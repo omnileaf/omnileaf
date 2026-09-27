@@ -14,7 +14,7 @@ pub fn run() {
     let app = tauri::Builder::default()
         .manage(Core::new())
         .invoke_handler(commands.invoke_handler());
-    #[cfg(feature = "e2e")]
+    #[cfg(all(feature = "e2e", not(windows)))]
     let app = app.plugin(tauri_plugin_wdio_webdriver::init());
     app.run(tauri::generate_context!())
         .expect("start the Tauri runtime");

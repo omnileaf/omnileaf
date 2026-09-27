@@ -21,8 +21,10 @@ omnileaf-engine.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true
 tauri.workspace = true
-tauri-plugin-wdio-webdriver = { workspace = true, optional = true }
 tauri-specta.workspace = true
+
+[target.'cfg(not(windows))'.dependencies]
+tauri-plugin-wdio-webdriver = { workspace = true, optional = true }
 
 [lints]
 workspace = true
