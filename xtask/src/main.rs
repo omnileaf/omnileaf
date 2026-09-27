@@ -28,6 +28,8 @@ enum Command {
         #[arg(long, value_enum)]
         only: Option<check::Group>,
     },
+    /// Regenerate the interface's TypeScript bindings from the app's commands.
+    Bindings,
     /// Check that this machine has the tools the repository needs.
     Doctor,
     /// Check the repository's files against its content rules.
@@ -39,6 +41,7 @@ fn main() -> anyhow::Result<()> {
         Command::Check { only } => {
             check::run_all(check::select(check::STEPS, only), &Process::in_workspace())?;
         }
+        Command::Bindings => regenerate_bindings()?,
         Command::Doctor => {
             let report = doctor::render(
                 doctor::REQUIREMENTS,
@@ -50,6 +53,25 @@ fn main() -> anyhow::Result<()> {
         }
         Command::Policy => enforce_policy()?,
     }
+    Ok(())
+}
+
+fn regenerate_bindings() -> anyhow::Result<()> {
+    let status = std::process::Command::new("cargo")
+        .args([
+            "test",
+            "--quiet",
+            "--locked",
+            "--package",
+            "omnileaf-app",
+            "--lib",
+            "commands::tests::committed_bindings_match_the_commands",
+        ])
+        .env("UPDATE_BINDINGS", "1")
+        .current_dir(workspace::root())
+        .status()
+        .context("run the bindings test")?;
+    anyhow::ensure!(status.success(), "regenerating the bindings failed");
     Ok(())
 }
 
