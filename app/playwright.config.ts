@@ -36,7 +36,7 @@ const projects: Project[] = ENGINES.flatMap((browserName) =>
 );
 
 export default defineConfig({
-  testDir: "tests",
+  testDir: "tests/browser",
   forbidOnly: true,
   retries: 0,
   reporter: "list",
