@@ -1,6 +1,7 @@
 packages:
   - app
 minimumReleaseAgeExclude:
+  - '@tauri-apps/api@2.12.0'
   - '@tauri-apps/cli-darwin-arm64@2.12.0'
   - '@tauri-apps/cli-darwin-x64@2.12.0'
   - '@tauri-apps/cli-linux-arm-gnueabihf@2.12.0'

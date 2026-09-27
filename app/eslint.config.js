@@ -8,7 +8,14 @@ import tseslint from "typescript-eslint";
 import svelteConfig from "./svelte.config.js";
 
 export default defineConfig(
-  { ignores: [".svelte-kit/", "build/", "src/lib/paraglide/"] },
+  {
+    ignores: [
+      ".svelte-kit/",
+      "build/",
+      "src/lib/paraglide/",
+      "src/lib/ipc/bindings.ts",
+    ],
+  },
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   svelte.configs.recommended,

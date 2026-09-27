@@ -13,10 +13,13 @@ publish = false
 [workspace.dependencies]
 anyhow = "1.0.104"
 clap = { version = "4.6.7", features = ["derive"] }
+omnileaf-engine = { path = "crates/omnileaf-engine" }
 serde = { version = "1.0.229", features = ["derive"] }
 specta = { version = "=2.0.0-rc.25", features = ["derive"] }
+specta-typescript = "=0.0.12"
 tauri = "2.12.0"
 tauri-build = "2.7.0"
+tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
