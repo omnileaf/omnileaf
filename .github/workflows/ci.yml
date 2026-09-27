@@ -38,9 +38,19 @@ jobs:
         run: '"$RUNNER_TEMP/gitleaks" git --redact --no-banner --verbose .'
 
   rust:
-    name: rust gate
-    runs-on: ubuntu-24.04
+    name: rust gate (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runner: ubuntu-24.04
+          - platform: macos
+            runner: macos-15
+          - platform: windows
+            runner: windows-2025
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -53,7 +63,7 @@ jobs:
 
       - uses: taiki-e/install-action@4cef1412cce204788f482e778a0b9187f9626a29 # v2.87.21
         with:
-          tool: cargo-nextest@0.9.146
+          tool: cargo-nextest@0.9.146,cargo-deny@0.20.2
 
       - name: Run the gate
         run: cargo xtask check

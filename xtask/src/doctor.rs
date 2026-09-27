@@ -30,6 +30,14 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
         },
         fix: "cargo install --locked cargo-nextest",
     },
+    Requirement {
+        name: "cargo-deny",
+        probe: Probe::Command {
+            program: "cargo",
+            args: &["deny", "--version"],
+        },
+        fix: "cargo install --locked cargo-deny",
+    },
 ];
 
 pub(crate) trait Machine {
