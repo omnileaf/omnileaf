@@ -39,6 +39,11 @@ pub(crate) const STEPS: &[Step] = &[
             "--locked",
         ],
     },
+    Step {
+        name: "dependencies",
+        program: "cargo",
+        args: &["deny", "--locked", "check"],
+    },
 ];
 
 pub(crate) trait Runner {
