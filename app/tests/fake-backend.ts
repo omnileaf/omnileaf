@@ -31,6 +31,10 @@ function isCommand(
   return Object.hasOwn(backend, name);
 }
 
+/**
+ * The bindings send arguments as an object in parameter order, so its values
+ * line up with the handler's parameters.
+ */
 function answer(
   backend: FakeBackend,
   command: string,
