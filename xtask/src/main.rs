@@ -40,7 +40,11 @@ fn main() -> anyhow::Result<()> {
             check::run_all(check::select(check::STEPS, only), &Process::in_workspace())?;
         }
         Command::Doctor => {
-            let report = doctor::render(doctor::REQUIREMENTS, &Process::in_workspace());
+            let report = doctor::render(
+                doctor::REQUIREMENTS,
+                &Process::in_workspace(),
+                std::env::consts::OS,
+            );
             print_lines(&report.lines);
             anyhow::ensure!(report.missing == 0, "{} tool(s) missing", report.missing);
         }
