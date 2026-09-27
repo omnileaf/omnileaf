@@ -49,7 +49,13 @@ impl fmt::Display for Violation {
 }
 
 const SOURCE_DIRECTORY_NAMES: &[&str] = &["sources", "extensions", "repos"];
-const RESERVED_HOSTS: &[&str] = &["localhost", "example.com", "example.net", "example.org"];
+const RESERVED_HOSTS: &[&str] = &[
+    "localhost",
+    "127.0.0.1",
+    "example.com",
+    "example.net",
+    "example.org",
+];
 const RESERVED_SUFFIXES: &[&str] = &[
     ".localhost",
     ".example",
@@ -319,6 +325,7 @@ mod tests {
         let content = links_to(&[
             "api.github.com",
             "localhost:1420",
+            "127.0.0.1:4445",
             "books.example.com",
             "a.test",
         ]);
