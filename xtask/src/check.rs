@@ -6,6 +6,7 @@ use std::{error::Error, fmt, io};
 pub(crate) enum Group {
     Rust,
     Interface,
+    Browser,
 }
 
 pub(crate) struct Step {
@@ -74,10 +75,22 @@ pub(crate) const STEPS: &[Step] = &[
         args: &["--recursive", "run", "lint"],
     },
     Step {
+        name: "interface tests",
+        group: Group::Interface,
+        program: "pnpm",
+        args: &["--recursive", "run", "test"],
+    },
+    Step {
         name: "interface build",
         group: Group::Interface,
         program: "pnpm",
         args: &["--recursive", "run", "build"],
+    },
+    Step {
+        name: "browser tests",
+        group: Group::Browser,
+        program: "pnpm",
+        args: &["--recursive", "run", "test:e2e"],
     },
 ];
 
