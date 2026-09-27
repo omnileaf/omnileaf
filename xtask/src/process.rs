@@ -9,6 +9,7 @@ use std::{
 use crate::{
     check::{Runner, Step},
     doctor::Machine,
+    workspace,
 };
 
 pub(crate) struct Process {
@@ -18,7 +19,7 @@ pub(crate) struct Process {
 impl Process {
     pub(crate) fn in_workspace() -> Self {
         Self {
-            root: PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/..")),
+            root: workspace::root(),
         }
     }
 }
