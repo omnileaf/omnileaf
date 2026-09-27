@@ -141,7 +141,7 @@ jobs:
           retention-days: 7
 
   app:
-    name: app tests (${{ matrix.platform }})
+    name: app (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 40
     strategy:
@@ -183,5 +183,9 @@ jobs:
         run: xvfb-run --auto-servernum cargo xtask check --only app
 
       - name: Build and test the app
-        if: runner.os != 'Linux'
+        if: runner.os == 'macOS'
         run: cargo xtask check --only app
+
+      - name: Build the app
+        if: runner.os == 'Windows'
+        run: pnpm --dir app tauri build --debug --no-bundle
