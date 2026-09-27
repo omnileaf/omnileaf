@@ -26,6 +26,15 @@ The agreement is still being finalised. Until it's in effect, pull requests from
 
 Run `cargo xtask doctor` first, since it lists anything missing, including WebKitGTK 4.1 on Linux and the Xcode command line tools on macOS. Then install the interface dependencies with `pnpm install` and start the app with `pnpm --dir app tauri dev`. The window reloads as you edit the interface. `cargo tauri dev` works too, from the repository root or `app/`, if the `tauri-cli` you installed is the version pinned in `app/package.json`. `pnpm dev` on its own serves the interface without the Rust side, so its commands fail there. The browser tests answer them with a fake backend instead.
 
+### Android
+
+Android builds need:
+- JDK 21;
+- the Android SDK, with `ANDROID_HOME` set;
+- NDK 27.1.12297006, with `NDK_HOME` pointing at it.
+
+Add the Rust Android targets once with `rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android`. `pnpm --dir app tauri android dev` runs the app on a connected device or a running emulator. The Android project in `app/src-tauri/gen/android` is committed, and the app supports Android 8.0 (API 26) and later.
+
 ## Checking your work
 
 `cargo xtask check` runs the same checks as CI. For Rust: formatting, clippy with warnings as errors, the tests, and a dependency check. For the interface, which needs Node and pnpm (`pnpm install` first): type checking, ESLint and Prettier, component tests in Chromium, and a production build. The browser tests then run the built interface in Chromium and WebKit at phone, tablet and desktop sizes, including an accessibility check in the light and dark themes. The app tests then build the app with the `e2e` feature, which adds an embedded WebDriver server and never ships, and drive the real app through it. They open a window, so on Linux without a display run them under `xvfb-run`. They don't run on Windows yet, because the WebDriver plugin doesn't build there with the current Tauri release. `--only rust`, `--only interface`, `--only browser` or `--only app` runs one group. The Rust tests also check that the interface's generated command bindings, `app/src/lib/ipc/bindings.ts`, are current. After changing a command, regenerate them with `cargo xtask bindings`. Every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories.

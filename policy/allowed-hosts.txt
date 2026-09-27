@@ -1,10 +1,15 @@
 creativecommons.org
+developer.android.com
+editorconfig.org
 fsf.org
 github.com
 rustup.rs
 schemas.android.com
+services.gradle.org
+www.apache.org
 www.contributor-covenant.org
 www.conventionalcommits.org
 www.gnu.org
+www.gradle.org
 www.harmonyagreements.org
 www.w3.org
