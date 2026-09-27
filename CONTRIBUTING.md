@@ -6,7 +6,7 @@ Thanks for your interest in Omnileaf. The project is in early development, so th
 
 - Follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 - Follow the [content policy](docs/legal/content-policy.md). The app ships no content and no content sources, never circumvents DRM, and uses only generated test fixtures. Requests to support specific websites are out of scope.
-- Describe the project the way the [wording guide](docs/style/wording.md) sets out.
+- Describe features technically, never as a way to get content for free.
 - Report security issues privately, as described in [SECURITY.md](SECURITY.md).
 
 ## Contributor License Agreement
@@ -34,6 +34,6 @@ A pull request is ready when:
 
 - **It follows the [code standards](docs/code-standards.md)** and was built test-first. New logic comes with tests, new commands with integration tests, and new user-visible flows with end-to-end tests, all in the same pull request. Every bug fix starts with a test that reproduces the bug.
 - **CI is green,** with no new warnings.
-- **Docs and generated files move with the code.** Where a decision closes off an alternative, it gets a [decision record](docs/decisions/).
+- **Docs and generated files move with the code.**
 - **It leaves nothing unfinished:** no `TODO` or `FIXME` comments, no skipped tests, no lint suppressions without a reason, no commented-out code and no debug output.
 - **It contains no copyrighted material,** no real titles and no site-specific code.
