@@ -1,6 +1,6 @@
 import { AxeBuilder } from "@axe-core/playwright";
 
-import { expect, test } from "./fixtures.ts";
+import { expect, FAKE_APP_VERSION, test } from "./fixtures.ts";
 
 const COLOR_SCHEMES = ["light", "dark"] as const;
 
@@ -12,6 +12,12 @@ test("opens on the empty library", async ({ page }) => {
     page.getByRole("heading", { level: 1, name: "Library" }),
   ).toBeVisible();
   await expect(page.getByText("Your library is empty.")).toBeVisible();
+});
+
+test("shows the version the backend reports", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.getByText(`Version ${FAKE_APP_VERSION}`)).toBeVisible();
 });
 
 for (const colorScheme of COLOR_SCHEMES) {
