@@ -261,8 +261,22 @@ jobs:
 
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
-      - name: Build the simulator app
-        run: pnpm --dir app tauri ios build --debug --target aarch64-sim --no-sign
+      - name: Install Appium
+        run: npm install --global appium@3.8.0 && appium driver install xcuitest@12.13.2
+
+      - name: Boot the newest iPhone Simulator
+        run: |
+          runtime=$(xcrun simctl list runtimes --json | jq -r '[.runtimes[] | select(.platform == "iOS" and .isAvailable)] | sort_by(.version | split(".") | map(tonumber)) | last | .identifier')
+          udid=$(xcrun simctl list devices available --json | jq -r --arg runtime "$runtime" '.devices[$runtime] | map(select(.name | startswith("iPhone"))) | first | .udid')
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          echo "SIMULATOR_SDK=$(xcrun simctl list runtimes --json | jq -r --arg runtime "$runtime" '.runtimes[] | select(.identifier == $runtime) | .version')" >> "$GITHUB_ENV"
+
+      - name: Build WebDriverAgent for the Simulator
+        run: appium driver run xcuitest build-wda --sdk "$SIMULATOR_SDK"
+
+      - name: Build and test the app on the Simulator
+        run: cargo xtask check --only ios
 
   app:
     name: app (${{ matrix.platform }})
