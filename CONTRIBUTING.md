@@ -22,6 +22,10 @@ The agreement is still being finalised. Until it's in effect, pull requests from
 - **Small pull requests.** Aim for about 400 changed lines or fewer, not counting generated files. Split bigger work into a series of pull requests that each stand on their own.
 - **Review and merge.** Every pull request needs a maintainer's review and green CI, then it is squash-merged into `main`. Nothing lands on `main` directly.
 
+## Checking your work
+
+`cargo xtask check` runs the same checks as CI: formatting, clippy with warnings as errors, and the tests. It needs [cargo-nextest](https://nexte.st/). Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.
+
 ## Definition of done
 
 A pull request is ready when:
