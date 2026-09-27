@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import type { commands } from "../src/lib/ipc/bindings.ts";
+import type { commands } from "../../src/lib/ipc/bindings.ts";
 
 type Commands = typeof commands;
 
