@@ -23,7 +23,11 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Run the checks CI runs on every pull request.
-    Check,
+    Check {
+        /// Run only this group of checks.
+        #[arg(long, value_enum)]
+        only: Option<check::Group>,
+    },
     /// Check that this machine has the tools the repository needs.
     Doctor,
     /// Check the repository's files against its content rules.
@@ -32,7 +36,9 @@ enum Command {
 
 fn main() -> anyhow::Result<()> {
     match Cli::parse().command {
-        Command::Check => check::run_all(check::STEPS, &Process::in_workspace())?,
+        Command::Check { only } => {
+            check::run_all(check::select(check::STEPS, only), &Process::in_workspace())?;
+        }
         Command::Doctor => {
             let report = doctor::render(doctor::REQUIREMENTS, &Process::in_workspace());
             print_lines(&report.lines);

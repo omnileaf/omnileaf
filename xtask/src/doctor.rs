@@ -38,6 +38,22 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
         },
         fix: "cargo install --locked cargo-deny",
     },
+    Requirement {
+        name: "node",
+        probe: Probe::Command {
+            program: "node",
+            args: &["--version"],
+        },
+        fix: "install the Node version in .node-version, for example with mise",
+    },
+    Requirement {
+        name: "pnpm",
+        probe: Probe::Command {
+            program: "pnpm",
+            args: &["--version"],
+        },
+        fix: "install the pnpm version in package.json's packageManager field",
+    },
 ];
 
 pub(crate) trait Machine {

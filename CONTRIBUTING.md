@@ -24,7 +24,7 @@ The agreement is still being finalised. Until it's in effect, pull requests from
 
 ## Checking your work
 
-`cargo xtask check` runs the same checks as CI: formatting, clippy with warnings as errors, the tests, and a dependency check. Every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories.
+`cargo xtask check` runs the same checks as CI. For Rust: formatting, clippy with warnings as errors, the tests, and a dependency check. For the interface, which needs Node and pnpm (`pnpm install` first): type checking, ESLint and Prettier, and a production build. `--only rust` or `--only interface` runs one group. Every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories.
 
 It also runs `cargo xtask policy`, which checks every file git doesn't ignore against the [content policy](docs/legal/content-policy.md):
 - no directories named `sources`, `extensions` or `repos`, and no WebAssembly modules;
