@@ -1,8 +1,15 @@
-//! Runs gate steps as child processes in the workspace root.
+//! Runs gate steps and tool probes as child processes in the workspace root.
 
-use std::{io, path::PathBuf, process::Command};
+use std::{
+    io,
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 
-use crate::check::{Runner, Step};
+use crate::{
+    check::{Runner, Step},
+    doctor::Machine,
+};
 
 pub(crate) struct Process {
     root: PathBuf,
@@ -25,5 +32,21 @@ impl Runner for Process {
             .current_dir(&self.root)
             .status()
             .map(|status| status.success())
+    }
+}
+
+impl Machine for Process {
+    fn first_line_of(&self, program: &str, args: &[&str]) -> Option<String> {
+        let output = Command::new(program)
+            .args(args)
+            .current_dir(&self.root)
+            .stderr(Stdio::null())
+            .output()
+            .ok()
+            .filter(|output| output.status.success())?;
+        String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .next()
+            .map(|line| line.trim().to_owned())
     }
 }
