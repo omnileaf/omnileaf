@@ -72,6 +72,43 @@ jobs:
       - name: Run the gate
         run: cargo xtask check --only rust
 
+  coverage:
+    name: coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CORE_LINE_COVERAGE_FLOOR: 76
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install WebKitGTK
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev
+
+      - name: Install the pinned toolchain with the LLVM tools
+        run: rustup toolchain install && rustup component add llvm-tools-preview
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - uses: taiki-e/install-action@4cef1412cce204788f482e778a0b9187f9626a29 # v2.87.21
+        with:
+          tool: cargo-nextest@0.9.146,cargo-llvm-cov@0.9.1
+
+      - name: Measure the tests' coverage
+        run: cargo llvm-cov nextest --workspace --all-features --locked --no-report
+
+      - name: Report coverage
+        run: |
+          {
+            echo '```'
+            cargo llvm-cov report --summary-only
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Hold the core crates to their coverage floor
+        run: cargo llvm-cov report --summary-only --ignore-filename-regex '(^|/)(app|xtask)/' --fail-under-lines "$CORE_LINE_COVERAGE_FLOOR"
+
   interface:
     name: interface gate
     runs-on: ubuntu-24.04
