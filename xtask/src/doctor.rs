@@ -69,6 +69,15 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
         },
         fix: "install the WebKitGTK 4.1 development package, for example libwebkit2gtk-4.1-dev or webkit2gtk-4.1",
     },
+    Requirement {
+        name: "xcode-tools",
+        os: Some("macos"),
+        probe: Probe::Command {
+            program: "xcode-select",
+            args: &["--print-path"],
+        },
+        fix: "install the Xcode command line tools with xcode-select --install",
+    },
 ];
 
 pub(crate) trait Machine {
