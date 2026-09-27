@@ -13,25 +13,40 @@ const APP_BUNDLE = fileURLToPath(
     import.meta.url,
   ),
 );
-const IOS_RUNTIME = /\.iOS-/;
+const IOS_RUNTIME = /\.iOS-(\d+(?:-\d+)*)$/;
 const WEBDRIVERAGENT_LAUNCH_TIMEOUT_MS = 120_000;
 const WEBVIEW_TIMEOUT_MS = 60_000;
 
 const run = promisify(execFile);
 
-function bootedIosSimulator(listing: unknown): string | undefined {
-  const devices = isRecord(listing) ? listing.devices : undefined;
-  if (!isRecord(devices)) {
-    return undefined;
-  }
-  return Object.entries(devices)
-    .filter(([runtime]) => IOS_RUNTIME.test(runtime))
-    .flatMap(([, simulators]) => listOf(simulators))
-    .map((simulator) => (isRecord(simulator) ? simulator.udid : undefined))
-    .find((udid) => typeof udid === "string");
+interface Simulator {
+  readonly udid: string;
+  readonly platformVersion: string;
 }
 
-async function findBootedSimulator(): Promise<string> {
+function simulatorsOn(runtime: string, devices: unknown): Simulator[] {
+  const version = IOS_RUNTIME.exec(runtime)?.[1];
+  if (version === undefined) {
+    return [];
+  }
+  const platformVersion = version.replaceAll("-", ".");
+  return listOf(devices).flatMap((device) => {
+    const udid = isRecord(device) ? device.udid : undefined;
+    return typeof udid === "string" ? [{ udid, platformVersion }] : [];
+  });
+}
+
+function bootedIosSimulator(listing: unknown): Simulator | undefined {
+  const runtimes = isRecord(listing) ? listing.devices : undefined;
+  if (!isRecord(runtimes)) {
+    return undefined;
+  }
+  return Object.entries(runtimes).flatMap(([runtime, devices]) =>
+    simulatorsOn(runtime, devices),
+  )[0];
+}
+
+async function findBootedSimulator(): Promise<Simulator> {
   const { stdout } = await run("xcrun", [
     "simctl",
     "list",
@@ -39,11 +54,11 @@ async function findBootedSimulator(): Promise<string> {
     "booted",
     "--json",
   ]);
-  const udid = bootedIosSimulator(JSON.parse(stdout));
-  if (udid === undefined) {
+  const simulator = bootedIosSimulator(JSON.parse(stdout));
+  if (simulator === undefined) {
     throw new Error("boot an iOS Simulator before running the iOS tests");
   }
-  return udid;
+  return simulator;
 }
 
 export async function setup(
@@ -56,10 +71,11 @@ export async function setup(
     capabilities: {
       platformName: "iOS",
       "appium:automationName": "XCUITest",
-      "appium:udid": simulator,
+      "appium:udid": simulator.udid,
+      "appium:platformVersion": simulator.platformVersion,
       "appium:app": APP_BUNDLE,
       "appium:autoWebview": true,
-      "appium:autoWebviewTimeout": WEBVIEW_TIMEOUT_MS,
+      "appium:webviewConnectTimeout": WEBVIEW_TIMEOUT_MS,
       "appium:wdaLaunchTimeout": WEBDRIVERAGENT_LAUNCH_TIMEOUT_MS,
     },
   });
