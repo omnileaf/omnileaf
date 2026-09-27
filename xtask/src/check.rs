@@ -2,8 +2,15 @@
 
 use std::{error::Error, fmt, io};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
+pub(crate) enum Group {
+    Rust,
+    Interface,
+}
+
 pub(crate) struct Step {
     pub(crate) name: &'static str,
+    pub(crate) group: Group,
     pub(crate) program: &'static str,
     pub(crate) args: &'static [&'static str],
 }
@@ -11,11 +18,13 @@ pub(crate) struct Step {
 pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "format",
+        group: Group::Rust,
         program: "cargo",
         args: &["fmt", "--all", "--check"],
     },
     Step {
         name: "lint",
+        group: Group::Rust,
         program: "cargo",
         args: &[
             "clippy",
@@ -30,6 +39,7 @@ pub(crate) const STEPS: &[Step] = &[
     },
     Step {
         name: "test",
+        group: Group::Rust,
         program: "cargo",
         args: &[
             "nextest",
@@ -41,13 +51,33 @@ pub(crate) const STEPS: &[Step] = &[
     },
     Step {
         name: "dependencies",
+        group: Group::Rust,
         program: "cargo",
         args: &["deny", "--locked", "check"],
     },
     Step {
         name: "policy",
+        group: Group::Rust,
         program: "cargo",
         args: &["xtask", "policy"],
+    },
+    Step {
+        name: "interface types",
+        group: Group::Interface,
+        program: "pnpm",
+        args: &["--recursive", "run", "check"],
+    },
+    Step {
+        name: "interface lint",
+        group: Group::Interface,
+        program: "pnpm",
+        args: &["--recursive", "run", "lint"],
+    },
+    Step {
+        name: "interface build",
+        group: Group::Interface,
+        program: "pnpm",
+        args: &["--recursive", "run", "build"],
     },
 ];
 
@@ -84,7 +114,17 @@ impl Error for CheckError {
     }
 }
 
-pub(crate) fn run_all(steps: &[Step], runner: &impl Runner) -> Result<(), CheckError> {
+pub(crate) fn select(steps: &[Step], only: Option<Group>) -> Vec<&Step> {
+    steps
+        .iter()
+        .filter(|step| only.is_none_or(|group| step.group == group))
+        .collect()
+}
+
+pub(crate) fn run_all<'a>(
+    steps: impl IntoIterator<Item = &'a Step>,
+    runner: &impl Runner,
+) -> Result<(), CheckError> {
     for step in steps {
         let passed = runner.run(step).map_err(|source| CheckError::Spawn {
             step: step.name,
@@ -131,16 +171,19 @@ mod tests {
     const THREE_STEPS: &[Step] = &[
         Step {
             name: "first",
+            group: Group::Rust,
             program: "true",
             args: &[],
         },
         Step {
             name: "second",
+            group: Group::Interface,
             program: "true",
             args: &[],
         },
         Step {
             name: "third",
+            group: Group::Rust,
             program: "true",
             args: &[],
         },
@@ -183,5 +226,21 @@ mod tests {
             Err(CheckError::Spawn { step: "first", .. })
         ));
         assert_eq!(*runner.ran.borrow(), ["first"]);
+    }
+
+    #[test]
+    fn selects_every_step_without_a_filter() {
+        let selected = select(THREE_STEPS, None);
+
+        let names: Vec<&str> = selected.iter().map(|step| step.name).collect();
+        assert_eq!(names, ["first", "second", "third"]);
+    }
+
+    #[test]
+    fn selects_only_steps_in_the_requested_group() {
+        let selected = select(THREE_STEPS, Some(Group::Rust));
+
+        let names: Vec<&str> = selected.iter().map(|step| step.name).collect();
+        assert_eq!(names, ["first", "third"]);
     }
 }
