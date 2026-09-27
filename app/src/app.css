@@ -1,14 +1,69 @@
-:root {
-  color-scheme: light dark;
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI Variable",
-    "Segoe UI",
-    Roboto,
+@import "tailwindcss";
+
+@theme {
+  --*: initial;
+
+  --breakpoint-medium: 600px;
+  --breakpoint-expanded: 840px;
+  --breakpoint-large: 1200px;
+
+  --font-ui:
+    system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto,
     sans-serif;
+
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.75rem;
+  --text-headline: 1.75rem;
+  --text-headline--line-height: 2.25rem;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.5rem;
+  --spacing-2xl: 2rem;
+  --spacing-3xl: 3rem;
+
+  --radius-control: 0.5rem;
+  --radius-card: 0.75rem;
+
+  --color-background: #ffffff;
+  --color-surface: #f5f5f7;
+  --color-foreground: #1d1d1f;
+  --color-muted: #5e5e63;
+  --color-accent: #2f6f4f;
+  --color-on-accent: #ffffff;
+  --color-border: #d2d2d7;
 }
 
-body {
-  margin: 0;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #111113;
+    --color-surface: #1c1c1f;
+    --color-foreground: #f5f5f7;
+    --color-muted: #a1a1a6;
+    --color-accent: #6fcf97;
+    --color-on-accent: #111113;
+    --color-border: #3a3a3e;
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-ui);
+  }
 }
