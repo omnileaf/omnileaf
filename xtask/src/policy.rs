@@ -184,6 +184,13 @@ mod tests {
         }
     }
 
+    fn links_to(hosts: &[&str]) -> String {
+        hosts
+            .iter()
+            .map(|host| format!("https://{host}/ "))
+            .collect()
+    }
+
     fn policy_with_hosts(hosts: &[&str]) -> Policy {
         Policy {
             allowed_hosts: hosts.iter().map(|host| (*host).to_owned()).collect(),
@@ -290,10 +297,11 @@ mod tests {
 
     #[test]
     fn rejects_hosts_that_are_not_allowed() {
-        let files = [text(
-            "README.md",
-            "https://github.com/x and https://unknown.site/y",
-        )];
+        let content = links_to(&["github.com", "unknown.site"]);
+        let files = [TrackedFile {
+            path: "README.md",
+            bytes: content.as_bytes(),
+        }];
 
         let violations = check(&files, &policy_with_hosts(&["github.com"]));
 
@@ -308,10 +316,16 @@ mod tests {
 
     #[test]
     fn accepts_wildcard_and_reserved_hosts() {
-        let files = [text(
-            "docs.md",
-            "https://api.github.com http://localhost:1420 https://books.example.com https://a.test",
-        )];
+        let content = links_to(&[
+            "api.github.com",
+            "localhost:1420",
+            "books.example.com",
+            "a.test",
+        ]);
+        let files = [TrackedFile {
+            path: "docs.md",
+            bytes: content.as_bytes(),
+        }];
 
         let violations = check(&files, &policy_with_hosts(&["*.github.com"]));
 
@@ -320,9 +334,9 @@ mod tests {
 
     #[test]
     fn rejects_forbidden_phrases_in_any_case() {
-        let files = [text("README.md", "Read For Free, anywhere")];
+        let files = [text("README.md", "Sample Phrase, anywhere")];
         let policy = Policy {
-            forbidden_phrases: vec!["read for free".to_owned()],
+            forbidden_phrases: vec!["sample phrase".to_owned()],
             ..Policy::default()
         };
 
@@ -332,16 +346,16 @@ mod tests {
             violations,
             [Violation::ForbiddenPhrase {
                 path: "README.md".to_owned(),
-                phrase: "read for free".to_owned()
+                phrase: "sample phrase".to_owned()
             }]
         );
     }
 
     #[test]
     fn skips_the_policy_lists_themselves() {
-        let files = [text("policy/forbidden-phrases.txt", "read for free")];
+        let files = [text("policy/forbidden-phrases.txt", "sample phrase")];
         let policy = Policy {
-            forbidden_phrases: vec!["read for free".to_owned()],
+            forbidden_phrases: vec!["sample phrase".to_owned()],
             ..Policy::default()
         };
 
