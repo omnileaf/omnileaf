@@ -74,6 +74,12 @@ pub(crate) const STEPS: &[Step] = &[
         args: &["--recursive", "run", "lint"],
     },
     Step {
+        name: "interface tests",
+        group: Group::Interface,
+        program: "pnpm",
+        args: &["--recursive", "run", "test"],
+    },
+    Step {
         name: "interface build",
         group: Group::Interface,
         program: "pnpm",

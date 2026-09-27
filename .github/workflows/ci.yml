@@ -91,6 +91,9 @@ jobs:
       - name: Install interface dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install the test browser
+        run: pnpm --dir app exec playwright install --with-deps chromium
+
       - name: Install the pinned toolchain
         run: rustup toolchain install
 
