@@ -54,19 +54,34 @@ pub(crate) fn examine(requirement: &Requirement, machine: &impl Machine) -> Find
         .map_or(Finding::Missing, |detail| Finding::Present { detail })
 }
 
+const STATUS_WIDTH: usize = 8;
+const NAME_WIDTH: usize = 16;
+
 pub(crate) fn render(requirements: &[Requirement], machine: &impl Machine) -> Report {
-    let mut missing = 0;
-    let lines = requirements
+    let findings: Vec<(&Requirement, Finding)> = requirements
         .iter()
-        .map(|requirement| match examine(requirement, machine) {
-            Finding::Present { detail } => format!("ok       {:<16} {detail}", requirement.name),
-            Finding::Missing => {
-                missing += 1;
-                format!("missing  {:<16} {}", requirement.name, requirement.fix)
-            }
-        })
+        .map(|requirement| (requirement, examine(requirement, machine)))
+        .collect();
+    let missing = findings
+        .iter()
+        .filter(|(_, finding)| *finding == Finding::Missing)
+        .count();
+    let lines = findings
+        .into_iter()
+        .map(|(requirement, finding)| line(requirement, finding))
         .collect();
     Report { lines, missing }
+}
+
+fn line(requirement: &Requirement, finding: Finding) -> String {
+    let (status, text) = match finding {
+        Finding::Present { detail } => ("ok", detail),
+        Finding::Missing => ("missing", requirement.fix.to_owned()),
+    };
+    format!(
+        "{status:<STATUS_WIDTH$} {name:<NAME_WIDTH$} {text}",
+        name = requirement.name
+    )
 }
 
 #[cfg(test)]
