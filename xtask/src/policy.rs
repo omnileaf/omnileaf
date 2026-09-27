@@ -187,7 +187,7 @@ mod tests {
     fn links_to(hosts: &[&str]) -> String {
         hosts
             .iter()
-            .map(|host| format!("https://{host}/ "))
+            .map(|host| ["https://", host, "/ "].concat())
             .collect()
     }
 
