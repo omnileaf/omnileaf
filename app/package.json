@@ -9,8 +9,9 @@
     "check": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy baseLocale && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
-    "test": "vitest run",
+    "test": "vitest run --project components",
     "test:e2e": "playwright test",
+    "test:app": "tauri build --debug --no-bundle --features e2e && vitest run --project app",
     "tauri": "tauri"
   },
   "devDependencies": {
@@ -25,6 +26,7 @@
     "@tailwindcss/vite": "4.3.3",
     "@tauri-apps/api": "2.12.0",
     "@tauri-apps/cli": "2.12.0",
+    "@types/node": "26.6.3",
     "@vitest/browser-playwright": "5.0.2",
     "eslint": "10.11.0",
     "eslint-plugin-better-tailwindcss": "4.7.0",
