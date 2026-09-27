@@ -180,7 +180,7 @@ jobs:
   android:
     name: android
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 60
     env:
       NDK_VERSION: 27.1.12297006
     steps:
@@ -216,8 +216,26 @@ jobs:
 
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
-      - name: Build the debug APKs
-        run: pnpm --dir app tauri android build --debug --apk --target aarch64 x86_64
+      - name: Build the ARM debug APK
+        run: pnpm --dir app tauri android build --debug --apk --target aarch64
+
+      - name: Install Appium
+        run: npm install --global appium@3.8.0 && appium driver install uiautomator2@8.7.0
+
+      - name: Let the emulator use KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Build and test the app on an emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: cargo xtask check --only android
 
   app:
     name: app (${{ matrix.platform }})
