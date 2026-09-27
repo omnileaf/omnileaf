@@ -32,6 +32,8 @@ Run `cargo xtask doctor` first, since it lists anything missing, including WebKi
 
 The tests use Playwright's browsers. Install them once with `pnpm --dir app exec playwright install chromium webkit`, adding `--with-deps` on Ubuntu or Debian to install the system libraries they need. Playwright's WebKit runs on Windows, macOS, Ubuntu and Debian. On other Linux distributions, run the Chromium browser tests with `pnpm --dir app test:e2e --project 'chromium-*'` and leave WebKit to CI.
 
+CI also measures test coverage and shows it in the `coverage` job's summary. Line coverage of the core crates in `crates/` must not drop below the floor set in `.github/workflows/ci.yml`. When a change raises it, raise the floor in the same pull request.
+
 The gate also runs `cargo xtask policy`, which checks every file git doesn't ignore against the [content policy](docs/legal/content-policy.md):
 - no directories named `sources`, `extensions` or `repos`, and no WebAssembly modules;
 - binary files only when listed in `policy/allowed-binaries.txt`;
