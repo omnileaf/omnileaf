@@ -1,6 +1,5 @@
-import { afterAll, beforeAll, expect, test } from "vitest";
+import { afterAll, beforeAll, expect, inject, test } from "vitest";
 
-import { WEBDRIVER_URL } from "./address.ts";
 import { Session, xpath } from "./webdriver.ts";
 
 const LIBRARY_HEADING = xpath("//h1");
@@ -11,7 +10,8 @@ const VERSION_CAPTION = xpath(
 let session: Session;
 
 beforeAll(async () => {
-  session = await Session.start(WEBDRIVER_URL, {});
+  const app = inject("appUnderTest");
+  session = await Session.start(new URL(app.server), app.capabilities);
 });
 
 afterAll(async () => {

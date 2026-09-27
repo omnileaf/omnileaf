@@ -45,7 +45,7 @@ export default defineConfig({
           name: "app",
           include: ["tests/app/**/*.e2e.ts"],
           environment: "node",
-          globalSetup: ["tests/app/launch.ts"],
+          globalSetup: ["tests/app/desktop.ts"],
           expect: { requireAssertions: true },
           testTimeout: APP_TEST_TIMEOUT_MS,
           hookTimeout: APP_TEST_TIMEOUT_MS,
