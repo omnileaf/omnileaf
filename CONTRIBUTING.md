@@ -24,7 +24,9 @@ The agreement is still being finalised. Until it's in effect, pull requests from
 
 ## Checking your work
 
-`cargo xtask check` runs the same checks as CI: formatting, clippy with warnings as errors, and the tests. It needs [cargo-nextest](https://nexte.st/). Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.
+`cargo xtask check` runs the same checks as CI: formatting, clippy with warnings as errors, and the tests. Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.
+
+`cargo xtask doctor` lists the tools the repository needs, and shows how to install any that are missing.
 
 ## Definition of done
 
