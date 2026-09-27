@@ -24,7 +24,15 @@ The agreement is still being finalised. Until it's in effect, pull requests from
 
 ## Checking your work
 
-`cargo xtask check` runs the same checks as CI: formatting, clippy with warnings as errors, the tests, and a dependency check. Every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories. Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.
+`cargo xtask check` runs the same checks as CI: formatting, clippy with warnings as errors, the tests, and a dependency check. Every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories.
+
+It also runs `cargo xtask policy`, which checks every tracked file against the [content policy](docs/legal/content-policy.md):
+- no directories named `sources`, `extensions` or `repos`, and no WebAssembly modules;
+- binary files only when listed in `policy/allowed-binaries.txt`;
+- links only to hosts in `policy/allowed-hosts.txt`, or to reserved ones such as `example.com` and `*.test`;
+- none of the phrases in `policy/forbidden-phrases.txt`.
+
+Adding an entry to one of those lists is reviewed like any other change. Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.
 
 `cargo xtask doctor` lists the tools the repository needs, and shows how to install any that are missing.
 
