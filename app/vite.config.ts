@@ -7,6 +7,7 @@ import { defineConfig } from "vitest/config";
 import { TEST_BROWSER_CONTEXT } from "./tests/browser-context.ts";
 
 const APP_TEST_TIMEOUT_MS = 30_000;
+const ANDROID_SESSION_TIMEOUT_MS = 180_000;
 
 export default defineConfig({
   clearScreen: false,
@@ -49,6 +50,17 @@ export default defineConfig({
           expect: { requireAssertions: true },
           testTimeout: APP_TEST_TIMEOUT_MS,
           hookTimeout: APP_TEST_TIMEOUT_MS,
+        },
+      },
+      {
+        test: {
+          name: "android",
+          include: ["tests/app/**/*.e2e.ts"],
+          environment: "node",
+          globalSetup: ["tests/app/android.ts"],
+          expect: { requireAssertions: true },
+          testTimeout: APP_TEST_TIMEOUT_MS,
+          hookTimeout: ANDROID_SESSION_TIMEOUT_MS,
         },
       },
     ],

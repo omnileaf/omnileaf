@@ -12,6 +12,7 @@
     "test": "vitest run --project components",
     "test:e2e": "playwright test",
     "test:app": "tauri build --debug --no-bundle --features e2e && vitest run --project app",
+    "test:android": "tauri android build --debug --apk --target x86_64 && vitest run --project android",
     "tauri": "tauri"
   },
   "devDependencies": {
