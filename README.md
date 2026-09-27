@@ -13,10 +13,6 @@ Omnileaf is in early development and has no release yet.
 
 Omnileaf ships no content and no content sources. It reads the files and servers you point it at.
 
-## Supporting the project
-
-Omnileaf is free and open source. If you'd like to support its development, you can [sponsor it on GitHub](https://github.com/sponsors/omnileaf).
-
 ## License
 
 Omnileaf is licensed under the [GNU General Public License v3.0 only](LICENSE). The name and logo are covered separately; see [TRADEMARKS.md](TRADEMARKS.md).
