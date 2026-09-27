@@ -16,7 +16,13 @@ pub(crate) fn root() -> PathBuf {
 
 pub(crate) fn tracked_files(root: &Path) -> io::Result<Vec<(String, Vec<u8>)>> {
     let listing = Command::new("git")
-        .args(["ls-files", "-z"])
+        .args([
+            "ls-files",
+            "-z",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+        ])
         .current_dir(root)
         .output()?;
     if !listing.status.success() {
