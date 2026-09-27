@@ -28,9 +28,11 @@ Run `cargo xtask doctor` first, since it lists anything missing (on Linux that i
 
 ## Checking your work
 
-`cargo xtask check` runs the same checks as CI. For Rust: formatting, clippy with warnings as errors, the tests, and a dependency check. For the interface, which needs Node and pnpm (`pnpm install` first): type checking, ESLint and Prettier, and a production build. `--only rust` or `--only interface` runs one group. Every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories.
+`cargo xtask check` runs the same checks as CI. For Rust: formatting, clippy with warnings as errors, the tests, and a dependency check. For the interface, which needs Node and pnpm (`pnpm install` first): type checking, ESLint and Prettier, component tests in Chromium, and a production build. The browser tests then run the built interface in Chromium and WebKit at phone, tablet and desktop sizes, including an accessibility check in the light and dark themes. `--only rust`, `--only interface` or `--only browser` runs one group. Every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories.
 
-It also runs `cargo xtask policy`, which checks every file git doesn't ignore against the [content policy](docs/legal/content-policy.md):
+The tests use Playwright's browsers. Install them once with `pnpm --dir app exec playwright install chromium webkit`, adding `--with-deps` on Ubuntu or Debian to install the system libraries they need. Playwright's WebKit runs on Windows, macOS, Ubuntu and Debian. On other Linux distributions, run the Chromium browser tests with `pnpm --dir app test:e2e --project 'chromium-*'` and leave WebKit to CI.
+
+The gate also runs `cargo xtask policy`, which checks every file git doesn't ignore against the [content policy](docs/legal/content-policy.md):
 - no directories named `sources`, `extensions` or `repos`, and no WebAssembly modules;
 - binary files only when listed in `policy/allowed-binaries.txt`;
 - links only to hosts in `policy/allowed-hosts.txt`, or to reserved ones such as `example.com` and `*.test`;

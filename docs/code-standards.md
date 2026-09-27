@@ -100,7 +100,7 @@ Test-driven by default. A change with behaviour starts with a failing test.
 - **Modules:** no work at import time, and no import cycles.
 - **Promises:** no floating promises. `Promise.all` only over bounded lists.
 - **Svelte state:** runes (`$state`, `$derived`, `$effect`) in `.svelte.ts` classes, with no store library. Components below the route level take props and callbacks.
-- **Tests:** vitest doesn't type-check, so `svelte-check` runs alongside it. Time comes from fake timers, and `TZ` is pinned to UTC in test scripts.
+- **Tests:** vitest and Playwright run in real browsers, with the locale and time zone pinned in the test configuration. Time comes from fake timers. vitest doesn't type-check, so `svelte-check` runs alongside it.
 - **Tools:** run them through `pnpm` scripts, never `npx`.
 
 ## Kotlin (Android plugin)
