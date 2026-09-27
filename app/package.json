@@ -5,10 +5,12 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "preview": "vite preview",
     "check": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy baseLocale && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "tauri": "tauri"
   },
   "devDependencies": {

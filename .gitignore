@@ -11,3 +11,4 @@ app/build/
 app/src/lib/paraglide/
 app/src-tauri/gen/schemas/
 app/.vitest/
+app/test-results/

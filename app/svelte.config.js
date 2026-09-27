@@ -4,6 +4,11 @@ import adapter from "@sveltejs/adapter-static";
 const config = {
   kit: {
     adapter: adapter({ fallback: "index.html" }),
+    typescript: {
+      config: (tsconfig) => {
+        tsconfig.include.push("../playwright.config.ts");
+      },
+    },
   },
 };
 
