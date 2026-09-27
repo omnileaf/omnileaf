@@ -7,7 +7,8 @@
     "build": "vite build",
     "check": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy baseLocale && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "lint": "eslint . && prettier --check .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "tauri": "tauri"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -17,6 +18,7 @@
     "@sveltejs/kit": "2.70.3",
     "@sveltejs/vite-plugin-svelte": "7.3.1",
     "@tailwindcss/vite": "4.3.3",
+    "@tauri-apps/cli": "2.12.0",
     "eslint": "10.11.0",
     "eslint-plugin-better-tailwindcss": "4.7.0",
     "eslint-plugin-svelte": "3.23.0",
