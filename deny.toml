@@ -5,6 +5,7 @@ all-features = true
 yanked = "deny"
 ignore = [
     { id = "RUSTSEC-2024-0370", reason = "proc-macro-error is unmaintained but compile-time only, pulled in by Tauri 2's GTK3 bindings on Linux; drop this once Tauri uses GTK4" },
+    { id = "RUSTSEC-2024-0436", reason = "paste is unmaintained but compile-time only, pulled in by specta's macros for the typed command bindings; drop this once specta no longer uses it" },
 ]
 
 [licenses]
