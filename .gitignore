@@ -4,3 +4,8 @@
 **/mutants.out*/
 
 .DS_Store
+
+node_modules/
+app/.svelte-kit/
+app/build/
+app/src/lib/paraglide/

@@ -1,0 +1,8 @@
+{
+  "name": "omnileaf",
+  "private": true,
+  "packageManager": "pnpm@11.26.0",
+  "engines": {
+    "node": ">=24"
+  }
+}
