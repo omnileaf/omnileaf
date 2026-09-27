@@ -7,6 +7,7 @@ rustup.rs
 schemas.android.com
 services.gradle.org
 www.apache.org
+www.apple.com
 www.contributor-covenant.org
 www.conventionalcommits.org
 www.gnu.org
