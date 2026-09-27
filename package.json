@@ -2,6 +2,10 @@
   "name": "omnileaf",
   "private": true,
   "packageManager": "pnpm@11.26.0",
+  "scripts": {
+    "dev": "pnpm --dir app dev",
+    "build": "pnpm --dir app build"
+  },
   "engines": {
     "node": ">=24"
   }
