@@ -11,7 +11,7 @@ Thanks for your interest in Omnileaf. The project is in early development, so th
 
 ## Contributor License Agreement
 
-Omnileaf is licensed under the [GPL-3.0-only](LICENSE). Contributions are accepted under a Contributor License Agreement based on the Harmony individual agreement. It lets the project distribute your contribution under the GPL and also under other terms, such as those of app stores whose terms are incompatible with the GPL. You keep the copyright to your work.
+Omnileaf is licensed under the [GPL-3.0-only](LICENSE). Contributions are accepted under a [Contributor License Agreement](docs/legal/cla.md) based on the Harmony individual agreement. It lets the project distribute your contribution under the GPL and also under other terms, such as those of app stores whose terms are incompatible with the GPL. You keep the copyright to your work.
 
 The agreement is still being finalised. Until it's in effect, pull requests from outside contributors can't be merged. Issues, bug reports and discussion are very welcome in the meantime.
 
