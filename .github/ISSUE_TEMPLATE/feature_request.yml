@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest something Omnileaf should do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you're trying to do, and what gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How you'd like it to work.
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: This isn't a request to support a specific website or content source.
+          required: true
+        - label: This request contains no copyrighted material and no links to it.
+          required: true
