@@ -1,0 +1,8 @@
+creativecommons.org
+fsf.org
+github.com
+rustup.rs
+www.contributor-covenant.org
+www.conventionalcommits.org
+www.gnu.org
+www.harmonyagreements.org
