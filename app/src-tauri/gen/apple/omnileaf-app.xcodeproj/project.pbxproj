@@ -1,0 +1,476 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		082BF856E8F47327BA2AE4CD /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED8C36CC79B13FEFC9419D84 /* Security.framework */; };
+		0B201145C347FF0A5A631D19 /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F2C05DB8A1686D979A0C9D5 /* libapp.a */; };
+		28407E22192809718126FF63 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4797D7A364984D92C59AE450 /* Assets.xcassets */; };
+		3FE314E0B43EE39099A13B28 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 94B090A2B9F7AC4F28FFACA5 /* assets */; };
+		55052054A43D5368A5A4B396 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 304DFE6AC08ACE8EFF3B5631 /* LaunchScreen.storyboard */; };
+		708AA2D8D57AED287AC7E6A3 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 17A6584735AC8DA232335771 /* MetalKit.framework */; };
+		78D516B9C9BE805E07FC4596 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00D847CABBDA718F187B7AA5 /* Metal.framework */; };
+		806B6C21B56EEF18D3B93B2E /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D5DDAE8925B3B01A0930B309 /* UIKit.framework */; };
+		845CEBD8F396741BF4C976CD /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E60EDB54AACB51C2E284F77F /* QuartzCore.framework */; };
+		86A978FDBB70CFCFF3883335 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58DD3C628B63F356A7127552 /* CoreGraphics.framework */; };
+		97334E088A60208EB246401A /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE1D90C99CA7925E02ADB344 /* WebKit.framework */; };
+		C6F95C42EAD6CC856520A52C /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25DC90D2D5EBCAC0056EAEF3 /* main.mm */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		00D847CABBDA718F187B7AA5 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		17A6584735AC8DA232335771 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		217AA6F30EDA12C235A5C556 /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
+		25DC90D2D5EBCAC0056EAEF3 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		304DFE6AC08ACE8EFF3B5631 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		4797D7A364984D92C59AE450 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		4CF785F97E0A8A289D65B911 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		58DD3C628B63F356A7127552 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		5F2C05DB8A1686D979A0C9D5 /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
+		6EFDE2BBBE4E05E0FE746B29 /* omnileaf-app_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "omnileaf-app_iOS.entitlements"; sourceTree = "<group>"; };
+		8F4978CA9FBE340C731B182C /* omnileaf-app_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "omnileaf-app_iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		94B090A2B9F7AC4F28FFACA5 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
+		A40BDFCF1981E64D1FBD8FE3 /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
+		A53F2B8C457DF05CB072D972 /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
+		D5DDAE8925B3B01A0930B309 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		E60EDB54AACB51C2E284F77F /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		ED8C36CC79B13FEFC9419D84 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		EE1D90C99CA7925E02ADB344 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		F25558E697983BB403992B71 /* commands.rs */ = {isa = PBXFileReference; path = commands.rs; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		7498F9A8764A3B01D19B8937 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0B201145C347FF0A5A631D19 /* libapp.a in Frameworks */,
+				86A978FDBB70CFCFF3883335 /* CoreGraphics.framework in Frameworks */,
+				78D516B9C9BE805E07FC4596 /* Metal.framework in Frameworks */,
+				708AA2D8D57AED287AC7E6A3 /* MetalKit.framework in Frameworks */,
+				845CEBD8F396741BF4C976CD /* QuartzCore.framework in Frameworks */,
+				082BF856E8F47327BA2AE4CD /* Security.framework in Frameworks */,
+				806B6C21B56EEF18D3B93B2E /* UIKit.framework in Frameworks */,
+				97334E088A60208EB246401A /* WebKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		191FA7768286A7C845657D6F /* omnileaf-app_iOS */ = {
+			isa = PBXGroup;
+			children = (
+				4CF785F97E0A8A289D65B911 /* Info.plist */,
+				6EFDE2BBBE4E05E0FE746B29 /* omnileaf-app_iOS.entitlements */,
+			);
+			path = "omnileaf-app_iOS";
+			sourceTree = "<group>";
+		};
+		27B6444450C8490671B56A29 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				DD90E616858FB4BF61BF2C91 /* omnileaf-app */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		3E7571CA4890ECC0A33489BC /* Externals */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Externals;
+			sourceTree = "<group>";
+		};
+		881B9194A8D8B8A6BAF4E125 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				58DD3C628B63F356A7127552 /* CoreGraphics.framework */,
+				5F2C05DB8A1686D979A0C9D5 /* libapp.a */,
+				00D847CABBDA718F187B7AA5 /* Metal.framework */,
+				17A6584735AC8DA232335771 /* MetalKit.framework */,
+				E60EDB54AACB51C2E284F77F /* QuartzCore.framework */,
+				ED8C36CC79B13FEFC9419D84 /* Security.framework */,
+				D5DDAE8925B3B01A0930B309 /* UIKit.framework */,
+				EE1D90C99CA7925E02ADB344 /* WebKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A771F5F861B037D393D945AB /* src */ = {
+			isa = PBXGroup;
+			children = (
+				F25558E697983BB403992B71 /* commands.rs */,
+				A53F2B8C457DF05CB072D972 /* lib.rs */,
+				217AA6F30EDA12C235A5C556 /* main.rs */,
+			);
+			name = src;
+			path = ../../src;
+			sourceTree = "<group>";
+		};
+		C08F86368ADB556A2432B66D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8F4978CA9FBE340C731B182C /* omnileaf-app_iOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D8D191F87D820309F16261D4 /* bindings */ = {
+			isa = PBXGroup;
+			children = (
+				A40BDFCF1981E64D1FBD8FE3 /* bindings.h */,
+			);
+			path = bindings;
+			sourceTree = "<group>";
+		};
+		DD90E616858FB4BF61BF2C91 /* omnileaf-app */ = {
+			isa = PBXGroup;
+			children = (
+				25DC90D2D5EBCAC0056EAEF3 /* main.mm */,
+				D8D191F87D820309F16261D4 /* bindings */,
+			);
+			path = "omnileaf-app";
+			sourceTree = "<group>";
+		};
+		FB9A1F8997B516CAECFBAA8F = {
+			isa = PBXGroup;
+			children = (
+				94B090A2B9F7AC4F28FFACA5 /* assets */,
+				4797D7A364984D92C59AE450 /* Assets.xcassets */,
+				304DFE6AC08ACE8EFF3B5631 /* LaunchScreen.storyboard */,
+				3E7571CA4890ECC0A33489BC /* Externals */,
+				191FA7768286A7C845657D6F /* omnileaf-app_iOS */,
+				27B6444450C8490671B56A29 /* Sources */,
+				A771F5F861B037D393D945AB /* src */,
+				881B9194A8D8B8A6BAF4E125 /* Frameworks */,
+				C08F86368ADB556A2432B66D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		"TEMP_ABA38DC2-73CB-4E14-9BF5-26ACCF6ED6AC" /* x86_64 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = x86_64;
+			sourceTree = "<group>";
+		};
+		"TEMP_E40AA048-5A77-408A-9F8C-5AA131CBE816" /* arm64 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = arm64;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D39A8B7767F9EFC3AE0A4A02 /* omnileaf-app_iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0EA72F445EE278185CF2A1FC /* Build configuration list for PBXNativeTarget "omnileaf-app_iOS" */;
+			buildPhases = (
+				E0D6DBC7F7286150240B4AC8 /* Build Rust Code */,
+				8D7A29E9C73F0C966CD0A57A /* Sources */,
+				78EB9EA02BCA81ED3C92FD2A /* Resources */,
+				7498F9A8764A3B01D19B8937 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "omnileaf-app_iOS";
+			packageProductDependencies = (
+			);
+			productName = "omnileaf-app_iOS";
+			productReference = 8F4978CA9FBE340C731B182C /* omnileaf-app_iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4F69BE2F028231363364C46C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 7FD88AB4887936962B9E4A92 /* Build configuration list for PBXProject "omnileaf-app" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = FB9A1F8997B516CAECFBAA8F;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C08F86368ADB556A2432B66D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D39A8B7767F9EFC3AE0A4A02 /* omnileaf-app_iOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		78EB9EA02BCA81ED3C92FD2A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				28407E22192809718126FF63 /* Assets.xcassets in Resources */,
+				55052054A43D5368A5A4B396 /* LaunchScreen.storyboard in Resources */,
+				3FE314E0B43EE39099A13B28 /* assets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		E0D6DBC7F7286150240B4AC8 /* Build Rust Code */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Rust Code";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Externals/x86_64/${CONFIGURATION}/libapp.a",
+				"$(SRCROOT)/Externals/arm64/${CONFIGURATION}/libapp.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "pnpm tauri ios xcode-script -v --platform \"${PLATFORM_DISPLAY_NAME:?}\" --sdk-root \"${SDKROOT:?}\" --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration \"${CONFIGURATION:?}\" ${FORCE_COLOR} ${ARCHS:?}\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8D7A29E9C73F0C966CD0A57A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C6F95C42EAD6CC856520A52C /* main.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		30FCAE8AAEA951F34C3C2660 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = release;
+		};
+		51A2E3BF8C597C8F58647177 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "omnileaf-app_iOS/omnileaf-app_iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "omnileaf-app_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = app.omnileaf;
+				PRODUCT_NAME = Omnileaf;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = release;
+		};
+		82684CD19D460FEEE854C45E /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "omnileaf-app_iOS/omnileaf-app_iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "omnileaf-app_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = app.omnileaf;
+				PRODUCT_NAME = Omnileaf;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = debug;
+		};
+		DD7D267C32165B288A022976 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0EA72F445EE278185CF2A1FC /* Build configuration list for PBXNativeTarget "omnileaf-app_iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				82684CD19D460FEEE854C45E /* debug */,
+				51A2E3BF8C597C8F58647177 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+		7FD88AB4887936962B9E4A92 /* Build configuration list for PBXProject "omnileaf-app" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DD7D267C32165B288A022976 /* debug */,
+				30FCAE8AAEA951F34C3C2660 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 4F69BE2F028231363364C46C /* Project object */;
+}
