@@ -26,7 +26,7 @@ The agreement is still being finalised. Until it's in effect, pull requests from
 
 `cargo xtask check` runs the same checks as CI: formatting, clippy with warnings as errors, the tests, and a dependency check. Every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories.
 
-It also runs `cargo xtask policy`, which checks every tracked file against the [content policy](docs/legal/content-policy.md):
+It also runs `cargo xtask policy`, which checks every file git doesn't ignore against the [content policy](docs/legal/content-policy.md):
 - no directories named `sources`, `extensions` or `repos`, and no WebAssembly modules;
 - binary files only when listed in `policy/allowed-binaries.txt`;
 - links only to hosts in `policy/allowed-hosts.txt`, or to reserved ones such as `example.com` and `*.test`;

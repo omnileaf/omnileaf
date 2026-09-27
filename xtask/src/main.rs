@@ -11,7 +11,7 @@ use std::fmt::Display;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 
-use crate::{policy::TrackedFile, process::Process};
+use crate::{policy::RepositoryFile, process::Process};
 
 #[derive(Parser)]
 #[command(about = "Repository automation for Omnileaf")]
@@ -26,7 +26,7 @@ enum Command {
     Check,
     /// Check that this machine has the tools the repository needs.
     Doctor,
-    /// Check tracked files against the repository's content rules.
+    /// Check the repository's files against its content rules.
     Policy,
 }
 
@@ -45,13 +45,13 @@ fn main() -> anyhow::Result<()> {
 
 fn enforce_policy() -> anyhow::Result<()> {
     let root = workspace::root();
-    let files = workspace::tracked_files(&root).context("read the tracked files")?;
+    let files = workspace::repository_files(&root).context("read the repository files")?;
     let rules = workspace::policy(&root).context("read the policy lists")?;
-    let tracked: Vec<TrackedFile<'_>> = files
+    let repository: Vec<RepositoryFile<'_>> = files
         .iter()
-        .map(|(path, bytes)| TrackedFile { path, bytes })
+        .map(|(path, bytes)| RepositoryFile { path, bytes })
         .collect();
-    let violations = policy::check(&tracked, &rules);
+    let violations = policy::check(&repository, &rules);
     print_lines(&violations);
     anyhow::ensure!(
         violations.is_empty(),

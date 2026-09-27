@@ -1,4 +1,4 @@
-//! Reads the repository's tracked files and policy lists from disk.
+//! Reads the repository's files, tracked or not yet ignored, and its policy lists.
 
 use std::{
     fs, io,
@@ -14,7 +14,7 @@ pub(crate) fn root() -> PathBuf {
     PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/.."))
 }
 
-pub(crate) fn tracked_files(root: &Path) -> io::Result<Vec<(String, Vec<u8>)>> {
+pub(crate) fn repository_files(root: &Path) -> io::Result<Vec<(String, Vec<u8>)>> {
     let listing = Command::new("git")
         .args([
             "ls-files",

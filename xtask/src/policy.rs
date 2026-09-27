@@ -2,7 +2,7 @@
 
 use std::{fmt, path::Path};
 
-pub(crate) struct TrackedFile<'a> {
+pub(crate) struct RepositoryFile<'a> {
     pub(crate) path: &'a str,
     pub(crate) bytes: &'a [u8],
 }
@@ -64,14 +64,14 @@ const BINARY_SNIFF_LENGTH: usize = 8000;
 const URL_SEPARATOR: &str = "://";
 const WASM_EXTENSION: &str = "wasm";
 
-pub(crate) fn check(files: &[TrackedFile<'_>], policy: &Policy) -> Vec<Violation> {
+pub(crate) fn check(files: &[RepositoryFile<'_>], policy: &Policy) -> Vec<Violation> {
     files
         .iter()
         .flat_map(|file| violations_in(file, policy))
         .collect()
 }
 
-fn violations_in(file: &TrackedFile<'_>, policy: &Policy) -> Vec<Violation> {
+fn violations_in(file: &RepositoryFile<'_>, policy: &Policy) -> Vec<Violation> {
     let path = file.path.to_owned();
     let mut violations = Vec::new();
     if !is_listed(file.path, &policy.allowed_paths) {
@@ -177,8 +177,8 @@ fn host_of_authority(rest: &str) -> Option<String> {
 mod tests {
     use super::*;
 
-    fn text(path: &'static str, content: &'static str) -> TrackedFile<'static> {
-        TrackedFile {
+    fn text(path: &'static str, content: &'static str) -> RepositoryFile<'static> {
+        RepositoryFile {
             path,
             bytes: content.as_bytes(),
         }
@@ -271,11 +271,11 @@ mod tests {
     #[test]
     fn accepts_only_listed_binary_files() {
         let files = [
-            TrackedFile {
+            RepositoryFile {
                 path: "icons/app.png",
                 bytes: b"\x89PNG\0",
             },
-            TrackedFile {
+            RepositoryFile {
                 path: "stray.bin",
                 bytes: b"\0\x01",
             },
@@ -298,7 +298,7 @@ mod tests {
     #[test]
     fn rejects_hosts_that_are_not_allowed() {
         let content = links_to(&["github.com", "unknown.site"]);
-        let files = [TrackedFile {
+        let files = [RepositoryFile {
             path: "README.md",
             bytes: content.as_bytes(),
         }];
@@ -322,7 +322,7 @@ mod tests {
             "books.example.com",
             "a.test",
         ]);
-        let files = [TrackedFile {
+        let files = [RepositoryFile {
             path: "docs.md",
             bytes: content.as_bytes(),
         }];
