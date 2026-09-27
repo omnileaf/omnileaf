@@ -8,6 +8,14 @@ pub(crate) enum Group {
     Interface,
     Browser,
     App,
+    Android,
+}
+
+impl Group {
+    /// The Android tests need a running emulator and Appium, so they run only when asked for.
+    fn runs_by_default(self) -> bool {
+        !matches!(self, Self::Android)
+    }
 }
 
 pub(crate) struct Step {
@@ -99,6 +107,12 @@ pub(crate) const STEPS: &[Step] = &[
         program: "pnpm",
         args: &["--recursive", "run", "test:app"],
     },
+    Step {
+        name: "android tests",
+        group: Group::Android,
+        program: "pnpm",
+        args: &["--recursive", "run", "test:android"],
+    },
 ];
 
 pub(crate) trait Runner {
@@ -137,7 +151,9 @@ impl Error for CheckError {
 pub(crate) fn select(steps: &[Step], only: Option<Group>) -> Vec<&Step> {
     steps
         .iter()
-        .filter(|step| only.is_none_or(|group| step.group == group))
+        .filter(|step| {
+            only.map_or_else(|| step.group.runs_by_default(), |group| step.group == group)
+        })
         .collect()
 }
 
@@ -249,11 +265,42 @@ mod tests {
     }
 
     #[test]
-    fn selects_every_step_without_a_filter() {
+    fn selects_every_default_step_without_a_filter() {
         let selected = select(THREE_STEPS, None);
 
         let names: Vec<&str> = selected.iter().map(|step| step.name).collect();
         assert_eq!(names, ["first", "second", "third"]);
+    }
+
+    const RUST_AND_ANDROID: &[Step] = &[
+        Step {
+            name: "rust",
+            group: Group::Rust,
+            program: "true",
+            args: &[],
+        },
+        Step {
+            name: "android",
+            group: Group::Android,
+            program: "true",
+            args: &[],
+        },
+    ];
+
+    #[test]
+    fn leaves_the_android_steps_out_without_a_filter() {
+        let selected = select(RUST_AND_ANDROID, None);
+
+        let names: Vec<&str> = selected.iter().map(|step| step.name).collect();
+        assert_eq!(names, ["rust"]);
+    }
+
+    #[test]
+    fn selects_the_android_steps_when_asked() {
+        let selected = select(RUST_AND_ANDROID, Some(Group::Android));
+
+        let names: Vec<&str> = selected.iter().map(|step| step.name).collect();
+        assert_eq!(names, ["android"]);
     }
 
     #[test]
