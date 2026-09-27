@@ -7,6 +7,7 @@ pub(crate) enum Group {
     Rust,
     Interface,
     Browser,
+    App,
 }
 
 pub(crate) struct Step {
@@ -91,6 +92,12 @@ pub(crate) const STEPS: &[Step] = &[
         group: Group::Browser,
         program: "pnpm",
         args: &["--recursive", "run", "test:e2e"],
+    },
+    Step {
+        name: "app tests",
+        group: Group::App,
+        program: "pnpm",
+        args: &["--recursive", "run", "test:app"],
     },
 ];
 
