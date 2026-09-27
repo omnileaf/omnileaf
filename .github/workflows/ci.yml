@@ -177,6 +177,48 @@ jobs:
           path: app/test-results/
           retention-days: 7
 
+  android:
+    name: android
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      NDK_VERSION: 27.1.12297006
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Install the Android NDK
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION" > /dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install interface dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install the pinned toolchain with the Android targets
+        run: rustup toolchain install && rustup target add aarch64-linux-android x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Build the debug APKs
+        run: pnpm --dir app tauri android build --debug --apk --target aarch64 x86_64
+
   app:
     name: app (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
