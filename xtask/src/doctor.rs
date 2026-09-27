@@ -2,6 +2,7 @@
 
 pub(crate) struct Requirement {
     pub(crate) name: &'static str,
+    pub(crate) os: Option<&'static str>,
     pub(crate) probe: Probe,
     pub(crate) fix: &'static str,
 }
@@ -16,6 +17,7 @@ pub(crate) enum Probe {
 pub(crate) const REQUIREMENTS: &[Requirement] = &[
     Requirement {
         name: "rustup",
+        os: None,
         probe: Probe::Command {
             program: "rustup",
             args: &["--version"],
@@ -24,6 +26,7 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
     },
     Requirement {
         name: "cargo-nextest",
+        os: None,
         probe: Probe::Command {
             program: "cargo",
             args: &["nextest", "--version"],
@@ -32,6 +35,7 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
     },
     Requirement {
         name: "cargo-deny",
+        os: None,
         probe: Probe::Command {
             program: "cargo",
             args: &["deny", "--version"],
@@ -40,6 +44,7 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
     },
     Requirement {
         name: "node",
+        os: None,
         probe: Probe::Command {
             program: "node",
             args: &["--version"],
@@ -48,11 +53,21 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
     },
     Requirement {
         name: "pnpm",
+        os: None,
         probe: Probe::Command {
             program: "pnpm",
             args: &["--version"],
         },
         fix: "install the pnpm version in package.json's packageManager field",
+    },
+    Requirement {
+        name: "webkit2gtk-4.1",
+        os: Some("linux"),
+        probe: Probe::Command {
+            program: "pkg-config",
+            args: &["--modversion", "webkit2gtk-4.1"],
+        },
+        fix: "install the WebKitGTK 4.1 development package, for example libwebkit2gtk-4.1-dev or webkit2gtk-4.1",
     },
 ];
 
@@ -81,9 +96,14 @@ pub(crate) fn examine(requirement: &Requirement, machine: &impl Machine) -> Find
 const STATUS_WIDTH: usize = 8;
 const NAME_WIDTH: usize = 16;
 
-pub(crate) fn render(requirements: &[Requirement], machine: &impl Machine) -> Report {
+fn applies_to(requirement: &Requirement, os: &str) -> bool {
+    requirement.os.is_none_or(|required| required == os)
+}
+
+pub(crate) fn render(requirements: &[Requirement], machine: &impl Machine, os: &str) -> Report {
     let findings: Vec<(&Requirement, Finding)> = requirements
         .iter()
+        .filter(|requirement| applies_to(requirement, os))
         .map(|requirement| (requirement, examine(requirement, machine)))
         .collect();
     let missing = findings
@@ -127,6 +147,7 @@ mod tests {
 
     const TOOL: Requirement = Requirement {
         name: "tool",
+        os: None,
         probe: Probe::Command {
             program: "tool",
             args: &["--version"],
@@ -136,6 +157,7 @@ mod tests {
 
     const OTHER: Requirement = Requirement {
         name: "other",
+        os: None,
         probe: Probe::Command {
             program: "other",
             args: &["--version"],
@@ -174,10 +196,27 @@ mod tests {
             installed: &[("tool", "tool 1.2.3")],
         };
 
-        let report = render(&[TOOL, OTHER], &machine);
+        let report = render(&[TOOL, OTHER], &machine, "linux");
 
         assert_eq!(report.missing, 1);
         assert!(report.lines[0].contains("tool 1.2.3"));
         assert!(report.lines[1].contains("install other"));
+    }
+
+    #[test]
+    fn skips_requirements_for_other_operating_systems() {
+        let machine = FakeMachine {
+            installed: &[("tool", "tool 1.2.3")],
+        };
+        let linux_only = Requirement {
+            name: "other",
+            os: Some("linux"),
+            ..OTHER
+        };
+
+        let report = render(&[TOOL, linux_only], &machine, "macos");
+
+        assert_eq!(report.missing, 0);
+        assert_eq!(report.lines.len(), 1);
     }
 }

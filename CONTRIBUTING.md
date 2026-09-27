@@ -22,6 +22,10 @@ The agreement is still being finalised. Until it's in effect, pull requests from
 - **Small pull requests.** Aim for about 400 changed lines or fewer, not counting generated files. Split bigger work into a series of pull requests that each stand on their own.
 - **Review and merge.** Every pull request needs a maintainer's review and green CI, then it is squash-merged into `main`. Nothing lands on `main` directly.
 
+## Running the app
+
+Run `cargo xtask doctor` first, since it lists anything missing (on Linux that includes WebKitGTK 4.1). Then install the interface dependencies with `pnpm install` and start the app with `pnpm --dir app tauri dev`. The window reloads as you edit the interface. `cargo tauri dev` works too, from the repository root or `app/`, if the `tauri-cli` you installed is the version pinned in `app/package.json`. `pnpm dev` serves just the interface, for a browser.
+
 ## Checking your work
 
 `cargo xtask check` runs the same checks as CI. For Rust: formatting, clippy with warnings as errors, the tests, and a dependency check. For the interface, which needs Node and pnpm (`pnpm install` first): type checking, ESLint and Prettier, and a production build. `--only rust` or `--only interface` runs one group. Every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories.

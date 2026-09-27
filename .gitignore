@@ -9,3 +9,4 @@ node_modules/
 app/.svelte-kit/
 app/build/
 app/src/lib/paraglide/
+app/src-tauri/gen/schemas/

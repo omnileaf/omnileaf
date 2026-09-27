@@ -2,7 +2,9 @@ creativecommons.org
 fsf.org
 github.com
 rustup.rs
+schemas.android.com
 www.contributor-covenant.org
 www.conventionalcommits.org
 www.gnu.org
 www.harmonyagreements.org
+www.w3.org
