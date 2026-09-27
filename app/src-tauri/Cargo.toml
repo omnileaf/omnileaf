@@ -1,0 +1,20 @@
+[package]
+name = "omnileaf-app"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "omnileaf_app"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build.workspace = true
+
+[dependencies]
+tauri.workspace = true
+
+[lints]
+workspace = true
