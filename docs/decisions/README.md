@@ -9,3 +9,4 @@ Each file here records one decision that closes off an alternative: what was dec
 | Record | Status |
 |---|---|
 | [0001: Licence and contributor agreement](0001-licence-and-cla.md) | Accepted |
+| [0002: Workspace and crate boundaries](0002-workspace-and-boundaries.md) | Accepted |
