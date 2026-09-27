@@ -44,6 +44,11 @@ pub(crate) const STEPS: &[Step] = &[
         program: "cargo",
         args: &["deny", "--locked", "check"],
     },
+    Step {
+        name: "policy",
+        program: "cargo",
+        args: &["xtask", "policy"],
+    },
 ];
 
 pub(crate) trait Runner {
