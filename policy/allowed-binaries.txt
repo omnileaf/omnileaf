@@ -1,1 +1,3 @@
 app/src-tauri/icons/
+app/src-tauri/gen/android/app/src/main/res/
+app/src-tauri/gen/android/gradle/wrapper/gradle-wrapper.jar
