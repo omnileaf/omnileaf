@@ -2,6 +2,7 @@
 
 mod check;
 mod doctor;
+mod icons;
 mod policy;
 mod process;
 mod workspace;
@@ -32,6 +33,8 @@ enum Command {
     Bindings,
     /// Check that this machine has the tools the repository needs.
     Doctor,
+    /// Regenerate the app icons from `branding/icon.json`.
+    Icons,
     /// Check the repository's files against its content rules.
     Policy,
 }
@@ -51,6 +54,7 @@ fn main() -> anyhow::Result<()> {
             print_lines(&report.lines);
             anyhow::ensure!(report.missing == 0, "{} tool(s) missing", report.missing);
         }
+        Command::Icons => icons::regenerate(&workspace::root())?,
         Command::Policy => enforce_policy()?,
     }
     Ok(())

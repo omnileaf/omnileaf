@@ -58,7 +58,7 @@ const DEFAULT_WINDOWS_EXTENSIONS: &str = ".COM;.EXE;.BAT;.CMD";
 
 /// Windows installs tools such as pnpm as `.cmd` shims, which `Command` only
 /// finds when it is given their full path.
-fn command_for(program: &str) -> Command {
+pub(crate) fn command_for(program: &str) -> Command {
     if cfg!(windows) {
         let path = env::var_os("PATH").unwrap_or_default();
         let extensions =
