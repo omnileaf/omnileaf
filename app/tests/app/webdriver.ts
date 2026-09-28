@@ -8,6 +8,7 @@ const ELEMENT_TIMEOUT_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 30_000;
 const SESSION_START_TIMEOUT_MS = 300_000;
 const POLL_INTERVAL_MS = 100;
+const WHITESPACE_RUN = /\s+/g;
 
 type Method = "GET" | "POST" | "DELETE";
 
@@ -19,7 +20,9 @@ export interface Locator {
 }
 
 export interface WebElement {
+  /** Collapses whitespace, since the desktop driver returns raw `textContent` where the standard returns rendered text. */
   text(): Promise<string>;
+  click(): Promise<void>;
 }
 
 export class WebDriverError extends Error {
@@ -149,7 +152,7 @@ export class Session {
     try {
       const found = await send(`${this.endpoint}/element`, "POST", locator);
       const id = requireString(property(found, ELEMENT_KEY), "element id");
-      return { text: () => this.textOf(id) };
+      return { text: () => this.textOf(id), click: () => this.clickOn(id) };
     } catch (error) {
       if (error instanceof WebDriverError && error.code === NO_SUCH_ELEMENT) {
         return undefined;
@@ -158,8 +161,14 @@ export class Session {
     }
   }
 
+  private async clickOn(element: string): Promise<void> {
+    await send(`${this.endpoint}/element/${element}/click`, "POST", {});
+  }
+
   private async textOf(element: string): Promise<string> {
     const text = await send(`${this.endpoint}/element/${element}/text`, "GET");
-    return requireString(text, "element text");
+    return requireString(text, "element text")
+      .replace(WHITESPACE_RUN, " ")
+      .trim();
   }
 }
