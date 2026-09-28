@@ -10,6 +10,10 @@ use crate::ipc_error::IpcError;
 pub(crate) fn pick_folder(app: &AppHandle) -> Result<Option<PathBuf>, IpcError> {
     use tauri_plugin_dialog::{DialogExt, FilePath};
 
+    #[cfg(feature = "e2e")]
+    if let Some(folder) = crate::e2e::picked_folder(app) {
+        return Ok(Some(folder));
+    }
     app.dialog()
         .file()
         .blocking_pick_folder()
