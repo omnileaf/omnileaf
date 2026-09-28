@@ -10,6 +10,7 @@ use omnileaf_engine::Core;
     reason = "without its runtime the app has nothing to fall back to"
 )]
 pub fn run() {
+    tracing_subscriber::fmt::init();
     let commands = commands::builder();
     let app = tauri::Builder::default()
         .manage(Core::new())
