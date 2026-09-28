@@ -103,6 +103,7 @@ fn encode_rgb8(frame: &OutputInfo, samples: &[u8]) -> anyhow::Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::workspace;
 
     const GREEN_AND_ALMOST_OPAQUE_WHITE: [u8; 8] = [47, 111, 79, 255, 255, 255, 255, 254];
 
@@ -152,6 +153,22 @@ mod tests {
         assert_eq!(
             decoded(&opaque),
             (ColorType::Rgb, vec![47, 111, 79, 255, 255, 255])
+        );
+    }
+
+    #[test]
+    fn committed_ios_icons_have_no_alpha_channel() {
+        let icons = ios_icons(&workspace::root()).unwrap();
+
+        let with_alpha: Vec<&PathBuf> = icons
+            .iter()
+            .filter(|icon| has_alpha_channel(&fs::read(icon).unwrap()).unwrap())
+            .collect();
+
+        assert!(!icons.is_empty());
+        assert!(
+            with_alpha.is_empty(),
+            "run `cargo xtask icons` to rewrite {with_alpha:?}"
         );
     }
 }
