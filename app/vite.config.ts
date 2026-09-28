@@ -10,6 +10,7 @@ const APP_TEST_TIMEOUT_MS = 30_000;
 const MOBILE_SESSION_TIMEOUT_MS = 330_000;
 const APP_SPECS = "tests/app/**/*.e2e.ts";
 const DESKTOP_ONLY_APP_SPECS = "tests/app/**/*.desktop.e2e.ts";
+const HARNESS_TESTS = "tests/app/**/*.test.ts";
 
 export default defineConfig({
   clearScreen: false,
@@ -41,6 +42,14 @@ export default defineConfig({
             provider: playwright({ contextOptions: TEST_BROWSER_CONTEXT }),
             instances: [{ browser: "chromium" }],
           },
+        },
+      },
+      {
+        test: {
+          name: "harness",
+          include: [HARNESS_TESTS],
+          environment: "node",
+          expect: { requireAssertions: true },
         },
       },
       {

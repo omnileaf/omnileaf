@@ -9,6 +9,8 @@ const REQUEST_TIMEOUT_MS = 30_000;
 const SESSION_START_TIMEOUT_MS = 300_000;
 const POLL_INTERVAL_MS = 100;
 const WHITESPACE_RUN = /\s+/g;
+const PAGE_TEXT_SHOWN = 200;
+const PAGE_TEXT_SCRIPT = "return document.body ? document.body.innerText : '';";
 
 type Method = "GET" | "POST" | "DELETE";
 
@@ -33,6 +35,25 @@ export class WebDriverError extends Error {
     super(`${code}: ${message}`);
     this.name = "WebDriverError";
   }
+}
+
+export interface PageState {
+  readonly url: string;
+  readonly title: string;
+  readonly text: string;
+}
+
+export function describePage(page: PageState): string {
+  const text = page.text.replace(WHITESPACE_RUN, " ").trim();
+  const shown =
+    text.length > PAGE_TEXT_SHOWN
+      ? `"${text.slice(0, PAGE_TEXT_SHOWN)}…"`
+      : `"${text}"`;
+  return `the page at ${page.url} titled "${page.title}" shows ${text === "" ? "no text" : shown}`;
+}
+
+class NotReadyError extends Error {
+  override name = "NotReadyError";
 }
 
 export function xpath(value: string): Locator {
@@ -87,7 +108,9 @@ async function pollUntil<T>(
       return result;
     }
     if (performance.now() > deadline) {
-      throw new Error(`${what} was not ready within ${String(timeoutMs)} ms`);
+      throw new NotReadyError(
+        `${what} was not ready within ${String(timeoutMs)} ms`,
+      );
     }
     await delay(POLL_INTERVAL_MS);
   }
@@ -137,15 +160,44 @@ export class Session {
     locator: Locator,
     timeoutMs = ELEMENT_TIMEOUT_MS,
   ): Promise<WebElement> {
-    return pollUntil(
-      () => this.find(locator),
-      timeoutMs,
-      `the element at ${locator.value}`,
-    );
+    try {
+      return await pollUntil(
+        () => this.find(locator),
+        timeoutMs,
+        `the element at ${locator.value}`,
+      );
+    } catch (error) {
+      if (!(error instanceof NotReadyError)) {
+        throw error;
+      }
+      throw new Error(`${error.message}; ${await this.describeCurrentPage()}`, {
+        cause: error,
+      });
+    }
   }
 
   async end(): Promise<void> {
     await send(this.endpoint, "DELETE");
+  }
+
+  private async describeCurrentPage(): Promise<string> {
+    try {
+      const [url, title, text] = await Promise.all([
+        send(`${this.endpoint}/url`, "GET"),
+        send(`${this.endpoint}/title`, "GET"),
+        send(`${this.endpoint}/execute/sync`, "POST", {
+          script: PAGE_TEXT_SCRIPT,
+          args: [],
+        }),
+      ]);
+      return describePage({
+        url: requireString(url, "page address"),
+        title: requireString(title, "page title"),
+        text: requireString(text, "page text"),
+      });
+    } catch (error) {
+      return `the page could not be read: ${error instanceof Error ? error.message : String(error)}`;
+    }
   }
 
   private async find(locator: Locator): Promise<WebElement | undefined> {
