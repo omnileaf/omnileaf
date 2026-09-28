@@ -2,12 +2,14 @@ import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { playwright } from "@vitest/browser-playwright";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 import { TEST_BROWSER_CONTEXT } from "./tests/browser-context.ts";
 
 const APP_TEST_TIMEOUT_MS = 30_000;
 const MOBILE_SESSION_TIMEOUT_MS = 330_000;
+const APP_SPECS = "tests/app/**/*.e2e.ts";
+const DESKTOP_ONLY_APP_SPECS = "tests/app/**/*.desktop.e2e.ts";
 
 export default defineConfig({
   clearScreen: false,
@@ -44,8 +46,9 @@ export default defineConfig({
       {
         test: {
           name: "app",
-          include: ["tests/app/**/*.e2e.ts"],
+          include: [APP_SPECS],
           environment: "node",
+          fileParallelism: false,
           globalSetup: ["tests/app/desktop.ts"],
           expect: { requireAssertions: true },
           testTimeout: APP_TEST_TIMEOUT_MS,
@@ -55,7 +58,8 @@ export default defineConfig({
       {
         test: {
           name: "android",
-          include: ["tests/app/**/*.e2e.ts"],
+          include: [APP_SPECS],
+          exclude: [...configDefaults.exclude, DESKTOP_ONLY_APP_SPECS],
           environment: "node",
           globalSetup: ["tests/app/android.ts"],
           expect: { requireAssertions: true },
@@ -66,7 +70,8 @@ export default defineConfig({
       {
         test: {
           name: "ios",
-          include: ["tests/app/**/*.e2e.ts"],
+          include: [APP_SPECS],
+          exclude: [...configDefaults.exclude, DESKTOP_ONLY_APP_SPECS],
           environment: "node",
           globalSetup: ["tests/app/ios.ts"],
           expect: { requireAssertions: true },
