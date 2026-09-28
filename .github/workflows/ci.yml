@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  schedule:
+    - cron: "0 17 * * *"
 
 permissions:
   contents: read
@@ -17,6 +19,29 @@ env:
   GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
 
 jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      mobile: ${{ steps.mobile.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Decide whether the mobile apps need testing
+        id: mobile
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" != "pull_request" ] || git diff --name-only HEAD^1 HEAD | grep -qE '^(app/|crates/|Cargo\.(toml|lock)$|package\.json$|pnpm-(lock|workspace)\.yaml$|rust-toolchain\.toml$|\.github/workflows/)'; then
+            echo "mobile=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "mobile=false" >> "$GITHUB_OUTPUT"
+          fi
+
   secrets:
     name: secret scan
     runs-on: ubuntu-24.04
@@ -179,6 +204,8 @@ jobs:
 
   android:
     name: android
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -247,6 +274,8 @@ jobs:
 
   ios:
     name: ios
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
     runs-on: macos-15
     timeout-minutes: 60
     steps:
