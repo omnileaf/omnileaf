@@ -1,10 +1,12 @@
 import { setTimeout as delay } from "node:timers/promises";
 
+import { isRecord } from "./json.ts";
+
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 const NO_SUCH_ELEMENT = "no such element";
 const ELEMENT_TIMEOUT_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 30_000;
-const SESSION_START_TIMEOUT_MS = 150_000;
+const SESSION_START_TIMEOUT_MS = 300_000;
 const POLL_INTERVAL_MS = 100;
 
 type Method = "GET" | "POST" | "DELETE";
@@ -32,10 +34,6 @@ export class WebDriverError extends Error {
 
 export function xpath(value: string): Locator {
   return { using: "xpath", value };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }
 
 function property(value: unknown, key: string): unknown {

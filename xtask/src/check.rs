@@ -9,12 +9,13 @@ pub(crate) enum Group {
     Browser,
     App,
     Android,
+    Ios,
 }
 
 impl Group {
-    /// The Android tests need a running emulator and Appium, so they run only when asked for.
+    /// The mobile tests need a running emulator or Simulator and Appium, so they run only when asked for.
     fn runs_by_default(self) -> bool {
-        !matches!(self, Self::Android)
+        !matches!(self, Self::Android | Self::Ios)
     }
 }
 
@@ -112,6 +113,12 @@ pub(crate) const STEPS: &[Step] = &[
         group: Group::Android,
         program: "pnpm",
         args: &["--recursive", "run", "test:android"],
+    },
+    Step {
+        name: "ios tests",
+        group: Group::Ios,
+        program: "pnpm",
+        args: &["--recursive", "run", "test:ios"],
     },
 ];
 
@@ -272,7 +279,7 @@ mod tests {
         assert_eq!(names, ["first", "second", "third"]);
     }
 
-    const RUST_AND_ANDROID: &[Step] = &[
+    const RUST_AND_MOBILE: &[Step] = &[
         Step {
             name: "rust",
             group: Group::Rust,
@@ -285,11 +292,17 @@ mod tests {
             program: "true",
             args: &[],
         },
+        Step {
+            name: "ios",
+            group: Group::Ios,
+            program: "true",
+            args: &[],
+        },
     ];
 
     #[test]
-    fn leaves_the_android_steps_out_without_a_filter() {
-        let selected = select(RUST_AND_ANDROID, None);
+    fn leaves_the_mobile_steps_out_without_a_filter() {
+        let selected = select(RUST_AND_MOBILE, None);
 
         let names: Vec<&str> = selected.iter().map(|step| step.name).collect();
         assert_eq!(names, ["rust"]);
@@ -297,7 +310,7 @@ mod tests {
 
     #[test]
     fn selects_the_android_steps_when_asked() {
-        let selected = select(RUST_AND_ANDROID, Some(Group::Android));
+        let selected = select(RUST_AND_MOBILE, Some(Group::Android));
 
         let names: Vec<&str> = selected.iter().map(|step| step.name).collect();
         assert_eq!(names, ["android"]);
