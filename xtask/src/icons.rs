@@ -1,6 +1,9 @@
-//! Regenerates the app icons, writing the iOS ones without the alpha channel the App Store rejects.
+//! Regenerates the app icons, drawing the macOS one inside Apple's margin and writing the iOS ones
+//! without the alpha channel the App Store rejects.
 
 use std::{
+    env,
+    ffi::OsStr,
     fs,
     io::Cursor,
     path::{Path, PathBuf},
@@ -12,16 +15,51 @@ use png::{BitDepth, ColorType, Compression, Decoder, Encoder, OutputInfo};
 use crate::process;
 
 const ICON_MANIFEST_FROM_APP: &str = "../branding/icon.json";
+const MACOS_ICON_SOURCE_FROM_APP: &str = "../branding/icon-macos.svg";
+const GENERATED_MACOS_ICON: &str = "icon.icns";
 const IOS_ICON_SET: &str = "app/src-tauri/gen/apple/Assets.xcassets/AppIcon.appiconset";
+const MACOS_ICON: &str = "app/src-tauri/icons/icon.icns";
 const RGBA_SAMPLES: usize = 4;
 
 pub(crate) fn regenerate(root: &Path) -> anyhow::Result<()> {
+    run_icon_generator(root, &[OsStr::new(ICON_MANIFEST_FROM_APP)])?;
+    replace_macos_icon(root)?;
+    remove_ios_alpha_channels(root)
+}
+
+fn run_icon_generator(root: &Path, args: &[&OsStr]) -> anyhow::Result<()> {
     let status = process::command_for("pnpm")
-        .args(["--dir", "app", "tauri", "icon", ICON_MANIFEST_FROM_APP])
+        .args(["--dir", "app", "tauri", "icon"])
+        .args(args)
         .current_dir(root)
         .status()
         .context("run the Tauri icon generator")?;
     anyhow::ensure!(status.success(), "generating the icons failed");
+    Ok(())
+}
+
+fn replace_macos_icon(root: &Path) -> anyhow::Result<()> {
+    let scratch = env::temp_dir().join(format!("omnileaf-macos-icon-{}", std::process::id()));
+    let output = scratch.join("icons");
+    fs::create_dir_all(&output).with_context(|| format!("create {}", output.display()))?;
+    let generated = run_icon_generator(
+        root,
+        &[
+            OsStr::new(MACOS_ICON_SOURCE_FROM_APP),
+            OsStr::new("--output"),
+            output.as_os_str(),
+        ],
+    )
+    .and_then(|()| {
+        fs::copy(output.join(GENERATED_MACOS_ICON), root.join(MACOS_ICON))
+            .context("copy the macOS icon")
+    });
+    let removed =
+        fs::remove_dir_all(&scratch).with_context(|| format!("remove {}", scratch.display()));
+    generated.and(removed)
+}
+
+fn remove_ios_alpha_channels(root: &Path) -> anyhow::Result<()> {
     for icon in ios_icons(root)? {
         let png = fs::read(&icon).with_context(|| format!("read {}", icon.display()))?;
         if has_alpha_channel(&png)? {
@@ -118,6 +156,36 @@ mod tests {
         bytes
     }
 
+    const MACOS_ICON_SIZE: usize = 1024;
+    const APPLE_MARGIN: usize = 100;
+    const ICNS_HEADER_LENGTH: usize = 8;
+    const PNG_SIGNATURE: &[u8] = b"\x89PNG\r\n\x1a\n";
+
+    fn largest_rgba_image_in_icns(icns: &[u8]) -> (usize, Vec<u8>) {
+        let mut largest = (0, Vec::new());
+        let mut offset = ICNS_HEADER_LENGTH;
+        while offset < icns.len() {
+            let length_bytes = icns[offset + 4..offset + ICNS_HEADER_LENGTH]
+                .try_into()
+                .unwrap();
+            let length = usize::try_from(u32::from_be_bytes(length_bytes)).unwrap();
+            let entry = &icns[offset + ICNS_HEADER_LENGTH..offset + length];
+            if entry.starts_with(PNG_SIGNATURE) {
+                let (frame, rgba) = decode_rgba8(entry).unwrap();
+                let width = usize::try_from(frame.width).unwrap();
+                if width > largest.0 {
+                    largest = (width, rgba);
+                }
+            }
+            offset += length;
+        }
+        largest
+    }
+
+    fn alpha_at(rgba: &[u8], width: usize, (x, y): (usize, usize)) -> u8 {
+        rgba[(y * width + x) * RGBA_SAMPLES + RGBA_SAMPLES - 1]
+    }
+
     fn decoded(png: &[u8]) -> (ColorType, Vec<u8>) {
         let mut reader = Decoder::new(Cursor::new(png)).read_info().unwrap();
         let mut pixels = vec![0; reader.output_buffer_size().unwrap()];
@@ -154,6 +222,21 @@ mod tests {
             decoded(&opaque),
             (ColorType::Rgb, vec![47, 111, 79, 255, 255, 255])
         );
+    }
+
+    #[test]
+    fn committed_macos_icon_leaves_apples_margin_around_the_tile() {
+        let icns = fs::read(workspace::root().join(MACOS_ICON)).unwrap();
+
+        let (width, rgba) = largest_rgba_image_in_icns(&icns);
+
+        assert_eq!(width, MACOS_ICON_SIZE);
+        assert_eq!(
+            alpha_at(&rgba, width, (width / 2, APPLE_MARGIN / 2)),
+            0,
+            "run `cargo xtask icons` to rebuild {MACOS_ICON}"
+        );
+        assert_eq!(alpha_at(&rgba, width, (width / 2, width / 2)), u8::MAX);
     }
 
     #[test]

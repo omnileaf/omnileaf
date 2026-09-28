@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <filter id="dock-shadow" x="-10%" y="-10%" width="120%" height="125%">
+    <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity="0.3"/>
+  </filter>
+  <mask id="leaf-vein">
+    <rect width="1024" height="1024" fill="#fff"/>
+    <path d="M642 714 L 754 410" stroke="#000" stroke-width="30" stroke-linecap="round"/>
+  </mask>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#2f6f4f" filter="url(#dock-shadow)"/>
+  <g transform="translate(512 512) scale(0.805) translate(-512 -530)">
+    <g fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M248 770 L 776 770"/>
+      <rect x="292" y="370" width="104" height="400" rx="20"/>
+      <rect x="436" y="290" width="116" height="480" rx="20"/>
+      <path d="M436 400 L 552 400"/>
+    </g>
+    <path d="M610 770 C 578 580, 642 390, 790 290 C 828 490, 778 660, 610 770 Z" fill="#fff" mask="url(#leaf-vein)"/>
+  </g>
+</svg>
