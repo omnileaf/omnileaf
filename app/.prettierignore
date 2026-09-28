@@ -5,3 +5,4 @@ project.inlang/*
 !project.inlang/settings.json
 src-tauri/gen/
 src/lib/ipc/bindings.ts
+test-results/
