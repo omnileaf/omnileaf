@@ -4,7 +4,7 @@ import { type FakeBackend, installFakeBackend } from "./fake-backend.ts";
 
 export const FAKE_APP_VERSION = "1.2.3";
 
-const DEFAULT_BACKEND: FakeBackend = {
+export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => ({ version: FAKE_APP_VERSION }),
   addLibraryFolder: () => null,
 };
