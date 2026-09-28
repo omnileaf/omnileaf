@@ -86,6 +86,8 @@ export async function setup(
       "appium:udid": simulator.udid,
       "appium:platformVersion": simulator.platformVersion,
       "appium:app": APP_BUNDLE,
+      "appium:noReset": true,
+      "appium:enforceAppInstall": true,
       "appium:isHeadless": true,
       "appium:autoWebview": true,
       "appium:additionalWebviewBundleIds": [WEBVIEW_PROCESS],
