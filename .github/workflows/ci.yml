@@ -237,6 +237,14 @@ jobs:
           disable-animations: true
           script: cargo xtask check --only android
 
+      - name: Keep the Appium log of failed tests
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android-appium-log
+          path: app/test-results/
+          retention-days: 7
+
   ios:
     name: ios
     runs-on: macos-15
@@ -278,6 +286,14 @@ jobs:
 
       - name: Build and test the app on the Simulator
         run: cargo xtask check --only ios
+
+      - name: Keep the Appium log of failed tests
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ios-appium-log
+          path: app/test-results/
+          retention-days: 7
 
   app:
     name: app (${{ matrix.platform }})
