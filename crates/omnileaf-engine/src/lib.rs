@@ -1,8 +1,10 @@
 //! The headless core that the app's commands drive.
 
 mod app_info;
+mod folder_survey;
 
 pub use app_info::AppInfo;
+pub use folder_survey::{FolderSurvey, SurveyError, survey_folder};
 
 #[derive(Debug)]
 pub struct Core {

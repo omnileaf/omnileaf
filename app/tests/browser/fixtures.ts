@@ -6,6 +6,7 @@ export const FAKE_APP_VERSION = "1.2.3";
 
 const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => ({ version: FAKE_APP_VERSION }),
+  addLibraryFolder: () => null,
 };
 
 export const test = base.extend<{ backend: FakeBackend }>({

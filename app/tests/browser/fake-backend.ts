@@ -1,21 +1,44 @@
 import type { Page } from "@playwright/test";
 
-import type { commands } from "../../src/lib/ipc/bindings.ts";
+import type { commands, IpcError } from "../../src/lib/ipc/bindings.ts";
 
 type Commands = typeof commands;
+
+type Success<Result> = Extract<Result, { status: "ok"; data: unknown }>;
+
+type Outcome<Result> = [Success<Result>] extends [never]
+  ? Result
+  : Success<Result>["data"];
 
 export type FakeBackend = {
   [Name in keyof Commands]: (
     ...args: Parameters<Commands[Name]>
-  ) => Awaited<ReturnType<Commands[Name]>>;
+  ) => Outcome<Awaited<ReturnType<Commands[Name]>>>;
 };
 
+/** Thrown by a fake command to fail the way the Rust side does, with a typed error. */
+export class CommandFailure extends Error {
+  constructor(readonly error: IpcError) {
+    super(error.message);
+  }
+}
+
 type CommandArguments = Record<string, unknown>;
+
+type Reply = { readonly value: unknown } | { readonly failure: IpcError };
 
 const BRIDGE = "__omnileafFakeInvoke";
 
 const INSTALL_BRIDGE = `Object.defineProperty(window, "__TAURI_INTERNALS__", {
-  value: { invoke: (command, args) => window.${BRIDGE}(command, args) },
+  value: {
+    invoke: async (command, args) => {
+      const reply = await window.${BRIDGE}(command, args);
+      if ("failure" in reply) {
+        throw reply.failure;
+      }
+      return reply.value;
+    },
+  },
 });`;
 
 function bindingName(command: string): string {
@@ -39,12 +62,24 @@ function answer(
   backend: FakeBackend,
   command: string,
   args: CommandArguments,
-): unknown {
+): Reply {
   const name = bindingName(command);
   if (!isCommand(backend, name)) {
     throw new Error(`the fake backend has no command \`${command}\``);
   }
-  return Reflect.apply(backend[name], undefined, Object.values(args));
+  try {
+    const value: unknown = Reflect.apply(
+      backend[name],
+      undefined,
+      Object.values(args),
+    );
+    return { value };
+  } catch (error) {
+    if (error instanceof CommandFailure) {
+      return { failure: error.error };
+    }
+    throw error;
+  }
 }
 
 export async function installFakeBackend(
