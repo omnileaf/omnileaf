@@ -29,13 +29,19 @@ export async function setup(
       [PICKED_FOLDER_VARIABLE]: library.folder,
     },
     server: WEBDRIVER_URL,
+  }).catch(async (error: unknown) => {
+    await library.remove();
+    throw error;
   });
   project.provide("appUnderTest", {
     server: WEBDRIVER_URL.href,
     capabilities: {},
   });
   return async () => {
-    await stop();
-    await library.remove();
+    try {
+      await stop();
+    } finally {
+      await library.remove();
+    }
   };
 }
