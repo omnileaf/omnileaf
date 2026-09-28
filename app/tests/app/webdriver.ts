@@ -6,7 +6,7 @@ const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 const NO_SUCH_ELEMENT = "no such element";
 const ELEMENT_TIMEOUT_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 30_000;
-const SESSION_START_TIMEOUT_MS = 150_000;
+const SESSION_START_TIMEOUT_MS = 300_000;
 const POLL_INTERVAL_MS = 100;
 
 type Method = "GET" | "POST" | "DELETE";

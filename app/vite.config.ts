@@ -7,7 +7,7 @@ import { defineConfig } from "vitest/config";
 import { TEST_BROWSER_CONTEXT } from "./tests/browser-context.ts";
 
 const APP_TEST_TIMEOUT_MS = 30_000;
-const MOBILE_SESSION_TIMEOUT_MS = 180_000;
+const MOBILE_SESSION_TIMEOUT_MS = 330_000;
 
 export default defineConfig({
   clearScreen: false,

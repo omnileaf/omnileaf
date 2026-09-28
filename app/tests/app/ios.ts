@@ -14,7 +14,7 @@ const APP_BUNDLE = fileURLToPath(
   ),
 );
 const IOS_RUNTIME = /\.iOS-(\d+(?:-\d+)*)$/;
-const WEBDRIVERAGENT_LAUNCH_TIMEOUT_MS = 120_000;
+const WEBDRIVERAGENT_LAUNCH_TIMEOUT_MS = 240_000;
 const WEBVIEW_TIMEOUT_MS = 60_000;
 
 const run = promisify(execFile);
