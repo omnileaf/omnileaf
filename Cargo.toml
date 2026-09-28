@@ -19,6 +19,7 @@ specta = { version = "=2.0.0-rc.25", features = ["derive"] }
 specta-typescript = "=0.0.12"
 tauri = "2.12.0"
 tauri-build = "2.7.0"
+tauri-plugin-dialog = "2.8.0"
 tauri-plugin-wdio-webdriver = "1.4.0"
 tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 thiserror = "2.0.21"

@@ -1,11 +1,13 @@
 //! The commands the interface calls, and the TypeScript bindings generated from them.
 
-use omnileaf_engine::{AppInfo, Core};
-use tauri::{State, Wry};
+use omnileaf_engine::{AppInfo, Core, FolderSurvey, survey_folder};
+use tauri::{AppHandle, State, Wry};
 use tauri_specta::{Builder, collect_commands};
 
+use crate::{folder_picker::pick_folder, ipc_error::IpcError};
+
 pub(crate) fn builder() -> Builder<Wry> {
-    Builder::new().commands(collect_commands![app_info])
+    Builder::new().commands(collect_commands![app_info, add_library_folder])
 }
 
 #[tauri::command]
@@ -16,6 +18,21 @@ pub(crate) fn builder() -> Builder<Wry> {
 )]
 fn app_info(core: State<'_, Core>) -> AppInfo {
     core.app_info().clone()
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn add_library_folder(app: AppHandle) -> Result<Option<FolderSurvey>, IpcError> {
+    tauri::async_runtime::spawn_blocking(move || pick_and_survey(&app))
+        .await
+        .map_err(|error| IpcError::internal(&error))?
+}
+
+fn pick_and_survey(app: &AppHandle) -> Result<Option<FolderSurvey>, IpcError> {
+    let Some(folder) = pick_folder(app)? else {
+        return Ok(None);
+    };
+    Ok(Some(survey_folder(&folder)?))
 }
 
 #[cfg(test)]
