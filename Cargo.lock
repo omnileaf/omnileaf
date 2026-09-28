@@ -2455,6 +2455,7 @@ version = "0.0.0"
 dependencies = [
  "serde",
  "specta",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
