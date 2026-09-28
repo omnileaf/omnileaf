@@ -15,6 +15,7 @@ const APP_BUNDLE = fileURLToPath(
 );
 const IOS_RUNTIME = /\.iOS-(\d+(?:-\d+)*)$/;
 const WEBDRIVERAGENT_LAUNCH_TIMEOUT_MS = 240_000;
+const WEBVIEW_PROCESS = "process-Omnileaf";
 const PREBUILT_WEBDRIVERAGENT = process.env.OMNILEAF_PREBUILT_WDA;
 const WEBVIEW_TIMEOUT_MS = 60_000;
 
@@ -85,7 +86,9 @@ export async function setup(
       "appium:udid": simulator.udid,
       "appium:platformVersion": simulator.platformVersion,
       "appium:app": APP_BUNDLE,
+      "appium:isHeadless": true,
       "appium:autoWebview": true,
+      "appium:additionalWebviewBundleIds": [WEBVIEW_PROCESS],
       "appium:webviewConnectTimeout": WEBVIEW_TIMEOUT_MS,
       "appium:wdaLaunchTimeout": WEBDRIVERAGENT_LAUNCH_TIMEOUT_MS,
       "appium:showXcodeLog": true,
