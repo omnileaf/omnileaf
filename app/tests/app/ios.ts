@@ -15,6 +15,7 @@ const APP_BUNDLE = fileURLToPath(
 );
 const IOS_RUNTIME = /\.iOS-(\d+(?:-\d+)*)$/;
 const WEBDRIVERAGENT_LAUNCH_TIMEOUT_MS = 240_000;
+const PREBUILT_WEBDRIVERAGENT = process.env.OMNILEAF_PREBUILT_WDA;
 const WEBVIEW_TIMEOUT_MS = 60_000;
 
 const run = promisify(execFile);
@@ -22,6 +23,16 @@ const run = promisify(execFile);
 interface Simulator {
   readonly udid: string;
   readonly platformVersion: string;
+}
+
+function webDriverAgentCapabilities(): Record<string, unknown> {
+  if (PREBUILT_WEBDRIVERAGENT === undefined) {
+    return {};
+  }
+  return {
+    "appium:usePreinstalledWDA": true,
+    "appium:prebuiltWDAPath": PREBUILT_WEBDRIVERAGENT,
+  };
 }
 
 function simulatorsOn(runtime: string, devices: unknown): Simulator[] {
@@ -77,8 +88,8 @@ export async function setup(
       "appium:autoWebview": true,
       "appium:webviewConnectTimeout": WEBVIEW_TIMEOUT_MS,
       "appium:wdaLaunchTimeout": WEBDRIVERAGENT_LAUNCH_TIMEOUT_MS,
-      "appium:usePrebuiltWDA": true,
       "appium:showXcodeLog": true,
+      ...webDriverAgentCapabilities(),
     },
   });
   return stop;
