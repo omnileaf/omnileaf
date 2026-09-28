@@ -77,6 +77,8 @@ export async function setup(
       "appium:autoWebview": true,
       "appium:webviewConnectTimeout": WEBVIEW_TIMEOUT_MS,
       "appium:wdaLaunchTimeout": WEBDRIVERAGENT_LAUNCH_TIMEOUT_MS,
+      "appium:usePrebuiltWDA": true,
+      "appium:showXcodeLog": true,
     },
   });
   return stop;
