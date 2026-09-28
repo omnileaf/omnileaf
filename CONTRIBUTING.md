@@ -41,7 +41,7 @@ iOS builds need a Mac with Xcode, selected with `sudo xcode-select -s /Applicati
 
 ### App icon
 
-The app icon is drawn in `branding/icon.svg`. Android's adaptive icon uses separate layers: `icon-foreground.svg`, which also serves as the monochrome layer for themed icons, over `icon-background.svg`. `branding/icon.json` ties them together and sets the colour that fills the iOS icon's corners. After changing any of them, run `pnpm --dir app tauri icon ../branding/icon.json`. It rewrites the desktop icons in `app/src-tauri/icons` and the ones in the committed Android and Xcode projects.
+The app icon is drawn in `branding/icon.svg`. Android's adaptive icon uses separate layers: `icon-foreground.svg`, which also serves as the monochrome layer for themed icons, over `icon-background.svg`. `branding/icon.json` ties them together and sets the colour that fills the iOS icon's corners. After changing any of them, run `cargo xtask icons`. It runs Tauri's icon generator, which rewrites the desktop icons in `app/src-tauri/icons` and the ones in the committed Android and Xcode projects. It then removes the alpha channel from the iOS icons, because the App Store rejects icons that have one, and a test fails if a committed iOS icon has one.
 
 ## Checking your work
 
