@@ -5240,6 +5240,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "clap",
+ "png 0.18.1",
 ]
 
 [[package]]
