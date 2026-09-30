@@ -1,8 +1,8 @@
 # Omnileaf Individual Contributor License Agreement
 
-> **Status: draft, not yet in effect.** This agreement takes effect once Omnileaf Pty Ltd is registered and the text has had legal review. Until then, pull requests from outside contributors can't be merged.
+> **Status: draft, not yet in effect.** This agreement takes effect once the text has had legal review. Until then, pull requests from outside contributors can't be merged.
 
-Thank you for your interest in contributing to Omnileaf, a project of Omnileaf Pty Ltd, a company to be registered in Australia ("We" or "Us").
+Thank you for your interest in contributing to Omnileaf, a project of Omnileaf Pty Ltd (ACN 702 747 671, ABN 83 702 747 671), a company registered in New South Wales, Australia ("We" or "Us").
 
 This contributor agreement ("Agreement") documents the rights granted by contributors to Us. To make this document effective, please sign it electronically through the CLA Assistant check that appears on your first pull request. This is a legally binding document, so please read it carefully before agreeing to it. The Agreement may cover more than one software project managed by Us.
 
@@ -76,7 +76,7 @@ TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT WILL YOU BE LIABL
 
 ## 6. Miscellaneous
 
-6.1 This Agreement will be governed by and construed in accordance with the laws of the State or Territory of Australia in which We have our registered office, excluding its conflicts of law provisions. Under certain circumstances, the governing law in this section might be superseded by the United Nations Convention on Contracts for the International Sale of Goods ("UN Convention") and the parties intend to avoid the application of the UN Convention to this Agreement and, thus, exclude the application of the UN Convention in its entirety to this Agreement.
+6.1 This Agreement will be governed by and construed in accordance with the laws of New South Wales, Australia, excluding its conflicts of law provisions. Under certain circumstances, the governing law in this section might be superseded by the United Nations Convention on Contracts for the International Sale of Goods ("UN Convention") and the parties intend to avoid the application of the UN Convention to this Agreement and, thus, exclude the application of the UN Convention in its entirety to this Agreement.
 
 6.2 This Agreement sets out the entire agreement between You and Us for Your Contributions to Us and overrides all other agreements or understandings.
 
