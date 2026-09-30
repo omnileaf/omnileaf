@@ -1,15 +1,32 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { afterNavigate } from "$app/navigation";
+  import { page } from "$app/state";
+  import AppNavigation from "$lib/navigation/AppNavigation.svelte";
+  import { sectionOf } from "$lib/navigation/sections";
   import { m } from "$lib/paraglide/messages.js";
 
   import "../app.css";
 
   let { children }: { children: Snippet } = $props();
+
+  let main: HTMLElement | undefined = $state();
+
+  afterNavigate(({ type }) => {
+    if (type !== "enter") {
+      main?.querySelector<HTMLHeadingElement>("h1")?.focus();
+    }
+  });
 </script>
 
 <svelte:head>
   <title>{m.app_name()}</title>
 </svelte:head>
 
-{@render children()}
+<div class="flex flex-col-reverse block-dvh medium:flex-row">
+  <AppNavigation current={sectionOf(page.url.pathname)} />
+  <main bind:this={main} class="flex-1 overflow-y-auto p-xl">
+    {@render children()}
+  </main>
+</div>
