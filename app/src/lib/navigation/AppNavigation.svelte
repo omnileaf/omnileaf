@@ -10,41 +10,38 @@
   import { resolve } from "$app/paths";
   import { m } from "$lib/paraglide/messages.js";
 
-  import type { Section } from "./sections";
+  import { type Section, SECTION_ROUTES } from "./sections";
 
   interface Destination {
     readonly section: Section;
-    readonly route: "/" | "/browse" | "/history" | "/settings";
     readonly label: () => string;
     readonly icon: LucideIcon;
     readonly isAtSidebarEnd: boolean;
   }
 
+  const ICON_SIZE = 22;
+
   const DESTINATIONS: readonly Destination[] = [
     {
       section: "library",
-      route: "/",
       label: m.library_title,
       icon: BookOpen,
       isAtSidebarEnd: false,
     },
     {
       section: "browse",
-      route: "/browse",
       label: m.browse_title,
       icon: Compass,
       isAtSidebarEnd: false,
     },
     {
       section: "history",
-      route: "/history",
       label: m.history_title,
       icon: RotateCcwClock,
       isAtSidebarEnd: false,
     },
     {
       section: "settings",
-      route: "/settings",
       label: m.settings_title,
       icon: Settings,
       isAtSidebarEnd: true,
@@ -73,7 +70,7 @@
         ]}
       >
         <a
-          href={resolve(destination.route)}
+          href={resolve(SECTION_ROUTES[destination.section])}
           aria-current={isCurrent ? "page" : undefined}
           class={[
             "flex flex-col items-center gap-xs py-xs text-caption min-block-touch-target expanded:flex-row expanded:gap-md expanded:rounded-control expanded:px-md expanded:text-body",
@@ -88,7 +85,7 @@
               isCurrent && "bg-accent-soft expanded:bg-transparent",
             ]}
           >
-            <destination.icon size={22} />
+            <destination.icon size={ICON_SIZE} />
           </span>
           {destination.label()}
         </a>
