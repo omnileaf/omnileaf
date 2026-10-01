@@ -8,7 +8,7 @@ import type { TestProject } from "vitest/node";
 import { APPIUM_URL, startAppium } from "./appium.ts";
 import { withAttempts } from "./attempts.ts";
 import { isRecord, listOf } from "./json.ts";
-import { waitUntilReady } from "./webdriver.ts";
+import { pollUntil, waitUntilReady } from "./webdriver.ts";
 
 const APP_BUNDLE = fileURLToPath(
   new URL(
@@ -28,6 +28,8 @@ const WEBDRIVERAGENT_LAUNCH_ATTEMPTS = 3;
 const WEBDRIVERAGENT_READY_TIMEOUT_MS = 60_000;
 const SIMCTL_TIMEOUT_MS = 60_000;
 const WEBVIEW_TIMEOUT_MS = 60_000;
+const APP_LAUNCHABLE_TIMEOUT_MS = 60_000;
+const UNKNOWN_TO_LAUNCHER = "FBSOpenApplicationServiceErrorDomain";
 
 const run = promisify(execFile);
 
@@ -78,6 +80,56 @@ async function launchWebDriverAgent(
     );
     await waitUntilReady(WEBDRIVERAGENT_URL, WEBDRIVERAGENT_READY_TIMEOUT_MS);
   });
+}
+
+function isUnknownToLauncher(error: unknown): boolean {
+  return (
+    isRecord(error) &&
+    typeof error.stderr === "string" &&
+    error.stderr.includes(UNKNOWN_TO_LAUNCHER)
+  );
+}
+
+async function launches(
+  simulator: Simulator,
+  bundleId: string,
+): Promise<true | undefined> {
+  try {
+    await run(
+      "xcrun",
+      [
+        "simctl",
+        "launch",
+        "--terminate-running-process",
+        simulator.udid,
+        bundleId,
+      ],
+      { timeout: SIMCTL_TIMEOUT_MS },
+    );
+    return true;
+  } catch (error) {
+    if (isUnknownToLauncher(error)) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+/** The Simulator's launcher refuses a just-installed app until it has registered it, so this waits until the app launches. */
+async function installApp(simulator: Simulator): Promise<string> {
+  await run("xcrun", ["simctl", "install", simulator.udid, APP_BUNDLE], {
+    timeout: SIMCTL_TIMEOUT_MS,
+  });
+  const bundleId = await bundleIdOf(APP_BUNDLE);
+  await pollUntil(
+    () => launches(simulator, bundleId),
+    APP_LAUNCHABLE_TIMEOUT_MS,
+    `launching ${bundleId} on the Simulator`,
+  );
+  await run("xcrun", ["simctl", "terminate", simulator.udid, bundleId], {
+    timeout: SIMCTL_TIMEOUT_MS,
+  });
+  return bundleId;
 }
 
 async function webDriverAgentCapabilities(
@@ -131,6 +183,7 @@ export async function setup(
   project: TestProject,
 ): Promise<() => Promise<void>> {
   const simulator = await findBootedSimulator();
+  const bundleId = await installApp(simulator);
   const webDriverAgent = await webDriverAgentCapabilities(simulator);
   const stop = await startAppium([]);
   project.provide("appUnderTest", {
@@ -140,9 +193,8 @@ export async function setup(
       "appium:automationName": "XCUITest",
       "appium:udid": simulator.udid,
       "appium:platformVersion": simulator.platformVersion,
-      "appium:app": APP_BUNDLE,
+      "appium:bundleId": bundleId,
       "appium:noReset": true,
-      "appium:enforceAppInstall": true,
       "appium:isHeadless": true,
       "appium:autoWebview": true,
       "appium:additionalWebviewBundleIds": [WEBVIEW_PROCESS],
