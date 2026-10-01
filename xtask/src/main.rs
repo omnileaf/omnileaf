@@ -2,12 +2,13 @@
 
 mod check;
 mod doctor;
+mod fixtures;
 mod icons;
 mod policy;
 mod process;
 mod workspace;
 
-use std::fmt::Display;
+use std::{fmt::Display, path::PathBuf};
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
@@ -33,6 +34,12 @@ enum Command {
     Bindings,
     /// Check that this machine has the tools the repository needs.
     Doctor,
+    /// Generate the test fixtures, replacing any from an earlier run.
+    Fixtures {
+        /// The folder to write them into, relative to the workspace root.
+        #[arg(long, default_value = "target/fixtures")]
+        out: PathBuf,
+    },
     /// Regenerate the app icons from `branding/icon.json`.
     Icons,
     /// Check the repository's files against its content rules.
@@ -53,6 +60,15 @@ fn main() -> anyhow::Result<()> {
             );
             print_lines(&report.lines);
             anyhow::ensure!(report.missing == 0, "{} tool(s) missing", report.missing);
+        }
+        Command::Fixtures { out } => {
+            let out = workspace::root().join(out);
+            let written = fixtures::generate(&out)?;
+            print_lines(&[format!(
+                "wrote {} fixture files to {}",
+                written.len(),
+                out.display()
+            )]);
         }
         Command::Icons => icons::regenerate(&workspace::root())?,
         Command::Policy => enforce_policy()?,

@@ -1,5 +1,5 @@
 [package]
-name = "xtask"
+name = "omnileaf-testkit"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -7,10 +7,9 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-anyhow.workspace = true
-clap.workspace = true
-omnileaf-testkit.workspace = true
 png.workspace = true
+thiserror.workspace = true
+zip.workspace = true
 
 [lints]
 workspace = true

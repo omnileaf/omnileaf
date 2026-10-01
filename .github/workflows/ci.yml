@@ -134,6 +134,67 @@ jobs:
       - name: Hold the core crates to their coverage floor
         run: cargo llvm-cov report --summary-only --ignore-filename-regex '(^|/)(app|xtask)/' --fail-under-lines "$CORE_LINE_COVERAGE_FLOOR"
 
+  fixtures:
+    name: fixtures (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runner: ubuntu-24.04
+          - platform: macos
+            runner: macos-15
+          - platform: windows
+            runner: windows-2025
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Generate the fixtures twice and hash them
+        run: |
+          for run in first second; do
+            cargo xtask fixtures --out "target/fixtures-$run"
+            (cd "target/fixtures-$run" && find . -type f | LC_ALL=C sort | while IFS= read -r file; do
+              printf '%s  %s\n' "$(git hash-object --no-filters "$file")" "$file"
+            done) > "target/fixtures-$run.hashes"
+          done
+          diff target/fixtures-first.hashes target/fixtures-second.hashes
+          cp target/fixtures-first.hashes "fixtures-${{ matrix.platform }}.hashes"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fixtures-${{ matrix.platform }}
+          path: fixtures-${{ matrix.platform }}.hashes
+          if-no-files-found: error
+          retention-days: 3
+
+  fixtures-agree:
+    name: fixtures agree across platforms
+    needs: fixtures
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: fixtures-*
+          merge-multiple: true
+
+      - name: Compare the fixture hashes
+        run: |
+          diff fixtures-linux.hashes fixtures-macos.hashes
+          diff fixtures-linux.hashes fixtures-windows.hashes
+
   interface:
     name: interface gate
     runs-on: ubuntu-24.04
