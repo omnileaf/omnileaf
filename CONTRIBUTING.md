@@ -51,6 +51,8 @@ After changing any of them, run `cargo xtask icons`. It runs Tauri's icon genera
 
 The tests use Playwright's browsers. Install them once with `pnpm --dir app exec playwright install chromium webkit`, adding `--with-deps` on Ubuntu or Debian to install the system libraries they need. Playwright's WebKit runs on Windows, macOS, Ubuntu and Debian. On other Linux distributions, run the Chromium browser tests with `pnpm --dir app test:e2e --project 'chromium-*'` and leave WebKit to CI.
 
+The Android and iOS app tests take the longest, so CI runs them on every merge to `main` and every night rather than on each pull request. Add the `mobile` label to a pull request that changes phone-specific code to run them there too.
+
 CI also measures test coverage and shows it in the `coverage` job's summary. Line coverage of the core crates in `crates/` must not drop below the floor set in `.github/workflows/ci.yml`. When a change raises it, raise the floor in the same pull request.
 
 The gate also runs `cargo xtask policy`, which checks every file git doesn't ignore against the [content policy](docs/legal/content-policy.md):
