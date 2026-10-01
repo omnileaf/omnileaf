@@ -6,7 +6,7 @@ const config = {
     adapter: adapter({ fallback: "index.html" }),
     typescript: {
       config: (tsconfig) => {
-        tsconfig.include.push("../playwright.config.ts");
+        tsconfig.include.push("../playwright.config.ts", "../scripts/**/*.ts");
       },
     },
   },
