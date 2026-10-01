@@ -96,7 +96,7 @@ async function send(
   return value;
 }
 
-async function pollUntil<T>(
+export async function pollUntil<T>(
   attempt: () => Promise<T | undefined>,
   timeoutMs: number,
   what: string,
