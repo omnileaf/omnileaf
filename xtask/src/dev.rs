@@ -15,6 +15,7 @@ use crate::process::command_for;
 const DEV_SERVER: (&str, u16) = ("localhost", 1420);
 /// Run through `node` rather than `pnpm`, so stopping the dev server can't leave Vite behind.
 const VITE: &str = "node_modules/vite/bin/vite.js";
+const PHONE_DEV_HOST: &str = "TAURI_DEV_HOST";
 const DEV_SERVER_TIMEOUT: Duration = Duration::from_secs(60);
 const DEV_SERVER_POLL: Duration = Duration::from_millis(250);
 
@@ -23,6 +24,15 @@ pub(crate) enum Platform {
     Desktop,
     Ios,
     Android,
+}
+
+impl Platform {
+    fn is_phone(self) -> bool {
+        match self {
+            Self::Desktop => false,
+            Self::Ios | Self::Android => true,
+        }
+    }
 }
 
 #[derive(Debug, Default)]
@@ -41,6 +51,10 @@ pub(crate) fn platforms_for(os: &str) -> Vec<Platform> {
     }
 }
 
+fn serves_phones(platforms: &[Platform]) -> bool {
+    platforms.iter().any(|platform| platform.is_phone())
+}
+
 pub(crate) fn tauri_args(platform: Platform, devices: &Devices) -> Vec<String> {
     let (subcommand, device): (&[&str], Option<&String>) = match platform {
         Platform::Desktop => (&["dev"], None),
@@ -57,14 +71,21 @@ pub(crate) fn tauri_args(platform: Platform, devices: &Devices) -> Vec<String> {
 }
 
 pub(crate) fn run(root: &Path, platforms: &[Platform], devices: &Devices) -> anyhow::Result<()> {
-    let mut dev_server = command_for("node")
-        .args([VITE, "dev"])
-        .current_dir(root.join("app"))
-        .spawn()
-        .context("start the Vite dev server")?;
+    let mut dev_server = start_dev_server(root, platforms)?;
     let outcome = wait_for_dev_server().and_then(|()| run_platforms(root, platforms, devices));
     stop(&mut dev_server).context("stop the Vite dev server")?;
     outcome
+}
+
+fn start_dev_server(root: &Path, platforms: &[Platform]) -> anyhow::Result<Child> {
+    let mut vite = command_for("node");
+    vite.args([VITE, "dev"]).current_dir(root.join("app"));
+    if serves_phones(platforms) {
+        let address = local_ip_address::local_ip()
+            .context("find this computer's network address for the phones")?;
+        vite.env(PHONE_DEV_HOST, address.to_string());
+    }
+    vite.spawn().context("start the Vite dev server")
 }
 
 fn wait_for_dev_server() -> anyhow::Result<()> {
@@ -132,6 +153,22 @@ mod tests {
     fn leaves_out_ios_where_it_cannot_be_built() {
         for os in ["linux", "windows"] {
             assert_eq!(platforms_for(os), [Platform::Desktop, Platform::Android]);
+        }
+    }
+
+    #[test]
+    fn keeps_the_dev_server_on_localhost_for_the_desktop_alone() {
+        assert!(!serves_phones(&[Platform::Desktop]));
+    }
+
+    #[test]
+    fn opens_the_dev_server_to_the_network_when_a_phone_runs_the_app() {
+        for platforms in [
+            &[Platform::Android][..],
+            &[Platform::Ios],
+            &[Platform::Desktop, Platform::Android],
+        ] {
+            assert!(serves_phones(platforms), "{platforms:?}");
         }
     }
 

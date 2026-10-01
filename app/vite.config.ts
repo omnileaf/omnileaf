@@ -6,17 +6,25 @@ import { configDefaults, defineConfig } from "vitest/config";
 
 import { TEST_BROWSER_CONTEXT } from "./tests/browser-context.ts";
 
+const DEV_SERVER_PORT = 1420;
 const APP_TEST_TIMEOUT_MS = 30_000;
 const MOBILE_SESSION_TIMEOUT_MS = 330_000;
 const APP_SPECS = "tests/app/**/*.e2e.ts";
 const DESKTOP_ONLY_APP_SPECS = "tests/app/**/*.desktop.e2e.ts";
 const HARNESS_TESTS = "tests/app/**/*.test.ts";
 
+const phoneDevHost = process.env.TAURI_DEV_HOST;
+const phoneAccess =
+  phoneDevHost === undefined
+    ? {}
+    : { host: true, hmr: { host: phoneDevHost, clientPort: DEV_SERVER_PORT } };
+
 export default defineConfig({
   clearScreen: false,
   server: {
-    port: 1420,
+    port: DEV_SERVER_PORT,
     strictPort: true,
+    ...phoneAccess,
     watch: { ignored: ["**/src-tauri/**"] },
   },
   plugins: [
