@@ -190,10 +190,11 @@ jobs:
           GH_REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
         run: |
+          mapfile -t builds < <(find nightly -type f | LC_ALL=C sort)
           if gh release view nightly > /dev/null 2>&1; then
             gh release delete nightly --cleanup-tag --yes
           fi
-          gh release create nightly nightly/* \
+          gh release create nightly "${builds[@]}" \
             --prerelease \
             --latest=false \
             --target "$SHA" \
