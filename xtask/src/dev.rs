@@ -13,6 +13,7 @@ use clap::ValueEnum;
 use crate::process::command_for;
 
 const DEV_SERVER: (&str, u16) = ("localhost", 1420);
+/// Run through `node` rather than `pnpm`, so stopping the dev server can't leave Vite behind.
 const VITE: &str = "node_modules/vite/bin/vite.js";
 const DEV_SERVER_TIMEOUT: Duration = Duration::from_secs(60);
 const DEV_SERVER_POLL: Duration = Duration::from_millis(250);
@@ -30,10 +31,8 @@ pub(crate) struct Devices {
     pub(crate) android: Option<String>,
 }
 
-/// Drops the configured `beforeDevCommand`, because one shared Vite server serves every platform.
 const WITHOUT_DEV_SERVER: &str = r#"{"build":{"beforeDevCommand":null}}"#;
 
-/// The desktop app plus every phone platform `os` can build for.
 pub(crate) fn platforms_for(os: &str) -> Vec<Platform> {
     if os == "macos" {
         vec![Platform::Desktop, Platform::Ios, Platform::Android]
@@ -42,7 +41,6 @@ pub(crate) fn platforms_for(os: &str) -> Vec<Platform> {
     }
 }
 
-/// The arguments to `pnpm` that run `platform` against the shared dev server.
 pub(crate) fn tauri_args(platform: Platform, devices: &Devices) -> Vec<String> {
     let (subcommand, device): (&[&str], Option<&String>) = match platform {
         Platform::Desktop => (&["dev"], None),
@@ -58,9 +56,6 @@ pub(crate) fn tauri_args(platform: Platform, devices: &Devices) -> Vec<String> {
         .collect()
 }
 
-/// Starts one Vite server, then every platform against it, and stops the server once they have all exited.
-///
-/// Vite runs through `node` rather than `pnpm`, so stopping it can't leave the server behind.
 pub(crate) fn run(root: &Path, platforms: &[Platform], devices: &Devices) -> anyhow::Result<()> {
     let mut dev_server = command_for("node")
         .args([VITE, "dev"])
