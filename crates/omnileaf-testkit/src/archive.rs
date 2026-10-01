@@ -1,6 +1,8 @@
 use std::io::{Cursor, Write};
 
-use zip::{CompressionMethod, DateTime, ZipWriter, result::ZipError, write::SimpleFileOptions};
+use zip::{
+    CompressionMethod, DateTime, System, ZipWriter, result::ZipError, write::SimpleFileOptions,
+};
 
 use crate::FixtureError;
 
@@ -27,11 +29,12 @@ pub struct ArchiveEntry {
     pub bytes: Vec<u8>,
 }
 
-/// A comic archive holding `entries` in the order given, with a fixed time and permissions so the bytes never vary.
+/// A comic archive holding `entries` in the order given, with a fixed time, permissions and host system so the bytes never vary.
 pub fn cbz(entries: &[ArchiveEntry], compression: Compression) -> Result<Vec<u8>, FixtureError> {
     let options = SimpleFileOptions::default()
         .compression_method(compression.method())
         .last_modified_time(DateTime::default())
+        .system(System::Unix)
         .unix_permissions(ENTRY_PERMISSIONS);
     let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
     for entry in entries {
