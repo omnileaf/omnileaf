@@ -31,7 +31,11 @@
   --spacing-xl: 1.5rem;
   --spacing-2xl: 2rem;
   --spacing-3xl: 3rem;
+  --spacing-none: 0;
   --spacing-touch-target: 3rem;
+  --spacing-safe-bottom: env(safe-area-inset-bottom);
+  --spacing-rail: 5.5rem;
+  --spacing-sidebar: 14.5rem;
 
   --radius-control: 0.5rem;
   --radius-card: 0.75rem;
@@ -42,6 +46,7 @@
   --color-border: #e3ded3;
   --color-card: #ffffff;
   --color-chip: #eeeae1;
+  --color-bar: #f3f0e9;
   --color-accent: #2f6f4f;
   --color-on-accent: #ffffff;
   --color-accent-soft: #ddebe2;
@@ -56,6 +61,7 @@
     --color-border: #302d28;
     --color-card: #1f1d1a;
     --color-chip: #2b2823;
+    --color-bar: #1c1a17;
     --color-accent: #7fcb9d;
     --color-on-accent: #0f2418;
     --color-accent-soft: #243a2c;

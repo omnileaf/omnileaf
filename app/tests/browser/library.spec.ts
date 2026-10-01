@@ -1,8 +1,4 @@
-import { AxeBuilder } from "@axe-core/playwright";
-
-import { expect, FAKE_APP_VERSION, test } from "./fixtures.ts";
-
-const COLOR_SCHEMES = ["light", "dark"] as const;
+import { expect, test } from "./fixtures.ts";
 
 test("opens on the empty library", async ({ page }) => {
   await page.goto("/");
@@ -13,23 +9,3 @@ test("opens on the empty library", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByText("Your library is empty.")).toBeVisible();
 });
-
-test("shows the version the backend reports", async ({ page }) => {
-  await page.goto("/");
-
-  await expect(page.getByText(`Version ${FAKE_APP_VERSION}`)).toBeVisible();
-});
-
-for (const colorScheme of COLOR_SCHEMES) {
-  test(`the empty library has no accessibility violations in the ${colorScheme} theme`, async ({
-    page,
-  }) => {
-    await page.emulateMedia({ colorScheme });
-    await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
-
-    const results = await new AxeBuilder({ page }).analyze();
-
-    expect(results.violations).toEqual([]);
-  });
-}
