@@ -35,5 +35,16 @@
   ],
   "library_folder_unreadable": "Couldn't read that folder.",
   "library_folder_picker_unavailable": "Adding folders isn't available on this device yet.",
-  "library_add_folder_failed": "Something went wrong while adding the folder. Try again."
+  "library_add_folder_failed": "Something went wrong while adding the folder. Try again.",
+  "navigation_label": "Main",
+  "browse_title": "Browse",
+  "browse_empty_title": "Nothing to browse yet",
+  "browse_empty_body": "Sources you add show up here, so you can read from them without copying files over.",
+  "browse_empty_later": "Adding sources comes in a later version.",
+  "history_title": "History",
+  "history_empty_title": "Nothing read yet",
+  "history_empty_body": "Books you open show up here, newest first, so you can pick up where you left off.",
+  "settings_title": "Settings",
+  "about_title": "About",
+  "about_licence": "Omnileaf is free software. You can share and change it under the GNU General Public License, version 3."
 }
