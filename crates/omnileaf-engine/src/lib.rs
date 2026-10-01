@@ -3,7 +3,7 @@
 mod app_info;
 mod folder_survey;
 
-pub use app_info::AppInfo;
+pub use app_info::{AppInfo, Platform};
 pub use folder_survey::{FolderSurvey, SurveyError, survey_folder};
 
 #[derive(Debug)]
@@ -17,6 +17,7 @@ impl Core {
         Self {
             app_info: AppInfo {
                 version: env!("CARGO_PKG_VERSION").to_owned(),
+                platform: Platform::CURRENT,
             },
         }
     }

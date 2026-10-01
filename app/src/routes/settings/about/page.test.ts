@@ -3,7 +3,10 @@ import { render } from "vitest-browser-svelte";
 
 import Page from "./+page.svelte";
 
-const PROPS = { data: { appInfo: { version: "1.2.3" } }, params: {} };
+const PROPS = {
+  data: { appInfo: { version: "1.2.3", platform: "linux" as const } },
+  params: {},
+};
 
 test("shows the app version it was given", async () => {
   const screen = await render(Page, PROPS);
