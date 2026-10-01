@@ -17,6 +17,8 @@ use omnileaf_testkit::{
 use zip::{CompressionMethod, DateTime, ZipArchive};
 
 const SEED: u64 = 7;
+const CENTRAL_DIRECTORY_SIGNATURE: &[u8] = b"PK\x01\x02";
+const UNIX_HOST_SYSTEM: u8 = 3;
 
 struct ScratchFolder(PathBuf);
 
@@ -181,4 +183,17 @@ fn writes_identical_files_each_time() {
             file.display()
         );
     }
+}
+
+#[test]
+fn records_a_unix_host_system_on_every_platform() {
+    let bytes = cbz(&sample_entries(), Compression::Stored).unwrap();
+
+    let host_systems: Vec<u8> = bytes
+        .windows(CENTRAL_DIRECTORY_SIGNATURE.len() + 2)
+        .filter(|header| header.starts_with(CENTRAL_DIRECTORY_SIGNATURE))
+        .filter_map(|header| header.last().copied())
+        .collect();
+
+    assert_eq!(host_systems, vec![UNIX_HOST_SYSTEM; sample_entries().len()]);
 }

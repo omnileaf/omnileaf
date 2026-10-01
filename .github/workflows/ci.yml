@@ -179,6 +179,14 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
+      - name: Keep the generated fixtures for comparing platforms
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fixture-files-${{ matrix.platform }}
+          path: target/fixtures-first/
+          if-no-files-found: error
+          retention-days: 3
+
   fixtures-agree:
     name: fixtures agree across platforms
     needs: fixtures
@@ -192,8 +200,10 @@ jobs:
 
       - name: Compare the fixture hashes
         run: |
-          diff fixtures-linux.hashes fixtures-macos.hashes
-          diff fixtures-linux.hashes fixtures-windows.hashes
+          status=0
+          diff fixtures-linux.hashes fixtures-macos.hashes || status=1
+          diff fixtures-linux.hashes fixtures-windows.hashes || status=1
+          exit "$status"
 
   interface:
     name: interface gate
