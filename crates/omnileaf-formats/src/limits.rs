@@ -1,5 +1,8 @@
 const MIB: u64 = 1024 * 1024;
 
+pub(crate) const COMIC_INFO_LIMIT: u64 = MIB;
+pub(crate) const COMIC_INFO_NAME: &str = "ComicInfo.xml";
+
 /// Bounds that keep a damaged or hostile archive from exhausting memory or disk.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Limits {

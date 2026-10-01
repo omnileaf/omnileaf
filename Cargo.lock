@@ -2607,6 +2607,7 @@ dependencies = [
  "flate2",
  "omnileaf-testkit",
  "proptest",
+ "quick-xml",
  "thiserror 2.0.21",
  "unicode-normalization",
  "zip",

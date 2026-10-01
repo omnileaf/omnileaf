@@ -20,6 +20,7 @@ omnileaf-formats = { path = "crates/omnileaf-formats" }
 omnileaf-testkit = { path = "crates/omnileaf-testkit" }
 png = "0.18.1"
 proptest = "1.11.0"
+quick-xml = "0.42.0"
 serde = { version = "1.0.229", features = ["derive"] }
 specta = { version = "=2.0.0-rc.25", features = ["derive"] }
 specta-typescript = "=0.0.12"
