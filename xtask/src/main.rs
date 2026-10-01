@@ -1,6 +1,7 @@
 //! Repository automation, run as `cargo xtask <command>`.
 
 mod check;
+mod dev;
 mod doctor;
 mod fixtures;
 mod icons;
@@ -32,6 +33,18 @@ enum Command {
     },
     /// Regenerate the interface's TypeScript bindings from the app's commands.
     Bindings,
+    /// Run the app on the desktop and phones at once, sharing one dev server.
+    Dev {
+        /// The platforms to run; every one this machine can build for when left out.
+        #[arg(long = "platform", value_enum)]
+        platforms: Vec<dev::Platform>,
+        /// The iOS Simulator or device to run on, by name.
+        #[arg(long)]
+        ios_device: Option<String>,
+        /// The Android device or emulator to run on, by name.
+        #[arg(long)]
+        android_device: Option<String>,
+    },
     /// Check that this machine has the tools the repository needs.
     Doctor,
     /// Generate the test fixtures, replacing any from an earlier run.
@@ -52,6 +65,22 @@ fn main() -> anyhow::Result<()> {
             check::run_all(check::select(check::STEPS, only), &Process::in_workspace())?;
         }
         Command::Bindings => regenerate_bindings()?,
+        Command::Dev {
+            platforms,
+            ios_device,
+            android_device,
+        } => {
+            let platforms = if platforms.is_empty() {
+                dev::platforms_for(std::env::consts::OS)
+            } else {
+                platforms
+            };
+            let devices = dev::Devices {
+                ios: ios_device,
+                android: android_device,
+            };
+            dev::run(&workspace::root(), &platforms, &devices)?;
+        }
         Command::Doctor => {
             let report = doctor::render(
                 doctor::REQUIREMENTS,
