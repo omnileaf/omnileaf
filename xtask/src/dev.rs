@@ -15,6 +15,7 @@ use crate::process::command_for;
 const DEV_SERVER: (&str, u16) = ("localhost", 1420);
 /// Run through `node` rather than `pnpm`, so stopping the dev server can't leave Vite behind.
 const VITE: &str = "node_modules/vite/bin/vite.js";
+const ON_EVERY_INTERFACE: &str = "--host";
 const DEV_SERVER_TIMEOUT: Duration = Duration::from_secs(60);
 const DEV_SERVER_POLL: Duration = Duration::from_millis(250);
 
@@ -23,6 +24,15 @@ pub(crate) enum Platform {
     Desktop,
     Ios,
     Android,
+}
+
+impl Platform {
+    fn is_phone(self) -> bool {
+        match self {
+            Self::Desktop => false,
+            Self::Ios | Self::Android => true,
+        }
+    }
 }
 
 #[derive(Debug, Default)]
@@ -39,6 +49,14 @@ pub(crate) fn platforms_for(os: &str) -> Vec<Platform> {
     } else {
         vec![Platform::Desktop, Platform::Android]
     }
+}
+
+pub(crate) fn dev_server_args(platforms: &[Platform]) -> Vec<&'static str> {
+    let mut args = vec![VITE, "dev"];
+    if platforms.iter().any(|platform| platform.is_phone()) {
+        args.push(ON_EVERY_INTERFACE);
+    }
+    args
 }
 
 pub(crate) fn tauri_args(platform: Platform, devices: &Devices) -> Vec<String> {
@@ -58,7 +76,7 @@ pub(crate) fn tauri_args(platform: Platform, devices: &Devices) -> Vec<String> {
 
 pub(crate) fn run(root: &Path, platforms: &[Platform], devices: &Devices) -> anyhow::Result<()> {
     let mut dev_server = command_for("node")
-        .args([VITE, "dev"])
+        .args(dev_server_args(platforms))
         .current_dir(root.join("app"))
         .spawn()
         .context("start the Vite dev server")?;
@@ -132,6 +150,26 @@ mod tests {
     fn leaves_out_ios_where_it_cannot_be_built() {
         for os in ["linux", "windows"] {
             assert_eq!(platforms_for(os), [Platform::Desktop, Platform::Android]);
+        }
+    }
+
+    #[test]
+    fn keeps_the_dev_server_on_localhost_for_the_desktop_alone() {
+        let args = dev_server_args(&[Platform::Desktop]);
+
+        assert_eq!(args, [VITE, "dev"]);
+    }
+
+    #[test]
+    fn opens_the_dev_server_to_the_network_when_a_phone_runs_the_app() {
+        for platforms in [
+            &[Platform::Android][..],
+            &[Platform::Ios],
+            &[Platform::Desktop, Platform::Android],
+        ] {
+            let args = dev_server_args(platforms);
+
+            assert_eq!(args, [VITE, "dev", ON_EVERY_INTERFACE], "{platforms:?}");
         }
     }
 
