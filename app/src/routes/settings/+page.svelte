@@ -8,6 +8,7 @@
 
   const SETTINGS_PAGES = [
     { route: "/settings/library", label: m.library_title },
+    { route: "/settings/appearance", label: m.appearance_title },
     { route: "/settings/about", label: m.about_title },
   ] as const;
 </script>

@@ -3,6 +3,10 @@
 
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
+  import {
+    setThemeSetting,
+    themeSettingForDocument,
+  } from "$lib/appearance/theme.svelte";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
   import { sectionOf } from "$lib/navigation/sections";
   import { m } from "$lib/paraglide/messages.js";
@@ -10,6 +14,8 @@
   import "../app.css";
 
   let { children }: { children: Snippet } = $props();
+
+  setThemeSetting(themeSettingForDocument());
 
   let main: HTMLElement | undefined = $state();
 
