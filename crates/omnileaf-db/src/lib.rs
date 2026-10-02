@@ -6,6 +6,8 @@ mod connection;
 mod database;
 mod error;
 mod migration;
+#[cfg(test)]
+mod scratch;
 mod workers;
 
 pub use config::Config;

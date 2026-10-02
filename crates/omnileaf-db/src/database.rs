@@ -65,11 +65,10 @@ impl Database {
 
 #[cfg(test)]
 mod tests {
-    use std::{env, fs, path::PathBuf, process};
-
     use rusqlite::OpenFlags;
 
     use super::*;
+    use crate::scratch::ScratchLibrary;
 
     const NOTES: Migration = Migration {
         name: "0001_create_note",
@@ -86,17 +85,17 @@ mod tests {
 
     #[test]
     fn backs_up_an_existing_database_before_migrating_it() {
-        let scratch = Scratch::new("backup");
+        let scratch = ScratchLibrary::new("backup");
         drop(Database::open_with(&scratch.config, &[NOTES]).unwrap());
 
         drop(Database::open_with(&scratch.config, &[NOTES, PINNED]).unwrap());
 
-        assert_eq!(scratch.backup(1), (1, vec!["kept".to_owned()]));
+        assert_eq!(backup(&scratch, 1), (1, vec!["kept".to_owned()]));
     }
 
     #[test]
     fn backs_up_again_when_a_failed_migration_is_retried() {
-        let scratch = Scratch::new("retry");
+        let scratch = ScratchLibrary::new("retry");
         drop(Database::open_with(&scratch.config, &[NOTES]).unwrap());
         let failed = Database::open_with(&scratch.config, &[NOTES, BROKEN]);
 
@@ -110,52 +109,24 @@ mod tests {
             })
         ));
         assert!(retried.is_ok());
-        assert_eq!(scratch.backup(1), (1, vec!["kept".to_owned()]));
+        assert_eq!(backup(&scratch, 1), (1, vec!["kept".to_owned()]));
     }
 
-    struct Scratch {
-        folder: PathBuf,
-        config: Config,
-    }
-
-    impl Scratch {
-        fn new(name: &str) -> Self {
-            let folder = env::temp_dir()
-                .join(format!("omnileaf-db-unit-{}", process::id()))
-                .join(name);
-            let _ = fs::remove_dir_all(&folder);
-            fs::create_dir_all(&folder).unwrap();
-            let config = Config {
-                path: folder.join("library.sqlite"),
-                backup_dir: folder.join("backups"),
-                mmap_size_bytes: 0,
-            };
-            Self { folder, config }
-        }
-
-        fn backup(&self, schema_version: u32) -> (u32, Vec<String>) {
-            let path = self
-                .config
-                .backup_dir
-                .join(format!("schema-v{schema_version}.sqlite"));
-            let connection =
-                Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
-            let version = connection
-                .pragma_query_value(None, "user_version", |row| row.get(0))
-                .unwrap();
-            let mut statement = connection.prepare("SELECT body FROM note").unwrap();
-            let notes = statement
-                .query_map([], |row| row.get(0))
-                .unwrap()
-                .collect::<Result<_, _>>()
-                .unwrap();
-            (version, notes)
-        }
-    }
-
-    impl Drop for Scratch {
-        fn drop(&mut self) {
-            let _ = fs::remove_dir_all(&self.folder);
-        }
+    fn backup(scratch: &ScratchLibrary, schema_version: u32) -> (u32, Vec<String>) {
+        let connection = Connection::open_with_flags(
+            scratch.backup_path(schema_version),
+            OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )
+        .unwrap();
+        let version = connection
+            .pragma_query_value(None, "user_version", |row| row.get(0))
+            .unwrap();
+        let mut statement = connection.prepare("SELECT body FROM note").unwrap();
+        let notes = statement
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        (version, notes)
     }
 }
