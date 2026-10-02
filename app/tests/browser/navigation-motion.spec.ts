@@ -1,6 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import {
   boxOf,
   EXPANDED_MIN_WIDTH,
@@ -24,17 +23,6 @@ const ICON_MOVES = [
   { label: "History", startFrom: "/", move: "hands-sweep" },
   { label: "Settings", startFrom: "/", move: "gear-turn" },
 ] as const;
-
-const MOVING_ICONS = [
-  {
-    platform: "android",
-    belowWidth: EXPANDED_MIN_WIDTH,
-    where: "bar and rail",
-  },
-  { platform: "ios", belowWidth: MEDIUM_MIN_WIDTH, where: "phones" },
-] as const;
-
-const PLATFORMS: readonly Platform[] = ["android", "ios", "linux"];
 
 interface Motion {
   readonly transitions: readonly string[];
@@ -162,6 +150,60 @@ function testReducingMotion(): void {
   });
 }
 
+interface IconMoveScreens {
+  readonly belowWidth: number;
+  readonly where: string;
+}
+
+function testMovingIcons({ belowWidth, where }: IconMoveScreens): void {
+  for (const { label, startFrom, move } of ICON_MOVES) {
+    test(`moves the ${label} icon as it becomes selected`, async ({ page }) => {
+      await page.goto(startFrom);
+      test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
+      await settle(navigation(page));
+
+      const started = await animationsStartedWhile(page, () =>
+        openTabAndSettle(page, label),
+      );
+
+      expect(started).toContainEqual({
+        tab: label,
+        animation: `${move} ${ICON_MOVE_TIMING}`,
+      });
+    });
+  }
+
+  test("keeps the icon still while the section stays the same", async ({
+    page,
+  }) => {
+    await page.goto("/settings");
+    test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
+    const icon = tab(page, "Settings").locator("svg");
+    await settle(icon);
+
+    await page.getByRole("main").getByRole("link", { name: "About" }).click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "About" }),
+    ).toBeVisible();
+
+    expect(
+      await icon.evaluate(
+        (element) => element.getAnimations({ subtree: true }).length,
+      ),
+    ).toBe(0);
+  });
+}
+
+function testCrossfadingTheFill(): void {
+  test("crossfades the selected icon's fill", async ({ page }) => {
+    await page.goto("/history");
+
+    const icon = await motionIn(tab(page, "History").locator("svg"));
+
+    expect(icon.transitions).toEqual([FADE]);
+  });
+}
+
 function testTurningTheScreen(): void {
   test("keeps the selected tab still when the screen turns and back", async ({
     page,
@@ -226,6 +268,8 @@ test.describe("on Android", () => {
     expect(motion).toEqual({ transitions: [FADE], animations: [] });
   });
 
+  testMovingIcons({ belowWidth: EXPANDED_MIN_WIDTH, where: "bar and rail" });
+  testCrossfadingTheFill();
   testTurningTheScreen();
   testReducingMotion();
 });
@@ -296,6 +340,8 @@ test.describe("on iOS", () => {
     expect(motion).toEqual({ transitions: [FADE], animations: [] });
   });
 
+  testMovingIcons({ belowWidth: MEDIUM_MIN_WIDTH, where: "phones" });
+  testCrossfadingTheFill();
   testReducingMotion();
 });
 
@@ -312,64 +358,6 @@ test.describe("on desktop", () => {
     expect(motion).toEqual({ transitions: [FADE], animations: [] });
   });
 
+  testCrossfadingTheFill();
   testReducingMotion();
 });
-
-for (const { platform, belowWidth, where } of MOVING_ICONS) {
-  test.describe(`on ${platform}`, () => {
-    test.use(onPlatform(platform));
-
-    for (const { label, startFrom, move } of ICON_MOVES) {
-      test(`moves the ${label} icon as it becomes selected`, async ({
-        page,
-      }) => {
-        await page.goto(startFrom);
-        test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
-        await settle(navigation(page));
-
-        const started = await animationsStartedWhile(page, () =>
-          openTabAndSettle(page, label),
-        );
-
-        expect(started).toContainEqual({
-          tab: label,
-          animation: `${move} ${ICON_MOVE_TIMING}`,
-        });
-      });
-    }
-
-    test("keeps the icon still while the section stays the same", async ({
-      page,
-    }) => {
-      await page.goto("/settings");
-      test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
-      const icon = tab(page, "Settings").locator("svg");
-      await settle(icon);
-
-      await page.getByRole("main").getByRole("link", { name: "About" }).click();
-      await expect(
-        page.getByRole("heading", { level: 1, name: "About" }),
-      ).toBeVisible();
-
-      expect(
-        await icon.evaluate(
-          (element) => element.getAnimations({ subtree: true }).length,
-        ),
-      ).toBe(0);
-    });
-  });
-}
-
-for (const platform of PLATFORMS) {
-  test.describe(`on ${platform}`, () => {
-    test.use(onPlatform(platform));
-
-    test("crossfades the selected icon's fill", async ({ page }) => {
-      await page.goto("/history");
-
-      const icon = await motionIn(tab(page, "History").locator("svg"));
-
-      expect(icon.transitions).toEqual([FADE]);
-    });
-  });
-}
