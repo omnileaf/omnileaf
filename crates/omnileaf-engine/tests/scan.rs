@@ -127,6 +127,26 @@ async fn scans_each_series_folder_into_a_series_of_its_books() {
 }
 
 #[tokio::test]
+async fn makes_a_book_at_the_top_of_the_folder_its_own_series() {
+    let comics = TempFolder::new("scan-one-shots");
+    write_book(&comics.path().join("Sample One-Shot.cbz"), 1);
+    let chapter = comics.path().join("Sample Chapter");
+    fs::create_dir(&chapter).unwrap();
+    fs::write(
+        chapter.join("001.png"),
+        page_png(2, 0, PageShape::Portrait).unwrap(),
+    )
+    .unwrap();
+
+    let (scanned, _) = Scanned::folder("scan-one-shots", comics.path()).await;
+
+    assert_eq!(
+        scanned.series(),
+        owned(&[("Sample Chapter", 1), ("Sample One-Shot", 1)])
+    );
+}
+
+#[tokio::test]
 async fn leaves_out_macos_resource_folders_and_hidden_files() {
     let comics = TempFolder::new("scan-clutter");
     for (path, seed) in [
