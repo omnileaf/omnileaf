@@ -5,6 +5,7 @@
 
 use std::{
     env, fs,
+    ops::Deref,
     path::{Path, PathBuf},
     process,
 };
@@ -31,8 +32,12 @@ impl ScratchFolder {
         fs::write(&path, bytes).unwrap();
         path
     }
+}
 
-    pub(crate) fn path(&self) -> &Path {
+impl Deref for ScratchFolder {
+    type Target = Path;
+
+    fn deref(&self) -> &Path {
         &self.0
     }
 }

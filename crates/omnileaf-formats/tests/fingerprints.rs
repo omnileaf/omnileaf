@@ -88,7 +88,7 @@ fn an_image_folder_shares_the_fingerprint_of_its_archive() {
     scratch.write("Chapter 01/ComicInfo.xml", b"<ComicInfo/>");
     let packed = fingerprint_book(&archive(&scratch, &pages(), Compression::Deflated)).unwrap();
 
-    let fingerprint = fingerprint_book(&scratch.path().join("Chapter 01"));
+    let fingerprint = fingerprint_book(&scratch.join("Chapter 01"));
 
     assert_eq!(fingerprint.unwrap(), packed);
 }
@@ -119,7 +119,7 @@ fn a_folder_without_images_has_no_fingerprint() {
     let scratch = ScratchFolder::new("empty-folder");
     scratch.write("Chapter 01/notes.txt", b"not a page");
 
-    let error = fingerprint_book(&scratch.path().join("Chapter 01")).unwrap_err();
+    let error = fingerprint_book(&scratch.join("Chapter 01")).unwrap_err();
 
     assert!(
         matches!(

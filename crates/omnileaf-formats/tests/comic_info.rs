@@ -146,7 +146,7 @@ fn reads_comic_info_from_an_archive_and_a_folder() {
     let archive_path = scratch.write("book.cbz", &archive);
     scratch.write("Chapter 01/1.png", &page);
     scratch.write("Chapter 01/ComicInfo.xml", FULL.as_bytes());
-    let folder = scratch.path().join("Chapter 01");
+    let folder = scratch.join("Chapter 01");
 
     for path in [archive_path, folder] {
         let info = open_book(&path).unwrap().comic_info().unwrap().unwrap();
