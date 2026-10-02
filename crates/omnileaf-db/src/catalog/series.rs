@@ -30,6 +30,7 @@ impl NewSeries {
     }
 }
 
+#[tracing::instrument(skip_all, fields(series = %series.id))]
 pub fn add_series(transaction: &Transaction<'_>, series: &NewSeries) -> Result<(), Error> {
     transaction
         .prepare(

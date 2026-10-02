@@ -12,6 +12,7 @@ pub struct NewBook {
 }
 
 /// Fails with [`Error::UnknownSeries`] when the book's series isn't in the catalog yet.
+#[tracing::instrument(skip_all, fields(book = %book.id, series = %book.series))]
 pub fn add_book(transaction: &Transaction<'_>, book: &NewBook) -> Result<(), Error> {
     let added = transaction
         .prepare(
