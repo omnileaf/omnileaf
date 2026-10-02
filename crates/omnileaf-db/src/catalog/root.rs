@@ -111,10 +111,10 @@ fn stored_location(locator: &RootLocator) -> (&'static str, Vec<u8>) {
 fn stored_locator(row: &Row<'_>) -> rusqlite::Result<RootLocator> {
     let kind: String = row.get(LOCATOR_KIND_COLUMN)?;
     if kind != PATH_LOCATOR {
-        return Err(rusqlite::Error::InvalidColumnType(
+        return Err(rusqlite::Error::FromSqlConversionFailure(
             LOCATOR_KIND_COLUMN,
-            kind,
             Type::Text,
+            Box::new(Error::UnsupportedLocator { kind }),
         ));
     }
     native_path::from_bytes(row.get(LOCATION_COLUMN)?)

@@ -298,3 +298,35 @@ async fn gives_a_removed_folder_id_to_no_folder_added_later() {
 
     assert_ne!(added_later, manga);
 }
+
+#[tokio::test]
+async fn names_the_locator_of_a_stored_folder_it_cannot_open() {
+    let library = Library::open("root-unsupported-locator");
+    library
+        .database
+        .write(|transaction| {
+            transaction.execute(
+                "INSERT INTO library_root (kind, locator_kind, location, added_at_ms)
+                 VALUES ('linked', 'android_tree', x'01', 0)",
+                [],
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+    let request = first_page(1);
+
+    let outcome = library
+        .database
+        .read(move |connection| library_roots(connection, &request))
+        .await;
+
+    assert!(matches!(
+        outcome,
+        Err(Error::Statement(rusqlite::Error::FromSqlConversionFailure(_, _, source)))
+            if matches!(
+                source.downcast_ref::<Error>(),
+                Some(Error::UnsupportedLocator { kind }) if kind == "android_tree"
+            )
+    ));
+}

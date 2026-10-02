@@ -43,6 +43,8 @@ pub enum Error {
     UnknownRoot { id: RootId },
     #[error("remove library folder {id}, the home folder the library lives in")]
     HomeRoot { id: RootId },
+    #[error("read a library folder stored as a {kind} locator, which this build can't open")]
+    UnsupportedLocator { kind: String },
     #[error("read a library folder id that isn't one the library gave out")]
     MalformedRootId,
     #[error("ask for a page of {requested} items, outside the 1 to {max} a page holds")]
