@@ -29,10 +29,17 @@ enum Variant {
     RenamedArchive,
     EditedComicInfo,
     ChangedPage,
+    Folder,
+}
+
+#[derive(Clone, Copy)]
+enum Layout {
+    Archive(Compression),
+    Folder,
 }
 
 struct Recipe {
-    compression: Compression,
+    layout: Layout,
     name: &'static str,
     comic_info: &'static str,
     reversed: bool,
@@ -40,7 +47,7 @@ struct Recipe {
 }
 
 const ORIGINAL: Recipe = Recipe {
-    compression: Compression::Stored,
+    layout: Layout::Archive(Compression::Stored),
     name: "Sample Series 05 v01.cbz",
     comic_info: COMIC_INFO,
     reversed: false,
@@ -52,7 +59,7 @@ impl Variant {
         match self {
             Self::Stored => ORIGINAL,
             Self::Deflated => Recipe {
-                compression: Compression::Deflated,
+                layout: Layout::Archive(Compression::Deflated),
                 ..ORIGINAL
             },
             Self::ReorderedEntries => Recipe {
@@ -69,6 +76,11 @@ impl Variant {
             },
             Self::ChangedPage => Recipe {
                 changed_page: Some(CHANGED_PAGE),
+                ..ORIGINAL
+            },
+            Self::Folder => Recipe {
+                layout: Layout::Folder,
+                name: "Sample Series 05 v01",
                 ..ORIGINAL
             },
         }
@@ -103,7 +115,35 @@ impl Recipe {
     }
 
     fn write(&self, scratch: &ScratchFolder) -> PathBuf {
-        scratch.write(self.name, &cbz(&self.entries(), self.compression).unwrap())
+        match self.layout {
+            Layout::Archive(compression) => {
+                scratch.write(self.name, &cbz(&self.entries(), compression).unwrap())
+            }
+            Layout::Folder => {
+                for entry in self.entries() {
+                    scratch.write(&format!("{}/{}", self.name, entry.name), &entry.bytes);
+                }
+                scratch.join(self.name)
+            }
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+enum Kind {
+    Pmf1,
+    Dir1,
+    Raw1,
+}
+
+impl From<FingerprintKind> for Kind {
+    fn from(kind: FingerprintKind) -> Self {
+        match kind {
+            FingerprintKind::Pmf1 => Self::Pmf1,
+            FingerprintKind::Dir1 => Self::Dir1,
+            FingerprintKind::Raw1 => Self::Raw1,
+        }
     }
 }
 
@@ -115,6 +155,7 @@ struct Golden {
 #[derive(Deserialize)]
 struct Vector {
     book: Variant,
+    kind: Kind,
     fingerprint: String,
 }
 
@@ -133,8 +174,8 @@ fn fingerprints_match_the_golden_vectors() {
         let fingerprint = vector.book.fingerprint();
 
         assert_eq!(
-            fingerprint.kind(),
-            FingerprintKind::Pmf1,
+            Kind::from(fingerprint.kind()),
+            vector.kind,
             "{:?}",
             vector.book
         );
