@@ -20,9 +20,9 @@ const COMIC_INFO: &str = "<ComicInfo><Series>Sample Series 05</Series></ComicInf
 const EDITED_COMIC_INFO: &str =
     "<ComicInfo><Series>Sample Series 05</Series><Title>Sample Title</Title></ComicInfo>";
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-enum Book {
+enum Variant {
     Stored,
     Deflated,
     ReorderedEntries,
@@ -31,16 +31,60 @@ enum Book {
     ChangedPage,
 }
 
-impl Book {
-    fn write(self, scratch: &ScratchFolder) -> PathBuf {
-        let comic_info = if self == Self::EditedComicInfo {
-            EDITED_COMIC_INFO
-        } else {
-            COMIC_INFO
-        };
+struct Recipe {
+    compression: Compression,
+    name: &'static str,
+    comic_info: &'static str,
+    reversed: bool,
+    changed_page: Option<u32>,
+}
+
+const ORIGINAL: Recipe = Recipe {
+    compression: Compression::Stored,
+    name: "Sample Series 05 v01.cbz",
+    comic_info: COMIC_INFO,
+    reversed: false,
+    changed_page: None,
+};
+
+impl Variant {
+    const fn recipe(self) -> Recipe {
+        match self {
+            Self::Stored => ORIGINAL,
+            Self::Deflated => Recipe {
+                compression: Compression::Deflated,
+                ..ORIGINAL
+            },
+            Self::ReorderedEntries => Recipe {
+                reversed: true,
+                ..ORIGINAL
+            },
+            Self::RenamedArchive => Recipe {
+                name: "Another Name.cbz",
+                ..ORIGINAL
+            },
+            Self::EditedComicInfo => Recipe {
+                comic_info: EDITED_COMIC_INFO,
+                ..ORIGINAL
+            },
+            Self::ChangedPage => Recipe {
+                changed_page: Some(CHANGED_PAGE),
+                ..ORIGINAL
+            },
+        }
+    }
+
+    fn fingerprint(self) -> Fingerprint {
+        let scratch = ScratchFolder::new(&format!("{self:?}"));
+        fingerprint_book(&self.recipe().write(&scratch)).unwrap()
+    }
+}
+
+impl Recipe {
+    fn entries(&self) -> Vec<ArchiveEntry> {
         let mut entries: Vec<ArchiveEntry> = (1..=PAGE_COUNT)
             .map(|index| {
-                let content = if self == Self::ChangedPage && index == CHANGED_PAGE {
+                let content = if self.changed_page == Some(index) {
                     format!("Sample page {index:03}, redrawn\n")
                 } else {
                     format!("Sample page {index:03}\n")
@@ -50,27 +94,16 @@ impl Book {
                     content.repeat(PAGE_REPEATS).into_bytes(),
                 )
             })
-            .chain([entry("ComicInfo.xml", comic_info.as_bytes().to_vec())])
+            .chain([entry("ComicInfo.xml", self.comic_info.as_bytes().to_vec())])
             .collect();
-        if self == Self::ReorderedEntries {
+        if self.reversed {
             entries.reverse();
         }
-        let compression = if self == Self::Deflated {
-            Compression::Deflated
-        } else {
-            Compression::Stored
-        };
-        let name = if self == Self::RenamedArchive {
-            "Another Name.cbz"
-        } else {
-            "Sample Series 05 v01.cbz"
-        };
-        scratch.write(name, &cbz(&entries, compression).unwrap())
+        entries
     }
 
-    fn fingerprint(self) -> Fingerprint {
-        let scratch = ScratchFolder::new(&format!("{self:?}"));
-        fingerprint_book(&self.write(&scratch)).unwrap()
+    fn write(&self, scratch: &ScratchFolder) -> PathBuf {
+        scratch.write(self.name, &cbz(&self.entries(), self.compression).unwrap())
     }
 }
 
@@ -81,7 +114,7 @@ struct Golden {
 
 #[derive(Deserialize)]
 struct Vector {
-    book: Book,
+    book: Variant,
     fingerprint: String,
 }
 
@@ -116,24 +149,24 @@ fn fingerprints_match_the_golden_vectors() {
 
 #[test]
 fn repacking_reordering_renaming_and_editing_metadata_keep_the_fingerprint() {
-    let original = Book::Stored.fingerprint();
+    let original = Variant::Stored.fingerprint();
 
     let others = [
-        Book::Deflated,
-        Book::ReorderedEntries,
-        Book::RenamedArchive,
-        Book::EditedComicInfo,
+        Variant::Deflated,
+        Variant::ReorderedEntries,
+        Variant::RenamedArchive,
+        Variant::EditedComicInfo,
     ]
-    .map(Book::fingerprint);
+    .map(Variant::fingerprint);
 
     assert_eq!(others, [original; 4]);
 }
 
 #[test]
 fn changing_a_page_changes_the_fingerprint() {
-    let original = Book::Stored.fingerprint();
+    let original = Variant::Stored.fingerprint();
 
-    let changed = Book::ChangedPage.fingerprint();
+    let changed = Variant::ChangedPage.fingerprint();
 
     assert_ne!(changed, original);
 }
