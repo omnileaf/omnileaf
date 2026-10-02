@@ -1,10 +1,15 @@
 import type { Locator, Page } from "@playwright/test";
 
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
-import { expect, onPlatform, test } from "./fixtures.ts";
-
-const MEDIUM_MIN_WIDTH = 600;
-const EXPANDED_MIN_WIDTH = 840;
+import {
+  boxOf,
+  EXPANDED_MIN_WIDTH,
+  expect,
+  MEDIUM_MIN_WIDTH,
+  onPlatform,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
 
 const FADE = "0.15s ease-out";
 const GROW = "0.2s cubic-bezier(0.2, 0, 0, 1)";
@@ -60,24 +65,12 @@ function glassPill(page: Page): Locator {
   return navigation(page).locator('li[aria-hidden="true"]');
 }
 
-function widthOf(page: Page): number {
-  return page.viewportSize()?.width ?? 0;
-}
-
 async function settle(locator: Locator): Promise<void> {
   await locator.evaluate((element) =>
     Promise.all(element.getAnimations().map((motion) => motion.finished)).then(
       () => undefined,
     ),
   );
-}
-
-async function boxOf(locator: Locator) {
-  const box = await locator.boundingBox();
-  if (box === null) {
-    throw new Error("the element has no layout box");
-  }
-  return box;
 }
 
 async function openHistoryAndSettle(page: Page): Promise<void> {
@@ -93,7 +86,10 @@ test.describe("on Android", () => {
     page,
   }) => {
     await page.goto("/history");
-    test.skip(widthOf(page) >= EXPANDED_MIN_WIDTH, "bar and rail only");
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "bar and rail only",
+    );
 
     const current = await motionIn(tab(page, "History"));
     const previous = await motionIn(tab(page, "Library"));
@@ -104,7 +100,7 @@ test.describe("on Android", () => {
 
   test("only fades the sidebar's highlight", async ({ page }) => {
     await page.goto("/history");
-    test.skip(widthOf(page) < EXPANDED_MIN_WIDTH, "sidebar only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "sidebar only");
 
     const motion = await motionIn(navigation(page));
 
@@ -117,7 +113,7 @@ test.describe("on iOS", () => {
 
   test("slides one glass pill under the new tab", async ({ page }) => {
     await page.goto("/");
-    test.skip(widthOf(page) >= MEDIUM_MIN_WIDTH, "phones only");
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
     await expect(glassPill(page)).toHaveCount(1);
 
     await openHistoryAndSettle(page);
@@ -136,7 +132,7 @@ test.describe("on iOS", () => {
     page,
   }) => {
     await page.goto("/");
-    test.skip(widthOf(page) >= MEDIUM_MIN_WIDTH, "phones only");
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
     await expect(
       page.getByRole("heading", { level: 1, name: "Library" }),
     ).toBeVisible();
@@ -154,7 +150,7 @@ test.describe("on iOS", () => {
 
   test("bounces the new tab's icon", async ({ page }) => {
     await page.goto("/history");
-    test.skip(widthOf(page) >= MEDIUM_MIN_WIDTH, "phones only");
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
 
     const current = await motionIn(tab(page, "History"));
 
@@ -163,7 +159,10 @@ test.describe("on iOS", () => {
 
   test("only fades the rail's and sidebar's highlight", async ({ page }) => {
     await page.goto("/history");
-    test.skip(widthOf(page) < MEDIUM_MIN_WIDTH, "tablets and desktops only");
+    test.skip(
+      viewportOf(page).width < MEDIUM_MIN_WIDTH,
+      "tablets and desktops only",
+    );
 
     const motion = await motionIn(navigation(page));
 
