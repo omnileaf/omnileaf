@@ -1,21 +1,13 @@
 <script lang="ts">
-  import {
-    BookOpen,
-    Compass,
-    type LucideIcon,
-    RotateCcwClock,
-    Settings,
-  } from "@lucide/svelte";
-
   import { resolve } from "$app/paths";
   import { m } from "$lib/paraglide/messages.js";
 
+  import NavigationIcon from "./NavigationIcon.svelte";
   import { type Section, SECTION_ROUTES } from "./sections";
 
   interface Destination {
     readonly section: Section;
     readonly label: () => string;
-    readonly icon: LucideIcon;
     readonly isAtSidebarEnd: boolean;
   }
 
@@ -25,25 +17,21 @@
     {
       section: "library",
       label: m.library_title,
-      icon: BookOpen,
       isAtSidebarEnd: false,
     },
     {
       section: "browse",
       label: m.browse_title,
-      icon: Compass,
       isAtSidebarEnd: false,
     },
     {
       section: "history",
       label: m.history_title,
-      icon: RotateCcwClock,
       isAtSidebarEnd: false,
     },
     {
       section: "settings",
       label: m.settings_title,
-      icon: Settings,
       isAtSidebarEnd: true,
     },
   ];
@@ -62,7 +50,7 @@
     class="flex p-sm medium:flex-col medium:gap-sm medium:pbs-lg expanded:flex-1 expanded:gap-xs expanded:px-md expanded:pbs-none"
   >
     {#each DESTINATIONS as destination (destination.section)}
-      {@const isCurrent = destination.section === current}
+      {@const isSelected = destination.section === current}
       <li
         class={[
           "flex-1 medium:flex-none",
@@ -71,21 +59,25 @@
       >
         <a
           href={resolve(SECTION_ROUTES[destination.section])}
-          aria-current={isCurrent ? "page" : undefined}
+          aria-current={isSelected ? "page" : undefined}
           class={[
             "flex flex-col items-center gap-xs py-xs text-caption min-block-touch-target expanded:flex-row expanded:gap-md expanded:rounded-control expanded:px-md expanded:text-body",
-            isCurrent
-              ? "font-bold text-foreground expanded:bg-accent-soft"
+            isSelected
+              ? "font-bold text-accent expanded:bg-accent-soft"
               : "font-medium text-muted",
           ]}
         >
           <span
             class={[
               "flex items-center justify-center rounded-card px-lg py-xs expanded:p-none",
-              isCurrent && "bg-accent-soft expanded:bg-transparent",
+              isSelected && "bg-accent-soft expanded:bg-transparent",
             ]}
           >
-            <destination.icon size={ICON_SIZE} />
+            <NavigationIcon
+              section={destination.section}
+              {isSelected}
+              size={ICON_SIZE}
+            />
           </span>
           {destination.label()}
         </a>
