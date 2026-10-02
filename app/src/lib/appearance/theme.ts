@@ -1,5 +1,7 @@
-export type ThemePreference = "system" | "light" | "dark";
-export type Theme = "light" | "dark";
+import type { Theme } from "$lib/ipc/bindings";
+
+export type { Theme };
+export type ThemePreference = "system" | Theme;
 
 export const THEME_PREFERENCES: readonly ThemePreference[] = [
   "system",
