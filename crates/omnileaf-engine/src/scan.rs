@@ -1,4 +1,9 @@
-use std::{collections::BTreeSet, error::Error, fs, io, path::PathBuf};
+use std::{
+    collections::BTreeSet,
+    error::Error,
+    fs, io,
+    path::{Path, PathBuf},
+};
 
 use omnileaf_db::{
     Database,
@@ -6,7 +11,7 @@ use omnileaf_db::{
         BookFile, LibraryRoot, NewSeries, RootId, RootLocator, ScannedBook, record_scanned_book,
     },
 };
-use omnileaf_formats::{FormatError, fingerprint_book, open_book};
+use omnileaf_formats::{Book, FormatError, fingerprint_book, open_book};
 use omnileaf_sync_proto::{KeyError, SeriesId};
 use serde::Serialize;
 use specta::Type;
@@ -129,8 +134,8 @@ fn read_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Unreadab
 }
 
 fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
-    let book = open_book(&found.path)?;
-    let title = file_stem(&found.path);
+    let mut book = open_book(&found.path)?;
+    let title = comic_info_title_or_name(&mut book, &found.path);
     let fingerprint = fingerprint_book(&found.path)?;
     let metadata = fs::metadata(&found.path)?;
     let size_bytes = if metadata.is_dir() {
@@ -154,6 +159,22 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
             modified_at_ms: i64::try_from(unix_ms(metadata.modified()?)).unwrap_or(i64::MAX),
         },
     })
+}
+
+fn comic_info_title_or_name(book: &mut Book, path: &Path) -> String {
+    let comic_info = book.comic_info().unwrap_or_else(|error| {
+        tracing::warn!(
+            path = %path.display(),
+            error = %describe(&error),
+            "title a book by its name since its ComicInfo can't be read"
+        );
+        None
+    });
+    comic_info
+        .and_then(|info| info.title)
+        .map(|title| title.trim().to_owned())
+        .filter(|title| !title.is_empty())
+        .unwrap_or_else(|| file_stem(path))
 }
 
 fn describe(error: &dyn Error) -> String {

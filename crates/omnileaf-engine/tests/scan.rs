@@ -56,6 +56,10 @@ impl Scanned {
         )
     }
 
+    fn book_titles(&self) -> Vec<String> {
+        self.rows("SELECT title FROM book ORDER BY title", |row| row.get(0))
+    }
+
     fn rows<T>(
         &self,
         sql: &str,
@@ -77,12 +81,22 @@ impl Scanned {
 }
 
 fn write_book(path: &Path, seed: u64) {
-    let entries: Vec<ArchiveEntry> = (0..2)
+    write_book_with(path, seed, None);
+}
+
+fn write_book_with(path: &Path, seed: u64, comic_info: Option<&str>) {
+    let mut entries: Vec<ArchiveEntry> = (0..2)
         .map(|index| ArchiveEntry {
             name: format!("{:03}.png", index + 1),
             bytes: page_png(seed, index, PageShape::Portrait).unwrap(),
         })
         .collect();
+    if let Some(xml) = comic_info {
+        entries.push(ArchiveEntry {
+            name: "ComicInfo.xml".to_owned(),
+            bytes: xml.as_bytes().to_vec(),
+        });
+    }
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(path, cbz(&entries, Compression::Stored).unwrap()).unwrap();
 }
@@ -173,6 +187,21 @@ async fn counts_the_books_it_cannot_read_and_carries_on() {
 
     assert_eq!(scanned.series(), owned(&[("Sample Series 01", 1)]));
     assert_eq!((scan.books, scan.unreadable_books), (1, 1));
+}
+
+#[tokio::test]
+async fn titles_a_book_from_its_comic_info_or_else_its_file_name() {
+    let comics = TempFolder::new("scan-titles");
+    write_book_with(
+        &comics.path().join("Sample Series 01/v01.cbz"),
+        1,
+        Some("<ComicInfo><Title>Sample Story</Title></ComicInfo>"),
+    );
+    write_book(&comics.path().join("Sample Series 01/v02.cbz"), 2);
+
+    let (scanned, _) = Scanned::folder("scan-titles", comics.path()).await;
+
+    assert_eq!(scanned.book_titles(), ["Sample Story", "v02"]);
 }
 
 #[tokio::test]
