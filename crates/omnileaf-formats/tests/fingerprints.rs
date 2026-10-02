@@ -9,7 +9,9 @@ use std::{fs, path::PathBuf};
 
 use flate2::Crc;
 use omnileaf_formats::{FormatError, fingerprint_book};
-use omnileaf_sync_proto::{Fingerprint, FingerprintError, FingerprintKind, ImageEntry};
+use omnileaf_sync_proto::{
+    Fingerprint, FingerprintError, FingerprintKind, FolderImage, FolderManifest, ImageEntry,
+};
 use omnileaf_testkit::{ArchiveEntry, Compression, cbz};
 use support::{ScratchFolder, entry};
 
@@ -80,17 +82,26 @@ fn counts_every_image_extension_even_ones_the_reader_cannot_show() {
 }
 
 #[test]
-fn an_image_folder_shares_the_fingerprint_of_its_archive() {
+fn an_image_folder_hashes_its_image_names_sizes_and_outer_edges() {
     let scratch = ScratchFolder::new("folder");
     for page in pages() {
         scratch.write(&format!("Chapter 01/{}", page.name), &page.bytes);
     }
     scratch.write("Chapter 01/ComicInfo.xml", b"<ComicInfo/>");
-    let packed = fingerprint_book(&archive(&scratch, &pages(), Compression::Deflated)).unwrap();
+    scratch.write("Chapter 01/.cover.png", &page(8));
+    let manifest = FolderManifest::new(pages().into_iter().map(|page| FolderImage {
+        size: page.bytes.len() as u64,
+        name: page.name,
+    }))
+    .unwrap();
 
-    let fingerprint = fingerprint_book(&scratch.join("Chapter 01"));
+    let fingerprint = fingerprint_book(&scratch.join("Chapter 01")).unwrap();
 
-    assert_eq!(fingerprint.unwrap(), packed);
+    assert_eq!(fingerprint.kind(), FingerprintKind::Dir1);
+    assert_eq!(
+        fingerprint,
+        Fingerprint::dir1(&manifest, &page(1), &page(3)).unwrap()
+    );
 }
 
 #[test]

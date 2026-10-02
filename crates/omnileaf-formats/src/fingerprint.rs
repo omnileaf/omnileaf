@@ -1,12 +1,14 @@
 use std::{
+    collections::BTreeMap,
     fs::File,
     io::{self, Read, Seek, SeekFrom},
     ops::Range,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
-use flate2::CrcReader;
-use omnileaf_sync_proto::{Fingerprint, FingerprintError, ImageEntry, RAW1_SAMPLE_COUNT};
+use omnileaf_sync_proto::{
+    Fingerprint, FingerprintError, FolderImage, FolderManifest, ImageEntry, RAW1_SAMPLE_COUNT,
+};
 
 use crate::{
     FormatError, Limits,
@@ -20,7 +22,7 @@ pub fn fingerprint_book(path: &Path) -> Result<Fingerprint, FormatError> {
     fingerprint_book_with(path, &Limits::default())
 }
 
-/// Fingerprints a book by its images' CRC-32s and sizes, falling back to sampled bytes for an archive without images.
+/// Fingerprints an archive by its images' CRC-32s and sizes, or by sampled bytes when it has none, and a folder by its images' names, sizes and outer edges.
 pub fn fingerprint_book_with(path: &Path, limits: &Limits) -> Result<Fingerprint, FormatError> {
     match Container::of(path)? {
         Container::Folder => folder_fingerprint(path, limits),
@@ -49,29 +51,50 @@ fn archive_fingerprint(path: &Path, limits: &Limits) -> Result<Fingerprint, Form
     Fingerprint::pmf1(images).map_err(|source| fingerprint_failed(path, source))
 }
 
+/// Reads only the head of the first image and the tail of the last, so scanning never reads a whole folder.
 fn folder_fingerprint(path: &Path, limits: &Limits) -> Result<Fingerprint, FormatError> {
+    let mut files = BTreeMap::new();
     let mut images = Vec::new();
     for entry in read_folder(path, limits)? {
         let file = entry.path();
-        let read_failed = |source| FormatError::Read {
-            path: file.clone(),
-            source,
-        };
+        let metadata = entry
+            .metadata()
+            .map_err(|source| read_failed(&file, source))?;
         let name = entry.file_name().to_string_lossy().into_owned();
-        if entry.metadata().map_err(read_failed)?.is_file() && is_fingerprinted_image(&name) {
-            images.push(image_entry(&file).map_err(read_failed)?);
+        if metadata.is_file() && is_fingerprinted_image(&name) {
+            images.push(FolderImage {
+                name: name.clone(),
+                size: metadata.len(),
+            });
+            files.insert(name, file);
         }
     }
-    Fingerprint::pmf1(images).map_err(|source| fingerprint_failed(path, source))
+    let manifest =
+        FolderManifest::new(images).map_err(|source| fingerprint_failed(path, source))?;
+    let head = read_image_range(&files, manifest.first(), manifest.head_range())?;
+    let tail = read_image_range(&files, manifest.last(), manifest.tail_range())?;
+    Fingerprint::dir1(&manifest, &head, &tail).map_err(|source| fingerprint_failed(path, source))
 }
 
-fn image_entry(file: &Path) -> io::Result<ImageEntry> {
-    let mut reader = CrcReader::new(File::open(file)?);
-    let size = io::copy(&mut reader, &mut io::sink())?;
-    Ok(ImageEntry {
-        crc32: reader.crc().sum(),
-        size,
-    })
+fn read_image_range(
+    files: &BTreeMap<String, PathBuf>,
+    image: &FolderImage,
+    range: Range<u64>,
+) -> Result<Vec<u8>, FormatError> {
+    let file = files.get(&image.name).ok_or_else(|| FormatError::Read {
+        path: PathBuf::from(&image.name),
+        source: io::ErrorKind::NotFound.into(),
+    })?;
+    File::open(file)
+        .and_then(|mut opened| read_range(&mut opened, range))
+        .map_err(|source| read_failed(file, source))
+}
+
+fn read_failed(path: &Path, source: io::Error) -> FormatError {
+    FormatError::Read {
+        path: path.to_owned(),
+        source,
+    }
 }
 
 fn raw_fingerprint(path: &Path, mut file: File) -> Result<Fingerprint, FormatError> {
