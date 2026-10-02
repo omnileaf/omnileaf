@@ -3,8 +3,6 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::ipc_error::IpcError;
-
 #[cfg(target_os = "android")]
 pub(crate) use android::{match_theme, plugin};
 
@@ -42,7 +40,10 @@ impl BarIcons {
     clippy::unused_async,
     reason = "only Android waits for its activity to restyle the bars"
 )]
-pub(crate) async fn match_theme(_app: &tauri::AppHandle, _theme: Theme) -> Result<(), IpcError> {
+pub(crate) async fn match_theme(
+    _app: &tauri::AppHandle,
+    _theme: Theme,
+) -> Result<(), crate::ipc_error::IpcError> {
     Ok(())
 }
 
