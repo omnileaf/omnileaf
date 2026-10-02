@@ -3,6 +3,7 @@ use proptest::prelude::*;
 use uuid::Uuid;
 
 const RANDOM_V4: &str = "3f2b8c1e-9d4a-4e6b-8f1c-2a7d5e9b0c43";
+const VERSION_8_NCS_VARIANT: &str = "ab0d5155-6fef-852c-182f-d8add37808d4";
 
 #[test]
 fn gives_folder_names_that_normalise_alike_the_same_series_id() {
@@ -62,6 +63,13 @@ fn rejects_a_uuid_that_was_not_derived() {
     let parsed = RANDOM_V4.parse::<SeriesId>();
 
     assert!(matches!(parsed, Err(IdError::NotDerived { version: 4 })));
+}
+
+#[test]
+fn rejects_a_version_8_uuid_of_another_variant() {
+    let parsed = VERSION_8_NCS_VARIANT.parse::<SeriesId>();
+
+    assert!(matches!(parsed, Err(IdError::WrongVariant)));
 }
 
 #[test]

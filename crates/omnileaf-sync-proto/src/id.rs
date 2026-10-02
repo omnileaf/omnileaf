@@ -11,18 +11,22 @@ const CATEGORY_KEY: &str = "category.v1";
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum KeyError {
-    #[error("a natural key part of {length} bytes does not fit its 32-bit length prefix")]
+    #[error(
+        "derive an entity id: a natural key part of {length} bytes does not fit its 32-bit length prefix"
+    )]
     PartTooLong { length: usize },
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum IdError {
-    #[error("not a UUID")]
+    #[error("parse an entity id: the text is not a UUID")]
     Malformed(#[source] uuid::Error),
-    #[error("an id is 16 bytes, not {length}")]
+    #[error("read an entity id: {length} bytes where an id has 16")]
     WrongLength { length: usize },
-    #[error("a UUID of version {version} is not a derived id")]
+    #[error("read an entity id: a version {version} UUID where a derived id has version 8")]
     NotDerived { version: usize },
+    #[error("read an entity id: a UUID of a variant other than RFC 9562's")]
+    WrongVariant,
 }
 
 macro_rules! entity_id {
@@ -97,6 +101,7 @@ fn derive(key_name: &str, parts: &[&[u8]]) -> Result<Uuid, KeyError> {
 fn derived(uuid: Uuid) -> Result<Uuid, IdError> {
     match (uuid.get_version_num(), uuid.get_variant()) {
         (DERIVED_VERSION, Variant::RFC4122) => Ok(uuid),
+        (DERIVED_VERSION, _) => Err(IdError::WrongVariant),
         (version, _) => Err(IdError::NotDerived { version }),
     }
 }
