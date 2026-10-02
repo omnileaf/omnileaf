@@ -72,6 +72,20 @@ fn leaves_out_clutter_and_metadata() {
 }
 
 #[test]
+fn counts_entries_named_from_the_archive_root_with_a_leading_dot_slash() {
+    let scratch = ScratchFolder::new("dot-slash");
+    let prefixed: Vec<ArchiveEntry> = pages()
+        .into_iter()
+        .map(|page| entry(&format!("./{}", page.name), page.bytes))
+        .collect();
+    let plain = fingerprint_book(&archive(&scratch, &pages(), Compression::Stored)).unwrap();
+
+    let fingerprint = fingerprint_book(&archive(&scratch, &prefixed, Compression::Stored));
+
+    assert_eq!(fingerprint.unwrap(), plain);
+}
+
+#[test]
 fn counts_every_image_extension_even_ones_the_reader_cannot_show() {
     let scratch = ScratchFolder::new("extensions");
     let only_tiff = [entry("001.TIFF", page(1))];
