@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Plus } from "@lucide/svelte";
+
   import type { commands, FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
@@ -13,6 +15,8 @@
     folderUnreadable: m.library_folder_unreadable,
     internal: m.library_add_folder_failed,
   } satisfies Record<IpcErrorCode, () => string>;
+
+  const ICON_SIZE = 20;
 
   let { addFolder }: { addFolder: typeof commands.addLibraryFolder } = $props();
 
@@ -33,10 +37,11 @@
 
 <button
   type="button"
-  class="rounded-control bg-accent px-lg font-medium text-on-accent min-block-touch-target disabled:opacity-60"
+  class="inline-flex items-center gap-sm rounded-control bg-accent px-button font-semibold text-on-accent min-block-touch-target disabled:opacity-60"
   disabled={outcome.kind === "adding"}
   onclick={add}
 >
+  <Plus size={ICON_SIZE} aria-hidden="true" />
   {m.library_add_folder()}
 </button>
 <div role="status" class="mbs-sm">

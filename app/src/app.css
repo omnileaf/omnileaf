@@ -59,6 +59,7 @@
   --spacing-4xl: 4rem;
   --spacing-none: 0;
   --spacing-touch-target: 3rem;
+  --spacing-button: 1.25rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
