@@ -12,7 +12,7 @@ use omnileaf_db::{
         series_books, series_page,
     },
 };
-use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
+use omnileaf_sync_proto::{Fingerprint, ImageEntry, SeriesId};
 use support::ScratchFolder;
 
 const ONE_BOOK: &[&str] = &["Volume 01"];
@@ -328,7 +328,7 @@ fn new_series(name: &str, added_at_ms: i64, titles: &[&str]) -> (NewSeries, Vec<
     let books = titles
         .iter()
         .map(|&title| NewBook {
-            id: book_id(name, title),
+            fingerprint: fingerprint(name, title),
             series: series.id(),
             title: title.to_owned(),
             added_at_ms,
@@ -337,11 +337,11 @@ fn new_series(name: &str, added_at_ms: i64, titles: &[&str]) -> (NewSeries, Vec<
     (series, books)
 }
 
-fn book_id(series: &str, title: &str) -> BookId {
+fn fingerprint(series: &str, title: &str) -> Fingerprint {
     let name = format!("{series}/{title}");
     let pages = name.bytes().zip(0..).map(|(byte, crc32)| ImageEntry {
         crc32,
         size: u64::from(byte),
     });
-    BookId::local(&Fingerprint::pmf1(pages).unwrap())
+    Fingerprint::pmf1(pages).unwrap()
 }

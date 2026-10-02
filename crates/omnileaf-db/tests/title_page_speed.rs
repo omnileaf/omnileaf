@@ -13,7 +13,7 @@ use omnileaf_db::{
         NewBook, NewSeries, PageRequest, PageSize, SeriesOrder, add_book, add_series, series_page,
     },
 };
-use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
+use omnileaf_sync_proto::{Fingerprint, ImageEntry};
 use support::ScratchFolder;
 
 const SERIES_COUNT: u32 = 10_000;
@@ -62,7 +62,7 @@ async fn add_generated_series(database: &Database) {
                 let series = NewSeries::local(&name, i64::from(number)).unwrap();
                 add_series(transaction, &series)?;
                 let book = NewBook {
-                    id: book_id(number),
+                    fingerprint: fingerprint(number),
                     series: series.id(),
                     title: "Volume 01".to_owned(),
                     added_at_ms: i64::from(number),
@@ -98,10 +98,10 @@ async fn walk_title_pages(database: &Database) -> Vec<Duration> {
     }
 }
 
-fn book_id(number: u32) -> BookId {
+fn fingerprint(number: u32) -> Fingerprint {
     let page = ImageEntry {
         crc32: number,
         size: u64::from(number),
     };
-    BookId::local(&Fingerprint::pmf1([page]).unwrap())
+    Fingerprint::pmf1([page]).unwrap()
 }

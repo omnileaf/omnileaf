@@ -281,7 +281,7 @@ async fn add_books(database: &Database, series: SeriesId, count: u8) -> Result<(
         .write(move |transaction| {
             for index in 0..count {
                 let book = NewBook {
-                    id: book_id(series, index),
+                    fingerprint: fingerprint(series, index),
                     series,
                     title: format!("Volume {index:02}"),
                     added_at_ms: ADDED_AT_MS,
@@ -293,12 +293,16 @@ async fn add_books(database: &Database, series: SeriesId, count: u8) -> Result<(
         .await
 }
 
-fn book_id(series: SeriesId, index: u8) -> BookId {
+fn fingerprint(series: SeriesId, index: u8) -> Fingerprint {
     let page = ImageEntry {
         crc32: u32::from(index),
         size: u64::from_le_bytes(series.as_bytes()[..8].try_into().unwrap()),
     };
-    BookId::local(&Fingerprint::pmf1([page]).unwrap())
+    Fingerprint::pmf1([page]).unwrap()
+}
+
+fn book_id(series: SeriesId, index: u8) -> BookId {
+    BookId::local(&fingerprint(series, index))
 }
 
 async fn remove_book(database: &Database, book: BookId) {
