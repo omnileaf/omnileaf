@@ -9,10 +9,10 @@ use omnileaf_db::{
     Connection, Database, Error,
     catalog::{
         Cursor, NewBook, NewSeries, Page, PageRequest, PageSize, SeriesOrder, add_book, add_series,
-        series_page,
+        series_books, series_page,
     },
 };
-use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
+use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
 use support::ScratchFolder;
 
 const ONE_BOOK: &[&str] = &["Volume 01"];
@@ -91,6 +91,16 @@ fn series_titles(order: SeriesOrder) -> impl List + Clone {
         let page = series_page(connection, order, request)?;
         Ok(Page {
             items: page.items.into_iter().map(|series| series.title).collect(),
+            next: page.next,
+        })
+    }
+}
+
+fn book_titles(series: SeriesId) -> impl List + Clone {
+    move |connection: &Connection, request: &PageRequest| {
+        let page = series_books(connection, series, request)?;
+        Ok(Page {
+            items: page.items.into_iter().map(|book| book.title).collect(),
             next: page.next,
         })
     }
@@ -176,6 +186,63 @@ async fn leaves_series_without_books_off_the_library_pages() {
 }
 
 #[tokio::test]
+async fn pages_a_series_books_in_natural_order() {
+    let library = Library::with(&[
+        (
+            "Sample Series 01",
+            1,
+            &["Volume 10", "Volume 2", "volume 1", "Extra"],
+        ),
+        ("Sample Series 02", 1, &["Volume 3"]),
+    ])
+    .await;
+
+    let pages = library
+        .walk(book_titles(series_id("Sample Series 01")), 3)
+        .await;
+
+    assert_eq!(
+        pages,
+        [vec!["Extra", "volume 1", "Volume 2"], vec!["Volume 10"]]
+    );
+}
+
+#[tokio::test]
+async fn gives_a_series_missing_from_the_catalog_an_empty_page_of_books() {
+    let library = Library::with(&[("Sample Series 01", 1, ONE_BOOK)]).await;
+
+    let pages = library
+        .walk(book_titles(series_id("Sample Series 09")), 3)
+        .await;
+
+    assert_eq!(pages, [Vec::<String>::new()]);
+}
+
+#[tokio::test]
+async fn refuses_to_continue_series_and_books_from_each_other_s_cursors() {
+    let library = Library::with(&[
+        ("Sample Series 01", 1, &["Volume 01", "Volume 02"]),
+        ("Sample Series 02", 1, ONE_BOOK),
+    ])
+    .await;
+    let books = book_titles(series_id("Sample Series 01"));
+    let by_title = library.page(series_titles(SeriesOrder::Title), None, 1);
+    let title_cursor = by_title.await.unwrap().next;
+    let books_cursor = library.page(books.clone(), None, 1).await.unwrap().next;
+
+    let outcomes = [
+        library.page(books, title_cursor, 1).await,
+        library
+            .page(series_titles(SeriesOrder::Title), books_cursor, 1)
+            .await,
+    ];
+
+    for outcome in outcomes {
+        assert!(matches!(outcome, Err(Error::CursorForAnotherList)));
+    }
+}
+
+#[tokio::test]
 async fn refuses_to_continue_one_series_order_from_another_s_cursor() {
     let library = Library::with(&[
         ("Sample Series 01", 1, ONE_BOOK),
@@ -196,6 +263,7 @@ async fn refuses_to_continue_one_series_order_from_another_s_cursor() {
 fn refuses_a_cursor_the_library_did_not_give_out() {
     let short_added = format!("02{}", "00".repeat(15));
     let long_added = format!("02{}", "00".repeat(17));
+    let underived_book = format!("03{}", "00".repeat(16));
     let texts = [
         "",
         "0",
@@ -205,6 +273,7 @@ fn refuses_a_cursor_the_library_did_not_give_out() {
         "ff00000000000000000000",
         &short_added,
         &long_added,
+        &underived_book,
     ];
 
     let outcomes = texts.map(str::parse::<Cursor>);
@@ -224,6 +293,10 @@ fn holds_a_page_to_between_one_and_two_hundred_items() {
     let accepted = sizes.map(|size| PageSize::try_from(size).is_ok());
 
     assert_eq!(accepted, [false, true, true, false]);
+}
+
+fn series_id(folder_name: &str) -> SeriesId {
+    NewSeries::local(folder_name, 0).unwrap().id()
 }
 
 fn new_series(name: &str, added_at_ms: i64, titles: &[&str]) -> (NewSeries, Vec<NewBook>) {

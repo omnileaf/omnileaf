@@ -1,9 +1,13 @@
 use std::{fmt, str::FromStr};
 
+use omnileaf_sync_proto::BookId;
+
 use crate::Error;
 
 const TITLE_TAG: u8 = 1;
 const ADDED_TAG: u8 = 2;
+const BOOK_TAG: u8 = 3;
+const ID_LENGTH: usize = 16;
 const ROW_KEY_LENGTH: usize = 8;
 const HEX_RADIX: u32 = 16;
 
@@ -16,6 +20,7 @@ pub struct Cursor(pub(crate) Position);
 pub(crate) enum Position {
     Title { sort_key: Vec<u8>, local_id: i64 },
     Added { added_at_ms: i64, local_id: i64 },
+    Book { sort_key: Vec<u8>, id: BookId },
 }
 
 impl Position {
@@ -33,6 +38,7 @@ impl Position {
                 &local_id.to_be_bytes(),
             ]
             .concat(),
+            Self::Book { sort_key, id } => [&[BOOK_TAG][..], id.as_bytes(), sort_key].concat(),
         }
     }
 
@@ -51,6 +57,13 @@ impl Position {
                 Some(Self::Added {
                     added_at_ms: i64::from_be_bytes(*added_at_ms),
                     local_id: i64::from_be_bytes(local_id.try_into().ok()?),
+                })
+            }
+            BOOK_TAG => {
+                let (id, sort_key) = rest.split_first_chunk::<ID_LENGTH>()?;
+                Some(Self::Book {
+                    sort_key: sort_key.to_vec(),
+                    id: BookId::try_from(id.as_slice()).ok()?,
                 })
             }
             _ => None,
