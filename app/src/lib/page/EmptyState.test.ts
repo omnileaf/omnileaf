@@ -29,7 +29,7 @@ test("draws its icon as decoration only", async () => {
     body: BODY,
   });
 
-  const icon = screen.container.querySelector("section svg");
+  const region = screen.getByRole("region", { name: TITLE });
 
-  expect(icon?.getAttribute("aria-hidden")).toBe("true");
+  await expect.element(region.getByRole("img")).not.toBeInTheDocument();
 });
