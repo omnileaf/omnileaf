@@ -49,11 +49,26 @@ impl Database {
         T: Send + 'static,
         F: FnOnce(&Transaction<'_>) -> Result<T, Error> + Send + 'static,
     {
+        self.write_then(job, |_| {})
+    }
+
+    /// Runs `committed` on the writer thread straight after the commit, so whatever it announces is already durable.
+    pub(crate) fn write_then<T, F, C>(
+        &self,
+        job: F,
+        committed: C,
+    ) -> impl Future<Output = Result<T, Error>> + use<T, F, C>
+    where
+        T: Send + 'static,
+        F: FnOnce(&Transaction<'_>) -> Result<T, Error> + Send + 'static,
+        C: FnOnce(&T) + Send + 'static,
+    {
         self.writer.submit(move |connection| {
             let transaction =
                 connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
             let value = job(&transaction)?;
             transaction.commit()?;
+            committed(&value);
             Ok(value)
         })
     }
