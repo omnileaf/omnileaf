@@ -14,6 +14,7 @@ const SIDE_CUTOUT = 59;
 const LANDSCAPE_HOME_INDICATOR = 21;
 const LANDSCAPE_STATUS_BAR = 24;
 const THREE_BUTTON_BAR = 48;
+const PAGE_PADDING = 24;
 
 interface SafeAreaInsets {
   readonly top: number;
@@ -162,7 +163,11 @@ test.describe("in landscape", () => {
   test("mirrors the cutout clearance in right-to-left languages", async ({
     page,
   }) => {
-    await emulateSafeArea(page, LANDSCAPE_INSETS);
+    await emulateSafeArea(page, {
+      top: 0,
+      right: SIDE_CUTOUT,
+      bottom: LANDSCAPE_HOME_INDICATOR,
+    });
 
     await page.goto("/");
     await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
@@ -175,7 +180,7 @@ test.describe("in landscape", () => {
     expect(firstLink.x + firstLink.width).toBeLessThanOrEqual(
       LANDSCAPE_PHONE.width - SIDE_CUTOUT,
     );
-    expect(heading.x).toBeGreaterThanOrEqual(SIDE_CUTOUT);
+    expect(heading.x).toBe(PAGE_PADDING);
   });
 
   test("keeps the page clear of side cutouts when the bottom bar shows", async ({
