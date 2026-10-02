@@ -11,7 +11,7 @@ pub enum Error {
     NoWriteAheadLog { path: PathBuf, mode: String },
     #[error("start a database thread")]
     Spawn(#[source] io::Error),
-    #[error("run a database statement")]
+    #[error("run a statement in a database job")]
     Statement(#[from] rusqlite::Error),
     #[error("the database closed before the job ran")]
     Closed,
