@@ -110,6 +110,12 @@
   --color-warning: #f3e0b8;
   --color-warning-edge: #ebd6a8;
   --color-on-warning: #3b2f1e;
+  --color-toast: #1c1b18;
+  --color-on-toast: #f1ede4;
+  --color-toast-muted: #c9c3b6;
+  --color-toast-key: rgb(255 255 255 / 0.1);
+  --color-toast-action: #7fcb9d;
+  --color-on-toast-action: #0f2418;
   --color-icon-hole: var(--color-accent-soft);
   --color-glass: rgb(250 248 244 / 0.74);
   --color-glass-edge: rgb(255 255 255 / 0.7);
@@ -216,6 +222,12 @@
   --color-warning: #5a4a2a;
   --color-warning-edge: #5a4a2a;
   --color-on-warning: #f1ede4;
+  --color-toast: #f1ede4;
+  --color-on-toast: #1c1b18;
+  --color-toast-muted: #5f5b52;
+  --color-toast-key: rgb(0 0 0 / 0.08);
+  --color-toast-action: #2f6f4f;
+  --color-on-toast-action: #ffffff;
   --color-glass: rgb(36 34 30 / 0.72);
   --color-glass-edge: rgb(255 255 255 / 0.1);
   --color-glass-pill: rgb(255 255 255 / 0.12);

@@ -40,7 +40,7 @@ const CANCELLED: AddFolderResult = { status: "ok", data: null };
 async function renderWith(addFolder: AddFolder) {
   const notices = new Notices();
   const screen = await render(AddLibraryFolder, { addFolder, notices });
-  await render(NoticeHost, { notices });
+  await render(NoticeHost, { notices, platform: "linux" });
   return {
     notices,
     unmount: screen.unmount,

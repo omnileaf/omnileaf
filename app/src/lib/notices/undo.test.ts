@@ -1,0 +1,140 @@
+import { Info } from "@lucide/svelte";
+import { afterEach, expect, test, vi } from "vitest";
+import { userEvent } from "vitest/browser";
+import { render } from "vitest-browser-svelte";
+
+import type { Platform } from "$lib/ipc/bindings";
+
+import NoticeHost from "./NoticeHost.svelte";
+import { Notices, UNDO_WINDOW_MS } from "./notices.svelte";
+
+const REMOVED = "Removed Sample Series 07. Its files stay in the folder.";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+async function offerUndo(platform: Platform = "linux") {
+  const notices = new Notices();
+  const screen = await render(NoticeHost, { notices, platform });
+  let timesUndone = 0;
+  notices.offerUndo({
+    message: REMOVED,
+    undo: () => {
+      timesUndone += 1;
+    },
+  });
+  await expect.element(screen.getByText(REMOVED)).toBeVisible();
+  return {
+    notices,
+    status: screen.getByRole("status"),
+    undoButton: screen.getByRole("button", { name: "Undo" }),
+    timesUndone: () => timesUndone,
+  };
+}
+
+test("offers to undo a removal politely", async () => {
+  const { status, undoButton } = await offerUndo();
+
+  await expect.element(undoButton).toBeVisible();
+  await expect.element(status).toHaveTextContent(`${REMOVED} Undo Ctrl Z`);
+});
+
+test("undoes from the Undo button and puts the offer away", async () => {
+  const { status, undoButton, timesUndone } = await offerUndo();
+
+  await undoButton.click();
+
+  expect(timesUndone()).toBe(1);
+  await expect.element(status).toBeEmptyDOMElement();
+});
+
+test("undoes with Ctrl Z", async () => {
+  const { status, timesUndone } = await offerUndo();
+
+  await userEvent.keyboard("{Control>}z{/Control}");
+
+  expect(timesUndone()).toBe(1);
+  await expect.element(status).toBeEmptyDOMElement();
+});
+
+test("undoes with Command Z on macOS", async () => {
+  const { undoButton, timesUndone } = await offerUndo("macos");
+
+  await userEvent.keyboard("{Meta>}z{/Meta}");
+
+  expect(timesUndone()).toBe(1);
+  await expect.element(undoButton).not.toBeInTheDocument();
+});
+
+test("names the shortcut on the Undo button", async () => {
+  const { undoButton } = await offerUndo("macos");
+
+  await expect
+    .element(undoButton)
+    .toHaveAttribute("aria-keyshortcuts", "Meta+Z");
+});
+
+test("leaves Ctrl Z to a text field", async () => {
+  const field = document.createElement("input");
+  document.body.append(field);
+  const { undoButton, timesUndone } = await offerUndo();
+  field.focus();
+
+  await userEvent.keyboard("{Control>}z{/Control}");
+
+  expect(timesUndone()).toBe(0);
+  await expect.element(undoButton).toBeVisible();
+  field.remove();
+});
+
+test("lets the offer lapse after a while without undoing", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const { status, timesUndone } = await offerUndo();
+
+  vi.advanceTimersByTime(UNDO_WINDOW_MS);
+
+  await expect.element(status).toBeEmptyDOMElement();
+  expect(timesUndone()).toBe(0);
+});
+
+test("holds the offer while focus is on it", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const { undoButton } = await offerUndo();
+  undoButton.element().focus();
+
+  vi.advanceTimersByTime(UNDO_WINDOW_MS);
+
+  await expect.element(undoButton).toBeVisible();
+});
+
+test("starts the wait again once focus leaves", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const { status, undoButton } = await offerUndo();
+  undoButton.element().focus();
+  vi.advanceTimersByTime(UNDO_WINDOW_MS);
+
+  undoButton.element().blur();
+  vi.advanceTimersByTime(UNDO_WINDOW_MS);
+
+  await expect.element(status).toBeEmptyDOMElement();
+});
+
+test("lets a new notice replace the offer without undoing", async () => {
+  const { notices, status, timesUndone } = await offerUndo();
+
+  notices.show({
+    tone: "info",
+    icon: Info,
+    title: "Sample Library is ready",
+    body: "Every comic in it can be read now.",
+    actions: [],
+  });
+
+  await expect
+    .element(status)
+    .toHaveTextContent(
+      "Sample Library is ready Every comic in it can be read now.",
+    );
+  expect(timesUndone()).toBe(0);
+});

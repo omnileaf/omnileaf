@@ -48,7 +48,7 @@ function placePageHeading(): HTMLHeadingElement {
 
 async function renderHost() {
   const notices = new Notices();
-  const screen = await render(NoticeHost, { notices });
+  const screen = await render(NoticeHost, { notices, platform: "linux" });
   return {
     notices,
     screen,

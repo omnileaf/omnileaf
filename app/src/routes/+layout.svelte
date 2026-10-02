@@ -38,6 +38,6 @@
     {@render children()}
   </main>
   <div class="relative z-notice order-1">
-    <NoticeHost notices={data.notices} />
+    <NoticeHost notices={data.notices} platform={data.appInfo.platform} />
   </div>
 </div>

@@ -1,12 +1,20 @@
 <script lang="ts">
+  import type { Platform } from "$lib/ipc/bindings";
   import { focusPageHeading } from "$lib/navigation/page-heading";
 
   import NoticeCard from "./NoticeCard.svelte";
   import type { NoticeAction, Notices } from "./notices.svelte";
+  import UndoBar from "./UndoBar.svelte";
+  import { isUndoPressed, undoShortcutOn } from "./undo-shortcut";
 
-  let { notices }: { notices: Notices } = $props();
+  const TEXT_FIELDS = "input, textarea, select, [contenteditable]";
+
+  let { notices, platform }: { notices: Notices; platform: Platform } =
+    $props();
 
   const shown = $derived(notices.shown);
+  const undoOffer = $derived(notices.undoOffer);
+  const shortcut = $derived(undoShortcutOn(platform));
 
   let status: HTMLElement | undefined;
   let alert: HTMLElement | undefined;
@@ -46,12 +54,34 @@
     returnFocus();
     notices.dismiss();
   }
+
+  function isInTextField(target: EventTarget | null): boolean {
+    return target instanceof Element && target.closest(TEXT_FIELDS) !== null;
+  }
+
+  function undoOnShortcut(event: KeyboardEvent): void {
+    if (
+      undoOffer === undefined ||
+      isInTextField(event.target) ||
+      !isUndoPressed(shortcut, event)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    notices.undo();
+  }
 </script>
+
+<svelte:window onkeydown={undoOnShortcut} />
 
 <div role="status" bind:this={status} onfocusin={noteWhereFocusCameFrom}>
   {#if shown?.tone === "info"}
     {#key shown}
       <NoticeCard notice={shown} onAction={act} onDismiss={dismiss} />
+    {/key}
+  {:else if undoOffer !== undefined}
+    {#key undoOffer}
+      <UndoBar offer={undoOffer} {notices} {shortcut} />
     {/key}
   {/if}
 </div>

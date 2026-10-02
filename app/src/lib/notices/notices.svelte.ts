@@ -16,16 +16,60 @@ export interface Notice {
   readonly actions: readonly NoticeAction[];
 }
 
-/** The notice on screen, at most one: showing another replaces it. */
+export interface UndoOffer {
+  readonly message: string;
+  readonly undo: () => void;
+}
+
+type Showing =
+  | { readonly kind: "notice"; readonly notice: Notice }
+  | { readonly kind: "undo"; readonly offer: UndoOffer };
+
+export const UNDO_WINDOW_MS = 10_000;
+
+/** The notice or undo offer on screen, at most one: showing another replaces it. */
 export class Notices {
-  shown: Notice | undefined = $state.raw();
+  #showing: Showing | undefined = $state.raw();
+  #lapse: ReturnType<typeof setTimeout> | undefined;
+
+  get shown(): Notice | undefined {
+    return this.#showing?.kind === "notice" ? this.#showing.notice : undefined;
+  }
+
+  get undoOffer(): UndoOffer | undefined {
+    return this.#showing?.kind === "undo" ? this.#showing.offer : undefined;
+  }
 
   show(notice: Notice): void {
-    this.shown = notice;
+    this.#replace({ kind: "notice", notice });
+  }
+
+  offerUndo(offer: UndoOffer): void {
+    this.#replace({ kind: "undo", offer });
+    this.#startLapse();
+  }
+
+  undo(): void {
+    const offer = this.undoOffer;
+    if (offer === undefined) {
+      return;
+    }
+    this.dismiss();
+    offer.undo();
+  }
+
+  hold(): void {
+    clearTimeout(this.#lapse);
+  }
+
+  release(): void {
+    if (this.undoOffer !== undefined) {
+      this.#startLapse();
+    }
   }
 
   dismiss(): void {
-    this.shown = undefined;
+    this.#replace(undefined);
   }
 
   withdraw(notice: Notice): void {
@@ -37,5 +81,17 @@ export class Notices {
   act(action: NoticeAction): void {
     this.dismiss();
     action.run();
+  }
+
+  #replace(showing: Showing | undefined): void {
+    clearTimeout(this.#lapse);
+    this.#showing = showing;
+  }
+
+  #startLapse(): void {
+    clearTimeout(this.#lapse);
+    this.#lapse = setTimeout(() => {
+      this.dismiss();
+    }, UNDO_WINDOW_MS);
   }
 }

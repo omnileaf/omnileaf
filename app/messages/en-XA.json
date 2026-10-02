@@ -62,5 +62,8 @@
   "general_title": "⟦Ĝéñéŕáļ···⟧",
   "language_label": "⟦Ļáñĝûáĝé····⟧",
   "language_system": "⟦Šýšţéɱ ({language})········⟧",
-  "notice_dismiss": "⟦Ðíšɱíšš···⟧"
+  "notice_dismiss": "⟦Ðíšɱíšš···⟧",
+  "undo_action": "⟦Ûñðö··⟧",
+  "undo_shortcut_control": "⟦Çţŕļ Ž···⟧",
+  "undo_shortcut_command": "⟦⌘ Ž··⟧"
 }

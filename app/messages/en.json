@@ -62,5 +62,8 @@
   "general_title": "General",
   "language_label": "Language",
   "language_system": "System ({language})",
-  "notice_dismiss": "Dismiss"
+  "notice_dismiss": "Dismiss",
+  "undo_action": "Undo",
+  "undo_shortcut_control": "Ctrl Z",
+  "undo_shortcut_command": "⌘ Z"
 }
