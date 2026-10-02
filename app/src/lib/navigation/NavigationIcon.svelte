@@ -60,6 +60,9 @@
   } = $props();
 
   const HOLE = "stroke-icon-hole";
+  const FILL_FADE =
+    "transition-colors motion-safe:duration-fade motion-safe:ease-out";
+  const MOVES_ABOUT_CENTRE = "origin-center";
 
   const SHAPES: Record<Section, Snippet<[boolean]>> = {
     library,
@@ -72,42 +75,87 @@
 </script>
 
 {#snippet library(filled: boolean)}
-  <path
-    d="M12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4a5 5 0 0 1 4 2z"
-    fill={filled ? "currentColor" : "none"}
-  />
-  <path
-    d="M12 5a5 5 0 0 1 4-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4a5 5 0 0 0-4 2z"
-    fill={filled ? "currentColor" : "none"}
-  />
-  {#if filled}
-    <path d="M12 6v14" class={HOLE} stroke-width="1.6" />
-  {/if}
+  <g
+    class={[
+      MOVES_ABOUT_CENTRE,
+      filled && "icon-moves:motion-safe:animate-book-open",
+    ]}
+  >
+    <path
+      d="M12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4a5 5 0 0 1 4 2z"
+      fill={filled ? "currentColor" : "transparent"}
+      class={FILL_FADE}
+    />
+    <path
+      d="M12 5a5 5 0 0 1 4-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4a5 5 0 0 0-4 2z"
+      fill={filled ? "currentColor" : "transparent"}
+      class={FILL_FADE}
+    />
+    <path
+      d="M12 6v14"
+      stroke-width="1.6"
+      class={[FILL_FADE, filled ? HOLE : "stroke-transparent"]}
+    />
+  </g>
 {/snippet}
 
 {#snippet browse(filled: boolean)}
-  <circle cx="12" cy="12" r="10" fill={filled ? "currentColor" : "none"} />
+  <circle
+    cx="12"
+    cy="12"
+    r="10"
+    fill={filled ? "currentColor" : "transparent"}
+    class={FILL_FADE}
+  />
   <path
     d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"
-    class={[filled && [HOLE, "fill-icon-hole"]]}
+    fill="transparent"
+    class={[
+      FILL_FADE,
+      MOVES_ABOUT_CENTRE,
+      filled && [
+        HOLE,
+        "fill-icon-hole icon-moves:motion-safe:animate-needle-swing",
+      ],
+    ]}
   />
 {/snippet}
 
 {#snippet history(filled: boolean)}
   <path d="M3 3v5h5" />
   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-  {#if filled}
-    <circle cx="12" cy="12" r="6.4" fill="currentColor" stroke="none" />
-  {/if}
-  <path d="M12 7v5l4 2" class={[filled && HOLE]} />
+  <circle
+    cx="12"
+    cy="12"
+    r="6.4"
+    fill={filled ? "currentColor" : "transparent"}
+    stroke="none"
+    class={FILL_FADE}
+  />
+  <path
+    d="M12 7v5l4 2"
+    class={[
+      FILL_FADE,
+      MOVES_ABOUT_CENTRE,
+      filled && [HOLE, "icon-moves:motion-safe:animate-hands-sweep"],
+    ]}
+  />
 {/snippet}
 
 {#snippet settings(filled: boolean)}
-  <path
-    d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
-    fill={filled ? "currentColor" : "none"}
-  />
-  <circle cx="12" cy="12" r="3" class={[filled && HOLE]} />
+  <g
+    class={[
+      MOVES_ABOUT_CENTRE,
+      filled && "icon-moves:motion-safe:animate-gear-turn",
+    ]}
+  >
+    <path
+      d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
+      fill={filled ? "currentColor" : "transparent"}
+      class={FILL_FADE}
+    />
+    <circle cx="12" cy="12" r="3" class={[FILL_FADE, filled && HOLE]} />
+  </g>
 {/snippet}
 
 <svg

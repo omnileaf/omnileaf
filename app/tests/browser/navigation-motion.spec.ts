@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
+import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import {
   boxOf,
   EXPANDED_MIN_WIDTH,
@@ -15,6 +16,25 @@ const GROW = "0.2s cubic-bezier(0.2, 0, 0, 1)";
 const SLIDE = "0.35s cubic-bezier(0.32, 0.72, 0, 1)";
 const PILL_GROW = `pill-grow ${GROW}`;
 const ICON_POP = "nav-pop 0.3s cubic-bezier(0.32, 0.72, 0, 1)";
+const ICON_MOVE_TIMING = "0.3s ease-out";
+
+const ICON_MOVES = [
+  { label: "Library", path: "/", move: "book-open" },
+  { label: "Browse", path: "/browse", move: "needle-swing" },
+  { label: "History", path: "/history", move: "hands-sweep" },
+  { label: "Settings", path: "/settings", move: "gear-turn" },
+] as const;
+
+const MOVING_ICONS = [
+  {
+    platform: "android",
+    belowWidth: EXPANDED_MIN_WIDTH,
+    where: "bar and rail",
+  },
+  { platform: "ios", belowWidth: MEDIUM_MIN_WIDTH, where: "phones" },
+] as const;
+
+const PLATFORMS: readonly Platform[] = ["android", "ios", "linux"];
 
 interface Motion {
   readonly transitions: readonly string[];
@@ -294,3 +314,56 @@ test.describe("on desktop", () => {
 
   testReducingMotion();
 });
+
+for (const { platform, belowWidth, where } of MOVING_ICONS) {
+  test.describe(`on ${platform}`, () => {
+    test.use(onPlatform(platform));
+
+    for (const { label, path, move } of ICON_MOVES) {
+      test(`moves the ${label} icon as it becomes selected`, async ({
+        page,
+      }) => {
+        await page.goto(path);
+        test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
+
+        const icon = await motionIn(tab(page, label).locator("svg"));
+
+        expect(icon.animations).toContain(`${move} ${ICON_MOVE_TIMING}`);
+      });
+    }
+
+    test("keeps the icon still while the section stays the same", async ({
+      page,
+    }) => {
+      await page.goto("/settings");
+      test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
+      const icon = tab(page, "Settings").locator("svg");
+      await settle(icon);
+
+      await page.getByRole("main").getByRole("link", { name: "About" }).click();
+      await expect(
+        page.getByRole("heading", { level: 1, name: "About" }),
+      ).toBeVisible();
+
+      expect(
+        await icon.evaluate(
+          (element) => element.getAnimations({ subtree: true }).length,
+        ),
+      ).toBe(0);
+    });
+  });
+}
+
+for (const platform of PLATFORMS) {
+  test.describe(`on ${platform}`, () => {
+    test.use(onPlatform(platform));
+
+    test("crossfades the selected icon's fill", async ({ page }) => {
+      await page.goto("/history");
+
+      const icon = await motionIn(tab(page, "History").locator("svg"));
+
+      expect(icon.transitions).toEqual([FADE]);
+    });
+  });
+}
