@@ -47,14 +47,8 @@
     env(safe-area-inset-bottom),
     var(--system-inset-bottom, 0px)
   );
-  --spacing-safe-start: max(
-    env(safe-area-inset-left),
-    var(--system-inset-left, 0px)
-  );
-  --spacing-safe-end: max(
-    env(safe-area-inset-right),
-    var(--system-inset-right, 0px)
-  );
+  --spacing-safe-start: var(--safe-area-left);
+  --spacing-safe-end: var(--safe-area-right);
   --spacing-page-top: calc(var(--spacing-safe-top) + var(--spacing-xl));
   --spacing-page-bottom: calc(var(--spacing-safe-bottom) + var(--spacing-xl));
   --spacing-page-start: calc(var(--spacing-safe-start) + var(--spacing-xl));
@@ -99,6 +93,17 @@
   --color-glass-contact: rgb(28 27 24 / 0.08);
 }
 
+:root {
+  --safe-area-left: max(
+    env(safe-area-inset-left),
+    var(--system-inset-left, 0px)
+  );
+  --safe-area-right: max(
+    env(safe-area-inset-right),
+    var(--system-inset-right, 0px)
+  );
+}
+
 :root[data-theme="dark"] {
   color-scheme: dark;
   --color-background: #161512;
@@ -121,14 +126,8 @@
 }
 
 :root[dir="rtl"] {
-  --spacing-safe-start: max(
-    env(safe-area-inset-right),
-    var(--system-inset-right, 0px)
-  );
-  --spacing-safe-end: max(
-    env(safe-area-inset-left),
-    var(--system-inset-left, 0px)
-  );
+  --spacing-safe-start: var(--safe-area-right);
+  --spacing-safe-end: var(--safe-area-left);
 }
 
 :root {
