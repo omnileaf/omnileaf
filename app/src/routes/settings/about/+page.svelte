@@ -1,8 +1,7 @@
 <script lang="ts">
-  import appIcon from "../../../../../branding/icon.svg";
-
-  import SectionHeading from "$lib/settings/SectionHeading.svelte";
+  import appIcon from "$branding/icon.svg";
   import { m } from "$lib/paraglide/messages.js";
+  import SectionHeading from "$lib/settings/SectionHeading.svelte";
 
   import type { PageProps } from "./$types";
 
