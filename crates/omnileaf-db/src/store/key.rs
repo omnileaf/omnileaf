@@ -18,11 +18,38 @@ pub enum MaximumKey {
     BookFurthest(BookId),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Key {
+    Latest(LatestKey),
+    Maximum(MaximumKey),
+}
+
+impl From<LatestKey> for Key {
+    fn from(key: LatestKey) -> Self {
+        Self::Latest(key)
+    }
+}
+
+impl From<MaximumKey> for Key {
+    fn from(key: MaximumKey) -> Self {
+        Self::Maximum(key)
+    }
+}
+
 /// Where a register is stored, under the names every device gives it.
 pub(crate) struct Address {
     pub(crate) entity: &'static str,
     pub(crate) id: [u8; 16],
     pub(crate) field: &'static str,
+}
+
+impl Key {
+    pub(crate) const fn address(self) -> Address {
+        match self {
+            Self::Latest(key) => key.address(),
+            Self::Maximum(key) => key.address(),
+        }
+    }
 }
 
 impl LatestKey {

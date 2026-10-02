@@ -5,17 +5,21 @@
 
 mod support;
 
-use std::sync::{
-    Arc,
-    atomic::{AtomicU64, Ordering},
+use std::{
+    collections::BTreeSet,
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 
 use omnileaf_db::{
     Database, Error,
-    store::{Clock, LatestKey, MaximumKey, Store},
+    store::{Changed, Clock, Key, LatestKey, MaximumKey, Store},
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, Hlc, ImageEntry, Value};
 use support::ScratchFolder;
+use tokio::sync::broadcast::error::TryRecvError;
 
 const NOW_UNIX_MS: u64 = 1_790_000_000_000;
 
@@ -146,6 +150,62 @@ async fn keeps_a_maximum_at_its_rank_and_spends_no_sequence_number_on_a_lower_on
             ("lww".to_owned(), None, 2, Value::Unsigned(10).to_cbor())
         ]
     );
+}
+
+#[tokio::test]
+async fn announces_the_keys_a_write_changed_once_it_commits() {
+    let folder = ScratchFolder::new("changed");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    let mut changes = store.subscribe();
+
+    store
+        .write(|writer| {
+            writer.set(LatestKey::BookPosition(book(1)), Value::Unsigned(4))?;
+            writer.raise(MaximumKey::BookFurthest(book(1)), 4, Value::Unsigned(4))?;
+            writer.set(LatestKey::BookRead(book(2)), Value::Bool(true))
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(
+        changes.try_recv(),
+        Ok(Changed {
+            keys: BTreeSet::from([
+                Key::from(LatestKey::BookPosition(book(1))),
+                Key::from(MaximumKey::BookFurthest(book(1))),
+                Key::from(LatestKey::BookRead(book(2))),
+            ])
+        })
+    );
+}
+
+#[tokio::test]
+async fn announces_nothing_for_a_write_that_changed_nothing() {
+    let folder = ScratchFolder::new("unchanged");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    raise_furthest(&store, book(1), 20).await;
+    let mut changes = store.subscribe();
+
+    raise_furthest(&store, book(1), 10).await;
+
+    assert_eq!(changes.try_recv(), Err(TryRecvError::Empty));
+}
+
+#[tokio::test]
+async fn announces_nothing_for_a_write_that_failed() {
+    let folder = ScratchFolder::new("failed-announce");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    let mut changes = store.subscribe();
+
+    let outcome = store
+        .write(|writer| {
+            writer.set(LatestKey::BookPosition(book(1)), Value::Unsigned(12))?;
+            Err::<(), _>(Error::Closed)
+        })
+        .await;
+
+    assert!(outcome.is_err());
+    assert_eq!(changes.try_recv(), Err(TryRecvError::Empty));
 }
 
 #[tokio::test]

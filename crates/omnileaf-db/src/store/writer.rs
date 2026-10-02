@@ -1,10 +1,13 @@
+use std::collections::BTreeSet;
+
 use omnileaf_sync_proto::{MergeClass, Register, Value};
 use rusqlite::Connection;
 
 use crate::{
     Error,
     store::{
-        key::{Address, LatestKey, MaximumKey},
+        Changed,
+        key::{Key, LatestKey, MaximumKey},
         local::LocalReplica,
         register,
     },
@@ -15,6 +18,7 @@ pub struct Writer<'t> {
     connection: &'t Connection,
     local: LocalReplica,
     now_unix_ms: u64,
+    changed: BTreeSet<Key>,
 }
 
 impl<'t> Writer<'t> {
@@ -23,12 +27,12 @@ impl<'t> Writer<'t> {
             connection,
             local: LocalReplica::read(connection)?,
             now_unix_ms,
+            changed: BTreeSet::new(),
         })
     }
 
     pub fn set(&mut self, key: LatestKey, value: Value) -> Result<(), Error> {
-        self.write(&key.address(), MergeClass::LastWriterWins, value)?;
-        Ok(())
+        self.write(key.into(), MergeClass::LastWriterWins, value)
     }
 
     /// Writes null, which outlives every earlier value so a stale device cannot bring one back.
@@ -38,24 +42,25 @@ impl<'t> Writer<'t> {
 
     /// Changes nothing, and takes no sequence number, unless `rank` is above the stored write's or level with it.
     pub fn raise(&mut self, key: MaximumKey, rank: u32, value: Value) -> Result<(), Error> {
-        self.write(&key.address(), MergeClass::Maximum { rank }, value)?;
-        Ok(())
+        self.write(key.into(), MergeClass::Maximum { rank }, value)
     }
 
-    fn write(&mut self, address: &Address, class: MergeClass, value: Value) -> Result<bool, Error> {
+    fn write(&mut self, key: Key, class: MergeClass, value: Value) -> Result<(), Error> {
         let register = Register {
             class,
             stamp: self.local.stamp(self.now_unix_ms)?,
             value: value.to_cbor(),
         };
-        let won = register::upsert(self.connection, address, &register, self.local.next_seq())?;
-        if won {
+        let seq = self.local.next_seq();
+        if register::upsert(self.connection, &key.address(), &register, seq)? {
             self.local.advance_seq();
+            self.changed.insert(key);
         }
-        Ok(won)
+        Ok(())
     }
 
-    pub(crate) fn finish(self) -> Result<(), Error> {
-        self.local.save(self.connection)
+    pub(crate) fn finish(self) -> Result<Changed, Error> {
+        self.local.save(self.connection)?;
+        Ok(Changed { keys: self.changed })
     }
 }
