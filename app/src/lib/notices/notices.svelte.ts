@@ -28,6 +28,12 @@ export class Notices {
     this.shown = undefined;
   }
 
+  withdraw(notice: Notice): void {
+    if (this.shown === notice) {
+      this.dismiss();
+    }
+  }
+
   act(action: NoticeAction): void {
     this.dismiss();
     action.run();

@@ -2,6 +2,10 @@
   import { commands } from "$lib/ipc/bindings";
   import AddLibraryFolder from "$lib/library/AddLibraryFolder.svelte";
   import { m } from "$lib/paraglide/messages.js";
+
+  import type { PageProps } from "./$types";
+
+  let { data }: PageProps = $props();
 </script>
 
 <h1 tabindex="-1" class="text-headline font-bold">{m.library_title()}</h1>
@@ -9,6 +13,9 @@
   <h2 class="text-title font-bold">{m.library_settings_folders()}</h2>
   <p class="mbs-xs text-muted">{m.library_settings_folders_hint()}</p>
   <div class="mbs-lg">
-    <AddLibraryFolder addFolder={commands.addLibraryFolder} />
+    <AddLibraryFolder
+      addFolder={commands.addLibraryFolder}
+      notices={data.notices}
+    />
   </div>
 </section>

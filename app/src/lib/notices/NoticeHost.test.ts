@@ -161,3 +161,26 @@ test("returns focus to the page heading once an action runs, if where it came fr
 
   expect(document.activeElement).toBe(heading);
 });
+
+test("keeps a newer notice when an older one is withdrawn", async () => {
+  const { notices, status } = await renderHost();
+  notices.show(WARNING);
+  notices.show(INFO);
+
+  notices.withdraw(WARNING);
+
+  await expect
+    .element(status)
+    .toHaveTextContent(
+      "Sample Library is ready Every comic in it can be read now.",
+    );
+});
+
+test("withdraws the notice still on screen", async () => {
+  const { notices, alert } = await renderHost();
+  notices.show(WARNING);
+
+  notices.withdraw(WARNING);
+
+  await expect.element(alert).toBeEmptyDOMElement();
+});
