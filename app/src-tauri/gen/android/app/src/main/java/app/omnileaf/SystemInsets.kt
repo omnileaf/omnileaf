@@ -1,6 +1,7 @@
 package app.omnileaf
 
 import android.webkit.WebView
+import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.webkit.ScriptHandler
@@ -17,8 +18,7 @@ class SystemInsets(private val webView: WebView) {
 
   fun attach() {
     ViewCompat.setOnApplyWindowInsetsListener(webView) { view, insets ->
-      val areas = insets.getInsets(SYSTEM_AREAS)
-      publish(insetVariablesScript(areas.top, areas.bottom, view.resources.displayMetrics.density))
+      publish(insetVariablesScript(insets.getInsets(SYSTEM_AREAS), view.resources.displayMetrics.density))
       ViewCompat.onApplyWindowInsets(view, insets)
     }
     ViewCompat.requestApplyInsets(webView)
@@ -33,7 +33,8 @@ class SystemInsets(private val webView: WebView) {
   }
 }
 
-internal fun insetVariablesScript(topPx: Int, bottomPx: Int, density: Float): String =
-  mapOf("top" to topPx, "bottom" to bottomPx).entries.joinToString(separator = "") { (side, px) ->
-    "document.documentElement.style.setProperty('--system-inset-$side','${px / density}px');"
-  }
+internal fun insetVariablesScript(areas: Insets, density: Float): String =
+  listOf("top" to areas.top, "right" to areas.right, "bottom" to areas.bottom, "left" to areas.left)
+    .joinToString(separator = "") { (side, px) ->
+      "document.documentElement.style.setProperty('--system-inset-$side','${px / density}px');"
+    }
