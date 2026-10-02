@@ -9,4 +9,4 @@ mod workers;
 pub use config::Config;
 pub use database::Database;
 pub use error::Error;
-pub use rusqlite::{Connection, Transaction};
+pub use rusqlite::{self, Connection, Transaction};
