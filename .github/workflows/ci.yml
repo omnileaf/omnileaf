@@ -5,6 +5,7 @@ on:
     types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
+  merge_group:
   schedule:
     - cron: "0 17 * * *"
 
@@ -253,7 +254,7 @@ jobs:
 
   android:
     name: android
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'mobile')
+    if: github.event_name == 'push' || github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'mobile')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -322,7 +323,7 @@ jobs:
 
   ios:
     name: ios
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'mobile')
+    if: github.event_name == 'push' || github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'mobile')
     runs-on: macos-15
     timeout-minutes: 60
     steps:
