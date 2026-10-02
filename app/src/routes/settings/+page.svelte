@@ -7,13 +7,21 @@
   import { EXPANDED_QUERY } from "$lib/page/breakpoints";
   import PageHeading from "$lib/page/PageHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import { SETTINGS_GROUPS, type SettingsRoute } from "$lib/settings/sections";
+  import {
+    SETTINGS_GROUPS,
+    type SettingsRoute,
+    type SettingsSection,
+  } from "$lib/settings/sections";
 
   import type { PageProps } from "./$types";
 
   const ICON_SIZE = 20;
   const CHEVRON_SIZE = 18;
   const FIRST_SECTION = "/settings/library";
+  const TILE_BACKGROUNDS = {
+    accent: "bg-accent-soft",
+    neutral: "bg-chip",
+  } satisfies Record<SettingsSection["tone"], string>;
 
   let { data }: PageProps = $props();
 
@@ -47,7 +55,7 @@
               <span
                 class={[
                   "flex shrink-0 items-center justify-center rounded-tile block-tile inline-tile",
-                  settingsPage.tile,
+                  TILE_BACKGROUNDS[settingsPage.tone],
                 ]}
               >
                 <settingsPage.icon size={ICON_SIZE} aria-hidden="true" />
