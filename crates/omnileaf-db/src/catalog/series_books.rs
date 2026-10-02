@@ -32,8 +32,12 @@ pub fn series_books(
 ) -> Result<Page<BookSummary>, Error> {
     let (sort_key, id): (&[u8], &[u8]) = match request.after.as_ref().map(|cursor| &cursor.0) {
         None => (&[], &[]),
-        Some(Position::Book { sort_key, id }) => (sort_key, id.as_bytes()),
-        Some(Position::Title { .. } | Position::Added { .. }) => {
+        Some(Position::Book {
+            series: listed,
+            sort_key,
+            id,
+        }) if *listed == series => (sort_key, id.as_bytes()),
+        Some(Position::Book { .. } | Position::Title { .. } | Position::Added { .. }) => {
             return Err(Error::CursorForAnotherList);
         }
     };
@@ -54,6 +58,7 @@ pub fn series_books(
                     added_at_ms: row.get(3)?,
                 };
                 let position = Position::Book {
+                    series,
                     sort_key: row.get(2)?,
                     id,
                 };

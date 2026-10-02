@@ -243,6 +243,30 @@ async fn refuses_to_continue_series_and_books_from_each_other_s_cursors() {
 }
 
 #[tokio::test]
+async fn refuses_to_continue_one_series_books_from_another_series_cursor() {
+    let library = Library::with(&[
+        ("Sample Series 01", 1, &["Volume 01", "Volume 02"]),
+        ("Sample Series 02", 1, &["Volume 01", "Volume 02"]),
+    ])
+    .await;
+    let first_series = book_titles(series_id("Sample Series 01"));
+    let first_series_cursor = library.page(first_series, None, 1).await.unwrap().next;
+
+    let outcome = library
+        .page(
+            book_titles(series_id("Sample Series 02")),
+            first_series_cursor,
+            1,
+        )
+        .await;
+
+    assert!(
+        matches!(outcome, Err(Error::CursorForAnotherList)),
+        "{outcome:?}"
+    );
+}
+
+#[tokio::test]
 async fn refuses_to_continue_one_series_order_from_another_s_cursor() {
     let library = Library::with(&[
         ("Sample Series 01", 1, ONE_BOOK),
@@ -263,7 +287,7 @@ async fn refuses_to_continue_one_series_order_from_another_s_cursor() {
 fn refuses_a_cursor_the_library_did_not_give_out() {
     let short_added = format!("02{}", "00".repeat(15));
     let long_added = format!("02{}", "00".repeat(17));
-    let underived_book = format!("03{}", "00".repeat(16));
+    let underived_book = format!("03{}", "00".repeat(32));
     let texts = [
         "",
         "0",

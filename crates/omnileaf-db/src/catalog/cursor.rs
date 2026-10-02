@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr};
 
-use omnileaf_sync_proto::BookId;
+use omnileaf_sync_proto::{BookId, SeriesId};
 
 use crate::Error;
 
@@ -18,9 +18,19 @@ pub struct Cursor(pub(crate) Position);
 /// The sort values of the last row on a page, which the next page starts after.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Position {
-    Title { sort_key: Vec<u8>, local_id: i64 },
-    Added { added_at_ms: i64, local_id: i64 },
-    Book { sort_key: Vec<u8>, id: BookId },
+    Title {
+        sort_key: Vec<u8>,
+        local_id: i64,
+    },
+    Added {
+        added_at_ms: i64,
+        local_id: i64,
+    },
+    Book {
+        series: SeriesId,
+        sort_key: Vec<u8>,
+        id: BookId,
+    },
 }
 
 impl Position {
@@ -38,7 +48,11 @@ impl Position {
                 &local_id.to_be_bytes(),
             ]
             .concat(),
-            Self::Book { sort_key, id } => [&[BOOK_TAG][..], id.as_bytes(), sort_key].concat(),
+            Self::Book {
+                series,
+                sort_key,
+                id,
+            } => [&[BOOK_TAG][..], series.as_bytes(), id.as_bytes(), sort_key].concat(),
         }
     }
 
@@ -60,8 +74,10 @@ impl Position {
                 })
             }
             BOOK_TAG => {
+                let (series, rest) = rest.split_first_chunk::<ID_LENGTH>()?;
                 let (id, sort_key) = rest.split_first_chunk::<ID_LENGTH>()?;
                 Some(Self::Book {
+                    series: SeriesId::try_from(series.as_slice()).ok()?,
                     sort_key: sort_key.to_vec(),
                     id: BookId::try_from(id.as_slice()).ok()?,
                 })
