@@ -14,7 +14,7 @@ pub use folder_survey::{FolderSurvey, SurveyError, survey_folder};
 pub use library::{Library, LibraryError};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
 pub use omnileaf_db::store::Clock;
-pub use scan::FolderScan;
+pub use scan::{FolderScan, ScanProgress};
 
 #[derive(Debug)]
 pub struct Core {

@@ -11,8 +11,8 @@ use omnileaf_db::{
 use tokio::task::spawn_blocking;
 
 use crate::{
-    FolderCursor, FolderId, FolderPage, FolderScan, FolderSurvey, LibraryFolder, SurveyError,
-    scan::scan, survey_folder,
+    FolderCursor, FolderId, FolderPage, FolderScan, FolderSurvey, LibraryFolder, ScanProgress,
+    SurveyError, scan::scan, survey_folder,
 };
 
 const DATABASE_FILE: &str = "library.sqlite";
@@ -110,14 +110,18 @@ impl Library {
             .await?)
     }
 
-    /// Reads the folder's books into the catalog.
+    /// Reads the folder's books into the catalog, calling `on_progress` as it goes.
     #[tracing::instrument(skip_all, fields(folder = %id))]
-    pub async fn scan_folder(&self, id: FolderId) -> Result<FolderScan, LibraryError> {
+    pub async fn scan_folder(
+        &self,
+        id: FolderId,
+        on_progress: impl FnMut(ScanProgress) + Send,
+    ) -> Result<FolderScan, LibraryError> {
         let root = self
             .database
             .read(move |connection| library_root(connection, id.0))
             .await?;
-        scan(&self.database, root, self.now_ms()).await
+        scan(&self.database, root, self.now_ms(), on_progress).await
     }
 
     async fn set_home(&self, home: PathBuf) -> Result<(), LibraryError> {
