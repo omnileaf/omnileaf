@@ -41,3 +41,95 @@ pub(crate) fn upsert(
     ))?;
     Ok(changed > 0)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use omnileaf_sync_proto::{Hlc, NodeId, Stamp};
+    use proptest::{collection::vec, prelude::*, sample::subsequence};
+
+    use super::*;
+    use crate::migration::{self, MIGRATIONS};
+
+    const ADDRESS: Address = Address {
+        entity: "book",
+        id: [0x11; 16],
+        field: "max",
+    };
+
+    fn migrated() -> Connection {
+        let mut connection = Connection::open_in_memory().unwrap();
+        migration::apply(&mut connection, Path::new(":memory:"), MIGRATIONS).unwrap();
+        connection
+    }
+
+    fn stored(connection: &Connection) -> Register {
+        connection
+            .query_row(
+                "SELECT rank, hlc, node, value FROM sync_register",
+                [],
+                |row| {
+                    let class = row
+                        .get::<_, Option<u32>>(0)?
+                        .map_or(MergeClass::LastWriterWins, |rank| MergeClass::Maximum {
+                            rank,
+                        });
+                    let stamp = Stamp {
+                        hlc: Hlc::from(row.get::<_, u64>(1)?),
+                        node: NodeId::from(row.get::<_, [u8; 16]>(2)?),
+                    };
+                    Ok(Register {
+                        class,
+                        stamp,
+                        value: row.get(3)?,
+                    })
+                },
+            )
+            .unwrap()
+    }
+
+    fn any_register() -> impl Strategy<Value = Register> {
+        let class = prop_oneof![
+            Just(MergeClass::LastWriterWins),
+            (0..3_u32).prop_map(|rank| MergeClass::Maximum { rank }),
+        ];
+        let node = prop_oneof![Just([0xa0; 16]), Just([0xb0; 16])];
+        (class, 0..3_u64, node, vec(0..2_u8, 0..3)).prop_map(|(class, hlc, node, value)| Register {
+            class,
+            stamp: Stamp {
+                hlc: Hlc::from(hlc),
+                node: NodeId::from(node),
+            },
+            value,
+        })
+    }
+
+    /// The writes alongside the same writes, some of them twice, in a shuffled order.
+    fn redelivered(writes: Vec<Register>) -> impl Strategy<Value = (Vec<Register>, Vec<Register>)> {
+        let count = writes.len();
+        subsequence(writes.clone(), 0..=count).prop_flat_map(move |repeats| {
+            let delivered: Vec<Register> = writes.iter().cloned().chain(repeats).collect();
+            (Just(writes.clone()), Just(delivered).prop_shuffle())
+        })
+    }
+
+    proptest! {
+        #[test]
+        fn keeps_what_the_merge_rule_keeps_in_any_order_and_with_repeats(
+            (writes, delivered) in vec(any_register(), 1..8).prop_flat_map(redelivered)
+        ) {
+            let connection = migrated();
+
+            let mut merged: Option<Register> = None;
+            for register in delivered {
+                let won = upsert(&connection, &ADDRESS, &register, 1).unwrap();
+                let kept = merged.clone().map_or(register.clone(), |kept| kept.merge(register));
+                prop_assert_eq!(won, merged.as_ref() != Some(&kept));
+                merged = Some(kept);
+            }
+
+            prop_assert_eq!(Some(stored(&connection)), writes.into_iter().reduce(Register::merge));
+        }
+    }
+}
