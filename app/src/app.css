@@ -94,7 +94,7 @@
 
   --shadow-floating:
     0 8px 28px var(--color-glass-shadow), 0 1px 3px var(--color-glass-contact);
-  --shadow-knob: 0 1px 2px rgb(0 0 0 / 0.2);
+  --shadow-knob: 0 1px 2px var(--color-knob-shadow);
 
   --color-background: #faf8f4;
   --color-foreground: #1c1b18;
@@ -109,6 +109,7 @@
   --color-warning-soft: #fbf3e3;
   --color-switch-off: #c9c3b6;
   --color-switch-knob: #ffffff;
+  --color-knob-shadow: rgb(0 0 0 / 0.2);
   --color-icon-hole: var(--color-accent-soft);
   --color-glass: rgb(250 248 244 / 0.74);
   --color-glass-edge: rgb(255 255 255 / 0.7);
