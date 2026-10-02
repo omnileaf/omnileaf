@@ -2,7 +2,7 @@ use rusqlite::{Connection, TransactionBehavior};
 
 use crate::Error;
 
-pub(crate) const EMPTY_SCHEMA: u32 = 0;
+const EMPTY_SCHEMA: u32 = 0;
 
 const SCHEMA_VERSION: &str = "user_version";
 
@@ -30,11 +30,8 @@ macro_rules! migration {
 pub(crate) const MIGRATIONS: &[Migration] = &[migration!("0001_mark_omnileaf_library")];
 
 pub(crate) fn pending(connection: &Connection, migrations: &[Migration]) -> Result<Pending, Error> {
-    let found: u32 = connection.pragma_query_value(None, SCHEMA_VERSION, |row| row.get(0))?;
-    let supported = latest_version(migrations);
-    if found > supported {
-        return Err(Error::NewerSchema { found, supported });
-    }
+    let found = schema_version(connection)?;
+    let supported = supported_version(found, migrations)?;
     Ok(if found == supported {
         Pending::Current
     } else if found == EMPTY_SCHEMA {
@@ -44,12 +41,11 @@ pub(crate) fn pending(connection: &Connection, migrations: &[Migration]) -> Resu
     })
 }
 
-pub(crate) fn apply(
-    connection: &mut Connection,
-    migrations: &[Migration],
-    from: u32,
-) -> Result<(), Error> {
+/// Reads the schema version again inside the write lock, so migrations another connection applied meanwhile are skipped.
+pub(crate) fn apply(connection: &mut Connection, migrations: &[Migration]) -> Result<(), Error> {
     let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
+    let from = schema_version(&transaction)?;
+    let latest = supported_version(from, migrations)?;
     for (_, migration) in numbered(migrations).filter(|(version, _)| *version > from) {
         transaction
             .execute_batch(migration.sql)
@@ -59,8 +55,20 @@ pub(crate) fn apply(
             })?;
         tracing::info!(migration = migration.name, "applied a database migration");
     }
-    transaction.pragma_update(None, SCHEMA_VERSION, latest_version(migrations))?;
+    transaction.pragma_update(None, SCHEMA_VERSION, latest)?;
     Ok(transaction.commit()?)
+}
+
+fn schema_version(connection: &Connection) -> rusqlite::Result<u32> {
+    connection.pragma_query_value(None, SCHEMA_VERSION, |row| row.get(0))
+}
+
+fn supported_version(found: u32, migrations: &[Migration]) -> Result<u32, Error> {
+    let supported = latest_version(migrations);
+    if found > supported {
+        return Err(Error::NewerSchema { found, supported });
+    }
+    Ok(supported)
 }
 
 fn numbered(migrations: &[Migration]) -> impl Iterator<Item = (u32, &Migration)> {
@@ -78,7 +86,7 @@ mod tests {
     use std::{fs, path::Path};
 
     use super::*;
-    use crate::{Database, scratch::ScratchLibrary};
+    use crate::{Database, connection, scratch::ScratchLibrary};
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
 
@@ -165,6 +173,34 @@ mod tests {
             })
         ));
         assert_eq!(schema_of(&scratch.config.path), (0, 0, Vec::new()));
+    }
+
+    #[test]
+    fn skips_the_migrations_another_connection_applied_since_the_version_was_read() {
+        let scratch = ScratchLibrary::new("raced");
+        let tally = [
+            Migration {
+                name: "0001_create_tally",
+                sql: "CREATE TABLE tally (count INTEGER NOT NULL); INSERT INTO tally (count) VALUES (1);",
+            },
+            Migration {
+                name: "0002_scale_tally",
+                sql: "UPDATE tally SET count = count * 1000;",
+            },
+        ];
+        drop(Database::open_with(&scratch.config, &tally[..1]).unwrap());
+        let mut stale = connection::open_writer(&scratch.config).unwrap();
+        let Pending::Upgrade { .. } = pending(&stale, &tally).unwrap() else {
+            panic!("the database should be waiting for its second migration");
+        };
+        drop(Database::open_with(&scratch.config, &tally).unwrap());
+
+        apply(&mut stale, &tally).unwrap();
+
+        let count: i64 = stale
+            .query_row("SELECT count FROM tally", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(count, 1000);
     }
 
     fn schema_of(path: &Path) -> Schema {

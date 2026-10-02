@@ -27,11 +27,11 @@ impl Database {
         match migration::pending(&writer, migrations)? {
             Pending::Current => {}
             Pending::NewDatabase => {
-                migration::apply(&mut writer, migrations, migration::EMPTY_SCHEMA)?;
+                migration::apply(&mut writer, migrations)?;
             }
             Pending::Upgrade { from } => {
                 backup::back_up(&writer, &config.backup_dir, from)?;
-                migration::apply(&mut writer, migrations, from)?;
+                migration::apply(&mut writer, migrations)?;
             }
         }
         let readers = (0..READER_COUNT)
