@@ -2,10 +2,13 @@
   import { Folder, House } from "@lucide/svelte";
 
   import type { LibraryFolder } from "$lib/ipc/bindings";
+  import { m } from "$lib/paraglide/messages.js";
 
   const ICON_SIZE = 20;
 
   let { folder }: { folder: LibraryFolder } = $props();
+
+  const title = $derived(folder.kind === "home" ? m.app_name() : folder.name);
 </script>
 
 <div
@@ -24,7 +27,7 @@
     {/if}
   </span>
   <div class="flex-1 min-inline-none">
-    <p class="truncate font-semibold">{folder.name}</p>
+    <p class="truncate font-semibold">{title}</p>
     <p class="truncate text-caption text-muted">{folder.location}</p>
   </div>
 </div>

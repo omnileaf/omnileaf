@@ -120,3 +120,23 @@ test("says when the folders couldn't be loaded", async () => {
     .element(screen.getByText("Couldn't load your folders. Try again later."))
     .toBeVisible();
 });
+
+test("names the home folder after the app rather than its folder on disk", async () => {
+  serveFolders([
+    {
+      id: "1",
+      kind: "home",
+      name: "app.omnileaf",
+      location: "/data/user/0/app.omnileaf",
+    },
+  ]);
+
+  const { home } = await renderSettings();
+
+  await expect
+    .element(home.getByText("Omnileaf", { exact: true }))
+    .toBeVisible();
+  await expect
+    .element(home.getByText("/data/user/0/app.omnileaf"))
+    .toBeVisible();
+});
