@@ -25,6 +25,7 @@ const SERIES: &str = "Sample Series 01";
 const HOME: &str = "/data/Omnileaf";
 const COMICS: &str = "/media/Comics";
 const MANGA: &str = "/media/Manga";
+const SAMPLES: &str = "/media/Samples";
 
 struct Library {
     database: Database,
@@ -284,4 +285,16 @@ async fn reports_a_folder_missing_from_the_library() {
     let outcome = library.remove(comics).await;
 
     assert!(matches!(outcome, Err(Error::UnknownRoot { id }) if id == comics));
+}
+
+#[tokio::test]
+async fn gives_a_removed_folder_id_to_no_folder_added_later() {
+    let library = Library::open("remove-root-id");
+    library.add(RootKind::Linked, COMICS).await;
+    let manga = library.add(RootKind::Linked, MANGA).await;
+    library.remove(manga).await.unwrap();
+
+    let added_later = library.add(RootKind::Linked, SAMPLES).await;
+
+    assert_ne!(added_later, manga);
 }

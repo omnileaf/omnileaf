@@ -21,7 +21,7 @@ const BOOKS_FOUND_ONLY_IN_ROOT: &str = "DELETE FROM book
             SELECT 1 FROM book_file WHERE book_id = book.id AND root_id != ?1
         )";
 
-/// A library root's row key, stable because the table keeps an explicit integer primary key.
+/// A library root's row key, never handed to a later root because the table counts its ids up without reusing them.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RootId(pub(crate) i64);
 
