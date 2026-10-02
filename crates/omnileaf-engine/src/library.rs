@@ -3,15 +3,16 @@ use std::{fs, io, path::PathBuf, sync::Arc};
 use omnileaf_db::{
     Config, Database,
     catalog::{
-        NewRoot, PageRequest, PageSize, RootKind, RootLocator, add_root, library_roots,
-        remove_root, set_home_root,
+        NewRoot, PageRequest, PageSize, RootKind, RootLocator, add_root, library_root,
+        library_roots, remove_root, set_home_root,
     },
     store::Clock,
 };
 use tokio::task::spawn_blocking;
 
 use crate::{
-    FolderCursor, FolderId, FolderPage, FolderSurvey, LibraryFolder, SurveyError, survey_folder,
+    FolderCursor, FolderId, FolderPage, FolderScan, FolderSurvey, LibraryFolder, SurveyError,
+    scan::scan, survey_folder,
 };
 
 const DATABASE_FILE: &str = "library.sqlite";
@@ -107,6 +108,16 @@ impl Library {
             .database
             .write(move |transaction| remove_root(transaction, id.0))
             .await?)
+    }
+
+    /// Reads the folder's books into the catalog.
+    #[tracing::instrument(skip_all, fields(folder = %id))]
+    pub async fn scan_folder(&self, id: FolderId) -> Result<FolderScan, LibraryError> {
+        let root = self
+            .database
+            .read(move |connection| library_root(connection, id.0))
+            .await?;
+        scan(&self.database, root, self.now_ms()).await
     }
 
     async fn set_home(&self, home: PathBuf) -> Result<(), LibraryError> {

@@ -87,7 +87,7 @@ fn is_ignored(name: &OsStr) -> bool {
     name.as_encoded_bytes().starts_with(b".") || name == MACOS_RESOURCE_FOLDER
 }
 
-fn is_comic(name: &OsStr) -> bool {
+pub(crate) fn is_comic(name: &OsStr) -> bool {
     Path::new(name)
         .extension()
         .and_then(OsStr::to_str)

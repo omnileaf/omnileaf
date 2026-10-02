@@ -1,0 +1,187 @@
+#![expect(
+    clippy::unwrap_used,
+    reason = "each test scans its own generated library in a scratch folder, so a failed set-up should stop the test"
+)]
+
+mod support;
+
+use std::{fs, path::Path};
+
+use omnileaf_db::rusqlite::{Connection, OpenFlags};
+use omnileaf_engine::{Clock, FolderId, FolderScan, Library, LibraryError};
+use omnileaf_testkit::{
+    ArchiveEntry, Compression, PageShape, SAMPLE_LIBRARY_NAME, cbz, page_png, write_sample_library,
+};
+use support::TempFolder;
+
+const NOW_UNIX_MS: u64 = 1_790_000_000_000;
+const DATABASE_FILE: &str = "library.sqlite";
+
+struct FixedClock;
+
+impl Clock for FixedClock {
+    fn now_unix_ms(&self) -> u64 {
+        NOW_UNIX_MS
+    }
+}
+
+struct Scanned {
+    library: Library,
+    home: TempFolder,
+    id: FolderId,
+}
+
+impl Scanned {
+    async fn folder(name: &str, folder: &Path) -> (Self, FolderScan) {
+        let home = TempFolder::new(&format!("{name}-home"));
+        let library = Library::open(home.path().to_path_buf(), FixedClock)
+            .await
+            .unwrap();
+        library.add_folder(folder.to_path_buf()).await.unwrap();
+        let page = library.folders(None).await.unwrap();
+        let id = page.folders.last().unwrap().id;
+        let scanned = Self { library, home, id };
+        let scan = scanned.scan_again().await;
+        (scanned, scan)
+    }
+
+    async fn scan_again(&self) -> FolderScan {
+        self.library.scan_folder(self.id).await.unwrap()
+    }
+
+    fn series(&self) -> Vec<(String, i64)> {
+        self.rows(
+            "SELECT title, book_count FROM series ORDER BY title",
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+    }
+
+    fn rows<T>(
+        &self,
+        sql: &str,
+        read: fn(&omnileaf_db::rusqlite::Row<'_>) -> omnileaf_db::rusqlite::Result<T>,
+    ) -> Vec<T> {
+        let connection = Connection::open_with_flags(
+            self.home.path().join(DATABASE_FILE),
+            OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )
+        .unwrap();
+        connection
+            .prepare(sql)
+            .unwrap()
+            .query_map([], read)
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap()
+    }
+}
+
+fn write_book(path: &Path, seed: u64) {
+    let entries: Vec<ArchiveEntry> = (0..2)
+        .map(|index| ArchiveEntry {
+            name: format!("{:03}.png", index + 1),
+            bytes: page_png(seed, index, PageShape::Portrait).unwrap(),
+        })
+        .collect();
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(path, cbz(&entries, Compression::Stored).unwrap()).unwrap();
+}
+
+fn sample_library(name: &str) -> TempFolder {
+    let folder = TempFolder::new(name);
+    write_sample_library(folder.path()).unwrap();
+    folder
+}
+
+fn owned(rows: &[(&str, i64)]) -> Vec<(String, i64)> {
+    rows.iter()
+        .map(|(title, books)| ((*title).to_owned(), *books))
+        .collect()
+}
+
+#[tokio::test]
+async fn scans_each_series_folder_into_a_series_of_its_books() {
+    let comics = sample_library("scan-sample");
+
+    let (scanned, scan) =
+        Scanned::folder("scan-sample", &comics.path().join(SAMPLE_LIBRARY_NAME)).await;
+
+    assert_eq!(
+        scanned.series(),
+        owned(&[
+            ("Sample Series 01", 3),
+            ("Sample Series 02", 2),
+            ("Sample Series 03", 2)
+        ])
+    );
+    assert_eq!(
+        scan,
+        FolderScan {
+            name: SAMPLE_LIBRARY_NAME.to_owned(),
+            series: 3,
+            books: 7,
+            unreadable_books: 0,
+            unreadable_folders: 0,
+        }
+    );
+}
+
+#[tokio::test]
+async fn leaves_out_macos_resource_folders_and_hidden_files() {
+    let comics = TempFolder::new("scan-clutter");
+    for (path, seed) in [
+        ("Sample Series 01/v01.cbz", 1),
+        ("Sample Series 01/.v02.cbz", 2),
+        (".Sample Hidden/v01.cbz", 3),
+        ("__MACOSX/Sample Series 01/v01.cbz", 4),
+    ] {
+        write_book(&comics.path().join(path), seed);
+    }
+
+    let (scanned, scan) = Scanned::folder("scan-clutter", comics.path()).await;
+
+    assert_eq!(scanned.series(), owned(&[("Sample Series 01", 1)]));
+    assert_eq!(scan.books, 1);
+}
+
+#[tokio::test]
+async fn counts_the_books_it_cannot_read_and_carries_on() {
+    let comics = TempFolder::new("scan-damaged").with_files(&["Sample Series 01/v02.cbz"]);
+    write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
+
+    let (scanned, scan) = Scanned::folder("scan-damaged", comics.path()).await;
+
+    assert_eq!(scanned.series(), owned(&[("Sample Series 01", 1)]));
+    assert_eq!((scan.books, scan.unreadable_books), (1, 1));
+}
+
+#[tokio::test]
+async fn keeps_one_book_per_file_when_a_folder_is_scanned_again() {
+    let comics = sample_library("scan-twice");
+    let (scanned, first) =
+        Scanned::folder("scan-twice", &comics.path().join(SAMPLE_LIBRARY_NAME)).await;
+
+    let again = scanned.scan_again().await;
+
+    assert_eq!(again, first);
+    assert_eq!(
+        scanned.series(),
+        owned(&[
+            ("Sample Series 01", 3),
+            ("Sample Series 02", 2),
+            ("Sample Series 03", 2)
+        ])
+    );
+}
+
+#[tokio::test]
+async fn refuses_to_scan_a_folder_missing_from_the_library() {
+    let comics = sample_library("scan-removed");
+    let (scanned, _) =
+        Scanned::folder("scan-removed", &comics.path().join(SAMPLE_LIBRARY_NAME)).await;
+    scanned.library.remove_folder(scanned.id).await.unwrap();
+
+    let outcome = scanned.library.scan_folder(scanned.id).await;
+
+    assert!(matches!(outcome, Err(LibraryError::FolderNotFound { id }) if id == scanned.id));
+}

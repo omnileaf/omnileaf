@@ -5,6 +5,8 @@ mod clock;
 mod folder_survey;
 mod library;
 mod library_folder;
+mod library_layout;
+mod scan;
 
 pub use app_info::{AppInfo, Platform};
 pub use clock::SystemClock;
@@ -12,6 +14,7 @@ pub use folder_survey::{FolderSurvey, SurveyError, survey_folder};
 pub use library::{Library, LibraryError};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
 pub use omnileaf_db::store::Clock;
+pub use scan::FolderScan;
 
 #[derive(Debug)]
 pub struct Core {
