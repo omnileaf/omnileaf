@@ -2,7 +2,10 @@ use std::{fs, io, path::PathBuf, sync::Arc};
 
 use omnileaf_db::{
     Config, Database,
-    catalog::{NewRoot, PageRequest, PageSize, RootKind, RootLocator, add_root, library_roots},
+    catalog::{
+        NewRoot, PageRequest, PageSize, RootKind, RootLocator, add_root, library_roots,
+        set_home_root,
+    },
     store::Clock,
 };
 use tokio::task::spawn_blocking;
@@ -63,7 +66,7 @@ impl Library {
             database,
             clock: Arc::new(clock),
         };
-        library.remember(RootKind::Home, home).await?;
+        library.set_home(home).await?;
         Ok(library)
     }
 
@@ -72,7 +75,7 @@ impl Library {
     pub async fn add_folder(&self, folder: PathBuf) -> Result<FolderSurvey, LibraryError> {
         let surveyed = folder.clone();
         let survey = spawn_blocking(move || survey_folder(&surveyed)).await??;
-        self.remember(RootKind::Linked, folder).await?;
+        self.link(folder).await?;
         Ok(survey)
     }
 
@@ -91,15 +94,28 @@ impl Library {
         })
     }
 
-    async fn remember(&self, kind: RootKind, folder: PathBuf) -> Result<(), LibraryError> {
+    async fn set_home(&self, home: PathBuf) -> Result<(), LibraryError> {
+        let locator = RootLocator::Path(home);
+        let added_at_ms = self.now_ms();
+        self.database
+            .write(move |transaction| set_home_root(transaction, &locator, added_at_ms))
+            .await?;
+        Ok(())
+    }
+
+    async fn link(&self, folder: PathBuf) -> Result<(), LibraryError> {
         let root = NewRoot {
-            kind,
+            kind: RootKind::Linked,
             locator: RootLocator::Path(folder),
-            added_at_ms: i64::try_from(self.clock.now_unix_ms()).unwrap_or(i64::MAX),
+            added_at_ms: self.now_ms(),
         };
         self.database
             .write(move |transaction| add_root(transaction, &root))
             .await?;
         Ok(())
+    }
+
+    fn now_ms(&self) -> i64 {
+        i64::try_from(self.clock.now_unix_ms()).unwrap_or(i64::MAX)
     }
 }

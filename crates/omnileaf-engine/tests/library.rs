@@ -157,3 +157,33 @@ async fn pages_through_more_folders_than_one_page_holds() {
         1 + MORE_FOLDERS_THAN_A_PAGE_HOLDS
     );
 }
+
+#[tokio::test]
+async fn keeps_one_home_folder_at_its_new_location_after_the_home_moves() {
+    let parent = TempFolder::new("library-moved-home");
+    let comics = TempFolder::new("Moved Home Comics");
+    let first_home = parent.path().join("Before");
+    let moved_home = parent.path().join("After");
+    let library = open(&first_home).await;
+    library
+        .add_folder(comics.path().to_path_buf())
+        .await
+        .unwrap();
+    drop(library);
+    std::fs::rename(&first_home, &moved_home).unwrap();
+
+    let reopened = open(&moved_home).await;
+
+    let folders = all_folders(&reopened).await;
+    assert_eq!(
+        kinds_and_names(&folders),
+        [
+            (FolderKind::Home, "After"),
+            (FolderKind::Linked, "Moved Home Comics")
+        ]
+    );
+    assert_eq!(
+        folders.first().map(|folder| folder.location.clone()),
+        Some(moved_home.display().to_string())
+    );
+}
