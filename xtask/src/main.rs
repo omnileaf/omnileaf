@@ -36,7 +36,7 @@ enum Command {
     /// Run the app on the desktop and phones at once, sharing one dev server.
     Dev {
         /// The platforms to run; every one this machine can build for when left out.
-        #[arg(long = "platform", value_enum)]
+        #[arg(long = "platform", value_enum, num_args = 1.., value_delimiter = ',')]
         platforms: Vec<dev::Platform>,
         /// The iOS Simulator or device to run on, by name.
         #[arg(long)]
@@ -146,5 +146,36 @@ fn enforce_policy() -> anyhow::Result<()> {
 fn print_lines(lines: &[impl Display]) {
     for line in lines {
         println!("{line}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use clap::Parser;
+
+    use super::{Cli, Command};
+    use crate::dev::Platform;
+
+    fn parsed_platforms(args: &[&str]) -> Vec<Platform> {
+        let cli = Cli::try_parse_from(["xtask", "dev"].iter().chain(args)).unwrap();
+        let Command::Dev { platforms, .. } = cli.command else {
+            panic!("parsed a command other than dev");
+        };
+        platforms
+    }
+
+    #[test]
+    fn takes_several_platforms_after_one_flag() {
+        for args in [
+            &["--platform", "ios", "android"][..],
+            &["--platform", "ios,android"],
+            &["--platform", "ios", "--platform", "android"],
+        ] {
+            assert_eq!(
+                parsed_platforms(args),
+                [Platform::Ios, Platform::Android],
+                "{args:?}"
+            );
+        }
     }
 }
