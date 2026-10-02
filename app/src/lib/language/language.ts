@@ -7,6 +7,8 @@ import {
   locales,
 } from "$lib/paraglide/runtime.js";
 
+import { PSEUDO_LOCALE } from "./pseudo-locale";
+
 const LANGUAGE_KEY = "omnileaf.language";
 const CHOSEN_LANGUAGE_STRATEGY = "custom-chosen";
 
@@ -25,7 +27,7 @@ export interface LanguageSwitch {
 
 export const LANGUAGE_CHOICES: readonly LanguageChoice[] = [
   "system",
-  ...locales,
+  ...locales.filter((locale) => locale !== PSEUDO_LOCALE),
 ];
 
 export function storedLanguageChoice(
