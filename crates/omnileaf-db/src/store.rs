@@ -54,7 +54,7 @@ impl Store {
         self.subscribers.subscribe()
     }
 
-    /// Runs the job in one transaction that commits only when it succeeds, stamping each write later than every earlier one.
+    /// Runs the job in one transaction that commits only when it and every write it made succeed, stamping each write later than every earlier one.
     pub fn write<T, F>(&self, job: F) -> impl Future<Output = Result<T, Error>> + use<T, F>
     where
         T: Send + 'static,

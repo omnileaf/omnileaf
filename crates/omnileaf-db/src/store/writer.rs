@@ -19,6 +19,7 @@ pub struct Writer<'t> {
     local: LocalReplica,
     now_unix_ms: u64,
     changed: BTreeSet<Key>,
+    has_failed: bool,
 }
 
 impl<'t> Writer<'t> {
@@ -28,6 +29,7 @@ impl<'t> Writer<'t> {
             local: LocalReplica::read(connection)?,
             now_unix_ms,
             changed: BTreeSet::new(),
+            has_failed: false,
         })
     }
 
@@ -59,7 +61,17 @@ impl<'t> Writer<'t> {
         self.write(key.into(), MergeClass::LastWriterWins, value)
     }
 
+    /// Fails every later write and the commit once one write fails, so no job can keep half of one.
     fn write(&mut self, key: Key, class: MergeClass, value: Value) -> Result<(), Error> {
+        if self.has_failed {
+            return Err(Error::FailedWriteIgnored);
+        }
+        let written = self.merge(key, class, value);
+        self.has_failed = written.is_err();
+        written
+    }
+
+    fn merge(&mut self, key: Key, class: MergeClass, value: Value) -> Result<(), Error> {
         let register = Register {
             class,
             stamp: self.local.stamp(self.now_unix_ms)?,
@@ -75,6 +87,9 @@ impl<'t> Writer<'t> {
     }
 
     pub(crate) fn finish(self) -> Result<Changed, Error> {
+        if self.has_failed {
+            return Err(Error::FailedWriteIgnored);
+        }
         self.local.save(self.connection)?;
         Ok(Changed { keys: self.changed })
     }

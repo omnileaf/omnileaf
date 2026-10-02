@@ -6,7 +6,10 @@
 mod store_support;
 mod support;
 
-use omnileaf_db::store::{LatestKey, Store};
+use omnileaf_db::{
+    Error,
+    store::{LatestKey, Store},
+};
 use omnileaf_sync_proto::BookId;
 use store_support::{FakeClock, NOW_UNIX_MS, book, open_store, raise_furthest, set_position};
 use support::ScratchFolder;
@@ -79,6 +82,24 @@ async fn projects_a_cleared_position_as_absent() {
     assert_eq!(positions, [None]);
 }
 
+#[tokio::test]
+async fn keeps_no_register_or_sequence_number_from_a_write_that_failed_to_project() {
+    let folder = ScratchFolder::new("project-failed");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    refuse_book_state_for(&store, book(1)).await;
+
+    let outcome = store
+        .write(|writer| {
+            let _ = writer.set_position(book(1), 7);
+            writer.set_position(book(2), 3)
+        })
+        .await;
+    set_position(&store, book(3), 5).await.unwrap();
+
+    assert!(matches!(outcome, Err(Error::FailedWriteIgnored)));
+    assert_eq!(register_seqs(&store).await, [1]);
+}
+
 async fn book_states(store: &Store) -> Vec<BookState> {
     store
         .database()
@@ -96,6 +117,38 @@ async fn book_states(store: &Store) -> Vec<BookState> {
                 })
             })?;
             Ok(rows.collect::<Result<_, _>>()?)
+        })
+        .await
+        .unwrap()
+}
+
+async fn refuse_book_state_for(store: &Store, book: BookId) {
+    store
+        .database()
+        .write(move |transaction| {
+            transaction.execute_batch(
+                "CREATE TABLE refused_book (id BLOB NOT NULL);
+                 CREATE TRIGGER refuse_book BEFORE INSERT ON book_state
+                 WHEN new.book_id IN (SELECT id FROM refused_book)
+                 BEGIN SELECT RAISE(ABORT, 'refused'); END;",
+            )?;
+            transaction.execute(
+                "INSERT INTO refused_book (id) VALUES (?1)",
+                [book.as_bytes()],
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+}
+
+async fn register_seqs(store: &Store) -> Vec<u64> {
+    store
+        .database()
+        .read(|connection| {
+            let mut statement = connection.prepare("SELECT seq FROM sync_register ORDER BY seq")?;
+            let seqs = statement.query_map([], |row| row.get(0))?;
+            Ok(seqs.collect::<Result<_, _>>()?)
         })
         .await
         .unwrap()

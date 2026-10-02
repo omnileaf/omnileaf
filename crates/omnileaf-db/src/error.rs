@@ -51,6 +51,8 @@ pub enum Error {
     UnexpectedValue { key: Key, found: Value },
     #[error("read the value of a synced register")]
     RegisterValue(#[from] ValueError),
+    #[error("commit a synced write job that carried on after one of its writes failed")]
+    FailedWriteIgnored,
     #[error("start a database thread")]
     Spawn(#[source] io::Error),
     #[error("run a statement in a database job")]
