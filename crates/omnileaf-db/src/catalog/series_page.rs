@@ -59,6 +59,7 @@ pub struct SeriesSummary {
 }
 
 /// Lists only the series holding at least one book, which are the ones the library shows.
+#[tracing::instrument(skip_all, fields(?order, size = ?request.size))]
 pub fn series_page(
     connection: &Connection,
     order: SeriesOrder,

@@ -25,6 +25,7 @@ pub struct BookSummary {
 }
 
 /// A series missing from the catalog has no books, so its page is empty.
+#[tracing::instrument(skip_all, fields(%series, size = ?request.size))]
 pub fn series_books(
     connection: &Connection,
     series: SeriesId,
