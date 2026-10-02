@@ -26,6 +26,10 @@ impl FakeClock {
     fn at(unix_ms: u64) -> Self {
         Self(Arc::new(AtomicU64::new(unix_ms)))
     }
+
+    fn set(&self, unix_ms: u64) {
+        self.0.store(unix_ms, Ordering::Relaxed);
+    }
 }
 
 impl Clock for FakeClock {
@@ -99,6 +103,25 @@ async fn keeps_the_later_of_two_sets_under_the_next_sequence_number() {
 }
 
 #[tokio::test]
+async fn stamps_a_write_after_the_last_one_when_the_clock_goes_back() {
+    let folder = ScratchFolder::new("clock-back");
+    let clock = FakeClock::at(NOW_UNIX_MS);
+    let store = open_store(&folder, clock.clone());
+    set_position(&store, book(1), 12).await.unwrap();
+    clock.set(NOW_UNIX_MS - 60_000);
+
+    set_position(&store, book(2), 3).await.unwrap();
+
+    assert_eq!(
+        stamps(&store).await,
+        [
+            Hlc::new(NOW_UNIX_MS, 0).unwrap().as_u64(),
+            Hlc::new(NOW_UNIX_MS, 1).unwrap().as_u64()
+        ]
+    );
+}
+
+#[tokio::test]
 async fn carries_the_clock_and_sequence_on_after_the_library_reopens() {
     let folder = ScratchFolder::new("reopen");
     let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
@@ -162,6 +185,16 @@ async fn local_node_id(database: &Database) -> [u8; 16] {
         })
         .await
         .unwrap()
+}
+
+async fn stamps(store: &Store) -> Vec<u64> {
+    let mut stamps: Vec<u64> = registers(store)
+        .await
+        .iter()
+        .map(|register| register.hlc)
+        .collect();
+    stamps.sort_unstable();
+    stamps
 }
 
 async fn registers(store: &Store) -> Vec<StoredRegister> {
