@@ -2,6 +2,18 @@
 
 @custom-variant ios (&:where([data-platform="ios"], [data-platform="ios"] *));
 @custom-variant android (&:where([data-platform="android"], [data-platform="android"] *));
+@custom-variant icon-moves {
+  @variant android {
+    @variant max-expanded {
+      @slot;
+    }
+  }
+  @variant ios {
+    @variant max-medium {
+      @slot;
+    }
+  }
+}
 
 @theme {
   --*: initial;
@@ -105,6 +117,12 @@
   --animate-pill-grow: pill-grow var(--transition-duration-grow)
     var(--ease-emphasized);
   --animate-nav-pop: nav-pop var(--transition-duration-move) var(--ease-glass);
+  --animate-book-open: book-open var(--transition-duration-move) var(--ease-out);
+  --animate-needle-swing: needle-swing var(--transition-duration-move)
+    var(--ease-out);
+  --animate-hands-sweep: hands-sweep var(--transition-duration-move)
+    var(--ease-out);
+  --animate-gear-turn: gear-turn var(--transition-duration-move) var(--ease-out);
 
   @keyframes pill-grow {
     from {
@@ -115,6 +133,36 @@
   @keyframes nav-pop {
     45% {
       scale: 1.15;
+    }
+  }
+
+  @keyframes book-open {
+    from {
+      scale: 0.5 1;
+    }
+    70% {
+      scale: 1.06 1;
+    }
+  }
+
+  @keyframes needle-swing {
+    from {
+      rotate: -100deg;
+    }
+    70% {
+      rotate: 14deg;
+    }
+  }
+
+  @keyframes hands-sweep {
+    from {
+      rotate: -140deg;
+    }
+  }
+
+  @keyframes gear-turn {
+    to {
+      rotate: 60deg;
     }
   }
 }
@@ -162,6 +210,12 @@
       --color-icon-hole: var(--color-glass-hole);
     }
   }
+}
+
+@utility transition-paint {
+  transition-property: fill, stroke;
+  transition-timing-function: var(--tw-ease, ease);
+  transition-duration: var(--tw-duration, 0s);
 }
 
 @utility inline-tab {

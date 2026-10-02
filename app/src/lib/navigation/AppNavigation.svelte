@@ -128,6 +128,7 @@
             <NavigationIcon
               section={destination.section}
               {isSelected}
+              {isArriving}
               size={ICON_SIZE}
               class={[
                 "relative ios:max-medium:block-xl ios:max-medium:inline-xl",
