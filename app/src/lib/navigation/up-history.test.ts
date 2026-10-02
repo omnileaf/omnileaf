@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import { moveTo } from "./up-history";
 
-test("stays put when Library is opened from Library", () => {
+test("lets the link through when Library is opened from Library", () => {
   expect(moveTo(["/"], "/")).toEqual({ kind: "push" });
 });
 
