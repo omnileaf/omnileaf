@@ -99,15 +99,6 @@ fn raw_fingerprints_change_when_a_sampled_byte_changes() {
 }
 
 #[test]
-fn raw_fingerprints_need_every_sample() {
-    let content = support::sample_file(100);
-
-    let fingerprint = Fingerprint::raw1(100, &[content.as_slice(); 9]);
-
-    assert_eq!(fingerprint, Err(FingerprintError::SampleCount { count: 9 }));
-}
-
-#[test]
 fn raw_fingerprints_reject_a_sample_of_the_wrong_length() {
     let content = support::sample_file(100);
     let mut samples = support::raw1_samples(&content);

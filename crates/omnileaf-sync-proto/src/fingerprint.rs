@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{array, ops::Range};
 
 pub const RAW1_SAMPLE_COUNT: usize = 10;
 
@@ -33,8 +33,6 @@ pub enum FingerprintError {
     NoImages,
     #[error("{count} image entries do not fit the 32-bit entry count")]
     TooManyImages { count: usize },
-    #[error("raw fingerprints need {RAW1_SAMPLE_COUNT} samples, not {count}")]
-    SampleCount { count: usize },
     #[error("raw sample {index} holds {actual} bytes where its range holds {expected}")]
     SampleLength {
         index: usize,
@@ -77,32 +75,18 @@ impl Fingerprint {
     #[must_use]
     pub fn raw1_ranges(size: u64) -> [Range<u64>; RAW1_SAMPLE_COUNT] {
         let edge = RAW1_EDGE_LENGTH.min(size);
-        let slice = |index: u64| {
-            let start = size / RAW1_SLICE_SPACING * index
-                + size % RAW1_SLICE_SPACING * index / RAW1_SLICE_SPACING;
-            start..start.saturating_add(RAW1_SLICE_LENGTH).min(size)
-        };
-        [
-            0..edge,
-            size - edge..size,
-            slice(1),
-            slice(2),
-            slice(3),
-            slice(4),
-            slice(5),
-            slice(6),
-            slice(7),
-            slice(8),
-        ]
+        array::from_fn(|position| match position {
+            0 => 0..edge,
+            1 => size - edge..size,
+            slice => {
+                let start = ninth_of(size, slice as u64 - 1);
+                start..start.saturating_add(RAW1_SLICE_LENGTH).min(size)
+            }
+        })
     }
 
     /// Takes the bytes of each range from [`Fingerprint::raw1_ranges`], in the same order.
-    pub fn raw1(size: u64, samples: &[&[u8]]) -> Result<Self, FingerprintError> {
-        if samples.len() != RAW1_SAMPLE_COUNT {
-            return Err(FingerprintError::SampleCount {
-                count: samples.len(),
-            });
-        }
+    pub fn raw1(size: u64, samples: &[&[u8]; RAW1_SAMPLE_COUNT]) -> Result<Self, FingerprintError> {
         let mut hasher = blake3::Hasher::new_derive_key(RAW1_CONTEXT);
         hasher.update(&size.to_le_bytes());
         for (index, (sample, range)) in samples.iter().zip(Self::raw1_ranges(size)).enumerate() {
@@ -125,4 +109,9 @@ impl Fingerprint {
             digest: *hasher.finalize().as_bytes(),
         }
     }
+}
+
+/// `size * ninths / 9` rounded down, without overflowing for any file size.
+const fn ninth_of(size: u64, ninths: u64) -> u64 {
+    size / RAW1_SLICE_SPACING * ninths + size % RAW1_SLICE_SPACING * ninths / RAW1_SLICE_SPACING
 }
