@@ -40,6 +40,7 @@ impl Hlc {
         Ok(Self(next).max(wall))
     }
 
+    /// Callers validate `remote` against the corrected wall clock first, since a stamp near the end of time leaves every later tick [`ClockError::Exhausted`].
     #[must_use]
     pub fn observe(self, remote: Self) -> Self {
         self.max(remote)
