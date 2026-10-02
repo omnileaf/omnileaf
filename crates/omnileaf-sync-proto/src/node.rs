@@ -1,13 +1,13 @@
-const NODE_ID_LENGTH: usize = 16;
+pub const NODE_ID_LENGTH: usize = 16;
 
 /// The device that made a write, by the id it picked at random when its library was created.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NodeId([u8; NODE_ID_LENGTH]);
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
-#[error("read a node id: {length} bytes where a node id has 16")]
-pub struct NodeIdLength {
-    pub length: usize,
+pub enum NodeIdError {
+    #[error("read a node id: {length} bytes where a node id has {NODE_ID_LENGTH}")]
+    WrongLength { length: usize },
 }
 
 impl NodeId {
@@ -24,11 +24,14 @@ impl From<[u8; NODE_ID_LENGTH]> for NodeId {
 }
 
 impl TryFrom<&[u8]> for NodeId {
-    type Error = NodeIdLength;
+    type Error = NodeIdError;
 
-    fn try_from(bytes: &[u8]) -> Result<Self, NodeIdLength> {
-        bytes.try_into().map(Self).map_err(|_| NodeIdLength {
-            length: bytes.len(),
-        })
+    fn try_from(bytes: &[u8]) -> Result<Self, NodeIdError> {
+        bytes
+            .try_into()
+            .map(Self)
+            .map_err(|_| NodeIdError::WrongLength {
+                length: bytes.len(),
+            })
     }
 }

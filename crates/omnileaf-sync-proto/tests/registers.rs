@@ -1,4 +1,4 @@
-use omnileaf_sync_proto::{Hlc, MergeClass, NodeId, NodeIdLength, Register, Stamp, Value};
+use omnileaf_sync_proto::{Hlc, MergeClass, NodeId, NodeIdError, Register, Stamp, Value};
 use proptest::{collection::vec, prelude::*, sample::subsequence};
 
 const NODE_A: [u8; 16] = [0xa0; 16];
@@ -28,7 +28,7 @@ fn reads_back_a_node_id_from_its_bytes() {
 fn refuses_a_node_id_of_the_wrong_length() {
     let read = NodeId::try_from([0xa0; 15].as_slice());
 
-    assert_eq!(read, Err(NodeIdLength { length: 15 }));
+    assert_eq!(read, Err(NodeIdError::WrongLength { length: 15 }));
 }
 
 #[test]

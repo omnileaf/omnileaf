@@ -14,7 +14,7 @@ pub use fingerprint::{
     RAW1_SAMPLE_COUNT,
 };
 pub use id::{BookId, CategoryId, IdError, KeyError, SeriesId};
-pub use node::{NodeId, NodeIdLength};
+pub use node::{NODE_ID_LENGTH, NodeId, NodeIdError};
 pub use norm::norm;
 pub use register::{MergeClass, Register, Stamp};
 pub use value::{Value, ValueError};
