@@ -98,14 +98,14 @@ async fn refuses_a_second_series_for_a_folder_name_that_normalises_alike() {
 }
 
 #[tokio::test]
-async fn keeps_the_fingerprint_a_book_id_comes_from_and_the_book_name_folded() {
+async fn keeps_the_fingerprint_a_book_id_comes_from_and_leaves_its_logical_key_unset() {
     let folder = ScratchFolder::new("book-identity");
     let database = Database::open(&folder.config()).unwrap();
     let series = add_local_series(&database, "Sample Series 01").await;
 
     add_books(&database, series, 1).await.unwrap();
 
-    let identity = database
+    let identity: (Option<Vec<u8>>, Option<String>, Option<String>) = database
         .read(move |connection| {
             Ok(connection.query_row(
                 "SELECT content_fp, fp_kind, logical_key FROM book WHERE id = ?1",
@@ -120,7 +120,7 @@ async fn keeps_the_fingerprint_a_book_id_comes_from_and_the_book_name_folded() {
         (
             Some(fingerprint(series, 0).as_bytes().to_vec()),
             Some("pmf1".to_owned()),
-            Some("volume 00".to_owned())
+            None
         )
     );
 }

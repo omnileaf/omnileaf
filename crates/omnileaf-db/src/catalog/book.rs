@@ -1,4 +1,4 @@
-use omnileaf_sync_proto::{BookId, Fingerprint, FingerprintKind, SeriesId, norm};
+use omnileaf_sync_proto::{BookId, Fingerprint, FingerprintKind, SeriesId};
 use rusqlite::Transaction;
 
 use crate::{Error, title_sort::title_sort_key};
@@ -25,9 +25,9 @@ pub fn add_book(transaction: &Transaction<'_>, book: &NewBook) -> Result<(), Err
         .prepare(
             "INSERT INTO book (
                  id, series_local_id, title, title_sort_key, added_at_ms,
-                 content_fp, fp_kind, logical_key
+                 content_fp, fp_kind
              )
-             SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7, ?8 FROM series WHERE id = ?2",
+             SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7 FROM series WHERE id = ?2",
         )?
         .execute((
             book.id().as_bytes(),
@@ -37,7 +37,6 @@ pub fn add_book(transaction: &Transaction<'_>, book: &NewBook) -> Result<(), Err
             book.added_at_ms,
             book.fingerprint.as_bytes(),
             kind_name(book.fingerprint.kind()),
-            norm(&book.title),
         ))?;
     if added == 0 {
         return Err(Error::UnknownSeries { id: book.series });
