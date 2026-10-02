@@ -1,4 +1,4 @@
-import { ScreenshotMode } from "../../src/lib/screenshot-mode/screenshot-mode.svelte.ts";
+import { ScreenshotMode } from "$lib/screenshot-mode/screenshot-mode.svelte";
 
 const NO_STORAGE = undefined;
 
