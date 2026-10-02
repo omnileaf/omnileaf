@@ -15,6 +15,7 @@ anyhow = "1.0.104"
 clap = { version = "4.6.7", features = ["derive"] }
 local-ip-address = "0.6.13"
 flate2 = { version = "1.1.10", default-features = false, features = ["rust_backend"] }
+icu_casemap = "2.3.0"
 omnileaf-engine = { path = "crates/omnileaf-engine" }
 omnileaf-formats = { path = "crates/omnileaf-formats" }
 omnileaf-testkit = { path = "crates/omnileaf-testkit" }
@@ -22,6 +23,7 @@ png = "0.18.1"
 proptest = "1.11.0"
 quick-xml = "0.42.0"
 serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
 specta = { version = "=2.0.0-rc.25", features = ["derive"] }
 specta-typescript = "=0.0.12"
 tauri = "2.12.0"

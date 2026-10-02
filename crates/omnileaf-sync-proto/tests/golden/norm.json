@@ -1,0 +1,85 @@
+{
+  "contract": "norm v1",
+  "vectors": [
+    {
+      "input": "Sample Series 03",
+      "norm": "sample series 03"
+    },
+    {
+      "input": "  Sample\tSeries \n 03  ",
+      "norm": "sample series 03"
+    },
+    {
+      "input": "",
+      "norm": ""
+    },
+    {
+      "input": " \u3000\u00a0 ",
+      "norm": ""
+    },
+    {
+      "input": "SAMPLE series",
+      "norm": "sample series"
+    },
+    {
+      "input": "\uff33\uff41\uff4d\uff50\uff4c\uff45 \uff10\uff13",
+      "norm": "sample 03"
+    },
+    {
+      "input": "\ufb01le \ufb00",
+      "norm": "file ff"
+    },
+    {
+      "input": "\u2460 \u337f",
+      "norm": "1 \u682a\u5f0f\u4f1a\u793e"
+    },
+    {
+      "input": "Stra\u00dfe STRASSE",
+      "norm": "strasse strasse"
+    },
+    {
+      "input": "STRA\u1e9e\u0301E",
+      "norm": "stras\u015be"
+    },
+    {
+      "input": "\u0130stanbul",
+      "norm": "i\u0307stanbul"
+    },
+    {
+      "input": "\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3 \u03c3\u03af\u03c3\u03c5\u03c6\u03bf\u03c2",
+      "norm": "\u03c3\u03af\u03c3\u03c5\u03c6\u03bf\u03c3 \u03c3\u03af\u03c3\u03c5\u03c6\u03bf\u03c3"
+    },
+    {
+      "input": "\u1fb3\u0308",
+      "norm": "\u03b1\u03ca"
+    },
+    {
+      "input": "\uab70\u13a0",
+      "norm": "\u13a0\u13a0"
+    },
+    {
+      "input": "\u212a\u212b",
+      "norm": "k\u00e5"
+    },
+    {
+      "input": "Cafe\u0301 Caf\u00e9",
+      "norm": "caf\u00e9 caf\u00e9"
+    },
+    {
+      "input": "\uff76\uff9e",
+      "norm": "\u30ac"
+    },
+    {
+      "input": "\u1100\u1161\u11a8",
+      "norm": "\uac01"
+    },
+    {
+      "input": "\ud835\udc00\ud835\udc01",
+      "norm": "ab"
+    },
+    {
+      "input": "Sample\u2003Series\u2028Volume",
+      "norm": "sample series volume"
+    }
+  ]
+}
