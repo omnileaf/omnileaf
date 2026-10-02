@@ -1,6 +1,6 @@
 import { Info } from "@lucide/svelte";
 import { afterEach, expect, test, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import type { Platform } from "$lib/ipc/bindings";
@@ -10,9 +10,21 @@ import { Notices, UNDO_WINDOW_MS } from "./notices.svelte";
 
 const REMOVED = "Removed Sample Series 07. Its files stay in the folder.";
 
+const placed: HTMLElement[] = [];
+
 afterEach(() => {
   vi.useRealTimers();
+  for (const element of placed.splice(0)) {
+    element.remove();
+  }
 });
+
+function placeButtonOnPage(): HTMLButtonElement {
+  const button = document.createElement("button");
+  document.body.append(button);
+  placed.push(button);
+  return button;
+}
 
 function pressKey(init: KeyboardEventInit): void {
   document.body.dispatchEvent(
@@ -88,6 +100,21 @@ test("follows the printed Z on a Latin keyboard that moves it", async () => {
 
   expect(timesUndone()).toBe(0);
 });
+
+test.each(["Undo", "Dismiss"])(
+  "returns focus to where it came from after %s",
+  async (name) => {
+    const origin = placeButtonOnPage();
+    await offerUndo();
+    origin.focus();
+    const button = page.getByRole("button", { name });
+    button.element().focus();
+
+    await userEvent.keyboard("{Enter}");
+
+    expect(document.activeElement).toBe(origin);
+  },
+);
 
 test("names the shortcut on the Undo button", async () => {
   const { undoButton } = await offerUndo("macos");

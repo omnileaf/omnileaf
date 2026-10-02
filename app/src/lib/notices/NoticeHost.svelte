@@ -55,6 +55,11 @@
     notices.dismiss();
   }
 
+  function undo(): void {
+    returnFocus();
+    notices.undo();
+  }
+
   function isInTextField(target: EventTarget | null): boolean {
     return target instanceof Element && target.closest(TEXT_FIELDS) !== null;
   }
@@ -68,7 +73,7 @@
       return;
     }
     event.preventDefault();
-    notices.undo();
+    undo();
   }
 </script>
 
@@ -81,7 +86,18 @@
     {/key}
   {:else if undoOffer !== undefined}
     {#key undoOffer}
-      <UndoBar offer={undoOffer} {notices} {shortcut} />
+      <UndoBar
+        offer={undoOffer}
+        {shortcut}
+        onUndo={undo}
+        onDismiss={dismiss}
+        onHold={() => {
+          notices.hold();
+        }}
+        onRelease={() => {
+          notices.release();
+        }}
+      />
     {/key}
   {/if}
 </div>
