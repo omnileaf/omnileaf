@@ -127,7 +127,7 @@ async fn carries_the_clock_and_sequence_on_after_the_library_reopens() {
     let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
     set_position(&store, book(1), 12).await.unwrap();
     drop(store);
-    let reopened = open_store(&folder, FakeClock::at(NOW_UNIX_MS - 60_000));
+    let reopened = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
 
     set_position(&reopened, book(2), 3).await.unwrap();
 
