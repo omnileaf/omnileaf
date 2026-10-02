@@ -7,7 +7,7 @@ mod writer;
 
 use std::sync::Arc;
 
-pub use key::LatestKey;
+pub use key::{LatestKey, MaximumKey};
 pub use writer::Writer;
 
 use crate::{Database, Error};

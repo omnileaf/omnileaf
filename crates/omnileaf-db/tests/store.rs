@@ -12,7 +12,7 @@ use std::sync::{
 
 use omnileaf_db::{
     Database, Error,
-    store::{Clock, LatestKey, Store},
+    store::{Clock, LatestKey, MaximumKey, Store},
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, Hlc, ImageEntry, Value};
 use support::ScratchFolder;
@@ -117,6 +117,38 @@ async fn clears_a_register_by_writing_null_over_it() {
 }
 
 #[tokio::test]
+async fn raises_a_maximum_to_a_higher_rank() {
+    let folder = ScratchFolder::new("raise");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    raise_furthest(&store, book(1), 10).await;
+
+    raise_furthest(&store, book(1), 20).await;
+
+    assert_eq!(
+        ranked(&store).await,
+        [("max".to_owned(), Some(20), 2, Value::Unsigned(20).to_cbor())]
+    );
+}
+
+#[tokio::test]
+async fn keeps_a_maximum_at_its_rank_and_spends_no_sequence_number_on_a_lower_one() {
+    let folder = ScratchFolder::new("raise-lower");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    raise_furthest(&store, book(1), 20).await;
+
+    raise_furthest(&store, book(1), 10).await;
+    set_position(&store, book(1), 10).await.unwrap();
+
+    assert_eq!(
+        ranked(&store).await,
+        [
+            ("max".to_owned(), Some(20), 1, Value::Unsigned(20).to_cbor()),
+            ("lww".to_owned(), None, 2, Value::Unsigned(10).to_cbor())
+        ]
+    );
+}
+
+#[tokio::test]
 async fn stamps_a_write_after_the_last_one_when_the_clock_goes_back() {
     let folder = ScratchFolder::new("clock-back");
     let clock = FakeClock::at(NOW_UNIX_MS);
@@ -172,6 +204,27 @@ async fn leaves_no_register_behind_when_the_job_fails() {
 
     assert!(matches!(outcome, Err(Error::Closed)));
     assert!(registers(&store).await.is_empty());
+}
+
+async fn raise_furthest(store: &Store, book: BookId, page: u32) {
+    store
+        .write(move |writer| {
+            writer.raise(
+                MaximumKey::BookFurthest(book),
+                page,
+                Value::Unsigned(page.into()),
+            )
+        })
+        .await
+        .unwrap();
+}
+
+async fn ranked(store: &Store) -> Vec<(String, Option<u32>, u64, Vec<u8>)> {
+    registers(store)
+        .await
+        .into_iter()
+        .map(|register| (register.class, register.rank, register.seq, register.value))
+        .collect()
 }
 
 async fn values(store: &Store) -> Vec<Vec<u8>> {

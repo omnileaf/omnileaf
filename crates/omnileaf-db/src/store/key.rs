@@ -3,12 +3,19 @@ use omnileaf_sync_proto::BookId;
 const BOOK: &str = "book";
 const POSITION: &str = "pos";
 const READ: &str = "read";
+const FURTHEST: &str = "max";
 
 /// A register that keeps the last write.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LatestKey {
     BookPosition(BookId),
     BookRead(BookId),
+}
+
+/// A register that keeps the write of highest rank.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum MaximumKey {
+    BookFurthest(BookId),
 }
 
 /// Where a register is stored, under the names every device gives it.
@@ -23,6 +30,14 @@ impl LatestKey {
         match self {
             Self::BookPosition(book) => book_field(book, POSITION),
             Self::BookRead(book) => book_field(book, READ),
+        }
+    }
+}
+
+impl MaximumKey {
+    pub(crate) const fn address(self) -> Address {
+        match self {
+            Self::BookFurthest(book) => book_field(book, FURTHEST),
         }
     }
 }

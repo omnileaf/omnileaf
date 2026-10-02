@@ -4,7 +4,7 @@ use rusqlite::Connection;
 use crate::{
     Error,
     store::{
-        key::{Address, LatestKey},
+        key::{Address, LatestKey, MaximumKey},
         local::LocalReplica,
         register,
     },
@@ -34,6 +34,12 @@ impl<'t> Writer<'t> {
     /// Writes null, which outlives every earlier value so a stale device cannot bring one back.
     pub fn clear(&mut self, key: LatestKey) -> Result<(), Error> {
         self.set(key, Value::Null)
+    }
+
+    /// Changes nothing, and takes no sequence number, unless `rank` is above the stored write's or level with it.
+    pub fn raise(&mut self, key: MaximumKey, rank: u32, value: Value) -> Result<(), Error> {
+        self.write(&key.address(), MergeClass::Maximum { rank }, value)?;
+        Ok(())
     }
 
     fn write(&mut self, address: &Address, class: MergeClass, value: Value) -> Result<bool, Error> {
