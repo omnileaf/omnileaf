@@ -87,8 +87,10 @@ test("the preview shows a sample title before and a stand-in after", async ({
 
   const preview = page.getByRole("figure", { name: "Preview" });
 
-  await expect(preview).toContainText("Sample Series 04");
-  await expect(preview).toContainText("Series 04");
+  await expect(
+    preview.getByText("Sample Series 04", { exact: true }),
+  ).toHaveCount(1);
+  await expect(preview.getByText("Series 04", { exact: true })).toHaveCount(1);
 });
 
 test("the keyboard shortcut is listed on a computer", async ({ page }) => {
