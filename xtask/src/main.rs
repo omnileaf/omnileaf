@@ -5,6 +5,7 @@ mod dev;
 mod doctor;
 mod fixtures;
 mod icons;
+mod lint_sync;
 mod policy;
 mod process;
 mod workspace;
@@ -55,6 +56,8 @@ enum Command {
     },
     /// Regenerate the app icons from `branding/icon.json`.
     Icons,
+    /// Check that only the write path writes synced state and the projections built from it.
+    LintSync,
     /// Check the repository's files against its content rules.
     Policy,
 }
@@ -100,6 +103,7 @@ fn main() -> anyhow::Result<()> {
             )]);
         }
         Command::Icons => icons::regenerate(&workspace::root())?,
+        Command::LintSync => lint_sync()?,
         Command::Policy => enforce_policy()?,
     }
     Ok(())
@@ -137,6 +141,23 @@ fn enforce_policy() -> anyhow::Result<()> {
     anyhow::ensure!(
         violations.is_empty(),
         "{} policy violation(s)",
+        violations.len()
+    );
+    Ok(())
+}
+
+fn lint_sync() -> anyhow::Result<()> {
+    let files =
+        workspace::repository_files(&workspace::root()).context("read the repository files")?;
+    let repository: Vec<RepositoryFile<'_>> = files
+        .iter()
+        .map(|(path, bytes)| RepositoryFile { path, bytes })
+        .collect();
+    let violations = lint_sync::check(&repository);
+    print_lines(&violations);
+    anyhow::ensure!(
+        violations.is_empty(),
+        "{} sync rule violation(s)",
         violations.len()
     );
     Ok(())
