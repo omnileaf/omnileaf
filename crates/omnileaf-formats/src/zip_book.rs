@@ -24,18 +24,7 @@ pub struct ZipBook {
 
 impl ZipBook {
     pub(crate) fn open(path: &Path, limits: &Limits) -> Result<Self, FormatError> {
-        let file = File::open(path).map_err(|source| FormatError::Read {
-            path: path.to_owned(),
-            source,
-        })?;
-        let mut archive = ZipArchive::new(file).map_err(|source| corrupt(path, source))?;
-        if archive.len() > limits.max_entries {
-            return Err(FormatError::TooManyEntries {
-                path: path.to_owned(),
-                count: archive.len(),
-                limit: limits.max_entries,
-            });
-        }
+        let mut archive = open_archive(path, limits)?;
         let mut found = Vec::new();
         let mut total: u64 = 0;
         for index in 0..archive.len() {
@@ -140,6 +129,23 @@ impl ZipBook {
     }
 }
 
+/// Reads the archive's central directory, refusing more entries than the limits allow.
+pub(crate) fn open_archive(path: &Path, limits: &Limits) -> Result<ZipArchive<File>, FormatError> {
+    let file = File::open(path).map_err(|source| FormatError::Read {
+        path: path.to_owned(),
+        source,
+    })?;
+    let archive = ZipArchive::new(file).map_err(|source| corrupt(path, source))?;
+    if archive.len() > limits.max_entries {
+        return Err(FormatError::TooManyEntries {
+            path: path.to_owned(),
+            count: archive.len(),
+            limit: limits.max_entries,
+        });
+    }
+    Ok(archive)
+}
+
 fn check_page(
     path: &Path,
     page: &Page,
@@ -166,7 +172,7 @@ fn check_page(
     Ok(())
 }
 
-fn corrupt(path: &Path, source: ZipError) -> FormatError {
+pub(crate) fn corrupt(path: &Path, source: ZipError) -> FormatError {
     FormatError::Corrupt {
         path: path.to_owned(),
         source,

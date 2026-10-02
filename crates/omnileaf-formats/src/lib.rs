@@ -2,6 +2,7 @@
 
 mod book;
 mod comic_info;
+mod container;
 mod entries;
 mod error;
 mod folder;
