@@ -26,7 +26,7 @@ test.describe("with a folder of comics", () => {
 
       await page.getByRole("button", { name: "Add a folder" }).click();
 
-      await expect(page.getByRole("status")).toHaveText(
+      await expect(page.getByRole("main").getByRole("status")).toHaveText(
         "Found 3 comics in Sample Library.",
       );
     });
@@ -64,7 +64,7 @@ test.describe("with a folder it can't read", () => {
 
     await page.getByRole("button", { name: "Add a folder" }).click();
 
-    await expect(page.getByRole("status")).toHaveText(
+    await expect(page.getByRole("main").getByRole("status")).toHaveText(
       "Couldn't read that folder.",
     );
   });

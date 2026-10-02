@@ -1,6 +1,4 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
-
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
   import {
@@ -9,11 +7,14 @@
   } from "$lib/appearance/theme.svelte";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
   import { sectionOf } from "$lib/navigation/sections";
+  import NoticeHost from "$lib/notices/NoticeHost.svelte";
   import { m } from "$lib/paraglide/messages.js";
+
+  import type { LayoutProps } from "./$types";
 
   import "../app.css";
 
-  let { children }: { children: Snippet } = $props();
+  let { children, data }: LayoutProps = $props();
 
   setThemeSetting(themeSettingForDocument());
 
@@ -34,8 +35,11 @@
   <AppNavigation current={sectionOf(page.url.pathname)} />
   <main
     bind:this={main}
-    class="flex-1 overflow-y-auto p-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance"
+    class="order-2 flex-1 overflow-y-auto p-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance"
   >
     {@render children()}
   </main>
+  <div class="relative z-notice order-1">
+    <NoticeHost notices={data.notices} />
+  </div>
 </div>
