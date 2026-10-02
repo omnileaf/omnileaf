@@ -104,6 +104,7 @@ test("a folder name already on screen is replaced when it's turned on", async ({
 
   await turnOnScreenshotMode(page);
 
+  await expect(page.getByText("Found 4 comics in Folder 01.")).toBeVisible();
   await expect(page.locator("body")).not.toContainText(REAL_FOLDER_NAME);
 });
 
