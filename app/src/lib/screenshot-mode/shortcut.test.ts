@@ -4,6 +4,7 @@ import { isScreenshotModeShortcut, type KeyPress } from "./shortcut";
 
 const CTRL_SHIFT_H: KeyPress = {
   key: "H",
+  code: "KeyH",
   ctrlKey: true,
   shiftKey: true,
   altKey: false,
@@ -17,6 +18,16 @@ test("Ctrl Shift H is the shortcut", () => {
 
 test("a lower-case h from Caps Lock is the shortcut too", () => {
   expect(isScreenshotModeShortcut({ ...CTRL_SHIFT_H, key: "h" })).toBe(true);
+});
+
+test("the key where H sits is the shortcut on a layout without Latin letters", () => {
+  expect(isScreenshotModeShortcut({ ...CTRL_SHIFT_H, key: "Р" })).toBe(true);
+});
+
+test("an h elsewhere on a Latin layout is the shortcut", () => {
+  expect(
+    isScreenshotModeShortcut({ ...CTRL_SHIFT_H, key: "h", code: "KeyJ" }),
+  ).toBe(true);
 });
 
 test.each([
