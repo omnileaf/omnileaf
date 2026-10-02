@@ -6,6 +6,12 @@ pub(crate) const EMPTY_SCHEMA: u32 = 0;
 
 const SCHEMA_VERSION: &str = "user_version";
 
+pub(crate) enum Pending {
+    Current,
+    NewDatabase,
+    Upgrade { from: u32 },
+}
+
 pub(crate) struct Migration {
     pub(crate) name: &'static str,
     pub(crate) sql: &'static str,
@@ -23,17 +29,19 @@ macro_rules! migration {
 /// Applied in order, and never edited once released; schema version N means the first N have run.
 pub(crate) const MIGRATIONS: &[Migration] = &[migration!("0001_mark_omnileaf_library")];
 
-/// Returns the schema version to migrate from, or nothing when the database is already current.
-pub(crate) fn pending_from(
-    connection: &Connection,
-    migrations: &[Migration],
-) -> Result<Option<u32>, Error> {
+pub(crate) fn pending(connection: &Connection, migrations: &[Migration]) -> Result<Pending, Error> {
     let found: u32 = connection.pragma_query_value(None, SCHEMA_VERSION, |row| row.get(0))?;
     let supported = latest_version(migrations);
     if found > supported {
         return Err(Error::NewerSchema { found, supported });
     }
-    Ok((found < supported).then_some(found))
+    Ok(if found == supported {
+        Pending::Current
+    } else if found == EMPTY_SCHEMA {
+        Pending::NewDatabase
+    } else {
+        Pending::Upgrade { from: found }
+    })
 }
 
 pub(crate) fn apply(

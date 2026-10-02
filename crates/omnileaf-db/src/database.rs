@@ -2,7 +2,7 @@ use rusqlite::{Connection, Transaction, TransactionBehavior};
 
 use crate::{
     Config, Error, backup, connection,
-    migration::{self, MIGRATIONS, Migration},
+    migration::{self, MIGRATIONS, Migration, Pending},
     workers::ConnectionWorkers,
 };
 
@@ -24,11 +24,15 @@ impl Database {
     #[tracing::instrument(skip_all, fields(path = %config.path.display()))]
     pub(crate) fn open_with(config: &Config, migrations: &[Migration]) -> Result<Self, Error> {
         let mut writer = connection::open_writer(config)?;
-        if let Some(from) = migration::pending_from(&writer, migrations)? {
-            if from != migration::EMPTY_SCHEMA {
-                backup::back_up(&writer, &config.backup_dir, from)?;
+        match migration::pending(&writer, migrations)? {
+            Pending::Current => {}
+            Pending::NewDatabase => {
+                migration::apply(&mut writer, migrations, migration::EMPTY_SCHEMA)?;
             }
-            migration::apply(&mut writer, migrations, from)?;
+            Pending::Upgrade { from } => {
+                backup::back_up(&writer, &config.backup_dir, from)?;
+                migration::apply(&mut writer, migrations, from)?;
+            }
         }
         let readers = (0..READER_COUNT)
             .map(|_| connection::open_reader(config))
