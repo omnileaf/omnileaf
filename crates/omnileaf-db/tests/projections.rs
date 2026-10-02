@@ -6,11 +6,13 @@
 mod store_support;
 mod support;
 
+use std::collections::BTreeSet;
+
 use omnileaf_db::{
     Error,
-    store::{LatestKey, Store},
+    store::{Changed, Key, LatestKey, MaximumKey, Store},
 };
-use omnileaf_sync_proto::BookId;
+use omnileaf_sync_proto::{BookId, Value};
 use proptest::{collection::vec, option, prelude::*};
 use store_support::{FakeClock, NOW_UNIX_MS, book, open_store, raise_furthest, set_position};
 use support::ScratchFolder;
@@ -122,6 +124,83 @@ async fn rebuilds_around_registers_a_newer_version_wrote() {
     store.rebuild_projections().await.unwrap();
 
     assert_eq!(book_states(&store).await, written);
+}
+
+#[tokio::test]
+async fn rebuilds_around_registers_holding_what_their_field_cannot() {
+    let folder = ScratchFolder::new("rebuild-corrupt");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    set_position(&store, book(1), 7).await.unwrap();
+    store
+        .database()
+        .write(|transaction| {
+            let mut insert = transaction.prepare(
+                "INSERT INTO sync_register (entity, id, field, class, hlc, node, seq, rank, value)
+                 VALUES ('book', ?1, ?2, ?3, 1, zeroblob(16), ?4, ?5, ?6)",
+            )?;
+            insert.execute(rusqlite::params![
+                book(2).as_bytes(),
+                "pos",
+                "lww",
+                2,
+                None::<u32>,
+                Value::Bool(true).to_cbor()
+            ])?;
+            insert.execute(rusqlite::params![
+                book(3).as_bytes(),
+                "read",
+                "lww",
+                3,
+                None::<u32>,
+                [0xff_u8]
+            ])?;
+            insert.execute(rusqlite::params![
+                [0_u8; 16],
+                "max",
+                "max",
+                4,
+                Some(1),
+                Value::Unsigned(1).to_cbor()
+            ])?;
+            insert.execute(rusqlite::params![
+                book(4).as_bytes(),
+                "pos",
+                "lww",
+                5,
+                None::<u32>,
+                Value::Unsigned(1 << 32).to_cbor()
+            ])?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+    let written = book_states(&store).await;
+
+    let rebuilt = store.rebuild_projections().await;
+
+    assert!(rebuilt.is_ok(), "{rebuilt:?}");
+    assert_eq!(book_states(&store).await, written);
+}
+
+#[tokio::test]
+async fn announces_every_key_the_rebuild_projected() {
+    let folder = ScratchFolder::new("rebuild-announce");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    set_position(&store, book(1), 7).await.unwrap();
+    raise_furthest(&store, book(2), 9).await;
+    let mut changes = store.subscribe();
+
+    store.rebuild_projections().await.unwrap();
+
+    assert_eq!(
+        changes.try_recv(),
+        Ok(Changed {
+            keys: BTreeSet::from([
+                Key::from(LatestKey::BookPosition(book(1))),
+                Key::from(MaximumKey::BookFurthest(book(2))),
+            ])
+        })
+    );
 }
 
 #[derive(Clone, Debug)]

@@ -79,7 +79,7 @@ impl<'t> Writer<'t> {
         };
         let seq = self.local.next_seq();
         if register::upsert(self.connection, &key.address(), &register, seq)? {
-            projector::project(self.connection, key, &register.value)?;
+            projector::project(self.connection, key, value)?;
             self.local.advance_seq();
             self.changed.insert(key);
         }

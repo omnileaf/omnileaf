@@ -74,10 +74,14 @@ impl Store {
         async move { Ok(written.await?.0) }
     }
 
-    /// Recomputes every projection from the registers alone, in one transaction.
+    /// Recomputes every projection from the registers alone, in one transaction, and announces every key it projected.
     pub fn rebuild_projections(&self) -> impl Future<Output = Result<(), Error>> + use<> {
-        self.database
-            .write(|transaction| projector::rebuild(transaction))
+        let subscribers = self.subscribers.clone();
+        let rebuilt = self.database.write_then(
+            |transaction| projector::rebuild(transaction),
+            move |changed| announce(&subscribers, changed),
+        );
+        async move { rebuilt.await.map(drop) }
     }
 }
 
