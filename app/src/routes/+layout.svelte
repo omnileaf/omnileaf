@@ -17,12 +17,12 @@
   let { children }: { children: Snippet } = $props();
 
   setThemeSetting(themeSettingForDocument());
-  makeBackGoUp();
+  const backGoesUp = makeBackGoUp();
 
   let main: HTMLElement | undefined = $state();
 
   afterNavigate(({ type }) => {
-    if (type !== "enter") {
+    if (type !== "enter" && !backGoesUp.isPassingThrough) {
       main?.querySelector<HTMLHeadingElement>("h1")?.focus();
     }
   });

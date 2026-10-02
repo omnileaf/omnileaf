@@ -88,3 +88,25 @@ test("leaves the app from Library after visiting other sections", async ({
 
   await expect(page).toHaveURL(OUTSIDE_THE_APP);
 });
+
+test("moves focus only to the page opened from a Settings page", async ({
+  page,
+}) => {
+  await openSection(page, "Settings");
+  await openSettingsPage(page, "About");
+  await page.evaluate(() => {
+    const focusedHeadings: string[] = [];
+    Object.assign(window, { focusedHeadings });
+    document.addEventListener("focusin", (event) => {
+      if (event.target instanceof HTMLHeadingElement) {
+        focusedHeadings.push(event.target.textContent.trim());
+      }
+    });
+  });
+
+  await openSection(page, "History");
+
+  expect(
+    await page.evaluate((): unknown => Reflect.get(window, "focusedHeadings")),
+  ).toEqual(["History"]);
+});

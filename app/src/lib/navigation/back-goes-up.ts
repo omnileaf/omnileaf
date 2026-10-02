@@ -8,9 +8,15 @@ import { type HistoryMove, moveTo } from "./up-history";
 
 type Replacing = Extract<HistoryMove, { kind: "replace" }>;
 
+export interface BackGoesUp {
+  /** True while back passes through a page on the way to the one a link asked for, which should not take focus. */
+  readonly isPassingThrough: boolean;
+}
+
 /** Shapes the history as links are followed so back goes up a level, as Android's back button should, instead of retracing every page. */
-export function makeBackGoUp(): void {
+export function makeBackGoUp(): BackGoesUp {
   let entries: readonly string[] = [];
+  let isPassingThrough = false;
   let isReplacing = false;
   let settle: (() => void) | undefined;
 
@@ -37,9 +43,18 @@ export function makeBackGoUp(): void {
     });
   }
 
+  async function passThrough(steps: number): Promise<void> {
+    isPassingThrough = true;
+    try {
+      await goBack(steps);
+    } finally {
+      isPassingThrough = false;
+    }
+  }
+
   async function replace(move: Replacing, route: RouteId): Promise<void> {
     if (move.stepsBack > 0) {
-      await goBack(move.stepsBack);
+      await passThrough(move.stepsBack);
     }
     isReplacing = true;
     try {
@@ -54,20 +69,20 @@ export function makeBackGoUp(): void {
     if (type !== "link" || to === null || route == null) {
       return;
     }
-    const move = moveTo(entries, to.url.pathname);
-    switch (move.kind) {
+    const planned = moveTo(entries, to.url.pathname);
+    switch (planned.kind) {
       case "push":
         return;
       case "back":
         cancel();
-        void goBack(move.steps);
+        void goBack(planned.steps);
         return;
       case "replace":
         cancel();
-        void replace(move, route);
+        void replace(planned, route);
         return;
       default:
-        assertNever(move);
+        assertNever(planned);
     }
   });
 
@@ -76,6 +91,12 @@ export function makeBackGoUp(): void {
     settle?.();
     settle = undefined;
   });
+
+  return {
+    get isPassingThrough() {
+      return isPassingThrough;
+    },
+  };
 }
 
 function assertNever(value: never): never {
