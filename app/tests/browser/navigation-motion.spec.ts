@@ -1,6 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import {
   boxOf,
   EXPANDED_MIN_WIDTH,
@@ -16,8 +15,6 @@ const GROW = "0.2s cubic-bezier(0.2, 0, 0, 1)";
 const SLIDE = "0.35s cubic-bezier(0.32, 0.72, 0, 1)";
 const PILL_GROW = `pill-grow ${GROW}`;
 const ICON_POP = "nav-pop 0.3s cubic-bezier(0.32, 0.72, 0, 1)";
-
-const PLATFORMS: readonly Platform[] = ["android", "ios", "linux"];
 
 interface Motion {
   readonly transitions: readonly string[];
@@ -118,6 +115,31 @@ async function turnTheScreen(page: Page): Promise<void> {
   await settle(navigation(page));
 }
 
+function testReducingMotion(): void {
+  test("changes the navigation at once with reduce motion", async ({
+    page,
+  }) => {
+    await page.goto("/history");
+    const motion = await motionIn(navigation(page));
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+
+    expect(motion).not.toEqual(STILL);
+    expect(await motionIn(navigation(page))).toEqual(STILL);
+  });
+
+  test("plays nothing on a tab change with reduce motion", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+
+    const started = await animationsStartedWhile(page, () =>
+      openHistoryAndSettle(page),
+    );
+
+    expect(started).toEqual([]);
+  });
+}
+
 function testTurningTheScreen(): void {
   test("keeps the selected tab still when the screen turns and back", async ({
     page,
@@ -183,6 +205,7 @@ test.describe("on Android", () => {
   });
 
   testTurningTheScreen();
+  testReducingMotion();
 });
 
 test.describe("on iOS", () => {
@@ -250,6 +273,8 @@ test.describe("on iOS", () => {
 
     expect(motion).toEqual({ transitions: [FADE], animations: [] });
   });
+
+  testReducingMotion();
 });
 
 test.describe("on desktop", () => {
@@ -264,20 +289,6 @@ test.describe("on desktop", () => {
 
     expect(motion).toEqual({ transitions: [FADE], animations: [] });
   });
+
+  testReducingMotion();
 });
-
-for (const platform of PLATFORMS) {
-  test.describe(`on ${platform} with reduce motion`, () => {
-    test.use(onPlatform(platform));
-
-    test("changes the navigation at once", async ({ page }) => {
-      await page.goto("/history");
-      const motion = await motionIn(navigation(page));
-
-      await page.emulateMedia({ reducedMotion: "reduce" });
-
-      expect(motion).not.toEqual(STILL);
-      expect(await motionIn(navigation(page))).toEqual(STILL);
-    });
-  });
-}
