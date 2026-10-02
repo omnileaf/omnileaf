@@ -25,7 +25,7 @@
   <span class="flex items-center justify-center rounded-panel bg-chip p-lg">
     <Icon aria-hidden="true" size={ICON_SIZE} />
   </span>
-  <h1 tabindex="-1" class="text-headline font-bold outline-none">
+  <h1 tabindex="-1" class="text-headline font-bold">
     {title}
   </h1>
   <p class="text-muted">{body}</p>
