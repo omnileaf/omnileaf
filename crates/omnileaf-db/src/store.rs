@@ -2,6 +2,7 @@
 
 mod key;
 mod local;
+mod projector;
 mod register;
 mod writer;
 

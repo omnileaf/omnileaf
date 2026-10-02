@@ -9,7 +9,7 @@ use crate::{
         Changed,
         key::{Key, LatestKey, MaximumKey},
         local::LocalReplica,
-        register,
+        projector, register,
     },
 };
 
@@ -67,6 +67,7 @@ impl<'t> Writer<'t> {
         };
         let seq = self.local.next_seq();
         if register::upsert(self.connection, &key.address(), &register, seq)? {
+            projector::project(self.connection, key, &register.value)?;
             self.local.advance_seq();
             self.changed.insert(key);
         }

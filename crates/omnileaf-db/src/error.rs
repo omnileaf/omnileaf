@@ -1,6 +1,8 @@
 use std::{io, path::PathBuf};
 
-use omnileaf_sync_proto::{ClockError, SeriesId};
+use omnileaf_sync_proto::{ClockError, SeriesId, Value, ValueError};
+
+use crate::store::Key;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -45,6 +47,10 @@ pub enum Error {
     CursorForAnotherList,
     #[error("stamp a synced write with this device's clock")]
     Clock(#[from] ClockError),
+    #[error("project register {key:?}, which holds {found:?} where its field holds another kind")]
+    UnexpectedValue { key: Key, found: Value },
+    #[error("read the value of a synced register")]
+    RegisterValue(#[from] ValueError),
     #[error("start a database thread")]
     Spawn(#[source] io::Error),
     #[error("run a statement in a database job")]
