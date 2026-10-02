@@ -6,6 +6,10 @@ use crate::Error;
 
 const EMPTY_SCHEMA: u32 = 0;
 
+const UNCLAIMED_APPLICATION_ID: i32 = 0;
+const LIBRARY_APPLICATION_ID: i32 = i32::from_be_bytes(*b"OMNL");
+const OWNABLE_APPLICATION_IDS: [i32; 2] = [UNCLAIMED_APPLICATION_ID, LIBRARY_APPLICATION_ID];
+
 const SCHEMA_VERSION: &str = "user_version";
 const FOREIGN_KEYS: &str = "foreign_keys";
 
@@ -37,18 +41,56 @@ pub(crate) fn pending(
     path: &Path,
     migrations: &[Migration],
 ) -> Result<Pending, Error> {
-    let found = schema_version(connection).map_err(|source| Error::Open {
+    let stored = StoredSchema::read(connection).map_err(|source| Error::Open {
         path: path.to_owned(),
         source,
     })?;
-    let supported = supported_version(found, migrations)?;
-    Ok(if found == supported {
+    if !OWNABLE_APPLICATION_IDS.contains(&stored.application_id) {
+        return Err(Error::NotALibrary {
+            path: path.to_owned(),
+        });
+    }
+    let supported = supported_version(stored.version, migrations)?;
+    Ok(if stored.version == supported {
         Pending::Current
-    } else if found == EMPTY_SCHEMA {
+    } else if stored.is_blank() {
         Pending::NewDatabase
     } else {
-        Pending::Upgrade { from: found }
+        Pending::Upgrade {
+            from: stored.version,
+        }
     })
+}
+
+struct StoredSchema {
+    version: u32,
+    application_id: i32,
+    holds_objects: bool,
+}
+
+impl StoredSchema {
+    fn read(connection: &Connection) -> rusqlite::Result<Self> {
+        connection.query_row(
+            "SELECT
+                 (SELECT user_version FROM pragma_user_version),
+                 (SELECT application_id FROM pragma_application_id),
+                 EXISTS (SELECT 1 FROM sqlite_schema)",
+            [],
+            |row| {
+                Ok(Self {
+                    version: row.get(0)?,
+                    application_id: row.get(1)?,
+                    holds_objects: row.get(2)?,
+                })
+            },
+        )
+    }
+
+    fn is_blank(&self) -> bool {
+        self.version == EMPTY_SCHEMA
+            && self.application_id == UNCLAIMED_APPLICATION_ID
+            && !self.holds_objects
+    }
 }
 
 /// Turns foreign key enforcement off while migrating, since rebuilding a table would otherwise cascade-delete the rows referring to it.
