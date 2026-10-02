@@ -66,7 +66,7 @@ The gate also runs `cargo xtask policy`, which checks every file git doesn't ign
 Adding an entry to one of those lists is reviewed like any other change. Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.
 
 It also runs `cargo xtask lint-sync`, which keeps synced state behind its one write path:
-- only `crates/omnileaf-db/src/store/register.rs` writes `sync_register`, and only `store/local.rs` writes `sync_local`;
+- only `crates/omnileaf-db/src/store/register.rs` writes `sync_register`, and only `store/local.rs` writes `sync_local`, so no migration writes either, apart from the one that creates `sync_local` with its first row;
 - the tables the projector (`store/projector.rs`) writes are projections, which nothing else writes, not even a migration's trigger;
 - a projection refers to no other table and holds no unique value, so it can always be rebuilt from the registers.
 

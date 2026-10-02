@@ -10,11 +10,13 @@ use crate::policy::RepositoryFile;
 const PROJECTOR: &str = "crates/omnileaf-db/src/store/projector.rs";
 const REGISTER_WRITER: &str = "crates/omnileaf-db/src/store/register.rs";
 const LOCAL_WRITER: &str = "crates/omnileaf-db/src/store/local.rs";
+const SYNC_LOCAL: &str = "sync_local";
 const SYNC_TABLE_WRITERS: &[(&str, &str)] = &[
     ("sync_register", REGISTER_WRITER),
-    ("sync_local", LOCAL_WRITER),
+    (SYNC_LOCAL, LOCAL_WRITER),
 ];
 const MIGRATIONS: &str = "crates/omnileaf-db/migrations/";
+const SYNC_LOCAL_SEED: &str = "crates/omnileaf-db/migrations/0005_create_sync_registers.sql";
 const SQL_EXTENSION: &str = ".sql";
 const RUST_EXTENSION: &str = ".rs";
 const SOURCE_ROOTS: &[&str] = &["crates/", "app/src-tauri/"];
@@ -71,7 +73,7 @@ struct Schema {
 pub(crate) fn check(files: &[RepositoryFile<'_>]) -> Vec<Violation> {
     let mut migrations: Vec<(&str, String)> = files
         .iter()
-        .filter(|file| file.path.starts_with(MIGRATIONS) && file.path.ends_with(SQL_EXTENSION))
+        .filter(|file| is_migration(file.path))
         .map(|file| (file.path, lowered(file)))
         .collect();
     migrations.sort_unstable();
@@ -92,10 +94,14 @@ pub(crate) fn check(files: &[RepositoryFile<'_>]) -> Vec<Violation> {
         .chain(SYNC_TABLE_WRITERS.iter().copied())
         .collect();
     let mut violations = Vec::new();
-    for file in files.iter().filter(|file| is_product_source(file.path)) {
+    for file in files
+        .iter()
+        .filter(|file| is_product_source(file.path) || is_migration(file.path))
+    {
         for table in written_tables(&lowered(file)) {
             if let Some(&writer) = writers.get(table.as_str())
                 && writer != file.path
+                && !is_sync_local_seed(file.path, &table)
             {
                 violations.push(Violation::ForeignWrite {
                     path: file.path.to_owned(),
@@ -103,15 +109,6 @@ pub(crate) fn check(files: &[RepositoryFile<'_>]) -> Vec<Violation> {
                     writer,
                 });
             }
-        }
-    }
-    for (path, text) in &migrations {
-        for table in written_tables(text).intersection(&projections) {
-            violations.push(Violation::ForeignWrite {
-                path: (*path).to_owned(),
-                table: table.clone(),
-                writer: PROJECTOR,
-            });
         }
     }
     for table in &projections {
@@ -132,6 +129,14 @@ pub(crate) fn check(files: &[RepositoryFile<'_>]) -> Vec<Violation> {
 
 fn lowered(file: &RepositoryFile<'_>) -> String {
     String::from_utf8_lossy(file.bytes).to_lowercase()
+}
+
+fn is_migration(path: &str) -> bool {
+    path.starts_with(MIGRATIONS) && path.ends_with(SQL_EXTENSION)
+}
+
+fn is_sync_local_seed(path: &str, table: &str) -> bool {
+    path == SYNC_LOCAL_SEED && table == SYNC_LOCAL
 }
 
 fn is_product_source(path: &str) -> bool {
@@ -261,10 +266,7 @@ mod tests {
         extra: impl IntoIterator<Item = RepositoryFile<'static>>,
     ) -> Vec<RepositoryFile<'static>> {
         let mut files = vec![
-            text(
-                "crates/omnileaf-db/migrations/0005_create_sync.sql",
-                SYNC_TABLES,
-            ),
+            text(SYNC_LOCAL_SEED, SYNC_TABLES),
             text(
                 "crates/omnileaf-db/migrations/0006_create_state.sql",
                 PROJECTION,
@@ -345,6 +347,25 @@ mod tests {
                 path: "crates/omnileaf-db/migrations/0007_add_trigger.sql".to_owned(),
                 table: "book_state".to_owned(),
                 writer: PROJECTOR,
+            }]
+        );
+    }
+
+    #[test]
+    fn flags_a_migration_that_writes_a_register() {
+        let backfill = text(
+            "crates/omnileaf-db/migrations/0007_backfill_registers.sql",
+            "INSERT INTO sync_register (entity) SELECT 'book' FROM book;",
+        );
+
+        let violations = check(&library_with([backfill]));
+
+        assert_eq!(
+            violations,
+            [Violation::ForeignWrite {
+                path: "crates/omnileaf-db/migrations/0007_backfill_registers.sql".to_owned(),
+                table: "sync_register".to_owned(),
+                writer: REGISTER_WRITER,
             }]
         );
     }
