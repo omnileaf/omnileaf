@@ -68,6 +68,8 @@
   --spacing-pill: 3.5rem;
   --spacing-tile: 2.25rem;
   --spacing-list-row: 0.875rem;
+  --spacing-pane: 2.5rem;
+  --spacing-settings-list: 17rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
@@ -96,6 +98,7 @@
   );
 
   --container-prose: 27.5rem;
+  --container-section: 45rem;
 
   --radius-control: 0.5rem;
   --radius-card: 0.75rem;

@@ -58,5 +58,6 @@
   "general_title": "General",
   "language_label": "Language",
   "language_system": "System ({language})",
-  "back_to": "Back to {page}"
+  "back_to": "Back to {page}",
+  "settings_sections_label": "Settings sections"
 }

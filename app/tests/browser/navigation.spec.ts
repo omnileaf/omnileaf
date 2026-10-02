@@ -2,6 +2,7 @@ import { AxeBuilder } from "@axe-core/playwright";
 
 import {
   boxOf,
+  EXPANDED_MIN_WIDTH,
   expect,
   FAKE_APP_VERSION,
   MEDIUM_MIN_WIDTH,
@@ -16,23 +17,35 @@ const SECTIONS = [
   { label: "Library", path: "/", startFrom: "/settings" },
   { label: "Browse", path: "/browse", startFrom: "/" },
   { label: "History", path: "/history", startFrom: "/" },
-  { label: "Settings", path: "/settings", startFrom: "/" },
+  {
+    label: "Settings",
+    path: "/settings",
+    startFrom: "/",
+    onDesktop: { path: "/settings/library", heading: "Library" },
+  },
 ] as const;
 
-for (const { label, path, startFrom } of SECTIONS) {
+for (const section of SECTIONS) {
+  const { label, path, startFrom } = section;
+
   test(`opens ${label} from the navigation and focuses its heading`, async ({
     page,
   }) => {
     await page.goto(startFrom);
+    const isDesktop = viewportOf(page).width >= EXPANDED_MIN_WIDTH;
+    const opened =
+      isDesktop && "onDesktop" in section
+        ? section.onDesktop
+        : { path, heading: label };
 
     await page
       .getByRole("navigation", { name: "Main" })
       .getByRole("link", { name: label })
       .click();
 
-    await expect(page).toHaveURL(path);
+    await expect(page).toHaveURL(opened.path);
     await expect(
-      page.getByRole("heading", { level: 1, name: label }),
+      page.getByRole("heading", { level: 1, name: opened.heading }),
     ).toBeFocused();
     await expect(page.getByRole("link", { name: label })).toHaveAttribute(
       "aria-current",
@@ -62,7 +75,7 @@ for (const { label, path, startFrom } of SECTIONS) {
       await page.emulateMedia({ colorScheme });
       await page.goto(path);
       await expect(
-        page.getByRole("heading", { level: 1, name: label }),
+        page.getByRole("main").getByRole("heading", { level: 1 }),
       ).toBeVisible();
 
       const results = await new AxeBuilder({ page }).analyze();
@@ -101,9 +114,7 @@ test("puts the navigation at the bottom on phones and at the side from 600px", a
 test("shows the version the backend reports in Settings › About", async ({
   page,
 }) => {
-  await page.goto("/settings");
-
-  await page.getByRole("link", { name: "About" }).click();
+  await page.goto("/settings/about");
 
   await expect(page.getByText(`Version ${FAKE_APP_VERSION}`)).toBeVisible();
 });
@@ -114,6 +125,10 @@ for (const platform of ["android", "ios"] as const) {
 
     test("goes back to Settings from a settings section", async ({ page }) => {
       await page.goto("/settings/about");
+      test.skip(
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+        "the section list stays beside the section on desktop",
+      );
 
       await page.getByRole("link", { name: "Back to Settings" }).click();
 
