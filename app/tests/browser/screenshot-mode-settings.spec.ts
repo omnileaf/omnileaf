@@ -25,6 +25,10 @@ function mainSwitch(page: Page) {
   return page.getByRole("switch", { name: "Screenshot mode", exact: true });
 }
 
+function labelSwitch(page: Page) {
+  return page.getByRole("switch", { name: "Show the Screenshot mode label" });
+}
+
 test("turning it on says when it turns off again", async ({ page }) => {
   await page.clock.install({ time: TURNED_ON_AT });
   await openScreenshotMode(page);
@@ -82,8 +86,28 @@ test("the keyboard shortcut is listed on a computer", async ({ page }) => {
   await expect(page.getByText("Keyboard shortcut")).toBeVisible();
 });
 
+test("the label is said to show at the top of the window on a computer", async ({
+  page,
+}) => {
+  await openScreenshotMode(page);
+
+  await expect(labelSwitch(page)).toHaveAccessibleDescription(
+    "At the top of the window, so you know it’s on.",
+  );
+});
+
 test.describe("on a phone", () => {
   test.use(onPlatform("android"));
+
+  test("the label is said to show at the top of the screen", async ({
+    page,
+  }) => {
+    await openScreenshotMode(page);
+
+    await expect(labelSwitch(page)).toHaveAccessibleDescription(
+      "At the top of the screen, so you know it’s on.",
+    );
+  });
 
   test("no keyboard shortcut is listed", async ({ page }) => {
     await openScreenshotMode(page);

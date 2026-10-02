@@ -24,7 +24,10 @@
     },
     showLabel: {
       label: m.screenshot_mode_show_label,
-      help: m.screenshot_mode_show_label_help,
+      help: () =>
+        hasKeyboard
+          ? m.screenshot_mode_show_label_help_desktop()
+          : m.screenshot_mode_show_label_help(),
     },
     turnOffAfterAnHour: {
       label: m.screenshot_mode_auto_off,

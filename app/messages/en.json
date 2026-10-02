@@ -72,6 +72,7 @@
   "screenshot_mode_blank_pages_help": "Plain grey panels with the page number. Turn off to show a page display problem.",
   "screenshot_mode_show_label": "Show the Screenshot mode label",
   "screenshot_mode_show_label_help": "At the top of the screen, so you know it’s on.",
+  "screenshot_mode_show_label_help_desktop": "At the top of the window, so you know it’s on.",
   "screenshot_mode_auto_off": "Turn off after 1 hour",
   "screenshot_mode_auto_off_help": "In case you forget it’s on.",
   "screenshot_mode_quickly": "Turn it on quickly",
