@@ -1,6 +1,6 @@
 use std::{io, path::PathBuf};
 
-use omnileaf_sync_proto::SeriesId;
+use omnileaf_sync_proto::{ClockError, SeriesId};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -43,6 +43,8 @@ pub enum Error {
     MalformedCursor,
     #[error("continue a list from a cursor another list gave out")]
     CursorForAnotherList,
+    #[error("stamp a synced write with this device's clock")]
+    Clock(#[from] ClockError),
     #[error("start a database thread")]
     Spawn(#[source] io::Error),
     #[error("run a statement in a database job")]
