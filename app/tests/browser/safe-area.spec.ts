@@ -198,6 +198,22 @@ test.describe("in landscape", () => {
     expect(heading.x).toBe(PAGE_PADDING);
   });
 
+  test("keeps the bottom bar's tabs clear of side cutouts", async ({
+    page,
+  }) => {
+    await page.setViewportSize(NARROW_LANDSCAPE_PHONE);
+    await emulateSafeArea(page, LANDSCAPE_INSETS);
+
+    await page.goto("/");
+    const firstLink = await layoutBox(navigationLinks(page).first());
+    const lastLink = await layoutBox(navigationLinks(page).last());
+
+    expect(firstLink.x).toBeGreaterThanOrEqual(SIDE_CUTOUT);
+    expect(lastLink.x + lastLink.width).toBeLessThanOrEqual(
+      NARROW_LANDSCAPE_PHONE.width - SIDE_CUTOUT,
+    );
+  });
+
   test("keeps the page clear of side cutouts when the bottom bar shows", async ({
     page,
   }) => {
