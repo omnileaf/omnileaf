@@ -1,18 +1,8 @@
 import { AxeBuilder } from "@axe-core/playwright";
 
-import type { Platform } from "../../src/lib/ipc/bindings.ts";
-import { DEFAULT_BACKEND, expect, FAKE_APP_VERSION, test } from "./fixtures.ts";
+import { expect, onPlatform, test } from "./fixtures.ts";
 
 const BOTTOM_BAR_MAX_WIDTH = 600;
-
-function onPlatform(platform: Platform) {
-  return {
-    backend: {
-      ...DEFAULT_BACKEND,
-      appInfo: () => ({ version: FAKE_APP_VERSION, platform }),
-    },
-  };
-}
 
 async function navigationBox(page: import("@playwright/test").Page) {
   const box = await page
