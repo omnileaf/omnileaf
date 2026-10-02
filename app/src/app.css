@@ -52,6 +52,9 @@
   --spacing-3xl: 3rem;
   --spacing-none: 0;
   --spacing-touch-target: 3rem;
+  --spacing-row: 4rem;
+  --spacing-row-compact: 3.5rem;
+  --spacing-icon-tile: 2.25rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
