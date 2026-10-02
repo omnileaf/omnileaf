@@ -27,6 +27,9 @@ function manualClock() {
         pending = pending.filter((other) => other !== entry);
       };
     },
+    sleepFor(milliseconds: number) {
+      time += milliseconds;
+    },
     advanceBy(milliseconds: number) {
       time += milliseconds;
       const due = pending.filter((entry) => entry.time <= time);
@@ -61,6 +64,17 @@ test("turns itself off when the hour is up", () => {
   mode.toggle();
 
   clock.advanceBy(AUTO_OFF_DELAY_MS);
+
+  expect(mode.isOn).toBe(false);
+});
+
+test("turns off on settling once the hour ran out while timers were paused", () => {
+  const clock = manualClock();
+  const mode = new ScreenshotMode(memoryStore(), clock);
+  mode.toggle();
+  clock.sleepFor(AUTO_OFF_DELAY_MS);
+
+  mode.settle();
 
   expect(mode.isOn).toBe(false);
 });

@@ -3,6 +3,8 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures.ts";
 
 const SHORTCUT = "Control+Shift+H";
+const TURNED_ON_AT = new Date("2026-10-03T21:14:00Z");
+const AN_HOUR_LATER = new Date("2026-10-03T22:14:00Z");
 
 async function open(page: Page, path: string): Promise<void> {
   await page.goto(path);
@@ -35,4 +37,20 @@ test("says so when the hour runs out and again when the shortcut turns it back o
   await page.keyboard.press(SHORTCUT);
 
   await expect(page.getByText("Screenshot mode is on")).toBeAttached();
+});
+
+test("turns off on coming back to the app after the hour ran out while asleep", async ({
+  page,
+}) => {
+  await page.clock.install({ time: TURNED_ON_AT });
+  await open(page, "/");
+  await page.keyboard.press(SHORTCUT);
+  await expect(page.getByText("Screenshot mode is on")).toBeAttached();
+
+  await page.clock.setSystemTime(AN_HOUR_LATER);
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+
+  await expect(page.getByText("Screenshot mode is off")).toBeAttached();
 });

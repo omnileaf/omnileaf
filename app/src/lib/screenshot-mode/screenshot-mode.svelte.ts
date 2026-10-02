@@ -70,6 +70,11 @@ export class ScreenshotMode {
     this.#apply(chooseOption(this.#settings, choice, this.clock.now()));
   }
 
+  /** Timers pause while the device sleeps, so this catches up with the wall clock when the app comes back. */
+  settle(): void {
+    this.#apply(settle(this.#settings, this.clock.now()));
+  }
+
   #apply(settings: ScreenshotModeSettings): void {
     this.#settings = settings;
     rememberPreference(this.store, PREFERENCE_KEY, JSON.stringify(settings));
@@ -81,7 +86,7 @@ export class ScreenshotMode {
     this.#cancelTurningOff =
       activity.kind === "onUntil"
         ? this.clock.at(activity.turnsOffAt, () => {
-            this.#apply(settle(this.#settings, this.clock.now()));
+            this.settle();
           })
         : undefined;
   }

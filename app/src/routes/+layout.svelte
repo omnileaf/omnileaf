@@ -32,6 +32,10 @@
     screenshotMode.toggle();
   }
 
+  function settleScreenshotMode(): void {
+    screenshotMode.settle();
+  }
+
   let main: HTMLElement | undefined = $state();
 
   afterNavigate(({ type }) => {
@@ -41,7 +45,12 @@
   });
 </script>
 
-<svelte:window onkeydown={toggleScreenshotModeOnShortcut} />
+<svelte:window
+  onkeydown={toggleScreenshotModeOnShortcut}
+  onfocus={settleScreenshotMode}
+  onpageshow={settleScreenshotMode}
+/>
+<svelte:document onvisibilitychange={settleScreenshotMode} />
 
 <svelte:head>
   <title>{m.app_name()}</title>
