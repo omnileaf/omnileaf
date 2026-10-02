@@ -15,24 +15,34 @@ export type FolderList =
 export class LibraryFolders {
   list: FolderList = $state({ kind: "loading" });
 
+  #latestLoad = 0;
+
   constructor(private readonly listFolders: ListFolders) {}
 
+  /** Only the most recently started load shows its list, so a slower older one can't bring back stale folders. */
   async load(): Promise<void> {
+    const load = ++this.#latestLoad;
     const folders: LibraryFolder[] = [];
     let after: FolderPage["next"] = null;
     do {
       const page = await this.listFolders(after);
       if (page.status === "error") {
-        this.list = { kind: "failed" };
+        this.#show(load, { kind: "failed" });
         return;
       }
       folders.push(...page.data.folders);
       after = page.data.next;
     } while (after !== null);
-    this.list = {
+    this.#show(load, {
       kind: "loaded",
       home: folders.find((folder) => folder.kind === "home"),
       linked: folders.filter((folder) => folder.kind === "linked"),
-    };
+    });
+  }
+
+  #show(load: number, list: FolderList): void {
+    if (load === this.#latestLoad) {
+      this.list = list;
+    }
   }
 }
