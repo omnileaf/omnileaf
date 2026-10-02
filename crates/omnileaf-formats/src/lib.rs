@@ -1,5 +1,6 @@
 //! Comic archives and image folders: what they contain, in reading order, and the fingerprint that identifies them.
 
+mod block_reader;
 mod book;
 mod comic_info;
 mod container;

@@ -97,24 +97,26 @@ fn read_failed(path: &Path, source: io::Error) -> FormatError {
     }
 }
 
-fn raw_fingerprint(path: &Path, mut file: File) -> Result<Fingerprint, FormatError> {
+fn raw_fingerprint(path: &Path, mut reader: impl Read + Seek) -> Result<Fingerprint, FormatError> {
     let read_failed = |source| FormatError::Read {
         path: path.to_owned(),
         source,
     };
-    let size = file.metadata().map_err(read_failed)?.len();
+    let size = reader.seek(SeekFrom::End(0)).map_err(read_failed)?;
     let mut samples: [Vec<u8>; RAW1_SAMPLE_COUNT] = Default::default();
     for (sample, range) in samples.iter_mut().zip(Fingerprint::raw1_ranges(size)) {
-        *sample = read_range(&mut file, range).map_err(read_failed)?;
+        *sample = read_range(&mut reader, range).map_err(read_failed)?;
     }
     Fingerprint::raw1(size, &samples.each_ref().map(Vec::as_slice))
         .map_err(|source| fingerprint_failed(path, source))
 }
 
-fn read_range(file: &mut File, range: Range<u64>) -> io::Result<Vec<u8>> {
-    file.seek(SeekFrom::Start(range.start))?;
+fn read_range(reader: &mut (impl Read + Seek), range: Range<u64>) -> io::Result<Vec<u8>> {
+    reader.seek(SeekFrom::Start(range.start))?;
     let mut bytes = Vec::new();
-    file.take(range.end - range.start).read_to_end(&mut bytes)?;
+    reader
+        .take(range.end - range.start)
+        .read_to_end(&mut bytes)?;
     Ok(bytes)
 }
 

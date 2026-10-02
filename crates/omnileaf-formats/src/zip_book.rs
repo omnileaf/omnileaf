@@ -8,6 +8,7 @@ use zip::{ZipArchive, result::ZipError};
 
 use crate::{
     FormatError, Limits, Page,
+    block_reader::BlockReader,
     book::in_reading_order,
     is_ignored, is_page_image,
     limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME},
@@ -16,7 +17,7 @@ use crate::{
 #[derive(Debug)]
 pub struct ZipBook {
     path: PathBuf,
-    archive: ZipArchive<File>,
+    archive: ZipArchive<BlockReader<File>>,
     pages: Vec<Page>,
     entries: Vec<usize>,
     limits: Limits,
@@ -130,12 +131,17 @@ impl ZipBook {
 }
 
 /// Reads the archive's central directory, refusing more entries than the limits allow.
-pub(crate) fn open_archive(path: &Path, limits: &Limits) -> Result<ZipArchive<File>, FormatError> {
-    let file = File::open(path).map_err(|source| FormatError::Read {
-        path: path.to_owned(),
-        source,
-    })?;
-    let archive = ZipArchive::new(file).map_err(|source| corrupt(path, source))?;
+pub(crate) fn open_archive(
+    path: &Path,
+    limits: &Limits,
+) -> Result<ZipArchive<BlockReader<File>>, FormatError> {
+    let reader = File::open(path)
+        .and_then(BlockReader::new)
+        .map_err(|source| FormatError::Read {
+            path: path.to_owned(),
+            source,
+        })?;
+    let archive = ZipArchive::new(reader).map_err(|source| corrupt(path, source))?;
     if archive.len() > limits.max_entries {
         return Err(FormatError::TooManyEntries {
             path: path.to_owned(),
