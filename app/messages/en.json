@@ -49,7 +49,7 @@
   "about_title": "About",
   "about_licence": "Omnileaf is free software. You can share and change it under the GNU General Public License, version 3.",
   "library_settings_folders": "Folders",
-  "library_settings_folders_hint": "Folders with comics that Omnileaf reads, wherever they are.",
+  "library_settings_folders_hint": "Omnileaf reads these folders where they are and never changes them.",
   "appearance_title": "Appearance",
   "appearance_light_or_dark": "Light or dark",
   "theme_system": "System",
