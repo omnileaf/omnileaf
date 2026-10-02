@@ -4,13 +4,15 @@ use omnileaf_db::{
     Config, Database,
     catalog::{
         NewRoot, PageRequest, PageSize, RootKind, RootLocator, add_root, library_roots,
-        set_home_root,
+        remove_root, set_home_root,
     },
     store::Clock,
 };
 use tokio::task::spawn_blocking;
 
-use crate::{FolderCursor, FolderPage, FolderSurvey, LibraryFolder, SurveyError, survey_folder};
+use crate::{
+    FolderCursor, FolderId, FolderPage, FolderSurvey, LibraryFolder, SurveyError, survey_folder,
+};
 
 const DATABASE_FILE: &str = "library.sqlite";
 const BACKUP_FOLDER: &str = "backups";
@@ -38,8 +40,12 @@ pub enum LibraryError {
     },
     #[error("survey the folder to add")]
     Survey(#[from] SurveyError),
+    #[error("remove a folder that isn't in the library")]
+    FolderNotFound,
+    #[error("remove the home folder, which the library always keeps")]
+    HomeFolderKept,
     #[error("reach the library database")]
-    Database(#[from] omnileaf_db::Error),
+    Database(#[source] omnileaf_db::Error),
     #[error("run blocking library work")]
     Interrupted(#[from] tokio::task::JoinError),
 }
@@ -94,6 +100,15 @@ impl Library {
         })
     }
 
+    /// Forgets the folder and the books found only in it, leaving its files where they are.
+    #[tracing::instrument(skip_all, fields(folder = %id))]
+    pub async fn remove_folder(&self, id: FolderId) -> Result<(), LibraryError> {
+        Ok(self
+            .database
+            .write(move |transaction| remove_root(transaction, id.0))
+            .await?)
+    }
+
     async fn set_home(&self, home: PathBuf) -> Result<(), LibraryError> {
         let locator = RootLocator::Path(home);
         let added_at_ms = self.now_ms();
@@ -117,5 +132,15 @@ impl Library {
 
     fn now_ms(&self) -> i64 {
         i64::try_from(self.clock.now_unix_ms()).unwrap_or(i64::MAX)
+    }
+}
+
+impl From<omnileaf_db::Error> for LibraryError {
+    fn from(error: omnileaf_db::Error) -> Self {
+        match error {
+            omnileaf_db::Error::UnknownRoot { .. } => Self::FolderNotFound,
+            omnileaf_db::Error::HomeRoot { .. } => Self::HomeFolderKept,
+            other => Self::Database(other),
+        }
     }
 }

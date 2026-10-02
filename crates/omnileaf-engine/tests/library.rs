@@ -126,6 +126,54 @@ async fn leaves_out_a_folder_it_cannot_read() {
 }
 
 #[tokio::test]
+async fn forgets_a_removed_folder_and_leaves_its_files() {
+    let home = TempFolder::new("library-remove-home");
+    let comics = TempFolder::new("Removed Comics").with_files(&["one.cbz"]);
+    let library = open(home.path()).await;
+    library
+        .add_folder(comics.path().to_path_buf())
+        .await
+        .unwrap();
+    let linked = folder_named(&library, "Removed Comics").await;
+
+    library.remove_folder(linked.id).await.unwrap();
+
+    assert_eq!(
+        kinds_and_names(&all_folders(&library).await),
+        [(FolderKind::Home, "library-remove-home")]
+    );
+    assert!(comics.path().join("one.cbz").is_file());
+}
+
+#[tokio::test]
+async fn keeps_the_home_folder() {
+    let home = TempFolder::new("library-keep-home");
+    let library = open(home.path()).await;
+    let home_folder = folder_named(&library, "library-keep-home").await;
+
+    let outcome = library.remove_folder(home_folder.id).await;
+
+    assert!(matches!(outcome, Err(LibraryError::HomeFolderKept)));
+}
+
+#[tokio::test]
+async fn reports_a_folder_already_removed() {
+    let home = TempFolder::new("library-removed-twice-home");
+    let comics = TempFolder::new("Removed Twice");
+    let library = open(home.path()).await;
+    library
+        .add_folder(comics.path().to_path_buf())
+        .await
+        .unwrap();
+    let linked = folder_named(&library, "Removed Twice").await;
+    library.remove_folder(linked.id).await.unwrap();
+
+    let outcome = library.remove_folder(linked.id).await;
+
+    assert!(matches!(outcome, Err(LibraryError::FolderNotFound)));
+}
+
+#[tokio::test]
 async fn takes_back_the_folder_id_it_gave_the_interface() {
     let home = TempFolder::new("library-id-home");
     let library = open(home.path()).await;
