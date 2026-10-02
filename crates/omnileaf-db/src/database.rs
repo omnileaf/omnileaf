@@ -144,10 +144,14 @@ mod tests {
     }
 
     #[test]
-    fn backs_up_again_when_a_failed_migration_is_retried() {
+    fn replaces_the_backup_when_a_failed_migration_is_retried() {
         let scratch = ScratchLibrary::new("retry");
         drop(Database::open_with(&scratch.config, &[NOTES]).unwrap());
         let failed = Database::open_with(&scratch.config, &[NOTES, BROKEN]);
+        Connection::open(&scratch.config.path)
+            .unwrap()
+            .execute("INSERT INTO note (body) VALUES ('newer')", [])
+            .unwrap();
 
         let retried = Database::open_with(&scratch.config, &[NOTES, PINNED]);
 
@@ -159,7 +163,10 @@ mod tests {
             })
         ));
         assert!(retried.is_ok());
-        assert_eq!(backup(&scratch, 1), (1, vec!["kept".to_owned()]));
+        assert_eq!(
+            backup(&scratch, 1),
+            (1, vec!["kept".to_owned(), "newer".to_owned()])
+        );
     }
 
     fn book_ids(scratch: &ScratchLibrary) -> Vec<i64> {
@@ -183,7 +190,9 @@ mod tests {
         let version = connection
             .pragma_query_value(None, "user_version", |row| row.get(0))
             .unwrap();
-        let mut statement = connection.prepare("SELECT body FROM note").unwrap();
+        let mut statement = connection
+            .prepare("SELECT body FROM note ORDER BY rowid")
+            .unwrap();
         let notes = statement
             .query_map([], |row| row.get(0))
             .unwrap()
