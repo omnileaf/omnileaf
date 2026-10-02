@@ -39,6 +39,16 @@ fn turns_blank_text_into_an_empty_key() {
     assert_eq!(norm(" \u{2003}\t "), "");
 }
 
+#[test]
+fn decomposes_with_the_unicode_17_tables() {
+    assert_eq!(unicode_normalization::UNICODE_VERSION, (17, 0, 0));
+}
+
+#[test]
+fn folds_case_with_the_unicode_17_tables() {
+    assert_eq!(norm("\u{a7d2}"), "\u{a7d3}");
+}
+
 const FOLDING_AND_MARKS: &str = "[aAsSßẞİΪϋᾀ-ᾯᲀ-ᲈ\u{300}-\u{36f}\u{3099}\u{1d165} ]{0,8}";
 
 proptest! {

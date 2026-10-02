@@ -1,5 +1,6 @@
 {
   "contract": "norm v1",
+  "rule": "Unicode 17.0: NFKC, full case folding, NFKC again so that norm is idempotent, then trim the ends and collapse each run of White_Space characters to one U+0020",
   "vectors": [
     {
       "input": "Sample Series 03",
@@ -80,6 +81,26 @@
     {
       "input": "Sample\u2003Series\u2028Volume",
       "norm": "sample series volume"
+    },
+    {
+      "input": "a\u001fb",
+      "norm": "a\u001fb"
+    },
+    {
+      "input": "a\u0085b",
+      "norm": "a b"
+    },
+    {
+      "input": "a\ufeffb",
+      "norm": "a\ufeffb"
+    },
+    {
+      "input": "a\u200bb",
+      "norm": "a\u200bb"
+    },
+    {
+      "input": "\ua7d2",
+      "norm": "\ua7d3"
     }
   ]
 }

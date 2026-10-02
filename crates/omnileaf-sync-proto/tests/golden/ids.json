@@ -1,5 +1,6 @@
 {
   "contract": "entity-id v1",
+  "rule": "the first 16 bytes of BLAKE3 derive_key(\"omnileaf.app 2026-09 entity-id v1\") over the key name and then each part, every one written as a little-endian u32 byte length followed by its bytes, with the RFC 9562 version 8 and variant bits set",
   "vectors": [
     {
       "key": "series.local.v1",
@@ -45,6 +46,21 @@
       "key": "category.v1",
       "input": "Sample Series 03",
       "id": "f7f25e9e-88f1-85a6-84c1-defd5a0cffbf"
+    },
+    {
+      "key": "series.local.v1",
+      "input": "Sample\u001fShelf",
+      "id": "7e78db4b-1487-860c-a82e-88bf3c182972"
+    },
+    {
+      "key": "series.local.v1",
+      "input": "Sample\u0085Shelf",
+      "id": "122bed7d-1fc9-8aa5-abea-d5df84e47d0b"
+    },
+    {
+      "key": "category.v1",
+      "input": "Sample\ufeffShelf",
+      "id": "512cf539-088d-8d67-a6ff-5468c20990ba"
     }
   ]
 }
