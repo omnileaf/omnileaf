@@ -1,24 +1,20 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import SubpageHeading from "./SubpageHeading.svelte";
+import SectionHeading from "./SectionHeading.svelte";
 
-const PROPS = {
-  title: "About",
-  parentTitle: "Settings",
-  parentRoute: "/settings" as const,
-};
+const PROPS = { title: "About" };
 
 test("titles the page", async () => {
-  const screen = await render(SubpageHeading, PROPS);
+  const screen = await render(SectionHeading, PROPS);
 
   await expect
     .element(screen.getByRole("heading", { level: 1, name: "About" }))
     .toBeVisible();
 });
 
-test("links back to the page it belongs to", async () => {
-  const screen = await render(SubpageHeading, PROPS);
+test("links back to settings", async () => {
+  const screen = await render(SectionHeading, PROPS);
 
   await expect
     .element(screen.getByRole("link", { name: "Back to Settings" }))

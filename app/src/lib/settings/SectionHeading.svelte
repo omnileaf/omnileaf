@@ -5,25 +5,18 @@
 
   import { m } from "$lib/paraglide/messages.js";
 
-  let {
-    title,
-    parentTitle,
-    parentRoute,
-  }: { title: string; parentTitle: string; parentRoute: "/settings" } =
-    $props();
+  let { title }: { title: string } = $props();
 
   const ARROW_SIZE = 24;
   const CHEVRON_SIZE = 22;
-
-  const backLabel = $derived(m.back_to({ page: parentTitle }));
 </script>
 
 <header
   class="-ms-md flex items-center gap-xs max-medium:-mbs-xl max-medium:min-block-4xl ios:ms-none ios:flex-col ios:items-start ios:gap-none ios:max-medium:-mbs-lg"
 >
   <a
-    href={resolve(parentRoute)}
-    aria-label={backLabel}
+    href={resolve("/settings")}
+    aria-label={m.back_to({ page: m.settings_title() })}
     class="flex shrink-0 items-center justify-center rounded-full block-touch-target inline-touch-target ios:-ms-xs ios:gap-2xs ios:px-xs ios:font-medium ios:text-accent ios:inline-auto"
   >
     <ArrowLeft size={ARROW_SIZE} aria-hidden="true" class="ios:hidden" />
@@ -32,7 +25,7 @@
       aria-hidden="true"
       class="hidden ios:block"
     />
-    <span class="hidden ios:inline">{parentTitle}</span>
+    <span class="hidden ios:inline">{m.settings_title()}</span>
   </a>
   <h1
     tabindex="-1"
