@@ -115,7 +115,7 @@ mod tests {
 
         generate(&corpus).unwrap();
 
-        for target in ["open_book", "read_book"] {
+        for target in ARCHIVE_TARGETS {
             let seeds = seeds_for(&corpus, target);
             assert!(!seeds.is_empty(), "no seeds for {target}");
             for seed in seeds {
@@ -132,7 +132,7 @@ mod tests {
 
         generate(&corpus).unwrap();
 
-        let seeds = seeds_for(&corpus, "comic_info");
+        let seeds = seeds_for(&corpus, COMIC_INFO_TARGET);
         assert!(!seeds.is_empty());
         for seed in seeds {
             parse_comic_info(&fs::read(&seed).unwrap()).unwrap();
