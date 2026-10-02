@@ -15,6 +15,7 @@ export const commands = {
 /* Types */
 export type AppInfo = {
 	version: string,
+	platform: Platform,
 };
 
 export type FolderSurvey = {
@@ -29,6 +30,8 @@ export type IpcError = {
 };
 
 export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "internal";
+
+export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {
