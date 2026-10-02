@@ -107,6 +107,24 @@ async fn keeps_the_later_of_two_sets_under_the_next_sequence_number() {
 }
 
 #[tokio::test]
+async fn records_whether_a_book_is_read_as_a_flag() {
+    let folder = ScratchFolder::new("read");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+
+    store
+        .write(|writer| writer.set_read(book(1), true))
+        .await
+        .unwrap();
+
+    let stored: Vec<(String, Vec<u8>)> = registers(&store)
+        .await
+        .into_iter()
+        .map(|register| (register.field, register.value))
+        .collect();
+    assert_eq!(stored, [("read".to_owned(), Value::Bool(true).to_cbor())]);
+}
+
+#[tokio::test]
 async fn clears_a_register_by_writing_null_over_it() {
     let folder = ScratchFolder::new("clear");
     let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
@@ -160,9 +178,9 @@ async fn announces_the_keys_a_write_changed_once_it_commits() {
 
     store
         .write(|writer| {
-            writer.set(LatestKey::BookPosition(book(1)), Value::Unsigned(4))?;
-            writer.raise(MaximumKey::BookFurthest(book(1)), 4, Value::Unsigned(4))?;
-            writer.set(LatestKey::BookRead(book(2)), Value::Bool(true))
+            writer.set_position(book(1), 4)?;
+            writer.raise_furthest(book(1), 4)?;
+            writer.set_read(book(2), true)
         })
         .await
         .unwrap();
@@ -199,7 +217,7 @@ async fn announces_nothing_for_a_write_that_failed() {
 
     let outcome = store
         .write(|writer| {
-            writer.set(LatestKey::BookPosition(book(1)), Value::Unsigned(12))?;
+            writer.set_position(book(1), 12)?;
             Err::<(), _>(Error::Closed)
         })
         .await;
@@ -257,7 +275,7 @@ async fn leaves_no_register_behind_when_the_job_fails() {
 
     let outcome = store
         .write(|writer| {
-            writer.set(LatestKey::BookPosition(book(1)), Value::Unsigned(12))?;
+            writer.set_position(book(1), 12)?;
             Err::<(), _>(Error::Closed)
         })
         .await;
@@ -268,13 +286,7 @@ async fn leaves_no_register_behind_when_the_job_fails() {
 
 async fn raise_furthest(store: &Store, book: BookId, page: u32) {
     store
-        .write(move |writer| {
-            writer.raise(
-                MaximumKey::BookFurthest(book),
-                page,
-                Value::Unsigned(page.into()),
-            )
-        })
+        .write(move |writer| writer.raise_furthest(book, page))
         .await
         .unwrap();
 }
@@ -307,9 +319,9 @@ fn book(number: u32) -> BookId {
     BookId::local(&Fingerprint::pmf1([page]).unwrap())
 }
 
-async fn set_position(store: &Store, book: BookId, page: u64) -> Result<(), Error> {
+async fn set_position(store: &Store, book: BookId, page: u32) -> Result<(), Error> {
     store
-        .write(move |writer| writer.set(LatestKey::BookPosition(book), Value::Unsigned(page)))
+        .write(move |writer| writer.set_position(book, page))
         .await
 }
 

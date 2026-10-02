@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use omnileaf_sync_proto::{MergeClass, Register, Value};
+use omnileaf_sync_proto::{BookId, MergeClass, Register, Value};
 use rusqlite::Connection;
 
 use crate::{
@@ -31,18 +31,32 @@ impl<'t> Writer<'t> {
         })
     }
 
-    pub fn set(&mut self, key: LatestKey, value: Value) -> Result<(), Error> {
-        self.write(key.into(), MergeClass::LastWriterWins, value)
+    #[tracing::instrument(skip_all, fields(%book, page))]
+    pub fn set_position(&mut self, book: BookId, page: u32) -> Result<(), Error> {
+        self.set(LatestKey::BookPosition(book), Value::Unsigned(page.into()))
+    }
+
+    #[tracing::instrument(skip_all, fields(%book, is_read))]
+    pub fn set_read(&mut self, book: BookId, is_read: bool) -> Result<(), Error> {
+        self.set(LatestKey::BookRead(book), Value::Bool(is_read))
     }
 
     /// Writes null, which outlives every earlier value so a stale device cannot bring one back.
+    #[tracing::instrument(skip_all, fields(?key))]
     pub fn clear(&mut self, key: LatestKey) -> Result<(), Error> {
         self.set(key, Value::Null)
     }
 
-    /// Changes nothing, and takes no sequence number, unless `rank` is above the stored write's or level with it.
-    pub fn raise(&mut self, key: MaximumKey, rank: u32, value: Value) -> Result<(), Error> {
-        self.write(key.into(), MergeClass::Maximum { rank }, value)
+    /// Changes nothing, and takes no sequence number, unless `page` is at or past the furthest page stored.
+    #[tracing::instrument(skip_all, fields(%book, page))]
+    pub fn raise_furthest(&mut self, book: BookId, page: u32) -> Result<(), Error> {
+        let furthest = MaximumKey::BookFurthest(book);
+        let class = MergeClass::Maximum { rank: page };
+        self.write(furthest.into(), class, Value::Unsigned(page.into()))
+    }
+
+    fn set(&mut self, key: LatestKey, value: Value) -> Result<(), Error> {
+        self.write(key.into(), MergeClass::LastWriterWins, value)
     }
 
     fn write(&mut self, key: Key, class: MergeClass, value: Value) -> Result<(), Error> {
