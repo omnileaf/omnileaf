@@ -9,6 +9,13 @@ pub enum Error {
     },
     #[error("database {} stayed in {mode} journal mode instead of write-ahead logging", path.display())]
     NoWriteAheadLog { path: PathBuf, mode: String },
+    #[error("database schema version {found} is newer than version {supported} this build knows")]
+    NewerSchema { found: u32, supported: u32 },
+    #[error("apply migration {name}")]
+    Migrate {
+        name: &'static str,
+        source: rusqlite::Error,
+    },
     #[error("start a database thread")]
     Spawn(#[source] io::Error),
     #[error("run a statement in a database job")]

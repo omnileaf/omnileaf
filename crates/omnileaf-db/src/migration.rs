@@ -1,0 +1,156 @@
+use rusqlite::{Connection, TransactionBehavior};
+
+use crate::Error;
+
+pub(crate) const EMPTY_SCHEMA: u32 = 0;
+
+const SCHEMA_VERSION: &str = "user_version";
+
+pub(crate) struct Migration {
+    pub(crate) name: &'static str,
+    pub(crate) sql: &'static str,
+}
+
+macro_rules! migration {
+    ($name:literal) => {
+        Migration {
+            name: $name,
+            sql: include_str!(concat!("../migrations/", $name, ".sql")),
+        }
+    };
+}
+
+/// Applied in order, and never edited once released; schema version N means the first N have run.
+pub(crate) const MIGRATIONS: &[Migration] = &[migration!("0001_mark_omnileaf_library")];
+
+/// Returns the schema version to migrate from, or nothing when the database is already current.
+pub(crate) fn pending_from(
+    connection: &Connection,
+    migrations: &[Migration],
+) -> Result<Option<u32>, Error> {
+    let found: u32 = connection.pragma_query_value(None, SCHEMA_VERSION, |row| row.get(0))?;
+    let supported = latest_version(migrations);
+    if found > supported {
+        return Err(Error::NewerSchema { found, supported });
+    }
+    Ok((found < supported).then_some(found))
+}
+
+pub(crate) fn apply(
+    connection: &mut Connection,
+    migrations: &[Migration],
+    from: u32,
+) -> Result<(), Error> {
+    let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
+    for (_, migration) in numbered(migrations).filter(|(version, _)| *version > from) {
+        transaction
+            .execute_batch(migration.sql)
+            .map_err(|source| Error::Migrate {
+                name: migration.name,
+                source,
+            })?;
+        tracing::info!(migration = migration.name, "applied a database migration");
+    }
+    transaction.pragma_update(None, SCHEMA_VERSION, latest_version(migrations))?;
+    Ok(transaction.commit()?)
+}
+
+fn numbered(migrations: &[Migration]) -> impl Iterator<Item = (u32, &Migration)> {
+    (1..).zip(migrations)
+}
+
+fn latest_version(migrations: &[Migration]) -> u32 {
+    numbered(migrations)
+        .last()
+        .map_or(EMPTY_SCHEMA, |(version, _)| version)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
+
+    #[test]
+    fn brings_an_empty_database_to_the_latest_schema_version() {
+        let connection = migrated_from(&[]);
+
+        let (version, _, _) = schema_of(&connection);
+
+        assert_eq!(usize::try_from(version).unwrap(), MIGRATIONS.len());
+    }
+
+    #[test]
+    fn every_earlier_schema_version_migrates_to_the_schema_a_new_database_gets() {
+        let expected = schema_of(&migrated_from(&[]));
+
+        for version in 0..MIGRATIONS.len() {
+            let connection = migrated_from(&MIGRATIONS[..version]);
+
+            assert_eq!(schema_of(&connection), expected, "from version {version}");
+        }
+    }
+
+    #[test]
+    fn numbers_each_migration_by_its_schema_version() {
+        for (version, migration) in numbered(MIGRATIONS) {
+            let prefix = format!("{version:04}_");
+
+            let is_numbered = migration.name.starts_with(&prefix);
+
+            assert!(is_numbered, "{} should start with {prefix}", migration.name);
+        }
+    }
+
+    #[test]
+    fn keeps_the_earlier_schema_when_a_migration_fails() {
+        let mut connection = Connection::open_in_memory().unwrap();
+        let broken = [
+            Migration {
+                name: "0001_create_note",
+                sql: "CREATE TABLE note (id INTEGER PRIMARY KEY);",
+            },
+            Migration {
+                name: "0002_break",
+                sql: "CREATE TABLE note (id INTEGER PRIMARY KEY);",
+            },
+        ];
+
+        let outcome = apply(&mut connection, &broken, EMPTY_SCHEMA);
+
+        assert!(matches!(
+            outcome,
+            Err(Error::Migrate {
+                name: "0002_break",
+                ..
+            })
+        ));
+        assert_eq!(schema_of(&connection), (0, 0, Vec::new()));
+    }
+
+    fn migrated_from(earlier: &[Migration]) -> Connection {
+        let mut connection = Connection::open_in_memory().unwrap();
+        apply(&mut connection, earlier, EMPTY_SCHEMA).unwrap();
+        if let Some(from) = pending_from(&connection, MIGRATIONS).unwrap() {
+            apply(&mut connection, MIGRATIONS, from).unwrap();
+        }
+        connection
+    }
+
+    fn schema_of(connection: &Connection) -> Schema {
+        let pragma = |name| connection.pragma_query_value(None, name, |row| row.get(0));
+        let mut statement = connection
+            .prepare("SELECT type, name, sql FROM sqlite_schema ORDER BY type, name")
+            .unwrap();
+        let objects = statement
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        (
+            pragma("user_version").unwrap(),
+            pragma("application_id").unwrap(),
+            objects,
+        )
+    }
+}

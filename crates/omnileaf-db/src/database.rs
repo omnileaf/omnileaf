@@ -1,6 +1,10 @@
 use rusqlite::{Connection, Transaction, TransactionBehavior};
 
-use crate::{Config, Error, connection, workers::ConnectionWorkers};
+use crate::{
+    Config, Error, connection,
+    migration::{self, MIGRATIONS, Migration},
+    workers::ConnectionWorkers,
+};
 
 const READER_COUNT: usize = 3;
 
@@ -12,8 +16,17 @@ pub struct Database {
 }
 
 impl Database {
+    /// Blocks while it opens the file and brings its schema up to date, so call it off the async runtime.
     pub fn open(config: &Config) -> Result<Self, Error> {
-        let writer = connection::open_writer(config)?;
+        Self::open_with(config, MIGRATIONS)
+    }
+
+    #[tracing::instrument(skip_all, fields(path = %config.path.display()))]
+    pub(crate) fn open_with(config: &Config, migrations: &[Migration]) -> Result<Self, Error> {
+        let mut writer = connection::open_writer(config)?;
+        if let Some(from) = migration::pending_from(&writer, migrations)? {
+            migration::apply(&mut writer, migrations, from)?;
+        }
         let readers = (0..READER_COUNT)
             .map(|_| connection::open_reader(config))
             .collect::<Result<_, _>>()?;

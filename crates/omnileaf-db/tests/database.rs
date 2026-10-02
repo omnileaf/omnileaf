@@ -209,6 +209,37 @@ async fn reports_which_database_could_not_be_opened() {
     assert!(matches!(outcome, Err(Error::Open { path, .. }) if path == config.path));
 }
 
+#[tokio::test]
+async fn stamps_a_new_database_as_an_omnileaf_library() {
+    let folder = ScratchFolder::new("application-id");
+    let database = Database::open(&folder.config()).unwrap();
+
+    let application_id = database
+        .read(|connection| pragma(connection, "application_id"))
+        .await
+        .unwrap();
+
+    assert_eq!(application_id, i64::from(i32::from_be_bytes(*b"OMNL")));
+}
+
+#[tokio::test]
+async fn refuses_a_database_from_a_newer_build() {
+    let folder = ScratchFolder::new("newer-schema");
+    let database = Database::open(&folder.config()).unwrap();
+    database
+        .write(|transaction| Ok(transaction.pragma_update(None, "user_version", 9999)?))
+        .await
+        .unwrap();
+    drop(database);
+
+    let outcome = Database::open(&folder.config());
+
+    assert!(matches!(
+        outcome,
+        Err(Error::NewerSchema { found: 9999, .. })
+    ));
+}
+
 fn pragma(connection: &Connection, name: &str) -> Result<i64, Error> {
     Ok(connection.query_row(&format!("PRAGMA {name}"), [], |row| row.get(0))?)
 }

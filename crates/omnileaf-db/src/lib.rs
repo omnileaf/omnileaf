@@ -4,6 +4,7 @@ mod config;
 mod connection;
 mod database;
 mod error;
+mod migration;
 mod workers;
 
 pub use config::Config;
