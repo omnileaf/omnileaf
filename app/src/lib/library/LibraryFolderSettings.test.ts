@@ -2,18 +2,13 @@ import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import { commands } from "$lib/ipc/bindings";
+import { commands, type LibraryFolder } from "$lib/ipc/bindings";
 
 import LibraryFolderSettings from "./LibraryFolderSettings.svelte";
 
 type AddFolder = typeof commands.addLibraryFolder;
 
-interface WireFolder {
-  readonly id: string;
-  readonly kind: "home" | "linked";
-  readonly name: string;
-  readonly location: string;
-}
+type WireFolder = Omit<LibraryFolder, "id"> & { readonly id: string };
 
 const HOME: WireFolder = {
   id: "1",
