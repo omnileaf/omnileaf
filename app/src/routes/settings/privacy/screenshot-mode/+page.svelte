@@ -12,7 +12,6 @@
   import ShortcutKeys from "$lib/screenshot-mode/ShortcutKeys.svelte";
   import { screenshotModeStatus } from "$lib/screenshot-mode/status";
   import SettingSwitch from "$lib/settings/SettingSwitch.svelte";
-  import SwitchTrack from "$lib/settings/SwitchTrack.svelte";
 
   import type { PageProps } from "./$types";
 
@@ -66,36 +65,22 @@
 </h1>
 
 <div class="mbs-xl flex flex-col">
-  <button
-    type="button"
-    role="switch"
-    aria-checked={screenshotMode.isOn}
-    aria-labelledby="{id}-label"
-    aria-describedby="{id}-status"
-    class="flex items-center gap-md rounded-card border border-border bg-card px-lg py-md text-start min-block-touch-target focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
-    onclick={() => {
+  <SettingSwitch
+    label={m.screenshot_mode_title()}
+    description={screenshotModeStatus(screenshotMode.activity)}
+    isOn={screenshotMode.isOn}
+    onToggle={() => {
       screenshotMode.toggle();
     }}
+    prominence="main"
+    class="rounded-card border border-border bg-card"
   >
-    <span class="flex flex-1 flex-col gap-2xs">
-      <span id="{id}-label" class="font-semibold expanded:font-bold">
-        {m.screenshot_mode_title()}
-      </span>
-      <span
-        id="{id}-status"
-        class={[
-          "text-detail",
-          screenshotMode.isOn ? "font-semibold text-accent" : "text-muted",
-        ]}
-      >
-        {screenshotModeStatus(screenshotMode.activity)}
-      </span>
-    </span>
-    {#if hasKeyboard}
-      <ShortcutKeys />
-    {/if}
-    <SwitchTrack isOn={screenshotMode.isOn} />
-  </button>
+    {#snippet trailing()}
+      {#if hasKeyboard}
+        <ShortcutKeys />
+      {/if}
+    {/snippet}
+  </SettingSwitch>
 
   <p class="mbs-sm px-xs text-detail text-muted">
     {m.screenshot_mode_what_changes()}
