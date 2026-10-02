@@ -7,5 +7,7 @@ test("opens on the empty library", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Library" }),
   ).toBeVisible();
-  await expect(page.getByText("Your library is empty.")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Your library is empty" }),
+  ).toBeVisible();
 });
