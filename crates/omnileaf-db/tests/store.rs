@@ -3,44 +3,19 @@
     reason = "each test builds its own scratch library, so a failed set-up should stop the test"
 )]
 
+mod store_support;
 mod support;
 
-use std::{
-    collections::BTreeSet,
-    sync::{
-        Arc,
-        atomic::{AtomicU64, Ordering},
-    },
-};
+use std::collections::BTreeSet;
 
 use omnileaf_db::{
     Database, Error,
-    store::{Changed, Clock, Key, LatestKey, MaximumKey, Store},
+    store::{Changed, Key, LatestKey, MaximumKey, Store},
 };
-use omnileaf_sync_proto::{BookId, Fingerprint, Hlc, ImageEntry, Value};
+use omnileaf_sync_proto::{Hlc, Value};
+use store_support::{FakeClock, NOW_UNIX_MS, book, open_store, raise_furthest, set_position};
 use support::ScratchFolder;
 use tokio::sync::broadcast::error::TryRecvError;
-
-const NOW_UNIX_MS: u64 = 1_790_000_000_000;
-
-#[derive(Clone)]
-struct FakeClock(Arc<AtomicU64>);
-
-impl FakeClock {
-    fn at(unix_ms: u64) -> Self {
-        Self(Arc::new(AtomicU64::new(unix_ms)))
-    }
-
-    fn set(&self, unix_ms: u64) {
-        self.0.store(unix_ms, Ordering::Relaxed);
-    }
-}
-
-impl Clock for FakeClock {
-    fn now_unix_ms(&self) -> u64 {
-        self.0.load(Ordering::Relaxed)
-    }
-}
 
 #[derive(Debug, PartialEq, Eq)]
 struct StoredRegister {
@@ -284,13 +259,6 @@ async fn leaves_no_register_behind_when_the_job_fails() {
     assert!(registers(&store).await.is_empty());
 }
 
-async fn raise_furthest(store: &Store, book: BookId, page: u32) {
-    store
-        .write(move |writer| writer.raise_furthest(book, page))
-        .await
-        .unwrap();
-}
-
 async fn ranked(store: &Store) -> Vec<(String, Option<u32>, u64, Vec<u8>)> {
     registers(store)
         .await
@@ -305,24 +273,6 @@ async fn values(store: &Store) -> Vec<Vec<u8>> {
         .into_iter()
         .map(|register| register.value)
         .collect()
-}
-
-fn open_store(folder: &ScratchFolder, clock: FakeClock) -> Store {
-    Store::new(Database::open(&folder.config()).unwrap(), clock)
-}
-
-fn book(number: u32) -> BookId {
-    let page = ImageEntry {
-        crc32: number,
-        size: 1,
-    };
-    BookId::local(&Fingerprint::pmf1([page]).unwrap())
-}
-
-async fn set_position(store: &Store, book: BookId, page: u32) -> Result<(), Error> {
-    store
-        .write(move |writer| writer.set_position(book, page))
-        .await
 }
 
 async fn local_node_id(database: &Database) -> [u8; 16] {
