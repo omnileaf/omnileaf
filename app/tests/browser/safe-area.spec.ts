@@ -10,6 +10,7 @@ const FLOATING_BAR_GAP = 22;
 const GESTURE_BAR = 24;
 const LANDSCAPE_PHONE = { width: 844, height: 390 };
 const NARROW_LANDSCAPE_PHONE = { width: 568, height: 320 };
+const RAIL_LANDSCAPE_PHONE = { width: 780, height: 360 };
 const SIDE_CUTOUT = 59;
 const LANDSCAPE_HOME_INDICATOR = 21;
 const LANDSCAPE_STATUS_BAR = 24;
@@ -125,17 +126,25 @@ test.describe("in landscape", () => {
     await page.setViewportSize(LANDSCAPE_PHONE);
   });
 
-  test("keeps the rail and the heading clear of a cutout at the start", async ({
-    page,
-  }) => {
+  test("keeps the sidebar clear of a cutout at the start", async ({ page }) => {
     await emulateSafeArea(page, LANDSCAPE_INSETS);
 
     await page.goto("/");
     const firstLink = await layoutBox(navigationLinks(page).first());
-    const heading = await layoutBox(pageHeading(page));
 
     expect(firstLink.x).toBeGreaterThanOrEqual(SIDE_CUTOUT);
-    expect(heading.x).toBeGreaterThanOrEqual(SIDE_CUTOUT);
+  });
+
+  test("widens the rail by a cutout at the start", async ({ page }) => {
+    await page.setViewportSize(RAIL_LANDSCAPE_PHONE);
+    await page.goto("/");
+    const usualLink = await layoutBox(navigationLinks(page).first());
+
+    await emulateSafeArea(page, LANDSCAPE_INSETS);
+    const firstLink = await layoutBox(navigationLinks(page).first());
+
+    expect(firstLink.x).toBeGreaterThanOrEqual(SIDE_CUTOUT);
+    expect(firstLink.width).toBe(usualLink.width);
   });
 
   test("keeps the page clear of a cutout at the end", async ({ page }) => {
@@ -149,7 +158,7 @@ test.describe("in landscape", () => {
     );
   });
 
-  test("lifts the rail and the page above the home indicator", async ({
+  test("lifts the side navigation and the page above the home indicator", async ({
     page,
   }) => {
     await page.goto("/");
@@ -256,7 +265,7 @@ test.describe("on Android", () => {
       await page.setViewportSize(LANDSCAPE_PHONE);
     });
 
-    test("keeps the rail clear of a side cutout the app reports", async ({
+    test("keeps the side navigation clear of a side cutout the app reports", async ({
       page,
     }) => {
       await page.goto("/");
