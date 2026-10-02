@@ -1,5 +1,10 @@
 {
   "contract": "pmf v1, raw v1, book.local.v1",
+  "rule": {
+    "pmf1": "BLAKE3 derive_key(\"omnileaf.app pmf v1\") over the image count as a little-endian u32, then the (crc32, size) pairs sorted ascending, each a little-endian u32 then a little-endian u64; an archive with no images takes raw1 instead",
+    "raw1": "BLAKE3 derive_key(\"omnileaf.app raw v1\") over the file size as a little-endian u64, then ten ranges in order: [0, min(64 KiB, size)), [size - min(64 KiB, size), size), and for i in 1..=8 [floor(size * i / 9), min(floor(size * i / 9) + 16 KiB, size)); ranges are clamped to the file and may overlap or repeat",
+    "book.local.v1": "the entity-id derivation over the 32-byte fingerprint as the only part"
+  },
   "raw_content": "byte i of each raw file is i mod 251",
   "vectors": [
     {

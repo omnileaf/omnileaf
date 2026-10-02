@@ -55,7 +55,7 @@ fn ids_match_the_golden_vectors() {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 enum FingerprintInput {
     Pmf1 { entries: Vec<(u32, u64)> },
@@ -87,7 +87,7 @@ fn fingerprint_of(input: &FingerprintInput) -> Fingerprint {
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().fold(String::new(), |mut text, byte| {
-        let _ = write!(text, "{byte:02x}");
+        write!(text, "{byte:02x}").unwrap();
         text
     })
 }
@@ -99,7 +99,17 @@ fn fingerprints_and_book_ids_match_the_golden_vectors() {
     for vector in vectors {
         let fingerprint = fingerprint_of(&vector.input);
 
-        assert_eq!(hex(fingerprint.as_bytes()), vector.fingerprint);
-        assert_eq!(BookId::local(&fingerprint).to_string(), vector.book_id);
+        assert_eq!(
+            hex(fingerprint.as_bytes()),
+            vector.fingerprint,
+            "{:?}",
+            vector.input
+        );
+        assert_eq!(
+            BookId::local(&fingerprint).to_string(),
+            vector.book_id,
+            "{:?}",
+            vector.input
+        );
     }
 }
