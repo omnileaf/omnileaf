@@ -1,5 +1,5 @@
 use omnileaf_sync_proto::SeriesId;
-use rusqlite::{Connection, Params, Row};
+use rusqlite::{Connection, Row, Statement, ToSql, named_params};
 
 use crate::{
     Error,
@@ -10,36 +10,56 @@ use crate::{
     },
 };
 
-/// A query reading one page in some order, and the sort values that place a row in that order.
+/// The first page of a list in some order, the page after a cursor, and the sort values that place a row in that order.
 struct Listing {
-    sql: &'static str,
+    first: &'static str,
+    after: &'static str,
     position: fn(&Row<'_>) -> rusqlite::Result<Position>,
 }
 
-const BY_TITLE: Listing = Listing {
-    sql: "SELECT local_id, id, title, title_sort_key, book_count, added_at_ms
+macro_rules! series_with_books {
+    () => {
+        "SELECT local_id, id, title, title_sort_key, book_count, added_at_ms
         FROM series
-        WHERE book_count > 0 AND (title_sort_key, local_id) > (?1, ?2)
-        ORDER BY title_sort_key, local_id
-        LIMIT ?3",
+        WHERE book_count > 0"
+    };
+}
+
+macro_rules! listing {
+    (seek: $seek:literal, order: $order:literal, position: $position:expr $(,)?) => {
+        Listing {
+            first: concat!(series_with_books!(), " ORDER BY ", $order, " LIMIT :limit"),
+            after: concat!(
+                series_with_books!(),
+                " AND ",
+                $seek,
+                " ORDER BY ",
+                $order,
+                " LIMIT :limit"
+            ),
+            position: $position,
+        }
+    };
+}
+
+const BY_TITLE: Listing = listing! {
+    seek: "(title_sort_key, local_id) > (:after_key, :after_id)",
+    order: "title_sort_key, local_id",
     position: |row| {
         Ok(Position::Title {
-            sort_key: row.get(3)?,
-            local_id: row.get(0)?,
+            sort_key: row.get("title_sort_key")?,
+            local_id: row.get("local_id")?,
         })
     },
 };
 
-const BY_RECENTLY_ADDED: Listing = Listing {
-    sql: "SELECT local_id, id, title, title_sort_key, book_count, added_at_ms
-        FROM series
-        WHERE book_count > 0 AND (added_at_ms, local_id) < (?1, ?2)
-        ORDER BY added_at_ms DESC, local_id DESC
-        LIMIT ?3",
+const BY_RECENTLY_ADDED: Listing = listing! {
+    seek: "(added_at_ms, local_id) < (:after_key, :after_id)",
+    order: "added_at_ms DESC, local_id DESC",
     position: |row| {
         Ok(Position::Added {
-            added_at_ms: row.get(5)?,
-            local_id: row.get(0)?,
+            added_at_ms: row.get("added_at_ms")?,
+            local_id: row.get("local_id")?,
         })
     },
 };
@@ -68,23 +88,21 @@ pub fn series_page(
     let limit = request.size.rows_to_fetch();
     let after = request.after.as_ref().map(|cursor| &cursor.0);
     let rows = match (order, after) {
-        (SeriesOrder::Title, None) => rows(connection, &BY_TITLE, (&[], i64::MIN, limit)),
-        (SeriesOrder::Title, Some(Position::Title { sort_key, local_id })) => {
-            rows(connection, &BY_TITLE, (sort_key, *local_id, limit))
-        }
-        (SeriesOrder::RecentlyAdded, None) => {
-            rows(connection, &BY_RECENTLY_ADDED, (i64::MAX, i64::MAX, limit))
-        }
+        (SeriesOrder::Title, None) => BY_TITLE.first_rows(connection, limit),
+        (SeriesOrder::Title, Some(Position::Title { sort_key, local_id })) => BY_TITLE.rows_after(
+            connection,
+            named_params! { ":after_key": sort_key, ":after_id": local_id, ":limit": limit },
+        ),
+        (SeriesOrder::RecentlyAdded, None) => BY_RECENTLY_ADDED.first_rows(connection, limit),
         (
             SeriesOrder::RecentlyAdded,
             Some(Position::Added {
                 added_at_ms,
                 local_id,
             }),
-        ) => rows(
+        ) => BY_RECENTLY_ADDED.rows_after(
             connection,
-            &BY_RECENTLY_ADDED,
-            (*added_at_ms, *local_id, limit),
+            named_params! { ":after_key": added_at_ms, ":after_id": local_id, ":limit": limit },
         ),
         (SeriesOrder::Title, Some(Position::Added { .. } | Position::Book { .. }))
         | (SeriesOrder::RecentlyAdded, Some(Position::Title { .. } | Position::Book { .. })) => {
@@ -94,24 +112,42 @@ pub fn series_page(
     Ok(Page::of(rows, request.size))
 }
 
-fn rows(
-    connection: &Connection,
-    listing: &Listing,
-    after_and_limit: impl Params,
-) -> Result<Vec<(SeriesSummary, Position)>, Error> {
-    let mut statement = connection.prepare(listing.sql)?;
-    let rows = statement.query_map(after_and_limit, |row| {
-        Ok((summary(row)?, (listing.position)(row)?))
-    })?;
-    Ok(rows.collect::<Result<_, _>>()?)
+impl Listing {
+    fn first_rows(
+        &self,
+        connection: &Connection,
+        limit: i64,
+    ) -> Result<Vec<(SeriesSummary, Position)>, Error> {
+        self.read(
+            connection.prepare(self.first)?,
+            named_params! { ":limit": limit },
+        )
+    }
+
+    fn rows_after(
+        &self,
+        connection: &Connection,
+        after_and_limit: &[(&str, &dyn ToSql)],
+    ) -> Result<Vec<(SeriesSummary, Position)>, Error> {
+        self.read(connection.prepare(self.after)?, after_and_limit)
+    }
+
+    fn read(
+        &self,
+        mut statement: Statement<'_>,
+        params: &[(&str, &dyn ToSql)],
+    ) -> Result<Vec<(SeriesSummary, Position)>, Error> {
+        let rows = statement.query_map(params, |row| Ok((summary(row)?, (self.position)(row)?)))?;
+        Ok(rows.collect::<Result<_, _>>()?)
+    }
 }
 
 fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
     Ok(SeriesSummary {
-        id: stored_id(row, 1)?,
-        title: row.get(2)?,
-        book_count: row.get(4)?,
-        added_at_ms: row.get(5)?,
+        id: stored_id(row, "id")?,
+        title: row.get("title")?,
+        book_count: row.get("book_count")?,
+        added_at_ms: row.get("added_at_ms")?,
     })
 }
 
@@ -121,10 +157,28 @@ mod tests {
     use crate::scratch::ScratchLibrary;
 
     #[test]
+    fn starts_at_the_head_of_the_title_index_without_reading_the_table_or_sorting() {
+        let scratch = ScratchLibrary::new("first-title-plan");
+
+        let plan = scratch.query_plan(BY_TITLE.first);
+
+        assert_eq!(plan, ["SCAN series USING INDEX series_by_title"]);
+    }
+
+    #[test]
+    fn starts_at_the_head_of_the_recently_added_index_without_reading_the_table_or_sorting() {
+        let scratch = ScratchLibrary::new("first-recently-added-plan");
+
+        let plan = scratch.query_plan(BY_RECENTLY_ADDED.first);
+
+        assert_eq!(plan, ["SCAN series USING INDEX series_by_added"]);
+    }
+
+    #[test]
     fn walks_the_title_index_of_series_with_books_without_scanning_or_sorting() {
         let scratch = ScratchLibrary::new("title-plan");
 
-        let plan = scratch.query_plan(BY_TITLE.sql);
+        let plan = scratch.query_plan(BY_TITLE.after);
 
         assert_eq!(
             plan,
@@ -136,7 +190,7 @@ mod tests {
     fn walks_the_recently_added_index_of_series_with_books_without_scanning_or_sorting() {
         let scratch = ScratchLibrary::new("recently-added-plan");
 
-        let plan = scratch.query_plan(BY_RECENTLY_ADDED.sql);
+        let plan = scratch.query_plan(BY_RECENTLY_ADDED.after);
 
         assert_eq!(
             plan,
