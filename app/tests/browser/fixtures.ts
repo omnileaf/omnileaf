@@ -16,7 +16,7 @@ export const EXPANDED_MIN_WIDTH = 840;
 export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => ({ version: FAKE_APP_VERSION, platform: "linux" }),
   addLibraryFolder: () => null,
-  matchSystemBars: () => undefined,
+  matchSystemBars: () => null,
 };
 
 export function onPlatform(platform: Platform): { backend: FakeBackend } {

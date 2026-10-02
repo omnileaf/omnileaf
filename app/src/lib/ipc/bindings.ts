@@ -10,7 +10,7 @@ export const commands = {
 	comicFiles: number,
 	unreadableFolders: number,
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder")),
-	matchSystemBars: (theme: Theme) => __TAURI_INVOKE<void>("match_system_bars", { theme }),
+	matchSystemBars: (theme: Theme) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme })),
 };
 
 /* Types */

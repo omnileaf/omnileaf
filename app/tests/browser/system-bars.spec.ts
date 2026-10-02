@@ -8,6 +8,7 @@ test.use({
     ...DEFAULT_BACKEND,
     matchSystemBars: (theme) => {
       reportedThemes.push(theme);
+      return null;
     },
   },
 });
