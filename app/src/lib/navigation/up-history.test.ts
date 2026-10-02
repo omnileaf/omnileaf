@@ -1,17 +1,13 @@
 import { expect, test } from "vitest";
 
-import { moveTo, wayUp } from "./up-history";
+import { moveTo } from "./up-history";
 
-test("Library's way up is Library alone", () => {
-  expect(wayUp("/")).toEqual(["/"]);
+test("stays put when Library is opened from Library", () => {
+  expect(moveTo(["/"], "/")).toEqual({ kind: "push" });
 });
 
-test("a Settings page's way up passes through Settings to Library", () => {
-  expect(wayUp("/settings/appearance")).toEqual([
-    "/",
-    "/settings",
-    "/settings/appearance",
-  ]);
+test("pushes a Settings page opened straight from Library", () => {
+  expect(moveTo(["/"], "/settings/appearance")).toEqual({ kind: "push" });
 });
 
 test("pushes a section opened from Library", () => {

@@ -1,4 +1,4 @@
-const LIBRARY_PATH = "/";
+import { SECTION_ROUTES } from "./sections";
 
 export type HistoryMove =
   | { readonly kind: "push" }
@@ -6,10 +6,10 @@ export type HistoryMove =
   | { readonly kind: "replace"; readonly stepsBack: number };
 
 /** The pages back passes through to leave `pathname`, from Library down to the page itself. */
-export function wayUp(pathname: string): readonly string[] {
+function wayUp(pathname: string): readonly string[] {
   const segments = pathname.split("/").filter(Boolean);
   return [
-    LIBRARY_PATH,
+    SECTION_ROUTES.library,
     ...segments.map((_, index) => `/${segments.slice(0, index + 1).join("/")}`),
   ];
 }
