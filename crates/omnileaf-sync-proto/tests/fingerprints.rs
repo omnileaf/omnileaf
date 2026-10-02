@@ -130,11 +130,11 @@ fn a_book_keeps_its_id_while_its_pages_stay_the_same() {
     let mut reordered = three_pages();
     reordered.rotate_left(1);
 
-    let id = BookId::local(&Fingerprint::pmf1(reordered).unwrap()).unwrap();
+    let id = BookId::local(&Fingerprint::pmf1(reordered).unwrap());
 
     assert_eq!(
         id,
-        BookId::local(&Fingerprint::pmf1(three_pages()).unwrap()).unwrap()
+        BookId::local(&Fingerprint::pmf1(three_pages()).unwrap())
     );
 }
 
@@ -142,11 +142,11 @@ fn a_book_keeps_its_id_while_its_pages_stay_the_same() {
 fn books_with_different_pages_get_different_ids() {
     let other = Fingerprint::pmf1([page(0x9999, 1)]).unwrap();
 
-    let id = BookId::local(&other).unwrap();
+    let id = BookId::local(&other);
 
     assert_ne!(
         id,
-        BookId::local(&Fingerprint::pmf1(three_pages()).unwrap()).unwrap()
+        BookId::local(&Fingerprint::pmf1(three_pages()).unwrap())
     );
 }
 

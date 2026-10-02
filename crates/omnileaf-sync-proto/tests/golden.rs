@@ -100,9 +100,6 @@ fn fingerprints_and_book_ids_match_the_golden_vectors() {
         let fingerprint = fingerprint_of(&vector.input);
 
         assert_eq!(hex(fingerprint.as_bytes()), vector.fingerprint);
-        assert_eq!(
-            BookId::local(&fingerprint).unwrap().to_string(),
-            vector.book_id
-        );
+        assert_eq!(BookId::local(&fingerprint).to_string(), vector.book_id);
     }
 }

@@ -1,4 +1,4 @@
-use std::{fmt, iter, str::FromStr};
+use std::{fmt, str::FromStr};
 
 use uuid::{Uuid, Variant};
 
@@ -6,9 +6,9 @@ use crate::{Fingerprint, norm};
 
 const ENTITY_ID_CONTEXT: &str = "omnileaf.app 2026-09 entity-id v1";
 const DERIVED_VERSION: usize = 8;
-const LOCAL_BOOK_KEY: &str = "book.local.v1";
-const LOCAL_SERIES_KEY: &str = "series.local.v1";
-const CATEGORY_KEY: &str = "category.v1";
+const LOCAL_BOOK_KEY: KeyName = KeyName::new("book.local.v1");
+const LOCAL_SERIES_KEY: KeyName = KeyName::new("series.local.v1");
+const CATEGORY_KEY: KeyName = KeyName::new("category.v1");
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum KeyError {
@@ -75,35 +75,84 @@ entity_id!(SeriesId);
 entity_id!(CategoryId);
 
 impl BookId {
-    pub fn local(fingerprint: &Fingerprint) -> Result<Self, KeyError> {
-        derive(LOCAL_BOOK_KEY, &[fingerprint.as_bytes()]).map(Self)
+    #[must_use]
+    pub fn local(fingerprint: &Fingerprint) -> Self {
+        Self(
+            NaturalKey::new(LOCAL_BOOK_KEY)
+                .fixed_part(fingerprint.as_bytes())
+                .id(),
+        )
     }
 }
 
 impl SeriesId {
     pub fn local(folder_name: &str) -> Result<Self, KeyError> {
-        derive(LOCAL_SERIES_KEY, &[norm(folder_name).as_bytes()]).map(Self)
+        let key = NaturalKey::new(LOCAL_SERIES_KEY).part(norm(folder_name).as_bytes())?;
+        Ok(Self(key.id()))
     }
 }
 
 impl CategoryId {
     pub fn from_name(name: &str) -> Result<Self, KeyError> {
-        derive(CATEGORY_KEY, &[norm(name).as_bytes()]).map(Self)
+        let key = NaturalKey::new(CATEGORY_KEY).part(norm(name).as_bytes())?;
+        Ok(Self(key.id()))
     }
 }
 
-fn derive(key_name: &str, parts: &[&[u8]]) -> Result<Uuid, KeyError> {
-    let mut hasher = blake3::Hasher::new_derive_key(ENTITY_ID_CONTEXT);
-    for field in iter::once(key_name.as_bytes()).chain(parts.iter().copied()) {
-        let length = u32::try_from(field.len()).map_err(|_| KeyError::PartTooLong {
-            length: field.len(),
-        })?;
-        hasher.update(&length.to_le_bytes());
-        hasher.update(field);
+#[derive(Clone, Copy)]
+struct KeyName {
+    length_prefix: [u8; 4],
+    name: &'static str,
+}
+
+impl KeyName {
+    const fn new(name: &'static str) -> Self {
+        Self {
+            length_prefix: fixed_length_prefix(name.len()),
+            name,
+        }
     }
-    let mut bytes = [0; 16];
-    hasher.finalize_xof().fill(&mut bytes);
-    Ok(Uuid::new_v8(bytes))
+}
+
+/// Only for lengths known at compile time, where the assertion fails the build rather than panicking.
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "the assertion keeps the length within u32"
+)]
+const fn fixed_length_prefix(length: usize) -> [u8; 4] {
+    assert!(length <= u32::MAX as usize);
+    (length as u32).to_le_bytes()
+}
+
+struct NaturalKey(blake3::Hasher);
+
+impl NaturalKey {
+    fn new(key_name: KeyName) -> Self {
+        let mut hasher = blake3::Hasher::new_derive_key(ENTITY_ID_CONTEXT);
+        hasher.update(&key_name.length_prefix);
+        hasher.update(key_name.name.as_bytes());
+        Self(hasher)
+    }
+
+    fn fixed_part<const LENGTH: usize>(mut self, part: &[u8; LENGTH]) -> Self {
+        self.0.update(&const { fixed_length_prefix(LENGTH) });
+        self.0.update(part);
+        self
+    }
+
+    fn part(mut self, part: &[u8]) -> Result<Self, KeyError> {
+        let length =
+            u32::try_from(part.len()).map_err(|_| KeyError::PartTooLong { length: part.len() })?;
+        self.0.update(&length.to_le_bytes());
+        self.0.update(part);
+        Ok(self)
+    }
+
+    fn id(&self) -> Uuid {
+        let mut bytes = [0; 16];
+        self.0.finalize_xof().fill(&mut bytes);
+        Uuid::new_v8(bytes)
+    }
 }
 
 fn derived(uuid: Uuid) -> Result<Uuid, IdError> {
