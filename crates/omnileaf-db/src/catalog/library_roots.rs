@@ -1,11 +1,11 @@
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 
 use crate::{
     Error,
     catalog::{
         cursor::Position,
         page::{Page, PageRequest},
-        root::{LibraryRoot, stored_root},
+        root::{LibraryRoot, RootId, stored_root},
     },
 };
 
@@ -14,6 +14,9 @@ const IN_ADDED_ORDER: &str = "SELECT id, kind, locator_kind, location, added_at_
     WHERE id > ?1
     ORDER BY id
     LIMIT ?2";
+const ONE_ROOT: &str = "SELECT id, kind, locator_kind, location, added_at_ms
+    FROM library_root
+    WHERE id = ?1";
 
 /// Lists the home folder and the linked folders together, in the order they were added.
 #[tracing::instrument(skip_all, fields(size = ?request.size))]
@@ -37,6 +40,15 @@ pub fn library_roots(
         })?
         .collect::<Result<_, _>>()?;
     Ok(Page::of(rows, request.size))
+}
+
+/// Fails with [`Error::UnknownRoot`] when the library has no root with that id.
+pub fn library_root(connection: &Connection, id: RootId) -> Result<LibraryRoot, Error> {
+    connection
+        .prepare(ONE_ROOT)?
+        .query_row([id.0], stored_root)
+        .optional()?
+        .ok_or(Error::UnknownRoot { id })
 }
 
 #[cfg(test)]

@@ -39,7 +39,7 @@ pub enum Error {
     DanglingReference { path: PathBuf, table: String },
     #[error("add a book to series {id}, which isn't in the catalog")]
     UnknownSeries { id: SeriesId },
-    #[error("remove library folder {id}, which isn't in the catalog")]
+    #[error("library folder {id} isn't in the catalog")]
     UnknownRoot { id: RootId },
     #[error("remove library folder {id}, the home folder the library lives in")]
     HomeRoot { id: RootId },

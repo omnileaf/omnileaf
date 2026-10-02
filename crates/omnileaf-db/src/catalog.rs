@@ -16,7 +16,7 @@ mod stored_id;
 pub use book::{NewBook, add_book};
 pub use cursor::Cursor;
 pub use home_root::set_home_root;
-pub use library_roots::library_roots;
+pub use library_roots::{library_root, library_roots};
 pub use page::{Page, PageRequest, PageSize};
 pub use root::{LibraryRoot, NewRoot, RootId, RootKind, RootLocator, add_root, remove_root};
 pub use scanned_book::{BookFile, ScannedBook, record_scanned_book};

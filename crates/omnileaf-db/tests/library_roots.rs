@@ -14,8 +14,8 @@ use omnileaf_db::{
     Database, Error,
     catalog::{
         Cursor, LibraryRoot, NewBook, NewRoot, NewSeries, Page, PageRequest, PageSize, RootId,
-        RootKind, RootLocator, add_book, add_root, add_series, library_roots, remove_root,
-        set_home_root,
+        RootKind, RootLocator, add_book, add_root, add_series, library_root, library_roots,
+        remove_root, set_home_root,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
@@ -184,6 +184,38 @@ async fn lists_a_folder_whose_name_is_not_unicode_as_it_was_added() {
     library.add(RootKind::Linked, &path).await;
 
     assert_eq!(library.locations().await, [(RootKind::Linked, path)]);
+}
+
+#[tokio::test]
+async fn reads_one_root_by_its_id() {
+    let library = Library::open("root-by-id");
+    library.add(RootKind::Linked, MANGA).await;
+    let comics = library.add(RootKind::Linked, COMICS).await;
+
+    let root = library
+        .database
+        .read(move |connection| library_root(connection, comics))
+        .await;
+
+    assert!(matches!(
+        root,
+        Ok(LibraryRoot { id, kind: RootKind::Linked, locator: RootLocator::Path(path), .. })
+            if id == comics && path == Path::new(COMICS)
+    ));
+}
+
+#[tokio::test]
+async fn reports_a_root_id_missing_from_the_library() {
+    let library = Library::open("root-by-missing-id");
+    let removed = library.add(RootKind::Linked, COMICS).await;
+    library.remove(removed).await.unwrap();
+
+    let root = library
+        .database
+        .read(move |connection| library_root(connection, removed))
+        .await;
+
+    assert!(matches!(root, Err(Error::UnknownRoot { id }) if id == removed));
 }
 
 #[tokio::test]
