@@ -1,3 +1,4 @@
+import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
 import { EXPANDED_MIN_WIDTH, expect, test, viewportOf } from "./fixtures.ts";
@@ -54,3 +55,20 @@ test("keeps the settings list to the index on phones and tablets", async ({
     page.getByRole("link", { name: "Back to Settings" }),
   ).toBeVisible();
 });
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`settings on desktop has no accessibility violations in the ${colorScheme} theme`, async ({
+    page,
+  }) => {
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "desktop only");
+    await page.emulateMedia({ colorScheme });
+    await page.goto("/settings");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Library" }),
+    ).toBeVisible();
+
+    const results = await new AxeBuilder({ page }).analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+}
