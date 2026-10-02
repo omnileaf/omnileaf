@@ -30,6 +30,21 @@ pub(crate) fn project(connection: &Connection, key: Key, cbor: &[u8]) -> Result<
     Ok(())
 }
 
+pub(crate) fn rebuild(connection: &Connection) -> Result<(), Error> {
+    connection.execute("DELETE FROM book_state", [])?;
+    let mut statement = connection.prepare("SELECT entity, id, field, value FROM sync_register")?;
+    let mut registers = statement.query([])?;
+    while let Some(register) = registers.next()? {
+        let entity: String = register.get(0)?;
+        let id: Vec<u8> = register.get(1)?;
+        let field: String = register.get(2)?;
+        if let Some(key) = Key::stored(&entity, &id, &field)? {
+            project(connection, key, &register.get::<_, Vec<u8>>(3)?)?;
+        }
+    }
+    Ok(())
+}
+
 fn page(key: Key, value: Value) -> Result<Option<u64>, Error> {
     match value {
         Value::Null => Ok(None),

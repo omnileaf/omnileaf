@@ -73,6 +73,12 @@ impl Store {
         );
         async move { Ok(written.await?.0) }
     }
+
+    /// Recomputes every projection from the registers alone, in one transaction.
+    pub fn rebuild_projections(&self) -> impl Future<Output = Result<(), Error>> + use<> {
+        self.database
+            .write(|transaction| projector::rebuild(transaction))
+    }
 }
 
 fn announce(subscribers: &broadcast::Sender<Changed>, changed: &Changed) {

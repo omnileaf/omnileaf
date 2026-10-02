@@ -11,6 +11,7 @@ use omnileaf_db::{
     store::{LatestKey, Store},
 };
 use omnileaf_sync_proto::BookId;
+use proptest::{collection::vec, option, prelude::*};
 use store_support::{FakeClock, NOW_UNIX_MS, book, open_store, raise_furthest, set_position};
 use support::ScratchFolder;
 
@@ -98,6 +99,107 @@ async fn keeps_no_register_or_sequence_number_from_a_write_that_failed_to_projec
 
     assert!(matches!(outcome, Err(Error::FailedWriteIgnored)));
     assert_eq!(register_seqs(&store).await, [1]);
+}
+
+#[tokio::test]
+async fn rebuilds_around_registers_a_newer_version_wrote() {
+    let folder = ScratchFolder::new("rebuild-unknown");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    set_position(&store, book(1), 7).await.unwrap();
+    store
+        .database()
+        .write(|transaction| {
+            Ok(transaction.execute_batch(
+                "INSERT INTO sync_register (entity, id, field, class, hlc, node, seq, value)
+                 VALUES ('book', zeroblob(16), 'rating', 'lww', 1, zeroblob(16), 1, x'05'),
+                        ('category', zeroblob(16), 'name', 'lww', 1, zeroblob(16), 2, x'f6')",
+            )?)
+        })
+        .await
+        .unwrap();
+    let written = book_states(&store).await;
+
+    store.rebuild_projections().await.unwrap();
+
+    assert_eq!(book_states(&store).await, written);
+}
+
+#[derive(Clone, Debug)]
+enum ReadingWrite {
+    Position { book: u32, page: Option<u32> },
+    Furthest { book: u32, page: u32 },
+    Read { book: u32, is_read: Option<bool> },
+}
+
+fn any_reading_write() -> impl Strategy<Value = ReadingWrite> {
+    prop_oneof![
+        (0..3_u32, option::of(0..40_u32))
+            .prop_map(|(book, page)| ReadingWrite::Position { book, page }),
+        (0..3_u32, 0..40_u32).prop_map(|(book, page)| ReadingWrite::Furthest { book, page }),
+        (0..3_u32, option::of(any::<bool>()))
+            .prop_map(|(book, is_read)| ReadingWrite::Read { book, is_read }),
+    ]
+}
+
+async fn apply(store: &Store, write: ReadingWrite) {
+    store
+        .write(move |writer| match write {
+            ReadingWrite::Position {
+                book: number,
+                page: Some(page),
+            } => writer.set_position(book(number), page),
+            ReadingWrite::Position {
+                book: number,
+                page: None,
+            } => writer.clear(LatestKey::BookPosition(book(number))),
+            ReadingWrite::Furthest { book: number, page } => {
+                writer.raise_furthest(book(number), page)
+            }
+            ReadingWrite::Read {
+                book: number,
+                is_read: Some(flag),
+            } => writer.set_read(book(number), flag),
+            ReadingWrite::Read {
+                book: number,
+                is_read: None,
+            } => writer.clear(LatestKey::BookRead(book(number))),
+        })
+        .await
+        .unwrap();
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(48))]
+
+    #[test]
+    fn rebuilding_from_the_registers_gives_what_applying_the_writes_one_by_one_gave(
+        writes in vec(any_reading_write(), 1..12)
+    ) {
+        let runtime = tokio::runtime::Builder::new_current_thread().build().unwrap();
+        let (written, rebuilt) = runtime.block_on(async {
+            let folder = ScratchFolder::new("rebuild");
+            let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+            for write in writes {
+                apply(&store, write).await;
+            }
+            let written = book_states(&store).await;
+            forget_book_states(&store).await;
+
+            store.rebuild_projections().await.unwrap();
+
+            (written, book_states(&store).await)
+        });
+
+        prop_assert_eq!(rebuilt, written);
+    }
+}
+
+async fn forget_book_states(store: &Store) {
+    store
+        .database()
+        .write(|transaction| Ok(transaction.execute("DELETE FROM book_state", [])?))
+        .await
+        .unwrap();
 }
 
 async fn book_states(store: &Store) -> Vec<BookState> {

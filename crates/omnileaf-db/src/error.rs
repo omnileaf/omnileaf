@@ -1,6 +1,6 @@
 use std::{io, path::PathBuf};
 
-use omnileaf_sync_proto::{ClockError, SeriesId, Value, ValueError};
+use omnileaf_sync_proto::{ClockError, IdError, SeriesId, Value, ValueError};
 
 use crate::store::Key;
 
@@ -51,6 +51,8 @@ pub enum Error {
     UnexpectedValue { key: Key, found: Value },
     #[error("read the value of a synced register")]
     RegisterValue(#[from] ValueError),
+    #[error("read the entity id of a synced register")]
+    RegisterId(#[from] IdError),
     #[error("commit a synced write job that carried on after one of its writes failed")]
     FailedWriteIgnored,
     #[error("start a database thread")]
