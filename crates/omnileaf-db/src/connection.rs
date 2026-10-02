@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use rusqlite::Connection;
+use rusqlite::{Connection, OpenFlags};
 
 use crate::{Config, Error};
 
@@ -8,7 +8,7 @@ const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 const WRITE_AHEAD_LOG: &str = "wal";
 
 pub(crate) fn open_writer(config: &Config) -> Result<Connection, Error> {
-    let connection = open(config)?;
+    let connection = open(config, OpenFlags::default())?;
     let mode = configure_writing(&connection).map_err(|source| open_failed(config, source))?;
     if !mode.eq_ignore_ascii_case(WRITE_AHEAD_LOG) {
         return Err(Error::NoWriteAheadLog {
@@ -19,8 +19,15 @@ pub(crate) fn open_writer(config: &Config) -> Result<Connection, Error> {
     Ok(connection)
 }
 
-fn open(config: &Config) -> Result<Connection, Error> {
-    Connection::open(&config.path)
+pub(crate) fn open_reader(config: &Config) -> Result<Connection, Error> {
+    open(
+        config,
+        OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )
+}
+
+fn open(config: &Config, flags: OpenFlags) -> Result<Connection, Error> {
+    Connection::open_with_flags(&config.path, flags)
         .and_then(|connection| {
             configure(&connection, config)?;
             Ok(connection)

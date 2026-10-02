@@ -1,4 +1,4 @@
-//! The library database: SQLite, written through one thread.
+//! The library database: SQLite, written through one thread and read through a small pool.
 
 mod config;
 mod connection;

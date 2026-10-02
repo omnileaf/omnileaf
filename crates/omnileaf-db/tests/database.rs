@@ -5,6 +5,11 @@
 
 mod support;
 
+use std::{
+    sync::{Arc, Condvar, Mutex},
+    time::Duration,
+};
+
 use omnileaf_db::{Connection, Database, Error};
 use support::{MMAP_SIZE_BYTES, ScratchFolder};
 
@@ -41,6 +46,67 @@ async fn configures_the_writer_for_write_ahead_logging_and_normal_sync() {
             i64::from(MMAP_SIZE_BYTES)
         )
     );
+}
+
+#[tokio::test]
+async fn configures_readers_with_foreign_keys_the_busy_timeout_and_memory_mapping() {
+    let folder = ScratchFolder::new("reader-settings");
+    let database = Database::open(&folder.config()).unwrap();
+
+    let settings = database
+        .read(|connection| {
+            Ok((
+                pragma(connection, "foreign_keys")?,
+                pragma(connection, "busy_timeout")?,
+                pragma(connection, "mmap_size")?,
+            ))
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(settings, (1, BUSY_TIMEOUT_MS, i64::from(MMAP_SIZE_BYTES)));
+}
+
+#[tokio::test]
+async fn readers_refuse_to_write() {
+    let folder = ScratchFolder::new("read-only");
+    let database = Database::open(&folder.config()).unwrap();
+    create_notes(&database).await;
+
+    let outcome = database
+        .read(|connection| Ok(connection.execute("INSERT INTO note (body) VALUES ('kept')", [])?))
+        .await;
+
+    assert!(matches!(
+        outcome,
+        Err(Error::Statement(rusqlite::Error::SqliteFailure(
+            rusqlite::ffi::Error {
+                code: rusqlite::ErrorCode::ReadOnly,
+                ..
+            },
+            _
+        )))
+    ));
+}
+
+#[tokio::test]
+async fn runs_three_reads_at_the_same_time() {
+    let folder = ScratchFolder::new("read-pool");
+    let database = Database::open(&folder.config()).unwrap();
+    let meeting = Arc::new(Meeting::default());
+
+    let reads: Vec<_> = (0..3)
+        .map(|_| {
+            let meeting = Arc::clone(&meeting);
+            database.read(move |_| Ok(meeting.arrive_and_wait_for(3)))
+        })
+        .collect();
+    let mut all_met = Vec::new();
+    for read in reads {
+        all_met.push(read.await.unwrap());
+    }
+
+    assert_eq!(all_met, [true, true, true]);
 }
 
 #[tokio::test]
@@ -153,8 +219,8 @@ fn add_note(database: &Database, body: String) -> impl Future<Output = Result<()
 
 async fn note_bodies(database: &Database) -> Vec<String> {
     database
-        .write(|transaction| {
-            let mut statement = transaction.prepare("SELECT body FROM note ORDER BY id")?;
+        .read(|connection| {
+            let mut statement = connection.prepare("SELECT body FROM note ORDER BY id")?;
             let bodies = statement
                 .query_map([], |row| row.get(0))?
                 .collect::<Result<_, _>>()?;
@@ -162,4 +228,25 @@ async fn note_bodies(database: &Database) -> Vec<String> {
         })
         .await
         .unwrap()
+}
+
+#[derive(Default)]
+struct Meeting {
+    arrived: Mutex<usize>,
+    changed: Condvar,
+}
+
+impl Meeting {
+    const PATIENCE: Duration = Duration::from_secs(5);
+
+    fn arrive_and_wait_for(&self, expected: usize) -> bool {
+        let mut arrived = self.arrived.lock().unwrap();
+        *arrived += 1;
+        self.changed.notify_all();
+        let (_arrived, waited) = self
+            .changed
+            .wait_timeout_while(arrived, Self::PATIENCE, |arrived| *arrived < expected)
+            .unwrap();
+        !waited.timed_out()
+    }
 }

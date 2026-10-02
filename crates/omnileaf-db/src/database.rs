@@ -1,17 +1,24 @@
-use rusqlite::{Transaction, TransactionBehavior};
+use rusqlite::{Connection, Transaction, TransactionBehavior};
 
 use crate::{Config, Error, connection, workers::ConnectionWorkers};
+
+const READER_COUNT: usize = 3;
 
 /// Dropping it blocks until every job already submitted has run.
 pub struct Database {
     writer: ConnectionWorkers,
+    readers: ConnectionWorkers,
 }
 
 impl Database {
     pub fn open(config: &Config) -> Result<Self, Error> {
         let writer = connection::open_writer(config)?;
+        let readers = (0..READER_COUNT)
+            .map(|_| connection::open_reader(config))
+            .collect::<Result<_, _>>()?;
         Ok(Self {
             writer: ConnectionWorkers::spawn("omnileaf-db-writer", vec![writer])?,
+            readers: ConnectionWorkers::spawn("omnileaf-db-reader", readers)?,
         })
     }
 
@@ -28,5 +35,13 @@ impl Database {
             transaction.commit()?;
             Ok(value)
         })
+    }
+
+    pub fn read<T, F>(&self, job: F) -> impl Future<Output = Result<T, Error>> + use<T, F>
+    where
+        T: Send + 'static,
+        F: FnOnce(&Connection) -> Result<T, Error> + Send + 'static,
+    {
+        self.readers.submit(move |connection| job(connection))
     }
 }
