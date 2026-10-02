@@ -34,7 +34,7 @@
   <AppNavigation current={sectionOf(page.url.pathname)} />
   <main
     bind:this={main}
-    class="flex-1 overflow-y-auto px-gutter py-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance"
+    class="flex flex-1 flex-col overflow-y-auto px-gutter py-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance"
   >
     {@render children()}
   </main>
