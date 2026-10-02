@@ -26,6 +26,11 @@ interface Motion {
 
 const STILL: Motion = { transitions: [], animations: [] };
 
+interface StartedAnimation {
+  readonly tab: string | null;
+  readonly animation: string;
+}
+
 function motionIn(locator: Locator): Promise<Motion> {
   return locator.evaluate((root) => {
     const rendered = [root, ...root.querySelectorAll("*")].filter((element) =>
@@ -67,16 +72,82 @@ function glassPill(page: Page): Locator {
 
 async function settle(locator: Locator): Promise<void> {
   await locator.evaluate((element) =>
-    Promise.all(element.getAnimations().map((motion) => motion.finished)).then(
-      () => undefined,
-    ),
+    Promise.all(
+      element.getAnimations({ subtree: true }).map((motion) => motion.finished),
+    ).then(() => undefined),
   );
 }
 
 async function openHistoryAndSettle(page: Page): Promise<void> {
   await tab(page, "History").click();
   await expect(tab(page, "History")).toHaveAttribute("aria-current", "page");
-  await settle(glassPill(page));
+  await settle(navigation(page));
+}
+
+async function animationsStartedWhile(
+  page: Page,
+  act: () => Promise<void>,
+): Promise<readonly StartedAnimation[]> {
+  const started = await navigation(page).evaluateHandle((root) => {
+    const log: StartedAnimation[] = [];
+    root.addEventListener("animationstart", (event) => {
+      if (
+        !(event instanceof AnimationEvent) ||
+        !(event.target instanceof Element)
+      ) {
+        return;
+      }
+      const style = getComputedStyle(event.target);
+      log.push({
+        tab: event.target.closest("a")?.textContent.trim() ?? null,
+        animation: `${event.animationName} ${style.animationDuration} ${style.animationTimingFunction}`,
+      });
+    });
+    return log;
+  });
+  await act();
+  return started.jsonValue();
+}
+
+async function turnTheScreen(page: Page): Promise<void> {
+  const viewport = viewportOf(page);
+  await page.setViewportSize({
+    width: viewport.height,
+    height: viewport.width,
+  });
+  await settle(navigation(page));
+}
+
+function testTurningTheScreen(): void {
+  test("keeps the selected tab still when the screen turns and back", async ({
+    page,
+  }) => {
+    await page.goto("/history");
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await settle(navigation(page));
+
+    const started = await animationsStartedWhile(page, async () => {
+      await turnTheScreen(page);
+      await turnTheScreen(page);
+    });
+
+    expect(started).toEqual([]);
+  });
+
+  test("keeps a tab picked sideways still when the screen turns back", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await turnTheScreen(page);
+    await openHistoryAndSettle(page);
+
+    const started = await animationsStartedWhile(page, () =>
+      turnTheScreen(page),
+    );
+
+    expect(started).toEqual([]);
+  });
 }
 
 test.describe("on Android", () => {
@@ -85,16 +156,20 @@ test.describe("on Android", () => {
   test("grows the new tab's pill in and fades the old one out", async ({
     page,
   }) => {
-    await page.goto("/history");
+    await page.goto("/");
     test.skip(
       viewportOf(page).width >= EXPANDED_MIN_WIDTH,
       "bar and rail only",
     );
+    await settle(navigation(page));
 
-    const current = await motionIn(tab(page, "History"));
+    const started = await animationsStartedWhile(page, () =>
+      openHistoryAndSettle(page),
+    );
+
     const previous = await motionIn(tab(page, "Library"));
-
-    expect(current.animations).toContain(PILL_GROW);
+    expect(started).toContainEqual({ tab: "History", animation: PILL_GROW });
+    expect(started.filter(({ tab }) => tab === "Library")).toEqual([]);
     expect(previous.transitions).toContain(GROW);
   });
 
@@ -106,6 +181,8 @@ test.describe("on Android", () => {
 
     expect(motion).toEqual({ transitions: [FADE], animations: [] });
   });
+
+  testTurningTheScreen();
 });
 
 test.describe("on iOS", () => {
@@ -149,13 +226,18 @@ test.describe("on iOS", () => {
   });
 
   test("bounces the new tab's icon", async ({ page }) => {
-    await page.goto("/history");
+    await page.goto("/");
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await settle(navigation(page));
 
-    const current = await motionIn(tab(page, "History"));
+    const started = await animationsStartedWhile(page, () =>
+      openHistoryAndSettle(page),
+    );
 
-    expect(current.animations).toContain(ICON_POP);
+    expect(started).toContainEqual({ tab: "History", animation: ICON_POP });
   });
+
+  testTurningTheScreen();
 
   test("only fades the rail's and sidebar's highlight", async ({ page }) => {
     await page.goto("/history");

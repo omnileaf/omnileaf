@@ -41,10 +41,42 @@
   const currentIndex = $derived(
     DESTINATIONS.findIndex(({ section }) => section === current),
   );
+
+  let navigation: HTMLElement | undefined = $state();
+  let arriving: Section | undefined = $state();
+  let previous: Section | undefined;
+
+  $effect(() => {
+    if (previous !== undefined && previous !== current) {
+      arriving = current;
+    }
+    previous = current;
+  });
+
+  $effect(() => {
+    if (arriving === undefined) {
+      return;
+    }
+    const frame = requestAnimationFrame(endArrivalOnceStill);
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  });
+
+  function endArrivalOnceStill(): void {
+    const isMoving = navigation
+      ?.getAnimations({ subtree: true })
+      .some((motion) => motion instanceof CSSAnimation);
+    if (isMoving !== true) {
+      arriving = undefined;
+    }
+  }
 </script>
 
 <nav
+  bind:this={navigation}
   aria-label={m.navigation_label()}
+  onanimationend={endArrivalOnceStill}
   class={[
     "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom max-medium:pe-safe-end medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:flex expanded:flex-col expanded:inline-sidebar",
     "ios:max-medium:fixed ios:max-medium:inset-x-lg ios:max-medium:inset-be-floating-gap ios:max-medium:rounded-full ios:max-medium:border ios:max-medium:border-glass-edge ios:max-medium:bg-glass ios:max-medium:p-xs ios:max-medium:shadow-floating ios:max-medium:backdrop-blur-glass ios:max-medium:backdrop-saturate-160 ios:max-medium:block-floating-bar",
@@ -63,6 +95,7 @@
     ></li>
     {#each DESTINATIONS as destination (destination.section)}
       {@const isSelected = destination.section === current}
+      {@const isArriving = destination.section === arriving}
       <li
         class={[
           "flex-1 medium:flex-none ios:max-medium:flex",
@@ -87,9 +120,8 @@
               class={[
                 "absolute inset-none rounded-card bg-accent-soft transition-opacity motion-safe:duration-fade motion-safe:ease-out expanded:hidden ios:max-medium:hidden",
                 "android:motion-safe:duration-grow android:motion-safe:ease-emphasized",
-                isSelected
-                  ? "android:motion-safe:animate-pill-grow"
-                  : "opacity-0",
+                !isSelected && "opacity-0",
+                isArriving && "android:motion-safe:animate-pill-grow",
               ]}
             ></span>
             <NavigationIcon
@@ -98,7 +130,7 @@
               size={ICON_SIZE}
               class={[
                 "relative ios:max-medium:block-xl ios:max-medium:inline-xl",
-                isSelected && "ios:max-medium:motion-safe:animate-nav-pop",
+                isArriving && "ios:max-medium:motion-safe:animate-nav-pop",
               ]}
             />
           </span>
