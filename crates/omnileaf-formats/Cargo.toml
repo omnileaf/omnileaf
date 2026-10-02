@@ -17,6 +17,8 @@ zip.workspace = true
 [dev-dependencies]
 omnileaf-testkit.workspace = true
 proptest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true

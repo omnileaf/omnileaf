@@ -1,0 +1,21 @@
+{
+  "contract": "pmf v1, as fed from a comic archive",
+  "rule": "every entry with an image extension (jpg, jpeg, png, webp, avif, jxl, gif, bmp, tif, tiff, heic, heif, any case), except directories, anything under __MACOSX/ and names starting with a dot, contributes the CRC-32 and uncompressed size its central directory records; ComicInfo.xml and the archive's name never contribute",
+  "book": "pages 001.png to 004.png, page n holding \"Sample page 00n\\n\" repeated 300 times, and a ComicInfo.xml naming Sample Series 05, stored, in that order, as Sample Series 05 v01.cbz",
+  "variants": {
+    "stored": "the book as described",
+    "deflated": "every entry deflated",
+    "reordered-entries": "the entries written in reverse order",
+    "renamed-archive": "the archive named Another Name.cbz",
+    "edited-comic-info": "the ComicInfo.xml also giving a title",
+    "changed-page": "page 002 holding \"Sample page 002, redrawn\\n\" repeated 300 times"
+  },
+  "vectors": [
+    { "book": "stored", "fingerprint": "ac3aa4cf4ae20d15d42ff5179984a027b596c85a5ba46316c2df35d416e98fc3" },
+    { "book": "deflated", "fingerprint": "ac3aa4cf4ae20d15d42ff5179984a027b596c85a5ba46316c2df35d416e98fc3" },
+    { "book": "reordered-entries", "fingerprint": "ac3aa4cf4ae20d15d42ff5179984a027b596c85a5ba46316c2df35d416e98fc3" },
+    { "book": "renamed-archive", "fingerprint": "ac3aa4cf4ae20d15d42ff5179984a027b596c85a5ba46316c2df35d416e98fc3" },
+    { "book": "edited-comic-info", "fingerprint": "ac3aa4cf4ae20d15d42ff5179984a027b596c85a5ba46316c2df35d416e98fc3" },
+    { "book": "changed-page", "fingerprint": "bb8ca85bbca885dbd834fa3392dde3c5ec54c9c891609cd1c660bcd9c9bf5c54" }
+  ]
+}
