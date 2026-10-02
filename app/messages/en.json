@@ -65,5 +65,10 @@
   "notice_dismiss": "Dismiss",
   "undo_action": "Undo",
   "undo_shortcut_control": "Ctrl Z",
-  "undo_shortcut_command": "⌘ Z"
+  "undo_shortcut_command": "⌘ Z",
+  "problem_page_missing_title": "This page doesn't exist",
+  "problem_page_missing_body": "The link may be out of date. Nothing in your library has changed.",
+  "problem_page_failed_title": "This page couldn't be opened",
+  "problem_page_failed_body": "Something went wrong inside Omnileaf. Nothing in your library has changed.",
+  "problem_go_to_library": "Go to Library"
 }

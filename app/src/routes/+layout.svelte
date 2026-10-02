@@ -20,7 +20,8 @@
   setThemeSetting(themeSettingForDocument());
 
   afterNavigate(({ type }) => {
-    if (type !== "enter") {
+    const isProblem = page.error !== null;
+    if (type !== "enter" || isProblem) {
       focusPageHeading();
     }
   });

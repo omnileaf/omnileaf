@@ -65,5 +65,10 @@
   "notice_dismiss": "⟦Ðíšɱíšš···⟧",
   "undo_action": "⟦Ûñðö··⟧",
   "undo_shortcut_control": "⟦Çţŕļ Ž···⟧",
-  "undo_shortcut_command": "⟦⌘ Ž··⟧"
+  "undo_shortcut_command": "⟦⌘ Ž··⟧",
+  "problem_page_missing_title": "⟦Ţĥíš þáĝé ðöéšñ'ţ éẋíšţ··········⟧",
+  "problem_page_missing_body": "⟦Ţĥé ļíñķ ɱáý ƀé öûţ öƒ ðáţé. Ñöţĥíñĝ íñ ýöûŕ ļíƀŕáŕý ĥáš çĥáñĝéð.··························⟧",
+  "problem_page_failed_title": "⟦Ţĥíš þáĝé çöûļðñ'ţ ƀé öþéñéð············⟧",
+  "problem_page_failed_body": "⟦Šöɱéţĥíñĝ ŵéñţ ŵŕöñĝ íñšíðé Öɱñíļéáƒ. Ñöţĥíñĝ íñ ýöûŕ ļíƀŕáŕý ĥáš çĥáñĝéð.······························⟧",
+  "problem_go_to_library": "⟦Ĝö ţö Ļíƀŕáŕý······⟧"
 }

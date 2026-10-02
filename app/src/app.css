@@ -25,6 +25,7 @@
   --font-ui:
     system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto,
     sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --text-tab: 0.625rem;
   --text-tab--line-height: 0.75rem;
@@ -86,6 +87,7 @@
   --radius-notice: 1.25rem;
 
   --container-notice: 27.5rem;
+  --container-problem: 32.5rem;
 
   --z-index-notice: 10;
 
