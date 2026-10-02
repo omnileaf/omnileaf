@@ -25,6 +25,12 @@ pub enum Error {
         name: &'static str,
         source: rusqlite::Error,
     },
+    #[error("bring database {} up to schema version {version}", path.display())]
+    Upgrade {
+        path: PathBuf,
+        version: u32,
+        source: rusqlite::Error,
+    },
     #[error("start a database thread")]
     Spawn(#[source] io::Error),
     #[error("run a statement in a database job")]

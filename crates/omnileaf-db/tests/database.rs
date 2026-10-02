@@ -209,6 +209,21 @@ async fn reports_which_database_could_not_be_opened() {
     assert!(matches!(outcome, Err(Error::Open { path, .. }) if path == config.path));
 }
 
+#[test]
+fn names_the_database_a_blocked_migration_was_for() {
+    let folder = ScratchFolder::new("locked");
+    let config = folder.config();
+    let holder = rusqlite::Connection::open(&config.path).unwrap();
+    holder
+        .query_row("PRAGMA journal_mode = wal", [], |_| Ok(()))
+        .unwrap();
+    holder.execute_batch("BEGIN IMMEDIATE").unwrap();
+
+    let outcome = Database::open(&config);
+
+    assert!(matches!(outcome, Err(Error::Upgrade { path, .. }) if path == config.path));
+}
+
 #[tokio::test]
 async fn stamps_a_new_database_as_an_omnileaf_library() {
     let folder = ScratchFolder::new("application-id");

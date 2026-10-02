@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use rusqlite::{Connection, TransactionBehavior};
 
 use crate::Error;
@@ -29,8 +31,15 @@ macro_rules! migration {
 /// Applied in order, and never edited once released; schema version N means the first N have run.
 pub(crate) const MIGRATIONS: &[Migration] = &[migration!("0001_mark_omnileaf_library")];
 
-pub(crate) fn pending(connection: &Connection, migrations: &[Migration]) -> Result<Pending, Error> {
-    let found = schema_version(connection)?;
+pub(crate) fn pending(
+    connection: &Connection,
+    path: &Path,
+    migrations: &[Migration],
+) -> Result<Pending, Error> {
+    let found = schema_version(connection).map_err(|source| Error::Open {
+        path: path.to_owned(),
+        source,
+    })?;
     let supported = supported_version(found, migrations)?;
     Ok(if found == supported {
         Pending::Current
@@ -42,9 +51,20 @@ pub(crate) fn pending(connection: &Connection, migrations: &[Migration]) -> Resu
 }
 
 /// Reads the schema version again inside the write lock, so migrations another connection applied meanwhile are skipped.
-pub(crate) fn apply(connection: &mut Connection, migrations: &[Migration]) -> Result<(), Error> {
-    let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
-    let from = schema_version(&transaction)?;
+pub(crate) fn apply(
+    connection: &mut Connection,
+    path: &Path,
+    migrations: &[Migration],
+) -> Result<(), Error> {
+    let upgrade_failed = |source| Error::Upgrade {
+        path: path.to_owned(),
+        version: latest_version(migrations),
+        source,
+    };
+    let transaction = connection
+        .transaction_with_behavior(TransactionBehavior::Immediate)
+        .map_err(upgrade_failed)?;
+    let from = schema_version(&transaction).map_err(upgrade_failed)?;
     let latest = supported_version(from, migrations)?;
     for (_, migration) in numbered(migrations).filter(|(version, _)| *version > from) {
         transaction
@@ -55,8 +75,10 @@ pub(crate) fn apply(connection: &mut Connection, migrations: &[Migration]) -> Re
             })?;
         tracing::info!(migration = migration.name, "applied a database migration");
     }
-    transaction.pragma_update(None, SCHEMA_VERSION, latest)?;
-    Ok(transaction.commit()?)
+    transaction
+        .pragma_update(None, SCHEMA_VERSION, latest)
+        .and_then(|()| transaction.commit())
+        .map_err(upgrade_failed)
 }
 
 fn schema_version(connection: &Connection) -> rusqlite::Result<u32> {
@@ -190,12 +212,12 @@ mod tests {
         ];
         drop(Database::open_with(&scratch.config, &tally[..1]).unwrap());
         let mut stale = connection::open_writer(&scratch.config).unwrap();
-        let Pending::Upgrade { .. } = pending(&stale, &tally).unwrap() else {
+        let Pending::Upgrade { .. } = pending(&stale, &scratch.config.path, &tally).unwrap() else {
             panic!("the database should be waiting for its second migration");
         };
         drop(Database::open_with(&scratch.config, &tally).unwrap());
 
-        apply(&mut stale, &tally).unwrap();
+        apply(&mut stale, &scratch.config.path, &tally).unwrap();
 
         let count: i64 = stale
             .query_row("SELECT count FROM tally", [], |row| row.get(0))

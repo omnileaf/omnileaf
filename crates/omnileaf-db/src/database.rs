@@ -24,14 +24,14 @@ impl Database {
     #[tracing::instrument(skip_all, fields(path = %config.path.display()))]
     pub(crate) fn open_with(config: &Config, migrations: &[Migration]) -> Result<Self, Error> {
         let mut writer = connection::open_writer(config)?;
-        match migration::pending(&writer, migrations)? {
+        match migration::pending(&writer, &config.path, migrations)? {
             Pending::Current => {}
             Pending::NewDatabase => {
-                migration::apply(&mut writer, migrations)?;
+                migration::apply(&mut writer, &config.path, migrations)?;
             }
             Pending::Upgrade { from } => {
                 backup::back_up(&writer, &config.backup_dir, from)?;
-                migration::apply(&mut writer, migrations)?;
+                migration::apply(&mut writer, &config.path, migrations)?;
             }
         }
         let readers = (0..READER_COUNT)
