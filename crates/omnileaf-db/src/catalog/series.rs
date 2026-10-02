@@ -4,6 +4,13 @@ use rusqlite::Transaction;
 use crate::{Error, title_sort::title_sort_key};
 
 const LOCAL_SOURCE: &str = "local";
+const ADD_SERIES: &str =
+    "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
+const ADD_SERIES_UNLESS_PRESENT: &str =
+    "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+     ON CONFLICT DO NOTHING";
 
 #[derive(Clone, Debug)]
 pub struct NewSeries {
@@ -28,22 +35,33 @@ impl NewSeries {
     pub const fn id(&self) -> SeriesId {
         self.id
     }
+
+    pub(crate) const fn added_at_ms(&self) -> i64 {
+        self.added_at_ms
+    }
 }
 
 #[tracing::instrument(skip_all, fields(series = %series.id))]
 pub fn add_series(transaction: &Transaction<'_>, series: &NewSeries) -> Result<(), Error> {
-    transaction
-        .prepare(
-            "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        )?
-        .execute((
-            series.id.as_bytes(),
-            LOCAL_SOURCE,
-            &series.natural_key,
-            &series.title,
-            title_sort_key(&series.title),
-            series.added_at_ms,
-        ))?;
+    insert(transaction, series, ADD_SERIES)
+}
+
+/// Leaves a series already in the catalog as it is, title included.
+pub(crate) fn add_series_unless_present(
+    transaction: &Transaction<'_>,
+    series: &NewSeries,
+) -> Result<(), Error> {
+    insert(transaction, series, ADD_SERIES_UNLESS_PRESENT)
+}
+
+fn insert(transaction: &Transaction<'_>, series: &NewSeries, sql: &str) -> Result<(), Error> {
+    transaction.prepare(sql)?.execute((
+        series.id.as_bytes(),
+        LOCAL_SOURCE,
+        &series.natural_key,
+        &series.title,
+        title_sort_key(&series.title),
+        series.added_at_ms,
+    ))?;
     Ok(())
 }
