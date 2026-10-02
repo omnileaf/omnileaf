@@ -1,9 +1,14 @@
-import type { Locator, Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
-import type { Platform } from "../../src/lib/ipc/bindings.ts";
-import { DEFAULT_BACKEND, expect, FAKE_APP_VERSION, test } from "./fixtures.ts";
+import {
+  boxOf,
+  expect,
+  MEDIUM_MIN_WIDTH,
+  onPlatform,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
 
-const BOTTOM_BAR_MAX_WIDTH = 600;
 const STATUS_BAR = 59;
 const HOME_INDICATOR = 34;
 const FLOATING_BAR_GAP = 22;
@@ -47,14 +52,6 @@ async function provideSystemInsets(page: Page, insets: SafeAreaInsets) {
   }, insets);
 }
 
-async function layoutBox(locator: Locator) {
-  const box = await locator.boundingBox();
-  if (box === null) {
-    throw new Error("the element has no layout box");
-  }
-  return box;
-}
-
 function mainNavigation(page: Page) {
   return page.getByRole("navigation", { name: "Main" });
 }
@@ -67,16 +64,8 @@ function pageHeading(page: Page) {
   return page.getByRole("heading", { level: 1, name: "Library" });
 }
 
-function viewportOf(page: Page) {
-  const viewport = page.viewportSize();
-  if (viewport === null) {
-    throw new Error("the page has no viewport");
-  }
-  return viewport;
-}
-
 async function roomBelowLastLink(page: Page) {
-  const lastLink = await layoutBox(navigationLinks(page).last());
+  const lastLink = await boxOf(navigationLinks(page).last());
   return viewportOf(page).height - lastLink.y - lastLink.height;
 }
 
@@ -84,15 +73,6 @@ async function roomBelowPage(page: Page) {
   return page
     .getByRole("main")
     .evaluate((main) => parseFloat(getComputedStyle(main).paddingBlockEnd));
-}
-
-function onPlatform(platform: Platform) {
-  return {
-    backend: {
-      ...DEFAULT_BACKEND,
-      appInfo: () => ({ version: FAKE_APP_VERSION, platform }),
-    },
-  };
 }
 
 test.beforeEach(({ browserName }) => {
@@ -103,7 +83,7 @@ test("keeps the page heading below the status bar", async ({ page }) => {
   await emulateSafeArea(page, { top: STATUS_BAR, bottom: HOME_INDICATOR });
 
   await page.goto("/");
-  const heading = await layoutBox(pageHeading(page));
+  const heading = await boxOf(pageHeading(page));
 
   expect(heading.y).toBeGreaterThanOrEqual(STATUS_BAR);
 });
@@ -113,10 +93,10 @@ test("keeps the rail and sidebar below the status bar", async ({ page }) => {
 
   await page.goto("/");
   test.skip(
-    viewportOf(page).width < BOTTOM_BAR_MAX_WIDTH,
+    viewportOf(page).width < MEDIUM_MIN_WIDTH,
     "tablets and desktops only",
   );
-  const firstLink = await layoutBox(navigationLinks(page).first());
+  const firstLink = await boxOf(navigationLinks(page).first());
 
   expect(firstLink.y).toBeGreaterThanOrEqual(STATUS_BAR);
 });
@@ -130,7 +110,7 @@ test.describe("in landscape", () => {
     await emulateSafeArea(page, LANDSCAPE_INSETS);
 
     await page.goto("/");
-    const firstLink = await layoutBox(navigationLinks(page).first());
+    const firstLink = await boxOf(navigationLinks(page).first());
 
     expect(firstLink.x).toBeGreaterThanOrEqual(SIDE_CUTOUT);
   });
@@ -138,10 +118,10 @@ test.describe("in landscape", () => {
   test("widens the rail by a cutout at the start", async ({ page }) => {
     await page.setViewportSize(RAIL_LANDSCAPE_PHONE);
     await page.goto("/");
-    const usualLink = await layoutBox(navigationLinks(page).first());
+    const usualLink = await boxOf(navigationLinks(page).first());
 
     await emulateSafeArea(page, LANDSCAPE_INSETS);
-    const firstLink = await layoutBox(navigationLinks(page).first());
+    const firstLink = await boxOf(navigationLinks(page).first());
 
     expect(firstLink.x).toBeGreaterThanOrEqual(SIDE_CUTOUT);
     expect(firstLink.width).toBe(usualLink.width);
@@ -151,7 +131,7 @@ test.describe("in landscape", () => {
     await emulateSafeArea(page, LANDSCAPE_INSETS);
 
     await page.goto("/");
-    const heading = await layoutBox(pageHeading(page));
+    const heading = await boxOf(pageHeading(page));
 
     expect(heading.x + heading.width).toBeLessThanOrEqual(
       LANDSCAPE_PHONE.width - SIDE_CUTOUT,
@@ -189,8 +169,8 @@ test.describe("in landscape", () => {
     await page.evaluate(() => {
       document.documentElement.dir = "rtl";
     });
-    const firstLink = await layoutBox(navigationLinks(page).first());
-    const heading = await layoutBox(pageHeading(page));
+    const firstLink = await boxOf(navigationLinks(page).first());
+    const heading = await boxOf(pageHeading(page));
 
     expect(firstLink.x + firstLink.width).toBeLessThanOrEqual(
       LANDSCAPE_PHONE.width - SIDE_CUTOUT,
@@ -205,8 +185,8 @@ test.describe("in landscape", () => {
     await emulateSafeArea(page, LANDSCAPE_INSETS);
 
     await page.goto("/");
-    const firstLink = await layoutBox(navigationLinks(page).first());
-    const lastLink = await layoutBox(navigationLinks(page).last());
+    const firstLink = await boxOf(navigationLinks(page).first());
+    const lastLink = await boxOf(navigationLinks(page).last());
 
     expect(firstLink.x).toBeGreaterThanOrEqual(SIDE_CUTOUT);
     expect(lastLink.x + lastLink.width).toBeLessThanOrEqual(
@@ -221,7 +201,7 @@ test.describe("in landscape", () => {
     await emulateSafeArea(page, LANDSCAPE_INSETS);
 
     await page.goto("/");
-    const heading = await layoutBox(pageHeading(page));
+    const heading = await boxOf(pageHeading(page));
 
     expect(heading.x).toBeGreaterThanOrEqual(SIDE_CUTOUT);
     expect(heading.x + heading.width).toBeLessThanOrEqual(
@@ -240,8 +220,8 @@ test.describe("on iOS", () => {
 
     await page.goto("/");
     const viewport = viewportOf(page);
-    test.skip(viewport.width >= BOTTOM_BAR_MAX_WIDTH, "phones only");
-    const bar = await layoutBox(mainNavigation(page));
+    test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
+    const bar = await boxOf(mainNavigation(page));
 
     expect(viewport.height - bar.y - bar.height).toBe(FLOATING_BAR_GAP);
   });
@@ -256,7 +236,7 @@ test.describe("on Android", () => {
     await page.goto("/");
     await provideSystemInsets(page, { top: STATUS_BAR, bottom: GESTURE_BAR });
 
-    const heading = await layoutBox(pageHeading(page));
+    const heading = await boxOf(pageHeading(page));
 
     expect(heading.y).toBeGreaterThanOrEqual(STATUS_BAR);
   });
@@ -266,10 +246,10 @@ test.describe("on Android", () => {
   }) => {
     await page.goto("/");
     const viewport = viewportOf(page);
-    test.skip(viewport.width >= BOTTOM_BAR_MAX_WIDTH, "phones only");
+    test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
     await provideSystemInsets(page, { top: STATUS_BAR, bottom: GESTURE_BAR });
 
-    const lastLink = await layoutBox(navigationLinks(page).last());
+    const lastLink = await boxOf(navigationLinks(page).last());
 
     expect(lastLink.y + lastLink.height).toBeLessThanOrEqual(
       viewport.height - GESTURE_BAR,
@@ -291,7 +271,7 @@ test.describe("on Android", () => {
         left: SIDE_CUTOUT,
       });
 
-      const firstLink = await layoutBox(navigationLinks(page).first());
+      const firstLink = await boxOf(navigationLinks(page).first());
 
       expect(firstLink.x).toBeGreaterThanOrEqual(SIDE_CUTOUT);
     });
@@ -306,7 +286,7 @@ test.describe("on Android", () => {
         right: THREE_BUTTON_BAR,
       });
 
-      const heading = await layoutBox(pageHeading(page));
+      const heading = await boxOf(pageHeading(page));
 
       expect(heading.x + heading.width).toBeLessThanOrEqual(
         LANDSCAPE_PHONE.width - THREE_BUTTON_BAR,
