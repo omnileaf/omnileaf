@@ -4,18 +4,35 @@
   "library_empty": "⟦Ýöûŕ ļíƀŕáŕý íš éɱþţý.·········⟧",
   "app_version": "⟦Ṽéŕšíöñ {version}·······⟧",
   "library_add_folder": "⟦Áðð á ƒöļðéŕ·····⟧",
-  "library_folder_found": [
+  "library_folder_scanned": [
+    {
+      "declarations": [
+        "input books",
+        "input series",
+        "input name",
+        "local booksPlural = books: plural",
+        "local formattedBooks = books: number",
+        "local formattedSeries = series: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "⟦Ƒöûñð {formattedBooks} ƀööķ íñ {formattedSeries} šéŕíéš íñ {name}.···························⟧",
+        "booksPlural=other": "⟦Ƒöûñð {formattedBooks} ƀööķš íñ {formattedSeries} šéŕíéš íñ {name}.···························⟧"
+      }
+    }
+  ],
+  "library_folder_no_books": "⟦Ƒöûñð ñö ƀööķš íñ {name}.··········⟧",
+  "library_folder_unreadable_books": [
     {
       "declarations": [
         "input count",
-        "input name",
         "local countPlural = count: plural",
         "local formattedCount = count: number"
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "⟦Ƒöûñð {formattedCount} çöɱíç íñ {name}.················⟧",
-        "countPlural=other": "⟦Ƒöûñð {formattedCount} çöɱíçš íñ {name}.················⟧"
+        "countPlural=one": "⟦Çöûļðñ'ţ ŕéáð {formattedCount} ƀööķ íñ íţ.·················⟧",
+        "countPlural=other": "⟦Çöûļðñ'ţ ŕéáð {formattedCount} ƀööķš íñ íţ.··················⟧"
       }
     }
   ],

@@ -40,7 +40,13 @@ const LIBRARY_BACKEND: FakeBackend = {
   libraryFolders: () => ({ folders: [...library.folders], next: null }),
   addLibraryFolder: () => {
     library.folders.push(SAMPLE_LIBRARY);
-    return { name: SAMPLE_LIBRARY.name, comicFiles: 3, unreadableFolders: 0 };
+    return {
+      name: SAMPLE_LIBRARY.name,
+      series: 3,
+      books: 7,
+      unreadableBooks: 0,
+      unreadableFolders: 0,
+    };
   },
   removeLibraryFolder: (id) => {
     library.folders = library.folders.filter((folder) => folder.id !== id);

@@ -119,7 +119,13 @@ test("lists a folder once it is added", async () => {
       library.push(COMICS);
       return Promise.resolve({
         status: "ok",
-        data: { name: COMICS.name, comicFiles: 3, unreadableFolders: 0 },
+        data: {
+          name: COMICS.name,
+          series: 3,
+          books: 7,
+          unreadableBooks: 0,
+          unreadableFolders: 0,
+        },
       });
     },
   });

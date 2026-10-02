@@ -47,7 +47,7 @@ impl IpcError {
 impl From<LibraryError> for IpcError {
     fn from(error: LibraryError) -> Self {
         let (code, message) = match error {
-            LibraryError::Survey(_) => (
+            LibraryError::FolderUnreadable { .. } => (
                 IpcErrorCode::FolderUnreadable,
                 "the folder could not be read",
             ),
@@ -83,7 +83,7 @@ fn describe(error: &dyn Error) -> String {
 mod tests {
     use std::{io, path::PathBuf};
 
-    use omnileaf_engine::{FolderId, SurveyError};
+    use omnileaf_engine::FolderId;
 
     use super::*;
 
@@ -93,14 +93,14 @@ mod tests {
 
     #[test]
     fn tells_the_interface_which_library_failure_it_met() {
-        let unreadable = SurveyError::Unreadable {
+        let unreadable = LibraryError::FolderUnreadable {
             path: PathBuf::from("/media/Sample Library"),
             source: io::Error::from(io::ErrorKind::PermissionDenied),
         };
         let id: FolderId = "7".parse().unwrap();
 
         let codes = [
-            code_for(LibraryError::Survey(unreadable)),
+            code_for(unreadable),
             code_for(LibraryError::FolderNotFound { id }),
             code_for(LibraryError::HomeFolderKept { id }),
             code_for(LibraryError::CreateHome {

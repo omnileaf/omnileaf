@@ -7,7 +7,9 @@ export const commands = {
 	appInfo: () => __TAURI_INVOKE<AppInfo>("app_info"),
 	addLibraryFolder: () => typedError<{
 	name: string,
-	comicFiles: number,
+	series: number,
+	books: number,
+	unreadableBooks: number,
 	unreadableFolders: number,
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder")),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
@@ -28,9 +30,11 @@ export type FolderPage = {
 	next: string & { readonly __brand: "FolderCursor" } | null,
 };
 
-export type FolderSurvey = {
+export type FolderScan = {
 	name: string,
-	comicFiles: number,
+	series: number,
+	books: number,
+	unreadableBooks: number,
 	unreadableFolders: number,
 };
 

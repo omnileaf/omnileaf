@@ -40,12 +40,14 @@ impl Scanned {
         let library = Library::open(home.path().to_path_buf(), FixedClock)
             .await
             .unwrap();
-        library.add_folder(folder.to_path_buf()).await.unwrap();
+        let mut progress = Vec::new();
+        let scan = library
+            .add_folder(folder.to_path_buf(), |step| progress.push(step))
+            .await
+            .unwrap();
         let page = library.folders(None).await.unwrap();
         let id = page.folders.last().unwrap().id;
-        let scanned = Self { library, home, id };
-        let (scan, progress) = scanned.scan_again().await;
-        (scanned, scan, progress)
+        (Self { library, home, id }, scan, progress)
     }
 
     async fn scan_again(&self) -> (FolderScan, Vec<ScanProgress>) {
@@ -327,4 +329,33 @@ async fn refuses_to_scan_a_folder_missing_from_the_library() {
     let outcome = scanned.library.scan_folder(scanned.id, |_| {}).await;
 
     assert!(matches!(outcome, Err(LibraryError::FolderNotFound { id }) if id == scanned.id));
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn does_not_follow_symbolic_links() {
+    let target = TempFolder::new("scan-link-target");
+    write_book(&target.path().join("Sample Series 01/v01.cbz"), 1);
+    let comics = TempFolder::new("scan-with-link");
+    std::os::unix::fs::symlink(target.path(), comics.path().join("Linked")).unwrap();
+
+    let (_, scan, _) = Scanned::folder("scan-with-link", comics.path()).await;
+
+    assert_eq!(scan.books, 0);
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn counts_the_folders_it_cannot_read_and_carries_on() {
+    use std::os::unix::fs::PermissionsExt;
+    let comics = TempFolder::new("scan-locked");
+    write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
+    let locked = comics.path().join("Sample Series 02");
+    write_book(&locked.join("v01.cbz"), 2);
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).unwrap();
+
+    let (_, scan, _) = Scanned::folder("scan-locked", comics.path()).await;
+
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o755)).unwrap();
+    assert_eq!((scan.books, scan.unreadable_folders), (1, 1));
 }

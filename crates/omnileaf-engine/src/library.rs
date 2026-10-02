@@ -3,7 +3,7 @@ use std::{fs, io, path::PathBuf, sync::Arc};
 use omnileaf_db::{
     Config, Database,
     catalog::{
-        NewRoot, PageRequest, PageSize, RootKind, RootLocator, add_root, library_root,
+        NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator, add_root, library_root,
         library_roots, remove_root, set_home_root,
     },
     store::Clock,
@@ -11,8 +11,8 @@ use omnileaf_db::{
 use tokio::task::spawn_blocking;
 
 use crate::{
-    FolderCursor, FolderId, FolderPage, FolderScan, FolderSurvey, LibraryFolder, ScanProgress,
-    SurveyError, scan::scan, survey_folder,
+    FolderCursor, FolderId, FolderPage, FolderScan, LibraryFolder, ScanProgress,
+    scan::{Target, find_books_in, scan},
 };
 
 const DATABASE_FILE: &str = "library.sqlite";
@@ -39,9 +39,13 @@ pub enum LibraryError {
         #[source]
         source: io::Error,
     },
-    #[error("survey the folder to add")]
-    Survey(#[from] SurveyError),
-    #[error("remove library folder {id}, which isn't in the library")]
+    #[error("read folder {}", path.display())]
+    FolderUnreadable {
+        path: PathBuf,
+        #[source]
+        source: io::Error,
+    },
+    #[error("library folder {id} isn't in the library")]
     FolderNotFound { id: FolderId },
     #[error("remove library folder {id}, the home folder the library always keeps")]
     HomeFolderKept { id: FolderId },
@@ -77,13 +81,17 @@ impl Library {
         Ok(library)
     }
 
-    /// Surveys the folder and remembers it, so a folder that can't be read is never added.
+    /// Remembers the folder and scans its books, adding nothing when the folder can't be read.
     #[tracing::instrument(skip_all, fields(folder = %folder.display()))]
-    pub async fn add_folder(&self, folder: PathBuf) -> Result<FolderSurvey, LibraryError> {
-        let surveyed = folder.clone();
-        let survey = spawn_blocking(move || survey_folder(&surveyed)).await??;
-        self.link(folder).await?;
-        Ok(survey)
+    pub async fn add_folder(
+        &self,
+        folder: PathBuf,
+        on_progress: impl FnMut(ScanProgress) + Send,
+    ) -> Result<FolderScan, LibraryError> {
+        let layout = find_books_in(folder.clone()).await?;
+        let root = self.link(folder.clone()).await?;
+        let target = self.target(root, folder);
+        scan(&self.database, target, layout, on_progress).await
     }
 
     pub async fn folders(&self, after: Option<FolderCursor>) -> Result<FolderPage, LibraryError> {
@@ -121,7 +129,10 @@ impl Library {
             .database
             .read(move |connection| library_root(connection, id.0))
             .await?;
-        scan(&self.database, root, self.now_ms(), on_progress).await
+        let RootLocator::Path(folder) = root.locator;
+        let layout = find_books_in(folder.clone()).await?;
+        let target = self.target(root.id, folder);
+        scan(&self.database, target, layout, on_progress).await
     }
 
     async fn set_home(&self, home: PathBuf) -> Result<(), LibraryError> {
@@ -133,16 +144,24 @@ impl Library {
         Ok(())
     }
 
-    async fn link(&self, folder: PathBuf) -> Result<(), LibraryError> {
+    async fn link(&self, folder: PathBuf) -> Result<RootId, LibraryError> {
         let root = NewRoot {
             kind: RootKind::Linked,
             locator: RootLocator::Path(folder),
             added_at_ms: self.now_ms(),
         };
-        self.database
+        Ok(self
+            .database
             .write(move |transaction| add_root(transaction, &root))
-            .await?;
-        Ok(())
+            .await?)
+    }
+
+    fn target(&self, root: RootId, folder: PathBuf) -> Target {
+        Target {
+            root,
+            folder,
+            added_at_ms: self.now_ms(),
+        }
     }
 
     fn now_ms(&self) -> i64 {

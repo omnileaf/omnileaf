@@ -1,6 +1,6 @@
 //! The commands the interface calls, and the TypeScript bindings generated from them.
 
-use omnileaf_engine::{AppInfo, Core, FolderCursor, FolderId, FolderPage, FolderSurvey, Library};
+use omnileaf_engine::{AppInfo, Core, FolderCursor, FolderId, FolderPage, FolderScan, Library};
 use tauri::{AppHandle, State, Wry};
 use tauri_specta::{Builder, collect_commands};
 
@@ -30,14 +30,14 @@ fn app_info(core: State<'_, Core>) -> AppInfo {
 async fn add_library_folder(
     app: AppHandle,
     library: State<'_, Library>,
-) -> Result<Option<FolderSurvey>, IpcError> {
+) -> Result<Option<FolderScan>, IpcError> {
     let picked = tauri::async_runtime::spawn_blocking(move || pick_folder(&app))
         .await
         .map_err(|error| IpcError::internal(&error))??;
     let Some(folder) = picked else {
         return Ok(None);
     };
-    Ok(Some(library.add_folder(folder).await?))
+    Ok(Some(library.add_folder(folder, |_| {}).await?))
 }
 
 #[tauri::command]

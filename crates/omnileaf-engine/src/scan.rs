@@ -7,9 +7,7 @@ use std::{
 
 use omnileaf_db::{
     Database,
-    catalog::{
-        BookFile, LibraryRoot, NewSeries, RootId, RootLocator, ScannedBook, record_scanned_book,
-    },
+    catalog::{BookFile, NewSeries, RootId, ScannedBook, record_scanned_book},
 };
 use omnileaf_formats::{FormatError, fingerprint_book, open_book};
 use omnileaf_sync_proto::{KeyError, SeriesId};
@@ -20,8 +18,7 @@ use tokio::task::spawn_blocking;
 use crate::{
     LibraryError,
     clock::unix_ms,
-    folder_survey::folder_name,
-    library_layout::{FoundBook, find_books},
+    library_layout::{FoundBook, Layout, find_books, folder_name},
 };
 
 const BOOKS_PER_BATCH: usize = 32;
@@ -58,10 +55,10 @@ enum UnreadableBook {
 
 /// The root a scan records its books under, and when it found them.
 #[derive(Clone)]
-struct Target {
-    root: RootId,
-    folder: PathBuf,
-    added_at_ms: i64,
+pub(crate) struct Target {
+    pub(crate) root: RootId,
+    pub(crate) folder: PathBuf,
+    pub(crate) added_at_ms: i64,
 }
 
 #[derive(Default)]
@@ -72,22 +69,25 @@ struct Tally {
     series: BTreeSet<SeriesId>,
 }
 
-/// Records the root's books in batches of one transaction each, reporting progress after every batch.
+/// Fails only when the folder itself can't be read.
+pub(crate) async fn find_books_in(folder: PathBuf) -> Result<Layout, LibraryError> {
+    let walked = folder.clone();
+    spawn_blocking(move || find_books(&walked))
+        .await?
+        .map_err(|source| LibraryError::FolderUnreadable {
+            path: folder,
+            source,
+        })
+}
+
+/// Records the books found in batches of one transaction each, reporting progress after every batch.
 pub(crate) async fn scan(
     database: &Database,
-    root: LibraryRoot,
-    added_at_ms: i64,
+    target: Target,
+    layout: Layout,
     mut on_progress: impl FnMut(ScanProgress) + Send,
 ) -> Result<FolderScan, LibraryError> {
-    let RootLocator::Path(folder) = root.locator;
-    let walked = folder.clone();
-    let layout = spawn_blocking(move || find_books(&walked)).await??;
     let total = u32::try_from(layout.books.len()).unwrap_or(u32::MAX);
-    let target = Target {
-        root: root.id,
-        folder,
-        added_at_ms,
-    };
     let mut tally = Tally::default();
     on_progress(ScanProgress { scanned: 0, total });
     for batch in layout.books.chunks(BOOKS_PER_BATCH) {

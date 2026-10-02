@@ -7,7 +7,10 @@ mod support;
 
 use std::path::Path;
 
-use omnileaf_engine::{Clock, FolderId, FolderKind, Library, LibraryError, LibraryFolder};
+use omnileaf_engine::{
+    Clock, FolderId, FolderKind, Library, LibraryError, LibraryFolder, ScanProgress,
+};
+use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::TempFolder;
 
 const NOW_UNIX_MS: u64 = 1_790_000_000_000;
@@ -75,22 +78,33 @@ async fn lists_the_home_folder_it_opened_in() {
 }
 
 #[tokio::test]
-async fn adds_a_folder_and_reports_the_comics_in_it() {
+async fn adds_a_folder_and_scans_the_books_in_it() {
     let home = TempFolder::new("library-add-home");
-    let comics = TempFolder::new("Sample Library").with_files(&["one.cbz", "Series/two.cbr"]);
+    let comics = TempFolder::new("library-add-comics");
+    write_sample_library(comics.path()).unwrap();
     let library = open(home.path()).await;
+    let mut progress = Vec::new();
 
-    let survey = library
-        .add_folder(comics.path().to_path_buf())
+    let scan = library
+        .add_folder(comics.path().join(SAMPLE_LIBRARY_NAME), |step| {
+            progress.push(step);
+        })
         .await
         .unwrap();
 
-    assert_eq!(survey.comic_files, 2);
+    assert_eq!((scan.series, scan.books), (3, 7));
+    assert_eq!(
+        progress.last(),
+        Some(&ScanProgress {
+            scanned: 7,
+            total: 7
+        })
+    );
     assert_eq!(
         kinds_and_names(&all_folders(&library).await),
         [
             (FolderKind::Home, "library-add-home"),
-            (FolderKind::Linked, "Sample Library")
+            (FolderKind::Linked, SAMPLE_LIBRARY_NAME)
         ]
     );
 }
@@ -101,7 +115,7 @@ async fn remembers_its_folders_after_a_restart() {
     let comics = TempFolder::new("Sample Comics");
     let library = open(home.path()).await;
     library
-        .add_folder(comics.path().to_path_buf())
+        .add_folder(comics.path().to_path_buf(), |_| {})
         .await
         .unwrap();
     drop(library);
@@ -122,9 +136,14 @@ async fn leaves_out_a_folder_it_cannot_read() {
     let home = TempFolder::new("library-unreadable-home");
     let library = open(home.path()).await;
 
-    let outcome = library.add_folder(home.path().join("not-there")).await;
+    let outcome = library
+        .add_folder(home.path().join("not-there"), |_| {})
+        .await;
 
-    assert!(matches!(outcome, Err(LibraryError::Survey(_))));
+    assert!(matches!(
+        outcome,
+        Err(LibraryError::FolderUnreadable { .. })
+    ));
     assert_eq!(
         kinds_and_names(&all_folders(&library).await),
         [(FolderKind::Home, "library-unreadable-home")]
@@ -137,7 +156,7 @@ async fn forgets_a_removed_folder_and_leaves_its_files() {
     let comics = TempFolder::new("Removed Comics").with_files(&["one.cbz"]);
     let library = open(home.path()).await;
     library
-        .add_folder(comics.path().to_path_buf())
+        .add_folder(comics.path().to_path_buf(), |_| {})
         .await
         .unwrap();
     let linked = folder_named(&library, "Removed Comics").await;
@@ -169,7 +188,7 @@ async fn reports_a_folder_already_removed() {
     let comics = TempFolder::new("Removed Twice");
     let library = open(home.path()).await;
     library
-        .add_folder(comics.path().to_path_buf())
+        .add_folder(comics.path().to_path_buf(), |_| {})
         .await
         .unwrap();
     let linked = folder_named(&library, "Removed Twice").await;
@@ -202,7 +221,7 @@ async fn pages_through_more_folders_than_one_page_holds() {
     for index in 0..MORE_FOLDERS_THAN_A_PAGE_HOLDS {
         let folder = comics.path().join(format!("Sample Series {index:03}"));
         std::fs::create_dir(&folder).unwrap();
-        library.add_folder(folder).await.unwrap();
+        library.add_folder(folder, |_| {}).await.unwrap();
     }
 
     let first_page = library.folders(None).await.unwrap();
@@ -222,7 +241,7 @@ async fn keeps_one_home_folder_at_its_new_location_after_the_home_moves() {
     let moved_home = parent.path().join("After");
     let library = open(&first_home).await;
     library
-        .add_folder(comics.path().to_path_buf())
+        .add_folder(comics.path().to_path_buf(), |_| {})
         .await
         .unwrap();
     drop(library);

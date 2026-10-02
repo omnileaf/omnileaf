@@ -37,14 +37,12 @@ async fn scans_a_first_library_of_1_000_books_within_3_s() {
     let library = Library::open(home.path().to_path_buf(), FixedClock)
         .await
         .unwrap();
-    library
-        .add_folder(comics.path().join(GENERATED_LIBRARY_NAME))
-        .await
-        .unwrap();
-    let folder = library.folders(None).await.unwrap().folders.pop().unwrap();
 
     let started = Instant::now();
-    let scan = library.scan_folder(folder.id, |_| {}).await.unwrap();
+    let scan = library
+        .add_folder(comics.path().join(GENERATED_LIBRARY_NAME), |_| {})
+        .await
+        .unwrap();
     let elapsed = started.elapsed();
 
     eprintln!("first scan of {BOOKS} books: {elapsed:?}, budget {BUDGET:?}");

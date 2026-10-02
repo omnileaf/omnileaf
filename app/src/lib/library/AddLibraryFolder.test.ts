@@ -1,16 +1,18 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import type { commands, FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
+import type { commands, FolderScan, IpcErrorCode } from "$lib/ipc/bindings";
 
 import AddLibraryFolder from "./AddLibraryFolder.svelte";
 
 type AddFolder = typeof commands.addLibraryFolder;
 type AddFolderResult = Awaited<ReturnType<AddFolder>>;
 
-const SAMPLE_SURVEY: FolderSurvey = {
+const SAMPLE_SCAN: FolderScan = {
   name: "Sample Library",
-  comicFiles: 3,
+  series: 3,
+  books: 7,
+  unreadableBooks: 0,
   unreadableFolders: 0,
 };
 
@@ -24,8 +26,8 @@ function answering(...results: AddFolderResult[]): AddFolder {
   };
 }
 
-function found(survey: Partial<FolderSurvey>): AddFolderResult {
-  return { status: "ok", data: { ...SAMPLE_SURVEY, ...survey } };
+function scanned(scan: Partial<FolderScan>): AddFolderResult {
+  return { status: "ok", data: { ...SAMPLE_SCAN, ...scan } };
 }
 
 function failed(code: IpcErrorCode): AddFolderResult {
@@ -42,43 +44,55 @@ async function renderWith(addFolder: AddFolder) {
   };
 }
 
-test("reports how many comics the picked folder holds", async () => {
-  const { button, status } = await renderWith(answering(found({})));
+test("reports the books and series the scan found in the picked folder", async () => {
+  const { button, status } = await renderWith(answering(scanned({})));
 
   await button.click();
 
   await expect
     .element(status)
-    .toHaveTextContent("Found 3 comics in Sample Library.");
+    .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
 });
 
-test("counts a single comic in the singular", async () => {
+test("counts a single book in a single series in the singular", async () => {
   const { button, status } = await renderWith(
-    answering(found({ comicFiles: 1 })),
+    answering(scanned({ books: 1, series: 1 })),
   );
 
   await button.click();
 
   await expect
     .element(status)
-    .toHaveTextContent("Found 1 comic in Sample Library.");
+    .toHaveTextContent("Found 1 book in 1 series in Sample Library.");
 });
 
-test("formats the comic count for the locale", async () => {
+test("formats the book count for the locale", async () => {
   const { button, status } = await renderWith(
-    answering(found({ comicFiles: 1234 })),
+    answering(scanned({ books: 1234 })),
   );
 
   await button.click();
 
   await expect
     .element(status)
-    .toHaveTextContent("Found 1,234 comics in Sample Library.");
+    .toHaveTextContent("Found 1,234 books in 3 series in Sample Library.");
 });
 
-test("mentions the folders inside it that couldn't be read", async () => {
+test("says so when the folder holds no books", async () => {
   const { button, status } = await renderWith(
-    answering(found({ unreadableFolders: 2 })),
+    answering(scanned({ books: 0, series: 0 })),
+  );
+
+  await button.click();
+
+  await expect
+    .element(status)
+    .toHaveTextContent("Found no books in Sample Library.");
+});
+
+test("mentions the books and folders inside it that couldn't be read", async () => {
+  const { button, status } = await renderWith(
+    answering(scanned({ unreadableBooks: 1, unreadableFolders: 2 })),
   );
 
   await button.click();
@@ -86,16 +100,18 @@ test("mentions the folders inside it that couldn't be read", async () => {
   await expect
     .element(status)
     .toHaveTextContent(
-      "Found 3 comics in Sample Library. Couldn't read 2 folders inside it.",
+      "Found 7 books in 3 series in Sample Library. Couldn't read 1 book in it. Couldn't read 2 folders inside it.",
     );
 });
 
 test("clears the last result when the picker is cancelled", async () => {
-  const { button, status } = await renderWith(answering(found({}), CANCELLED));
+  const { button, status } = await renderWith(
+    answering(scanned({}), CANCELLED),
+  );
   await button.click();
   await expect
     .element(status)
-    .toHaveTextContent("Found 3 comics in Sample Library.");
+    .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
 
   await button.click();
 
@@ -117,7 +133,7 @@ test.each<[IpcErrorCode, string]>([
   await expect.element(status).toHaveTextContent(explanation);
 });
 
-test("disables the button while the picker is open", async () => {
+test("disables the button while the folder is being added", async () => {
   let answer: (result: AddFolderResult) => void = () => undefined;
   const { button } = await renderWith(
     () =>

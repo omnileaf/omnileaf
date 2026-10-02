@@ -1,16 +1,14 @@
 //! Where books sit in a library folder: a folder is a series, a file at the top is a one-shot, and a folder of images and no comics is a book.
 
 use std::{
-    fs,
+    ffi::OsStr,
+    fs, io,
     path::{Path, PathBuf},
 };
 
 use omnileaf_formats::{is_ignored, is_page_image};
 
-use crate::{
-    SurveyError,
-    folder_survey::{folder_name, is_comic},
-};
+const COMIC_EXTENSIONS: &[&str] = &["cbz", "cbr", "cb7"];
 
 #[derive(Clone, Debug)]
 pub(crate) struct FoundBook {
@@ -34,18 +32,13 @@ enum Place {
 }
 
 /// Fails only when `root` itself can't be read; a subfolder that can't be read is counted and skipped.
-pub(crate) fn find_books(root: &Path) -> Result<Layout, SurveyError> {
+pub(crate) fn find_books(root: &Path) -> io::Result<Layout> {
     let mut layout = Layout::default();
     let mut pending = vec![(root.to_path_buf(), Place::Root)];
     while let Some((folder, place)) = pending.pop() {
         match fs::read_dir(&folder) {
             Ok(entries) => layout.take_in(&folder, place, entries, &mut pending),
-            Err(source) if place == Place::Root => {
-                return Err(SurveyError::Unreadable {
-                    path: folder,
-                    source,
-                });
-            }
+            Err(error) if place == Place::Root => return Err(error),
             Err(_) => layout.count_unreadable_folder(),
         }
     }
@@ -130,4 +123,22 @@ fn file_stem(path: &Path) -> String {
         || folder_name(path),
         |stem| stem.to_string_lossy().into_owned(),
     )
+}
+
+pub(crate) fn folder_name(folder: &Path) -> String {
+    folder.file_name().map_or_else(
+        || folder.display().to_string(),
+        |name| name.to_string_lossy().into_owned(),
+    )
+}
+
+fn is_comic(name: &OsStr) -> bool {
+    Path::new(name)
+        .extension()
+        .and_then(OsStr::to_str)
+        .is_some_and(|extension| {
+            COMIC_EXTENSIONS
+                .iter()
+                .any(|comic| extension.eq_ignore_ascii_case(comic))
+        })
 }

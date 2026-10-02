@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Plus } from "@lucide/svelte";
 
-  import type { commands, FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
+  import type { commands, FolderScan, IpcErrorCode } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
   import { ICON_SIZE } from "./icon-size";
@@ -9,7 +9,7 @@
   type Outcome =
     | { readonly kind: "idle" }
     | { readonly kind: "adding" }
-    | { readonly kind: "found"; readonly survey: FolderSurvey }
+    | { readonly kind: "scanned"; readonly scan: FolderScan }
     | { readonly kind: "failed"; readonly code: IpcErrorCode };
 
   const FAILURE_MESSAGES = {
@@ -38,7 +38,7 @@
     } else if (result.data === null) {
       outcome = { kind: "idle" };
     } else {
-      outcome = { kind: "found", survey: result.data };
+      outcome = { kind: "scanned", scan: result.data };
       onAdded?.();
     }
   }
@@ -54,17 +54,26 @@
   {m.library_add_folder()}
 </button>
 <div role="status" class="mbs-sm">
-  {#if outcome.kind === "found"}
+  {#if outcome.kind === "scanned"}
+    {@const scan = outcome.scan}
     <p>
-      {m.library_folder_found({
-        count: outcome.survey.comicFiles,
-        name: outcome.survey.name,
-      })}
+      {scan.books === 0
+        ? m.library_folder_no_books({ name: scan.name })
+        : m.library_folder_scanned({
+            books: scan.books,
+            series: scan.series,
+            name: scan.name,
+          })}
     </p>
-    {#if outcome.survey.unreadableFolders > 0}
+    {#if scan.unreadableBooks > 0}
+      <p>
+        {m.library_folder_unreadable_books({ count: scan.unreadableBooks })}
+      </p>
+    {/if}
+    {#if scan.unreadableFolders > 0}
       <p>
         {m.library_folder_unreadable_subfolders({
-          count: outcome.survey.unreadableFolders,
+          count: scan.unreadableFolders,
         })}
       </p>
     {/if}
