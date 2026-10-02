@@ -14,16 +14,16 @@ use crate::Error;
 type Job = Box<dyn FnOnce(&mut Connection) + Send>;
 
 /// Threads that each own one connection and take jobs from a shared queue in the order they were submitted.
-pub(crate) struct Lane {
+pub(crate) struct ConnectionWorkers {
     jobs: Option<Sender<Job>>,
     threads: Vec<JoinHandle<()>>,
 }
 
-impl Lane {
+impl ConnectionWorkers {
     pub(crate) fn spawn(name: &str, connections: Vec<Connection>) -> Result<Self, Error> {
         let (jobs, queue) = mpsc::channel();
         let queue = Arc::new(Mutex::new(queue));
-        let mut lane = Self {
+        let mut workers = Self {
             jobs: Some(jobs),
             threads: Vec::with_capacity(connections.len()),
         };
@@ -33,9 +33,9 @@ impl Lane {
                 .name(name.to_owned())
                 .spawn(move || serve(connection, &queue))
                 .map_err(Error::Spawn)?;
-            lane.threads.push(thread);
+            workers.threads.push(thread);
         }
-        Ok(lane)
+        Ok(workers)
     }
 
     pub(crate) fn submit<T, F>(&self, job: F) -> impl Future<Output = Result<T, Error>> + use<T, F>
@@ -59,7 +59,7 @@ impl Lane {
     }
 }
 
-impl Drop for Lane {
+impl Drop for ConnectionWorkers {
     fn drop(&mut self) {
         drop(self.jobs.take());
         for thread in self.threads.drain(..) {

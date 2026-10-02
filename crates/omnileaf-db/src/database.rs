@@ -1,17 +1,17 @@
 use rusqlite::{Transaction, TransactionBehavior};
 
-use crate::{Config, Error, connection, lane::Lane};
+use crate::{Config, Error, connection, workers::ConnectionWorkers};
 
 /// Dropping it blocks until every job already submitted has run.
 pub struct Database {
-    writer: Lane,
+    writer: ConnectionWorkers,
 }
 
 impl Database {
     pub fn open(config: &Config) -> Result<Self, Error> {
         let writer = connection::open_writer(config)?;
         Ok(Self {
-            writer: Lane::spawn("omnileaf-db-writer", vec![writer])?,
+            writer: ConnectionWorkers::spawn("omnileaf-db-writer", vec![writer])?,
         })
     }
 

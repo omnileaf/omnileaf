@@ -4,7 +4,7 @@ mod config;
 mod connection;
 mod database;
 mod error;
-mod lane;
+mod workers;
 
 pub use config::Config;
 pub use database::Database;
