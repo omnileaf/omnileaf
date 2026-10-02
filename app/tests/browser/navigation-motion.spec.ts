@@ -202,6 +202,26 @@ function testCrossfadingTheFill(): void {
 
     expect(icon.transitions).toEqual([FADE]);
   });
+
+  test("fades the icons without restarting their transitions every frame", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await settle(navigation(page));
+    const cancelled = await navigation(page).evaluateHandle((root) => {
+      const properties: string[] = [];
+      root.addEventListener("transitioncancel", (event) => {
+        if (event instanceof TransitionEvent) {
+          properties.push(event.propertyName);
+        }
+      });
+      return properties;
+    });
+
+    await openTabAndSettle(page, "History");
+
+    expect(await cancelled.jsonValue()).toEqual([]);
+  });
 }
 
 function testTurningTheScreen(): void {

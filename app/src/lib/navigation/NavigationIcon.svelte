@@ -63,7 +63,7 @@
 
   const HOLE = "stroke-icon-hole";
   const FILL_FADE =
-    "transition-colors motion-safe:duration-fade motion-safe:ease-out";
+    "transition-paint motion-safe:duration-fade motion-safe:ease-out";
   const MOVES_ABOUT_CENTRE = "origin-center";
 
   const SHAPES: Record<Section, Snippet<[boolean]>> = {

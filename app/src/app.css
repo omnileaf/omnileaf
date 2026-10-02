@@ -212,6 +212,12 @@
   }
 }
 
+@utility transition-paint {
+  transition-property: fill, stroke;
+  transition-timing-function: var(--tw-ease, ease);
+  transition-duration: var(--tw-duration, 0s);
+}
+
 @utility inline-tab {
   inline-size: calc(100% / var(--tab-count));
 }
