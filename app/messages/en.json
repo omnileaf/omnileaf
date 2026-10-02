@@ -53,5 +53,8 @@
   "appearance_light_or_dark": "Light or dark",
   "theme_system": "System",
   "theme_light": "Light",
-  "theme_dark": "Dark"
+  "theme_dark": "Dark",
+  "general_title": "General",
+  "language_label": "Language",
+  "language_system": "System ({language})"
 }
