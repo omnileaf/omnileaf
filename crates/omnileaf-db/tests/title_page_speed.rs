@@ -3,17 +3,16 @@
     reason = "the test builds its own scratch library, so a failed set-up should stop it"
 )]
 
+mod library_seed;
 mod support;
 
 use std::time::{Duration, Instant};
 
+use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Database,
-    catalog::{
-        NewBook, NewSeries, PageRequest, PageSize, SeriesOrder, add_book, add_series, series_page,
-    },
+    catalog::{PageRequest, PageSize, SeriesOrder, series_page},
 };
-use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
 use support::ScratchFolder;
 
 const SERIES_COUNT: u32 = 10_000;
@@ -21,6 +20,7 @@ const PAGE_SIZE: u16 = 100;
 const WALKS: usize = 3;
 const BUDGET: Duration = Duration::from_millis(2);
 const PERCENTILE: usize = 95;
+const ONE_BOOK: &[&str] = &["Volume 01"];
 
 #[tokio::test]
 #[expect(
@@ -55,24 +55,14 @@ async fn reads_each_title_page_of_10_000_series_within_2_ms_at_p95() {
 }
 
 async fn add_generated_series(database: &Database) {
-    database
-        .write(|transaction| {
-            for number in 0..SERIES_COUNT {
-                let name = format!("Sample Series {number:05}");
-                let series = NewSeries::local(&name, i64::from(number)).unwrap();
-                add_series(transaction, &series)?;
-                let book = NewBook {
-                    id: book_id(number),
-                    series: series.id(),
-                    title: "Volume 01".to_owned(),
-                    added_at_ms: i64::from(number),
-                };
-                add_book(transaction, &book)?;
-            }
-            Ok(())
-        })
-        .await
-        .unwrap();
+    let names: Vec<(String, i64)> = (0..SERIES_COUNT)
+        .map(|number| (format!("Sample Series {number:05}"), i64::from(number)))
+        .collect();
+    let series: Vec<SeriesSeed<'_>> = names
+        .iter()
+        .map(|(name, added_at_ms)| (name.as_str(), *added_at_ms, ONE_BOOK))
+        .collect();
+    seed_library(database, &series).await;
 }
 
 /// Times each page from the caller's side, waiting for a reader included.
@@ -96,12 +86,4 @@ async fn walk_title_pages(database: &Database) -> Vec<Duration> {
             return timings;
         }
     }
-}
-
-fn book_id(number: u32) -> BookId {
-    let page = ImageEntry {
-        crc32: number,
-        size: u64::from(number),
-    };
-    BookId::local(&Fingerprint::pmf1([page]).unwrap())
 }

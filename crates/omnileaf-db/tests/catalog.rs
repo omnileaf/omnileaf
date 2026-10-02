@@ -3,25 +3,30 @@
     reason = "each test builds its own scratch library, so a failed set-up should stop the test"
 )]
 
+mod library_seed;
 mod support;
 
+use library_seed::{book_id, seed_library};
 use omnileaf_db::{
     Database, Error,
     catalog::{NewBook, NewSeries, add_book, add_series},
     rusqlite::{self, ErrorCode},
 };
-use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
+use omnileaf_sync_proto::{BookId, SeriesId};
 use support::ScratchFolder;
 
 const ADDED_AT_MS: i64 = 1_790_000_000_000;
+const SERIES: &str = "Sample Series 01";
+const NO_BOOKS: &[&str] = &[];
+const ONE_BOOK: &[&str] = &["Volume 01"];
+const TWO_BOOKS: &[&str] = &["Volume 01", "Volume 02"];
 
 #[tokio::test]
 async fn counts_the_books_added_to_a_series() {
     let folder = ScratchFolder::new("count-books");
     let database = Database::open(&folder.config()).unwrap();
-    let series = add_local_series(&database, "Sample Series 01").await;
 
-    add_books(&database, series, 2).await.unwrap();
+    let series = add_local_series(&database, SERIES, TWO_BOOKS).await;
 
     assert_eq!(book_count(&database, series).await, 2);
 }
@@ -30,10 +35,9 @@ async fn counts_the_books_added_to_a_series() {
 async fn counts_a_book_out_once_it_is_removed() {
     let folder = ScratchFolder::new("uncount-books");
     let database = Database::open(&folder.config()).unwrap();
-    let series = add_local_series(&database, "Sample Series 01").await;
-    add_books(&database, series, 2).await.unwrap();
+    let series = add_local_series(&database, SERIES, TWO_BOOKS).await;
 
-    remove_book(&database, book_id(series, 0)).await;
+    remove_book(&database, book_id(SERIES, "Volume 01")).await;
 
     assert_eq!(book_count(&database, series).await, 1);
 }
@@ -42,16 +46,15 @@ async fn counts_a_book_out_once_it_is_removed() {
 async fn moves_the_count_with_a_book_moved_to_another_series() {
     let folder = ScratchFolder::new("move-book");
     let database = Database::open(&folder.config()).unwrap();
-    let from = add_local_series(&database, "Sample Series 01").await;
-    let to = add_local_series(&database, "Sample Series 02").await;
-    add_books(&database, from, 2).await.unwrap();
+    let from = add_local_series(&database, SERIES, TWO_BOOKS).await;
+    let to = add_local_series(&database, "Sample Series 02", NO_BOOKS).await;
 
     database
         .write(move |transaction| {
             Ok(transaction.execute(
                 "UPDATE book SET series_local_id = (SELECT local_id FROM series WHERE id = ?1)
                  WHERE id = ?2",
-                (to.as_bytes(), book_id(from, 0).as_bytes()),
+                (to.as_bytes(), book_id(SERIES, "Volume 01").as_bytes()),
             )?)
         })
         .await
@@ -73,8 +76,16 @@ async fn refuses_a_book_for_a_series_missing_from_the_catalog() {
     let missing = NewSeries::local("Sample Series 09", ADDED_AT_MS)
         .unwrap()
         .id();
+    let book = NewBook {
+        id: book_id("Sample Series 09", "Volume 01"),
+        series: missing,
+        title: "Volume 01".to_owned(),
+        added_at_ms: ADDED_AT_MS,
+    };
 
-    let outcome = add_books(&database, missing, 1).await;
+    let outcome = database
+        .write(move |transaction| add_book(transaction, &book))
+        .await;
 
     assert!(matches!(outcome, Err(Error::UnknownSeries { id }) if id == missing));
 }
@@ -83,7 +94,7 @@ async fn refuses_a_book_for_a_series_missing_from_the_catalog() {
 async fn refuses_a_second_series_for_a_folder_name_that_normalises_alike() {
     let folder = ScratchFolder::new("same-series");
     let database = Database::open(&folder.config()).unwrap();
-    add_local_series(&database, "Sample Series 01").await;
+    add_local_series(&database, SERIES, NO_BOOKS).await;
 
     let outcome = database
         .write(|transaction| {
@@ -165,8 +176,7 @@ async fn refuses_a_bookmarked_folder_without_its_bookmark() {
 async fn forgets_the_books_of_a_removed_series() {
     let folder = ScratchFolder::new("remove-series");
     let database = Database::open(&folder.config()).unwrap();
-    let series = add_local_series(&database, "Sample Series 01").await;
-    add_books(&database, series, 1).await.unwrap();
+    let series = add_local_series(&database, SERIES, ONE_BOOK).await;
 
     database
         .write(move |transaction| {
@@ -182,8 +192,7 @@ async fn forgets_the_books_of_a_removed_series() {
 async fn forgets_the_book_files_of_a_removed_library_folder() {
     let folder = ScratchFolder::new("remove-root");
     let database = Database::open(&folder.config()).unwrap();
-    let series = add_local_series(&database, "Sample Series 01").await;
-    add_books(&database, series, 1).await.unwrap();
+    add_local_series(&database, SERIES, ONE_BOOK).await;
     database
         .write(move |transaction| {
             transaction.execute(
@@ -194,7 +203,7 @@ async fn forgets_the_book_files_of_a_removed_library_folder() {
             Ok(transaction.execute(
                 "INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
                  VALUES (?1, 1, 'Sample Series 01/Volume 01.cbz', 4096, ?2)",
-                (book_id(series, 0).as_bytes(), ADDED_AT_MS),
+                (book_id(SERIES, "Volume 01").as_bytes(), ADDED_AT_MS),
             )?)
         })
         .await
@@ -218,7 +227,7 @@ async fn forgets_the_book_files_of_a_removed_library_folder() {
 async fn finds_a_series_by_any_three_characters_of_its_title() {
     let folder = ScratchFolder::new("search-added");
     let database = Database::open(&folder.config()).unwrap();
-    add_local_series(&database, "Sample Series 01").await;
+    add_local_series(&database, SERIES, NO_BOOKS).await;
 
     let found = titles_matching(&database, "ies 0").await;
 
@@ -229,7 +238,7 @@ async fn finds_a_series_by_any_three_characters_of_its_title() {
 async fn searches_a_renamed_series_by_its_new_title_only() {
     let folder = ScratchFolder::new("search-renamed");
     let database = Database::open(&folder.config()).unwrap();
-    let series = add_local_series(&database, "Sample Series 01").await;
+    let series = add_local_series(&database, SERIES, NO_BOOKS).await;
 
     database
         .write(move |transaction| {
@@ -254,7 +263,7 @@ async fn searches_a_renamed_series_by_its_new_title_only() {
 async fn drops_a_removed_series_from_title_search() {
     let folder = ScratchFolder::new("search-removed");
     let database = Database::open(&folder.config()).unwrap();
-    let series = add_local_series(&database, "Sample Series 01").await;
+    let series = add_local_series(&database, SERIES, NO_BOOKS).await;
 
     database
         .write(move |transaction| {
@@ -266,39 +275,9 @@ async fn drops_a_removed_series_from_title_search() {
     assert!(titles_matching(&database, "Sample").await.is_empty());
 }
 
-async fn add_local_series(database: &Database, folder_name: &str) -> SeriesId {
-    let series = NewSeries::local(folder_name, ADDED_AT_MS).unwrap();
-    let id = series.id();
-    database
-        .write(move |transaction| add_series(transaction, &series))
-        .await
-        .unwrap();
-    id
-}
-
-async fn add_books(database: &Database, series: SeriesId, count: u8) -> Result<(), Error> {
-    database
-        .write(move |transaction| {
-            for index in 0..count {
-                let book = NewBook {
-                    id: book_id(series, index),
-                    series,
-                    title: format!("Volume {index:02}"),
-                    added_at_ms: ADDED_AT_MS,
-                };
-                add_book(transaction, &book)?;
-            }
-            Ok(())
-        })
-        .await
-}
-
-fn book_id(series: SeriesId, index: u8) -> BookId {
-    let page = ImageEntry {
-        crc32: u32::from(index),
-        size: u64::from_le_bytes(series.as_bytes()[..8].try_into().unwrap()),
-    };
-    BookId::local(&Fingerprint::pmf1([page]).unwrap())
+async fn add_local_series(database: &Database, folder_name: &str, titles: &[&str]) -> SeriesId {
+    seed_library(database, &[(folder_name, ADDED_AT_MS, titles)]).await;
+    NewSeries::local(folder_name, ADDED_AT_MS).unwrap().id()
 }
 
 async fn remove_book(database: &Database, book: BookId) {

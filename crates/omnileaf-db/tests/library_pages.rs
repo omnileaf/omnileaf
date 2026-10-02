@@ -3,18 +3,19 @@
     reason = "each test builds its own scratch library, so a failed set-up should stop the test"
 )]
 
+mod library_seed;
 mod support;
 
 use std::{cmp::Reverse, fmt::Write};
 
+use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Connection, Database, Error,
     catalog::{
-        Cursor, NewBook, NewSeries, Page, PageRequest, PageSize, SeriesOrder, add_book, add_series,
-        series_books, series_page,
+        Cursor, NewSeries, Page, PageRequest, PageSize, SeriesOrder, series_books, series_page,
     },
 };
-use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
+use omnileaf_sync_proto::SeriesId;
 use support::ScratchFolder;
 
 const ONE_BOOK: &[&str] = &["Volume 01"];
@@ -26,25 +27,10 @@ struct Library {
 }
 
 impl Library {
-    async fn with(series: &[(&str, i64, &[&str])]) -> Self {
+    async fn with(series: &[SeriesSeed<'_>]) -> Self {
         let folder = ScratchFolder::new("library-pages");
         let database = Database::open(&folder.config()).unwrap();
-        let books: Vec<(NewSeries, Vec<NewBook>)> = series
-            .iter()
-            .map(|&(name, added_at_ms, titles)| new_series(name, added_at_ms, titles))
-            .collect();
-        database
-            .write(move |transaction| {
-                for (series, books) in &books {
-                    add_series(transaction, series)?;
-                    for book in books {
-                        add_book(transaction, book)?;
-                    }
-                }
-                Ok(())
-            })
-            .await
-            .unwrap();
+        seed_library(&database, series).await;
         Self {
             database,
             _folder: folder,
@@ -354,27 +340,4 @@ fn holds_a_page_to_between_one_and_two_hundred_items() {
 
 fn series_id(folder_name: &str) -> SeriesId {
     NewSeries::local(folder_name, 0).unwrap().id()
-}
-
-fn new_series(name: &str, added_at_ms: i64, titles: &[&str]) -> (NewSeries, Vec<NewBook>) {
-    let series = NewSeries::local(name, added_at_ms).unwrap();
-    let books = titles
-        .iter()
-        .map(|&title| NewBook {
-            id: book_id(name, title),
-            series: series.id(),
-            title: title.to_owned(),
-            added_at_ms,
-        })
-        .collect();
-    (series, books)
-}
-
-fn book_id(series: &str, title: &str) -> BookId {
-    let name = format!("{series}/{title}");
-    let pages = name.bytes().zip(0..).map(|(byte, crc32)| ImageEntry {
-        crc32,
-        size: u64::from(byte),
-    });
-    BookId::local(&Fingerprint::pmf1(pages).unwrap())
 }
