@@ -19,7 +19,7 @@ struct Listing {
 
 macro_rules! series_with_books {
     () => {
-        "SELECT local_id, id, title, title_sort_key, book_count, added_at_ms
+        "SELECT id, title, title_sort_key, book_count, added_at_ms
         FROM series
         WHERE book_count > 0"
     };
@@ -43,23 +43,23 @@ macro_rules! listing {
 }
 
 const BY_TITLE: Listing = listing! {
-    seek: "(title_sort_key, local_id) > (:after_key, :after_id)",
-    order: "title_sort_key, local_id",
+    seek: "(title_sort_key, id) > (:after_key, :after_id)",
+    order: "title_sort_key, id",
     position: |row| {
         Ok(Position::Title {
             sort_key: row.get("title_sort_key")?,
-            local_id: row.get("local_id")?,
+            id: stored_id(row, "id")?,
         })
     },
 };
 
 const BY_RECENTLY_ADDED: Listing = listing! {
-    seek: "(added_at_ms, local_id) < (:after_key, :after_id)",
-    order: "added_at_ms DESC, local_id DESC",
+    seek: "(added_at_ms, id) < (:after_key, :after_id)",
+    order: "added_at_ms DESC, id DESC",
     position: |row| {
         Ok(Position::Added {
             added_at_ms: row.get("added_at_ms")?,
-            local_id: row.get("local_id")?,
+            id: stored_id(row, "id")?,
         })
     },
 };
@@ -89,20 +89,17 @@ pub fn series_page(
     let after = request.after.as_ref().map(|cursor| &cursor.0);
     let rows = match (order, after) {
         (SeriesOrder::Title, None) => BY_TITLE.first_rows(connection, limit),
-        (SeriesOrder::Title, Some(Position::Title { sort_key, local_id })) => BY_TITLE.rows_after(
+        (SeriesOrder::Title, Some(Position::Title { sort_key, id })) => BY_TITLE.rows_after(
             connection,
-            named_params! { ":after_key": sort_key, ":after_id": local_id, ":limit": limit },
+            named_params! { ":after_key": sort_key, ":after_id": id.as_bytes(), ":limit": limit },
         ),
         (SeriesOrder::RecentlyAdded, None) => BY_RECENTLY_ADDED.first_rows(connection, limit),
         (
             SeriesOrder::RecentlyAdded,
-            Some(Position::Added {
-                added_at_ms,
-                local_id,
-            }),
+            Some(Position::Added { added_at_ms, id }),
         ) => BY_RECENTLY_ADDED.rows_after(
             connection,
-            named_params! { ":after_key": added_at_ms, ":after_id": local_id, ":limit": limit },
+            named_params! { ":after_key": added_at_ms, ":after_id": id.as_bytes(), ":limit": limit },
         ),
         (SeriesOrder::Title, Some(Position::Added { .. } | Position::Book { .. }))
         | (SeriesOrder::RecentlyAdded, Some(Position::Title { .. } | Position::Book { .. })) => {
@@ -175,26 +172,26 @@ mod tests {
     }
 
     #[test]
-    fn walks_the_title_index_of_series_with_books_without_scanning_or_sorting() {
+    fn seeks_the_title_index_on_both_sort_columns_without_scanning_or_sorting() {
         let scratch = ScratchLibrary::new("title-plan");
 
         let plan = scratch.query_plan(BY_TITLE.after);
 
         assert_eq!(
             plan,
-            ["SEARCH series USING INDEX series_by_title (title_sort_key>?)"]
+            ["SEARCH series USING INDEX series_by_title ((title_sort_key,id)>(?,?))"]
         );
     }
 
     #[test]
-    fn walks_the_recently_added_index_of_series_with_books_without_scanning_or_sorting() {
+    fn seeks_the_recently_added_index_on_both_sort_columns_without_scanning_or_sorting() {
         let scratch = ScratchLibrary::new("recently-added-plan");
 
         let plan = scratch.query_plan(BY_RECENTLY_ADDED.after);
 
         assert_eq!(
             plan,
-            ["SEARCH series USING INDEX series_by_added (added_at_ms<?)"]
+            ["SEARCH series USING INDEX series_by_added ((added_at_ms,id)<(?,?))"]
         );
     }
 }

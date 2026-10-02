@@ -19,8 +19,8 @@ CREATE TABLE series (
     UNIQUE (source_id, natural_key)
 ) STRICT;
 
-CREATE INDEX series_by_title ON series (title_sort_key, local_id) WHERE book_count > 0;
-CREATE INDEX series_by_added ON series (added_at_ms, local_id) WHERE book_count > 0;
+CREATE INDEX series_by_title ON series (title_sort_key, id) WHERE book_count > 0;
+CREATE INDEX series_by_added ON series (added_at_ms, id) WHERE book_count > 0;
 
 CREATE TABLE book (
     id BLOB PRIMARY KEY CHECK (length(id) = 16),

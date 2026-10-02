@@ -5,6 +5,8 @@
 
 mod support;
 
+use std::{cmp::Reverse, fmt::Write};
+
 use omnileaf_db::{
     Connection, Database, Error,
     catalog::{
@@ -133,10 +135,10 @@ async fn pages_the_library_by_title_in_natural_order() {
 async fn pages_the_library_by_most_recently_added_first() {
     let library = Library::with(&[
         ("Sample Series 01", 20, ONE_BOOK),
-        ("Sample Series 02", 30, ONE_BOOK),
-        ("Sample Series 03", 20, ONE_BOOK),
+        ("Sample Series 02", 50, ONE_BOOK),
+        ("Sample Series 03", 30, ONE_BOOK),
         ("Sample Series 04", 10, ONE_BOOK),
-        ("Sample Series 05", 20, ONE_BOOK),
+        ("Sample Series 05", 40, ONE_BOOK),
     ])
     .await;
 
@@ -152,6 +154,26 @@ async fn pages_the_library_by_most_recently_added_first() {
             vec!["Sample Series 04"],
         ]
     );
+}
+
+#[tokio::test]
+async fn pages_series_added_at_the_same_moment_by_descending_id() {
+    let names = [
+        "Sample Series 01",
+        "Sample Series 02",
+        "Sample Series 03",
+        "Sample Series 04",
+        "Sample Series 05",
+    ];
+    let library = Library::with(&names.map(|name| (name, 1, ONE_BOOK))).await;
+    let mut expected = names;
+    expected.sort_by_key(|name| Reverse(series_id(name)));
+
+    let pages = library
+        .walk(series_titles(SeriesOrder::RecentlyAdded), 2)
+        .await;
+
+    assert_eq!(pages.concat(), expected);
 }
 
 #[tokio::test]
@@ -285,8 +307,18 @@ async fn refuses_to_continue_one_series_order_from_another_s_cursor() {
 
 #[test]
 fn refuses_a_cursor_the_library_did_not_give_out() {
-    let short_added = format!("02{}", "00".repeat(15));
-    let long_added = format!("02{}", "00".repeat(17));
+    let series =
+        series_id("Sample Series 01")
+            .as_bytes()
+            .iter()
+            .fold(String::new(), |mut hex, byte| {
+                write!(hex, "{byte:02x}").unwrap();
+                hex
+            });
+    let added_at = "00".repeat(8);
+    let short_added = format!("02{added_at}{}", &series[2..]);
+    let long_added = format!("02{added_at}{series}00");
+    let underived_added = format!("02{added_at}{}", "00".repeat(16));
     let underived_book = format!("03{}", "00".repeat(32));
     let texts = [
         "",
@@ -297,6 +329,7 @@ fn refuses_a_cursor_the_library_did_not_give_out() {
         "ff00000000000000000000",
         &short_added,
         &long_added,
+        &underived_added,
         &underived_book,
     ];
 
