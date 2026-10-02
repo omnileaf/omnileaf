@@ -1,5 +1,5 @@
 <script lang="ts">
-  import PageHeading from "$lib/page/PageHeading.svelte";
+  import SubpageHeading from "$lib/page/SubpageHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   import type { PageProps } from "./$types";
@@ -7,7 +7,11 @@
   let { data }: PageProps = $props();
 </script>
 
-<PageHeading title={m.about_title()} />
+<SubpageHeading
+  title={m.about_title()}
+  parentTitle={m.settings_title()}
+  parentRoute="/settings"
+/>
 <section class="mbs-xl rounded-card border border-border bg-card p-lg">
   <h2 class="text-title font-bold">{m.app_name()}</h2>
   <p class="mbs-xs text-muted">
