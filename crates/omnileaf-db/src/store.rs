@@ -47,7 +47,7 @@ impl Store {
         &self.database
     }
 
-    /// A receiver that falls more than 64 changes behind loses the oldest and is told how many it missed.
+    /// A receiver that falls too far behind loses the oldest changes and is told how many it missed.
     #[must_use]
     pub fn subscribe(&self) -> broadcast::Receiver<Changed> {
         self.subscribers.subscribe()
