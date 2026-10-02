@@ -20,7 +20,7 @@
 </script>
 
 <section
-  class="mx-auto flex flex-col items-start gap-md pbs-2xl max-inline-problem medium:pbs-3xl"
+  class="mx-auto flex flex-col items-start gap-md pbs-2xl max-inline-problem medium:pbs-3xl expanded:pbs-problem-top"
 >
   <span class="flex items-center justify-center rounded-panel bg-chip p-lg">
     <Icon aria-hidden="true" size={ICON_SIZE} />

@@ -55,6 +55,7 @@
   --spacing-3xl: 3rem;
   --spacing-none: 0;
   --spacing-touch-target: 3rem;
+  --spacing-problem-top: 9.125rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)

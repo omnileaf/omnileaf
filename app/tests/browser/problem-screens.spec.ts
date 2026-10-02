@@ -1,8 +1,15 @@
 import { AxeBuilder } from "@axe-core/playwright";
 
-import { expect, test } from "./fixtures.ts";
+import {
+  boxOf,
+  EXPANDED_MIN_WIDTH,
+  expect,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
 
 const MISSING_ADDRESS = "/sample/missing-page";
+const DESKTOP_PROBLEM_TOP = 170;
 
 test("explains that an address leads nowhere and shows it", async ({
   page,
@@ -37,6 +44,19 @@ test("moves focus to the problem as it opens", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "This page doesn't exist" }),
   ).toBeFocused();
+});
+
+test("sets the problem lower on desktops, as the board does", async ({
+  page,
+}) => {
+  await page.goto(MISSING_ADDRESS);
+  test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "desktops only");
+
+  const problem = await boxOf(
+    page.getByRole("main").locator("section").locator(":scope > *").first(),
+  );
+
+  expect(problem.y).toBe(DESKTOP_PROBLEM_TOP);
 });
 
 for (const colorScheme of ["light", "dark"] as const) {
