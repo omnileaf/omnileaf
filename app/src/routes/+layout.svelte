@@ -10,12 +10,31 @@
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
   import { sectionOf } from "$lib/navigation/sections";
   import { m } from "$lib/paraglide/messages.js";
+  import {
+    screenshotModeForDocument,
+    setScreenshotMode,
+  } from "$lib/screenshot-mode/screenshot-mode.svelte";
+  import { isScreenshotModeShortcut } from "$lib/screenshot-mode/shortcut";
 
   import "../app.css";
 
   let { children }: { children: Snippet } = $props();
 
   setThemeSetting(themeSettingForDocument());
+  const screenshotMode = setScreenshotMode(screenshotModeForDocument());
+
+  let shortcutAnnouncement = $state("");
+
+  function toggleScreenshotModeOnShortcut(event: KeyboardEvent): void {
+    if (!isScreenshotModeShortcut(event)) {
+      return;
+    }
+    event.preventDefault();
+    screenshotMode.toggle();
+    shortcutAnnouncement = screenshotMode.isOn
+      ? m.screenshot_mode_now_on()
+      : m.screenshot_mode_now_off();
+  }
 
   let main: HTMLElement | undefined = $state();
 
@@ -25,6 +44,8 @@
     }
   });
 </script>
+
+<svelte:window onkeydown={toggleScreenshotModeOnShortcut} />
 
 <svelte:head>
   <title>{m.app_name()}</title>
@@ -39,3 +60,4 @@
     {@render children()}
   </main>
 </div>
+<p aria-live="polite" class="sr-only">{shortcutAnnouncement}</p>
