@@ -8,17 +8,22 @@ use std::{
     ops::Deref,
     path::{Path, PathBuf},
     process,
+    sync::atomic::{AtomicUsize, Ordering},
 };
 
 use omnileaf_testkit::ArchiveEntry;
 
+static CREATED: AtomicUsize = AtomicUsize::new(0);
+
 pub(crate) struct ScratchFolder(PathBuf);
 
 impl ScratchFolder {
+    /// Gives every call its own folder, so tests running as threads of one process never share one.
     pub(crate) fn new(name: &str) -> Self {
+        let serial = CREATED.fetch_add(1, Ordering::Relaxed);
         let path = env::temp_dir()
             .join(format!("omnileaf-formats-{}", process::id()))
-            .join(name);
+            .join(format!("{name}-{serial}"));
         if path.exists() {
             fs::remove_dir_all(&path).unwrap();
         }
