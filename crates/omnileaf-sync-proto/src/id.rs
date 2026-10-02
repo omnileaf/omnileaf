@@ -2,10 +2,11 @@ use std::{fmt, iter, str::FromStr};
 
 use uuid::{Uuid, Variant};
 
-use crate::norm;
+use crate::{Fingerprint, norm};
 
 const ENTITY_ID_CONTEXT: &str = "omnileaf.app 2026-09 entity-id v1";
 const DERIVED_VERSION: usize = 8;
+const LOCAL_BOOK_KEY: &str = "book.local.v1";
 const LOCAL_SERIES_KEY: &str = "series.local.v1";
 const CATEGORY_KEY: &str = "category.v1";
 
@@ -69,8 +70,15 @@ macro_rules! entity_id {
     };
 }
 
+entity_id!(BookId);
 entity_id!(SeriesId);
 entity_id!(CategoryId);
+
+impl BookId {
+    pub fn local(fingerprint: &Fingerprint) -> Result<Self, KeyError> {
+        derive(LOCAL_BOOK_KEY, &[fingerprint.as_bytes()]).map(Self)
+    }
+}
 
 impl SeriesId {
     pub fn local(folder_name: &str) -> Result<Self, KeyError> {
