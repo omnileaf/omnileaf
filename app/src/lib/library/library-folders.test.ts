@@ -53,7 +53,10 @@ function holdFolderRequests(): {
 
 test("keeps the newer list when an older load finishes after it", async () => {
   const requests = holdFolderRequests();
-  const folders = new LibraryFolders(commands.libraryFolders);
+  const folders = new LibraryFolders(
+    commands.libraryFolders,
+    commands.removeLibraryFolder,
+  );
   const older = folders.load();
   const newer = folders.load();
   await expect.poll(requests.waiting).toBe(2);
