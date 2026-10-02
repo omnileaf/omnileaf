@@ -15,6 +15,7 @@ use omnileaf_db::{
     catalog::{
         Cursor, LibraryRoot, NewBook, NewRoot, NewSeries, Page, PageRequest, PageSize, RootId,
         RootKind, RootLocator, add_book, add_root, add_series, library_roots, remove_root,
+        set_home_root,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
@@ -26,6 +27,7 @@ const HOME: &str = "/data/Omnileaf";
 const COMICS: &str = "/media/Comics";
 const MANGA: &str = "/media/Manga";
 const SAMPLES: &str = "/media/Samples";
+const MOVED_HOME: &str = "/data/Moved/Omnileaf";
 
 struct Library {
     database: Database,
@@ -49,6 +51,14 @@ impl Library {
         };
         self.database
             .write(move |transaction| add_root(transaction, &root))
+            .await
+            .unwrap()
+    }
+
+    async fn set_home(&self, path: impl AsRef<Path>) -> RootId {
+        let locator = RootLocator::Path(path.as_ref().to_path_buf());
+        self.database
+            .write(move |transaction| set_home_root(transaction, &locator, ADDED_AT_MS))
             .await
             .unwrap()
     }
@@ -354,5 +364,52 @@ async fn refuses_a_second_home_folder() {
     assert_eq!(
         library.locations().await,
         [(RootKind::Home, PathBuf::from(HOME))]
+    );
+}
+
+#[tokio::test]
+async fn sets_the_home_folder_once_for_a_location_set_again() {
+    let library = Library::open("home-set-again");
+    let first = library.set_home(HOME).await;
+
+    let again = library.set_home(HOME).await;
+
+    assert_eq!(again, first);
+    assert_eq!(
+        library.locations().await,
+        [(RootKind::Home, PathBuf::from(HOME))]
+    );
+}
+
+#[tokio::test]
+async fn moves_the_home_folder_without_leaving_the_old_one_behind() {
+    let library = Library::open("home-moved");
+    let home = library.set_home(HOME).await;
+    library.add(RootKind::Linked, COMICS).await;
+
+    let moved = library.set_home(MOVED_HOME).await;
+
+    assert_eq!(moved, home);
+    assert_eq!(
+        library.locations().await,
+        [
+            (RootKind::Home, PathBuf::from(MOVED_HOME)),
+            (RootKind::Linked, PathBuf::from(COMICS)),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn makes_a_linked_folder_the_home_folder_when_home_moves_into_it() {
+    let library = Library::open("home-moved-into-linked");
+    library.set_home(HOME).await;
+    let comics = library.add(RootKind::Linked, COMICS).await;
+
+    let moved = library.set_home(COMICS).await;
+
+    assert_eq!(moved, comics);
+    assert_eq!(
+        library.locations().await,
+        [(RootKind::Home, PathBuf::from(COMICS))]
     );
 }

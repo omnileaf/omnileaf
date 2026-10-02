@@ -80,16 +80,19 @@ pub fn remove_root(transaction: &Transaction<'_>, id: RootId) -> Result<(), Erro
     match kind {
         None => Err(Error::UnknownRoot { id }),
         Some(RootKind::Home) => Err(Error::HomeRoot { id }),
-        Some(RootKind::Linked) => {
-            transaction
-                .prepare(BOOKS_FOUND_ONLY_IN_ROOT)?
-                .execute([id.0])?;
-            transaction
-                .prepare("DELETE FROM library_root WHERE id = ?1")?
-                .execute([id.0])?;
-            Ok(())
-        }
+        Some(RootKind::Linked) => forget_root(transaction, id),
     }
+}
+
+/// Deletes the root and the books found only in it, whatever its kind.
+pub(crate) fn forget_root(transaction: &Transaction<'_>, id: RootId) -> Result<(), Error> {
+    transaction
+        .prepare(BOOKS_FOUND_ONLY_IN_ROOT)?
+        .execute([id.0])?;
+    transaction
+        .prepare("DELETE FROM library_root WHERE id = ?1")?
+        .execute([id.0])?;
+    Ok(())
 }
 
 /// Reads a root from a row holding `id, kind, locator_kind, location, added_at_ms` in that order.
@@ -102,7 +105,7 @@ pub(crate) fn stored_root(row: &Row<'_>) -> rusqlite::Result<LibraryRoot> {
     })
 }
 
-fn stored_location(locator: &RootLocator) -> (&'static str, Vec<u8>) {
+pub(crate) fn stored_location(locator: &RootLocator) -> (&'static str, Vec<u8>) {
     match locator {
         RootLocator::Path(path) => (PATH_LOCATOR, native_path::to_bytes(path)),
     }
