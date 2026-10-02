@@ -50,15 +50,40 @@ mod tests {
 
     const TITLE: &str = "[a-zA-Z0-9 ._ßİ０-９①Ａ-Ｚ一-三-]{0,16}";
 
+    /// Mixes unrelated titles with ones differing only in case or in leading zeros, which random pairs almost never do.
+    fn title_pairs() -> impl Strategy<Value = (String, String)> {
+        prop_oneof![
+            (TITLE, TITLE),
+            TITLE.prop_map(|title| (title.to_uppercase(), title)),
+            TITLE.prop_map(|title| (zero_padded(&title), title)),
+        ]
+    }
+
+    fn zero_padded(title: &str) -> String {
+        let mut padded = String::with_capacity(title.len());
+        let mut follows_digit = false;
+        for character in title.chars() {
+            let is_digit = character.is_ascii_digit();
+            if is_digit && !follows_digit {
+                padded.push(ZERO);
+            }
+            padded.push(character);
+            follows_digit = is_digit;
+        }
+        padded
+    }
+
     proptest! {
         #[test]
-        fn orders_titles_as_natural_sort_does(left in TITLE, right in TITLE) {
+        fn orders_titles_as_natural_sort_does((left, right) in title_pairs()) {
             let by_key = title_sort_key(&left).cmp(&title_sort_key(&right));
 
-            prop_assert!(
-                by_key == Ordering::Equal || by_key == natural_cmp(&left, &right),
-                "{left:?} and {right:?} keyed {by_key:?}"
-            );
+            let expected = if folded(&left) == folded(&right) {
+                Ordering::Equal
+            } else {
+                natural_cmp(&left, &right)
+            };
+            prop_assert_eq!(by_key, expected, "{:?} and {:?}", left, right);
         }
     }
 
@@ -73,5 +98,19 @@ mod tests {
             sorted,
             ["Sample Series 9", "Sample Series 10", "sample series 010"]
         );
+    }
+
+    #[test]
+    fn orders_a_number_with_more_leading_zeros_after_the_same_value() {
+        let titles = ["sample series 010", "Sample Series 10"];
+
+        let mut sorted = titles;
+        sorted.sort_by_key(|title| title_sort_key(title));
+
+        assert_eq!(sorted, ["Sample Series 10", "sample series 010"]);
+    }
+
+    fn folded(title: &str) -> String {
+        title.nfkc().flat_map(char::to_lowercase).collect()
     }
 }
