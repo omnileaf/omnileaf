@@ -2,6 +2,7 @@
   import { ChevronRight } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
+  import PageHeading from "$lib/page/PageHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   const CHEVRON_SIZE = 20;
@@ -14,7 +15,7 @@
   ] as const;
 </script>
 
-<h1 tabindex="-1" class="text-headline font-bold">{m.settings_title()}</h1>
+<PageHeading title={m.settings_title()} />
 <ul
   class="mbs-xl divide-y divide-border rounded-card border border-border bg-card"
 >

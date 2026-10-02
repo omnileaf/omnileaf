@@ -34,8 +34,10 @@
   --text-body--line-height: 1.5rem;
   --text-title: 1.25rem;
   --text-title--line-height: 1.75rem;
-  --text-headline: 1.75rem;
-  --text-headline--line-height: 2.25rem;
+  --text-page-title: 2rem;
+  --text-page-title--line-height: 1.1;
+
+  --tracking-tight: -0.01em;
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
@@ -64,8 +66,9 @@
   --spacing-safe-end: var(--safe-area-right);
   --spacing-page-top: calc(var(--spacing-safe-top) + var(--spacing-xl));
   --spacing-page-bottom: calc(var(--spacing-safe-bottom) + var(--spacing-xl));
-  --spacing-page-start: calc(var(--spacing-safe-start) + var(--spacing-xl));
-  --spacing-page-end: calc(var(--spacing-safe-end) + var(--spacing-xl));
+  --spacing-gutter: 1rem;
+  --spacing-page-start: calc(var(--spacing-safe-start) + var(--spacing-gutter));
+  --spacing-page-end: calc(var(--spacing-safe-end) + var(--spacing-gutter));
   --spacing-rail: calc(5.5rem + var(--spacing-safe-start));
   --spacing-sidebar: calc(14.5rem + var(--spacing-safe-start));
   --spacing-floating-bar: 3.875rem;
@@ -164,6 +167,19 @@
     to {
       rotate: 60deg;
     }
+  }
+}
+
+:root {
+  @variant medium {
+    --spacing-gutter: 1.75rem;
+    --text-page-title: 1.875rem;
+    --text-page-title--line-height: 1.15;
+  }
+
+  @variant expanded {
+    --spacing-gutter: 2rem;
+    --text-page-title: 1.75rem;
   }
 }
 

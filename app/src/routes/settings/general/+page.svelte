@@ -7,6 +7,7 @@
     languageName,
     storedLanguageChoice,
   } from "$lib/language/language";
+  import PageHeading from "$lib/page/PageHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { getLocale } from "$lib/paraglide/runtime.js";
 
@@ -23,7 +24,7 @@
   }
 </script>
 
-<h1 tabindex="-1" class="text-headline font-bold">{m.general_title()}</h1>
+<PageHeading title={m.general_title()} />
 <fieldset class="mbs-xl">
   <legend class="font-medium">{m.language_label()}</legend>
   <div

@@ -4,6 +4,7 @@
     type ThemePreference,
   } from "$lib/appearance/theme";
   import { getThemeSetting } from "$lib/appearance/theme.svelte";
+  import PageHeading from "$lib/page/PageHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   const THEME_LABELS = {
@@ -15,7 +16,7 @@
   const theme = getThemeSetting();
 </script>
 
-<h1 tabindex="-1" class="text-headline font-bold">{m.appearance_title()}</h1>
+<PageHeading title={m.appearance_title()} />
 <fieldset class="mbs-xl">
   <legend class="font-medium">{m.appearance_light_or_dark()}</legend>
   <div class="mbs-sm flex gap-xs rounded-control bg-chip p-xs">
