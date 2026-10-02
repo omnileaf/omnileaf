@@ -7,6 +7,7 @@ const BOTTOM_BAR_MAX_WIDTH = 600;
 const STATUS_BAR = 59;
 const HOME_INDICATOR = 34;
 const FLOATING_BAR_GAP = 22;
+const GESTURE_BAR = 24;
 
 interface SafeAreaInsets {
   readonly top: number;
@@ -16,6 +17,14 @@ interface SafeAreaInsets {
 async function emulateSafeArea(page: Page, insets: SafeAreaInsets) {
   const session = await page.context().newCDPSession(page);
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets });
+}
+
+async function provideSystemInsets(page: Page, insets: SafeAreaInsets) {
+  await page.evaluate(({ top, bottom }) => {
+    const root = document.documentElement.style;
+    root.setProperty("--system-inset-top", `${String(top)}px`);
+    root.setProperty("--system-inset-bottom", `${String(bottom)}px`);
+  }, insets);
 }
 
 function onPlatform(platform: Platform) {
@@ -76,6 +85,42 @@ test.describe("on iOS", () => {
 
     expect((viewport?.height ?? 0) - (bar?.y ?? 0) - (bar?.height ?? 0)).toBe(
       FLOATING_BAR_GAP,
+    );
+  });
+});
+
+test.describe("on Android", () => {
+  test.use(onPlatform("android"));
+
+  test("keeps the heading below the status bar the app reports", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await provideSystemInsets(page, { top: STATUS_BAR, bottom: GESTURE_BAR });
+
+    const heading = await page
+      .getByRole("heading", { level: 1, name: "Library" })
+      .boundingBox();
+
+    expect(heading?.y).toBeGreaterThanOrEqual(STATUS_BAR);
+  });
+
+  test("keeps the bottom bar above the gesture bar the app reports", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const viewport = page.viewportSize();
+    test.skip((viewport?.width ?? 0) >= BOTTOM_BAR_MAX_WIDTH, "phones only");
+    await provideSystemInsets(page, { top: STATUS_BAR, bottom: GESTURE_BAR });
+
+    const lastLink = await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link")
+      .last()
+      .boundingBox();
+
+    expect((lastLink?.y ?? 0) + (lastLink?.height ?? 0)).toBeLessThanOrEqual(
+      (viewport?.height ?? 0) - GESTURE_BAR,
     );
   });
 });

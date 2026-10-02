@@ -39,15 +39,21 @@
   --spacing-3xl: 3rem;
   --spacing-none: 0;
   --spacing-touch-target: 3rem;
-  --spacing-safe-top: env(safe-area-inset-top);
-  --spacing-safe-bottom: env(safe-area-inset-bottom);
-  --spacing-page-top: calc(env(safe-area-inset-top) + var(--spacing-xl));
+  --spacing-safe-top: max(
+    env(safe-area-inset-top),
+    var(--system-inset-top, 0px)
+  );
+  --spacing-safe-bottom: max(
+    env(safe-area-inset-bottom),
+    var(--system-inset-bottom, 0px)
+  );
+  --spacing-page-top: calc(var(--spacing-safe-top) + var(--spacing-xl));
   --spacing-rail: 5.5rem;
   --spacing-sidebar: 14.5rem;
   --spacing-floating-bar: 3.875rem;
   --spacing-floating-gap: max(
     var(--spacing-md),
-    calc(env(safe-area-inset-bottom) - var(--spacing-md))
+    calc(var(--spacing-safe-bottom) - var(--spacing-md))
   );
   --spacing-floating-clearance: calc(
     var(--spacing-floating-bar) + var(--spacing-floating-gap) +
