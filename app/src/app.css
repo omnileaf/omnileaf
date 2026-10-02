@@ -39,7 +39,9 @@
   --spacing-3xl: 3rem;
   --spacing-none: 0;
   --spacing-touch-target: 3rem;
+  --spacing-safe-top: env(safe-area-inset-top);
   --spacing-safe-bottom: env(safe-area-inset-bottom);
+  --spacing-page-top: calc(env(safe-area-inset-top) + var(--spacing-xl));
   --spacing-rail: 5.5rem;
   --spacing-sidebar: 14.5rem;
   --spacing-floating-bar: 3.875rem;
