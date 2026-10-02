@@ -6,8 +6,9 @@ const READER_COUNT: usize = 3;
 
 /// Dropping it blocks until every job already submitted has run.
 pub struct Database {
-    writer: ConnectionWorkers,
+    /// Declared before the writer so the readers close first, leaving the writer to checkpoint the log.
     readers: ConnectionWorkers,
+    writer: ConnectionWorkers,
 }
 
 impl Database {

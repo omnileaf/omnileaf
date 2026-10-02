@@ -6,6 +6,7 @@
 mod support;
 
 use std::{
+    path::PathBuf,
     sync::{Arc, Condvar, Mutex},
     time::Duration,
 };
@@ -179,6 +180,22 @@ async fn finishes_submitted_writes_before_closing() {
     let reopened = Database::open(&folder.config()).unwrap();
 
     assert_eq!(note_bodies(&reopened).await, bodies);
+}
+
+#[tokio::test]
+async fn leaves_no_write_ahead_log_behind_once_closed() {
+    let folder = ScratchFolder::new("checkpoint");
+    let config = folder.config();
+    let database = Database::open(&config).unwrap();
+    create_notes(&database).await;
+    add_note(&database, "kept".to_owned()).await.unwrap();
+    note_bodies(&database).await;
+
+    drop(database);
+
+    let mut write_ahead_log = config.path.into_os_string();
+    write_ahead_log.push("-wal");
+    assert!(!PathBuf::from(write_ahead_log).exists());
 }
 
 #[tokio::test]
