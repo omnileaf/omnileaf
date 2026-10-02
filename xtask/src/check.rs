@@ -61,6 +61,23 @@ pub(crate) const STEPS: &[Step] = &[
         ],
     },
     Step {
+        name: "listing speed",
+        group: Group::Rust,
+        program: "cargo",
+        args: &[
+            "nextest",
+            "run",
+            "--package",
+            "omnileaf-formats",
+            "--test",
+            "listing_speed",
+            "--release",
+            "--run-ignored",
+            "only",
+            "--locked",
+        ],
+    },
+    Step {
         name: "webassembly",
         group: Group::Rust,
         program: "cargo",
