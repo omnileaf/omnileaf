@@ -149,12 +149,7 @@ mod tests {
     use std::{fs, path::Path};
 
     use super::*;
-    use crate::{
-        Database,
-        catalog::{NewSeries, add_series},
-        connection,
-        scratch::ScratchLibrary,
-    };
+    use crate::{Database, connection, scratch::ScratchLibrary};
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
 
@@ -275,11 +270,14 @@ mod tests {
     fn makes_the_series_added_before_title_search_searchable() {
         let scratch = ScratchLibrary::new("search-upgrade");
         drop(Database::open_with(&scratch.config, &MIGRATIONS[..2]).unwrap());
-        let mut connection = Connection::open(&scratch.config.path).unwrap();
-        let transaction = connection.transaction().unwrap();
-        let series = NewSeries::local("Sample Series 01", 0).unwrap();
-        add_series(&transaction, &series).unwrap();
-        transaction.commit().unwrap();
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0)",
+                [],
+            )
+            .unwrap();
 
         drop(Database::open(&scratch.config).unwrap());
 
