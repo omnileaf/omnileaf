@@ -42,7 +42,7 @@
 <nav
   aria-label={m.navigation_label()}
   class={[
-    "shrink-0 border-bs border-border bg-bar pbe-safe-bottom medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:pbe-lg medium:inline-rail expanded:flex expanded:flex-col expanded:inline-sidebar",
+    "shrink-0 border-bs border-border bg-bar pbe-safe-bottom medium:border-e medium:border-bs-0 medium:ps-safe-start medium:pbs-safe-top medium:inline-rail expanded:flex expanded:flex-col expanded:inline-sidebar",
     "ios:max-medium:fixed ios:max-medium:inset-x-lg ios:max-medium:inset-be-floating-gap ios:max-medium:rounded-full ios:max-medium:border ios:max-medium:border-glass-edge ios:max-medium:bg-glass ios:max-medium:p-xs ios:max-medium:shadow-floating ios:max-medium:backdrop-blur-glass ios:max-medium:backdrop-saturate-160 ios:max-medium:block-floating-bar",
   ]}
 >
@@ -50,7 +50,7 @@
     {m.app_name()}
   </p>
   <ul
-    class="flex p-sm medium:flex-col medium:gap-sm medium:pbs-lg expanded:flex-1 expanded:gap-xs expanded:px-md expanded:pbs-none ios:max-medium:p-none ios:max-medium:block-full"
+    class="flex p-sm medium:flex-col medium:gap-sm medium:pbs-lg medium:pbe-xl expanded:flex-1 expanded:gap-xs expanded:px-md expanded:pbs-none ios:max-medium:p-none ios:max-medium:block-full"
   >
     {#each DESTINATIONS as destination (destination.section)}
       {@const isSelected = destination.section === current}

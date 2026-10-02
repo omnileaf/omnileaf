@@ -47,9 +47,20 @@
     env(safe-area-inset-bottom),
     var(--system-inset-bottom, 0px)
   );
+  --spacing-safe-start: max(
+    env(safe-area-inset-left),
+    var(--system-inset-left, 0px)
+  );
+  --spacing-safe-end: max(
+    env(safe-area-inset-right),
+    var(--system-inset-right, 0px)
+  );
   --spacing-page-top: calc(var(--spacing-safe-top) + var(--spacing-xl));
-  --spacing-rail: 5.5rem;
-  --spacing-sidebar: 14.5rem;
+  --spacing-page-bottom: calc(var(--spacing-safe-bottom) + var(--spacing-xl));
+  --spacing-page-start: calc(var(--spacing-safe-start) + var(--spacing-xl));
+  --spacing-page-end: calc(var(--spacing-safe-end) + var(--spacing-xl));
+  --spacing-rail: calc(5.5rem + var(--spacing-safe-start));
+  --spacing-sidebar: calc(14.5rem + var(--spacing-safe-start));
   --spacing-floating-bar: 3.875rem;
   --spacing-floating-gap: max(
     var(--spacing-md),
@@ -107,6 +118,17 @@
   --color-glass-hole: #3a3833;
   --color-glass-shadow: rgb(0 0 0 / 0.45);
   --color-glass-contact: transparent;
+}
+
+:root[dir="rtl"] {
+  --spacing-safe-start: max(
+    env(safe-area-inset-right),
+    var(--system-inset-right, 0px)
+  );
+  --spacing-safe-end: max(
+    env(safe-area-inset-left),
+    var(--system-inset-left, 0px)
+  );
 }
 
 :root {
