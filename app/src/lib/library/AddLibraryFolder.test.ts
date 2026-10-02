@@ -43,6 +43,7 @@ async function renderWith(addFolder: AddFolder) {
   await render(NoticeHost, { notices });
   return {
     notices,
+    unmount: screen.unmount,
     button: screen.getByRole("button", { name: "Add a folder" }),
     status: page.elementLocator(screen.container).getByRole("status"),
   };
@@ -189,4 +190,16 @@ test("disables the button while the picker is open", async () => {
   answer(CANCELLED);
 
   await expect.element(button).toBeEnabled();
+});
+
+test("withdraws its warning once it's gone from the page", async () => {
+  const { notices, button, unmount } = await renderWith(
+    answering(failed("folderUnreadable")),
+  );
+  await button.click();
+  await expect.poll(() => notices.shown).toBeDefined();
+
+  await unmount();
+
+  expect(notices.shown).toBeUndefined();
 });

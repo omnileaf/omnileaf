@@ -97,6 +97,23 @@ test("reaches the warning from the keyboard after the page", async ({
   await page.keyboard.press("Enter");
 
   await expect(page.getByRole("alert")).toBeEmpty();
+  await expect(
+    page.getByRole("button", { name: "Add a folder" }),
+  ).toBeFocused();
+});
+
+test("puts the warning away when the page changes", async ({ page }) => {
+  await failToAddAFolder(page);
+
+  await page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("link", { name: "Settings" })
+    .click();
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Settings" }),
+  ).toBeFocused();
+  await expect(page.getByRole("alert")).toBeEmpty();
 });
 
 test("rises into place", async ({ page }) => {

@@ -5,6 +5,7 @@
     type LucideIcon,
     TriangleAlert,
   } from "@lucide/svelte";
+  import { onDestroy } from "svelte";
 
   import type { commands, FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
   import type { Notice, Notices } from "$lib/notices/notices.svelte";
@@ -52,6 +53,14 @@
   let outcome: Outcome = $state({ kind: "idle" });
   let failure: Notice | undefined;
 
+  onDestroy(withdrawFailure);
+
+  function withdrawFailure(): void {
+    if (failure !== undefined) {
+      notices.withdraw(failure);
+    }
+  }
+
   function failureNotice(code: IpcErrorCode): Notice {
     const { icon, title, body, retry }: Failure = FAILURES[code];
     return {
@@ -83,9 +92,7 @@
       notices.show(failure);
       return;
     }
-    if (failure !== undefined) {
-      notices.withdraw(failure);
-    }
+    withdrawFailure();
     outcome =
       result.data === null
         ? { kind: "idle" }
