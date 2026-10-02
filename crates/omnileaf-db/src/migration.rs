@@ -35,6 +35,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0002_create_catalog"),
     migration!("0003_add_series_title_search"),
     migration!("0004_add_book_identity"),
+    migration!("0005_create_sync_registers"),
 ];
 
 pub(crate) fn pending(
