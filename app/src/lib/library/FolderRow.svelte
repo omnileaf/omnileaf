@@ -5,7 +5,7 @@
   import type { LibraryFolder } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
-  const ICON_SIZE = 20;
+  import { ICON_SIZE } from "./icon-size";
 
   let { folder, action }: { folder: LibraryFolder; action?: Snippet } =
     $props();

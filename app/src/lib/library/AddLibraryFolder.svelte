@@ -4,6 +4,8 @@
   import type { commands, FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
+  import { ICON_SIZE } from "./icon-size";
+
   type Outcome =
     | { readonly kind: "idle" }
     | { readonly kind: "adding" }
@@ -17,8 +19,6 @@
     homeFolderKept: m.library_add_folder_failed,
     internal: m.library_add_folder_failed,
   } satisfies Record<IpcErrorCode, () => string>;
-
-  const ICON_SIZE = 20;
 
   let {
     addFolder,
