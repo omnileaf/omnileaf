@@ -1,10 +1,11 @@
 import { m } from "$lib/paraglide/messages.js";
 import { getLocale } from "$lib/paraglide/runtime.js";
 
-export type StandInKind = "series";
+export type StandInKind = "series" | "folder";
 
 const STAND_IN_NAMES = {
   series: m.stand_in_series,
+  folder: m.stand_in_folder,
 } satisfies Record<StandInKind, (inputs: { number: string }) => string>;
 
 const MINIMUM_DIGITS = 2;

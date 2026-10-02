@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { commands, FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
+  import { standInName } from "$lib/screenshot-mode/stand-ins";
 
   type Outcome =
     | { readonly kind: "idle" }
@@ -14,9 +15,22 @@
     internal: m.library_add_folder_failed,
   } satisfies Record<IpcErrorCode, () => string>;
 
-  let { addFolder }: { addFolder: typeof commands.addLibraryFolder } = $props();
+  interface Props {
+    readonly addFolder: typeof commands.addLibraryFolder;
+    readonly usesStandIns: boolean;
+  }
+
+  let { addFolder, usesStandIns }: Props = $props();
+
+  const SHOWN_FOLDER_STAND_IN = 1;
 
   let outcome: Outcome = $state({ kind: "idle" });
+
+  function shownName(survey: FolderSurvey): string {
+    return usesStandIns
+      ? standInName("folder", SHOWN_FOLDER_STAND_IN)
+      : survey.name;
+  }
 
   async function add(): Promise<void> {
     outcome = { kind: "adding" };
@@ -44,7 +58,7 @@
     <p>
       {m.library_folder_found({
         count: outcome.survey.comicFiles,
-        name: outcome.survey.name,
+        name: shownName(outcome.survey),
       })}
     </p>
     {#if outcome.survey.unreadableFolders > 0}

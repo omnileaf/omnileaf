@@ -98,5 +98,6 @@
   "screenshot_mode_shortcut_keys": "Ctrl Shift H",
   "screenshot_mode_nothing_sent": "Nothing about Screenshot mode is sent anywhere. It only changes what’s on screen and in reports.",
   "stand_in_series": "Series {number}",
-  "screenshot_mode_preview_label": "Preview of one cover with Screenshot mode off and on"
+  "screenshot_mode_preview_label": "Preview of one cover with Screenshot mode off and on",
+  "stand_in_folder": "Folder {number}"
 }
