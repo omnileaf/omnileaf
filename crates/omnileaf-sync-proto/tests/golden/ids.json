@@ -1,0 +1,50 @@
+{
+  "contract": "entity-id v1",
+  "vectors": [
+    {
+      "key": "series.local.v1",
+      "input": "Sample Series 03",
+      "id": "ab0d5155-6fef-852c-982f-d8add37808d4"
+    },
+    {
+      "key": "series.local.v1",
+      "input": "  SAMPLE   series 03 ",
+      "id": "ab0d5155-6fef-852c-982f-d8add37808d4"
+    },
+    {
+      "key": "series.local.v1",
+      "input": "Sample Series 04",
+      "id": "fecfb417-08ce-8829-ad7d-a732c16364b9"
+    },
+    {
+      "key": "series.local.v1",
+      "input": "",
+      "id": "d540be68-2917-8c4f-86e1-390e00b2fac8"
+    },
+    {
+      "key": "series.local.v1",
+      "input": "\uff33\uff41\uff4d\uff50\uff4c\uff45 \u2163",
+      "id": "8aa8c08c-3bd5-834b-a0c6-67f1e4a66d40"
+    },
+    {
+      "key": "series.local.v1",
+      "input": "STRA\u1e9e\u0301E",
+      "id": "2f0bdeb5-fa5b-8206-b414-59cfbaf34755"
+    },
+    {
+      "key": "category.v1",
+      "input": "Sample Shelf",
+      "id": "5841dbf8-d874-8252-9f51-22a8343420aa"
+    },
+    {
+      "key": "category.v1",
+      "input": "sample shelf",
+      "id": "5841dbf8-d874-8252-9f51-22a8343420aa"
+    },
+    {
+      "key": "category.v1",
+      "input": "Sample Series 03",
+      "id": "f7f25e9e-88f1-85a6-84c1-defd5a0cffbf"
+    }
+  ]
+}
