@@ -37,7 +37,7 @@
 
 <button
   type="button"
-  class="flex items-center justify-center gap-sm rounded-control bg-accent px-button font-semibold text-on-accent inline-full min-block-touch-target disabled:opacity-60"
+  class="inline-flex items-center justify-center gap-sm rounded-control bg-accent px-button font-semibold text-on-accent min-block-touch-target disabled:opacity-60"
   disabled={outcome.kind === "adding"}
   onclick={add}
 >

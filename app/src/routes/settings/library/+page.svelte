@@ -13,7 +13,7 @@
   <h2 id="folders-heading" class="px-xs text-footnote font-semibold text-muted">
     {m.library_settings_folders()}
   </h2>
-  <div class="mbs-xs expanded:self-start">
+  <div class="mbs-xs flex flex-col expanded:items-start">
     <AddLibraryFolder addFolder={commands.addLibraryFolder} />
   </div>
   <p class="px-xs text-footnote text-muted">

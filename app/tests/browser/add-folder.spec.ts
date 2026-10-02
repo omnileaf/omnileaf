@@ -1,7 +1,14 @@
 import { AxeBuilder } from "@axe-core/playwright";
 
 import { CommandFailure } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  boxOf,
+  DEFAULT_BACKEND,
+  EXPANDED_MIN_WIDTH,
+  expect,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
 
 test.describe("with a folder of comics", () => {
   test.use({
@@ -46,6 +53,20 @@ test("opens Settings › Library from Settings", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("fills Settings › Library's width with the Add a folder button below desktop", async ({
+  page,
+}) => {
+  await page.goto("/settings/library");
+  test.skip(viewportOf(page).width >= EXPANDED_MIN_WIDTH, "below desktop only");
+
+  const folders = await boxOf(page.getByRole("region", { name: "Folders" }));
+  const button = await boxOf(
+    page.getByRole("button", { name: "Add a folder" }),
+  );
+
+  expect(button.width).toBe(folders.width);
+});
+
 test.describe("with a folder it can't read", () => {
   test.use({
     backend: {
@@ -68,6 +89,40 @@ test.describe("with a folder it can't read", () => {
       "Couldn't read that folder.",
     );
   });
+});
+
+test.describe("where the folder picker is unavailable", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      addLibraryFolder: () => {
+        throw new CommandFailure({
+          code: "folderPickerUnavailable",
+          message: "the folder picker is unavailable",
+        });
+      },
+    },
+  });
+
+  for (const { place, path } of [
+    { place: "the empty library", path: "/" },
+    { place: "Settings › Library", path: "/settings/library" },
+  ]) {
+    test(`keeps the Add a folder button its size in ${place} when the outcome shows`, async ({
+      page,
+    }) => {
+      await page.goto(path);
+      const button = page.getByRole("button", { name: "Add a folder" });
+      const before = await boxOf(button);
+
+      await button.click();
+
+      await expect(page.getByRole("status")).toHaveText(
+        "Adding folders isn't available on this device yet.",
+      );
+      expect((await boxOf(button)).width).toBe(before.width);
+    });
+  }
 });
 
 for (const colorScheme of ["light", "dark"] as const) {
