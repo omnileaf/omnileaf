@@ -94,16 +94,71 @@ async fn refuses_a_second_series_for_a_folder_name_that_normalises_alike() {
         })
         .await;
 
-    assert!(matches!(
-        outcome,
-        Err(Error::Statement(rusqlite::Error::SqliteFailure(
-            rusqlite::ffi::Error {
-                code: ErrorCode::ConstraintViolation,
-                ..
-            },
-            _
-        )))
-    ));
+    assert!(is_constraint_violation(&outcome));
+}
+
+#[tokio::test]
+async fn keeps_a_library_folder_path_that_is_not_unicode_byte_for_byte() {
+    let folder = ScratchFolder::new("root-bytes");
+    let database = Database::open(&folder.config()).unwrap();
+    let path = b"/sample/library-\xff".to_vec();
+
+    database
+        .write({
+            let path = path.clone();
+            move |transaction| {
+                Ok(transaction.execute(
+                    "INSERT INTO library_root (id, kind, locator_kind, location, added_at_ms)
+                     VALUES (1, 'linked', 'path', ?1, ?2)",
+                    (path, ADDED_AT_MS),
+                )?)
+            }
+        })
+        .await
+        .unwrap();
+
+    let stored: Vec<u8> = database
+        .read(|connection| {
+            Ok(connection.query_row(
+                "SELECT location FROM library_root WHERE id = 1",
+                [],
+                |row| row.get(0),
+            )?)
+        })
+        .await
+        .unwrap();
+    assert_eq!(stored, path);
+}
+
+#[tokio::test]
+async fn refuses_a_second_link_to_a_folder_picked_again_with_a_new_bookmark() {
+    let folder = ScratchFolder::new("root-twice");
+    let database = Database::open(&folder.config()).unwrap();
+    link_bookmarked_folder(&database, 1, b"first bookmark")
+        .await
+        .unwrap();
+
+    let outcome = link_bookmarked_folder(&database, 2, b"second bookmark").await;
+
+    assert!(is_constraint_violation(&outcome));
+}
+
+#[tokio::test]
+async fn refuses_a_bookmarked_folder_without_its_bookmark() {
+    let folder = ScratchFolder::new("root-no-bookmark");
+    let database = Database::open(&folder.config()).unwrap();
+
+    let outcome = database
+        .write(|transaction| {
+            Ok(transaction.execute(
+                "INSERT INTO library_root (id, kind, locator_kind, location, added_at_ms)
+                 VALUES (1, 'linked', 'apple_bookmark', CAST('/sample/library' AS BLOB), ?1)",
+                [ADDED_AT_MS],
+            )?)
+        })
+        .await;
+
+    assert!(is_constraint_violation(&outcome));
 }
 
 #[tokio::test]
@@ -132,8 +187,8 @@ async fn forgets_the_book_files_of_a_removed_library_folder() {
     database
         .write(move |transaction| {
             transaction.execute(
-                "INSERT INTO library_root (id, kind, location, added_at_ms)
-                 VALUES (1, 'linked', '/sample/library', ?1)",
+                "INSERT INTO library_root (id, kind, locator_kind, location, added_at_ms)
+                 VALUES (1, 'linked', 'path', CAST('/sample/library' AS BLOB), ?1)",
                 [ADDED_AT_MS],
             )?;
             Ok(transaction.execute(
@@ -227,4 +282,33 @@ async fn row_count(database: &Database, table: &'static str) -> i64 {
         })
         .await
         .unwrap()
+}
+
+async fn link_bookmarked_folder(
+    database: &Database,
+    id: i64,
+    bookmark: &'static [u8],
+) -> Result<usize, Error> {
+    database
+        .write(move |transaction| {
+            Ok(transaction.execute(
+                "INSERT INTO library_root (id, kind, locator_kind, location, bookmark, added_at_ms)
+                 VALUES (?1, 'linked', 'apple_bookmark', CAST('/sample/library' AS BLOB), ?2, ?3)",
+                (id, bookmark, ADDED_AT_MS),
+            )?)
+        })
+        .await
+}
+
+fn is_constraint_violation<T>(outcome: &Result<T, Error>) -> bool {
+    matches!(
+        outcome,
+        Err(Error::Statement(rusqlite::Error::SqliteFailure(
+            rusqlite::ffi::Error {
+                code: ErrorCode::ConstraintViolation,
+                ..
+            },
+            _
+        )))
+    )
 }

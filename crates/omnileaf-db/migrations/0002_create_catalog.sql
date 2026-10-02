@@ -1,7 +1,9 @@
 CREATE TABLE library_root (
     id INTEGER PRIMARY KEY,
     kind TEXT NOT NULL CHECK (kind IN ('home', 'linked')),
-    location TEXT NOT NULL UNIQUE,
+    locator_kind TEXT NOT NULL CHECK (locator_kind IN ('path', 'android_tree', 'apple_bookmark')),
+    location BLOB NOT NULL UNIQUE,
+    bookmark BLOB CHECK ((bookmark IS NOT NULL) = (locator_kind = 'apple_bookmark')),
     added_at_ms INTEGER NOT NULL
 ) STRICT;
 
