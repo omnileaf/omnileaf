@@ -1,4 +1,5 @@
 import { expect, test } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import Page from "./+page.svelte";
@@ -21,7 +22,9 @@ test("shows the app version under About", async () => {
 test("keeps About in a group of its own", async () => {
   const screen = await render(Page, PROPS);
 
-  const group = screen.getByRole("link", ABOUT).element().closest("ul");
+  const aboutGroup = screen
+    .getByRole("list")
+    .filter({ has: page.getByRole("link", ABOUT) });
 
-  expect(group?.querySelectorAll("a")).toHaveLength(1);
+  expect(aboutGroup.getByRole("listitem").elements()).toHaveLength(1);
 });
