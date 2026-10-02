@@ -1,46 +1,9 @@
-#![expect(
-    clippy::unwrap_used,
-    reason = "the test folders are fixtures, so a failed set-up should stop the test"
-)]
+mod support;
 
-use std::{
-    env, fs,
-    path::{Path, PathBuf},
-    process,
-};
+use std::fs;
 
 use omnileaf_engine::{SurveyError, survey_folder};
-
-struct TempFolder(PathBuf);
-
-impl TempFolder {
-    fn new(name: &str) -> Self {
-        let path = env::temp_dir()
-            .join(format!("omnileaf-survey-{}", process::id()))
-            .join(name);
-        fs::create_dir_all(&path).unwrap();
-        Self(path)
-    }
-
-    fn with_files(self, files: &[&str]) -> Self {
-        for file in files {
-            let path = self.0.join(file);
-            fs::create_dir_all(path.parent().unwrap()).unwrap();
-            fs::write(path, b"").unwrap();
-        }
-        self
-    }
-
-    fn path(&self) -> &Path {
-        &self.0
-    }
-}
-
-impl Drop for TempFolder {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
-    }
-}
+use support::TempFolder;
 
 #[test]
 fn counts_comic_archives_in_nested_folders() {
