@@ -214,6 +214,58 @@ async fn forgets_the_book_files_of_a_removed_library_folder() {
     );
 }
 
+#[tokio::test]
+async fn finds_a_series_by_any_three_characters_of_its_title() {
+    let folder = ScratchFolder::new("search-added");
+    let database = Database::open(&folder.config()).unwrap();
+    add_local_series(&database, "Sample Series 01").await;
+
+    let found = titles_matching(&database, "ies 0").await;
+
+    assert_eq!(found, ["Sample Series 01"]);
+}
+
+#[tokio::test]
+async fn searches_a_renamed_series_by_its_new_title_only() {
+    let folder = ScratchFolder::new("search-renamed");
+    let database = Database::open(&folder.config()).unwrap();
+    let series = add_local_series(&database, "Sample Series 01").await;
+
+    database
+        .write(move |transaction| {
+            Ok(transaction.execute(
+                "UPDATE series SET title = 'Example Volume 02' WHERE id = ?1",
+                [series.as_bytes()],
+            )?)
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (
+            titles_matching(&database, "Sample").await,
+            titles_matching(&database, "Volume").await
+        ),
+        (Vec::new(), vec!["Example Volume 02".to_owned()])
+    );
+}
+
+#[tokio::test]
+async fn drops_a_removed_series_from_title_search() {
+    let folder = ScratchFolder::new("search-removed");
+    let database = Database::open(&folder.config()).unwrap();
+    let series = add_local_series(&database, "Sample Series 01").await;
+
+    database
+        .write(move |transaction| {
+            Ok(transaction.execute("DELETE FROM series WHERE id = ?1", [series.as_bytes()])?)
+        })
+        .await
+        .unwrap();
+
+    assert!(titles_matching(&database, "Sample").await.is_empty());
+}
+
 async fn add_local_series(database: &Database, folder_name: &str) -> SeriesId {
     let series = NewSeries::local(folder_name, ADDED_AT_MS).unwrap();
     let id = series.id();
@@ -266,6 +318,21 @@ async fn book_count(database: &Database, series: SeriesId) -> i64 {
                 [series.as_bytes()],
                 |row| row.get(0),
             )?)
+        })
+        .await
+        .unwrap()
+}
+
+async fn titles_matching(database: &Database, text: &str) -> Vec<String> {
+    let query = format!("\"{text}\"");
+    database
+        .read(move |connection| {
+            let mut statement = connection
+                .prepare("SELECT title FROM series_fts WHERE series_fts MATCH ?1 ORDER BY rowid")?;
+            let titles = statement
+                .query_map([query], |row| row.get(0))?
+                .collect::<Result<_, _>>()?;
+            Ok(titles)
         })
         .await
         .unwrap()

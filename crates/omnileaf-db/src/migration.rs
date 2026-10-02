@@ -33,6 +33,7 @@ macro_rules! migration {
 pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0001_mark_omnileaf_library"),
     migration!("0002_create_catalog"),
+    migration!("0003_add_series_title_search"),
 ];
 
 pub(crate) fn pending(
@@ -148,7 +149,12 @@ mod tests {
     use std::{fs, path::Path};
 
     use super::*;
-    use crate::{Database, connection, scratch::ScratchLibrary};
+    use crate::{
+        Database,
+        catalog::{NewSeries, add_series},
+        connection,
+        scratch::ScratchLibrary,
+    };
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
 
@@ -263,6 +269,28 @@ mod tests {
             .query_row("SELECT count FROM tally", [], |row| row.get(0))
             .unwrap();
         assert_eq!(count, 1000);
+    }
+
+    #[test]
+    fn makes_the_series_added_before_title_search_searchable() {
+        let scratch = ScratchLibrary::new("search-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..2]).unwrap());
+        let mut connection = Connection::open(&scratch.config.path).unwrap();
+        let transaction = connection.transaction().unwrap();
+        let series = NewSeries::local("Sample Series 01", 0).unwrap();
+        add_series(&transaction, &series).unwrap();
+        transaction.commit().unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let found: i64 = connection
+            .query_row(
+                "SELECT count(*) FROM series_fts WHERE series_fts MATCH 'Sample'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(found, 1);
     }
 
     fn schema_of(path: &Path) -> Schema {
