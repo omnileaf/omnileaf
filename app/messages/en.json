@@ -57,5 +57,6 @@
   "theme_dark": "Dark",
   "general_title": "General",
   "language_label": "Language",
-  "language_system": "System ({language})"
+  "language_system": "System ({language})",
+  "back_to": "Back to {page}"
 }

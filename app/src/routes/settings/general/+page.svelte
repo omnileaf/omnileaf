@@ -7,7 +7,7 @@
     languageName,
     storedLanguageChoice,
   } from "$lib/language/language";
-  import PageHeading from "$lib/page/PageHeading.svelte";
+  import SubpageHeading from "$lib/page/SubpageHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { getLocale } from "$lib/paraglide/runtime.js";
 
@@ -24,7 +24,11 @@
   }
 </script>
 
-<PageHeading title={m.general_title()} />
+<SubpageHeading
+  title={m.general_title()}
+  parentTitle={m.settings_title()}
+  parentRoute="/settings"
+/>
 <fieldset class="mbs-xl">
   <legend class="font-medium">{m.language_label()}</legend>
   <div

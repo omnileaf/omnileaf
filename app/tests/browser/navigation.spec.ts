@@ -5,6 +5,7 @@ import {
   expect,
   FAKE_APP_VERSION,
   MEDIUM_MIN_WIDTH,
+  onPlatform,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -91,6 +92,23 @@ test("shows the version the backend reports in Settings › About", async ({
 
   await expect(page.getByText(`Version ${FAKE_APP_VERSION}`)).toBeVisible();
 });
+
+for (const platform of ["android", "ios"] as const) {
+  test.describe(`on ${platform}`, () => {
+    test.use(onPlatform(platform));
+
+    test("goes back to Settings from a settings section", async ({ page }) => {
+      await page.goto("/settings/about");
+
+      await page.getByRole("link", { name: "Back to Settings" }).click();
+
+      await expect(page).toHaveURL("/settings");
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Settings" }),
+      ).toBeFocused();
+    });
+  });
+}
 
 test("keeps Settings at the far end of the rail and the sidebar", async ({
   page,
