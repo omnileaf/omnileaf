@@ -4,6 +4,7 @@ mod clock;
 mod fingerprint;
 mod id;
 mod norm;
+mod value;
 
 pub use clock::{ClockError, Hlc};
 pub use fingerprint::{
@@ -12,3 +13,4 @@ pub use fingerprint::{
 };
 pub use id::{BookId, CategoryId, IdError, KeyError, SeriesId};
 pub use norm::norm;
+pub use value::{Value, ValueError};

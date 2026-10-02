@@ -8,7 +8,7 @@ mod support;
 use std::fmt::Write;
 
 use omnileaf_sync_proto::{
-    BookId, CategoryId, Fingerprint, FolderImage, Hlc, ImageEntry, SeriesId, norm,
+    BookId, CategoryId, Fingerprint, FolderImage, Hlc, ImageEntry, SeriesId, Value, norm,
 };
 use serde::Deserialize;
 
@@ -192,4 +192,52 @@ fn clock_sequences_match_the_golden_vectors() {
             vector.start, vector.events
         );
     }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum ValueInput {
+    Null,
+    Bool(bool),
+    Unsigned(u64),
+}
+
+impl From<ValueInput> for Value {
+    fn from(input: ValueInput) -> Self {
+        match input {
+            ValueInput::Null => Self::Null,
+            ValueInput::Bool(flag) => Self::Bool(flag),
+            ValueInput::Unsigned(number) => Self::Unsigned(number),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct ValueVector {
+    value: ValueInput,
+    cbor: String,
+}
+
+#[test]
+fn register_values_match_the_golden_vectors() {
+    let vectors: Vec<ValueVector> = golden(include_str!("golden/values.json"));
+
+    for vector in vectors {
+        let value = Value::from(vector.value);
+
+        assert_eq!(hex(&value.to_cbor()), vector.cbor, "{value:?}");
+        assert_eq!(
+            Value::from_cbor(&unhex(&vector.cbor)),
+            Ok(value),
+            "{}",
+            vector.cbor
+        );
+    }
+}
+
+fn unhex(text: &str) -> Vec<u8> {
+    text.as_bytes()
+        .chunks(2)
+        .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+        .collect()
 }
