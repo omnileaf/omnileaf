@@ -1,6 +1,7 @@
 import type { commands, FolderPage, LibraryFolder } from "$lib/ipc/bindings";
 
 export type ListFolders = typeof commands.libraryFolders;
+export type RemoveFolder = typeof commands.removeLibraryFolder;
 
 export type FolderList =
   | { readonly kind: "loading" }
@@ -11,13 +12,18 @@ export type FolderList =
     }
   | { readonly kind: "failed" };
 
+export type RemoveOutcome = "removed" | "failed";
+
 /** The library's folders, read page by page until the backend says there are no more. */
 export class LibraryFolders {
   list: FolderList = $state({ kind: "loading" });
 
   #latestLoad = 0;
 
-  constructor(private readonly listFolders: ListFolders) {}
+  constructor(
+    private readonly listFolders: ListFolders,
+    private readonly removeFolder: RemoveFolder,
+  ) {}
 
   /** Only the most recently started load shows its list, so a slower older one can't bring back stale folders. */
   async load(): Promise<void> {
@@ -44,5 +50,15 @@ export class LibraryFolders {
     if (load === this.#latestLoad) {
       this.list = list;
     }
+  }
+
+  /** A folder something else already removed counts as removed, since the list then matches what was asked for. */
+  async remove(folder: LibraryFolder): Promise<RemoveOutcome> {
+    const result = await this.removeFolder(folder.id);
+    if (result.status === "error" && result.error.code !== "folderNotFound") {
+      return "failed";
+    }
+    await this.load();
+    return "removed";
   }
 }

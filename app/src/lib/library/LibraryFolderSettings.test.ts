@@ -7,6 +7,8 @@ import { commands, type LibraryFolder } from "$lib/ipc/bindings";
 import LibraryFolderSettings from "./LibraryFolderSettings.svelte";
 
 type AddFolder = typeof commands.addLibraryFolder;
+type RemoveFolder = typeof commands.removeLibraryFolder;
+type FolderId = Parameters<RemoveFolder>[0];
 
 type WireFolder = Omit<LibraryFolder, "id"> & { readonly id: string };
 
@@ -31,12 +33,14 @@ const MANGA: WireFolder = {
 
 const NOTHING_PICKED: AddFolder = () =>
   Promise.resolve({ status: "ok", data: null });
+const NOTHING_REMOVED: RemoveFolder = () =>
+  Promise.resolve({ status: "ok", data: null });
 
 afterEach(() => {
   clearMocks();
 });
 
-/** Answers the library's folders from `folders`, one folder to a page, through the real IPC client. */
+/** Answers the library's folders from `folders` as it is at each call, one folder to a page, through the real IPC client. */
 function serveFolders(folders: readonly WireFolder[]): void {
   mockIPC((command, payload) => {
     if (command !== "library_folders") {
@@ -51,14 +55,38 @@ function serveFolders(folders: readonly WireFolder[]): void {
   });
 }
 
-async function renderSettings(addFolder: AddFolder = NOTHING_PICKED) {
+/** Removes folders from `library` and records which ones it was asked to remove. */
+function removingFrom(library: WireFolder[]): {
+  removeFolder: RemoveFolder;
+  removed: FolderId[];
+} {
+  const removed: FolderId[] = [];
+  return {
+    removed,
+    removeFolder: (id) => {
+      removed.push(id);
+      library.splice(
+        library.findIndex((folder) => folder.id === id),
+        1,
+      );
+      return Promise.resolve({ status: "ok", data: null });
+    },
+  };
+}
+
+async function renderSettings({
+  addFolder = NOTHING_PICKED,
+  removeFolder = NOTHING_REMOVED,
+}: { addFolder?: AddFolder; removeFolder?: RemoveFolder } = {}) {
   const screen = await render(LibraryFolderSettings, {
     listFolders: commands.libraryFolders,
+    removeFolder,
     addFolder,
   });
   return {
     home: screen.getByRole("region", { name: "Home folder" }),
     folders: screen.getByRole("region", { name: "Folders" }),
+    dialog: screen.getByRole("alertdialog"),
   };
 }
 
@@ -71,7 +99,7 @@ test("shows the home folder apart from the linked folders", async () => {
   await expect.element(home.getByText("/data/Omnileaf")).toBeVisible();
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Comics /media/Sample Comics");
+    .toHaveTextContent("Sample Comics /media/Sample Comics Remove");
 });
 
 test("reads every page of folders", async () => {
@@ -86,19 +114,21 @@ test("reads every page of folders", async () => {
 test("lists a folder once it is added", async () => {
   const library = [HOME];
   serveFolders(library);
-  const { folders } = await renderSettings(() => {
-    library.push(COMICS);
-    return Promise.resolve({
-      status: "ok",
-      data: { name: COMICS.name, comicFiles: 3, unreadableFolders: 0 },
-    });
+  const { folders } = await renderSettings({
+    addFolder: () => {
+      library.push(COMICS);
+      return Promise.resolve({
+        status: "ok",
+        data: { name: COMICS.name, comicFiles: 3, unreadableFolders: 0 },
+      });
+    },
   });
 
   await folders.getByRole("button", { name: "Add a folder" }).click();
 
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Comics /media/Sample Comics");
+    .toHaveTextContent("Sample Comics /media/Sample Comics Remove");
 });
 
 test("says when the folders couldn't be loaded", async () => {
@@ -108,6 +138,7 @@ test("says when the folders couldn't be loaded", async () => {
         status: "error",
         error: { code: "internal", message: "from the backend" },
       }),
+    removeFolder: NOTHING_REMOVED,
     addFolder: NOTHING_PICKED,
   });
 
@@ -134,4 +165,101 @@ test("names the home folder after the app rather than its folder on disk", async
   await expect
     .element(home.getByText("/data/user/0/app.omnileaf"))
     .toBeVisible();
+});
+
+test("offers Remove on linked folders only", async () => {
+  serveFolders([HOME, COMICS]);
+
+  const { home, folders } = await renderSettings();
+
+  await expect
+    .element(folders.getByRole("button", { name: "Remove Sample Comics" }))
+    .toBeVisible();
+  expect(home.getByRole("button").elements()).toHaveLength(0);
+});
+
+test("asks before removing a folder", async () => {
+  const library = [HOME, COMICS];
+  serveFolders(library);
+  const { removeFolder, removed } = removingFrom(library);
+  const { folders, dialog } = await renderSettings({ removeFolder });
+
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await expect
+    .element(dialog.getByRole("heading", { name: "Remove Sample Comics?" }))
+    .toBeVisible();
+  expect(removed).toEqual([]);
+});
+
+test("removes the folder once the removal is confirmed", async () => {
+  const library = [HOME, COMICS, MANGA];
+  serveFolders(library);
+  const { removeFolder, removed } = removingFrom(library);
+  const { folders, dialog } = await renderSettings({ removeFolder });
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await dialog.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await expect
+    .element(folders.getByRole("listitem"))
+    .toHaveTextContent("Sample Manga /media/Sample Manga Remove");
+  expect(removed).toEqual([COMICS.id]);
+  await expect.element(dialog).not.toBeInTheDocument();
+});
+
+test("keeps the folder when the removal is cancelled", async () => {
+  const library = [HOME, COMICS];
+  serveFolders(library);
+  const { removeFolder, removed } = removingFrom(library);
+  const { folders, dialog } = await renderSettings({ removeFolder });
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+
+  await expect.element(dialog).not.toBeInTheDocument();
+  expect(removed).toEqual([]);
+  await expect
+    .element(folders.getByRole("listitem"))
+    .toHaveTextContent("Sample Comics /media/Sample Comics Remove");
+});
+
+test("says when a folder couldn't be removed", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders, dialog } = await renderSettings({
+    removeFolder: () =>
+      Promise.resolve({
+        status: "error",
+        error: { code: "internal", message: "from the backend" },
+      }),
+  });
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await dialog.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await expect
+    .element(folders.getByRole("alert"))
+    .toHaveTextContent("Couldn't remove Sample Comics. Try again.");
+});
+
+test("drops a folder that was already removed without reporting a failure", async () => {
+  const library = [HOME, COMICS, MANGA];
+  serveFolders(library);
+  const { folders, dialog } = await renderSettings({
+    removeFolder: () => {
+      library.splice(library.indexOf(COMICS), 1);
+      return Promise.resolve({
+        status: "error",
+        error: { code: "folderNotFound", message: "from the backend" },
+      });
+    },
+  });
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await dialog.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await expect
+    .element(folders.getByRole("listitem"))
+    .toHaveTextContent("Sample Manga /media/Sample Manga Remove");
+  await expect.element(folders.getByRole("alert")).not.toBeInTheDocument();
 });

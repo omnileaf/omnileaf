@@ -1,12 +1,14 @@
 <script lang="ts">
   import { Folder, House } from "@lucide/svelte";
+  import type { Snippet } from "svelte";
 
   import type { LibraryFolder } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
   const ICON_SIZE = 20;
 
-  let { folder }: { folder: LibraryFolder } = $props();
+  let { folder, action }: { folder: LibraryFolder; action?: Snippet } =
+    $props();
 
   const title = $derived(folder.kind === "home" ? m.app_name() : folder.name);
 </script>
@@ -30,4 +32,5 @@
     <p class="truncate font-semibold">{title}</p>
     <p class="truncate text-caption text-muted">{folder.location}</p>
   </div>
+  {@render action?.()}
 </div>

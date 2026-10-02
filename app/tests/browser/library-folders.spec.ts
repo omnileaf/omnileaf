@@ -42,6 +42,10 @@ const LIBRARY_BACKEND: FakeBackend = {
     library.folders.push(SAMPLE_LIBRARY);
     return { name: SAMPLE_LIBRARY.name, comicFiles: 3, unreadableFolders: 0 };
   },
+  removeLibraryFolder: (id) => {
+    library.folders = library.folders.filter((folder) => folder.id !== id);
+    return null;
+  },
 };
 
 test.use({ backend: LIBRARY_BACKEND });
@@ -60,7 +64,7 @@ test("shows the home folder and the linked folders in Settings › Library", asy
   );
   await expect(
     page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
-  ).toHaveText(["Sample Comics /media/Sample Comics"]);
+  ).toHaveText(["Sample Comics /media/Sample Comics Remove"]);
 });
 
 test("lists a folder as soon as it is added", async ({ page }) => {
@@ -71,12 +75,58 @@ test("lists a folder as soon as it is added", async ({ page }) => {
   await folders.getByRole("button", { name: "Add a folder" }).click();
 
   await expect(folders.getByRole("listitem")).toHaveText([
-    "Sample Comics /media/Sample Comics",
-    "Sample Library /media/Sample Library",
+    "Sample Comics /media/Sample Comics Remove",
+    "Sample Library /media/Sample Library Remove",
   ]);
 });
 
+test("removes a folder once the removal is confirmed", async ({ page }) => {
+  await page.goto("/settings/library");
+  const folders = page.getByRole("region", { name: "Folders" });
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+  const dialog = page.getByRole("alertdialog", {
+    name: "Remove Sample Comics?",
+  });
+
+  await dialog.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(folders.getByRole("listitem")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Folders" }),
+  ).toBeFocused();
+});
+
+test("keeps a folder when the removal is dismissed with Escape", async ({
+  page,
+}) => {
+  await page.goto("/settings/library");
+  const folders = page.getByRole("region", { name: "Folders" });
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+  await remove.click();
+  await expect(page.getByRole("alertdialog")).toBeVisible();
+
+  await page.keyboard.press("Escape");
+
+  await expect(page.getByRole("alertdialog")).toBeHidden();
+  await expect(folders.getByRole("listitem")).toHaveCount(1);
+  await expect(remove).toBeFocused();
+});
+
 for (const colorScheme of ["light", "dark"] as const) {
+  test(`the removal question has no accessibility violations in the ${colorScheme} theme`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto("/settings/library");
+    await page.getByRole("button", { name: "Remove Sample Comics" }).click();
+    await expect(page.getByRole("alertdialog")).toBeVisible();
+
+    const results = await new AxeBuilder({ page }).analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
   test(`the folder list has no accessibility violations in the ${colorScheme} theme`, async ({
     page,
   }) => {
