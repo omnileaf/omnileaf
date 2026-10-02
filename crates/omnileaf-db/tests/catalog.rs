@@ -98,6 +98,53 @@ async fn refuses_a_second_series_for_a_folder_name_that_normalises_alike() {
 }
 
 #[tokio::test]
+async fn keeps_the_fingerprint_a_book_id_comes_from_and_the_book_name_folded() {
+    let folder = ScratchFolder::new("book-identity");
+    let database = Database::open(&folder.config()).unwrap();
+    let series = add_local_series(&database, "Sample Series 01").await;
+
+    add_books(&database, series, 1).await.unwrap();
+
+    let identity = database
+        .read(move |connection| {
+            Ok(connection.query_row(
+                "SELECT content_fp, fp_kind, logical_key FROM book WHERE id = ?1",
+                [book_id(series, 0).as_bytes()],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )?)
+        })
+        .await
+        .unwrap();
+    assert_eq!(
+        identity,
+        (
+            Some(fingerprint(series, 0).as_bytes().to_vec()),
+            Some("pmf1".to_owned()),
+            Some("volume 00".to_owned())
+        )
+    );
+}
+
+#[tokio::test]
+async fn refuses_a_book_fingerprint_without_its_kind() {
+    let folder = ScratchFolder::new("fingerprint-kind");
+    let database = Database::open(&folder.config()).unwrap();
+    let series = add_local_series(&database, "Sample Series 01").await;
+    add_books(&database, series, 1).await.unwrap();
+
+    let outcome = database
+        .write(move |transaction| {
+            Ok(transaction.execute(
+                "UPDATE book SET fp_kind = NULL WHERE id = ?1",
+                [book_id(series, 0).as_bytes()],
+            )?)
+        })
+        .await;
+
+    assert!(is_constraint_violation(&outcome));
+}
+
+#[tokio::test]
 async fn keeps_a_library_folder_path_that_is_not_unicode_byte_for_byte() {
     let folder = ScratchFolder::new("root-bytes");
     let database = Database::open(&folder.config()).unwrap();
