@@ -1,3 +1,4 @@
+import { assertNever } from "$lib/assert-never";
 import { m } from "$lib/paraglide/messages.js";
 import { getLocale } from "$lib/paraglide/runtime.js";
 
@@ -20,5 +21,7 @@ export function screenshotModeStatus(activity: ScreenshotModeActivity): string {
       return m.screenshot_mode_on_until({
         time: timeOfDay(activity.turnsOffAt),
       });
+    default:
+      return assertNever(activity);
   }
 }
