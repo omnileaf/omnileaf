@@ -91,7 +91,8 @@
     <li
       aria-hidden="true"
       style:--tab-index={currentIndex}
-      class="pointer-events-none absolute inset-s-none inset-bs-none inset-be-none hidden translate-to-tab rounded-full bg-glass-pill transition-transform inline-1/4 motion-safe:duration-slide motion-safe:ease-glass ios:max-medium:block"
+      style:--tab-count={DESTINATIONS.length}
+      class="pointer-events-none absolute inset-s-none inset-bs-none inset-be-none hidden translate-to-tab rounded-full bg-glass-pill transition-transform inline-tab motion-safe:duration-slide motion-safe:ease-glass ios:max-medium:block"
     ></li>
     {#each DESTINATIONS as destination (destination.section)}
       {@const isSelected = destination.section === current}
