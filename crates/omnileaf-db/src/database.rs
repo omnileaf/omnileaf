@@ -87,6 +87,52 @@ mod tests {
         sql: "ALTER TABLE missing ADD COLUMN pinned INTEGER;",
     };
 
+    const SERIES_AND_BOOKS: Migration = Migration {
+        name: "0001_create_series_and_book",
+        sql: "CREATE TABLE series (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+              CREATE TABLE book (
+                  id INTEGER PRIMARY KEY,
+                  series_id INTEGER NOT NULL REFERENCES series (id) ON DELETE CASCADE
+              );
+              INSERT INTO series (id, name) VALUES (1, 'Sample Series 01');
+              INSERT INTO book (id, series_id) VALUES (1, 1), (2, 1);",
+    };
+    const REBUILD_SERIES: Migration = Migration {
+        name: "0002_rebuild_series",
+        sql: "CREATE TABLE series_new (id INTEGER PRIMARY KEY, name TEXT NOT NULL, sort_name TEXT);
+              INSERT INTO series_new (id, name) SELECT id, name FROM series;
+              DROP TABLE series;
+              ALTER TABLE series_new RENAME TO series;",
+    };
+    const ORPHAN_BOOK: Migration = Migration {
+        name: "0002_add_orphan_book",
+        sql: "INSERT INTO book (id, series_id) VALUES (3, 99);",
+    };
+
+    #[test]
+    fn keeps_child_rows_when_a_migration_rebuilds_the_table_they_reference() {
+        let scratch = ScratchLibrary::new("rebuild");
+        drop(Database::open_with(&scratch.config, &[SERIES_AND_BOOKS]).unwrap());
+
+        drop(Database::open_with(&scratch.config, &[SERIES_AND_BOOKS, REBUILD_SERIES]).unwrap());
+
+        assert_eq!(book_ids(&scratch), [1, 2]);
+    }
+
+    #[test]
+    fn refuses_a_migration_that_leaves_a_reference_dangling() {
+        let scratch = ScratchLibrary::new("dangling");
+        drop(Database::open_with(&scratch.config, &[SERIES_AND_BOOKS]).unwrap());
+
+        let outcome = Database::open_with(&scratch.config, &[SERIES_AND_BOOKS, ORPHAN_BOOK]);
+
+        assert!(matches!(
+            outcome,
+            Err(Error::DanglingReference { table, .. }) if table == "book"
+        ));
+        assert_eq!(book_ids(&scratch), [1, 2]);
+    }
+
     #[test]
     fn backs_up_an_existing_database_before_migrating_it() {
         let scratch = ScratchLibrary::new("backup");
@@ -114,6 +160,18 @@ mod tests {
         ));
         assert!(retried.is_ok());
         assert_eq!(backup(&scratch, 1), (1, vec!["kept".to_owned()]));
+    }
+
+    fn book_ids(scratch: &ScratchLibrary) -> Vec<i64> {
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        let mut statement = connection
+            .prepare("SELECT id FROM book ORDER BY id")
+            .unwrap();
+        statement
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap()
     }
 
     fn backup(scratch: &ScratchLibrary, schema_version: u32) -> (u32, Vec<String>) {

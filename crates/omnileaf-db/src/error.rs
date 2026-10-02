@@ -31,6 +31,8 @@ pub enum Error {
         version: u32,
         source: rusqlite::Error,
     },
+    #[error("migrating database {} left rows in {table} referring to missing rows", path.display())]
+    DanglingReference { path: PathBuf, table: String },
     #[error("start a database thread")]
     Spawn(#[source] io::Error),
     #[error("run a statement in a database job")]

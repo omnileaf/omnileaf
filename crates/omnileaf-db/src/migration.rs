@@ -1,12 +1,13 @@
 use std::path::Path;
 
-use rusqlite::{Connection, TransactionBehavior};
+use rusqlite::{Connection, OptionalExtension, TransactionBehavior};
 
 use crate::Error;
 
 const EMPTY_SCHEMA: u32 = 0;
 
 const SCHEMA_VERSION: &str = "user_version";
+const FOREIGN_KEYS: &str = "foreign_keys";
 
 pub(crate) enum Pending {
     Current,
@@ -50,21 +51,34 @@ pub(crate) fn pending(
     })
 }
 
-/// Reads the schema version again inside the write lock, so migrations another connection applied meanwhile are skipped.
+/// Turns foreign key enforcement off while migrating, since rebuilding a table would otherwise cascade-delete the rows referring to it.
 pub(crate) fn apply(
     connection: &mut Connection,
     path: &Path,
     migrations: &[Migration],
 ) -> Result<(), Error> {
-    let upgrade_failed = |source| Error::Upgrade {
-        path: path.to_owned(),
-        version: latest_version(migrations),
-        source,
-    };
+    let failed = upgrade_failed(path, migrations);
+    connection
+        .pragma_update(None, FOREIGN_KEYS, false)
+        .map_err(&failed)?;
+    let migrated = migrate(connection, path, migrations);
+    let enforced = connection
+        .pragma_update(None, FOREIGN_KEYS, true)
+        .map_err(&failed);
+    migrated.and(enforced)
+}
+
+/// Reads the schema version again inside the write lock, so migrations another connection applied meanwhile are skipped.
+fn migrate(
+    connection: &mut Connection,
+    path: &Path,
+    migrations: &[Migration],
+) -> Result<(), Error> {
+    let failed = upgrade_failed(path, migrations);
     let transaction = connection
         .transaction_with_behavior(TransactionBehavior::Immediate)
-        .map_err(upgrade_failed)?;
-    let from = schema_version(&transaction).map_err(upgrade_failed)?;
+        .map_err(&failed)?;
+    let from = schema_version(&transaction).map_err(&failed)?;
     let latest = supported_version(from, migrations)?;
     for (_, migration) in numbered(migrations).filter(|(version, _)| *version > from) {
         transaction
@@ -75,10 +89,33 @@ pub(crate) fn apply(
             })?;
         tracing::info!(migration = migration.name, "applied a database migration");
     }
+    let dangling = first_dangling_reference(&transaction).map_err(&failed)?;
+    if let Some(table) = dangling {
+        return Err(Error::DanglingReference {
+            path: path.to_owned(),
+            table,
+        });
+    }
     transaction
         .pragma_update(None, SCHEMA_VERSION, latest)
         .and_then(|()| transaction.commit())
-        .map_err(upgrade_failed)
+        .map_err(&failed)
+}
+
+fn first_dangling_reference(connection: &Connection) -> rusqlite::Result<Option<String>> {
+    connection
+        .query_row("PRAGMA foreign_key_check", [], |row| row.get(0))
+        .optional()
+}
+
+fn upgrade_failed(path: &Path, migrations: &[Migration]) -> impl Fn(rusqlite::Error) -> Error {
+    let path = path.to_owned();
+    let version = latest_version(migrations);
+    move |source| Error::Upgrade {
+        path: path.clone(),
+        version,
+        source,
+    }
 }
 
 fn schema_version(connection: &Connection) -> rusqlite::Result<u32> {
