@@ -38,7 +38,12 @@ pub fn series_books(
             sort_key,
             id,
         }) if *listed == series => (sort_key, id.as_bytes()),
-        Some(Position::Book { .. } | Position::Title { .. } | Position::Added { .. }) => {
+        Some(
+            Position::Book { .. }
+            | Position::Title { .. }
+            | Position::Added { .. }
+            | Position::Root { .. },
+        ) => {
             return Err(Error::CursorForAnotherList);
         }
     };

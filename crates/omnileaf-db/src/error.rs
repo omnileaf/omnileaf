@@ -39,6 +39,8 @@ pub enum Error {
     DanglingReference { path: PathBuf, table: String },
     #[error("add a book to series {id}, which isn't in the catalog")]
     UnknownSeries { id: SeriesId },
+    #[error("read a library folder id that isn't one the library gave out")]
+    MalformedRootId,
     #[error("ask for a page of {requested} items, outside the 1 to {max} a page holds")]
     PageSize { requested: u16, max: u16 },
     #[error("read a page cursor that isn't one the library gave out")]

@@ -86,8 +86,14 @@ pub fn series_page(
             &BY_RECENTLY_ADDED,
             (*added_at_ms, *local_id, limit),
         ),
-        (SeriesOrder::Title, Some(Position::Added { .. } | Position::Book { .. }))
-        | (SeriesOrder::RecentlyAdded, Some(Position::Title { .. } | Position::Book { .. })) => {
+        (
+            SeriesOrder::Title,
+            Some(Position::Added { .. } | Position::Book { .. } | Position::Root { .. }),
+        )
+        | (
+            SeriesOrder::RecentlyAdded,
+            Some(Position::Title { .. } | Position::Book { .. } | Position::Root { .. }),
+        ) => {
             return Err(Error::CursorForAnotherList);
         }
     }?;
