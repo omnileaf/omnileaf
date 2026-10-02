@@ -8,6 +8,7 @@
     themeSettingForDocument,
   } from "$lib/appearance/theme.svelte";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
+  import { makeBackGoUp } from "$lib/navigation/back-goes-up";
   import { sectionOf } from "$lib/navigation/sections";
   import { m } from "$lib/paraglide/messages.js";
 
@@ -16,6 +17,7 @@
   let { children }: { children: Snippet } = $props();
 
   setThemeSetting(themeSettingForDocument());
+  makeBackGoUp();
 
   let main: HTMLElement | undefined = $state();
 
