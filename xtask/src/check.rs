@@ -74,6 +74,7 @@ pub(crate) const STEPS: &[Step] = &[
             "--release",
             "--run-ignored",
             "only",
+            "--no-capture",
             "--locked",
         ],
     },

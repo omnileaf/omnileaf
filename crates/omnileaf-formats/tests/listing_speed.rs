@@ -13,6 +13,10 @@ const RUNS: usize = 31;
 const BUDGET: Duration = Duration::from_millis(3);
 
 #[test]
+#[expect(
+    clippy::print_stderr,
+    reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
+)]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
 fn lists_a_500_entry_archive_within_3_ms() {
     let scratch = ScratchFolder::new("listing-speed");
@@ -38,6 +42,10 @@ fn lists_a_500_entry_archive_within_3_ms() {
         .collect();
     timings.sort_unstable();
     let median = timings[RUNS / 2];
+    let slowest = timings[RUNS - 1];
+    eprintln!(
+        "listing {ENTRY_COUNT} entries: median {median:?}, slowest {slowest:?} over {RUNS} runs, budget {BUDGET:?}"
+    );
 
     assert!(
         median <= BUDGET,
