@@ -240,6 +240,17 @@ async fn refuses_a_database_from_a_newer_build() {
     ));
 }
 
+#[tokio::test]
+async fn backs_up_neither_a_new_database_nor_a_current_one() {
+    let folder = ScratchFolder::new("no-backup");
+    let config = folder.config();
+
+    drop(Database::open(&config).unwrap());
+    drop(Database::open(&config).unwrap());
+
+    assert!(!config.backup_dir.exists());
+}
+
 fn pragma(connection: &Connection, name: &str) -> Result<i64, Error> {
     Ok(connection.query_row(&format!("PRAGMA {name}"), [], |row| row.get(0))?)
 }

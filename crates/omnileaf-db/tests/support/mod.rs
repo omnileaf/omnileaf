@@ -35,6 +35,7 @@ impl ScratchFolder {
     pub(crate) fn config(&self) -> Config {
         Config {
             path: self.0.join("library.sqlite"),
+            backup_dir: self.0.join("backups"),
             mmap_size_bytes: MMAP_SIZE_BYTES,
         }
     }

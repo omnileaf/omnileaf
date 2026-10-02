@@ -11,6 +11,15 @@ pub enum Error {
     NoWriteAheadLog { path: PathBuf, mode: String },
     #[error("database schema version {found} is newer than version {supported} this build knows")]
     NewerSchema { found: u32, supported: u32 },
+    #[error("back up the database to {}", path.display())]
+    Backup {
+        path: PathBuf,
+        source: rusqlite::Error,
+    },
+    #[error("store the database backup at {}", path.display())]
+    BackupFile { path: PathBuf, source: io::Error },
+    #[error("backup path {} isn't valid Unicode", path.display())]
+    BackupPathNotUnicode { path: PathBuf },
     #[error("apply migration {name}")]
     Migrate {
         name: &'static str,
