@@ -68,11 +68,13 @@ function glassPill(page: Page): Locator {
 }
 
 async function settle(locator: Locator): Promise<void> {
-  await locator.evaluate((element) =>
-    Promise.all(
-      element.getAnimations({ subtree: true }).map((motion) => motion.finished),
-    ).then(() => undefined),
-  );
+  await expect
+    .poll(() =>
+      locator.evaluate(
+        (element) => element.getAnimations({ subtree: true }).length,
+      ),
+    )
+    .toBe(0);
 }
 
 async function openHistoryAndSettle(page: Page): Promise<void> {
