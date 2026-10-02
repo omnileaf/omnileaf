@@ -11,7 +11,7 @@ use std::{
     time::Duration,
 };
 
-use omnileaf_db::{Connection, Database, Error};
+use omnileaf_db::{Connection, Database, Error, rusqlite};
 use support::{MMAP_SIZE_BYTES, ScratchFolder};
 
 const NORMAL_SYNCHRONOUS: i64 = 1;
