@@ -29,3 +29,18 @@ test("marks only the current section as the current page", async () => {
       .not.toHaveAttribute("aria-current");
   }
 });
+
+test("fills only the current section's icon", async () => {
+  const screen = await render(AppNavigation, { current: "browse" });
+
+  const filledIn = (label: string) =>
+    screen
+      .getByRole("link", { name: label })
+      .element()
+      .querySelector('svg [fill="currentColor"]') !== null;
+
+  expect(filledIn("Browse")).toBe(true);
+  for (const label of ["Library", "History", "Settings"]) {
+    expect(filledIn(label)).toBe(false);
+  }
+});
