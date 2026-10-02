@@ -76,10 +76,6 @@ jobs:
       - name: Run the gate
         run: cargo xtask check --only rust
 
-      - name: Build the sync contract for WebAssembly
-        if: runner.os == 'Linux'
-        run: rustup target add wasm32-unknown-unknown && cargo build --package omnileaf-sync-proto --target wasm32-unknown-unknown --locked
-
   coverage:
     name: coverage
     runs-on: ubuntu-24.04
