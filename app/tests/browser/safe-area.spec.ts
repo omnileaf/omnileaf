@@ -20,7 +20,7 @@ const SIDE_CUTOUT = 59;
 const LANDSCAPE_HOME_INDICATOR = 21;
 const LANDSCAPE_STATUS_BAR = 24;
 const THREE_BUTTON_BAR = 48;
-const PAGE_PADDING = 24;
+const PAGE_PADDING = 32;
 
 interface SafeAreaInsets {
   readonly top: number;
