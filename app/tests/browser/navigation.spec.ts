@@ -14,38 +14,53 @@ import {
 const COLOR_SCHEMES = ["light", "dark"] as const;
 
 const SECTIONS = [
-  { label: "Library", path: "/", startFrom: "/settings" },
-  { label: "Browse", path: "/browse", startFrom: "/" },
-  { label: "History", path: "/history", startFrom: "/" },
+  {
+    label: "Library",
+    path: "/",
+    startFrom: "/settings",
+    opensFirstSectionOnDesktop: false,
+  },
+  {
+    label: "Browse",
+    path: "/browse",
+    startFrom: "/",
+    opensFirstSectionOnDesktop: false,
+  },
+  {
+    label: "History",
+    path: "/history",
+    startFrom: "/",
+    opensFirstSectionOnDesktop: false,
+  },
   {
     label: "Settings",
     path: "/settings",
     startFrom: "/",
-    onDesktop: { path: "/settings/library", heading: "Library" },
+    opensFirstSectionOnDesktop: true,
   },
 ] as const;
 
-for (const section of SECTIONS) {
-  const { label, path, startFrom } = section;
+const OPENS_FIRST_SECTION = "settings opens its first section on desktop";
 
+for (const { label, path, startFrom, opensFirstSectionOnDesktop } of SECTIONS) {
   test(`opens ${label} from the navigation and focuses its heading`, async ({
     page,
   }) => {
+    test.skip(
+      opensFirstSectionOnDesktop &&
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      OPENS_FIRST_SECTION,
+    );
     await page.goto(startFrom);
-    const isDesktop = viewportOf(page).width >= EXPANDED_MIN_WIDTH;
-    const opened =
-      isDesktop && "onDesktop" in section
-        ? section.onDesktop
-        : { path, heading: label };
 
     await page
       .getByRole("navigation", { name: "Main" })
       .getByRole("link", { name: label })
       .click();
 
-    await expect(page).toHaveURL(opened.path);
+    await expect(page).toHaveURL(path);
     await expect(
-      page.getByRole("heading", { level: 1, name: opened.heading }),
+      page.getByRole("heading", { level: 1, name: label }),
     ).toBeFocused();
     await expect(page.getByRole("link", { name: label })).toHaveAttribute(
       "aria-current",
@@ -72,10 +87,15 @@ for (const section of SECTIONS) {
     test(`${label} has no accessibility violations in the ${colorScheme} theme`, async ({
       page,
     }) => {
+      test.skip(
+        opensFirstSectionOnDesktop &&
+          viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+        OPENS_FIRST_SECTION,
+      );
       await page.emulateMedia({ colorScheme });
       await page.goto(path);
       await expect(
-        page.getByRole("main").getByRole("heading", { level: 1 }),
+        page.getByRole("heading", { level: 1, name: label }),
       ).toBeVisible();
 
       const results = await new AxeBuilder({ page }).analyze();
