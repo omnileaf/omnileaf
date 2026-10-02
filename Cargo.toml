@@ -15,8 +15,10 @@ anyhow = "1.0.104"
 clap = { version = "4.6.7", features = ["derive"] }
 local-ip-address = "0.6.13"
 omnileaf-engine = { path = "crates/omnileaf-engine" }
+omnileaf-formats = { path = "crates/omnileaf-formats" }
 omnileaf-testkit = { path = "crates/omnileaf-testkit" }
 png = "0.18.1"
+proptest = "1.11.0"
 serde = { version = "1.0.229", features = ["derive"] }
 specta = { version = "=2.0.0-rc.25", features = ["derive"] }
 specta-typescript = "=0.0.12"
@@ -28,6 +30,7 @@ tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 thiserror = "2.0.21"
 tracing = "0.1.44"
 tracing-subscriber = "0.3.23"
+unicode-normalization = "0.1.25"
 zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2"] }
 
 [workspace.lints.rust]
