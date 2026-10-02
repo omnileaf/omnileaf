@@ -103,6 +103,20 @@ async fn keeps_the_later_of_two_sets_under_the_next_sequence_number() {
 }
 
 #[tokio::test]
+async fn clears_a_register_by_writing_null_over_it() {
+    let folder = ScratchFolder::new("clear");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    set_position(&store, book(1), 12).await.unwrap();
+
+    store
+        .write(|writer| writer.clear(LatestKey::BookPosition(book(1))))
+        .await
+        .unwrap();
+
+    assert_eq!(values(&store).await, [Value::Null.to_cbor()]);
+}
+
+#[tokio::test]
 async fn stamps_a_write_after_the_last_one_when_the_clock_goes_back() {
     let folder = ScratchFolder::new("clock-back");
     let clock = FakeClock::at(NOW_UNIX_MS);
@@ -158,6 +172,14 @@ async fn leaves_no_register_behind_when_the_job_fails() {
 
     assert!(matches!(outcome, Err(Error::Closed)));
     assert!(registers(&store).await.is_empty());
+}
+
+async fn values(store: &Store) -> Vec<Vec<u8>> {
+    registers(store)
+        .await
+        .into_iter()
+        .map(|register| register.value)
+        .collect()
 }
 
 fn open_store(folder: &ScratchFolder, clock: FakeClock) -> Store {
