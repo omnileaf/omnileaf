@@ -5,7 +5,7 @@ import { xpath } from "./webdriver.ts";
 
 const PAGE_HEADING = xpath("//h1");
 const SETTINGS_LINK = xpath("//nav//a[normalize-space()='Settings']");
-const ABOUT_LINK = xpath("//main//a[normalize-space()='About']");
+const ABOUT_LINK = xpath("//main//a[starts-with(normalize-space(), 'About')]");
 const VERSION_CAPTION = xpath(
   "//p[starts-with(normalize-space(), 'Version ')]",
 );
