@@ -110,64 +110,69 @@
     </p>
   </div>
 
-  <section
-    aria-labelledby="{id}-while-on"
-    class="flex flex-col gap-sm max-expanded:mbs-xl expanded:col-start-1"
+  <div
+    class="max-expanded:contents expanded:col-start-1 expanded:flex expanded:flex-col expanded:gap-xl"
   >
-    <h2 id="{id}-while-on" class="px-xs text-detail font-semibold text-muted">
-      {m.screenshot_mode_while_on()}
-    </h2>
-    <div
-      class="flex flex-col divide-y divide-border rounded-card border border-border bg-card"
-    >
-      {#each SCREENSHOT_MODE_OPTIONS as option (option)}
-        <SettingSwitch
-          label={OPTION_TEXT[option].label()}
-          description={OPTION_TEXT[option].help()}
-          isOn={screenshotMode.options[option]}
-          onToggle={() => {
-            screenshotMode.choose({
-              option,
-              isChosen: !screenshotMode.options[option],
-            });
-          }}
-        />
-      {/each}
-    </div>
-  </section>
-
-  {#if hasKeyboard}
     <section
-      aria-labelledby="{id}-quickly"
-      class="flex flex-col gap-sm max-expanded:mbs-xl expanded:col-start-1"
+      aria-labelledby="{id}-while-on"
+      class="flex flex-col gap-sm max-expanded:mbs-xl"
     >
-      <h2 id="{id}-quickly" class="px-xs text-detail font-semibold text-muted">
-        {m.screenshot_mode_quickly()}
+      <h2 id="{id}-while-on" class="px-xs text-detail font-semibold text-muted">
+        {m.screenshot_mode_while_on()}
       </h2>
       <div
-        class="flex items-center gap-md rounded-card border border-border bg-card px-lg py-md min-block-touch-target"
+        class="flex flex-col divide-y divide-border rounded-card border border-border bg-card"
       >
-        <span
-          class="flex shrink-0 items-center justify-center rounded-control bg-chip p-xs"
-        >
-          <Keyboard size={KEYBOARD_ICON_SIZE} />
-        </span>
-        <span class="flex flex-1 flex-col gap-2xs">
-          <span class="font-medium expanded:font-semibold">
-            {m.screenshot_mode_shortcut()}
-          </span>
-          <span class="text-detail text-muted">
-            {m.screenshot_mode_shortcut_help()}
-          </span>
-        </span>
-        <ShortcutKeys />
+        {#each SCREENSHOT_MODE_OPTIONS as option (option)}
+          <SettingSwitch
+            label={OPTION_TEXT[option].label()}
+            description={OPTION_TEXT[option].help()}
+            isOn={screenshotMode.options[option]}
+            onToggle={() => {
+              screenshotMode.choose({
+                option,
+                isChosen: !screenshotMode.options[option],
+              });
+            }}
+          />
+        {/each}
       </div>
     </section>
-  {/if}
 
-  <p
-    class="px-xs text-detail text-muted max-expanded:mbs-sm expanded:col-start-1"
-  >
-    {m.screenshot_mode_nothing_sent()}
-  </p>
+    {#if hasKeyboard}
+      <section
+        aria-labelledby="{id}-quickly"
+        class="flex flex-col gap-sm max-expanded:mbs-xl"
+      >
+        <h2
+          id="{id}-quickly"
+          class="px-xs text-detail font-semibold text-muted"
+        >
+          {m.screenshot_mode_quickly()}
+        </h2>
+        <div
+          class="flex items-center gap-md rounded-card border border-border bg-card px-lg py-md min-block-touch-target"
+        >
+          <span
+            class="flex shrink-0 items-center justify-center rounded-control bg-chip p-xs"
+          >
+            <Keyboard size={KEYBOARD_ICON_SIZE} />
+          </span>
+          <span class="flex flex-1 flex-col gap-2xs">
+            <span class="font-medium expanded:font-semibold">
+              {m.screenshot_mode_shortcut()}
+            </span>
+            <span class="text-detail text-muted">
+              {m.screenshot_mode_shortcut_help()}
+            </span>
+          </span>
+          <ShortcutKeys />
+        </div>
+      </section>
+    {/if}
+
+    <p class="px-xs text-detail text-muted max-expanded:mbs-sm">
+      {m.screenshot_mode_nothing_sent()}
+    </p>
+  </div>
 </div>

@@ -268,7 +268,7 @@
 
 @utility grid-with-preview {
   grid-template-columns: minmax(0, 1fr) var(--spacing-preview);
-  grid-template-rows: repeat(3, auto) 1fr;
+  grid-template-rows: auto 1fr;
 }
 
 @utility translate-to-tab {
