@@ -1,5 +1,7 @@
 use std::{io, path::PathBuf};
 
+use omnileaf_sync_proto::FingerprintError;
+
 use crate::ComicInfoError;
 
 #[derive(Debug, thiserror::Error)]
@@ -39,5 +41,10 @@ pub enum FormatError {
     BadComicInfo {
         path: PathBuf,
         source: ComicInfoError,
+    },
+    #[error("fingerprint {}", path.display())]
+    Fingerprint {
+        path: PathBuf,
+        source: FingerprintError,
     },
 }

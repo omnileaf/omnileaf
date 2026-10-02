@@ -19,6 +19,7 @@ flate2 = { version = "1.1.10", default-features = false, features = ["rust_backe
 icu_casemap = "=2.3.0"
 omnileaf-engine = { path = "crates/omnileaf-engine" }
 omnileaf-formats = { path = "crates/omnileaf-formats" }
+omnileaf-sync-proto = { path = "crates/omnileaf-sync-proto" }
 omnileaf-testkit = { path = "crates/omnileaf-testkit" }
 png = "0.18.1"
 proptest = "1.11.0"
