@@ -67,27 +67,42 @@ fn latest_version(migrations: &[Migration]) -> u32 {
 
 #[cfg(test)]
 mod tests {
+    use std::{fs, path::Path};
+
     use super::*;
+    use crate::{Database, scratch::ScratchLibrary};
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
 
     #[test]
-    fn brings_an_empty_database_to_the_latest_schema_version() {
-        let connection = migrated_from(&[]);
+    fn brings_a_new_database_to_the_latest_schema_version() {
+        let scratch = ScratchLibrary::new("latest");
 
-        let (version, _, _) = schema_of(&connection);
+        drop(Database::open(&scratch.config).unwrap());
 
+        let (version, _, _) = schema_of(&scratch.config.path);
         assert_eq!(usize::try_from(version).unwrap(), MIGRATIONS.len());
     }
 
     #[test]
     fn every_earlier_schema_version_migrates_to_the_schema_a_new_database_gets() {
-        let expected = schema_of(&migrated_from(&[]));
+        let fresh = ScratchLibrary::new("fresh");
+        drop(Database::open(&fresh.config).unwrap());
+        let expected = schema_of(&fresh.config.path);
 
         for version in 0..MIGRATIONS.len() {
-            let connection = migrated_from(&MIGRATIONS[..version]);
+            let earlier = ScratchLibrary::new("earlier");
+            drop(Database::open_with(&earlier.config, &MIGRATIONS[..version]).unwrap());
 
-            assert_eq!(schema_of(&connection), expected, "from version {version}");
+            drop(Database::open(&earlier.config).unwrap());
+
+            let backup = earlier.backup_path(u32::try_from(version).unwrap());
+            assert_eq!(
+                schema_of(&earlier.config.path),
+                expected,
+                "from version {version}"
+            );
+            assert_eq!(backup.exists(), version > 0, "backup of version {version}");
         }
     }
 
@@ -103,8 +118,24 @@ mod tests {
     }
 
     #[test]
+    fn lists_every_migration_file() {
+        let folder = concat!(env!("CARGO_MANIFEST_DIR"), "/migrations");
+
+        let mut files: Vec<String> = fs::read_dir(folder)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .filter(|path| path.extension().is_some_and(|extension| extension == "sql"))
+            .map(|path| path.file_stem().unwrap().to_string_lossy().into_owned())
+            .collect();
+        files.sort();
+
+        let listed: Vec<&str> = MIGRATIONS.iter().map(|migration| migration.name).collect();
+        assert_eq!(files, listed);
+    }
+
+    #[test]
     fn keeps_the_earlier_schema_when_a_migration_fails() {
-        let mut connection = Connection::open_in_memory().unwrap();
+        let scratch = ScratchLibrary::new("failed");
         let broken = [
             Migration {
                 name: "0001_create_note",
@@ -116,7 +147,7 @@ mod tests {
             },
         ];
 
-        let outcome = apply(&mut connection, &broken, EMPTY_SCHEMA);
+        let outcome = Database::open_with(&scratch.config, &broken);
 
         assert!(matches!(
             outcome,
@@ -125,19 +156,11 @@ mod tests {
                 ..
             })
         ));
-        assert_eq!(schema_of(&connection), (0, 0, Vec::new()));
+        assert_eq!(schema_of(&scratch.config.path), (0, 0, Vec::new()));
     }
 
-    fn migrated_from(earlier: &[Migration]) -> Connection {
-        let mut connection = Connection::open_in_memory().unwrap();
-        apply(&mut connection, earlier, EMPTY_SCHEMA).unwrap();
-        if let Some(from) = pending_from(&connection, MIGRATIONS).unwrap() {
-            apply(&mut connection, MIGRATIONS, from).unwrap();
-        }
-        connection
-    }
-
-    fn schema_of(connection: &Connection) -> Schema {
+    fn schema_of(path: &Path) -> Schema {
+        let connection = Connection::open(path).unwrap();
         let pragma = |name| connection.pragma_query_value(None, name, |row| row.get(0));
         let mut statement = connection
             .prepare("SELECT type, name, sql FROM sqlite_schema ORDER BY type, name")
