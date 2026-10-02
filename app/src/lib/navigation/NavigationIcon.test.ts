@@ -22,6 +22,7 @@ test.each(SECTIONS)("draws the %s icon as decoration only", async (section) => {
   const screen = await render(NavigationIcon, {
     section,
     isSelected: false,
+    isArriving: false,
     size: SIZE,
   });
 
@@ -38,6 +39,7 @@ test.each(SECTIONS)(
     const screen = await render(NavigationIcon, {
       section,
       isSelected: false,
+      isArriving: false,
       size: SIZE,
     });
 
@@ -49,6 +51,7 @@ test.each(SECTIONS)("fills the %s icon when it's selected", async (section) => {
   const screen = await render(NavigationIcon, {
     section,
     isSelected: true,
+    isArriving: false,
     size: SIZE,
   });
 
@@ -59,6 +62,7 @@ test("keeps the clock's circular arrow drawn when the history icon is filled", a
   const screen = await render(NavigationIcon, {
     section: "history",
     isSelected: true,
+    isArriving: false,
     size: SIZE,
   });
 

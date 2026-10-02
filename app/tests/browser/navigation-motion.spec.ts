@@ -19,10 +19,10 @@ const ICON_POP = "nav-pop 0.3s cubic-bezier(0.32, 0.72, 0, 1)";
 const ICON_MOVE_TIMING = "0.3s ease-out";
 
 const ICON_MOVES = [
-  { label: "Library", path: "/", move: "book-open" },
-  { label: "Browse", path: "/browse", move: "needle-swing" },
-  { label: "History", path: "/history", move: "hands-sweep" },
-  { label: "Settings", path: "/settings", move: "gear-turn" },
+  { label: "Library", startFrom: "/settings", move: "book-open" },
+  { label: "Browse", startFrom: "/", move: "needle-swing" },
+  { label: "History", startFrom: "/", move: "hands-sweep" },
+  { label: "Settings", startFrom: "/", move: "gear-turn" },
 ] as const;
 
 const MOVING_ICONS = [
@@ -97,9 +97,9 @@ async function settle(locator: Locator): Promise<void> {
     .toBe(0);
 }
 
-async function openHistoryAndSettle(page: Page): Promise<void> {
-  await tab(page, "History").click();
-  await expect(tab(page, "History")).toHaveAttribute("aria-current", "page");
+async function openTabAndSettle(page: Page, name: string): Promise<void> {
+  await tab(page, name).click();
+  await expect(tab(page, name)).toHaveAttribute("aria-current", "page");
   await settle(navigation(page));
 }
 
@@ -155,7 +155,7 @@ function testReducingMotion(): void {
     await page.goto("/");
 
     const started = await animationsStartedWhile(page, () =>
-      openHistoryAndSettle(page),
+      openTabAndSettle(page, "History"),
     );
 
     expect(started).toEqual([]);
@@ -184,7 +184,7 @@ function testTurningTheScreen(): void {
     await page.goto("/");
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
     await turnTheScreen(page);
-    await openHistoryAndSettle(page);
+    await openTabAndSettle(page, "History");
 
     const started = await animationsStartedWhile(page, () =>
       turnTheScreen(page),
@@ -208,7 +208,7 @@ test.describe("on Android", () => {
     await settle(navigation(page));
 
     const started = await animationsStartedWhile(page, () =>
-      openHistoryAndSettle(page),
+      openTabAndSettle(page, "History"),
     );
 
     const previous = await motionIn(tab(page, "Library"));
@@ -238,7 +238,7 @@ test.describe("on iOS", () => {
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
     await expect(glassPill(page)).toHaveCount(1);
 
-    await openHistoryAndSettle(page);
+    await openTabAndSettle(page, "History");
 
     const pill = await boxOf(glassPill(page));
     const history = await boxOf(tab(page, "History"));
@@ -263,7 +263,7 @@ test.describe("on iOS", () => {
     });
     await expect(glassPill(page)).toHaveCount(1);
 
-    await openHistoryAndSettle(page);
+    await openTabAndSettle(page, "History");
 
     const pill = await boxOf(glassPill(page));
     const history = await boxOf(tab(page, "History"));
@@ -276,7 +276,7 @@ test.describe("on iOS", () => {
     await settle(navigation(page));
 
     const started = await animationsStartedWhile(page, () =>
-      openHistoryAndSettle(page),
+      openTabAndSettle(page, "History"),
     );
 
     expect(started).toContainEqual({ tab: "History", animation: ICON_POP });
@@ -319,16 +319,22 @@ for (const { platform, belowWidth, where } of MOVING_ICONS) {
   test.describe(`on ${platform}`, () => {
     test.use(onPlatform(platform));
 
-    for (const { label, path, move } of ICON_MOVES) {
+    for (const { label, startFrom, move } of ICON_MOVES) {
       test(`moves the ${label} icon as it becomes selected`, async ({
         page,
       }) => {
-        await page.goto(path);
+        await page.goto(startFrom);
         test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
+        await settle(navigation(page));
 
-        const icon = await motionIn(tab(page, label).locator("svg"));
+        const started = await animationsStartedWhile(page, () =>
+          openTabAndSettle(page, label),
+        );
 
-        expect(icon.animations).toContain(`${move} ${ICON_MOVE_TIMING}`);
+        expect(started).toContainEqual({
+          tab: label,
+          animation: `${move} ${ICON_MOVE_TIMING}`,
+        });
       });
     }
 

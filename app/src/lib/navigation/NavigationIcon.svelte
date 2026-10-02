@@ -50,11 +50,13 @@
   let {
     section,
     isSelected,
+    isArriving,
     size,
     class: className,
   }: {
     section: Section;
     isSelected: boolean;
+    isArriving: boolean;
     size: number;
     class?: ClassValue;
   } = $props();
@@ -78,7 +80,7 @@
   <g
     class={[
       MOVES_ABOUT_CENTRE,
-      filled && "icon-moves:motion-safe:animate-book-open",
+      isArriving && "icon-moves:motion-safe:animate-book-open",
     ]}
   >
     <path
@@ -113,10 +115,8 @@
     class={[
       FILL_FADE,
       MOVES_ABOUT_CENTRE,
-      filled && [
-        HOLE,
-        "fill-icon-hole icon-moves:motion-safe:animate-needle-swing",
-      ],
+      filled && [HOLE, "fill-icon-hole"],
+      isArriving && "icon-moves:motion-safe:animate-needle-swing",
     ]}
   />
 {/snippet}
@@ -137,7 +137,8 @@
     class={[
       FILL_FADE,
       MOVES_ABOUT_CENTRE,
-      filled && [HOLE, "icon-moves:motion-safe:animate-hands-sweep"],
+      filled && HOLE,
+      isArriving && "icon-moves:motion-safe:animate-hands-sweep",
     ]}
   />
 {/snippet}
@@ -146,7 +147,7 @@
   <g
     class={[
       MOVES_ABOUT_CENTRE,
-      filled && "icon-moves:motion-safe:animate-gear-turn",
+      isArriving && "icon-moves:motion-safe:animate-gear-turn",
     ]}
   >
     <path
