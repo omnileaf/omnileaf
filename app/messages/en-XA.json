@@ -1,0 +1,60 @@
+{
+  "app_name": "⟦Öɱñíļéáƒ····⟧",
+  "library_title": "⟦Ļíƀŕáŕý···⟧",
+  "library_empty": "⟦Ýöûŕ ļíƀŕáŕý íš éɱþţý.·········⟧",
+  "app_version": "⟦Ṽéŕšíöñ {version}·······⟧",
+  "library_add_folder": "⟦Áðð á ƒöļðéŕ·····⟧",
+  "library_folder_found": [
+    {
+      "declarations": [
+        "input count",
+        "input name",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ƒöûñð {formattedCount} çöɱíç íñ {name}.················⟧",
+        "countPlural=other": "⟦Ƒöûñð {formattedCount} çöɱíçš íñ {name}.················⟧"
+      }
+    }
+  ],
+  "library_folder_unreadable_subfolders": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Çöûļðñ'ţ ŕéáð {formattedCount} ƒöļðéŕ íñšíðé íţ.····················⟧",
+        "countPlural=other": "⟦Çöûļðñ'ţ ŕéáð {formattedCount} ƒöļðéŕš íñšíðé íţ.····················⟧"
+      }
+    }
+  ],
+  "library_folder_unreadable": "⟦Çöûļðñ'ţ ŕéáð ţĥáţ ƒöļðéŕ.···········⟧",
+  "library_folder_picker_unavailable": "⟦Áððíñĝ ƒöļðéŕš íšñ'ţ áṽáíļáƀļé öñ ţĥíš ðéṽíçé ýéţ.····················⟧",
+  "library_add_folder_failed": "⟦Šöɱéţĥíñĝ ŵéñţ ŵŕöñĝ ŵĥíļé áððíñĝ ţĥé ƒöļðéŕ. Ţŕý áĝáíñ.·······················⟧",
+  "navigation_label": "⟦Ṁáíñ··⟧",
+  "browse_title": "⟦Ɓŕöŵšé···⟧",
+  "browse_empty_title": "⟦Ñöţĥíñĝ ţö ƀŕöŵšé ýéţ·········⟧",
+  "browse_empty_body": "⟦Šöûŕçéš ýöû áðð šĥöŵ ûþ ĥéŕé, šö ýöû çáñ ŕéáð ƒŕöɱ ţĥéɱ ŵíţĥöûţ çöþýíñĝ ƒíļéš öṽéŕ.··································⟧",
+  "browse_empty_later": "⟦Áððíñĝ šöûŕçéš çöɱéš íñ á ļáţéŕ ṽéŕšíöñ.················⟧",
+  "history_title": "⟦Ĥíšţöŕý···⟧",
+  "history_empty_title": "⟦Ñöţĥíñĝ ŕéáð ýéţ·······⟧",
+  "history_empty_body": "⟦Ɓööķš ýöû öþéñ šĥöŵ ûþ ĥéŕé, ñéŵéšţ ƒíŕšţ, šö ýöû çáñ þíçķ ûþ ŵĥéŕé ýöû ļéƒţ öƒƒ.·································⟧",
+  "settings_title": "⟦Šéţţíñĝš····⟧",
+  "about_title": "⟦Áƀöûţ··⟧",
+  "about_licence": "⟦Öɱñíļéáƒ íš ƒŕéé šöƒţŵáŕé. Ýöû çáñ šĥáŕé áñð çĥáñĝé íţ ûñðéŕ ţĥé ĜÑÛ Ĝéñéŕáļ Þûƀļíç Ļíçéñšé, ṽéŕšíöñ 3.··········································⟧",
+  "library_settings_folders": "⟦Ƒöļðéŕš···⟧",
+  "library_settings_folders_hint": "⟦Ƒöļðéŕš ŵíţĥ çöɱíçš ţĥáţ Öɱñíļéáƒ ŕéáðš, ŵĥéŕéṽéŕ ţĥéý áŕé.························⟧",
+  "appearance_title": "⟦Áþþéáŕáñçé····⟧",
+  "appearance_light_or_dark": "⟦Ļíĝĥţ öŕ ðáŕķ······⟧",
+  "theme_system": "⟦Šýšţéɱ···⟧",
+  "theme_light": "⟦Ļíĝĥţ··⟧",
+  "theme_dark": "⟦Ðáŕķ··⟧",
+  "general_title": "⟦Ĝéñéŕáļ···⟧",
+  "language_label": "⟦Ļáñĝûáĝé····⟧",
+  "language_system": "⟦Šýšţéɱ ({language})········⟧"
+}
