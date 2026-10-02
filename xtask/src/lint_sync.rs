@@ -69,11 +69,12 @@ struct Schema {
 }
 
 pub(crate) fn check(files: &[RepositoryFile<'_>]) -> Vec<Violation> {
-    let migrations: Vec<(&str, String)> = files
+    let mut migrations: Vec<(&str, String)> = files
         .iter()
         .filter(|file| file.path.starts_with(MIGRATIONS) && file.path.ends_with(SQL_EXTENSION))
         .map(|file| (file.path, lowered(file)))
         .collect();
+    migrations.sort_unstable();
     let schema = schema_of(&migrations);
     let Some(projector) = files.iter().find(|file| file.path == PROJECTOR) else {
         return vec![Violation::NoProjector];
@@ -152,6 +153,23 @@ fn schema_of(migrations: &[(&str, String)]) -> Schema {
                 schema
                     .tables
                     .insert(leading_name(name).to_owned(), statement.to_owned());
+            }
+            ["alter", "table", name, "rename", "to", new_name, ..] => {
+                if let Some(definition) = schema.tables.remove(leading_name(name)) {
+                    schema
+                        .tables
+                        .insert(leading_name(new_name).to_owned(), definition);
+                }
+                if schema.unique_indexed.remove(leading_name(name)) {
+                    schema
+                        .unique_indexed
+                        .insert(leading_name(new_name).to_owned());
+                }
+            }
+            ["alter", "table", name, "add", ..] => {
+                if let Some(definition) = schema.tables.get_mut(leading_name(name)) {
+                    definition.push_str(statement);
+                }
             }
             ["create", "unique", "index", rest @ ..] => {
                 if let Some(table) = rest.iter().skip_while(|word| **word != "on").nth(1) {
@@ -354,6 +372,42 @@ mod tests {
         ];
 
         let violations = check(&files);
+
+        assert_eq!(
+            violations,
+            [Violation::ProjectionReference {
+                table: "book_state".to_owned()
+            }]
+        );
+    }
+
+    #[test]
+    fn flags_a_projection_given_a_reference_by_a_later_column() {
+        let added = text(
+            "crates/omnileaf-db/migrations/0007_add_state_series.sql",
+            "ALTER TABLE book_state ADD COLUMN series_id BLOB REFERENCES series (id);",
+        );
+
+        let violations = check(&library_with([added]));
+
+        assert_eq!(
+            violations,
+            [Violation::ProjectionReference {
+                table: "book_state".to_owned()
+            }]
+        );
+    }
+
+    #[test]
+    fn flags_a_projection_rebuilt_under_a_new_name_with_a_reference() {
+        let rebuilt = text(
+            "crates/omnileaf-db/migrations/0007_rebuild_state.sql",
+            "CREATE TABLE book_state_new (book_id BLOB PRIMARY KEY REFERENCES book (id));
+             DROP TABLE book_state;
+             ALTER TABLE book_state_new RENAME TO book_state;",
+        );
+
+        let violations = check(&library_with([rebuilt]));
 
         assert_eq!(
             violations,
