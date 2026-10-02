@@ -330,3 +330,29 @@ async fn names_the_locator_of_a_stored_folder_it_cannot_open() {
             )
     ));
 }
+
+#[tokio::test]
+async fn refuses_a_second_home_folder() {
+    let library = Library::open("second-home");
+    library.add(RootKind::Home, HOME).await;
+    let second = NewRoot {
+        kind: RootKind::Home,
+        locator: RootLocator::Path(PathBuf::from(SAMPLES)),
+        added_at_ms: ADDED_AT_MS,
+    };
+
+    let outcome = library
+        .database
+        .write(move |transaction| add_root(transaction, &second))
+        .await;
+
+    assert!(matches!(
+        outcome,
+        Err(Error::Statement(rusqlite::Error::SqliteFailure(failure, _)))
+            if failure.code == rusqlite::ErrorCode::ConstraintViolation
+    ));
+    assert_eq!(
+        library.locations().await,
+        [(RootKind::Home, PathBuf::from(HOME))]
+    );
+}

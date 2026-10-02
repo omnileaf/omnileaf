@@ -38,6 +38,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0005_create_sync_registers"),
     migration!("0006_create_book_state"),
     migration!("0007_stop_reusing_library_root_ids"),
+    migration!("0008_allow_one_home_root"),
 ];
 
 pub(crate) fn pending(
