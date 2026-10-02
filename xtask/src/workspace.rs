@@ -1,6 +1,8 @@
 //! Reads the repository's files, tracked or not yet ignored, and its policy lists.
 
 use std::{
+    env,
+    ffi::OsString,
     fs, io,
     path::{Path, PathBuf},
     process::Command,
@@ -9,9 +11,17 @@ use std::{
 use crate::policy::Policy;
 
 const POLICY_LISTS: &str = "policy";
+const BUILT_MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
+/// The checkout `cargo run` starts xtask from, which can differ from the one its binary was built in.
 pub(crate) fn root() -> PathBuf {
-    PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/.."))
+    root_from(env::var_os("CARGO_MANIFEST_DIR"))
+}
+
+fn root_from(run_manifest_dir: Option<OsString>) -> PathBuf {
+    run_manifest_dir
+        .map_or_else(|| PathBuf::from(BUILT_MANIFEST_DIR), PathBuf::from)
+        .join("..")
 }
 
 pub(crate) fn repository_files(root: &Path) -> io::Result<Vec<(String, Vec<u8>)>> {
@@ -62,5 +72,26 @@ fn read_list(path: &Path) -> io::Result<Vec<String>> {
             .collect()),
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Vec::new()),
         Err(error) => Err(error),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn works_on_the_checkout_cargo_runs_it_from() {
+        let run_from = OsString::from("/elsewhere/omnileaf/xtask");
+
+        let root = root_from(Some(run_from));
+
+        assert_eq!(root, Path::new("/elsewhere/omnileaf/xtask/.."));
+    }
+
+    #[test]
+    fn falls_back_to_the_checkout_it_was_built_in() {
+        let root = root_from(None);
+
+        assert_eq!(root, Path::new(BUILT_MANIFEST_DIR).join(".."));
     }
 }
