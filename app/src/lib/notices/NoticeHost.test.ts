@@ -1,5 +1,6 @@
 import { Info, TriangleAlert } from "@lucide/svelte";
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
+import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import NoticeHost from "./NoticeHost.svelte";
@@ -20,6 +21,30 @@ const WARNING: Notice = {
   body: "Your progress is safe.",
   actions: [],
 };
+
+const placed: HTMLElement[] = [];
+
+afterEach(() => {
+  for (const element of placed.splice(0)) {
+    element.remove();
+  }
+});
+
+function placeOnPage<Tag extends "button" | "main">(
+  tag: Tag,
+): HTMLElementTagNameMap[Tag] {
+  const element = document.createElement(tag);
+  document.body.append(element);
+  placed.push(element);
+  return element;
+}
+
+function placePageHeading(): HTMLHeadingElement {
+  const heading = document.createElement("h1");
+  heading.tabIndex = -1;
+  placeOnPage("main").append(heading);
+  return heading;
+}
 
 async function renderHost() {
   const notices = new Notices();
@@ -100,4 +125,39 @@ test("runs an action and puts the notice away", async () => {
 
   expect(timesRun).toBe(1);
   await expect.element(alert).toBeEmptyDOMElement();
+});
+
+test("returns focus to where it came from once dismissed", async () => {
+  const origin = placeOnPage("button");
+  const { notices, screen } = await renderHost();
+  notices.show(WARNING);
+  origin.focus();
+  await userEvent.tab();
+  await expect
+    .element(screen.getByRole("button", { name: "Dismiss" }))
+    .toHaveFocus();
+
+  await userEvent.keyboard("{Enter}");
+
+  expect(document.activeElement).toBe(origin);
+});
+
+test("returns focus to the page heading once an action runs, if where it came from has gone", async () => {
+  const heading = placePageHeading();
+  const origin = placeOnPage("button");
+  const { notices, screen } = await renderHost();
+  notices.show({
+    ...WARNING,
+    actions: [
+      { label: "Find the folder", emphasis: "primary", run: () => undefined },
+    ],
+  });
+  origin.focus();
+  await userEvent.tab();
+  origin.remove();
+  screen.getByRole("button", { name: "Find the folder" }).element().focus();
+
+  await userEvent.keyboard("{Enter}");
+
+  expect(document.activeElement).toBe(heading);
 });
