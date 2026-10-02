@@ -4,10 +4,18 @@ use omnileaf_engine::{AppInfo, Core, FolderSurvey, survey_folder};
 use tauri::{AppHandle, State, Wry};
 use tauri_specta::{Builder, collect_commands};
 
-use crate::{folder_picker::pick_folder, ipc_error::IpcError};
+use crate::{
+    folder_picker::pick_folder,
+    ipc_error::IpcError,
+    system_bars::{self, Theme},
+};
 
 pub(crate) fn builder() -> Builder<Wry> {
-    Builder::new().commands(collect_commands![app_info, add_library_folder])
+    Builder::new().commands(collect_commands![
+        app_info,
+        add_library_folder,
+        match_system_bars
+    ])
 }
 
 #[tauri::command]
@@ -26,6 +34,12 @@ async fn add_library_folder(app: AppHandle) -> Result<Option<FolderSurvey>, IpcE
     tauri::async_runtime::spawn_blocking(move || pick_and_survey(&app))
         .await
         .map_err(|error| IpcError::internal(&error))?
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn match_system_bars(app: AppHandle, theme: Theme) {
+    system_bars::match_theme(&app, theme).await;
 }
 
 fn pick_and_survey(app: &AppHandle) -> Result<Option<FolderSurvey>, IpcError> {

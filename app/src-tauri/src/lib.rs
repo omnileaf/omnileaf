@@ -5,6 +5,7 @@ mod commands;
 mod e2e;
 mod folder_picker;
 mod ipc_error;
+mod system_bars;
 
 use omnileaf_engine::Core;
 
@@ -21,6 +22,8 @@ pub fn run() {
         .invoke_handler(commands.invoke_handler());
     #[cfg(desktop)]
     let app = app.plugin(tauri_plugin_dialog::init());
+    #[cfg(target_os = "android")]
+    let app = app.plugin(system_bars::plugin());
     #[cfg(all(desktop, feature = "e2e"))]
     let app = app.manage(e2e::PickedFolder::from_environment());
     #[cfg(all(feature = "e2e", not(windows)))]
