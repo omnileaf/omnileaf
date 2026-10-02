@@ -14,6 +14,7 @@
     screenshotModeForDocument,
     setScreenshotMode,
   } from "$lib/screenshot-mode/screenshot-mode.svelte";
+  import ScreenshotModeAnnouncement from "$lib/screenshot-mode/ScreenshotModeAnnouncement.svelte";
   import { isScreenshotModeShortcut } from "$lib/screenshot-mode/shortcut";
 
   import "../app.css";
@@ -23,17 +24,12 @@
   setThemeSetting(themeSettingForDocument());
   const screenshotMode = setScreenshotMode(screenshotModeForDocument());
 
-  let shortcutAnnouncement = $state("");
-
   function toggleScreenshotModeOnShortcut(event: KeyboardEvent): void {
     if (!isScreenshotModeShortcut(event)) {
       return;
     }
     event.preventDefault();
     screenshotMode.toggle();
-    shortcutAnnouncement = screenshotMode.isOn
-      ? m.screenshot_mode_now_on()
-      : m.screenshot_mode_now_off();
   }
 
   let main: HTMLElement | undefined = $state();
@@ -60,4 +56,4 @@
     {@render children()}
   </main>
 </div>
-<p aria-live="polite" class="sr-only">{shortcutAnnouncement}</p>
+<ScreenshotModeAnnouncement />
