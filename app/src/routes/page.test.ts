@@ -17,6 +17,18 @@ test("shows that the library is empty", async () => {
   await expect
     .element(screen.getByText("Your library is empty."))
     .toBeVisible();
+});
+
+test("leaves the library unlabelled while Screenshot mode is off", async () => {
+  const screen = await render(WithScreenshotMode, {
+    screenshotMode: screenshotModeTurned("off"),
+    page: Page,
+  });
+
+  await expect
+    .element(screen.getByRole("heading", { level: 1, name: "Library" }))
+    .toBeVisible();
+
   expect(screen.getByText("Screenshot mode").elements()).toHaveLength(0);
 });
 
