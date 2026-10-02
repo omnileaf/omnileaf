@@ -51,11 +51,11 @@ impl From<LibraryError> for IpcError {
                 IpcErrorCode::FolderUnreadable,
                 "the folder could not be read",
             ),
-            LibraryError::FolderNotFound => (
+            LibraryError::FolderNotFound { .. } => (
                 IpcErrorCode::FolderNotFound,
                 "that folder isn't in the library",
             ),
-            LibraryError::HomeFolderKept => (
+            LibraryError::HomeFolderKept { .. } => (
                 IpcErrorCode::HomeFolderKept,
                 "the home folder stays in the library",
             ),
@@ -83,7 +83,7 @@ fn describe(error: &dyn Error) -> String {
 mod tests {
     use std::{io, path::PathBuf};
 
-    use omnileaf_engine::SurveyError;
+    use omnileaf_engine::{FolderId, SurveyError};
 
     use super::*;
 
@@ -97,11 +97,12 @@ mod tests {
             path: PathBuf::from("/media/Sample Library"),
             source: io::Error::from(io::ErrorKind::PermissionDenied),
         };
+        let id: FolderId = "7".parse().unwrap();
 
         let codes = [
             code_for(LibraryError::Survey(unreadable)),
-            code_for(LibraryError::FolderNotFound),
-            code_for(LibraryError::HomeFolderKept),
+            code_for(LibraryError::FolderNotFound { id }),
+            code_for(LibraryError::HomeFolderKept { id }),
             code_for(LibraryError::CreateHome {
                 path: PathBuf::from("/data/Omnileaf"),
                 source: io::Error::from(io::ErrorKind::StorageFull),

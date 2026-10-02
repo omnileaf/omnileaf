@@ -40,10 +40,10 @@ pub enum LibraryError {
     },
     #[error("survey the folder to add")]
     Survey(#[from] SurveyError),
-    #[error("remove a folder that isn't in the library")]
-    FolderNotFound,
-    #[error("remove the home folder, which the library always keeps")]
-    HomeFolderKept,
+    #[error("remove library folder {id}, which isn't in the library")]
+    FolderNotFound { id: FolderId },
+    #[error("remove library folder {id}, the home folder the library always keeps")]
+    HomeFolderKept { id: FolderId },
     #[error("reach the library database")]
     Database(#[source] omnileaf_db::Error),
     #[error("run blocking library work")]
@@ -138,8 +138,8 @@ impl Library {
 impl From<omnileaf_db::Error> for LibraryError {
     fn from(error: omnileaf_db::Error) -> Self {
         match error {
-            omnileaf_db::Error::UnknownRoot { .. } => Self::FolderNotFound,
-            omnileaf_db::Error::HomeRoot { .. } => Self::HomeFolderKept,
+            omnileaf_db::Error::UnknownRoot { id } => Self::FolderNotFound { id: FolderId(id) },
+            omnileaf_db::Error::HomeRoot { id } => Self::HomeFolderKept { id: FolderId(id) },
             other => Self::Database(other),
         }
     }

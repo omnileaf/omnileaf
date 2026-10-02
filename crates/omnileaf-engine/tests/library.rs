@@ -46,6 +46,12 @@ async fn folder_named(library: &Library, name: &str) -> LibraryFolder {
         .unwrap()
 }
 
+fn names_the_folder(outcome: &Result<(), LibraryError>, id: FolderId) -> bool {
+    outcome
+        .as_ref()
+        .is_err_and(|error| error.to_string().contains(&format!("folder {id}")))
+}
+
 fn kinds_and_names(folders: &[LibraryFolder]) -> Vec<(FolderKind, &str)> {
     folders
         .iter()
@@ -153,7 +159,8 @@ async fn keeps_the_home_folder() {
 
     let outcome = library.remove_folder(home_folder.id).await;
 
-    assert!(matches!(outcome, Err(LibraryError::HomeFolderKept)));
+    assert!(matches!(outcome, Err(LibraryError::HomeFolderKept { id }) if id == home_folder.id));
+    assert!(names_the_folder(&outcome, home_folder.id));
 }
 
 #[tokio::test]
@@ -170,7 +177,8 @@ async fn reports_a_folder_already_removed() {
 
     let outcome = library.remove_folder(linked.id).await;
 
-    assert!(matches!(outcome, Err(LibraryError::FolderNotFound)));
+    assert!(matches!(outcome, Err(LibraryError::FolderNotFound { id }) if id == linked.id));
+    assert!(names_the_folder(&outcome, linked.id));
 }
 
 #[tokio::test]
