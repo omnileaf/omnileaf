@@ -57,6 +57,8 @@ The Android and iOS app tests take the longest, so CI runs them on every merge t
 
 CI also measures test coverage and shows it in the `coverage` job's summary. Line coverage of the core crates in `crates/` must not drop below the floor set in `.github/workflows/ci.yml`. When a change raises it, raise the floor in the same pull request.
 
+The archive and ComicInfo readers have fuzz targets in `fuzz/`, which sits outside the workspace and builds with the nightly toolchain pinned in `fuzz/rust-toolchain.toml`. Install `cargo-fuzz` once with `cargo install cargo-fuzz@0.13.2 --locked` and write the seed inputs with `cargo xtask fuzz-seeds`. Then, from `fuzz/`, `cargo fuzz list` names the targets and `cargo fuzz run open_book -- -max_total_time=120` fuzzes one for two minutes. A crash leaves its input in `fuzz/artifacts/`; turn it into a regression test in `crates/omnileaf-formats` before fixing it. CI fuzzes every target each night, sharing 15 minutes between them, and keeps any crash inputs as an artifact.
+
 The gate also runs `cargo xtask policy`, which checks every file git doesn't ignore against the [content policy](docs/legal/content-policy.md):
 - no directories named `sources`, `extensions` or `repos`, and no WebAssembly modules;
 - binary files only when listed in `policy/allowed-binaries.txt`;
