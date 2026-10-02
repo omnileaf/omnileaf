@@ -18,7 +18,7 @@ export interface SettingsSection {
   readonly route: SettingsRoute;
   readonly label: () => string;
   readonly icon: LucideIcon;
-  readonly tile: "bg-accent-soft" | "bg-chip";
+  readonly tone: "accent" | "neutral";
 }
 
 export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [
@@ -27,13 +27,13 @@ export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [
       route: "/settings/library",
       label: m.library_title,
       icon: Library,
-      tile: "bg-accent-soft",
+      tone: "accent",
     },
     {
       route: "/settings/appearance",
       label: m.appearance_title,
       icon: Palette,
-      tile: "bg-accent-soft",
+      tone: "accent",
     },
   ],
   [
@@ -41,7 +41,7 @@ export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [
       route: "/settings/general",
       label: m.general_title,
       icon: Settings,
-      tile: "bg-accent-soft",
+      tone: "accent",
     },
   ],
   [
@@ -49,7 +49,7 @@ export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [
       route: "/settings/about",
       label: m.about_title,
       icon: Info,
-      tile: "bg-chip",
+      tone: "neutral",
     },
   ],
 ];
