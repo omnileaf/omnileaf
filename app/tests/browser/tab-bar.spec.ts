@@ -105,4 +105,20 @@ test.describe("on Android", () => {
     expect(bar.x).toBe(0);
     expect(bar.width).toBeCloseTo(viewport.width, 0);
   });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`the navigation has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/history");
+      await expect(
+        page.getByRole("heading", { level: 1, name: "History" }),
+      ).toBeVisible();
+
+      const results = await new AxeBuilder({ page }).analyze();
+
+      expect(results.violations).toEqual([]);
+    });
+  }
 });

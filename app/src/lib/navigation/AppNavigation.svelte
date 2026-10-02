@@ -37,6 +37,10 @@
   ];
 
   let { current }: { current: Section } = $props();
+
+  const currentIndex = $derived(
+    DESTINATIONS.findIndex(({ section }) => section === current),
+  );
 </script>
 
 <nav
@@ -50,8 +54,13 @@
     {m.app_name()}
   </p>
   <ul
-    class="flex p-sm medium:flex-col medium:gap-sm medium:pbs-lg medium:pbe-xl expanded:flex-1 expanded:gap-xs expanded:px-md expanded:pbs-none ios:max-medium:p-none ios:max-medium:block-full"
+    class="flex p-sm medium:flex-col medium:gap-sm medium:pbs-lg medium:pbe-xl expanded:flex-1 expanded:gap-xs expanded:px-md expanded:pbs-none ios:max-medium:relative ios:max-medium:p-none ios:max-medium:block-full"
   >
+    <li
+      aria-hidden="true"
+      style:--tab-index={currentIndex}
+      class="pointer-events-none absolute inset-s-none inset-bs-none inset-be-none hidden translate-to-tab rounded-full bg-glass-pill transition-transform inline-1/4 motion-safe:duration-slide motion-safe:ease-glass ios:max-medium:block"
+    ></li>
     {#each DESTINATIONS as destination (destination.section)}
       {@const isSelected = destination.section === current}
       <li
@@ -64,25 +73,33 @@
           href={resolve(SECTION_ROUTES[destination.section])}
           aria-current={isSelected ? "page" : undefined}
           class={[
-            "flex flex-col items-center gap-xs py-xs text-caption min-block-touch-target expanded:flex-row expanded:gap-md expanded:rounded-control expanded:px-md expanded:text-body",
+            "relative flex flex-col items-center gap-xs py-xs text-caption transition-colors min-block-touch-target motion-safe:duration-fade motion-safe:ease-out expanded:flex-row expanded:gap-md expanded:rounded-control expanded:px-md expanded:text-body",
             "ios:max-medium:flex-1 ios:max-medium:justify-center ios:max-medium:gap-2xs ios:max-medium:rounded-full ios:max-medium:py-none ios:max-medium:text-tab ios:max-medium:font-semibold",
             isSelected
-              ? "font-bold text-accent expanded:bg-accent-soft ios:max-medium:bg-glass-pill"
+              ? "font-bold text-accent expanded:bg-accent-soft"
               : "font-medium text-muted ios:max-medium:text-foreground",
           ]}
         >
           <span
-            class={[
-              "flex items-center justify-center rounded-card px-lg py-xs expanded:p-none ios:max-medium:p-none",
-              isSelected &&
-                "bg-accent-soft expanded:bg-transparent ios:max-medium:bg-transparent",
-            ]}
+            class="relative flex items-center justify-center px-lg py-xs expanded:p-none ios:max-medium:p-none"
           >
+            <span
+              class={[
+                "absolute inset-none rounded-card bg-accent-soft transition-opacity motion-safe:duration-fade motion-safe:ease-out expanded:hidden ios:max-medium:hidden",
+                "android:motion-safe:duration-grow android:motion-safe:ease-emphasized",
+                isSelected
+                  ? "android:motion-safe:animate-pill-grow"
+                  : "opacity-0",
+              ]}
+            ></span>
             <NavigationIcon
               section={destination.section}
               {isSelected}
               size={ICON_SIZE}
-              class="ios:max-medium:block-xl ios:max-medium:inline-xl"
+              class={[
+                "relative ios:max-medium:block-xl ios:max-medium:inline-xl",
+                isSelected && "ios:max-medium:motion-safe:animate-nav-pop",
+              ]}
             />
           </span>
           {destination.label()}
