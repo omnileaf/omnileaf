@@ -127,3 +127,19 @@ test("keeps the query of a link opened from a Settings page", async ({
 
   await expect(page).toHaveURL(/\/history\?from=about$/);
 });
+
+test("ignores a second link tapped while going back", async ({ page }) => {
+  await openSection(page, "Settings");
+  await openSettingsPage(page, "About");
+
+  await page.evaluate(() => {
+    const navigation = document.querySelector("nav");
+    for (const label of ["Library", "History"]) {
+      [...(navigation?.querySelectorAll("a") ?? [])]
+        .find((link) => link.textContent.trim() === label)
+        ?.click();
+    }
+  });
+
+  await expectPage(page, "Library");
+});

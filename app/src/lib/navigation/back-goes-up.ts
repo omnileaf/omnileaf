@@ -14,6 +14,7 @@ export interface BackGoesUp {
 /** Shapes the history as links are followed so back goes up a level, as Android's back button should, instead of retracing every page. */
 export function makeBackGoUp(): BackGoesUp {
   let entries: readonly string[] = [];
+  let isMoving = false;
   let isPassingThrough = false;
   let isReplacing = false;
   let settle: (() => void) | undefined;
@@ -63,8 +64,21 @@ export function makeBackGoUp(): BackGoesUp {
     }
   }
 
+  async function move(planned: Promise<void>): Promise<void> {
+    isMoving = true;
+    try {
+      await planned;
+    } finally {
+      isMoving = false;
+    }
+  }
+
   beforeNavigate(({ type, to, cancel }) => {
     if (type !== "link" || to === null || to.route.id === null) {
+      return;
+    }
+    if (isMoving) {
+      cancel();
       return;
     }
     const planned = moveTo(entries, to.url.pathname);
@@ -73,11 +87,11 @@ export function makeBackGoUp(): BackGoesUp {
         return;
       case "back":
         cancel();
-        void goBack(planned.steps);
+        void move(goBack(planned.steps));
         return;
       case "replace":
         cancel();
-        void replace(planned, to.url);
+        void move(replace(planned, to.url));
         return;
       default:
         assertNever(planned);
