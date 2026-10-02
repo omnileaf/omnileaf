@@ -1,7 +1,9 @@
 import { expect, test } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import type { commands, FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
+import NoticeHost from "$lib/notices/NoticeHost.svelte";
 import { Notices } from "$lib/notices/notices.svelte";
 
 import AddLibraryFolder from "./AddLibraryFolder.svelte";
@@ -38,10 +40,11 @@ const CANCELLED: AddFolderResult = { status: "ok", data: null };
 async function renderWith(addFolder: AddFolder) {
   const notices = new Notices();
   const screen = await render(AddLibraryFolder, { addFolder, notices });
+  await render(NoticeHost, { notices });
   return {
     notices,
     button: screen.getByRole("button", { name: "Add a folder" }),
-    status: screen.getByRole("status"),
+    status: page.elementLocator(screen.container).getByRole("status"),
   };
 }
 
@@ -135,17 +138,12 @@ test.each<[IpcErrorCode, string]>([
   ["folderUnreadable", "Choose another folder"],
   ["internal", "Try again"],
 ])("opens the picker again from the %s warning", async (code, retry) => {
-  const { notices, status, button } = await renderWith(
+  const { status, button } = await renderWith(
     answering(failed(code), found({})),
   );
   await button.click();
-  await expect.poll(() => notices.shown?.title).toBeDefined();
-  const action = notices.shown?.actions.find(({ label }) => label === retry);
-  if (action === undefined) {
-    throw new Error(`the warning offers no "${retry}" action`);
-  }
 
-  notices.act(action);
+  await page.getByRole("button", { name: retry }).click();
 
   await expect
     .element(status)
