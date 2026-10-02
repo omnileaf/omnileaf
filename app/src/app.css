@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @custom-variant ios (&:where([data-platform="ios"], [data-platform="ios"] *));
+@custom-variant android (&:where([data-platform="android"], [data-platform="android"] *));
 
 @theme {
   --*: initial;
@@ -91,6 +92,31 @@
   --color-glass-hole: #e6e2da;
   --color-glass-shadow: rgb(28 27 24 / 0.16);
   --color-glass-contact: rgb(28 27 24 / 0.08);
+
+  --transition-duration-fade: 150ms;
+  --transition-duration-grow: 200ms;
+  --transition-duration-slide: 350ms;
+  --transition-duration-move: 300ms;
+
+  --ease-out: ease-out;
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --animate-pill-grow: pill-grow var(--transition-duration-grow)
+    var(--ease-emphasized);
+  --animate-nav-pop: nav-pop var(--transition-duration-move) var(--ease-glass);
+
+  @keyframes pill-grow {
+    from {
+      scale: 0.5 1;
+    }
+  }
+
+  @keyframes nav-pop {
+    45% {
+      scale: 1.15;
+    }
+  }
 }
 
 :root {
@@ -135,6 +161,18 @@
     @variant max-medium {
       --color-icon-hole: var(--color-glass-hole);
     }
+  }
+}
+
+@utility inline-tab {
+  inline-size: calc(100% / var(--tab-count));
+}
+
+@utility translate-to-tab {
+  translate: calc(var(--tab-index) * 100%) 0;
+
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    translate: calc(var(--tab-index) * -100%) 0;
   }
 }
 

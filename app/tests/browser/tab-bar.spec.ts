@@ -1,36 +1,18 @@
 import { AxeBuilder } from "@axe-core/playwright";
 
-import type { Platform } from "../../src/lib/ipc/bindings.ts";
-import { DEFAULT_BACKEND, expect, FAKE_APP_VERSION, test } from "./fixtures.ts";
+import type { Page } from "@playwright/test";
 
-const BOTTOM_BAR_MAX_WIDTH = 600;
+import {
+  boxOf,
+  expect,
+  MEDIUM_MIN_WIDTH,
+  onPlatform,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
 
-function onPlatform(platform: Platform) {
-  return {
-    backend: {
-      ...DEFAULT_BACKEND,
-      appInfo: () => ({ version: FAKE_APP_VERSION, platform }),
-    },
-  };
-}
-
-async function navigationBox(page: import("@playwright/test").Page) {
-  const box = await page
-    .getByRole("navigation", { name: "Main" })
-    .boundingBox();
-  expect(box).not.toBeNull();
-  if (box === null) {
-    throw new Error("the navigation has no layout box");
-  }
-  return box;
-}
-
-function viewportOf(page: import("@playwright/test").Page) {
-  const viewport = page.viewportSize();
-  if (viewport === null) {
-    throw new Error("the page has no viewport");
-  }
-  return viewport;
+function navigationBox(page: Page) {
+  return boxOf(page.getByRole("navigation", { name: "Main" }));
 }
 
 test.describe("on iOS", () => {
@@ -41,7 +23,7 @@ test.describe("on iOS", () => {
   }) => {
     await page.goto("/");
     const viewport = viewportOf(page);
-    test.skip(viewport.width >= BOTTOM_BAR_MAX_WIDTH, "phones only");
+    test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
 
     const bar = await navigationBox(page);
 
@@ -59,7 +41,7 @@ test.describe("on iOS", () => {
   }) => {
     await page.goto("/");
     const viewport = viewportOf(page);
-    test.skip(viewport.width >= BOTTOM_BAR_MAX_WIDTH, "phones only");
+    test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
 
     const bar = await navigationBox(page);
     const clearance = await page
@@ -74,10 +56,7 @@ test.describe("on iOS", () => {
   }) => {
     await page.goto("/");
     const viewport = viewportOf(page);
-    test.skip(
-      viewport.width < BOTTOM_BAR_MAX_WIDTH,
-      "tablets and desktops only",
-    );
+    test.skip(viewport.width < MEDIUM_MIN_WIDTH, "tablets and desktops only");
 
     const navigation = await navigationBox(page);
 
@@ -108,11 +87,27 @@ test.describe("on Android", () => {
   test("keeps the bottom bar full width on phones", async ({ page }) => {
     await page.goto("/");
     const viewport = viewportOf(page);
-    test.skip(viewport.width >= BOTTOM_BAR_MAX_WIDTH, "phones only");
+    test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
 
     const bar = await navigationBox(page);
 
     expect(bar.x).toBe(0);
     expect(bar.width).toBeCloseTo(viewport.width, 0);
   });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`the navigation has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/history");
+      await expect(
+        page.getByRole("heading", { level: 1, name: "History" }),
+      ).toBeVisible();
+
+      const results = await new AxeBuilder({ page }).analyze();
+
+      expect(results.violations).toEqual([]);
+    });
+  }
 });

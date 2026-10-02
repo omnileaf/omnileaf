@@ -1,8 +1,12 @@
 import { AxeBuilder } from "@axe-core/playwright";
 
-import { expect, FAKE_APP_VERSION, test } from "./fixtures.ts";
+import {
+  expect,
+  FAKE_APP_VERSION,
+  MEDIUM_MIN_WIDTH,
+  test,
+} from "./fixtures.ts";
 
-const BOTTOM_BAR_MAX_WIDTH = 600;
 const COLOR_SCHEMES = ["light", "dark"] as const;
 
 const SECTIONS = [
@@ -67,7 +71,7 @@ test("puts the navigation at the bottom on phones and at the side from 600px", a
   if (navigation === null || main === null || viewport === null) {
     return;
   }
-  if (viewport.width < BOTTOM_BAR_MAX_WIDTH) {
+  if (viewport.width < MEDIUM_MIN_WIDTH) {
     expect(navigation.y).toBeGreaterThanOrEqual(main.y + main.height);
     expect(navigation.y + navigation.height).toBeCloseTo(viewport.height, 0);
   } else {

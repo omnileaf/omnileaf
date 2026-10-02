@@ -1,5 +1,5 @@
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
-import { DEFAULT_BACKEND, expect, FAKE_APP_VERSION, test } from "./fixtures.ts";
+import { expect, onPlatform, test } from "./fixtures.ts";
 
 const PLATFORMS: readonly Platform[] = [
   "android",
@@ -11,12 +11,7 @@ const PLATFORMS: readonly Platform[] = [
 
 for (const platform of PLATFORMS) {
   test.describe(`on ${platform}`, () => {
-    test.use({
-      backend: {
-        ...DEFAULT_BACKEND,
-        appInfo: () => ({ version: FAKE_APP_VERSION, platform }),
-      },
-    });
+    test.use(onPlatform(platform));
 
     test("marks the page with the platform the core reports", async ({
       page,
