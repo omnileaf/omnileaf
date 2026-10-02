@@ -71,3 +71,21 @@ fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
         added_at_ms: row.get(5)?,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scratch::ScratchLibrary;
+
+    #[test]
+    fn walks_the_title_index_of_series_with_books_without_scanning_or_sorting() {
+        let scratch = ScratchLibrary::new("title-plan");
+
+        let plan = scratch.query_plan(BY_TITLE);
+
+        assert_eq!(
+            plan,
+            ["SEARCH series USING INDEX series_by_title (title_sort_key>?)"]
+        );
+    }
+}
