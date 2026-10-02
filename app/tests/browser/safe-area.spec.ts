@@ -54,17 +54,29 @@ async function layoutBox(locator: Locator) {
   return box;
 }
 
+function mainNavigation(page: Page) {
+  return page.getByRole("navigation", { name: "Main" });
+}
+
 function navigationLinks(page: Page) {
-  return page.getByRole("navigation", { name: "Main" }).getByRole("link");
+  return mainNavigation(page).getByRole("link");
 }
 
 function pageHeading(page: Page) {
   return page.getByRole("heading", { level: 1, name: "Library" });
 }
 
+function viewportOf(page: Page) {
+  const viewport = page.viewportSize();
+  if (viewport === null) {
+    throw new Error("the page has no viewport");
+  }
+  return viewport;
+}
+
 async function roomBelowLastLink(page: Page) {
   const lastLink = await layoutBox(navigationLinks(page).last());
-  return LANDSCAPE_PHONE.height - lastLink.y - lastLink.height;
+  return viewportOf(page).height - lastLink.y - lastLink.height;
 }
 
 async function roomBelowPage(page: Page) {
@@ -90,11 +102,9 @@ test("keeps the page heading below the status bar", async ({ page }) => {
   await emulateSafeArea(page, { top: STATUS_BAR, bottom: HOME_INDICATOR });
 
   await page.goto("/");
-  const heading = await page
-    .getByRole("heading", { level: 1, name: "Library" })
-    .boundingBox();
+  const heading = await layoutBox(pageHeading(page));
 
-  expect(heading?.y).toBeGreaterThanOrEqual(STATUS_BAR);
+  expect(heading.y).toBeGreaterThanOrEqual(STATUS_BAR);
 });
 
 test("keeps the rail and sidebar below the status bar", async ({ page }) => {
@@ -102,16 +112,12 @@ test("keeps the rail and sidebar below the status bar", async ({ page }) => {
 
   await page.goto("/");
   test.skip(
-    (page.viewportSize()?.width ?? 0) < BOTTOM_BAR_MAX_WIDTH,
+    viewportOf(page).width < BOTTOM_BAR_MAX_WIDTH,
     "tablets and desktops only",
   );
-  const firstLink = await page
-    .getByRole("navigation", { name: "Main" })
-    .getByRole("link")
-    .first()
-    .boundingBox();
+  const firstLink = await layoutBox(navigationLinks(page).first());
 
-  expect(firstLink?.y).toBeGreaterThanOrEqual(STATUS_BAR);
+  expect(firstLink.y).toBeGreaterThanOrEqual(STATUS_BAR);
 });
 
 test.describe("in landscape", () => {
@@ -208,15 +214,11 @@ test.describe("on iOS", () => {
     await emulateSafeArea(page, { top: STATUS_BAR, bottom: HOME_INDICATOR });
 
     await page.goto("/");
-    const viewport = page.viewportSize();
-    test.skip((viewport?.width ?? 0) >= BOTTOM_BAR_MAX_WIDTH, "phones only");
-    const bar = await page
-      .getByRole("navigation", { name: "Main" })
-      .boundingBox();
+    const viewport = viewportOf(page);
+    test.skip(viewport.width >= BOTTOM_BAR_MAX_WIDTH, "phones only");
+    const bar = await layoutBox(mainNavigation(page));
 
-    expect((viewport?.height ?? 0) - (bar?.y ?? 0) - (bar?.height ?? 0)).toBe(
-      FLOATING_BAR_GAP,
-    );
+    expect(viewport.height - bar.y - bar.height).toBe(FLOATING_BAR_GAP);
   });
 });
 
@@ -229,29 +231,23 @@ test.describe("on Android", () => {
     await page.goto("/");
     await provideSystemInsets(page, { top: STATUS_BAR, bottom: GESTURE_BAR });
 
-    const heading = await page
-      .getByRole("heading", { level: 1, name: "Library" })
-      .boundingBox();
+    const heading = await layoutBox(pageHeading(page));
 
-    expect(heading?.y).toBeGreaterThanOrEqual(STATUS_BAR);
+    expect(heading.y).toBeGreaterThanOrEqual(STATUS_BAR);
   });
 
   test("keeps the bottom bar above the gesture bar the app reports", async ({
     page,
   }) => {
     await page.goto("/");
-    const viewport = page.viewportSize();
-    test.skip((viewport?.width ?? 0) >= BOTTOM_BAR_MAX_WIDTH, "phones only");
+    const viewport = viewportOf(page);
+    test.skip(viewport.width >= BOTTOM_BAR_MAX_WIDTH, "phones only");
     await provideSystemInsets(page, { top: STATUS_BAR, bottom: GESTURE_BAR });
 
-    const lastLink = await page
-      .getByRole("navigation", { name: "Main" })
-      .getByRole("link")
-      .last()
-      .boundingBox();
+    const lastLink = await layoutBox(navigationLinks(page).last());
 
-    expect((lastLink?.y ?? 0) + (lastLink?.height ?? 0)).toBeLessThanOrEqual(
-      (viewport?.height ?? 0) - GESTURE_BAR,
+    expect(lastLink.y + lastLink.height).toBeLessThanOrEqual(
+      viewport.height - GESTURE_BAR,
     );
   });
 
