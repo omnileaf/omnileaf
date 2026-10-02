@@ -110,3 +110,20 @@ test("moves focus only to the page opened from a Settings page", async ({
     await page.evaluate((): unknown => Reflect.get(window, "focusedHeadings")),
   ).toEqual(["History"]);
 });
+
+test("keeps the query of a link opened from a Settings page", async ({
+  page,
+}) => {
+  await openSection(page, "Settings");
+  await openSettingsPage(page, "About");
+  await page.evaluate(() => {
+    const link = document.createElement("a");
+    link.href = "/history?from=about";
+    link.textContent = "History with a query";
+    document.querySelector("main")?.append(link);
+  });
+
+  await page.getByRole("link", { name: "History with a query" }).click();
+
+  await expect(page).toHaveURL(/\/history\?from=about$/);
+});

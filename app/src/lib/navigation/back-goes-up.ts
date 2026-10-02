@@ -1,8 +1,6 @@
 import type { AfterNavigate } from "@sveltejs/kit";
-import type { RouteId } from "$app/types";
 
 import { afterNavigate, beforeNavigate, goto } from "$app/navigation";
-import { resolve } from "$app/paths";
 
 import { type HistoryMove, moveTo } from "./up-history";
 
@@ -52,21 +50,21 @@ export function makeBackGoUp(): BackGoesUp {
     }
   }
 
-  async function replace(move: Replacing, route: RouteId): Promise<void> {
+  async function replace(move: Replacing, target: URL): Promise<void> {
     if (move.stepsBack > 0) {
       await passThrough(move.stepsBack);
     }
     isReplacing = true;
     try {
-      await goto(resolve(route), { replaceState: true });
+      // eslint-disable-next-line svelte/no-navigation-without-resolve -- the link already resolved its own address
+      await goto(target, { replaceState: true });
     } finally {
       isReplacing = false;
     }
   }
 
   beforeNavigate(({ type, to, cancel }) => {
-    const route = to?.route.id;
-    if (type !== "link" || to === null || route == null) {
+    if (type !== "link" || to === null || to.route.id === null) {
       return;
     }
     const planned = moveTo(entries, to.url.pathname);
@@ -79,7 +77,7 @@ export function makeBackGoUp(): BackGoesUp {
         return;
       case "replace":
         cancel();
-        void replace(planned, route);
+        void replace(planned, to.url);
         return;
       default:
         assertNever(planned);
