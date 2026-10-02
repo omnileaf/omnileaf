@@ -1,17 +1,19 @@
 import { createContext } from "svelte";
 
 import {
+  browserStorage,
+  type PreferenceStore,
+  readPreference,
+  rememberPreference,
+} from "$lib/preferences/preference-store";
+
+import {
   parseThemePreference,
   resolveTheme,
   type ThemePreference,
 } from "./theme";
 
 const PREFERENCE_KEY = "omnileaf.theme";
-
-export interface PreferenceStore {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-}
 
 export interface DarkModeQuery {
   readonly matches: boolean;
@@ -27,7 +29,9 @@ export class ThemeSetting {
     private readonly darkMode: DarkModeQuery,
     private readonly root: HTMLElement,
   ) {
-    this.preference = parseThemePreference(this.readStored());
+    this.preference = parseThemePreference(
+      readPreference(store, PREFERENCE_KEY),
+    );
     this.apply();
     darkMode.addEventListener("change", () => {
       this.apply();
@@ -37,7 +41,7 @@ export class ThemeSetting {
   choose(preference: ThemePreference): void {
     this.preference = preference;
     this.apply();
-    this.rememberIfPossible(preference);
+    rememberPreference(this.store, PREFERENCE_KEY, preference);
   }
 
   private apply(): void {
@@ -46,35 +50,10 @@ export class ThemeSetting {
       this.darkMode.matches,
     );
   }
-
-  private rememberIfPossible(preference: ThemePreference): void {
-    try {
-      this.store?.setItem(PREFERENCE_KEY, preference);
-    } catch {
-      return;
-    }
-  }
-
-  private readStored(): string | null {
-    try {
-      return this.store?.getItem(PREFERENCE_KEY) ?? null;
-    } catch {
-      return null;
-    }
-  }
 }
 
 const DARK_MODE_QUERY = "(prefers-color-scheme: dark)";
 
-function browserStorage(): PreferenceStore | undefined {
-  try {
-    return window.localStorage;
-  } catch {
-    return undefined;
-  }
-}
-
-/** The setting for this document; the choice is kept in the web view's storage until the app has a settings store. */
 export function themeSettingForDocument(): ThemeSetting {
   return new ThemeSetting(
     browserStorage(),
