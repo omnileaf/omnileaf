@@ -61,6 +61,19 @@ pub(crate) const STEPS: &[Step] = &[
         ],
     },
     Step {
+        name: "webassembly",
+        group: Group::Rust,
+        program: "cargo",
+        args: &[
+            "build",
+            "--package",
+            "omnileaf-sync-proto",
+            "--target",
+            "wasm32-unknown-unknown",
+            "--locked",
+        ],
+    },
+    Step {
         name: "dependencies",
         group: Group::Rust,
         program: "cargo",
