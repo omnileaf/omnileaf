@@ -30,7 +30,10 @@ macro_rules! migration {
 }
 
 /// Applied in order, and never edited once released; schema version N means the first N have run.
-pub(crate) const MIGRATIONS: &[Migration] = &[migration!("0001_mark_omnileaf_library")];
+pub(crate) const MIGRATIONS: &[Migration] = &[
+    migration!("0001_mark_omnileaf_library"),
+    migration!("0002_create_catalog"),
+];
 
 pub(crate) fn pending(
     connection: &Connection,

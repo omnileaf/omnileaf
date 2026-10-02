@@ -1,5 +1,7 @@
 use std::{io, path::PathBuf};
 
+use omnileaf_sync_proto::SeriesId;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("open database {}", path.display())]
@@ -33,6 +35,8 @@ pub enum Error {
     },
     #[error("migrating database {} left rows in {table} referring to missing rows", path.display())]
     DanglingReference { path: PathBuf, table: String },
+    #[error("add a book to series {id}, which isn't in the catalog")]
+    UnknownSeries { id: SeriesId },
     #[error("start a database thread")]
     Spawn(#[source] io::Error),
     #[error("run a statement in a database job")]
