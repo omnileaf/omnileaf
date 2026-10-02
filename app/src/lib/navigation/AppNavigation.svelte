@@ -8,7 +8,7 @@
   interface Destination {
     readonly section: Section;
     readonly label: () => string;
-    readonly isAtSidebarEnd: boolean;
+    readonly isAtSideEnd: boolean;
   }
 
   const ICON_SIZE = 22;
@@ -17,22 +17,22 @@
     {
       section: "library",
       label: m.library_title,
-      isAtSidebarEnd: false,
+      isAtSideEnd: false,
     },
     {
       section: "browse",
       label: m.browse_title,
-      isAtSidebarEnd: false,
+      isAtSideEnd: false,
     },
     {
       section: "history",
       label: m.history_title,
-      isAtSidebarEnd: false,
+      isAtSideEnd: false,
     },
     {
       section: "settings",
       label: m.settings_title,
-      isAtSidebarEnd: true,
+      isAtSideEnd: true,
     },
   ];
 
@@ -78,7 +78,7 @@
   aria-label={m.navigation_label()}
   onanimationend={endArrivalOnceStill}
   class={[
-    "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom max-medium:pe-safe-end medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:flex expanded:flex-col expanded:inline-sidebar",
+    "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom max-medium:pe-safe-end medium:flex medium:flex-col medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:inline-sidebar",
     "ios:max-medium:fixed ios:max-medium:inset-x-lg ios:max-medium:inset-be-floating-gap ios:max-medium:rounded-full ios:max-medium:border ios:max-medium:border-glass-edge ios:max-medium:bg-glass ios:max-medium:p-xs ios:max-medium:shadow-floating ios:max-medium:backdrop-blur-glass ios:max-medium:backdrop-saturate-160 ios:max-medium:block-floating-bar",
   ]}
 >
@@ -86,7 +86,7 @@
     {m.app_name()}
   </p>
   <ul
-    class="flex p-sm medium:flex-col medium:gap-sm medium:pbs-lg medium:pbe-xl expanded:flex-1 expanded:gap-xs expanded:px-md expanded:pbs-none ios:max-medium:relative ios:max-medium:p-none ios:max-medium:block-full"
+    class="flex p-sm medium:flex-1 medium:flex-col medium:gap-sm medium:pbs-lg medium:pbe-xl expanded:gap-xs expanded:px-md expanded:pbs-none ios:max-medium:relative ios:max-medium:p-none ios:max-medium:block-full"
   >
     <li
       aria-hidden="true"
@@ -100,7 +100,7 @@
       <li
         class={[
           "flex-1 medium:flex-none ios:max-medium:flex",
-          destination.isAtSidebarEnd && "expanded:mbs-auto",
+          destination.isAtSideEnd && "medium:mbs-auto",
         ]}
       >
         <a

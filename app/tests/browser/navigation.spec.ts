@@ -1,10 +1,12 @@
 import { AxeBuilder } from "@axe-core/playwright";
 
 import {
+  boxOf,
   expect,
   FAKE_APP_VERSION,
   MEDIUM_MIN_WIDTH,
   test,
+  viewportOf,
 } from "./fixtures.ts";
 
 const COLOR_SCHEMES = ["light", "dark"] as const;
@@ -88,4 +90,24 @@ test("shows the version the backend reports in Settings › About", async ({
   await page.getByRole("link", { name: "About" }).click();
 
   await expect(page.getByText(`Version ${FAKE_APP_VERSION}`)).toBeVisible();
+});
+
+test("keeps Settings at the far end of the rail and the sidebar", async ({
+  page,
+}) => {
+  await page.goto("/");
+  test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "side navigation only");
+  const navigation = page.getByRole("navigation", { name: "Main" });
+
+  const bar = await boxOf(navigation);
+  const history = await boxOf(
+    navigation.getByRole("link", { name: "History" }),
+  );
+  const settings = await boxOf(
+    navigation.getByRole("link", { name: "Settings" }),
+  );
+
+  expect(settings.y - (history.y + history.height)).toBeGreaterThan(
+    bar.height / 2,
+  );
 });
