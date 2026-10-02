@@ -4,7 +4,10 @@ use std::{
     path::Path,
 };
 
-use crate::{FormatError, Limits, folder::FolderBook, natural_cmp, zip_book::ZipBook};
+use crate::{
+    ComicInfo, FormatError, Limits, folder::FolderBook, natural_cmp, parse_comic_info,
+    zip_book::ZipBook,
+};
 
 const ZIP_SIGNATURES: [&[u8; 4]; 2] = [b"PK\x03\x04", b"PK\x05\x06"];
 
@@ -35,6 +38,18 @@ impl Book {
             Self::Archive(book) => book.read_page(index),
             Self::Folder(book) => book.read_page(index),
         }
+    }
+
+    /// The book's ComicInfo.xml, if it has one; a damaged one is an error, never a reason the book can't open.
+    pub fn comic_info(&mut self) -> Result<Option<ComicInfo>, FormatError> {
+        let (path, xml) = match self {
+            Self::Archive(book) => (book.path().to_owned(), book.read_comic_info()?),
+            Self::Folder(book) => (book.path().to_owned(), book.read_comic_info()?),
+        };
+        xml.map(|xml| {
+            parse_comic_info(&xml).map_err(|source| FormatError::BadComicInfo { path, source })
+        })
+        .transpose()
     }
 }
 

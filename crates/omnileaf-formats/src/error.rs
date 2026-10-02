@@ -1,5 +1,7 @@
 use std::{io, path::PathBuf};
 
+use crate::ComicInfoError;
+
 #[derive(Debug, thiserror::Error)]
 pub enum FormatError {
     #[error("read {}", path.display())]
@@ -31,4 +33,11 @@ pub enum FormatError {
     SuspiciousCompression { path: PathBuf, name: String },
     #[error("{} has no page {index}", path.display())]
     NoSuchPage { path: PathBuf, index: usize },
+    #[error("the ComicInfo in {} is larger than the {limit} bytes allowed", path.display())]
+    ComicInfoTooLarge { path: PathBuf, limit: u64 },
+    #[error("read the ComicInfo in {}", path.display())]
+    BadComicInfo {
+        path: PathBuf,
+        source: ComicInfoError,
+    },
 }

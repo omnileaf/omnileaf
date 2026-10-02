@@ -3,7 +3,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{FormatError, Limits, Page, book::in_reading_order, is_ignored, is_page_image};
+use crate::{
+    FormatError, Limits, Page,
+    book::in_reading_order,
+    is_ignored, is_page_image,
+    limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME},
+};
 
 /// A folder whose images, directly inside it, are one book's pages.
 #[derive(Debug)]
@@ -77,6 +82,36 @@ impl FolderBook {
 
     pub(crate) fn pages(&self) -> &[Page] {
         &self.pages
+    }
+
+    pub(crate) fn path(&self) -> &Path {
+        &self.path
+    }
+
+    pub(crate) fn read_comic_info(&self) -> Result<Option<Vec<u8>>, FormatError> {
+        let read_failed = |source| FormatError::Read {
+            path: self.path.clone(),
+            source,
+        };
+        let found = fs::read_dir(&self.path)
+            .map_err(read_failed)?
+            .filter_map(Result::ok)
+            .find(|entry| {
+                entry
+                    .file_name()
+                    .to_string_lossy()
+                    .eq_ignore_ascii_case(COMIC_INFO_NAME)
+            });
+        let Some(entry) = found else {
+            return Ok(None);
+        };
+        if entry.metadata().map_err(read_failed)?.len() > COMIC_INFO_LIMIT {
+            return Err(FormatError::ComicInfoTooLarge {
+                path: self.path.clone(),
+                limit: COMIC_INFO_LIMIT,
+            });
+        }
+        fs::read(entry.path()).map(Some).map_err(read_failed)
     }
 
     pub(crate) fn read_page(&self, index: usize) -> Result<Vec<u8>, FormatError> {

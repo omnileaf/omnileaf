@@ -6,7 +6,12 @@ use std::{
 
 use zip::{ZipArchive, result::ZipError};
 
-use crate::{FormatError, Limits, Page, book::in_reading_order, is_ignored, is_page_image};
+use crate::{
+    FormatError, Limits, Page,
+    book::in_reading_order,
+    is_ignored, is_page_image,
+    limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME},
+};
 
 #[derive(Debug)]
 pub struct ZipBook {
@@ -71,6 +76,37 @@ impl ZipBook {
 
     pub(crate) fn pages(&self) -> &[Page] {
         &self.pages
+    }
+
+    pub(crate) fn path(&self) -> &Path {
+        &self.path
+    }
+
+    pub(crate) fn read_comic_info(&mut self) -> Result<Option<Vec<u8>>, FormatError> {
+        let Some(name) = self
+            .archive
+            .file_names()
+            .find(|name| name.eq_ignore_ascii_case(COMIC_INFO_NAME))
+            .map(ToOwned::to_owned)
+        else {
+            return Ok(None);
+        };
+        let entry = self
+            .archive
+            .by_name(&name)
+            .map_err(|source| corrupt(&self.path, source))?;
+        let mut xml = Vec::new();
+        entry
+            .take(COMIC_INFO_LIMIT.saturating_add(1))
+            .read_to_end(&mut xml)
+            .map_err(|source| corrupt(&self.path, ZipError::Io(source)))?;
+        if u64::try_from(xml.len()).unwrap_or(u64::MAX) > COMIC_INFO_LIMIT {
+            return Err(FormatError::ComicInfoTooLarge {
+                path: self.path.clone(),
+                limit: COMIC_INFO_LIMIT,
+            });
+        }
+        Ok(Some(xml))
     }
 
     /// Reads one page, stopping past the size limit in case the archive understates it.
