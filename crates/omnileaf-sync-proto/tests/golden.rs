@@ -134,7 +134,7 @@ struct SequenceVector {
     after: Vec<u64>,
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum ClockEvent {
     Tick(u64),
@@ -148,8 +148,14 @@ fn clock_stamps_match_the_golden_vectors() {
     for vector in golden.stamps {
         let hlc = Hlc::new(vector.unix_ms, vector.counter).unwrap();
 
-        assert_eq!(hlc.as_u64(), vector.hlc);
-        assert_eq!(hlc.unix_ms(), vector.unix_ms);
+        assert_eq!(
+            hlc.as_u64(),
+            vector.hlc,
+            "{} {}",
+            vector.unix_ms,
+            vector.counter
+        );
+        assert_eq!(hlc.unix_ms(), vector.unix_ms, "{}", vector.hlc);
     }
 }
 
@@ -160,7 +166,7 @@ fn clock_sequences_match_the_golden_vectors() {
     for vector in golden.sequences {
         let mut clock = Hlc::from(vector.start);
         let mut after = Vec::new();
-        for event in vector.events {
+        for &event in &vector.events {
             clock = match event {
                 ClockEvent::Tick(now) => clock.tick(now).unwrap(),
                 ClockEvent::Observe(remote) => clock.observe(Hlc::from(remote)),
@@ -168,6 +174,10 @@ fn clock_sequences_match_the_golden_vectors() {
             after.push(clock.as_u64());
         }
 
-        assert_eq!(after, vector.after);
+        assert_eq!(
+            after, vector.after,
+            "from {} through {:?}",
+            vector.start, vector.events
+        );
     }
 }

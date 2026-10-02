@@ -1,5 +1,6 @@
 {
   "contract": "hlc v1",
+  "rule": "a stamp is unix_ms << 16 | counter, with unix_ms below 2^48; tick(now) is max(stamp + 1, now << 16), so a full counter carries into the next millisecond and the last stamp cannot tick; observe(remote) is max(stamp, remote)",
   "stamps": [
     {
       "unix_ms": 0,
