@@ -43,6 +43,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   import type { Section } from "./sections";
 
@@ -50,9 +51,15 @@
     section,
     isSelected,
     size,
-  }: { section: Section; isSelected: boolean; size: number } = $props();
+    class: className,
+  }: {
+    section: Section;
+    isSelected: boolean;
+    size: number;
+    class?: ClassValue;
+  } = $props();
 
-  const HOLE = "stroke-accent-soft";
+  const HOLE = "stroke-icon-hole";
 
   const SHAPES: Record<Section, Snippet<[boolean]>> = {
     library,
@@ -82,7 +89,7 @@
   <circle cx="12" cy="12" r="10" fill={filled ? "currentColor" : "none"} />
   <path
     d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"
-    class={[filled && [HOLE, "fill-accent-soft"]]}
+    class={[filled && [HOLE, "fill-icon-hole"]]}
   />
 {/snippet}
 
@@ -113,6 +120,7 @@
   stroke-width="2"
   stroke-linecap="round"
   stroke-linejoin="round"
+  class={className}
 >
   {@render shape(isSelected)}
 </svg>
