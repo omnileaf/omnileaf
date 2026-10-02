@@ -74,14 +74,14 @@
 <div class="mbs-lg flex flex-col gap-xl">
   {#each SETTINGS_GROUPS as group, index (index)}
     <ul
-      class="divide-y divide-border overflow-hidden rounded-card border border-border bg-card"
+      class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card"
     >
       {#each group as settingsPage (settingsPage.route)}
         {@const summary = summaries[settingsPage.route]}
         <li>
           <a
             href={resolve(settingsPage.route)}
-            class="flex items-center gap-md px-md py-sm min-block-4xl"
+            class="flex items-center gap-list-row py-sm ps-list-row pe-md min-block-4xl"
           >
             <span
               class={[

@@ -64,6 +64,7 @@
   --spacing-button: 1.25rem;
   --spacing-pill: 3.5rem;
   --spacing-tile: 2.25rem;
+  --spacing-list-row: 0.875rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
@@ -96,6 +97,7 @@
   --radius-control: 0.5rem;
   --radius-card: 0.75rem;
   --radius-tile: 0.625rem;
+  --radius-list: 0.625rem;
 
   --blur-glass: 24px;
 
