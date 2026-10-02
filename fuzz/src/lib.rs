@@ -5,6 +5,10 @@ use std::{env, fs, path::PathBuf, process};
 use omnileaf_formats::{Book, FormatError, Limits, open_book_with};
 
 /// Opens `bytes` through the same path-based entry point the app uses, via a scratch file private to this process.
+#[expect(
+    clippy::panic,
+    reason = "an unwritable scratch file must stop the fuzzer rather than look like a clean input"
+)]
 pub fn open_bytes(bytes: &[u8], limits: &Limits) -> Result<Book, FormatError> {
     let scratch = scratch_file();
     if let Err(error) = fs::write(&scratch, bytes) {

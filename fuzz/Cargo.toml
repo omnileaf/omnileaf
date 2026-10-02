@@ -14,11 +14,26 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4.13"
 omnileaf-formats = { path = "../crates/omnileaf-formats" }
 
+[lints.rust]
+unsafe_code = "forbid"
+unreachable_pub = "warn"
+
 [lints.clippy]
 all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+dbg_macro = "warn"
+expect_used = "warn"
+indexing_slicing = "warn"
+panic = "warn"
+print_stderr = "warn"
+print_stdout = "warn"
+todo = "warn"
+unimplemented = "warn"
+unwrap_used = "warn"
 
 [[bin]]
 name = "open_book"
