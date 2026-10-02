@@ -35,6 +35,46 @@ test.describe("with a folder of books", () => {
   }
 });
 
+test.describe("while the folder is being scanned", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      addLibraryFolder: async (onProgress) => {
+        await onProgress.send({ scanned: 32, total: 100 });
+        return new Promise(() => undefined);
+      },
+    },
+  });
+
+  test("shows how far the scan has got", async ({ page }) => {
+    await page.goto("/settings/library");
+
+    await page.getByRole("button", { name: "Add a folder" }).click();
+
+    await expect(page.getByRole("status")).toHaveText(
+      "Finding books · 32 so far",
+    );
+    await expect(
+      page.getByRole("progressbar", { name: "Finding books · 32 so far" }),
+    ).toHaveAttribute("value", "32");
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`the scan's progress has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/settings/library");
+      await page.getByRole("button", { name: "Add a folder" }).click();
+      await expect(page.getByRole("progressbar")).toBeVisible();
+
+      const results = await new AxeBuilder({ page }).analyze();
+
+      expect(results.violations).toEqual([]);
+    });
+  }
+});
+
 test("opens Settings › Library from Settings", async ({ page }) => {
   await page.goto("/settings");
 

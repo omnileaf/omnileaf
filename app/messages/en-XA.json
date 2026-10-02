@@ -4,6 +4,19 @@
   "library_empty": "⟦Ýöûŕ ļíƀŕáŕý íš éɱþţý.·········⟧",
   "app_version": "⟦Ṽéŕšíöñ {version}·······⟧",
   "library_add_folder": "⟦Áðð á ƒöļðéŕ·····⟧",
+  "library_scan_progress": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=*": "⟦Ƒíñðíñĝ ƀööķš · {formattedCount} šö ƒáŕ················⟧"
+      }
+    }
+  ],
   "library_folder_scanned": [
     {
       "declarations": [

@@ -1,14 +1,20 @@
 <script lang="ts">
   import { Plus } from "@lucide/svelte";
 
-  import type { commands, FolderScan, IpcErrorCode } from "$lib/ipc/bindings";
+  import type {
+    FolderScan,
+    IpcErrorCode,
+    ScanProgress,
+  } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
+  import type { AddFolder } from "./add-folder";
   import { ICON_SIZE } from "./icon-size";
 
   type Outcome =
     | { readonly kind: "idle" }
     | { readonly kind: "adding" }
+    | { readonly kind: "scanning"; readonly progress: ScanProgress }
     | { readonly kind: "scanned"; readonly scan: FolderScan }
     | { readonly kind: "failed"; readonly code: IpcErrorCode };
 
@@ -24,15 +30,28 @@
     addFolder,
     onAdded,
   }: {
-    addFolder: typeof commands.addLibraryFolder;
+    addFolder: AddFolder;
     onAdded?: () => void;
   } = $props();
 
+  const progressTitleId = $props.id();
+
   let outcome: Outcome = $state({ kind: "idle" });
+
+  function isBusy(current: Outcome): boolean {
+    return current.kind === "adding" || current.kind === "scanning";
+  }
+
+  /** Progress can arrive after the result it led to, which must not turn back into a scan in progress. */
+  function showProgress(progress: ScanProgress): void {
+    if (isBusy(outcome)) {
+      outcome = { kind: "scanning", progress };
+    }
+  }
 
   async function add(): Promise<void> {
     outcome = { kind: "adding" };
-    const result = await addFolder();
+    const result = await addFolder(showProgress);
     if (result.status === "error") {
       outcome = { kind: "failed", code: result.error.code };
     } else if (result.data === null) {
@@ -47,14 +66,24 @@
 <button
   type="button"
   class="flex items-center justify-center gap-sm rounded-control bg-accent px-lg font-semibold text-on-accent min-block-touch-target disabled:opacity-60 max-medium:inline-full"
-  disabled={outcome.kind === "adding"}
+  disabled={isBusy(outcome)}
   onclick={add}
 >
   <Plus size={ICON_SIZE} aria-hidden="true" />
   {m.library_add_folder()}
 </button>
 <div role="status" class="mbs-sm">
-  {#if outcome.kind === "scanned"}
+  {#if outcome.kind === "scanning"}
+    <p id={progressTitleId} class="font-semibold">
+      {m.library_scan_progress({ count: outcome.progress.scanned })}
+    </p>
+    <progress
+      aria-labelledby={progressTitleId}
+      class="mbs-sm progress-track"
+      max={outcome.progress.total}
+      value={outcome.progress.scanned}
+    ></progress>
+  {:else if outcome.kind === "scanned"}
     {@const scan = outcome.scan}
     <p>
       {scan.books === 0

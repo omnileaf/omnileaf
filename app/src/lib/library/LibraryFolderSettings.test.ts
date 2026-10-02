@@ -4,9 +4,9 @@ import { render } from "vitest-browser-svelte";
 
 import { commands, type LibraryFolder } from "$lib/ipc/bindings";
 
+import type { AddFolder } from "./add-folder";
 import LibraryFolderSettings from "./LibraryFolderSettings.svelte";
 
-type AddFolder = typeof commands.addLibraryFolder;
 type RemoveFolder = typeof commands.removeLibraryFolder;
 type FolderId = Parameters<RemoveFolder>[0];
 

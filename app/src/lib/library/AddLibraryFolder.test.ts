@@ -1,12 +1,25 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import type { commands, FolderScan, IpcErrorCode } from "$lib/ipc/bindings";
+import type { FolderScan, IpcErrorCode, ScanProgress } from "$lib/ipc/bindings";
 
+import type { AddFolder } from "./add-folder";
 import AddLibraryFolder from "./AddLibraryFolder.svelte";
 
-type AddFolder = typeof commands.addLibraryFolder;
 type AddFolderResult = Awaited<ReturnType<AddFolder>>;
+
+/** A folder being added whose scan the test steps through and then finishes. */
+class PendingScan {
+  report: (progress: ScanProgress) => void = () => undefined;
+  finish: (result: AddFolderResult) => void = () => undefined;
+
+  readonly addFolder: AddFolder = (onProgress) => {
+    this.report = onProgress;
+    return new Promise((resolve) => {
+      this.finish = resolve;
+    });
+  };
+}
 
 const SAMPLE_SCAN: FolderScan = {
   name: "Sample Library",
@@ -133,18 +146,48 @@ test.each<[IpcErrorCode, string]>([
   await expect.element(status).toHaveTextContent(explanation);
 });
 
-test("disables the button while the folder is being added", async () => {
-  let answer: (result: AddFolderResult) => void = () => undefined;
-  const { button } = await renderWith(
-    () =>
-      new Promise((resolve) => {
-        answer = resolve;
-      }),
-  );
+test("disables the button while the folder is being added and scanned", async () => {
+  const scan = new PendingScan();
+  const { button } = await renderWith(scan.addFolder);
 
   await button.click();
   await expect.element(button).toBeDisabled();
-  answer(CANCELLED);
+  scan.report({ scanned: 0, total: 7 });
+  await expect.element(button).toBeDisabled();
+  scan.finish(CANCELLED);
 
   await expect.element(button).toBeEnabled();
+});
+
+test("shows how far the scan has got while it runs", async () => {
+  const scan = new PendingScan();
+  const screen = await render(AddLibraryFolder, { addFolder: scan.addFolder });
+  await screen.getByRole("button", { name: "Add a folder" }).click();
+
+  scan.report({ scanned: 32, total: 100 });
+
+  await expect
+    .element(screen.getByRole("status"))
+    .toHaveTextContent("Finding books · 32 so far");
+  const bar = screen.getByRole("progressbar", {
+    name: "Finding books · 32 so far",
+  });
+  await expect.element(bar).toHaveAttribute("value", "32");
+  await expect.element(bar).toHaveAttribute("max", "100");
+});
+
+test("keeps the result when word of the scan arrives after it finished", async () => {
+  const scan = new PendingScan();
+  const screen = await render(AddLibraryFolder, { addFolder: scan.addFolder });
+  await screen.getByRole("button", { name: "Add a folder" }).click();
+  scan.finish(scanned({}));
+  await expect
+    .element(screen.getByRole("status"))
+    .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
+
+  scan.report({ scanned: 7, total: 7 });
+
+  await expect
+    .element(screen.getByRole("status"))
+    .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
 });

@@ -1,7 +1,9 @@
 //! The commands the interface calls, and the TypeScript bindings generated from them.
 
-use omnileaf_engine::{AppInfo, Core, FolderCursor, FolderId, FolderPage, FolderScan, Library};
-use tauri::{AppHandle, State, Wry};
+use omnileaf_engine::{
+    AppInfo, Core, FolderCursor, FolderId, FolderPage, FolderScan, Library, ScanProgress,
+};
+use tauri::{AppHandle, State, Wry, ipc::Channel};
 use tauri_specta::{Builder, collect_commands};
 
 use crate::{folder_picker::pick_folder, ipc_error::IpcError};
@@ -30,6 +32,7 @@ fn app_info(core: State<'_, Core>) -> AppInfo {
 async fn add_library_folder(
     app: AppHandle,
     library: State<'_, Library>,
+    on_progress: Channel<ScanProgress>,
 ) -> Result<Option<FolderScan>, IpcError> {
     let picked = tauri::async_runtime::spawn_blocking(move || pick_folder(&app))
         .await
@@ -37,7 +40,12 @@ async fn add_library_folder(
     let Some(folder) = picked else {
         return Ok(None);
     };
-    Ok(Some(library.add_folder(folder, |_| {}).await?))
+    let report = move |progress| {
+        if let Err(error) = on_progress.send(progress) {
+            tracing::debug!(%error, "the interface stopped listening for scan progress");
+        }
+    };
+    Ok(Some(library.add_folder(folder, report).await?))
 }
 
 #[tauri::command]

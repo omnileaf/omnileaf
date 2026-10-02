@@ -5,7 +5,9 @@ import { SAMPLE_LIBRARY } from "./sample-library.ts";
 import { xpath } from "./webdriver.ts";
 
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
-const FOLDER_REPORT = xpath("//*[@role='status'][normalize-space()]");
+const FINISHED_SCAN_REPORT = xpath(
+  "//*[@role='status'][starts-with(normalize-space(), 'Found ')]",
+);
 const SETTINGS_LINK = xpath("//nav//a[normalize-space()='Settings']");
 const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
 const LINKED_FOLDER_NAMES = xpath(
@@ -39,7 +41,7 @@ test("adds a folder, waits for its scan and reports the series and books in it",
 
   await button.click();
 
-  const report = await appSession().waitFor(FOLDER_REPORT);
+  const report = await appSession().waitFor(FINISHED_SCAN_REPORT);
   expect(await report.text()).toBe(SCAN_REPORT);
 });
 
@@ -49,7 +51,7 @@ test("adds a folder from Settings › Library and lists it there", async () => {
 
   await button.click();
 
-  const report = await appSession().waitFor(FOLDER_REPORT);
+  const report = await appSession().waitFor(FINISHED_SCAN_REPORT);
   expect(await report.text()).toBe(SCAN_REPORT);
   const listed = await appSession().waitFor(LINKED_FOLDER_NAMES);
   expect(await listed.text()).toBe(SAMPLE_LIBRARY.name);
