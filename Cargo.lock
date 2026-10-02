@@ -2604,14 +2604,19 @@ dependencies = [
 name = "omnileaf-formats"
 version = "0.0.0"
 dependencies = [
+ "flate2",
+ "omnileaf-testkit",
  "proptest",
+ "thiserror 2.0.21",
  "unicode-normalization",
+ "zip",
 ]
 
 [[package]]
 name = "omnileaf-testkit"
 version = "0.0.0"
 dependencies = [
+ "flate2",
  "png 0.18.1",
  "thiserror 2.0.21",
  "zip",
