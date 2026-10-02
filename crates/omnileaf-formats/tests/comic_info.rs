@@ -1,12 +1,8 @@
-#![expect(
-    clippy::unwrap_used,
-    reason = "the books are generated in a scratch folder, so a failed set-up should stop the test"
-)]
-
-use std::{env, fs, path::PathBuf, process};
+mod support;
 
 use omnileaf_formats::{ComicInfoError, PageKind, ReadingDirection, open_book, parse_comic_info};
-use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_png};
+use omnileaf_testkit::{Compression, PageShape, cbz, page_png};
+use support::{ScratchFolder, entry};
 
 const FULL: &str = r#"<?xml version="1.0" encoding="utf-8"?>
 <ComicInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -135,34 +131,6 @@ fn reports_malformed_xml() {
     );
 }
 
-struct ScratchFolder(PathBuf);
-
-impl ScratchFolder {
-    fn new(name: &str) -> Self {
-        let path = env::temp_dir()
-            .join(format!("omnileaf-comic-info-{}", process::id()))
-            .join(name);
-        if path.exists() {
-            fs::remove_dir_all(&path).unwrap();
-        }
-        fs::create_dir_all(&path).unwrap();
-        Self(path)
-    }
-}
-
-impl Drop for ScratchFolder {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
-    }
-}
-
-fn entry(name: &str, bytes: Vec<u8>) -> ArchiveEntry {
-    ArchiveEntry {
-        name: name.to_owned(),
-        bytes,
-    }
-}
-
 #[test]
 fn reads_comic_info_from_an_archive_and_a_folder() {
     let scratch = ScratchFolder::new("both");
@@ -175,12 +143,10 @@ fn reads_comic_info_from_an_archive_and_a_folder() {
         Compression::Deflated,
     )
     .unwrap();
-    let archive_path = scratch.0.join("book.cbz");
-    fs::write(&archive_path, archive).unwrap();
-    let folder = scratch.0.join("Chapter 01");
-    fs::create_dir_all(&folder).unwrap();
-    fs::write(folder.join("1.png"), page).unwrap();
-    fs::write(folder.join("ComicInfo.xml"), FULL).unwrap();
+    let archive_path = scratch.write("book.cbz", &archive);
+    scratch.write("Chapter 01/1.png", &page);
+    scratch.write("Chapter 01/ComicInfo.xml", FULL.as_bytes());
+    let folder = scratch.path().join("Chapter 01");
 
     for path in [archive_path, folder] {
         let info = open_book(&path).unwrap().comic_info().unwrap().unwrap();
@@ -198,12 +164,10 @@ fn reads_comic_info_from_an_archive_and_a_folder() {
 fn has_no_comic_info_when_the_book_carries_none() {
     let scratch = ScratchFolder::new("none");
     let page = page_png(5, 0, PageShape::Portrait).unwrap();
-    let path = scratch.0.join("book.cbz");
-    fs::write(
-        &path,
-        cbz(&[entry("1.png", page)], Compression::Stored).unwrap(),
-    )
-    .unwrap();
+    let path = scratch.write(
+        "book.cbz",
+        &cbz(&[entry("1.png", page)], Compression::Stored).unwrap(),
+    );
 
     let info = open_book(&path).unwrap().comic_info().unwrap();
 
