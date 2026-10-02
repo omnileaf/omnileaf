@@ -80,6 +80,25 @@ async fn keeps_nothing_from_a_write_job_that_fails() {
 }
 
 #[tokio::test]
+async fn keeps_writing_after_a_write_job_panics() {
+    let folder = ScratchFolder::new("panic");
+    let database = Database::open(&folder.config()).unwrap();
+    create_notes(&database).await;
+
+    let panicked = database
+        .write::<(), _>(|transaction| {
+            transaction.execute("INSERT INTO note (body) VALUES ('dropped')", [])?;
+            panic!("the job gave up")
+        })
+        .await;
+    let later = add_note(&database, "kept".to_owned()).await;
+
+    assert!(matches!(panicked, Err(Error::JobPanicked)));
+    assert!(later.is_ok());
+    assert_eq!(note_bodies(&database).await, ["kept"]);
+}
+
+#[tokio::test]
 async fn finishes_submitted_writes_before_closing() {
     let folder = ScratchFolder::new("close");
     let database = Database::open(&folder.config()).unwrap();

@@ -1,4 +1,5 @@
 use std::{
+    panic::{self, AssertUnwindSafe},
     sync::{
         Arc, Mutex,
         mpsc::{self, Receiver, Sender},
@@ -46,7 +47,7 @@ impl ConnectionWorkers {
         let (reply, outcome) = oneshot::channel();
         let queued = self.jobs.as_ref().ok_or(Error::Closed).and_then(|jobs| {
             jobs.send(Box::new(move |connection: &mut Connection| {
-                if reply.send(job(connection)).is_err() {
+                if reply.send(run_unwinding(job, connection)).is_err() {
                     tracing::debug!("a database job finished after its caller stopped waiting");
                 }
             }))
@@ -68,6 +69,17 @@ impl Drop for ConnectionWorkers {
             }
         }
     }
+}
+
+/// Turns a panicking job into an error, so its thread lives on to serve the next one.
+fn run_unwinding<T>(
+    job: impl FnOnce(&mut Connection) -> Result<T, Error>,
+    connection: &mut Connection,
+) -> Result<T, Error> {
+    panic::catch_unwind(AssertUnwindSafe(|| job(connection))).unwrap_or_else(|_| {
+        tracing::error!("a database job panicked");
+        Err(Error::JobPanicked)
+    })
 }
 
 fn serve(mut connection: Connection, queue: &Mutex<Receiver<Job>>) {

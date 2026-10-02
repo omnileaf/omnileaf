@@ -13,6 +13,8 @@ pub enum Error {
     Spawn(#[source] io::Error),
     #[error("run a statement in a database job")]
     Statement(#[from] rusqlite::Error),
+    #[error("a database job panicked")]
+    JobPanicked,
     #[error("the database closed before the job ran")]
     Closed,
 }
