@@ -41,6 +41,8 @@ pub enum Error {
     PageSize { requested: u16, max: u16 },
     #[error("read a page cursor that isn't one the library gave out")]
     MalformedCursor,
+    #[error("continue a list from a cursor another list gave out")]
+    CursorForAnotherList,
     #[error("start a database thread")]
     Spawn(#[source] io::Error),
     #[error("run a statement in a database job")]

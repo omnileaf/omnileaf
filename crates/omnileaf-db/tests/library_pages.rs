@@ -120,6 +120,31 @@ async fn pages_the_library_by_title_in_natural_order() {
 }
 
 #[tokio::test]
+async fn pages_the_library_by_most_recently_added_first() {
+    let library = Library::with(&[
+        ("Sample Series 01", 20, ONE_BOOK),
+        ("Sample Series 02", 30, ONE_BOOK),
+        ("Sample Series 03", 20, ONE_BOOK),
+        ("Sample Series 04", 10, ONE_BOOK),
+        ("Sample Series 05", 20, ONE_BOOK),
+    ])
+    .await;
+
+    let pages = library
+        .walk(series_titles(SeriesOrder::RecentlyAdded), 2)
+        .await;
+
+    assert_eq!(
+        pages,
+        [
+            vec!["Sample Series 02", "Sample Series 05"],
+            vec!["Sample Series 03", "Sample Series 01"],
+            vec!["Sample Series 04"],
+        ]
+    );
+}
+
+#[tokio::test]
 async fn ends_on_a_full_last_page_without_an_empty_one_after_it() {
     let library = Library::with(&[
         ("Sample Series 01", 1, ONE_BOOK),
@@ -140,14 +165,47 @@ async fn leaves_series_without_books_off_the_library_pages() {
     ])
     .await;
 
-    let pages = library.walk(series_titles(SeriesOrder::Title), 10).await;
+    let pages = [
+        library.walk(series_titles(SeriesOrder::Title), 10).await,
+        library
+            .walk(series_titles(SeriesOrder::RecentlyAdded), 10)
+            .await,
+    ];
 
-    assert_eq!(pages, [["Sample Series 02"]]);
+    assert_eq!(pages, [[["Sample Series 02"]], [["Sample Series 02"]]]);
+}
+
+#[tokio::test]
+async fn refuses_to_continue_one_series_order_from_another_s_cursor() {
+    let library = Library::with(&[
+        ("Sample Series 01", 1, ONE_BOOK),
+        ("Sample Series 02", 2, ONE_BOOK),
+    ])
+    .await;
+    let by_title = library.page(series_titles(SeriesOrder::Title), None, 1);
+    let title_cursor = by_title.await.unwrap().next;
+
+    let outcome = library
+        .page(series_titles(SeriesOrder::RecentlyAdded), title_cursor, 1)
+        .await;
+
+    assert!(matches!(outcome, Err(Error::CursorForAnotherList)));
 }
 
 #[test]
 fn refuses_a_cursor_the_library_did_not_give_out() {
-    let texts = ["", "0", "zz", "01", "0100", "ff00000000000000000000"];
+    let short_added = format!("02{}", "00".repeat(15));
+    let long_added = format!("02{}", "00".repeat(17));
+    let texts = [
+        "",
+        "0",
+        "zz",
+        "01",
+        "0100",
+        "ff00000000000000000000",
+        &short_added,
+        &long_added,
+    ];
 
     let outcomes = texts.map(str::parse::<Cursor>);
 

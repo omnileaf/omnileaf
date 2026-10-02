@@ -3,6 +3,7 @@ use std::{fmt, str::FromStr};
 use crate::Error;
 
 const TITLE_TAG: u8 = 1;
+const ADDED_TAG: u8 = 2;
 const ROW_KEY_LENGTH: usize = 8;
 const HEX_RADIX: u32 = 16;
 
@@ -14,6 +15,7 @@ pub struct Cursor(pub(crate) Position);
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Position {
     Title { sort_key: Vec<u8>, local_id: i64 },
+    Added { added_at_ms: i64, local_id: i64 },
 }
 
 impl Position {
@@ -22,6 +24,15 @@ impl Position {
             Self::Title { sort_key, local_id } => {
                 [&[TITLE_TAG][..], &local_id.to_be_bytes(), sort_key].concat()
             }
+            Self::Added {
+                added_at_ms,
+                local_id,
+            } => [
+                &[ADDED_TAG][..],
+                &added_at_ms.to_be_bytes(),
+                &local_id.to_be_bytes(),
+            ]
+            .concat(),
         }
     }
 
@@ -33,6 +44,13 @@ impl Position {
                 Some(Self::Title {
                     sort_key: sort_key.to_vec(),
                     local_id: i64::from_be_bytes(*local_id),
+                })
+            }
+            ADDED_TAG => {
+                let (added_at_ms, local_id) = rest.split_first_chunk::<ROW_KEY_LENGTH>()?;
+                Some(Self::Added {
+                    added_at_ms: i64::from_be_bytes(*added_at_ms),
+                    local_id: i64::from_be_bytes(local_id.try_into().ok()?),
                 })
             }
             _ => None,
