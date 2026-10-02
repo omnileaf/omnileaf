@@ -25,6 +25,12 @@ export function undoShortcutOn(platform: Platform): UndoShortcut {
   return APPLE_PLATFORMS.has(platform) ? COMMAND_Z : CONTROL_Z;
 }
 
+const LATIN_LETTER = /^[a-z]$/i;
+
+function isZKey({ key, code }: KeyboardEvent): boolean {
+  return LATIN_LETTER.test(key) ? key.toLowerCase() === "z" : code === "KeyZ";
+}
+
 export function isUndoPressed(
   shortcut: UndoShortcut,
   event: KeyboardEvent,
@@ -33,6 +39,6 @@ export function isUndoPressed(
     shortcut.isModifierHeld(event) &&
     !event.shiftKey &&
     !event.altKey &&
-    event.key.toLowerCase() === "z"
+    isZKey(event)
   );
 }

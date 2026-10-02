@@ -14,6 +14,12 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+function pressKey(init: KeyboardEventInit): void {
+  document.body.dispatchEvent(
+    new KeyboardEvent("keydown", { bubbles: true, ...init }),
+  );
+}
+
 async function offerUndo(platform: Platform = "linux") {
   const notices = new Notices();
   const screen = await render(NoticeHost, { notices, platform });
@@ -65,6 +71,22 @@ test("undoes with Command Z on macOS", async () => {
 
   expect(timesUndone()).toBe(1);
   await expect.element(undoButton).not.toBeInTheDocument();
+});
+
+test("undoes with Ctrl Z on a keyboard whose Z key types another script", async () => {
+  const { timesUndone } = await offerUndo();
+
+  pressKey({ key: "я", code: "KeyZ", ctrlKey: true });
+
+  expect(timesUndone()).toBe(1);
+});
+
+test("follows the printed Z on a Latin keyboard that moves it", async () => {
+  const { timesUndone } = await offerUndo();
+
+  pressKey({ key: "w", code: "KeyZ", ctrlKey: true });
+
+  expect(timesUndone()).toBe(0);
 });
 
 test("names the shortcut on the Undo button", async () => {
