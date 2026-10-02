@@ -32,7 +32,10 @@
 
 <div class="flex flex-col-reverse block-dvh medium:flex-row">
   <AppNavigation current={sectionOf(page.url.pathname)} />
-  <main bind:this={main} class="flex-1 overflow-y-auto p-xl">
+  <main
+    bind:this={main}
+    class="flex-1 overflow-y-auto p-xl ios:max-medium:pbe-floating-clearance"
+  >
     {@render children()}
   </main>
 </div>
