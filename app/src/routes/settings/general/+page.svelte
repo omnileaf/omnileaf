@@ -13,12 +13,6 @@
   const store = browserLanguageStore();
   const chosen = storedLanguageChoice(store);
 
-  function labelFor(choice: LanguageChoice): string {
-    return choice === "system"
-      ? m.language_system({ language: languageName(getLocale()) })
-      : languageName(choice);
-  }
-
   function choose(choice: LanguageChoice): void {
     chooseLanguage(choice, {
       store,
@@ -49,7 +43,11 @@
             choose(choice);
           }}
         />
-        {labelFor(choice)}
+        {#if choice === "system"}
+          {m.language_system({ language: languageName(getLocale()) })}
+        {:else}
+          <span lang={choice}>{languageName(choice)}</span>
+        {/if}
       </label>
     {/each}
   </div>
