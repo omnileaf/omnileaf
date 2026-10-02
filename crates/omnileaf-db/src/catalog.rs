@@ -15,7 +15,7 @@ pub use book::{NewBook, add_book};
 pub use cursor::Cursor;
 pub use library_roots::library_roots;
 pub use page::{Page, PageRequest, PageSize};
-pub use root::{LibraryRoot, NewRoot, RootId, RootKind, RootLocator, add_root};
+pub use root::{LibraryRoot, NewRoot, RootId, RootKind, RootLocator, add_root, remove_root};
 pub use series::{NewSeries, add_series};
 pub use series_books::{BookSummary, series_books};
 pub use series_page::{SeriesOrder, SeriesSummary, series_page};

@@ -1,7 +1,7 @@
 use std::{fmt, path::PathBuf, str::FromStr};
 
 use rusqlite::{
-    Row, ToSql, Transaction,
+    OptionalExtension, Row, ToSql, Transaction,
     types::{FromSql, FromSqlError, FromSqlResult, ToSqlOutput, Type, ValueRef},
 };
 
@@ -15,6 +15,11 @@ const KIND_COLUMN: usize = 1;
 const LOCATOR_KIND_COLUMN: usize = 2;
 const LOCATION_COLUMN: usize = 3;
 const ADDED_AT_COLUMN: usize = 4;
+const BOOKS_FOUND_ONLY_IN_ROOT: &str = "DELETE FROM book
+    WHERE id IN (SELECT book_id FROM book_file WHERE root_id = ?1)
+        AND NOT EXISTS (
+            SELECT 1 FROM book_file WHERE book_id = book.id AND root_id != ?1
+        )";
 
 /// A library root's row key, stable because the table keeps an explicit integer primary key.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -63,6 +68,28 @@ pub fn add_root(transaction: &Transaction<'_>, root: &NewRoot) -> Result<RootId,
         .prepare("SELECT id FROM library_root WHERE location = ?1")?
         .query_row([location], |row| row.get(0))?;
     Ok(RootId(id))
+}
+
+/// Removes a linked root and the books found only in it, leaving the files on disk alone.
+#[tracing::instrument(skip_all, fields(root = %id))]
+pub fn remove_root(transaction: &Transaction<'_>, id: RootId) -> Result<(), Error> {
+    let kind: Option<RootKind> = transaction
+        .prepare("SELECT kind FROM library_root WHERE id = ?1")?
+        .query_row([id.0], |row| row.get(0))
+        .optional()?;
+    match kind {
+        None => Err(Error::UnknownRoot { id }),
+        Some(RootKind::Home) => Err(Error::HomeRoot { id }),
+        Some(RootKind::Linked) => {
+            transaction
+                .prepare(BOOKS_FOUND_ONLY_IN_ROOT)?
+                .execute([id.0])?;
+            transaction
+                .prepare("DELETE FROM library_root WHERE id = ?1")?
+                .execute([id.0])?;
+            Ok(())
+        }
+    }
 }
 
 /// Reads a root from a row holding `id, kind, locator_kind, location, added_at_ms` in that order.
@@ -135,6 +162,7 @@ mod tests {
     use proptest::prelude::*;
 
     use super::*;
+    use crate::scratch::ScratchLibrary;
 
     proptest! {
         #[test]
@@ -154,6 +182,25 @@ mod tests {
         assert!(
             read.iter()
                 .all(|outcome| matches!(outcome, Err(Error::MalformedRootId)))
+        );
+    }
+
+    #[test]
+    fn finds_the_books_of_a_removed_root_through_its_files_without_scanning_the_library() {
+        let scratch = ScratchLibrary::new("remove-root-plan");
+
+        let plan = scratch.query_plan(BOOKS_FOUND_ONLY_IN_ROOT);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH book USING PRIMARY KEY (id=?)",
+                "LIST SUBQUERY 1",
+                "SEARCH book_file USING INDEX sqlite_autoindex_book_file_1 (root_id=?)",
+                "CORRELATED SCALAR SUBQUERY 2",
+                "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
+                "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
+            ]
         );
     }
 }
