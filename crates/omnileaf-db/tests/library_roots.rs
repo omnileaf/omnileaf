@@ -100,7 +100,7 @@ impl Library {
                     transaction.execute(
                         "INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
                          VALUES (?1, ?2, ?3, 1, ?4)",
-                        (id.as_bytes(), root, &book.title, ADDED_AT_MS),
+                        (id.as_bytes(), root, book.title.as_bytes(), ADDED_AT_MS),
                     )?;
                 }
                 Ok(())
