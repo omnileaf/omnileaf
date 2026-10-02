@@ -7,7 +7,7 @@ mod support;
 
 use std::fmt::Write;
 
-use omnileaf_sync_proto::{BookId, CategoryId, Fingerprint, ImageEntry, SeriesId, norm};
+use omnileaf_sync_proto::{BookId, CategoryId, Fingerprint, Hlc, ImageEntry, SeriesId, norm};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -111,5 +111,63 @@ fn fingerprints_and_book_ids_match_the_golden_vectors() {
             "{:?}",
             vector.input
         );
+    }
+}
+
+#[derive(Deserialize)]
+struct ClockGolden {
+    stamps: Vec<StampVector>,
+    sequences: Vec<SequenceVector>,
+}
+
+#[derive(Deserialize)]
+struct StampVector {
+    unix_ms: u64,
+    counter: u16,
+    hlc: u64,
+}
+
+#[derive(Deserialize)]
+struct SequenceVector {
+    start: u64,
+    events: Vec<ClockEvent>,
+    after: Vec<u64>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum ClockEvent {
+    Tick(u64),
+    Observe(u64),
+}
+
+#[test]
+fn clock_stamps_match_the_golden_vectors() {
+    let golden: ClockGolden = serde_json::from_str(include_str!("golden/clock.json")).unwrap();
+
+    for vector in golden.stamps {
+        let hlc = Hlc::new(vector.unix_ms, vector.counter).unwrap();
+
+        assert_eq!(hlc.as_u64(), vector.hlc);
+        assert_eq!(hlc.unix_ms(), vector.unix_ms);
+    }
+}
+
+#[test]
+fn clock_sequences_match_the_golden_vectors() {
+    let golden: ClockGolden = serde_json::from_str(include_str!("golden/clock.json")).unwrap();
+
+    for vector in golden.sequences {
+        let mut clock = Hlc::from(vector.start);
+        let mut after = Vec::new();
+        for event in vector.events {
+            clock = match event {
+                ClockEvent::Tick(now) => clock.tick(now).unwrap(),
+                ClockEvent::Observe(remote) => clock.observe(Hlc::from(remote)),
+            };
+            after.push(clock.as_u64());
+        }
+
+        assert_eq!(after, vector.after);
     }
 }
