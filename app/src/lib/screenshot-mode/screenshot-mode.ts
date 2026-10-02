@@ -79,8 +79,15 @@ export function settle(
   now: number,
 ): ScreenshotModeSettings {
   const { activity } = settings;
-  return activity.kind === "onUntil" && activity.turnsOffAt <= now
-    ? turnOff(settings)
+  if (activity.kind !== "onUntil") {
+    return settings;
+  }
+  if (activity.turnsOffAt <= now) {
+    return turnOff(settings);
+  }
+  const latestTurnOff = now + AUTO_OFF_DELAY_MS;
+  return activity.turnsOffAt > latestTurnOff
+    ? { ...settings, activity: { kind: "onUntil", turnsOffAt: latestTurnOff } }
     : settings;
 }
 

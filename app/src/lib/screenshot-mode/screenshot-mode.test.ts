@@ -109,6 +109,20 @@ describe("settling at a time", () => {
 
     expect(settle(on, AN_HOUR_LATER - 1)).toEqual(on);
   });
+
+  test("brings a deadline set further ahead than an hour back to an hour from now", () => {
+    const aMonthAhead = turnOn(
+      DEFAULT_SCREENSHOT_MODE,
+      NOW + 30 * 24 * AUTO_OFF_DELAY_MS,
+    );
+
+    const settings = settle(aMonthAhead, NOW);
+
+    expect(settings.activity).toEqual({
+      kind: "onUntil",
+      turnsOffAt: AN_HOUR_LATER,
+    });
+  });
 });
 
 describe("reading what was stored", () => {
