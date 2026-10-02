@@ -1,4 +1,4 @@
-use omnileaf_sync_proto::{Hlc, NodeId, Stamp};
+use omnileaf_sync_proto::{Hlc, NODE_ID_LENGTH, NodeId, Stamp};
 use rusqlite::Connection;
 
 use crate::Error;
@@ -15,7 +15,7 @@ impl LocalReplica {
         let local =
             connection.query_row("SELECT node_id, hlc, next_seq FROM sync_local", [], |row| {
                 Ok(Self {
-                    node: NodeId::from(row.get::<_, [u8; 16]>(0)?),
+                    node: NodeId::from(row.get::<_, [u8; NODE_ID_LENGTH]>(0)?),
                     hlc: Hlc::from(row.get::<_, u64>(1)?),
                     next_seq: row.get(2)?,
                 })
