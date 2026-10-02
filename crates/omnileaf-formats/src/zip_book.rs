@@ -8,6 +8,7 @@ use zip::{ZipArchive, result::ZipError};
 
 use crate::{
     FormatError, Limits, Page,
+    block_reader::BlockReader,
     book::in_reading_order,
     is_ignored, is_page_image,
     limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME},
@@ -16,7 +17,7 @@ use crate::{
 #[derive(Debug)]
 pub struct ZipBook {
     path: PathBuf,
-    archive: ZipArchive<File>,
+    archive: ZipArchive<BlockReader<File>>,
     pages: Vec<Page>,
     entries: Vec<usize>,
     limits: Limits,
@@ -24,18 +25,7 @@ pub struct ZipBook {
 
 impl ZipBook {
     pub(crate) fn open(path: &Path, limits: &Limits) -> Result<Self, FormatError> {
-        let file = File::open(path).map_err(|source| FormatError::Read {
-            path: path.to_owned(),
-            source,
-        })?;
-        let mut archive = ZipArchive::new(file).map_err(|source| corrupt(path, source))?;
-        if archive.len() > limits.max_entries {
-            return Err(FormatError::TooManyEntries {
-                path: path.to_owned(),
-                count: archive.len(),
-                limit: limits.max_entries,
-            });
-        }
+        let mut archive = open_archive(path, limits)?;
         let mut found = Vec::new();
         let mut total: u64 = 0;
         for index in 0..archive.len() {
@@ -140,6 +130,28 @@ impl ZipBook {
     }
 }
 
+/// Reads the archive's central directory, refusing more entries than the limits allow.
+pub(crate) fn open_archive(
+    path: &Path,
+    limits: &Limits,
+) -> Result<ZipArchive<BlockReader<File>>, FormatError> {
+    let reader = File::open(path)
+        .and_then(BlockReader::new)
+        .map_err(|source| FormatError::Read {
+            path: path.to_owned(),
+            source,
+        })?;
+    let archive = ZipArchive::new(reader).map_err(|source| corrupt(path, source))?;
+    if archive.len() > limits.max_entries {
+        return Err(FormatError::TooManyEntries {
+            path: path.to_owned(),
+            count: archive.len(),
+            limit: limits.max_entries,
+        });
+    }
+    Ok(archive)
+}
+
 fn check_page(
     path: &Path,
     page: &Page,
@@ -166,7 +178,7 @@ fn check_page(
     Ok(())
 }
 
-fn corrupt(path: &Path, source: ZipError) -> FormatError {
+pub(crate) fn corrupt(path: &Path, source: ZipError) -> FormatError {
     FormatError::Corrupt {
         path: path.to_owned(),
         source,

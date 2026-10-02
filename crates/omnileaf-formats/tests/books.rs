@@ -3,58 +3,18 @@
     reason = "the books are generated in a scratch folder, so a failed set-up should stop the test"
 )]
 
-use std::{
-    env, fs,
-    path::{Path, PathBuf},
-    process,
-};
+mod support;
+
+use std::path::Path;
 
 use omnileaf_formats::{FormatError, Limits, open_book, open_book_with};
-use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_png};
+use omnileaf_testkit::{Compression, PageShape, cbz, page_png};
+use support::{ScratchFolder, entry};
 
 const SEED: u64 = 11;
 
-struct ScratchFolder(PathBuf);
-
-impl ScratchFolder {
-    fn new(name: &str) -> Self {
-        let path = env::temp_dir()
-            .join(format!("omnileaf-formats-{}", process::id()))
-            .join(name);
-        if path.exists() {
-            fs::remove_dir_all(&path).unwrap();
-        }
-        fs::create_dir_all(&path).unwrap();
-        Self(path)
-    }
-
-    fn write(&self, name: &str, bytes: &[u8]) -> PathBuf {
-        let path = self.0.join(name);
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::write(&path, bytes).unwrap();
-        path
-    }
-
-    fn path(&self) -> &Path {
-        &self.0
-    }
-}
-
-impl Drop for ScratchFolder {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
-    }
-}
-
 fn page(index: u32) -> Vec<u8> {
     page_png(SEED, index, PageShape::Portrait).unwrap()
-}
-
-fn entry(name: &str, bytes: Vec<u8>) -> ArchiveEntry {
-    ArchiveEntry {
-        name: name.to_owned(),
-        bytes,
-    }
 }
 
 fn page_names(path: &Path) -> Vec<String> {
@@ -130,7 +90,7 @@ fn lists_a_folders_images_in_reading_order() {
     scratch.write("Chapter/2.png", &page(1));
     scratch.write("Chapter/.hidden.png", &page(3));
     scratch.write("Chapter/notes.txt", b"not a page");
-    let folder = scratch.path().join("Chapter");
+    let folder = scratch.join("Chapter");
 
     let mut book = open_book(&folder).unwrap();
 

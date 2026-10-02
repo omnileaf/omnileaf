@@ -7,7 +7,9 @@ mod support;
 
 use std::fmt::Write;
 
-use omnileaf_sync_proto::{BookId, CategoryId, Fingerprint, Hlc, ImageEntry, SeriesId, norm};
+use omnileaf_sync_proto::{
+    BookId, CategoryId, Fingerprint, FolderImage, Hlc, ImageEntry, SeriesId, norm,
+};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -59,6 +61,7 @@ fn ids_match_the_golden_vectors() {
 #[serde(tag = "kind", rename_all = "lowercase")]
 enum FingerprintInput {
     Pmf1 { entries: Vec<(u32, u64)> },
+    Dir1 { files: Vec<(String, u64)> },
     Raw1 { size: u64 },
 }
 
@@ -78,6 +81,15 @@ fn fingerprint_of(input: &FingerprintInput) -> Fingerprint {
                 .map(|&(crc32, size)| ImageEntry { crc32, size }),
         )
         .unwrap(),
+        FingerprintInput::Dir1 { files } => support::dir1_of_sample_files(
+            files
+                .iter()
+                .map(|(name, size)| FolderImage {
+                    name: name.clone(),
+                    size: *size,
+                })
+                .collect(),
+        ),
         FingerprintInput::Raw1 { size } => {
             let content = support::sample_file(*size);
             Fingerprint::raw1(*size, &support::raw1_samples(&content)).unwrap()

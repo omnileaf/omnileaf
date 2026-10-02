@@ -17,7 +17,13 @@ fn ignores_system_files_and_hidden_entries() {
 
 #[test]
 fn keeps_ordinary_entries() {
-    for path in ["page1.jpg", "Volume 1/page 01.png", "ComicInfo.xml"] {
+    for path in [
+        "page1.jpg",
+        "Volume 1/page 01.png",
+        "ComicInfo.xml",
+        "./page1.jpg",
+        "./Volume 1/page 01.png",
+    ] {
         assert!(!is_ignored(path), "{path} should be kept");
     }
 }

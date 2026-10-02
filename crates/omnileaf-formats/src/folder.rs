@@ -1,5 +1,5 @@
 use std::{
-    fs,
+    fs::{self, DirEntry},
     path::{Path, PathBuf},
 };
 
@@ -25,17 +25,7 @@ impl FolderBook {
             path: path.to_owned(),
             source,
         };
-        let entries = fs::read_dir(path)
-            .map_err(read_failed)?
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(read_failed)?;
-        if entries.len() > limits.max_entries {
-            return Err(FormatError::TooManyEntries {
-                path: path.to_owned(),
-                count: entries.len(),
-                limit: limits.max_entries,
-            });
-        }
+        let entries = read_folder(path, limits)?;
         let mut found = Vec::new();
         let mut total: u64 = 0;
         for entry in entries {
@@ -134,4 +124,24 @@ impl FolderBook {
         }
         fs::read(file).map_err(read_failed)
     }
+}
+
+/// Lists what is directly inside the folder, refusing more entries than the limits allow.
+pub(crate) fn read_folder(path: &Path, limits: &Limits) -> Result<Vec<DirEntry>, FormatError> {
+    let read_failed = |source| FormatError::Read {
+        path: path.to_owned(),
+        source,
+    };
+    let entries = fs::read_dir(path)
+        .map_err(read_failed)?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(read_failed)?;
+    if entries.len() > limits.max_entries {
+        return Err(FormatError::TooManyEntries {
+            path: path.to_owned(),
+            count: entries.len(),
+            limit: limits.max_entries,
+        });
+    }
+    Ok(entries)
 }
