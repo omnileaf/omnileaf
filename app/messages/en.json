@@ -66,6 +66,23 @@
   "screenshot_mode_on_until": "On · turns off at {time}",
   "switch_on": "On",
   "switch_off": "Off",
+  "screenshot_mode_preview": "Preview",
+  "screenshot_mode_sample_title": "Sample Series 04",
+  "screenshot_mode_sample_format": "Manga",
+  "screenshot_mode_sample_chapters": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} chapter",
+        "countPlural=other": "{formattedCount} chapters"
+      }
+    }
+  ],
   "screenshot_mode_what_changes": "Titles, writers, covers, chapter titles, summaries, tags, and the names of folders, servers and your own categories, shelves and profiles become stand-ins. 18+ is hidden and not counted. Counts, dates, progress and settings otherwise stay real, so a bug still shows.",
   "screenshot_mode_while_on": "While it’s on",
   "screenshot_mode_blank_pages": "Blank the pages in the reader",
@@ -79,5 +96,7 @@
   "screenshot_mode_shortcut": "Keyboard shortcut",
   "screenshot_mode_shortcut_help": "Anywhere in Omnileaf",
   "screenshot_mode_shortcut_keys": "Ctrl Shift H",
-  "screenshot_mode_nothing_sent": "Nothing about Screenshot mode is sent anywhere. It only changes what’s on screen and in reports."
+  "screenshot_mode_nothing_sent": "Nothing about Screenshot mode is sent anywhere. It only changes what’s on screen and in reports.",
+  "stand_in_series": "Series {number}",
+  "screenshot_mode_preview_label": "Preview of one cover with Screenshot mode off and on"
 }

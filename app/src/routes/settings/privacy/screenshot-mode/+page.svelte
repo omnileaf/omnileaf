@@ -9,6 +9,7 @@
     type ScreenshotModeOption,
   } from "$lib/screenshot-mode/screenshot-mode";
   import { getScreenshotMode } from "$lib/screenshot-mode/screenshot-mode.svelte";
+  import ScreenshotModePreview from "$lib/screenshot-mode/ScreenshotModePreview.svelte";
   import ShortcutKeys from "$lib/screenshot-mode/ShortcutKeys.svelte";
   import { screenshotModeStatus } from "$lib/screenshot-mode/status";
   import SettingSwitch from "$lib/settings/SettingSwitch.svelte";
@@ -67,7 +68,9 @@
   {m.screenshot_mode_title()}
 </h1>
 
-<div class="mbs-xl flex flex-col">
+<div
+  class="mbs-xl flex flex-col expanded:grid expanded:grid-with-preview expanded:items-start expanded:gap-xl"
+>
   <SettingSwitch
     label={m.screenshot_mode_title()}
     description={screenshotModeStatus(screenshotMode.activity)}
@@ -76,7 +79,7 @@
       screenshotMode.toggle();
     }}
     prominence="main"
-    class="rounded-card border border-border bg-card"
+    class="rounded-card border border-border bg-card max-expanded:rounded-ee-none max-expanded:rounded-es-none expanded:col-start-1"
   >
     {#snippet trailing()}
       {#if hasKeyboard}
@@ -85,11 +88,32 @@
     {/snippet}
   </SettingSwitch>
 
-  <p class="mbs-sm px-xs text-detail text-muted">
-    {m.screenshot_mode_what_changes()}
-  </p>
+  <div
+    class="max-expanded:contents expanded:col-start-2 expanded:row-span-full expanded:flex expanded:flex-col expanded:gap-md expanded:rounded-card expanded:border expanded:border-border expanded:bg-card expanded:p-lg"
+  >
+    <figure
+      aria-labelledby="{id}-preview"
+      class="flex flex-col gap-md max-expanded:rounded-ee-card max-expanded:rounded-es-card max-expanded:border max-expanded:border-bs-0 max-expanded:border-border max-expanded:bg-card max-expanded:p-lg"
+    >
+      <figcaption
+        id="{id}-preview"
+        class="text-detail font-semibold text-muted max-expanded:sr-only"
+      >
+        {m.screenshot_mode_preview()}
+      </figcaption>
+      <ScreenshotModePreview isOn={screenshotMode.isOn} />
+    </figure>
+    <p
+      class="text-detail text-muted max-expanded:mbs-sm max-expanded:px-xs expanded:border-bs expanded:border-border expanded:pbs-md"
+    >
+      {m.screenshot_mode_what_changes()}
+    </p>
+  </div>
 
-  <section aria-labelledby="{id}-while-on" class="mbs-xl flex flex-col gap-sm">
+  <section
+    aria-labelledby="{id}-while-on"
+    class="flex flex-col gap-sm max-expanded:mbs-xl expanded:col-start-1"
+  >
     <h2 id="{id}-while-on" class="px-xs text-detail font-semibold text-muted">
       {m.screenshot_mode_while_on()}
     </h2>
@@ -113,7 +137,10 @@
   </section>
 
   {#if hasKeyboard}
-    <section aria-labelledby="{id}-quickly" class="mbs-xl flex flex-col gap-sm">
+    <section
+      aria-labelledby="{id}-quickly"
+      class="flex flex-col gap-sm max-expanded:mbs-xl expanded:col-start-1"
+    >
       <h2 id="{id}-quickly" class="px-xs text-detail font-semibold text-muted">
         {m.screenshot_mode_quickly()}
       </h2>
@@ -138,7 +165,9 @@
     </section>
   {/if}
 
-  <p class="mbs-sm px-xs text-detail text-muted">
+  <p
+    class="px-xs text-detail text-muted max-expanded:mbs-sm expanded:col-start-1"
+  >
     {m.screenshot_mode_nothing_sent()}
   </p>
 </div>

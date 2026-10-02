@@ -66,6 +66,23 @@
   "screenshot_mode_on_until": "⟦Öñ · ţûŕñš öƒƒ áţ {time}··········⟧",
   "switch_on": "⟦Öñ·⟧",
   "switch_off": "⟦Öƒƒ··⟧",
+  "screenshot_mode_preview": "⟦Þŕéṽíéŵ···⟧",
+  "screenshot_mode_sample_title": "⟦Šáɱþļé Šéŕíéš 04·······⟧",
+  "screenshot_mode_sample_format": "⟦Ṁáñĝá··⟧",
+  "screenshot_mode_sample_chapters": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} çĥáþţéŕ··········⟧",
+        "countPlural=other": "⟦{formattedCount} çĥáþţéŕš··········⟧"
+      }
+    }
+  ],
   "screenshot_mode_what_changes": "⟦Ţíţļéš, ŵŕíţéŕš, çöṽéŕš, çĥáþţéŕ ţíţļéš, šûɱɱáŕíéš, ţáĝš, áñð ţĥé ñáɱéš öƒ ƒöļðéŕš, šéŕṽéŕš áñð ýöûŕ öŵñ çáţéĝöŕíéš, šĥéļṽéš áñð þŕöƒíļéš ƀéçöɱé šţáñð-íñš. 18+ íš ĥíððéñ áñð ñöţ çöûñţéð. Çöûñţš, ðáţéš, þŕöĝŕéšš áñð šéţţíñĝš öţĥéŕŵíšé šţáý ŕéáļ, šö á ƀûĝ šţíļļ šĥöŵš.···········································································································⟧",
   "screenshot_mode_while_on": "⟦Ŵĥíļé íţ’š öñ······⟧",
   "screenshot_mode_blank_pages": "⟦Ɓļáñķ ţĥé þáĝéš íñ ţĥé ŕéáðéŕ············⟧",
@@ -79,5 +96,7 @@
   "screenshot_mode_shortcut": "⟦Ķéýƀöáŕð šĥöŕţçûţ·······⟧",
   "screenshot_mode_shortcut_help": "⟦Áñýŵĥéŕé íñ Öɱñíļéáƒ········⟧",
   "screenshot_mode_shortcut_keys": "⟦Çţŕļ Šĥíƒţ Ĥ·····⟧",
-  "screenshot_mode_nothing_sent": "⟦Ñöţĥíñĝ áƀöûţ Šçŕééñšĥöţ ɱöðé íš šéñţ áñýŵĥéŕé. Íţ öñļý çĥáñĝéš ŵĥáţ’š öñ šçŕééñ áñð íñ ŕéþöŕţš.·······································⟧"
+  "screenshot_mode_nothing_sent": "⟦Ñöţĥíñĝ áƀöûţ Šçŕééñšĥöţ ɱöðé íš šéñţ áñýŵĥéŕé. Íţ öñļý çĥáñĝéš ŵĥáţ’š öñ šçŕééñ áñð íñ ŕéþöŕţš.·······································⟧",
+  "stand_in_series": "⟦Šéŕíéš {number}······⟧",
+  "screenshot_mode_preview_label": "⟦Þŕéṽíéŵ öƒ öñé çöṽéŕ ŵíţĥ Šçŕééñšĥöţ ɱöðé öƒƒ áñð öñ·····················⟧"
 }

@@ -80,6 +80,17 @@ test("Space turns it on from the keyboard", async ({ page }) => {
   await expect(mainSwitch(page)).toBeChecked();
 });
 
+test("the preview shows a sample title before and a stand-in after", async ({
+  page,
+}) => {
+  await openScreenshotMode(page);
+
+  const preview = page.getByRole("figure", { name: "Preview" });
+
+  await expect(preview).toContainText("Sample Series 04");
+  await expect(preview).toContainText("Series 04");
+});
+
 test("the keyboard shortcut is listed on a computer", async ({ page }) => {
   await openScreenshotMode(page);
 
