@@ -94,14 +94,25 @@ mod tests {
 
     use super::*;
 
+    /// Walks the keys through a match with no catch-all, so a new key fails to build here until it joins the walk.
+    fn every_key(book: BookId) -> Vec<Key> {
+        let mut keys = Vec::new();
+        let mut next = Some(Key::from(LatestKey::BookPosition(book)));
+        while let Some(key) = next {
+            keys.push(key);
+            next = match key {
+                Key::Latest(LatestKey::BookPosition(_)) => Some(LatestKey::BookRead(book).into()),
+                Key::Latest(LatestKey::BookRead(_)) => Some(MaximumKey::BookFurthest(book).into()),
+                Key::Maximum(MaximumKey::BookFurthest(_)) => None,
+            };
+        }
+        keys
+    }
+
     #[test]
     fn reads_every_key_back_from_where_it_is_stored() {
         let book = BookId::local(&Fingerprint::pmf1([ImageEntry { crc32: 1, size: 1 }]).unwrap());
-        let keys = [
-            Key::from(LatestKey::BookPosition(book)),
-            Key::from(LatestKey::BookRead(book)),
-            Key::from(MaximumKey::BookFurthest(book)),
-        ];
+        let keys = every_key(book);
 
         let read_back: Vec<Option<Key>> = keys
             .iter()
@@ -111,7 +122,7 @@ mod tests {
             })
             .collect();
 
-        assert_eq!(read_back, keys.map(Some));
+        assert_eq!(read_back, keys.into_iter().map(Some).collect::<Vec<_>>());
     }
 
     #[test]
