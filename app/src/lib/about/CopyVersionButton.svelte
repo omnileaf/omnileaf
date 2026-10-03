@@ -3,18 +3,13 @@
 
   import { m } from "$lib/paraglide/messages.js";
 
-  import type { AboutLook } from "./look";
+  import { type AboutLook, ROW_ICON_SIZES } from "./look";
   import type { VersionCopying } from "./version-copying.svelte";
 
   const LOOKS = {
     phone: "rounded-tile px-md text-accent",
     pane: "rounded-control border border-border bg-card ps-md pe-list-row desktop:text-label desktop:min-block-pointer-button",
   } satisfies Record<AboutLook, string>;
-
-  const ICON_SIZES = { phone: 18, pane: 16 } satisfies Record<
-    AboutLook,
-    number
-  >;
 
   let { copying, look }: { copying: VersionCopying; look: AboutLook } =
     $props();
@@ -33,10 +28,10 @@
   }}
 >
   {#if isCopied}
-    <Check size={ICON_SIZES[look]} class="shrink-0" />
+    <Check size={ROW_ICON_SIZES[look]} class="shrink-0" />
     <span>{m.about_version_details_copied()}</span>
   {:else}
-    <Copy size={ICON_SIZES[look]} class="shrink-0" />
+    <Copy size={ROW_ICON_SIZES[look]} class="shrink-0" />
     <span>{m.about_copy_version_details()}</span>
   {/if}
 </button>
