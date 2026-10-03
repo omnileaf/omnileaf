@@ -16,6 +16,7 @@ const POINTER_ROW_HEIGHT = 44;
 const NARROW_BACK_LINK_HEIGHT = 32;
 const TOUCH_TARGET = 48;
 const STATUS_BAR_GAP = 8;
+const IOS_BACK_LINK_TEXT = "17px";
 
 function sectionList(page: Page) {
   return page.getByRole("navigation", { name: "Settings sections" });
@@ -129,6 +130,24 @@ for (const platform of ["android", "ios"] as const) {
     });
   });
 }
+
+test.describe("on an iOS phone", () => {
+  test.use(onPlatform("ios"));
+
+  test("leads a section back to settings with a 17px chevron and label", async ({
+    page,
+  }) => {
+    await page.goto("/settings/about");
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+
+    const back = page.getByRole("link", { name: "Back to Settings" });
+
+    await expect(back).toHaveText("Settings");
+    await expect(back).toHaveCSS("font-size", IOS_BACK_LINK_TEXT);
+    await expect(back).toHaveCSS("font-weight", "500");
+    expect((await boxOf(back)).height).toBe(TOUCH_TARGET);
+  });
+});
 
 for (const colorScheme of ["light", "dark"] as const) {
   test(`settings on desktop has no accessibility violations in the ${colorScheme} theme`, async ({
