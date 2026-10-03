@@ -41,7 +41,7 @@ pub(crate) struct ReadBook {
 /// The books read in one batch, split by how each is recorded.
 #[derive(Default)]
 pub(crate) struct Recording {
-    pub(crate) found_again: Vec<ScannedBook>,
+    pub(crate) unmoved: Vec<ScannedBook>,
     pub(crate) moved: Vec<ScannedBook>,
 }
 
@@ -98,7 +98,7 @@ impl Plan {
                     if previous != id {
                         self.replaced.push(previous);
                     }
-                    recording.found_again.push(book);
+                    recording.unmoved.push(book);
                 }
                 None if self.take_gone(id) => {
                     self.changes.moved = self.changes.moved.saturating_add(1);
@@ -106,7 +106,7 @@ impl Plan {
                 }
                 None => {
                     self.changes.added = self.changes.added.saturating_add(1);
-                    recording.found_again.push(book);
+                    recording.unmoved.push(book);
                 }
             }
         }

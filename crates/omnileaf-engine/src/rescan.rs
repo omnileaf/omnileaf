@@ -95,7 +95,7 @@ async fn record_changed(
         let recording = plan.sort(read);
         database
             .write(move |transaction| {
-                record_scanned_books(transaction, &recording.found_again)?;
+                record_scanned_books(transaction, &recording.unmoved)?;
                 record_moved_books(transaction, &recording.moved)
             })
             .await?;
