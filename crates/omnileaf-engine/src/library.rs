@@ -1,4 +1,4 @@
-use std::{fs, io, path::PathBuf, sync::Arc};
+use std::{fs, io, path::PathBuf};
 
 use omnileaf_db::{
     Config, Database,
@@ -29,16 +29,6 @@ const MAPPED_DATABASE_BYTES: u32 = if cfg!(any(target_os = "android", target_os 
 /// The library database in the home folder, and the folders it reads.
 pub struct Library {
     store: Store,
-    clock: Arc<dyn Clock>,
-}
-
-/// Lets the library and its store read one clock.
-struct SharedClock(Arc<dyn Clock>);
-
-impl Clock for SharedClock {
-    fn now_unix_ms(&self) -> u64 {
-        self.0.now_unix_ms()
-    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -83,10 +73,8 @@ impl Library {
             Ok::<_, LibraryError>(Database::open(&config)?)
         })
         .await??;
-        let clock: Arc<dyn Clock> = Arc::new(clock);
         let library = Self {
-            store: Store::new(database, SharedClock(Arc::clone(&clock))),
-            clock,
+            store: Store::new(database, clock),
         };
         library.set_home(home).await?;
         Ok(library)
@@ -210,7 +198,7 @@ impl Library {
     }
 
     fn now_ms(&self) -> i64 {
-        i64::try_from(self.clock.now_unix_ms()).unwrap_or(i64::MAX)
+        i64::try_from(self.store.clock().now_unix_ms()).unwrap_or(i64::MAX)
     }
 }
 

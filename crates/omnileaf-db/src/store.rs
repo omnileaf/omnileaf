@@ -64,6 +64,11 @@ impl Store {
         &self.database
     }
 
+    #[must_use]
+    pub fn clock(&self) -> &dyn Clock {
+        self.clock.as_ref()
+    }
+
     /// A receiver that falls too far behind loses the oldest changes and is told how many it missed.
     #[must_use]
     pub fn subscribe(&self) -> broadcast::Receiver<Changed> {
