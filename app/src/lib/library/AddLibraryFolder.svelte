@@ -33,10 +33,10 @@
 
   let {
     addFolder,
-    onAdded,
+    onFinished,
   }: {
     addFolder: AddFolder;
-    onAdded?: () => void;
+    onFinished?: () => void;
   } = $props();
 
   const progressTitleId = $props.id();
@@ -73,10 +73,11 @@
       outcome = { kind: "failed", code: result.error.code };
     } else if (result.data === null) {
       outcome = { kind: "idle" };
+      return;
     } else {
       outcome = { kind: "scanned", scan: result.data };
-      onAdded?.();
     }
+    onFinished?.();
   }
 </script>
 
