@@ -14,17 +14,17 @@ use support::ScratchFolder;
 
 const LIST_OF_FOUR: StoredLibraryView = StoredLibraryView {
     display: LibraryDisplay::List,
-    phone_columns: 4,
-    tablet_columns: 7,
-    desktop_columns: 10,
+    phone_covers_per_row: 4,
+    tablet_covers_per_row: 7,
+    desktop_covers_per_row: 10,
     shows_item_counts: true,
 };
 
 const COMPACT_OF_TWO: StoredLibraryView = StoredLibraryView {
     display: LibraryDisplay::Compact,
-    phone_columns: 2,
-    tablet_columns: 3,
-    desktop_columns: 4,
+    phone_covers_per_row: 2,
+    tablet_covers_per_row: 3,
+    desktop_covers_per_row: 4,
     shows_item_counts: false,
 };
 
@@ -79,7 +79,7 @@ async fn refuses_more_covers_per_row_than_a_phone_holds_and_keeps_the_view_befor
     let outcome = set(
         &database,
         StoredLibraryView {
-            phone_columns: 6,
+            phone_covers_per_row: 6,
             ..COMPACT_OF_TWO
         },
     )
@@ -99,12 +99,18 @@ fn any_display() -> impl Strategy<Value = LibraryDisplay> {
 
 fn any_view() -> impl Strategy<Value = StoredLibraryView> {
     (any_display(), 2_u8..=5, 3_u8..=8, 4_u8..=12, any::<bool>()).prop_map(
-        |(display, phone_columns, tablet_columns, desktop_columns, shows_item_counts)| {
+        |(
+            display,
+            phone_covers_per_row,
+            tablet_covers_per_row,
+            desktop_covers_per_row,
+            shows_item_counts,
+        )| {
             StoredLibraryView {
                 display,
-                phone_columns,
-                tablet_columns,
-                desktop_columns,
+                phone_covers_per_row,
+                tablet_covers_per_row,
+                desktop_covers_per_row,
                 shows_item_counts,
             }
         },

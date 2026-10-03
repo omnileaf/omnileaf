@@ -17,9 +17,9 @@ use tokio::{
 };
 
 use crate::{
-    AppLanguage, ColumnsOutOfRange, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan,
-    LibraryChanges, LibraryFolder, LibrarySeries, LibraryView, RescanOutcome, ScanProgress,
-    SeriesCursor, SeriesPage,
+    AppLanguage, CoversPerRowOutOfRange, FolderCursor, FolderId, FolderPage, FolderRescan,
+    FolderScan, LibraryChanges, LibraryFolder, LibrarySeries, LibraryView, RescanOutcome,
+    ScanProgress, SeriesCursor, SeriesPage,
     device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
     library_layout::folder_name,
@@ -67,7 +67,7 @@ pub enum LibraryError {
     #[error("reach the library database")]
     Database(#[source] omnileaf_db::Error),
     #[error("read the library view this device stored")]
-    StoredView(#[source] ColumnsOutOfRange),
+    StoredView(#[source] CoversPerRowOutOfRange),
     #[error("run blocking library work")]
     Interrupted(#[from] tokio::task::JoinError),
 }
