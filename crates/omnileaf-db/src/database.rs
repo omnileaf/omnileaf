@@ -18,7 +18,6 @@ pub struct Database {
 
 impl Database {
     /// Blocks while it opens the file, brings its schema up to date and re-keys titles made by another build, so call it off the async runtime.
-    #[tracing::instrument(skip_all, fields(path = %config.path.display()))]
     pub fn open(config: &Config) -> Result<Self, Error> {
         let mut writer = migrated_writer(config, MIGRATIONS)?;
         let transaction = writer.transaction_with_behavior(TransactionBehavior::Immediate)?;
