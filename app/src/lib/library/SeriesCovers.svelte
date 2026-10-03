@@ -26,7 +26,7 @@
 
 {#snippet gridCell(one: LibrarySeries)}
   <div
-    class="aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+    class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
   >
     <CoverImage cover={one.cover} {coverUrl} />
   </div>
@@ -56,7 +56,7 @@
 
 {#snippet listRow(one: LibrarySeries)}
   <div
-    class="box-content aspect-cover shrink-0 overflow-hidden rounded-list-cover border border-cover-edge bg-chip inline-list-cover large:inline-list-cover-wide"
+    class="relative box-content aspect-cover shrink-0 overflow-hidden rounded-list-cover border border-cover-edge bg-chip inline-list-cover large:inline-list-cover-wide"
   >
     <CoverImage cover={one.cover} {coverUrl} />
   </div>
