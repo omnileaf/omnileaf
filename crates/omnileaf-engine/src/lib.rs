@@ -2,10 +2,12 @@
 
 mod app_info;
 mod folder_survey;
+mod project_link;
 mod version_details;
 
 pub use app_info::{AppInfo, Platform};
 pub use folder_survey::{FolderSurvey, SurveyError, survey_folder};
+pub use project_link::ProjectLink;
 pub use version_details::{BuildProfile, VersionDetails};
 
 #[derive(Debug)]
@@ -20,6 +22,7 @@ impl Core {
             app_info: AppInfo {
                 version: env!("CARGO_PKG_VERSION").to_owned(),
                 platform: Platform::CURRENT,
+                source_code: ProjectLink::SourceCode.address().to_owned(),
             },
         }
     }

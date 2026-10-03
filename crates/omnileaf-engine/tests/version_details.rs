@@ -5,6 +5,7 @@ fn details() -> VersionDetails {
         app: AppInfo {
             version: "1.2.3".to_owned(),
             platform: Platform::Ios,
+            source_code: "repo.example.org/omnileaf".to_owned(),
         },
         build: BuildProfile::Release,
         architecture: "aarch64".to_owned(),
@@ -76,8 +77,8 @@ fn names_each_platform_as_its_maker_writes_it() {
     .map(|platform| {
         VersionDetails {
             app: AppInfo {
-                version: "1.2.3".to_owned(),
                 platform,
+                ..details().app
             },
             ..details()
         }
