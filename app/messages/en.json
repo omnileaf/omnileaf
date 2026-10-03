@@ -53,6 +53,7 @@
   "appearance_title": "Appearance",
   "appearance_light_or_dark": "Light or dark",
   "appearance_system_hint": "System follows the device's setting and changes with it.",
+  "appearance_system_hint_phone": "System follows your phone's setting.",
   "theme_system": "System",
   "theme_follows_system": "Follows the system",
   "theme_light": "Light",

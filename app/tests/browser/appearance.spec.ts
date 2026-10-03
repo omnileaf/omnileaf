@@ -1,10 +1,20 @@
 import { AxeBuilder } from "@axe-core/playwright";
 
-import { boxOf, expect, test } from "./fixtures.ts";
+import {
+  boxOf,
+  expect,
+  MEDIUM_MIN_WIDTH,
+  onPlatform,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
 
 const OPTION_HEIGHT = 40;
 const TRACK_HEIGHT = 44;
 const TAP_OVERHANG = 3;
+
+const DEVICE_HINT = "System follows the device's setting and changes with it.";
+const PHONE_HINT = "System follows your phone's setting.";
 
 const LIGHT_GROUND = "rgb(250, 248, 244)";
 const DARK_GROUND = "rgb(22, 21, 18)";
@@ -100,6 +110,26 @@ test("chooses an option from just outside its visible edge", async ({
 
   await expect(page.getByRole("radio", { name: "Dark" })).toBeChecked();
 });
+
+for (const platform of ["android", "ios", "linux"] as const) {
+  test.describe(`on ${platform}`, () => {
+    test.use(onPlatform(platform));
+
+    test("explains what System follows in the group's description", async ({
+      page,
+    }) => {
+      await page.goto("/settings/appearance");
+      const isPhone =
+        platform !== "linux" && viewportOf(page).width < MEDIUM_MIN_WIDTH;
+
+      const group = page.getByRole("radiogroup", { name: "Light or dark" });
+
+      await expect(group).toHaveAccessibleDescription(
+        isPhone ? PHONE_HINT : DEVICE_HINT,
+      );
+    });
+  });
+}
 
 for (const label of ["Light", "Dark"]) {
   test(`Settings › Appearance has no accessibility violations in ${label}`, async ({

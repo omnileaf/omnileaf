@@ -4,8 +4,12 @@
     type ThemePreference,
   } from "$lib/appearance/theme";
   import { getThemeSetting } from "$lib/appearance/theme.svelte";
+  import { WindowWidth } from "$lib/page/breakpoints";
+  import { isPointer } from "$lib/page/platform";
   import SectionHeading from "$lib/settings/SectionHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
+
+  import type { PageProps } from "./$types";
 
   const THEME_LABELS = {
     system: m.theme_system,
@@ -13,9 +17,16 @@
     dark: m.theme_dark,
   } satisfies Record<ThemePreference, () => string>;
 
+  let { data }: PageProps = $props();
+
   const theme = getThemeSetting();
+  const width = new WindowWidth();
+  const isPhone = $derived(
+    !isPointer(data.appInfo.platform) && width.current === "compact",
+  );
 
   const headingId = $props.id();
+  const hintId = `${headingId}-hint`;
 </script>
 
 <SectionHeading title={m.appearance_title()} />
@@ -30,13 +41,15 @@
     {m.appearance_light_or_dark()}
   </h2>
   <p
+    id={hintId}
     class="text-footnote text-muted touch:medium:order-last desktop:order-last"
   >
-    {m.appearance_system_hint()}
+    {isPhone ? m.appearance_system_hint_phone() : m.appearance_system_hint()}
   </p>
   <div
     role="radiogroup"
     aria-labelledby={headingId}
+    aria-describedby={hintId}
     class="flex gap-2xs rounded-card bg-chip p-2xs touch:medium:max-inline-segmented-touch desktop:max-inline-segmented"
   >
     {#each THEME_PREFERENCES as preference (preference)}
