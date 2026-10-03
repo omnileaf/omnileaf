@@ -9,7 +9,6 @@ const ADDED_TAG: u8 = 2;
 const BOOK_TAG: u8 = 3;
 const ROOT_TAG: u8 = 4;
 const ID_LENGTH: usize = 16;
-const STAMP_LENGTH: usize = 16;
 const MILLIS_LENGTH: usize = size_of::<i64>();
 const HEX_RADIX: u32 = 16;
 
@@ -65,9 +64,9 @@ impl Position {
         match tag {
             TITLE_TAG => {
                 let (id, rest) = rest.split_first_chunk::<ID_LENGTH>()?;
-                let (stamp, sort_key) = rest.split_first_chunk::<STAMP_LENGTH>()?;
+                let (stamp, sort_key) = rest.split_first_chunk::<{ TitleStamp::LENGTH }>()?;
                 Some(Self::Title {
-                    stamp: TitleStamp::from_bytes(stamp)?,
+                    stamp: TitleStamp::from(*stamp),
                     sort_key: sort_key.to_vec(),
                     id: SeriesId::try_from(id.as_slice()).ok()?,
                 })

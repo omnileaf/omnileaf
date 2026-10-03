@@ -9,14 +9,15 @@ const RULES_VERSION: u32 = 1;
 const ICU_VERSIONS: &str = env!("OMNILEAF_ICU_VERSIONS");
 const STAMP_CONTEXT: &str = "omnileaf.app 2026-10 title-key-stamp v1";
 const FIELD_END: &[u8] = &[0];
-const STAMP_LENGTH: usize = 16;
 const THE_STAMP: i64 = 1;
 
 /// Names the language, our rules and the ICU4X build that made a set of title keys, since keys made by any other compare differently.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct TitleStamp([u8; STAMP_LENGTH]);
+pub(crate) struct TitleStamp([u8; TitleStamp::LENGTH]);
 
 impl TitleStamp {
+    pub(crate) const LENGTH: usize = 16;
+
     pub(crate) fn of(language: &Language) -> Self {
         Self::with_icu_versions(language, ICU_VERSIONS)
     }
@@ -27,17 +28,19 @@ impl TitleStamp {
         hasher.update(language.to_string().as_bytes());
         hasher.update(FIELD_END);
         hasher.update(icu_versions.as_bytes());
-        let mut stamp = [0; STAMP_LENGTH];
+        let mut stamp = [0; Self::LENGTH];
         hasher.finalize_xof().fill(&mut stamp);
         Self(stamp)
     }
 
-    pub(crate) const fn as_bytes(&self) -> &[u8; STAMP_LENGTH] {
+    pub(crate) const fn as_bytes(&self) -> &[u8; Self::LENGTH] {
         &self.0
     }
+}
 
-    pub(crate) fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        bytes.try_into().ok().map(Self)
+impl From<[u8; TitleStamp::LENGTH]> for TitleStamp {
+    fn from(bytes: [u8; TitleStamp::LENGTH]) -> Self {
+        Self(bytes)
     }
 }
 
@@ -61,10 +64,12 @@ pub(crate) fn stored_stamp(connection: &Connection) -> Result<TitleStamp, Error>
 impl FromSql for TitleStamp {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         let bytes = value.as_blob()?;
-        Self::from_bytes(bytes).ok_or(FromSqlError::InvalidBlobSize {
-            expected_size: STAMP_LENGTH,
-            blob_size: bytes.len(),
-        })
+        <[u8; Self::LENGTH]>::try_from(bytes)
+            .map(Self)
+            .map_err(|_| FromSqlError::InvalidBlobSize {
+                expected_size: Self::LENGTH,
+                blob_size: bytes.len(),
+            })
     }
 }
 
