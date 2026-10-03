@@ -5,38 +5,29 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const TEN_THOUSAND = 10_000;
 const FIRST_GRID_PAINT_BUDGET_MS = 150;
-const OPENINGS = 5;
-
-interface Invoker {
-  invoke: (command: string, args: unknown) => Promise<unknown>;
-}
+const OPENINGS = 9;
 
 declare global {
   interface Window {
-    __TAURI_INTERNALS__?: Invoker;
-    __omnileafSeriesAskedAt?: number | undefined;
+    __omnileafLibraryClickedAt?: number | undefined;
     __omnileafGridPaintedAt?: number | undefined;
-    __omnileafTimingSeries?: boolean;
   }
 }
 
+/** The screen reads only the first page of these, so this times the interface rather than the catalog query. */
 const CATALOG = sampleSeries(TEN_THOUSAND);
 
-/** Notes when the library screen next asks for series, and when the frame showing the first of them has painted. */
+/** Notes when the next click lands, and when the frame showing the first series after it has painted. */
 function timeTheNextGrid(): void {
-  window.__omnileafSeriesAskedAt = undefined;
+  window.__omnileafLibraryClickedAt = undefined;
   window.__omnileafGridPaintedAt = undefined;
-  const internals = window.__TAURI_INTERNALS__;
-  if (internals !== undefined && window.__omnileafTimingSeries !== true) {
-    window.__omnileafTimingSeries = true;
-    const invoke = internals.invoke;
-    internals.invoke = (command, args) => {
-      if (command === "library_series") {
-        window.__omnileafSeriesAskedAt ??= performance.now();
-      }
-      return invoke(command, args);
-    };
-  }
+  document.addEventListener(
+    "click",
+    (event) => {
+      window.__omnileafLibraryClickedAt = event.timeStamp;
+    },
+    { capture: true, once: true },
+  );
   new MutationObserver((_, observer) => {
     if (document.querySelector("ul[aria-label='Series'] li") === null) {
       return;
@@ -62,11 +53,16 @@ async function openTheLibraryTimed(page: Page): Promise<number> {
 
   const took = await page.waitForFunction(() =>
     window.__omnileafGridPaintedAt === undefined ||
-    window.__omnileafSeriesAskedAt === undefined
+    window.__omnileafLibraryClickedAt === undefined
       ? undefined
-      : window.__omnileafGridPaintedAt - window.__omnileafSeriesAskedAt,
+      : window.__omnileafGridPaintedAt - window.__omnileafLibraryClickedAt,
   );
   return Number(await took.jsonValue());
+}
+
+function median(values: readonly number[]): number {
+  const sorted = values.toSorted((one, other) => one - other);
+  return sorted[Math.floor(sorted.length / 2)] ?? Number.NaN;
 }
 
 test.use({
@@ -76,7 +72,7 @@ test.use({
   },
 });
 
-test("paints the first rows of ten thousand series within the budget", async ({
+test("paints the first rows of ten thousand series within the budget from the click that opens them", async ({
   page,
 }) => {
   await page.goto("/");
@@ -89,7 +85,7 @@ test("paints the first rows of ten thousand series within the budget", async ({
 
   test.info().annotations.push({
     type: "first grid paint",
-    description: timings.map((ms) => `${ms.toFixed(1)} ms`).join(", "),
+    description: `median ${median(timings).toFixed(1)} ms of ${timings.map((ms) => `${ms.toFixed(1)} ms`).join(", ")}`,
   });
-  expect(Math.min(...timings)).toBeLessThanOrEqual(FIRST_GRID_PAINT_BUDGET_MS);
+  expect(median(timings)).toBeLessThanOrEqual(FIRST_GRID_PAINT_BUDGET_MS);
 });
