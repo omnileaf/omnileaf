@@ -1,8 +1,22 @@
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
-import { chooseLanguage, storedLanguageChoice } from "./language";
+import { baseLocale } from "$lib/paraglide/runtime.js";
+
+import {
+  chooseLanguage,
+  storedLanguageChoice,
+  systemLanguage,
+} from "./language";
 
 const KEY = "omnileaf.language";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+function preferLanguages(languages: readonly string[]): void {
+  vi.spyOn(navigator, "languages", "get").mockReturnValue(languages);
+}
 
 function memoryStore(initial: Record<string, string> = {}) {
   const values = new Map(Object.entries(initial));
@@ -48,4 +62,16 @@ test("choosing the system forgets the stored language and reloads", () => {
 
   expect(store.values.has(KEY)).toBe(false);
   expect(reload).toHaveBeenCalledOnce();
+});
+
+test("takes the system language from the device's preferred languages", () => {
+  preferLanguages(["fr", "en-XA"]);
+
+  expect(systemLanguage()).toBe("en-XA");
+});
+
+test("falls back to the app's base language when the device prefers none the app has", () => {
+  preferLanguages(["xx", "yy-ZZ"]);
+
+  expect(systemLanguage()).toBe(baseLocale);
 });
