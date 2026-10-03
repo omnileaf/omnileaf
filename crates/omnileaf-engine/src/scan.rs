@@ -16,7 +16,7 @@ use crate::{
     LibraryError,
     clock::unix_ms,
     folder_survey::folder_name,
-    library_layout::{FoundBook, file_stem, find_books},
+    library_layout::{FoundBook, find_books},
 };
 
 const BOOKS_PER_BATCH: usize = 32;
@@ -147,7 +147,6 @@ fn read_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Unreadab
 
 fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
     let book = open_book(&found.path)?;
-    let title = file_stem(&found.path);
     let fingerprint = fingerprint_book(&found.path)?;
     let metadata = fs::metadata(&found.path)?;
     let size_bytes = if metadata.is_dir() {
@@ -163,7 +162,7 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
     Ok(ScannedBook {
         series: NewSeries::local(&found.series, target.added_at_ms)?,
         fingerprint,
-        title,
+        title: found.title.clone(),
         file: BookFile {
             root: target.root,
             location,

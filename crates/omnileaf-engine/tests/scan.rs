@@ -122,6 +122,15 @@ fn write_book_with(path: &Path, seed: u64, comic_info: Option<&str>) {
     fs::write(path, cbz(&entries, Compression::Stored).unwrap()).unwrap();
 }
 
+fn write_page(folder: &Path, seed: u64) {
+    fs::create_dir_all(folder).unwrap();
+    fs::write(
+        folder.join("001.png"),
+        page_png(seed, 0, PageShape::Portrait).unwrap(),
+    )
+    .unwrap();
+}
+
 fn sample_library(name: &str) -> TempFolder {
     let folder = TempFolder::new(name);
     write_sample_library(folder.path()).unwrap();
@@ -189,13 +198,7 @@ async fn reports_progress_from_no_books_up_to_every_book_found() {
 async fn makes_a_book_at_the_top_of_the_folder_its_own_series() {
     let comics = TempFolder::new("scan-one-shots");
     write_book(&comics.path().join("Sample One-Shot.cbz"), 1);
-    let chapter = comics.path().join("Sample Chapter");
-    fs::create_dir(&chapter).unwrap();
-    fs::write(
-        chapter.join("001.png"),
-        page_png(2, 0, PageShape::Portrait).unwrap(),
-    )
-    .unwrap();
+    write_page(&comics.path().join("Sample Chapter"), 2);
 
     let (scanned, _, _) = Scanned::folder("scan-one-shots", comics.path()).await;
 
@@ -251,6 +254,18 @@ async fn titles_and_orders_books_by_file_name_whatever_their_comic_info_titles()
     let (scanned, _, _) = Scanned::folder("scan-titles", comics.path()).await;
 
     assert_eq!(scanned.books_in("Sample Series 01"), ["v01", "v02"]);
+}
+
+#[tokio::test]
+async fn titles_a_folder_of_images_by_its_whole_name_dots_included() {
+    let comics = TempFolder::new("scan-dotted-chapters");
+    for (chapter, seed) in [("Ch 10.5", 1), ("Ch 10.6", 2)] {
+        write_page(&comics.path().join("Sample Series 01").join(chapter), seed);
+    }
+
+    let (scanned, _, _) = Scanned::folder("scan-dotted-chapters", comics.path()).await;
+
+    assert_eq!(scanned.books_in("Sample Series 01"), ["Ch 10.5", "Ch 10.6"]);
 }
 
 #[tokio::test]

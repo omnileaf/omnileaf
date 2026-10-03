@@ -16,6 +16,7 @@ use crate::{
 pub(crate) struct FoundBook {
     pub(crate) path: PathBuf,
     pub(crate) series: String,
+    pub(crate) title: String,
 }
 
 #[derive(Debug, Default)]
@@ -77,11 +78,16 @@ impl Layout {
                 Ok(kind) if kind.is_dir() => pending.push((entry.path(), place.inner())),
                 Ok(kind) if kind.is_file() && is_comic(&file_name) => {
                     let path = entry.path();
+                    let title = file_stem(&path);
                     let series = match place {
-                        Place::Root => file_stem(&path),
+                        Place::Root => title.clone(),
                         Place::Top | Place::Nested => folder_name(folder),
                     };
-                    self.books.push(FoundBook { path, series });
+                    self.books.push(FoundBook {
+                        path,
+                        series,
+                        title,
+                    });
                 }
                 Ok(kind) if kind.is_file() && is_page_image(&name) => holds_pages = true,
                 _ => {}
@@ -97,6 +103,7 @@ impl Layout {
             self.books.push(FoundBook {
                 path: folder.to_path_buf(),
                 series,
+                title: folder_name(folder),
             });
         }
     }
@@ -115,7 +122,7 @@ impl Place {
     }
 }
 
-pub(crate) fn file_stem(path: &Path) -> String {
+fn file_stem(path: &Path) -> String {
     path.file_stem().map_or_else(
         || folder_name(path),
         |stem| stem.to_string_lossy().into_owned(),
