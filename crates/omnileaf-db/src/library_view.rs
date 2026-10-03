@@ -7,18 +7,18 @@ use crate::Error;
 const THE_VIEW: i64 = 1;
 
 const STORED_VIEW: &str =
-    "SELECT display, phone_columns, tablet_columns, desktop_columns, shows_item_counts
+    "SELECT display, phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row, shows_item_counts
     FROM library_view
     WHERE id = ?1";
 
 const SET_VIEW: &str = "INSERT INTO library_view
-        (id, display, phone_columns, tablet_columns, desktop_columns, shows_item_counts)
+        (id, display, phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row, shows_item_counts)
     VALUES (?1, ?2, ?3, ?4, ?5, ?6)
     ON CONFLICT (id) DO UPDATE SET
         display = excluded.display,
-        phone_columns = excluded.phone_columns,
-        tablet_columns = excluded.tablet_columns,
-        desktop_columns = excluded.desktop_columns,
+        phone_covers_per_row = excluded.phone_covers_per_row,
+        tablet_covers_per_row = excluded.tablet_covers_per_row,
+        desktop_covers_per_row = excluded.desktop_covers_per_row,
         shows_item_counts = excluded.shows_item_counts";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -28,13 +28,13 @@ pub enum LibraryDisplay {
     List,
 }
 
-/// The view as stored, its column counts held to their ranges by the schema alone.
+/// The view as stored, its covers per row held to their ranges by the schema alone.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct StoredLibraryView {
     pub display: LibraryDisplay,
-    pub phone_columns: u8,
-    pub tablet_columns: u8,
-    pub desktop_columns: u8,
+    pub phone_covers_per_row: u8,
+    pub tablet_covers_per_row: u8,
+    pub desktop_covers_per_row: u8,
     pub shows_item_counts: bool,
 }
 
@@ -54,9 +54,9 @@ pub fn set_library_view(
     transaction.prepare(SET_VIEW)?.execute((
         THE_VIEW,
         view.display.as_stored(),
-        view.phone_columns,
-        view.tablet_columns,
-        view.desktop_columns,
+        view.phone_covers_per_row,
+        view.tablet_covers_per_row,
+        view.desktop_covers_per_row,
         view.shows_item_counts,
     ))?;
     Ok(())
@@ -64,9 +64,9 @@ pub fn set_library_view(
 
 struct ViewRow {
     display: String,
-    phone_columns: u8,
-    tablet_columns: u8,
-    desktop_columns: u8,
+    phone_covers_per_row: u8,
+    tablet_covers_per_row: u8,
+    desktop_covers_per_row: u8,
     shows_item_counts: bool,
 }
 
@@ -74,9 +74,9 @@ impl ViewRow {
     fn read(row: &Row<'_>) -> rusqlite::Result<Self> {
         Ok(Self {
             display: row.get(0)?,
-            phone_columns: row.get(1)?,
-            tablet_columns: row.get(2)?,
-            desktop_columns: row.get(3)?,
+            phone_covers_per_row: row.get(1)?,
+            tablet_covers_per_row: row.get(2)?,
+            desktop_covers_per_row: row.get(3)?,
             shows_item_counts: row.get(4)?,
         })
     }
@@ -88,9 +88,9 @@ impl TryFrom<ViewRow> for StoredLibraryView {
     fn try_from(row: ViewRow) -> Result<Self, Self::Error> {
         Ok(Self {
             display: LibraryDisplay::stored(row.display)?,
-            phone_columns: row.phone_columns,
-            tablet_columns: row.tablet_columns,
-            desktop_columns: row.desktop_columns,
+            phone_covers_per_row: row.phone_covers_per_row,
+            tablet_covers_per_row: row.tablet_covers_per_row,
+            desktop_covers_per_row: row.desktop_covers_per_row,
             shows_item_counts: row.shows_item_counts,
         })
     }

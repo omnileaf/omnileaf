@@ -29,8 +29,8 @@ pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryC
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
 pub use library_view::{
-    ColumnRange, ColumnRanges, Columns, ColumnsOutOfRange, CoversPerRow, DesktopColumns,
-    LibraryDisplay, LibraryView, PhoneColumns, TabletColumns,
+    CoversPerRow, CoversPerRowCount, CoversPerRowOutOfRange, CoversPerRowRange, CoversPerRowRanges,
+    DesktopCoversPerRow, LibraryDisplay, LibraryView, PhoneCoversPerRow, TabletCoversPerRow,
 };
 pub use omnileaf_db::store::{Changed, Clock};
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};

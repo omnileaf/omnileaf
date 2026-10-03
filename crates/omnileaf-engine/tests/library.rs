@@ -8,8 +8,8 @@ mod support;
 use std::path::Path;
 
 use omnileaf_engine::{
-    Changed, CoversPerRow, DesktopColumns, FolderId, FolderKind, Library, LibraryDisplay,
-    LibraryError, LibraryFolder, LibraryView, PhoneColumns, ScanProgress, TabletColumns,
+    Changed, CoversPerRow, DesktopCoversPerRow, FolderId, FolderKind, Library, LibraryDisplay,
+    LibraryError, LibraryFolder, LibraryView, PhoneCoversPerRow, ScanProgress, TabletCoversPerRow,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, TempFolder};
@@ -289,9 +289,9 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
     let list = LibraryView {
         display: LibraryDisplay::List,
         covers_per_row: CoversPerRow {
-            phone: PhoneColumns::try_from(2).unwrap(),
-            tablet: TabletColumns::try_from(4).unwrap(),
-            desktop: DesktopColumns::try_from(9).unwrap(),
+            phone: PhoneCoversPerRow::try_from(2).unwrap(),
+            tablet: TabletCoversPerRow::try_from(4).unwrap(),
+            desktop: DesktopCoversPerRow::try_from(9).unwrap(),
         },
         shows_item_counts: true,
     };
