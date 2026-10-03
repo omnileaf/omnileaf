@@ -10,6 +10,12 @@
 
   const ICON_SIZE = 18;
 
+  const RANGE_LABELS = {
+    phone: m.library_covers_per_row_range_phone,
+    tablet: m.library_covers_per_row_range_tablet,
+    desktop: m.library_covers_per_row_range,
+  } satisfies Record<ScreenSize, typeof m.library_covers_per_row_range>;
+
   let {
     size,
     count,
@@ -33,7 +39,7 @@
       {m.library_covers_per_row()}
     </p>
     <p class="text-detail text-muted large:text-caption">
-      {m.library_covers_per_row_range({
+      {RANGE_LABELS[size]({
         fewest: numbers.format(fewest),
         most: numbers.format(most),
       })}
