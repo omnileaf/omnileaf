@@ -31,6 +31,8 @@ enum EntryKind {
     Folder,
     Comic,
     Page,
+    /// Its kind couldn't be read, so it may be a folder or a book.
+    Unreadable,
     Other,
 }
 
@@ -70,7 +72,7 @@ impl Layout {
         let mut holds_comics = false;
         for entry in entries {
             let Ok(entry) = entry else {
-                self.unreadable_folders.push(folder.to_path_buf());
+                self.note_unreadable(folder);
                 continue;
             };
             let file_name = entry.file_name();
@@ -95,6 +97,7 @@ impl Layout {
                     });
                 }
                 EntryKind::Page => holds_pages = true,
+                EntryKind::Unreadable => self.note_unreadable(folder),
                 EntryKind::Other => {}
             }
         }
@@ -115,9 +118,19 @@ impl Layout {
     }
 }
 
+impl Layout {
+    /// Counts each folder once, however many of its entries failed.
+    fn note_unreadable(&mut self, folder: &Path) {
+        if self.unreadable_folders.last().map(PathBuf::as_path) != Some(folder) {
+            self.unreadable_folders.push(folder.to_path_buf());
+        }
+    }
+}
+
 impl EntryKind {
     fn of(file_type: &io::Result<fs::FileType>, file_name: &OsStr) -> Self {
         match file_type {
+            Err(_) => Self::Unreadable,
             Ok(kind) if kind.is_dir() => Self::Folder,
             Ok(kind) if kind.is_file() && is_comic(file_name) => Self::Comic,
             Ok(kind) if kind.is_file() && is_page_image(&file_name.to_string_lossy()) => Self::Page,
@@ -158,4 +171,18 @@ fn is_comic(name: &OsStr) -> bool {
                 .iter()
                 .any(|comic| extension.eq_ignore_ascii_case(comic))
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reads_an_entry_whose_kind_cannot_be_read_as_unreadable_rather_than_not_a_book() {
+        let failed = Err(io::Error::from(io::ErrorKind::PermissionDenied));
+
+        let kind = EntryKind::of(&failed, OsStr::new("v01.cbz"));
+
+        assert_eq!(kind, EntryKind::Unreadable);
+    }
 }
