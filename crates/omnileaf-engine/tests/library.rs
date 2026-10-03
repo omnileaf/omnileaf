@@ -262,3 +262,22 @@ async fn keeps_one_home_folder_at_its_new_location_after_the_home_moves() {
         Some(moved_home.display().to_string())
     );
 }
+
+#[tokio::test]
+async fn opens_a_new_library_before_its_first_launch_is_finished() {
+    let home = TempFolder::new("library-first-launch-new");
+
+    let library = open(home.path()).await;
+
+    assert!(!library.first_launch_finished().await.unwrap());
+}
+
+#[tokio::test]
+async fn remembers_the_finished_first_launch_when_the_library_reopens() {
+    let home = TempFolder::new("library-first-launch-finished");
+    open(home.path()).await.finish_first_launch().await.unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert!(reopened.first_launch_finished().await.unwrap());
+}
