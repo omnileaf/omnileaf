@@ -17,6 +17,7 @@ export const commands = {
 export type AppInfo = {
 	version: string,
 	platform: Platform,
+	sourceCode: string,
 };
 
 export type FolderSurvey = {
