@@ -1,5 +1,6 @@
 //! The keys series titles sort by, made by the collation of the app's language and re-made whenever that collation changes.
 
+mod articles;
 mod collation;
 mod language;
 mod resort;

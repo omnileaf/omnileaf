@@ -15,6 +15,11 @@ impl Language {
     pub(crate) const fn locale(&self) -> &Locale {
         &self.0
     }
+
+    /// The language subtag alone, such as `fr` for `fr-CA`.
+    pub(crate) const fn code(&self) -> &str {
+        self.0.id.language.as_str()
+    }
 }
 
 impl FromStr for Language {
