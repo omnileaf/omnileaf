@@ -10,6 +10,7 @@ import {
 import {
   parseThemePreference,
   resolveTheme,
+  type Theme,
   type ThemePreference,
 } from "./theme";
 
@@ -23,6 +24,7 @@ export interface DarkModeQuery {
 /** Applies the light or dark choice to `root` as `data-theme`, following the device while the choice is "system". */
 export class ThemeSetting {
   preference: ThemePreference = $state("system");
+  resolved: Theme = $state("light");
 
   constructor(
     private readonly store: PreferenceStore | undefined,
@@ -45,10 +47,8 @@ export class ThemeSetting {
   }
 
   private apply(): void {
-    this.root.dataset.theme = resolveTheme(
-      this.preference,
-      this.darkMode.matches,
-    );
+    this.resolved = resolveTheme(this.preference, this.darkMode.matches);
+    this.root.dataset.theme = this.resolved;
   }
 }
 

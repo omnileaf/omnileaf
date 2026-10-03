@@ -289,4 +289,8 @@
     color: var(--color-foreground);
     font-family: var(--font-ui);
   }
+
+  :where([tabindex="-1"]):focus {
+    outline: none;
+  }
 }

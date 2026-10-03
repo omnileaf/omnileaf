@@ -7,6 +7,7 @@
     setThemeSetting,
     themeSettingForDocument,
   } from "$lib/appearance/theme.svelte";
+  import { commands } from "$lib/ipc/bindings";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
   import { sectionOf } from "$lib/navigation/sections";
   import { m } from "$lib/paraglide/messages.js";
@@ -21,7 +22,7 @@
 
   let { children }: { children: Snippet } = $props();
 
-  setThemeSetting(themeSettingForDocument());
+  const themeSetting = setThemeSetting(themeSettingForDocument());
   const screenshotMode = setScreenshotMode(screenshotModeForDocument());
 
   function toggleScreenshotModeOnShortcut(event: KeyboardEvent): void {
@@ -35,6 +36,10 @@
   function settleScreenshotMode(): void {
     screenshotMode.settle();
   }
+
+  $effect(() => {
+    void commands.matchSystemBars(themeSetting.resolved);
+  });
 
   let main: HTMLElement | undefined = $state();
 
