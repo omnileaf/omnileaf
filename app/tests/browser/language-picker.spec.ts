@@ -127,14 +127,18 @@ test.describe("on an Android phone", () => {
 test.describe("on an Android tablet", () => {
   test.use(onPlatform("android"));
 
-  test("sets the system language apart on 48px rows", async ({ page }) => {
+  test("sets the system language apart on 48px rows with a 20px check", async ({
+    page,
+  }) => {
     await page.goto(LANGUAGE_PAGE);
     test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "tablets only");
 
     const system = await boxOf(optionRow(page, SYSTEM_OPTION));
     const english = await boxOf(optionRow(page, "English"));
+    const check = await boxOf(optionRow(page, SYSTEM_OPTION).locator("svg"));
 
     expect(system.height).toBe(TOUCH_ROW_HEIGHT);
+    expect(check.width).toBe(CHECK_SIZE);
     expect(english.y - (system.y + system.height)).toBeGreaterThanOrEqual(
       GROUP_GAP,
     );

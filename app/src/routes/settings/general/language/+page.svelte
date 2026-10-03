@@ -20,6 +20,7 @@
   import type { PageProps } from "./$types";
 
   const PHONE_CHECK_SIZE = 22;
+  const CHECK_SIZE = 20;
   const CHECK_STROKE = 2.4;
 
   let { data }: PageProps = $props();
@@ -99,9 +100,9 @@
             {/if}
             {#if isChosen}
               <Check
-                size={PHONE_CHECK_SIZE}
+                size={onPhone ? PHONE_CHECK_SIZE : CHECK_SIZE}
                 strokeWidth={CHECK_STROKE}
-                class="shrink-0 text-accent touch:medium:block-check touch:medium:inline-check desktop:block-check desktop:inline-check"
+                class="shrink-0 text-accent"
               />
             {/if}
           </label>
