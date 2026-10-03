@@ -1,6 +1,7 @@
 //! The library database: SQLite, written through one thread and read through a small pool.
 
 mod backup;
+mod book_order;
 pub mod catalog;
 mod config;
 mod connection;
@@ -15,7 +16,6 @@ mod migration;
 mod scratch;
 pub mod store;
 mod title_key;
-mod title_sort;
 mod workers;
 
 pub use config::Config;
