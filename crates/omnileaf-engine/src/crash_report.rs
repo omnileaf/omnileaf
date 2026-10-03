@@ -96,8 +96,32 @@ pub struct CrashReport {
     app: CrashedApp,
     origin: Origin,
     message: String,
-    location: Option<String>,
+    location: Option<CodeLocation>,
     trace: Vec<String>,
+}
+
+/// Where a panic happened, with the file named from its package down.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+struct CodeLocation {
+    file: String,
+    line: u32,
+    column: u32,
+}
+
+impl CodeLocation {
+    fn package_relative(file: &str, line: u32, column: u32) -> Self {
+        Self {
+            file: trace::package_relative(file),
+            line,
+            column,
+        }
+    }
+}
+
+impl fmt::Display for CodeLocation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}:{}", self.file, self.line, self.column)
+    }
 }
 
 impl CrashReport {
@@ -108,7 +132,9 @@ impl CrashReport {
             app,
             origin: Origin::Panic,
             message: scrub::clean(panic.message, MESSAGE_BYTE_LIMIT),
-            location: panic.location.map(trace::package_relative),
+            location: panic.location.map(|location| {
+                CodeLocation::package_relative(location.file, location.line, location.column)
+            }),
             trace: clean_frames(trace::frame_names(panic.backtrace)),
         }
     }
@@ -165,7 +191,7 @@ struct StoredCrashReport {
     system: Option<String>,
     origin: Origin,
     message: String,
-    location: Option<String>,
+    location: Option<CodeLocation>,
     trace: Vec<String>,
 }
 
@@ -195,9 +221,9 @@ impl From<StoredCrashReport> for CrashReport {
             },
             origin: stored.origin,
             message: scrub::clean(&stored.message, MESSAGE_BYTE_LIMIT),
-            location: stored
-                .location
-                .map(|location| scrub::clean(&location, FRAME_BYTE_LIMIT)),
+            location: stored.location.map(|location| {
+                CodeLocation::package_relative(&location.file, location.line, location.column)
+            }),
             trace: clean_frames(stored.trace.iter().map(String::as_str)),
         }
     }

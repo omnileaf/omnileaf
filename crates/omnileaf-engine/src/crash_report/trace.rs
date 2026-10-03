@@ -1,5 +1,3 @@
-use super::SourceLocation;
-
 const SOURCE_FOLDER: &str = "src";
 const SHORT_BACKTRACE_END: &str = "__rust_end_short_backtrace";
 const SHORT_BACKTRACE_BEGIN: &str = "__rust_begin_short_backtrace";
@@ -11,9 +9,8 @@ const PANIC_MACHINERY: &[&str] = &[
 ];
 
 /// Names a source file from its package down, so no folder of the machine that built it shows.
-pub(super) fn package_relative(location: SourceLocation<'_>) -> String {
-    let components: Vec<&str> = location
-        .file
+pub(super) fn package_relative(file: &str) -> String {
+    let components: Vec<&str> = file
         .split(['/', '\\'])
         .filter(|component| !component.is_empty())
         .collect();
@@ -22,8 +19,7 @@ pub(super) fn package_relative(location: SourceLocation<'_>) -> String {
         .rposition(|component| *component == SOURCE_FOLDER)
         .and_then(|source| source.checked_sub(1))
         .unwrap_or(components.len().saturating_sub(1));
-    let file = components.get(from..).unwrap_or_default().join("/");
-    format!("{file}:{}:{}", location.line, location.column)
+    components.get(from..).unwrap_or_default().join("/")
 }
 
 /// The function names of a standard library backtrace, from the code that panicked to the thread's start.

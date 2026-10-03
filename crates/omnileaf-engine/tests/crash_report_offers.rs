@@ -11,7 +11,7 @@ use std::{
 
 use omnileaf_engine::{
     CrashReport, CrashReportError, CrashReportFile, CrashReportId, CrashReportOffers, CrashedApp,
-    InterfaceError, Platform,
+    InterfaceError, PanicDetails, Platform, SourceLocation,
 };
 
 struct TempFolder(PathBuf);
@@ -176,6 +176,38 @@ fn cleans_a_saved_report_again_when_reading_it() {
     let offered = folder.offers().offer_saved().unwrap().unwrap();
 
     assert!(!offered.to_string().contains("sample-user"), "{offered}");
+}
+
+#[test]
+fn keeps_where_a_saved_panic_happened() {
+    let folder = TempFolder::new("panic-location");
+    let panic = CrashReport::from_panic(
+        CrashReportId::from_millis(1),
+        CrashedApp {
+            version: "1.2.3".to_owned(),
+            platform: Platform::Linux,
+            system: None,
+        },
+        &PanicDetails {
+            message: "boom",
+            location: Some(SourceLocation {
+                file: "crates/omnileaf-formats/src/zip_book.rs",
+                line: 42,
+                column: 5,
+            }),
+            backtrace: "",
+        },
+    );
+    folder.file().save(&panic).unwrap();
+
+    let offered = folder.offers().offer_saved().unwrap().unwrap();
+
+    assert!(
+        offered
+            .to_string()
+            .contains("\nAt: omnileaf-formats/src/zip_book.rs:42:5\n"),
+        "{offered}"
+    );
 }
 
 #[test]
