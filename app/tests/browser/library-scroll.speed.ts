@@ -96,7 +96,7 @@ async function scrollThrough(
 }
 
 for (const display of ["grid", "compact", "list"] as const) {
-  test(`scrolls the ${display} of ten thousand series without dropping frames`, async ({
+  test(`scrolls the first ${String(FRAMES * SCROLL_PER_FRAME_PX)} px of the ${display} of ten thousand series dropping at most ${String(MOST_DROPPED_FRAMES)} of ${String(FRAMES)} frames`, async ({
     page,
   }) => {
     const scrolled = await scrollThrough(page, display);
