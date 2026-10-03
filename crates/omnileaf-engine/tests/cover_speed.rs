@@ -86,12 +86,12 @@ async fn makes_a_cold_cover_thumbnail_from_a_full_size_scan_within_30_ms_at_p95(
     let p95 = times[times.len() * 95 / 100 - 1];
     let slowest = times[times.len() - 1];
     eprintln!(
-        "cold cover thumbnail from a 1800x2700 scan: median {median:?}, p95 {p95:?}, slowest {slowest:?} over {} covers, budget {BUDGET:?}",
+        "cold cover thumbnail from a 1800x2700 baseline JPEG scan of about 1 MB: median {median:?}, p95 {p95:?}, slowest {slowest:?} over {} covers, budget {BUDGET:?}",
         times.len()
     );
     assert_eq!(times.len(), usize::try_from(BOOKS).unwrap());
     assert!(
         p95 <= BUDGET,
-        "a cold cover thumbnail took {p95:?} at p95, over the {BUDGET:?} budget"
+        "a cold cover thumbnail from a baseline JPEG scan of about 1 MB took {p95:?} at p95, over the {BUDGET:?} budget"
     );
 }
