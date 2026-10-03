@@ -182,7 +182,7 @@ fn replaces_quoted_text_in_a_panic_message() {
 
     assert!(
         report.contains(
-            "Panic: called `Result::unwrap()` on an `Err` value: Custom { kind: NotFound, error: \"…\" }\n"
+            "Panic: called \"…\" on an \"…\" value: Custom { kind: NotFound, error: \"…\" }\n"
         ),
         "{report}"
     );
@@ -219,6 +219,58 @@ fn recognises_windows_home_relative_and_content_paths() {
             .all(|line| line == "read <path>" || line == "read (<path>"),
         "{lines:?}"
     );
+}
+
+#[test]
+fn recognises_a_path_however_it_is_quoted_or_introduced() {
+    let messages = [
+        "failed to read `/home/sample-user/Comics/Sample Series 01.cbz`: bad",
+        "path:/home/sample-user/Comics/x.cbz",
+        "open <C:\\Users\\sample-user\\Comics\\x.cbz>",
+        "entry 'Sample Series/page1.jpg' broken",
+        "couldn't decode Comics/Sample Series/ch01.cbz",
+        "no such file “/home/sample-user/Sample”",
+        "read Comics/Sample/Volume 1",
+    ];
+
+    let lines: Vec<String> = messages
+        .iter()
+        .map(|message| message_line(&interface_report(message, None)).to_owned())
+        .collect();
+
+    assert!(
+        lines.iter().all(|line| !line.contains("sample-user")
+            && !line.contains("Comics")
+            && !line.contains("Sample")),
+        "{lines:?}"
+    );
+}
+
+#[test]
+fn replaces_text_in_backticks_and_typographic_quotes() {
+    let messages = [
+        "no series `Sample Title` here",
+        "no series “Sample Title” here",
+        "no series ‘Sample Title’ here",
+        "no series 'Sample Title' here",
+    ];
+
+    let lines: Vec<String> = messages
+        .iter()
+        .map(|message| message_line(&interface_report(message, None)).to_owned())
+        .collect();
+
+    assert!(
+        lines.iter().all(|line| line == "no series \"…\" here"),
+        "{lines:?}"
+    );
+}
+
+#[test]
+fn keeps_an_apostrophe_inside_a_word() {
+    let report = interface_report("couldn't open the app's page", None);
+
+    assert_eq!(message_line(&report), "couldn't open the app's page");
 }
 
 #[test]
@@ -282,6 +334,57 @@ proptest! {
 
         prop_assert!(!report.contains(folder.trim()), "{}", report);
         prop_assert!(!report.contains(&file), "{}", report);
+    }
+
+    #[test]
+    fn never_names_a_folder_however_its_path_is_introduced(
+        before in "[a-z ]{0,20}",
+        opener in prop::sample::select(vec![" ", "`", ":", "<", "(", "“", "'", "=", "@"]),
+        folder in "[A-Z]{3}[A-Z ]{0,12}",
+        file in "[A-Z]{3,10}",
+    ) {
+        let report = interface_report(&format!("{before}{opener}/home/{folder}/{file}.cbz"), None);
+
+        prop_assert!(!report.contains(folder.trim()), "{}", report);
+        prop_assert!(!report.contains(&file), "{}", report);
+    }
+
+    #[test]
+    fn never_names_a_folder_in_a_relative_path(
+        before in "[a-z ]{0,20}",
+        root in "[A-Z]{3,12}",
+        folder in "[A-Z]{3}[A-Z ]{0,12}",
+        file in "[A-Z]{3,10}",
+        extension in prop::sample::select(vec![".cbz", ".jpg", ".epub"]),
+    ) {
+        let report = interface_report(&format!("{before} {root}/{folder}/{file}{extension}"), None);
+
+        prop_assert!(!report.contains(&root), "{}", report);
+        prop_assert!(!report.contains(folder.trim()), "{}", report);
+        prop_assert!(!report.contains(&file), "{}", report);
+    }
+
+    #[test]
+    fn never_repeats_text_in_any_kind_of_quotes(
+        before in "[a-z ]{0,20}",
+        quotes in prop::sample::select(vec![("\"", "\""), ("`", "`"), ("“", "”"), ("‘", "’"), ("'", "'")]),
+        title in "[A-Z]{3}[A-Z ]{0,12}",
+    ) {
+        let (open, close) = quotes;
+        let report = interface_report(&format!("{before} {open}{title}{close} after"), None);
+
+        prop_assert!(!report.contains(title.trim()), "{}", report);
+    }
+
+    #[test]
+    fn leaves_cleaned_text_with_quotes_and_separators_as_it_is(
+        message in "[a-zA-Z0-9 .:/\\\\'`\"“”‘’<>(@=\n]{0,120}",
+    ) {
+        let once = message_line(&interface_report(&message, None)).to_owned();
+
+        let twice = message_line(&interface_report(&once, None)).to_owned();
+
+        prop_assert_eq!(once, twice);
     }
 
     #[test]
