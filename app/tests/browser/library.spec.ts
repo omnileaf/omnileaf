@@ -13,6 +13,7 @@ import {
 import {
   pagedSeries,
   sampleSeries,
+  SERIES_PER_PAGE,
   type WireSeries,
 } from "./series-catalog.ts";
 
@@ -21,6 +22,12 @@ const EMPTY_TEXT_MEASURE = 440;
 const PHONE_EMPTY_TEXT_INSET = 40;
 const ROW_LIMIT_FOR_A_SCREEN = 120;
 const PAGES_A_SCREEN_NEEDS = 1;
+const SERIES_IN_CATALOG = 500;
+const PAGES_IN_CATALOG = SERIES_IN_CATALOG / SERIES_PER_PAGE;
+const LAST_SERIES = `Sample Series ${String(SERIES_IN_CATALOG).padStart(4, "0")}`;
+const SCROLL_RETRY_MS = 100;
+const PHONE_EMPTY_ART = { art: 64, icon: 28 };
+const WIDE_EMPTY_ART = { art: 80, icon: 36 };
 
 function emptyLibrary(page: Page): Locator {
   return page.getByRole("region", { name: "Your library is empty" });
@@ -78,10 +85,10 @@ test.describe("with an empty library", () => {
     const art = await boxOf(icon.locator(".."));
     const shape = await boxOf(icon);
 
-    const [artSize, iconSize] = isWide(page) ? [80, 36] : [64, 28];
-    expect(art.width).toBe(artSize);
-    expect(art.height).toBe(artSize);
-    expect(shape.width).toBe(iconSize);
+    const board = isWide(page) ? WIDE_EMPTY_ART : PHONE_EMPTY_ART;
+    expect(art.width).toBe(board.art);
+    expect(art.height).toBe(board.art);
+    expect(shape.width).toBe(board.icon);
   });
 
   test("keeps the empty state's help to the board's measure", async ({
@@ -146,14 +153,19 @@ test.describe("with a library of many series", () => {
   });
 
   test.beforeEach(() => {
-    catalog = sampleSeries(500);
+    catalog = sampleSeries(SERIES_IN_CATALOG);
     pagesAsked = 0;
   });
 
-  async function scrollToTheEnd(page: Page): Promise<void> {
-    await page.getByRole("main").evaluate((main) => {
-      main.scrollTo({ top: main.scrollHeight });
-    });
+  async function scrollToTheLastSeries(page: Page): Promise<Locator> {
+    const last = seriesList(page).getByText(LAST_SERIES);
+    await expect(async () => {
+      await page.getByRole("main").evaluate((main) => {
+        main.scrollTo({ top: main.scrollHeight });
+      });
+      await expect(last).toBeVisible({ timeout: SCROLL_RETRY_MS });
+    }).toPass({ intervals: [SCROLL_RETRY_MS] });
+    return last;
   }
 
   test("reads only the first page the screen needs", async ({ page }) => {
@@ -179,25 +191,17 @@ test.describe("with a library of many series", () => {
     await expect(
       seriesList(page).getByText("Sample Series 0001"),
     ).toBeVisible();
-    const last = seriesList(page).getByText("Sample Series 0500");
 
-    await expect(async () => {
-      await scrollToTheEnd(page);
-      await expect(last).toBeVisible({ timeout: 100 });
-    }).toPass();
+    await scrollToTheLastSeries(page);
 
-    expect(pagesAsked).toBe(10);
+    expect(pagesAsked).toBe(PAGES_IN_CATALOG);
   });
 
   test("lays out only the rows near the screen however far the list goes", async ({
     page,
   }) => {
     await page.goto("/");
-    const last = seriesList(page).getByText("Sample Series 0500");
-    await expect(async () => {
-      await scrollToTheEnd(page);
-      await expect(last).toBeVisible({ timeout: 100 });
-    }).toPass();
+    await scrollToTheLastSeries(page);
 
     const laidOut = await seriesList(page).getByRole("listitem").count();
 
@@ -235,7 +239,7 @@ test.describe("with a library of many series", () => {
     await emitFakeEvent(page, LIBRARY_CHANGED);
 
     await expect(seriesList(page).getByRole("listitem").first()).toContainText(
-      "Sample Series 0500",
+      LAST_SERIES,
     );
   });
 
@@ -258,15 +262,11 @@ test.describe("with a library of many series", () => {
     page,
   }) => {
     await page.goto("/");
-    const last = seriesList(page).getByText("Sample Series 0500");
-    await expect(async () => {
-      await scrollToTheEnd(page);
-      await expect(last).toBeVisible({ timeout: 100 });
-    }).toPass();
+    const last = await scrollToTheLastSeries(page);
 
     await emitFakeEvent(page, LIBRARY_CHANGED);
 
-    await expect.poll(() => pagesAsked).toBe(20);
+    await expect.poll(() => pagesAsked).toBe(2 * PAGES_IN_CATALOG);
     await expect(last).toBeVisible();
   });
 

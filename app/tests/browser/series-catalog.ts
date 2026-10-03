@@ -4,7 +4,7 @@ export type WireSeries = Awaited<
   ReturnType<FakeBackend["librarySeries"]>
 >["series"][number];
 
-const SERIES_PER_PAGE = 50;
+export const SERIES_PER_PAGE = 50;
 
 /** Generated series named "Sample Series 0001" onwards, with no covers so specs need no image routes. */
 export function sampleSeries(count: number, from = 1): WireSeries[] {
