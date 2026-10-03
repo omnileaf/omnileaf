@@ -5,9 +5,8 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
-  MEDIUM_MIN_WIDTH,
+  onPlatform,
   test,
-  viewportOf,
 } from "./fixtures.ts";
 
 test.describe("with a folder of comics", () => {
@@ -38,6 +37,17 @@ test.describe("with a folder of comics", () => {
       );
     });
   }
+
+  test("lets the notice under the folders be dismissed", async ({ page }) => {
+    await page.goto("/settings/library");
+    await page.getByRole("button", { name: "Add a folder" }).click();
+    const status = page.getByRole("status");
+    await expect(status).toHaveText("Found 3 comics in Sample Library.");
+
+    await status.getByRole("button", { name: "Dismiss" }).click();
+
+    await expect(status).toBeEmpty();
+  });
 });
 
 test("opens Settings › Library from Settings", async ({ page }) => {
@@ -53,19 +63,34 @@ test("opens Settings › Library from Settings", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("fills Settings › Library's width with the Add a folder button below desktop", async ({
-  page,
-}) => {
-  await page.goto("/settings/library");
-  test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "one pane only");
+for (const { platform, buttonHeight } of [
+  { platform: "linux", buttonHeight: 36 },
+  { platform: "android", buttonHeight: 48 },
+] as const) {
+  test.describe(`on ${platform}`, () => {
+    test.use(onPlatform(platform));
 
-  const folders = await boxOf(page.getByRole("region", { name: "Folders" }));
-  const button = await boxOf(
-    page.getByRole("button", { name: "Add a folder" }),
-  );
+    test(`puts a ${String(buttonHeight)}px Add a folder at the end of the Folders heading`, async ({
+      page,
+    }) => {
+      await page.goto("/settings/library");
+      const folders = page.getByRole("region", { name: "Folders" });
 
-  expect(button.width).toBe(folders.width);
-});
+      const region = await boxOf(folders);
+      const heading = await boxOf(
+        folders.getByRole("heading", { level: 2, name: "Folders" }),
+      );
+      const button = await boxOf(
+        folders.getByRole("button", { name: "Add a folder" }),
+      );
+
+      expect(button.height).toBe(buttonHeight);
+      expect(button.x + button.width).toBe(region.x + region.width);
+      expect(button.y).toBeLessThan(heading.y + heading.height);
+      expect(button.y + button.height).toBeGreaterThan(heading.y);
+    });
+  });
+}
 
 test.describe("with a folder it can't read", () => {
   test.use({

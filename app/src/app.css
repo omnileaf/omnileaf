@@ -52,6 +52,8 @@
   --text-brand--line-height: 1.5rem;
   --text-bar-title: 1.375rem;
   --text-bar-title--line-height: 1.75rem;
+  --text-group-title: 1.125rem;
+  --text-group-title--line-height: 1.5rem;
   --text-title: 1.25rem;
   --text-title--line-height: 1.75rem;
   --text-app-name: 1.5rem;
@@ -79,6 +81,8 @@
   --spacing-none: 0;
   --spacing-touch-target: 3rem;
   --spacing-pointer-target: 2.5rem;
+  --spacing-pointer-button: 2.25rem;
+  --spacing-dismiss: 1.75rem;
   --spacing-button: 1.25rem;
   --spacing-pill: 3.5rem;
   --spacing-tile: 2.25rem;
@@ -140,6 +144,7 @@
   --color-muted: #5f5b52;
   --color-sidebar-ink: #4a473f;
   --color-border: #e3ded3;
+  --color-field: #e3ded3;
   --color-card: #ffffff;
   --color-chip: #eeeae1;
   --color-raised: #ffffff;
@@ -149,6 +154,9 @@
   --color-on-accent: #ffffff;
   --color-accent-soft: #ddebe2;
   --color-warning-soft: #fbf3e3;
+  --color-warning-edge: #ebd6a8;
+  --color-warning-tile: #f3e0b8;
+  --color-on-warning: #3b2f1e;
   --color-icon-hole: var(--color-accent-soft);
   --color-glass: rgb(250 248 244 / 0.74);
   --color-glass-edge: rgb(255 255 255 / 0.7);
@@ -263,6 +271,7 @@
   --color-muted: #a9a396;
   --color-sidebar-ink: #c9c3b6;
   --color-border: #302d28;
+  --color-field: #34312b;
   --color-card: #1f1d1a;
   --color-chip: #2b2823;
   --color-raised: #3a3630;
@@ -272,6 +281,9 @@
   --color-on-accent: #0f2418;
   --color-accent-soft: #243a2c;
   --color-warning-soft: #3a3120;
+  --color-warning-edge: #4e4229;
+  --color-warning-tile: #4e4229;
+  --color-on-warning: #f3e6c8;
   --color-glass: rgb(36 34 30 / 0.72);
   --color-glass-edge: rgb(255 255 255 / 0.1);
   --color-glass-pill: rgb(255 255 255 / 0.12);
