@@ -1,3 +1,5 @@
+use icu_locale_core::subtags::{self, language};
+
 use crate::title_key::Language;
 
 /// A leading article of one language, written in lower case.
@@ -31,16 +33,20 @@ const GERMAN: &[Article] = &[
 ];
 const SWEDISH: &[Article] = &[Article::Word("en"), Article::Word("ett")];
 const NO_ARTICLES: &[Article] = &[];
+const ARTICLES_BY_LANGUAGE: [(subtags::Language, &[Article]); 4] = [
+    (language!("en"), ENGLISH),
+    (language!("fr"), FRENCH),
+    (language!("de"), GERMAN),
+    (language!("sv"), SWEDISH),
+];
 const APOSTROPHES: [char; 2] = ['\'', '\u{2019}'];
 
 pub(crate) fn articles_of(language: &Language) -> &'static [Article] {
-    match language.code() {
-        "en" => ENGLISH,
-        "fr" => FRENCH,
-        "de" => GERMAN,
-        "sv" => SWEDISH,
-        _ => NO_ARTICLES,
-    }
+    let subtag = language.subtag();
+    ARTICLES_BY_LANGUAGE
+        .iter()
+        .find(|(listed, _)| *listed == subtag)
+        .map_or(NO_ARTICLES, |(_, articles)| articles)
 }
 
 /// Drops the first article only when another word follows it, so a title that is only an article keeps it.

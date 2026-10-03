@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr};
 
-use icu_locale_core::Locale;
+use icu_locale_core::{Locale, subtags};
 
 use crate::Error;
 
@@ -17,8 +17,8 @@ impl Language {
     }
 
     /// The language subtag alone, such as `fr` for `fr-CA`.
-    pub(crate) const fn code(&self) -> &str {
-        self.0.id.language.as_str()
+    pub(crate) const fn subtag(&self) -> subtags::Language {
+        self.0.id.language
     }
 }
 
