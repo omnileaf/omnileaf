@@ -10,9 +10,11 @@
   import { m } from "$lib/paraglide/messages.js";
   import VirtualGrid from "$lib/virtual-grid/VirtualGrid.svelte";
 
+  import CoverBadges from "./CoverBadges.svelte";
   import CoverImage from "./CoverImage.svelte";
   import { coverLook } from "./cover-look";
   import type { CoverUrl } from "./cover-url";
+  import UnreadCount from "./UnreadCount.svelte";
 
   let {
     series,
@@ -64,6 +66,7 @@
     class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
   >
     <CoverImage cover={one.cover} {coverUrl} />
+    <CoverBadges series={one} onCovers={view.onCovers} />
   </div>
   <div class="min-inline-none">
     <p class={["truncate font-semibold", look.title]}>{one.title}</p>
@@ -78,6 +81,7 @@
     class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
   >
     <CoverImage cover={one.cover} {coverUrl} />
+    <CoverBadges series={one} onCovers={view.onCovers} />
     <p
       class={[
         "absolute inset-x-none inset-be-none line-clamp-2 bg-band px-band pbs-band pbe-sm leading-band font-semibold text-on-band medium:px-band-wide medium:pbs-sm medium:pbe-band-wide medium:leading-band-wide",
@@ -103,6 +107,14 @@
       {m.library_series_books({ count: one.bookCount })}
     </p>
   </div>
+  {#if view.onCovers.showsUnreadCount}
+    <div class="flex shrink-0 justify-end large:inline-list-unread">
+      <UnreadCount
+        count={one.unreadCount}
+        class="rounded-badge px-sm py-2xs text-caption"
+      />
+    </div>
+  {/if}
 {/snippet}
 
 <div

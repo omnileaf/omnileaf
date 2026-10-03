@@ -52,6 +52,20 @@
   "library_on_covers_language": "Language",
   "library_on_covers_reading_progress": "Reading progress",
   "library_on_covers_continue_button": "Continue reading button",
+  "library_unread_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} unread",
+        "countPlural=other": "{formattedCount} unread"
+      }
+    }
+  ],
   "app_version": "Version {version}",
   "library_add_folder": "Add a folder",
   "library_scan_finding": "Finding books",
