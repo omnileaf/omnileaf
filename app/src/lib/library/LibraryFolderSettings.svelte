@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import type { commands, LibraryFolder } from "$lib/ipc/bindings";
+  import type { LibraryFolder } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
+  import type { AddFolder } from "./add-folder";
   import AddLibraryFolder from "./AddLibraryFolder.svelte";
   import FolderRow from "./FolderRow.svelte";
   import {
@@ -20,7 +21,7 @@
   }: {
     listFolders: ListFolders;
     removeFolder: RemoveFolder;
-    addFolder: typeof commands.addLibraryFolder;
+    addFolder: AddFolder;
   } = $props();
 
   const folders = new LibraryFolders(
@@ -106,7 +107,7 @@
   <div class="mbs-md">
     <AddLibraryFolder
       {addFolder}
-      onAdded={() => {
+      onFinished={() => {
         void folders.load();
       }}
     />

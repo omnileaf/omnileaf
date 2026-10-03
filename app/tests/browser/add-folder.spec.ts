@@ -3,13 +3,15 @@ import { AxeBuilder } from "@axe-core/playwright";
 import { CommandFailure } from "./fake-backend.ts";
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
-test.describe("with a folder of comics", () => {
+test.describe("with a folder of books", () => {
   test.use({
     backend: {
       ...DEFAULT_BACKEND,
       addLibraryFolder: () => ({
         name: "Sample Library",
-        comicFiles: 3,
+        series: 3,
+        books: 7,
+        unreadableBooks: 0,
         unreadableFolders: 0,
       }),
     },
@@ -19,7 +21,7 @@ test.describe("with a folder of comics", () => {
     { place: "the empty library", path: "/" },
     { place: "Settings › Library", path: "/settings/library" },
   ]) {
-    test(`adds a folder from ${place} and reports the comics in it`, async ({
+    test(`adds a folder from ${place} and reports the books scanned in it`, async ({
       page,
     }) => {
       await page.goto(path);
@@ -27,8 +29,46 @@ test.describe("with a folder of comics", () => {
       await page.getByRole("button", { name: "Add a folder" }).click();
 
       await expect(page.getByRole("status")).toHaveText(
-        "Found 3 comics in Sample Library.",
+        "Found 7 books in 3 series in Sample Library.",
       );
+    });
+  }
+});
+
+test.describe("while the folder is being scanned", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      addLibraryFolder: async (onProgress) => {
+        await onProgress.send({ stage: "reading", scanned: 32, total: 100 });
+        return new Promise(() => undefined);
+      },
+    },
+  });
+
+  test("shows how far the scan has got", async ({ page }) => {
+    await page.goto("/settings/library");
+
+    await page.getByRole("button", { name: "Add a folder" }).click();
+
+    await expect(page.getByRole("status")).toHaveText("Finding books");
+    const bar = page.getByRole("progressbar", { name: "Finding books" });
+    await expect(bar).toHaveAttribute("value", "32");
+    await expect(bar).toHaveAccessibleDescription("32 of 100 books");
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`the scan's progress has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/settings/library");
+      await page.getByRole("button", { name: "Add a folder" }).click();
+      await expect(page.getByRole("progressbar")).toBeVisible();
+
+      const results = await new AxeBuilder({ page }).analyze();
+
+      expect(results.violations).toEqual([]);
     });
   }
 });

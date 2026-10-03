@@ -4,6 +4,7 @@
 )]
 
 use std::{
+    collections::BTreeSet,
     env, fs,
     io::{Cursor, Read},
     path::{Path, PathBuf},
@@ -11,8 +12,8 @@ use std::{
 };
 
 use omnileaf_testkit::{
-    ArchiveEntry, Compression, PageShape, SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, cbz, page_png,
-    write_sample_library,
+    ArchiveEntry, Compression, GENERATED_LIBRARY_NAME, GeneratedLibrary, PageShape, SAMPLE_LIBRARY,
+    SAMPLE_LIBRARY_NAME, cbz, page_png, write_generated_library, write_sample_library,
 };
 use zip::{CompressionMethod, DateTime, ZipArchive};
 
@@ -196,4 +197,58 @@ fn records_a_unix_host_system_on_every_platform() {
         .collect();
 
     assert_eq!(host_systems, vec![UNIX_HOST_SYSTEM; sample_entries().len()]);
+}
+
+#[test]
+fn writes_a_generated_library_whose_books_share_every_page_but_their_cover() {
+    let scratch = ScratchFolder::new("generated");
+    let library = GeneratedLibrary {
+        series: 2,
+        books_per_series: 3,
+        pages_per_book: 4,
+    };
+
+    let files = write_generated_library(scratch.path(), library).unwrap();
+
+    let pages: Vec<Vec<Vec<u8>>> = files
+        .iter()
+        .map(|file| {
+            let mut archive = read_archive(fs::read(scratch.path().join(file)).unwrap());
+            (0..archive.len())
+                .map(|index| {
+                    let mut bytes = Vec::new();
+                    archive
+                        .by_index(index)
+                        .unwrap()
+                        .read_to_end(&mut bytes)
+                        .unwrap();
+                    bytes
+                })
+                .collect()
+        })
+        .collect();
+    assert_eq!(files.len(), 6);
+    assert!(
+        files
+            .iter()
+            .all(|file| file.starts_with(GENERATED_LIBRARY_NAME))
+    );
+    assert!(pages.iter().all(|book| book.len() == 4));
+    let covers: BTreeSet<&Vec<u8>> = pages.iter().filter_map(|book| book.first()).collect();
+    let rest: BTreeSet<&[Vec<u8>]> = pages.iter().filter_map(|book| book.get(1..)).collect();
+    assert_eq!((covers.len(), rest.len()), (6, 1));
+}
+
+#[test]
+fn counts_a_book_for_every_file_a_generated_library_writes() {
+    let scratch = ScratchFolder::new("generated-count");
+    let library = GeneratedLibrary {
+        series: 3,
+        books_per_series: 4,
+        pages_per_book: 1,
+    };
+
+    let files = write_generated_library(scratch.path(), library).unwrap();
+
+    assert_eq!(usize::try_from(library.books()).unwrap(), files.len());
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { commands } from "$lib/ipc/bindings";
+  import { addFolderWithProgress } from "$lib/library/add-folder";
   import LibraryFolderSettings from "$lib/library/LibraryFolderSettings.svelte";
   import { m } from "$lib/paraglide/messages.js";
 </script>
@@ -8,5 +9,5 @@
 <LibraryFolderSettings
   listFolders={commands.libraryFolders}
   removeFolder={commands.removeLibraryFolder}
-  addFolder={commands.addLibraryFolder}
+  addFolder={addFolderWithProgress}
 />

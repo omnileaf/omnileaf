@@ -247,6 +247,30 @@
   }
 }
 
+@utility progress-track {
+  appearance: none;
+  display: block;
+  inline-size: 100%;
+  block-size: var(--spacing-xs);
+  border: none;
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  background-color: var(--color-chip);
+  color: var(--color-accent);
+
+  &::-webkit-progress-bar {
+    background-color: var(--color-chip);
+  }
+
+  &::-webkit-progress-value {
+    background-color: var(--color-accent);
+  }
+
+  &::-moz-progress-bar {
+    background-color: var(--color-accent);
+  }
+}
+
 @layer base {
   :root {
     color-scheme: light;

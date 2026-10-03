@@ -3,7 +3,9 @@ import { AxeBuilder } from "@axe-core/playwright";
 import type { FakeBackend } from "./fake-backend.ts";
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
-type WireFolder = ReturnType<FakeBackend["libraryFolders"]>["folders"][number];
+type WireFolder = Awaited<
+  ReturnType<FakeBackend["libraryFolders"]>
+>["folders"][number];
 
 const HOME: WireFolder = {
   id: "1",
@@ -40,7 +42,13 @@ const LIBRARY_BACKEND: FakeBackend = {
   libraryFolders: () => ({ folders: [...library.folders], next: null }),
   addLibraryFolder: () => {
     library.folders.push(SAMPLE_LIBRARY);
-    return { name: SAMPLE_LIBRARY.name, comicFiles: 3, unreadableFolders: 0 };
+    return {
+      name: SAMPLE_LIBRARY.name,
+      series: 3,
+      books: 7,
+      unreadableBooks: 0,
+      unreadableFolders: 0,
+    };
   },
   removeLibraryFolder: (id) => {
     library.folders = library.folders.filter((folder) => folder.id !== id);
