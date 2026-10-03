@@ -18,6 +18,7 @@ pub struct Database {
 
 impl Database {
     /// Blocks while it opens the file, brings its schema up to date and re-keys titles made by another build, so call it off the async runtime.
+    #[tracing::instrument(skip_all, fields(path = %config.path.display()))]
     pub fn open(config: &Config) -> Result<Self, Error> {
         let mut writer = migrated_writer(config, MIGRATIONS)?;
         let transaction = writer.transaction_with_behavior(TransactionBehavior::Immediate)?;
@@ -27,6 +28,7 @@ impl Database {
     }
 
     #[cfg(test)]
+    #[tracing::instrument(skip_all, fields(path = %config.path.display()))]
     pub(crate) fn open_with(config: &Config, migrations: &[Migration]) -> Result<Self, Error> {
         Self::serve(config, migrated_writer(config, migrations)?)
     }
@@ -80,7 +82,6 @@ impl Database {
     }
 }
 
-#[tracing::instrument(skip_all, fields(path = %config.path.display()))]
 fn migrated_writer(config: &Config, migrations: &[Migration]) -> Result<Connection, Error> {
     let mut writer = connection::open_writer(config)?;
     match migration::pending(&writer, &config.path, migrations)? {
