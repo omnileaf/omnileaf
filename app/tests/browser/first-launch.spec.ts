@@ -1,5 +1,5 @@
 import { AxeBuilder } from "@axe-core/playwright";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
@@ -10,6 +10,13 @@ import {
   test,
   viewportOf,
 } from "./fixtures.ts";
+
+const HOME_FOLDER = {
+  id: "1",
+  kind: "home",
+  name: "Omnileaf",
+  location: "/data/Omnileaf",
+} as const;
 
 /** A device that hasn't finished its first launch until the test finishes it. */
 class Device {
@@ -37,10 +44,12 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
     device.finishes += 1;
     return null;
   },
+  libraryFolders: () => ({ folders: [HOME_FOLDER], next: null }),
 };
 
 const STEPS = [
   { heading: "Welcome to Omnileaf", leaveWith: "Get started" },
+  { heading: "Where your library lives", leaveWith: "Continue" },
   { heading: "You're all set", leaveWith: "Open my library" },
 ] as const;
 
@@ -97,7 +106,7 @@ test("focuses each step's heading as it moves on", async ({ page }) => {
 
   await page.getByRole("button", { name: "Get started" }).click();
 
-  await expect(heading(page, "You're all set")).toBeFocused();
+  await expect(heading(page, "Where your library lives")).toBeFocused();
 });
 
 const MOBILE_WORDING = {
@@ -148,8 +157,31 @@ for (const { platform, wording } of [
   });
 }
 
+test("shows the home folder the library lives in", async ({ page }) => {
+  await goTo(page, "Where your library lives");
+
+  await expect(page.getByText(HOME_FOLDER.location)).toBeVisible();
+});
+
+test("counts the steps between the welcome and the end", async ({ page }) => {
+  await goTo(page, "Where your library lives");
+
+  const progress = page.getByRole("progressbar", { name: "Setting up" });
+
+  await expect(progress).toHaveAttribute("aria-valuenow", "1");
+  await expect(progress).toHaveAttribute("aria-valuetext", "1 of 1");
+});
+
+test("goes back a step with the Back button", async ({ page }) => {
+  await goTo(page, "Where your library lives");
+
+  await page.getByRole("button", { name: "Back" }).click();
+
+  await expect(heading(page, "Welcome to Omnileaf")).toBeFocused();
+});
+
 test("goes back a step with the browser's back", async ({ page }) => {
-  await goTo(page, "You're all set");
+  await goTo(page, "Where your library lives");
 
   await page.goBack();
 
@@ -169,6 +201,45 @@ test("stays on the last step and says so when finishing fails", async ({
   );
   await expect(page).toHaveURL("/first-launch");
 });
+
+test("puts the Back button above the step on phones and beside its actions from 600px", async ({
+  page,
+}) => {
+  await goTo(page, "Where your library lives");
+
+  const back = page.getByRole("button", { name: "Back" });
+  const next = page.getByRole("button", { name: "Continue" });
+  const isPhone = viewportOf(page).width < MEDIUM_MIN_WIDTH;
+
+  const backBox = await back.boundingBox();
+  const nextBox = await next.boundingBox();
+  const backIsAbove =
+    backBox !== null && nextBox !== null && backBox.y < nextBox.y;
+  expect(backIsAbove).toBe(isPhone);
+});
+
+function transitionsIn(locator: Locator): Promise<string[]> {
+  return locator.evaluate((root) =>
+    [...root.querySelectorAll("*")]
+      .map((element) => getComputedStyle(element).transitionDuration)
+      .filter((duration) => duration !== "0s"),
+  );
+}
+
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test(`moves the progress dots only without reduce motion (${reducedMotion})`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion });
+    await goTo(page, "Where your library lives");
+
+    const transitions = await transitionsIn(
+      page.getByRole("progressbar", { name: "Setting up" }),
+    );
+
+    expect(transitions.length > 0).toBe(reducedMotion === "no-preference");
+  });
+}
 
 for (const colorScheme of ["light", "dark"] as const) {
   for (const step of STEPS) {

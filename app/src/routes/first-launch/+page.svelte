@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import { goto, pushState } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { deviceKindOf } from "$lib/first-launch/device";
+  import HomeStep from "$lib/first-launch/HomeStep.svelte";
   import ReadyStep, {
     type FinishOutcome,
   } from "$lib/first-launch/ReadyStep.svelte";
@@ -13,6 +16,7 @@
   } from "$lib/first-launch/steps";
   import WelcomeStep from "$lib/first-launch/WelcomeStep.svelte";
   import { commands } from "$lib/ipc/bindings";
+  import { LibraryFolders } from "$lib/library/library-folders.svelte";
 
   import type { PageProps } from "./$types";
 
@@ -24,8 +28,17 @@
     isLeaving ? "ready" : (page.state.firstLaunchStep ?? "welcome"),
   );
 
+  const folders = new LibraryFolders(
+    commands.libraryFolders,
+    commands.removeLibraryFolder,
+  );
+
   let card: HTMLElement | undefined = $state();
   let shownStep: FirstLaunchStep | undefined;
+
+  onMount(() => {
+    void folders.load();
+  });
 
   $effect(() => {
     if (shownStep !== undefined && shownStep !== step) {
@@ -39,6 +52,10 @@
     if (after !== undefined) {
       pushState("", { firstLaunchStep: after });
     }
+  }
+
+  function back(): void {
+    window.history.back();
   }
 
   /** Goes back to the entry the first launch opened on, so the library replaces it and back leaves the app instead of replaying the steps. */
@@ -83,6 +100,8 @@
     >
       {#if step === "welcome"}
         <WelcomeStep {device} onNext={next} />
+      {:else if step === "home"}
+        <HomeStep folders={folders.list} onBack={back} onNext={next} />
       {:else}
         <ReadyStep onFinish={finish} />
       {/if}

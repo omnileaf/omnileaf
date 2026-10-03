@@ -62,7 +62,7 @@
   } satisfies Record<DeviceKind, readonly unknown[]>;
 </script>
 
-<StepFrame>
+<StepFrame step="welcome">
   <div class="flex flex-1 flex-col justify-center gap-lg">
     <h1 tabindex="-1" class="text-display font-bold">
       {m.first_launch_welcome_title()}

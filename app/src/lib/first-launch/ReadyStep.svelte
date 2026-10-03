@@ -23,7 +23,7 @@
   }
 </script>
 
-<StepFrame>
+<StepFrame step="ready">
   <div class="flex flex-1 flex-col justify-center gap-lg">
     <StepIcon tone="strong">
       <Check size={HERO_ICON_SIZE} aria-hidden="true" />
