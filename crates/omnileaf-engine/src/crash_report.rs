@@ -1,3 +1,4 @@
+mod file;
 mod issue;
 mod offers;
 mod scrub;
@@ -10,7 +11,8 @@ use specta::Type;
 
 use crate::{AppInfo, Platform, ProjectLink};
 
-pub use offers::{CrashReportError, CrashReportFile, CrashReportOffers, UnsavedCrashReport};
+pub use file::{CrashReportError, CrashReportFile};
+pub use offers::{CrashReportOffers, UnsavedCrashReport};
 
 const MESSAGE_BYTE_LIMIT: usize = 240;
 const FRAME_LIMIT: usize = 12;
