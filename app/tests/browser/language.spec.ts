@@ -1,6 +1,6 @@
 import { AxeBuilder } from "@axe-core/playwright";
 
-import { expect, test } from "./fixtures.ts";
+import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
 async function openGeneral(page: import("@playwright/test").Page) {
   await page.goto("/settings");
@@ -43,6 +43,44 @@ test("goes back to the system language", async ({ page }) => {
   await expect(
     page.getByRole("radio", { name: "System (English)" }),
   ).toBeChecked();
+});
+
+test.describe("sorting the library", () => {
+  const told: string[] = [];
+
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      setAppLanguage: (language) => {
+        told.push(language);
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    told.length = 0;
+  });
+
+  test("tells the library the language the app shows", async ({ page }) => {
+    await page.goto("/");
+
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    expect(told).toEqual(["en"]);
+  });
+
+  test("tells the library the language chosen in Settings", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem("omnileaf.language", "en-XA");
+    });
+
+    await page.goto("/");
+
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    expect(told).toEqual(["en-XA"]);
+  });
 });
 
 test("Settings › General has no accessibility violations", async ({ page }) => {
