@@ -9,9 +9,10 @@ use std::{fs, path::Path};
 
 use omnileaf_db::{
     catalog::{PageRequest, PageSize, SeriesOrder, SeriesSummary, series_books, series_page},
-    rusqlite::{Connection, OpenFlags},
+    rusqlite::{Connection, OpenFlags, types::Value},
 };
 use omnileaf_engine::{Clock, FolderId, FolderScan, Library, LibraryError, ScanProgress};
+use omnileaf_sync_proto::SourceId;
 use omnileaf_testkit::{
     ArchiveEntry, Compression, PageShape, SAMPLE_LIBRARY_NAME, cbz, page_png, write_sample_library,
 };
@@ -79,6 +80,16 @@ impl Scanned {
             .into_iter()
             .map(|book| book.title)
             .collect()
+    }
+
+    fn series_sources(&self) -> Vec<Value> {
+        self.connection()
+            .prepare("SELECT source_id FROM series ORDER BY local_id")
+            .unwrap()
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap()
     }
 
     fn series_summaries(&self) -> Vec<SeriesSummary> {
@@ -169,6 +180,23 @@ async fn scans_each_series_folder_into_a_series_of_its_books() {
             unreadable_books: 0,
             unreadable_folders: 0,
         }
+    );
+}
+
+#[tokio::test]
+async fn files_every_series_found_under_the_local_library_source() {
+    let comics = sample_library("scan-local-source");
+
+    let (scanned, _, _) = Scanned::folder(
+        "scan-local-source",
+        &comics.path().join(SAMPLE_LIBRARY_NAME),
+    )
+    .await;
+
+    let local = Value::Blob(SourceId::local().as_bytes().to_vec());
+    assert_eq!(
+        scanned.series_sources(),
+        [local.clone(), local.clone(), local]
     );
 }
 

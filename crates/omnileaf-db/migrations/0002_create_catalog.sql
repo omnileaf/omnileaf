@@ -10,7 +10,7 @@ CREATE TABLE library_root (
 CREATE TABLE series (
     local_id INTEGER PRIMARY KEY,
     id BLOB NOT NULL UNIQUE CHECK (length(id) = 16),
-    source_id TEXT NOT NULL,
+    source_id BLOB NOT NULL CHECK (length(source_id) = 16),
     natural_key TEXT NOT NULL,
     title TEXT NOT NULL,
     title_sort_key BLOB NOT NULL,

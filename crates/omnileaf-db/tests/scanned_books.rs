@@ -14,7 +14,7 @@ use omnileaf_db::{
         record_scanned_book,
     },
 };
-use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
+use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId, SourceId};
 use support::ScratchFolder;
 
 const ADDED_AT_MS: i64 = 1_790_000_000_000;
@@ -262,8 +262,8 @@ async fn refuses_a_book_whose_series_name_is_held_by_another_series_id() {
         .write(|transaction| {
             Ok(transaction.execute(
                 "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0)",
-                [],
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
             )?)
         })
         .await

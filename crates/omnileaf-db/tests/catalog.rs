@@ -10,9 +10,9 @@ use library_seed::{fingerprint, seed_library};
 use omnileaf_db::{
     Database, Error,
     catalog::{NewBook, NewSeries, add_book, add_series},
-    rusqlite::{self, ErrorCode},
+    rusqlite::{self, ErrorCode, types::Value},
 };
-use omnileaf_sync_proto::{BookId, SeriesId};
+use omnileaf_sync_proto::{BookId, SeriesId, SourceId};
 use support::ScratchFolder;
 
 const ADDED_AT_MS: i64 = 1_790_000_000_000;
@@ -20,6 +20,9 @@ const SERIES: &str = "Sample Series 01";
 const NO_BOOKS: &[&str] = &[];
 const ONE_BOOK: &[&str] = &["Volume 01"];
 const TWO_BOOKS: &[&str] = &["Volume 01", "Volume 02"];
+const OTHER_SERIES_ID: [u8; 16] = [8; 16];
+const OTHER_SOURCE_ID: [u8; 16] = [7; 16];
+const SHORT_SOURCE_ID: [u8; 15] = [7; 15];
 
 #[tokio::test]
 async fn counts_the_books_added_to_a_series() {
@@ -104,6 +107,59 @@ async fn refuses_a_second_series_for_a_folder_name_that_normalises_alike() {
             )
         })
         .await;
+
+    assert!(is_constraint_violation(&outcome));
+}
+
+#[tokio::test]
+async fn files_a_local_series_under_the_local_library_source() {
+    let folder = ScratchFolder::new("local-source");
+    let database = Database::open(&folder.config()).unwrap();
+
+    let series = add_local_series(&database, SERIES, NO_BOOKS).await;
+
+    assert_eq!(
+        source_of(&database, series).await,
+        Value::Blob(SourceId::local().as_bytes().to_vec())
+    );
+}
+
+#[tokio::test]
+async fn lets_another_source_hold_a_series_of_the_same_name() {
+    let folder = ScratchFolder::new("other-source");
+    let database = Database::open(&folder.config()).unwrap();
+    add_local_series(&database, SERIES, NO_BOOKS).await;
+
+    let outcome = add_sample_series_from(&database, OTHER_SOURCE_ID.to_vec()).await;
+
+    assert!(outcome.is_ok(), "{outcome:?}");
+    assert_eq!(row_count(&database, "series").await, 2);
+}
+
+#[tokio::test]
+async fn refuses_a_source_named_by_text() {
+    let folder = ScratchFolder::new("text-source");
+    let database = Database::open(&folder.config()).unwrap();
+
+    let outcome = database
+        .write(|transaction| {
+            Ok(transaction.execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0)",
+                [],
+            )?)
+        })
+        .await;
+
+    assert!(is_constraint_violation(&outcome));
+}
+
+#[tokio::test]
+async fn refuses_a_source_id_that_is_not_16_bytes() {
+    let folder = ScratchFolder::new("short-source");
+    let database = Database::open(&folder.config()).unwrap();
+
+    let outcome = add_sample_series_from(&database, SHORT_SOURCE_ID.to_vec()).await;
 
     assert!(is_constraint_violation(&outcome));
 }
@@ -323,6 +379,31 @@ async fn drops_a_removed_series_from_title_search() {
 async fn add_local_series(database: &Database, folder_name: &str, titles: &[&str]) -> SeriesId {
     seed_library(database, &[(folder_name, ADDED_AT_MS, titles)]).await;
     NewSeries::local(folder_name, ADDED_AT_MS).unwrap().id()
+}
+
+async fn source_of(database: &Database, series: SeriesId) -> Value {
+    database
+        .read(move |connection| {
+            Ok(connection.query_row(
+                "SELECT source_id FROM series WHERE id = ?1",
+                [series.as_bytes()],
+                |row| row.get(0),
+            )?)
+        })
+        .await
+        .unwrap()
+}
+
+async fn add_sample_series_from(database: &Database, source: Vec<u8>) -> Result<usize, Error> {
+    database
+        .write(move |transaction| {
+            Ok(transaction.execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                 VALUES (?1, ?2, 'sample series 01', 'Sample Series 01', x'', 0)",
+                (OTHER_SERIES_ID, source),
+            )?)
+        })
+        .await
 }
 
 async fn remove_book(database: &Database, book: BookId) {
