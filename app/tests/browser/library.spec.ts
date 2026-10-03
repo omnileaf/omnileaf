@@ -20,7 +20,7 @@ const LIBRARY_CHANGED = "library-changed";
 const EMPTY_TEXT_MEASURE = 440;
 const PHONE_EMPTY_TEXT_INSET = 40;
 const ROW_LIMIT_FOR_A_SCREEN = 120;
-const PAGES_A_SCREEN_NEEDS = 2;
+const PAGES_A_SCREEN_NEEDS = 1;
 
 function emptyLibrary(page: Page): Locator {
   return page.getByRole("region", { name: "Your library is empty" });
@@ -156,13 +156,20 @@ test.describe("with a library of many series", () => {
     });
   }
 
-  test("reads only the first pages the screen needs", async ({ page }) => {
+  test("reads only the first page the screen needs", async ({ page }) => {
     await page.goto("/");
-
     await expect(
       seriesList(page).getByText("Sample Series 0001"),
     ).toBeVisible();
-    expect(pagesAsked).toBeLessThanOrEqual(PAGES_A_SCREEN_NEEDS);
+
+    await page.evaluate(
+      () =>
+        new Promise((painted) => {
+          requestAnimationFrame(() => requestAnimationFrame(painted));
+        }),
+    );
+
+    expect(pagesAsked).toBe(PAGES_A_SCREEN_NEEDS);
   });
 
   test("reads further pages as the list scrolls, as far as its last series", async ({

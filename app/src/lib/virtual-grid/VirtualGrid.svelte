@@ -26,7 +26,7 @@
 
   const ITEMS_BEFORE_MEASURING = 24;
   const EXTRA_ROWS = 2;
-  const NEAR_END_ROWS = 6;
+  const NEAR_END_ROWS = 2;
   const UNKNOWN_SIZE = -1;
 
   interface Measure {
