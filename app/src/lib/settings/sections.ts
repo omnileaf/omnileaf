@@ -28,6 +28,13 @@ export interface SettingsSection {
   readonly tone: "accent" | "neutral";
 }
 
+export function isWithinSection(
+  pathname: string,
+  sectionPath: string,
+): boolean {
+  return pathname === sectionPath || pathname.startsWith(`${sectionPath}/`);
+}
+
 export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [
   [
     {
