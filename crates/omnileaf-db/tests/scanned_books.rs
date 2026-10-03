@@ -261,7 +261,7 @@ async fn refuses_a_book_whose_series_name_is_held_by_another_series_id() {
         .database
         .write(|transaction| {
             Ok(transaction.execute(
-                "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
                  VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
                 [SourceId::local().as_bytes()],
             )?)

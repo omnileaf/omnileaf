@@ -1,13 +1,16 @@
 use omnileaf_sync_proto::{KeyError, SeriesId, SourceId, norm};
 use rusqlite::Transaction;
 
-use crate::{Error, title_sort::title_sort_key};
+use crate::{
+    Error,
+    title_key::{TitleCollation, stored_language},
+};
 
 const ADD_SERIES: &str =
-    "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+    "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
      VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
 const ADD_SERIES_UNLESS_PRESENT: &str =
-    "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+    "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
      VALUES (?1, ?2, ?3, ?4, ?5, ?6)
      ON CONFLICT DO NOTHING";
 
@@ -52,12 +55,13 @@ pub(crate) fn add_series_unless_present(
 }
 
 fn insert(transaction: &Transaction<'_>, series: &NewSeries, sql: &str) -> Result<(), Error> {
+    let collation = TitleCollation::new(&stored_language(transaction)?)?;
     transaction.prepare(sql)?.execute((
         series.id.as_bytes(),
         series.source.as_bytes(),
         &series.natural_key,
         &series.title,
-        title_sort_key(&series.title),
+        collation.key(&series.title),
         series.added_at_ms,
     ))?;
     Ok(())

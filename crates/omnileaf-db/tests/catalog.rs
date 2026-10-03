@@ -394,7 +394,7 @@ async fn add_sample_series_from(
     database
         .write(move |transaction| {
             Ok(transaction.execute(
-                "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
                  VALUES (?1, ?2, 'sample series 01', 'Sample Series 01', x'', 0)",
                 (OTHER_SERIES_ID, source),
             )?)

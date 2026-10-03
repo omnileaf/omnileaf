@@ -19,7 +19,7 @@ struct Listing {
 
 macro_rules! series_with_books {
     () => {
-        "SELECT id, title, title_sort_key, book_count, added_at_ms
+        "SELECT id, title, title_key, book_count, added_at_ms
         FROM series
         WHERE book_count > 0"
     };
@@ -43,11 +43,11 @@ macro_rules! listing {
 }
 
 const BY_TITLE: Listing = listing! {
-    seek: "(title_sort_key, id) > (:after_key, :after_id)",
-    order: "title_sort_key, id",
+    seek: "(title_key, id) > (:after_key, :after_id)",
+    order: "title_key, id",
     position: |row| {
         Ok(Position::Title {
-            sort_key: row.get("title_sort_key")?,
+            sort_key: row.get("title_key")?,
             id: stored_id(row, "id")?,
         })
     },
@@ -185,7 +185,7 @@ mod tests {
 
         assert_eq!(
             plan,
-            ["SEARCH series USING INDEX series_by_title ((title_sort_key,id)>(?,?))"]
+            ["SEARCH series USING INDEX series_by_title ((title_key,id)>(?,?))"]
         );
     }
 

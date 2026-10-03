@@ -49,6 +49,13 @@ pub enum Error {
     MalformedRootId,
     #[error("ask for a page of {requested} items, outside the 1 to {max} a page holds")]
     PageSize { requested: u16, max: u16 },
+    #[error("read {tag:?} as a language, which isn't a BCP 47 language tag")]
+    MalformedLanguage { tag: String },
+    #[error("load the collation of language {language}")]
+    Collation {
+        language: String,
+        source: icu_provider::DataError,
+    },
     #[error("read a page cursor that isn't one the library gave out")]
     MalformedCursor,
     #[error("continue a list from a cursor another list gave out")]
