@@ -35,9 +35,9 @@
         class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card"
       >
         <li
-          class="flex items-center gap-md py-sm ps-list-row pe-sm min-block-4xl"
+          class="flex flex-wrap items-center gap-md py-sm ps-list-row pe-sm min-block-4xl"
         >
-          <span class="flex flex-1 flex-col">
+          <span class="flex grow flex-col">
             <span class="font-semibold">{m.about_version()}</span>
             <span class="text-footnote text-muted">{data.appInfo.version}</span>
           </span>
