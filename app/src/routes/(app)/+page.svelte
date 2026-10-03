@@ -10,16 +10,25 @@
   import FolderAddingStatus from "$lib/library/FolderAddingStatus.svelte";
   import { listenForLibraryChanges } from "$lib/library/library-changes";
   import { LibrarySeriesList } from "$lib/library/library-series.svelte";
+  import { LibraryViewSetting } from "$lib/library/library-view.svelte";
   import SeriesCovers from "$lib/library/SeriesCovers.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   const library = new LibrarySeriesList((after) =>
     commands.librarySeries(after),
   );
+  const view = new LibraryViewSetting(
+    () => commands.libraryView(),
+    (chosen) => commands.setLibraryView(chosen),
+    (error) => {
+      reportError(error);
+    },
+  );
   const adding = new FolderAdding(addFolderWithProgress);
 
   onMount(() => {
     void library.load();
+    void view.load();
     return listenForLibraryChanges(() => {
       void library.load();
     }, reportError);
@@ -41,7 +50,7 @@
   {:else if library.list.kind === "loaded"}
     {#if library.list.series.length === 0}
       <EmptyLibrary {adding} />
-    {:else}
+    {:else if view.reading.kind === "read"}
       <div class="mbs-lg">
         <SeriesCovers
           series={library.list.series}
@@ -50,6 +59,7 @@
             void library.loadMore();
           }}
           {coverUrl}
+          view={view.reading.view}
         />
       </div>
     {/if}
