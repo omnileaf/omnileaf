@@ -21,10 +21,18 @@ pub trait Clock: Send + Sync + 'static {
     fn now_unix_ms(&self) -> u64;
 }
 
-/// The registers one committed write changed.
+/// What one committed write changed.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Changed {
-    pub keys: BTreeSet<Key>,
+pub enum Changed {
+    Registers { keys: BTreeSet<Key> },
+}
+
+impl Changed {
+    fn is_empty(&self) -> bool {
+        match self {
+            Self::Registers { keys } => keys.is_empty(),
+        }
+    }
 }
 
 pub struct Store {
@@ -86,7 +94,7 @@ impl Store {
 }
 
 fn announce(subscribers: &broadcast::Sender<Changed>, changed: &Changed) {
-    if changed.keys.is_empty() {
+    if changed.is_empty() {
         return;
     }
     if subscribers.send(changed.clone()).is_err() {

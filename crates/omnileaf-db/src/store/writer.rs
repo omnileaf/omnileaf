@@ -91,6 +91,6 @@ impl<'t> Writer<'t> {
             return Err(Error::FailedWriteIgnored);
         }
         self.local.save(self.connection)?;
-        Ok(Changed { keys: self.changed })
+        Ok(Changed::Registers { keys: self.changed })
     }
 }
