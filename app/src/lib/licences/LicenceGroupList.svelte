@@ -22,7 +22,7 @@
 
   const ROWS = {
     phone: "gap-sm ps-lg pe-md min-block-package-row",
-    pane: "gap-md ps-list-row pe-md min-block-touch-target desktop:text-label desktop:min-block-settings-row",
+    pane: "gap-md ps-list-row pe-md text-label min-block-touch-target desktop:min-block-settings-row",
   } satisfies Record<AboutLook, string>;
 
   const CHEVRON_SIZES = { phone: 18, pane: 16 } satisfies Record<
