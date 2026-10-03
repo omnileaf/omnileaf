@@ -63,7 +63,7 @@ The gate also runs `cargo xtask policy`, which checks every file git doesn't ign
 - links only to hosts in `policy/allowed-hosts.txt`, or to reserved ones such as `example.com` and `*.test`;
 - none of the phrases in `policy/forbidden-phrases.txt`.
 
-Adding an entry to one of those lists is reviewed like any other change. Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.
+The last two rules skip the generated licence catalogues in `app/src/lib/licences`, which hold third-party licence texts word for word. Adding an entry to one of those lists is reviewed like any other change. Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.
 
 `cargo xtask doctor` lists the tools the repository needs, and shows how to install any that are missing.
 

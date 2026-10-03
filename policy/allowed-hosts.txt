@@ -1,10 +1,8 @@
-cgit.freedesktop.org
 creativecommons.org
 developer.android.com
 editorconfig.org
 fsf.org
 github.com
-mozilla.org
 rustup.rs
 schemas.android.com
 services.gradle.org
