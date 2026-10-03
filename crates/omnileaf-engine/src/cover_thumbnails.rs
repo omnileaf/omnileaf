@@ -14,7 +14,7 @@ use tokio::{sync::OnceCell, task::spawn_blocking};
 use crate::{
     Library, LibraryError,
     background_lane::{BackgroundLane, LaneStopped},
-    resource_router::describe,
+    describe_error,
 };
 
 const MEBIBYTE: u64 = 1 << 20;
@@ -96,7 +96,7 @@ async fn open_cache(folder: PathBuf) -> Option<Arc<DiskCache>> {
     match spawn_blocking(move || DiskCache::open(folder, CACHE_BUDGET_BYTES)).await {
         Ok(Ok(cache)) => Some(Arc::new(cache)),
         Ok(Err(error)) => {
-            tracing::warn!(error = %describe(&error), "open the cover cache, so covers are made afresh each time");
+            tracing::warn!(error = %describe_error(&error), "open the cover cache, so covers are made afresh each time");
             None
         }
         Err(error) => {

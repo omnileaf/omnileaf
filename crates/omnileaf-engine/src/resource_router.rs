@@ -2,6 +2,7 @@ use std::{io, path::Path};
 
 use crate::{
     CoverPath, Library, Resource, cover_path::THUMBNAIL_VERSION, cover_thumbnails::CoverThumbnails,
+    describe_error,
 };
 
 const THUMBNAIL_FOLDER: &str = "thumbs";
@@ -43,20 +44,9 @@ impl ResourceRouter {
             },
             Ok(None) => Resource::NotFound,
             Err(error) => {
-                tracing::warn!(error = %describe(&error), "serve a cover thumbnail");
+                tracing::warn!(error = %describe_error(&error), "serve a cover thumbnail");
                 Resource::Failed
             }
         }
     }
-}
-
-pub(crate) fn describe(error: &dyn std::error::Error) -> String {
-    let mut description = error.to_string();
-    let mut cause = error.source();
-    while let Some(source) = cause {
-        description.push_str(": ");
-        description.push_str(&source.to_string());
-        cause = source.source();
-    }
-    description
 }

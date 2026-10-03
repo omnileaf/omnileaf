@@ -10,7 +10,7 @@ mod runtime_config;
 
 use std::{error::Error, path::Path};
 
-use omnileaf_engine::{Core, Library, ResourceRouter, SystemClock};
+use omnileaf_engine::{Core, Library, ResourceRouter, SystemClock, describe_error};
 use tauri::{App, Manager};
 
 use crate::runtime_config::RuntimeConfig;
@@ -59,7 +59,9 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
         Ok(covers) => {
             app.manage(covers);
         }
-        Err(error) => tracing::error!(%error, "start the covers, which won't show"),
+        Err(error) => {
+            tracing::error!(error = %describe_error(error.as_ref()), "start the covers, which won't show");
+        }
     }
     Ok(())
 }
