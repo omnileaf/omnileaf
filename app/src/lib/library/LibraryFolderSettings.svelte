@@ -39,9 +39,9 @@
 </HomeFolder>
 
 <div class="mbs-xl">
-  <LinkedFolders
-    {folders}
-    {addFolder}
-    hint={m.library_settings_folders_hint()}
-  />
+  <LinkedFolders {folders} {addFolder}>
+    {#snippet hint()}
+      {m.library_settings_folders_hint()}
+    {/snippet}
+  </LinkedFolders>
 </div>

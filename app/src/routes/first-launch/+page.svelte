@@ -109,7 +109,7 @@
         <HomeStep folders={folders.list} onBack={back} onNext={next} />
       {:else if step === "link"}
         <LinkStep
-          {device}
+          platform={data.appInfo.platform}
           {folders}
           addFolder={addFolderWithProgress}
           onBack={back}

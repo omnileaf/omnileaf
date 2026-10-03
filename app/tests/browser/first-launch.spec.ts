@@ -230,6 +230,49 @@ test("skips linking folders for now", async ({ page }) => {
   expect(device.folders).toEqual([HOME_FOLDER]);
 });
 
+const IOS_LINK_HINT =
+  "Folders in Files, iCloud Drive or a connected drive all work.";
+const DESKTOP_LINK_HINT =
+  "Folders on this computer, external drives and network shares all work.";
+
+for (const { platform, hint } of [
+  {
+    platform: "android",
+    hint: {
+      onPhones: "Folders on your phone, an SD card or a USB drive all work.",
+      fromMedium: "Folders on this device, an SD card or a USB drive all work.",
+    },
+  },
+  {
+    platform: "ios",
+    hint: { onPhones: IOS_LINK_HINT, fromMedium: IOS_LINK_HINT },
+  },
+  {
+    platform: "linux",
+    hint: { onPhones: DESKTOP_LINK_HINT, fromMedium: DESKTOP_LINK_HINT },
+  },
+] as const) {
+  test.describe(`linking on ${platform}`, () => {
+    test.use({
+      backend: {
+        ...FIRST_LAUNCH_BACKEND,
+        appInfo: onPlatform(platform).backend.appInfo,
+      },
+    });
+
+    test("says which folders can be linked on the device", async ({ page }) => {
+      const expected =
+        viewportOf(page).width < MEDIUM_MIN_WIDTH
+          ? hint.onPhones
+          : hint.fromMedium;
+
+      await goTo(page, "Already have comics or books?");
+
+      await expect(page.getByText(expected)).toBeVisible();
+    });
+  });
+}
+
 test.describe("on android", () => {
   test.use({
     backend: {

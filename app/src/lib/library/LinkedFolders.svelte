@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import type { LibraryFolder } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
@@ -15,7 +17,7 @@
   }: {
     folders: LibraryFolders;
     addFolder: AddFolder;
-    hint?: string | undefined;
+    hint?: Snippet | undefined;
   } = $props();
 
   let confirming: LibraryFolder | undefined = $state();
@@ -82,7 +84,7 @@
     />
   </div>
   {#if hint !== undefined}
-    <p class="mbs-sm px-xs text-caption text-muted">{hint}</p>
+    <p class="mbs-sm px-xs text-caption text-muted">{@render hint()}</p>
   {/if}
 </section>
 

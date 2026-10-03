@@ -1,26 +1,28 @@
 <script lang="ts">
   import { Link2 } from "@lucide/svelte";
 
+  import type { Platform } from "$lib/ipc/bindings";
   import type { AddFolder } from "$lib/library/add-folder";
   import type { LibraryFolders } from "$lib/library/library-folders.svelte";
   import LinkedFolders from "$lib/library/LinkedFolders.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
-  import type { DeviceKind } from "./device";
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
   import StepIcon from "./StepIcon.svelte";
+  import WidthWording from "./WidthWording.svelte";
+  import { atEveryWidth, type WordingByWidth } from "./wording";
 
   const HERO_ICON_SIZE = 30;
 
   let {
-    device,
+    platform,
     folders,
     addFolder,
     onBack,
     onNext,
   }: {
-    device: DeviceKind;
+    platform: Platform;
     folders: LibraryFolders;
     addFolder: AddFolder;
     onBack: () => void;
@@ -28,9 +30,20 @@
   } = $props();
 
   const HINT = {
-    phone: undefined,
-    desktop: m.first_launch_link_hint_desktop,
-  } satisfies Record<DeviceKind, (() => string) | undefined>;
+    android: {
+      onPhones: m.first_launch_link_hint_android_phone,
+      fromMedium: m.first_launch_link_hint_android_tablet,
+    },
+    ios: atEveryWidth(m.first_launch_link_hint_ios),
+    macos: atEveryWidth(m.first_launch_link_hint_desktop),
+    windows: atEveryWidth(m.first_launch_link_hint_desktop),
+    linux: atEveryWidth(m.first_launch_link_hint_desktop),
+  } satisfies Record<Platform, WordingByWidth>;
+
+  const SKIP = {
+    onPhones: m.first_launch_skip_phone,
+    fromMedium: m.first_launch_skip_desktop,
+  } satisfies WordingByWidth;
 </script>
 
 <StepFrame step="link" {onBack}>
@@ -41,7 +54,11 @@
     </h1>
     <p class="text-muted">{m.first_launch_link_body()}</p>
     <div class="mbs-sm">
-      <LinkedFolders {folders} {addFolder} hint={HINT[device]?.()} />
+      <LinkedFolders {folders} {addFolder}>
+        {#snippet hint()}
+          <WidthWording wording={HINT[platform]} />
+        {/snippet}
+      </LinkedFolders>
     </div>
   </div>
   {#snippet actions()}
@@ -49,8 +66,7 @@
       {m.first_launch_continue()}
     </StepButton>
     <StepButton kind="quiet" onclick={onNext}>
-      <span class="medium:hidden">{m.first_launch_skip_phone()}</span>
-      <span class="hidden medium:inline">{m.first_launch_skip_desktop()}</span>
+      <WidthWording wording={SKIP} />
     </StepButton>
   {/snippet}
 </StepFrame>
