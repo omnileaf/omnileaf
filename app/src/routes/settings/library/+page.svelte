@@ -9,6 +9,8 @@
   const foldersHeadingId = $props.id();
 
   const adding = new FolderAdding(commands.addLibraryFolder);
+
+  let addFolder: HTMLButtonElement | undefined = $state();
 </script>
 
 <SectionHeading title={m.library_title()} />
@@ -23,12 +25,21 @@
     >
       {m.library_settings_folders()}
     </h2>
-    <AddFolderButton {adding} placement="section-heading" />
+    <AddFolderButton
+      bind:element={addFolder}
+      {adding}
+      placement="section-heading"
+    />
   </div>
   <p class="text-footnote text-muted touch:max-medium:px-xs">
     {m.library_settings_folders_hint()}
   </p>
   <div class="mbs-xs">
-    <FolderNotice {adding} />
+    <FolderNotice
+      {adding}
+      onDismissed={() => {
+        addFolder?.focus();
+      }}
+    />
   </div>
 </section>

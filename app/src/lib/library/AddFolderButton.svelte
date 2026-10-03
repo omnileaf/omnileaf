@@ -18,11 +18,19 @@
 
   const ICON_SIZE = 20;
 
-  let { adding, placement }: { adding: FolderAdding; placement: Placement } =
-    $props();
+  let {
+    adding,
+    placement,
+    element = $bindable(),
+  }: {
+    adding: FolderAdding;
+    placement: Placement;
+    element?: HTMLButtonElement | undefined;
+  } = $props();
 </script>
 
 <button
+  bind:this={element}
   type="button"
   class={[
     "inline-flex shrink-0 items-center justify-center font-semibold disabled:opacity-60",

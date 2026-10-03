@@ -38,12 +38,19 @@ const CANCELLED: AddFolderResult = { status: "ok", data: null };
 
 async function renderWith(addFolder: AddFolder) {
   const adding = new FolderAdding(addFolder);
+  const dismissals = { count: 0 };
   await render(AddFolderButton, { adding, placement: "empty-state" });
-  await render(FolderNotice, { adding });
+  await render(FolderNotice, {
+    adding,
+    onDismissed: () => {
+      dismissals.count += 1;
+    },
+  });
   return {
     button: page.getByRole("button", { name: "Add a folder" }),
     status: page.getByRole("status"),
     alert: page.getByRole("alert"),
+    dismissals,
   };
 }
 
@@ -117,6 +124,15 @@ test("clears the result when it is dismissed", async () => {
   await status.getByRole("button", { name: "Dismiss" }).click();
 
   await expect.element(status).toHaveTextContent("");
+});
+
+test("tells the page once the notice is dismissed", async () => {
+  const { button, status, dismissals } = await renderWith(answering(found({})));
+  await button.click();
+
+  await status.getByRole("button", { name: "Dismiss" }).click();
+
+  expect(dismissals.count).toBe(1);
 });
 
 test.each<[IpcErrorCode, string]>([

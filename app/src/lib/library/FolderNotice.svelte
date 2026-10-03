@@ -14,7 +14,10 @@
     internal: m.library_add_folder_failed,
   } satisfies Record<IpcErrorCode, () => string>;
 
-  let { adding }: { adding: FolderAdding } = $props();
+  let {
+    adding,
+    onDismissed,
+  }: { adding: FolderAdding; onDismissed: () => void } = $props();
 
   function noticeFor(outcome: FolderOutcome): Notice | undefined {
     switch (outcome.kind) {
@@ -59,6 +62,7 @@
 
   function dismiss(): void {
     adding.dismiss();
+    onDismissed();
   }
 </script>
 
