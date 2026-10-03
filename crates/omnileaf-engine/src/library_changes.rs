@@ -44,11 +44,11 @@ impl LibraryChanges {
             }
         }
         tokio::time::sleep(LIBRARY_CHANGES_GATHERED_FOR).await;
-        self.skip_waiting();
+        self.drop_gathered_changes();
         Some(LibraryChanged)
     }
 
-    fn skip_waiting(&mut self) {
+    fn drop_gathered_changes(&mut self) {
         while !matches!(
             self.catalog.try_recv(),
             Err(TryRecvError::Empty | TryRecvError::Closed)
