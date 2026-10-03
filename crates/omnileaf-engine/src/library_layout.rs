@@ -1,4 +1,4 @@
-//! Where books sit in a library folder: a folder is a series, a file at the top is a one-shot, and a folder of images is a book.
+//! Where books sit in a library folder: a folder is a series, a file at the top is a one-shot, and a folder of images and no comics is a book.
 
 use std::{
     fs,
@@ -64,6 +64,7 @@ impl Layout {
         pending: &mut Vec<(PathBuf, Place)>,
     ) {
         let mut holds_pages = false;
+        let mut holds_comics = false;
         for entry in entries {
             let Ok(entry) = entry else {
                 self.count_unreadable_folder();
@@ -77,6 +78,7 @@ impl Layout {
             match entry.file_type() {
                 Ok(kind) if kind.is_dir() => pending.push((entry.path(), place.inner())),
                 Ok(kind) if kind.is_file() && is_comic(&file_name) => {
+                    holds_comics = true;
                     let path = entry.path();
                     let title = file_stem(&path);
                     let series = match place {
@@ -93,7 +95,8 @@ impl Layout {
                 _ => {}
             }
         }
-        if holds_pages {
+        let is_book_of_images = holds_pages && !holds_comics;
+        if is_book_of_images {
             let series = match place {
                 Place::Root | Place::Top => folder_name(folder),
                 Place::Nested => folder

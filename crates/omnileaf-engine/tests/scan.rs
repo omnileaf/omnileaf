@@ -269,6 +269,23 @@ async fn titles_a_folder_of_images_by_its_whole_name_dots_included() {
 }
 
 #[tokio::test]
+async fn leaves_out_a_cover_image_beside_the_books_of_a_series() {
+    let comics = TempFolder::new("scan-series-cover");
+    let series = comics.path().join("Sample Series 01");
+    write_book(&series.join("v01.cbz"), 1);
+    fs::write(
+        series.join("cover.jpg"),
+        page_png(2, 0, PageShape::Portrait).unwrap(),
+    )
+    .unwrap();
+
+    let (scanned, scan, _) = Scanned::folder("scan-series-cover", comics.path()).await;
+
+    assert_eq!(scanned.books_in("Sample Series 01"), ["v01"]);
+    assert_eq!(scan.books, 1);
+}
+
+#[tokio::test]
 async fn keeps_one_book_per_file_when_a_folder_is_scanned_again() {
     let comics = sample_library("scan-twice");
     let (scanned, first, _) =
