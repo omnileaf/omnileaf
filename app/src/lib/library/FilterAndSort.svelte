@@ -97,7 +97,7 @@
     }
     event.preventDefault();
     tab = tab === "filter" ? "sort" : "filter";
-    dialog?.querySelector<HTMLButtonElement>(`#${titleId}-${tab}-tab`)?.focus();
+    document.getElementById(`${titleId}-${tab}-tab`)?.focus();
   }
 </script>
 

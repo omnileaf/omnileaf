@@ -387,6 +387,25 @@ test("moves between Any, Only and Hide with the arrow keys", async ({
   await expectTitles(page, [1, 2, 3, 5]);
 });
 
+test("moves between the filter and the sort with the arrow keys on a phone", async ({
+  page,
+}) => {
+  test.skip(
+    !isPhone(page),
+    "wider screens show the filter and the sort together",
+  );
+  await openLibrary(page);
+  const panel = await openFilterAndSort(page);
+  await panel.getByRole("tab", { name: "Filter" }).focus();
+
+  await page.keyboard.press("ArrowRight");
+
+  const sort = panel.getByRole("tab", { name: "Sort" });
+  await expect(sort).toBeFocused();
+  await expect(sort).toHaveAttribute("aria-selected", "true");
+  await expect(panel.getByRole("radio", { name: "Date added" })).toBeAttached();
+});
+
 test("slides up from the foot of a phone, and stands against the end of wider screens", async ({
   page,
 }) => {
