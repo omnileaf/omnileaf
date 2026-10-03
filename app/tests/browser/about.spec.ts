@@ -43,12 +43,10 @@ async function expectCopyButtonInsideCard(page: Page): Promise<void> {
   const button = await boxOf(
     page.getByRole("main").getByRole("listitem").first().getByRole("button"),
   );
-  const content = await page
-    .getByRole("main")
-    .evaluate((main) => ({
-      width: main.clientWidth,
-      scrolls: main.scrollWidth,
-    }));
+  const content = await page.getByRole("main").evaluate((main) => ({
+    width: main.clientWidth,
+    scrolls: main.scrollWidth,
+  }));
 
   expect(button.x + button.width).toBeLessThanOrEqual(card.x + card.width);
   expect(content.scrolls).toBeLessThanOrEqual(content.width);
