@@ -1,11 +1,13 @@
 import type { Platform } from "$lib/ipc/bindings";
 import type { WidthClass } from "$lib/page/breakpoints";
 
-const POINTER_PLATFORMS: ReadonlySet<Platform> = new Set([
-  "linux",
-  "macos",
-  "windows",
-]);
+const IS_POINTER = {
+  android: false,
+  ios: false,
+  linux: true,
+  macos: true,
+  windows: true,
+} satisfies Record<Platform, boolean>;
 
 /** Desktop windows show both panes from the medium width, touch screens only once a sidebar fits. */
 export function showsSectionsBeside(
@@ -16,7 +18,7 @@ export function showsSectionsBeside(
     case "compact":
       return false;
     case "medium":
-      return POINTER_PLATFORMS.has(platform);
+      return IS_POINTER[platform];
     case "expanded":
       return true;
   }
