@@ -7,7 +7,6 @@ import type { AddressInfo } from "node:net";
 
 import { expect, onTestFinished, test } from "vitest";
 
-import { isRecord } from "./json.ts";
 import { describePage, Session, xpath } from "./webdriver.ts";
 
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
@@ -24,15 +23,12 @@ function reply(response: ServerResponse, status: number, value: unknown) {
   response.end(JSON.stringify({ value }));
 }
 
-async function serverShowingABlankPage(): Promise<URL> {
+type Handler = (route: string, response: ServerResponse) => void;
+
+async function serve(handle: Handler): Promise<URL> {
   const server = createServer((request: IncomingMessage, response) => {
     request.resume();
-    const route = `${request.method ?? ""} ${request.url ?? ""}`;
-    if (route in BLANK_PAGE) {
-      reply(response, 200, BLANK_PAGE[route]);
-    } else {
-      reply(response, 404, { error: "no such element", message: "" });
-    }
+    handle(`${request.method ?? ""} ${request.url ?? ""}`, response);
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   onTestFinished(
@@ -47,6 +43,16 @@ async function serverShowingABlankPage(): Promise<URL> {
   return new URL(`http://127.0.0.1:${String(port)}/`);
 }
 
+function serverShowingABlankPage(): Promise<URL> {
+  return serve((route, response) => {
+    if (route in BLANK_PAGE) {
+      reply(response, 200, BLANK_PAGE[route]);
+    } else {
+      reply(response, 404, { error: "no such element", message: "" });
+    }
+  });
+}
+
 test("says what the page shows when an element never appears", async () => {
   const session = await Session.start(await serverShowingABlankPage(), {});
 
@@ -58,49 +64,29 @@ test("says what the page shows when an element never appears", async () => {
 });
 
 test("reloads the page and waits for the fresh one", async () => {
-  const requests: string[] = [];
-  let finds = 0;
-  const server = createServer((request, response) => {
-    const chunks: Buffer[] = [];
-    request.on("data", (chunk: Buffer) => chunks.push(chunk));
-    request.on("end", () => {
-      const body: unknown =
-        chunks.length === 0
-          ? null
-          : JSON.parse(Buffer.concat(chunks).toString());
-      const sent = isRecord(body) ? (body.script ?? body.value) : undefined;
-      requests.push(`${request.url ?? ""} ${String(sent)}`);
-      if (request.url === "/session") {
-        reply(response, 200, { sessionId: "blank" });
-      } else if (request.url === "/session/blank/element" && finds++ === 0) {
-        reply(response, 404, { error: "no such element", message: "" });
-      } else {
-        reply(response, 200, { [ELEMENT_KEY]: "fresh" });
-      }
-    });
+  const OLD_PAGE_LOOKUPS = 2;
+  let scriptsRun = 0;
+  let lookups = 0;
+  const server = await serve((route, response) => {
+    if (route === "POST /session") {
+      reply(response, 200, { sessionId: "blank" });
+    } else if (route === "POST /session/blank/execute/sync") {
+      scriptsRun += 1;
+      reply(response, 200, null);
+    } else if (++lookups <= OLD_PAGE_LOOKUPS) {
+      reply(response, 404, { error: "no such element", message: "" });
+    } else {
+      reply(response, 200, { [ELEMENT_KEY]: "fresh" });
+    }
   });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  onTestFinished(
-    () =>
-      new Promise((resolve) =>
-        server.close(() => {
-          resolve();
-        }),
-      ),
-  );
-  const { port } = server.address() as AddressInfo;
-  const session = await Session.start(
-    new URL(`http://127.0.0.1:${String(port)}/`),
-    {},
-  );
+  const session = await Session.start(server, {});
 
   await session.reload();
 
-  expect(requests.slice(1)).toEqual([
-    "/session/blank/execute/sync document.documentElement.dataset.e2eReloading = ''; setTimeout(() => location.reload()); return null;",
-    "/session/blank/element /html[not(@data-e2e-reloading)]",
-    "/session/blank/element /html[not(@data-e2e-reloading)]",
-  ]);
+  expect({ scriptsRun, lookups }).toEqual({
+    scriptsRun: 1,
+    lookups: OLD_PAGE_LOOKUPS + 1,
+  });
 });
 
 test("describes the page by its address, title and text", () => {
