@@ -1,5 +1,7 @@
 //! Checks that this machine has the tools the repository needs.
 
+use crate::licences::INSTALL_CARGO_ABOUT;
+
 pub(crate) struct Requirement {
     pub(crate) name: &'static str,
     pub(crate) os: Option<&'static str>,
@@ -49,7 +51,7 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
             program: "cargo",
             args: &["about", "--version"],
         },
-        fix: "cargo install --locked cargo-about",
+        fix: INSTALL_CARGO_ABOUT,
     },
     Requirement {
         name: "node",

@@ -10,6 +10,8 @@ const APP_MANIFEST: &str = "app/src-tauri/Cargo.toml";
 const ABOUT_CONFIG: &str = "about.toml";
 const RUST_CATALOGUE: &str = "app/src/lib/licences/rust.json";
 const JAVASCRIPT_UPDATE_REQUEST: &str = "UPDATE_LICENCES";
+const CARGO_ABOUT_VERSION: &str = "0.9.2";
+pub(crate) const INSTALL_CARGO_ABOUT: &str = "cargo install --locked cargo-about@0.9.2";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Mode {
@@ -60,6 +62,7 @@ fn write_javascript_catalogue(root: &Path) -> anyhow::Result<()> {
 /// Fetches every target's crates first, so cargo-about can stay offline and never
 /// fill a missing licence from the network, which would make its report vary.
 fn cargo_about_report(root: &Path) -> anyhow::Result<String> {
+    ensure_pinned_cargo_about(root)?;
     let fetched = Command::new("cargo")
         .args(["fetch", "--locked"])
         .current_dir(root)
@@ -80,4 +83,40 @@ fn cargo_about_report(root: &Path) -> anyhow::Result<String> {
         String::from_utf8_lossy(&output.stderr)
     );
     String::from_utf8(output.stdout).context("read cargo-about's report")
+}
+
+fn is_pinned_cargo_about(version_output: &str) -> bool {
+    version_output.split_whitespace().nth(1) == Some(CARGO_ABOUT_VERSION)
+}
+
+/// The committed catalogue is compared byte for byte, and other cargo-about releases word it differently.
+fn ensure_pinned_cargo_about(root: &Path) -> anyhow::Result<()> {
+    let output = Command::new("cargo")
+        .args(["about", "--version"])
+        .current_dir(root)
+        .output()
+        .context("ask cargo-about for its version")?;
+    let reported = String::from_utf8_lossy(&output.stdout);
+    anyhow::ensure!(
+        output.status.success() && is_pinned_cargo_about(&reported),
+        "the licences need cargo-about {CARGO_ABOUT_VERSION}, found `{}`; run `{INSTALL_CARGO_ABOUT}`",
+        reported.trim()
+    );
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn accepts_the_pinned_cargo_about() {
+        assert!(is_pinned_cargo_about("cargo-about 0.9.2\n"));
+    }
+
+    #[test]
+    fn rejects_any_other_cargo_about() {
+        assert!(!is_pinned_cargo_about("cargo-about 0.9.20\n"));
+        assert!(!is_pinned_cargo_about("cargo-about 0.10.0\n"));
+    }
 }
