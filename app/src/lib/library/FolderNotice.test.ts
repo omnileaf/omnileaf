@@ -43,6 +43,7 @@ async function renderWith(addFolder: AddFolder) {
   return {
     button: page.getByRole("button", { name: "Add a folder" }),
     status: page.getByRole("status"),
+    alert: page.getByRole("alert"),
   };
 }
 
@@ -126,11 +127,12 @@ test.each<[IpcErrorCode, string]>([
   ],
   ["internal", "Something went wrong while adding the folder. Try again."],
 ])("explains a %s failure", async (code, explanation) => {
-  const { button, status } = await renderWith(answering(failed(code)));
+  const { button, status, alert } = await renderWith(answering(failed(code)));
 
   await button.click();
 
-  await expect.element(status).toHaveTextContent(explanation);
+  await expect.element(alert).toHaveTextContent(explanation);
+  await expect.element(status).toHaveTextContent("");
 });
 
 test("disables the button while the picker is open", async () => {

@@ -28,9 +28,15 @@
           name: survey.name,
         });
         if (survey.unreadableFolders === 0) {
-          return { tone: "done", icon: CircleCheckBig, title };
+          return {
+            urgency: "status",
+            tone: "done",
+            icon: CircleCheckBig,
+            title,
+          };
         }
         return {
+          urgency: "status",
           tone: "warning",
           icon: CircleAlert,
           title,
@@ -41,6 +47,7 @@
       }
       case "failed":
         return {
+          urgency: "alert",
           tone: "warning",
           icon: Unplug,
           title: FAILURE_MESSAGES[outcome.code](),
@@ -55,8 +62,15 @@
   }
 </script>
 
-<div role="status">
-  {#if notice !== undefined}
-    <NoticeCard {notice} onDismiss={dismiss} />
-  {/if}
+<div>
+  <div role="status">
+    {#if notice?.urgency === "status"}
+      <NoticeCard {notice} onDismiss={dismiss} />
+    {/if}
+  </div>
+  <div role="alert">
+    {#if notice?.urgency === "alert"}
+      <NoticeCard {notice} onDismiss={dismiss} />
+    {/if}
+  </div>
 </div>
