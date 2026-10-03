@@ -281,6 +281,39 @@ function stepButton(options: Locator, step: "Fewer" | "More"): Locator {
     .filter({ visible: true });
 }
 
+interface RowLayout {
+  readonly lastBottom: number;
+  readonly screenBottom: number;
+  readonly rowStride: string;
+  readonly firstRowStride: string;
+}
+
+function rowLayoutOf(list: Locator): Promise<RowLayout> {
+  return list.evaluate((element) => {
+    const first = element.firstElementChild;
+    const last = element.lastElementChild;
+    const rowGap = Number.parseFloat(getComputedStyle(element).rowGap);
+    return {
+      lastBottom: last?.getBoundingClientRect().bottom ?? 0,
+      screenBottom: window.innerHeight,
+      rowStride:
+        element.parentElement?.style.getPropertyValue("--row-stride") ?? "",
+      firstRowStride: `${String((first?.getBoundingClientRect().height ?? 0) + rowGap)}px`,
+    };
+  });
+}
+
+async function expectRowsToFillTheScreen(page: Page): Promise<void> {
+  await expect
+    .poll(async () => {
+      const layout = await rowLayoutOf(seriesList(page));
+      return layout.lastBottom >= layout.screenBottom;
+    })
+    .toBe(true);
+  const layout = await rowLayoutOf(seriesList(page));
+  expect(layout.rowStride).toBe(layout.firstRowStride);
+}
+
 test.describe("view options", () => {
   test("leaves the view options out of the empty library's header", async ({
     page,
@@ -337,6 +370,35 @@ test.describe("view options", () => {
       ...DEFAULT_LIBRARY_VIEW.coversPerRow,
       [size]: most,
     });
+  });
+
+  test("lays the rows out again to fill the screen once a row holds the most covers", async ({
+    page,
+  }) => {
+    const { most } = COVERS_PER_ROW[screenSizeOf(page)];
+    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    const options = await openViewOptions(page);
+    await expectRowsToFillTheScreen(page);
+
+    while ((await columnsOf(seriesList(page))) < most) {
+      await stepButton(options, "More").click();
+    }
+    await page.keyboard.press("Escape");
+
+    await expectRowsToFillTheScreen(page);
+  });
+
+  test("lays the rows out again to fill the screen once the grid turns compact", async ({
+    page,
+  }) => {
+    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    const options = await openViewOptions(page);
+    await expectRowsToFillTheScreen(page);
+
+    await choose(options, "Compact");
+    await page.keyboard.press("Escape");
+
+    await expectRowsToFillTheScreen(page);
   });
 
   test("goes no lower than the fewest covers per row this size offers", async ({
