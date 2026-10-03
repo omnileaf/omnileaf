@@ -121,7 +121,7 @@ test.describe("with a folder it can't read", () => {
 
     await addFolderIn(page, EMPTY_LIBRARY).click();
 
-    await expect(page.getByRole("status")).toHaveText(
+    await expect(page.getByRole("alert")).toHaveText(
       "Couldn't read that folder.",
     );
   });
@@ -150,7 +150,7 @@ test.describe("where the folder picker is unavailable", () => {
 
       await button.click();
 
-      await expect(page.getByRole("status")).toHaveText(
+      await expect(page.getByRole("alert")).toHaveText(
         "Adding folders isn't available on this device yet.",
       );
       expect((await boxOf(button)).width).toBe(before.width);
