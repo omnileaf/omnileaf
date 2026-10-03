@@ -127,5 +127,10 @@
   "first_launch_choices_body": "Change any of these later in Settings.",
   "first_launch_choices_appearance": "Appearance",
   "first_launch_choices_appearance_help_phone": "Paper light or dark, or follow your phone.",
-  "first_launch_choices_appearance_help_tablet": "Paper light or dark, or follow this device."
+  "first_launch_choices_appearance_help_tablet": "Paper light or dark, or follow this device.",
+  "first_launch_link_title": "Already have comics or books?",
+  "first_launch_link_body": "Link the folders they're in. Omnileaf reads them where they are and never moves or changes them.",
+  "first_launch_link_hint_desktop": "Folders on this computer, external drives and network shares all work.",
+  "first_launch_skip_phone": "Skip, I'll add them later",
+  "first_launch_skip_desktop": "Skip for now"
 }

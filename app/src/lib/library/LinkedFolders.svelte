@@ -12,8 +12,11 @@
     folders,
     addFolder,
     hint,
-  }: { folders: LibraryFolders; addFolder: AddFolder; hint?: string } =
-    $props();
+  }: {
+    folders: LibraryFolders;
+    addFolder: AddFolder;
+    hint?: string | undefined;
+  } = $props();
 
   let confirming: LibraryFolder | undefined = $state();
   let notRemoved: LibraryFolder | undefined = $state();

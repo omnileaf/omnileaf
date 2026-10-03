@@ -1,6 +1,7 @@
 export const FIRST_LAUNCH_STEPS = [
   "welcome",
   "home",
+  "link",
   "choices",
   "ready",
 ] as const;

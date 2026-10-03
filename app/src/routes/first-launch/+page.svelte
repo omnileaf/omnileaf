@@ -8,6 +8,7 @@
   import { deviceKindOf } from "$lib/first-launch/device";
   import FirstLaunchPanel from "$lib/first-launch/FirstLaunchPanel.svelte";
   import HomeStep from "$lib/first-launch/HomeStep.svelte";
+  import LinkStep from "$lib/first-launch/LinkStep.svelte";
   import ReadyStep, {
     type FinishOutcome,
   } from "$lib/first-launch/ReadyStep.svelte";
@@ -18,6 +19,7 @@
   } from "$lib/first-launch/steps";
   import WelcomeStep from "$lib/first-launch/WelcomeStep.svelte";
   import { commands } from "$lib/ipc/bindings";
+  import { addFolderWithProgress } from "$lib/library/add-folder";
   import { LibraryFolders } from "$lib/library/library-folders.svelte";
 
   import type { PageProps } from "./$types";
@@ -105,6 +107,14 @@
         <WelcomeStep {device} onNext={next} />
       {:else if step === "home"}
         <HomeStep folders={folders.list} onBack={back} onNext={next} />
+      {:else if step === "link"}
+        <LinkStep
+          {device}
+          {folders}
+          addFolder={addFolderWithProgress}
+          onBack={back}
+          onNext={next}
+        />
       {:else if step === "choices"}
         <ChoicesStep {device} onBack={back} onNext={next} />
       {:else}

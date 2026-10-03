@@ -12,21 +12,33 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 
-const HOME_FOLDER = {
+type WireFolder = Awaited<
+  ReturnType<FakeBackend["libraryFolders"]>
+>["folders"][number];
+
+const HOME_FOLDER: WireFolder = {
   id: "1",
   kind: "home",
   name: "Omnileaf",
   location: "/data/Omnileaf",
-} as const;
+};
+const SAMPLE_COMICS: WireFolder = {
+  id: "2",
+  kind: "linked",
+  name: "Sample Comics",
+  location: "/media/Sample Comics",
+};
 
 /** A device that hasn't finished its first launch until the test finishes it. */
 class Device {
   finishes = 0;
   failsToFinish = false;
+  folders: WireFolder[] = [];
 
   reset(): void {
     this.finishes = 0;
     this.failsToFinish = false;
+    this.folders = [HOME_FOLDER];
   }
 }
 
@@ -45,12 +57,23 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
     device.finishes += 1;
     return null;
   },
-  libraryFolders: () => ({ folders: [HOME_FOLDER], next: null }),
+  libraryFolders: () => ({ folders: [...device.folders], next: null }),
+  addLibraryFolder: () => {
+    device.folders.push(SAMPLE_COMICS);
+    return {
+      name: SAMPLE_COMICS.name,
+      series: 3,
+      books: 7,
+      unreadableBooks: 0,
+      unreadableFolders: 0,
+    };
+  },
 };
 
 const STEPS = [
   { heading: "Welcome to Omnileaf", leaveWith: "Get started" },
   { heading: "Where your library lives", leaveWith: "Continue" },
+  { heading: "Already have comics or books?", leaveWith: "Continue" },
   { heading: "A few choices", leaveWith: "Continue" },
   { heading: "You're all set", leaveWith: "Open my library" },
 ] as const;
@@ -183,7 +206,28 @@ test("counts the steps between the welcome and the end", async ({ page }) => {
   const progress = page.getByRole("progressbar", { name: "Setting up" });
 
   await expect(progress).toHaveAttribute("aria-valuenow", "1");
-  await expect(progress).toHaveAttribute("aria-valuetext", "1 of 2");
+  await expect(progress).toHaveAttribute("aria-valuetext", "1 of 3");
+});
+
+test("links a folder that already holds comics and lists it", async ({
+  page,
+}) => {
+  await goTo(page, "Already have comics or books?");
+
+  await page.getByRole("button", { name: "Add a folder" }).click();
+
+  await expect(
+    page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
+  ).toHaveText(["Sample Comics /media/Sample Comics Remove"]);
+});
+
+test("skips linking folders for now", async ({ page }) => {
+  await goTo(page, "Already have comics or books?");
+
+  await page.getByRole("button", { name: /^Skip/ }).click();
+
+  await expect(heading(page, "A few choices")).toBeFocused();
+  expect(device.folders).toEqual([HOME_FOLDER]);
 });
 
 test.describe("on android", () => {
