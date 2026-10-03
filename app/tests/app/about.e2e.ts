@@ -16,9 +16,13 @@ const FIRST_LICENCE_GROUP = xpath("(//main//section//h2)[1]");
 
 const appSession = useAppSession();
 
-test("copies the version details to the clipboard", async () => {
+async function openAbout(): Promise<void> {
   await (await appSession().waitFor(SETTINGS_LINK)).click();
   await (await appSession().waitFor(ABOUT_LINK)).click();
+}
+
+test("confirms the version details were copied", async () => {
+  await openAbout();
 
   await (await appSession().waitFor(COPY_BUTTON)).click();
 
@@ -27,6 +31,7 @@ test("copies the version details to the clipboard", async () => {
 });
 
 test("lists the licences of the packages it ships", async () => {
+  await openAbout();
   await (await appSession().waitFor(LICENCES_LINK)).click();
 
   const group = await appSession().waitFor(FIRST_LICENCE_GROUP);
