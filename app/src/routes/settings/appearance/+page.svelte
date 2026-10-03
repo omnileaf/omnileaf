@@ -5,7 +5,7 @@
   } from "$lib/appearance/theme";
   import { getThemeSetting } from "$lib/appearance/theme.svelte";
   import { WindowWidth } from "$lib/page/breakpoints";
-  import { isPointer } from "$lib/page/platform";
+  import { isPhone } from "$lib/page/platform";
   import SectionHeading from "$lib/settings/SectionHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
@@ -21,9 +21,7 @@
 
   const theme = getThemeSetting();
   const width = new WindowWidth();
-  const isPhone = $derived(
-    !isPointer(data.appInfo.platform) && width.current === "compact",
-  );
+  const onPhone = $derived(isPhone(data.appInfo.platform, width.current));
 
   const headingId = $props.id();
   const hintId = `${headingId}-hint`;
@@ -44,7 +42,7 @@
     id={hintId}
     class="text-footnote text-muted touch:medium:order-last desktop:order-last"
   >
-    {isPhone ? m.appearance_system_hint_phone() : m.appearance_system_hint()}
+    {onPhone ? m.appearance_system_hint_phone() : m.appearance_system_hint()}
   </p>
   <div
     role="radiogroup"
