@@ -192,9 +192,6 @@ for (const { platform, buttonHeight } of PANE_SIZES) {
       );
 
       const button = await boxOf(copyButton(page));
-      const title = await boxOf(
-        page.getByRole("heading", { level: 2, name: "Omnileaf" }),
-      );
       const sourceRow = await boxOf(linkRow(page, "Source code"));
       const icon = await boxOf(appIcon(page));
 
@@ -202,13 +199,40 @@ for (const { platform, buttonHeight } of PANE_SIZES) {
         page.getByText(`Version ${FAKE_APP_VERSION}`, { exact: true }),
       ).toBeVisible();
       expect(button.height).toBe(buttonHeight);
-      expect(button.x).toBeGreaterThan(title.x + title.width);
       expect(sourceRow.y).toBeGreaterThan(button.y + button.height);
       expect(sourceRow.height).toBe(PANE_ROW_HEIGHT);
       expect(icon.width).toBe(PANE_ICON_SIZE);
     });
+
+    test("puts the copy button beside the name from 600px", async ({
+      page,
+    }) => {
+      await openAbout(page);
+      test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "600px and wider");
+
+      const button = await boxOf(copyButton(page));
+      const title = await boxOf(
+        page.getByRole("heading", { level: 2, name: "Omnileaf" }),
+      );
+
+      expect(button.x).toBeGreaterThan(title.x + title.width);
+    });
   });
 }
+
+test.describe("in a desktop window under 600px", () => {
+  test.use(onPlatform("linux"));
+
+  test("moves the copy button under the name", async ({ page }) => {
+    await openAbout(page);
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "under 600px only");
+
+    const button = await boxOf(copyButton(page));
+    const icon = await boxOf(appIcon(page));
+
+    expect(button.y).toBeGreaterThanOrEqual(icon.y + icon.height);
+  });
+});
 
 for (const platform of ["android", "ios", "linux"] as const) {
   for (const colorScheme of ["light", "dark"] as const) {

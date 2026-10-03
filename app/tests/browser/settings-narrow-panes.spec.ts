@@ -18,6 +18,7 @@ const SECTIONS = [
   "/settings/general",
   "/settings/general/language",
   "/settings/about",
+  "/settings/about/licences",
 ] as const;
 
 const OVERFLOWING_SCRIPT = `(() => {

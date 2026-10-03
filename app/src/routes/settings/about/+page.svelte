@@ -60,7 +60,7 @@
   <div
     class="mbs-pane-gap flex flex-col gap-pane-gap two-pane:max-inline-section"
   >
-    <div class="flex items-center gap-lg">
+    <div class="flex flex-wrap items-center gap-lg">
       <img
         src={appIcon}
         alt=""
