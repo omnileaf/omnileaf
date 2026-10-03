@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { commands } from "$lib/ipc/bindings";
+  import { commands, type LibraryView } from "$lib/ipc/bindings";
   import { addFolderWithProgress } from "$lib/library/add-folder";
   import AddFolderButton from "$lib/library/AddFolderButton.svelte";
   import { coverUrl } from "$lib/library/cover-url";
@@ -9,8 +9,11 @@
   import FolderNotice from "$lib/library/FolderNotice.svelte";
   import { listenForLibraryChanges } from "$lib/library/library-changes";
   import { LibrarySeriesList } from "$lib/library/library-series.svelte";
+  import { LibrarySeriesCount } from "$lib/library/library-series-count.svelte";
   import { LibraryViewSetting } from "$lib/library/library-view.svelte";
+  import SeriesCount from "$lib/library/SeriesCount.svelte";
   import SeriesCovers from "$lib/library/SeriesCovers.svelte";
+  import ViewOptions from "$lib/library/ViewOptions.svelte";
   import LibraryGlyph from "$lib/navigation/LibraryGlyph.svelte";
   import EmptyState from "$lib/page/EmptyState.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -25,6 +28,9 @@
   const library = new LibrarySeriesList((after) =>
     commands.librarySeries(after),
   );
+  const seriesCount = new LibrarySeriesCount(() =>
+    commands.librarySeriesCount(),
+  );
   const view = new LibraryViewSetting(
     () => commands.libraryView(),
     (chosen) => commands.setLibraryView(chosen),
@@ -37,6 +43,20 @@
   const isEmpty = $derived(
     library.list.kind === "loaded" && library.list.series.length === 0,
   );
+  const shown = $derived(
+    library.list.kind === "loaded" &&
+      library.list.series.length > 0 &&
+      view.reading.kind === "read"
+      ? { series: library.list, view: view.reading.view }
+      : undefined,
+  );
+  const showsItemCounts = $derived(shown?.view.showsItemCounts === true);
+
+  $effect(() => {
+    if (showsItemCounts) {
+      void seriesCount.load();
+    }
+  });
 
   let headingAddFolder: HTMLButtonElement | undefined = $state();
   let emptyAddFolder: HTMLButtonElement | undefined = $state();
@@ -46,6 +66,9 @@
     void view.load();
     return listenForLibraryChanges(() => {
       void library.load();
+      if (showsItemCounts) {
+        void seriesCount.load();
+      }
     }, reportError);
   });
 
@@ -54,11 +77,24 @@
   }
 </script>
 
-<div class="flex items-center justify-between gap-sm">
-  <CollectionHeading
-    title={m.library_title()}
-    showsLabel={screenshotMode.showsLabel}
-  />
+<div class="flex items-center gap-sm">
+  <div class="flex flex-1 items-baseline gap-title-count min-inline-none">
+    <CollectionHeading
+      title={m.library_title()}
+      showsLabel={screenshotMode.showsLabel}
+    />
+    {#if showsItemCounts && seriesCount.count !== undefined}
+      <SeriesCount count={seriesCount.count} />
+    {/if}
+  </div>
+  {#if shown !== undefined}
+    <ViewOptions
+      view={shown.view}
+      onChoose={(chosen: LibraryView) => {
+        view.choose(chosen);
+      }}
+    />
+  {/if}
   <AddFolderButton
     bind:element={headingAddFolder}
     {adding}
@@ -94,16 +130,16 @@
   </div>
   {#if library.list.kind === "failed"}
     <p class="mbs-sm text-muted">{m.library_series_failed()}</p>
-  {:else if view.reading.kind === "read"}
+  {:else if shown !== undefined}
     <div class="mbs-xl">
       <SeriesCovers
-        series={library.list.series}
-        isComplete={library.list.isComplete}
+        series={shown.series.series}
+        isComplete={shown.series.isComplete}
         onNearEnd={() => {
           void library.loadMore();
         }}
         {coverUrl}
-        view={view.reading.view}
+        view={shown.view}
       />
     </div>
   {/if}
