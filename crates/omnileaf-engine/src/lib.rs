@@ -2,9 +2,11 @@
 
 mod app_info;
 mod folder_survey;
+mod version_details;
 
 pub use app_info::{AppInfo, Platform};
 pub use folder_survey::{FolderSurvey, SurveyError, survey_folder};
+pub use version_details::{BuildProfile, VersionDetails};
 
 #[derive(Debug)]
 pub struct Core {
