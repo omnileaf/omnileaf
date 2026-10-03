@@ -87,7 +87,9 @@ test("names each series and how many books it holds under its cover", async ({
 
   await expect(first).toContainText("Sample Series 01");
   await expect(first).toContainText("1 book");
-  await expect(page.getByText("Your library is empty.")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Your library is empty" }),
+  ).toHaveCount(0);
 });
 
 test("lays the covers out in as many columns as the screen's board draws", async ({

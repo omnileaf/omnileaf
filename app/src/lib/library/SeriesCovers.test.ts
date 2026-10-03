@@ -46,6 +46,7 @@ test("lists each series with its title and how many books it holds", async () =>
 
   const screen = await render(SeriesCovers, {
     series,
+    isComplete: true,
     coverUrl: fakeCoverUrl,
   });
 
@@ -67,6 +68,7 @@ test("shows a series' cover from the omni protocol", async () => {
 
   const screen = await render(SeriesCovers, {
     series,
+    isComplete: true,
     coverUrl: fakeCoverUrl,
   });
 
@@ -81,6 +83,7 @@ test("leaves the cover's place empty for a series with no cover yet", async () =
 
   const screen = await render(SeriesCovers, {
     series,
+    isComplete: true,
     coverUrl: fakeCoverUrl,
   });
 
@@ -93,6 +96,7 @@ test("keeps each series' cover with its series when the list reorders", async ()
   const series = await listed();
   const screen = await render(SeriesCovers, {
     series,
+    isComplete: true,
     coverUrl: fakeCoverUrl,
   });
   const cover = screen.getByRole("presentation").element();

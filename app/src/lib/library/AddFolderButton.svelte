@@ -7,12 +7,12 @@
   import type { FolderAdding } from "./folder-adding.svelte";
   import { ICON_SIZE } from "./icon-size";
 
-  type Look = "filled" | "outlined" | "plain";
+  type Look = "filled" | "header";
 
   const LOOKS = {
     filled: "rounded-control bg-accent px-lg text-on-accent",
-    outlined: "rounded-control border border-border bg-card px-lg",
-    plain: "rounded-full px-md text-accent",
+    header:
+      "rounded-full px-md text-accent medium:rounded-control medium:border medium:border-border medium:bg-card medium:px-lg medium:text-foreground",
   } satisfies Record<Look, ClassValue>;
 
   let {
