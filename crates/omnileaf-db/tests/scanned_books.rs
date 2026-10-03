@@ -8,7 +8,7 @@ mod support;
 use std::path::PathBuf;
 
 use omnileaf_db::{
-    Database,
+    Database, Error,
     catalog::{
         BookFile, NewRoot, NewSeries, RootId, RootKind, RootLocator, ScannedBook, add_root,
         record_scanned_book,
@@ -237,4 +237,30 @@ async fn keeps_a_book_file_location_that_is_not_unicode_byte_for_byte() {
             .collect::<Vec<_>>(),
         [location]
     );
+}
+
+#[tokio::test]
+async fn refuses_a_book_whose_series_name_is_held_by_another_series_id() {
+    let library = Library::open("scanned-name-taken").await;
+    library
+        .database
+        .write(|transaction| {
+            Ok(transaction.execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0)",
+                [],
+            )?)
+        })
+        .await
+        .unwrap();
+    let found = library.found("Sample Series 01", "Sample Series 01/Volume 01.cbz", 1);
+    let series = found.series.id();
+
+    let outcome = library
+        .database
+        .write(move |transaction| record_scanned_book(transaction, &found))
+        .await;
+
+    assert!(matches!(outcome, Err(Error::UnknownSeries { id }) if id == series));
+    assert!(library.files().await.is_empty());
 }
