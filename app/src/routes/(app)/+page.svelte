@@ -9,6 +9,7 @@
   import FolderNotice from "$lib/library/FolderNotice.svelte";
   import { listenForLibraryChanges } from "$lib/library/library-changes";
   import { LibrarySeriesList } from "$lib/library/library-series.svelte";
+  import { LibraryViewSetting } from "$lib/library/library-view.svelte";
   import SeriesCovers from "$lib/library/SeriesCovers.svelte";
   import LibraryGlyph from "$lib/navigation/LibraryGlyph.svelte";
   import EmptyState from "$lib/page/EmptyState.svelte";
@@ -24,6 +25,13 @@
   const library = new LibrarySeriesList((after) =>
     commands.librarySeries(after),
   );
+  const view = new LibraryViewSetting(
+    () => commands.libraryView(),
+    (chosen) => commands.setLibraryView(chosen),
+    (error) => {
+      reportError(error);
+    },
+  );
   const adding = new FolderAdding(addFolderWithProgress, () => data.notices);
 
   const isEmpty = $derived(
@@ -35,6 +43,7 @@
 
   onMount(() => {
     void library.load();
+    void view.load();
     return listenForLibraryChanges(() => {
       void library.load();
     }, reportError);
@@ -85,7 +94,7 @@
   </div>
   {#if library.list.kind === "failed"}
     <p class="mbs-sm text-muted">{m.library_series_failed()}</p>
-  {:else}
+  {:else if view.reading.kind === "read"}
     <div class="mbs-xl">
       <SeriesCovers
         series={library.list.series}
@@ -94,6 +103,7 @@
           void library.loadMore();
         }}
         {coverUrl}
+        view={view.reading.view}
       />
     </div>
   {/if}

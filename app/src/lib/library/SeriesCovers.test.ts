@@ -2,7 +2,11 @@ import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import { commands, type LibrarySeries } from "$lib/ipc/bindings";
+import {
+  commands,
+  DEFAULT_LIBRARY_VIEW,
+  type LibrarySeries,
+} from "$lib/ipc/bindings";
 
 import type { CoverPath } from "./cover-url";
 import SeriesCovers from "./SeriesCovers.svelte";
@@ -48,6 +52,7 @@ test("lists each series with its title and how many books it holds", async () =>
     series,
     isComplete: true,
     coverUrl: fakeCoverUrl,
+    view: DEFAULT_LIBRARY_VIEW,
   });
 
   const items = screen
@@ -70,6 +75,7 @@ test("shows a series' cover from the omni protocol", async () => {
     series,
     isComplete: true,
     coverUrl: fakeCoverUrl,
+    view: DEFAULT_LIBRARY_VIEW,
   });
 
   const first = screen.getByRole("listitem").nth(0);
@@ -85,6 +91,7 @@ test("leaves the cover's place empty for a series with no cover yet", async () =
     series,
     isComplete: true,
     coverUrl: fakeCoverUrl,
+    view: DEFAULT_LIBRARY_VIEW,
   });
 
   const second = screen.getByRole("listitem").nth(1);
@@ -98,6 +105,7 @@ test("keeps each series' cover with its series when the list reorders", async ()
     series,
     isComplete: true,
     coverUrl: fakeCoverUrl,
+    view: DEFAULT_LIBRARY_VIEW,
   });
   const cover = screen.getByRole("presentation").element();
 

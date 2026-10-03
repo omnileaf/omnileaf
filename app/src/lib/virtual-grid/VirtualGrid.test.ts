@@ -91,6 +91,17 @@ test("lays out the rows scrolled to", async () => {
   );
 });
 
+test("lays out the rows again once its items are laid out in more columns", async () => {
+  const { screen, list } = await renderGrid(TEN_THOUSAND);
+  const before = list.getByRole("listitem").elements().length;
+
+  await screen.rerender({ class: "grid-cols-8 gap-lg" });
+
+  await expect
+    .poll(() => list.getByRole("listitem").elements().length)
+    .toBe(before * 2);
+});
+
 test("gives each item its place in the whole list", async () => {
   const { list } = await renderGrid(TEN_THOUSAND);
 

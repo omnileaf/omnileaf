@@ -3,7 +3,11 @@ import type { ComponentProps } from "svelte";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { cleanup, render } from "vitest-browser-svelte";
 
-import { events, type LibrarySeries } from "$lib/ipc/bindings";
+import {
+  DEFAULT_LIBRARY_VIEW,
+  events,
+  type LibrarySeries,
+} from "$lib/ipc/bindings";
 import { Notices } from "$lib/notices/notices.svelte";
 
 import { screenshotModeTurned } from "../../../tests/components/screenshot-mode";
@@ -34,11 +38,14 @@ function settled(): Promise<void> {
   });
 }
 
-/** Lists whatever `catalog` holds when asked, counting how often the page asked. */
+/** Lists whatever `catalog` holds when asked, counting how often the page asked, and draws the library as a new one is drawn. */
 function listing(catalog: () => readonly WireSeries[]): { asked: number } {
   const counted = { asked: 0 };
   mockIPC(
     (command) => {
+      if (command === "library_view") {
+        return DEFAULT_LIBRARY_VIEW;
+      }
       if (command !== "library_series") {
         throw new Error(`the page called \`${command}\``);
       }
@@ -132,7 +139,10 @@ test("labels the library while Screenshot mode is on", async () => {
 
 test("says when the library's series can't be listed", async () => {
   mockIPC(
-    () => {
+    (command) => {
+      if (command === "library_view") {
+        return DEFAULT_LIBRARY_VIEW;
+      }
       // eslint-disable-next-line @typescript-eslint/only-throw-error -- a failed command rejects with its plain error object, which is what the bindings read
       throw {
         code: "internal",
