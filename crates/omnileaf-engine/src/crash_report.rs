@@ -62,14 +62,15 @@ pub struct InterfaceError {
     pub stack: Option<String>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// What crashed: the app itself, or only its interface.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
-enum Origin {
+pub enum CrashOrigin {
     Panic,
     Interface,
 }
 
-impl Origin {
+impl CrashOrigin {
     fn message_label(self) -> &'static str {
         match self {
             Self::Panic => "Panic",
@@ -97,7 +98,7 @@ impl Origin {
 pub struct CrashReport {
     id: CrashReportId,
     app: CrashedApp,
-    origin: Origin,
+    origin: CrashOrigin,
     message: String,
     location: Option<CodeLocation>,
     trace: Vec<String>,
@@ -133,7 +134,7 @@ impl CrashReport {
         Self {
             id,
             app,
-            origin: Origin::Panic,
+            origin: CrashOrigin::Panic,
             message: scrub::clean(panic.message, MESSAGE_BYTE_LIMIT),
             location: panic.location.map(|location| {
                 CodeLocation::package_relative(location.file, location.line, location.column)
@@ -152,7 +153,7 @@ impl CrashReport {
         Self {
             id,
             app,
-            origin: Origin::Interface,
+            origin: CrashOrigin::Interface,
             message: scrub::clean(&error.message, MESSAGE_BYTE_LIMIT),
             location: None,
             trace: clean_frames(stack.lines().map(str::trim).filter(|line| !line.is_empty())),
@@ -162,6 +163,11 @@ impl CrashReport {
     #[must_use]
     pub fn id(&self) -> CrashReportId {
         self.id
+    }
+
+    #[must_use]
+    pub fn origin(&self) -> CrashOrigin {
+        self.origin
     }
 
     /// A new bug report in the project's tracker, filled in with this report for the person to read and submit.
@@ -192,7 +198,7 @@ struct StoredCrashReport {
     version: String,
     platform: Platform,
     system: Option<String>,
-    origin: Origin,
+    origin: CrashOrigin,
     message: String,
     location: Option<CodeLocation>,
     trace: Vec<String>,

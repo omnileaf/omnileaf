@@ -1,6 +1,10 @@
 import { expect, test } from "vitest";
 
-import type { IpcError, IpcErrorCode } from "$lib/ipc/bindings";
+import type {
+  CrashReportOffer,
+  IpcError,
+  IpcErrorCode,
+} from "$lib/ipc/bindings";
 
 import { type CrashReportChoice, CrashReportSetting } from "./choice.svelte";
 import {
@@ -11,6 +15,14 @@ import {
 const SAVED_DETAILS = "Omnileaf 1.2.3 on Linux\nPanic: boom\n";
 const INTERFACE_DETAILS = "Omnileaf 1.2.3 on Linux\nInterface error: oops\n";
 const CHOICE_KEY = "omnileaf.crash-reports";
+const SAVED_PANIC: CrashReportOffer = {
+  details: SAVED_DETAILS,
+  origin: "panic",
+};
+const INTERFACE_ERROR: CrashReportOffer = {
+  details: INTERFACE_DETAILS,
+  origin: "interface",
+};
 
 type Result<T> =
   { status: "ok"; data: T } | { status: "error"; error: IpcError };
@@ -24,27 +36,25 @@ function failed(code: IpcErrorCode): Result<null> {
 }
 
 interface FakeOptions {
-  readonly saved?: string | null;
+  readonly saved?: CrashReportOffer | null;
   readonly sending?: Result<null>;
 }
 
 function fakeBackend({
-  saved = SAVED_DETAILS,
+  saved = SAVED_PANIC,
   sending = ok(null),
 }: FakeOptions = {}) {
   const calls = { sent: 0, declined: 0, interfaceErrors: [] as string[] };
-  let offered: string | null = null;
+  let offered: CrashReportOffer | null = null;
   const backend: CrashReportBackend = {
     offerSavedCrashReport: () => {
       offered ??= saved;
-      return Promise.resolve(
-        ok(offered === null ? null : { details: offered }),
-      );
+      return Promise.resolve(ok(offered));
     },
     offerInterfaceErrorReport: (error) => {
       calls.interfaceErrors.push(error.message);
-      offered ??= INTERFACE_DETAILS;
-      return Promise.resolve(ok({ details: offered }));
+      offered ??= INTERFACE_ERROR;
+      return Promise.resolve(ok(offered));
     },
     sendCrashReport: () => {
       calls.sent += 1;
@@ -87,10 +97,21 @@ test("shows the report a crash left behind, asking first", async () => {
   expect(reporting.prompt).toEqual({
     kind: "asking",
     details: SAVED_DETAILS,
-    moment: "lastTime",
+    origin: "panic",
     failure: undefined,
   });
   expect(calls.sent).toBe(0);
+});
+
+test("words an interface error left by an earlier run as an interface error", async () => {
+  const { reporting } = reportingWith("ask", { saved: INTERFACE_ERROR });
+
+  await reporting.offerSaved();
+
+  expect(reporting.prompt).toMatchObject({
+    details: INTERFACE_DETAILS,
+    origin: "interface",
+  });
 });
 
 test("shows nothing when no crash left a report", async () => {
@@ -213,7 +234,7 @@ test("offers an error the interface didn't handle straight away", async () => {
   expect(reporting.prompt).toEqual({
     kind: "asking",
     details: INTERFACE_DETAILS,
-    moment: "now",
+    origin: "interface",
     failure: undefined,
   });
 });
@@ -227,6 +248,6 @@ test("keeps showing the report it asked about when another error arrives", async
   expect(calls.interfaceErrors).toEqual(["oops"]);
   expect(reporting.prompt).toMatchObject({
     details: SAVED_DETAILS,
-    moment: "lastTime",
+    origin: "panic",
   });
 });

@@ -1,7 +1,11 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
-import type { InterfaceError, Platform } from "../../src/lib/ipc/bindings.ts";
+import type {
+  CrashReportOffer,
+  InterfaceError,
+  Platform,
+} from "../../src/lib/ipc/bindings.ts";
 import { CommandFailure } from "./fake-backend.ts";
 import {
   DEFAULT_BACKEND,
@@ -11,12 +15,15 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 
-const SAVED_DETAILS =
-  "Omnileaf 1.2.3 on Android\nPanic: index out of bounds\nAt: omnileaf-formats/src/zip_book.rs:42:5\n";
+const SAVED_PANIC: CrashReportOffer = {
+  details:
+    "Omnileaf 1.2.3 on Android\nPanic: index out of bounds\nAt: omnileaf-formats/src/zip_book.rs:42:5\n",
+  origin: "panic",
+};
 const CHOICE_KEY = "omnileaf.crash-reports";
 
 interface Calls {
-  offered: string | null;
+  offered: CrashReportOffer | null;
   sent: number;
   declined: number;
   copied: number;
@@ -25,12 +32,14 @@ interface Calls {
 
 function fakeCrashReports(calls: Calls) {
   return {
-    offerSavedCrashReport: () =>
-      calls.offered === null ? null : { details: calls.offered },
+    offerSavedCrashReport: () => calls.offered,
     offerInterfaceErrorReport: (error: InterfaceError) => {
       calls.interfaceErrors.push(error);
-      calls.offered ??= `Omnileaf 1.2.3 on Android\nInterface error: ${error.message}\n`;
-      return { details: calls.offered };
+      calls.offered ??= {
+        details: `Omnileaf 1.2.3 on Android\nInterface error: ${error.message}\n`,
+        origin: "interface",
+      };
+      return calls.offered;
     },
     sendCrashReport: () => {
       calls.sent += 1;
@@ -49,7 +58,7 @@ function fakeCrashReports(calls: Calls) {
   };
 }
 
-function freshCalls(saved: string | null = SAVED_DETAILS): Calls {
+function freshCalls(saved: CrashReportOffer | null = SAVED_PANIC): Calls {
   return {
     offered: saved,
     sent: 0,

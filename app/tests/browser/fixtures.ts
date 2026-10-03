@@ -24,7 +24,10 @@ export const DEFAULT_BACKEND: FakeBackend = {
   copyVersionDetails: () => null,
   openProjectLink: () => null,
   offerSavedCrashReport: () => null,
-  offerInterfaceErrorReport: (error) => ({ details: error.message }),
+  offerInterfaceErrorReport: (error) => ({
+    details: error.message,
+    origin: "interface",
+  }),
   sendCrashReport: () => null,
   copyCrashReport: () => null,
   declineCrashReport: () => null,

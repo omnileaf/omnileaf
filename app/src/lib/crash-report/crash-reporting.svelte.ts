@@ -1,5 +1,11 @@
 import { DetailsCopying } from "$lib/copying/details-copying.svelte";
-import type { commands, InterfaceError, IpcErrorCode } from "$lib/ipc/bindings";
+import type {
+  commands,
+  CrashOrigin,
+  CrashReportOffer,
+  InterfaceError,
+  IpcErrorCode,
+} from "$lib/ipc/bindings";
 
 import type { CrashReportChoice, CrashReportSetting } from "./choice.svelte";
 
@@ -12,8 +18,6 @@ export type CrashReportBackend = Pick<
   | "declineCrashReport"
 >;
 
-export type CrashMoment = "lastTime" | "now";
-
 export type SendFailure = "browserUnavailable" | "notSent";
 
 export type CrashReportPrompt =
@@ -21,7 +25,7 @@ export type CrashReportPrompt =
   | {
       readonly kind: "asking";
       readonly details: string;
-      readonly moment: CrashMoment;
+      readonly origin: CrashOrigin;
       readonly failure: SendFailure | undefined;
     };
 
@@ -43,14 +47,14 @@ export class CrashReporting {
   async offerSaved(): Promise<void> {
     const saved = await this.backend.offerSavedCrashReport();
     if (saved.status === "ok" && saved.data !== null) {
-      await this.follow(saved.data.details, "lastTime");
+      await this.follow(saved.data);
     }
   }
 
   async offerInterfaceError(error: InterfaceError): Promise<void> {
     const offered = await this.backend.offerInterfaceErrorReport(error);
     if (offered.status === "ok" && this.prompt.kind === "hidden") {
-      await this.follow(offered.data.details, "now");
+      await this.follow(offered.data);
     }
   }
 
@@ -69,11 +73,11 @@ export class CrashReporting {
     await this.backend.declineCrashReport();
   }
 
-  private async follow(details: string, moment: CrashMoment): Promise<void> {
+  private async follow({ details, origin }: CrashReportOffer): Promise<void> {
     const asking = {
       kind: "asking",
       details,
-      moment,
+      origin,
       failure: undefined,
     } as const;
     const outcomes = {

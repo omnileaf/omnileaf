@@ -14,6 +14,7 @@ export const commands = {
 	openProjectLink: (link: ProjectLink) => typedError<null, IpcError>(__TAURI_INVOKE("open_project_link", { link })),
 	offerSavedCrashReport: () => typedError<{
 	details: string,
+	origin: CrashOrigin,
 } | null, IpcError>(__TAURI_INVOKE("offer_saved_crash_report")),
 	offerInterfaceErrorReport: (error: InterfaceError) => typedError<CrashReportOffer, IpcError>(__TAURI_INVOKE("offer_interface_error_report", { error })),
 	sendCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("send_crash_report")),
@@ -28,9 +29,13 @@ export type AppInfo = {
 	sourceCode: string,
 };
 
+/**  What crashed: the app itself, or only its interface. */
+export type CrashOrigin = "panic" | "interface";
+
 /**  A crash report as the interface shows it, for the person to read before deciding. */
 export type CrashReportOffer = {
 	details: string,
+	origin: CrashOrigin,
 };
 
 export type FolderSurvey = {

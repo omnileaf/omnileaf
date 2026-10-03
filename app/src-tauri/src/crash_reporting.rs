@@ -9,8 +9,8 @@ use std::{
 };
 
 use omnileaf_engine::{
-    AppInfo, Core, CrashReport, CrashReportFile, CrashReportId, CrashReportOffers, CrashedApp,
-    InterfaceError, PanicDetails, Platform, SourceLocation,
+    AppInfo, Core, CrashOrigin, CrashReport, CrashReportFile, CrashReportId, CrashReportOffers,
+    CrashedApp, InterfaceError, PanicDetails, Platform, SourceLocation,
 };
 use serde::Serialize;
 use specta::Type;
@@ -25,12 +25,14 @@ const NO_MESSAGE: &str = "the panic carried no message";
 #[serde(rename_all = "camelCase")]
 pub(crate) struct CrashReportOffer {
     details: String,
+    origin: CrashOrigin,
 }
 
 impl From<&CrashReport> for CrashReportOffer {
     fn from(report: &CrashReport) -> Self {
         Self {
             details: report.to_string(),
+            origin: report.origin(),
         }
     }
 }

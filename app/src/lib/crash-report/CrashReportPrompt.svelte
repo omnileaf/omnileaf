@@ -1,11 +1,12 @@
 <script lang="ts">
   import { ArrowLeft, Bug, ChevronLeft } from "@lucide/svelte";
 
+  import type { CrashOrigin } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
   import AlwaysSendChoice from "./AlwaysSendChoice.svelte";
 
-  import type { CrashMoment, CrashReporting } from "./crash-reporting.svelte";
+  import type { CrashReporting } from "./crash-reporting.svelte";
   import ReportDetails from "./ReportDetails.svelte";
   import ReportFailures from "./ReportFailures.svelte";
 
@@ -18,13 +19,13 @@
   const BACK_CHEVRON_SIZE = 22;
 
   const TITLES = {
-    lastTime: m.crash_report_title_last_time,
-    now: m.crash_report_title_now,
-  } satisfies Record<CrashMoment, () => string>;
+    panic: m.crash_report_title_last_time,
+    interface: m.crash_report_title_now,
+  } satisfies Record<CrashOrigin, () => string>;
   const PHONE_BODIES = {
-    lastTime: m.crash_report_body_last_time,
-    now: m.crash_report_body,
-  } satisfies Record<CrashMoment, () => string>;
+    panic: m.crash_report_body_last_time,
+    interface: m.crash_report_body,
+  } satisfies Record<CrashOrigin, () => string>;
 
   const titleId = $props.id();
   const bodyId = `${titleId}-body`;
@@ -113,7 +114,7 @@
             {m.crash_report_title_now()}
           </h1>
           <p id={bodyId} class="text-callout text-foreground/85">
-            {PHONE_BODIES[asking.moment]()}
+            {PHONE_BODIES[asking.origin]()}
           </p>
           <ReportDetails details={asking.details} {onPhone} />
           <AlwaysSendChoice bind:checked={alwaysSend} {onPhone} />
@@ -149,7 +150,7 @@
           data-prompt-title
           class="text-title font-extrabold"
         >
-          {TITLES[asking.moment]()}
+          {TITLES[asking.origin]()}
         </h2>
         <p id={bodyId} class="text-label text-muted">
           {m.crash_report_body()}
