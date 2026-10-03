@@ -1,13 +1,16 @@
 mod issue;
+mod offers;
 mod scrub;
 mod trace;
 
 use std::fmt;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::{Platform, ProjectLink, platform_name};
+
+pub use offers::{CrashReportError, CrashReportFile, CrashReportOffers, UnsavedCrashReport};
 
 const APP_NAME: &str = "Omnileaf";
 const MESSAGE_BYTE_LIMIT: usize = 240;
@@ -56,7 +59,8 @@ pub struct InterfaceError {
     pub stack: Option<String>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 enum Origin {
     Panic,
     Interface,
@@ -148,6 +152,54 @@ impl CrashReport {
                 ("logs", &self.to_string()),
             ],
         )
+    }
+}
+
+/// How a report is kept on disk; reading one back cleans its text again, since the file is outside the app's control.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StoredCrashReport {
+    id: u64,
+    version: String,
+    platform: Platform,
+    system: Option<String>,
+    origin: Origin,
+    message: String,
+    location: Option<String>,
+    trace: Vec<String>,
+}
+
+impl From<&CrashReport> for StoredCrashReport {
+    fn from(report: &CrashReport) -> Self {
+        Self {
+            id: report.id.0,
+            version: report.app.version.clone(),
+            platform: report.app.platform,
+            system: report.app.system.clone(),
+            origin: report.origin,
+            message: report.message.clone(),
+            location: report.location.clone(),
+            trace: report.trace.clone(),
+        }
+    }
+}
+
+impl From<StoredCrashReport> for CrashReport {
+    fn from(stored: StoredCrashReport) -> Self {
+        Self {
+            id: CrashReportId(stored.id),
+            app: CrashedApp {
+                version: stored.version,
+                platform: stored.platform,
+                system: stored.system,
+            },
+            origin: stored.origin,
+            message: scrub::clean(&stored.message, MESSAGE_BYTE_LIMIT),
+            location: stored
+                .location
+                .map(|location| scrub::clean(&location, FRAME_BYTE_LIMIT)),
+            trace: clean_frames(stored.trace.iter().map(String::as_str)),
+        }
     }
 }
 

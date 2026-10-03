@@ -8,7 +8,8 @@ mod version_details;
 
 pub use app_info::{AppInfo, Platform};
 pub use crash_report::{
-    CrashReport, CrashReportId, CrashedApp, InterfaceError, PanicDetails, SourceLocation,
+    CrashReport, CrashReportError, CrashReportFile, CrashReportId, CrashReportOffers, CrashedApp,
+    InterfaceError, PanicDetails, SourceLocation, UnsavedCrashReport,
 };
 pub use folder_survey::{FolderSurvey, SurveyError, survey_folder};
 pub use project_link::ProjectLink;

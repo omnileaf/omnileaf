@@ -2980,6 +2980,7 @@ version = "0.0.0"
 dependencies = [
  "proptest",
  "serde",
+ "serde_json",
  "specta",
  "thiserror 2.0.21",
 ]

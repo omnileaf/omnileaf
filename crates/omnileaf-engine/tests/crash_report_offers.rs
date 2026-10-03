@@ -1,0 +1,193 @@
+#![expect(
+    clippy::unwrap_used,
+    reason = "the test folders are fixtures, so a failed set-up should stop the test"
+)]
+
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+    process,
+};
+
+use omnileaf_engine::{
+    CrashReport, CrashReportError, CrashReportFile, CrashReportId, CrashReportOffers, CrashedApp,
+    InterfaceError, Platform,
+};
+
+struct TempFolder(PathBuf);
+
+impl TempFolder {
+    fn new(name: &str) -> Self {
+        let path = env::temp_dir()
+            .join(format!("omnileaf-crash-reports-{}", process::id()))
+            .join(name);
+        let _ = fs::remove_dir_all(&path);
+        Self(path)
+    }
+
+    fn path(&self) -> &Path {
+        &self.0
+    }
+
+    fn file(&self) -> CrashReportFile {
+        CrashReportFile::in_folder(self.path())
+    }
+
+    fn offers(&self) -> CrashReportOffers {
+        CrashReportOffers::new(self.file())
+    }
+
+    fn saved_text(&self) -> String {
+        let file = fs::read_dir(self.path()).unwrap().next().unwrap().unwrap();
+        fs::read_to_string(file.path()).unwrap()
+    }
+
+    fn replace_saved_text(&self, text: &str) {
+        let file = fs::read_dir(self.path()).unwrap().next().unwrap().unwrap();
+        fs::write(file.path(), text).unwrap();
+    }
+}
+
+impl Drop for TempFolder {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+        let _ = fs::remove_file(&self.0);
+    }
+}
+
+fn report(millis: u64, message: &str) -> CrashReport {
+    CrashReport::from_interface_error(
+        CrashReportId::from_millis(millis),
+        CrashedApp {
+            version: "1.2.3".to_owned(),
+            platform: Platform::Android,
+            system: None,
+        },
+        &InterfaceError {
+            message: message.to_owned(),
+            stack: Some("at turn\nat open".to_owned()),
+        },
+    )
+}
+
+#[test]
+fn offers_nothing_when_no_crash_was_saved() {
+    let folder = TempFolder::new("nothing-saved");
+
+    let offered = folder.offers().offer_saved().unwrap();
+
+    assert_eq!(offered, None);
+}
+
+#[test]
+fn offers_the_report_saved_by_an_earlier_run() {
+    let folder = TempFolder::new("earlier-run");
+    folder.file().save(&report(1, "first")).unwrap();
+
+    let offered = folder.offers().offer_saved().unwrap();
+
+    assert_eq!(offered, Some(report(1, "first")));
+}
+
+#[test]
+fn offers_a_new_report_and_keeps_it_for_the_next_run() {
+    let folder = TempFolder::new("kept-for-next-run");
+    let offered = folder.offers().offer(report(1, "first")).unwrap();
+
+    let next_run = folder.offers().offer_saved().unwrap();
+
+    assert_eq!(offered, report(1, "first"));
+    assert_eq!(next_run, Some(report(1, "first")));
+}
+
+#[test]
+fn keeps_the_report_on_offer_when_another_arrives() {
+    let folder = TempFolder::new("another-arrives");
+    let offers = folder.offers();
+    offers.offer(report(1, "first")).unwrap();
+
+    let offered = offers.offer(report(2, "second")).unwrap();
+
+    assert_eq!(offered, report(1, "first"));
+    assert_eq!(offers.offered(), Some(report(1, "first")));
+}
+
+#[test]
+fn keeps_offering_the_same_report_until_it_is_settled() {
+    let folder = TempFolder::new("same-until-settled");
+    let offers = folder.offers();
+    offers.offer(report(1, "first")).unwrap();
+    folder.file().save(&report(2, "second")).unwrap();
+
+    let offered = offers.offer_saved().unwrap();
+
+    assert_eq!(offered, Some(report(1, "first")));
+}
+
+#[test]
+fn forgets_a_settled_report() {
+    let folder = TempFolder::new("settled");
+    let offers = folder.offers();
+    offers.offer(report(1, "first")).unwrap();
+
+    offers.settle().unwrap();
+
+    assert_eq!(offers.offered(), None);
+    assert_eq!(folder.offers().offer_saved().unwrap(), None);
+}
+
+#[test]
+fn leaves_a_newer_saved_report_for_the_next_run() {
+    let folder = TempFolder::new("newer-saved");
+    let offers = folder.offers();
+    offers.offer(report(1, "first")).unwrap();
+    folder.file().save(&report(2, "second")).unwrap();
+
+    offers.settle().unwrap();
+
+    assert_eq!(
+        folder.offers().offer_saved().unwrap(),
+        Some(report(2, "second"))
+    );
+}
+
+#[test]
+fn discards_a_saved_report_it_cannot_read() {
+    let folder = TempFolder::new("unreadable");
+    folder.file().save(&report(1, "first")).unwrap();
+    folder.replace_saved_text("not a report");
+
+    let first_try = folder.offers().offer_saved();
+    let second_try = folder.offers().offer_saved().unwrap();
+
+    assert!(matches!(first_try, Err(CrashReportError::Parse(_))));
+    assert_eq!(second_try, None);
+}
+
+#[test]
+fn cleans_a_saved_report_again_when_reading_it() {
+    let folder = TempFolder::new("cleaned-again");
+    folder.file().save(&report(1, "first")).unwrap();
+    let edited = folder
+        .saved_text()
+        .replace("first", "open /home/sample-user/Comics");
+    folder.replace_saved_text(&edited);
+
+    let offered = folder.offers().offer_saved().unwrap().unwrap();
+
+    assert!(!offered.to_string().contains("sample-user"), "{offered}");
+}
+
+#[test]
+fn still_offers_a_report_it_could_not_save() {
+    let folder = TempFolder::new("unsaved");
+    fs::create_dir_all(folder.path().parent().unwrap()).unwrap();
+    fs::write(folder.path(), "a file where the folder should be").unwrap();
+    let offers = folder.offers();
+
+    let unsaved = offers.offer(report(1, "first")).unwrap_err();
+
+    assert_eq!(*unsaved.report, report(1, "first"));
+    assert!(matches!(unsaved.source, CrashReportError::Save(_)));
+    assert_eq!(offers.offered(), Some(report(1, "first")));
+}

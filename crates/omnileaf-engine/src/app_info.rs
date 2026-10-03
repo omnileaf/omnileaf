@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -9,7 +9,7 @@ pub struct AppInfo {
     pub source_code: String,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum Platform {
     Android,
