@@ -81,6 +81,7 @@ export type LibraryFolder = {
 };
 
 export type LibrarySeries = {
+	id: string & { readonly __brand: "SeriesId" },
 	title: string,
 	bookCount: number,
 	/**  The cover of its first book by title, absent while none of its books has a file. */

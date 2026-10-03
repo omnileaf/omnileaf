@@ -48,7 +48,14 @@ test("says when the library's series can't be listed", async () => {
 
 test("shows the covers of the library's series once it has some", async () => {
   mockConvertFileSrc("linux");
-  listing([{ title: "Sample Series 01", bookCount: 3, cover: COVER }]);
+  listing([
+    {
+      id: "0190a3e4-0000-8000-8000-0000000000a1",
+      title: "Sample Series 01",
+      bookCount: 3,
+      cover: COVER,
+    },
+  ]);
 
   const screen = await render(Page);
 

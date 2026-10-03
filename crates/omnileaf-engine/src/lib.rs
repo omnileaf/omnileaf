@@ -24,7 +24,7 @@ pub use cover_path::{CoverPath, MalformedCoverPath};
 pub use error_chain::describe_error;
 pub use library::{Library, LibraryError};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
-pub use library_series::{LibrarySeries, SeriesCursor, SeriesPage};
+pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
 pub use omnileaf_db::store::{Changed, Clock};
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
 pub use resource::Resource;

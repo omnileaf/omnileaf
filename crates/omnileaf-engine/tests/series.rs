@@ -4,6 +4,8 @@
 )]
 mod support;
 
+use std::collections::BTreeSet;
+
 use omnileaf_engine::Library;
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, TempFolder};
@@ -56,4 +58,27 @@ async fn lists_the_series_found_by_title_each_with_a_cover() {
         ]
     );
     assert_eq!(page.next, None);
+}
+
+#[tokio::test]
+async fn names_each_series_by_an_id_of_its_own() {
+    let comics = TempFolder::new("series-ids-comics");
+    write_sample_library(comics.path()).unwrap();
+    let home = TempFolder::new("series-ids-home");
+    let library = Library::open(home.path().to_path_buf(), FixedClock)
+        .await
+        .unwrap();
+    library
+        .add_folder(comics.path().join(SAMPLE_LIBRARY_NAME), |_| {})
+        .await
+        .unwrap();
+
+    let page = library.series(None).await.unwrap();
+
+    let ids: BTreeSet<String> = page
+        .series
+        .iter()
+        .map(|series| series.id.to_string())
+        .collect();
+    assert_eq!(ids.len(), page.series.len());
 }

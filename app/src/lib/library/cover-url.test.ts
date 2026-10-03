@@ -14,7 +14,14 @@ afterEach(() => {
 /** A cover path as only the backend hands one out. */
 async function listedCover(): Promise<CoverPath> {
   mockIPC(() => ({
-    series: [{ title: "Sample Series 01", bookCount: 1, cover: PATH }],
+    series: [
+      {
+        id: "0190a3e4-0000-8000-8000-0000000000a1",
+        title: "Sample Series 01",
+        bookCount: 1,
+        cover: PATH,
+      },
+    ],
     next: null,
   }));
   const page = await commands.librarySeries(null);

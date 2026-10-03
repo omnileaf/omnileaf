@@ -18,6 +18,7 @@ type WireSeries = Awaited<
 const LARGE_MIN_WIDTH = 1200;
 const BOOK = "0190a3e4-0000-8000-8000-000000000001";
 const SERIES: readonly WireSeries[] = Array.from({ length: 7 }, (_, index) => ({
+  id: `0190a3e4-0000-8000-8000-0000000000${String(index + 1).padStart(2, "0")}`,
   title: `Sample Series ${String(index + 1).padStart(2, "0")}`,
   bookCount: index + 1,
   cover: index === 6 ? null : `thumb/v1/${BOOK}/${String(index + 1)}/1`,

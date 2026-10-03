@@ -5,16 +5,19 @@ import { commands, type LibrarySeries } from "$lib/ipc/bindings";
 
 import { LibrarySeriesList } from "./library-series.svelte";
 
-type WireSeries = Omit<LibrarySeries, "cover"> & {
+type WireSeries = Omit<LibrarySeries, "id" | "cover"> & {
+  readonly id: string;
   readonly cover: string | null;
 };
 
 const FIRST: WireSeries = {
+  id: "0190a3e4-0000-8000-8000-0000000000a1",
   title: "Sample Series 01",
   bookCount: 3,
   cover: "thumb/v1/0190a3e4-0000-8000-8000-000000000001/1/1",
 };
 const SECOND: WireSeries = {
+  id: "0190a3e4-0000-8000-8000-0000000000a2",
   title: "Sample Series 02",
   bookCount: 1,
   cover: null,
