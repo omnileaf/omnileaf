@@ -15,6 +15,6 @@
     alt=""
     loading="lazy"
     decoding="async"
-    class="object-cover block-full inline-full"
+    class="absolute inset-none object-cover block-full inline-full"
   />
 {/if}
