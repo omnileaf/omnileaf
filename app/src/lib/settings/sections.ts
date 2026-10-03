@@ -79,3 +79,13 @@ export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [
     },
   ],
 ];
+
+/** Whether two panes already show a page in the section list, so a link back to it is not needed there. */
+export function isListedBeside(route: ParentPage["route"]): boolean {
+  return (
+    route === "/settings" ||
+    SETTINGS_GROUPS.some((group) =>
+      group.some((section) => section.route === route),
+    )
+  );
+}

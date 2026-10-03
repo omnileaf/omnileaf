@@ -111,6 +111,19 @@ test("opens a package's licence text", async ({ page }) => {
   );
 });
 
+test("leads a licence text back to the licences, even beside the sections", async ({
+  page,
+}) => {
+  await openLicences(page);
+  await groupSection(page, MOST_USED.name).getByRole("link").first().click();
+
+  await page
+    .getByRole("link", { name: "Back to Open-source licences" })
+    .click();
+
+  await expect(page).toHaveURL(LICENCES_PAGE);
+});
+
 for (const platform of ["android", "ios"] as const) {
   test.describe(`on an ${platform} phone`, () => {
     test.use(onPlatform(platform));

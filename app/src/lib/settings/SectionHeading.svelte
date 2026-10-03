@@ -5,7 +5,7 @@
 
   import { m } from "$lib/paraglide/messages.js";
 
-  import type { ParentPage } from "./sections";
+  import { isListedBeside, type ParentPage } from "./sections";
 
   let {
     title,
@@ -24,7 +24,8 @@
     href={resolve(parent.route)}
     aria-label={m.back_to({ page: parent.title })}
     class={[
-      "flex shrink-0 items-center gap-2xs two-pane:hidden",
+      "flex shrink-0 items-center gap-2xs",
+      isListedBeside(parent.route) && "two-pane:hidden",
       "desktop:-ms-xs desktop:rounded-control desktop:ps-2xs desktop:pe-sm desktop:text-label desktop:font-semibold desktop:text-accent desktop:block-2xl",
       "ios:max-medium:-ms-xs ios:max-medium:px-sm ios:max-medium:text-back-link ios:max-medium:font-medium ios:max-medium:text-accent ios:max-medium:min-block-touch-target",
       "android:justify-center android:rounded-full android:block-touch-target android:inline-touch-target",
