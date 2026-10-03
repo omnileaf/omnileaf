@@ -1,95 +1,98 @@
 import type { CoversPerRow } from "$lib/ipc/bindings";
 
-/** The classes a grid of covers takes from how many covers each size's rows hold, as the boards space and letter them. */
+/** The classes a grid of covers takes from how many covers each size's rows hold, spaced tighter and lettered smaller as rows fill. */
 export interface CoverLook {
   readonly gap: string;
   readonly title: string;
   readonly bookCount: string;
 }
 
-interface SizeLook {
+interface DenserLook {
   /** The fewest covers per row this look is drawn for, up to the next look's. */
   readonly from: number;
   readonly look: CoverLook;
 }
 
-const PHONE_LOOKS: readonly SizeLook[] = [
-  {
-    from: 5,
-    look: {
-      gap: "max-medium:gap-sm",
-      title: "max-medium:text-cover-title-tiny",
-      bookCount: "max-medium:hidden",
-    },
-  },
-  {
-    from: 4,
-    look: {
-      gap: "max-medium:gap-cover-gap-tight",
-      title: "max-medium:text-cover-title-small",
-      bookCount: "max-medium:hidden",
-    },
-  },
-  {
-    from: 0,
-    look: {
-      gap: "max-medium:gap-cover-gap",
-      title: "max-medium:text-cover-title",
-      bookCount: "",
-    },
-  },
-];
+/** A size's look for its fewest covers per row, and the denser looks that replace it as rows fill, densest first. */
+interface SizeLooks {
+  readonly base: CoverLook;
+  readonly denser: readonly DenserLook[];
+}
 
-const TABLET_LOOKS: readonly SizeLook[] = [
-  {
-    from: 7,
-    look: {
-      gap: "medium:max-large:gap-cover-gap",
-      title: "medium:max-large:text-cover-title-wide",
-      bookCount: "",
-    },
+const PHONE_LOOKS: SizeLooks = {
+  base: {
+    gap: "max-medium:gap-cover-gap",
+    title: "max-medium:text-cover-title",
+    bookCount: "",
   },
-  {
-    from: 0,
-    look: {
-      gap: "medium:max-large:gap-cover-gap-wide",
-      title: "medium:max-large:text-cover-title-wide",
-      bookCount: "",
+  denser: [
+    {
+      from: 5,
+      look: {
+        gap: "max-medium:gap-sm",
+        title: "max-medium:text-cover-title-tiny",
+        bookCount: "max-medium:hidden",
+      },
     },
-  },
-];
+    {
+      from: 4,
+      look: {
+        gap: "max-medium:gap-cover-gap-tight",
+        title: "max-medium:text-cover-title-small",
+        bookCount: "max-medium:hidden",
+      },
+    },
+  ],
+};
 
-const DESKTOP_LOOKS: readonly SizeLook[] = [
-  {
-    from: 9,
-    look: {
-      gap: "large:gap-cover-gap",
-      title: "large:text-cover-title-small",
-      bookCount: "large:hidden",
-    },
+const TABLET_LOOKS: SizeLooks = {
+  base: {
+    gap: "medium:max-large:gap-cover-gap-wide",
+    title: "medium:max-large:text-cover-title-wide",
+    bookCount: "",
   },
-  {
-    from: 7,
-    look: {
-      gap: "large:gap-cover-gap-loose",
-      title: "large:text-cover-title",
-      bookCount: "",
+  denser: [
+    {
+      from: 7,
+      look: {
+        gap: "medium:max-large:gap-cover-gap",
+        title: "medium:max-large:text-cover-title-wide",
+        bookCount: "",
+      },
     },
-  },
-  {
-    from: 0,
-    look: {
-      gap: "large:gap-xl",
-      title: "large:text-cover-title-wide",
-      bookCount: "",
-    },
-  },
-];
+  ],
+};
 
-const NO_LOOK: CoverLook = { gap: "", title: "", bookCount: "" };
+const DESKTOP_LOOKS: SizeLooks = {
+  base: {
+    gap: "large:gap-xl",
+    title: "large:text-cover-title-wide",
+    bookCount: "",
+  },
+  denser: [
+    {
+      from: 9,
+      look: {
+        gap: "large:gap-cover-gap",
+        title: "large:text-cover-title-small",
+        bookCount: "large:hidden",
+      },
+    },
+    {
+      from: 7,
+      look: {
+        gap: "large:gap-cover-gap-loose",
+        title: "large:text-cover-title",
+        bookCount: "",
+      },
+    },
+  ],
+};
 
-function lookFor(looks: readonly SizeLook[], coversPerRow: number): CoverLook {
-  return looks.find(({ from }) => coversPerRow >= from)?.look ?? NO_LOOK;
+function lookFor(looks: SizeLooks, coversPerRow: number): CoverLook {
+  return (
+    looks.denser.find(({ from }) => coversPerRow >= from)?.look ?? looks.base
+  );
 }
 
 export function coverLook(coversPerRow: CoversPerRow): CoverLook {
