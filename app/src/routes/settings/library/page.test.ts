@@ -11,7 +11,7 @@ test("explains that folders stay where they are", async () => {
   await expect
     .element(
       folders.getByText(
-        "Omnileaf reads these folders where they are and never changes them.",
+        "Folders of comics, manga or books. Omnileaf reads them where they are.",
       ),
     )
     .toBeVisible();

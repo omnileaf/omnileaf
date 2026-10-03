@@ -1,11 +1,13 @@
 import { expect, test } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
-import type { commands, FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
+import type { FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
 
-import AddLibraryFolder from "./AddLibraryFolder.svelte";
+import AddFolderButton from "./AddFolderButton.svelte";
+import { type AddFolder, FolderAdding } from "./folder-adding.svelte";
+import FolderNotice from "./FolderNotice.svelte";
 
-type AddFolder = typeof commands.addLibraryFolder;
 type AddFolderResult = Awaited<ReturnType<AddFolder>>;
 
 const SAMPLE_SURVEY: FolderSurvey = {
@@ -35,10 +37,12 @@ function failed(code: IpcErrorCode): AddFolderResult {
 const CANCELLED: AddFolderResult = { status: "ok", data: null };
 
 async function renderWith(addFolder: AddFolder) {
-  const screen = await render(AddLibraryFolder, { addFolder });
+  const adding = new FolderAdding(addFolder);
+  await render(AddFolderButton, { adding, placement: "empty-state" });
+  await render(FolderNotice, { adding });
   return {
-    button: screen.getByRole("button", { name: "Add a folder" }),
-    status: screen.getByRole("status"),
+    button: page.getByRole("button", { name: "Add a folder" }),
+    status: page.getByRole("status"),
   };
 }
 
@@ -98,6 +102,18 @@ test("clears the last result when the picker is cancelled", async () => {
     .toHaveTextContent("Found 3 comics in Sample Library.");
 
   await button.click();
+
+  await expect.element(status).toHaveTextContent("");
+});
+
+test("clears the result when it is dismissed", async () => {
+  const { button, status } = await renderWith(answering(found({})));
+  await button.click();
+  await expect
+    .element(status)
+    .toHaveTextContent("Found 3 comics in Sample Library.");
+
+  await status.getByRole("button", { name: "Dismiss" }).click();
 
   await expect.element(status).toHaveTextContent("");
 });
