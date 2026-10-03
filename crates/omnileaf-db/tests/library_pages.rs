@@ -3,16 +3,19 @@
     reason = "each test builds its own scratch library, so a failed set-up should stop the test"
 )]
 
+mod library_seed;
 mod support;
 
+use std::{cmp::Reverse, fmt::Write};
+
+use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Connection, Database, Error,
     catalog::{
-        Cursor, NewBook, NewSeries, Page, PageRequest, PageSize, SeriesOrder, add_book, add_series,
-        series_books, series_page,
+        Cursor, NewSeries, Page, PageRequest, PageSize, SeriesOrder, series_books, series_page,
     },
 };
-use omnileaf_sync_proto::{Fingerprint, ImageEntry, SeriesId};
+use omnileaf_sync_proto::SeriesId;
 use support::ScratchFolder;
 
 const ONE_BOOK: &[&str] = &["Volume 01"];
@@ -24,25 +27,10 @@ struct Library {
 }
 
 impl Library {
-    async fn with(series: &[(&str, i64, &[&str])]) -> Self {
+    async fn with(series: &[SeriesSeed<'_>]) -> Self {
         let folder = ScratchFolder::new("library-pages");
         let database = Database::open(&folder.config()).unwrap();
-        let books: Vec<(NewSeries, Vec<NewBook>)> = series
-            .iter()
-            .map(|&(name, added_at_ms, titles)| new_series(name, added_at_ms, titles))
-            .collect();
-        database
-            .write(move |transaction| {
-                for (series, books) in &books {
-                    add_series(transaction, series)?;
-                    for book in books {
-                        add_book(transaction, book)?;
-                    }
-                }
-                Ok(())
-            })
-            .await
-            .unwrap();
+        seed_library(&database, series).await;
         Self {
             database,
             _folder: folder,
@@ -133,10 +121,10 @@ async fn pages_the_library_by_title_in_natural_order() {
 async fn pages_the_library_by_most_recently_added_first() {
     let library = Library::with(&[
         ("Sample Series 01", 20, ONE_BOOK),
-        ("Sample Series 02", 30, ONE_BOOK),
-        ("Sample Series 03", 20, ONE_BOOK),
+        ("Sample Series 02", 50, ONE_BOOK),
+        ("Sample Series 03", 30, ONE_BOOK),
         ("Sample Series 04", 10, ONE_BOOK),
-        ("Sample Series 05", 20, ONE_BOOK),
+        ("Sample Series 05", 40, ONE_BOOK),
     ])
     .await;
 
@@ -152,6 +140,26 @@ async fn pages_the_library_by_most_recently_added_first() {
             vec!["Sample Series 04"],
         ]
     );
+}
+
+#[tokio::test]
+async fn pages_series_added_at_the_same_moment_by_descending_id() {
+    let names = [
+        "Sample Series 01",
+        "Sample Series 02",
+        "Sample Series 03",
+        "Sample Series 04",
+        "Sample Series 05",
+    ];
+    let library = Library::with(&names.map(|name| (name, 1, ONE_BOOK))).await;
+    let mut expected = names;
+    expected.sort_by_key(|name| Reverse(series_id(name)));
+
+    let pages = library
+        .walk(series_titles(SeriesOrder::RecentlyAdded), 2)
+        .await;
+
+    assert_eq!(pages.concat(), expected);
 }
 
 #[tokio::test]
@@ -285,8 +293,18 @@ async fn refuses_to_continue_one_series_order_from_another_s_cursor() {
 
 #[test]
 fn refuses_a_cursor_the_library_did_not_give_out() {
-    let short_added = format!("02{}", "00".repeat(15));
-    let long_added = format!("02{}", "00".repeat(17));
+    let series =
+        series_id("Sample Series 01")
+            .as_bytes()
+            .iter()
+            .fold(String::new(), |mut hex, byte| {
+                write!(hex, "{byte:02x}").unwrap();
+                hex
+            });
+    let added_at = "00".repeat(8);
+    let short_added = format!("02{added_at}{}", &series[2..]);
+    let long_added = format!("02{added_at}{series}00");
+    let underived_added = format!("02{added_at}{}", "00".repeat(16));
     let underived_book = format!("03{}", "00".repeat(32));
     let texts = [
         "",
@@ -297,6 +315,7 @@ fn refuses_a_cursor_the_library_did_not_give_out() {
         "ff00000000000000000000",
         &short_added,
         &long_added,
+        &underived_added,
         &underived_book,
     ];
 
@@ -321,27 +340,4 @@ fn holds_a_page_to_between_one_and_two_hundred_items() {
 
 fn series_id(folder_name: &str) -> SeriesId {
     NewSeries::local(folder_name, 0).unwrap().id()
-}
-
-fn new_series(name: &str, added_at_ms: i64, titles: &[&str]) -> (NewSeries, Vec<NewBook>) {
-    let series = NewSeries::local(name, added_at_ms).unwrap();
-    let books = titles
-        .iter()
-        .map(|&title| NewBook {
-            fingerprint: fingerprint(name, title),
-            series: series.id(),
-            title: title.to_owned(),
-            added_at_ms,
-        })
-        .collect();
-    (series, books)
-}
-
-fn fingerprint(series: &str, title: &str) -> Fingerprint {
-    let name = format!("{series}/{title}");
-    let pages = name.bytes().zip(0..).map(|(byte, crc32)| ImageEntry {
-        crc32,
-        size: u64::from(byte),
-    });
-    Fingerprint::pmf1(pages).unwrap()
 }
