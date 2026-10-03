@@ -35,7 +35,7 @@ const MAPPED_DATABASE_BYTES: u32 = if cfg!(any(target_os = "android", target_os 
 /// The library database in the home folder, and the folders it reads.
 pub struct Library {
     store: Store,
-    /// Held for each scan, so two never compare the same folder with a catalog the other is changing.
+    /// Held for each scan and folder removal, so none compares a folder with a catalog another is changing.
     scanning: Mutex<()>,
 }
 
@@ -120,9 +120,10 @@ impl Library {
         })
     }
 
-    /// Forgets the folder and the books found only in it, leaving its files where they are.
+    /// Forgets the folder and the books found only in it, leaving its files where they are, once any scan in progress ends.
     #[tracing::instrument(skip_all, fields(folder = %id))]
     pub async fn remove_folder(&self, id: FolderId) -> Result<(), LibraryError> {
+        let _scanning = self.scanning.lock().await;
         Ok(self
             .store
             .database()
@@ -164,7 +165,7 @@ impl Library {
         })
     }
 
-    /// Rescans the home folder and every linked folder in turn, in the order they were added.
+    /// Rescans the home folder and every linked folder in turn, in the order they were added, leaving out a folder removed meanwhile.
     #[tracing::instrument(skip_all)]
     pub async fn rescan_folders(&self) -> Result<Vec<FolderRescan>, LibraryError> {
         let mut rescans = Vec::new();
@@ -172,7 +173,13 @@ impl Library {
         loop {
             let page = self.folders(after).await?;
             for folder in page.folders {
-                rescans.push(self.rescan_folder(folder.id, |_| {}).await?);
+                match self.rescan_folder(folder.id, |_| {}).await {
+                    Ok(rescan) => rescans.push(rescan),
+                    Err(LibraryError::FolderNotFound { id }) => {
+                        tracing::debug!(folder = %id, "skip a folder removed since the rescan listed it");
+                    }
+                    Err(error) => return Err(error),
+                }
             }
             match page.next {
                 Some(next) => after = Some(next),

@@ -600,6 +600,56 @@ async fn rescans_the_home_folder_and_every_linked_folder_in_the_order_they_were_
     );
 }
 
+/// Removes a folder once the rescan has listed it and recorded the first batch of the home folder's books, so the removal lands mid-rescan.
+#[tokio::test]
+async fn rescans_the_folders_after_one_removed_while_the_rescan_runs() {
+    const HOME_BOOKS: u64 = 40;
+    let folder = Rescanned::new("rescan-removed-meanwhile").await;
+    let library = &folder.scanned.library;
+    let later = TempFolder::new("rescan-removed-meanwhile-later");
+    write_book(&later.path().join(SERIES_03).join("v01.cbz"), 4);
+    write_book(&later.path().join(SERIES_03).join("v02.cbz"), 5);
+    library
+        .add_folder(later.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+    let later_id = library
+        .folders(None)
+        .await
+        .unwrap()
+        .folders
+        .last()
+        .unwrap()
+        .id;
+    fs::remove_file(later.path().join(SERIES_03).join("v02.cbz")).unwrap();
+    for number in 1..=HOME_BOOKS {
+        let one_shot = folder.scanned.home.path().join(format!("v{number:02}.cbz"));
+        write_book(&one_shot, 10 + number);
+    }
+    let series_before = folder.scanned.series().len();
+
+    let (rescans, removed) = tokio::join!(library.rescan_folders(), async {
+        while folder.scanned.series().len() == series_before {
+            tokio::task::yield_now().await;
+        }
+        library.remove_folder(folder.scanned.id).await
+    });
+
+    removed.unwrap();
+    let later_rescan = rescans
+        .unwrap()
+        .into_iter()
+        .find(|rescan| rescan.id == later_id)
+        .map(|rescan| rescan.outcome);
+    assert_eq!(
+        later_rescan,
+        Some(rescanned(FileChanges {
+            removed: 1,
+            ..FileChanges::default()
+        }))
+    );
+}
+
 #[test]
 fn tells_the_interface_what_a_rescan_found_by_kind() {
     let outcomes = [
