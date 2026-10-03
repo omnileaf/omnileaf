@@ -109,7 +109,7 @@
           href={resolve(SECTION_ROUTES[destination.section])}
           aria-current={isSelected ? "page" : undefined}
           class={[
-            "relative flex flex-col items-center gap-xs text-caption transition-colors min-block-touch-target motion-safe:duration-fade motion-safe:ease-out medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-control expanded:px-md expanded:text-label",
+            "relative flex flex-col items-center gap-xs text-caption transition-colors min-block-touch-target motion-safe:duration-fade motion-safe:ease-out medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-control expanded:px-md expanded:text-label desktop:expanded:min-block-pointer-target",
             "ios:max-medium:flex-1 ios:max-medium:justify-center ios:max-medium:gap-2xs ios:max-medium:rounded-full ios:max-medium:py-none ios:max-medium:text-tab ios:max-medium:font-semibold",
             isSelected
               ? "font-bold text-accent expanded:bg-accent-soft"
@@ -133,7 +133,7 @@
               {isArriving}
               size={ICON_SIZE}
               class={[
-                "relative ios:max-medium:block-xl ios:max-medium:inline-xl",
+                "relative ios:max-medium:block-xl ios:max-medium:inline-xl desktop:expanded:block-sidebar-icon desktop:expanded:inline-sidebar-icon",
                 isArriving && "ios:max-medium:motion-safe:animate-nav-pop",
               ]}
             />
