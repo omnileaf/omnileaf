@@ -18,6 +18,9 @@ export const commands = {
 	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
 	librarySeries: (after: string & { readonly __brand: "SeriesCursor" } | null) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_series", { after })),
+	librarySeriesCount: () => typedError<number, IpcError>(__TAURI_INVOKE("library_series_count")),
+	libraryView: () => typedError<LibraryView, IpcError>(__TAURI_INVOKE("library_view")),
+	setLibraryView: (view: LibraryView) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_view", { view })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
 	rescanLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<FolderRescan, IpcError>(__TAURI_INVOKE("rescan_library_folder", { id, onProgress })),
 	rescanLibraryFolders: () => typedError<FolderRescan[], IpcError>(__TAURI_INVOKE("rescan_library_folders")),
@@ -33,11 +36,23 @@ export const events = {
 	libraryChanged: makeEvent<LibraryChanged>("library-changed"),
 };
 
+/* Constants */
+export const COVERS_PER_ROW = {"desktop":{"fewest":4,"most":12},"phone":{"fewest":2,"most":5},"tablet":{"fewest":3,"most":8}} as const;
+
+export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","showsItemCounts":false} as const;
+
 /* Types */
 export type AppInfo = {
 	version: string,
 	platform: Platform,
 	sourceCode: string,
+};
+
+/**  How many covers a row holds at each size the library is drawn at, chosen apart since each wants its own. */
+export type CoversPerRow = {
+	phone: number,
+	tablet: number,
+	desktop: number,
 };
 
 /**  The book files a rescan found added, changed, moved or gone since the folder was last read. */
@@ -90,6 +105,8 @@ export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "fol
 /**  Series came, went, changed or sort in a new order, so a list of them should be read again. */
 export type LibraryChanged = null;
 
+export type LibraryDisplay = "grid" | "compact" | "list";
+
 export type LibraryFolder = {
 	id: string & { readonly __brand: "FolderId" },
 	kind: FolderKind,
@@ -105,6 +122,14 @@ export type LibrarySeries = {
 	bookCount: number,
 	/**  The cover of its first book by title, absent while none of its books has a file. */
 	cover: string & { readonly __brand: "CoverPath" } | null,
+};
+
+/**  How this device draws the library. */
+export type LibraryView = {
+	display: LibraryDisplay,
+	coversPerRow: CoversPerRow,
+	/**  Whether the number of series shows beside the library's title. */
+	showsItemCounts: boolean,
 };
 
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
