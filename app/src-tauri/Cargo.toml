@@ -18,10 +18,13 @@ tauri-build.workspace = true
 
 [dependencies]
 omnileaf-engine.workspace = true
+os_info.workspace = true
 serde.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true
 tauri.workspace = true
+tauri-plugin-clipboard-manager.workspace = true
+tauri-plugin-opener.workspace = true
 tauri-specta.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true

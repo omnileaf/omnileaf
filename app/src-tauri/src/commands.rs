@@ -1,13 +1,20 @@
 //! The commands the interface calls, and the TypeScript bindings generated from them.
 
-use omnileaf_engine::{AppInfo, Core, FolderSurvey, survey_folder};
-use tauri::{AppHandle, State, Wry};
+use omnileaf_engine::{AppInfo, Core, FolderSurvey, ProjectLink, survey_folder};
+use tauri::{AppHandle, Manager, State, Wry};
+use tauri_plugin_clipboard_manager::ClipboardExt;
+use tauri_plugin_opener::OpenerExt;
 use tauri_specta::{Builder, collect_commands};
 
-use crate::{folder_picker::pick_folder, ipc_error::IpcError};
+use crate::{folder_picker::pick_folder, ipc_error::IpcError, version_details};
 
 pub(crate) fn builder() -> Builder<Wry> {
-    Builder::new().commands(collect_commands![app_info, add_library_folder])
+    Builder::new().commands(collect_commands![
+        app_info,
+        add_library_folder,
+        copy_version_details,
+        open_project_link
+    ])
 }
 
 #[tauri::command]
@@ -33,6 +40,29 @@ fn pick_and_survey(app: &AppHandle) -> Result<Option<FolderSurvey>, IpcError> {
         return Ok(None);
     };
     Ok(Some(survey_folder(&folder)?))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn copy_version_details(app: AppHandle) -> Result<(), IpcError> {
+    tauri::async_runtime::spawn_blocking(move || copy_details(&app))
+        .await
+        .map_err(|error| IpcError::internal(&error))?
+}
+
+fn copy_details(app: &AppHandle) -> Result<(), IpcError> {
+    let details = version_details::current(app.state::<Core>().app_info().clone());
+    app.clipboard()
+        .write_text(details.to_string())
+        .map_err(|error| IpcError::clipboard_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn open_project_link(app: AppHandle, link: ProjectLink) -> Result<(), IpcError> {
+    app.opener()
+        .open_url(link.url(), None::<&str>)
+        .map_err(|error| IpcError::browser_unavailable(&error))
 }
 
 #[cfg(test)]

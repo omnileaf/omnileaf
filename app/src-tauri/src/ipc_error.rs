@@ -15,6 +15,8 @@ pub(crate) enum IpcErrorCode {
     )]
     FolderPickerUnavailable,
     FolderUnreadable,
+    ClipboardUnavailable,
+    BrowserUnavailable,
     Internal,
 }
 
@@ -30,6 +32,22 @@ impl IpcError {
         Self {
             code: IpcErrorCode::FolderPickerUnavailable,
             message: "this platform has no folder picker yet",
+        }
+    }
+
+    pub(crate) fn clipboard_unavailable(error: &dyn Error) -> Self {
+        tracing::warn!(error = %describe(error), "copy the version details");
+        Self {
+            code: IpcErrorCode::ClipboardUnavailable,
+            message: "the clipboard could not be written",
+        }
+    }
+
+    pub(crate) fn browser_unavailable(error: &dyn Error) -> Self {
+        tracing::warn!(error = %describe(error), "open a project page in the browser");
+        Self {
+            code: IpcErrorCode::BrowserUnavailable,
+            message: "the browser could not be opened",
         }
     }
 
