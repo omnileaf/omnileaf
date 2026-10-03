@@ -2,7 +2,7 @@ export type AboutLook = "phone" | "pane";
 
 export type HintKind = "prose" | "address";
 
-const ROW = "flex w-full items-center px-list-row text-start";
+const ROW = "flex inline-full items-center px-list-row text-start";
 
 export const ROW_LOOKS = {
   phone: `${ROW} gap-list-row py-sm min-block-detail-row`,
