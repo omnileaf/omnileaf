@@ -22,7 +22,7 @@ pub(crate) fn sort_titles_for(
     language: &Language,
 ) -> Result<Resorted, Error> {
     let stamp = TitleStamp::of(language);
-    if stored_stamp(connection)? == Some(stamp) {
+    if stored_stamp(connection)? == stamp {
         return Ok(Resorted::Unchanged);
     }
     let titles = rekey_every_title(connection, &TitleCollation::new(language)?)?;

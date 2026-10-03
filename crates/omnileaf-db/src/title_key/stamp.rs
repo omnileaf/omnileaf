@@ -1,4 +1,7 @@
-use rusqlite::Connection;
+use rusqlite::{
+    Connection,
+    types::{FromSql, FromSqlError, FromSqlResult, ValueRef},
+};
 
 use crate::{Error, title_key::Language};
 
@@ -49,11 +52,20 @@ pub(crate) fn stored_language(connection: &Connection) -> Result<Language, Error
     }))
 }
 
-pub(crate) fn stored_stamp(connection: &Connection) -> Result<Option<TitleStamp>, Error> {
-    let bytes: Vec<u8> = connection
+pub(crate) fn stored_stamp(connection: &Connection) -> Result<TitleStamp, Error> {
+    Ok(connection
         .prepare("SELECT stamp FROM title_key_stamp WHERE id = ?1")?
-        .query_row([THE_STAMP], |row| row.get(0))?;
-    Ok(TitleStamp::from_bytes(&bytes))
+        .query_row([THE_STAMP], |row| row.get(0))?)
+}
+
+impl FromSql for TitleStamp {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        let bytes = value.as_blob()?;
+        Self::from_bytes(bytes).ok_or(FromSqlError::InvalidBlobSize {
+            expected_size: STAMP_LENGTH,
+            blob_size: bytes.len(),
+        })
+    }
 }
 
 pub(crate) fn save_stamp(

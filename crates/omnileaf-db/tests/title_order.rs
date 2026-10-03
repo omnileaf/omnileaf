@@ -9,7 +9,7 @@ mod support;
 use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Connection, Database,
-    catalog::{NewSeries, PageRequest, PageSize, SeriesOrder, series_page},
+    catalog::{Cursor, NewSeries, Page, PageRequest, PageSize, SeriesOrder, series_page},
     store::{Changed, Clock, Store},
 };
 use support::ScratchFolder;
@@ -63,26 +63,81 @@ impl Library {
     }
 
     async fn titles(&self) -> Vec<String> {
+        self.titles_after(None).await
+    }
+
+    /// Passes every cursor through its text form, as one crossing to the interface would.
+    async fn titles_after(&self, mut after: Option<Cursor>) -> Vec<String> {
         let mut titles = Vec::new();
-        let mut after = None;
         loop {
-            let request = PageRequest {
-                after,
-                size: PageSize::try_from(PAGE_SIZE).unwrap(),
-            };
-            let page = self
-                .store
-                .database()
-                .read(move |connection| series_page(connection, SeriesOrder::Title, &request))
-                .await
-                .unwrap();
-            titles.extend(page.items.into_iter().map(|series| series.title));
+            let page = self.page(after, PAGE_SIZE).await;
+            titles.extend(page.items);
             match page.next {
-                Some(next) => after = Some(next),
+                Some(next) => after = Some(next.to_string().parse().unwrap()),
                 None => return titles,
             }
         }
     }
+
+    async fn page(&self, after: Option<Cursor>, size: u16) -> Page<String> {
+        let request = PageRequest {
+            after,
+            size: PageSize::try_from(size).unwrap(),
+        };
+        let page = self
+            .store
+            .database()
+            .read(move |connection| series_page(connection, SeriesOrder::Title, &request))
+            .await
+            .unwrap();
+        Page {
+            items: page.items.into_iter().map(|series| series.title).collect(),
+            next: page.next,
+        }
+    }
+}
+
+#[tokio::test]
+async fn carries_an_open_cursor_on_from_its_series_new_place_once_the_titles_are_keyed_again() {
+    let library = Library::with_titles(
+        "cursor-rekeyed",
+        &["Zebra", "Ödla", "Bok", "Åsna", "Apelsin"],
+    )
+    .await;
+    let first = library.page(None, 2).await;
+    library
+        .store
+        .sort_titles_for("sv".parse().unwrap())
+        .await
+        .unwrap();
+
+    let rest = library.titles_after(first.next).await;
+
+    assert_eq!(first.items, ["Apelsin", "Åsna"]);
+    assert_eq!(rest, ["Ödla"]);
+}
+
+#[tokio::test]
+async fn starts_an_open_cursor_over_when_its_series_went_before_the_titles_were_keyed_again() {
+    let library = Library::with_titles("cursor-series-gone", &["Bok", "Åsna", "Apelsin"]).await;
+    let first = library.page(None, 2).await;
+    library
+        .store
+        .database()
+        .write(
+            |transaction| Ok(transaction.execute("DELETE FROM series WHERE title = 'Åsna'", [])?),
+        )
+        .await
+        .unwrap();
+    library
+        .store
+        .sort_titles_for("sv".parse().unwrap())
+        .await
+        .unwrap();
+
+    let rest = library.titles_after(first.next).await;
+
+    assert_eq!(rest, ["Apelsin", "Bok"]);
 }
 
 #[tokio::test]
