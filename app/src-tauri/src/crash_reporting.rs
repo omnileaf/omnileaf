@@ -41,7 +41,9 @@ pub(crate) struct CrashReporting {
 }
 
 impl CrashReporting {
+    /// Also learns the system's name, so a later panic report can include it without looking it up inside the panic hook.
     pub(crate) fn offer_saved(&self) -> Result<Option<CrashReportOffer>, IpcError> {
+        self.reporter.learn_system();
         let saved = self.offers.offer_saved()?;
         Ok(saved.as_ref().map(CrashReportOffer::from))
     }
@@ -101,7 +103,7 @@ fn report_folder(app: &AppHandle) -> tauri::Result<PathBuf> {
     app.path().app_local_data_dir()
 }
 
-/// Describes the running app in a report, reading the system's name only once a report needs it.
+/// Describes the running app in a report, reading the system's name once, outside any panic.
 pub(crate) struct Reporter {
     version: String,
     platform: Platform,
@@ -124,14 +126,25 @@ impl Reporter {
         CrashReportId::from_millis(u64::try_from(since_epoch.as_millis()).unwrap_or(u64::MAX))
     }
 
+    fn learn_system(&self) -> Option<&String> {
+        self.system
+            .get_or_init(crate::version_details::system)
+            .as_ref()
+    }
+
     fn crashed_app(&self) -> CrashedApp {
+        self.crashed_app_with(self.learn_system())
+    }
+
+    fn crashed_app_while_panicking(&self) -> CrashedApp {
+        self.crashed_app_with(self.system.get().and_then(Option::as_ref))
+    }
+
+    fn crashed_app_with(&self, system: Option<&String>) -> CrashedApp {
         CrashedApp {
             version: self.version.clone(),
             platform: self.platform,
-            system: self
-                .system
-                .get_or_init(crate::version_details::system)
-                .clone(),
+            system: system.cloned(),
         }
     }
 }
@@ -155,7 +168,11 @@ fn keep_for_next_run(file: &CrashReportFile, reporter: &Reporter, info: &PanicHo
         }),
         backtrace: &backtrace,
     };
-    let report = CrashReport::from_panic(Reporter::next_id(), reporter.crashed_app(), &panic);
+    let report = CrashReport::from_panic(
+        Reporter::next_id(),
+        reporter.crashed_app_while_panicking(),
+        &panic,
+    );
     if let Err(error) = file.save(&report) {
         tracing::error!(error = ?error, "keep the crash report for the next run");
     }
@@ -170,7 +187,7 @@ mod tests {
     use super::{Reporter, set_panic_hook};
 
     #[test]
-    fn a_panic_leaves_a_report_for_the_next_run_without_its_paths() {
+    fn a_panic_leaves_a_report_without_its_paths_or_a_system_not_yet_known() {
         let folder = env::temp_dir().join(format!("omnileaf-panic-{}", process::id()));
         let file = CrashReportFile::in_folder(&folder);
         let app = AppInfo {
@@ -190,10 +207,10 @@ mod tests {
         assert!(outcome.is_err());
         assert!(saved.is_some(), "no report was kept");
         let report = saved.map(|saved| saved.to_string()).unwrap_or_default();
-        assert!(report.starts_with("Omnileaf 1.2.3 on Linux"), "{report}");
+        assert!(report.starts_with("Omnileaf 1.2.3 on Linux\n"), "{report}");
         assert!(report.contains("\nPanic: open <path>\n"), "{report}");
         assert!(
-            report.contains("a_panic_leaves_a_report_for_the_next_run_without_its_paths"),
+            report.contains("a_panic_leaves_a_report_without_its_paths"),
             "{report}"
         );
         assert!(!report.contains("sample-user"), "{report}");
