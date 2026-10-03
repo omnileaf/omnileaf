@@ -16,6 +16,8 @@ const LANGUAGES = ["en", "en-XA"] as const;
 const SECTIONS = [
   "/settings/library",
   "/settings/appearance",
+  "/settings/general",
+  "/settings/general/language",
   "/settings/about",
 ] as const;
 
