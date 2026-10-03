@@ -7,7 +7,7 @@ mod support;
 
 use omnileaf_db::{
     Database, Error,
-    library_view::{LibraryDisplay, StoredLibraryView, library_view, set_library_view},
+    library_view::{LibraryDisplay, OnCovers, StoredLibraryView, library_view, set_library_view},
 };
 use proptest::prelude::*;
 use support::ScratchFolder;
@@ -18,6 +18,13 @@ const LIST_OF_FOUR: StoredLibraryView = StoredLibraryView {
     tablet_covers_per_row: 7,
     desktop_covers_per_row: 10,
     shows_item_counts: true,
+    on_covers: OnCovers {
+        shows_unread_count: true,
+        shows_downloaded: false,
+        shows_language: true,
+        shows_reading_progress: false,
+        shows_continue_button: true,
+    },
 };
 
 const COMPACT_OF_TWO: StoredLibraryView = StoredLibraryView {
@@ -26,6 +33,13 @@ const COMPACT_OF_TWO: StoredLibraryView = StoredLibraryView {
     tablet_covers_per_row: 3,
     desktop_covers_per_row: 4,
     shows_item_counts: false,
+    on_covers: OnCovers {
+        shows_unread_count: false,
+        shows_downloaded: true,
+        shows_language: false,
+        shows_reading_progress: true,
+        shows_continue_button: false,
+    },
 };
 
 async fn stored(database: &Database) -> Option<StoredLibraryView> {
@@ -97,24 +111,52 @@ fn any_display() -> impl Strategy<Value = LibraryDisplay> {
     ]
 }
 
+fn any_on_covers() -> impl Strategy<Value = OnCovers> {
+    any::<[bool; 5]>().prop_map(
+        |[
+            shows_unread_count,
+            shows_downloaded,
+            shows_language,
+            shows_reading_progress,
+            shows_continue_button,
+        ]| OnCovers {
+            shows_unread_count,
+            shows_downloaded,
+            shows_language,
+            shows_reading_progress,
+            shows_continue_button,
+        },
+    )
+}
+
 fn any_view() -> impl Strategy<Value = StoredLibraryView> {
-    (any_display(), 2_u8..=5, 3_u8..=8, 4_u8..=12, any::<bool>()).prop_map(
-        |(
-            display,
-            phone_covers_per_row,
-            tablet_covers_per_row,
-            desktop_covers_per_row,
-            shows_item_counts,
-        )| {
-            StoredLibraryView {
+    (
+        any_display(),
+        2_u8..=5,
+        3_u8..=8,
+        4_u8..=12,
+        any::<bool>(),
+        any_on_covers(),
+    )
+        .prop_map(
+            |(
                 display,
                 phone_covers_per_row,
                 tablet_covers_per_row,
                 desktop_covers_per_row,
                 shows_item_counts,
-            }
-        },
-    )
+                on_covers,
+            )| {
+                StoredLibraryView {
+                    display,
+                    phone_covers_per_row,
+                    tablet_covers_per_row,
+                    desktop_covers_per_row,
+                    shows_item_counts,
+                    on_covers,
+                }
+            },
+        )
 }
 
 proptest! {

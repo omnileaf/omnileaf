@@ -8,6 +8,7 @@ const VIEW: LibraryView = {
   display: "grid",
   coversPerRow: { phone: 3, tablet: 5, desktop: 6 },
   showsItemCounts: false,
+  onCovers: DEFAULT_LIBRARY_VIEW.onCovers,
 };
 
 test("changes the covers per row of one size and leaves the others", () => {

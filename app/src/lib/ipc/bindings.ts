@@ -39,7 +39,7 @@ export const events = {
 /* Constants */
 export const COVERS_PER_ROW = {"desktop":{"fewest":4,"most":12},"phone":{"fewest":2,"most":5},"tablet":{"fewest":3,"most":8}} as const;
 
-export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","showsItemCounts":false} as const;
+export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsItemCounts":false} as const;
 
 /* Types */
 export type AppInfo = {
@@ -132,6 +132,16 @@ export type LibraryView = {
 	coversPerRow: CoversPerRow,
 	/**  Whether the number of series shows beside the library's title. */
 	showsItemCounts: boolean,
+	onCovers: OnCovers,
+};
+
+/**  What each cover carries besides its picture and title, each drawn only for a series with something to show. */
+export type OnCovers = {
+	showsUnreadCount: boolean,
+	showsDownloaded: boolean,
+	showsLanguage: boolean,
+	showsReadingProgress: boolean,
+	showsContinueButton: boolean,
 };
 
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
