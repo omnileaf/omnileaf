@@ -182,20 +182,43 @@ fn keep_for_next_run(file: &CrashReportFile, reporter: &Reporter, info: &PanicHo
 mod tests {
     use std::{env, fs, panic, process, sync::Arc};
 
-    use omnileaf_engine::{AppInfo, CrashReportFile, Platform};
+    use omnileaf_engine::{AppInfo, CrashReportFile, CrashReportOffers, InterfaceError, Platform};
 
-    use super::{Reporter, set_panic_hook};
+    use super::{CrashReporting, Reporter, set_panic_hook};
+
+    fn sample_app() -> AppInfo {
+        AppInfo {
+            version: "1.2.3".to_owned(),
+            platform: Platform::Linux,
+            source_code: "repo.example.org/omnileaf".to_owned(),
+        }
+    }
+
+    #[test]
+    fn a_sent_report_is_no_longer_offered_even_when_its_saved_copy_stays() {
+        let folder = env::temp_dir().join(format!("omnileaf-sent-{}", process::id()));
+        fs::create_dir_all(folder.join("crash-report.json")).unwrap();
+        let reporting = CrashReporting {
+            offers: CrashReportOffers::new(CrashReportFile::in_folder(&folder)),
+            reporter: Arc::new(Reporter::new(&sample_app())),
+        };
+        reporting.offer_interface_error(&InterfaceError {
+            message: "boom".to_owned(),
+            stack: None,
+        });
+
+        reporting.settle_sent();
+
+        let still_offered = reporting.offered().is_ok();
+        let _ = fs::remove_dir_all(&folder);
+        assert!(!still_offered);
+    }
 
     #[test]
     fn a_panic_leaves_a_report_without_its_paths_or_a_system_not_yet_known() {
         let folder = env::temp_dir().join(format!("omnileaf-panic-{}", process::id()));
         let file = CrashReportFile::in_folder(&folder);
-        let app = AppInfo {
-            version: "1.2.3".to_owned(),
-            platform: Platform::Linux,
-            source_code: "repo.example.org/omnileaf".to_owned(),
-        };
-        set_panic_hook(file.clone(), Arc::new(Reporter::new(&app)));
+        set_panic_hook(file.clone(), Arc::new(Reporter::new(&sample_app())));
 
         let outcome = panic::catch_unwind(|| {
             panic!("open /home/sample-user/Sample Series 01.cbz");
