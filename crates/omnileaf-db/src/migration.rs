@@ -40,6 +40,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0007_stop_reusing_library_root_ids"),
     migration!("0008_allow_one_home_root"),
     migration!("0009_store_book_file_locations_as_bytes"),
+    migration!("0010_create_first_launch"),
 ];
 
 pub(crate) fn pending(
