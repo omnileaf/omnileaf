@@ -22,6 +22,9 @@ const BACKTRACE: &str = "   0: omnileaf_app::crash_reporting::hook
   10: main
 ";
 
+const MESSAGE_BYTE_LIMIT: usize = 240;
+const FRAME_LIMIT: usize = 12;
+
 fn app() -> CrashedApp {
     CrashedApp {
         version: "1.2.3".to_owned(),
@@ -304,10 +307,10 @@ fn reports_an_interface_error_with_its_stack() {
 fn shortens_a_long_message() {
     let report = interface_report(&"a".repeat(1000), None);
 
-    let shown = message_line(&report).chars().count();
+    let shown = message_line(&report);
 
-    assert!((2..=250).contains(&shown), "{shown}");
-    assert!(message_line(&report).ends_with('…'));
+    assert_eq!(shown.len(), MESSAGE_BYTE_LIMIT, "{shown}");
+    assert!(shown.ends_with('…'), "{shown}");
 }
 
 #[test]
@@ -320,7 +323,7 @@ fn keeps_at_most_a_screenful_of_frames() {
         .lines()
         .filter(|line| line.starts_with("  frame"))
         .count();
-    assert!((1..=16).contains(&frames), "{frames}");
+    assert_eq!(frames, FRAME_LIMIT);
 }
 
 proptest! {
