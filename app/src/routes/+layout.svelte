@@ -11,12 +11,31 @@
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
   import { sectionOf } from "$lib/navigation/sections";
   import { m } from "$lib/paraglide/messages.js";
+  import {
+    screenshotModeForDocument,
+    setScreenshotMode,
+  } from "$lib/screenshot-mode/screenshot-mode.svelte";
+  import ScreenshotModeAnnouncement from "$lib/screenshot-mode/ScreenshotModeAnnouncement.svelte";
+  import { isScreenshotModeShortcut } from "$lib/screenshot-mode/shortcut";
 
   import "../app.css";
 
   let { children }: { children: Snippet } = $props();
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
+  const screenshotMode = setScreenshotMode(screenshotModeForDocument());
+
+  function toggleScreenshotModeOnShortcut(event: KeyboardEvent): void {
+    if (!isScreenshotModeShortcut(event)) {
+      return;
+    }
+    event.preventDefault();
+    screenshotMode.toggle();
+  }
+
+  function settleScreenshotMode(): void {
+    screenshotMode.settle();
+  }
 
   $effect(() => {
     void commands.matchSystemBars(themeSetting.resolved);
@@ -31,6 +50,13 @@
   });
 </script>
 
+<svelte:window
+  onkeydown={toggleScreenshotModeOnShortcut}
+  onfocus={settleScreenshotMode}
+  onpageshow={settleScreenshotMode}
+/>
+<svelte:document onvisibilitychange={settleScreenshotMode} />
+
 <svelte:head>
   <title>{m.app_name()}</title>
 </svelte:head>
@@ -44,3 +70,4 @@
     {@render children()}
   </main>
 </div>
+<ScreenshotModeAnnouncement />

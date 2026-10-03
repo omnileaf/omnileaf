@@ -170,12 +170,14 @@ test.describe("in landscape", () => {
       document.documentElement.dir = "rtl";
     });
     const firstLink = await boxOf(navigationLinks(page).first());
-    const heading = await boxOf(pageHeading(page));
+    const headingRow = await boxOf(
+      page.locator("header", { has: pageHeading(page) }),
+    );
 
     expect(firstLink.x + firstLink.width).toBeLessThanOrEqual(
       LANDSCAPE_PHONE.width - SIDE_CUTOUT,
     );
-    expect(heading.x).toBe(PAGE_PADDING);
+    expect(headingRow.x).toBe(PAGE_PADDING);
   });
 
   test("keeps the bottom bar's tabs clear of side cutouts", async ({
