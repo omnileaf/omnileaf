@@ -1,4 +1,4 @@
-use omnileaf_sync_proto::{CategoryId, IdError, SeriesId, norm};
+use omnileaf_sync_proto::{CategoryId, IdError, SeriesId, SourceId, norm};
 use proptest::prelude::*;
 use uuid::Uuid;
 
@@ -52,6 +52,13 @@ fn reads_its_own_stored_bytes() {
 }
 
 #[test]
+fn reads_the_local_source_id_from_its_stored_bytes() {
+    let id = SourceId::local();
+
+    assert_eq!(SourceId::try_from(id.as_bytes().as_slice()).unwrap(), id);
+}
+
+#[test]
 fn rejects_text_that_is_not_a_uuid() {
     let parsed = "sample-series".parse::<SeriesId>();
 
@@ -97,6 +104,14 @@ proptest! {
     #[test]
     fn derives_the_series_id_of_the_normalised_name(name in any::<String>()) {
         prop_assert_eq!(SeriesId::local(&norm(&name)).unwrap(), SeriesId::local(&name).unwrap());
+    }
+
+    #[test]
+    fn keeps_the_local_source_apart_from_every_series(name in any::<String>()) {
+        let series = SeriesId::local(&name).unwrap();
+        let source = SourceId::local();
+
+        prop_assert_ne!(series.as_bytes(), source.as_bytes());
     }
 
     #[test]
