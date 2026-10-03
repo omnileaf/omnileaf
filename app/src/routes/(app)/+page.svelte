@@ -22,7 +22,7 @@
     void library.load();
     return listenForLibraryChanges(() => {
       void library.load();
-    });
+    }, reportError);
   });
 </script>
 
