@@ -38,12 +38,13 @@ export class LibrarySeriesList {
   constructor(private readonly listSeries: ListSeries) {}
 
   async load(): Promise<void> {
-    const load = ++this.#latestLoad;
     const shown = this.list.kind === "loaded" ? this.list.series.length : 0;
-    const read = await this.#readFromStart(load, shown);
-    if (read.kind !== "superseded") {
-      this.#show(read);
-    }
+    await this.#loadAtLeast(shown);
+  }
+
+  /** Reads the first page of a list in a new listing, and only the most recently started load shows its list. */
+  async start(): Promise<void> {
+    await this.#loadAtLeast(0);
   }
 
   async loadMore(): Promise<void> {
@@ -72,6 +73,14 @@ export class LibrarySeriesList {
           }
         : { kind: "failed" },
     );
+  }
+
+  async #loadAtLeast(count: number): Promise<void> {
+    const load = ++this.#latestLoad;
+    const read = await this.#readFromStart(load, count);
+    if (read.kind !== "superseded") {
+      this.#show(read);
+    }
   }
 
   async #readFromStart(load: number, atLeast: number): Promise<Read> {

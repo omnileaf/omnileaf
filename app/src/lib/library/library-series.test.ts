@@ -196,6 +196,24 @@ test("reads again from the start as many series as it shows", async () => {
   });
 });
 
+test("starts a list in a new listing from its first page alone", async () => {
+  const catalog = sampleSeries(5);
+  const asked = pagedFrom(() => catalog);
+  const series = new LibrarySeriesList(listSeries);
+  await series.load();
+  await series.loadMore();
+  asked.length = 0;
+
+  await series.start();
+
+  expect(asked).toEqual([null]);
+  expect(series.list).toEqual({
+    kind: "loaded",
+    series: catalog.slice(0, 2),
+    isComplete: false,
+  });
+});
+
 test("drops a next page that arrives after the list was read again", async () => {
   const answers = heldAnswers();
   const series = new LibrarySeriesList(listSeries);
