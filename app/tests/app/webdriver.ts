@@ -10,6 +10,9 @@ const SESSION_START_TIMEOUT_MS = 300_000;
 const POLL_INTERVAL_MS = 100;
 const WHITESPACE_RUN = /\s+/g;
 const PAGE_TEXT_SHOWN = 200;
+const RELOADING_MARK = "data-e2e-reloading";
+const RELOAD_SCRIPT =
+  "document.documentElement.dataset.e2eReloading = ''; setTimeout(() => location.reload()); return null;";
 const PAGE_TEXT_SCRIPT = "return document.body ? document.body.innerText : '';";
 
 type Method = "GET" | "POST" | "DELETE";
@@ -174,6 +177,15 @@ export class Session {
         cause: error,
       });
     }
+  }
+
+  /** Marks the page and reloads it once the script has returned, then waits for a page without the mark. */
+  async reload(): Promise<void> {
+    await send(`${this.endpoint}/execute/sync`, "POST", {
+      script: RELOAD_SCRIPT,
+      args: [],
+    });
+    await this.waitFor(xpath(`/html[not(@${RELOADING_MARK})]`));
   }
 
   async end(): Promise<void> {

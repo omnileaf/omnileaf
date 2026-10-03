@@ -18,6 +18,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   addLibraryFolder: () => null,
   libraryFolders: () => ({ folders: [], next: null }),
   removeLibraryFolder: () => null,
+  firstLaunchFinished: () => true,
+  finishFirstLaunch: () => null,
 };
 
 export function onPlatform(platform: Platform): { backend: FakeBackend } {

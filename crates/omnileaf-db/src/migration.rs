@@ -44,6 +44,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0007_stop_reusing_library_root_ids"),
     migration!("0008_allow_one_home_root"),
     migration!("0009_store_book_file_locations_as_bytes"),
+    migration!("0010_create_first_launch"),
 ];
 
 pub(crate) fn pending(
@@ -197,7 +198,9 @@ mod tests {
     use std::{fs, path::Path};
 
     use super::*;
-    use crate::{Database, connection, scratch::ScratchLibrary};
+    use crate::{
+        Database, connection, first_launch::first_launch_finished, scratch::ScratchLibrary,
+    };
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
 
@@ -419,6 +422,61 @@ mod tests {
             .query_row("SELECT location FROM book_file", [], |row| row.get(0))
             .unwrap();
         assert_eq!(location, b"Sample Series 01/Volume 01.cbz");
+    }
+
+    fn library_before_first_launch_with(name: &str, rows: &str) -> ScratchLibrary {
+        let scratch = ScratchLibrary::new(name);
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..9]).unwrap());
+        Connection::open(&scratch.config.path)
+            .unwrap()
+            .execute_batch(rows)
+            .unwrap();
+        scratch
+    }
+
+    fn has_finished_first_launch(scratch: &ScratchLibrary) -> bool {
+        first_launch_finished(&Connection::open(&scratch.config.path).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn counts_a_library_with_a_linked_folder_as_through_its_first_launch() {
+        let scratch = library_before_first_launch_with(
+            "first-launch-linked-upgrade",
+            "INSERT INTO library_root (kind, locator_kind, location, added_at_ms)
+             VALUES ('linked', 'path', x'2f6d65646961', 0);",
+        );
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        assert!(has_finished_first_launch(&scratch));
+    }
+
+    #[test]
+    fn counts_a_library_with_books_as_through_its_first_launch() {
+        let scratch = library_before_first_launch_with(
+            "first-launch-books-upgrade",
+            "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+             VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0);
+             INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+             VALUES (zeroblob(16), 1, 'Volume 01', x'', 0);",
+        );
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        assert!(has_finished_first_launch(&scratch));
+    }
+
+    #[test]
+    fn leaves_the_first_launch_to_a_library_holding_only_its_home_folder() {
+        let scratch = library_before_first_launch_with(
+            "first-launch-home-upgrade",
+            "INSERT INTO library_root (kind, locator_kind, location, added_at_ms)
+             VALUES ('home', 'path', x'2f686f6d65', 0);",
+        );
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        assert!(!has_finished_first_launch(&scratch));
     }
 
     fn schema_of(path: &Path) -> Schema {

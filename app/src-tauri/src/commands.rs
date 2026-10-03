@@ -13,7 +13,9 @@ pub(crate) fn builder() -> Builder<Wry> {
         app_info,
         add_library_folder,
         library_folders,
-        remove_library_folder
+        remove_library_folder,
+        first_launch_finished,
+        finish_first_launch
     ])
 }
 
@@ -61,6 +63,18 @@ async fn library_folders(
 #[specta::specta]
 async fn remove_library_folder(library: State<'_, Library>, id: FolderId) -> Result<(), IpcError> {
     Ok(library.remove_folder(id).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn first_launch_finished(library: State<'_, Library>) -> Result<bool, IpcError> {
+    Ok(library.first_launch_finished().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn finish_first_launch(library: State<'_, Library>) -> Result<(), IpcError> {
+    Ok(library.finish_first_launch().await?)
 }
 
 #[cfg(test)]

@@ -6,6 +6,7 @@ use omnileaf_db::{
         NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator, add_root, library_root,
         library_roots, remove_root, set_home_root,
     },
+    first_launch::{finish_first_launch, first_launch_finished},
     store::Clock,
 };
 use tokio::task::spawn_blocking;
@@ -135,6 +136,20 @@ impl Library {
         let layout = find_books_in(folder.clone()).await?;
         let target = self.target(root.id, folder);
         scan(&self.database, target, layout, on_progress).await
+    }
+
+    pub async fn first_launch_finished(&self) -> Result<bool, LibraryError> {
+        Ok(self.database.read(first_launch_finished).await?)
+    }
+
+    /// Records the first launch as finished for good, so it never shows again on this device.
+    #[tracing::instrument(skip_all)]
+    pub async fn finish_first_launch(&self) -> Result<(), LibraryError> {
+        let finished_at_ms = self.now_ms();
+        Ok(self
+            .database
+            .write(move |transaction| finish_first_launch(transaction, finished_at_ms))
+            .await?)
     }
 
     async fn set_home(&self, home: PathBuf) -> Result<(), LibraryError> {
