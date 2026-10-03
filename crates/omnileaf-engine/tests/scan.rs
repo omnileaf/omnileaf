@@ -235,21 +235,22 @@ async fn counts_the_books_it_cannot_read_and_carries_on() {
 }
 
 #[tokio::test]
-async fn titles_a_book_from_its_comic_info_or_else_its_file_name() {
+async fn titles_and_orders_books_by_file_name_whatever_their_comic_info_titles() {
     let comics = TempFolder::new("scan-titles");
-    write_book_with(
-        &comics.path().join("Sample Series 01/v01.cbz"),
-        1,
-        Some("<ComicInfo><Title>Sample Story</Title></ComicInfo>"),
-    );
-    write_book(&comics.path().join("Sample Series 01/v02.cbz"), 2);
+    for (name, seed, story) in [
+        ("v01", 1, "Sample Zebra Story"),
+        ("v02", 2, "Sample Apple Story"),
+    ] {
+        write_book_with(
+            &comics.path().join(format!("Sample Series 01/{name}.cbz")),
+            seed,
+            Some(&format!("<ComicInfo><Title>{story}</Title></ComicInfo>")),
+        );
+    }
 
     let (scanned, _, _) = Scanned::folder("scan-titles", comics.path()).await;
 
-    assert_eq!(
-        scanned.books_in("Sample Series 01"),
-        ["Sample Story", "v02"]
-    );
+    assert_eq!(scanned.books_in("Sample Series 01"), ["v01", "v02"]);
 }
 
 #[tokio::test]
