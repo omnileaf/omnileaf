@@ -1,4 +1,5 @@
 import type { LicenceCatalogue, LicenceText } from "./catalogue.ts";
+import { byCodePoint } from "./order.ts";
 
 export interface LicenceFile {
   readonly name: string;
@@ -30,10 +31,6 @@ export function packageRootOf(moduleId: string): string | undefined {
     "node_modules",
     ...inside.slice(0, nameLength),
   ].join("/");
-}
-
-function byCodePoint(a: string, b: string): number {
-  return a < b ? -1 : Number(a > b);
 }
 
 function byNameThenVersion(a: ShippedPackage, b: ShippedPackage): number {

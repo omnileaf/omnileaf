@@ -3,6 +3,7 @@ import type {
   LicenceCatalogue,
   LicenceText,
 } from "./catalogue.ts";
+import { byCodePoint } from "./order.ts";
 
 export type Ecosystem = "rust" | "javascript";
 
@@ -52,10 +53,6 @@ export function licensedPackages(
       texts: textsOf(catalogued, catalogue),
     }));
   });
-}
-
-function byCodePoint(a: string, b: string): number {
-  return a < b ? -1 : Number(a > b);
 }
 
 function withoutOuterParentheses(expression: string): string {
