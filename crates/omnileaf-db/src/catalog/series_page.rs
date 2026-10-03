@@ -4,6 +4,8 @@ use rusqlite::{Connection, OptionalExtension, Row, Statement, ToSql, Transaction
 use crate::{
     Error,
     catalog::{
+        Cover,
+        cover::stored_cover,
         cursor::Position,
         page::{Page, PageRequest},
         stored_id::stored_id,
@@ -28,9 +30,18 @@ struct TitlePlace {
 
 macro_rules! series_with_books {
     () => {
-        "SELECT id, title, title_key, book_count, added_at_ms
+        "SELECT series.id, series.title, series.title_key, series.book_count, series.added_at_ms,
+            cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev
         FROM series
-        WHERE book_count > 0"
+        LEFT JOIN book_file AS cover ON cover.id = (
+            SELECT (SELECT min(book_file.id) FROM book_file WHERE book_file.book_id = book.id)
+            FROM book
+            WHERE book.series_local_id = series.local_id
+                AND EXISTS (SELECT 1 FROM book_file WHERE book_file.book_id = book.id)
+            ORDER BY book.title_sort_key, book.id
+            LIMIT 1
+        )
+        WHERE series.book_count > 0"
     };
 }
 
@@ -52,8 +63,8 @@ macro_rules! listing {
 }
 
 const BY_TITLE: Listing<TitlePlace> = listing! {
-    seek: "(title_key, id) > (:after_key, :after_id)",
-    order: "title_key, id",
+    seek: "(series.title_key, series.id) > (:after_key, :after_id)",
+    order: "series.title_key, series.id",
     position: |row| {
         Ok(TitlePlace {
             sort_key: row.get("title_key")?,
@@ -63,8 +74,8 @@ const BY_TITLE: Listing<TitlePlace> = listing! {
 };
 
 const BY_RECENTLY_ADDED: Listing<Position> = listing! {
-    seek: "(added_at_ms, id) < (:after_key, :after_id)",
-    order: "added_at_ms DESC, id DESC",
+    seek: "(series.added_at_ms, series.id) < (:after_key, :after_id)",
+    order: "series.added_at_ms DESC, series.id DESC",
     position: |row| {
         Ok(Position::Added {
             added_at_ms: row.get("added_at_ms")?,
@@ -85,6 +96,8 @@ pub struct SeriesSummary {
     pub title: String,
     pub book_count: u32,
     pub added_at_ms: i64,
+    /// The cover of the series' first book in title order, absent while none of its books has a file.
+    pub cover: Option<Cover>,
 }
 
 /// Lists only the series holding at least one book, which are the ones the library shows.
@@ -225,6 +238,7 @@ fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
         title: row.get("title")?,
         book_count: row.get("book_count")?,
         added_at_ms: row.get("added_at_ms")?,
+        cover: stored_cover(row)?,
     })
 }
 
@@ -233,13 +247,31 @@ mod tests {
     use super::*;
     use crate::scratch::ScratchLibrary;
 
+    /// Each listed series finds its first book and that book's first file by index, sorting nothing.
+    const COVER_BY_INDEX: [&str; 6] = [
+        "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
+        "CORRELATED SCALAR SUBQUERY 3",
+        "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)",
+        "SEARCH book_file EXISTS USING COVERING INDEX book_file_by_book (book_id=?)",
+        "CORRELATED SCALAR SUBQUERY 1",
+        "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
+    ];
+
+    fn with_covers(series_step: &str) -> Vec<String> {
+        [series_step]
+            .into_iter()
+            .chain(COVER_BY_INDEX)
+            .map(ToOwned::to_owned)
+            .collect()
+    }
+
     #[test]
     fn starts_at_the_head_of_the_title_index_without_reading_the_table_or_sorting() {
         let scratch = ScratchLibrary::new("first-title-plan");
 
         let plan = scratch.query_plan(BY_TITLE.first);
 
-        assert_eq!(plan, ["SCAN series USING INDEX series_by_title"]);
+        assert_eq!(plan, with_covers("SCAN series USING INDEX series_by_title"));
     }
 
     #[test]
@@ -248,7 +280,7 @@ mod tests {
 
         let plan = scratch.query_plan(BY_RECENTLY_ADDED.first);
 
-        assert_eq!(plan, ["SCAN series USING INDEX series_by_added"]);
+        assert_eq!(plan, with_covers("SCAN series USING INDEX series_by_added"));
     }
 
     #[test]
@@ -259,7 +291,7 @@ mod tests {
 
         assert_eq!(
             plan,
-            ["SEARCH series USING INDEX series_by_title ((title_key,id)>(?,?))"]
+            with_covers("SEARCH series USING INDEX series_by_title ((title_key,id)>(?,?))")
         );
     }
 
@@ -271,7 +303,7 @@ mod tests {
 
         assert_eq!(
             plan,
-            ["SEARCH series USING INDEX series_by_added ((added_at_ms,id)<(?,?))"]
+            with_covers("SEARCH series USING INDEX series_by_added ((added_at_ms,id)<(?,?))")
         );
     }
 

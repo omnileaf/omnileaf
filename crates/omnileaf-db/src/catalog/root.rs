@@ -13,7 +13,6 @@ const PATH_LOCATOR: &str = "path";
 const ID_COLUMN: usize = 0;
 const KIND_COLUMN: usize = 1;
 const LOCATOR_KIND_COLUMN: usize = 2;
-const LOCATION_COLUMN: usize = 3;
 const ADDED_AT_COLUMN: usize = 4;
 const UNAVAILABLE_SINCE_COLUMN: usize = 5;
 const BOOKS_FOUND_ONLY_IN_ROOT: &str = "DELETE FROM book
@@ -103,7 +102,7 @@ pub(crate) fn stored_root(row: &Row<'_>) -> rusqlite::Result<LibraryRoot> {
     Ok(LibraryRoot {
         id: RootId(row.get(ID_COLUMN)?),
         kind: row.get(KIND_COLUMN)?,
-        locator: stored_locator(row)?,
+        locator: stored_locator(row, LOCATOR_KIND_COLUMN)?,
         added_at_ms: row.get(ADDED_AT_COLUMN)?,
         unavailable_since_ms: row.get(UNAVAILABLE_SINCE_COLUMN)?,
     })
@@ -115,19 +114,21 @@ pub(crate) fn stored_location(locator: &RootLocator) -> (&'static str, Vec<u8>) 
     }
 }
 
-fn stored_locator(row: &Row<'_>) -> rusqlite::Result<RootLocator> {
-    let kind: String = row.get(LOCATOR_KIND_COLUMN)?;
+/// Reads a locator from a row holding its kind at `kind_column` and its location in the column after.
+pub(crate) fn stored_locator(row: &Row<'_>, kind_column: usize) -> rusqlite::Result<RootLocator> {
+    let location_column = kind_column + 1;
+    let kind: String = row.get(kind_column)?;
     if kind != PATH_LOCATOR {
         return Err(rusqlite::Error::FromSqlConversionFailure(
-            LOCATOR_KIND_COLUMN,
+            kind_column,
             Type::Text,
             Box::new(Error::UnsupportedLocator { kind }),
         ));
     }
-    native_path::from_bytes(row.get(LOCATION_COLUMN)?)
+    native_path::from_bytes(row.get(location_column)?)
         .map(RootLocator::Path)
         .ok_or_else(|| {
-            rusqlite::Error::InvalidColumnType(LOCATION_COLUMN, "location".to_owned(), Type::Blob)
+            rusqlite::Error::InvalidColumnType(location_column, "location".to_owned(), Type::Blob)
         })
 }
 
