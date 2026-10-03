@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import { onMount, type Snippet } from "svelte";
 
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
@@ -11,16 +11,36 @@
     crashReportSettingForDocument,
     setCrashReportSetting,
   } from "$lib/crash-report/choice.svelte";
+  import { CrashReporting } from "$lib/crash-report/crash-reporting.svelte";
+  import CrashReportPrompt from "$lib/crash-report/CrashReportPrompt.svelte";
+  import { listenForInterfaceErrors } from "$lib/crash-report/interface-errors";
+  import { commands } from "$lib/ipc/bindings";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
   import { sectionOf } from "$lib/navigation/sections";
+  import { WindowWidth } from "$lib/page/breakpoints";
+  import { isPhone } from "$lib/page/platform";
   import { m } from "$lib/paraglide/messages.js";
 
   import "../app.css";
 
-  let { children }: { children: Snippet } = $props();
+  import type { LayoutData } from "./$types";
+
+  let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
   setThemeSetting(themeSettingForDocument());
-  setCrashReportSetting(crashReportSettingForDocument());
+  const crashReportSetting = crashReportSettingForDocument();
+  setCrashReportSetting(crashReportSetting);
+  const crashReporting = new CrashReporting(commands, crashReportSetting);
+
+  const width = new WindowWidth();
+  const onPhone = $derived(isPhone(data.appInfo.platform, width.current));
+
+  onMount(() => {
+    void crashReporting.offerSaved();
+    return listenForInterfaceErrors(window, (error) => {
+      void crashReporting.offerInterfaceError(error);
+    });
+  });
 
   let main: HTMLElement | undefined = $state();
 
@@ -44,3 +64,4 @@
     {@render children()}
   </main>
 </div>
+<CrashReportPrompt reporting={crashReporting} {onPhone} />

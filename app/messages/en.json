@@ -129,5 +129,19 @@
   "crash_reports_never": "Never",
   "privacy_summary_ask": "Ask before sending crash reports",
   "privacy_summary_always": "Always send crash reports",
-  "privacy_summary_never": "Never send crash reports"
+  "privacy_summary_never": "Never send crash reports",
+  "crash_report_title_last_time": "Omnileaf closed unexpectedly last time",
+  "crash_report_title_now": "Something went wrong",
+  "crash_report_body": "Nothing was lost. If you report it, only the details below are sent, never your library or files.",
+  "crash_report_body_last_time": "Omnileaf closed unexpectedly last time. Nothing was lost. If you report it, only the details below are sent, never your library or files.",
+  "crash_report_always": "Always send reports like this, without asking",
+  "crash_report_copy": "Copy details",
+  "crash_report_copied": "Copied",
+  "crash_report_copied_status": "Report details copied.",
+  "crash_report_copy_failed": "Couldn't copy the details. Try again.",
+  "crash_report_decline": "Don't send",
+  "crash_report_send": "Send report",
+  "crash_report_send_phone": "Report the problem",
+  "crash_report_browser_unavailable": "Couldn't open your browser. Try again.",
+  "crash_report_not_sent": "Couldn't send the report. Try again."
 }
