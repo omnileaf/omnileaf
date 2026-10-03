@@ -21,6 +21,7 @@ const SAMPLE_SERIES: WireSeries = {
   id: "0190a3e4-0000-8000-8000-0000000000a1",
   title: "Sample Series 01",
   bookCount: 3,
+  unreadCount: 3,
   cover: COVER,
 };
 
