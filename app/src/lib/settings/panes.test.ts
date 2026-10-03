@@ -25,7 +25,9 @@ function variantRule(name: string): string {
 
 function platformsOf(variant: string): ReadonlySet<string> {
   const names = variantRule(variant).matchAll(/data-platform="(\w+)"/g);
-  return new Set(Array.from(names, ([, name]) => name));
+  return new Set(
+    Array.from(names).flatMap(([, name]) => (name === undefined ? [] : [name])),
+  );
 }
 
 const DESKTOPS = EVERY_PLATFORM.filter((platform) =>
