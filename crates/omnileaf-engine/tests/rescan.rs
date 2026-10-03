@@ -407,6 +407,24 @@ async fn marks_a_folder_available_again_once_a_rescan_reaches_it() {
 }
 
 #[tokio::test]
+async fn marks_a_folder_available_again_once_it_is_added_again() {
+    let folder = Rescanned::new("rescan-added-again").await;
+    let unplugged = folder.comics.path().with_extension("unplugged");
+    fs::rename(folder.comics.path(), &unplugged).unwrap();
+    folder.rescan().await;
+    fs::rename(&unplugged, folder.comics.path()).unwrap();
+
+    folder
+        .scanned
+        .library
+        .add_folder(folder.comics.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+
+    assert!(folder.folder().await.is_available);
+}
+
+#[tokio::test]
 async fn finds_nothing_changed_in_a_folder_that_never_held_books() {
     let comics = TempFolder::new("rescan-never-held-books");
     let (scanned, _, _) = Scanned::folder("rescan-never-held-books", comics.path()).await;

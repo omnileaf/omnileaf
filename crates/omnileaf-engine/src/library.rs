@@ -218,6 +218,7 @@ impl Library {
         Ok(())
     }
 
+    /// Reads a folder linked before as available again, since it was just read.
     async fn link(&self, folder: PathBuf) -> Result<RootId, LibraryError> {
         let root = NewRoot {
             kind: RootKind::Linked,
@@ -227,7 +228,11 @@ impl Library {
         Ok(self
             .store
             .database()
-            .write(move |transaction| add_root(transaction, &root))
+            .write(move |transaction| {
+                let id = add_root(transaction, &root)?;
+                mark_root_available(transaction, id)?;
+                Ok(id)
+            })
             .await?)
     }
 
