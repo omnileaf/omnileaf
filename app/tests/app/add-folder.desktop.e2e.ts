@@ -33,6 +33,12 @@ const LOADED_HOME_FOLDER = xpath(
   "//section[h2[normalize-space()='Home folder']]//p[normalize-space()='Omnileaf']",
 );
 
+const LIBRARY_LINK = xpath("//nav//a[normalize-space()='Library']");
+const VIEW_OPTIONS_BUTTON = xpath("//button[@aria-label='View options']");
+const LIST_CHOICE = xpath("//dialog[@open]//label[normalize-space()='List']");
+const SERIES_IN_ONE_COLUMN = `const series = document.querySelector("ul[aria-label='Series']");
+return series !== null && series.children.length > 0 && getComputedStyle(series).gridTemplateColumns.split(" ").length === 1;`;
+
 const EVERY_COVER_SHOWN = `const covers = [...document.querySelectorAll("ul[aria-label='Series'] img")];
 return covers.length === ${String(SAMPLE_LIBRARY.series)} && covers.every((cover) => cover.complete && cover.naturalWidth > 0);`;
 
@@ -101,4 +107,21 @@ test("rescans a folder from Settings › Library and finds nothing changed", asy
 
   const report = await appSession().waitFor(UP_TO_DATE_REPORT);
   expect(await report.text()).toBe(`${SAMPLE_LIBRARY.name} is up to date.`);
+});
+
+test("draws the library as the list chosen in its view options after the app reloads", async () => {
+  await (await appSession().waitFor(LIBRARY_LINK)).click();
+  await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
+  await appSession().waitFor(FINISHED_SCAN_REPORT);
+  await (await appSession().waitFor(VIEW_OPTIONS_BUTTON)).click();
+  await (await appSession().waitFor(LIST_CHOICE)).click();
+  await appSession().waitUntil(SERIES_IN_ONE_COLUMN, "the series in a list");
+
+  await appSession().reload();
+
+  const listed = appSession().waitUntil(
+    SERIES_IN_ONE_COLUMN,
+    "the series in a list once the app reloaded",
+  );
+  await expect(listed).resolves.toBeUndefined();
 });
