@@ -1,18 +1,18 @@
 import type { commands } from "$lib/ipc/bindings";
 
-export type CopyVersionDetails = typeof commands.copyVersionDetails;
+export type CopyDetails = typeof commands.copyVersionDetails;
 
 export type CopyOutcome = "idle" | "copied" | "failed";
 
 export const COPIED_FOR_MS = 2000;
 
-/** Copies the version details and says so for a moment, or says why it couldn't. */
-export class VersionCopying {
+/** Copies details to the clipboard through the backend and says so for a moment, or says why it couldn't. */
+export class DetailsCopying {
   outcome: CopyOutcome = $state("idle");
 
   #settle: ReturnType<typeof setTimeout> | undefined;
 
-  constructor(private readonly copyDetails: CopyVersionDetails) {}
+  constructor(private readonly copyDetails: CopyDetails) {}
 
   async copy(): Promise<void> {
     clearTimeout(this.#settle);
