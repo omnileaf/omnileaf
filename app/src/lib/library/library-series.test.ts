@@ -211,6 +211,62 @@ test("drops a next page that arrives after the list was read again", async () =>
   });
 });
 
+test("drops a next page asked for while the list was being read again", async () => {
+  const answers = heldAnswers();
+  const series = new LibrarySeriesList(commands.librarySeries);
+  const loaded = series.load();
+  await expect.poll(() => answers.length).toBe(1);
+  answers[0]?.({ series: [FIRST], next: "1" });
+  await loaded;
+  const reloaded = series.load();
+  const more = series.loadMore();
+  await expect.poll(() => answers.length).toBe(3);
+  answers[1]?.({ series: [SECOND], next: null });
+  await reloaded;
+
+  answers[2]?.({ series: [SECOND], next: null });
+  await more;
+
+  expect(series.list).toEqual({
+    kind: "loaded",
+    series: [SECOND],
+    isComplete: true,
+  });
+});
+
+test("stops reading a list again once a newer read has started", async () => {
+  const asked = pagedFrom(() => sampleSeries(5));
+  const series = new LibrarySeriesList(commands.librarySeries);
+  await series.load();
+  await series.loadMore();
+  asked.length = 0;
+
+  await Promise.all([series.load(), series.load()]);
+
+  expect(asked).toEqual([null, null, "2"]);
+});
+
+test("reads the next page again after asking for one broke", async () => {
+  mockIPC(() => ({ series: [FIRST], next: "1" }));
+  const series = new LibrarySeriesList(commands.librarySeries);
+  await series.load();
+  mockIPC(() => {
+    throw new Error("the bridge to the core broke");
+  });
+  await expect(series.loadMore()).rejects.toThrow(
+    "the bridge to the core broke",
+  );
+  mockIPC(() => ({ series: [SECOND], next: null }));
+
+  await series.loadMore();
+
+  expect(series.list).toEqual({
+    kind: "loaded",
+    series: [FIRST, SECOND],
+    isComplete: true,
+  });
+});
+
 test("keeps the newer list when an older load finishes after it", async () => {
   const answers = heldAnswers();
   const series = new LibrarySeriesList(commands.librarySeries);
