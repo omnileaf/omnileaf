@@ -5,11 +5,18 @@ const PATH_PLACEHOLDER: &str = "<path>";
 const TRUNCATION_MARK: char = '…';
 const TOKEN_OPENERS: &[char] = &['(', '[', '{', '\'', '=', '@', ','];
 const URL_SCHEME_END: &str = "://";
+const RAW_BYTES_PER_KEPT_BYTE: usize = 64;
+
+/// Cleans `text` and keeps at most `limit` bytes of it, cutting before a placeholder rather than through one.
+pub(crate) fn clean(text: &str, limit: usize) -> String {
+    let bounded = prefix_within(text, limit.saturating_mul(RAW_BYTES_PER_KEPT_BYTE));
+    shorten(&scrub(bounded), limit)
+}
 
 /// Replaces quoted text and anything path-shaped, since that is where names and titles appear in error messages.
 ///
 /// A path or URL runs to the end of its line, because names can contain spaces.
-pub(crate) fn scrub(text: &str) -> String {
+fn scrub(text: &str) -> String {
     let mut cleaned = String::with_capacity(text.len());
     let mut rest = text.chars().peekable();
     let mut at_token_start = true;
@@ -30,14 +37,29 @@ pub(crate) fn scrub(text: &str) -> String {
     cleaned
 }
 
-/// Keeps at most `limit` characters, marking a cut with an ellipsis that counts towards the limit.
-pub(crate) fn shorten(text: &str, limit: usize) -> String {
-    if text.chars().count() <= limit {
-        return text.to_owned();
+fn shorten(scrubbed: &str, limit: usize) -> String {
+    if scrubbed.len() <= limit {
+        return scrubbed.to_owned();
     }
-    let mut shortened: String = text.chars().take(limit.saturating_sub(1)).collect();
+    let kept = prefix_within(scrubbed, limit.saturating_sub(TRUNCATION_MARK.len_utf8()));
+    let opens_cut_placeholder = kept.matches('"').count() % 2 == 1;
+    let kept = match kept.rfind('"') {
+        Some(cut_quote) if opens_cut_placeholder => kept.get(..cut_quote).unwrap_or_default(),
+        _ => kept,
+    };
+    let mut shortened = kept.to_owned();
     shortened.push(TRUNCATION_MARK);
     shortened
+}
+
+fn prefix_within(text: &str, budget: usize) -> &str {
+    let cut = text
+        .char_indices()
+        .map(|(start, next)| start.saturating_add(next.len_utf8()))
+        .take_while(|end| *end <= budget)
+        .last()
+        .unwrap_or(0);
+    text.get(..cut).unwrap_or_default()
 }
 
 fn skip_quoted(rest: &mut Peekable<Chars<'_>>) {

@@ -1,3 +1,4 @@
+mod issue;
 mod scrub;
 mod trace;
 
@@ -6,13 +7,13 @@ use std::fmt;
 use serde::Deserialize;
 use specta::Type;
 
-use crate::{Platform, platform_name};
+use crate::{Platform, ProjectLink, platform_name};
 
 const APP_NAME: &str = "Omnileaf";
-const MESSAGE_LIMIT: usize = 200;
-const FRAME_LIMIT: usize = 16;
-const FRAME_NAME_LIMIT: usize = 100;
-const RAW_TEXT_LIMIT: usize = 8 * MESSAGE_LIMIT * FRAME_LIMIT;
+const MESSAGE_BYTE_LIMIT: usize = 240;
+const FRAME_LIMIT: usize = 12;
+const FRAME_BYTE_LIMIT: usize = 120;
+const TITLE_MESSAGE_BYTE_LIMIT: usize = 80;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct CrashReportId(u64);
@@ -69,6 +70,13 @@ impl Origin {
         }
     }
 
+    fn what_happened(self) -> &'static str {
+        match self {
+            Self::Panic => "Omnileaf closed unexpectedly.",
+            Self::Interface => "The interface stopped on an unexpected error.",
+        }
+    }
+
     fn trace_label(self) -> &'static str {
         match self {
             Self::Panic => "Backtrace",
@@ -95,7 +103,7 @@ impl CrashReport {
             id,
             app,
             origin: Origin::Panic,
-            message: clean_message(panic.message),
+            message: scrub::clean(panic.message, MESSAGE_BYTE_LIMIT),
             location: panic.location.map(trace::package_relative),
             trace: clean_frames(trace::frame_names(panic.backtrace)),
         }
@@ -112,7 +120,7 @@ impl CrashReport {
             id,
             app,
             origin: Origin::Interface,
-            message: clean_message(&error.message),
+            message: scrub::clean(&error.message, MESSAGE_BYTE_LIMIT),
             location: None,
             trace: clean_frames(stack.lines().map(str::trim).filter(|line| !line.is_empty())),
         }
@@ -122,21 +130,32 @@ impl CrashReport {
     pub fn id(&self) -> CrashReportId {
         self.id
     }
-}
 
-fn clean_message(message: &str) -> String {
-    let bounded = scrub::shorten(message, RAW_TEXT_LIMIT);
-    scrub::shorten(&scrub::scrub(&bounded), MESSAGE_LIMIT)
+    /// A new bug report in the project's tracker, filled in with this report for the person to read and submit.
+    #[must_use]
+    pub fn new_issue_url(&self) -> String {
+        let title = format!(
+            "Crash: {}",
+            scrub::clean(&self.message, TITLE_MESSAGE_BYTE_LIMIT)
+        );
+        issue::prefilled(
+            ProjectLink::NewIssue.url(),
+            &[
+                ("title", &title),
+                ("what-happened", self.origin.what_happened()),
+                ("platform", platform_name(self.app.platform)),
+                ("version", &self.app.version),
+                ("logs", &self.to_string()),
+            ],
+        )
+    }
 }
 
 fn clean_frames<'a>(frames: impl IntoIterator<Item = &'a str>) -> Vec<String> {
     frames
         .into_iter()
         .take(FRAME_LIMIT)
-        .map(|frame| {
-            let bounded = scrub::shorten(frame, RAW_TEXT_LIMIT);
-            scrub::shorten(&scrub::scrub(&bounded), FRAME_NAME_LIMIT)
-        })
+        .map(|frame| scrub::clean(frame, FRAME_BYTE_LIMIT))
         .collect()
 }
 
