@@ -21,7 +21,7 @@
 <SectionHeading title={m.appearance_title()} />
 <section
   aria-labelledby={headingId}
-  class="mbs-xl flex flex-col gap-sm touch:max-medium:rounded-list touch:max-medium:border touch:max-medium:border-border touch:max-medium:bg-card touch:max-medium:p-list-row"
+  class="mbs-pane-gap flex flex-col gap-sm touch:max-medium:rounded-list touch:max-medium:border touch:max-medium:border-border touch:max-medium:bg-card touch:max-medium:p-list-row"
 >
   <h2
     id={headingId}

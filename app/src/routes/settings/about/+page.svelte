@@ -9,7 +9,7 @@
 </script>
 
 <SectionHeading title={m.about_title()} />
-<div class="mbs-xl flex flex-col gap-xl two-pane:max-inline-narrow">
+<div class="mbs-pane-gap flex flex-col gap-xl two-pane:max-inline-narrow">
   <section
     class="flex flex-col items-center gap-xs text-center two-pane:flex-row two-pane:gap-lg two-pane:text-start"
   >

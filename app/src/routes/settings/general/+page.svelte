@@ -25,7 +25,7 @@
 </script>
 
 <SectionHeading title={m.general_title()} />
-<fieldset class="mbs-xl">
+<fieldset class="mbs-pane-gap">
   <legend class="font-medium">{m.language_label()}</legend>
   <div
     class="mbs-sm divide-y divide-border rounded-card border border-border bg-card"

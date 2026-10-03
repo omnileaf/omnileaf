@@ -14,7 +14,7 @@
 <SectionHeading title={m.library_title()} />
 <section
   aria-labelledby={foldersHeadingId}
-  class="mbs-xl flex flex-col gap-sm two-pane:max-inline-section"
+  class="mbs-pane-gap flex flex-col gap-sm two-pane:max-inline-section"
 >
   <div class="flex items-center justify-between gap-md">
     <h2

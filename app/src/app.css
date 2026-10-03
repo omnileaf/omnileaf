@@ -98,6 +98,7 @@
   --spacing-list-row: 0.875rem;
   --spacing-app-icon: 4.5rem;
   --spacing-pane: 2.5rem;
+  --spacing-pane-gap: 1.5rem;
   --spacing-settings-list: 17rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
@@ -259,6 +260,7 @@
 :root {
   @variant desktop {
     --spacing-empty-lift: 3.25rem;
+    --spacing-pane-gap: 1.25rem;
     --spacing-title-gap: 1.75rem;
     --text-page-title: 1.75rem;
     --text-page-title--line-height: 1.15;
