@@ -14,7 +14,7 @@
 
   import type { PageProps } from "./$types";
 
-  const FIRST_SECTION = "/settings/library";
+  const OPENING_SECTION: SettingsRoute = "/settings/library";
   const THEME_SUMMARIES = {
     system: m.theme_follows_system,
     light: m.theme_light,
@@ -28,7 +28,7 @@
 
   $effect(() => {
     if (showsSectionsBeside(data.appInfo.platform, width.current)) {
-      void goto(resolve(FIRST_SECTION), { replaceState: true });
+      void goto(resolve(OPENING_SECTION), { replaceState: true });
     }
   });
 
