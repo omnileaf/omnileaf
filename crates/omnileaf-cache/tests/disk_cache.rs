@@ -185,6 +185,29 @@ fn removes_a_write_left_unfinished_by_a_crash() {
     assert!(!folder.path().join("a.partial-1-0").exists());
 }
 
+#[cfg(unix)]
+#[test]
+fn opens_without_the_entries_whose_details_it_cannot_read() {
+    use std::os::unix::fs::PermissionsExt;
+    const LISTABLE_BUT_NOT_SEARCHABLE: u32 = 0o400;
+    const OWNER_ONLY: u32 = 0o700;
+    let folder = ScratchFolder::new("unreadable-entry");
+    fs::create_dir_all(folder.path()).unwrap();
+    fs::write(folder.path().join("a"), entry(1)).unwrap();
+    let set_mode = |mode| {
+        fs::set_permissions(folder.path(), fs::Permissions::from_mode(mode)).unwrap();
+    };
+    set_mode(LISTABLE_BUT_NOT_SEARCHABLE);
+
+    let opened = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES);
+
+    set_mode(OWNER_ONLY);
+    assert!(
+        matches!(&opened, Ok(cache) if cache.stored_bytes() == 0),
+        "{opened:?}"
+    );
+}
+
 #[test]
 fn refuses_a_key_that_is_not_a_plain_file_name() {
     let refused = ["", "../a", "a/b", "A", "a.b", &"a".repeat(129)].map(str::parse::<CacheKey>);

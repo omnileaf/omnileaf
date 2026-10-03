@@ -1,5 +1,5 @@
 use std::{
-    fs::{self, File},
+    fs::{self, DirEntry, File},
     io::{self, Read},
     path::{Path, PathBuf},
     process,
@@ -35,26 +35,10 @@ impl DiskCache {
             source,
         };
         fs::create_dir_all(&folder).map_err(open_failed)?;
-        let mut found = Vec::new();
-        for entry in fs::read_dir(&folder).map_err(open_failed)? {
-            let entry = entry.map_err(open_failed)?;
-            let name = entry.file_name();
-            let Some(name) = name.to_str() else {
-                continue;
-            };
-            if name.contains(PARTIAL_MARKER) {
-                remove_leftover(&entry.path());
-                continue;
-            }
-            let Ok(key) = name.parse::<CacheKey>() else {
-                continue;
-            };
-            let metadata = entry.metadata().map_err(open_failed)?;
-            if metadata.is_file() {
-                let last_used = metadata.modified().unwrap_or(USED_LONG_AGO);
-                found.push((last_used, key, metadata.len()));
-            }
-        }
+        let mut found: Vec<Found> = fs::read_dir(&folder)
+            .map_err(open_failed)?
+            .filter_map(found_entry)
+            .collect();
         found.sort();
         let mut recency = Recency::default();
         for (_, key, bytes) in found {
@@ -155,6 +139,35 @@ impl DiskCache {
     fn recency(&self) -> MutexGuard<'_, Recency> {
         self.recency.lock().unwrap_or_else(PoisonError::into_inner)
     }
+}
+
+/// When an entry was last used, its key and its size in bytes.
+type Found = (SystemTime, CacheKey, u64);
+
+/// Reads one listed file as an entry, leaving out anything else and any file that went or can't be read meanwhile.
+fn found_entry(entry: io::Result<DirEntry>) -> Option<Found> {
+    let entry = entry
+        .inspect_err(|error| tracing::warn!(%error, "list a cache entry"))
+        .ok()?;
+    let name = entry.file_name();
+    let name = name.to_str()?;
+    if name.contains(PARTIAL_MARKER) {
+        remove_leftover(&entry.path());
+        return None;
+    }
+    let key = name.parse::<CacheKey>().ok()?;
+    let metadata = match entry.metadata() {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return None,
+        Err(error) => {
+            tracing::warn!(%key, %error, "leave out a cache entry whose details can't be read");
+            return None;
+        }
+    };
+    metadata.is_file().then(|| {
+        let last_used = metadata.modified().unwrap_or(USED_LONG_AGO);
+        (last_used, key, metadata.len())
+    })
 }
 
 fn remove_leftover(path: &Path) {
