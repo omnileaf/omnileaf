@@ -138,7 +138,7 @@ fn read_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Unreadab
     if let Err(error) = &read {
         tracing::warn!(
             path = %found.path.display(),
-            error = %describe(error),
+            error = error as &dyn Error,
             "skip a book the scan can't read"
         );
     }
@@ -170,15 +170,4 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
             modified_at_ms: i64::try_from(unix_ms(metadata.modified()?)).unwrap_or(i64::MAX),
         },
     })
-}
-
-fn describe(error: &dyn Error) -> String {
-    let mut description = error.to_string();
-    let mut cause = error.source();
-    while let Some(source) = cause {
-        description.push_str(": ");
-        description.push_str(&source.to_string());
-        cause = source.source();
-    }
-    description
 }
