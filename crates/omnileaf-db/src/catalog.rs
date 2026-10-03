@@ -13,6 +13,7 @@ mod root_files;
 mod scanned_book;
 mod series;
 mod series_books;
+mod series_count;
 mod series_page;
 mod stored_id;
 
@@ -28,4 +29,5 @@ pub use root_files::{StoredFile, remove_book_files, root_files};
 pub use scanned_book::{BookFile, ScannedBook, record_moved_books, record_scanned_books};
 pub use series::{NewSeries, add_series};
 pub use series_books::{BookSummary, series_books};
+pub use series_count::series_count;
 pub use series_page::{SeriesOrder, SeriesSummary, series_page};

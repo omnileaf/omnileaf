@@ -12,7 +12,8 @@ use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Connection, Database, Error,
     catalog::{
-        Cursor, NewSeries, Page, PageRequest, PageSize, SeriesOrder, series_books, series_page,
+        Cursor, NewSeries, Page, PageRequest, PageSize, SeriesOrder, series_books, series_count,
+        series_page,
     },
 };
 use omnileaf_sync_proto::SeriesId;
@@ -191,6 +192,20 @@ async fn leaves_series_without_books_off_the_library_pages() {
     ];
 
     assert_eq!(pages, [[["Sample Series 02"]], [["Sample Series 02"]]]);
+}
+
+#[tokio::test]
+async fn counts_the_series_the_library_pages_list() {
+    let library = Library::with(&[
+        ("Sample Series 01", 1, NO_BOOKS),
+        ("Sample Series 02", 2, ONE_BOOK),
+        ("Sample Series 03", 3, &["Volume 01", "Volume 02"]),
+    ])
+    .await;
+
+    let count = library.database.read(series_count).await.unwrap();
+
+    assert_eq!(count, 2);
 }
 
 #[tokio::test]
