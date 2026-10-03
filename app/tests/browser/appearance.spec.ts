@@ -1,6 +1,10 @@
 import { AxeBuilder } from "@axe-core/playwright";
 
-import { expect, test } from "./fixtures.ts";
+import { boxOf, expect, test } from "./fixtures.ts";
+
+const OPTION_HEIGHT = 40;
+const TRACK_HEIGHT = 44;
+const TAP_OVERHANG = 3;
 
 const LIGHT_GROUND = "rgb(250, 248, 244)";
 const DARK_GROUND = "rgb(22, 21, 18)";
@@ -71,6 +75,31 @@ for (const { colorScheme, shadow } of [
     );
   });
 }
+
+test("draws the light or dark options 40px tall in a 44px track", async ({
+  page,
+}) => {
+  await chooseTheme(page, "System");
+
+  const option = await boxOf(
+    page.locator("label").filter({ hasText: "Light" }),
+  );
+  const track = await boxOf(page.getByRole("radiogroup"));
+
+  expect(option.height).toBe(OPTION_HEIGHT);
+  expect(track.height).toBe(TRACK_HEIGHT);
+});
+
+test("chooses an option from just outside its visible edge", async ({
+  page,
+}) => {
+  await chooseTheme(page, "System");
+  const option = await boxOf(page.locator("label").filter({ hasText: "Dark" }));
+
+  await page.mouse.click(option.x + option.width / 2, option.y - TAP_OVERHANG);
+
+  await expect(page.getByRole("radio", { name: "Dark" })).toBeChecked();
+});
 
 for (const label of ["Light", "Dark"]) {
   test(`Settings › Appearance has no accessibility violations in ${label}`, async ({

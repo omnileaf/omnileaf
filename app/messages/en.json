@@ -52,6 +52,7 @@
   "library_settings_folders_hint": "Omnileaf reads these folders where they are and never changes them.",
   "appearance_title": "Appearance",
   "appearance_light_or_dark": "Light or dark",
+  "appearance_system_hint": "System follows the device's setting and changes with it.",
   "theme_system": "System",
   "theme_light": "Light",
   "theme_dark": "Dark",
