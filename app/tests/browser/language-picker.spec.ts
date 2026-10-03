@@ -83,9 +83,16 @@ test("names the system's own language while another is chosen", async ({
 
   await page.goto(LANGUAGE_PAGE);
 
-  await expect(page.getByRole("radio").first()).toHaveAccessibleName(
-    /\(English\)/,
-  );
+  const system = page.getByRole("radio").first();
+  const systemName = page
+    .getByRole("radiogroup")
+    .locator("label")
+    .first()
+    .locator("[lang]");
+
+  await expect(system).toHaveAccessibleName(/\(English\)/);
+  await expect(systemName).toHaveText("English");
+  await expect(systemName).toHaveAttribute("lang", "en");
 });
 
 test.describe("on an Android phone", () => {
