@@ -68,10 +68,12 @@
   --spacing-4xl: 4rem;
   --spacing-none: 0;
   --spacing-touch-target: 3rem;
+  --spacing-pointer-target: 2.5rem;
   --spacing-button: 1.25rem;
   --spacing-pill: 3.5rem;
   --spacing-tile: 2.25rem;
   --spacing-option: 2.5rem;
+  --spacing-sidebar-icon: 1.25rem;
   --spacing-list-row: 0.875rem;
   --spacing-app-icon: 4.5rem;
   --spacing-pane: 2.5rem;
