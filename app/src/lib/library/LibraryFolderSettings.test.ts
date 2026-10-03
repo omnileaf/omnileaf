@@ -55,8 +55,6 @@ const NO_CHANGES: FileChanges = {
   unreadableFolders: 0,
 };
 
-type RescanResult = Awaited<ReturnType<RescanFolder>>;
-
 function rescanning(outcome: RescanOutcome): RescanFolder {
   return (id) =>
     Promise.resolve({ status: "ok", data: { id, name: "", outcome } });
@@ -67,12 +65,14 @@ const NOTHING_CHANGED = rescanning({ kind: "rescanned", ...NO_CHANGES });
 /** A rescan the test steps through and then finishes. */
 class PendingRescan {
   report: (progress: ScanProgress) => void = () => undefined;
-  finish: (result: RescanResult) => void = () => undefined;
+  finish: (outcome: RescanOutcome) => void = () => undefined;
 
-  readonly rescanFolder: RescanFolder = (_, onProgress) => {
+  readonly rescanFolder: RescanFolder = (id, onProgress) => {
     this.report = onProgress;
     return new Promise((resolve) => {
-      this.finish = resolve;
+      this.finish = (outcome) => {
+        resolve({ status: "ok", data: { id, name: "", outcome } });
+      };
     });
   };
 }
@@ -442,6 +442,28 @@ test("shows how far a rescan has got", async () => {
     .element(folders.getByRole("progressbar"))
     .toHaveAttribute("value", "3");
   await expect.element(folders.getByText("3 of 7 books")).toBeVisible();
+});
+
+test("keeps a rescan's report when word of it arrives after it finished", async () => {
+  serveFolders([HOME, COMICS]);
+  const pending = new PendingRescan();
+  const { folders } = await renderSettings({
+    rescanFolder: pending.rescanFolder,
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  pending.finish({ kind: "rescanned", ...NO_CHANGES });
+  await expect
+    .element(rescanReport(folders))
+    .toHaveTextContent("Sample Comics is up to date.");
+
+  pending.report({ stage: "reading", scanned: 2, total: 2 });
+
+  await expect
+    .element(rescanReport(folders))
+    .toHaveTextContent("Sample Comics is up to date.");
+  await expect
+    .element(folders.getByRole("progressbar"))
+    .not.toBeInTheDocument();
 });
 
 test("lets one rescan run at a time", async () => {
