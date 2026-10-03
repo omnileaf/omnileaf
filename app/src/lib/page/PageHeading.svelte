@@ -4,7 +4,7 @@
 
 <h1
   tabindex="-1"
-  class="text-page-title font-bold tracking-tight max-medium:ps-xs"
+  class="text-page-title font-bold tracking-tight touch:max-medium:ps-xs"
 >
   {title}
 </h1>
