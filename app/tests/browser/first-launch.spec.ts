@@ -114,6 +114,28 @@ test("goes through every step and opens the library once finished", async ({
   expect(device.finishes).toBe(1);
 });
 
+test("opens on the first launch until the device has finished it", async ({
+  page,
+}) => {
+  await page.goto("/settings");
+
+  await expect(page).toHaveURL("/first-launch");
+  await expect(heading(page, "Welcome to Omnileaf")).toBeVisible();
+});
+
+test("never shows the first launch again once it is finished", async ({
+  page,
+}) => {
+  await goTo(page, "You're all set");
+  await page.getByRole("button", { name: "Open my library" }).click();
+  await expect(heading(page, "Library")).toBeVisible();
+
+  await page.goto("/first-launch");
+
+  await expect(page).toHaveURL("/");
+  await expect(heading(page, "Library")).toBeVisible();
+});
+
 test("leaves the app when going back from the library it finished on", async ({
   page,
 }) => {
