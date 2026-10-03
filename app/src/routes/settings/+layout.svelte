@@ -4,7 +4,7 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { m } from "$lib/paraglide/messages.js";
-  import { isWithinSection, SETTINGS_GROUPS } from "$lib/settings/sections";
+  import { SETTINGS_GROUPS, sectionCurrent } from "$lib/settings/sections";
 
   let { children }: { children: Snippet } = $props();
 
@@ -26,17 +26,17 @@
       {#each SETTINGS_GROUPS as group, index (index)}
         <ul class="flex flex-col gap-2xs">
           {#each group as section (section.route)}
-            {@const isOpen = isWithinSection(
+            {@const current = sectionCurrent(
               page.url.pathname,
               resolve(section.route),
             )}
             <li>
               <a
                 href={resolve(section.route)}
-                aria-current={isOpen ? "page" : undefined}
+                aria-current={current}
                 class={[
                   "flex items-center gap-md rounded-control px-md text-label min-block-touch-target desktop:min-block-settings-row",
-                  isOpen
+                  current !== undefined
                     ? "bg-accent-soft font-bold text-accent"
                     : "font-medium text-sidebar-ink",
                 ]}

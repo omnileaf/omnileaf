@@ -35,6 +35,18 @@ export function isWithinSection(
   return pathname === sectionPath || pathname.startsWith(`${sectionPath}/`);
 }
 
+export type SectionCurrent = "page" | "true" | undefined;
+
+export function sectionCurrent(
+  pathname: string,
+  sectionPath: string,
+): SectionCurrent {
+  if (pathname === sectionPath) {
+    return "page";
+  }
+  return isWithinSection(pathname, sectionPath) ? "true" : undefined;
+}
+
 export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [
   [
     {

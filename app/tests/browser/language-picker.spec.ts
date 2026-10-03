@@ -165,7 +165,7 @@ test.describe("on a desktop", () => {
       page
         .getByRole("navigation", { name: "Settings sections" })
         .getByRole("link", { name: "General" }),
-    ).toHaveAttribute("aria-current", "page");
+    ).toHaveAttribute("aria-current", "true");
     await expect(
       page.getByRole("link", { name: "Back to General" }),
     ).toBeHidden();
