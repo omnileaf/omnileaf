@@ -60,7 +60,7 @@ impl fmt::Display for VersionDetails {
     }
 }
 
-fn platform_name(platform: Platform) -> &'static str {
+pub(crate) fn platform_name(platform: Platform) -> &'static str {
     match platform {
         Platform::Android => "Android",
         Platform::Ios => "iOS",
