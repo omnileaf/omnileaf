@@ -91,11 +91,11 @@ impl Library {
             .unwrap()
     }
 
-    async fn remove_fileless(&self, books: Vec<BookId>) {
+    async fn remove_fileless(&self, books: Vec<BookId>) -> usize {
         self.database
             .write(move |transaction| remove_books_without_files(transaction, &books))
             .await
-            .unwrap();
+            .unwrap()
     }
 
     async fn book_ids(&self) -> BTreeSet<BookId> {
@@ -209,12 +209,13 @@ async fn removes_only_the_books_no_file_holds_any_more() {
         )
         .await;
 
-    library.remove_fileless(held).await;
+    let removed = library.remove_fileless(held).await;
 
     assert_eq!(
         library.book_ids().await,
         BTreeSet::from([copied, untouched])
     );
+    assert_eq!(removed, 1);
 }
 
 #[tokio::test]

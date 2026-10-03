@@ -161,7 +161,7 @@ async fn forget(
                     .iter()
                     .map(|replacement| replacement.old),
             );
-            remove_books_without_files(transaction, &left)
+            remove_books_without_files(transaction, &left).map(drop)
         })
         .await?)
 }

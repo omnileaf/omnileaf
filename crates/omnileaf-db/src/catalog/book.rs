@@ -74,17 +74,18 @@ pub(crate) fn add_or_refile_book(
     Ok(())
 }
 
-/// Deletes each of `books` that no file in any root holds any more, leaving its synced reading state for when it is found again.
+/// Deletes each of `books` that no file in any root holds any more, leaving its synced reading state for when it is found again, and returns how many it deleted.
 #[tracing::instrument(skip_all, fields(books = books.len()))]
 pub fn remove_books_without_files(
     transaction: &Transaction<'_>,
     books: &[BookId],
-) -> Result<(), Error> {
+) -> Result<usize, Error> {
     let mut remove = transaction.prepare(REMOVE_BOOK_WITHOUT_FILES)?;
+    let mut removed = 0;
     for book in books {
-        remove.execute([book.as_bytes()])?;
+        removed = remove.execute([book.as_bytes()])?.saturating_add(removed);
     }
-    Ok(())
+    Ok(removed)
 }
 
 fn series_exists(transaction: &Transaction<'_>, series: SeriesId) -> Result<bool, Error> {
