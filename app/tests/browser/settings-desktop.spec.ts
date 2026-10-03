@@ -171,6 +171,33 @@ for (const platform of ["android", "ios", "linux"] as const) {
   });
 }
 
+for (const { platform, gap } of [
+  { platform: "linux", gap: 20 },
+  { platform: "android", gap: 24 },
+] as const) {
+  test.describe(`on ${platform}`, () => {
+    test.use(onPlatform(platform));
+
+    for (const { path, region } of [
+      { path: "/settings/library", region: "Folders" },
+      { path: "/settings/appearance", region: "Light or dark" },
+    ] as const) {
+      test(`spaces ${path} ${String(gap)}px under its title`, async ({
+        page,
+      }) => {
+        await page.goto(path);
+
+        const header = await boxOf(
+          page.getByRole("heading", { level: 1 }).locator(".."),
+        );
+        const content = await boxOf(page.getByRole("region", { name: region }));
+
+        expect(content.y - (header.y + header.height)).toBe(gap);
+      });
+    }
+  });
+}
+
 for (const colorScheme of ["light", "dark"] as const) {
   test(`settings on desktop has no accessibility violations in the ${colorScheme} theme`, async ({
     page,
