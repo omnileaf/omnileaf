@@ -21,7 +21,8 @@ pub(crate) struct FoundBook {
 pub(crate) struct Layout {
     /// In path order, so a scan always meets them in the same order.
     pub(crate) books: Vec<FoundBook>,
-    pub(crate) unreadable_folders: u32,
+    /// Each folder the walk couldn't read in full, so nothing under it can be told gone.
+    pub(crate) unreadable_folders: Vec<PathBuf>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -39,7 +40,7 @@ pub(crate) fn find_books(root: &Path) -> io::Result<Layout> {
         match fs::read_dir(&folder) {
             Ok(entries) => layout.take_in(&folder, place, entries, &mut pending),
             Err(error) if place == Place::Root => return Err(error),
-            Err(_) => layout.count_unreadable_folder(),
+            Err(_) => layout.unreadable_folders.push(folder),
         }
     }
     layout
@@ -60,7 +61,7 @@ impl Layout {
         let mut holds_comics = false;
         for entry in entries {
             let Ok(entry) = entry else {
-                self.count_unreadable_folder();
+                self.unreadable_folders.push(folder.to_path_buf());
                 continue;
             };
             let file_name = entry.file_name();
@@ -102,10 +103,6 @@ impl Layout {
                 title: folder_name(folder),
             });
         }
-    }
-
-    fn count_unreadable_folder(&mut self) {
-        self.unreadable_folders = self.unreadable_folders.saturating_add(1);
     }
 }
 

@@ -115,7 +115,7 @@ pub(crate) async fn scan(
         series: u32::try_from(tally.series.len()).unwrap_or(u32::MAX),
         books: tally.books,
         unreadable_books: tally.unreadable_books,
-        unreadable_folders: layout.unreadable_folders,
+        unreadable_folders: u32::try_from(layout.unreadable_folders.len()).unwrap_or(u32::MAX),
     })
 }
 
