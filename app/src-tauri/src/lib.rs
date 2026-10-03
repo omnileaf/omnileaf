@@ -53,7 +53,7 @@ fn open_library(app: &App, config: RuntimeConfig) -> Result<(), Box<dyn Error>> 
         None => (app.path().app_data_dir()?, app.path().app_cache_dir()?),
     };
     let library = tauri::async_runtime::block_on(Library::open(home, SystemClock))?;
-    let resources = tauri::async_runtime::block_on(ResourceRouter::open(cache))?;
+    let resources = ResourceRouter::open(&cache)?;
     app.manage(library);
     app.manage(resources);
     Ok(())

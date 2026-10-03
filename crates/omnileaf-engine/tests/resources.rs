@@ -61,9 +61,7 @@ impl Covers {
             .await
             .unwrap();
         let cache = TempFolder::new(&format!("{name}-cache"));
-        let router = ResourceRouter::open(cache.path().to_path_buf())
-            .await
-            .unwrap();
+        let router = ResourceRouter::open(cache.path()).unwrap();
         Self {
             library,
             router,
@@ -90,10 +88,8 @@ impl Covers {
         self.request(&format!("/{cover}")).await
     }
 
-    async fn reopen_router(&mut self) {
-        self.router = ResourceRouter::open(self.cache.path().to_path_buf())
-            .await
-            .unwrap();
+    fn reopen_router(&mut self) {
+        self.router = ResourceRouter::open(self.cache.path()).unwrap();
     }
 }
 
@@ -118,6 +114,16 @@ fn write_book(path: &Path, seed: u64, comic_info: Option<&str>) {
 
 fn thumbnail_of(seed: u64, index: u32) -> Vec<u8> {
     thumbnail(&page(seed, index)).unwrap().jpeg
+}
+
+#[test]
+fn leaves_its_cache_folder_alone_until_a_cover_is_asked_for() {
+    let cache = TempFolder::new("untouched-cache");
+
+    let router = ResourceRouter::open(cache.path());
+
+    assert!(router.is_ok());
+    assert_eq!(fs::read_dir(cache.path()).unwrap().count(), 0);
 }
 
 #[tokio::test]
@@ -196,11 +202,24 @@ async fn fails_a_cover_whose_book_cannot_be_read() {
 }
 
 #[tokio::test]
+async fn still_serves_covers_when_its_cache_folder_cannot_be_made() {
+    let mut covers = Covers::with_book("no-cache", None).await;
+    let blocked = covers.cache.path().join("not-a-folder");
+    fs::write(&blocked, b"a file where the cache folder should go").unwrap();
+    covers.router = ResourceRouter::open(&blocked).unwrap();
+    let cover = covers.cover().await;
+
+    let resource = covers.request_cover(cover).await;
+
+    assert_eq!(resource.into_body(), thumbnail_of(SEED, 0));
+}
+
+#[tokio::test]
 async fn serves_a_cover_made_before_from_its_cache_after_a_restart() {
     let mut covers = Covers::with_book("cached", None).await;
     let cover = covers.cover().await;
     covers.request_cover(cover).await;
-    covers.reopen_router().await;
+    covers.reopen_router();
     fs::remove_file(covers.book_path()).unwrap();
 
     let resource = covers.request_cover(cover).await;

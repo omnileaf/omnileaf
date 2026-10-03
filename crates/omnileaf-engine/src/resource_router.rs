@@ -1,8 +1,4 @@
-use std::path::PathBuf;
-
-use tokio::task::spawn_blocking;
-
-use omnileaf_cache::CacheError;
+use std::{io, path::Path};
 
 use crate::{
     CoverPath, Library, Resource, cover_path::THUMBNAIL_VERSION, cover_thumbnails::CoverThumbnails,
@@ -18,20 +14,16 @@ pub struct ResourceRouter {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ResourceRouterError {
-    #[error("open the cover thumbnail cache")]
-    Cache(#[from] CacheError),
     #[error("start the cover thumbnail workers")]
-    Workers(#[source] std::io::Error),
-    #[error("run blocking work to open the cover thumbnails")]
-    Interrupted(#[from] tokio::task::JoinError),
+    Workers(#[source] io::Error),
 }
 
 impl ResourceRouter {
     /// Keeps thumbnails under `cache_folder`, which the platform may empty whenever it needs the space.
     #[tracing::instrument(skip_all, fields(cache_folder = %cache_folder.display()))]
-    pub async fn open(cache_folder: PathBuf) -> Result<Self, ResourceRouterError> {
+    pub fn open(cache_folder: &Path) -> Result<Self, ResourceRouterError> {
         let folder = cache_folder.join(THUMBNAIL_FOLDER).join(THUMBNAIL_VERSION);
-        let thumbnails = spawn_blocking(move || CoverThumbnails::open(folder)).await??;
+        let thumbnails = CoverThumbnails::open(folder).map_err(ResourceRouterError::Workers)?;
         Ok(Self { thumbnails })
     }
 
@@ -58,7 +50,7 @@ impl ResourceRouter {
     }
 }
 
-fn describe(error: &dyn std::error::Error) -> String {
+pub(crate) fn describe(error: &dyn std::error::Error) -> String {
     let mut description = error.to_string();
     let mut cause = error.source();
     while let Some(source) = cause {

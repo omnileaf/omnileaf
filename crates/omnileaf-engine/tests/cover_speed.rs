@@ -72,9 +72,7 @@ async fn makes_a_cold_cover_thumbnail_from_a_full_size_scan_within_30_ms_at_p95(
         .await
         .unwrap();
     let cache = TempFolder::new("cover-speed-cache");
-    let router = ResourceRouter::open(cache.path().to_path_buf())
-        .await
-        .unwrap();
+    let router = ResourceRouter::open(cache.path()).unwrap();
     let covers: Vec<String> = library
         .series(None)
         .await

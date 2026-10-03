@@ -1,4 +1,5 @@
 use std::{
+    io,
     num::NonZeroUsize,
     path::{Path, PathBuf},
     sync::Arc,
@@ -8,11 +9,12 @@ use omnileaf_cache::{CacheError, CacheKey, DiskCache};
 use omnileaf_db::catalog::Cover;
 use omnileaf_formats::{FormatError, open_book};
 use omnileaf_imaging::{ImagingError, thumbnail};
-use tokio::task::spawn_blocking;
+use tokio::{sync::OnceCell, task::spawn_blocking};
 
 use crate::{
-    Library, LibraryError, ResourceRouterError,
+    Library, LibraryError,
     background_lane::{BackgroundLane, LaneStopped},
+    resource_router::describe,
 };
 
 const MEBIBYTE: u64 = 1 << 20;
@@ -26,7 +28,8 @@ const WORKER_NAME: &str = "omnileaf-thumbnails";
 
 /// Cover thumbnails, kept on disk under a byte budget and made on a background lane when missing.
 pub(crate) struct CoverThumbnails {
-    cache: Arc<DiskCache>,
+    folder: PathBuf,
+    cache: OnceCell<Option<Arc<DiskCache>>>,
     lane: BackgroundLane,
 }
 
@@ -47,12 +50,12 @@ pub(crate) enum ThumbnailError {
 }
 
 impl CoverThumbnails {
-    /// Blocks while it lists the cache folder.
-    pub(crate) fn open(folder: PathBuf) -> Result<Self, ResourceRouterError> {
+    /// Leaves the cache folder alone until the first cover is asked for, so opening never waits on its files.
+    pub(crate) fn open(folder: PathBuf) -> io::Result<Self> {
         Ok(Self {
-            cache: Arc::new(DiskCache::open(folder, CACHE_BUDGET_BYTES)?),
-            lane: BackgroundLane::start(WORKER_NAME, WORKERS)
-                .map_err(ResourceRouterError::Workers)?,
+            folder,
+            cache: OnceCell::new(),
+            lane: BackgroundLane::start(WORKER_NAME, WORKERS)?,
         })
     }
 
@@ -63,20 +66,43 @@ impl CoverThumbnails {
         cover: Cover,
     ) -> Result<Option<Vec<u8>>, ThumbnailError> {
         let key = cache_key(cover)?;
-        let cache = Arc::clone(&self.cache);
-        let cached_key = key.clone();
-        if let Some(cached) = spawn_blocking(move || cache.get(&cached_key)).await?? {
-            return Ok(Some(cached));
+        let cache = self.cache().await;
+        if let Some(cache) = cache.clone() {
+            let cached_key = key.clone();
+            if let Some(cached) = spawn_blocking(move || cache.get(&cached_key)).await?? {
+                return Ok(Some(cached));
+            }
         }
         let Some(file) = library.cover_file(cover).await? else {
             return Ok(None);
         };
-        let cache = Arc::clone(&self.cache);
         let made = self
             .lane
-            .run(move || make_thumbnail(&cache, &key, &file))
+            .run(move || make_thumbnail(cache.as_deref(), &key, &file))
             .await??;
         Ok(Some(made))
+    }
+
+    /// The cache, opened by whichever request comes first, or nothing when it can't be opened.
+    async fn cache(&self) -> Option<Arc<DiskCache>> {
+        self.cache
+            .get_or_init(|| open_cache(self.folder.clone()))
+            .await
+            .clone()
+    }
+}
+
+async fn open_cache(folder: PathBuf) -> Option<Arc<DiskCache>> {
+    match spawn_blocking(move || DiskCache::open(folder, CACHE_BUDGET_BYTES)).await {
+        Ok(Ok(cache)) => Some(Arc::new(cache)),
+        Ok(Err(error)) => {
+            tracing::warn!(error = %describe(&error), "open the cover cache, so covers are made afresh each time");
+            None
+        }
+        Err(error) => {
+            tracing::warn!(%error, "open the cover cache, so covers are made afresh each time");
+            None
+        }
     }
 }
 
@@ -86,11 +112,11 @@ fn cache_key(cover: Cover) -> Result<CacheKey, CacheError> {
 
 /// Reads the page the book shows as its cover and stores its thumbnail, unless another request stored it meanwhile.
 fn make_thumbnail(
-    cache: &DiskCache,
+    cache: Option<&DiskCache>,
     key: &CacheKey,
     file: &Path,
 ) -> Result<Vec<u8>, ThumbnailError> {
-    if let Some(cached) = cache.get(key)? {
+    if let Some(cached) = cache.map(|cache| cache.get(key)).transpose()?.flatten() {
         return Ok(cached);
     }
     let mut book = open_book(file)?;
@@ -100,7 +126,7 @@ fn make_thumbnail(
     });
     let page = book.read_page(book.cover_page(comic_info.as_ref()))?;
     let made = thumbnail(&page)?.jpeg;
-    if let Err(error) = cache.put(key, &made) {
+    if let Some(Err(error)) = cache.map(|cache| cache.put(key, &made)) {
         tracing::warn!(%error, "keep a cover thumbnail for next time");
     }
     Ok(made)
