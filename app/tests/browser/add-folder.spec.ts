@@ -51,12 +51,10 @@ test.describe("while the folder is being scanned", () => {
 
     await page.getByRole("button", { name: "Add a folder" }).click();
 
-    await expect(page.getByRole("status")).toHaveText(
-      "Finding books · 32 so far",
-    );
-    await expect(
-      page.getByRole("progressbar", { name: "Finding books · 32 so far" }),
-    ).toHaveAttribute("value", "32");
+    await expect(page.getByRole("status")).toHaveText("Finding books");
+    const bar = page.getByRole("progressbar", { name: "Finding books" });
+    await expect(bar).toHaveAttribute("value", "32");
+    await expect(bar).toHaveAccessibleDescription("32 of 100 books");
   });
 
   for (const colorScheme of ["light", "dark"] as const) {

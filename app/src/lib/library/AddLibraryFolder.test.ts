@@ -166,14 +166,28 @@ test("shows how far the scan has got while it runs", async () => {
 
   scan.report({ stage: "reading", scanned: 32, total: 100 });
 
-  await expect
-    .element(screen.getByRole("status"))
-    .toHaveTextContent("Finding books · 32 so far");
   const bar = screen.getByRole("progressbar", {
-    name: "Finding books · 32 so far",
+    name: "Finding books",
+    exact: true,
   });
   await expect.element(bar).toHaveAttribute("value", "32");
   await expect.element(bar).toHaveAttribute("max", "100");
+  await expect.element(bar).toHaveAccessibleDescription("32 of 100 books");
+});
+
+test("announces that books are being found without announcing each count", async () => {
+  const scan = new PendingScan();
+  const screen = await render(AddLibraryFolder, { addFolder: scan.addFolder });
+  await screen.getByRole("button", { name: "Add a folder" }).click();
+  scan.report({ stage: "finding" });
+
+  scan.report({ stage: "reading", scanned: 32, total: 100 });
+
+  await expect.element(screen.getByText("32 of 100 books")).toBeVisible();
+  await expect
+    .element(screen.getByRole("status"))
+    .toHaveTextContent("Finding books");
+  await expect.element(screen.getByRole("status")).not.toHaveTextContent("32");
 });
 
 test("says it is finding books before the scan has counted them", async () => {

@@ -40,6 +40,7 @@
   } = $props();
 
   const progressTitleId = $props.id();
+  const progressCountId = `${progressTitleId}-count`;
 
   let outcome: Outcome = $state({ kind: "idle" });
 
@@ -88,47 +89,55 @@
   <Plus size={ICON_SIZE} aria-hidden="true" />
   {m.library_add_folder()}
 </button>
-<div role="status" class="mbs-sm">
+<div class="mbs-sm">
+  <div role="status">
+    {#if outcome.kind === "finding" || outcome.kind === "reading"}
+      <p id={progressTitleId} class="font-semibold">
+        {m.library_scan_finding()}
+      </p>
+    {:else if outcome.kind === "scanned"}
+      {@const scan = outcome.scan}
+      <p>
+        {scan.books === 0
+          ? m.library_folder_no_books({ name: scan.name })
+          : m.library_folder_scanned({
+              books: scan.books,
+              series: scan.series,
+              name: scan.name,
+            })}
+      </p>
+      {#if scan.unreadableBooks > 0}
+        <p>
+          {m.library_folder_unreadable_books({ count: scan.unreadableBooks })}
+        </p>
+      {/if}
+      {#if scan.unreadableFolders > 0}
+        <p>
+          {m.library_folder_unreadable_subfolders({
+            count: scan.unreadableFolders,
+          })}
+        </p>
+      {/if}
+    {:else if outcome.kind === "failed"}
+      <p>{FAILURE_MESSAGES[outcome.code]()}</p>
+    {/if}
+  </div>
   {#if outcome.kind === "finding"}
-    <p id={progressTitleId} class="font-semibold">
-      {m.library_scan_finding()}
-    </p>
     <progress aria-labelledby={progressTitleId} class="mbs-sm progress-track"
     ></progress>
   {:else if outcome.kind === "reading"}
-    <p id={progressTitleId} class="font-semibold">
-      {m.library_scan_progress({ count: outcome.scanned })}
-    </p>
     <progress
       aria-labelledby={progressTitleId}
+      aria-describedby={progressCountId}
       class="mbs-sm progress-track"
       max={outcome.total}
       value={outcome.scanned}
     ></progress>
-  {:else if outcome.kind === "scanned"}
-    {@const scan = outcome.scan}
-    <p>
-      {scan.books === 0
-        ? m.library_folder_no_books({ name: scan.name })
-        : m.library_folder_scanned({
-            books: scan.books,
-            series: scan.series,
-            name: scan.name,
-          })}
+    <p id={progressCountId} class="mbs-xs text-caption text-muted">
+      {m.library_scan_progress({
+        scanned: outcome.scanned,
+        total: outcome.total,
+      })}
     </p>
-    {#if scan.unreadableBooks > 0}
-      <p>
-        {m.library_folder_unreadable_books({ count: scan.unreadableBooks })}
-      </p>
-    {/if}
-    {#if scan.unreadableFolders > 0}
-      <p>
-        {m.library_folder_unreadable_subfolders({
-          count: scan.unreadableFolders,
-        })}
-      </p>
-    {/if}
-  {:else if outcome.kind === "failed"}
-    <p>{FAILURE_MESSAGES[outcome.code]()}</p>
   {/if}
 </div>
