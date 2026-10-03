@@ -39,7 +39,6 @@ fn norm_matches_the_golden_vectors() {
 #[derive(Deserialize)]
 struct IdVector {
     key: String,
-    #[serde(default)]
     input: Option<String>,
     id: String,
 }

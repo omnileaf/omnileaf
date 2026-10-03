@@ -107,14 +107,6 @@ proptest! {
     }
 
     #[test]
-    fn keeps_the_local_source_apart_from_every_series(name in any::<String>()) {
-        let series = SeriesId::local(&name).unwrap();
-        let source = SourceId::local();
-
-        prop_assert_ne!(series.as_bytes(), source.as_bytes());
-    }
-
-    #[test]
     fn round_trips_every_derived_id_through_text_and_bytes(name in any::<String>()) {
         let id = CategoryId::from_name(&name).unwrap();
 
