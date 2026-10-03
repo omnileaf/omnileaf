@@ -3,6 +3,7 @@ import {
   type CoversPerRow,
   type LibraryDisplay,
   type LibraryView,
+  type OnCovers,
 } from "$lib/ipc/bindings";
 
 /** The sizes the library is drawn at, each with covers per row of its own. */
@@ -42,4 +43,12 @@ export function withItemCounts(
   showsItemCounts: boolean,
 ): LibraryView {
   return { ...view, showsItemCounts };
+}
+
+export function withOnCovers(
+  view: LibraryView,
+  name: keyof OnCovers,
+  isShown: boolean,
+): LibraryView {
+  return { ...view, onCovers: { ...view.onCovers, [name]: isShown } };
 }

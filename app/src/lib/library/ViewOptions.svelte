@@ -1,18 +1,24 @@
 <script lang="ts">
   import { SlidersHorizontal } from "@lucide/svelte";
 
-  import type { LibraryDisplay, LibraryView } from "$lib/ipc/bindings";
+  import type {
+    LibraryDisplay,
+    LibraryView,
+    OnCovers,
+  } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
   import CoversPerRowStepper from "./CoversPerRowStepper.svelte";
   import DisplayChoice from "./DisplayChoice.svelte";
   import ItemCountsChoice from "./ItemCountsChoice.svelte";
+  import OnCoversChoice from "./OnCoversChoice.svelte";
   import {
     SCREEN_SIZES,
     type ScreenSize,
     withCoversPerRow,
     withDisplay,
     withItemCounts,
+    withOnCovers,
   } from "./library-view";
 
   const ICON_SIZE = 22;
@@ -154,6 +160,12 @@
       isShown={view.showsItemCounts}
       onChoose={(isShown: boolean) => {
         onChoose(withItemCounts(view, isShown));
+      }}
+    />
+    <OnCoversChoice
+      onCovers={view.onCovers}
+      onChoose={(name: keyof OnCovers, isShown: boolean) => {
+        onChoose(withOnCovers(view, name, isShown));
       }}
     />
   </div>
