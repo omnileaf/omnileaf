@@ -23,12 +23,12 @@ use crate::{
 
 const BOOKS_PER_BATCH: usize = 32;
 
-/// How far a scan has got through the books it found.
+/// How far a scan has got: still finding the books in the folder, or reading the ones it found.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
-#[serde(rename_all = "camelCase")]
-pub struct ScanProgress {
-    pub scanned: u32,
-    pub total: u32,
+#[serde(tag = "stage", rename_all = "camelCase")]
+pub enum ScanProgress {
+    Finding,
+    Reading { scanned: u32, total: u32 },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -89,7 +89,7 @@ pub(crate) async fn scan(
 ) -> Result<FolderScan, LibraryError> {
     let total = u32::try_from(layout.books.len()).unwrap_or(u32::MAX);
     let mut tally = Tally::default();
-    on_progress(ScanProgress { scanned: 0, total });
+    on_progress(ScanProgress::Reading { scanned: 0, total });
     for batch in layout.books.chunks(BOOKS_PER_BATCH) {
         let batch = batch.to_vec();
         let reading = target.clone();
@@ -110,7 +110,7 @@ pub(crate) async fn scan(
             })
             .await?;
         tally.series.extend(filed_in);
-        on_progress(ScanProgress {
+        on_progress(ScanProgress::Reading {
             scanned: tally.scanned,
             total,
         });

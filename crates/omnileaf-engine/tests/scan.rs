@@ -173,27 +173,31 @@ async fn scans_each_series_folder_into_a_series_of_its_books() {
 }
 
 #[tokio::test]
-async fn reports_progress_from_no_books_up_to_every_book_found() {
+async fn reports_finding_the_books_then_reading_each_one_found() {
     let comics = sample_library("scan-progress");
 
     let (_, _, progress) =
         Scanned::folder("scan-progress", &comics.path().join(SAMPLE_LIBRARY_NAME)).await;
 
+    assert_eq!(progress.first(), Some(&ScanProgress::Finding),);
     assert_eq!(
-        progress.first(),
-        Some(&ScanProgress {
+        progress.get(1),
+        Some(&ScanProgress::Reading {
             scanned: 0,
             total: 7
         })
     );
     assert_eq!(
         progress.last(),
-        Some(&ScanProgress {
+        Some(&ScanProgress::Reading {
             scanned: 7,
             total: 7
         })
     );
-    assert!(progress.is_sorted_by_key(|step| step.scanned));
+    assert!(progress.is_sorted_by_key(|step| match step {
+        ScanProgress::Finding => None,
+        ScanProgress::Reading { scanned, .. } => Some(*scanned),
+    }));
 }
 
 #[tokio::test]
@@ -358,4 +362,25 @@ async fn counts_the_folders_it_cannot_read_and_carries_on() {
 
     fs::set_permissions(&locked, fs::Permissions::from_mode(0o755)).unwrap();
     assert_eq!((scan.books, scan.unreadable_folders), (1, 1));
+}
+
+#[test]
+fn tells_the_interface_each_stage_of_a_scan_by_name() {
+    let stages = [
+        ScanProgress::Finding,
+        ScanProgress::Reading {
+            scanned: 3,
+            total: 7,
+        },
+    ];
+
+    let sent = stages.map(|stage| serde_json::to_value(stage).unwrap());
+
+    assert_eq!(
+        sent,
+        [
+            serde_json::json!({ "stage": "finding" }),
+            serde_json::json!({ "stage": "reading", "scanned": 3, "total": 7 }),
+        ]
+    );
 }

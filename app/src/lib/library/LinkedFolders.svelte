@@ -78,7 +78,7 @@
   <div class="mbs-md">
     <AddLibraryFolder
       {addFolder}
-      onAdded={() => {
+      onFinished={() => {
         void folders.load();
       }}
     />

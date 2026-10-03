@@ -137,6 +137,26 @@ test("lists a folder once it is added", async () => {
     .toHaveTextContent("Sample Comics /media/Sample Comics Remove");
 });
 
+test("lists a folder that was saved before its scan failed", async () => {
+  const library = [HOME];
+  serveFolders(library);
+  const { folders } = await renderSettings({
+    addFolder: () => {
+      library.push(COMICS);
+      return Promise.resolve({
+        status: "error",
+        error: { code: "internal", message: "the scan stopped" },
+      });
+    },
+  });
+
+  await folders.getByRole("button", { name: "Add a folder" }).click();
+
+  await expect
+    .element(folders.getByRole("listitem"))
+    .toHaveTextContent("Sample Comics /media/Sample Comics Remove");
+});
+
 test("says when the folders couldn't be loaded", async () => {
   const screen = await render(LibraryFolderSettings, {
     listFolders: () =>

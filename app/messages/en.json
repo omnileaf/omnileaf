@@ -4,16 +4,20 @@
   "library_empty": "Your library is empty.",
   "app_version": "Version {version}",
   "library_add_folder": "Add a folder",
+  "library_scan_finding": "Finding books",
   "library_scan_progress": [
     {
       "declarations": [
-        "input count",
-        "local countPlural = count: plural",
-        "local formattedCount = count: number"
+        "input scanned",
+        "input total",
+        "local totalPlural = total: plural",
+        "local formattedScanned = scanned: number",
+        "local formattedTotal = total: number"
       ],
-      "selectors": ["countPlural"],
+      "selectors": ["totalPlural"],
       "match": {
-        "countPlural=*": "Finding books · {formattedCount} so far"
+        "totalPlural=one": "{formattedScanned} of {formattedTotal} book",
+        "totalPlural=other": "{formattedScanned} of {formattedTotal} books"
       }
     }
   ],

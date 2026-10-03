@@ -87,8 +87,9 @@ impl Library {
     pub async fn add_folder(
         &self,
         folder: PathBuf,
-        on_progress: impl FnMut(ScanProgress) + Send,
+        mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderScan, LibraryError> {
+        on_progress(ScanProgress::Finding);
         let layout = find_books_in(folder.clone()).await?;
         let root = self.link(folder.clone()).await?;
         let target = self.target(root, folder);
@@ -124,13 +125,14 @@ impl Library {
     pub async fn scan_folder(
         &self,
         id: FolderId,
-        on_progress: impl FnMut(ScanProgress) + Send,
+        mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderScan, LibraryError> {
         let root = self
             .database
             .read(move |connection| library_root(connection, id.0))
             .await?;
         let RootLocator::Path(folder) = root.locator;
+        on_progress(ScanProgress::Finding);
         let layout = find_books_in(folder.clone()).await?;
         let target = self.target(root.id, folder);
         scan(&self.database, target, layout, on_progress).await

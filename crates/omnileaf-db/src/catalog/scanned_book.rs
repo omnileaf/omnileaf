@@ -70,7 +70,7 @@ pub fn record_scanned_book(
     ))?;
     Ok(transaction
         .prepare(SERIES_OF_BOOK)?
-        .query_row([book.id().as_bytes()], |row| stored_id(row, 0))?)
+        .query_row([book.id().as_bytes()], |row| stored_id(row, "id"))?)
 }
 
 #[cfg(test)]

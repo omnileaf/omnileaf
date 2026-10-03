@@ -13,9 +13,9 @@ use std::{
 use omnileaf_db::{
     Database, Error,
     catalog::{
-        Cursor, LibraryRoot, NewBook, NewRoot, NewSeries, Page, PageRequest, PageSize, RootId,
-        RootKind, RootLocator, add_book, add_root, add_series, library_root, library_roots,
-        remove_root, set_home_root,
+        LibraryRoot, NewBook, NewRoot, NewSeries, Page, PageRequest, PageSize, RootId, RootKind,
+        RootLocator, add_book, add_root, add_series, library_root, library_roots, remove_root,
+        series_books, set_home_root,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
@@ -258,9 +258,16 @@ async fn continues_the_list_after_the_cursor_of_the_last_page() {
 #[tokio::test]
 async fn refuses_a_cursor_another_list_gave_out() {
     let library = Library::open("root-pages-other-cursor");
-    let title_cursor: Cursor = "010000000000000000".parse().unwrap();
+    let series = library.add_series().await;
+    library.add_book(series, 1, &[]).await;
+    library.add_book(series, 2, &[]).await;
+    let books = library
+        .database
+        .read(move |connection| series_books(connection, series, &first_page(1)))
+        .await
+        .unwrap();
     let request = PageRequest {
-        after: Some(title_cursor),
+        after: books.next,
         size: PageSize::try_from(1).unwrap(),
     };
 

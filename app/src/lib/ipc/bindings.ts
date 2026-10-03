@@ -56,11 +56,8 @@ export type LibraryFolder = {
 
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
-/**  How far a scan has got through the books it found. */
-export type ScanProgress = {
-	scanned: number,
-	total: number,
-};
+/**  How far a scan has got: still finding the books in the folder, or reading the ones it found. */
+export type ScanProgress = { stage: "finding" } | { stage: "reading"; scanned: number; total: number };
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {
