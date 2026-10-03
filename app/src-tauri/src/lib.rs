@@ -34,7 +34,9 @@ pub fn run() {
     #[cfg(desktop)]
     let app = app.plugin(tauri_plugin_dialog::init());
     #[cfg(all(desktop, feature = "e2e"))]
-    let app = app.manage(e2e::PickedFolder::from_environment());
+    let app = app
+        .manage(e2e::PickedFolder::from_environment())
+        .manage(e2e::CrashReportFolder::from_environment());
     #[cfg(all(feature = "e2e", not(windows)))]
     let app = app.plugin(tauri_plugin_wdio_webdriver::init());
     app.run(tauri::generate_context!())

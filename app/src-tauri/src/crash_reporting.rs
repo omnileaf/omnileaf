@@ -95,7 +95,7 @@ pub(crate) fn install(app: &AppHandle) {
 
 fn report_folder(app: &AppHandle) -> tauri::Result<PathBuf> {
     #[cfg(all(desktop, feature = "e2e"))]
-    if let Some(folder) = crate::e2e::crash_report_folder() {
+    if let Some(folder) = crate::e2e::crash_report_folder(app) {
         return Ok(folder);
     }
     app.path().app_local_data_dir()

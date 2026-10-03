@@ -22,6 +22,15 @@ pub(crate) fn picked_folder(app: &AppHandle) -> Option<PathBuf> {
 }
 
 /// Where test builds keep crash reports, so a report from a real run never shows up in a test.
-pub(crate) fn crash_report_folder() -> Option<PathBuf> {
-    env::var_os(CRASH_REPORT_FOLDER_VARIABLE).map(PathBuf::from)
+pub(crate) struct CrashReportFolder(Option<PathBuf>);
+
+impl CrashReportFolder {
+    pub(crate) fn from_environment() -> Self {
+        Self(env::var_os(CRASH_REPORT_FOLDER_VARIABLE).map(PathBuf::from))
+    }
+}
+
+pub(crate) fn crash_report_folder(app: &AppHandle) -> Option<PathBuf> {
+    app.try_state::<CrashReportFolder>()
+        .and_then(|folder| folder.0.clone())
 }
