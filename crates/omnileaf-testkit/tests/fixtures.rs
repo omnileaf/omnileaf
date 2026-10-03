@@ -13,7 +13,8 @@ use std::{
 
 use omnileaf_testkit::{
     ArchiveEntry, Compression, GENERATED_LIBRARY_NAME, GeneratedLibrary, PageShape, SAMPLE_LIBRARY,
-    SAMPLE_LIBRARY_NAME, cbz, page_png, write_generated_library, write_sample_library,
+    SAMPLE_LIBRARY_NAME, cbz, page_jpeg, page_png, page_webp, scan_jpeg, write_generated_library,
+    write_sample_library,
 };
 use zip::{CompressionMethod, DateTime, ZipArchive};
 
@@ -50,6 +51,20 @@ fn dimensions(png: &[u8]) -> (u32, u32) {
     let reader = png::Decoder::new(Cursor::new(png)).read_info().unwrap();
     let info = reader.info();
     (info.width, info.height)
+}
+
+fn png_pixels(png: &[u8]) -> Vec<u8> {
+    let mut reader = png::Decoder::new(Cursor::new(png)).read_info().unwrap();
+    let mut pixels = vec![0; reader.output_buffer_size().unwrap()];
+    reader.next_frame(&mut pixels).unwrap();
+    pixels
+}
+
+fn jpeg_dimensions(jpeg: &[u8]) -> (u32, u32) {
+    let mut decoder = jpeg_decoder::Decoder::new(jpeg);
+    decoder.read_info().unwrap();
+    let info = decoder.info().unwrap();
+    (u32::from(info.width), u32::from(info.height))
 }
 
 fn sample_entries() -> Vec<ArchiveEntry> {
@@ -93,6 +108,49 @@ fn makes_a_spread_twice_as_wide_as_a_portrait_page() {
     assert!(portrait_height > portrait_width);
     assert_eq!(spread_width, portrait_width * 2);
     assert_eq!(spread_height, portrait_height);
+}
+
+#[test]
+fn draws_a_jpeg_page_at_the_size_of_its_shape() {
+    let jpeg = page_jpeg(SEED, 0, PageShape::Spread).unwrap();
+
+    let size = jpeg_dimensions(&jpeg);
+
+    assert_eq!(
+        size,
+        (PageShape::Spread.width(), PageShape::Spread.height())
+    );
+}
+
+#[test]
+fn draws_a_webp_page_with_exactly_the_pixels_of_the_png_page() {
+    let webp = page_webp(SEED, 3, PageShape::Portrait).unwrap();
+    let png = page_png(SEED, 3, PageShape::Portrait).unwrap();
+
+    let mut decoder = image_webp::WebPDecoder::new(Cursor::new(webp)).unwrap();
+    let mut pixels = vec![0; decoder.output_buffer_size().unwrap()];
+    decoder.read_image(&mut pixels).unwrap();
+
+    assert!(!decoder.has_alpha());
+    assert_eq!(pixels, png_pixels(&png));
+}
+
+#[test]
+fn draws_a_scan_at_the_size_of_a_full_resolution_comic_page() {
+    let scan = scan_jpeg(SEED).unwrap();
+
+    let size = jpeg_dimensions(&scan);
+
+    assert_eq!(size, (1800, 2700));
+}
+
+#[test]
+fn weighs_a_scan_about_the_megabyte_of_a_typical_scanned_page() {
+    let scan = scan_jpeg(SEED).unwrap();
+
+    let megabytes = scan.len() / 1_000_000;
+
+    assert_eq!(megabytes, 1, "the scan weighs {} bytes", scan.len());
 }
 
 #[test]
