@@ -10,10 +10,17 @@ type Outcome<Result> = [Success<Result>] extends [never]
   ? Result
   : Success<Result>["data"];
 
+/** A value as it crosses the bridge, where branded ids are the plain strings they're minted from. */
+type Wire<Value> = Value extends { readonly __brand: string }
+  ? string
+  : Value extends object
+    ? { [Key in keyof Value]: Wire<Value[Key]> }
+    : Value;
+
 export type FakeBackend = {
   [Name in keyof Commands]: (
-    ...args: Parameters<Commands[Name]>
-  ) => Outcome<Awaited<ReturnType<Commands[Name]>>>;
+    ...args: Wire<Parameters<Commands[Name]>>
+  ) => Wire<Outcome<Awaited<ReturnType<Commands[Name]>>>>;
 };
 
 /** Thrown by a fake command to fail the way the Rust side does, with a typed error. */

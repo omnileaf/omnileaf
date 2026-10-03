@@ -1,13 +1,18 @@
 //! The commands the interface calls, and the TypeScript bindings generated from them.
 
-use omnileaf_engine::{AppInfo, Core, FolderSurvey, survey_folder};
+use omnileaf_engine::{AppInfo, Core, FolderCursor, FolderId, FolderPage, FolderSurvey, Library};
 use tauri::{AppHandle, State, Wry};
 use tauri_specta::{Builder, collect_commands};
 
 use crate::{folder_picker::pick_folder, ipc_error::IpcError};
 
 pub(crate) fn builder() -> Builder<Wry> {
-    Builder::new().commands(collect_commands![app_info, add_library_folder])
+    Builder::new().commands(collect_commands![
+        app_info,
+        add_library_folder,
+        library_folders,
+        remove_library_folder
+    ])
 }
 
 #[tauri::command]
@@ -22,17 +27,32 @@ fn app_info(core: State<'_, Core>) -> AppInfo {
 
 #[tauri::command]
 #[specta::specta]
-async fn add_library_folder(app: AppHandle) -> Result<Option<FolderSurvey>, IpcError> {
-    tauri::async_runtime::spawn_blocking(move || pick_and_survey(&app))
+async fn add_library_folder(
+    app: AppHandle,
+    library: State<'_, Library>,
+) -> Result<Option<FolderSurvey>, IpcError> {
+    let picked = tauri::async_runtime::spawn_blocking(move || pick_folder(&app))
         .await
-        .map_err(|error| IpcError::internal(&error))?
-}
-
-fn pick_and_survey(app: &AppHandle) -> Result<Option<FolderSurvey>, IpcError> {
-    let Some(folder) = pick_folder(app)? else {
+        .map_err(|error| IpcError::internal(&error))??;
+    let Some(folder) = picked else {
         return Ok(None);
     };
-    Ok(Some(survey_folder(&folder)?))
+    Ok(Some(library.add_folder(folder).await?))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_folders(
+    library: State<'_, Library>,
+    after: Option<FolderCursor>,
+) -> Result<FolderPage, IpcError> {
+    Ok(library.folders(after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn remove_library_folder(library: State<'_, Library>, id: FolderId) -> Result<(), IpcError> {
+    Ok(library.remove_folder(id).await?)
 }
 
 #[cfg(test)]

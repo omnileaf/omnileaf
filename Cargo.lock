@@ -2670,6 +2670,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-wdio-webdriver",
  "tauri-specta",
+ "thiserror 2.0.21",
  "tracing",
  "tracing-subscriber",
 ]
@@ -2692,9 +2693,15 @@ dependencies = [
 name = "omnileaf-engine"
 version = "0.0.0"
 dependencies = [
+ "omnileaf-db",
  "serde",
+ "serde_json",
  "specta",
+ "specta-typescript",
  "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

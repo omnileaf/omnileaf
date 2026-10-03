@@ -2,7 +2,7 @@ use std::{io, path::PathBuf};
 
 use omnileaf_sync_proto::{ClockError, SeriesId, Value};
 
-use crate::store::Key;
+use crate::{catalog::RootId, store::Key};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -41,6 +41,14 @@ pub enum Error {
     DanglingReference { path: PathBuf, table: String },
     #[error("add a book to series {id}, which isn't in the catalog")]
     UnknownSeries { id: SeriesId },
+    #[error("remove library folder {id}, which isn't in the catalog")]
+    UnknownRoot { id: RootId },
+    #[error("remove library folder {id}, the home folder the library lives in")]
+    HomeRoot { id: RootId },
+    #[error("read a library folder stored as a {kind} locator, which this build can't open")]
+    UnsupportedLocator { kind: String },
+    #[error("read a library folder id that isn't one the library gave out")]
+    MalformedRootId,
     #[error("ask for a page of {requested} items, outside the 1 to {max} a page holds")]
     PageSize { requested: u16, max: u16 },
     #[error("read a page cursor that isn't one the library gave out")]

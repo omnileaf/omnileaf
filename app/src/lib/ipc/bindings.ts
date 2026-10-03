@@ -10,12 +10,22 @@ export const commands = {
 	comicFiles: number,
 	unreadableFolders: number,
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder")),
+	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
+	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
 };
 
 /* Types */
 export type AppInfo = {
 	version: string,
 	platform: Platform,
+};
+
+export type FolderKind = "home" | "linked";
+
+export type FolderPage = {
+	folders: LibraryFolder[],
+	/**  Absent on the last page. */
+	next: string & { readonly __brand: "FolderCursor" } | null,
 };
 
 export type FolderSurvey = {
@@ -29,7 +39,14 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "internal";
+
+export type LibraryFolder = {
+	id: string & { readonly __brand: "FolderId" },
+	kind: FolderKind,
+	name: string,
+	location: string,
+};
 
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
