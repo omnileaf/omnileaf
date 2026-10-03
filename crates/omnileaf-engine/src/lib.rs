@@ -12,6 +12,7 @@ mod library_changes;
 mod library_folder;
 mod library_layout;
 mod library_series;
+mod library_view;
 mod rescan;
 mod rescan_plan;
 mod resource;
@@ -27,6 +28,10 @@ pub use library::{Library, LibraryError};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
+pub use library_view::{
+    ColumnRange, ColumnRanges, Columns, ColumnsOutOfRange, CoversPerRow, DesktopColumns,
+    LibraryDisplay, LibraryView, PhoneColumns, TabletColumns,
+};
 pub use omnileaf_db::store::{Changed, Clock};
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
 pub use resource::Resource;

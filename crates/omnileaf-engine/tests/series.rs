@@ -61,6 +61,24 @@ async fn lists_the_series_found_by_title_each_with_a_cover() {
 }
 
 #[tokio::test]
+async fn counts_the_series_found() {
+    let comics = TempFolder::new("series-count-comics");
+    write_sample_library(comics.path()).unwrap();
+    let home = TempFolder::new("series-count-home");
+    let library = Library::open(home.path().to_path_buf(), FixedClock)
+        .await
+        .unwrap();
+    library
+        .add_folder(comics.path().join(SAMPLE_LIBRARY_NAME), |_| {})
+        .await
+        .unwrap();
+
+    let count = library.series_count().await.unwrap();
+
+    assert_eq!(count, 3);
+}
+
+#[tokio::test]
 async fn names_each_series_by_an_id_of_its_own() {
     let comics = TempFolder::new("series-ids-comics");
     write_sample_library(comics.path()).unwrap();
