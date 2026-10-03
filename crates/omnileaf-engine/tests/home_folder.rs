@@ -12,7 +12,9 @@ use std::{fs, path::Path};
 use books::write_book;
 use omnileaf_db::{
     Config, Database,
-    catalog::{PageRequest, PageSize, SeriesOrder, series_books, series_page},
+    catalog::{
+        PageRequest, PageSize, SeriesListing, SeriesOrder, SeriesSort, series_books, series_page,
+    },
     rusqlite::{Connection, OpenFlags},
     store::{Store, reading_state},
 };
@@ -75,9 +77,13 @@ fn only_book(database: &Path) -> BookId {
         size: PageSize::try_from(PageSize::MAX).unwrap(),
     };
     let connection = read_only(database);
-    let series = series_page(&connection, SeriesOrder::Title, &whole_page)
-        .unwrap()
-        .items;
+    let series = series_page(
+        &connection,
+        &SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title)),
+        &whole_page,
+    )
+    .unwrap()
+    .items;
     assert_eq!(series.len(), 1);
     let books = series_books(&connection, series.first().unwrap().id, &whole_page)
         .unwrap()

@@ -50,6 +50,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0014_store_series_source_ids_as_sixteen_bytes"),
     migration!("0015_allow_covers_only_library_view"),
     migration!("0016_add_android_tree_labels"),
+    migration!("0017_count_read_and_started_books"),
 ];
 
 pub(crate) fn pending(
@@ -201,12 +202,16 @@ fn latest_version(migrations: &[Migration]) -> u32 {
 mod tests {
     use std::{fs, path::Path};
 
+    use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SourceId};
+
     use super::*;
     use crate::{
-        Database, Language, connection, first_launch::first_launch_finished,
-        scratch::ScratchLibrary, title_key::TitleCollation,
+        Database, Language, connection,
+        first_launch::first_launch_finished,
+        scratch::ScratchLibrary,
+        store::{Clock, Store},
+        title_key::TitleCollation,
     };
-    use omnileaf_sync_proto::SourceId;
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
 
@@ -551,6 +556,71 @@ mod tests {
             .query_row("SELECT source_id FROM series", [], |row| row.get(0))
             .unwrap();
         assert_eq!(source, SourceId::local().as_bytes().to_vec());
+    }
+
+    struct StoppedClock;
+
+    impl Clock for StoppedClock {
+        fn now_unix_ms(&self) -> u64 {
+            0
+        }
+    }
+
+    fn book(number: u32) -> BookId {
+        BookId::local(
+            &Fingerprint::pmf1([ImageEntry {
+                crc32: number,
+                size: 1,
+            }])
+            .unwrap(),
+        )
+    }
+
+    #[test]
+    fn counts_the_read_and_started_books_of_each_series_kept_from_before_they_were_counted() {
+        let scratch = ScratchLibrary::new("reading-counts-upgrade");
+        let store = Store::new(
+            Database::open_with(&scratch.config, &MIGRATIONS[..16]).unwrap(),
+            StoppedClock,
+        );
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for number in 1..=3 {
+            connection
+                .execute(
+                    "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                     VALUES (?1, 1, ?2, x'', 0)",
+                    (book(number).as_bytes(), format!("Volume {number:02}")),
+                )
+                .unwrap();
+        }
+        let written = store.write(|writer| {
+            writer.set_read(book(1), true)?;
+            writer.set_position(book(2), 4)?;
+            writer.set_read(book(2), false)?;
+            writer.set_read(book(3), false)
+        });
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(written)
+            .unwrap();
+        drop(store);
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let counts: (u32, u32) = connection
+            .query_row("SELECT read_count, started_count FROM series", [], |row| {
+                Ok((row.get(0)?, row.get(1)?))
+            })
+            .unwrap();
+        assert_eq!(counts, (1, 2));
     }
 
     fn schema_of(path: &Path) -> Schema {

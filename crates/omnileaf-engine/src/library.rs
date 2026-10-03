@@ -10,10 +10,10 @@ use omnileaf_db::{
     Config, Database,
     catalog::{
         AndroidTree, AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind,
-        RootLocator, SeriesOrder, add_root, bookmarked_roots, cover_file, home_root, library_root,
-        library_roots, mark_root_available, mark_root_unavailable, remove_book_files,
-        remove_books_without_files, remove_root, root_book_count, root_files, series_count,
-        series_page,
+        RootLocator, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort, add_root,
+        bookmarked_roots, cover_file, home_root, library_root, library_roots, mark_root_available,
+        mark_root_unavailable, remove_book_files, remove_books_without_files, remove_root,
+        root_book_count, root_files, series_count, series_page,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_view::{library_view, set_library_view},
@@ -223,7 +223,13 @@ impl Library {
         let page = self
             .store
             .database()
-            .read(move |connection| series_page(connection, SeriesOrder::Title, &request))
+            .read(move |connection| {
+                series_page(
+                    connection,
+                    &SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title)),
+                    &request,
+                )
+            })
             .await?;
         Ok(SeriesPage {
             series: page.items.into_iter().map(LibrarySeries::from).collect(),
@@ -240,7 +246,11 @@ impl Library {
     }
 
     pub async fn series_count(&self) -> Result<u32, LibraryError> {
-        Ok(self.store.database().read(series_count).await?)
+        Ok(self
+            .store
+            .database()
+            .read(|connection| series_count(connection, &SeriesFilter::NONE))
+            .await?)
     }
 
     pub async fn view(&self) -> Result<LibraryView, LibraryError> {

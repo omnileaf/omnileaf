@@ -11,7 +11,7 @@ use std::{num::NonZeroUsize, time::Duration};
 use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Database,
-    catalog::{Cursor, PageRequest, PageSize, SeriesOrder, series_page},
+    catalog::{Cursor, PageRequest, PageSize, SeriesListing, SeriesOrder, SeriesSort, series_page},
 };
 use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
 use support::{ScratchFolder, library_config};
@@ -71,7 +71,13 @@ async fn read_title_page(database: &Database, after: Option<Cursor>) -> Option<C
         size: PageSize::try_from(PAGE_SIZE).unwrap(),
     };
     let page = database
-        .read(move |connection| series_page(connection, SeriesOrder::Title, &request))
+        .read(move |connection| {
+            series_page(
+                connection,
+                &SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title)),
+                &request,
+            )
+        })
         .await
         .unwrap();
     assert_eq!(page.items.len(), usize::from(PAGE_SIZE));

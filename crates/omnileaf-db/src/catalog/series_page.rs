@@ -1,5 +1,5 @@
 use omnileaf_sync_proto::SeriesId;
-use rusqlite::{Connection, OptionalExtension, Row, Statement, ToSql, Transaction, named_params};
+use rusqlite::{Connection, OptionalExtension, Row, ToSql, Transaction, named_params};
 
 use crate::{
     Error,
@@ -8,6 +8,9 @@ use crate::{
         cover::stored_cover,
         cursor::Position,
         page::{Page, PageRequest},
+        series_listing::{
+            FilterParams, SeriesFilter, SeriesListing, SeriesOrder, SortDirection, meets_the_filter,
+        },
         stored_id::stored_id,
     },
     title_key::{TitleStamp, stored_stamp},
@@ -21,6 +24,13 @@ struct Listing<P> {
     sort_position: fn(&Row<'_>) -> rusqlite::Result<P>,
 }
 
+/// One order's lists, each way round.
+struct Directions<P> {
+    ascending: Listing<P>,
+    descending: Listing<P>,
+}
+
+/// Where a row sits in title order, short of the stamp its key was made under.
 struct TitlePlace {
     sort_key: Vec<u8>,
     id: SeriesId,
@@ -28,29 +38,27 @@ struct TitlePlace {
 
 macro_rules! series_with_books {
     () => {
-        "SELECT series.id, series.title, series.title_key, series.book_count, series.added_at_ms,
-            cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
-            series.book_count - (
-                SELECT count(*)
-                FROM book AS read_book
-                JOIN book_state ON book_state.book_id = read_book.id
-                WHERE read_book.series_local_id = series.local_id AND book_state.is_read = 1
-            ) AS unread_count
-        FROM series
-        LEFT JOIN book_file AS cover ON cover.id = (
-            SELECT (SELECT min(book_file.id) FROM book_file WHERE book_file.book_id = book.id)
-            FROM book
-            WHERE book.series_local_id = series.local_id
-                AND EXISTS (SELECT 1 FROM book_file WHERE book_file.book_id = book.id)
-            ORDER BY book.title_sort_key, book.id
-            LIMIT 1
+        concat!(
+            "SELECT series.id, series.title, series.title_key, series.book_count, series.added_at_ms,
+                cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
+                series.book_count - series.read_count AS unread_count
+            FROM series
+            LEFT JOIN book_file AS cover ON cover.id = (
+                SELECT (SELECT min(book_file.id) FROM book_file WHERE book_file.book_id = book.id)
+                FROM book
+                WHERE book.series_local_id = series.local_id
+                    AND EXISTS (SELECT 1 FROM book_file WHERE book_file.book_id = book.id)
+                ORDER BY book.title_sort_key, book.id
+                LIMIT 1
+            )
+            WHERE series.book_count > 0 AND ",
+            meets_the_filter!()
         )
-        WHERE series.book_count > 0"
     };
 }
 
 macro_rules! listing {
-    (seek: $seek:literal, order: $order:literal, sort_position: $position:expr $(,)?) => {
+    (seek: $seek:expr, order: $order:expr, sort_position: $position:expr $(,)?) => {
         Listing {
             first_page_query: concat!(series_with_books!(), " ORDER BY ", $order, " LIMIT :limit"),
             next_page_query: concat!(
@@ -66,9 +74,26 @@ macro_rules! listing {
     };
 }
 
-const BY_TITLE: Listing<TitlePlace> = listing! {
-    seek: "(series.title_key, series.id) > (:after_key, :after_id)",
-    order: "series.title_key, series.id",
+/// Both ways round an order on `key`, with the id breaking ties so every row has one place.
+macro_rules! directions {
+    (key: $key:literal, sort_position: $position:expr $(,)?) => {
+        Directions {
+            ascending: listing! {
+                seek: concat!("(", $key, ", series.id) > (:after_key, :after_id)"),
+                order: concat!($key, ", series.id"),
+                sort_position: $position,
+            },
+            descending: listing! {
+                seek: concat!("(", $key, ", series.id) < (:after_key, :after_id)"),
+                order: concat!($key, " DESC, series.id DESC"),
+                sort_position: $position,
+            },
+        }
+    };
+}
+
+const BY_TITLE: Directions<TitlePlace> = directions! {
+    key: "series.title_key",
     sort_position: |row| {
         Ok(TitlePlace {
             sort_key: row.get("title_key")?,
@@ -77,9 +102,8 @@ const BY_TITLE: Listing<TitlePlace> = listing! {
     },
 };
 
-const BY_RECENTLY_ADDED: Listing<Position> = listing! {
-    seek: "(series.added_at_ms, series.id) < (:after_key, :after_id)",
-    order: "series.added_at_ms DESC, series.id DESC",
+const BY_DATE_ADDED: Directions<Position> = directions! {
+    key: "series.added_at_ms",
     sort_position: |row| {
         Ok(Position::Added {
             added_at_ms: row.get("added_at_ms")?,
@@ -87,12 +111,6 @@ const BY_RECENTLY_ADDED: Listing<Position> = listing! {
         })
     },
 };
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SeriesOrder {
-    Title,
-    RecentlyAdded,
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeriesSummary {
@@ -104,37 +122,53 @@ pub struct SeriesSummary {
     pub cover: Option<Cover>,
 }
 
-#[tracing::instrument(skip_all, fields(?order, size = ?request.size))]
+/// Lists only the series holding at least one book, which are the ones the library shows, and of those only the ones the listing's filter lets through.
+///
+/// A title cursor from before the titles were keyed again carries on after its series' new place, or fails with [`Error::StaleCursor`] when that series has gone.
+#[tracing::instrument(skip_all, fields(?listing, size = ?request.size))]
 pub fn series_page(
     connection: &Connection,
-    order: SeriesOrder,
+    listing: &SeriesListing,
     request: &PageRequest,
 ) -> Result<Page<SeriesSummary>, Error> {
+    let read = Read {
+        connection,
+        filter: listing.filter,
+        limit: request.size.rows_to_fetch(),
+    };
     let after = request.after.as_ref().map(|cursor| &cursor.0);
-    let limit = request.size.rows_to_fetch();
-    let rows = match order {
-        SeriesOrder::Title => title_rows(connection, after, limit),
-        SeriesOrder::RecentlyAdded => recently_added_rows(connection, after, limit),
+    let direction = listing.sort.direction;
+    let rows = match listing.sort.order {
+        SeriesOrder::Title => title_rows(&read, BY_TITLE.toward(direction), after),
+        SeriesOrder::DateAdded => date_added_rows(&read, BY_DATE_ADDED.toward(direction), after),
     }?;
     Ok(Page::of(rows, request.size))
 }
 
-fn title_rows(
-    connection: &Connection,
-    after: Option<&Position>,
+/// What every page read binds besides where it starts.
+struct Read<'c> {
+    connection: &'c Connection,
+    filter: SeriesFilter,
     limit: i64,
+}
+
+/// Reads the stamp and the rows in one snapshot, so a re-key committing meanwhile can't mix keys made under two stamps.
+fn title_rows(
+    read: &Read<'_>,
+    listing: &Listing<TitlePlace>,
+    after: Option<&Position>,
 ) -> Result<Vec<(SeriesSummary, Position)>, Error> {
-    let _snapshot = snapshot(connection)?;
-    let stamp = stored_stamp(connection)?;
+    let _snapshot = snapshot(read.connection)?;
+    let stamp = stored_stamp(read.connection)?;
     let place = after
-        .map(|position| place_after(connection, stamp, position))
+        .map(|position| place_after(read.connection, stamp, position))
         .transpose()?;
     let rows = match place {
-        Some(TitlePlace { sort_key, id }) => BY_TITLE.rows_after(
-            connection,
-            named_params! { ":after_key": sort_key, ":after_id": id.as_bytes(), ":limit": limit },
+        Some(TitlePlace { sort_key, id }) => listing.rows_after(
+            read,
+            named_params! { ":after_key": sort_key, ":after_id": id.as_bytes() },
         ),
-        None => BY_TITLE.first_rows(connection, limit),
+        None => listing.first_rows(read),
     }?;
     Ok(rows
         .into_iter()
@@ -183,16 +217,16 @@ fn place_after(
     }
 }
 
-fn recently_added_rows(
-    connection: &Connection,
+fn date_added_rows(
+    read: &Read<'_>,
+    listing: &Listing<Position>,
     after: Option<&Position>,
-    limit: i64,
 ) -> Result<Vec<(SeriesSummary, Position)>, Error> {
     match after {
-        None => BY_RECENTLY_ADDED.first_rows(connection, limit),
-        Some(Position::Added { added_at_ms, id }) => BY_RECENTLY_ADDED.rows_after(
-            connection,
-            named_params! { ":after_key": added_at_ms, ":after_id": id.as_bytes(), ":limit": limit },
+        None => listing.first_rows(read),
+        Some(Position::Added { added_at_ms, id }) => listing.rows_after(
+            read,
+            named_params! { ":after_key": added_at_ms, ":after_id": id.as_bytes() },
         ),
         Some(Position::Title { .. } | Position::Book { .. } | Position::Root { .. }) => {
             Err(Error::CursorForAnotherList)
@@ -200,32 +234,40 @@ fn recently_added_rows(
     }
 }
 
+impl<P> Directions<P> {
+    const fn toward(&self, direction: SortDirection) -> &Listing<P> {
+        match direction {
+            SortDirection::Ascending => &self.ascending,
+            SortDirection::Descending => &self.descending,
+        }
+    }
+}
+
 impl<P> Listing<P> {
-    fn first_rows(
-        &self,
-        connection: &Connection,
-        limit: i64,
-    ) -> Result<Vec<(SeriesSummary, P)>, Error> {
-        self.read(
-            connection.prepare(self.first_page_query)?,
-            named_params! { ":limit": limit },
-        )
+    fn first_rows(&self, read: &Read<'_>) -> Result<Vec<(SeriesSummary, P)>, Error> {
+        self.read(read, self.first_page_query, &[])
     }
 
     fn rows_after(
         &self,
-        connection: &Connection,
-        after_and_limit: &[(&str, &dyn ToSql)],
+        read: &Read<'_>,
+        after: &[(&str, &dyn ToSql)],
     ) -> Result<Vec<(SeriesSummary, P)>, Error> {
-        self.read(connection.prepare(self.next_page_query)?, after_and_limit)
+        self.read(read, self.next_page_query, after)
     }
 
     fn read(
         &self,
-        mut statement: Statement<'_>,
-        params: &[(&str, &dyn ToSql)],
+        read: &Read<'_>,
+        sql: &str,
+        after: &[(&str, &dyn ToSql)],
     ) -> Result<Vec<(SeriesSummary, P)>, Error> {
-        let rows = statement.query_map(params, |row| {
+        let filter = FilterParams::of(read.filter);
+        let mut params = filter.named().to_vec();
+        params.push((":limit", &read.limit));
+        params.extend_from_slice(after);
+        let mut statement = read.connection.prepare(sql)?;
+        let rows = statement.query_map(params.as_slice(), |row| {
             Ok((summary(row)?, (self.sort_position)(row)?))
         })?;
         Ok(rows.collect::<Result<_, _>>()?)
@@ -250,77 +292,79 @@ mod tests {
 
     const COVER_BY_INDEX: [&str; 6] = [
         "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
-        "CORRELATED SCALAR SUBQUERY 4",
+        "CORRELATED SCALAR SUBQUERY 3",
         "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)",
         "SEARCH book_file EXISTS USING COVERING INDEX book_file_by_book (book_id=?)",
-        "CORRELATED SCALAR SUBQUERY 2",
+        "CORRELATED SCALAR SUBQUERY 1",
         "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
     ];
 
-    const UNREAD_BY_INDEX: [&str; 3] = [
-        "CORRELATED SCALAR SUBQUERY 1",
-        "SEARCH read_book USING COVERING INDEX book_by_series (series_local_id=?)",
-        "SEARCH book_state USING PRIMARY KEY (book_id=?)",
-    ];
-
-    fn with_covers_and_unread_counts(series_step: &str) -> Vec<String> {
+    fn with_covers(series_step: &str) -> Vec<String> {
         [series_step]
             .into_iter()
             .chain(COVER_BY_INDEX)
-            .chain(UNREAD_BY_INDEX)
             .map(ToOwned::to_owned)
             .collect()
     }
 
+    fn plans_of<P>(
+        scratch: &ScratchLibrary,
+        pick: fn(&Listing<P>) -> &'static str,
+        directions: &Directions<P>,
+    ) -> [Vec<String>; 2] {
+        [
+            scratch.query_plan(pick(&directions.ascending)),
+            scratch.query_plan(pick(&directions.descending)),
+        ]
+    }
+
     #[test]
-    fn starts_at_the_head_of_the_title_index_without_reading_the_table_or_sorting() {
+    fn starts_at_either_end_of_the_title_index_without_reading_the_table_or_sorting() {
         let scratch = ScratchLibrary::new("first-title-plan");
 
-        let plan = scratch.query_plan(BY_TITLE.first_page_query);
+        let plans = plans_of(&scratch, |listing| listing.first_page_query, &BY_TITLE);
 
-        assert_eq!(
-            plan,
-            with_covers_and_unread_counts("SCAN series USING INDEX series_by_title")
-        );
+        let from_the_head = with_covers("SCAN series USING INDEX series_by_title");
+        assert_eq!(plans, [from_the_head.clone(), from_the_head]);
     }
 
     #[test]
-    fn starts_at_the_head_of_the_recently_added_index_without_reading_the_table_or_sorting() {
-        let scratch = ScratchLibrary::new("first-recently-added-plan");
+    fn starts_at_either_end_of_the_date_added_index_without_reading_the_table_or_sorting() {
+        let scratch = ScratchLibrary::new("first-date-added-plan");
 
-        let plan = scratch.query_plan(BY_RECENTLY_ADDED.first_page_query);
+        let plans = plans_of(&scratch, |listing| listing.first_page_query, &BY_DATE_ADDED);
 
-        assert_eq!(
-            plan,
-            with_covers_and_unread_counts("SCAN series USING INDEX series_by_added")
-        );
+        let from_the_head = with_covers("SCAN series USING INDEX series_by_added");
+        assert_eq!(plans, [from_the_head.clone(), from_the_head]);
     }
 
     #[test]
-    fn seeks_the_title_index_on_both_sort_columns_without_scanning_or_sorting() {
+    fn seeks_the_title_index_either_way_on_both_sort_columns_without_scanning_or_sorting() {
         let scratch = ScratchLibrary::new("title-plan");
 
-        let plan = scratch.query_plan(BY_TITLE.next_page_query);
+        let plans = plans_of(&scratch, |listing| listing.next_page_query, &BY_TITLE);
 
         assert_eq!(
-            plan,
-            with_covers_and_unread_counts(
-                "SEARCH series USING INDEX series_by_title ((title_key,id)>(?,?))"
-            )
+            plans,
+            [
+                with_covers("SEARCH series USING INDEX series_by_title ((title_key,id)>(?,?))"),
+                with_covers("SEARCH series USING INDEX series_by_title ((title_key,id)<(?,?))"),
+            ]
         );
     }
 
     #[test]
-    fn seeks_the_recently_added_index_on_both_sort_columns_without_scanning_or_sorting() {
-        let scratch = ScratchLibrary::new("recently-added-plan");
+    fn seeks_the_date_added_index_either_way_on_both_sort_columns_without_scanning_or_sorting() {
+        let scratch = ScratchLibrary::new("date-added-plan");
 
-        let plan = scratch.query_plan(BY_RECENTLY_ADDED.next_page_query);
+        let plans = plans_of(&scratch, |listing| listing.next_page_query, &BY_DATE_ADDED);
 
         assert_eq!(
-            plan,
-            with_covers_and_unread_counts(
-                "SEARCH series USING INDEX series_by_added ((added_at_ms,id)<(?,?))"
-            )
+            plans,
+            [
+                with_covers("SEARCH series USING INDEX series_by_added ((added_at_ms,id)>(?,?))"),
+                with_covers("SEARCH series USING INDEX series_by_added ((added_at_ms,id)<(?,?))"),
+            ]
         );
     }
 
