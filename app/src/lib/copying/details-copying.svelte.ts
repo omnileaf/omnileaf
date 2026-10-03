@@ -1,6 +1,8 @@
-import type { commands } from "$lib/ipc/bindings";
+import type { IpcError } from "$lib/ipc/bindings";
 
-export type CopyDetails = typeof commands.copyVersionDetails;
+export type CopyDetails = () => Promise<
+  { status: "ok"; data: null } | { status: "error"; error: IpcError }
+>;
 
 export type CopyOutcome = "idle" | "copied" | "failed";
 
