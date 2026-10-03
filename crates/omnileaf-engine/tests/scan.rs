@@ -7,7 +7,10 @@ mod support;
 
 use std::{fs, path::Path};
 
-use omnileaf_db::rusqlite::{Connection, OpenFlags};
+use omnileaf_db::{
+    catalog::{PageRequest, PageSize, SeriesOrder, SeriesSummary, series_books, series_page},
+    rusqlite::{Connection, OpenFlags},
+};
 use omnileaf_engine::{Clock, FolderId, FolderScan, Library, LibraryError, ScanProgress};
 use omnileaf_testkit::{
     ArchiveEntry, Compression, PageShape, SAMPLE_LIBRARY_NAME, cbz, page_png, write_sample_library,
@@ -55,34 +58,46 @@ impl Scanned {
         (scan, progress)
     }
 
-    fn series(&self) -> Vec<(String, i64)> {
-        self.rows(
-            "SELECT title, book_count FROM series ORDER BY title",
-            |row| Ok((row.get(0)?, row.get(1)?)),
-        )
+    fn series(&self) -> Vec<(String, u32)> {
+        self.series_summaries()
+            .into_iter()
+            .map(|series| (series.title, series.book_count))
+            .collect()
     }
 
-    fn book_titles(&self) -> Vec<String> {
-        self.rows("SELECT title FROM book ORDER BY title", |row| row.get(0))
+    fn books_in(&self, title: &str) -> Vec<String> {
+        let series = self
+            .series_summaries()
+            .into_iter()
+            .find(|series| series.title == title)
+            .unwrap();
+        series_books(&self.connection(), series.id, &whole_page())
+            .unwrap()
+            .items
+            .into_iter()
+            .map(|book| book.title)
+            .collect()
     }
 
-    fn rows<T>(
-        &self,
-        sql: &str,
-        read: fn(&omnileaf_db::rusqlite::Row<'_>) -> omnileaf_db::rusqlite::Result<T>,
-    ) -> Vec<T> {
-        let connection = Connection::open_with_flags(
+    fn series_summaries(&self) -> Vec<SeriesSummary> {
+        series_page(&self.connection(), SeriesOrder::Title, &whole_page())
+            .unwrap()
+            .items
+    }
+
+    fn connection(&self) -> Connection {
+        Connection::open_with_flags(
             self.home.path().join(DATABASE_FILE),
             OpenFlags::SQLITE_OPEN_READ_ONLY,
         )
-        .unwrap();
-        connection
-            .prepare(sql)
-            .unwrap()
-            .query_map([], read)
-            .unwrap()
-            .collect::<Result<_, _>>()
-            .unwrap()
+        .unwrap()
+    }
+}
+
+fn whole_page() -> PageRequest {
+    PageRequest {
+        after: None,
+        size: PageSize::try_from(PageSize::MAX).unwrap(),
     }
 }
 
@@ -113,7 +128,7 @@ fn sample_library(name: &str) -> TempFolder {
     folder
 }
 
-fn owned(rows: &[(&str, i64)]) -> Vec<(String, i64)> {
+fn owned(rows: &[(&str, u32)]) -> Vec<(String, u32)> {
     rows.iter()
         .map(|(title, books)| ((*title).to_owned(), *books))
         .collect()
@@ -231,7 +246,10 @@ async fn titles_a_book_from_its_comic_info_or_else_its_file_name() {
 
     let (scanned, _, _) = Scanned::folder("scan-titles", comics.path()).await;
 
-    assert_eq!(scanned.book_titles(), ["Sample Story", "v02"]);
+    assert_eq!(
+        scanned.books_in("Sample Series 01"),
+        ["Sample Story", "v02"]
+    );
 }
 
 #[tokio::test]
