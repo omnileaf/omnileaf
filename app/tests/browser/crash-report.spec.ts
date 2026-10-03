@@ -72,6 +72,12 @@ function prompt(page: Page) {
   return page.getByRole("alertdialog");
 }
 
+function alwaysSendBox(page: Page) {
+  return prompt(page).getByRole("checkbox", {
+    name: "Always send reports like this, without asking",
+  });
+}
+
 function sendButton(page: Page) {
   return prompt(page).getByRole("button", {
     name: /^(Send report|Report the problem)$/,
@@ -193,17 +199,25 @@ for (const platform of ["android", "linux"] as const) {
     }) => {
       await page.goto("/");
 
-      await prompt(page)
-        .getByRole("checkbox", {
-          name: "Always send reports like this, without asking",
-        })
-        .check();
+      await alwaysSendBox(page).check();
       await sendButton(page).click();
       await page.goto("/settings/privacy");
 
       await expect(
         page.getByRole("radio", { name: "Always send" }),
       ).toBeChecked();
+    });
+
+    test("a later report opens with Always unticked", async ({ page }) => {
+      await page.goto("/");
+      await alwaysSendBox(page).check();
+      await prompt(page).getByRole("button", { name: "Don't send" }).click();
+      await expect(prompt(page)).toBeHidden();
+
+      await throwUnhandled(page, 1);
+
+      await expect(prompt(page)).toContainText("Interface error");
+      await expect(alwaysSendBox(page)).not.toBeChecked();
     });
 
     for (const scheme of ["light", "dark"] as const) {

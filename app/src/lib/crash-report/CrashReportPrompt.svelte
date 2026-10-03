@@ -38,6 +38,7 @@
   const isCopied = $derived(reporting.copying.outcome === "copied");
 
   function openModally(dialog: HTMLDialogElement): () => void {
+    alwaysSend = false;
     dialog.showModal();
     dialog.querySelector<HTMLElement>("[data-prompt-title]")?.focus();
     return () => {
