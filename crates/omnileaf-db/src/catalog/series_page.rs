@@ -1,5 +1,5 @@
 use omnileaf_sync_proto::SeriesId;
-use rusqlite::{Connection, OptionalExtension, Row, Statement, ToSql, named_params};
+use rusqlite::{Connection, OptionalExtension, Row, Statement, ToSql, Transaction, named_params};
 
 use crate::{
     Error,
@@ -111,18 +111,18 @@ fn title_rows(
     after: Option<&Position>,
     limit: i64,
 ) -> Result<Vec<(SeriesSummary, Position)>, Error> {
-    let snapshot = connection.unchecked_transaction()?;
-    let stamp = stored_stamp(&snapshot)?;
+    let _snapshot = snapshot(connection)?;
+    let stamp = stored_stamp(connection)?;
     let place = match after {
-        Some(position) => place_after(&snapshot, stamp, position)?,
+        Some(position) => place_after(connection, stamp, position)?,
         None => None,
     };
     let rows = match place {
         Some(TitlePlace { sort_key, id }) => BY_TITLE.rows_after(
-            &snapshot,
+            connection,
             named_params! { ":after_key": sort_key, ":after_id": id.as_bytes(), ":limit": limit },
         ),
-        None => BY_TITLE.first_rows(&snapshot, limit),
+        None => BY_TITLE.first_rows(connection, limit),
     }?;
     Ok(rows
         .into_iter()
@@ -135,6 +135,15 @@ fn title_rows(
             (series, position)
         })
         .collect())
+}
+
+/// Begins a read transaction unless the caller is in one already, which holds one snapshot by itself.
+fn snapshot(connection: &Connection) -> rusqlite::Result<Option<Transaction<'_>>> {
+    if connection.is_autocommit() {
+        connection.unchecked_transaction().map(Some)
+    } else {
+        Ok(None)
+    }
 }
 
 /// The cursor's place under the current stamp, which is its series' new key when the titles were keyed again since.

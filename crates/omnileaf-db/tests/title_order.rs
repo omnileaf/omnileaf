@@ -328,6 +328,25 @@ async fn orders_hebrew_ignoring_direction_marks() {
 }
 
 #[tokio::test]
+async fn lists_titles_from_inside_a_write_job() {
+    let library = Library::with_titles("title-page-in-write", &["Bravo", "Alpha"]).await;
+    let request = PageRequest {
+        after: None,
+        size: PageSize::try_from(PAGE_SIZE).unwrap(),
+    };
+
+    let page = library
+        .store
+        .database()
+        .write(move |transaction| series_page(transaction, SeriesOrder::Title, &request))
+        .await
+        .unwrap();
+
+    let titles: Vec<String> = page.items.into_iter().map(|series| series.title).collect();
+    assert_eq!(titles, ["Alpha", "Bravo"]);
+}
+
+#[tokio::test]
 async fn keys_a_series_added_after_a_language_change_for_that_language() {
     let library = Library::with_titles("added-after-change", &["Zebra"]).await;
     library
