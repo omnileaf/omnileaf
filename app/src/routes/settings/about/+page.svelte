@@ -1,37 +1,89 @@
 <script lang="ts">
   import appIcon from "$branding/icon.svg";
+  import AboutFailures from "$lib/about/AboutFailures.svelte";
+  import CopyVersionButton from "$lib/about/CopyVersionButton.svelte";
+  import { LinkOpening } from "$lib/about/link-opening.svelte";
+  import ProjectLinkRows from "$lib/about/ProjectLinkRows.svelte";
+  import { VersionCopying } from "$lib/about/version-copying.svelte";
+  import { commands } from "$lib/ipc/bindings";
+  import { WindowWidth } from "$lib/page/breakpoints";
+  import { isPhone } from "$lib/page/platform";
   import { m } from "$lib/paraglide/messages.js";
   import SectionHeading from "$lib/settings/SectionHeading.svelte";
 
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
+
+  const copying = new VersionCopying(commands.copyVersionDetails);
+  const opening = new LinkOpening(commands.openProjectLink);
+
+  const width = new WindowWidth();
+  const onPhone = $derived(isPhone(data.appInfo.platform, width.current));
 </script>
 
 <SectionHeading title={m.about_title()} />
-<div class="mbs-pane-gap flex flex-col gap-xl two-pane:max-inline-narrow">
-  <section
-    class="flex flex-col items-center gap-xs text-center two-pane:flex-row two-pane:gap-lg two-pane:text-start"
-  >
-    <img
-      src={appIcon}
-      alt=""
-      class="block-app-icon inline-app-icon two-pane:block-4xl two-pane:inline-4xl"
-    />
-    <div>
-      <h2
-        class="mbs-sm text-app-name font-bold two-pane:mbs-none two-pane:text-bar-title"
-      >
-        {m.app_name()}
-      </h2>
-      <p class="text-callout text-muted two-pane:text-label">
-        {m.app_version({ version: data.appInfo.version })}
-      </p>
+{#if onPhone}
+  <div class="mbs-pane-gap flex flex-col gap-xl">
+    <div class="flex flex-col items-center gap-sm text-center">
+      <img src={appIcon} alt="" class="block-app-icon inline-app-icon" />
+      <h2 class="text-app-name font-bold">{m.app_name()}</h2>
     </div>
-  </section>
-  <p
-    class="px-md text-center text-footnote text-muted two-pane:px-none two-pane:text-start"
+    <div>
+      <ul
+        class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card"
+      >
+        <li
+          class="flex items-center gap-md py-sm ps-list-row pe-sm min-block-detail-row"
+        >
+          <span class="flex flex-1 flex-col">
+            <span class="font-semibold">{m.about_version()}</span>
+            <span class="text-footnote text-muted">{data.appInfo.version}</span>
+          </span>
+          <CopyVersionButton {copying} look="phone" />
+        </li>
+        <ProjectLinkRows
+          {opening}
+          sourceCode={data.appInfo.sourceCode}
+          look="phone"
+        />
+      </ul>
+      <AboutFailures {copying} {opening} />
+    </div>
+    <p class="px-md text-center text-footnote text-muted">
+      {m.about_licence()}
+    </p>
+  </div>
+{:else}
+  <div
+    class="mbs-pane-gap flex flex-col gap-pane-gap two-pane:max-inline-section"
   >
-    {m.about_licence()}
-  </p>
-</div>
+    <div class="flex items-center gap-lg">
+      <img
+        src={appIcon}
+        alt=""
+        class="block-pane-app-icon inline-pane-app-icon"
+      />
+      <div class="flex-1">
+        <h2 class="text-group-title font-bold">{m.app_name()}</h2>
+        <p class="text-label text-muted">
+          {m.app_version({ version: data.appInfo.version })}
+        </p>
+      </div>
+      <CopyVersionButton {copying} look="pane" />
+    </div>
+    <div>
+      <ul
+        class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card"
+      >
+        <ProjectLinkRows
+          {opening}
+          sourceCode={data.appInfo.sourceCode}
+          look="pane"
+        />
+      </ul>
+      <AboutFailures {copying} {opening} />
+    </div>
+    <p class="text-footnote text-muted">{m.about_licence()}</p>
+  </div>
+{/if}
