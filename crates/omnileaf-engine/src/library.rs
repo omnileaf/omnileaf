@@ -148,7 +148,7 @@ impl Library {
         let outcome = match walk(folder.clone()).await? {
             Ok(layout) => {
                 let target = self.target(root.id, folder.clone());
-                rescan(self.store.database(), target, layout, on_progress).await?
+                rescan(&self.store, target, layout, on_progress).await?
             }
             Err(error) => {
                 tracing::warn!(%error, "keep the books of a folder the rescan can't read");

@@ -14,18 +14,23 @@ use std::{
 };
 
 use books::{write_book, write_book_with, write_page};
-use omnileaf_db::catalog::{SeriesOrder, series_books, series_page};
+use omnileaf_db::{
+    Config, Database,
+    catalog::{SeriesOrder, series_books, series_page},
+    store::{ReadingState, Store, reading_state},
+};
 use omnileaf_engine::{
     FileChanges, FolderRescan, Library, LibraryFolder, RescanOutcome, ScanProgress,
 };
 use omnileaf_sync_proto::BookId;
-use scanned::{Scanned, owned, whole_page};
+use scanned::{FixedClock, Scanned, owned, whole_page};
 use support::TempFolder;
 
 const SERIES_01: &str = "Sample Series 01";
 const SERIES_02: &str = "Sample Series 02";
 const SERIES_03: &str = "Sample Series 03";
 const CHANGED_AT: Duration = Duration::from_secs(1_800_000_001);
+const DATABASE_FILE: &str = "library.sqlite";
 
 /// A folder of three books in two series, scanned once into a library of its own.
 struct Rescanned {
@@ -76,6 +81,26 @@ impl Rescanned {
             .into_iter()
             .map(|book| book.id)
             .collect()
+    }
+
+    /// Writes through a store of its own on the library's database, as reading a book would.
+    async fn set_position(&self, book: BookId, page: u32) {
+        let home = self.scanned.home.path();
+        let config = Config {
+            path: home.join(DATABASE_FILE),
+            backup_dir: home.join("backups"),
+            mmap_size_bytes: 0,
+        };
+        Store::new(Database::open(&config).unwrap(), FixedClock)
+            .write(move |writer| writer.set_position(book, page))
+            .await
+            .unwrap();
+    }
+
+    fn position_of(&self, book: BookId) -> Option<u32> {
+        reading_state(&self.scanned.connection(), book)
+            .unwrap()
+            .and_then(|state: ReadingState| state.position_page)
     }
 
     async fn folder(&self) -> LibraryFolder {
@@ -199,6 +224,8 @@ async fn updates_a_book_whose_file_changed_but_still_holds_the_same_pages() {
 async fn follows_a_renamed_file_and_keeps_its_book() {
     let folder = Rescanned::new("rescan-renamed").await;
     let before = folder.book_ids_in(SERIES_01);
+    let renamed = *before.first().unwrap();
+    folder.set_position(renamed, 5).await;
     fs::rename(
         folder.path("Sample Series 01/v01.cbz"),
         folder.path("Sample Series 01/v01 (fixed).cbz"),
@@ -216,6 +243,7 @@ async fn follows_a_renamed_file_and_keeps_its_book() {
     );
     assert_eq!(folder.scanned.books_in(SERIES_01), ["v01 (fixed)", "v02"]);
     assert_eq!(folder.book_ids_in(SERIES_01), before);
+    assert_eq!(folder.position_of(renamed), Some(5));
 }
 
 #[tokio::test]
@@ -289,6 +317,39 @@ async fn swaps_the_book_of_a_file_replaced_by_other_content() {
 }
 
 #[tokio::test]
+async fn carries_the_reading_state_of_a_replaced_file_to_the_book_now_there() {
+    let folder = Rescanned::new("rescan-replaced-state").await;
+    let before = folder.book_ids_in(SERIES_01);
+    folder.set_position(*before.first().unwrap(), 6).await;
+    let replaced = folder.path("Sample Series 01/v01.cbz");
+    write_book(&replaced, 9);
+    mark_changed(&replaced);
+
+    folder.rescan().await;
+
+    let now_there = *folder.book_ids_in(SERIES_01).first().unwrap();
+    assert!(!before.contains(&now_there));
+    assert_eq!(folder.position_of(now_there), Some(6));
+}
+
+#[tokio::test]
+async fn keeps_its_own_reading_state_for_a_known_book_renamed_over_another() {
+    let folder = Rescanned::new("rescan-renamed-over").await;
+    let before = folder.book_ids_in(SERIES_01);
+    let (overwritten, renamed) = (*before.first().unwrap(), *before.last().unwrap());
+    folder.set_position(overwritten, 6).await;
+    folder.set_position(renamed, 11).await;
+    let kept = folder.path("Sample Series 01/v01.cbz");
+    fs::rename(folder.path("Sample Series 01/v02.cbz"), &kept).unwrap();
+    mark_changed(&kept);
+
+    folder.rescan().await;
+
+    assert_eq!(folder.book_ids_in(SERIES_01), [renamed]);
+    assert_eq!(folder.position_of(renamed), Some(11));
+}
+
+#[tokio::test]
 async fn removes_a_book_whose_file_is_gone_and_a_series_left_without_books() {
     let folder = Rescanned::new("rescan-deleted").await;
     fs::remove_file(folder.path("Sample Series 02/v01.cbz")).unwrap();
@@ -309,6 +370,8 @@ async fn removes_a_book_whose_file_is_gone_and_a_series_left_without_books() {
 async fn brings_a_book_back_under_its_old_id_when_its_file_returns() {
     let folder = Rescanned::new("rescan-returned").await;
     let before = folder.book_ids_in(SERIES_02);
+    let returning_book = *before.first().unwrap();
+    folder.set_position(returning_book, 8).await;
     let returning = folder.path("Sample Series 02/v01.cbz");
     fs::remove_file(&returning).unwrap();
     folder.rescan().await;
@@ -324,6 +387,7 @@ async fn brings_a_book_back_under_its_old_id_when_its_file_returns() {
         })
     );
     assert_eq!(folder.book_ids_in(SERIES_02), before);
+    assert_eq!(folder.position_of(returning_book), Some(8));
 }
 
 #[tokio::test]

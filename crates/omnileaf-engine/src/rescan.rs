@@ -4,6 +4,7 @@ use omnileaf_db::{
         RootId, StoredFile, record_moved_books, record_scanned_books, remove_book_files,
         remove_books_without_files, root_files,
     },
+    store::Store,
 };
 use serde::Serialize;
 use specta::Type;
@@ -12,7 +13,7 @@ use tokio::task::spawn_blocking;
 use crate::{
     FolderId, LibraryError, ScanProgress,
     library_layout::Layout,
-    rescan_plan::{Forgetting, Plan, ReadBook, ToRead},
+    rescan_plan::{Forgetting, Plan, ReadBook, Replacement, ToRead},
     scan::{BOOKS_PER_BATCH, Target, read_book, saturating_u32},
 };
 
@@ -51,11 +52,12 @@ pub struct FileChanges {
 
 /// Brings the catalog in line with a folder walked successfully, leaving it as it was when the folder looks unplugged.
 pub(crate) async fn rescan(
-    database: &Database,
+    store: &Store,
     target: Target,
     layout: Layout,
     on_progress: impl FnMut(ScanProgress) + Send,
 ) -> Result<RescanOutcome, LibraryError> {
+    let database = store.database();
     let root = target.root;
     let stored = database
         .read(move |connection| root_files(connection, root))
@@ -67,6 +69,7 @@ pub(crate) async fn rescan(
     let (mut plan, to_read) = spawn_blocking(move || Plan::new(&folder, layout, stored)).await?;
     record_changed(database, &target, &mut plan, to_read, on_progress).await?;
     let (changes, forgetting) = plan.finish();
+    carry_reading_states(store, forgetting.replaced.clone()).await?;
     forget(database, root, forgetting).await?;
     Ok(RescanOutcome::Rescanned(changes))
 }
@@ -120,6 +123,23 @@ async fn read_batch(target: &Target, batch: Vec<ToRead>) -> Result<Vec<ReadBook>
     .await?)
 }
 
+/// Gives each book now in a replaced book's file the reading state it had, as synced writes.
+async fn carry_reading_states(
+    store: &Store,
+    replaced: Vec<Replacement>,
+) -> Result<(), LibraryError> {
+    if replaced.is_empty() {
+        return Ok(());
+    }
+    Ok(store
+        .write(move |writer| {
+            replaced.iter().try_for_each(|replacement| {
+                writer.carry_reading_state(replacement.old, replacement.new)
+            })
+        })
+        .await?)
+}
+
 /// Removes the files gone from the folder, then each book left with no file anywhere, in one transaction.
 async fn forget(
     database: &Database,
@@ -132,7 +152,12 @@ async fn forget(
     Ok(database
         .write(move |transaction| {
             let mut left = remove_book_files(transaction, root, &forgetting.gone)?;
-            left.extend(forgetting.replaced);
+            left.extend(
+                forgetting
+                    .replaced
+                    .iter()
+                    .map(|replacement| replacement.old),
+            );
             remove_books_without_files(transaction, &left)
         })
         .await?)

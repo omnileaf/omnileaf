@@ -26,8 +26,14 @@ pub(crate) struct Plan {
     gone: Vec<PathBuf>,
     /// How many of each book's files went, so a book found at a new place can be told moved rather than added.
     gone_books: BTreeMap<BookId, u32>,
-    /// Books whose file now holds another book, removed at the end unless found elsewhere.
-    replaced: Vec<BookId>,
+    replaced: Vec<Replacement>,
+}
+
+/// A book whose file now holds another book, removed at the end unless found elsewhere, whose reading state the new book takes on.
+#[derive(Clone, Copy)]
+pub(crate) struct Replacement {
+    pub(crate) old: BookId,
+    pub(crate) new: BookId,
 }
 
 /// A book read for a rescan, beside the book its location held before.
@@ -46,7 +52,7 @@ pub(crate) struct Recording {
 /// What the catalog loses once every changed book is recorded.
 pub(crate) struct Forgetting {
     pub(crate) gone: Vec<PathBuf>,
-    pub(crate) replaced: Vec<BookId>,
+    pub(crate) replaced: Vec<Replacement>,
 }
 
 impl Plan {
@@ -98,7 +104,10 @@ impl Plan {
                 Some(previous) => {
                     self.changes.updated = self.changes.updated.saturating_add(1);
                     if previous != id {
-                        self.replaced.push(previous);
+                        self.replaced.push(Replacement {
+                            old: previous,
+                            new: id,
+                        });
                     }
                     recording.unmoved.push(book);
                 }
