@@ -8,7 +8,8 @@ mod support;
 use std::path::Path;
 
 use omnileaf_engine::{
-    Changed, FolderId, FolderKind, Library, LibraryError, LibraryFolder, ScanProgress,
+    Changed, CoversPerRow, DesktopColumns, FolderId, FolderKind, Library, LibraryDisplay,
+    LibraryError, LibraryFolder, LibraryView, PhoneColumns, ScanProgress, TabletColumns,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, TempFolder};
@@ -271,6 +272,34 @@ async fn remembers_the_finished_first_launch_when_the_library_reopens() {
     let reopened = open(home.path()).await;
 
     assert!(reopened.first_launch_finished().await.unwrap());
+}
+
+#[tokio::test]
+async fn draws_a_new_library_in_the_view_a_new_library_starts_with() {
+    let home = TempFolder::new("library-view-new");
+
+    let view = open(home.path()).await.view().await.unwrap();
+
+    assert_eq!(view, LibraryView::default());
+}
+
+#[tokio::test]
+async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
+    let home = TempFolder::new("library-view-set");
+    let list = LibraryView {
+        display: LibraryDisplay::List,
+        covers_per_row: CoversPerRow {
+            phone: PhoneColumns::try_from(2).unwrap(),
+            tablet: TabletColumns::try_from(4).unwrap(),
+            desktop: DesktopColumns::try_from(9).unwrap(),
+        },
+        shows_item_counts: true,
+    };
+    open(home.path()).await.set_view(list).await.unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.view().await.unwrap(), list);
 }
 
 #[tokio::test]

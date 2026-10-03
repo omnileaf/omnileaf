@@ -5,9 +5,10 @@ use omnileaf_db::{
     catalog::{
         Cover, NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator, SeriesOrder,
         add_root, cover_file, library_root, library_roots, mark_root_available,
-        mark_root_unavailable, remove_root, series_page, set_home_root,
+        mark_root_unavailable, remove_root, series_count, series_page, set_home_root,
     },
     first_launch::{finish_first_launch, first_launch_finished},
+    library_view::{library_view, set_library_view},
     store::{Changed, Clock, Store},
 };
 use tokio::{
@@ -16,8 +17,9 @@ use tokio::{
 };
 
 use crate::{
-    AppLanguage, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, LibraryChanges,
-    LibraryFolder, LibrarySeries, RescanOutcome, ScanProgress, SeriesCursor, SeriesPage,
+    AppLanguage, ColumnsOutOfRange, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan,
+    LibraryChanges, LibraryFolder, LibrarySeries, LibraryView, RescanOutcome, ScanProgress,
+    SeriesCursor, SeriesPage,
     device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
     library_layout::folder_name,
@@ -64,6 +66,8 @@ pub enum LibraryError {
     HomeFolderKept { id: FolderId },
     #[error("reach the library database")]
     Database(#[source] omnileaf_db::Error),
+    #[error("read the library view this device stored")]
+    StoredView(#[source] ColumnsOutOfRange),
     #[error("run blocking library work")]
     Interrupted(#[from] tokio::task::JoinError),
 }
@@ -147,6 +151,29 @@ impl Library {
             series: page.items.into_iter().map(LibrarySeries::from).collect(),
             next: page.next.map(SeriesCursor),
         })
+    }
+
+    pub async fn series_count(&self) -> Result<u32, LibraryError> {
+        Ok(self.store.database().read(series_count).await?)
+    }
+
+    /// The view this device last set, or the one a new library starts with.
+    pub async fn view(&self) -> Result<LibraryView, LibraryError> {
+        let stored = self.store.database().read(library_view).await?;
+        stored.map_or_else(
+            || Ok(LibraryView::default()),
+            |view| LibraryView::try_from(view).map_err(LibraryError::StoredView),
+        )
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn set_view(&self, view: LibraryView) -> Result<(), LibraryError> {
+        let stored = view.into();
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| set_library_view(transaction, &stored))
+            .await?)
     }
 
     /// Where the cover's file is, or nothing once it has changed or gone since the cover was listed.
