@@ -12,6 +12,8 @@ use crate::{
     },
 };
 
+const NUMERIC_ORDERING: CollationNumericOrdering = CollationNumericOrdering::True;
+
 /// Makes the sort keys titles are listed by, which compare bytewise in the order the language's readers expect.
 pub(crate) struct TitleCollation {
     collator: CollatorBorrowed<'static>,
@@ -22,12 +24,9 @@ impl TitleCollation {
     /// Sorts numbers by value, and lets case, accents, then punctuation and spaces decide only between titles otherwise equal.
     pub(crate) fn new(language: &Language) -> Result<Self, Error> {
         let mut preferences = CollatorPreferences::from(language.locale());
-        preferences.numeric_ordering = Some(CollationNumericOrdering::True);
-        let mut options = CollatorOptions::default();
-        options.strength = Some(Strength::Quaternary);
-        options.alternate_handling = Some(AlternateHandling::Shifted);
+        preferences.numeric_ordering = Some(NUMERIC_ORDERING);
         let collator =
-            Collator::try_new(preferences, options).map_err(|source| Error::Collation {
+            Collator::try_new(preferences, options()).map_err(|source| Error::Collation {
                 language: language.to_string(),
                 source,
             })?;
@@ -37,6 +36,15 @@ impl TitleCollation {
         })
     }
 
+    /// Describes every setting the keys depend on besides ICU4X's own code and data, so the stamp moves whenever one of them does.
+    pub(crate) fn rules(language: &Language) -> String {
+        format!(
+            "{:?} {NUMERIC_ORDERING:?} {:?}",
+            options(),
+            articles_of(language)
+        )
+    }
+
     /// Keys the title without its leading article, so it files under the word readers look it up by.
     pub(crate) fn key(&self, title: &str) -> Vec<u8> {
         let sorted_by = without_leading_article(title, self.articles);
@@ -44,6 +52,13 @@ impl TitleCollation {
         let Ok(()) = self.collator.write_sort_key_to(sorted_by, &mut key);
         key
     }
+}
+
+fn options() -> CollatorOptions {
+    let mut options = CollatorOptions::default();
+    options.strength = Some(Strength::Quaternary);
+    options.alternate_handling = Some(AlternateHandling::Shifted);
+    options
 }
 
 #[cfg(test)]
@@ -60,6 +75,16 @@ mod tests {
         let [with_article, without] = keys("en", ["The Sample", "Sample"]);
 
         assert_eq!(with_article, without);
+    }
+
+    #[test]
+    fn describes_the_settings_and_the_article_list_of_the_language() {
+        let rules = ["en", "ja"].map(|language| TitleCollation::rules(&language.parse().unwrap()));
+
+        assert!(rules[0].contains("Quaternary") && rules[0].contains("Shifted"));
+        assert!(rules[0].contains("True"));
+        assert!(rules[0].contains(r#"Word("the")"#));
+        assert!(!rules[1].contains(r#"Word("the")"#));
     }
 
     #[test]

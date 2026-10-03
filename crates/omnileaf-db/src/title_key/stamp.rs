@@ -3,8 +3,12 @@ use rusqlite::{
     types::{FromSql, FromSqlError, FromSqlResult, ValueRef},
 };
 
-use crate::{Error, title_key::Language};
+use crate::{
+    Error,
+    title_key::{Language, TitleCollation},
+};
 
+/// Moves only when the code that makes keys changes, since its settings and article lists reach the stamp by themselves.
 const RULES_VERSION: u32 = 1;
 const ICU_VERSIONS: &str = env!("OMNILEAF_ICU_VERSIONS");
 const STAMP_CONTEXT: &str = "omnileaf.app 2026-10 title-key-stamp v1";
@@ -19,13 +23,15 @@ impl TitleStamp {
     pub(crate) const LENGTH: usize = 16;
 
     pub(crate) fn of(language: &Language) -> Self {
-        Self::with_icu_versions(language, ICU_VERSIONS)
+        Self::made_by(language, &TitleCollation::rules(language), ICU_VERSIONS)
     }
 
-    fn with_icu_versions(language: &Language, icu_versions: &str) -> Self {
+    fn made_by(language: &Language, rules: &str, icu_versions: &str) -> Self {
         let mut hasher = blake3::Hasher::new_derive_key(STAMP_CONTEXT);
         hasher.update(&RULES_VERSION.to_be_bytes());
         hasher.update(language.to_string().as_bytes());
+        hasher.update(FIELD_END);
+        hasher.update(rules.as_bytes());
         hasher.update(FIELD_END);
         hasher.update(icu_versions.as_bytes());
         let mut stamp = [0; Self::LENGTH];
@@ -111,6 +117,8 @@ name = "idna"
 version = "1.1.0"
 "#;
 
+    const RULES: &str = "Quaternary Shifted [Word(\"the\")]";
+
     fn english() -> Language {
         "en".parse().unwrap()
     }
@@ -124,7 +132,7 @@ version = "1.1.0"
         );
 
         let stamps = [LOCK_BEFORE, after.as_str()]
-            .map(|lock| TitleStamp::with_icu_versions(&english(), &icu_versions(lock)));
+            .map(|lock| TitleStamp::made_by(&english(), RULES, &icu_versions(lock)));
 
         assert_ne!(stamps[0], stamps[1]);
     }
@@ -138,7 +146,7 @@ version = "1.1.0"
         );
 
         let stamps = [LOCK_BEFORE, after.as_str()]
-            .map(|lock| TitleStamp::with_icu_versions(&english(), &icu_versions(lock)));
+            .map(|lock| TitleStamp::made_by(&english(), RULES, &icu_versions(lock)));
 
         assert_ne!(stamps[0], stamps[1]);
     }
@@ -148,9 +156,27 @@ version = "1.1.0"
         let after = LOCK_BEFORE.replacen("version = \"1.1.0\"", "version = \"1.2.0\"", 1);
 
         let stamps = [LOCK_BEFORE, after.as_str()]
-            .map(|lock| TitleStamp::with_icu_versions(&english(), &icu_versions(lock)));
+            .map(|lock| TitleStamp::made_by(&english(), RULES, &icu_versions(lock)));
 
         assert_eq!(stamps[0], stamps[1]);
+    }
+
+    #[test]
+    fn changes_when_only_the_rules_move() {
+        let rules = [RULES, "Tertiary Shifted [Word(\"the\")]"];
+
+        let stamps = rules.map(|rules| TitleStamp::made_by(&english(), rules, ICU_VERSIONS));
+
+        assert_ne!(stamps[0], stamps[1]);
+    }
+
+    #[test]
+    fn is_made_by_the_rules_titles_are_keyed_by_for_the_language() {
+        let rules = TitleCollation::rules(&english());
+
+        let stamp = TitleStamp::of(&english());
+
+        assert_eq!(stamp, TitleStamp::made_by(&english(), &rules, ICU_VERSIONS));
     }
 
     #[test]
