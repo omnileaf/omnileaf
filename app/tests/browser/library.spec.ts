@@ -6,6 +6,8 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 
+const EMPTY_ICON_SIZE = { phone: 28, wider: 36 } as const;
+
 test("opens on the empty library", async ({ page }) => {
   await page.goto("/");
 
@@ -53,5 +55,7 @@ test("draws the empty library's art at the size the boards draw it", async ({
       .first(),
   );
 
-  expect(icon.width).toBe(isPhone ? 28 : 36);
+  expect(icon.width).toBe(
+    isPhone ? EMPTY_ICON_SIZE.phone : EMPTY_ICON_SIZE.wider,
+  );
 });
