@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronRight } from "@lucide/svelte";
+  import { ChevronDown, ChevronRight } from "@lucide/svelte";
   import { tick } from "svelte";
 
   import { resolve } from "$app/paths";
@@ -91,10 +91,7 @@
           <span class="flex-1">
             {m.licences_show_all({ count: group.packages.length })}
           </span>
-          <ChevronRight
-            size={ROW_ICON_SIZES[look]}
-            class="shrink-0 rtl:-scale-x-100"
-          />
+          <ChevronDown size={ROW_ICON_SIZES[look]} class="shrink-0" />
         </button>
       </li>
     {/if}
