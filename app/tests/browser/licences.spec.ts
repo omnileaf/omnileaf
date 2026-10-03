@@ -22,6 +22,7 @@ const PACKAGES = licensedPackages({ rust, javascript });
 const GROUPS = groupByLicence(PACKAGES, new Intl.Collator("en"));
 const PREVIEW_SIZE = 3;
 const PHONE_ROW_HEIGHT = 60;
+const PANE_PACKAGE_TEXT = "14px";
 const SMALL_PHONE = { width: 360, height: 800 };
 const BREAK_OPPORTUNITY = /[\s/-]/;
 const LONGEST_UNBROKEN = PACKAGES.filter(
@@ -178,7 +179,7 @@ for (const { platform, rowHeight } of PANE_ROWS) {
   test.describe(`on ${platform} beside the phone width`, () => {
     test.use(onPlatform(platform));
 
-    test(`lists the packages on ${String(rowHeight)}px rows`, async ({
+    test(`lists the packages on ${String(rowHeight)}px rows in 14px text`, async ({
       page,
     }) => {
       await openLicences(page);
@@ -187,11 +188,11 @@ for (const { platform, rowHeight } of PANE_ROWS) {
         "tablets only",
       );
 
-      const row = await boxOf(
-        groupSection(page, MOST_USED.name).getByRole("link").first(),
-      );
+      const link = groupSection(page, MOST_USED.name).getByRole("link").first();
+      const row = await boxOf(link);
 
       expect(row.height).toBe(rowHeight);
+      await expect(link).toHaveCSS("font-size", PANE_PACKAGE_TEXT);
     });
   });
 }
