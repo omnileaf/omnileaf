@@ -6,7 +6,7 @@
 use std::{
     env, fs,
     path::{Path, PathBuf},
-    process,
+    process, thread,
 };
 
 use omnileaf_engine::{
@@ -255,6 +255,30 @@ fn bounds_where_a_saved_panic_happened() {
         offered.new_issue_url().len() <= BROWSER_URL_LIMIT,
         "{offered}"
     );
+}
+
+#[test]
+fn saves_from_several_threads_at_once_without_losing_the_report() {
+    let folder = TempFolder::new("concurrent-saves");
+    let file = folder.file();
+
+    let outcomes: Vec<bool> = thread::scope(|scope| {
+        let savers: Vec<_> = (0..8_u64)
+            .map(|saver| {
+                let file = file.clone();
+                scope.spawn(move || {
+                    (0..50_u64).all(|n| file.save(&report(saver * 100 + n, "busy")).is_ok())
+                })
+            })
+            .collect();
+        savers
+            .into_iter()
+            .map(|saver| saver.join().unwrap())
+            .collect()
+    });
+
+    assert!(outcomes.iter().all(|saved| *saved), "{outcomes:?}");
+    assert!(file.load().unwrap().is_some());
 }
 
 #[test]

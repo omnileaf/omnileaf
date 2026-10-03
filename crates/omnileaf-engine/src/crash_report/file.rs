@@ -1,12 +1,17 @@
 use std::{
     fs, io,
     path::{Path, PathBuf},
+    process,
+    sync::atomic::{AtomicU64, Ordering},
 };
 
 use super::{CrashReport, CrashReportId, StoredCrashReport};
 
 const FILE_NAME: &str = "crash-report.json";
-const UNFINISHED_FILE_NAME: &str = "crash-report.json.partial";
+const UNFINISHED_SUFFIX: &str = "partial";
+
+/// Numbers every save in the process, so saves on two threads at once never write the same side file.
+static SAVES: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug, thiserror::Error)]
 pub enum CrashReportError {
@@ -40,11 +45,14 @@ impl CrashReportFile {
     pub fn save(&self, report: &CrashReport) -> Result<(), CrashReportError> {
         let text = serde_json::to_vec(&StoredCrashReport::from(report))
             .map_err(CrashReportError::Encode)?;
-        let unfinished = self.folder.join(UNFINISHED_FILE_NAME);
+        let unfinished = self.unfinished_path();
         fs::create_dir_all(&self.folder)
             .and_then(|()| fs::write(&unfinished, text))
             .and_then(|()| fs::rename(&unfinished, self.path()))
-            .map_err(CrashReportError::Save)
+            .map_err(|error| {
+                let _ = fs::remove_file(&unfinished);
+                CrashReportError::Save(error)
+            })
     }
 
     pub fn load(&self) -> Result<Option<CrashReport>, CrashReportError> {
@@ -79,5 +87,13 @@ impl CrashReportFile {
 
     fn path(&self) -> PathBuf {
         self.folder.join(FILE_NAME)
+    }
+
+    fn unfinished_path(&self) -> PathBuf {
+        let save = SAVES.fetch_add(1, Ordering::Relaxed);
+        self.folder.join(format!(
+            "{FILE_NAME}.{}-{save}.{UNFINISHED_SUFFIX}",
+            process::id()
+        ))
     }
 }
