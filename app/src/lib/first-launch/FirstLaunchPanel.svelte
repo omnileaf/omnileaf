@@ -9,15 +9,15 @@
   const SPINE_GAP = 8;
   const SPINE_INSET = 8;
   const SPINES = [
-    { width: 22, height: 120, colour: "#ddebe2" },
-    { width: 30, height: 150, colour: "#7fcb9d" },
-    { width: 18, height: 100, colour: "#c9a24d" },
-    { width: 26, height: 160, colour: "#a9c4e6" },
-    { width: 22, height: 130, colour: "#f1ede4" },
-    { width: 34, height: 110, colour: "#e8c98c" },
-    { width: 20, height: 150, colour: "#9fdccf" },
-    { width: 28, height: 125, colour: "#f0b8c4" },
-    { width: 24, height: 140, colour: "#ddebe2" },
+    { width: 22, height: 120, fill: "fill-spine-mint" },
+    { width: 30, height: 150, fill: "fill-spine-green" },
+    { width: 18, height: 100, fill: "fill-spine-gold" },
+    { width: 26, height: 160, fill: "fill-spine-blue" },
+    { width: 22, height: 130, fill: "fill-spine-paper" },
+    { width: 34, height: 110, fill: "fill-spine-sand" },
+    { width: 20, height: 150, fill: "fill-spine-teal" },
+    { width: 28, height: 125, fill: "fill-spine-rose" },
+    { width: 24, height: 140, fill: "fill-spine-mint" },
   ] as const;
 
   const spines = SPINES.map((spine, index) => ({
@@ -36,9 +36,7 @@
   class="relative hidden shrink-0 flex-col overflow-hidden bg-panel p-2xl text-on-panel inline-first-launch-panel expanded:flex"
 >
   <svg
-    class="absolute inset-e-none inset-bs-none fill-panel-glow opacity-60"
-    width="260"
-    height="280"
+    class="absolute inset-e-none inset-bs-none fill-panel-glow opacity-60 block-panel-glow-tall inline-panel-glow"
     viewBox="0 0 260 280"
   >
     <circle cx="240" cy="40" r="240" />
@@ -58,7 +56,7 @@
         width={spine.width}
         height={spine.height}
         rx="4"
-        fill={spine.colour}
+        class={spine.fill}
       />
     {/each}
     <rect

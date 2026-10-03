@@ -67,6 +67,8 @@
   --spacing-first-launch-card: 61.25rem;
   --spacing-first-launch-card-tall: 38.75rem;
   --spacing-first-launch-panel: 22.5rem;
+  --spacing-panel-glow: 16.25rem;
+  --spacing-panel-glow-tall: 17.5rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
@@ -125,6 +127,14 @@
   --color-panel: #1f3a2b;
   --color-panel-glow: #2f6f4f;
   --color-on-panel: #f1ede4;
+  --color-spine-mint: #ddebe2;
+  --color-spine-green: #7fcb9d;
+  --color-spine-gold: #c9a24d;
+  --color-spine-blue: #a9c4e6;
+  --color-spine-paper: var(--color-on-panel);
+  --color-spine-sand: #e8c98c;
+  --color-spine-teal: #9fdccf;
+  --color-spine-rose: #f0b8c4;
   --color-icon-hole: var(--color-accent-soft);
   --color-glass: rgb(250 248 244 / 0.74);
   --color-glass-edge: rgb(255 255 255 / 0.7);
