@@ -9,12 +9,14 @@ use crate::{
     },
 };
 
-const IN_ADDED_ORDER: &str = "SELECT id, kind, locator_kind, location, added_at_ms
+const IN_ADDED_ORDER: &str = "SELECT
+        id, kind, locator_kind, location, added_at_ms, unavailable_since_ms
     FROM library_root
     WHERE id > ?1
     ORDER BY id
     LIMIT ?2";
-const ONE_ROOT: &str = "SELECT id, kind, locator_kind, location, added_at_ms
+const ONE_ROOT: &str = "SELECT
+        id, kind, locator_kind, location, added_at_ms, unavailable_since_ms
     FROM library_root
     WHERE id = ?1";
 

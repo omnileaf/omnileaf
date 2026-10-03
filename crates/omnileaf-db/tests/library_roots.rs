@@ -14,14 +14,16 @@ use omnileaf_db::{
     Database, Error,
     catalog::{
         LibraryRoot, NewBook, NewRoot, NewSeries, Page, PageRequest, PageSize, RootId, RootKind,
-        RootLocator, add_book, add_root, add_series, library_root, library_roots, remove_root,
-        series_books, set_home_root,
+        RootLocator, add_book, add_root, add_series, library_root, library_roots,
+        mark_root_available, mark_root_unavailable, remove_root, series_books, set_home_root,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
 use support::ScratchFolder;
 
 const ADDED_AT_MS: i64 = 1_790_000_000_000;
+const FIRST_MISSED_AT_MS: i64 = 1_790_000_100_000;
+const MISSED_AGAIN_AT_MS: i64 = 1_790_000_200_000;
 const SERIES: &str = "Sample Series 01";
 const HOME: &str = "/data/Omnileaf";
 const COMICS: &str = "/media/Comics";
@@ -67,6 +69,26 @@ impl Library {
         self.database
             .write(move |transaction| remove_root(transaction, id))
             .await
+    }
+
+    async fn mark_unavailable(&self, id: RootId, since_ms: i64) -> Result<(), Error> {
+        self.database
+            .write(move |transaction| mark_root_unavailable(transaction, id, since_ms))
+            .await
+    }
+
+    async fn mark_available(&self, id: RootId) -> Result<(), Error> {
+        self.database
+            .write(move |transaction| mark_root_available(transaction, id))
+            .await
+    }
+
+    async fn unavailable_since(&self, id: RootId) -> Option<i64> {
+        self.database
+            .read(move |connection| library_root(connection, id))
+            .await
+            .unwrap()
+            .unavailable_since_ms
     }
 
     async fn add_series(&self) -> SeriesId {
@@ -450,5 +472,66 @@ async fn makes_a_linked_folder_the_home_folder_when_home_moves_into_it() {
     assert_eq!(
         library.locations().await,
         [(RootKind::Home, PathBuf::from(COMICS))]
+    );
+}
+
+#[tokio::test]
+async fn reads_a_new_root_as_available() {
+    let library = Library::open("root-available");
+
+    let comics = library.add(RootKind::Linked, COMICS).await;
+
+    assert_eq!(library.unavailable_since(comics).await, None);
+}
+
+#[tokio::test]
+async fn keeps_the_time_a_root_was_first_found_unavailable() {
+    let library = Library::open("root-unavailable");
+    let comics = library.add(RootKind::Linked, COMICS).await;
+    library
+        .mark_unavailable(comics, FIRST_MISSED_AT_MS)
+        .await
+        .unwrap();
+
+    library
+        .mark_unavailable(comics, MISSED_AGAIN_AT_MS)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        library.unavailable_since(comics).await,
+        Some(FIRST_MISSED_AT_MS)
+    );
+}
+
+#[tokio::test]
+async fn reads_a_root_found_again_as_available() {
+    let library = Library::open("root-available-again");
+    let comics = library.add(RootKind::Linked, COMICS).await;
+    library
+        .mark_unavailable(comics, FIRST_MISSED_AT_MS)
+        .await
+        .unwrap();
+
+    library.mark_available(comics).await.unwrap();
+
+    assert_eq!(library.unavailable_since(comics).await, None);
+}
+
+#[tokio::test]
+async fn refuses_to_mark_a_root_missing_from_the_library() {
+    let library = Library::open("root-mark-missing");
+    let comics = library.add(RootKind::Linked, COMICS).await;
+    library.remove(comics).await.unwrap();
+
+    let outcomes = [
+        library.mark_unavailable(comics, FIRST_MISSED_AT_MS).await,
+        library.mark_available(comics).await,
+    ];
+
+    assert!(
+        outcomes
+            .iter()
+            .all(|outcome| matches!(outcome, Err(Error::UnknownRoot { id }) if *id == comics))
     );
 }
