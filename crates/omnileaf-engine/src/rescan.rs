@@ -1,7 +1,7 @@
 use omnileaf_db::{
     Database,
     catalog::{
-        RootId, StoredFile, record_moved_books, record_scanned_books, remove_book_files,
+        RootId, RootKind, StoredFile, record_moved_books, record_scanned_books, remove_book_files,
         remove_books_without_files, root_files,
     },
     store::Store,
@@ -62,7 +62,7 @@ pub(crate) async fn rescan(
     let stored = database
         .read(move |connection| root_files(connection, root))
         .await?;
-    if looks_unplugged(&layout, &stored) {
+    if looks_unplugged(target.kind, &layout, &stored) {
         return Ok(RescanOutcome::FoundEmpty);
     }
     let folder = target.folder.clone();
@@ -74,9 +74,12 @@ pub(crate) async fn rescan(
     Ok(RescanOutcome::Rescanned(changes))
 }
 
-/// No books where the catalog holds some is what an unmounted drive or share looks like, so it never reads as every book deleted.
-fn looks_unplugged(layout: &Layout, stored: &[StoredFile]) -> bool {
-    layout.books.is_empty() && !stored.is_empty()
+/// No books where the catalog holds some is what an unmounted drive or share looks like, which the home folder holding the open library can never be.
+fn looks_unplugged(kind: RootKind, layout: &Layout, stored: &[StoredFile]) -> bool {
+    match kind {
+        RootKind::Home => false,
+        RootKind::Linked => layout.books.is_empty() && !stored.is_empty(),
+    }
 }
 
 /// Reads and records the new and changed books in batches of one transaction each, reporting progress after every batch.

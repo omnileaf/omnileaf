@@ -100,7 +100,7 @@ impl Library {
         on_progress(ScanProgress::Finding);
         let layout = find_books_in(folder.clone()).await?;
         let root = self.link(folder.clone()).await?;
-        let target = self.target(root, folder);
+        let target = self.target(root, RootKind::Linked, folder);
         scan(self.store.database(), target, layout, on_progress).await
     }
 
@@ -147,7 +147,7 @@ impl Library {
         on_progress(ScanProgress::Finding);
         let outcome = match walk(folder.clone()).await? {
             Ok(layout) => {
-                let target = self.target(root.id, folder.clone());
+                let target = self.target(root.id, root.kind, folder.clone());
                 rescan(&self.store, target, layout, on_progress).await?
             }
             Err(error) => {
@@ -262,9 +262,10 @@ impl Library {
         Ok(())
     }
 
-    fn target(&self, root: RootId, folder: PathBuf) -> Target {
+    fn target(&self, root: RootId, kind: RootKind, folder: PathBuf) -> Target {
         Target {
             root,
+            kind,
             folder,
             added_at_ms: self.now_ms(),
         }

@@ -8,7 +8,7 @@ use std::{
 
 use omnileaf_db::{
     Database,
-    catalog::{BookFile, NewSeries, RootId, ScannedBook, record_scanned_books},
+    catalog::{BookFile, NewSeries, RootId, RootKind, ScannedBook, record_scanned_books},
 };
 use omnileaf_formats::{Book, FormatError, fingerprint_book, open_book};
 use omnileaf_sync_proto::{KeyError, SeriesId};
@@ -65,6 +65,7 @@ pub(crate) struct FileStamp {
 #[derive(Clone)]
 pub(crate) struct Target {
     pub(crate) root: RootId,
+    pub(crate) kind: RootKind,
     pub(crate) folder: PathBuf,
     pub(crate) added_at_ms: i64,
 }
@@ -218,6 +219,7 @@ mod tests {
     fn refuses_a_book_found_outside_the_folder_it_scans() {
         let target = Target {
             root: "1".parse().unwrap(),
+            kind: RootKind::Linked,
             folder: PathBuf::from("/media/Sample Library"),
             added_at_ms: 0,
         };

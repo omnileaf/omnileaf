@@ -444,6 +444,44 @@ async fn keeps_every_book_of_a_folder_found_empty_and_marks_it_unavailable() {
 }
 
 #[tokio::test]
+async fn removes_the_last_book_gone_from_the_home_folder_since_the_library_lives_there() {
+    let folder = Rescanned::new("rescan-home-emptied").await;
+    let library = &folder.scanned.library;
+    let home = library
+        .folders(None)
+        .await
+        .unwrap()
+        .folders
+        .first()
+        .unwrap()
+        .clone();
+    let kept_at_home = folder.scanned.home.path().join("v01.cbz");
+    write_book(&kept_at_home, 7);
+    library.rescan_folder(home.id, |_| {}).await.unwrap();
+    fs::remove_file(&kept_at_home).unwrap();
+
+    let rescan = library.rescan_folder(home.id, |_| {}).await.unwrap();
+
+    assert_eq!(
+        rescan.outcome,
+        rescanned(FileChanges {
+            removed: 1,
+            ..FileChanges::default()
+        })
+    );
+    assert!(
+        library
+            .folders(None)
+            .await
+            .unwrap()
+            .folders
+            .first()
+            .unwrap()
+            .is_available
+    );
+}
+
+#[tokio::test]
 async fn reads_a_folder_holding_only_files_that_are_not_books_as_found_empty() {
     let folder = Rescanned::new("rescan-only-notes").await;
     for series in [SERIES_01, SERIES_02] {
