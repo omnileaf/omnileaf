@@ -2,7 +2,14 @@ import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, onPlatform, test } from "./fixtures.ts";
+import {
+  DEFAULT_BACKEND,
+  expect,
+  MEDIUM_MIN_WIDTH,
+  onPlatform,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
 
 /** A device that hasn't finished its first launch until the test finishes it. */
 class Device {
@@ -93,10 +100,28 @@ test("focuses each step's heading as it moves on", async ({ page }) => {
   await expect(heading(page, "You're all set")).toBeFocused();
 });
 
-for (const { platform, promise } of [
-  { platform: "android", promise: "Your library stays on your phone." },
-  { platform: "ios", promise: "Your library stays on your phone." },
-  { platform: "linux", promise: "Your library stays on this computer." },
+const MOBILE_WORDING = {
+  onPhones: [
+    "Your library stays on your phone.",
+    "Your books and history stay on this phone unless you sync.",
+  ],
+  fromMedium: [
+    "Your library stays on this device.",
+    "Your books and history stay on this device unless you sync.",
+  ],
+};
+const DESKTOP_PROMISES = [
+  "Your library stays on this computer.",
+  "No account. Your books and history stay here unless you sync.",
+];
+
+for (const { platform, wording } of [
+  { platform: "android", wording: MOBILE_WORDING },
+  { platform: "ios", wording: MOBILE_WORDING },
+  {
+    platform: "linux",
+    wording: { onPhones: DESKTOP_PROMISES, fromMedium: DESKTOP_PROMISES },
+  },
 ] as const) {
   test.describe(`on ${platform}`, () => {
     test.use({
@@ -109,9 +134,16 @@ for (const { platform, promise } of [
     test("promises the library stays on the device it runs on", async ({
       page,
     }) => {
+      const promises =
+        viewportOf(page).width < MEDIUM_MIN_WIDTH
+          ? wording.onPhones
+          : wording.fromMedium;
+
       await page.goto("/first-launch");
 
-      await expect(page.getByText(promise)).toBeVisible();
+      for (const promise of promises) {
+        await expect(page.getByText(promise)).toBeVisible();
+      }
     });
   });
 }

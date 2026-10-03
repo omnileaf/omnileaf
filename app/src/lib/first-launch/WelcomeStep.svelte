@@ -6,49 +6,57 @@
   import type { DeviceKind } from "./device";
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
+  import WidthWording from "./WidthWording.svelte";
+  import { atEveryWidth, type WordingByWidth } from "./wording";
 
   const PROMISE_ICON_SIZE = 20;
 
   let { device, onNext }: { device: DeviceKind; onNext: () => void } = $props();
 
   const BODY = {
-    phone: m.first_launch_welcome_body_phone,
-    desktop: m.first_launch_welcome_body_desktop,
-  } satisfies Record<DeviceKind, () => string>;
+    phone: {
+      onPhones: m.first_launch_welcome_body_phone,
+      fromMedium: m.first_launch_welcome_body_tablet,
+    },
+    desktop: atEveryWidth(m.first_launch_welcome_body_desktop),
+  } satisfies Record<DeviceKind, WordingByWidth>;
 
   const PROMISES = {
     phone: [
       {
         icon: Folder,
         title: m.first_launch_promise_folders,
-        detail: m.first_launch_promise_folders_detail_phone,
+        detail: atEveryWidth(m.first_launch_promise_folders_detail_phone),
       },
       {
         icon: Sparkles,
         title: m.first_launch_promise_reading,
-        detail: m.first_launch_promise_reading_detail_phone,
+        detail: atEveryWidth(m.first_launch_promise_reading_detail_phone),
       },
       {
         icon: Lock,
         title: m.first_launch_promise_private_phone,
-        detail: m.first_launch_promise_private_detail_phone,
+        detail: {
+          onPhones: m.first_launch_promise_private_detail_phone,
+          fromMedium: m.first_launch_promise_private_detail_tablet,
+        },
       },
     ],
     desktop: [
       {
         icon: Folder,
         title: m.first_launch_promise_folders,
-        detail: m.first_launch_promise_folders_detail_desktop,
+        detail: atEveryWidth(m.first_launch_promise_folders_detail_desktop),
       },
       {
         icon: Sparkles,
         title: m.first_launch_promise_reading,
-        detail: m.first_launch_promise_reading_detail_desktop,
+        detail: atEveryWidth(m.first_launch_promise_reading_detail_desktop),
       },
       {
         icon: Lock,
         title: m.first_launch_promise_private_desktop,
-        detail: m.first_launch_promise_private_detail_desktop,
+        detail: atEveryWidth(m.first_launch_promise_private_detail_desktop),
       },
     ],
   } satisfies Record<DeviceKind, readonly unknown[]>;
@@ -59,7 +67,7 @@
     <h1 tabindex="-1" class="text-display font-bold">
       {m.first_launch_welcome_title()}
     </h1>
-    <p class="text-muted">{BODY[device]()}</p>
+    <p class="text-muted"><WidthWording wording={BODY[device]} /></p>
     <ul class="mbs-sm flex flex-col gap-md">
       {#each PROMISES[device] as promise (promise.title)}
         <li class="flex items-center gap-md">
@@ -73,7 +81,9 @@
           ></span>
           <span class="flex flex-col">
             <span class="font-semibold">{promise.title()}</span>
-            <span class="text-caption text-muted">{promise.detail()}</span>
+            <span class="text-caption text-muted">
+              <WidthWording wording={promise.detail} />
+            </span>
           </span>
         </li>
       {/each}
