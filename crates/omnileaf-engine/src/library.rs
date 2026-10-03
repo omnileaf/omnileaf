@@ -3,8 +3,9 @@ use std::{fs, io, path::PathBuf};
 use omnileaf_db::{
     Config, Database,
     catalog::{
-        NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator, add_root, library_root,
-        library_roots, mark_root_available, mark_root_unavailable, remove_root, set_home_root,
+        NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator, SeriesOrder, add_root,
+        library_root, library_roots, mark_root_available, mark_root_unavailable, remove_root,
+        series_page, set_home_root,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     store::{Changed, Clock, Store},
@@ -16,7 +17,7 @@ use tokio::{
 
 use crate::{
     AppLanguage, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, LibraryFolder,
-    RescanOutcome, ScanProgress,
+    LibrarySeries, RescanOutcome, ScanProgress, SeriesCursor, SeriesPage,
     library_layout::folder_name,
     rescan::rescan,
     scan::{Target, find_books_in, scan, walk},
@@ -25,6 +26,7 @@ use crate::{
 const DATABASE_FILE: &str = "library.sqlite";
 const BACKUP_FOLDER: &str = "backups";
 const FOLDERS_PER_PAGE: u16 = 50;
+const SERIES_PER_PAGE: u16 = 50;
 const MEBIBYTE: u32 = 1 << 20;
 const MAPPED_DATABASE_BYTES: u32 = if cfg!(any(target_os = "android", target_os = "ios")) {
     64 * MEBIBYTE
@@ -117,6 +119,23 @@ impl Library {
         Ok(FolderPage {
             folders: page.items.into_iter().map(LibraryFolder::from).collect(),
             next: page.next.map(FolderCursor),
+        })
+    }
+
+    /// Lists the series holding books, by title.
+    pub async fn series(&self, after: Option<SeriesCursor>) -> Result<SeriesPage, LibraryError> {
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(SERIES_PER_PAGE)?,
+        };
+        let page = self
+            .store
+            .database()
+            .read(move |connection| series_page(connection, SeriesOrder::Title, &request))
+            .await?;
+        Ok(SeriesPage {
+            series: page.items.into_iter().map(LibrarySeries::from).collect(),
+            next: page.next.map(SeriesCursor),
         })
     }
 

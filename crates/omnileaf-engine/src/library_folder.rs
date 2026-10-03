@@ -117,7 +117,7 @@ impl Type for FolderCursor {
 }
 
 /// A string the interface can't mistake for any other string, since only the IPC client hands one out.
-fn branded_string(brand: &'static str, types: &mut Types) -> DataType {
+pub(crate) fn branded_string(brand: &'static str, types: &mut Types) -> DataType {
     DataType::Reference(Reference::opaque(Branded::new(
         brand,
         String::definition(types),
