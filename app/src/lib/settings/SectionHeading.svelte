@@ -12,7 +12,7 @@
 </script>
 
 <header
-  class="-ms-md flex items-center gap-xs max-medium:-mbs-xl max-medium:min-block-4xl expanded:ms-none ios:ms-none ios:flex-col ios:items-start ios:gap-none ios:max-medium:-mbs-lg"
+  class="-ms-md flex items-center gap-xs max-medium:-mbs-sm max-medium:min-block-4xl expanded:ms-none ios:ms-none ios:flex-col ios:items-start ios:gap-none"
 >
   <a
     href={resolve("/settings")}

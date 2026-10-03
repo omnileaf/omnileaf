@@ -90,7 +90,8 @@
   );
   --spacing-safe-start: var(--safe-area-left);
   --spacing-safe-end: var(--safe-area-right);
-  --spacing-page-top: calc(var(--spacing-safe-top) + var(--spacing-xl));
+  --spacing-title-gap: 1rem;
+  --spacing-page-top: calc(var(--spacing-safe-top) + var(--spacing-title-gap));
   --spacing-page-bottom: calc(var(--spacing-safe-bottom) + var(--spacing-xl));
   --spacing-gutter: 1rem;
   --spacing-page-start: calc(var(--spacing-safe-start) + var(--spacing-gutter));
@@ -210,6 +211,7 @@
 
 :root {
   @variant medium {
+    --spacing-title-gap: 1.5rem;
     --spacing-gutter: 1.75rem;
     --text-page-title: 1.875rem;
     --text-page-title--line-height: 1.15;
@@ -218,6 +220,18 @@
   @variant expanded {
     --spacing-gutter: 2rem;
     --text-page-title: 1.75rem;
+  }
+}
+
+:root {
+  @variant desktop {
+    --spacing-title-gap: 1.75rem;
+    --text-page-title: 1.75rem;
+    --text-page-title--line-height: 1.15;
+
+    @variant max-medium {
+      --spacing-gutter: 1.5rem;
+    }
   }
 }
 
