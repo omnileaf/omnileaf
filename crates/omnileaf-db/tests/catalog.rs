@@ -23,6 +23,7 @@ const TWO_BOOKS: &[&str] = &["Volume 01", "Volume 02"];
 const OTHER_SERIES_ID: [u8; 16] = [8; 16];
 const OTHER_SOURCE_ID: [u8; 16] = [7; 16];
 const SHORT_SOURCE_ID: [u8; 15] = [7; 15];
+const TEXT_SOURCE_ID: &str = "0123456789abcdef";
 
 #[tokio::test]
 async fn counts_the_books_added_to_a_series() {
@@ -130,7 +131,7 @@ async fn lets_another_source_hold_a_series_of_the_same_name() {
     let database = Database::open(&folder.config()).unwrap();
     add_local_series(&database, SERIES, NO_BOOKS).await;
 
-    let outcome = add_sample_series_from(&database, OTHER_SOURCE_ID.to_vec()).await;
+    let outcome = add_sample_series_from(&database, OTHER_SOURCE_ID).await;
 
     assert!(outcome.is_ok(), "{outcome:?}");
     assert_eq!(row_count(&database, "series").await, 2);
@@ -141,15 +142,7 @@ async fn refuses_a_source_named_by_text() {
     let folder = ScratchFolder::new("text-source");
     let database = Database::open(&folder.config()).unwrap();
 
-    let outcome = database
-        .write(|transaction| {
-            Ok(transaction.execute(
-                "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0)",
-                [],
-            )?)
-        })
-        .await;
+    let outcome = add_sample_series_from(&database, TEXT_SOURCE_ID).await;
 
     assert!(is_constraint_violation(&outcome));
 }
@@ -159,7 +152,7 @@ async fn refuses_a_source_id_that_is_not_16_bytes() {
     let folder = ScratchFolder::new("short-source");
     let database = Database::open(&folder.config()).unwrap();
 
-    let outcome = add_sample_series_from(&database, SHORT_SOURCE_ID.to_vec()).await;
+    let outcome = add_sample_series_from(&database, SHORT_SOURCE_ID).await;
 
     assert!(is_constraint_violation(&outcome));
 }
@@ -394,7 +387,10 @@ async fn source_of(database: &Database, series: SeriesId) -> Value {
         .unwrap()
 }
 
-async fn add_sample_series_from(database: &Database, source: Vec<u8>) -> Result<usize, Error> {
+async fn add_sample_series_from(
+    database: &Database,
+    source: impl rusqlite::ToSql + Send + 'static,
+) -> Result<usize, Error> {
     database
         .write(move |transaction| {
             Ok(transaction.execute(
