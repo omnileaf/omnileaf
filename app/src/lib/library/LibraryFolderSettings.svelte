@@ -7,6 +7,7 @@
   import type { AddFolder } from "./add-folder";
   import AddLibraryFolder from "./AddLibraryFolder.svelte";
   import FolderRow from "./FolderRow.svelte";
+  import HomeFolder from "./HomeFolder.svelte";
   import {
     LibraryFolders,
     type ListFolders,
@@ -45,22 +46,11 @@
   }
 </script>
 
-<section aria-labelledby="home-folder-heading" class="mbs-xl">
-  <h2
-    id="home-folder-heading"
-    class="px-xs text-caption font-semibold text-muted"
-  >
-    {m.library_settings_home_folder()}
-  </h2>
-  {#if folders.list.kind === "loaded" && folders.list.home !== undefined}
-    <div class="mbs-sm rounded-card border border-border bg-card">
-      <FolderRow folder={folders.list.home} />
-    </div>
-  {/if}
+<HomeFolder folders={folders.list} class="mbs-xl">
   <p class="mbs-sm px-xs text-caption text-muted">
     {m.library_settings_home_folder_hint()}
   </p>
-</section>
+</HomeFolder>
 
 <section aria-labelledby="folders-heading" class="mbs-xl">
   <h2
