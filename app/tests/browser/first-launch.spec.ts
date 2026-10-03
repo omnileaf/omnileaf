@@ -73,6 +73,18 @@ test("goes through every step and opens the library once finished", async ({
   expect(device.finishes).toBe(1);
 });
 
+test("leaves the app when going back from the library it finished on", async ({
+  page,
+}) => {
+  await goTo(page, "You're all set");
+  await page.getByRole("button", { name: "Open my library" }).click();
+  await expect(heading(page, "Library")).toBeVisible();
+
+  await page.goBack();
+
+  await expect(page).toHaveURL("about:blank");
+});
+
 test("focuses each step's heading as it moves on", async ({ page }) => {
   await goTo(page, "Welcome to Omnileaf");
 

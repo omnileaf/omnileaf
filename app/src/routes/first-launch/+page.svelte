@@ -6,7 +6,11 @@
   import ReadyStep, {
     type FinishOutcome,
   } from "$lib/first-launch/ReadyStep.svelte";
-  import { type FirstLaunchStep, stepAfter } from "$lib/first-launch/steps";
+  import {
+    FIRST_LAUNCH_STEPS,
+    type FirstLaunchStep,
+    stepAfter,
+  } from "$lib/first-launch/steps";
   import WelcomeStep from "$lib/first-launch/WelcomeStep.svelte";
   import { commands } from "$lib/ipc/bindings";
 
@@ -15,8 +19,9 @@
   let { data }: PageProps = $props();
 
   const device = $derived(deviceKindOf(data.appInfo.platform));
+  let isLeaving = $state(false);
   const step: FirstLaunchStep = $derived(
-    page.state.firstLaunchStep ?? "welcome",
+    isLeaving ? "ready" : (page.state.firstLaunchStep ?? "welcome"),
   );
 
   let card: HTMLElement | undefined = $state();
@@ -36,11 +41,31 @@
     }
   }
 
+  /** Goes back to the entry the first launch opened on, so the library replaces it and back leaves the app instead of replaying the steps. */
+  function dropStepEntries(): Promise<void> {
+    const stepEntries = FIRST_LAUNCH_STEPS.indexOf(step);
+    if (stepEntries === 0) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      window.addEventListener(
+        "popstate",
+        () => {
+          resolve();
+        },
+        { once: true },
+      );
+      window.history.go(-stepEntries);
+    });
+  }
+
   async function finish(): Promise<FinishOutcome> {
     const result = await commands.finishFirstLaunch();
     if (result.status === "error") {
       return "failed";
     }
+    isLeaving = true;
+    await dropStepEntries();
     await goto(resolve("/"), { replaceState: true, invalidateAll: true });
     return "finished";
   }
