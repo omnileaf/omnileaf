@@ -7,18 +7,17 @@ import {
   type LibraryDisplay,
   type LibraryView,
 } from "../../src/lib/ipc/bindings.ts";
+import type { ScreenSize } from "../../src/lib/library/library-view.ts";
 import { fakeProtocolRoute } from "./fake-backend.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
-  MEDIUM_MIN_WIDTH,
+  screenSizeOf,
   test,
   viewportOf,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
-
-type ScreenSize = keyof LibraryView["coversPerRow"];
 
 interface GridBoard {
   readonly columns: number;
@@ -33,7 +32,6 @@ interface ListBoard {
   readonly coverHeight: number;
 }
 
-const LARGE_MIN_WIDTH = 1200;
 const PANEL_WIDTH = 340;
 const SERIES_IN_CATALOG = 200;
 const FIRST_TITLE = "Sample Series 0001";
@@ -100,14 +98,6 @@ test.beforeEach(async ({ page }) => {
     route.fulfill({ contentType: "image/svg+xml", body: COVER_IMAGE }),
   );
 });
-
-function screenSizeOf(page: Page): ScreenSize {
-  const { width } = viewportOf(page);
-  if (width >= LARGE_MIN_WIDTH) {
-    return "desktop";
-  }
-  return width >= MEDIUM_MIN_WIDTH ? "tablet" : "phone";
-}
 
 function seriesList(page: Page): Locator {
   return page.getByRole("list", { name: "Series" });

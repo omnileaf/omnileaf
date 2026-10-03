@@ -11,6 +11,7 @@ import {
   DEFAULT_LIBRARY_VIEW,
   type Platform,
 } from "../../src/lib/ipc/bindings.ts";
+import type { ScreenSize } from "../../src/lib/library/library-view.ts";
 import {
   CommandFailure,
   type FakeBackend,
@@ -67,6 +68,15 @@ export function viewportOf(page: Page): ViewportSize {
     throw new Error("the page has no viewport");
   }
   return viewport;
+}
+
+/** The size the library draws the page's screen at, each with covers per row of its own. */
+export function screenSizeOf(page: Page): ScreenSize {
+  const { width } = viewportOf(page);
+  if (width >= LARGE_MIN_WIDTH) {
+    return "desktop";
+  }
+  return width >= MEDIUM_MIN_WIDTH ? "tablet" : "phone";
 }
 
 type Box = NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>;
