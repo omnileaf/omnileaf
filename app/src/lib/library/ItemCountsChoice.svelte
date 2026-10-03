@@ -1,6 +1,8 @@
 <script lang="ts">
   import { m } from "$lib/paraglide/messages.js";
 
+  import SwitchTrack from "./SwitchTrack.svelte";
+
   let {
     isShown,
     onChoose,
@@ -33,12 +35,5 @@
       {m.library_item_counts_hint()}
     </span>
   </span>
-  <span
-    aria-hidden="true"
-    class="flex shrink-0 items-center rounded-full bg-switch-off p-switch-inset block-switch-block inline-switch peer-checked:justify-end peer-checked:bg-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent large:hidden"
-  >
-    <span
-      class="rounded-full bg-switch-knob block-switch-knob inline-switch-knob"
-    ></span>
-  </span>
+  <SwitchTrack class="large:hidden" />
 </label>

@@ -2,7 +2,12 @@ import { expect, test } from "vitest";
 
 import { DEFAULT_LIBRARY_VIEW, type LibraryView } from "$lib/ipc/bindings";
 
-import { withCoversPerRow, withDisplay, withItemCounts } from "./library-view";
+import {
+  withCoversPerRow,
+  withDisplay,
+  withItemCounts,
+  withOnCovers,
+} from "./library-view";
 
 const VIEW: LibraryView = {
   display: "grid",
@@ -44,4 +49,13 @@ test("turns the item counts on and off", () => {
 
   expect(shown.showsItemCounts).toBe(true);
   expect(withItemCounts(shown, false)).toEqual(DEFAULT_LIBRARY_VIEW);
+});
+
+test("turns one thing covers show on or off and keeps the rest", () => {
+  const view = withOnCovers(VIEW, "showsLanguage", true);
+
+  expect(view).toEqual({
+    ...VIEW,
+    onCovers: { ...VIEW.onCovers, showsLanguage: true },
+  });
 });

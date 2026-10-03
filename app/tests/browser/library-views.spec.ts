@@ -18,6 +18,12 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
+import {
+  choose,
+  openViewOptions,
+  viewOptions,
+  viewOptionsButton,
+} from "./view-options.ts";
 
 interface GridBoard {
   readonly columns: number;
@@ -243,26 +249,6 @@ for (const display of ["compact", "list"] as const) {
       expect(results.violations).toEqual([]);
     });
   }
-}
-
-function viewOptionsButton(page: Page): Locator {
-  return page
-    .locator("main header")
-    .getByRole("button", { name: "View options" });
-}
-
-function viewOptions(page: Page): Locator {
-  return page.getByRole("dialog", { name: "View" });
-}
-
-async function openViewOptions(page: Page): Promise<Locator> {
-  await viewOptionsButton(page).click();
-  await expect(viewOptions(page)).toBeVisible();
-  return viewOptions(page);
-}
-
-async function choose(options: Locator, label: string): Promise<void> {
-  await options.locator("label").filter({ hasText: label }).click();
 }
 
 function stepButton(options: Locator, step: "Fewer" | "More"): Locator {
