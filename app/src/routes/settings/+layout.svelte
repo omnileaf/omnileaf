@@ -17,7 +17,9 @@
   <div
     class="hidden shrink-0 flex-col gap-lg border-e border-border px-md pbs-page-top pbe-xl two-pane:flex two-pane:inline-settings-list"
   >
-    <p class="mbe-xs px-md text-page-title font-bold tracking-tight">
+    <p
+      class="mbe-xs px-md text-page-title font-bold tracking-tight wrap-break-word hyphens-auto"
+    >
       {m.settings_title()}
     </p>
     <nav aria-label={m.settings_sections_label()} class="flex flex-col gap-lg">
