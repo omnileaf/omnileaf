@@ -13,6 +13,8 @@ const ADD_BOOK_UNLESS_PRESENT: &str = "INSERT INTO book (
     SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7 FROM series WHERE id = ?2
     ON CONFLICT (id) DO NOTHING";
 const SERIES_EXISTS: &str = "SELECT EXISTS (SELECT 1 FROM series WHERE id = ?1)";
+const REMOVE_BOOK_WITHOUT_FILES: &str = "DELETE FROM book
+    WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM book_file WHERE book_id = ?1)";
 
 #[derive(Clone, Debug)]
 pub struct NewBook {
@@ -46,6 +48,19 @@ pub(crate) fn add_book_unless_present(
     let is_added = insert(transaction, book, ADD_BOOK_UNLESS_PRESENT)? > 0;
     if !is_added && !series_exists(transaction, book.series)? {
         return Err(Error::UnknownSeries { id: book.series });
+    }
+    Ok(())
+}
+
+/// Deletes each of `books` that no file in any root holds any more, leaving its synced reading state for when it is found again.
+#[tracing::instrument(skip_all, fields(books = books.len()))]
+pub fn remove_books_without_files(
+    transaction: &Transaction<'_>,
+    books: &[BookId],
+) -> Result<(), Error> {
+    let mut remove = transaction.prepare(REMOVE_BOOK_WITHOUT_FILES)?;
+    for book in books {
+        remove.execute([book.as_bytes()])?;
     }
     Ok(())
 }
@@ -114,6 +129,23 @@ mod tests {
                 "SCAN CONSTANT ROW",
                 "SCALAR SUBQUERY 1",
                 "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)"
+            ]
+        );
+    }
+
+    #[test]
+    fn checks_a_book_for_files_through_their_book_index() {
+        let scratch = ScratchLibrary::new("remove-fileless-book-plan");
+
+        let plan = scratch.query_plan(REMOVE_BOOK_WITHOUT_FILES);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH book USING PRIMARY KEY (id=?)",
+                "SCALAR SUBQUERY 1",
+                "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
+                "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)"
             ]
         );
     }
