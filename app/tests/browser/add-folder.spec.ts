@@ -1,4 +1,5 @@
 import { AxeBuilder } from "@axe-core/playwright";
+import type { Page } from "@playwright/test";
 
 import { CommandFailure } from "./fake-backend.ts";
 import {
@@ -8,6 +9,19 @@ import {
   onPlatform,
   test,
 } from "./fixtures.ts";
+
+const EMPTY_LIBRARY = "Your library is empty";
+
+const PLACES = [
+  { place: "the empty library", path: "/", region: EMPTY_LIBRARY },
+  { place: "Settings › Library", path: "/settings/library", region: "Folders" },
+] as const;
+
+function addFolderIn(page: Page, region: string) {
+  return page
+    .getByRole("region", { name: region })
+    .getByRole("button", { name: "Add a folder" });
+}
 
 test.describe("with a folder of comics", () => {
   test.use({
@@ -21,16 +35,13 @@ test.describe("with a folder of comics", () => {
     },
   });
 
-  for (const { place, path } of [
-    { place: "the empty library", path: "/" },
-    { place: "Settings › Library", path: "/settings/library" },
-  ]) {
+  for (const { place, path, region } of PLACES) {
     test(`adds a folder from ${place} and reports the comics in it`, async ({
       page,
     }) => {
       await page.goto(path);
 
-      await page.getByRole("button", { name: "Add a folder" }).click();
+      await addFolderIn(page, region).click();
 
       await expect(page.getByRole("status")).toHaveText(
         "Found 3 comics in Sample Library.",
@@ -108,7 +119,7 @@ test.describe("with a folder it can't read", () => {
   test("explains that the folder couldn't be read", async ({ page }) => {
     await page.goto("/");
 
-    await page.getByRole("button", { name: "Add a folder" }).click();
+    await addFolderIn(page, EMPTY_LIBRARY).click();
 
     await expect(page.getByRole("status")).toHaveText(
       "Couldn't read that folder.",
@@ -129,15 +140,12 @@ test.describe("where the folder picker is unavailable", () => {
     },
   });
 
-  for (const { place, path } of [
-    { place: "the empty library", path: "/" },
-    { place: "Settings › Library", path: "/settings/library" },
-  ]) {
+  for (const { place, path, region } of PLACES) {
     test(`keeps the Add a folder button its size in ${place} when the outcome shows`, async ({
       page,
     }) => {
       await page.goto(path);
-      const button = page.getByRole("button", { name: "Add a folder" });
+      const button = addFolderIn(page, region);
       const before = await boxOf(button);
 
       await button.click();

@@ -9,7 +9,7 @@
 
   const LOOKS = {
     "page-heading":
-      "gap-sm rounded-control border border-field bg-card ps-md pe-lg text-foreground min-block-touch-target desktop:text-label desktop:min-block-pointer-target touch:max-medium:-my-sm touch:max-medium:gap-xs touch:max-medium:rounded-full touch:max-medium:border-transparent touch:max-medium:bg-transparent touch:max-medium:px-md touch:max-medium:text-accent",
+      "-my-sm gap-sm rounded-control border border-field bg-card ps-md pe-lg text-foreground min-block-touch-target desktop:-my-xs desktop:text-label desktop:min-block-pointer-target touch:max-medium:-me-sm touch:max-medium:gap-xs touch:max-medium:rounded-full touch:max-medium:border-transparent touch:max-medium:bg-transparent touch:max-medium:px-md touch:max-medium:text-accent",
     "empty-state":
       "gap-sm rounded-control bg-accent ps-lg pe-button text-on-accent min-block-touch-target desktop:text-label desktop:min-block-pointer-target",
     "section-heading":
