@@ -4,7 +4,7 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { m } from "$lib/paraglide/messages.js";
-  import { SETTINGS_GROUPS } from "$lib/settings/sections";
+  import { isWithinSection, SETTINGS_GROUPS } from "$lib/settings/sections";
 
   let { children }: { children: Snippet } = $props();
 
@@ -26,7 +26,10 @@
       {#each SETTINGS_GROUPS as group, index (index)}
         <ul class="flex flex-col gap-2xs">
           {#each group as section (section.route)}
-            {@const isOpen = page.url.pathname === resolve(section.route)}
+            {@const isOpen = isWithinSection(
+              page.url.pathname,
+              resolve(section.route),
+            )}
             <li>
               <a
                 href={resolve(section.route)}
