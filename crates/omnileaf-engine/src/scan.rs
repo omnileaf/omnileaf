@@ -166,6 +166,7 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
         series: NewSeries::local(&found.series, target.added_at_ms)?,
         fingerprint,
         title: found.title.clone(),
+        added_at_ms: target.added_at_ms,
         file: BookFile {
             root: target.root,
             location,

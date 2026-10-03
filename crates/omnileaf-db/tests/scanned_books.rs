@@ -60,6 +60,7 @@ impl Library {
             series: NewSeries::local(series, ADDED_AT_MS).unwrap(),
             fingerprint: fingerprint(page_crc),
             title: format!("Volume {page_crc:02}"),
+            added_at_ms: ADDED_AT_MS,
             file: BookFile {
                 root: self.root,
                 location: location.into(),

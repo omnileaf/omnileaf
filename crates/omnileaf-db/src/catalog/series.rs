@@ -35,10 +35,6 @@ impl NewSeries {
     pub const fn id(&self) -> SeriesId {
         self.id
     }
-
-    pub(crate) const fn added_at_ms(&self) -> i64 {
-        self.added_at_ms
-    }
 }
 
 #[tracing::instrument(skip_all, fields(series = %series.id))]

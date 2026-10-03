@@ -29,6 +29,7 @@ pub struct ScannedBook {
     pub series: NewSeries,
     pub fingerprint: Fingerprint,
     pub title: String,
+    pub added_at_ms: i64,
     pub file: BookFile,
 }
 
@@ -52,7 +53,7 @@ pub fn record_scanned_book(
         fingerprint: scanned.fingerprint,
         series: scanned.series.id(),
         title: scanned.title.clone(),
-        added_at_ms: scanned.series.added_at_ms(),
+        added_at_ms: scanned.added_at_ms,
     };
     add_book_unless_present(transaction, &book)?;
     let file = &scanned.file;
