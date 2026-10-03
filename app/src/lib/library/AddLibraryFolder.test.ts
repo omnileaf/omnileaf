@@ -152,7 +152,7 @@ test("disables the button while the folder is being added and scanned", async ()
 
   await button.click();
   await expect.element(button).toBeDisabled();
-  scan.report({ scanned: 0, total: 7 });
+  scan.report({ stage: "reading", scanned: 0, total: 7 });
   await expect.element(button).toBeDisabled();
   scan.finish(CANCELLED);
 
@@ -164,7 +164,7 @@ test("shows how far the scan has got while it runs", async () => {
   const screen = await render(AddLibraryFolder, { addFolder: scan.addFolder });
   await screen.getByRole("button", { name: "Add a folder" }).click();
 
-  scan.report({ scanned: 32, total: 100 });
+  scan.report({ stage: "reading", scanned: 32, total: 100 });
 
   await expect
     .element(screen.getByRole("status"))
@@ -176,6 +176,21 @@ test("shows how far the scan has got while it runs", async () => {
   await expect.element(bar).toHaveAttribute("max", "100");
 });
 
+test("says it is finding books before the scan has counted them", async () => {
+  const scan = new PendingScan();
+  const screen = await render(AddLibraryFolder, { addFolder: scan.addFolder });
+  await screen.getByRole("button", { name: "Add a folder" }).click();
+
+  scan.report({ stage: "finding" });
+
+  const bar = screen.getByRole("progressbar", {
+    name: "Finding books",
+    exact: true,
+  });
+  await expect.element(bar).toBeVisible();
+  await expect.element(bar).not.toHaveAttribute("value");
+});
+
 test("keeps the result when word of the scan arrives after it finished", async () => {
   const scan = new PendingScan();
   const screen = await render(AddLibraryFolder, { addFolder: scan.addFolder });
@@ -185,7 +200,7 @@ test("keeps the result when word of the scan arrives after it finished", async (
     .element(screen.getByRole("status"))
     .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
 
-  scan.report({ scanned: 7, total: 7 });
+  scan.report({ stage: "reading", scanned: 7, total: 7 });
 
   await expect
     .element(screen.getByRole("status"))

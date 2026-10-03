@@ -40,7 +40,7 @@ test.describe("while the folder is being scanned", () => {
     backend: {
       ...DEFAULT_BACKEND,
       addLibraryFolder: async (onProgress) => {
-        await onProgress.send({ scanned: 32, total: 100 });
+        await onProgress.send({ stage: "reading", scanned: 32, total: 100 });
         return new Promise(() => undefined);
       },
     },

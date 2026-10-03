@@ -95,7 +95,7 @@ async fn adds_a_folder_and_scans_the_books_in_it() {
     assert_eq!((scan.series, scan.books), (3, 7));
     assert_eq!(
         progress.last(),
-        Some(&ScanProgress {
+        Some(&ScanProgress::Reading {
             scanned: 7,
             total: 7
         })

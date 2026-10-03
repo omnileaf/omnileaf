@@ -14,7 +14,12 @@
   type Outcome =
     | { readonly kind: "idle" }
     | { readonly kind: "adding" }
-    | { readonly kind: "scanning"; readonly progress: ScanProgress }
+    | { readonly kind: "finding" }
+    | {
+        readonly kind: "reading";
+        readonly scanned: number;
+        readonly total: number;
+      }
     | { readonly kind: "scanned"; readonly scan: FolderScan }
     | { readonly kind: "failed"; readonly code: IpcErrorCode };
 
@@ -39,13 +44,24 @@
   let outcome: Outcome = $state({ kind: "idle" });
 
   function isBusy(current: Outcome): boolean {
-    return current.kind === "adding" || current.kind === "scanning";
+    return (
+      current.kind === "adding" ||
+      current.kind === "finding" ||
+      current.kind === "reading"
+    );
   }
 
   /** Progress can arrive after the result it led to, which must not turn back into a scan in progress. */
   function showProgress(progress: ScanProgress): void {
     if (isBusy(outcome)) {
-      outcome = { kind: "scanning", progress };
+      outcome =
+        progress.stage === "finding"
+          ? { kind: "finding" }
+          : {
+              kind: "reading",
+              scanned: progress.scanned,
+              total: progress.total,
+            };
     }
   }
 
@@ -73,15 +89,21 @@
   {m.library_add_folder()}
 </button>
 <div role="status" class="mbs-sm">
-  {#if outcome.kind === "scanning"}
+  {#if outcome.kind === "finding"}
     <p id={progressTitleId} class="font-semibold">
-      {m.library_scan_progress({ count: outcome.progress.scanned })}
+      {m.library_scan_finding()}
+    </p>
+    <progress aria-labelledby={progressTitleId} class="mbs-sm progress-track"
+    ></progress>
+  {:else if outcome.kind === "reading"}
+    <p id={progressTitleId} class="font-semibold">
+      {m.library_scan_progress({ count: outcome.scanned })}
     </p>
     <progress
       aria-labelledby={progressTitleId}
       class="mbs-sm progress-track"
-      max={outcome.progress.total}
-      value={outcome.progress.scanned}
+      max={outcome.total}
+      value={outcome.scanned}
     ></progress>
   {:else if outcome.kind === "scanned"}
     {@const scan = outcome.scan}

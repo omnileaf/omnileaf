@@ -34,7 +34,7 @@ test("hands the backend a channel that passes each step of the scan on", async (
   const commands: string[] = [];
   mockIPC((command, args) => {
     commands.push(command);
-    reportProgress(args, { scanned: 3, total: 7 });
+    reportProgress(args, { stage: "reading", scanned: 3, total: 7 });
     return SAMPLE_SCAN;
   });
   const steps: ScanProgress[] = [];
@@ -42,6 +42,6 @@ test("hands the backend a channel that passes each step of the scan on", async (
   const result = await addFolderWithProgress((step) => steps.push(step));
 
   expect(commands).toEqual(["add_library_folder"]);
-  expect(steps).toEqual([{ scanned: 3, total: 7 }]);
+  expect(steps).toEqual([{ stage: "reading", scanned: 3, total: 7 }]);
   expect(result).toEqual({ status: "ok", data: SAMPLE_SCAN });
 });
