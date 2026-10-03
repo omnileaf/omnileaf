@@ -7,6 +7,7 @@
     setThemeSetting,
     themeSettingForDocument,
   } from "$lib/appearance/theme.svelte";
+  import { commands } from "$lib/ipc/bindings";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
   import { makeBackGoUp } from "$lib/navigation/back-goes-up";
   import { sectionOf } from "$lib/navigation/sections";
@@ -16,8 +17,12 @@
 
   let { children }: { children: Snippet } = $props();
 
-  setThemeSetting(themeSettingForDocument());
+  const themeSetting = setThemeSetting(themeSettingForDocument());
   const backGoesUp = makeBackGoUp();
+
+  $effect(() => {
+    void commands.matchSystemBars(themeSetting.resolved);
+  });
 
   let main: HTMLElement | undefined = $state();
 
