@@ -25,14 +25,14 @@ import {
   viewOptionsButton,
 } from "./view-options.ts";
 
-interface GridBoard {
+interface GridLook {
   readonly columns: number;
   readonly gap: number;
   readonly titleSize: number;
   readonly showsBookCount: boolean;
 }
 
-interface ListBoard {
+interface ListLook {
   readonly rowHeight: number;
   readonly coverWidth: number;
   readonly coverHeight: number;
@@ -49,7 +49,7 @@ const SERIES_IN_CATALOG = 200;
 const FIRST_TITLE = "Sample Series 0001";
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;
 
-const GRID_BOARDS = {
+const GRID_LOOKS = {
   phone: [
     { columns: 3, gap: 14, titleSize: 13, showsBookCount: true },
     { columns: 4, gap: 10, titleSize: 12, showsBookCount: false },
@@ -64,14 +64,14 @@ const GRID_BOARDS = {
     { columns: 8, gap: 18, titleSize: 13, showsBookCount: true },
     { columns: 9, gap: 14, titleSize: 12, showsBookCount: false },
   ],
-} as const satisfies Record<ScreenSize, readonly GridBoard[]>;
+} as const satisfies Record<ScreenSize, readonly GridLook[]>;
 
 /** A row's height with its padding and the line under it, and the cover inside its edge. */
-const LIST_BOARDS = {
+const LIST_LOOKS = {
   phone: { rowHeight: 105, coverWidth: 48, coverHeight: 72 },
   tablet: { rowHeight: 105, coverWidth: 48, coverHeight: 72 },
   desktop: { rowHeight: 89, coverWidth: 42, coverHeight: 63 },
-} as const satisfies Record<ScreenSize, ListBoard>;
+} as const satisfies Record<ScreenSize, ListLook>;
 
 const BAND_PADDING = {
   phone: { top: 6, inline: 6, bottom: 8 },
@@ -160,25 +160,25 @@ function pixels(locator: Locator, property: "columnGap" | "fontSize") {
 test("draws as many covers in a row as this size's stored view asks for", async ({
   page,
 }) => {
-  const [, board] = GRID_BOARDS[screenSizeOf(page)];
+  const [, look] = GRID_LOOKS[screenSizeOf(page)];
 
-  await openWith(page, viewWith(page, "grid", board.columns));
+  await openWith(page, viewWith(page, "grid", look.columns));
 
-  expect(await columnsOf(seriesList(page))).toBe(board.columns);
+  expect(await columnsOf(seriesList(page))).toBe(look.columns);
 });
 
-test("spaces the grid and sizes its titles as the boards do for each number of covers per row", async ({
+test("spaces the grid and sizes its titles for each number of covers per row", async ({
   page,
 }) => {
-  for (const board of GRID_BOARDS[screenSizeOf(page)]) {
-    await openWith(page, viewWith(page, "grid", board.columns));
+  for (const look of GRID_LOOKS[screenSizeOf(page)]) {
+    await openWith(page, viewWith(page, "grid", look.columns));
     const title = firstSeries(page).getByText(FIRST_TITLE);
     const bookCount = firstSeries(page).getByText("1 book");
 
-    expect(await columnsOf(seriesList(page))).toBe(board.columns);
-    expect(await pixels(seriesList(page), "columnGap")).toBe(board.gap);
-    expect(await pixels(title, "fontSize")).toBe(board.titleSize);
-    await expect(bookCount).toBeVisible({ visible: board.showsBookCount });
+    expect(await columnsOf(seriesList(page))).toBe(look.columns);
+    expect(await pixels(seriesList(page), "columnGap")).toBe(look.gap);
+    expect(await pixels(title, "fontSize")).toBe(look.titleSize);
+    await expect(bookCount).toBeVisible({ visible: look.showsBookCount });
   }
 });
 
@@ -213,7 +213,7 @@ test("draws a compact grid with each title on a band across the foot of its cove
 test("draws a list with a small cover beside each title and its book count", async ({
   page,
 }) => {
-  const board = LIST_BOARDS[screenSizeOf(page)];
+  const look = LIST_LOOKS[screenSizeOf(page)];
   await openWith(page, viewWith(page, "list"));
   const cover = await boxOf(firstSeries(page).getByRole("presentation"));
   const title = await boxOf(firstSeries(page).getByText(FIRST_TITLE));
@@ -221,9 +221,9 @@ test("draws a list with a small cover beside each title and its book count", asy
   const row = await boxOf(firstSeries(page));
 
   expect(await columnsOf(seriesList(page))).toBe(1);
-  expect(row.height).toBe(board.rowHeight);
-  expect(cover.width).toBe(board.coverWidth);
-  expect(cover.height).toBe(board.coverHeight);
+  expect(row.height).toBe(look.rowHeight);
+  expect(cover.width).toBe(look.coverWidth);
+  expect(cover.height).toBe(look.coverHeight);
   expect(title.x).toBeGreaterThan(cover.x + cover.width);
   await expect(firstSeries(page).getByText("1 book")).toBeVisible();
 });
