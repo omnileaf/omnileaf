@@ -39,7 +39,7 @@
                     : "font-medium text-sidebar-ink",
                 ]}
               >
-                <section.icon size={ICON_SIZE} aria-hidden="true" />
+                <section.icon size={ICON_SIZE} />
                 {section.label()}
               </a>
             </li>

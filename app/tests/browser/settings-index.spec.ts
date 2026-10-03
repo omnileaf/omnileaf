@@ -1,0 +1,45 @@
+import {
+  EXPANDED_MIN_WIDTH,
+  expect,
+  FAKE_APP_VERSION,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
+
+const SUMMARIES = [
+  { section: "Appearance", summary: "Follows the system" },
+  { section: "General", summary: "English" },
+  { section: "About", summary: `Version ${FAKE_APP_VERSION}` },
+] as const;
+
+test("summarises each section from what the app stores", async ({ page }) => {
+  await page.goto("/settings");
+  test.skip(
+    viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+    "settings opens its first section on desktop",
+  );
+  const main = page.getByRole("main");
+
+  for (const { section, summary } of SUMMARIES) {
+    await expect(
+      main.getByRole("link", { name: new RegExp(`^${section}`) }),
+    ).toContainText(summary);
+  }
+});
+
+test("follows the light or dark choice in Appearance's summary", async ({
+  page,
+}) => {
+  await page.goto("/settings/appearance");
+  await page.locator("label").filter({ hasText: "Dark" }).click();
+
+  await page.goto("/settings");
+  test.skip(
+    viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+    "settings opens its first section on desktop",
+  );
+
+  await expect(
+    page.getByRole("main").getByRole("link", { name: /^Appearance/ }),
+  ).toContainText("Dark");
+});

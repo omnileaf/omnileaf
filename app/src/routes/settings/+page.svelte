@@ -1,30 +1,30 @@
 <script lang="ts">
-  import { ChevronRight } from "@lucide/svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import type { ThemePreference } from "$lib/appearance/theme";
+  import { getThemeSetting } from "$lib/appearance/theme.svelte";
+  import { languageName } from "$lib/language/language";
   import { EXPANDED_QUERY } from "$lib/page/breakpoints";
   import PageHeading from "$lib/page/PageHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import {
-    SETTINGS_GROUPS,
-    type SettingsRoute,
-    type SettingsSection,
-  } from "$lib/settings/sections";
+  import { getLocale } from "$lib/paraglide/runtime.js";
+  import type { SectionSummary, SettingsRoute } from "$lib/settings/sections";
+  import SettingsIndex from "$lib/settings/SettingsIndex.svelte";
 
   import type { PageProps } from "./$types";
 
-  const ICON_SIZE = 20;
-  const CHEVRON_SIZE = 18;
   const FIRST_SECTION = "/settings/library";
-  const TILE_BACKGROUNDS = {
-    accent: "bg-accent-soft",
-    neutral: "bg-chip",
-  } satisfies Record<SettingsSection["tone"], string>;
+  const THEME_SUMMARIES = {
+    system: m.theme_follows_system,
+    light: m.theme_light,
+    dark: m.theme_dark,
+  } satisfies Record<ThemePreference, () => string>;
 
   let { data }: PageProps = $props();
 
+  const theme = getThemeSetting();
   const isBesideSections = new MediaQuery(EXPANDED_QUERY);
 
   $effect(() => {
@@ -33,48 +33,21 @@
     }
   });
 
-  const summaries: Partial<Record<SettingsRoute, string>> = $derived({
-    "/settings/about": m.app_version({ version: data.appInfo.version }),
+  const summaries: Partial<Record<SettingsRoute, SectionSummary>> = $derived({
+    "/settings/appearance": { text: THEME_SUMMARIES[theme.preference]() },
+    "/settings/general": {
+      text: languageName(getLocale()),
+      lang: getLocale(),
+    },
+    "/settings/about": {
+      text: m.app_version({ version: data.appInfo.version }),
+    },
   });
 </script>
 
 <div class="expanded:hidden">
   <PageHeading title={m.settings_title()} />
-  <div class="mbs-lg flex flex-col gap-xl">
-    {#each SETTINGS_GROUPS as group, index (index)}
-      <ul
-        class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card"
-      >
-        {#each group as settingsPage (settingsPage.route)}
-          {@const summary = summaries[settingsPage.route]}
-          <li>
-            <a
-              href={resolve(settingsPage.route)}
-              class="flex items-center gap-list-row py-sm ps-list-row pe-md min-block-4xl"
-            >
-              <span
-                class={[
-                  "flex shrink-0 items-center justify-center rounded-tile block-tile inline-tile",
-                  TILE_BACKGROUNDS[settingsPage.tone],
-                ]}
-              >
-                <settingsPage.icon size={ICON_SIZE} aria-hidden="true" />
-              </span>
-              <span class="flex flex-1 flex-col">
-                <span class="font-semibold">{settingsPage.label()}</span>
-                {#if summary !== undefined}
-                  <span class="text-footnote text-muted">{summary}</span>
-                {/if}
-              </span>
-              <ChevronRight
-                size={CHEVRON_SIZE}
-                aria-hidden="true"
-                class="shrink-0 text-muted"
-              />
-            </a>
-          </li>
-        {/each}
-      </ul>
-    {/each}
+  <div class="mbs-lg">
+    <SettingsIndex {summaries} />
   </div>
 </div>
