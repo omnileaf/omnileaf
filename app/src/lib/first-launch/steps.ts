@@ -1,4 +1,9 @@
-export const FIRST_LAUNCH_STEPS = ["welcome", "home", "ready"] as const;
+export const FIRST_LAUNCH_STEPS = [
+  "welcome",
+  "home",
+  "choices",
+  "ready",
+] as const;
 
 export type FirstLaunchStep = (typeof FIRST_LAUNCH_STEPS)[number];
 

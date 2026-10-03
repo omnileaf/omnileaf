@@ -4,6 +4,7 @@
   import { goto, pushState } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
+  import ChoicesStep from "$lib/first-launch/ChoicesStep.svelte";
   import { deviceKindOf } from "$lib/first-launch/device";
   import FirstLaunchPanel from "$lib/first-launch/FirstLaunchPanel.svelte";
   import HomeStep from "$lib/first-launch/HomeStep.svelte";
@@ -104,6 +105,8 @@
         <WelcomeStep {device} onNext={next} />
       {:else if step === "home"}
         <HomeStep folders={folders.list} onBack={back} onNext={next} />
+      {:else if step === "choices"}
+        <ChoicesStep onBack={back} onNext={next} />
       {:else}
         <ReadyStep onFinish={finish} />
       {/if}

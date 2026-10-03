@@ -51,6 +51,7 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
 const STEPS = [
   { heading: "Welcome to Omnileaf", leaveWith: "Get started" },
   { heading: "Where your library lives", leaveWith: "Continue" },
+  { heading: "A few choices", leaveWith: "Continue" },
   { heading: "You're all set", leaveWith: "Open my library" },
 ] as const;
 
@@ -182,7 +183,21 @@ test("counts the steps between the welcome and the end", async ({ page }) => {
   const progress = page.getByRole("progressbar", { name: "Setting up" });
 
   await expect(progress).toHaveAttribute("aria-valuenow", "1");
-  await expect(progress).toHaveAttribute("aria-valuetext", "1 of 1");
+  await expect(progress).toHaveAttribute("aria-valuetext", "1 of 2");
+});
+
+test("turns the app dark from the choices", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await goTo(page, "A few choices");
+
+  await page
+    .getByRole("group", { name: "Appearance" })
+    .locator("label")
+    .filter({ hasText: "Dark" })
+    .click();
+
+  await expect(page.getByRole("radio", { name: "Dark" })).toBeChecked();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
 test("goes back a step with the Back button", async ({ page }) => {
