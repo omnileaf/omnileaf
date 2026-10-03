@@ -1,5 +1,7 @@
 import {
+  baseLocale,
   defineCustomClientStrategy,
+  extractLocaleFromNavigator,
   getLocale,
   getTextDirection,
   isLocale,
@@ -25,9 +27,13 @@ export interface LanguageSwitch {
   readonly reload: () => void;
 }
 
+export const LANGUAGES: readonly Locale[] = locales.filter(
+  (locale) => locale !== PSEUDO_LOCALE,
+);
+
 export const LANGUAGE_CHOICES: readonly LanguageChoice[] = [
   "system",
-  ...locales.filter((locale) => locale !== PSEUDO_LOCALE),
+  ...LANGUAGES,
 ];
 
 export function storedLanguageChoice(
@@ -63,6 +69,10 @@ export function useChosenLanguage(store: Pick<LanguageStore, "getItem">): void {
 export function markLanguage(root: HTMLElement): void {
   root.lang = getLocale();
   root.dir = getTextDirection();
+}
+
+export function systemLanguage(): Locale {
+  return extractLocaleFromNavigator() ?? baseLocale;
 }
 
 export function languageName(locale: Locale): string {
