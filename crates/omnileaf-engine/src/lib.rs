@@ -13,7 +13,6 @@ pub use crash_report::{
 };
 pub use folder_survey::{FolderSurvey, SurveyError, survey_folder};
 pub use project_link::ProjectLink;
-use version_details::platform_name;
 pub use version_details::{BuildProfile, VersionDetails};
 
 #[derive(Debug)]

@@ -8,11 +8,10 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::{Platform, ProjectLink, platform_name};
+use crate::{AppInfo, Platform, ProjectLink};
 
 pub use offers::{CrashReportError, CrashReportFile, CrashReportOffers, UnsavedCrashReport};
 
-const APP_NAME: &str = "Omnileaf";
 const MESSAGE_BYTE_LIMIT: usize = 240;
 const FRAME_LIMIT: usize = 12;
 const FRAME_BYTE_LIMIT: usize = 120;
@@ -76,10 +75,10 @@ impl Origin {
         }
     }
 
-    fn what_happened(self) -> &'static str {
+    fn what_happened(self) -> String {
         match self {
-            Self::Panic => "Omnileaf closed unexpectedly.",
-            Self::Interface => "The interface stopped on an unexpected error.",
+            Self::Panic => format!("{} closed unexpectedly.", AppInfo::NAME),
+            Self::Interface => "The interface stopped on an unexpected error.".to_owned(),
         }
     }
 
@@ -174,8 +173,8 @@ impl CrashReport {
             ProjectLink::NewIssue.url(),
             &[
                 ("title", &title),
-                ("what-happened", self.origin.what_happened()),
-                ("platform", platform_name(self.app.platform)),
+                ("what-happened", &self.origin.what_happened()),
+                ("platform", self.app.platform.name()),
                 ("version", &self.app.version),
                 ("logs", &self.to_string()),
             ],
@@ -243,8 +242,13 @@ fn clean_frames<'a>(frames: impl IntoIterator<Item = &'a str>) -> Vec<String> {
 
 impl fmt::Display for CrashReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let platform = platform_name(self.app.platform);
-        write!(f, "{APP_NAME} {} on {platform}", self.app.version)?;
+        write!(
+            f,
+            "{} {} on {}",
+            AppInfo::NAME,
+            self.app.version,
+            self.app.platform.name()
+        )?;
         match &self.app.system {
             Some(system) => writeln!(f, " ({system})")?,
             None => writeln!(f)?,
