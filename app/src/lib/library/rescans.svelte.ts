@@ -1,20 +1,11 @@
-import type {
-  LibraryFolder,
-  RescanOutcome,
-  ScanProgress,
-} from "$lib/ipc/bindings";
+import type { LibraryFolder, RescanOutcome } from "$lib/ipc/bindings";
 
 import type { RescanFolder } from "./rescan-folder";
+import { followScan, type ScanStep } from "./scan-step";
 
 export type RescanStatus =
   | { readonly kind: "idle" }
-  | { readonly kind: "finding"; readonly folder: LibraryFolder }
-  | {
-      readonly kind: "reading";
-      readonly folder: LibraryFolder;
-      readonly scanned: number;
-      readonly total: number;
-    }
+  | (ScanStep & { readonly folder: LibraryFolder })
   | {
       readonly kind: "finished";
       readonly folder: LibraryFolder;
@@ -35,28 +26,18 @@ export class Rescans {
   /** Resolves once the rescan is over, whatever it found. */
   async rescan(folder: LibraryFolder): Promise<void> {
     this.status = { kind: "finding", folder };
-    const result = await this.rescanFolder(folder.id, (progress) => {
-      this.#show(folder, progress);
-    });
+    const result = await this.rescanFolder(
+      folder.id,
+      followScan(
+        () => this.isBusy,
+        (step) => {
+          this.status = { ...step, folder };
+        },
+      ),
+    );
     this.status =
       result.status === "ok"
         ? { kind: "finished", folder, outcome: result.data.outcome }
         : { kind: "failed", folder };
-  }
-
-  /** Progress can arrive after the result it led to, which must not turn back into a rescan in progress. */
-  #show(folder: LibraryFolder, progress: ScanProgress): void {
-    if (!this.isBusy) {
-      return;
-    }
-    this.status =
-      progress.stage === "finding"
-        ? { kind: "finding", folder }
-        : {
-            kind: "reading",
-            folder,
-            scanned: progress.scanned,
-            total: progress.total,
-          };
   }
 }

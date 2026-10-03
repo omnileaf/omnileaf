@@ -5,11 +5,11 @@
   import { folderTitle } from "./folder-title";
   import { rescanReport } from "./rescan-report";
   import type { RescanStatus } from "./rescans.svelte";
+  import ScanProgressBar from "./ScanProgressBar.svelte";
 
   let { status, kind }: { status: RescanStatus; kind: FolderKind } = $props();
 
   const progressTitleId = $props.id();
-  const progressCountId = `${progressTitleId}-count`;
 
   const shown = $derived(
     status.kind !== "idle" && status.folder.kind === kind ? status : undefined,
@@ -40,22 +40,7 @@
       <p>{line}</p>
     {/each}
   </div>
-  {#if shown?.kind === "finding"}
-    <progress aria-labelledby={progressTitleId} class="mbs-sm progress-track"
-    ></progress>
-  {:else if shown?.kind === "reading"}
-    <progress
-      aria-labelledby={progressTitleId}
-      aria-describedby={progressCountId}
-      class="mbs-sm progress-track"
-      max={shown.total}
-      value={shown.scanned}
-    ></progress>
-    <p id={progressCountId} class="mbs-xs text-caption text-muted">
-      {m.library_scan_progress({
-        scanned: shown.scanned,
-        total: shown.total,
-      })}
-    </p>
+  {#if shown?.kind === "finding" || shown?.kind === "reading"}
+    <ScanProgressBar step={shown} titleId={progressTitleId} />
   {/if}
 </div>
