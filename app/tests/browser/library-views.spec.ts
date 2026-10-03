@@ -39,6 +39,12 @@ interface ListBoard {
 }
 
 const PANEL_WIDTH = 340;
+
+const RANGE_LABELS = {
+  phone: "2 to 5 on this phone",
+  tablet: "3 to 8 on this tablet",
+  desktop: "4 to 12",
+} as const satisfies Record<ScreenSize, string>;
 const SERIES_IN_CATALOG = 200;
 const FIRST_TITLE = "Sample Series 0001";
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;
@@ -321,11 +327,11 @@ test.describe("view options", () => {
     page,
   }) => {
     const size = screenSizeOf(page);
-    const { fewest, most } = COVERS_PER_ROW[size];
+    const { most } = COVERS_PER_ROW[size];
     await openWith(page, DEFAULT_LIBRARY_VIEW);
     const options = await openViewOptions(page);
     await expect(
-      options.getByText(`${String(fewest)} to ${String(most)}`),
+      options.getByText(RANGE_LABELS[size], { exact: true }),
     ).toBeVisible();
 
     for (

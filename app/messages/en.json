@@ -42,6 +42,8 @@
   "library_display_list": "List",
   "library_covers_per_row": "Covers per row",
   "library_covers_per_row_range": "{fewest} to {most}",
+  "library_covers_per_row_range_phone": "{fewest} to {most} on this phone",
+  "library_covers_per_row_range_tablet": "{fewest} to {most} on this tablet",
   "library_fewer_covers_per_row": "Fewer covers per row",
   "library_more_covers_per_row": "More covers per row",
   "library_item_counts": "Item counts",

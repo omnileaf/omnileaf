@@ -42,6 +42,8 @@
   "library_display_list": "⟦Ļíšţ··⟧",
   "library_covers_per_row": "⟦Çöṽéŕš þéŕ ŕöŵ······⟧",
   "library_covers_per_row_range": "⟦{fewest} ţö {most}········⟧",
+  "library_covers_per_row_range_phone": "⟦{fewest} ţö {most} öñ ţĥíš þĥöñé·············⟧",
+  "library_covers_per_row_range_tablet": "⟦{fewest} ţö {most} öñ ţĥíš ţáƀļéţ··············⟧",
   "library_fewer_covers_per_row": "⟦Ƒéŵéŕ çöṽéŕš þéŕ ŕöŵ········⟧",
   "library_more_covers_per_row": "⟦Ṁöŕé çöṽéŕš þéŕ ŕöŵ········⟧",
   "library_item_counts": "⟦Íţéɱ çöûñţš·····⟧",
