@@ -6,8 +6,8 @@ use crate::{ImageFormat, Size};
 pub enum ImagingError {
     #[error("decode an image in a format this app can't read")]
     Unsupported,
-    #[error("decode a {} by {} image, larger than the {limit} pixels allowed", size.width, size.height)]
-    TooLarge { size: Size, limit: u64 },
+    #[error("decode a {} by {} image, which needs {bytes} bytes, more than the {limit} allowed", size.width, size.height)]
+    TooLarge { size: Size, bytes: u64, limit: u64 },
     #[error("decode a {format:?} image")]
     Undecodable {
         format: ImageFormat,

@@ -5,13 +5,20 @@ use std::{
 };
 
 use image_webp::WebPDecoder;
-use jpeg_decoder::PixelFormat;
+use jpeg_decoder::{CodingProcess, PixelFormat};
 use png::{ColorType, Transformations};
 
 use crate::{ImageFormat, ImagingError, Size};
 
-const MAX_PIXELS: u64 = 200_000_000;
-const MAX_DECODED_BYTES: usize = 256 * 1024 * 1024;
+/// The most memory one decode may take, its decoder's working buffers and the pixels it hands back counted together.
+const MAX_DECODED_BYTES: u64 = 256 * 1024 * 1024;
+const RGB_BYTES_PER_PIXEL: u64 = 3;
+/// Each sample of a progressive JPEG keeps a 16-bit coefficient at full size until its last scan.
+const COEFFICIENT_BYTES: u64 = 2;
+/// The widest block a JPEG pads its samples to, which its coefficients take room for.
+const MAX_JPEG_MCU_EDGE: u64 = 32;
+/// The WebP decoder's working buffers per pixel, at most a 32-bit ARGB plane for a lossless image.
+const WEBP_WORKING_BYTES_PER_PIXEL: u64 = 4;
 const OPAQUE: u8 = u8::MAX;
 
 /// An image whose format and size are known from its header, before any pixel is decoded.
@@ -28,7 +35,7 @@ pub(crate) struct Decoded {
 }
 
 impl<'bytes> Source<'bytes> {
-    /// Reads the image's header, refusing an image too large to decode.
+    /// Reads the image's header, without decoding any pixel.
     pub(crate) fn probe(bytes: &'bytes [u8]) -> Result<Self, ImagingError> {
         let format = ImageFormat::sniff(bytes).ok_or(ImagingError::Unsupported)?;
         let size = guarded(format, || match format {
@@ -39,12 +46,6 @@ impl<'bytes> Source<'bytes> {
         if size.is_empty() {
             return Err(ImagingError::Damaged { format });
         }
-        if size.pixels() > MAX_PIXELS {
-            return Err(ImagingError::TooLarge {
-                size,
-                limit: MAX_PIXELS,
-            });
-        }
         Ok(Self {
             bytes,
             format,
@@ -53,14 +54,39 @@ impl<'bytes> Source<'bytes> {
     }
 
     /// Decodes a JPEG at the smallest of its built-in scales still `at_least` as large in one direction; other formats decode in full.
+    ///
+    /// Refuses an image whose decode would need more memory than allowed, worked out from its header before anything is allocated.
     pub(crate) fn decode(&self, at_least: Size) -> Result<Decoded, ImagingError> {
-        let bytes = self.bytes;
-        guarded(self.format, || match self.format {
-            ImageFormat::Jpeg => decode_jpeg(bytes, at_least),
-            ImageFormat::Png => decode_png(bytes),
-            ImageFormat::Webp => decode_webp(bytes),
+        let Self {
+            bytes,
+            format,
+            size,
+        } = *self;
+        guarded(format, || match format {
+            ImageFormat::Jpeg => decode_jpeg(bytes, size, at_least),
+            ImageFormat::Png => decode_png(bytes, size),
+            ImageFormat::Webp => decode_webp(bytes, size),
         })
     }
+}
+
+fn ensure_within_budget(size: Size, bytes: u64) -> Result<(), ImagingError> {
+    if bytes > MAX_DECODED_BYTES {
+        return Err(ImagingError::TooLarge {
+            size,
+            bytes,
+            limit: MAX_DECODED_BYTES,
+        });
+    }
+    Ok(())
+}
+
+fn as_u64(length: usize) -> u64 {
+    u64::try_from(length).unwrap_or(u64::MAX)
+}
+
+fn rgb_bytes(size: Size) -> u64 {
+    size.pixels().saturating_mul(RGB_BYTES_PER_PIXEL)
 }
 
 /// Turns a decoder's panic on a damaged image into an error, so one bad page never takes the app down.
@@ -89,16 +115,25 @@ fn jpeg_size(bytes: &[u8]) -> Result<Size, ImagingError> {
     })
 }
 
-fn decode_jpeg(bytes: &[u8], at_least: Size) -> Result<Decoded, ImagingError> {
+fn decode_jpeg(bytes: &[u8], source: Size, at_least: Size) -> Result<Decoded, ImagingError> {
     let failed = |error: jpeg_decoder::Error| undecodable(ImageFormat::Jpeg)(error.into());
+    let damaged = || ImagingError::Damaged {
+        format: ImageFormat::Jpeg,
+    };
     let mut decoder = jpeg_decoder::Decoder::new(bytes);
-    decoder
+    let (width, height) = decoder
         .scale(clamped(at_least.width), clamped(at_least.height))
         .map_err(failed)?;
+    let scaled = Size {
+        width: u32::from(width),
+        height: u32::from(height),
+    };
+    let info = decoder.info().ok_or_else(damaged)?;
+    let needed = jpeg_decode_bytes(source, scaled, info);
+    ensure_within_budget(source, needed)?;
+    decoder.set_max_decoding_buffer_size(usize::try_from(needed).unwrap_or(usize::MAX));
     let pixels = decoder.decode().map_err(failed)?;
-    let info = decoder.info().ok_or(ImagingError::Damaged {
-        format: ImageFormat::Jpeg,
-    })?;
+    let info = decoder.info().ok_or_else(damaged)?;
     let rgb = match info.pixel_format {
         PixelFormat::RGB24 => pixels,
         PixelFormat::L8 => grey_to_rgb(&pixels),
@@ -114,11 +149,29 @@ fn decode_jpeg(bytes: &[u8], at_least: Size) -> Result<Decoded, ImagingError> {
     })
 }
 
+/// The decoder's planes and its output at the scaled size, the RGB copy of them, and a progressive image's full-size coefficients.
+fn jpeg_decode_bytes(source: Size, scaled: Size, info: jpeg_decoder::ImageInfo) -> u64 {
+    let samples_per_pixel = as_u64(info.pixel_format.pixel_bytes());
+    let scaled_bytes = scaled
+        .pixels()
+        .saturating_mul(samples_per_pixel.saturating_mul(2))
+        .saturating_add(rgb_bytes(scaled));
+    let coefficient_bytes = if info.coding_process == CodingProcess::DctProgressive {
+        let padded_pixels = u64::from(source.width)
+            .next_multiple_of(MAX_JPEG_MCU_EDGE)
+            .saturating_mul(u64::from(source.height).next_multiple_of(MAX_JPEG_MCU_EDGE));
+        padded_pixels.saturating_mul(samples_per_pixel.saturating_mul(COEFFICIENT_BYTES))
+    } else {
+        0
+    };
+    scaled_bytes.saturating_add(coefficient_bytes)
+}
+
 fn png_decoder(bytes: &[u8]) -> png::Decoder<Cursor<&[u8]>> {
     let mut decoder = png::Decoder::new_with_limits(
         Cursor::new(bytes),
         png::Limits {
-            bytes: MAX_DECODED_BYTES,
+            bytes: usize::try_from(MAX_DECODED_BYTES).unwrap_or(usize::MAX),
         },
     );
     decoder.set_transformations(Transformations::normalize_to_color8());
@@ -136,12 +189,19 @@ fn png_size(bytes: &[u8]) -> Result<Size, ImagingError> {
     })
 }
 
-fn decode_png(bytes: &[u8]) -> Result<Decoded, ImagingError> {
+fn decode_png(bytes: &[u8], size: Size) -> Result<Decoded, ImagingError> {
     let failed = |error: png::DecodingError| undecodable(ImageFormat::Png)(error.into());
     let mut reader = png_decoder(bytes).read_info().map_err(failed)?;
     let length = reader.output_buffer_size().ok_or(ImagingError::Damaged {
         format: ImageFormat::Png,
     })?;
+    let conversion_bytes = match reader.output_color_type().0 {
+        ColorType::Rgb => 0,
+        ColorType::Rgba | ColorType::Grayscale | ColorType::GrayscaleAlpha | ColorType::Indexed => {
+            rgb_bytes(size)
+        }
+    };
+    ensure_within_budget(size, as_u64(length).saturating_add(conversion_bytes))?;
     let mut pixels = vec![0; length];
     let frame = reader.next_frame(&mut pixels).map_err(failed)?;
     pixels.truncate(frame.buffer_size());
@@ -164,7 +224,7 @@ fn decode_png(bytes: &[u8]) -> Result<Decoded, ImagingError> {
 fn webp_decoder(bytes: &[u8]) -> Result<WebPDecoder<Cursor<&[u8]>>, ImagingError> {
     let mut decoder = WebPDecoder::new(Cursor::new(bytes))
         .map_err(|error| undecodable(ImageFormat::Webp)(error.into()))?;
-    decoder.set_memory_limit(MAX_DECODED_BYTES);
+    decoder.set_memory_limit(usize::try_from(MAX_DECODED_BYTES).unwrap_or(usize::MAX));
     Ok(decoder)
 }
 
@@ -173,11 +233,23 @@ fn webp_size(bytes: &[u8]) -> Result<Size, ImagingError> {
     Ok(Size { width, height })
 }
 
-fn decode_webp(bytes: &[u8]) -> Result<Decoded, ImagingError> {
+fn decode_webp(bytes: &[u8], size: Size) -> Result<Decoded, ImagingError> {
     let mut decoder = webp_decoder(bytes)?;
     let length = decoder.output_buffer_size().ok_or(ImagingError::Damaged {
         format: ImageFormat::Webp,
     })?;
+    let working_bytes = size.pixels().saturating_mul(WEBP_WORKING_BYTES_PER_PIXEL);
+    let conversion_bytes = if decoder.has_alpha() {
+        rgb_bytes(size)
+    } else {
+        0
+    };
+    ensure_within_budget(
+        size,
+        as_u64(length)
+            .saturating_add(working_bytes)
+            .saturating_add(conversion_bytes),
+    )?;
     let mut pixels = vec![0; length];
     decoder
         .read_image(&mut pixels)
@@ -198,28 +270,31 @@ fn clamped(length: u32) -> u16 {
     u16::try_from(length).unwrap_or(u16::MAX)
 }
 
+/// Converts each pixel of `CHANNELS` bytes into an RGB copy allocated once at its final size.
+fn to_rgb<const CHANNELS: usize>(
+    pixels: &[u8],
+    convert: impl Fn([u8; CHANNELS]) -> [u8; 3],
+) -> Vec<u8> {
+    let (whole, _) = pixels.as_chunks::<CHANNELS>();
+    let mut rgb = Vec::with_capacity(whole.len().saturating_mul(3));
+    for &pixel in whole {
+        rgb.extend_from_slice(&convert(pixel));
+    }
+    rgb
+}
+
 fn grey_to_rgb(grey: &[u8]) -> Vec<u8> {
-    grey.iter().flat_map(|&level| [level; 3]).collect()
+    to_rgb(grey, |[level]| [level; 3])
 }
 
 fn grey_alpha_on_white(pixels: &[u8]) -> Vec<u8> {
-    pixels
-        .as_chunks::<2>()
-        .0
-        .iter()
-        .flat_map(|&[level, alpha]| [on_white(level, alpha); 3])
-        .collect()
+    to_rgb(pixels, |[level, alpha]| [on_white(level, alpha); 3])
 }
 
 fn rgba_on_white(pixels: &[u8]) -> Vec<u8> {
-    pixels
-        .as_chunks::<4>()
-        .0
-        .iter()
-        .flat_map(|&[red, green, blue, alpha]| {
-            [red, green, blue].map(|channel| on_white(channel, alpha))
-        })
-        .collect()
+    to_rgb(pixels, |[red, green, blue, alpha]| {
+        [red, green, blue].map(|channel| on_white(channel, alpha))
+    })
 }
 
 fn on_white(channel: u8, alpha: u8) -> u8 {
@@ -231,17 +306,12 @@ fn on_white(channel: u8, alpha: u8) -> u8 {
 }
 
 fn cmyk_to_rgb(pixels: &[u8]) -> Vec<u8> {
-    pixels
-        .as_chunks::<4>()
-        .0
-        .iter()
-        .flat_map(|&[cyan, magenta, yellow, black]| {
-            [cyan, magenta, yellow].map(|ink| {
-                let light = u32::from(OPAQUE - ink) * u32::from(OPAQUE - black);
-                u8::try_from(light / u32::from(OPAQUE)).unwrap_or(OPAQUE)
-            })
+    to_rgb(pixels, |[cyan, magenta, yellow, black]| {
+        [cyan, magenta, yellow].map(|ink| {
+            let light = u32::from(OPAQUE - ink) * u32::from(OPAQUE - black);
+            u8::try_from(light / u32::from(OPAQUE)).unwrap_or(OPAQUE)
         })
-        .collect()
+    })
 }
 
 #[cfg(test)]

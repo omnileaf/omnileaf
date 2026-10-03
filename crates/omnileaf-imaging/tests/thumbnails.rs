@@ -8,13 +8,20 @@ use std::io::Cursor;
 
 use omnileaf_imaging::{ImagingError, Size, THUMBNAIL_WIDTH, thumbnail};
 use omnileaf_testkit::{PageShape, page_jpeg, page_png, page_webp, scan_jpeg};
-use png::{BitDepth, ColorType, Encoder};
+use png::{BitDepth, ColorType, Encoder, chunk};
 
 const SEED: u64 = 11;
 const PAGE_WITH_ITS_BAND_AT_THE_FOOT: u32 = 9;
 const COLOUR_TOLERANCE: u8 = 6;
 const WHITE: [u8; 3] = [255; 3];
 const SOF0_DIMENSIONS_OFFSET: usize = 5;
+const SOF0: [u8; 2] = [0xFF, 0xC0];
+const SOF2: [u8; 2] = [0xFF, 0xC2];
+const ZLIB_HEADER: [u8; 2] = [0x78, 0x9C];
+const VP8L_SIGNATURE: u8 = 0x2F;
+const VP8L_LENGTH_BITS: u32 = 14;
+const VP8L_ALPHA_BIT: u32 = 1 << (2 * VP8L_LENGTH_BITS);
+const WEBP_HEADER_LENGTH: u32 = 12;
 
 fn decoded(jpeg: &[u8]) -> (Size, Vec<u8>) {
     let mut decoder = jpeg_decoder::Decoder::new(jpeg);
@@ -63,11 +70,46 @@ fn is_close(left: [u8; 3], right: [u8; 3]) -> bool {
         .all(|(left, right)| left.abs_diff(right) <= COLOUR_TOLERANCE)
 }
 
-fn with_sof0_size(jpeg: &[u8], width: u16, height: u16) -> Vec<u8> {
+/// A PNG whose header promises an RGBA image of `size` but whose pixels stop as soon as they start.
+fn png_header_only(size: Size) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    let mut encoder = Encoder::new(&mut bytes, size.width, size.height);
+    encoder.set_color(ColorType::Rgba);
+    encoder.set_depth(BitDepth::Eight);
+    let mut writer = encoder.write_header().unwrap();
+    writer.write_chunk(chunk::IDAT, &ZLIB_HEADER).unwrap();
+    drop(writer);
+    bytes
+}
+
+/// A lossless WebP whose header promises an image of `size` with alpha but whose pixels never come.
+fn webp_header_only(size: Size) -> Vec<u8> {
+    let packed = (size.width - 1) | ((size.height - 1) << VP8L_LENGTH_BITS) | VP8L_ALPHA_BIT;
+    let payload = [&[VP8L_SIGNATURE][..], &packed.to_le_bytes(), &[0; 3]].concat();
+    let chunk_length = u32::try_from(payload.len()).unwrap();
+    [
+        &b"RIFF"[..],
+        &(WEBP_HEADER_LENGTH + chunk_length).to_le_bytes(),
+        b"WEBP",
+        b"VP8L",
+        &chunk_length.to_le_bytes(),
+        &payload,
+    ]
+    .concat()
+}
+
+fn as_progressive(jpeg: &[u8]) -> Vec<u8> {
+    let mut patched = jpeg.to_vec();
+    let marker = patched.windows(2).position(|pair| pair == SOF0).unwrap();
+    patched[marker..marker + 2].copy_from_slice(&SOF2);
+    patched
+}
+
+fn with_sof_size(jpeg: &[u8], width: u16, height: u16) -> Vec<u8> {
     let mut patched = jpeg.to_vec();
     let marker = patched
         .windows(2)
-        .position(|pair| pair == [0xFF, 0xC0])
+        .position(|pair| pair == SOF0 || pair == SOF2)
         .unwrap();
     let dimensions = marker + SOF0_DIMENSIONS_OFFSET;
     patched[dimensions..dimensions + 2].copy_from_slice(&height.to_be_bytes());
@@ -224,11 +266,54 @@ fn refuses_a_damaged_jpeg() {
 }
 
 #[test]
-fn refuses_an_image_larger_than_the_pixel_limit_before_decoding_it() {
+fn refuses_a_jpeg_too_large_to_decode_within_the_memory_budget() {
     let page = page_jpeg(SEED, 0, PageShape::Portrait).unwrap();
-    let huge = with_sof0_size(&page, 60_000, 60_000);
+    let huge = with_sof_size(&page, 60_000, 60_000);
 
     let outcome = thumbnail(&huge);
 
     assert!(matches!(outcome, Err(ImagingError::TooLarge { .. })));
+}
+
+#[test]
+fn refuses_a_progressive_jpeg_whose_full_size_coefficients_outgrow_the_memory_budget() {
+    let page = page_jpeg(SEED, 0, PageShape::Portrait).unwrap();
+    let huge = with_sof_size(&as_progressive(&page), 12_000, 12_000);
+
+    let outcome = thumbnail(&huge);
+
+    assert!(
+        matches!(outcome, Err(ImagingError::TooLarge { .. })),
+        "{outcome:?}"
+    );
+}
+
+#[test]
+fn refuses_a_png_whose_pixels_outgrow_the_memory_budget_before_decoding_it() {
+    let huge = png_header_only(Size {
+        width: 14_000,
+        height: 14_000,
+    });
+
+    let outcome = thumbnail(&huge);
+
+    assert!(
+        matches!(outcome, Err(ImagingError::TooLarge { .. })),
+        "{outcome:?}"
+    );
+}
+
+#[test]
+fn refuses_a_webp_whose_pixels_outgrow_the_memory_budget_before_decoding_it() {
+    let huge = webp_header_only(Size {
+        width: 14_000,
+        height: 14_000,
+    });
+
+    let outcome = thumbnail(&huge);
+
+    assert!(
+        matches!(outcome, Err(ImagingError::TooLarge { .. })),
+        "{outcome:?}"
+    );
 }
