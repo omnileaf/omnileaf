@@ -116,9 +116,7 @@ impl Layout {
             });
         }
     }
-}
 
-impl Layout {
     /// Counts each folder once, however many of its entries failed.
     fn note_unreadable(&mut self, folder: &Path) {
         if self.unreadable_folders.last().map(PathBuf::as_path) != Some(folder) {
