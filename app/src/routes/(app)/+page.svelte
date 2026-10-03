@@ -4,6 +4,7 @@
   import {
     commands,
     DEFAULT_LIBRARY_LISTING,
+    DEFAULT_LIBRARY_VIEW,
     type LibraryView,
   } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
@@ -14,9 +15,9 @@
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { LibrarySeriesList } from "#lib/library/library-series.svelte.ts";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
-  import { LibraryViewSetting } from "#lib/library/library-view.svelte.ts";
   import SeriesCount from "#lib/library/SeriesCount.svelte";
   import SeriesCovers from "#lib/library/SeriesCovers.svelte";
+  import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
@@ -36,9 +37,12 @@
       reportError(error);
     },
   );
-  const view = new LibraryViewSetting(
-    () => commands.libraryView(),
-    (chosen) => commands.setLibraryView(chosen),
+  const view = new StoredChoice<LibraryView>(
+    {
+      read: () => commands.libraryView(),
+      store: (chosen: LibraryView) => commands.setLibraryView(chosen),
+      fallback: DEFAULT_LIBRARY_VIEW,
+    },
     (error) => {
       reportError(error);
     },
@@ -53,7 +57,7 @@
     library.list.kind === "loaded" &&
       library.list.series.length > 0 &&
       view.reading.kind === "read"
-      ? { series: library.list, view: view.reading.view }
+      ? { series: library.list, view: view.reading.value }
       : undefined,
   );
   const showsItemCounts = $derived(shown?.view.showsItemCounts === true);
