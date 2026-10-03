@@ -83,6 +83,9 @@
   --spacing-pointer-target: 2.5rem;
   --spacing-pointer-button: 2.25rem;
   --spacing-dismiss: 1.75rem;
+  --spacing-empty-art: 4rem;
+  --spacing-empty-icon: 1.75rem;
+  --spacing-empty-lift: 5rem;
   --spacing-button: 1.25rem;
   --spacing-pill: 3.5rem;
   --spacing-tile: 2.25rem;
@@ -229,6 +232,9 @@
 
 :root {
   @variant medium {
+    --spacing-empty-art: 5rem;
+    --spacing-empty-icon: 2.25rem;
+    --spacing-empty-lift: 9.5rem;
     --spacing-title-gap: 1.5rem;
     --spacing-gutter: 1.75rem;
     --text-page-title: 1.875rem;
@@ -243,6 +249,7 @@
 
 :root {
   @variant desktop {
+    --spacing-empty-lift: 3.25rem;
     --spacing-title-gap: 1.75rem;
     --text-page-title: 1.75rem;
     --text-page-title--line-height: 1.15;
