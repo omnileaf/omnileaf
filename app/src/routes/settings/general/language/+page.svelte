@@ -11,6 +11,7 @@
     storedLanguageChoice,
     systemLanguage,
   } from "$lib/language/language";
+  import { textAroundValue } from "$lib/language/placeholder";
   import { WindowWidth } from "$lib/page/breakpoints";
   import { isPhone } from "$lib/page/platform";
   import SectionHeading from "$lib/settings/SectionHeading.svelte";
@@ -29,6 +30,12 @@
   const onPhone = $derived(isPhone(data.appInfo.platform, width.current));
   const groups: readonly (readonly LanguageChoice[])[] = $derived(
     onPhone ? [LANGUAGE_CHOICES] : [["system"], LANGUAGES],
+  );
+
+  const system = systemLanguage();
+  const systemName = languageName(system);
+  const systemLabel = textAroundValue((language) =>
+    m.language_system({ language }),
   );
 
   const footnoteId = $props.id();
@@ -80,9 +87,12 @@
             />
             {#if choice === "system"}
               <span class="flex-1">
-                {m.language_system({
-                  language: languageName(systemLanguage()),
-                })}
+                {#if systemLabel === undefined}
+                  {m.language_system({ language: systemName })}
+                {:else}
+                  {systemLabel.before}<span lang={system}>{systemName}</span
+                  >{systemLabel.after}
+                {/if}
               </span>
             {:else}
               <span lang={choice} class="flex-1">{languageName(choice)}</span>
