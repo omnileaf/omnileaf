@@ -21,6 +21,7 @@
   let confirming: LibraryFolder | undefined = $state();
   let notRemoved: LibraryFolder | undefined = $state();
   let foldersHeading: HTMLHeadingElement | undefined = $state();
+  const headingId = $props.id();
 
   async function remove(folder: LibraryFolder): Promise<void> {
     confirming = undefined;
@@ -30,9 +31,9 @@
   }
 </script>
 
-<section aria-labelledby="folders-heading">
+<section aria-labelledby={headingId}>
   <h2
-    id="folders-heading"
+    id={headingId}
     tabindex="-1"
     bind:this={foldersHeading}
     class="px-xs text-caption font-semibold text-muted"
