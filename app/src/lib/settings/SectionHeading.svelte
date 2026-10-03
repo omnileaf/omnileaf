@@ -29,13 +29,16 @@
   >
     <ArrowLeft
       size={ARROW_SIZE}
-      class="hidden ios:medium:block android:block"
+      class="hidden rtl:-scale-x-100 ios:medium:block android:block"
     />
     <ChevronLeft
       size={PHONE_CHEVRON_SIZE}
-      class="hidden ios:max-medium:block"
+      class="hidden rtl:-scale-x-100 ios:max-medium:block"
     />
-    <ChevronLeft size={POINTER_CHEVRON_SIZE} class="hidden desktop:block" />
+    <ChevronLeft
+      size={POINTER_CHEVRON_SIZE}
+      class="hidden rtl:-scale-x-100 desktop:block"
+    />
     <span class="ios:medium:hidden android:hidden">{m.settings_title()}</span>
   </a>
   <h1

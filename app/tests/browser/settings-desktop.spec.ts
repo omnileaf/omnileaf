@@ -149,6 +149,28 @@ test.describe("on an iOS phone", () => {
   });
 });
 
+for (const platform of ["android", "ios", "linux"] as const) {
+  test.describe(`on ${platform} in a right-to-left language`, () => {
+    test.use(onPlatform(platform));
+
+    test("points the way back to settings toward the start of the line", async ({
+      page,
+    }) => {
+      await page.goto("/settings/about");
+      test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+      const back = page.getByRole("link", { name: "Back to Settings" });
+      await expect(back).toBeVisible();
+      await page.evaluate(() => {
+        document.documentElement.dir = "rtl";
+      });
+
+      const icon = back.locator("svg:visible");
+
+      await expect(icon).toHaveCSS("scale", "-1 1");
+    });
+  });
+}
+
 for (const colorScheme of ["light", "dark"] as const) {
   test(`settings on desktop has no accessibility violations in the ${colorScheme} theme`, async ({
     page,
