@@ -3,7 +3,7 @@
   import { tick } from "svelte";
 
   import { resolve } from "$app/paths";
-  import type { AboutLook } from "$lib/about/look";
+  import { type AboutLook, ROW_ICON_SIZES } from "$lib/about/look";
   import { m } from "$lib/paraglide/messages.js";
 
   import type { LicenceGroup } from "./licences";
@@ -24,11 +24,6 @@
     phone: "gap-sm ps-lg pe-md min-block-package-row",
     pane: "gap-md ps-list-row pe-md text-label min-block-touch-target desktop:min-block-settings-row",
   } satisfies Record<AboutLook, string>;
-
-  const CHEVRON_SIZES = { phone: 18, pane: 16 } satisfies Record<
-    AboutLook,
-    number
-  >;
 
   let { group, look }: { group: LicenceGroup; look: AboutLook } = $props();
 
@@ -75,7 +70,7 @@
             {licensed.version}
           </span>
           <ChevronRight
-            size={CHEVRON_SIZES[look]}
+            size={ROW_ICON_SIZES[look]}
             class="shrink-0 text-muted rtl:-scale-x-100"
           />
         </a>
@@ -97,7 +92,7 @@
             {m.licences_show_all({ count: group.packages.length })}
           </span>
           <ChevronRight
-            size={CHEVRON_SIZES[look]}
+            size={ROW_ICON_SIZES[look]}
             class="shrink-0 rtl:-scale-x-100"
           />
         </button>
