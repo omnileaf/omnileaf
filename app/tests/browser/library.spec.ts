@@ -13,6 +13,7 @@ import {
 import {
   pagedSeries,
   sampleSeries,
+  SERIES_PER_PAGE,
   type WireSeries,
 } from "./series-catalog.ts";
 
@@ -20,6 +21,10 @@ const EMPTY_ICON_SIZE = { phone: 28, wider: 36 } as const;
 const LIBRARY_CHANGED = "library-changed";
 const ROW_LIMIT_FOR_A_SCREEN = 120;
 const PAGES_A_SCREEN_NEEDS = 1;
+const SERIES_IN_CATALOG = 500;
+const PAGES_IN_CATALOG = SERIES_IN_CATALOG / SERIES_PER_PAGE;
+const LAST_SERIES = `Sample Series ${String(SERIES_IN_CATALOG).padStart(4, "0")}`;
+const SCROLL_RETRY_MS = 100;
 
 function emptyLibrary(page: Page): Locator {
   return page.getByRole("region", { name: "Your library is empty" });
@@ -103,14 +108,19 @@ test.describe("with a library of many series", () => {
   });
 
   test.beforeEach(() => {
-    catalog = sampleSeries(500);
+    catalog = sampleSeries(SERIES_IN_CATALOG);
     pagesAsked = 0;
   });
 
-  async function scrollToTheEnd(page: Page): Promise<void> {
-    await page.getByRole("main").evaluate((main) => {
-      main.scrollTo({ top: main.scrollHeight });
-    });
+  async function scrollToTheLastSeries(page: Page): Promise<Locator> {
+    const last = seriesList(page).getByText(LAST_SERIES);
+    await expect(async () => {
+      await page.getByRole("main").evaluate((main) => {
+        main.scrollTo({ top: main.scrollHeight });
+      });
+      await expect(last).toBeVisible({ timeout: SCROLL_RETRY_MS });
+    }).toPass({ intervals: [SCROLL_RETRY_MS] });
+    return last;
   }
 
   test("reads only the first page the screen needs", async ({ page }) => {
@@ -136,25 +146,17 @@ test.describe("with a library of many series", () => {
     await expect(
       seriesList(page).getByText("Sample Series 0001"),
     ).toBeVisible();
-    const last = seriesList(page).getByText("Sample Series 0500");
 
-    await expect(async () => {
-      await scrollToTheEnd(page);
-      await expect(last).toBeVisible({ timeout: 100 });
-    }).toPass();
+    await scrollToTheLastSeries(page);
 
-    expect(pagesAsked).toBe(10);
+    expect(pagesAsked).toBe(PAGES_IN_CATALOG);
   });
 
   test("lays out only the rows near the screen however far the list goes", async ({
     page,
   }) => {
     await page.goto("/");
-    const last = seriesList(page).getByText("Sample Series 0500");
-    await expect(async () => {
-      await scrollToTheEnd(page);
-      await expect(last).toBeVisible({ timeout: 100 });
-    }).toPass();
+    await scrollToTheLastSeries(page);
 
     const laidOut = await seriesList(page).getByRole("listitem").count();
 
@@ -192,7 +194,7 @@ test.describe("with a library of many series", () => {
     await emitFakeEvent(page, LIBRARY_CHANGED);
 
     await expect(seriesList(page).getByRole("listitem").first()).toContainText(
-      "Sample Series 0500",
+      LAST_SERIES,
     );
   });
 
@@ -215,15 +217,11 @@ test.describe("with a library of many series", () => {
     page,
   }) => {
     await page.goto("/");
-    const last = seriesList(page).getByText("Sample Series 0500");
-    await expect(async () => {
-      await scrollToTheEnd(page);
-      await expect(last).toBeVisible({ timeout: 100 });
-    }).toPass();
+    const last = await scrollToTheLastSeries(page);
 
     await emitFakeEvent(page, LIBRARY_CHANGED);
 
-    await expect.poll(() => pagesAsked).toBe(20);
+    await expect.poll(() => pagesAsked).toBe(2 * PAGES_IN_CATALOG);
     await expect(last).toBeVisible();
   });
 
