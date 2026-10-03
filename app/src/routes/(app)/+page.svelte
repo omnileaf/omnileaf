@@ -20,8 +20,11 @@
   const library = new LibrarySeriesList((after) =>
     commands.librarySeries(after),
   );
-  const seriesCount = new LibrarySeriesCount(() =>
-    commands.librarySeriesCount(),
+  const seriesCount = new LibrarySeriesCount(
+    () => commands.librarySeriesCount(),
+    (error) => {
+      reportError(error);
+    },
   );
   const view = new LibraryViewSetting(
     () => commands.libraryView(),
