@@ -8,7 +8,7 @@ const TITLE_TAG: u8 = 1;
 const ADDED_TAG: u8 = 2;
 const BOOK_TAG: u8 = 3;
 const ID_LENGTH: usize = 16;
-const ROW_KEY_LENGTH: usize = 8;
+const MILLIS_LENGTH: usize = size_of::<i64>();
 const HEX_RADIX: u32 = 16;
 
 /// Where the next page of a list starts, handed back unchanged by whoever asked for the previous page.
@@ -20,11 +20,11 @@ pub struct Cursor(pub(crate) Position);
 pub(crate) enum Position {
     Title {
         sort_key: Vec<u8>,
-        local_id: i64,
+        id: SeriesId,
     },
     Added {
         added_at_ms: i64,
-        local_id: i64,
+        id: SeriesId,
     },
     Book {
         series: SeriesId,
@@ -36,18 +36,10 @@ pub(crate) enum Position {
 impl Position {
     fn to_bytes(&self) -> Vec<u8> {
         match self {
-            Self::Title { sort_key, local_id } => {
-                [&[TITLE_TAG][..], &local_id.to_be_bytes(), sort_key].concat()
+            Self::Title { sort_key, id } => [&[TITLE_TAG][..], id.as_bytes(), sort_key].concat(),
+            Self::Added { added_at_ms, id } => {
+                [&[ADDED_TAG][..], &added_at_ms.to_be_bytes(), id.as_bytes()].concat()
             }
-            Self::Added {
-                added_at_ms,
-                local_id,
-            } => [
-                &[ADDED_TAG][..],
-                &added_at_ms.to_be_bytes(),
-                &local_id.to_be_bytes(),
-            ]
-            .concat(),
             Self::Book {
                 series,
                 sort_key,
@@ -60,17 +52,17 @@ impl Position {
         let (&tag, rest) = bytes.split_first()?;
         match tag {
             TITLE_TAG => {
-                let (local_id, sort_key) = rest.split_first_chunk::<ROW_KEY_LENGTH>()?;
+                let (id, sort_key) = rest.split_first_chunk::<ID_LENGTH>()?;
                 Some(Self::Title {
                     sort_key: sort_key.to_vec(),
-                    local_id: i64::from_be_bytes(*local_id),
+                    id: SeriesId::try_from(id.as_slice()).ok()?,
                 })
             }
             ADDED_TAG => {
-                let (added_at_ms, local_id) = rest.split_first_chunk::<ROW_KEY_LENGTH>()?;
+                let (added_at_ms, id) = rest.split_first_chunk::<MILLIS_LENGTH>()?;
                 Some(Self::Added {
                     added_at_ms: i64::from_be_bytes(*added_at_ms),
-                    local_id: i64::from_be_bytes(local_id.try_into().ok()?),
+                    id: SeriesId::try_from(id).ok()?,
                 })
             }
             BOOK_TAG => {
