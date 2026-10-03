@@ -1,0 +1,190 @@
+//! Keeps a report of a panic for the next run and offers reports to the person, who decides whether to send them.
+
+use std::{
+    backtrace::Backtrace,
+    panic::{self, PanicHookInfo},
+    path::PathBuf,
+    sync::{Arc, OnceLock},
+    time::{SystemTime, UNIX_EPOCH},
+};
+
+use omnileaf_engine::{
+    AppInfo, Core, CrashReport, CrashReportFile, CrashReportId, CrashReportOffers, CrashedApp,
+    InterfaceError, PanicDetails, Platform, SourceLocation,
+};
+use serde::Serialize;
+use specta::Type;
+use tauri::{AppHandle, Manager};
+
+use crate::ipc_error::IpcError;
+
+const NO_MESSAGE: &str = "the panic carried no message";
+
+/// A crash report as the interface shows it, for the person to read before deciding.
+#[derive(Debug, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct CrashReportOffer {
+    details: String,
+}
+
+impl From<&CrashReport> for CrashReportOffer {
+    fn from(report: &CrashReport) -> Self {
+        Self {
+            details: report.to_string(),
+        }
+    }
+}
+
+pub(crate) struct CrashReporting {
+    offers: CrashReportOffers,
+    reporter: Arc<Reporter>,
+}
+
+impl CrashReporting {
+    pub(crate) fn offer_saved(&self) -> Result<Option<CrashReportOffer>, IpcError> {
+        let saved = self.offers.offer_saved()?;
+        Ok(saved.as_ref().map(CrashReportOffer::from))
+    }
+
+    pub(crate) fn offer_interface_error(&self, error: &InterfaceError) -> CrashReportOffer {
+        let report = CrashReport::from_interface_error(
+            Reporter::next_id(),
+            self.reporter.crashed_app(),
+            error,
+        );
+        tracing::error!(report = %report, "the interface met an error it didn't handle");
+        let offered = self.offers.offer(report).unwrap_or_else(|unsaved| {
+            tracing::warn!(error = ?unsaved.source, "keep the crash report for the next run");
+            *unsaved.report
+        });
+        CrashReportOffer::from(&offered)
+    }
+
+    pub(crate) fn offered(&self) -> Result<CrashReport, IpcError> {
+        self.offers.offered().ok_or_else(IpcError::no_crash_report)
+    }
+
+    pub(crate) fn settle(&self) -> Result<(), IpcError> {
+        Ok(self.offers.settle()?)
+    }
+}
+
+/// Starts keeping reports of panics, and offers them through the app's state.
+pub(crate) fn install(app: &AppHandle) -> tauri::Result<()> {
+    let file = CrashReportFile::in_folder(&report_folder(app)?);
+    let reporter = Arc::new(Reporter::new(app.state::<Core>().app_info()));
+    set_panic_hook(file.clone(), Arc::clone(&reporter));
+    app.manage(CrashReporting {
+        offers: CrashReportOffers::new(file),
+        reporter,
+    });
+    Ok(())
+}
+
+fn report_folder(app: &AppHandle) -> tauri::Result<PathBuf> {
+    #[cfg(all(desktop, feature = "e2e"))]
+    if let Some(folder) = crate::e2e::crash_report_folder() {
+        return Ok(folder);
+    }
+    app.path().app_local_data_dir()
+}
+
+/// Describes the running app in a report, reading the system's name only once a report needs it.
+pub(crate) struct Reporter {
+    version: String,
+    platform: Platform,
+    system: OnceLock<Option<String>>,
+}
+
+impl Reporter {
+    pub(crate) fn new(app: &AppInfo) -> Self {
+        Self {
+            version: app.version.clone(),
+            platform: app.platform,
+            system: OnceLock::new(),
+        }
+    }
+
+    fn next_id() -> CrashReportId {
+        let since_epoch = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default();
+        CrashReportId::from_millis(u64::try_from(since_epoch.as_millis()).unwrap_or(u64::MAX))
+    }
+
+    fn crashed_app(&self) -> CrashedApp {
+        CrashedApp {
+            version: self.version.clone(),
+            platform: self.platform,
+            system: self
+                .system
+                .get_or_init(crate::version_details::system)
+                .clone(),
+        }
+    }
+}
+
+fn set_panic_hook(file: CrashReportFile, reporter: Arc<Reporter>) {
+    let previous = panic::take_hook();
+    panic::set_hook(Box::new(move |info| {
+        keep_for_next_run(&file, &reporter, info);
+        previous(info);
+    }));
+}
+
+fn keep_for_next_run(file: &CrashReportFile, reporter: &Reporter, info: &PanicHookInfo<'_>) {
+    let backtrace = Backtrace::force_capture().to_string();
+    let panic = PanicDetails {
+        message: info.payload_as_str().unwrap_or(NO_MESSAGE),
+        location: info.location().map(|location| SourceLocation {
+            file: location.file(),
+            line: location.line(),
+            column: location.column(),
+        }),
+        backtrace: &backtrace,
+    };
+    let report = CrashReport::from_panic(Reporter::next_id(), reporter.crashed_app(), &panic);
+    if let Err(error) = file.save(&report) {
+        tracing::error!(error = ?error, "keep the crash report for the next run");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{env, fs, panic, process, sync::Arc};
+
+    use omnileaf_engine::{AppInfo, CrashReportFile, Platform};
+
+    use super::{Reporter, set_panic_hook};
+
+    #[test]
+    fn a_panic_leaves_a_report_for_the_next_run_without_its_paths() {
+        let folder = env::temp_dir().join(format!("omnileaf-panic-{}", process::id()));
+        let file = CrashReportFile::in_folder(&folder);
+        let app = AppInfo {
+            version: "1.2.3".to_owned(),
+            platform: Platform::Linux,
+            source_code: "repo.example.org/omnileaf".to_owned(),
+        };
+        set_panic_hook(file.clone(), Arc::new(Reporter::new(&app)));
+
+        let outcome = panic::catch_unwind(|| {
+            panic!("open /home/sample-user/Sample Series 01.cbz");
+        });
+
+        drop(panic::take_hook());
+        let saved = file.load().unwrap();
+        let _ = fs::remove_dir_all(&folder);
+        assert!(outcome.is_err());
+        assert!(saved.is_some(), "no report was kept");
+        let report = saved.map(|saved| saved.to_string()).unwrap_or_default();
+        assert!(report.starts_with("Omnileaf 1.2.3 on Linux"), "{report}");
+        assert!(report.contains("\nPanic: open <path>\n"), "{report}");
+        assert!(
+            report.contains("a_panic_leaves_a_report_for_the_next_run_without_its_paths"),
+            "{report}"
+        );
+        assert!(!report.contains("sample-user"), "{report}");
+        assert!(!report.contains("Sample Series"), "{report}");
+    }
+}

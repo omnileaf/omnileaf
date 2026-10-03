@@ -13,6 +13,8 @@
     folderUnreadable: m.library_folder_unreadable,
     clipboardUnavailable: m.library_add_folder_failed,
     browserUnavailable: m.library_add_folder_failed,
+    noCrashReport: m.library_add_folder_failed,
+    crashReportUnavailable: m.library_add_folder_failed,
     internal: m.library_add_folder_failed,
   } satisfies Record<IpcErrorCode, () => string>;
 

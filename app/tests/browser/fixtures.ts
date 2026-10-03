@@ -23,6 +23,11 @@ export const DEFAULT_BACKEND: FakeBackend = {
   addLibraryFolder: () => null,
   copyVersionDetails: () => null,
   openProjectLink: () => null,
+  offerSavedCrashReport: () => null,
+  offerInterfaceErrorReport: (error) => ({ details: error.message }),
+  sendCrashReport: () => null,
+  copyCrashReport: () => null,
+  declineCrashReport: () => null,
 };
 
 export function onPlatform(platform: Platform): { backend: FakeBackend } {

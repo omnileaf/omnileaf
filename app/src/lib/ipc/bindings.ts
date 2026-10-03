@@ -12,6 +12,13 @@ export const commands = {
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder")),
 	copyVersionDetails: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_version_details")),
 	openProjectLink: (link: ProjectLink) => typedError<null, IpcError>(__TAURI_INVOKE("open_project_link", { link })),
+	offerSavedCrashReport: () => typedError<{
+	details: string,
+} | null, IpcError>(__TAURI_INVOKE("offer_saved_crash_report")),
+	offerInterfaceErrorReport: (error: InterfaceError) => typedError<CrashReportOffer, IpcError>(__TAURI_INVOKE("offer_interface_error_report", { error })),
+	sendCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("send_crash_report")),
+	copyCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_crash_report")),
+	declineCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("decline_crash_report")),
 };
 
 /* Types */
@@ -21,10 +28,21 @@ export type AppInfo = {
 	sourceCode: string,
 };
 
+/**  A crash report as the interface shows it, for the person to read before deciding. */
+export type CrashReportOffer = {
+	details: string,
+};
+
 export type FolderSurvey = {
 	name: string,
 	comicFiles: number,
 	unreadableFolders: number,
+};
+
+/**  An error the interface didn't handle, as the webview describes it. */
+export type InterfaceError = {
+	message: string,
+	stack: string | null,
 };
 
 export type IpcError = {
@@ -32,7 +50,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "clipboardUnavailable" | "browserUnavailable" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "internal";
 
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
