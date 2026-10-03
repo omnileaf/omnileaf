@@ -15,16 +15,21 @@ export type SeriesList =
 
 type SeriesPageResult = Awaited<ReturnType<ListSeries>>;
 
-interface Read {
-  readonly series: readonly LibrarySeries[];
-  readonly next: SeriesCursor | null;
-}
+type Read =
+  | {
+      readonly kind: "read";
+      readonly series: readonly LibrarySeries[];
+      readonly next: SeriesCursor | null;
+    }
+  | { readonly kind: "failed" }
+  | { readonly kind: "superseded" };
 
 /** The library's series, read a page at a time as far as the screen has needed them. */
 export class LibrarySeriesList {
   list: SeriesList = $state({ kind: "loading" });
 
   #latestLoad = 0;
+  #shownLists = 0;
   #next: SeriesCursor | null = null;
   #isLoadingMore = false;
 
@@ -34,49 +39,61 @@ export class LibrarySeriesList {
   async load(): Promise<void> {
     const load = ++this.#latestLoad;
     const shown = this.list.kind === "loaded" ? this.list.series.length : 0;
-    const read = await this.#readFromStart(shown);
-    if (load === this.#latestLoad) {
+    const read = await this.#readFromStart(load, shown);
+    if (read.kind !== "superseded") {
       this.#show(read);
     }
   }
 
-  /** Reads the page after the last one shown, once at a time, until the list is complete. */
+  /** Reads the page after the last one shown, once at a time, until the list is complete, and drops it if another list was shown meanwhile. */
   async loadMore(): Promise<void> {
     const after = this.#next;
     if (this.list.kind !== "loaded" || after === null || this.#isLoadingMore) {
       return;
     }
-    const load = this.#latestLoad;
+    const shownList = this.#shownLists;
     const shown = this.list.series;
     this.#isLoadingMore = true;
-    const page = await this.listSeries(after);
-    this.#isLoadingMore = false;
-    if (load !== this.#latestLoad) {
+    let page: SeriesPageResult;
+    try {
+      page = await this.listSeries(after);
+    } finally {
+      this.#isLoadingMore = false;
+    }
+    if (shownList !== this.#shownLists) {
       return;
     }
     this.#show(
       page.status === "ok"
-        ? { series: [...shown, ...page.data.series], next: page.data.next }
-        : undefined,
+        ? {
+            kind: "read",
+            series: [...shown, ...page.data.series],
+            next: page.data.next,
+          }
+        : { kind: "failed" },
     );
   }
 
-  async #readFromStart(atLeast: number): Promise<Read | undefined> {
+  async #readFromStart(load: number, atLeast: number): Promise<Read> {
     const series: LibrarySeries[] = [];
     let after: SeriesCursor | null = null;
     do {
       const page: SeriesPageResult = await this.listSeries(after);
+      if (load !== this.#latestLoad) {
+        return { kind: "superseded" };
+      }
       if (page.status === "error") {
-        return undefined;
+        return { kind: "failed" };
       }
       series.push(...page.data.series);
       after = page.data.next;
     } while (after !== null && series.length < atLeast);
-    return { series, next: after };
+    return { kind: "read", series, next: after };
   }
 
-  #show(read: Read | undefined): void {
-    if (read === undefined) {
+  #show(read: Exclude<Read, { kind: "superseded" }>): void {
+    this.#shownLists += 1;
+    if (read.kind === "failed") {
       this.list = { kind: "failed" };
       return;
     }
