@@ -1,6 +1,7 @@
 //! The headless core that the app's commands drive.
 
 mod app_info;
+mod app_language;
 mod clock;
 mod library;
 mod library_folder;
@@ -8,10 +9,11 @@ mod library_layout;
 mod scan;
 
 pub use app_info::{AppInfo, Platform};
+pub use app_language::AppLanguage;
 pub use clock::SystemClock;
 pub use library::{Library, LibraryError};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
-pub use omnileaf_db::store::Clock;
+pub use omnileaf_db::store::{Changed, Clock};
 pub use scan::{FolderScan, ScanProgress};
 
 #[derive(Debug)]
