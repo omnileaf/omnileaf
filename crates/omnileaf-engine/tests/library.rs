@@ -303,6 +303,35 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
 }
 
 #[tokio::test]
+async fn stores_the_fewest_and_the_most_covers_per_row_each_size_offers() {
+    let home = TempFolder::new("library-view-ranges");
+    let library = open(home.path()).await;
+    let ranges = CoversPerRow::RANGES;
+    let ends = [
+        (
+            ranges.phone.fewest,
+            ranges.tablet.fewest,
+            ranges.desktop.fewest,
+        ),
+        (ranges.phone.most, ranges.tablet.most, ranges.desktop.most),
+    ];
+
+    for (phone, tablet, desktop) in ends {
+        let view = LibraryView {
+            covers_per_row: CoversPerRow {
+                phone: PhoneCoversPerRow::try_from(phone).unwrap(),
+                tablet: TabletCoversPerRow::try_from(tablet).unwrap(),
+                desktop: DesktopCoversPerRow::try_from(desktop).unwrap(),
+            },
+            ..LibraryView::default()
+        };
+        library.set_view(view).await.unwrap();
+
+        assert_eq!(library.view().await.unwrap(), view);
+    }
+}
+
+#[tokio::test]
 async fn announces_a_new_title_order_when_the_app_s_language_changes() {
     let home = TempFolder::new("library-language-changed");
     let library = open(home.path()).await;
