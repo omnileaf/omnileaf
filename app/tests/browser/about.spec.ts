@@ -16,7 +16,8 @@ import {
 } from "./fixtures.ts";
 
 const ABOUT_PAGE = "/settings/about";
-const PHONE_ROW_HEIGHT = 80;
+const PHONE_ROW_HEIGHT = 64;
+const ROW_DIVIDER_WIDTH = 1;
 const PANE_ROW_HEIGHT = 56;
 const TOUCH_BUTTON_HEIGHT = 48;
 const POINTER_BUTTON_HEIGHT = 36;
@@ -146,7 +147,7 @@ for (const platform of ["android", "ios"] as const) {
   test.describe(`on an ${platform} phone`, () => {
     test.use(onPlatform(platform));
 
-    test("puts the version in the list beside Copy version details, on 80px rows", async ({
+    test("puts the version in the list beside Copy version details, on 64px rows", async ({
       page,
     }) => {
       await openAbout(page);
@@ -162,7 +163,7 @@ for (const platform of ["android", "ios"] as const) {
       await expect(version.getByRole("button")).toHaveText(
         "Copy version details",
       );
-      expect(versionRow.height).toBe(PHONE_ROW_HEIGHT);
+      expect(versionRow.height).toBe(PHONE_ROW_HEIGHT + ROW_DIVIDER_WIDTH);
       expect(sourceRow.height).toBe(PHONE_ROW_HEIGHT);
       expect(button.height).toBe(TOUCH_BUTTON_HEIGHT);
       expect(icon.width).toBe(PHONE_ICON_SIZE);

@@ -5,7 +5,7 @@ export type HintKind = "prose" | "address";
 const ROW = "flex inline-full items-center px-list-row text-start";
 
 export const ROW_LOOKS = {
-  phone: `${ROW} gap-list-row py-sm min-block-detail-row`,
+  phone: `${ROW} gap-list-row py-sm min-block-4xl`,
   pane: `${ROW} gap-md py-xs min-block-phone-row`,
 } satisfies Record<AboutLook, string>;
 
