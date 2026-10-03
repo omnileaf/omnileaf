@@ -50,7 +50,7 @@
   <h1
     tabindex="-1"
     class={[
-      "mbs-xs text-bar-title font-bold tracking-tight two-pane:mbs-none",
+      "mbs-xs text-bar-title font-bold tracking-tight wrap-anywhere two-pane:mbs-none",
       "android:max-medium:mbs-none android:max-medium:font-semibold android:max-medium:tracking-normal",
       "ios:max-medium:ps-xs ios:max-medium:text-page-title",
       "touch:medium:max-expanded:text-page-title",

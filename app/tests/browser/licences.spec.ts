@@ -22,6 +22,13 @@ const PACKAGES = licensedPackages({ rust, javascript });
 const GROUPS = groupByLicence(PACKAGES, new Intl.Collator("en"));
 const PREVIEW_SIZE = 3;
 const PHONE_ROW_HEIGHT = 60;
+const SMALL_PHONE = { width: 360, height: 800 };
+const BREAK_OPPORTUNITY = /[\s/-]/;
+const LONGEST_UNBROKEN = PACKAGES.filter(
+  (licensed) => !BREAK_OPPORTUNITY.test(licensed.name),
+).reduce((longest, licensed) =>
+  licensed.name.length > longest.name.length ? licensed : longest,
+);
 
 function groupSection(page: Page, name: string) {
   return page.getByRole("region", { name, exact: true });
@@ -142,6 +149,22 @@ for (const platform of ["android", "ios"] as const) {
       await expect(
         page.getByRole("link", { name: "Back to About" }),
       ).toHaveAttribute("href", "/settings/about");
+    });
+
+    test.describe("on a small phone", () => {
+      test.use({ viewport: SMALL_PHONE });
+
+      test("wraps a long package name with no break inside the screen", async ({
+        page,
+      }) => {
+        await page.goto(`${LICENCES_PAGE}/${LONGEST_UNBROKEN.key}`);
+
+        const title = await boxOf(
+          page.getByRole("heading", { level: 1, name: LONGEST_UNBROKEN.name }),
+        );
+
+        expect(title.x + title.width).toBeLessThanOrEqual(SMALL_PHONE.width);
+      });
     });
   });
 }
