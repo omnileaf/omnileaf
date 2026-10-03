@@ -99,7 +99,8 @@ async fn send_crash_report(app: AppHandle) -> Result<(), IpcError> {
         app.opener()
             .open_url(report.new_issue_url(), None::<&str>)
             .map_err(|error| IpcError::browser_unavailable(&error))?;
-        reporting.settle()
+        reporting.settle_sent();
+        Ok(())
     })
     .await
 }

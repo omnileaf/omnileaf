@@ -67,6 +67,13 @@ impl CrashReporting {
     pub(crate) fn settle(&self) -> Result<(), IpcError> {
         Ok(self.offers.settle()?)
     }
+
+    /// Ends the offer of a report that has gone out; a copy left on disk only comes back next time, so it is logged rather than reported.
+    pub(crate) fn settle_sent(&self) {
+        if let Err(error) = self.offers.settle() {
+            tracing::warn!(error = ?error, "remove the crash report that was sent");
+        }
+    }
 }
 
 /// Starts keeping reports of panics, and offers them through the app's state.
