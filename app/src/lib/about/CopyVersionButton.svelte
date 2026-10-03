@@ -25,7 +25,7 @@
 <button
   type="button"
   class={[
-    "inline-flex shrink-0 items-center gap-sm text-callout font-semibold min-block-touch-target",
+    "inline-flex items-center gap-sm text-start text-callout font-semibold min-block-touch-target min-inline-none",
     LOOKS[look],
   ]}
   onclick={() => {
@@ -33,11 +33,11 @@
   }}
 >
   {#if isCopied}
-    <Check size={ICON_SIZES[look]} />
-    {m.about_version_details_copied()}
+    <Check size={ICON_SIZES[look]} class="shrink-0" />
+    <span>{m.about_version_details_copied()}</span>
   {:else}
-    <Copy size={ICON_SIZES[look]} />
-    {m.about_copy_version_details()}
+    <Copy size={ICON_SIZES[look]} class="shrink-0" />
+    <span>{m.about_copy_version_details()}</span>
   {/if}
 </button>
 <span role="status" class="sr-only">

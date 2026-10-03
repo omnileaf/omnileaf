@@ -22,6 +22,8 @@ const PANE_ROW_HEIGHT = 56;
 const TOUCH_BUTTON_HEIGHT = 48;
 const POINTER_BUTTON_HEIGHT = 36;
 const PHONE_ICON_SIZE = 72;
+const SMALL_PHONE = { width: 360, height: 800 };
+const LARGEST_TEXT = "html { font-size: 200%; }";
 const PANE_ICON_SIZE = 56;
 
 function copyButton(page: Page) {
@@ -34,6 +36,22 @@ function linkRow(page: Page, name: string) {
 
 function appIcon(page: Page) {
   return page.getByRole("main").locator("img");
+}
+
+async function expectCopyButtonInsideCard(page: Page): Promise<void> {
+  const card = await boxOf(page.getByRole("main").getByRole("list").first());
+  const button = await boxOf(
+    page.getByRole("main").getByRole("listitem").first().getByRole("button"),
+  );
+  const content = await page
+    .getByRole("main")
+    .evaluate((main) => ({
+      width: main.clientWidth,
+      scrolls: main.scrollWidth,
+    }));
+
+  expect(button.x + button.width).toBeLessThanOrEqual(card.x + card.width);
+  expect(content.scrolls).toBeLessThanOrEqual(content.width);
 }
 
 async function openAbout(page: Page): Promise<void> {
@@ -167,6 +185,34 @@ for (const platform of ["android", "ios"] as const) {
       expect(sourceRow.height).toBe(PHONE_ROW_HEIGHT);
       expect(button.height).toBe(TOUCH_BUTTON_HEIGHT);
       expect(icon.width).toBe(PHONE_ICON_SIZE);
+    });
+
+    test.describe("on a small phone", () => {
+      test.use({ viewport: SMALL_PHONE });
+
+      test("keeps Copy version details inside the card in a longer language", async ({
+        page,
+      }) => {
+        await page.addInitScript(() => {
+          window.localStorage.setItem("omnileaf.language", "en-XA");
+        });
+        await page.goto(ABOUT_PAGE);
+        await expect(page.getByRole("heading", { level: 1 })).toContainText(
+          "⟦",
+        );
+
+        await expectCopyButtonInsideCard(page);
+      });
+
+      test("keeps Copy version details inside the card with the largest text", async ({
+        page,
+      }) => {
+        await openAbout(page);
+
+        await page.addStyleTag({ content: LARGEST_TEXT });
+
+        await expectCopyButtonInsideCard(page);
+      });
     });
   });
 }
