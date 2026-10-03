@@ -4,11 +4,14 @@ use icu_collator::{
     preferences::CollationNumericOrdering,
 };
 
+use rusqlite::Connection;
+
 use crate::{
     Error,
     title_key::{
         Language,
         articles::{Article, articles_of, without_leading_article},
+        stored_language,
     },
 };
 
@@ -34,6 +37,11 @@ impl TitleCollation {
             collator,
             articles: articles_of(language),
         })
+    }
+
+    /// The collation of the language the stored title keys were made for, which new titles must be keyed by to sort among them.
+    pub(crate) fn stored(connection: &Connection) -> Result<Self, Error> {
+        Self::new(&stored_language(connection)?)
     }
 
     /// Describes every setting the keys depend on besides ICU4X's own code and data, so the stamp moves whenever one of them does.
