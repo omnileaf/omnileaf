@@ -21,12 +21,14 @@ const HOME_FOLDER: WireFolder = {
   kind: "home",
   name: "Omnileaf",
   location: "/data/Omnileaf",
+  isAvailable: true,
 };
 const SAMPLE_COMICS: WireFolder = {
   id: "2",
   kind: "linked",
   name: "Sample Comics",
   location: "/media/Sample Comics",
+  isAvailable: true,
 };
 
 /** A device that hasn't finished its first launch until the test finishes it. */

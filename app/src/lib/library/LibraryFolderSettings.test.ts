@@ -17,18 +17,21 @@ const HOME: WireFolder = {
   kind: "home",
   name: "Omnileaf",
   location: "/data/Omnileaf",
+  isAvailable: true,
 };
 const COMICS: WireFolder = {
   id: "2",
   kind: "linked",
   name: "Sample Comics",
   location: "/media/Sample Comics",
+  isAvailable: true,
 };
 const MANGA: WireFolder = {
   id: "3",
   kind: "linked",
   name: "Sample Manga",
   location: "/media/Sample Manga",
+  isAvailable: true,
 };
 
 const NOTHING_PICKED: AddFolder = () =>
@@ -180,6 +183,7 @@ test("names the home folder after the app rather than its folder on disk", async
       kind: "home",
       name: "app.omnileaf",
       location: "/data/user/0/app.omnileaf",
+      isAvailable: true,
     },
   ]);
 

@@ -13,12 +13,14 @@ const HOME: WireFolder = {
   kind: "home",
   name: "Omnileaf",
   location: "/data/Omnileaf",
+  isAvailable: true,
 };
 const COMICS: WireFolder = {
   id: "2",
   kind: "linked",
   name: "Sample Comics",
   location: "/media/Sample Comics",
+  isAvailable: true,
 };
 
 afterEach(() => {

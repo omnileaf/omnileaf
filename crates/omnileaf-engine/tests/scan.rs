@@ -4,117 +4,20 @@
 )]
 
 mod books;
+mod scanned;
 mod support;
 
-use std::{fs, path::Path};
+use std::fs;
 
 use books::{write_book, write_book_with, write_page};
-use omnileaf_db::{
-    catalog::{PageRequest, PageSize, SeriesOrder, SeriesSummary, series_books, series_page},
-    rusqlite::{Connection, OpenFlags, types::Value},
-};
-use omnileaf_engine::{Clock, FolderId, FolderScan, Library, LibraryError, ScanProgress};
+use omnileaf_db::rusqlite::types::Value;
+use omnileaf_engine::{FileChanges, FolderScan, LibraryError, RescanOutcome, ScanProgress};
 use omnileaf_sync_proto::SourceId;
 use omnileaf_testkit::{
     PageShape, SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, page_png, write_sample_library,
 };
+use scanned::{Scanned, owned};
 use support::TempFolder;
-
-const NOW_UNIX_MS: u64 = 1_790_000_000_000;
-const DATABASE_FILE: &str = "library.sqlite";
-
-struct FixedClock;
-
-impl Clock for FixedClock {
-    fn now_unix_ms(&self) -> u64 {
-        NOW_UNIX_MS
-    }
-}
-
-struct Scanned {
-    library: Library,
-    home: TempFolder,
-    id: FolderId,
-}
-
-impl Scanned {
-    async fn folder(name: &str, folder: &Path) -> (Self, FolderScan, Vec<ScanProgress>) {
-        let home = TempFolder::new(&format!("{name}-home"));
-        let library = Library::open(home.path().to_path_buf(), FixedClock)
-            .await
-            .unwrap();
-        let mut progress = Vec::new();
-        let scan = library
-            .add_folder(folder.to_path_buf(), |step| progress.push(step))
-            .await
-            .unwrap();
-        let page = library.folders(None).await.unwrap();
-        let id = page.folders.last().unwrap().id;
-        (Self { library, home, id }, scan, progress)
-    }
-
-    async fn scan_again(&self) -> (FolderScan, Vec<ScanProgress>) {
-        let mut progress = Vec::new();
-        let scan = self
-            .library
-            .scan_folder(self.id, |step| progress.push(step))
-            .await
-            .unwrap();
-        (scan, progress)
-    }
-
-    fn series(&self) -> Vec<(String, u32)> {
-        self.series_summaries()
-            .into_iter()
-            .map(|series| (series.title, series.book_count))
-            .collect()
-    }
-
-    fn books_in(&self, title: &str) -> Vec<String> {
-        let series = self
-            .series_summaries()
-            .into_iter()
-            .find(|series| series.title == title)
-            .unwrap();
-        series_books(&self.connection(), series.id, &whole_page())
-            .unwrap()
-            .items
-            .into_iter()
-            .map(|book| book.title)
-            .collect()
-    }
-
-    fn series_sources(&self) -> Vec<Value> {
-        self.connection()
-            .prepare("SELECT source_id FROM series ORDER BY local_id")
-            .unwrap()
-            .query_map([], |row| row.get(0))
-            .unwrap()
-            .collect::<Result<_, _>>()
-            .unwrap()
-    }
-
-    fn series_summaries(&self) -> Vec<SeriesSummary> {
-        series_page(&self.connection(), SeriesOrder::Title, &whole_page())
-            .unwrap()
-            .items
-    }
-
-    fn connection(&self) -> Connection {
-        Connection::open_with_flags(
-            self.home.path().join(DATABASE_FILE),
-            OpenFlags::SQLITE_OPEN_READ_ONLY,
-        )
-        .unwrap()
-    }
-}
-
-fn whole_page() -> PageRequest {
-    PageRequest {
-        after: None,
-        size: PageSize::try_from(PageSize::MAX).unwrap(),
-    }
-}
 
 fn sample_library(name: &str) -> TempFolder {
     let folder = TempFolder::new(name);
@@ -122,10 +25,15 @@ fn sample_library(name: &str) -> TempFolder {
     folder
 }
 
-fn owned(rows: &[(&str, u32)]) -> Vec<(String, u32)> {
-    rows.iter()
-        .map(|(title, books)| ((*title).to_owned(), *books))
-        .collect()
+fn series_sources(scanned: &Scanned) -> Vec<Value> {
+    scanned
+        .connection()
+        .prepare("SELECT source_id FROM series ORDER BY local_id")
+        .unwrap()
+        .query_map([], |row| row.get(0))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap()
 }
 
 #[tokio::test]
@@ -166,7 +74,7 @@ async fn files_every_series_found_under_the_local_library_source() {
     .await;
 
     let local = Value::Blob(SourceId::local().as_bytes().to_vec());
-    assert_eq!(scanned.series_sources(), vec![local; SAMPLE_LIBRARY.len()]);
+    assert_eq!(series_sources(&scanned), vec![local; SAMPLE_LIBRARY.len()]);
 }
 
 #[tokio::test]
@@ -304,12 +212,19 @@ async fn counts_only_the_series_that_hold_the_books_found() {
 #[tokio::test]
 async fn keeps_one_book_per_file_when_a_folder_is_scanned_again() {
     let comics = sample_library("scan-twice");
-    let (scanned, first, _) =
+    let (scanned, _, _) =
         Scanned::folder("scan-twice", &comics.path().join(SAMPLE_LIBRARY_NAME)).await;
 
-    let (again, _) = scanned.scan_again().await;
+    let again = scanned
+        .library
+        .rescan_folder(scanned.id, |_| {})
+        .await
+        .unwrap();
 
-    assert_eq!(again, first);
+    assert_eq!(
+        again.outcome,
+        RescanOutcome::Rescanned(FileChanges::default())
+    );
     assert_eq!(
         scanned.series(),
         owned(&[
@@ -327,7 +242,7 @@ async fn refuses_to_scan_a_folder_missing_from_the_library() {
         Scanned::folder("scan-removed", &comics.path().join(SAMPLE_LIBRARY_NAME)).await;
     scanned.library.remove_folder(scanned.id).await.unwrap();
 
-    let outcome = scanned.library.scan_folder(scanned.id, |_| {}).await;
+    let outcome = scanned.library.rescan_folder(scanned.id, |_| {}).await;
 
     assert!(matches!(outcome, Err(LibraryError::FolderNotFound { id }) if id == scanned.id));
 }

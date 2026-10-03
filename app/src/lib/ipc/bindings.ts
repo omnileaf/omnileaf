@@ -53,6 +53,8 @@ export type LibraryFolder = {
 	kind: FolderKind,
 	name: string,
 	location: string,
+	/**  False since a rescan last found the folder missing, unreadable or empty of the books it held. */
+	isAvailable: boolean,
 };
 
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";

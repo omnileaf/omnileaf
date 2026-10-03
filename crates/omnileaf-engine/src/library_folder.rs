@@ -17,6 +17,8 @@ pub struct LibraryFolder {
     pub kind: FolderKind,
     pub name: String,
     pub location: String,
+    /// False since a rescan last found the folder missing, unreadable or empty of the books it held.
+    pub is_available: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
@@ -55,6 +57,7 @@ impl From<LibraryRoot> for LibraryFolder {
             },
             name: folder_name(&path),
             location: path.display().to_string(),
+            is_available: root.unavailable_since_ms.is_none(),
         }
     }
 }
