@@ -67,6 +67,17 @@ test("picks a language and comes back to General", async ({ page }) => {
   await expect(languageRow(page)).toContainText("English");
 });
 
+test("points the Language row's chevron toward the end of the line in a right-to-left language", async ({
+  page,
+}) => {
+  await openGeneral(page);
+  await page.evaluate(() => {
+    document.documentElement.dir = "rtl";
+  });
+
+  await expect(languageRow(page).locator("svg")).toHaveCSS("scale", "-1 1");
+});
+
 test.describe("on an Android phone", () => {
   test.use(onPlatform("android"));
 

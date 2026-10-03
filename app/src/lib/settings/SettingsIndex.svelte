@@ -57,7 +57,10 @@
                 >
               {/if}
             </span>
-            <ChevronRight size={CHEVRON_SIZE} class="shrink-0 text-muted" />
+            <ChevronRight
+              size={CHEVRON_SIZE}
+              class="shrink-0 text-muted rtl:-scale-x-100"
+            />
           </a>
         </li>
       {/each}
