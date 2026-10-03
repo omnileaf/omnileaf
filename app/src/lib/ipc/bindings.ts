@@ -14,6 +14,8 @@ export const commands = {
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder", { onProgress })),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
+	firstLaunchFinished: () => typedError<boolean, IpcError>(__TAURI_INVOKE("first_launch_finished")),
+	finishFirstLaunch: () => typedError<null, IpcError>(__TAURI_INVOKE("finish_first_launch")),
 };
 
 /* Types */
