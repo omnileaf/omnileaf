@@ -14,12 +14,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use omnileaf_engine::{Clock, CoverPath, Library, Resource, ResourceRouter};
+use omnileaf_engine::{CoverPath, Library, Resource, ResourceRouter};
 use omnileaf_imaging::thumbnail;
 use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg};
-use support::TempFolder;
+use support::{FixedClock, TempFolder};
 
-const NOW_UNIX_MS: u64 = 1_790_000_000_000;
 const SEED: u64 = 21;
 const PAGES: u32 = 3;
 const FOLDER: &str = "Sample Library";
@@ -31,14 +30,6 @@ const FRONT_COVER_IS_THE_THIRD_PAGE: &str = r#"<?xml version="1.0"?>
     <Page Image="2" Type="FrontCover" />
   </Pages>
 </ComicInfo>"#;
-
-struct FixedClock;
-
-impl Clock for FixedClock {
-    fn now_unix_ms(&self) -> u64 {
-        NOW_UNIX_MS
-    }
-}
 
 struct Covers {
     library: Library,

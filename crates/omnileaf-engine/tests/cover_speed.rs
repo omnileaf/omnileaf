@@ -14,23 +14,14 @@ use std::{
     time::{Duration, Instant},
 };
 
-use omnileaf_engine::{Clock, Library, Resource, ResourceRouter};
+use omnileaf_engine::{Library, Resource, ResourceRouter};
 use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg, scan_jpeg};
-use support::TempFolder;
+use support::{FixedClock, TempFolder};
 
 const BOOKS: u64 = 20;
 const PAGES_AFTER_THE_COVER: u32 = 3;
 const FOLDER: &str = "Scanned Library";
 const BUDGET: Duration = Duration::from_millis(30);
-const NOW_UNIX_MS: u64 = 1_790_000_000_000;
-
-struct FixedClock;
-
-impl Clock for FixedClock {
-    fn now_unix_ms(&self) -> u64 {
-        NOW_UNIX_MS
-    }
-}
 
 /// One book in each series, so every book's cover is listed, each opening on a full-size scan.
 fn write_scanned_library(root: &std::path::Path) {

@@ -4,19 +4,9 @@
 )]
 mod support;
 
-use omnileaf_engine::{Clock, Library};
+use omnileaf_engine::Library;
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
-use support::TempFolder;
-
-const NOW_UNIX_MS: u64 = 1_790_000_000_000;
-
-struct FixedClock;
-
-impl Clock for FixedClock {
-    fn now_unix_ms(&self) -> u64 {
-        NOW_UNIX_MS
-    }
-}
+use support::{FixedClock, TempFolder};
 
 #[tokio::test]
 async fn lists_nothing_before_a_book_is_found() {

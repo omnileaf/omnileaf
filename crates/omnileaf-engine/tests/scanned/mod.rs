@@ -9,20 +9,11 @@ use omnileaf_db::{
     catalog::{PageRequest, PageSize, SeriesOrder, SeriesSummary, series_books, series_page},
     rusqlite::{Connection, OpenFlags},
 };
-use omnileaf_engine::{Clock, FolderId, FolderScan, Library, ScanProgress};
+use omnileaf_engine::{FolderId, FolderScan, Library, ScanProgress};
 
-use crate::support::TempFolder;
+use crate::support::{FixedClock, TempFolder};
 
-const NOW_UNIX_MS: u64 = 1_790_000_000_000;
 const DATABASE_FILE: &str = "library.sqlite";
-
-pub(crate) struct FixedClock;
-
-impl Clock for FixedClock {
-    fn now_unix_ms(&self) -> u64 {
-        NOW_UNIX_MS
-    }
-}
 
 /// A scratch library holding one linked folder, read through a connection of its own.
 pub(crate) struct Scanned {
