@@ -11,7 +11,7 @@ test("follows the system language by default", async ({ page }) => {
   await openGeneral(page);
 
   await expect(
-    page.getByRole("radio", { name: "System (English)" }),
+    page.getByRole("radio", { name: "Use the system language (English)" }),
   ).toBeChecked();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
@@ -38,10 +38,12 @@ test("goes back to the system language", async ({ page }) => {
     page.getByRole("radio", { name: "English", exact: true }),
   ).toBeChecked();
 
-  await page.getByRole("radio", { name: "System (English)" }).check();
+  await page
+    .getByRole("radio", { name: "Use the system language (English)" })
+    .check();
 
   await expect(
-    page.getByRole("radio", { name: "System (English)" }),
+    page.getByRole("radio", { name: "Use the system language (English)" }),
   ).toBeChecked();
 });
 
