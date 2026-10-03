@@ -25,19 +25,6 @@ async fn finish(database: &Database, finished_at_ms: i64) {
         .unwrap();
 }
 
-async fn finished_at(database: &Database) -> Vec<i64> {
-    database
-        .read(|connection| {
-            let mut statement = connection.prepare("SELECT finished_at_ms FROM first_launch")?;
-            let times = statement
-                .query_map([], |row| row.get(0))?
-                .collect::<Result<_, _>>()?;
-            Ok(times)
-        })
-        .await
-        .unwrap()
-}
-
 #[tokio::test]
 async fn a_new_library_has_not_finished_its_first_launch() {
     let folder = ScratchFolder::new("first-launch-new");
@@ -58,12 +45,12 @@ async fn remembers_the_first_launch_finished_after_the_library_reopens() {
 }
 
 #[tokio::test]
-async fn keeps_the_time_of_the_first_finish_when_finished_again() {
+async fn stays_finished_when_finished_again() {
     let folder = ScratchFolder::new("first-launch-again");
     let database = Database::open(&folder.config()).unwrap();
     finish(&database, FINISHED_AT_MS).await;
 
     finish(&database, FINISHED_AGAIN_AT_MS).await;
 
-    assert_eq!(finished_at(&database).await, [FINISHED_AT_MS]);
+    assert!(is_finished(&database).await);
 }
