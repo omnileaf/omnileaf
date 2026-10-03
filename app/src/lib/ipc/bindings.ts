@@ -34,6 +34,7 @@ export type FileChanges = {
 	updated: number,
 	/**  Found at a new place with the same content, so the book keeps its id and reading state. */
 	moved: number,
+	/**  Books left with no file anywhere once theirs here went, so deleting one of two copies removes none. */
 	removed: number,
 	unreadableBooks: number,
 	unreadableFolders: number,
@@ -85,7 +86,7 @@ export type RescanOutcome = {
 } & FileChanges | 
 /**  The folder couldn't be read, so every book found in it before stays. */
 { kind: "unreachable" } | 
-/**  The folder held no books where the library had some, as an unplugged drive's empty mount point does, so they stay. */
+/**  The linked folder held no books where the library had some, as an unplugged drive's empty mount point does, so they stay. */
 { kind: "foundEmpty" };
 
 /**  How far a scan has got: still finding the books in the folder, or reading the ones it found. */

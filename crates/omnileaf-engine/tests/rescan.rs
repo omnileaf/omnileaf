@@ -294,6 +294,20 @@ async fn counts_a_copy_as_added_while_the_original_stays() {
 }
 
 #[tokio::test]
+async fn removes_no_book_when_a_copy_of_one_is_deleted() {
+    let folder = Rescanned::new("rescan-copy-deleted").await;
+    let copy = folder.path("Sample Series 01/v01 copy.cbz");
+    fs::copy(folder.path("Sample Series 01/v01.cbz"), &copy).unwrap();
+    folder.rescan().await;
+    fs::remove_file(&copy).unwrap();
+
+    let outcome = folder.changes().await;
+
+    assert_eq!(outcome, rescanned(FileChanges::default()));
+    assert_eq!(folder.scanned.books_in(SERIES_01), ["v01", "v02"]);
+}
+
+#[tokio::test]
 async fn swaps_the_book_of_a_file_replaced_by_other_content() {
     let folder = Rescanned::new("rescan-replaced").await;
     let before = folder.book_ids_in(SERIES_01);

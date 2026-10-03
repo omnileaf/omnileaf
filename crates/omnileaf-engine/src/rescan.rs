@@ -6,6 +6,7 @@ use omnileaf_db::{
     },
     store::Store,
 };
+use omnileaf_sync_proto::BookId;
 use serde::Serialize;
 use specta::Type;
 use tokio::task::spawn_blocking;
@@ -32,7 +33,7 @@ pub enum RescanOutcome {
     Rescanned(FileChanges),
     /// The folder couldn't be read, so every book found in it before stays.
     Unreachable,
-    /// The folder held no books where the library had some, as an unplugged drive's empty mount point does, so they stay.
+    /// The linked folder held no books where the library had some, as an unplugged drive's empty mount point does, so they stay.
     FoundEmpty,
 }
 
@@ -45,6 +46,7 @@ pub struct FileChanges {
     pub updated: u32,
     /// Found at a new place with the same content, so the book keeps its id and reading state.
     pub moved: u32,
+    /// Books left with no file anywhere once theirs here went, so deleting one of two copies removes none.
     pub removed: u32,
     pub unreadable_books: u32,
     pub unreadable_folders: u32,
@@ -70,8 +72,8 @@ pub(crate) async fn rescan(
     record_changed(database, &target, &mut plan, to_read, on_progress).await?;
     let (changes, forgetting) = plan.finish();
     carry_reading_states(store, forgetting.replaced.clone()).await?;
-    forget(database, root, forgetting).await?;
-    Ok(RescanOutcome::Rescanned(changes))
+    let removed = forget(database, root, forgetting).await?;
+    Ok(RescanOutcome::Rescanned(FileChanges { removed, ..changes }))
 }
 
 /// No books where the catalog holds some is what an unmounted drive or share looks like, which the home folder holding the open library can never be.
@@ -143,25 +145,26 @@ async fn carry_reading_states(
         .await?)
 }
 
-/// Removes the files gone from the folder, then each book left with no file anywhere, in one transaction.
+/// Removes the files gone from the folder and each book left with no file anywhere in one transaction, counting only the books whose files went.
 async fn forget(
     database: &Database,
     root: RootId,
     forgetting: Forgetting,
-) -> Result<(), LibraryError> {
+) -> Result<u32, LibraryError> {
     if forgetting.is_empty() {
-        return Ok(());
+        return Ok(0);
     }
     Ok(database
         .write(move |transaction| {
-            let mut left = remove_book_files(transaction, root, &forgetting.gone)?;
-            left.extend(
-                forgetting
-                    .replaced
-                    .iter()
-                    .map(|replacement| replacement.old),
-            );
-            remove_books_without_files(transaction, &left).map(drop)
+            let left = remove_book_files(transaction, root, &forgetting.gone)?;
+            let removed = remove_books_without_files(transaction, &left)?;
+            let replaced: Vec<BookId> = forgetting
+                .replaced
+                .iter()
+                .map(|replacement| replacement.old)
+                .collect();
+            remove_books_without_files(transaction, &replaced)?;
+            Ok(saturating_u32(removed))
         })
         .await?)
 }

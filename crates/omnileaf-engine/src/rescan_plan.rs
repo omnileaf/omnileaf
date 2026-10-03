@@ -124,17 +124,13 @@ impl Plan {
         recording
     }
 
-    /// Counts each file gone and not found again at a new place as removed.
+    /// Leaves the books removed for the caller to count once it has forgotten them.
     pub(crate) fn finish(self) -> (FileChanges, Forgetting) {
-        let changes = FileChanges {
-            removed: saturating_u32(self.gone.len()).saturating_sub(self.changes.moved),
-            ..self.changes
-        };
         let forgetting = Forgetting {
             gone: self.gone,
             replaced: self.replaced,
         };
-        (changes, forgetting)
+        (self.changes, forgetting)
     }
 
     /// The book to read when its location is new to the catalog or its file changed since.
