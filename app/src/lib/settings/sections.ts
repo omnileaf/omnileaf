@@ -11,6 +11,11 @@ export type SettingsRoute =
   | "/settings/general"
   | "/settings/about";
 
+export interface ParentPage {
+  readonly route: "/settings" | SettingsRoute;
+  readonly title: string;
+}
+
 export interface SectionSummary {
   readonly text: string;
   readonly lang?: Locale;
