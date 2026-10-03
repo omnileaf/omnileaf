@@ -21,6 +21,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => ({ version: FAKE_APP_VERSION, platform: "linux" }),
   addLibraryFolder: () => null,
   libraryFolders: () => ({ folders: [], next: null }),
+  librarySeries: () => ({ series: [], next: null }),
   removeLibraryFolder: () => null,
   rescanLibraryFolder: () => {
     throw new CommandFailure({
