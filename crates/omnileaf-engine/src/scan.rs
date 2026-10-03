@@ -1,4 +1,9 @@
-use std::{collections::BTreeSet, error::Error, fs, io, path::PathBuf};
+use std::{
+    collections::BTreeSet,
+    error::Error,
+    fs, io,
+    path::{PathBuf, StripPrefixError},
+};
 
 use omnileaf_db::{
     Database,
@@ -47,6 +52,8 @@ enum UnreadableBook {
     Metadata(#[from] io::Error),
     #[error("name the book's series")]
     SeriesName(#[from] KeyError),
+    #[error("place the book inside the folder scanned")]
+    OutsideFolder(#[from] StripPrefixError),
 }
 
 /// The root a scan records its books under, and when it found them.
@@ -146,6 +153,7 @@ fn read_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Unreadab
 }
 
 fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
+    let location = found.path.strip_prefix(&target.folder)?.to_path_buf();
     let book = open_book(&found.path)?;
     let fingerprint = fingerprint_book(&found.path)?;
     let metadata = fs::metadata(&found.path)?;
@@ -154,11 +162,6 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
     } else {
         metadata.len()
     };
-    let location = found
-        .path
-        .strip_prefix(&target.folder)
-        .unwrap_or(&found.path)
-        .to_path_buf();
     Ok(ScannedBook {
         series: NewSeries::local(&found.series, target.added_at_ms)?,
         fingerprint,
@@ -170,4 +173,27 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
             modified_at_ms: i64::try_from(unix_ms(metadata.modified()?)).unwrap_or(i64::MAX),
         },
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn refuses_a_book_found_outside_the_folder_it_scans() {
+        let target = Target {
+            root: "1".parse().unwrap(),
+            folder: PathBuf::from("/media/Sample Library"),
+            added_at_ms: 0,
+        };
+        let found = FoundBook {
+            path: PathBuf::from("/media/Elsewhere/v01.cbz"),
+            series: "Sample Series 01".to_owned(),
+            title: "v01".to_owned(),
+        };
+
+        let read = read_found_book(&found, &target);
+
+        assert!(matches!(read, Err(UnreadableBook::OutsideFolder(_))));
+    }
 }
