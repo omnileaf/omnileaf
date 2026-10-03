@@ -1,7 +1,8 @@
 //! The commands the interface calls, and the TypeScript bindings generated from them.
 
 use omnileaf_engine::{
-    AppInfo, Core, FolderCursor, FolderId, FolderPage, FolderScan, Library, ScanProgress,
+    AppInfo, AppLanguage, Core, FolderCursor, FolderId, FolderPage, FolderScan, Library,
+    ScanProgress,
 };
 use tauri::{AppHandle, State, Wry, ipc::Channel};
 use tauri_specta::{Builder, collect_commands};
@@ -15,7 +16,8 @@ pub(crate) fn builder() -> Builder<Wry> {
         library_folders,
         remove_library_folder,
         first_launch_finished,
-        finish_first_launch
+        finish_first_launch,
+        set_app_language
     ])
 }
 
@@ -75,6 +77,15 @@ async fn first_launch_finished(library: State<'_, Library>) -> Result<bool, IpcE
 #[specta::specta]
 async fn finish_first_launch(library: State<'_, Library>) -> Result<(), IpcError> {
     Ok(library.finish_first_launch().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn set_app_language(
+    library: State<'_, Library>,
+    language: AppLanguage,
+) -> Result<(), IpcError> {
+    Ok(library.set_language(language).await?)
 }
 
 #[cfg(test)]
