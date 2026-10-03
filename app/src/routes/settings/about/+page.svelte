@@ -9,28 +9,28 @@
 </script>
 
 <SectionHeading title={m.about_title()} />
-<div class="mbs-xl flex flex-col gap-xl expanded:max-inline-narrow">
+<div class="mbs-xl flex flex-col gap-xl two-pane:max-inline-narrow">
   <section
-    class="flex flex-col items-center gap-xs text-center expanded:flex-row expanded:gap-lg expanded:text-start"
+    class="flex flex-col items-center gap-xs text-center two-pane:flex-row two-pane:gap-lg two-pane:text-start"
   >
     <img
       src={appIcon}
       alt=""
-      class="block-app-icon inline-app-icon expanded:block-4xl expanded:inline-4xl"
+      class="block-app-icon inline-app-icon two-pane:block-4xl two-pane:inline-4xl"
     />
     <div>
       <h2
-        class="mbs-sm text-app-name font-bold expanded:mbs-none expanded:text-bar-title"
+        class="mbs-sm text-app-name font-bold two-pane:mbs-none two-pane:text-bar-title"
       >
         {m.app_name()}
       </h2>
-      <p class="text-callout text-muted expanded:text-label">
+      <p class="text-callout text-muted two-pane:text-label">
         {m.app_version({ version: data.appInfo.version })}
       </p>
     </div>
   </section>
   <p
-    class="px-md text-center text-footnote text-muted expanded:px-none expanded:text-start"
+    class="px-md text-center text-footnote text-muted two-pane:px-none two-pane:text-start"
   >
     {m.about_licence()}
   </p>

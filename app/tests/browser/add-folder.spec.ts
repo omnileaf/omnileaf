@@ -4,8 +4,8 @@ import { CommandFailure } from "./fake-backend.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
-  EXPANDED_MIN_WIDTH,
   expect,
+  MEDIUM_MIN_WIDTH,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -57,7 +57,7 @@ test("fills Settings › Library's width with the Add a folder button below desk
   page,
 }) => {
   await page.goto("/settings/library");
-  test.skip(viewportOf(page).width >= EXPANDED_MIN_WIDTH, "below desktop only");
+  test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "one pane only");
 
   const folders = await boxOf(page.getByRole("region", { name: "Folders" }));
   const button = await boxOf(

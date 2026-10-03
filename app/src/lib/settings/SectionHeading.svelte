@@ -8,28 +8,44 @@
   let { title }: { title: string } = $props();
 
   const ARROW_SIZE = 24;
-  const CHEVRON_SIZE = 22;
+  const PHONE_CHEVRON_SIZE = 22;
+  const POINTER_CHEVRON_SIZE = 16;
 </script>
 
 <header
-  class="-ms-md flex items-center gap-xs max-medium:-mbs-sm max-medium:min-block-4xl expanded:ms-none ios:ms-none ios:flex-col ios:items-start ios:gap-none"
+  class="flex flex-col items-start android:max-medium:-ms-md android:max-medium:flex-row android:max-medium:items-center android:max-medium:gap-xs touch:max-medium:-mbs-sm touch:medium:max-expanded:-mbs-lg desktop:max-medium:-mbs-md"
 >
   <a
     href={resolve("/settings")}
     aria-label={m.back_to({ page: m.settings_title() })}
-    class="flex shrink-0 items-center justify-center rounded-full block-touch-target inline-touch-target expanded:hidden ios:-ms-xs ios:gap-2xs ios:px-xs ios:font-medium ios:text-accent ios:inline-auto"
+    class={[
+      "flex shrink-0 items-center gap-2xs two-pane:hidden",
+      "desktop:-ms-xs desktop:rounded-control desktop:ps-2xs desktop:pe-sm desktop:text-label desktop:font-semibold desktop:text-accent desktop:block-2xl",
+      "ios:max-medium:-ms-xs ios:max-medium:px-sm ios:max-medium:font-medium ios:max-medium:text-accent ios:max-medium:min-block-touch-target",
+      "android:justify-center android:rounded-full android:block-touch-target android:inline-touch-target",
+      "ios:medium:justify-center ios:medium:rounded-full ios:medium:block-touch-target ios:medium:inline-touch-target",
+      "touch:medium:-ms-md",
+    ]}
   >
-    <ArrowLeft size={ARROW_SIZE} aria-hidden="true" class="ios:hidden" />
-    <ChevronLeft
-      size={CHEVRON_SIZE}
-      aria-hidden="true"
-      class="hidden ios:block"
+    <ArrowLeft
+      size={ARROW_SIZE}
+      class="hidden ios:medium:block android:block"
     />
-    <span class="hidden ios:inline">{m.settings_title()}</span>
+    <ChevronLeft
+      size={PHONE_CHEVRON_SIZE}
+      class="hidden ios:max-medium:block"
+    />
+    <ChevronLeft size={POINTER_CHEVRON_SIZE} class="hidden desktop:block" />
+    <span class="ios:medium:hidden android:hidden">{m.settings_title()}</span>
   </a>
   <h1
     tabindex="-1"
-    class="text-page-title font-bold tracking-tight max-medium:text-bar-title max-medium:font-semibold max-medium:tracking-normal expanded:text-bar-title expanded:tracking-normal ios:mbs-xs ios:max-medium:ps-xs ios:max-medium:text-page-title ios:max-medium:font-bold ios:max-medium:tracking-tight"
+    class={[
+      "mbs-xs text-bar-title font-bold tracking-tight two-pane:mbs-none",
+      "android:max-medium:mbs-none android:max-medium:font-semibold android:max-medium:tracking-normal",
+      "ios:max-medium:ps-xs ios:max-medium:text-page-title",
+      "touch:medium:max-expanded:text-page-title",
+    ]}
   >
     {title}
   </h1>

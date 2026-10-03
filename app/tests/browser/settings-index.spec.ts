@@ -2,6 +2,7 @@ import {
   EXPANDED_MIN_WIDTH,
   expect,
   FAKE_APP_VERSION,
+  onPlatform,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -12,11 +13,13 @@ const SUMMARIES = [
   { section: "About", summary: `Version ${FAKE_APP_VERSION}` },
 ] as const;
 
+test.use(onPlatform("android"));
+
 test("summarises each section from what the app stores", async ({ page }) => {
   await page.goto("/settings");
   test.skip(
     viewportOf(page).width >= EXPANDED_MIN_WIDTH,
-    "settings opens its first section on desktop",
+    "settings opens its first section beside the list",
   );
   const main = page.getByRole("main");
 
@@ -36,7 +39,7 @@ test("follows the light or dark choice in Appearance's summary", async ({
   await page.goto("/settings");
   test.skip(
     viewportOf(page).width >= EXPANDED_MIN_WIDTH,
-    "settings opens its first section on desktop",
+    "settings opens its first section beside the list",
   );
 
   await expect(
