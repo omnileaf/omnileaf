@@ -125,5 +125,7 @@
   "first_launch_tagline": "⟦Çöɱíçš, ɱáñĝá, ŵéƀţööñš áñð ƀööķš íñ öñé ŕéáðéŕ.····················⟧",
   "first_launch_choices_title": "⟦Á ƒéŵ çĥöíçéš······⟧",
   "first_launch_choices_body": "⟦Çĥáñĝé áñý öƒ ţĥéšé ļáţéŕ íñ Šéţţíñĝš.················⟧",
-  "first_launch_choices_appearance": "⟦Áþþéáŕáñçé····⟧"
+  "first_launch_choices_appearance": "⟦Áþþéáŕáñçé····⟧",
+  "first_launch_choices_appearance_help_phone": "⟦Þáþéŕ ļíĝĥţ öŕ ðáŕķ, öŕ ƒöļļöŵ ýöûŕ þĥöñé.·················⟧",
+  "first_launch_choices_appearance_help_tablet": "⟦Þáþéŕ ļíĝĥţ öŕ ðáŕķ, öŕ ƒöļļöŵ ţĥíš ðéṽíçé.··················⟧"
 }

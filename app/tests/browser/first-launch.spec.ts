@@ -186,6 +186,30 @@ test("counts the steps between the welcome and the end", async ({ page }) => {
   await expect(progress).toHaveAttribute("aria-valuetext", "1 of 2");
 });
 
+test.describe("on android", () => {
+  test.use({
+    backend: {
+      ...FIRST_LAUNCH_BACKEND,
+      appInfo: onPlatform("android").backend.appInfo,
+    },
+  });
+
+  test("explains the appearance choice in the device's words", async ({
+    page,
+  }) => {
+    const help =
+      viewportOf(page).width < MEDIUM_MIN_WIDTH
+        ? "Paper light or dark, or follow your phone."
+        : "Paper light or dark, or follow this device.";
+
+    await goTo(page, "A few choices");
+
+    await expect(
+      page.getByRole("group", { name: "Appearance" }),
+    ).toHaveAccessibleDescription(help);
+  });
+});
+
 test("turns the app dark from the choices", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" });
   await goTo(page, "A few choices");

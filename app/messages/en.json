@@ -125,5 +125,7 @@
   "first_launch_tagline": "Comics, manga, webtoons and books in one reader.",
   "first_launch_choices_title": "A few choices",
   "first_launch_choices_body": "Change any of these later in Settings.",
-  "first_launch_choices_appearance": "Appearance"
+  "first_launch_choices_appearance": "Appearance",
+  "first_launch_choices_appearance_help_phone": "Paper light or dark, or follow your phone.",
+  "first_launch_choices_appearance_help_tablet": "Paper light or dark, or follow this device."
 }

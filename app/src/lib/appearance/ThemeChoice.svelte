@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import { m } from "$lib/paraglide/messages.js";
 
   import { THEME_PREFERENCES, type ThemePreference } from "./theme";
@@ -10,14 +12,19 @@
     dark: m.theme_dark,
   } satisfies Record<ThemePreference, () => string>;
 
-  let { legend }: { legend: string } = $props();
+  let { legend, help }: { legend: string; help?: Snippet | undefined } =
+    $props();
 
   const theme = getThemeSetting();
   const group = $props.id();
+  const helpId = `${group}-help`;
 </script>
 
-<fieldset>
+<fieldset aria-describedby={help === undefined ? undefined : helpId}>
   <legend class="font-medium">{legend}</legend>
+  {#if help !== undefined}
+    <p id={helpId} class="text-caption text-muted">{@render help()}</p>
+  {/if}
   <div class="mbs-sm flex gap-xs rounded-control bg-chip p-xs">
     {#each THEME_PREFERENCES as preference (preference)}
       <label

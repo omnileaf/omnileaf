@@ -106,7 +106,7 @@
       {:else if step === "home"}
         <HomeStep folders={folders.list} onBack={back} onNext={next} />
       {:else if step === "choices"}
-        <ChoicesStep onBack={back} onNext={next} />
+        <ChoicesStep {device} onBack={back} onNext={next} />
       {:else}
         <ReadyStep onFinish={finish} />
       {/if}
