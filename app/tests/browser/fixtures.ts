@@ -22,6 +22,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => fakeAppInfo("linux"),
   addLibraryFolder: () => null,
   matchSystemBars: () => null,
+  copyVersionDetails: () => null,
+  openProjectLink: () => null,
 };
 
 export function onPlatform(platform: Platform): { backend: FakeBackend } {
