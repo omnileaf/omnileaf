@@ -12,6 +12,7 @@ const ADD_BOOK_UNLESS_PRESENT: &str = "INSERT INTO book (
     )
     SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7 FROM series WHERE id = ?2
     ON CONFLICT (id) DO NOTHING";
+const SERIES_EXISTS: &str = "SELECT EXISTS (SELECT 1 FROM series WHERE id = ?1)";
 
 #[derive(Clone, Debug)]
 pub struct NewBook {
@@ -37,12 +38,22 @@ pub fn add_book(transaction: &Transaction<'_>, book: &NewBook) -> Result<(), Err
     Ok(())
 }
 
-/// Leaves a book already in the catalog in the series it was first found in.
+/// Leaves a book already in the catalog in the series it was first found in, and fails like [`add_book`] when its series is missing.
 pub(crate) fn add_book_unless_present(
     transaction: &Transaction<'_>,
     book: &NewBook,
 ) -> Result<(), Error> {
-    insert(transaction, book, ADD_BOOK_UNLESS_PRESENT).map(drop)
+    let is_added = insert(transaction, book, ADD_BOOK_UNLESS_PRESENT)? > 0;
+    if !is_added && !series_exists(transaction, book.series)? {
+        return Err(Error::UnknownSeries { id: book.series });
+    }
+    Ok(())
+}
+
+fn series_exists(transaction: &Transaction<'_>, series: SeriesId) -> Result<bool, Error> {
+    Ok(transaction
+        .prepare(SERIES_EXISTS)?
+        .query_row([series.as_bytes()], |row| row.get(0))?)
 }
 
 fn insert(transaction: &Transaction<'_>, book: &NewBook, sql: &str) -> Result<usize, Error> {
@@ -62,5 +73,48 @@ const fn kind_name(kind: FingerprintKind) -> &'static str {
         FingerprintKind::Pmf1 => "pmf1",
         FingerprintKind::Dir1 => "dir1",
         FingerprintKind::Raw1 => "raw1",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use omnileaf_sync_proto::ImageEntry;
+    use rusqlite::Connection;
+
+    use super::*;
+    use crate::{Database, scratch::ScratchLibrary};
+
+    #[test]
+    fn refuses_a_book_whose_series_is_missing_from_the_catalog() {
+        let scratch = ScratchLibrary::new("book-unknown-series");
+        drop(Database::open(&scratch.config).unwrap());
+        let mut connection = Connection::open(&scratch.config.path).unwrap();
+        let transaction = connection.transaction().unwrap();
+        let book = NewBook {
+            fingerprint: Fingerprint::pmf1([ImageEntry { crc32: 1, size: 1 }]).unwrap(),
+            series: SeriesId::local("Sample Series 01").unwrap(),
+            title: "Volume 01".to_owned(),
+            added_at_ms: 0,
+        };
+
+        let outcome = add_book_unless_present(&transaction, &book);
+
+        assert!(matches!(outcome, Err(Error::UnknownSeries { id }) if id == book.series));
+    }
+
+    #[test]
+    fn checks_a_series_is_there_through_its_id_index() {
+        let scratch = ScratchLibrary::new("series-exists-plan");
+
+        let plan = scratch.query_plan(SERIES_EXISTS);
+
+        assert_eq!(
+            plan,
+            [
+                "SCAN CONSTANT ROW",
+                "SCALAR SUBQUERY 1",
+                "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)"
+            ]
+        );
     }
 }
