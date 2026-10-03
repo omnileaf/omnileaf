@@ -51,6 +51,27 @@ test("System follows the device as it changes", async ({ page }) => {
   await expect(page.locator("body")).toHaveCSS("background-color", DARK_GROUND);
 });
 
+for (const { colorScheme, shadow } of [
+  {
+    colorScheme: "light",
+    shadow: /rgba\(28, 27, 24, 0\.14\) 0px 1px 2px 0px$/,
+  },
+  { colorScheme: "dark", shadow: /rgba\(0, 0, 0, 0\.5\) 0px 1px 2px 0px$/ },
+] as const) {
+  test(`raises the chosen option with the ${colorScheme} theme's shadow`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+
+    await chooseTheme(page, "System");
+
+    await expect(page.locator("label").filter({ hasText: "System" })).toHaveCSS(
+      "box-shadow",
+      shadow,
+    );
+  });
+}
+
 for (const label of ["Light", "Dark"]) {
   test(`Settings › Appearance has no accessibility violations in ${label}`, async ({
     page,
