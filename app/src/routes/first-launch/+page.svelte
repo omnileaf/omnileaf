@@ -5,6 +5,7 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { deviceKindOf } from "$lib/first-launch/device";
+  import FirstLaunchPanel from "$lib/first-launch/FirstLaunchPanel.svelte";
   import HomeStep from "$lib/first-launch/HomeStep.svelte";
   import ReadyStep, {
     type FinishOutcome,
@@ -95,6 +96,7 @@
     bind:this={card}
     class="flex flex-1 medium:flex-none medium:overflow-hidden medium:rounded-sheet medium:border medium:border-border medium:bg-background medium:shadow-card medium:inline-full medium:max-inline-first-launch-card medium:min-block-first-launch-card-tall"
   >
+    <FirstLaunchPanel />
     <main
       class="flex flex-1 flex-col ps-page-start pe-page-end pbs-safe-top pbe-page-bottom medium:p-2xl"
     >

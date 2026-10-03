@@ -4,6 +4,7 @@ import type { Locator, Page } from "@playwright/test";
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   DEFAULT_BACKEND,
+  EXPANDED_MIN_WIDTH,
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
@@ -156,6 +157,18 @@ for (const { platform, wording } of [
     });
   });
 }
+
+test("sets the steps beside a shelf from 840px", async ({ page }) => {
+  const isExpanded = viewportOf(page).width >= EXPANDED_MIN_WIDTH;
+
+  await page.goto("/first-launch");
+
+  await expect(
+    page.getByText("Comics, manga, webtoons and books in one reader.", {
+      exact: true,
+    }),
+  ).toBeVisible({ visible: isExpanded });
+});
 
 test("shows the home folder the library lives in", async ({ page }) => {
   await goTo(page, "Where your library lives");

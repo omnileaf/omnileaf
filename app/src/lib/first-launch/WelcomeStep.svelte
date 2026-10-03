@@ -3,6 +3,7 @@
 
   import { m } from "$lib/paraglide/messages.js";
 
+  import AppIcon from "./AppIcon.svelte";
   import type { DeviceKind } from "./device";
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
@@ -64,6 +65,7 @@
 
 <StepFrame step="welcome">
   <div class="flex flex-1 flex-col justify-center gap-lg">
+    <AppIcon class="block-app-icon inline-app-icon medium:hidden" />
     <h1 tabindex="-1" class="text-display font-bold">
       {m.first_launch_welcome_title()}
     </h1>
