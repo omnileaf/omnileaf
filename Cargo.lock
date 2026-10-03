@@ -2779,6 +2779,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "omnileaf-cache"
+version = "0.0.0"
+dependencies = [
+ "proptest",
+ "thiserror 2.0.21",
+ "tracing",
+]
+
+[[package]]
 name = "omnileaf-db"
 version = "0.0.0"
 dependencies = [

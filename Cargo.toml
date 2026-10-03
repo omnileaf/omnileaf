@@ -24,6 +24,7 @@ icu_provider = { version = "=2.3.1", default-features = false }
 image-webp = "0.2.4"
 jpeg-decoder = { version = "0.3.2", default-features = false }
 jpeg-encoder = { version = "0.7.1", default-features = false, features = ["std"] }
+omnileaf-cache = { path = "crates/omnileaf-cache" }
 omnileaf-db = { path = "crates/omnileaf-db" }
 omnileaf-engine = { path = "crates/omnileaf-engine" }
 omnileaf-formats = { path = "crates/omnileaf-formats" }
