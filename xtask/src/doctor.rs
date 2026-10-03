@@ -43,6 +43,15 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
         fix: "cargo install --locked cargo-deny",
     },
     Requirement {
+        name: "cargo-about",
+        os: None,
+        probe: Probe::Command {
+            program: "cargo",
+            args: &["about", "--version"],
+        },
+        fix: "cargo install --locked cargo-about",
+    },
+    Requirement {
         name: "node",
         os: None,
         probe: Probe::Command {

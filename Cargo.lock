@@ -6189,6 +6189,9 @@ dependencies = [
  "local-ip-address",
  "omnileaf-testkit",
  "png 0.18.1",
+ "proptest",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

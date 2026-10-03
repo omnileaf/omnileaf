@@ -5,6 +5,8 @@ mod dev;
 mod doctor;
 mod fixtures;
 mod icons;
+mod licence_catalogue;
+mod licences;
 mod policy;
 mod process;
 mod workspace;
@@ -55,6 +57,12 @@ enum Command {
     },
     /// Regenerate the app icons from `branding/icon.json`.
     Icons,
+    /// Regenerate the licences the app's licences page lists, from the crates it ships.
+    Licences {
+        /// Only check that the committed licences are current.
+        #[arg(long)]
+        check: bool,
+    },
     /// Check the repository's files against its content rules.
     Policy,
 }
@@ -100,6 +108,14 @@ fn main() -> anyhow::Result<()> {
             )]);
         }
         Command::Icons => icons::regenerate(&workspace::root())?,
+        Command::Licences { check } => {
+            let mode = if check {
+                licences::Mode::Check
+            } else {
+                licences::Mode::Write
+            };
+            licences::regenerate(&workspace::root(), mode)?;
+        }
         Command::Policy => enforce_policy()?,
     }
     Ok(())
