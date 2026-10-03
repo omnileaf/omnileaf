@@ -248,6 +248,13 @@
 }
 
 :root {
+  @variant max-large {
+    --spacing-settings-list: 13rem;
+    --spacing-pane: 1.5rem;
+  }
+}
+
+:root {
   @variant desktop {
     --spacing-empty-lift: 3.25rem;
     --spacing-title-gap: 1.75rem;
@@ -256,6 +263,11 @@
 
     @variant max-medium {
       --spacing-gutter: 1.5rem;
+    }
+
+    @variant max-expanded {
+      --spacing-settings-list: 11rem;
+      --spacing-pane: 1rem;
     }
   }
 }
