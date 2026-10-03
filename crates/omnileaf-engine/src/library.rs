@@ -3,9 +3,9 @@ use std::{fs, io, path::PathBuf};
 use omnileaf_db::{
     Config, Database,
     catalog::{
-        NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator, SeriesOrder, add_root,
-        library_root, library_roots, mark_root_available, mark_root_unavailable, remove_root,
-        series_page, set_home_root,
+        Cover, NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator, SeriesOrder,
+        add_root, cover_file, library_root, library_roots, mark_root_available,
+        mark_root_unavailable, remove_root, series_page, set_home_root,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     store::{Changed, Clock, Store},
@@ -137,6 +137,15 @@ impl Library {
             series: page.items.into_iter().map(LibrarySeries::from).collect(),
             next: page.next.map(SeriesCursor),
         })
+    }
+
+    /// Where the cover's file is, or nothing once it has changed or gone since the cover was listed.
+    pub(crate) async fn cover_file(&self, cover: Cover) -> Result<Option<PathBuf>, LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| cover_file(connection, &cover))
+            .await?)
     }
 
     /// Forgets the folder and the books found only in it, leaving its files where they are, once any scan in progress ends.

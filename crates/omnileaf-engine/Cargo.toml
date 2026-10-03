@@ -7,8 +7,10 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+omnileaf-cache.workspace = true
 omnileaf-db.workspace = true
 omnileaf-formats.workspace = true
+omnileaf-imaging.workspace = true
 omnileaf-sync-proto.workspace = true
 serde.workspace = true
 specta.workspace = true

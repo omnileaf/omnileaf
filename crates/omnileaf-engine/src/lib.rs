@@ -2,14 +2,18 @@
 
 mod app_info;
 mod app_language;
+mod background_lane;
 mod clock;
 mod cover_path;
+mod cover_thumbnails;
 mod library;
 mod library_folder;
 mod library_layout;
 mod library_series;
 mod rescan;
 mod rescan_plan;
+mod resource;
+mod resource_router;
 mod scan;
 
 pub use app_info::{AppInfo, Platform};
@@ -21,6 +25,8 @@ pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, Library
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesPage};
 pub use omnileaf_db::store::{Changed, Clock};
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
+pub use resource::Resource;
+pub use resource_router::{ResourceRouter, ResourceRouterError};
 pub use scan::{FolderScan, ScanProgress};
 
 #[derive(Debug)]

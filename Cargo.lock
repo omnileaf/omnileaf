@@ -2809,8 +2809,10 @@ dependencies = [
 name = "omnileaf-engine"
 version = "0.0.0"
 dependencies = [
+ "omnileaf-cache",
  "omnileaf-db",
  "omnileaf-formats",
+ "omnileaf-imaging",
  "omnileaf-sync-proto",
  "omnileaf-testkit",
  "proptest",
