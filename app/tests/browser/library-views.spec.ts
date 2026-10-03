@@ -289,11 +289,12 @@ async function expectRowsToFillTheScreen(page: Page): Promise<void> {
   await expect
     .poll(async () => {
       const layout = await rowLayoutOf(seriesList(page));
-      return layout.lastBottom >= layout.screenBottom;
+      return {
+        fillsTheScreen: layout.lastBottom >= layout.screenBottom,
+        stridesByTheFirstRow: layout.rowStride === layout.firstRowStride,
+      };
     })
-    .toBe(true);
-  const layout = await rowLayoutOf(seriesList(page));
-  expect(layout.rowStride).toBe(layout.firstRowStride);
+    .toEqual({ fillsTheScreen: true, stridesByTheFirstRow: true });
 }
 
 test.describe("view options", () => {
