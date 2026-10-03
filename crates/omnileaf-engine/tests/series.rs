@@ -61,6 +61,29 @@ async fn lists_the_series_found_by_title_each_with_a_cover() {
 }
 
 #[tokio::test]
+async fn counts_every_book_of_a_series_just_found_as_unread() {
+    let comics = TempFolder::new("series-unread-comics");
+    write_sample_library(comics.path()).unwrap();
+    let home = TempFolder::new("series-unread-home");
+    let library = Library::open(home.path().to_path_buf(), FixedClock)
+        .await
+        .unwrap();
+    library
+        .add_folder(comics.path().join(SAMPLE_LIBRARY_NAME), |_| {})
+        .await
+        .unwrap();
+
+    let page = library.series(None).await.unwrap();
+
+    let unread: Vec<(u32, u32)> = page
+        .series
+        .iter()
+        .map(|series| (series.book_count, series.unread_count))
+        .collect();
+    assert_eq!(unread, [(3, 3), (2, 2), (2, 2)]);
+}
+
+#[tokio::test]
 async fn counts_the_series_found() {
     let comics = TempFolder::new("series-count-comics");
     write_sample_library(comics.path()).unwrap();

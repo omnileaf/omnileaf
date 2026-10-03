@@ -120,6 +120,8 @@ export type LibrarySeries = {
 	id: string & { readonly __brand: "SeriesId" },
 	title: string,
 	bookCount: number,
+	/**  Its books not marked read. */
+	unreadCount: number,
 	/**  The cover of its first book by title, absent while none of its books has a file. */
 	cover: string & { readonly __brand: "CoverPath" } | null,
 };

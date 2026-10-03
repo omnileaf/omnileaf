@@ -6,7 +6,6 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
-  LARGE_MIN_WIDTH,
   MEDIUM_MIN_WIDTH,
   test,
   viewportOf,
@@ -16,11 +15,13 @@ type WireSeries = Awaited<
   ReturnType<FakeBackend["librarySeries"]>
 >["series"][number];
 
+const LARGE_MIN_WIDTH = 1200;
 const BOOK = "0190a3e4-0000-8000-8000-000000000001";
 const SERIES: readonly WireSeries[] = Array.from({ length: 7 }, (_, index) => ({
   id: `0190a3e4-0000-8000-8000-0000000000${String(index + 1).padStart(2, "0")}`,
   title: `Sample Series ${String(index + 1).padStart(2, "0")}`,
   bookCount: index + 1,
+  unreadCount: index + 1,
   cover: index === 6 ? null : `thumb/v1/${BOOK}/${String(index + 1)}/1`,
 }));
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;
