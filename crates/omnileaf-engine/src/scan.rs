@@ -101,13 +101,15 @@ pub(crate) async fn scan(
         })
         .await?;
         let found = tally.count(read);
-        database
+        let filed_in = database
             .write(move |transaction| {
                 found
                     .iter()
-                    .try_for_each(|book| record_scanned_book(transaction, book))
+                    .map(|book| record_scanned_book(transaction, book))
+                    .collect::<Result<Vec<_>, _>>()
             })
             .await?;
+        tally.series.extend(filed_in);
         on_progress(ScanProgress {
             scanned: tally.scanned,
             total,
@@ -130,7 +132,6 @@ impl Tally {
             match book {
                 Ok(book) => {
                     self.books = self.books.saturating_add(1);
-                    self.series.insert(book.series.id());
                     found.push(book);
                 }
                 Err(_) => self.unreadable_books = self.unreadable_books.saturating_add(1),

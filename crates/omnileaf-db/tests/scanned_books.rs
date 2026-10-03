@@ -14,7 +14,7 @@ use omnileaf_db::{
         record_scanned_book,
     },
 };
-use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
+use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
 use support::ScratchFolder;
 
 const ADDED_AT_MS: i64 = 1_790_000_000_000;
@@ -70,11 +70,11 @@ impl Library {
         }
     }
 
-    async fn record(&self, scanned: ScannedBook) {
+    async fn record(&self, scanned: ScannedBook) -> SeriesId {
         self.database
             .write(move |transaction| record_scanned_book(transaction, &scanned))
             .await
-            .unwrap();
+            .unwrap()
     }
 
     async fn series(&self) -> Vec<(String, i64)> {
@@ -216,6 +216,20 @@ async fn adds_books_from_folders_whose_names_normalise_alike_to_one_series() {
         .await;
 
     assert_eq!(library.series().await, [("Sample Series 01".to_owned(), 2)]);
+}
+
+#[tokio::test]
+async fn files_a_book_found_again_in_another_series_where_it_was_first_found() {
+    let library = Library::open("scanned-elsewhere").await;
+    let first = library.found("Sample Series 01", "Sample Series 01/Volume 01.cbz", 1);
+    let first_series = first.series.id();
+    library.record(first).await;
+
+    let filed_in = library
+        .record(library.found("Sample Series 02", "Sample Series 02/Volume 01.cbz", 1))
+        .await;
+
+    assert_eq!(filed_in, first_series);
 }
 
 #[cfg(unix)]

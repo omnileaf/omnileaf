@@ -286,6 +286,19 @@ async fn leaves_out_a_cover_image_beside_the_books_of_a_series() {
 }
 
 #[tokio::test]
+async fn counts_only_the_series_that_hold_the_books_found() {
+    let comics = TempFolder::new("scan-duplicate-book");
+    for series in ["Sample Series 01", "Sample Series 02"] {
+        write_book(&comics.path().join(series).join("v01.cbz"), 1);
+    }
+
+    let (scanned, scan, _) = Scanned::folder("scan-duplicate-book", comics.path()).await;
+
+    assert_eq!(scanned.series(), owned(&[("Sample Series 01", 1)]));
+    assert_eq!(scan.series, 1);
+}
+
+#[tokio::test]
 async fn keeps_one_book_per_file_when_a_folder_is_scanned_again() {
     let comics = sample_library("scan-twice");
     let (scanned, first, _) =
