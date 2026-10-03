@@ -1,9 +1,9 @@
-import { emit } from "@tauri-apps/api/event";
 import { clearMocks, mockConvertFileSrc, mockIPC } from "@tauri-apps/api/mocks";
 import type { ComponentProps } from "svelte";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { cleanup, render } from "vitest-browser-svelte";
 
+import { events, type LibrarySeries } from "$lib/ipc/bindings";
 import { Notices } from "$lib/notices/notices.svelte";
 
 import { screenshotModeTurned } from "../../../tests/components/screenshot-mode";
@@ -14,14 +14,11 @@ const PageWithScreenshotMode = WithScreenshotMode<ComponentProps<typeof Page>>;
 
 const COVER = "thumb/v1/0190a3e4-0000-8000-8000-000000000001/1/1";
 const EMPTY_LIBRARY = "Your library is empty";
-const LIBRARY_CHANGED = "library-changed";
 
-interface WireSeries {
+type WireSeries = Omit<LibrarySeries, "id" | "cover"> & {
   readonly id: string;
-  readonly title: string;
-  readonly bookCount: number;
   readonly cover: string | null;
-}
+};
 
 const SAMPLE_SERIES: WireSeries = {
   id: "0190a3e4-0000-8000-8000-0000000000a1",
@@ -180,7 +177,7 @@ test("shows the series the library gains once it says it changed", async () => {
     .toBeVisible();
   catalog = [SAMPLE_SERIES];
 
-  await emit(LIBRARY_CHANGED);
+  await events.libraryChanged.emit();
 
   await expect
     .element(
@@ -200,7 +197,7 @@ test("stops reading the series again once the page has closed", async () => {
   await expect.poll(() => counted.asked).toBe(1);
   await screen.unmount();
 
-  await emit(LIBRARY_CHANGED);
+  await events.libraryChanged.emit();
 
   expect(counted.asked).toBe(1);
 });
