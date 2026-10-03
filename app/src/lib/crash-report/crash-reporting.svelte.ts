@@ -22,6 +22,7 @@ export type SendFailure = "browserUnavailable" | "notSent";
 
 export type CrashReportPrompt =
   | { readonly kind: "hidden" }
+  | { readonly kind: "sending" }
   | {
       readonly kind: "asking";
       readonly details: string;
@@ -30,10 +31,23 @@ export type CrashReportPrompt =
     };
 
 const HIDDEN: CrashReportPrompt = { kind: "hidden" };
+const SENDING: CrashReportPrompt = { kind: "sending" };
 
-/** Offers crash reports as the person's choice says: asking first, sending without asking, or never. */
+const SEND_OUTCOMES = {
+  noCrashReport: undefined,
+  browserUnavailable: "browserUnavailable",
+  folderPickerUnavailable: "notSent",
+  folderUnreadable: "notSent",
+  clipboardUnavailable: "notSent",
+  crashReportUnavailable: "notSent",
+  internal: "notSent",
+} as const satisfies Record<IpcErrorCode, SendFailure | undefined>;
+
+/** Offers crash reports as the person's choice says: asking first, sending without asking, or never; interface errors at most once a session. */
 export class CrashReporting {
   prompt: CrashReportPrompt = $state(HIDDEN);
+
+  #interfaceErrorOffered = false;
 
   readonly copying: DetailsCopying;
 
@@ -52,8 +66,12 @@ export class CrashReporting {
   }
 
   async offerInterfaceError(error: InterfaceError): Promise<void> {
+    if (this.#interfaceErrorOffered) {
+      return;
+    }
+    this.#interfaceErrorOffered = true;
     const offered = await this.backend.offerInterfaceErrorReport(error);
-    if (offered.status === "ok" && this.prompt.kind === "hidden") {
+    if (offered.status === "ok") {
       await this.follow(offered.data);
     }
   }
@@ -74,6 +92,9 @@ export class CrashReporting {
   }
 
   private async follow({ details, origin }: CrashReportOffer): Promise<void> {
+    if (this.prompt.kind !== "hidden") {
+      return;
+    }
     const asking = {
       kind: "asking",
       details,
@@ -86,10 +107,9 @@ export class CrashReporting {
         return Promise.resolve();
       },
       always: async () => {
+        this.prompt = SENDING;
         const failure = await this.send();
-        if (failure !== undefined) {
-          this.prompt = { ...asking, failure };
-        }
+        this.prompt = failure === undefined ? HIDDEN : { ...asking, failure };
       },
       never: async () => {
         await this.backend.declineCrashReport();
@@ -116,6 +136,6 @@ export class CrashReporting {
   }
 }
 
-function failureOf(code: IpcErrorCode): SendFailure {
-  return code === "browserUnavailable" ? "browserUnavailable" : "notSent";
+function failureOf(code: IpcErrorCode): SendFailure | undefined {
+  return SEND_OUTCOMES[code];
 }

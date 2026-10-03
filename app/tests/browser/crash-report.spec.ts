@@ -90,6 +90,18 @@ async function chooseBeforeOpening(
   );
 }
 
+/** Throws errors nothing handles, resolving once the page has heard them all. */
+async function throwUnhandled(page: Page, times: number): Promise<void> {
+  await page.evaluate(async (count) => {
+    for (let n = 0; n < count; n += 1) {
+      setTimeout(() => {
+        throw new TypeError("page is undefined");
+      });
+    }
+    await new Promise((resolve) => setTimeout(resolve));
+  }, times);
+}
+
 function isPhoneScreen(page: Page, platform: Platform): boolean {
   return platform === "android" && viewportOf(page).width < MEDIUM_MIN_WIDTH;
 }
@@ -295,6 +307,48 @@ test.describe("with nothing saved", () => {
       "TypeError: page is undefined",
     ]);
     expect(calls.sent).toBe(0);
+  });
+  test("doesn't ask again once an interface error was declined", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Library" }),
+    ).toBeVisible();
+    await throwUnhandled(page, 1);
+    await prompt(page).getByRole("button", { name: "Don't send" }).click();
+    await expect(prompt(page)).toBeHidden();
+
+    await throwUnhandled(page, 1);
+
+    await expect(prompt(page)).toBeHidden();
+    expect(calls.interfaceErrors).toHaveLength(1);
+  });
+});
+
+test.describe("set to Always, with nothing saved", () => {
+  const calls = freshCalls(null);
+
+  test.use({
+    backend: { ...DEFAULT_BACKEND, ...fakeCrashReports(calls) },
+  });
+
+  test.beforeEach(() => {
+    Object.assign(calls, freshCalls(null));
+  });
+
+  test("sends an error that keeps happening only once", async ({ page }) => {
+    await chooseBeforeOpening(page, "always");
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Library" }),
+    ).toBeVisible();
+
+    await throwUnhandled(page, 3);
+
+    await expect.poll(() => calls.sent).toBe(1);
+    await expect(prompt(page)).toBeHidden();
+    expect(calls.interfaceErrors).toHaveLength(1);
   });
 });
 
