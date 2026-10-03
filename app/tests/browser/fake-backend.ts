@@ -50,6 +50,7 @@ type Reply = { readonly value: unknown } | { readonly failure: IpcError };
 declare global {
   interface Window {
     __omnileafFakeChannelMessage?: (id: number, message: unknown) => void;
+    __omnileafFakeEvent?: (event: string, payload: unknown) => void;
   }
 }
 
@@ -63,8 +64,27 @@ export function fakeProtocolRoute(protocol: string): string {
 const CHANNEL_PREFIX = "__CHANNEL__:";
 
 const INSTALL_BRIDGE = `const callbacks = new Map();
+const listeners = new Map();
 let lastCallback = 0;
 window.__omnileafFakeChannelMessage = (id, message) => callbacks.get(id)?.(message);
+window.__omnileafFakeEvent = (event, payload) => {
+  for (const handler of listeners.get(event) ?? []) {
+    callbacks.get(handler)?.({ event, id: handler, payload });
+  }
+};
+const EVENT_COMMANDS = {
+  "plugin:event|listen": ({ event, handler }) => {
+    listeners.set(event, [...(listeners.get(event) ?? []), handler]);
+    return handler;
+  },
+  "plugin:event|unlisten": ({ event, eventId }) => {
+    listeners.set(event, (listeners.get(event) ?? []).filter((handler) => handler !== eventId));
+    return null;
+  },
+};
+Object.defineProperty(window, "__TAURI_EVENT_PLUGIN_INTERNALS__", {
+  value: { unregisterListener: (_event, id) => callbacks.delete(id) },
+});
 Object.defineProperty(window, "__TAURI_INTERNALS__", {
   value: {
     transformCallback: (callback) => {
@@ -75,6 +95,9 @@ Object.defineProperty(window, "__TAURI_INTERNALS__", {
     unregisterCallback: (id) => callbacks.delete(id),
     convertFileSrc: (path, protocol) => location.origin + "/${FAKE_PROTOCOL_PREFIX}" + protocol + "/" + encodeURIComponent(path),
     invoke: async (command, args) => {
+      if (command in EVENT_COMMANDS) {
+        return EVENT_COMMANDS[command](args);
+      }
       const reply = await window.${BRIDGE}(command, JSON.parse(JSON.stringify(args)));
       if ("failure" in reply) {
         throw reply.failure;
@@ -144,6 +167,20 @@ async function answer(
     }
     throw error;
   }
+}
+
+/** Sends an event to the page the way the Rust side emits one to every window. */
+export async function emitFakeEvent(
+  page: Page,
+  event: string,
+  payload: unknown = null,
+): Promise<void> {
+  await page.evaluate(
+    ([name, sent]) => {
+      window.__omnileafFakeEvent?.(name, sent);
+    },
+    [event, payload] as const,
+  );
 }
 
 export async function installFakeBackend(
