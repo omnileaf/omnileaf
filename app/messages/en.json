@@ -120,5 +120,14 @@
   "language_more_coming": "More languages arrive as people translate Omnileaf.",
   "back_to": "Back to {page}",
   "notice_dismiss": "Dismiss",
-  "settings_sections_label": "Settings sections"
+  "settings_sections_label": "Settings sections",
+  "privacy_title": "Privacy",
+  "privacy_crash_reports": "Crash reports",
+  "privacy_crash_reports_hint": "You see a report before it's sent.",
+  "crash_reports_ask": "Ask each time",
+  "crash_reports_always": "Always send",
+  "crash_reports_never": "Never",
+  "privacy_summary_ask": "Ask before sending crash reports",
+  "privacy_summary_always": "Always send crash reports",
+  "privacy_summary_never": "Never send crash reports"
 }

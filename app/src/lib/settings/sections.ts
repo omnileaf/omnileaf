@@ -1,4 +1,4 @@
-import { Info, Palette, Settings2 } from "@lucide/svelte";
+import { Info, Lock, Palette, Settings2 } from "@lucide/svelte";
 
 import LibraryGlyph from "$lib/navigation/LibraryGlyph.svelte";
 import type { Glyph } from "$lib/page/glyph";
@@ -8,6 +8,7 @@ import type { Locale } from "$lib/paraglide/runtime.js";
 export type SettingsRoute =
   | "/settings/library"
   | "/settings/appearance"
+  | "/settings/privacy"
   | "/settings/general"
   | "/settings/about";
 
@@ -61,6 +62,12 @@ export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [
       route: "/settings/appearance",
       label: m.appearance_title,
       icon: Palette,
+      tone: "accent",
+    },
+    {
+      route: "/settings/privacy",
+      label: m.privacy_title,
+      icon: Lock,
       tone: "accent",
     },
     {

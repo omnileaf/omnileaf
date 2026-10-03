@@ -120,5 +120,14 @@
   "language_more_coming": "⟦Ṁöŕé ļáñĝûáĝéš áŕŕíṽé áš þéöþļé ţŕáñšļáţé Öɱñíļéáƒ.·····················⟧",
   "back_to": "⟦Ɓáçķ ţö {page}······⟧",
   "notice_dismiss": "⟦Ðíšɱíšš···⟧",
-  "settings_sections_label": "⟦Šéţţíñĝš šéçţíöñš·······⟧"
+  "settings_sections_label": "⟦Šéţţíñĝš šéçţíöñš·······⟧",
+  "privacy_title": "⟦Þŕíṽáçý···⟧",
+  "privacy_crash_reports": "⟦Çŕášĥ ŕéþöŕţš······⟧",
+  "privacy_crash_reports_hint": "⟦Ýöû šéé á ŕéþöŕţ ƀéƒöŕé íţ'š šéñţ.··············⟧",
+  "crash_reports_ask": "⟦Ášķ éáçĥ ţíɱé······⟧",
+  "crash_reports_always": "⟦Áļŵáýš šéñð·····⟧",
+  "crash_reports_never": "⟦Ñéṽéŕ··⟧",
+  "privacy_summary_ask": "⟦Ášķ ƀéƒöŕé šéñðíñĝ çŕášĥ ŕéþöŕţš·············⟧",
+  "privacy_summary_always": "⟦Áļŵáýš šéñð çŕášĥ ŕéþöŕţš··········⟧",
+  "privacy_summary_never": "⟦Ñéṽéŕ šéñð çŕášĥ ŕéþöŕţš··········⟧"
 }
