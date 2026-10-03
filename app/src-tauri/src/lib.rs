@@ -27,7 +27,10 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(commands.invoke_handler())
-        .setup(|app| Ok(crash_reporting::install(app.handle())?));
+        .setup(|app| {
+            crash_reporting::install(app.handle());
+            Ok(())
+        });
     #[cfg(desktop)]
     let app = app.plugin(tauri_plugin_dialog::init());
     #[cfg(all(desktop, feature = "e2e"))]

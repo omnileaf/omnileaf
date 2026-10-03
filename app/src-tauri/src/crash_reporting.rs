@@ -76,16 +76,21 @@ impl CrashReporting {
     }
 }
 
-/// Starts keeping reports of panics, and offers them through the app's state.
-pub(crate) fn install(app: &AppHandle) -> tauri::Result<()> {
-    let file = CrashReportFile::in_folder(&report_folder(app)?);
+/// Starts keeping reports of panics, and offers them through the app's state; without a folder for them, reports last only for this run.
+pub(crate) fn install(app: &AppHandle) {
     let reporter = Arc::new(Reporter::new(app.state::<Core>().app_info()));
-    set_panic_hook(file.clone(), Arc::clone(&reporter));
-    app.manage(CrashReporting {
-        offers: CrashReportOffers::new(file),
-        reporter,
-    });
-    Ok(())
+    let offers = match report_folder(app) {
+        Ok(folder) => {
+            let file = CrashReportFile::in_folder(&folder);
+            set_panic_hook(file.clone(), Arc::clone(&reporter));
+            CrashReportOffers::new(file)
+        }
+        Err(error) => {
+            tracing::error!(%error, "find a folder for crash reports");
+            CrashReportOffers::in_memory()
+        }
+    };
+    app.manage(CrashReporting { offers, reporter });
 }
 
 fn report_folder(app: &AppHandle) -> tauri::Result<PathBuf> {

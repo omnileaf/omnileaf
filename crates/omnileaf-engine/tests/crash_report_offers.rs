@@ -282,6 +282,19 @@ fn saves_from_several_threads_at_once_without_losing_the_report() {
 }
 
 #[test]
+fn offers_a_report_for_this_run_when_there_is_nowhere_to_keep_it() {
+    let offers = CrashReportOffers::in_memory();
+
+    let offered = offers.offer(report(1, "first")).unwrap();
+    let still_offered = offers.offer_saved().unwrap();
+    offers.settle().unwrap();
+
+    assert_eq!(offered, report(1, "first"));
+    assert_eq!(still_offered, Some(report(1, "first")));
+    assert_eq!(offers.offered(), None);
+}
+
+#[test]
 fn still_offers_a_report_it_could_not_save() {
     let folder = TempFolder::new("unsaved");
     fs::create_dir_all(folder.path().parent().unwrap()).unwrap();

@@ -13,7 +13,7 @@ pub struct UnsavedCrashReport {
 /// The report the person is being asked about, which stays the same until they decide.
 #[derive(Debug)]
 pub struct CrashReportOffers {
-    file: CrashReportFile,
+    file: Option<CrashReportFile>,
     offered: Mutex<Option<CrashReport>>,
 }
 
@@ -21,7 +21,16 @@ impl CrashReportOffers {
     #[must_use]
     pub fn new(file: CrashReportFile) -> Self {
         Self {
-            file,
+            file: Some(file),
+            offered: Mutex::new(None),
+        }
+    }
+
+    /// Offers reports for this run only, for when there is nowhere to keep them between runs.
+    #[must_use]
+    pub fn in_memory() -> Self {
+        Self {
+            file: None,
             offered: Mutex::new(None),
         }
     }
@@ -29,10 +38,10 @@ impl CrashReportOffers {
     /// Offers the report saved by an earlier run, or the one already on offer.
     pub fn offer_saved(&self) -> Result<Option<CrashReport>, CrashReportError> {
         let mut offered = self.lock();
-        if offered.is_none() {
-            *offered = match self.file.load() {
+        if let (None, Some(file)) = (offered.as_ref(), &self.file) {
+            *offered = match file.load() {
                 Err(unreadable @ CrashReportError::Parse(_)) => {
-                    self.file.discard()?;
+                    file.discard()?;
                     return Err(unreadable);
                 }
                 loaded => loaded?,
@@ -51,7 +60,10 @@ impl CrashReportOffers {
             return Ok(earlier.clone());
         }
         *offered = Some(report.clone());
-        match self.file.save(&report) {
+        let Some(file) = &self.file else {
+            return Ok(report);
+        };
+        match file.save(&report) {
             Ok(()) => Ok(report),
             Err(source) => Err(UnsavedCrashReport {
                 report: Box::new(report),
@@ -67,10 +79,11 @@ impl CrashReportOffers {
 
     /// Ends the offer once the person has sent or declined the report.
     pub fn settle(&self) -> Result<(), CrashReportError> {
-        let Some(settled) = self.lock().take() else {
-            return Ok(());
-        };
-        self.file.remove(settled.id())
+        let settled = self.lock().take();
+        match (settled, &self.file) {
+            (Some(settled), Some(file)) => file.remove(settled.id()),
+            _ => Ok(()),
+        }
     }
 
     fn lock(&self) -> MutexGuard<'_, Option<CrashReport>> {
