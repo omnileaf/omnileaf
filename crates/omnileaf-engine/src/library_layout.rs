@@ -25,6 +25,15 @@ pub(crate) struct Layout {
     pub(crate) unreadable_folders: Vec<PathBuf>,
 }
 
+/// What one entry of a folder is to the walk.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum EntryKind {
+    Folder,
+    Comic,
+    Page,
+    Other,
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Place {
     Root,
@@ -69,9 +78,9 @@ impl Layout {
             if is_ignored(&name) {
                 continue;
             }
-            match entry.file_type() {
-                Ok(kind) if kind.is_dir() => pending.push((entry.path(), place.inner())),
-                Ok(kind) if kind.is_file() && is_comic(&file_name) => {
+            match EntryKind::of(&entry.file_type(), &file_name) {
+                EntryKind::Folder => pending.push((entry.path(), place.inner())),
+                EntryKind::Comic => {
                     holds_comics = true;
                     let path = entry.path();
                     let title = file_stem(&path);
@@ -85,8 +94,8 @@ impl Layout {
                         title,
                     });
                 }
-                Ok(kind) if kind.is_file() && is_page_image(&name) => holds_pages = true,
-                _ => {}
+                EntryKind::Page => holds_pages = true,
+                EntryKind::Other => {}
             }
         }
         let is_book_of_images = holds_pages && !holds_comics;
@@ -102,6 +111,17 @@ impl Layout {
                 series,
                 title: folder_name(folder),
             });
+        }
+    }
+}
+
+impl EntryKind {
+    fn of(file_type: &io::Result<fs::FileType>, file_name: &OsStr) -> Self {
+        match file_type {
+            Ok(kind) if kind.is_dir() => Self::Folder,
+            Ok(kind) if kind.is_file() && is_comic(file_name) => Self::Comic,
+            Ok(kind) if kind.is_file() && is_page_image(&file_name.to_string_lossy()) => Self::Page,
+            _ => Self::Other,
         }
     }
 }
