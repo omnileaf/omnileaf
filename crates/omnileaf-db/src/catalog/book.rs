@@ -3,23 +3,26 @@ use rusqlite::Transaction;
 
 use crate::{Error, book_order::book_order_key};
 
-const ADD_BOOK: &str = "INSERT INTO book (
-        id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind
-    )
-    SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7 FROM series WHERE id = ?2";
-const ADD_BOOK_UNLESS_PRESENT: &str = "INSERT INTO book (
-        id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind
-    )
-    SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7 FROM series WHERE id = ?2
-    ON CONFLICT (id) DO NOTHING";
-const ADD_OR_REFILE_BOOK: &str = "INSERT INTO book (
-        id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind
-    )
-    SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7 FROM series WHERE id = ?2
-    ON CONFLICT (id) DO UPDATE SET
+macro_rules! insert_book {
+    ($on_conflict:literal) => {
+        concat!(
+            "INSERT INTO book (
+                id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind
+            )
+            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7 FROM series WHERE id = ?2",
+            $on_conflict
+        )
+    };
+}
+
+const ADD_BOOK: &str = insert_book!("");
+const ADD_BOOK_UNLESS_PRESENT: &str = insert_book!(" ON CONFLICT (id) DO NOTHING");
+const ADD_OR_REFILE_BOOK: &str = insert_book!(
+    " ON CONFLICT (id) DO UPDATE SET
         series_local_id = excluded.series_local_id,
         title = excluded.title,
-        title_sort_key = excluded.title_sort_key";
+        title_sort_key = excluded.title_sort_key"
+);
 const SERIES_EXISTS: &str = "SELECT EXISTS (SELECT 1 FROM series WHERE id = ?1)";
 const REMOVE_BOOK_WITHOUT_FILES: &str = "DELETE FROM book
     WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM book_file WHERE book_id = ?1)";
