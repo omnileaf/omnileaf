@@ -83,6 +83,75 @@
       }
     }
   ],
+  "library_filter_and_sort": "Filter and sort",
+  "library_filter_and_sort_filtered": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Filter and sort, {formattedCount} filter on",
+        "countPlural=other": "Filter and sort, {formattedCount} filters on"
+      }
+    }
+  ],
+  "library_filter": "Filter",
+  "library_filter_with_count": "Filter · {count}",
+  "library_sort": "Sort",
+  "library_sort_by": "Sort by",
+  "library_reset": "Reset",
+  "library_close": "Close",
+  "library_sort_title": "Title",
+  "library_sort_date_added": "Date added",
+  "library_sort_a_to_z": "A to Z",
+  "library_sort_z_to_a": "Z to A",
+  "library_sort_newest_first": "Newest first",
+  "library_sort_oldest_first": "Oldest first",
+  "library_sort_a_to_z_change": "Order: A to Z. Change to Z to A",
+  "library_sort_z_to_a_change": "Order: Z to A. Change to A to Z",
+  "library_sort_newest_first_change": "Order: newest first. Change to oldest first",
+  "library_sort_oldest_first_change": "Order: oldest first. Change to newest first",
+  "library_filter_unread": "Unread",
+  "library_filter_unread_hint": "Has books you haven't read",
+  "library_filter_started": "Started",
+  "library_filter_finished": "Finished",
+  "library_filter_finished_hint": "You've read every book",
+  "library_filter_any": "Any",
+  "library_filter_only": "Only",
+  "library_filter_hide": "Hide",
+  "library_show_series": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Show {formattedCount} series",
+        "countPlural=other": "Show {formattedCount} series"
+      }
+    }
+  ],
+  "library_series_match": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} series matches",
+        "countPlural=other": "{formattedCount} series match"
+      }
+    }
+  ],
+  "library_no_matches": "No series match these filters.",
+  "library_clear_filters": "Clear filters",
   "app_version": "Version {version}",
   "library_add_folder": "Add a folder",
   "library_scan_finding": "Finding books",
