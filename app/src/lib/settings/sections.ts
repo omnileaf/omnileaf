@@ -11,8 +11,10 @@ export type SettingsRoute =
   | "/settings/general"
   | "/settings/about";
 
+export type SettingsSubPage = "/settings/about/licences";
+
 export interface ParentPage {
-  readonly route: "/settings" | SettingsRoute;
+  readonly route: "/settings" | SettingsRoute | SettingsSubPage;
   readonly title: string;
 }
 

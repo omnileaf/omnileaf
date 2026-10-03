@@ -10,6 +10,7 @@ const PAGES = [
   "/settings/general",
   "/settings/general/language",
   "/settings/about",
+  "/settings/about/licences",
 ];
 
 const UNMARKED_TEXT_SCRIPT = `(() => {

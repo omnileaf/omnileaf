@@ -60,6 +60,49 @@
   "about_browser_unavailable": "Couldn't open your browser. Try again.",
   "about_licences": "Open-source licences",
   "about_licences_hint": "The packages Omnileaf is built with",
+  "licences_intro": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Omnileaf is built with {formattedCount} open-source package. Open it to read its licence.",
+        "countPlural=other": "Omnileaf is built with {formattedCount} open-source packages, grouped by licence. Open one to read its licence."
+      }
+    }
+  ],
+  "licences_package_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} package",
+        "countPlural=other": "{formattedCount} packages"
+      }
+    }
+  ],
+  "licences_show_all": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Show all {formattedCount}",
+        "countPlural=other": "Show all {formattedCount}"
+      }
+    }
+  ],
+  "licence_summary": "Version {version} · {licence}",
   "library_settings_folders": "Folders",
   "library_settings_folders_hint": "Folders of comics, manga or books. Omnileaf reads them where they are.",
   "appearance_title": "Appearance",

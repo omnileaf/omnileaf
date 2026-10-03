@@ -60,6 +60,49 @@
   "about_browser_unavailable": "⟦Çöûļðñ'ţ öþéñ ýöûŕ ƀŕöŵšéŕ. Ţŕý áĝáíñ.················⟧",
   "about_licences": "⟦Öþéñ-šöûŕçé ļíçéñçéš········⟧",
   "about_licences_hint": "⟦Ţĥé þáçķáĝéš Öɱñíļéáƒ íš ƀûíļţ ŵíţĥ··············⟧",
+  "licences_intro": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Öɱñíļéáƒ íš ƀûíļţ ŵíţĥ {formattedCount} öþéñ-šöûŕçé þáçķáĝé. Öþéñ íţ ţö ŕéáð íţš ļíçéñçé.····································⟧",
+        "countPlural=other": "⟦Öɱñíļéáƒ íš ƀûíļţ ŵíţĥ {formattedCount} öþéñ-šöûŕçé þáçķáĝéš, ĝŕöûþéð ƀý ļíçéñçé. Öþéñ öñé ţö ŕéáð íţš ļíçéñçé.·············································⟧"
+      }
+    }
+  ],
+  "licences_package_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} þáçķáĝé··········⟧",
+        "countPlural=other": "⟦{formattedCount} þáçķáĝéš··········⟧"
+      }
+    }
+  ],
+  "licences_show_all": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Šĥöŵ áļļ {formattedCount}··········⟧",
+        "countPlural=other": "⟦Šĥöŵ áļļ {formattedCount}··········⟧"
+      }
+    }
+  ],
+  "licence_summary": "⟦Ṽéŕšíöñ {version} · {licence}············⟧",
   "library_settings_folders": "⟦Ƒöļðéŕš···⟧",
   "library_settings_folders_hint": "⟦Ƒöļðéŕš öƒ çöɱíçš, ɱáñĝá öŕ ƀööķš. Öɱñíļéáƒ ŕéáðš ţĥéɱ ŵĥéŕé ţĥéý áŕé.····························⟧",
   "appearance_title": "⟦Áþþéáŕáñçé····⟧",
