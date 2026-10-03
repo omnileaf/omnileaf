@@ -33,6 +33,9 @@ const LOADED_HOME_FOLDER = xpath(
   "//section[h2[normalize-space()='Home folder']]//p[normalize-space()='Omnileaf']",
 );
 
+const EVERY_COVER_SHOWN = `const covers = [...document.querySelectorAll("ul[aria-label='Series'] img")];
+return covers.length === ${String(SAMPLE_LIBRARY.series)} && covers.every((cover) => cover.complete && cover.naturalWidth > 0);`;
+
 const SCAN_REPORT = `Found ${String(SAMPLE_LIBRARY.books)} books in ${String(SAMPLE_LIBRARY.series)} series in ${SAMPLE_LIBRARY.name}.`;
 
 const appSession = useAppSession();
@@ -49,6 +52,18 @@ test("adds a folder, waits for its scan and reports the series and books in it",
 
   const report = await appSession().waitFor(FINISHED_SCAN_REPORT);
   expect(await report.text()).toBe(SCAN_REPORT);
+});
+
+test("shows the cover of every series it found, read through the app's own protocol", async () => {
+  await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
+  await appSession().waitFor(FINISHED_SCAN_REPORT);
+
+  const shown = appSession().waitUntil(
+    EVERY_COVER_SHOWN,
+    "a loaded cover for every series",
+  );
+
+  await expect(shown).resolves.toBeUndefined();
 });
 
 test("adds a folder from Settings › Library and lists it there", async () => {

@@ -163,12 +163,44 @@ export class Session {
     locator: Locator,
     timeoutMs = ELEMENT_TIMEOUT_MS,
   ): Promise<WebElement> {
+    return this.pollOnPage(
+      () => this.find(locator),
+      timeoutMs,
+      `the element at ${locator.value}`,
+    );
+  }
+
+  /** Runs `script` in the page until it returns `true`, for what no element's presence can show, such as an image having loaded. */
+  async waitUntil(
+    script: string,
+    what: string,
+    timeoutMs = ELEMENT_TIMEOUT_MS,
+  ): Promise<void> {
+    await this.pollOnPage(
+      async () => ((await this.run(script)) === true ? true : undefined),
+      timeoutMs,
+      what,
+    );
+  }
+
+  /** Marks the page and reloads it once the script has returned, then waits for a page without the mark. */
+  async reload(): Promise<void> {
+    await this.run(RELOAD_SCRIPT);
+    await this.waitFor(xpath(`/html[not(@${RELOADING_MARK})]`));
+  }
+
+  async end(): Promise<void> {
+    await send(this.endpoint, "DELETE");
+  }
+
+  /** Polls like {@link pollUntil}, saying what the page showed when it gives up. */
+  private async pollOnPage<T>(
+    attempt: () => Promise<T | undefined>,
+    timeoutMs: number,
+    what: string,
+  ): Promise<T> {
     try {
-      return await pollUntil(
-        () => this.find(locator),
-        timeoutMs,
-        `the element at ${locator.value}`,
-      );
+      return await pollUntil(attempt, timeoutMs, what);
     } catch (error) {
       if (!(error instanceof NotReadyError)) {
         throw error;
@@ -179,17 +211,8 @@ export class Session {
     }
   }
 
-  /** Marks the page and reloads it once the script has returned, then waits for a page without the mark. */
-  async reload(): Promise<void> {
-    await send(`${this.endpoint}/execute/sync`, "POST", {
-      script: RELOAD_SCRIPT,
-      args: [],
-    });
-    await this.waitFor(xpath(`/html[not(@${RELOADING_MARK})]`));
-  }
-
-  async end(): Promise<void> {
-    await send(this.endpoint, "DELETE");
+  private async run(script: string): Promise<unknown> {
+    return send(`${this.endpoint}/execute/sync`, "POST", { script, args: [] });
   }
 
   private async describeCurrentPage(): Promise<string> {
