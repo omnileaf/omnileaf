@@ -223,14 +223,26 @@ for (const { platform, buttonHeight } of PANE_SIZES) {
 test.describe("in a desktop window under 600px", () => {
   test.use(onPlatform("linux"));
 
-  test("moves the copy button under the name", async ({ page }) => {
-    await openAbout(page);
-    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "under 600px only");
+  test("keeps the copy button inside the window in a longer language", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem("omnileaf.language", "en-XA");
+    });
+    await page.goto(ABOUT_PAGE);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("⟦");
+    const { width } = viewportOf(page);
+    test.skip(width >= MEDIUM_MIN_WIDTH, "under 600px only");
 
-    const button = await boxOf(copyButton(page));
-    const icon = await boxOf(appIcon(page));
+    const button = await boxOf(
+      page.getByRole("main").getByRole("button").first(),
+    );
+    const sourceRow = await boxOf(
+      page.getByRole("main").getByRole("listitem").first(),
+    );
 
-    expect(button.y).toBeGreaterThanOrEqual(icon.y + icon.height);
+    expect(button.x + button.width).toBeLessThanOrEqual(width);
+    expect(sourceRow.y).toBeGreaterThan(button.y + button.height);
   });
 });
 
