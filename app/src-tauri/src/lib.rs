@@ -8,7 +8,7 @@ mod ipc_error;
 mod omni_protocol;
 mod runtime_config;
 
-use std::error::Error;
+use std::{error::Error, path::Path};
 
 use omnileaf_engine::{Core, Library, ResourceRouter, SystemClock};
 use tauri::{App, Manager};
@@ -32,7 +32,7 @@ pub fn run() {
         .invoke_handler(commands.invoke_handler())
         .register_asynchronous_uri_scheme_protocol(omni_protocol::SCHEME, omni_protocol::answer)
         .setup(move |app| {
-            open_library(app, config?).inspect_err(|error| {
+            open_library(app, &config?).inspect_err(|error| {
                 tracing::error!(%error, "open the library");
             })
         });
@@ -46,15 +46,28 @@ pub fn run() {
         .expect("start the Tauri runtime");
 }
 
-/// Opens the library and its covers before the window shows, since every library command and cover needs them.
-fn open_library(app: &App, config: RuntimeConfig) -> Result<(), Box<dyn Error>> {
-    let (home, cache) = match config.data_dir {
-        Some(data_dir) => (data_dir.clone(), data_dir.join(CACHE_FOLDER)),
-        None => (app.path().app_data_dir()?, app.path().app_cache_dir()?),
+/// Opens the library before the window shows, since every library command needs it, and starts its covers without waiting on their cache.
+fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>> {
+    let data_dir = config.data_dir.as_deref();
+    let home = match data_dir {
+        Some(data_dir) => data_dir.to_path_buf(),
+        None => app.path().app_data_dir()?,
     };
     let library = tauri::async_runtime::block_on(Library::open(home, SystemClock))?;
-    let resources = ResourceRouter::open(&cache)?;
     app.manage(library);
-    app.manage(resources);
+    match open_covers(app, data_dir) {
+        Ok(covers) => {
+            app.manage(covers);
+        }
+        Err(error) => tracing::error!(%error, "start the covers, which won't show"),
+    }
     Ok(())
+}
+
+fn open_covers(app: &App, data_dir: Option<&Path>) -> Result<ResourceRouter, Box<dyn Error>> {
+    let cache = match data_dir {
+        Some(data_dir) => data_dir.join(CACHE_FOLDER),
+        None => app.path().app_cache_dir()?,
+    };
+    Ok(ResourceRouter::open(&cache)?)
 }
