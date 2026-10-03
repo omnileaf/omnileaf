@@ -3,10 +3,17 @@
 
   import { m } from "$lib/paraglide/messages.js";
 
+  import type { PromptLook } from "./look";
+
   let {
     checked = $bindable(false),
-    onPhone,
-  }: { checked?: boolean; onPhone: boolean } = $props();
+    look,
+  }: { checked?: boolean; look: PromptLook } = $props();
+
+  const LOOKS = {
+    phone: "text-label",
+    dialog: "text-footnote",
+  } satisfies Record<PromptLook, string>;
 
   const CHECK_SIZE = 14;
   const CHECK_STROKE = 3;
@@ -15,7 +22,7 @@
 <label
   class={[
     "flex cursor-pointer items-center gap-md text-start touch:min-block-touch-target",
-    onPhone ? "text-label" : "text-footnote",
+    LOOKS[look],
   ]}
 >
   <span class="relative flex shrink-0">

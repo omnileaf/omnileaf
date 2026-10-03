@@ -7,11 +7,19 @@
   import AlwaysSendChoice from "./AlwaysSendChoice.svelte";
 
   import type { CrashReporting } from "./crash-reporting.svelte";
+  import type { PromptLook } from "./look";
   import ReportDetails from "./ReportDetails.svelte";
   import ReportFailures from "./ReportFailures.svelte";
 
-  let { reporting, onPhone }: { reporting: CrashReporting; onPhone: boolean } =
+  let { reporting, look }: { reporting: CrashReporting; look: PromptLook } =
     $props();
+
+  const LOOKS = {
+    phone:
+      "inset-none m-none overflow-y-auto bg-background block-dvh inline-full max-block-full max-inline-full",
+    dialog:
+      "m-auto overflow-y-auto rounded-dialog bg-background p-xl shadow-dialog inline-full max-inline-dialog backdrop:bg-scrim",
+  } satisfies Record<PromptLook, string>;
 
   const PHONE_ICON_SIZE = 28;
   const DIALOG_ICON_SIZE = 24;
@@ -69,14 +77,9 @@
       event.preventDefault();
       decline();
     }}
-    class={[
-      "border-none text-foreground",
-      onPhone
-        ? "inset-none m-none overflow-y-auto bg-background block-dvh inline-full max-block-full max-inline-full"
-        : "m-auto overflow-y-auto rounded-dialog bg-background p-xl shadow-dialog inline-full max-inline-dialog backdrop:bg-scrim",
-    ]}
+    class={["border-none text-foreground", LOOKS[look]]}
   >
-    {#if onPhone}
+    {#if look === "phone"}
       <div
         class="flex flex-col ps-safe-start pe-safe-end pbs-safe-top pbe-safe-bottom min-block-full"
       >
@@ -117,8 +120,8 @@
           <p id={bodyId} class="text-callout text-foreground/85">
             {PHONE_BODIES[asking.origin]()}
           </p>
-          <ReportDetails details={asking.details} {onPhone} />
-          <AlwaysSendChoice bind:checked={alwaysSend} {onPhone} />
+          <ReportDetails details={asking.details} {look} />
+          <AlwaysSendChoice bind:checked={alwaysSend} {look} />
           <div class="mbs-sm flex flex-col gap-sm self-stretch">
             <button
               type="button"
@@ -156,8 +159,8 @@
         <p id={bodyId} class="text-label text-muted">
           {m.crash_report_body()}
         </p>
-        <ReportDetails details={asking.details} {onPhone} />
-        <AlwaysSendChoice bind:checked={alwaysSend} {onPhone} />
+        <ReportDetails details={asking.details} {look} />
+        <AlwaysSendChoice bind:checked={alwaysSend} {look} />
         <div class="mbs-xs flex flex-wrap items-center gap-sm">
           <button
             type="button"

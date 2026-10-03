@@ -14,6 +14,7 @@
   import { CrashReporting } from "$lib/crash-report/crash-reporting.svelte";
   import CrashReportPrompt from "$lib/crash-report/CrashReportPrompt.svelte";
   import { listenForInterfaceErrors } from "$lib/crash-report/interface-errors";
+  import type { PromptLook } from "$lib/crash-report/look";
   import { commands } from "$lib/ipc/bindings";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
   import { sectionOf } from "$lib/navigation/sections";
@@ -33,7 +34,9 @@
   const crashReporting = new CrashReporting(commands, crashReportSetting);
 
   const width = new WindowWidth();
-  const onPhone = $derived(isPhone(data.appInfo.platform, width.current));
+  const promptLook: PromptLook = $derived(
+    isPhone(data.appInfo.platform, width.current) ? "phone" : "dialog",
+  );
 
   onMount(() => {
     void crashReporting.offerSaved();
@@ -64,4 +67,4 @@
     {@render children()}
   </main>
 </div>
-<CrashReportPrompt reporting={crashReporting} {onPhone} />
+<CrashReportPrompt reporting={crashReporting} look={promptLook} />
