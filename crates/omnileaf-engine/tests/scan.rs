@@ -3,10 +3,12 @@
     reason = "each test scans its own generated library in a scratch folder, so a failed set-up should stop the test"
 )]
 
+mod books;
 mod support;
 
 use std::{fs, path::Path};
 
+use books::{write_book, write_book_with, write_page};
 use omnileaf_db::{
     catalog::{PageRequest, PageSize, SeriesOrder, SeriesSummary, series_books, series_page},
     rusqlite::{Connection, OpenFlags, types::Value},
@@ -14,8 +16,7 @@ use omnileaf_db::{
 use omnileaf_engine::{Clock, FolderId, FolderScan, Library, LibraryError, ScanProgress};
 use omnileaf_sync_proto::SourceId;
 use omnileaf_testkit::{
-    ArchiveEntry, Compression, PageShape, SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, cbz, page_png,
-    write_sample_library,
+    PageShape, SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, page_png, write_sample_library,
 };
 use support::TempFolder;
 
@@ -113,36 +114,6 @@ fn whole_page() -> PageRequest {
         after: None,
         size: PageSize::try_from(PageSize::MAX).unwrap(),
     }
-}
-
-fn write_book(path: &Path, seed: u64) {
-    write_book_with(path, seed, None);
-}
-
-fn write_book_with(path: &Path, seed: u64, comic_info: Option<&str>) {
-    let mut entries: Vec<ArchiveEntry> = (0..2)
-        .map(|index| ArchiveEntry {
-            name: format!("{:03}.png", index + 1),
-            bytes: page_png(seed, index, PageShape::Portrait).unwrap(),
-        })
-        .collect();
-    if let Some(xml) = comic_info {
-        entries.push(ArchiveEntry {
-            name: "ComicInfo.xml".to_owned(),
-            bytes: xml.as_bytes().to_vec(),
-        });
-    }
-    fs::create_dir_all(path.parent().unwrap()).unwrap();
-    fs::write(path, cbz(&entries, Compression::Stored).unwrap()).unwrap();
-}
-
-fn write_page(folder: &Path, seed: u64) {
-    fs::create_dir_all(folder).unwrap();
-    fs::write(
-        folder.join("001.png"),
-        page_png(seed, 0, PageShape::Portrait).unwrap(),
-    )
-    .unwrap();
 }
 
 fn sample_library(name: &str) -> TempFolder {
