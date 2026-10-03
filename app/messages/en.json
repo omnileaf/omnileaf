@@ -19,6 +19,33 @@
     }
   ],
   "library_series_failed": "Couldn't load your library. Try again later.",
+  "library_series_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} series",
+        "countPlural=other": "{formattedCount} series"
+      }
+    }
+  ],
+  "library_view_options": "View options",
+  "library_view": "View",
+  "library_view_done": "Done",
+  "library_view_display": "Display",
+  "library_display_grid": "Grid",
+  "library_display_compact": "Compact",
+  "library_display_list": "List",
+  "library_covers_per_row": "Covers per row",
+  "library_covers_per_row_range": "{fewest} to {most}",
+  "library_fewer_covers_per_row": "Fewer covers per row",
+  "library_more_covers_per_row": "More covers per row",
+  "library_item_counts": "Item counts",
+  "library_item_counts_hint": "Next to the library title",
   "app_version": "Version {version}",
   "library_add_folder": "Add a folder",
   "library_scan_finding": "Finding books",

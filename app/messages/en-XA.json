@@ -19,6 +19,33 @@
     }
   ],
   "library_series_failed": "⟦Çöûļðñ'ţ ļöáð ýöûŕ ļíƀŕáŕý. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
+  "library_series_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šéŕíéš··········⟧",
+        "countPlural=other": "⟦{formattedCount} šéŕíéš··········⟧"
+      }
+    }
+  ],
+  "library_view_options": "⟦Ṽíéŵ öþţíöñš·····⟧",
+  "library_view": "⟦Ṽíéŵ··⟧",
+  "library_view_done": "⟦Ðöñé··⟧",
+  "library_view_display": "⟦Ðíšþļáý···⟧",
+  "library_display_grid": "⟦Ĝŕíð··⟧",
+  "library_display_compact": "⟦Çöɱþáçţ···⟧",
+  "library_display_list": "⟦Ļíšţ··⟧",
+  "library_covers_per_row": "⟦Çöṽéŕš þéŕ ŕöŵ······⟧",
+  "library_covers_per_row_range": "⟦{fewest} ţö {most}········⟧",
+  "library_fewer_covers_per_row": "⟦Ƒéŵéŕ çöṽéŕš þéŕ ŕöŵ········⟧",
+  "library_more_covers_per_row": "⟦Ṁöŕé çöṽéŕš þéŕ ŕöŵ········⟧",
+  "library_item_counts": "⟦Íţéɱ çöûñţš·····⟧",
+  "library_item_counts_hint": "⟦Ñéẋţ ţö ţĥé ļíƀŕáŕý ţíţļé··········⟧",
   "app_version": "⟦Ṽéŕšíöñ {version}·······⟧",
   "library_add_folder": "⟦Áðð á ƒöļðéŕ·····⟧",
   "library_scan_finding": "⟦Ƒíñðíñĝ ƀööķš······⟧",
