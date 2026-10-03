@@ -16,6 +16,9 @@ export class VersionCopying {
 
   async copy(): Promise<void> {
     clearTimeout(this.#settle);
+    if (this.outcome === "failed") {
+      this.outcome = "idle";
+    }
     const result = await this.copyDetails();
     if (result.status === "error") {
       this.outcome = "failed";

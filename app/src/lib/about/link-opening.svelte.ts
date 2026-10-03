@@ -9,6 +9,7 @@ export class LinkOpening {
   constructor(private readonly openLink: OpenProjectLink) {}
 
   async open(link: ProjectLink): Promise<void> {
+    this.hasFailed = false;
     const result = await this.openLink(link);
     this.hasFailed = result.status === "error";
   }

@@ -21,7 +21,7 @@ function failed(code: IpcErrorCode): CopyResult {
   return { status: "error", error: { code, message: "from the backend" } };
 }
 
-async function renderWith(...results: CopyResult[]) {
+async function renderWith(...results: (CopyResult | Promise<CopyResult>)[]) {
   const copies = { count: 0 };
   const copying = new VersionCopying(() => {
     copies.count += 1;
@@ -111,6 +111,19 @@ test("clears the failure once a later copy works", async () => {
   );
   await press(button);
   expect(alert.textContent.trim()).not.toBe("");
+
+  await press(button);
+
+  expect(alert.textContent.trim()).toBe("");
+});
+
+test("takes the failure down while it tries again, so a repeat is announced", async () => {
+  const retry = Promise.withResolvers<CopyResult>();
+  const { button, alert } = await renderWith(
+    failed("clipboardUnavailable"),
+    retry.promise,
+  );
+  await press(button);
 
   await press(button);
 

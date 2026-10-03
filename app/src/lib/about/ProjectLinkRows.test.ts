@@ -18,7 +18,7 @@ const NO_BROWSER: OpenResult = {
 };
 const SOURCE_CODE = "repo.example.org/omnileaf";
 
-async function renderWith(...results: OpenResult[]) {
+async function renderWith(...results: (OpenResult | Promise<OpenResult>)[]) {
   const opened: ProjectLink[] = [];
   const opening = new LinkOpening((link) => {
     opened.push(link);
@@ -98,6 +98,19 @@ test("clears the failure once a later link opens", async () => {
     .toHaveTextContent("Couldn't open your browser. Try again.");
 
   await sourceCode.click();
+
+  await expect.poll(() => alert.element().textContent.trim()).toBe("");
+});
+
+test("takes the failure down while it tries again, so a repeat is announced", async () => {
+  const retry = Promise.withResolvers<OpenResult>();
+  const { report, alert } = await renderWith(NO_BROWSER, retry.promise);
+  await report.click();
+  await expect
+    .element(alert)
+    .toHaveTextContent("Couldn't open your browser. Try again.");
+
+  await report.click();
 
   await expect.poll(() => alert.element().textContent.trim()).toBe("");
 });
