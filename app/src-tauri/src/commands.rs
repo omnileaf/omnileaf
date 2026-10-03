@@ -7,31 +7,34 @@ use omnileaf_engine::{
 use tauri::{AppHandle, Manager, State, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_opener::OpenerExt;
-use tauri_specta::{Builder, collect_commands};
+use tauri_specta::{Builder, collect_commands, collect_events};
 
 use crate::{
     folder_picker::pick_folder,
     ipc_error::IpcError,
+    library_events::LibraryChanged,
     system_bars::{self, Theme, ThemePreference},
     version_details,
 };
 
 pub(crate) fn builder() -> Builder<Wry> {
-    Builder::new().commands(collect_commands![
-        app_info,
-        add_library_folder,
-        match_system_bars,
-        library_folders,
-        library_series,
-        remove_library_folder,
-        rescan_library_folder,
-        rescan_library_folders,
-        first_launch_finished,
-        finish_first_launch,
-        set_app_language,
-        copy_version_details,
-        open_project_link
-    ])
+    Builder::new()
+        .commands(collect_commands![
+            app_info,
+            add_library_folder,
+            match_system_bars,
+            library_folders,
+            library_series,
+            remove_library_folder,
+            rescan_library_folder,
+            rescan_library_folders,
+            first_launch_finished,
+            finish_first_launch,
+            set_app_language,
+            copy_version_details,
+            open_project_link
+        ])
+        .events(collect_events![LibraryChanged])
 }
 
 #[tauri::command]
