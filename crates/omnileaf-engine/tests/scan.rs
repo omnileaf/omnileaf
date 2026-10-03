@@ -14,7 +14,8 @@ use omnileaf_db::{
 use omnileaf_engine::{Clock, FolderId, FolderScan, Library, LibraryError, ScanProgress};
 use omnileaf_sync_proto::SourceId;
 use omnileaf_testkit::{
-    ArchiveEntry, Compression, PageShape, SAMPLE_LIBRARY_NAME, cbz, page_png, write_sample_library,
+    ArchiveEntry, Compression, PageShape, SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, cbz, page_png,
+    write_sample_library,
 };
 use support::TempFolder;
 
@@ -194,10 +195,7 @@ async fn files_every_series_found_under_the_local_library_source() {
     .await;
 
     let local = Value::Blob(SourceId::local().as_bytes().to_vec());
-    assert_eq!(
-        scanned.series_sources(),
-        [local.clone(), local.clone(), local]
-    );
+    assert_eq!(scanned.series_sources(), vec![local; SAMPLE_LIBRARY.len()]);
 }
 
 #[tokio::test]
