@@ -8,5 +8,5 @@ mod stamp;
 
 pub(crate) use collation::TitleCollation;
 pub use language::Language;
-pub(crate) use resort::keep_titles_sorted;
+pub(crate) use resort::{Resorted, keep_titles_sorted, sort_titles_for};
 pub(crate) use stamp::stored_language;

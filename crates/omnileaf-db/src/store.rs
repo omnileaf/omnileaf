@@ -12,7 +12,10 @@ pub use key::{Key, LatestKey, MaximumKey};
 use tokio::sync::broadcast;
 pub use writer::Writer;
 
-use crate::{Database, Error};
+use crate::{
+    Database, Error, Language,
+    title_key::{Resorted, sort_titles_for},
+};
 
 const CHANGE_BACKLOG: usize = 64;
 
@@ -24,13 +27,18 @@ pub trait Clock: Send + Sync + 'static {
 /// What one committed write changed.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Changed {
-    Registers { keys: BTreeSet<Key> },
+    Registers {
+        keys: BTreeSet<Key>,
+    },
+    /// Every series title was keyed again, so lists in title order read in a new order from here on.
+    TitleOrder,
 }
 
 impl Changed {
     fn is_empty(&self) -> bool {
         match self {
             Self::Registers { keys } => keys.is_empty(),
+            Self::TitleOrder => false,
         }
     }
 }
@@ -90,6 +98,22 @@ impl Store {
             move |changed| announce(&subscribers, changed),
         );
         async move { rebuilt.await.map(drop) }
+    }
+
+    /// Keys every series title again for `language`, in one transaction readers never see half of, unless they are keyed for it already.
+    pub fn sort_titles_for(
+        &self,
+        language: Language,
+    ) -> impl Future<Output = Result<(), Error>> + use<> {
+        let subscribers = self.subscribers.clone();
+        let sorted = self.database.write_then(
+            move |transaction| sort_titles_for(transaction, &language),
+            move |resorted| match resorted {
+                Resorted::Rekeyed => announce(&subscribers, &Changed::TitleOrder),
+                Resorted::Unchanged => {}
+            },
+        );
+        async move { sorted.await.map(drop) }
     }
 }
 

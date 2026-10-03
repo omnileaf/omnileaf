@@ -10,6 +10,7 @@ use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Connection, Database,
     catalog::{NewSeries, PageRequest, PageSize, SeriesOrder, series_page},
+    store::{Changed, Clock, Store},
 };
 use support::ScratchFolder;
 
@@ -23,8 +24,16 @@ const UNSORTED: [&str; 5] = [
     "Alpha Sample",
 ];
 
+struct StoppedClock;
+
+impl Clock for StoppedClock {
+    fn now_unix_ms(&self) -> u64 {
+        0
+    }
+}
+
 struct Library {
-    database: Database,
+    store: Store,
     _folder: ScratchFolder,
 }
 
@@ -36,10 +45,21 @@ impl Library {
     }
 
     fn reopen(folder: ScratchFolder) -> Self {
+        let database = Database::open(&folder.config()).unwrap();
         Self {
-            database: Database::open(&folder.config()).unwrap(),
+            store: Store::new(database, StoppedClock),
             _folder: folder,
         }
+    }
+
+    async fn sorted_for(language: &str, titles: &[&str]) -> Vec<String> {
+        let library = Self::with_titles(&format!("sorted-for-{language}"), titles).await;
+        library
+            .store
+            .sort_titles_for(language.parse().unwrap())
+            .await
+            .unwrap();
+        library.titles().await
     }
 
     async fn titles(&self) -> Vec<String> {
@@ -51,7 +71,8 @@ impl Library {
                 size: PageSize::try_from(PAGE_SIZE).unwrap(),
             };
             let page = self
-                .database
+                .store
+                .database()
                 .read(move |connection| series_page(connection, SeriesOrder::Title, &request))
                 .await
                 .unwrap();
@@ -110,6 +131,217 @@ async fn orders_titles_differing_only_in_punctuation_by_their_text_rather_than_t
 
     assert!(series_id(hyphenated) < series_id(spaced));
     assert_eq!(titles, [spaced, hyphenated]);
+}
+
+#[tokio::test]
+async fn orders_english_titles_by_number_and_without_their_leading_article() {
+    let titles = Library::sorted_for(
+        "en",
+        &[
+            "The Zebra",
+            "Vol. 10",
+            "An Apple",
+            "Ｆｕｌｌ 12",
+            "The",
+            "Vol. 2",
+            "Full 3",
+            "Mango",
+        ],
+    )
+    .await;
+
+    assert_eq!(
+        titles,
+        [
+            "An Apple",
+            "Full 3",
+            "Ｆｕｌｌ 12",
+            "Mango",
+            "The",
+            "Vol. 2",
+            "Vol. 10",
+            "The Zebra",
+        ]
+    );
+}
+
+#[tokio::test]
+async fn files_german_umlauts_with_their_base_letters() {
+    let titles = Library::sorted_for(
+        "de",
+        &["Zebra", "Ärger", "Apfel", "Öl", "Ofen", "Die Probe", "Das"],
+    )
+    .await;
+
+    assert_eq!(
+        titles,
+        ["Apfel", "Ärger", "Das", "Ofen", "Öl", "Die Probe", "Zebra"]
+    );
+}
+
+#[tokio::test]
+async fn files_swedish_letters_after_z() {
+    let titles = Library::sorted_for(
+        "sv",
+        &["Zebra", "Ärlig", "Apelsin", "Åsna", "Ödla", "En Bok"],
+    )
+    .await;
+
+    assert_eq!(
+        titles,
+        ["Apelsin", "En Bok", "Zebra", "Åsna", "Ärlig", "Ödla"]
+    );
+}
+
+#[tokio::test]
+async fn orders_french_accents_and_drops_elided_articles() {
+    let titles = Library::sorted_for(
+        "fr",
+        &[
+            "L'Exemple",
+            "Le Zèbre",
+            "Côté",
+            "Cote",
+            "Coté",
+            "Côte",
+            "Abricot",
+        ],
+    )
+    .await;
+
+    assert_eq!(
+        titles,
+        [
+            "Abricot",
+            "Cote",
+            "Coté",
+            "Côte",
+            "Côté",
+            "L'Exemple",
+            "Le Zèbre"
+        ]
+    );
+}
+
+#[tokio::test]
+async fn files_russian_yo_with_ye_and_cyrillic_before_latin() {
+    let titles = Library::sorted_for("ru", &["яблоко", "Zebra", "ёж", "жук", "Apple", "ель"]).await;
+
+    assert_eq!(titles, ["ёж", "ель", "жук", "яблоко", "Apple", "Zebra"]);
+}
+
+#[tokio::test]
+async fn interleaves_japanese_hiragana_and_katakana() {
+    let titles = Library::sorted_for("ja", &["かめ", "カニ", "漢字", "かい", "アメ", "あめ"]).await;
+
+    assert_eq!(titles, ["あめ", "アメ", "かい", "カニ", "かめ", "漢字"]);
+}
+
+#[tokio::test]
+async fn orders_chinese_by_pinyin() {
+    let titles = Library::sorted_for("zh", &["中文", "北方", "阿姨", "上午"]).await;
+
+    assert_eq!(titles, ["阿姨", "北方", "上午", "中文"]);
+}
+
+#[tokio::test]
+async fn orders_korean_hangul_before_latin() {
+    let titles = Library::sorted_for("ko", &["하늘", "Apple", "가방", "나무"]).await;
+
+    assert_eq!(titles, ["가방", "나무", "하늘", "Apple"]);
+}
+
+#[tokio::test]
+async fn orders_arabic_numbers_by_value_whatever_their_digits() {
+    let titles = Library::sorted_for(
+        "ar",
+        &["كتاب ١٠", "Apple", "باب", "كتاب 9", "أرض", "كتاب ٢"],
+    )
+    .await;
+
+    assert_eq!(
+        titles,
+        ["أرض", "باب", "كتاب ٢", "كتاب 9", "كتاب ١٠", "Apple"]
+    );
+}
+
+#[tokio::test]
+async fn orders_hebrew_ignoring_direction_marks() {
+    let titles = Library::sorted_for("he", &["תפוח", "Apple", "\u{200f}גשם", "בית", "אור"]).await;
+
+    assert_eq!(titles, ["אור", "בית", "\u{200f}גשם", "תפוח", "Apple"]);
+}
+
+#[tokio::test]
+async fn keys_a_series_added_after_a_language_change_for_that_language() {
+    let library = Library::with_titles("added-after-change", &["Zebra"]).await;
+    library
+        .store
+        .sort_titles_for("sv".parse().unwrap())
+        .await
+        .unwrap();
+
+    seed_library(
+        library.store.database(),
+        &[("Åsna", 1, ONE_BOOK), ("Apelsin", 1, ONE_BOOK)],
+    )
+    .await;
+
+    assert_eq!(library.titles().await, ["Apelsin", "Zebra", "Åsna"]);
+}
+
+#[tokio::test]
+async fn announces_the_new_title_order_once_the_titles_are_keyed_again() {
+    let library = Library::with_titles("announce-order", &UNSORTED).await;
+    let mut changes = library.store.subscribe();
+
+    library
+        .store
+        .sort_titles_for("sv".parse().unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(changes.try_recv(), Ok(Changed::TitleOrder));
+}
+
+#[tokio::test]
+async fn announces_nothing_when_the_titles_are_keyed_for_the_language_already() {
+    let library = Library::with_titles("announce-nothing", &UNSORTED).await;
+    library
+        .store
+        .sort_titles_for("sv".parse().unwrap())
+        .await
+        .unwrap();
+    let mut changes = library.store.subscribe();
+
+    library
+        .store
+        .sort_titles_for("sv".parse().unwrap())
+        .await
+        .unwrap();
+
+    assert!(changes.try_recv().is_err());
+}
+
+#[tokio::test]
+async fn keeps_sorting_for_the_last_language_when_the_library_opens_again() {
+    let folder = ScratchFolder::new("language-kept");
+    seed(&folder, &["Zebra", "Åsna", "Apelsin"]).await;
+    let library = Library::reopen(folder);
+    library
+        .store
+        .sort_titles_for("sv".parse().unwrap())
+        .await
+        .unwrap();
+    let Library {
+        store,
+        _folder: folder,
+    } = library;
+    drop(store);
+
+    let library = Library::reopen(folder);
+
+    assert_eq!(library.titles().await, ["Apelsin", "Zebra", "Åsna"]);
 }
 
 #[tokio::test]
