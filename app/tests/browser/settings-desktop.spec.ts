@@ -13,6 +13,9 @@ import {
 
 const ACCENT = "rgb(47, 111, 79)";
 const POINTER_ROW_HEIGHT = 44;
+const NARROW_BACK_LINK_HEIGHT = 32;
+const TOUCH_TARGET = 48;
+const STATUS_BAR_GAP = 8;
 
 function sectionList(page: Page) {
   return page.getByRole("navigation", { name: "Settings sections" });
@@ -80,7 +83,7 @@ test.describe("on a desktop", () => {
 
     await expect(sectionList(page)).toBeHidden();
     await expect(back).toHaveText("Settings");
-    expect((await boxOf(back)).height).toBe(32);
+    expect((await boxOf(back)).height).toBe(NARROW_BACK_LINK_HEIGHT);
   });
 });
 
@@ -119,9 +122,9 @@ for (const platform of ["android", "ios"] as const) {
         page.getByRole("heading", { level: 1, name: "About" }),
       );
 
-      expect(back.width).toBe(48);
-      expect(back.height).toBe(48);
-      expect(back.y).toBe(8);
+      expect(back.width).toBe(TOUCH_TARGET);
+      expect(back.height).toBe(TOUCH_TARGET);
+      expect(back.y).toBe(STATUS_BAR_GAP);
       expect(title.y).toBeGreaterThanOrEqual(back.y + back.height);
     });
   });
