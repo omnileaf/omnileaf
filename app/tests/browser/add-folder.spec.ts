@@ -1,7 +1,14 @@
 import { AxeBuilder } from "@axe-core/playwright";
 
+import type { Locator, Page } from "@playwright/test";
+
 import { CommandFailure } from "./fake-backend.ts";
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+
+/** The report of adding a folder, apart from the rescan reports Settings › Library also shows. */
+function scanReport(page: Page, opening: string): Locator {
+  return page.getByRole("status").filter({ hasText: opening });
+}
 
 test.describe("with a folder of books", () => {
   test.use({
@@ -28,7 +35,7 @@ test.describe("with a folder of books", () => {
 
       await page.getByRole("button", { name: "Add a folder" }).click();
 
-      await expect(page.getByRole("status")).toHaveText(
+      await expect(scanReport(page, "Found")).toHaveText(
         "Found 7 books in 3 series in Sample Library.",
       );
     });
@@ -51,7 +58,7 @@ test.describe("while the folder is being scanned", () => {
 
     await page.getByRole("button", { name: "Add a folder" }).click();
 
-    await expect(page.getByRole("status")).toHaveText("Finding books");
+    await expect(scanReport(page, "Finding books")).toHaveText("Finding books");
     const bar = page.getByRole("progressbar", { name: "Finding books" });
     await expect(bar).toHaveAttribute("value", "32");
     await expect(bar).toHaveAccessibleDescription("32 of 100 books");

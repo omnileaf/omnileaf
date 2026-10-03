@@ -2,6 +2,7 @@
   import { commands } from "$lib/ipc/bindings";
   import { addFolderWithProgress } from "$lib/library/add-folder";
   import LibraryFolderSettings from "$lib/library/LibraryFolderSettings.svelte";
+  import { rescanFolderWithProgress } from "$lib/library/rescan-folder";
   import { m } from "$lib/paraglide/messages.js";
 </script>
 
@@ -10,4 +11,5 @@
   listFolders={commands.libraryFolders}
   removeFolder={commands.removeLibraryFolder}
   addFolder={addFolderWithProgress}
+  rescanFolder={rescanFolderWithProgress}
 />

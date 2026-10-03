@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import type { LibraryFolder } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
   import FolderRow from "./FolderRow.svelte";
@@ -9,9 +10,15 @@
 
   let {
     folders,
+    rowAction,
     class: className,
     children,
-  }: { folders: FolderList; class?: ClassValue; children?: Snippet } = $props();
+  }: {
+    folders: FolderList;
+    rowAction?: Snippet<[LibraryFolder]>;
+    class?: ClassValue;
+    children?: Snippet;
+  } = $props();
 
   const headingId = $props.id();
 </script>
@@ -21,8 +28,13 @@
     {m.library_settings_home_folder()}
   </h2>
   {#if folders.kind === "loaded" && folders.home !== undefined}
+    {@const home = folders.home}
     <div class="mbs-sm rounded-card border border-border bg-card">
-      <FolderRow folder={folders.home} />
+      <FolderRow folder={home}>
+        {#snippet action()}
+          {@render rowAction?.(home)}
+        {/snippet}
+      </FolderRow>
     </div>
   {/if}
   {@render children?.()}
