@@ -21,7 +21,11 @@ pub fn run() {
     let app = tauri::Builder::default()
         .manage(Core::new())
         .plugin(tauri_plugin_clipboard_manager::init())
-        .plugin(tauri_plugin_opener::init())
+        .plugin(
+            tauri_plugin_opener::Builder::new()
+                .open_js_links_on_click(false)
+                .build(),
+        )
         .invoke_handler(commands.invoke_handler());
     #[cfg(desktop)]
     let app = app.plugin(tauri_plugin_dialog::init());
