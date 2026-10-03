@@ -15,6 +15,13 @@ pub struct GeneratedLibrary {
     pub pages_per_book: u16,
 }
 
+impl GeneratedLibrary {
+    #[must_use]
+    pub const fn books(self) -> u32 {
+        self.series as u32 * self.books_per_series as u32
+    }
+}
+
 /// Gives each book a cover of its own and the same remaining pages, so every book has its own fingerprint while only one page per book is drawn.
 pub fn write_generated_library(
     root: &Path,

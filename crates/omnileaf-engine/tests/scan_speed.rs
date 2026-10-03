@@ -11,7 +11,7 @@ const LIBRARY: GeneratedLibrary = GeneratedLibrary {
     books_per_series: 10,
     pages_per_book: 24,
 };
-const BOOKS: u32 = 1_000;
+const BOOKS: u32 = LIBRARY.books();
 const BUDGET: Duration = Duration::from_secs(3);
 const NOW_UNIX_MS: u64 = 1_790_000_000_000;
 

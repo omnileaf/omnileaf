@@ -238,3 +238,17 @@ fn writes_a_generated_library_whose_books_share_every_page_but_their_cover() {
     let rest: BTreeSet<&[Vec<u8>]> = pages.iter().filter_map(|book| book.get(1..)).collect();
     assert_eq!((covers.len(), rest.len()), (6, 1));
 }
+
+#[test]
+fn counts_a_book_for_every_file_a_generated_library_writes() {
+    let scratch = ScratchFolder::new("generated-count");
+    let library = GeneratedLibrary {
+        series: 3,
+        books_per_series: 4,
+        pages_per_book: 1,
+    };
+
+    let files = write_generated_library(scratch.path(), library).unwrap();
+
+    assert_eq!(usize::try_from(library.books()).unwrap(), files.len());
+}
