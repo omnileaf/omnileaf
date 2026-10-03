@@ -3,7 +3,6 @@ use icu_collator::{
     options::{AlternateHandling, CollatorOptions, Strength},
     preferences::CollationNumericOrdering,
 };
-
 use rusqlite::Connection;
 
 use crate::{
