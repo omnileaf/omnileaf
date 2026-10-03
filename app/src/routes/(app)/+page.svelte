@@ -7,6 +7,7 @@
   import { coverUrl } from "$lib/library/cover-url";
   import { FolderAdding } from "$lib/library/folder-adding.svelte";
   import FolderNotice from "$lib/library/FolderNotice.svelte";
+  import { listenForLibraryChanges } from "$lib/library/library-changes";
   import { LibrarySeriesList } from "$lib/library/library-series.svelte";
   import SeriesCovers from "$lib/library/SeriesCovers.svelte";
   import LibraryGlyph from "$lib/navigation/LibraryGlyph.svelte";
@@ -23,13 +24,7 @@
   const library = new LibrarySeriesList((after) =>
     commands.librarySeries(after),
   );
-  const adding = new FolderAdding(
-    addFolderWithProgress,
-    () => data.notices,
-    () => {
-      void library.load();
-    },
-  );
+  const adding = new FolderAdding(addFolderWithProgress, () => data.notices);
 
   const isEmpty = $derived(
     library.list.kind === "loaded" && library.list.series.length === 0,
@@ -40,6 +35,9 @@
 
   onMount(() => {
     void library.load();
+    return listenForLibraryChanges(() => {
+      void library.load();
+    });
   });
 
   function focusAddFolder(): void {
@@ -89,7 +87,14 @@
     <p class="mbs-sm text-muted">{m.library_series_failed()}</p>
   {:else}
     <div class="mbs-xl">
-      <SeriesCovers series={library.list.series} {coverUrl} />
+      <SeriesCovers
+        series={library.list.series}
+        isComplete={library.list.isComplete}
+        onNearEnd={() => {
+          void library.loadMore();
+        }}
+        {coverUrl}
+      />
     </div>
   {/if}
 {/if}
