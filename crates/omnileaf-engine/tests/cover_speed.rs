@@ -11,7 +11,7 @@ mod support;
 
 use std::{fs, num::NonZeroUsize, slice::Iter, time::Duration};
 
-use omnileaf_engine::{Library, Resource, ResourceRouter};
+use omnileaf_engine::{Library, LibraryListing, Resource, ResourceRouter};
 use omnileaf_testkit::{
     ArchiveEntry, Compression, PageShape, Sampling, SpeedTrial, Statistic, TimingBudget, cbz,
     page_jpeg, subsampled_scan_jpeg,
@@ -48,7 +48,10 @@ async fn cover_paths(library: &Library) -> Vec<String> {
     let mut covers = Vec::new();
     let mut after = None;
     loop {
-        let page = library.series(after).await.unwrap();
+        let page = library
+            .series(LibraryListing::default(), after)
+            .await
+            .unwrap();
         covers.extend(
             page.series
                 .into_iter()

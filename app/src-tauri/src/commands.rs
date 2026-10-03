@@ -3,8 +3,8 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AppInfo, AppLanguage, BooksRemoval, Core, CoversPerRow, FolderCursor, FolderId, FolderPage,
-    FolderRescan, FolderScan, InterfaceError, Library, LibraryView, ProjectLink, ScanProgress,
-    SeriesCursor, SeriesPage,
+    FolderRescan, FolderScan, InterfaceError, Library, LibraryFilter, LibraryListing, LibraryView,
+    ProjectLink, ScanProgress, SeriesCursor, SeriesPage,
 };
 use tauri::{AppHandle, Manager, State, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -36,6 +36,8 @@ macro_rules! app_commands {
             library_folders,
             library_series,
             library_series_count,
+            library_listing,
+            set_library_listing,
             library_view,
             set_library_view,
             remove_library_folder,
@@ -65,6 +67,7 @@ pub(crate) fn builder() -> Builder<Wry> {
         .events(collect_events![LibraryChanged])
         .constant("COVERS_PER_ROW", CoversPerRow::RANGES)
         .constant("DEFAULT_LIBRARY_VIEW", LibraryView::default())
+        .constant("DEFAULT_LIBRARY_LISTING", LibraryListing::default())
 }
 
 #[cfg(debug_assertions)]
@@ -207,14 +210,33 @@ async fn library_folders(
 async fn library_series(
     library: State<'_, Library>,
     after: Option<SeriesCursor>,
+    listing: LibraryListing,
 ) -> Result<SeriesPage, IpcError> {
-    Ok(library.series(after).await?)
+    Ok(library.series(listing, after).await?)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn library_series_count(library: State<'_, Library>) -> Result<u32, IpcError> {
-    Ok(library.series_count().await?)
+async fn library_series_count(
+    library: State<'_, Library>,
+    filter: LibraryFilter,
+) -> Result<u32, IpcError> {
+    Ok(library.series_count(filter).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_listing(library: State<'_, Library>) -> Result<LibraryListing, IpcError> {
+    Ok(library.listing().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn set_library_listing(
+    library: State<'_, Library>,
+    listing: LibraryListing,
+) -> Result<(), IpcError> {
+    Ok(library.set_listing(listing).await?)
 }
 
 #[tauri::command]

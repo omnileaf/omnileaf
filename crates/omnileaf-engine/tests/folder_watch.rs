@@ -16,7 +16,9 @@ mod support;
 use std::{fs, time::Duration};
 
 use books::write_book;
-use omnileaf_engine::{AppFiles, FolderWatch, FolderWatchSwitch, Library, LibraryFolders};
+use omnileaf_engine::{
+    AppFiles, FolderWatch, FolderWatchSwitch, Library, LibraryFolders, LibraryListing,
+};
 use scanned::Scanned;
 use support::ScratchFolder;
 use tokio::time::timeout;
@@ -34,7 +36,7 @@ const ADDED_FOLDER_SHOWN_WITHIN: Duration = Duration::from_secs(5);
 
 async fn series_titles(library: &Library) -> Vec<String> {
     library
-        .series(None)
+        .series(LibraryListing::default(), None)
         .await
         .unwrap()
         .series

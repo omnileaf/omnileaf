@@ -1,7 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { commands, type LibraryView } from "#lib/ipc/bindings.ts";
+  import {
+    commands,
+    DEFAULT_LIBRARY_LISTING,
+    type LibraryView,
+  } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import AddFolderButton from "#lib/library/AddFolderButton.svelte";
   import { coverUrl } from "#lib/library/cover-url.ts";
@@ -24,10 +28,10 @@
 
   const screenshotMode = getScreenshotMode();
   const library = new LibrarySeriesList((after) =>
-    commands.librarySeries(after),
+    commands.librarySeries(after, DEFAULT_LIBRARY_LISTING),
   );
   const seriesCount = new LibrarySeriesCount(
-    () => commands.librarySeriesCount(),
+    () => commands.librarySeriesCount(DEFAULT_LIBRARY_LISTING.filter),
     (error) => {
       reportError(error);
     },

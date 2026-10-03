@@ -4,6 +4,7 @@ import { render } from "vitest-browser-svelte";
 
 import {
   commands,
+  DEFAULT_LIBRARY_LISTING,
   DEFAULT_LIBRARY_VIEW,
   type LibrarySeries,
 } from "#lib/ipc/bindings.ts";
@@ -37,7 +38,7 @@ async function listed(): Promise<readonly LibrarySeries[]> {
     ],
     next: null,
   }));
-  const page = await commands.librarySeries(null);
+  const page = await commands.librarySeries(null, DEFAULT_LIBRARY_LISTING);
   if (page.status === "error") {
     throw new Error("the backend listed no series");
   }

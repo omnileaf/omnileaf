@@ -1,8 +1,11 @@
 import type { commands, LibrarySeries } from "#lib/ipc/bindings.ts";
 
-export type ListSeries = typeof commands.librarySeries;
+type SeriesCursor = NonNullable<Parameters<typeof commands.librarySeries>[0]>;
 
-type SeriesCursor = NonNullable<Parameters<ListSeries>[0]>;
+/** Reads the page of series after a cursor, or the first page without one, in the order the library is listed in. */
+export type ListSeries = (
+  after: SeriesCursor | null,
+) => ReturnType<typeof commands.librarySeries>;
 
 export type SeriesList =
   | { readonly kind: "loading" }

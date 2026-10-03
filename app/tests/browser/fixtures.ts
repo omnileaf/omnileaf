@@ -9,6 +9,7 @@ import {
 
 import {
   type AppInfo,
+  DEFAULT_LIBRARY_LISTING,
   DEFAULT_LIBRARY_VIEW,
   type Platform,
 } from "../../src/lib/ipc/bindings.ts";
@@ -46,6 +47,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   libraryFolders: () => ({ folders: [], next: null }),
   librarySeries: () => ({ series: [], next: null }),
   librarySeriesCount: () => 0,
+  libraryListing: () => DEFAULT_LIBRARY_LISTING,
+  setLibraryListing: () => null,
   libraryView: () => DEFAULT_LIBRARY_VIEW,
   setLibraryView: () => null,
   removeLibraryFolder: () => null,

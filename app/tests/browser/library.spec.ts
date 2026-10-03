@@ -100,9 +100,9 @@ test.describe("with a library of many series", () => {
   test.use({
     backend: {
       ...DEFAULT_BACKEND,
-      librarySeries: (after) => {
+      librarySeries: (after, listing) => {
         pagesAsked += 1;
-        return pagedSeries(() => catalog)(after);
+        return pagedSeries(() => catalog)(after, listing);
       },
     },
   });
