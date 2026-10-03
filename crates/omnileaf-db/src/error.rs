@@ -60,6 +60,10 @@ pub enum Error {
     MalformedCursor,
     #[error("continue a list from a cursor another list gave out")]
     CursorForAnotherList,
+    #[error(
+        "continue a list in title order from a cursor whose series went before the titles were keyed again"
+    )]
+    StaleCursor,
     #[error("stamp a synced write with this device's clock")]
     Clock(#[from] ClockError),
     #[error("project register {key:?}, which holds {found:?} where its field holds another kind")]

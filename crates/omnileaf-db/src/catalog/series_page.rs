@@ -89,7 +89,7 @@ pub struct SeriesSummary {
 
 /// Lists only the series holding at least one book, which are the ones the library shows.
 ///
-/// A title cursor from before the titles were keyed again carries on after its series' new place, or from the start when that series has gone.
+/// A title cursor from before the titles were keyed again carries on after its series' new place, or fails with [`Error::StaleCursor`] when that series has gone.
 #[tracing::instrument(skip_all, fields(?order, size = ?request.size))]
 pub fn series_page(
     connection: &Connection,
@@ -113,10 +113,9 @@ fn title_rows(
 ) -> Result<Vec<(SeriesSummary, Position)>, Error> {
     let _snapshot = snapshot(connection)?;
     let stamp = stored_stamp(connection)?;
-    let place = match after {
-        Some(position) => place_after(connection, stamp, position)?,
-        None => None,
-    };
+    let place = after
+        .map(|position| place_after(connection, stamp, position))
+        .transpose()?;
     let rows = match place {
         Some(TitlePlace { sort_key, id }) => BY_TITLE.rows_after(
             connection,
@@ -151,21 +150,22 @@ fn place_after(
     connection: &Connection,
     current: TitleStamp,
     after: &Position,
-) -> Result<Option<TitlePlace>, Error> {
+) -> Result<TitlePlace, Error> {
     match after {
         Position::Title {
             stamp,
             sort_key,
             id,
-        } if *stamp == current => Ok(Some(TitlePlace {
+        } if *stamp == current => Ok(TitlePlace {
             sort_key: sort_key.clone(),
             id: *id,
-        })),
-        Position::Title { id, .. } => Ok(connection
+        }),
+        Position::Title { id, .. } => connection
             .prepare(TITLE_KEY_OF_SERIES)?
             .query_row([id.as_bytes()], |row| row.get(0))
             .optional()?
-            .map(|sort_key| TitlePlace { sort_key, id: *id })),
+            .map(|sort_key| TitlePlace { sort_key, id: *id })
+            .ok_or(Error::StaleCursor),
         Position::Added { .. } | Position::Book { .. } | Position::Root { .. } => {
             Err(Error::CursorForAnotherList)
         }

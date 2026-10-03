@@ -8,7 +8,7 @@ mod support;
 
 use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
-    Connection, Database,
+    Connection, Database, Error,
     catalog::{Cursor, NewSeries, Page, PageRequest, PageSize, SeriesOrder, series_page},
     store::{Changed, Clock, Store},
 };
@@ -80,6 +80,10 @@ impl Library {
     }
 
     async fn page(&self, after: Option<Cursor>, size: u16) -> Page<String> {
+        self.try_page(after, size).await.unwrap()
+    }
+
+    async fn try_page(&self, after: Option<Cursor>, size: u16) -> Result<Page<String>, Error> {
         let request = PageRequest {
             after,
             size: PageSize::try_from(size).unwrap(),
@@ -88,12 +92,11 @@ impl Library {
             .store
             .database()
             .read(move |connection| series_page(connection, SeriesOrder::Title, &request))
-            .await
-            .unwrap();
-        Page {
+            .await?;
+        Ok(Page {
             items: page.items.into_iter().map(|series| series.title).collect(),
             next: page.next,
-        }
+        })
     }
 }
 
@@ -118,7 +121,7 @@ async fn carries_an_open_cursor_on_from_its_series_new_place_once_the_titles_are
 }
 
 #[tokio::test]
-async fn starts_an_open_cursor_over_when_its_series_went_before_the_titles_were_keyed_again() {
+async fn refuses_an_open_cursor_whose_series_went_before_the_titles_were_keyed_again() {
     let library = Library::with_titles("cursor-series-gone", &["Bok", "Åsna", "Apelsin"]).await;
     let first = library.page(None, 2).await;
     library
@@ -135,9 +138,9 @@ async fn starts_an_open_cursor_over_when_its_series_went_before_the_titles_were_
         .await
         .unwrap();
 
-    let rest = library.titles_after(first.next).await;
+    let outcome = library.try_page(first.next, PAGE_SIZE).await;
 
-    assert_eq!(rest, ["Apelsin", "Bok"]);
+    assert!(matches!(outcome, Err(Error::StaleCursor)), "{outcome:?}");
 }
 
 #[tokio::test]
