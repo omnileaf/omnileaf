@@ -5,7 +5,10 @@ import {
   type ViewportSize,
 } from "@playwright/test";
 
-import type { Platform } from "../../src/lib/ipc/bindings.ts";
+import {
+  DEFAULT_LIBRARY_VIEW,
+  type Platform,
+} from "../../src/lib/ipc/bindings.ts";
 import {
   CommandFailure,
   type FakeBackend,
@@ -22,6 +25,9 @@ export const DEFAULT_BACKEND: FakeBackend = {
   addLibraryFolder: () => null,
   libraryFolders: () => ({ folders: [], next: null }),
   librarySeries: () => ({ series: [], next: null }),
+  librarySeriesCount: () => 0,
+  libraryView: () => DEFAULT_LIBRARY_VIEW,
+  setLibraryView: () => null,
   removeLibraryFolder: () => null,
   rescanLibraryFolder: () => {
     throw new CommandFailure({
