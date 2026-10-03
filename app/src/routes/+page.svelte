@@ -9,6 +9,8 @@
   import { m } from "$lib/paraglide/messages.js";
 
   const adding = new FolderAdding(commands.addLibraryFolder);
+
+  let addFolder: HTMLButtonElement | undefined = $state();
 </script>
 
 <div class="flex items-center justify-between gap-sm">
@@ -21,7 +23,16 @@
   body={m.library_empty_body()}
 >
   <div class="mbs-sm flex flex-col items-center gap-md max-inline-prose">
-    <AddFolderButton {adding} placement="empty-state" />
-    <FolderNotice {adding} />
+    <AddFolderButton
+      bind:element={addFolder}
+      {adding}
+      placement="empty-state"
+    />
+    <FolderNotice
+      {adding}
+      onDismissed={() => {
+        addFolder?.focus();
+      }}
+    />
   </div>
 </EmptyState>

@@ -59,6 +59,22 @@ test.describe("with a folder of comics", () => {
 
     await expect(status).toBeEmpty();
   });
+
+  for (const { place, path, region } of PLACES) {
+    test(`returns focus to Add a folder in ${place} once the notice is dismissed`, async ({
+      page,
+    }) => {
+      await page.goto(path);
+      const addFolder = addFolderIn(page, region);
+      await addFolder.click();
+      const status = page.getByRole("status");
+      await expect(status).not.toBeEmpty();
+
+      await status.getByRole("button", { name: "Dismiss" }).click();
+
+      await expect(addFolder).toBeFocused();
+    });
+  }
 });
 
 test("opens Settings › Library from Settings", async ({ page }) => {
