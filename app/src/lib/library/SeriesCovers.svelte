@@ -14,7 +14,7 @@
   aria-label={m.library_series_list()}
   class="grid grid-cols-3 gap-cover-gap medium:grid-cols-5 medium:gap-cover-gap-wide large:grid-cols-6 large:gap-xl"
 >
-  {#each series as one, index (index)}
+  {#each series as one (one.id)}
     <li class="flex flex-col gap-cover-caption min-inline-none">
       <div
         class="aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"

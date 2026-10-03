@@ -17,8 +17,18 @@ afterEach(() => {
 async function listed(): Promise<readonly LibrarySeries[]> {
   mockIPC(() => ({
     series: [
-      { title: "Sample Series 01", bookCount: 3, cover: COVER },
-      { title: "Sample Series 02", bookCount: 1, cover: null },
+      {
+        id: "0190a3e4-0000-8000-8000-0000000000a1",
+        title: "Sample Series 01",
+        bookCount: 3,
+        cover: COVER,
+      },
+      {
+        id: "0190a3e4-0000-8000-8000-0000000000a2",
+        title: "Sample Series 02",
+        bookCount: 1,
+        cover: null,
+      },
     ],
     next: null,
   }));
@@ -77,4 +87,18 @@ test("leaves the cover's place empty for a series with no cover yet", async () =
   const second = screen.getByRole("listitem").nth(1);
   await expect.element(second.getByText("Sample Series 02")).toBeVisible();
   expect(second.getByRole("presentation").elements()).toHaveLength(0);
+});
+
+test("keeps each series' cover with its series when the list reorders", async () => {
+  const series = await listed();
+  const screen = await render(SeriesCovers, {
+    series,
+    coverUrl: fakeCoverUrl,
+  });
+  const cover = screen.getByRole("presentation").element();
+
+  await screen.rerender({ series: series.toReversed() });
+
+  const moved = screen.getByRole("listitem").nth(1);
+  expect(moved.getByRole("presentation").element()).toBe(cover);
 });
