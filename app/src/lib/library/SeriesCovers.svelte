@@ -1,5 +1,12 @@
 <script lang="ts">
-  import type { LibrarySeries, LibraryView } from "$lib/ipc/bindings";
+  import type { Snippet } from "svelte";
+  import type { ClassValue } from "svelte/elements";
+
+  import type {
+    LibraryDisplay,
+    LibrarySeries,
+    LibraryView,
+  } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
   import VirtualGrid from "$lib/virtual-grid/VirtualGrid.svelte";
 
@@ -21,7 +28,35 @@
     view: LibraryView;
   } = $props();
 
+  interface DisplayLayout {
+    readonly list: ClassValue;
+    readonly item: string;
+    readonly cell: Snippet<[LibrarySeries]>;
+  }
+
   const look = $derived(coverLook(view.coversPerRow));
+
+  const layout = $derived(
+    (
+      {
+        grid: {
+          list: ["grid-cols-covers-per-row", look.gap],
+          item: "flex flex-col gap-cover-caption min-inline-none medium:gap-sm",
+          cell: gridCell,
+        },
+        compact: {
+          list: ["grid-cols-covers-per-row", look.gap],
+          item: "min-inline-none",
+          cell: compactCell,
+        },
+        list: {
+          list: "grid-cols-1",
+          item: "box-content flex items-center gap-cover-gap border-be border-border py-sm min-block-list-row large:gap-lg large:py-list-row-pad-wide large:min-block-list-row-wide",
+          cell: listRow,
+        },
+      } satisfies Record<LibraryDisplay, DisplayLayout>
+    )[view.display],
+  );
 </script>
 
 {#snippet gridCell(one: LibrarySeries)}
@@ -75,29 +110,14 @@
   style:--tablet-covers-per-row={String(view.coversPerRow.tablet)}
   style:--desktop-covers-per-row={String(view.coversPerRow.desktop)}
 >
-  {#if view.display === "list"}
-    <VirtualGrid
-      items={series}
-      key={(one: LibrarySeries) => one.id}
-      label={m.library_series_list()}
-      {isComplete}
-      {...onNearEnd === undefined ? {} : { onNearEnd }}
-      class="grid-cols-1"
-      itemClass="box-content flex items-center gap-cover-gap border-be border-border py-sm min-block-list-row large:gap-lg large:py-list-row-pad-wide large:min-block-list-row-wide"
-      cell={listRow}
-    />
-  {:else}
-    <VirtualGrid
-      items={series}
-      key={(one: LibrarySeries) => one.id}
-      label={m.library_series_list()}
-      {isComplete}
-      {...onNearEnd === undefined ? {} : { onNearEnd }}
-      class={["grid-cols-covers-per-row", look.gap]}
-      itemClass={view.display === "grid"
-        ? "flex flex-col gap-cover-caption min-inline-none medium:gap-sm"
-        : "min-inline-none"}
-      cell={view.display === "grid" ? gridCell : compactCell}
-    />
-  {/if}
+  <VirtualGrid
+    items={series}
+    key={(one: LibrarySeries) => one.id}
+    label={m.library_series_list()}
+    {isComplete}
+    {...onNearEnd === undefined ? {} : { onNearEnd }}
+    class={layout.list}
+    itemClass={layout.item}
+    cell={layout.cell}
+  />
 </div>
