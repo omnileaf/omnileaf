@@ -2,6 +2,8 @@
 
 @custom-variant ios (&:where([data-platform="ios"], [data-platform="ios"] *));
 @custom-variant android (&:where([data-platform="android"], [data-platform="android"] *));
+@custom-variant touch (&:where([data-platform="android"], [data-platform="ios"], [data-platform="android"] *, [data-platform="ios"] *));
+@custom-variant desktop (&:where([data-platform="linux"], [data-platform="macos"], [data-platform="windows"], [data-platform="linux"] *, [data-platform="macos"] *, [data-platform="windows"] *));
 @custom-variant icon-moves {
   @variant android {
     @variant max-expanded {
@@ -69,6 +71,7 @@
   --spacing-button: 1.25rem;
   --spacing-pill: 3.5rem;
   --spacing-tile: 2.25rem;
+  --spacing-option: 2.5rem;
   --spacing-list-row: 0.875rem;
   --spacing-app-icon: 4.5rem;
   --spacing-pane: 2.5rem;
@@ -103,6 +106,8 @@
   --container-prose: 27.5rem;
   --container-section: 45rem;
   --container-narrow: 35rem;
+  --container-segmented: 22.5rem;
+  --container-segmented-touch: 30rem;
 
   --radius-control: 0.5rem;
   --radius-card: 0.75rem;
