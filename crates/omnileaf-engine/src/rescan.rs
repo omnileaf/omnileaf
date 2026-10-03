@@ -1,5 +1,3 @@
-use std::mem;
-
 use omnileaf_db::{
     Database,
     catalog::{
@@ -15,7 +13,7 @@ use crate::{
     FolderId, LibraryError, ScanProgress,
     library_layout::Layout,
     rescan_plan::{Forgetting, Plan, ReadBook, ToRead},
-    scan::{BOOKS_PER_BATCH, Target, read_book},
+    scan::{BOOKS_PER_BATCH, Target, read_book, saturating_u32},
 };
 
 /// What a rescan of one library folder found.
@@ -66,8 +64,8 @@ pub(crate) async fn rescan(
         return Ok(RescanOutcome::FoundEmpty);
     }
     let folder = target.folder.clone();
-    let mut plan = spawn_blocking(move || Plan::new(&folder, layout, stored)).await?;
-    record_changed(database, &target, &mut plan, on_progress).await?;
+    let (mut plan, to_read) = spawn_blocking(move || Plan::new(&folder, layout, stored)).await?;
+    record_changed(database, &target, &mut plan, to_read, on_progress).await?;
     let (changes, forgetting) = plan.finish();
     forget(database, root, forgetting).await?;
     Ok(RescanOutcome::Rescanned(changes))
@@ -83,15 +81,20 @@ async fn record_changed(
     database: &Database,
     target: &Target,
     plan: &mut Plan,
+    to_read: Vec<ToRead>,
     mut on_progress: impl FnMut(ScanProgress) + Send,
 ) -> Result<(), LibraryError> {
-    let to_read = mem::take(&mut plan.to_read);
-    let total = u32::try_from(to_read.len()).unwrap_or(u32::MAX);
+    let total = saturating_u32(to_read.len());
     let mut scanned: u32 = 0;
     on_progress(ScanProgress::Reading { scanned, total });
-    for batch in to_read.chunks(BOOKS_PER_BATCH) {
-        let read = read_batch(target, batch.to_vec()).await?;
-        scanned = scanned.saturating_add(u32::try_from(read.len()).unwrap_or(u32::MAX));
+    let mut to_read = to_read.into_iter();
+    loop {
+        let batch: Vec<ToRead> = to_read.by_ref().take(BOOKS_PER_BATCH).collect();
+        if batch.is_empty() {
+            return Ok(());
+        }
+        let read = read_batch(target, batch).await?;
+        scanned = scanned.saturating_add(saturating_u32(read.len()));
         let recording = plan.sort(read);
         database
             .write(move |transaction| {
@@ -101,7 +104,6 @@ async fn record_changed(
             .await?;
         on_progress(ScanProgress::Reading { scanned, total });
     }
-    Ok(())
 }
 
 async fn read_batch(target: &Target, batch: Vec<ToRead>) -> Result<Vec<ReadBook>, LibraryError> {

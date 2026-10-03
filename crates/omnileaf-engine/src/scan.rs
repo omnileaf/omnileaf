@@ -99,7 +99,7 @@ pub(crate) async fn scan(
     layout: Layout,
     mut on_progress: impl FnMut(ScanProgress) + Send,
 ) -> Result<FolderScan, LibraryError> {
-    let total = u32::try_from(layout.books.len()).unwrap_or(u32::MAX);
+    let total = saturating_u32(layout.books.len());
     let mut tally = Tally::default();
     on_progress(ScanProgress::Reading { scanned: 0, total });
     for batch in layout.books.chunks(BOOKS_PER_BATCH) {
@@ -124,10 +124,10 @@ pub(crate) async fn scan(
     }
     Ok(FolderScan {
         name: folder_name(&target.folder),
-        series: u32::try_from(tally.series.len()).unwrap_or(u32::MAX),
+        series: saturating_u32(tally.series.len()),
         books: tally.books,
         unreadable_books: tally.unreadable_books,
-        unreadable_folders: u32::try_from(layout.unreadable_folders.len()).unwrap_or(u32::MAX),
+        unreadable_folders: saturating_u32(layout.unreadable_folders.len()),
     })
 }
 
@@ -146,6 +146,10 @@ impl Tally {
         }
         found
     }
+}
+
+pub(crate) fn saturating_u32(items: usize) -> u32 {
+    u32::try_from(items).unwrap_or(u32::MAX)
 }
 
 pub(crate) fn read_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {

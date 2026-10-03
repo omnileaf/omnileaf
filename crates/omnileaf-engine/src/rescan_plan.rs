@@ -11,11 +11,10 @@ use omnileaf_sync_proto::BookId;
 use crate::{
     FileChanges,
     library_layout::{FoundBook, Layout},
-    scan::{FileStamp, UnreadableBook, warn_unreadable},
+    scan::{FileStamp, UnreadableBook, saturating_u32, warn_unreadable},
 };
 
 /// A book found at a location the catalog has no file for, or whose file changed since.
-#[derive(Clone)]
 pub(crate) struct ToRead {
     pub(crate) found: FoundBook,
     /// The book the catalog last recorded at this location, absent for a new location.
@@ -23,8 +22,7 @@ pub(crate) struct ToRead {
 }
 
 pub(crate) struct Plan {
-    pub(crate) to_read: Vec<ToRead>,
-    pub(crate) changes: FileChanges,
+    changes: FileChanges,
     gone: Vec<PathBuf>,
     /// How many of each book's files went, so a book found at a new place can be told moved rather than added.
     gone_books: BTreeMap<BookId, u32>,
@@ -52,16 +50,20 @@ pub(crate) struct Forgetting {
 }
 
 impl Plan {
-    /// Compares each book found with the file the catalog holds at its location, by size and modification time alone.
-    pub(crate) fn new(folder: &Path, layout: Layout, stored: Vec<StoredFile>) -> Self {
+    /// Compares each book found with the file the catalog holds at its location, by size and modification time alone, returning the books to read.
+    pub(crate) fn new(
+        folder: &Path,
+        layout: Layout,
+        stored: Vec<StoredFile>,
+    ) -> (Self, Vec<ToRead>) {
         let mut stored: BTreeMap<PathBuf, StoredFile> = stored
             .into_iter()
             .map(|file| (file.location.clone(), file))
             .collect();
+        let mut to_read = Vec::new();
         let mut plan = Self {
-            to_read: Vec::new(),
             changes: FileChanges {
-                unreadable_folders: count(layout.unreadable_folders.len()),
+                unreadable_folders: saturating_u32(layout.unreadable_folders.len()),
                 ..FileChanges::default()
             },
             gone: Vec::new(),
@@ -69,7 +71,7 @@ impl Plan {
             replaced: Vec::new(),
         };
         for found in layout.books {
-            plan.compare(folder, found, &mut stored);
+            to_read.extend(plan.compare(folder, found, &mut stored));
         }
         let unread = relative_to(folder, &layout.unreadable_folders);
         for (location, file) in stored {
@@ -80,7 +82,7 @@ impl Plan {
                 plan.note_gone(location, file.book);
             }
         }
-        plan
+        (plan, to_read)
     }
 
     /// Sorts the books read in one batch into those found again, at a new place, or unreadable.
@@ -116,7 +118,7 @@ impl Plan {
     /// Counts each file gone and not found again at a new place as removed.
     pub(crate) fn finish(self) -> (FileChanges, Forgetting) {
         let changes = FileChanges {
-            removed: count(self.gone.len()).saturating_sub(self.changes.moved),
+            removed: saturating_u32(self.gone.len()).saturating_sub(self.changes.moved),
             ..self.changes
         };
         let forgetting = Forgetting {
@@ -126,26 +128,28 @@ impl Plan {
         (changes, forgetting)
     }
 
+    /// The book to read when its location is new to the catalog or its file changed since.
     fn compare(
         &mut self,
         folder: &Path,
         found: FoundBook,
         stored: &mut BTreeMap<PathBuf, StoredFile>,
-    ) {
+    ) -> Option<ToRead> {
         let Ok(location) = found.path.strip_prefix(folder).map(Path::to_path_buf) else {
             self.changes.unreadable_books = self.changes.unreadable_books.saturating_add(1);
-            return;
+            return None;
         };
         let known = stored.remove(&location);
         match FileStamp::read(&found.path) {
-            Ok(stamp) if known.as_ref().map(FileStamp::from) == Some(stamp) => {}
-            Ok(_) => self.to_read.push(ToRead {
+            Ok(stamp) if known.as_ref().map(FileStamp::from) == Some(stamp) => None,
+            Ok(_) => Some(ToRead {
                 found,
                 replacing: known.map(|file| file.book),
             }),
             Err(error) => {
                 warn_unreadable(&found, &error);
                 self.changes.unreadable_books = self.changes.unreadable_books.saturating_add(1);
+                None
             }
         }
     }
@@ -191,8 +195,4 @@ fn relative_to(folder: &Path, paths: &[PathBuf]) -> Vec<PathBuf> {
         .filter_map(|path| path.strip_prefix(folder).ok())
         .map(Path::to_path_buf)
         .collect()
-}
-
-fn count(items: usize) -> u32 {
-    u32::try_from(items).unwrap_or(u32::MAX)
 }
