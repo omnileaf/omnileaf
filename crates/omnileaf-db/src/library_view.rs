@@ -6,20 +6,31 @@ use crate::Error;
 
 const THE_VIEW: i64 = 1;
 
-const STORED_VIEW: &str =
-    "SELECT display, phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row, shows_item_counts
+const STORED_VIEW: &str = "SELECT display,
+        phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row,
+        shows_item_counts, shows_unread_count, shows_downloaded, shows_language,
+        shows_reading_progress, shows_continue_button
     FROM library_view
     WHERE id = ?1";
 
-const SET_VIEW: &str = "INSERT INTO library_view
-        (id, display, phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row, shows_item_counts)
-    VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+const SET_VIEW: &str = "INSERT INTO library_view (
+        id, display,
+        phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row,
+        shows_item_counts, shows_unread_count, shows_downloaded, shows_language,
+        shows_reading_progress, shows_continue_button
+    )
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
     ON CONFLICT (id) DO UPDATE SET
         display = excluded.display,
         phone_covers_per_row = excluded.phone_covers_per_row,
         tablet_covers_per_row = excluded.tablet_covers_per_row,
         desktop_covers_per_row = excluded.desktop_covers_per_row,
-        shows_item_counts = excluded.shows_item_counts";
+        shows_item_counts = excluded.shows_item_counts,
+        shows_unread_count = excluded.shows_unread_count,
+        shows_downloaded = excluded.shows_downloaded,
+        shows_language = excluded.shows_language,
+        shows_reading_progress = excluded.shows_reading_progress,
+        shows_continue_button = excluded.shows_continue_button";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LibraryDisplay {
@@ -36,6 +47,21 @@ pub struct StoredLibraryView {
     pub tablet_covers_per_row: u8,
     pub desktop_covers_per_row: u8,
     pub shows_item_counts: bool,
+    pub on_covers: OnCovers,
+}
+
+/// What each cover carries besides its picture and title.
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "each is a switch of its own in the view options"
+)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct OnCovers {
+    pub shows_unread_count: bool,
+    pub shows_downloaded: bool,
+    pub shows_language: bool,
+    pub shows_reading_progress: bool,
+    pub shows_continue_button: bool,
 }
 
 /// None until a view is first set on this device.
@@ -58,6 +84,11 @@ pub fn set_library_view(
         view.tablet_covers_per_row,
         view.desktop_covers_per_row,
         view.shows_item_counts,
+        view.on_covers.shows_unread_count,
+        view.on_covers.shows_downloaded,
+        view.on_covers.shows_language,
+        view.on_covers.shows_reading_progress,
+        view.on_covers.shows_continue_button,
     ))?;
     Ok(())
 }
@@ -68,6 +99,7 @@ struct ViewRow {
     tablet_covers_per_row: u8,
     desktop_covers_per_row: u8,
     shows_item_counts: bool,
+    on_covers: OnCovers,
 }
 
 impl ViewRow {
@@ -78,6 +110,13 @@ impl ViewRow {
             tablet_covers_per_row: row.get(2)?,
             desktop_covers_per_row: row.get(3)?,
             shows_item_counts: row.get(4)?,
+            on_covers: OnCovers {
+                shows_unread_count: row.get(5)?,
+                shows_downloaded: row.get(6)?,
+                shows_language: row.get(7)?,
+                shows_reading_progress: row.get(8)?,
+                shows_continue_button: row.get(9)?,
+            },
         })
     }
 }
@@ -92,6 +131,7 @@ impl TryFrom<ViewRow> for StoredLibraryView {
             tablet_covers_per_row: row.tablet_covers_per_row,
             desktop_covers_per_row: row.desktop_covers_per_row,
             shows_item_counts: row.shows_item_counts,
+            on_covers: row.on_covers,
         })
     }
 }

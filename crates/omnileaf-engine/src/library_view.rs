@@ -1,4 +1,6 @@
-use omnileaf_db::library_view::{LibraryDisplay as StoredDisplay, StoredLibraryView};
+use omnileaf_db::library_view::{
+    LibraryDisplay as StoredDisplay, OnCovers as StoredOnCovers, StoredLibraryView,
+};
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
@@ -10,6 +12,22 @@ pub struct LibraryView {
     pub covers_per_row: CoversPerRow,
     /// Whether the number of series shows beside the library's title.
     pub shows_item_counts: bool,
+    pub on_covers: OnCovers,
+}
+
+/// What each cover carries besides its picture and title, each drawn only for a series with something to show.
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "each is a switch of its own in the view options"
+)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct OnCovers {
+    pub shows_unread_count: bool,
+    pub shows_downloaded: bool,
+    pub shows_language: bool,
+    pub shows_reading_progress: bool,
+    pub shows_continue_button: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -118,6 +136,37 @@ impl Default for LibraryView {
                 desktop: CoversPerRowCount(6),
             },
             shows_item_counts: false,
+            on_covers: OnCovers {
+                shows_unread_count: true,
+                shows_downloaded: true,
+                shows_language: false,
+                shows_reading_progress: true,
+                shows_continue_button: false,
+            },
+        }
+    }
+}
+
+impl From<OnCovers> for StoredOnCovers {
+    fn from(on_covers: OnCovers) -> Self {
+        Self {
+            shows_unread_count: on_covers.shows_unread_count,
+            shows_downloaded: on_covers.shows_downloaded,
+            shows_language: on_covers.shows_language,
+            shows_reading_progress: on_covers.shows_reading_progress,
+            shows_continue_button: on_covers.shows_continue_button,
+        }
+    }
+}
+
+impl From<StoredOnCovers> for OnCovers {
+    fn from(stored: StoredOnCovers) -> Self {
+        Self {
+            shows_unread_count: stored.shows_unread_count,
+            shows_downloaded: stored.shows_downloaded,
+            shows_language: stored.shows_language,
+            shows_reading_progress: stored.shows_reading_progress,
+            shows_continue_button: stored.shows_continue_button,
         }
     }
 }
@@ -134,6 +183,7 @@ impl From<LibraryView> for StoredLibraryView {
             tablet_covers_per_row: view.covers_per_row.tablet.get(),
             desktop_covers_per_row: view.covers_per_row.desktop.get(),
             shows_item_counts: view.shows_item_counts,
+            on_covers: view.on_covers.into(),
         }
     }
 }
@@ -154,6 +204,7 @@ impl TryFrom<StoredLibraryView> for LibraryView {
                 desktop: stored.desktop_covers_per_row.try_into()?,
             },
             shows_item_counts: stored.shows_item_counts,
+            on_covers: stored.on_covers.into(),
         })
     }
 }
@@ -177,6 +228,23 @@ mod tests {
     }
 
     #[test]
+    fn shows_a_new_library_s_unread_downloaded_and_progress_badges_but_not_its_language_or_continue_button()
+     {
+        let view = LibraryView::default();
+
+        assert_eq!(
+            view.on_covers,
+            OnCovers {
+                shows_unread_count: true,
+                shows_downloaded: true,
+                shows_language: false,
+                shows_reading_progress: true,
+                shows_continue_button: false,
+            }
+        );
+    }
+
+    #[test]
     fn crosses_to_the_interface_with_each_size_s_covers_per_row_as_a_number() {
         let view = LibraryView::default();
 
@@ -188,6 +256,13 @@ mod tests {
                 "display": "grid",
                 "coversPerRow": { "phone": 3, "tablet": 5, "desktop": 6 },
                 "showsItemCounts": false,
+                "onCovers": {
+                    "showsUnreadCount": true,
+                    "showsDownloaded": true,
+                    "showsLanguage": false,
+                    "showsReadingProgress": true,
+                    "showsContinueButton": false,
+                },
             })
         );
     }
@@ -198,6 +273,13 @@ mod tests {
             "display": "list",
             "coversPerRow": { "phone": 6, "tablet": 5, "desktop": 6 },
             "showsItemCounts": false,
+            "onCovers": {
+                "showsUnreadCount": true,
+                "showsDownloaded": true,
+                "showsLanguage": false,
+                "showsReadingProgress": true,
+                "showsContinueButton": false,
+            },
         }));
 
         assert!(outcome.is_err());
@@ -237,6 +319,13 @@ mod tests {
                 desktop: DesktopCoversPerRow::try_from(12).unwrap(),
             },
             shows_item_counts: true,
+            on_covers: OnCovers {
+                shows_unread_count: false,
+                shows_downloaded: true,
+                shows_language: true,
+                shows_reading_progress: false,
+                shows_continue_button: true,
+            },
         };
 
         let read = LibraryView::try_from(StoredLibraryView::from(view));

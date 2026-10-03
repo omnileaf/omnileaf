@@ -9,7 +9,8 @@ use std::path::Path;
 
 use omnileaf_engine::{
     Changed, CoversPerRow, DesktopCoversPerRow, FolderId, FolderKind, Library, LibraryDisplay,
-    LibraryError, LibraryFolder, LibraryView, PhoneCoversPerRow, ScanProgress, TabletCoversPerRow,
+    LibraryError, LibraryFolder, LibraryView, OnCovers, PhoneCoversPerRow, ScanProgress,
+    TabletCoversPerRow,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, TempFolder};
@@ -294,6 +295,13 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
             desktop: DesktopCoversPerRow::try_from(9).unwrap(),
         },
         shows_item_counts: true,
+        on_covers: OnCovers {
+            shows_unread_count: false,
+            shows_downloaded: false,
+            shows_language: true,
+            shows_reading_progress: false,
+            shows_continue_button: true,
+        },
     };
     open(home.path()).await.set_view(list).await.unwrap();
 

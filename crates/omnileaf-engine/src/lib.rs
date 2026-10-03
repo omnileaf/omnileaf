@@ -30,7 +30,8 @@ pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, Library
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
 pub use library_view::{
     CoversPerRow, CoversPerRowCount, CoversPerRowOutOfRange, CoversPerRowRange, CoversPerRowRanges,
-    DesktopCoversPerRow, LibraryDisplay, LibraryView, PhoneCoversPerRow, TabletCoversPerRow,
+    DesktopCoversPerRow, LibraryDisplay, LibraryView, OnCovers, PhoneCoversPerRow,
+    TabletCoversPerRow,
 };
 pub use omnileaf_db::store::{Changed, Clock};
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
