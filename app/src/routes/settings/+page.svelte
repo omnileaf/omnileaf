@@ -1,17 +1,16 @@
 <script lang="ts">
-  import { MediaQuery } from "svelte/reactivity";
-
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import type { ThemePreference } from "$lib/appearance/theme";
   import { getThemeSetting } from "$lib/appearance/theme.svelte";
   import { languageName } from "$lib/language/language";
-  import { EXPANDED_QUERY } from "$lib/page/breakpoints";
+  import { WindowWidth } from "$lib/page/breakpoints";
   import PageHeading from "$lib/page/PageHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { getLocale } from "$lib/paraglide/runtime.js";
   import type { SectionSummary, SettingsRoute } from "$lib/settings/sections";
   import SettingsIndex from "$lib/settings/SettingsIndex.svelte";
+  import { showsSectionsBeside } from "$lib/settings/panes";
 
   import type { PageProps } from "./$types";
 
@@ -25,10 +24,10 @@
   let { data }: PageProps = $props();
 
   const theme = getThemeSetting();
-  const isBesideSections = new MediaQuery(EXPANDED_QUERY);
+  const width = new WindowWidth();
 
   $effect(() => {
-    if (isBesideSections.current) {
+    if (showsSectionsBeside(data.appInfo.platform, width.current)) {
       void goto(resolve(FIRST_SECTION), { replaceState: true });
     }
   });
@@ -45,7 +44,7 @@
   });
 </script>
 
-<div class="expanded:hidden">
+<div class="two-pane:hidden">
   <PageHeading title={m.settings_title()} />
   <div class="mbs-lg">
     <SettingsIndex {summaries} />

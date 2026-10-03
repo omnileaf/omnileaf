@@ -10,7 +10,7 @@
 <SectionHeading title={m.library_title()} />
 <section
   aria-labelledby={foldersHeadingId}
-  class="mbs-lg flex flex-col gap-sm expanded:max-inline-section"
+  class="mbs-lg flex flex-col gap-sm two-pane:max-inline-section"
 >
   <h2
     id={foldersHeadingId}
@@ -18,7 +18,7 @@
   >
     {m.library_settings_folders()}
   </h2>
-  <div class="mbs-xs flex flex-col expanded:items-start">
+  <div class="mbs-xs flex flex-col two-pane:items-start">
     <AddLibraryFolder addFolder={commands.addLibraryFolder} />
   </div>
   <p class="px-xs text-footnote text-muted">

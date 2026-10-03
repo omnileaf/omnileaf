@@ -4,6 +4,16 @@
 @custom-variant android (&:where([data-platform="android"], [data-platform="android"] *));
 @custom-variant touch (&:where([data-platform="android"], [data-platform="ios"], [data-platform="android"] *, [data-platform="ios"] *));
 @custom-variant desktop (&:where([data-platform="linux"], [data-platform="macos"], [data-platform="windows"], [data-platform="linux"] *, [data-platform="macos"] *, [data-platform="windows"] *));
+@custom-variant two-pane {
+  @variant expanded {
+    @slot;
+  }
+  @variant desktop {
+    @variant medium {
+      @slot;
+    }
+  }
+}
 @custom-variant icon-moves {
   @variant android {
     @variant max-expanded {
