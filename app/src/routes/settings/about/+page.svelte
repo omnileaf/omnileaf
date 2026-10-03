@@ -2,6 +2,7 @@
   import appIcon from "$branding/icon.svg";
   import AboutFailures from "$lib/about/AboutFailures.svelte";
   import CopyVersionButton from "$lib/about/CopyVersionButton.svelte";
+  import LicencesRow from "$lib/about/LicencesRow.svelte";
   import { LinkOpening } from "$lib/about/link-opening.svelte";
   import ProjectLinkRows from "$lib/about/ProjectLinkRows.svelte";
   import { VersionCopying } from "$lib/about/version-copying.svelte";
@@ -47,6 +48,7 @@
           sourceCode={data.appInfo.sourceCode}
           look="phone"
         />
+        <LicencesRow look="phone" />
       </ul>
       <AboutFailures {copying} {opening} />
     </div>
@@ -81,6 +83,7 @@
           sourceCode={data.appInfo.sourceCode}
           look="pane"
         />
+        <LicencesRow look="pane" />
       </ul>
       <AboutFailures {copying} {opening} />
     </div>
