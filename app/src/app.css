@@ -543,6 +543,12 @@
   }
 }
 
+@utility virtual-rows {
+  box-sizing: border-box;
+  block-size: calc(var(--row-count) * var(--row-stride));
+  padding-block-start: calc(var(--first-row) * var(--row-stride));
+}
+
 @utility progress-track {
   appearance: none;
   display: block;
