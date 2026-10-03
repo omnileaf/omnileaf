@@ -1,21 +1,20 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
+import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
 import { type FakeBackend, fakeProtocolRoute } from "./fake-backend.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
-  MEDIUM_MIN_WIDTH,
+  screenSizeOf,
   test,
-  viewportOf,
 } from "./fixtures.ts";
 
 type WireSeries = Awaited<
   ReturnType<FakeBackend["librarySeries"]>
 >["series"][number];
 
-const LARGE_MIN_WIDTH = 1200;
 const BOOK = "0190a3e4-0000-8000-8000-000000000001";
 const SERIES: readonly WireSeries[] = Array.from({ length: 7 }, (_, index) => ({
   id: `0190a3e4-0000-8000-8000-0000000000${String(index + 1).padStart(2, "0")}`,
@@ -45,13 +44,6 @@ test.beforeEach(async ({ page }) => {
 
 function coversList(page: Page): ReturnType<Page["getByRole"]> {
   return page.getByRole("list", { name: "Series" });
-}
-
-function columnsFor(width: number): number {
-  if (width >= LARGE_MIN_WIDTH) {
-    return 6;
-  }
-  return width >= MEDIUM_MIN_WIDTH ? 5 : 3;
 }
 
 test("shows each series' cover from the omni protocol", async ({ page }) => {
@@ -105,7 +97,7 @@ test("lays the covers out in as many columns as the screen's board draws", async
   );
 
   const firstRow = tops.filter((top) => top === tops[0]).length;
-  expect(firstRow).toBe(columnsFor(viewportOf(page).width));
+  expect(firstRow).toBe(DEFAULT_LIBRARY_VIEW.coversPerRow[screenSizeOf(page)]);
 });
 
 test("keeps every cover in the shape of a book cover", async ({ page }) => {
