@@ -14,6 +14,8 @@ use omnileaf_engine::{
     InterfaceError, PanicDetails, Platform, SourceLocation,
 };
 
+const BROWSER_URL_LIMIT: usize = 8000;
+
 struct TempFolder(PathBuf);
 
 impl TempFolder {
@@ -179,9 +181,32 @@ fn cleans_a_saved_report_again_when_reading_it() {
 }
 
 #[test]
-fn keeps_where_a_saved_panic_happened() {
-    let folder = TempFolder::new("panic-location");
-    let panic = CrashReport::from_panic(
+fn cleans_and_bounds_the_version_and_system_of_a_saved_report() {
+    let folder = TempFolder::new("cleaned-app");
+    folder.file().save(&report(1, "first")).unwrap();
+    let edited = folder
+        .saved_text()
+        .replace(
+            "\"version\":\"1.2.3\"",
+            "\"version\":\"1.2.3 /home/sample-user/Comics\"",
+        )
+        .replace(
+            "\"system\":null",
+            &format!("\"system\":\"{}\"", "Sample OS ".repeat(1000)),
+        );
+    folder.replace_saved_text(&edited);
+
+    let offered = folder.offers().offer_saved().unwrap().unwrap();
+
+    assert!(!offered.to_string().contains("sample-user"), "{offered}");
+    assert!(
+        offered.new_issue_url().len() <= BROWSER_URL_LIMIT,
+        "{offered}"
+    );
+}
+
+fn panic_report() -> CrashReport {
+    CrashReport::from_panic(
         CrashReportId::from_millis(1),
         CrashedApp {
             version: "1.2.3".to_owned(),
@@ -197,8 +222,13 @@ fn keeps_where_a_saved_panic_happened() {
             }),
             backtrace: "",
         },
-    );
-    folder.file().save(&panic).unwrap();
+    )
+}
+
+#[test]
+fn keeps_where_a_saved_panic_happened() {
+    let folder = TempFolder::new("panic-location");
+    folder.file().save(&panic_report()).unwrap();
 
     let offered = folder.offers().offer_saved().unwrap().unwrap();
 
@@ -206,6 +236,23 @@ fn keeps_where_a_saved_panic_happened() {
         offered
             .to_string()
             .contains("\nAt: omnileaf-formats/src/zip_book.rs:42:5\n"),
+        "{offered}"
+    );
+}
+
+#[test]
+fn bounds_where_a_saved_panic_happened() {
+    let folder = TempFolder::new("panic-location-bounded");
+    folder.file().save(&panic_report()).unwrap();
+    let edited = folder
+        .saved_text()
+        .replace("zip_book.rs", &"x".repeat(10_000));
+    folder.replace_saved_text(&edited);
+
+    let offered = folder.offers().offer_saved().unwrap().unwrap();
+
+    assert!(
+        offered.new_issue_url().len() <= BROWSER_URL_LIMIT,
         "{offered}"
     );
 }

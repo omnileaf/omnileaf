@@ -21,6 +21,11 @@ pub(crate) fn clean(text: &str, limit: usize) -> String {
     shorten(&scrub(bounded), limit)
 }
 
+/// Keeps at most `limit` bytes of text that needs no cleaning.
+pub(crate) fn bound(text: &str, limit: usize) -> String {
+    shorten(text, limit)
+}
+
 /// Replaces quoted text and anything path-shaped, since that is where names and titles appear in error messages.
 ///
 /// A path or URL runs to the end of its line, because names can contain spaces.

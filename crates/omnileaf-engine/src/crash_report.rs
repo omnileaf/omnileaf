@@ -17,6 +17,8 @@ const MESSAGE_BYTE_LIMIT: usize = 240;
 const FRAME_LIMIT: usize = 12;
 const FRAME_BYTE_LIMIT: usize = 120;
 const TITLE_MESSAGE_BYTE_LIMIT: usize = 80;
+const VERSION_BYTE_LIMIT: usize = 40;
+const SYSTEM_BYTE_LIMIT: usize = 80;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct CrashReportId(u64);
@@ -111,7 +113,7 @@ struct CodeLocation {
 impl CodeLocation {
     fn package_relative(file: &str, line: u32, column: u32) -> Self {
         Self {
-            file: trace::package_relative(file),
+            file: scrub::bound(&trace::package_relative(file), FRAME_BYTE_LIMIT),
             line,
             column,
         }
@@ -215,9 +217,11 @@ impl From<StoredCrashReport> for CrashReport {
         Self {
             id: CrashReportId(stored.id),
             app: CrashedApp {
-                version: stored.version,
+                version: scrub::clean(&stored.version, VERSION_BYTE_LIMIT),
                 platform: stored.platform,
-                system: stored.system,
+                system: stored
+                    .system
+                    .map(|system| scrub::clean(&system, SYSTEM_BYTE_LIMIT)),
             },
             origin: stored.origin,
             message: scrub::clean(&stored.message, MESSAGE_BYTE_LIMIT),
