@@ -11,14 +11,14 @@ use crate::{
 };
 
 macro_rules! books_in_series {
-    ($($seek:literal)?) => {
+    ($($condition:literal)?) => {
         concat!(
             "SELECT book.id, book.title, book.title_sort_key, book.added_at_ms,
                 book_state.is_read, book_state.is_started, book_state.position_page
             FROM book
             LEFT JOIN book_state ON book_state.book_id = book.id
             WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = :series) ",
-            $($seek,)?
+            $($condition,)?
             " ORDER BY book.title_sort_key, book.id LIMIT :limit"
         )
     };
@@ -27,6 +27,10 @@ macro_rules! books_in_series {
 const FIRST_IN_SERIES: &str = books_in_series!();
 const NEXT_IN_SERIES: &str =
     books_in_series!("AND (book.title_sort_key, book.id) > (:after_key, :after_id)");
+const FIRST_STARTED_UNREAD: &str =
+    books_in_series!("AND book_state.is_started IS 1 AND book_state.is_read IS NOT 1");
+const FIRST_UNREAD: &str = books_in_series!("AND book_state.is_read IS NOT 1");
+const ONE_BOOK: i64 = 1;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BookSummary {
@@ -85,6 +89,19 @@ pub fn series_books(
     .map(|rows| Page::of(rows, request.size))
 }
 
+/// The book reading the series goes on from: its first book in order that is started and not read, or else its first book not read.
+#[tracing::instrument(skip_all, fields(%series))]
+pub fn up_next(connection: &Connection, series: SeriesId) -> Result<Option<BookSummary>, Error> {
+    let params = named_params! { ":series": series.as_bytes(), ":limit": ONE_BOOK };
+    for query in [FIRST_STARTED_UNREAD, FIRST_UNREAD] {
+        let found = read(series, connection.prepare(query)?, params)?;
+        if let Some((book, _)) = found.into_iter().next() {
+            return Ok(Some(book));
+        }
+    }
+    Ok(None)
+}
+
 fn read(
     series: SeriesId,
     mut statement: Statement<'_>,
@@ -109,7 +126,7 @@ fn read(
 }
 
 /// Reads `is_read`, `is_started` and `position_page`, which a book with no reading state leaves null.
-pub(crate) fn stored_reading(row: &Row<'_>) -> rusqlite::Result<BookReading> {
+fn stored_reading(row: &Row<'_>) -> rusqlite::Result<BookReading> {
     let is_read: Option<bool> = row.get("is_read")?;
     let is_started: Option<bool> = row.get("is_started")?;
     Ok(match (is_read, is_started) {
@@ -158,5 +175,20 @@ mod tests {
                 "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN",
             ]
         );
+    }
+
+    #[test]
+    fn finds_what_is_up_next_by_walking_the_series_books_in_order_without_scanning_or_sorting() {
+        let scratch = ScratchLibrary::new("up-next-plan");
+
+        let plans = [FIRST_STARTED_UNREAD, FIRST_UNREAD].map(|query| scratch.query_plan(query));
+
+        let walking_in_order = [
+            "SEARCH book USING INDEX book_by_series (series_local_id=?)",
+            "SCALAR SUBQUERY 1",
+            "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
+            "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN",
+        ];
+        assert_eq!(plans, [walking_in_order, walking_in_order]);
     }
 }
