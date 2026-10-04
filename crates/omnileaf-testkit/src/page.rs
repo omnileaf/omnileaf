@@ -72,7 +72,7 @@ pub fn page_webp(seed: u64, index: u32, shape: PageShape) -> Result<Vec<u8>, Fix
     Ok(bytes)
 }
 
-/// A full-resolution colour comic scan with heavy grain and unsubsampled chroma, the slow end of what a cover is made from.
+/// A full-resolution grainy colour comic scan with chroma at full resolution (4:4:4), the slow end of what a cover is made from.
 pub fn grainy_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
     scan_jpeg(seed, GRAINY_SCAN_GRAIN, SamplingFactor::R_4_4_4)
 }
