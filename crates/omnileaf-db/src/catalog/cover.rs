@@ -18,6 +18,7 @@ const FILE_OF_COVER: &str =
     FROM book_file JOIN library_root ON library_root.id = book_file.root_id
     WHERE book_file.id = ?1 AND book_file.book_id = ?2 AND book_file.rev = ?3";
 const ROOT_LOCATOR_KIND_COLUMN: usize = 0;
+const FILE_LOCATION_COLUMN: usize = 5;
 
 /// Joins `series` to its cover's file as `cover`: the first file of its first book in title order that has one.
 macro_rules! join_series_cover {
@@ -34,7 +35,6 @@ macro_rules! join_series_cover {
 }
 
 pub(crate) use join_series_cover;
-const FILE_LOCATION_COLUMN: usize = 5;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BookFileId(pub(crate) i64);
