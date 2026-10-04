@@ -1,6 +1,6 @@
 import { setTimeout as delay } from "node:timers/promises";
 
-import { isRecord } from "./json.ts";
+import { isRecord, listOf } from "./json.ts";
 
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 const STALE_ELEMENT = "stale element reference";
@@ -175,6 +175,25 @@ export class Session {
         cause: error,
       });
     }
+  }
+
+  /** Runs one of the Appium driver's own `mobile:` commands, which act on the device rather than the page. */
+  async runMobileCommand(name: string, options: object): Promise<unknown> {
+    return send(`${this.endpoint}/execute/sync`, "POST", {
+      script: `mobile: ${name}`,
+      args: [options],
+    });
+  }
+
+  async windows(): Promise<readonly string[]> {
+    const handles = await send(`${this.endpoint}/window/handles`, "GET");
+    return listOf(handles).map((handle) =>
+      requireString(handle, "window handle"),
+    );
+  }
+
+  async switchToWindow(handle: string): Promise<void> {
+    await send(`${this.endpoint}/window`, "POST", { handle });
   }
 
   async end(): Promise<void> {
