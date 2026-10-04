@@ -22,7 +22,7 @@ mod series_overview;
 mod series_page;
 mod series_search;
 mod staged_rows;
-mod stored_id;
+pub(crate) mod stored_id;
 
 pub(crate) use book::series_of_book;
 pub use book::{NewBook, add_book, remove_books_without_files};
