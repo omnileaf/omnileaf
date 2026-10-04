@@ -82,6 +82,23 @@ impl Covers {
     fn reopen_router(&mut self) {
         self.router = ResourceRouter::open(self.cache.path()).unwrap();
     }
+
+    /// The one thumbnail the cache holds, once a cover has been served.
+    fn cached_thumbnail(&self) -> PathBuf {
+        let mut entries = fs::read_dir(self.cache.path().join("thumbs").join("v1")).unwrap();
+        let entry = entries.next().unwrap().unwrap().path();
+        assert!(entries.next().is_none());
+        entry
+    }
+
+    /// Serves the cover once so its thumbnail is cached, then damages that entry and restarts.
+    async fn cached_then_damaged(&mut self, damage: impl FnOnce(&Path)) -> CoverPath {
+        let cover = self.cover().await;
+        self.request_cover(cover).await;
+        damage(&self.cached_thumbnail());
+        self.reopen_router();
+        cover
+    }
 }
 
 fn page(seed: u64, index: u32) -> Vec<u8> {
@@ -216,4 +233,53 @@ async fn serves_a_cover_made_before_from_its_cache_after_a_restart() {
     let resource = covers.request_cover(cover).await;
 
     assert_eq!(resource.into_body(), thumbnail_of(SEED, 0));
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn serves_a_cover_from_a_cached_thumbnail_it_may_only_read() {
+    use std::os::unix::fs::PermissionsExt;
+    const READ_ONLY: u32 = 0o444;
+    let mut covers = Covers::with_book("read-only-entry", None).await;
+    let cover = covers
+        .cached_then_damaged(|entry| {
+            fs::set_permissions(entry, fs::Permissions::from_mode(READ_ONLY)).unwrap();
+        })
+        .await;
+    fs::remove_file(covers.book_path()).unwrap();
+
+    let resource = covers.request_cover(cover).await;
+
+    assert_eq!(resource.into_body(), thumbnail_of(SEED, 0));
+}
+
+#[tokio::test]
+async fn makes_a_cover_again_when_its_cached_thumbnail_came_back_empty() {
+    let mut covers = Covers::with_book("emptied-entry", None).await;
+    let cover = covers
+        .cached_then_damaged(|entry| fs::write(entry, []).unwrap())
+        .await;
+
+    let resource = covers.request_cover(cover).await;
+
+    assert_eq!(resource.into_body(), thumbnail_of(SEED, 0));
+}
+
+#[tokio::test]
+async fn makes_a_cover_again_when_its_cached_thumbnail_came_back_cut_short() {
+    let mut covers = Covers::with_book("cut-short-entry", None).await;
+    let cover = covers
+        .cached_then_damaged(|entry| {
+            let whole = fs::read(entry).unwrap();
+            fs::write(entry, &whole[..whole.len() / 2]).unwrap();
+        })
+        .await;
+
+    let resource = covers.request_cover(cover).await;
+
+    assert_eq!(resource.into_body(), thumbnail_of(SEED, 0));
+    assert_eq!(
+        fs::read(covers.cached_thumbnail()).unwrap(),
+        thumbnail_of(SEED, 0)
+    );
 }

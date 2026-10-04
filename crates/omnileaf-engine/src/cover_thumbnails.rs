@@ -8,7 +8,7 @@ use std::{
 use omnileaf_cache::{CacheError, CacheKey, DiskCache};
 use omnileaf_db::catalog::Cover;
 use omnileaf_formats::{FormatError, open_book};
-use omnileaf_imaging::{ImagingError, thumbnail};
+use omnileaf_imaging::{ImagingError, is_whole_jpeg, thumbnail};
 use tokio::{sync::OnceCell, task::spawn_blocking};
 
 use crate::{
@@ -69,7 +69,9 @@ impl CoverThumbnails {
         let cache = self.cache().await;
         if let Some(cache) = cache.clone() {
             let cached_key = key.clone();
-            if let Some(cached) = spawn_blocking(move || cache.get(&cached_key)).await? {
+            if let Some(cached) =
+                spawn_blocking(move || cached_thumbnail(&cache, &cached_key)).await?
+            {
                 return Ok(Some(cached));
             }
         }
@@ -110,13 +112,24 @@ fn cache_key(cover: Cover) -> Result<CacheKey, CacheError> {
     format!("{}-{}-{}", cover.book, cover.file, cover.rev).parse()
 }
 
+/// The thumbnail the cache holds, letting go of one a lost write cut short so it is made again.
+fn cached_thumbnail(cache: &DiskCache, key: &CacheKey) -> Option<Vec<u8>> {
+    let cached = cache.get(key)?;
+    if is_whole_jpeg(&cached) {
+        return Some(cached);
+    }
+    tracing::warn!(%key, "make a cover thumbnail again that a lost write cut short");
+    cache.remove(key);
+    None
+}
+
 /// Reads the page the book shows as its cover and stores its thumbnail, unless another request stored it meanwhile.
 fn make_thumbnail(
     cache: Option<&DiskCache>,
     key: &CacheKey,
     file: &Path,
 ) -> Result<Vec<u8>, ThumbnailError> {
-    if let Some(cached) = cache.and_then(|cache| cache.get(key)) {
+    if let Some(cached) = cache.and_then(|cache| cached_thumbnail(cache, key)) {
         return Ok(cached);
     }
     let mut book = open_book(file)?;
