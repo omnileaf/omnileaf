@@ -3,19 +3,32 @@
     reason = "each test opens its own library in a scratch folder, so a failed set-up should stop the test"
 )]
 
-#[expect(
-    dead_code,
-    reason = "these tests need scratch folders but none of the files support can put in them"
-)]
 mod support;
 
-use std::collections::BTreeSet;
+use std::{
+    collections::BTreeSet,
+    fs,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 use omnileaf_engine::{
-    Inclusion, Library, LibraryFilter, LibraryListing, LibrarySort, LibrarySortBy, SortDirection,
+    Clock, Inclusion, Library, LibraryFilter, LibraryListing, LibrarySort, LibrarySortBy,
+    SortDirection,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
-use support::{FixedClock, ScratchFolder};
+use support::{FixedClock, NOW_UNIX_MS, ScratchFolder};
+
+/// The sample series in the order [`library_adding_one_series_at_a_time`] adds them, each in a folder of its own, which is not their title order.
+const ADDED_ORDER: [&str; 3] = ["Sample Series 02", "Sample Series 03", "Sample Series 01"];
+
+/// Moves on a millisecond each time it is read, so each folder added after another was added later.
+struct SteppingClock(AtomicU64);
+
+impl Clock for SteppingClock {
+    fn now_unix_ms(&self) -> u64 {
+        self.0.fetch_add(1, Ordering::Relaxed)
+    }
+}
 
 #[tokio::test]
 async fn lists_nothing_before_a_book_is_found() {
@@ -160,6 +173,41 @@ async fn library_with_the_sample_series(name: &str) -> (Library, ScratchFolder, 
     (library, comics, home)
 }
 
+async fn library_adding_one_series_at_a_time(
+    name: &str,
+) -> (Library, ScratchFolder, ScratchFolder) {
+    let comics = ScratchFolder::new(&format!("{name}-comics"));
+    write_sample_library(comics.path()).unwrap();
+    let home = ScratchFolder::new(&format!("{name}-home"));
+    let library = Library::open(
+        home.path().to_path_buf(),
+        SteppingClock(AtomicU64::new(NOW_UNIX_MS)),
+    )
+    .await
+    .unwrap();
+    for series in ADDED_ORDER {
+        let folder = comics.path().join(format!("{series} alone"));
+        fs::create_dir_all(&folder).unwrap();
+        fs::rename(
+            comics.path().join(SAMPLE_LIBRARY_NAME).join(series),
+            folder.join(series),
+        )
+        .unwrap();
+        library.add_folder(folder, |_| {}).await.unwrap();
+    }
+    (library, comics, home)
+}
+
+const fn by_date_added(direction: SortDirection) -> LibraryListing {
+    LibraryListing {
+        sort: LibrarySort {
+            by: LibrarySortBy::DateAdded,
+            direction,
+        },
+        filter: EVERY_SERIES,
+    }
+}
+
 async fn titles(library: &Library, listing: LibraryListing) -> Vec<String> {
     let page = library.series(listing, None).await.unwrap();
     page.series.into_iter().map(|series| series.title).collect()
@@ -200,6 +248,57 @@ async fn lists_the_series_found_by_title_from_z_to_a() {
     assert_eq!(
         listed,
         ["Sample Series 03", "Sample Series 02", "Sample Series 01"]
+    );
+}
+
+#[tokio::test]
+async fn lists_the_series_in_the_order_they_were_added_either_way() {
+    let (library, _comics, _home) =
+        library_adding_one_series_at_a_time("series-by-date-added").await;
+
+    let listed = [
+        titles(&library, by_date_added(SortDirection::Ascending)).await,
+        titles(&library, by_date_added(SortDirection::Descending)).await,
+    ];
+
+    assert_eq!(
+        listed,
+        [
+            ["Sample Series 02", "Sample Series 03", "Sample Series 01"],
+            ["Sample Series 01", "Sample Series 03", "Sample Series 02"],
+        ]
+    );
+}
+
+#[tokio::test]
+async fn lists_none_of_the_series_the_filter_hides() {
+    let (library, _comics, _home) = library_with_the_sample_series("series-hidden").await;
+
+    let listed = [
+        titles(
+            &library,
+            filtered(LibraryFilter {
+                unread: Inclusion::Hide,
+                ..EVERY_SERIES
+            }),
+        )
+        .await,
+        titles(
+            &library,
+            filtered(LibraryFilter {
+                finished: Inclusion::Hide,
+                ..EVERY_SERIES
+            }),
+        )
+        .await,
+    ];
+
+    assert_eq!(
+        listed,
+        [
+            vec![],
+            vec!["Sample Series 01", "Sample Series 02", "Sample Series 03"],
+        ]
     );
 }
 
