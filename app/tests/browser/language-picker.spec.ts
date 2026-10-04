@@ -21,6 +21,7 @@ const POINTER_ROW_HEIGHT = 44;
 const PHONE_CHECK_SIZE = 22;
 const CHECK_SIZE = 20;
 const SHORT_VIEWPORT_HEIGHT = 240;
+const PSEUDO_LOCALE_MARK = "⟦";
 
 function option(page: Page, name: string) {
   return page.getByRole("radio", { name, exact: true });
@@ -42,7 +43,9 @@ async function openInPseudoLocale(page: Page): Promise<void> {
     }
   }, LANGUAGE_KEY);
   await page.goto(LANGUAGE_PAGE);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("⟦");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(
+    PSEUDO_LOCALE_MARK,
+  );
 }
 
 function documentStart(page: Page): Promise<number> {
@@ -104,6 +107,10 @@ test("switches the interface to a chosen language without reloading", async ({
   await expect(page).toHaveTitle("Omnileaf");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+  await expect(page.locator("body")).not.toContainText(PSEUDO_LOCALE_MARK);
+  await expect(
+    page.locator(`[aria-label*="${PSEUDO_LOCALE_MARK}"]`),
+  ).toHaveCount(0);
   await expect(option(page, "English")).toBeChecked();
   expect(await documentStart(page)).toBe(startedAt);
 });
