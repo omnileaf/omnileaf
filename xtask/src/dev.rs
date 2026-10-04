@@ -180,12 +180,20 @@ fn run_platforms(root: &Path, platforms: &[Platform], devices: &Devices) -> anyh
                 .args(tauri_args(platform, devices))
                 .current_dir(root)
                 .spawn()
+                .map(|app| (platform, app))
                 .with_context(|| format!("start the {platform:?} app"))
         })
         .collect::<anyhow::Result<Vec<_>>>()?;
-    for app in &mut apps {
-        app.wait().context("wait for an app to exit")?;
+    let mut failed = Vec::new();
+    for (platform, app) in &mut apps {
+        let status = app
+            .wait()
+            .with_context(|| format!("wait for the {platform:?} app to exit"))?;
+        if !status.success() {
+            failed.push(*platform);
+        }
     }
+    anyhow::ensure!(failed.is_empty(), "the {failed:?} app failed");
     Ok(())
 }
 
