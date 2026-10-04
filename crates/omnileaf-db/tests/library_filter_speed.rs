@@ -34,8 +34,7 @@ const BOOK_TITLES: [&str; 10] = [
 const EVERY_HUNDREDTH_FINISHED: u32 = 100;
 const EVERY_TENTH_STARTED: u32 = 10;
 const PAGE_SIZE: u16 = 100;
-const WALKS: usize = 3;
-const COUNTS: usize = 20;
+const TIMINGS: usize = 40;
 const BUDGET: Duration = Duration::from_millis(5);
 const PERCENTILE: usize = 95;
 
@@ -92,7 +91,7 @@ async fn reads_each_sorted_and_filtered_page_of_10_000_series_within_5_ms_at_p95
             let listing = SeriesListing { sort, filter };
             walk_pages(&database, listing).await;
             let mut timings: Vec<Duration> = Vec::new();
-            for _ in 0..WALKS {
+            while timings.len() < TIMINGS {
                 timings.extend(walk_pages(&database, listing).await);
             }
             let p95 = percentile(&mut timings);
@@ -130,11 +129,11 @@ async fn counts_the_filtered_series_of_10_000_within_5_ms_at_p95() {
     for filter in FILTERS {
         time_count(&database, filter).await;
         let mut timings: Vec<Duration> = Vec::new();
-        for _ in 0..COUNTS {
+        for _ in 0..TIMINGS {
             timings.push(time_count(&database, filter).await);
         }
         let p95 = percentile(&mut timings);
-        eprintln!("{filter:?}: p95 {p95:?} over {COUNTS} counts");
+        eprintln!("{filter:?}: p95 {p95:?} over {TIMINGS} counts");
         if p95 > slowest_case.0 {
             slowest_case = (p95, filter);
         }
