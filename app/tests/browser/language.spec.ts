@@ -53,10 +53,7 @@ test("picks a language and comes back to General", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Language" }),
   ).toBeFocused();
-  await Promise.all([
-    page.waitForEvent("load"),
-    page.locator("label").filter({ has: english }).click(),
-  ]);
+  await page.locator("label").filter({ has: english }).click();
   await expect(english).toBeChecked();
   await page
     .getByRole("link", { name: /^(Back to )?General$/ })

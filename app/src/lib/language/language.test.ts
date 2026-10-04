@@ -3,7 +3,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import { baseLocale } from "$lib/paraglide/runtime.js";
 
 import {
-  chooseLanguage,
+  rememberLanguageChoice,
   storedLanguageChoice,
   systemLanguage,
 } from "./language";
@@ -44,24 +44,20 @@ test("follows the system when the stored language isn't one the app has", () => 
   expect(storedLanguageChoice(memoryStore({ [KEY]: "xx" }))).toBe("system");
 });
 
-test("choosing a language stores it and reloads", () => {
+test("remembers a chosen language", () => {
   const store = memoryStore();
-  const reload = vi.fn();
 
-  chooseLanguage("en", { store, reload });
+  rememberLanguageChoice("en", store);
 
   expect(store.values.get(KEY)).toBe("en");
-  expect(reload).toHaveBeenCalledOnce();
 });
 
-test("choosing the system forgets the stored language and reloads", () => {
+test("choosing the system forgets the stored language", () => {
   const store = memoryStore({ [KEY]: "en" });
-  const reload = vi.fn();
 
-  chooseLanguage("system", { store, reload });
+  rememberLanguageChoice("system", store);
 
   expect(store.values.has(KEY)).toBe(false);
-  expect(reload).toHaveBeenCalledOnce();
 });
 
 test("takes the system language from the device's preferred languages", () => {

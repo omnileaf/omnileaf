@@ -11,6 +11,7 @@ import {
 } from "./fixtures.ts";
 
 const LANGUAGE_PAGE = "/settings/general/language";
+const LANGUAGE_KEY = "omnileaf.language";
 const SYSTEM_OPTION = "Use the system language (English)";
 const FOOTNOTE = "More languages arrive as people translate Omnileaf.";
 const GROUP_GAP = 16;
@@ -19,6 +20,7 @@ const TOUCH_ROW_HEIGHT = 48;
 const POINTER_ROW_HEIGHT = 44;
 const PHONE_CHECK_SIZE = 22;
 const CHECK_SIZE = 20;
+const SHORT_VIEWPORT_HEIGHT = 240;
 
 function option(page: Page, name: string) {
   return page.getByRole("radio", { name, exact: true });
@@ -29,10 +31,22 @@ function optionRow(page: Page, name: string) {
 }
 
 async function chooseEnglish(page: Page): Promise<void> {
-  await Promise.all([
-    page.waitForEvent("load"),
-    optionRow(page, "English").click(),
-  ]);
+  await optionRow(page, "English").click();
+}
+
+async function openInPseudoLocale(page: Page): Promise<void> {
+  await page.addInitScript((key) => {
+    if (window.sessionStorage.getItem("seeded") === null) {
+      window.sessionStorage.setItem("seeded", "yes");
+      window.localStorage.setItem(key, "en-XA");
+    }
+  }, LANGUAGE_KEY);
+  await page.goto(LANGUAGE_PAGE);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("⟦");
+}
+
+function documentStart(page: Page): Promise<number> {
+  return page.evaluate(() => performance.timeOrigin);
 }
 
 test("checks the system language until another is chosen", async ({ page }) => {
@@ -55,6 +69,7 @@ test("moves the check to a chosen language and keeps it", async ({ page }) => {
   await page.goto(LANGUAGE_PAGE);
 
   await chooseEnglish(page);
+  await page.reload();
 
   await expect(option(page, "English")).toBeChecked();
   await expect(optionRow(page, "English").locator("svg")).toBeVisible();
@@ -65,13 +80,91 @@ test("goes back to the system language", async ({ page }) => {
   await page.goto(LANGUAGE_PAGE);
   await chooseEnglish(page);
 
-  await Promise.all([
-    page.waitForEvent("load"),
-    optionRow(page, SYSTEM_OPTION).click(),
-  ]);
+  await optionRow(page, SYSTEM_OPTION).click();
+  await page.reload();
 
   await expect(option(page, SYSTEM_OPTION)).toBeChecked();
   await expect(optionRow(page, SYSTEM_OPTION).locator("svg")).toBeVisible();
+});
+
+test("switches the interface to a chosen language without reloading", async ({
+  page,
+}) => {
+  await openInPseudoLocale(page);
+  const startedAt = await documentStart(page);
+
+  await chooseEnglish(page);
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Language", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Settings", exact: true }).first(),
+  ).toBeAttached();
+  await expect(page).toHaveTitle("Omnileaf");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+  await expect(option(page, "English")).toBeChecked();
+  expect(await documentStart(page)).toBe(startedAt);
+});
+
+test("keeps the keyboard on the language it switched to", async ({ page }) => {
+  await openInPseudoLocale(page);
+
+  await option(page, "English").focus();
+  await page.keyboard.press("Space");
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Language", exact: true }),
+  ).toBeVisible();
+  await expect(option(page, "English")).toBeFocused();
+  await expect(option(page, "English")).toBeChecked();
+});
+
+test("keeps the page scrolled where it was when switching", async ({
+  page,
+}) => {
+  await page.setViewportSize({
+    width: viewportOf(page).width,
+    height: SHORT_VIEWPORT_HEIGHT,
+  });
+  await openInPseudoLocale(page);
+  const main = page.getByRole("main");
+  const scrolledTo = await main.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    return element.scrollTop;
+  });
+
+  await chooseEnglish(page);
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Language", exact: true }),
+  ).toBeAttached();
+  const scroll = await main.evaluate((element) => ({
+    top: element.scrollTop,
+    bottom: element.scrollHeight - element.clientHeight,
+  }));
+  expect(scrolledTo).toBeGreaterThan(0);
+  expect(scroll.top).toBe(Math.min(scrolledTo, scroll.bottom));
+});
+
+test("only moves the check when the chosen language is the one already showing", async ({
+  page,
+}) => {
+  await page.goto(LANGUAGE_PAGE);
+  const heading = page.getByRole("heading", { level: 1, name: "Language" });
+  await heading.evaluate((element) => {
+    element.dataset.untouched = "";
+  });
+  const startedAt = await documentStart(page);
+
+  await chooseEnglish(page);
+
+  await expect(option(page, "English")).toBeChecked();
+  await expect(optionRow(page, SYSTEM_OPTION).locator("svg")).toHaveCount(0);
+  await expect(heading).toHaveAttribute("data-untouched");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  expect(await documentStart(page)).toBe(startedAt);
 });
 
 test("names the system's own language while another is chosen", async ({
