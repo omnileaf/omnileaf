@@ -7,6 +7,7 @@ mod dev;
 mod devices;
 mod doctor;
 mod fixtures;
+mod fresh;
 mod fuzz_seeds;
 mod icons;
 mod licence_catalogue;
@@ -64,6 +65,9 @@ enum Command {
         /// The Android device or emulator to run on, by name.
         #[arg(long)]
         android_device: Option<String>,
+        /// Remove the app from the phones, emulators and Simulators first, so it starts with no data.
+        #[arg(long)]
+        fresh: bool,
     },
     /// List the phones, emulators and Simulators `dev` can run the app on.
     Devices,
@@ -111,6 +115,7 @@ fn main() -> anyhow::Result<()> {
             platforms,
             ios_device,
             android_device,
+            fresh,
         } => {
             let platforms = if platforms.is_empty() {
                 dev::platforms_for(std::env::consts::OS)
@@ -121,6 +126,9 @@ fn main() -> anyhow::Result<()> {
                 ios: ios_device,
                 android: android_device,
             };
+            if fresh {
+                fresh::clear(&workspace::root(), &platforms, &devices)?;
+            }
             dev::run(&workspace::root(), &platforms, &devices)?;
         }
         Command::Devices => list_devices()?,
