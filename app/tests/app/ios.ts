@@ -168,14 +168,19 @@ function simulatorsOn(runtime: string, devices: unknown): Simulator[] {
   });
 }
 
-function bootedIosSimulator(listing: unknown): Simulator | undefined {
+function bootedIosSimulator(
+  listing: unknown,
+  chosenUdid: string | undefined,
+): Simulator | undefined {
   const runtimes = isRecord(listing) ? listing.devices : undefined;
   if (!isRecord(runtimes)) {
     return undefined;
   }
-  return Object.entries(runtimes).flatMap(([runtime, devices]) =>
-    simulatorsOn(runtime, devices),
-  )[0];
+  return Object.entries(runtimes)
+    .flatMap(([runtime, devices]) => simulatorsOn(runtime, devices))
+    .find(
+      (simulator) => chosenUdid === undefined || simulator.udid === chosenUdid,
+    );
 }
 
 async function findBootedSimulator(): Promise<Simulator> {
@@ -186,7 +191,10 @@ async function findBootedSimulator(): Promise<Simulator> {
     "booted",
     "--json",
   ]);
-  const simulator = bootedIosSimulator(JSON.parse(stdout));
+  const simulator = bootedIosSimulator(
+    JSON.parse(stdout),
+    process.env.OMNILEAF_SIMULATOR_UDID,
+  );
   if (simulator === undefined) {
     throw new Error("boot an iOS Simulator before running the iOS tests");
   }
