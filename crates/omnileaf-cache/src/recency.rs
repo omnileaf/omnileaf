@@ -1,11 +1,12 @@
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    hash::Hash,
+};
 
-use crate::CacheKey;
-
-#[derive(Debug, Default)]
-pub(crate) struct Recency {
-    entries: HashMap<CacheKey, Entry>,
-    by_last_use: BTreeMap<u64, CacheKey>,
+#[derive(Debug)]
+pub(crate) struct Recency<K> {
+    entries: HashMap<K, Entry>,
+    by_last_use: BTreeMap<u64, K>,
     stored_bytes: u64,
     uses: u64,
 }
@@ -16,12 +17,23 @@ struct Entry {
     last_use: u64,
 }
 
-impl Recency {
+impl<K> Default for Recency<K> {
+    fn default() -> Self {
+        Self {
+            entries: HashMap::new(),
+            by_last_use: BTreeMap::new(),
+            stored_bytes: 0,
+            uses: 0,
+        }
+    }
+}
+
+impl<K: Clone + Eq + Hash> Recency<K> {
     pub(crate) fn stored_bytes(&self) -> u64 {
         self.stored_bytes
     }
 
-    pub(crate) fn record(&mut self, key: CacheKey, bytes: u64) {
+    pub(crate) fn record(&mut self, key: K, bytes: u64) {
         self.forget(&key);
         self.uses += 1;
         self.by_last_use.insert(self.uses, key.clone());
@@ -35,7 +47,7 @@ impl Recency {
         self.stored_bytes = self.stored_bytes.saturating_add(bytes);
     }
 
-    pub(crate) fn touch(&mut self, key: &CacheKey) -> bool {
+    pub(crate) fn touch(&mut self, key: &K) -> bool {
         match self.entries.get(key).copied() {
             Some(entry) => {
                 self.record(key.clone(), entry.bytes);
@@ -45,14 +57,14 @@ impl Recency {
         }
     }
 
-    pub(crate) fn forget(&mut self, key: &CacheKey) {
+    pub(crate) fn forget(&mut self, key: &K) {
         if let Some(entry) = self.entries.remove(key) {
             self.by_last_use.remove(&entry.last_use);
             self.stored_bytes = self.stored_bytes.saturating_sub(entry.bytes);
         }
     }
 
-    pub(crate) fn evict_beyond(&mut self, budget_bytes: u64) -> Vec<CacheKey> {
+    pub(crate) fn evict_beyond(&mut self, budget_bytes: u64) -> Vec<K> {
         let mut evicted = Vec::new();
         while self.stored_bytes > budget_bytes {
             let Some((_, key)) = self.by_last_use.pop_first() else {
