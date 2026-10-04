@@ -28,6 +28,8 @@ Run `cargo xtask doctor` first, since it lists anything missing, including WebKi
 
 `cargo xtask dev` runs the app on the desktop and phones at once, all sharing one dev server: on macOS the desktop app, the iOS Simulator and a connected Android device, and elsewhere the desktop app and Android. Pick platforms with `--platform desktop ios` (or `--platform desktop,ios`), and a simulator or device with `--ios-device` or `--android-device`, by name. `cargo xtask devices` lists the names, including Android emulators that are switched off, which Tauri starts when you pick one. An Android emulator reaches the dev server through `adb reverse`, which Tauri sets up, and the iOS Simulator reaches it on `localhost`, so for them the dev server stays on `localhost`. A physical Android phone or iPhone reaches it over your network. When `--android-device` or `--ios-device` names anything other than an emulator or Simulator, or names nothing while a phone is connected, the dev server listens on every network interface and live reload connects to the address Tauri gives the phone. The phone must be on the same network as your computer, and macOS may ask once whether `node` can accept incoming connections. On Windows, Tauri gives Android emulators the network address too, so the dev server listens on the network there.
 
+`cargo xtask screenshot` saves what a running phone, emulator or Simulator shows into `target/screenshots`, for pull request images. `--device` picks one when several are running.
+
 ### Android
 
 Android builds need:
