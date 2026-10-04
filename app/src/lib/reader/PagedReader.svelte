@@ -36,15 +36,9 @@
   >;
 
   const CORE: ReadingCore = {
-    restored: async (id, page) => {
-      await commands.readingRestored(id, page);
-    },
-    shown: async (id, page) => {
-      await commands.pageShown(id, page);
-    },
-    closed: async (id) => {
-      await commands.closeBook(id);
-    },
+    restored: (id, page) => commands.readingRestored(id, page),
+    shown: (id, page) => commands.pageShown(id, page),
+    closed: (id) => commands.closeBook(id),
   };
 
   let { book }: { book: OpenedBook } = $props();
@@ -55,7 +49,12 @@
   const turner = untrack(
     () => new PageTurner(book.pages.length, book.startPage),
   );
-  const report = untrack(() => new ReadingReport(book.id, CORE));
+  const report = untrack(
+    () =>
+      new ReadingReport(book.id, CORE, (error) => {
+        reportError(error);
+      }),
+  );
   const swipe = new Swipe(SWIPE_MIN_PX);
   const controls = new ReaderControls(CONTROLS_HIDE_AFTER_MS);
   let heading: HTMLHeadingElement | undefined = $state();
