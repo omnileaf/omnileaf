@@ -53,6 +53,61 @@
   "settings_title": "Settings",
   "about_title": "About",
   "about_licence": "Omnileaf is free software. You can share and change it under the GNU General Public License, version 3.",
+  "about_version": "Version",
+  "about_copy_version_details": "Copy version details",
+  "about_version_details_copied": "Copied",
+  "about_version_details_copied_status": "Version details copied.",
+  "about_copy_failed": "Couldn't copy the version details. Try again.",
+  "about_source_code": "Source code",
+  "about_report_problem": "Report a problem",
+  "about_report_problem_hint": "Opens a new issue in your browser",
+  "about_opens_in_browser": "Opens in your browser",
+  "about_browser_unavailable": "Couldn't open your browser. Try again.",
+  "about_licences": "Open-source licences",
+  "about_licences_hint": "The packages Omnileaf is built with",
+  "licences_intro": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Omnileaf is built with {formattedCount} open-source package. Open it to read its licence.",
+        "countPlural=other": "Omnileaf is built with {formattedCount} open-source packages, grouped by licence. Open one to read its licence."
+      }
+    }
+  ],
+  "licences_package_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} package",
+        "countPlural=other": "{formattedCount} packages"
+      }
+    }
+  ],
+  "licences_show_all": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Show all {formattedCount}",
+        "countPlural=other": "Show all {formattedCount}"
+      }
+    }
+  ],
+  "licence_summary": "Version {version} · {licence}",
   "library_settings_folders": "Folders",
   "library_settings_folders_hint": "Folders of comics, manga or books. Omnileaf reads them where they are.",
   "appearance_title": "Appearance",

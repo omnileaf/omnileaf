@@ -10,12 +10,13 @@ const PAGES = [
   "/settings/general",
   "/settings/general/language",
   "/settings/about",
+  "/settings/about/licences",
 ];
 
 const UNMARKED_TEXT_SCRIPT = `(() => {
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
     acceptNode: (node) =>
-      node.parentElement?.closest("script, style") ||
+      node.parentElement?.closest("script, style, [translate=no]") ||
       node.parentElement?.closest("[lang]") !== document.documentElement
         ? NodeFilter.FILTER_REJECT
         : NodeFilter.FILTER_ACCEPT,

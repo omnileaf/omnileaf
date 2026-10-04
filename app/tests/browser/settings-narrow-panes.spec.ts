@@ -5,7 +5,6 @@ import {
   DEFAULT_BACKEND,
   EXPANDED_MIN_WIDTH,
   expect,
-  FAKE_APP_VERSION,
   MEDIUM_MIN_WIDTH,
   test,
 } from "./fixtures.ts";
@@ -19,6 +18,7 @@ const SECTIONS = [
   "/settings/general",
   "/settings/general/language",
   "/settings/about",
+  "/settings/about/licences",
 ] as const;
 
 const OVERFLOWING_SCRIPT = `(() => {
@@ -48,7 +48,6 @@ for (const width of [MEDIUM_MIN_WIDTH, EXPANDED_MIN_WIDTH]) {
       viewport: { width, height: WINDOW_HEIGHT },
       backend: {
         ...DEFAULT_BACKEND,
-        appInfo: () => ({ version: FAKE_APP_VERSION, platform: "linux" }),
         addLibraryFolder: () => ({
           name: "Sample Library",
           comicFiles: 342,

@@ -16,7 +16,11 @@ function renderPage(screenshotMode: "on" | "off") {
     page: Page,
     pageProps: {
       data: {
-        appInfo: { version: "1.2.3", platform: "linux" },
+        appInfo: {
+          version: "1.2.3",
+          platform: "linux",
+          sourceCode: "repo.example.org/omnileaf",
+        },
         notices: new Notices(),
       },
       params: {},

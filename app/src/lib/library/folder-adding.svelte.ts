@@ -18,6 +18,13 @@ interface Failure {
   readonly retry: (() => string) | undefined;
 }
 
+const ADDING_FAILED: Failure = {
+  icon: TriangleAlert,
+  title: m.library_add_folder_failed_title,
+  body: m.library_add_folder_failed_body,
+  retry: m.library_add_folder_try_again,
+};
+
 const FAILURES = {
   folderUnreadable: {
     icon: Lock,
@@ -31,12 +38,9 @@ const FAILURES = {
     body: m.library_folder_picker_unavailable_body,
     retry: undefined,
   },
-  internal: {
-    icon: TriangleAlert,
-    title: m.library_add_folder_failed_title,
-    body: m.library_add_folder_failed_body,
-    retry: m.library_add_folder_try_again,
-  },
+  clipboardUnavailable: ADDING_FAILED,
+  browserUnavailable: ADDING_FAILED,
+  internal: ADDING_FAILED,
 } satisfies Record<IpcErrorCode, Failure>;
 
 /** One Add a folder flow, shared by every button that starts it and the notice that reports it. */
