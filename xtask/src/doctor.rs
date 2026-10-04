@@ -1,6 +1,8 @@
 //! Checks that this machine has the tools the repository needs.
 
-use crate::licences::INSTALL_CARGO_ABOUT;
+use std::ffi::OsStr;
+
+use crate::{licences::INSTALL_CARGO_ABOUT, process::Machine};
 
 pub(crate) struct Requirement {
     pub(crate) name: &'static str,
@@ -91,10 +93,6 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
     },
 ];
 
-pub(crate) trait Machine {
-    fn first_line_of(&self, program: &str, args: &[&str]) -> Option<String>;
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum Finding {
     Present { detail: String },
@@ -109,8 +107,14 @@ pub(crate) struct Report {
 pub(crate) fn examine(requirement: &Requirement, machine: &impl Machine) -> Finding {
     let Probe::Command { program, args } = requirement.probe;
     machine
-        .first_line_of(program, args)
+        .stdout_of(OsStr::new(program), args)
+        .as_deref()
+        .and_then(first_line)
         .map_or(Finding::Missing, |detail| Finding::Present { detail })
+}
+
+fn first_line(output: &str) -> Option<String> {
+    output.lines().next().map(|line| line.trim().to_owned())
 }
 
 const STATUS_WIDTH: usize = 8;
@@ -157,7 +161,7 @@ mod tests {
     }
 
     impl Machine for FakeMachine {
-        fn first_line_of(&self, program: &str, _args: &[&str]) -> Option<String> {
+        fn stdout_of(&self, program: &OsStr, _args: &[&str]) -> Option<String> {
             self.installed
                 .iter()
                 .find(|(name, _)| *name == program)

@@ -10,9 +10,14 @@ use std::{
 
 use crate::{
     check::{Runner, Step},
-    doctor::Machine,
     workspace,
 };
+
+/// The programs on this machine, behind a seam the tests replace with a fake.
+pub(crate) trait Machine {
+    /// Returns `None` when the program can't start or exits unsuccessfully.
+    fn stdout_of(&self, program: &OsStr, args: &[&str]) -> Option<String>;
+}
 
 pub(crate) struct Process {
     root: PathBuf,
@@ -39,7 +44,7 @@ impl Runner for Process {
 }
 
 impl Machine for Process {
-    fn first_line_of(&self, program: &str, args: &[&str]) -> Option<String> {
+    fn stdout_of(&self, program: &OsStr, args: &[&str]) -> Option<String> {
         let output = command_for(program)
             .args(args)
             .current_dir(&self.root)
@@ -47,10 +52,7 @@ impl Machine for Process {
             .output()
             .ok()
             .filter(|output| output.status.success())?;
-        String::from_utf8_lossy(&output.stdout)
-            .lines()
-            .next()
-            .map(|line| line.trim().to_owned())
+        Some(String::from_utf8_lossy(&output.stdout).into_owned())
     }
 }
 
@@ -58,8 +60,11 @@ const DEFAULT_WINDOWS_EXTENSIONS: &str = ".COM;.EXE;.BAT;.CMD";
 
 /// Windows installs tools such as pnpm as `.cmd` shims, which `Command` only
 /// finds when it is given their full path.
-pub(crate) fn command_for(program: &str) -> Command {
-    if cfg!(windows) {
+pub(crate) fn command_for(program: impl AsRef<OsStr>) -> Command {
+    let program = program.as_ref();
+    if cfg!(windows)
+        && let Some(program) = program.to_str()
+    {
         let path = env::var_os("PATH").unwrap_or_default();
         let extensions =
             env::var("PATHEXT").unwrap_or_else(|_| DEFAULT_WINDOWS_EXTENSIONS.to_owned());
