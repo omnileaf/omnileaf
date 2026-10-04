@@ -10,7 +10,7 @@ export const commands = {
 	comicFiles: number,
 	unreadableFolders: number,
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder")),
-	matchSystemBars: (theme: Theme) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme })),
+	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
 	copyVersionDetails: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_version_details")),
 	openProjectLink: (link: ProjectLink) => typedError<null, IpcError>(__TAURI_INVOKE("open_project_link", { link })),
 };
@@ -41,6 +41,8 @@ export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 export type ProjectLink = "sourceCode" | "newIssue";
 
 export type Theme = "light" | "dark";
+
+export type ThemePreference = "system" | "light" | "dark";
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

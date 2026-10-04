@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.os.Build
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.ColorInt
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
@@ -20,6 +21,22 @@ class BarIcons {
   var areDark: Boolean = false
 }
 
+@InvokeArg
+class PageBackground {
+  var red: Int = 0
+  var green: Int = 0
+  var blue: Int = 0
+
+  @ColorInt
+  fun color(): Int = Color.rgb(red, green, blue)
+}
+
+@InvokeArg
+class WindowBackground {
+  var shown: PageBackground = PageBackground()
+  var remembered: PageBackground? = null
+}
+
 @TauriPlugin
 class SystemBarsPlugin(activity: Activity) : Plugin(activity) {
   @Command
@@ -32,6 +49,16 @@ class SystemBarsPlugin(activity: Activity) : Plugin(activity) {
         navigationBarStyle = navigationBarStyle(icons),
       )
     }
+    invoke.resolve()
+  }
+
+  @Command
+  fun showBackground(invoke: Invoke) {
+    val background = invoke.parseArgs(WindowBackground::class.java)
+    val color = background.shown.color()
+    val shownActivity = PluginManager.activity as? MainActivity ?: return invoke.reject("no activity is showing the app")
+    RememberedBackground(shownActivity).keep(background.remembered)
+    shownActivity.runOnUiThread { shownActivity.showPageBackground(color) }
     invoke.resolve()
   }
 }

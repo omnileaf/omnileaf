@@ -1,16 +1,15 @@
 <script lang="ts">
   import { Check } from "@lucide/svelte";
+  import { tick } from "svelte";
 
   import {
-    browserLanguageStore,
-    chooseLanguage,
     LANGUAGE_CHOICES,
     type LanguageChoice,
     languageName,
     LANGUAGES,
-    storedLanguageChoice,
     systemLanguage,
   } from "$lib/language/language";
+  import { getLanguageSetting } from "$lib/language/language.svelte";
   import { textAroundValue } from "$lib/language/placeholder";
   import { WindowWidth } from "$lib/page/breakpoints";
   import { isPhone } from "$lib/page/platform";
@@ -22,11 +21,11 @@
   const PHONE_CHECK_SIZE = 22;
   const CHECK_SIZE = 20;
   const CHECK_STROKE = 2.4;
+  const LANGUAGE_FIELD = "language";
 
   let { data }: PageProps = $props();
 
-  const store = browserLanguageStore();
-  const chosen = storedLanguageChoice(store);
+  const language = getLanguageSetting();
   const width = new WindowWidth();
   const onPhone = $derived(isPhone(data.appInfo.platform, width.current));
   const groups: readonly (readonly LanguageChoice[])[] = $derived(
@@ -41,13 +40,23 @@
 
   const footnoteId = $props.id();
 
-  function choose(choice: LanguageChoice): void {
-    chooseLanguage(choice, {
-      store,
-      reload: () => {
-        window.location.reload();
-      },
-    });
+  async function choose(
+    choice: LanguageChoice,
+    option: HTMLInputElement,
+  ): Promise<void> {
+    language.choose(choice);
+    await tick();
+    if (!option.isConnected) {
+      focusChosenOption();
+    }
+  }
+
+  function focusChosenOption(): void {
+    document
+      .querySelector<HTMLInputElement>(
+        `input[name="${LANGUAGE_FIELD}"]:checked`,
+      )
+      ?.focus();
   }
 </script>
 
@@ -67,7 +76,7 @@
         class="divide-y divide-border rounded-list border border-border bg-card"
       >
         {#each group as choice (choice)}
-          {@const isChosen = chosen === choice}
+          {@const isChosen = language.choice === choice}
           <label
             class={[
               "flex cursor-pointer items-center gap-md py-xs ps-lg pe-list-row min-block-phone-row has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-accent",
@@ -78,12 +87,12 @@
           >
             <input
               type="radio"
-              name="language"
+              name={LANGUAGE_FIELD}
               value={choice}
               class="sr-only"
               checked={isChosen}
-              onchange={() => {
-                choose(choice);
+              onchange={(event) => {
+                void choose(choice, event.currentTarget);
               }}
             />
             {#if choice === "system"}
