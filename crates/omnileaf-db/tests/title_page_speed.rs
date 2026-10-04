@@ -13,6 +13,7 @@ use omnileaf_db::{
     Database,
     catalog::{PageRequest, PageSize, SeriesOrder, series_page},
 };
+use omnileaf_testkit::TimingBudget;
 use support::ScratchFolder;
 
 const SERIES_COUNT: u32 = 10_000;
@@ -29,6 +30,7 @@ const ONE_BOOK: &[&str] = &["Volume 01"];
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
 async fn reads_each_title_page_of_10_000_series_within_2_ms_at_p95() {
+    let budget = TimingBudget::from_env(BUDGET);
     let folder = ScratchFolder::new("title-page-speed");
     let database = Database::open(&folder.config()).unwrap();
     add_generated_series(&database).await;
@@ -43,13 +45,13 @@ async fn reads_each_title_page_of_10_000_series_within_2_ms_at_p95() {
     let median = timings[timings.len() / 2];
     let slowest = timings[timings.len() - 1];
     eprintln!(
-        "title page of {PAGE_SIZE} from {SERIES_COUNT} series: median {median:?}, p95 {p95:?}, slowest {slowest:?} over {} pages, budget {BUDGET:?}",
+        "title page of {PAGE_SIZE} from {SERIES_COUNT} series: median {median:?}, p95 {p95:?}, slowest {slowest:?} over {} pages, {budget}",
         timings.len()
     );
 
     assert!(
-        p95 <= BUDGET,
-        "a title page took {p95:?} at p95 over {} pages, over the {BUDGET:?} budget",
+        budget.allows(p95),
+        "a title page took {p95:?} at p95 over {} pages, over the {budget}",
         timings.len()
     );
 }
