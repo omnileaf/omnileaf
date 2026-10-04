@@ -10,10 +10,13 @@ import androidx.activity.enableEdgeToEdge
 private const val TABLET_SMALLEST_WIDTH_DP = 600
 
 class MainActivity : TauriActivity() {
+  private val rememberedBackground: Int? by lazy { RememberedBackground(this).color() }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
     showTheAppBehindTheNavigationButtons()
     keepPhonesInPortrait(resources.configuration)
+    rememberedBackground?.let { showPageBackground(it) }
     super.onCreate(savedInstanceState)
   }
 
@@ -24,6 +27,7 @@ class MainActivity : TauriActivity() {
 
   override fun onWebViewCreate(webView: WebView) {
     SystemInsets(webView).attach()
+    rememberedBackground?.let(webView::setBackgroundColor)
   }
 
   private fun showTheAppBehindTheNavigationButtons() {

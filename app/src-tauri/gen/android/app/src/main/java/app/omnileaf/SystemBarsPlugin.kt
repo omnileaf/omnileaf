@@ -3,6 +3,7 @@ package app.omnileaf
 import android.app.Activity
 import android.graphics.Color
 import android.os.Build
+import android.webkit.WebView
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import app.tauri.annotation.Command
@@ -20,8 +21,21 @@ class BarIcons {
   var areDark: Boolean = false
 }
 
+@InvokeArg
+class PageBackground {
+  var red: Int = 0
+  var green: Int = 0
+  var blue: Int = 0
+}
+
 @TauriPlugin
 class SystemBarsPlugin(activity: Activity) : Plugin(activity) {
+  private var webView: WebView? = null
+
+  override fun load(webView: WebView) {
+    this.webView = webView
+  }
+
   @Command
   fun showIcons(invoke: Invoke) {
     val icons = invoke.parseArgs(BarIcons::class.java)
@@ -31,6 +45,19 @@ class SystemBarsPlugin(activity: Activity) : Plugin(activity) {
         statusBarStyle = barStyle(icons, Color.TRANSPARENT, Color.TRANSPARENT),
         navigationBarStyle = navigationBarStyle(icons),
       )
+    }
+    invoke.resolve()
+  }
+
+  @Command
+  fun showBackground(invoke: Invoke) {
+    val background = invoke.parseArgs(PageBackground::class.java)
+    val color = Color.rgb(background.red, background.green, background.blue)
+    val shownActivity = PluginManager.activity ?: return invoke.reject("no activity is showing the app")
+    RememberedBackground(shownActivity).remember(color)
+    shownActivity.runOnUiThread {
+      shownActivity.showPageBackground(color)
+      webView?.setBackgroundColor(color)
     }
     invoke.resolve()
   }
