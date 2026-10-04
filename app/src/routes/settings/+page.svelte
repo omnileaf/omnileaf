@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import type { ThemePreference } from "$lib/appearance/theme";
   import { getThemeSetting } from "$lib/appearance/theme.svelte";
   import { languageName } from "$lib/language/language";
+  import { getBackGoesUp } from "$lib/navigation/back-goes-up";
   import { WindowWidth } from "$lib/page/breakpoints";
   import PageHeading from "$lib/page/PageHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -23,12 +23,13 @@
 
   let { data }: PageProps = $props();
 
+  const backGoesUp = getBackGoesUp();
   const theme = getThemeSetting();
   const width = new WindowWidth();
 
   $effect(() => {
     if (showsSectionsBeside(data.appInfo.platform, width.current)) {
-      void goto(resolve(OPENING_SECTION), { replaceState: true });
+      void backGoesUp.replaceWith(resolve(OPENING_SECTION));
     }
   });
 

@@ -11,7 +11,7 @@
     setLanguageSetting,
   } from "$lib/language/language.svelte";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
-  import { makeBackGoUp } from "$lib/navigation/back-goes-up";
+  import { makeBackGoUp, setBackGoesUp } from "$lib/navigation/back-goes-up";
   import { focusPageHeading } from "$lib/navigation/page-heading";
   import { sectionOf } from "$lib/navigation/sections";
   import NoticeHost from "$lib/notices/NoticeHost.svelte";
@@ -25,7 +25,7 @@
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
-  const backGoesUp = makeBackGoUp();
+  const backGoesUp = setBackGoesUp(makeBackGoUp());
 
   $effect(() => {
     void commands.matchSystemBars(
