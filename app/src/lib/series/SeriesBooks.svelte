@@ -3,7 +3,7 @@
   import { tick } from "svelte";
 
   import { beforeNavigate } from "$app/navigation";
-
+  import { resolve } from "$app/paths";
   import type {
     ReadMark,
     SeriesBook,
@@ -241,7 +241,13 @@
         event.preventDefault();
       }}
     >
-      <BookRowText {book} {dates} />
+      <a
+        href={resolve("/read/[book]", { book: book.id })}
+        draggable="false"
+        class="flex flex-1 items-center self-stretch min-inline-none"
+      >
+        <BookRowText {book} {dates} />
+      </a>
     </div>
   {/if}
 {/snippet}
