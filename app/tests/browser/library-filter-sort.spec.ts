@@ -464,6 +464,23 @@ test("keeps filter and sort inside the screen in a longer language", async ({
   expect(overflows).toBe(false);
 });
 
+test("explains the unread and finished conditions on phones, where the sheet has room", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  const panel = await openFilterAndSort(page);
+  await showFilters(panel, page);
+
+  const hints = [
+    panel.getByText("Has books you haven't read"),
+    panel.getByText("You've read every book"),
+  ];
+
+  for (const hint of hints) {
+    await expect(hint).toBeVisible({ visible: isPhone(page) });
+  }
+});
+
 for (const colorScheme of ["light", "dark"] as const) {
   test(`filter and sort have no accessibility violations in the ${colorScheme} theme`, async ({
     page,
