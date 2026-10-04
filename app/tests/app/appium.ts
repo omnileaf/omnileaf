@@ -15,7 +15,7 @@ export async function startAppium(
   insecureFeatures: readonly string[],
 ): Promise<() => Promise<void>> {
   await mkdir(dirname(APPIUM_LOG), { recursive: true });
-  return startWebDriverProcess({
+  const appium = await startWebDriverProcess({
     command: "appium",
     args: [
       "--address",
@@ -31,4 +31,5 @@ export async function startAppium(
     env: process.env,
     server: APPIUM_URL,
   });
+  return () => appium.stop();
 }
