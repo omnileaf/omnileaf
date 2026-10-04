@@ -103,7 +103,7 @@ impl From<catalog::BookReading> for BookReading {
             catalog::BookReading::Started { position_page } => Self::Started {
                 page: position_page.map(|index| index.saturating_add(1)),
             },
-            catalog::BookReading::Read => Self::Read,
+            catalog::BookReading::Read { .. } => Self::Read,
         }
     }
 }
