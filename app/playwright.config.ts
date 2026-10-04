@@ -40,11 +40,12 @@ const screenProjects = Object.entries(SCREENS).flatMap(([screen, emulation]) =>
   })),
 ) satisfies Project[];
 
-/** Times the interface on its own once every other spec has finished, so their load can't push a timing over its budget. */
+/** Times the interface on its own, one spec at a time once every other spec has finished, so no other load can push a timing over its budget. */
 const speedProject: Project = {
   name: "speed",
   testMatch: SPEED_SPECS,
   dependencies: screenProjects.map(({ name }) => name),
+  workers: 1,
   use: { browserName: "chromium", ...SCREENS.desktop },
 };
 

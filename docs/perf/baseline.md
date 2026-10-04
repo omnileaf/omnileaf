@@ -23,7 +23,7 @@ Where the library screen's startup and first paint stood when the grid, compact 
 
 ## Measuring
 
-The two browser specs run in the `speed` project, after every other browser spec has finished so their load can't skew a timing:
+The two browser specs run in the `speed` project, one at a time after every other browser spec has finished, so no other load can skew a timing:
 
 ```sh
 cd app
