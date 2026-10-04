@@ -32,11 +32,19 @@ export class FakeShelf {
   }
 
   titleOf(index: number): string {
+    return this.#bookAt(index).title;
+  }
+
+  idOf(index: number): string {
+    return this.#bookAt(index).id;
+  }
+
+  #bookAt(index: number): WireBook {
     const book = this.#books[index];
     if (book === undefined) {
       throw new Error(`the shelf has no book ${String(index)}`);
     }
-    return book.title;
+    return book;
   }
 
   backend(): FakeBackend {
