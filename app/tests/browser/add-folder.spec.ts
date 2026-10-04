@@ -24,16 +24,30 @@ test.describe("with a folder of books", () => {
     },
   });
 
-  for (const { place, path } of [
-    { place: "the empty library", path: "/" },
-    { place: "Settings › Library", path: "/settings/library" },
+  for (const { place, path, area } of [
+    {
+      place: "the empty library",
+      path: "/",
+      area: (page: Page) =>
+        page.getByRole("region", { name: "Your library is empty" }),
+    },
+    {
+      place: "the library's title",
+      path: "/",
+      area: (page: Page) => page.locator("main header"),
+    },
+    {
+      place: "Settings › Library",
+      path: "/settings/library",
+      area: (page: Page) => page.getByRole("main"),
+    },
   ]) {
     test(`adds a folder from ${place} and reports the books scanned in it`, async ({
       page,
     }) => {
       await page.goto(path);
 
-      await page.getByRole("button", { name: "Add a folder" }).click();
+      await area(page).getByRole("button", { name: "Add a folder" }).click();
 
       await expect(scanReport(page, "Found")).toHaveText(
         "Found 7 books in 3 series in Sample Library.",
@@ -109,7 +123,10 @@ test.describe("with a folder it can't read", () => {
   test("explains that the folder couldn't be read", async ({ page }) => {
     await page.goto("/");
 
-    await page.getByRole("button", { name: "Add a folder" }).click();
+    await page
+      .locator("main header")
+      .getByRole("button", { name: "Add a folder" })
+      .click();
 
     await expect(page.getByRole("status")).toHaveText(
       "Couldn't read that folder.",

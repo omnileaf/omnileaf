@@ -28,12 +28,24 @@ const SCREENS = {
   },
 } as const;
 
-const projects: Project[] = ENGINES.flatMap((browserName) =>
+const SPEED_SPECS = "**/*.speed.ts";
+
+const screenProjects = ENGINES.flatMap((browserName) =>
   Object.entries(SCREENS).map(([screen, emulation]) => ({
     name: `${browserName}-${screen}`,
     use: { browserName, ...emulation },
   })),
-);
+) satisfies Project[];
+
+/** Times the interface on its own once every other spec has finished, so their load can't push a timing over its budget. */
+const speedProject: Project = {
+  name: "speed",
+  testMatch: SPEED_SPECS,
+  dependencies: screenProjects.map(({ name }) => name),
+  use: { browserName: "chromium", ...SCREENS.desktop },
+};
+
+const projects: Project[] = [...screenProjects, speedProject];
 
 export default defineConfig({
   testDir: "tests/browser",

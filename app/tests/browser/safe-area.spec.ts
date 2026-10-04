@@ -60,8 +60,12 @@ function navigationLinks(page: Page) {
   return mainNavigation(page).getByRole("link");
 }
 
-function pageHeading(page: Page) {
-  return page.getByRole("heading", { level: 1, name: "Library" });
+/** The library's title row, which spans the page from one padded edge to the other. */
+function pageTitleRow(page: Page) {
+  return page
+    .getByRole("main")
+    .locator("header")
+    .filter({ has: page.getByRole("heading", { level: 1, name: "Library" }) });
 }
 
 async function roomBelowLastLink(page: Page) {
@@ -83,7 +87,7 @@ test("keeps the page heading below the status bar", async ({ page }) => {
   await emulateSafeArea(page, { top: STATUS_BAR, bottom: HOME_INDICATOR });
 
   await page.goto("/");
-  const heading = await boxOf(pageHeading(page));
+  const heading = await boxOf(pageTitleRow(page));
 
   expect(heading.y).toBeGreaterThanOrEqual(STATUS_BAR);
 });
@@ -131,7 +135,7 @@ test.describe("in landscape", () => {
     await emulateSafeArea(page, LANDSCAPE_INSETS);
 
     await page.goto("/");
-    const heading = await boxOf(pageHeading(page));
+    const heading = await boxOf(pageTitleRow(page));
 
     expect(heading.x + heading.width).toBeLessThanOrEqual(
       LANDSCAPE_PHONE.width - SIDE_CUTOUT,
@@ -170,7 +174,7 @@ test.describe("in landscape", () => {
       document.documentElement.dir = "rtl";
     });
     const firstLink = await boxOf(navigationLinks(page).first());
-    const heading = await boxOf(pageHeading(page));
+    const heading = await boxOf(pageTitleRow(page));
 
     expect(firstLink.x + firstLink.width).toBeLessThanOrEqual(
       LANDSCAPE_PHONE.width - SIDE_CUTOUT,
@@ -201,7 +205,7 @@ test.describe("in landscape", () => {
     await emulateSafeArea(page, LANDSCAPE_INSETS);
 
     await page.goto("/");
-    const heading = await boxOf(pageHeading(page));
+    const heading = await boxOf(pageTitleRow(page));
 
     expect(heading.x).toBeGreaterThanOrEqual(SIDE_CUTOUT);
     expect(heading.x + heading.width).toBeLessThanOrEqual(
@@ -236,7 +240,7 @@ test.describe("on Android", () => {
     await page.goto("/");
     await provideSystemInsets(page, { top: STATUS_BAR, bottom: GESTURE_BAR });
 
-    const heading = await boxOf(pageHeading(page));
+    const heading = await boxOf(pageTitleRow(page));
 
     expect(heading.y).toBeGreaterThanOrEqual(STATUS_BAR);
   });
@@ -286,7 +290,7 @@ test.describe("on Android", () => {
         right: THREE_BUTTON_BAR,
       });
 
-      const heading = await boxOf(pageHeading(page));
+      const heading = await boxOf(pageTitleRow(page));
 
       expect(heading.x + heading.width).toBeLessThanOrEqual(
         LANDSCAPE_PHONE.width - THREE_BUTTON_BAR,

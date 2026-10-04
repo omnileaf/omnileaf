@@ -1,7 +1,8 @@
 {
   "app_name": "Omnileaf",
   "library_title": "Library",
-  "library_empty": "Your library is empty.",
+  "library_empty_title": "Your library is empty",
+  "library_empty_body": "Add a folder of comics, manga or books. Omnileaf reads it where it is.",
   "library_series_list": "Series",
   "library_series_books": [
     {
