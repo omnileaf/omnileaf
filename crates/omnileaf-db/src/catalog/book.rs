@@ -1,7 +1,7 @@
 use omnileaf_sync_proto::{BookId, Fingerprint, FingerprintKind, SeriesId};
 use rusqlite::Transaction;
 
-use crate::{Error, title_sort::title_sort_key};
+use crate::{Error, book_order::book_order_key};
 
 const ADD_BOOK: &str = "INSERT INTO book (
         id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind
@@ -61,7 +61,7 @@ fn insert(transaction: &Transaction<'_>, book: &NewBook, sql: &str) -> Result<us
         book.id().as_bytes(),
         book.series.as_bytes(),
         &book.title,
-        title_sort_key(&book.title),
+        book_order_key(&book.title),
         book.added_at_ms,
         book.fingerprint.as_bytes(),
         kind_name(book.fingerprint.kind()),

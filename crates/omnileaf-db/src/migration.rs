@@ -41,6 +41,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0008_allow_one_home_root"),
     migration!("0009_store_book_file_locations_as_bytes"),
     migration!("0010_create_first_launch"),
+    migration!("0011_key_series_titles_by_collation"),
 ];
 
 pub(crate) fn pending(
@@ -157,7 +158,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        Database, connection, first_launch::first_launch_finished, scratch::ScratchLibrary,
+        Database, Language, connection, first_launch::first_launch_finished,
+        scratch::ScratchLibrary, title_key::TitleCollation,
     };
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
@@ -435,6 +437,28 @@ mod tests {
         drop(Database::open(&scratch.config).unwrap());
 
         assert!(!has_finished_first_launch(&scratch));
+    }
+
+    #[test]
+    fn keys_the_series_titles_kept_from_before_titles_were_collated() {
+        let scratch = ScratchLibrary::new("title-key-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..10]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), zeroblob(16), 'sample series 01', 'Sample Series 01', x'', 0)",
+                [],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let key: Vec<u8> = connection
+            .query_row("SELECT title_key FROM series", [], |row| row.get(0))
+            .unwrap();
+        let root = TitleCollation::new(&Language::ROOT).unwrap();
+        assert_eq!(key, root.key("Sample Series 01"));
     }
 
     fn schema_of(path: &Path) -> Schema {

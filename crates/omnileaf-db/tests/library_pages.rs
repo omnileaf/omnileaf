@@ -95,7 +95,7 @@ fn book_titles(series: SeriesId) -> impl List + Clone {
 }
 
 #[tokio::test]
-async fn pages_the_library_by_title_in_natural_order() {
+async fn pages_the_library_by_title_with_numbers_in_order_of_value() {
     let library = Library::with(&[
         ("Sample Series 10", 1, ONE_BOOK),
         ("Sample Series 9", 1, ONE_BOOK),

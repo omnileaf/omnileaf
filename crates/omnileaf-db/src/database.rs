@@ -3,6 +3,7 @@ use rusqlite::{Connection, Transaction, TransactionBehavior};
 use crate::{
     Config, Error, backup, connection,
     migration::{self, MIGRATIONS, Migration, Pending},
+    title_key::keep_titles_sorted,
     workers::ConnectionWorkers,
 };
 
@@ -16,24 +17,23 @@ pub struct Database {
 }
 
 impl Database {
-    /// Blocks while it opens the file and brings its schema up to date, so call it off the async runtime.
+    /// Blocks while it opens the file, brings its schema up to date and re-keys titles made by another build, so call it off the async runtime.
+    #[tracing::instrument(skip_all, fields(path = %config.path.display()))]
     pub fn open(config: &Config) -> Result<Self, Error> {
-        Self::open_with(config, MIGRATIONS)
+        let mut writer = migrated_writer(config, MIGRATIONS)?;
+        let transaction = writer.transaction_with_behavior(TransactionBehavior::Immediate)?;
+        keep_titles_sorted(&transaction)?;
+        transaction.commit()?;
+        Self::serve(config, writer)
     }
 
+    #[cfg(test)]
     #[tracing::instrument(skip_all, fields(path = %config.path.display()))]
     pub(crate) fn open_with(config: &Config, migrations: &[Migration]) -> Result<Self, Error> {
-        let mut writer = connection::open_writer(config)?;
-        match migration::pending(&writer, &config.path, migrations)? {
-            Pending::Current => {}
-            Pending::NewDatabase => {
-                migration::apply(&mut writer, &config.path, migrations)?;
-            }
-            Pending::Upgrade { from } => {
-                backup::back_up(&writer, &config.backup_dir, from)?;
-                migration::apply(&mut writer, &config.path, migrations)?;
-            }
-        }
+        Self::serve(config, migrated_writer(config, migrations)?)
+    }
+
+    fn serve(config: &Config, writer: Connection) -> Result<Self, Error> {
         let readers = (0..READER_COUNT)
             .map(|_| connection::open_reader(config))
             .collect::<Result<_, _>>()?;
@@ -80,6 +80,21 @@ impl Database {
     {
         self.readers.submit(move |connection| job(connection))
     }
+}
+
+fn migrated_writer(config: &Config, migrations: &[Migration]) -> Result<Connection, Error> {
+    let mut writer = connection::open_writer(config)?;
+    match migration::pending(&writer, &config.path, migrations)? {
+        Pending::Current => {}
+        Pending::NewDatabase => {
+            migration::apply(&mut writer, &config.path, migrations)?;
+        }
+        Pending::Upgrade { from } => {
+            backup::back_up(&writer, &config.backup_dir, from)?;
+            migration::apply(&mut writer, &config.path, migrations)?;
+        }
+    }
+    Ok(writer)
 }
 
 #[cfg(test)]

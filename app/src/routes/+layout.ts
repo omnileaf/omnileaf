@@ -8,6 +8,7 @@ import {
   markLanguage,
   useChosenLanguage,
 } from "$lib/language/language";
+import { getLocale } from "$lib/paraglide/runtime.js";
 
 import type { LayoutLoad } from "./$types";
 
@@ -19,6 +20,7 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   const [appInfo, firstLaunchFinished] = await Promise.all([
     commands.appInfo(),
     commands.firstLaunchFinished(),
+    commands.setAppLanguage(getLocale()),
   ]);
   document.documentElement.dataset.platform = appInfo.platform;
   const isFirstLaunch = needsFirstLaunch(firstLaunchFinished);

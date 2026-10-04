@@ -4,8 +4,8 @@ use unicode_normalization::UnicodeNormalization;
 const NUMBER_MARKER: u8 = b'0';
 const ZERO: char = '0';
 
-/// Bytes ordered as natural sort orders titles (case and width ignored, digit runs by value), short of its final tie-break.
-pub(crate) fn title_sort_key(title: &str) -> Vec<u8> {
+/// Bytes that order a series' books as natural sort orders their titles (case and width ignored, digit runs by value), short of its final tie-break.
+pub(crate) fn book_order_key(title: &str) -> Vec<u8> {
     let mut key = Vec::with_capacity(title.len());
     let mut digits = String::new();
     for character in title.nfkc().flat_map(char::to_lowercase) {
@@ -75,8 +75,8 @@ mod tests {
 
     proptest! {
         #[test]
-        fn orders_titles_as_natural_sort_does((left, right) in title_pairs()) {
-            let by_key = title_sort_key(&left).cmp(&title_sort_key(&right));
+        fn orders_books_as_natural_sort_orders_their_titles((left, right) in title_pairs()) {
+            let by_key = book_order_key(&left).cmp(&book_order_key(&right));
 
             let expected = if folded(&left) == folded(&right) {
                 Ordering::Equal
@@ -92,7 +92,7 @@ mod tests {
         let titles = ["Sample Series 10", "Sample Series 9", "sample series 010"];
 
         let mut sorted = titles;
-        sorted.sort_by_key(|title| title_sort_key(title));
+        sorted.sort_by_key(|title| book_order_key(title));
 
         assert_eq!(
             sorted,
@@ -105,7 +105,7 @@ mod tests {
         let titles = ["sample series 010", "Sample Series 10"];
 
         let mut sorted = titles;
-        sorted.sort_by_key(|title| title_sort_key(title));
+        sorted.sort_by_key(|title| book_order_key(title));
 
         assert_eq!(sorted, ["Sample Series 10", "sample series 010"]);
     }

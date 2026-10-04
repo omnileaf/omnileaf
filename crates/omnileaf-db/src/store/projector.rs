@@ -87,7 +87,7 @@ pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
         registers = projected.len(),
         "rebuilt the projections from the registers"
     );
-    Ok(Changed { keys: projected })
+    Ok(Changed::Registers { keys: projected })
 }
 
 fn projectable(entity: &str, id: &[u8], field: &str, cbor: &[u8]) -> Option<(Key, Projection)> {

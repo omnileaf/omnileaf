@@ -12,7 +12,10 @@ pub use key::{Key, LatestKey, MaximumKey};
 use tokio::sync::broadcast;
 pub use writer::Writer;
 
-use crate::{Database, Error};
+use crate::{
+    Database, Error, Language,
+    title_key::{Resorted, sort_titles_for},
+};
 
 const CHANGE_BACKLOG: usize = 64;
 
@@ -21,10 +24,23 @@ pub trait Clock: Send + Sync + 'static {
     fn now_unix_ms(&self) -> u64;
 }
 
-/// The registers one committed write changed.
+/// What one committed write changed.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Changed {
-    pub keys: BTreeSet<Key>,
+pub enum Changed {
+    Registers {
+        keys: BTreeSet<Key>,
+    },
+    /// Every series title was keyed again, so lists in title order read in a new order from here on.
+    TitleOrder,
+}
+
+impl Changed {
+    fn is_empty(&self) -> bool {
+        match self {
+            Self::Registers { keys } => keys.is_empty(),
+            Self::TitleOrder => false,
+        }
+    }
 }
 
 pub struct Store {
@@ -46,6 +62,11 @@ impl Store {
     #[must_use]
     pub const fn database(&self) -> &Database {
         &self.database
+    }
+
+    #[must_use]
+    pub fn clock(&self) -> &dyn Clock {
+        self.clock.as_ref()
     }
 
     /// A receiver that falls too far behind loses the oldest changes and is told how many it missed.
@@ -83,10 +104,26 @@ impl Store {
         );
         async move { rebuilt.await.map(drop) }
     }
+
+    /// Keys every series title again for `language`, in one transaction readers never see half of, unless they are keyed for it already.
+    pub fn sort_titles_for(
+        &self,
+        language: Language,
+    ) -> impl Future<Output = Result<(), Error>> + use<> {
+        let subscribers = self.subscribers.clone();
+        let sorted = self.database.write_then(
+            move |transaction| sort_titles_for(transaction, &language),
+            move |resorted| match resorted {
+                Resorted::Rekeyed => announce(&subscribers, &Changed::TitleOrder),
+                Resorted::Unchanged => {}
+            },
+        );
+        async move { sorted.await.map(drop) }
+    }
 }
 
 fn announce(subscribers: &broadcast::Sender<Changed>, changed: &Changed) {
-    if changed.keys.is_empty() {
+    if changed.is_empty() {
         return;
     }
     if subscribers.send(changed.clone()).is_err() {

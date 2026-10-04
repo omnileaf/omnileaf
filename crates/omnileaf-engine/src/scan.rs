@@ -7,7 +7,7 @@ use std::{
 
 use omnileaf_db::{
     Database,
-    catalog::{BookFile, NewSeries, RootId, ScannedBook, record_scanned_book},
+    catalog::{BookFile, NewSeries, RootId, ScannedBook, record_scanned_books},
 };
 use omnileaf_formats::{FormatError, fingerprint_book, open_book};
 use omnileaf_sync_proto::{KeyError, SeriesId};
@@ -102,12 +102,7 @@ pub(crate) async fn scan(
         .await?;
         let found = tally.count(read);
         let filed_in = database
-            .write(move |transaction| {
-                found
-                    .iter()
-                    .map(|book| record_scanned_book(transaction, book))
-                    .collect::<Result<Vec<_>, _>>()
-            })
+            .write(move |transaction| record_scanned_books(transaction, &found))
             .await?;
         tally.series.extend(filed_in);
         on_progress(ScanProgress::Reading {

@@ -20,6 +20,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   removeLibraryFolder: () => null,
   firstLaunchFinished: () => true,
   finishFirstLaunch: () => null,
+  setAppLanguage: () => null,
 };
 
 export function onPlatform(platform: Platform): { backend: FakeBackend } {

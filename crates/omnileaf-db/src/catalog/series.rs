@@ -1,13 +1,13 @@
 use omnileaf_sync_proto::{KeyError, SeriesId, SourceId, norm};
-use rusqlite::Transaction;
+use rusqlite::{Statement, Transaction};
 
-use crate::{Error, title_sort::title_sort_key};
+use crate::{Error, title_key::TitleCollation};
 
 const ADD_SERIES: &str =
-    "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+    "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
      VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
 const ADD_SERIES_UNLESS_PRESENT: &str =
-    "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+    "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
      VALUES (?1, ?2, ?3, ?4, ?5, ?6)
      ON CONFLICT DO NOTHING";
 
@@ -40,24 +40,34 @@ impl NewSeries {
 
 #[tracing::instrument(skip_all, fields(series = %series.id))]
 pub fn add_series(transaction: &Transaction<'_>, series: &NewSeries) -> Result<(), Error> {
-    insert(transaction, series, ADD_SERIES)
+    let collation = TitleCollation::stored(transaction)?;
+    insert(&mut transaction.prepare(ADD_SERIES)?, series, &collation)
 }
 
 /// Leaves a series already in the catalog as it is, title included.
 pub(crate) fn add_series_unless_present(
     transaction: &Transaction<'_>,
     series: &NewSeries,
+    collation: &TitleCollation,
 ) -> Result<(), Error> {
-    insert(transaction, series, ADD_SERIES_UNLESS_PRESENT)
+    insert(
+        &mut transaction.prepare(ADD_SERIES_UNLESS_PRESENT)?,
+        series,
+        collation,
+    )
 }
 
-fn insert(transaction: &Transaction<'_>, series: &NewSeries, sql: &str) -> Result<(), Error> {
-    transaction.prepare(sql)?.execute((
+fn insert(
+    statement: &mut Statement<'_>,
+    series: &NewSeries,
+    collation: &TitleCollation,
+) -> Result<(), Error> {
+    statement.execute((
         series.id.as_bytes(),
         series.source.as_bytes(),
         &series.natural_key,
         &series.title,
-        title_sort_key(&series.title),
+        collation.key(&series.title),
         series.added_at_ms,
     ))?;
     Ok(())
