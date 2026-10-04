@@ -9,6 +9,7 @@ import {
 
 const SUMMARIES = [
   { section: "Appearance", summary: "Follows the system" },
+  { section: "Privacy", summary: "Ask before sending crash reports" },
   { section: "General", summary: "English" },
   { section: "About", summary: `Version ${FAKE_APP_VERSION}` },
 ] as const;

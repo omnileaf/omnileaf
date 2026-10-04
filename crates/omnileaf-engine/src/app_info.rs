@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -9,7 +9,11 @@ pub struct AppInfo {
     pub source_code: String,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+impl AppInfo {
+    pub const NAME: &str = "Omnileaf";
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum Platform {
     Android,
@@ -32,4 +36,15 @@ impl Platform {
     } else {
         Self::Linux
     };
+
+    #[must_use]
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Android => "Android",
+            Self::Ios => "iOS",
+            Self::Macos => "macOS",
+            Self::Windows => "Windows",
+            Self::Linux => "Linux",
+        }
+    }
 }

@@ -2,7 +2,7 @@
 
 use std::error::Error;
 
-use omnileaf_engine::SurveyError;
+use omnileaf_engine::{CrashReportError, SurveyError};
 use serde::Serialize;
 use specta::Type;
 
@@ -17,6 +17,8 @@ pub(crate) enum IpcErrorCode {
     FolderUnreadable,
     ClipboardUnavailable,
     BrowserUnavailable,
+    NoCrashReport,
+    CrashReportUnavailable,
     Internal,
 }
 
@@ -51,6 +53,13 @@ impl IpcError {
         }
     }
 
+    pub(crate) fn no_crash_report() -> Self {
+        Self {
+            code: IpcErrorCode::NoCrashReport,
+            message: "no crash report is waiting for a decision",
+        }
+    }
+
     pub(crate) fn internal(error: &dyn Error) -> Self {
         tracing::error!(error = %describe(error), "command failed");
         Self {
@@ -66,6 +75,16 @@ impl From<SurveyError> for IpcError {
         Self {
             code: IpcErrorCode::FolderUnreadable,
             message: "the folder could not be read",
+        }
+    }
+}
+
+impl From<CrashReportError> for IpcError {
+    fn from(error: CrashReportError) -> Self {
+        tracing::warn!(error = %describe(&error), "handle a crash report");
+        Self {
+            code: IpcErrorCode::CrashReportUnavailable,
+            message: "the crash report could not be read or removed",
         }
     }
 }

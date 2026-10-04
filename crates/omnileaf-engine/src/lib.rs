@@ -1,11 +1,16 @@
 //! The headless core that the app's commands drive.
 
 mod app_info;
+mod crash_report;
 mod folder_survey;
 mod project_link;
 mod version_details;
 
 pub use app_info::{AppInfo, Platform};
+pub use crash_report::{
+    CrashOrigin, CrashReport, CrashReportError, CrashReportFile, CrashReportId, CrashReportOffers,
+    CrashedApp, InterfaceError, PanicDetails, SourceLocation, UnsavedCrashReport,
+};
 pub use folder_survey::{FolderSurvey, SurveyError, survey_folder};
 pub use project_link::ProjectLink;
 pub use version_details::{BuildProfile, VersionDetails};

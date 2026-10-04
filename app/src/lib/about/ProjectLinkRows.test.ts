@@ -7,7 +7,7 @@ import type { ProjectLink } from "$lib/ipc/bindings";
 import AboutFailures from "./AboutFailures.svelte";
 import { LinkOpening, type OpenProjectLink } from "./link-opening.svelte";
 import ProjectLinkRows from "./ProjectLinkRows.svelte";
-import { VersionCopying } from "./version-copying.svelte";
+import { DetailsCopying } from "$lib/copying/details-copying.svelte";
 
 type OpenResult = Awaited<ReturnType<OpenProjectLink>>;
 
@@ -28,7 +28,7 @@ async function renderWith(...results: (OpenResult | Promise<OpenResult>)[]) {
     }
     return Promise.resolve(result);
   });
-  const copying = new VersionCopying(() => Promise.resolve(OPENED));
+  const copying = new DetailsCopying(() => Promise.resolve(OPENED));
   await render(ProjectLinkRows, {
     opening,
     sourceCode: SOURCE_CODE,

@@ -1,8 +1,6 @@
 use std::fmt;
 
-use crate::{AppInfo, Platform};
-
-const APP_NAME: &str = "Omnileaf";
+use crate::AppInfo;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BuildProfile {
@@ -40,14 +38,15 @@ impl fmt::Display for VersionDetails {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
-            "{APP_NAME} {}, {} build",
+            "{} {}, {} build",
+            AppInfo::NAME,
             self.app.version,
             self.build.name()
         )?;
         writeln!(
             f,
             "Platform: {} on {}",
-            platform_name(self.app.platform),
+            self.app.platform.name(),
             self.architecture
         )?;
         if let Some(system) = &self.system {
@@ -57,15 +56,5 @@ impl fmt::Display for VersionDetails {
             writeln!(f, "Webview: {webview}")?;
         }
         writeln!(f, "Runtime: {}", self.runtime)
-    }
-}
-
-fn platform_name(platform: Platform) -> &'static str {
-    match platform {
-        Platform::Android => "Android",
-        Platform::Ios => "iOS",
-        Platform::Macos => "macOS",
-        Platform::Windows => "Windows",
-        Platform::Linux => "Linux",
     }
 }

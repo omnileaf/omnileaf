@@ -4,14 +4,14 @@
   import { m } from "$lib/paraglide/messages.js";
 
   import { type AboutLook, ROW_ICON_SIZES } from "./look";
-  import type { VersionCopying } from "./version-copying.svelte";
+  import type { DetailsCopying } from "$lib/copying/details-copying.svelte";
 
   const LOOKS = {
     phone: "rounded-tile px-md text-accent",
     pane: "rounded-control border border-border bg-card ps-md pe-list-row desktop:text-label desktop:min-block-pointer-button",
   } satisfies Record<AboutLook, string>;
 
-  let { copying, look }: { copying: VersionCopying; look: AboutLook } =
+  let { copying, look }: { copying: DetailsCopying; look: AboutLook } =
     $props();
 
   const isCopied = $derived(copying.outcome === "copied");

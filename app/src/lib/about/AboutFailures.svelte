@@ -2,9 +2,9 @@
   import { m } from "$lib/paraglide/messages.js";
 
   import type { LinkOpening } from "./link-opening.svelte";
-  import type { VersionCopying } from "./version-copying.svelte";
+  import type { DetailsCopying } from "$lib/copying/details-copying.svelte";
 
-  let { copying, opening }: { copying: VersionCopying; opening: LinkOpening } =
+  let { copying, opening }: { copying: DetailsCopying; opening: LinkOpening } =
     $props();
 </script>
 
