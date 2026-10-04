@@ -156,6 +156,26 @@ test("shows the series chosen on the search page", async ({ page }) => {
   ).toHaveText([/Sample Series 0007/]);
 });
 
+test("shows another series chosen while the search page is open", async ({
+  page,
+}) => {
+  await page.goto("/search?q=Sample+Series+0007");
+  await expect(
+    page.getByRole("list", { name: "Series found" }).getByRole("listitem"),
+  ).toHaveText([/Sample Series 0007/]);
+  await pressQuickOpen(page);
+
+  await field(page).fill("0008");
+  await field(page).press("Enter");
+
+  await expect(
+    page.getByRole("searchbox", { name: "Search your library" }),
+  ).toHaveValue("Sample Series 0008");
+  await expect(
+    page.getByRole("list", { name: "Series found" }).getByRole("listitem"),
+  ).toHaveText([/Sample Series 0008/]);
+});
+
 test("closes with Escape and gives focus back to where it was", async ({
   page,
 }) => {

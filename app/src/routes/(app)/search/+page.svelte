@@ -32,8 +32,8 @@
   let { data }: PageProps = $props();
 
   const query = new SearchQuery(filterWords(), getLocale());
-  query.type(
-    untrack(() => page.url.searchParams.get(SEARCH_QUERY_PARAMETER)) ?? "",
+  const asked = $derived(
+    page.url.searchParams.get(SEARCH_QUERY_PARAMETER) ?? "",
   );
 
   const results = new LibrarySeriesList((after) =>
@@ -72,6 +72,18 @@
     void results.start();
     void found.load();
   }
+
+  function startOver(text: string): void {
+    query.clearConditions();
+    query.type(text);
+  }
+
+  $effect.pre(() => {
+    const text = asked;
+    untrack(() => {
+      startOver(text);
+    });
+  });
 
   $effect(() => {
     if (hasSomethingToFind(query.search)) {
