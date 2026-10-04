@@ -1,7 +1,7 @@
 use std::{fmt, path::PathBuf, str::FromStr};
 
 use omnileaf_sync_proto::BookId;
-use rusqlite::{Connection, OptionalExtension, Row, types::Type};
+use rusqlite::{Connection, OptionalExtension, Row};
 
 use crate::{
     Error,
@@ -34,15 +34,7 @@ pub fn cover_file(connection: &Connection, cover: &Cover) -> Result<Option<PathB
         .prepare(FILE_OF_COVER)?
         .query_row((cover.file.0, cover.book.as_bytes(), cover.rev), |row| {
             let RootLocator::Path(folder) = stored_locator(row, ROOT_LOCATOR_KIND_COLUMN)?;
-            let location =
-                native_path::from_bytes(row.get(FILE_LOCATION_COLUMN)?).ok_or_else(|| {
-                    rusqlite::Error::InvalidColumnType(
-                        FILE_LOCATION_COLUMN,
-                        "location".to_owned(),
-                        Type::Blob,
-                    )
-                })?;
-            Ok(folder.join(location))
+            Ok(folder.join(native_path::stored_native_path(row, FILE_LOCATION_COLUMN)?))
         })
         .optional()?)
 }
