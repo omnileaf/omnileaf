@@ -1,5 +1,6 @@
 mod archive;
 mod cb7;
+mod encoded_page;
 mod error;
 mod generated_library;
 mod library;
@@ -10,6 +11,10 @@ mod timing_budget;
 
 pub use archive::{ArchiveEntry, Compression, cbz};
 pub use cb7::{Packing, cb7};
+pub use encoded_page::{
+    ENCODED_PAGE_HEIGHT, ENCODED_PAGE_INK, ENCODED_PAGE_PAPER, ENCODED_PAGE_WIDTH,
+    INK_OVER_CLEAR_JXL, INK_OVER_PAPER_AVIF, INK_OVER_PAPER_JXL,
+};
 pub use error::FixtureError;
 pub use generated_library::{GENERATED_LIBRARY_NAME, GeneratedLibrary, write_generated_library};
 pub use library::{
