@@ -23,7 +23,7 @@
 >
   <a
     href={resolve("/(app)")}
-    class="flex shrink-0 items-center justify-center gap-xs rounded-full block-reader-control inline-reader-control expanded:rounded-reader-control-wide expanded:ps-reader-back-start-wide expanded:pe-md expanded:text-small expanded:font-semibold expanded:block-reader-control-wide expanded:inline-auto"
+    class="relative flex shrink-0 items-center justify-center gap-xs rounded-full block-reader-control inline-reader-control expanded:rounded-reader-control-wide expanded:ps-reader-back-start-wide expanded:pe-md expanded:text-small expanded:font-semibold expanded:block-reader-control-wide expanded:inline-auto android:before:absolute android:before:block-touch-target android:before:inline-touch-target"
   >
     <ArrowLeft
       size={BACK_ICON_SIZE}
