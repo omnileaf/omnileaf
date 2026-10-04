@@ -15,7 +15,7 @@
     type FilterCondition,
     filtersOn,
   } from "#lib/library/library-listing.ts";
-  import { LibrarySeriesList } from "#lib/library/library-series.svelte.ts";
+  import { librarySeriesList } from "#lib/library/library-series.svelte.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
@@ -53,7 +53,7 @@
 
   const query = new SearchQuery(filterWords(), getLocale());
 
-  const results = new LibrarySeriesList((after) =>
+  const results = librarySeriesList((after) =>
     commands.librarySearch(after, query.search),
   );
   const found = new LibrarySeriesCount(
@@ -79,7 +79,7 @@
     if (!isAnswered || results.list.kind !== "loaded") {
       return "";
     }
-    if (results.list.series.length === 0) {
+    if (results.list.items.length === 0) {
       return nothingFoundTitle(query.search.text);
     }
     return found.count === undefined
@@ -91,7 +91,7 @@
   let drawnKey: string | undefined = $state();
   let revealResult: Reveal | undefined = $state();
   const shown: readonly LibrarySeries[] = $derived(
-    results.list.kind === "loaded" ? results.list.series : [],
+    results.list.kind === "loaded" ? results.list.items : [],
   );
   const activeIndex = $derived.by(() => {
     const index = shown.findIndex((series) => series.id === activeKey);
@@ -260,7 +260,7 @@
     />
     {#if results.list.kind === "failed"}
       <p class="text-body text-muted">{m.search_failed()}</p>
-    {:else if results.list.kind === "loaded" && results.list.series.length === 0}
+    {:else if results.list.kind === "loaded" && results.list.items.length === 0}
       {#if isAnswered}
         <NothingFound text={query.search.text} />
       {/if}
@@ -269,7 +269,7 @@
         onRevealReady={(reveal: Reveal) => {
           revealResult = reveal;
         }}
-        series={results.list.series}
+        series={results.list.items}
         count={found.count}
         isComplete={results.list.isComplete}
         onNearEnd={() => {
