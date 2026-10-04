@@ -4,12 +4,14 @@
   import { FolderAdding } from "$lib/library/folder-adding.svelte";
   import FolderNotice from "$lib/library/FolderNotice.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import { getScreenshotMode } from "$lib/screenshot-mode/screenshot-mode.svelte";
   import SectionHeading from "$lib/settings/SectionHeading.svelte";
 
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 
+  const screenshotMode = getScreenshotMode();
   const foldersHeadingId = $props.id();
 
   const adding = new FolderAdding(
@@ -44,6 +46,7 @@
   <div class="mbs-xs">
     <FolderNotice
       {adding}
+      usesStandIns={screenshotMode.isOn}
       onDismissed={() => {
         addFolder?.focus();
       }}
