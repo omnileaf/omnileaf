@@ -32,6 +32,8 @@ pub enum ImagingError {
     UnreadableHeader,
     #[error("transcode a page in {format:?}, when only WebP and JPEG XL pages are transcoded")]
     NotTranscodable { format: PageFormat },
+    #[error("transcode a {format:?} page its decoder gave up on")]
+    DamagedPage { format: PageFormat },
     #[error("decode a {format:?} page to transcode it")]
     Transcode {
         format: PageFormat,

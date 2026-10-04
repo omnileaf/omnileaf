@@ -9,8 +9,8 @@ use std::io::Cursor;
 use omnileaf_imaging::{ImagingError, PageFormat, Size, page_size, transcode};
 use omnileaf_testkit::{
     ENCODED_PAGE_HEIGHT, ENCODED_PAGE_INK, ENCODED_PAGE_PAPER, ENCODED_PAGE_WIDTH,
-    INK_OVER_CLEAR_JXL, INK_OVER_PAPER_AVIF, INK_OVER_PAPER_JXL, PageShape, page_jpeg, page_png,
-    page_webp,
+    INK_OVER_CLEAR_JXL, INK_OVER_PAPER_AVIF, INK_OVER_PAPER_JXL, PageShape, jxl_header_only,
+    page_jpeg, page_png, page_webp, webp_header_only,
 };
 
 const SEED: u64 = 5;
@@ -223,6 +223,45 @@ fn fails_to_transcode_a_jpeg_xl_page_cut_short() {
                 ..
             })
         ),
+        "{transcoded:?}"
+    );
+}
+
+#[test]
+fn reads_the_size_a_jpeg_xl_header_claims() {
+    let header = jxl_header_only(100_000, 70_000);
+
+    let size = page_size(&header).unwrap();
+
+    assert_eq!(
+        size,
+        Size {
+            width: 100_000,
+            height: 70_000
+        }
+    );
+}
+
+#[test]
+fn refuses_to_transcode_a_webp_whose_pixels_outgrow_the_memory_budget_before_decoding_it() {
+    let huge = webp_header_only(16_000, 16_000);
+
+    let transcoded = transcode(&huge);
+
+    assert!(
+        matches!(transcoded, Err(ImagingError::TooLarge { .. })),
+        "{transcoded:?}"
+    );
+}
+
+#[test]
+fn refuses_to_transcode_a_jpeg_xl_whose_pixels_outgrow_the_memory_budget_before_decoding_it() {
+    let huge = jxl_header_only(100_000, 70_000);
+
+    let transcoded = transcode(&huge);
+
+    assert!(
+        matches!(transcoded, Err(ImagingError::TooLarge { .. })),
         "{transcoded:?}"
     );
 }
