@@ -30,7 +30,7 @@ use tokio::{
 use crate::{
     AppLanguage, BooksRemoval, CoversPerRowOutOfRange, FolderCursor, FolderId, FolderPage,
     FolderRescan, FolderScan, LibraryChanges, LibraryFilter, LibraryFolder, LibraryListing,
-    LibrarySeries, LibraryView, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesCursor,
+    LibrarySearch, LibraryView, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesCursor,
     SeriesPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     cover_thumbnails::CoverFile,
@@ -39,6 +39,7 @@ use crate::{
     library_changes::CatalogWritten,
     library_folder::root_folder,
     library_layout::folder_name,
+    library_search::StoredSearch,
     moved_home::move_home,
     rescan::rescan,
     rescan_conditions::{RescanConditions, Storage},
@@ -233,10 +234,7 @@ impl Library {
             .database()
             .read(move |connection| series_page(connection, &listing, &request))
             .await?;
-        Ok(SeriesPage {
-            series: page.items.into_iter().map(LibrarySeries::from).collect(),
-            next: page.next.map(SeriesCursor),
-        })
+        Ok(SeriesPage::from(page))
     }
 
     pub async fn folder_book_count(&self, id: FolderId) -> Result<u32, LibraryError> {
@@ -253,6 +251,35 @@ impl Library {
             .store
             .database()
             .read(move |connection| series_count(connection, &filter))
+            .await?)
+    }
+
+    /// Lists in title order the series holding books whose titles hold the search's text, of those its filter lets through.
+    pub async fn search(
+        &self,
+        search: LibrarySearch,
+        after: Option<SeriesCursor>,
+    ) -> Result<SeriesPage, LibraryError> {
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(SERIES_PER_PAGE)?,
+        };
+        let search = StoredSearch::parse(&search)?;
+        let page = self
+            .store
+            .database()
+            .read(move |connection| search.page(connection, &request))
+            .await?;
+        Ok(SeriesPage::from(page))
+    }
+
+    /// Counts the series [`Library::search`] lists for the same search.
+    pub async fn search_count(&self, search: LibrarySearch) -> Result<u32, LibraryError> {
+        let search = StoredSearch::parse(&search)?;
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| search.count(connection))
             .await?)
     }
 
