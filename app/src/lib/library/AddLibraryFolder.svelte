@@ -10,6 +10,7 @@
   import type { commands, FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
   import type { Notice, Notices } from "$lib/notices/notices.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import { standInName } from "$lib/screenshot-mode/stand-ins";
 
   type Outcome =
     | { readonly kind: "idle" }
@@ -44,11 +45,15 @@
     },
   } satisfies Record<IpcErrorCode, Failure>;
 
-  let {
-    addFolder,
-    notices,
-  }: { addFolder: typeof commands.addLibraryFolder; notices: Notices } =
-    $props();
+  interface Props {
+    readonly addFolder: typeof commands.addLibraryFolder;
+    readonly notices: Notices;
+    readonly usesStandIns: boolean;
+  }
+
+  let { addFolder, notices, usesStandIns }: Props = $props();
+
+  const SHOWN_FOLDER_STAND_IN = 1;
 
   let outcome: Outcome = $state({ kind: "idle" });
   let failure: Notice | undefined;
@@ -83,6 +88,12 @@
     };
   }
 
+  function shownName(survey: FolderSurvey): string {
+    return usesStandIns
+      ? standInName("folder", SHOWN_FOLDER_STAND_IN)
+      : survey.name;
+  }
+
   async function add(): Promise<void> {
     outcome = { kind: "adding" };
     const result = await addFolder();
@@ -113,7 +124,7 @@
     <p>
       {m.library_folder_found({
         count: outcome.survey.comicFiles,
-        name: outcome.survey.name,
+        name: shownName(outcome.survey),
       })}
     </p>
     {#if outcome.survey.unreadableFolders > 0}
