@@ -49,6 +49,27 @@ pub(crate) const STEPS: &[Step] = &[
         ],
     },
     Step {
+        name: "fuzz format",
+        group: Group::Rust,
+        program: "cargo",
+        args: &["fmt", "--manifest-path", "fuzz/Cargo.toml", "--check"],
+    },
+    Step {
+        name: "fuzz lint",
+        group: Group::Rust,
+        program: "cargo",
+        args: &[
+            "clippy",
+            "--manifest-path",
+            "fuzz/Cargo.toml",
+            "--all-targets",
+            "--locked",
+            "--",
+            "-D",
+            "warnings",
+        ],
+    },
+    Step {
         name: "test",
         group: Group::Rust,
         program: "cargo",
@@ -327,6 +348,26 @@ mod tests {
 
         let names: Vec<&str> = selected.iter().map(|step| step.name).collect();
         assert_eq!(names, ["android"]);
+    }
+
+    fn rust_group_runs_on_the_fuzz_crate(subcommand: &str) -> bool {
+        select(STEPS, Some(Group::Rust)).iter().any(|step| {
+            step.args.first() == Some(&subcommand)
+                && step
+                    .args
+                    .windows(2)
+                    .any(|pair| pair == ["--manifest-path", "fuzz/Cargo.toml"])
+        })
+    }
+
+    #[test]
+    fn the_rust_group_checks_the_fuzz_crate_formatting() {
+        assert!(rust_group_runs_on_the_fuzz_crate("fmt"));
+    }
+
+    #[test]
+    fn the_rust_group_lints_the_fuzz_crate() {
+        assert!(rust_group_runs_on_the_fuzz_crate("clippy"));
     }
 
     #[test]
