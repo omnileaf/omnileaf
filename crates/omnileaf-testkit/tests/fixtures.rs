@@ -13,8 +13,8 @@ use std::{
 
 use omnileaf_testkit::{
     ArchiveEntry, Compression, GENERATED_LIBRARY_NAME, GeneratedLibrary, PageShape, SAMPLE_LIBRARY,
-    SAMPLE_LIBRARY_NAME, cbz, page_jpeg, page_png, page_webp, scan_jpeg, write_generated_library,
-    write_sample_library,
+    SAMPLE_LIBRARY_NAME, cbz, grainy_scan_jpeg, page_jpeg, page_png, page_webp,
+    write_generated_library, write_sample_library,
 };
 use zip::{CompressionMethod, DateTime, ZipArchive};
 
@@ -136,8 +136,8 @@ fn draws_a_webp_page_with_exactly_the_pixels_of_the_png_page() {
 }
 
 #[test]
-fn draws_a_scan_at_the_size_of_a_full_resolution_comic_page() {
-    let scan = scan_jpeg(SEED).unwrap();
+fn draws_a_grainy_scan_at_the_size_of_a_full_resolution_comic_page() {
+    let scan = grainy_scan_jpeg(SEED).unwrap();
 
     let size = jpeg_dimensions(&scan);
 
@@ -145,8 +145,8 @@ fn draws_a_scan_at_the_size_of_a_full_resolution_comic_page() {
 }
 
 #[test]
-fn weighs_a_scan_about_the_megabyte_of_a_typical_scanned_page() {
-    let scan = scan_jpeg(SEED).unwrap();
+fn weighs_a_grainy_scan_a_little_over_a_megabyte() {
+    let scan = grainy_scan_jpeg(SEED).unwrap();
 
     let megabytes = scan.len() / 1_000_000;
 

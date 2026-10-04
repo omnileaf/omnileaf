@@ -12,7 +12,7 @@ const GOLDEN_GAMMA: u64 = 0x9E37_79B9_7F4A_7C15;
 const JPEG_QUALITY: u8 = 90;
 const SCAN_WIDTH: u16 = 1800;
 const SCAN_HEIGHT: u16 = 2700;
-const SCAN_GRAIN: u8 = 16;
+const GRAINY_SCAN_GRAIN: u8 = 16;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PageShape {
@@ -67,8 +67,8 @@ pub fn page_webp(seed: u64, index: u32, shape: PageShape) -> Result<Vec<u8>, Fix
     Ok(bytes)
 }
 
-/// A JPEG the size of a full-resolution comic scan, with enough grain to weigh about the megabyte a typical scanned page does.
-pub fn scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
+/// A full-resolution colour comic scan with heavy grain and unsubsampled chroma, the slow end of what a cover is made from.
+pub fn grainy_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
     let ground = tint(seed, 0);
     let width = u32::from(SCAN_WIDTH);
     let pixels: Vec<u8> = (0..u32::from(SCAN_HEIGHT))
@@ -78,9 +78,9 @@ pub fn scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
                     splitmix64(seed ^ u64::from(row * width + column)).to_le_bytes();
                 let [ground_red, ground_green, ground_blue] = ground;
                 [
-                    ground_red.saturating_sub(red % SCAN_GRAIN),
-                    ground_green.saturating_sub(green % SCAN_GRAIN),
-                    ground_blue.saturating_sub(blue % SCAN_GRAIN),
+                    ground_red.saturating_sub(red % GRAINY_SCAN_GRAIN),
+                    ground_green.saturating_sub(green % GRAINY_SCAN_GRAIN),
+                    ground_blue.saturating_sub(blue % GRAINY_SCAN_GRAIN),
                 ]
             })
         })
