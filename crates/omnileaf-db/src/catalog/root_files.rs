@@ -109,7 +109,8 @@ mod tests {
         assert_eq!(
             plan,
             [
-                "SEARCH book_file USING INDEX sqlite_autoindex_book_file_1 (root_id=? AND location=?)"
+                "SEARCH book_file USING INDEX sqlite_autoindex_book_file_1 (root_id=? AND location=?)",
+                "SEARCH book_pages USING INTEGER PRIMARY KEY (rowid=?)",
             ]
         );
     }
