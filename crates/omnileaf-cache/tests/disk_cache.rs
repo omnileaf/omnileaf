@@ -245,6 +245,27 @@ fn misses_an_entry_it_cannot_read_and_lets_it_go() {
     assert!(!folder.path().join("a").exists());
 }
 
+#[cfg(unix)]
+#[test]
+fn keeps_counting_an_entry_it_could_not_remove() {
+    use std::os::unix::fs::PermissionsExt;
+    const READ_ONLY_FOLDER: u32 = 0o500;
+    const OWNER_ONLY: u32 = 0o700;
+    let folder = ScratchFolder::new("unremovable-entry");
+    let cache = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();
+    cache.put(&key("a"), &entry(1)).unwrap();
+    let set_mode = |mode| {
+        fs::set_permissions(folder.path(), fs::Permissions::from_mode(mode)).unwrap();
+    };
+    set_mode(READ_ONLY_FOLDER);
+
+    cache.remove(&key("a"));
+
+    set_mode(OWNER_ONLY);
+    assert!(folder.path().join("a").exists());
+    assert_eq!(cache.stored_bytes(), 100);
+}
+
 #[test]
 fn misses_an_entry_a_lost_write_left_empty_and_lets_it_go() {
     let folder = ScratchFolder::new("emptied-entry");
