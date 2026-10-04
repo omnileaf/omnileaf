@@ -81,7 +81,6 @@ async function launchWebDriverAgent(
   });
 }
 
-/** The Simulator's launcher refuses a just-installed app until it has registered it, so this waits until the app launches. */
 async function installApp(simulator: Simulator): Promise<string> {
   await run("xcrun", ["simctl", "install", simulator.udid, APP_BUNDLE], {
     timeout: SIMCTL_TIMEOUT_MS,

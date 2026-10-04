@@ -45,7 +45,7 @@ async function launches(
   }
 }
 
-/** The Simulator can hang a launch that succeeds when tried again, so a hung launch is retried while any other failure ends it. */
+/** Waits for the Simulator's launcher to register a just-installed app, launching again after a hung launch; any other failure ends it. */
 export async function launchOnceRegistered(
   bundleId: string,
   launch: () => Promise<unknown>,
