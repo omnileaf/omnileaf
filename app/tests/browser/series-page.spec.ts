@@ -330,6 +330,35 @@ test("starts picking books with a long press on a touch screen", async ({
   ).toBeVisible();
 });
 
+test("picks the next book tapped after a long press the screen took over", async ({
+  page,
+}) => {
+  test.skip(
+    !(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)),
+    "a long press is how a touch screen starts picking",
+  );
+  await page.clock.install();
+  await openSeries(page);
+  const row = books(page).getByText(shelf.titleOf(6));
+  await row.dispatchEvent("pointerdown", {
+    pointerType: "touch",
+    isPrimary: true,
+  });
+  await page.clock.runFor(600);
+  await row.dispatchEvent("pointercancel", {
+    pointerType: "touch",
+    isPrimary: true,
+  });
+
+  await page
+    .getByRole("checkbox", { name: `Select ${shelf.titleOf(7)}` })
+    .tap();
+
+  await expect(
+    page.getByRole("heading", { level: 2, name: "2 selected" }),
+  ).toBeVisible();
+});
+
 for (const colorScheme of ["light", "dark"] as const) {
   test(`the series page has no accessibility violations in the ${colorScheme} theme`, async ({
     page,
