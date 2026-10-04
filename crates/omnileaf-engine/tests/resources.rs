@@ -120,6 +120,13 @@ fn write_book(path: &Path, seed: u64, comic_info: Option<&str>) {
     fs::write(path, cbz(&entries, Compression::Stored).unwrap()).unwrap();
 }
 
+fn jpeg(body: Vec<u8>) -> Resource {
+    Resource::Immutable {
+        content_type: "image/jpeg",
+        body,
+    }
+}
+
 fn thumbnail_of(seed: u64, index: u32) -> Vec<u8> {
     thumbnail(&page(seed, index)).unwrap().jpeg
 }
@@ -141,9 +148,16 @@ async fn serves_a_cover_as_a_jpeg_the_webview_may_keep_for_good() {
 
     let resource = covers.request_cover(cover).await;
 
-    assert_eq!(resource.status_code(), 200);
-    assert_eq!(resource.content_type(), Some("image/jpeg"));
-    assert!(resource.cache_control().contains("immutable"));
+    assert!(
+        matches!(
+            resource,
+            Resource::Immutable {
+                content_type: "image/jpeg",
+                ..
+            }
+        ),
+        "{resource:?}"
+    );
 }
 
 #[tokio::test]
@@ -153,7 +167,7 @@ async fn shows_the_first_page_of_a_book_without_comic_info() {
 
     let resource = covers.request_cover(cover).await;
 
-    assert_eq!(resource.into_body(), thumbnail_of(SEED, 0));
+    assert_eq!(resource, jpeg(thumbnail_of(SEED, 0)));
 }
 
 #[tokio::test]
@@ -163,7 +177,7 @@ async fn shows_the_page_comic_info_marks_as_the_front_cover() {
 
     let resource = covers.request_cover(cover).await;
 
-    assert_eq!(resource.into_body(), thumbnail_of(SEED, 2));
+    assert_eq!(resource, jpeg(thumbnail_of(SEED, 2)));
 }
 
 #[tokio::test]
@@ -171,17 +185,21 @@ async fn finds_nothing_at_a_path_the_library_never_gave_out() {
     let covers = Covers::with_book("unknown-path", None).await;
     let cover = covers.cover().await.to_string();
 
-    let statuses = [
+    let resources = [
         covers.request("/").await,
         covers.request("/thumb/v1/not-a-book/1/1").await,
         covers
             .request(&format!("/{}", cover.replace("thumb", "page")))
             .await,
         covers.request(&format!("/{cover}/extra")).await,
-    ]
-    .map(|resource| resource.status_code());
+    ];
 
-    assert_eq!(statuses, [404; 4]);
+    assert!(
+        resources
+            .iter()
+            .all(|resource| *resource == Resource::NotFound),
+        "{resources:?}"
+    );
 }
 
 #[tokio::test]
@@ -195,7 +213,7 @@ async fn finds_nothing_at_a_cover_whose_file_changed_since_it_was_listed() {
     let current = covers.request_cover(covers.cover().await).await;
 
     assert_eq!(stale, Resource::NotFound);
-    assert_eq!(current.into_body(), thumbnail_of(SEED + 1, 0));
+    assert_eq!(current, jpeg(thumbnail_of(SEED + 1, 0)));
 }
 
 #[tokio::test]
@@ -219,7 +237,7 @@ async fn still_serves_covers_when_its_cache_folder_cannot_be_made() {
 
     let resource = covers.request_cover(cover).await;
 
-    assert_eq!(resource.into_body(), thumbnail_of(SEED, 0));
+    assert_eq!(resource, jpeg(thumbnail_of(SEED, 0)));
 }
 
 #[tokio::test]
@@ -232,7 +250,7 @@ async fn serves_a_cover_made_before_from_its_cache_after_a_restart() {
 
     let resource = covers.request_cover(cover).await;
 
-    assert_eq!(resource.into_body(), thumbnail_of(SEED, 0));
+    assert_eq!(resource, jpeg(thumbnail_of(SEED, 0)));
 }
 
 #[cfg(unix)]
@@ -250,7 +268,7 @@ async fn serves_a_cover_from_a_cached_thumbnail_it_may_only_read() {
 
     let resource = covers.request_cover(cover).await;
 
-    assert_eq!(resource.into_body(), thumbnail_of(SEED, 0));
+    assert_eq!(resource, jpeg(thumbnail_of(SEED, 0)));
 }
 
 #[tokio::test]
@@ -262,7 +280,7 @@ async fn makes_a_cover_again_when_its_cached_thumbnail_came_back_empty() {
 
     let resource = covers.request_cover(cover).await;
 
-    assert_eq!(resource.into_body(), thumbnail_of(SEED, 0));
+    assert_eq!(resource, jpeg(thumbnail_of(SEED, 0)));
 }
 
 #[tokio::test]
@@ -277,7 +295,7 @@ async fn makes_a_cover_again_when_its_cached_thumbnail_came_back_cut_short() {
 
     let resource = covers.request_cover(cover).await;
 
-    assert_eq!(resource.into_body(), thumbnail_of(SEED, 0));
+    assert_eq!(resource, jpeg(thumbnail_of(SEED, 0)));
     assert_eq!(
         fs::read(covers.cached_thumbnail()).unwrap(),
         thumbnail_of(SEED, 0)

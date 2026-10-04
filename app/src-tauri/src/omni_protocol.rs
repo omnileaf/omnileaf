@@ -1,4 +1,4 @@
-//! The `omni` protocol, which hands the webview pages and covers by id so it never reads a file itself.
+//! The `omni` protocol, which hands the webview covers by id so it never reads a file itself.
 
 use omnileaf_engine::{Library, Resource, ResourceRouter};
 use tauri::{
@@ -8,6 +8,8 @@ use tauri::{
 
 pub(crate) const SCHEME: &str = "omni";
 const NO_SNIFFING: &str = "nosniff";
+const KEEP_FOR_GOOD: &str = "public, max-age=31536000, immutable";
+const NOT_STORED: &str = "no-store";
 
 /// Answers off the protocol's thread, since making a thumbnail can take a while.
 #[expect(
@@ -36,11 +38,19 @@ pub(crate) fn answer<R: Runtime>(
 }
 
 fn http_response(resource: Resource) -> http::Response<Vec<u8>> {
-    let status =
-        StatusCode::from_u16(resource.status_code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-    let cache_control = resource.cache_control();
-    let content_type = resource.content_type();
-    let mut response = http::Response::new(resource.into_body());
+    let (status, cache_control, content_type, body) = match resource {
+        Resource::Immutable { content_type, body } => {
+            (StatusCode::OK, KEEP_FOR_GOOD, Some(content_type), body)
+        }
+        Resource::NotFound => (StatusCode::NOT_FOUND, NOT_STORED, None, Vec::new()),
+        Resource::Failed => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            NOT_STORED,
+            None,
+            Vec::new(),
+        ),
+    };
+    let mut response = http::Response::new(body);
     *response.status_mut() = status;
     let headers = response.headers_mut();
     headers.insert(
