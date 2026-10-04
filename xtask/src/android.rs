@@ -94,7 +94,13 @@ impl AdbState {
 /// Finds the name Tauri matches an Android phone by in `adb shell dumpsys bluetooth_manager`.
 pub(crate) fn bluetooth_name(dump: &str) -> Option<&str> {
     dump.lines()
-        .find_map(|line| line.trim().strip_prefix(BLUETOOTH_NAME_FIELD))
+        .find_map(|line| {
+            let line = line.trim_start();
+            let (field, value) = line.split_at_checked(BLUETOOTH_NAME_FIELD.len())?;
+            field
+                .eq_ignore_ascii_case(BLUETOOTH_NAME_FIELD)
+                .then_some(value)
+        })
         .map(str::trim)
         .filter(|name| !name.is_empty())
 }
@@ -302,5 +308,12 @@ mod tests {
     #[test]
     fn finds_no_phone_name_in_an_empty_dump() {
         assert_eq!(bluetooth_name("Bluetooth Status\n  enabled: false\n"), None);
+    }
+
+    #[test]
+    fn finds_the_phone_name_where_newer_android_capitalises_the_field() {
+        let dump = "Bluetooth Status:\n  State:         ON\n  Name:          Pixel 9 Pro\n  Inner app:     com.android.bluetooth\n";
+
+        assert_eq!(bluetooth_name(dump), Some("Pixel 9 Pro"));
     }
 }
