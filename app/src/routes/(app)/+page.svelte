@@ -91,9 +91,12 @@
   const offersAddFolder = $derived(isEmpty || library.list.kind === "failed");
 
   function listedBy(): LibraryListing {
-    return listing.reading.kind === "read"
-      ? listing.reading.value
-      : DEFAULT_LIBRARY_LISTING;
+    if (chosenListing === undefined) {
+      throw new Error(
+        "the library's series were asked for before their listing was read",
+      );
+    }
+    return chosenListing;
   }
 
   function chooseListing(chosen: LibraryListing): void {
