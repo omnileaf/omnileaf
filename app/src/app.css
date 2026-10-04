@@ -120,6 +120,7 @@
   --spacing-gutter: 1rem;
   --spacing-page-start: calc(var(--spacing-safe-start) + var(--spacing-gutter));
   --spacing-page-end: calc(var(--spacing-safe-end) + var(--spacing-gutter));
+  --spacing-notice-end: calc(var(--spacing-safe-end) + var(--spacing-xl));
   --spacing-rail: calc(5.5rem + var(--spacing-safe-start));
   --spacing-sidebar: calc(14.5rem + var(--spacing-safe-start));
   --spacing-floating-bar: 3.875rem;
