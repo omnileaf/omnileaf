@@ -13,7 +13,7 @@ private const val TABLET_SMALLEST_WIDTH_DP = 600
 
 class MainActivity : TauriActivity() {
   @get:ColorInt
-  private val startingBackground: Int by lazy { RememberedBackground(this).color() ?: getColor(R.color.page_background) }
+  private val startingBackground: Int by lazy { getColor(RememberedTheme(this).theme().pageBackground()) }
   private var webView: WebView? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {

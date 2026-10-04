@@ -88,12 +88,27 @@ impl PageBackground {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[cfg_attr(
     not(any(target_os = "android", test)),
-    expect(dead_code, reason = "only Android draws a splash screen")
+    expect(dead_code, reason = "only Android starts in a remembered theme")
 )]
-enum SplashScreenTheme {
+enum StartingTheme {
     Device,
     Light,
     Dark,
+}
+
+#[cfg_attr(
+    not(any(target_os = "android", test)),
+    expect(dead_code, reason = "only Android starts in a remembered theme")
+)]
+impl StartingTheme {
+    /// Remembers only a light or dark choice, so under System a cold start and its splash screen keep following the device's dark mode.
+    fn for_preference(preference: ThemePreference) -> Self {
+        match preference {
+            ThemePreference::System => Self::Device,
+            ThemePreference::Light => Self::Light,
+            ThemePreference::Dark => Self::Dark,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
@@ -107,8 +122,7 @@ enum SplashScreenTheme {
 )]
 struct WindowBackground {
     shown: PageBackground,
-    remembered: Option<PageBackground>,
-    splash_screen: SplashScreenTheme,
+    remembered: StartingTheme,
 }
 
 #[cfg_attr(
@@ -119,17 +133,10 @@ struct WindowBackground {
     )
 )]
 impl WindowBackground {
-    /// Remembers only a light or dark choice, so under System a cold start and its splash screen keep following the device's dark mode.
     fn for_appearance(preference: ThemePreference, theme: Theme) -> Self {
-        let (remembered, splash_screen) = match preference {
-            ThemePreference::System => (None, SplashScreenTheme::Device),
-            ThemePreference::Light => (Some(PageBackground::LIGHT), SplashScreenTheme::Light),
-            ThemePreference::Dark => (Some(PageBackground::DARK), SplashScreenTheme::Dark),
-        };
         Self {
             shown: PageBackground::for_theme(theme),
-            remembered,
-            splash_screen,
+            remembered: StartingTheme::for_preference(preference),
         }
     }
 }
@@ -217,7 +224,7 @@ mod android {
 #[cfg(test)]
 mod tests {
     use super::{
-        BarIcons, PageBackground, SplashScreenTheme, Theme, ThemePreference, WindowBackground,
+        BarIcons, PageBackground, StartingTheme, Theme, ThemePreference, WindowBackground,
     };
 
     const APP_CSS: &str = include_str!("../../src/app.css");
@@ -307,43 +314,40 @@ mod tests {
     }
 
     #[test]
-    fn a_chosen_light_theme_is_shown_and_remembered_for_the_splash_screen() {
+    fn a_chosen_light_theme_is_shown_and_remembered_for_the_next_start() {
         let background = WindowBackground::for_appearance(ThemePreference::Light, Theme::Light);
 
         assert_eq!(
             background,
             WindowBackground {
                 shown: PageBackground::LIGHT,
-                remembered: Some(PageBackground::LIGHT),
-                splash_screen: SplashScreenTheme::Light,
+                remembered: StartingTheme::Light,
             }
         );
     }
 
     #[test]
-    fn a_chosen_dark_theme_is_shown_and_remembered_for_the_splash_screen() {
+    fn a_chosen_dark_theme_is_shown_and_remembered_for_the_next_start() {
         let background = WindowBackground::for_appearance(ThemePreference::Dark, Theme::Dark);
 
         assert_eq!(
             background,
             WindowBackground {
                 shown: PageBackground::DARK,
-                remembered: Some(PageBackground::DARK),
-                splash_screen: SplashScreenTheme::Dark,
+                remembered: StartingTheme::Dark,
             }
         );
     }
 
     #[test]
-    fn following_the_system_shows_the_devices_theme_and_leaves_the_splash_screen_to_the_device() {
+    fn following_the_system_shows_the_devices_theme_and_leaves_the_next_start_to_the_device() {
         let background = WindowBackground::for_appearance(ThemePreference::System, Theme::Dark);
 
         assert_eq!(
             background,
             WindowBackground {
                 shown: PageBackground::DARK,
-                remembered: None,
-                splash_screen: SplashScreenTheme::Device,
+                remembered: StartingTheme::Device,
             }
         );
     }
