@@ -104,6 +104,8 @@
   --text-app-name--line-height: 2rem;
   --text-page-title: 2rem;
   --text-page-title--line-height: 1.1;
+  --text-code: 0.75rem;
+  --text-code--line-height: 1.125rem;
 
   --tracking-tight: -0.01em;
   --tracking-normal: 0;
@@ -112,6 +114,7 @@
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
 
   --tracking-stand-in: 0.08em;
 
@@ -218,6 +221,9 @@
   --spacing-switch-knob-compact: 1.25rem;
   --spacing-cover-thumb: 3.5rem;
   --spacing-preview: 17.5rem;
+  --spacing-dialog-icon: 3rem;
+  --spacing-dialog-gap: 0.875rem;
+  --spacing-dialog-button: 2.375rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
@@ -252,6 +258,7 @@
   --container-narrow: 35rem;
   --container-segmented: 22.5rem;
   --container-segmented-touch: 30rem;
+  --container-crash-report: 32.5rem;
 
   --radius-control: 0.625rem;
   --radius-row: 0.5rem;
@@ -274,6 +281,9 @@
   --radius-list: 0.625rem;
   --radius-panel: 1rem;
   --radius-notice: 1.25rem;
+  --radius-dialog: 1.125rem;
+  --radius-dialog-icon: 0.875rem;
+  --radius-dialog-button: 0.5625rem;
 
   --container-notice: 27.5rem;
   --container-problem: 32.5rem;
