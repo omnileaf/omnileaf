@@ -277,6 +277,7 @@ async fn saves_the_page_reached_in_a_book_when_the_reader_restores_the_next_one(
         .reading_restored(second.id, second.start_page)
         .await
         .unwrap();
+    shelf.close(&second).await;
 
     assert_eq!(shelf.reading(0).await, started_on(3));
 }
