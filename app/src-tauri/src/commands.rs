@@ -2,9 +2,10 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 #[cfg(debug_assertions)]
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
-    AppInfo, AppLanguage, BooksRemoval, Core, CoversPerRow, FolderCursor, FolderId, FolderPage,
-    FolderRescan, FolderScan, InterfaceError, Library, LibraryFilter, LibraryListing,
-    LibrarySearch, LibraryView, ProjectLink, ScanProgress, SeriesCursor, SeriesPage,
+    AppInfo, AppLanguage, BookCursor, BookId, BookPage, BooksRemoval, Core, CoversPerRow,
+    FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, InterfaceError, Library,
+    LibraryFilter, LibraryListing, LibrarySearch, LibraryView, ProjectLink, ReadMark, ScanProgress,
+    SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
 };
 use tauri::{AppHandle, Manager, State, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -38,6 +39,9 @@ macro_rules! app_commands {
             library_series_count,
             library_search,
             library_search_count,
+            series_overview,
+            series_books,
+            mark_books,
             library_listing,
             set_library_listing,
             library_view,
@@ -244,6 +248,35 @@ async fn library_search_count(
     search: LibrarySearch,
 ) -> Result<u32, IpcError> {
     Ok(library.search_count(search).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn series_overview(
+    library: State<'_, Library>,
+    id: SeriesId,
+) -> Result<SeriesOverview, IpcError> {
+    Ok(library.series_overview(id).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn series_books(
+    library: State<'_, Library>,
+    id: SeriesId,
+    after: Option<BookCursor>,
+) -> Result<BookPage, IpcError> {
+    Ok(library.series_books(id, after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn mark_books(
+    library: State<'_, Library>,
+    books: Vec<BookId>,
+    mark: ReadMark,
+) -> Result<(), IpcError> {
+    Ok(library.mark_books(books, mark).await?)
 }
 
 #[tauri::command]
