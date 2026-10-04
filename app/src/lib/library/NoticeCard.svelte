@@ -12,7 +12,7 @@
     },
     warning: {
       card: "border-warning-edge bg-warning-soft text-on-warning",
-      tile: "bg-warning-tile",
+      tile: "bg-warning",
     },
   } satisfies Record<Tone, { card: string; tile: string }>;
 

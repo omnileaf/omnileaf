@@ -1,10 +1,18 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
+import { Notices } from "$lib/notices/notices.svelte";
+
 import Page from "./+page.svelte";
 
 test("explains that folders stay where they are", async () => {
-  const screen = await render(Page);
+  const screen = await render(Page, {
+    data: {
+      appInfo: { version: "1.2.3", platform: "linux" },
+      notices: new Notices(),
+    },
+    params: {},
+  });
 
   const folders = screen.getByRole("region", { name: "Folders" });
 
