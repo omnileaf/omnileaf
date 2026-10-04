@@ -1,6 +1,7 @@
 //! Repository automation, run as `cargo xtask <command>`.
 
 mod android;
+mod apple;
 mod check;
 mod dev;
 mod doctor;
@@ -104,7 +105,7 @@ fn main() -> anyhow::Result<()> {
             print_lines(&report.lines);
             if report.missing_for_phones > 0 {
                 print_lines(&[format!(
-                    "{} tool(s) for running the app on phones missing",
+                    "{} phone tool(s) missing, which only Android and iOS work needs",
                     report.missing_for_phones
                 )]);
             }

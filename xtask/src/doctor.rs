@@ -2,7 +2,7 @@
 
 use std::ffi::OsStr;
 
-use crate::{android, licences::INSTALL_CARGO_ABOUT, process::Machine};
+use crate::{android, apple, licences::INSTALL_CARGO_ABOUT, process::Machine};
 
 pub(crate) struct Requirement {
     pub(crate) name: &'static str,
@@ -28,6 +28,7 @@ pub(crate) enum Probe {
     AndroidNdk,
     Adb,
     AndroidVirtualDevices,
+    IosSimulators,
 }
 
 /// What the probes need to know about the machine beyond the programs on its path.
@@ -152,6 +153,40 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
         probe: Probe::RustTargets(&["aarch64-linux-android"]),
         fix: "rustup target add aarch64-linux-android",
     },
+    Requirement {
+        name: "xcode",
+        os: Some("macos"),
+        need: Need::ForPhones,
+        probe: Probe::Command {
+            program: "xcodebuild",
+            args: &["-version"],
+        },
+        fix: "install Xcode, then select it with sudo xcode-select -s /Applications/Xcode.app/Contents/Developer",
+    },
+    Requirement {
+        name: "ios-simulators",
+        os: Some("macos"),
+        need: Need::ForPhones,
+        probe: Probe::IosSimulators,
+        fix: "install an iOS Simulator runtime in Xcode's Components settings",
+    },
+    Requirement {
+        name: "ios-rust",
+        os: Some("macos"),
+        need: Need::ForPhones,
+        probe: Probe::RustTargets(&["aarch64-apple-ios", "aarch64-apple-ios-sim"]),
+        fix: "rustup target add aarch64-apple-ios aarch64-apple-ios-sim",
+    },
+    Requirement {
+        name: "appium",
+        os: None,
+        need: Need::ForPhones,
+        probe: Probe::Command {
+            program: "appium",
+            args: &["--version"],
+        },
+        fix: "npm install --global appium@3.8.0, for the Android and iOS app tests",
+    },
 ];
 
 #[derive(Debug, PartialEq, Eq)]
@@ -203,6 +238,12 @@ pub(crate) fn examine(
             .and_then(|android| machine.stdout_of(android.emulator().as_os_str(), &["-list-avds"]))
             .map(|listing| android::virtual_device_names(&listing).join(", "))
             .filter(|names| !names.is_empty()),
+        Probe::IosSimulators => machine
+            .stdout_of(OsStr::new("xcrun"), apple::LIST_SIMULATORS)
+            .and_then(|listing| apple::ios_simulators(&listing).ok())
+            .map(|simulators| simulators.len())
+            .filter(|count| *count > 0)
+            .map(|count| format!("{count} iOS Simulators")),
     };
     detail.map_or(Finding::Missing, |detail| Finding::Present { detail })
 }
@@ -516,5 +557,46 @@ mod tests {
         let report = render(&[OTHER, phones], &machine, &LINUX);
 
         assert_eq!((report.missing, report.missing_for_phones), (1, 1));
+    }
+
+    #[test]
+    fn counts_the_ios_simulators_xcode_lists() {
+        let machine = FakeMachine {
+            installed: &[(
+                "xcrun",
+                r#"{"devices":{"com.apple.CoreSimulator.SimRuntime.iOS-27-0":[
+                    {"udid":"75BD17D7-0A6C-48A1-9768-568ACF690500","state":"Shutdown","name":"iPhone 18 Pro"},
+                    {"udid":"2AD917AF-392E-4478-8CF1-D866F1DDDCE6","state":"Booted","name":"iPhone 18 Pro Max"}
+                ]}}"#,
+            )],
+        };
+
+        let finding = examine(
+            &requirement(Need::ForPhones, Probe::IosSimulators),
+            &machine,
+            &LINUX,
+        );
+
+        assert_eq!(
+            finding,
+            Finding::Present {
+                detail: "2 iOS Simulators".to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn reports_no_ios_simulators_without_a_runtime() {
+        let machine = FakeMachine {
+            installed: &[("xcrun", r#"{"devices":{}}"#)],
+        };
+
+        let finding = examine(
+            &requirement(Need::ForPhones, Probe::IosSimulators),
+            &machine,
+            &LINUX,
+        );
+
+        assert_eq!(finding, Finding::Missing);
     }
 }
