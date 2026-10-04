@@ -83,7 +83,7 @@ pub struct HistoryPage {
 pub struct HistoryCursor(pub(crate) Cursor);
 
 impl HistoryPage {
-    /// Gives each entry the time read on its day from `read_ms_by_day`.
+    /// Gives each entry the time read on its day from `read_ms_by_day`, leaving out an entry it can't list.
     pub(crate) fn new(
         page: Page<history::HistoryEntry>,
         read_ms_by_day: &BTreeMap<i64, i64>,
@@ -91,9 +91,12 @@ impl HistoryPage {
         let entries = page
             .items
             .into_iter()
-            .map(|entry| {
-                let read_ms = read_ms_by_day.get(&entry.local_day).copied().unwrap_or(0);
-                HistoryEntry::new(entry, read_ms)
+            .filter_map(|entry| {
+                HistoryEntry::new(entry, read_ms_by_day)
+                    .inspect_err(|unlisted| {
+                        tracing::warn!(reason = %unlisted, "leave a session out of history");
+                    })
+                    .ok()
             })
             .collect();
         Self {
@@ -103,9 +106,22 @@ impl HistoryPage {
     }
 }
 
+/// Why a stored session can't be listed, which only a broken store can cause.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
+enum Unlisted {
+    #[error("its day has no reading time added up")]
+    DayNotAddedUp,
+}
+
 impl HistoryEntry {
-    fn new(entry: history::HistoryEntry, day_read_ms: i64) -> Self {
-        Self {
+    fn new(
+        entry: history::HistoryEntry,
+        read_ms_by_day: &BTreeMap<i64, i64>,
+    ) -> Result<Self, Unlisted> {
+        let day_read_ms = *read_ms_by_day
+            .get(&entry.local_day)
+            .ok_or(Unlisted::DayNotAddedUp)?;
+        Ok(Self {
             book: BookId(entry.book),
             book_title: entry.book_title,
             series_title: entry.series_title,
@@ -126,7 +142,7 @@ impl HistoryEntry {
                 day: LocalDay(entry.local_day),
                 read_seconds: whole_seconds(day_read_ms),
             },
-        }
+        })
     }
 }
 
@@ -190,11 +206,13 @@ mod tests {
         }
     }
 
+    fn day_read() -> BTreeMap<i64, i64> {
+        BTreeMap::from([(DAY, 600_000)])
+    }
+
     #[test]
     fn lists_a_session_with_its_start_offset_length_and_day() {
-        let read_ms_by_day = BTreeMap::from([(DAY, 600_000)]);
-
-        let page = HistoryPage::new(page_of(vec![stored(DAY, 6, 24)]), &read_ms_by_day);
+        let page = HistoryPage::new(page_of(vec![stored(DAY, 6, 24)]), &day_read());
 
         assert_eq!(
             page.entries,
@@ -221,7 +239,7 @@ mod tests {
 
     #[test]
     fn reads_a_session_that_reached_the_last_page_to_the_end() {
-        let page = HistoryPage::new(page_of(vec![stored(DAY, 23, 24)]), &BTreeMap::new());
+        let page = HistoryPage::new(page_of(vec![stored(DAY, 23, 24)]), &day_read());
 
         assert_eq!(
             page.entries.first().map(|entry| entry.read_to),
@@ -230,13 +248,10 @@ mod tests {
     }
 
     #[test]
-    fn gives_a_day_with_no_time_added_up_no_time_read() {
+    fn leaves_out_a_session_whose_day_has_no_time_added_up() {
         let page = HistoryPage::new(page_of(vec![stored(DAY, 0, 24)]), &BTreeMap::new());
 
-        assert_eq!(
-            page.entries.first().map(|entry| entry.day.read_seconds),
-            Some(0)
-        );
+        assert_eq!(page.entries, []);
     }
 
     #[test]
@@ -251,7 +266,7 @@ mod tests {
             ..stored(DAY, 0, 24)
         };
 
-        let page = HistoryPage::new(page_of(vec![entry]), &BTreeMap::new());
+        let page = HistoryPage::new(page_of(vec![entry]), &day_read());
 
         assert_eq!(
             page.entries.first().and_then(|entry| entry.cover),
