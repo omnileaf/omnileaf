@@ -1,48 +1,21 @@
-use std::{
-    io,
-    num::NonZeroUsize,
-    panic::{self, AssertUnwindSafe},
-    sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError},
-    thread::{self, JoinHandle},
-};
+use std::{io, num::NonZeroUsize};
 
-use tokio::sync::oneshot;
+use crate::lane::{Job, JobQueue, Lane, LaneStopped, answered};
 
-type Job = Box<dyn FnOnce() + Send>;
-
-pub(crate) struct BackgroundLane {
-    shared: Arc<Shared>,
-    workers: Vec<JoinHandle<()>>,
-}
+pub(crate) struct BackgroundLane(Lane<NewestFirst>);
 
 #[derive(Default)]
-struct Shared {
-    queue: Mutex<Queue>,
-    job_added: Condvar,
-}
+pub(crate) struct NewestFirst(Vec<Job>);
 
-#[derive(Default)]
-struct Queue {
-    jobs: Vec<Job>,
-    is_closing: bool,
+impl JobQueue for NewestFirst {
+    fn next(&mut self) -> Option<Job> {
+        self.0.pop()
+    }
 }
-
-#[derive(Debug, thiserror::Error)]
-#[error("run a job on a lane that has stopped")]
-pub(crate) struct LaneStopped;
 
 impl BackgroundLane {
     pub(crate) fn start(name: &str, workers: NonZeroUsize) -> io::Result<Self> {
-        let shared = Arc::new(Shared::default());
-        let workers = (0..workers.get())
-            .map(|_| {
-                let shared = Arc::clone(&shared);
-                thread::Builder::new()
-                    .name(name.to_owned())
-                    .spawn(move || shared.work())
-            })
-            .collect::<io::Result<_>>()?;
-        Ok(Self { shared, workers })
+        Lane::start(name, workers).map(Self)
     }
 
     pub(crate) fn run<T, F>(
@@ -53,69 +26,18 @@ impl BackgroundLane {
         T: Send + 'static,
         F: FnOnce() -> T + Send + 'static,
     {
-        let (sender, receiver) = oneshot::channel::<T>();
-        self.shared.push(Box::new(move || {
-            if sender.is_closed() {
-                return;
-            }
-            if sender.send(job()).is_err() {
-                tracing::trace!("the caller stopped waiting while its job ran");
-            }
-        }));
-        async move { receiver.await.map_err(|_| LaneStopped) }
-    }
-}
-
-impl Drop for BackgroundLane {
-    fn drop(&mut self) {
-        self.shared.queue().is_closing = true;
-        self.shared.job_added.notify_all();
-        for worker in self.workers.drain(..) {
-            if worker.join().is_err() {
-                tracing::error!("a background worker stopped by panicking");
-            }
-        }
-    }
-}
-
-impl Shared {
-    fn queue(&self) -> MutexGuard<'_, Queue> {
-        self.queue.lock().unwrap_or_else(PoisonError::into_inner)
-    }
-
-    fn push(&self, job: Job) {
-        self.queue().jobs.push(job);
-        self.job_added.notify_one();
-    }
-
-    fn newest_job(&self) -> Option<Job> {
-        let mut queue = self.queue();
-        loop {
-            if queue.is_closing {
-                return None;
-            }
-            if let Some(job) = queue.jobs.pop() {
-                return Some(job);
-            }
-            queue = self
-                .job_added
-                .wait(queue)
-                .unwrap_or_else(PoisonError::into_inner);
-        }
-    }
-
-    fn work(&self) {
-        while let Some(job) = self.newest_job() {
-            if panic::catch_unwind(AssertUnwindSafe(job)).is_err() {
-                tracing::error!("a background job panicked");
-            }
-        }
+        let (job, answer) = answered(job);
+        self.0.queue(|queue| queue.0.push(job));
+        answer
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{sync::mpsc, time::Duration};
+    use std::{
+        sync::{Arc, Mutex, mpsc},
+        time::Duration,
+    };
 
     use super::*;
 
