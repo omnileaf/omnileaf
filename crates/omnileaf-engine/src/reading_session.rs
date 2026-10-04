@@ -1,7 +1,7 @@
 use omnileaf_db::catalog::BookReading as StoredReading;
 use tokio::time::{Duration, Instant};
 
-use omnileaf_db::store::SessionPlace;
+use omnileaf_db::store::{Continuity, SessionPlace};
 
 use crate::{BookId, UtcOffset};
 
@@ -71,6 +71,7 @@ pub(crate) struct ReadingSession {
     last_page: u32,
     utc_offset: UtcOffset,
     stage: Stage,
+    continuity: Continuity,
 }
 
 impl ReadingSession {
@@ -82,11 +83,26 @@ impl ReadingSession {
             last_page,
             utc_offset,
             stage: Stage::Opening,
+            continuity: Continuity::AfterBreak,
         })
     }
 
     pub(crate) const fn book(&self) -> BookId {
         self.book
+    }
+
+    /// Whether reading has gone on without a break since its session was last recorded.
+    pub(crate) const fn continuity(&self) -> Continuity {
+        self.continuity
+    }
+
+    pub(crate) fn recorded(&mut self) {
+        self.continuity = Continuity::Unbroken;
+    }
+
+    /// Leaves the next record to carry the session on only within two minutes, as the app may stay put away for long.
+    pub(crate) fn put_away(&mut self) {
+        self.continuity = Continuity::AfterBreak;
     }
 
     /// Leaves a session restored before, or a page past the book's end, as it is.
@@ -426,6 +442,32 @@ mod tests {
                 },
             ]
         );
+    }
+
+    #[test]
+    fn records_a_session_opened_after_a_break() {
+        let session = restored_on(0);
+
+        assert_eq!(session.continuity(), Continuity::AfterBreak);
+    }
+
+    #[test]
+    fn goes_on_unbroken_once_recorded() {
+        let mut session = restored_on(0);
+
+        session.recorded();
+
+        assert_eq!(session.continuity(), Continuity::Unbroken);
+    }
+
+    #[test]
+    fn records_reading_after_a_break_once_the_app_is_put_away() {
+        let mut session = restored_on(0);
+        session.recorded();
+
+        session.put_away();
+
+        assert_eq!(session.continuity(), Continuity::AfterBreak);
     }
 
     #[derive(Clone, Copy, Debug)]
