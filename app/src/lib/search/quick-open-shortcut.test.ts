@@ -40,3 +40,27 @@ test("leaves K with another modifier as well to whatever else wants it", () => {
 
   expect(pressed).toEqual([false, false, false]);
 });
+
+test("opens quick open from the K key whatever letter the keyboard layout gives it", () => {
+  const pressed = [
+    isQuickOpenShortcut(
+      press({ key: "л", code: "KeyK", ctrlKey: true }),
+      "linux",
+    ),
+    isQuickOpenShortcut(
+      press({ key: "ל", code: "KeyK", metaKey: true }),
+      "macos",
+    ),
+  ];
+
+  expect(pressed).toEqual([true, true]);
+});
+
+test("leaves a Latin layout's own letter K to the key that types it", () => {
+  const pressed = isQuickOpenShortcut(
+    press({ key: "j", code: "KeyK", ctrlKey: true }),
+    "linux",
+  );
+
+  expect(pressed).toBe(false);
+});

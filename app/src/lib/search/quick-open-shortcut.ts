@@ -2,6 +2,8 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
 
 const SHORTCUT_KEY = "k";
+const SHORTCUT_CODE = "KeyK";
+const LATIN_LETTER = /^[a-z]$/u;
 
 /** Apple's systems take the Command key for shortcuts where the others take Control. */
 function usesCommandKey(platform: Platform): boolean {
@@ -27,8 +29,16 @@ export function isQuickOpenShortcut(
     !other &&
     !event.altKey &&
     !event.shiftKey &&
-    event.key.toLowerCase() === SHORTCUT_KEY
+    isShortcutKey(event)
   );
+}
+
+/** Takes the K key by its place on the keyboard when the layout types a letter there that isn't Latin. */
+function isShortcutKey(event: KeyboardEvent): boolean {
+  const key = event.key.toLowerCase();
+  return LATIN_LETTER.test(key)
+    ? key === SHORTCUT_KEY
+    : event.code === SHORTCUT_CODE;
 }
 
 export function quickOpenShortcutLabel(platform: Platform): string {
