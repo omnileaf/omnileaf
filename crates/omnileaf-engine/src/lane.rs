@@ -34,7 +34,7 @@ struct State<Q> {
 /// The lane stopped before the job ran, because the app is closing.
 #[derive(Debug, thiserror::Error)]
 #[error("run a job on a lane that has stopped")]
-pub(crate) struct LaneStopped;
+pub struct LaneStopped;
 
 impl<Q: JobQueue> Lane<Q> {
     pub(crate) fn start(name: &str, workers: NonZeroUsize) -> io::Result<Self> {

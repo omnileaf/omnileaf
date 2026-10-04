@@ -1,0 +1,388 @@
+#![expect(
+    clippy::unwrap_used,
+    reason = "each test opens its own library in a scratch folder, so a failed set-up should stop the test"
+)]
+
+#[expect(
+    dead_code,
+    reason = "these tests need scratch folders but none of the files support can put in them"
+)]
+mod support;
+
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
+
+use omnileaf_engine::{
+    BookId, BookReading, Library, LibraryListing, OpenBookError, OpenedBook, PageDimensions,
+    ProbedFormat, Resource, ResourceRouter, SeriesBookListing, SeriesId,
+};
+use omnileaf_testkit::{
+    ArchiveEntry, Compression, ENCODED_PAGE_HEIGHT, ENCODED_PAGE_WIDTH, INK_OVER_PAPER_JXL,
+    PageShape, cbz, page_jpeg, page_png,
+};
+use support::{FixedClock, ScratchFolder};
+
+const SEED: u64 = 31;
+const PAGES: u32 = 5;
+const FOLDER: &str = "Sample Library";
+const SERIES: &str = "Sample Series 01";
+const BOOK: &str = "Sample Series 01 v01";
+const PORTRAIT: PageDimensions = PageDimensions {
+    width: 400,
+    height: 600,
+};
+const SPREAD: PageDimensions = PageDimensions {
+    width: 800,
+    height: 600,
+};
+const NOTHING_UNDECODABLE: Vec<ProbedFormat> = Vec::new();
+
+struct Reader {
+    library: Library,
+    router: ResourceRouter,
+    comics: ScratchFolder,
+    cache: ScratchFolder,
+    _home: ScratchFolder,
+}
+
+impl Reader {
+    async fn with_pages(name: &str, pages: &[Vec<u8>]) -> Self {
+        let comics = ScratchFolder::new(&format!("{name}-comics"));
+        write_book(&comics.path().join(FOLDER).join(SERIES), pages);
+        let home = ScratchFolder::new(&format!("{name}-home"));
+        let library = Library::open(home.path().to_path_buf(), FixedClock)
+            .await
+            .unwrap();
+        library
+            .add_folder(comics.path().join(FOLDER), |_| {})
+            .await
+            .unwrap();
+        let cache = ScratchFolder::new(&format!("{name}-cache"));
+        let router = ResourceRouter::open(cache.path()).unwrap();
+        Self {
+            library,
+            router,
+            comics,
+            cache,
+            _home: home,
+        }
+    }
+
+    async fn with_book(name: &str) -> Self {
+        Self::with_pages(name, &portrait_pages(SEED)).await
+    }
+
+    /// A router that hasn't served or opened anything yet, as after a restart.
+    fn fresh_router(&self) -> ResourceRouter {
+        ResourceRouter::open(self.cache.path()).unwrap()
+    }
+
+    fn book_path(&self) -> PathBuf {
+        self.comics
+            .path()
+            .join(FOLDER)
+            .join(SERIES)
+            .join(format!("{BOOK}.cbz"))
+    }
+
+    async fn series(&self) -> SeriesId {
+        let listed = self
+            .library
+            .series(LibraryListing::default(), None)
+            .await
+            .unwrap();
+        listed.series.first().unwrap().id
+    }
+
+    async fn book(&self) -> BookId {
+        let books = self
+            .library
+            .series_books(self.series().await, SeriesBookListing::default(), None)
+            .await
+            .unwrap();
+        books.books.first().unwrap().id
+    }
+
+    async fn open(&self, undecodable: Vec<ProbedFormat>) -> OpenedBook {
+        let book = self.book().await;
+        self.router
+            .open_book(&self.library, book, undecodable)
+            .await
+            .unwrap()
+    }
+
+    async fn page(&self, opened: &OpenedBook, index: usize) -> Resource {
+        let path = opened.pages.get(index).unwrap().path;
+        self.router
+            .respond(&self.library, &format!("/{path}"))
+            .await
+    }
+}
+
+fn portrait_pages(seed: u64) -> Vec<Vec<u8>> {
+    (0..PAGES)
+        .map(|index| page_jpeg(seed, index, PageShape::Portrait).unwrap())
+        .collect()
+}
+
+fn write_book(series: &Path, pages: &[Vec<u8>]) {
+    let entries: Vec<ArchiveEntry> = pages
+        .iter()
+        .enumerate()
+        .map(|(index, bytes)| ArchiveEntry {
+            name: format!("{:03}.img", index + 1).replace(".img", extension_of(bytes)),
+            bytes: bytes.clone(),
+        })
+        .collect();
+    fs::create_dir_all(series).unwrap();
+    fs::write(
+        series.join(format!("{BOOK}.cbz")),
+        cbz(&entries, Compression::Deflated).unwrap(),
+    )
+    .unwrap();
+}
+
+fn extension_of(bytes: &[u8]) -> &'static str {
+    if bytes.starts_with(&[0xFF, 0xD8]) {
+        ".jpg"
+    } else if bytes.starts_with(&[0xFF, 0x0A]) {
+        ".jxl"
+    } else {
+        ".png"
+    }
+}
+
+fn served(content_type: &'static str, body: Vec<u8>) -> Resource {
+    Resource::Immutable { content_type, body }
+}
+
+#[tokio::test]
+async fn opens_a_book_with_its_series_and_every_page_in_reading_order() {
+    let reader = Reader::with_book("opened").await;
+    let book = reader.book().await;
+
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(opened.id, book);
+    assert_eq!(opened.title, BOOK);
+    assert_eq!(opened.series_title, SERIES);
+    assert_eq!(opened.series, reader.series().await);
+    assert_eq!(opened.reading, BookReading::NotStarted);
+    let paths: Vec<String> = opened
+        .pages
+        .iter()
+        .map(|page| page.path.to_string())
+        .collect();
+    let expected: Vec<String> = (0..PAGES)
+        .map(|index| format!("page/v1/{book}/1/{index}"))
+        .collect();
+    assert_eq!(paths, expected);
+}
+
+#[tokio::test]
+async fn gives_the_size_of_every_page_from_its_header() {
+    let mut pages = portrait_pages(SEED);
+    pages[2] = page_png(SEED, 2, PageShape::Spread).unwrap();
+    let reader = Reader::with_pages("sizes", &pages).await;
+
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let sizes: Vec<Option<PageDimensions>> = opened.pages.iter().map(|page| page.size).collect();
+    assert_eq!(
+        sizes,
+        [
+            Some(PORTRAIT),
+            Some(PORTRAIT),
+            Some(SPREAD),
+            Some(PORTRAIT),
+            Some(PORTRAIT)
+        ]
+    );
+}
+
+#[tokio::test]
+async fn gives_the_same_page_sizes_when_the_book_is_opened_again() {
+    let reader = Reader::with_book("sizes-again").await;
+    let first = reader.open(NOTHING_UNDECODABLE).await;
+
+    let again = reader
+        .fresh_router()
+        .open_book(&reader.library, first.id, NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+
+    assert_eq!(again.pages, first.pages);
+}
+
+#[tokio::test]
+async fn leaves_a_page_whose_header_cannot_be_read_without_a_size() {
+    let mut pages = portrait_pages(SEED);
+    pages[1] = b"\x89PNG\r\n\x1a\n not a header".to_vec();
+    let reader = Reader::with_pages("unreadable-size", &pages).await;
+
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(opened.pages[0].size, Some(PORTRAIT));
+    assert_eq!(opened.pages[1].size, None);
+}
+
+#[tokio::test]
+async fn refuses_to_open_a_book_the_library_does_not_hold() {
+    let reader = Reader::with_book("not-held").await;
+    let book = reader.book().await;
+    fs::remove_file(reader.book_path()).unwrap();
+    write_book(
+        &reader.comics.path().join(FOLDER).join("Sample Series 02"),
+        &portrait_pages(SEED + 1),
+    );
+    reader.library.rescan_folders().await.unwrap();
+
+    let opened = reader
+        .router
+        .open_book(&reader.library, book, NOTHING_UNDECODABLE)
+        .await;
+
+    assert!(
+        matches!(opened, Err(OpenBookError::BookNotFound { id }) if id == book),
+        "{opened:?}"
+    );
+}
+
+#[tokio::test]
+async fn refuses_to_open_a_book_whose_file_cannot_be_read() {
+    let reader = Reader::with_book("unreadable-file").await;
+    let book = reader.book().await;
+    fs::write(reader.book_path(), b"no longer an archive").unwrap();
+
+    let opened = reader
+        .router
+        .open_book(&reader.library, book, NOTHING_UNDECODABLE)
+        .await;
+
+    assert!(
+        matches!(opened, Err(OpenBookError::Unreadable { .. })),
+        "{opened:?}"
+    );
+}
+
+#[tokio::test]
+async fn serves_a_page_s_own_bytes_for_good() {
+    let reader = Reader::with_book("original").await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let resource = reader.page(&opened, 3).await;
+
+    assert_eq!(
+        resource,
+        served("image/jpeg", portrait_pages(SEED)[3].clone())
+    );
+}
+
+#[tokio::test]
+async fn serves_a_page_kept_in_memory_once_its_file_has_gone() {
+    let reader = Reader::with_book("in-memory").await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    reader.page(&opened, 0).await;
+    fs::remove_file(reader.book_path()).unwrap();
+
+    let resource = reader.page(&opened, 0).await;
+
+    assert_eq!(
+        resource,
+        served("image/jpeg", portrait_pages(SEED)[0].clone())
+    );
+}
+
+#[tokio::test]
+async fn serves_a_page_asked_for_by_a_router_that_never_opened_its_book() {
+    let reader = Reader::with_book("not-opened").await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    let path = opened.pages[4].path;
+    let fresh = reader.fresh_router();
+
+    let resource = fresh.respond(&reader.library, &format!("/{path}")).await;
+
+    assert_eq!(
+        resource,
+        served("image/jpeg", portrait_pages(SEED)[4].clone())
+    );
+}
+
+#[tokio::test]
+async fn finds_no_page_past_the_end_of_a_book_or_of_a_revision_since_replaced() {
+    let reader = Reader::with_book("missing-pages").await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    let book = opened.id;
+    write_book(
+        &reader.comics.path().join(FOLDER).join(SERIES),
+        &portrait_pages(SEED + 1),
+    );
+    reader.library.rescan_folders().await.unwrap();
+    let fresh = reader.fresh_router();
+
+    let resources = [
+        fresh
+            .respond(&reader.library, &format!("/page/v1/{book}/1/{PAGES}"))
+            .await,
+        fresh
+            .respond(&reader.library, &format!("/page/v1/{book}/1/0"))
+            .await,
+        fresh
+            .respond(&reader.library, &format!("/page/v1/{book}/9/0"))
+            .await,
+    ];
+
+    assert_eq!(
+        resources,
+        [Resource::NotFound, Resource::NotFound, Resource::NotFound]
+    );
+}
+
+#[tokio::test]
+async fn serves_a_jpeg_xl_page_as_it_is_to_a_webview_that_shows_jpeg_xl() {
+    let mut pages = portrait_pages(SEED);
+    pages[0] = INK_OVER_PAPER_JXL.to_vec();
+    let reader = Reader::with_pages("jxl-shown", &pages).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let resource = reader.page(&opened, 0).await;
+
+    assert_eq!(resource, served("image/jxl", INK_OVER_PAPER_JXL.to_vec()));
+    assert_eq!(
+        opened.pages[0].size,
+        Some(PageDimensions {
+            width: ENCODED_PAGE_WIDTH,
+            height: ENCODED_PAGE_HEIGHT
+        })
+    );
+}
+
+#[tokio::test]
+async fn transcodes_a_jpeg_xl_page_for_a_webview_that_cannot_show_it() {
+    let mut pages = portrait_pages(SEED);
+    pages[0] = INK_OVER_PAPER_JXL.to_vec();
+    let reader = Reader::with_pages("jxl-transcoded", &pages).await;
+    let opened = reader.open(vec![ProbedFormat::Jxl]).await;
+
+    let resource = reader.page(&opened, 0).await;
+
+    let Resource::Immutable { content_type, body } = resource else {
+        panic!("{resource:?}");
+    };
+    assert_eq!(content_type, "image/jpeg");
+    assert!(body.starts_with(&[0xFF, 0xD8, 0xFF]));
+}
+
+#[tokio::test]
+async fn fails_a_page_that_is_no_image() {
+    let mut pages = portrait_pages(SEED);
+    pages[1] = b"not an image of any kind".to_vec();
+    let reader = Reader::with_pages("not-an-image", &pages).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let resource = reader.page(&opened, 1).await;
+
+    assert_eq!(resource, Resource::Failed);
+}

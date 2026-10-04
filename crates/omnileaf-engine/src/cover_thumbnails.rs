@@ -8,7 +8,7 @@ use std::{
 
 use omnileaf_cache::{CacheError, CacheKey, DiskCache};
 use omnileaf_db::catalog::Cover;
-use omnileaf_formats::{FormatError, Limits, Storage, open_book_in};
+use omnileaf_formats::{FormatError, Limits, open_book_in};
 use omnileaf_imaging::{ImagingError, is_whole_jpeg, thumbnail};
 use tokio::{sync::OnceCell, task::spawn_blocking};
 
@@ -17,6 +17,7 @@ use crate::{
     background_lane::BackgroundLane,
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
+    file_in_storage::FileInStorage,
     lane::LaneStopped,
 };
 
@@ -28,11 +29,6 @@ const WORKERS: NonZeroUsize = if IS_MOBILE {
     NonZeroUsize::MIN.saturating_add(1)
 };
 const WORKER_NAME: &str = "omnileaf-thumbnails";
-
-pub(crate) struct CoverFile {
-    pub(crate) storage: Arc<dyn Storage>,
-    pub(crate) path: PathBuf,
-}
 
 pub(crate) struct CoverThumbnails {
     folder: PathBuf,
@@ -146,7 +142,7 @@ fn cached_thumbnail(cache: &DiskCache, key: &CacheKey) -> Option<Vec<u8>> {
 fn make_thumbnail(
     cache: Option<&DiskCache>,
     key: &CacheKey,
-    file: &CoverFile,
+    file: &FileInStorage,
 ) -> Result<Vec<u8>, ThumbnailError> {
     if let Some(cached) = cache.and_then(|cache| cached_thumbnail(cache, key)) {
         return Ok(cached);
