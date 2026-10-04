@@ -49,6 +49,14 @@ export const DEFAULT_BACKEND: FakeBackend = {
   librarySeriesCount: () => 0,
   librarySearch: () => ({ series: [], next: null }),
   librarySearchCount: () => 0,
+  seriesOverview: () => {
+    throw new CommandFailure({
+      code: "seriesNotFound",
+      message: "that series isn't in the library",
+    });
+  },
+  seriesBooks: () => ({ books: [], next: null }),
+  markBooks: () => null,
   libraryListing: () => DEFAULT_LIBRARY_LISTING,
   setLibraryListing: () => null,
   libraryView: () => DEFAULT_LIBRARY_VIEW,
