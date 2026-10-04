@@ -4,8 +4,11 @@
   import type { CrashOrigin } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
+  import AlwaysSendChoice from "./AlwaysSendChoice.svelte";
+
   import type { CrashReporting } from "./crash-reporting.svelte";
   import ReportDetails from "./ReportDetails.svelte";
+  import ReportFailures from "./ReportFailures.svelte";
 
   let { reporting }: { reporting: CrashReporting } = $props();
 
@@ -19,11 +22,15 @@
   const titleId = $props.id();
   const bodyId = `${titleId}-body`;
 
+  let alwaysSend = $state(false);
+
   const asking = $derived(
     reporting.prompt.kind === "asking" ? reporting.prompt : undefined,
   );
+  const isCopied = $derived(reporting.copying.outcome === "copied");
 
   function openModally(dialog: HTMLDialogElement): () => void {
+    alwaysSend = false;
     dialog.showModal();
     dialog.querySelector<HTMLElement>("[data-prompt-title]")?.focus();
     return () => {
@@ -32,11 +39,15 @@
   }
 
   function send(): void {
-    void reporting.sendThisTime();
+    void (alwaysSend ? reporting.sendAlways() : reporting.sendThisTime());
   }
 
   function decline(): void {
     void reporting.decline();
+  }
+
+  function copy(): void {
+    void reporting.copying.copy();
   }
 </script>
 
@@ -74,7 +85,15 @@
         {m.crash_report_body()}
       </p>
       <ReportDetails details={asking.details} />
+      <AlwaysSendChoice bind:checked={alwaysSend} />
       <div class="mbs-xs flex flex-wrap items-center gap-sm">
+        <button
+          type="button"
+          class="rounded-dialog-button border border-border px-list-row text-footnote font-semibold min-block-dialog-button touch:min-block-touch-target"
+          onclick={copy}
+        >
+          {isCopied ? m.crash_report_copied() : m.crash_report_copy()}
+        </button>
         <span class="flex-1"></span>
         <button
           type="button"
@@ -91,6 +110,12 @@
           {m.crash_report_send()}
         </button>
       </div>
+      <ReportFailures {reporting} />
     </div>
+    <span role="status" class="sr-only">
+      {#if isCopied}
+        {m.crash_report_copied_status()}
+      {/if}
+    </span>
   </dialog>
 {/if}
