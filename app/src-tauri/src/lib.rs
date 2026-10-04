@@ -109,12 +109,12 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     app.manage(folder_watch::FolderWatching::start(app, data_dir)?);
     #[cfg(target_os = "ios")]
     folder_access::reopen_picked_folders_in_background(app.handle().clone());
-    match open_covers(app, data_dir) {
+    match open_resources(app, data_dir) {
         Ok(covers) => {
             app.manage(covers);
         }
         Err(error) => {
-            tracing::error!(error = %describe_error(error.as_ref()), "start the covers, which won't show");
+            tracing::error!(error = %describe_error(error.as_ref()), "start the covers and pages, which won't show");
         }
     }
     Ok(())
@@ -134,7 +134,7 @@ fn library_folders(app: &App, data_dir: Option<&Path>) -> tauri::Result<LibraryF
     Ok(LibraryFolders { database, home })
 }
 
-fn open_covers(app: &App, data_dir: Option<&Path>) -> Result<ResourceRouter, Box<dyn Error>> {
+fn open_resources(app: &App, data_dir: Option<&Path>) -> Result<ResourceRouter, Box<dyn Error>> {
     Ok(ResourceRouter::open(&cache_folder(app, data_dir)?)?)
 }
 

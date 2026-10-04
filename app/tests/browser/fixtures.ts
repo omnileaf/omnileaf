@@ -57,6 +57,12 @@ export const DEFAULT_BACKEND: FakeBackend = {
   },
   seriesBooks: () => ({ books: [], next: null }),
   markBooks: () => null,
+  openBook: () => {
+    throw new CommandFailure({
+      code: "bookNotFound",
+      message: "that book isn't in the library",
+    });
+  },
   libraryListing: () => DEFAULT_LIBRARY_LISTING,
   setLibraryListing: () => null,
   libraryView: () => DEFAULT_LIBRARY_VIEW,

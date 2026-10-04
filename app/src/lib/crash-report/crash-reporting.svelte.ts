@@ -49,6 +49,8 @@ const SEND_OUTCOMES = {
   seriesNotFound: "notSent",
   searchTooLong: "notSent",
   cursorForAnotherList: "notSent",
+  bookNotFound: "notSent",
+  bookUnreadable: "notSent",
   internal: "notSent",
 } as const satisfies Record<IpcErrorCode, SendFailure | undefined>;
 

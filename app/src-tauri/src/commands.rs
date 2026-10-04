@@ -4,8 +4,9 @@ use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AppInfo, AppLanguage, BookCursor, BookId, BooksRemoval, Core, CoversPerRow, FolderCursor,
     FolderId, FolderPage, FolderRescan, FolderScan, InterfaceError, Library, LibraryFilter,
-    LibraryListing, LibrarySearch, LibraryView, ProjectLink, ReadMark, ScanProgress,
-    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
+    LibraryListing, LibrarySearch, LibraryView, OpenedBook, ProbedFormat, ProjectLink, ReadMark,
+    ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
+    SeriesOverview, SeriesPage,
 };
 use tauri::{AppHandle, Manager, State, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -42,6 +43,7 @@ macro_rules! app_commands {
             series_overview,
             series_books,
             mark_books,
+            open_book,
             library_listing,
             set_library_listing,
             library_view,
@@ -278,6 +280,17 @@ async fn mark_books(
     mark: ReadMark,
 ) -> Result<(), IpcError> {
     Ok(library.mark_books(books, mark).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn open_book(
+    library: State<'_, Library>,
+    router: State<'_, ResourceRouter>,
+    id: BookId,
+    undecodable: Vec<ProbedFormat>,
+) -> Result<OpenedBook, IpcError> {
+    Ok(router.open_book(&library, id, undecodable).await?)
 }
 
 #[tauri::command]

@@ -3485,6 +3485,7 @@ dependencies = [
  "omnileaf-edge-swipe",
  "omnileaf-engine",
  "omnileaf-folder-access",
+ "omnileaf-formats",
  "omnileaf-system-bars",
  "omnileaf-windows-probes",
  "os_info",
