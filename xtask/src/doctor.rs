@@ -261,7 +261,7 @@ fn line(requirement: &Requirement, finding: Finding) -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     use super::*;
 
@@ -273,7 +273,7 @@ mod tests {
         fn stdout_of(&self, program: &OsStr, _args: &[&str]) -> Option<String> {
             self.installed
                 .iter()
-                .find(|(name, _)| *name == program)
+                .find(|(name, _)| Path::new(name) == Path::new(program))
                 .map(|(_, output)| (*output).to_owned())
         }
     }
