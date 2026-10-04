@@ -35,7 +35,7 @@ use crate::{
     FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryPage, LibraryChanges,
     LibraryFilter, LibraryFolder, LibraryListing, LibrarySearch, LibraryView, LocalDay, ReadMark,
     RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
-    SeriesId, SeriesOverview, SeriesPage,
+    SeriesId, SeriesOverview, SeriesPage, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -398,8 +398,13 @@ impl Library {
 
     /// Saves the page reached in the book read before, then the pages the reader shows in this one after the page it opened on.
     #[tracing::instrument(skip_all, fields(%book, page))]
-    pub async fn reading_restored(&self, book: BookId, page: u32) -> Result<(), LibraryError> {
-        self.reading.restored(book, page).await
+    pub async fn reading_restored(
+        &self,
+        book: BookId,
+        page: u32,
+        utc_offset: UtcOffset,
+    ) -> Result<(), LibraryError> {
+        self.reading.restored(book, page, utc_offset).await
     }
 
     /// Saves the page within a moment, unless the reader hasn't restored the book yet or has closed it.

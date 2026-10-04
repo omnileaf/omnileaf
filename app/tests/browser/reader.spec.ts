@@ -684,6 +684,33 @@ test.describe("saving where reading is", () => {
   });
 });
 
+test.describe("the local time reading begins at", () => {
+  const offsets: number[] = [];
+
+  test.use({
+    timezoneId: "Asia/Kolkata",
+    backend: {
+      ...readerBackend(DEFAULT_BACKEND),
+      readingRestored: (_id, _page, utcOffset) => {
+        offsets.push(utcOffset);
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    offsets.length = 0;
+  });
+
+  test("tells the core how far the device's clock is ahead of UTC as the book opens", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await expect.poll(() => offsets).toEqual([330]);
+  });
+});
+
 test.describe("full screen", () => {
   const changes: FullScreenChange[] = [];
   let isFullScreen = false;
