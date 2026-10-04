@@ -255,6 +255,36 @@ async fn refuses_a_database_from_a_newer_build() {
     ));
 }
 
+#[test]
+fn refuses_a_database_another_application_owns() {
+    let folder = ScratchFolder::new("foreign");
+    let config = folder.config();
+    let foreign = rusqlite::Connection::open(&config.path).unwrap();
+    foreign.pragma_update(None, "application_id", 42).unwrap();
+
+    let outcome = Database::open(&config);
+
+    let application_id: i64 = foreign
+        .pragma_query_value(None, "application_id", |row| row.get(0))
+        .unwrap();
+    assert!(matches!(outcome, Err(Error::NotALibrary { path }) if path == config.path));
+    assert_eq!(application_id, 42);
+}
+
+#[test]
+fn backs_up_an_unversioned_database_that_already_holds_tables() {
+    let folder = ScratchFolder::new("unversioned");
+    let config = folder.config();
+    rusqlite::Connection::open(&config.path)
+        .unwrap()
+        .execute_batch("CREATE TABLE note (body TEXT NOT NULL);")
+        .unwrap();
+
+    drop(Database::open(&config).unwrap());
+
+    assert!(config.backup_dir.join("schema-v0.sqlite").exists());
+}
+
 #[tokio::test]
 async fn backs_up_neither_a_new_database_nor_a_current_one() {
     let folder = ScratchFolder::new("no-backup");

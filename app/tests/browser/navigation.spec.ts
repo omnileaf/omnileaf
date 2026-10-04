@@ -37,6 +37,21 @@ for (const { label, path, startFrom } of SECTIONS) {
     );
   });
 
+  test(`focuses the ${label} heading without a focus ring when opened from the keyboard`, async ({
+    page,
+  }) => {
+    await page.goto(startFrom);
+
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: label })
+      .press("Enter");
+
+    const heading = page.getByRole("heading", { level: 1, name: label });
+    await expect(heading).toBeFocused();
+    await expect(heading).toHaveCSS("outline-style", "none");
+  });
+
   for (const colorScheme of COLOR_SCHEMES) {
     test(`${label} has no accessibility violations in the ${colorScheme} theme`, async ({
       page,

@@ -2670,6 +2670,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-wdio-webdriver",
  "tauri-specta",
+ "thiserror 2.0.21",
  "tracing",
  "tracing-subscriber",
 ]
@@ -5637,6 +5638,7 @@ dependencies = [
  "anyhow",
  "clap",
  "local-ip-address",
+ "omnileaf-formats",
  "omnileaf-testkit",
  "png 0.18.1",
 ]
