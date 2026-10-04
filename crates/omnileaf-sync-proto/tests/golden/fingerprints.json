@@ -1,11 +1,12 @@
 {
-  "contract": "pmf v1, raw v1, book.local.v1",
+  "contract": "pmf v1, dir v1, raw v1, book.local.v1",
   "rule": {
     "pmf1": "BLAKE3 derive_key(\"omnileaf.app pmf v1\") over the image count as a little-endian u32, then the (crc32, size) pairs sorted ascending, each a little-endian u32 then a little-endian u64; an archive with no images takes raw1 instead",
+    "dir1": "BLAKE3 derive_key(\"omnileaf.app dir v1\") over the image count as a little-endian u32, then for each image, sorted by the bytes of norm(file name) and then by size and the file name's own bytes, its normalised name as a little-endian u32 length and the bytes followed by its size as a little-endian u64, then [0, min(64 KiB, size)) of the first image and [size - min(64 KiB, size), size) of the last",
     "raw1": "BLAKE3 derive_key(\"omnileaf.app raw v1\") over the file size as a little-endian u64, then ten ranges in order: [0, min(64 KiB, size)), [size - min(64 KiB, size), size), and for i in 1..=8 [floor(size * i / 9), min(floor(size * i / 9) + 16 KiB, size)); ranges are clamped to the file and may overlap or repeat",
     "book.local.v1": "the entity-id derivation over the 32-byte fingerprint as the only part"
   },
-  "raw_content": "byte i of each raw file is i mod 251",
+  "sample_content": "byte i of each raw file and of each folder image is i mod 251",
   "vectors": [
     {
       "kind": "pmf1",
@@ -100,6 +101,81 @@
       ],
       "fingerprint": "4965a4bc7d6a2a0802ca4232eb5eeca7c3029cdd85640c559b32d1966c916968",
       "book_id": "87eecbb0-ef55-8710-b62f-bd779cbdf0e9"
+    },
+    {
+      "kind": "dir1",
+      "files": [
+        [
+          "001.png",
+          0
+        ]
+      ],
+      "fingerprint": "7f6d8b06abc4260d3cff89858b101280719ac82f57efd2c13826d80ba9c0f4c0",
+      "book_id": "fabff3f2-501e-88e4-a73c-a96b5dab4a17"
+    },
+    {
+      "kind": "dir1",
+      "files": [
+        [
+          "Page 10.png",
+          307200
+        ],
+        [
+          "page 02.PNG",
+          200
+        ],
+        [
+          "Ｐage 01.png",
+          102400
+        ]
+      ],
+      "fingerprint": "261ffc2a87ea2eabc07314886f01389e4db4c3ad6d7407a34c31989bc320ca06",
+      "book_id": "687fab1c-be56-80f6-814d-2f303e02b402"
+    },
+    {
+      "kind": "dir1",
+      "files": [
+        [
+          "Ｐage 01.png",
+          102400
+        ],
+        [
+          "page 02.PNG",
+          200
+        ],
+        [
+          "Page 10.png",
+          307200
+        ]
+      ],
+      "fingerprint": "261ffc2a87ea2eabc07314886f01389e4db4c3ad6d7407a34c31989bc320ca06",
+      "book_id": "687fab1c-be56-80f6-814d-2f303e02b402"
+    },
+    {
+      "kind": "dir1",
+      "files": [
+        [
+          "a.png",
+          5
+        ],
+        [
+          "A.png",
+          3
+        ]
+      ],
+      "fingerprint": "b8b3d489755a506bdf8c138cbe51f09ab5ac5eef8f051c3bef362639e9ab1dc5",
+      "book_id": "8d384634-7f04-88bb-8701-3ec5ad4d9cdb"
+    },
+    {
+      "kind": "dir1",
+      "files": [
+        [
+          "  Page  01 .JPG",
+          70000
+        ]
+      ],
+      "fingerprint": "0aae8ed6403b22f860c99b7e4b31e863c571d86ba5a42e9a3d4178d4d11adf78",
+      "book_id": "364fbec5-cc4e-8339-a93a-ad1971e94c90"
     },
     {
       "kind": "raw1",

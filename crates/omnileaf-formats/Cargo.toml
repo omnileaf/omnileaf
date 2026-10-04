@@ -8,6 +8,7 @@ publish.workspace = true
 
 [dependencies]
 flate2.workspace = true
+omnileaf-sync-proto.workspace = true
 quick-xml.workspace = true
 thiserror.workspace = true
 unicode-normalization.workspace = true
@@ -16,6 +17,8 @@ zip.workspace = true
 [dev-dependencies]
 omnileaf-testkit.workspace = true
 proptest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true

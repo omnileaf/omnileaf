@@ -1,15 +1,9 @@
-use std::{
-    fs::{self, File},
-    io::Read,
-    path::Path,
-};
+use std::path::Path;
 
 use crate::{
-    ComicInfo, FormatError, Limits, folder::FolderBook, natural_cmp, parse_comic_info,
-    zip_book::ZipBook,
+    ComicInfo, FormatError, Limits, container::Container, folder::FolderBook, natural_cmp,
+    parse_comic_info, zip_book::ZipBook,
 };
-
-const ZIP_SIGNATURES: [&[u8; 4]; 2] = [b"PK\x03\x04", b"PK\x05\x06"];
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Page {
@@ -59,30 +53,10 @@ pub fn open_book(path: &Path) -> Result<Book, FormatError> {
 
 /// Opens a folder of images, or an archive recognised by its first bytes rather than its name.
 pub fn open_book_with(path: &Path, limits: &Limits) -> Result<Book, FormatError> {
-    let metadata = fs::metadata(path).map_err(|source| FormatError::Read {
-        path: path.to_owned(),
-        source,
-    })?;
-    if metadata.is_dir() {
-        return FolderBook::open(path, limits).map(Book::Folder);
+    match Container::of(path)? {
+        Container::Folder => FolderBook::open(path, limits).map(Book::Folder),
+        Container::Zip => ZipBook::open(path, limits).map(Book::Archive),
     }
-    if starts_like_a_zip(path)? {
-        return ZipBook::open(path, limits).map(Book::Archive);
-    }
-    Err(FormatError::Unsupported {
-        path: path.to_owned(),
-    })
-}
-
-fn starts_like_a_zip(path: &Path) -> Result<bool, FormatError> {
-    let read_failed = |source| FormatError::Read {
-        path: path.to_owned(),
-        source,
-    };
-    let mut signature = [0; 4];
-    let file = File::open(path).map_err(read_failed)?;
-    let read = file.take(4).read(&mut signature).map_err(read_failed)?;
-    Ok(read == signature.len() && ZIP_SIGNATURES.contains(&&signature))
 }
 
 pub(crate) fn in_reading_order<T>(mut found: Vec<(Page, T)>) -> (Vec<Page>, Vec<T>) {
