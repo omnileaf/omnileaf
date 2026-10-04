@@ -147,7 +147,7 @@ fn is_android(kind: Kind) -> bool {
     }
 }
 
-fn usable(device: &Device) -> Result<Pick<'_>, NoTestDevice> {
+pub(crate) fn usable(device: &Device) -> Result<Pick<'_>, NoTestDevice> {
     match device.state {
         State::Ready => Ok(Pick::Ready(device)),
         State::Off if device.kind.is_virtual() => Ok(Pick::Boot(device)),
@@ -201,7 +201,7 @@ pub(crate) fn ready_simulator(
 }
 
 #[expect(clippy::print_stdout, reason = "progress output for the developer")]
-fn boot_simulator(machine: &impl Machine, name: &str, udid: &str) -> anyhow::Result<()> {
+pub(crate) fn boot_simulator(machine: &impl Machine, name: &str, udid: &str) -> anyhow::Result<()> {
     println!("==> boot the {name} Simulator");
     machine
         .stdout_of(OsStr::new(XCRUN), &["simctl", "boot", udid])
@@ -228,7 +228,7 @@ pub(crate) fn build_android_app(root: &Path, target: android::Target) -> anyhow:
 }
 
 #[expect(clippy::print_stdout, reason = "progress output for the developer")]
-fn boot_emulator(
+pub(crate) fn boot_emulator(
     machine: &impl Machine,
     toolchain: &android::Toolchain,
     name: &str,
@@ -254,7 +254,7 @@ fn boot_emulator(
     .with_context(|| format!("wait for the {name} emulator to connect"))
 }
 
-fn wait_until_booted(
+pub(crate) fn wait_until_booted(
     machine: &impl Machine,
     toolchain: &android::Toolchain,
     serial: &str,
