@@ -237,16 +237,19 @@ mod tests {
 
     impl Machine for FakeMachine {
         fn stdout_of(&self, program: &OsStr, args: &[&str]) -> Option<String> {
-            let command = [program.to_string_lossy().as_ref()]
-                .into_iter()
-                .chain(args.iter().copied())
-                .collect::<Vec<_>>()
-                .join(" ");
             self.outputs
                 .iter()
-                .find(|(known, _)| *known == command)
+                .find(|(command, _)| is_running(command, program, args))
                 .map(|(_, output)| (*output).to_owned())
         }
+    }
+
+    fn is_running(command: &str, program: &OsStr, args: &[&str]) -> bool {
+        let mut words = command.split(' ');
+        words
+            .next()
+            .is_some_and(|known| Path::new(known) == Path::new(program))
+            && words.eq(args.iter().copied())
     }
 
     fn toolchain() -> android::Toolchain {
