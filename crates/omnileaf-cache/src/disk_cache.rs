@@ -2,7 +2,7 @@ use std::{
     fs::{self, DirEntry, File},
     io,
     path::{Path, PathBuf},
-    process, slice,
+    process,
     sync::{
         Mutex, MutexGuard, PoisonError,
         atomic::{AtomicU64, Ordering},
@@ -55,7 +55,7 @@ impl DiskCache {
         Ok(cache)
     }
 
-    /// Misses an entry it can't read, or one a lost write left empty, and lets it go so it is made again; blocks on the file system.
+    /// Misses an entry it can't read now, letting go of a damaged one or one a lost write left empty so it is made again; blocks on the file system.
     #[must_use]
     pub fn get(&self, key: &CacheKey) -> Option<Vec<u8>> {
         if !self.recency().touch(key) {
@@ -76,9 +76,13 @@ impl DiskCache {
                 self.recency().forget(key);
                 None
             }
-            Err(error) => {
+            Err(error) if means_damaged(&error) => {
                 tracing::warn!(%key, %error, "let go of a cache entry that can't be read");
                 self.remove(key);
+                None
+            }
+            Err(error) => {
+                tracing::warn!(%key, %error, "read a cache entry, which stays for the next request");
                 None
             }
         }
@@ -114,10 +118,12 @@ impl DiskCache {
         Ok(())
     }
 
-    /// Lets go of an entry its reader found damaged, and blocks on the file system.
+    /// Lets go of an entry its reader found damaged, still counting one whose file stays, and blocks on the file system.
     pub fn remove(&self, key: &CacheKey) {
-        self.recency().forget(key);
-        self.remove_files(slice::from_ref(key));
+        let mut recency = self.recency();
+        if self.remove_file(key) {
+            recency.forget(key);
+        }
     }
 
     #[must_use]
@@ -138,10 +144,18 @@ impl DiskCache {
 
     fn remove_files(&self, evicted: &[CacheKey]) {
         for key in evicted {
-            match fs::remove_file(self.path_of(key)) {
-                Ok(()) => {}
-                Err(error) if error.kind() == io::ErrorKind::NotFound => {}
-                Err(error) => tracing::warn!(%key, %error, "remove an evicted cache entry"),
+            self.remove_file(key);
+        }
+    }
+
+    /// Whether the entry's file is gone, removed now or before.
+    fn remove_file(&self, key: &CacheKey) -> bool {
+        match fs::remove_file(self.path_of(key)) {
+            Ok(()) => true,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => true,
+            Err(error) => {
+                tracing::warn!(%key, %error, "remove a cache entry");
+                false
             }
         }
     }
@@ -194,5 +208,36 @@ fn mark_used(path: &Path, key: &CacheKey) {
 fn remove_leftover(path: &Path) {
     if let Err(error) = fs::remove_file(path) {
         tracing::warn!(path = %path.display(), %error, "remove an unfinished cache write");
+    }
+}
+
+/// A read error every later read of the entry would meet too, unlike a passing one such as a busy file.
+fn means_damaged(error: &io::Error) -> bool {
+    matches!(
+        error.kind(),
+        io::ErrorKind::PermissionDenied | io::ErrorKind::InvalidData
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reads_a_busy_entry_as_passing_not_as_damaged() {
+        let error = io::Error::from(io::ErrorKind::ResourceBusy);
+
+        let damaged = means_damaged(&error);
+
+        assert!(!damaged);
+    }
+
+    #[test]
+    fn reads_an_entry_it_has_no_permission_to_read_as_damaged() {
+        let error = io::Error::from(io::ErrorKind::PermissionDenied);
+
+        let damaged = means_damaged(&error);
+
+        assert!(damaged);
     }
 }
