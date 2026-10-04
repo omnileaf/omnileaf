@@ -218,7 +218,7 @@ async fn finds_nothing_at_a_path_the_library_never_gave_out() {
         covers.request("/").await,
         covers.request("/thumb/v1/not-a-book/1/1").await,
         covers
-            .request(&format!("/{}", cover.replace("thumb", "page")))
+            .request(&format!("/{}", cover.replace("thumb/v1", "page/v2")))
             .await,
         covers.request(&format!("/{cover}/extra")).await,
     ];

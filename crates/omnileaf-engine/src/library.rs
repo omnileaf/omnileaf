@@ -9,11 +9,12 @@ use std::{
 use omnileaf_db::{
     Config, Database,
     catalog::{
-        AndroidTree, AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind,
-        RootLocator, SeriesFilter, SeriesListing, add_root, bookmarked_roots, cover_file,
-        home_root, library_root, library_roots, mark_root_available, mark_root_unavailable,
+        AndroidTree, AppleBookmark, BookFileId, BookToRead, Cover, NewRoot, PageDimensions,
+        PageRequest, PageSize, RootId, RootKind, RootLocator, SeriesFilter, SeriesListing,
+        add_root, book_to_read, bookmarked_roots, cover_file, home_root, library_root,
+        library_roots, mark_root_available, mark_root_unavailable, page_dimensions,
         remove_book_files, remove_books_without_files, remove_root, root_book_count, root_files,
-        series_books, series_count, series_overview, series_page, up_next,
+        series_books, series_count, series_overview, series_page, store_page_dimensions, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_listing::{library_listing, set_library_listing},
@@ -34,9 +35,9 @@ use crate::{
     ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview,
     SeriesPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
-    cover_thumbnails::CoverFile,
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
+    file_in_storage::FileInStorage,
     library_changes::CatalogWritten,
     library_folder::root_folder,
     library_layout::folder_name,
@@ -377,19 +378,56 @@ impl Library {
             .await?)
     }
 
-    pub(crate) async fn cover_file(&self, cover: Cover) -> Result<Option<CoverFile>, LibraryError> {
+    pub(crate) async fn cover_file(
+        &self,
+        cover: Cover,
+    ) -> Result<Option<FileInStorage>, LibraryError> {
         let file = self
             .store
             .database()
             .read(move |connection| cover_file(connection, &cover))
             .await?;
-        Ok(file.and_then(|(locator, location)| {
-            let files = self.files_of(&locator)?;
-            Some(CoverFile {
-                storage: files.storage,
-                path: files.folder.join(location),
-            })
-        }))
+        Ok(file.and_then(|(locator, location)| self.file_in(&locator, &location)))
+    }
+
+    pub(crate) fn book_file(&self, book: &BookToRead) -> Option<FileInStorage> {
+        self.file_in(&book.root, &book.location)
+    }
+
+    pub(crate) async fn book_to_read(
+        &self,
+        book: BookId,
+    ) -> Result<Option<BookToRead>, LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| book_to_read(connection, book.0))
+            .await?)
+    }
+
+    pub(crate) async fn page_dimensions(
+        &self,
+        file: BookFileId,
+        rev: u32,
+    ) -> Result<Option<Vec<Option<PageDimensions>>>, LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| page_dimensions(connection, file, rev))
+            .await?)
+    }
+
+    pub(crate) async fn store_page_dimensions(
+        &self,
+        file: BookFileId,
+        rev: u32,
+        pages: Vec<Option<PageDimensions>>,
+    ) -> Result<(), LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| store_page_dimensions(transaction, file, rev, &pages))
+            .await?)
     }
 
     #[tracing::instrument(skip_all, fields(folder = %id))]
@@ -829,6 +867,14 @@ impl Library {
         if self.catalog_writes.send(CatalogWritten).is_err() {
             tracing::trace!("no one is listening for library changes");
         }
+    }
+
+    fn file_in(&self, locator: &RootLocator, location: &Path) -> Option<FileInStorage> {
+        let files = self.files_of(locator)?;
+        Some(FileInStorage {
+            storage: files.storage,
+            path: files.folder.join(location),
+        })
     }
 
     fn files_of(&self, locator: &RootLocator) -> Option<RootFiles> {
