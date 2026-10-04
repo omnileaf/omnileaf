@@ -1,19 +1,22 @@
 <script lang="ts">
-  import { ArrowLeft, ChevronLeft } from "@lucide/svelte";
+  import { ArrowLeft, ChevronLeft, Maximize } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
   import { m } from "#lib/paraglide/messages.js";
 
   const BACK_ICON_SIZE = 24;
   const BACK_ICON_SIZE_WIDE = 20;
+  const BAR_ICON_SIZE_WIDE = 19;
 
   let {
     seriesTitle,
     bookLine,
+    onFullScreen,
     heading = $bindable(),
   }: {
     seriesTitle: string;
     bookLine: string;
+    onFullScreen: () => void;
     heading?: HTMLHeadingElement | undefined;
   } = $props();
 </script>
@@ -61,4 +64,12 @@
       {bookLine}
     </p>
   </div>
+  <button
+    type="button"
+    aria-label={m.reader_full_screen()}
+    class="hidden shrink-0 items-center justify-center rounded-reader-control-wide block-reader-control-wide inline-reader-control-wide expanded:flex ios:hidden android:hidden"
+    onclick={onFullScreen}
+  >
+    <Maximize size={BAR_ICON_SIZE_WIDE} aria-hidden="true" />
+  </button>
 </div>

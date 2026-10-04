@@ -46,6 +46,16 @@ test("shows or hides the controls with M, wherever the layout puts it", () => {
   ]);
 });
 
+test("goes in or out of full screen with F, wherever the layout puts it", () => {
+  const actions = [
+    press("f", { code: "KeyF" }),
+    press("F", { code: "KeyF", shiftKey: true }),
+    press("а", { code: "KeyF" }),
+  ].map(readerActionFor);
+
+  expect(actions).toEqual(["fullScreen", "fullScreen", "fullScreen"]);
+});
+
 test("closes the book with Escape", () => {
   const action = readerActionFor(press("Escape"));
 
@@ -57,12 +67,14 @@ test("leaves shortcuts held with another modifier and keys it has no use for alo
     press("ArrowRight", { ctrlKey: true }),
     press("ArrowLeft", { altKey: true }),
     press("m", { code: "KeyM", metaKey: true }),
+    press("f", { code: "KeyF", ctrlKey: true }),
     press("ArrowDown"),
     press("Tab"),
     press("Enter"),
   ].map(readerActionFor);
 
   expect(actions).toEqual([
+    undefined,
     undefined,
     undefined,
     undefined,
