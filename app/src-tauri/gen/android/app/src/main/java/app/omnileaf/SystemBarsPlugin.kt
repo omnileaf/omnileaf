@@ -3,6 +3,7 @@ package app.omnileaf
 import android.app.Activity
 import android.graphics.Color
 import android.os.Build
+import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.ColorInt
@@ -17,9 +18,7 @@ private val LIGHT_SCRIM = Color.argb(0xe6, 0xff, 0xff, 0xff)
 private val DARK_SCRIM = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
 
 @InvokeArg
-class BarIcons {
-  var areDark: Boolean = false
-}
+class BarIcons(var areDark: Boolean = false)
 
 @InvokeArg
 class PageBackground {
@@ -34,7 +33,7 @@ class PageBackground {
 @InvokeArg
 class WindowBackground {
   var shown: PageBackground = PageBackground()
-  var remembered: PageBackground? = null
+  var remembered: StartingTheme = StartingTheme.DEVICE
 }
 
 @TauriPlugin
@@ -43,12 +42,7 @@ class SystemBarsPlugin(activity: Activity) : Plugin(activity) {
   fun showIcons(invoke: Invoke) {
     val icons = invoke.parseArgs(BarIcons::class.java)
     val shownActivity = PluginManager.activity ?: return invoke.reject("no activity is showing the app")
-    shownActivity.runOnUiThread {
-      shownActivity.enableEdgeToEdge(
-        statusBarStyle = barStyle(icons, Color.TRANSPARENT, Color.TRANSPARENT),
-        navigationBarStyle = navigationBarStyle(icons),
-      )
-    }
+    shownActivity.runOnUiThread { shownActivity.showBarIcons(icons) }
     invoke.resolve()
   }
 
@@ -57,10 +51,18 @@ class SystemBarsPlugin(activity: Activity) : Plugin(activity) {
     val background = invoke.parseArgs(WindowBackground::class.java)
     val color = background.shown.color()
     val shownActivity = PluginManager.activity as? MainActivity ?: return invoke.reject("no activity is showing the app")
-    RememberedBackground(shownActivity).keep(background.remembered)
+    RememberedTheme(shownActivity).keep(background.remembered)
+    shownActivity.keepSplashScreenTheme(background.remembered)
     shownActivity.runOnUiThread { shownActivity.showPageBackground(color) }
     invoke.resolve()
   }
+}
+
+fun ComponentActivity.showBarIcons(icons: BarIcons) {
+  enableEdgeToEdge(
+    statusBarStyle = barStyle(icons, Color.TRANSPARENT, Color.TRANSPARENT),
+    navigationBarStyle = navigationBarStyle(icons),
+  )
 }
 
 /** From Android 10 the app shows behind the navigation buttons, while older versions keep a scrim that has to suit the icons. */

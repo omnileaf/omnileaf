@@ -6188,6 +6188,7 @@ dependencies = [
  "anyhow",
  "clap",
  "local-ip-address",
+ "omnileaf-formats",
  "omnileaf-testkit",
  "png 0.18.1",
  "proptest",

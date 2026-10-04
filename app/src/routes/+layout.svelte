@@ -1,6 +1,4 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
-
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
   import {
@@ -13,12 +11,16 @@
     setLanguageSetting,
   } from "$lib/language/language.svelte";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
+  import { focusPageHeading } from "$lib/navigation/page-heading";
   import { sectionOf } from "$lib/navigation/sections";
+  import NoticeHost from "$lib/notices/NoticeHost.svelte";
   import { m } from "$lib/paraglide/messages.js";
+
+  import type { LayoutProps } from "./$types";
 
   import "../app.css";
 
-  let { children }: { children: Snippet } = $props();
+  let { children, data }: LayoutProps = $props();
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
@@ -30,11 +32,10 @@
     );
   });
 
-  let main: HTMLElement | undefined = $state();
-
   afterNavigate(({ type }) => {
-    if (type !== "enter") {
-      main?.querySelector<HTMLHeadingElement>("h1")?.focus();
+    const isProblem = page.error !== null;
+    if (type !== "enter" || isProblem) {
+      focusPageHeading();
     }
   });
 </script>
@@ -50,11 +51,15 @@
     <AppNavigation current={sectionOf(page.url.pathname)} />
   {/key}
   <main
-    bind:this={main}
-    class="flex flex-1 flex-col overflow-y-auto px-gutter py-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance"
+    class="order-2 flex flex-1 flex-col overflow-y-auto px-gutter py-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance"
   >
     {#key language.resolved}
       {@render children()}
     {/key}
   </main>
+  <div class="relative z-notice order-1">
+    {#key language.resolved}
+      <NoticeHost notices={data.notices} platform={data.appInfo.platform} />
+    {/key}
+  </div>
 </div>

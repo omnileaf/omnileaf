@@ -38,7 +38,7 @@ async function openSection(page: Page, path: string): Promise<void> {
   await page.goto(path);
   if (path === "/settings/library") {
     await page.getByRole("main").getByRole("button").click();
-    await expect(page.getByRole("status")).not.toBeEmpty();
+    await expect(page.getByRole("main").getByRole("status")).not.toBeEmpty();
   }
 }
 

@@ -84,7 +84,35 @@ impl PageBackground {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[cfg_attr(
+    not(any(target_os = "android", test)),
+    expect(dead_code, reason = "only Android starts in a remembered theme")
+)]
+enum StartingTheme {
+    Device,
+    Light,
+    Dark,
+}
+
+#[cfg_attr(
+    not(any(target_os = "android", test)),
+    expect(dead_code, reason = "only Android starts in a remembered theme")
+)]
+impl StartingTheme {
+    /// Remembers only a light or dark choice, so under System a cold start and its splash screen keep following the device's dark mode.
+    fn for_preference(preference: ThemePreference) -> Self {
+        match preference {
+            ThemePreference::System => Self::Device,
+            ThemePreference::Light => Self::Light,
+            ThemePreference::Dark => Self::Dark,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 #[cfg_attr(
     not(any(target_os = "android", test)),
     expect(
@@ -94,7 +122,7 @@ impl PageBackground {
 )]
 struct WindowBackground {
     shown: PageBackground,
-    remembered: Option<PageBackground>,
+    remembered: StartingTheme,
 }
 
 #[cfg_attr(
@@ -105,15 +133,11 @@ struct WindowBackground {
     )
 )]
 impl WindowBackground {
-    /// Remembers only a light or dark choice, so a cold start under System keeps following the device's dark mode.
     fn for_appearance(preference: ThemePreference, theme: Theme) -> Self {
-        let shown = PageBackground::for_theme(theme);
-        let remembered = match preference {
-            ThemePreference::System => None,
-            ThemePreference::Light => Some(PageBackground::LIGHT),
-            ThemePreference::Dark => Some(PageBackground::DARK),
-        };
-        Self { shown, remembered }
+        Self {
+            shown: PageBackground::for_theme(theme),
+            remembered: StartingTheme::for_preference(preference),
+        }
     }
 }
 
@@ -199,11 +223,14 @@ mod android {
 
 #[cfg(test)]
 mod tests {
-    use super::{BarIcons, PageBackground, Theme, ThemePreference, WindowBackground};
+    use super::{
+        BarIcons, PageBackground, StartingTheme, Theme, ThemePreference, WindowBackground,
+    };
 
     const APP_CSS: &str = include_str!("../../src/app.css");
     const DARK_THEME_RULE: &str = ":root[data-theme=\"dark\"] {";
     const BACKGROUND_TOKEN: &str = "--color-background:";
+    const ANDROID_COLORS: &str = include_str!("../gen/android/app/src/main/res/values/colors.xml");
 
     fn first_background_token(css: &str) -> &str {
         let (_, rest) = css
@@ -218,6 +245,15 @@ mod tests {
             .split_once(DARK_THEME_RULE)
             .expect("the stylesheet has a dark theme");
         (first_background_token(light), first_background_token(dark))
+    }
+
+    fn android_color(name: &str) -> &'static str {
+        let opening = format!("<color name=\"{name}\">");
+        let (_, rest) = ANDROID_COLORS
+            .split_once(&opening)
+            .unwrap_or_else(|| panic!("Android defines the colour {name}"));
+        let (value, _) = rest.split_once("</color>").expect("the colour ends");
+        value.trim()
     }
 
     fn css_hex(background: PageBackground) -> String {
@@ -260,40 +296,58 @@ mod tests {
     }
 
     #[test]
-    fn a_chosen_light_theme_is_shown_and_remembered() {
+    fn android_starts_a_light_theme_on_the_interfaces_light_page_background() {
+        let background = PageBackground::for_theme(Theme::Light);
+
+        let starting_window = android_color("page_background_light");
+
+        assert_eq!(starting_window, css_hex(background));
+    }
+
+    #[test]
+    fn android_starts_a_dark_theme_on_the_interfaces_dark_page_background() {
+        let background = PageBackground::for_theme(Theme::Dark);
+
+        let starting_window = android_color("page_background_dark");
+
+        assert_eq!(starting_window, css_hex(background));
+    }
+
+    #[test]
+    fn a_chosen_light_theme_is_shown_and_remembered_for_the_next_start() {
         let background = WindowBackground::for_appearance(ThemePreference::Light, Theme::Light);
 
         assert_eq!(
             background,
             WindowBackground {
                 shown: PageBackground::LIGHT,
-                remembered: Some(PageBackground::LIGHT),
+                remembered: StartingTheme::Light,
             }
         );
     }
 
     #[test]
-    fn a_chosen_dark_theme_is_shown_and_remembered() {
+    fn a_chosen_dark_theme_is_shown_and_remembered_for_the_next_start() {
         let background = WindowBackground::for_appearance(ThemePreference::Dark, Theme::Dark);
 
         assert_eq!(
             background,
             WindowBackground {
                 shown: PageBackground::DARK,
-                remembered: Some(PageBackground::DARK),
+                remembered: StartingTheme::Dark,
             }
         );
     }
 
     #[test]
-    fn following_the_system_shows_the_devices_theme_without_remembering_it() {
+    fn following_the_system_shows_the_devices_theme_and_leaves_the_next_start_to_the_device() {
         let background = WindowBackground::for_appearance(ThemePreference::System, Theme::Dark);
 
         assert_eq!(
             background,
             WindowBackground {
                 shown: PageBackground::DARK,
-                remembered: None,
+                remembered: StartingTheme::Device,
             }
         );
     }

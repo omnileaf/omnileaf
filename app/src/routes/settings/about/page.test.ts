@@ -1,6 +1,8 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
+import { Notices } from "$lib/notices/notices.svelte";
+
 import Page from "./+page.svelte";
 
 const PROPS = {
@@ -10,6 +12,7 @@ const PROPS = {
       platform: "linux" as const,
       sourceCode: "repo.example.org/omnileaf",
     },
+    notices: new Notices(),
   },
   params: {},
 };
