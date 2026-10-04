@@ -36,7 +36,7 @@ pub use root_files::{StoredFile, remove_book_files, root_book_count, root_files}
 pub use scanned_book::{BookFile, ScannedBook, record_moved_books, record_scanned_books};
 pub use search_text::SearchText;
 pub use series::{NewSeries, add_series};
-pub use series_books::{BookSummary, series_books};
+pub use series_books::{BookReading, BookSummary, series_books};
 pub use series_count::series_count;
 pub use series_listing::{
     Inclusion, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort, SortDirection,
