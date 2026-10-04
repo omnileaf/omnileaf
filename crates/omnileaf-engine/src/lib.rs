@@ -34,6 +34,8 @@ mod page_sizes;
 mod page_thumbnail_path;
 mod pages;
 mod project_link;
+mod reading_progress;
+mod reading_session;
 mod rescan;
 mod rescan_conditions;
 mod rescan_plan;

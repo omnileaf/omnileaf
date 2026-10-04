@@ -187,6 +187,7 @@ impl Pages {
             None if is_filled => store_sizes(library, found.file, found.rev, sizes.clone()).await,
             None => {}
         }
+        library.start_reading(id, opened.page_count).await?;
         let start = start_page(found.reading, opened.page_count);
         self.read_ahead(&opened, start_index(found.reading, opened.page_count));
         Ok(opened_book(to_open, &sizes, start))
