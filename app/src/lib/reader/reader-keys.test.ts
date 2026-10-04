@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { readerActionFor } from "./reader-keys";
+import { isKeyForFocusedControl, readerActionFor } from "./reader-keys";
 
 function press(key: string, init: KeyboardEventInit = {}): KeyboardEvent {
   return new KeyboardEvent("keydown", { key, ...init });
@@ -70,4 +70,51 @@ test("leaves shortcuts held with another modifier and keys it has no use for alo
     undefined,
     undefined,
   ]);
+});
+
+function pressOn(target: HTMLElement, key: string): KeyboardEvent {
+  const event = press(key);
+  Object.defineProperty(event, "target", { value: target });
+  return event;
+}
+
+function slider(): HTMLInputElement {
+  const input = document.createElement("input");
+  input.type = "range";
+  return input;
+}
+
+test("leaves the arrows and paging keys to a focused slider", () => {
+  const keys = ["ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"];
+
+  const taken = keys.map((key) =>
+    isKeyForFocusedControl(pressOn(slider(), key)),
+  );
+
+  expect(taken).toEqual([true, true, true, true, true, true]);
+});
+
+test("leaves Space and Enter to a focused button or link", () => {
+  const button = document.createElement("button");
+  const link = document.createElement("a");
+
+  const taken = [
+    isKeyForFocusedControl(pressOn(button, " ")),
+    isKeyForFocusedControl(pressOn(button, "Enter")),
+    isKeyForFocusedControl(pressOn(link, "Enter")),
+  ];
+
+  expect(taken).toEqual([true, true, true]);
+});
+
+test("takes the keys no focused control acts on", () => {
+  const button = document.createElement("button");
+
+  const taken = [
+    isKeyForFocusedControl(pressOn(button, "ArrowRight")),
+    isKeyForFocusedControl(pressOn(slider(), "Escape")),
+    isKeyForFocusedControl(pressOn(document.body, " ")),
+  ];
+
+  expect(taken).toEqual([false, false, false]);
 });

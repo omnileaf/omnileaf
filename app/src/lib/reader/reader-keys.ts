@@ -4,6 +4,18 @@ export type ReaderAction =
 const SPACE = " ";
 const CONTROLS_CODE = "KeyM";
 
+const SLIDER_KEYS: ReadonlySet<string> = new Set([
+  "ArrowLeft",
+  "ArrowRight",
+  "ArrowUp",
+  "ArrowDown",
+  "Home",
+  "End",
+  "PageUp",
+  "PageDown",
+]);
+const ACTIVATING_KEYS: ReadonlySet<string> = new Set([SPACE, "Enter"]);
+
 const PLAIN_KEYS: Readonly<Record<string, ReaderAction>> = {
   ArrowRight: "next",
   PageDown: "next",
@@ -28,4 +40,19 @@ export function readerActionFor(
     return event.shiftKey ? "previous" : "next";
   }
   return event.shiftKey ? undefined : PLAIN_KEYS[event.key];
+}
+
+/** Whether the focused control acts on the key itself, as a slider does on arrows and a button on Space, so the reader leaves it alone. */
+export function isKeyForFocusedControl(event: KeyboardEvent): boolean {
+  const { target } = event;
+  if (target instanceof HTMLInputElement) {
+    return SLIDER_KEYS.has(event.key);
+  }
+  if (
+    target instanceof HTMLButtonElement ||
+    target instanceof HTMLAnchorElement
+  ) {
+    return ACTIVATING_KEYS.has(event.key);
+  }
+  return false;
 }
