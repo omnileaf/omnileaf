@@ -13,5 +13,8 @@ local-ip-address.workspace = true
 omnileaf-testkit.workspace = true
 png.workspace = true
 
+[dev-dependencies]
+omnileaf-formats.workspace = true
+
 [lints]
 workspace = true
