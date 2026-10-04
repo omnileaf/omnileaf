@@ -2,7 +2,7 @@ use std::{collections::HashMap, future, sync::Arc};
 
 use omnileaf_db::{
     Error,
-    store::{Store, Writer},
+    store::{Continuity, Store, Writer},
 };
 use tokio::{
     sync::{broadcast, mpsc, oneshot},
@@ -301,7 +301,7 @@ impl Keeper {
             return Ok(());
         };
         self.store
-            .write(move |writer| writer.record_reading_stopped(book.0))
+            .write(move |writer| writer.record_reading_stopped(book.0, Continuity::AfterBreak))
             .await
     }
 
@@ -312,7 +312,7 @@ impl Keeper {
         };
         let place = reached.place();
         self.store
-            .write(move |writer| writer.record_reading(&place))
+            .write(move |writer| writer.record_reading(&place, Continuity::AfterBreak))
             .await
     }
 
@@ -339,7 +339,7 @@ impl Keeper {
             .write(move |writer| {
                 let told = write_reached(writer, &reached)?;
                 if let Some(reading) = reading {
-                    writer.record_reading(&reading.place())?;
+                    writer.record_reading(&reading.place(), Continuity::AfterBreak)?;
                 }
                 Ok(told)
             })

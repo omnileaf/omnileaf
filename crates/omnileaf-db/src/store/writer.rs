@@ -13,7 +13,7 @@ use crate::{
         projector,
         reading_state::reading_state,
         register,
-        session::{self, SessionPlace},
+        session::{self, Continuity, SessionPlace},
     },
 };
 
@@ -106,18 +106,28 @@ impl<'t> Writer<'t> {
         series_of_book(self.connection, book)
     }
 
-    /// Records reading at `place` now, carrying on the latest session when it is of the same book and ended at most two minutes before, or else starting one.
-    #[tracing::instrument(skip_all, fields(book = %place.book, page = place.page))]
-    pub fn record_reading(&mut self, place: &SessionPlace) -> Result<(), Error> {
+    /// Records reading at `place` now, carrying on the latest session when it is of the same book and `continuity` allows, or else starting one.
+    #[tracing::instrument(skip_all, fields(book = %place.book, page = place.page, ?continuity))]
+    pub fn record_reading(
+        &mut self,
+        place: &SessionPlace,
+        continuity: Continuity,
+    ) -> Result<(), Error> {
         let at_ms = self.now_ms();
-        self.guarded(|writer| session::record_reading(writer.connection, at_ms, place))
+        self.guarded(|writer| session::record_reading(writer.connection, at_ms, place, continuity))
     }
 
-    /// Ends the latest session now when it is of `book` and ended at most two minutes before, so time away from a book never counts as reading it.
-    #[tracing::instrument(skip_all, fields(%book))]
-    pub fn record_reading_stopped(&mut self, book: BookId) -> Result<(), Error> {
+    /// Ends the latest session now when it is of `book` and `continuity` allows, so time away from a book never counts as reading it.
+    #[tracing::instrument(skip_all, fields(%book, ?continuity))]
+    pub fn record_reading_stopped(
+        &mut self,
+        book: BookId,
+        continuity: Continuity,
+    ) -> Result<(), Error> {
         let at_ms = self.now_ms();
-        self.guarded(|writer| session::record_reading_stopped(writer.connection, at_ms, book))
+        self.guarded(|writer| {
+            session::record_reading_stopped(writer.connection, at_ms, book, continuity)
+        })
     }
 
     fn now_ms(&self) -> i64 {

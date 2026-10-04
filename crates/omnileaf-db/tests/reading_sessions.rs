@@ -10,7 +10,7 @@
 mod store_support;
 mod support;
 
-use omnileaf_db::store::{SessionPlace, Store};
+use omnileaf_db::store::{Continuity, SessionPlace, Store};
 use omnileaf_sync_proto::BookId;
 use store_support::{FakeClock, NOW_UNIX_MS, book, open_store};
 use support::ScratchFolder;
@@ -53,6 +53,29 @@ impl Reading {
     }
 
     async fn read_in_zone(&self, at_ms: u64, book: BookId, page: u32, utc_offset_minutes: i16) {
+        self.record(
+            at_ms,
+            book,
+            page,
+            utc_offset_minutes,
+            Continuity::AfterBreak,
+        )
+        .await;
+    }
+
+    async fn read_on_at(&self, at_ms: u64, book: BookId, page: u32) {
+        self.record(at_ms, book, page, UTC_PLUS_TEN, Continuity::Unbroken)
+            .await;
+    }
+
+    async fn record(
+        &self,
+        at_ms: u64,
+        book: BookId,
+        page: u32,
+        utc_offset_minutes: i16,
+        continuity: Continuity,
+    ) {
         self.clock.set(at_ms);
         let place = SessionPlace {
             book,
@@ -61,15 +84,19 @@ impl Reading {
             utc_offset_minutes,
         };
         self.store
-            .write(move |writer| writer.record_reading(&place))
+            .write(move |writer| writer.record_reading(&place, continuity))
             .await
             .unwrap();
     }
 
     async fn stop_at(&self, at_ms: u64, book: BookId) {
+        self.stop(at_ms, book, Continuity::AfterBreak).await;
+    }
+
+    async fn stop(&self, at_ms: u64, book: BookId, continuity: Continuity) {
         self.clock.set(at_ms);
         self.store
-            .write(move |writer| writer.record_reading_stopped(book))
+            .write(move |writer| writer.record_reading_stopped(book, continuity))
             .await
             .unwrap();
     }
@@ -176,6 +203,52 @@ async fn starts_a_new_session_once_more_than_two_minutes_passed_without_reading(
         [
             session(book(1), NOW_UNIX_MS, NOW_UNIX_MS, 3),
             session(book(1), back_ms, back_ms, 4),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn carries_on_the_session_however_long_a_page_was_shown_while_reading_goes_on_unbroken() {
+    let reading = Reading::open("session-long-page");
+    reading.read_at(NOW_UNIX_MS, book(1), 3).await;
+
+    let turned_ms = NOW_UNIX_MS + 3 * RESUME_GAP_MS;
+    reading.read_on_at(turned_ms, book(1), 4).await;
+
+    assert_eq!(
+        reading.sessions().await,
+        [session(book(1), NOW_UNIX_MS, turned_ms, 4)]
+    );
+}
+
+#[tokio::test]
+async fn ends_the_session_however_long_its_last_page_was_shown_while_reading_went_on_unbroken() {
+    let reading = Reading::open("session-long-last-page");
+    reading.read_at(NOW_UNIX_MS, book(1), 3).await;
+
+    let closed_ms = NOW_UNIX_MS + 3 * RESUME_GAP_MS;
+    reading.stop(closed_ms, book(1), Continuity::Unbroken).await;
+
+    assert_eq!(
+        reading.sessions().await,
+        [session(book(1), NOW_UNIX_MS, closed_ms, 3)]
+    );
+}
+
+#[tokio::test]
+async fn starts_a_new_session_for_another_book_even_while_reading_goes_on_unbroken() {
+    let reading = Reading::open("session-unbroken-other-book");
+    reading.read_at(NOW_UNIX_MS, book(1), 3).await;
+
+    reading
+        .read_on_at(NOW_UNIX_MS + MINUTE_MS, book(2), 0)
+        .await;
+
+    assert_eq!(
+        reading.sessions().await,
+        [
+            session(book(1), NOW_UNIX_MS, NOW_UNIX_MS, 3),
+            session(book(2), NOW_UNIX_MS + MINUTE_MS, NOW_UNIX_MS + MINUTE_MS, 0),
         ]
     );
 }

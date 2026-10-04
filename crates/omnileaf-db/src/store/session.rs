@@ -28,6 +28,15 @@ pub struct SessionPlace {
     pub utc_offset_minutes: i16,
 }
 
+/// Whether reading has gone on without a break since its session was last recorded.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Continuity {
+    /// The book has stayed open in an app in use, so the session carries on however long a page was shown.
+    Unbroken,
+    /// The book was opened again or the app put away, so the session carries on only within two minutes.
+    AfterBreak,
+}
+
 struct LatestSession {
     id: i64,
     book: BookId,
@@ -35,8 +44,12 @@ struct LatestSession {
 }
 
 impl LatestSession {
-    fn goes_on_with(&self, book: BookId, at_ms: i64) -> bool {
-        self.book == book && at_ms.saturating_sub(self.ended_at_ms) <= RESUME_GAP_MS
+    fn goes_on_with(&self, book: BookId, at_ms: i64, continuity: Continuity) -> bool {
+        self.book == book
+            && match continuity {
+                Continuity::Unbroken => true,
+                Continuity::AfterBreak => at_ms.saturating_sub(self.ended_at_ms) <= RESUME_GAP_MS,
+            }
     }
 }
 
@@ -44,8 +57,11 @@ pub(crate) fn record_reading(
     connection: &Connection,
     at_ms: i64,
     place: &SessionPlace,
+    continuity: Continuity,
 ) -> Result<(), Error> {
-    match latest_session(connection)?.filter(|latest| latest.goes_on_with(place.book, at_ms)) {
+    match latest_session(connection)?
+        .filter(|latest| latest.goes_on_with(place.book, at_ms, continuity))
+    {
         Some(latest) => {
             connection.execute(CARRY_ON, (latest.id, at_ms, place.page, place.page_count))?
         }
@@ -67,9 +83,10 @@ pub(crate) fn record_reading_stopped(
     connection: &Connection,
     at_ms: i64,
     book: BookId,
+    continuity: Continuity,
 ) -> Result<(), Error> {
     if let Some(latest) =
-        latest_session(connection)?.filter(|latest| latest.goes_on_with(book, at_ms))
+        latest_session(connection)?.filter(|latest| latest.goes_on_with(book, at_ms, continuity))
     {
         connection.execute(STOP, (latest.id, at_ms))?;
     }
@@ -122,7 +139,7 @@ mod tests {
             connection
                 .execute("DELETE FROM reading_session", [])
                 .unwrap();
-            record_reading(&connection, at_ms, &place(offset)).unwrap();
+            record_reading(&connection, at_ms, &place(offset), Continuity::AfterBreak).unwrap();
             let day: i64 = connection
                 .query_row("SELECT local_day FROM reading_session", [], |row| {
                     row.get(0)

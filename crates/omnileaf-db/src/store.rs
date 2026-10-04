@@ -10,7 +10,7 @@ use std::{collections::BTreeSet, sync::Arc};
 
 pub use key::{Key, LatestKey, MaximumKey};
 pub use reading_state::{ReadingState, reading_state};
-pub use session::SessionPlace;
+pub use session::{Continuity, SessionPlace};
 use tokio::sync::broadcast;
 pub use writer::Writer;
 
