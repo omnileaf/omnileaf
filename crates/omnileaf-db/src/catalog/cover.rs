@@ -18,6 +18,22 @@ const FILE_OF_COVER: &str =
     FROM book_file JOIN library_root ON library_root.id = book_file.root_id
     WHERE book_file.id = ?1 AND book_file.book_id = ?2 AND book_file.rev = ?3";
 const ROOT_LOCATOR_KIND_COLUMN: usize = 0;
+
+/// Joins `series` to its cover's file as `cover`: the first file of its first book in title order that has one.
+macro_rules! join_series_cover {
+    () => {
+        "LEFT JOIN book_file AS cover ON cover.id = (
+            SELECT (SELECT min(book_file.id) FROM book_file WHERE book_file.book_id = book.id)
+            FROM book
+            WHERE book.series_local_id = series.local_id
+                AND EXISTS (SELECT 1 FROM book_file WHERE book_file.book_id = book.id)
+            ORDER BY book.title_sort_key, book.id
+            LIMIT 1
+        )"
+    };
+}
+
+pub(crate) use join_series_cover;
 const FILE_LOCATION_COLUMN: usize = 5;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
