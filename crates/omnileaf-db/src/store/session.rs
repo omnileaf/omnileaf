@@ -6,8 +6,9 @@ use crate::{Error, catalog::stored_id::stored_id};
 /// How long reading can stop before going on with the same book counts as a new session.
 const RESUME_GAP_MS: i64 = 120_000;
 
+/// The session written last, which a clock set back can leave starting before an earlier one.
 const LATEST_SESSION: &str = "SELECT id, book_id, ended_at_ms FROM reading_session
-    ORDER BY started_at_ms DESC, id DESC
+    ORDER BY id DESC
     LIMIT 1";
 const CARRY_ON: &str = "UPDATE reading_session
     SET ended_at_ms = max(ended_at_ms, ?2), page = ?3, page_count = ?4
@@ -136,15 +137,12 @@ mod tests {
     }
 
     #[test]
-    fn finds_the_latest_session_at_the_end_of_the_start_index() {
+    fn finds_the_latest_session_at_the_end_of_the_table_with_no_sort() {
         let scratch = ScratchLibrary::new("latest-session-plan");
 
         let plan = scratch.query_plan(LATEST_SESSION);
 
-        assert_eq!(
-            plan,
-            ["SCAN reading_session USING INDEX reading_session_by_start"]
-        );
+        assert_eq!(plan, ["SCAN reading_session"]);
     }
 
     #[test]

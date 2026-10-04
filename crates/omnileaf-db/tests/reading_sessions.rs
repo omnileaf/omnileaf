@@ -197,6 +197,24 @@ async fn starts_a_new_session_for_another_book() {
 }
 
 #[tokio::test]
+async fn carries_on_the_session_written_last_after_the_clock_is_set_back() {
+    let reading = Reading::open("session-clock-set-back");
+    reading.read_at(NOW_UNIX_MS, book(1), 3).await;
+    let set_back_ms = NOW_UNIX_MS - 60 * MINUTE_MS;
+    reading.read_at(set_back_ms, book(2), 0).await;
+
+    reading.read_at(set_back_ms + MINUTE_MS, book(2), 1).await;
+
+    assert_eq!(
+        reading.sessions().await,
+        [
+            session(book(1), NOW_UNIX_MS, NOW_UNIX_MS, 3),
+            session(book(2), set_back_ms, set_back_ms + MINUTE_MS, 1),
+        ]
+    );
+}
+
+#[tokio::test]
 async fn ends_the_session_when_reading_stops() {
     let reading = Reading::open("session-stopped");
     reading.read_at(NOW_UNIX_MS, book(1), 3).await;
