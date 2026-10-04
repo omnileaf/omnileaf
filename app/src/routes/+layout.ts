@@ -4,6 +4,7 @@ import {
   markLanguage,
   useChosenLanguage,
 } from "$lib/language/language";
+import { Notices } from "$lib/notices/notices.svelte";
 
 import type { LayoutLoad } from "./$types";
 
@@ -14,5 +15,5 @@ export const load: LayoutLoad = async () => {
   markLanguage(document.documentElement);
   const appInfo = await commands.appInfo();
   document.documentElement.dataset.platform = appInfo.platform;
-  return { appInfo };
+  return { appInfo, notices: new Notices() };
 };
