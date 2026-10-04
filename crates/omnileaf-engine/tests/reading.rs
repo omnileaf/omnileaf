@@ -264,3 +264,46 @@ async fn saves_the_page_reached_in_a_book_when_the_next_one_opens() {
 
     assert_eq!(shelf.reading(0).await, started_on(3));
 }
+
+#[tokio::test]
+async fn saves_the_page_reached_in_a_book_when_the_reader_restores_the_next_one() {
+    let shelf = Shelf::with_two_books("next-restored").await;
+    let first = shelf.restore(0).await;
+    let second = shelf.open(1).await;
+    shelf.show(&first, 2).await;
+
+    shelf
+        .library
+        .reading_restored(second.id, second.start_page)
+        .await
+        .unwrap();
+
+    assert_eq!(shelf.reading(0).await, started_on(3));
+}
+
+#[tokio::test]
+async fn keeps_saving_the_book_restored_when_an_open_begun_before_it_finishes_after_it() {
+    let shelf = Shelf::with_two_books("late-open").await;
+    let read = shelf.restore(1).await;
+    shelf.open(0).await;
+
+    shelf.show(&read, 3).await;
+    shelf.close(&read).await;
+
+    assert_eq!(shelf.reading(1).await, started_on(4));
+}
+
+#[tokio::test]
+async fn keeps_a_page_shown_in_one_book_out_of_the_book_read_after_it() {
+    let shelf = Shelf::with_two_books("other-book").await;
+    let first = shelf.restore(0).await;
+    let second = shelf.restore(1).await;
+
+    shelf.show(&first, 3).await;
+    shelf.close(&second).await;
+
+    assert_eq!(
+        [shelf.reading(0).await, shelf.reading(1).await],
+        [BookReading::NotStarted, BookReading::NotStarted]
+    );
+}
