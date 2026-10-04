@@ -21,6 +21,8 @@ export const commands = {
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
 	librarySeries: (after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_series", { after, listing })),
 	librarySeriesCount: (filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("library_series_count", { filter })),
+	librarySearch: (after: string & { readonly __brand: "SeriesCursor" } | null, search: LibrarySearch) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_search", { after, search })),
+	librarySearchCount: (search: LibrarySearch) => typedError<number, IpcError>(__TAURI_INVOKE("library_search_count", { search })),
 	libraryListing: () => typedError<LibraryListing, IpcError>(__TAURI_INVOKE("library_listing")),
 	setLibraryListing: (listing: LibraryListing) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_listing", { listing })),
 	libraryView: () => typedError<LibraryView, IpcError>(__TAURI_INVOKE("library_view")),
@@ -161,6 +163,13 @@ export type LibraryListing = {
 };
 
 export type LibraryProblem = "writtenByANewerVersion" | "couldNotOpen";
+
+/**  What someone typed to find series by title, and the filter the series found must also pass. */
+export type LibrarySearch = {
+	/**  Text of nothing but white space finds every series the filter lets through. */
+	text: string,
+	filter: LibraryFilter,
+};
 
 export type LibrarySeries = {
 	id: string & { readonly __brand: "SeriesId" },

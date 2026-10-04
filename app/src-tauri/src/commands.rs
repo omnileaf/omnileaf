@@ -3,8 +3,8 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AppInfo, AppLanguage, BooksRemoval, Core, CoversPerRow, FolderCursor, FolderId, FolderPage,
-    FolderRescan, FolderScan, InterfaceError, Library, LibraryFilter, LibraryListing, LibraryView,
-    ProjectLink, ScanProgress, SeriesCursor, SeriesPage,
+    FolderRescan, FolderScan, InterfaceError, Library, LibraryFilter, LibraryListing,
+    LibrarySearch, LibraryView, ProjectLink, ScanProgress, SeriesCursor, SeriesPage,
 };
 use tauri::{AppHandle, Manager, State, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -36,6 +36,8 @@ macro_rules! app_commands {
             library_folders,
             library_series,
             library_series_count,
+            library_search,
+            library_search_count,
             library_listing,
             set_library_listing,
             library_view,
@@ -222,6 +224,25 @@ async fn library_series_count(
     filter: LibraryFilter,
 ) -> Result<u32, IpcError> {
     Ok(library.series_count(filter).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_search(
+    library: State<'_, Library>,
+    after: Option<SeriesCursor>,
+    search: LibrarySearch,
+) -> Result<SeriesPage, IpcError> {
+    Ok(library.search(search, after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_search_count(
+    library: State<'_, Library>,
+    search: LibrarySearch,
+) -> Result<u32, IpcError> {
+    Ok(library.search_count(search).await?)
 }
 
 #[tauri::command]
