@@ -3,6 +3,7 @@ mod cb7;
 mod encoded_page;
 mod error;
 mod generated_library;
+mod header_only;
 mod library;
 mod page;
 mod scratch_folder;
@@ -17,6 +18,7 @@ pub use encoded_page::{
 };
 pub use error::FixtureError;
 pub use generated_library::{GENERATED_LIBRARY_NAME, GeneratedLibrary, write_generated_library};
+pub use header_only::{jxl_header_only, webp_header_only};
 pub use library::{
     SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, SeriesLayout, SeriesSpec, write_sample_library,
 };
