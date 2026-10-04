@@ -13,15 +13,22 @@ mod licence_catalogue;
 mod licences;
 mod policy;
 mod process;
+mod screenshot;
 mod test_device;
 mod workspace;
 
-use std::{fmt::Display, path::PathBuf};
+use std::{
+    fmt::Display,
+    path::PathBuf,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 
 use crate::{policy::RepositoryFile, process::Process};
+
+const SCREENSHOTS: &str = "target/screenshots";
 
 #[derive(Parser)]
 #[command(about = "Repository automation for Omnileaf")]
@@ -80,6 +87,12 @@ enum Command {
     },
     /// Check the repository's files against its content rules.
     Policy,
+    /// Save what a running phone, emulator or Simulator shows into `target/screenshots`.
+    Screenshot {
+        /// The device to capture, by name; the only running one when left out.
+        #[arg(long)]
+        device: Option<String>,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -156,6 +169,7 @@ fn main() -> anyhow::Result<()> {
             licences::regenerate(&workspace::root(), mode)?;
         }
         Command::Policy => enforce_policy()?,
+        Command::Screenshot { device } => take_screenshot(device.as_deref())?,
     }
     Ok(())
 }
@@ -221,6 +235,21 @@ fn ready_for_android_tests(chosen: Option<&str>) -> anyhow::Result<Process> {
     Ok(process
         .with_env(test_device::ANDROID_SERIAL, device.serial)
         .with_env(android::ANDROID_HOME, toolchain.sdk))
+}
+
+fn take_screenshot(chosen: Option<&str>) -> anyhow::Result<()> {
+    let os = std::env::consts::OS;
+    let android = android::Toolchain::locate(|key| std::env::var_os(key), os);
+    let devices = devices::discover(&Process::in_workspace(), android.as_ref(), os)?;
+    let device = screenshot::pick_running(&devices, chosen)?;
+    let taken_at = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .context("read the clock")?
+        .as_secs();
+    let root = workspace::root();
+    let path = screenshot::capture(device, android.as_ref(), &root.join(SCREENSHOTS), taken_at)?;
+    print_lines(&[path.strip_prefix(&root).unwrap_or(&path).display()]);
+    Ok(())
 }
 
 fn list_devices() -> anyhow::Result<()> {
