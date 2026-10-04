@@ -35,7 +35,7 @@ const EVERY_HUNDREDTH_FINISHED: u32 = 100;
 const EVERY_TENTH_STARTED: u32 = 10;
 const PAGE_SIZE: u16 = 100;
 const TIMINGS: usize = 40;
-const BUDGET: Duration = Duration::from_millis(5);
+const BUDGET: Duration = Duration::from_millis(2);
 const PERCENTILE: usize = 95;
 
 const SORTS: [SeriesSort; 4] = [
@@ -80,7 +80,7 @@ const FILTERS: [SeriesFilter; 7] = [
     reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
-async fn reads_each_sorted_and_filtered_page_of_10_000_series_within_5_ms_at_p95() {
+async fn reads_each_sorted_and_filtered_page_of_10_000_series_within_2_ms_at_p95() {
     let folder = ScratchFolder::new("filtered-page-speed");
     let database = Database::open(&library_config(&folder)).unwrap();
     add_generated_library(&database).await;
@@ -120,7 +120,7 @@ async fn reads_each_sorted_and_filtered_page_of_10_000_series_within_5_ms_at_p95
     reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
-async fn counts_the_filtered_series_of_10_000_within_5_ms_at_p95() {
+async fn counts_the_filtered_series_of_10_000_within_2_ms_at_p95() {
     let folder = ScratchFolder::new("filtered-count-speed");
     let database = Database::open(&library_config(&folder)).unwrap();
     add_generated_library(&database).await;

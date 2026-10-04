@@ -81,48 +81,83 @@ impl SeriesFilter {
 }
 
 impl Inclusion {
-    /// What the condition must be for a series to be listed, or none when either will do.
-    const fn required(self) -> Option<bool> {
+    const fn admits(self, holds: bool) -> bool {
         match self {
-            Self::Any => None,
-            Self::Only => Some(true),
-            Self::Hide => Some(false),
+            Self::Any => true,
+            Self::Only => holds,
+            Self::Hide => !holds,
         }
     }
 }
 
-/// The SQL condition a series row meets when the filter bound as `:unread`, `:started` and `:finished` lets it through.
-macro_rules! meets_the_filter {
-    () => {
-        "(:unread IS NULL OR (series.read_count < series.book_count) = :unread)
-        AND (:started IS NULL OR (series.started_count > 0) = :started)
-        AND (:finished IS NULL OR (series.read_count = series.book_count) = :finished)"
-    };
+/// How far through its books a listed series has been read, which decides every condition of a filter at once.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ReadingStage {
+    Unstarted,
+    InProgress,
+    Finished,
 }
 
-pub(crate) use meets_the_filter;
+impl ReadingStage {
+    /// The value of the series' `reading_stage` column at this stage.
+    const fn stored(self) -> i64 {
+        match self {
+            Self::Unstarted => 0,
+            Self::InProgress => 1,
+            Self::Finished => 2,
+        }
+    }
 
-/// A filter's conditions as the parameters [`meets_the_filter`] binds.
-pub(crate) struct FilterParams {
-    unread: Option<bool>,
-    started: Option<bool>,
-    finished: Option<bool>,
+    const fn is_unread(self) -> bool {
+        !matches!(self, Self::Finished)
+    }
+
+    const fn is_started(self) -> bool {
+        !matches!(self, Self::Unstarted)
+    }
+
+    const fn is_finished(self) -> bool {
+        matches!(self, Self::Finished)
+    }
 }
 
-impl FilterParams {
+impl SeriesFilter {
+    const fn admits(self, stage: ReadingStage) -> bool {
+        self.unread.admits(stage.is_unread())
+            && self.started.admits(stage.is_started())
+            && self.finished.admits(stage.is_finished())
+    }
+}
+
+/// The stages a filter lets through, bound as `:unstarted`, `:in_progress` and `:finished`: each one's stored value, or null for a stage it hides, which matches no series.
+pub(crate) struct StageParams {
+    unstarted: Option<i64>,
+    in_progress: Option<i64>,
+    finished: Option<i64>,
+}
+
+impl StageParams {
     pub(crate) const fn of(filter: SeriesFilter) -> Self {
         Self {
-            unread: filter.unread.required(),
-            started: filter.started.required(),
-            finished: filter.finished.required(),
+            unstarted: admitted(filter, ReadingStage::Unstarted),
+            in_progress: admitted(filter, ReadingStage::InProgress),
+            finished: admitted(filter, ReadingStage::Finished),
         }
     }
 
     pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 3] {
         [
-            (":unread", &self.unread),
-            (":started", &self.started),
+            (":unstarted", &self.unstarted),
+            (":in_progress", &self.in_progress),
             (":finished", &self.finished),
         ]
+    }
+}
+
+const fn admitted(filter: SeriesFilter, stage: ReadingStage) -> Option<i64> {
+    if filter.admits(stage) {
+        Some(stage.stored())
+    } else {
+        None
     }
 }

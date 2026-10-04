@@ -52,6 +52,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0016_add_android_tree_labels"),
     migration!("0017_count_read_and_started_books"),
     migration!("0018_create_library_listing"),
+    migration!("0019_index_series_by_reading_stage"),
 ];
 
 pub(crate) fn pending(

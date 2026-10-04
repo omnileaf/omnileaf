@@ -8,9 +8,7 @@ use crate::{
         cover::stored_cover,
         cursor::Position,
         page::{Page, PageRequest},
-        series_listing::{
-            FilterParams, SeriesFilter, SeriesListing, SeriesOrder, SortDirection, meets_the_filter,
-        },
+        series_listing::{SeriesFilter, SeriesListing, SeriesOrder, SortDirection, StageParams},
         stored_id::stored_id,
     },
     title_key::{TitleStamp, stored_stamp},
@@ -36,10 +34,11 @@ struct TitlePlace {
     id: SeriesId,
 }
 
-macro_rules! series_with_books {
-    () => {
+/// The listed series at the stage bound as `$stage`, which hold at least one book.
+macro_rules! series_at_stage {
+    ($stage:literal) => {
         concat!(
-            "SELECT series.id, series.title, series.title_key, series.book_count, series.added_at_ms,
+            "SELECT series.id AS id, series.title, series.title_key, series.book_count, series.added_at_ms,
                 cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
                 series.book_count - series.read_count AS unread_count
             FROM series
@@ -51,18 +50,36 @@ macro_rules! series_with_books {
                 ORDER BY book.title_sort_key, book.id
                 LIMIT 1
             )
-            WHERE series.book_count > 0 AND ",
-            meets_the_filter!()
+            WHERE series.reading_stage = ",
+            $stage
         )
     };
 }
 
+/// Merges each stage the filter lets through, read in order from its own stretch of the index, so a filter matching few series reads only those.
 macro_rules! listing {
     (seek: $seek:expr, order: $order:expr, sort_position: $position:expr $(,)?) => {
         Listing {
-            first_page_query: concat!(series_with_books!(), " ORDER BY ", $order, " LIMIT :limit"),
+            first_page_query: concat!(
+                series_at_stage!(":unstarted"),
+                " UNION ALL ",
+                series_at_stage!(":in_progress"),
+                " UNION ALL ",
+                series_at_stage!(":finished"),
+                " ORDER BY ",
+                $order,
+                " LIMIT :limit"
+            ),
             next_page_query: concat!(
-                series_with_books!(),
+                series_at_stage!(":unstarted"),
+                " AND ",
+                $seek,
+                " UNION ALL ",
+                series_at_stage!(":in_progress"),
+                " AND ",
+                $seek,
+                " UNION ALL ",
+                series_at_stage!(":finished"),
                 " AND ",
                 $seek,
                 " ORDER BY ",
@@ -74,18 +91,18 @@ macro_rules! listing {
     };
 }
 
-/// Both ways round an order on `key`, with the id breaking ties so every row has one place.
+/// Both ways round an order on the series column `key`, with the id breaking ties so every row has one place.
 macro_rules! directions {
     (key: $key:literal, sort_position: $position:expr $(,)?) => {
         Directions {
             ascending: listing! {
-                seek: concat!("(", $key, ", series.id) > (:after_key, :after_id)"),
-                order: concat!($key, ", series.id"),
+                seek: concat!("(series.", $key, ", series.id) > (:after_key, :after_id)"),
+                order: concat!($key, ", id"),
                 sort_position: $position,
             },
             descending: listing! {
-                seek: concat!("(", $key, ", series.id) < (:after_key, :after_id)"),
-                order: concat!($key, " DESC, series.id DESC"),
+                seek: concat!("(series.", $key, ", series.id) < (:after_key, :after_id)"),
+                order: concat!($key, " DESC, id DESC"),
                 sort_position: $position,
             },
         }
@@ -93,7 +110,7 @@ macro_rules! directions {
 }
 
 const BY_TITLE: Directions<TitlePlace> = directions! {
-    key: "series.title_key",
+    key: "title_key",
     sort_position: |row| {
         Ok(TitlePlace {
             sort_key: row.get("title_key")?,
@@ -103,7 +120,7 @@ const BY_TITLE: Directions<TitlePlace> = directions! {
 };
 
 const BY_DATE_ADDED: Directions<Position> = directions! {
-    key: "series.added_at_ms",
+    key: "added_at_ms",
     sort_position: |row| {
         Ok(Position::Added {
             added_at_ms: row.get("added_at_ms")?,
@@ -262,7 +279,7 @@ impl<P> Listing<P> {
         sql: &str,
         after: &[(&str, &dyn ToSql)],
     ) -> Result<Vec<(SeriesSummary, P)>, Error> {
-        let filter = FilterParams::of(read.filter);
+        let filter = StageParams::of(read.filter);
         let mut params = filter.named().to_vec();
         params.push((":limit", &read.limit));
         params.extend_from_slice(after);
@@ -290,20 +307,34 @@ mod tests {
     use super::*;
     use crate::scratch::ScratchLibrary;
 
-    const COVER_BY_INDEX: [&str; 6] = [
-        "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
-        "CORRELATED SCALAR SUBQUERY 3",
-        "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)",
-        "SEARCH book_file EXISTS USING COVERING INDEX book_file_by_book (book_id=?)",
-        "CORRELATED SCALAR SUBQUERY 1",
-        "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
-    ];
+    /// The numbers SQLite gives each stage's two cover subqueries, outer first.
+    const COVER_SUBQUERIES_OF_EACH_STAGE: [(u8, u8); 3] = [(3, 1), (7, 5), (11, 9)];
 
-    fn with_covers(series_step: &str) -> Vec<String> {
-        [series_step]
-            .into_iter()
-            .chain(COVER_BY_INDEX)
+    /// Each listed series finds its first book and that book's first file by index, sorting nothing.
+    fn with_covers(series_step: &str, (outer, inner): (u8, u8)) -> Vec<String> {
+        vec![
+            series_step.to_owned(),
+            "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN".to_owned(),
+            format!("CORRELATED SCALAR SUBQUERY {outer}"),
+            "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)".to_owned(),
+            "SEARCH book_file EXISTS USING COVERING INDEX book_file_by_book (book_id=?)".to_owned(),
+            format!("CORRELATED SCALAR SUBQUERY {inner}"),
+            "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)".to_owned(),
+        ]
+    }
+
+    /// Reads each stage in order through `series_step` and merges the three, so no step sorts.
+    fn merging_each_stage(series_step: &str) -> Vec<String> {
+        let [unstarted, in_progress, finished] =
+            COVER_SUBQUERIES_OF_EACH_STAGE.map(|subqueries| with_covers(series_step, subqueries));
+        ["MERGE (UNION ALL)", "LEFT", "MERGE (UNION ALL)", "LEFT"]
             .map(ToOwned::to_owned)
+            .into_iter()
+            .chain(unstarted)
+            .chain(["RIGHT".to_owned()])
+            .chain(in_progress)
+            .chain(["RIGHT".to_owned()])
+            .chain(finished)
             .collect()
     }
 
@@ -319,27 +350,31 @@ mod tests {
     }
 
     #[test]
-    fn starts_at_either_end_of_the_title_index_without_reading_the_table_or_sorting() {
+    fn starts_each_stage_at_either_end_of_its_stretch_of_the_title_index_without_sorting() {
         let scratch = ScratchLibrary::new("first-title-plan");
 
         let plans = plans_of(&scratch, |listing| listing.first_page_query, &BY_TITLE);
 
-        let from_the_head = with_covers("SCAN series USING INDEX series_by_title");
+        let from_the_head = merging_each_stage(
+            "SEARCH series USING INDEX series_by_stage_and_title (reading_stage=?)",
+        );
         assert_eq!(plans, [from_the_head.clone(), from_the_head]);
     }
 
     #[test]
-    fn starts_at_either_end_of_the_date_added_index_without_reading_the_table_or_sorting() {
+    fn starts_each_stage_at_either_end_of_its_stretch_of_the_date_added_index_without_sorting() {
         let scratch = ScratchLibrary::new("first-date-added-plan");
 
         let plans = plans_of(&scratch, |listing| listing.first_page_query, &BY_DATE_ADDED);
 
-        let from_the_head = with_covers("SCAN series USING INDEX series_by_added");
+        let from_the_head = merging_each_stage(
+            "SEARCH series USING INDEX series_by_stage_and_added (reading_stage=?)",
+        );
         assert_eq!(plans, [from_the_head.clone(), from_the_head]);
     }
 
     #[test]
-    fn seeks_the_title_index_either_way_on_both_sort_columns_without_scanning_or_sorting() {
+    fn seeks_each_stage_of_the_title_index_either_way_on_both_sort_columns_without_sorting() {
         let scratch = ScratchLibrary::new("title-plan");
 
         let plans = plans_of(&scratch, |listing| listing.next_page_query, &BY_TITLE);
@@ -347,14 +382,18 @@ mod tests {
         assert_eq!(
             plans,
             [
-                with_covers("SEARCH series USING INDEX series_by_title ((title_key,id)>(?,?))"),
-                with_covers("SEARCH series USING INDEX series_by_title ((title_key,id)<(?,?))"),
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_title (reading_stage=? AND (title_key,id)>(?,?))"
+                ),
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_title (reading_stage=? AND (title_key,id)<(?,?))"
+                ),
             ]
         );
     }
 
     #[test]
-    fn seeks_the_date_added_index_either_way_on_both_sort_columns_without_scanning_or_sorting() {
+    fn seeks_each_stage_of_the_date_added_index_either_way_on_both_sort_columns_without_sorting() {
         let scratch = ScratchLibrary::new("date-added-plan");
 
         let plans = plans_of(&scratch, |listing| listing.next_page_query, &BY_DATE_ADDED);
@@ -362,8 +401,12 @@ mod tests {
         assert_eq!(
             plans,
             [
-                with_covers("SEARCH series USING INDEX series_by_added ((added_at_ms,id)>(?,?))"),
-                with_covers("SEARCH series USING INDEX series_by_added ((added_at_ms,id)<(?,?))"),
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_added (reading_stage=? AND (added_at_ms,id)>(?,?))"
+                ),
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_added (reading_stage=? AND (added_at_ms,id)<(?,?))"
+                ),
             ]
         );
     }

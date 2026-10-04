@@ -2,17 +2,15 @@ use rusqlite::Connection;
 
 use crate::{
     Error,
-    catalog::series_listing::{FilterParams, SeriesFilter, meets_the_filter},
+    catalog::series_listing::{SeriesFilter, StageParams},
 };
 
-const SERIES_WITH_BOOKS: &str = concat!(
-    "SELECT count(*) FROM series WHERE book_count > 0 AND ",
-    meets_the_filter!()
-);
+const SERIES_WITH_BOOKS: &str =
+    "SELECT count(*) FROM series WHERE reading_stage IN (:unstarted, :in_progress, :finished)";
 
 /// Counts the series the library lists through `filter`, which are those holding at least one book that it lets through.
 pub fn series_count(connection: &Connection, filter: &SeriesFilter) -> Result<u32, Error> {
-    let params = FilterParams::of(*filter);
+    let params = StageParams::of(*filter);
     Ok(connection
         .prepare(SERIES_WITH_BOOKS)?
         .query_row(params.named().as_slice(), |row| row.get(0))?)
@@ -24,11 +22,14 @@ mod tests {
     use crate::scratch::ScratchLibrary;
 
     #[test]
-    fn counts_through_an_index_holding_only_the_listed_series_and_their_reading_counts() {
+    fn counts_only_the_stretches_of_an_index_holding_the_stages_the_filter_lets_through() {
         let scratch = ScratchLibrary::new("series-count-plan");
 
         let plan = scratch.query_plan(SERIES_WITH_BOOKS);
 
-        assert_eq!(plan, ["SCAN series USING COVERING INDEX series_by_added"]);
+        assert_eq!(
+            plan,
+            ["SEARCH series USING INDEX series_by_stage_and_added (reading_stage=?)"]
+        );
     }
 }
