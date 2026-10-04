@@ -7,7 +7,7 @@ import {
   type LibrarySeries,
 } from "#lib/ipc/bindings.ts";
 
-import { LibrarySeriesList, type ListSeries } from "./library-series.svelte";
+import { librarySeriesList, type ListSeries } from "./library-series.svelte";
 
 type WireSeries = Omit<LibrarySeries, "id" | "cover"> & {
   readonly id: string;
@@ -94,20 +94,20 @@ function failing(): void {
 
 test("lists the first page of the series the library holds", async () => {
   mockIPC(() => ({ series: [FIRST, SECOND], next: "cursor" }));
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
 
   await series.load();
 
   expect(series.list).toEqual({
     kind: "loaded",
-    series: [FIRST, SECOND],
+    items: [FIRST, SECOND],
     isComplete: false,
   });
 });
 
 test("asks for the first page only", async () => {
   const asked = pagedFrom(() => sampleSeries(5));
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
 
   await series.load();
 
@@ -117,7 +117,7 @@ test("asks for the first page only", async () => {
 test("reads the next page from where the last one ended", async () => {
   const catalog = sampleSeries(5);
   const asked = pagedFrom(() => catalog);
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
   await series.load();
 
   await series.loadMore();
@@ -125,7 +125,7 @@ test("reads the next page from where the last one ended", async () => {
   expect(asked).toEqual([null, "2"]);
   expect(series.list).toEqual({
     kind: "loaded",
-    series: catalog.slice(0, 4),
+    items: catalog.slice(0, 4),
     isComplete: false,
   });
 });
@@ -133,21 +133,21 @@ test("reads the next page from where the last one ended", async () => {
 test("marks the list complete once its last page is read", async () => {
   const catalog = sampleSeries(3);
   pagedFrom(() => catalog);
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
   await series.load();
 
   await series.loadMore();
 
   expect(series.list).toEqual({
     kind: "loaded",
-    series: catalog,
+    items: catalog,
     isComplete: true,
   });
 });
 
 test("asks for nothing more once the list is complete", async () => {
   const asked = pagedFrom(() => sampleSeries(2));
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
   await series.load();
 
   await series.loadMore();
@@ -157,7 +157,7 @@ test("asks for nothing more once the list is complete", async () => {
 
 test("asks for one next page at a time", async () => {
   const answers = heldAnswers();
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
   const loaded = series.load();
   await expect.poll(() => answers.length).toBe(1);
   answers[0]?.({ series: [FIRST], next: "1" });
@@ -172,7 +172,7 @@ test("asks for one next page at a time", async () => {
   expect(answers).toHaveLength(2);
   expect(series.list).toEqual({
     kind: "loaded",
-    series: [FIRST, SECOND],
+    items: [FIRST, SECOND],
     isComplete: true,
   });
 });
@@ -180,7 +180,7 @@ test("asks for one next page at a time", async () => {
 test("reads again from the start as many series as it shows", async () => {
   let catalog = sampleSeries(5);
   const asked = pagedFrom(() => catalog);
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
   await series.load();
   await series.loadMore();
   catalog = sampleSeries(6).slice(1);
@@ -191,7 +191,7 @@ test("reads again from the start as many series as it shows", async () => {
   expect(asked).toEqual([null, "2"]);
   expect(series.list).toEqual({
     kind: "loaded",
-    series: catalog.slice(0, 4),
+    items: catalog.slice(0, 4),
     isComplete: false,
   });
 });
@@ -199,7 +199,7 @@ test("reads again from the start as many series as it shows", async () => {
 test("starts a list in a new listing from its first page alone", async () => {
   const catalog = sampleSeries(5);
   const asked = pagedFrom(() => catalog);
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
   await series.load();
   await series.loadMore();
   asked.length = 0;
@@ -209,14 +209,14 @@ test("starts a list in a new listing from its first page alone", async () => {
   expect(asked).toEqual([null]);
   expect(series.list).toEqual({
     kind: "loaded",
-    series: catalog.slice(0, 2),
+    items: catalog.slice(0, 2),
     isComplete: false,
   });
 });
 
 test("keeps a next page of the old listing out of the list once a new listing has started", async () => {
   const answers = heldAnswers();
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
   const loaded = series.load();
   await expect.poll(() => answers.length).toBe(1);
   answers[0]?.({ series: [FIRST], next: "1" });
@@ -230,7 +230,7 @@ test("keeps a next page of the old listing out of the list once a new listing ha
 
   expect(series.list).toEqual({
     kind: "loaded",
-    series: [FIRST],
+    items: [FIRST],
     isComplete: false,
   });
   answers[2]?.({ series: [SECOND], next: null });
@@ -239,7 +239,7 @@ test("keeps a next page of the old listing out of the list once a new listing ha
 
 test("drops a next page that arrives after the list was read again", async () => {
   const answers = heldAnswers();
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
   const loaded = series.load();
   await expect.poll(() => answers.length).toBe(1);
   answers[0]?.({ series: [FIRST], next: "1" });
@@ -255,14 +255,14 @@ test("drops a next page that arrives after the list was read again", async () =>
 
   expect(series.list).toEqual({
     kind: "loaded",
-    series: [SECOND],
+    items: [SECOND],
     isComplete: true,
   });
 });
 
 test("drops a next page asked for while the list was being read again", async () => {
   const answers = heldAnswers();
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
   const loaded = series.load();
   await expect.poll(() => answers.length).toBe(1);
   answers[0]?.({ series: [FIRST], next: "1" });
@@ -278,14 +278,14 @@ test("drops a next page asked for while the list was being read again", async ()
 
   expect(series.list).toEqual({
     kind: "loaded",
-    series: [SECOND],
+    items: [SECOND],
     isComplete: true,
   });
 });
 
 test("stops reading a list again once a newer read has started", async () => {
   const asked = pagedFrom(() => sampleSeries(5));
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
   await series.load();
   await series.loadMore();
   asked.length = 0;
@@ -297,7 +297,7 @@ test("stops reading a list again once a newer read has started", async () => {
 
 test("reads the next page again after asking for one broke", async () => {
   mockIPC(() => ({ series: [FIRST], next: "1" }));
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
   await series.load();
   mockIPC(() => {
     throw new Error("the bridge to the core broke");
@@ -311,14 +311,14 @@ test("reads the next page again after asking for one broke", async () => {
 
   expect(series.list).toEqual({
     kind: "loaded",
-    series: [FIRST, SECOND],
+    items: [FIRST, SECOND],
     isComplete: true,
   });
 });
 
 test("keeps the newer list when an older load finishes after it", async () => {
   const answers = heldAnswers();
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
   const older = series.load();
   const newer = series.load();
   await expect.poll(() => answers.length).toBe(2);
@@ -330,14 +330,14 @@ test("keeps the newer list when an older load finishes after it", async () => {
 
   expect(series.list).toEqual({
     kind: "loaded",
-    series: [FIRST, SECOND],
+    items: [FIRST, SECOND],
     isComplete: true,
   });
 });
 
 test("says when the series can't be listed", async () => {
   failing();
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
 
   await series.load();
 
@@ -346,7 +346,7 @@ test("says when the series can't be listed", async () => {
 
 test("says when the next page can't be read", async () => {
   mockIPC(() => ({ series: [FIRST], next: "1" }));
-  const series = new LibrarySeriesList(listSeries);
+  const series = librarySeriesList(listSeries);
   await series.load();
   failing();
 

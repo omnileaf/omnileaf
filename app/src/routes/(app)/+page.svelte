@@ -16,7 +16,7 @@
   import FolderNotice from "#lib/library/FolderNotice.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { filtersOn, withoutFilters } from "#lib/library/library-listing.ts";
-  import { LibrarySeriesList } from "#lib/library/library-series.svelte.ts";
+  import { librarySeriesList } from "#lib/library/library-series.svelte.ts";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
   import NoMatches from "#lib/library/NoMatches.svelte";
   import SeriesCount from "#lib/library/SeriesCount.svelte";
@@ -43,7 +43,7 @@
       reportError(error);
     },
   );
-  const library = new LibrarySeriesList((after) =>
+  const library = librarySeriesList((after) =>
     commands.librarySeries(after, listedBy()),
   );
   const seriesCount = new LibrarySeriesCount(
@@ -73,7 +73,7 @@
   let isListFiltered = $state(false);
 
   const listsNothing = $derived(
-    library.list.kind === "loaded" && library.list.series.length === 0,
+    library.list.kind === "loaded" && library.list.items.length === 0,
   );
   let holdsNoSeries = $state(false);
   const isEmpty = $derived(listsNothing && (!isListFiltered || holdsNoSeries));
@@ -84,7 +84,7 @@
   );
   const hasBooks = $derived(
     loaded !== undefined &&
-      (loaded.series.series.length > 0 || (isListFiltered && !holdsNoSeries)),
+      (loaded.series.items.length > 0 || (isListFiltered && !holdsNoSeries)),
   );
   const showsItemCounts = $derived(
     hasBooks && loaded?.view.showsItemCounts === true,
@@ -146,7 +146,7 @@
 
   let measuredColumns: number | undefined = $state();
   const coversDrawn = $derived(
-    library.list.kind === "failed" || loaded?.series.series.length === 0
+    library.list.kind === "failed" || loaded?.series.items.length === 0
       ? undefined
       : measuredColumns,
   );
@@ -272,7 +272,7 @@
   {:else if loaded !== undefined}
     <div class="mbs-xl">
       <SeriesCovers
-        series={loaded.series.series}
+        series={loaded.series.items}
         isComplete={loaded.series.isComplete}
         onNearEnd={() => {
           void library.loadMore();
