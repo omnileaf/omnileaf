@@ -5,6 +5,7 @@
     setThemeSetting,
     themeSettingForDocument,
   } from "$lib/appearance/theme.svelte";
+  import { commands } from "$lib/ipc/bindings";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
   import { focusPageHeading } from "$lib/navigation/page-heading";
   import { sectionOf } from "$lib/navigation/sections";
@@ -17,7 +18,11 @@
 
   let { children, data }: LayoutProps = $props();
 
-  setThemeSetting(themeSettingForDocument());
+  const themeSetting = setThemeSetting(themeSettingForDocument());
+
+  $effect(() => {
+    void commands.matchSystemBars(themeSetting.resolved);
+  });
 
   afterNavigate(({ type }) => {
     const isProblem = page.error !== null;

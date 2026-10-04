@@ -94,3 +94,28 @@ test("still applies the theme when storage can't be read", () => {
 
   expect(root.dataset.theme).toBe("light");
 });
+
+test("resolves to the system's theme while the preference is system", () => {
+  const darkMode = darkModeQuery(false);
+  const setting = new ThemeSetting(
+    memoryStore(),
+    darkMode,
+    document.createElement("div"),
+  );
+
+  darkMode.change(true);
+
+  expect(setting.resolved).toBe("dark");
+});
+
+test("resolves to a chosen theme whatever the system's", () => {
+  const setting = new ThemeSetting(
+    memoryStore(),
+    darkModeQuery(true),
+    document.createElement("div"),
+  );
+
+  setting.choose("light");
+
+  expect(setting.resolved).toBe("light");
+});
