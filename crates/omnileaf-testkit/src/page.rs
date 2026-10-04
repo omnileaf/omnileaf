@@ -12,8 +12,8 @@ const GOLDEN_GAMMA: u64 = 0x9E37_79B9_7F4A_7C15;
 const JPEG_QUALITY: u8 = 90;
 const SCAN_WIDTH: u16 = 1800;
 const SCAN_HEIGHT: u16 = 2700;
-const GRAINY_SCAN_GRAIN: u8 = 16;
-const TYPICAL_SCAN_GRAIN: u8 = 20;
+const FULL_CHROMA_SCAN_GRAIN: u8 = 16;
+const SUBSAMPLED_SCAN_GRAIN: u8 = 20;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PageShape {
@@ -72,14 +72,14 @@ pub fn page_webp(seed: u64, index: u32, shape: PageShape) -> Result<Vec<u8>, Fix
     Ok(bytes)
 }
 
-/// A full-resolution grainy colour comic scan with chroma at full resolution (4:4:4), the slow end of what a cover is made from.
-pub fn grainy_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
-    scan_jpeg(seed, GRAINY_SCAN_GRAIN, SamplingFactor::R_4_4_4)
+/// A full-resolution colour comic scan with chroma at full resolution (4:4:4), the slowest common kind of page to make a cover from.
+pub fn full_chroma_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
+    scan_jpeg(seed, FULL_CHROMA_SCAN_GRAIN, SamplingFactor::R_4_4_4)
 }
 
 /// A full-resolution colour comic scan with 4:2:0 chroma subsampling, the common default, weighing about a megabyte.
-pub fn typical_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
-    scan_jpeg(seed, TYPICAL_SCAN_GRAIN, SamplingFactor::R_4_2_0)
+pub fn subsampled_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
+    scan_jpeg(seed, SUBSAMPLED_SCAN_GRAIN, SamplingFactor::R_4_2_0)
 }
 
 fn scan_jpeg(seed: u64, grain: u8, chroma: SamplingFactor) -> Result<Vec<u8>, FixtureError> {

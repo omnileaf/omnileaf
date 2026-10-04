@@ -15,7 +15,9 @@ use std::{
 };
 
 use omnileaf_engine::{Library, Resource, ResourceRouter};
-use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg, typical_scan_jpeg};
+use omnileaf_testkit::{
+    ArchiveEntry, Compression, PageShape, cbz, page_jpeg, subsampled_scan_jpeg,
+};
 use support::{FixedClock, TempFolder};
 
 const BOOKS: u64 = 20;
@@ -29,7 +31,7 @@ fn write_scanned_library(root: &std::path::Path) {
         let series = format!("Sample Series {book:02}");
         let mut entries = vec![ArchiveEntry {
             name: "000.jpg".to_owned(),
-            bytes: typical_scan_jpeg(book).unwrap(),
+            bytes: subsampled_scan_jpeg(book).unwrap(),
         }];
         entries.extend((1..=PAGES_AFTER_THE_COVER).map(|index| ArchiveEntry {
             name: format!("{index:03}.jpg"),
