@@ -12,29 +12,26 @@ const NOT_AN_IMAGE = "data:image/jxl;base64,bm90IGFuIGltYWdl";
 
 test("names each format whose sample the webview fails to decode", async () => {
   const undecodable = await undecodableFormats({
-    webp: ONE_PIXEL_PNG,
-    avif: NOT_AN_IMAGE,
-    jxl: NOT_AN_IMAGE,
+    webp: NOT_AN_IMAGE,
+    jxl: ONE_PIXEL_PNG,
   });
 
-  expect(undecodable).toEqual(["avif", "jxl"]);
+  expect(undecodable).toEqual(["webp"]);
 });
 
 test("names no format when every sample decodes", async () => {
   const undecodable = await undecodableFormats({
     webp: ONE_PIXEL_PNG,
-    avif: ONE_PIXEL_PNG,
     jxl: ONE_PIXEL_PNG,
   });
 
   expect(undecodable).toEqual([]);
 });
 
-test("decodes the WebP and AVIF samples in Chromium, which every webview the app runs in can show", async () => {
+test("names no format in Chromium, which shows both WebP and JPEG XL", async () => {
   const undecodable = await undecodableFormats(FORMAT_SAMPLES);
 
-  expect(undecodable).not.toContain("webp");
-  expect(undecodable).not.toContain("avif");
+  expect(undecodable).toEqual([]);
 });
 
 const WITHIN_MS = 20;

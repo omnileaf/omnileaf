@@ -2,10 +2,9 @@ import type { ProbedFormat } from "#lib/ipc/bindings.ts";
 
 export type FormatSamples = Readonly<Record<ProbedFormat, string>>;
 
-/** A one-pixel image in each format some webviews can't show, made by each format's reference encoder. */
+/** A one-pixel image in each format some webviews can't show and pages can be transcoded from, made by each format's reference encoder. */
 export const FORMAT_SAMPLES = {
   webp: "data:image/webp;base64,UklGRjQAAABXRUJQVlA4ICgAAABwAQCdASoBAAEAAUAmJaACdAFAAAD+8LprXFzZEUf/IMf4Nf5h81wA",
-  avif: "data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUEAAADrbWV0YQAAAAAAAAAhaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAAAAAAAOcGl0bQAAAAAAAQAAAB5pbG9jAAAAAEQAAAEAAQAAAAEAAAETAAAAJQAAAChpaW5mAAAAAAABAAAAGmluZmUCAAAAAAEAAGF2MDFDb2xvcgAAAABqaXBycAAAAEtpcGNvAAAAFGlzcGUAAAAAAAAAAQAAAAEAAAAQcGl4aQAAAAADCAgIAAAADGF2MUOBIAAAAAAAE2NvbHJuY2x4AAEADQAGgAAAABdpcG1hAAAAAAAAAAEAAQQBAoMEAAAALW1kYXQSAAoHOAAGkBDQaTIYF4JjBMJJJJMoAAAASFQ2YavHpXql28+o",
   jxl: "data:image/jxl;base64,/woAEBAJCAABADQASxiLFcJBER5gqN9jAA==",
 } as const satisfies FormatSamples;
 

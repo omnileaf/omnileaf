@@ -240,8 +240,8 @@ export type PageDimensions = {
 
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
-/**  A format the webview may be unable to show, which it tries before asking for pages. */
-export type ProbedFormat = "webp" | "avif" | "jxl";
+/**  A format the webview may be unable to show, which it tries before asking for pages, limited to the formats pages can be transcoded from. */
+export type ProbedFormat = "webp" | "jxl";
 
 export type ProjectLink = "sourceCode" | "newIssue" | "latestRelease";
 

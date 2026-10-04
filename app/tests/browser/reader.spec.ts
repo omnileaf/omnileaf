@@ -345,7 +345,7 @@ test.describe("formats the webview can't decode", () => {
     reported.length = 0;
   });
 
-  test("are reported as the book opens, never WebP or AVIF, which every webview shows", async ({
+  test("are reported as the book opens, never WebP, which every webview shows", async ({
     page,
   }) => {
     await openBook(page);
@@ -353,10 +353,23 @@ test.describe("formats the webview can't decode", () => {
     expect(reported).toHaveLength(1);
     const [undecodable = []] = reported;
     expect(undecodable).not.toContain("webp");
-    expect(undecodable).not.toContain("avif");
     expect(
-      undecodable.every((format) => ["webp", "avif", "jxl"].includes(format)),
+      undecodable.every((format) => ["webp", "jxl"].includes(format)),
     ).toBe(true);
+  });
+
+  test("leave out JPEG XL in Chromium, which shows it", async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== "chromium",
+      "only Chromium is known to show JPEG XL",
+    );
+
+    await openBook(page);
+
+    expect(reported).toEqual([[]]);
   });
 });
 

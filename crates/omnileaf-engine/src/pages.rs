@@ -284,15 +284,7 @@ impl Shared {
             .undecodable
             .read()
             .unwrap_or_else(PoisonError::into_inner);
-        match format {
-            PageFormat::Webp => undecodable.contains(&ProbedFormat::Webp),
-            PageFormat::Jxl => undecodable.contains(&ProbedFormat::Jxl),
-            PageFormat::Avif
-            | PageFormat::Jpeg
-            | PageFormat::Png
-            | PageFormat::Gif
-            | PageFormat::Bmp => false,
-        }
+        ProbedFormat::of(format).is_some_and(|probed| undecodable.contains(&probed))
     }
 
     /// The transcode cache, opened by whichever page needs it first, or nothing when it can't be opened.
