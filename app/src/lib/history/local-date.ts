@@ -24,6 +24,11 @@ export function weekStartOf(day: LocalDay, firstDay: number): LocalDay {
   return day - ((weekdayOf(day) - firstDay + DAYS_PER_WEEK) % DAYS_PER_WEEK);
 }
 
+/** The locale the device formats dates in, whose region sets where its weeks start whatever language the app shows. */
+export function deviceLocale(): Intl.Locale {
+  return new Intl.Locale(new Intl.DateTimeFormat().resolvedOptions().locale);
+}
+
 interface WeekInfo {
   readonly firstDay: number;
 }

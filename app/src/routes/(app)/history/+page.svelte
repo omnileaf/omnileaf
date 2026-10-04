@@ -5,6 +5,7 @@
   import HistoryDays from "#lib/history/HistoryDays.svelte";
   import { historyList } from "#lib/history/history-list.svelte.ts";
   import {
+    deviceLocale,
     firstDayOfWeek,
     localDayOf,
     weekStartOf,
@@ -14,7 +15,6 @@
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { getLocale } from "#lib/paraglide/runtime.js";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
 
@@ -29,10 +29,7 @@
   );
 
   async function readThisWeek(): Promise<void> {
-    const firstDay = weekStartOf(
-      today,
-      firstDayOfWeek(new Intl.Locale(getLocale())),
-    );
+    const firstDay = weekStartOf(today, firstDayOfWeek(deviceLocale()));
     const read = await commands.readingTimeSince(firstDay);
     if (read.status === "error") {
       reportError(read.error);
