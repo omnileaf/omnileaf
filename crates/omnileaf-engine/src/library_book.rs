@@ -75,7 +75,7 @@ pub struct SeriesBookPage {
 }
 
 /// Crosses to the interface as an opaque string, which it hands back unchanged to name the book.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(into = "String", try_from = "String")]
 pub struct BookId(pub(crate) omnileaf_sync_proto::BookId);
 

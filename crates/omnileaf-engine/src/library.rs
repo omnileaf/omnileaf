@@ -358,7 +358,7 @@ impl Library {
             .await?)
     }
 
-    /// Saves from now on the pages the reader shows in the book, starting with the next it shows after the page it opened on.
+    /// Saves the page reached in the book read before, then the pages the reader shows in this one after the page it opened on.
     #[tracing::instrument(skip_all, fields(%book, page))]
     pub async fn reading_restored(&self, book: BookId, page: u32) -> Result<(), LibraryError> {
         self.reading.restored(book, page).await
@@ -381,7 +381,7 @@ impl Library {
         self.reading.save_now().await
     }
 
-    /// Saves the page reached in the book open before, as the reader moves on to `book`.
+    /// Saves the page reached in the book read now, and keeps `book`'s length for when the reader restores it.
     pub(crate) async fn start_reading(
         &self,
         book: BookId,
