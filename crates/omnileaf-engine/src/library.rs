@@ -18,6 +18,7 @@ use omnileaf_db::{
         store_page_dimensions, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
+    history::{history_page, reading_time_by_day, reading_time_since},
     library_listing::{library_listing, set_library_listing},
     library_view::{library_view, set_library_view},
     store::{Changed, Clock, Store},
@@ -31,14 +32,15 @@ use tokio::{
 
 use crate::{
     AppLanguage, BookCursor, BookId, BooksRemoval, CoversPerRowOutOfRange, FolderCursor, FolderId,
-    FolderPage, FolderRescan, FolderScan, LibraryChanges, LibraryFilter, LibraryFolder,
-    LibraryListing, LibrarySearch, LibraryView, ReadMark, RescanOutcome, ResolvedBookmark,
-    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview,
-    SeriesPage,
+    FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryPage, LibraryChanges,
+    LibraryFilter, LibraryFolder, LibraryListing, LibrarySearch, LibraryView, LocalDay, ReadMark,
+    RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
+    SeriesId, SeriesOverview, SeriesPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
     file_in_storage::FileInStorage,
+    history::whole_seconds,
     library_changes::CatalogWritten,
     library_folder::root_folder,
     library_layout::folder_name,
@@ -56,6 +58,7 @@ const BACKUP_FOLDER: &str = "backups";
 const FOLDERS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
 const BOOKS_PER_PAGE: u16 = 100;
+const SESSIONS_PER_PAGE: u16 = 50;
 const CATALOG_WRITE_BACKLOG: usize = 16;
 const SCHEDULE_CHECK_EVERY: Duration = Duration::from_mins(1);
 const STORAGE_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
@@ -340,6 +343,39 @@ impl Library {
             .read(move |connection| series_books(connection, id.0, listing.into(), &request))
             .await?;
         Ok(SeriesBookPage::from(page))
+    }
+
+    /// Lists the reading sessions of books still in the library, the latest started first, each with the time read on its day.
+    pub async fn history(&self, after: Option<HistoryCursor>) -> Result<HistoryPage, LibraryError> {
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(SESSIONS_PER_PAGE)?,
+        };
+        let (page, read_ms_by_day) = self
+            .store
+            .database()
+            .read(move |connection| {
+                let page = history_page(connection, &request)?;
+                let days = page.items.iter().map(|entry| entry.local_day);
+                let read_ms_by_day = match (days.clone().min(), days.max()) {
+                    (Some(first), Some(last)) => reading_time_by_day(connection, first..=last)?,
+                    _ => BTreeMap::new(),
+                };
+                Ok((page, read_ms_by_day))
+            })
+            .await?;
+        Ok(HistoryPage::new(page, &read_ms_by_day))
+    }
+
+    /// Seconds read from the start of `first_day` on, in the local time each session started at.
+    pub async fn reading_time_since(&self, first_day: LocalDay) -> Result<u32, LibraryError> {
+        let first_day = first_day.0;
+        let read_ms = self
+            .store
+            .database()
+            .read(move |connection| reading_time_since(connection, first_day))
+            .await?;
+        Ok(whole_seconds(read_ms))
     }
 
     /// Marks the books read or unread in one write, leaving where each was opened at as it is, once any reading not yet saved is, so that save never undoes the mark.
