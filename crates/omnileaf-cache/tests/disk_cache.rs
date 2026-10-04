@@ -260,6 +260,20 @@ fn misses_an_entry_a_lost_write_left_empty_and_lets_it_go() {
 }
 
 #[test]
+fn lets_go_of_an_entry_removed() {
+    let folder = ScratchFolder::new("removed");
+    let cache = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();
+    cache.put(&key("a"), &entry(1)).unwrap();
+    cache.put(&key("b"), &entry(2)).unwrap();
+
+    cache.remove(&key("a"));
+
+    assert_eq!(cache.get(&key("a")), None);
+    assert_eq!(cache.stored_bytes(), 100);
+    assert_eq!(bytes_on_disk(folder.path()), 100);
+}
+
+#[test]
 fn stores_nothing_for_an_empty_entry() {
     let folder = ScratchFolder::new("empty-put");
     let cache = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();

@@ -65,7 +65,7 @@ impl DiskCache {
         match fs::read(&path) {
             Ok(bytes) if bytes.is_empty() => {
                 tracing::warn!(%key, "let go of a cache entry a lost write left empty");
-                self.let_go(key);
+                self.remove(key);
                 None
             }
             Ok(bytes) => {
@@ -78,7 +78,7 @@ impl DiskCache {
             }
             Err(error) => {
                 tracing::warn!(%key, %error, "let go of a cache entry that can't be read");
-                self.let_go(key);
+                self.remove(key);
                 None
             }
         }
@@ -114,6 +114,12 @@ impl DiskCache {
         Ok(())
     }
 
+    /// Lets go of an entry its reader found damaged, and blocks on the file system.
+    pub fn remove(&self, key: &CacheKey) {
+        self.recency().forget(key);
+        self.remove_files(slice::from_ref(key));
+    }
+
     #[must_use]
     pub fn stored_bytes(&self) -> u64 {
         self.recency().stored_bytes()
@@ -128,11 +134,6 @@ impl DiskCache {
         let write = self.next_write.fetch_add(1, Ordering::Relaxed);
         self.folder
             .join(format!("{key}{PARTIAL_MARKER}{}-{write}", process::id()))
-    }
-
-    fn let_go(&self, key: &CacheKey) {
-        self.recency().forget(key);
-        self.remove_files(slice::from_ref(key));
     }
 
     fn remove_files(&self, evicted: &[CacheKey]) {
