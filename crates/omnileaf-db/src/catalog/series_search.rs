@@ -38,7 +38,7 @@ const CONTAINING_COUNT: &str = "SELECT count(*) FROM series
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
         AND instr(fold_case(title), :characters) > 0";
 
-/// Which series a search finds: those holding books whose titles hold its text, and of those the ones its filter lets through.
+/// Which series a search finds: those whose titles hold its text, of those holding books its filter lets through.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeriesSearch {
     pub text: SearchText,

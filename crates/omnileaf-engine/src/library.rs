@@ -256,7 +256,7 @@ impl Library {
             .await?)
     }
 
-    /// Lists in title order the series holding books whose titles hold the search's text, of those its filter lets through.
+    /// Lists in title order the series whose titles hold the search's text, of those holding books its filter lets through.
     pub async fn search(
         &self,
         search: LibrarySearch,
