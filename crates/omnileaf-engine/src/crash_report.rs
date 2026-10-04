@@ -1,13 +1,15 @@
+mod issue;
 mod scrub;
 mod trace;
 
 use std::fmt;
 
-use crate::{AppInfo, Platform};
+use crate::{AppInfo, Platform, ProjectLink};
 
 const MESSAGE_BYTE_LIMIT: usize = 240;
 const FRAME_LIMIT: usize = 12;
 const FRAME_BYTE_LIMIT: usize = 120;
+const TITLE_MESSAGE_BYTE_LIMIT: usize = 80;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct CrashReportId(u64);
@@ -61,6 +63,13 @@ impl CrashOrigin {
         match self {
             Self::Panic => "Panic",
             Self::Interface => "Interface error",
+        }
+    }
+
+    fn what_happened(self) -> String {
+        match self {
+            Self::Panic => format!("{} closed unexpectedly.", AppInfo::NAME),
+            Self::Interface => "The interface stopped on an unexpected error.".to_owned(),
         }
     }
 
@@ -142,6 +151,25 @@ impl CrashReport {
     #[must_use]
     pub fn id(&self) -> CrashReportId {
         self.id
+    }
+
+    /// A new bug report in the project's tracker, filled in with this report for the person to read and submit.
+    #[must_use]
+    pub fn new_issue_url(&self) -> String {
+        let title = format!(
+            "Crash: {}",
+            scrub::clean(&self.message, TITLE_MESSAGE_BYTE_LIMIT)
+        );
+        issue::prefilled(
+            ProjectLink::NewIssue.url(),
+            &[
+                ("title", &title),
+                ("what-happened", &self.origin.what_happened()),
+                ("platform", self.app.platform.name()),
+                ("version", &self.app.version),
+                ("logs", &self.to_string()),
+            ],
+        )
     }
 }
 
