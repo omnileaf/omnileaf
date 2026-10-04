@@ -7,6 +7,7 @@
   } from "$lib/appearance/theme.svelte";
   import { commands } from "$lib/ipc/bindings";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
+  import { makeBackGoUp } from "$lib/navigation/back-goes-up";
   import { focusPageHeading } from "$lib/navigation/page-heading";
   import { sectionOf } from "$lib/navigation/sections";
   import NoticeHost from "$lib/notices/NoticeHost.svelte";
@@ -19,6 +20,7 @@
   let { children, data }: LayoutProps = $props();
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
+  const backGoesUp = makeBackGoUp();
 
   $effect(() => {
     void commands.matchSystemBars(themeSetting.resolved);
@@ -26,7 +28,8 @@
 
   afterNavigate(({ type }) => {
     const isProblem = page.error !== null;
-    if (type !== "enter" || isProblem) {
+    const isArrival = type !== "enter" && !backGoesUp.isPassingThrough;
+    if (isArrival || isProblem) {
       focusPageHeading();
     }
   });
