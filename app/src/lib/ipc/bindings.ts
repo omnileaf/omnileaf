@@ -10,7 +10,7 @@ export const commands = {
 	comicFiles: number,
 	unreadableFolders: number,
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder")),
-	matchSystemBars: (theme: Theme) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme })),
+	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
 };
 
 /* Types */
@@ -35,6 +35,8 @@ export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "int
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
 export type Theme = "light" | "dark";
+
+export type ThemePreference = "system" | "light" | "dark";
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

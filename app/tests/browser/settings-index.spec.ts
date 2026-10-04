@@ -46,3 +46,24 @@ test("follows the light or dark choice in Appearance's summary", async ({
     page.getByRole("main").getByRole("link", { name: /^Appearance/ }),
   ).toContainText("Dark");
 });
+
+test("points each section's chevron toward the end of the line in a right-to-left language", async ({
+  page,
+}) => {
+  await page.goto("/settings");
+  test.skip(
+    viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+    "settings opens its first section beside the list",
+  );
+  const general = page
+    .getByRole("main")
+    .getByRole("link", { name: /^General/ });
+  await expect(general).toBeVisible();
+  await page.evaluate(() => {
+    document.documentElement.dir = "rtl";
+  });
+
+  const chevron = general.locator("svg").last();
+
+  await expect(chevron).toHaveCSS("scale", "-1 1");
+});

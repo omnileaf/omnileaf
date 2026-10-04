@@ -5,6 +5,7 @@ import { expect, MEDIUM_MIN_WIDTH, test, viewportOf } from "./fixtures.ts";
 const OUTSIDE_THE_APP = "about:blank";
 const LIBRARY_URL = "/";
 const SETTINGS_OPENING_SECTION_URL = "/settings/library";
+const GENERAL_URL = "/settings/general";
 
 function showsSettingsSectionsBeside(page: Page): boolean {
   return viewportOf(page).width >= MEDIUM_MIN_WIDTH;
@@ -87,6 +88,17 @@ test("goes back to Library from a Settings section shown beside the list", async
   await page.goBack();
 
   await expectLibrary(page);
+});
+
+test("goes back up to General from Language", async ({ page }) => {
+  await openSettings(page);
+  await openSettingsPage(page, "General");
+  await openSettingsPage(page, "Language");
+
+  await page.goBack();
+
+  await expect(page).toHaveURL(GENERAL_URL);
+  await expectPage(page, "General");
 });
 
 test("goes back to Library from a section opened after Settings took another section's place", async ({

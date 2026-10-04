@@ -8,6 +8,7 @@ const PAGES = [
   "/settings/library",
   "/settings/appearance",
   "/settings/general",
+  "/settings/general/language",
   "/settings/about",
 ];
 
