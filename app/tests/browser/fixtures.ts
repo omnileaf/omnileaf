@@ -1,4 +1,6 @@
+import { AxeBuilder } from "@axe-core/playwright";
 import {
+  expect,
   test as base,
   type Locator,
   type Page,
@@ -46,6 +48,27 @@ export async function boxOf(locator: Locator): Promise<Box> {
   return box;
 }
 
+type Violations = Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"];
+
+function runningAnimationCount(page: Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      document
+        .getAnimations()
+        .filter((animation) => animation.playState === "running").length,
+  );
+}
+
+/**
+ * Waits for every animation and transition to end, since axe reads colours
+ * mid-fade as they are.
+ */
+export async function accessibilityViolations(page: Page): Promise<Violations> {
+  await expect.poll(() => runningAnimationCount(page)).toBe(0);
+  const results = await new AxeBuilder({ page }).analyze();
+  return results.violations;
+}
+
 export const test = base.extend<{ backend: FakeBackend }>({
   backend: [DEFAULT_BACKEND, { option: true }],
   page: async ({ page, backend }, use) => {
@@ -54,4 +77,4 @@ export const test = base.extend<{ backend: FakeBackend }>({
   },
 });
 
-export { expect } from "@playwright/test";
+export { expect };

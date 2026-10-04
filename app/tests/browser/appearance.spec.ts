@@ -1,6 +1,4 @@
-import { AxeBuilder } from "@axe-core/playwright";
-
-import { expect, test } from "./fixtures.ts";
+import { accessibilityViolations, expect, test } from "./fixtures.ts";
 
 const LIGHT_GROUND = "rgb(250, 248, 244)";
 const DARK_GROUND = "rgb(22, 21, 18)";
@@ -57,8 +55,8 @@ for (const label of ["Light", "Dark"]) {
   }) => {
     await chooseTheme(page, label);
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const violations = await accessibilityViolations(page);
 
-    expect(results.violations).toEqual([]);
+    expect(violations).toEqual([]);
   });
 }

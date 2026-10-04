@@ -1,6 +1,4 @@
-import { AxeBuilder } from "@axe-core/playwright";
-
-import { expect, test } from "./fixtures.ts";
+import { accessibilityViolations, expect, test } from "./fixtures.ts";
 
 async function openGeneral(page: import("@playwright/test").Page) {
   await page.goto("/settings");
@@ -51,7 +49,7 @@ test("Settings › General has no accessibility violations", async ({ page }) =>
     page.getByRole("heading", { level: 1, name: "General" }),
   ).toBeVisible();
 
-  const results = await new AxeBuilder({ page }).analyze();
+  const violations = await accessibilityViolations(page);
 
-  expect(results.violations).toEqual([]);
+  expect(violations).toEqual([]);
 });

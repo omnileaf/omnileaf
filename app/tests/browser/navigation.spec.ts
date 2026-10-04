@@ -1,6 +1,5 @@
-import { AxeBuilder } from "@axe-core/playwright";
-
 import {
+  accessibilityViolations,
   expect,
   FAKE_APP_VERSION,
   MEDIUM_MIN_WIDTH,
@@ -62,9 +61,9 @@ for (const { label, path, startFrom } of SECTIONS) {
         page.getByRole("heading", { level: 1, name: label }),
       ).toBeVisible();
 
-      const results = await new AxeBuilder({ page }).analyze();
+      const violations = await accessibilityViolations(page);
 
-      expect(results.violations).toEqual([]);
+      expect(violations).toEqual([]);
     });
   }
 }
