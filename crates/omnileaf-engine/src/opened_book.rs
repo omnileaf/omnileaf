@@ -15,6 +15,8 @@ pub struct OpenedBook {
     pub series_title: String,
     /// In reading order.
     pub pages: Vec<BookPage>,
+    /// The page the reader opens on, counting from 0.
+    pub start_page: u32,
     pub reading: BookReading,
 }
 

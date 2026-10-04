@@ -229,6 +229,8 @@ export type OpenedBook = {
 	seriesTitle: string,
 	/**  In reading order. */
 	pages: BookPage[],
+	/**  The page the reader opens on, counting from 0. */
+	startPage: number,
 	reading: BookReading,
 };
 

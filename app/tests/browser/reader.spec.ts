@@ -85,7 +85,10 @@ test("opens a book on its first page with the series and book named", async ({
 
 test.describe("a book started before", () => {
   test.use({
-    backend: readerBackend(DEFAULT_BACKEND, { state: "started", page: 14 }),
+    backend: readerBackend(DEFAULT_BACKEND, {
+      reading: { state: "started", page: 14 },
+      startPage: 13,
+    }),
   });
 
   test("opens on the page reading goes on from", async ({ page }) => {
@@ -336,7 +339,7 @@ test.describe("formats the webview can't decode", () => {
       ...readerBackend(DEFAULT_BACKEND),
       openBook: (_, undecodable) => {
         reported.push(undecodable);
-        return readerBook({ state: "notStarted" });
+        return readerBook({ reading: { state: "notStarted" }, startPage: 0 });
       },
     },
   });

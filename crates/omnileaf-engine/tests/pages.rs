@@ -170,6 +170,7 @@ async fn opens_a_book_with_its_series_and_every_page_in_reading_order() {
     assert_eq!(opened.series_title, SERIES);
     assert_eq!(opened.series, reader.series().await);
     assert_eq!(opened.reading, BookReading::NotStarted);
+    assert_eq!(opened.start_page, 0);
     let paths: Vec<String> = opened
         .pages
         .iter()
