@@ -354,6 +354,26 @@ test("returns focus to Select once the books picked are marked", async ({
   await expect(select).toBeFocused();
 });
 
+test("keeps the books picked when Escape closes quick open", async ({
+  page,
+}) => {
+  await openSeries(page);
+  await page.getByRole("button", { name: "Select", exact: true }).click();
+  await page
+    .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
+    .check();
+  await page.keyboard.press("Control+k");
+  const quickOpen = page.getByRole("dialog", { name: "Quick open" });
+  await expect(quickOpen).toBeVisible();
+
+  await page.keyboard.press("Escape");
+
+  await expect(quickOpen).toBeHidden();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "1 selected" }),
+  ).toBeVisible();
+});
+
 test("stops picking books with Done or Escape, with nothing left picked", async ({
   page,
 }) => {

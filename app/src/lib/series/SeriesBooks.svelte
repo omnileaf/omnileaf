@@ -138,10 +138,17 @@
     }
   }
 
+  function isFromDialog(event: Event): boolean {
+    return (
+      event.target instanceof Element && event.target.closest("dialog") !== null
+    );
+  }
+
   function endOnEscape(event: KeyboardEvent): void {
     if (
       event.key === "Escape" &&
       !event.defaultPrevented &&
+      !isFromDialog(event) &&
       selection.isSelecting
     ) {
       void end();
