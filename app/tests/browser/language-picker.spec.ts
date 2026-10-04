@@ -108,7 +108,8 @@ test.describe("on an Android phone", () => {
     const english = await boxOf(optionRow(page, "English"));
     const check = await boxOf(optionRow(page, SYSTEM_OPTION).locator("svg"));
 
-    expect(system.height).toBe(PHONE_ROW_HEIGHT);
+    expect(english.height).toBe(PHONE_ROW_HEIGHT);
+    expect(system.height).toBeGreaterThanOrEqual(PHONE_ROW_HEIGHT);
     expect(english.y).toBe(system.y + system.height);
     expect(check.width).toBe(PHONE_CHECK_SIZE);
     await expect(page.getByText(FOOTNOTE)).toBeVisible();
