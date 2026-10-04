@@ -105,6 +105,18 @@ fn page(seed: u64, index: u32) -> Vec<u8> {
     page_jpeg(seed, index, PageShape::Portrait).unwrap()
 }
 
+fn write_book_of(path: &Path, pages: &[Vec<u8>]) {
+    let entries: Vec<ArchiveEntry> = pages
+        .iter()
+        .enumerate()
+        .map(|(index, bytes)| ArchiveEntry {
+            name: format!("{:03}.jpg", index + 1),
+            bytes: bytes.clone(),
+        })
+        .collect();
+    fs::write(path, cbz(&entries, Compression::Stored).unwrap()).unwrap();
+}
+
 fn write_book(path: &Path, seed: u64, comic_info: Option<&str>) {
     let mut entries: Vec<ArchiveEntry> = (0..PAGES)
         .map(|index| ArchiveEntry {
@@ -300,4 +312,22 @@ async fn makes_a_cover_again_when_its_cached_thumbnail_came_back_cut_short() {
         fs::read(covers.cached_thumbnail()).unwrap(),
         thumbnail_of(SEED, 0)
     );
+}
+
+#[tokio::test]
+async fn keeps_failing_a_cover_whose_page_could_not_be_made_into_a_thumbnail_until_its_file_changes() {
+    let covers = Covers::with_book("undecodable-page", None).await;
+    let damaged_page = [0xFF, 0xD8, 0xFF, 0xC0, 0x00];
+    write_book_of(&covers.book_path(), &[damaged_page.to_vec()]);
+    covers.library.rescan_folders().await.unwrap();
+    let damaged = covers.cover().await;
+    let first = covers.request_cover(damaged).await;
+    write_book(&covers.book_path(), SEED, None);
+
+    let again = covers.request_cover(damaged).await;
+    covers.library.rescan_folders().await.unwrap();
+    let changed = covers.request_cover(covers.cover().await).await;
+
+    assert_eq!([first, again], [Resource::Failed, Resource::Failed]);
+    assert_eq!(changed, jpeg(thumbnail_of(SEED, 0)));
 }

@@ -1,8 +1,9 @@
 use std::{
+    collections::HashSet,
     io,
     num::NonZeroUsize,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, Mutex, MutexGuard, PoisonError},
 };
 
 use omnileaf_cache::{CacheError, CacheKey, DiskCache};
@@ -27,6 +28,8 @@ pub(crate) struct CoverThumbnails {
     folder: PathBuf,
     cache: OnceCell<Option<Arc<DiskCache>>>,
     lane: BackgroundLane,
+    /// Covers whose page couldn't be made into a thumbnail, which fail again without another decode until their file changes.
+    failed_covers: Mutex<HashSet<CacheKey>>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -43,6 +46,8 @@ pub(crate) enum ThumbnailError {
     Lane(#[from] LaneStopped),
     #[error("run blocking thumbnail work")]
     Interrupted(#[from] tokio::task::JoinError),
+    #[error("make a thumbnail of a cover whose page couldn't be made into one before")]
+    FailedBefore,
 }
 
 impl CoverThumbnails {
@@ -52,6 +57,7 @@ impl CoverThumbnails {
             folder,
             cache: OnceCell::new(),
             lane: BackgroundLane::start(WORKER_NAME, WORKERS)?,
+            failed_covers: Mutex::default(),
         })
     }
 
@@ -62,6 +68,9 @@ impl CoverThumbnails {
         cover: Cover,
     ) -> Result<Option<Vec<u8>>, ThumbnailError> {
         let key = cache_key(cover)?;
+        if self.failed_covers().contains(&key) {
+            return Err(ThumbnailError::FailedBefore);
+        }
         let cache = self.cache().await;
         if let Some(cache) = cache.clone() {
             let cached_key = key.clone();
@@ -74,11 +83,21 @@ impl CoverThumbnails {
         let Some(file) = library.cover_file(cover).await? else {
             return Ok(None);
         };
+        let made_key = key.clone();
         let made = self
             .lane
-            .run(move || make_thumbnail(cache.as_deref(), &key, &file))
-            .await??;
-        Ok(Some(made))
+            .run(move || make_thumbnail(cache.as_deref(), &made_key, &file))
+            .await?;
+        if let Err(ThumbnailError::Imaging(_)) = made {
+            self.failed_covers().insert(key);
+        }
+        Ok(Some(made?))
+    }
+
+    fn failed_covers(&self) -> MutexGuard<'_, HashSet<CacheKey>> {
+        self.failed_covers
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
     }
 
     /// The cache, opened by whichever request comes first, or nothing when it can't be opened.
