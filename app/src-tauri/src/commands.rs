@@ -3,10 +3,10 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AppInfo, AppLanguage, BookCursor, BookId, BooksRemoval, Core, CoversPerRow, FolderCursor,
-    FolderId, FolderPage, FolderRescan, FolderScan, InterfaceError, Library, LibraryFilter,
-    LibraryListing, LibrarySearch, LibraryView, OpenedBook, ProbedFormat, ProjectLink, ReadMark,
-    ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
-    SeriesOverview, SeriesPage, UtcOffset,
+    FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryPage, InterfaceError,
+    Library, LibraryFilter, LibraryListing, LibrarySearch, LibraryView, LocalDay, OpenedBook,
+    ProbedFormat, ProjectLink, ReadMark, ResourceRouter, ScanProgress, SeriesBookListing,
+    SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -49,6 +49,8 @@ macro_rules! app_commands {
             reading_restored,
             page_shown,
             close_book,
+            reading_history,
+            reading_time_since,
             orient_screen,
             change_full_screen,
             library_listing,
@@ -321,6 +323,24 @@ async fn page_shown(library: State<'_, Library>, id: BookId, page: u32) -> Resul
 #[specta::specta]
 async fn close_book(library: State<'_, Library>, id: BookId) -> Result<(), IpcError> {
     Ok(library.close_book(id).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn reading_history(
+    library: State<'_, Library>,
+    after: Option<HistoryCursor>,
+) -> Result<HistoryPage, IpcError> {
+    Ok(library.history(after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn reading_time_since(
+    library: State<'_, Library>,
+    first_day: LocalDay,
+) -> Result<u32, IpcError> {
+    Ok(library.reading_time_since(first_day).await?)
 }
 
 #[tauri::command]
