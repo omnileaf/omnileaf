@@ -426,5 +426,13 @@
   "problem_library_newer_body": "A newer version of Omnileaf last opened your library, so this one can't read it. Update Omnileaf to open your library again. Nothing in it has changed.",
   "problem_library_newer_action": "Get the latest Omnileaf",
   "problem_library_failed_title": "Your library couldn't be opened",
-  "problem_library_failed_body": "Something went wrong inside Omnileaf while opening your library. Nothing in it has changed. Quit and open Omnileaf again, and report the problem if it keeps happening."
+  "problem_library_failed_body": "Something went wrong inside Omnileaf while opening your library. Nothing in it has changed. Quit and open Omnileaf again, and report the problem if it keeps happening.",
+  "privacy_crash_reports": "Crash reports",
+  "privacy_crash_reports_hint": "You see a report before it's sent.",
+  "crash_reports_ask": "Ask each time",
+  "crash_reports_always": "Always send",
+  "crash_reports_never": "Never",
+  "privacy_summary_ask": "Ask before sending crash reports",
+  "privacy_summary_always": "Always send crash reports",
+  "privacy_summary_never": "Never send crash reports"
 }
