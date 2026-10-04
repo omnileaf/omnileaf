@@ -223,6 +223,38 @@ fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
 }
 
 #[cfg(test)]
+pub(crate) mod plans {
+    /// A stage's own steps, then each of its series finding its first book and that book's first file by index, sorting nothing.
+    pub(crate) fn with_covers(stage_steps: Vec<String>, (outer, inner): (u8, u8)) -> Vec<String> {
+        stage_steps
+            .into_iter()
+            .chain([
+                "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN".to_owned(),
+                format!("CORRELATED SCALAR SUBQUERY {outer}"),
+                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)".to_owned(),
+                "SEARCH book_file EXISTS USING COVERING INDEX book_file_by_book (book_id=?)"
+                    .to_owned(),
+                format!("CORRELATED SCALAR SUBQUERY {inner}"),
+                "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)".to_owned(),
+            ])
+            .collect()
+    }
+
+    /// Merges the stages read in order, so no step sorts.
+    pub(crate) fn merging([unstarted, in_progress, finished]: [Vec<String>; 3]) -> Vec<String> {
+        ["MERGE (UNION ALL)", "LEFT", "MERGE (UNION ALL)", "LEFT"]
+            .map(ToOwned::to_owned)
+            .into_iter()
+            .chain(unstarted)
+            .chain(["RIGHT".to_owned()])
+            .chain(in_progress)
+            .chain(["RIGHT".to_owned()])
+            .chain(finished)
+            .collect()
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::scratch::ScratchLibrary;

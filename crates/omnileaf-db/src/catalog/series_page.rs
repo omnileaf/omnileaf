@@ -117,37 +117,20 @@ impl<P> Directions<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::scratch::ScratchLibrary;
+    use crate::{
+        catalog::staged_rows::plans::{merging, with_covers},
+        scratch::ScratchLibrary,
+    };
 
     /// The numbers SQLite gives each stage's two cover subqueries, outer first.
     const COVER_SUBQUERIES_OF_EACH_STAGE: [(u8, u8); 3] = [(3, 1), (7, 5), (11, 9)];
 
-    /// Each listed series finds its first book and that book's first file by index, sorting nothing.
-    fn with_covers(series_step: &str, (outer, inner): (u8, u8)) -> Vec<String> {
-        vec![
-            series_step.to_owned(),
-            "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN".to_owned(),
-            format!("CORRELATED SCALAR SUBQUERY {outer}"),
-            "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)".to_owned(),
-            "SEARCH book_file EXISTS USING COVERING INDEX book_file_by_book (book_id=?)".to_owned(),
-            format!("CORRELATED SCALAR SUBQUERY {inner}"),
-            "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)".to_owned(),
-        ]
-    }
-
-    /// Reads each stage in order through `series_step` and merges the three, so no step sorts.
+    /// Reads each stage in order through `series_step` and merges the three.
     fn merging_each_stage(series_step: &str) -> Vec<String> {
-        let [unstarted, in_progress, finished] =
-            COVER_SUBQUERIES_OF_EACH_STAGE.map(|subqueries| with_covers(series_step, subqueries));
-        ["MERGE (UNION ALL)", "LEFT", "MERGE (UNION ALL)", "LEFT"]
-            .map(ToOwned::to_owned)
-            .into_iter()
-            .chain(unstarted)
-            .chain(["RIGHT".to_owned()])
-            .chain(in_progress)
-            .chain(["RIGHT".to_owned()])
-            .chain(finished)
-            .collect()
+        merging(
+            COVER_SUBQUERIES_OF_EACH_STAGE
+                .map(|subqueries| with_covers(vec![series_step.to_owned()], subqueries)),
+        )
     }
 
     fn plans_of<P>(

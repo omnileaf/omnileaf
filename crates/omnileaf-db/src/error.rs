@@ -70,6 +70,8 @@ pub enum Error {
         language: String,
         source: icu_provider::DataError,
     },
+    #[error("search for {chars} characters, more than the {max} a search reads")]
+    SearchTooLong { chars: usize, max: usize },
     #[error("read a page cursor that isn't one the library gave out")]
     MalformedCursor,
     #[error("continue a list from a cursor another list gave out")]
