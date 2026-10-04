@@ -1,6 +1,4 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
-
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
   import {
@@ -10,12 +8,16 @@
   import { commands } from "$lib/ipc/bindings";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
   import { makeBackGoUp } from "$lib/navigation/back-goes-up";
+  import { focusPageHeading } from "$lib/navigation/page-heading";
   import { sectionOf } from "$lib/navigation/sections";
+  import NoticeHost from "$lib/notices/NoticeHost.svelte";
   import { m } from "$lib/paraglide/messages.js";
+
+  import type { LayoutProps } from "./$types";
 
   import "../app.css";
 
-  let { children }: { children: Snippet } = $props();
+  let { children, data }: LayoutProps = $props();
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
   const backGoesUp = makeBackGoUp();
@@ -24,11 +26,11 @@
     void commands.matchSystemBars(themeSetting.resolved);
   });
 
-  let main: HTMLElement | undefined = $state();
-
   afterNavigate(({ type }) => {
-    if (type !== "enter" && !backGoesUp.isPassingThrough) {
-      main?.querySelector<HTMLHeadingElement>("h1")?.focus();
+    const isProblem = page.error !== null;
+    const isArrival = type !== "enter" && !backGoesUp.isPassingThrough;
+    if (isArrival || isProblem) {
+      focusPageHeading();
     }
   });
 </script>
@@ -40,9 +42,11 @@
 <div class="flex flex-col-reverse block-dvh medium:flex-row">
   <AppNavigation current={sectionOf(page.url.pathname)} />
   <main
-    bind:this={main}
-    class="flex-1 overflow-y-auto p-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance"
+    class="order-2 flex-1 overflow-y-auto p-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance"
   >
     {@render children()}
   </main>
+  <div class="relative z-notice order-1">
+    <NoticeHost notices={data.notices} platform={data.appInfo.platform} />
+  </div>
 </div>
