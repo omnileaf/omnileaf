@@ -1,7 +1,10 @@
-import { AxeBuilder } from "@axe-core/playwright";
-
 import { CommandFailure } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  accessibilityViolations,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+} from "./fixtures.ts";
 
 test.describe("with a folder of comics", () => {
   test.use({
@@ -80,8 +83,8 @@ for (const colorScheme of ["light", "dark"] as const) {
       page.getByRole("heading", { level: 2, name: "Folders" }),
     ).toBeVisible();
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const violations = await accessibilityViolations(page);
 
-    expect(results.violations).toEqual([]);
+    expect(violations).toEqual([]);
   });
 }
