@@ -7,7 +7,7 @@
   } from "$lib/appearance/theme.svelte";
   import { commands } from "$lib/ipc/bindings";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
-  import { makeBackGoUp } from "$lib/navigation/back-goes-up";
+  import { makeBackGoUp, setBackGoesUp } from "$lib/navigation/back-goes-up";
   import { focusPageHeading } from "$lib/navigation/page-heading";
   import { sectionOf } from "$lib/navigation/sections";
   import NoticeHost from "$lib/notices/NoticeHost.svelte";
@@ -20,7 +20,7 @@
   let { children, data }: LayoutProps = $props();
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
-  const backGoesUp = makeBackGoUp();
+  const backGoesUp = setBackGoesUp(makeBackGoUp());
 
   $effect(() => {
     void commands.matchSystemBars(themeSetting.resolved);
