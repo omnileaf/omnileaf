@@ -5,6 +5,7 @@ import {
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  settle,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -30,6 +31,7 @@ async function chooseTheme(
     .click();
   await page.locator("label").filter({ hasText: label }).click();
   await expect(page.getByRole("radio", { name: label })).toBeChecked();
+  await settle(page.locator(":root"));
 }
 
 test("Dark overrides a light device and survives a reload", async ({
