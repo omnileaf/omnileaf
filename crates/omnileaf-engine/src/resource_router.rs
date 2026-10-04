@@ -11,7 +11,6 @@ use crate::{
 const THUMBNAIL_FOLDER: &str = "thumbs";
 const PAGE_FOLDER: &str = "pages";
 const JPEG: &str = "image/jpeg";
-const PAGE_ROUTE: &str = "page/";
 
 pub struct ResourceRouter {
     thumbnails: CoverThumbnails,
@@ -52,11 +51,8 @@ impl ResourceRouter {
         let Some(route) = path.strip_prefix('/') else {
             return Resource::NotFound;
         };
-        if route.starts_with(PAGE_ROUTE) {
-            return match route.parse::<PagePath>() {
-                Ok(page) => self.page(library, page).await,
-                Err(_) => Resource::NotFound,
-            };
+        if let Ok(page) = route.parse::<PagePath>() {
+            return self.page(library, page).await;
         }
         let Ok(cover) = route.parse::<CoverPath>() else {
             return Resource::NotFound;
