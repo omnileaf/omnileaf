@@ -17,3 +17,12 @@ fn reports_the_platform_it_was_built_for() {
 
     assert_eq!(platform, std::env::consts::OS);
 }
+
+#[test]
+fn reports_where_its_source_code_lives_without_the_scheme() {
+    let core = Core::new();
+
+    let source_code = &core.app_info().source_code;
+
+    assert_eq!(source_code, "github.com/omnileaf/omnileaf");
+}

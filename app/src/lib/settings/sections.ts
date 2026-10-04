@@ -11,8 +11,10 @@ export type SettingsRoute =
   | "/settings/general"
   | "/settings/about";
 
+export type SettingsSubPage = "/settings/about/licences";
+
 export interface ParentPage {
-  readonly route: "/settings" | SettingsRoute;
+  readonly route: "/settings" | SettingsRoute | SettingsSubPage;
   readonly title: string;
 }
 
@@ -77,3 +79,13 @@ export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [
     },
   ],
 ];
+
+/** Whether two panes already show a page in the section list, so a link back to it is not needed there. */
+export function isListedBeside(route: ParentPage["route"]): boolean {
+  return (
+    route === "/settings" ||
+    SETTINGS_GROUPS.some((group) =>
+      group.some((section) => section.route === route),
+    )
+  );
+}

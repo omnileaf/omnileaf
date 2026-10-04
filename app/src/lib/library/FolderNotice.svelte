@@ -11,6 +11,8 @@
   const FAILURE_MESSAGES = {
     folderPickerUnavailable: m.library_folder_picker_unavailable,
     folderUnreadable: m.library_folder_unreadable,
+    clipboardUnavailable: m.library_add_folder_failed,
+    browserUnavailable: m.library_add_folder_failed,
     internal: m.library_add_folder_failed,
   } satisfies Record<IpcErrorCode, () => string>;
 

@@ -6,6 +6,7 @@ mod e2e;
 mod folder_picker;
 mod ipc_error;
 mod system_bars;
+mod version_details;
 
 use omnileaf_engine::Core;
 
@@ -19,6 +20,12 @@ pub fn run() {
     let commands = commands::builder();
     let app = tauri::Builder::default()
         .manage(Core::new())
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(
+            tauri_plugin_opener::Builder::new()
+                .open_js_links_on_click(false)
+                .build(),
+        )
         .invoke_handler(commands.invoke_handler());
     #[cfg(desktop)]
     let app = app.plugin(tauri_plugin_dialog::init());

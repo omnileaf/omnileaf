@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { isWithinSection, sectionCurrent } from "./sections";
+import { isListedBeside, isWithinSection, sectionCurrent } from "./sections";
 
 test("counts a section's own page as within it", () => {
   expect(isWithinSection("/settings/general", "/settings/general")).toBe(true);
@@ -36,4 +36,14 @@ test("leaves another section unmarked", () => {
   expect(
     sectionCurrent("/settings/about", "/settings/general"),
   ).toBeUndefined();
+});
+
+test("lists settings and its sections beside the open page", () => {
+  const listed = ["/settings", "/settings/general", "/settings/about"] as const;
+
+  expect(listed.map(isListedBeside)).toEqual([true, true, true]);
+});
+
+test("leaves a page under a section out of the list beside it", () => {
+  expect(isListedBeside("/settings/about/licences")).toBe(false);
 });

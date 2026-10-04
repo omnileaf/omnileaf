@@ -5,25 +5,32 @@ import {
   type ViewportSize,
 } from "@playwright/test";
 
-import type { Platform } from "../../src/lib/ipc/bindings.ts";
+import type { AppInfo, Platform } from "../../src/lib/ipc/bindings.ts";
 import { type FakeBackend, installFakeBackend } from "./fake-backend.ts";
 
 export const FAKE_APP_VERSION = "1.2.3";
+export const FAKE_SOURCE_CODE = "repo.example.org/omnileaf";
 
 export const MEDIUM_MIN_WIDTH = 600;
 export const EXPANDED_MIN_WIDTH = 840;
 
+function fakeAppInfo(platform: Platform): AppInfo {
+  return { version: FAKE_APP_VERSION, platform, sourceCode: FAKE_SOURCE_CODE };
+}
+
 export const DEFAULT_BACKEND: FakeBackend = {
-  appInfo: () => ({ version: FAKE_APP_VERSION, platform: "linux" }),
+  appInfo: () => fakeAppInfo("linux"),
   addLibraryFolder: () => null,
   matchSystemBars: () => null,
+  copyVersionDetails: () => null,
+  openProjectLink: () => null,
 };
 
 export function onPlatform(platform: Platform): { backend: FakeBackend } {
   return {
     backend: {
       ...DEFAULT_BACKEND,
-      appInfo: () => ({ version: FAKE_APP_VERSION, platform }),
+      appInfo: () => fakeAppInfo(platform),
     },
   };
 }
