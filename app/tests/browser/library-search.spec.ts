@@ -1,6 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { LibrarySearch } from "../../src/lib/ipc/bindings.ts";
+import {
+  type LibrarySearch,
+  SEARCH_MAX_CHARS,
+} from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -160,6 +163,19 @@ test("carries on the search typed into the library's header on desktop", async (
 
   await expect(searchField(page)).toHaveValue("lantern");
   await expectFound(page, ["Lantern Market", "Market Lanterns"]);
+});
+
+test("carries on no more of the header's text than a search reads", async ({
+  page,
+}) => {
+  test.skip(!isDesktop(page), "desktop only");
+  await page.goto("/");
+
+  await page
+    .getByRole("searchbox", { name: "Search the library" })
+    .fill("l".repeat(SEARCH_MAX_CHARS + 1));
+
+  await expect(searchField(page)).toHaveValue("l".repeat(SEARCH_MAX_CHARS));
 });
 
 test("turns a filter word followed by a space into a filter", async ({

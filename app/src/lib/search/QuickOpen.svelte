@@ -9,6 +9,7 @@
     DEFAULT_LIBRARY_LISTING,
     type LibrarySeries,
     type Platform,
+    SEARCH_MAX_CHARS,
   } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -199,6 +200,7 @@
       aria-activedescendant={choices.length > 0 ? optionId(active) : undefined}
       autocomplete="off"
       spellcheck="false"
+      maxlength={SEARCH_MAX_CHARS}
       value={text}
       class="flex-1 bg-transparent text-quick-open outline-none min-inline-none"
       oninput={type}

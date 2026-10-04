@@ -3,6 +3,7 @@
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { searchQuery } from "./search-route";
@@ -35,6 +36,7 @@
     type="search"
     aria-label={m.search_library_field()}
     placeholder={m.search_library_placeholder()}
+    maxlength={SEARCH_MAX_CHARS}
     class="no-search-cancel flex-1 bg-transparent text-small text-foreground outline-none min-inline-none placeholder:text-muted"
     oninput={openSearch}
   />

@@ -70,6 +70,7 @@ pub(crate) fn builder() -> Builder<Wry> {
         .constant("COVERS_PER_ROW", CoversPerRow::RANGES)
         .constant("DEFAULT_LIBRARY_VIEW", LibraryView::default())
         .constant("DEFAULT_LIBRARY_LISTING", LibraryListing::default())
+        .constant("SEARCH_MAX_CHARS", LibrarySearch::MAX_CHARS)
 }
 
 #[cfg(debug_assertions)]

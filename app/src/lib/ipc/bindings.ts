@@ -62,6 +62,8 @@ export const DEFAULT_LIBRARY_LISTING = {"filter":{"finished":"any","started":"an
 
 export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsItemCounts":false} as const;
 
+export const SEARCH_MAX_CHARS = 200 as const;
+
 /* Types */
 export type AppInfo = {
 	version: string,

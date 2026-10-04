@@ -1,6 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { LibrarySearch } from "../../src/lib/ipc/bindings.ts";
+import {
+  type LibrarySearch,
+  SEARCH_MAX_CHARS,
+} from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -174,6 +177,15 @@ test("shows another series chosen while the search page is open", async ({
   await expect(
     page.getByRole("list", { name: "Series found" }).getByRole("listitem"),
   ).toHaveText([/Sample Series 0008/]);
+});
+
+test("takes no more text than a search reads", async ({ page }) => {
+  await openLibrary(page);
+  await pressQuickOpen(page);
+
+  await field(page).fill("s".repeat(SEARCH_MAX_CHARS + 1));
+
+  await expect(field(page)).toHaveValue("s".repeat(SEARCH_MAX_CHARS));
 });
 
 test("closes with Escape and gives focus back to where it was", async ({

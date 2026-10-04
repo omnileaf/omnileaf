@@ -2,6 +2,7 @@
   import { Search, X } from "@lucide/svelte";
   import { onMount, tick } from "svelte";
 
+  import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
   import type { FilterCondition } from "#lib/library/library-listing.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -9,7 +10,6 @@
 
   const SEARCH_ICON_SIZE = 20;
   const CLEAR_ICON_SIZE = 14;
-  const MAX_CHARS = 200;
 
   let {
     text,
@@ -72,7 +72,7 @@
     data-arrival-focus
     aria-label={m.search_field()}
     placeholder={m.search_field()}
-    maxlength={MAX_CHARS}
+    maxlength={SEARCH_MAX_CHARS}
     value={text}
     class="no-search-cancel flex-1 bg-transparent text-body outline-none min-inline-none placeholder:text-muted large:text-search-wide"
     oninput={(event) => {
