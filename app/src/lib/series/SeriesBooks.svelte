@@ -17,6 +17,11 @@
   const ICON_SIZE = 16;
   const ACTION_ICON_SIZE = 20;
   const CHECK_ICON_SIZE = 14;
+  const CHECK_STROKE_WIDTH = 3;
+  const MARKS = [
+    { mark: "read", icon: Eye, label: m.series_mark_read },
+    { mark: "unread", icon: EyeOff, label: m.series_mark_unread },
+  ] as const;
 
   let {
     books,
@@ -169,7 +174,7 @@
         />
         <Check
           size={CHECK_ICON_SIZE}
-          strokeWidth={3}
+          strokeWidth={CHECK_STROKE_WIDTH}
           aria-hidden="true"
           class="pointer-events-none absolute inset-none m-auto hidden text-on-accent peer-checked:block"
         />
@@ -291,26 +296,18 @@
       <span class="text-detail font-bold max-expanded:hidden expanded:me-sm">
         {m.series_selected_books({ count: selection.count })}
       </span>
-      <button
-        type="button"
-        class="flex flex-col items-center justify-center gap-xs rounded-selection-action text-caption font-semibold min-block-selection-action expanded:flex-row expanded:gap-icon-gap expanded:rounded-selection-action-wide expanded:bg-selection-action expanded:px-md expanded:text-detail expanded:min-block-selection-action-wide"
-        onclick={() => {
-          void mark("read");
-        }}
-      >
-        <Eye size={ACTION_ICON_SIZE} aria-hidden="true" />
-        {m.series_mark_read()}
-      </button>
-      <button
-        type="button"
-        class="flex flex-col items-center justify-center gap-xs rounded-selection-action text-caption font-semibold min-block-selection-action expanded:flex-row expanded:gap-icon-gap expanded:rounded-selection-action-wide expanded:bg-selection-action expanded:px-md expanded:text-detail expanded:min-block-selection-action-wide"
-        onclick={() => {
-          void mark("unread");
-        }}
-      >
-        <EyeOff size={ACTION_ICON_SIZE} aria-hidden="true" />
-        {m.series_mark_unread()}
-      </button>
+      {#each MARKS as { mark: read, icon: Icon, label } (read)}
+        <button
+          type="button"
+          class="flex flex-col items-center justify-center gap-xs rounded-selection-action text-caption font-semibold min-block-selection-action expanded:flex-row expanded:gap-icon-gap expanded:rounded-selection-action-wide expanded:bg-selection-action expanded:px-md expanded:text-detail expanded:min-block-selection-action-wide"
+          onclick={() => {
+            void mark(read);
+          }}
+        >
+          <Icon size={ACTION_ICON_SIZE} aria-hidden="true" />
+          {label()}
+        </button>
+      {/each}
     </div>
   {/if}
   <p
