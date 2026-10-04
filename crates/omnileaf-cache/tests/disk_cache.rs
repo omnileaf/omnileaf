@@ -70,7 +70,7 @@ fn returns_the_bytes_put_under_a_key() {
 
     cache.put(&key("cover-1"), &entry(1)).unwrap();
 
-    assert_eq!(cache.get(&key("cover-1")).unwrap(), Some(entry(1)));
+    assert_eq!(cache.get(&key("cover-1")), Some(entry(1)));
 }
 
 #[test]
@@ -78,7 +78,7 @@ fn misses_a_key_never_put() {
     let folder = ScratchFolder::new("misses");
     let cache = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();
 
-    let found = cache.get(&key("cover-1")).unwrap();
+    let found = cache.get(&key("cover-1"));
 
     assert_eq!(found, None);
 }
@@ -92,7 +92,7 @@ fn keeps_its_entries_when_opened_again() {
 
     let reopened = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();
 
-    assert_eq!(reopened.get(&key("cover-1")).unwrap(), Some(entry(1)));
+    assert_eq!(reopened.get(&key("cover-1")), Some(entry(1)));
     assert_eq!(reopened.stored_bytes(), 100);
 }
 
@@ -103,13 +103,13 @@ fn drops_the_least_recently_used_entry_once_over_its_budget() {
     for name in ["a", "b", "c"] {
         cache.put(&key(name), &entry(1)).unwrap();
     }
-    cache.get(&key("a")).unwrap();
+    let _ = cache.get(&key("a"));
 
     cache.put(&key("d"), &entry(2)).unwrap();
 
     let kept: Vec<bool> = ["a", "b", "c", "d"]
         .iter()
-        .map(|name| cache.get(&key(name)).unwrap().is_some())
+        .map(|name| cache.get(&key(name)).is_some())
         .collect();
     assert_eq!(kept, [true, false, true, true]);
     assert_eq!(bytes_on_disk(folder.path()), BUDGET_BYTES);
@@ -123,7 +123,7 @@ fn counts_an_entry_put_again_at_its_new_size() {
 
     cache.put(&key("a"), &[7; 40]).unwrap();
 
-    assert_eq!(cache.get(&key("a")).unwrap(), Some(vec![7; 40]));
+    assert_eq!(cache.get(&key("a")), Some(vec![7; 40]));
     assert_eq!(cache.stored_bytes(), 40);
 }
 
@@ -135,8 +135,8 @@ fn stores_nothing_for_an_entry_larger_than_its_whole_budget() {
 
     cache.put(&key("huge"), &[0; 400]).unwrap();
 
-    assert_eq!(cache.get(&key("huge")).unwrap(), None);
-    assert_eq!(cache.get(&key("a")).unwrap(), Some(entry(1)));
+    assert_eq!(cache.get(&key("huge")), None);
+    assert_eq!(cache.get(&key("a")), Some(entry(1)));
 }
 
 #[test]
@@ -154,8 +154,8 @@ fn drops_the_entry_used_longest_ago_before_its_last_run_ended() {
 
     reopened.put(&key("d"), &entry(2)).unwrap();
 
-    assert_eq!(reopened.get(&key("b")).unwrap(), None);
-    assert!(reopened.get(&key("c")).unwrap().is_some());
+    assert_eq!(reopened.get(&key("b")), None);
+    assert!(reopened.get(&key("c")).is_some());
 }
 
 #[test]
@@ -208,6 +208,82 @@ fn opens_without_the_entries_whose_details_it_cannot_read() {
     );
 }
 
+#[cfg(unix)]
+fn set_entry_mode(folder: &Path, name: &str, mode: u32) {
+    use std::os::unix::fs::PermissionsExt;
+
+    fs::set_permissions(folder.join(name), fs::Permissions::from_mode(mode)).unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn serves_an_entry_it_may_only_read() {
+    const READ_ONLY: u32 = 0o444;
+    let folder = ScratchFolder::new("read-only-entry");
+    let cache = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();
+    cache.put(&key("a"), &entry(1)).unwrap();
+    set_entry_mode(folder.path(), "a", READ_ONLY);
+
+    let found = cache.get(&key("a"));
+
+    assert_eq!(found, Some(entry(1)));
+}
+
+#[cfg(unix)]
+#[test]
+fn misses_an_entry_it_cannot_read_and_lets_it_go() {
+    const NO_ACCESS: u32 = 0o000;
+    let folder = ScratchFolder::new("unreadable-file");
+    let cache = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();
+    cache.put(&key("a"), &entry(1)).unwrap();
+    set_entry_mode(folder.path(), "a", NO_ACCESS);
+
+    let found = cache.get(&key("a"));
+
+    assert_eq!(found, None);
+    assert_eq!(cache.stored_bytes(), 0);
+    assert!(!folder.path().join("a").exists());
+}
+
+#[test]
+fn misses_an_entry_a_lost_write_left_empty_and_lets_it_go() {
+    let folder = ScratchFolder::new("emptied-entry");
+    let cache = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();
+    cache.put(&key("a"), &entry(1)).unwrap();
+    fs::write(folder.path().join("a"), []).unwrap();
+
+    let found = cache.get(&key("a"));
+
+    assert_eq!(found, None);
+    assert_eq!(cache.stored_bytes(), 0);
+    assert!(!folder.path().join("a").exists());
+}
+
+#[test]
+fn lets_go_of_an_entry_removed() {
+    let folder = ScratchFolder::new("removed");
+    let cache = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();
+    cache.put(&key("a"), &entry(1)).unwrap();
+    cache.put(&key("b"), &entry(2)).unwrap();
+
+    cache.remove(&key("a"));
+
+    assert_eq!(cache.get(&key("a")), None);
+    assert_eq!(cache.stored_bytes(), 100);
+    assert_eq!(bytes_on_disk(folder.path()), 100);
+}
+
+#[test]
+fn stores_nothing_for_an_empty_entry() {
+    let folder = ScratchFolder::new("empty-put");
+    let cache = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();
+
+    cache.put(&key("a"), &[]).unwrap();
+
+    assert_eq!(cache.get(&key("a")), None);
+    assert_eq!(bytes_on_disk(folder.path()), 0);
+}
+
 #[test]
 fn refuses_a_key_that_is_not_a_plain_file_name() {
     let refused = ["", "../a", "a/b", "A", "a.b", &"a".repeat(129)].map(str::parse::<CacheKey>);
@@ -227,7 +303,7 @@ enum Step {
 
 fn steps() -> impl Strategy<Value = Vec<Step>> {
     let step = prop_oneof![
-        (0_u8..6, 0_usize..=200).prop_map(|(key, bytes)| Step::Put { key, bytes }),
+        (0_u8..6, 1_usize..=200).prop_map(|(key, bytes)| Step::Put { key, bytes }),
         (0_u8..6).prop_map(|key| Step::Get { key }),
     ];
     prop::collection::vec(step, 1..24)
@@ -246,10 +322,10 @@ proptest! {
                 Step::Put { key: name, bytes } => {
                     let put = key(&format!("entry-{name}"));
                     cache.put(&put, &vec![name; bytes]).unwrap();
-                    prop_assert_eq!(cache.get(&put).unwrap(), Some(vec![name; bytes]));
+                    prop_assert_eq!(cache.get(&put), Some(vec![name; bytes]));
                 }
                 Step::Get { key: name } => {
-                    cache.get(&key(&format!("entry-{name}"))).unwrap();
+                    let _ = cache.get(&key(&format!("entry-{name}")));
                 }
             }
             prop_assert!(cache.stored_bytes() <= BUDGET_BYTES);

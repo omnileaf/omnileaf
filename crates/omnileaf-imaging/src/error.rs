@@ -22,6 +22,8 @@ pub enum ImagingError {
         #[source]
         source: Box<dyn Error + Send + Sync>,
     },
+    #[error("encode a {} by {} thumbnail, larger than a JPEG can hold", size.width, size.height)]
+    TooLargeToEncode { size: Size },
     #[error("encode a thumbnail")]
     Encode(#[source] jpeg_encoder::EncodingError),
 }

@@ -7,6 +7,6 @@ mod size;
 mod thumbnail;
 
 pub use error::ImagingError;
-pub use format::ImageFormat;
+pub use format::{ImageFormat, is_whole_jpeg};
 pub use size::Size;
 pub use thumbnail::{THUMBNAIL_WIDTH, Thumbnail, thumbnail};

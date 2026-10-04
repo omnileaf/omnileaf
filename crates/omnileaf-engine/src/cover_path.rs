@@ -4,7 +4,7 @@ use omnileaf_db::catalog::Cover;
 use serde::Serialize;
 use specta::{Type, Types, datatype::DataType};
 
-use crate::library_folder::branded_string;
+use crate::ipc_brand::branded_string;
 
 const THUMBNAIL_ROUTE: &str = "thumb";
 /// Changes whenever thumbnails are made differently, so no cache keeps serving the old ones under the same path.

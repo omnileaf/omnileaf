@@ -4,7 +4,7 @@ use omnileaf_db::catalog::{Cursor, SeriesSummary};
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
-use crate::{CoverPath, library_folder::branded_string};
+use crate::{CoverPath, ipc_brand::branded_string};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]

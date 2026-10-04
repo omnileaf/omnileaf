@@ -316,13 +316,13 @@ fn cmyk_to_rgb(pixels: &[u8]) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use omnileaf_testkit::scan_jpeg;
+    use omnileaf_testkit::grainy_scan_jpeg;
 
     use super::*;
 
     #[test]
     fn decodes_a_full_size_jpeg_at_a_quarter_of_its_size_when_a_thumbnail_needs_no_more() {
-        let scan = scan_jpeg(3).unwrap();
+        let scan = grainy_scan_jpeg(3).unwrap();
         let source = Source::probe(&scan).unwrap();
 
         let decoded = source
