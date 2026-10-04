@@ -21,10 +21,13 @@ Where the library screen's startup and first paint stood when the grid, compact 
 | Cold start to the page loading, then to its first contentful paint | | medians of 274 ms from launch to the page starting to load, and 128 ms more to its first contentful paint | Manual, described below |
 | Scrolling on Android | 55 fps or more | Not measured yet | Needs a phone or an emulator in the loop |
 | Searching 10,000 series titled "Sample Series 00000" onwards: the first page of 50, the page after it and the count, for words every title holds down to words none holds, and one or two characters | 10 ms at the 95th percentile | slowest p95 5.7 ms, for "sample series", in the fastest of three passes of 40 samples | `crates/omnileaf-db/tests/library_search_speed.rs`, in release by `cargo xtask check` |
+| Opening a book never opened before to its first page: 30 pages of 1800 × 2700 4:2:0 JPEG scans, each page's size read from its header on the way | 150 ms at the 95th percentile on desktop | p95 5.2 ms (median 3.3 ms, slowest 5.6 ms) in the fastest of three passes of 40 books, with the machine at a load average of 9 from other work | `crates/omnileaf-engine/tests/page_speed.rs`, in release by `cargo xtask check` |
+| Turning to a page read ahead, from the key going down to the new page laid out | 16 ms at the 95th percentile on desktop | p95 3.2 ms over 20 turns (median 1.7 ms), and 4.2 ms on a second run, with the machine at a load average of 6 from other work | `tests/browser/reader-page-turn.speed.ts` |
+| The first page on Android, and a page turn on a phone | 300 ms and 33 ms | Not measured yet | Needs a phone or an emulator in the loop |
 
 ## Measuring
 
-The two browser specs run in the `speed` project, one at a time after every other browser spec has finished, so no other load can skew a timing:
+The browser specs ending in `.speed.ts` run in the `speed` project, one at a time after every other browser spec has finished, so no other load can skew a timing:
 
 ```sh
 cd app
@@ -38,3 +41,5 @@ The middle of the whole catalog was probed by changing the scrolling spec to scr
 The cold start was timed by hand against a release build with the WebDriver feature, `pnpm tauri build --no-bundle --features e2e`. A small script finished the first launch and added the generated sample library once, then launched the app nine times on that data folder. For each launch it noted the time it spawned the process, waited for the WebDriver server, and polled the page every 5 ms until the first series' cover image was in the grid, reading `Date.now()` and the navigation and paint timings from the page. Polling adds a few milliseconds, so the grid times are an upper bound.
 
 The timing script was not kept, so a new measurement isn't strictly like for like. To compare, build the same way, keep the library at 3 series, launch nine times and take the median, and note the machine next to the number. The WebDriver feature may add a little to each launch, and the library route now waits for three calls before its first paint: the view, and at the same time the stored sort and filter followed by the first page of series in that order. The first-paint spec measured a median of 33.5 ms once the sort and filter came first. With item counts on, it counts the series once the grid is drawn.
+
+The page turn spec opens a generated book of 30 pages, waits until the next page has been decoded ahead of the turn, then times 20 turns with the right arrow, from the key's event time to a mutation observer seeing the new page shown and forcing its layout. It leaves out painting, which a decoded page doesn't hold up, and asserts the 95th percentile.
