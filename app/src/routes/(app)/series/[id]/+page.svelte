@@ -27,16 +27,14 @@
   const shown = $derived(data.shown);
   const found = $derived(shown.kind === "found" ? shown : undefined);
 
-  const books = seriesBookList(() => {
-    if (found === undefined) {
-      throw new Error("a series' books were asked for while no series showed");
-    }
-    return found.id;
-  });
+  const foundId = $derived(found?.id);
+  const books = $derived(
+    foundId === undefined ? undefined : seriesBookList(foundId),
+  );
 
   function readAgain(): void {
     void invalidate(SERIES_OVERVIEW);
-    void books.load();
+    void books?.load();
   }
 
   async function mark(picked: SeriesBook["id"][], read: ReadMark) {
@@ -46,18 +44,15 @@
   }
 
   $effect(() => {
-    if (found?.id !== undefined) {
-      untrack(() => {
-        void books.start();
-      });
-    }
+    const listed = books;
+    untrack(() => {
+      void listed?.start();
+    });
   });
 
   onMount(() =>
     listenForLibraryChanges(() => {
-      if (found !== undefined) {
-        readAgain();
-      }
+      readAgain();
     }, reportError),
   );
 </script>
@@ -102,10 +97,10 @@
         <ReadingProgress overview={found.overview} />
       </div>
       <div class="flex flex-1 flex-col gap-sm min-inline-none">
-        {#if books.list.kind === "failed"}
+        {#if books?.list.kind === "failed"}
           <p class="text-body text-muted">{m.series_books_failed()}</p>
-        {:else if books.list.kind === "loaded"}
-          {#key found.id}
+        {:else if books?.list.kind === "loaded"}
+          {#key foundId}
             <SeriesBooks
               books={books.list.items}
               bookCount={found.overview.bookCount}

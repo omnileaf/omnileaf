@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { FakeBackend } from "./fake-backend.ts";
+import { emitFakeEvent, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -19,6 +19,7 @@ import {
   SERIES_TITLE,
 } from "./series-shelf.ts";
 
+const LIBRARY_CHANGED = "library-changed";
 const READ = { state: "read" } as const;
 const NOT_STARTED = { state: "notStarted" } as const;
 const ON_PAGE_15 = { state: "started", page: 15 } as const;
@@ -255,6 +256,60 @@ test("picks every book in the series, past the ones read so far", async ({
   await expect(
     page.getByRole("heading", { level: 2, name: "105 selected" }),
   ).toBeVisible();
+});
+
+function pickedLongSeries(): FakeShelf {
+  return new FakeShelf(
+    Array.from({ length: BOOKS_PER_PAGE + 5 }, () => NOT_STARTED),
+  );
+}
+
+async function pickAllBooks(page: Page): Promise<void> {
+  await page.goto(`/series/${SERIES_ID}`);
+  await expect(books(page).first()).toBeVisible();
+  await page.getByRole("button", { name: "Select", exact: true }).click();
+  await page.getByRole("button", { name: "Select all" }).click();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "105 selected" }),
+  ).toBeVisible();
+}
+
+test("keeps every book listed after marking a long series read", async ({
+  page,
+}) => {
+  shelf = pickedLongSeries();
+  await pickAllBooks(page);
+
+  await page
+    .getByRole("group", { name: "Selected books" })
+    .getByRole("button", { name: "Mark read" })
+    .click();
+
+  await expect(
+    page.getByRole("progressbar", { name: "105 of 105 read" }),
+  ).toBeVisible();
+  await expect(books(page).first()).toContainText("Read");
+  await expect(books(page).first()).toHaveAttribute("aria-setsize", "105");
+});
+
+test("marks every book picked when the library changes while picking", async ({
+  page,
+}) => {
+  shelf = pickedLongSeries();
+  await pickAllBooks(page);
+  await shelf.backend().markBooks([shelf.idOf(0)], "read");
+  await emitFakeEvent(page, LIBRARY_CHANGED);
+  await expect(books(page).first()).toContainText("Read");
+
+  await page
+    .getByRole("group", { name: "Selected books" })
+    .getByRole("button", { name: "Mark read" })
+    .click();
+
+  await expect(
+    page.getByRole("status").filter({ hasText: "Marked 105 books read" }),
+  ).toBeAttached();
+  expect(shelf.marked.at(-1)?.books).toHaveLength(BOOKS_PER_PAGE + 5);
 });
 
 test("stops picking books with Done or Escape, with nothing left picked", async ({
