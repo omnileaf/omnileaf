@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use rusqlite::{Connection, OpenFlags};
 
-use crate::{Config, Error};
+use crate::{Config, Error, letter_case::add_fold_case};
 
 const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 const WRITE_AHEAD_LOG: &str = "wal";
@@ -37,6 +37,7 @@ fn open(config: &Config, flags: OpenFlags) -> Result<Connection, Error> {
 
 fn configure(connection: &Connection, config: &Config) -> rusqlite::Result<()> {
     connection.busy_timeout(BUSY_TIMEOUT)?;
+    add_fold_case(connection)?;
     connection.pragma_update(None, "foreign_keys", true)?;
     connection.pragma_update(None, "mmap_size", i64::from(config.mmap_size_bytes))
 }

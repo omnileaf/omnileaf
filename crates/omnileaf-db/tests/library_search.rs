@@ -154,6 +154,15 @@ async fn finds_a_few_characters_anywhere_in_a_title() {
 }
 
 #[tokio::test]
+async fn finds_a_few_characters_whatever_their_letter_case_beyond_ascii() {
+    let library = Library::with("few-characters-letter-case", &SHELF).await;
+
+    let found = [library.finding("éc").await, library.finding("ÉC").await];
+
+    assert_eq!(found, [["Écho du Port"], ["Écho du Port"]]);
+}
+
+#[tokio::test]
 async fn finds_wildcard_characters_only_where_a_title_holds_them() {
     let library = Library::with("wildcards", &SHELF).await;
 

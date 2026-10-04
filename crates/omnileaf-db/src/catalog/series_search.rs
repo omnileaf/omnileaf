@@ -24,7 +24,7 @@ const MATCHED: Listing<TitlePlace> = listing! {
 
 const CONTAINING: Listing<TitlePlace> = listing! {
     with: "",
-    condition: r" AND series.title LIKE :pattern ESCAPE '\'",
+    condition: " AND instr(fold_case(series.title), :characters) > 0",
     seek: "(series.title_key, series.id) > (:after_key, :after_id)",
     order: "title_key, id",
     sort_position: title_place,
@@ -34,9 +34,9 @@ const MATCHED_COUNT: &str = "SELECT count(*) FROM series
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
         AND local_id IN (SELECT rowid FROM series_fts WHERE series_fts MATCH :phrases)";
 
-const CONTAINING_COUNT: &str = r"SELECT count(*) FROM series
+const CONTAINING_COUNT: &str = "SELECT count(*) FROM series
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
-        AND title LIKE :pattern ESCAPE '\'";
+        AND instr(fold_case(title), :characters) > 0";
 
 /// Which series a search finds: those holding books whose titles hold its text, and of those the ones its filter lets through.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -81,7 +81,7 @@ impl Lookup {
     fn bound(&self) -> [(&'static str, &dyn ToSql); 1] {
         match self {
             Self::Phrases(query) => [(":phrases", query)],
-            Self::Characters(pattern) => [(":pattern", pattern)],
+            Self::Characters(characters) => [(":characters", characters)],
         }
     }
 

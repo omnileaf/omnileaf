@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::{Error, letter_case::fold_case};
 
 /// What a search finds in series titles, parsed once from the words typed.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -8,7 +8,7 @@ pub struct SearchText(pub(crate) Lookup);
 pub(crate) enum Lookup {
     /// A full-text query for titles holding every phrase, each at least as long as a trigram.
     Phrases(String),
-    /// A `LIKE` pattern for titles holding these few characters anywhere.
+    /// A few characters, their letter case folded, for titles holding them anywhere.
     Characters(String),
 }
 
@@ -30,7 +30,7 @@ impl SearchText {
         }
         let joined = words.join(" ");
         let lookup = if is_shorter_than_a_trigram(&joined) {
-            Lookup::Characters(format!("%{}%", escape_like(&joined)))
+            Lookup::Characters(fold_case(&joined))
         } else {
             Lookup::Phrases(full_text_query(&words))
         };
@@ -39,7 +39,6 @@ impl SearchText {
 }
 
 const TRIGRAM_CHARS: usize = 3;
-const LIKE_ESCAPE: char = '\\';
 
 fn is_shorter_than_a_trigram(text: &str) -> bool {
     text.chars().count() < TRIGRAM_CHARS
@@ -72,17 +71,6 @@ fn full_text_query(words: &[&str]) -> String {
         .join(" ")
 }
 
-fn escape_like(text: &str) -> String {
-    let mut escaped = String::with_capacity(text.len());
-    for character in text.chars() {
-        if matches!(character, LIKE_ESCAPE | '%' | '_') {
-            escaped.push(LIKE_ESCAPE);
-        }
-        escaped.push(character);
-    }
-    escaped
-}
-
 #[cfg(test)]
 mod tests {
     use proptest::prelude::*;
@@ -97,8 +85,8 @@ mod tests {
         Lookup::Phrases(text.to_owned())
     }
 
-    fn characters(pattern: &str) -> Lookup {
-        Lookup::Characters(pattern.to_owned())
+    fn characters(text: &str) -> Lookup {
+        Lookup::Characters(text.to_owned())
     }
 
     #[test]
@@ -140,21 +128,21 @@ mod tests {
     fn looks_for_fewer_than_three_characters_anywhere_in_a_title() {
         let found = lookup(" ab ");
 
-        assert_eq!(found, characters("%ab%"));
+        assert_eq!(found, characters("ab"));
     }
 
     #[test]
     fn counts_characters_rather_than_bytes() {
         let found = [lookup("éé"), lookup("ééé")];
 
-        assert_eq!(found, [characters("%éé%"), phrases(r#""ééé""#)]);
+        assert_eq!(found, [characters("éé"), phrases(r#""ééé""#)]);
     }
 
     #[test]
-    fn finds_wildcards_and_the_escape_character_as_themselves() {
-        let found = [lookup("%_"), lookup(r"\")];
+    fn folds_the_letter_case_of_a_few_characters_in_any_script() {
+        let found = [lookup("ÉC"), lookup("ШЕ")];
 
-        assert_eq!(found, [characters(r"%\%\_%"), characters(r"%\\%")]);
+        assert_eq!(found, [characters("éc"), characters("ше")]);
     }
 
     #[test]
@@ -205,9 +193,9 @@ mod tests {
                     prop_assert!(phrases.iter().all(|phrase| phrase.chars().count() >= 3));
                     prop_assert_eq!(phrases.join(" "), joined);
                 }
-                Lookup::Characters(pattern) => {
+                Lookup::Characters(characters) => {
                     prop_assert!(joined.chars().count() < 3);
-                    prop_assert_eq!(pattern, format!("%{joined}%"));
+                    prop_assert_eq!(characters, joined);
                 }
             }
         }
