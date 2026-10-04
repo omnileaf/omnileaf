@@ -13,12 +13,12 @@ pub(crate) enum Lookup {
 }
 
 impl SearchText {
-    pub const MAX_CHARS: usize = 200;
+    pub const MAX_CHARS: u16 = 200;
 
     /// Absent for text with nothing but white space, which every title holds.
     pub fn parse(text: &str) -> Result<Option<Self>, Error> {
         let chars = text.chars().count();
-        if chars > Self::MAX_CHARS {
+        if chars > usize::from(Self::MAX_CHARS) {
             return Err(Error::SearchTooLong {
                 chars,
                 max: Self::MAX_CHARS,
@@ -173,14 +173,15 @@ mod tests {
 
     #[test]
     fn refuses_text_longer_than_a_search_reads() {
-        let text = "a".repeat(SearchText::MAX_CHARS + 1);
+        let longest = usize::from(SearchText::MAX_CHARS);
+        let text = "a".repeat(longest + 1);
 
         let parsed = SearchText::parse(&text);
 
         assert!(matches!(
             parsed,
             Err(Error::SearchTooLong { chars, max: SearchText::MAX_CHARS })
-                if chars == SearchText::MAX_CHARS + 1
+                if chars == longest + 1
         ));
     }
 

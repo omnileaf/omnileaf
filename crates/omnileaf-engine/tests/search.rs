@@ -9,7 +9,7 @@
 )]
 mod support;
 
-use omnileaf_engine::{Inclusion, Library, LibraryFilter, LibrarySearch};
+use omnileaf_engine::{Inclusion, Library, LibraryError, LibraryFilter, LibrarySearch};
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
 
@@ -113,4 +113,28 @@ async fn counts_what_a_search_finds() {
     ];
 
     assert_eq!(counts, [3, 1, 3, 0]);
+}
+
+#[tokio::test]
+async fn refuses_text_longer_than_a_search_reads_as_a_search_too_long() {
+    let (library, _comics, _home) = library_with_the_sample_series("search-too-long").await;
+    let too_long = "s".repeat(usize::from(LibrarySearch::MAX_CHARS) + 1);
+
+    let refusals = [
+        library
+            .search(search(&too_long, EVERY_SERIES), None)
+            .await
+            .err(),
+        library
+            .search_count(search(&too_long, EVERY_SERIES))
+            .await
+            .err(),
+    ];
+
+    assert!(
+        refusals
+            .iter()
+            .all(|refusal| matches!(refusal, Some(LibraryError::SearchTooLong { .. }))),
+        "{refusals:?}"
+    );
 }

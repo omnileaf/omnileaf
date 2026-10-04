@@ -29,6 +29,7 @@ pub(crate) enum IpcErrorCode {
         expect(dead_code, reason = "only development builds offer crash tests")
     )]
     DevelopmentBuildOnly,
+    SearchTooLong,
     Internal,
 }
 
@@ -102,6 +103,10 @@ impl From<LibraryError> for IpcError {
                 IpcErrorCode::HomeFolderKept,
                 "the home folder stays in the library",
             ),
+            LibraryError::SearchTooLong { .. } => (
+                IpcErrorCode::SearchTooLong,
+                "the search is longer than a search reads",
+            ),
             LibraryError::CreateFolder { .. }
             | LibraryError::Database(_)
             | LibraryError::StoredView(_)
@@ -146,6 +151,10 @@ mod tests {
             code_for(unreadable),
             code_for(LibraryError::FolderNotFound { id }),
             code_for(LibraryError::HomeFolderKept { id }),
+            code_for(LibraryError::SearchTooLong {
+                chars: 201,
+                max: 200,
+            }),
             code_for(LibraryError::CreateFolder {
                 path: PathBuf::from("/data/Omnileaf"),
                 source: io::Error::from(io::ErrorKind::StorageFull),
@@ -158,6 +167,7 @@ mod tests {
                 IpcErrorCode::FolderUnreadable,
                 IpcErrorCode::FolderNotFound,
                 IpcErrorCode::HomeFolderKept,
+                IpcErrorCode::SearchTooLong,
                 IpcErrorCode::Internal,
             ]
         );

@@ -19,6 +19,10 @@ pub struct LibrarySearch {
     pub filter: LibraryFilter,
 }
 
+impl LibrarySearch {
+    pub const MAX_CHARS: u16 = SearchText::MAX_CHARS;
+}
+
 /// A search read for the database: by its text, or by its filter alone when it has none.
 pub(crate) enum StoredSearch {
     Text(SeriesSearch),
