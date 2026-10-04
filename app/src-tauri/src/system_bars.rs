@@ -204,6 +204,7 @@ mod tests {
     const APP_CSS: &str = include_str!("../../src/app.css");
     const DARK_THEME_RULE: &str = ":root[data-theme=\"dark\"] {";
     const BACKGROUND_TOKEN: &str = "--color-background:";
+    const ANDROID_COLORS: &str = include_str!("../gen/android/app/src/main/res/values/colors.xml");
 
     fn first_background_token(css: &str) -> &str {
         let (_, rest) = css
@@ -218,6 +219,15 @@ mod tests {
             .split_once(DARK_THEME_RULE)
             .expect("the stylesheet has a dark theme");
         (first_background_token(light), first_background_token(dark))
+    }
+
+    fn android_color(name: &str) -> &'static str {
+        let opening = format!("<color name=\"{name}\">");
+        let (_, rest) = ANDROID_COLORS
+            .split_once(&opening)
+            .unwrap_or_else(|| panic!("Android defines the colour {name}"));
+        let (value, _) = rest.split_once("</color>").expect("the colour ends");
+        value.trim()
     }
 
     fn css_hex(background: PageBackground) -> String {
@@ -257,6 +267,24 @@ mod tests {
         let background = PageBackground::for_theme(Theme::Dark);
 
         assert_eq!(css_hex(background), dark);
+    }
+
+    #[test]
+    fn android_starts_a_light_theme_on_the_interfaces_light_page_background() {
+        let background = PageBackground::for_theme(Theme::Light);
+
+        let starting_window = android_color("page_background_light");
+
+        assert_eq!(starting_window, css_hex(background));
+    }
+
+    #[test]
+    fn android_starts_a_dark_theme_on_the_interfaces_dark_page_background() {
+        let background = PageBackground::for_theme(Theme::Dark);
+
+        let starting_window = android_color("page_background_dark");
+
+        assert_eq!(starting_window, css_hex(background));
     }
 
     #[test]

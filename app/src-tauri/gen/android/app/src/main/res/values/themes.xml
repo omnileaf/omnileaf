@@ -1,3 +1,17 @@
-<resources>
-    <style name="Theme.omnileaf_app" parent="Theme.Material3.DayNight.NoActionBar" />
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.omnileaf_app" parent="Theme.omnileaf_app.Light" />
+
+    <style name="Theme.omnileaf_app.Light" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:windowBackground">@color/page_background_light</item>
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/page_background_light</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+    </style>
+
+    <style name="Theme.omnileaf_app.Dark" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/page_background_dark</item>
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/page_background_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
+    </style>
 </resources>
