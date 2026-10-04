@@ -1,6 +1,5 @@
-import { AxeBuilder } from "@axe-core/playwright";
-
 import {
+  accessibilityViolations,
   boxOf,
   expect,
   MEDIUM_MIN_WIDTH,
@@ -139,8 +138,8 @@ for (const label of ["Light", "Dark"]) {
   }) => {
     await chooseTheme(page, label);
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const violations = await accessibilityViolations(page);
 
-    expect(results.violations).toEqual([]);
+    expect(violations).toEqual([]);
   });
 }
