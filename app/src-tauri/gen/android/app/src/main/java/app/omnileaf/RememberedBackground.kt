@@ -1,8 +1,6 @@
 package app.omnileaf
 
-import android.app.Activity
 import android.content.Context
-import android.graphics.drawable.ColorDrawable
 import androidx.annotation.ColorInt
 import androidx.core.content.edit
 
@@ -21,8 +19,4 @@ class RememberedBackground(context: Context) {
       if (background == null) remove(COLOR_KEY) else putInt(COLOR_KEY, background.color())
     }
   }
-}
-
-fun Activity.showPageBackground(@ColorInt color: Int) {
-  window.setBackgroundDrawable(ColorDrawable(color))
 }
