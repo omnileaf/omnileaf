@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
 use crate::{
-    BookId, BookReading, CoverPath, ipc_brand::branded_string, reading_session::is_last_page,
+    BookId, BookReading, CoverPath, UtcOffset, UtcOffsetOutOfRange, ipc_brand::branded_string,
+    reading_session::is_last_page,
 };
 
 const MS_PER_SECOND: i64 = 1_000;
@@ -26,7 +27,7 @@ pub struct HistoryEntry {
     #[specta(type = i32)]
     pub started_at_ms: i64,
     /// How far the device's clock was ahead of UTC as the session started, so it shows at the local time it was read at.
-    pub utc_offset_minutes: i16,
+    pub utc_offset_minutes: UtcOffset,
     pub read_seconds: u32,
     pub read_to: ReadTo,
     /// How far the book has been read since, which decides whether reading it goes on or starts again.
@@ -111,6 +112,8 @@ impl HistoryPage {
 enum Unlisted {
     #[error("its day has no reading time added up")]
     DayNotAddedUp,
+    #[error("it started at a clock beyond the furthest from UTC")]
+    OffsetOutOfRange(#[from] UtcOffsetOutOfRange),
 }
 
 impl HistoryEntry {
@@ -127,7 +130,7 @@ impl HistoryEntry {
             series_title: entry.series_title,
             cover: entry.cover.map(CoverPath),
             started_at_ms: entry.started_at_ms,
-            utc_offset_minutes: entry.utc_offset_minutes,
+            utc_offset_minutes: UtcOffset::try_from(entry.utc_offset_minutes)?,
             read_seconds: whole_seconds(entry.ended_at_ms.saturating_sub(entry.started_at_ms)),
             read_to: if is_last_page(entry.page, entry.page_count) {
                 ReadTo::End
@@ -222,7 +225,7 @@ mod tests {
                 series_title: "Sample Series 01".to_owned(),
                 cover: None,
                 started_at_ms: STARTED_AT_MS,
-                utc_offset_minutes: 600,
+                utc_offset_minutes: UtcOffset::try_from(600).unwrap(),
                 read_seconds: 90,
                 read_to: ReadTo::Page {
                     page: 7,
@@ -250,6 +253,18 @@ mod tests {
     #[test]
     fn leaves_out_a_session_whose_day_has_no_time_added_up() {
         let page = HistoryPage::new(page_of(vec![stored(DAY, 0, 24)]), &BTreeMap::new());
+
+        assert_eq!(page.entries, []);
+    }
+
+    #[test]
+    fn leaves_out_a_session_started_beyond_eighteen_hours_from_utc() {
+        let entry = history::HistoryEntry {
+            utc_offset_minutes: 1_200,
+            ..stored(DAY, 0, 24)
+        };
+
+        let page = HistoryPage::new(page_of(vec![entry]), &day_read());
 
         assert_eq!(page.entries, []);
     }
