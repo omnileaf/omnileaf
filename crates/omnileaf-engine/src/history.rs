@@ -7,7 +7,9 @@ use omnileaf_db::{
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
-use crate::{BookId, BookReading, CoverPath, ipc_brand::branded_string};
+use crate::{
+    BookId, BookReading, CoverPath, ipc_brand::branded_string, reading_session::is_last_page,
+};
 
 const MS_PER_SECOND: i64 = 1_000;
 
@@ -103,7 +105,6 @@ impl HistoryPage {
 
 impl HistoryEntry {
     fn new(entry: history::HistoryEntry, day_read_ms: i64) -> Self {
-        let is_last_page = entry.page.saturating_add(1) >= entry.page_count;
         Self {
             book: BookId(entry.book),
             book_title: entry.book_title,
@@ -112,7 +113,7 @@ impl HistoryEntry {
             started_at_ms: entry.started_at_ms,
             utc_offset_minutes: entry.utc_offset_minutes,
             read_seconds: whole_seconds(entry.ended_at_ms.saturating_sub(entry.started_at_ms)),
-            read_to: if is_last_page {
+            read_to: if is_last_page(entry.page, entry.page_count) {
                 ReadTo::End
             } else {
                 ReadTo::Page {
