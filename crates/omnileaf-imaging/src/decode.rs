@@ -10,7 +10,8 @@ use png::{ColorType, Transformations};
 
 use crate::{ImageFormat, ImagingError, Size};
 
-const MAX_DECODED_BYTES: u64 = 256 * 1024 * 1024;
+/// The most memory one decode may take, its decoder's working buffers and the pixels it hands back counted together.
+pub(crate) const MAX_DECODED_BYTES: u64 = 256 * 1024 * 1024;
 const RGB_BYTES_PER_PIXEL: u64 = 3;
 /// Each sample of a progressive JPEG keeps a 16-bit coefficient at full size until its last scan.
 const COEFFICIENT_BYTES: u64 = 2;

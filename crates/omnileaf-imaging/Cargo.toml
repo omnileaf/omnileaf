@@ -9,8 +9,10 @@ publish.workspace = true
 [dependencies]
 fast_image_resize.workspace = true
 image-webp.workspace = true
+imagesize.workspace = true
 jpeg-decoder.workspace = true
 jpeg-encoder.workspace = true
+jxl-oxide.workspace = true
 png.workspace = true
 thiserror.workspace = true
 
