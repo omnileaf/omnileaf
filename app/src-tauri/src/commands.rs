@@ -6,7 +6,7 @@ use omnileaf_engine::{
     FolderId, FolderPage, FolderRescan, FolderScan, InterfaceError, Library, LibraryFilter,
     LibraryListing, LibrarySearch, LibraryView, OpenedBook, ProbedFormat, ProjectLink, ReadMark,
     ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
-    SeriesOverview, SeriesPage,
+    SeriesOverview, SeriesPage, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -306,8 +306,9 @@ async fn reading_restored(
     library: State<'_, Library>,
     id: BookId,
     page: u32,
+    utc_offset: UtcOffset,
 ) -> Result<(), IpcError> {
-    Ok(library.reading_restored(id, page).await?)
+    Ok(library.reading_restored(id, page, utc_offset).await?)
 }
 
 #[tauri::command]

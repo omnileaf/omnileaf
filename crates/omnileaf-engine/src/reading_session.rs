@@ -1,7 +1,9 @@
 use omnileaf_db::catalog::BookReading as StoredReading;
 use tokio::time::{Duration, Instant};
 
-use crate::BookId;
+use omnileaf_db::store::SessionPlace;
+
+use crate::{BookId, UtcOffset};
 
 /// How long after the first page left unsaved reading is saved, however many pages are turned meanwhile.
 pub const READING_SAVE_DELAY: Duration = Duration::from_millis(1_500);
@@ -11,14 +13,31 @@ pub const READING_SAVE_DELAY: Duration = Duration::from_millis(1_500);
 pub(crate) struct ReachedPage {
     pub(crate) book: BookId,
     pub(crate) page: u32,
-    pub(crate) is_last: bool,
+    pub(crate) page_count: u32,
+    pub(crate) utc_offset: UtcOffset,
+}
+
+impl ReachedPage {
+    pub(crate) const fn is_last(self) -> bool {
+        self.page.saturating_add(1) >= self.page_count
+    }
+
+    /// Where the reading session the page belongs to stands.
+    pub(crate) const fn place(self) -> SessionPlace {
+        SessionPlace {
+            book: self.book.0,
+            page: self.page,
+            page_count: self.page_count,
+            utc_offset_minutes: self.utc_offset.minutes(),
+        }
+    }
 }
 
 impl ReachedPage {
     /// The reading stored once this page saves, which marks the book read on its last page and unread on any other.
     pub(crate) const fn stored(self) -> StoredReading {
         let position_page = Some(self.page);
-        if self.is_last {
+        if self.is_last() {
             StoredReading::Read { position_page }
         } else {
             StoredReading::Started { position_page }
@@ -50,16 +69,18 @@ enum Stage {
 pub(crate) struct ReadingSession {
     book: BookId,
     last_page: u32,
+    utc_offset: UtcOffset,
     stage: Stage,
 }
 
 impl ReadingSession {
     /// None for a book with no pages to read.
-    pub(crate) fn opening(book: BookId, page_count: usize) -> Option<Self> {
+    pub(crate) fn opening(book: BookId, page_count: usize, utc_offset: UtcOffset) -> Option<Self> {
         let last_page = u32::try_from(page_count.checked_sub(1)?).unwrap_or(u32::MAX);
         Some(Self {
             book,
             last_page,
+            utc_offset,
             stage: Stage::Opening,
         })
     }
@@ -124,11 +145,26 @@ impl ReadingSession {
         else {
             return None;
         };
-        Some(ReachedPage {
+        Some(self.reached(unsaved.page))
+    }
+
+    /// The page reading stands on, saved or not, or nothing while the reader hasn't restored the book.
+    pub(crate) fn on_page(&self) -> Option<ReachedPage> {
+        let page = match self.stage {
+            Stage::Opening => return None,
+            Stage::Restored { page } => page,
+            Stage::Reading { saved, unsaved } => unsaved.map_or(saved, |unsaved| unsaved.page),
+        };
+        Some(self.reached(page))
+    }
+
+    const fn reached(&self, page: u32) -> ReachedPage {
+        ReachedPage {
             book: self.book,
-            page: unsaved.page,
-            is_last: unsaved.page == self.last_page,
-        })
+            page,
+            page_count: self.last_page.saturating_add(1),
+            utc_offset: self.utc_offset,
+        }
     }
 
     pub(crate) fn saved(&mut self, reached: ReachedPage) {
@@ -169,7 +205,7 @@ mod tests {
     const LAST_PAGE: u32 = 7;
 
     fn restored_on(page: u32) -> ReadingSession {
-        let mut session = ReadingSession::opening(book(1), PAGE_COUNT).unwrap();
+        let mut session = ReadingSession::opening(book(1), PAGE_COUNT, UtcOffset::UTC).unwrap();
         session.restored(page);
         session
     }
@@ -178,20 +214,21 @@ mod tests {
         ReachedPage {
             book: book(1),
             page,
-            is_last: page == LAST_PAGE,
+            page_count: LAST_PAGE + 1,
+            utc_offset: UtcOffset::UTC,
         }
     }
 
     #[test]
     fn opens_no_session_for_a_book_without_pages() {
-        let session = ReadingSession::opening(book(1), 0);
+        let session = ReadingSession::opening(book(1), 0, UtcOffset::UTC);
 
         assert_eq!(session, None);
     }
 
     #[test]
     fn saves_nothing_shown_before_the_reader_restored_the_book() {
-        let mut session = ReadingSession::opening(book(1), PAGE_COUNT).unwrap();
+        let mut session = ReadingSession::opening(book(1), PAGE_COUNT, UtcOffset::UTC).unwrap();
         session.shown(4, Instant::now());
 
         let saved = session.unsaved();
@@ -295,18 +332,67 @@ mod tests {
     }
 
     #[test]
+    fn stands_on_no_page_before_the_reader_restored_the_book() {
+        let session = ReadingSession::opening(book(1), PAGE_COUNT, UtcOffset::UTC).unwrap();
+
+        assert_eq!(session.on_page(), None);
+    }
+
+    #[test]
+    fn stands_on_the_page_restored_until_another_is_shown() {
+        let mut session = restored_on(3);
+        let restored = session.on_page();
+
+        session.shown(5, Instant::now());
+
+        assert_eq!(
+            [restored, session.on_page()],
+            [Some(reached(3)), Some(reached(5))]
+        );
+    }
+
+    #[test]
+    fn stands_on_the_page_shown_last_once_it_is_saved() {
+        let mut session = restored_on(3);
+        session.shown(5, Instant::now());
+
+        session.saved(reached(5));
+
+        assert_eq!(session.on_page(), Some(reached(5)));
+    }
+
+    #[test]
+    fn places_a_session_where_the_page_reached_is_in_the_device_s_local_time() {
+        let offset = UtcOffset::try_from(-300).unwrap();
+        let mut session = ReadingSession::opening(book(1), PAGE_COUNT, offset).unwrap();
+        session.restored(2);
+
+        let place = session.on_page().map(ReachedPage::place);
+
+        assert_eq!(
+            place,
+            Some(SessionPlace {
+                book: book(1).0,
+                page: 2,
+                page_count: 8,
+                utc_offset_minutes: -300,
+            })
+        );
+    }
+
+    #[test]
     fn finishes_the_book_with_its_last_page() {
         let mut session = restored_on(6);
         session.shown(LAST_PAGE, Instant::now());
 
         let saved = session.unsaved();
 
-        assert_eq!(saved.map(|page| page.is_last), Some(true));
+        assert_eq!(saved.map(ReachedPage::is_last), Some(true));
     }
 
     #[test]
     fn ignores_a_page_past_the_book_s_end() {
-        let mut session = ReadingSession::opening(book(1), PAGE_COUNT).unwrap();
+        let mut session = ReadingSession::opening(book(1), PAGE_COUNT, UtcOffset::UTC).unwrap();
         session.restored(LAST_PAGE + 1);
         session.restored(2);
 
@@ -365,7 +451,7 @@ mod tests {
         fn saves_only_after_the_restore_and_always_the_page_shown_last(
             reports in vec(any_report(), 0..32)
         ) {
-            let mut session = ReadingSession::opening(book(1), PAGE_COUNT).unwrap();
+            let mut session = ReadingSession::opening(book(1), PAGE_COUNT, UtcOffset::UTC).unwrap();
             let now = Instant::now();
             let mut restored = None;
             let mut on_page = None;
@@ -388,7 +474,7 @@ mod tests {
                         if let Some(saved) = session.unsaved() {
                             prop_assert!(restored.is_some());
                             prop_assert_eq!(Some(saved.page), on_page);
-                            prop_assert_eq!(saved.is_last, saved.page == LAST_PAGE);
+                            prop_assert_eq!(saved.is_last(), saved.page == LAST_PAGE);
                             session.saved(saved);
                         }
                     }

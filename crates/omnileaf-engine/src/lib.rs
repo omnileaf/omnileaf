@@ -47,6 +47,7 @@ mod resource;
 mod resource_router;
 mod scan;
 mod series_overview;
+mod utc_offset;
 mod version_details;
 
 pub use app_info::{AppInfo, Platform};
@@ -100,6 +101,7 @@ pub use resource::Resource;
 pub use resource_router::{ResourceRouter, ResourceRouterError};
 pub use scan::{FolderScan, ScanProgress};
 pub use series_overview::SeriesOverview;
+pub use utc_offset::{UtcOffset, UtcOffsetOutOfRange};
 pub use version_details::{BuildProfile, VersionDetails};
 
 #[derive(Debug)]

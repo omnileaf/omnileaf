@@ -21,7 +21,7 @@ use std::{
 use omnileaf_engine::{
     BookId, BookReading, LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges,
     LibraryListing, OpenedBook, ProbedFormat, READING_SAVE_DELAY, ReadMark, ReadingSaved,
-    ResourceRouter, SeriesBookListing, SeriesId,
+    ResourceRouter, SeriesBookListing, SeriesId, UtcOffset,
 };
 use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg};
 use support::{FixedClock, ScratchFolder};
@@ -145,7 +145,7 @@ impl Shelf {
     async fn restore(&self, index: usize) -> OpenedBook {
         let opened = self.open(index).await;
         self.library
-            .reading_restored(opened.id, opened.start_page)
+            .reading_restored(opened.id, opened.start_page, UtcOffset::UTC)
             .await
             .unwrap();
         opened
@@ -392,7 +392,7 @@ async fn saves_the_page_reached_in_a_book_when_the_reader_restores_the_next_one(
 
     shelf
         .library
-        .reading_restored(second.id, second.start_page)
+        .reading_restored(second.id, second.start_page, UtcOffset::UTC)
         .await
         .unwrap();
     shelf.close(&second).await;
