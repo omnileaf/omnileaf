@@ -37,8 +37,19 @@ test.beforeEach(() => {
   shelf = new FakeShelf(TWELVE_BOOKS);
 });
 
+const LISTED_SERIES = {
+  id: SERIES_ID,
+  title: SERIES_TITLE,
+  bookCount: 12,
+  unreadCount: 9,
+  cover: null,
+};
+
 const SHELF_BACKEND: FakeBackend = {
   ...DEFAULT_BACKEND,
+  librarySeries: () => ({ series: [LISTED_SERIES], next: null }),
+  librarySearch: () => ({ series: [LISTED_SERIES], next: null }),
+  librarySearchCount: () => 1,
   seriesOverview: (id) => shelf.backend().seriesOverview(id),
   seriesBooks: (id, after) => shelf.backend().seriesBooks(id, after),
   markBooks: (books, mark) => shelf.backend().markBooks(books, mark),
@@ -98,6 +109,35 @@ test("lists the series' books in order with how far each has been read", async (
   await expect(rows.nth(4)).toContainText(
     isWide(page) ? "Unread" : "Added Sep 21, 2026",
   );
+});
+
+test("opens a series from its cover in the library, landing on its heading", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: new RegExp(SERIES_TITLE) })
+    .click();
+
+  await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+  await expect(
+    page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
+  ).toBeFocused();
+});
+
+test("opens a series found by a search", async ({ page }) => {
+  await page.goto("/search?q=sample");
+
+  await page
+    .getByRole("listbox", { name: "Series found" })
+    .getByRole("option", { name: new RegExp(SERIES_TITLE) })
+    .click();
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
+  ).toBeFocused();
 });
 
 test("says a series isn't in the library once it has gone", async ({

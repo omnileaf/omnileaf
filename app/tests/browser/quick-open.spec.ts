@@ -66,6 +66,21 @@ const SEARCHING_BACKEND: FakeBackend = {
   librarySeries: () => ({ series: [...CATALOG], next: null }),
   librarySearch: (_after, search) => ({ series: found(search), next: null }),
   librarySearchCount: (search) => found(search).length,
+  seriesOverview: (id) => {
+    const series = CATALOG.find((one) => one.id === id);
+    if (series === undefined) {
+      return DEFAULT_BACKEND.seriesOverview(id);
+    }
+    return {
+      id: series.id,
+      title: series.title,
+      bookCount: series.bookCount,
+      readCount: 0,
+      cover: null,
+      folder: null,
+      upNext: null,
+    };
+  },
 };
 
 test.use({ backend: SEARCHING_BACKEND });
@@ -82,16 +97,6 @@ function field(page: Page): Locator {
   return quickOpen(page).getByRole("combobox", {
     name: "Search or go to a page",
   });
-}
-
-function searchField(page: Page): Locator {
-  return page.getByRole("combobox", { name: "Search your library" });
-}
-
-function seriesFound(page: Page): Locator {
-  return page
-    .getByRole("listbox", { name: "Series found" })
-    .getByRole("option");
 }
 
 function options(page: Page): Locator {
@@ -230,58 +235,36 @@ for (const flag of ["isComposing", "keyCode 229"] as const) {
   });
 }
 
-test("shows the series chosen on the search page", async ({ page }) => {
+test("opens the series chosen on its own page", async ({ page }) => {
   await openLibrary(page);
   await pressQuickOpen(page);
 
   await field(page).fill("0007");
   await options(page).first().click();
 
-  await expect(page).toHaveURL(/\/search\?title=Sample\+Series\+0007$/);
+  await expect(page).toHaveURL(
+    /\/series\/0190a3e4-0000-8000-8000-000000000007$/,
+  );
   await expect(
-    page.getByRole("listbox", { name: "Series found" }).getByRole("option"),
-  ).toHaveText([/Sample Series 0007/]);
+    page.getByRole("heading", { level: 1, name: "Sample Series 0007" }),
+  ).toBeFocused();
 });
 
-test("fills the search field with a series' stand-in, never its title, while Screenshot mode is on", async ({
+test("opens another series chosen while a series' page is open", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      "omnileaf.screenshotMode",
-      JSON.stringify({ activity: { kind: "on" } }),
-    );
-  });
-  await openLibrary(page);
-  await pressQuickOpen(page);
-  await field(page).fill("0007");
-
-  await options(page).first().click();
-
+  await page.goto("/series/0190a3e4-0000-8000-8000-000000000007");
   await expect(
-    page.getByRole("combobox", { name: "Search your library" }),
-  ).toHaveValue(/^Series \d{2,3}$/);
-  expect(page.url()).not.toContain("Sample");
-});
-
-test("shows another series chosen while the search page is open", async ({
-  page,
-}) => {
-  await page.goto("/search?q=Sample+Series+0007");
-  await expect(
-    page.getByRole("listbox", { name: "Series found" }).getByRole("option"),
-  ).toHaveText([/Sample Series 0007/]);
+    page.getByRole("heading", { level: 1, name: "Sample Series 0007" }),
+  ).toBeVisible();
   await pressQuickOpen(page);
 
   await field(page).fill("0008");
   await field(page).press("Enter");
 
   await expect(
-    page.getByRole("combobox", { name: "Search your library" }),
-  ).toHaveValue("Sample Series 0008");
-  await expect(
-    page.getByRole("listbox", { name: "Series found" }).getByRole("option"),
-  ).toHaveText([/Sample Series 0008/]);
+    page.getByRole("heading", { level: 1, name: "Sample Series 0008" }),
+  ).toBeFocused();
 });
 
 test("takes no more text than a search reads", async ({ page }) => {
@@ -293,51 +276,21 @@ test("takes no more text than a search reads", async ({ page }) => {
   await expect(field(page)).toHaveValue("s".repeat(SEARCH_MAX_CHARS));
 });
 
-test("shows a chosen series whose title holds a filter word as it is", async ({
-  page,
-}) => {
-  await openLibrary(page);
-  await pressQuickOpen(page);
+for (const title of [FILTER_WORD_TITLE, LENGTHY_TITLE]) {
+  test(`opens a chosen series titled as it is, even "${title.slice(0, 16)}"`, async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await pressQuickOpen(page);
 
-  await field(page).fill("business");
-  await field(page).press("Enter");
+    await field(page).fill(title.split(" ")[1] ?? title);
+    await field(page).press("Enter");
 
-  await expect(searchField(page)).toHaveValue(FILTER_WORD_TITLE);
-  await expect(seriesFound(page)).toHaveText([new RegExp(FILTER_WORD_TITLE)]);
-});
-
-test("shows a chosen series whose title is longer than a search reads", async ({
-  page,
-}) => {
-  await openLibrary(page);
-  await pressQuickOpen(page);
-
-  await field(page).fill("lengthy");
-  await field(page).press("Enter");
-
-  await expect(searchField(page)).toHaveValue(
-    Array.from(LENGTHY_TITLE).slice(0, SEARCH_MAX_CHARS).join(""),
-  );
-  await expect(seriesFound(page)).toHaveText([/The Lengthy Tale/]);
-});
-
-test("shows the series chosen again after something else was typed on the search page", async ({
-  page,
-}) => {
-  await openLibrary(page);
-  await pressQuickOpen(page);
-  await field(page).fill("0007");
-  await field(page).press("Enter");
-  await expect(seriesFound(page)).toHaveText([/Sample Series 0007/]);
-  await searchField(page).fill("zzz");
-  await pressQuickOpen(page);
-
-  await field(page).fill("0007");
-  await field(page).press("Enter");
-
-  await expect(searchField(page)).toHaveValue("Sample Series 0007");
-  await expect(seriesFound(page)).toHaveText([/Sample Series 0007/]);
-});
+    await expect(
+      page.getByRole("heading", { level: 1, name: title.trim() }),
+    ).toBeVisible();
+  });
+}
 
 test("tells whoever is in the field when nothing is called what was typed", async ({
   page,

@@ -1,7 +1,6 @@
 import type { LibraryFilter, LibrarySearch } from "#lib/ipc/bindings.ts";
 import type { FilterCondition } from "#lib/library/library-listing.ts";
 
-import type { AskedSearch } from "./search-route";
 import { type FilterWords, takeFilterWords } from "./typed-filters";
 
 /** What someone has typed into a search and the conditions they've chosen or typed. */
@@ -35,17 +34,10 @@ export class SearchQuery {
     ];
   }
 
-  /** Starts a search afresh from what the page is asked to find, with no condition but those its typed text names. */
-  startOver(asked: AskedSearch): void {
+  /** Starts a search afresh from typed text, with no condition but those its filter words name. */
+  startOver(typed: string): void {
     this.conditions = [];
-    switch (asked.kind) {
-      case "typed":
-        this.type(asked.text);
-        return;
-      case "title":
-        this.text = asked.text;
-        return;
-    }
+    this.type(typed);
   }
 
   toggle(condition: FilterCondition): void {
