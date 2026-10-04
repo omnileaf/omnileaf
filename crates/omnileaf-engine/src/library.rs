@@ -13,7 +13,7 @@ use omnileaf_db::{
         RootLocator, SeriesFilter, SeriesListing, add_root, bookmarked_roots, cover_file,
         home_root, library_root, library_roots, mark_root_available, mark_root_unavailable,
         remove_book_files, remove_books_without_files, remove_root, root_book_count, root_files,
-        series_count, series_page,
+        series_books, series_count, series_overview, series_page, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_listing::{library_listing, set_library_listing},
@@ -28,10 +28,10 @@ use tokio::{
 };
 
 use crate::{
-    AppLanguage, BooksRemoval, CoversPerRowOutOfRange, FolderCursor, FolderId, FolderPage,
-    FolderRescan, FolderScan, LibraryChanges, LibraryFilter, LibraryFolder, LibraryListing,
-    LibrarySearch, LibraryView, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesCursor,
-    SeriesPage,
+    AppLanguage, BookCursor, BookId, BookPage, BooksRemoval, CoversPerRowOutOfRange, FolderCursor,
+    FolderId, FolderPage, FolderRescan, FolderScan, LibraryChanges, LibraryFilter, LibraryFolder,
+    LibraryListing, LibrarySearch, LibraryView, ReadMark, RescanOutcome, ResolvedBookmark,
+    ScanProgress, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     cover_thumbnails::CoverFile,
     describe_error,
@@ -51,6 +51,7 @@ const DATABASE_FILE: &str = "library.sqlite";
 const BACKUP_FOLDER: &str = "backups";
 const FOLDERS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
+const BOOKS_PER_PAGE: u16 = 100;
 const CATALOG_WRITE_BACKLOG: usize = 16;
 const SCHEDULE_CHECK_EVERY: Duration = Duration::from_mins(1);
 const STORAGE_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
@@ -112,6 +113,8 @@ pub enum LibraryError {
     },
     #[error("library folder {id} isn't in the library")]
     FolderNotFound { id: FolderId },
+    #[error("series {id} isn't in the library")]
+    SeriesNotFound { id: SeriesId },
     #[error("remove library folder {id}, the home folder the library always keeps")]
     HomeFolderKept { id: FolderId },
     #[error("search for {chars} characters, more than the {max} a search reads")]
@@ -282,6 +285,58 @@ impl Library {
             .store
             .database()
             .read(move |connection| search.count(connection))
+            .await?)
+    }
+
+    /// Fails with [`LibraryError::SeriesNotFound`] for a series the library doesn't show, being missing or empty of books.
+    pub async fn series_overview(&self, id: SeriesId) -> Result<SeriesOverview, LibraryError> {
+        let series = id.0;
+        let found = self
+            .store
+            .database()
+            .read(move |connection| {
+                let Some(overview) = series_overview(connection, series)? else {
+                    return Ok(None);
+                };
+                Ok(Some((overview, up_next(connection, series)?)))
+            })
+            .await?;
+        let (overview, up_next) = found.ok_or(LibraryError::SeriesNotFound { id })?;
+        Ok(SeriesOverview::new(overview, up_next))
+    }
+
+    /// Lists a series' books in order, giving a series missing from the library no books.
+    pub async fn series_books(
+        &self,
+        id: SeriesId,
+        after: Option<BookCursor>,
+    ) -> Result<BookPage, LibraryError> {
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(BOOKS_PER_PAGE)?,
+        };
+        let page = self
+            .store
+            .database()
+            .read(move |connection| series_books(connection, id.0, &request))
+            .await?;
+        Ok(BookPage::from(page))
+    }
+
+    /// Marks the books read or unread in one write, leaving where each was opened at as it is.
+    #[tracing::instrument(skip_all, fields(books = books.len(), ?mark))]
+    pub async fn mark_books(&self, books: Vec<BookId>, mark: ReadMark) -> Result<(), LibraryError> {
+        let is_read = match mark {
+            ReadMark::Read => true,
+            ReadMark::Unread => false,
+        };
+        Ok(self
+            .store
+            .write(move |writer| {
+                books
+                    .iter()
+                    .try_for_each(|book| writer.set_read(book.0, is_read))
+            })
             .await?)
     }
 
