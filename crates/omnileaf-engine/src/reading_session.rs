@@ -8,6 +8,11 @@ use crate::{BookId, UtcOffset};
 /// How long after the first page left unsaved reading is saved, however many pages are turned meanwhile.
 pub const READING_SAVE_DELAY: Duration = Duration::from_millis(1_500);
 
+/// Whether `page`, counting from 0, is the last of `page_count`, which finishes the book.
+pub(crate) const fn is_last_page(page: u32, page_count: u32) -> bool {
+    page.saturating_add(1) >= page_count
+}
+
 /// A page reading reached, for the store to save.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct ReachedPage {
@@ -19,7 +24,7 @@ pub(crate) struct ReachedPage {
 
 impl ReachedPage {
     pub(crate) const fn is_last(self) -> bool {
-        self.page.saturating_add(1) >= self.page_count
+        is_last_page(self.page, self.page_count)
     }
 
     /// Where the reading session the page belongs to stands.
