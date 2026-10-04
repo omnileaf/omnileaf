@@ -664,5 +664,136 @@
   "quick_open_places": "⟦Ĝö ţö··⟧",
   "quick_open_anywhere": "⟦{shortcut} ƒŕöɱ áñýŵĥéŕé··········⟧",
   "quick_open_shortcut": "⟦Çţŕļ Ķ···⟧",
-  "quick_open_shortcut_mac": "⟦⌘ Ķ··⟧"
+  "quick_open_shortcut_mac": "⟦⌘ Ķ··⟧",
+  "series_back": "⟦Ļíƀŕáŕý···⟧",
+  "series_back_label": "⟦Ɓáçķ ţö ţĥé ļíƀŕáŕý········⟧",
+  "series_folder": "⟦Ƒöļðéŕ···⟧",
+  "series_failed": "⟦Çöûļðñ'ţ ļöáð ţĥíš šéŕíéš. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
+  "series_not_found": "⟦Ţĥíš šéŕíéš íšñ'ţ íñ ýöûŕ ļíƀŕáŕý··············⟧",
+  "series_not_found_body": "⟦Íţš ƀööķš ɱáý ĥáṽé ƀééñ ŕéɱöṽéð, öŕ ţĥé ƒöļðéŕ ĥöļðíñĝ ţĥéɱ ţáķéñ öûţ öƒ ţĥé ļíƀŕáŕý.··································⟧",
+  "series_read_count": [
+    {
+      "declarations": [
+        "input read",
+        "input total",
+        "local formattedRead = read: number",
+        "local formattedTotal = total: number"
+      ],
+      "match": {
+        "*": "⟦{formattedRead} öƒ {formattedTotal} ŕéáð················⟧"
+      }
+    }
+  ],
+  "series_up_next": "⟦Ûþ ñéẋţ···⟧",
+  "series_continue_at": [
+    {
+      "declarations": [
+        "input title",
+        "input page",
+        "local formattedPage = page: number"
+      ],
+      "match": {
+        "*": "⟦Çöñţíñûé {title} áţ þáĝé {formattedPage}················⟧"
+      }
+    }
+  ],
+  "series_continue": "⟦Çöñţíñûé {title}·······⟧",
+  "series_start": "⟦Šţáŕţ ŵíţĥ {title}········⟧",
+  "series_all_read": "⟦Ýöû'ṽé ŕéáð éṽéŕý ƀööķ íñ ţĥíš šéŕíéš···············⟧",
+  "series_books_heading": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ·········⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš·········⟧"
+      }
+    }
+  ],
+  "series_books_list": "⟦Ɓööķš··⟧",
+  "series_books_failed": "⟦Çöûļðñ'ţ ļöáð ţĥé ƀööķš íñ ţĥíš šéŕíéš. Ţŕý áĝáíñ ļáţéŕ.·······················⟧",
+  "series_column_book": "⟦Ɓööķ··⟧",
+  "series_column_added": "⟦Áððéð··⟧",
+  "series_column_progress": "⟦Þŕöĝŕéšš····⟧",
+  "series_book_added": "⟦Áððéð {date}·····⟧",
+  "series_book_unread": "⟦Ûñŕéáð···⟧",
+  "series_book_started": "⟦Šţáŕţéð···⟧",
+  "series_book_page": [
+    {
+      "declarations": ["input page", "local formattedPage = page: number"],
+      "match": {
+        "*": "⟦Þáĝé {formattedPage}········⟧"
+      }
+    }
+  ],
+  "series_book_read": "⟦Ŕéáð··⟧",
+  "series_select": "⟦Šéļéçţ···⟧",
+  "series_select_all": "⟦Šéļéçţ áļļ····⟧",
+  "series_select_done": "⟦Ðöñé··⟧",
+  "series_select_book": "⟦Šéļéçţ {title}······⟧",
+  "series_select_range_hint": "⟦Šĥíƒţ-çļíçķ ţö šéļéçţ á ŕáñĝé············⟧",
+  "series_selected_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šéļéçţéð··········⟧",
+        "countPlural=other": "⟦{formattedCount} šéļéçţéð··········⟧"
+      }
+    }
+  ],
+  "series_selected_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ·········⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš·········⟧"
+      }
+    }
+  ],
+  "series_selection_toolbar": "⟦Šéļéçţéð ƀööķš······⟧",
+  "series_mark_read": "⟦Ṁáŕķ ŕéáð····⟧",
+  "series_mark_unread": "⟦Ṁáŕķ ûñŕéáð·····⟧",
+  "series_mark_failed": "⟦Çöûļðñ'ţ ɱáŕķ ţĥöšé ƀööķš. Ţŕý áĝáíñ.···············⟧",
+  "series_marked_read": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ṁáŕķéð {formattedCount} ƀööķ ŕéáð··············⟧",
+        "countPlural=other": "⟦Ṁáŕķéð {formattedCount} ƀööķš ŕéáð··············⟧"
+      }
+    }
+  ],
+  "series_marked_unread": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ṁáŕķéð {formattedCount} ƀööķ ûñŕéáð··············⟧",
+        "countPlural=other": "⟦Ṁáŕķéð {formattedCount} ƀööķš ûñŕéáð···············⟧"
+      }
+    }
+  ]
 }

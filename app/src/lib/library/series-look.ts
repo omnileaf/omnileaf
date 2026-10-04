@@ -16,7 +16,9 @@ export interface SeriesLook {
   readonly cover: ShownCover;
 }
 
-export type LookOf = (series: LibrarySeries) => SeriesLook;
+export type NamedSeries = Pick<LibrarySeries, "id" | "title" | "cover">;
+
+export type LookOf = (series: NamedSeries) => SeriesLook;
 
 export const realLook: LookOf = (series) => ({
   title: series.title,
