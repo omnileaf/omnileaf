@@ -3,7 +3,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { isRecord } from "./json.ts";
 
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
-const NO_SUCH_ELEMENT = "no such element";
+const STALE_ELEMENT = "stale element reference";
 const ELEMENT_TIMEOUT_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 30_000;
 const SESSION_START_TIMEOUT_MS = 300_000;
@@ -156,6 +156,7 @@ export class Session {
     return new Session(new URL(`session/${id}`, server).href);
   }
 
+  /** Waits for the first match the page displays, since some layouts keep a hidden copy of a control. */
   async waitFor(
     locator: Locator,
     timeoutMs = ELEMENT_TIMEOUT_MS,
@@ -201,13 +202,29 @@ export class Session {
   }
 
   private async find(locator: Locator): Promise<WebElement | undefined> {
+    const found = await send(`${this.endpoint}/elements`, "POST", locator);
+    if (!Array.isArray(found)) {
+      throw new Error("expected the elements found to be a list");
+    }
+    for (const element of found) {
+      const id = requireString(property(element, ELEMENT_KEY), "element id");
+      if (await this.isShown(id)) {
+        return { text: () => this.textOf(id), click: () => this.clickOn(id) };
+      }
+    }
+    return undefined;
+  }
+
+  private async isShown(element: string): Promise<boolean> {
     try {
-      const found = await send(`${this.endpoint}/element`, "POST", locator);
-      const id = requireString(property(found, ELEMENT_KEY), "element id");
-      return { text: () => this.textOf(id), click: () => this.clickOn(id) };
+      const shown = await send(
+        `${this.endpoint}/element/${element}/displayed`,
+        "GET",
+      );
+      return shown === true;
     } catch (error) {
-      if (error instanceof WebDriverError && error.code === NO_SUCH_ELEMENT) {
-        return undefined;
+      if (error instanceof WebDriverError && error.code === STALE_ELEMENT) {
+        return false;
       }
       throw error;
     }
