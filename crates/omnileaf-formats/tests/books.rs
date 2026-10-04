@@ -12,6 +12,7 @@ use omnileaf_testkit::{Compression, PageShape, cbz, page_png};
 use support::{ScratchFolder, entry};
 
 const SEED: u64 = 11;
+const START_LENGTH: u64 = 64;
 
 fn page(index: u32) -> Vec<u8> {
     page_png(SEED, index, PageShape::Portrait).unwrap()
@@ -81,6 +82,38 @@ fn reads_every_page_back_exactly_from_stored_and_deflated_archives() {
             assert_eq!(&book.read_page(index).unwrap(), expected);
         }
     }
+}
+
+#[test]
+fn reads_only_the_start_of_a_page_from_stored_and_deflated_archives() {
+    let scratch = ScratchFolder::new("read-start");
+    let pages = [page(0), page(1)];
+    for compression in [Compression::Stored, Compression::Deflated] {
+        let entries: Vec<_> = pages
+            .iter()
+            .enumerate()
+            .map(|(index, bytes)| entry(&format!("{index:02}.png"), bytes.clone()))
+            .collect();
+        let path = scratch.write("book.cbz", &cbz(&entries, compression).unwrap());
+        let mut book = open_book(&path).unwrap();
+
+        let start = book.read_page_start(1, START_LENGTH).unwrap();
+
+        assert_eq!(start, pages[1][..usize::try_from(START_LENGTH).unwrap()]);
+    }
+}
+
+#[test]
+fn reads_the_start_of_a_folder_s_page_and_all_of_a_page_shorter_than_asked_for() {
+    let scratch = ScratchFolder::new("read-start-folder");
+    scratch.write("Chapter/1.png", &page(0));
+    let mut book = open_book(&scratch.path().join("Chapter")).unwrap();
+
+    let start = book.read_page_start(0, START_LENGTH).unwrap();
+    let whole = book.read_page_start(0, u64::MAX).unwrap();
+
+    assert_eq!(start, page(0)[..usize::try_from(START_LENGTH).unwrap()]);
+    assert_eq!(whole, page(0));
 }
 
 #[test]

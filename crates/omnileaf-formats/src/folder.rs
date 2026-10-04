@@ -12,7 +12,7 @@ use crate::{
     error::read_failed,
     fingerprint::folder_fingerprint,
     is_ignored, is_page_image,
-    limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME, read_within},
+    limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME, read_start, read_within},
 };
 
 #[derive(Debug)]
@@ -104,12 +104,7 @@ impl FolderBook {
     }
 
     pub(crate) fn read_page(&self, index: usize) -> Result<Vec<u8>, FormatError> {
-        let (Some(file), Some(page)) = (self.files.get(index), self.pages.get(index)) else {
-            return Err(FormatError::NoSuchPage {
-                path: self.path.clone(),
-                index,
-            });
-        };
+        let (file, page) = self.page_file(index)?;
         let limit = self.limits.max_page_bytes;
         read_file_within(&*self.storage, file, limit)
             .map_err(read_failed(file))?
@@ -118,6 +113,28 @@ impl FolderBook {
                 name: page.name.clone(),
                 limit,
             })
+    }
+
+    pub(crate) fn read_page_start(
+        &self,
+        index: usize,
+        length: u64,
+    ) -> Result<Vec<u8>, FormatError> {
+        let (file, _) = self.page_file(index)?;
+        self.storage
+            .open(file)
+            .and_then(|opened| read_start(opened, length.min(self.limits.max_page_bytes)))
+            .map_err(read_failed(file))
+    }
+
+    fn page_file(&self, index: usize) -> Result<(&Path, &Page), FormatError> {
+        match (self.files.get(index), self.pages.get(index)) {
+            (Some(file), Some(page)) => Ok((file, page)),
+            _ => Err(FormatError::NoSuchPage {
+                path: self.path.clone(),
+                index,
+            }),
+        }
     }
 }
 

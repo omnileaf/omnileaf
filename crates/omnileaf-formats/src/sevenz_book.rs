@@ -16,7 +16,7 @@ use crate::{
     error::read_failed,
     fingerprint::{fingerprint_failed, raw_fingerprint},
     is_ignored, is_page_image,
-    limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME, read_within},
+    limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME, read_start, read_within},
     sevenz_header::check_header,
 };
 
@@ -148,6 +148,21 @@ impl SevenZipBook {
                 name,
                 limit,
             })
+    }
+
+    pub(crate) fn read_page_start(
+        &mut self,
+        index: usize,
+        length: u64,
+    ) -> Result<Vec<u8>, FormatError> {
+        let Some(&file) = self.entries.get(index) else {
+            return Err(FormatError::NoSuchPage {
+                path: self.path.clone(),
+                index,
+            });
+        };
+        let at_most = length.min(self.limits.max_page_bytes);
+        self.read_entry(file, |contents| read_start(contents, at_most))
     }
 
     /// Hands `read` one entry's contents; a solid block decodes only from its start, so the entries before it are decoded and dropped on the way.

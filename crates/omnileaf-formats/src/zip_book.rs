@@ -1,5 +1,6 @@
 use std::{
     fs::File,
+    io::{self, Read},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -14,7 +15,7 @@ use crate::{
     error::read_failed,
     fingerprint::archive_fingerprint,
     is_ignored, is_page_image,
-    limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME, read_within},
+    limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME, read_start, read_within},
 };
 
 #[derive(Debug)]
@@ -106,6 +107,31 @@ impl ZipBook {
 
     /// Stops past the page size limit because a ZIP entry's recorded size can understate its real size.
     pub(crate) fn read_page(&mut self, index: usize) -> Result<Vec<u8>, FormatError> {
+        let limit = self.limits.max_page_bytes;
+        let (name, bytes) = self.read_entry(index, |entry| read_within(entry, limit))?;
+        bytes.ok_or_else(|| FormatError::PageTooLarge {
+            path: self.path.clone(),
+            name,
+            limit,
+        })
+    }
+
+    pub(crate) fn read_page_start(
+        &mut self,
+        index: usize,
+        length: u64,
+    ) -> Result<Vec<u8>, FormatError> {
+        let at_most = length.min(self.limits.max_page_bytes);
+        let (_, bytes) = self.read_entry(index, |entry| read_start(entry, at_most))?;
+        Ok(bytes)
+    }
+
+    /// The page's name and what `read` makes of its bytes.
+    fn read_entry<T>(
+        &mut self,
+        index: usize,
+        read: impl FnOnce(&mut dyn Read) -> io::Result<T>,
+    ) -> Result<(String, T), FormatError> {
         let (Some(&entry_index), Some(page)) = (self.entries.get(index), self.pages.get(index))
         else {
             return Err(FormatError::NoSuchPage {
@@ -113,18 +139,13 @@ impl ZipBook {
                 index,
             });
         };
-        let limit = self.limits.max_page_bytes;
-        let entry = self
+        let name = page.name.clone();
+        let mut entry = self
             .archive
             .by_index(entry_index)
             .map_err(|source| corrupt(&self.path, source))?;
-        read_within(entry, limit)
-            .map_err(|source| corrupt(&self.path, ZipError::Io(source)))?
-            .ok_or_else(|| FormatError::PageTooLarge {
-                path: self.path.clone(),
-                name: page.name.clone(),
-                limit,
-            })
+        let read = read(&mut entry).map_err(|source| corrupt(&self.path, ZipError::Io(source)))?;
+        Ok((name, read))
     }
 }
 
