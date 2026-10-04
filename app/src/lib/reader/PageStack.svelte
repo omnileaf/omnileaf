@@ -1,5 +1,6 @@
 <script lang="ts">
   import { LoaderCircle } from "@lucide/svelte";
+  import type { Attachment } from "svelte/attachments";
   import { SvelteSet } from "svelte/reactivity";
 
   import type { BookPage } from "#lib/ipc/bindings.ts";
@@ -31,6 +32,14 @@
     return page.size === null
       ? undefined
       : fittedSize(page.size, { width: spaceWidth, height: spaceHeight });
+  }
+
+  /** Forgets how the page's last image fared, so an image mounted afresh shows only once it decodes and a failure clears once it loads. */
+  function freshImage(index: number): Attachment<HTMLImageElement> {
+    return () => {
+      decoded.delete(index);
+      failed.delete(index);
+    };
   }
 
   /** Marks the page ready only once its pixels are decoded, so turning to it never waits on a decode. */
@@ -81,6 +90,7 @@
           : `${String(size.height)}px`}
       >
         <img
+          {@attach freshImage(index)}
           src={omniUrl(page.path)}
           alt={m.reader_page({ page: index + 1 })}
           aria-hidden={isShown ? undefined : "true"}

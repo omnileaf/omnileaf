@@ -17,6 +17,7 @@ import {
   PAGE_COUNT,
   PAGE_HEIGHT,
   PAGE_WIDTH,
+  pageIndexOf,
   readerBackend,
   readerBook,
   servePages,
@@ -303,6 +304,29 @@ test("says so when a page can't be shown", async ({ page }) => {
   await openBook(page);
 
   await expect(page.getByText("This page couldn't be shown.")).toBeVisible();
+});
+
+test("shows a page that failed once when it loads on coming back to it", async ({
+  page,
+}) => {
+  let hasFailedOnce = false;
+  await page.route(fakeProtocolRoute("omni"), async (route) => {
+    if (pageIndexOf(route.request().url()) === 0 && !hasFailedOnce) {
+      hasFailedOnce = true;
+      await route.abort();
+      return;
+    }
+    await route.fallback();
+  });
+  await openBook(page);
+  await expect(page.getByText("This page couldn't be shown.")).toBeVisible();
+  await page.keyboard.press("End");
+  await expectOnPage(page, PAGE_COUNT);
+
+  await page.keyboard.press("Home");
+
+  await expectOnPage(page, 1);
+  await expect(page.getByText("This page couldn't be shown.")).toHaveCount(0);
 });
 
 test("asks for the pages ahead before they're turned to, and keeps one behind", async ({
