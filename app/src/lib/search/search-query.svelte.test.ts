@@ -67,3 +67,27 @@ test("has nothing to search for until text or a condition is in it", () => {
 
   expect([blank, query.isEmpty]).toEqual([true, false]);
 });
+
+test("starts over from typed text, reading its filter words", () => {
+  const query = englishQuery();
+  query.toggle("started");
+
+  query.startOver({ kind: "typed", text: "finished lantern" });
+
+  expect(query.search).toEqual({
+    text: "lantern",
+    filter: { unread: "any", started: "any", finished: "only" },
+  });
+});
+
+test("starts over from a chosen title as it is, filter words and all", () => {
+  const query = englishQuery();
+  query.toggle("started");
+
+  query.startOver({ kind: "title", text: "Finished Business" });
+
+  expect(query.search).toEqual({
+    text: "Finished Business",
+    filter: { unread: "any", started: "any", finished: "any" },
+  });
+});

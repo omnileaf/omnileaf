@@ -20,7 +20,7 @@
   import { filterWords } from "#lib/search/condition-labels.ts";
   import KeyHints from "#lib/search/KeyHints.svelte";
   import NothingFound from "#lib/search/NothingFound.svelte";
-  import { SEARCH_QUERY_PARAMETER } from "#lib/search/search-route.ts";
+  import { searchAskedIn } from "#lib/search/search-route.ts";
   import SearchField from "#lib/search/SearchField.svelte";
   import { SearchQuery } from "#lib/search/search-query.svelte.ts";
   import SearchResults from "#lib/search/SearchResults.svelte";
@@ -32,9 +32,6 @@
   let { data }: PageProps = $props();
 
   const query = new SearchQuery(filterWords(), getLocale());
-  const asked = $derived(
-    page.url.searchParams.get(SEARCH_QUERY_PARAMETER) ?? "",
-  );
 
   const results = new LibrarySeriesList((after) =>
     commands.librarySearch(after, query.search),
@@ -73,17 +70,15 @@
     void found.load();
   }
 
-  function startOver(text: string): void {
-    query.clearConditions();
-    query.type(text);
+  /** Reads the whole address rather than its query, so arriving at the same one again still starts over. */
+  function startOverOnArrival(): void {
+    const arrival = page.url;
+    untrack(() => {
+      query.startOver(searchAskedIn(arrival));
+    });
   }
 
-  $effect.pre(() => {
-    const text = asked;
-    untrack(() => {
-      startOver(text);
-    });
-  });
+  $effect.pre(startOverOnArrival);
 
   $effect(() => {
     if (hasSomethingToFind(query.search)) {

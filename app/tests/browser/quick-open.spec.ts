@@ -1,10 +1,11 @@
 import type { Locator, Page } from "@playwright/test";
 
 import {
+  type LibraryFilter,
   type LibrarySearch,
   SEARCH_MAX_CHARS,
 } from "../../src/lib/ipc/bindings.ts";
-import type { FakeBackend } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   DEFAULT_BACKEND,
@@ -16,13 +17,48 @@ import {
 } from "./fixtures.ts";
 import { sampleSeries, type WireSeries } from "./series-catalog.ts";
 
-const CATALOG: readonly WireSeries[] = sampleSeries(12);
+const FILTER_WORD_TITLE = "Finished Business";
+const LENGTHY_TITLE = `The Lengthy Tale ${"of Many Volumes ".repeat(14)}`;
+
+function seriesTitled(number: number, title: string): WireSeries {
+  return {
+    id: `0190a3e4-0000-8000-8000-${String(number).padStart(12, "0")}`,
+    title,
+    bookCount: 1,
+    unreadCount: 1,
+    cover: null,
+  };
+}
+
+const CATALOG: readonly WireSeries[] = [
+  ...sampleSeries(12),
+  seriesTitled(13, FILTER_WORD_TITLE),
+  seriesTitled(14, LENGTHY_TITLE),
+];
 const SERIES_SHOWN = 6;
 const PLACES_HOLDING_SE = 6;
 
+/** Every series here is unread and unstarted, so only a filter letting those through finds any. */
+function letsThrough(filter: LibraryFilter): boolean {
+  return (
+    filter.unread !== "hide" &&
+    filter.started !== "only" &&
+    filter.finished !== "only"
+  );
+}
+
 function found(search: LibrarySearch): WireSeries[] {
+  if (Array.from(search.text).length > SEARCH_MAX_CHARS) {
+    throw new CommandFailure({
+      code: "searchTooLong",
+      message: "the search is longer than a search reads",
+    });
+  }
   const text = search.text.trim().toLowerCase();
-  return CATALOG.filter((series) => series.title.toLowerCase().includes(text));
+  return CATALOG.filter(
+    (series) =>
+      letsThrough(search.filter) && series.title.toLowerCase().includes(text),
+  );
 }
 
 const SEARCHING_BACKEND: FakeBackend = {
@@ -46,6 +82,14 @@ function field(page: Page): Locator {
   return quickOpen(page).getByRole("combobox", {
     name: "Search or go to a page",
   });
+}
+
+function searchField(page: Page): Locator {
+  return page.getByRole("searchbox", { name: "Search your library" });
+}
+
+function seriesFound(page: Page): Locator {
+  return page.getByRole("list", { name: "Series found" }).getByRole("listitem");
 }
 
 function options(page: Page): Locator {
@@ -153,7 +197,7 @@ test("shows the series chosen on the search page", async ({ page }) => {
   await field(page).fill("0007");
   await options(page).first().click();
 
-  await expect(page).toHaveURL(/\/search\?q=Sample\+Series\+0007$/);
+  await expect(page).toHaveURL(/\/search\?title=Sample\+Series\+0007$/);
   await expect(
     page.getByRole("list", { name: "Series found" }).getByRole("listitem"),
   ).toHaveText([/Sample Series 0007/]);
@@ -186,6 +230,52 @@ test("takes no more text than a search reads", async ({ page }) => {
   await field(page).fill("s".repeat(SEARCH_MAX_CHARS + 1));
 
   await expect(field(page)).toHaveValue("s".repeat(SEARCH_MAX_CHARS));
+});
+
+test("shows a chosen series whose title holds a filter word as it is", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await pressQuickOpen(page);
+
+  await field(page).fill("business");
+  await field(page).press("Enter");
+
+  await expect(searchField(page)).toHaveValue(FILTER_WORD_TITLE);
+  await expect(seriesFound(page)).toHaveText([new RegExp(FILTER_WORD_TITLE)]);
+});
+
+test("shows a chosen series whose title is longer than a search reads", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await pressQuickOpen(page);
+
+  await field(page).fill("lengthy");
+  await field(page).press("Enter");
+
+  await expect(searchField(page)).toHaveValue(
+    Array.from(LENGTHY_TITLE).slice(0, SEARCH_MAX_CHARS).join(""),
+  );
+  await expect(seriesFound(page)).toHaveText([/The Lengthy Tale/]);
+});
+
+test("shows the series chosen again after something else was typed on the search page", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await pressQuickOpen(page);
+  await field(page).fill("0007");
+  await field(page).press("Enter");
+  await expect(seriesFound(page)).toHaveText([/Sample Series 0007/]);
+  await searchField(page).fill("zzz");
+  await pressQuickOpen(page);
+
+  await field(page).fill("0007");
+  await field(page).press("Enter");
+
+  await expect(searchField(page)).toHaveValue("Sample Series 0007");
+  await expect(seriesFound(page)).toHaveText([/Sample Series 0007/]);
 });
 
 test("closes with Escape and gives focus back to where it was", async ({

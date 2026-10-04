@@ -19,7 +19,7 @@
   import { quickOpenShortcutLabel } from "./quick-open-shortcut";
   import QuickOpenOption from "./QuickOpenOption.svelte";
   import type { QuickOpenState } from "./quick-open-state.svelte";
-  import { searchQuery } from "./search-route";
+  import { titleQuery } from "./search-route";
 
   interface Group {
     readonly name: "series" | "places";
@@ -120,7 +120,7 @@
     switch (choice.kind) {
       case "series":
         void goto(
-          `${resolve("/(app)/search")}${searchQuery(choice.series.title)}`,
+          `${resolve("/(app)/search")}${titleQuery(choice.series.title)}`,
         );
         return;
       case "place":
