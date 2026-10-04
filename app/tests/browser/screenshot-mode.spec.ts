@@ -8,6 +8,11 @@ const TURNED_ON_AT = new Date("2026-10-03T21:14:00Z");
 const AN_HOUR_LATER = new Date("2026-10-03T22:14:00Z");
 const REAL_FOLDER_NAME = "Generated Sample Shelf";
 const COLLECTION_SCREENS = ["/", "/browse", "/history"];
+const EMPTY_LIBRARY = "Your library is empty";
+const FOLDER_PLACES = [
+  { path: "/", region: EMPTY_LIBRARY },
+  { path: "/settings/library", region: "Folders" },
+] as const;
 
 async function open(page: Page, path: string): Promise<void> {
   await page.goto(path);
@@ -19,8 +24,11 @@ async function turnOnScreenshotMode(page: Page): Promise<void> {
   await expect(page.getByText("Screenshot mode is on")).toBeAttached();
 }
 
-async function addFolder(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Add a folder" }).click();
+async function addFolder(page: Page, region: string): Promise<void> {
+  await page
+    .getByRole("region", { name: region })
+    .getByRole("button", { name: "Add a folder" })
+    .click();
   await expect(page.getByText(/^Found 4 comics in /)).toBeVisible();
 }
 
@@ -82,14 +90,14 @@ test("turns off on coming back to the app after the hour ran out while asleep", 
   await expect(page.getByText("Screenshot mode is off")).toBeAttached();
 });
 
-for (const path of ["/", "/settings/library"]) {
+for (const { path, region } of FOLDER_PLACES) {
   test(`no real folder name shows on ${path} while it's on`, async ({
     page,
   }) => {
     await open(page, path);
     await turnOnScreenshotMode(page);
 
-    await addFolder(page);
+    await addFolder(page, region);
 
     await expect(page.getByText("Found 4 comics in Folder 01.")).toBeVisible();
     await expect(page.locator("body")).not.toContainText(REAL_FOLDER_NAME);
@@ -100,7 +108,7 @@ test("a folder name already on screen is replaced when it's turned on", async ({
   page,
 }) => {
   await open(page, "/");
-  await addFolder(page);
+  await addFolder(page, EMPTY_LIBRARY);
 
   await turnOnScreenshotMode(page);
 
@@ -140,7 +148,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
     await open(page, "/");
     await turnOnScreenshotMode(page);
-    await addFolder(page);
+    await addFolder(page, EMPTY_LIBRARY);
 
     const results = await new AxeBuilder({ page }).analyze();
 

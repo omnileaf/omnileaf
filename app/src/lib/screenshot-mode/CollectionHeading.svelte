@@ -1,4 +1,6 @@
 <script lang="ts">
+  import PageHeading from "$lib/page/PageHeading.svelte";
+
   import ScreenshotModeLabel from "./ScreenshotModeLabel.svelte";
 
   interface Props {
@@ -12,7 +14,7 @@
 <header
   class="flex flex-col items-start gap-sm expanded:flex-row expanded:items-center expanded:gap-md"
 >
-  <h1 tabindex="-1" class="text-headline font-bold">{title}</h1>
+  <PageHeading {title} />
   {#if showsLabel}
     <ScreenshotModeLabel />
   {/if}

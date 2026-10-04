@@ -50,7 +50,11 @@ test("it stays on after a restart and Privacy and security says so", async ({
 
   await page.reload();
   await expect(mainSwitch(page)).toBeChecked();
-  await page.getByRole("link", { name: "Privacy and security" }).click();
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: "Privacy and security" })
+    .and(page.locator("a:not(nav a)"))
+    .click();
 
   await expect(
     page.getByRole("main").getByRole("link", { name: "Screenshot mode On" }),

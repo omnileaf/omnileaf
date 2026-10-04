@@ -1,10 +1,16 @@
 import { afterAll, beforeAll, inject } from "vitest";
 
-import { Session, xpath } from "./webdriver.ts";
+import { type Locator, Session, xpath } from "./webdriver.ts";
 
-const LIBRARY_LINK = xpath("//nav//a[normalize-space()='Library']");
+const MAIN_NAVIGATION = "//nav[@aria-label='Main']";
+
+export function mainNavigationLink(name: string): Locator {
+  return xpath(`${MAIN_NAVIGATION}//a[normalize-space()='${name}']`);
+}
+
+const LIBRARY_LINK = mainNavigationLink("Library");
 const LIBRARY_LINK_WHEN_CURRENT = xpath(
-  "//nav//a[normalize-space()='Library'][@aria-current='page']",
+  `${MAIN_NAVIGATION}//a[normalize-space()='Library'][@aria-current='page']`,
 );
 
 /** Opens one WebDriver session on the app's library page for the calling spec file's tests, and ends it after them. */

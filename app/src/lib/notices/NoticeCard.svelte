@@ -39,7 +39,7 @@
 
 <div
   class={[
-    "absolute inset-x-md inset-be-md flex flex-col gap-sm rounded-notice p-md shadow-notice motion-safe:animate-notice-rise medium:fixed medium:inset-s-auto medium:inset-e-page-end medium:inset-be-page-bottom medium:rounded-panel medium:border medium:shadow-notice-wide medium:inline-notice ios:max-medium:inset-be-floating-clearance",
+    "absolute inset-x-md inset-be-md flex flex-col gap-sm rounded-notice p-md shadow-notice motion-safe:animate-notice-rise medium:fixed medium:inset-s-auto medium:inset-e-notice-end medium:inset-be-page-bottom medium:rounded-panel medium:border medium:shadow-notice-wide medium:inline-notice ios:max-medium:inset-be-floating-clearance",
     tone.card,
   ]}
 >
