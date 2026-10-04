@@ -158,8 +158,9 @@ impl Pages {
         {
             tracing::warn!(error = %describe_error(&error), "keep the size of each page for the next time the book opens");
         }
-        self.read_ahead(&opened, start_page(&found, opened.page_count));
-        Ok(opened_book(found, &sizes))
+        let start = start_page(found.reading, opened.page_count);
+        self.read_ahead(&opened, usize::try_from(start).unwrap_or(usize::MAX));
+        Ok(opened_book(found, &sizes, start))
     }
 
     /// The page, or nothing for a page of a revision the library no longer holds or past the end of its book.
@@ -304,13 +305,12 @@ impl Shared {
 }
 
 /// The page reading goes on from, counting from 0, or the first page of a book not started.
-fn start_page(book: &BookToRead, page_count: usize) -> usize {
-    match book.reading {
+fn start_page(reading: StoredReading, page_count: usize) -> u32 {
+    let last = u32::try_from(page_count.saturating_sub(1)).unwrap_or(u32::MAX);
+    match reading {
         StoredReading::Started {
             position_page: Some(page),
-        } => usize::try_from(page)
-            .unwrap_or(usize::MAX)
-            .min(page_count.saturating_sub(1)),
+        } => page.min(last),
         StoredReading::Started {
             position_page: None,
         }
@@ -347,7 +347,11 @@ fn probe_size(
     })
 }
 
-fn opened_book(found: BookToRead, sizes: &[Option<catalog::PageDimensions>]) -> OpenedBook {
+fn opened_book(
+    found: BookToRead,
+    sizes: &[Option<catalog::PageDimensions>],
+    start_page: u32,
+) -> OpenedBook {
     let pages = (0_u32..)
         .zip(sizes)
         .map(|(index, size)| BookPage {
@@ -365,6 +369,51 @@ fn opened_book(found: BookToRead, sizes: &[Option<catalog::PageDimensions>]) -> 
         series: SeriesId(found.series),
         series_title: found.series_title,
         pages,
+        start_page,
         reading: found.reading.into(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const PAGE_COUNT: usize = 30;
+
+    fn started_at(position_page: Option<u32>) -> StoredReading {
+        StoredReading::Started { position_page }
+    }
+
+    #[test]
+    fn opens_a_started_book_on_the_page_reading_goes_on_from() {
+        let start = start_page(started_at(Some(13)), PAGE_COUNT);
+
+        assert_eq!(start, 13);
+    }
+
+    #[test]
+    fn opens_on_the_last_page_a_book_whose_position_is_past_its_end() {
+        let start = start_page(started_at(Some(40)), PAGE_COUNT);
+
+        assert_eq!(start, 29);
+    }
+
+    #[test]
+    fn opens_on_the_first_page_a_book_with_no_position_to_go_on_from() {
+        let starts = [
+            StoredReading::NotStarted,
+            started_at(None),
+            StoredReading::Read,
+        ]
+        .map(|reading| start_page(reading, PAGE_COUNT));
+
+        assert_eq!(starts, [0, 0, 0]);
+    }
+
+    #[test]
+    fn opens_a_book_with_no_pages_on_its_first_page() {
+        let start = start_page(started_at(Some(3)), 0);
+
+        assert_eq!(start, 0);
     }
 }

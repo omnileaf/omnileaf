@@ -15,7 +15,6 @@
   } from "#lib/reader/reader-keys.ts";
   import ReaderPanel from "#lib/reader/ReaderPanel.svelte";
   import ReaderTopBar from "#lib/reader/ReaderTopBar.svelte";
-  import { startPage } from "#lib/reader/start-page.ts";
   import { Swipe, type SwipeTurn } from "#lib/reader/swipe.ts";
 
   const SWIPE_MIN_PX = 48;
@@ -27,7 +26,7 @@
   let { book }: { book: OpenedBook } = $props();
 
   const turner = untrack(
-    () => new PageTurner(book.pages.length, startPage(book.reading)),
+    () => new PageTurner(book.pages.length, book.startPage),
   );
   const swipe = new Swipe(SWIPE_MIN_PX);
   let areControlsShown = $state(true);

@@ -15,8 +15,19 @@ export const PAGE_HEIGHT = 2700;
 
 const PAGE_PATH = new RegExp(`/page/v1/${BOOK_ID}/1/(\\d+)$`);
 
+/** The reading state of a book and the page, counting from 0, the core opens it on. */
+export interface WireOpening {
+  readonly reading: WireReading;
+  readonly startPage: number;
+}
+
+const NOT_STARTED: WireOpening = {
+  reading: { state: "notStarted" },
+  startPage: 0,
+};
+
 /** A generated book whose pages are all the same portrait size. */
-export function readerBook(reading: WireReading): WireBook {
+export function readerBook({ reading, startPage }: WireOpening): WireBook {
   return {
     id: BOOK_ID,
     title: BOOK_TITLE,
@@ -26,6 +37,7 @@ export function readerBook(reading: WireReading): WireBook {
       path: `page/v1/${BOOK_ID}/1/${String(index)}`,
       size: { width: PAGE_WIDTH, height: PAGE_HEIGHT },
     })),
+    startPage,
     reading,
   };
 }
@@ -65,8 +77,8 @@ export async function servePages(
 
 export const readerBackend = (
   base: FakeBackend,
-  reading: WireReading = { state: "notStarted" },
+  opening: WireOpening = NOT_STARTED,
 ): FakeBackend => ({
   ...base,
-  openBook: () => readerBook(reading),
+  openBook: () => readerBook(opening),
 });
