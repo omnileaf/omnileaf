@@ -20,7 +20,7 @@ use omnileaf_testkit::{
 };
 use support::{FixedClock, TempFolder};
 
-const BOOKS: u64 = 20;
+const BOOKS: u64 = 100;
 const PAGES_AFTER_THE_COVER: u32 = 3;
 const FOLDER: &str = "Scanned Library";
 const BUDGET: Duration = Duration::from_millis(30);
@@ -47,6 +47,23 @@ fn write_scanned_library(root: &std::path::Path) {
     }
 }
 
+async fn cover_paths(library: &Library) -> Vec<String> {
+    let mut covers = Vec::new();
+    let mut after = None;
+    loop {
+        let page = library.series(after).await.unwrap();
+        covers.extend(
+            page.series
+                .into_iter()
+                .map(|series| format!("/{}", series.cover.unwrap())),
+        );
+        match page.next {
+            Some(next) => after = Some(next),
+            None => return covers,
+        }
+    }
+}
+
 #[tokio::test]
 #[expect(
     clippy::print_stderr,
@@ -66,14 +83,7 @@ async fn makes_a_cold_cover_thumbnail_from_a_full_size_scan_within_30_ms_at_p95(
         .unwrap();
     let cache = TempFolder::new("cover-speed-cache");
     let router = ResourceRouter::open(cache.path()).unwrap();
-    let covers: Vec<String> = library
-        .series(None)
-        .await
-        .unwrap()
-        .series
-        .into_iter()
-        .map(|series| format!("/{}", series.cover.unwrap()))
-        .collect();
+    let covers = cover_paths(&library).await;
 
     let mut times = Vec::with_capacity(covers.len());
     for cover in &covers {
