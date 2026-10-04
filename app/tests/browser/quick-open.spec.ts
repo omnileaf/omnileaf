@@ -278,6 +278,20 @@ test("shows the series chosen again after something else was typed on the search
   await expect(seriesFound(page)).toHaveText([/Sample Series 0007/]);
 });
 
+test("tells whoever is in the field when nothing is called what was typed", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await pressQuickOpen(page);
+
+  await field(page).fill("zzz");
+
+  await expect(field(page)).toHaveAccessibleDescription("Nothing called “zzz”");
+  await expect(quickOpen(page).getByRole("status")).toHaveText(
+    "Nothing called “zzz”",
+  );
+});
+
 test("closes with Escape and gives focus back to where it was", async ({
   page,
 }) => {
@@ -309,6 +323,22 @@ test.describe("on macOS", () => {
 });
 
 for (const colorScheme of ["light", "dark"] as const) {
+  test(`quick open finding nothing has no accessibility violations in the ${colorScheme} theme`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await openLibrary(page);
+    await pressQuickOpen(page);
+    await field(page).fill("zzz");
+    await expect(
+      quickOpen(page).getByText("Nothing called “zzz”"),
+    ).toBeVisible();
+
+    const violations = await accessibilityViolations(page);
+
+    expect(violations).toEqual([]);
+  });
+
   test(`quick open has no accessibility violations in the ${colorScheme} theme`, async ({
     page,
   }) => {

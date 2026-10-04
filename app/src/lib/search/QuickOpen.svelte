@@ -45,6 +45,7 @@
 
   const id = $props.id();
   const listboxId = `${id}-results`;
+  const nothingFoundId = `${id}-nothing-found`;
 
   const groups: readonly Group[] = $derived.by(() => {
     const seriesChoices = series.map((one): Choice => ({
@@ -197,6 +198,7 @@
       aria-expanded={choices.length > 0}
       aria-controls={listboxId}
       aria-autocomplete="list"
+      aria-describedby={nothingFoundId}
       aria-activedescendant={choices.length > 0 ? optionId(active) : undefined}
       autocomplete="off"
       spellcheck="false"
@@ -217,7 +219,10 @@
     id={listboxId}
     role="listbox"
     aria-label={m.quick_open_results()}
-    class="flex flex-col gap-2xs overflow-y-auto p-sm max-block-quick-open-results"
+    class={[
+      "flex flex-col gap-2xs overflow-y-auto max-block-quick-open-results",
+      choices.length > 0 && "p-sm",
+    ]}
   >
     {#each groups as group (group.name)}
       {@const headingId = `${id}-${group.name}`}
@@ -249,12 +254,19 @@
         {/each}
       </div>
     {/each}
-    {#if choices.length === 0}
-      <p class="px-option-inline py-sm text-small text-muted">
-        {m.search_nothing_called({ text: text.trim() })}
-      </p>
-    {/if}
   </div>
+  <p
+    id={nothingFoundId}
+    role="status"
+    class={[
+      "text-small text-muted",
+      choices.length === 0 && "m-sm px-option-inline py-sm",
+    ]}
+  >
+    {#if choices.length === 0}
+      {m.search_nothing_called({ text: text.trim() })}
+    {/if}
+  </p>
   <footer
     class="flex items-center gap-lg border-bs border-border px-lg text-caption text-muted block-key-hints"
   >
