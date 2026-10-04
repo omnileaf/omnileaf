@@ -25,8 +25,8 @@ const UNIX_HOST_SYSTEM: u8 = 3;
 const SOF0: [u8; 2] = [0xFF, 0xC0];
 const SOF0_COMPONENT_COUNT_OFFSET: usize = 9;
 const SOF0_COMPONENT_LENGTH: usize = 3;
-const LUMA_TWICE_EACH_WAY: u8 = 0x22;
-const CHROMA_ONCE_EACH_WAY: u8 = 0x11;
+const TWICE_EACH_WAY: u8 = 0x22;
+const ONCE_EACH_WAY: u8 = 0x11;
 
 struct ScratchFolder(PathBuf);
 
@@ -170,6 +170,15 @@ fn weighs_a_grainy_scan_a_little_over_a_megabyte() {
 }
 
 #[test]
+fn keeps_a_grainy_scans_chroma_at_full_resolution() {
+    let scan = grainy_scan_jpeg(SEED).unwrap();
+
+    let factors = jpeg_sampling_factors(&scan);
+
+    assert_eq!(factors, [ONCE_EACH_WAY; 3]);
+}
+
+#[test]
 fn draws_a_typical_scan_at_the_size_of_a_full_resolution_comic_page() {
     let scan = typical_scan_jpeg(SEED).unwrap();
 
@@ -184,14 +193,7 @@ fn subsamples_a_typical_scans_chroma_to_4_2_0() {
 
     let factors = jpeg_sampling_factors(&scan);
 
-    assert_eq!(
-        factors,
-        [
-            LUMA_TWICE_EACH_WAY,
-            CHROMA_ONCE_EACH_WAY,
-            CHROMA_ONCE_EACH_WAY
-        ]
-    );
+    assert_eq!(factors, [TWICE_EACH_WAY, ONCE_EACH_WAY, ONCE_EACH_WAY]);
 }
 
 #[test]
