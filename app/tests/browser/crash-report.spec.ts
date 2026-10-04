@@ -4,9 +4,16 @@ import type { Page } from "@playwright/test";
 import type {
   CrashReportOffer,
   InterfaceError,
+  Platform,
 } from "../../src/lib/ipc/bindings.ts";
 import { CommandFailure } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  DEFAULT_BACKEND,
+  expect,
+  MEDIUM_MIN_WIDTH,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
 
 const SAVED_PANIC: CrashReportOffer = {
   details:
@@ -72,7 +79,9 @@ function alwaysSendBox(page: Page) {
 }
 
 function sendButton(page: Page) {
-  return prompt(page).getByRole("button", { name: "Send report" });
+  return prompt(page).getByRole("button", {
+    name: /^(Send report|Report the problem)$/,
+  });
 }
 
 async function chooseBeforeOpening(
@@ -97,6 +106,10 @@ async function throwUnhandled(page: Page, times: number): Promise<void> {
     }
     await new Promise((resolve) => setTimeout(resolve));
   }, times);
+}
+
+function isPhoneScreen(page: Page, platform: Platform): boolean {
+  return platform === "android" && viewportOf(page).width < MEDIUM_MIN_WIDTH;
 }
 
 for (const platform of ["android", "linux"] as const) {
@@ -125,7 +138,9 @@ for (const platform of ["android", "linux"] as const) {
       await expect(prompt(page)).toBeVisible();
       await expect(prompt(page)).toContainText("Panic: index out of bounds");
       await expect(prompt(page)).toHaveAccessibleName(
-        "Omnileaf closed unexpectedly last time",
+        isPhoneScreen(page, platform)
+          ? "Something went wrong"
+          : "Omnileaf closed unexpectedly last time",
       );
       expect(calls.sent).toBe(0);
     });
