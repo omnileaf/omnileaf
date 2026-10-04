@@ -111,11 +111,11 @@ test("puts the warning away when the page changes", async ({ page }) => {
 
   await page
     .getByRole("navigation", { name: "Main" })
-    .getByRole("link", { name: "Settings" })
+    .getByRole("link", { name: "Browse" })
     .click();
 
   await expect(
-    page.getByRole("heading", { level: 1, name: "Settings" }),
+    page.getByRole("heading", { level: 1, name: "Browse" }),
   ).toBeFocused();
   await expect(page.getByRole("alert")).toBeEmpty();
 });
