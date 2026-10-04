@@ -30,6 +30,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import LibrarySearchEntry from "#lib/search/LibrarySearchEntry.svelte";
 
   const screenshotMode = getScreenshotMode();
   const listing = new StoredChoice<LibraryListing>(
@@ -207,6 +208,7 @@
 >
   {#snippet actions()}
     {#if hasBooks && loaded !== undefined && chosenListing !== undefined}
+      <LibrarySearchEntry />
       <FilterAndSort
         listing={chosenListing}
         matching={seriesCount.count}

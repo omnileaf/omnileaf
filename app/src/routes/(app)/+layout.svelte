@@ -4,7 +4,7 @@
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import AppNavigation from "#lib/navigation/AppNavigation.svelte";
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
-  import { focusPageHeading } from "#lib/navigation/page-heading.ts";
+  import { focusArrival } from "#lib/navigation/page-heading.ts";
   import { sectionOf } from "#lib/navigation/sections.ts";
   import SwipeableMain from "#lib/navigation/SwipeableMain.svelte";
   import NoticeHost from "#lib/notices/NoticeHost.svelte";
@@ -22,7 +22,7 @@
     const isProblem = page.error !== null;
     const isArrival = type !== "enter" && !backGoesUp.isPassingThrough;
     if (isArrival || isProblem) {
-      focusPageHeading();
+      focusArrival();
     }
   });
 </script>

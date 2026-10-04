@@ -156,6 +156,7 @@ export const APP_PAGES = [
   "/settings/advanced",
   "/settings/about",
   "/settings/about/licences",
+  "/search",
 ] as const;
 
 export function sidewaysOverflow(
