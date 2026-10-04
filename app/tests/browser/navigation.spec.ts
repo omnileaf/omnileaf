@@ -71,6 +71,10 @@ for (const { label, path, startFrom, opensFirstSectionOnDesktop } of SECTIONS) {
   test(`focuses the ${label} heading without a focus ring when opened from the keyboard`, async ({
     page,
   }) => {
+    test.skip(
+      opensFirstSectionOnDesktop && viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      OPENS_FIRST_SECTION,
+    );
     await page.goto(startFrom);
 
     await page
