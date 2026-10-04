@@ -12,8 +12,8 @@ use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Connection, Database, Error,
     catalog::{
-        Cursor, NewSeries, Page, PageRequest, PageSize, SeriesFilter, SeriesListing, SeriesOrder,
-        SeriesSort, series_books, series_count, series_page,
+        BookReading, Cursor, NewSeries, Page, PageRequest, PageSize, SeriesFilter, SeriesListing,
+        SeriesOrder, SeriesSort, series_books, series_count, series_page,
     },
 };
 use omnileaf_sync_proto::SeriesId;
@@ -295,6 +295,64 @@ async fn pages_a_series_books_in_natural_order() {
     assert_eq!(
         pages,
         [vec!["Extra", "volume 1", "Volume 2"], vec!["Volume 10"]]
+    );
+}
+
+#[tokio::test]
+async fn tells_each_book_of_a_series_whether_it_is_read_started_or_not() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &[
+            "Volume 01",
+            "Volume 02",
+            "Volume 03",
+            "Volume 04",
+            "Volume 05",
+        ],
+    )])
+    .await;
+    library
+        .database
+        .write(|transaction| {
+            let mut state = transaction.prepare(
+                "INSERT INTO book_state (book_id, position_page, furthest_page, is_read)
+                SELECT book.id, ?2, ?3, ?4 FROM book WHERE book.title = ?1",
+            )?;
+            state.execute(("Volume 01", 30, 30, true))?;
+            state.execute(("Volume 02", 4, None::<u32>, None::<bool>))?;
+            state.execute(("Volume 03", None::<u32>, 9, false))?;
+            state.execute(("Volume 04", None::<u32>, None::<u32>, false))?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+
+    let page = library
+        .database
+        .read(|connection| {
+            let request = PageRequest {
+                after: None,
+                size: PageSize::try_from(10).unwrap(),
+            };
+            series_books(connection, series_id("Sample Series 01"), &request)
+        })
+        .await
+        .unwrap();
+
+    let readings: Vec<BookReading> = page.items.iter().map(|book| book.reading).collect();
+    assert_eq!(
+        readings,
+        [
+            BookReading::Read,
+            BookReading::Started {
+                position_page: Some(4)
+            },
+            BookReading::Started {
+                position_page: None
+            },
+            BookReading::NotStarted,
+            BookReading::NotStarted,
+        ]
     );
 }
 
