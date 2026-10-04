@@ -224,6 +224,17 @@ fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
 
 #[cfg(test)]
 pub(crate) mod plans {
+    /// The numbers SQLite gives each stage's two cover subqueries, outer first.
+    const COVER_SUBQUERIES_OF_EACH_STAGE: [(u8, u8); 3] = [(3, 1), (7, 5), (11, 9)];
+
+    /// Reads each stage in order through `series_step` and merges the three.
+    pub(crate) fn merging_each_stage(series_step: &str) -> Vec<String> {
+        merging(
+            COVER_SUBQUERIES_OF_EACH_STAGE
+                .map(|subqueries| with_covers(vec![series_step.to_owned()], subqueries)),
+        )
+    }
+
     /// A stage's own steps, then each of its series finding its first book and that book's first file by index, sorting nothing.
     pub(crate) fn with_covers(stage_steps: Vec<String>, (outer, inner): (u8, u8)) -> Vec<String> {
         stage_steps

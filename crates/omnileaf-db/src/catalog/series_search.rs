@@ -104,7 +104,7 @@ impl Lookup {
 mod tests {
     use super::*;
     use crate::{
-        catalog::staged_rows::plans::{merging, with_covers},
+        catalog::staged_rows::plans::{merging, merging_each_stage, with_covers},
         scratch::ScratchLibrary,
     };
 
@@ -116,9 +116,6 @@ mod tests {
     /// The numbers SQLite gives each stage's list of matched series, then its two cover subqueries, outer first.
     const SUBQUERIES_OF_EACH_MATCHED_STAGE: [(u8, (u8, u8)); 3] =
         [(5, (4, 2)), (10, (9, 7)), (15, (14, 12))];
-
-    /// The numbers SQLite gives each stage's two cover subqueries, outer first.
-    const COVER_SUBQUERIES_OF_EACH_STAGE: [(u8, u8); 3] = [(3, 1), (7, 5), (11, 9)];
 
     /// Matches the phrases once, then looks up each series a stage reads among those matched.
     fn matching_each_stage(series_step: &str) -> Vec<String> {
@@ -135,13 +132,6 @@ mod tests {
                 .collect();
             with_covers(steps, covers)
         }))
-    }
-
-    fn reading_each_stage(series_step: &str) -> Vec<String> {
-        merging(
-            COVER_SUBQUERIES_OF_EACH_STAGE
-                .map(|covers| with_covers(vec![series_step.to_owned()], covers)),
-        )
     }
 
     #[test]
@@ -175,8 +165,8 @@ mod tests {
         assert_eq!(
             plans,
             [
-                reading_each_stage(FIRST_TITLES),
-                reading_each_stage(TITLES_AFTER)
+                merging_each_stage(FIRST_TITLES),
+                merging_each_stage(TITLES_AFTER)
             ]
         );
     }

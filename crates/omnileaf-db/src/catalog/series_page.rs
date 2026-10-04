@@ -117,21 +117,7 @@ impl<P> Directions<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        catalog::staged_rows::plans::{merging, with_covers},
-        scratch::ScratchLibrary,
-    };
-
-    /// The numbers SQLite gives each stage's two cover subqueries, outer first.
-    const COVER_SUBQUERIES_OF_EACH_STAGE: [(u8, u8); 3] = [(3, 1), (7, 5), (11, 9)];
-
-    /// Reads each stage in order through `series_step` and merges the three.
-    fn merging_each_stage(series_step: &str) -> Vec<String> {
-        merging(
-            COVER_SUBQUERIES_OF_EACH_STAGE
-                .map(|subqueries| with_covers(vec![series_step.to_owned()], subqueries)),
-        )
-    }
+    use crate::{catalog::staged_rows::plans::merging_each_stage, scratch::ScratchLibrary};
 
     fn plans_of<P>(
         scratch: &ScratchLibrary,
