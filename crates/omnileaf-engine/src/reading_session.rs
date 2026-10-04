@@ -113,22 +113,13 @@ impl ReadingSession {
 
 #[cfg(test)]
 mod tests {
-    use omnileaf_sync_proto::{Fingerprint, ImageEntry};
     use proptest::{collection::vec, prelude::*};
 
     use super::*;
+    use crate::library_book::sample_book_id as book;
 
     const PAGE_COUNT: usize = 8;
     const LAST_PAGE: u32 = 7;
-
-    fn book(seed: u32) -> BookId {
-        let fingerprint = Fingerprint::pmf1([ImageEntry {
-            crc32: seed,
-            size: 1,
-        }])
-        .unwrap();
-        BookId(omnileaf_sync_proto::BookId::local(&fingerprint))
-    }
 
     fn restored_on(page: u32) -> ReadingSession {
         let mut session = ReadingSession::opening(book(1), PAGE_COUNT).unwrap();

@@ -164,6 +164,18 @@ impl Type for BookCursor {
 }
 
 #[cfg(test)]
+pub(crate) fn sample_book_id(seed: u32) -> BookId {
+    use omnileaf_sync_proto::{Fingerprint, ImageEntry};
+
+    let fingerprint = Fingerprint::pmf1([ImageEntry {
+        crc32: seed,
+        size: 1,
+    }])
+    .unwrap();
+    BookId(omnileaf_sync_proto::BookId::local(&fingerprint))
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

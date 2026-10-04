@@ -70,13 +70,13 @@ impl Type for PagePath {
 
 #[cfg(test)]
 mod tests {
-    use omnileaf_sync_proto::{Fingerprint, ImageEntry};
     use proptest::prelude::*;
 
     use super::*;
+    use crate::library_book::sample_book_id;
 
     fn book(crc32: u32) -> BookId {
-        BookId::local(&Fingerprint::pmf1([ImageEntry { crc32, size: 1 }]).unwrap())
+        sample_book_id(crc32).0
     }
 
     #[test]
