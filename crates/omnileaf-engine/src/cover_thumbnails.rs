@@ -154,13 +154,21 @@ fn make_thumbnail(
     }
     let mut book = open_book(file)?;
     let comic_info = book.comic_info().unwrap_or_else(|error| {
-        tracing::warn!(%error, "show the first page of a book whose ComicInfo can't be read");
+        tracing::warn!(
+            file = %file.display(),
+            error = %describe_error(&error),
+            "show the first page of a book whose ComicInfo can't be read"
+        );
         None
     });
     let page = book.read_page(book.cover_page(comic_info.as_ref()))?;
     let made = thumbnail(&page)?.jpeg;
     if let Some(Err(error)) = cache.map(|cache| cache.put(key, &made)) {
-        tracing::warn!(%error, "keep a cover thumbnail for next time");
+        tracing::warn!(
+            file = %file.display(),
+            error = %describe_error(&error),
+            "keep a cover thumbnail for next time"
+        );
     }
     Ok(made)
 }
