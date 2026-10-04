@@ -6,6 +6,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  LARGE_MIN_WIDTH,
   MEDIUM_MIN_WIDTH,
   test,
   viewportOf,
@@ -15,7 +16,6 @@ type WireSeries = Awaited<
   ReturnType<FakeBackend["librarySeries"]>
 >["series"][number];
 
-const LARGE_MIN_WIDTH = 1200;
 const BOOK = "0190a3e4-0000-8000-8000-000000000001";
 const SERIES: readonly WireSeries[] = Array.from({ length: 7 }, (_, index) => ({
   id: `0190a3e4-0000-8000-8000-0000000000${String(index + 1).padStart(2, "0")}`,
