@@ -133,15 +133,22 @@ mod tests {
         assert_eq!(found, None);
     }
 
-    #[cfg(unix)]
     #[test]
     fn runs_steps_with_the_variables_it_was_given() {
         let process = Process::in_workspace().with_env("XTASK_PROBE", "set");
+        let (program, args): (&'static str, &'static [&'static str]) = if cfg!(windows) {
+            (
+                "cmd",
+                &["/C", "if %XTASK_PROBE%==set (exit 0) else (exit 1)"],
+            )
+        } else {
+            ("sh", &["-c", "test \"$XTASK_PROBE\" = set"])
+        };
         let step = Step {
             name: "probe",
             group: crate::check::Group::Rust,
-            program: "sh",
-            args: &["-c", "test \"$XTASK_PROBE\" = set"],
+            program,
+            args,
         };
 
         let passed = process.run(&step).unwrap();
