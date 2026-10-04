@@ -6,7 +6,17 @@ const SECONDS_PER_MINUTE: i64 = 60;
 const MINUTES_PER_HOUR: i64 = 60;
 const DAYS_FROM_YEAR_ZERO_MARCH_TO_EPOCH: i64 = 719_468;
 const DAYS_PER_ERA: i64 = 146_097;
+const DAYS_PER_CENTURY: i64 = 36_524;
+const DAYS_PER_LEAP_CYCLE: i64 = 1_461;
+const DAYS_PER_COMMON_YEAR: i64 = 365;
 const YEARS_PER_ERA: i64 = 400;
+const YEARS_PER_CENTURY: i64 = 100;
+const YEARS_PER_LEAP_CYCLE: i64 = 4;
+const MONTHS_PER_YEAR: i64 = 12;
+const MONTHS_BEFORE_MARCH: i64 = 2;
+const MONTHS_PER_MONTH_RUN: i64 = 5;
+const DAYS_PER_MONTH_RUN: i64 = 153;
+const MONTH_RUN_ROUNDING: i64 = 2;
 
 /// Writes a moment as an RFC 3339 UTC timestamp to the millisecond, holding one outside years 0000 to 9999 at the nearer end.
 pub(crate) fn rfc3339_utc(unix_ms: i64) -> String {
@@ -24,22 +34,25 @@ pub(crate) fn rfc3339_utc(unix_ms: i64) -> String {
     )
 }
 
-/// The proleptic Gregorian year, month and day of a day counted from 1970-01-01, by eras of 400 years that start in March.
+/// The proleptic Gregorian year, month and day of a day counted from 1970-01-01, by Howard Hinnant's `civil_from_days` over eras of 400 years that start in March.
 fn civil_date(days_since_epoch: i64) -> (i64, i64, i64) {
     let days = days_since_epoch + DAYS_FROM_YEAR_ZERO_MARCH_TO_EPOCH;
     let era = days.div_euclid(DAYS_PER_ERA);
     let day_of_era = days.rem_euclid(DAYS_PER_ERA);
-    let year_of_era =
-        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
-    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
-    let month_from_march = (5 * day_of_year + 2) / 153;
-    let day = day_of_year - (153 * month_from_march + 2) / 5 + 1;
-    let month = if month_from_march < 10 {
-        month_from_march + 3
-    } else {
-        month_from_march - 9
-    };
-    let year = year_of_era + era * YEARS_PER_ERA + i64::from(month <= 2);
+    let year_of_era = (day_of_era - day_of_era / (DAYS_PER_LEAP_CYCLE - 1)
+        + day_of_era / DAYS_PER_CENTURY
+        - day_of_era / (DAYS_PER_ERA - 1))
+        / DAYS_PER_COMMON_YEAR;
+    let day_of_year = day_of_era
+        - (DAYS_PER_COMMON_YEAR * year_of_era + year_of_era / YEARS_PER_LEAP_CYCLE
+            - year_of_era / YEARS_PER_CENTURY);
+    let month_from_march =
+        (MONTHS_PER_MONTH_RUN * day_of_year + MONTH_RUN_ROUNDING) / DAYS_PER_MONTH_RUN;
+    let day = day_of_year
+        - (DAYS_PER_MONTH_RUN * month_from_march + MONTH_RUN_ROUNDING) / MONTHS_PER_MONTH_RUN
+        + 1;
+    let month = (month_from_march + MONTHS_BEFORE_MARCH) % MONTHS_PER_YEAR + 1;
+    let year = year_of_era + era * YEARS_PER_ERA + i64::from(month <= MONTHS_BEFORE_MARCH);
     (year, month, day)
 }
 
@@ -64,6 +77,37 @@ mod tests {
     }
 
     #[test]
+    fn writes_the_last_moment_of_each_month_of_a_year() {
+        let first_of_2025_ms = 1_735_689_600_000;
+        let month_lengths = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        let ends_ms = month_lengths.iter().scan(first_of_2025_ms, |start, days| {
+            *start += days * MS_PER_DAY;
+            Some(*start - 1)
+        });
+
+        let written: Vec<String> = ends_ms.map(rfc3339_utc).collect();
+
+        assert_eq!(
+            written,
+            [
+                "2025-01-31",
+                "2025-02-28",
+                "2025-03-31",
+                "2025-04-30",
+                "2025-05-31",
+                "2025-06-30",
+                "2025-07-31",
+                "2025-08-31",
+                "2025-09-30",
+                "2025-10-31",
+                "2025-11-30",
+                "2025-12-31",
+            ]
+            .map(|day| format!("{day}T23:59:59.999Z"))
+        );
+    }
+
+    #[test]
     fn writes_a_moment_before_the_epoch() {
         let written = rfc3339_utc(-1);
 
@@ -83,8 +127,8 @@ mod tests {
     proptest! {
         #[test]
         fn orders_timestamps_as_text_the_way_their_moments_are_ordered(
-            earlier in -62_167_219_200_000_i64..253_402_300_799_999,
-            later in -62_167_219_200_000_i64..253_402_300_799_999,
+            earlier in FIRST_WRITABLE_MS..=LAST_WRITABLE_MS,
+            later in FIRST_WRITABLE_MS..=LAST_WRITABLE_MS,
         ) {
             let (earlier, later) = (earlier.min(later), earlier.max(later));
 
