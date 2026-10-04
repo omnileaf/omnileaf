@@ -1,5 +1,5 @@
 use image_webp::{ColorType as WebpColour, WebPEncoder};
-use jpeg_encoder::{ColorType as JpegColour, Encoder as JpegEncoder};
+use jpeg_encoder::{ColorType as JpegColour, Encoder as JpegEncoder, SamplingFactor};
 use png::{BitDepth, ColorType, Encoder};
 
 use crate::FixtureError;
@@ -13,6 +13,7 @@ const JPEG_QUALITY: u8 = 90;
 const SCAN_WIDTH: u16 = 1800;
 const SCAN_HEIGHT: u16 = 2700;
 const GRAINY_SCAN_GRAIN: u8 = 16;
+const TYPICAL_SCAN_GRAIN: u8 = 20;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PageShape {
@@ -50,8 +51,12 @@ pub fn page_png(seed: u64, index: u32, shape: PageShape) -> Result<Vec<u8>, Fixt
 
 /// The page [`page_png`] draws, as a JPEG.
 pub fn page_jpeg(seed: u64, index: u32, shape: PageShape) -> Result<Vec<u8>, FixtureError> {
-    let pixels = page_pixels(seed, index, shape);
-    encode_jpeg(&pixels, shape.width(), shape.height())
+    let page = RgbImage {
+        pixels: page_pixels(seed, index, shape),
+        width: shape.width(),
+        height: shape.height(),
+    };
+    page.to_jpeg(SamplingFactor::R_4_4_4)
 }
 
 /// The page [`page_png`] draws, as a lossless WebP.
@@ -69,6 +74,15 @@ pub fn page_webp(seed: u64, index: u32, shape: PageShape) -> Result<Vec<u8>, Fix
 
 /// A full-resolution colour comic scan with heavy grain and unsubsampled chroma, the slow end of what a cover is made from.
 pub fn grainy_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
+    scan_jpeg(seed, GRAINY_SCAN_GRAIN, SamplingFactor::R_4_4_4)
+}
+
+/// A full-resolution colour comic scan with 4:2:0 chroma subsampling, the common default, weighing about a megabyte.
+pub fn typical_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
+    scan_jpeg(seed, TYPICAL_SCAN_GRAIN, SamplingFactor::R_4_2_0)
+}
+
+fn scan_jpeg(seed: u64, grain: u8, chroma: SamplingFactor) -> Result<Vec<u8>, FixtureError> {
     let ground = tint(seed, 0);
     let width = u32::from(SCAN_WIDTH);
     let pixels: Vec<u8> = (0..u32::from(SCAN_HEIGHT))
@@ -78,26 +92,42 @@ pub fn grainy_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
                     splitmix64(seed ^ u64::from(row * width + column)).to_le_bytes();
                 let [ground_red, ground_green, ground_blue] = ground;
                 [
-                    ground_red.saturating_sub(red % GRAINY_SCAN_GRAIN),
-                    ground_green.saturating_sub(green % GRAINY_SCAN_GRAIN),
-                    ground_blue.saturating_sub(blue % GRAINY_SCAN_GRAIN),
+                    ground_red.saturating_sub(red % grain),
+                    ground_green.saturating_sub(green % grain),
+                    ground_blue.saturating_sub(blue % grain),
                 ]
             })
         })
         .collect();
-    encode_jpeg(&pixels, width, u32::from(SCAN_HEIGHT))
+    let scan = RgbImage {
+        pixels,
+        width,
+        height: u32::from(SCAN_HEIGHT),
+    };
+    scan.to_jpeg(chroma)
 }
 
-fn encode_jpeg(pixels: &[u8], width: u32, height: u32) -> Result<Vec<u8>, FixtureError> {
-    let too_large = |_| FixtureError::JpegSize { width, height };
-    let mut bytes = Vec::new();
-    JpegEncoder::new(&mut bytes, JPEG_QUALITY).encode(
-        pixels,
-        u16::try_from(width).map_err(too_large)?,
-        u16::try_from(height).map_err(too_large)?,
-        JpegColour::Rgb,
-    )?;
-    Ok(bytes)
+struct RgbImage {
+    pixels: Vec<u8>,
+    width: u32,
+    height: u32,
+}
+
+impl RgbImage {
+    fn to_jpeg(&self, chroma: SamplingFactor) -> Result<Vec<u8>, FixtureError> {
+        let (width, height) = (self.width, self.height);
+        let too_large = |_| FixtureError::JpegSize { width, height };
+        let mut bytes = Vec::new();
+        let mut encoder = JpegEncoder::new(&mut bytes, JPEG_QUALITY);
+        encoder.set_sampling_factor(chroma);
+        encoder.encode(
+            &self.pixels,
+            u16::try_from(width).map_err(too_large)?,
+            u16::try_from(height).map_err(too_large)?,
+            JpegColour::Rgb,
+        )?;
+        Ok(bytes)
+    }
 }
 
 fn page_pixels(seed: u64, index: u32, shape: PageShape) -> Vec<u8> {

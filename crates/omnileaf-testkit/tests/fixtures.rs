@@ -1,5 +1,6 @@
 #![expect(
     clippy::unwrap_used,
+    clippy::indexing_slicing,
     reason = "the fixtures are generated in memory or in a scratch folder, so a failure should stop the test"
 )]
 
@@ -13,7 +14,7 @@ use std::{
 
 use omnileaf_testkit::{
     ArchiveEntry, Compression, GENERATED_LIBRARY_NAME, GeneratedLibrary, PageShape, SAMPLE_LIBRARY,
-    SAMPLE_LIBRARY_NAME, cbz, grainy_scan_jpeg, page_jpeg, page_png, page_webp,
+    SAMPLE_LIBRARY_NAME, cbz, grainy_scan_jpeg, page_jpeg, page_png, page_webp, typical_scan_jpeg,
     write_generated_library, write_sample_library,
 };
 use zip::{CompressionMethod, DateTime, ZipArchive};
@@ -21,6 +22,11 @@ use zip::{CompressionMethod, DateTime, ZipArchive};
 const SEED: u64 = 7;
 const CENTRAL_DIRECTORY_SIGNATURE: &[u8] = b"PK\x01\x02";
 const UNIX_HOST_SYSTEM: u8 = 3;
+const SOF0: [u8; 2] = [0xFF, 0xC0];
+const SOF0_COMPONENT_COUNT_OFFSET: usize = 9;
+const SOF0_COMPONENT_LENGTH: usize = 3;
+const LUMA_TWICE_EACH_WAY: u8 = 0x22;
+const CHROMA_ONCE_EACH_WAY: u8 = 0x11;
 
 struct ScratchFolder(PathBuf);
 
@@ -65,6 +71,16 @@ fn jpeg_dimensions(jpeg: &[u8]) -> (u32, u32) {
     decoder.read_info().unwrap();
     let info = decoder.info().unwrap();
     (u32::from(info.width), u32::from(info.height))
+}
+
+fn jpeg_sampling_factors(jpeg: &[u8]) -> Vec<u8> {
+    let marker = jpeg.windows(2).position(|pair| pair == SOF0).unwrap();
+    let count_at = marker + SOF0_COMPONENT_COUNT_OFFSET;
+    jpeg[count_at + 1..]
+        .chunks(SOF0_COMPONENT_LENGTH)
+        .take(usize::from(jpeg[count_at]))
+        .map(|component| component[1])
+        .collect()
 }
 
 fn sample_entries() -> Vec<ArchiveEntry> {
@@ -151,6 +167,49 @@ fn weighs_a_grainy_scan_a_little_over_a_megabyte() {
     let megabytes = scan.len() / 1_000_000;
 
     assert_eq!(megabytes, 1, "the scan weighs {} bytes", scan.len());
+}
+
+#[test]
+fn draws_a_typical_scan_at_the_size_of_a_full_resolution_comic_page() {
+    let scan = typical_scan_jpeg(SEED).unwrap();
+
+    let size = jpeg_dimensions(&scan);
+
+    assert_eq!(size, (1800, 2700));
+}
+
+#[test]
+fn subsamples_a_typical_scans_chroma_to_4_2_0() {
+    let scan = typical_scan_jpeg(SEED).unwrap();
+
+    let factors = jpeg_sampling_factors(&scan);
+
+    assert_eq!(
+        factors,
+        [
+            LUMA_TWICE_EACH_WAY,
+            CHROMA_ONCE_EACH_WAY,
+            CHROMA_ONCE_EACH_WAY
+        ]
+    );
+}
+
+#[test]
+fn weighs_a_typical_scan_about_a_megabyte() {
+    let scan = typical_scan_jpeg(SEED).unwrap();
+
+    let megabytes = scan.len() / 1_000_000;
+
+    assert_eq!(megabytes, 1, "the scan weighs {} bytes", scan.len());
+}
+
+#[test]
+fn generates_the_same_typical_scan_every_time() {
+    let first = typical_scan_jpeg(SEED).unwrap();
+
+    let second = typical_scan_jpeg(SEED).unwrap();
+
+    assert_eq!(first, second);
 }
 
 #[test]
