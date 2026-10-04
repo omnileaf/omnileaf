@@ -87,7 +87,7 @@ test.describe("with a working clipboard and browser", () => {
 
     await copyButton(page).click();
 
-    await expect(page.getByRole("status")).toHaveText(
+    await expect(page.getByRole("main").getByRole("status")).toHaveText(
       "Version details copied.",
     );
     await expect(
@@ -137,7 +137,7 @@ test.describe("when the device turns the app down", () => {
 
     await copyButton(page).click();
 
-    await expect(page.getByRole("alert")).toHaveText(
+    await expect(page.getByRole("main").getByRole("alert")).toHaveText(
       "Couldn't copy the version details. Try again.",
     );
   });
@@ -147,7 +147,7 @@ test.describe("when the device turns the app down", () => {
 
     await linkRow(page, "Source code").click();
 
-    await expect(page.getByRole("alert")).toHaveText(
+    await expect(page.getByRole("main").getByRole("alert")).toHaveText(
       "Couldn't open your browser. Try again.",
     );
   });
