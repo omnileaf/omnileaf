@@ -81,6 +81,10 @@ impl ResourceRouter {
                 body: served.bytes.clone(),
             },
             Ok(None) => Resource::NotFound,
+            Err(error) if error.is_superseded() => {
+                tracing::debug!(%page, "drop a page the reader moved on from");
+                Resource::NotFound
+            }
             Err(error) => {
                 tracing::warn!(error = %describe_error(&error), "serve a page");
                 Resource::Failed

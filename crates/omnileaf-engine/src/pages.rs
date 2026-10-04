@@ -17,7 +17,7 @@ use crate::{
     device_class::{IS_MOBILE, MEBIBYTE},
     lane::{Job, LaneStopped},
     open_books::{BookFileAt, OpenBook, OpenBooks, PageAt},
-    page_lane::PageLane,
+    page_lane::{AskedPageError, PageLane},
 };
 
 /// Changes whenever pages are transcoded differently, so no transcode made the old way is served again.
@@ -84,8 +84,17 @@ pub(crate) enum PageError {
     Transcode(#[from] ImagingError),
     #[error("name the page's transcode in the cache")]
     CacheKey(#[from] CacheError),
-    #[error("read the page on the page lane")]
+    #[error("open the page's book on the page lane")]
     Lane(#[from] LaneStopped),
+    #[error("read the page on the page lane")]
+    Asked(#[from] AskedPageError),
+}
+
+impl PageError {
+    /// Whether the reader asked for newer pages before this one's turn came, so nobody waits for it any more.
+    pub(crate) fn is_superseded(&self) -> bool {
+        matches!(self, Self::Asked(AskedPageError::Superseded))
+    }
 }
 
 impl Pages {
@@ -189,7 +198,7 @@ impl Pages {
             let shared = Arc::clone(&self.shared);
             let reading = opened.clone();
             self.lane
-                .run(move || shared.serve(&reading, page))
+                .read_page(move || shared.serve(&reading, page))
                 .await??
         };
         self.read_ahead(&opened, page.index.saturating_add(1));

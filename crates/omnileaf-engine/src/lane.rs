@@ -57,9 +57,10 @@ impl<Q: JobQueue> Lane<Q> {
     }
 
     /// Changes what is queued, waking the workers to take it.
-    pub(crate) fn queue(&self, change: impl FnOnce(&mut Q)) {
-        change(&mut self.shared.state().queue);
+    pub(crate) fn queue<R>(&self, change: impl FnOnce(&mut Q) -> R) -> R {
+        let changed = change(&mut self.shared.state().queue);
         self.shared.job_added.notify_all();
+        changed
     }
 }
 
