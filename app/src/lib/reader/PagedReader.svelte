@@ -36,9 +36,15 @@
   >;
 
   const CORE: ReadingCore = {
-    restored: (id, page) => void commands.readingRestored(id, page),
-    shown: (id, page) => void commands.pageShown(id, page),
-    closed: (id) => void commands.closeBook(id),
+    restored: async (id, page) => {
+      await commands.readingRestored(id, page);
+    },
+    shown: async (id, page) => {
+      await commands.pageShown(id, page);
+    },
+    closed: async (id) => {
+      await commands.closeBook(id);
+    },
   };
 
   let { book }: { book: OpenedBook } = $props();
