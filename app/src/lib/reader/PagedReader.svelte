@@ -3,7 +3,7 @@
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import type { OpenedBook } from "#lib/ipc/bindings.ts";
+  import { commands, type OpenedBook } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { PageTurner } from "#lib/reader/page-turner.svelte.ts";
@@ -93,6 +93,10 @@
 
   onMount(() => {
     heading?.focus();
+    void commands.orientScreen("followDevice");
+    return () => {
+      void commands.orientScreen("portraitOnPhones");
+    };
   });
 </script>
 

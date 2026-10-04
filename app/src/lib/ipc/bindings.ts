@@ -27,6 +27,7 @@ export const commands = {
 	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
+	orientScreen: (orientation: ScreenOrientation) => typedError<null, IpcError>(__TAURI_INVOKE("orient_screen", { orientation })),
 	libraryListing: () => typedError<LibraryListing, IpcError>(__TAURI_INVOKE("library_listing")),
 	setLibraryListing: (listing: LibraryListing) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_listing", { listing })),
 	libraryView: () => typedError<LibraryView, IpcError>(__TAURI_INVOKE("library_view")),
@@ -254,6 +255,12 @@ export type RescanOutcome = {
 } & FileChanges | { kind: "unreachable" } | { kind: "foundEmpty" };
 
 export type ScanProgress = { stage: "finding" } | { stage: "reading"; scanned: number; total: number };
+
+export type ScreenOrientation = 
+/**  Turns with the device, as the reader wants on every screen. */
+"followDevice" | 
+/**  Upright on phones and turning with the device on tablets, as the rest of the app is laid out. */
+"portraitOnPhones";
 
 export type SeriesBook = {
 	id: string & { readonly __brand: "BookId" },

@@ -22,6 +22,7 @@ use crate::{
     ipc_error::IpcError,
     library_events::LibraryChanged,
     library_problem::{LibraryAtLaunch, LibraryProblem},
+    screen_orientation::{self, ScreenOrientation},
     system_bars::{self, Theme, ThemePreference},
     version_details,
 };
@@ -44,6 +45,7 @@ macro_rules! app_commands {
             series_books,
             mark_books,
             open_book,
+            orient_screen,
             library_listing,
             set_library_listing,
             library_view,
@@ -291,6 +293,12 @@ async fn open_book(
     undecodable: Vec<ProbedFormat>,
 ) -> Result<OpenedBook, IpcError> {
     Ok(router.open_book(&library, id, undecodable).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn orient_screen(app: AppHandle, orientation: ScreenOrientation) -> Result<(), IpcError> {
+    screen_orientation::orient(&app, orientation).await
 }
 
 #[tauri::command]

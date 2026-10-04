@@ -18,6 +18,7 @@ mod omni_protocol;
 mod power_mode;
 mod runtime_config;
 mod scheduled_rescans;
+mod screen_orientation;
 mod system_bars;
 #[cfg(target_os = "android")]
 mod tree_storage;
@@ -75,7 +76,8 @@ pub fn run() {
     let app = app
         .plugin(omnileaf_folder_access::init())
         .plugin(system_bars::plugin())
-        .plugin(power_mode::plugin());
+        .plugin(power_mode::plugin())
+        .plugin(screen_orientation::plugin());
     #[cfg(target_os = "ios")]
     let app = app
         .plugin(omnileaf_folder_access::init())

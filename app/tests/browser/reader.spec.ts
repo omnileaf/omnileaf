@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
+import type { ScreenOrientation } from "../../src/lib/ipc/bindings.ts";
 import { CommandFailure, fakeProtocolRoute } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -355,6 +356,37 @@ test("turns to a page read ahead without waiting for it", async ({ page }) => {
   await expect(
     page.getByRole("main").getByRole("status").filter({ hasText: "Loading" }),
   ).toHaveCount(0);
+});
+
+test.describe("the screen's orientation", () => {
+  const asked: ScreenOrientation[] = [];
+
+  test.use({
+    backend: {
+      ...readerBackend(DEFAULT_BACKEND),
+      orientScreen: (orientation) => {
+        asked.push(orientation);
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    asked.length = 0;
+  });
+
+  test("follows the device while a book is read and keeps phones upright once it's closed", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await expect.poll(() => asked).toEqual(["followDevice"]);
+
+    await page.keyboard.press("Escape");
+
+    await expect
+      .poll(() => asked)
+      .toEqual(["followDevice", "portraitOnPhones"]);
+  });
 });
 
 test.describe("on Android", () => {
