@@ -11,7 +11,7 @@ const NO_SNIFFING: &str = "nosniff";
 const KEEP_FOR_GOOD: &str = "public, max-age=31536000, immutable";
 const NOT_STORED: &str = "no-store";
 
-/// Answers off the protocol's thread, since making a thumbnail can take a while.
+/// Answers off the protocol's thread, since making a thumbnail can take a while, and always answers even if that work panics.
 #[expect(
     clippy::needless_pass_by_value,
     reason = "Tauri hands protocol requests over by value"
@@ -23,18 +23,54 @@ pub(crate) fn answer<R: Runtime>(
 ) {
     let app = context.app_handle().clone();
     let path = request.uri().path().to_owned();
+    let answer = Answer::new(move |response| responder.respond(response));
     tauri::async_runtime::spawn(async move {
-        let opened = app
-            .try_state::<Library>()
-            .zip(app.try_state::<ResourceRouter>());
-        let resource = if let Some((library, router)) = opened {
-            router.respond(&library, &path).await
-        } else {
-            tracing::warn!(%path, "answer an omni request before the library opened");
-            Resource::Failed
+        let resource = match (
+            app.try_state::<Library>(),
+            app.try_state::<ResourceRouter>(),
+        ) {
+            (Some(library), Some(router)) => router.respond(&library, &path).await,
+            (None, _) => {
+                tracing::warn!(%path, "answer an omni request before the library opened");
+                Resource::Failed
+            }
+            (Some(_), None) => {
+                tracing::warn!(%path, "answer an omni request while the covers aren't running");
+                Resource::Failed
+            }
         };
-        responder.respond(http_response(resource));
+        answer.with(resource);
     });
+}
+
+type Respond = Box<dyn FnOnce(http::Response<Vec<u8>>) + Send>;
+
+/// Answers its request exactly once, with a failure when the work behind it stops before it finishes.
+struct Answer {
+    respond: Option<Respond>,
+}
+
+impl Answer {
+    fn new(respond: impl FnOnce(http::Response<Vec<u8>>) + Send + 'static) -> Self {
+        Self {
+            respond: Some(Box::new(respond)),
+        }
+    }
+
+    fn with(mut self, resource: Resource) {
+        if let Some(respond) = self.respond.take() {
+            respond(http_response(resource));
+        }
+    }
+}
+
+impl Drop for Answer {
+    fn drop(&mut self) {
+        if let Some(respond) = self.respond.take() {
+            tracing::error!("answer an omni request whose work stopped before it finished");
+            respond(http_response(Resource::Failed));
+        }
+    }
 }
 
 fn http_response(resource: Resource) -> http::Response<Vec<u8>> {
@@ -69,7 +105,40 @@ fn http_response(resource: Resource) -> http::Response<Vec<u8>> {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{Arc, Mutex};
+
     use super::*;
+
+    type SentStatus = Arc<Mutex<Option<StatusCode>>>;
+
+    /// Sends a response by putting its status in `slot`.
+    fn recorder(slot: &SentStatus) -> impl FnOnce(http::Response<Vec<u8>>) + use<> {
+        let slot = Arc::clone(slot);
+        move |response| *slot.lock().unwrap() = Some(response.status())
+    }
+
+    #[test]
+    fn answers_with_the_resource_its_work_made() {
+        let slot = SentStatus::default();
+        let answer = Answer::new(recorder(&slot));
+
+        answer.with(Resource::NotFound);
+
+        assert_eq!(*slot.lock().unwrap(), Some(StatusCode::NOT_FOUND));
+    }
+
+    #[test]
+    fn answers_a_request_whose_work_stopped_as_a_failure() {
+        let slot = SentStatus::default();
+        let answer = Answer::new(recorder(&slot));
+
+        drop(answer);
+
+        assert_eq!(
+            *slot.lock().unwrap(),
+            Some(StatusCode::INTERNAL_SERVER_ERROR)
+        );
+    }
 
     fn header_of<'response>(
         response: &'response http::Response<Vec<u8>>,
