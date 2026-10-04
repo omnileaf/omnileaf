@@ -214,6 +214,29 @@ test("starts a list in a new listing from its first page alone", async () => {
   });
 });
 
+test("keeps a next page of the old listing out of the list once a new listing has started", async () => {
+  const answers = heldAnswers();
+  const series = new LibrarySeriesList(listSeries);
+  const loaded = series.load();
+  await expect.poll(() => answers.length).toBe(1);
+  answers[0]?.({ series: [FIRST], next: "1" });
+  await loaded;
+  const more = series.loadMore();
+  const started = series.start();
+  await expect.poll(() => answers.length).toBe(3);
+
+  answers[1]?.({ series: [SECOND], next: null });
+  await more;
+
+  expect(series.list).toEqual({
+    kind: "loaded",
+    series: [FIRST],
+    isComplete: false,
+  });
+  answers[2]?.({ series: [SECOND], next: null });
+  await started;
+});
+
 test("drops a next page that arrives after the list was read again", async () => {
   const answers = heldAnswers();
   const series = new LibrarySeriesList(listSeries);

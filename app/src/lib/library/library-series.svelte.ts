@@ -31,7 +31,7 @@ export class LibrarySeriesList {
   list: SeriesList = $state({ kind: "loading" });
 
   #latestLoad = 0;
-  #shownLists = 0;
+  #listsBegun = 0;
   #next: SeriesCursor | null = null;
   #isLoadingMore = false;
 
@@ -44,6 +44,7 @@ export class LibrarySeriesList {
 
   /** Reads the first page of a list in a new listing, and only the most recently started load shows its list. */
   async start(): Promise<void> {
+    this.#listsBegun += 1;
     await this.#loadAtLeast(0);
   }
 
@@ -52,7 +53,7 @@ export class LibrarySeriesList {
     if (this.list.kind !== "loaded" || after === null || this.#isLoadingMore) {
       return;
     }
-    const shownList = this.#shownLists;
+    const shownList = this.#listsBegun;
     const shown = this.list.series;
     this.#isLoadingMore = true;
     let page: SeriesPageResult;
@@ -61,7 +62,7 @@ export class LibrarySeriesList {
     } finally {
       this.#isLoadingMore = false;
     }
-    if (shownList !== this.#shownLists) {
+    if (shownList !== this.#listsBegun) {
       return;
     }
     this.#show(
@@ -101,7 +102,7 @@ export class LibrarySeriesList {
   }
 
   #show(read: Exclude<Read, { kind: "superseded" }>): void {
-    this.#shownLists += 1;
+    this.#listsBegun += 1;
     if (read.kind === "failed") {
       this.list = { kind: "failed" };
       return;
