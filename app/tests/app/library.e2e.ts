@@ -1,10 +1,10 @@
 import { expect, test } from "vitest";
 
-import { useAppSession } from "./app-session.ts";
+import { mainNavigationLink, useAppSession } from "./app-session.ts";
 import { xpath } from "./webdriver.ts";
 
 const PAGE_HEADING = xpath("//h1");
-const SETTINGS_LINK = xpath("//nav//a[normalize-space()='Settings']");
+const SETTINGS_LINK = mainNavigationLink("Settings");
 const ABOUT_LINK = xpath("//main//a[starts-with(normalize-space(), 'About')]");
 const VERSION_CAPTION = xpath(
   "//p[starts-with(normalize-space(), 'Version ')]",
