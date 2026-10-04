@@ -14,8 +14,7 @@ pub enum ImageFormat {
 
 impl ImageFormat {
     /// Recognises an image by its first bytes, never its name.
-    #[must_use]
-    pub fn sniff(bytes: &[u8]) -> Option<Self> {
+    pub(crate) fn sniff(bytes: &[u8]) -> Option<Self> {
         if bytes.starts_with(JPEG_MAGIC) {
             Some(Self::Jpeg)
         } else if bytes.starts_with(PNG_MAGIC) {
