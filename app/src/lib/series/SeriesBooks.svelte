@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Check, Eye, EyeOff, ListChecks } from "@lucide/svelte";
+  import { tick } from "svelte";
 
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -49,6 +50,9 @@
   const ids = $derived(books.map((book) => book.id));
 
   let outcome: Outcome = $state({ kind: "none" });
+  let section: HTMLElement | undefined = $state();
+  let selectButton: HTMLButtonElement | undefined = $state();
+  let selectAllButton: HTMLButtonElement | undefined = $state();
   let pressing: ReturnType<typeof setTimeout> | undefined;
   let isClickAfterPressSwallowed = false;
 
@@ -93,9 +97,29 @@
 
   $effect(() => pressEnded);
 
-  function begin(): void {
+  async function begin(): Promise<void> {
     outcome = { kind: "none" };
     selection.begin();
+    await tick();
+    selectAllButton?.focus();
+  }
+
+  function isFocusHereOrLost(): boolean {
+    const focused = document.activeElement;
+    return (
+      focused === null ||
+      focused === document.body ||
+      (section?.contains(focused) ?? false)
+    );
+  }
+
+  async function end(): Promise<void> {
+    const isFocusToKeep = isFocusHereOrLost();
+    selection.end();
+    if (isFocusToKeep) {
+      await tick();
+      selectButton?.focus();
+    }
   }
 
   async function pickAll(): Promise<void> {
@@ -108,7 +132,7 @@
     const isMarked = await onMark(picked, read);
     if (isMarked) {
       outcome = { kind: "marked", mark: read, count: picked.length };
-      selection.end();
+      await end();
     } else {
       outcome = { kind: "failed" };
     }
@@ -120,7 +144,7 @@
       !event.defaultPrevented &&
       selection.isSelecting
     ) {
-      selection.end();
+      void end();
     }
   }
 
@@ -191,7 +215,11 @@
   onkeydown={endOnEscape}
 />
 
-<section aria-labelledby={headingId} class="flex flex-col gap-sm">
+<section
+  bind:this={section}
+  aria-labelledby={headingId}
+  class="flex flex-col gap-sm"
+>
   <div class="flex flex-wrap items-center gap-sm min-block-series-back">
     <h2 id={headingId} class="flex-1 text-series-heading font-bold">
       {selection.isSelecting
@@ -203,6 +231,7 @@
         {m.series_select_range_hint()}
       </span>
       <button
+        bind:this={selectAllButton}
         type="button"
         class="rounded-control border border-border bg-card px-md text-detail font-semibold block-series-back expanded:block-series-crumb"
         onclick={() => {
@@ -215,16 +244,19 @@
         type="button"
         class="rounded-control bg-accent px-md text-detail font-bold text-on-accent block-series-back expanded:block-series-crumb"
         onclick={() => {
-          selection.end();
+          void end();
         }}
       >
         {m.series_select_done()}
       </button>
     {:else}
       <button
+        bind:this={selectButton}
         type="button"
         class="flex items-center gap-icon-gap rounded-control border border-border bg-card px-md text-detail font-semibold block-series-back expanded:block-series-crumb"
-        onclick={begin}
+        onclick={() => {
+          void begin();
+        }}
       >
         <ListChecks size={ICON_SIZE} aria-hidden="true" />
         {m.series_select()}
