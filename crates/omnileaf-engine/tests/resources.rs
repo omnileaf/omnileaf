@@ -315,7 +315,7 @@ async fn makes_a_cover_again_when_its_cached_thumbnail_came_back_cut_short() {
 }
 
 #[tokio::test]
-async fn keeps_failing_a_cover_whose_page_could_not_be_made_into_a_thumbnail_until_its_file_changes() {
+async fn keeps_failing_a_cover_it_could_not_thumbnail_until_its_file_changes() {
     let covers = Covers::with_book("undecodable-page", None).await;
     let damaged_page = [0xFF, 0xD8, 0xFF, 0xC0, 0x00];
     write_book_of(&covers.book_path(), &[damaged_page.to_vec()]);
