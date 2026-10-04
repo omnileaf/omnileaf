@@ -3,7 +3,7 @@ use tokio::time::{Duration, Instant};
 use crate::BookId;
 
 /// How long after the first page left unsaved reading is saved, however many pages are turned meanwhile.
-pub(crate) const SAVE_DELAY: Duration = Duration::from_millis(1_500);
+pub const READING_SAVE_DELAY: Duration = Duration::from_millis(1_500);
 
 /// A page reading reached, for the store to save.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -74,7 +74,7 @@ impl ReadingSession {
         };
         let unsaved = (page != saved).then(|| Unsaved {
             page,
-            save_at: unsaved.map_or(now + SAVE_DELAY, |unsaved| unsaved.save_at),
+            save_at: unsaved.map_or(now + READING_SAVE_DELAY, |unsaved| unsaved.save_at),
         });
         self.stage = Stage::Reading { saved, unsaved };
     }
@@ -125,7 +125,7 @@ impl ReadingSession {
             self.stage = Stage::Reading {
                 saved,
                 unsaved: Some(Unsaved {
-                    save_at: now + SAVE_DELAY,
+                    save_at: now + READING_SAVE_DELAY,
                     ..unsaved
                 }),
             };
@@ -213,12 +213,12 @@ mod tests {
         let mut session = restored_on(0);
         let first = Instant::now();
         session.shown(2, first);
-        let failed = first + SAVE_DELAY;
+        let failed = first + READING_SAVE_DELAY;
 
         session.save_failed(failed);
 
         assert_eq!(session.unsaved(), Some(reached(2)));
-        assert_eq!(session.save_at(), Some(failed + SAVE_DELAY));
+        assert_eq!(session.save_at(), Some(failed + READING_SAVE_DELAY));
     }
 
     #[test]
@@ -226,11 +226,24 @@ mod tests {
         let mut session = restored_on(5);
         let now = Instant::now();
         session.shown(6, now);
-        session.save_failed(now + SAVE_DELAY);
+        session.save_failed(now + READING_SAVE_DELAY);
 
-        session.shown(5, now + SAVE_DELAY);
+        session.shown(5, now + READING_SAVE_DELAY);
 
         assert_eq!(session.unsaved(), None);
+    }
+
+    #[test]
+    fn saves_a_second_and_a_half_after_the_first_page_left_unsaved() {
+        let mut session = restored_on(0);
+        let shown = Instant::now();
+
+        session.shown(1, shown);
+
+        assert_eq!(
+            session.save_at(),
+            Some(shown + Duration::from_millis(1_500))
+        );
     }
 
     #[test]
@@ -239,9 +252,9 @@ mod tests {
         let first = Instant::now();
         session.shown(1, first);
 
-        session.shown(2, first + SAVE_DELAY / 2);
+        session.shown(2, first + READING_SAVE_DELAY / 2);
 
-        assert_eq!(session.save_at(), Some(first + SAVE_DELAY));
+        assert_eq!(session.save_at(), Some(first + READING_SAVE_DELAY));
     }
 
     #[test]

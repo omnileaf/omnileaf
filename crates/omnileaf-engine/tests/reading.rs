@@ -13,8 +13,8 @@ mod support;
 use std::{fs, path::Path, time::Duration};
 
 use omnileaf_engine::{
-    BookId, BookReading, Library, LibraryListing, OpenedBook, ProbedFormat, ResourceRouter,
-    SeriesBookListing, SeriesId,
+    BookId, BookReading, Library, LibraryListing, OpenedBook, ProbedFormat, READING_SAVE_DELAY,
+    ResourceRouter, SeriesBookListing, SeriesId,
 };
 use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg};
 use support::{FixedClock, ScratchFolder};
@@ -27,10 +27,9 @@ const FOLDER: &str = "Sample Library";
 const SERIES: &str = "Sample Series 01";
 const FIRST_BOOK: &str = "Sample Series 01 v01";
 const SECOND_BOOK: &str = "Sample Series 01 v02";
-/// Longer than the core waits before saving a page shown, so a save not made by then never comes.
-const SAVE_WAIT: Duration = Duration::from_secs(10);
-/// A moment short of the 1.5 s the core waits before saving a page shown.
-const JUST_BEFORE_THE_SAVE: Duration = Duration::from_millis(1_400);
+const SAVE_WAIT: Duration = READING_SAVE_DELAY.saturating_mul(4);
+const JUST_BEFORE_THE_SAVE: Duration =
+    READING_SAVE_DELAY.saturating_sub(Duration::from_millis(100));
 
 struct Shelf {
     library: Library,
