@@ -24,7 +24,7 @@ The agreement is still being finalised. Until it's in effect, pull requests from
 
 ## Running the app
 
-Run `cargo xtask doctor` first, since it lists anything missing, including WebKitGTK 4.1 on Linux and the Xcode command line tools on macOS. Then install the interface dependencies with `pnpm install` and start the app with `pnpm --dir app tauri dev`. The window reloads as you edit the interface. `cargo tauri dev` works too, from the repository root or `app/`, if the `tauri-cli` you installed is the version pinned in `app/package.json`. `pnpm dev` on its own serves the interface without the Rust side, so its commands fail there. The browser tests answer them with a fake backend instead.
+Run `cargo xtask doctor` first, since it lists anything missing, including WebKitGTK 4.1 on Linux and the Xcode command line tools on macOS. It also checks the Android and iOS tools, and reports them missing without failing, since only work on phones needs them. Then install the interface dependencies with `pnpm install` and start the app with `pnpm --dir app tauri dev`. The window reloads as you edit the interface. `cargo tauri dev` works too, from the repository root or `app/`, if the `tauri-cli` you installed is the version pinned in `app/package.json`. `pnpm dev` on its own serves the interface without the Rust side, so its commands fail there. The browser tests answer them with a fake backend instead.
 
 `cargo xtask dev` runs the app on the desktop and phones at once, all sharing one dev server: on macOS the desktop app, the iOS Simulator and a connected Android device, and elsewhere the desktop app and Android. Pick platforms with `--platform desktop ios` (or `--platform desktop,ios`), and a simulator or device with `--ios-device` or `--android-device`, by name. An Android emulator reaches the dev server through `adb reverse`, which Tauri sets up. A physical Android phone or iPhone reaches it over your network, so when a phone platform is picked the dev server listens on every network interface and live reload connects to the address Tauri gives the phone. The phone must be on the same network as your computer, and macOS may ask once whether `node` can accept incoming connections.
 
@@ -32,8 +32,8 @@ Run `cargo xtask doctor` first, since it lists anything missing, including WebKi
 
 Android builds need:
 - JDK 21;
-- the Android SDK, with `ANDROID_HOME` set;
-- NDK 27.1.12297006, with `NDK_HOME` pointing at it.
+- the Android SDK, in Android Studio's default location or with `ANDROID_HOME` pointing at it;
+- the Android NDK, version 27.1.12297006 as CI uses. Tauri takes the newest one in the SDK, or the one `NDK_HOME` points at.
 
 Add the Rust Android targets once with `rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android`. `pnpm --dir app tauri android dev` runs the app on a connected device or a running emulator. The Android project in `app/src-tauri/gen/android` is committed, and the app supports Android 8.0 (API 26) and later.
 
