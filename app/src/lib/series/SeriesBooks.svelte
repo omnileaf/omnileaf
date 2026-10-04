@@ -79,6 +79,10 @@
     pressing = undefined;
   }
 
+  function forgetPressBeforeNextTouch(): void {
+    isClickAfterPressSwallowed = false;
+  }
+
   function swallowClickAfterPress(event: MouseEvent): void {
     if (isClickAfterPressSwallowed) {
       isClickAfterPressSwallowed = false;
@@ -86,6 +90,8 @@
       event.stopPropagation();
     }
   }
+
+  $effect(() => pressEnded);
 
   function begin(): void {
     outcome = { kind: "none" };
@@ -180,6 +186,7 @@
 {/snippet}
 
 <svelte:window
+  onpointerdowncapture={forgetPressBeforeNextTouch}
   onclickcapture={swallowClickAfterPress}
   onkeydown={endOnEscape}
 />
