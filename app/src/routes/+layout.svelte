@@ -9,6 +9,7 @@
   } from "$lib/appearance/theme.svelte";
   import { commands } from "$lib/ipc/bindings";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
+  import { makeBackGoUp } from "$lib/navigation/back-goes-up";
   import { sectionOf } from "$lib/navigation/sections";
   import { m } from "$lib/paraglide/messages.js";
 
@@ -17,6 +18,7 @@
   let { children }: { children: Snippet } = $props();
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
+  const backGoesUp = makeBackGoUp();
 
   $effect(() => {
     void commands.matchSystemBars(themeSetting.resolved);
@@ -25,7 +27,7 @@
   let main: HTMLElement | undefined = $state();
 
   afterNavigate(({ type }) => {
-    if (type !== "enter") {
+    if (type !== "enter" && !backGoesUp.isPassingThrough) {
       main?.querySelector<HTMLHeadingElement>("h1")?.focus();
     }
   });

@@ -11,6 +11,7 @@ const APP_TEST_TIMEOUT_MS = 30_000;
 const MOBILE_SESSION_TIMEOUT_MS = 330_000;
 const APP_SPECS = "tests/app/**/*.e2e.ts";
 const DESKTOP_ONLY_APP_SPECS = "tests/app/**/*.desktop.e2e.ts";
+const ANDROID_ONLY_APP_SPECS = "tests/app/**/*.android.e2e.ts";
 const HARNESS_TESTS = "tests/app/**/*.test.ts";
 
 const phoneDevHost = process.env.TAURI_DEV_HOST;
@@ -64,6 +65,7 @@ export default defineConfig({
         test: {
           name: "app",
           include: [APP_SPECS],
+          exclude: [...configDefaults.exclude, ANDROID_ONLY_APP_SPECS],
           environment: "node",
           fileParallelism: false,
           globalSetup: ["tests/app/desktop.ts"],
@@ -78,6 +80,7 @@ export default defineConfig({
           include: [APP_SPECS],
           exclude: [...configDefaults.exclude, DESKTOP_ONLY_APP_SPECS],
           environment: "node",
+          fileParallelism: false,
           globalSetup: ["tests/app/android.ts"],
           expect: { requireAssertions: true },
           testTimeout: APP_TEST_TIMEOUT_MS,
@@ -88,7 +91,11 @@ export default defineConfig({
         test: {
           name: "ios",
           include: [APP_SPECS],
-          exclude: [...configDefaults.exclude, DESKTOP_ONLY_APP_SPECS],
+          exclude: [
+            ...configDefaults.exclude,
+            DESKTOP_ONLY_APP_SPECS,
+            ANDROID_ONLY_APP_SPECS,
+          ],
           environment: "node",
           globalSetup: ["tests/app/ios.ts"],
           expect: { requireAssertions: true },
