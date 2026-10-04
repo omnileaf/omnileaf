@@ -9,6 +9,7 @@ use std::io::Cursor;
 use omnileaf_imaging::{ImagingError, Size, THUMBNAIL_WIDTH, is_whole_jpeg, thumbnail};
 use omnileaf_testkit::{
     PageShape, full_chroma_scan_jpeg, page_jpeg, page_png, page_webp, subsampled_scan_jpeg,
+    webp_header_only,
 };
 use png::{BitDepth, ColorType, Encoder, chunk};
 
@@ -20,10 +21,6 @@ const SOF0_DIMENSIONS_OFFSET: usize = 5;
 const SOF0: [u8; 2] = [0xFF, 0xC0];
 const SOF2: [u8; 2] = [0xFF, 0xC2];
 const ZLIB_HEADER: [u8; 2] = [0x78, 0x9C];
-const VP8L_SIGNATURE: u8 = 0x2F;
-const VP8L_LENGTH_BITS: u32 = 14;
-const VP8L_ALPHA_BIT: u32 = 1 << (2 * VP8L_LENGTH_BITS);
-const WEBP_HEADER_LENGTH: u32 = 12;
 
 fn decoded(jpeg: &[u8]) -> (Size, Vec<u8>) {
     let mut decoder = jpeg_decoder::Decoder::new(jpeg);
@@ -81,21 +78,6 @@ fn png_header_only(size: Size) -> Vec<u8> {
     writer.write_chunk(chunk::IDAT, &ZLIB_HEADER).unwrap();
     drop(writer);
     bytes
-}
-
-fn webp_header_only(size: Size) -> Vec<u8> {
-    let packed = (size.width - 1) | ((size.height - 1) << VP8L_LENGTH_BITS) | VP8L_ALPHA_BIT;
-    let payload = [&[VP8L_SIGNATURE][..], &packed.to_le_bytes(), &[0; 3]].concat();
-    let chunk_length = u32::try_from(payload.len()).unwrap();
-    [
-        &b"RIFF"[..],
-        &(WEBP_HEADER_LENGTH + chunk_length).to_le_bytes(),
-        b"WEBP",
-        b"VP8L",
-        &chunk_length.to_le_bytes(),
-        &payload,
-    ]
-    .concat()
 }
 
 fn as_progressive(jpeg: &[u8]) -> Vec<u8> {
@@ -319,10 +301,7 @@ fn refuses_a_png_whose_pixels_outgrow_the_memory_budget_before_decoding_it() {
 
 #[test]
 fn refuses_a_webp_whose_pixels_outgrow_the_memory_budget_before_decoding_it() {
-    let huge = webp_header_only(Size {
-        width: 14_000,
-        height: 14_000,
-    });
+    let huge = webp_header_only(14_000, 14_000);
 
     let outcome = thumbnail(&huge);
 
