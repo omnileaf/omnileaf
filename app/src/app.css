@@ -103,7 +103,7 @@
   --spacing-pane: 2.5rem;
   --spacing-pane-gap: 1.5rem;
   --spacing-settings-list: 17rem;
-  --spacing-problem-top: 9.125rem;
+  --spacing-problem-top: calc(10.625rem - var(--spacing-title-gap));
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
