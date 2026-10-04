@@ -4,8 +4,17 @@ const QUOTED_PLACEHOLDER: &str = "\"…\"";
 const PATH_PLACEHOLDER: &str = "<path>";
 const TRUNCATION_MARK: char = '…';
 const QUOTES: &[(char, char)] = &[('"', '"'), ('`', '`'), ('“', '”'), ('‘', '’')];
-const TOKEN_OPENERS: &[char] = &['(', '[', '{', '<', '=', '@', ',', ':'];
+const APOSTROPHE: char = '\'';
+const AFTER_CLOSING_APOSTROPHE: &[char] = &['.', ',', ';', ':', '!', '?', ')', ']', '}'];
+const CODE_QUOTE: char = '`';
+const CODE_PUNCTUATION: &[char] = &['_', ':', '<', '>', '(', ')', '&'];
+const STANDARD_VARIANTS: &[&str] = &["None", "Some", "Ok", "Err"];
+const WORD_RUN_BREAKS: &[char] = &['(', '[', '{', '<', '=', '@', ',', ':', CODE_QUOTE];
 pub(super) const SEPARATORS: [char; 2] = ['/', '\\'];
+const CONTENT_EXTENSIONS: &[&str] = &[
+    ".cbz", ".cbr", ".cb7", ".cbt", ".zip", ".rar", ".7z", ".epub", ".pdf", ".jpg", ".jpeg",
+    ".png", ".webp", ".gif", ".avif",
+];
 const URL_SCHEME_END: &str = "://";
 const RAW_BYTES_PER_KEPT_BYTE: usize = 64;
 
@@ -17,25 +26,71 @@ pub(crate) fn clean(text: &str, limit: usize) -> String {
 
 /// Replaces quoted text and anything path-shaped, since that is where names and titles appear in error messages.
 ///
-/// A path runs to the end of its line, because names can contain spaces.
+/// A path runs to the end of its line, because names can contain spaces, and one that isn't rooted also takes the words before it.
 fn scrub(text: &str) -> String {
-    let mut cleaned = String::with_capacity(text.len());
+    let mut cleaned = Cleaned::with_capacity(text.len());
     let mut rest = text.chars().peekable();
     let mut at_token_start = true;
     while let Some(next) = rest.peek().copied() {
-        if skip_quoted(&mut rest) {
-            cleaned.push_str(QUOTED_PLACEHOLDER);
+        if let Some(length) = code_span_length(&rest) {
+            rest.by_ref()
+                .take(length)
+                .for_each(|code| cleaned.push(code));
             at_token_start = true;
-        } else if at_token_start && starts_rooted_path(&rest) {
+        } else if skip_quoted(&mut rest, at_token_start) {
+            cleaned.push_quoted();
+            at_token_start = true;
+        } else if let Some(start) = at_token_start.then(|| path_at(&rest)).flatten() {
             skip_line(&mut rest);
-            cleaned.push_str(PATH_PLACEHOLDER);
+            cleaned.push_path(start);
         } else {
             rest.next();
             cleaned.push(next);
-            at_token_start = next.is_whitespace() || TOKEN_OPENERS.contains(&next);
+            at_token_start = next.is_whitespace() || is_token_opener(next);
         }
     }
-    cleaned
+    cleaned.text
+}
+
+/// Text cleaned so far, remembering where its current run of words began, since a relative path can begin with any of them.
+struct Cleaned {
+    text: String,
+    words_start: Option<usize>,
+}
+
+impl Cleaned {
+    fn with_capacity(capacity: usize) -> Self {
+        Self {
+            text: String::with_capacity(capacity),
+            words_start: None,
+        }
+    }
+
+    fn push(&mut self, next: char) {
+        let start = self.text.len();
+        self.text.push(next);
+        if next == '\n' || WORD_RUN_BREAKS.contains(&next) {
+            self.words_start = None;
+        } else if !next.is_whitespace() {
+            self.words_start.get_or_insert(start);
+        }
+    }
+
+    fn push_quoted(&mut self) {
+        self.text.push_str(QUOTED_PLACEHOLDER);
+        self.words_start = None;
+    }
+
+    fn push_path(&mut self, start: PathStart) {
+        if let (PathStart::Words, Some(words_start)) = (start, self.words_start) {
+            self.text.truncate(words_start);
+        }
+        self.text.push_str(PATH_PLACEHOLDER);
+    }
+}
+
+fn is_token_opener(next: char) -> bool {
+    next == APOSTROPHE || WORD_RUN_BREAKS.contains(&next)
 }
 
 /// Keeps at most `limit` bytes of `text`, cutting before a placeholder rather than through one.
@@ -64,13 +119,43 @@ fn prefix_within(text: &str, budget: usize) -> &str {
     text.get(..cut).unwrap_or_default()
 }
 
+/// The length of a backtick span naming code, as standard panic messages have, rather than text that could be a title.
+fn code_span_length(rest: &Peekable<Chars<'_>>) -> Option<usize> {
+    let mut chars = rest.clone();
+    if chars.next() != Some(CODE_QUOTE) {
+        return None;
+    }
+    let code: String = chars.take_while(|next| *next != CODE_QUOTE).collect();
+    let closing = code.chars().count().saturating_add(1);
+    let is_closed = rest.clone().nth(closing) == Some(CODE_QUOTE);
+    (is_closed && names_code(&code)).then_some(closing.saturating_add(1))
+}
+
+fn names_code(span: &str) -> bool {
+    let is_code_shaped = span
+        .chars()
+        .all(|next| next.is_ascii_alphanumeric() || CODE_PUNCTUATION.contains(&next));
+    is_code_shaped
+        && (span.contains("::") || span.ends_with("()") || STANDARD_VARIANTS.contains(&span))
+}
+
 /// Skips a quoted span starting at `rest`, returning whether there was one.
-fn skip_quoted(rest: &mut Peekable<Chars<'_>>) -> bool {
-    let Some(close) = rest.peek().copied().and_then(closing_quote) else {
+fn skip_quoted(rest: &mut Peekable<Chars<'_>>, at_token_start: bool) -> bool {
+    let Some(open) = rest.peek().copied() else {
         return false;
     };
-    rest.next();
-    skip_through(rest, close);
+    if let Some(close) = closing_quote(open) {
+        rest.next();
+        skip_through(rest, close);
+        return true;
+    }
+    if open != APOSTROPHE || !at_token_start {
+        return false;
+    }
+    let Some(length) = single_quoted_length(rest) else {
+        return false;
+    };
+    rest.by_ref().take(length).for_each(drop);
     true
 }
 
@@ -90,16 +175,74 @@ fn skip_through(rest: &mut Peekable<Chars<'_>>, close: char) {
     }
 }
 
+/// The length of a single-quoted span on one line with no other quotes inside, closed by a quote that ends a word.
+fn single_quoted_length(rest: &Peekable<Chars<'_>>) -> Option<usize> {
+    let mut chars = rest.clone().skip(1).peekable();
+    let mut length = 1_usize;
+    while let Some(next) = chars.next() {
+        length = length.saturating_add(1);
+        match next {
+            '\n' => return None,
+            quote if closing_quote(quote).is_some() => return None,
+            APOSTROPHE if chars.peek().is_none_or(|after| closes_apostrophe(*after)) => {
+                return Some(length);
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+fn closes_apostrophe(after: char) -> bool {
+    after.is_whitespace()
+        || AFTER_CLOSING_APOSTROPHE.contains(&after)
+        || closing_quote(after).is_some()
+}
+
 fn skip_line(rest: &mut Peekable<Chars<'_>>) {
     while rest.next_if(|next| *next != '\n').is_some() {}
 }
 
-fn starts_rooted_path(rest: &Peekable<Chars<'_>>) -> bool {
+/// Where a path found at a token begins: at the token for a rooted path, or with the words before it for any other.
+#[derive(Clone, Copy)]
+enum PathStart {
+    Token,
+    Words,
+}
+
+fn path_at(rest: &Peekable<Chars<'_>>) -> Option<PathStart> {
     let token: String = rest
         .clone()
         .take_while(|next| !next.is_whitespace())
         .collect();
-    is_rooted_path(&token)
+    if is_rooted_path(&token) {
+        return Some(PathStart::Token);
+    }
+    let relative = token
+        .split(|next| is_token_opener(next) || closing_quote(next).is_some())
+        .next()
+        .unwrap_or_default();
+    (separates_a_name(relative) || names_content_file(relative)).then_some(PathStart::Words)
+}
+
+fn separates_a_name(token: &str) -> bool {
+    let is_name = |next: char| next.is_alphabetic() || next == '_';
+    let is_separator = |next: char| SEPARATORS.contains(&next);
+    token
+        .chars()
+        .zip(token.chars().skip(1))
+        .any(|(before, after)| {
+            (is_separator(before) && is_name(after)) || (is_name(before) && is_separator(after))
+        })
+}
+
+fn names_content_file(token: &str) -> bool {
+    let name = token
+        .trim_end_matches(|next: char| !next.is_alphanumeric())
+        .to_lowercase();
+    CONTENT_EXTENSIONS
+        .iter()
+        .any(|extension| name.len() > extension.len() && name.ends_with(extension))
 }
 
 fn is_rooted_path(token: &str) -> bool {
