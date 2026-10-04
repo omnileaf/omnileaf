@@ -24,7 +24,10 @@
   const language = setLanguageSetting(languageSettingForDocument());
 
   $effect(() => {
-    void commands.matchSystemBars(themeSetting.resolved);
+    void commands.matchSystemBars(
+      themeSetting.resolved,
+      themeSetting.preference,
+    );
   });
 
   let main: HTMLElement | undefined = $state();

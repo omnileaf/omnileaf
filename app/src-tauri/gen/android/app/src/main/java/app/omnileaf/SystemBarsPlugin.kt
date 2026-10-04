@@ -6,6 +6,7 @@ import android.os.Build
 import android.webkit.WebView
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.ColorInt
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
@@ -26,6 +27,15 @@ class PageBackground {
   var red: Int = 0
   var green: Int = 0
   var blue: Int = 0
+
+  @ColorInt
+  fun color(): Int = Color.rgb(red, green, blue)
+}
+
+@InvokeArg
+class WindowBackground {
+  var shown: PageBackground = PageBackground()
+  var remembered: PageBackground? = null
 }
 
 @TauriPlugin
@@ -51,10 +61,10 @@ class SystemBarsPlugin(activity: Activity) : Plugin(activity) {
 
   @Command
   fun showBackground(invoke: Invoke) {
-    val background = invoke.parseArgs(PageBackground::class.java)
-    val color = Color.rgb(background.red, background.green, background.blue)
+    val background = invoke.parseArgs(WindowBackground::class.java)
+    val color = background.shown.color()
     val shownActivity = PluginManager.activity ?: return invoke.reject("no activity is showing the app")
-    RememberedBackground(shownActivity).remember(color)
+    RememberedBackground(shownActivity).keep(background.remembered)
     shownActivity.runOnUiThread {
       shownActivity.showPageBackground(color)
       webView?.setBackgroundColor(color)

@@ -13,6 +13,14 @@ pub(crate) enum Theme {
     Dark,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
+#[serde(rename_all = "lowercase")]
+pub(crate) enum ThemePreference {
+    System,
+    Light,
+    Dark,
+}
+
 #[derive(Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(
@@ -35,7 +43,7 @@ impl BarIcons {
     }
 }
 
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[cfg_attr(
     not(any(target_os = "android", test)),
     expect(
@@ -76,6 +84,39 @@ impl PageBackground {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Serialize)]
+#[cfg_attr(
+    not(any(target_os = "android", test)),
+    expect(
+        dead_code,
+        reason = "only Android paints the window behind the interface"
+    )
+)]
+struct WindowBackground {
+    shown: PageBackground,
+    remembered: Option<PageBackground>,
+}
+
+#[cfg_attr(
+    not(any(target_os = "android", test)),
+    expect(
+        dead_code,
+        reason = "only Android paints the window behind the interface"
+    )
+)]
+impl WindowBackground {
+    /// Remembers only a light or dark choice, so a cold start under System keeps following the device's dark mode.
+    fn for_appearance(preference: ThemePreference, theme: Theme) -> Self {
+        let shown = PageBackground::for_theme(theme);
+        let remembered = match preference {
+            ThemePreference::System => None,
+            ThemePreference::Light => Some(PageBackground::LIGHT),
+            ThemePreference::Dark => Some(PageBackground::DARK),
+        };
+        Self { shown, remembered }
+    }
+}
+
 #[cfg(not(target_os = "android"))]
 #[expect(
     clippy::unused_async,
@@ -84,6 +125,7 @@ impl PageBackground {
 pub(crate) async fn match_theme(
     _app: &tauri::AppHandle,
     _theme: Theme,
+    _preference: ThemePreference,
 ) -> Result<(), crate::ipc_error::IpcError> {
     Ok(())
 }
@@ -95,7 +137,7 @@ mod android {
         plugin::{Builder, PluginHandle, TauriPlugin, mobile::PluginInvokeError},
     };
 
-    use super::{BarIcons, PageBackground, Theme};
+    use super::{BarIcons, Theme, ThemePreference, WindowBackground};
     use crate::ipc_error::IpcError;
 
     const PLUGIN_NAME: &str = "system-bars";
@@ -124,13 +166,21 @@ mod android {
             .build()
     }
 
-    pub(crate) async fn match_theme(app: &AppHandle, theme: Theme) -> Result<(), IpcError> {
-        restyle(app, theme)
+    pub(crate) async fn match_theme(
+        app: &AppHandle,
+        theme: Theme,
+        preference: ThemePreference,
+    ) -> Result<(), IpcError> {
+        restyle(app, theme, preference)
             .await
             .map_err(|error| IpcError::internal(&error))
     }
 
-    async fn restyle(app: &AppHandle, theme: Theme) -> Result<(), SystemBarsError> {
+    async fn restyle(
+        app: &AppHandle,
+        theme: Theme,
+        preference: ThemePreference,
+    ) -> Result<(), SystemBarsError> {
         let bars = app
             .try_state::<SystemBars>()
             .ok_or(SystemBarsError::NotRegistered)?;
@@ -138,7 +188,10 @@ mod android {
             .run_mobile_plugin_async::<()>(SHOW_ICONS, BarIcons::for_theme(theme))
             .await?;
         bars.0
-            .run_mobile_plugin_async::<()>(SHOW_BACKGROUND, PageBackground::for_theme(theme))
+            .run_mobile_plugin_async::<()>(
+                SHOW_BACKGROUND,
+                WindowBackground::for_appearance(preference, theme),
+            )
             .await?;
         Ok(())
     }
@@ -146,7 +199,7 @@ mod android {
 
 #[cfg(test)]
 mod tests {
-    use super::{BarIcons, PageBackground, Theme};
+    use super::{BarIcons, PageBackground, Theme, ThemePreference, WindowBackground};
 
     const APP_CSS: &str = include_str!("../../src/app.css");
     const DARK_THEME_RULE: &str = ":root[data-theme=\"dark\"] {";
@@ -204,5 +257,44 @@ mod tests {
         let background = PageBackground::for_theme(Theme::Dark);
 
         assert_eq!(css_hex(background), dark);
+    }
+
+    #[test]
+    fn a_chosen_light_theme_is_shown_and_remembered() {
+        let background = WindowBackground::for_appearance(ThemePreference::Light, Theme::Light);
+
+        assert_eq!(
+            background,
+            WindowBackground {
+                shown: PageBackground::LIGHT,
+                remembered: Some(PageBackground::LIGHT),
+            }
+        );
+    }
+
+    #[test]
+    fn a_chosen_dark_theme_is_shown_and_remembered() {
+        let background = WindowBackground::for_appearance(ThemePreference::Dark, Theme::Dark);
+
+        assert_eq!(
+            background,
+            WindowBackground {
+                shown: PageBackground::DARK,
+                remembered: Some(PageBackground::DARK),
+            }
+        );
+    }
+
+    #[test]
+    fn following_the_system_shows_the_devices_theme_without_remembering_it() {
+        let background = WindowBackground::for_appearance(ThemePreference::System, Theme::Dark);
+
+        assert_eq!(
+            background,
+            WindowBackground {
+                shown: PageBackground::DARK,
+                remembered: None,
+            }
+        );
     }
 }

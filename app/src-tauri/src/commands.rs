@@ -7,7 +7,7 @@ use tauri_specta::{Builder, collect_commands};
 use crate::{
     folder_picker::pick_folder,
     ipc_error::IpcError,
-    system_bars::{self, Theme},
+    system_bars::{self, Theme, ThemePreference},
 };
 
 pub(crate) fn builder() -> Builder<Wry> {
@@ -38,8 +38,12 @@ async fn add_library_folder(app: AppHandle) -> Result<Option<FolderSurvey>, IpcE
 
 #[tauri::command]
 #[specta::specta]
-async fn match_system_bars(app: AppHandle, theme: Theme) -> Result<(), IpcError> {
-    system_bars::match_theme(&app, theme).await
+async fn match_system_bars(
+    app: AppHandle,
+    theme: Theme,
+    preference: ThemePreference,
+) -> Result<(), IpcError> {
+    system_bars::match_theme(&app, theme, preference).await
 }
 
 fn pick_and_survey(app: &AppHandle) -> Result<Option<FolderSurvey>, IpcError> {

@@ -9,15 +9,17 @@ import androidx.core.content.edit
 private const val PREFERENCES = "page_background"
 private const val COLOR_KEY = "color"
 
-/** Keeps the interface's page background, so the window shows it before the interface loads and while it reloads. */
+/** Keeps only a chosen light or dark page background, so under System the window still follows the device before the interface loads. */
 class RememberedBackground(context: Context) {
   private val preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
 
   @ColorInt
   fun color(): Int? = if (preferences.contains(COLOR_KEY)) preferences.getInt(COLOR_KEY, 0) else null
 
-  fun remember(@ColorInt color: Int) {
-    preferences.edit { putInt(COLOR_KEY, color) }
+  fun keep(background: PageBackground?) {
+    preferences.edit {
+      if (background == null) remove(COLOR_KEY) else putInt(COLOR_KEY, background.color())
+    }
   }
 }
 
