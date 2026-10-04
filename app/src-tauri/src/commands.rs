@@ -2,7 +2,8 @@
 
 use omnileaf_engine::{
     AppInfo, AppLanguage, Core, CoversPerRow, FolderCursor, FolderId, FolderPage, FolderRescan,
-    FolderScan, Library, LibraryView, ProjectLink, ScanProgress, SeriesCursor, SeriesPage,
+    FolderScan, InterfaceError, Library, LibraryView, ProjectLink, ScanProgress, SeriesCursor,
+    SeriesPage,
 };
 use tauri::{AppHandle, Manager, State, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -10,6 +11,7 @@ use tauri_plugin_opener::OpenerExt;
 use tauri_specta::{Builder, collect_commands, collect_events};
 
 use crate::{
+    crash_reporting::{CrashReportOffer, CrashReporting},
     folder_picker::pick_folder,
     ipc_error::IpcError,
     library_events::LibraryChanged,
@@ -38,7 +40,12 @@ pub(crate) fn builder() -> Builder<Wry> {
             finish_first_launch,
             set_app_language,
             copy_version_details,
-            open_project_link
+            open_project_link,
+            offer_saved_crash_report,
+            offer_interface_error_report,
+            send_crash_report,
+            copy_crash_report,
+            decline_crash_report
         ])
         .events(collect_events![LibraryChanged])
         .constant("COVERS_PER_ROW", CoversPerRow::RANGES)
@@ -214,6 +221,62 @@ async fn open_project_link(app: AppHandle, link: ProjectLink) -> Result<(), IpcE
     app.opener()
         .open_url(link.url(), None::<&str>)
         .map_err(|error| IpcError::browser_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn offer_saved_crash_report(app: AppHandle) -> Result<Option<CrashReportOffer>, IpcError> {
+    off_the_runtime(move || app.state::<CrashReporting>().offer_saved()).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn offer_interface_error_report(
+    app: AppHandle,
+    error: InterfaceError,
+) -> Result<CrashReportOffer, IpcError> {
+    off_the_runtime(move || Ok(app.state::<CrashReporting>().offer_interface_error(&error))).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn send_crash_report(app: AppHandle) -> Result<(), IpcError> {
+    off_the_runtime(move || {
+        let reporting = app.state::<CrashReporting>();
+        let report = reporting.offered()?;
+        app.opener()
+            .open_url(report.new_issue_url(), None::<&str>)
+            .map_err(|error| IpcError::browser_unavailable(&error))?;
+        reporting.settle_sent();
+        Ok(())
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn copy_crash_report(app: AppHandle) -> Result<(), IpcError> {
+    off_the_runtime(move || {
+        let report = app.state::<CrashReporting>().offered()?;
+        app.clipboard()
+            .write_text(report.to_string())
+            .map_err(|error| IpcError::clipboard_unavailable(&error))
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn decline_crash_report(app: AppHandle) -> Result<(), IpcError> {
+    off_the_runtime(move || app.state::<CrashReporting>().settle()).await
+}
+
+async fn off_the_runtime<T: Send + 'static>(
+    work: impl FnOnce() -> Result<T, IpcError> + Send + 'static,
+) -> Result<T, IpcError> {
+    tauri::async_runtime::spawn_blocking(work)
+        .await
+        .map_err(|error| IpcError::internal(&error))?
 }
 
 #[cfg(test)]

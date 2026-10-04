@@ -1,4 +1,4 @@
-//! Keeps a report of a panic for the next run.
+//! Keeps a report of a panic for the next run and offers reports to the person, who decides whether to send them.
 
 use std::{
     backtrace::Backtrace,
@@ -9,21 +9,91 @@ use std::{
 };
 
 use omnileaf_engine::{
-    AppInfo, Core, CrashReport, CrashReportFile, CrashReportId, CrashedApp, PanicDetails, Platform,
-    SourceLocation, is_panic_contained,
+    AppInfo, Core, CrashOrigin, CrashReport, CrashReportFile, CrashReportId, CrashReportOffers,
+    CrashedApp, InterfaceError, PanicDetails, Platform, SourceLocation, is_panic_contained,
 };
+use serde::Serialize;
+use specta::Type;
 use tauri::{AppHandle, Manager};
+
+use crate::ipc_error::IpcError;
 
 const NO_MESSAGE: &str = "the panic carried no message";
 
-/// Starts keeping reports of panics; without a folder for them, a panic leaves no report.
+/// A crash report as the interface shows it, for the person to read before deciding.
+#[derive(Debug, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct CrashReportOffer {
+    details: String,
+    origin: CrashOrigin,
+}
+
+impl From<&CrashReport> for CrashReportOffer {
+    fn from(report: &CrashReport) -> Self {
+        Self {
+            details: report.to_string(),
+            origin: report.origin(),
+        }
+    }
+}
+
+pub(crate) struct CrashReporting {
+    offers: CrashReportOffers,
+    reporter: Arc<Reporter>,
+}
+
+impl CrashReporting {
+    pub(crate) fn offer_saved(&self) -> Result<Option<CrashReportOffer>, IpcError> {
+        let saved = self.offers.offer_saved()?;
+        Ok(saved.as_ref().map(CrashReportOffer::from))
+    }
+
+    pub(crate) fn offer_interface_error(&self, error: &InterfaceError) -> CrashReportOffer {
+        let report = CrashReport::from_interface_error(
+            Reporter::next_id(),
+            self.reporter.crashed_app(),
+            error,
+        );
+        tracing::error!(report = %report, "the interface met an error it didn't handle");
+        let offered = self.offers.offer(report).unwrap_or_else(|unsaved| {
+            tracing::warn!(error = ?unsaved.source, "keep the crash report for the next run");
+            *unsaved.report
+        });
+        CrashReportOffer::from(&offered)
+    }
+
+    pub(crate) fn offered(&self) -> Result<CrashReport, IpcError> {
+        self.offers.offered().ok_or_else(IpcError::no_crash_report)
+    }
+
+    pub(crate) fn settle(&self) -> Result<(), IpcError> {
+        Ok(self.offers.settle()?)
+    }
+
+    /// Ends the offer of a report that has gone out; a copy left on disk only comes back next time, so it is logged rather than reported.
+    pub(crate) fn settle_sent(&self) {
+        if let Err(error) = self.offers.settle() {
+            tracing::warn!(error = ?error, "remove the crash report that was sent");
+        }
+    }
+}
+
+/// Starts keeping reports of panics, and offers them through the app's state; without a folder for them, reports last only for this run.
 pub(crate) fn install(app: &AppHandle) {
     let reporter = Arc::new(Reporter::new(app.state::<Core>().app_info()));
     learn_system_off_the_main_thread(Arc::clone(&reporter));
-    match report_folder(app) {
-        Ok(folder) => set_panic_hook(CrashReportFile::in_folder(&folder), reporter),
-        Err(error) => tracing::error!(%error, "find a folder for crash reports"),
-    }
+    let offers = match report_folder(app) {
+        Ok(folder) => {
+            let file = CrashReportFile::in_folder(&folder);
+            set_panic_hook(file.clone(), Arc::clone(&reporter));
+            CrashReportOffers::new(file)
+        }
+        Err(error) => {
+            tracing::error!(%error, "find a folder for crash reports");
+            CrashReportOffers::in_memory()
+        }
+    };
+    app.manage(CrashReporting { offers, reporter });
 }
 
 /// Reads the system's name while the app starts, so a panic report can include it without looking it up inside the panic hook.
@@ -68,6 +138,10 @@ impl Reporter {
         self.system
             .get_or_init(crate::version_details::system)
             .as_ref()
+    }
+
+    fn crashed_app(&self) -> CrashedApp {
+        self.crashed_app_with(self.learn_system())
     }
 
     fn crashed_app_while_panicking(&self) -> CrashedApp {
@@ -121,9 +195,11 @@ mod tests {
         sync::{Arc, Mutex, PoisonError},
     };
 
-    use omnileaf_engine::{AppInfo, CrashReportFile, Platform, contain_panic};
+    use omnileaf_engine::{
+        AppInfo, CrashReportFile, CrashReportOffers, InterfaceError, Platform, contain_panic,
+    };
 
-    use super::{Reporter, set_panic_hook};
+    use super::{CrashReporting, Reporter, set_panic_hook};
 
     static PANIC_HOOK: Mutex<()> = Mutex::new(());
 
@@ -133,6 +209,26 @@ mod tests {
             platform: Platform::Linux,
             source_code: "repo.example.org/omnileaf".to_owned(),
         }
+    }
+
+    #[test]
+    fn a_sent_report_is_no_longer_offered_even_when_its_saved_copy_stays() {
+        let folder = env::temp_dir().join(format!("omnileaf-sent-{}", process::id()));
+        fs::create_dir_all(folder.join("crash-report.json")).unwrap();
+        let reporting = CrashReporting {
+            offers: CrashReportOffers::new(CrashReportFile::in_folder(&folder)),
+            reporter: Arc::new(Reporter::new(&sample_app())),
+        };
+        reporting.offer_interface_error(&InterfaceError {
+            message: "boom".to_owned(),
+            stack: None,
+        });
+
+        reporting.settle_sent();
+
+        let still_offered = reporting.offered().is_ok();
+        let _ = fs::remove_dir_all(&folder);
+        assert!(!still_offered);
     }
 
     #[test]

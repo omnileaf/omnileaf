@@ -31,6 +31,14 @@ export const commands = {
 	setAppLanguage: (language: string) => typedError<null, IpcError>(__TAURI_INVOKE("set_app_language", { language })),
 	copyVersionDetails: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_version_details")),
 	openProjectLink: (link: ProjectLink) => typedError<null, IpcError>(__TAURI_INVOKE("open_project_link", { link })),
+	offerSavedCrashReport: () => typedError<{
+	details: string,
+	origin: CrashOrigin,
+} | null, IpcError>(__TAURI_INVOKE("offer_saved_crash_report")),
+	offerInterfaceErrorReport: (error: InterfaceError) => typedError<CrashReportOffer, IpcError>(__TAURI_INVOKE("offer_interface_error_report", { error })),
+	sendCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("send_crash_report")),
+	copyCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_crash_report")),
+	declineCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("decline_crash_report")),
 };
 
 /** Events */
@@ -55,6 +63,15 @@ export type CoversPerRow = {
 	phone: number,
 	tablet: number,
 	desktop: number,
+};
+
+/**  What crashed: the app itself, or only its interface. */
+export type CrashOrigin = "panic" | "interface";
+
+/**  A crash report as the interface shows it, for the person to read before deciding. */
+export type CrashReportOffer = {
+	details: string,
+	origin: CrashOrigin,
 };
 
 /**  The book files a rescan found added, changed, moved or gone since the folder was last read. */
@@ -97,12 +114,18 @@ export type FolderScan = {
 	unreadableFolders: number,
 };
 
+/**  An error the interface didn't handle, as the webview describes it. */
+export type InterfaceError = {
+	message: string,
+	stack: string | null,
+};
+
 export type IpcError = {
 	code: IpcErrorCode,
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "internal";
 
 /**  Series came, went, changed or sort in a new order, so a list of them should be read again. */
 export type LibraryChanged = null;

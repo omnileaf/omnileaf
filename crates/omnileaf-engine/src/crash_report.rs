@@ -8,6 +8,7 @@ mod trace;
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
+use specta::Type;
 
 use crate::{AppInfo, Platform, ProjectLink};
 
@@ -56,14 +57,15 @@ pub struct PanicDetails<'a> {
 }
 
 /// An error the interface didn't handle, as the webview describes it.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct InterfaceError {
     pub message: String,
     pub stack: Option<String>,
 }
 
 /// What crashed: the app itself, or only its interface.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum CrashOrigin {
     Panic,
@@ -163,6 +165,11 @@ impl CrashReport {
     #[must_use]
     pub fn id(&self) -> CrashReportId {
         self.id
+    }
+
+    #[must_use]
+    pub fn origin(&self) -> CrashOrigin {
+        self.origin
     }
 
     /// A new bug report in the project's tracker, filled in with this report for the person to read and submit.
