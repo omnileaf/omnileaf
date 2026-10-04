@@ -391,15 +391,18 @@ mod tests {
         );
     }
 
-    #[cfg(unix)]
     fn app_exiting_with(code: u8) -> Child {
-        std::process::Command::new("sh")
-            .args(["-c", &format!("exit {code}")])
+        let (shell, run) = if cfg!(windows) {
+            ("cmd", "/C")
+        } else {
+            ("sh", "-c")
+        };
+        std::process::Command::new(shell)
+            .args([run, &format!("exit {code}")])
             .spawn()
             .unwrap()
     }
 
-    #[cfg(unix)]
     #[test]
     fn fails_when_an_app_exits_with_an_error() {
         let apps = vec![
@@ -412,7 +415,6 @@ mod tests {
         assert!(outcome.unwrap_err().to_string().contains("Android"));
     }
 
-    #[cfg(unix)]
     #[test]
     fn succeeds_when_every_app_exits_cleanly() {
         let apps = vec![
