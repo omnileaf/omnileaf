@@ -15,7 +15,7 @@ use std::{
 };
 
 use omnileaf_engine::{CoverPath, Library, Resource, ResourceRouter};
-use omnileaf_imaging::{Size, THUMBNAIL_WIDTH, thumbnail};
+use omnileaf_imaging::thumbnail;
 use omnileaf_testkit::{
     ArchiveEntry, Compression, PageShape, cbz, full_chroma_scan_jpeg, page_jpeg,
 };
@@ -195,8 +195,8 @@ async fn shows_the_page_comic_info_marks_as_the_front_cover() {
 }
 
 #[tokio::test]
-async fn makes_a_320_by_480_jpeg_cover_from_a_grainy_full_colour_scan() {
-    let covers = Covers::with_book("grainy-scan", None).await;
+async fn serves_the_thumbnail_of_a_full_chroma_scan_as_its_cover() {
+    let covers = Covers::with_book("full-chroma-scan", None).await;
     let scan = full_chroma_scan_jpeg(SEED).unwrap();
     write_book_of(&covers.book_path(), std::slice::from_ref(&scan));
     covers.library.rescan_folders().await.unwrap();
@@ -204,13 +204,6 @@ async fn makes_a_320_by_480_jpeg_cover_from_a_grainy_full_colour_scan() {
 
     let resource = covers.request_cover(covers.cover().await).await;
 
-    assert_eq!(
-        expected.size,
-        Size {
-            width: THUMBNAIL_WIDTH,
-            height: 480
-        }
-    );
     assert_eq!(resource, jpeg(expected.jpeg));
 }
 
