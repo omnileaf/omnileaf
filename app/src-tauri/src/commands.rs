@@ -46,6 +46,9 @@ macro_rules! app_commands {
             series_books,
             mark_books,
             open_book,
+            reading_restored,
+            page_shown,
+            close_book,
             orient_screen,
             change_full_screen,
             library_listing,
@@ -295,6 +298,28 @@ async fn open_book(
     undecodable: Vec<ProbedFormat>,
 ) -> Result<OpenedBook, IpcError> {
     Ok(router.open_book(&library, id, undecodable).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn reading_restored(
+    library: State<'_, Library>,
+    id: BookId,
+    page: u32,
+) -> Result<(), IpcError> {
+    Ok(library.reading_restored(id, page).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn page_shown(library: State<'_, Library>, id: BookId, page: u32) -> Result<(), IpcError> {
+    Ok(library.page_shown(id, page).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn close_book(library: State<'_, Library>, id: BookId) -> Result<(), IpcError> {
+    Ok(library.close_book(id).await?)
 }
 
 #[tauri::command]

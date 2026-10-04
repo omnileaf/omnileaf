@@ -65,6 +65,9 @@ export const DEFAULT_BACKEND: FakeBackend = {
       message: "that book isn't in the library",
     });
   },
+  readingRestored: () => null,
+  pageShown: () => null,
+  closeBook: () => null,
   libraryListing: () => DEFAULT_LIBRARY_LISTING,
   setLibraryListing: () => null,
   libraryView: () => DEFAULT_LIBRARY_VIEW,
