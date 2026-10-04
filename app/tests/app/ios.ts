@@ -8,7 +8,8 @@ import type { TestProject } from "vitest/node";
 import { APPIUM_URL, startAppium } from "./appium.ts";
 import { withAttempts } from "./attempts.ts";
 import { isRecord, listOf } from "./json.ts";
-import { pollUntil, waitUntilReady } from "./webdriver.ts";
+import { launchOnceRegistered } from "./simulator-launch.ts";
+import { waitUntilReady } from "./webdriver.ts";
 
 const APP_BUNDLE = fileURLToPath(
   new URL(
@@ -28,8 +29,6 @@ const WEBDRIVERAGENT_LAUNCH_ATTEMPTS = 3;
 const WEBDRIVERAGENT_READY_TIMEOUT_MS = 60_000;
 const SIMCTL_TIMEOUT_MS = 60_000;
 const WEBVIEW_TIMEOUT_MS = 60_000;
-const APP_LAUNCHABLE_TIMEOUT_MS = 60_000;
-const UNKNOWN_TO_LAUNCHER = "FBSOpenApplicationServiceErrorDomain";
 
 const run = promisify(execFile);
 
@@ -82,20 +81,14 @@ async function launchWebDriverAgent(
   });
 }
 
-function isUnknownToLauncher(error: unknown): boolean {
-  return (
-    isRecord(error) &&
-    typeof error.stderr === "string" &&
-    error.stderr.includes(UNKNOWN_TO_LAUNCHER)
-  );
-}
-
-async function launches(
-  simulator: Simulator,
-  bundleId: string,
-): Promise<true | undefined> {
-  try {
-    await run(
+/** The Simulator's launcher refuses a just-installed app until it has registered it, so this waits until the app launches. */
+async function installApp(simulator: Simulator): Promise<string> {
+  await run("xcrun", ["simctl", "install", simulator.udid, APP_BUNDLE], {
+    timeout: SIMCTL_TIMEOUT_MS,
+  });
+  const bundleId = await bundleIdOf(APP_BUNDLE);
+  await launchOnceRegistered(bundleId, () =>
+    run(
       "xcrun",
       [
         "simctl",
@@ -105,26 +98,7 @@ async function launches(
         bundleId,
       ],
       { timeout: SIMCTL_TIMEOUT_MS },
-    );
-    return true;
-  } catch (error) {
-    if (isUnknownToLauncher(error)) {
-      return undefined;
-    }
-    throw error;
-  }
-}
-
-/** The Simulator's launcher refuses a just-installed app until it has registered it, so this waits until the app launches. */
-async function installApp(simulator: Simulator): Promise<string> {
-  await run("xcrun", ["simctl", "install", simulator.udid, APP_BUNDLE], {
-    timeout: SIMCTL_TIMEOUT_MS,
-  });
-  const bundleId = await bundleIdOf(APP_BUNDLE);
-  await pollUntil(
-    () => launches(simulator, bundleId),
-    APP_LAUNCHABLE_TIMEOUT_MS,
-    `launching ${bundleId} on the Simulator`,
+    ),
   );
   await run("xcrun", ["simctl", "terminate", simulator.udid, bundleId], {
     timeout: SIMCTL_TIMEOUT_MS,
