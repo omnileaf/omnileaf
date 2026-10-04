@@ -1,4 +1,5 @@
 const JPEG_MAGIC: &[u8] = &[0xFF, 0xD8, 0xFF];
+const JPEG_END_MARKER: &[u8] = &[0xFF, 0xD9];
 const PNG_MAGIC: &[u8] = b"\x89PNG\r\n\x1a\n";
 const RIFF_MAGIC: &[u8] = b"RIFF";
 const WEBP_MAGIC: &[u8] = b"WEBP";
@@ -25,6 +26,12 @@ impl ImageFormat {
             None
         }
     }
+}
+
+/// Whether the bytes run from a JPEG's start marker to its end marker, which a write cut short never does.
+#[must_use]
+pub fn is_whole_jpeg(bytes: &[u8]) -> bool {
+    bytes.starts_with(JPEG_MAGIC) && bytes.ends_with(JPEG_END_MARKER)
 }
 
 fn is_webp(bytes: &[u8]) -> bool {

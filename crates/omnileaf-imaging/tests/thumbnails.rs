@@ -6,7 +6,7 @@
 
 use std::io::Cursor;
 
-use omnileaf_imaging::{ImagingError, Size, THUMBNAIL_WIDTH, thumbnail};
+use omnileaf_imaging::{ImagingError, Size, THUMBNAIL_WIDTH, is_whole_jpeg, thumbnail};
 use omnileaf_testkit::{PageShape, page_jpeg, page_png, page_webp, scan_jpeg};
 use png::{BitDepth, ColorType, Encoder, chunk};
 
@@ -316,4 +316,17 @@ fn refuses_a_webp_whose_pixels_outgrow_the_memory_budget_before_decoding_it() {
         matches!(outcome, Err(ImagingError::TooLarge { .. })),
         "{outcome:?}"
     );
+}
+
+#[test]
+fn tells_a_whole_thumbnail_from_one_cut_short() {
+    let whole = thumbnail(&page_jpeg(SEED, 0, PageShape::Portrait).unwrap())
+        .unwrap()
+        .jpeg;
+    let cut_short = &whole[..whole.len() / 2];
+
+    let empty: &[u8] = &[];
+    let verdicts = [whole.as_slice(), cut_short, empty].map(is_whole_jpeg);
+
+    assert_eq!(verdicts, [true, false, false]);
 }
