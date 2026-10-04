@@ -12,14 +12,15 @@ import androidx.annotation.ColorInt
 private const val TABLET_SMALLEST_WIDTH_DP = 600
 
 class MainActivity : TauriActivity() {
-  private val rememberedBackground: Int? by lazy { RememberedBackground(this).color() }
+  @get:ColorInt
+  private val startingBackground: Int by lazy { RememberedBackground(this).color() ?: getColor(R.color.page_background) }
   private var webView: WebView? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
     showTheAppBehindTheNavigationButtons()
     keepPhonesInPortrait(resources.configuration)
-    rememberedBackground?.let { showPageBackground(it) }
+    showPageBackground(startingBackground)
     super.onCreate(savedInstanceState)
   }
 
@@ -31,7 +32,7 @@ class MainActivity : TauriActivity() {
   override fun onWebViewCreate(webView: WebView) {
     SystemInsets(webView).attach()
     this.webView = webView
-    rememberedBackground?.let(webView::setBackgroundColor)
+    webView.setBackgroundColor(startingBackground)
   }
 
   fun showPageBackground(@ColorInt color: Int) {
