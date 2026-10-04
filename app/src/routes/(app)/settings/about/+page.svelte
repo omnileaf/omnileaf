@@ -5,7 +5,7 @@
   import LicencesRow from "$lib/about/LicencesRow.svelte";
   import { LinkOpening } from "$lib/about/link-opening.svelte";
   import ProjectLinkRows from "$lib/about/ProjectLinkRows.svelte";
-  import { VersionCopying } from "$lib/about/version-copying.svelte";
+  import { DetailsCopying } from "$lib/copying/details-copying.svelte";
   import { commands } from "$lib/ipc/bindings";
   import { WindowWidth } from "$lib/page/breakpoints";
   import { isPhone } from "$lib/page/platform";
@@ -16,7 +16,7 @@
 
   let { data }: PageProps = $props();
 
-  const copying = new VersionCopying(commands.copyVersionDetails);
+  const copying = new DetailsCopying(commands.copyVersionDetails);
   const opening = new LinkOpening(commands.openProjectLink);
 
   const width = new WindowWidth();
