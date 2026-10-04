@@ -8,10 +8,12 @@ use crate::policy::RepositoryFile;
 const PROJECTOR: &str = "crates/omnileaf-db/src/store/projector.rs";
 const REGISTER_WRITER: &str = "crates/omnileaf-db/src/store/register.rs";
 const LOCAL_WRITER: &str = "crates/omnileaf-db/src/store/local.rs";
+const SESSION_WRITER: &str = "crates/omnileaf-db/src/store/session.rs";
 const SYNC_LOCAL: &str = "sync_local";
 const SYNC_TABLE_WRITERS: &[(&str, &str)] = &[
     ("sync_register", REGISTER_WRITER),
     (SYNC_LOCAL, LOCAL_WRITER),
+    ("reading_session", SESSION_WRITER),
 ];
 const MIGRATIONS: &str = "crates/omnileaf-db/migrations/";
 const SYNC_LOCAL_SEED: &str = "crates/omnileaf-db/migrations/0005_create_sync_registers.sql";
@@ -321,6 +323,25 @@ mod tests {
                 path: "crates/omnileaf-db/src/catalog/book.rs".to_owned(),
                 table: "sync_register".to_owned(),
                 writer: REGISTER_WRITER,
+            }]
+        );
+    }
+
+    #[test]
+    fn flags_a_reading_session_written_outside_the_write_path() {
+        let elsewhere = text(
+            "crates/omnileaf-engine/src/reading_progress.rs",
+            "connection.execute(\"INSERT INTO reading_session (book_id) VALUES (?1)\", [])",
+        );
+
+        let violations = check(&library_with([elsewhere]));
+
+        assert_eq!(
+            violations,
+            [Violation::ForeignWrite {
+                path: "crates/omnileaf-engine/src/reading_progress.rs".to_owned(),
+                table: "reading_session".to_owned(),
+                writer: SESSION_WRITER,
             }]
         );
     }
