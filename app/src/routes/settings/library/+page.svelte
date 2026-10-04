@@ -6,9 +6,16 @@
   import { m } from "$lib/paraglide/messages.js";
   import SectionHeading from "$lib/settings/SectionHeading.svelte";
 
+  import type { PageProps } from "./$types";
+
+  let { data }: PageProps = $props();
+
   const foldersHeadingId = $props.id();
 
-  const adding = new FolderAdding(commands.addLibraryFolder);
+  const adding = new FolderAdding(
+    commands.addLibraryFolder,
+    () => data.notices,
+  );
 
   let addFolder: HTMLButtonElement | undefined = $state();
 </script>

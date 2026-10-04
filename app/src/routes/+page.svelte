@@ -8,7 +8,14 @@
   import PageHeading from "$lib/page/PageHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
-  const adding = new FolderAdding(commands.addLibraryFolder);
+  import type { PageProps } from "./$types";
+
+  let { data }: PageProps = $props();
+
+  const adding = new FolderAdding(
+    commands.addLibraryFolder,
+    () => data.notices,
+  );
 
   let addFolder: HTMLButtonElement | undefined = $state();
 </script>

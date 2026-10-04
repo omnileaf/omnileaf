@@ -1,10 +1,15 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
+import { Notices } from "$lib/notices/notices.svelte";
+
 import Page from "./+page.svelte";
 
 const PROPS = {
-  data: { appInfo: { version: "1.2.3", platform: "linux" as const } },
+  data: {
+    appInfo: { version: "1.2.3", platform: "linux" as const },
+    notices: new Notices(),
+  },
   params: {},
 };
 

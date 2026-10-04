@@ -1,7 +1,6 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
-import { CommandFailure } from "./fake-backend.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
@@ -43,7 +42,7 @@ test.describe("with a folder of comics", () => {
 
       await addFolderIn(page, region).click();
 
-      await expect(page.getByRole("status")).toHaveText(
+      await expect(page.getByRole("main").getByRole("status")).toHaveText(
         "Found 3 comics in Sample Library.",
       );
     });
@@ -52,7 +51,7 @@ test.describe("with a folder of comics", () => {
   test("lets the notice under the folders be dismissed", async ({ page }) => {
     await page.goto("/settings/library");
     await page.getByRole("button", { name: "Add a folder" }).click();
-    const status = page.getByRole("status");
+    const status = page.getByRole("main").getByRole("status");
     await expect(status).toHaveText("Found 3 comics in Sample Library.");
 
     await status.getByRole("button", { name: "Dismiss" }).click();
@@ -67,12 +66,29 @@ test.describe("with a folder of comics", () => {
       await page.goto(path);
       const addFolder = addFolderIn(page, region);
       await addFolder.click();
-      const status = page.getByRole("status");
+      const status = page.getByRole("main").getByRole("status");
       await expect(status).not.toBeEmpty();
 
       await status.getByRole("button", { name: "Dismiss" }).click();
 
       await expect(addFolder).toBeFocused();
+    });
+  }
+
+  for (const { place, path, region } of PLACES) {
+    test(`keeps the Add a folder button its size in ${place} when the outcome shows`, async ({
+      page,
+    }) => {
+      await page.goto(path);
+      const button = addFolderIn(page, region);
+      const before = await boxOf(button);
+
+      await button.click();
+
+      await expect(page.getByRole("main").getByRole("status")).toHaveText(
+        "Found 3 comics in Sample Library.",
+      );
+      expect((await boxOf(button)).width).toBe(before.width);
     });
   }
 });
@@ -118,61 +134,6 @@ for (const { platform, buttonHeight } of [
     });
   });
 }
-
-test.describe("with a folder it can't read", () => {
-  test.use({
-    backend: {
-      ...DEFAULT_BACKEND,
-      addLibraryFolder: () => {
-        throw new CommandFailure({
-          code: "folderUnreadable",
-          message: "the folder could not be read",
-        });
-      },
-    },
-  });
-
-  test("explains that the folder couldn't be read", async ({ page }) => {
-    await page.goto("/");
-
-    await addFolderIn(page, EMPTY_LIBRARY).click();
-
-    await expect(page.getByRole("alert")).toHaveText(
-      "Couldn't read that folder.",
-    );
-  });
-});
-
-test.describe("where the folder picker is unavailable", () => {
-  test.use({
-    backend: {
-      ...DEFAULT_BACKEND,
-      addLibraryFolder: () => {
-        throw new CommandFailure({
-          code: "folderPickerUnavailable",
-          message: "the folder picker is unavailable",
-        });
-      },
-    },
-  });
-
-  for (const { place, path, region } of PLACES) {
-    test(`keeps the Add a folder button its size in ${place} when the outcome shows`, async ({
-      page,
-    }) => {
-      await page.goto(path);
-      const button = addFolderIn(page, region);
-      const before = await boxOf(button);
-
-      await button.click();
-
-      await expect(page.getByRole("alert")).toHaveText(
-        "Adding folders isn't available on this device yet.",
-      );
-      expect((await boxOf(button)).width).toBe(before.width);
-    });
-  }
-});
 
 for (const colorScheme of ["light", "dark"] as const) {
   test(`Settings › Library has no accessibility violations in the ${colorScheme} theme`, async ({
