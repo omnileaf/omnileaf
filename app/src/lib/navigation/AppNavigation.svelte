@@ -8,7 +8,7 @@
   interface Destination {
     readonly section: Section;
     readonly label: () => string;
-    readonly isAtSidebarEnd: boolean;
+    readonly isAtSideEnd: boolean;
   }
 
   const ICON_SIZE = 22;
@@ -17,22 +17,22 @@
     {
       section: "library",
       label: m.library_title,
-      isAtSidebarEnd: false,
+      isAtSideEnd: false,
     },
     {
       section: "browse",
       label: m.browse_title,
-      isAtSidebarEnd: false,
+      isAtSideEnd: false,
     },
     {
       section: "history",
       label: m.history_title,
-      isAtSidebarEnd: false,
+      isAtSideEnd: false,
     },
     {
       section: "settings",
       label: m.settings_title,
-      isAtSidebarEnd: true,
+      isAtSideEnd: true,
     },
   ];
 
@@ -78,15 +78,17 @@
   aria-label={m.navigation_label()}
   onanimationend={endArrivalOnceStill}
   class={[
-    "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom max-medium:pe-safe-end medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:flex expanded:flex-col expanded:inline-sidebar",
+    "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom max-medium:pe-safe-end medium:flex medium:flex-col medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:inline-sidebar",
     "ios:max-medium:fixed ios:max-medium:inset-x-lg ios:max-medium:inset-be-floating-gap ios:max-medium:rounded-full ios:max-medium:border ios:max-medium:border-glass-edge ios:max-medium:bg-glass ios:max-medium:p-xs ios:max-medium:shadow-floating ios:max-medium:backdrop-blur-glass ios:max-medium:backdrop-saturate-160 ios:max-medium:block-floating-bar",
   ]}
 >
-  <p class="hidden px-lg pbs-xl pbe-lg text-title font-bold expanded:block">
+  <p
+    class="hidden px-xl pbs-xl pbe-xl text-brand font-bold tracking-tight expanded:block"
+  >
     {m.app_name()}
   </p>
   <ul
-    class="flex p-sm medium:flex-col medium:gap-sm medium:pbs-lg medium:pbe-xl expanded:flex-1 expanded:gap-xs expanded:px-md expanded:pbs-none ios:max-medium:relative ios:max-medium:p-none ios:max-medium:block-full"
+    class="flex p-sm medium:flex-1 medium:flex-col medium:gap-md medium:pbs-lg medium:pbe-2xl expanded:gap-xs expanded:px-md expanded:pbs-none expanded:pbe-xl ios:max-medium:relative ios:max-medium:p-none ios:max-medium:block-full"
   >
     <li
       aria-hidden="true"
@@ -100,26 +102,26 @@
       <li
         class={[
           "flex-1 medium:flex-none ios:max-medium:flex",
-          destination.isAtSidebarEnd && "expanded:mbs-auto",
+          destination.isAtSideEnd && "medium:mbs-auto",
         ]}
       >
         <a
           href={resolve(SECTION_ROUTES[destination.section])}
           aria-current={isSelected ? "page" : undefined}
           class={[
-            "relative flex flex-col items-center gap-xs py-xs text-caption transition-colors min-block-touch-target motion-safe:duration-fade motion-safe:ease-out expanded:flex-row expanded:gap-md expanded:rounded-control expanded:px-md expanded:text-body",
+            "relative flex flex-col items-center gap-xs text-caption transition-colors min-block-touch-target motion-safe:duration-fade motion-safe:ease-out medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-control expanded:px-md expanded:text-label desktop:expanded:min-block-pointer-target",
             "ios:max-medium:flex-1 ios:max-medium:justify-center ios:max-medium:gap-2xs ios:max-medium:rounded-full ios:max-medium:py-none ios:max-medium:text-tab ios:max-medium:font-semibold",
             isSelected
               ? "font-bold text-accent expanded:bg-accent-soft"
-              : "font-medium text-muted ios:max-medium:text-foreground",
+              : "font-medium text-muted expanded:text-sidebar-ink ios:max-medium:text-foreground",
           ]}
         >
           <span
-            class="relative flex items-center justify-center px-lg py-xs expanded:p-none ios:max-medium:p-none"
+            class="relative flex items-center justify-center block-2xl inline-pill expanded:block-auto expanded:inline-auto ios:max-medium:block-auto ios:max-medium:inline-auto"
           >
             <span
               class={[
-                "absolute inset-none rounded-card bg-accent-soft transition-opacity motion-safe:duration-fade motion-safe:ease-out expanded:hidden ios:max-medium:hidden",
+                "absolute inset-none rounded-full bg-accent-soft transition-opacity motion-safe:duration-fade motion-safe:ease-out expanded:hidden ios:max-medium:hidden",
                 "android:motion-safe:duration-grow android:motion-safe:ease-emphasized",
                 !isSelected && "opacity-0",
                 isArriving && "android:motion-safe:animate-pill-grow",
@@ -131,7 +133,7 @@
               {isArriving}
               size={ICON_SIZE}
               class={[
-                "relative ios:max-medium:block-xl ios:max-medium:inline-xl",
+                "relative ios:max-medium:block-xl ios:max-medium:inline-xl desktop:expanded:block-sidebar-icon desktop:expanded:inline-sidebar-icon",
                 isArriving && "ios:max-medium:motion-safe:animate-nav-pop",
               ]}
             />

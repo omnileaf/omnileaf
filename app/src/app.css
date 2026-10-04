@@ -2,6 +2,18 @@
 
 @custom-variant ios (&:where([data-platform="ios"], [data-platform="ios"] *));
 @custom-variant android (&:where([data-platform="android"], [data-platform="android"] *));
+@custom-variant touch (&:where([data-platform="android"], [data-platform="ios"], [data-platform="android"] *, [data-platform="ios"] *));
+@custom-variant desktop (&:where([data-platform="linux"], [data-platform="macos"], [data-platform="windows"], [data-platform="linux"] *, [data-platform="macos"] *, [data-platform="windows"] *));
+@custom-variant two-pane {
+  @variant expanded {
+    @slot;
+  }
+  @variant desktop {
+    @variant medium {
+      @slot;
+    }
+  }
+}
 @custom-variant icon-moves {
   @variant android {
     @variant max-expanded {
@@ -30,12 +42,29 @@
   --text-tab--line-height: 0.75rem;
   --text-caption: 0.75rem;
   --text-caption--line-height: 1rem;
-  --text-body: 1rem;
-  --text-body--line-height: 1.5rem;
+  --text-footnote: 0.8125rem;
+  --text-footnote--line-height: 1.1875rem;
+  --text-callout: 0.9375rem;
+  --text-callout--line-height: 1.375rem;
+  --text-back-link: 1.0625rem;
+  --text-back-link--line-height: 1.375rem;
+  --text-label: 0.875rem;
+  --text-label--line-height: 1.25rem;
+  --text-brand: 1.3125rem;
+  --text-brand--line-height: 1.5rem;
+  --text-bar-title: 1.375rem;
+  --text-bar-title--line-height: 1.75rem;
+  --text-group-title: 1.125rem;
+  --text-group-title--line-height: 1.5rem;
   --text-title: 1.25rem;
   --text-title--line-height: 1.75rem;
-  --text-headline: 1.75rem;
-  --text-headline--line-height: 2.25rem;
+  --text-app-name: 1.5rem;
+  --text-app-name--line-height: 2rem;
+  --text-page-title: 2rem;
+  --text-page-title--line-height: 1.1;
+
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
@@ -50,8 +79,27 @@
   --spacing-xl: 1.5rem;
   --spacing-2xl: 2rem;
   --spacing-3xl: 3rem;
+  --spacing-4xl: 4rem;
   --spacing-none: 0;
   --spacing-touch-target: 3rem;
+  --spacing-pointer-target: 2.5rem;
+  --spacing-pointer-button: 2.25rem;
+  --spacing-dismiss: 1.75rem;
+  --spacing-empty-art: 4rem;
+  --spacing-empty-icon: 1.75rem;
+  --spacing-empty-lift: 5rem;
+  --spacing-button: 1.25rem;
+  --spacing-pill: 3.5rem;
+  --spacing-tile: 2.25rem;
+  --spacing-option: 2.5rem;
+  --spacing-sidebar-icon: 1.25rem;
+  --spacing-settings-icon: 1.125rem;
+  --spacing-settings-row: 2.75rem;
+  --spacing-list-row: 0.875rem;
+  --spacing-app-icon: 4.5rem;
+  --spacing-pane: 2.5rem;
+  --spacing-pane-gap: 1.5rem;
+  --spacing-settings-list: 17rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
@@ -62,10 +110,12 @@
   );
   --spacing-safe-start: var(--safe-area-left);
   --spacing-safe-end: var(--safe-area-right);
-  --spacing-page-top: calc(var(--spacing-safe-top) + var(--spacing-xl));
+  --spacing-title-gap: 1rem;
+  --spacing-page-top: calc(var(--spacing-safe-top) + var(--spacing-title-gap));
   --spacing-page-bottom: calc(var(--spacing-safe-bottom) + var(--spacing-xl));
-  --spacing-page-start: calc(var(--spacing-safe-start) + var(--spacing-xl));
-  --spacing-page-end: calc(var(--spacing-safe-end) + var(--spacing-xl));
+  --spacing-gutter: 1rem;
+  --spacing-page-start: calc(var(--spacing-safe-start) + var(--spacing-gutter));
+  --spacing-page-end: calc(var(--spacing-safe-end) + var(--spacing-gutter));
   --spacing-rail: calc(5.5rem + var(--spacing-safe-start));
   --spacing-sidebar: calc(14.5rem + var(--spacing-safe-start));
   --spacing-floating-bar: 3.875rem;
@@ -78,25 +128,41 @@
       var(--spacing-lg)
   );
 
+  --container-prose: 27.5rem;
+  --container-section: 45rem;
+  --container-narrow: 35rem;
+  --container-segmented: 22.5rem;
+  --container-segmented-touch: 30rem;
+
   --radius-control: 0.5rem;
   --radius-card: 0.75rem;
+  --radius-tile: 0.625rem;
+  --radius-list: 0.625rem;
 
   --blur-glass: 24px;
 
+  --shadow-raised: 0 1px 2px var(--color-raised-shadow);
   --shadow-floating:
     0 8px 28px var(--color-glass-shadow), 0 1px 3px var(--color-glass-contact);
 
   --color-background: #faf8f4;
   --color-foreground: #1c1b18;
   --color-muted: #5f5b52;
+  --color-sidebar-ink: #4a473f;
   --color-border: #e3ded3;
+  --color-field: #e3ded3;
   --color-card: #ffffff;
   --color-chip: #eeeae1;
+  --color-raised: #ffffff;
+  --color-raised-shadow: rgb(28 27 24 / 0.14);
   --color-bar: #f3f0e9;
   --color-accent: #2f6f4f;
   --color-on-accent: #ffffff;
   --color-accent-soft: #ddebe2;
   --color-warning-soft: #fbf3e3;
+  --color-warning-edge: #ebd6a8;
+  --color-warning-tile: #f3e0b8;
+  --color-on-warning: #3b2f1e;
   --color-icon-hole: var(--color-accent-soft);
   --color-glass: rgb(250 248 244 / 0.74);
   --color-glass-edge: rgb(255 255 255 / 0.7);
@@ -168,6 +234,49 @@
 }
 
 :root {
+  @variant medium {
+    --spacing-empty-art: 5rem;
+    --spacing-empty-icon: 2.25rem;
+    --spacing-empty-lift: 9.5rem;
+    --spacing-title-gap: 1.5rem;
+    --spacing-gutter: 1.75rem;
+    --text-page-title: 1.875rem;
+    --text-page-title--line-height: 1.15;
+  }
+
+  @variant expanded {
+    --spacing-gutter: 2rem;
+    --text-page-title: 1.75rem;
+  }
+}
+
+:root {
+  @variant max-large {
+    --spacing-settings-list: 13rem;
+    --spacing-pane: 1.5rem;
+  }
+}
+
+:root {
+  @variant desktop {
+    --spacing-empty-lift: 3.25rem;
+    --spacing-pane-gap: 1.25rem;
+    --spacing-title-gap: 1.75rem;
+    --text-page-title: 1.75rem;
+    --text-page-title--line-height: 1.15;
+
+    @variant max-medium {
+      --spacing-gutter: 1.5rem;
+    }
+
+    @variant max-expanded {
+      --spacing-settings-list: 11rem;
+      --spacing-pane: 1rem;
+    }
+  }
+}
+
+:root {
   --safe-area-left: max(
     env(safe-area-inset-left),
     var(--system-inset-left, 0px)
@@ -183,14 +292,21 @@
   --color-background: #161512;
   --color-foreground: #f1ede4;
   --color-muted: #a9a396;
+  --color-sidebar-ink: #c9c3b6;
   --color-border: #302d28;
+  --color-field: #34312b;
   --color-card: #1f1d1a;
   --color-chip: #2b2823;
+  --color-raised: #3a3630;
+  --color-raised-shadow: rgb(0 0 0 / 0.5);
   --color-bar: #1c1a17;
   --color-accent: #7fcb9d;
   --color-on-accent: #0f2418;
   --color-accent-soft: #243a2c;
   --color-warning-soft: #3a3120;
+  --color-warning-edge: #4e4229;
+  --color-warning-tile: #4e4229;
+  --color-on-warning: #f3e6c8;
   --color-glass: rgb(36 34 30 / 0.72);
   --color-glass-edge: rgb(255 255 255 / 0.1);
   --color-glass-pill: rgb(255 255 255 / 0.12);

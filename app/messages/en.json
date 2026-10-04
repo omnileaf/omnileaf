@@ -1,7 +1,8 @@
 {
   "app_name": "Omnileaf",
   "library_title": "Library",
-  "library_empty": "Your library is empty.",
+  "library_empty": "Your library is empty",
+  "library_empty_body": "Add a folder of comics, manga or books. Omnileaf reads it where it is.",
   "app_version": "Version {version}",
   "library_add_folder": "Add a folder",
   "library_folder_found": [
@@ -48,13 +49,19 @@
   "about_title": "About",
   "about_licence": "Omnileaf is free software. You can share and change it under the GNU General Public License, version 3.",
   "library_settings_folders": "Folders",
-  "library_settings_folders_hint": "Folders with comics that Omnileaf reads, wherever they are.",
+  "library_settings_folders_hint": "Folders of comics, manga or books. Omnileaf reads them where they are.",
   "appearance_title": "Appearance",
   "appearance_light_or_dark": "Light or dark",
+  "appearance_system_hint": "System follows the device's setting and changes with it.",
+  "appearance_system_hint_phone": "System follows your phone's setting.",
   "theme_system": "System",
+  "theme_follows_system": "Follows the system",
   "theme_light": "Light",
   "theme_dark": "Dark",
   "general_title": "General",
   "language_label": "Language",
-  "language_system": "System ({language})"
+  "language_system": "System ({language})",
+  "back_to": "Back to {page}",
+  "notice_dismiss": "Dismiss",
+  "settings_sections_label": "Settings sections"
 }

@@ -1,11 +1,13 @@
 import { expect, test } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
-import type { commands, FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
+import type { FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
 
-import AddLibraryFolder from "./AddLibraryFolder.svelte";
+import AddFolderButton from "./AddFolderButton.svelte";
+import { type AddFolder, FolderAdding } from "./folder-adding.svelte";
+import FolderNotice from "./FolderNotice.svelte";
 
-type AddFolder = typeof commands.addLibraryFolder;
 type AddFolderResult = Awaited<ReturnType<AddFolder>>;
 
 const SAMPLE_SURVEY: FolderSurvey = {
@@ -35,10 +37,20 @@ function failed(code: IpcErrorCode): AddFolderResult {
 const CANCELLED: AddFolderResult = { status: "ok", data: null };
 
 async function renderWith(addFolder: AddFolder) {
-  const screen = await render(AddLibraryFolder, { addFolder });
+  const adding = new FolderAdding(addFolder);
+  const dismissals = { count: 0 };
+  await render(AddFolderButton, { adding, placement: "empty-state" });
+  await render(FolderNotice, {
+    adding,
+    onDismissed: () => {
+      dismissals.count += 1;
+    },
+  });
   return {
-    button: screen.getByRole("button", { name: "Add a folder" }),
-    status: screen.getByRole("status"),
+    button: page.getByRole("button", { name: "Add a folder" }),
+    status: page.getByRole("status"),
+    alert: page.getByRole("alert"),
+    dismissals,
   };
 }
 
@@ -102,6 +114,27 @@ test("clears the last result when the picker is cancelled", async () => {
   await expect.element(status).toHaveTextContent("");
 });
 
+test("clears the result when it is dismissed", async () => {
+  const { button, status } = await renderWith(answering(found({})));
+  await button.click();
+  await expect
+    .element(status)
+    .toHaveTextContent("Found 3 comics in Sample Library.");
+
+  await status.getByRole("button", { name: "Dismiss" }).click();
+
+  await expect.element(status).toHaveTextContent("");
+});
+
+test("tells the page once the notice is dismissed", async () => {
+  const { button, status, dismissals } = await renderWith(answering(found({})));
+  await button.click();
+
+  await status.getByRole("button", { name: "Dismiss" }).click();
+
+  expect(dismissals.count).toBe(1);
+});
+
 test.each<[IpcErrorCode, string]>([
   ["folderUnreadable", "Couldn't read that folder."],
   [
@@ -110,11 +143,12 @@ test.each<[IpcErrorCode, string]>([
   ],
   ["internal", "Something went wrong while adding the folder. Try again."],
 ])("explains a %s failure", async (code, explanation) => {
-  const { button, status } = await renderWith(answering(failed(code)));
+  const { button, status, alert } = await renderWith(answering(failed(code)));
 
   await button.click();
 
-  await expect.element(status).toHaveTextContent(explanation);
+  await expect.element(alert).toHaveTextContent(explanation);
+  await expect.element(status).toHaveTextContent("");
 });
 
 test("disables the button while the picker is open", async () => {

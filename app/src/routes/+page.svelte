@@ -1,11 +1,38 @@
 <script lang="ts">
   import { commands } from "$lib/ipc/bindings";
-  import AddLibraryFolder from "$lib/library/AddLibraryFolder.svelte";
+  import AddFolderButton from "$lib/library/AddFolderButton.svelte";
+  import { FolderAdding } from "$lib/library/folder-adding.svelte";
+  import FolderNotice from "$lib/library/FolderNotice.svelte";
+  import LibraryGlyph from "$lib/navigation/LibraryGlyph.svelte";
+  import EmptyState from "$lib/page/EmptyState.svelte";
+  import PageHeading from "$lib/page/PageHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
+
+  const adding = new FolderAdding(commands.addLibraryFolder);
+
+  let addFolder: HTMLButtonElement | undefined = $state();
 </script>
 
-<h1 tabindex="-1" class="text-headline font-bold">{m.library_title()}</h1>
-<p class="mbs-sm text-muted">{m.library_empty()}</p>
-<div class="mbs-lg">
-  <AddLibraryFolder addFolder={commands.addLibraryFolder} />
+<div class="flex items-center justify-between gap-sm">
+  <PageHeading title={m.library_title()} />
+  <AddFolderButton {adding} placement="page-heading" />
 </div>
+<EmptyState
+  icon={LibraryGlyph}
+  title={m.library_empty()}
+  body={m.library_empty_body()}
+>
+  <div class="mbs-sm flex flex-col items-center gap-md max-inline-prose">
+    <AddFolderButton
+      bind:element={addFolder}
+      {adding}
+      placement="empty-state"
+    />
+    <FolderNotice
+      {adding}
+      onDismissed={() => {
+        addFolder?.focus();
+      }}
+    />
+  </div>
+</EmptyState>

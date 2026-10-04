@@ -7,6 +7,7 @@
     languageName,
     storedLanguageChoice,
   } from "$lib/language/language";
+  import SectionHeading from "$lib/settings/SectionHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { getLocale } from "$lib/paraglide/runtime.js";
 
@@ -23,8 +24,8 @@
   }
 </script>
 
-<h1 tabindex="-1" class="text-headline font-bold">{m.general_title()}</h1>
-<fieldset class="mbs-xl">
+<SectionHeading title={m.general_title()} />
+<fieldset class="mbs-pane-gap">
   <legend class="font-medium">{m.language_label()}</legend>
   <div
     class="mbs-sm divide-y divide-border rounded-card border border-border bg-card"
