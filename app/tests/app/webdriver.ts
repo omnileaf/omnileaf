@@ -1,5 +1,3 @@
-import { setTimeout as delay } from "node:timers/promises";
-
 import { isRecord } from "./json.ts";
 
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
@@ -94,6 +92,12 @@ async function send(
     );
   }
   return value;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 export async function pollUntil<T>(

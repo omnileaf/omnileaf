@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, onTestFinished, test, vi } from "vitest";
 
 import { launchOnceRegistered } from "./simulator-launch.ts";
 
@@ -58,11 +58,17 @@ test("launches again after a launch is killed by its timeout", async () => {
 });
 
 test("keeps launching while the launcher does not know the app yet", async () => {
+  vi.useFakeTimers();
+  onTestFinished(() => {
+    vi.useRealTimers();
+  });
   const app = launchesInTurn([unknownToLauncher(), undefined]);
 
-  await launchOnceRegistered(BUNDLE_ID, app.launch);
+  const launching = launchOnceRegistered(BUNDLE_ID, app.launch);
+  await vi.runAllTimersAsync();
 
   expect(app.launched()).toBe(2);
+  await expect(launching).resolves.toBeUndefined();
 });
 
 test("fails at once when a launch fails any other way", async () => {
