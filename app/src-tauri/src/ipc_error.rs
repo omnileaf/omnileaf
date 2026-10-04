@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use omnileaf_engine::{CrashReportError, LibraryError, describe_error};
+use omnileaf_engine::{CrashReportError, LibraryError, OpenBookError, describe_error};
 use serde::Serialize;
 use specta::Type;
 
@@ -32,6 +32,8 @@ pub(crate) enum IpcErrorCode {
     SeriesNotFound,
     SearchTooLong,
     CursorForAnotherList,
+    BookNotFound,
+    BookUnreadable,
     Internal,
 }
 
@@ -137,11 +139,30 @@ impl From<CrashReportError> for IpcError {
     }
 }
 
+impl From<OpenBookError> for IpcError {
+    fn from(error: OpenBookError) -> Self {
+        let (code, message) = match error {
+            OpenBookError::BookNotFound { .. } => {
+                (IpcErrorCode::BookNotFound, "that book isn't in the library")
+            }
+            OpenBookError::Unreadable { .. } | OpenBookError::FolderClosed { .. } => (
+                IpcErrorCode::BookUnreadable,
+                "the book's file could not be read",
+            ),
+            OpenBookError::Library(error) => return error.into(),
+            OpenBookError::Lane(_) => return Self::internal(&error),
+        };
+        tracing::warn!(error = %describe_error(&error), "opening a book refused");
+        Self { code, message }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{io, path::PathBuf};
 
-    use omnileaf_engine::{FolderId, SeriesId};
+    use omnileaf_engine::{BookId, FolderId, LaneStopped, SeriesId};
+    use omnileaf_formats::FormatError;
 
     use super::*;
 
@@ -184,6 +205,36 @@ mod tests {
                 IpcErrorCode::SeriesNotFound,
                 IpcErrorCode::SearchTooLong,
                 IpcErrorCode::CursorForAnotherList,
+                IpcErrorCode::Internal,
+            ]
+        );
+    }
+
+    #[test]
+    fn tells_the_interface_why_a_book_did_not_open() {
+        let id = BookId::try_from("0190a3e4-0000-8000-8000-000000000002".to_owned()).unwrap();
+        let series = SeriesId::try_from("0190a3e4-0000-8000-8000-000000000001".to_owned()).unwrap();
+        let unreadable = OpenBookError::Unreadable {
+            id,
+            source: FormatError::Unsupported {
+                path: PathBuf::from("/media/Sample Library/Sample Series 01 v01.cbz"),
+            },
+        };
+
+        let codes = [
+            OpenBookError::BookNotFound { id },
+            unreadable,
+            OpenBookError::Library(LibraryError::SeriesNotFound { id: series }),
+            OpenBookError::Lane(LaneStopped),
+        ]
+        .map(|error| IpcError::from(error).code);
+
+        assert_eq!(
+            codes,
+            [
+                IpcErrorCode::BookNotFound,
+                IpcErrorCode::BookUnreadable,
+                IpcErrorCode::SeriesNotFound,
                 IpcErrorCode::Internal,
             ]
         );

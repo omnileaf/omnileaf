@@ -26,6 +26,7 @@ export const commands = {
 	seriesOverview: (id: string & { readonly __brand: "SeriesId" }) => typedError<SeriesOverview, IpcError>(__TAURI_INVOKE("series_overview", { id })),
 	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
+	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
 	libraryListing: () => typedError<LibraryListing, IpcError>(__TAURI_INVOKE("library_listing")),
 	setLibraryListing: (listing: LibraryListing) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_listing", { listing })),
 	libraryView: () => typedError<LibraryView, IpcError>(__TAURI_INVOKE("library_view")),
@@ -76,6 +77,12 @@ export type AppInfo = {
 };
 
 export type BackSwipe = { kind: "moved"; progress: number | null } | { kind: "released"; progress: number | null; velocity: number | null } | { kind: "cancelled" };
+
+export type BookPage = {
+	path: string & { readonly __brand: "PagePath" },
+	/**  Absent when the page's image header couldn't be read. */
+	size: PageDimensions | null,
+};
 
 export type BookReading = { state: "notStarted" } | 
 /**  The page is where reading goes on from, counting from 1, and absent when only the furthest page read is known. */
@@ -145,7 +152,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "internal";
 
 export type LibraryChanged = null;
 
@@ -214,7 +221,27 @@ export type OnCovers = {
 	showsContinueButton: boolean,
 };
 
+/**  A book as the reader shows it, with every page it can ask the `omni` protocol for. */
+export type OpenedBook = {
+	id: string & { readonly __brand: "BookId" },
+	title: string,
+	series: string & { readonly __brand: "SeriesId" },
+	seriesTitle: string,
+	/**  In reading order. */
+	pages: BookPage[],
+	reading: BookReading,
+};
+
+/**  A page's size in pixels. */
+export type PageDimensions = {
+	width: number,
+	height: number,
+};
+
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
+
+/**  A format the webview may be unable to show, which it tries before asking for pages. */
+export type ProbedFormat = "webp" | "avif" | "jxl";
 
 export type ProjectLink = "sourceCode" | "newIssue" | "latestRelease";
 

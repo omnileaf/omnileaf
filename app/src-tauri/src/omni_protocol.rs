@@ -32,7 +32,7 @@ pub(crate) fn answer<R: Runtime>(
                 Resource::Failed
             }
             (Some(_), None) => {
-                tracing::warn!(%path, "answer an omni request while the covers aren't running");
+                tracing::warn!(%path, "answer an omni request while the covers and pages aren't served");
                 Resource::Failed
             }
         };

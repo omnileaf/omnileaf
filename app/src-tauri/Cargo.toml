@@ -61,6 +61,7 @@ tauri-plugin-wdio-webdriver = { workspace = true, optional = true }
 
 [dev-dependencies]
 omnileaf-db.workspace = true
+omnileaf-formats.workspace = true
 omnileaf-system-bars.workspace = true
 serde_json.workspace = true
 tauri = { workspace = true, features = ["test"] }

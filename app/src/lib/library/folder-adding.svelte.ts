@@ -56,6 +56,8 @@ const FAILURES = {
   seriesNotFound: ADDING_FAILED,
   searchTooLong: ADDING_FAILED,
   cursorForAnotherList: ADDING_FAILED,
+  bookNotFound: ADDING_FAILED,
+  bookUnreadable: ADDING_FAILED,
   internal: ADDING_FAILED,
 } satisfies Record<IpcErrorCode, Failure>;
 
