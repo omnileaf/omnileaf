@@ -7,6 +7,7 @@ import {
 } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   LARGE_MIN_WIDTH,
@@ -26,6 +27,8 @@ const READ_THIS_WEEK = 3 * 60 * MINUTE + 12 * MINUTE;
 const ENTRIES_PER_PAGE = 50;
 const DAY_MS = 86_400_000;
 const MONDAY = Date.UTC(2026, 9, 5) / DAY_MS;
+const DESKTOP_TITLE_GAP = 14;
+const DESKTOP_DAYS_TOP = 22;
 
 interface Session {
   readonly number: number;
@@ -263,6 +266,26 @@ test.describe("with books read", () => {
       isDesktop(page)
         ? `Continue ${seriesTitle(4)}, ${bookTitle(4)}`
         : new RegExp(`^${seriesTitle(4)}`),
+    );
+  });
+
+  test("spaces the title, the week's total and the first day the way the desktop board does", async ({
+    page,
+  }) => {
+    test.skip(!isDesktop(page), "desktops only");
+    await openHistory(page);
+    const title = await boxOf(
+      page.getByRole("heading", { level: 1, name: "History" }),
+    );
+    const week = await boxOf(page.getByText("3 h 12 min read this week"));
+    const header = await boxOf(page.getByRole("main").locator("header"));
+
+    const firstDay = await boxOf(days(page).first());
+
+    expect(week.x - (title.x + title.width)).toBeCloseTo(DESKTOP_TITLE_GAP, 0);
+    expect(firstDay.y - (header.y + header.height)).toBeCloseTo(
+      DESKTOP_DAYS_TOP,
+      0,
     );
   });
 

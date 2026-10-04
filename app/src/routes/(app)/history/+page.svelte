@@ -51,7 +51,7 @@
 </script>
 
 {#snippet readThisWeekTotal()}
-  <p class="text-small text-muted">
+  <p class="text-small text-muted large:ms-xs">
     {m.history_read_this_week({
       duration: readingTime(readThisWeekSeconds ?? 0),
     })}
@@ -76,7 +76,7 @@
     body={m.history_empty_body()}
   />
 {:else if history.list.kind === "loaded"}
-  <div class="mbs-lg large:mbs-xl">
+  <div class="mbs-lg large:mbs-history-days-wide">
     <HistoryDays
       entries={history.list.items}
       isComplete={history.list.isComplete}
