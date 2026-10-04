@@ -216,7 +216,9 @@ fn ready_for_android_tests(chosen: Option<&str>) -> anyhow::Result<Process> {
         .context("find the Android SDK; cargo xtask doctor shows how to install it")?;
     let device = test_device::ready_android(&process, &toolchain, chosen)?;
     test_device::build_android_app(&workspace::root(), device.target)?;
-    Ok(process.with_env(test_device::ANDROID_SERIAL, device.serial))
+    Ok(process
+        .with_env(test_device::ANDROID_SERIAL, device.serial)
+        .with_env(android::ANDROID_HOME, toolchain.sdk))
 }
 
 fn list_devices() -> anyhow::Result<()> {

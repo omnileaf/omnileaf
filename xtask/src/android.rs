@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const ANDROID_HOME: &str = "ANDROID_HOME";
+pub(crate) const ANDROID_HOME: &str = "ANDROID_HOME";
 const ANDROID_SDK_ROOT: &str = "ANDROID_SDK_ROOT";
 const NDK_HOME: &str = "NDK_HOME";
 const EMULATOR_SERIAL_PREFIX: &str = "emulator-";
