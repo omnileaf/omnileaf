@@ -14,8 +14,8 @@ use std::{
 
 use omnileaf_testkit::{
     ArchiveEntry, Compression, GENERATED_LIBRARY_NAME, GeneratedLibrary, PageShape, SAMPLE_LIBRARY,
-    SAMPLE_LIBRARY_NAME, cbz, grainy_scan_jpeg, page_jpeg, page_png, page_webp, typical_scan_jpeg,
-    write_generated_library, write_sample_library,
+    SAMPLE_LIBRARY_NAME, cbz, full_chroma_scan_jpeg, page_jpeg, page_png, page_webp,
+    subsampled_scan_jpeg, write_generated_library, write_sample_library,
 };
 use zip::{CompressionMethod, DateTime, ZipArchive};
 
@@ -152,8 +152,8 @@ fn draws_a_webp_page_with_exactly_the_pixels_of_the_png_page() {
 }
 
 #[test]
-fn draws_a_grainy_scan_at_the_size_of_a_full_resolution_comic_page() {
-    let scan = grainy_scan_jpeg(SEED).unwrap();
+fn draws_a_full_chroma_scan_at_the_size_of_a_full_resolution_comic_page() {
+    let scan = full_chroma_scan_jpeg(SEED).unwrap();
 
     let size = jpeg_dimensions(&scan);
 
@@ -161,8 +161,8 @@ fn draws_a_grainy_scan_at_the_size_of_a_full_resolution_comic_page() {
 }
 
 #[test]
-fn weighs_a_grainy_scan_a_little_over_a_megabyte() {
-    let scan = grainy_scan_jpeg(SEED).unwrap();
+fn weighs_a_full_chroma_scan_a_little_over_a_megabyte() {
+    let scan = full_chroma_scan_jpeg(SEED).unwrap();
 
     let megabytes = scan.len() / 1_000_000;
 
@@ -170,8 +170,8 @@ fn weighs_a_grainy_scan_a_little_over_a_megabyte() {
 }
 
 #[test]
-fn keeps_a_grainy_scans_chroma_at_full_resolution() {
-    let scan = grainy_scan_jpeg(SEED).unwrap();
+fn keeps_a_full_chroma_scans_chroma_at_full_resolution() {
+    let scan = full_chroma_scan_jpeg(SEED).unwrap();
 
     let factors = jpeg_sampling_factors(&scan);
 
@@ -179,8 +179,8 @@ fn keeps_a_grainy_scans_chroma_at_full_resolution() {
 }
 
 #[test]
-fn draws_a_typical_scan_at_the_size_of_a_full_resolution_comic_page() {
-    let scan = typical_scan_jpeg(SEED).unwrap();
+fn draws_a_subsampled_scan_at_the_size_of_a_full_resolution_comic_page() {
+    let scan = subsampled_scan_jpeg(SEED).unwrap();
 
     let size = jpeg_dimensions(&scan);
 
@@ -188,8 +188,8 @@ fn draws_a_typical_scan_at_the_size_of_a_full_resolution_comic_page() {
 }
 
 #[test]
-fn subsamples_a_typical_scans_chroma_to_4_2_0() {
-    let scan = typical_scan_jpeg(SEED).unwrap();
+fn subsamples_a_subsampled_scans_chroma_to_4_2_0() {
+    let scan = subsampled_scan_jpeg(SEED).unwrap();
 
     let factors = jpeg_sampling_factors(&scan);
 
@@ -197,8 +197,8 @@ fn subsamples_a_typical_scans_chroma_to_4_2_0() {
 }
 
 #[test]
-fn weighs_a_typical_scan_about_a_megabyte() {
-    let scan = typical_scan_jpeg(SEED).unwrap();
+fn weighs_a_subsampled_scan_about_a_megabyte() {
+    let scan = subsampled_scan_jpeg(SEED).unwrap();
 
     let megabytes = scan.len() / 1_000_000;
 
@@ -206,10 +206,10 @@ fn weighs_a_typical_scan_about_a_megabyte() {
 }
 
 #[test]
-fn generates_the_same_typical_scan_every_time() {
-    let first = typical_scan_jpeg(SEED).unwrap();
+fn generates_the_same_subsampled_scan_every_time() {
+    let first = subsampled_scan_jpeg(SEED).unwrap();
 
-    let second = typical_scan_jpeg(SEED).unwrap();
+    let second = subsampled_scan_jpeg(SEED).unwrap();
 
     assert_eq!(first, second);
 }
