@@ -89,6 +89,7 @@ The `portable` group holds the Rust checks whose answer is the same everywhere, 
 
 `cargo xtask lint-sync` keeps synced state behind its one write path:
 - only `crates/omnileaf-db/src/store/register.rs` writes `sync_register`, and only `store/local.rs` writes `sync_local`, so no migration writes either, apart from the one that creates `sync_local` with its first row;
+- only `store/session.rs` writes `reading_session`, the reading sessions History lists, which will sync too;
 - the tables the projector (`store/projector.rs`) writes are projections, which nothing else writes, not even a migration's trigger;
 - a projection refers to no other table and holds no unique value, so it can always be rebuilt from the registers.
 
