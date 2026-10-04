@@ -59,14 +59,12 @@ fn resize(decoded: &Decoded, source: Size, plan: Plan) -> Result<Vec<u8>, Imagin
 }
 
 fn encode(rgb: &[u8], size: Size) -> Result<Vec<u8>, ImagingError> {
+    let too_large = |_| ImagingError::TooLargeToEncode { size };
+    let width = u16::try_from(size.width).map_err(too_large)?;
+    let height = u16::try_from(size.height).map_err(too_large)?;
     let mut jpeg = Vec::new();
     Encoder::new(&mut jpeg, JPEG_QUALITY)
-        .encode(
-            rgb,
-            u16::try_from(size.width).unwrap_or(u16::MAX),
-            u16::try_from(size.height).unwrap_or(u16::MAX),
-            ColorType::Rgb,
-        )
+        .encode(rgb, width, height, ColorType::Rgb)
         .map_err(ImagingError::Encode)?;
     Ok(jpeg)
 }

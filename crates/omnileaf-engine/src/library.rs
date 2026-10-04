@@ -18,6 +18,7 @@ use tokio::{
 use crate::{
     AppLanguage, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, LibraryChanges,
     LibraryFolder, LibrarySeries, RescanOutcome, ScanProgress, SeriesCursor, SeriesPage,
+    device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
     library_layout::folder_name,
     rescan::rescan,
@@ -29,8 +30,7 @@ const BACKUP_FOLDER: &str = "backups";
 const FOLDERS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
 const CATALOG_WRITE_BACKLOG: usize = 16;
-const MEBIBYTE: u32 = 1 << 20;
-const MAPPED_DATABASE_BYTES: u32 = if cfg!(any(target_os = "android", target_os = "ios")) {
+const MAPPED_DATABASE_BYTES: u32 = if IS_MOBILE {
     64 * MEBIBYTE
 } else {
     256 * MEBIBYTE

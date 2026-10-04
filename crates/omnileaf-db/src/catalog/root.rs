@@ -125,11 +125,7 @@ pub(crate) fn stored_locator(row: &Row<'_>, kind_column: usize) -> rusqlite::Res
             Box::new(Error::UnsupportedLocator { kind }),
         ));
     }
-    native_path::from_bytes(row.get(location_column)?)
-        .map(RootLocator::Path)
-        .ok_or_else(|| {
-            rusqlite::Error::InvalidColumnType(location_column, "location".to_owned(), Type::Blob)
-        })
+    native_path::stored_native_path(row, location_column).map(RootLocator::Path)
 }
 
 impl ToSql for RootKind {

@@ -12,4 +12,4 @@ pub use generated_library::{GENERATED_LIBRARY_NAME, GeneratedLibrary, write_gene
 pub use library::{
     SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, SeriesLayout, SeriesSpec, write_sample_library,
 };
-pub use page::{PageShape, page_jpeg, page_png, page_webp, scan_jpeg};
+pub use page::{PageShape, grainy_scan_jpeg, page_jpeg, page_png, page_webp, typical_scan_jpeg};

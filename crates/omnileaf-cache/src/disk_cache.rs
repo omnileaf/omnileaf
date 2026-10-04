@@ -1,8 +1,8 @@
 use std::{
     fs::{self, DirEntry, File},
-    io::{self, Read},
+    io,
     path::{Path, PathBuf},
-    process,
+    process, slice,
     sync::{
         Mutex, MutexGuard, PoisonError,
         atomic::{AtomicU64, Ordering},
@@ -55,33 +55,33 @@ impl DiskCache {
         Ok(cache)
     }
 
-    /// Blocks on the file system.
-    pub fn get(&self, key: &CacheKey) -> Result<Option<Vec<u8>>, CacheError> {
+    /// Misses an entry it can't read, or one a lost write left empty, and lets it go so it is made again; blocks on the file system.
+    #[must_use]
+    pub fn get(&self, key: &CacheKey) -> Option<Vec<u8>> {
         if !self.recency().touch(key) {
-            return Ok(None);
+            return None;
         }
-        let read_failed = |source| CacheError::Read {
-            key: key.clone(),
-            source,
-        };
-        let mut file = match File::options()
-            .read(true)
-            .write(true)
-            .open(self.path_of(key))
-        {
-            Ok(file) => file,
+        let path = self.path_of(key);
+        match fs::read(&path) {
+            Ok(bytes) if bytes.is_empty() => {
+                tracing::warn!(%key, "let go of a cache entry a lost write left empty");
+                self.remove(key);
+                None
+            }
+            Ok(bytes) => {
+                mark_used(&path, key);
+                Some(bytes)
+            }
             Err(error) if error.kind() == io::ErrorKind::NotFound => {
                 self.recency().forget(key);
-                return Ok(None);
+                None
             }
-            Err(error) => return Err(read_failed(error)),
-        };
-        let mut bytes = Vec::new();
-        file.read_to_end(&mut bytes).map_err(read_failed)?;
-        if let Err(error) = file.set_modified(SystemTime::now()) {
-            tracing::warn!(%key, %error, "remember when a cache entry was last used");
+            Err(error) => {
+                tracing::warn!(%key, %error, "let go of a cache entry that can't be read");
+                self.remove(key);
+                None
+            }
         }
-        Ok(Some(bytes))
     }
 
     /// Stores nothing for an entry larger than the whole budget, and blocks on the file system.
@@ -89,6 +89,10 @@ impl DiskCache {
         let size = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
         if size > self.budget_bytes {
             tracing::debug!(%key, size, "leave out a cache entry larger than the whole budget");
+            return Ok(());
+        }
+        if bytes.is_empty() {
+            tracing::debug!(%key, "leave out an empty cache entry, which reads as a lost write");
             return Ok(());
         }
         let write_failed = |source| CacheError::Write {
@@ -108,6 +112,12 @@ impl DiskCache {
         };
         self.remove_files(&evicted);
         Ok(())
+    }
+
+    /// Lets go of an entry its reader found damaged, and blocks on the file system.
+    pub fn remove(&self, key: &CacheKey) {
+        self.recency().forget(key);
+        self.remove_files(slice::from_ref(key));
     }
 
     #[must_use]
@@ -168,6 +178,17 @@ fn found_entry(entry: io::Result<DirEntry>) -> Option<Found> {
         let last_used = metadata.modified().unwrap_or(USED_LONG_AGO);
         (last_used, key, metadata.len())
     })
+}
+
+/// Remembers the entry was just used through a handle of its own, so an entry it may only read is still served.
+fn mark_used(path: &Path, key: &CacheKey) {
+    let marked = File::options()
+        .write(true)
+        .open(path)
+        .and_then(|file| file.set_modified(SystemTime::now()));
+    if let Err(error) = marked {
+        tracing::debug!(%key, %error, "remember when a cache entry was last used");
+    }
 }
 
 fn remove_leftover(path: &Path) {

@@ -16,6 +16,7 @@ export const FAKE_APP_VERSION = "1.2.3";
 
 export const MEDIUM_MIN_WIDTH = 600;
 export const EXPANDED_MIN_WIDTH = 840;
+export const LARGE_MIN_WIDTH = 1200;
 
 export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => ({ version: FAKE_APP_VERSION, platform: "linux" }),
