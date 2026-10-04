@@ -17,7 +17,7 @@ export const load: PageLoad = async ({ params, depends }) => {
   const read = await commands.seriesOverview(id);
   const shown: SeriesShown =
     read.status === "ok"
-      ? { kind: "found", id, overview: read.data }
+      ? { kind: "found", overview: read.data }
       : read.error.code === "seriesNotFound"
         ? { kind: "missing" }
         : { kind: "failed" };

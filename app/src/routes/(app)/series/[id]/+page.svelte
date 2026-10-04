@@ -27,7 +27,7 @@
   const shown = $derived(data.shown);
   const found = $derived(shown.kind === "found" ? shown : undefined);
 
-  const foundId = $derived(found?.id);
+  const foundId = $derived(found?.overview.id);
   const books = $derived(
     foundId === undefined ? undefined : seriesBookList(foundId),
   );
