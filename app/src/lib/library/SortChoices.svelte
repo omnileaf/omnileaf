@@ -3,12 +3,8 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import { SORTS } from "./library-listing";
+  import { SORT_LABELS } from "./sort-labels";
   import SortDirectionButton from "./SortDirectionButton.svelte";
-
-  const LABELS = {
-    title: m.library_sort_title,
-    dateAdded: m.library_sort_date_added,
-  } satisfies Record<LibrarySortBy, () => string>;
 
   let {
     sort,
@@ -49,7 +45,7 @@
           }}
         />
         <span class={sort.by === by ? "font-bold" : "font-medium"}>
-          {LABELS[by]()}
+          {SORT_LABELS[by]()}
         </span>
       </label>
       {#if sort.by === by}

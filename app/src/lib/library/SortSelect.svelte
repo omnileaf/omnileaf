@@ -5,12 +5,8 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import { SORTS } from "./library-listing";
+  import { SORT_LABELS } from "./sort-labels";
   import SortDirectionButton from "./SortDirectionButton.svelte";
-
-  const LABELS = {
-    title: m.library_sort_title,
-    dateAdded: m.library_sort_date_added,
-  } satisfies Record<LibrarySortBy, () => string>;
 
   const ICON_SIZE = 16;
 
@@ -49,7 +45,7 @@
         }}
       >
         {#each SORTS as by (by)}
-          <option value={by}>{LABELS[by]()}</option>
+          <option value={by}>{SORT_LABELS[by]()}</option>
         {/each}
       </select>
       <ChevronDown
