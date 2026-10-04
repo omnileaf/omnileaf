@@ -33,7 +33,7 @@
     value={shown + 1}
     aria-label={m.reader_slider()}
     aria-valuetext={m.reader_slider_value({ page: shown + 1, count })}
-    class="absolute inset-none m-none cursor-pointer opacity-0 block-full inline-full"
+    class="absolute inset-none mx-none my-auto cursor-pointer opacity-0 block-full inline-full android:block-touch-target"
     oninput={(event) => {
       onSeek(Number(event.currentTarget.value) - 1);
     }}

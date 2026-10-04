@@ -6,6 +6,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  onPlatform,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -22,6 +23,7 @@ import {
 } from "./reader-book.ts";
 
 const SWIPE_PX = 120;
+const ANDROID_TOUCH_TARGET_PX = 48;
 const FADE_MS = "0.15s";
 const NO_TIME = "0s";
 
@@ -329,6 +331,35 @@ test("turns to a page read ahead without waiting for it", async ({ page }) => {
   await expect(
     page.getByRole("main").getByRole("status").filter({ hasText: "Loading" }),
   ).toHaveCount(0);
+});
+
+test.describe("on Android", () => {
+  test.use({ backend: readerBackend(onPlatform("android").backend) });
+
+  test("answers a touch within 48 dp of the back link while drawing it at the boards' size", async ({
+    page,
+  }) => {
+    await openBook(page);
+    const link = await boxOf(controls(page));
+    const reach = (ANDROID_TOUCH_TARGET_PX - link.height) / 2;
+
+    const touched = await page.evaluate(
+      ({ x, y }) =>
+        document.elementFromPoint(x, y)?.closest("a")?.textContent.trim(),
+      { x: link.x + link.width / 2, y: link.y - reach + 1 },
+    );
+
+    expect(touched).toMatch(/Library|Back to the library/);
+    expect(link.height).toBeLessThan(ANDROID_TOUCH_TARGET_PX);
+  });
+
+  test("gives the page slider a touch target 48 dp tall", async ({ page }) => {
+    await openBook(page);
+
+    const slid = await boxOf(slider(page));
+
+    expect(slid.height).toBe(ANDROID_TOUCH_TARGET_PX);
+  });
 });
 
 test.describe("formats the webview can't decode", () => {
