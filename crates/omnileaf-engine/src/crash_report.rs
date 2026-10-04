@@ -1,3 +1,4 @@
+mod containment;
 mod file;
 mod issue;
 mod offers;
@@ -10,6 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{AppInfo, Platform, ProjectLink};
 
+pub use containment::{contain_panic, is_panic_contained};
 pub use file::{CrashReportError, CrashReportFile};
 pub use offers::{CrashReportOffers, UnsavedCrashReport};
 
