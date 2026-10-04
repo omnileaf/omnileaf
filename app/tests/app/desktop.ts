@@ -27,7 +27,7 @@ export async function setup(
     await library.remove();
   };
   const app = await launchDesktopApp({
-    port: WEBDRIVER_PORT,
+    webDriverPort: WEBDRIVER_PORT,
     dataDir,
     pickedFolder: library.folder,
     crashReports,

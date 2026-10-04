@@ -6,6 +6,7 @@ import { afterAll, beforeAll, expect, inject, test } from "vitest";
 
 import { type DesktopApp, launchDesktopApp } from "./desktop-app.ts";
 import { finishFirstLaunchIfShown } from "./first-launch.ts";
+import { pageShownScript } from "./page-shown.ts";
 import { Session, xpath } from "./webdriver.ts";
 
 /** Clear of the port the shared app's WebDriver server listens on, since both apps run at once. */
@@ -34,11 +35,6 @@ let crashReports: string | undefined;
 let app: DesktopApp | undefined;
 let session: Session | undefined;
 
-/** Whether the page is shown, its image loaded from the omni protocol and decoded. */
-function pageShownScript(page: number): string {
-  return `return [...document.images].some((image) => image.alt === "Page ${String(page)}" && image.complete && image.naturalWidth > 0 && !image.classList.contains("invisible") && image.getAttribute("aria-hidden") === null);`;
-}
-
 /** Whether the core holds the first book of the series as read up to `page`, asked through the app's own commands. */
 function pageSavedScript(series: string, page: number): string {
   return `return window.__TAURI_INTERNALS__.invoke("series_books", { id: ${JSON.stringify(series)}, listing: { shown: "all", direction: "ascending" }, after: null }).then((books) => books.books[0]?.reading?.page === ${String(page)}, () => false);`;
@@ -57,7 +53,7 @@ async function launch(): Promise<void> {
     throw new Error("the data folders were not made");
   }
   app = await launchDesktopApp({
-    port: RELAUNCHED_WEBDRIVER_PORT,
+    webDriverPort: RELAUNCHED_WEBDRIVER_PORT,
     dataDir,
     pickedFolder: inject("sampleLibraryFolder"),
     crashReports,
