@@ -186,11 +186,11 @@
     <div
       class="flex items-center border-bs border-border px-filter-panel-inline pbs-md pbe-lg"
     >
-      {#if matching !== undefined}
-        <p class="flex-1 text-detail text-muted">
+      <p role="status" class="flex-1 text-detail text-muted">
+        {#if matching !== undefined}
           {m.library_series_match({ count: matching })}
-        </p>
-      {/if}
+        {/if}
+      </p>
     </div>
   {:else}
     <div class="flex flex-col gap-md px-sheet-inline pbs-sm pbe-xs">
@@ -264,6 +264,11 @@
     <div
       class="border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom"
     >
+      <p role="status" class="sr-only">
+        {#if matching !== undefined}
+          {m.library_series_match({ count: matching })}
+        {/if}
+      </p>
       <button
         type="button"
         class="rounded-control bg-accent text-body font-semibold text-on-accent inline-full min-block-touch-target"

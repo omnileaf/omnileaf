@@ -291,6 +291,17 @@ test("says how many series the filter lets through", async ({ page }) => {
   }
 });
 
+test("tells screen readers how many series match as the filter changes", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  const panel = await openFilterAndSort(page);
+
+  await filterBy(page, "Unread", "Hide");
+
+  await expect(panel.getByRole("status")).toHaveText("2 series match");
+});
+
 test("marks the filter button with how many filters are on", async ({
   page,
 }) => {
