@@ -1,6 +1,6 @@
 //! Regenerates the licences of the packages the app ships, or checks the committed Rust ones are current.
 
-use std::{fs, io, path::Path, process::Command};
+use std::{env, fs, io, path::Path, process::Command};
 
 use anyhow::Context;
 
@@ -69,11 +69,15 @@ fn cargo_about_report(root: &Path) -> anyhow::Result<String> {
         .status()
         .context("fetch the crates")?;
     anyhow::ensure!(fetched.success(), "fetching the crates failed");
+    let report_path =
+        env::temp_dir().join(format!("omnileaf-cargo-about-{}.json", std::process::id()));
     let output = Command::new("cargo")
         .args([
             "about", "generate", "--format", "json", "--frozen", "--fail",
         ])
         .args(["--manifest-path", APP_MANIFEST, "--config", ABOUT_CONFIG])
+        .arg("--output-file")
+        .arg(&report_path)
         .current_dir(root)
         .output()
         .context("run cargo-about")?;
@@ -82,7 +86,9 @@ fn cargo_about_report(root: &Path) -> anyhow::Result<String> {
         "cargo-about failed: {}",
         String::from_utf8_lossy(&output.stderr)
     );
-    String::from_utf8(output.stdout).context("read cargo-about's report")
+    let report = fs::read_to_string(&report_path).context("read cargo-about's report")?;
+    fs::remove_file(&report_path).with_context(|| format!("remove {}", report_path.display()))?;
+    Ok(report)
 }
 
 fn is_pinned_cargo_about(version_output: &str) -> bool {
