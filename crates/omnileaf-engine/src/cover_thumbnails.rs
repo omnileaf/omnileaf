@@ -14,9 +14,10 @@ use tokio::{sync::OnceCell, task::spawn_blocking};
 
 use crate::{
     Library, LibraryError,
-    background_lane::{BackgroundLane, LaneStopped},
+    background_lane::BackgroundLane,
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
+    lane::LaneStopped,
 };
 
 const CACHE_BUDGET_BYTES: u64 = (if IS_MOBILE { 300 } else { 1024 }) * MEBIBYTE as u64;

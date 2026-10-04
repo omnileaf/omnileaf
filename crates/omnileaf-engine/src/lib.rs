@@ -13,6 +13,7 @@ mod external_storage;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 mod folder_watch;
 mod ipc_brand;
+mod lane;
 mod library;
 mod library_book;
 mod library_changes;
