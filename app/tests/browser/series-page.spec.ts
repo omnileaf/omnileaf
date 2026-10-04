@@ -104,6 +104,29 @@ test("shows a series' title, folder and how far it has been read", async ({
   ).toHaveJSProperty("value", 3);
 });
 
+test("opens a book in the reader from its row", async ({ page }) => {
+  await openSeries(page);
+
+  await books(page)
+    .filter({ hasText: shelf.titleOf(5) })
+    .getByRole("link")
+    .click();
+
+  await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(5)}$`));
+});
+
+test("opens the book reading goes on from in the reader from the up next line", async ({
+  page,
+}) => {
+  await openSeries(page);
+
+  await page
+    .getByRole("link", { name: `Continue ${shelf.titleOf(3)} at page 15` })
+    .click();
+
+  await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(3)}$`));
+});
+
 test("lists the series' books in order with how far each has been read", async ({
   page,
 }) => {

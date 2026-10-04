@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { resolve } from "$app/paths";
   import type { SeriesBook, SeriesOverview } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -27,7 +28,16 @@
 <div class="flex flex-col gap-sm">
   <p class="flex flex-col">
     <span class="text-caption text-muted">{m.series_up_next()}</span>
-    <span class="text-lead font-semibold">{upNext(overview.upNext)}</span>
+    {#if overview.upNext === null || overview.upNext.reading.state === "read"}
+      <span class="text-lead font-semibold">{upNext(overview.upNext)}</span>
+    {:else}
+      <a
+        href={resolve("/read/[book]", { book: overview.upNext.id })}
+        class="self-start text-lead font-semibold text-accent"
+      >
+        {upNext(overview.upNext)}
+      </a>
+    {/if}
   </p>
   <div class="flex flex-col gap-xs">
     <progress
