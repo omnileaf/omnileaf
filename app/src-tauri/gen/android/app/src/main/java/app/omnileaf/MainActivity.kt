@@ -17,6 +17,9 @@ class MainActivity : TauriActivity() {
   private val startingBackground: Int by lazy { getColor(startingTheme.pageBackground()) }
   private var webView: WebView? = null
 
+  /** Tauri's own back handler stays with the first activity, so once Android recreates the activity back would close the app from any page. */
+  override val handleBackNavigation = true
+
   override fun onCreate(savedInstanceState: Bundle?) {
     showStartingBarIcons(startingTheme)
     showTheAppBehindTheNavigationButtons()

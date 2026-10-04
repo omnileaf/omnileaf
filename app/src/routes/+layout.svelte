@@ -11,6 +11,7 @@
     setLanguageSetting,
   } from "$lib/language/language.svelte";
   import AppNavigation from "$lib/navigation/AppNavigation.svelte";
+  import { makeBackGoUp } from "$lib/navigation/back-goes-up";
   import { focusPageHeading } from "$lib/navigation/page-heading";
   import { sectionOf } from "$lib/navigation/sections";
   import NoticeHost from "$lib/notices/NoticeHost.svelte";
@@ -24,6 +25,7 @@
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
+  const backGoesUp = makeBackGoUp();
 
   $effect(() => {
     void commands.matchSystemBars(
@@ -34,7 +36,8 @@
 
   afterNavigate(({ type }) => {
     const isProblem = page.error !== null;
-    if (type !== "enter" || isProblem) {
+    const isArrival = type !== "enter" && !backGoesUp.isPassingThrough;
+    if (isArrival || isProblem) {
       focusPageHeading();
     }
   });
