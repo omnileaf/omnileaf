@@ -24,11 +24,9 @@
 
   let {
     filter,
-    showsHints,
     onChoose,
   }: {
     filter: LibraryFilter;
-    showsHints: boolean;
     onChoose: (condition: FilterCondition, inclusion: Inclusion) => void;
   } = $props();
 </script>
@@ -37,7 +35,7 @@
   {@const wording = CONDITIONS[condition]}
   <InclusionChoice
     label={wording.label()}
-    hint={showsHints ? wording.hint?.() : undefined}
+    hint={wording.hint?.()}
     chosen={filter[condition]}
     onChoose={(inclusion: Inclusion) => {
       onChoose(condition, inclusion);

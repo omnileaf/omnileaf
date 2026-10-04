@@ -180,11 +180,7 @@
     >
       <SortSelect sort={listing.sort} onSortBy={sortBy} onReverse={reverse} />
       <div class="flex flex-col border-bs border-chip">
-        <FilterConditions
-          filter={listing.filter}
-          showsHints={false}
-          onChoose={choose}
-        />
+        <FilterConditions filter={listing.filter} onChoose={choose} />
       </div>
     </div>
     <div
@@ -255,11 +251,7 @@
     >
       {#if tab === "filter"}
         <div class="flex flex-col px-sheet-inline pbs-sm pbe-lg">
-          <FilterConditions
-            filter={listing.filter}
-            showsHints={true}
-            onChoose={choose}
-          />
+          <FilterConditions filter={listing.filter} onChoose={choose} />
         </div>
       {:else}
         <SortChoices
