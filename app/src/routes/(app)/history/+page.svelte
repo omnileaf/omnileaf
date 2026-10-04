@@ -20,8 +20,7 @@
 
   const screenshotMode = getScreenshotMode();
   const history = historyList();
-  const today = localDayOf(new Date());
-
+  let today = $state(localDayOf(new Date()));
   let readThisWeekSeconds: number | undefined = $state();
 
   const hasEntries = $derived(
@@ -39,6 +38,7 @@
   }
 
   function readAgain(): void {
+    today = localDayOf(new Date());
     void history.load();
     void readThisWeek();
   }

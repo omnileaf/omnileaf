@@ -1,6 +1,10 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
+import {
+  CommandFailure,
+  emitFakeEvent,
+  type FakeBackend,
+} from "./fake-backend.ts";
 import {
   accessibilityViolations,
   DEFAULT_BACKEND,
@@ -15,6 +19,8 @@ type WireEntry = Awaited<
 >["entries"][number];
 
 const MONDAY_EVENING = new Date("2026-10-05T22:30:00Z");
+const TUESDAY_SMALL_HOURS = new Date("2026-10-06T01:00:00Z");
+const LIBRARY_CHANGED = "library-changed";
 const MINUTE = 60;
 const READ_THIS_WEEK = 3 * 60 * MINUTE + 12 * MINUTE;
 const ENTRIES_PER_PAGE = 50;
@@ -258,6 +264,22 @@ test.describe("with books read", () => {
         ? `Continue ${seriesTitle(4)}, ${bookTitle(4)}`
         : new RegExp(`^${seriesTitle(4)}`),
     );
+  });
+
+  test("names the days again from the date the list is read again on", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    await expect(
+      page.getByRole("region", { name: "Today 52 min" }),
+    ).toBeVisible();
+
+    await page.clock.setFixedTime(TUESDAY_SMALL_HOURS);
+    await emitFakeEvent(page, LIBRARY_CHANGED);
+
+    await expect(
+      page.getByRole("region", { name: "Yesterday 52 min" }),
+    ).toBeVisible();
   });
 
   for (const colorScheme of ["light", "dark"] as const) {
