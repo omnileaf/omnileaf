@@ -33,9 +33,14 @@
       }
     }
   ],
-  "library_folder_unreadable": "Couldn't read that folder.",
-  "library_folder_picker_unavailable": "Adding folders isn't available on this device yet.",
-  "library_add_folder_failed": "Something went wrong while adding the folder. Try again.",
+  "library_folder_unreadable_title": "Couldn't read that folder",
+  "library_folder_unreadable_body": "Omnileaf may not be allowed to open it, or it may have moved. Your library hasn't changed.",
+  "library_choose_another_folder": "Choose another folder",
+  "library_folder_picker_unavailable_title": "Adding folders isn't available on this device yet",
+  "library_folder_picker_unavailable_body": "It's coming in a later version of Omnileaf.",
+  "library_add_folder_failed_title": "Couldn't add the folder",
+  "library_add_folder_failed_body": "Something went wrong inside Omnileaf. Your library hasn't changed.",
+  "library_add_folder_try_again": "Try again",
   "navigation_label": "Main",
   "browse_title": "Browse",
   "browse_empty_title": "Nothing to browse yet",
@@ -99,5 +104,14 @@
   "screenshot_mode_nothing_sent": "Nothing about Screenshot mode is sent anywhere. It only changes what’s on screen and in reports.",
   "stand_in_series": "Series {number}",
   "screenshot_mode_preview_label": "Preview of one cover with Screenshot mode off and on",
-  "stand_in_folder": "Folder {number}"
+  "stand_in_folder": "Folder {number}",
+  "notice_dismiss": "Dismiss",
+  "undo_action": "Undo",
+  "undo_shortcut_control": "Ctrl Z",
+  "undo_shortcut_command": "⌘ Z",
+  "problem_page_missing_title": "This page doesn't exist",
+  "problem_page_missing_body": "The link may be out of date. Nothing in your library has changed.",
+  "problem_page_failed_title": "This page couldn't be opened",
+  "problem_page_failed_body": "Something went wrong inside Omnileaf. Nothing in your library has changed.",
+  "problem_go_to_library": "Go to Library"
 }

@@ -5,6 +5,10 @@
   import CollectionHeading from "$lib/screenshot-mode/CollectionHeading.svelte";
   import { getScreenshotMode } from "$lib/screenshot-mode/screenshot-mode.svelte";
 
+  import type { PageProps } from "./$types";
+
+  let { data }: PageProps = $props();
+
   const screenshotMode = getScreenshotMode();
 </script>
 
@@ -16,6 +20,7 @@
 <div class="mbs-lg">
   <AddLibraryFolder
     addFolder={commands.addLibraryFolder}
+    notices={data.notices}
     usesStandIns={screenshotMode.isOn}
   />
 </div>

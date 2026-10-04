@@ -1,30 +1,92 @@
 <script lang="ts">
+  import {
+    FolderX,
+    Lock,
+    type LucideIcon,
+    TriangleAlert,
+  } from "@lucide/svelte";
+  import { onDestroy } from "svelte";
+
   import type { commands, FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
+  import type { Notice, Notices } from "$lib/notices/notices.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { standInName } from "$lib/screenshot-mode/stand-ins";
 
   type Outcome =
     | { readonly kind: "idle" }
     | { readonly kind: "adding" }
-    | { readonly kind: "found"; readonly survey: FolderSurvey }
-    | { readonly kind: "failed"; readonly code: IpcErrorCode };
+    | { readonly kind: "found"; readonly survey: FolderSurvey };
 
-  const FAILURE_MESSAGES = {
-    folderPickerUnavailable: m.library_folder_picker_unavailable,
-    folderUnreadable: m.library_folder_unreadable,
-    internal: m.library_add_folder_failed,
-  } satisfies Record<IpcErrorCode, () => string>;
+  interface Failure {
+    readonly icon: LucideIcon;
+    readonly title: () => string;
+    readonly body: () => string;
+    readonly retry: (() => string) | undefined;
+  }
+
+  const FAILURES = {
+    folderUnreadable: {
+      icon: Lock,
+      title: m.library_folder_unreadable_title,
+      body: m.library_folder_unreadable_body,
+      retry: m.library_choose_another_folder,
+    },
+    folderPickerUnavailable: {
+      icon: FolderX,
+      title: m.library_folder_picker_unavailable_title,
+      body: m.library_folder_picker_unavailable_body,
+      retry: undefined,
+    },
+    internal: {
+      icon: TriangleAlert,
+      title: m.library_add_folder_failed_title,
+      body: m.library_add_folder_failed_body,
+      retry: m.library_add_folder_try_again,
+    },
+  } satisfies Record<IpcErrorCode, Failure>;
 
   interface Props {
     readonly addFolder: typeof commands.addLibraryFolder;
+    readonly notices: Notices;
     readonly usesStandIns: boolean;
   }
 
-  let { addFolder, usesStandIns }: Props = $props();
+  let { addFolder, notices, usesStandIns }: Props = $props();
 
   const SHOWN_FOLDER_STAND_IN = 1;
 
   let outcome: Outcome = $state({ kind: "idle" });
+  let failure: Notice | undefined;
+
+  onDestroy(withdrawFailure);
+
+  function withdrawFailure(): void {
+    if (failure !== undefined) {
+      notices.withdraw(failure);
+    }
+  }
+
+  function failureNotice(code: IpcErrorCode): Notice {
+    const { icon, title, body, retry }: Failure = FAILURES[code];
+    return {
+      tone: "warning",
+      icon,
+      title: title(),
+      body: body(),
+      actions:
+        retry === undefined
+          ? []
+          : [
+              {
+                label: retry(),
+                emphasis: "primary",
+                run: () => {
+                  void add();
+                },
+              },
+            ],
+    };
+  }
 
   function shownName(survey: FolderSurvey): string {
     return usesStandIns
@@ -36,12 +98,16 @@
     outcome = { kind: "adding" };
     const result = await addFolder();
     if (result.status === "error") {
-      outcome = { kind: "failed", code: result.error.code };
-    } else if (result.data === null) {
       outcome = { kind: "idle" };
-    } else {
-      outcome = { kind: "found", survey: result.data };
+      failure = failureNotice(result.error.code);
+      notices.show(failure);
+      return;
     }
+    withdrawFailure();
+    outcome =
+      result.data === null
+        ? { kind: "idle" }
+        : { kind: "found", survey: result.data };
   }
 </script>
 
@@ -68,7 +134,5 @@
         })}
       </p>
     {/if}
-  {:else if outcome.kind === "failed"}
-    <p>{FAILURE_MESSAGES[outcome.code]()}</p>
   {/if}
 </div>

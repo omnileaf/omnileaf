@@ -1,7 +1,10 @@
 import { expect, test } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import type { commands, FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
+import NoticeHost from "$lib/notices/NoticeHost.svelte";
+import { Notices } from "$lib/notices/notices.svelte";
 
 import AddLibraryFolder from "./AddLibraryFolder.svelte";
 
@@ -38,10 +41,18 @@ async function renderWith(
   addFolder: AddFolder,
   { usesStandIns } = { usesStandIns: false },
 ) {
-  const screen = await render(AddLibraryFolder, { addFolder, usesStandIns });
+  const notices = new Notices();
+  const screen = await render(AddLibraryFolder, {
+    addFolder,
+    notices,
+    usesStandIns,
+  });
+  await render(NoticeHost, { notices, platform: "linux" });
   return {
+    notices,
+    unmount: screen.unmount,
     button: screen.getByRole("button", { name: "Add a folder" }),
-    status: screen.getByRole("status"),
+    status: page.elementLocator(screen.container).getByRole("status"),
   };
 }
 
@@ -117,19 +128,71 @@ test("clears the last result when the picker is cancelled", async () => {
   await expect.element(status).toHaveTextContent("");
 });
 
-test.each<[IpcErrorCode, string]>([
-  ["folderUnreadable", "Couldn't read that folder."],
+test.each<[IpcErrorCode, string, string]>([
+  [
+    "folderUnreadable",
+    "Couldn't read that folder",
+    "Omnileaf may not be allowed to open it, or it may have moved. Your library hasn't changed.",
+  ],
   [
     "folderPickerUnavailable",
-    "Adding folders isn't available on this device yet.",
+    "Adding folders isn't available on this device yet",
+    "It's coming in a later version of Omnileaf.",
   ],
-  ["internal", "Something went wrong while adding the folder. Try again."],
-])("explains a %s failure", async (code, explanation) => {
-  const { button, status } = await renderWith(answering(failed(code)));
+  [
+    "internal",
+    "Couldn't add the folder",
+    "Something went wrong inside Omnileaf. Your library hasn't changed.",
+  ],
+])("warns when adding fails with %s", async (code, title, body) => {
+  const { notices, button } = await renderWith(answering(failed(code)));
 
   await button.click();
 
-  await expect.element(status).toHaveTextContent(explanation);
+  await expect
+    .poll(() => notices.shown)
+    .toMatchObject({ tone: "warning", title, body });
+});
+
+test.each<[IpcErrorCode, string]>([
+  ["folderUnreadable", "Choose another folder"],
+  ["internal", "Try again"],
+])("opens the picker again from the %s warning", async (code, retry) => {
+  const { status, button } = await renderWith(
+    answering(failed(code), found({})),
+  );
+  await button.click();
+
+  await page.getByRole("button", { name: retry }).click();
+
+  await expect
+    .element(status)
+    .toHaveTextContent("Found 3 comics in Sample Library.");
+});
+
+test("offers no retry when the device has no folder picker", async () => {
+  const { notices, button } = await renderWith(
+    answering(failed("folderPickerUnavailable")),
+  );
+
+  await button.click();
+
+  await expect.poll(() => notices.shown?.actions).toEqual([]);
+});
+
+test("puts a failure warning away once a folder is added", async () => {
+  const { notices, button, status } = await renderWith(
+    answering(failed("folderUnreadable"), found({})),
+  );
+  await button.click();
+  await expect.poll(() => notices.shown).toBeDefined();
+
+  await button.click();
+
+  await expect
+    .element(status)
+    .toHaveTextContent("Found 3 comics in Sample Library.");
+  expect(notices.shown).toBeUndefined();
 });
 
 test("disables the button while the picker is open", async () => {
@@ -146,4 +209,16 @@ test("disables the button while the picker is open", async () => {
   answer(CANCELLED);
 
   await expect.element(button).toBeEnabled();
+});
+
+test("withdraws its warning once it's gone from the page", async () => {
+  const { notices, button, unmount } = await renderWith(
+    answering(failed("folderUnreadable")),
+  );
+  await button.click();
+  await expect.poll(() => notices.shown).toBeDefined();
+
+  await unmount();
+
+  expect(notices.shown).toBeUndefined();
 });
