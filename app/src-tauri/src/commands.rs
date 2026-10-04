@@ -2,7 +2,7 @@
 
 use omnileaf_engine::{
     AppInfo, AppLanguage, Core, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan,
-    Library, ScanProgress,
+    Library, ScanProgress, SeriesCursor, SeriesPage,
 };
 use tauri::{AppHandle, State, Wry, ipc::Channel};
 use tauri_specta::{Builder, collect_commands};
@@ -14,6 +14,7 @@ pub(crate) fn builder() -> Builder<Wry> {
         app_info,
         add_library_folder,
         library_folders,
+        library_series,
         remove_library_folder,
         rescan_library_folder,
         rescan_library_folders,
@@ -86,6 +87,15 @@ async fn library_folders(
     after: Option<FolderCursor>,
 ) -> Result<FolderPage, IpcError> {
     Ok(library.folders(after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_series(
+    library: State<'_, Library>,
+    after: Option<SeriesCursor>,
+) -> Result<SeriesPage, IpcError> {
+    Ok(library.series(after).await?)
 }
 
 #[tauri::command]

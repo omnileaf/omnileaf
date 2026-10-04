@@ -2,7 +2,7 @@
 
 use std::error::Error;
 
-use omnileaf_engine::LibraryError;
+use omnileaf_engine::{LibraryError, describe_error};
 use serde::Serialize;
 use specta::Type;
 
@@ -36,7 +36,7 @@ impl IpcError {
     }
 
     pub(crate) fn internal(error: &dyn Error) -> Self {
-        tracing::error!(error = %describe(error), "command failed");
+        tracing::error!(error = %describe_error(error), "command failed");
         Self {
             code: IpcErrorCode::Internal,
             message: "something went wrong inside the app",
@@ -63,20 +63,9 @@ impl From<LibraryError> for IpcError {
             | LibraryError::Database(_)
             | LibraryError::Interrupted(_) => return Self::internal(&error),
         };
-        tracing::warn!(error = %describe(&error), "library command refused");
+        tracing::warn!(error = %describe_error(&error), "library command refused");
         Self { code, message }
     }
-}
-
-fn describe(error: &dyn Error) -> String {
-    let mut description = error.to_string();
-    let mut cause = error.source();
-    while let Some(source) = cause {
-        description.push_str(": ");
-        description.push_str(&source.to_string());
-        cause = source.source();
-    }
-    description
 }
 
 #[cfg(test)]

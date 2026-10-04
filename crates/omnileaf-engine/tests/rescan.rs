@@ -23,8 +23,8 @@ use omnileaf_engine::{
     FileChanges, FolderRescan, Library, LibraryFolder, RescanOutcome, ScanProgress,
 };
 use omnileaf_sync_proto::BookId;
-use scanned::{FixedClock, Scanned, owned, whole_page};
-use support::TempFolder;
+use scanned::{Scanned, owned, whole_page};
+use support::{FixedClock, TempFolder};
 
 const SERIES_01: &str = "Sample Series 01";
 const SERIES_02: &str = "Sample Series 02";

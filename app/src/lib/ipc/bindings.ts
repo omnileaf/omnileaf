@@ -13,6 +13,7 @@ export const commands = {
 	unreadableFolders: number,
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder", { onProgress })),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
+	librarySeries: (after: string & { readonly __brand: "SeriesCursor" } | null) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_series", { after })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
 	rescanLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<FolderRescan, IpcError>(__TAURI_INVOKE("rescan_library_folder", { id, onProgress })),
 	rescanLibraryFolders: () => typedError<FolderRescan[], IpcError>(__TAURI_INVOKE("rescan_library_folders")),
@@ -79,6 +80,14 @@ export type LibraryFolder = {
 	isAvailable: boolean,
 };
 
+export type LibrarySeries = {
+	id: string & { readonly __brand: "SeriesId" },
+	title: string,
+	bookCount: number,
+	/**  The cover of its first book by title, absent while none of its books has a file. */
+	cover: string & { readonly __brand: "CoverPath" } | null,
+};
+
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
 export type RescanOutcome = {
@@ -91,6 +100,12 @@ export type RescanOutcome = {
 
 /**  How far a scan has got: still finding the books in the folder, or reading the ones it found. */
 export type ScanProgress = { stage: "finding" } | { stage: "reading"; scanned: number; total: number };
+
+export type SeriesPage = {
+	series: LibrarySeries[],
+	/**  Absent on the last page. */
+	next: string & { readonly __brand: "SeriesCursor" } | null,
+};
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {
