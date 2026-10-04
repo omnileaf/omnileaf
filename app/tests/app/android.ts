@@ -52,6 +52,7 @@ export async function setup(
       platformName: "Android",
       "appium:automationName": "UiAutomator2",
       "appium:app": APP_PACKAGE,
+      "appium:enforceAppInstall": true,
       ...chosenDevice(),
       "appium:autoWebview": true,
       "appium:autoWebviewTimeout": WEBVIEW_TIMEOUT_MS,
