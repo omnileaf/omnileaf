@@ -9,6 +9,9 @@
   import SwipeableMain from "#lib/navigation/SwipeableMain.svelte";
   import NoticeHost from "#lib/notices/NoticeHost.svelte";
   import { getNotices } from "#lib/notices/notices.svelte.ts";
+  import QuickOpen from "#lib/search/QuickOpen.svelte";
+  import { isQuickOpenShortcut } from "#lib/search/quick-open-shortcut.ts";
+  import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
 
   import type { LayoutProps } from "./$types";
 
@@ -17,6 +20,14 @@
   const language = getLanguageSetting();
   const notices = getNotices();
   const backGoesUp = setBackGoesUp(makeBackGoUp());
+  const quickOpen = new QuickOpenState();
+
+  function openQuickOpen(event: KeyboardEvent): void {
+    if (isQuickOpenShortcut(event, data.appInfo.platform)) {
+      event.preventDefault();
+      quickOpen.open();
+    }
+  }
 
   afterNavigate(({ type }) => {
     const isProblem = page.error !== null;
@@ -26,6 +37,8 @@
     }
   });
 </script>
+
+<svelte:window onkeydown={openQuickOpen} />
 
 <div class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row">
   {#key language.resolved}
@@ -42,3 +55,6 @@
     {/key}
   </div>
 </div>
+{#key language.resolved}
+  <QuickOpen platform={data.appInfo.platform} {quickOpen} />
+{/key}

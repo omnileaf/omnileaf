@@ -122,7 +122,10 @@ for (const { platform, keys } of SHORTCUT_HINTS) {
     test(`the shortcut is shown as ${keys}`, async ({ page }) => {
       await openScreenshotMode(page);
 
-      await expect(page.locator("kbd")).toHaveText([keys, keys]);
+      await expect(page.getByRole("main").locator("kbd")).toHaveText([
+        keys,
+        keys,
+      ]);
     });
   });
 }
