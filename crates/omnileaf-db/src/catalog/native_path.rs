@@ -31,6 +31,10 @@ pub(crate) fn to_bytes(path: &Path) -> Vec<u8> {
 }
 
 #[cfg(windows)]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Unix takes the stored bytes over without copying, so both platforms share one signature"
+)]
 pub(crate) fn from_bytes(bytes: Vec<u8>) -> Option<PathBuf> {
     use std::{ffi::OsString, os::windows::ffi::OsStringExt};
 
