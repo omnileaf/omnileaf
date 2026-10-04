@@ -69,7 +69,7 @@ impl CoverThumbnails {
         let cache = self.cache().await;
         if let Some(cache) = cache.clone() {
             let cached_key = key.clone();
-            if let Some(cached) = spawn_blocking(move || cache.get(&cached_key)).await?? {
+            if let Some(cached) = spawn_blocking(move || cache.get(&cached_key)).await? {
                 return Ok(Some(cached));
             }
         }
@@ -116,7 +116,7 @@ fn make_thumbnail(
     key: &CacheKey,
     file: &Path,
 ) -> Result<Vec<u8>, ThumbnailError> {
-    if let Some(cached) = cache.map(|cache| cache.get(key)).transpose()?.flatten() {
+    if let Some(cached) = cache.and_then(|cache| cache.get(key)) {
         return Ok(cached);
     }
     let mut book = open_book(file)?;

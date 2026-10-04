@@ -10,12 +10,6 @@ pub enum CacheError {
         #[source]
         source: io::Error,
     },
-    #[error("read cache entry {key}")]
-    Read {
-        key: CacheKey,
-        #[source]
-        source: io::Error,
-    },
     #[error("write cache entry {key}")]
     Write {
         key: CacheKey,
