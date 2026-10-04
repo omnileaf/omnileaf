@@ -24,11 +24,17 @@ export function weekStartOf(day: LocalDay, firstDay: number): LocalDay {
   return day - ((weekdayOf(day) - firstDay + DAYS_PER_WEEK) % DAYS_PER_WEEK);
 }
 
-/** The day the locale starts its weeks on, 1 being Monday and 7 Sunday, or Monday where the browser can't tell. */
-export function firstDayOfWeek(locale: string): number {
-  const found = new Intl.Locale(locale);
-  if ("getWeekInfo" in found && typeof found.getWeekInfo === "function") {
-    return found.getWeekInfo().firstDay;
-  }
-  return MONDAY;
+interface WeekInfo {
+  readonly firstDay: number;
+}
+
+/** A locale's week, read through `getWeekInfo` or the `weekInfo` getter older WebKit offers instead. */
+export interface LocaleWeek {
+  readonly getWeekInfo?: () => WeekInfo;
+  readonly weekInfo?: WeekInfo;
+}
+
+/** The day `locale` starts its weeks on, 1 being Monday and 7 Sunday, or Monday where the browser can't tell. */
+export function firstDayOfWeek(locale: LocaleWeek): number {
+  return locale.getWeekInfo?.().firstDay ?? locale.weekInfo?.firstDay ?? MONDAY;
 }

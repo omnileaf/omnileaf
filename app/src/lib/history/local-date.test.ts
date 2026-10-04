@@ -42,13 +42,21 @@ test("starts a week on its first day, going back to it from any day of the week"
 });
 
 test("starts a week where the locale does", () => {
-  const firstDays = [firstDayOfWeek("en-GB"), firstDayOfWeek("de-DE")];
+  const firstDays = ["en-GB", "de-DE", "en-US"].map((tag) =>
+    firstDayOfWeek(new Intl.Locale(tag)),
+  );
 
-  expect(firstDays).toEqual([MONDAY, MONDAY]);
+  expect(firstDays).toEqual([MONDAY, MONDAY, SUNDAY]);
 });
 
-test("starts a week on Monday for a locale the browser knows nothing of", () => {
-  const firstDay = firstDayOfWeek("zxx");
+test("reads the first day of the week from the getter older WebKit offers", () => {
+  const firstDay = firstDayOfWeek({ weekInfo: { firstDay: SUNDAY } });
+
+  expect(firstDay).toBe(SUNDAY);
+});
+
+test("starts a week on Monday where the browser can't tell its first day", () => {
+  const firstDay = firstDayOfWeek({});
 
   expect(firstDay).toBe(MONDAY);
 });
