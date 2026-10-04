@@ -2,7 +2,7 @@ use std::{collections::HashMap, future, sync::Arc};
 
 use omnileaf_db::{
     Error,
-    store::{Continuity, Store, Writer},
+    store::{Store, Writer},
 };
 use tokio::{
     sync::{broadcast, mpsc, oneshot},
@@ -297,23 +297,33 @@ impl Keeper {
     /// Saves the page shown last and ends the reading session at this moment.
     async fn save_now(&mut self) -> Result<(), Error> {
         self.save().await?;
-        let Some(book) = self.session.as_ref().map(ReadingSession::book) else {
+        let Some(open) = self.session.as_mut() else {
             return Ok(());
         };
+        let (book, continuity) = (open.book(), open.continuity());
+        open.put_away();
         self.store
-            .write(move |writer| writer.record_reading_stopped(book.0, Continuity::AfterBreak))
+            .write(move |writer| writer.record_reading_stopped(book.0, continuity))
             .await
     }
 
     /// Records the reading session going on in the book read now, from the page it stands on.
-    async fn record_reading(&self) -> Result<(), Error> {
-        let Some(reached) = self.session.as_ref().and_then(ReadingSession::on_page) else {
+    async fn record_reading(&mut self) -> Result<(), Error> {
+        let Some(open) = self.session.as_mut() else {
             return Ok(());
         };
-        let place = reached.place();
-        self.store
-            .write(move |writer| writer.record_reading(&place, Continuity::AfterBreak))
-            .await
+        let Some(reached) = open.on_page() else {
+            return Ok(());
+        };
+        let (place, continuity) = (reached.place(), open.continuity());
+        let outcome = self
+            .store
+            .write(move |writer| writer.record_reading(&place, continuity))
+            .await;
+        if outcome.is_ok() {
+            open.recorded();
+        }
+        outcome
     }
 
     /// The session of `book`, or nothing for a report about a book not read now.
@@ -327,9 +337,16 @@ impl Keeper {
 
     #[tracing::instrument(skip_all)]
     async fn save(&mut self) -> Result<(), Error> {
-        let reading = self.session.as_ref().and_then(ReadingSession::unsaved);
-        let reached: Vec<ReachedPage> =
-            self.left_unsaved.values().copied().chain(reading).collect();
+        let reading = self
+            .session
+            .as_ref()
+            .and_then(|open| Some((open.unsaved()?, open.continuity())));
+        let reached: Vec<ReachedPage> = self
+            .left_unsaved
+            .values()
+            .copied()
+            .chain(reading.map(|(reached, _)| reached))
+            .collect();
         if reached.is_empty() {
             self.end_failed_run();
             return Ok(());
@@ -338,15 +355,15 @@ impl Keeper {
             .store
             .write(move |writer| {
                 let told = write_reached(writer, &reached)?;
-                if let Some(reading) = reading {
-                    writer.record_reading(&reading.place(), Continuity::AfterBreak)?;
+                if let Some((reading, continuity)) = reading {
+                    writer.record_reading(&reading.place(), continuity)?;
                 }
                 Ok(told)
             })
             .await;
         match outcome {
             Ok(told) => {
-                self.landed(&told, reading);
+                self.landed(&told, reading.map(|(reached, _)| reached));
                 Ok(())
             }
             Err(error) => {
@@ -361,6 +378,7 @@ impl Keeper {
         self.end_failed_run();
         if let (Some(open), Some(reading)) = (self.session.as_mut(), reading) {
             open.saved(reading);
+            open.recorded();
         }
         for &saved in told {
             if self.saved.send(saved).is_err() {

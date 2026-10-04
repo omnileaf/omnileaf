@@ -272,3 +272,79 @@ async fn counts_the_time_read_since_a_day() {
 
     assert_eq!(read_seconds, 120);
 }
+
+#[tokio::test]
+async fn lists_one_entry_for_a_page_read_for_longer_than_two_minutes() {
+    let shelf = Shelf::with_two_books("history-long-page").await;
+    let opened = shelf.restore(0).await;
+    shelf.clock.advance(3 * MINUTE_MS);
+    shelf.show(&opened, 1).await;
+
+    shelf.close(&opened).await;
+
+    let read: Vec<u32> = shelf
+        .entries()
+        .await
+        .iter()
+        .map(|entry| entry.read_seconds)
+        .collect();
+    assert_eq!(read, [180]);
+}
+
+#[tokio::test]
+async fn counts_the_time_on_the_last_page_until_the_book_closes() {
+    let shelf = Shelf::with_two_books("history-long-last-page").await;
+    let opened = shelf.restore(0).await;
+    shelf.clock.advance(3 * MINUTE_MS);
+
+    shelf.close(&opened).await;
+
+    let read: Vec<u32> = shelf
+        .entries()
+        .await
+        .iter()
+        .map(|entry| entry.read_seconds)
+        .collect();
+    assert_eq!(read, [180]);
+}
+
+#[tokio::test]
+async fn counts_no_time_the_app_spent_put_away() {
+    let shelf = Shelf::with_two_books("history-put-away").await;
+    let opened = shelf.restore(0).await;
+    shelf.clock.advance(MINUTE_MS);
+    shelf.library.save_reading().await.unwrap();
+    shelf.clock.advance(3 * MINUTE_MS);
+
+    shelf.close(&opened).await;
+
+    let read: Vec<u32> = shelf
+        .entries()
+        .await
+        .iter()
+        .map(|entry| entry.read_seconds)
+        .collect();
+    assert_eq!(read, [60]);
+}
+
+#[tokio::test]
+async fn lists_a_new_entry_for_reading_on_long_after_the_app_was_put_away() {
+    let shelf = Shelf::with_two_books("history-back-from-away").await;
+    let opened = shelf.restore(0).await;
+    shelf.clock.advance(MINUTE_MS);
+    shelf.library.save_reading().await.unwrap();
+    shelf.clock.advance(3 * MINUTE_MS);
+    shelf.show(&opened, 1).await;
+    shelf.library.save_reading().await.unwrap();
+    shelf.clock.advance(MINUTE_MS);
+
+    shelf.close(&opened).await;
+
+    let read: Vec<u32> = shelf
+        .entries()
+        .await
+        .iter()
+        .map(|entry| entry.read_seconds)
+        .collect();
+    assert_eq!(read, [60, 60]);
+}
