@@ -19,6 +19,10 @@
   import ReaderPanel from "#lib/reader/ReaderPanel.svelte";
   import ReaderTopBar from "#lib/reader/ReaderTopBar.svelte";
   import { isZoomedIn, zoneAction } from "#lib/reader/reader-zoom.ts";
+  import {
+    type ReadingCore,
+    ReadingReport,
+  } from "#lib/reader/reading-report.ts";
   import { Swipe, type SwipeTurn } from "#lib/reader/swipe.ts";
 
   const SWIPE_MIN_PX = 48;
@@ -31,6 +35,12 @@
     number
   >;
 
+  const CORE: ReadingCore = {
+    restored: (id, page) => void commands.readingRestored(id, page),
+    shown: (id, page) => void commands.pageShown(id, page),
+    closed: (id) => void commands.closeBook(id),
+  };
+
   let { book }: { book: OpenedBook } = $props();
 
   const screenshotMode = getScreenshotMode();
@@ -39,6 +49,7 @@
   const turner = untrack(
     () => new PageTurner(book.pages.length, book.startPage),
   );
+  const report = untrack(() => new ReadingReport(book.id, CORE));
   const swipe = new Swipe(SWIPE_MIN_PX);
   const controls = new ReaderControls(CONTROLS_HIDE_AFTER_MS);
   let heading: HTMLHeadingElement | undefined = $state();
@@ -172,6 +183,10 @@
     }
   }
 
+  $effect(() => {
+    report.show(turner.shown);
+  });
+
   onMount(() => {
     heading?.focus();
     return () => {
@@ -181,16 +196,14 @@
 
   onMount(() => {
     const viewport = window.visualViewport;
-    if (viewport === null) {
-      return;
-    }
     const followScale = (): void => {
-      viewportScale = viewport.scale;
+      viewportScale = viewport?.scale ?? viewportScale;
     };
     followScale();
-    viewport.addEventListener("resize", followScale);
+    viewport?.addEventListener("resize", followScale);
     return () => {
-      viewport.removeEventListener("resize", followScale);
+      viewport?.removeEventListener("resize", followScale);
+      report.close();
     };
   });
 </script>
