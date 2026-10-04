@@ -4,11 +4,11 @@
 )]
 
 mod library_seed;
+mod speed;
 mod support;
 
 use std::{mem, num::NonZeroUsize, time::Duration};
 
-use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Database,
     catalog::{
@@ -17,9 +17,10 @@ use omnileaf_db::{
     },
 };
 use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
+use speed::add_generated_series;
 use support::{ScratchFolder, library_config};
 
-const SERIES_COUNT: u32 = 10_000;
+const BOOK_TITLES: [&str; 1] = ["Volume 01"];
 const EVERY_HUNDREDTH_FINISHED: u32 = 100;
 const PAGE_SIZE: u16 = 50;
 const SAMPLES: usize = 40;
@@ -100,17 +101,7 @@ async fn searches_10_000_series_within_10_ms_at_p95() {
 
 /// Adds a book to each series, then marks the book of each hundredth series read.
 async fn add_generated_library(database: &Database) {
-    let names: Vec<(String, i64)> = (0..SERIES_COUNT)
-        .map(|number| (format!("Sample Series {number:05}"), i64::from(number)))
-        .collect();
-    let series: Vec<SeriesSeed<'_>> = names
-        .iter()
-        .map(|(name, added_at_ms)| SeriesSeed {
-            added_at_ms: *added_at_ms,
-            ..SeriesSeed::named(name)
-        })
-        .collect();
-    seed_library(database, &series).await;
+    add_generated_series(database, &BOOK_TITLES).await;
     database
         .write(|transaction| {
             transaction.execute(
