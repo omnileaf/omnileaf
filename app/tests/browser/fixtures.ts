@@ -172,6 +172,7 @@ export const APP_PAGES = [
   "/settings/about/licences",
   "/search",
   "/series/0190a3e4-0000-8000-8000-00000000000f",
+  "/read/0190a3e4-0000-8000-8000-00000000000f",
 ] as const;
 
 export function sidewaysOverflow(
