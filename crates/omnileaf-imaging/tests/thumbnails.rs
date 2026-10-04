@@ -7,7 +7,9 @@
 use std::io::Cursor;
 
 use omnileaf_imaging::{ImagingError, Size, THUMBNAIL_WIDTH, is_whole_jpeg, thumbnail};
-use omnileaf_testkit::{PageShape, grainy_scan_jpeg, page_jpeg, page_png, page_webp};
+use omnileaf_testkit::{
+    PageShape, grainy_scan_jpeg, page_jpeg, page_png, page_webp, typical_scan_jpeg,
+};
 use png::{BitDepth, ColorType, Encoder, chunk};
 
 const SEED: u64 = 11;
@@ -120,6 +122,20 @@ fn with_sof_size(jpeg: &[u8], width: u16, height: u16) -> Vec<u8> {
 #[test]
 fn makes_a_jpeg_thumbnail_320_px_wide_from_a_grainy_full_size_scan() {
     let scan = grainy_scan_jpeg(SEED).unwrap();
+
+    let thumbnail = thumbnail(&scan).unwrap();
+
+    let expected = Size {
+        width: THUMBNAIL_WIDTH,
+        height: 480,
+    };
+    assert_eq!(thumbnail.size, expected);
+    assert_eq!(decoded(&thumbnail.jpeg).0, expected);
+}
+
+#[test]
+fn makes_a_jpeg_thumbnail_320_px_wide_from_a_typical_4_2_0_scan() {
+    let scan = typical_scan_jpeg(SEED).unwrap();
 
     let thumbnail = thumbnail(&scan).unwrap();
 
