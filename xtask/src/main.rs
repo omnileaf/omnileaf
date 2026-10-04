@@ -4,6 +4,7 @@ mod android;
 mod apple;
 mod check;
 mod dev;
+mod devices;
 mod doctor;
 mod fixtures;
 mod fuzz_seeds;
@@ -50,6 +51,8 @@ enum Command {
         #[arg(long)]
         android_device: Option<String>,
     },
+    /// List the phones, emulators and Simulators `dev` can run the app on.
+    Devices,
     /// Check that this machine has the tools the repository needs.
     Doctor,
     /// Generate the test fixtures, replacing any from an earlier run.
@@ -94,6 +97,7 @@ fn main() -> anyhow::Result<()> {
             };
             dev::run(&workspace::root(), &platforms, &devices)?;
         }
+        Command::Devices => list_devices()?,
         Command::Doctor => {
             let os = std::env::consts::OS;
             let android = android::Toolchain::locate(|key| std::env::var_os(key), os);
@@ -159,6 +163,24 @@ fn regenerate_bindings() -> anyhow::Result<()> {
         .status()
         .context("run the bindings test")?;
     anyhow::ensure!(status.success(), "regenerating the bindings failed");
+    Ok(())
+}
+
+fn list_devices() -> anyhow::Result<()> {
+    let os = std::env::consts::OS;
+    let android = android::Toolchain::locate(|key| std::env::var_os(key), os);
+    let devices = devices::discover(&Process::in_workspace(), android.as_ref(), os)?;
+    if devices.is_empty() {
+        print_lines(&[
+            "no phones, emulators or Simulators found; cargo xtask doctor shows what's missing",
+        ]);
+        return Ok(());
+    }
+    print_lines(&devices::render(&devices));
+    print_lines(&[
+        "",
+        "run on one with cargo xtask dev --android-device <name> or --ios-device <name>",
+    ]);
     Ok(())
 }
 
