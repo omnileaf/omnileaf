@@ -266,7 +266,7 @@ fn stored_book(
 }
 
 /// Reads `is_read`, `is_started` and `position_page`, which a book with no reading state leaves null.
-fn stored_reading(row: &Row<'_>) -> rusqlite::Result<BookReading> {
+pub(crate) fn stored_reading(row: &Row<'_>) -> rusqlite::Result<BookReading> {
     let is_read: Option<bool> = row.get("is_read")?;
     let is_started: Option<bool> = row.get("is_started")?;
     Ok(match (is_read, is_started) {
