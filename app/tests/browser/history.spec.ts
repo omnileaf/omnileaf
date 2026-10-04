@@ -19,6 +19,7 @@ const MINUTE = 60;
 const READ_THIS_WEEK = 3 * 60 * MINUTE + 12 * MINUTE;
 const ENTRIES_PER_PAGE = 50;
 const DAY_MS = 86_400_000;
+const MONDAY = Date.UTC(2026, 9, 5) / DAY_MS;
 
 interface Session {
   readonly number: number;
@@ -272,6 +273,23 @@ test.describe("with books read", () => {
       expect(violations).toEqual([]);
     });
   }
+});
+
+test.describe("on a device whose region starts its weeks on Monday", () => {
+  test.use({
+    locale: "en-GB",
+    backend: {
+      ...READ_BACKEND,
+      readingTimeSince: (firstDay) =>
+        firstDay === MONDAY ? READ_THIS_WEEK : 0,
+    },
+  });
+
+  test("counts the time read this week from Monday", async ({ page }) => {
+    await openHistory(page);
+
+    await expect(page.getByText("3 h 12 min read this week")).toBeVisible();
+  });
 });
 
 test.describe("with a long history", () => {
