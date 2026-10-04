@@ -20,6 +20,7 @@ Where the library screen's startup and first paint stood when the grid, compact 
 | Cold start to the library's grid, release build with the WebDriver feature, a library of 3 series | 500 ms on desktop | median 471 ms (431 to 494 ms over nine launches) on the machine above, which is faster than the mid-range laptop the budget is set for | Manual, described below |
 | Cold start to the page loading, then to its first contentful paint | | medians of 274 ms from launch to the page starting to load, and 128 ms more to its first contentful paint | Manual, described below |
 | Scrolling on Android | 55 fps or more | Not measured yet | Needs a phone or an emulator in the loop |
+| Searching 10,000 series titled "Sample Series 00000" onwards: the first page of 50, the page after it and the count, for words every title holds down to words none holds, and one or two characters | 10 ms at the 95th percentile | slowest p95 5.7 ms, for "sample series", in the fastest of three passes of 40 samples | `crates/omnileaf-db/tests/library_search_speed.rs`, in release by `cargo xtask check` |
 
 ## Measuring
 
