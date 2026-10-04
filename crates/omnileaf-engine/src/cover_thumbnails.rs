@@ -15,14 +15,10 @@ use crate::{
     Library, LibraryError,
     background_lane::{BackgroundLane, LaneStopped},
     describe_error,
+    device_class::{IS_MOBILE, MEBIBYTE},
 };
 
-const MEBIBYTE: u64 = 1 << 20;
-const CACHE_BUDGET_BYTES: u64 = if cfg!(any(target_os = "android", target_os = "ios")) {
-    300 * MEBIBYTE
-} else {
-    1024 * MEBIBYTE
-};
+const CACHE_BUDGET_BYTES: u64 = (if IS_MOBILE { 300 } else { 1024 }) * MEBIBYTE as u64;
 const WORKERS: NonZeroUsize = NonZeroUsize::MIN.saturating_add(1);
 const WORKER_NAME: &str = "omnileaf-thumbnails";
 

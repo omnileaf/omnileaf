@@ -6,6 +6,7 @@ mod background_lane;
 mod clock;
 mod cover_path;
 mod cover_thumbnails;
+mod device_class;
 mod error_chain;
 mod library;
 mod library_folder;
