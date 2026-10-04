@@ -216,7 +216,7 @@ async fn keeps_the_local_time_the_book_was_read_at() {
     shelf.close(&opened).await;
 
     let entry = shelf.entries().await.into_iter().next().unwrap();
-    assert_eq!(entry.utc_offset_minutes, UTC_MINUS_FIVE);
+    assert_eq!(entry.utc_offset_minutes, utc_minus_five);
     assert_eq!(entry.day.day, SOME_MONDAY);
 }
 
