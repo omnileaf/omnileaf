@@ -173,7 +173,7 @@ fn dev_server_answers() -> anyhow::Result<bool> {
 }
 
 fn run_platforms(root: &Path, platforms: &[Platform], devices: &Devices) -> anyhow::Result<()> {
-    let mut apps = platforms
+    let apps = platforms
         .iter()
         .map(|&platform| {
             command_for("pnpm")
@@ -184,13 +184,17 @@ fn run_platforms(root: &Path, platforms: &[Platform], devices: &Devices) -> anyh
                 .with_context(|| format!("start the {platform:?} app"))
         })
         .collect::<anyhow::Result<Vec<_>>>()?;
+    wait_for_apps(apps)
+}
+
+fn wait_for_apps(apps: Vec<(Platform, Child)>) -> anyhow::Result<()> {
     let mut failed = Vec::new();
-    for (platform, app) in &mut apps {
+    for (platform, mut app) in apps {
         let status = app
             .wait()
             .with_context(|| format!("wait for the {platform:?} app to exit"))?;
         if !status.success() {
-            failed.push(*platform);
+            failed.push(platform);
         }
     }
     anyhow::ensure!(failed.is_empty(), "the {failed:?} app failed");
@@ -385,5 +389,37 @@ mod tests {
             tauri_args(Platform::Android, &devices).last().unwrap(),
             "Pixel 8"
         );
+    }
+
+    #[cfg(unix)]
+    fn app_exiting_with(code: u8) -> Child {
+        std::process::Command::new("sh")
+            .args(["-c", &format!("exit {code}")])
+            .spawn()
+            .unwrap()
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn fails_when_an_app_exits_with_an_error() {
+        let apps = vec![
+            (Platform::Desktop, app_exiting_with(0)),
+            (Platform::Android, app_exiting_with(3)),
+        ];
+
+        let outcome = wait_for_apps(apps);
+
+        assert!(outcome.unwrap_err().to_string().contains("Android"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn succeeds_when_every_app_exits_cleanly() {
+        let apps = vec![
+            (Platform::Desktop, app_exiting_with(0)),
+            (Platform::Ios, app_exiting_with(0)),
+        ];
+
+        assert!(wait_for_apps(apps).is_ok());
     }
 }
