@@ -24,7 +24,7 @@ use omnileaf_db::{
         remove_books_without_files,
     },
     history::{HistoryEntry, history_page, reading_time_by_day, reading_time_since},
-    store::{SessionPlace, Store},
+    store::{Continuity, SessionPlace, Store},
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
 use store_support::{FakeClock, NOW_UNIX_MS, book, open_store};
@@ -118,7 +118,7 @@ impl History {
         for at_ms in minutes.chain([to_ms]) {
             self.clock.set(at_ms);
             self.store
-                .write(move |writer| writer.record_reading(&place))
+                .write(move |writer| writer.record_reading(&place, Continuity::AfterBreak))
                 .await
                 .unwrap();
         }
