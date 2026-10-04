@@ -29,7 +29,10 @@
   );
 
   async function readThisWeek(): Promise<void> {
-    const firstDay = weekStartOf(today, firstDayOfWeek(getLocale()));
+    const firstDay = weekStartOf(
+      today,
+      firstDayOfWeek(new Intl.Locale(getLocale())),
+    );
     const read = await commands.readingTimeSince(firstDay);
     if (read.status === "error") {
       reportError(read.error);
