@@ -11,6 +11,8 @@ pub enum Error {
     },
     #[error("database {} stayed in {mode} journal mode instead of write-ahead logging", path.display())]
     NoWriteAheadLog { path: PathBuf, mode: String },
+    #[error("database {} belongs to another application", path.display())]
+    NotALibrary { path: PathBuf },
     #[error("database schema version {found} is newer than version {supported} this build knows")]
     NewerSchema { found: u32, supported: u32 },
     #[error("back up the database to {}", path.display())]
