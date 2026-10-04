@@ -271,6 +271,14 @@ test("says what it waited for when a script never says it holds", async () => {
   );
 });
 
+test("reads the address of the page shown", async () => {
+  const session = await Session.start(await serverShowing(BLANK_PAGE), {});
+
+  const url = await session.url();
+
+  expect(url).toBe("about:blank");
+});
+
 test("describes the page by its address, title and text", () => {
   const description = describePage({
     url: "http://tauri.localhost/",
