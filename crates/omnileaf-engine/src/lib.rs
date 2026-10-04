@@ -8,6 +8,7 @@ mod cover_path;
 mod cover_thumbnails;
 mod device_class;
 mod error_chain;
+mod ipc_brand;
 mod library;
 mod library_folder;
 mod library_layout;
