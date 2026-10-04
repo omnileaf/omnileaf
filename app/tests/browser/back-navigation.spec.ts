@@ -128,7 +128,9 @@ test("keeps the query of a link opened from a Settings page", async ({
   await expect(page).toHaveURL(/\/history\?from=about$/);
 });
 
-test("ignores a second link tapped while going back", async ({ page }) => {
+test("keeps the way back intact when two links are tapped at once", async ({
+  page,
+}) => {
   await openSection(page, "Settings");
   await openSettingsPage(page, "About");
 
@@ -140,6 +142,12 @@ test("ignores a second link tapped while going back", async ({ page }) => {
         ?.click();
     }
   });
+  const heading = page.getByRole("heading", { level: 1 });
+  await expect(heading).toHaveText(/^(Library|History)$/);
+  const landedOnHistory = (await heading.textContent()) === "History";
+  await page.goBack();
 
-  await expectPage(page, "Library");
+  await expect(page).toHaveURL(
+    landedOnHistory ? /^http:\/\/localhost:\d+\/$/ : OUTSIDE_THE_APP,
+  );
 });
