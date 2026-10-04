@@ -40,7 +40,7 @@ export class PagedList<Item, Cursor> {
   #latestLoad = 0;
   #listsBegun = 0;
   #next: Cursor | null = null;
-  #isLoadingMore = false;
+  #loadingMore: Promise<void> | undefined;
 
   constructor(private readonly readPage: ReadPage<Item, Cursor>) {}
 
@@ -57,20 +57,28 @@ export class PagedList<Item, Cursor> {
   }
 
   /** Reads the page after the last one shown, once at a time, until the list is complete, and drops it if another list was begun meanwhile. */
-  async loadMore(): Promise<void> {
+  loadMore(): Promise<void> {
+    this.#loadingMore ??= this.#readMore().finally(() => {
+      this.#loadingMore = undefined;
+    });
+    return this.#loadingMore;
+  }
+
+  /** Reads every page after the last one shown, a page at a time, until the list is complete or can't be read. */
+  async loadAll(): Promise<void> {
+    while (this.list.kind === "loaded" && this.#next !== null) {
+      await this.loadMore();
+    }
+  }
+
+  async #readMore(): Promise<void> {
     const after = this.#next;
-    if (this.list.kind !== "loaded" || after === null || this.#isLoadingMore) {
+    if (this.list.kind !== "loaded" || after === null) {
       return;
     }
     const shownList = this.#listsBegun;
     const shown = this.list.items;
-    this.#isLoadingMore = true;
-    let page: PageResult<Item, Cursor>;
-    try {
-      page = await this.readPage(after);
-    } finally {
-      this.#isLoadingMore = false;
-    }
+    const page = await this.readPage(after);
     if (shownList !== this.#listsBegun) {
       return;
     }
