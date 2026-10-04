@@ -84,7 +84,20 @@ impl PageBackground {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[cfg_attr(
+    not(any(target_os = "android", test)),
+    expect(dead_code, reason = "only Android draws a splash screen")
+)]
+enum SplashScreenTheme {
+    Device,
+    Light,
+    Dark,
+}
+
 #[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 #[cfg_attr(
     not(any(target_os = "android", test)),
     expect(
@@ -95,6 +108,7 @@ impl PageBackground {
 struct WindowBackground {
     shown: PageBackground,
     remembered: Option<PageBackground>,
+    splash_screen: SplashScreenTheme,
 }
 
 #[cfg_attr(
@@ -105,15 +119,18 @@ struct WindowBackground {
     )
 )]
 impl WindowBackground {
-    /// Remembers only a light or dark choice, so a cold start under System keeps following the device's dark mode.
+    /// Remembers only a light or dark choice, so under System a cold start and its splash screen keep following the device's dark mode.
     fn for_appearance(preference: ThemePreference, theme: Theme) -> Self {
-        let shown = PageBackground::for_theme(theme);
-        let remembered = match preference {
-            ThemePreference::System => None,
-            ThemePreference::Light => Some(PageBackground::LIGHT),
-            ThemePreference::Dark => Some(PageBackground::DARK),
+        let (remembered, splash_screen) = match preference {
+            ThemePreference::System => (None, SplashScreenTheme::Device),
+            ThemePreference::Light => (Some(PageBackground::LIGHT), SplashScreenTheme::Light),
+            ThemePreference::Dark => (Some(PageBackground::DARK), SplashScreenTheme::Dark),
         };
-        Self { shown, remembered }
+        Self {
+            shown: PageBackground::for_theme(theme),
+            remembered,
+            splash_screen,
+        }
     }
 }
 
@@ -199,7 +216,9 @@ mod android {
 
 #[cfg(test)]
 mod tests {
-    use super::{BarIcons, PageBackground, Theme, ThemePreference, WindowBackground};
+    use super::{
+        BarIcons, PageBackground, SplashScreenTheme, Theme, ThemePreference, WindowBackground,
+    };
 
     const APP_CSS: &str = include_str!("../../src/app.css");
     const DARK_THEME_RULE: &str = ":root[data-theme=\"dark\"] {";
@@ -288,7 +307,7 @@ mod tests {
     }
 
     #[test]
-    fn a_chosen_light_theme_is_shown_and_remembered() {
+    fn a_chosen_light_theme_is_shown_and_remembered_for_the_splash_screen() {
         let background = WindowBackground::for_appearance(ThemePreference::Light, Theme::Light);
 
         assert_eq!(
@@ -296,12 +315,13 @@ mod tests {
             WindowBackground {
                 shown: PageBackground::LIGHT,
                 remembered: Some(PageBackground::LIGHT),
+                splash_screen: SplashScreenTheme::Light,
             }
         );
     }
 
     #[test]
-    fn a_chosen_dark_theme_is_shown_and_remembered() {
+    fn a_chosen_dark_theme_is_shown_and_remembered_for_the_splash_screen() {
         let background = WindowBackground::for_appearance(ThemePreference::Dark, Theme::Dark);
 
         assert_eq!(
@@ -309,12 +329,13 @@ mod tests {
             WindowBackground {
                 shown: PageBackground::DARK,
                 remembered: Some(PageBackground::DARK),
+                splash_screen: SplashScreenTheme::Dark,
             }
         );
     }
 
     #[test]
-    fn following_the_system_shows_the_devices_theme_without_remembering_it() {
+    fn following_the_system_shows_the_devices_theme_and_leaves_the_splash_screen_to_the_device() {
         let background = WindowBackground::for_appearance(ThemePreference::System, Theme::Dark);
 
         assert_eq!(
@@ -322,6 +343,7 @@ mod tests {
             WindowBackground {
                 shown: PageBackground::DARK,
                 remembered: None,
+                splash_screen: SplashScreenTheme::Device,
             }
         );
     }

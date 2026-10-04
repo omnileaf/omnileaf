@@ -35,6 +35,7 @@ class PageBackground {
 class WindowBackground {
   var shown: PageBackground = PageBackground()
   var remembered: PageBackground? = null
+  var splashScreen: SplashScreenTheme = SplashScreenTheme.DEVICE
 }
 
 @TauriPlugin
@@ -58,6 +59,7 @@ class SystemBarsPlugin(activity: Activity) : Plugin(activity) {
     val color = background.shown.color()
     val shownActivity = PluginManager.activity as? MainActivity ?: return invoke.reject("no activity is showing the app")
     RememberedBackground(shownActivity).keep(background.remembered)
+    shownActivity.keepSplashScreenTheme(background.splashScreen)
     shownActivity.runOnUiThread { shownActivity.showPageBackground(color) }
     invoke.resolve()
   }
