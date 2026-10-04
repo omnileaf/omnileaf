@@ -15,6 +15,7 @@ mod series_books;
 mod series_count;
 mod series_listing;
 mod series_page;
+mod staged_rows;
 mod stored_id;
 
 pub use book::{NewBook, add_book, remove_books_without_files};
