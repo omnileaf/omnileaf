@@ -1,7 +1,17 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
+
+import type { IpcError } from "#lib/ipc/bindings.ts";
 
 import { type BookId, bookIdIn } from "./opened-book";
 import { type ReadingCore, ReadingReport } from "./reading-report";
+
+type CoreAnswer = Awaited<ReturnType<ReadingCore["shown"]>>;
+
+const HEARD: CoreAnswer = { status: "ok", data: null };
+const FAILURE: IpcError = {
+  code: "internal",
+  message: "something went wrong inside the app",
+};
 
 type Heard =
   | readonly ["restored", BookId, number]
@@ -17,31 +27,48 @@ function bookId(): BookId {
   return BOOK;
 }
 
-/** A core that hears each report at once, or holds every page shown until the test lets it through. */
-function listeningCore({ holdsPagesShown = false } = {}): {
+function ignoreFailure(): void {
+  return;
+}
+
+/** A core that hears each report at once, or holds every page shown until the test lets it through, and answers the first page shown as told. */
+function listeningCore({
+  holdsPagesShown = false,
+  answerToFirstPageShown = (): Promise<CoreAnswer> => Promise.resolve(HEARD),
+} = {}): {
   core: ReadingCore;
   heard: Heard[];
   letThrough: () => void;
 } {
   const heard: Heard[] = [];
   const held: (() => void)[] = [];
+  let isFirstPageShown = true;
   return {
     heard,
     letThrough: () => held.shift()?.(),
     core: {
       restored: (book, page) => {
         heard.push(["restored", book, page]);
-        return Promise.resolve();
+        return Promise.resolve(HEARD);
       },
       shown: (book, page) => {
         heard.push(["shown", book, page]);
-        return holdsPagesShown
-          ? new Promise((resolve) => held.push(resolve))
-          : Promise.resolve();
+        if (holdsPagesShown) {
+          return new Promise((resolve) =>
+            held.push(() => {
+              resolve(HEARD);
+            }),
+          );
+        }
+        if (isFirstPageShown) {
+          isFirstPageShown = false;
+          return answerToFirstPageShown();
+        }
+        return Promise.resolve(HEARD);
       },
       closed: (book) => {
         heard.push(["closed", book]);
-        return Promise.resolve();
+        return Promise.resolve(HEARD);
       },
     },
   };
@@ -49,7 +76,7 @@ function listeningCore({ holdsPagesShown = false } = {}): {
 
 test("reports the first page shown as the one reading was restored to", async () => {
   const { core, heard } = listeningCore();
-  const report = new ReadingReport(bookId(), core);
+  const report = new ReadingReport(bookId(), core, ignoreFailure);
 
   report.show(13);
 
@@ -58,7 +85,7 @@ test("reports the first page shown as the one reading was restored to", async ()
 
 test("reports every page shown after the restored one", async () => {
   const { core, heard } = listeningCore();
-  const report = new ReadingReport(bookId(), core);
+  const report = new ReadingReport(bookId(), core, ignoreFailure);
 
   report.show(13);
   report.show(14);
@@ -74,7 +101,7 @@ test("reports every page shown after the restored one", async () => {
 
 test("reports a page only once the core has heard the one before, so it hears them in order", async () => {
   const { core, heard, letThrough } = listeningCore({ holdsPagesShown: true });
-  const report = new ReadingReport(bookId(), core);
+  const report = new ReadingReport(bookId(), core, ignoreFailure);
   report.show(0);
   report.show(1);
   report.show(2);
@@ -88,7 +115,7 @@ test("reports a page only once the core has heard the one before, so it hears th
 
 test("reports the book closed once, and nothing shown after it", async () => {
   const { core, heard } = listeningCore();
-  const report = new ReadingReport(bookId(), core);
+  const report = new ReadingReport(bookId(), core, ignoreFailure);
   report.show(0);
 
   report.close();
@@ -101,4 +128,40 @@ test("reports the book closed once, and nothing shown after it", async () => {
       ["restored", bookId(), 0],
       ["closed", bookId()],
     ]);
+});
+
+test("reports a failure the core answers with, and goes on reporting", async () => {
+  const { core, heard } = listeningCore({
+    answerToFirstPageShown: () =>
+      Promise.resolve({ status: "error", error: FAILURE }),
+  });
+  const onFailure = vi.fn();
+  const report = new ReadingReport(bookId(), core, onFailure);
+  report.show(0);
+  report.show(1);
+
+  report.show(2);
+  report.close();
+
+  await expect.poll(() => heard.at(-1)).toEqual(["closed", bookId()]);
+  expect(heard).toHaveLength(4);
+  expect(onFailure).toHaveBeenCalledWith(FAILURE);
+});
+
+test("reports a report the core rejects, and goes on reporting", async () => {
+  const rejected = new Error("the core could not be reached");
+  const { core, heard } = listeningCore({
+    answerToFirstPageShown: () => Promise.reject(rejected),
+  });
+  const onFailure = vi.fn();
+  const report = new ReadingReport(bookId(), core, onFailure);
+  report.show(0);
+  report.show(1);
+
+  report.show(2);
+  report.close();
+
+  await expect.poll(() => heard.at(-1)).toEqual(["closed", bookId()]);
+  expect(heard).toHaveLength(4);
+  expect(onFailure).toHaveBeenCalledWith(rejected);
 });

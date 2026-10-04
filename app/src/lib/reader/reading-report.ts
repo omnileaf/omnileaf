@@ -1,10 +1,13 @@
+import type { commands } from "#lib/ipc/bindings.ts";
 import type { BookId } from "#lib/reader/opened-book.ts";
 
-/** Where the core hears about reading, each report resolving once it is heard and never rejecting. */
+type Heard = ReturnType<typeof commands.pageShown>;
+
+/** Where the core hears about reading, each report settling once it is heard. */
 export interface ReadingCore {
-  restored(book: BookId, page: number): Promise<void>;
-  shown(book: BookId, page: number): Promise<void>;
-  closed(book: BookId): Promise<void>;
+  restored(book: BookId, page: number): Heard;
+  shown(book: BookId, page: number): Heard;
+  closed(book: BookId): Heard;
 }
 
 /** Tells the core the page reading was restored to, then each page shown after it, until the book closes. */
@@ -16,6 +19,7 @@ export class ReadingReport {
   constructor(
     readonly book: BookId,
     private readonly core: ReadingCore,
+    private readonly onFailure: (error: unknown) => void,
   ) {}
 
   show(page: number): void {
@@ -39,7 +43,16 @@ export class ReadingReport {
   }
 
   /** Sends the report once the core has heard the one before, since commands sent at once may reach it in any order. */
-  #send(report: () => Promise<void>): void {
-    this.#heard = this.#heard.then(report);
+  #send(report: () => Heard): void {
+    this.#heard = this.#heard.then(report).then(
+      (answer) => {
+        if (answer.status === "error") {
+          this.onFailure(answer.error);
+        }
+      },
+      (error: unknown) => {
+        this.onFailure(error);
+      },
+    );
   }
 }
