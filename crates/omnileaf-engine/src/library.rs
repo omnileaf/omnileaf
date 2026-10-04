@@ -4,16 +4,22 @@ use omnileaf_db::{
     Config, Database,
     catalog::{
         NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator, add_root, library_root,
-        library_roots, remove_root, set_home_root,
+        library_roots, mark_root_available, mark_root_unavailable, remove_root, set_home_root,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     store::{Changed, Clock, Store},
 };
-use tokio::{sync::broadcast, task::spawn_blocking};
+use tokio::{
+    sync::{Mutex, broadcast},
+    task::spawn_blocking,
+};
 
 use crate::{
-    AppLanguage, FolderCursor, FolderId, FolderPage, FolderScan, LibraryFolder, ScanProgress,
-    scan::{Target, find_books_in, scan},
+    AppLanguage, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, LibraryFolder,
+    RescanOutcome, ScanProgress,
+    library_layout::folder_name,
+    rescan::rescan,
+    scan::{Target, find_books_in, scan, walk},
 };
 
 const DATABASE_FILE: &str = "library.sqlite";
@@ -29,6 +35,8 @@ const MAPPED_DATABASE_BYTES: u32 = if cfg!(any(target_os = "android", target_os 
 /// The library database in the home folder, and the folders it reads.
 pub struct Library {
     store: Store,
+    /// Held for each scan and folder removal, so none compares a folder with a catalog another is changing.
+    scanning: Mutex<()>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -75,6 +83,7 @@ impl Library {
         .await??;
         let library = Self {
             store: Store::new(database, clock),
+            scanning: Mutex::new(()),
         };
         library.set_home(home).await?;
         Ok(library)
@@ -87,10 +96,11 @@ impl Library {
         folder: PathBuf,
         mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderScan, LibraryError> {
+        let _scanning = self.scanning.lock().await;
         on_progress(ScanProgress::Finding);
         let layout = find_books_in(folder.clone()).await?;
         let root = self.link(folder.clone()).await?;
-        let target = self.target(root, folder);
+        let target = self.target(root, RootKind::Linked, folder);
         scan(self.store.database(), target, layout, on_progress).await
     }
 
@@ -110,9 +120,10 @@ impl Library {
         })
     }
 
-    /// Forgets the folder and the books found only in it, leaving its files where they are.
+    /// Forgets the folder and the books found only in it, leaving its files where they are, once any scan in progress ends.
     #[tracing::instrument(skip_all, fields(folder = %id))]
     pub async fn remove_folder(&self, id: FolderId) -> Result<(), LibraryError> {
+        let _scanning = self.scanning.lock().await;
         Ok(self
             .store
             .database()
@@ -120,13 +131,14 @@ impl Library {
             .await?)
     }
 
-    /// Reads the folder's books into the catalog, calling `on_progress` as it goes.
+    /// Brings the catalog in line with the folder's files, removing nothing when the folder can't be read or looks unplugged.
     #[tracing::instrument(skip_all, fields(folder = %id))]
-    pub async fn scan_folder(
+    pub async fn rescan_folder(
         &self,
         id: FolderId,
         mut on_progress: impl FnMut(ScanProgress) + Send,
-    ) -> Result<FolderScan, LibraryError> {
+    ) -> Result<FolderRescan, LibraryError> {
+        let _scanning = self.scanning.lock().await;
         let root = self
             .store
             .database()
@@ -134,9 +146,46 @@ impl Library {
             .await?;
         let RootLocator::Path(folder) = root.locator;
         on_progress(ScanProgress::Finding);
-        let layout = find_books_in(folder.clone()).await?;
-        let target = self.target(root.id, folder);
-        scan(self.store.database(), target, layout, on_progress).await
+        let outcome = match walk(folder.clone()).await? {
+            Ok(layout) => {
+                let target = self.target(root.id, root.kind, folder.clone());
+                rescan(&self.store, target, layout, on_progress).await?
+            }
+            Err(error) => {
+                tracing::warn!(%error, "keep the books of a folder the rescan can't read");
+                RescanOutcome::Unreachable
+            }
+        };
+        self.note_availability(root.id, root.unavailable_since_ms, &outcome)
+            .await?;
+        Ok(FolderRescan {
+            id,
+            name: folder_name(&folder),
+            outcome,
+        })
+    }
+
+    /// Rescans the home folder and every linked folder in turn, in the order they were added, leaving out a folder removed meanwhile.
+    #[tracing::instrument(skip_all)]
+    pub async fn rescan_folders(&self) -> Result<Vec<FolderRescan>, LibraryError> {
+        let mut rescans = Vec::new();
+        let mut after = None;
+        loop {
+            let page = self.folders(after).await?;
+            for folder in page.folders {
+                match self.rescan_folder(folder.id, |_| {}).await {
+                    Ok(rescan) => rescans.push(rescan),
+                    Err(LibraryError::FolderNotFound { id }) => {
+                        tracing::debug!(folder = %id, "skip a folder removed since the rescan listed it");
+                    }
+                    Err(error) => return Err(error),
+                }
+            }
+            match page.next {
+                Some(next) => after = Some(next),
+                None => return Ok(rescans),
+            }
+        }
     }
 
     /// Sorts the library's titles for the app's language, keying them again only when it isn't the one they sort by.
@@ -176,6 +225,7 @@ impl Library {
         Ok(())
     }
 
+    /// Reads a folder linked before as available again, since it was just read.
     async fn link(&self, folder: PathBuf) -> Result<RootId, LibraryError> {
         let root = NewRoot {
             kind: RootKind::Linked,
@@ -185,13 +235,44 @@ impl Library {
         Ok(self
             .store
             .database()
-            .write(move |transaction| add_root(transaction, &root))
+            .write(move |transaction| {
+                let id = add_root(transaction, &root)?;
+                mark_root_available(transaction, id)?;
+                Ok(id)
+            })
             .await?)
     }
 
-    fn target(&self, root: RootId, folder: PathBuf) -> Target {
+    /// Writes only when the folder's availability changed, so an unchanged rescan stays a read.
+    async fn note_availability(
+        &self,
+        root: RootId,
+        unavailable_since_ms: Option<i64>,
+        outcome: &RescanOutcome,
+    ) -> Result<(), LibraryError> {
+        let database = self.store.database();
+        match (outcome, unavailable_since_ms) {
+            (RescanOutcome::Rescanned(_), None)
+            | (RescanOutcome::Unreachable | RescanOutcome::FoundEmpty, Some(_)) => {}
+            (RescanOutcome::Rescanned(_), Some(_)) => {
+                database
+                    .write(move |transaction| mark_root_available(transaction, root))
+                    .await?;
+            }
+            (RescanOutcome::Unreachable | RescanOutcome::FoundEmpty, None) => {
+                let since_ms = self.now_ms();
+                database
+                    .write(move |transaction| mark_root_unavailable(transaction, root, since_ms))
+                    .await?;
+            }
+        }
+        Ok(())
+    }
+
+    fn target(&self, root: RootId, kind: RootKind, folder: PathBuf) -> Target {
         Target {
             root,
+            kind,
             folder,
             added_at_ms: self.now_ms(),
         }

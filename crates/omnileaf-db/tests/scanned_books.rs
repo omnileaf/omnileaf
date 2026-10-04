@@ -11,7 +11,7 @@ use omnileaf_db::{
     Database, Error,
     catalog::{
         BookFile, NewRoot, NewSeries, RootId, RootKind, RootLocator, ScannedBook, add_root,
-        record_scanned_books,
+        record_moved_books, record_scanned_books,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId, SourceId};
@@ -258,6 +258,52 @@ async fn files_a_book_found_again_in_another_series_where_it_was_first_found() {
         .await;
 
     assert_eq!(filed_in, first_series);
+}
+
+#[tokio::test]
+async fn refiles_a_moved_book_in_the_series_and_under_the_title_of_its_new_place() {
+    let library = Library::open("scanned-moved").await;
+    library
+        .record(library.found("Sample Series 01", "Sample Series 01/Volume 01.cbz", 1))
+        .await;
+    let mut moved = library.found(
+        "Sample Series 02",
+        "Sample Series 02/Volume 01 (fixed).cbz",
+        1,
+    );
+    moved.title = "Volume 01 (fixed)".to_owned();
+    let new_series = moved.series.id();
+
+    let filed_in = library
+        .database
+        .write(move |transaction| record_moved_books(transaction, &[moved]))
+        .await
+        .unwrap();
+
+    assert_eq!(filed_in, [new_series]);
+    assert_eq!(
+        library.series().await,
+        [
+            ("Sample Series 01".to_owned(), 0),
+            ("Sample Series 02".to_owned(), 1)
+        ]
+    );
+    assert_eq!(library.books().await, ["Volume 01 (fixed)"]);
+}
+
+#[tokio::test]
+async fn adds_a_moved_book_the_catalog_no_longer_holds() {
+    let library = Library::open("scanned-moved-new").await;
+    let moved = library.found("Sample Series 02", "Sample Series 02/Volume 01.cbz", 1);
+
+    library
+        .database
+        .write(move |transaction| record_moved_books(transaction, &[moved]))
+        .await
+        .unwrap();
+
+    assert_eq!(library.series().await, [("Sample Series 02".to_owned(), 1)]);
+    assert_eq!(library.books().await, ["Volume 01"]);
 }
 
 #[cfg(unix)]

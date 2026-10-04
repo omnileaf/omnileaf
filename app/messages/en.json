@@ -92,6 +92,71 @@
   "library_remove_folder_body": "Its comics leave your library. The files stay where they are.",
   "library_remove_folder_cancel": "Cancel",
   "library_remove_folder_failed": "Couldn't remove {name}. Try again.",
+  "library_rescan_folder": "Rescan",
+  "library_rescan_folder_label": "Rescan {name}",
+  "library_rescan_checking": "Checking {name} for changes",
+  "library_rescan_up_to_date": "{name} is up to date.",
+  "library_rescan_done": "Rescanned {name}.",
+  "library_rescan_added": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} book added.",
+        "countPlural=other": "{formattedCount} books added."
+      }
+    }
+  ],
+  "library_rescan_updated": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} book updated.",
+        "countPlural=other": "{formattedCount} books updated."
+      }
+    }
+  ],
+  "library_rescan_moved": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} book moved or renamed.",
+        "countPlural=other": "{formattedCount} books moved or renamed."
+      }
+    }
+  ],
+  "library_rescan_removed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} book removed.",
+        "countPlural=other": "{formattedCount} books removed."
+      }
+    }
+  ],
+  "library_rescan_unreachable": "{name} isn't available. Its books stay in your library until it's back.",
+  "library_rescan_found_empty": "Found no books in {name}. Its books stay in your library in case its drive isn't connected.",
+  "library_rescan_failed": "Couldn't rescan {name}. Try again.",
+  "library_folder_unavailable": "Not available",
   "appearance_title": "Appearance",
   "appearance_light_or_dark": "Light or dark",
   "theme_system": "System",

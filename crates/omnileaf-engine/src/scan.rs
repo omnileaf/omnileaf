@@ -1,15 +1,16 @@
 use std::{
     collections::BTreeSet,
     error::Error,
-    fs, io,
-    path::{PathBuf, StripPrefixError},
+    fs::{self, Metadata},
+    io,
+    path::{Path, PathBuf, StripPrefixError},
 };
 
 use omnileaf_db::{
     Database,
-    catalog::{BookFile, NewSeries, RootId, ScannedBook, record_scanned_books},
+    catalog::{BookFile, NewSeries, RootId, RootKind, ScannedBook, record_scanned_books},
 };
-use omnileaf_formats::{FormatError, fingerprint_book, open_book};
+use omnileaf_formats::{Book, FormatError, fingerprint_book, open_book};
 use omnileaf_sync_proto::{KeyError, SeriesId};
 use serde::Serialize;
 use specta::Type;
@@ -21,7 +22,7 @@ use crate::{
     library_layout::{FoundBook, Layout, find_books, folder_name},
 };
 
-const BOOKS_PER_BATCH: usize = 32;
+pub(crate) const BOOKS_PER_BATCH: usize = 32;
 
 /// How far a scan has got: still finding the books in the folder, or reading the ones it found.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
@@ -42,7 +43,7 @@ pub struct FolderScan {
 }
 
 #[derive(Debug, thiserror::Error)]
-enum UnreadableBook {
+pub(crate) enum UnreadableBook {
     #[error("open the book")]
     Format(#[from] FormatError),
     #[error("read when the book last changed")]
@@ -53,10 +54,18 @@ enum UnreadableBook {
     OutsideFolder(#[from] StripPrefixError),
 }
 
+/// Size and modification time, which tell a rescan whether a book's file changed without reading it again.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct FileStamp {
+    pub(crate) size_bytes: u64,
+    pub(crate) modified_at_ms: i64,
+}
+
 /// The root a scan records its books under, and when it found them.
 #[derive(Clone)]
 pub(crate) struct Target {
     pub(crate) root: RootId,
+    pub(crate) kind: RootKind,
     pub(crate) folder: PathBuf,
     pub(crate) added_at_ms: i64,
 }
@@ -71,13 +80,17 @@ struct Tally {
 
 /// Fails only when the folder itself can't be read.
 pub(crate) async fn find_books_in(folder: PathBuf) -> Result<Layout, LibraryError> {
-    let walked = folder.clone();
-    spawn_blocking(move || find_books(&walked))
+    walk(folder.clone())
         .await?
         .map_err(|source| LibraryError::FolderUnreadable {
             path: folder,
             source,
         })
+}
+
+/// Hands back the walk's own failure to read the folder for the caller to decide what it means.
+pub(crate) async fn walk(folder: PathBuf) -> Result<io::Result<Layout>, LibraryError> {
+    Ok(spawn_blocking(move || find_books(&folder)).await?)
 }
 
 /// Records the books found in batches of one transaction each, reporting progress after every batch.
@@ -87,7 +100,7 @@ pub(crate) async fn scan(
     layout: Layout,
     mut on_progress: impl FnMut(ScanProgress) + Send,
 ) -> Result<FolderScan, LibraryError> {
-    let total = u32::try_from(layout.books.len()).unwrap_or(u32::MAX);
+    let total = saturating_u32(layout.books.len());
     let mut tally = Tally::default();
     on_progress(ScanProgress::Reading { scanned: 0, total });
     for batch in layout.books.chunks(BOOKS_PER_BATCH) {
@@ -112,10 +125,10 @@ pub(crate) async fn scan(
     }
     Ok(FolderScan {
         name: folder_name(&target.folder),
-        series: u32::try_from(tally.series.len()).unwrap_or(u32::MAX),
+        series: saturating_u32(tally.series.len()),
         books: tally.books,
         unreadable_books: tally.unreadable_books,
-        unreadable_folders: layout.unreadable_folders,
+        unreadable_folders: saturating_u32(layout.unreadable_folders.len()),
     })
 }
 
@@ -136,16 +149,24 @@ impl Tally {
     }
 }
 
-fn read_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
+pub(crate) fn saturating_u32(items: usize) -> u32 {
+    u32::try_from(items).unwrap_or(u32::MAX)
+}
+
+pub(crate) fn read_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
     let read = read_found_book(found, target);
     if let Err(error) = &read {
-        tracing::warn!(
-            path = %found.path.display(),
-            error = error as &dyn Error,
-            "skip a book the scan can't read"
-        );
+        warn_unreadable(found, error);
     }
     read
+}
+
+pub(crate) fn warn_unreadable(found: &FoundBook, error: &UnreadableBook) {
+    tracing::warn!(
+        path = %found.path.display(),
+        error = error as &dyn Error,
+        "skip a book the scan can't read"
+    );
 }
 
 fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
@@ -153,11 +174,7 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
     let book = open_book(&found.path)?;
     let fingerprint = fingerprint_book(&found.path)?;
     let metadata = fs::metadata(&found.path)?;
-    let size_bytes = if metadata.is_dir() {
-        book.pages().iter().map(|page| page.size).sum()
-    } else {
-        metadata.len()
-    };
+    let stamp = FileStamp::of(&metadata, || Ok(book))?;
     Ok(ScannedBook {
         series: NewSeries::local(&found.series, target.added_at_ms)?,
         fingerprint,
@@ -166,10 +183,32 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
         file: BookFile {
             root: target.root,
             location,
-            size_bytes,
-            modified_at_ms: i64::try_from(unix_ms(metadata.modified()?)).unwrap_or(i64::MAX),
+            size_bytes: stamp.size_bytes,
+            modified_at_ms: stamp.modified_at_ms,
         },
     })
+}
+
+impl FileStamp {
+    pub(crate) fn read(path: &Path) -> Result<Self, UnreadableBook> {
+        Self::of(&fs::metadata(path)?, || open_book(path))
+    }
+
+    /// Opens a folder of images to add up its pages, since a folder's own size says nothing about them.
+    fn of(
+        metadata: &Metadata,
+        open: impl FnOnce() -> Result<Book, FormatError>,
+    ) -> Result<Self, UnreadableBook> {
+        let size_bytes = if metadata.is_dir() {
+            open()?.pages().iter().map(|page| page.size).sum()
+        } else {
+            metadata.len()
+        };
+        Ok(Self {
+            size_bytes,
+            modified_at_ms: i64::try_from(unix_ms(metadata.modified()?)).unwrap_or(i64::MAX),
+        })
+    }
 }
 
 #[cfg(test)]
@@ -180,6 +219,7 @@ mod tests {
     fn refuses_a_book_found_outside_the_folder_it_scans() {
         let target = Target {
             root: "1".parse().unwrap(),
+            kind: RootKind::Linked,
             folder: PathBuf::from("/media/Sample Library"),
             added_at_ms: 0,
         };

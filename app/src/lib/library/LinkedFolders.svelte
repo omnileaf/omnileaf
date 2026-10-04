@@ -13,10 +13,14 @@
   let {
     folders,
     addFolder,
+    rowAction,
+    status,
     hint,
   }: {
     folders: LibraryFolders;
     addFolder: AddFolder;
+    rowAction?: Snippet<[LibraryFolder]>;
+    status?: Snippet;
     hint?: Snippet | undefined;
   } = $props();
 
@@ -50,12 +54,13 @@
         <li>
           <FolderRow {folder}>
             {#snippet action()}
+              {@render rowAction?.(folder)}
               <button
                 type="button"
                 aria-label={m.library_remove_folder_label({
                   name: folder.name,
                 })}
-                class="shrink-0 rounded-control px-md font-medium text-muted min-block-touch-target"
+                class="shrink-0 rounded-control px-sm font-medium text-muted min-block-touch-target medium:px-md"
                 onclick={() => {
                   confirming = folder;
                 }}
@@ -70,6 +75,7 @@
   {:else if folders.list.kind === "failed"}
     <p class="mbs-sm px-xs">{m.library_folders_failed()}</p>
   {/if}
+  {@render status?.()}
   {#if notRemoved !== undefined}
     <p role="alert" class="mbs-sm px-xs">
       {m.library_remove_folder_failed({ name: notRemoved.name })}

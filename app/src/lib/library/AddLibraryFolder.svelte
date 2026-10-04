@@ -1,25 +1,18 @@
 <script lang="ts">
   import { Plus } from "@lucide/svelte";
 
-  import type {
-    FolderScan,
-    IpcErrorCode,
-    ScanProgress,
-  } from "$lib/ipc/bindings";
+  import type { FolderScan, IpcErrorCode } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
   import type { AddFolder } from "./add-folder";
   import { ICON_SIZE } from "./icon-size";
+  import { followScan, type ScanStep } from "./scan-step";
+  import ScanProgressBar from "./ScanProgressBar.svelte";
 
   type Outcome =
     | { readonly kind: "idle" }
     | { readonly kind: "adding" }
-    | { readonly kind: "finding" }
-    | {
-        readonly kind: "reading";
-        readonly scanned: number;
-        readonly total: number;
-      }
+    | ScanStep
     | { readonly kind: "scanned"; readonly scan: FolderScan }
     | { readonly kind: "failed"; readonly code: IpcErrorCode };
 
@@ -40,7 +33,6 @@
   } = $props();
 
   const progressTitleId = $props.id();
-  const progressCountId = `${progressTitleId}-count`;
 
   let outcome: Outcome = $state({ kind: "idle" });
 
@@ -52,19 +44,12 @@
     );
   }
 
-  /** Progress can arrive after the result it led to, which must not turn back into a scan in progress. */
-  function showProgress(progress: ScanProgress): void {
-    if (isBusy(outcome)) {
-      outcome =
-        progress.stage === "finding"
-          ? { kind: "finding" }
-          : {
-              kind: "reading",
-              scanned: progress.scanned,
-              total: progress.total,
-            };
-    }
-  }
+  const showProgress = followScan(
+    () => isBusy(outcome),
+    (step) => {
+      outcome = step;
+    },
+  );
 
   async function add(): Promise<void> {
     outcome = { kind: "adding" };
@@ -123,22 +108,7 @@
       <p>{FAILURE_MESSAGES[outcome.code]()}</p>
     {/if}
   </div>
-  {#if outcome.kind === "finding"}
-    <progress aria-labelledby={progressTitleId} class="mbs-sm progress-track"
-    ></progress>
-  {:else if outcome.kind === "reading"}
-    <progress
-      aria-labelledby={progressTitleId}
-      aria-describedby={progressCountId}
-      class="mbs-sm progress-track"
-      max={outcome.total}
-      value={outcome.scanned}
-    ></progress>
-    <p id={progressCountId} class="mbs-xs text-caption text-muted">
-      {m.library_scan_progress({
-        scanned: outcome.scanned,
-        total: outcome.total,
-      })}
-    </p>
+  {#if outcome.kind === "finding" || outcome.kind === "reading"}
+    <ScanProgressBar step={outcome} titleId={progressTitleId} />
   {/if}
 </div>

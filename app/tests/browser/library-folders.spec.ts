@@ -12,18 +12,21 @@ const HOME: WireFolder = {
   kind: "home",
   name: "Omnileaf",
   location: "/data/Omnileaf",
+  isAvailable: true,
 };
 const SAMPLE_COMICS: WireFolder = {
   id: "2",
   kind: "linked",
   name: "Sample Comics",
   location: "/media/Sample Comics",
+  isAvailable: true,
 };
 const SAMPLE_LIBRARY: WireFolder = {
   id: "3",
   kind: "linked",
   name: "Sample Library",
   location: "/media/Sample Library",
+  isAvailable: true,
 };
 
 /** A library that keeps what each test adds, set back before the next test. */
@@ -72,7 +75,7 @@ test("shows the home folder and the linked folders in Settings › Library", asy
   );
   await expect(
     page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
-  ).toHaveText(["Sample Comics /media/Sample Comics Remove"]);
+  ).toHaveText(["Sample Comics /media/Sample Comics Rescan Remove"]);
 });
 
 test("lists a folder as soon as it is added", async ({ page }) => {
@@ -83,8 +86,8 @@ test("lists a folder as soon as it is added", async ({ page }) => {
   await folders.getByRole("button", { name: "Add a folder" }).click();
 
   await expect(folders.getByRole("listitem")).toHaveText([
-    "Sample Comics /media/Sample Comics Remove",
-    "Sample Library /media/Sample Library Remove",
+    "Sample Comics /media/Sample Comics Rescan Remove",
+    "Sample Library /media/Sample Library Rescan Remove",
   ]);
 });
 
