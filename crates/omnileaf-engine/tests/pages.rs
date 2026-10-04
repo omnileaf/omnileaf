@@ -19,8 +19,8 @@ use omnileaf_engine::{
     ProbedFormat, Resource, ResourceRouter, SeriesBookListing, SeriesId,
 };
 use omnileaf_testkit::{
-    ArchiveEntry, Compression, ENCODED_PAGE_HEIGHT, ENCODED_PAGE_WIDTH, INK_OVER_PAPER_JXL,
-    PageShape, cbz, page_jpeg, page_png,
+    ArchiveEntry, Compression, ENCODED_PAGE_HEIGHT, ENCODED_PAGE_WIDTH, INK_OVER_CLEAR_JXL,
+    INK_OVER_PAPER_JXL, PageShape, cbz, page_jpeg, page_png,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -374,6 +374,38 @@ async fn transcodes_a_jpeg_xl_page_for_a_webview_that_cannot_show_it() {
     };
     assert_eq!(content_type, "image/jpeg");
     assert!(body.starts_with(&[0xFF, 0xD8, 0xFF]));
+}
+
+#[tokio::test]
+async fn serves_a_transcode_kept_on_disk_after_a_restart_without_transcoding_again() {
+    let mut pages = portrait_pages(SEED);
+    pages[0] = INK_OVER_PAPER_JXL.to_vec();
+    let reader = Reader::with_pages("jxl-kept", &pages).await;
+    let opened = reader.open(vec![ProbedFormat::Jxl]).await;
+    let first = reader.page(&opened, 0).await;
+    pages[0] = INK_OVER_CLEAR_JXL.to_vec();
+    write_book(&reader.comics.path().join(FOLDER).join(SERIES), &pages);
+    let fresh = reader.fresh_router();
+    fresh
+        .open_book(&reader.library, opened.id, vec![ProbedFormat::Jxl])
+        .await
+        .unwrap();
+
+    let again = fresh
+        .respond(&reader.library, &format!("/{}", opened.pages[0].path))
+        .await;
+
+    assert!(
+        matches!(
+            first,
+            Resource::Immutable {
+                content_type: "image/jpeg",
+                ..
+            }
+        ),
+        "{first:?}"
+    );
+    assert_eq!(again, first);
 }
 
 #[tokio::test]
