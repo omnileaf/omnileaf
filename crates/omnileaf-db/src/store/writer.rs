@@ -13,6 +13,7 @@ use crate::{
         projector,
         reading_state::reading_state,
         register,
+        session::{self, SessionPlace},
     },
 };
 
@@ -105,15 +106,41 @@ impl<'t> Writer<'t> {
         series_of_book(self.connection, book)
     }
 
+    /// Records reading at `place` now, carrying on the latest session when it is of the same book and ended at most two minutes before, or else starting one.
+    #[tracing::instrument(skip_all, fields(book = %place.book, page = place.page))]
+    pub fn record_reading(&mut self, place: &SessionPlace) -> Result<(), Error> {
+        let at_ms = self.now_ms();
+        self.guarded(|writer| session::record_reading(writer.connection, at_ms, place))
+    }
+
+    /// Ends the latest session now when it is of `book` and ended at most two minutes before, so time away from a book never counts as reading it.
+    #[tracing::instrument(skip_all, fields(%book))]
+    pub fn record_reading_stopped(&mut self, book: BookId) -> Result<(), Error> {
+        let at_ms = self.now_ms();
+        self.guarded(|writer| session::record_reading_stopped(writer.connection, at_ms, book))
+    }
+
+    fn now_ms(&self) -> i64 {
+        i64::try_from(self.now_unix_ms).unwrap_or(i64::MAX)
+    }
+
     fn set(&mut self, key: LatestKey, value: Value) -> Result<(), Error> {
         self.write(key.into(), MergeClass::LastWriterWins, value)
     }
 
     fn write(&mut self, key: Key, class: MergeClass, value: Value) -> Result<(), Error> {
+        self.guarded(|writer| writer.merge(key, class, value))
+    }
+
+    /// Fails every later write and the commit once one write fails, so no job can keep half of one.
+    fn guarded<T>(
+        &mut self,
+        write: impl FnOnce(&mut Self) -> Result<T, Error>,
+    ) -> Result<T, Error> {
         if self.has_failed {
             return Err(Error::FailedWriteIgnored);
         }
-        let written = self.merge(key, class, value);
+        let written = write(self);
         self.has_failed = written.is_err();
         written
     }
