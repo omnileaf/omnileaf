@@ -10,8 +10,8 @@ use std::{
 };
 
 use omnileaf_engine::{
-    CrashReport, CrashReportError, CrashReportFile, CrashReportId, CrashedApp, InterfaceError,
-    PanicDetails, Platform, SourceLocation,
+    CrashReport, CrashReportError, CrashReportFile, CrashReportId, CrashReportOffers, CrashedApp,
+    InterfaceError, PanicDetails, Platform, SourceLocation,
 };
 
 const BROWSER_URL_LIMIT: usize = 8000;
@@ -33,6 +33,10 @@ impl TempFolder {
 
     fn file(&self) -> CrashReportFile {
         CrashReportFile::in_folder(self.path())
+    }
+
+    fn offers(&self) -> CrashReportOffers {
+        CrashReportOffers::new(self.file())
     }
 
     fn saved_text(&self) -> String {
@@ -69,37 +73,101 @@ fn report(millis: u64, message: &str) -> CrashReport {
 }
 
 #[test]
-fn loads_nothing_when_no_crash_was_saved() {
+fn offers_nothing_when_no_crash_was_saved() {
     let folder = TempFolder::new("nothing-saved");
 
-    let loaded = folder.file().load().unwrap();
+    let offered = folder.offers().offer_saved().unwrap();
 
-    assert_eq!(loaded, None);
+    assert_eq!(offered, None);
 }
 
 #[test]
-fn loads_the_report_saved_by_an_earlier_run() {
+fn offers_the_report_saved_by_an_earlier_run() {
     let folder = TempFolder::new("earlier-run");
     folder.file().save(&report(1, "first")).unwrap();
 
-    let loaded = folder.file().load().unwrap();
+    let offered = folder.offers().offer_saved().unwrap();
 
-    assert_eq!(loaded, Some(report(1, "first")));
+    assert_eq!(offered, Some(report(1, "first")));
 }
 
 #[test]
-fn refuses_a_saved_report_it_cannot_read() {
+fn offers_a_new_report_and_keeps_it_for_the_next_run() {
+    let folder = TempFolder::new("kept-for-next-run");
+    let offered = folder.offers().offer(report(1, "first")).unwrap();
+
+    let next_run = folder.offers().offer_saved().unwrap();
+
+    assert_eq!(offered, report(1, "first"));
+    assert_eq!(next_run, Some(report(1, "first")));
+}
+
+#[test]
+fn keeps_the_report_on_offer_when_another_arrives() {
+    let folder = TempFolder::new("another-arrives");
+    let offers = folder.offers();
+    offers.offer(report(1, "first")).unwrap();
+
+    let offered = offers.offer(report(2, "second")).unwrap();
+
+    assert_eq!(offered, report(1, "first"));
+    assert_eq!(offers.offered(), Some(report(1, "first")));
+}
+
+#[test]
+fn keeps_offering_the_same_report_until_it_is_settled() {
+    let folder = TempFolder::new("same-until-settled");
+    let offers = folder.offers();
+    offers.offer(report(1, "first")).unwrap();
+    folder.file().save(&report(2, "second")).unwrap();
+
+    let offered = offers.offer_saved().unwrap();
+
+    assert_eq!(offered, Some(report(1, "first")));
+}
+
+#[test]
+fn forgets_a_settled_report() {
+    let folder = TempFolder::new("settled");
+    let offers = folder.offers();
+    offers.offer(report(1, "first")).unwrap();
+
+    offers.settle().unwrap();
+
+    assert_eq!(offers.offered(), None);
+    assert_eq!(folder.offers().offer_saved().unwrap(), None);
+}
+
+#[test]
+fn leaves_a_newer_saved_report_for_the_next_run() {
+    let folder = TempFolder::new("newer-saved");
+    let offers = folder.offers();
+    offers.offer(report(1, "first")).unwrap();
+    folder.file().save(&report(2, "second")).unwrap();
+
+    offers.settle().unwrap();
+
+    assert_eq!(
+        folder.offers().offer_saved().unwrap(),
+        Some(report(2, "second"))
+    );
+}
+
+#[test]
+fn discards_a_saved_report_it_cannot_read() {
     let folder = TempFolder::new("unreadable");
     folder.file().save(&report(1, "first")).unwrap();
     folder.replace_saved_text("not a report");
 
-    let loaded = folder.file().load();
+    let first_try = folder.offers().offer_saved();
+    let second_try = folder.offers().offer_saved().unwrap();
 
-    assert!(matches!(loaded, Err(CrashReportError::Parse(_))));
+    assert!(matches!(first_try, Err(CrashReportError::Parse(_))));
+    assert_eq!(second_try, None);
 }
 
 #[test]
-fn refuses_a_saved_report_too_large_to_be_one() {
+fn discards_a_saved_report_too_large_to_be_one() {
     let folder = TempFolder::new("too-large");
     folder.file().save(&report(1, "first")).unwrap();
     let edited = folder
@@ -107,9 +175,11 @@ fn refuses_a_saved_report_too_large_to_be_one() {
         .replace("first", &"a".repeat(1024 * 1024));
     folder.replace_saved_text(&edited);
 
-    let loaded = folder.file().load();
+    let first_try = folder.offers().offer_saved();
+    let second_try = folder.offers().offer_saved().unwrap();
 
-    assert!(matches!(loaded, Err(CrashReportError::Parse(_))));
+    assert!(matches!(first_try, Err(CrashReportError::Parse(_))));
+    assert_eq!(second_try, None);
 }
 
 #[test]
@@ -121,9 +191,9 @@ fn cleans_a_saved_report_again_when_reading_it() {
         .replace("first", "open /home/sample-user/Comics");
     folder.replace_saved_text(&edited);
 
-    let loaded = folder.file().load().unwrap().unwrap();
+    let offered = folder.offers().offer_saved().unwrap().unwrap();
 
-    assert!(!loaded.to_string().contains("sample-user"), "{loaded}");
+    assert!(!offered.to_string().contains("sample-user"), "{offered}");
 }
 
 #[test]
@@ -142,12 +212,12 @@ fn cleans_and_bounds_the_version_and_system_of_a_saved_report() {
         );
     folder.replace_saved_text(&edited);
 
-    let loaded = folder.file().load().unwrap().unwrap();
+    let offered = folder.offers().offer_saved().unwrap().unwrap();
 
-    assert!(!loaded.to_string().contains("sample-user"), "{loaded}");
+    assert!(!offered.to_string().contains("sample-user"), "{offered}");
     assert!(
-        loaded.new_issue_url().len() <= BROWSER_URL_LIMIT,
-        "{loaded}"
+        offered.new_issue_url().len() <= BROWSER_URL_LIMIT,
+        "{offered}"
     );
 }
 
@@ -176,13 +246,13 @@ fn keeps_where_a_saved_panic_happened() {
     let folder = TempFolder::new("panic-location");
     folder.file().save(&panic_report()).unwrap();
 
-    let loaded = folder.file().load().unwrap().unwrap();
+    let offered = folder.offers().offer_saved().unwrap().unwrap();
 
     assert!(
-        loaded
+        offered
             .to_string()
             .contains("\nAt: omnileaf-formats/src/zip_book.rs:42:5\n"),
-        "{loaded}"
+        "{offered}"
     );
 }
 
@@ -195,11 +265,11 @@ fn bounds_where_a_saved_panic_happened() {
         .replace("zip_book.rs", &"x".repeat(10_000));
     folder.replace_saved_text(&edited);
 
-    let loaded = folder.file().load().unwrap().unwrap();
+    let offered = folder.offers().offer_saved().unwrap().unwrap();
 
     assert!(
-        loaded.new_issue_url().len() <= BROWSER_URL_LIMIT,
-        "{loaded}"
+        offered.new_issue_url().len() <= BROWSER_URL_LIMIT,
+        "{offered}"
     );
 }
 
@@ -225,4 +295,31 @@ fn saves_from_several_threads_at_once_without_losing_the_report() {
 
     assert!(outcomes.iter().all(|saved| *saved), "{outcomes:?}");
     assert!(file.load().unwrap().is_some());
+}
+
+#[test]
+fn offers_a_report_for_this_run_when_there_is_nowhere_to_keep_it() {
+    let offers = CrashReportOffers::in_memory();
+
+    let offered = offers.offer(report(1, "first")).unwrap();
+    let still_offered = offers.offer_saved().unwrap();
+    offers.settle().unwrap();
+
+    assert_eq!(offered, report(1, "first"));
+    assert_eq!(still_offered, Some(report(1, "first")));
+    assert_eq!(offers.offered(), None);
+}
+
+#[test]
+fn still_offers_a_report_it_could_not_save() {
+    let folder = TempFolder::new("unsaved");
+    fs::create_dir_all(folder.path().parent().unwrap()).unwrap();
+    fs::write(folder.path(), "a file where the folder should be").unwrap();
+    let offers = folder.offers();
+
+    let unsaved = offers.offer(report(1, "first")).unwrap_err();
+
+    assert_eq!(*unsaved.report, report(1, "first"));
+    assert!(matches!(unsaved.source, CrashReportError::Save(_)));
+    assert_eq!(offers.offered(), Some(report(1, "first")));
 }
