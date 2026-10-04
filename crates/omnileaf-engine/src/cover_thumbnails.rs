@@ -20,7 +20,12 @@ use crate::{
 };
 
 const CACHE_BUDGET_BYTES: u64 = (if IS_MOBILE { 300 } else { 1024 }) * MEBIBYTE as u64;
-const WORKERS: NonZeroUsize = NonZeroUsize::MIN.saturating_add(1);
+/// One worker on a phone, since each decode may hold a few hundred megabytes at once.
+const WORKERS: NonZeroUsize = if IS_MOBILE {
+    NonZeroUsize::MIN
+} else {
+    NonZeroUsize::MIN.saturating_add(1)
+};
 const WORKER_NAME: &str = "omnileaf-thumbnails";
 
 /// Cover thumbnails, kept on disk under a byte budget and made on a background lane when missing.
