@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, onTestFinished, test, vi } from "vitest";
 
 import { HungLaunchError, launchOnceRegistered } from "./simulator-launch.ts";
 
@@ -74,11 +74,17 @@ function logsSaver(): {
 }
 
 test("keeps launching while the launcher does not know the app yet", async () => {
+  vi.useFakeTimers();
+  onTestFinished(() => {
+    vi.useRealTimers();
+  });
   const app = launchesInTurn([unknownToLauncher(), undefined]);
   const logs = logsSaver();
 
-  await launchOnceRegistered(BUNDLE_ID, app.launch, logs.saveLogs);
+  const launching = launchOnceRegistered(BUNDLE_ID, app.launch, logs.saveLogs);
+  await vi.runAllTimersAsync();
 
+  await expect(launching).resolves.toBeUndefined();
   expect([app.launched(), logs.saved()]).toEqual([2, 0]);
 });
 
