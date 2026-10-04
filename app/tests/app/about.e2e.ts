@@ -1,9 +1,9 @@
 import { expect, test } from "vitest";
 
-import { useAppSession } from "./app-session.ts";
+import { mainNavigationLink, useAppSession } from "./app-session.ts";
 import { xpath } from "./webdriver.ts";
 
-const SETTINGS_LINK = xpath("//nav//a[normalize-space()='Settings']");
+const SETTINGS_LINK = mainNavigationLink("Settings");
 const ABOUT_LINK = xpath("//main//a[starts-with(normalize-space(), 'About')]");
 const COPY_BUTTON = xpath("//button[normalize-space()='Copy version details']");
 const COPY_OUTCOME = xpath(
