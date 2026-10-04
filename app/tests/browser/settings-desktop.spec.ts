@@ -45,6 +45,22 @@ test.describe("on a desktop", () => {
     ).toHaveAttribute("aria-current", "page");
   });
 
+  test("focuses the first settings section's heading without a focus ring when opened from the keyboard", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Settings" })
+      .press("Enter");
+
+    const heading = page.getByRole("heading", { level: 1, name: "Library" });
+    await expect(heading).toBeFocused();
+    await expect(heading).toHaveCSS("outline-style", "none");
+  });
+
   test("switches settings sections from the list", async ({ page }) => {
     await page.goto("/settings/library");
     test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");

@@ -41,8 +41,10 @@
                     : "font-medium text-sidebar-ink",
                 ]}
               >
-                <section.icon size={ICON_SIZE} />
-                {section.label()}
+                <section.icon size={ICON_SIZE} class="shrink-0" />
+                <span class="wrap-break-word hyphens-auto min-inline-none"
+                  >{section.label()}</span
+                >
               </a>
             </li>
           {/each}
