@@ -9,6 +9,7 @@
 
   import BookRowText from "./BookRowText.svelte";
   import { BookSelection } from "./book-selection.svelte";
+  import { LongPress } from "./long-press";
 
   type BookId = SeriesBook["id"];
 
@@ -43,6 +44,7 @@
     | { readonly kind: "failed" };
 
   const selection = new BookSelection<BookId>();
+  const longPress = new LongPress(LONG_PRESS_MS);
   const headingId = $props.id();
   const dates = $derived(
     new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }),
@@ -53,8 +55,6 @@
   let section: HTMLElement | undefined = $state();
   let selectButton: HTMLButtonElement | undefined = $state();
   let selectAllButton: HTMLButtonElement | undefined = $state();
-  let pressing: ReturnType<typeof setTimeout> | undefined;
-  let isClickAfterPressSwallowed = false;
 
   function pick(event: MouseEvent, book: SeriesBook): void {
     if (event.shiftKey) {
@@ -65,37 +65,16 @@
     selection.toggle(book.id);
   }
 
-  function pressStarted(event: PointerEvent, book: SeriesBook): void {
-    if (event.pointerType === "mouse") {
-      return;
-    }
-    pressEnded();
-    pressing = setTimeout(() => {
-      pressing = undefined;
-      isClickAfterPressSwallowed = true;
-      outcome = { kind: "none" };
-      selection.begin(book.id);
-    }, LONG_PRESS_MS);
+  function startPickingFrom(book: SeriesBook): void {
+    outcome = { kind: "none" };
+    selection.begin(book.id);
   }
 
-  function pressEnded(): void {
-    clearTimeout(pressing);
-    pressing = undefined;
+  function releasePress(): void {
+    longPress.released();
   }
 
-  function forgetPressBeforeNextTouch(): void {
-    isClickAfterPressSwallowed = false;
-  }
-
-  function swallowClickAfterPress(event: MouseEvent): void {
-    if (isClickAfterPressSwallowed) {
-      isClickAfterPressSwallowed = false;
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }
-
-  $effect(() => pressEnded);
+  $effect(() => releasePress);
 
   async function begin(): Promise<void> {
     outcome = { kind: "none" };
@@ -202,11 +181,13 @@
       role="presentation"
       class="flex items-center gap-md select-none min-block-book-row max-medium:ps-page-start max-medium:pe-md medium:px-lg expanded:px-md expanded:min-block-book-row-wide"
       onpointerdown={(event) => {
-        pressStarted(event, book);
+        longPress.pressed(event, () => {
+          startPickingFrom(book);
+        });
       }}
-      onpointerup={pressEnded}
-      onpointercancel={pressEnded}
-      onpointerleave={pressEnded}
+      onpointerup={releasePress}
+      onpointercancel={releasePress}
+      onpointerleave={releasePress}
       oncontextmenu={(event) => {
         event.preventDefault();
       }}
@@ -217,8 +198,12 @@
 {/snippet}
 
 <svelte:window
-  onpointerdowncapture={forgetPressBeforeNextTouch}
-  onclickcapture={swallowClickAfterPress}
+  onpointerdowncapture={() => {
+    longPress.pointerWentDown();
+  }}
+  onclickcapture={(event: MouseEvent) => {
+    longPress.clicked(event);
+  }}
   onkeydown={endOnEscape}
 />
 
