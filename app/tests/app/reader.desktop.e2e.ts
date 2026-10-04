@@ -1,6 +1,7 @@
 import { afterEach, expect, test } from "vitest";
 
 import { addSampleLibrary, useAppSession } from "./app-session.ts";
+import { pageShownScript } from "./page-shown.ts";
 import { xpath } from "./webdriver.ts";
 
 const FIRST_SERIES_COVER = xpath(
@@ -19,11 +20,6 @@ const appSession = useAppSession();
 afterEach(async () => {
   await (await appSession().waitFor(BACK_TO_THE_LIBRARY)).click();
 });
-
-/** Whether the page is shown, its image loaded from the omni protocol and decoded. */
-function pageShownScript(page: number): string {
-  return `return [...document.images].some((image) => image.alt === "Page ${String(page)}" && image.complete && image.naturalWidth > 0 && !image.classList.contains("invisible") && image.getAttribute("aria-hidden") === null);`;
-}
 
 async function openFirstBook(): Promise<void> {
   await addSampleLibrary(appSession());
