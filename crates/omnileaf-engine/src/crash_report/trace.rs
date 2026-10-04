@@ -1,4 +1,5 @@
-const SEPARATORS: [char; 2] = ['/', '\\'];
+use super::scrub::SEPARATORS;
+
 const SOURCE_FOLDER: &str = "src";
 const SHORT_BACKTRACE_END: &str = "__rust_end_short_backtrace";
 const SHORT_BACKTRACE_BEGIN: &str = "__rust_begin_short_backtrace";
