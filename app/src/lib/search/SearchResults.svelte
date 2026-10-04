@@ -18,6 +18,7 @@
     listId,
     activeKey,
     onRevealReady,
+    onOpen,
   }: {
     series: readonly LibrarySeries[];
     count: number | undefined;
@@ -28,6 +29,7 @@
     listId: string;
     activeKey: string | undefined;
     onRevealReady?: ((reveal: Reveal) => void) | undefined;
+    onOpen: (series: LibrarySeries) => void;
   } = $props();
 
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
@@ -75,8 +77,8 @@
     {isComplete}
     {onNearEnd}
     class="grid-cols-1 gap-sm medium:grid-cols-2 medium:gap-md large:grid-cols-3"
-    itemClass="flex items-center gap-md min-inline-none medium:items-start medium:rounded-card medium:border medium:border-border medium:bg-card medium:p-result-card aria-selected:bg-accent-soft medium:aria-selected:border-accent medium:aria-selected:bg-accent-soft"
+    itemClass="flex cursor-default items-center gap-md min-inline-none medium:items-start medium:rounded-card medium:border medium:border-border medium:bg-card medium:p-result-card aria-selected:bg-accent-soft medium:aria-selected:border-accent medium:aria-selected:bg-accent-soft"
     cell={found}
-    listbox={{ id: listId, activeKey }}
+    listbox={{ id: listId, activeKey, onChoose: onOpen }}
   />
 </section>

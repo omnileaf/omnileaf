@@ -11,7 +11,6 @@
     type Platform,
     SEARCH_MAX_CHARS,
   } from "#lib/ipc/bindings.ts";
-  import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
@@ -21,7 +20,6 @@
   import { quickOpenShortcutLabel } from "./quick-open-shortcut";
   import QuickOpenOption from "./QuickOpenOption.svelte";
   import type { QuickOpenState } from "./quick-open-state.svelte";
-  import { titleQuery } from "./search-route";
 
   interface Group {
     readonly name: "series" | "places";
@@ -52,7 +50,6 @@
   let latestSearch = 0;
   let isKeyComposing = false;
 
-  const lookOf = $derived(usesStandIns ? standInLook : realLook);
   const id = $props.id();
   const listboxId = `${id}-results`;
   const nothingFoundId = `${id}-nothing-found`;
@@ -134,9 +131,7 @@
     dialog?.close();
     switch (choice.kind) {
       case "series":
-        void goto(
-          `${resolve("/(app)/search")}${titleQuery(lookOf(choice.series).title)}`,
-        );
+        void goto(resolve("/(app)/series/[id]", { id: choice.series.id }));
         return;
       case "place":
         void goto(resolve(choice.place.route));
