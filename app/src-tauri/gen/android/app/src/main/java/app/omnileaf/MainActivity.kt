@@ -10,6 +10,9 @@ import androidx.activity.enableEdgeToEdge
 private const val TABLET_SMALLEST_WIDTH_DP = 600
 
 class MainActivity : TauriActivity() {
+  /** Tauri's own back handler stays with the first activity, so once Android recreates the activity back would close the app from any page. */
+  override val handleBackNavigation = true
+
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
     showTheAppBehindTheNavigationButtons()
