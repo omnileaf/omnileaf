@@ -11,6 +11,11 @@ export type SettingsRoute =
   | "/settings/general"
   | "/settings/about";
 
+export interface ParentPage {
+  readonly route: "/settings" | SettingsRoute;
+  readonly title: string;
+}
+
 export interface SectionSummary {
   readonly text: string;
   readonly lang?: Locale;
@@ -21,6 +26,25 @@ export interface SettingsSection {
   readonly label: () => string;
   readonly icon: Glyph;
   readonly tone: "accent" | "neutral";
+}
+
+export function isWithinSection(
+  pathname: string,
+  sectionPath: string,
+): boolean {
+  return pathname === sectionPath || pathname.startsWith(`${sectionPath}/`);
+}
+
+export type SectionCurrent = "page" | "true" | undefined;
+
+export function sectionCurrent(
+  pathname: string,
+  sectionPath: string,
+): SectionCurrent {
+  if (pathname === sectionPath) {
+    return "page";
+  }
+  return isWithinSection(pathname, sectionPath) ? "true" : undefined;
 }
 
 export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [

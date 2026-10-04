@@ -60,7 +60,9 @@
   "theme_dark": "Dark",
   "general_title": "General",
   "language_label": "Language",
-  "language_system": "System ({language})",
+  "language_phone_hint": "Omnileaf uses your phone's language unless you pick one.",
+  "language_system": "Use the system language ({language})",
+  "language_more_coming": "More languages arrive as people translate Omnileaf.",
   "back_to": "Back to {page}",
   "notice_dismiss": "Dismiss",
   "settings_sections_label": "Settings sections"

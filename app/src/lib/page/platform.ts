@@ -1,5 +1,7 @@
 import type { Platform } from "$lib/ipc/bindings";
 
+import type { WidthClass } from "./breakpoints";
+
 const IS_POINTER = {
   android: false,
   ios: false,
@@ -10,4 +12,8 @@ const IS_POINTER = {
 
 export function isPointer(platform: Platform): boolean {
   return IS_POINTER[platform];
+}
+
+export function isPhone(platform: Platform, width: WidthClass): boolean {
+  return !isPointer(platform) && width === "compact";
 }

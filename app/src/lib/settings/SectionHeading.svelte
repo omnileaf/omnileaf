@@ -5,7 +5,12 @@
 
   import { m } from "$lib/paraglide/messages.js";
 
-  let { title }: { title: string } = $props();
+  import type { ParentPage } from "./sections";
+
+  let {
+    title,
+    parent = { route: "/settings", title: m.settings_title() },
+  }: { title: string; parent?: ParentPage } = $props();
 
   const ARROW_SIZE = 24;
   const PHONE_CHEVRON_SIZE = 22;
@@ -16,8 +21,8 @@
   class="flex flex-col items-start android:max-medium:-ms-md android:max-medium:flex-row android:max-medium:items-center android:max-medium:gap-xs touch:max-medium:-mbs-sm touch:medium:max-expanded:-mbs-lg desktop:max-medium:-mbs-md"
 >
   <a
-    href={resolve("/settings")}
-    aria-label={m.back_to({ page: m.settings_title() })}
+    href={resolve(parent.route)}
+    aria-label={m.back_to({ page: parent.title })}
     class={[
       "flex shrink-0 items-center gap-2xs two-pane:hidden",
       "desktop:-ms-xs desktop:rounded-control desktop:ps-2xs desktop:pe-sm desktop:text-label desktop:font-semibold desktop:text-accent desktop:block-2xl",
@@ -39,7 +44,7 @@
       size={POINTER_CHEVRON_SIZE}
       class="hidden rtl:-scale-x-100 desktop:block"
     />
-    <span class="ios:medium:hidden android:hidden">{m.settings_title()}</span>
+    <span class="ios:medium:hidden android:hidden">{parent.title}</span>
   </a>
   <h1
     tabindex="-1"
