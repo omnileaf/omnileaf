@@ -146,17 +146,7 @@ impl Keeper {
                     open.shown(page, Instant::now());
                 }
             }
-            Report::Closed { book, saved } => {
-                let outcome = match self.reading(book) {
-                    Some(_) => {
-                        let outcome = self.save().await;
-                        self.session = None;
-                        outcome
-                    }
-                    None => Ok(()),
-                };
-                answer_or_warn(Some(saved), outcome);
-            }
+            Report::Closed { book, saved } => answer_or_warn(Some(saved), self.closed(book).await),
             Report::SaveNow { saved } => answer_or_warn(Some(saved), self.save().await),
         }
     }
@@ -178,6 +168,16 @@ impl Keeper {
         });
     }
 
+    /// Keeps reading a book whose save failed, so the next save tries it again.
+    async fn closed(&mut self, book: BookId) -> Result<(), Error> {
+        if self.reading(book).is_none() {
+            return Ok(());
+        }
+        self.save().await?;
+        self.session = None;
+        Ok(())
+    }
+
     /// The session of `book`, or nothing for a report about a book not read now.
     fn reading(&mut self, book: BookId) -> Option<&mut ReadingSession> {
         let open = self.session.as_mut().filter(|open| open.book() == book);
@@ -189,7 +189,7 @@ impl Keeper {
 
     #[tracing::instrument(skip_all)]
     async fn save(&mut self) -> Result<(), Error> {
-        let Some(reached) = self.session.as_mut().and_then(ReadingSession::take_unsaved) else {
+        let Some(reached) = self.session.as_ref().and_then(ReadingSession::unsaved) else {
             return Ok(());
         };
         let ReachedPage {
@@ -197,7 +197,8 @@ impl Keeper {
             page,
             is_last,
         } = reached;
-        self.store
+        let outcome = self
+            .store
             .write(move |writer| {
                 writer.set_position(book.0, page)?;
                 writer.raise_furthest(book.0, page)?;
@@ -206,7 +207,14 @@ impl Keeper {
                 }
                 Ok(())
             })
-            .await
+            .await;
+        if let Some(open) = self.session.as_mut() {
+            match outcome {
+                Ok(()) => open.saved(reached),
+                Err(_) => open.save_failed(Instant::now()),
+            }
+        }
+        outcome
     }
 }
 

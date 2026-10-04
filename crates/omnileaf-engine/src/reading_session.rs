@@ -90,8 +90,8 @@ impl ReadingSession {
         }
     }
 
-    /// The page shown last, counted from then on as saved, or nothing when it is saved already.
-    pub(crate) fn take_unsaved(&mut self) -> Option<ReachedPage> {
+    /// The page shown last, or nothing when it is saved already.
+    pub(crate) fn unsaved(&self) -> Option<ReachedPage> {
         let Stage::Reading {
             unsaved: Some(unsaved),
             ..
@@ -99,15 +99,37 @@ impl ReadingSession {
         else {
             return None;
         };
-        self.stage = Stage::Reading {
-            saved: unsaved.page,
-            unsaved: None,
-        };
         Some(ReachedPage {
             book: self.book,
             page: unsaved.page,
             is_last: unsaved.page == self.last_page,
         })
+    }
+
+    pub(crate) fn saved(&mut self, reached: ReachedPage) {
+        if let Stage::Reading { unsaved, .. } = self.stage {
+            self.stage = Stage::Reading {
+                saved: reached.page,
+                unsaved: unsaved.filter(|unsaved| unsaved.page != reached.page),
+            };
+        }
+    }
+
+    /// Leaves the page shown last unsaved, to save again a delay after `now`.
+    pub(crate) fn save_failed(&mut self, now: Instant) {
+        if let Stage::Reading {
+            saved,
+            unsaved: Some(unsaved),
+        } = self.stage
+        {
+            self.stage = Stage::Reading {
+                saved,
+                unsaved: Some(Unsaved {
+                    save_at: now + SAVE_DELAY,
+                    ..unsaved
+                }),
+            };
+        }
     }
 }
 
@@ -147,7 +169,7 @@ mod tests {
         let mut session = ReadingSession::opening(book(1), PAGE_COUNT).unwrap();
         session.shown(4, Instant::now());
 
-        let saved = session.take_unsaved();
+        let saved = session.unsaved();
 
         assert_eq!(saved, None);
         assert_eq!(session.save_at(), None);
@@ -158,21 +180,57 @@ mod tests {
         let mut session = restored_on(3);
         session.shown(3, Instant::now());
 
-        let saved = session.take_unsaved();
+        let saved = session.unsaved();
 
         assert_eq!(saved, None);
     }
 
     #[test]
-    fn saves_the_page_shown_last_once() {
+    fn saves_the_page_shown_last() {
         let mut session = restored_on(0);
         let now = Instant::now();
         session.shown(1, now);
         session.shown(2, now);
 
-        let saved = [session.take_unsaved(), session.take_unsaved()];
+        let unsaved = session.unsaved();
 
-        assert_eq!(saved, [Some(reached(2)), None]);
+        assert_eq!(unsaved, Some(reached(2)));
+    }
+
+    #[test]
+    fn has_nothing_left_to_save_once_the_page_shown_last_is_saved() {
+        let mut session = restored_on(0);
+        session.shown(2, Instant::now());
+
+        session.saved(reached(2));
+
+        assert_eq!(session.unsaved(), None);
+        assert_eq!(session.save_at(), None);
+    }
+
+    #[test]
+    fn saves_again_a_delay_after_a_save_that_failed() {
+        let mut session = restored_on(0);
+        let first = Instant::now();
+        session.shown(2, first);
+        let failed = first + SAVE_DELAY;
+
+        session.save_failed(failed);
+
+        assert_eq!(session.unsaved(), Some(reached(2)));
+        assert_eq!(session.save_at(), Some(failed + SAVE_DELAY));
+    }
+
+    #[test]
+    fn has_nothing_to_save_on_turning_back_to_the_page_saved_before_a_save_that_failed() {
+        let mut session = restored_on(5);
+        let now = Instant::now();
+        session.shown(6, now);
+        session.save_failed(now + SAVE_DELAY);
+
+        session.shown(5, now + SAVE_DELAY);
+
+        assert_eq!(session.unsaved(), None);
     }
 
     #[test]
@@ -195,7 +253,7 @@ mod tests {
         session.shown(5, now);
 
         assert_eq!(session.save_at(), None);
-        assert_eq!(session.take_unsaved(), None);
+        assert_eq!(session.unsaved(), None);
     }
 
     #[test]
@@ -203,7 +261,7 @@ mod tests {
         let mut session = restored_on(6);
         session.shown(LAST_PAGE, Instant::now());
 
-        let saved = session.take_unsaved();
+        let saved = session.unsaved();
 
         assert_eq!(saved.map(|page| page.is_last), Some(true));
     }
@@ -226,7 +284,7 @@ mod tests {
         session.restored(4);
         session.shown(4, Instant::now());
 
-        assert_eq!(session.take_unsaved(), Some(reached(4)));
+        assert_eq!(session.unsaved(), Some(reached(4)));
     }
 
     #[derive(Clone, Copy, Debug)]
@@ -234,6 +292,7 @@ mod tests {
         Restored(u32),
         Shown(u32),
         Saved,
+        Failed,
     }
 
     fn any_report() -> impl Strategy<Value = Report> {
@@ -242,6 +301,7 @@ mod tests {
             page.clone().prop_map(Report::Restored),
             page.prop_map(Report::Shown),
             Just(Report::Saved),
+            Just(Report::Failed),
         ]
     }
 
@@ -270,12 +330,14 @@ mod tests {
                         }
                     }
                     Report::Saved => {
-                        if let Some(saved) = session.take_unsaved() {
+                        if let Some(saved) = session.unsaved() {
                             prop_assert!(restored.is_some());
                             prop_assert_eq!(Some(saved.page), on_page);
                             prop_assert_eq!(saved.is_last, saved.page == LAST_PAGE);
+                            session.saved(saved);
                         }
                     }
+                    Report::Failed => session.save_failed(now),
                 }
             }
         }
