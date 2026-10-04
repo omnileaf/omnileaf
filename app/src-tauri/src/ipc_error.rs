@@ -61,6 +61,7 @@ impl From<LibraryError> for IpcError {
             ),
             LibraryError::CreateHome { .. }
             | LibraryError::Database(_)
+            | LibraryError::StoredView(_)
             | LibraryError::Interrupted(_) => return Self::internal(&error),
         };
         tracing::warn!(error = %describe_error(&error), "library command refused");

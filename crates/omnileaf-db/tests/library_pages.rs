@@ -12,7 +12,8 @@ use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Connection, Database, Error,
     catalog::{
-        Cursor, NewSeries, Page, PageRequest, PageSize, SeriesOrder, series_books, series_page,
+        Cursor, NewSeries, Page, PageRequest, PageSize, SeriesOrder, series_books, series_count,
+        series_page,
     },
 };
 use omnileaf_sync_proto::SeriesId;
@@ -191,6 +192,74 @@ async fn leaves_series_without_books_off_the_library_pages() {
     ];
 
     assert_eq!(pages, [[["Sample Series 02"]], [["Sample Series 02"]]]);
+}
+
+#[tokio::test]
+async fn counts_the_series_the_library_pages_list() {
+    let library = Library::with(&[
+        ("Sample Series 01", 1, NO_BOOKS),
+        ("Sample Series 02", 2, ONE_BOOK),
+        ("Sample Series 03", 3, &["Volume 01", "Volume 02"]),
+    ])
+    .await;
+
+    let count = library.database.read(series_count).await.unwrap();
+
+    assert_eq!(count, 2);
+}
+
+#[tokio::test]
+async fn counts_the_books_of_each_listed_series_not_marked_read() {
+    let library = Library::with(&[
+        (
+            "Sample Series 01",
+            1,
+            &["Volume 01", "Volume 02", "Volume 03", "Volume 04"],
+        ),
+        ("Sample Series 02", 1, &["Volume 01", "Volume 02"]),
+    ])
+    .await;
+    library
+        .database
+        .write(|transaction| {
+            let mut state = transaction.prepare(
+                "INSERT INTO book_state (book_id, position_page, is_read)
+                SELECT book.id, ?3, ?4 FROM book JOIN series ON series.local_id = book.series_local_id
+                WHERE series.title = ?1 AND book.title = ?2",
+            )?;
+            state.execute(("Sample Series 01", "Volume 01", 30, true))?;
+            state.execute(("Sample Series 01", "Volume 02", 4, false))?;
+            state.execute(("Sample Series 01", "Volume 03", 9, None::<bool>))?;
+            state.execute(("Sample Series 02", "Volume 02", 12, true))?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+
+    let page = library
+        .database
+        .read(|connection| {
+            let request = PageRequest {
+                after: None,
+                size: PageSize::try_from(10).unwrap(),
+            };
+            series_page(connection, SeriesOrder::Title, &request)
+        })
+        .await
+        .unwrap();
+
+    let unread: Vec<(String, u32)> = page
+        .items
+        .into_iter()
+        .map(|series| (series.title, series.unread_count))
+        .collect();
+    assert_eq!(
+        unread,
+        [
+            ("Sample Series 01".to_owned(), 3),
+            ("Sample Series 02".to_owned(), 1),
+        ]
+    );
 }
 
 #[tokio::test]

@@ -21,12 +21,14 @@ const FIRST: WireSeries = {
   id: "0190a3e4-0000-8000-8000-0000000000a1",
   title: "Sample Series 01",
   bookCount: 3,
+  unreadCount: 3,
   cover: "thumb/v1/0190a3e4-0000-8000-8000-000000000001/1/1",
 };
 const SECOND: WireSeries = {
   id: "0190a3e4-0000-8000-8000-0000000000a2",
   title: "Sample Series 02",
   bookCount: 1,
+  unreadCount: 1,
   cover: null,
 };
 
@@ -39,6 +41,7 @@ function sampleSeries(count: number): WireSeries[] {
     id: `0190a3e4-0000-8000-8000-${String(index + 1).padStart(12, "0")}`,
     title: `Sample Series ${String(index + 1).padStart(2, "0")}`,
     bookCount: 1,
+    unreadCount: 1,
     cover: null,
   }));
 }

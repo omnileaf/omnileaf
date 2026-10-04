@@ -2,7 +2,11 @@ import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import { commands, type LibrarySeries } from "$lib/ipc/bindings";
+import {
+  commands,
+  DEFAULT_LIBRARY_VIEW,
+  type LibrarySeries,
+} from "$lib/ipc/bindings";
 
 import type { CoverPath } from "./cover-url";
 import SeriesCovers from "./SeriesCovers.svelte";
@@ -21,12 +25,14 @@ async function listed(): Promise<readonly LibrarySeries[]> {
         id: "0190a3e4-0000-8000-8000-0000000000a1",
         title: "Sample Series 01",
         bookCount: 3,
+        unreadCount: 3,
         cover: COVER,
       },
       {
         id: "0190a3e4-0000-8000-8000-0000000000a2",
         title: "Sample Series 02",
         bookCount: 1,
+        unreadCount: 1,
         cover: null,
       },
     ],
@@ -48,6 +54,7 @@ test("lists each series with its title and how many books it holds", async () =>
     series,
     isComplete: true,
     coverUrl: fakeCoverUrl,
+    view: DEFAULT_LIBRARY_VIEW,
   });
 
   const items = screen
@@ -70,6 +77,7 @@ test("shows a series' cover from the omni protocol", async () => {
     series,
     isComplete: true,
     coverUrl: fakeCoverUrl,
+    view: DEFAULT_LIBRARY_VIEW,
   });
 
   const first = screen.getByRole("listitem").nth(0);
@@ -85,6 +93,7 @@ test("leaves the cover's place empty for a series with no cover yet", async () =
     series,
     isComplete: true,
     coverUrl: fakeCoverUrl,
+    view: DEFAULT_LIBRARY_VIEW,
   });
 
   const second = screen.getByRole("listitem").nth(1);
@@ -98,6 +107,7 @@ test("keeps each series' cover with its series when the list reorders", async ()
     series,
     isComplete: true,
     coverUrl: fakeCoverUrl,
+    view: DEFAULT_LIBRARY_VIEW,
   });
   const cover = screen.getByRole("presentation").element();
 
