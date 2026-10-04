@@ -4,6 +4,7 @@ mod check;
 mod dev;
 mod doctor;
 mod fixtures;
+mod fuzz_seeds;
 mod icons;
 mod policy;
 mod process;
@@ -53,6 +54,8 @@ enum Command {
         #[arg(long, default_value = "target/fixtures")]
         out: PathBuf,
     },
+    /// Write the fuzz targets' seed inputs into `fuzz/corpus`.
+    FuzzSeeds,
     /// Regenerate the app icons from `branding/icon.json`.
     Icons,
     /// Check the repository's files against its content rules.
@@ -97,6 +100,15 @@ fn main() -> anyhow::Result<()> {
                 "wrote {} fixture files to {}",
                 written.len(),
                 out.display()
+            )]);
+        }
+        Command::FuzzSeeds => {
+            let corpus = workspace::root().join(fuzz_seeds::CORPUS);
+            let written = fuzz_seeds::generate(&corpus)?;
+            print_lines(&[format!(
+                "wrote {} seeds to {}",
+                written.len(),
+                corpus.display()
             )]);
         }
         Command::Icons => icons::regenerate(&workspace::root())?,
