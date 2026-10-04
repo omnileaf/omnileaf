@@ -1,11 +1,15 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { ScreenOrientation } from "../../src/lib/ipc/bindings.ts";
+import type {
+  FullScreenChange,
+  ScreenOrientation,
+} from "../../src/lib/ipc/bindings.ts";
 import { CommandFailure, fakeProtocolRoute } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
+  EXPANDED_MIN_WIDTH,
   expect,
   onPlatform,
   test,
@@ -389,6 +393,63 @@ test.describe("the screen's orientation", () => {
   });
 });
 
+test.describe("full screen", () => {
+  const changes: FullScreenChange[] = [];
+
+  test.use({
+    backend: {
+      ...readerBackend(DEFAULT_BACKEND),
+      changeFullScreen: (change) => {
+        changes.push(change);
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    changes.length = 0;
+  });
+
+  test("goes in or out of full screen with F and leaves it when the book closes", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await page.keyboard.press("f");
+    await page.keyboard.press("Escape");
+
+    await expect.poll(() => changes).toEqual(["toggle", "leave"]);
+  });
+
+  test("goes in or out of full screen with the top bar's button on a wide screen", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width < EXPANDED_MIN_WIDTH,
+      "the boards draw the button on wide screens only",
+    );
+    await openBook(page);
+
+    await page.getByRole("button", { name: "Full screen" }).click();
+
+    await expect.poll(() => changes).toEqual(["toggle"]);
+  });
+
+  test("has no full screen button on a phone's narrow screen", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "wide screens draw the button",
+    );
+    await openBook(page);
+
+    await expect(
+      page.getByRole("button", { name: "Full screen" }),
+    ).toBeHidden();
+  });
+});
+
 test.describe("on Android", () => {
   test.use({ backend: readerBackend(onPlatform("android").backend) });
 
@@ -407,6 +468,16 @@ test.describe("on Android", () => {
 
     expect(touched).toMatch(/Library|Back to the library/);
     expect(link.height).toBeLessThan(ANDROID_TOUCH_TARGET_PX);
+  });
+
+  test("has no full screen button, since the app has no window to fill the screen with", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await expect(
+      page.getByRole("button", { name: "Full screen" }),
+    ).toBeHidden();
   });
 
   test("gives the page slider a touch target 48 dp tall", async ({ page }) => {

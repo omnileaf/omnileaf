@@ -1,8 +1,17 @@
 export type ReaderAction =
-  "next" | "previous" | "first" | "last" | "toggleControls" | "close";
+  | "next"
+  | "previous"
+  | "first"
+  | "last"
+  | "toggleControls"
+  | "fullScreen"
+  | "close";
 
 const SPACE = " ";
-const CONTROLS_CODE = "KeyM";
+const CODE_ACTIONS: Readonly<Record<string, ReaderAction>> = {
+  KeyM: "toggleControls",
+  KeyF: "fullScreen",
+};
 
 const SLIDER_KEYS: ReadonlySet<string> = new Set([
   "ArrowLeft",
@@ -33,8 +42,9 @@ export function readerActionFor(
   if (event.ctrlKey || event.metaKey || event.altKey) {
     return undefined;
   }
-  if (event.code === CONTROLS_CODE) {
-    return "toggleControls";
+  const byCode = CODE_ACTIONS[event.code];
+  if (byCode !== undefined) {
+    return byCode;
   }
   if (event.key === SPACE) {
     return event.shiftKey ? "previous" : "next";

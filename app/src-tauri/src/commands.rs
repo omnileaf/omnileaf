@@ -8,7 +8,7 @@ use omnileaf_engine::{
     ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
     SeriesOverview, SeriesPage,
 };
-use tauri::{AppHandle, Manager, State, Window, Wry, ipc::Channel};
+use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_opener::OpenerExt;
 use tauri_specta::{Builder, Commands, collect_commands, collect_events};
@@ -19,6 +19,7 @@ use crate::{
     back_swipe,
     crash_reporting::{CrashReportOffer, CrashReporting},
     folder_picker::pick_folder,
+    full_screen::{self, FullScreenChange},
     ipc_error::IpcError,
     library_events::LibraryChanged,
     library_problem::{LibraryAtLaunch, LibraryProblem},
@@ -46,6 +47,7 @@ macro_rules! app_commands {
             mark_books,
             open_book,
             orient_screen,
+            change_full_screen,
             library_listing,
             set_library_listing,
             library_view,
@@ -299,6 +301,16 @@ async fn open_book(
 #[specta::specta]
 async fn orient_screen(app: AppHandle, orientation: ScreenOrientation) -> Result<(), IpcError> {
     screen_orientation::orient(&app, orientation).await
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+fn change_full_screen(window: WebviewWindow, change: FullScreenChange) -> Result<(), IpcError> {
+    full_screen::change(&window, change)
 }
 
 #[tauri::command]

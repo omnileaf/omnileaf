@@ -28,6 +28,7 @@ export const commands = {
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
 	orientScreen: (orientation: ScreenOrientation) => typedError<null, IpcError>(__TAURI_INVOKE("orient_screen", { orientation })),
+	changeFullScreen: (change: FullScreenChange) => typedError<null, IpcError>(__TAURI_INVOKE("change_full_screen", { change })),
 	libraryListing: () => typedError<LibraryListing, IpcError>(__TAURI_INVOKE("library_listing")),
 	setLibraryListing: (listing: LibraryListing) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_listing", { listing })),
 	libraryView: () => typedError<LibraryView, IpcError>(__TAURI_INVOKE("library_view")),
@@ -139,6 +140,12 @@ export type FolderScan = {
 	unsupportedBooks: number,
 	unreadableFolders: number,
 };
+
+export type FullScreenChange = 
+/**  Goes into full screen from a window, and back out of it. */
+"toggle" | 
+/**  Goes back to a window, as when the reader closes. */
+"leave";
 
 /**  Whether the library lists series meeting a condition alongside the rest, only those, or only the rest. */
 export type Inclusion = "any" | "only" | "hide";

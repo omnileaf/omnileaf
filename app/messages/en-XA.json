@@ -852,6 +852,7 @@
   "reader_next_page": "⟦Ñéẋţ þáĝé····⟧",
   "reader_show_controls": "⟦Šĥöŵ ţĥé çöñţŕöļš·······⟧",
   "reader_hide_controls": "⟦Ĥíðé ţĥé çöñţŕöļš·······⟧",
+  "reader_full_screen": "⟦Ƒûļļ šçŕééñ·····⟧",
   "reader_page": [
     {
       "declarations": ["input page", "local formattedPage = page: number"],

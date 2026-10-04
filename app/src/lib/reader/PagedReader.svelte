@@ -52,6 +52,9 @@
       case "toggleControls":
         areControlsShown = !areControlsShown;
         return;
+      case "fullScreen":
+        void commands.changeFullScreen("toggle");
+        return;
       case "close":
         void goto(resolve("/(app)"));
         return;
@@ -96,6 +99,7 @@
     void commands.orientScreen("followDevice");
     return () => {
       void commands.orientScreen("portraitOnPhones");
+      void commands.changeFullScreen("leave");
     };
   });
 </script>
@@ -158,6 +162,9 @@
         page: pageNumber,
         count: pageCount,
       })}
+      onFullScreen={() => {
+        act("fullScreen");
+      }}
       bind:heading
     />
   </header>

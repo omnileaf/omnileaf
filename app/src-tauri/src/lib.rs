@@ -11,6 +11,7 @@ mod folder_picker;
 mod folder_storage;
 #[cfg(desktop)]
 mod folder_watch;
+mod full_screen;
 mod ipc_error;
 mod library_events;
 mod library_problem;
