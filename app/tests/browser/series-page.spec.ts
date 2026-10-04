@@ -312,6 +312,48 @@ test("marks every book picked when the library changes while picking", async ({
   expect(shelf.marked.at(-1)?.books).toHaveLength(BOOKS_PER_PAGE + 5);
 });
 
+test("focuses Select all once picking starts", async ({ page }) => {
+  await openSeries(page);
+
+  await page.getByRole("button", { name: "Select", exact: true }).click();
+
+  await expect(page.getByRole("button", { name: "Select all" })).toBeFocused();
+});
+
+for (const stop of ["Done", "Escape"] as const) {
+  test(`returns focus to Select once picking stops with ${stop}`, async ({
+    page,
+  }) => {
+    await openSeries(page);
+    const select = page.getByRole("button", { name: "Select", exact: true });
+    await select.click();
+
+    await (stop === "Done"
+      ? page.getByRole("button", { name: "Done" }).click()
+      : page.keyboard.press("Escape"));
+
+    await expect(select).toBeFocused();
+  });
+}
+
+test("returns focus to Select once the books picked are marked", async ({
+  page,
+}) => {
+  await openSeries(page);
+  const select = page.getByRole("button", { name: "Select", exact: true });
+  await select.click();
+  await page
+    .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
+    .check();
+
+  await page
+    .getByRole("group", { name: "Selected books" })
+    .getByRole("button", { name: "Mark read" })
+    .click();
+
+  await expect(select).toBeFocused();
+});
+
 test("stops picking books with Done or Escape, with nothing left picked", async ({
   page,
 }) => {
