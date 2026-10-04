@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Search, X } from "@lucide/svelte";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
 
   import type { FilterCondition } from "#lib/library/library-listing.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -31,8 +31,10 @@
     input?.setSelectionRange(text.length, text.length);
   });
 
-  function type(typed: string): void {
+  /** Puts back the text the query kept, since taking a filter word out can leave it as it was before the keystroke. */
+  async function type(typed: string): Promise<void> {
     onType(typed);
+    await tick();
     if (input !== undefined && input.value !== text) {
       input.value = text;
     }
@@ -74,7 +76,7 @@
     value={text}
     class="no-search-cancel flex-1 bg-transparent text-body outline-none min-inline-none placeholder:text-muted large:text-search-wide"
     oninput={(event) => {
-      type(event.currentTarget.value);
+      void type(event.currentTarget.value);
     }}
     onkeydown={keyDown}
   />
@@ -84,7 +86,7 @@
       aria-label={m.search_clear()}
       class="flex shrink-0 items-center justify-center rounded-full bg-chip text-muted block-search-clear inline-search-clear large:hidden"
       onclick={() => {
-        type("");
+        void type("");
         input?.focus();
       }}
     >
