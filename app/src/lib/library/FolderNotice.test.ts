@@ -38,13 +38,17 @@ function failed(code: IpcErrorCode): AddFolderResult {
 
 const CANCELLED: AddFolderResult = { status: "ok", data: null };
 
-async function renderWith(addFolder: AddFolder) {
+async function renderWith(
+  addFolder: AddFolder,
+  { usesStandIns } = { usesStandIns: false },
+) {
   const notices = new Notices();
   const adding = new FolderAdding(addFolder, () => notices);
   const dismissals = { count: 0 };
   await render(AddFolderButton, { adding, placement: "empty-state" });
   const notice = await render(FolderNotice, {
     adding,
+    usesStandIns,
     onDismissed: () => {
       dismissals.count += 1;
     },
@@ -67,6 +71,18 @@ test("reports how many comics the picked folder holds", async () => {
   await expect
     .element(status)
     .toHaveTextContent("Found 3 comics in Sample Library.");
+});
+
+test("names the folder with a stand-in while Screenshot mode is on", async () => {
+  const { button, status } = await renderWith(answering(found({})), {
+    usesStandIns: true,
+  });
+
+  await button.click();
+
+  await expect
+    .element(status)
+    .toHaveTextContent("Found 3 comics in Folder 01.");
 });
 
 test("counts a single comic in the singular", async () => {

@@ -49,6 +49,8 @@
   --text-callout--line-height: 1.375rem;
   --text-back-link: 1.0625rem;
   --text-back-link--line-height: 1.375rem;
+  --text-detail: 0.8125rem;
+  --text-detail--line-height: 1.125rem;
   --text-label: 0.875rem;
   --text-label--line-height: 1.25rem;
   --text-brand: 1.3125rem;
@@ -73,6 +75,8 @@
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+
+  --tracking-stand-in: 0.08em;
 
   --spacing-2xs: 0.125rem;
   --spacing-xs: 0.25rem;
@@ -107,6 +111,15 @@
   --spacing-pane-gap: 1.5rem;
   --spacing-settings-list: 17rem;
   --spacing-problem-top: calc(10.625rem - var(--spacing-title-gap));
+  --spacing-switch-length: 3.125rem;
+  --spacing-switch-thickness: 1.875rem;
+  --spacing-switch-knob: 1.5rem;
+  --spacing-switch-length-compact: 2.75rem;
+  --spacing-switch-thickness-compact: 1.625rem;
+  --spacing-switch-knob-compact: 1.25rem;
+  --spacing-switch-inset: 0.1875rem;
+  --spacing-cover-thumb: 3.5rem;
+  --spacing-preview: 17.5rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
@@ -146,6 +159,7 @@
   --radius-card: 0.75rem;
   --radius-tile: 0.625rem;
   --radius-list: 0.625rem;
+  --radius-cover: 0.375rem;
   --radius-panel: 1rem;
   --radius-notice: 1.25rem;
 
@@ -159,6 +173,7 @@
   --shadow-raised: 0 1px 2px var(--color-raised-shadow);
   --shadow-floating:
     0 8px 28px var(--color-glass-shadow), 0 1px 3px var(--color-glass-contact);
+  --shadow-knob: 0 1px 2px var(--color-knob-shadow);
   --shadow-notice: 0 12px 34px rgb(0 0 0 / 0.25);
   --shadow-notice-wide: 0 14px 40px rgb(0 0 0 / 0.2);
   --shadow-undo: 0 12px 34px rgb(0 0 0 / 0.3);
@@ -168,6 +183,7 @@
   --color-foreground: #1c1b18;
   --color-muted: #5f5b52;
   --color-sidebar-ink: #4a473f;
+  --color-faint: #8c867a;
   --color-border: #e3ded3;
   --color-field: #e3ded3;
   --color-card: #ffffff;
@@ -179,6 +195,15 @@
   --color-on-accent: #ffffff;
   --color-accent-soft: #ddebe2;
   --color-warning-soft: #fbf3e3;
+  --color-switch-off: #c9c3b6;
+  --color-switch-knob: #ffffff;
+  --color-knob-shadow: rgb(0 0 0 / 0.2);
+  --color-cover-edge: rgb(28 27 24 / 0.1);
+  --color-stand-in: #dad6cd;
+  --color-stand-in-stripe: rgb(28 27 24 / 0.07);
+  --color-sample-cover: #7a2e2e;
+  --color-sample-cover-art: #994141;
+  --color-sample-cover-ink: #f6e7d8;
   --color-warning: #f3e0b8;
   --color-warning-edge: #ebd6a8;
   --color-on-warning: #3b2f1e;
@@ -327,6 +352,7 @@
   --color-foreground: #f1ede4;
   --color-muted: #a9a396;
   --color-sidebar-ink: #c9c3b6;
+  --color-faint: #6b665c;
   --color-border: #302d28;
   --color-field: #34312b;
   --color-card: #1f1d1a;
@@ -338,6 +364,10 @@
   --color-on-accent: #0f2418;
   --color-accent-soft: #243a2c;
   --color-warning-soft: #3a3120;
+  --color-switch-off: #4a463f;
+  --color-cover-edge: rgb(255 255 255 / 0.08);
+  --color-stand-in: #2e2c28;
+  --color-stand-in-stripe: rgb(255 255 255 / 0.06);
   --color-warning: #5a4a2a;
   --color-warning-edge: #5a4a2a;
   --color-on-warning: #f1ede4;
@@ -376,6 +406,25 @@
 
 @utility inline-tab {
   inline-size: calc(100% / var(--tab-count));
+}
+
+@utility bg-stand-in-pattern {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      var(--color-stand-in-stripe) 0 1px,
+      transparent 1px 7px
+    ),
+    var(--color-stand-in);
+}
+
+@utility small-caps {
+  font-variant-caps: all-small-caps;
+}
+
+@utility grid-with-preview {
+  grid-template-columns: minmax(0, 1fr) var(--spacing-preview);
+  grid-template-rows: auto 1fr;
 }
 
 @utility translate-to-tab {

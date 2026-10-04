@@ -16,6 +16,12 @@
   import { sectionOf } from "$lib/navigation/sections";
   import NoticeHost from "$lib/notices/NoticeHost.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import {
+    screenshotModeForDocument,
+    setScreenshotMode,
+  } from "$lib/screenshot-mode/screenshot-mode.svelte";
+  import ScreenshotModeAnnouncement from "$lib/screenshot-mode/ScreenshotModeAnnouncement.svelte";
+  import { isScreenshotModeShortcut } from "$lib/screenshot-mode/shortcut";
 
   import type { LayoutProps } from "./$types";
 
@@ -25,7 +31,20 @@
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
+  const screenshotMode = setScreenshotMode(screenshotModeForDocument());
   const backGoesUp = setBackGoesUp(makeBackGoUp());
+
+  function toggleScreenshotModeOnShortcut(event: KeyboardEvent): void {
+    if (!isScreenshotModeShortcut(event)) {
+      return;
+    }
+    event.preventDefault();
+    screenshotMode.toggle();
+  }
+
+  function settleScreenshotMode(): void {
+    screenshotMode.settle();
+  }
 
   $effect(() => {
     void commands.matchSystemBars(
@@ -42,6 +61,13 @@
     }
   });
 </script>
+
+<svelte:window
+  onkeydown={toggleScreenshotModeOnShortcut}
+  onfocus={settleScreenshotMode}
+  onpageshow={settleScreenshotMode}
+/>
+<svelte:document onvisibilitychange={settleScreenshotMode} />
 
 <svelte:head>
   {#key language.resolved}
@@ -66,3 +92,6 @@
     {/key}
   </div>
 </div>
+{#key language.resolved}
+  <ScreenshotModeAnnouncement />
+{/key}

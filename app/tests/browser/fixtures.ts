@@ -1,4 +1,5 @@
 import {
+  expect,
   test as base,
   type Locator,
   type Page,
@@ -51,6 +52,17 @@ export async function boxOf(locator: Locator): Promise<Box> {
     throw new Error("the element has no layout box");
   }
   return box;
+}
+
+/** Waits until nothing in `locator`'s subtree is animating, polling so it also catches transitions that start while it waits. */
+export async function settle(locator: Locator): Promise<void> {
+  await expect
+    .poll(() =>
+      locator.evaluate(
+        (element) => element.getAnimations({ subtree: true }).length,
+      ),
+    )
+    .toBe(0);
 }
 
 export const test = base.extend<{ backend: FakeBackend }>({
