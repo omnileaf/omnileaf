@@ -308,3 +308,25 @@ async fn keeps_a_page_shown_in_one_book_out_of_the_book_read_after_it() {
         [BookReading::NotStarted, BookReading::NotStarted]
     );
 }
+
+#[tokio::test]
+async fn opens_a_book_read_before_on_the_page_reading_it_again_reached() {
+    let shelf = Shelf::with_two_books("read-again").await;
+    let first_reading = shelf.restore(0).await;
+    shelf.show(&first_reading, LAST_PAGE).await;
+    shelf.close(&first_reading).await;
+    let again = shelf.restore(0).await;
+    shelf.show(&again, 3).await;
+    shelf.close(&again).await;
+
+    let opened = shelf.open(0).await;
+
+    assert_eq!(
+        (
+            first_reading.start_page,
+            again.start_page,
+            opened.start_page
+        ),
+        (0, 0, 3)
+    );
+}
