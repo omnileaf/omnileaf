@@ -9,6 +9,7 @@ mod error;
 mod migration;
 #[cfg(test)]
 mod scratch;
+pub mod store;
 mod title_sort;
 mod workers;
 

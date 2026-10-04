@@ -122,6 +122,12 @@ pub(crate) const STEPS: &[Step] = &[
         args: &["xtask", "policy"],
     },
     Step {
+        name: "sync rules",
+        group: Group::Rust,
+        program: "cargo",
+        args: &["xtask", "lint-sync"],
+    },
+    Step {
         name: "interface types",
         group: Group::Interface,
         program: "pnpm",
