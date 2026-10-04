@@ -71,13 +71,17 @@ fn cargo_about_report(root: &Path) -> anyhow::Result<String> {
     anyhow::ensure!(fetched.success(), "fetching the crates failed");
     let report_path =
         env::temp_dir().join(format!("omnileaf-cargo-about-{}.json", std::process::id()));
+    take_report(&report_path, |path| write_cargo_about_report(root, path))
+}
+
+fn write_cargo_about_report(root: &Path, path: &Path) -> anyhow::Result<()> {
     let output = Command::new("cargo")
         .args([
             "about", "generate", "--format", "json", "--frozen", "--fail",
         ])
         .args(["--manifest-path", APP_MANIFEST, "--config", ABOUT_CONFIG])
         .arg("--output-file")
-        .arg(&report_path)
+        .arg(path)
         .current_dir(root)
         .output()
         .context("run cargo-about")?;
@@ -86,9 +90,27 @@ fn cargo_about_report(root: &Path) -> anyhow::Result<String> {
         "cargo-about failed: {}",
         String::from_utf8_lossy(&output.stderr)
     );
-    let report = fs::read_to_string(&report_path).context("read cargo-about's report")?;
-    fs::remove_file(&report_path).with_context(|| format!("remove {}", report_path.display()))?;
-    Ok(report)
+    Ok(())
+}
+
+/// Reads the report `write` leaves at `path`, and removes it whether or not `write` succeeds.
+fn take_report(
+    path: &Path,
+    write: impl FnOnce(&Path) -> anyhow::Result<()>,
+) -> anyhow::Result<String> {
+    let report =
+        write(path).and_then(|()| fs::read_to_string(path).context("read cargo-about's report"));
+    let removed = remove_if_present(path);
+    report.and_then(|report| removed.map(|()| report))
+}
+
+fn remove_if_present(path: &Path) -> anyhow::Result<()> {
+    match fs::remove_file(path) {
+        Err(error) if error.kind() != io::ErrorKind::NotFound => {
+            Err(error).with_context(|| format!("remove {}", path.display()))
+        }
+        _ => Ok(()),
+    }
 }
 
 fn is_pinned_cargo_about(version_output: &str) -> bool {
@@ -114,6 +136,42 @@ fn ensure_pinned_cargo_about(root: &Path) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn report_path(name: &str) -> std::path::PathBuf {
+        env::temp_dir().join(format!("omnileaf-xtask-{name}-{}.json", std::process::id()))
+    }
+
+    #[test]
+    fn takes_the_written_report_and_removes_its_file() {
+        let path = report_path("written-report");
+
+        let report = take_report(&path, |path| Ok(fs::write(path, "{}")?)).unwrap();
+
+        assert_eq!(report, "{}");
+        assert!(!path.exists());
+    }
+
+    #[test]
+    fn removes_a_partly_written_report_when_writing_it_fails() {
+        let path = report_path("failed-report");
+
+        let taken = take_report(&path, |path| {
+            fs::write(path, "{")?;
+            anyhow::bail!("cargo-about failed")
+        });
+
+        assert_eq!(taken.unwrap_err().to_string(), "cargo-about failed");
+        assert!(!path.exists());
+    }
+
+    #[test]
+    fn reports_the_failure_when_writing_leaves_no_report() {
+        let path = report_path("missing-report");
+
+        let taken = take_report(&path, |_| anyhow::bail!("cargo-about failed"));
+
+        assert_eq!(taken.unwrap_err().to_string(), "cargo-about failed");
+    }
 
     #[test]
     fn accepts_the_pinned_cargo_about() {
