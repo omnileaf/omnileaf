@@ -1,7 +1,7 @@
 mod book;
 mod book_to_read;
-mod cover;
-mod cursor;
+pub(crate) mod cover;
+pub(crate) mod cursor;
 mod home_root;
 mod library_roots;
 mod native_path;
@@ -15,7 +15,7 @@ mod root_files;
 mod scanned_book;
 mod search_text;
 mod series;
-mod series_books;
+pub(crate) mod series_books;
 mod series_count;
 mod series_listing;
 mod series_overview;

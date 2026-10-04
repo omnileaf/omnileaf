@@ -7,6 +7,7 @@ mod connection;
 mod database;
 mod error;
 pub mod first_launch;
+pub mod history;
 #[cfg(test)]
 #[path = "../build/icu_versions.rs"]
 mod icu_versions;
