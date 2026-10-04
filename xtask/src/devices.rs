@@ -34,6 +34,21 @@ pub(crate) struct Device {
     pub(crate) id: Option<String>,
 }
 
+impl Kind {
+    pub(crate) fn is_virtual(self) -> bool {
+        match self {
+            Self::AndroidEmulator | Self::IosSimulator => true,
+            Self::AndroidDevice | Self::IosDevice => false,
+        }
+    }
+}
+
+impl Device {
+    pub(crate) fn answers_to(&self, chosen: &str) -> bool {
+        self.name.eq_ignore_ascii_case(chosen) || self.id.as_deref() == Some(chosen)
+    }
+}
+
 impl fmt::Display for Kind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
@@ -77,7 +92,10 @@ pub(crate) fn discover(
     Ok(devices)
 }
 
-fn android_devices(machine: &impl Machine, toolchain: &android::Toolchain) -> Vec<Device> {
+pub(crate) fn android_devices(
+    machine: &impl Machine,
+    toolchain: &android::Toolchain,
+) -> Vec<Device> {
     let adb = toolchain.adb();
     let attached: Vec<Device> = machine
         .stdout_of(adb.as_os_str(), android::LIST_ATTACHED)
@@ -160,7 +178,7 @@ fn adb_on(machine: &impl Machine, adb: &Path, serial: &str, args: &[&str]) -> Op
     machine.stdout_of(adb.as_os_str(), &args)
 }
 
-fn ios_devices(machine: &impl Machine) -> anyhow::Result<Vec<Device>> {
+pub(crate) fn ios_devices(machine: &impl Machine) -> anyhow::Result<Vec<Device>> {
     let physical = machine
         .stdout_of(OsStr::new(XCRUN), apple::LIST_DEVICES)
         .map(|listing| apple::physical_ios_devices(&listing))
