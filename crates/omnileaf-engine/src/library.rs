@@ -28,10 +28,10 @@ use tokio::{
 };
 
 use crate::{
-    AppLanguage, BookCursor, BookId, BookPage, BooksRemoval, CoversPerRowOutOfRange, FolderCursor,
-    FolderId, FolderPage, FolderRescan, FolderScan, LibraryChanges, LibraryFilter, LibraryFolder,
+    AppLanguage, BookCursor, BookId, BooksRemoval, CoversPerRowOutOfRange, FolderCursor, FolderId,
+    FolderPage, FolderRescan, FolderScan, LibraryChanges, LibraryFilter, LibraryFolder,
     LibraryListing, LibrarySearch, LibraryView, ReadMark, RescanOutcome, ResolvedBookmark,
-    ScanProgress, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
+    ScanProgress, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     cover_thumbnails::CoverFile,
     describe_error,
@@ -310,7 +310,7 @@ impl Library {
         &self,
         id: SeriesId,
         after: Option<BookCursor>,
-    ) -> Result<BookPage, LibraryError> {
+    ) -> Result<SeriesBookPage, LibraryError> {
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(BOOKS_PER_PAGE)?,
@@ -320,7 +320,7 @@ impl Library {
             .database()
             .read(move |connection| series_books(connection, id.0, &request))
             .await?;
-        Ok(BookPage::from(page))
+        Ok(SeriesBookPage::from(page))
     }
 
     /// Marks the books read or unread in one write, leaving where each was opened at as it is.

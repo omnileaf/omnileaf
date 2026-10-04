@@ -36,7 +36,7 @@ pub enum ReadMark {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
-pub struct BookPage {
+pub struct SeriesBookPage {
     pub books: Vec<SeriesBook>,
     /// Absent on the last page.
     pub next: Option<BookCursor>,
@@ -75,7 +75,7 @@ impl From<catalog::BookReading> for BookReading {
     }
 }
 
-impl From<Page<BookSummary>> for BookPage {
+impl From<Page<BookSummary>> for SeriesBookPage {
     fn from(page: Page<BookSummary>) -> Self {
         Self {
             books: page.items.into_iter().map(SeriesBook::from).collect(),

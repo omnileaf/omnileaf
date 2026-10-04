@@ -2,10 +2,10 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 #[cfg(debug_assertions)]
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
-    AppInfo, AppLanguage, BookCursor, BookId, BookPage, BooksRemoval, Core, CoversPerRow,
-    FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, InterfaceError, Library,
-    LibraryFilter, LibraryListing, LibrarySearch, LibraryView, ProjectLink, ReadMark, ScanProgress,
-    SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
+    AppInfo, AppLanguage, BookCursor, BookId, BooksRemoval, Core, CoversPerRow, FolderCursor,
+    FolderId, FolderPage, FolderRescan, FolderScan, InterfaceError, Library, LibraryFilter,
+    LibraryListing, LibrarySearch, LibraryView, ProjectLink, ReadMark, ScanProgress,
+    SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
 };
 use tauri::{AppHandle, Manager, State, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -265,7 +265,7 @@ async fn series_books(
     library: State<'_, Library>,
     id: SeriesId,
     after: Option<BookCursor>,
-) -> Result<BookPage, IpcError> {
+) -> Result<SeriesBookPage, IpcError> {
     Ok(library.series_books(id, after).await?)
 }
 
