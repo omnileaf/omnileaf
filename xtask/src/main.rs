@@ -197,6 +197,7 @@ fn process_for_check(
         Some(check::Group::Ios) => ready_for_ios_tests(ios_device),
         Some(
             check::Group::Rust
+            | check::Group::Portable
             | check::Group::Interface
             | check::Group::Browser
             | check::Group::App,
