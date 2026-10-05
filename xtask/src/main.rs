@@ -130,15 +130,12 @@ fn main() -> anyhow::Result<()> {
             android_device,
             fresh,
         } => {
-            let platforms = if platforms.is_empty() {
-                dev::platforms_for(std::env::consts::OS)
-            } else {
-                platforms
-            };
             let devices = dev::Devices {
                 ios: ios_device,
                 android: android_device,
             };
+            let platforms = dev::platforms_to_run(&platforms, &devices, std::env::consts::OS)?;
+            let devices = dev::listed_names(&devices, &Process::in_workspace())?;
             if fresh {
                 fresh::clear(&workspace::root(), &platforms, &devices)?;
             }
