@@ -3049,9 +3049,12 @@ name = "omnileaf-formats"
 version = "0.0.0"
 dependencies = [
  "flate2",
+ "omnileaf-sync-proto",
  "omnileaf-testkit",
  "proptest",
  "quick-xml 0.42.0",
+ "serde",
+ "serde_json",
  "thiserror 2.0.21",
  "unicode-normalization",
  "zip",

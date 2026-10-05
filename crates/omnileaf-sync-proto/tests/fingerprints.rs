@@ -2,7 +2,9 @@ mod support;
 
 use std::ops::Range;
 
-use omnileaf_sync_proto::{BookId, Fingerprint, FingerprintError, FingerprintKind, ImageEntry};
+use omnileaf_sync_proto::{
+    BookId, Fingerprint, FingerprintError, FingerprintKind, FolderImage, FolderManifest, ImageEntry,
+};
 use proptest::prelude::*;
 
 const KIB: u64 = 1024;
@@ -114,6 +116,107 @@ fn raw_fingerprints_reject_a_sample_of_the_wrong_length() {
             ..
         })
     ));
+}
+
+fn image(name: &str, size: u64) -> FolderImage {
+    FolderImage {
+        name: name.to_owned(),
+        size,
+    }
+}
+
+fn three_files() -> Vec<FolderImage> {
+    vec![
+        image("Page 10.png", 300 * KIB),
+        image("page 02.PNG", 200),
+        image("\u{ff30}age 01.png", 100 * KIB),
+    ]
+}
+
+#[test]
+fn folder_manifests_order_files_by_normalised_name() {
+    let manifest = FolderManifest::new(three_files()).unwrap();
+
+    assert_eq!(manifest.first(), &image("\u{ff30}age 01.png", 100 * KIB));
+    assert_eq!(manifest.last(), &image("Page 10.png", 300 * KIB));
+}
+
+#[test]
+fn folder_samples_take_the_head_of_the_first_file_and_the_tail_of_the_last() {
+    let manifest = FolderManifest::new(three_files()).unwrap();
+
+    assert_eq!(manifest.head_range(), 0..64 * KIB);
+    assert_eq!(manifest.tail_range(), 236 * KIB..300 * KIB);
+}
+
+#[test]
+fn folder_samples_stop_at_the_end_of_a_small_file() {
+    let manifest = FolderManifest::new([image("001.png", 100)]).unwrap();
+
+    assert_eq!(manifest.head_range(), 0..100);
+    assert_eq!(manifest.tail_range(), 0..100);
+}
+
+#[test]
+fn folder_fingerprints_ignore_the_listing_order() {
+    let mut reversed = three_files();
+    reversed.reverse();
+
+    let fingerprint = support::dir1_of_sample_files(reversed);
+
+    assert_eq!(fingerprint, support::dir1_of_sample_files(three_files()));
+    assert_eq!(fingerprint.kind(), FingerprintKind::Dir1);
+}
+
+#[test]
+fn folder_fingerprints_change_when_a_name_or_size_changes() {
+    let original = support::dir1_of_sample_files(three_files());
+    let mut renamed = three_files();
+    renamed[1].name = "page 03.png".to_owned();
+    let mut resized = three_files();
+    resized[1].size += 1;
+
+    assert_ne!(support::dir1_of_sample_files(renamed), original);
+    assert_ne!(support::dir1_of_sample_files(resized), original);
+}
+
+#[test]
+fn folder_fingerprints_change_when_a_sampled_byte_changes() {
+    let manifest = FolderManifest::new([image("001.png", 100)]).unwrap();
+    let content = support::sample_file(100);
+    let mut edited = content.clone();
+    edited[0] ^= 1;
+
+    let fingerprint = Fingerprint::dir1(&manifest, &edited, &content).unwrap();
+
+    assert_ne!(
+        fingerprint,
+        Fingerprint::dir1(&manifest, &content, &content).unwrap()
+    );
+}
+
+#[test]
+fn folder_fingerprints_reject_a_sample_of_the_wrong_length() {
+    let manifest = FolderManifest::new([image("001.png", 100)]).unwrap();
+    let content = support::sample_file(100);
+
+    let fingerprint = Fingerprint::dir1(&manifest, &content, &content[..10]);
+
+    assert!(matches!(
+        fingerprint,
+        Err(FingerprintError::SampleLength {
+            index: 1,
+            actual: 10,
+            ..
+        })
+    ));
+}
+
+#[test]
+fn a_folder_without_images_has_no_manifest() {
+    let manifest = FolderManifest::new([]);
+
+    assert!(matches!(manifest, Err(FingerprintError::NoImages)));
 }
 
 #[test]
