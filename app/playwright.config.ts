@@ -1,6 +1,7 @@
 import { defineConfig, type Project } from "@playwright/test";
 
 import { TEST_BROWSER_CONTEXT } from "./tests/browser-context.ts";
+import { shardFromEnvironment } from "./tests/shard.ts";
 
 const PREVIEW_PORT = 4173;
 const PREVIEW_URL = `http://localhost:${String(PREVIEW_PORT)}`;
@@ -28,11 +29,12 @@ const SCREENS = {
   },
 } as const;
 
-const projects: Project[] = ENGINES.flatMap((browserName) =>
-  Object.entries(SCREENS).map(([screen, emulation]) => ({
-    name: `${browserName}-${screen}`,
-    use: { browserName, ...emulation },
-  })),
+const projects: Project[] = Object.entries(SCREENS).flatMap(
+  ([screen, emulation]) =>
+    ENGINES.map((browserName) => ({
+      name: `${browserName}-${screen}`,
+      use: { browserName, ...emulation },
+    })),
 );
 
 export default defineConfig({
@@ -46,6 +48,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects,
+  shard: shardFromEnvironment(process.env.PLAYWRIGHT_SHARD),
   webServer: {
     command: `pnpm build && pnpm preview --port ${String(PREVIEW_PORT)} --strictPort`,
     url: PREVIEW_URL,

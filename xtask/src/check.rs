@@ -5,6 +5,8 @@ use std::{error::Error, fmt, io};
 #[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
 pub(crate) enum Group {
     Rust,
+    /// Checks whose outcome is the same on every platform, so CI runs them once.
+    Portable,
     Interface,
     Browser,
     App,
@@ -29,7 +31,7 @@ pub(crate) struct Step {
 pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "format",
-        group: Group::Rust,
+        group: Group::Portable,
         program: "cargo",
         args: &["fmt", "--all", "--check"],
     },
@@ -50,13 +52,13 @@ pub(crate) const STEPS: &[Step] = &[
     },
     Step {
         name: "fuzz format",
-        group: Group::Rust,
+        group: Group::Portable,
         program: "cargo",
         args: &["fmt", "--manifest-path", "fuzz/Cargo.toml", "--check"],
     },
     Step {
         name: "fuzz lint",
-        group: Group::Rust,
+        group: Group::Portable,
         program: "cargo",
         args: &[
             "clippy",
@@ -119,7 +121,7 @@ pub(crate) const STEPS: &[Step] = &[
     },
     Step {
         name: "webassembly",
-        group: Group::Rust,
+        group: Group::Portable,
         program: "cargo",
         args: &[
             "build",
@@ -132,19 +134,19 @@ pub(crate) const STEPS: &[Step] = &[
     },
     Step {
         name: "dependencies",
-        group: Group::Rust,
+        group: Group::Portable,
         program: "cargo",
         args: &["deny", "--locked", "check"],
     },
     Step {
         name: "policy",
-        group: Group::Rust,
+        group: Group::Portable,
         program: "cargo",
         args: &["xtask", "policy"],
     },
     Step {
         name: "licences",
-        group: Group::Rust,
+        group: Group::Portable,
         program: "cargo",
         args: &["xtask", "licences", "--check"],
     },
@@ -355,10 +357,16 @@ mod tests {
         assert_eq!(names, ["first", "second", "third"]);
     }
 
-    const RUST_AND_MOBILE: &[Step] = &[
+    const RUST_PORTABLE_AND_MOBILE: &[Step] = &[
         Step {
             name: "rust",
             group: Group::Rust,
+            program: "true",
+            args: &[],
+        },
+        Step {
+            name: "portable",
+            group: Group::Portable,
             program: "true",
             args: &[],
         },
@@ -377,23 +385,54 @@ mod tests {
     ];
 
     #[test]
-    fn leaves_the_mobile_steps_out_without_a_filter() {
-        let selected = select(RUST_AND_MOBILE, None);
+    fn leaves_only_the_mobile_steps_out_without_a_filter() {
+        let selected = select(RUST_PORTABLE_AND_MOBILE, None);
 
         let names: Vec<&str> = selected.iter().map(|step| step.name).collect();
-        assert_eq!(names, ["rust"]);
+        assert_eq!(names, ["rust", "portable"]);
     }
 
     #[test]
     fn selects_the_android_steps_when_asked() {
-        let selected = select(RUST_AND_MOBILE, Some(Group::Android));
+        let selected = select(RUST_PORTABLE_AND_MOBILE, Some(Group::Android));
 
         let names: Vec<&str> = selected.iter().map(|step| step.name).collect();
         assert_eq!(names, ["android"]);
     }
 
-    fn rust_group_runs_on_the_fuzz_crate(subcommand: &str) -> bool {
-        select(STEPS, Some(Group::Rust)).iter().any(|step| {
+    fn names_in(group: Group) -> Vec<&'static str> {
+        select(STEPS, Some(group))
+            .iter()
+            .map(|step| step.name)
+            .collect()
+    }
+
+    #[test]
+    fn the_rust_group_keeps_only_the_checks_that_depend_on_the_platform() {
+        assert_eq!(
+            names_in(Group::Rust),
+            ["lint", "test", "listing speed", "title page speed"]
+        );
+    }
+
+    #[test]
+    fn the_portable_group_holds_the_checks_that_answer_the_same_everywhere() {
+        assert_eq!(
+            names_in(Group::Portable),
+            [
+                "format",
+                "fuzz format",
+                "fuzz lint",
+                "webassembly",
+                "dependencies",
+                "policy",
+                "licences",
+            ]
+        );
+    }
+
+    fn portable_group_runs_on_the_fuzz_crate(subcommand: &str) -> bool {
+        select(STEPS, Some(Group::Portable)).iter().any(|step| {
             step.args.first() == Some(&subcommand)
                 && step
                     .args
@@ -403,13 +442,13 @@ mod tests {
     }
 
     #[test]
-    fn the_rust_group_checks_the_fuzz_crate_formatting() {
-        assert!(rust_group_runs_on_the_fuzz_crate("fmt"));
+    fn the_portable_group_checks_the_fuzz_crate_formatting() {
+        assert!(portable_group_runs_on_the_fuzz_crate("fmt"));
     }
 
     #[test]
-    fn the_rust_group_lints_the_fuzz_crate() {
-        assert!(rust_group_runs_on_the_fuzz_crate("clippy"));
+    fn the_portable_group_lints_the_fuzz_crate() {
+        assert!(portable_group_runs_on_the_fuzz_crate("clippy"));
     }
 
     #[test]
