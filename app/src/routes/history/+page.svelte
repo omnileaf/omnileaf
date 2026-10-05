@@ -1,9 +1,20 @@
 <script lang="ts">
+  import { RotateCcwClock } from "@lucide/svelte";
+
+  import EmptyState from "$lib/page/EmptyState.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import CollectionHeading from "$lib/screenshot-mode/CollectionHeading.svelte";
+  import { getScreenshotMode } from "$lib/screenshot-mode/screenshot-mode.svelte";
+
+  const screenshotMode = getScreenshotMode();
 </script>
 
-<h1 tabindex="-1" class="text-headline font-bold">{m.history_title()}</h1>
-<section class="mbs-2xl">
-  <h2 class="text-title font-bold">{m.history_empty_title()}</h2>
-  <p class="mbs-sm text-muted">{m.history_empty_body()}</p>
-</section>
+<CollectionHeading
+  title={m.history_title()}
+  showsLabel={screenshotMode.showsLabel}
+/>
+<EmptyState
+  icon={RotateCcwClock}
+  title={m.history_empty_title()}
+  body={m.history_empty_body()}
+/>
