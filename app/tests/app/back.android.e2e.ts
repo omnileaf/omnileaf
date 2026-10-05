@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 
 import { afterAll, expect, onTestFinished, test } from "vitest";
 
-import { useAppSession } from "./app-session.ts";
+import { mainNavigationLink, useAppSession } from "./app-session.ts";
 import { type Locator, pollUntil, xpath } from "./webdriver.ts";
 
 const APP_ID = "app.omnileaf";
@@ -20,12 +20,10 @@ const appSession = useAppSession();
 
 afterAll(() => setFontScale(DEFAULT_FONT_SCALE));
 
-function navigationLink(label: string): Locator {
-  return xpath(`//nav//a[normalize-space()='${label}']`);
-}
-
-function pageLink(label: string): Locator {
-  return xpath(`//main//a[normalize-space()='${label}']`);
+function settingsRow(label: string): Locator {
+  return xpath(
+    `//main//a[not(ancestor::nav)][starts-with(normalize-space(), '${label}')]`,
+  );
 }
 
 async function open(link: Locator): Promise<void> {
@@ -77,8 +75,8 @@ async function appState(): Promise<unknown> {
 }
 
 test("goes up from a Settings page to Settings and then to Library", async () => {
-  await open(navigationLink("Settings"));
-  await open(pageLink("Appearance"));
+  await open(mainNavigationLink("Settings"));
+  await open(settingsRow("Appearance"));
   await shownPage("Appearance");
 
   await pressBack();
@@ -90,8 +88,8 @@ test("goes up from a Settings page to Settings and then to Library", async () =>
 });
 
 test("goes back to Library from a section opened after another", async () => {
-  await open(navigationLink("Browse"));
-  await open(navigationLink("History"));
+  await open(mainNavigationLink("Browse"));
+  await open(mainNavigationLink("History"));
   await shownPage("History");
 
   await pressBack();
@@ -102,8 +100,8 @@ test("goes back to Library from a section opened after another", async () => {
 test("keeps back inside the app after Android recreates the activity", async () => {
   await recreateTheScreenWithFontScale(LARGER_FONT_SCALE);
   onTestFinished(() => recreateTheScreenWithFontScale(DEFAULT_FONT_SCALE));
-  await open(navigationLink("Settings"));
-  await open(pageLink("About"));
+  await open(mainNavigationLink("Settings"));
+  await open(settingsRow("About"));
   await shownPage("About");
 
   await pressBack();

@@ -54,3 +54,25 @@ test("replaces the first page when the app opened somewhere other than Library",
     stepsBack: 0,
   });
 });
+
+test("pushes a page opened from a Settings section that stands in for Settings", () => {
+  expect(
+    moveTo(["/", "/settings/general"], "/settings/general/language"),
+  ).toEqual({ kind: "push" });
+});
+
+test("goes back to a Settings section that stands in for Settings when it is opened from one of its pages", () => {
+  expect(
+    moveTo(
+      ["/", "/settings/general", "/settings/general/language"],
+      "/settings/general",
+    ),
+  ).toEqual({ kind: "back", steps: 1 });
+});
+
+test("replaces a Settings section that stands in for Settings with another", () => {
+  expect(moveTo(["/", "/settings/library"], "/settings/appearance")).toEqual({
+    kind: "replace",
+    stepsBack: 0,
+  });
+});

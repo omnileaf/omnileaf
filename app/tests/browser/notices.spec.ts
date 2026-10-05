@@ -30,9 +30,15 @@ test.use({
   },
 });
 
+function emptyLibraryAddFolder(page: Page) {
+  return page
+    .getByRole("region", { name: "Your library is empty" })
+    .getByRole("button", { name: "Add a folder" });
+}
+
 async function failToAddAFolder(page: Page) {
   await page.goto("/");
-  await page.getByRole("button", { name: "Add a folder" }).click();
+  await emptyLibraryAddFolder(page).click();
   const warning = page.getByRole("alert");
   await expect(warning).toHaveText(UNREADABLE);
   const card = warning.locator(":scope > *");
@@ -89,7 +95,7 @@ test("reaches the warning from the keyboard after the page", async ({
   page,
 }) => {
   await failToAddAFolder(page);
-  await page.getByRole("button", { name: "Add a folder" }).focus();
+  await emptyLibraryAddFolder(page).focus();
 
   await page.keyboard.press("Tab");
   const dismiss = page.getByRole("button", { name: "Dismiss" });
@@ -97,9 +103,7 @@ test("reaches the warning from the keyboard after the page", async ({
   await page.keyboard.press("Enter");
 
   await expect(page.getByRole("alert")).toBeEmpty();
-  await expect(
-    page.getByRole("button", { name: "Add a folder" }),
-  ).toBeFocused();
+  await expect(emptyLibraryAddFolder(page)).toBeFocused();
 });
 
 test("puts the warning away when the page changes", async ({ page }) => {
@@ -107,11 +111,11 @@ test("puts the warning away when the page changes", async ({ page }) => {
 
   await page
     .getByRole("navigation", { name: "Main" })
-    .getByRole("link", { name: "Settings" })
+    .getByRole("link", { name: "Browse" })
     .click();
 
   await expect(
-    page.getByRole("heading", { level: 1, name: "Settings" }),
+    page.getByRole("heading", { level: 1, name: "Browse" }),
   ).toBeFocused();
   await expect(page.getByRole("alert")).toBeEmpty();
 });
@@ -119,7 +123,7 @@ test("puts the warning away when the page changes", async ({ page }) => {
 test("rises into place", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("button", { name: "Add a folder" }).click();
+  await emptyLibraryAddFolder(page).click();
 
   const card = page.getByRole("alert").locator(":scope > *");
 
@@ -130,7 +134,7 @@ test("appears at once with reduce motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
 
-  await page.getByRole("button", { name: "Add a folder" }).click();
+  await emptyLibraryAddFolder(page).click();
 
   const card = page.getByRole("alert").locator(":scope > *");
   await expect(card).toBeVisible();

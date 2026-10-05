@@ -26,7 +26,7 @@
 </script>
 
 <div
-  class="absolute inset-x-md inset-be-md flex items-center gap-md rounded-panel bg-toast p-sm ps-lg text-on-toast shadow-undo motion-safe:animate-notice-rise medium:fixed medium:inset-x-page-end medium:inset-be-page-bottom medium:mx-auto medium:shadow-undo-wide medium:inline-fit ios:max-medium:inset-be-floating-clearance"
+  class="absolute inset-x-md inset-be-md flex items-center gap-md rounded-panel bg-toast p-sm ps-lg text-on-toast shadow-undo motion-safe:animate-notice-rise medium:fixed medium:inset-x-notice-end medium:inset-be-page-bottom medium:mx-auto medium:shadow-undo-wide medium:inline-fit ios:max-medium:inset-be-floating-clearance"
   onfocusin={onHold}
   onfocusout={onRelease}
 >

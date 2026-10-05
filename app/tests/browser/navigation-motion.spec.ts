@@ -6,6 +6,7 @@ import {
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  settle,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -73,16 +74,6 @@ function tab(page: Page, name: string): Locator {
 
 function glassPill(page: Page): Locator {
   return navigation(page).locator('li[aria-hidden="true"]');
-}
-
-async function settle(locator: Locator): Promise<void> {
-  await expect
-    .poll(() =>
-      locator.evaluate(
-        (element) => element.getAnimations({ subtree: true }).length,
-      ),
-    )
-    .toBe(0);
 }
 
 async function openTabAndSettle(page: Page, name: string): Promise<void> {
