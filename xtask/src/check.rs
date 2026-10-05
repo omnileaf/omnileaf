@@ -433,6 +433,7 @@ mod tests {
                 "dependencies",
                 "policy",
                 "licences",
+                "sync rules",
             ]
         );
     }
