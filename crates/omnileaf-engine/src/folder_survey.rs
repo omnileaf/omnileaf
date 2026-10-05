@@ -76,7 +76,7 @@ impl FolderSurvey {
     }
 }
 
-fn folder_name(root: &Path) -> String {
+pub(crate) fn folder_name(root: &Path) -> String {
     root.file_name().map_or_else(
         || root.display().to_string(),
         |name| name.to_string_lossy().into_owned(),

@@ -7,6 +7,7 @@ use crate::Error;
 const TITLE_TAG: u8 = 1;
 const ADDED_TAG: u8 = 2;
 const BOOK_TAG: u8 = 3;
+const ROOT_TAG: u8 = 4;
 const ID_LENGTH: usize = 16;
 const MILLIS_LENGTH: usize = size_of::<i64>();
 const HEX_RADIX: u32 = 16;
@@ -31,6 +32,9 @@ pub(crate) enum Position {
         sort_key: Vec<u8>,
         id: BookId,
     },
+    Root {
+        id: i64,
+    },
 }
 
 impl Position {
@@ -45,6 +49,7 @@ impl Position {
                 sort_key,
                 id,
             } => [&[BOOK_TAG][..], series.as_bytes(), id.as_bytes(), sort_key].concat(),
+            Self::Root { id } => [&[ROOT_TAG][..], &id.to_be_bytes()].concat(),
         }
     }
 
@@ -74,6 +79,9 @@ impl Position {
                     id: BookId::try_from(id.as_slice()).ok()?,
                 })
             }
+            ROOT_TAG => Some(Self::Root {
+                id: i64::from_be_bytes(rest.try_into().ok()?),
+            }),
             _ => None,
         }
     }

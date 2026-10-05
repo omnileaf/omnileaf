@@ -172,6 +172,16 @@ test.each<[IpcErrorCode, string, string]>([
     "Couldn't add the folder",
     "Something went wrong inside Omnileaf. Your library hasn't changed.",
   ],
+  [
+    "folderNotFound",
+    "Couldn't add the folder",
+    "Something went wrong inside Omnileaf. Your library hasn't changed.",
+  ],
+  [
+    "homeFolderKept",
+    "Couldn't add the folder",
+    "Something went wrong inside Omnileaf. Your library hasn't changed.",
+  ],
 ])("warns when adding fails with %s", async (code, title, body) => {
   const { notices, button } = await renderWith(answering(failed(code)));
 
