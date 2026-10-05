@@ -35,6 +35,21 @@ pub(crate) struct Device {
 }
 
 impl Kind {
+    pub(crate) fn flag(self) -> &'static str {
+        match self {
+            Self::AndroidDevice | Self::AndroidEmulator => "--android-device",
+            Self::IosDevice | Self::IosSimulator => "--ios-device",
+        }
+    }
+
+    fn short_name(self) -> &'static str {
+        match self {
+            Self::AndroidDevice | Self::IosDevice => "device",
+            Self::AndroidEmulator => "emulator",
+            Self::IosSimulator => "simulator",
+        }
+    }
+
     pub(crate) fn is_virtual(self) -> bool {
         match self {
             Self::AndroidEmulator | Self::IosSimulator => true,
@@ -50,6 +65,72 @@ impl Device {
         self.id.as_deref() == Some(chosen)
             || (!wanted.is_empty() && normalized(&self.name) == wanted)
     }
+}
+
+/// A `cargo xtask dev` line that runs on `device`, quoting the name when the shell needs it.
+pub(crate) fn example_command(device: &Device) -> String {
+    format!(
+        "cargo xtask dev {} {}",
+        device.kind.flag(),
+        shell_word(&device.name)
+    )
+}
+
+fn shell_word(name: &str) -> String {
+    let is_plain = name
+        .chars()
+        .all(|character| character.is_ascii_alphanumeric() || matches!(character, '_' | '-' | '.'));
+    if is_plain {
+        name.to_owned()
+    } else {
+        format!("\"{name}\"")
+    }
+}
+
+/// One example per kind of device listed, preferring a ready one, then a note that names are forgiving.
+pub(crate) fn examples(devices: &[Device]) -> Vec<String> {
+    let picked: Vec<&Device> = EXAMPLE_KINDS
+        .iter()
+        .filter_map(|kind| {
+            let of_kind = || devices.iter().filter(move |device| device.kind == *kind);
+            of_kind()
+                .find(|device| device.state == State::Ready)
+                .or_else(|| {
+                    of_kind().find(|device| device.state == State::Off && kind.is_virtual())
+                })
+        })
+        .collect();
+    let Some(first) = picked.first() else {
+        return Vec::new();
+    };
+    let commands: Vec<String> = picked
+        .iter()
+        .map(|device| example_command(device))
+        .collect();
+    let width = commands.iter().map(String::len).max().unwrap_or_default();
+    commands
+        .iter()
+        .zip(&picked)
+        .map(|(command, device)| {
+            format!(
+                "  {command:<width$}{EXAMPLE_GAP}({})",
+                device.kind.short_name()
+            )
+        })
+        .chain([format!(
+            "names are forgiving, so {} {} works too",
+            first.kind.flag(),
+            slug(&first.name)
+        )])
+        .collect()
+}
+
+fn slug(name: &str) -> String {
+    name.split(|character: char| !character.is_ascii_alphanumeric())
+        .filter(|word| !word.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>()
+        .join("-")
 }
 
 pub(crate) fn normalized(name: &str) -> String {
@@ -87,6 +168,13 @@ const LIST_VIRTUAL_DEVICES: &[&str] = &["-list-avds"];
 const AVD_NAME: &[&str] = &["emu", "avd", "name"];
 const BLUETOOTH_DUMP: &[&str] = &["shell", "dumpsys", "bluetooth_manager"];
 const COLUMN_GAP: &str = "  ";
+const EXAMPLE_GAP: &str = "    ";
+const EXAMPLE_KINDS: [Kind; 4] = [
+    Kind::AndroidDevice,
+    Kind::AndroidEmulator,
+    Kind::IosDevice,
+    Kind::IosSimulator,
+];
 
 pub(crate) fn discover(
     machine: &impl Machine,
@@ -530,5 +618,102 @@ mod tests {
             ["iPhone 18 Pro", "iphone-18", "", "--"].map(|chosen| simulator.answers_to(chosen));
 
         assert_eq!(answers, [false; 4]);
+    }
+
+    #[test]
+    fn writes_a_dev_command_for_each_kind_of_device() {
+        let commands = [
+            device(
+                Kind::AndroidDevice,
+                State::Ready,
+                "Pixel 9 Pro",
+                Some("46181FDAP00204"),
+            ),
+            device(Kind::AndroidEmulator, State::Off, "Pixel_10_Pro", None),
+            device(
+                Kind::IosSimulator,
+                State::Off,
+                "iPad Pro 13-inch (M5)",
+                Some("9EAF4372"),
+            ),
+            device(
+                Kind::IosDevice,
+                State::Ready,
+                "Someone's iPhone",
+                Some("00008140"),
+            ),
+        ]
+        .map(|device| example_command(&device));
+
+        assert_eq!(
+            commands,
+            [
+                r#"cargo xtask dev --android-device "Pixel 9 Pro""#,
+                "cargo xtask dev --android-device Pixel_10_Pro",
+                r#"cargo xtask dev --ios-device "iPad Pro 13-inch (M5)""#,
+                r#"cargo xtask dev --ios-device "Someone's iPhone""#,
+            ]
+        );
+    }
+
+    #[test]
+    fn gives_one_example_per_kind_preferring_a_ready_device() {
+        let devices = [
+            device(
+                Kind::AndroidDevice,
+                State::Unauthorized,
+                "R5CT10ABCDE",
+                Some("R5CT10ABCDE"),
+            ),
+            device(
+                Kind::AndroidDevice,
+                State::Ready,
+                "Pixel 9 Pro",
+                Some("46181FDAP00204"),
+            ),
+            device(Kind::AndroidEmulator, State::Off, "Pixel_10_Pro_XL", None),
+            device(
+                Kind::AndroidEmulator,
+                State::Ready,
+                "Pixel_10_Pro",
+                Some("emulator-5554"),
+            ),
+            device(
+                Kind::IosSimulator,
+                State::Off,
+                "iPhone 18 Pro",
+                Some("75BD17D7"),
+            ),
+            device(
+                Kind::IosSimulator,
+                State::Off,
+                "iPhone 18 Pro Max",
+                Some("2AD917AF"),
+            ),
+        ];
+
+        let lines = examples(&devices);
+
+        assert_eq!(
+            lines,
+            [
+                r#"  cargo xtask dev --android-device "Pixel 9 Pro"    (device)"#,
+                "  cargo xtask dev --android-device Pixel_10_Pro     (emulator)",
+                r#"  cargo xtask dev --ios-device "iPhone 18 Pro"      (simulator)"#,
+                "names are forgiving, so --android-device pixel-9-pro works too",
+            ]
+        );
+    }
+
+    #[test]
+    fn gives_no_examples_without_a_device_that_can_run_the_app() {
+        let devices = [device(
+            Kind::AndroidDevice,
+            State::Unauthorized,
+            "R5CT10ABCDE",
+            None,
+        )];
+
+        assert!(examples(&devices).is_empty());
     }
 }
