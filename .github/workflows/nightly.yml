@@ -58,6 +58,8 @@ jobs:
         run: rustup toolchain install
 
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build the unsigned bundles
         run: pnpm --dir app tauri build --bundles ${{ matrix.bundles }}
@@ -112,6 +114,8 @@ jobs:
         run: rustup toolchain install && rustup target add aarch64-linux-android
 
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build the ARM debug APK
         run: pnpm --dir app tauri android build --debug --apk --target aarch64
@@ -152,6 +156,8 @@ jobs:
         run: rustup toolchain install && rustup target add aarch64-apple-ios-sim
 
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build the Simulator app
         run: pnpm --dir app tauri ios build --debug --target aarch64-sim --no-sign
