@@ -6,6 +6,8 @@ mod doctor;
 mod fixtures;
 mod fuzz_seeds;
 mod icons;
+mod licence_catalogue;
+mod licences;
 mod lint_sync;
 mod policy;
 mod process;
@@ -62,6 +64,12 @@ enum Command {
     FuzzSeeds,
     /// Regenerate the app icons from `branding/icon.json`.
     Icons,
+    /// Regenerate the licences the app's licences page lists, from the crates it ships.
+    Licences {
+        /// Only check that the committed licences are current.
+        #[arg(long)]
+        check: bool,
+    },
     /// Check that only the write path writes synced state and the projections built from it.
     LintSync,
     /// Check the repository's files against its content rules.
@@ -118,6 +126,14 @@ fn main() -> anyhow::Result<()> {
             )]);
         }
         Command::Icons => icons::regenerate(&workspace::root())?,
+        Command::Licences { check } => {
+            let mode = if check {
+                licences::Mode::Check
+            } else {
+                licences::Mode::Write
+            };
+            licences::regenerate(&workspace::root(), mode)?;
+        }
         Command::LintSync => lint_sync()?,
         Command::Policy => enforce_policy()?,
     }

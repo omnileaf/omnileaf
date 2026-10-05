@@ -1,12 +1,12 @@
 import { expect, test } from "vitest";
 
-import { useAppSession } from "./app-session.ts";
+import { mainNavigationLink, useAppSession } from "./app-session.ts";
 import { SAMPLE_LIBRARY } from "./sample-library.ts";
 import { xpath } from "./webdriver.ts";
 
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
 const FOLDER_REPORT = xpath("//*[@role='status'][normalize-space()]");
-const SETTINGS_LINK = xpath("//nav//a[normalize-space()='Settings']");
+const SETTINGS_LINK = mainNavigationLink("Settings");
 const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
 
 const appSession = useAppSession();

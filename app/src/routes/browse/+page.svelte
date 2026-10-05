@@ -1,10 +1,22 @@
 <script lang="ts">
+  import { Compass } from "@lucide/svelte";
+
+  import EmptyState from "$lib/page/EmptyState.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import CollectionHeading from "$lib/screenshot-mode/CollectionHeading.svelte";
+  import { getScreenshotMode } from "$lib/screenshot-mode/screenshot-mode.svelte";
+
+  const screenshotMode = getScreenshotMode();
 </script>
 
-<h1 tabindex="-1" class="text-headline font-bold">{m.browse_title()}</h1>
-<section class="mbs-2xl">
-  <h2 class="text-title font-bold">{m.browse_empty_title()}</h2>
-  <p class="mbs-sm text-muted">{m.browse_empty_body()}</p>
-  <p class="mbs-sm text-muted">{m.browse_empty_later()}</p>
-</section>
+<CollectionHeading
+  title={m.browse_title()}
+  showsLabel={screenshotMode.showsLabel}
+/>
+<EmptyState
+  icon={Compass}
+  title={m.browse_empty_title()}
+  body={m.browse_empty_body()}
+>
+  <p class="text-footnote text-muted">{m.browse_empty_later()}</p>
+</EmptyState>

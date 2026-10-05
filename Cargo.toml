@@ -23,6 +23,7 @@ omnileaf-engine = { path = "crates/omnileaf-engine" }
 omnileaf-formats = { path = "crates/omnileaf-formats" }
 omnileaf-sync-proto = { path = "crates/omnileaf-sync-proto" }
 omnileaf-testkit = { path = "crates/omnileaf-testkit" }
+os_info = { version = "3.15.0", default-features = false }
 png = "0.18.1"
 proptest = "1.11.0"
 quick-xml = "0.42.0"
@@ -33,7 +34,9 @@ specta = { version = "=2.0.0-rc.25", features = ["derive"] }
 specta-typescript = "=0.0.12"
 tauri = "2.12.0"
 tauri-build = "2.7.0"
+tauri-plugin-clipboard-manager = "2.4.1"
 tauri-plugin-dialog = "2.8.0"
+tauri-plugin-opener = "2.7.0"
 tauri-plugin-wdio-webdriver = "1.4.0"
 tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 thiserror = "2.0.21"

@@ -1,25 +1,56 @@
 import { AxeBuilder } from "@axe-core/playwright";
 
 import {
+  boxOf,
+  EXPANDED_MIN_WIDTH,
   expect,
   FAKE_APP_VERSION,
   MEDIUM_MIN_WIDTH,
+  onPlatform,
   test,
+  viewportOf,
 } from "./fixtures.ts";
 
 const COLOR_SCHEMES = ["light", "dark"] as const;
 
 const SECTIONS = [
-  { label: "Library", path: "/", startFrom: "/settings" },
-  { label: "Browse", path: "/browse", startFrom: "/" },
-  { label: "History", path: "/history", startFrom: "/" },
-  { label: "Settings", path: "/settings", startFrom: "/" },
+  {
+    label: "Library",
+    path: "/",
+    startFrom: "/settings",
+    opensFirstSectionOnDesktop: false,
+  },
+  {
+    label: "Browse",
+    path: "/browse",
+    startFrom: "/",
+    opensFirstSectionOnDesktop: false,
+  },
+  {
+    label: "History",
+    path: "/history",
+    startFrom: "/",
+    opensFirstSectionOnDesktop: false,
+  },
+  {
+    label: "Settings",
+    path: "/settings",
+    startFrom: "/",
+    opensFirstSectionOnDesktop: true,
+  },
 ] as const;
 
-for (const { label, path, startFrom } of SECTIONS) {
+const OPENS_FIRST_SECTION =
+  "settings opens its first section in a desktop window from 600px";
+
+for (const { label, path, startFrom, opensFirstSectionOnDesktop } of SECTIONS) {
   test(`opens ${label} from the navigation and focuses its heading`, async ({
     page,
   }) => {
+    test.skip(
+      opensFirstSectionOnDesktop && viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      OPENS_FIRST_SECTION,
+    );
     await page.goto(startFrom);
 
     await page
@@ -40,6 +71,10 @@ for (const { label, path, startFrom } of SECTIONS) {
   test(`focuses the ${label} heading without a focus ring when opened from the keyboard`, async ({
     page,
   }) => {
+    test.skip(
+      opensFirstSectionOnDesktop && viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      OPENS_FIRST_SECTION,
+    );
     await page.goto(startFrom);
 
     await page
@@ -56,6 +91,11 @@ for (const { label, path, startFrom } of SECTIONS) {
     test(`${label} has no accessibility violations in the ${colorScheme} theme`, async ({
       page,
     }) => {
+      test.skip(
+        opensFirstSectionOnDesktop &&
+          viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+        OPENS_FIRST_SECTION,
+      );
       await page.emulateMedia({ colorScheme });
       await page.goto(path);
       await expect(
@@ -98,9 +138,73 @@ test("puts the navigation at the bottom on phones and at the side from 600px", a
 test("shows the version the backend reports in Settings › About", async ({
   page,
 }) => {
-  await page.goto("/settings");
-
-  await page.getByRole("link", { name: "About" }).click();
+  await page.goto("/settings/about");
 
   await expect(page.getByText(`Version ${FAKE_APP_VERSION}`)).toBeVisible();
 });
+
+for (const platform of ["android", "ios"] as const) {
+  test.describe(`on ${platform}`, () => {
+    test.use(onPlatform(platform));
+
+    test("goes back to Settings from a settings section", async ({ page }) => {
+      await page.goto("/settings/about");
+      test.skip(
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+        "the section list stays beside the section on desktop",
+      );
+
+      await page.getByRole("link", { name: "Back to Settings" }).click();
+
+      await expect(page).toHaveURL("/settings");
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Settings" }),
+      ).toBeFocused();
+    });
+  });
+}
+
+test("keeps Settings at the far end of the rail and the sidebar", async ({
+  page,
+}) => {
+  await page.goto("/");
+  test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "side navigation only");
+  const navigation = page.getByRole("navigation", { name: "Main" });
+
+  const bar = await boxOf(navigation);
+  const history = await boxOf(
+    navigation.getByRole("link", { name: "History" }),
+  );
+  const settings = await boxOf(
+    navigation.getByRole("link", { name: "Settings" }),
+  );
+
+  expect(settings.y - (history.y + history.height)).toBeGreaterThan(
+    bar.height / 2,
+  );
+});
+
+for (const { platform, rowHeight, iconSize } of [
+  { platform: "linux", rowHeight: 40, iconSize: 20 },
+  { platform: "android", rowHeight: 48, iconSize: 22 },
+] as const) {
+  test.describe(`on ${platform}`, () => {
+    test.use(onPlatform(platform));
+
+    test(`draws the sidebar's rows ${String(rowHeight)}px tall with ${String(iconSize)}px icons`, async ({
+      page,
+    }) => {
+      await page.goto("/");
+      test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "sidebar only");
+      const library = page
+        .getByRole("navigation", { name: "Main" })
+        .getByRole("link", { name: "Library" });
+
+      const row = await boxOf(library);
+      const icon = await boxOf(library.locator("svg"));
+
+      expect(row.height).toBe(rowHeight);
+      expect(icon.width).toBe(iconSize);
+    });
+  });
+}
