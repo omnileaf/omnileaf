@@ -5,12 +5,11 @@
   import type { LibraryFolder } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
+  import { folderTitle } from "./folder-title";
   import { ICON_SIZE } from "./icon-size";
 
   let { folder, action }: { folder: LibraryFolder; action?: Snippet } =
     $props();
-
-  const title = $derived(folder.kind === "home" ? m.app_name() : folder.name);
 </script>
 
 <div
@@ -29,7 +28,14 @@
     {/if}
   </span>
   <div class="flex-1 min-inline-none">
-    <p class="truncate font-semibold">{title}</p>
+    <p class="truncate font-semibold">{folderTitle(folder)}</p>
+    {#if !folder.isAvailable}
+      <p
+        class="mbs-2xs rounded-control bg-warning-soft px-xs text-caption font-semibold inline-fit"
+      >
+        {m.library_folder_unavailable()}
+      </p>
+    {/if}
     <p class="truncate text-caption text-muted">{folder.location}</p>
   </div>
   {@render action?.()}

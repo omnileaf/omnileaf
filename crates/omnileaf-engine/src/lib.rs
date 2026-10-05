@@ -7,6 +7,8 @@ mod library;
 mod library_folder;
 mod library_layout;
 mod project_link;
+mod rescan;
+mod rescan_plan;
 mod scan;
 mod version_details;
 
@@ -17,6 +19,7 @@ pub use library::{Library, LibraryError};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
 pub use omnileaf_db::store::{Changed, Clock};
 pub use project_link::ProjectLink;
+pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
 pub use scan::{FolderScan, ScanProgress};
 pub use version_details::{BuildProfile, VersionDetails};
 

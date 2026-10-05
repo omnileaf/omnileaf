@@ -6,8 +6,11 @@ use rusqlite::Transaction;
 use crate::{
     Error,
     catalog::{
-        NewBook, NewSeries, RootId, book::add_book_unless_present, native_path,
-        series::add_series_unless_present, stored_id::stored_id,
+        NewBook, NewSeries, RootId,
+        book::{add_book_unless_present, add_or_refile_book},
+        native_path,
+        series::add_series_unless_present,
+        stored_id::stored_id,
     },
     title_key::TitleCollation,
 };
@@ -38,6 +41,13 @@ pub struct ScannedBook {
     pub file: BookFile,
 }
 
+/// Where a book already in the catalog stays when one of its files is recorded.
+#[derive(Clone, Copy)]
+enum Filing {
+    WhereFirstFound,
+    WhereFoundNow,
+}
+
 #[derive(Clone, Debug)]
 pub struct BookFile {
     pub root: RootId,
@@ -53,10 +63,27 @@ pub fn record_scanned_books(
     transaction: &Transaction<'_>,
     scanned: &[ScannedBook],
 ) -> Result<Vec<SeriesId>, Error> {
+    record(transaction, scanned, Filing::WhereFirstFound)
+}
+
+/// Records books found at a new place after their old one went, refiling each in the series and under the title its new place gives it.
+#[tracing::instrument(skip_all, fields(books = moved.len()))]
+pub fn record_moved_books(
+    transaction: &Transaction<'_>,
+    moved: &[ScannedBook],
+) -> Result<Vec<SeriesId>, Error> {
+    record(transaction, moved, Filing::WhereFoundNow)
+}
+
+fn record(
+    transaction: &Transaction<'_>,
+    scanned: &[ScannedBook],
+    filing: Filing,
+) -> Result<Vec<SeriesId>, Error> {
     let collation = TitleCollation::stored(transaction)?;
     scanned
         .iter()
-        .map(|book| record_scanned_book(transaction, book, &collation))
+        .map(|book| record_scanned_book(transaction, book, &collation, filing))
         .collect()
 }
 
@@ -64,6 +91,7 @@ fn record_scanned_book(
     transaction: &Transaction<'_>,
     scanned: &ScannedBook,
     collation: &TitleCollation,
+    filing: Filing,
 ) -> Result<SeriesId, Error> {
     add_series_unless_present(transaction, &scanned.series, collation)?;
     let book = NewBook {
@@ -72,7 +100,10 @@ fn record_scanned_book(
         title: scanned.title.clone(),
         added_at_ms: scanned.added_at_ms,
     };
-    add_book_unless_present(transaction, &book)?;
+    match filing {
+        Filing::WhereFirstFound => add_book_unless_present(transaction, &book)?,
+        Filing::WhereFoundNow => add_or_refile_book(transaction, &book)?,
+    }
     let file = &scanned.file;
     transaction.prepare(RECORD_FILE)?.execute((
         book.id().as_bytes(),

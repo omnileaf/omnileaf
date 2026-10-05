@@ -7,7 +7,11 @@ import {
 } from "@playwright/test";
 
 import type { AppInfo, Platform } from "../../src/lib/ipc/bindings.ts";
-import { type FakeBackend, installFakeBackend } from "./fake-backend.ts";
+import {
+  CommandFailure,
+  type FakeBackend,
+  installFakeBackend,
+} from "./fake-backend.ts";
 
 export const FAKE_APP_VERSION = "1.2.3";
 export const FAKE_SOURCE_CODE = "repo.example.org/omnileaf";
@@ -24,6 +28,13 @@ export const DEFAULT_BACKEND: FakeBackend = {
   addLibraryFolder: () => null,
   libraryFolders: () => ({ folders: [], next: null }),
   removeLibraryFolder: () => null,
+  rescanLibraryFolder: () => {
+    throw new CommandFailure({
+      code: "folderNotFound",
+      message: "that folder isn't in the library",
+    });
+  },
+  rescanLibraryFolders: () => [],
   firstLaunchFinished: () => true,
   finishFirstLaunch: () => null,
   setAppLanguage: () => null,

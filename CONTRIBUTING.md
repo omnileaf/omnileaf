@@ -57,7 +57,7 @@ The `rust` group runs on every platform in CI, because its answer can differ bet
 
 - clippy over the workspace, with warnings as errors;
 - the tests, which also check that the interface's generated command bindings in `app/src/lib/ipc/bindings.ts` are current. After changing a command, regenerate them with `cargo xtask bindings`;
-- two release-build timing budgets: listing a 500-entry archive takes 3 ms or less, and a page of the library sorted by title takes 2 ms or less at the 95th percentile over 10,000 series.
+- three release-build timing budgets: listing a 500-entry archive takes 3 ms or less, a page of the library sorted by title takes 2 ms or less at the 95th percentile over 10,000 series, and rescanning an unchanged library of 1,000 books takes 300 ms or less.
 
 The timing budgets hold exactly on your machine and on CI's Linux runner. The macOS and Windows runners are shared and sometimes stall, so CI sets `OMNILEAF_BUDGET_SLACK=2` there: a timing fails only beyond twice its budget, while the log still shows each measured time against the budget.
 

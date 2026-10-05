@@ -1,9 +1,12 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import {
     setThemeSetting,
     themeSettingForDocument,
   } from "$lib/appearance/theme.svelte";
   import { commands } from "$lib/ipc/bindings";
+  import { rescanEveryFolder } from "$lib/library/rescan-folder";
   import {
     languageSettingForDocument,
     setLanguageSetting,
@@ -47,6 +50,10 @@
 
   $effect(() => {
     void commands.setAppLanguage(language.resolved);
+  });
+
+  onMount(() => {
+    void rescanEveryFolder();
   });
 </script>
 

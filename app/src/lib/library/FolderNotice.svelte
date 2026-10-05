@@ -9,6 +9,7 @@
   import type { FolderAdding, FolderOutcome } from "./folder-adding.svelte";
   import type { Notice } from "./notice";
   import NoticeCard from "./NoticeCard.svelte";
+  import ScanProgressBar from "./ScanProgressBar.svelte";
 
   interface Props {
     readonly adding: FolderAdding;
@@ -21,7 +22,6 @@
   const SHOWN_FOLDER_STAND_IN = 1;
 
   const progressTitleId = $props.id();
-  const progressCountId = `${progressTitleId}-count`;
 
   onDestroy(() => {
     adding.withdrawFailure();
@@ -92,21 +92,6 @@
     <NoticeCard {notice} onDismiss={dismiss} />
   {/if}
 </div>
-{#if adding.outcome.kind === "finding"}
-  <progress aria-labelledby={progressTitleId} class="mbs-sm progress-track"
-  ></progress>
-{:else if adding.outcome.kind === "reading"}
-  <progress
-    aria-labelledby={progressTitleId}
-    aria-describedby={progressCountId}
-    class="mbs-sm progress-track"
-    max={adding.outcome.total}
-    value={adding.outcome.scanned}
-  ></progress>
-  <p id={progressCountId} class="mbs-xs text-footnote text-muted">
-    {m.library_scan_progress({
-      scanned: adding.outcome.scanned,
-      total: adding.outcome.total,
-    })}
-  </p>
+{#if adding.outcome.kind === "finding" || adding.outcome.kind === "reading"}
+  <ScanProgressBar step={adding.outcome} titleId={progressTitleId} />
 {/if}

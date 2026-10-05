@@ -12,18 +12,21 @@ const HOME: WireFolder = {
   kind: "home",
   name: "Omnileaf",
   location: "/data/Omnileaf",
+  isAvailable: true,
 };
 const SAMPLE_COMICS: WireFolder = {
   id: "2",
   kind: "linked",
   name: "Sample Comics",
   location: "/media/Sample Comics",
+  isAvailable: true,
 };
 const SAMPLE_LIBRARY: WireFolder = {
   id: "3",
   kind: "linked",
   name: "Sample Library",
   location: "/media/Sample Library",
+  isAvailable: true,
 };
 
 /** A library that keeps what each test adds, set back before the next test. */
@@ -73,7 +76,7 @@ test("shows the home folder and the linked folders in Settings › Library", asy
   );
   await expect(
     page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
-  ).toHaveText(["Sample Comics /media/Sample Comics"]);
+  ).toHaveText(["Sample Comics /media/Sample Comics Rescan"]);
 });
 
 test("lists a folder as soon as it is added", async ({ page }) => {
@@ -84,8 +87,8 @@ test("lists a folder as soon as it is added", async ({ page }) => {
   await folders.getByRole("button", { name: "Add a folder" }).click();
 
   await expect(folders.getByRole("listitem")).toHaveText([
-    "Sample Comics /media/Sample Comics",
-    "Sample Library /media/Sample Library",
+    "Sample Comics /media/Sample Comics Rescan",
+    "Sample Library /media/Sample Library Rescan",
   ]);
 });
 
@@ -106,7 +109,7 @@ test("rings Remove when the keyboard reaches it", async ({ page }) => {
   const folders = page.getByRole("region", { name: "Folders" });
   const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
   await expect(remove).toBeVisible();
-  await folders.getByRole("button", { name: "Add a folder" }).focus();
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).focus();
 
   await page.keyboard.press("Tab");
 

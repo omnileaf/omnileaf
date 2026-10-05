@@ -1,5 +1,5 @@
 import { AxeBuilder } from "@axe-core/playwright";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import {
   boxOf,
@@ -20,6 +20,14 @@ function addFolderIn(page: Page, region: string) {
   return page
     .getByRole("region", { name: region })
     .getByRole("button", { name: "Add a folder" });
+}
+
+/** The report of adding a folder, apart from the rescan reports Settings › Library also shows. */
+function scanReport(page: Page, opening: string): Locator {
+  return page
+    .getByRole("main")
+    .getByRole("status")
+    .filter({ hasText: opening });
 }
 
 test.describe("with a folder of books", () => {
@@ -45,7 +53,7 @@ test.describe("with a folder of books", () => {
 
       await addFolderIn(page, region).click();
 
-      await expect(page.getByRole("main").getByRole("status")).toHaveText(
+      await expect(scanReport(page, "Found")).toHaveText(
         "Found 7 books in 3 series in Sample Library.",
       );
     });
@@ -54,14 +62,14 @@ test.describe("with a folder of books", () => {
   test("lets the notice under the folders be dismissed", async ({ page }) => {
     await page.goto("/settings/library");
     await page.getByRole("button", { name: "Add a folder" }).click();
-    const status = page.getByRole("main").getByRole("status");
-    await expect(status).toHaveText(
+    const report = scanReport(page, "Found");
+    await expect(report).toHaveText(
       "Found 7 books in 3 series in Sample Library.",
     );
 
-    await status.getByRole("button", { name: "Dismiss" }).click();
+    await report.getByRole("button", { name: "Dismiss" }).click();
 
-    await expect(status).toBeEmpty();
+    await expect(report).toHaveCount(0);
   });
 
   for (const { place, path, region } of PLACES) {
@@ -71,10 +79,10 @@ test.describe("with a folder of books", () => {
       await page.goto(path);
       const addFolder = addFolderIn(page, region);
       await addFolder.click();
-      const status = page.getByRole("main").getByRole("status");
-      await expect(status).not.toBeEmpty();
+      const report = scanReport(page, "Found");
+      await expect(report).toBeVisible();
 
-      await status.getByRole("button", { name: "Dismiss" }).click();
+      await report.getByRole("button", { name: "Dismiss" }).click();
 
       await expect(addFolder).toBeFocused();
     });
@@ -90,7 +98,7 @@ test.describe("with a folder of books", () => {
 
       await button.click();
 
-      await expect(page.getByRole("main").getByRole("status")).toHaveText(
+      await expect(scanReport(page, "Found")).toHaveText(
         "Found 7 books in 3 series in Sample Library.",
       );
       expect((await boxOf(button)).width).toBe(before.width);
@@ -114,9 +122,7 @@ test.describe("while the folder is being scanned", () => {
 
     await page.getByRole("button", { name: "Add a folder" }).click();
 
-    await expect(page.getByRole("main").getByRole("status")).toHaveText(
-      "Finding books",
-    );
+    await expect(scanReport(page, "Finding books")).toHaveText("Finding books");
     const bar = page.getByRole("progressbar", { name: "Finding books" });
     await expect(bar).toHaveAttribute("value", "32");
     await expect(bar).toHaveAccessibleDescription("32 of 100 books");

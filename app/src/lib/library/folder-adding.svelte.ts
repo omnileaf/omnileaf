@@ -1,20 +1,16 @@
 import { FolderX, Lock, type LucideIcon, TriangleAlert } from "@lucide/svelte";
 
-import type { FolderScan, IpcErrorCode, ScanProgress } from "$lib/ipc/bindings";
+import type { FolderScan, IpcErrorCode } from "$lib/ipc/bindings";
 import type { Notice, Notices } from "$lib/notices/notices.svelte";
 import { m } from "$lib/paraglide/messages.js";
 
 import type { AddFolder } from "./add-folder";
+import { followScan, type ScanStep } from "./scan-step";
 
 export type FolderOutcome =
   | { readonly kind: "idle" }
   | { readonly kind: "adding" }
-  | { readonly kind: "finding" }
-  | {
-      readonly kind: "reading";
-      readonly scanned: number;
-      readonly total: number;
-    }
+  | ScanStep
   | { readonly kind: "scanned"; readonly scan: FolderScan };
 
 interface Failure {
@@ -72,9 +68,14 @@ export class FolderAdding {
 
   async add(): Promise<void> {
     this.outcome = { kind: "adding" };
-    const result = await this.addFolder((progress) => {
-      this.#showProgress(progress);
-    });
+    const result = await this.addFolder(
+      followScan(
+        () => this.isAdding,
+        (step) => {
+          this.outcome = step;
+        },
+      ),
+    );
     if (result.status === "error") {
       this.outcome = { kind: "idle" };
       this.#failure = this.#failureNotice(result.error.code);
@@ -89,17 +90,6 @@ export class FolderAdding {
     }
     this.outcome = { kind: "scanned", scan: result.data };
     this.onFinished();
-  }
-
-  /** Progress can arrive after the result it led to, which must not turn back into a scan in progress. */
-  #showProgress(progress: ScanProgress): void {
-    if (!this.isAdding) {
-      return;
-    }
-    this.outcome =
-      progress.stage === "finding"
-        ? { kind: "finding" }
-        : { kind: "reading", scanned: progress.scanned, total: progress.total };
   }
 
   dismiss(): void {

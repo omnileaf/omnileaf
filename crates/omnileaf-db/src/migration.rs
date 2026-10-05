@@ -46,6 +46,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0009_store_book_file_locations_as_bytes"),
     migration!("0010_create_first_launch"),
     migration!("0011_key_series_titles_by_collation"),
+    migration!("0012_add_library_root_unavailable_since"),
 ];
 
 pub(crate) fn pending(

@@ -15,6 +15,7 @@ const KIND_COLUMN: usize = 1;
 const LOCATOR_KIND_COLUMN: usize = 2;
 const LOCATION_COLUMN: usize = 3;
 const ADDED_AT_COLUMN: usize = 4;
+const UNAVAILABLE_SINCE_COLUMN: usize = 5;
 const BOOKS_FOUND_ONLY_IN_ROOT: &str = "DELETE FROM book
     WHERE id IN (SELECT book_id FROM book_file WHERE root_id = ?1)
         AND NOT EXISTS (
@@ -51,6 +52,8 @@ pub struct LibraryRoot {
     pub kind: RootKind,
     pub locator: RootLocator,
     pub added_at_ms: i64,
+    /// Absent while the root was found the last time it was read.
+    pub unavailable_since_ms: Option<i64>,
 }
 
 /// Adding a folder the library already reads returns that root unchanged.
@@ -95,13 +98,14 @@ pub(crate) fn forget_root(transaction: &Transaction<'_>, id: RootId) -> Result<(
     Ok(())
 }
 
-/// Reads a root from a row holding `id, kind, locator_kind, location, added_at_ms` in that order.
+/// Reads a root from a row holding `id, kind, locator_kind, location, added_at_ms, unavailable_since_ms` in that order.
 pub(crate) fn stored_root(row: &Row<'_>) -> rusqlite::Result<LibraryRoot> {
     Ok(LibraryRoot {
         id: RootId(row.get(ID_COLUMN)?),
         kind: row.get(KIND_COLUMN)?,
         locator: stored_locator(row)?,
         added_at_ms: row.get(ADDED_AT_COLUMN)?,
+        unavailable_since_ms: row.get(UNAVAILABLE_SINCE_COLUMN)?,
     })
 }
 

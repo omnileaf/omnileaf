@@ -20,12 +20,16 @@
     folders,
     addFolder,
     notices,
+    rowAction,
+    status,
     usesStandIns,
     hint,
   }: {
     folders: LibraryFolders;
     addFolder: AddFolder;
     notices: Notices;
+    rowAction?: Snippet<[LibraryFolder]>;
+    status?: Snippet;
     usesStandIns: boolean;
     hint?: Snippet | undefined;
   } = $props();
@@ -84,6 +88,7 @@
         <li>
           <FolderRow {folder}>
             {#snippet action()}
+              {@render rowAction?.(folder)}
               <RowActionButton
                 label={m.library_remove_folder_label({ name: folder.name })}
                 tooltip={m.library_remove_folder()}
@@ -101,6 +106,7 @@
   {:else if folders.list.kind === "failed"}
     <p class="mbs-sm px-xs">{m.library_folders_failed()}</p>
   {/if}
+  {@render status?.()}
   {#if notRemoved !== undefined}
     <p role="alert" class="mbs-sm px-xs">
       {m.library_remove_folder_failed({ name: notRemoved.name })}
