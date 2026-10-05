@@ -143,6 +143,12 @@ pub(crate) const STEPS: &[Step] = &[
         args: &["xtask", "policy"],
     },
     Step {
+        name: "licences",
+        group: Group::Rust,
+        program: "cargo",
+        args: &["xtask", "licences", "--check"],
+    },
+    Step {
         name: "interface types",
         group: Group::Interface,
         program: "pnpm",

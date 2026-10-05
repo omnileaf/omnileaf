@@ -7,7 +7,11 @@ import Page from "./+page.svelte";
 
 const PROPS = {
   data: {
-    appInfo: { version: "1.2.3", platform: "linux" as const },
+    appInfo: {
+      version: "1.2.3",
+      platform: "linux" as const,
+      sourceCode: "repo.example.org/omnileaf",
+    },
     notices: new Notices(),
   },
   params: {},

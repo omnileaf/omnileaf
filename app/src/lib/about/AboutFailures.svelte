@@ -1,0 +1,18 @@
+<script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
+
+  import type { LinkOpening } from "./link-opening.svelte";
+  import type { VersionCopying } from "./version-copying.svelte";
+
+  let { copying, opening }: { copying: VersionCopying; opening: LinkOpening } =
+    $props();
+</script>
+
+<div role="alert" class="text-footnote touch:max-medium:px-xs">
+  {#if copying.outcome === "failed"}
+    <p class="mbs-sm">{m.about_copy_failed()}</p>
+  {/if}
+  {#if opening.hasFailed}
+    <p class="mbs-sm">{m.about_browser_unavailable()}</p>
+  {/if}
+</div>

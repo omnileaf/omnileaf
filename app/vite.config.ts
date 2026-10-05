@@ -4,6 +4,10 @@ import tailwindcss from "@tailwindcss/vite";
 import { playwright } from "@vitest/browser-playwright";
 import { configDefaults, defineConfig } from "vitest/config";
 
+import {
+  javascriptLicences,
+  type LicencesMode,
+} from "./scripts/javascript-licences.ts";
 import { TEST_BROWSER_CONTEXT } from "./tests/browser-context.ts";
 
 const DEV_SERVER_PORT = 1420;
@@ -15,6 +19,8 @@ const ANDROID_ONLY_APP_SPECS = "tests/app/**/*.android.e2e.ts";
 const HARNESS_TESTS = "tests/app/**/*.test.ts";
 
 const phoneDevHost = process.env.TAURI_DEV_HOST;
+const licencesMode: LicencesMode =
+  process.env.UPDATE_LICENCES === undefined ? "verify" : "write";
 const phoneAccess =
   phoneDevHost === undefined
     ? {}
@@ -36,6 +42,7 @@ export default defineConfig({
       outdir: "./src/lib/paraglide",
       strategy: ["custom-chosen", "preferredLanguage", "baseLocale"],
     }),
+    javascriptLicences(licencesMode),
   ],
   test: {
     projects: [
@@ -97,6 +104,7 @@ export default defineConfig({
             ANDROID_ONLY_APP_SPECS,
           ],
           environment: "node",
+          fileParallelism: false,
           globalSetup: ["tests/app/ios.ts"],
           expect: { requireAssertions: true },
           testTimeout: APP_TEST_TIMEOUT_MS,

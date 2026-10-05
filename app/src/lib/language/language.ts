@@ -1,5 +1,7 @@
 import {
+  baseLocale,
   defineCustomClientStrategy,
+  extractLocaleFromNavigator,
   getLocale,
   getTextDirection,
   isLocale,
@@ -20,14 +22,13 @@ export interface LanguageStore {
   removeItem(key: string): void;
 }
 
-export interface LanguageSwitch {
-  readonly store: LanguageStore;
-  readonly reload: () => void;
-}
+export const LANGUAGES: readonly Locale[] = locales.filter(
+  (locale) => locale !== PSEUDO_LOCALE,
+);
 
 export const LANGUAGE_CHOICES: readonly LanguageChoice[] = [
   "system",
-  ...locales.filter((locale) => locale !== PSEUDO_LOCALE),
+  ...LANGUAGES,
 ];
 
 export function storedLanguageChoice(
@@ -37,16 +38,15 @@ export function storedLanguageChoice(
   return stored !== null && isLocale(stored) ? stored : "system";
 }
 
-export function chooseLanguage(
+export function rememberLanguageChoice(
   choice: LanguageChoice,
-  { store, reload }: LanguageSwitch,
+  store: LanguageStore,
 ): void {
   if (choice === "system") {
     store.removeItem(LANGUAGE_KEY);
   } else {
     store.setItem(LANGUAGE_KEY, choice);
   }
-  reload();
 }
 
 /** Paraglide saves the first language it resolves; ignoring that save keeps "system" following the device. */
@@ -63,6 +63,10 @@ export function useChosenLanguage(store: Pick<LanguageStore, "getItem">): void {
 export function markLanguage(root: HTMLElement): void {
   root.lang = getLocale();
   root.dir = getTextDirection();
+}
+
+export function systemLanguage(): Locale {
+  return extractLocaleFromNavigator() ?? baseLocale;
 }
 
 export function languageName(locale: Locale): string {
