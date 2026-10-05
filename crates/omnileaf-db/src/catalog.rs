@@ -19,7 +19,7 @@ pub use home_root::set_home_root;
 pub use library_roots::{library_root, library_roots};
 pub use page::{Page, PageRequest, PageSize};
 pub use root::{LibraryRoot, NewRoot, RootId, RootKind, RootLocator, add_root, remove_root};
-pub use scanned_book::{BookFile, ScannedBook, record_scanned_book};
+pub use scanned_book::{BookFile, ScannedBook, record_scanned_books};
 pub use series::{NewSeries, add_series};
 pub use series_books::{BookSummary, series_books};
 pub use series_page::{SeriesOrder, SeriesSummary, series_page};

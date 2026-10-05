@@ -44,6 +44,10 @@
       themeSetting.preference,
     );
   });
+
+  $effect(() => {
+    void commands.setAppLanguage(language.resolved);
+  });
 </script>
 
 <svelte:window

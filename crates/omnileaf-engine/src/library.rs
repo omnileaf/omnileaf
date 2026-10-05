@@ -1,4 +1,4 @@
-use std::{fs, io, path::PathBuf, sync::Arc};
+use std::{fs, io, path::PathBuf};
 
 use omnileaf_db::{
     Config, Database,
@@ -7,12 +7,12 @@ use omnileaf_db::{
         library_roots, remove_root, set_home_root,
     },
     first_launch::{finish_first_launch, first_launch_finished},
-    store::Clock,
+    store::{Changed, Clock, Store},
 };
-use tokio::task::spawn_blocking;
+use tokio::{sync::broadcast, task::spawn_blocking};
 
 use crate::{
-    FolderCursor, FolderId, FolderPage, FolderScan, LibraryFolder, ScanProgress,
+    AppLanguage, FolderCursor, FolderId, FolderPage, FolderScan, LibraryFolder, ScanProgress,
     scan::{Target, find_books_in, scan},
 };
 
@@ -28,8 +28,7 @@ const MAPPED_DATABASE_BYTES: u32 = if cfg!(any(target_os = "android", target_os 
 
 /// The library database in the home folder, and the folders it reads.
 pub struct Library {
-    database: Database,
-    clock: Arc<dyn Clock>,
+    store: Store,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -75,8 +74,7 @@ impl Library {
         })
         .await??;
         let library = Self {
-            database,
-            clock: Arc::new(clock),
+            store: Store::new(database, clock),
         };
         library.set_home(home).await?;
         Ok(library)
@@ -93,7 +91,7 @@ impl Library {
         let layout = find_books_in(folder.clone()).await?;
         let root = self.link(folder.clone()).await?;
         let target = self.target(root, folder);
-        scan(&self.database, target, layout, on_progress).await
+        scan(self.store.database(), target, layout, on_progress).await
     }
 
     pub async fn folders(&self, after: Option<FolderCursor>) -> Result<FolderPage, LibraryError> {
@@ -102,7 +100,8 @@ impl Library {
             size: PageSize::try_from(FOLDERS_PER_PAGE)?,
         };
         let page = self
-            .database
+            .store
+            .database()
             .read(move |connection| library_roots(connection, &request))
             .await?;
         Ok(FolderPage {
@@ -115,7 +114,8 @@ impl Library {
     #[tracing::instrument(skip_all, fields(folder = %id))]
     pub async fn remove_folder(&self, id: FolderId) -> Result<(), LibraryError> {
         Ok(self
-            .database
+            .store
+            .database()
             .write(move |transaction| remove_root(transaction, id.0))
             .await?)
     }
@@ -128,18 +128,31 @@ impl Library {
         mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderScan, LibraryError> {
         let root = self
-            .database
+            .store
+            .database()
             .read(move |connection| library_root(connection, id.0))
             .await?;
         let RootLocator::Path(folder) = root.locator;
         on_progress(ScanProgress::Finding);
         let layout = find_books_in(folder.clone()).await?;
         let target = self.target(root.id, folder);
-        scan(&self.database, target, layout, on_progress).await
+        scan(self.store.database(), target, layout, on_progress).await
+    }
+
+    /// Sorts the library's titles for the app's language, keying them again only when it isn't the one they sort by.
+    #[tracing::instrument(skip_all, fields(%language))]
+    pub async fn set_language(&self, language: AppLanguage) -> Result<(), LibraryError> {
+        Ok(self.store.sort_titles_for(language.0).await?)
+    }
+
+    /// A receiver that falls too far behind loses the oldest changes and is told how many it missed.
+    #[must_use]
+    pub fn subscribe(&self) -> broadcast::Receiver<Changed> {
+        self.store.subscribe()
     }
 
     pub async fn first_launch_finished(&self) -> Result<bool, LibraryError> {
-        Ok(self.database.read(first_launch_finished).await?)
+        Ok(self.store.database().read(first_launch_finished).await?)
     }
 
     /// Records the first launch as finished for good, so it never shows again on this device.
@@ -147,7 +160,8 @@ impl Library {
     pub async fn finish_first_launch(&self) -> Result<(), LibraryError> {
         let finished_at_ms = self.now_ms();
         Ok(self
-            .database
+            .store
+            .database()
             .write(move |transaction| finish_first_launch(transaction, finished_at_ms))
             .await?)
     }
@@ -155,7 +169,8 @@ impl Library {
     async fn set_home(&self, home: PathBuf) -> Result<(), LibraryError> {
         let locator = RootLocator::Path(home);
         let added_at_ms = self.now_ms();
-        self.database
+        self.store
+            .database()
             .write(move |transaction| set_home_root(transaction, &locator, added_at_ms))
             .await?;
         Ok(())
@@ -168,7 +183,8 @@ impl Library {
             added_at_ms: self.now_ms(),
         };
         Ok(self
-            .database
+            .store
+            .database()
             .write(move |transaction| add_root(transaction, &root))
             .await?)
     }
@@ -182,7 +198,7 @@ impl Library {
     }
 
     fn now_ms(&self) -> i64 {
-        i64::try_from(self.clock.now_unix_ms()).unwrap_or(i64::MAX)
+        i64::try_from(self.store.clock().now_unix_ms()).unwrap_or(i64::MAX)
     }
 }
 

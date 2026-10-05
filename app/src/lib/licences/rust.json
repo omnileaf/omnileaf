@@ -1283,6 +1283,22 @@
       ]
     },
     {
+      "name": "icu_collator",
+      "version": "2.3.1",
+      "licence": "Unicode-3.0",
+      "texts": [
+        107
+      ]
+    },
+    {
+      "name": "icu_collator_data",
+      "version": "2.3.0",
+      "licence": "Unicode-3.0",
+      "texts": [
+        107
+      ]
+    },
+    {
       "name": "icu_collections",
       "version": "2.3.0",
       "licence": "Unicode-3.0",
@@ -1292,6 +1308,22 @@
     },
     {
       "name": "icu_locale_core",
+      "version": "2.3.0",
+      "licence": "Unicode-3.0",
+      "texts": [
+        107
+      ]
+    },
+    {
+      "name": "icu_locale_fallback",
+      "version": "2.3.0",
+      "licence": "Unicode-3.0",
+      "texts": [
+        107
+      ]
+    },
+    {
+      "name": "icu_locale_fallback_data",
       "version": "2.3.0",
       "licence": "Unicode-3.0",
       "texts": [
@@ -3040,6 +3072,14 @@
       ]
     },
     {
+      "name": "utf16_iter",
+      "version": "1.0.5",
+      "licence": "Apache-2.0 OR MIT",
+      "texts": [
+        3
+      ]
+    },
+    {
       "name": "utf8_iter",
       "version": "1.0.4",
       "licence": "Apache-2.0 OR MIT",
@@ -3390,6 +3430,14 @@
       "licence": "MIT OR Apache-2.0",
       "texts": [
         23
+      ]
+    },
+    {
+      "name": "write16",
+      "version": "1.0.0",
+      "licence": "Apache-2.0 OR MIT",
+      "texts": [
+        3
       ]
     },
     {

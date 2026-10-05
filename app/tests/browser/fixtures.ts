@@ -26,6 +26,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   removeLibraryFolder: () => null,
   firstLaunchFinished: () => true,
   finishFirstLaunch: () => null,
+  setAppLanguage: () => null,
   matchSystemBars: () => null,
   copyVersionDetails: () => null,
   openProjectLink: () => null,

@@ -9,6 +9,7 @@ use crate::{
         NewBook, NewSeries, RootId, book::add_book_unless_present, native_path,
         series::add_series_unless_present, stored_id::stored_id,
     },
+    title_key::TitleCollation,
 };
 
 const RECORD_FILE: &str =
@@ -46,13 +47,25 @@ pub struct BookFile {
     pub modified_at_ms: i64,
 }
 
-/// Adds the series and the book unless the catalog has them, points the file's row at the book, and returns the series the book is filed in.
-#[tracing::instrument(skip_all, fields(root = %scanned.file.root))]
-pub fn record_scanned_book(
+/// Adds each book's series and the book unless the catalog has them, points the file's row at the book, and returns the series each book is filed in.
+#[tracing::instrument(skip_all, fields(books = scanned.len()))]
+pub fn record_scanned_books(
+    transaction: &Transaction<'_>,
+    scanned: &[ScannedBook],
+) -> Result<Vec<SeriesId>, Error> {
+    let collation = TitleCollation::stored(transaction)?;
+    scanned
+        .iter()
+        .map(|book| record_scanned_book(transaction, book, &collation))
+        .collect()
+}
+
+fn record_scanned_book(
     transaction: &Transaction<'_>,
     scanned: &ScannedBook,
+    collation: &TitleCollation,
 ) -> Result<SeriesId, Error> {
-    add_series_unless_present(transaction, &scanned.series)?;
+    add_series_unless_present(transaction, &scanned.series, collation)?;
     let book = NewBook {
         fingerprint: scanned.fingerprint,
         series: scanned.series.id(),

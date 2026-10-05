@@ -8,7 +8,7 @@ mod support;
 use std::path::Path;
 
 use omnileaf_engine::{
-    Clock, FolderId, FolderKind, Library, LibraryError, LibraryFolder, ScanProgress,
+    Changed, Clock, FolderId, FolderKind, Library, LibraryError, LibraryFolder, ScanProgress,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::TempFolder;
@@ -280,4 +280,31 @@ async fn remembers_the_finished_first_launch_when_the_library_reopens() {
     let reopened = open(home.path()).await;
 
     assert!(reopened.first_launch_finished().await.unwrap());
+}
+
+#[tokio::test]
+async fn announces_a_new_title_order_when_the_app_s_language_changes() {
+    let home = TempFolder::new("library-language-changed");
+    let library = open(home.path()).await;
+    let mut changes = library.subscribe();
+
+    library.set_language("sv".parse().unwrap()).await.unwrap();
+
+    assert_eq!(changes.try_recv(), Ok(Changed::TitleOrder));
+}
+
+#[tokio::test]
+async fn keeps_the_title_order_when_the_app_s_language_is_the_one_titles_sort_by() {
+    let home = TempFolder::new("library-language-kept");
+    open(home.path())
+        .await
+        .set_language("sv".parse().unwrap())
+        .await
+        .unwrap();
+    let reopened = open(home.path()).await;
+    let mut changes = reopened.subscribe();
+
+    reopened.set_language("sv".parse().unwrap()).await.unwrap();
+
+    assert!(changes.try_recv().is_err());
 }

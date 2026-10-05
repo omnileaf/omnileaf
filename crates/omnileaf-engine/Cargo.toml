@@ -15,7 +15,7 @@ serde.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true
 thiserror.workspace = true
-tokio = { workspace = true, features = ["rt"] }
+tokio = { workspace = true, features = ["rt", "sync"] }
 tracing.workspace = true
 
 [dev-dependencies]

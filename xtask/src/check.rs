@@ -120,6 +120,24 @@ pub(crate) const STEPS: &[Step] = &[
         ],
     },
     Step {
+        name: "title re-key speed",
+        group: Group::Rust,
+        program: "cargo",
+        args: &[
+            "nextest",
+            "run",
+            "--package",
+            "omnileaf-db",
+            "--test",
+            "title_rekey_speed",
+            "--release",
+            "--run-ignored",
+            "only",
+            "--no-capture",
+            "--locked",
+        ],
+    },
+    Step {
         name: "scan speed",
         group: Group::Rust,
         program: "cargo",
@@ -440,6 +458,7 @@ mod tests {
                 "test",
                 "listing speed",
                 "title page speed",
+                "title re-key speed",
                 "scan speed",
             ]
         );
