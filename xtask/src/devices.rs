@@ -44,9 +44,19 @@ impl Kind {
 }
 
 impl Device {
+    /// Matches the id exactly, or the name ignoring case and everything but letters and digits, so `iphone-18-pro-max` finds `iPhone 18 Pro Max`.
     pub(crate) fn answers_to(&self, chosen: &str) -> bool {
-        self.name.eq_ignore_ascii_case(chosen) || self.id.as_deref() == Some(chosen)
+        let wanted = normalized(chosen);
+        self.id.as_deref() == Some(chosen)
+            || (!wanted.is_empty() && normalized(&self.name) == wanted)
     }
+}
+
+pub(crate) fn normalized(name: &str) -> String {
+    name.chars()
+        .filter(char::is_ascii_alphanumeric)
+        .map(|character| character.to_ascii_lowercase())
+        .collect()
 }
 
 impl fmt::Display for Kind {
@@ -455,5 +465,70 @@ mod tests {
                 "ios simulator     ready  iPhone 18 Pro    2AD917AF",
             ]
         );
+    }
+
+    #[test]
+    fn keeps_only_lowercase_letters_and_digits_of_a_name() {
+        let names = [
+            "iPhone 18 Pro Max",
+            "iPad Pro 13-inch (M5)",
+            "Pixel_10_Pro",
+            "Someone's Pixel",
+        ]
+        .map(normalized);
+
+        assert_eq!(
+            names,
+            [
+                "iphone18promax",
+                "ipadpro13inchm5",
+                "pixel10pro",
+                "someonespixel"
+            ]
+        );
+    }
+
+    #[test]
+    fn answers_to_a_name_written_any_way() {
+        let simulator = device(
+            Kind::IosSimulator,
+            State::Off,
+            "iPhone 18 Pro Max",
+            Some("2AD917AF-392E-4478-8CF1-D866F1DDDCE6"),
+        );
+
+        let answers = [
+            "iPhone 18 Pro Max",
+            "iphone-18-pro-max",
+            "IPHONE_18_PRO_MAX",
+            "iphone18promax",
+        ]
+        .map(|chosen| simulator.answers_to(chosen));
+
+        assert_eq!(answers, [true; 4]);
+    }
+
+    #[test]
+    fn answers_to_its_id_exactly() {
+        let phone = device(
+            Kind::AndroidDevice,
+            State::Ready,
+            "Pixel 9 Pro",
+            Some("46181FDAP00204"),
+        );
+
+        let answers = ["46181FDAP00204", "46181fdap00204"].map(|chosen| phone.answers_to(chosen));
+
+        assert_eq!(answers, [true, false]);
+    }
+
+    #[test]
+    fn answers_to_no_other_name() {
+        let simulator = device(Kind::IosSimulator, State::Off, "iPhone 18 Pro Max", None);
+
+        let answers =
+            ["iPhone 18 Pro", "iphone-18", "", "--"].map(|chosen| simulator.answers_to(chosen));
+
+        assert_eq!(answers, [false; 4]);
     }
 }
