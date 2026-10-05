@@ -4,6 +4,7 @@ mod android;
 mod apple;
 mod check;
 mod dev;
+mod device_choice;
 mod devices;
 mod doctor;
 mod fixtures;
@@ -135,7 +136,7 @@ fn main() -> anyhow::Result<()> {
                 android: android_device,
             };
             let platforms = dev::platforms_to_run(&platforms, &devices, std::env::consts::OS)?;
-            let devices = dev::listed_names(&devices, &Process::in_workspace())?;
+            let devices = dev::settle_devices(&platforms, &devices, &Process::in_workspace())?;
             if fresh {
                 fresh::clear(&workspace::root(), &platforms, &devices)?;
             }

@@ -11,7 +11,7 @@ use anyhow::Context;
 use clap::ValueEnum;
 
 use crate::{
-    android,
+    android, device_choice,
     devices::{self, Device, State},
     process::{Machine, Process, command_for},
 };
@@ -102,26 +102,33 @@ pub(crate) fn platforms_to_run(
     }
 }
 
-/// Swaps a forgiving name for the one device it answers to, keeping a name nothing or several devices answer to as it was.
-fn listed_name(chosen: &str, devices: &[Device]) -> String {
-    let mut answering = devices.iter().filter(|device| device.answers_to(chosen));
-    match (answering.next(), answering.next()) {
-        (Some(device), None) => device.name.clone(),
-        _ => chosen.to_owned(),
-    }
-}
-
-/// Names each chosen device the way `cargo xtask devices` lists it, which is the name Tauri matches.
-pub(crate) fn listed_names(chosen: &Devices, machine: &impl Machine) -> anyhow::Result<Devices> {
-    let android = chosen.android.as_deref().map(|name| {
+/// Settles the device for each phone platform that runs, so Tauri gets an exact name and never has to ask.
+pub(crate) fn settle_devices(
+    platforms: &[Platform],
+    chosen: &Devices,
+    machine: &impl Machine,
+) -> anyhow::Result<Devices> {
+    let android = if platforms.contains(&Platform::Android) {
         let listed = android::Toolchain::locate(|key| env::var_os(key), env::consts::OS)
             .map(|toolchain| devices::android_devices(machine, &toolchain))
             .unwrap_or_default();
-        listed_name(name, &listed)
-    });
-    let ios = match chosen.ios.as_deref() {
-        Some(name) => Some(listed_name(name, &devices::ios_devices(machine)?)),
-        None => None,
+        Some(device_choice::settle(
+            "Android",
+            &listed,
+            chosen.android.as_deref(),
+        )?)
+    } else {
+        None
+    };
+    let ios = if platforms.contains(&Platform::Ios) {
+        let listed = devices::ios_devices(machine)?;
+        Some(device_choice::settle(
+            "iOS",
+            &listed,
+            chosen.ios.as_deref(),
+        )?)
+    } else {
+        None
     };
     Ok(Devices { ios, android })
 }
@@ -558,43 +565,5 @@ mod tests {
                 Err(DeviceWithoutPlatform::Android),
             ]
         );
-    }
-
-    #[test]
-    fn uses_the_listed_name_of_the_device_a_forgiving_name_finds() {
-        let devices = [
-            listed(
-                Kind::IosSimulator,
-                State::Off,
-                "iPhone 18 Pro",
-                Some("75BD17D7"),
-            ),
-            listed(
-                Kind::IosSimulator,
-                State::Off,
-                "iPhone 18 Pro Max",
-                Some("2AD917AF"),
-            ),
-        ];
-
-        let names = ["iphone-18-pro-max", "iPhone 18 Pro", "75BD17D7"]
-            .map(|chosen| listed_name(chosen, &devices));
-
-        assert_eq!(
-            names,
-            ["iPhone 18 Pro Max", "iPhone 18 Pro", "iPhone 18 Pro"]
-        );
-    }
-
-    #[test]
-    fn keeps_a_name_no_device_answers_to() {
-        let devices = [listed(
-            Kind::AndroidEmulator,
-            State::Off,
-            "Pixel_10_Pro",
-            None,
-        )];
-
-        assert_eq!(listed_name("Nexus 5", &devices), "Nexus 5");
     }
 }

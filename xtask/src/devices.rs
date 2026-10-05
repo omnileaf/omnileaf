@@ -42,7 +42,7 @@ impl Kind {
         }
     }
 
-    fn short_name(self) -> &'static str {
+    pub(crate) fn short_name(self) -> &'static str {
         match self {
             Self::AndroidDevice | Self::IosDevice => "device",
             Self::AndroidEmulator => "emulator",
