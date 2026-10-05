@@ -8,7 +8,7 @@ mod support;
 use std::fmt::Write;
 
 use omnileaf_sync_proto::{
-    BookId, CategoryId, Fingerprint, FolderImage, Hlc, ImageEntry, SeriesId, Value, norm,
+    BookId, CategoryId, Fingerprint, FolderImage, Hlc, ImageEntry, SeriesId, SourceId, Value, norm,
 };
 use serde::Deserialize;
 
@@ -39,7 +39,7 @@ fn norm_matches_the_golden_vectors() {
 #[derive(Deserialize)]
 struct IdVector {
     key: String,
-    input: String,
+    input: Option<String>,
     id: String,
 }
 
@@ -48,10 +48,11 @@ fn ids_match_the_golden_vectors() {
     let vectors: Vec<IdVector> = golden(include_str!("golden/ids.json"));
 
     for vector in vectors {
-        let id = match vector.key.as_str() {
-            "series.local.v1" => SeriesId::local(&vector.input).unwrap().to_string(),
-            "category.v1" => CategoryId::from_name(&vector.input).unwrap().to_string(),
-            other => panic!("no derivation for key {other}"),
+        let id = match (vector.key.as_str(), vector.input.as_deref()) {
+            ("series.local.v1", Some(input)) => SeriesId::local(input).unwrap().to_string(),
+            ("category.v1", Some(input)) => CategoryId::from_name(input).unwrap().to_string(),
+            ("source.local.v1", None) => SourceId::local().to_string(),
+            (key, input) => panic!("no derivation for key {key} from {input:?}"),
         };
         assert_eq!(id, vector.id, "{} {:?}", vector.key, vector.input);
     }

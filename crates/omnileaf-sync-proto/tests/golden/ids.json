@@ -61,6 +61,10 @@
       "key": "category.v1",
       "input": "Sample\ufeffShelf",
       "id": "512cf539-088d-8d67-a6ff-5468c20990ba"
+    },
+    {
+      "key": "source.local.v1",
+      "id": "2f459482-bb88-8f49-b795-205dedca106b"
     }
   ]
 }
