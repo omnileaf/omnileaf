@@ -32,6 +32,15 @@ use clap::{Parser, Subcommand};
 use crate::{policy::RepositoryFile, process::Process};
 
 const SCREENSHOTS: &str = "target/screenshots";
+const DEV_EXAMPLES: &str = "\
+Examples:
+  cargo xtask dev                                         desktop and every phone platform
+  cargo xtask dev --ios-device iphone-18-pro-max          one iOS Simulator or iPhone
+  cargo xtask dev --android-device pixel-9-pro            one Android phone or emulator
+  cargo xtask dev --platform desktop,ios                  only these platforms
+  cargo xtask dev --android-device pixel-9-pro --fresh    start without the app's data
+
+Names ignore case, spaces and dashes. cargo xtask devices lists them.";
 
 #[derive(Parser)]
 #[command(about = "Repository automation for Omnileaf")]
@@ -57,6 +66,7 @@ enum Command {
     /// Regenerate the interface's TypeScript bindings from the app's commands.
     Bindings,
     /// Run the app on the desktop and phones at once, sharing one dev server.
+    #[command(after_help = DEV_EXAMPLES)]
     Dev {
         /// The platforms to run; every one this machine can build for when left out.
         #[arg(long = "platform", value_enum, num_args = 1.., value_delimiter = ',')]
@@ -72,6 +82,9 @@ enum Command {
         fresh: bool,
     },
     /// List the phones, emulators and Simulators `dev` can run the app on.
+    #[command(
+        after_help = "Prints a ready-to-run `cargo xtask dev` line for each kind of device it finds."
+    )]
     Devices,
     /// Check that this machine has the tools the repository needs.
     Doctor,
@@ -293,10 +306,11 @@ fn list_devices() -> anyhow::Result<()> {
         return Ok(());
     }
     print_lines(&devices::render(&devices));
-    print_lines(&[
-        "",
-        "run on one with cargo xtask dev --android-device <name> or --ios-device <name>",
-    ]);
+    let examples = devices::examples(&devices);
+    if !examples.is_empty() {
+        print_lines(&["", "run on one with:"]);
+        print_lines(&examples);
+    }
     Ok(())
 }
 
