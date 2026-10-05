@@ -70,6 +70,7 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
     Requirement {
         name: "cargo-about",
         os: None,
+        need: Need::Always,
         probe: Probe::Command {
             program: "cargo",
             args: &["about", "--version"],
