@@ -1,0 +1,147 @@
+{
+  "contract": "pmf v1, raw v1, book.local.v1",
+  "rule": {
+    "pmf1": "BLAKE3 derive_key(\"omnileaf.app pmf v1\") over the image count as a little-endian u32, then the (crc32, size) pairs sorted ascending, each a little-endian u32 then a little-endian u64; an archive with no images takes raw1 instead",
+    "raw1": "BLAKE3 derive_key(\"omnileaf.app raw v1\") over the file size as a little-endian u64, then ten ranges in order: [0, min(64 KiB, size)), [size - min(64 KiB, size), size), and for i in 1..=8 [floor(size * i / 9), min(floor(size * i / 9) + 16 KiB, size)); ranges are clamped to the file and may overlap or repeat",
+    "book.local.v1": "the entity-id derivation over the 32-byte fingerprint as the only part"
+  },
+  "raw_content": "byte i of each raw file is i mod 251",
+  "vectors": [
+    {
+      "kind": "pmf1",
+      "entries": [
+        [
+          0,
+          0
+        ]
+      ],
+      "fingerprint": "1e0714fafc845e7e37db4006478efaa657251d4976dce87b4f2f103a9217123d",
+      "book_id": "a9874d5a-1607-8103-9c82-2ffaf786c06c"
+    },
+    {
+      "kind": "pmf1",
+      "entries": [
+        [
+          13107,
+          700
+        ],
+        [
+          4369,
+          900
+        ],
+        [
+          8738,
+          800
+        ]
+      ],
+      "fingerprint": "569fa0a2e84ca8c7e3703589cad44e39829d0828927f35c0b6d98785b0350662",
+      "book_id": "de95dbc0-b4a5-80c4-9a4a-8d81e4acbe58"
+    },
+    {
+      "kind": "pmf1",
+      "entries": [
+        [
+          4369,
+          900
+        ],
+        [
+          8738,
+          800
+        ],
+        [
+          13107,
+          700
+        ]
+      ],
+      "fingerprint": "569fa0a2e84ca8c7e3703589cad44e39829d0828927f35c0b6d98785b0350662",
+      "book_id": "de95dbc0-b4a5-80c4-9a4a-8d81e4acbe58"
+    },
+    {
+      "kind": "pmf1",
+      "entries": [
+        [
+          4369,
+          900
+        ],
+        [
+          4369,
+          900
+        ]
+      ],
+      "fingerprint": "97eb0229105ec4813e75b9ef59213f872a5e9f903cff57924cfaa7eaa6e1dfce",
+      "book_id": "b928749e-d5e3-85e4-aa1f-1d9254efcf74"
+    },
+    {
+      "kind": "pmf1",
+      "entries": [
+        [
+          3735928559,
+          2
+        ],
+        [
+          3735928559,
+          1
+        ]
+      ],
+      "fingerprint": "35e25f7a7e4ac1a5507f4cba6cb787abed973f9cd818d8373b0fa92e5ff9e18f",
+      "book_id": "ae9b7fa9-02a6-8275-ab64-4cb637dcf111"
+    },
+    {
+      "kind": "pmf1",
+      "entries": [
+        [
+          4294967295,
+          18446744073709551615
+        ],
+        [
+          1,
+          65536
+        ]
+      ],
+      "fingerprint": "4965a4bc7d6a2a0802ca4232eb5eeca7c3029cdd85640c559b32d1966c916968",
+      "book_id": "87eecbb0-ef55-8710-b62f-bd779cbdf0e9"
+    },
+    {
+      "kind": "raw1",
+      "size": 0,
+      "fingerprint": "8c273652d51772cdc9af9996a33c6dbfcfd48b2e8ad9aaa234a0d09991ba8eca",
+      "book_id": "2e9a5845-f63d-89db-87e6-ddbd084ce0ae"
+    },
+    {
+      "kind": "raw1",
+      "size": 1,
+      "fingerprint": "294e876d9d55225ae68f66ffe6c316fd85686947208fb083cd199bbf34c5b617",
+      "book_id": "3665bdd2-dfd4-8fca-89f4-0d18b7e24e69"
+    },
+    {
+      "kind": "raw1",
+      "size": 100,
+      "fingerprint": "2a5323782352436e7aa1b524d16e29bc86bfbf710c292c50c5a658a4ce406122",
+      "book_id": "144679ce-301e-8431-8d24-816e8a5e5647"
+    },
+    {
+      "kind": "raw1",
+      "size": 65536,
+      "fingerprint": "6c8d26a2eb5f99b9b1cd5ebe59b45654ccf524ec331fd5b8bef0f82c7289cec6",
+      "book_id": "ab1563a6-569d-8bf1-b9d4-28fab815f2c2"
+    },
+    {
+      "kind": "raw1",
+      "size": 65537,
+      "fingerprint": "f2c105bf0f58c863219ea5946911c9bff5123d422fa89fb3aa98985600ecf7d1",
+      "book_id": "5cd9efce-1346-852c-b753-e0c3d33fe901"
+    },
+    {
+      "kind": "raw1",
+      "size": 200000,
+      "fingerprint": "b7e2814d28196e6c4d6b531371b3d8ee93c298f9c0dd230afd3626822d1130ce",
+      "book_id": "958c5b07-cc19-8420-bbc7-b224edf563ba"
+    },
+    {
+      "kind": "raw1",
+      "size": 1000003,
+      "fingerprint": "7ef95e5e7ed58a7fc1d62ac72229b0f5d3be957ac112be348ac5c53b090eb6bb",
+      "book_id": "e0ae9188-d00e-88ab-947f-70a9357af8c3"
+    }
+  ]
+}
