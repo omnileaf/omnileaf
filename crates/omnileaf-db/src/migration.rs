@@ -34,7 +34,11 @@ macro_rules! migration {
 }
 
 /// Applied in order, and never edited once released; schema version N means the first N have run.
-pub(crate) const MIGRATIONS: &[Migration] = &[migration!("0001_mark_omnileaf_library")];
+pub(crate) const MIGRATIONS: &[Migration] = &[
+    migration!("0001_mark_omnileaf_library"),
+    migration!("0002_create_catalog"),
+    migration!("0003_add_series_title_search"),
+];
 
 pub(crate) fn pending(
     connection: &Connection,
@@ -302,6 +306,31 @@ mod tests {
             .query_row("SELECT count FROM tally", [], |row| row.get(0))
             .unwrap();
         assert_eq!(count, 1000);
+    }
+
+    #[test]
+    fn makes_the_series_added_before_title_search_searchable() {
+        let scratch = ScratchLibrary::new("search-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..2]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0)",
+                [],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let found: i64 = connection
+            .query_row(
+                "SELECT count(*) FROM series_fts WHERE series_fts MATCH 'Sample'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(found, 1);
     }
 
     fn schema_of(path: &Path) -> Schema {

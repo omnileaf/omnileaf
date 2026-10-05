@@ -5,7 +5,9 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use crate::Config;
+use rusqlite::{Connection, params_from_iter, types::Null};
+
+use crate::{Config, Database};
 
 static CREATED: AtomicUsize = AtomicUsize::new(0);
 
@@ -29,6 +31,21 @@ impl ScratchLibrary {
             mmap_size_bytes: 0,
         };
         Self { folder, config }
+    }
+
+    /// The steps SQLite plans for `sql` on a library with the latest schema.
+    pub(crate) fn query_plan(&self, sql: &str) -> Vec<String> {
+        drop(Database::open(&self.config).unwrap());
+        let connection = Connection::open(&self.config.path).unwrap();
+        let mut statement = connection
+            .prepare(&format!("EXPLAIN QUERY PLAN {sql}"))
+            .unwrap();
+        let unbound = vec![Null; statement.parameter_count()];
+        statement
+            .query_map(params_from_iter(unbound), |row| row.get("detail"))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap()
     }
 
     pub(crate) fn backup_path(&self, schema_version: u32) -> PathBuf {

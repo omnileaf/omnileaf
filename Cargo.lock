@@ -3062,10 +3062,15 @@ dependencies = [
 name = "omnileaf-db"
 version = "0.0.0"
 dependencies = [
+ "omnileaf-formats",
+ "omnileaf-sync-proto",
+ "omnileaf-testkit",
+ "proptest",
  "rusqlite",
  "thiserror 2.0.21",
  "tokio",
  "tracing",
+ "unicode-normalization",
 ]
 
 [[package]]
