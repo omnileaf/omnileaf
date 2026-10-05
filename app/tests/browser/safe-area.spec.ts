@@ -20,7 +20,7 @@ const SIDE_CUTOUT = 59;
 const LANDSCAPE_HOME_INDICATOR = 21;
 const LANDSCAPE_STATUS_BAR = 24;
 const THREE_BUTTON_BAR = 48;
-const PAGE_PADDING = 24;
+const PAGE_PADDING = 32;
 
 interface SafeAreaInsets {
   readonly top: number;
@@ -170,12 +170,14 @@ test.describe("in landscape", () => {
       document.documentElement.dir = "rtl";
     });
     const firstLink = await boxOf(navigationLinks(page).first());
-    const heading = await boxOf(pageHeading(page));
+    const emptyLibrary = await boxOf(
+      page.getByRole("region", { name: "Your library is empty" }),
+    );
 
     expect(firstLink.x + firstLink.width).toBeLessThanOrEqual(
       LANDSCAPE_PHONE.width - SIDE_CUTOUT,
     );
-    expect(heading.x).toBe(PAGE_PADDING);
+    expect(emptyLibrary.x).toBe(PAGE_PADDING);
   });
 
   test("keeps the bottom bar's tabs clear of side cutouts", async ({

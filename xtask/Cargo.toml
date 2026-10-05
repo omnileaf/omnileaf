@@ -12,9 +12,12 @@ clap.workspace = true
 local-ip-address.workspace = true
 omnileaf-testkit.workspace = true
 png.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 
 [dev-dependencies]
 omnileaf-formats.workspace = true
+proptest.workspace = true
 
 [lints]
 workspace = true

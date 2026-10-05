@@ -6,6 +6,7 @@ use specta::Type;
 pub struct AppInfo {
     pub version: String,
     pub platform: Platform,
+    pub source_code: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
