@@ -58,7 +58,7 @@
       <li>
         <a
           bind:this={links[index]}
-          href={resolve("/settings/about/licences/[...package]", {
+          href={resolve("/(app)/settings/about/licences/[...package]", {
             package: licensed.key,
           })}
           class={["flex items-center", ROWS[look]]}

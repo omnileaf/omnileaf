@@ -9,6 +9,8 @@ import { expect, onTestFinished, test } from "vitest";
 
 import { describePage, Session, xpath } from "./webdriver.ts";
 
+const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
+
 const BLANK_PAGE: Readonly<Record<string, unknown>> = {
   "POST /session": { sessionId: "blank" },
   "GET /session/blank/url": "about:blank",
@@ -16,8 +18,6 @@ const BLANK_PAGE: Readonly<Record<string, unknown>> = {
   "POST /session/blank/execute/sync": "",
   "POST /session/blank/elements": [],
 };
-
-const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 
 const PAGE_WITH_A_HIDDEN_DUPLICATE: Readonly<Record<string, unknown>> = {
   "POST /session": { sessionId: "duplicates" },
@@ -36,21 +36,12 @@ function reply(response: ServerResponse, status: number, value: unknown) {
   response.end(JSON.stringify({ value }));
 }
 
-async function serverShowing(
-  page: Readonly<Record<string, unknown>>,
-  failures: Readonly<Record<string, string>> = {},
-): Promise<URL> {
+type Handler = (route: string, response: ServerResponse) => void;
+
+async function serve(handle: Handler): Promise<URL> {
   const server = createServer((request: IncomingMessage, response) => {
     request.resume();
-    const route = `${request.method ?? ""} ${request.url ?? ""}`;
-    const failure = failures[route];
-    if (failure !== undefined) {
-      reply(response, 404, { error: failure, message: "" });
-    } else if (route in page) {
-      reply(response, 200, page[route]);
-    } else {
-      reply(response, 404, { error: "no such element", message: "" });
-    }
+    handle(`${request.method ?? ""} ${request.url ?? ""}`, response);
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   onTestFinished(
@@ -65,6 +56,22 @@ async function serverShowing(
   return new URL(`http://127.0.0.1:${String(port)}/`);
 }
 
+function serverShowing(
+  page: Readonly<Record<string, unknown>>,
+  failures: Readonly<Record<string, string>> = {},
+): Promise<URL> {
+  return serve((route, response) => {
+    const failure = failures[route];
+    if (failure !== undefined) {
+      reply(response, 404, { error: failure, message: "" });
+    } else if (route in page) {
+      reply(response, 200, page[route]);
+    } else {
+      reply(response, 404, { error: "no such element", message: "" });
+    }
+  });
+}
+
 test("says what the page shows when an element never appears", async () => {
   const session = await Session.start(await serverShowing(BLANK_PAGE), {});
 
@@ -73,6 +80,28 @@ test("says what the page shows when an element never appears", async () => {
   await expect(wait).rejects.toThrow(
     'the element at //h1 was not ready within 50 ms; the page at about:blank titled "" shows no text',
   );
+});
+
+test("reloads the page and waits for the fresh one", async () => {
+  const OLD_PAGE_CHECKS = 2;
+  let scriptsRun = 0;
+  const server = await serve((route, response) => {
+    if (route === "POST /session") {
+      reply(response, 200, { sessionId: "blank" });
+    } else if (route === "POST /session/blank/execute/sync") {
+      scriptsRun += 1;
+      const isReloadScript = scriptsRun === 1;
+      const isOldPage = scriptsRun <= 1 + OLD_PAGE_CHECKS;
+      reply(response, 200, isReloadScript ? null : !isOldPage);
+    } else {
+      reply(response, 404, { error: "no such element", message: "" });
+    }
+  });
+  const session = await Session.start(server, {});
+
+  await session.reload();
+
+  expect(scriptsRun).toBe(1 + OLD_PAGE_CHECKS + 1);
 });
 
 test("passes over a hidden match for the one the page shows", async () => {

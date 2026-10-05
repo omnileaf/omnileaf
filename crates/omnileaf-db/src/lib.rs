@@ -6,6 +6,7 @@ mod config;
 mod connection;
 mod database;
 mod error;
+pub mod first_launch;
 mod migration;
 #[cfg(test)]
 mod scratch;

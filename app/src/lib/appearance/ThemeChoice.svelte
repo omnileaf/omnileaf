@@ -1,15 +1,11 @@
 <script lang="ts">
-  import {
-    THEME_PREFERENCES,
-    type ThemePreference,
-  } from "$lib/appearance/theme";
-  import { getThemeSetting } from "$lib/appearance/theme.svelte";
-  import { WindowWidth } from "$lib/page/breakpoints";
-  import { isPhone } from "$lib/page/platform";
-  import SectionHeading from "$lib/settings/SectionHeading.svelte";
+  import type { Snippet } from "svelte";
+  import type { ClassValue } from "svelte/elements";
+
   import { m } from "$lib/paraglide/messages.js";
 
-  import type { PageProps } from "./$types";
+  import { THEME_PREFERENCES, type ThemePreference } from "./theme";
+  import { getThemeSetting } from "./theme.svelte";
 
   const THEME_LABELS = {
     system: m.theme_system,
@@ -17,37 +13,46 @@
     dark: m.theme_dark,
   } satisfies Record<ThemePreference, () => string>;
 
-  let { data }: PageProps = $props();
+  let {
+    title,
+    hint,
+    class: className,
+  }: {
+    title: string;
+    hint?: Snippet | undefined;
+    class?: ClassValue;
+  } = $props();
 
   const theme = getThemeSetting();
-  const width = new WindowWidth();
-  const onPhone = $derived(isPhone(data.appInfo.platform, width.current));
-
   const headingId = $props.id();
   const hintId = `${headingId}-hint`;
 </script>
 
-<SectionHeading title={m.appearance_title()} />
 <section
   aria-labelledby={headingId}
-  class="mbs-pane-gap flex flex-col gap-sm touch:max-medium:rounded-list touch:max-medium:border touch:max-medium:border-border touch:max-medium:bg-card touch:max-medium:p-list-row"
+  class={[
+    "flex flex-col gap-sm touch:max-medium:rounded-list touch:max-medium:border touch:max-medium:border-border touch:max-medium:bg-card touch:max-medium:p-list-row",
+    className,
+  ]}
 >
   <h2
     id={headingId}
     class="font-semibold touch:medium:text-label touch:medium:text-muted desktop:text-footnote desktop:text-muted"
   >
-    {m.appearance_light_or_dark()}
+    {title}
   </h2>
-  <p
-    id={hintId}
-    class="text-footnote text-muted touch:medium:order-last desktop:order-last"
-  >
-    {onPhone ? m.appearance_system_hint_phone() : m.appearance_system_hint()}
-  </p>
+  {#if hint !== undefined}
+    <p
+      id={hintId}
+      class="text-footnote text-muted touch:medium:order-last desktop:order-last"
+    >
+      {@render hint()}
+    </p>
+  {/if}
   <div
     role="radiogroup"
     aria-labelledby={headingId}
-    aria-describedby={hintId}
+    aria-describedby={hint === undefined ? undefined : hintId}
     class="flex gap-2xs rounded-card bg-chip p-2xs touch:medium:max-inline-segmented-touch desktop:max-inline-segmented"
   >
     {#each THEME_PREFERENCES as preference (preference)}
@@ -61,7 +66,7 @@
       >
         <input
           type="radio"
-          name="theme"
+          name={headingId}
           value={preference}
           class="sr-only"
           checked={theme.preference === preference}

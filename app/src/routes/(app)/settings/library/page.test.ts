@@ -5,8 +5,8 @@ import { render } from "vitest-browser-svelte";
 
 import { Notices } from "$lib/notices/notices.svelte";
 
-import { screenshotModeTurned } from "../../../../tests/components/screenshot-mode";
-import WithScreenshotMode from "../../../../tests/components/WithScreenshotMode.svelte";
+import { screenshotModeTurned } from "../../../../../tests/components/screenshot-mode";
+import WithScreenshotMode from "../../../../../tests/components/WithScreenshotMode.svelte";
 import Page from "./+page.svelte";
 
 const PageWithScreenshotMode = WithScreenshotMode<ComponentProps<typeof Page>>;
@@ -35,6 +35,7 @@ test("explains that folders stay where they are", async () => {
           platform: "linux",
           sourceCode: "repo.example.org/omnileaf",
         },
+        isFirstLaunch: false,
         notices: new Notices(),
       },
       params: {},
