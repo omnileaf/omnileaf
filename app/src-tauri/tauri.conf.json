@@ -18,7 +18,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data:; style-src 'self'"
+      "csp": "default-src 'self'; img-src 'self' data: omni: http://omni.localhost; style-src 'self'"
     }
   },
   "bundle": {

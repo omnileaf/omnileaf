@@ -3,6 +3,22 @@
   "library_title": "⟦Ļíƀŕáŕý···⟧",
   "library_empty": "⟦Ýöûŕ ļíƀŕáŕý íš éɱþţý·········⟧",
   "library_empty_body": "⟦Áðð á ƒöļðéŕ öƒ çöɱíçš, ɱáñĝá öŕ ƀööķš. Öɱñíļéáƒ ŕéáðš íţ ŵĥéŕé íţ íš.····························⟧",
+  "library_series_list": "⟦Šéŕíéš···⟧",
+  "library_series_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ·········⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš·········⟧"
+      }
+    }
+  ],
+  "library_series_failed": "⟦Çöûļðñ'ţ ļöáð ýöûŕ ļíƀŕáŕý. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
   "app_version": "⟦Ṽéŕšíöñ {version}·······⟧",
   "library_add_folder": "⟦Áðð á ƒöļðéŕ·····⟧",
   "library_scan_finding": "⟦Ƒíñðíñĝ ƀööķš······⟧",

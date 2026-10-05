@@ -3,6 +3,22 @@
   "library_title": "Library",
   "library_empty": "Your library is empty",
   "library_empty_body": "Add a folder of comics, manga or books. Omnileaf reads it where it is.",
+  "library_series_list": "Series",
+  "library_series_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} book",
+        "countPlural=other": "{formattedCount} books"
+      }
+    }
+  ],
+  "library_series_failed": "Couldn't load your library. Try again later.",
   "app_version": "Version {version}",
   "library_add_folder": "Add a folder",
   "library_scan_finding": "Finding books",

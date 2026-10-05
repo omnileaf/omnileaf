@@ -161,6 +161,36 @@ test("passes over a match that is removed while it is checked", async () => {
   expect(await element.text()).toBe("About Version 1.2.3");
 });
 
+test("waits until a script run in the page says what it waits for holds", async () => {
+  const FALSE_ANSWERS = 2;
+  let runs = 0;
+  const server = await serve((route, response) => {
+    if (route === "POST /session") {
+      reply(response, 200, { sessionId: "blank" });
+    } else if (route === "POST /session/blank/execute/sync") {
+      runs += 1;
+      reply(response, 200, runs > FALSE_ANSWERS);
+    } else {
+      reply(response, 404, { error: "unknown command", message: "" });
+    }
+  });
+  const session = await Session.start(server, {});
+
+  await session.waitUntil("return true;", "the covers");
+
+  expect(runs).toBe(FALSE_ANSWERS + 1);
+});
+
+test("says what it waited for when a script never says it holds", async () => {
+  const session = await Session.start(await serverShowing(BLANK_PAGE), {});
+
+  const wait = session.waitUntil("return false;", "the covers", 50);
+
+  await expect(wait).rejects.toThrow(
+    'the covers was not ready within 50 ms; the page at about:blank titled "" shows no text',
+  );
+});
+
 test("describes the page by its address, title and text", () => {
   const description = describePage({
     url: "http://tauri.localhost/",

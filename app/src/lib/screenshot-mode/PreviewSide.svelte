@@ -35,7 +35,7 @@
     <div
       aria-hidden="true"
       class={[
-        "relative aspect-2/3 overflow-hidden rounded-cover bg-sample-cover",
+        "relative aspect-cover overflow-hidden rounded-cover bg-sample-cover",
         coverClasses,
       ]}
     >

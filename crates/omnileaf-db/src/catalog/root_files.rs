@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use omnileaf_sync_proto::BookId;
-use rusqlite::{Connection, OptionalExtension, Row, Transaction, types::Type};
+use rusqlite::{Connection, OptionalExtension, Row, Transaction};
 
 use crate::{
     Error,
@@ -56,9 +56,7 @@ pub fn remove_book_files(
 }
 
 fn stored_file(row: &Row<'_>) -> rusqlite::Result<StoredFile> {
-    let location = native_path::from_bytes(row.get(LOCATION_COLUMN)?).ok_or_else(|| {
-        rusqlite::Error::InvalidColumnType(LOCATION_COLUMN, "location".to_owned(), Type::Blob)
-    })?;
+    let location = native_path::stored_native_path(row, LOCATION_COLUMN)?;
     Ok(StoredFile {
         book: stored_id(row, "book_id")?,
         location,

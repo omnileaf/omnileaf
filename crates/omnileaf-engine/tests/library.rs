@@ -8,21 +8,12 @@ mod support;
 use std::path::Path;
 
 use omnileaf_engine::{
-    Changed, Clock, FolderId, FolderKind, Library, LibraryError, LibraryFolder, ScanProgress,
+    Changed, FolderId, FolderKind, Library, LibraryError, LibraryFolder, ScanProgress,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
-use support::TempFolder;
+use support::{FixedClock, TempFolder};
 
-const NOW_UNIX_MS: u64 = 1_790_000_000_000;
 const MORE_FOLDERS_THAN_A_PAGE_HOLDS: usize = 120;
-
-struct FixedClock;
-
-impl Clock for FixedClock {
-    fn now_unix_ms(&self) -> u64 {
-        NOW_UNIX_MS
-    }
-}
 
 async fn open(home: &Path) -> Library {
     Library::open(home.to_path_buf(), FixedClock).await.unwrap()

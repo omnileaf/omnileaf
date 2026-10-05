@@ -2,7 +2,7 @@
 
 use omnileaf_engine::{
     AppInfo, AppLanguage, Core, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan,
-    Library, ProjectLink, ScanProgress,
+    Library, ProjectLink, ScanProgress, SeriesCursor, SeriesPage,
 };
 use tauri::{AppHandle, Manager, State, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -22,6 +22,7 @@ pub(crate) fn builder() -> Builder<Wry> {
         add_library_folder,
         match_system_bars,
         library_folders,
+        library_series,
         remove_library_folder,
         rescan_library_folder,
         rescan_library_folders,
@@ -106,6 +107,15 @@ async fn library_folders(
     after: Option<FolderCursor>,
 ) -> Result<FolderPage, IpcError> {
     Ok(library.folders(after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_series(
+    library: State<'_, Library>,
+    after: Option<SeriesCursor>,
+) -> Result<SeriesPage, IpcError> {
+    Ok(library.series(after).await?)
 }
 
 #[tauri::command]

@@ -1,6 +1,7 @@
 //! The library folders and the series and books found in them, which every device derives from its own files.
 
 mod book;
+mod cover;
 mod cursor;
 mod home_root;
 mod library_roots;
@@ -16,6 +17,7 @@ mod series_page;
 mod stored_id;
 
 pub use book::{NewBook, add_book, remove_books_without_files};
+pub use cover::{BookFileId, Cover, cover_file};
 pub use cursor::Cursor;
 pub use home_root::set_home_root;
 pub use library_roots::{library_root, library_roots};

@@ -1,5 +1,6 @@
 #![expect(
     clippy::unwrap_used,
+    clippy::indexing_slicing,
     reason = "the fixtures are generated in memory or in a scratch folder, so a failure should stop the test"
 )]
 
@@ -13,13 +14,19 @@ use std::{
 
 use omnileaf_testkit::{
     ArchiveEntry, Compression, GENERATED_LIBRARY_NAME, GeneratedLibrary, PageShape, SAMPLE_LIBRARY,
-    SAMPLE_LIBRARY_NAME, cbz, page_png, write_generated_library, write_sample_library,
+    SAMPLE_LIBRARY_NAME, cbz, full_chroma_scan_jpeg, page_jpeg, page_png, page_webp,
+    subsampled_scan_jpeg, write_generated_library, write_sample_library,
 };
 use zip::{CompressionMethod, DateTime, ZipArchive};
 
 const SEED: u64 = 7;
 const CENTRAL_DIRECTORY_SIGNATURE: &[u8] = b"PK\x01\x02";
 const UNIX_HOST_SYSTEM: u8 = 3;
+const SOF0: [u8; 2] = [0xFF, 0xC0];
+const SOF0_COMPONENT_COUNT_OFFSET: usize = 9;
+const SOF0_COMPONENT_LENGTH: usize = 3;
+const TWICE_EACH_WAY: u8 = 0x22;
+const ONCE_EACH_WAY: u8 = 0x11;
 
 struct ScratchFolder(PathBuf);
 
@@ -50,6 +57,30 @@ fn dimensions(png: &[u8]) -> (u32, u32) {
     let reader = png::Decoder::new(Cursor::new(png)).read_info().unwrap();
     let info = reader.info();
     (info.width, info.height)
+}
+
+fn png_pixels(png: &[u8]) -> Vec<u8> {
+    let mut reader = png::Decoder::new(Cursor::new(png)).read_info().unwrap();
+    let mut pixels = vec![0; reader.output_buffer_size().unwrap()];
+    reader.next_frame(&mut pixels).unwrap();
+    pixels
+}
+
+fn jpeg_dimensions(jpeg: &[u8]) -> (u32, u32) {
+    let mut decoder = jpeg_decoder::Decoder::new(jpeg);
+    decoder.read_info().unwrap();
+    let info = decoder.info().unwrap();
+    (u32::from(info.width), u32::from(info.height))
+}
+
+fn jpeg_sampling_factors(jpeg: &[u8]) -> Vec<u8> {
+    let marker = jpeg.windows(2).position(|pair| pair == SOF0).unwrap();
+    let count_at = marker + SOF0_COMPONENT_COUNT_OFFSET;
+    jpeg[count_at + 1..]
+        .chunks(SOF0_COMPONENT_LENGTH)
+        .take(usize::from(jpeg[count_at]))
+        .map(|component| component[1])
+        .collect()
 }
 
 fn sample_entries() -> Vec<ArchiveEntry> {
@@ -93,6 +124,94 @@ fn makes_a_spread_twice_as_wide_as_a_portrait_page() {
     assert!(portrait_height > portrait_width);
     assert_eq!(spread_width, portrait_width * 2);
     assert_eq!(spread_height, portrait_height);
+}
+
+#[test]
+fn draws_a_jpeg_page_at_the_size_of_its_shape() {
+    let jpeg = page_jpeg(SEED, 0, PageShape::Spread).unwrap();
+
+    let size = jpeg_dimensions(&jpeg);
+
+    assert_eq!(
+        size,
+        (PageShape::Spread.width(), PageShape::Spread.height())
+    );
+}
+
+#[test]
+fn draws_a_webp_page_with_exactly_the_pixels_of_the_png_page() {
+    let webp = page_webp(SEED, 3, PageShape::Portrait).unwrap();
+    let png = page_png(SEED, 3, PageShape::Portrait).unwrap();
+
+    let mut decoder = image_webp::WebPDecoder::new(Cursor::new(webp)).unwrap();
+    let mut pixels = vec![0; decoder.output_buffer_size().unwrap()];
+    decoder.read_image(&mut pixels).unwrap();
+
+    assert!(!decoder.has_alpha());
+    assert_eq!(pixels, png_pixels(&png));
+}
+
+#[test]
+fn draws_a_full_chroma_scan_at_the_size_of_a_full_resolution_comic_page() {
+    let scan = full_chroma_scan_jpeg(SEED).unwrap();
+
+    let size = jpeg_dimensions(&scan);
+
+    assert_eq!(size, (1800, 2700));
+}
+
+#[test]
+fn weighs_a_full_chroma_scan_a_little_over_a_megabyte() {
+    let scan = full_chroma_scan_jpeg(SEED).unwrap();
+
+    let megabytes = scan.len() / 1_000_000;
+
+    assert_eq!(megabytes, 1, "the scan weighs {} bytes", scan.len());
+}
+
+#[test]
+fn keeps_a_full_chroma_scans_chroma_at_full_resolution() {
+    let scan = full_chroma_scan_jpeg(SEED).unwrap();
+
+    let factors = jpeg_sampling_factors(&scan);
+
+    assert_eq!(factors, [ONCE_EACH_WAY; 3]);
+}
+
+#[test]
+fn draws_a_subsampled_scan_at_the_size_of_a_full_resolution_comic_page() {
+    let scan = subsampled_scan_jpeg(SEED).unwrap();
+
+    let size = jpeg_dimensions(&scan);
+
+    assert_eq!(size, (1800, 2700));
+}
+
+#[test]
+fn subsamples_a_subsampled_scans_chroma_to_4_2_0() {
+    let scan = subsampled_scan_jpeg(SEED).unwrap();
+
+    let factors = jpeg_sampling_factors(&scan);
+
+    assert_eq!(factors, [TWICE_EACH_WAY, ONCE_EACH_WAY, ONCE_EACH_WAY]);
+}
+
+#[test]
+fn weighs_a_subsampled_scan_about_a_megabyte() {
+    let scan = subsampled_scan_jpeg(SEED).unwrap();
+
+    let megabytes = scan.len() / 1_000_000;
+
+    assert_eq!(megabytes, 1, "the scan weighs {} bytes", scan.len());
+}
+
+#[test]
+fn generates_the_same_subsampled_scan_every_time() {
+    let first = subsampled_scan_jpeg(SEED).unwrap();
+
+    let second = subsampled_scan_jpeg(SEED).unwrap();
+
+    assert_eq!(first, second);
 }
 
 #[test]
