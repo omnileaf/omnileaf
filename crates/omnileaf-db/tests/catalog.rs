@@ -247,7 +247,7 @@ async fn forgets_the_book_files_of_a_removed_library_folder() {
             )?;
             Ok(transaction.execute(
                 "INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
-                 VALUES (?1, 1, 'Sample Series 01/Volume 01.cbz', 4096, ?2)",
+                 VALUES (?1, 1, CAST('Sample Series 01/Volume 01.cbz' AS BLOB), 4096, ?2)",
                 (book_id(SERIES, "Volume 01").as_bytes(), ADDED_AT_MS),
             )?)
         })

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { commands } from "$lib/ipc/bindings";
+  import { addFolderWithProgress } from "$lib/library/add-folder";
   import AddFolderButton from "$lib/library/AddFolderButton.svelte";
   import { FolderAdding } from "$lib/library/folder-adding.svelte";
   import FolderNotice from "$lib/library/FolderNotice.svelte";
@@ -14,10 +14,7 @@
   let { data }: PageProps = $props();
 
   const screenshotMode = getScreenshotMode();
-  const adding = new FolderAdding(
-    commands.addLibraryFolder,
-    () => data.notices,
-  );
+  const adding = new FolderAdding(addFolderWithProgress, () => data.notices);
 
   let addFolder: HTMLButtonElement | undefined = $state();
 </script>

@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import type { commands, LibraryFolder } from "$lib/ipc/bindings";
+  import type { LibraryFolder } from "$lib/ipc/bindings";
   import type { Notices } from "$lib/notices/notices.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
+  import type { AddFolder } from "./add-folder";
   import AddFolderButton from "./AddFolderButton.svelte";
   import { FolderAdding } from "./folder-adding.svelte";
   import FolderNotice from "./FolderNotice.svelte";
@@ -25,7 +26,7 @@
   }: {
     listFolders: ListFolders;
     removeFolder: RemoveFolder;
-    addFolder: typeof commands.addLibraryFolder;
+    addFolder: AddFolder;
     notices: Notices;
     usesStandIns: boolean;
   } = $props();
@@ -36,7 +37,7 @@
   );
 
   const adding = new FolderAdding(
-    () => addFolder(),
+    (onProgress) => addFolder(onProgress),
     () => notices,
     () => {
       void folders.load();

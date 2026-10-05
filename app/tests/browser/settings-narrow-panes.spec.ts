@@ -50,7 +50,9 @@ for (const width of [MEDIUM_MIN_WIDTH, EXPANDED_MIN_WIDTH]) {
         ...DEFAULT_BACKEND,
         addLibraryFolder: () => ({
           name: "Sample Library",
-          comicFiles: 342,
+          series: 34,
+          books: 342,
+          unreadableBooks: 0,
           unreadableFolders: 2,
         }),
       },

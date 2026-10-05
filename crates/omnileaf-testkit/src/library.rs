@@ -94,7 +94,7 @@ pub fn write_sample_library(root: &Path) -> Result<Vec<PathBuf>, FixtureError> {
     Ok(written)
 }
 
-fn write(root: &Path, relative: &Path, bytes: &[u8]) -> Result<(), FixtureError> {
+pub(crate) fn write(root: &Path, relative: &Path, bytes: &[u8]) -> Result<(), FixtureError> {
     let path = root.join(relative);
     let failed = |source| FixtureError::Write {
         path: path.clone(),

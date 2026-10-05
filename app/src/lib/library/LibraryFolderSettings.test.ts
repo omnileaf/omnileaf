@@ -5,9 +5,9 @@ import { render } from "vitest-browser-svelte";
 import { commands, type LibraryFolder } from "$lib/ipc/bindings";
 import { Notices } from "$lib/notices/notices.svelte";
 
+import type { AddFolder } from "./add-folder";
 import LibraryFolderSettings from "./LibraryFolderSettings.svelte";
 
-type AddFolder = typeof commands.addLibraryFolder;
 type RemoveFolder = typeof commands.removeLibraryFolder;
 type FolderId = Parameters<RemoveFolder>[0];
 
@@ -122,7 +122,33 @@ test("lists a folder once it is added", async () => {
       library.push(COMICS);
       return Promise.resolve({
         status: "ok",
-        data: { name: COMICS.name, comicFiles: 3, unreadableFolders: 0 },
+        data: {
+          name: COMICS.name,
+          series: 3,
+          books: 7,
+          unreadableBooks: 0,
+          unreadableFolders: 0,
+        },
+      });
+    },
+  });
+
+  await folders.getByRole("button", { name: "Add a folder" }).click();
+
+  await expect
+    .element(folders.getByRole("listitem"))
+    .toHaveTextContent("Sample Comics /media/Sample Comics Remove");
+});
+
+test("lists a folder that was saved before its scan failed", async () => {
+  const library = [HOME];
+  serveFolders(library);
+  const { folders } = await renderSettings({
+    addFolder: () => {
+      library.push(COMICS);
+      return Promise.resolve({
+        status: "error",
+        error: { code: "internal", message: "the scan stopped" },
       });
     },
   });
