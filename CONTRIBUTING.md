@@ -49,27 +49,71 @@ After changing any of them, run `cargo xtask icons`. It runs Tauri's icon genera
 
 ## Checking your work
 
-`cargo xtask check` runs the same checks as CI. For Rust: formatting and clippy with warnings as errors, over the workspace and the fuzz targets, then the tests, release build checks that listing a 500-entry archive takes 3 ms or less and that a page of the library sorted by title takes 2 ms or less at the 95th percentile over 10,000 series, and a dependency check. For the interface, which needs Node and pnpm (`pnpm install` first): type checking, ESLint and Prettier, component tests in Chromium, unit tests for the app tests' helpers, and a production build. The browser tests then run the built interface in Chromium and WebKit at phone, tablet and desktop sizes, including an accessibility check in the light and dark themes. The app tests then build the app with the `e2e` feature, which adds an embedded WebDriver server and never ships, and drive the real app through it. WebDriver can't reach the system folder picker, so that build answers it with the folder in `OMNILEAF_E2E_PICKED_FOLDER`, which the tests point at a sample library they generate. They open a window, so on Linux without a display run them under `xvfb-run`. They don't run on Windows yet, because the WebDriver plugin doesn't build there with the current Tauri release. `--only rust`, `--only portable`, `--only interface`, `--only browser` or `--only app` runs one group. The portable group holds the Rust checks whose answer is the same on every platform: formatting, the fuzz crate, the WebAssembly build, dependencies, the content policy and the licences. CI runs it once, on Linux, and the rust gate on each platform runs clippy, the tests and the timing budgets. `--only android` builds the x86_64 APK and runs the same app tests, except the desktop-only `*.desktop.e2e.ts` ones, on a running emulator or connected device through Appium. Install Appium once with `npm install --global appium@3.8.0` and `appium driver install uiautomator2@8.7.0`. `--only ios` builds the Simulator app and runs them in a booted iOS Simulator, with Appium's XCUITest driver (`appium driver install xcuitest@12.13.2`). The driver builds its WebDriverAgent with Xcode on the first run. To use Appium's prebuilt one instead, as CI does, download it with `appium driver run xcuitest download-wda -- --outdir <dir> --platform iOS --kind sim` and point `OMNILEAF_PREBUILT_WDA` at the `WebDriverAgentRunner-Runner.app` inside. The tests then install and launch it themselves, trying again if the launch hangs, and have Appium attach to it. When they fail, `app/test-results` holds the Appium log, and for Android the device log in `logcat.txt`. CI keeps that folder as an artifact of a failed run. A plain `cargo xtask check` leaves the Android and iOS tests out. CI runs them on pull requests that change the app, the Rust crates, the lockfiles, the toolchain or the workflows, and on every push to `main` and nightly. The Rust tests also check that the interface's generated command bindings, `app/src/lib/ipc/bindings.ts`, are current. After changing a command, regenerate them with `cargo xtask bindings`. Every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories. Settings › About › Open-source licences lists every package the app ships, from two generated files in `app/src/lib/licences`. `rust.json` comes from [cargo-about](https://github.com/EmbarkStudios/cargo-about), configured in `about.toml`, for the crates the app depends on across its platforms. `javascript.json` comes from the packages that end up in the interface's bundle. The Rust checks fail when `rust.json` is out of date and the interface build fails when `javascript.json` is, so after changing a dependency run `cargo xtask licences`, which needs `cargo install --locked cargo-about@0.9.2`, and commit both files. Keep the licences `about.toml` accepts in step with the ones `deny.toml` allows.
+`cargo xtask check` runs the same checks as CI, in groups. `--only <group>` runs one of them: `rust`, `portable`, `interface`, `browser`, `app`, `android` or `ios`. A plain `cargo xtask check` runs every group except `android` and `ios`, which need an emulator or a Simulator. `cargo xtask doctor` lists the tools the groups need and shows how to install any that are missing. Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.
 
-The Rust timing budgets hold exactly on your machine and on CI's Linux runner. The macOS and Windows runners are shared and sometimes stall, so CI sets `OMNILEAF_BUDGET_SLACK=2` there and a timing fails only beyond twice its budget, while the log still shows each measured time against the budget.
+### Rust
 
-The tests use Playwright's browsers. Install them once with `pnpm --dir app exec playwright install chromium webkit`, adding `--with-deps` on Ubuntu or Debian to install the system libraries they need. Playwright's WebKit runs on Windows, macOS, Ubuntu and Debian. On other Linux distributions, run the Chromium browser tests with `pnpm --dir app test:e2e --project 'chromium-*'` and leave WebKit to CI.
+The `rust` group runs on every platform in CI, because its answer can differ between them:
 
-The Android and iOS app tests take the longest, so CI runs them on every merge to `main` and every night rather than on each pull request. Add the `mobile` label to a pull request that changes phone-specific code to run them there too.
+- clippy over the workspace, with warnings as errors;
+- the tests, which also check that the interface's generated command bindings in `app/src/lib/ipc/bindings.ts` are current. After changing a command, regenerate them with `cargo xtask bindings`;
+- two release-build timing budgets: listing a 500-entry archive takes 3 ms or less, and a page of the library sorted by title takes 2 ms or less at the 95th percentile over 10,000 series.
 
-CI also measures test coverage and shows it in the `coverage` job's summary. Line coverage of the core crates in `crates/` must not drop below the floor set in `.github/workflows/ci.yml`. When a change raises it, raise the floor in the same pull request.
+The timing budgets hold exactly on your machine and on CI's Linux runner. The macOS and Windows runners are shared and sometimes stall, so CI sets `OMNILEAF_BUDGET_SLACK=2` there: a timing fails only beyond twice its budget, while the log still shows each measured time against the budget.
 
-The archive and ComicInfo readers have fuzz targets in `fuzz/`, which sits outside the workspace and builds with the nightly toolchain pinned in `fuzz/rust-toolchain.toml`. Install `cargo-fuzz` once with `cargo install cargo-fuzz@0.13.2 --locked` and write the seed inputs with `cargo xtask fuzz-seeds`. Then, from `fuzz/`, `cargo fuzz list` names the targets and `cargo fuzz run open_book -- -max_total_time=120` fuzzes one for two minutes. A crash leaves its input in `fuzz/artifacts/`; turn it into a regression test in `crates/omnileaf-formats` before fixing it. CI fuzzes every target each night, sharing 15 minutes between them, and keeps any crash inputs as an artifact. The fuzz crate depends on `libfuzzer-sys`, which carries LLVM's NCSA licence; it never ships and sits outside the workspace, so it's left out of the licence rule above.
+The `portable` group holds the Rust checks whose answer is the same everywhere, so CI runs it once, on Linux:
 
-The gate also runs `cargo xtask policy`, which checks every file git doesn't ignore against the [content policy](docs/legal/content-policy.md):
+- formatting of the workspace and of the fuzz crate, and clippy over the fuzz crate;
+- the WebAssembly build of `omnileaf-sync-proto`;
+- `cargo deny`: every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories;
+- `cargo xtask policy`, the content policy check below;
+- `cargo xtask licences --check`, the licence catalogue check below.
+
+### Interface
+
+The `interface` group needs Node and pnpm (`pnpm install` first). It runs type checking, ESLint and Prettier, the component tests in Chromium, the unit tests for the app tests' helpers, and a production build.
+
+### Browser tests
+
+The `browser` group runs the built interface in Chromium and WebKit at phone, tablet and desktop sizes, including an accessibility check in the light and dark themes. Install the browsers once with `pnpm --dir app exec playwright install chromium webkit`, adding `--with-deps` on Ubuntu or Debian to install the system libraries they need. Playwright's WebKit runs on Windows, macOS, Ubuntu and Debian. On other Linux distributions, run the Chromium tests with `pnpm --dir app test:e2e --project 'chromium-*'` and leave WebKit to CI.
+
+CI splits the suite into three shards. `PLAYWRIGHT_SHARD=2/3 pnpm --dir app test:e2e` runs one of them.
+
+### App tests
+
+The `app` group builds the app with the `e2e` feature, which adds an embedded WebDriver server and never ships, and drives the real app through it. WebDriver can't reach the system folder picker, so that build answers it with the folder in `OMNILEAF_E2E_PICKED_FOLDER`, which the tests point at a sample library they generate. The tests open a window, so on Linux without a display run them under `xvfb-run`. They don't run on Windows yet, because the WebDriver plugin doesn't build there with the current Tauri release.
+
+### Android and iOS
+
+The phone tests take the longest, so CI runs them on every push to `main` and every night rather than on each pull request. Add the `mobile` label to a pull request that changes phone-specific code to run them there too.
+
+- `--only android` builds the x86_64 APK and runs the app tests, except the desktop-only `*.desktop.e2e.ts` ones, on a running emulator or connected device through Appium. Install Appium once with `npm install --global appium@3.8.0` and `appium driver install uiautomator2@8.7.0`.
+- `--only ios` builds the Simulator app and runs them in a booted iOS Simulator with Appium's XCUITest driver (`appium driver install xcuitest@12.13.2`). The driver builds its WebDriverAgent with Xcode on the first run. To use Appium's prebuilt one instead, as CI does, download it with `appium driver run xcuitest download-wda -- --outdir <dir> --platform iOS --kind sim` and point `OMNILEAF_PREBUILT_WDA` at the `WebDriverAgentRunner-Runner.app` inside. The tests then install and launch it themselves, trying again if the launch hangs, and have Appium attach to it.
+
+When they fail, `app/test-results` holds the Appium log, and for Android the device log in `logcat.txt`. CI keeps that folder as an artifact of a failed run.
+
+### Coverage
+
+CI measures test coverage and shows it in the `coverage` job's summary. Line coverage of the core crates in `crates/` must not drop below the floor set in `.github/workflows/ci.yml`. When a change raises it, raise the floor in the same pull request.
+
+### Content policy
+
+`cargo xtask policy` checks every file git doesn't ignore against the [content policy](docs/legal/content-policy.md):
+
 - no directories named `sources`, `extensions` or `repos`, and no WebAssembly modules;
 - binary files only when listed in `policy/allowed-binaries.txt`;
 - links only to hosts in `policy/allowed-hosts.txt`, or to reserved ones such as `example.com` and `*.test`;
 - none of the phrases in `policy/forbidden-phrases.txt`.
 
-The last two rules skip the generated licence catalogues in `app/src/lib/licences`, which hold third-party licence texts word for word. Adding an entry to one of those lists is reviewed like any other change. Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.
+The last two rules skip the generated licence catalogues in `app/src/lib/licences`, which hold third-party licence texts word for word. Adding an entry to one of those lists is reviewed like any other change.
 
-`cargo xtask doctor` lists the tools the repository needs, and shows how to install any that are missing.
+### Licences
+
+Settings › About › Open-source licences lists every package the app ships, from two generated files in `app/src/lib/licences`. `rust.json` comes from [cargo-about](https://github.com/EmbarkStudios/cargo-about), configured in `about.toml`, for the crates the app depends on across its platforms. `javascript.json` comes from the packages that end up in the interface's bundle. `cargo xtask licences --check` fails when `rust.json` is out of date and the interface build fails when `javascript.json` is, so after changing a dependency run `cargo xtask licences`, which needs `cargo install --locked cargo-about@0.9.2`, and commit both files. Keep the licences `about.toml` accepts in step with the ones `deny.toml` allows.
+
+### Fuzzing
+
+The archive and ComicInfo readers have fuzz targets in `fuzz/`, which sits outside the workspace and builds with the nightly toolchain pinned in `fuzz/rust-toolchain.toml`. Install `cargo-fuzz` once with `cargo install cargo-fuzz@0.13.2 --locked` and write the seed inputs with `cargo xtask fuzz-seeds`. Then, from `fuzz/`, `cargo fuzz list` names the targets and `cargo fuzz run open_book -- -max_total_time=120` fuzzes one for two minutes. A crash leaves its input in `fuzz/artifacts/`; turn it into a regression test in `crates/omnileaf-formats` before fixing it. CI fuzzes every target each night, sharing 15 minutes between them, and keeps any crash inputs as an artifact. The fuzz crate depends on `libfuzzer-sys`, which carries LLVM's NCSA licence; it never ships and sits outside the workspace, so it's left out of the licence rule above.
 
 ## Definition of done
 
