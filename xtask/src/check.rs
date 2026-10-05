@@ -151,6 +151,12 @@ pub(crate) const STEPS: &[Step] = &[
         args: &["xtask", "licences", "--check"],
     },
     Step {
+        name: "sync rules",
+        group: Group::Portable,
+        program: "cargo",
+        args: &["xtask", "lint-sync"],
+    },
+    Step {
         name: "interface types",
         group: Group::Interface,
         program: "pnpm",
@@ -427,6 +433,7 @@ mod tests {
                 "dependencies",
                 "policy",
                 "licences",
+                "sync rules",
             ]
         );
     }

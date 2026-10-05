@@ -67,7 +67,15 @@ The `portable` group holds the Rust checks whose answer is the same everywhere, 
 - the WebAssembly build of `omnileaf-sync-proto`;
 - `cargo deny`: every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories;
 - `cargo xtask policy`, the content policy check below;
-- `cargo xtask licences --check`, the licence catalogue check below.
+- `cargo xtask licences --check`, the licence catalogue check below;
+- `cargo xtask lint-sync`, which checks how synced state is written.
+
+`cargo xtask lint-sync` keeps synced state behind its one write path:
+- only `crates/omnileaf-db/src/store/register.rs` writes `sync_register`, and only `store/local.rs` writes `sync_local`, so no migration writes either, apart from the one that creates `sync_local` with its first row;
+- the tables the projector (`store/projector.rs`) writes are projections, which nothing else writes, not even a migration's trigger;
+- a projection refers to no other table and holds no unique value, so it can always be rebuilt from the registers.
+
+Integration tests under `tests/` may still seed any table directly.
 
 ### Interface
 

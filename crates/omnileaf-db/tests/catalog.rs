@@ -6,7 +6,7 @@
 mod library_seed;
 mod support;
 
-use library_seed::{book_id, seed_library};
+use library_seed::{fingerprint, seed_library};
 use omnileaf_db::{
     Database, Error,
     catalog::{NewBook, NewSeries, add_book, add_series},
@@ -77,7 +77,7 @@ async fn refuses_a_book_for_a_series_missing_from_the_catalog() {
         .unwrap()
         .id();
     let book = NewBook {
-        id: book_id("Sample Series 09", "Volume 01"),
+        fingerprint: fingerprint("Sample Series 09", "Volume 01"),
         series: missing,
         title: "Volume 01".to_owned(),
         added_at_ms: ADDED_AT_MS,
@@ -102,6 +102,51 @@ async fn refuses_a_second_series_for_a_folder_name_that_normalises_alike() {
                 transaction,
                 &NewSeries::local("SAMPLE  series 01", ADDED_AT_MS).unwrap(),
             )
+        })
+        .await;
+
+    assert!(is_constraint_violation(&outcome));
+}
+
+#[tokio::test]
+async fn keeps_the_fingerprint_a_book_id_comes_from_and_leaves_its_logical_key_unset() {
+    let folder = ScratchFolder::new("book-identity");
+    let database = Database::open(&folder.config()).unwrap();
+
+    add_local_series(&database, SERIES, ONE_BOOK).await;
+
+    let identity: (Option<Vec<u8>>, Option<String>, Option<String>) = database
+        .read(move |connection| {
+            Ok(connection.query_row(
+                "SELECT content_fp, fp_kind, logical_key FROM book WHERE id = ?1",
+                [book_id(SERIES, "Volume 01").as_bytes()],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )?)
+        })
+        .await
+        .unwrap();
+    assert_eq!(
+        identity,
+        (
+            Some(fingerprint(SERIES, "Volume 01").as_bytes().to_vec()),
+            Some("pmf1".to_owned()),
+            None
+        )
+    );
+}
+
+#[tokio::test]
+async fn refuses_a_book_fingerprint_without_its_kind() {
+    let folder = ScratchFolder::new("fingerprint-kind");
+    let database = Database::open(&folder.config()).unwrap();
+    add_local_series(&database, SERIES, ONE_BOOK).await;
+
+    let outcome = database
+        .write(move |transaction| {
+            Ok(transaction.execute(
+                "UPDATE book SET fp_kind = NULL WHERE id = ?1",
+                [book_id(SERIES, "Volume 01").as_bytes()],
+            )?)
         })
         .await;
 
@@ -357,4 +402,8 @@ fn is_constraint_violation<T>(outcome: &Result<T, Error>) -> bool {
             _
         )))
     )
+}
+
+fn book_id(series: &str, title: &str) -> BookId {
+    BookId::local(&fingerprint(series, title))
 }

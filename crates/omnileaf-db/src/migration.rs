@@ -38,6 +38,9 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0001_mark_omnileaf_library"),
     migration!("0002_create_catalog"),
     migration!("0003_add_series_title_search"),
+    migration!("0004_add_book_identity"),
+    migration!("0005_create_sync_registers"),
+    migration!("0006_create_book_state"),
 ];
 
 pub(crate) fn pending(
@@ -331,6 +334,32 @@ mod tests {
             )
             .unwrap();
         assert_eq!(found, 1);
+    }
+
+    #[test]
+    fn keeps_the_books_added_before_book_identity_without_a_fingerprint() {
+        let scratch = ScratchLibrary::new("identity-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..3]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0);
+                 INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), 1, 'Volume 01', x'', 0);",
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let identity: (Option<Vec<u8>>, Option<String>, Option<String>) = connection
+            .query_row(
+                "SELECT content_fp, fp_kind, logical_key FROM book",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!(identity, (None, None, None));
     }
 
     fn schema_of(path: &Path) -> Schema {
