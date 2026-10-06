@@ -74,6 +74,33 @@ test("rescans every library folder once as the app starts", async ({
   await expect.poll(() => startRescans.count).toBe(1);
 });
 
+test("shows Rescan as an icon with its verb as the tooltip", async ({
+  page,
+}) => {
+  await page.goto("/settings/library");
+
+  for (const rescan of [
+    page.getByRole("button", { name: "Rescan Omnileaf" }),
+    page.getByRole("button", { name: "Rescan Sample Comics" }),
+  ]) {
+    await expect(rescan).toHaveText("");
+    await expect(rescan).toHaveAttribute("title", "Rescan");
+  }
+});
+
+test("rings Rescan when the keyboard reaches it", async ({ page }) => {
+  await page.goto("/settings/library");
+  const folders = page.getByRole("region", { name: "Folders" });
+  const rescan = folders.getByRole("button", { name: "Rescan Sample Comics" });
+  await expect(rescan).toBeVisible();
+  await folders.getByRole("button", { name: "Add a folder" }).focus();
+
+  await page.keyboard.press("Tab");
+
+  await expect(rescan).toBeFocused();
+  await expect(rescan).toHaveCSS("outline-style", "solid");
+});
+
 test.describe("with a folder whose files changed", () => {
   test.use({
     backend: {
@@ -141,6 +168,36 @@ test.describe("while a folder is being rescanned", () => {
     ).toBeDisabled();
   });
 
+  test("spins the icon of the folder being rescanned, and only that one", async ({
+    page,
+  }) => {
+    await rescanSampleComics(page);
+
+    await expect(
+      page.getByRole("button", { name: "Rescan Sample Comics" }).locator("svg"),
+    ).toHaveCSS("animation-name", "spin");
+    await expect(
+      page.getByRole("button", { name: "Rescan Omnileaf" }).locator("svg"),
+    ).toHaveCSS("animation-name", "none");
+  });
+
+  test("keeps the icon still and the progress showing when motion is reduced", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+
+    await rescanSampleComics(page);
+
+    await expect(
+      page.getByRole("progressbar", {
+        name: "Checking Sample Comics for changes",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Rescan Sample Comics" }).locator("svg"),
+    ).toHaveCSS("animation-name", "none");
+  });
+
   for (const colorScheme of ["light", "dark"] as const) {
     test(`the rescan's progress has no accessibility violations in the ${colorScheme} theme`, async ({
       page,
@@ -179,7 +236,7 @@ test.describe("with a folder that isn't available", () => {
 
     await expect(
       page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
-    ).toHaveText(["Sample Comics Not available /media/Sample Comics Rescan"]);
+    ).toHaveText(["Sample Comics Not available /media/Sample Comics"]);
     await expect(rescanReport(page)).toHaveText(
       "Sample Comics isn't available. Its books stay in your library until it's back.",
     );

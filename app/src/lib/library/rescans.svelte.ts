@@ -23,6 +23,14 @@ export class Rescans {
     return this.status.kind === "finding" || this.status.kind === "reading";
   }
 
+  isRescanning(folder: LibraryFolder): boolean {
+    return (
+      this.isBusy &&
+      this.status.kind !== "idle" &&
+      this.status.folder.id === folder.id
+    );
+  }
+
   /** Resolves once the rescan is over, whatever it found. */
   async rescan(folder: LibraryFolder): Promise<void> {
     this.status = { kind: "finding", folder };

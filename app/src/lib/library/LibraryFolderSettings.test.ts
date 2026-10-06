@@ -161,7 +161,7 @@ test("shows the home folder apart from the linked folders", async () => {
   await expect.element(home.getByText("/data/Omnileaf")).toBeVisible();
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Comics /media/Sample Comics Rescan");
+    .toHaveTextContent("Sample Comics /media/Sample Comics");
 });
 
 test("reads every page of folders", async () => {
@@ -197,7 +197,7 @@ test("lists a folder once it is added", async () => {
 
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Comics /media/Sample Comics Rescan");
+    .toHaveTextContent("Sample Comics /media/Sample Comics");
 });
 
 test("lists a folder that was saved before its scan failed", async () => {
@@ -217,7 +217,7 @@ test("lists a folder that was saved before its scan failed", async () => {
 
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Comics /media/Sample Comics Rescan");
+    .toHaveTextContent("Sample Comics /media/Sample Comics");
 });
 
 test("says when the folders couldn't be loaded", async () => {
@@ -323,7 +323,7 @@ test("removes the folder once the removal is confirmed", async () => {
 
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Manga /media/Sample Manga Rescan");
+    .toHaveTextContent("Sample Manga /media/Sample Manga");
   expect(removed).toEqual([COMICS.id]);
   await expect.element(dialog).not.toBeInTheDocument();
 });
@@ -341,7 +341,7 @@ test("keeps the folder when the removal is cancelled", async () => {
   expect(removed).toEqual([]);
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Comics /media/Sample Comics Rescan");
+    .toHaveTextContent("Sample Comics /media/Sample Comics");
 });
 
 test("says when a folder couldn't be removed", async () => {
@@ -380,7 +380,7 @@ test("drops a folder that was already removed without reporting a failure", asyn
 
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Manga /media/Sample Manga Rescan");
+    .toHaveTextContent("Sample Manga /media/Sample Manga");
   await expect.element(folders.getByRole("alert")).not.toBeInTheDocument();
 });
 
@@ -395,6 +395,73 @@ test("offers to rescan every folder, the home folder too", async () => {
   await expect
     .element(folders.getByRole("button", { name: "Rescan Sample Comics" }))
     .toBeVisible();
+});
+
+test("shows Rescan as an icon with its verb as the tooltip", async () => {
+  serveFolders([HOME, COMICS]);
+
+  const { home, folders } = await renderSettings();
+
+  for (const rescan of [
+    home.getByRole("button", { name: "Rescan Omnileaf" }),
+    folders.getByRole("button", { name: "Rescan Sample Comics" }),
+  ]) {
+    await expect.element(rescan).toHaveTextContent("");
+    await expect.element(rescan).toHaveAttribute("title", "Rescan");
+  }
+});
+
+test("reaches Rescan from the keyboard", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders } = await renderSettings();
+  const rescan = folders.getByRole("button", { name: "Rescan Sample Comics" });
+  await expect.element(rescan).toBeVisible();
+  folders.getByRole("button", { name: "Add a folder" }).element().focus();
+
+  await userEvent.tab();
+
+  await expect.element(rescan).toHaveFocus();
+});
+
+test("spins only the Rescan icon of the folder being rescanned", async () => {
+  serveFolders([HOME, COMICS]);
+  const pending = new PendingRescan();
+  const { home, folders } = await renderSettings({
+    rescanFolder: pending.rescanFolder,
+  });
+  const rescan = folders.getByRole("button", { name: "Rescan Sample Comics" });
+
+  await rescan.click();
+
+  await expect
+    .element(rescan.getByRole("img", { includeHidden: true }))
+    .toHaveClass("motion-safe:animate-spin");
+  await expect
+    .element(
+      home
+        .getByRole("button", { name: "Rescan Omnileaf" })
+        .getByRole("img", { includeHidden: true }),
+    )
+    .not.toHaveClass("motion-safe:animate-spin");
+});
+
+test("stops spinning the Rescan icon once the rescan finishes", async () => {
+  serveFolders([HOME, COMICS]);
+  const pending = new PendingRescan();
+  const { folders } = await renderSettings({
+    rescanFolder: pending.rescanFolder,
+  });
+  const rescan = folders.getByRole("button", { name: "Rescan Sample Comics" });
+  await rescan.click();
+
+  pending.finish({ kind: "rescanned", ...NO_CHANGES });
+
+  await expect
+    .element(rescanReport(folders))
+    .toHaveTextContent("Sample Comics is up to date.");
+  await expect
+    .element(rescan.getByRole("img", { includeHidden: true }))
+    .not.toHaveClass("motion-safe:animate-spin");
 });
 
 test("reports what a rescan found changed", async () => {
@@ -579,9 +646,7 @@ test("marks a folder that isn't available", async () => {
 
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent(
-      "Sample Comics Not available /media/Sample Comics Rescan",
-    );
+    .toHaveTextContent("Sample Comics Not available /media/Sample Comics");
 });
 
 test("shows a folder as available once a rescan reaches it again", async () => {

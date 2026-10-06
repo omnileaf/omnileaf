@@ -76,7 +76,7 @@ test("shows the home folder and the linked folders in Settings › Library", asy
   );
   await expect(
     page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
-  ).toHaveText(["Sample Comics /media/Sample Comics Rescan"]);
+  ).toHaveText(["Sample Comics /media/Sample Comics"]);
 });
 
 test("lists a folder as soon as it is added", async ({ page }) => {
@@ -87,8 +87,8 @@ test("lists a folder as soon as it is added", async ({ page }) => {
   await folders.getByRole("button", { name: "Add a folder" }).click();
 
   await expect(folders.getByRole("listitem")).toHaveText([
-    "Sample Comics /media/Sample Comics Rescan",
-    "Sample Library /media/Sample Library Rescan",
+    "Sample Comics /media/Sample Comics",
+    "Sample Library /media/Sample Library",
   ]);
 });
 
