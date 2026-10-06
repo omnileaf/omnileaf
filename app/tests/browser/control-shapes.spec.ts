@@ -23,6 +23,16 @@ const IOS_BUTTON_CORNER = "14px";
 const SHEET_CORNER = "24px";
 const PANEL_TITLE_SIZE = "17px";
 const PANEL_TITLE_LINE_HEIGHT = 22.1;
+const DESKTOP_SEGMENT_HEIGHT = 32;
+const DESKTOP_SEGMENT_TRACK_HEIGHT = 38;
+const DESKTOP_SEGMENT_TRACK_CORNER = "8px";
+const DESKTOP_SEGMENT_CORNER = "6px";
+const DESKTOP_SEGMENT_TEXT = "13px";
+const PHONE_SEGMENT_HEIGHT = 40;
+const PHONE_SEGMENT_TRACK_HEIGHT = 48;
+const PHONE_SEGMENT_TRACK_CORNER = "10px";
+const PHONE_SEGMENT_CORNER = "8px";
+const PHONE_SEGMENT_TEXT = "14px";
 const DESKTOP_STEPPER_CORNER = "8px";
 
 function withSeries(platform: "linux" | "android" | "ios"): FakeBackend {
@@ -44,6 +54,16 @@ function emptyStateAddFolder(page: Page): Locator {
   return page
     .getByRole("region", { name: "Your library is empty" })
     .getByRole("button", { name: "Add a folder" });
+}
+
+function displayTrack(panel: Locator): Locator {
+  return panel.getByRole("group", { name: "Display" }).locator("div").first();
+}
+
+function displaySegment(panel: Locator, name: string): Locator {
+  return panel
+    .locator("label")
+    .filter({ has: panel.page().getByRole("radio", { name }) });
 }
 
 test.describe("on a desktop", () => {
@@ -117,6 +137,22 @@ test.describe("on a desktop", () => {
     expect(parseFloat(lineHeight)).toBeCloseTo(PANEL_TITLE_LINE_HEIGHT, 1);
   });
 
+  test("draws the View panel's displays as 32px segments in an 8px track", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const panel = await openViewOptions(page);
+    const track = displayTrack(panel);
+    const grid = displaySegment(panel, "Grid");
+
+    expect((await boxOf(grid)).height).toBe(DESKTOP_SEGMENT_HEIGHT);
+    expect((await boxOf(track)).height).toBe(DESKTOP_SEGMENT_TRACK_HEIGHT);
+    expect(await cornerOf(track)).toBe(DESKTOP_SEGMENT_TRACK_CORNER);
+    expect(await cornerOf(grid)).toBe(DESKTOP_SEGMENT_CORNER);
+    await expect(grid).toHaveCSS("font-size", DESKTOP_SEGMENT_TEXT);
+  });
+
   test("keeps the View panel's stepper at 8px", async ({ page }) => {
     await page.goto("/");
 
@@ -164,6 +200,22 @@ test.describe("on an Android phone", () => {
       const panel = await openViewOptions(page);
 
       expect(await cornerOf(panel)).toBe(SHEET_CORNER);
+    });
+
+    test("draws the View sheet's displays as 40px segments in a 10px track", async ({
+      page,
+    }) => {
+      await page.goto("/");
+
+      const panel = await openViewOptions(page);
+      const track = displayTrack(panel);
+      const grid = displaySegment(panel, "Grid");
+
+      expect((await boxOf(grid)).height).toBe(PHONE_SEGMENT_HEIGHT);
+      expect((await boxOf(track)).height).toBe(PHONE_SEGMENT_TRACK_HEIGHT);
+      expect(await cornerOf(track)).toBe(PHONE_SEGMENT_TRACK_CORNER);
+      expect(await cornerOf(grid)).toBe(PHONE_SEGMENT_CORNER);
+      await expect(grid).toHaveCSS("font-size", PHONE_SEGMENT_TEXT);
     });
   });
 });
