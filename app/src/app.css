@@ -311,7 +311,6 @@
   --color-raised: #ffffff;
   --color-raised-shadow: rgb(28 27 24 / 0.14);
   --color-bar: #f3f0e9;
-  --color-well: #f3f0e9;
   --color-accent: #2f6f4f;
   --color-on-accent: #ffffff;
   --color-accent-soft: #ddebe2;
@@ -369,7 +368,6 @@
   --color-glass-hole: #e6e2da;
   --color-glass-shadow: rgb(28 27 24 / 0.16);
   --color-glass-contact: rgb(28 27 24 / 0.08);
-  --color-cover-edge: rgb(28 27 24 / 0.1);
   --color-band: rgb(20 19 17 / 0.74);
   --color-on-band: #ffffff;
   --color-popover-shadow: rgb(28 27 24 / 0.18);
@@ -530,7 +528,6 @@
   --color-raised: #3a3630;
   --color-raised-shadow: rgb(0 0 0 / 0.5);
   --color-bar: #1c1a17;
-  --color-well: #2b2823;
   --color-accent: #7fcb9d;
   --color-on-accent: #0f2418;
   --color-accent-soft: #243a2c;
@@ -571,7 +568,6 @@
   --color-glass-hole: #3a3833;
   --color-glass-shadow: rgb(0 0 0 / 0.45);
   --color-glass-contact: transparent;
-  --color-cover-edge: rgb(255 255 255 / 0.08);
   --color-band: rgb(12 11 10 / 0.8);
   --color-on-band: #f1ede4;
   --color-popover-shadow: rgb(0 0 0 / 0.5);
