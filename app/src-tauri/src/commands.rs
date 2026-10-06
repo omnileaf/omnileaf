@@ -1,6 +1,8 @@
 //! The commands the interface calls, and the TypeScript bindings generated from them.
 
-use omnileaf_engine::{AppInfo, Core, FolderSurvey, ProjectLink, survey_folder};
+use omnileaf_engine::{
+    AppInfo, Core, FolderCursor, FolderId, FolderPage, FolderSurvey, Library, ProjectLink,
+};
 use tauri::{AppHandle, Manager, State, Wry};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_opener::OpenerExt;
@@ -18,6 +20,8 @@ pub(crate) fn builder() -> Builder<Wry> {
         app_info,
         add_library_folder,
         match_system_bars,
+        library_folders,
+        remove_library_folder,
         copy_version_details,
         open_project_link
     ])
@@ -35,10 +39,17 @@ fn app_info(core: State<'_, Core>) -> AppInfo {
 
 #[tauri::command]
 #[specta::specta]
-async fn add_library_folder(app: AppHandle) -> Result<Option<FolderSurvey>, IpcError> {
-    tauri::async_runtime::spawn_blocking(move || pick_and_survey(&app))
+async fn add_library_folder(
+    app: AppHandle,
+    library: State<'_, Library>,
+) -> Result<Option<FolderSurvey>, IpcError> {
+    let picked = tauri::async_runtime::spawn_blocking(move || pick_folder(&app))
         .await
-        .map_err(|error| IpcError::internal(&error))?
+        .map_err(|error| IpcError::internal(&error))??;
+    let Some(folder) = picked else {
+        return Ok(None);
+    };
+    Ok(Some(library.add_folder(folder).await?))
 }
 
 #[tauri::command]
@@ -51,11 +62,19 @@ async fn match_system_bars(
     system_bars::match_theme(&app, theme, preference).await
 }
 
-fn pick_and_survey(app: &AppHandle) -> Result<Option<FolderSurvey>, IpcError> {
-    let Some(folder) = pick_folder(app)? else {
-        return Ok(None);
-    };
-    Ok(Some(survey_folder(&folder)?))
+#[tauri::command]
+#[specta::specta]
+async fn library_folders(
+    library: State<'_, Library>,
+    after: Option<FolderCursor>,
+) -> Result<FolderPage, IpcError> {
+    Ok(library.folders(after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn remove_library_folder(library: State<'_, Library>, id: FolderId) -> Result<(), IpcError> {
+    Ok(library.remove_folder(id).await?)
 }
 
 #[tauri::command]

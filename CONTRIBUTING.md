@@ -67,7 +67,15 @@ The `portable` group holds the Rust checks whose answer is the same everywhere, 
 - the WebAssembly build of `omnileaf-sync-proto`;
 - `cargo deny`: every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories;
 - `cargo xtask policy`, the content policy check below;
-- `cargo xtask licences --check`, the licence catalogue check below.
+- `cargo xtask licences --check`, the licence catalogue check below;
+- `cargo xtask lint-sync`, which checks how synced state is written.
+
+`cargo xtask lint-sync` keeps synced state behind its one write path:
+- only `crates/omnileaf-db/src/store/register.rs` writes `sync_register`, and only `store/local.rs` writes `sync_local`, so no migration writes either, apart from the one that creates `sync_local` with its first row;
+- the tables the projector (`store/projector.rs`) writes are projections, which nothing else writes, not even a migration's trigger;
+- a projection refers to no other table and holds no unique value, so it can always be rebuilt from the registers.
+
+Integration tests under `tests/` may still seed any table directly.
 
 ### Interface
 
@@ -81,7 +89,7 @@ CI splits the suite into three shards. `PLAYWRIGHT_SHARD=2/3 pnpm --dir app test
 
 ### App tests
 
-The `app` group builds the app with the `e2e` feature, which adds an embedded WebDriver server and never ships, and drives the real app through it. WebDriver can't reach the system folder picker, so that build answers it with the folder in `OMNILEAF_E2E_PICKED_FOLDER`, which the tests point at a sample library they generate. The tests open a window, so on Linux without a display run them under `xvfb-run`. They don't run on Windows yet, because the WebDriver plugin doesn't build there with the current Tauri release.
+The `app` group builds the app with the `e2e` feature, which adds an embedded WebDriver server and never ships, and drives the real app through it. WebDriver can't reach the system folder picker, so that build answers it with the folder in `OMNILEAF_E2E_PICKED_FOLDER`, which the tests point at a sample library they generate. They also set `OMNILEAF_DATA_DIR`, which every build reads once at startup, so the app keeps its library database in a scratch folder instead of the platform's app data folder. It must be an absolute path. The tests open a window, so on Linux without a display run them under `xvfb-run`. They don't run on Windows yet, because the WebDriver plugin doesn't build there with the current Tauri release.
 
 ### Android and iOS
 

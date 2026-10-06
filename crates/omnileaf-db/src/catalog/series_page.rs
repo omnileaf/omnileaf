@@ -101,8 +101,14 @@ pub fn series_page(
             connection,
             named_params! { ":after_key": added_at_ms, ":after_id": id.as_bytes(), ":limit": limit },
         ),
-        (SeriesOrder::Title, Some(Position::Added { .. } | Position::Book { .. }))
-        | (SeriesOrder::RecentlyAdded, Some(Position::Title { .. } | Position::Book { .. })) => {
+        (
+            SeriesOrder::Title,
+            Some(Position::Added { .. } | Position::Book { .. } | Position::Root { .. }),
+        )
+        | (
+            SeriesOrder::RecentlyAdded,
+            Some(Position::Title { .. } | Position::Book { .. } | Position::Root { .. }),
+        ) => {
             return Err(Error::CursorForAnotherList);
         }
     }?;

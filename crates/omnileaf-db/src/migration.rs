@@ -38,6 +38,11 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0001_mark_omnileaf_library"),
     migration!("0002_create_catalog"),
     migration!("0003_add_series_title_search"),
+    migration!("0004_add_book_identity"),
+    migration!("0005_create_sync_registers"),
+    migration!("0006_create_book_state"),
+    migration!("0007_stop_reusing_library_root_ids"),
+    migration!("0008_allow_one_home_root"),
 ];
 
 pub(crate) fn pending(
@@ -331,6 +336,62 @@ mod tests {
             )
             .unwrap();
         assert_eq!(found, 1);
+    }
+
+    #[test]
+    fn keeps_the_books_added_before_book_identity_without_a_fingerprint() {
+        let scratch = ScratchLibrary::new("identity-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..3]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0);
+                 INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), 1, 'Volume 01', x'', 0);",
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let identity: (Option<Vec<u8>>, Option<String>, Option<String>) = connection
+            .query_row(
+                "SELECT content_fp, fp_kind, logical_key FROM book",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!(identity, (None, None, None));
+    }
+
+    #[test]
+    fn keeps_the_library_folders_and_their_files_when_root_ids_stop_being_reused() {
+        let scratch = ScratchLibrary::new("root-ids-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..6]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO library_root (id, kind, locator_kind, location, added_at_ms)
+                 VALUES (7, 'linked', 'path', x'2f6d65646961', 0);
+                 INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0);
+                 INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), 1, 'Volume 01', x'', 0);
+                 INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
+                 VALUES (zeroblob(16), 7, 'Volume 01.cbz', 1, 0);",
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let file_roots: Vec<i64> = connection
+            .prepare("SELECT library_root.id FROM book_file JOIN library_root ON library_root.id = book_file.root_id")
+            .unwrap()
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(file_roots, [7]);
     }
 
     fn schema_of(path: &Path) -> Schema {

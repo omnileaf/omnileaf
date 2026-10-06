@@ -11,6 +11,8 @@ export const commands = {
 	unreadableFolders: number,
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder")),
 	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
+	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
+	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
 	copyVersionDetails: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_version_details")),
 	openProjectLink: (link: ProjectLink) => typedError<null, IpcError>(__TAURI_INVOKE("open_project_link", { link })),
 };
@@ -20,6 +22,14 @@ export type AppInfo = {
 	version: string,
 	platform: Platform,
 	sourceCode: string,
+};
+
+export type FolderKind = "home" | "linked";
+
+export type FolderPage = {
+	folders: LibraryFolder[],
+	/**  Absent on the last page. */
+	next: string & { readonly __brand: "FolderCursor" } | null,
 };
 
 export type FolderSurvey = {
@@ -33,7 +43,14 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "clipboardUnavailable" | "browserUnavailable" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "internal";
+
+export type LibraryFolder = {
+	id: string & { readonly __brand: "FolderId" },
+	kind: FolderKind,
+	name: string,
+	location: string,
+};
 
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
