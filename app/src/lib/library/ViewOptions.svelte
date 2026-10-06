@@ -92,8 +92,10 @@
   aria-expanded={isOpen}
   aria-label={m.library_view_options()}
   class={[
-    "flex items-center justify-center gap-sm rounded-full block-touch-target inline-touch-target large:rounded-control large:border large:border-border large:px-header-control-inline large:text-small large:font-medium large:block-header-control large:inline-auto",
-    isOpen ? "large:bg-accent-soft" : "large:bg-card",
+    "flex items-center justify-center gap-sm rounded-full transition-control block-touch-target inline-touch-target large:rounded-control large:border large:border-border large:px-header-control-inline large:text-small large:font-medium large:block-header-control large:inline-auto",
+    isOpen
+      ? "large:bg-accent-soft"
+      : "hover:tint-hover active:tint-pressed large:bg-card",
   ]}
   onclick={open}
 >
@@ -134,7 +136,7 @@
       </h2>
       <button
         type="button"
-        class="px-xs text-body font-semibold text-accent min-block-touch-target medium:hidden"
+        class="rounded-control px-xs text-body font-semibold text-accent transition-control min-block-touch-target hover:bg-hover active:bg-pressed medium:hidden"
         onclick={close}
       >
         {m.library_view_done()}

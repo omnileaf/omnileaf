@@ -12,7 +12,7 @@
 </script>
 
 <label
-  class="flex cursor-pointer items-center gap-md border-bs border-border pbs-md min-block-switch-row large:items-start large:gap-label large:min-block-auto"
+  class="flex items-center gap-md border-bs border-border pbs-md min-block-switch-row large:items-start large:gap-label large:min-block-auto"
 >
   <input
     type="checkbox"

@@ -38,10 +38,10 @@
     {#each CHOICES as choice (choice.display)}
       <label
         class={[
-          "relative flex cursor-pointer items-center justify-center gap-icon-gap rounded-field text-lead block-segment before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent",
+          "relative flex items-center justify-center gap-icon-gap rounded-field text-lead transition-control block-segment before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent",
           chosen === choice.display
             ? "bg-raised font-bold shadow-raised"
-            : "font-medium text-muted",
+            : "font-medium text-muted hover:bg-hover",
         ]}
       >
         <input

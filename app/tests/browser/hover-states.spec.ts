@@ -9,8 +9,11 @@ import {
   THEME_OPTION,
   WITH_THE_PICKER_OPEN,
 } from "./controls.ts";
+import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import { boxOf, expect, onPlatform, settle, test } from "./fixtures.ts";
+import { pagedSeries, sampleSeries } from "./series-catalog.ts";
+import { openViewOptions, viewOptionsButton } from "./view-options.ts";
 
 const POINTER_TARGET = 40;
 
@@ -217,6 +220,54 @@ test.describe("with a pointer", () => {
 
       expect(await boxOf(dismiss)).toEqual(before);
     });
+  });
+
+  test.describe("with series in the library", () => {
+    test.use({
+      backend: {
+        ...DESKTOP,
+        librarySeries: pagedSeries(() => sampleSeries(3)),
+        libraryView: () => DEFAULT_LIBRARY_VIEW,
+        setLibraryView: () => null,
+        librarySeriesCount: () => 3,
+      },
+    });
+
+    test("tints the view options button under the pointer", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      const button = viewOptionsButton(page);
+      const resting = await paintOf(button);
+
+      await button.hover();
+
+      expect(await paintOf(button)).not.toBe(resting);
+    });
+
+    for (const [name, find] of [
+      [
+        "an unchosen display",
+        (options: Locator) =>
+          options.locator("label").filter({ hasText: "List" }),
+      ],
+      [
+        "a covers per row step",
+        (options: Locator) =>
+          options.getByRole("button", { name: "More covers per row" }),
+      ],
+    ] as const) {
+      test(`tints ${name} under the pointer`, async ({ page }) => {
+        await page.goto("/");
+        const control = find(await openViewOptions(page));
+        await page.mouse.move(0, 0);
+        const resting = await paintOf(control);
+
+        await control.hover();
+
+        expect(await paintOf(control)).not.toBe(resting);
+      });
+    }
   });
 
   test.describe("on a first launch", () => {

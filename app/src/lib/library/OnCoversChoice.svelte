@@ -47,7 +47,7 @@
   </p>
   {#each CHOICES as choice (choice.name)}
     <label
-      class="flex cursor-pointer items-center gap-md text-body min-block-touch-target large:gap-label large:text-small large:min-block-checkbox-row"
+      class="flex items-center gap-md text-body min-block-touch-target large:gap-label large:text-small large:min-block-checkbox-row"
     >
       <input
         type="checkbox"
