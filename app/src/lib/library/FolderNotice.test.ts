@@ -31,6 +31,7 @@ const SAMPLE_SCAN: FolderScan = {
   series: 3,
   books: 7,
   unreadableBooks: 0,
+  unsupportedBooks: 0,
   unreadableFolders: 0,
 };
 
@@ -148,6 +149,20 @@ test("mentions the books and folders inside it that couldn't be read", async () 
     .element(status)
     .toHaveTextContent(
       "Found 7 books in 3 series in Sample Library. Couldn't read 1 book in it. Couldn't read 2 folders inside it.",
+    );
+});
+
+test("says which books are in a format this version can't open yet", async () => {
+  const { button, status } = await renderWith(
+    answering(scanned({ unreadableBooks: 1, unsupportedBooks: 16 })),
+  );
+
+  await button.click();
+
+  await expect
+    .element(status)
+    .toHaveTextContent(
+      "Found 7 books in 3 series in Sample Library. Couldn't read 1 book in it. 16 books are CBR or CB7 files, which this version can't open yet.",
     );
 });
 

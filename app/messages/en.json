@@ -54,6 +54,20 @@
       }
     }
   ],
+  "library_folder_unsupported_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} book is a CBR or CB7 file, which this version can't open yet.",
+        "countPlural=other": "{formattedCount} books are CBR or CB7 files, which this version can't open yet."
+      }
+    }
+  ],
   "library_folder_unreadable_subfolders": [
     {
       "declarations": [

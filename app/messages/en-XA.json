@@ -54,6 +54,20 @@
       }
     }
   ],
+  "library_folder_unsupported_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ íš á ÇƁŔ öŕ ÇƁ7 ƒíļé, ŵĥíçĥ ţĥíš ṽéŕšíöñ çáñ'ţ öþéñ ýéţ.································⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš áŕé ÇƁŔ öŕ ÇƁ7 ƒíļéš, ŵĥíçĥ ţĥíš ṽéŕšíöñ çáñ'ţ öþéñ ýéţ.································⟧"
+      }
+    }
+  ],
   "library_folder_unreadable_subfolders": [
     {
       "declarations": [

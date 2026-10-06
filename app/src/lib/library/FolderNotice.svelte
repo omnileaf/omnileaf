@@ -38,6 +38,9 @@
       scan.unreadableBooks > 0
         ? m.library_folder_unreadable_books({ count: scan.unreadableBooks })
         : undefined,
+      scan.unsupportedBooks > 0
+        ? m.library_folder_unsupported_books({ count: scan.unsupportedBooks })
+        : undefined,
       scan.unreadableFolders > 0
         ? m.library_folder_unreadable_subfolders({
             count: scan.unreadableFolders,
