@@ -1,12 +1,13 @@
 import type { Page } from "@playwright/test";
 
-import { CommandFailure } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
   MEDIUM_MIN_WIDTH,
+  onPlatform,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -16,18 +17,23 @@ const UNREADABLE =
 
 const CORNER_INSET = 24;
 const NOTICE_WIDTH = 440;
+const POINTER_TITLE_SIZE = "14px";
+const TOUCH_TITLE_SIZE = "15px";
+const BODY_SIZE = "13px";
+const POINTER_ACTION_HEIGHT = 32;
+const ACTION_CORNER = "10px";
 
-test.use({
-  backend: {
-    ...DEFAULT_BACKEND,
-    addLibraryFolder: () => {
-      throw new CommandFailure({
-        code: "folderUnreadable",
-        message: "the folder could not be read",
-      });
-    },
+const FAILS_TO_READ_THE_FOLDER: FakeBackend = {
+  ...DEFAULT_BACKEND,
+  addLibraryFolder: () => {
+    throw new CommandFailure({
+      code: "folderUnreadable",
+      message: "the folder could not be read",
+    });
   },
-});
+};
+
+test.use({ backend: FAILS_TO_READ_THE_FOLDER });
 
 function emptyLibraryAddFolder(page: Page) {
   return page
@@ -152,3 +158,43 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test("sets the warning's title at 14px over a 13px body on a desktop", async ({
+  page,
+}) => {
+  const card = await failToAddAFolder(page);
+
+  const title = card.getByText("Couldn't read that folder", { exact: true });
+  const body = card.getByText(/^Omnileaf may not be allowed/);
+
+  await expect(title).toHaveCSS("font-size", POINTER_TITLE_SIZE);
+  await expect(body).toHaveCSS("font-size", BODY_SIZE);
+});
+
+test("draws the warning's action 32px tall with 10px corners on a desktop", async ({
+  page,
+}) => {
+  const card = await failToAddAFolder(page);
+
+  const action = card.getByRole("button", { name: "Choose another folder" });
+
+  expect((await boxOf(action)).height).toBe(POINTER_ACTION_HEIGHT);
+  await expect(action).toHaveCSS("border-top-left-radius", ACTION_CORNER);
+});
+
+test.describe("on Android", () => {
+  test.use({
+    backend: {
+      ...FAILS_TO_READ_THE_FOLDER,
+      appInfo: onPlatform("android").backend.appInfo,
+    },
+  });
+
+  test("sets the warning's title at 15px", async ({ page }) => {
+    const card = await failToAddAFolder(page);
+
+    const title = card.getByText("Couldn't read that folder", { exact: true });
+
+    await expect(title).toHaveCSS("font-size", TOUCH_TITLE_SIZE);
+  });
+});
