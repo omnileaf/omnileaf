@@ -53,6 +53,7 @@ const NO_CHANGES: FileChanges = {
   moved: 0,
   removed: 0,
   unreadableBooks: 0,
+  unsupportedBooks: 0,
   unreadableFolders: 0,
 };
 
@@ -500,13 +501,14 @@ test("says a folder is up to date when the rescan found nothing changed", async 
     .toHaveTextContent("Sample Comics is up to date.");
 });
 
-test("reports the books and folders a rescan couldn't read", async () => {
+test("reports the books and folders a rescan couldn't read or open yet", async () => {
   serveFolders([HOME, COMICS]);
   const { folders } = await renderSettings({
     rescanFolder: rescanning({
       kind: "rescanned",
       ...NO_CHANGES,
       unreadableBooks: 1,
+      unsupportedBooks: 3,
       unreadableFolders: 2,
     }),
   });
@@ -519,6 +521,7 @@ test("reports the books and folders a rescan couldn't read", async () => {
   expect(linesOf(rescanReport(folders))).toEqual([
     "Sample Comics is up to date.",
     "Couldn't read 1 book in it.",
+    "3 books are CBR or CB7 files, which this version can't open yet.",
     "Couldn't read 2 folders inside it.",
   ]);
 });

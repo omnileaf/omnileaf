@@ -43,6 +43,8 @@ export type FileChanges = {
 	/**  Books left with no file anywhere once theirs here went, so deleting one of two copies removes none. */
 	removed: number,
 	unreadableBooks: number,
+	/**  Books in an archive format this version recognises but can't open yet, such as CBR. */
+	unsupportedBooks: number,
 	unreadableFolders: number,
 };
 

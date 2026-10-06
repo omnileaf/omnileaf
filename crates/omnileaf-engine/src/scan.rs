@@ -56,6 +56,16 @@ pub(crate) enum UnreadableBook {
     OutsideFolder(#[from] StripPrefixError),
 }
 
+impl UnreadableBook {
+    /// Whether the book is in an archive format this version recognises but can't open yet, rather than damaged.
+    pub(crate) fn is_unsupported_archive(&self) -> bool {
+        matches!(
+            self,
+            Self::Format(FormatError::ArchiveNotSupportedYet { .. })
+        )
+    }
+}
+
 /// Size and modification time, which tell a rescan whether a book's file changed without reading it again.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct FileStamp {
@@ -146,7 +156,7 @@ impl Tally {
                     self.books = self.books.saturating_add(1);
                     found.push(book);
                 }
-                Err(UnreadableBook::Format(FormatError::ArchiveNotSupportedYet { .. })) => {
+                Err(unread) if unread.is_unsupported_archive() => {
                     self.unsupported_books = self.unsupported_books.saturating_add(1);
                 }
                 Err(_) => self.unreadable_books = self.unreadable_books.saturating_add(1),

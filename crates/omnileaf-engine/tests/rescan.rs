@@ -424,6 +424,26 @@ async fn keeps_a_book_whose_file_can_no_longer_be_read() {
 }
 
 #[tokio::test]
+async fn counts_a_new_book_it_cannot_open_yet_apart_from_damaged_ones() {
+    let folder = Rescanned::new("rescan-not-yet").await;
+    fs::write(
+        folder.path("Sample Series 01/v03.cbr"),
+        b"Rar!\x1a\x07\x01\x00",
+    )
+    .unwrap();
+
+    let outcome = folder.changes().await;
+
+    assert_eq!(
+        outcome,
+        rescanned(FileChanges {
+            unsupported_books: 1,
+            ..FileChanges::default()
+        })
+    );
+}
+
+#[tokio::test]
 async fn keeps_every_book_of_a_folder_it_cannot_reach_and_marks_it_unavailable() {
     let folder = Rescanned::new("rescan-unreachable").await;
     let unplugged = folder.comics.path().with_extension("unplugged");
@@ -673,6 +693,7 @@ fn tells_the_interface_what_a_rescan_found_by_kind() {
             moved: 3,
             removed: 4,
             unreadable_books: 5,
+            unsupported_books: 7,
             unreadable_folders: 6,
         }),
         RescanOutcome::Unreachable,
@@ -691,6 +712,7 @@ fn tells_the_interface_what_a_rescan_found_by_kind() {
                 "moved": 3,
                 "removed": 4,
                 "unreadableBooks": 5,
+                "unsupportedBooks": 7,
                 "unreadableFolders": 6,
             }),
             serde_json::json!({ "kind": "unreachable" }),

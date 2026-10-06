@@ -95,9 +95,17 @@ impl Plan {
     pub(crate) fn sort(&mut self, read: Vec<ReadBook>) -> Recording {
         let mut recording = Recording::default();
         for ReadBook { book, replacing } in read {
-            let Ok(book) = book else {
-                self.changes.unreadable_books = self.changes.unreadable_books.saturating_add(1);
-                continue;
+            let book = match book {
+                Ok(book) => book,
+                Err(unread) if unread.is_unsupported_archive() => {
+                    self.changes.unsupported_books =
+                        self.changes.unsupported_books.saturating_add(1);
+                    continue;
+                }
+                Err(_) => {
+                    self.changes.unreadable_books = self.changes.unreadable_books.saturating_add(1);
+                    continue;
+                }
             };
             let id = BookId::local(&book.fingerprint);
             match replacing {

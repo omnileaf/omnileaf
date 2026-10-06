@@ -28,6 +28,7 @@ const NO_CHANGES = {
   moved: 0,
   removed: 0,
   unreadableBooks: 0,
+  unsupportedBooks: 0,
   unreadableFolders: 0,
 };
 

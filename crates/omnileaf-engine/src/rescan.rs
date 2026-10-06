@@ -49,6 +49,8 @@ pub struct FileChanges {
     /// Books left with no file anywhere once theirs here went, so deleting one of two copies removes none.
     pub removed: u32,
     pub unreadable_books: u32,
+    /// Books in an archive format this version recognises but can't open yet, such as CBR.
+    pub unsupported_books: u32,
     pub unreadable_folders: u32,
 }
 

@@ -24,6 +24,7 @@ const CHANGE_LINES = [
 
 const UNREADABLE_LINES = [
   ["unreadableBooks", m.library_folder_unreadable_books],
+  ["unsupportedBooks", m.library_folder_unsupported_books],
   ["unreadableFolders", m.library_folder_unreadable_subfolders],
 ] as const satisfies readonly (readonly [keyof FileChanges, Counted])[];
 
