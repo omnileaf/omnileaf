@@ -13,7 +13,7 @@
     "empty-state":
       "gap-sm rounded-control bg-accent ps-lg pe-button text-on-accent enabled:hover:bg-accent-hover enabled:active:bg-accent-pressed min-block-touch-target touch:max-medium:min-block-phone-button android:max-medium:rounded-full ios:max-medium:rounded-phone-button desktop:text-label desktop:min-block-pointer-target",
     "section-heading":
-      "gap-xs rounded-control bg-accent ps-md pe-lg text-callout text-on-accent enabled:hover:bg-accent-hover enabled:active:bg-accent-pressed min-block-touch-target desktop:text-label desktop:min-block-pointer-button",
+      "gap-xs rounded-control bg-accent ps-md pe-lg text-callout text-on-accent enabled:hover:bg-accent-hover enabled:active:bg-accent-pressed min-block-touch-target android:max-medium:rounded-full ios:max-medium:rounded-phone-button desktop:text-label desktop:min-block-pointer-button",
   } satisfies Record<Placement, string>;
 
   const ICON_SIZE = 20;

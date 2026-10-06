@@ -19,6 +19,7 @@ const ROW_CORNER = "8px";
 const KEY_CORNER = "6px";
 const PAGE_BUTTON_HEIGHT = 36;
 const PHONE_BUTTON_HEIGHT = 52;
+const PHONE_SECTION_BUTTON_HEIGHT = 48;
 const IOS_BUTTON_CORNER = "14px";
 const SHEET_CORNER = "24px";
 const PANEL_TITLE_SIZE = "17px";
@@ -191,6 +192,19 @@ test.describe("on an Android phone", () => {
     expect(parseFloat(corner)).toBeGreaterThanOrEqual(box.height / 2);
   });
 
+  test("draws the Folders heading's Add a folder as a 48px pill", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library");
+    const button = addFolderBesideFolders(page);
+
+    const box = await boxOf(button);
+    const corner = await cornerOf(button);
+
+    expect(box.height).toBe(PHONE_SECTION_BUTTON_HEIGHT);
+    expect(parseFloat(corner)).toBeGreaterThanOrEqual(box.height / 2);
+  });
+
   test.describe("with series", () => {
     test.use({ backend: withSeries("android") });
 
@@ -236,6 +250,15 @@ test.describe("on an iPhone", () => {
     const box = await boxOf(button);
 
     expect(box.height).toBe(PHONE_BUTTON_HEIGHT);
+    expect(await cornerOf(button)).toBe(IOS_BUTTON_CORNER);
+  });
+
+  test("rounds the Folders heading's Add a folder to 14px", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library");
+    const button = addFolderBesideFolders(page);
+
     expect(await cornerOf(button)).toBe(IOS_BUTTON_CORNER);
   });
 });
