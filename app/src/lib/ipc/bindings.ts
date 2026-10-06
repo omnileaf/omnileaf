@@ -10,6 +10,8 @@ export const commands = {
 	series: number,
 	books: number,
 	unreadableBooks: number,
+	/**  Books in an archive format this version recognises but can't open yet, such as CBR. */
+	unsupportedBooks: number,
 	unreadableFolders: number,
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder", { onProgress })),
 	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
@@ -39,6 +41,8 @@ export type FolderScan = {
 	series: number,
 	books: number,
 	unreadableBooks: number,
+	/**  Books in an archive format this version recognises but can't open yet, such as CBR. */
+	unsupportedBooks: number,
 	unreadableFolders: number,
 };
 

@@ -128,6 +128,7 @@ test("lists a folder once it is added", async () => {
           series: 3,
           books: 7,
           unreadableBooks: 0,
+          unsupportedBooks: 0,
           unreadableFolders: 0,
         },
       });

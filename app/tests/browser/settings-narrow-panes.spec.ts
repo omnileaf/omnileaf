@@ -53,6 +53,7 @@ for (const width of [MEDIUM_MIN_WIDTH, EXPANDED_MIN_WIDTH]) {
           series: 34,
           books: 342,
           unreadableBooks: 0,
+          unsupportedBooks: 0,
           unreadableFolders: 2,
         }),
       },

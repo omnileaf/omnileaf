@@ -31,6 +31,7 @@ test.describe("with a folder of books", () => {
         series: 3,
         books: 7,
         unreadableBooks: 0,
+        unsupportedBooks: 0,
         unreadableFolders: 0,
       }),
     },

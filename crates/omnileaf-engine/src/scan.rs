@@ -38,6 +38,8 @@ pub struct FolderScan {
     pub series: u32,
     pub books: u32,
     pub unreadable_books: u32,
+    /// Books in an archive format this version recognises but can't open yet, such as CBR.
+    pub unsupported_books: u32,
     pub unreadable_folders: u32,
 }
 
@@ -66,6 +68,7 @@ struct Tally {
     scanned: u32,
     books: u32,
     unreadable_books: u32,
+    unsupported_books: u32,
     series: BTreeSet<SeriesId>,
 }
 
@@ -120,6 +123,7 @@ pub(crate) async fn scan(
         series: u32::try_from(tally.series.len()).unwrap_or(u32::MAX),
         books: tally.books,
         unreadable_books: tally.unreadable_books,
+        unsupported_books: tally.unsupported_books,
         unreadable_folders: layout.unreadable_folders,
     })
 }
@@ -133,6 +137,9 @@ impl Tally {
                 Ok(book) => {
                     self.books = self.books.saturating_add(1);
                     found.push(book);
+                }
+                Err(UnreadableBook::Format(FormatError::ArchiveNotSupportedYet { .. })) => {
+                    self.unsupported_books = self.unsupported_books.saturating_add(1);
                 }
                 Err(_) => self.unreadable_books = self.unreadable_books.saturating_add(1),
             }

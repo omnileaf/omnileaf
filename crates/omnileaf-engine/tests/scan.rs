@@ -167,6 +167,7 @@ async fn scans_each_series_folder_into_a_series_of_its_books() {
             series: 3,
             books: 7,
             unreadable_books: 0,
+            unsupported_books: 0,
             unreadable_folders: 0,
         }
     );
@@ -241,6 +242,29 @@ async fn counts_the_books_it_cannot_read_and_carries_on() {
 
     assert_eq!(scanned.series(), owned(&[("Sample Series 01", 1)]));
     assert_eq!((scan.books, scan.unreadable_books), (1, 1));
+}
+
+#[tokio::test]
+async fn counts_the_rar_and_7z_books_it_cannot_open_yet_apart_from_damaged_ones() {
+    let comics = TempFolder::new("scan-not-yet").with_files(&["Sample Series 01/v02.cbz"]);
+    write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
+    fs::write(
+        comics.path().join("Sample Series 01/v03.cbr"),
+        b"Rar!\x1a\x07\x01\x00",
+    )
+    .unwrap();
+    fs::write(
+        comics.path().join("Sample Series 01/v04.cb7"),
+        b"7z\xbc\xaf\x27\x1c",
+    )
+    .unwrap();
+
+    let (_, scan, _) = Scanned::folder("scan-not-yet", comics.path()).await;
+
+    assert_eq!(
+        (scan.books, scan.unreadable_books, scan.unsupported_books),
+        (1, 1, 2)
+    );
 }
 
 #[tokio::test]

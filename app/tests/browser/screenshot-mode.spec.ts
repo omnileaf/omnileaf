@@ -44,6 +44,7 @@ test.use({
       series: 1,
       books: 4,
       unreadableBooks: 0,
+      unsupportedBooks: 0,
       unreadableFolders: 0,
     }),
   },
