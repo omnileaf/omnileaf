@@ -8,7 +8,7 @@
 
   const LOOKS = {
     phone:
-      "rounded-tile px-md text-accent transition-colors motion-safe:duration-fade motion-safe:ease-out hover:bg-hover active:bg-pressed",
+      "rounded-tile px-md text-accent transition-control hover:bg-hover active:bg-pressed",
     pane: "rounded-control border border-border bg-card ps-md pe-list-row hover:tint-hover active:tint-pressed desktop:text-label desktop:min-block-pointer-button",
   } satisfies Record<AboutLook, string>;
 

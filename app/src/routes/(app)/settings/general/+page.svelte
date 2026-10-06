@@ -28,7 +28,7 @@
       href={resolve("/settings/general/language")}
       aria-describedby={onPhone ? hintId : undefined}
       class={[
-        "flex items-center gap-md rounded-list py-xs ps-lg pe-md transition-colors min-block-phone-row hover:bg-hover active:bg-pressed motion-safe:duration-fade motion-safe:ease-out",
+        "flex items-center gap-md rounded-list py-xs ps-lg pe-md transition-control min-block-phone-row hover:bg-hover active:bg-pressed",
         "touch:medium:py-none touch:medium:ps-list-row touch:medium:min-block-touch-target",
         "desktop:py-none desktop:ps-list-row desktop:min-block-settings-row",
       ]}

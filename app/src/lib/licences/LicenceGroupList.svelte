@@ -62,7 +62,7 @@
             package: licensed.key,
           })}
           class={[
-            "flex items-center transition-colors hover:bg-hover active:bg-pressed motion-safe:duration-fade motion-safe:ease-out",
+            "flex items-center transition-control hover:bg-hover active:bg-pressed",
             ROWS[look],
           ]}
         >
@@ -84,7 +84,7 @@
         <button
           type="button"
           class={[
-            "flex items-center text-start font-semibold text-accent transition-colors inline-full hover:bg-hover active:bg-pressed motion-safe:duration-fade motion-safe:ease-out",
+            "flex items-center text-start font-semibold text-accent transition-control inline-full hover:bg-hover active:bg-pressed",
             ROWS[look],
           ]}
           onclick={() => {

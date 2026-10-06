@@ -60,7 +60,7 @@
     <button
       type="button"
       aria-label={m.notice_dismiss()}
-      class="-me-sm -mbs-sm flex shrink-0 items-center justify-center rounded-full opacity-70 transition-opacity min-block-touch-target min-inline-touch-target before:absolute before:rounded-full before:transition-colors before:block-pointer-target before:inline-pointer-target hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed motion-safe:duration-fade motion-safe:ease-out motion-safe:before:duration-fade motion-safe:before:ease-out"
+      class="-me-sm -mbs-sm flex shrink-0 items-center justify-center rounded-full opacity-70 transition-opacity min-block-touch-target min-inline-touch-target before:absolute before:rounded-full before:transition-control before:block-pointer-target before:inline-pointer-target hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed motion-safe:before:duration-fade motion-safe:before:ease-out"
       onclick={onDismiss}
     >
       <X aria-hidden="true" size={DISMISS_ICON_SIZE} class="relative" />
@@ -72,7 +72,7 @@
         <button
           type="button"
           class={[
-            "rounded-full px-lg text-label font-bold transition-colors min-block-touch-target motion-safe:duration-fade motion-safe:ease-out medium:rounded-control",
+            "rounded-full px-lg text-label font-bold transition-control min-block-touch-target medium:rounded-control",
             EMPHASES[action.emphasis],
           ]}
           onclick={() => {

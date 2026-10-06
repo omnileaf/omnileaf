@@ -58,7 +58,7 @@
     {#each THEME_PREFERENCES as preference (preference)}
       <label
         class={[
-          "relative flex flex-1 items-center justify-center rounded-tile text-callout transition-colors block-option before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent motion-safe:duration-fade motion-safe:ease-out",
+          "relative flex flex-1 items-center justify-center rounded-tile text-callout transition-control block-option before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent",
           theme.preference === preference
             ? "bg-raised font-bold text-foreground shadow-raised"
             : "font-medium text-muted hover:bg-hover",

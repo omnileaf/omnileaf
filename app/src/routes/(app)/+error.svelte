@@ -14,7 +14,7 @@
 {#snippet goToLibrary()}
   <a
     href={resolve("/")}
-    class="flex items-center justify-center rounded-full bg-accent px-xl font-bold text-on-accent transition-colors min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed motion-safe:duration-fade motion-safe:ease-out medium:rounded-control"
+    class="flex items-center justify-center rounded-full bg-accent px-xl font-bold text-on-accent transition-control min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed medium:rounded-control"
   >
     {m.problem_go_to_library()}
   </a>

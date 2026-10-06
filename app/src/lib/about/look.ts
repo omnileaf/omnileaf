@@ -3,7 +3,7 @@ export type AboutLook = "phone" | "pane";
 export type HintKind = "prose" | "address";
 
 const ROW =
-  "flex inline-full items-center px-list-row text-start transition-colors motion-safe:duration-fade motion-safe:ease-out hover:bg-hover active:bg-pressed";
+  "flex inline-full items-center px-list-row text-start transition-control hover:bg-hover active:bg-pressed";
 
 export const ROW_LOOKS = {
   phone: `${ROW} gap-list-row py-sm min-block-4xl`,

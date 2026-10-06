@@ -33,7 +33,7 @@
   bind:this={element}
   type="button"
   class={[
-    "inline-flex shrink-0 items-center justify-center font-semibold transition-colors disabled:opacity-60 motion-safe:duration-fade motion-safe:ease-out",
+    "inline-flex shrink-0 items-center justify-center font-semibold transition-control disabled:opacity-60",
     LOOKS[placement],
   ]}
   disabled={adding.isAdding}
