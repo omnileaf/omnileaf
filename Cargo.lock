@@ -3078,6 +3078,9 @@ name = "omnileaf-engine"
 version = "0.0.0"
 dependencies = [
  "omnileaf-db",
+ "omnileaf-formats",
+ "omnileaf-sync-proto",
+ "omnileaf-testkit",
  "serde",
  "serde_json",
  "specta",

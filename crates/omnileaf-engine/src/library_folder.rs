@@ -8,7 +8,7 @@ use specta::{
 };
 use specta_typescript::Branded;
 
-use crate::folder_survey::folder_name;
+use crate::library_layout::folder_name;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]

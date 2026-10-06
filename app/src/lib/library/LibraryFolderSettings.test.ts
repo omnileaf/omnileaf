@@ -1,13 +1,14 @@
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
+import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import { commands, type LibraryFolder } from "$lib/ipc/bindings";
 import { Notices } from "$lib/notices/notices.svelte";
 
+import type { AddFolder } from "./add-folder";
 import LibraryFolderSettings from "./LibraryFolderSettings.svelte";
 
-type AddFolder = typeof commands.addLibraryFolder;
 type RemoveFolder = typeof commands.removeLibraryFolder;
 type FolderId = Parameters<RemoveFolder>[0];
 
@@ -102,7 +103,7 @@ test("shows the home folder apart from the linked folders", async () => {
   await expect.element(home.getByText("/data/Omnileaf")).toBeVisible();
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Comics /media/Sample Comics Remove");
+    .toHaveTextContent("Sample Comics /media/Sample Comics");
 });
 
 test("reads every page of folders", async () => {
@@ -122,7 +123,14 @@ test("lists a folder once it is added", async () => {
       library.push(COMICS);
       return Promise.resolve({
         status: "ok",
-        data: { name: COMICS.name, comicFiles: 3, unreadableFolders: 0 },
+        data: {
+          name: COMICS.name,
+          series: 3,
+          books: 7,
+          unreadableBooks: 0,
+          unsupportedBooks: 0,
+          unreadableFolders: 0,
+        },
       });
     },
   });
@@ -131,7 +139,27 @@ test("lists a folder once it is added", async () => {
 
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Comics /media/Sample Comics Remove");
+    .toHaveTextContent("Sample Comics /media/Sample Comics");
+});
+
+test("lists a folder that was saved before its scan failed", async () => {
+  const library = [HOME];
+  serveFolders(library);
+  const { folders } = await renderSettings({
+    addFolder: () => {
+      library.push(COMICS);
+      return Promise.resolve({
+        status: "error",
+        error: { code: "internal", message: "the scan stopped" },
+      });
+    },
+  });
+
+  await folders.getByRole("button", { name: "Add a folder" }).click();
+
+  await expect
+    .element(folders.getByRole("listitem"))
+    .toHaveTextContent("Sample Comics /media/Sample Comics");
 });
 
 test("says when the folders couldn't be loaded", async () => {
@@ -183,6 +211,28 @@ test("offers Remove on linked folders only", async () => {
   expect(home.getByRole("button").elements()).toHaveLength(0);
 });
 
+test("shows Remove as an icon with its verb as the tooltip", async () => {
+  serveFolders([HOME, COMICS]);
+
+  const { folders } = await renderSettings();
+
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+  await expect.element(remove).toHaveTextContent("");
+  await expect.element(remove).toHaveAttribute("title", "Remove");
+});
+
+test("reaches Remove from the keyboard", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders } = await renderSettings();
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+  await expect.element(remove).toBeVisible();
+  folders.getByRole("button", { name: "Add a folder" }).element().focus();
+
+  await userEvent.tab();
+
+  await expect.element(remove).toHaveFocus();
+});
+
 test("asks before removing a folder", async () => {
   const library = [HOME, COMICS];
   serveFolders(library);
@@ -208,7 +258,7 @@ test("removes the folder once the removal is confirmed", async () => {
 
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Manga /media/Sample Manga Remove");
+    .toHaveTextContent("Sample Manga /media/Sample Manga");
   expect(removed).toEqual([COMICS.id]);
   await expect.element(dialog).not.toBeInTheDocument();
 });
@@ -226,7 +276,7 @@ test("keeps the folder when the removal is cancelled", async () => {
   expect(removed).toEqual([]);
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Comics /media/Sample Comics Remove");
+    .toHaveTextContent("Sample Comics /media/Sample Comics");
 });
 
 test("says when a folder couldn't be removed", async () => {
@@ -265,6 +315,6 @@ test("drops a folder that was already removed without reporting a failure", asyn
 
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Manga /media/Sample Manga Remove");
+    .toHaveTextContent("Sample Manga /media/Sample Manga");
   await expect.element(folders.getByRole("alert")).not.toBeInTheDocument();
 });

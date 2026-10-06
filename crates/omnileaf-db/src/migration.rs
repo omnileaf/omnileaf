@@ -43,6 +43,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0006_create_book_state"),
     migration!("0007_stop_reusing_library_root_ids"),
     migration!("0008_allow_one_home_root"),
+    migration!("0009_store_book_file_locations_as_bytes"),
 ];
 
 pub(crate) fn pending(
@@ -392,6 +393,32 @@ mod tests {
             .collect::<Result<_, _>>()
             .unwrap();
         assert_eq!(file_roots, [7]);
+    }
+
+    #[test]
+    fn keeps_each_book_file_location_as_the_bytes_of_its_text() {
+        let scratch = ScratchLibrary::new("file-location-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..8]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO library_root (id, kind, locator_kind, location, added_at_ms)
+                 VALUES (7, 'linked', 'path', x'2f6d65646961', 0);
+                 INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0);
+                 INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), 1, 'Volume 01', x'', 0);
+                 INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
+                 VALUES (zeroblob(16), 7, 'Sample Series 01/Volume 01.cbz', 1, 0);",
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let location: Vec<u8> = connection
+            .query_row("SELECT location FROM book_file", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(location, b"Sample Series 01/Volume 01.cbz");
     }
 
     fn schema_of(path: &Path) -> Schema {

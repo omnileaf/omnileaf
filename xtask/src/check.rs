@@ -120,6 +120,24 @@ pub(crate) const STEPS: &[Step] = &[
         ],
     },
     Step {
+        name: "scan speed",
+        group: Group::Rust,
+        program: "cargo",
+        args: &[
+            "nextest",
+            "run",
+            "--package",
+            "omnileaf-engine",
+            "--test",
+            "scan_speed",
+            "--release",
+            "--run-ignored",
+            "only",
+            "--no-capture",
+            "--locked",
+        ],
+    },
+    Step {
         name: "webassembly",
         group: Group::Portable,
         program: "cargo",
@@ -417,7 +435,13 @@ mod tests {
     fn the_rust_group_keeps_only_the_checks_that_depend_on_the_platform() {
         assert_eq!(
             names_in(Group::Rust),
-            ["lint", "test", "listing speed", "title page speed"]
+            [
+                "lint",
+                "test",
+                "listing speed",
+                "title page speed",
+                "scan speed",
+            ]
         );
     }
 

@@ -5,18 +5,66 @@
   "library_empty_body": "Add a folder of comics, manga or books. Omnileaf reads it where it is.",
   "app_version": "Version {version}",
   "library_add_folder": "Add a folder",
-  "library_folder_found": [
+  "library_scan_finding": "Finding books",
+  "library_scan_progress": [
+    {
+      "declarations": [
+        "input scanned",
+        "input total",
+        "local totalPlural = total: plural",
+        "local formattedScanned = scanned: number",
+        "local formattedTotal = total: number"
+      ],
+      "selectors": ["totalPlural"],
+      "match": {
+        "totalPlural=one": "{formattedScanned} of {formattedTotal} book",
+        "totalPlural=other": "{formattedScanned} of {formattedTotal} books"
+      }
+    }
+  ],
+  "library_folder_scanned": [
+    {
+      "declarations": [
+        "input books",
+        "input series",
+        "input name",
+        "local booksPlural = books: plural",
+        "local formattedBooks = books: number",
+        "local formattedSeries = series: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "Found {formattedBooks} book in {formattedSeries} series in {name}.",
+        "booksPlural=other": "Found {formattedBooks} books in {formattedSeries} series in {name}."
+      }
+    }
+  ],
+  "library_folder_no_books": "Found no books in {name}.",
+  "library_folder_unreadable_books": [
     {
       "declarations": [
         "input count",
-        "input name",
         "local countPlural = count: plural",
         "local formattedCount = count: number"
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "Found {formattedCount} comic in {name}.",
-        "countPlural=other": "Found {formattedCount} comics in {name}."
+        "countPlural=one": "Couldn't read {formattedCount} book in it.",
+        "countPlural=other": "Couldn't read {formattedCount} books in it."
+      }
+    }
+  ],
+  "library_folder_unsupported_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} book is a CBR or CB7 file, which this version can't open yet.",
+        "countPlural=other": "{formattedCount} books are CBR or CB7 files, which this version can't open yet."
       }
     }
   ],
