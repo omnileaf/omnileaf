@@ -263,6 +263,7 @@
   --transition-duration-grow: 200ms;
   --transition-duration-slide: 350ms;
   --transition-duration-move: 300ms;
+  --transition-duration-spin: 1s;
 
   --ease-out: ease-out;
   --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
@@ -279,6 +280,7 @@
   --animate-gear-turn: gear-turn var(--transition-duration-move) var(--ease-out);
   --animate-notice-rise: notice-rise var(--transition-duration-grow)
     var(--ease-emphasized);
+  --animate-spin: spin var(--transition-duration-spin) linear infinite;
 
   @keyframes pill-grow {
     from {
@@ -319,6 +321,12 @@
   @keyframes gear-turn {
     to {
       rotate: 60deg;
+    }
+  }
+
+  @keyframes spin {
+    to {
+      rotate: 360deg;
     }
   }
 

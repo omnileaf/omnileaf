@@ -167,6 +167,71 @@
   "library_remove_folder_body": "⟦Íţš çöɱíçš ļéáṽé ýöûŕ ļíƀŕáŕý. Ţĥé ƒíļéš šţáý ŵĥéŕé ţĥéý áŕé.·························⟧",
   "library_remove_folder_cancel": "⟦Çáñçéļ···⟧",
   "library_remove_folder_failed": "⟦Çöûļðñ'ţ ŕéɱöṽé {name}. Ţŕý áĝáíñ.··············⟧",
+  "library_rescan_folder": "⟦Ŕéšçáñ···⟧",
+  "library_rescan_folder_label": "⟦Ŕéšçáñ {name}······⟧",
+  "library_rescan_checking": "⟦Çĥéçķíñĝ {name} ƒöŕ çĥáñĝéš···········⟧",
+  "library_rescan_up_to_date": "⟦{name} íš ûþ ţö ðáţé.·········⟧",
+  "library_rescan_done": "⟦Ŕéšçáññéð {name}.·······⟧",
+  "library_rescan_added": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ áððéð.············⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš áððéð.············⟧"
+      }
+    }
+  ],
+  "library_rescan_updated": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ ûþðáţéð.············⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš ûþðáţéð.·············⟧"
+      }
+    }
+  ],
+  "library_rescan_moved": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ ɱöṽéð öŕ ŕéñáɱéð.················⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš ɱöṽéð öŕ ŕéñáɱéð.················⟧"
+      }
+    }
+  ],
+  "library_rescan_removed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ ŕéɱöṽéð.············⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš ŕéɱöṽéð.·············⟧"
+      }
+    }
+  ],
+  "library_rescan_unreachable": "⟦{name} íšñ'ţ áṽáíļáƀļé. Íţš ƀööķš šţáý íñ ýöûŕ ļíƀŕáŕý ûñţíļ íţ'š ƀáçķ.·····························⟧",
+  "library_rescan_found_empty": "⟦Ƒöûñð ñö ƀööķš íñ {name}. Íţš ƀööķš šţáý íñ ýöûŕ ļíƀŕáŕý íñ çášé íţš ðŕíṽé íšñ'ţ çöññéçţéð.·····································⟧",
+  "library_rescan_failed": "⟦Çöûļðñ'ţ ŕéšçáñ {name}. Ţŕý áĝáíñ.··············⟧",
+  "library_folder_unavailable": "⟦Ñöţ áṽáíļáƀļé······⟧",
   "appearance_title": "⟦Áþþéáŕáñçé····⟧",
   "appearance_light_or_dark": "⟦Ļíĝĥţ öŕ ðáŕķ······⟧",
   "appearance_system_hint": "⟦Šýšţéɱ ƒöļļöŵš ţĥé ðéṽíçé'š šéţţíñĝ áñð çĥáñĝéš ŵíţĥ íţ.·······················⟧",

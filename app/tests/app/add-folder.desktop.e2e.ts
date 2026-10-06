@@ -23,6 +23,12 @@ const FOLDERS_WITHOUT_LINKED_FOLDERS = xpath(
   "//section[.//h2[normalize-space()='Folders']][not(.//li)]",
 );
 const FOLDERS_SECTION = xpath("//section[.//h2[normalize-space()='Folders']]");
+const RESCAN_SAMPLE_LIBRARY = xpath(
+  `//button[@aria-label='Rescan ${SAMPLE_LIBRARY.name}']`,
+);
+const UP_TO_DATE_REPORT = xpath(
+  `//*[@role='status']/p[normalize-space()='${SAMPLE_LIBRARY.name} is up to date.']`,
+);
 const LOADED_HOME_FOLDER = xpath(
   "//section[.//h2[normalize-space()='Home folder']]//p[normalize-space()='Omnileaf']",
 );
@@ -69,4 +75,15 @@ test("removes a folder from Settings › Library once the removal is confirmed",
   await appSession().waitFor(LOADED_HOME_FOLDER);
   const folders = await appSession().waitFor(FOLDERS_SECTION);
   expect(await folders.text()).not.toContain(SAMPLE_LIBRARY.name);
+});
+
+test("rescans a folder from Settings › Library and finds nothing changed", async () => {
+  await openLibrarySettings();
+  await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
+  await appSession().waitFor(FINISHED_SCAN_REPORT);
+
+  await (await appSession().waitFor(RESCAN_SAMPLE_LIBRARY)).click();
+
+  const report = await appSession().waitFor(UP_TO_DATE_REPORT);
+  expect(await report.text()).toBe(`${SAMPLE_LIBRARY.name} is up to date.`);
 });

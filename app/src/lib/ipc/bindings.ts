@@ -17,6 +17,8 @@ export const commands = {
 	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
+	rescanLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<FolderRescan, IpcError>(__TAURI_INVOKE("rescan_library_folder", { id, onProgress })),
+	rescanLibraryFolders: () => typedError<FolderRescan[], IpcError>(__TAURI_INVOKE("rescan_library_folders")),
 	firstLaunchFinished: () => typedError<boolean, IpcError>(__TAURI_INVOKE("first_launch_finished")),
 	finishFirstLaunch: () => typedError<null, IpcError>(__TAURI_INVOKE("finish_first_launch")),
 	setAppLanguage: (language: string) => typedError<null, IpcError>(__TAURI_INVOKE("set_app_language", { language })),
@@ -31,12 +33,34 @@ export type AppInfo = {
 	sourceCode: string,
 };
 
+/**  The book files a rescan found added, changed, moved or gone since the folder was last read. */
+export type FileChanges = {
+	added: number,
+	/**  Includes a file that now holds another book. */
+	updated: number,
+	/**  Found at a new place with the same content, so the book keeps its id and reading state. */
+	moved: number,
+	/**  Books left with no file anywhere once theirs here went, so deleting one of two copies removes none. */
+	removed: number,
+	unreadableBooks: number,
+	/**  Books in an archive format this version recognises but can't open yet, such as CBR. */
+	unsupportedBooks: number,
+	unreadableFolders: number,
+};
+
 export type FolderKind = "home" | "linked";
 
 export type FolderPage = {
 	folders: LibraryFolder[],
 	/**  Absent on the last page. */
 	next: string & { readonly __brand: "FolderCursor" } | null,
+};
+
+/**  What a rescan of one library folder found. */
+export type FolderRescan = {
+	id: string & { readonly __brand: "FolderId" },
+	name: string,
+	outcome: RescanOutcome,
 };
 
 export type FolderScan = {
@@ -61,12 +85,22 @@ export type LibraryFolder = {
 	kind: FolderKind,
 	name: string,
 	location: string,
+	/**  False since a rescan last found the folder missing, unreadable or empty of the books it held. */
+	isAvailable: boolean,
 };
 
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
 /**  The project's pages the app opens in the system browser; the interface names one, never a URL. */
 export type ProjectLink = "sourceCode" | "newIssue";
+
+export type RescanOutcome = {
+	kind: "rescanned",
+} & FileChanges | 
+/**  The folder couldn't be read, so every book found in it before stays. */
+{ kind: "unreachable" } | 
+/**  The linked folder held no books where the library had some, as an unplugged drive's empty mount point does, so they stay. */
+{ kind: "foundEmpty" };
 
 /**  How far a scan has got: still finding the books in the folder, or reading the ones it found. */
 export type ScanProgress = { stage: "finding" } | { stage: "reading"; scanned: number; total: number };

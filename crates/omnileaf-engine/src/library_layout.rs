@@ -21,7 +21,19 @@ pub(crate) struct FoundBook {
 pub(crate) struct Layout {
     /// In path order, so a scan always meets them in the same order.
     pub(crate) books: Vec<FoundBook>,
-    pub(crate) unreadable_folders: u32,
+    /// Each folder the walk couldn't read in full, so nothing under it can be told gone.
+    pub(crate) unreadable_folders: Vec<PathBuf>,
+}
+
+/// What one entry of a folder is to the walk.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum EntryKind {
+    Folder,
+    Comic,
+    Page,
+    /// Its kind couldn't be read, so it may be a folder or a book.
+    Unreadable,
+    Other,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -39,7 +51,7 @@ pub(crate) fn find_books(root: &Path) -> io::Result<Layout> {
         match fs::read_dir(&folder) {
             Ok(entries) => layout.take_in(&folder, place, entries, &mut pending),
             Err(error) if place == Place::Root => return Err(error),
-            Err(_) => layout.count_unreadable_folder(),
+            Err(_) => layout.unreadable_folders.push(folder),
         }
     }
     layout
@@ -60,7 +72,7 @@ impl Layout {
         let mut holds_comics = false;
         for entry in entries {
             let Ok(entry) = entry else {
-                self.count_unreadable_folder();
+                self.note_unreadable(folder);
                 continue;
             };
             let file_name = entry.file_name();
@@ -68,9 +80,9 @@ impl Layout {
             if is_ignored(&name) {
                 continue;
             }
-            match entry.file_type() {
-                Ok(kind) if kind.is_dir() => pending.push((entry.path(), place.inner())),
-                Ok(kind) if kind.is_file() && is_comic(&file_name) => {
+            match EntryKind::of(&entry.file_type(), &file_name) {
+                EntryKind::Folder => pending.push((entry.path(), place.inner())),
+                EntryKind::Comic => {
                     holds_comics = true;
                     let path = entry.path();
                     let title = file_stem(&path);
@@ -84,8 +96,9 @@ impl Layout {
                         title,
                     });
                 }
-                Ok(kind) if kind.is_file() && is_page_image(&name) => holds_pages = true,
-                _ => {}
+                EntryKind::Page => holds_pages = true,
+                EntryKind::Unreadable => self.note_unreadable(folder),
+                EntryKind::Other => {}
             }
         }
         let is_book_of_images = holds_pages && !holds_comics;
@@ -104,8 +117,23 @@ impl Layout {
         }
     }
 
-    fn count_unreadable_folder(&mut self) {
-        self.unreadable_folders = self.unreadable_folders.saturating_add(1);
+    /// Counts each folder once, however many of its entries failed.
+    fn note_unreadable(&mut self, folder: &Path) {
+        if self.unreadable_folders.last().map(PathBuf::as_path) != Some(folder) {
+            self.unreadable_folders.push(folder.to_path_buf());
+        }
+    }
+}
+
+impl EntryKind {
+    fn of(file_type: &io::Result<fs::FileType>, file_name: &OsStr) -> Self {
+        match file_type {
+            Err(_) => Self::Unreadable,
+            Ok(kind) if kind.is_dir() => Self::Folder,
+            Ok(kind) if kind.is_file() && is_comic(file_name) => Self::Comic,
+            Ok(kind) if kind.is_file() && is_page_image(&file_name.to_string_lossy()) => Self::Page,
+            _ => Self::Other,
+        }
     }
 }
 
@@ -141,4 +169,18 @@ fn is_comic(name: &OsStr) -> bool {
                 .iter()
                 .any(|comic| extension.eq_ignore_ascii_case(comic))
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reads_an_entry_whose_kind_cannot_be_read_as_unreadable_rather_than_not_a_book() {
+        let failed = Err(io::Error::from(io::ErrorKind::PermissionDenied));
+
+        let kind = EntryKind::of(&failed, OsStr::new("v01.cbz"));
+
+        assert_eq!(kind, EntryKind::Unreadable);
+    }
 }

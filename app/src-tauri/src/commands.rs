@@ -1,8 +1,8 @@
 //! The commands the interface calls, and the TypeScript bindings generated from them.
 
 use omnileaf_engine::{
-    AppInfo, AppLanguage, Core, FolderCursor, FolderId, FolderPage, FolderScan, Library,
-    ProjectLink, ScanProgress,
+    AppInfo, AppLanguage, Core, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan,
+    Library, ProjectLink, ScanProgress,
 };
 use tauri::{AppHandle, Manager, State, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -23,6 +23,8 @@ pub(crate) fn builder() -> Builder<Wry> {
         match_system_bars,
         library_folders,
         remove_library_folder,
+        rescan_library_folder,
+        rescan_library_folders,
         first_launch_finished,
         finish_first_launch,
         set_app_language,
@@ -54,12 +56,37 @@ async fn add_library_folder(
     let Some(folder) = picked else {
         return Ok(None);
     };
-    let report = move |progress| {
+    Ok(Some(
+        library
+            .add_folder(folder, reporting_to(on_progress))
+            .await?,
+    ))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn rescan_library_folder(
+    library: State<'_, Library>,
+    id: FolderId,
+    on_progress: Channel<ScanProgress>,
+) -> Result<FolderRescan, IpcError> {
+    Ok(library.rescan_folder(id, reporting_to(on_progress)).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn rescan_library_folders(
+    library: State<'_, Library>,
+) -> Result<Vec<FolderRescan>, IpcError> {
+    Ok(library.rescan_folders().await?)
+}
+
+fn reporting_to(on_progress: Channel<ScanProgress>) -> impl FnMut(ScanProgress) + Send {
+    move |progress| {
         if let Err(error) = on_progress.send(progress) {
             tracing::debug!(%error, "the interface stopped listening for scan progress");
         }
-    };
-    Ok(Some(library.add_folder(folder, report).await?))
+    }
 }
 
 #[tauri::command]

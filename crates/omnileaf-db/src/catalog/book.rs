@@ -3,16 +3,29 @@ use rusqlite::Transaction;
 
 use crate::{Error, book_order::book_order_key};
 
-const ADD_BOOK: &str = "INSERT INTO book (
-        id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind
-    )
-    SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7 FROM series WHERE id = ?2";
-const ADD_BOOK_UNLESS_PRESENT: &str = "INSERT INTO book (
-        id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind
-    )
-    SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7 FROM series WHERE id = ?2
-    ON CONFLICT (id) DO NOTHING";
+macro_rules! insert_book {
+    ($on_conflict:literal) => {
+        concat!(
+            "INSERT INTO book (
+                id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind
+            )
+            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7 FROM series WHERE id = ?2",
+            $on_conflict
+        )
+    };
+}
+
+const ADD_BOOK: &str = insert_book!("");
+const ADD_BOOK_UNLESS_PRESENT: &str = insert_book!(" ON CONFLICT (id) DO NOTHING");
+const ADD_OR_REFILE_BOOK: &str = insert_book!(
+    " ON CONFLICT (id) DO UPDATE SET
+        series_local_id = excluded.series_local_id,
+        title = excluded.title,
+        title_sort_key = excluded.title_sort_key"
+);
 const SERIES_EXISTS: &str = "SELECT EXISTS (SELECT 1 FROM series WHERE id = ?1)";
+const REMOVE_BOOK_WITHOUT_FILES: &str = "DELETE FROM book
+    WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM book_file WHERE book_id = ?1)";
 
 #[derive(Clone, Debug)]
 pub struct NewBook {
@@ -48,6 +61,31 @@ pub(crate) fn add_book_unless_present(
         return Err(Error::UnknownSeries { id: book.series });
     }
     Ok(())
+}
+
+/// Moves a book already in the catalog into `book`'s series under its title, keeping when it was added, and fails like [`add_book`] when that series is missing.
+pub(crate) fn add_or_refile_book(
+    transaction: &Transaction<'_>,
+    book: &NewBook,
+) -> Result<(), Error> {
+    if insert(transaction, book, ADD_OR_REFILE_BOOK)? == 0 {
+        return Err(Error::UnknownSeries { id: book.series });
+    }
+    Ok(())
+}
+
+/// Deletes each of `books` that no file in any root holds any more, leaving its synced reading state for when it is found again, and returns how many it deleted.
+#[tracing::instrument(skip_all, fields(books = books.len()))]
+pub fn remove_books_without_files(
+    transaction: &Transaction<'_>,
+    books: &[BookId],
+) -> Result<usize, Error> {
+    let mut remove = transaction.prepare(REMOVE_BOOK_WITHOUT_FILES)?;
+    let mut removed = 0;
+    for book in books {
+        removed = remove.execute([book.as_bytes()])?.saturating_add(removed);
+    }
+    Ok(removed)
 }
 
 fn series_exists(transaction: &Transaction<'_>, series: SeriesId) -> Result<bool, Error> {
@@ -114,6 +152,23 @@ mod tests {
                 "SCAN CONSTANT ROW",
                 "SCALAR SUBQUERY 1",
                 "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)"
+            ]
+        );
+    }
+
+    #[test]
+    fn checks_a_book_for_files_through_their_book_index() {
+        let scratch = ScratchLibrary::new("remove-fileless-book-plan");
+
+        let plan = scratch.query_plan(REMOVE_BOOK_WITHOUT_FILES);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH book USING PRIMARY KEY (id=?)",
+                "SCALAR SUBQUERY 1",
+                "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
+                "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)"
             ]
         );
     }
