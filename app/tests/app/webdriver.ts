@@ -6,6 +6,7 @@ const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 const STALE_ELEMENT = "stale element reference";
 const ELEMENT_TIMEOUT_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 30_000;
+const SCRIPT_TIMEOUT_MS = 2_000;
 const SESSION_START_TIMEOUT_MS = 300_000;
 const POLL_INTERVAL_MS = 100;
 const WHITESPACE_RUN = /\s+/g;
@@ -157,7 +158,9 @@ export class Session {
       SESSION_START_TIMEOUT_MS,
     );
     const id = requireString(property(created, "sessionId"), "session id");
-    return new Session(new URL(`session/${id}`, server).href);
+    const session = new Session(new URL(`session/${id}`, server).href);
+    await session.limitScriptsTo(SCRIPT_TIMEOUT_MS);
+    return session;
   }
 
   /** Waits for the first match the page displays, since some layouts keep a hidden copy of a control. */
@@ -231,6 +234,11 @@ export class Session {
 
   async end(): Promise<void> {
     await send(this.endpoint, "DELETE");
+  }
+
+  /** A script's answer is lost when its page unloads, and the driver otherwise waits 30 s for it, as long as a test may run. */
+  private async limitScriptsTo(timeoutMs: number): Promise<void> {
+    await send(`${this.endpoint}/timeouts`, "POST", { script: timeoutMs });
   }
 
   private async describeCurrentPage(): Promise<string> {

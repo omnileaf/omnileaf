@@ -38,10 +38,31 @@ function reply(response: ServerResponse, status: number, value: unknown) {
 
 type Handler = (route: string, response: ServerResponse) => void;
 
-async function serve(handle: Handler): Promise<URL> {
+const SESSION_TIMEOUTS = /^POST \/session\/[^/]+\/timeouts$/;
+
+async function bodyOf(request: IncomingMessage): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of request) {
+    chunks.push(chunk as Buffer);
+  }
+  return Buffer.concat(chunks).toString();
+}
+
+/** Serves `handle`'s routes, answering every session's timeouts itself and recording each one set in `timeoutsSet`. */
+async function serve(
+  handle: Handler,
+  timeoutsSet: unknown[] = [],
+): Promise<URL> {
   const server = createServer((request: IncomingMessage, response) => {
-    request.resume();
-    handle(`${request.method ?? ""} ${request.url ?? ""}`, response);
+    const route = `${request.method ?? ""} ${request.url ?? ""}`;
+    void bodyOf(request).then((body) => {
+      if (SESSION_TIMEOUTS.test(route)) {
+        timeoutsSet.push(JSON.parse(body));
+        reply(response, 200, null);
+      } else {
+        handle(route, response);
+      }
+    });
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   onTestFinished(
@@ -102,6 +123,17 @@ test("reloads the page and waits for the fresh one", async () => {
   await session.reload();
 
   expect(scriptsRun).toBe(1 + OLD_PAGE_CHECKS + 1);
+});
+
+test("gives up on a script after two seconds, so a page that unloads mid-script can't hold the session", async () => {
+  const timeoutsSet: unknown[] = [];
+  const server = await serve((_route, response) => {
+    reply(response, 200, { sessionId: "blank" });
+  }, timeoutsSet);
+
+  await Session.start(server, {});
+
+  expect(timeoutsSet).toEqual([{ script: 2_000 }]);
 });
 
 test("passes over a hidden match for the one the page shows", async () => {
