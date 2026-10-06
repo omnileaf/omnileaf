@@ -1,0 +1,86 @@
+language: en-GB
+tone_instructions: "Plain words and short sentences, no praise or filler. Name the file and line, say what breaks and the smallest fix. Hold the change to docs/code-standards.md and CONTRIBUTING.md. British spelling."
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  review_status: true
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: false
+  estimate_code_review_effort: true
+  assess_linked_issues: false
+  related_issues: false
+  related_prs: true
+  suggested_labels: false
+  suggested_reviewers: false
+  in_progress_fortune: false
+  poem: false
+  enable_prompt_for_ai_agents: true
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+    base_branches:
+      - "feat/.*"
+      - "fix/.*"
+      - "refactor/.*"
+      - "perf/.*"
+      - "test/.*"
+      - "build/.*"
+      - "ci/.*"
+      - "chore/.*"
+      - "docs/.*"
+    ignore_usernames:
+      - "dependabot[bot]"
+  path_filters:
+    - "!app/src/lib/ipc/bindings.ts"
+    - "!app/src/lib/licences/**"
+    - "!app/src/lib/paraglide/**"
+    - "!app/messages/en-XA.json"
+    - "!app/src-tauri/gen/**"
+    - "!app/src-tauri/icons/**"
+    - "!**/Cargo.lock"
+    - "!pnpm-lock.yaml"
+  path_instructions:
+    - path: "**"
+      instructions: "No inline comments, TODOs, FIXMEs or commented-out code; a doc comment only for a non-obvious why, one sentence at most. Every bug fix starts with a test that reproduces it and every new behaviour with a test that pins it. Flag anything that leaves a stub, a skipped test or an unexplained lint suppression."
+    - path: "**/*.rs"
+      instructions: "No unwrap, expect, panic, todo or unimplemented outside tests. Libraries return a thiserror enum, binaries use anyhow with context naming what was attempted. A lint is silenced only with #[expect(..., reason = ...)]. Log through tracing, never println. Use .get() and checked arithmetic on anything untrusted. Match the crate's own enums without a wildcard arm."
+    - path: "app/src/**/*.{ts,svelte}"
+      instructions: "Strict TypeScript: no as casts beyond as const, no non-null assertions, no @ts-ignore. State is a discriminated union matched exhaustively. Named exports only. Every promise is awaited or returned. User-facing text goes through paraglide messages (m.*), never a literal string. Styling uses the tokens in app/src/app.css, never arbitrary Tailwind values. Every control is labelled and reachable by keyboard."
+    - path: "app/**/*.{test,spec,e2e}.ts"
+      instructions: "One behaviour per test, named for that behaviour, with Arrange, Act and Assert separated by blank lines. Deterministic: no sleeps, a fixed clock, no real network. A browser spec that depends on text width must pass with CI's Ubuntu fonts, which are wider than local ones. Never loosen an assertion or raise a timeout to get green."
+    - path: "app/messages/en.json"
+      instructions: "A new or changed message needs app/messages/en-XA.json regenerated with pnpm --dir app pseudo-locale in the same change, and the pseudo-locale text must still fit the 600px two-pane layout."
+    - path: "{**/Cargo.toml,app/package.json,about.toml,deny.toml}"
+      instructions: "A changed dependency needs cargo xtask licences run and both licence catalogues under app/src/lib/licences committed. Every third-party crate must be permissively licensed or MPL-2.0, come from crates.io and have no open advisory. Keep about.toml and deny.toml in step."
+    - path: ".github/workflows/**"
+      instructions: "Every action is pinned to a commit SHA with its version in a comment. A new or renamed job must be added to the protect main ruleset's required checks, or pull requests cannot merge. rust-cache steps save only from main to stay inside the 10 GB cache budget."
+    - path: "**/*.md"
+      instructions: "Short sentences, British spelling, no marketing words. Docs move with the code they describe, in the same change."
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    title:
+      mode: warning
+      requirements: "A Conventional Commits 1.0.0 subject: type(scope): imperative, lowercase, no trailing period, at most 72 characters."
+    description:
+      mode: "off"
+    issue_assessment:
+      mode: "off"
+  finishing_touches:
+    docstrings:
+      enabled: false
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "docs/code-standards.md"
+      - "CONTRIBUTING.md"
