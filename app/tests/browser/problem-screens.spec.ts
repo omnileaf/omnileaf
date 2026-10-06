@@ -17,6 +17,7 @@ const TITLE_SIZE = "24px";
 const TITLE_LINE_HEIGHT = 30;
 const WELL = "rgb(243, 240, 233)";
 const MUTED = "rgb(95, 91, 82)";
+const ACCENT_SOFT = "rgb(221, 235, 226)";
 const DETAIL_CORNER = "12px";
 const BODY_LINE_HEIGHT_RATIO = 1.5;
 
@@ -127,7 +128,7 @@ test("sets the problem's title at 24px beside a round badge", async ({
     titleBox.y + titleBox.height / 2,
     0,
   );
-  await expect(badge).toHaveCSS("background-color", "rgb(221, 235, 226)");
+  await expect(badge).toHaveCSS("background-color", ACCENT_SOFT);
 });
 
 test("explains the problem in muted ink with its details on the well", async ({
