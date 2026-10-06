@@ -365,3 +365,26 @@ async fn keeps_the_title_order_when_the_app_s_language_is_the_one_titles_sort_by
 
     assert!(changes.try_recv().is_err());
 }
+
+#[tokio::test]
+async fn knows_a_library_a_newer_version_wrote() {
+    let home = TempFolder::new("library-from-a-newer-version");
+    drop(open(home.path()).await);
+    let database =
+        omnileaf_db::rusqlite::Connection::open(home.path().join("library.sqlite")).unwrap();
+    database.pragma_update(None, "user_version", 9999).unwrap();
+    drop(database);
+
+    let refused = Library::open(home.path().to_path_buf(), FixedClock).await;
+
+    assert!(refused.is_err_and(|error| error.was_written_by_a_newer_version()));
+}
+
+#[test]
+fn does_not_take_another_failure_for_a_newer_library() {
+    let error = LibraryError::FolderNotFound {
+        id: "7".parse().unwrap(),
+    };
+
+    assert!(!error.was_written_by_a_newer_version());
+}
