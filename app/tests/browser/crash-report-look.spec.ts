@@ -157,6 +157,22 @@ test.describe("on desktop, the crash report dialog", () => {
     );
   });
 
+  test("ends its padding below the buttons while nothing failed", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const card = await boxOf(prompt(page));
+    const send = await boxOf(
+      prompt(page).getByRole("button", { name: "Send report" }),
+    );
+    const edge =
+      Number.parseFloat(await styleOf(prompt(page), "padding-block-end")) +
+      Number.parseFloat(await styleOf(prompt(page), "border-bottom-width"));
+
+    expect(card.y + card.height - (send.y + send.height)).toBe(edge);
+  });
+
   test("offers Copy details as a text button at the start", async ({
     page,
   }) => {

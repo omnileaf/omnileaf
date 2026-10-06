@@ -13,10 +13,12 @@
   const failure = $derived(
     reporting.prompt.kind === "asking" ? reporting.prompt.failure : undefined,
   );
+  const isCopyFailed = $derived(reporting.copying.outcome === "failed");
+  const isQuiet = $derived(!isCopyFailed && failure === undefined);
 </script>
 
-<div role="alert" class="text-footnote">
-  {#if reporting.copying.outcome === "failed"}
+<div role="alert" class={["text-footnote", isQuiet && "-mbs-dialog-gap"]}>
+  {#if isCopyFailed}
     <p>{m.crash_report_copy_failed()}</p>
   {/if}
   {#if failure !== undefined}
