@@ -13,6 +13,12 @@ const LIBRARY_LINK_WHEN_CURRENT = xpath(
   `${LIBRARY_LINK.value}[@aria-current='page']`,
 );
 
+/** Opens the library page and waits until the navigation marks it current, so nothing found afterwards belongs to the page before. */
+export async function openLibraryPage(session: Session): Promise<void> {
+  await (await session.waitFor(LIBRARY_LINK)).click();
+  await session.waitFor(LIBRARY_LINK_WHEN_CURRENT);
+}
+
 /** Opens one WebDriver session for the calling spec file's tests, starts each of them on the library page, and ends it after them. */
 export function useAppSession(): () => Session {
   let session: Session | undefined;
@@ -23,9 +29,7 @@ export function useAppSession(): () => Session {
   });
 
   beforeEach(async () => {
-    const started = appSession();
-    await (await started.waitFor(LIBRARY_LINK)).click();
-    await started.waitFor(LIBRARY_LINK_WHEN_CURRENT);
+    await openLibraryPage(appSession());
   });
 
   afterAll(async () => {
