@@ -245,7 +245,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install the test browser
-        run: pnpm --dir app exec playwright install --with-deps chromium
+        uses: ./.github/actions/playwright-browsers
+        with:
+          browsers: chromium
 
       - name: Install the pinned toolchain
         run: rustup toolchain install
@@ -284,7 +286,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install the test browsers
-        run: pnpm --dir app exec playwright install --with-deps chromium webkit
+        uses: ./.github/actions/playwright-browsers
+        with:
+          browsers: chromium webkit
 
       - name: Install the pinned toolchain
         run: rustup toolchain install
