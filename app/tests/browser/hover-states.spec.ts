@@ -23,6 +23,7 @@ const WITH_A_LINKED_FOLDER: FakeBackend = {
         kind: "linked",
         name: "Sample Comics",
         location: "/media/Sample Comics",
+        isAvailable: true,
       },
     ],
     next: null,
