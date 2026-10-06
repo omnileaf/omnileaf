@@ -35,10 +35,10 @@
                 href={resolve(section.route)}
                 aria-current={current}
                 class={[
-                  "flex items-center gap-md rounded-control px-md text-label min-block-touch-target desktop:min-block-settings-row",
+                  "flex items-center gap-md rounded-control px-md text-label transition-colors min-block-touch-target motion-safe:duration-fade motion-safe:ease-out desktop:min-block-settings-row",
                   current !== undefined
                     ? "bg-accent-soft font-bold text-accent"
-                    : "font-medium text-sidebar-ink",
+                    : "font-medium text-sidebar-ink hover:bg-hover active:bg-pressed",
                 ]}
               >
                 <section.icon size={ICON_SIZE} class="shrink-0" />

@@ -42,7 +42,7 @@
   aria-labelledby="{id}-label"
   aria-describedby="{id}-description"
   class={[
-    "flex items-center gap-md px-lg py-md text-start inline-full min-block-touch-target focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
+    "flex items-center gap-md px-lg py-md text-start inline-full min-block-touch-target hover:tint-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent active:tint-pressed",
     className,
   ]}
   onclick={onToggle}

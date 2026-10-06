@@ -34,7 +34,7 @@
   <button
     type="button"
     aria-keyshortcuts={shortcut.keys}
-    class="shrink-0 rounded-control bg-toast-action px-lg text-label font-bold text-on-toast-action min-block-touch-target"
+    class="shrink-0 rounded-control bg-toast-action px-lg text-label font-bold text-on-toast-action transition-colors min-block-touch-target hover:bg-toast-action-hover active:bg-toast-action-pressed motion-safe:duration-fade motion-safe:ease-out"
     onclick={onUndo}
   >
     {m.undo_action()}
@@ -48,9 +48,9 @@
   <button
     type="button"
     aria-label={m.notice_dismiss()}
-    class="hidden shrink-0 items-center justify-center rounded-full text-toast-muted min-block-touch-target min-inline-touch-target medium:flex"
+    class="hidden shrink-0 items-center justify-center rounded-full text-toast-muted transition-colors min-block-touch-target min-inline-touch-target before:absolute before:rounded-full before:transition-colors before:block-pointer-target before:inline-pointer-target hover:text-on-toast hover:before:bg-toast-hover active:text-on-toast active:before:bg-toast-pressed motion-safe:duration-fade motion-safe:ease-out motion-safe:before:duration-fade motion-safe:before:ease-out medium:flex"
     onclick={onDismiss}
   >
-    <X aria-hidden="true" size={DISMISS_ICON_SIZE} />
+    <X aria-hidden="true" size={DISMISS_ICON_SIZE} class="relative" />
   </button>
 </div>

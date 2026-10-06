@@ -61,7 +61,10 @@
           href={resolve("/(app)/settings/about/licences/[...package]", {
             package: licensed.key,
           })}
-          class={["flex items-center", ROWS[look]]}
+          class={[
+            "flex items-center transition-colors hover:bg-hover active:bg-pressed motion-safe:duration-fade motion-safe:ease-out",
+            ROWS[look],
+          ]}
         >
           <span class="flex-1 truncate font-medium">
             <bdi translate="no">{licensed.name}</bdi>
@@ -81,7 +84,7 @@
         <button
           type="button"
           class={[
-            "flex items-center text-start font-semibold text-accent inline-full",
+            "flex items-center text-start font-semibold text-accent transition-colors inline-full hover:bg-hover active:bg-pressed motion-safe:duration-fade motion-safe:ease-out",
             ROWS[look],
           ]}
           onclick={() => {
