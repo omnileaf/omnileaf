@@ -8,6 +8,7 @@
   import type { AddFolder } from "./add-folder";
   import HomeFolder from "./HomeFolder.svelte";
   import {
+    type CountFolderBooks,
     LibraryFolders,
     type ListFolders,
     type RemoveFolder,
@@ -21,6 +22,7 @@
   let {
     listFolders,
     removeFolder,
+    countFolderBooks,
     addFolder,
     rescanFolder,
     notices,
@@ -28,6 +30,7 @@
   }: {
     listFolders: ListFolders;
     removeFolder: RemoveFolder;
+    countFolderBooks: CountFolderBooks;
     addFolder: AddFolder;
     rescanFolder: RescanFolder;
     notices: Notices;
@@ -37,6 +40,7 @@
   const folders = new LibraryFolders(
     (after) => listFolders(after),
     (id) => removeFolder(id),
+    (id) => countFolderBooks(id),
   );
   const rescans = new Rescans((id, onProgress) => rescanFolder(id, onProgress));
 

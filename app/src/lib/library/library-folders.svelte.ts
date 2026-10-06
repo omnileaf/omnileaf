@@ -2,6 +2,7 @@ import type { commands, FolderPage, LibraryFolder } from "$lib/ipc/bindings";
 
 export type ListFolders = typeof commands.libraryFolders;
 export type RemoveFolder = typeof commands.removeLibraryFolder;
+export type CountFolderBooks = typeof commands.libraryFolderBookCount;
 
 export type FolderList =
   | { readonly kind: "loading" }
@@ -23,6 +24,7 @@ export class LibraryFolders {
   constructor(
     private readonly listFolders: ListFolders,
     private readonly removeFolder: RemoveFolder,
+    private readonly countFolderBooks: CountFolderBooks,
   ) {}
 
   /** Only the most recently started load shows its list, so a slower older one can't bring back stale folders. */
@@ -60,5 +62,11 @@ export class LibraryFolders {
     }
     await this.load();
     return "removed";
+  }
+
+  /** Leaves the count out when it couldn't be read, since it only adds detail to what the folder is. */
+  async countBooks(folder: LibraryFolder): Promise<number | undefined> {
+    const result = await this.countFolderBooks(folder.id);
+    return result.status === "ok" ? result.data : undefined;
   }
 }

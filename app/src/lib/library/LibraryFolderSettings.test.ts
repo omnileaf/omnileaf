@@ -17,6 +17,7 @@ import LibraryFolderSettings from "./LibraryFolderSettings.svelte";
 import type { RescanFolder } from "./rescan-folder";
 
 type RemoveFolder = typeof commands.removeLibraryFolder;
+type CountFolderBooks = typeof commands.libraryFolderBookCount;
 type FolderId = Parameters<RemoveFolder>[0];
 
 type WireFolder = Omit<LibraryFolder, "id"> & { readonly id: string };
@@ -47,6 +48,9 @@ const NOTHING_PICKED: AddFolder = () =>
   Promise.resolve({ status: "ok", data: null });
 const NOTHING_REMOVED: RemoveFolder = () =>
   Promise.resolve({ status: "ok", data: null });
+const BOOKS_IN_COMICS = 342;
+const COUNTED: CountFolderBooks = () =>
+  Promise.resolve({ status: "ok", data: BOOKS_IN_COMICS });
 const NO_CHANGES: FileChanges = {
   added: 0,
   updated: 0,
@@ -133,14 +137,17 @@ async function renderSettings({
   addFolder = NOTHING_PICKED,
   removeFolder = NOTHING_REMOVED,
   rescanFolder = NOTHING_CHANGED,
+  countFolderBooks = COUNTED,
 }: {
   addFolder?: AddFolder;
   removeFolder?: RemoveFolder;
   rescanFolder?: RescanFolder;
+  countFolderBooks?: CountFolderBooks;
 } = {}) {
   const screen = await render(LibraryFolderSettings, {
     listFolders: commands.libraryFolders,
     removeFolder,
+    countFolderBooks,
     addFolder,
     rescanFolder,
     notices: new Notices(),
@@ -229,6 +236,7 @@ test("says when the folders couldn't be loaded", async () => {
         error: { code: "internal", message: "from the backend" },
       }),
     removeFolder: NOTHING_REMOVED,
+    countFolderBooks: COUNTED,
     addFolder: NOTHING_PICKED,
     rescanFolder: NOTHING_CHANGED,
     notices: new Notices(),
