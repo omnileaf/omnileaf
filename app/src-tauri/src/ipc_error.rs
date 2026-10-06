@@ -2,7 +2,7 @@
 
 use std::error::Error;
 
-use omnileaf_engine::SurveyError;
+use omnileaf_engine::LibraryError;
 use serde::Serialize;
 use specta::Type;
 
@@ -15,6 +15,8 @@ pub(crate) enum IpcErrorCode {
     )]
     FolderPickerUnavailable,
     FolderUnreadable,
+    FolderNotFound,
+    HomeFolderKept,
     ClipboardUnavailable,
     BrowserUnavailable,
     Internal,
@@ -60,13 +62,27 @@ impl IpcError {
     }
 }
 
-impl From<SurveyError> for IpcError {
-    fn from(error: SurveyError) -> Self {
-        tracing::warn!(error = %describe(&error), "survey a library folder");
-        Self {
-            code: IpcErrorCode::FolderUnreadable,
-            message: "the folder could not be read",
-        }
+impl From<LibraryError> for IpcError {
+    fn from(error: LibraryError) -> Self {
+        let (code, message) = match error {
+            LibraryError::Survey(_) => (
+                IpcErrorCode::FolderUnreadable,
+                "the folder could not be read",
+            ),
+            LibraryError::FolderNotFound { .. } => (
+                IpcErrorCode::FolderNotFound,
+                "that folder isn't in the library",
+            ),
+            LibraryError::HomeFolderKept { .. } => (
+                IpcErrorCode::HomeFolderKept,
+                "the home folder stays in the library",
+            ),
+            LibraryError::CreateHome { .. }
+            | LibraryError::Database(_)
+            | LibraryError::Interrupted(_) => return Self::internal(&error),
+        };
+        tracing::warn!(error = %describe(&error), "library command refused");
+        Self { code, message }
     }
 }
 
@@ -79,4 +95,46 @@ fn describe(error: &dyn Error) -> String {
         cause = source.source();
     }
     description
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{io, path::PathBuf};
+
+    use omnileaf_engine::{FolderId, SurveyError};
+
+    use super::*;
+
+    fn code_for(error: LibraryError) -> IpcErrorCode {
+        IpcError::from(error).code
+    }
+
+    #[test]
+    fn tells_the_interface_which_library_failure_it_met() {
+        let unreadable = SurveyError::Unreadable {
+            path: PathBuf::from("/media/Sample Library"),
+            source: io::Error::from(io::ErrorKind::PermissionDenied),
+        };
+        let id: FolderId = "7".parse().unwrap();
+
+        let codes = [
+            code_for(LibraryError::Survey(unreadable)),
+            code_for(LibraryError::FolderNotFound { id }),
+            code_for(LibraryError::HomeFolderKept { id }),
+            code_for(LibraryError::CreateHome {
+                path: PathBuf::from("/data/Omnileaf"),
+                source: io::Error::from(io::ErrorKind::StorageFull),
+            }),
+        ];
+
+        assert_eq!(
+            codes,
+            [
+                IpcErrorCode::FolderUnreadable,
+                IpcErrorCode::FolderNotFound,
+                IpcErrorCode::HomeFolderKept,
+                IpcErrorCode::Internal,
+            ]
+        );
+    }
 }

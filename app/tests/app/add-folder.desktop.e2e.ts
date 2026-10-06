@@ -8,8 +8,29 @@ const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
 const FOLDER_REPORT = xpath("//*[@role='status'][normalize-space()]");
 const SETTINGS_LINK = mainNavigationLink("Settings");
 const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
+const LINKED_FOLDER_NAMES = xpath(
+  "//section[.//h2[normalize-space()='Folders']]//li//p[1]",
+);
+const REMOVE_SAMPLE_LIBRARY = xpath(
+  `//button[@aria-label='Remove ${SAMPLE_LIBRARY.name}']`,
+);
+const CONFIRM_REMOVAL = xpath(
+  `//dialog[@open]//button[normalize-space()='Remove ${SAMPLE_LIBRARY.name}']`,
+);
+const FOLDERS_WITHOUT_LINKED_FOLDERS = xpath(
+  "//section[.//h2[normalize-space()='Folders']][not(.//li)]",
+);
+const FOLDERS_SECTION = xpath("//section[.//h2[normalize-space()='Folders']]");
+const LOADED_HOME_FOLDER = xpath(
+  "//section[.//h2[normalize-space()='Home folder']]//p[normalize-space()='Omnileaf']",
+);
 
 const appSession = useAppSession();
+
+async function openLibrarySettings(): Promise<void> {
+  await (await appSession().waitFor(SETTINGS_LINK)).click();
+  await (await appSession().waitFor(LIBRARY_SETTINGS_LINK)).click();
+}
 
 test("adds a folder and reports the comics in it", async () => {
   const button = await appSession().waitFor(ADD_FOLDER_BUTTON);
@@ -22,9 +43,8 @@ test("adds a folder and reports the comics in it", async () => {
   );
 });
 
-test("adds a folder from Settings › Library", async () => {
-  await (await appSession().waitFor(SETTINGS_LINK)).click();
-  await (await appSession().waitFor(LIBRARY_SETTINGS_LINK)).click();
+test("adds a folder from Settings › Library and lists it there", async () => {
+  await openLibrarySettings();
   const button = await appSession().waitFor(ADD_FOLDER_BUTTON);
 
   await button.click();
@@ -33,4 +53,20 @@ test("adds a folder from Settings › Library", async () => {
   expect(await report.text()).toBe(
     `Found ${String(SAMPLE_LIBRARY.comics.length)} comics in ${SAMPLE_LIBRARY.name}.`,
   );
+  const listed = await appSession().waitFor(LINKED_FOLDER_NAMES);
+  expect(await listed.text()).toBe(SAMPLE_LIBRARY.name);
+});
+
+test("removes a folder from Settings › Library once the removal is confirmed", async () => {
+  await openLibrarySettings();
+  await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
+  await (await appSession().waitFor(REMOVE_SAMPLE_LIBRARY)).click();
+
+  await (await appSession().waitFor(CONFIRM_REMOVAL)).click();
+
+  await appSession().waitFor(FOLDERS_WITHOUT_LINKED_FOLDERS);
+  await openLibrarySettings();
+  await appSession().waitFor(LOADED_HOME_FOLDER);
+  const folders = await appSession().waitFor(FOLDERS_SECTION);
+  expect(await folders.text()).not.toContain(SAMPLE_LIBRARY.name);
 });

@@ -1,5 +1,6 @@
+import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import type { ComponentProps } from "svelte";
-import { expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
 import { Notices } from "$lib/notices/notices.svelte";
@@ -9,6 +10,19 @@ import WithScreenshotMode from "../../../../tests/components/WithScreenshotMode.
 import Page from "./+page.svelte";
 
 const PageWithScreenshotMode = WithScreenshotMode<ComponentProps<typeof Page>>;
+
+beforeEach(() => {
+  mockIPC((command) => {
+    if (command !== "library_folders") {
+      throw new Error(`the test serves no command \`${command}\``);
+    }
+    return { folders: [], next: null };
+  });
+});
+
+afterEach(() => {
+  clearMocks();
+});
 
 test("explains that folders stay where they are", async () => {
   const screen = await render(PageWithScreenshotMode, {

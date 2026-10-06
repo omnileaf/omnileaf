@@ -195,7 +195,7 @@ for (const { platform, gap } of [
     test.use(onPlatform(platform));
 
     for (const { path, region } of [
-      { path: "/settings/library", region: "Folders" },
+      { path: "/settings/library", region: "Home folder" },
       { path: "/settings/appearance", region: "Light or dark" },
     ] as const) {
       test(`spaces ${path} ${String(gap)}px under its title`, async ({

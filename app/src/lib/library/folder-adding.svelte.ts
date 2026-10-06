@@ -38,6 +38,8 @@ const FAILURES = {
     body: m.library_folder_picker_unavailable_body,
     retry: undefined,
   },
+  folderNotFound: ADDING_FAILED,
+  homeFolderKept: ADDING_FAILED,
   clipboardUnavailable: ADDING_FAILED,
   browserUnavailable: ADDING_FAILED,
   internal: ADDING_FAILED,
@@ -51,6 +53,7 @@ export class FolderAdding {
   constructor(
     private readonly addFolder: AddFolder,
     private readonly notices: () => Notices,
+    private readonly onAdded: () => void = () => {},
   ) {}
 
   get isAdding(): boolean {
@@ -67,10 +70,12 @@ export class FolderAdding {
       return;
     }
     this.withdrawFailure();
-    this.outcome =
-      result.data === null
-        ? { kind: "idle" }
-        : { kind: "found", survey: result.data };
+    if (result.data === null) {
+      this.outcome = { kind: "idle" };
+      return;
+    }
+    this.outcome = { kind: "found", survey: result.data };
+    this.onAdded();
   }
 
   dismiss(): void {
