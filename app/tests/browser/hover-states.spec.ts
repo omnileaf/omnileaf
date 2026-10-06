@@ -218,6 +218,45 @@ test.describe("with a pointer", () => {
     });
   });
 
+  test.describe("on a first launch", () => {
+    test.use({ backend: { ...DESKTOP, firstLaunchFinished: () => false } });
+
+    test("tints the step's main button under the pointer", async ({ page }) => {
+      await page.goto("/first-launch");
+      const start = page.getByRole("button", { name: "Get started" });
+      const resting = await paintOf(start);
+
+      await start.hover();
+
+      expect(await paintOf(start)).not.toBe(resting);
+    });
+
+    test("tints Back under the pointer", async ({ page }) => {
+      await page.goto("/first-launch");
+      await page.getByRole("button", { name: "Get started" }).click();
+      await page.mouse.move(0, 0);
+      const back = page.getByRole("button", { name: "Back" }).last();
+      const resting = await paintOf(back);
+
+      await back.hover();
+
+      expect(await paintOf(back)).not.toBe(resting);
+    });
+
+    test("tints a quiet step button under the pointer", async ({ page }) => {
+      await page.goto("/first-launch");
+      await page.getByRole("button", { name: "Get started" }).click();
+      await page.getByRole("button", { name: "Continue" }).click();
+      await page.mouse.move(0, 0);
+      const skip = page.getByRole("button", { name: "Skip for now" });
+      const resting = await paintOf(skip);
+
+      await skip.hover();
+
+      expect(await paintOf(skip)).not.toBe(resting);
+    });
+  });
+
   test.describe("while the folder picker is open", () => {
     test.use({ backend: WITH_THE_PICKER_OPEN });
 
