@@ -403,5 +403,10 @@
   "problem_page_missing_body": "The link may be out of date. Nothing in your library has changed.",
   "problem_page_failed_title": "This page couldn't be opened",
   "problem_page_failed_body": "Something went wrong inside Omnileaf. Nothing in your library has changed.",
-  "problem_go_to_library": "Go to Library"
+  "problem_go_to_library": "Go to Library",
+  "problem_library_newer_title": "This library is from a newer Omnileaf",
+  "problem_library_newer_body": "A newer version of Omnileaf last opened your library, so this one can't read it. Update Omnileaf to open your library again. Nothing in it has changed.",
+  "problem_library_newer_action": "Get the latest Omnileaf",
+  "problem_library_failed_title": "Your library couldn't be opened",
+  "problem_library_failed_body": "Something went wrong inside Omnileaf while opening your library. Nothing in it has changed. Quit and open Omnileaf again, and report the problem if it keeps happening."
 }

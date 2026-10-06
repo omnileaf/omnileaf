@@ -10,14 +10,18 @@ import type { LayoutLoad } from "./$types";
 export const ssr = false;
 
 export const load: LayoutLoad = async ({ url, untrack }) => {
-  const [appInfo, firstLaunchFinished] = await Promise.all([
+  const [appInfo, libraryProblem] = await Promise.all([
     commands.appInfo(),
-    commands.firstLaunchFinished(),
+    commands.libraryProblem(),
   ]);
   document.documentElement.dataset.platform = appInfo.platform;
-  const isFirstLaunch = needsFirstLaunch(firstLaunchFinished);
+  const notices = new Notices();
+  if (libraryProblem !== null) {
+    return { appInfo, libraryProblem, isFirstLaunch: false, notices };
+  }
+  const isFirstLaunch = needsFirstLaunch(await commands.firstLaunchFinished());
   if (isFirstLaunch && untrack(() => url.pathname) !== FIRST_LAUNCH_ROUTE) {
     redirect(307, resolve(FIRST_LAUNCH_ROUTE));
   }
-  return { appInfo, isFirstLaunch, notices: new Notices() };
+  return { appInfo, libraryProblem, isFirstLaunch, notices };
 };

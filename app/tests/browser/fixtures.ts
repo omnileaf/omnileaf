@@ -31,6 +31,7 @@ function fakeAppInfo(platform: Platform): AppInfo {
 
 export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => fakeAppInfo("linux"),
+  libraryProblem: () => null,
   addLibraryFolder: () => null,
   libraryFolders: () => ({ folders: [], next: null }),
   librarySeries: () => ({ series: [], next: null }),

@@ -13,6 +13,7 @@ use crate::{
     folder_picker::pick_folder,
     ipc_error::IpcError,
     library_events::LibraryChanged,
+    library_problem::{LibraryAtLaunch, LibraryProblem},
     system_bars::{self, Theme, ThemePreference},
     version_details,
 };
@@ -21,6 +22,7 @@ pub(crate) fn builder() -> Builder<Wry> {
     Builder::new()
         .commands(collect_commands![
             app_info,
+            library_problem,
             add_library_folder,
             match_system_bars,
             library_folders,
@@ -50,6 +52,16 @@ pub(crate) fn builder() -> Builder<Wry> {
 )]
 fn app_info(core: State<'_, Core>) -> AppInfo {
     core.app_info().clone()
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+fn library_problem(launch: State<'_, LibraryAtLaunch>) -> Option<LibraryProblem> {
+    launch.problem
 }
 
 #[tauri::command]

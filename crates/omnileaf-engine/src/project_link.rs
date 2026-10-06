@@ -7,10 +7,12 @@ use specta::Type;
 pub enum ProjectLink {
     SourceCode,
     NewIssue,
+    LatestRelease,
 }
 
 const SCHEME: &str = "https://";
 const SOURCE_CODE: &str = env!("CARGO_PKG_REPOSITORY");
+const LATEST_RELEASE: &str = concat!(env!("CARGO_PKG_REPOSITORY"), "/releases/latest");
 const NEW_ISSUE: &str = concat!(
     env!("CARGO_PKG_REPOSITORY"),
     "/issues/new?template=bug_report.yml"
@@ -22,6 +24,7 @@ impl ProjectLink {
         match self {
             Self::SourceCode => SOURCE_CODE,
             Self::NewIssue => NEW_ISSUE,
+            Self::LatestRelease => LATEST_RELEASE,
         }
     }
 
