@@ -546,4 +546,15 @@
   :where([tabindex="-1"]):focus {
     outline: none;
   }
+
+  @media (pointer: fine) {
+    a[href],
+    button:not(:disabled),
+    [role="button"]:not([aria-disabled="true"]),
+    summary,
+    select:not(:disabled),
+    label:has(input:not(:disabled)) {
+      cursor: pointer;
+    }
+  }
 }

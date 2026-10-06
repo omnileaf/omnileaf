@@ -79,7 +79,7 @@
           {@const isChosen = language.choice === choice}
           <label
             class={[
-              "flex cursor-pointer items-center gap-md py-xs ps-lg pe-list-row min-block-phone-row has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-accent",
+              "flex items-center gap-md py-xs ps-lg pe-list-row min-block-phone-row has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-accent",
               "touch:medium:py-none touch:medium:ps-list-row touch:medium:min-block-touch-target",
               "desktop:py-none desktop:ps-list-row desktop:text-callout desktop:min-block-settings-row",
               isChosen ? "font-semibold" : "font-medium",
