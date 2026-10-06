@@ -59,6 +59,8 @@ The `rust` group runs on every platform in CI, because its answer can differ bet
 - the tests, which also check that the interface's generated command bindings in `app/src/lib/ipc/bindings.ts` are current. After changing a command, regenerate them with `cargo xtask bindings`;
 - four release-build timing budgets: listing a 500-entry archive takes 3 ms or less, a page of the library sorted by title takes 2 ms or less at the 95th percentile over 10,000 series, rescanning an unchanged library of 1,000 books takes 300 ms or less, and a cover thumbnail made from a typical full-size colour scan, a JPEG page of about 1 MB with 4:2:0 chroma subsampling, takes 30 ms or less at the 95th percentile.
 
+Each timing budget is measured with the testkit's `SpeedTrial`: one untimed warm-up pass, then three timed passes, holding the fastest pass to the budget. A stall on a shared runner only ever adds time, so the fastest pass is the closest to the real cost, and the log shows every pass so a spread between them stays visible. Write a new speed test the same way rather than timing a single pass.
+
 The timing budgets hold exactly on your machine and on CI's Linux runner. The macOS and Windows runners are shared and sometimes stall, so CI sets `OMNILEAF_BUDGET_SLACK=2` there: a timing fails only beyond twice its budget, while the log still shows each measured time against the budget.
 
 The `portable` group holds the Rust checks whose answer is the same everywhere, so CI runs it once, on Linux:
