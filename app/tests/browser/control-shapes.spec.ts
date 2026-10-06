@@ -21,6 +21,8 @@ const PAGE_BUTTON_HEIGHT = 36;
 const PHONE_BUTTON_HEIGHT = 52;
 const IOS_BUTTON_CORNER = "14px";
 const SHEET_CORNER = "24px";
+const PANEL_TITLE_SIZE = "17px";
+const PANEL_TITLE_LINE_HEIGHT = 22.1;
 const DESKTOP_STEPPER_CORNER = "8px";
 
 function withSeries(platform: "linux" | "android" | "ios"): FakeBackend {
@@ -97,6 +99,22 @@ test.describe("on a desktop", () => {
 
     expect(addFolder.height).toBe(PAGE_BUTTON_HEIGHT);
     expect(view.height).toBe(PAGE_BUTTON_HEIGHT);
+  });
+
+  test("titles the View panel at 17px with a 1.3 line height", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const panel = await openViewOptions(page);
+    const title = panel.getByRole("heading", { name: "View" });
+
+    const lineHeight = await title.evaluate(
+      (element) => getComputedStyle(element).lineHeight,
+    );
+
+    await expect(title).toHaveCSS("font-size", PANEL_TITLE_SIZE);
+    expect(parseFloat(lineHeight)).toBeCloseTo(PANEL_TITLE_LINE_HEIGHT, 1);
   });
 
   test("keeps the View panel's stepper at 8px", async ({ page }) => {

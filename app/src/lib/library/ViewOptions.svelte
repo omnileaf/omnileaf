@@ -131,7 +131,10 @@
       class="self-center rounded-full bg-step-off block-sheet-handle-block inline-sheet-handle medium:hidden"
     ></span>
     <div class="flex items-center">
-      <h2 id={titleId} class="flex-1 text-title font-bold medium:text-lead">
+      <h2
+        id={titleId}
+        class="flex-1 text-title font-bold medium:text-panel-title"
+      >
         {m.library_view()}
       </h2>
       <button
