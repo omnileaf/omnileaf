@@ -3,7 +3,7 @@
 </script>
 
 <kbd
-  class="shrink-0 rounded-control border border-border bg-chip px-sm py-2xs font-ui text-caption font-bold whitespace-nowrap"
+  class="shrink-0 rounded-badge border border-border bg-chip px-sm py-2xs font-ui text-caption font-bold whitespace-nowrap"
 >
   {m.screenshot_mode_shortcut_keys()}
 </kbd>

@@ -241,7 +241,9 @@
   --container-segmented: 22.5rem;
   --container-segmented-touch: 30rem;
 
-  --radius-control: 0.5rem;
+  --radius-control: 0.625rem;
+  --radius-row: 0.5rem;
+  --radius-small-control: 0.5rem;
   --radius-card: 0.75rem;
   --radius-sheet: 1.25rem;
   --radius-cover: 0.375rem;

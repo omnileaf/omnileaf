@@ -35,7 +35,7 @@
                 href={resolve(section.route)}
                 aria-current={current}
                 class={[
-                  "flex items-center gap-md rounded-control px-md text-label transition-control min-block-touch-target desktop:min-block-settings-row",
+                  "flex items-center gap-md rounded-row px-md text-label transition-control min-block-touch-target desktop:min-block-settings-row",
                   current !== undefined
                     ? "bg-accent-soft font-bold text-accent"
                     : "font-medium text-sidebar-ink hover:bg-hover active:bg-pressed",

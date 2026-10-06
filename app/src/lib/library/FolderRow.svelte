@@ -31,7 +31,7 @@
     <p class="truncate font-semibold">{folderTitle(folder)}</p>
     {#if !folder.isAvailable}
       <p
-        class="mbs-2xs rounded-control bg-warning-soft px-xs text-caption font-semibold inline-fit"
+        class="mbs-2xs rounded-badge bg-warning-soft px-xs text-caption font-semibold inline-fit"
       >
         {m.library_folder_unavailable()}
       </p>

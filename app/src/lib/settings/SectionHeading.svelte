@@ -26,8 +26,8 @@
     class={[
       "flex shrink-0 items-center gap-2xs transition-control hover:bg-hover active:bg-pressed",
       isListedBeside(parent.route) && "two-pane:hidden",
-      "desktop:-ms-xs desktop:rounded-control desktop:ps-2xs desktop:pe-sm desktop:text-label desktop:font-semibold desktop:text-accent desktop:block-2xl",
-      "ios:max-medium:-ms-xs ios:max-medium:rounded-control ios:max-medium:px-sm ios:max-medium:text-back-link ios:max-medium:font-medium ios:max-medium:text-accent ios:max-medium:min-block-touch-target",
+      "desktop:-ms-xs desktop:rounded-row desktop:ps-2xs desktop:pe-sm desktop:text-label desktop:font-semibold desktop:text-accent desktop:block-2xl",
+      "ios:max-medium:-ms-xs ios:max-medium:rounded-row ios:max-medium:px-sm ios:max-medium:text-back-link ios:max-medium:font-medium ios:max-medium:text-accent ios:max-medium:min-block-touch-target",
       "android:justify-center android:rounded-full android:block-touch-target android:inline-touch-target",
       "ios:medium:justify-center ios:medium:rounded-full ios:medium:block-touch-target ios:medium:inline-touch-target",
       "touch:medium:-ms-md",
