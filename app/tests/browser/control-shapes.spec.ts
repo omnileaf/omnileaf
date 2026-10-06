@@ -20,6 +20,7 @@ const KEY_CORNER = "6px";
 const PAGE_BUTTON_HEIGHT = 36;
 const PHONE_BUTTON_HEIGHT = 52;
 const IOS_BUTTON_CORNER = "14px";
+const SHEET_CORNER = "24px";
 const DESKTOP_STEPPER_CORNER = "8px";
 
 function withSeries(platform: "linux" | "android" | "ios"): FakeBackend {
@@ -134,6 +135,18 @@ test.describe("on an Android phone", () => {
 
     expect(box.height).toBe(PHONE_BUTTON_HEIGHT);
     expect(parseFloat(corner)).toBeGreaterThanOrEqual(box.height / 2);
+  });
+
+  test.describe("with series", () => {
+    test.use({ backend: withSeries("android") });
+
+    test("rounds the View sheet's top corners to 24px", async ({ page }) => {
+      await page.goto("/");
+
+      const panel = await openViewOptions(page);
+
+      expect(await cornerOf(panel)).toBe(SHEET_CORNER);
+    });
   });
 });
 
