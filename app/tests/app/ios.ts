@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -8,7 +9,8 @@ import type { TestProject } from "vitest/node";
 import { APPIUM_URL, startAppium } from "./appium.ts";
 import { withAttempts } from "./attempts.ts";
 import { isRecord, listOf } from "./json.ts";
-import { pollUntil, waitUntilReady } from "./webdriver.ts";
+import { launchOnceRegistered } from "./simulator-launch.ts";
+import { waitUntilReady } from "./webdriver.ts";
 
 const APP_BUNDLE = fileURLToPath(
   new URL(
@@ -16,6 +18,16 @@ const APP_BUNDLE = fileURLToPath(
     import.meta.url,
   ),
 );
+const TEST_RESULTS = fileURLToPath(
+  new URL("../../test-results/", import.meta.url),
+);
+const APP_STDOUT = join(TEST_RESULTS, "ios-app.stdout.log");
+const APP_STDERR = join(TEST_RESULTS, "ios-app.stderr.log");
+const LAUNCH_HANG_LOGS = join(TEST_RESULTS, "ios-launch-hang.log");
+const LAUNCH_HANG_LOG_PROCESSES =
+  'process == "SpringBoard" OR process == "Omnileaf" OR process == "installcoordinationd"';
+const LAUNCH_HANG_LOG_WINDOW = "3m";
+const SIMULATOR_LOG_BYTES = 64 * 1024 * 1024;
 const IOS_RUNTIME = /\.iOS-(\d+(?:-\d+)*)$/;
 const WEBDRIVERAGENT_LAUNCH_TIMEOUT_MS = 240_000;
 const WEBVIEW_PROCESS = "process-Omnileaf";
@@ -28,8 +40,6 @@ const WEBDRIVERAGENT_LAUNCH_ATTEMPTS = 3;
 const WEBDRIVERAGENT_READY_TIMEOUT_MS = 60_000;
 const SIMCTL_TIMEOUT_MS = 60_000;
 const WEBVIEW_TIMEOUT_MS = 60_000;
-const APP_LAUNCHABLE_TIMEOUT_MS = 60_000;
-const UNKNOWN_TO_LAUNCHER = "FBSOpenApplicationServiceErrorDomain";
 
 const run = promisify(execFile);
 
@@ -82,49 +92,53 @@ async function launchWebDriverAgent(
   });
 }
 
-function isUnknownToLauncher(error: unknown): boolean {
-  return (
-    isRecord(error) &&
-    typeof error.stderr === "string" &&
-    error.stderr.includes(UNKNOWN_TO_LAUNCHER)
+/** Saves the Simulator's recent log from the launcher, the installer and the app, for a launch that hung. */
+async function saveLaunchLogs(simulator: Simulator): Promise<string> {
+  const { stdout } = await run(
+    "xcrun",
+    [
+      "simctl",
+      "spawn",
+      simulator.udid,
+      "log",
+      "show",
+      "--last",
+      LAUNCH_HANG_LOG_WINDOW,
+      "--style",
+      "compact",
+      "--predicate",
+      LAUNCH_HANG_LOG_PROCESSES,
+    ],
+    { timeout: SIMCTL_TIMEOUT_MS, maxBuffer: SIMULATOR_LOG_BYTES },
   );
+  await writeFile(LAUNCH_HANG_LOGS, stdout);
+  return LAUNCH_HANG_LOGS;
 }
 
-async function launches(
-  simulator: Simulator,
-  bundleId: string,
-): Promise<true | undefined> {
-  try {
-    await run(
-      "xcrun",
-      [
-        "simctl",
-        "launch",
-        "--terminate-running-process",
-        simulator.udid,
-        bundleId,
-      ],
-      { timeout: SIMCTL_TIMEOUT_MS },
-    );
-    return true;
-  } catch (error) {
-    if (isUnknownToLauncher(error)) {
-      return undefined;
-    }
-    throw error;
-  }
-}
-
-/** The Simulator's launcher refuses a just-installed app until it has registered it, so this waits until the app launches. */
+/** Launches a just-installed app once to show it starts, keeping its output and, if the launch hangs, the Simulator's log. */
 async function installApp(simulator: Simulator): Promise<string> {
   await run("xcrun", ["simctl", "install", simulator.udid, APP_BUNDLE], {
     timeout: SIMCTL_TIMEOUT_MS,
   });
   const bundleId = await bundleIdOf(APP_BUNDLE);
-  await pollUntil(
-    () => launches(simulator, bundleId),
-    APP_LAUNCHABLE_TIMEOUT_MS,
-    `launching ${bundleId} on the Simulator`,
+  await mkdir(TEST_RESULTS, { recursive: true });
+  await launchOnceRegistered(
+    bundleId,
+    () =>
+      run(
+        "xcrun",
+        [
+          "simctl",
+          "launch",
+          "--terminate-running-process",
+          `--stdout=${APP_STDOUT}`,
+          `--stderr=${APP_STDERR}`,
+          simulator.udid,
+          bundleId,
+        ],
+        { timeout: SIMCTL_TIMEOUT_MS },
+      ),
+    () => saveLaunchLogs(simulator),
   );
   await run("xcrun", ["simctl", "terminate", simulator.udid, bundleId], {
     timeout: SIMCTL_TIMEOUT_MS,
