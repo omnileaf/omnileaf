@@ -218,6 +218,12 @@
   --color-danger: #9b2c2c;
   --color-on-danger: #ffffff;
   --color-danger-soft: #f6e3e3;
+  --color-hover: rgb(28 27 24 / 0.06);
+  --color-pressed: rgb(28 27 24 / 0.1);
+  --color-accent-hover: #285f44;
+  --color-accent-pressed: #22513a;
+  --color-danger-hover: #852424;
+  --color-danger-pressed: #701e1e;
   --color-sheet: #faf8f4;
   --color-scrim: rgb(12 11 10 / 0.45);
   --color-backdrop: #eeeae1;
@@ -251,6 +257,10 @@
   --color-toast-key: rgb(255 255 255 / 0.1);
   --color-toast-action: #7fcb9d;
   --color-on-toast-action: #0f2418;
+  --color-toast-hover: rgb(241 237 228 / 0.08);
+  --color-toast-pressed: rgb(241 237 228 / 0.12);
+  --color-toast-action-hover: #95d6ae;
+  --color-toast-action-pressed: #6bb98a;
   --color-icon-hole: var(--color-accent-soft);
   --color-glass: rgb(250 248 244 / 0.74);
   --color-glass-edge: rgb(255 255 255 / 0.7);
@@ -413,6 +423,12 @@
   --color-danger: #f08c8c;
   --color-on-danger: #2a0e0e;
   --color-danger-soft: #3a2222;
+  --color-hover: rgb(241 237 228 / 0.08);
+  --color-pressed: rgb(241 237 228 / 0.12);
+  --color-accent-hover: #95d6ae;
+  --color-accent-pressed: #6bb98a;
+  --color-danger-hover: #f4a3a3;
+  --color-danger-pressed: #e57a7a;
   --color-sheet: #1f1d1a;
   --color-scrim: rgb(0 0 0 / 0.6);
   --color-backdrop: #0e0d0c;
@@ -430,6 +446,10 @@
   --color-toast-key: rgb(0 0 0 / 0.08);
   --color-toast-action: #2f6f4f;
   --color-on-toast-action: #ffffff;
+  --color-toast-hover: rgb(28 27 24 / 0.06);
+  --color-toast-pressed: rgb(28 27 24 / 0.1);
+  --color-toast-action-hover: #285f44;
+  --color-toast-action-pressed: #22513a;
   --color-glass: rgb(36 34 30 / 0.72);
   --color-glass-edge: rgb(255 255 255 / 0.1);
   --color-glass-pill: rgb(255 255 255 / 0.12);
