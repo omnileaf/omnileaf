@@ -46,7 +46,7 @@
   <button
     type="button"
     aria-label={m.notice_dismiss()}
-    class="-my-xs flex shrink-0 items-center justify-center rounded-full opacity-70 transition-opacity block-touch-target inline-touch-target before:absolute before:rounded-full before:transition-control before:block-pointer-target before:inline-pointer-target hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed motion-safe:before:duration-fade motion-safe:before:ease-out desktop:my-none desktop:block-dismiss desktop:inline-dismiss"
+    class="-my-xs flex shrink-0 items-center justify-center rounded-full opacity-70 transition-control block-touch-target inline-touch-target before:absolute before:rounded-full before:transition-control before:block-pointer-target before:inline-pointer-target hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed desktop:my-none desktop:block-dismiss desktop:inline-dismiss"
     onclick={onDismiss}
   >
     <X size={DISMISS_SIZE} class="relative" />

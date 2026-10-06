@@ -48,7 +48,7 @@
   <button
     type="button"
     aria-label={m.notice_dismiss()}
-    class="hidden shrink-0 items-center justify-center rounded-full text-toast-muted transition-control min-block-touch-target min-inline-touch-target before:absolute before:rounded-full before:transition-control before:block-pointer-target before:inline-pointer-target hover:text-on-toast hover:before:bg-toast-hover active:text-on-toast active:before:bg-toast-pressed motion-safe:before:duration-fade motion-safe:before:ease-out medium:flex"
+    class="hidden shrink-0 items-center justify-center rounded-full text-toast-muted transition-control min-block-touch-target min-inline-touch-target before:absolute before:rounded-full before:transition-control before:block-pointer-target before:inline-pointer-target hover:text-on-toast hover:before:bg-toast-hover active:text-on-toast active:before:bg-toast-pressed medium:flex"
     onclick={onDismiss}
   >
     <X aria-hidden="true" size={DISMISS_ICON_SIZE} class="relative" />

@@ -60,7 +60,7 @@
     <button
       type="button"
       aria-label={m.notice_dismiss()}
-      class="-me-sm -mbs-sm flex shrink-0 items-center justify-center rounded-full opacity-70 transition-opacity min-block-touch-target min-inline-touch-target before:absolute before:rounded-full before:transition-control before:block-pointer-target before:inline-pointer-target hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed motion-safe:before:duration-fade motion-safe:before:ease-out"
+      class="-me-sm -mbs-sm flex shrink-0 items-center justify-center rounded-full opacity-70 transition-control min-block-touch-target min-inline-touch-target before:absolute before:rounded-full before:transition-control before:block-pointer-target before:inline-pointer-target hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed"
       onclick={onDismiss}
     >
       <X aria-hidden="true" size={DISMISS_ICON_SIZE} class="relative" />
