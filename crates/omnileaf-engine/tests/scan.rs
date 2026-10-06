@@ -79,6 +79,36 @@ async fn files_every_series_found_under_the_local_library_source() {
 }
 
 #[tokio::test]
+async fn counts_the_books_a_folder_holds() {
+    let comics = sample_library("scan-folder-count");
+
+    let (scanned, _, _) = Scanned::folder(
+        "scan-folder-count",
+        &comics.path().join(SAMPLE_LIBRARY_NAME),
+    )
+    .await;
+
+    assert_eq!(
+        scanned.library.folder_book_count(scanned.id).await.unwrap(),
+        7
+    );
+}
+
+#[tokio::test]
+async fn counts_a_book_held_twice_in_a_folder_once() {
+    let comics = TempFolder::new("scan-folder-copies");
+    write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
+    write_book(&comics.path().join("Copies/v01.cbz"), 1);
+
+    let (scanned, _, _) = Scanned::folder("scan-folder-copies", comics.path()).await;
+
+    assert_eq!(
+        scanned.library.folder_book_count(scanned.id).await.unwrap(),
+        1
+    );
+}
+
+#[tokio::test]
 async fn reports_finding_the_books_then_reading_each_one_found() {
     let comics = sample_library("scan-progress");
 

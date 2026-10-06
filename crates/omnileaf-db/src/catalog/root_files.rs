@@ -11,6 +11,7 @@ use crate::{
 const FILES_IN_ROOT: &str = "SELECT book_id, location, size_bytes, modified_at_ms
     FROM book_file
     WHERE root_id = ?1";
+const BOOKS_IN_ROOT: &str = "SELECT count(DISTINCT book_id) FROM book_file WHERE root_id = ?1";
 const REMOVE_FILE: &str = "DELETE FROM book_file
     WHERE root_id = ?1 AND location = ?2
     RETURNING book_id";
@@ -33,6 +34,13 @@ pub fn root_files(connection: &Connection, root: RootId) -> Result<Vec<StoredFil
         .prepare(FILES_IN_ROOT)?
         .query_map([root.0], stored_file)?
         .collect::<Result<_, _>>()?)
+}
+
+/// Counts the books with at least one file in the root, so a book held twice there counts once.
+pub fn root_book_count(connection: &Connection, root: RootId) -> Result<u32, Error> {
+    Ok(connection
+        .prepare(BOOKS_IN_ROOT)?
+        .query_row([root.0], |row| row.get(0))?)
 }
 
 /// Deletes the root's files at `locations` and returns the books they held, once for each file deleted.
@@ -79,6 +87,21 @@ mod tests {
         assert_eq!(
             plan,
             ["SEARCH book_file USING INDEX sqlite_autoindex_book_file_1 (root_id=?)"]
+        );
+    }
+
+    #[test]
+    fn counts_a_root_s_books_through_its_location_index() {
+        let scratch = ScratchLibrary::new("root-book-count-plan");
+
+        let plan = scratch.query_plan(BOOKS_IN_ROOT);
+
+        assert_eq!(
+            plan,
+            [
+                "USE TEMP B-TREE FOR count(DISTINCT)",
+                "SEARCH book_file USING INDEX sqlite_autoindex_book_file_1 (root_id=?)"
+            ]
         );
     }
 

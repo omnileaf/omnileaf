@@ -5,7 +5,8 @@ use omnileaf_db::{
     catalog::{
         Cover, NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator, SeriesOrder,
         add_root, cover_file, library_root, library_roots, mark_root_available,
-        mark_root_unavailable, remove_root, series_count, series_page, set_home_root,
+        mark_root_unavailable, remove_root, root_book_count, series_count, series_page,
+        set_home_root,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_view::{library_view, set_library_view},
@@ -151,6 +152,14 @@ impl Library {
             series: page.items.into_iter().map(LibrarySeries::from).collect(),
             next: page.next.map(SeriesCursor),
         })
+    }
+
+    pub async fn folder_book_count(&self, id: FolderId) -> Result<u32, LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| root_book_count(connection, id.0))
+            .await?)
     }
 
     pub async fn series_count(&self) -> Result<u32, LibraryError> {
