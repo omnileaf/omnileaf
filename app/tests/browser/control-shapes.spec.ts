@@ -1,4 +1,4 @@
-import type { Locator } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import { addFolderBesideFolders, addFolderInPageHeading } from "./controls.ts";
 import type { FakeBackend } from "./fake-backend.ts";
@@ -6,6 +6,7 @@ import {
   boxOf,
   expect,
   LARGE_MIN_WIDTH,
+  MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
   viewportOf,
@@ -17,6 +18,8 @@ const BUTTON_CORNER = "10px";
 const ROW_CORNER = "8px";
 const KEY_CORNER = "6px";
 const PAGE_BUTTON_HEIGHT = 36;
+const PHONE_BUTTON_HEIGHT = 52;
+const IOS_BUTTON_CORNER = "14px";
 const DESKTOP_STEPPER_CORNER = "8px";
 
 function withSeries(platform: "linux" | "android" | "ios"): FakeBackend {
@@ -32,6 +35,12 @@ function cornerOf(locator: Locator): Promise<string> {
   return locator.evaluate(
     (element) => getComputedStyle(element).borderStartStartRadius,
   );
+}
+
+function emptyStateAddFolder(page: Page): Locator {
+  return page
+    .getByRole("region", { name: "Your library is empty" })
+    .getByRole("button", { name: "Add a folder" });
 }
 
 test.describe("on a desktop", () => {
@@ -104,5 +113,46 @@ test.describe("on a desktop", () => {
     const key = page.locator("kbd").first();
 
     expect(await cornerOf(key)).toBe(KEY_CORNER);
+  });
+});
+
+test.describe("on an Android phone", () => {
+  test.use(onPlatform("android"));
+
+  test.beforeEach(({ page }) => {
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+  });
+
+  test("draws the empty library's Add a folder as a 52px pill", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const button = emptyStateAddFolder(page);
+
+    const box = await boxOf(button);
+    const corner = await cornerOf(button);
+
+    expect(box.height).toBe(PHONE_BUTTON_HEIGHT);
+    expect(parseFloat(corner)).toBeGreaterThanOrEqual(box.height / 2);
+  });
+});
+
+test.describe("on an iPhone", () => {
+  test.use(onPlatform("ios"));
+
+  test.beforeEach(({ page }) => {
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+  });
+
+  test("draws the empty library's Add a folder 52px tall with 14px corners", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const button = emptyStateAddFolder(page);
+
+    const box = await boxOf(button);
+
+    expect(box.height).toBe(PHONE_BUTTON_HEIGHT);
+    expect(await cornerOf(button)).toBe(IOS_BUTTON_CORNER);
   });
 });

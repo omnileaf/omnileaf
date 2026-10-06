@@ -182,6 +182,7 @@
   --spacing-empty-icon: 1.75rem;
   --spacing-empty-lift: 5rem;
   --spacing-button: 1.25rem;
+  --spacing-phone-button: 3.25rem;
   --spacing-pill: 3.5rem;
   --spacing-tile: 2.25rem;
   --spacing-option: 2.5rem;
@@ -242,6 +243,7 @@
 
   --radius-control: 0.625rem;
   --radius-row: 0.5rem;
+  --radius-phone-button: 0.875rem;
   --radius-small-control: 0.5rem;
   --radius-card: 0.75rem;
   --radius-sheet: 1.25rem;
