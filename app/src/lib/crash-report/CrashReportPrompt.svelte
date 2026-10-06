@@ -86,15 +86,14 @@
       </p>
       <ReportDetails details={asking.details} />
       <AlwaysSendChoice bind:checked={alwaysSend} />
-      <div class="mbs-xs flex flex-wrap items-center gap-sm">
+      <div class="mbs-xs flex flex-wrap items-center justify-end gap-sm">
         <button
           type="button"
-          class="rounded-dialog-button border border-border px-list-row text-footnote font-semibold min-block-dialog-button touch:min-block-touch-target"
+          class="me-auto rounded-dialog-button px-md text-label font-semibold text-accent min-block-dialog-button touch:min-block-touch-target"
           onclick={copy}
         >
           {isCopied ? m.crash_report_copied() : m.crash_report_copy()}
         </button>
-        <span class="flex-1"></span>
         <button
           type="button"
           class="rounded-dialog-button border border-border px-lg text-label font-semibold min-block-dialog-button touch:min-block-touch-target"
