@@ -9,7 +9,7 @@
 
   let { reporting }: { reporting: CrashReporting } = $props();
 
-  const DIALOG_ICON_SIZE = 24;
+  const DIALOG_BADGE_ICON_SIZE = 18;
 
   const TITLES = {
     panic: m.crash_report_title_last_time,
@@ -50,23 +50,27 @@
       event.preventDefault();
       decline();
     }}
-    class="m-auto overflow-y-auto rounded-dialog border-none bg-background p-xl text-foreground shadow-dialog inline-full max-inline-crash-report backdrop:bg-scrim"
+    class="m-auto overflow-y-auto rounded-dialog border border-dialog-edge bg-card p-dialog-inset text-foreground shadow-dialog inline-full max-inline-crash-report backdrop:bg-scrim"
   >
     <div class="flex flex-col gap-dialog-gap">
-      <span
-        class="flex items-center justify-center rounded-dialog-icon bg-chip block-dialog-icon inline-dialog-icon"
-      >
-        <Bug size={DIALOG_ICON_SIZE} />
-      </span>
-      <h2
-        id={titleId}
-        tabindex="-1"
-        data-prompt-title
-        class="text-title font-extrabold"
-      >
-        {TITLES[asking.origin]()}
-      </h2>
-      <p id={bodyId} class="text-label text-muted">
+      <div class="flex items-center gap-md">
+        <span
+          aria-hidden="true"
+          data-prompt-badge
+          class="flex shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent block-dialog-badge inline-dialog-badge"
+        >
+          <Bug size={DIALOG_BADGE_ICON_SIZE} />
+        </span>
+        <h2
+          id={titleId}
+          tabindex="-1"
+          data-prompt-title
+          class="text-dialog-title font-bold"
+        >
+          {TITLES[asking.origin]()}
+        </h2>
+      </div>
+      <p id={bodyId} class="text-dialog-body text-muted">
         {m.crash_report_body()}
       </p>
       <ReportDetails details={asking.details} />
@@ -74,14 +78,14 @@
         <span class="flex-1"></span>
         <button
           type="button"
-          class="rounded-dialog-button border border-border px-list-row text-footnote font-semibold min-block-dialog-button touch:min-block-touch-target"
+          class="rounded-dialog-button border border-border px-lg text-label font-semibold min-block-dialog-button touch:min-block-touch-target"
           onclick={decline}
         >
           {m.crash_report_decline()}
         </button>
         <button
           type="button"
-          class="rounded-dialog-button bg-accent px-lg text-footnote font-bold text-on-accent min-block-dialog-button touch:min-block-touch-target"
+          class="rounded-dialog-button bg-accent px-lg text-label font-semibold text-on-accent min-block-dialog-button touch:min-block-touch-target"
           onclick={send}
         >
           {m.crash_report_send()}
