@@ -72,7 +72,9 @@
       {/snippet}
       {m.first_launch_welcome_title()}
     </StepHeader>
-    <p class="text-muted"><WidthWording wording={BODY[device]} /></p>
+    <p class="text-step-body text-muted">
+      <WidthWording wording={BODY[device]} />
+    </p>
     <ul class="mbs-sm flex flex-col gap-md">
       {#each PROMISES[device] as promise (promise.title)}
         <li class="flex items-center gap-md">

@@ -4,6 +4,7 @@
 
   import { m } from "$lib/paraglide/messages.js";
 
+  import StepButton from "./StepButton.svelte";
   import { type FirstLaunchStep, numberOf } from "./steps";
   import StepProgress from "./StepProgress.svelte";
 
@@ -53,13 +54,11 @@
 </div>
 <div class="flex flex-col gap-xs pbs-xl medium:flex-row medium:items-center">
   {#if onBack !== undefined}
-    <button
-      type="button"
-      class="hidden rounded-control border border-border px-lg font-semibold transition-control min-block-touch-target hover:bg-hover active:bg-pressed medium:block"
-      onclick={onBack}
-    >
-      {m.first_launch_back()}
-    </button>
+    <div class="hidden medium:block">
+      <StepButton kind="outlined" onclick={onBack}>
+        {m.first_launch_back()}
+      </StepButton>
+    </div>
   {/if}
   <div
     class={[

@@ -59,7 +59,7 @@
       {/snippet}
       {m.first_launch_link_title()}
     </StepHeader>
-    <p class="text-muted">{m.first_launch_link_body()}</p>
+    <p class="text-step-body text-muted">{m.first_launch_link_body()}</p>
     <div class="mbs-sm">
       <LinkedFolders
         {folders}

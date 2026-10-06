@@ -30,7 +30,7 @@
       {/snippet}
       {m.first_launch_ready_title()}
     </StepHeader>
-    <p class="text-muted">{m.first_launch_ready_body()}</p>
+    <p class="text-step-body text-muted">{m.first_launch_ready_body()}</p>
     {#if outcome === "failed"}
       <p role="alert">{m.first_launch_finish_failed()}</p>
     {/if}

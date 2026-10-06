@@ -25,7 +25,7 @@
       {/snippet}
       {m.first_launch_home_title()}
     </StepHeader>
-    <p class="text-muted">{m.first_launch_home_body()}</p>
+    <p class="text-step-body text-muted">{m.first_launch_home_body()}</p>
     <HomeFolder {folders} class="mbs-sm">
       {#if folders.kind === "failed"}
         <p class="mbs-sm px-xs">{m.library_folders_failed()}</p>

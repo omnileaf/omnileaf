@@ -43,7 +43,7 @@
       {/snippet}
       {m.first_launch_choices_title()}
     </StepHeader>
-    <p class="text-muted">{m.first_launch_choices_body()}</p>
+    <p class="text-step-body text-muted">{m.first_launch_choices_body()}</p>
     <ThemeChoice
       title={m.first_launch_choices_appearance()}
       hint={appearanceHelp === undefined ? undefined : appearanceHelpText}
