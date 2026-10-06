@@ -7,6 +7,7 @@
   import type { DeviceKind } from "./device";
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
+  import StepHeader from "./StepHeader.svelte";
   import WidthWording from "./WidthWording.svelte";
   import { atEveryWidth, type WordingByWidth } from "./wording";
 
@@ -65,12 +66,12 @@
 
 <StepFrame step="welcome">
   <div class="flex flex-1 flex-col justify-center gap-lg">
-    <AppIcon
-      class="block-welcome-app-icon inline-welcome-app-icon medium:hidden"
-    />
-    <h1 tabindex="-1" class="text-display font-bold">
+    <StepHeader scale="display">
+      {#snippet badge()}
+        <AppIcon class="rounded-full block-header-badge inline-header-badge" />
+      {/snippet}
       {m.first_launch_welcome_title()}
-    </h1>
+    </StepHeader>
     <p class="text-muted"><WidthWording wording={BODY[device]} /></p>
     <ul class="mbs-sm flex flex-col gap-md">
       {#each PROMISES[device] as promise (promise.title)}

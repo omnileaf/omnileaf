@@ -11,11 +11,10 @@
 
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
-  import StepIcon from "./StepIcon.svelte";
+  import StepBadge from "./StepBadge.svelte";
+  import StepHeader from "./StepHeader.svelte";
   import WidthWording from "./WidthWording.svelte";
   import { atEveryWidth, type WordingByWidth } from "./wording";
-
-  const HERO_ICON_SIZE = 30;
 
   let {
     platform,
@@ -54,10 +53,12 @@
 
 <StepFrame step="link" {onBack}>
   <div class="flex flex-col gap-lg">
-    <StepIcon><Link2 size={HERO_ICON_SIZE} aria-hidden="true" /></StepIcon>
-    <h1 tabindex="-1" class="text-headline font-bold">
+    <StepHeader scale="headline">
+      {#snippet badge()}
+        <StepBadge icon={Link2} />
+      {/snippet}
       {m.first_launch_link_title()}
-    </h1>
+    </StepHeader>
     <p class="text-muted">{m.first_launch_link_body()}</p>
     <div class="mbs-sm">
       <LinkedFolders

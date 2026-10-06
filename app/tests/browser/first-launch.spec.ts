@@ -3,11 +3,13 @@ import type { Locator, Page } from "@playwright/test";
 
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
+  boxOf,
   DEFAULT_BACKEND,
   EXPANDED_MIN_WIDTH,
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  settle,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -100,6 +102,40 @@ async function goTo(page: Page, stepHeading: string): Promise<void> {
     }
     await page.getByRole("button", { name: step.leaveWith }).click();
   }
+}
+
+const BADGE_BEFORE_TITLE =
+  "xpath=preceding-sibling::*[1]/descendant-or-self::*[self::img or local-name()='svg'][1]";
+
+function firstLineOf(title: Locator): Promise<{ top: number; bottom: number }> {
+  return title.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const [line] = range.getClientRects();
+    if (line === undefined) {
+      throw new Error("the heading has no text");
+    }
+    return { top: line.top, bottom: line.bottom };
+  });
+}
+
+for (const step of STEPS) {
+  test(`sets the badge on the line of "${step.heading}", before it`, async ({
+    page,
+  }) => {
+    await goTo(page, step.heading);
+    await settle(page.getByRole("main"));
+    const title = heading(page, step.heading);
+
+    const badge = await boxOf(title.locator(BADGE_BEFORE_TITLE));
+    const titleBox = await boxOf(title);
+    const firstLine = await firstLineOf(title);
+
+    const badgeMiddle = badge.y + badge.height / 2;
+    expect(badgeMiddle).toBeGreaterThanOrEqual(firstLine.top);
+    expect(badgeMiddle).toBeLessThanOrEqual(firstLine.bottom);
+    expect(badge.x + badge.width).toBeLessThanOrEqual(titleBox.x);
+  });
 }
 
 test("goes through every step and opens the library once finished", async ({

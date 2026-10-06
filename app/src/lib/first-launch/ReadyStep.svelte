@@ -9,9 +9,8 @@
 
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
-  import StepIcon from "./StepIcon.svelte";
-
-  const HERO_ICON_SIZE = 34;
+  import StepBadge from "./StepBadge.svelte";
+  import StepHeader from "./StepHeader.svelte";
 
   let { onFinish }: { onFinish: () => Promise<FinishOutcome> } = $props();
 
@@ -25,12 +24,12 @@
 
 <StepFrame step="ready">
   <div class="flex flex-1 flex-col justify-center gap-lg">
-    <StepIcon tone="strong">
-      <Check size={HERO_ICON_SIZE} aria-hidden="true" />
-    </StepIcon>
-    <h1 tabindex="-1" class="text-headline font-bold">
+    <StepHeader scale="headline">
+      {#snippet badge()}
+        <StepBadge icon={Check} />
+      {/snippet}
       {m.first_launch_ready_title()}
-    </h1>
+    </StepHeader>
     <p class="text-muted">{m.first_launch_ready_body()}</p>
     {#if outcome === "failed"}
       <p role="alert">{m.first_launch_finish_failed()}</p>
