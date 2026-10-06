@@ -1,9 +1,8 @@
-use omnileaf_sync_proto::{KeyError, SeriesId, norm};
+use omnileaf_sync_proto::{KeyError, SeriesId, SourceId, norm};
 use rusqlite::Transaction;
 
 use crate::{Error, title_sort::title_sort_key};
 
-const LOCAL_SOURCE: &str = "local";
 const ADD_SERIES: &str =
     "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
      VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
@@ -15,6 +14,7 @@ const ADD_SERIES_UNLESS_PRESENT: &str =
 #[derive(Clone, Debug)]
 pub struct NewSeries {
     id: SeriesId,
+    source: SourceId,
     natural_key: String,
     title: String,
     added_at_ms: i64,
@@ -25,6 +25,7 @@ impl NewSeries {
     pub fn local(folder_name: &str, added_at_ms: i64) -> Result<Self, KeyError> {
         Ok(Self {
             id: SeriesId::local(folder_name)?,
+            source: SourceId::local(),
             natural_key: norm(folder_name),
             title: folder_name.to_owned(),
             added_at_ms,
@@ -53,7 +54,7 @@ pub(crate) fn add_series_unless_present(
 fn insert(transaction: &Transaction<'_>, series: &NewSeries, sql: &str) -> Result<(), Error> {
     transaction.prepare(sql)?.execute((
         series.id.as_bytes(),
-        LOCAL_SOURCE,
+        series.source.as_bytes(),
         &series.natural_key,
         &series.title,
         title_sort_key(&series.title),

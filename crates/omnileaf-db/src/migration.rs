@@ -325,7 +325,7 @@ mod tests {
         connection
             .execute(
                 "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0)",
+                 VALUES (zeroblob(16), zeroblob(16), 'sample series 01', 'Sample Series 01', x'', 0)",
                 [],
             )
             .unwrap();
@@ -350,7 +350,7 @@ mod tests {
         connection
             .execute_batch(
                 "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0);
+                 VALUES (zeroblob(16), zeroblob(16), 'sample series 01', 'Sample Series 01', x'', 0);
                  INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
                  VALUES (zeroblob(16), 1, 'Volume 01', x'', 0);",
             )
@@ -378,7 +378,7 @@ mod tests {
                 "INSERT INTO library_root (id, kind, locator_kind, location, added_at_ms)
                  VALUES (7, 'linked', 'path', x'2f6d65646961', 0);
                  INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0);
+                 VALUES (zeroblob(16), zeroblob(16), 'sample series 01', 'Sample Series 01', x'', 0);
                  INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
                  VALUES (zeroblob(16), 1, 'Volume 01', x'', 0);
                  INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
@@ -408,7 +408,7 @@ mod tests {
                 "INSERT INTO library_root (id, kind, locator_kind, location, added_at_ms)
                  VALUES (7, 'linked', 'path', x'2f6d65646961', 0);
                  INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0);
+                 VALUES (zeroblob(16), zeroblob(16), 'sample series 01', 'Sample Series 01', x'', 0);
                  INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
                  VALUES (zeroblob(16), 1, 'Volume 01', x'', 0);
                  INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
@@ -456,7 +456,7 @@ mod tests {
         let scratch = library_before_first_launch_with(
             "first-launch-books-upgrade",
             "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-             VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0);
+             VALUES (zeroblob(16), zeroblob(16), 'sample series 01', 'Sample Series 01', x'', 0);
              INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
              VALUES (zeroblob(16), 1, 'Volume 01', x'', 0);",
         );
