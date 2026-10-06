@@ -70,7 +70,7 @@
           {TITLES[asking.origin]()}
         </h2>
       </div>
-      <p id={bodyId} class="text-dialog-body text-muted">
+      <p id={bodyId} class="-mbs-xs text-dialog-body text-muted">
         {m.crash_report_body()}
       </p>
       <ReportDetails details={asking.details} />

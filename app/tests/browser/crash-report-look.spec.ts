@@ -1,7 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import type { CrashReportOffer } from "../../src/lib/ipc/bindings.ts";
-import { boxOf, expect, onPlatform, test } from "./fixtures.ts";
+import { boxOf, expect, onPlatform, test, viewportOf } from "./fixtures.ts";
 
 const SAVED_PANIC: CrashReportOffer = {
   details: "Omnileaf 1.2.3 on Linux\nPanic: index out of bounds\n",
@@ -15,6 +15,8 @@ const DIALOG_LOOK = {
   inset: "20px",
   title: "17px",
   body: "14px",
+  width: 420,
+  well: "rgb(243, 240, 233)",
 };
 
 function prompt(page: Page): Locator {
@@ -98,6 +100,30 @@ test.describe("on desktop, the crash report dialog", () => {
     expect(await styleOf(prompt(page), "padding-inline-start")).toBe(
       DIALOG_LOOK.inset,
     );
+  });
+
+  test("is a 420px card where the window has room", async ({ page }) => {
+    await page.goto("/");
+    test.skip(
+      viewportOf(page).width <= DIALOG_LOOK.width,
+      "windows wider than the card",
+    );
+
+    const card = await boxOf(prompt(page));
+
+    expect(card.width).toBe(DIALOG_LOOK.width);
+  });
+
+  test("sets the details on the well colour", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/");
+
+    expect(
+      await styleOf(
+        prompt(page).getByText("Panic: index out of bounds"),
+        "background-color",
+      ),
+    ).toBe(DIALOG_LOOK.well);
   });
 
   test("sets the title and body at the dialog sizes", async ({ page }) => {
