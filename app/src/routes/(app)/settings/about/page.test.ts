@@ -12,6 +12,7 @@ const PROPS = {
       platform: "linux" as const,
       sourceCode: "repo.example.org/omnileaf",
     },
+    isFirstLaunch: false,
     notices: new Notices(),
   },
   params: {},

@@ -37,6 +37,7 @@
   --font-ui:
     system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto,
     sans-serif;
+  --font-display: Georgia, serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --text-tab: 0.625rem;
@@ -63,6 +64,8 @@
   --text-title--line-height: 1.75rem;
   --text-headline: 1.75rem;
   --text-headline--line-height: 2.25rem;
+  --text-display: 2.125rem;
+  --text-display--line-height: 2.5rem;
   --text-app-name: 1.5rem;
   --text-app-name--line-height: 2rem;
   --text-page-title: 2rem;
@@ -94,6 +97,15 @@
   --spacing-icon-tile: 2.25rem;
   --spacing-icon-badge: 3rem;
   --spacing-dialog: 27.5rem;
+  --spacing-hero-icon: 4rem;
+  --spacing-welcome-app-icon: 6.5rem;
+  --spacing-step-dot: 0.375rem;
+  --spacing-step-dot-current: 1.375rem;
+  --spacing-first-launch-card: 61.25rem;
+  --spacing-first-launch-card-tall: 38.75rem;
+  --spacing-first-launch-panel: 22.5rem;
+  --spacing-panel-glow: 16.25rem;
+  --spacing-panel-glow-tall: 17.5rem;
   --spacing-pointer-target: 2.5rem;
   --spacing-pointer-button: 2.25rem;
   --spacing-dismiss: 1.75rem;
@@ -180,6 +192,7 @@
   --shadow-floating:
     0 8px 28px var(--color-glass-shadow), 0 1px 3px var(--color-glass-contact);
   --shadow-dialog: 0 24px 60px rgb(0 0 0 / 0.35);
+  --shadow-card: 0 24px 60px rgb(0 0 0 / 0.12);
   --shadow-knob: 0 1px 2px var(--color-knob-shadow);
   --shadow-notice: 0 12px 34px rgb(0 0 0 / 0.25);
   --shadow-notice-wide: 0 14px 40px rgb(0 0 0 / 0.2);
@@ -207,6 +220,19 @@
   --color-danger-soft: #f6e3e3;
   --color-sheet: #faf8f4;
   --color-scrim: rgb(12 11 10 / 0.45);
+  --color-backdrop: #eeeae1;
+  --color-step-off: #d6d0c4;
+  --color-panel: #1f3a2b;
+  --color-panel-glow: #2f6f4f;
+  --color-on-panel: #f1ede4;
+  --color-spine-mint: #ddebe2;
+  --color-spine-green: #7fcb9d;
+  --color-spine-gold: #c9a24d;
+  --color-spine-blue: #a9c4e6;
+  --color-spine-paper: var(--color-on-panel);
+  --color-spine-sand: #e8c98c;
+  --color-spine-teal: #9fdccf;
+  --color-spine-rose: #f0b8c4;
   --color-switch-off: #c9c3b6;
   --color-switch-knob: #ffffff;
   --color-knob-shadow: rgb(0 0 0 / 0.2);
@@ -381,6 +407,8 @@
   --color-danger-soft: #3a2222;
   --color-sheet: #1f1d1a;
   --color-scrim: rgb(0 0 0 / 0.6);
+  --color-backdrop: #0e0d0c;
+  --color-step-off: #3a3630;
   --color-switch-off: #4a463f;
   --color-cover-edge: rgb(255 255 255 / 0.08);
   --color-stand-in: #2e2c28;

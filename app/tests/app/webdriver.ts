@@ -6,11 +6,16 @@ const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 const STALE_ELEMENT = "stale element reference";
 const ELEMENT_TIMEOUT_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 30_000;
+const SCRIPT_TIMEOUT_MS = 2_000;
 const SESSION_START_TIMEOUT_MS = 300_000;
 const POLL_INTERVAL_MS = 100;
 const WHITESPACE_RUN = /\s+/g;
 const PAGE_TEXT_SHOWN = 200;
+const RELOADING_MARK = "data-e2e-reloading";
+const RELOAD_SCRIPT =
+  "document.documentElement.dataset.e2eReloading = ''; setTimeout(() => location.reload()); return null;";
 const PAGE_TEXT_SCRIPT = "return document.body ? document.body.innerText : '';";
+const FRESH_PAGE_SCRIPT = `return !document.documentElement.hasAttribute("${RELOADING_MARK}");`;
 
 type Method = "GET" | "POST" | "DELETE";
 
@@ -153,7 +158,9 @@ export class Session {
       SESSION_START_TIMEOUT_MS,
     );
     const id = requireString(property(created, "sessionId"), "session id");
-    return new Session(new URL(`session/${id}`, server).href);
+    const session = new Session(new URL(`session/${id}`, server).href);
+    await session.limitScriptsTo(SCRIPT_TIMEOUT_MS);
+    return session;
   }
 
   /** Waits for the first match the page displays, since some layouts keep a hidden copy of a control. */
@@ -174,6 +181,35 @@ export class Session {
       throw new Error(`${error.message}; ${await this.describeCurrentPage()}`, {
         cause: error,
       });
+    }
+  }
+
+  /** Marks the page and reloads it once the script has returned, then asks the page until one without the mark answers. */
+  async reload(): Promise<void> {
+    await send(`${this.endpoint}/execute/sync`, "POST", {
+      script: RELOAD_SCRIPT,
+      args: [],
+    });
+    await pollUntil(
+      () => this.isFreshPage(),
+      ELEMENT_TIMEOUT_MS,
+      "the reloaded page",
+    );
+  }
+
+  /** A page that is still unloading can't run the check, which counts as not reloaded yet. */
+  private async isFreshPage(): Promise<true | undefined> {
+    try {
+      const fresh = await send(`${this.endpoint}/execute/sync`, "POST", {
+        script: FRESH_PAGE_SCRIPT,
+        args: [],
+      });
+      return fresh === true ? true : undefined;
+    } catch (error) {
+      if (error instanceof WebDriverError) {
+        return undefined;
+      }
+      throw error;
     }
   }
 
@@ -198,6 +234,11 @@ export class Session {
 
   async end(): Promise<void> {
     await send(this.endpoint, "DELETE");
+  }
+
+  /** A script's answer is lost when its page unloads, and the driver otherwise waits 30 s for it, as long as a test may run. */
+  private async limitScriptsTo(timeoutMs: number): Promise<void> {
+    await send(`${this.endpoint}/timeouts`, "POST", { script: timeoutMs });
   }
 
   private async describeCurrentPage(): Promise<string> {

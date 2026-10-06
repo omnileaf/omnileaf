@@ -23,6 +23,8 @@ pub(crate) fn builder() -> Builder<Wry> {
         match_system_bars,
         library_folders,
         remove_library_folder,
+        first_launch_finished,
+        finish_first_launch,
         copy_version_details,
         open_project_link
     ])
@@ -86,6 +88,12 @@ async fn remove_library_folder(library: State<'_, Library>, id: FolderId) -> Res
 
 #[tauri::command]
 #[specta::specta]
+async fn first_launch_finished(library: State<'_, Library>) -> Result<bool, IpcError> {
+    Ok(library.first_launch_finished().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn copy_version_details(app: AppHandle) -> Result<(), IpcError> {
     tauri::async_runtime::spawn_blocking(move || copy_details(&app))
         .await
@@ -97,6 +105,12 @@ fn copy_details(app: &AppHandle) -> Result<(), IpcError> {
     app.clipboard()
         .write_text(details.to_string())
         .map_err(|error| IpcError::clipboard_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn finish_first_launch(library: State<'_, Library>) -> Result<(), IpcError> {
+    Ok(library.finish_first_launch().await?)
 }
 
 #[tauri::command]
