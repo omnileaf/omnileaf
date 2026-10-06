@@ -14,7 +14,7 @@
 {#snippet goToLibrary()}
   <a
     href={resolve("/")}
-    class="flex items-center justify-center rounded-full bg-accent px-xl font-bold text-on-accent transition-control min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed medium:rounded-control"
+    class="flex items-center justify-center rounded-control bg-accent px-xl font-bold text-on-accent transition-control min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed ios:max-medium:rounded-phone-button android:max-medium:rounded-full touch:max-medium:text-callout touch:max-medium:min-block-phone-button desktop:px-lg desktop:text-label desktop:min-block-pointer-button"
   >
     {m.problem_go_to_library()}
   </a>

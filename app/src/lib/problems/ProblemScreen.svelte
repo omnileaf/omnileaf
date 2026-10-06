@@ -2,7 +2,7 @@
   import type { LucideIcon } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
-  const ICON_SIZE = 28;
+  const ICON_SIZE = 20;
 
   let {
     icon: Icon,
@@ -22,17 +22,25 @@
 <section
   class="mx-auto flex flex-col items-start gap-md pbs-2xl max-inline-problem medium:pbs-3xl expanded:pbs-problem-top"
 >
-  <span class="flex items-center justify-center rounded-panel bg-chip p-lg">
-    <Icon aria-hidden="true" size={ICON_SIZE} />
-  </span>
-  <h1 tabindex="-1" class="text-headline font-bold">
-    {title}
-  </h1>
-  <p class="text-muted">{body}</p>
+  <div class="flex items-center gap-md">
+    <span
+      class="flex shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent block-header-badge inline-header-badge desktop:block-header-badge-desktop desktop:inline-header-badge-desktop"
+    >
+      <Icon
+        aria-hidden="true"
+        size={ICON_SIZE}
+        class="desktop:block-header-icon-desktop desktop:inline-header-icon-desktop"
+      />
+    </span>
+    <h1 tabindex="-1" class="text-problem-title font-bold tracking-tight">
+      {title}
+    </h1>
+  </div>
+  <p class="text-reading text-muted desktop:text-reading-small">{body}</p>
   {#if detail !== undefined}
     <p
       dir="ltr"
-      class="self-stretch rounded-card bg-chip p-md font-mono text-caption break-all"
+      class="self-stretch rounded-card bg-well px-list-row py-md font-mono text-caption break-all"
     >
       {detail}
     </p>
