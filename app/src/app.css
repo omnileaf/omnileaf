@@ -105,7 +105,9 @@
   --text-page-title: 2rem;
   --text-page-title--line-height: 1.1;
   --text-crash-screen-title: 1.5rem;
-  --text-crash-screen-title--line-height: 1.2;
+  --text-crash-screen-title--line-height: 1.25;
+  --text-crash-screen-body: 0.9375rem;
+  --text-crash-screen-body--line-height: 1.5;
   --text-dialog-body: 0.875rem;
   --text-dialog-body--line-height: 1.5;
   --text-code: 0.75rem;
@@ -118,7 +120,6 @@
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
-  --font-weight-extrabold: 800;
 
   --tracking-stand-in: 0.08em;
 
@@ -225,10 +226,10 @@
   --spacing-switch-knob-compact: 1.25rem;
   --spacing-cover-thumb: 3.5rem;
   --spacing-preview: 17.5rem;
-  --spacing-crash-screen-icon: 3.75rem;
+  --spacing-crash-screen-badge: 2.5rem;
   --spacing-crash-screen-inset: 1.75rem;
   --spacing-crash-screen-top: 6.875rem;
-  --spacing-crash-screen-button: 3.125rem;
+  --spacing-crash-screen-button: 3.25rem;
   --spacing-dialog-badge: 2.25rem;
   --spacing-dialog-inset: 1.25rem;
   --spacing-dialog-gap: 1rem;
@@ -291,7 +292,7 @@
   --radius-list: 0.625rem;
   --radius-panel: 1rem;
   --radius-notice: 1.25rem;
-  --radius-crash-screen-icon: 1.125rem;
+  --radius-crash-screen-button: 0.875rem;
   --radius-dialog: 1rem;
   --radius-dialog-button: 0.625rem;
   --radius-checkbox: 0.3125rem;

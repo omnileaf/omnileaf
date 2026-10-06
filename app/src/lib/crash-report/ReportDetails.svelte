@@ -1,16 +1,6 @@
 <script lang="ts">
-  import type { PromptLook } from "./look";
-
-  let { details, look }: { details: string; look: PromptLook } = $props();
-
-  const LOOKS = {
-    phone: "rounded-card",
-    dialog: "rounded-card",
-  } satisfies Record<PromptLook, string>;
+  let { details }: { details: string } = $props();
 </script>
 
 <pre
-  class={[
-    "self-stretch bg-well px-list-row py-md font-mono text-code wrap-anywhere whitespace-pre-wrap",
-    LOOKS[look],
-  ]}>{details}</pre>
+  class="self-stretch rounded-card bg-well px-list-row py-md font-mono text-code wrap-anywhere whitespace-pre-wrap">{details}</pre>

@@ -21,7 +21,7 @@
       "m-auto overflow-y-auto rounded-dialog border border-dialog-edge bg-card p-dialog-inset shadow-dialog inline-full max-inline-crash-report backdrop:bg-scrim",
   } satisfies Record<PromptLook, string>;
 
-  const PHONE_ICON_SIZE = 28;
+  const PHONE_BADGE_ICON_SIZE = 20;
   const DIALOG_BADGE_ICON_SIZE = 18;
   const BACK_ARROW_SIZE = 24;
   const BACK_CHEVRON_SIZE = 22;
@@ -104,35 +104,39 @@
         <div
           class="flex flex-col items-start gap-dialog-gap px-crash-screen-inset pbs-crash-screen-top pbe-xl"
         >
-          <span
-            class="flex items-center justify-center rounded-crash-screen-icon bg-chip block-crash-screen-icon inline-crash-screen-icon"
-          >
-            <Bug size={PHONE_ICON_SIZE} />
-          </span>
-          <h1
-            id={titleId}
-            tabindex="-1"
-            data-prompt-title
-            class="text-crash-screen-title font-extrabold"
-          >
-            {m.crash_report_title_now()}
-          </h1>
-          <p id={bodyId} class="text-callout text-foreground/85">
+          <div class="flex items-center gap-md">
+            <span
+              aria-hidden="true"
+              data-prompt-badge
+              class="flex shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent block-crash-screen-badge inline-crash-screen-badge"
+            >
+              <Bug size={PHONE_BADGE_ICON_SIZE} />
+            </span>
+            <h1
+              id={titleId}
+              tabindex="-1"
+              data-prompt-title
+              class="text-crash-screen-title font-bold tracking-tight"
+            >
+              {m.crash_report_title_now()}
+            </h1>
+          </div>
+          <p id={bodyId} class="text-crash-screen-body text-muted">
             {PHONE_BODIES[asking.origin]()}
           </p>
-          <ReportDetails details={asking.details} {look} />
+          <ReportDetails details={asking.details} />
           <AlwaysSendChoice bind:checked={alwaysSend} {look} />
           <div class="mbs-sm flex flex-col gap-sm self-stretch">
             <button
               type="button"
-              class="rounded-full bg-accent text-callout font-bold text-on-accent min-block-crash-screen-button"
+              class="rounded-full bg-accent text-callout font-bold text-on-accent min-block-crash-screen-button ios:rounded-crash-screen-button"
               onclick={send}
             >
               {m.crash_report_send_phone()}
             </button>
             <button
               type="button"
-              class="rounded-full border border-quiet-edge text-callout font-bold min-block-crash-screen-button"
+              class="rounded-full border border-quiet-edge text-callout font-bold min-block-crash-screen-button ios:rounded-crash-screen-button"
               onclick={copy}
             >
               {isCopied ? m.crash_report_copied() : m.crash_report_copy()}
@@ -163,7 +167,7 @@
         <p id={bodyId} class="-mbs-xs text-dialog-body text-muted">
           {m.crash_report_body()}
         </p>
-        <ReportDetails details={asking.details} {look} />
+        <ReportDetails details={asking.details} />
         <AlwaysSendChoice bind:checked={alwaysSend} {look} />
         <div class="mbs-xs flex flex-wrap items-center justify-end gap-sm">
           <button

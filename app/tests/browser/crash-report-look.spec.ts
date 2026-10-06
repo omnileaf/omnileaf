@@ -1,7 +1,14 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { CrashReportOffer } from "../../src/lib/ipc/bindings.ts";
-import { boxOf, expect, onPlatform, test, viewportOf } from "./fixtures.ts";
+import type { CrashReportOffer, Platform } from "../../src/lib/ipc/bindings.ts";
+import {
+  boxOf,
+  expect,
+  MEDIUM_MIN_WIDTH,
+  onPlatform,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
 
 const SAVED_PANIC: CrashReportOffer = {
   details: "Omnileaf 1.2.3 on Linux\nPanic: index out of bounds\n",
@@ -18,7 +25,30 @@ const DIALOG_LOOK = {
   width: 420,
   well: "rgb(243, 240, 233)",
   accent: "rgb(47, 111, 79)",
+  accentSoft: "rgb(221, 235, 226)",
+  muted: "rgb(95, 91, 82)",
 };
+
+const PHONE_LOOK = {
+  badge: 40,
+  title: "24px",
+  button: 52,
+  iosCorner: 14,
+};
+
+function cornerFits(platform: "android" | "ios", radius: number): boolean {
+  return platform === "ios"
+    ? radius === PHONE_LOOK.iosCorner
+    : radius >= PHONE_LOOK.button / 2;
+}
+
+function isPhoneScreen(page: Page, platform: Platform): boolean {
+  return platform !== "linux" && viewportOf(page).width < MEDIUM_MIN_WIDTH;
+}
+
+function badgeSizeOn(page: Page, platform: Platform): number {
+  return isPhoneScreen(page, platform) ? PHONE_LOOK.badge : DIALOG_LOOK.badge;
+}
 
 function prompt(page: Page): Locator {
   return page.getByRole("alertdialog");
@@ -39,7 +69,7 @@ function styleOf(locator: Locator, property: string): Promise<string> {
   );
 }
 
-for (const platform of ["android", "linux"] as const) {
+for (const platform of ["android", "ios", "linux"] as const) {
   test.describe(`on ${platform}, the crash report header`, () => {
     test.use({
       backend: {
@@ -67,15 +97,20 @@ for (const platform of ["android", "linux"] as const) {
     test("draws the badge as a round, accent-toned circle", async ({
       page,
     }) => {
+      await page.emulateMedia({ colorScheme: "light" });
       await page.goto("/");
+      const size = badgeSizeOn(page, platform);
 
       const badge = await boxOf(badgeOf(page));
 
-      expect(badge.width).toBe(DIALOG_LOOK.badge);
-      expect(badge.height).toBe(DIALOG_LOOK.badge);
+      expect(badge.width).toBe(size);
+      expect(badge.height).toBe(size);
       expect(
         Number.parseFloat(await styleOf(badgeOf(page), "border-radius")),
-      ).toBeGreaterThanOrEqual(DIALOG_LOOK.badge / 2);
+      ).toBeGreaterThanOrEqual(size / 2);
+      expect(await styleOf(badgeOf(page), "background-color")).toBe(
+        DIALOG_LOOK.accentSoft,
+      );
       await expect(badgeOf(page)).toHaveAttribute("aria-hidden", "true");
     });
   });
@@ -192,3 +227,64 @@ test.describe("on desktop, the crash report dialog", () => {
     expect(await styleOf(copy, "color")).toBe(DIALOG_LOOK.accent);
   });
 });
+
+for (const platform of ["android", "ios"] as const) {
+  test.describe(`on an ${platform} phone, the crash report screen`, () => {
+    test.use({
+      backend: {
+        ...onPlatform(platform).backend,
+        offerSavedCrashReport: () => SAVED_PANIC,
+      },
+    });
+
+    test.beforeEach(async ({ page }) => {
+      await page.emulateMedia({ colorScheme: "light" });
+      await page.goto("/");
+      test.skip(!isPhoneScreen(page, platform), "phones only");
+      await expect(prompt(page)).toBeVisible();
+    });
+
+    test("sets a bold 24px title and muted body", async ({ page }) => {
+      const body = prompt(page).getByText(/Nothing was lost/);
+
+      expect(await styleOf(titleOf(page), "font-size")).toBe(PHONE_LOOK.title);
+      expect(await styleOf(titleOf(page), "font-weight")).toBe("700");
+      expect(await styleOf(body, "color")).toBe(DIALOG_LOOK.muted);
+    });
+
+    test("sets the details on the well colour", async ({ page }) => {
+      expect(
+        await styleOf(
+          prompt(page).getByText("Panic: index out of bounds"),
+          "background-color",
+        ),
+      ).toBe(DIALOG_LOOK.well);
+    });
+
+    test("stacks full-width 52px buttons, the report on top", async ({
+      page,
+    }) => {
+      const report = prompt(page).getByRole("button", {
+        name: "Report the problem",
+      });
+      const copy = prompt(page).getByRole("button", { name: "Copy details" });
+      const details = await boxOf(
+        prompt(page).getByText("Panic: index out of bounds"),
+      );
+
+      for (const button of [report, copy]) {
+        const box = await boxOf(button);
+        expect(box.height).toBe(PHONE_LOOK.button);
+        expect(box.x).toBe(details.x);
+        expect(box.width).toBe(details.width);
+        expect(
+          cornerFits(
+            platform,
+            Number.parseFloat(await styleOf(button, "border-top-left-radius")),
+          ),
+        ).toBe(true);
+      }
+      expect((await boxOf(report)).y).toBeLessThan((await boxOf(copy)).y);
+    });
+  });
+}
