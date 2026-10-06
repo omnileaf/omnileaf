@@ -2,7 +2,7 @@ use std::{fmt, str::FromStr};
 
 use omnileaf_sync_proto::{BookId, SeriesId};
 
-use crate::Error;
+use crate::{Error, title_key::TitleStamp};
 
 const TITLE_TAG: u8 = 1;
 const ADDED_TAG: u8 = 2;
@@ -19,7 +19,9 @@ pub struct Cursor(pub(crate) Position);
 /// The sort values of the last row on a page, which the next page starts after.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Position {
+    /// Carries the stamp its key was made under, since a key made under another compares differently.
     Title {
+        stamp: TitleStamp,
         sort_key: Vec<u8>,
         id: SeriesId,
     },
@@ -40,7 +42,11 @@ pub(crate) enum Position {
 impl Position {
     fn to_bytes(&self) -> Vec<u8> {
         match self {
-            Self::Title { sort_key, id } => [&[TITLE_TAG][..], id.as_bytes(), sort_key].concat(),
+            Self::Title {
+                stamp,
+                sort_key,
+                id,
+            } => [&[TITLE_TAG][..], id.as_bytes(), stamp.as_bytes(), sort_key].concat(),
             Self::Added { added_at_ms, id } => {
                 [&[ADDED_TAG][..], &added_at_ms.to_be_bytes(), id.as_bytes()].concat()
             }
@@ -57,8 +63,10 @@ impl Position {
         let (&tag, rest) = bytes.split_first()?;
         match tag {
             TITLE_TAG => {
-                let (id, sort_key) = rest.split_first_chunk::<ID_LENGTH>()?;
+                let (id, rest) = rest.split_first_chunk::<ID_LENGTH>()?;
+                let (stamp, sort_key) = rest.split_first_chunk::<{ TitleStamp::LENGTH }>()?;
                 Some(Self::Title {
+                    stamp: TitleStamp::from(*stamp),
                     sort_key: sort_key.to_vec(),
                     id: SeriesId::try_from(id.as_slice()).ok()?,
                 })

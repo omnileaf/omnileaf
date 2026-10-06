@@ -162,7 +162,7 @@ async fn announces_the_keys_a_write_changed_once_it_commits() {
 
     assert_eq!(
         changes.try_recv(),
-        Ok(Changed {
+        Ok(Changed::Registers {
             keys: BTreeSet::from([
                 Key::from(LatestKey::BookPosition(book(1))),
                 Key::from(MaximumKey::BookFurthest(book(1))),

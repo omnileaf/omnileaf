@@ -11,7 +11,7 @@ use omnileaf_db::{
     Database, Error,
     catalog::{
         BookFile, NewRoot, NewSeries, RootId, RootKind, RootLocator, ScannedBook, add_root,
-        record_scanned_book,
+        record_scanned_books,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId, SourceId};
@@ -71,10 +71,12 @@ impl Library {
     }
 
     async fn record(&self, scanned: ScannedBook) -> SeriesId {
-        self.database
-            .write(move |transaction| record_scanned_book(transaction, &scanned))
+        let filed_in = self
+            .database
+            .write(move |transaction| record_scanned_books(transaction, &[scanned]))
             .await
-            .unwrap()
+            .unwrap();
+        *filed_in.first().unwrap()
     }
 
     async fn series(&self) -> Vec<(String, i64)> {
@@ -166,6 +168,32 @@ async fn adds_the_series_the_book_and_the_file_a_scan_found() {
             modified_at_ms: MODIFIED_AT_MS,
             rev: 1,
         }]
+    );
+}
+
+#[tokio::test]
+async fn files_each_book_of_a_batch_in_the_series_its_folder_names() {
+    let library = Library::open("scanned-batch").await;
+    let batch = vec![
+        library.found("Sample Series 01", "Sample Series 01/Volume 01.cbz", 1),
+        library.found("Sample Series 02", "Sample Series 02/Volume 02.cbz", 2),
+        library.found("Sample Series 01", "Sample Series 01/Volume 03.cbz", 3),
+    ];
+    let expected: Vec<SeriesId> = batch.iter().map(|book| book.series.id()).collect();
+
+    let filed_in = library
+        .database
+        .write(move |transaction| record_scanned_books(transaction, &batch))
+        .await
+        .unwrap();
+
+    assert_eq!(filed_in, expected);
+    assert_eq!(
+        library.series().await,
+        [
+            ("Sample Series 01".to_owned(), 2),
+            ("Sample Series 02".to_owned(), 1)
+        ]
     );
 }
 
@@ -273,7 +301,7 @@ async fn refuses_a_book_whose_series_name_is_held_by_another_series_id() {
         .database
         .write(|transaction| {
             Ok(transaction.execute(
-                "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
                  VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
                 [SourceId::local().as_bytes()],
             )?)
@@ -285,7 +313,7 @@ async fn refuses_a_book_whose_series_name_is_held_by_another_series_id() {
 
     let outcome = library
         .database
-        .write(move |transaction| record_scanned_book(transaction, &found))
+        .write(move |transaction| record_scanned_books(transaction, &[found]))
         .await;
 
     assert!(matches!(outcome, Err(Error::UnknownSeries { id }) if id == series));
