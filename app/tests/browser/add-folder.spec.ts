@@ -5,11 +5,24 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
+  viewportOf,
 } from "./fixtures.ts";
 
 const EMPTY_LIBRARY = "Your library is empty";
+const SAMPLE_LIBRARY_SCANNED = {
+  ...DEFAULT_BACKEND,
+  addLibraryFolder: () => ({
+    name: "Sample Library",
+    series: 3,
+    books: 7,
+    unreadableBooks: 0,
+    unsupportedBooks: 0,
+    unreadableFolders: 0,
+  }),
+};
 
 const PLACES = [
   { place: "the empty library", path: "/", region: EMPTY_LIBRARY },
@@ -31,19 +44,7 @@ function scanReport(page: Page, opening: string): Locator {
 }
 
 test.describe("with a folder of books", () => {
-  test.use({
-    backend: {
-      ...DEFAULT_BACKEND,
-      addLibraryFolder: () => ({
-        name: "Sample Library",
-        series: 3,
-        books: 7,
-        unreadableBooks: 0,
-        unsupportedBooks: 0,
-        unreadableFolders: 0,
-      }),
-    },
-  });
+  test.use({ backend: SAMPLE_LIBRARY_SCANNED });
 
   for (const { place, path, region } of PLACES) {
     test(`adds a folder from ${place} and reports the books scanned in it`, async ({
@@ -199,5 +200,37 @@ for (const colorScheme of ["light", "dark"] as const) {
     const violations = await accessibilityViolations(page);
 
     expect(violations).toEqual([]);
+  });
+}
+
+for (const { platform, titleSize } of [
+  { platform: "linux", titleSize: "14px" },
+  { platform: "android", titleSize: "15px" },
+] as const) {
+  test.describe(`on ${platform}`, () => {
+    test.use({
+      backend: {
+        ...SAMPLE_LIBRARY_SCANNED,
+        appInfo: onPlatform(platform).backend.appInfo,
+      },
+    });
+
+    test(`titles the report under the folders at ${titleSize}`, async ({
+      page,
+    }) => {
+      test.skip(
+        platform === "android" && viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+        "phones only",
+      );
+      await page.goto("/settings/library");
+
+      await addFolderIn(page, "Folders").click();
+
+      await expect(
+        scanReport(page, "Found").getByText(
+          "Found 7 books in 3 series in Sample Library.",
+        ),
+      ).toHaveCSS("font-size", titleSize);
+    });
   });
 }
