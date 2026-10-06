@@ -157,7 +157,7 @@ test.describe("with a pointer", () => {
       expect(circle).toEqual({ width: POINTER_TARGET, height: POINTER_TARGET });
     });
 
-    for (const name of ["Remove Sample Comics", "Cancel"]) {
+    for (const name of ["Remove folder", "Cancel"]) {
       test(`tints the dialog's ${name} button under the pointer`, async ({
         page,
       }) => {

@@ -228,8 +228,24 @@
   "library_folders_failed": "⟦Çöûļðñ'ţ ļöáð ýöûŕ ƒöļðéŕš. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
   "library_remove_folder": "⟦Ŕéɱöṽé ƒöļðéŕ······⟧",
   "library_remove_folder_label": "⟦Ŕéɱöṽé {name}······⟧",
-  "library_remove_folder_title": "⟦Ŕéɱöṽé {name}?······⟧",
-  "library_remove_folder_body": "⟦Íţš çöɱíçš ļéáṽé ýöûŕ ļíƀŕáŕý. Ţĥé ƒíļéš šţáý ŵĥéŕé ţĥéý áŕé.·························⟧",
+  "library_remove_folder_title": "⟦Ŕéɱöṽé ţĥíš ƒöļðéŕ?········⟧",
+  "library_remove_folder_detail": [
+    {
+      "declarations": [
+        "input location",
+        "input books",
+        "local booksPlural = books: plural",
+        "local formattedBooks = books: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "⟦{location} · {formattedBooks} ƀööķ··············⟧",
+        "booksPlural=other": "⟦{location} · {formattedBooks} ƀööķš··············⟧"
+      }
+    }
+  ],
+  "library_remove_folder_note": "⟦Íţš ƀööķš ļéáṽé ýöûŕ ļíƀŕáŕý. Ţĥé ƒíļéš šţáý ŵĥéŕé ţĥéý áŕé, áñð ýöû çáñ áðð ţĥé ƒöļðéŕ áĝáíñ.······································⟧",
+  "library_remove_folder_confirm": "⟦Ŕéɱöṽé ƒöļðéŕ······⟧",
   "library_remove_folder_cancel": "⟦Çáñçéļ···⟧",
   "library_remove_folder_failed": "⟦Çöûļðñ'ţ ŕéɱöṽé {name}. Ţŕý áĝáíñ.··············⟧",
   "library_rescan_folder": "⟦Ŕéšçáñ···⟧",

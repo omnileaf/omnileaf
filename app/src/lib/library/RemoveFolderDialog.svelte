@@ -1,17 +1,25 @@
 <script lang="ts">
-  import { Trash } from "@lucide/svelte";
+  import { Folder, FolderMinus, ShieldCheck } from "@lucide/svelte";
 
   import type { LibraryFolder } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
 
-  import { ICON_SIZE } from "./icon-size";
+  import { folderTitle } from "./folder-title";
+
+  const DIALOG_ICON_SIZE = 18;
+  const NOTE_ICON_SIZE = 16;
+
+  const BUTTON =
+    "rounded-full px-lg text-body font-semibold transition-control min-block-touch-button focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ios:max-medium:rounded-ios-button medium:rounded-button medium:text-label medium:min-block-pointer-target";
 
   let {
     folder,
+    books,
     onConfirm,
     onCancel,
   }: {
     folder: LibraryFolder | undefined;
+    books: number | undefined;
     onConfirm: (folder: LibraryFolder) => void;
     onCancel: () => void;
   } = $props();
@@ -25,6 +33,12 @@
       dialog.close();
     }
   });
+
+  function detailOf(folder: LibraryFolder): string {
+    return books === undefined
+      ? folder.location
+      : m.library_remove_folder_detail({ location: folder.location, books });
+  }
 </script>
 
 <dialog
@@ -32,7 +46,7 @@
   role="alertdialog"
   aria-labelledby="remove-folder-title"
   aria-describedby="remove-folder-body"
-  class="m-auto flex-col gap-md bg-sheet p-xl text-foreground backdrop:bg-scrim open:flex max-medium:mbe-none max-medium:rounded-ss-sheet max-medium:rounded-se-sheet max-medium:pbe-page-bottom max-medium:inline-full max-medium:max-inline-full medium:rounded-sheet medium:shadow-dialog medium:inline-dialog"
+  class="m-auto flex-col gap-lg bg-card px-sheet-inline text-foreground backdrop:bg-scrim open:flex max-medium:mbe-none max-medium:rounded-ss-confirm-sheet max-medium:rounded-se-confirm-sheet max-medium:pbs-sm max-medium:pbe-page-bottom max-medium:inline-full max-medium:max-inline-full medium:rounded-panel medium:border medium:border-dialog-edge medium:py-sheet-inline medium:shadow-dialog medium:inline-dialog"
   oncancel={(event) => {
     event.preventDefault();
     onCancel();
@@ -40,34 +54,75 @@
 >
   {#if folder !== undefined}
     <span
-      class="flex items-center justify-center rounded-control bg-danger-soft text-danger block-icon-badge inline-icon-badge"
-    >
-      <Trash size={ICON_SIZE} aria-hidden="true" />
-    </span>
-    <h2 id="remove-folder-title" class="text-title font-bold">
-      {m.library_remove_folder_title({ name: folder.name })}
-    </h2>
-    <p id="remove-folder-body" class="text-muted">
-      {m.library_remove_folder_body()}
-    </p>
+      aria-hidden="true"
+      class="self-center rounded-full bg-step-off block-sheet-handle-block inline-sheet-handle medium:hidden"
+    ></span>
+    <div class="flex items-center gap-md">
+      <span
+        class="flex shrink-0 items-center justify-center rounded-full bg-danger-soft text-danger block-header-badge inline-header-badge"
+      >
+        <FolderMinus size={DIALOG_ICON_SIZE} aria-hidden="true" />
+      </span>
+      <h2
+        id="remove-folder-title"
+        class="text-dialog-title font-bold max-medium:text-sheet-title"
+      >
+        {m.library_remove_folder_title()}
+      </h2>
+    </div>
+    <div id="remove-folder-body" class="flex flex-col gap-md">
+      <div
+        class="flex items-center gap-md rounded-card bg-well px-list-row py-md"
+      >
+        <span
+          class="flex shrink-0 items-center justify-center rounded-control bg-card block-icon-tile inline-icon-tile"
+        >
+          <Folder size={DIALOG_ICON_SIZE} aria-hidden="true" />
+        </span>
+        <div class="flex flex-col min-inline-none">
+          <p class="truncate text-callout font-semibold max-medium:text-body">
+            {folderTitle(folder)}
+          </p>
+          <p class="text-footnote wrap-break-word text-muted">
+            {detailOf(folder)}
+          </p>
+        </div>
+      </div>
+      <p
+        class="flex items-start gap-sm text-footnote text-muted max-medium:text-label"
+      >
+        <ShieldCheck
+          size={NOTE_ICON_SIZE}
+          aria-hidden="true"
+          class="mbs-2xs shrink-0 text-accent"
+        />
+        <span>{m.library_remove_folder_note()}</span>
+      </p>
+    </div>
     <div
-      class="mbs-sm flex flex-col gap-sm medium:flex-row-reverse medium:justify-start"
+      class="mbs-xs flex flex-col-reverse gap-sheet-buttons medium:grid medium:grid-cols-2 medium:gap-sm"
     >
       <button
         type="button"
-        class="rounded-full bg-danger px-lg font-semibold text-on-danger transition-control min-block-touch-target hover:bg-danger-hover active:bg-danger-pressed medium:rounded-control"
+        class={[
+          BUTTON,
+          "bg-chip hover:tint-hover active:tint-pressed medium:border medium:border-border medium:bg-card",
+        ]}
+        onclick={onCancel}
+      >
+        {m.library_remove_folder_cancel()}
+      </button>
+      <button
+        type="button"
+        class={[
+          BUTTON,
+          "bg-danger text-on-danger hover:bg-danger-hover active:bg-danger-pressed",
+        ]}
         onclick={() => {
           onConfirm(folder);
         }}
       >
-        {m.library_remove_folder_label({ name: folder.name })}
-      </button>
-      <button
-        type="button"
-        class="rounded-full border border-border px-lg font-semibold transition-control min-block-touch-target hover:bg-hover active:bg-pressed medium:rounded-control"
-        onclick={onCancel}
-      >
-        {m.library_remove_folder_cancel()}
+        {m.library_remove_folder_confirm()}
       </button>
     </div>
   {/if}

@@ -1,8 +1,10 @@
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
+  MEDIUM_MIN_WIDTH,
   test,
 } from "./fixtures.ts";
 
@@ -61,7 +63,13 @@ const LIBRARY_BACKEND: FakeBackend = {
     library.folders = library.folders.filter((folder) => folder.id !== id);
     return null;
   },
+  libraryFolderBookCount: () => 342,
 };
+
+const DANGER_SOFT = "rgb(246, 227, 227)";
+const DIALOG_BUTTON_HEIGHT = 40;
+const SHEET_BUTTON_HEIGHT = 52;
+const SHEET_INSET = 20;
 
 test.use({ backend: LIBRARY_BACKEND });
 
@@ -125,10 +133,10 @@ test("removes a folder once the removal is confirmed", async ({ page }) => {
   const folders = page.getByRole("region", { name: "Folders" });
   await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
   const dialog = page.getByRole("alertdialog", {
-    name: "Remove Sample Comics?",
+    name: "Remove this folder?",
   });
 
-  await dialog.getByRole("button", { name: "Remove Sample Comics" }).click();
+  await dialog.getByRole("button", { name: "Remove folder" }).click();
 
   await expect(dialog).toBeHidden();
   await expect(folders.getByRole("listitem")).toHaveCount(0);
@@ -151,6 +159,104 @@ test("keeps a folder when the removal is dismissed with Escape", async ({
   await expect(page.getByRole("alertdialog")).toBeHidden();
   await expect(folders.getByRole("listitem")).toHaveCount(1);
   await expect(remove).toBeFocused();
+});
+
+test("shows the folder and its books in the removal question", async ({
+  page,
+}) => {
+  await page.goto("/settings/library");
+
+  await page.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  const dialog = page.getByRole("alertdialog", {
+    name: "Remove this folder?",
+  });
+  await expect(
+    dialog.getByText("Sample Comics", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByText("/media/Sample Comics · 342 books"),
+  ).toBeVisible();
+  await expect(
+    dialog.getByText(
+      "Its books leave your library. The files stay where they are, and you can add the folder again.",
+    ),
+  ).toBeVisible();
+});
+
+test("marks the removal question with a round danger badge", async ({
+  page,
+}) => {
+  await page.goto("/settings/library");
+
+  await page.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  const badge = page
+    .getByRole("alertdialog")
+    .locator("span:has(> svg.lucide-folder-minus)");
+  await expect(badge).toHaveCSS("background-color", DANGER_SOFT);
+  const { width, height } = await boxOf(badge);
+  const radius = await badge.evaluate((element) =>
+    parseFloat(getComputedStyle(element).borderRadius),
+  );
+  expect(width).toBe(height);
+  expect(radius).toBeGreaterThanOrEqual(width / 2);
+});
+
+test.describe("from medium screens up", () => {
+  test.skip(
+    ({ viewport }) => (viewport?.width ?? 0) < MEDIUM_MIN_WIDTH,
+    "screens with room for a dialog",
+  );
+
+  test("puts Cancel and Remove folder side by side at equal widths", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library");
+    await page.getByRole("button", { name: "Remove Sample Comics" }).click();
+    const dialog = page.getByRole("alertdialog");
+
+    const cancel = await boxOf(dialog.getByRole("button", { name: "Cancel" }));
+    const remove = await boxOf(
+      dialog.getByRole("button", { name: "Remove folder" }),
+    );
+
+    expect(cancel.x + cancel.width).toBeLessThan(remove.x);
+    expect(cancel.y).toBe(remove.y);
+    expect(cancel.width).toBeCloseTo(remove.width, 0);
+    expect([cancel.height, remove.height]).toEqual([
+      DIALOG_BUTTON_HEIGHT,
+      DIALOG_BUTTON_HEIGHT,
+    ]);
+  });
+});
+
+test.describe("on phones", () => {
+  test.skip(
+    ({ viewport }) => (viewport?.width ?? 0) >= MEDIUM_MIN_WIDTH,
+    "phone-width screens only",
+  );
+
+  test("stacks Remove folder above Cancel across the sheet", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library");
+    await page.getByRole("button", { name: "Remove Sample Comics" }).click();
+    const dialog = page.getByRole("alertdialog");
+    const sheet = await boxOf(dialog);
+
+    const remove = await boxOf(
+      dialog.getByRole("button", { name: "Remove folder" }),
+    );
+    const cancel = await boxOf(dialog.getByRole("button", { name: "Cancel" }));
+
+    expect(remove.y + remove.height).toBeLessThan(cancel.y);
+    for (const button of [remove, cancel]) {
+      expect(button.x).toBe(sheet.x + SHEET_INSET);
+      expect(button.width).toBe(sheet.width - 2 * SHEET_INSET);
+      expect(button.height).toBe(SHEET_BUTTON_HEIGHT);
+    }
+  });
 });
 
 for (const colorScheme of ["light", "dark"] as const) {
