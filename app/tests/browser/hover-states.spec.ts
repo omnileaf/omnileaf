@@ -29,7 +29,10 @@ const WITH_A_LINKED_FOLDER: FakeBackend = {
   }),
   addLibraryFolder: () => ({
     name: "Sample Library",
-    comicFiles: 3,
+    series: 1,
+    books: 3,
+    unreadableBooks: 0,
+    unsupportedBooks: 0,
     unreadableFolders: 0,
   }),
 };
@@ -126,6 +129,28 @@ test.describe("with a pointer", () => {
       await remove.hover();
 
       expect(await inkOf(remove)).not.toBe(resting);
+    });
+
+    test("draws a 40px circle behind a row action under the pointer", async ({
+      page,
+    }) => {
+      await page.goto("/settings/library");
+      const remove = page.getByRole("button", {
+        name: "Remove Sample Comics",
+      });
+      const resting = await paintOf(remove, "::before");
+
+      await remove.hover();
+
+      const circle = await remove.evaluate((element) => {
+        const style = getComputedStyle(element, "::before");
+        return {
+          width: parseFloat(style.inlineSize),
+          height: parseFloat(style.blockSize),
+        };
+      });
+      expect(await paintOf(remove, "::before")).not.toBe(resting);
+      expect(circle).toEqual({ width: POINTER_TARGET, height: POINTER_TARGET });
     });
 
     for (const name of ["Remove Sample Comics", "Cancel"]) {
