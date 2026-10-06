@@ -3,6 +3,7 @@ import type { Locator } from "@playwright/test";
 import { addFolderBesideFolders, addFolderInPageHeading } from "./controls.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
+  boxOf,
   expect,
   LARGE_MIN_WIDTH,
   onPlatform,
@@ -15,6 +16,7 @@ import { openViewOptions, viewOptionsButton } from "./view-options.ts";
 const BUTTON_CORNER = "10px";
 const ROW_CORNER = "8px";
 const KEY_CORNER = "6px";
+const PAGE_BUTTON_HEIGHT = 36;
 const DESKTOP_STEPPER_CORNER = "8px";
 
 function withSeries(platform: "linux" | "android" | "ios"): FakeBackend {
@@ -74,6 +76,17 @@ test.describe("on a desktop", () => {
 
     expect(await cornerOf(destination)).toBe(ROW_CORNER);
     expect(await cornerOf(section)).toBe(ROW_CORNER);
+  });
+
+  test("draws the library heading's buttons 36px tall", async ({ page }) => {
+    await page.goto("/");
+    await expect(viewOptionsButton(page)).toBeVisible();
+
+    const addFolder = await boxOf(addFolderInPageHeading(page));
+    const view = await boxOf(viewOptionsButton(page));
+
+    expect(addFolder.height).toBe(PAGE_BUTTON_HEIGHT);
+    expect(view.height).toBe(PAGE_BUTTON_HEIGHT);
   });
 
   test("keeps the View panel's stepper at 8px", async ({ page }) => {
