@@ -43,7 +43,7 @@ pub fn run() {
         .setup(move |app| {
             commands.mount_events(app);
             open_library(app, &config?).inspect_err(|error| {
-                tracing::error!(%error, "open the library");
+                tracing::error!(error = %describe_error(error.as_ref()), "open the library");
             })
         });
     #[cfg(desktop)]
