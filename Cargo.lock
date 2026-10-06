@@ -3280,6 +3280,7 @@ dependencies = [
  "jpeg-encoder",
  "png 0.18.1",
  "thiserror 2.0.21",
+ "tokio",
  "zip",
 ]
 
