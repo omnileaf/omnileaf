@@ -72,7 +72,7 @@ test("shows the home folder and the linked folders in Settings › Library", asy
   );
   await expect(
     page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
-  ).toHaveText(["Sample Comics /media/Sample Comics Remove"]);
+  ).toHaveText(["Sample Comics /media/Sample Comics"]);
 });
 
 test("lists a folder as soon as it is added", async ({ page }) => {
@@ -83,9 +83,34 @@ test("lists a folder as soon as it is added", async ({ page }) => {
   await folders.getByRole("button", { name: "Add a folder" }).click();
 
   await expect(folders.getByRole("listitem")).toHaveText([
-    "Sample Comics /media/Sample Comics Remove",
-    "Sample Library /media/Sample Library Remove",
+    "Sample Comics /media/Sample Comics",
+    "Sample Library /media/Sample Library",
   ]);
+});
+
+test("shows Remove as an icon with its verb as the tooltip", async ({
+  page,
+}) => {
+  await page.goto("/settings/library");
+  const folders = page.getByRole("region", { name: "Folders" });
+
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+
+  await expect(remove).toHaveText("");
+  await expect(remove).toHaveAttribute("title", "Remove");
+});
+
+test("rings Remove when the keyboard reaches it", async ({ page }) => {
+  await page.goto("/settings/library");
+  const folders = page.getByRole("region", { name: "Folders" });
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+  await expect(remove).toBeVisible();
+  await folders.getByRole("button", { name: "Add a folder" }).focus();
+
+  await page.keyboard.press("Tab");
+
+  await expect(remove).toBeFocused();
+  await expect(remove).toHaveCSS("outline-style", "solid");
 });
 
 test("removes a folder once the removal is confirmed", async ({ page }) => {

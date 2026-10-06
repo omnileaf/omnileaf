@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { FolderMinus } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   import type { LibraryFolder } from "$lib/ipc/bindings";
@@ -10,12 +11,14 @@
   import { FolderAdding } from "./folder-adding.svelte";
   import FolderNotice from "./FolderNotice.svelte";
   import FolderRow from "./FolderRow.svelte";
+  import { ACTION_ICON_SIZE } from "./icon-size";
   import {
     LibraryFolders,
     type ListFolders,
     type RemoveFolder,
   } from "./library-folders.svelte";
   import RemoveFolderDialog from "./RemoveFolderDialog.svelte";
+  import RowActionButton from "./RowActionButton.svelte";
 
   let {
     listFolders,
@@ -111,18 +114,15 @@
           <li>
             <FolderRow {folder}>
               {#snippet action()}
-                <button
-                  type="button"
-                  aria-label={m.library_remove_folder_label({
-                    name: folder.name,
-                  })}
-                  class="shrink-0 rounded-control px-md font-medium text-muted min-block-touch-target"
+                <RowActionButton
+                  label={m.library_remove_folder_label({ name: folder.name })}
+                  tooltip={m.library_remove_folder()}
                   onclick={() => {
                     confirming = folder;
                   }}
                 >
-                  {m.library_remove_folder()}
-                </button>
+                  <FolderMinus size={ACTION_ICON_SIZE} aria-hidden="true" />
+                </RowActionButton>
               {/snippet}
             </FolderRow>
           </li>
