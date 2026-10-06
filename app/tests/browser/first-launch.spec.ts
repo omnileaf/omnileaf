@@ -65,6 +65,7 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
       series: 3,
       books: 7,
       unreadableBooks: 0,
+      unsupportedBooks: 0,
       unreadableFolders: 0,
     };
   },
