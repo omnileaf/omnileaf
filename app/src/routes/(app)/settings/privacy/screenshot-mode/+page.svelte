@@ -83,7 +83,7 @@
   >
     {#snippet trailing()}
       {#if hasKeyboard}
-        <ShortcutKeys />
+        <ShortcutKeys platform={data.appInfo.platform} />
       {/if}
     {/snippet}
   </SettingSwitch>
@@ -166,7 +166,7 @@
               {m.screenshot_mode_shortcut_help()}
             </span>
           </span>
-          <ShortcutKeys />
+          <ShortcutKeys platform={data.appInfo.platform} />
         </div>
       </section>
     {/if}

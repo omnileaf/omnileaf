@@ -1,9 +1,15 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
+  import type { Platform } from "$lib/ipc/bindings";
+
+  import { screenshotModeShortcutOn } from "./shortcut";
+
+  let { platform }: { readonly platform: Platform } = $props();
+
+  const shortcut = $derived(screenshotModeShortcutOn(platform));
 </script>
 
 <kbd
   class="shrink-0 rounded-badge border border-border bg-chip px-sm py-2xs font-ui text-caption font-bold whitespace-nowrap"
 >
-  {m.screenshot_mode_shortcut_keys()}
+  {shortcut.label()}
 </kbd>
