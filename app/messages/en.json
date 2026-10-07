@@ -39,6 +39,7 @@
   "library_view_display": "Display",
   "library_display_grid": "Grid",
   "library_display_compact": "Compact",
+  "library_display_covers": "Covers",
   "library_display_list": "List",
   "library_covers_per_row": "Covers per row",
   "library_covers_per_row_range": "{fewest} to {most}",

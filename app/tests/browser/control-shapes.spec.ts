@@ -28,12 +28,12 @@ const DESKTOP_SEGMENT_HEIGHT = 32;
 const DESKTOP_SEGMENT_TRACK_HEIGHT = 38;
 const DESKTOP_SEGMENT_TRACK_CORNER = "8px";
 const DESKTOP_SEGMENT_CORNER = "6px";
-const DESKTOP_SEGMENT_TEXT = "13px";
+const DESKTOP_SEGMENT_TEXT = "12px";
 const PHONE_SEGMENT_HEIGHT = 40;
 const PHONE_SEGMENT_TRACK_HEIGHT = 48;
 const PHONE_SEGMENT_TRACK_CORNER = "10px";
 const PHONE_SEGMENT_CORNER = "8px";
-const PHONE_SEGMENT_TEXT = "14px";
+const PHONE_SEGMENT_TEXT = "13px";
 const DESKTOP_STEPPER_CORNER = "8px";
 
 function withSeries(platform: "linux" | "android" | "ios"): FakeBackend {

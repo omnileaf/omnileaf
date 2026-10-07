@@ -74,6 +74,20 @@ async fn remembers_the_view_after_the_library_reopens() {
 }
 
 #[tokio::test]
+async fn remembers_covers_only() {
+    let folder = ScratchFolder::new("library-view-covers");
+    let database = Database::open(&folder.config()).unwrap();
+    let covers_only = StoredLibraryView {
+        display: LibraryDisplay::Covers,
+        ..COMPACT_OF_TWO
+    };
+
+    set(&database, covers_only).await.unwrap();
+
+    assert_eq!(stored(&database).await, Some(covers_only));
+}
+
+#[tokio::test]
 async fn keeps_only_the_view_set_last() {
     let folder = ScratchFolder::new("library-view-again");
     let database = Database::open(&folder.config()).unwrap();

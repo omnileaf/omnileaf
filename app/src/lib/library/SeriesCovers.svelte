@@ -51,6 +51,11 @@
           item: "min-inline-none",
           cell: compactCell,
         },
+        covers: {
+          list: ["grid-cols-covers-per-row", look.gap],
+          item: "min-inline-none",
+          cell: coversCell,
+        },
         list: {
           list: "grid-cols-1",
           item: "box-content flex items-center gap-cover-gap border-be border-border py-sm min-block-series-row large:gap-lg large:py-series-row-pad-wide large:min-block-series-row-wide",
@@ -94,6 +99,17 @@
         {one.title}
       </p>
     </div>
+  </div>
+{/snippet}
+
+{#snippet coversCell(one: LibrarySeries)}
+  <div
+    title={one.title}
+    class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+  >
+    <CoverImage cover={one.cover} {coverUrl} />
+    <CoverBadges series={one} onCovers={view.onCovers} />
+    <p class="sr-only">{one.title}</p>
   </div>
 {/snippet}
 

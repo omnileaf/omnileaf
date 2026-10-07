@@ -35,6 +35,7 @@ pub struct OnCovers {
 pub enum LibraryDisplay {
     Grid,
     Compact,
+    Covers,
     List,
 }
 
@@ -177,6 +178,7 @@ impl From<LibraryView> for StoredLibraryView {
             display: match view.display {
                 LibraryDisplay::Grid => StoredDisplay::Grid,
                 LibraryDisplay::Compact => StoredDisplay::Compact,
+                LibraryDisplay::Covers => StoredDisplay::Covers,
                 LibraryDisplay::List => StoredDisplay::List,
             },
             phone_covers_per_row: view.covers_per_row.phone.get(),
@@ -196,6 +198,7 @@ impl TryFrom<StoredLibraryView> for LibraryView {
             display: match stored.display {
                 StoredDisplay::Grid => LibraryDisplay::Grid,
                 StoredDisplay::Compact => LibraryDisplay::Compact,
+                StoredDisplay::Covers => LibraryDisplay::Covers,
                 StoredDisplay::List => LibraryDisplay::List,
             },
             covers_per_row: CoversPerRow {
@@ -307,6 +310,25 @@ mod tests {
             .collect();
 
         assert_eq!(counts, [3, 4, 5, 6, 7, 8]);
+    }
+
+    #[test]
+    fn stores_covers_only_and_reads_it_back() {
+        let view = LibraryView {
+            display: LibraryDisplay::Covers,
+            ..LibraryView::default()
+        };
+
+        let read = LibraryView::try_from(StoredLibraryView::from(view));
+
+        assert_eq!(read, Ok(view));
+    }
+
+    #[test]
+    fn names_covers_only_covers_for_the_interface() {
+        let sent = serde_json::to_value(LibraryDisplay::Covers).unwrap();
+
+        assert_eq!(sent, serde_json::json!("covers"));
     }
 
     #[test]

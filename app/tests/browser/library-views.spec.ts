@@ -38,7 +38,7 @@ interface ListLook {
   readonly coverHeight: number;
 }
 
-const PANEL_WIDTH = 340;
+const PANEL_WIDTH = 360;
 
 const RANGE_LABELS = {
   phone: "2 to 5 on this phone",
@@ -260,6 +260,23 @@ test("fades a compact title's band into the cover above it", async ({
   expect(background).toContain("linear-gradient");
 });
 
+test("draws only the covers, naming each one without printing its title", async ({
+  page,
+}) => {
+  await openWith(page, viewWith(page, "covers"));
+  const cover = firstSeries(page).getByRole("presentation").locator("..");
+  const title = firstSeries(page).getByText(FIRST_TITLE);
+
+  const titleBox = await boxOf(title);
+
+  expect(await columnsOf(seriesList(page))).toBe(
+    DEFAULT_LIBRARY_VIEW.coversPerRow[screenSizeOf(page)],
+  );
+  expect(titleBox.width * titleBox.height).toBeLessThanOrEqual(1);
+  await expect(cover).toHaveAttribute("title", FIRST_TITLE);
+  await expect(firstSeries(page).getByText("1 book")).toHaveCount(0);
+});
+
 test("draws a list with a small cover beside each title and its book count", async ({
   page,
 }) => {
@@ -292,7 +309,7 @@ test("starts a list row's cover at the reading direction's start in a right-to-l
   expect(cover.x).toBeGreaterThan(title.x + title.width);
 });
 
-for (const display of ["compact", "list"] as const) {
+for (const display of ["compact", "covers", "list"] as const) {
   for (const colorScheme of ["light", "dark"] as const) {
     test(`the ${display} library has no accessibility violations in the ${colorScheme} theme`, async ({
       page,
@@ -468,6 +485,34 @@ test.describe("view options", () => {
     const shown = await boxOf(count.locator(".."));
     expect(shown.x).toBeGreaterThan(title.x + title.width);
     await expect.poll(() => storedView.showsItemCounts).toBe(true);
+  });
+
+  test("fits each display's label inside its segment", async ({ page }) => {
+    await openWith(page, viewWith(page, "grid"));
+    const options = await openViewOptions(page);
+
+    const overflowing = await options
+      .locator("label")
+      .filter({ has: page.getByRole("radio") })
+      .evaluateAll((labels) =>
+        labels
+          .filter((label) => label.scrollWidth > label.clientWidth)
+          .map((label) => label.textContent.trim()),
+      );
+
+    expect(overflowing).toEqual([]);
+  });
+
+  test("offers covers only and stores it on this device", async ({ page }) => {
+    await openWith(page, viewWith(page, "grid"));
+    const options = await openViewOptions(page);
+
+    await choose(options, "Covers");
+
+    await expect.poll(() => storedView.display).toBe("covers");
+    await expect(
+      firstSeries(page).getByRole("presentation").locator(".."),
+    ).toHaveAttribute("title", FIRST_TITLE);
   });
 
   test("draws the view chosen before when the library opens again", async ({

@@ -49,6 +49,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0012_add_library_root_unavailable_since"),
     migration!("0013_create_library_view"),
     migration!("0014_store_series_source_ids_as_sixteen_bytes"),
+    migration!("0015_allow_covers_only_library_view"),
 ];
 
 pub(crate) fn pending(
