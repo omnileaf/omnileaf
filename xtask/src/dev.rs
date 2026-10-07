@@ -1,7 +1,7 @@
 use std::{
     env, io,
     net::{TcpStream, ToSocketAddrs},
-    path::Path,
+    path::{Path, PathBuf},
     process::Child,
     thread,
     time::{Duration, Instant},
@@ -23,6 +23,7 @@ const PHONE_DEV_HOST: &str = "TAURI_DEV_HOST";
 const DEV_SERVER_TIMEOUT: Duration = Duration::from_secs(60);
 const DEV_SERVER_POLL: Duration = Duration::from_millis(250);
 const WINDOWS: &str = "windows";
+const DATA_DIR_VARIABLE: &str = "OMNILEAF_DATA_DIR";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub(crate) enum Platform {
@@ -54,6 +55,24 @@ struct Targets {
 pub(crate) struct Devices {
     pub(crate) ios: Option<String>,
     pub(crate) android: Option<String>,
+}
+
+/// What `dev` starts: the platforms, the devices they run on, and a data folder for the desktop app in place of its usual one.
+#[derive(Debug, Default)]
+pub(crate) struct Session {
+    pub(crate) platforms: Vec<Platform>,
+    pub(crate) devices: Devices,
+    pub(crate) desktop_data: Option<PathBuf>,
+}
+
+/// The data folder setting a platform's app starts with; only the desktop app reads one, from the computer it runs on.
+fn data_folder_setting(
+    platform: Platform,
+    desktop_data: Option<&Path>,
+) -> Option<(&'static str, &Path)> {
+    desktop_data
+        .filter(|_| platform == Platform::Desktop)
+        .map(|folder| (DATA_DIR_VARIABLE, folder))
 }
 
 const WITHOUT_DEV_SERVER: &str = r#"{"build":{"beforeDevCommand":null}}"#;
@@ -184,10 +203,14 @@ pub(crate) fn tauri_args(platform: Platform, devices: &Devices) -> Vec<String> {
         .collect()
 }
 
-pub(crate) fn run(root: &Path, platforms: &[Platform], devices: &Devices) -> anyhow::Result<()> {
-    let targets = chosen_targets(platforms, devices, &Process::in_workspace())?;
+pub(crate) fn run(root: &Path, session: &Session) -> anyhow::Result<()> {
+    let targets = chosen_targets(
+        &session.platforms,
+        &session.devices,
+        &Process::in_workspace(),
+    )?;
     let mut dev_server = start_dev_server(root, reach(&targets, env::consts::OS))?;
-    let outcome = wait_for_dev_server().and_then(|()| run_platforms(root, platforms, devices));
+    let outcome = wait_for_dev_server().and_then(|()| run_platforms(root, session));
     stop(&mut dev_server).context("stop the Vite dev server")?;
     outcome
 }
@@ -247,14 +270,20 @@ fn dev_server_answers() -> anyhow::Result<bool> {
         .any(|address| TcpStream::connect_timeout(&address, DEV_SERVER_POLL).is_ok()))
 }
 
-fn run_platforms(root: &Path, platforms: &[Platform], devices: &Devices) -> anyhow::Result<()> {
-    let apps = platforms
+fn run_platforms(root: &Path, session: &Session) -> anyhow::Result<()> {
+    let apps = session
+        .platforms
         .iter()
         .map(|&platform| {
-            command_for("pnpm")
-                .args(tauri_args(platform, devices))
-                .current_dir(root)
-                .spawn()
+            let mut app = command_for("pnpm");
+            app.args(tauri_args(platform, &session.devices))
+                .current_dir(root);
+            if let Some((variable, folder)) =
+                data_folder_setting(platform, session.desktop_data.as_deref())
+            {
+                app.env(variable, folder);
+            }
+            app.spawn()
                 .map(|app| (platform, app))
                 .with_context(|| format!("start the {platform:?} app"))
         })
@@ -287,6 +316,28 @@ fn stop(child: &mut Child) -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn gives_the_desktop_app_a_fresh_data_folder() {
+        let folder = Path::new("/work/omnileaf/target/dev-data/1");
+
+        let setting = data_folder_setting(Platform::Desktop, Some(folder));
+
+        assert_eq!(setting, Some((DATA_DIR_VARIABLE, folder)));
+    }
+
+    #[test]
+    fn leaves_the_phones_and_a_plain_run_with_their_own_data() {
+        let folder = Path::new("/work/omnileaf/target/dev-data/1");
+
+        let settings = [
+            data_folder_setting(Platform::Ios, Some(folder)),
+            data_folder_setting(Platform::Android, Some(folder)),
+            data_folder_setting(Platform::Desktop, None),
+        ];
+
+        assert_eq!(settings, [None, None, None]);
+    }
     use crate::devices::Kind;
 
     #[test]

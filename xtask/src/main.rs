@@ -78,7 +78,7 @@ enum Command {
         /// The Android device or emulator to run on, by name.
         #[arg(long)]
         android_device: Option<String>,
-        /// Remove the app from the phones, emulators and Simulators first, so it starts with no data.
+        /// Start the app with no data: remove it from the phones, emulators and Simulators, and give the desktop app a new data folder under `target/dev-data`.
         #[arg(long)]
         fresh: bool,
     },
@@ -150,10 +150,20 @@ fn main() -> anyhow::Result<()> {
             };
             let platforms = dev::platforms_to_run(&platforms, &devices, std::env::consts::OS)?;
             let devices = dev::settle_devices(&platforms, &devices, &Process::in_workspace())?;
+            let root = workspace::root();
+            let mut desktop_data = None;
             if fresh {
-                fresh::clear(&workspace::root(), &platforms, &devices)?;
+                fresh::clear(&root, &platforms, &devices)?;
+                if platforms.contains(&dev::Platform::Desktop) {
+                    desktop_data = Some(fresh::start_desktop_data(&root)?);
+                }
             }
-            dev::run(&workspace::root(), &platforms, &devices)?;
+            let session = dev::Session {
+                platforms,
+                devices,
+                desktop_data,
+            };
+            dev::run(&root, &session)?;
         }
         Command::Devices => list_devices()?,
         Command::Doctor => {
