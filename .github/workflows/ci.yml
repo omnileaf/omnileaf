@@ -283,8 +283,36 @@ jobs:
       - name: Install interface dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Name the test browsers' system packages
+        id: browser-packages
+        run: |
+          playwright=$(pnpm --dir app exec playwright --version)
+          digest=$(printf '%s %s %s' "$ImageOS" "$ImageVersion" "$playwright" | sha256sum | cut -c1-16)
+          echo "key=playwright-system-packages-$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the test browsers' system packages
+        id: restore-browser-packages
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/browser-packages
+          key: ${{ steps.browser-packages.outputs.key }}
+
       - name: Install the test browsers
-        run: pnpm --dir app exec playwright install --with-deps chromium webkit
+        run: |
+          if compgen -G "$HOME/browser-packages/*.deb" > /dev/null; then
+            sudo cp "$HOME"/browser-packages/*.deb /var/cache/apt/archives/
+          fi
+          pnpm --dir app exec playwright install --with-deps chromium webkit
+          mkdir -p "$HOME/browser-packages"
+          find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp -t "$HOME/browser-packages" {} +
+          echo "Kept $(find "$HOME/browser-packages" -name '*.deb' | wc -l) system packages for the next run"
+
+      - name: Keep the test browsers' system packages for later runs
+        if: github.ref == 'refs/heads/main' && matrix.shard == 1 && steps.restore-browser-packages.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/browser-packages
+          key: ${{ steps.browser-packages.outputs.key }}
 
       - name: Install the pinned toolchain
         run: rustup toolchain install
