@@ -24,6 +24,8 @@ const IOS_BUTTON_CORNER = "14px";
 const SHEET_CORNER = "24px";
 const PANEL_TITLE_SIZE = "17px";
 const PANEL_TITLE_LINE_HEIGHT = 22.1;
+const CHOSEN_SEGMENT_WEIGHT = "600";
+const SEGMENT_WEIGHT = "500";
 const DESKTOP_SEGMENT_HEIGHT = 32;
 const DESKTOP_SEGMENT_TRACK_HEIGHT = 38;
 const DESKTOP_SEGMENT_TRACK_CORNER = "8px";
@@ -66,6 +68,45 @@ function displaySegment(panel: Locator, name: string): Locator {
     .locator("label")
     .filter({ has: panel.page().getByRole("radio", { name }) });
 }
+
+test.describe("in every segmented control", () => {
+  test.use({ backend: withSeries("linux") });
+
+  test("sets the chosen display in semibold and the others in medium", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const panel = await openViewOptions(page);
+
+    await expect(displaySegment(panel, "Grid")).toHaveCSS(
+      "font-weight",
+      CHOSEN_SEGMENT_WEIGHT,
+    );
+    await expect(displaySegment(panel, "Compact")).toHaveCSS(
+      "font-weight",
+      SEGMENT_WEIGHT,
+    );
+  });
+
+  test("sets the chosen theme in semibold and the others in medium", async ({
+    page,
+  }) => {
+    await page.goto("/settings/appearance");
+    const options = page
+      .locator("label")
+      .filter({ has: page.getByRole("radio") });
+
+    await expect(
+      options.filter({ has: page.getByRole("radio", { checked: true }) }),
+    ).toHaveCSS("font-weight", CHOSEN_SEGMENT_WEIGHT);
+    await expect(
+      options
+        .filter({ has: page.getByRole("radio", { checked: false }) })
+        .first(),
+    ).toHaveCSS("font-weight", SEGMENT_WEIGHT);
+  });
+});
 
 test.describe("on a desktop", () => {
   test.use({ backend: withSeries("linux") });

@@ -47,7 +47,7 @@
         class={[
           "relative flex flex-auto items-center justify-center gap-icon-gap rounded-small-control px-sm text-detail transition-control block-segment min-inline-none before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent large:rounded-segment large:text-caption large:block-segment-compact",
           chosen === choice.display
-            ? "bg-raised font-bold shadow-raised"
+            ? "bg-raised font-semibold shadow-raised"
             : "font-medium text-muted hover:bg-hover",
         ]}
       >
@@ -69,7 +69,7 @@
         <span class="grid min-inline-none">
           <span
             aria-hidden="true"
-            class="invisible col-start-1 row-start-1 truncate font-bold"
+            class="invisible col-start-1 row-start-1 truncate font-semibold"
           >
             {choice.label()}
           </span>
