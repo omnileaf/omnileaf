@@ -522,3 +522,31 @@ jobs:
       - name: Build the app
         if: runner.os == 'Windows'
         run: pnpm --dir app tauri build --debug --no-bundle
+
+  prune-caches:
+    name: prune caches
+    needs: [rust, portable, coverage, fixtures, interface, browser, android, ios, app]
+    if: always() && (github.event_name == 'push' || github.event_name == 'schedule')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Keep the newest cache of each kind saved from main
+        run: |
+          gh api --paginate "repos/$GH_REPO/actions/caches?per_page=100" --jq '.actions_caches[]' \
+            | jq -s -r '
+                [.[] | .family = (.key | sub("-[0-9a-f]{8,}$"; ""))]
+                | (map(select(.ref != "refs/heads/main")) | map(.id))
+                  + (map(select(.ref == "refs/heads/main"))
+                     | group_by(.family)
+                     | map(sort_by(.created_at) | reverse | .[1:] | map(.id))
+                     | add // [])
+                | .[]' \
+            | while read -r id; do
+                gh api -X DELETE "repos/$GH_REPO/actions/caches/$id" --silent && echo "Deleted cache $id"
+              done
+          gh api "repos/$GH_REPO/actions/cache/usage" --jq '"Caches now hold \(.active_caches_size_in_bytes / 1048576 | floor) MB"'
