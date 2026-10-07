@@ -58,6 +58,74 @@ pub(crate) struct Devices {
 
 const WITHOUT_DEV_SERVER: &str = r#"{"build":{"beforeDevCommand":null}}"#;
 
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum DeviceWithoutPlatform {
+    Ios,
+    Android,
+}
+
+impl std::fmt::Display for DeviceWithoutPlatform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Ios => "--ios-device needs ios in --platform",
+            Self::Android => "--android-device needs android in --platform",
+        })
+    }
+}
+
+impl std::error::Error for DeviceWithoutPlatform {}
+
+/// Runs the platforms asked for, or else the ones whose device is named, or else every one this machine builds for.
+pub(crate) fn platforms_to_run(
+    explicit: &[Platform],
+    chosen: &Devices,
+    os: &str,
+) -> Result<Vec<Platform>, DeviceWithoutPlatform> {
+    let named: Vec<Platform> = [
+        chosen.ios.as_ref().map(|_| Platform::Ios),
+        chosen.android.as_ref().map(|_| Platform::Android),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+    if explicit.is_empty() {
+        return Ok(if named.is_empty() {
+            platforms_for(os)
+        } else {
+            named
+        });
+    }
+    match named.iter().find(|platform| !explicit.contains(platform)) {
+        Some(Platform::Ios) => Err(DeviceWithoutPlatform::Ios),
+        Some(Platform::Android) => Err(DeviceWithoutPlatform::Android),
+        Some(Platform::Desktop) | None => Ok(explicit.to_vec()),
+    }
+}
+
+/// Swaps a forgiving name for the one device it answers to, keeping a name nothing or several devices answer to as it was.
+fn listed_name(chosen: &str, devices: &[Device]) -> String {
+    let mut answering = devices.iter().filter(|device| device.answers_to(chosen));
+    match (answering.next(), answering.next()) {
+        (Some(device), None) => device.name.clone(),
+        _ => chosen.to_owned(),
+    }
+}
+
+/// Names each chosen device the way `cargo xtask devices` lists it, which is the name Tauri matches.
+pub(crate) fn listed_names(chosen: &Devices, machine: &impl Machine) -> anyhow::Result<Devices> {
+    let android = chosen.android.as_deref().map(|name| {
+        let listed = android::Toolchain::locate(|key| env::var_os(key), env::consts::OS)
+            .map(|toolchain| devices::android_devices(machine, &toolchain))
+            .unwrap_or_default();
+        listed_name(name, &listed)
+    });
+    let ios = match chosen.ios.as_deref() {
+        Some(name) => Some(listed_name(name, &devices::ios_devices(machine)?)),
+        None => None,
+    };
+    Ok(Devices { ios, android })
+}
+
 pub(crate) fn platforms_for(os: &str) -> Vec<Platform> {
     if os == "macos" {
         vec![Platform::Desktop, Platform::Ios, Platform::Android]
@@ -423,5 +491,110 @@ mod tests {
         ];
 
         assert!(wait_for_apps(apps).is_ok());
+    }
+
+    fn chosen(ios: Option<&str>, android: Option<&str>) -> Devices {
+        Devices {
+            ios: ios.map(str::to_owned),
+            android: android.map(str::to_owned),
+        }
+    }
+
+    #[test]
+    fn runs_only_the_platforms_whose_device_is_named() {
+        let runs = [
+            chosen(Some("iphone-18-pro-max"), None),
+            chosen(None, Some("pixel-9-pro")),
+            chosen(Some("iphone-18-pro-max"), Some("pixel-9-pro")),
+        ]
+        .map(|devices| platforms_to_run(&[], &devices, "macos"));
+
+        assert_eq!(
+            runs,
+            [
+                Ok(vec![Platform::Ios]),
+                Ok(vec![Platform::Android]),
+                Ok(vec![Platform::Ios, Platform::Android]),
+            ]
+        );
+    }
+
+    #[test]
+    fn runs_every_platform_this_machine_builds_for_when_nothing_is_named() {
+        assert_eq!(
+            platforms_to_run(&[], &Devices::default(), "macos"),
+            Ok(platforms_for("macos"))
+        );
+    }
+
+    #[test]
+    fn keeps_the_platforms_asked_for() {
+        let explicit = [Platform::Desktop, Platform::Ios];
+
+        let runs = platforms_to_run(&explicit, &chosen(Some("iphone-18-pro-max"), None), "macos");
+
+        assert_eq!(runs, Ok(explicit.to_vec()));
+    }
+
+    #[test]
+    fn refuses_a_device_for_a_platform_left_out() {
+        let runs = [
+            platforms_to_run(
+                &[Platform::Android],
+                &chosen(Some("iphone-18-pro-max"), None),
+                "macos",
+            ),
+            platforms_to_run(
+                &[Platform::Desktop],
+                &chosen(None, Some("pixel-9-pro")),
+                "linux",
+            ),
+        ];
+
+        assert_eq!(
+            runs,
+            [
+                Err(DeviceWithoutPlatform::Ios),
+                Err(DeviceWithoutPlatform::Android),
+            ]
+        );
+    }
+
+    #[test]
+    fn uses_the_listed_name_of_the_device_a_forgiving_name_finds() {
+        let devices = [
+            listed(
+                Kind::IosSimulator,
+                State::Off,
+                "iPhone 18 Pro",
+                Some("75BD17D7"),
+            ),
+            listed(
+                Kind::IosSimulator,
+                State::Off,
+                "iPhone 18 Pro Max",
+                Some("2AD917AF"),
+            ),
+        ];
+
+        let names = ["iphone-18-pro-max", "iPhone 18 Pro", "75BD17D7"]
+            .map(|chosen| listed_name(chosen, &devices));
+
+        assert_eq!(
+            names,
+            ["iPhone 18 Pro Max", "iPhone 18 Pro", "iPhone 18 Pro"]
+        );
+    }
+
+    #[test]
+    fn keeps_a_name_no_device_answers_to() {
+        let devices = [listed(
+            Kind::AndroidEmulator,
+            State::Off,
+            "Pixel_10_Pro",
+            None,
+        )];
+
+        assert_eq!(listed_name("Nexus 5", &devices), "Nexus 5");
     }
 }
