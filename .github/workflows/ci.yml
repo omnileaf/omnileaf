@@ -53,9 +53,6 @@ jobs:
         include:
           - platform: linux
             runner: ubuntu-24.04
-          - platform: macos
-            runner: macos-15
-            budget-slack: 2
           - platform: windows
             runner: windows-2025
             budget-slack: 2
@@ -67,6 +64,20 @@ jobs:
       - uses: ./.github/actions/rust-gate
         with:
           budget-slack: ${{ matrix.budget-slack }}
+
+  rust-macos:
+    name: rust gate (macos)
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/rust-gate
+        with:
+          budget-slack: 2
 
   portable:
     name: portable gate
@@ -140,8 +151,6 @@ jobs:
         include:
           - platform: linux
             runner: ubuntu-24.04
-          - platform: macos
-            runner: macos-15
           - platform: windows
             runner: windows-2025
     steps:
@@ -153,9 +162,24 @@ jobs:
         with:
           platform: ${{ matrix.platform }}
 
+  fixtures-macos:
+    name: fixtures (macos)
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/fixtures-check
+        with:
+          platform: macos
+
   fixtures-agree:
     name: fixtures agree across platforms
-    needs: fixtures
+    needs: [fixtures, fixtures-macos]
+    if: ${{ !cancelled() && needs.fixtures.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.fixtures-macos.result) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -167,8 +191,10 @@ jobs:
       - name: Compare the fixture hashes
         run: |
           status=0
-          diff fixtures-linux.hashes fixtures-macos.hashes || status=1
           diff fixtures-linux.hashes fixtures-windows.hashes || status=1
+          if [ -f fixtures-macos.hashes ]; then
+            diff fixtures-linux.hashes fixtures-macos.hashes || status=1
+          fi
           exit "$status"
 
   interface:
@@ -396,10 +422,20 @@ jobs:
         include:
           - platform: linux
             runner: ubuntu-24.04
-          - platform: macos
-            runner: macos-15
           - platform: windows
             runner: windows-2025
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/app-gate
+
+  app-macos:
+    name: app (macos)
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')
+    runs-on: macos-15
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
