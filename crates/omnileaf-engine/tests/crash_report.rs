@@ -1,5 +1,5 @@
 use omnileaf_engine::{
-    CrashReport, CrashReportId, CrashedApp, PanicDetails, Platform, SourceLocation,
+    CrashReport, CrashReportId, CrashedApp, InterfaceError, PanicDetails, Platform, SourceLocation,
 };
 
 const BACKTRACE: &str = "   0: omnileaf_app::crash_reporting::hook
@@ -20,6 +20,9 @@ const BACKTRACE: &str = "   0: omnileaf_app::crash_reporting::hook
    9: std::rt::lang_start::<()>::{closure#0}
   10: main
 ";
+
+const MESSAGE_BYTE_LIMIT: usize = 240;
+const FRAME_LIMIT: usize = 12;
 
 fn app() -> CrashedApp {
     CrashedApp {
@@ -50,6 +53,18 @@ fn panic_report(message: &str) -> String {
     .to_string()
 }
 
+fn interface_report(message: &str, stack: Option<&str>) -> String {
+    CrashReport::from_interface_error(
+        id(),
+        app(),
+        &InterfaceError {
+            message: message.to_owned(),
+            stack: stack.map(str::to_owned),
+        },
+    )
+    .to_string()
+}
+
 fn located_at(file: &str) -> String {
     CrashReport::from_panic(
         id(),
@@ -65,6 +80,13 @@ fn located_at(file: &str) -> String {
         },
     )
     .to_string()
+}
+
+fn message_line(report: &str) -> &str {
+    report
+        .lines()
+        .find_map(|line| line.strip_prefix("Interface error: "))
+        .unwrap_or_default()
 }
 
 #[test]
@@ -84,16 +106,15 @@ fn gives_the_version_platform_system_message_location_and_backtrace() {
 
 #[test]
 fn names_the_platform_alone_when_the_system_is_unknown() {
-    let report = CrashReport::from_panic(
+    let report = CrashReport::from_interface_error(
         id(),
         CrashedApp {
             system: None,
             ..app()
         },
-        &PanicDetails {
-            message: "boom",
-            location: None,
-            backtrace: "",
+        &InterfaceError {
+            message: "boom".to_owned(),
+            stack: None,
         },
     )
     .to_string();
@@ -153,4 +174,47 @@ fn keeps_every_frame_when_the_backtrace_has_no_markers() {
         report.ends_with("Backtrace:\n  first::frame\n  second::frame\n"),
         "{report}"
     );
+}
+
+#[test]
+fn reports_an_interface_error_with_its_stack() {
+    let report = interface_report(
+        "TypeError: undefined is not an object",
+        Some(
+            "open@http://tauri.localhost/_app/chunks/reader.js:1:200\nTypeError: x\n    at turn (tauri://localhost/_app/chunks/reader.js:3:9)",
+        ),
+    );
+
+    assert_eq!(
+        report,
+        "Omnileaf 1.2.3 on Linux (Sample OS 4.5)\n\
+         Interface error: TypeError: undefined is not an object\n\
+         Stack:\n\
+         \x20 open@http://tauri.localhost/_app/chunks/reader.js:1:200\n\
+         \x20 TypeError: x\n\
+         \x20 at turn (tauri://localhost/_app/chunks/reader.js:3:9)\n"
+    );
+}
+
+#[test]
+fn shortens_a_long_message() {
+    let report = interface_report(&"a".repeat(1000), None);
+
+    let shown = message_line(&report);
+
+    assert_eq!(shown.len(), MESSAGE_BYTE_LIMIT, "{shown}");
+    assert!(shown.ends_with('…'), "{shown}");
+}
+
+#[test]
+fn keeps_at_most_a_screenful_of_frames() {
+    let stack: Vec<String> = (0..100).map(|n| format!("frame{n}")).collect();
+
+    let report = interface_report("boom", Some(&stack.join("\n")));
+
+    let frames = report
+        .lines()
+        .filter(|line| line.starts_with("  frame"))
+        .count();
+    assert_eq!(frames, FRAME_LIMIT);
 }

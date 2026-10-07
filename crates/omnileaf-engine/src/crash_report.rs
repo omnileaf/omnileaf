@@ -1,8 +1,13 @@
+mod scrub;
 mod trace;
 
 use std::fmt;
 
 use crate::{AppInfo, Platform};
+
+const MESSAGE_BYTE_LIMIT: usize = 240;
+const FRAME_LIMIT: usize = 12;
+const FRAME_BYTE_LIMIT: usize = 120;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct CrashReportId(u64);
@@ -37,11 +42,42 @@ pub struct PanicDetails<'a> {
     pub backtrace: &'a str,
 }
 
-/// A report about one crash, as text the person can read before deciding to send it.
+/// An error the interface didn't handle, as the webview describes it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InterfaceError {
+    pub message: String,
+    pub stack: Option<String>,
+}
+
+/// What crashed: the app itself, or only its interface.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CrashOrigin {
+    Panic,
+    Interface,
+}
+
+impl CrashOrigin {
+    fn message_label(self) -> &'static str {
+        match self {
+            Self::Panic => "Panic",
+            Self::Interface => "Interface error",
+        }
+    }
+
+    fn trace_label(self) -> &'static str {
+        match self {
+            Self::Panic => "Backtrace",
+            Self::Interface => "Stack",
+        }
+    }
+}
+
+/// A report about one crash, holding only text bounded to a readable length.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrashReport {
     id: CrashReportId,
     app: CrashedApp,
+    origin: CrashOrigin,
     message: String,
     location: Option<CodeLocation>,
     trace: Vec<String>,
@@ -58,7 +94,7 @@ struct CodeLocation {
 impl CodeLocation {
     fn package_relative(file: &str, line: u32, column: u32) -> Self {
         Self {
-            file: trace::package_relative(file),
+            file: scrub::bound(&trace::package_relative(file), FRAME_BYTE_LIMIT),
             line,
             column,
         }
@@ -77,14 +113,29 @@ impl CrashReport {
         Self {
             id,
             app,
-            message: panic.message.to_owned(),
+            origin: CrashOrigin::Panic,
+            message: scrub::bound(panic.message, MESSAGE_BYTE_LIMIT),
             location: panic.location.map(|location| {
                 CodeLocation::package_relative(location.file, location.line, location.column)
             }),
-            trace: trace::frame_names(panic.backtrace)
-                .into_iter()
-                .map(str::to_owned)
-                .collect(),
+            trace: clean_frames(trace::frame_names(panic.backtrace)),
+        }
+    }
+
+    #[must_use]
+    pub fn from_interface_error(
+        id: CrashReportId,
+        app: CrashedApp,
+        error: &InterfaceError,
+    ) -> Self {
+        let stack = error.stack.as_deref().unwrap_or_default();
+        Self {
+            id,
+            app,
+            origin: CrashOrigin::Interface,
+            message: scrub::bound(&error.message, MESSAGE_BYTE_LIMIT),
+            location: None,
+            trace: clean_frames(stack.lines().map(str::trim).filter(|line| !line.is_empty())),
         }
     }
 
@@ -92,6 +143,14 @@ impl CrashReport {
     pub fn id(&self) -> CrashReportId {
         self.id
     }
+}
+
+fn clean_frames<'a>(frames: impl IntoIterator<Item = &'a str>) -> Vec<String> {
+    frames
+        .into_iter()
+        .take(FRAME_LIMIT)
+        .map(|frame| scrub::bound(frame, FRAME_BYTE_LIMIT))
+        .collect()
 }
 
 impl fmt::Display for CrashReport {
@@ -107,14 +166,14 @@ impl fmt::Display for CrashReport {
             Some(system) => writeln!(f, " ({system})")?,
             None => writeln!(f)?,
         }
-        writeln!(f, "Panic: {}", self.message)?;
+        writeln!(f, "{}: {}", self.origin.message_label(), self.message)?;
         if let Some(location) = &self.location {
             writeln!(f, "At: {location}")?;
         }
         if self.trace.is_empty() {
             return Ok(());
         }
-        writeln!(f, "Backtrace:")?;
+        writeln!(f, "{}:", self.origin.trace_label())?;
         self.trace
             .iter()
             .try_for_each(|frame| writeln!(f, "  {frame}"))
