@@ -72,6 +72,14 @@ pub enum LibraryError {
     Interrupted(#[from] tokio::task::JoinError),
 }
 
+impl LibraryError {
+    /// True when a newer Omnileaf last wrote the library, which this build leaves alone rather than misread.
+    #[must_use]
+    pub fn was_written_by_a_newer_version(&self) -> bool {
+        matches!(self, Self::Database(omnileaf_db::Error::NewerSchema { .. }))
+    }
+}
+
 impl Library {
     /// Opens the library kept in `home`, creating the folder and its database on the first run.
     #[tracing::instrument(skip_all, fields(home = %home.display()))]

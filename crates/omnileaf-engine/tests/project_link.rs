@@ -20,8 +20,19 @@ fn opens_a_new_bug_report_in_the_repository() {
 }
 
 #[test]
+fn opens_the_latest_release_for_an_update() {
+    let url = ProjectLink::LatestRelease.url();
+
+    assert_eq!(url, format!("{REPOSITORY}/releases/latest"));
+}
+
+#[test]
 fn opens_only_https_pages() {
-    let links = [ProjectLink::SourceCode, ProjectLink::NewIssue];
+    let links = [
+        ProjectLink::SourceCode,
+        ProjectLink::NewIssue,
+        ProjectLink::LatestRelease,
+    ];
 
     let insecure: Vec<&str> = links
         .into_iter()

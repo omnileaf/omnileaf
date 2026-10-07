@@ -6,6 +6,7 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 /** Commands */
 export const commands = {
 	appInfo: () => __TAURI_INVOKE<AppInfo>("app_info"),
+	libraryProblem: () => __TAURI_INVOKE<"writtenByANewerVersion" | "couldNotOpen" | null>("library_problem"),
 	addLibraryFolder: (onProgress: Channel<ScanProgress>) => typedError<{
 	name: string,
 	series: number,
@@ -116,6 +117,8 @@ export type LibraryFolder = {
 	isAvailable: boolean,
 };
 
+export type LibraryProblem = "writtenByANewerVersion" | "couldNotOpen";
+
 export type LibrarySeries = {
 	id: string & { readonly __brand: "SeriesId" },
 	title: string,
@@ -147,7 +150,7 @@ export type OnCovers = {
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
 /**  The project's pages the app opens in the system browser; the interface names one, never a URL. */
-export type ProjectLink = "sourceCode" | "newIssue";
+export type ProjectLink = "sourceCode" | "newIssue" | "latestRelease";
 
 export type RescanOutcome = {
 	kind: "rescanned",

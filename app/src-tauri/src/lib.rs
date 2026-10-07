@@ -6,6 +6,7 @@ mod e2e;
 mod folder_picker;
 mod ipc_error;
 mod library_events;
+mod library_problem;
 mod omni_protocol;
 mod runtime_config;
 mod system_bars;
@@ -16,7 +17,11 @@ use std::{error::Error, path::Path};
 use omnileaf_engine::{Core, Library, ResourceRouter, SystemClock, describe_error};
 use tauri::{App, Manager};
 
-use crate::{library_events::LibraryChangesForwarding, runtime_config::RuntimeConfig};
+use crate::{
+    library_events::LibraryChangesForwarding,
+    library_problem::{LibraryAtLaunch, LibraryProblem},
+    runtime_config::RuntimeConfig,
+};
 
 /// Where the cache goes inside a data folder set for tests, so they leave nothing in the platform's cache folder.
 const CACHE_FOLDER: &str = "cache";
@@ -42,9 +47,12 @@ pub fn run() {
         .register_asynchronous_uri_scheme_protocol(omni_protocol::SCHEME, omni_protocol::answer)
         .setup(move |app| {
             commands.mount_events(app);
-            open_library(app, &config?).inspect_err(|error| {
-                tracing::error!(%error, "open the library");
-            })
+            let problem = open_library(app, &config?).err().map(|error| {
+                tracing::error!(error = %describe_error(error.as_ref()), "open the library");
+                LibraryProblem::of(error.as_ref())
+            });
+            app.manage(LibraryAtLaunch { problem });
+            Ok(())
         });
     #[cfg(desktop)]
     let app = app.plugin(tauri_plugin_dialog::init());

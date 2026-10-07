@@ -3160,6 +3160,7 @@ dependencies = [
 name = "omnileaf-app"
 version = "0.0.0"
 dependencies = [
+ "omnileaf-db",
  "omnileaf-engine",
  "os_info",
  "serde",

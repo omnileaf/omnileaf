@@ -39,5 +39,8 @@ tauri-plugin-dialog.workspace = true
 [target.'cfg(not(windows))'.dependencies]
 tauri-plugin-wdio-webdriver = { workspace = true, optional = true }
 
+[dev-dependencies]
+omnileaf-db.workspace = true
+
 [lints]
 workspace = true

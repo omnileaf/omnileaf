@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import { LinkOpening } from "$lib/about/link-opening.svelte";
   import {
     setThemeSetting,
     themeSettingForDocument,
@@ -12,6 +13,7 @@
     setLanguageSetting,
   } from "$lib/language/language.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import LibraryProblemScreen from "$lib/problems/LibraryProblemScreen.svelte";
   import {
     screenshotModeForDocument,
     setScreenshotMode,
@@ -23,7 +25,7 @@
 
   import "../app.css";
 
-  let { children }: LayoutProps = $props();
+  let { data, children }: LayoutProps = $props();
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
@@ -52,8 +54,12 @@
     void commands.setAppLanguage(language.resolved);
   });
 
+  const opening = new LinkOpening(commands.openProjectLink);
+
   onMount(() => {
-    void rescanEveryFolder();
+    if (data.libraryProblem === null) {
+      void rescanEveryFolder();
+    }
   });
 </script>
 
@@ -70,7 +76,11 @@
   {/key}
 </svelte:head>
 
-{@render children()}
+{#if data.libraryProblem === null}
+  {@render children()}
+{:else}
+  <LibraryProblemScreen problem={data.libraryProblem} {opening} />
+{/if}
 {#key language.resolved}
   <ScreenshotModeAnnouncement />
 {/key}

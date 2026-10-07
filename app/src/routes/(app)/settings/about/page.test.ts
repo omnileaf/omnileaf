@@ -13,6 +13,7 @@ const PROPS = {
       sourceCode: "repo.example.org/omnileaf",
     },
     isFirstLaunch: false,
+    libraryProblem: null,
     notices: new Notices(),
   },
   params: {},
