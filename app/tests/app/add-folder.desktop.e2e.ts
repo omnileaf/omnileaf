@@ -42,7 +42,9 @@ const VIEW_OPTIONS_BUTTON = xpath("//button[@aria-label='View options']");
 const LIBRARY_ADD_FOLDER_BUTTON = xpath(
   "//main[.//button[@aria-label='View options']]//button[normalize-space()='Add a folder']",
 );
-const LIST_CHOICE = xpath("//dialog[@open]//label[normalize-space()='List']");
+const LIST_CHOICE = xpath(
+  "//dialog[@open]//label[.//span[not(@aria-hidden='true')][normalize-space()='List']]",
+);
 const SERIES_IN_ONE_COLUMN = `const series = document.querySelector("ul[aria-label='Series']");
 return series !== null && series.children.length > 0 && getComputedStyle(series).gridTemplateColumns.split(" ").length === 1;`;
 

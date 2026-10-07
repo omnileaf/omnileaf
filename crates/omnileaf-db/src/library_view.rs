@@ -36,6 +36,7 @@ const SET_VIEW: &str = "INSERT INTO library_view (
 pub enum LibraryDisplay {
     Grid,
     Compact,
+    Covers,
     List,
 }
 
@@ -141,12 +142,13 @@ impl LibraryDisplay {
         match self {
             Self::Grid => "grid",
             Self::Compact => "compact",
+            Self::Covers => "covers",
             Self::List => "list",
         }
     }
 
     fn stored(name: String) -> Result<Self, Error> {
-        [Self::Grid, Self::Compact, Self::List]
+        [Self::Grid, Self::Compact, Self::Covers, Self::List]
             .into_iter()
             .find(|display| display.as_stored() == name)
             .ok_or(Error::UnsupportedLibraryDisplay { name })

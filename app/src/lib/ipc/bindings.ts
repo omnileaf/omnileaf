@@ -107,7 +107,7 @@ export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "fol
 /**  Series came, went, changed or sort in a new order, so a list of them should be read again. */
 export type LibraryChanged = null;
 
-export type LibraryDisplay = "grid" | "compact" | "list";
+export type LibraryDisplay = "grid" | "compact" | "covers" | "list";
 
 export type LibraryFolder = {
 	id: string & { readonly __brand: "FolderId" },

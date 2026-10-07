@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { Grid3x3, LayoutGrid, List, type LucideProps } from "@lucide/svelte";
+  import {
+    Grid3x3,
+    Images,
+    LayoutGrid,
+    List,
+    type LucideProps,
+  } from "@lucide/svelte";
   import type { Component } from "svelte";
 
   import type { LibraryDisplay } from "$lib/ipc/bindings";
@@ -16,6 +22,7 @@
   const CHOICES: readonly Choice[] = [
     { display: "grid", label: m.library_display_grid, icon: LayoutGrid },
     { display: "compact", label: m.library_display_compact, icon: Grid3x3 },
+    { display: "covers", label: m.library_display_covers, icon: Images },
     { display: "list", label: m.library_display_list, icon: List },
   ];
 
@@ -28,19 +35,19 @@
   const group = $props.id();
 </script>
 
-<fieldset>
+<fieldset class="min-inline-none">
   <legend class="text-detail font-semibold text-muted large:text-caption">
     {m.library_view_display()}
   </legend>
   <div
-    class="mbs-sm grid grid-cols-3 gap-xs rounded-field bg-chip p-xs large:mbs-icon-gap large:rounded-small-control large:p-segment-track"
+    class="mbs-sm flex gap-xs rounded-field bg-chip p-xs large:mbs-icon-gap large:rounded-small-control large:p-segment-track"
   >
     {#each CHOICES as choice (choice.display)}
       <label
         class={[
-          "relative flex items-center justify-center gap-icon-gap rounded-small-control text-label transition-control block-segment before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent large:rounded-segment large:text-detail large:block-segment-compact",
+          "relative flex flex-auto items-center justify-center gap-icon-gap rounded-small-control px-sm text-detail transition-control block-segment min-inline-none before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent large:rounded-segment large:text-caption large:block-segment-compact",
           chosen === choice.display
-            ? "bg-raised font-bold shadow-raised"
+            ? "bg-raised font-semibold shadow-raised"
             : "font-medium text-muted hover:bg-hover",
         ]}
       >
@@ -59,7 +66,17 @@
           aria-hidden="true"
           class="large:block-segment-icon-desktop large:inline-segment-icon-desktop"
         />
-        {choice.label()}
+        <span class="grid min-inline-none">
+          <span
+            aria-hidden="true"
+            class="invisible col-start-1 row-start-1 truncate font-semibold"
+          >
+            {choice.label()}
+          </span>
+          <span class="col-start-1 row-start-1 truncate">
+            {choice.label()}
+          </span>
+        </span>
       </label>
     {/each}
   </div>
