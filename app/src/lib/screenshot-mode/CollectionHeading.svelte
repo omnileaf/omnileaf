@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import PageHeading from "$lib/page/PageHeading.svelte";
 
   import ScreenshotModeLabel from "./ScreenshotModeLabel.svelte";
@@ -6,16 +8,30 @@
   interface Props {
     readonly title: string;
     readonly showsLabel: boolean;
+    readonly count?: Snippet;
+    readonly actions?: Snippet;
   }
 
-  let { title, showsLabel }: Props = $props();
+  let { title, showsLabel, count, actions }: Props = $props();
 </script>
 
-<header
-  class="flex flex-col items-start gap-sm expanded:flex-row expanded:items-center expanded:gap-md"
->
-  <PageHeading {title} />
+<header class="flex flex-wrap items-center gap-x-title-count gap-y-2xs">
+  <div
+    class="flex flex-1 items-baseline gap-title-count min-inline-none expanded:flex-none"
+  >
+    <PageHeading {title} />
+    {@render count?.()}
+  </div>
   {#if showsLabel}
-    <ScreenshotModeLabel />
+    <div
+      class="flex max-expanded:order-last max-expanded:basis-full expanded:ms-xs touch:max-medium:ps-xs"
+    >
+      <ScreenshotModeLabel />
+    </div>
+  {/if}
+  {#if actions !== undefined}
+    <div class="ms-auto flex items-center gap-sm">
+      {@render actions()}
+    </div>
   {/if}
 </header>

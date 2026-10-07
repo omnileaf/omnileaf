@@ -80,30 +80,31 @@
   }
 </script>
 
-<div class="flex items-center gap-sm">
-  <div class="flex flex-1 items-baseline gap-title-count min-inline-none">
-    <CollectionHeading
-      title={m.library_title()}
-      showsLabel={screenshotMode.showsLabel}
-    />
+<CollectionHeading
+  title={m.library_title()}
+  showsLabel={screenshotMode.showsLabel}
+>
+  {#snippet count()}
     {#if showsItemCounts && seriesCount.count !== undefined}
       <SeriesCount count={seriesCount.count} />
     {/if}
-  </div>
-  {#if shown !== undefined}
-    <ViewOptions
-      view={shown.view}
-      onChoose={(chosen: LibraryView) => {
-        view.choose(chosen);
-      }}
+  {/snippet}
+  {#snippet actions()}
+    {#if shown !== undefined}
+      <ViewOptions
+        view={shown.view}
+        onChoose={(chosen: LibraryView) => {
+          view.choose(chosen);
+        }}
+      />
+    {/if}
+    <AddFolderButton
+      bind:element={headingAddFolder}
+      {adding}
+      placement="page-heading"
     />
-  {/if}
-  <AddFolderButton
-    bind:element={headingAddFolder}
-    {adding}
-    placement="page-heading"
-  />
-</div>
+  {/snippet}
+</CollectionHeading>
 {#if isEmpty}
   <EmptyState
     icon={LibraryGlyph}
@@ -143,6 +144,7 @@
         }}
         {coverUrl}
         view={shown.view}
+        usesStandIns={screenshotMode.isOn}
       />
     </div>
   {/if}

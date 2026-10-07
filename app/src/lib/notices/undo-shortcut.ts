@@ -1,4 +1,5 @@
 import type { Platform } from "$lib/ipc/bindings";
+import { usesCommandKey } from "$lib/page/platform";
 import { m } from "$lib/paraglide/messages.js";
 
 export interface UndoShortcut {
@@ -19,10 +20,8 @@ const CONTROL_Z: UndoShortcut = {
   isModifierHeld: (event) => event.ctrlKey && !event.metaKey,
 };
 
-const APPLE_PLATFORMS: ReadonlySet<Platform> = new Set(["macos", "ios"]);
-
 export function undoShortcutOn(platform: Platform): UndoShortcut {
-  return APPLE_PLATFORMS.has(platform) ? COMMAND_Z : CONTROL_Z;
+  return usesCommandKey(platform) ? COMMAND_Z : CONTROL_Z;
 }
 
 const LATIN_LETTER = /^[a-z]$/i;

@@ -107,6 +107,24 @@ test("the keyboard shortcut is listed on a computer", async ({ page }) => {
   await expect(page.getByText("Keyboard shortcut")).toBeVisible();
 });
 
+const SHORTCUT_HINTS = [
+  { platform: "macos", keys: "⇧⌘H" },
+  { platform: "linux", keys: "Ctrl Shift H" },
+  { platform: "windows", keys: "Ctrl Shift H" },
+] as const;
+
+for (const { platform, keys } of SHORTCUT_HINTS) {
+  test.describe(`on ${platform}`, () => {
+    test.use(onPlatform(platform));
+
+    test(`the shortcut is shown as ${keys}`, async ({ page }) => {
+      await openScreenshotMode(page);
+
+      await expect(page.locator("kbd")).toHaveText([keys, keys]);
+    });
+  });
+}
+
 test("the label is said to show at the top of the window on a computer", async ({
   page,
 }) => {

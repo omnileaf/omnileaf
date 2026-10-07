@@ -55,6 +55,7 @@ test("lists each series with its title and how many books it holds", async () =>
     isComplete: true,
     coverUrl: fakeCoverUrl,
     view: DEFAULT_LIBRARY_VIEW,
+    usesStandIns: false,
   });
 
   const items = screen
@@ -78,6 +79,7 @@ test("shows a series' cover from the omni protocol", async () => {
     isComplete: true,
     coverUrl: fakeCoverUrl,
     view: DEFAULT_LIBRARY_VIEW,
+    usesStandIns: false,
   });
 
   const first = screen.getByRole("listitem").nth(0);
@@ -94,6 +96,7 @@ test("leaves the cover's place empty for a series with no cover yet", async () =
     isComplete: true,
     coverUrl: fakeCoverUrl,
     view: DEFAULT_LIBRARY_VIEW,
+    usesStandIns: false,
   });
 
   const second = screen.getByRole("listitem").nth(1);
@@ -108,6 +111,7 @@ test("keeps each series' cover with its series when the list reorders", async ()
     isComplete: true,
     coverUrl: fakeCoverUrl,
     view: DEFAULT_LIBRARY_VIEW,
+    usesStandIns: false,
   });
   const cover = screen.getByRole("presentation").element();
 

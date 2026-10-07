@@ -19,7 +19,10 @@
     setScreenshotMode,
   } from "$lib/screenshot-mode/screenshot-mode.svelte";
   import ScreenshotModeAnnouncement from "$lib/screenshot-mode/ScreenshotModeAnnouncement.svelte";
-  import { isScreenshotModeShortcut } from "$lib/screenshot-mode/shortcut";
+  import {
+    isScreenshotModeShortcut,
+    screenshotModeShortcutOn,
+  } from "$lib/screenshot-mode/shortcut";
 
   import type { LayoutProps } from "./$types";
 
@@ -30,9 +33,12 @@
   const themeSetting = setThemeSetting(themeSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
   const screenshotMode = setScreenshotMode(screenshotModeForDocument());
+  const screenshotModeShortcut = $derived(
+    screenshotModeShortcutOn(data.appInfo.platform),
+  );
 
   function toggleScreenshotModeOnShortcut(event: KeyboardEvent): void {
-    if (!isScreenshotModeShortcut(event)) {
+    if (!isScreenshotModeShortcut(screenshotModeShortcut, event)) {
       return;
     }
     event.preventDefault();
