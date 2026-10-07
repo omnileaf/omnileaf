@@ -1,6 +1,6 @@
 mod support;
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use omnileaf_engine::{FileChanges, Library, RescanOutcome};
 use omnileaf_testkit::{
@@ -64,7 +64,11 @@ async fn scans_a_first_library_of_1_000_books_within_3_s() {
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
 async fn rescans_an_unchanged_library_of_1_000_books_within_300_ms() {
-    let budget = TimingBudget::from_env(UNCHANGED_RESCAN_BUDGET);
+    let trial = SpeedTrial {
+        measured: "the unchanged rescan of 1,000 books",
+        sampling: Sampling::Once,
+        budget: TimingBudget::from_env(UNCHANGED_RESCAN_BUDGET),
+    };
     let comics = TempFolder::new("rescan-speed-comics");
     write_generated_library(comics.path(), LIBRARY).unwrap();
     let home = TempFolder::new("rescan-speed-home");
@@ -84,17 +88,19 @@ async fn rescans_an_unchanged_library_of_1_000_books_within_300_ms() {
         .unwrap()
         .id;
 
-    let started = Instant::now();
-    let rescan = library.rescan_folder(folder, |_| {}).await.unwrap();
-    let elapsed = started.elapsed();
+    let outcome = trial
+        .run(
+            async |_| (),
+            async |()| {
+                let rescan = library.rescan_folder(folder, |_| {}).await.unwrap();
+                assert_eq!(
+                    rescan.outcome,
+                    RescanOutcome::Rescanned(FileChanges::default())
+                );
+            },
+        )
+        .await;
 
-    eprintln!("unchanged rescan of {BOOKS} books: {elapsed:?}, {budget}");
-    assert_eq!(
-        rescan.outcome,
-        RescanOutcome::Rescanned(FileChanges::default())
-    );
-    assert!(
-        budget.allows(elapsed),
-        "the unchanged rescan of {BOOKS} books took {elapsed:?}, over the {budget}"
-    );
+    eprintln!("{outcome}");
+    assert!(outcome.is_within_budget(), "{outcome}");
 }
