@@ -82,14 +82,18 @@
   >
     <CoverImage cover={one.cover} {coverUrl} />
     <CoverBadges series={one} onCovers={view.onCovers} />
-    <p
-      class={[
-        "absolute inset-x-none inset-be-none line-clamp-2 bg-band px-band pbs-band pbe-sm leading-band font-semibold text-on-band medium:px-band-wide medium:pbs-sm medium:pbe-band-wide medium:leading-band-wide",
-        look.title,
-      ]}
+    <div
+      class="absolute inset-x-none inset-be-none bg-linear-to-t from-band from-55% to-transparent px-band pbs-band-fade pbe-sm medium:px-band-wide medium:pbe-band-wide"
     >
-      {one.title}
-    </p>
+      <p
+        class={[
+          "line-clamp-2 leading-band font-semibold text-on-band",
+          look.title,
+        ]}
+      >
+        {one.title}
+      </p>
+    </div>
   </div>
 {/snippet}
 

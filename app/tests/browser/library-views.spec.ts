@@ -47,6 +47,8 @@ const RANGE_LABELS = {
 } as const satisfies Record<ScreenSize, string>;
 const SERIES_IN_CATALOG = 200;
 const FIRST_TITLE = "Sample Series 0001";
+const LONG_TITLE =
+  "Sample Series 0001 Collected Edition, Volumes One to Thirty, with Every Extra Chapter (Digital)";
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;
 
 const GRID_LOOKS = {
@@ -74,14 +76,15 @@ const LIST_LOOKS = {
 } as const satisfies Record<ScreenSize, ListLook>;
 
 const BAND_PADDING = {
-  phone: { top: 6, inline: 6, bottom: 8 },
-  tablet: { top: 8, inline: 10, bottom: 10 },
-  desktop: { top: 8, inline: 10, bottom: 10 },
+  phone: { top: 20, inline: 6, bottom: 8 },
+  tablet: { top: 20, inline: 10, bottom: 10 },
+  desktop: { top: 20, inline: 10, bottom: 10 },
 } as const satisfies Record<ScreenSize, Record<string, number>>;
 
 let storedView: LibraryView = DEFAULT_LIBRARY_VIEW;
 let storedViews: LibraryView[] = [];
 let seriesInCatalog = SERIES_IN_CATALOG;
+let firstTitle = FIRST_TITLE;
 
 test.use({
   backend: {
@@ -89,6 +92,7 @@ test.use({
     librarySeries: pagedSeries(() =>
       sampleSeries(seriesInCatalog).map((series, index) => ({
         ...series,
+        title: index === 0 ? firstTitle : series.title,
         cover: `thumb/v1/0190a3e4-0000-8000-8000-000000000001/${String(index + 1)}/1`,
       })),
     ),
@@ -106,6 +110,7 @@ test.beforeEach(async ({ page }) => {
   storedView = DEFAULT_LIBRARY_VIEW;
   storedViews = [];
   seriesInCatalog = SERIES_IN_CATALOG;
+  firstTitle = FIRST_TITLE;
   await page.route(fakeProtocolRoute("omni"), (route) =>
     route.fulfill({ contentType: "image/svg+xml", body: COVER_IMAGE }),
   );
@@ -188,7 +193,7 @@ test("draws a compact grid with each title on a band across the foot of its cove
   const padding = BAND_PADDING[screenSizeOf(page)];
   await openWith(page, viewWith(page, "compact"));
   const cover = firstSeries(page).getByRole("presentation");
-  const band = firstSeries(page).getByText(FIRST_TITLE);
+  const band = firstSeries(page).getByText(FIRST_TITLE).locator("..");
 
   const coverBox = await boxOf(cover);
   const bandBox = await boxOf(band);
@@ -208,6 +213,51 @@ test("draws a compact grid with each title on a band across the foot of its cove
   expect(bandBox.width).toBeCloseTo(coverBox.width, 0);
   expect(bandPadding).toEqual(padding);
   await expect(firstSeries(page).getByText("1 book")).toHaveCount(0);
+});
+
+test("ends a long compact title after two whole lines, cutting none in half", async ({
+  page,
+}) => {
+  firstTitle = LONG_TITLE;
+  await openWith(page, viewWith(page, "compact"));
+  const title = firstSeries(page).getByText(LONG_TITLE);
+
+  const lines = await title.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const clip = element.getBoundingClientRect();
+    const rows = [...range.getClientRects()].map((rect) => ({
+      top: Math.round(rect.top),
+      bottom: Math.round(rect.bottom),
+    }));
+    const unique = rows.filter(
+      (row, index) =>
+        rows.findIndex((other) => other.top === row.top) === index,
+    );
+    const top = Math.round(clip.top);
+    const bottom = Math.round(clip.bottom);
+    return {
+      shown: unique.filter((row) => row.top >= top && row.bottom <= bottom)
+        .length,
+      cut: unique.filter((row) => row.top < bottom && row.bottom > bottom)
+        .length,
+    };
+  });
+
+  expect(lines).toEqual({ shown: 2, cut: 0 });
+});
+
+test("fades a compact title's band into the cover above it", async ({
+  page,
+}) => {
+  await openWith(page, viewWith(page, "compact"));
+  const band = firstSeries(page).getByText(FIRST_TITLE).locator("..");
+
+  const background = await band.evaluate(
+    (element) => getComputedStyle(element).backgroundImage,
+  );
+
+  expect(background).toContain("linear-gradient");
 });
 
 test("draws a list with a small cover beside each title and its book count", async ({
