@@ -10,6 +10,7 @@ mod licence_catalogue;
 mod licences;
 mod lint_sync;
 mod policy;
+mod pre_push;
 mod process;
 mod workspace;
 
@@ -74,6 +75,15 @@ enum Command {
     LintSync,
     /// Check the repository's files against its content rules.
     Policy,
+    /// Run the quick checks for what a push changes; git calls this from `.githooks/pre-push`.
+    PrePush {
+        /// The remote git is pushing to.
+        remote: String,
+        /// The remote's address, which git passes after its name.
+        url: Option<String>,
+    },
+    /// Have git run the repository's hooks, so a push is checked before it leaves.
+    InstallHooks,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -136,6 +146,17 @@ fn main() -> anyhow::Result<()> {
         }
         Command::LintSync => lint_sync()?,
         Command::Policy => enforce_policy()?,
+        Command::PrePush { remote, .. } => {
+            let pushed =
+                std::io::read_to_string(std::io::stdin()).context("read the pushed refs")?;
+            pre_push::run(
+                &workspace::root(),
+                &remote,
+                &pushed,
+                &Process::in_workspace(),
+            )?;
+        }
+        Command::InstallHooks => pre_push::install_hooks(&workspace::root())?,
     }
     Ok(())
 }
