@@ -18,10 +18,10 @@
   type="button"
   {disabled}
   class={[
-    "flex items-center justify-center gap-sm rounded-full px-xl min-block-touch-target disabled:opacity-60 medium:rounded-control",
+    "flex items-center justify-center gap-sm rounded-full px-xl transition-control min-block-touch-target disabled:opacity-60 medium:rounded-control",
     kind === "primary"
-      ? "bg-accent font-bold text-on-accent"
-      : "font-semibold text-accent",
+      ? "bg-accent font-bold text-on-accent enabled:hover:bg-accent-hover enabled:active:bg-accent-pressed"
+      : "font-semibold text-accent enabled:hover:bg-hover enabled:active:bg-pressed",
   ]}
   {onclick}
 >

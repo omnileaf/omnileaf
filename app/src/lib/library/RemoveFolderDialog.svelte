@@ -55,7 +55,7 @@
     >
       <button
         type="button"
-        class="rounded-full bg-danger px-lg font-semibold text-on-danger min-block-touch-target medium:rounded-control"
+        class="rounded-full bg-danger px-lg font-semibold text-on-danger transition-control min-block-touch-target hover:bg-danger-hover active:bg-danger-pressed medium:rounded-control"
         onclick={() => {
           onConfirm(folder);
         }}
@@ -64,7 +64,7 @@
       </button>
       <button
         type="button"
-        class="rounded-full border border-border px-lg font-semibold min-block-touch-target medium:rounded-control"
+        class="rounded-full border border-border px-lg font-semibold transition-control min-block-touch-target hover:bg-hover active:bg-pressed medium:rounded-control"
         onclick={onCancel}
       >
         {m.library_remove_folder_cancel()}

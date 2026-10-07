@@ -29,7 +29,7 @@
     {#if onBack !== undefined}
       <button
         type="button"
-        class="flex items-center justify-center rounded-full min-block-touch-target min-inline-touch-target medium:hidden ios:gap-2xs ios:pe-sm ios:text-accent"
+        class="flex items-center justify-center rounded-full transition-control min-block-touch-target min-inline-touch-target hover:bg-hover active:bg-pressed medium:hidden ios:gap-2xs ios:pe-sm ios:text-accent"
         onclick={onBack}
       >
         <ArrowLeft
@@ -55,7 +55,7 @@
   {#if onBack !== undefined}
     <button
       type="button"
-      class="hidden rounded-control border border-border px-lg font-semibold min-block-touch-target medium:block"
+      class="hidden rounded-control border border-border px-lg font-semibold transition-control min-block-touch-target hover:bg-hover active:bg-pressed medium:block"
       onclick={onBack}
     >
       {m.first_launch_back()}

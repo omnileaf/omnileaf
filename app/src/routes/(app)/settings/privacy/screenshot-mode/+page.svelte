@@ -55,7 +55,7 @@
 
 <a
   href={resolve("/settings/privacy")}
-  class="inline-flex items-center gap-2xs font-medium text-accent min-block-touch-target expanded:text-detail expanded:font-semibold"
+  class="inline-flex items-center gap-2xs font-medium text-accent min-block-touch-target hover:underline expanded:text-detail expanded:font-semibold"
 >
   <ChevronLeft size={CHEVRON_SIZE} class="expanded:hidden rtl:-scale-x-100" />
   {m.privacy_title()}
@@ -121,7 +121,7 @@
         {m.screenshot_mode_while_on()}
       </h2>
       <div
-        class="flex flex-col divide-y divide-border rounded-card border border-border bg-card"
+        class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card"
       >
         {#each SCREENSHOT_MODE_OPTIONS as option (option)}
           <SettingSwitch
