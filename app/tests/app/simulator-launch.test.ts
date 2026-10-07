@@ -74,36 +74,43 @@ function logsSaver(): {
 }
 
 test("keeps launching while the launcher does not know the app yet", async () => {
-  const app = launchesInTurn([
-    unknownToLauncher(),
-    unknownToLauncher(),
-    undefined,
-  ]);
+  const app = launchesInTurn([unknownToLauncher(), undefined]);
   const logs = logsSaver();
 
   await launchOnceRegistered(BUNDLE_ID, app.launch, logs.saveLogs);
 
-  expect([app.launched(), logs.saved()]).toEqual([3, 0]);
+  expect([app.launched(), logs.saved()]).toEqual([2, 0]);
 });
 
-test("saves the launch logs and fails when a launch overruns its timeout", async () => {
+test("launches again after a launch is killed by its timeout", async () => {
   const app = launchesInTurn([killedByItsTimeout(), undefined]);
+  const logs = logsSaver();
+
+  await launchOnceRegistered(BUNDLE_ID, app.launch, logs.saveLogs);
+
+  expect([app.launched(), logs.saved()]).toEqual([2, 0]);
+});
+
+test("saves the launch logs and fails when every launch hangs", async () => {
+  const app = launchesInTurn([killedByItsTimeout()]);
   const logs = logsSaver();
 
   const launched = launchOnceRegistered(BUNDLE_ID, app.launch, logs.saveLogs);
 
   await expect(launched).rejects.toThrow(HungLaunchError);
-  await expect(launched).rejects.toThrow(SAVED_LOGS);
-  expect([app.launched(), logs.saved()]).toEqual([1, 1]);
+  await expect(launched).rejects.toThrow(
+    `launching ${BUNDLE_ID} on the Simulator hung 3 times; the Simulator's logs are in ${SAVED_LOGS}`,
+  );
+  expect([app.launched(), logs.saved()]).toEqual([3, 1]);
 });
 
-test("fails without saving logs when the launch is refused outright", async () => {
+test("fails at once without saving logs when the launch is refused outright", async () => {
   const refused = refusedOutright();
-  const app = launchesInTurn([refused]);
+  const app = launchesInTurn([refused, undefined]);
   const logs = logsSaver();
 
   const launched = launchOnceRegistered(BUNDLE_ID, app.launch, logs.saveLogs);
 
   await expect(launched).rejects.toBe(refused);
-  expect(logs.saved()).toBe(0);
+  expect([app.launched(), logs.saved()]).toEqual([1, 0]);
 });
