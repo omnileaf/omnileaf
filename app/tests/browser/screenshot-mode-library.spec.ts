@@ -6,11 +6,20 @@ import {
   type LibraryView,
 } from "../../src/lib/ipc/bindings.ts";
 import { fakeProtocolRoute } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  boxOf,
+  DEFAULT_BACKEND,
+  EXPANDED_MIN_WIDTH,
+  expect,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
 import type { WireSeries } from "./series-catalog.ts";
+import { viewOptionsButton } from "./view-options.ts";
 
 const REAL_TITLE = "Hidden Story";
 const SERIES_COUNT = 42;
+const CENTRE_TOLERANCE = 1;
 const STAND_IN = /Series \d{2,3}/;
 const DISPLAYS: readonly LibraryDisplay[] = [
   "grid",
@@ -152,4 +161,72 @@ test("the series count stays real while it's on", async ({ page }) => {
   await expect(
     page.getByRole("main").getByText(String(SERIES_COUNT), { exact: true }),
   ).toBeVisible();
+});
+
+test.describe("the label", () => {
+  function label(page: Page): Locator {
+    return page.getByRole("main").getByText("Screenshot mode", { exact: true });
+  }
+
+  function count(page: Page): Locator {
+    return page
+      .getByRole("main")
+      .getByText(String(SERIES_COUNT), { exact: true });
+  }
+
+  test("follows the title and the count on one row on a wide screen", async ({
+    page,
+  }) => {
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "wide screens only");
+    await turnOnScreenshotMode(page);
+    await openLibrary(page, "grid");
+
+    const title = await boxOf(page.getByRole("heading", { level: 1 }));
+    const number = await boxOf(count(page));
+    const pill = await boxOf(label(page));
+
+    expect(number.x).toBeGreaterThanOrEqual(title.x + title.width);
+    expect(pill.x).toBeGreaterThanOrEqual(number.x + number.width);
+    expect(
+      Math.abs(pill.y + pill.height / 2 - (title.y + title.height / 2)),
+    ).toBeLessThanOrEqual(CENTRE_TOLERANCE);
+  });
+
+  test("sits on its own row under the heading on a narrower screen", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "narrower screens only",
+    );
+    await turnOnScreenshotMode(page);
+    await openLibrary(page, "grid");
+
+    const title = await boxOf(page.getByRole("heading", { level: 1 }));
+    const number = await boxOf(count(page));
+    const options = await boxOf(viewOptionsButton(page));
+    const pill = await boxOf(label(page));
+
+    expect(number.x).toBeGreaterThanOrEqual(title.x + title.width);
+    expect(pill.y).toBeGreaterThanOrEqual(
+      Math.max(title.y + title.height, options.y + options.height),
+    );
+  });
+
+  for (const isOn of [true, false]) {
+    test(`leaves the buttons on the title's row with it ${isOn ? "on" : "off"}`, async ({
+      page,
+    }) => {
+      if (isOn) {
+        await turnOnScreenshotMode(page);
+      }
+      await openLibrary(page, "grid");
+
+      const title = await boxOf(page.getByRole("heading", { level: 1 }));
+      const options = await boxOf(viewOptionsButton(page));
+
+      expect(options.y).toBeLessThan(title.y + title.height);
+      expect(options.y + options.height).toBeGreaterThan(title.y);
+    });
+  }
 });
