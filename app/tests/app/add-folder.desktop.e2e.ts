@@ -1,6 +1,10 @@
 import { expect, test } from "vitest";
 
-import { mainNavigationLink, useAppSession } from "./app-session.ts";
+import {
+  mainNavigationLink,
+  openLibraryPage,
+  useAppSession,
+} from "./app-session.ts";
 import { SAMPLE_LIBRARY } from "./sample-library.ts";
 import { xpath } from "./webdriver.ts";
 
@@ -40,7 +44,9 @@ const SCAN_REPORT = `Found ${String(SAMPLE_LIBRARY.books)} books in ${String(SAM
 
 const appSession = useAppSession();
 
+/** Leaves for the library page first, so re-opening Library settings can't find the page it is replacing. */
 async function openLibrarySettings(): Promise<void> {
+  await openLibraryPage(appSession());
   await (await appSession().waitFor(SETTINGS_LINK)).click();
   await (await appSession().waitFor(LIBRARY_SETTINGS_LINK)).click();
 }
