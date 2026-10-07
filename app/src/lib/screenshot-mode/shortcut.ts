@@ -1,4 +1,5 @@
 import type { Platform } from "$lib/ipc/bindings";
+import { usesCommandKey } from "$lib/page/platform";
 import { m } from "$lib/paraglide/messages.js";
 
 export type KeyPress = Pick<
@@ -28,7 +29,7 @@ const CONTROL_SHIFT_H: ScreenshotModeShortcut = {
 export function screenshotModeShortcutOn(
   platform: Platform,
 ): ScreenshotModeShortcut {
-  return platform === "macos" ? COMMAND_SHIFT_H : CONTROL_SHIFT_H;
+  return usesCommandKey(platform) ? COMMAND_SHIFT_H : CONTROL_SHIFT_H;
 }
 
 /** Layouts without Latin letters report their own character, so there the physical H key stands in. */

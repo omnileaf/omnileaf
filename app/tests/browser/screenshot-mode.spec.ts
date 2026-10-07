@@ -77,28 +77,32 @@ test("Command Shift H does nothing off a Mac", async ({ page }) => {
   await expect(screenshotModeLabel(page)).toHaveCount(0);
 });
 
-test.describe("on macOS", () => {
-  test.use(onPlatform("macos"));
+for (const platform of ["macos", "ios"] as const) {
+  test.describe(`on ${platform}`, () => {
+    test.use(onPlatform(platform));
 
-  test("Command Shift H turns Screenshot mode on and off", async ({ page }) => {
-    await open(page, "/");
+    test("Command Shift H turns Screenshot mode on and off", async ({
+      page,
+    }) => {
+      await open(page, "/");
 
-    await page.keyboard.press(MAC_SHORTCUT);
-    await expect(page.getByText("Screenshot mode is on")).toBeAttached();
-    await page.keyboard.press(MAC_SHORTCUT);
+      await page.keyboard.press(MAC_SHORTCUT);
+      await expect(page.getByText("Screenshot mode is on")).toBeAttached();
+      await page.keyboard.press(MAC_SHORTCUT);
 
-    await expect(page.getByText("Screenshot mode is off")).toBeAttached();
+      await expect(page.getByText("Screenshot mode is off")).toBeAttached();
+    });
+
+    test("Ctrl Shift H does nothing", async ({ page }) => {
+      await open(page, "/");
+
+      await page.keyboard.press(SHORTCUT);
+      await open(page, "/");
+
+      await expect(screenshotModeLabel(page)).toHaveCount(0);
+    });
   });
-
-  test("Ctrl Shift H does nothing", async ({ page }) => {
-    await open(page, "/");
-
-    await page.keyboard.press(SHORTCUT);
-    await open(page, "/");
-
-    await expect(screenshotModeLabel(page)).toHaveCount(0);
-  });
-});
+}
 
 test("says so when the hour runs out and again when the shortcut turns it back on", async ({
   page,

@@ -24,15 +24,12 @@ const COMMAND_SHIFT_H: KeyPress = {
   metaKey: true,
 };
 
-const CONTROL_PLATFORMS: readonly Platform[] = [
-  "linux",
-  "windows",
-  "android",
-  "ios",
-];
+const COMMAND_PLATFORMS: readonly Platform[] = ["macos", "ios"];
 
-describe("on macOS", () => {
-  const shortcut = screenshotModeShortcutOn("macos");
+const CONTROL_PLATFORMS: readonly Platform[] = ["linux", "windows", "android"];
+
+describe.each(COMMAND_PLATFORMS)("on %s", (platform) => {
+  const shortcut = screenshotModeShortcutOn(platform);
 
   test("Command Shift H is the shortcut", () => {
     expect(isScreenshotModeShortcut(shortcut, COMMAND_SHIFT_H)).toBe(true);
