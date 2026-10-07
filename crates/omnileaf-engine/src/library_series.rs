@@ -12,6 +12,8 @@ pub struct LibrarySeries {
     pub id: SeriesId,
     pub title: String,
     pub book_count: u32,
+    /// Its books not marked read.
+    pub unread_count: u32,
     /// The cover of its first book by title, absent while none of its books has a file.
     pub cover: Option<CoverPath>,
 }
@@ -40,6 +42,7 @@ impl From<SeriesSummary> for LibrarySeries {
             id: SeriesId(series.id),
             title: series.title,
             book_count: series.book_count,
+            unread_count: series.unread_count,
             cover: series.cover.map(CoverPath),
         }
     }

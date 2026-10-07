@@ -14,6 +14,7 @@ export function sampleSeries(count: number, from = 1): WireSeries[] {
       id: `0190a3e4-0000-8000-8000-${number.padStart(12, "0")}`,
       title: `Sample Series ${number}`,
       bookCount: 1,
+      unreadCount: 1,
       cover: null,
     };
   });

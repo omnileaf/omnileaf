@@ -19,6 +19,7 @@ async function listedCover(): Promise<CoverPath> {
         id: "0190a3e4-0000-8000-8000-0000000000a1",
         title: "Sample Series 01",
         bookCount: 1,
+        unreadCount: 1,
         cover: PATH,
       },
     ],

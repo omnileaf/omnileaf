@@ -47,6 +47,8 @@ pub enum Error {
     HomeRoot { id: RootId },
     #[error("read a library folder stored as a {kind} locator, which this build can't open")]
     UnsupportedLocator { kind: String },
+    #[error("read the library view drawn as {name:?}, which this build can't draw")]
+    UnsupportedLibraryDisplay { name: String },
     #[error("read a library folder id that isn't one the library gave out")]
     MalformedRootId,
     #[error("read a book file id that isn't one the library gave out")]

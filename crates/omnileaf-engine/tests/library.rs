@@ -8,7 +8,9 @@ mod support;
 use std::path::Path;
 
 use omnileaf_engine::{
-    Changed, FolderId, FolderKind, Library, LibraryError, LibraryFolder, ScanProgress,
+    Changed, CoversPerRow, DesktopCoversPerRow, FolderId, FolderKind, Library, LibraryDisplay,
+    LibraryError, LibraryFolder, LibraryView, OnCovers, PhoneCoversPerRow, ScanProgress,
+    TabletCoversPerRow,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, TempFolder};
@@ -271,6 +273,70 @@ async fn remembers_the_finished_first_launch_when_the_library_reopens() {
     let reopened = open(home.path()).await;
 
     assert!(reopened.first_launch_finished().await.unwrap());
+}
+
+#[tokio::test]
+async fn draws_a_new_library_in_the_view_a_new_library_starts_with() {
+    let home = TempFolder::new("library-view-new");
+
+    let view = open(home.path()).await.view().await.unwrap();
+
+    assert_eq!(view, LibraryView::default());
+}
+
+#[tokio::test]
+async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
+    let home = TempFolder::new("library-view-set");
+    let list = LibraryView {
+        display: LibraryDisplay::List,
+        covers_per_row: CoversPerRow {
+            phone: PhoneCoversPerRow::try_from(2).unwrap(),
+            tablet: TabletCoversPerRow::try_from(4).unwrap(),
+            desktop: DesktopCoversPerRow::try_from(9).unwrap(),
+        },
+        shows_item_counts: true,
+        on_covers: OnCovers {
+            shows_unread_count: false,
+            shows_downloaded: false,
+            shows_language: true,
+            shows_reading_progress: false,
+            shows_continue_button: true,
+        },
+    };
+    open(home.path()).await.set_view(list).await.unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.view().await.unwrap(), list);
+}
+
+#[tokio::test]
+async fn stores_the_fewest_and_the_most_covers_per_row_each_size_offers() {
+    let home = TempFolder::new("library-view-ranges");
+    let library = open(home.path()).await;
+    let ranges = CoversPerRow::RANGES;
+    let ends = [
+        (
+            ranges.phone.fewest,
+            ranges.tablet.fewest,
+            ranges.desktop.fewest,
+        ),
+        (ranges.phone.most, ranges.tablet.most, ranges.desktop.most),
+    ];
+
+    for (phone, tablet, desktop) in ends {
+        let view = LibraryView {
+            covers_per_row: CoversPerRow {
+                phone: PhoneCoversPerRow::try_from(phone).unwrap(),
+                tablet: TabletCoversPerRow::try_from(tablet).unwrap(),
+                desktop: DesktopCoversPerRow::try_from(desktop).unwrap(),
+            },
+            ..LibraryView::default()
+        };
+        library.set_view(view).await.unwrap();
+
+        assert_eq!(library.view().await.unwrap(), view);
+    }
 }
 
 #[tokio::test]

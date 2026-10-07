@@ -31,7 +31,13 @@ struct TitlePlace {
 macro_rules! series_with_books {
     () => {
         "SELECT series.id, series.title, series.title_key, series.book_count, series.added_at_ms,
-            cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev
+            cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
+            series.book_count - (
+                SELECT count(*)
+                FROM book AS read_book
+                JOIN book_state ON book_state.book_id = read_book.id
+                WHERE read_book.series_local_id = series.local_id AND book_state.is_read = 1
+            ) AS unread_count
         FROM series
         LEFT JOIN book_file AS cover ON cover.id = (
             SELECT (SELECT min(book_file.id) FROM book_file WHERE book_file.book_id = book.id)
@@ -95,6 +101,8 @@ pub struct SeriesSummary {
     pub id: SeriesId,
     pub title: String,
     pub book_count: u32,
+    /// Its books no one has marked read, so a book with no reading state counts.
+    pub unread_count: u32,
     pub added_at_ms: i64,
     /// The cover of the series' first book in title order, absent while none of its books has a file.
     pub cover: Option<Cover>,
@@ -237,6 +245,7 @@ fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
         id: stored_id(row, "id")?,
         title: row.get("title")?,
         book_count: row.get("book_count")?,
+        unread_count: row.get("unread_count")?,
         added_at_ms: row.get("added_at_ms")?,
         cover: stored_cover(row)?,
     })
@@ -250,17 +259,25 @@ mod tests {
     /// Each listed series finds its first book and that book's first file by index, sorting nothing.
     const COVER_BY_INDEX: [&str; 6] = [
         "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
-        "CORRELATED SCALAR SUBQUERY 3",
+        "CORRELATED SCALAR SUBQUERY 4",
         "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)",
         "SEARCH book_file EXISTS USING COVERING INDEX book_file_by_book (book_id=?)",
-        "CORRELATED SCALAR SUBQUERY 1",
+        "CORRELATED SCALAR SUBQUERY 2",
         "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
     ];
 
-    fn with_covers(series_step: &str) -> Vec<String> {
+    /// Each listed series counts its read books through its own books' index and their states' keys.
+    const UNREAD_BY_INDEX: [&str; 3] = [
+        "CORRELATED SCALAR SUBQUERY 1",
+        "SEARCH read_book USING COVERING INDEX book_by_series (series_local_id=?)",
+        "SEARCH book_state USING PRIMARY KEY (book_id=?)",
+    ];
+
+    fn with_covers_and_unread_counts(series_step: &str) -> Vec<String> {
         [series_step]
             .into_iter()
             .chain(COVER_BY_INDEX)
+            .chain(UNREAD_BY_INDEX)
             .map(ToOwned::to_owned)
             .collect()
     }
@@ -271,7 +288,10 @@ mod tests {
 
         let plan = scratch.query_plan(BY_TITLE.first);
 
-        assert_eq!(plan, with_covers("SCAN series USING INDEX series_by_title"));
+        assert_eq!(
+            plan,
+            with_covers_and_unread_counts("SCAN series USING INDEX series_by_title")
+        );
     }
 
     #[test]
@@ -280,7 +300,10 @@ mod tests {
 
         let plan = scratch.query_plan(BY_RECENTLY_ADDED.first);
 
-        assert_eq!(plan, with_covers("SCAN series USING INDEX series_by_added"));
+        assert_eq!(
+            plan,
+            with_covers_and_unread_counts("SCAN series USING INDEX series_by_added")
+        );
     }
 
     #[test]
@@ -291,7 +314,9 @@ mod tests {
 
         assert_eq!(
             plan,
-            with_covers("SEARCH series USING INDEX series_by_title ((title_key,id)>(?,?))")
+            with_covers_and_unread_counts(
+                "SEARCH series USING INDEX series_by_title ((title_key,id)>(?,?))"
+            )
         );
     }
 
@@ -303,7 +328,9 @@ mod tests {
 
         assert_eq!(
             plan,
-            with_covers("SEARCH series USING INDEX series_by_added ((added_at_ms,id)<(?,?))")
+            with_covers_and_unread_counts(
+                "SEARCH series USING INDEX series_by_added ((added_at_ms,id)<(?,?))"
+            )
         );
     }
 

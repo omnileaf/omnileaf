@@ -47,6 +47,8 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0010_create_first_launch"),
     migration!("0011_key_series_titles_by_collation"),
     migration!("0012_add_library_root_unavailable_since"),
+    migration!("0013_create_library_view"),
+    migration!("0014_store_series_source_ids_as_sixteen_bytes"),
 ];
 
 pub(crate) fn pending(
@@ -204,6 +206,7 @@ mod tests {
         Database, Language, connection, first_launch::first_launch_finished,
         scratch::ScratchLibrary, title_key::TitleCollation,
     };
+    use omnileaf_sync_proto::SourceId;
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
 
@@ -328,7 +331,7 @@ mod tests {
         connection
             .execute(
                 "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-                 VALUES (zeroblob(16), zeroblob(16), 'sample series 01', 'Sample Series 01', x'', 0)",
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0)",
                 [],
             )
             .unwrap();
@@ -353,7 +356,7 @@ mod tests {
         connection
             .execute_batch(
                 "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-                 VALUES (zeroblob(16), zeroblob(16), 'sample series 01', 'Sample Series 01', x'', 0);
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0);
                  INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
                  VALUES (zeroblob(16), 1, 'Volume 01', x'', 0);",
             )
@@ -381,7 +384,7 @@ mod tests {
                 "INSERT INTO library_root (id, kind, locator_kind, location, added_at_ms)
                  VALUES (7, 'linked', 'path', x'2f6d65646961', 0);
                  INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-                 VALUES (zeroblob(16), zeroblob(16), 'sample series 01', 'Sample Series 01', x'', 0);
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0);
                  INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
                  VALUES (zeroblob(16), 1, 'Volume 01', x'', 0);
                  INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
@@ -411,7 +414,7 @@ mod tests {
                 "INSERT INTO library_root (id, kind, locator_kind, location, added_at_ms)
                  VALUES (7, 'linked', 'path', x'2f6d65646961', 0);
                  INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-                 VALUES (zeroblob(16), zeroblob(16), 'sample series 01', 'Sample Series 01', x'', 0);
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0);
                  INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
                  VALUES (zeroblob(16), 1, 'Volume 01', x'', 0);
                  INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
@@ -459,7 +462,7 @@ mod tests {
         let scratch = library_before_first_launch_with(
             "first-launch-books-upgrade",
             "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-             VALUES (zeroblob(16), zeroblob(16), 'sample series 01', 'Sample Series 01', x'', 0);
+             VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0);
              INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
              VALUES (zeroblob(16), 1, 'Volume 01', x'', 0);",
         );
@@ -490,7 +493,7 @@ mod tests {
         connection
             .execute(
                 "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
-                 VALUES (zeroblob(16), zeroblob(16), 'sample series 01', 'Sample Series 01', x'', 0)",
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0)",
                 [],
             )
             .unwrap();
@@ -502,6 +505,27 @@ mod tests {
             .unwrap();
         let root = TitleCollation::new(&Language::ROOT).unwrap();
         assert_eq!(key, root.key("Sample Series 01"));
+    }
+
+    #[test]
+    fn keeps_each_series_stored_before_source_ids_were_sixteen_bytes_under_the_local_source() {
+        let scratch = ScratchLibrary::new("source-id-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..2]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_sort_key, added_at_ms)
+                 VALUES (zeroblob(16), 'local', 'sample series 01', 'Sample Series 01', x'', 0)",
+                [],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let source: Vec<u8> = connection
+            .query_row("SELECT source_id FROM series", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(source, SourceId::local().as_bytes().to_vec());
     }
 
     fn schema_of(path: &Path) -> Schema {

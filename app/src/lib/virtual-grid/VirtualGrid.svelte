@@ -102,8 +102,10 @@
   onMount(() => {
     look();
     const resized = new ResizeObserver(lookNextFrame);
-    if (frame !== undefined) {
-      resized.observe(frame);
+    for (const laidOut of [frame, list]) {
+      if (laidOut !== undefined) {
+        resized.observe(laidOut);
+      }
     }
     document.addEventListener("scroll", lookNextFrame, {
       capture: true,
