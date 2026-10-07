@@ -208,6 +208,7 @@ mod tests {
             version: "1.2.3".to_owned(),
             platform: Platform::Linux,
             source_code: "repo.example.org/omnileaf".to_owned(),
+            is_development_build: true,
         }
     }
 

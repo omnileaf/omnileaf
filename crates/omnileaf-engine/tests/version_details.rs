@@ -6,6 +6,7 @@ fn details() -> VersionDetails {
             version: "1.2.3".to_owned(),
             platform: Platform::Ios,
             source_code: "repo.example.org/omnileaf".to_owned(),
+            is_development_build: false,
         },
         build: BuildProfile::Release,
         architecture: "aarch64".to_owned(),

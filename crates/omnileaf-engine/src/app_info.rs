@@ -7,6 +7,7 @@ pub struct AppInfo {
     pub version: String,
     pub platform: Platform,
     pub source_code: String,
+    pub is_development_build: bool,
 }
 
 impl AppInfo {

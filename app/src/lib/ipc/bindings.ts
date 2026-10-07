@@ -56,6 +56,7 @@ export type AppInfo = {
 	version: string,
 	platform: Platform,
 	sourceCode: string,
+	isDevelopmentBuild: boolean,
 };
 
 /**  How many covers a row holds at each size the library is drawn at, chosen apart since each wants its own. */

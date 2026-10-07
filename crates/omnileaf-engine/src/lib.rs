@@ -64,6 +64,7 @@ impl Core {
                 version: env!("CARGO_PKG_VERSION").to_owned(),
                 platform: Platform::CURRENT,
                 source_code: ProjectLink::SourceCode.address().to_owned(),
+                is_development_build: BuildProfile::CURRENT == BuildProfile::Debug,
             },
         }
     }

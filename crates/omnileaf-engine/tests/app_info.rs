@@ -26,3 +26,12 @@ fn reports_where_its_source_code_lives_without_the_scheme() {
 
     assert_eq!(source_code, "github.com/omnileaf/omnileaf");
 }
+
+#[test]
+fn says_whether_it_is_a_development_build() {
+    let core = Core::new();
+
+    let is_development_build = core.app_info().is_development_build;
+
+    assert_eq!(is_development_build, cfg!(debug_assertions));
+}
