@@ -92,7 +92,7 @@
   aria-expanded={isOpen}
   aria-label={m.library_view_options()}
   class={[
-    "flex items-center justify-center gap-sm rounded-full transition-control block-touch-target inline-touch-target large:rounded-control large:border large:border-border large:px-header-control-inline large:text-small large:font-medium large:block-header-control large:inline-auto",
+    "flex items-center justify-center gap-sm rounded-full transition-control block-touch-target inline-touch-target large:rounded-control large:border large:border-field large:px-header-control-inline large:text-small large:font-medium large:block-pointer-button large:inline-auto",
     isOpen
       ? "large:bg-accent-soft"
       : "hover:tint-hover active:tint-pressed large:bg-card",
@@ -131,7 +131,10 @@
       class="self-center rounded-full bg-step-off block-sheet-handle-block inline-sheet-handle medium:hidden"
     ></span>
     <div class="flex items-center">
-      <h2 id={titleId} class="flex-1 text-title font-bold medium:text-lead">
+      <h2
+        id={titleId}
+        class="flex-1 text-title font-bold medium:text-panel-title"
+      >
         {m.library_view()}
       </h2>
       <button

@@ -48,13 +48,13 @@
   <div
     role="group"
     aria-labelledby={labelId}
-    class="flex items-center rounded-field border border-border large:rounded-control"
+    class="flex items-center rounded-field border border-border large:rounded-small-control"
   >
     <button
       type="button"
       aria-label={m.library_fewer_covers_per_row()}
       disabled={count <= fewest}
-      class="flex items-center justify-center rounded-s-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-s-control large:block-stepper large:inline-stepper"
+      class="flex items-center justify-center rounded-s-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-s-small-control large:block-stepper large:inline-stepper"
       onclick={() => {
         onCount(count - 1);
       }}
@@ -74,7 +74,7 @@
       type="button"
       aria-label={m.library_more_covers_per_row()}
       disabled={count >= most}
-      class="flex items-center justify-center rounded-e-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-e-control large:block-stepper large:inline-stepper"
+      class="flex items-center justify-center rounded-e-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-e-small-control large:block-stepper large:inline-stepper"
       onclick={() => {
         onCount(count + 1);
       }}

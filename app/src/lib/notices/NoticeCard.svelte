@@ -54,8 +54,10 @@
       <notice.icon aria-hidden="true" size={ICON_SIZE} />
     </span>
     <p class="flex grow flex-col gap-2xs">
-      <span class="font-bold">{notice.title}</span>
-      <span class="text-label opacity-85">{notice.body}</span>
+      <span class="text-callout font-bold desktop:text-label"
+        >{notice.title}</span
+      >
+      <span class="text-detail opacity-85">{notice.body}</span>
     </p>
     <button
       type="button"
@@ -72,7 +74,7 @@
         <button
           type="button"
           class={[
-            "rounded-full px-lg text-label font-bold transition-control min-block-touch-target medium:rounded-control",
+            "rounded-full px-lg text-detail font-bold transition-control min-block-touch-target medium:rounded-control desktop:rounded-control desktop:px-md desktop:min-block-compact-button",
             EMPHASES[action.emphasis],
           ]}
           onclick={() => {

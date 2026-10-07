@@ -41,7 +41,7 @@
   </button>
   <kbd
     aria-hidden="true"
-    class="hidden shrink-0 rounded-control bg-toast-key px-sm font-ui text-caption font-bold text-toast-muted medium:block"
+    class="hidden shrink-0 rounded-badge bg-toast-key px-sm font-ui text-caption font-bold text-toast-muted medium:block"
   >
     {shortcut.label()}
   </kbd>

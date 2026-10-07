@@ -38,7 +38,9 @@
     <notice.icon size={ICON_SIZE} />
   </span>
   <span class="flex flex-1 flex-col gap-2xs self-center wrap-anywhere">
-    <span class="text-label font-bold">{notice.title}</span>
+    <span class="text-label font-bold touch:max-medium:text-callout"
+      >{notice.title}</span
+    >
     {#if notice.body !== undefined}
       <span class="text-footnote opacity-85">{notice.body}</span>
     {/if}

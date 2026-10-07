@@ -33,12 +33,12 @@
     {m.library_view_display()}
   </legend>
   <div
-    class="mbs-sm grid grid-cols-3 gap-xs rounded-card bg-chip p-2xs large:mbs-icon-gap"
+    class="mbs-sm grid grid-cols-3 gap-xs rounded-field bg-chip p-xs large:mbs-icon-gap large:rounded-small-control large:p-segment-track"
   >
     {#each CHOICES as choice (choice.display)}
       <label
         class={[
-          "relative flex items-center justify-center gap-icon-gap rounded-field text-lead transition-control block-segment before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent",
+          "relative flex items-center justify-center gap-icon-gap rounded-small-control text-label transition-control block-segment before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent large:rounded-segment large:text-detail large:block-segment-compact",
           chosen === choice.display
             ? "bg-raised font-bold shadow-raised"
             : "font-medium text-muted hover:bg-hover",
