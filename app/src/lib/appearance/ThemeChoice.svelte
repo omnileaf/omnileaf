@@ -3,6 +3,7 @@
   import type { ClassValue } from "svelte/elements";
 
   import { m } from "$lib/paraglide/messages.js";
+  import SegmentedChoice from "$lib/settings/SegmentedChoice.svelte";
 
   import { THEME_PREFERENCES, type ThemePreference } from "./theme";
   import { getThemeSetting } from "./theme.svelte";
@@ -49,33 +50,15 @@
       {@render hint()}
     </p>
   {/if}
-  <div
-    role="radiogroup"
-    aria-labelledby={headingId}
-    aria-describedby={hint === undefined ? undefined : hintId}
-    class="flex gap-2xs rounded-card bg-chip p-2xs touch:medium:max-inline-segmented-touch desktop:max-inline-segmented"
-  >
-    {#each THEME_PREFERENCES as preference (preference)}
-      <label
-        class={[
-          "relative flex flex-1 items-center justify-center rounded-tile text-callout transition-control block-option before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent",
-          theme.preference === preference
-            ? "bg-raised font-semibold text-foreground shadow-raised"
-            : "font-medium text-muted hover:bg-hover",
-        ]}
-      >
-        <input
-          type="radio"
-          name={headingId}
-          value={preference}
-          class="sr-only"
-          checked={theme.preference === preference}
-          onchange={() => {
-            theme.choose(preference);
-          }}
-        />
-        {THEME_LABELS[preference]()}
-      </label>
-    {/each}
-  </div>
+  <SegmentedChoice
+    name={headingId}
+    options={THEME_PREFERENCES}
+    labels={THEME_LABELS}
+    chosen={theme.preference}
+    labelledBy={headingId}
+    describedBy={hint === undefined ? undefined : hintId}
+    onChoose={(preference: ThemePreference) => {
+      theme.choose(preference);
+    }}
+  />
 </section>

@@ -9,6 +9,10 @@ pub struct AppInfo {
     pub source_code: String,
 }
 
+impl AppInfo {
+    pub const NAME: &str = "Omnileaf";
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum Platform {
@@ -32,4 +36,15 @@ impl Platform {
     } else {
         Self::Linux
     };
+
+    #[must_use]
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Android => "Android",
+            Self::Ios => "iOS",
+            Self::Macos => "macOS",
+            Self::Windows => "Windows",
+            Self::Linux => "Linux",
+        }
+    }
 }

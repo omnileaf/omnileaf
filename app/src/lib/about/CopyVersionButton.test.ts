@@ -9,11 +9,11 @@ import CopyVersionButton from "./CopyVersionButton.svelte";
 import { LinkOpening } from "./link-opening.svelte";
 import {
   COPIED_FOR_MS,
-  type CopyVersionDetails,
-  VersionCopying,
-} from "./version-copying.svelte";
+  type CopyDetails,
+  DetailsCopying,
+} from "$lib/copying/details-copying.svelte";
 
-type CopyResult = Awaited<ReturnType<CopyVersionDetails>>;
+type CopyResult = Awaited<ReturnType<CopyDetails>>;
 
 const COPIED: CopyResult = { status: "ok", data: null };
 
@@ -23,7 +23,7 @@ function failed(code: IpcErrorCode): CopyResult {
 
 async function renderWith(...results: (CopyResult | Promise<CopyResult>)[]) {
   const copies = { count: 0 };
-  const copying = new VersionCopying(() => {
+  const copying = new DetailsCopying(() => {
     copies.count += 1;
     const result = results.shift();
     if (result === undefined) {
