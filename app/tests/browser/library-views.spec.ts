@@ -503,6 +503,58 @@ test.describe("view options", () => {
     expect(overflowing).toEqual([]);
   });
 
+  test("pads every display's label alike on both sides", async ({ page }) => {
+    await openWith(page, viewWith(page, "compact"));
+    const options = await openViewOptions(page);
+
+    const gaps = await options
+      .locator("label")
+      .filter({ has: page.getByRole("radio") })
+      .evaluateAll((labels) =>
+        labels.map((label) => {
+          const box = label.getBoundingClientRect();
+          const icon = label.querySelector("svg")?.getBoundingClientRect();
+          const words = label
+            .querySelector("span > span:not([aria-hidden])")
+            ?.getBoundingClientRect();
+          if (words === undefined) {
+            throw new Error("a display segment has no label");
+          }
+          return {
+            start: Math.round((icon?.left ?? words.left) - box.left),
+            end: Math.round(box.right - words.right),
+          };
+        }),
+      );
+
+    const [first] = gaps;
+    for (const gap of gaps) {
+      expect(Math.abs(gap.start - gap.end)).toBeLessThanOrEqual(1);
+      expect(Math.abs(gap.start - (first?.start ?? 0))).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test("keeps each display's segment its width whichever is chosen", async ({
+    page,
+  }) => {
+    await openWith(page, viewWith(page, "grid"));
+    const options = await openViewOptions(page);
+    const widths = () =>
+      options
+        .locator("label")
+        .filter({ has: page.getByRole("radio") })
+        .evaluateAll((labels) =>
+          labels.map((label) =>
+            Math.round(label.getBoundingClientRect().width),
+          ),
+        );
+    const before = await widths();
+
+    await choose(options, "Compact");
+
+    await expect.poll(widths).toEqual(before);
+  });
+
   test("offers covers only and stores it on this device", async ({ page }) => {
     await openWith(page, viewWith(page, "grid"));
     const options = await openViewOptions(page);
