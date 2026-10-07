@@ -3,25 +3,30 @@ import { AxeBuilder } from "@axe-core/playwright";
 import type { FakeBackend } from "./fake-backend.ts";
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
-type WireFolder = ReturnType<FakeBackend["libraryFolders"]>["folders"][number];
+type WireFolder = Awaited<
+  ReturnType<FakeBackend["libraryFolders"]>
+>["folders"][number];
 
 const HOME: WireFolder = {
   id: "1",
   kind: "home",
   name: "Omnileaf",
   location: "/data/Omnileaf",
+  isAvailable: true,
 };
 const SAMPLE_COMICS: WireFolder = {
   id: "2",
   kind: "linked",
   name: "Sample Comics",
   location: "/media/Sample Comics",
+  isAvailable: true,
 };
 const SAMPLE_LIBRARY: WireFolder = {
   id: "3",
   kind: "linked",
   name: "Sample Library",
   location: "/media/Sample Library",
+  isAvailable: true,
 };
 
 /** A library that keeps what each test adds, set back before the next test. */
@@ -40,7 +45,14 @@ const LIBRARY_BACKEND: FakeBackend = {
   libraryFolders: () => ({ folders: [...library.folders], next: null }),
   addLibraryFolder: () => {
     library.folders.push(SAMPLE_LIBRARY);
-    return { name: SAMPLE_LIBRARY.name, comicFiles: 3, unreadableFolders: 0 };
+    return {
+      name: SAMPLE_LIBRARY.name,
+      series: 3,
+      books: 7,
+      unreadableBooks: 0,
+      unsupportedBooks: 0,
+      unreadableFolders: 0,
+    };
   },
   removeLibraryFolder: (id) => {
     library.folders = library.folders.filter((folder) => folder.id !== id);
@@ -64,7 +76,7 @@ test("shows the home folder and the linked folders in Settings › Library", asy
   );
   await expect(
     page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
-  ).toHaveText(["Sample Comics /media/Sample Comics Remove"]);
+  ).toHaveText(["Sample Comics /media/Sample Comics"]);
 });
 
 test("lists a folder as soon as it is added", async ({ page }) => {
@@ -75,9 +87,34 @@ test("lists a folder as soon as it is added", async ({ page }) => {
   await folders.getByRole("button", { name: "Add a folder" }).click();
 
   await expect(folders.getByRole("listitem")).toHaveText([
-    "Sample Comics /media/Sample Comics Remove",
-    "Sample Library /media/Sample Library Remove",
+    "Sample Comics /media/Sample Comics",
+    "Sample Library /media/Sample Library",
   ]);
+});
+
+test('shows Remove as an icon with "Remove folder" as the tooltip', async ({
+  page,
+}) => {
+  await page.goto("/settings/library");
+  const folders = page.getByRole("region", { name: "Folders" });
+
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+
+  await expect(remove).toHaveText("");
+  await expect(remove).toHaveAttribute("title", "Remove folder");
+});
+
+test("rings Remove when the keyboard reaches it", async ({ page }) => {
+  await page.goto("/settings/library");
+  const folders = page.getByRole("region", { name: "Folders" });
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+  await expect(remove).toBeVisible();
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).focus();
+
+  await page.keyboard.press("Tab");
+
+  await expect(remove).toBeFocused();
+  await expect(remove).toHaveCSS("outline-style", "solid");
 });
 
 test("removes a folder once the removal is confirmed", async ({ page }) => {

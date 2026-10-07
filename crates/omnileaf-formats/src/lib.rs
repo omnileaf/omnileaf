@@ -17,7 +17,7 @@ pub use comic_info::{
     ComicInfo, ComicInfoError, PageInfo, PageKind, ReadingDirection, parse_comic_info,
 };
 pub use entries::{is_ignored, is_page_image};
-pub use error::FormatError;
+pub use error::{FormatError, UnsupportedArchive};
 pub use fingerprint::{fingerprint_book, fingerprint_book_with};
 pub use limits::Limits;
 pub use natural::natural_cmp;

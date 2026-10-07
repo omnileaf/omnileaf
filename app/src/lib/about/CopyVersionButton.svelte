@@ -7,8 +7,9 @@
   import type { VersionCopying } from "./version-copying.svelte";
 
   const LOOKS = {
-    phone: "rounded-tile px-md text-accent",
-    pane: "rounded-control border border-border bg-card ps-md pe-list-row desktop:text-label desktop:min-block-pointer-button",
+    phone:
+      "rounded-tile px-md text-accent transition-control hover:bg-hover active:bg-pressed",
+    pane: "rounded-control border border-border bg-card ps-md pe-list-row hover:tint-hover active:tint-pressed desktop:text-label desktop:min-block-pointer-button",
   } satisfies Record<AboutLook, string>;
 
   let { copying, look }: { copying: VersionCopying; look: AboutLook } =

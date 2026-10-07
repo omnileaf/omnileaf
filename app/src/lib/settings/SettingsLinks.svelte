@@ -22,10 +22,10 @@
   class="mbs-xl divide-y divide-border rounded-card border border-border bg-card"
 >
   {#each links as link (link.route)}
-    <li>
+    <li class="group">
       <a
         href={resolve(link.route)}
-        class="flex items-center gap-sm px-lg min-block-touch-target"
+        class="flex items-center gap-sm px-lg transition-control min-block-touch-target group-first:rounded-ss-card group-first:rounded-se-card group-last:rounded-ee-card group-last:rounded-es-card hover:bg-hover active:bg-pressed"
       >
         <span class="flex-1">{link.label}</span>
         {#if link.value !== undefined}

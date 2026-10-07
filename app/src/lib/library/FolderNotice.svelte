@@ -2,13 +2,14 @@
   import { CircleAlert, CircleCheckBig } from "@lucide/svelte";
   import { onDestroy } from "svelte";
 
-  import type { FolderSurvey } from "$lib/ipc/bindings";
+  import type { FolderScan } from "$lib/ipc/bindings";
   import { m } from "$lib/paraglide/messages.js";
   import { standInName } from "$lib/screenshot-mode/stand-ins";
 
   import type { FolderAdding, FolderOutcome } from "./folder-adding.svelte";
   import type { Notice } from "./notice";
   import NoticeCard from "./NoticeCard.svelte";
+  import ScanProgressBar from "./ScanProgressBar.svelte";
 
   interface Props {
     readonly adding: FolderAdding;
@@ -20,35 +21,57 @@
 
   const SHOWN_FOLDER_STAND_IN = 1;
 
+  const progressTitleId = $props.id();
+
   onDestroy(() => {
     adding.withdrawFailure();
   });
 
-  function shownName(survey: FolderSurvey): string {
+  function shownName(scan: FolderScan): string {
     return usesStandIns
       ? standInName("folder", SHOWN_FOLDER_STAND_IN)
-      : survey.name;
+      : scan.name;
+  }
+
+  function problemsIn(scan: FolderScan): string[] {
+    return [
+      scan.unreadableBooks > 0
+        ? m.library_folder_unreadable_books({ count: scan.unreadableBooks })
+        : undefined,
+      scan.unsupportedBooks > 0
+        ? m.library_folder_unsupported_books({ count: scan.unsupportedBooks })
+        : undefined,
+      scan.unreadableFolders > 0
+        ? m.library_folder_unreadable_subfolders({
+            count: scan.unreadableFolders,
+          })
+        : undefined,
+    ].filter((problem) => problem !== undefined);
   }
 
   function noticeFor(outcome: FolderOutcome): Notice | undefined {
-    if (outcome.kind !== "found") {
+    if (outcome.kind !== "scanned") {
       return undefined;
     }
-    const { survey } = outcome;
-    const title = m.library_folder_found({
-      count: survey.comicFiles,
-      name: shownName(survey),
-    });
-    if (survey.unreadableFolders === 0) {
+    const { scan } = outcome;
+    const name = shownName(scan);
+    const title =
+      scan.books === 0
+        ? m.library_folder_no_books({ name })
+        : m.library_folder_scanned({
+            books: scan.books,
+            series: scan.series,
+            name,
+          });
+    const problems = problemsIn(scan);
+    if (problems.length === 0) {
       return { tone: "done", icon: CircleCheckBig, title };
     }
     return {
       tone: "warning",
       icon: CircleAlert,
       title,
-      body: m.library_folder_unreadable_subfolders({
-        count: survey.unreadableFolders,
-      }),
+      body: problems.join(" "),
     };
   }
 
@@ -61,7 +84,14 @@
 </script>
 
 <div role="status">
-  {#if notice !== undefined}
+  {#if adding.outcome.kind === "finding" || adding.outcome.kind === "reading"}
+    <p id={progressTitleId} class="font-semibold">
+      {m.library_scan_finding()}
+    </p>
+  {:else if notice !== undefined}
     <NoticeCard {notice} onDismiss={dismiss} />
   {/if}
 </div>
+{#if adding.outcome.kind === "finding" || adding.outcome.kind === "reading"}
+  <ScanProgressBar step={adding.outcome} titleId={progressTitleId} />
+{/if}

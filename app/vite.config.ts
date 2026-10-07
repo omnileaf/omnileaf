@@ -17,6 +17,7 @@ const APP_SPECS = "tests/app/**/*.e2e.ts";
 const DESKTOP_ONLY_APP_SPECS = "tests/app/**/*.desktop.e2e.ts";
 const ANDROID_ONLY_APP_SPECS = "tests/app/**/*.android.e2e.ts";
 const HARNESS_TESTS = "tests/app/**/*.test.ts";
+const BRANDING = "../branding";
 
 const phoneDevHost = process.env.TAURI_DEV_HOST;
 const licencesMode: LicencesMode =
@@ -33,6 +34,7 @@ export default defineConfig({
     strictPort: true,
     ...phoneAccess,
     watch: { ignored: ["**/src-tauri/**"] },
+    fs: { allow: [BRANDING] },
   },
   plugins: [
     tailwindcss(),

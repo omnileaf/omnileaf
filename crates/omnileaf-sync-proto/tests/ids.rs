@@ -1,4 +1,4 @@
-use omnileaf_sync_proto::{CategoryId, IdError, SeriesId, norm};
+use omnileaf_sync_proto::{CategoryId, IdError, SeriesId, SourceId, norm};
 use proptest::prelude::*;
 use uuid::Uuid;
 
@@ -49,6 +49,13 @@ fn reads_its_own_stored_bytes() {
     let id = SeriesId::local("Sample Series 03").unwrap();
 
     assert_eq!(SeriesId::try_from(id.as_bytes().as_slice()).unwrap(), id);
+}
+
+#[test]
+fn reads_the_local_source_id_from_its_stored_bytes() {
+    let id = SourceId::local();
+
+    assert_eq!(SourceId::try_from(id.as_bytes().as_slice()).unwrap(), id);
 }
 
 #[test]

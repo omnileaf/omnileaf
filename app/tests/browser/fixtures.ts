@@ -7,13 +7,18 @@ import {
 } from "@playwright/test";
 
 import type { AppInfo, Platform } from "../../src/lib/ipc/bindings.ts";
-import { type FakeBackend, installFakeBackend } from "./fake-backend.ts";
+import {
+  CommandFailure,
+  type FakeBackend,
+  installFakeBackend,
+} from "./fake-backend.ts";
 
 export const FAKE_APP_VERSION = "1.2.3";
 export const FAKE_SOURCE_CODE = "repo.example.org/omnileaf";
 
 export const MEDIUM_MIN_WIDTH = 600;
 export const EXPANDED_MIN_WIDTH = 840;
+export const LARGE_MIN_WIDTH = 1200;
 
 function fakeAppInfo(platform: Platform): AppInfo {
   return { version: FAKE_APP_VERSION, platform, sourceCode: FAKE_SOURCE_CODE };
@@ -23,7 +28,18 @@ export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => fakeAppInfo("linux"),
   addLibraryFolder: () => null,
   libraryFolders: () => ({ folders: [], next: null }),
+  librarySeries: () => ({ series: [], next: null }),
   removeLibraryFolder: () => null,
+  rescanLibraryFolder: () => {
+    throw new CommandFailure({
+      code: "folderNotFound",
+      message: "that folder isn't in the library",
+    });
+  },
+  rescanLibraryFolders: () => [],
+  firstLaunchFinished: () => true,
+  finishFirstLaunch: () => null,
+  setAppLanguage: () => null,
   matchSystemBars: () => null,
   copyVersionDetails: () => null,
   openProjectLink: () => null,

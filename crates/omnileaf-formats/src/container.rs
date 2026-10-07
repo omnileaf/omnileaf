@@ -4,9 +4,12 @@ use std::{
     path::Path,
 };
 
-use crate::FormatError;
+use crate::{FormatError, UnsupportedArchive};
 
-const ZIP_SIGNATURES: [&[u8; 4]; 2] = [b"PK\x03\x04", b"PK\x05\x06"];
+const SIGNATURE_LENGTH: u64 = 6;
+const ZIP_SIGNATURES: [&[u8]; 2] = [b"PK\x03\x04", b"PK\x05\x06"];
+const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07";
+const SEVEN_ZIP_SIGNATURE: &[u8] = b"7z\xbc\xaf\x27\x1c";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Container {
@@ -24,22 +27,41 @@ impl Container {
         if metadata.is_dir() {
             return Ok(Self::Folder);
         }
-        if starts_like_a_zip(path)? {
+        let start = first_bytes(path)?;
+        if ZIP_SIGNATURES
+            .iter()
+            .any(|signature| start.starts_with(signature))
+        {
             return Ok(Self::Zip);
         }
-        Err(FormatError::Unsupported {
-            path: path.to_owned(),
+        let path = path.to_owned();
+        Err(match unsupported_archive(&start) {
+            Some(archive) => FormatError::ArchiveNotSupportedYet { path, archive },
+            None => FormatError::Unsupported { path },
         })
     }
 }
 
-fn starts_like_a_zip(path: &Path) -> Result<bool, FormatError> {
+fn unsupported_archive(start: &[u8]) -> Option<UnsupportedArchive> {
+    if start.starts_with(RAR_SIGNATURE) {
+        Some(UnsupportedArchive::Rar)
+    } else if start.starts_with(SEVEN_ZIP_SIGNATURE) {
+        Some(UnsupportedArchive::SevenZip)
+    } else {
+        None
+    }
+}
+
+fn first_bytes(path: &Path) -> Result<Vec<u8>, FormatError> {
     let read_failed = |source| FormatError::Read {
         path: path.to_owned(),
         source,
     };
-    let mut signature = [0; 4];
-    let file = File::open(path).map_err(read_failed)?;
-    let read = file.take(4).read(&mut signature).map_err(read_failed)?;
-    Ok(read == signature.len() && ZIP_SIGNATURES.contains(&&signature))
+    let mut start = Vec::new();
+    File::open(path)
+        .map_err(read_failed)?
+        .take(SIGNATURE_LENGTH)
+        .read_to_end(&mut start)
+        .map_err(read_failed)?;
+    Ok(start)
 }

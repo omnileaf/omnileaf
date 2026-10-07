@@ -37,6 +37,7 @@
   --font-ui:
     system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto,
     sans-serif;
+  --font-display: Georgia, serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --text-tab: 0.625rem;
@@ -61,8 +62,18 @@
   --text-group-title--line-height: 1.5rem;
   --text-title: 1.25rem;
   --text-title--line-height: 1.75rem;
-  --text-headline: 1.75rem;
-  --text-headline--line-height: 2.25rem;
+  --text-headline: 1.5rem;
+  --text-headline--line-height: 1.25;
+  --text-display: 1.75rem;
+  --text-display--line-height: 1.2;
+  --text-step-body: 0.9375rem;
+  --text-step-body--line-height: 1.5;
+  --text-lead: 0.9375rem;
+  --text-lead--line-height: 1.375rem;
+  --text-cover-title: 0.8125rem;
+  --text-cover-title--line-height: 1.125rem;
+  --text-cover-title-wide: 0.875rem;
+  --text-cover-title-wide--line-height: 1.25rem;
   --text-app-name: 1.5rem;
   --text-app-name--line-height: 2rem;
   --text-page-title: 2rem;
@@ -94,6 +105,19 @@
   --spacing-icon-tile: 2.25rem;
   --spacing-icon-badge: 3rem;
   --spacing-dialog: 27.5rem;
+  --spacing-header-badge: 2.5rem;
+  --spacing-header-badge-icon: 1.25rem;
+  --spacing-touch-button: 3.25rem;
+  --spacing-step-dot: 0.375rem;
+  --spacing-step-dot-current: 1.375rem;
+  --spacing-first-launch-card: 61.25rem;
+  --spacing-first-launch-card-tall: 38.75rem;
+  --spacing-first-launch-panel: 22.5rem;
+  --spacing-panel-glow: 16.25rem;
+  --spacing-panel-glow-tall: 17.5rem;
+  --spacing-cover-caption: 0.375rem;
+  --spacing-cover-gap: 0.875rem;
+  --spacing-cover-gap-wide: 1.25rem;
   --spacing-pointer-target: 2.5rem;
   --spacing-pointer-button: 2.25rem;
   --spacing-dismiss: 1.75rem;
@@ -163,7 +187,11 @@
   --radius-control: 0.5rem;
   --radius-card: 0.75rem;
   --radius-sheet: 1.25rem;
+
+  --aspect-cover: 2 / 3;
   --radius-tile: 0.625rem;
+  --radius-button: 0.625rem;
+  --radius-ios-button: 0.875rem;
   --radius-list: 0.625rem;
   --radius-cover: 0.375rem;
   --radius-panel: 1rem;
@@ -180,6 +208,7 @@
   --shadow-floating:
     0 8px 28px var(--color-glass-shadow), 0 1px 3px var(--color-glass-contact);
   --shadow-dialog: 0 24px 60px rgb(0 0 0 / 0.35);
+  --shadow-card: 0 24px 60px rgb(0 0 0 / 0.12);
   --shadow-knob: 0 1px 2px var(--color-knob-shadow);
   --shadow-notice: 0 12px 34px rgb(0 0 0 / 0.25);
   --shadow-notice-wide: 0 14px 40px rgb(0 0 0 / 0.2);
@@ -205,8 +234,27 @@
   --color-danger: #9b2c2c;
   --color-on-danger: #ffffff;
   --color-danger-soft: #f6e3e3;
+  --color-hover: rgb(28 27 24 / 0.06);
+  --color-pressed: rgb(28 27 24 / 0.1);
+  --color-accent-hover: #285f44;
+  --color-accent-pressed: #22513a;
+  --color-danger-hover: #852424;
+  --color-danger-pressed: #701e1e;
   --color-sheet: #faf8f4;
   --color-scrim: rgb(12 11 10 / 0.45);
+  --color-backdrop: #eeeae1;
+  --color-step-off: #d6d0c4;
+  --color-panel: #1f3a2b;
+  --color-panel-glow: #2f6f4f;
+  --color-on-panel: #f1ede4;
+  --color-spine-mint: #ddebe2;
+  --color-spine-green: #7fcb9d;
+  --color-spine-gold: #c9a24d;
+  --color-spine-blue: #a9c4e6;
+  --color-spine-paper: var(--color-on-panel);
+  --color-spine-sand: #e8c98c;
+  --color-spine-teal: #9fdccf;
+  --color-spine-rose: #f0b8c4;
   --color-switch-off: #c9c3b6;
   --color-switch-knob: #ffffff;
   --color-knob-shadow: rgb(0 0 0 / 0.2);
@@ -225,6 +273,10 @@
   --color-toast-key: rgb(255 255 255 / 0.1);
   --color-toast-action: #7fcb9d;
   --color-on-toast-action: #0f2418;
+  --color-toast-hover: rgb(241 237 228 / 0.08);
+  --color-toast-pressed: rgb(241 237 228 / 0.12);
+  --color-toast-action-hover: #95d6ae;
+  --color-toast-action-pressed: #6bb98a;
   --color-icon-hole: var(--color-accent-soft);
   --color-glass: rgb(250 248 244 / 0.74);
   --color-glass-edge: rgb(255 255 255 / 0.7);
@@ -232,11 +284,13 @@
   --color-glass-hole: #e6e2da;
   --color-glass-shadow: rgb(28 27 24 / 0.16);
   --color-glass-contact: rgb(28 27 24 / 0.08);
+  --color-cover-edge: rgb(28 27 24 / 0.1);
 
   --transition-duration-fade: 150ms;
   --transition-duration-grow: 200ms;
   --transition-duration-slide: 350ms;
   --transition-duration-move: 300ms;
+  --transition-duration-spin: 1s;
 
   --ease-out: ease-out;
   --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
@@ -253,6 +307,7 @@
   --animate-gear-turn: gear-turn var(--transition-duration-move) var(--ease-out);
   --animate-notice-rise: notice-rise var(--transition-duration-grow)
     var(--ease-emphasized);
+  --animate-spin: spin var(--transition-duration-spin) linear infinite;
 
   @keyframes pill-grow {
     from {
@@ -296,6 +351,12 @@
     }
   }
 
+  @keyframes spin {
+    to {
+      rotate: 360deg;
+    }
+  }
+
   @keyframes notice-rise {
     from {
       opacity: 0;
@@ -308,6 +369,10 @@
   @variant medium {
     --spacing-empty-art: 5rem;
     --spacing-empty-icon: 2.25rem;
+    --spacing-header-badge: 2.25rem;
+    --spacing-header-badge-icon: 1.125rem;
+    --text-display: 1.875rem;
+    --text-step-body: 0.875rem;
     --spacing-empty-lift: 9.5rem;
     --spacing-title-gap: 1.5rem;
     --spacing-gutter: 1.75rem;
@@ -379,8 +444,16 @@
   --color-danger: #f08c8c;
   --color-on-danger: #2a0e0e;
   --color-danger-soft: #3a2222;
+  --color-hover: rgb(241 237 228 / 0.08);
+  --color-pressed: rgb(241 237 228 / 0.12);
+  --color-accent-hover: #95d6ae;
+  --color-accent-pressed: #6bb98a;
+  --color-danger-hover: #f4a3a3;
+  --color-danger-pressed: #e57a7a;
   --color-sheet: #1f1d1a;
   --color-scrim: rgb(0 0 0 / 0.6);
+  --color-backdrop: #0e0d0c;
+  --color-step-off: #3a3630;
   --color-switch-off: #4a463f;
   --color-cover-edge: rgb(255 255 255 / 0.08);
   --color-stand-in: #2e2c28;
@@ -394,12 +467,17 @@
   --color-toast-key: rgb(0 0 0 / 0.08);
   --color-toast-action: #2f6f4f;
   --color-on-toast-action: #ffffff;
+  --color-toast-hover: rgb(28 27 24 / 0.06);
+  --color-toast-pressed: rgb(28 27 24 / 0.1);
+  --color-toast-action-hover: #285f44;
+  --color-toast-action-pressed: #22513a;
   --color-glass: rgb(36 34 30 / 0.72);
   --color-glass-edge: rgb(255 255 255 / 0.1);
   --color-glass-pill: rgb(255 255 255 / 0.12);
   --color-glass-hole: #3a3833;
   --color-glass-shadow: rgb(0 0 0 / 0.45);
   --color-glass-contact: transparent;
+  --color-cover-edge: rgb(255 255 255 / 0.08);
 }
 
 :root[dir="rtl"] {
@@ -419,6 +497,21 @@
   transition-property: fill, stroke;
   transition-timing-function: var(--tw-ease, ease);
   transition-duration: var(--tw-duration, 0s);
+}
+
+@utility transition-control {
+  transition-property: color, background-color, border-color, opacity;
+  transition-timing-function: var(--ease-out);
+  transition-duration: 0s;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition-duration: var(--transition-duration-fade);
+  }
+}
+
+@utility tint-* {
+  --tint: --value(--color-*);
+  background-image: linear-gradient(var(--tint), var(--tint));
 }
 
 @utility inline-tab {
@@ -452,6 +545,36 @@
   }
 }
 
+@utility virtual-rows {
+  box-sizing: border-box;
+  block-size: calc(var(--row-count) * var(--row-stride));
+  padding-block-start: calc(var(--first-row) * var(--row-stride));
+}
+
+@utility progress-track {
+  appearance: none;
+  display: block;
+  inline-size: 100%;
+  block-size: var(--spacing-xs);
+  border: none;
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  background-color: var(--color-chip);
+  color: var(--color-accent);
+
+  &::-webkit-progress-bar {
+    background-color: var(--color-chip);
+  }
+
+  &::-webkit-progress-value {
+    background-color: var(--color-accent);
+  }
+
+  &::-moz-progress-bar {
+    background-color: var(--color-accent);
+  }
+}
+
 @layer base {
   :root {
     color-scheme: light;
@@ -465,5 +588,16 @@
 
   :where([tabindex="-1"]):focus {
     outline: none;
+  }
+
+  @media (pointer: fine) {
+    a[href],
+    button:not(:disabled),
+    [role="button"]:not([aria-disabled="true"]),
+    summary,
+    select:not(:disabled),
+    label:has(input:not(:disabled)) {
+      cursor: pointer;
+    }
   }
 }

@@ -9,7 +9,9 @@ use crate::{
         Changed,
         key::{Key, LatestKey, MaximumKey},
         local::LocalReplica,
-        projector, register,
+        projector,
+        reading_state::reading_state,
+        register,
     },
 };
 
@@ -57,6 +59,27 @@ impl<'t> Writer<'t> {
         self.write(furthest.into(), class, Value::Unsigned(page.into()))
     }
 
+    /// Copies `from`'s position, furthest page and read flag onto `to`, unless `to` has reading state of its own.
+    #[tracing::instrument(skip_all, fields(%from, %to))]
+    pub fn carry_reading_state(&mut self, from: BookId, to: BookId) -> Result<(), Error> {
+        if reading_state(self.connection, to)?.is_some() {
+            return Ok(());
+        }
+        let Some(state) = reading_state(self.connection, from)? else {
+            return Ok(());
+        };
+        if let Some(page) = state.position_page {
+            self.set_position(to, page)?;
+        }
+        if let Some(page) = state.furthest_page {
+            self.raise_furthest(to, page)?;
+        }
+        if let Some(is_read) = state.is_read {
+            self.set_read(to, is_read)?;
+        }
+        Ok(())
+    }
+
     fn set(&mut self, key: LatestKey, value: Value) -> Result<(), Error> {
         self.write(key.into(), MergeClass::LastWriterWins, value)
     }
@@ -91,6 +114,6 @@ impl<'t> Writer<'t> {
             return Err(Error::FailedWriteIgnored);
         }
         self.local.save(self.connection)?;
-        Ok(Changed { keys: self.changed })
+        Ok(Changed::Registers { keys: self.changed })
     }
 }

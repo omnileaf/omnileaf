@@ -9,6 +9,7 @@ const DERIVED_VERSION: usize = 8;
 const LOCAL_BOOK_KEY: KeyName = KeyName::new("book.local.v1");
 const LOCAL_SERIES_KEY: KeyName = KeyName::new("series.local.v1");
 const CATEGORY_KEY: KeyName = KeyName::new("category.v1");
+const LOCAL_SOURCE_KEY: KeyName = KeyName::new("source.local.v1");
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum KeyError {
@@ -73,6 +74,7 @@ macro_rules! entity_id {
 entity_id!(BookId);
 entity_id!(SeriesId);
 entity_id!(CategoryId);
+entity_id!(SourceId);
 
 impl BookId {
     #[must_use]
@@ -96,6 +98,13 @@ impl CategoryId {
     pub fn from_name(name: &str) -> Result<Self, KeyError> {
         let key = NaturalKey::new(CATEGORY_KEY).part(norm(name).as_bytes())?;
         Ok(Self(key.id()))
+    }
+}
+
+impl SourceId {
+    #[must_use]
+    pub fn local() -> Self {
+        Self(NaturalKey::new(LOCAL_SOURCE_KEY).id())
     }
 }
 

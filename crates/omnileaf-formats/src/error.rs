@@ -1,8 +1,24 @@
-use std::{io, path::PathBuf};
+use std::{fmt, io, path::PathBuf};
 
 use omnileaf_sync_proto::FingerprintError;
 
 use crate::ComicInfoError;
+
+/// An archive format Omnileaf recognises but can't open in this version.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UnsupportedArchive {
+    Rar,
+    SevenZip,
+}
+
+impl fmt::Display for UnsupportedArchive {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(match self {
+            Self::Rar => "RAR",
+            Self::SevenZip => "7z",
+        })
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum FormatError {
@@ -10,6 +26,11 @@ pub enum FormatError {
     Read { path: PathBuf, source: io::Error },
     #[error("{} isn't a comic archive or folder this app can read", path.display())]
     Unsupported { path: PathBuf },
+    #[error("{} is a {archive} archive, which this version can't open", path.display())]
+    ArchiveNotSupportedYet {
+        path: PathBuf,
+        archive: UnsupportedArchive,
+    },
     #[error("{} is damaged", path.display())]
     Corrupt {
         path: PathBuf,

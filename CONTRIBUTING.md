@@ -57,7 +57,7 @@ The `rust` group runs on every platform in CI, because its answer can differ bet
 
 - clippy over the workspace, with warnings as errors;
 - the tests, which also check that the interface's generated command bindings in `app/src/lib/ipc/bindings.ts` are current. After changing a command, regenerate them with `cargo xtask bindings`;
-- two release-build timing budgets: listing a 500-entry archive takes 3 ms or less, and a page of the library sorted by title takes 2 ms or less at the 95th percentile over 10,000 series.
+- four release-build timing budgets: listing a 500-entry archive takes 3 ms or less, a page of the library sorted by title takes 2 ms or less at the 95th percentile over 10,000 series, rescanning an unchanged library of 1,000 books takes 300 ms or less, and a cover thumbnail made from a typical full-size colour scan, a JPEG page of about 1 MB with 4:2:0 chroma subsampling, takes 30 ms or less at the 95th percentile.
 
 The timing budgets hold exactly on your machine and on CI's Linux runner. The macOS and Windows runners are shared and sometimes stall, so CI sets `OMNILEAF_BUDGET_SLACK=2` there: a timing fails only beyond twice its budget, while the log still shows each measured time against the budget.
 
@@ -87,9 +87,11 @@ The `browser` group runs the built interface in Chromium and WebKit at phone, ta
 
 CI splits the suite into three shards. `PLAYWRIGHT_SHARD=2/3 pnpm --dir app test:e2e` runs one of them.
 
+Once the rest pass, the `speed` project opens the library of 10,000 series nine times in desktop Chromium, with nothing else running, and checks that the median time from the click to the first painted rows is 150 ms or less. `pnpm --dir app test:e2e --project speed --no-deps` runs it on its own. A shard leaves it out, so CI runs it on its own after the last shard.
+
 ### App tests
 
-The `app` group builds the app with the `e2e` feature, which adds an embedded WebDriver server and never ships, and drives the real app through it. WebDriver can't reach the system folder picker, so that build answers it with the folder in `OMNILEAF_E2E_PICKED_FOLDER`, which the tests point at a sample library they generate. They also set `OMNILEAF_DATA_DIR`, which every build reads once at startup, so the app keeps its library database in a scratch folder instead of the platform's app data folder. It must be an absolute path. The tests open a window, so on Linux without a display run them under `xvfb-run`. They don't run on Windows yet, because the WebDriver plugin doesn't build there with the current Tauri release.
+The `app` group builds the app with the `e2e` feature, which adds an embedded WebDriver server and never ships, and drives the real app through it. WebDriver can't reach the system folder picker, so that build answers it with the folder in `OMNILEAF_E2E_PICKED_FOLDER`, which the tests point at a sample library they generate. They also set `OMNILEAF_DATA_DIR`, which every build reads once at startup, so the app keeps its library database in a scratch folder instead of the platform's app data folder, and its cover cache in that folder's `cache` folder instead of the platform's cache folder. It must be an absolute path. The tests open a window, so on Linux without a display run them under `xvfb-run`. They don't run on Windows yet, because the WebDriver plugin doesn't build there with the current Tauri release.
 
 ### Android and iOS
 

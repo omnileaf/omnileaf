@@ -1,0 +1,6 @@
+{
+  "identifier": "main",
+  "description": "Lets the app's window listen for the events the Rust core sends it, and nothing else of Tauri's own.",
+  "windows": ["main"],
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
+}

@@ -29,13 +29,28 @@ const SCREENS = {
   },
 } as const;
 
-const projects: Project[] = Object.entries(SCREENS).flatMap(
-  ([screen, emulation]) =>
-    ENGINES.map((browserName) => ({
-      name: `${browserName}-${screen}`,
-      use: { browserName, ...emulation },
-    })),
-);
+const SPEED_SPECS = "**/*.speed.ts";
+
+const shard = shardFromEnvironment(process.env.PLAYWRIGHT_SHARD);
+
+const screenProjects = Object.entries(SCREENS).flatMap(([screen, emulation]) =>
+  ENGINES.map((browserName) => ({
+    name: `${browserName}-${screen}`,
+    use: { browserName, ...emulation },
+  })),
+) satisfies Project[];
+
+/** Times the interface on its own once every other spec has finished, so their load can't push a timing over its budget. */
+const speedProject: Project = {
+  name: "speed",
+  testMatch: SPEED_SPECS,
+  dependencies: screenProjects.map(({ name }) => name),
+  use: { browserName: "chromium", ...SCREENS.desktop },
+};
+
+/** A shard leaves the speed project out, since depending on every other project would pull them all into one shard. */
+const projects: Project[] =
+  shard === null ? [...screenProjects, speedProject] : screenProjects;
 
 export default defineConfig({
   testDir: "tests/browser",
@@ -48,7 +63,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects,
-  shard: shardFromEnvironment(process.env.PLAYWRIGHT_SHARD),
+  shard,
   webServer: {
     command: `pnpm build && pnpm preview --port ${String(PREVIEW_PORT)} --strictPort`,
     url: PREVIEW_URL,

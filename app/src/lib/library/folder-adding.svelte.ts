@@ -1,15 +1,17 @@
 import { FolderX, Lock, type LucideIcon, TriangleAlert } from "@lucide/svelte";
 
-import type { commands, FolderSurvey, IpcErrorCode } from "$lib/ipc/bindings";
+import type { FolderScan, IpcErrorCode } from "$lib/ipc/bindings";
 import type { Notice, Notices } from "$lib/notices/notices.svelte";
 import { m } from "$lib/paraglide/messages.js";
 
-export type AddFolder = typeof commands.addLibraryFolder;
+import type { AddFolder } from "./add-folder";
+import { followScan, type ScanStep } from "./scan-step";
 
 export type FolderOutcome =
   | { readonly kind: "idle" }
   | { readonly kind: "adding" }
-  | { readonly kind: "found"; readonly survey: FolderSurvey };
+  | ScanStep
+  | { readonly kind: "scanned"; readonly scan: FolderScan };
 
 interface Failure {
   readonly icon: LucideIcon;
@@ -53,20 +55,32 @@ export class FolderAdding {
   constructor(
     private readonly addFolder: AddFolder,
     private readonly notices: () => Notices,
-    private readonly onAdded: () => void = () => {},
+    private readonly onFinished: () => void = () => {},
   ) {}
 
   get isAdding(): boolean {
-    return this.outcome.kind === "adding";
+    return (
+      this.outcome.kind === "adding" ||
+      this.outcome.kind === "finding" ||
+      this.outcome.kind === "reading"
+    );
   }
 
   async add(): Promise<void> {
     this.outcome = { kind: "adding" };
-    const result = await this.addFolder();
+    const result = await this.addFolder(
+      followScan(
+        () => this.isAdding,
+        (step) => {
+          this.outcome = step;
+        },
+      ),
+    );
     if (result.status === "error") {
       this.outcome = { kind: "idle" };
       this.#failure = this.#failureNotice(result.error.code);
       this.notices().show(this.#failure);
+      this.onFinished();
       return;
     }
     this.withdrawFailure();
@@ -74,8 +88,8 @@ export class FolderAdding {
       this.outcome = { kind: "idle" };
       return;
     }
-    this.outcome = { kind: "found", survey: result.data };
-    this.onAdded();
+    this.outcome = { kind: "scanned", scan: result.data };
+    this.onFinished();
   }
 
   dismiss(): void {
