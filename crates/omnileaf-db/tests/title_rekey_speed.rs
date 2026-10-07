@@ -1,14 +1,14 @@
 mod library_seed;
 mod support;
 
-use std::time::{Duration, Instant};
+use std::{num::NonZeroUsize, time::Duration};
 
 use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Database,
     store::{Clock, Store},
 };
-use omnileaf_testkit::TimingBudget;
+use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
 use support::ScratchFolder;
 
 const SERIES_COUNT: u32 = 10_000;
@@ -31,29 +31,34 @@ impl Clock for StoppedClock {
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
 async fn keys_10_000_titles_again_for_each_language_within_150_ms() {
-    let budget = TimingBudget::from_env(BUDGET);
+    let trial = SpeedTrial {
+        measured: "re-keying 10,000 titles for a language",
+        sampling: Sampling::Repeated {
+            samples: NonZeroUsize::new(LANGUAGES.len()).unwrap(),
+            statistic: Statistic::Slowest,
+        },
+        budget: TimingBudget::from_env(BUDGET),
+    };
     let folder = ScratchFolder::new("title-rekey-speed");
     let database = Database::open(&folder.config()).unwrap();
     add_generated_series(&database).await;
     let store = Store::new(database, StoppedClock);
 
-    let mut timings = Vec::new();
-    for language in LANGUAGES {
-        let started = Instant::now();
-        store
-            .sort_titles_for(language.parse().unwrap())
-            .await
-            .unwrap();
-        timings.push((language, started.elapsed()));
-    }
+    let outcome = trial
+        .run(
+            async |_| LANGUAGES.into_iter(),
+            async |languages| {
+                let language = languages.next().unwrap();
+                store
+                    .sort_titles_for(language.parse().unwrap())
+                    .await
+                    .unwrap();
+            },
+        )
+        .await;
 
-    eprintln!("re-keying {SERIES_COUNT} titles: {timings:?}, each against the {budget}");
-    for (language, elapsed) in timings {
-        assert!(
-            budget.allows(elapsed),
-            "re-keying {SERIES_COUNT} titles for {language} took {elapsed:?}, over the {budget}"
-        );
-    }
+    eprintln!("{outcome}");
+    assert!(outcome.is_within_budget(), "{outcome}");
 }
 
 /// Starts every title with a letter Swedish files after Z and English files under A, so each switch between them changes every key.

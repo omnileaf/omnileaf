@@ -1,10 +1,11 @@
 mod support;
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use omnileaf_engine::{FileChanges, Library, RescanOutcome};
 use omnileaf_testkit::{
-    GENERATED_LIBRARY_NAME, GeneratedLibrary, TimingBudget, write_generated_library,
+    GENERATED_LIBRARY_NAME, GeneratedLibrary, Sampling, SpeedTrial, TimingBudget,
+    write_generated_library,
 };
 use support::{FixedClock, TempFolder};
 
@@ -24,28 +25,36 @@ const UNCHANGED_RESCAN_BUDGET: Duration = Duration::from_millis(300);
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
 async fn scans_a_first_library_of_1_000_books_within_3_s() {
-    let budget = TimingBudget::from_env(BUDGET);
+    let trial = SpeedTrial {
+        measured: "the first scan of 1,000 books",
+        sampling: Sampling::Once,
+        budget: TimingBudget::from_env(BUDGET),
+    };
     let comics = TempFolder::new("scan-speed-comics")
         .with_files(&["Generated Library/.DS_Store", "Generated Library/notes.txt"]);
     write_generated_library(comics.path(), LIBRARY).unwrap();
-    let home = TempFolder::new("scan-speed-home");
-    let library = Library::open(home.path().to_path_buf(), FixedClock)
-        .await
-        .unwrap();
 
-    let started = Instant::now();
-    let scan = library
-        .add_folder(comics.path().join(GENERATED_LIBRARY_NAME), |_| {})
-        .await
-        .unwrap();
-    let elapsed = started.elapsed();
+    let outcome = trial
+        .run(
+            async |pass| {
+                let home = TempFolder::new(&format!("scan-speed-home-{pass}"));
+                let library = Library::open(home.path().to_path_buf(), FixedClock)
+                    .await
+                    .unwrap();
+                (library, home)
+            },
+            async |(library, _home)| {
+                let scan = library
+                    .add_folder(comics.path().join(GENERATED_LIBRARY_NAME), |_| {})
+                    .await
+                    .unwrap();
+                assert_eq!(scan.books, BOOKS);
+            },
+        )
+        .await;
 
-    eprintln!("first scan of {BOOKS} books: {elapsed:?}, {budget}");
-    assert_eq!(scan.books, BOOKS);
-    assert!(
-        budget.allows(elapsed),
-        "the first scan of {BOOKS} books took {elapsed:?}, over the {budget}"
-    );
+    eprintln!("{outcome}");
+    assert!(outcome.is_within_budget(), "{outcome}");
 }
 
 #[tokio::test]
@@ -55,7 +64,11 @@ async fn scans_a_first_library_of_1_000_books_within_3_s() {
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
 async fn rescans_an_unchanged_library_of_1_000_books_within_300_ms() {
-    let budget = TimingBudget::from_env(UNCHANGED_RESCAN_BUDGET);
+    let trial = SpeedTrial {
+        measured: "the unchanged rescan of 1,000 books",
+        sampling: Sampling::Once,
+        budget: TimingBudget::from_env(UNCHANGED_RESCAN_BUDGET),
+    };
     let comics = TempFolder::new("rescan-speed-comics");
     write_generated_library(comics.path(), LIBRARY).unwrap();
     let home = TempFolder::new("rescan-speed-home");
@@ -75,17 +88,19 @@ async fn rescans_an_unchanged_library_of_1_000_books_within_300_ms() {
         .unwrap()
         .id;
 
-    let started = Instant::now();
-    let rescan = library.rescan_folder(folder, |_| {}).await.unwrap();
-    let elapsed = started.elapsed();
+    let outcome = trial
+        .run(
+            async |_| (),
+            async |()| {
+                let rescan = library.rescan_folder(folder, |_| {}).await.unwrap();
+                assert_eq!(
+                    rescan.outcome,
+                    RescanOutcome::Rescanned(FileChanges::default())
+                );
+            },
+        )
+        .await;
 
-    eprintln!("unchanged rescan of {BOOKS} books: {elapsed:?}, {budget}");
-    assert_eq!(
-        rescan.outcome,
-        RescanOutcome::Rescanned(FileChanges::default())
-    );
-    assert!(
-        budget.allows(elapsed),
-        "the unchanged rescan of {BOOKS} books took {elapsed:?}, over the {budget}"
-    );
+    eprintln!("{outcome}");
+    assert!(outcome.is_within_budget(), "{outcome}");
 }
