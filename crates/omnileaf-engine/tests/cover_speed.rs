@@ -9,14 +9,12 @@
 )]
 mod support;
 
-use std::{
-    fs,
-    time::{Duration, Instant},
-};
+use std::{fs, num::NonZeroUsize, slice::Iter, time::Duration};
 
 use omnileaf_engine::{Library, Resource, ResourceRouter};
 use omnileaf_testkit::{
-    ArchiveEntry, Compression, PageShape, TimingBudget, cbz, page_jpeg, subsampled_scan_jpeg,
+    ArchiveEntry, Compression, PageShape, Sampling, SpeedTrial, Statistic, TimingBudget, cbz,
+    page_jpeg, subsampled_scan_jpeg,
 };
 use support::{FixedClock, TempFolder};
 
@@ -64,14 +62,27 @@ async fn cover_paths(library: &Library) -> Vec<String> {
     }
 }
 
+struct ColdCovers<'covers> {
+    router: ResourceRouter,
+    _cache: TempFolder,
+    covers: Iter<'covers, String>,
+}
+
 #[tokio::test]
 #[expect(
     clippy::print_stderr,
-    reason = "the gate logs the measured time so each platform's margin under the budget shows on every run"
+    reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
 async fn makes_a_cold_cover_thumbnail_from_a_typical_colour_scan_within_30_ms_at_p95() {
-    let budget = TimingBudget::from_env(BUDGET);
+    let trial = SpeedTrial {
+        measured: "a cold cover thumbnail from a typical 1800x2700 4:2:0 JPEG scan of about 1 MB",
+        sampling: Sampling::Repeated {
+            samples: NonZeroUsize::new(usize::try_from(BOOKS).unwrap()).unwrap(),
+            statistic: Statistic::Percentile95,
+        },
+        budget: TimingBudget::from_env(BUDGET),
+    };
     let comics = TempFolder::new("cover-speed-comics");
     write_scanned_library(&comics.path().join(FOLDER));
     let home = TempFolder::new("cover-speed-home");
@@ -82,29 +93,27 @@ async fn makes_a_cold_cover_thumbnail_from_a_typical_colour_scan_within_30_ms_at
         .add_folder(comics.path().join(FOLDER), |_| {})
         .await
         .unwrap();
-    let cache = TempFolder::new("cover-speed-cache");
-    let router = ResourceRouter::open(cache.path()).unwrap();
     let covers = cover_paths(&library).await;
+    assert_eq!(covers.len(), usize::try_from(BOOKS).unwrap());
 
-    let mut times = Vec::with_capacity(covers.len());
-    for cover in &covers {
-        let started = Instant::now();
-        let resource = router.respond(&library, cover).await;
-        times.push(started.elapsed());
-        assert!(matches!(resource, Resource::Immutable { .. }));
-    }
+    let outcome = trial
+        .run(
+            async |pass| {
+                let cache = TempFolder::new(&format!("cover-speed-cache-{pass}"));
+                ColdCovers {
+                    router: ResourceRouter::open(cache.path()).unwrap(),
+                    _cache: cache,
+                    covers: covers.iter(),
+                }
+            },
+            async |cold| {
+                let cover = cold.covers.next().unwrap();
+                let resource = cold.router.respond(&library, cover).await;
+                assert!(matches!(resource, Resource::Immutable { .. }));
+            },
+        )
+        .await;
 
-    times.sort();
-    let median = times[times.len() / 2];
-    let p95 = times[times.len() * 95 / 100 - 1];
-    let slowest = times[times.len() - 1];
-    eprintln!(
-        "cold cover thumbnail from a typical 1800x2700 4:2:0 JPEG scan of about 1 MB: median {median:?}, p95 {p95:?}, slowest {slowest:?} over {} covers, {budget}",
-        times.len()
-    );
-    assert_eq!(times.len(), usize::try_from(BOOKS).unwrap());
-    assert!(
-        budget.allows(p95),
-        "a cold cover thumbnail from a typical 4:2:0 JPEG scan of about 1 MB took {p95:?} at p95, over the {budget}"
-    );
+    eprintln!("{outcome}");
+    assert!(outcome.is_within_budget(), "{outcome}");
 }
