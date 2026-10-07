@@ -285,10 +285,43 @@ jobs:
       - name: Install interface dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Name the test browsers' system packages
+        id: browser-packages
+        run: |
+          playwright=$(pnpm --dir app exec playwright --version)
+          digest=$(printf '%s %s %s' "$ImageOS" "$ImageVersion" "$playwright" | sha256sum | cut -c1-16)
+          echo "key=playwright-system-packages-$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the test browsers' system packages
+        id: restore-browser-packages
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/browser-packages
+          key: ${{ steps.browser-packages.outputs.key }}
+
+      - name: Put the test browsers' system packages back
+        run: |
+          if compgen -G "$HOME/browser-packages/*.deb" > /dev/null; then
+            sudo cp "$HOME"/browser-packages/*.deb /var/cache/apt/archives/
+          fi
+
       - name: Install the test browsers
         uses: ./.github/actions/playwright-browsers
         with:
           browsers: chromium webkit
+
+      - name: Collect the system packages the install downloaded
+        run: |
+          mkdir -p "$HOME/browser-packages"
+          find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp -t "$HOME/browser-packages" {} +
+          echo "Kept $(find "$HOME/browser-packages" -name '*.deb' | wc -l) system packages for the next run"
+
+      - name: Keep the test browsers' system packages for later runs
+        if: github.ref == 'refs/heads/main' && matrix.shard == 1 && steps.restore-browser-packages.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/browser-packages
+          key: ${{ steps.browser-packages.outputs.key }}
 
       - name: Install the pinned toolchain
         run: rustup toolchain install
@@ -498,3 +531,31 @@ jobs:
       - name: Build the app
         if: runner.os == 'Windows'
         run: pnpm --dir app tauri build --debug --no-bundle
+
+  prune-caches:
+    name: prune caches
+    needs: [rust, portable, coverage, fixtures, interface, browser, android, ios, app]
+    if: always() && (github.event_name == 'push' || github.event_name == 'schedule')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Keep the newest cache of each kind saved from main
+        run: |
+          gh api --paginate "repos/$GH_REPO/actions/caches?per_page=100" --jq '.actions_caches[]' \
+            | jq -s -r '
+                [.[] | .family = (.key | sub("-[0-9a-f]{8,}$"; ""))]
+                | (map(select(.ref != "refs/heads/main")) | map(.id))
+                  + (map(select(.ref == "refs/heads/main"))
+                     | group_by(.family)
+                     | map(sort_by(.created_at) | reverse | .[1:] | map(.id))
+                     | add // [])
+                | .[]' \
+            | while read -r id; do
+                gh api -X DELETE "repos/$GH_REPO/actions/caches/$id" --silent && echo "Deleted cache $id"
+              done
+          gh api "repos/$GH_REPO/actions/cache/usage" --jq '"Caches now hold \(.active_caches_size_in_bytes / 1048576 | floor) MB"'
