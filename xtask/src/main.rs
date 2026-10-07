@@ -1,5 +1,6 @@
 //! Repository automation, run as `cargo xtask <command>`.
 
+mod android;
 mod check;
 mod dev;
 mod doctor;
@@ -109,12 +110,20 @@ fn main() -> anyhow::Result<()> {
             dev::run(&workspace::root(), &platforms, &devices)?;
         }
         Command::Doctor => {
-            let report = doctor::render(
-                doctor::REQUIREMENTS,
-                &Process::in_workspace(),
-                std::env::consts::OS,
-            );
+            let os = std::env::consts::OS;
+            let android = android::Toolchain::locate(|key| std::env::var_os(key), os);
+            let host = doctor::Host {
+                os,
+                android: android.as_ref(),
+            };
+            let report = doctor::render(doctor::REQUIREMENTS, &Process::in_workspace(), &host);
             print_lines(&report.lines);
+            if report.missing_for_phones > 0 {
+                print_lines(&[format!(
+                    "{} tool(s) for running the app on phones missing",
+                    report.missing_for_phones
+                )]);
+            }
             anyhow::ensure!(report.missing == 0, "{} tool(s) missing", report.missing);
         }
         Command::Fixtures { out } => {
