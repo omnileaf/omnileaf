@@ -228,8 +228,24 @@
   "library_folders_failed": "Couldn't load your folders. Try again later.",
   "library_remove_folder": "Remove folder",
   "library_remove_folder_label": "Remove {name}",
-  "library_remove_folder_title": "Remove {name}?",
-  "library_remove_folder_body": "Its comics leave your library. The files stay where they are.",
+  "library_remove_folder_title": "Remove this folder?",
+  "library_remove_folder_detail": [
+    {
+      "declarations": [
+        "input location",
+        "input books",
+        "local booksPlural = books: plural",
+        "local formattedBooks = books: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "{location} · {formattedBooks} book",
+        "booksPlural=other": "{location} · {formattedBooks} books"
+      }
+    }
+  ],
+  "library_remove_folder_note": "Its books leave your library. The files stay where they are, and you can add the folder again.",
+  "library_remove_folder_confirm": "Remove folder",
   "library_remove_folder_cancel": "Cancel",
   "library_remove_folder_failed": "Couldn't remove {name}. Try again.",
   "library_rescan_folder": "Rescan",

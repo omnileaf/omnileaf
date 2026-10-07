@@ -40,6 +40,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   libraryView: () => DEFAULT_LIBRARY_VIEW,
   setLibraryView: () => null,
   removeLibraryFolder: () => null,
+  libraryFolderBookCount: () => 0,
   rescanLibraryFolder: () => {
     throw new CommandFailure({
       code: "folderNotFound",

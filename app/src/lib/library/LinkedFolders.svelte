@@ -44,9 +44,23 @@
 
   let addButton: HTMLButtonElement | undefined = $state();
   let confirming: LibraryFolder | undefined = $state();
+  let confirmingBooks: number | undefined = $state();
   let notRemoved: LibraryFolder | undefined = $state();
   let foldersHeading: HTMLHeadingElement | undefined = $state();
   const headingId = $props.id();
+
+  let latestRemovalAsked = 0;
+
+  /** Only the latest question shows its count, so a slow count can't land on a folder asked about after it. */
+  async function confirmRemoval(folder: LibraryFolder): Promise<void> {
+    const asked = ++latestRemovalAsked;
+    confirming = folder;
+    confirmingBooks = undefined;
+    const books = await folders.countBooks(folder);
+    if (asked === latestRemovalAsked) {
+      confirmingBooks = books;
+    }
+  }
 
   async function remove(folder: LibraryFolder): Promise<void> {
     confirming = undefined;
@@ -93,7 +107,7 @@
                 label={m.library_remove_folder_label({ name: folder.name })}
                 tooltip={m.library_remove_folder()}
                 onclick={() => {
-                  confirming = folder;
+                  void confirmRemoval(folder);
                 }}
               >
                 <FolderMinus size={ACTION_ICON_SIZE} aria-hidden="true" />
@@ -125,6 +139,7 @@
 
 <RemoveFolderDialog
   folder={confirming}
+  books={confirmingBooks}
   onConfirm={(folder: LibraryFolder) => {
     void remove(folder);
   }}

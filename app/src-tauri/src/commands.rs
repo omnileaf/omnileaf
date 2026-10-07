@@ -31,6 +31,7 @@ pub(crate) fn builder() -> Builder<Wry> {
             library_view,
             set_library_view,
             remove_library_folder,
+            library_folder_book_count,
             rescan_library_folder,
             rescan_library_folders,
             first_launch_finished,
@@ -160,6 +161,15 @@ async fn set_library_view(library: State<'_, Library>, view: LibraryView) -> Res
 #[specta::specta]
 async fn remove_library_folder(library: State<'_, Library>, id: FolderId) -> Result<(), IpcError> {
     Ok(library.remove_folder(id).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_folder_book_count(
+    library: State<'_, Library>,
+    id: FolderId,
+) -> Result<u32, IpcError> {
+    Ok(library.folder_book_count(id).await?)
 }
 
 #[tauri::command]

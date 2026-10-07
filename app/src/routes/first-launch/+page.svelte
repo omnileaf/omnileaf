@@ -36,6 +36,7 @@
   const folders = new LibraryFolders(
     commands.libraryFolders,
     commands.removeLibraryFolder,
+    commands.libraryFolderBookCount,
   );
 
   let card: HTMLElement | undefined = $state();

@@ -18,6 +18,7 @@
 <LibraryFolderSettings
   listFolders={commands.libraryFolders}
   removeFolder={commands.removeLibraryFolder}
+  countFolderBooks={commands.libraryFolderBookCount}
   addFolder={addFolderWithProgress}
   rescanFolder={rescanFolderWithProgress}
   notices={data.notices}

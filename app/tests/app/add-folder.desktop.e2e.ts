@@ -21,7 +21,7 @@ const REMOVE_SAMPLE_LIBRARY = xpath(
   `//button[@aria-label='Remove ${SAMPLE_LIBRARY.name}']`,
 );
 const CONFIRM_REMOVAL = xpath(
-  `//dialog[@open]//button[normalize-space()='Remove ${SAMPLE_LIBRARY.name}']`,
+  "//dialog[@open]//button[normalize-space()='Remove folder']",
 );
 const FOLDERS_WITHOUT_LINKED_FOLDERS = xpath(
   "//section[.//h2[normalize-space()='Folders']][not(.//li)]",
