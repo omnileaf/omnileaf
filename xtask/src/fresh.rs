@@ -1,6 +1,12 @@
 //! Removes the app from a phone, emulator or Simulator so `dev --fresh` starts it with no data.
 
-use std::{env, ffi::OsStr, fmt, fs, path::Path};
+use std::{
+    env,
+    ffi::OsStr,
+    fmt, fs,
+    path::{Path, PathBuf},
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use anyhow::Context;
 use serde::Deserialize;
@@ -15,6 +21,7 @@ use crate::{
 
 const TAURI_CONFIG: &str = "app/src-tauri/tauri.conf.json";
 const XCRUN: &str = "xcrun";
+const DESKTOP_DEV_DATA: &str = "target/dev-data";
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum NoFreshDevice {
@@ -81,7 +88,7 @@ struct TauriConfig {
     identifier: String,
 }
 
-/// Removes the app from each phone platform's device, leaving the desktop app's data alone.
+/// Removes the app from each phone platform's device; the desktop app gets a new data folder instead.
 pub(crate) fn clear(root: &Path, platforms: &[Platform], chosen: &Devices) -> anyhow::Result<()> {
     let config_path = root.join(TAURI_CONFIG);
     let config = fs::read_to_string(&config_path)
@@ -170,10 +177,41 @@ fn clear_ios(machine: &impl Machine, chosen: Option<&str>, identifier: &str) -> 
     Ok(())
 }
 
+/// Makes the desktop app's data folder for this fresh run and says where it is, leaving the usual one untouched.
+#[expect(clippy::print_stdout, reason = "progress output for the developer")]
+pub(crate) fn start_desktop_data(root: &Path) -> anyhow::Result<PathBuf> {
+    let run = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .context("read the clock to name this run's data folder")?
+        .as_secs();
+    let folder = desktop_data_folder(root, run);
+    fs::create_dir_all(&folder).with_context(|| format!("create {}", folder.display()))?;
+    println!(
+        "the desktop app keeps this run's data in {}",
+        folder.display()
+    );
+    Ok(folder)
+}
+
+/// A new folder for one fresh run's desktop data under `target`, so the developer's own library stays as it was.
+pub(crate) fn desktop_data_folder(root: &Path, run: u64) -> PathBuf {
+    root.join(DESKTOP_DEV_DATA).join(run.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::devices::Kind;
+
+    #[test]
+    fn keeps_a_fresh_desktop_run_s_data_in_its_own_folder_under_target() {
+        let folder = desktop_data_folder(Path::new("/work/omnileaf"), 1_791_262_418);
+
+        assert_eq!(
+            folder,
+            Path::new("/work/omnileaf/target/dev-data/1791262418")
+        );
+    }
 
     fn device(kind: Kind, state: State, name: &str) -> Device {
         Device {

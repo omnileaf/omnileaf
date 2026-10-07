@@ -1,7 +1,7 @@
 use std::{
     env, io,
     net::{TcpStream, ToSocketAddrs},
-    path::Path,
+    path::{Path, PathBuf},
     process::Child,
     thread,
     time::{Duration, Instant},
@@ -11,7 +11,7 @@ use anyhow::Context;
 use clap::ValueEnum;
 
 use crate::{
-    android,
+    android, device_choice,
     devices::{self, Device, State},
     process::{Machine, Process, command_for},
 };
@@ -23,6 +23,7 @@ const PHONE_DEV_HOST: &str = "TAURI_DEV_HOST";
 const DEV_SERVER_TIMEOUT: Duration = Duration::from_secs(60);
 const DEV_SERVER_POLL: Duration = Duration::from_millis(250);
 const WINDOWS: &str = "windows";
+const DATA_DIR_VARIABLE: &str = "OMNILEAF_DATA_DIR";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub(crate) enum Platform {
@@ -54,6 +55,24 @@ struct Targets {
 pub(crate) struct Devices {
     pub(crate) ios: Option<String>,
     pub(crate) android: Option<String>,
+}
+
+/// What `dev` starts: the platforms, the devices they run on, and a data folder for the desktop app in place of its usual one.
+#[derive(Debug, Default)]
+pub(crate) struct Session {
+    pub(crate) platforms: Vec<Platform>,
+    pub(crate) devices: Devices,
+    pub(crate) desktop_data: Option<PathBuf>,
+}
+
+/// The data folder setting a platform's app starts with; only the desktop app reads one, from the computer it runs on.
+fn data_folder_setting(
+    platform: Platform,
+    desktop_data: Option<&Path>,
+) -> Option<(&'static str, &Path)> {
+    desktop_data
+        .filter(|_| platform == Platform::Desktop)
+        .map(|folder| (DATA_DIR_VARIABLE, folder))
 }
 
 const WITHOUT_DEV_SERVER: &str = r#"{"build":{"beforeDevCommand":null}}"#;
@@ -102,26 +121,33 @@ pub(crate) fn platforms_to_run(
     }
 }
 
-/// Swaps a forgiving name for the one device it answers to, keeping a name nothing or several devices answer to as it was.
-fn listed_name(chosen: &str, devices: &[Device]) -> String {
-    let mut answering = devices.iter().filter(|device| device.answers_to(chosen));
-    match (answering.next(), answering.next()) {
-        (Some(device), None) => device.name.clone(),
-        _ => chosen.to_owned(),
-    }
-}
-
-/// Names each chosen device the way `cargo xtask devices` lists it, which is the name Tauri matches.
-pub(crate) fn listed_names(chosen: &Devices, machine: &impl Machine) -> anyhow::Result<Devices> {
-    let android = chosen.android.as_deref().map(|name| {
+/// Settles the device for each phone platform that runs, so Tauri gets an exact name and never has to ask.
+pub(crate) fn settle_devices(
+    platforms: &[Platform],
+    chosen: &Devices,
+    machine: &impl Machine,
+) -> anyhow::Result<Devices> {
+    let android = if platforms.contains(&Platform::Android) {
         let listed = android::Toolchain::locate(|key| env::var_os(key), env::consts::OS)
             .map(|toolchain| devices::android_devices(machine, &toolchain))
             .unwrap_or_default();
-        listed_name(name, &listed)
-    });
-    let ios = match chosen.ios.as_deref() {
-        Some(name) => Some(listed_name(name, &devices::ios_devices(machine)?)),
-        None => None,
+        Some(device_choice::settle(
+            "Android",
+            &listed,
+            chosen.android.as_deref(),
+        )?)
+    } else {
+        None
+    };
+    let ios = if platforms.contains(&Platform::Ios) {
+        let listed = devices::ios_devices(machine)?;
+        Some(device_choice::settle(
+            "iOS",
+            &listed,
+            chosen.ios.as_deref(),
+        )?)
+    } else {
+        None
     };
     Ok(Devices { ios, android })
 }
@@ -177,10 +203,14 @@ pub(crate) fn tauri_args(platform: Platform, devices: &Devices) -> Vec<String> {
         .collect()
 }
 
-pub(crate) fn run(root: &Path, platforms: &[Platform], devices: &Devices) -> anyhow::Result<()> {
-    let targets = chosen_targets(platforms, devices, &Process::in_workspace())?;
+pub(crate) fn run(root: &Path, session: &Session) -> anyhow::Result<()> {
+    let targets = chosen_targets(
+        &session.platforms,
+        &session.devices,
+        &Process::in_workspace(),
+    )?;
     let mut dev_server = start_dev_server(root, reach(&targets, env::consts::OS))?;
-    let outcome = wait_for_dev_server().and_then(|()| run_platforms(root, platforms, devices));
+    let outcome = wait_for_dev_server().and_then(|()| run_platforms(root, session));
     stop(&mut dev_server).context("stop the Vite dev server")?;
     outcome
 }
@@ -240,14 +270,20 @@ fn dev_server_answers() -> anyhow::Result<bool> {
         .any(|address| TcpStream::connect_timeout(&address, DEV_SERVER_POLL).is_ok()))
 }
 
-fn run_platforms(root: &Path, platforms: &[Platform], devices: &Devices) -> anyhow::Result<()> {
-    let apps = platforms
+fn run_platforms(root: &Path, session: &Session) -> anyhow::Result<()> {
+    let apps = session
+        .platforms
         .iter()
         .map(|&platform| {
-            command_for("pnpm")
-                .args(tauri_args(platform, devices))
-                .current_dir(root)
-                .spawn()
+            let mut app = command_for("pnpm");
+            app.args(tauri_args(platform, &session.devices))
+                .current_dir(root);
+            if let Some((variable, folder)) =
+                data_folder_setting(platform, session.desktop_data.as_deref())
+            {
+                app.env(variable, folder);
+            }
+            app.spawn()
                 .map(|app| (platform, app))
                 .with_context(|| format!("start the {platform:?} app"))
         })
@@ -280,6 +316,28 @@ fn stop(child: &mut Child) -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn gives_the_desktop_app_a_fresh_data_folder() {
+        let folder = Path::new("/work/omnileaf/target/dev-data/1");
+
+        let setting = data_folder_setting(Platform::Desktop, Some(folder));
+
+        assert_eq!(setting, Some((DATA_DIR_VARIABLE, folder)));
+    }
+
+    #[test]
+    fn leaves_the_phones_and_a_plain_run_with_their_own_data() {
+        let folder = Path::new("/work/omnileaf/target/dev-data/1");
+
+        let settings = [
+            data_folder_setting(Platform::Ios, Some(folder)),
+            data_folder_setting(Platform::Android, Some(folder)),
+            data_folder_setting(Platform::Desktop, None),
+        ];
+
+        assert_eq!(settings, [None, None, None]);
+    }
     use crate::devices::Kind;
 
     #[test]
@@ -558,43 +616,5 @@ mod tests {
                 Err(DeviceWithoutPlatform::Android),
             ]
         );
-    }
-
-    #[test]
-    fn uses_the_listed_name_of_the_device_a_forgiving_name_finds() {
-        let devices = [
-            listed(
-                Kind::IosSimulator,
-                State::Off,
-                "iPhone 18 Pro",
-                Some("75BD17D7"),
-            ),
-            listed(
-                Kind::IosSimulator,
-                State::Off,
-                "iPhone 18 Pro Max",
-                Some("2AD917AF"),
-            ),
-        ];
-
-        let names = ["iphone-18-pro-max", "iPhone 18 Pro", "75BD17D7"]
-            .map(|chosen| listed_name(chosen, &devices));
-
-        assert_eq!(
-            names,
-            ["iPhone 18 Pro Max", "iPhone 18 Pro", "iPhone 18 Pro"]
-        );
-    }
-
-    #[test]
-    fn keeps_a_name_no_device_answers_to() {
-        let devices = [listed(
-            Kind::AndroidEmulator,
-            State::Off,
-            "Pixel_10_Pro",
-            None,
-        )];
-
-        assert_eq!(listed_name("Nexus 5", &devices), "Nexus 5");
     }
 }
