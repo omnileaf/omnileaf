@@ -16,6 +16,7 @@ zip.workspace = true
 
 [dev-dependencies]
 jpeg-decoder.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }
 
 [lints]
 workspace = true
