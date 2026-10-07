@@ -1,3 +1,5 @@
+import { createContext } from "svelte";
+
 import { DetailsCopying } from "$lib/copying/details-copying.svelte";
 import type {
   commands,
@@ -151,3 +153,6 @@ export class CrashReporting {
     return sent.status === "ok" ? undefined : SEND_OUTCOMES[sent.error.code];
   }
 }
+
+export const [getCrashReporting, setCrashReporting] =
+  createContext<CrashReporting>();

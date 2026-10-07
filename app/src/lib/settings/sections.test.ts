@@ -1,6 +1,17 @@
 import { expect, test } from "vitest";
 
-import { isListedBeside, isWithinSection, sectionCurrent } from "./sections";
+import {
+  isListedBeside,
+  isWithinSection,
+  sectionCurrent,
+  settingsGroups,
+} from "./sections";
+
+function routesIn(isDevelopmentBuild: boolean): string[][] {
+  return settingsGroups({ isDevelopmentBuild }).map((group) =>
+    group.map((section) => section.route),
+  );
+}
 
 test("counts a section's own page as within it", () => {
   expect(isWithinSection("/settings/general", "/settings/general")).toBe(true);
@@ -46,4 +57,21 @@ test("lists settings and its sections beside the open page", () => {
 
 test("leaves a page under a section out of the list beside it", () => {
   expect(isListedBeside("/settings/about/licences")).toBe(false);
+});
+
+test("lists Advanced just above About in a development build", () => {
+  const groups = routesIn(true);
+
+  expect(groups.at(-1)).toEqual(["/settings/advanced", "/settings/about"]);
+});
+
+test("leaves Advanced out of a release build entirely", () => {
+  const groups = routesIn(false);
+
+  expect(groups.flat()).not.toContain("/settings/advanced");
+  expect(groups.at(-1)).toEqual(["/settings/about"]);
+});
+
+test("lists Advanced beside the open page", () => {
+  expect(isListedBeside("/settings/advanced")).toBe(true);
 });

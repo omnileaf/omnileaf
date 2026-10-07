@@ -1,12 +1,14 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
-
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { m } from "$lib/paraglide/messages.js";
-  import { SETTINGS_GROUPS, sectionCurrent } from "$lib/settings/sections";
+  import { sectionCurrent, settingsGroups } from "$lib/settings/sections";
 
-  let { children }: { children: Snippet } = $props();
+  import type { LayoutProps } from "./$types";
+
+  let { data, children }: LayoutProps = $props();
+
+  const groups = $derived(settingsGroups(data.appInfo));
 
   const ICON_SIZE = 18;
 </script>
@@ -23,7 +25,7 @@
       {m.settings_title()}
     </p>
     <nav aria-label={m.settings_sections_label()} class="flex flex-col gap-lg">
-      {#each SETTINGS_GROUPS as group, index (index)}
+      {#each groups as group, index (index)}
         <ul class="flex flex-col gap-2xs">
           {#each group as section (section.route)}
             {@const current = sectionCurrent(

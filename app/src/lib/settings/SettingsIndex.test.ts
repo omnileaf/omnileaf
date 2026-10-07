@@ -5,6 +5,7 @@ import { render } from "vitest-browser-svelte";
 import SettingsIndex from "./SettingsIndex.svelte";
 
 const PROPS = {
+  app: { isDevelopmentBuild: false },
   summaries: {
     "/settings/appearance": { text: "Follows the system" },
     "/settings/about": { text: "Version 1.2.3" },
@@ -62,4 +63,26 @@ test("names a section without a summary by its title alone", async () => {
   await expect
     .element(screen.getByRole("link", { name: "Library", exact: true }))
     .toBeVisible();
+});
+
+test("lists Advanced above About in a development build", async () => {
+  await render(SettingsIndex, { ...PROPS, app: { isDevelopmentBuild: true } });
+
+  const group = groupHolding("About");
+  const links = group.getByRole("link");
+
+  await expect.element(links.nth(0)).toHaveAccessibleName("Advanced");
+  await expect.element(links.nth(1)).toHaveAccessibleName(/^About/);
+  expect(links.elements()).toHaveLength(2);
+});
+
+test("leaves Advanced out of a release build", async () => {
+  const screen = await render(SettingsIndex, PROPS);
+
+  await expect
+    .element(screen.getByRole("link", { name: /^About/ }))
+    .toBeVisible();
+  expect(screen.getByRole("link", { name: /^Advanced/ }).elements()).toEqual(
+    [],
+  );
 });
