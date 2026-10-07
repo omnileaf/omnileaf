@@ -67,6 +67,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   sendCrashReport: () => null,
   copyCrashReport: () => null,
   declineCrashReport: () => null,
+  panicInCore: () => null,
+  crashAndQuit: () => null,
 };
 
 export function onPlatform(platform: Platform): { backend: FakeBackend } {
