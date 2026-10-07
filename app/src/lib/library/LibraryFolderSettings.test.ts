@@ -274,14 +274,14 @@ test("offers Remove on linked folders only", async () => {
   );
 });
 
-test("shows Remove as an icon with its verb as the tooltip", async () => {
+test('shows Remove as an icon with "Remove folder" as the tooltip', async () => {
   serveFolders([HOME, COMICS]);
 
   const { folders } = await renderSettings();
 
   const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
   await expect.element(remove).toHaveTextContent("");
-  await expect.element(remove).toHaveAttribute("title", "Remove");
+  await expect.element(remove).toHaveAttribute("title", "Remove folder");
 });
 
 test("reaches Remove from the keyboard", async () => {

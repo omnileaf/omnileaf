@@ -3,11 +3,13 @@ import type { Locator, Page } from "@playwright/test";
 
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
+  boxOf,
   DEFAULT_BACKEND,
   EXPANDED_MIN_WIDTH,
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  settle,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -101,6 +103,159 @@ async function goTo(page: Page, stepHeading: string): Promise<void> {
     await page.getByRole("button", { name: step.leaveWith }).click();
   }
 }
+
+const BADGE_BEFORE_TITLE =
+  "xpath=preceding-sibling::*[1]/descendant-or-self::*[self::img or local-name()='svg'][1]";
+
+function firstLineOf(title: Locator): Promise<{ top: number; bottom: number }> {
+  return title.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const [line] = range.getClientRects();
+    if (line === undefined) {
+      throw new Error("the heading has no text");
+    }
+    return { top: line.top, bottom: line.bottom };
+  });
+}
+
+for (const step of STEPS) {
+  test(`sets the badge on the line of "${step.heading}", before it`, async ({
+    page,
+  }) => {
+    await goTo(page, step.heading);
+    await settle(page.getByRole("main"));
+    const title = heading(page, step.heading);
+
+    const badge = await boxOf(title.locator(BADGE_BEFORE_TITLE));
+    const titleBox = await boxOf(title);
+    const firstLine = await firstLineOf(title);
+
+    const badgeMiddle = badge.y + badge.height / 2;
+    expect(badgeMiddle).toBeGreaterThanOrEqual(firstLine.top);
+    expect(badgeMiddle).toBeLessThanOrEqual(firstLine.bottom);
+    expect(badge.x + badge.width).toBeLessThanOrEqual(titleBox.x);
+  });
+}
+
+const BADGE_OF_TITLE = "xpath=preceding-sibling::*[1]/*[1]";
+const BODY_OF_TITLE = "xpath=../following-sibling::p[1]";
+
+const HEADER_SIZES = {
+  onPhones: { badge: 40, title: 24, welcomeTitle: 28, body: 15 },
+  fromMedium: { badge: 36, title: 24, welcomeTitle: 30, body: 14 },
+} as const;
+
+function fontSizeOf(locator: Locator): Promise<number> {
+  return locator.evaluate((element) =>
+    Number.parseFloat(getComputedStyle(element).fontSize),
+  );
+}
+
+for (const step of STEPS) {
+  test(`sizes the badge, title and body of "${step.heading}" for the screen`, async ({
+    page,
+  }) => {
+    const sizes =
+      viewportOf(page).width < MEDIUM_MIN_WIDTH
+        ? HEADER_SIZES.onPhones
+        : HEADER_SIZES.fromMedium;
+    const isWelcome = step.heading === STEPS[0].heading;
+    await goTo(page, step.heading);
+    const title = heading(page, step.heading);
+
+    const badge = await boxOf(title.locator(BADGE_OF_TITLE));
+
+    expect([badge.width, badge.height]).toEqual([sizes.badge, sizes.badge]);
+    expect(await fontSizeOf(title)).toBe(
+      isWelcome ? sizes.welcomeTitle : sizes.title,
+    );
+    expect(await fontSizeOf(title.locator(BODY_OF_TITLE))).toBe(sizes.body);
+  });
+}
+
+interface ButtonShape {
+  height: number;
+  radius: number;
+  fontSize: number;
+}
+
+function shapeOf(button: Locator): Promise<ButtonShape> {
+  return button.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      height: element.getBoundingClientRect().height,
+      radius: Number.parseFloat(style.borderStartStartRadius),
+      fontSize: Number.parseFloat(style.fontSize),
+    };
+  });
+}
+
+const DESKTOP_BUTTON = { height: 40, radius: 10, fontSize: 14 };
+const TOUCH_PRIMARY_HEIGHT = 52;
+
+test.describe("buttons on a desktop", () => {
+  test.use({
+    backend: {
+      ...FIRST_LAUNCH_BACKEND,
+      appInfo: onPlatform("linux").backend.appInfo,
+    },
+  });
+
+  test("makes every step button 40px tall with 10px corners and 14px text", async ({
+    page,
+  }) => {
+    await goTo(page, "Already have comics or books?");
+    const buttons = [
+      page.getByRole("button", { name: "Continue" }),
+      page.getByRole("button", { name: /^Skip/ }),
+    ];
+    if (viewportOf(page).width >= MEDIUM_MIN_WIDTH) {
+      buttons.push(page.getByRole("button", { name: "Back" }).last());
+    }
+
+    const shapes = await Promise.all(buttons.map(shapeOf));
+
+    expect(shapes).toEqual(buttons.map(() => DESKTOP_BUTTON));
+  });
+});
+
+test.describe("buttons on android", () => {
+  test.use({
+    backend: {
+      ...FIRST_LAUNCH_BACKEND,
+      appInfo: onPlatform("android").backend.appInfo,
+    },
+  });
+
+  test("makes the main step button a 52px pill", async ({ page }) => {
+    await goTo(page, "Already have comics or books?");
+
+    const shape = await shapeOf(page.getByRole("button", { name: "Continue" }));
+
+    expect(shape.height).toBe(TOUCH_PRIMARY_HEIGHT);
+    expect(shape.radius).toBeGreaterThanOrEqual(TOUCH_PRIMARY_HEIGHT / 2);
+  });
+});
+
+test.describe("buttons on ios", () => {
+  test.use({
+    backend: {
+      ...FIRST_LAUNCH_BACKEND,
+      appInfo: onPlatform("ios").backend.appInfo,
+    },
+  });
+
+  test("makes the main step button 52px tall with 14px corners", async ({
+    page,
+  }) => {
+    await goTo(page, "Already have comics or books?");
+
+    const shape = await shapeOf(page.getByRole("button", { name: "Continue" }));
+
+    expect([shape.height, shape.radius]).toEqual([TOUCH_PRIMARY_HEIGHT, 14]);
+  });
+});
 
 test("goes through every step and opens the library once finished", async ({
   page,

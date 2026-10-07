@@ -92,7 +92,7 @@ test("lists a folder as soon as it is added", async ({ page }) => {
   ]);
 });
 
-test("shows Remove as an icon with its verb as the tooltip", async ({
+test('shows Remove as an icon with "Remove folder" as the tooltip', async ({
   page,
 }) => {
   await page.goto("/settings/library");
@@ -101,7 +101,7 @@ test("shows Remove as an icon with its verb as the tooltip", async ({
   const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
 
   await expect(remove).toHaveText("");
-  await expect(remove).toHaveAttribute("title", "Remove");
+  await expect(remove).toHaveAttribute("title", "Remove folder");
 });
 
 test("rings Remove when the keyboard reaches it", async ({ page }) => {

@@ -7,9 +7,8 @@
 
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
-  import StepIcon from "./StepIcon.svelte";
-
-  const HERO_ICON_SIZE = 30;
+  import StepBadge from "./StepBadge.svelte";
+  import StepHeader from "./StepHeader.svelte";
 
   let {
     folders,
@@ -20,11 +19,13 @@
 
 <StepFrame step="home" {onBack}>
   <div class="flex flex-col gap-lg">
-    <StepIcon><House size={HERO_ICON_SIZE} aria-hidden="true" /></StepIcon>
-    <h1 tabindex="-1" class="text-headline font-bold">
+    <StepHeader scale="headline">
+      {#snippet badge()}
+        <StepBadge icon={House} />
+      {/snippet}
       {m.first_launch_home_title()}
-    </h1>
-    <p class="text-muted">{m.first_launch_home_body()}</p>
+    </StepHeader>
+    <p class="text-step-body text-muted">{m.first_launch_home_body()}</p>
     <HomeFolder {folders} class="mbs-sm">
       {#if folders.kind === "failed"}
         <p class="mbs-sm px-xs">{m.library_folders_failed()}</p>

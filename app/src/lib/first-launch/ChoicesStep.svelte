@@ -1,10 +1,14 @@
 <script lang="ts">
+  import { SlidersHorizontal } from "@lucide/svelte";
+
   import ThemeChoice from "$lib/appearance/ThemeChoice.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   import StepButton from "./StepButton.svelte";
   import type { DeviceKind } from "./device";
+  import StepBadge from "./StepBadge.svelte";
   import StepFrame from "./StepFrame.svelte";
+  import StepHeader from "./StepHeader.svelte";
   import WidthWording from "./WidthWording.svelte";
   import type { WordingByWidth } from "./wording";
 
@@ -33,10 +37,13 @@
 
 <StepFrame step="choices" {onBack}>
   <div class="flex flex-col gap-lg">
-    <h1 tabindex="-1" class="text-headline font-bold">
+    <StepHeader scale="headline">
+      {#snippet badge()}
+        <StepBadge icon={SlidersHorizontal} />
+      {/snippet}
       {m.first_launch_choices_title()}
-    </h1>
-    <p class="text-muted">{m.first_launch_choices_body()}</p>
+    </StepHeader>
+    <p class="text-step-body text-muted">{m.first_launch_choices_body()}</p>
     <ThemeChoice
       title={m.first_launch_choices_appearance()}
       hint={appearanceHelp === undefined ? undefined : appearanceHelpText}
