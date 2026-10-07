@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import {
   accessibilityViolations,
   boxOf,
+  DEFAULT_BACKEND,
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
@@ -137,3 +138,63 @@ for (const platform of ["android", "ios", "linux"] as const) {
     });
   }
 }
+
+test.describe("sorting the library", () => {
+  const told: string[] = [];
+
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      setAppLanguage: (language) => {
+        told.push(language);
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    told.length = 0;
+  });
+
+  test("tells the library the language the app shows", async ({ page }) => {
+    await page.goto("/");
+
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    expect(told).toEqual(["en"]);
+  });
+
+  test("tells the library again when another language is chosen", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      if (window.sessionStorage.getItem("seeded") === null) {
+        window.sessionStorage.setItem("seeded", "yes");
+        window.localStorage.setItem("omnileaf.language", "en-XA");
+      }
+    });
+    await page.goto("/settings/general/language");
+    await expect.poll(() => told).toEqual(["en-XA"]);
+
+    await page
+      .locator("label")
+      .filter({
+        has: page.getByRole("radio", { name: "English", exact: true }),
+      })
+      .click();
+
+    await expect.poll(() => told).toEqual(["en-XA", "en"]);
+  });
+
+  test("tells the library the language chosen in Settings", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem("omnileaf.language", "en-XA");
+    });
+
+    await page.goto("/");
+
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    expect(told).toEqual(["en-XA"]);
+  });
+});

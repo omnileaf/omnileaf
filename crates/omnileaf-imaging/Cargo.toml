@@ -1,0 +1,22 @@
+[package]
+name = "omnileaf-imaging"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+fast_image_resize.workspace = true
+image-webp.workspace = true
+jpeg-decoder.workspace = true
+jpeg-encoder.workspace = true
+png.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+omnileaf-testkit.workspace = true
+proptest.workspace = true
+
+[lints]
+workspace = true

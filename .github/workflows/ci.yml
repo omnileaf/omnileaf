@@ -297,6 +297,10 @@ jobs:
       - name: Run the browser tests
         run: cargo xtask check --only browser
 
+      - name: Time the interface on its own
+        if: matrix.shard == strategy.job-total
+        run: env -u PLAYWRIGHT_SHARD pnpm --dir app test:e2e --project speed --no-deps
+
       - name: Keep the traces of failed tests
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

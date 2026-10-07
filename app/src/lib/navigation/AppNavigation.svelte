@@ -109,15 +109,19 @@
           href={resolve(SECTION_ROUTES[destination.section])}
           aria-current={isSelected ? "page" : undefined}
           class={[
-            "relative flex flex-col items-center gap-xs text-caption transition-colors min-block-touch-target motion-safe:duration-fade motion-safe:ease-out medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-control expanded:px-md expanded:text-label desktop:expanded:min-block-pointer-target",
+            "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-control expanded:px-md expanded:text-label desktop:expanded:min-block-pointer-target",
             "ios:max-medium:flex-1 ios:max-medium:justify-center ios:max-medium:gap-2xs ios:max-medium:rounded-full ios:max-medium:py-none ios:max-medium:text-tab ios:max-medium:font-semibold",
             isSelected
               ? "font-bold text-accent expanded:bg-accent-soft"
-              : "font-medium text-muted expanded:text-sidebar-ink ios:max-medium:text-foreground",
+              : "font-medium text-muted expanded:text-sidebar-ink expanded:hover:tint-hover expanded:active:tint-pressed ios:max-medium:text-foreground",
           ]}
         >
           <span
-            class="relative flex items-center justify-center block-2xl inline-pill expanded:block-auto expanded:inline-auto ios:max-medium:block-auto ios:max-medium:inline-auto"
+            class={[
+              "relative flex items-center justify-center rounded-full block-2xl inline-pill expanded:block-auto expanded:inline-auto ios:max-medium:block-auto ios:max-medium:inline-auto",
+              !isSelected &&
+                "max-expanded:group-hover:tint-hover max-expanded:group-active:tint-pressed",
+            ]}
           >
             <span
               class={[

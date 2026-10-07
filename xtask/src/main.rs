@@ -8,11 +8,15 @@ mod fuzz_seeds;
 mod icons;
 mod licence_catalogue;
 mod licences;
+mod lint_sync;
 mod policy;
 mod process;
 mod workspace;
 
-use std::{fmt::Display, path::PathBuf};
+use std::{
+    fmt::Display,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
@@ -66,6 +70,8 @@ enum Command {
         #[arg(long)]
         check: bool,
     },
+    /// Check that only the write path writes synced state and the projections built from it.
+    LintSync,
     /// Check the repository's files against its content rules.
     Policy,
 }
@@ -128,6 +134,7 @@ fn main() -> anyhow::Result<()> {
             };
             licences::regenerate(&workspace::root(), mode)?;
         }
+        Command::LintSync => lint_sync()?,
         Command::Policy => enforce_policy()?,
     }
     Ok(())
@@ -154,17 +161,33 @@ fn regenerate_bindings() -> anyhow::Result<()> {
 
 fn enforce_policy() -> anyhow::Result<()> {
     let root = workspace::root();
-    let files = workspace::repository_files(&root).context("read the repository files")?;
     let rules = workspace::policy(&root).context("read the policy lists")?;
+    let violations = check_repository(&root, |files| policy::check(files, &rules))?;
+    report(&violations, "policy")
+}
+
+fn lint_sync() -> anyhow::Result<()> {
+    let violations = check_repository(&workspace::root(), lint_sync::check)?;
+    report(&violations, "sync rule")
+}
+
+fn check_repository<V>(
+    root: &Path,
+    check: impl FnOnce(&[RepositoryFile<'_>]) -> Vec<V>,
+) -> anyhow::Result<Vec<V>> {
+    let files = workspace::repository_files(root).context("read the repository files")?;
     let repository: Vec<RepositoryFile<'_>> = files
         .iter()
         .map(|(path, bytes)| RepositoryFile { path, bytes })
         .collect();
-    let violations = policy::check(&repository, &rules);
-    print_lines(&violations);
+    Ok(check(&repository))
+}
+
+fn report(violations: &[impl Display], rule: &str) -> anyhow::Result<()> {
+    print_lines(violations);
     anyhow::ensure!(
         violations.is_empty(),
-        "{} policy violation(s)",
+        "{} {rule} violation(s)",
         violations.len()
     );
     Ok(())

@@ -32,7 +32,7 @@
         <li>
           <a
             href={resolve(section.route)}
-            class="flex items-center gap-list-row py-sm ps-list-row pe-md min-block-4xl desktop:gap-md desktop:py-none desktop:min-block-settings-row"
+            class="flex items-center gap-list-row py-sm ps-list-row pe-md transition-control min-block-4xl hover:bg-hover active:bg-pressed desktop:gap-md desktop:py-none desktop:min-block-settings-row"
           >
             <span
               class={[

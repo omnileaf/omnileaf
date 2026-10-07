@@ -2,7 +2,7 @@
 
 use std::error::Error;
 
-use omnileaf_engine::SurveyError;
+use omnileaf_engine::{LibraryError, describe_error};
 use serde::Serialize;
 use specta::Type;
 
@@ -15,6 +15,8 @@ pub(crate) enum IpcErrorCode {
     )]
     FolderPickerUnavailable,
     FolderUnreadable,
+    FolderNotFound,
+    HomeFolderKept,
     ClipboardUnavailable,
     BrowserUnavailable,
     Internal,
@@ -36,7 +38,7 @@ impl IpcError {
     }
 
     pub(crate) fn clipboard_unavailable(error: &dyn Error) -> Self {
-        tracing::warn!(error = %describe(error), "copy the version details");
+        tracing::warn!(error = %describe_error(error), "copy the version details");
         Self {
             code: IpcErrorCode::ClipboardUnavailable,
             message: "the clipboard could not be written",
@@ -44,7 +46,7 @@ impl IpcError {
     }
 
     pub(crate) fn browser_unavailable(error: &dyn Error) -> Self {
-        tracing::warn!(error = %describe(error), "open a project page in the browser");
+        tracing::warn!(error = %describe_error(error), "open a project page in the browser");
         Self {
             code: IpcErrorCode::BrowserUnavailable,
             message: "the browser could not be opened",
@@ -52,7 +54,7 @@ impl IpcError {
     }
 
     pub(crate) fn internal(error: &dyn Error) -> Self {
-        tracing::error!(error = %describe(error), "command failed");
+        tracing::error!(error = %describe_error(error), "command failed");
         Self {
             code: IpcErrorCode::Internal,
             message: "something went wrong inside the app",
@@ -60,23 +62,68 @@ impl IpcError {
     }
 }
 
-impl From<SurveyError> for IpcError {
-    fn from(error: SurveyError) -> Self {
-        tracing::warn!(error = %describe(&error), "survey a library folder");
-        Self {
-            code: IpcErrorCode::FolderUnreadable,
-            message: "the folder could not be read",
-        }
+impl From<LibraryError> for IpcError {
+    fn from(error: LibraryError) -> Self {
+        let (code, message) = match error {
+            LibraryError::FolderUnreadable { .. } => (
+                IpcErrorCode::FolderUnreadable,
+                "the folder could not be read",
+            ),
+            LibraryError::FolderNotFound { .. } => (
+                IpcErrorCode::FolderNotFound,
+                "that folder isn't in the library",
+            ),
+            LibraryError::HomeFolderKept { .. } => (
+                IpcErrorCode::HomeFolderKept,
+                "the home folder stays in the library",
+            ),
+            LibraryError::CreateHome { .. }
+            | LibraryError::Database(_)
+            | LibraryError::Interrupted(_) => return Self::internal(&error),
+        };
+        tracing::warn!(error = %describe_error(&error), "library command refused");
+        Self { code, message }
     }
 }
 
-fn describe(error: &dyn Error) -> String {
-    let mut description = error.to_string();
-    let mut cause = error.source();
-    while let Some(source) = cause {
-        description.push_str(": ");
-        description.push_str(&source.to_string());
-        cause = source.source();
+#[cfg(test)]
+mod tests {
+    use std::{io, path::PathBuf};
+
+    use omnileaf_engine::FolderId;
+
+    use super::*;
+
+    fn code_for(error: LibraryError) -> IpcErrorCode {
+        IpcError::from(error).code
     }
-    description
+
+    #[test]
+    fn tells_the_interface_which_library_failure_it_met() {
+        let unreadable = LibraryError::FolderUnreadable {
+            path: PathBuf::from("/media/Sample Library"),
+            source: io::Error::from(io::ErrorKind::PermissionDenied),
+        };
+        let id: FolderId = "7".parse().unwrap();
+
+        let codes = [
+            code_for(unreadable),
+            code_for(LibraryError::FolderNotFound { id }),
+            code_for(LibraryError::HomeFolderKept { id }),
+            code_for(LibraryError::CreateHome {
+                path: PathBuf::from("/data/Omnileaf"),
+                source: io::Error::from(io::ErrorKind::StorageFull),
+            }),
+        ];
+
+        assert_eq!(
+            codes,
+            [
+                IpcErrorCode::FolderUnreadable,
+                IpcErrorCode::FolderNotFound,
+                IpcErrorCode::HomeFolderKept,
+                IpcErrorCode::Internal,
+            ]
+        );
+    }
 }

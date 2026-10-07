@@ -1,8 +1,11 @@
 use rusqlite::{Connection, Transaction, TransactionBehavior};
 
 use crate::{
-    Config, Error, backup, connection,
+    Config, Error, backup,
+    checkpoint::{Checkpointer, hand_checkpoints_over},
+    connection,
     migration::{self, MIGRATIONS, Migration, Pending},
+    title_key::keep_titles_sorted,
     workers::ConnectionWorkers,
 };
 
@@ -10,36 +13,39 @@ const READER_COUNT: usize = 3;
 
 /// Dropping it blocks until every job already submitted has run.
 pub struct Database {
-    /// Declared before the writer so the readers close first, leaving the writer to checkpoint the log.
+    /// Declared before the writer and the checkpointer so the readers close first and the checkpointer last, leaving it to checkpoint and remove the log.
     readers: ConnectionWorkers,
     writer: ConnectionWorkers,
+    checkpointer: Checkpointer,
 }
 
 impl Database {
-    /// Blocks while it opens the file and brings its schema up to date, so call it off the async runtime.
+    /// Blocks while it opens the file, brings its schema up to date and re-keys titles made by another build, so call it off the async runtime.
+    #[tracing::instrument(skip_all, fields(path = %config.path.display()))]
     pub fn open(config: &Config) -> Result<Self, Error> {
-        Self::open_with(config, MIGRATIONS)
+        let mut writer = migrated_writer(config, MIGRATIONS)?;
+        let transaction = writer.transaction_with_behavior(TransactionBehavior::Immediate)?;
+        keep_titles_sorted(&transaction)?;
+        transaction.commit()?;
+        Self::serve(config, writer)
     }
 
+    #[cfg(test)]
     #[tracing::instrument(skip_all, fields(path = %config.path.display()))]
     pub(crate) fn open_with(config: &Config, migrations: &[Migration]) -> Result<Self, Error> {
-        let mut writer = connection::open_writer(config)?;
-        match migration::pending(&writer, &config.path, migrations)? {
-            Pending::Current => {}
-            Pending::NewDatabase => {
-                migration::apply(&mut writer, &config.path, migrations)?;
-            }
-            Pending::Upgrade { from } => {
-                backup::back_up(&writer, &config.backup_dir, from)?;
-                migration::apply(&mut writer, &config.path, migrations)?;
-            }
-        }
+        Self::serve(config, migrated_writer(config, migrations)?)
+    }
+
+    fn serve(config: &Config, writer: Connection) -> Result<Self, Error> {
         let readers = (0..READER_COUNT)
             .map(|_| connection::open_reader(config))
             .collect::<Result<_, _>>()?;
+        let checkpointer = Checkpointer::spawn(connection::open_writer(config)?)?;
+        hand_checkpoints_over(&writer);
         Ok(Self {
             writer: ConnectionWorkers::spawn("omnileaf-db-writer", vec![writer])?,
             readers: ConnectionWorkers::spawn("omnileaf-db-reader", readers)?,
+            checkpointer,
         })
     }
 
@@ -49,11 +55,28 @@ impl Database {
         T: Send + 'static,
         F: FnOnce(&Transaction<'_>) -> Result<T, Error> + Send + 'static,
     {
+        self.write_then(job, |_| {})
+    }
+
+    /// Runs `committed` on the writer thread straight after the commit, so whatever it announces is already durable.
+    pub(crate) fn write_then<T, F, C>(
+        &self,
+        job: F,
+        committed: C,
+    ) -> impl Future<Output = Result<T, Error>> + use<T, F, C>
+    where
+        T: Send + 'static,
+        F: FnOnce(&Transaction<'_>) -> Result<T, Error> + Send + 'static,
+        C: FnOnce(&T) + Send + 'static,
+    {
+        let checkpoints = self.checkpointer.requests();
         self.writer.submit(move |connection| {
             let transaction =
                 connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
             let value = job(&transaction)?;
             transaction.commit()?;
+            checkpoints.request_if_due();
+            committed(&value);
             Ok(value)
         })
     }
@@ -65,6 +88,21 @@ impl Database {
     {
         self.readers.submit(move |connection| job(connection))
     }
+}
+
+fn migrated_writer(config: &Config, migrations: &[Migration]) -> Result<Connection, Error> {
+    let mut writer = connection::open_writer(config)?;
+    match migration::pending(&writer, &config.path, migrations)? {
+        Pending::Current => {}
+        Pending::NewDatabase => {
+            migration::apply(&mut writer, &config.path, migrations)?;
+        }
+        Pending::Upgrade { from } => {
+            backup::back_up(&writer, &config.backup_dir, from)?;
+            migration::apply(&mut writer, &config.path, migrations)?;
+        }
+    }
+    Ok(writer)
 }
 
 #[cfg(test)]

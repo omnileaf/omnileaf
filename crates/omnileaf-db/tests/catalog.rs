@@ -6,13 +6,13 @@
 mod library_seed;
 mod support;
 
-use library_seed::{book_id, seed_library};
+use library_seed::{fingerprint, seed_library};
 use omnileaf_db::{
     Database, Error,
     catalog::{NewBook, NewSeries, add_book, add_series},
-    rusqlite::{self, ErrorCode},
+    rusqlite::{self, ErrorCode, types::Value},
 };
-use omnileaf_sync_proto::{BookId, SeriesId};
+use omnileaf_sync_proto::{BookId, SeriesId, SourceId};
 use support::ScratchFolder;
 
 const ADDED_AT_MS: i64 = 1_790_000_000_000;
@@ -20,6 +20,10 @@ const SERIES: &str = "Sample Series 01";
 const NO_BOOKS: &[&str] = &[];
 const ONE_BOOK: &[&str] = &["Volume 01"];
 const TWO_BOOKS: &[&str] = &["Volume 01", "Volume 02"];
+const OTHER_SERIES_ID: [u8; 16] = [8; 16];
+const OTHER_SOURCE_ID: [u8; 16] = [7; 16];
+const SHORT_SOURCE_ID: [u8; 15] = [7; 15];
+const TEXT_SOURCE_ID: &str = "0123456789abcdef";
 
 #[tokio::test]
 async fn counts_the_books_added_to_a_series() {
@@ -77,7 +81,7 @@ async fn refuses_a_book_for_a_series_missing_from_the_catalog() {
         .unwrap()
         .id();
     let book = NewBook {
-        id: book_id("Sample Series 09", "Volume 01"),
+        fingerprint: fingerprint("Sample Series 09", "Volume 01"),
         series: missing,
         title: "Volume 01".to_owned(),
         added_at_ms: ADDED_AT_MS,
@@ -102,6 +106,96 @@ async fn refuses_a_second_series_for_a_folder_name_that_normalises_alike() {
                 transaction,
                 &NewSeries::local("SAMPLE  series 01", ADDED_AT_MS).unwrap(),
             )
+        })
+        .await;
+
+    assert!(is_constraint_violation(&outcome));
+}
+
+#[tokio::test]
+async fn files_a_local_series_under_the_local_library_source() {
+    let folder = ScratchFolder::new("local-source");
+    let database = Database::open(&folder.config()).unwrap();
+
+    let series = add_local_series(&database, SERIES, NO_BOOKS).await;
+
+    assert_eq!(
+        source_of(&database, series).await,
+        Value::Blob(SourceId::local().as_bytes().to_vec())
+    );
+}
+
+#[tokio::test]
+async fn lets_another_source_hold_a_series_of_the_same_name() {
+    let folder = ScratchFolder::new("other-source");
+    let database = Database::open(&folder.config()).unwrap();
+    add_local_series(&database, SERIES, NO_BOOKS).await;
+
+    let outcome = add_sample_series_from(&database, OTHER_SOURCE_ID).await;
+
+    assert!(outcome.is_ok(), "{outcome:?}");
+    assert_eq!(row_count(&database, "series").await, 2);
+}
+
+#[tokio::test]
+async fn refuses_a_source_named_by_text() {
+    let folder = ScratchFolder::new("text-source");
+    let database = Database::open(&folder.config()).unwrap();
+
+    let outcome = add_sample_series_from(&database, TEXT_SOURCE_ID).await;
+
+    assert!(is_constraint_violation(&outcome));
+}
+
+#[tokio::test]
+async fn refuses_a_source_id_that_is_not_16_bytes() {
+    let folder = ScratchFolder::new("short-source");
+    let database = Database::open(&folder.config()).unwrap();
+
+    let outcome = add_sample_series_from(&database, SHORT_SOURCE_ID).await;
+
+    assert!(is_constraint_violation(&outcome));
+}
+
+#[tokio::test]
+async fn keeps_the_fingerprint_a_book_id_comes_from_and_leaves_its_logical_key_unset() {
+    let folder = ScratchFolder::new("book-identity");
+    let database = Database::open(&folder.config()).unwrap();
+
+    add_local_series(&database, SERIES, ONE_BOOK).await;
+
+    let identity: (Option<Vec<u8>>, Option<String>, Option<String>) = database
+        .read(move |connection| {
+            Ok(connection.query_row(
+                "SELECT content_fp, fp_kind, logical_key FROM book WHERE id = ?1",
+                [book_id(SERIES, "Volume 01").as_bytes()],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )?)
+        })
+        .await
+        .unwrap();
+    assert_eq!(
+        identity,
+        (
+            Some(fingerprint(SERIES, "Volume 01").as_bytes().to_vec()),
+            Some("pmf1".to_owned()),
+            None
+        )
+    );
+}
+
+#[tokio::test]
+async fn refuses_a_book_fingerprint_without_its_kind() {
+    let folder = ScratchFolder::new("fingerprint-kind");
+    let database = Database::open(&folder.config()).unwrap();
+    add_local_series(&database, SERIES, ONE_BOOK).await;
+
+    let outcome = database
+        .write(move |transaction| {
+            Ok(transaction.execute(
+                "UPDATE book SET fp_kind = NULL WHERE id = ?1",
+                [book_id(SERIES, "Volume 01").as_bytes()],
+            )?)
         })
         .await;
 
@@ -202,7 +296,7 @@ async fn forgets_the_book_files_of_a_removed_library_folder() {
             )?;
             Ok(transaction.execute(
                 "INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
-                 VALUES (?1, 1, 'Sample Series 01/Volume 01.cbz', 4096, ?2)",
+                 VALUES (?1, 1, CAST('Sample Series 01/Volume 01.cbz' AS BLOB), 4096, ?2)",
                 (book_id(SERIES, "Volume 01").as_bytes(), ADDED_AT_MS),
             )?)
         })
@@ -278,6 +372,34 @@ async fn drops_a_removed_series_from_title_search() {
 async fn add_local_series(database: &Database, folder_name: &str, titles: &[&str]) -> SeriesId {
     seed_library(database, &[(folder_name, ADDED_AT_MS, titles)]).await;
     NewSeries::local(folder_name, ADDED_AT_MS).unwrap().id()
+}
+
+async fn source_of(database: &Database, series: SeriesId) -> Value {
+    database
+        .read(move |connection| {
+            Ok(connection.query_row(
+                "SELECT source_id FROM series WHERE id = ?1",
+                [series.as_bytes()],
+                |row| row.get(0),
+            )?)
+        })
+        .await
+        .unwrap()
+}
+
+async fn add_sample_series_from(
+    database: &Database,
+    source: impl rusqlite::ToSql + Send + 'static,
+) -> Result<usize, Error> {
+    database
+        .write(move |transaction| {
+            Ok(transaction.execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (?1, ?2, 'sample series 01', 'Sample Series 01', x'', 0)",
+                (OTHER_SERIES_ID, source),
+            )?)
+        })
+        .await
 }
 
 async fn remove_book(database: &Database, book: BookId) {
@@ -357,4 +479,8 @@ fn is_constraint_violation<T>(outcome: &Result<T, Error>) -> bool {
             _
         )))
     )
+}
+
+fn book_id(series: &str, title: &str) -> BookId {
+    BookId::local(&fingerprint(series, title))
 }

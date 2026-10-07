@@ -18,6 +18,14 @@ test("opens on the empty library", async () => {
   expect(await heading.text()).toBe("Library");
 });
 
+test("opens on the library again once the first launch is finished", async () => {
+  await appSession().reload();
+
+  const heading = await appSession().waitFor(PAGE_HEADING);
+
+  expect(await heading.text()).toBe("Library");
+});
+
 test("shows the version the Rust core reports in Settings › About", async () => {
   await (await appSession().waitFor(SETTINGS_LINK)).click();
   await (await appSession().waitFor(ABOUT_LINK)).click();

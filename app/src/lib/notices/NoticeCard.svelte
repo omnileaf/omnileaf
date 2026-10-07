@@ -20,8 +20,9 @@
   } satisfies Record<NoticeTone, { card: string; icon: string }>;
 
   const EMPHASES = {
-    primary: "bg-accent text-on-accent",
-    quiet: "border border-current/35",
+    primary:
+      "bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed",
+    quiet: "border border-current/35 hover:bg-hover active:bg-pressed",
   } satisfies Record<NoticeAction["emphasis"], string>;
 
   let {
@@ -59,10 +60,10 @@
     <button
       type="button"
       aria-label={m.notice_dismiss()}
-      class="-me-sm -mbs-sm flex shrink-0 items-center justify-center rounded-full opacity-70 min-block-touch-target min-inline-touch-target"
+      class="-me-sm -mbs-sm flex shrink-0 items-center justify-center rounded-full opacity-70 transition-control min-block-touch-target min-inline-touch-target before:absolute before:rounded-full before:transition-control before:block-pointer-target before:inline-pointer-target hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed"
       onclick={onDismiss}
     >
-      <X aria-hidden="true" size={DISMISS_ICON_SIZE} />
+      <X aria-hidden="true" size={DISMISS_ICON_SIZE} class="relative" />
     </button>
   </div>
   {#if notice.actions.length > 0}
@@ -71,7 +72,7 @@
         <button
           type="button"
           class={[
-            "rounded-full px-lg text-label font-bold min-block-touch-target medium:rounded-control",
+            "rounded-full px-lg text-label font-bold transition-control min-block-touch-target medium:rounded-control",
             EMPHASES[action.emphasis],
           ]}
           onclick={() => {

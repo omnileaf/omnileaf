@@ -61,9 +61,12 @@ pub fn series_books(
                 ":limit": limit,
             },
         ),
-        Some(Position::Book { .. } | Position::Title { .. } | Position::Added { .. }) => {
-            Err(Error::CursorForAnotherList)
-        }
+        Some(
+            Position::Book { .. }
+            | Position::Title { .. }
+            | Position::Added { .. }
+            | Position::Root { .. },
+        ) => Err(Error::CursorForAnotherList),
     }
     .map(|rows| Page::of(rows, request.size))
 }

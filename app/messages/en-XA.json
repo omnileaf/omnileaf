@@ -3,20 +3,84 @@
   "library_title": "⟦Ļíƀŕáŕý···⟧",
   "library_empty": "⟦Ýöûŕ ļíƀŕáŕý íš éɱþţý·········⟧",
   "library_empty_body": "⟦Áðð á ƒöļðéŕ öƒ çöɱíçš, ɱáñĝá öŕ ƀööķš. Öɱñíļéáƒ ŕéáðš íţ ŵĥéŕé íţ íš.····························⟧",
-  "app_version": "⟦Ṽéŕšíöñ {version}·······⟧",
-  "library_add_folder": "⟦Áðð á ƒöļðéŕ·····⟧",
-  "library_folder_found": [
+  "library_series_list": "⟦Šéŕíéš···⟧",
+  "library_series_books": [
     {
       "declarations": [
         "input count",
-        "input name",
         "local countPlural = count: plural",
         "local formattedCount = count: number"
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "⟦Ƒöûñð {formattedCount} çöɱíç íñ {name}.················⟧",
-        "countPlural=other": "⟦Ƒöûñð {formattedCount} çöɱíçš íñ {name}.················⟧"
+        "countPlural=one": "⟦{formattedCount} ƀööķ·········⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš·········⟧"
+      }
+    }
+  ],
+  "library_series_failed": "⟦Çöûļðñ'ţ ļöáð ýöûŕ ļíƀŕáŕý. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
+  "app_version": "⟦Ṽéŕšíöñ {version}·······⟧",
+  "library_add_folder": "⟦Áðð á ƒöļðéŕ·····⟧",
+  "library_scan_finding": "⟦Ƒíñðíñĝ ƀööķš······⟧",
+  "library_scan_progress": [
+    {
+      "declarations": [
+        "input scanned",
+        "input total",
+        "local totalPlural = total: plural",
+        "local formattedScanned = scanned: number",
+        "local formattedTotal = total: number"
+      ],
+      "selectors": ["totalPlural"],
+      "match": {
+        "totalPlural=one": "⟦{formattedScanned} öƒ {formattedTotal} ƀööķ··················⟧",
+        "totalPlural=other": "⟦{formattedScanned} öƒ {formattedTotal} ƀööķš··················⟧"
+      }
+    }
+  ],
+  "library_folder_scanned": [
+    {
+      "declarations": [
+        "input books",
+        "input series",
+        "input name",
+        "local booksPlural = books: plural",
+        "local formattedBooks = books: number",
+        "local formattedSeries = series: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "⟦Ƒöûñð {formattedBooks} ƀööķ íñ {formattedSeries} šéŕíéš íñ {name}.···························⟧",
+        "booksPlural=other": "⟦Ƒöûñð {formattedBooks} ƀööķš íñ {formattedSeries} šéŕíéš íñ {name}.···························⟧"
+      }
+    }
+  ],
+  "library_folder_no_books": "⟦Ƒöûñð ñö ƀööķš íñ {name}.··········⟧",
+  "library_folder_unreadable_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Çöûļðñ'ţ ŕéáð {formattedCount} ƀööķ íñ íţ.·················⟧",
+        "countPlural=other": "⟦Çöûļðñ'ţ ŕéáð {formattedCount} ƀööķš íñ íţ.··················⟧"
+      }
+    }
+  ],
+  "library_folder_unsupported_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ íš á ÇƁŔ öŕ ÇƁ7 ƒíļé, ŵĥíçĥ ţĥíš ṽéŕšíöñ çáñ'ţ öþéñ ýéţ.································⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš áŕé ÇƁŔ öŕ ÇƁ7 ƒíļéš, ŵĥíçĥ ţĥíš ṽéŕšíöñ çáñ'ţ öþéñ ýéţ.································⟧"
       }
     }
   ],
@@ -110,6 +174,80 @@
   "licence_summary": "⟦Ṽéŕšíöñ {version} · {licence}············⟧",
   "library_settings_folders": "⟦Ƒöļðéŕš···⟧",
   "library_settings_folders_hint": "⟦Ƒöļðéŕš öƒ çöɱíçš, ɱáñĝá öŕ ƀööķš. Öɱñíļéáƒ ŕéáðš ţĥéɱ ŵĥéŕé ţĥéý áŕé.····························⟧",
+  "library_settings_home_folder": "⟦Ĥöɱé ƒöļðéŕ·····⟧",
+  "library_settings_home_folder_hint": "⟦Ýöûŕ ļíƀŕáŕý, ŕéáðíñĝ þŕöĝŕéšš áñð ƀáçķûþš áŕé ķéþţ ĥéŕé.·······················⟧",
+  "library_folders_failed": "⟦Çöûļðñ'ţ ļöáð ýöûŕ ƒöļðéŕš. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
+  "library_remove_folder": "⟦Ŕéɱöṽé ƒöļðéŕ······⟧",
+  "library_remove_folder_label": "⟦Ŕéɱöṽé {name}······⟧",
+  "library_remove_folder_title": "⟦Ŕéɱöṽé {name}?······⟧",
+  "library_remove_folder_body": "⟦Íţš çöɱíçš ļéáṽé ýöûŕ ļíƀŕáŕý. Ţĥé ƒíļéš šţáý ŵĥéŕé ţĥéý áŕé.·························⟧",
+  "library_remove_folder_cancel": "⟦Çáñçéļ···⟧",
+  "library_remove_folder_failed": "⟦Çöûļðñ'ţ ŕéɱöṽé {name}. Ţŕý áĝáíñ.··············⟧",
+  "library_rescan_folder": "⟦Ŕéšçáñ···⟧",
+  "library_rescan_folder_label": "⟦Ŕéšçáñ {name}······⟧",
+  "library_rescan_checking": "⟦Çĥéçķíñĝ {name} ƒöŕ çĥáñĝéš···········⟧",
+  "library_rescan_up_to_date": "⟦{name} íš ûþ ţö ðáţé.·········⟧",
+  "library_rescan_done": "⟦Ŕéšçáññéð {name}.·······⟧",
+  "library_rescan_added": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ áððéð.············⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš áððéð.············⟧"
+      }
+    }
+  ],
+  "library_rescan_updated": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ ûþðáţéð.············⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš ûþðáţéð.·············⟧"
+      }
+    }
+  ],
+  "library_rescan_moved": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ ɱöṽéð öŕ ŕéñáɱéð.················⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš ɱöṽéð öŕ ŕéñáɱéð.················⟧"
+      }
+    }
+  ],
+  "library_rescan_removed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ ŕéɱöṽéð.············⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš ŕéɱöṽéð.·············⟧"
+      }
+    }
+  ],
+  "library_rescan_unreachable": "⟦{name} íšñ'ţ áṽáíļáƀļé. Íţš ƀööķš šţáý íñ ýöûŕ ļíƀŕáŕý ûñţíļ íţ'š ƀáçķ.·····························⟧",
+  "library_rescan_found_empty": "⟦Ƒöûñð ñö ƀööķš íñ {name}. Íţš ƀööķš šţáý íñ ýöûŕ ļíƀŕáŕý íñ çášé íţš ðŕíṽé íšñ'ţ çöññéçţéð.·····································⟧",
+  "library_rescan_failed": "⟦Çöûļðñ'ţ ŕéšçáñ {name}. Ţŕý áĝáíñ.··············⟧",
+  "library_folder_unavailable": "⟦Ñöţ áṽáíļáƀļé······⟧",
   "appearance_title": "⟦Áþþéáŕáñçé····⟧",
   "appearance_light_or_dark": "⟦Ļíĝĥţ öŕ ðáŕķ······⟧",
   "appearance_system_hint": "⟦Šýšţéɱ ƒöļļöŵš ţĥé ðéṽíçé'š šéţţíñĝ áñð çĥáñĝéš ŵíţĥ íţ.·······················⟧",
@@ -120,6 +258,46 @@
   "theme_dark": "⟦Ðáŕķ··⟧",
   "general_title": "⟦Ĝéñéŕáļ···⟧",
   "language_label": "⟦Ļáñĝûáĝé····⟧",
+  "first_launch_progress_label": "⟦Šéţţíñĝ ûþ····⟧",
+  "first_launch_progress": "⟦{number} öƒ {count}········⟧",
+  "first_launch_back": "⟦Ɓáçķ··⟧",
+  "first_launch_continue": "⟦Çöñţíñûé····⟧",
+  "first_launch_welcome_title": "⟦Ŵéļçöɱé ţö Öɱñíļéáƒ········⟧",
+  "first_launch_welcome_body_phone": "⟦Çöɱíçš, ɱáñĝá, ŵéƀţööñš áñð ƀööķš íñ öñé ŕéáðéŕ. Ýöûŕ ļíƀŕáŕý šţáýš öñ ýöûŕ þĥöñé.·································⟧",
+  "first_launch_welcome_body_tablet": "⟦Çöɱíçš, ɱáñĝá, ŵéƀţööñš áñð ƀööķš íñ öñé ŕéáðéŕ. Ýöûŕ ļíƀŕáŕý šţáýš öñ ţĥíš ðéṽíçé.··································⟧",
+  "first_launch_welcome_body_desktop": "⟦Ýöûŕ ļíƀŕáŕý šţáýš öñ ţĥíš çöɱþûţéŕ. Ñö áççöûñţ ñééðéð.······················⟧",
+  "first_launch_get_started": "⟦Ĝéţ šţáŕţéð·····⟧",
+  "first_launch_promise_folders": "⟦Ŕéáðš ŵĥáţ ýöû áļŕéáðý ĥáṽé···········⟧",
+  "first_launch_promise_folders_detail_phone": "⟦Ļíñķ ýöûŕ ƒöļðéŕš. Ñöţĥíñĝ íš çöþíéð öŕ ɱöṽéð.···················⟧",
+  "first_launch_promise_folders_detail_desktop": "⟦Ļíñķ ƒöļðéŕš, ðŕíṽéš áñð ñéţŵöŕķ šĥáŕéš. Ñöţĥíñĝ íš çöþíéð öŕ ɱöṽéð.····························⟧",
+  "first_launch_promise_reading": "⟦Ŕéáðš éáçĥ šéŕíéš ţĥé ŕíĝĥţ ŵáý·············⟧",
+  "first_launch_promise_reading_detail_phone": "⟦Þáĝéš, ŕíĝĥţ ţö ļéƒţ öŕ á ļöñĝ šţŕíþ, çĥöšéñ ƒöŕ ýöû.······················⟧",
+  "first_launch_promise_reading_detail_desktop": "⟦Ţŵö þáĝéš, ŕíĝĥţ ţö ļéƒţ öŕ á ļöñĝ šţŕíþ, çĥöšéñ ƒöŕ ýöû.·······················⟧",
+  "first_launch_promise_private_phone": "⟦Ñö áççöûñţ ñééðéð·······⟧",
+  "first_launch_promise_private_detail_phone": "⟦Ýöûŕ ƀööķš áñð ĥíšţöŕý šţáý öñ ţĥíš þĥöñé ûñļéšš ýöû šýñç.························⟧",
+  "first_launch_promise_private_detail_tablet": "⟦Ýöûŕ ƀööķš áñð ĥíšţöŕý šţáý öñ ţĥíš ðéṽíçé ûñļéšš ýöû šýñç.························⟧",
+  "first_launch_promise_private_desktop": "⟦Öþéñ šöûŕçé, áñð ýöûŕš·········⟧",
+  "first_launch_promise_private_detail_desktop": "⟦Ñö áççöûñţ. Ýöûŕ ƀööķš áñð ĥíšţöŕý šţáý ĥéŕé ûñļéšš ýöû šýñç.·························⟧",
+  "first_launch_home_title": "⟦Ŵĥéŕé ýöûŕ ļíƀŕáŕý ļíṽéš··········⟧",
+  "first_launch_home_body": "⟦Öɱñíļéáƒ ķééþš ýöûŕ þŕöĝŕéšš, çáţéĝöŕíéš áñð ƀáçķûþš íñ ţĥíš ƒöļðéŕ. Ɓööķš ýöû ðöŵñļöáð öŕ íɱþöŕţ ĝö ĥéŕé ţöö. Ţĥé çöɱíçš ýöû áļŕéáðý ĥáṽé šţáý ŵĥéŕé ţĥéý áŕé.································································⟧",
+  "first_launch_ready_title": "⟦Ýöû'ŕé áļļ šéţ······⟧",
+  "first_launch_ready_body": "⟦Ýöûŕ ļíƀŕáŕý íš ŕéáðý. Áðð öŕ ŕéɱöṽé ƒöļðéŕš áñý ţíɱé íñ Šéţţíñĝš › Ļíƀŕáŕý.·······························⟧",
+  "first_launch_open_library": "⟦Öþéñ ɱý ļíƀŕáŕý······⟧",
+  "first_launch_finish_failed": "⟦Çöûļðñ'ţ ƒíñíšĥ šéţţíñĝ ûþ. Ţŕý áĝáíñ.················⟧",
+  "first_launch_tagline": "⟦Çöɱíçš, ɱáñĝá, ŵéƀţööñš áñð ƀööķš íñ öñé ŕéáðéŕ.····················⟧",
+  "first_launch_choices_title": "⟦Á ƒéŵ çĥöíçéš······⟧",
+  "first_launch_choices_body": "⟦Çĥáñĝé áñý öƒ ţĥéšé ļáţéŕ íñ Šéţţíñĝš.················⟧",
+  "first_launch_choices_appearance": "⟦Áþþéáŕáñçé····⟧",
+  "first_launch_choices_appearance_help_phone": "⟦Þáþéŕ ļíĝĥţ öŕ ðáŕķ, öŕ ƒöļļöŵ ýöûŕ þĥöñé.·················⟧",
+  "first_launch_choices_appearance_help_tablet": "⟦Þáþéŕ ļíĝĥţ öŕ ðáŕķ, öŕ ƒöļļöŵ ţĥíš ðéṽíçé.··················⟧",
+  "first_launch_link_title": "⟦Áļŕéáðý ĥáṽé çöɱíçš öŕ ƀööķš?············⟧",
+  "first_launch_link_body": "⟦Ļíñķ ţĥé ƒöļðéŕš ţĥéý'ŕé íñ. Öɱñíļéáƒ ŕéáðš ţĥéɱ ŵĥéŕé ţĥéý áŕé áñð ñéṽéŕ ɱöṽéš öŕ çĥáñĝéš ţĥéɱ.·······································⟧",
+  "first_launch_link_hint_android_phone": "⟦Ƒöļðéŕš öñ ýöûŕ þĥöñé, áñ ŠÐ çáŕð öŕ á ÛŠƁ ðŕíṽé áļļ ŵöŕķ.························⟧",
+  "first_launch_link_hint_android_tablet": "⟦Ƒöļðéŕš öñ ţĥíš ðéṽíçé, áñ ŠÐ çáŕð öŕ á ÛŠƁ ðŕíṽé áļļ ŵöŕķ.························⟧",
+  "first_launch_link_hint_ios": "⟦Ƒöļðéŕš íñ Ƒíļéš, íÇļöûð Ðŕíṽé öŕ á çöññéçţéð ðŕíṽé áļļ ŵöŕķ.·························⟧",
+  "first_launch_link_hint_desktop": "⟦Ƒöļðéŕš öñ ţĥíš çöɱþûţéŕ, éẋţéŕñáļ ðŕíṽéš áñð ñéţŵöŕķ šĥáŕéš áļļ ŵöŕķ.····························⟧",
+  "first_launch_skip_phone": "⟦Šķíþ, Í'ļļ áðð ţĥéɱ ļáţéŕ··········⟧",
+  "first_launch_skip_desktop": "⟦Šķíþ ƒöŕ ñöŵ·····⟧",
   "language_phone_hint": "⟦Öɱñíļéáƒ ûšéš ýöûŕ þĥöñé'š ļáñĝûáĝé ûñļéšš ýöû þíçķ öñé.·······················⟧",
   "language_system": "⟦Ûšé ţĥé šýšţéɱ ļáñĝûáĝé ({language})···············⟧",
   "language_more_coming": "⟦Ṁöŕé ļáñĝûáĝéš áŕŕíṽé áš þéöþļé ţŕáñšļáţé Öɱñíļéáƒ.·····················⟧",

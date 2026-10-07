@@ -8,9 +8,15 @@ publish.workspace = true
 
 [dependencies]
 flate2.workspace = true
+image-webp.workspace = true
+jpeg-encoder.workspace = true
 png.workspace = true
 thiserror.workspace = true
 zip.workspace = true
+
+[dev-dependencies]
+jpeg-decoder.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }
 
 [lints]
 workspace = true

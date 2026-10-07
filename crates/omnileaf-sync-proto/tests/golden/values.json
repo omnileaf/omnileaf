@@ -1,0 +1,124 @@
+{
+  "contract": "register value v1",
+  "rule": "a register value is one CBOR data item in RFC 8949's deterministic encoding: an unsigned integer as major type 0 in its shortest form, false as f4, true as f5 and null as f6",
+  "vectors": [
+    {
+      "value": {
+        "unsigned": 0
+      },
+      "cbor": "00"
+    },
+    {
+      "value": {
+        "unsigned": 1
+      },
+      "cbor": "01"
+    },
+    {
+      "value": {
+        "unsigned": 10
+      },
+      "cbor": "0a"
+    },
+    {
+      "value": {
+        "unsigned": 23
+      },
+      "cbor": "17"
+    },
+    {
+      "value": {
+        "unsigned": 24
+      },
+      "cbor": "1818"
+    },
+    {
+      "value": {
+        "unsigned": 25
+      },
+      "cbor": "1819"
+    },
+    {
+      "value": {
+        "unsigned": 100
+      },
+      "cbor": "1864"
+    },
+    {
+      "value": {
+        "unsigned": 255
+      },
+      "cbor": "18ff"
+    },
+    {
+      "value": {
+        "unsigned": 256
+      },
+      "cbor": "190100"
+    },
+    {
+      "value": {
+        "unsigned": 1000
+      },
+      "cbor": "1903e8"
+    },
+    {
+      "value": {
+        "unsigned": 65535
+      },
+      "cbor": "19ffff"
+    },
+    {
+      "value": {
+        "unsigned": 65536
+      },
+      "cbor": "1a00010000"
+    },
+    {
+      "value": {
+        "unsigned": 1000000
+      },
+      "cbor": "1a000f4240"
+    },
+    {
+      "value": {
+        "unsigned": 4294967295
+      },
+      "cbor": "1affffffff"
+    },
+    {
+      "value": {
+        "unsigned": 4294967296
+      },
+      "cbor": "1b0000000100000000"
+    },
+    {
+      "value": {
+        "unsigned": 1000000000000
+      },
+      "cbor": "1b000000e8d4a51000"
+    },
+    {
+      "value": {
+        "unsigned": 18446744073709551615
+      },
+      "cbor": "1bffffffffffffffff"
+    },
+    {
+      "value": {
+        "bool": false
+      },
+      "cbor": "f4"
+    },
+    {
+      "value": {
+        "bool": true
+      },
+      "cbor": "f5"
+    },
+    {
+      "value": "null",
+      "cbor": "f6"
+    }
+  ]
+}

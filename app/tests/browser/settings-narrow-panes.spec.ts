@@ -12,6 +12,7 @@ import {
 const WINDOW_HEIGHT = 800;
 const PANE_CONTENT_MIN_WIDTH = 300;
 const LANGUAGES = ["en", "en-XA"] as const;
+const SCANNED_FOLDER = "Sample Library";
 const SECTIONS = [
   "/settings/library",
   "/settings/appearance",
@@ -34,11 +35,26 @@ const OVERFLOWING_SCRIPT = `(() => {
   return overflowing;
 })()`;
 
+/** Found by its place, the first control of the Folders section, since its name is translated. */
+function addFolderButton(page: Page) {
+  return page
+    .getByRole("main")
+    .locator("section")
+    .last()
+    .getByRole("button")
+    .first();
+}
+
 async function openSection(page: Page, path: string): Promise<void> {
   await page.goto(path);
   if (path === "/settings/library") {
-    await page.getByRole("main").getByRole("button").click();
-    await expect(page.getByRole("main").getByRole("status")).not.toBeEmpty();
+    await addFolderButton(page).click();
+    await expect(
+      page
+        .getByRole("main")
+        .getByRole("status")
+        .filter({ hasText: SCANNED_FOLDER }),
+    ).toBeVisible();
   }
 }
 
@@ -49,8 +65,11 @@ for (const width of [MEDIUM_MIN_WIDTH, EXPANDED_MIN_WIDTH]) {
       backend: {
         ...DEFAULT_BACKEND,
         addLibraryFolder: () => ({
-          name: "Sample Library",
-          comicFiles: 342,
+          name: SCANNED_FOLDER,
+          series: 34,
+          books: 342,
+          unreadableBooks: 0,
+          unsupportedBooks: 0,
           unreadableFolders: 2,
         }),
       },
