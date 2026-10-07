@@ -54,6 +54,12 @@ declare global {
 }
 
 const BRIDGE = "__omnileafFakeInvoke";
+const FAKE_PROTOCOL_PREFIX = "__protocol__/";
+
+/** Where the page asks for what a custom protocol such as `omni` would serve, as a route on the preview server a spec can answer. */
+export function fakeProtocolRoute(protocol: string): string {
+  return `**/${FAKE_PROTOCOL_PREFIX}${protocol}/**`;
+}
 const CHANNEL_PREFIX = "__CHANNEL__:";
 
 const INSTALL_BRIDGE = `const callbacks = new Map();
@@ -67,6 +73,7 @@ Object.defineProperty(window, "__TAURI_INTERNALS__", {
       return lastCallback;
     },
     unregisterCallback: (id) => callbacks.delete(id),
+    convertFileSrc: (path, protocol) => location.origin + "/${FAKE_PROTOCOL_PREFIX}" + protocol + "/" + encodeURIComponent(path),
     invoke: async (command, args) => {
       const reply = await window.${BRIDGE}(command, JSON.parse(JSON.stringify(args)));
       if ("failure" in reply) {

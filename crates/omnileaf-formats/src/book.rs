@@ -1,9 +1,11 @@
 use std::path::Path;
 
 use crate::{
-    ComicInfo, FormatError, Limits, container::Container, folder::FolderBook, natural_cmp,
-    parse_comic_info, zip_book::ZipBook,
+    ComicInfo, FormatError, Limits, PageKind, container::Container, folder::FolderBook,
+    natural_cmp, parse_comic_info, zip_book::ZipBook,
 };
+
+const FIRST_PAGE: usize = 0;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Page {
@@ -25,6 +27,20 @@ impl Book {
             Self::Archive(book) => book.pages(),
             Self::Folder(book) => book.pages(),
         }
+    }
+
+    /// The page the book shows as its cover: the first its [`ComicInfo`] marks as the front cover, or else its first page.
+    #[must_use]
+    pub fn cover_page(&self, comic_info: Option<&ComicInfo>) -> usize {
+        comic_info
+            .and_then(|info| {
+                info.pages
+                    .iter()
+                    .find(|page| page.kind == Some(PageKind::FrontCover))
+            })
+            .and_then(|cover| usize::try_from(cover.image).ok())
+            .filter(|&index| index < self.pages().len())
+            .unwrap_or(FIRST_PAGE)
     }
 
     pub fn read_page(&mut self, index: usize) -> Result<Vec<u8>, FormatError> {

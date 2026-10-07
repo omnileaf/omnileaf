@@ -2,13 +2,9 @@ use std::{fmt, str::FromStr};
 
 use omnileaf_db::catalog::{Cursor, LibraryRoot, RootId, RootKind, RootLocator};
 use serde::{Deserialize, Serialize};
-use specta::{
-    Type, Types,
-    datatype::{DataType, Reference},
-};
-use specta_typescript::Branded;
+use specta::{Type, Types, datatype::DataType};
 
-use crate::library_layout::folder_name;
+use crate::{ipc_brand::branded_string, library_layout::folder_name};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -114,12 +110,4 @@ impl Type for FolderCursor {
     fn definition(types: &mut Types) -> DataType {
         branded_string("FolderCursor", types)
     }
-}
-
-/// A string the interface can't mistake for any other string, since only the IPC client hands one out.
-fn branded_string(brand: &'static str, types: &mut Types) -> DataType {
-    DataType::Reference(Reference::opaque(Branded::new(
-        brand,
-        String::definition(types),
-    )))
 }

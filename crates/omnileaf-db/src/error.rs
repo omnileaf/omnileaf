@@ -49,6 +49,8 @@ pub enum Error {
     UnsupportedLocator { kind: String },
     #[error("read a library folder id that isn't one the library gave out")]
     MalformedRootId,
+    #[error("read a book file id that isn't one the library gave out")]
+    MalformedBookFileId,
     #[error("ask for a page of {requested} items, outside the 1 to {max} a page holds")]
     PageSize { requested: u16, max: u16 },
     #[error("read {tag:?} as a language, which isn't a BCP 47 language tag")]

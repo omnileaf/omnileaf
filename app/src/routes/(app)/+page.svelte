@@ -1,8 +1,14 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
+  import { commands } from "$lib/ipc/bindings";
   import { addFolderWithProgress } from "$lib/library/add-folder";
   import AddFolderButton from "$lib/library/AddFolderButton.svelte";
+  import { coverUrl } from "$lib/library/cover-url";
   import { FolderAdding } from "$lib/library/folder-adding.svelte";
   import FolderNotice from "$lib/library/FolderNotice.svelte";
+  import { LibrarySeriesList } from "$lib/library/library-series.svelte";
+  import SeriesCovers from "$lib/library/SeriesCovers.svelte";
   import LibraryGlyph from "$lib/navigation/LibraryGlyph.svelte";
   import EmptyState from "$lib/page/EmptyState.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -14,9 +20,31 @@
   let { data }: PageProps = $props();
 
   const screenshotMode = getScreenshotMode();
-  const adding = new FolderAdding(addFolderWithProgress, () => data.notices);
+  const library = new LibrarySeriesList((after) =>
+    commands.librarySeries(after),
+  );
+  const adding = new FolderAdding(
+    addFolderWithProgress,
+    () => data.notices,
+    () => {
+      void library.load();
+    },
+  );
 
-  let addFolder: HTMLButtonElement | undefined = $state();
+  const isEmpty = $derived(
+    library.list.kind === "loaded" && library.list.series.length === 0,
+  );
+
+  let headingAddFolder: HTMLButtonElement | undefined = $state();
+  let emptyAddFolder: HTMLButtonElement | undefined = $state();
+
+  onMount(() => {
+    void library.load();
+  });
+
+  function focusAddFolder(): void {
+    (isEmpty ? emptyAddFolder : headingAddFolder)?.focus();
+  }
 </script>
 
 <div class="flex items-center justify-between gap-sm">
@@ -24,25 +52,44 @@
     title={m.library_title()}
     showsLabel={screenshotMode.showsLabel}
   />
-  <AddFolderButton {adding} placement="page-heading" />
+  <AddFolderButton
+    bind:element={headingAddFolder}
+    {adding}
+    placement="page-heading"
+  />
 </div>
-<EmptyState
-  icon={LibraryGlyph}
-  title={m.library_empty()}
-  body={m.library_empty_body()}
->
-  <div class="mbs-sm flex flex-col items-center gap-md max-inline-prose">
-    <AddFolderButton
-      bind:element={addFolder}
-      {adding}
-      placement="empty-state"
-    />
+{#if isEmpty}
+  <EmptyState
+    icon={LibraryGlyph}
+    title={m.library_empty()}
+    body={m.library_empty_body()}
+  >
+    <div class="mbs-sm flex flex-col items-center gap-md max-inline-prose">
+      <AddFolderButton
+        bind:element={emptyAddFolder}
+        {adding}
+        placement="empty-state"
+      />
+      <FolderNotice
+        {adding}
+        usesStandIns={screenshotMode.isOn}
+        onDismissed={focusAddFolder}
+      />
+    </div>
+  </EmptyState>
+{:else if library.list.kind !== "loading"}
+  <div class="mbs-sm">
     <FolderNotice
       {adding}
       usesStandIns={screenshotMode.isOn}
-      onDismissed={() => {
-        addFolder?.focus();
-      }}
+      onDismissed={focusAddFolder}
     />
   </div>
-</EmptyState>
+  {#if library.list.kind === "failed"}
+    <p class="mbs-sm text-muted">{m.library_series_failed()}</p>
+  {:else}
+    <div class="mbs-xl">
+      <SeriesCovers series={library.list.series} {coverUrl} />
+    </div>
+  {/if}
+{/if}

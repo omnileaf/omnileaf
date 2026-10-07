@@ -2,24 +2,38 @@
 
 mod app_info;
 mod app_language;
+mod background_lane;
 mod clock;
+mod cover_path;
+mod cover_thumbnails;
+mod device_class;
+mod error_chain;
+mod ipc_brand;
 mod library;
 mod library_folder;
 mod library_layout;
+mod library_series;
 mod project_link;
 mod rescan;
 mod rescan_plan;
+mod resource;
+mod resource_router;
 mod scan;
 mod version_details;
 
 pub use app_info::{AppInfo, Platform};
 pub use app_language::AppLanguage;
 pub use clock::SystemClock;
+pub use cover_path::{CoverPath, MalformedCoverPath};
+pub use error_chain::describe_error;
 pub use library::{Library, LibraryError};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
+pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
 pub use omnileaf_db::store::{Changed, Clock};
 pub use project_link::ProjectLink;
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
+pub use resource::Resource;
+pub use resource_router::{ResourceRouter, ResourceRouterError};
 pub use scan::{FolderScan, ScanProgress};
 pub use version_details::{BuildProfile, VersionDetails};
 

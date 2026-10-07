@@ -168,28 +168,29 @@ export class Session {
     locator: Locator,
     timeoutMs = ELEMENT_TIMEOUT_MS,
   ): Promise<WebElement> {
-    try {
-      return await pollUntil(
-        () => this.find(locator),
-        timeoutMs,
-        `the element at ${locator.value}`,
-      );
-    } catch (error) {
-      if (!(error instanceof NotReadyError)) {
-        throw error;
-      }
-      throw new Error(`${error.message}; ${await this.describeCurrentPage()}`, {
-        cause: error,
-      });
-    }
+    return this.pollOnPage(
+      () => this.find(locator),
+      timeoutMs,
+      `the element at ${locator.value}`,
+    );
+  }
+
+  /** Runs `script` in the page until it returns `true`, for what no element's presence can show, such as an image having loaded. */
+  async waitUntil(
+    script: string,
+    what: string,
+    timeoutMs = ELEMENT_TIMEOUT_MS,
+  ): Promise<void> {
+    await this.pollOnPage(
+      async () => ((await this.run(script)) === true ? true : undefined),
+      timeoutMs,
+      what,
+    );
   }
 
   /** Marks the page and reloads it once the script has returned, then asks the page until one without the mark answers. */
   async reload(): Promise<void> {
-    await send(`${this.endpoint}/execute/sync`, "POST", {
-      script: RELOAD_SCRIPT,
-      args: [],
-    });
+    await this.run(RELOAD_SCRIPT);
     await pollUntil(
       () => this.isFreshPage(),
       ELEMENT_TIMEOUT_MS,
@@ -200,10 +201,7 @@ export class Session {
   /** A page that is still unloading can't run the check, which counts as not reloaded yet. */
   private async isFreshPage(): Promise<true | undefined> {
     try {
-      const fresh = await send(`${this.endpoint}/execute/sync`, "POST", {
-        script: FRESH_PAGE_SCRIPT,
-        args: [],
-      });
+      const fresh = await this.run(FRESH_PAGE_SCRIPT);
       return fresh === true ? true : undefined;
     } catch (error) {
       if (error instanceof WebDriverError) {
@@ -236,9 +234,31 @@ export class Session {
     await send(this.endpoint, "DELETE");
   }
 
+  /** Polls like {@link pollUntil}, saying what the page showed when it gives up. */
+  private async pollOnPage<T>(
+    attempt: () => Promise<T | undefined>,
+    timeoutMs: number,
+    what: string,
+  ): Promise<T> {
+    try {
+      return await pollUntil(attempt, timeoutMs, what);
+    } catch (error) {
+      if (!(error instanceof NotReadyError)) {
+        throw error;
+      }
+      throw new Error(`${error.message}; ${await this.describeCurrentPage()}`, {
+        cause: error,
+      });
+    }
+  }
+
   /** A script's answer is lost when its page unloads, and the driver otherwise waits 30 s for it, as long as a test may run. */
   private async limitScriptsTo(timeoutMs: number): Promise<void> {
     await send(`${this.endpoint}/timeouts`, "POST", { script: timeoutMs });
+  }
+
+  private async run(script: string): Promise<unknown> {
+    return send(`${this.endpoint}/execute/sync`, "POST", { script, args: [] });
   }
 
   private async describeCurrentPage(): Promise<string> {

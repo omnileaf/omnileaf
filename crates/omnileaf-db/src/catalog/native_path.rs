@@ -2,6 +2,15 @@
 
 use std::path::{Path, PathBuf};
 
+use rusqlite::{Row, types::Type};
+
+/// Reads the path stored in `column`, failing the row when its bytes can't be one.
+pub(crate) fn stored_native_path(row: &Row<'_>, column: usize) -> rusqlite::Result<PathBuf> {
+    from_bytes(row.get(column)?).ok_or_else(|| {
+        rusqlite::Error::InvalidColumnType(column, "location".to_owned(), Type::Blob)
+    })
+}
+
 #[cfg(unix)]
 pub(crate) fn to_bytes(path: &Path) -> Vec<u8> {
     use std::os::unix::ffi::OsStrExt;

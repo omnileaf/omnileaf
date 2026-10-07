@@ -68,6 +68,10 @@
   --text-display--line-height: 1.2;
   --text-step-body: 0.9375rem;
   --text-step-body--line-height: 1.5;
+  --text-cover-title: 0.8125rem;
+  --text-cover-title--line-height: 1.125rem;
+  --text-cover-title-wide: 0.875rem;
+  --text-cover-title-wide--line-height: 1.25rem;
   --text-app-name: 1.5rem;
   --text-app-name--line-height: 2rem;
   --text-page-title: 2rem;
@@ -109,6 +113,9 @@
   --spacing-first-launch-panel: 22.5rem;
   --spacing-panel-glow: 16.25rem;
   --spacing-panel-glow-tall: 17.5rem;
+  --spacing-cover-caption: 0.375rem;
+  --spacing-cover-gap: 0.875rem;
+  --spacing-cover-gap-wide: 1.25rem;
   --spacing-pointer-target: 2.5rem;
   --spacing-pointer-button: 2.25rem;
   --spacing-dismiss: 1.75rem;
@@ -178,6 +185,8 @@
   --radius-control: 0.5rem;
   --radius-card: 0.75rem;
   --radius-sheet: 1.25rem;
+
+  --aspect-cover: 2 / 3;
   --radius-tile: 0.625rem;
   --radius-button: 0.625rem;
   --radius-ios-button: 0.875rem;
@@ -273,6 +282,7 @@
   --color-glass-hole: #e6e2da;
   --color-glass-shadow: rgb(28 27 24 / 0.16);
   --color-glass-contact: rgb(28 27 24 / 0.08);
+  --color-cover-edge: rgb(28 27 24 / 0.1);
 
   --transition-duration-fade: 150ms;
   --transition-duration-grow: 200ms;
@@ -465,6 +475,7 @@
   --color-glass-hole: #3a3833;
   --color-glass-shadow: rgb(0 0 0 / 0.45);
   --color-glass-contact: transparent;
+  --color-cover-edge: rgb(255 255 255 / 0.08);
 }
 
 :root[dir="rtl"] {

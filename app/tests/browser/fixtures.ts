@@ -18,6 +18,7 @@ export const FAKE_SOURCE_CODE = "repo.example.org/omnileaf";
 
 export const MEDIUM_MIN_WIDTH = 600;
 export const EXPANDED_MIN_WIDTH = 840;
+export const LARGE_MIN_WIDTH = 1200;
 
 function fakeAppInfo(platform: Platform): AppInfo {
   return { version: FAKE_APP_VERSION, platform, sourceCode: FAKE_SOURCE_CODE };
@@ -27,6 +28,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => fakeAppInfo("linux"),
   addLibraryFolder: () => null,
   libraryFolders: () => ({ folders: [], next: null }),
+  librarySeries: () => ({ series: [], next: null }),
   removeLibraryFolder: () => null,
   rescanLibraryFolder: () => {
     throw new CommandFailure({

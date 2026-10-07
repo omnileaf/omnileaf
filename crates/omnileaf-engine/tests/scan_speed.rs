@@ -2,11 +2,11 @@ mod support;
 
 use std::time::{Duration, Instant};
 
-use omnileaf_engine::{Clock, FileChanges, Library, RescanOutcome};
+use omnileaf_engine::{FileChanges, Library, RescanOutcome};
 use omnileaf_testkit::{
     GENERATED_LIBRARY_NAME, GeneratedLibrary, TimingBudget, write_generated_library,
 };
-use support::TempFolder;
+use support::{FixedClock, TempFolder};
 
 const LIBRARY: GeneratedLibrary = GeneratedLibrary {
     series: 100,
@@ -16,15 +16,6 @@ const LIBRARY: GeneratedLibrary = GeneratedLibrary {
 const BOOKS: u32 = LIBRARY.books();
 const BUDGET: Duration = Duration::from_secs(3);
 const UNCHANGED_RESCAN_BUDGET: Duration = Duration::from_millis(300);
-const NOW_UNIX_MS: u64 = 1_790_000_000_000;
-
-struct FixedClock;
-
-impl Clock for FixedClock {
-    fn now_unix_ms(&self) -> u64 {
-        NOW_UNIX_MS
-    }
-}
 
 #[tokio::test]
 #[expect(
