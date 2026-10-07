@@ -16,9 +16,10 @@ use tokio::{
 };
 
 use crate::{
-    AppLanguage, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, LibraryFolder,
-    LibrarySeries, RescanOutcome, ScanProgress, SeriesCursor, SeriesPage,
+    AppLanguage, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, LibraryChanges,
+    LibraryFolder, LibrarySeries, RescanOutcome, ScanProgress, SeriesCursor, SeriesPage,
     device_class::{IS_MOBILE, MEBIBYTE},
+    library_changes::CatalogWritten,
     library_layout::folder_name,
     rescan::rescan,
     scan::{Target, find_books_in, scan, walk},
@@ -28,6 +29,7 @@ const DATABASE_FILE: &str = "library.sqlite";
 const BACKUP_FOLDER: &str = "backups";
 const FOLDERS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
+const CATALOG_WRITE_BACKLOG: usize = 16;
 const MAPPED_DATABASE_BYTES: u32 = if IS_MOBILE {
     64 * MEBIBYTE
 } else {
@@ -39,6 +41,7 @@ pub struct Library {
     store: Store,
     /// Held for each scan and folder removal, so none compares a folder with a catalog another is changing.
     scanning: Mutex<()>,
+    catalog_writes: broadcast::Sender<CatalogWritten>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -86,6 +89,7 @@ impl Library {
         let library = Self {
             store: Store::new(database, clock),
             scanning: Mutex::new(()),
+            catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
         };
         library.set_home(home).await?;
         Ok(library)
@@ -103,7 +107,13 @@ impl Library {
         let layout = find_books_in(folder.clone()).await?;
         let root = self.link(folder.clone()).await?;
         let target = self.target(root, RootKind::Linked, folder);
-        scan(self.store.database(), target, layout, on_progress).await
+        scan(
+            self.store.database(),
+            target,
+            layout,
+            self.noting_writes(on_progress),
+        )
+        .await
     }
 
     pub async fn folders(&self, after: Option<FolderCursor>) -> Result<FolderPage, LibraryError> {
@@ -152,11 +162,12 @@ impl Library {
     #[tracing::instrument(skip_all, fields(folder = %id))]
     pub async fn remove_folder(&self, id: FolderId) -> Result<(), LibraryError> {
         let _scanning = self.scanning.lock().await;
-        Ok(self
-            .store
+        self.store
             .database()
             .write(move |transaction| remove_root(transaction, id.0))
-            .await?)
+            .await?;
+        self.note_catalog_written();
+        Ok(())
     }
 
     /// Brings the catalog in line with the folder's files, removing nothing when the folder can't be read or looks unplugged.
@@ -177,7 +188,14 @@ impl Library {
         let outcome = match walk(folder.clone()).await? {
             Ok(layout) => {
                 let target = self.target(root.id, root.kind, folder.clone());
-                rescan(&self.store, target, layout, on_progress).await?
+                let outcome =
+                    rescan(&self.store, target, layout, self.noting_writes(on_progress)).await?;
+                if let RescanOutcome::Rescanned(changes) = &outcome
+                    && changes.removed > 0
+                {
+                    self.note_catalog_written();
+                }
+                outcome
             }
             Err(error) => {
                 tracing::warn!(%error, "keep the books of a folder the rescan can't read");
@@ -226,6 +244,14 @@ impl Library {
     #[must_use]
     pub fn subscribe(&self) -> broadcast::Receiver<Changed> {
         self.store.subscribe()
+    }
+
+    #[must_use]
+    pub fn changes(&self) -> LibraryChanges {
+        LibraryChanges {
+            catalog: self.catalog_writes.subscribe(),
+            synced: self.store.subscribe(),
+        }
     }
 
     pub async fn first_launch_finished(&self) -> Result<bool, LibraryError> {
@@ -295,6 +321,25 @@ impl Library {
             }
         }
         Ok(())
+    }
+
+    /// Scans report their progress after recording each batch, so a report of books read is a catalog written.
+    fn noting_writes<'a>(
+        &'a self,
+        mut on_progress: impl FnMut(ScanProgress) + Send + 'a,
+    ) -> impl FnMut(ScanProgress) + Send + 'a {
+        move |progress| {
+            if matches!(progress, ScanProgress::Reading { scanned, .. } if scanned > 0) {
+                self.note_catalog_written();
+            }
+            on_progress(progress);
+        }
+    }
+
+    fn note_catalog_written(&self) {
+        if self.catalog_writes.send(CatalogWritten).is_err() {
+            tracing::trace!("no one is listening for library changes");
+        }
     }
 
     fn target(&self, root: RootId, kind: RootKind, folder: PathBuf) -> Target {

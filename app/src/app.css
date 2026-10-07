@@ -68,6 +68,8 @@
   --text-display--line-height: 1.2;
   --text-step-body: 0.9375rem;
   --text-step-body--line-height: 1.5;
+  --text-lead: 0.9375rem;
+  --text-lead--line-height: 1.375rem;
   --text-cover-title: 0.8125rem;
   --text-cover-title--line-height: 1.125rem;
   --text-cover-title-wide: 0.875rem;
@@ -541,6 +543,12 @@
   &:where([dir="rtl"], [dir="rtl"] *) {
     translate: calc(var(--tab-index) * -100%) 0;
   }
+}
+
+@utility virtual-rows {
+  box-sizing: border-box;
+  block-size: calc(var(--row-count) * var(--row-stride));
+  padding-block-start: calc(var(--first-row) * var(--row-stride));
 }
 
 @utility progress-track {
