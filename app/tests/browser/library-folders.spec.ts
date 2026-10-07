@@ -1,7 +1,10 @@
-import { AxeBuilder } from "@axe-core/playwright";
-
 import type { FakeBackend } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  accessibilityViolations,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+} from "./fixtures.ts";
 
 type WireFolder = Awaited<
   ReturnType<FakeBackend["libraryFolders"]>
@@ -159,9 +162,9 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.getByRole("button", { name: "Remove Sample Comics" }).click();
     await expect(page.getByRole("alertdialog")).toBeVisible();
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const violations = await accessibilityViolations(page);
 
-    expect(results.violations).toEqual([]);
+    expect(violations).toEqual([]);
   });
 
   test(`the folder list has no accessibility violations in the ${colorScheme} theme`, async ({
@@ -173,8 +176,8 @@ for (const colorScheme of ["light", "dark"] as const) {
       page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
     ).toHaveCount(1);
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const violations = await accessibilityViolations(page);
 
-    expect(results.violations).toEqual([]);
+    expect(violations).toEqual([]);
   });
 }

@@ -1,9 +1,9 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
 import type { Platform, ProjectLink } from "../../src/lib/ipc/bindings.ts";
 import { CommandFailure } from "./fake-backend.ts";
 import {
+  accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
@@ -302,9 +302,9 @@ for (const platform of ["android", "ios", "linux"] as const) {
         await page.emulateMedia({ colorScheme });
         await openAbout(page);
 
-        const results = await new AxeBuilder({ page }).analyze();
+        const violations = await accessibilityViolations(page);
 
-        expect(results.violations).toEqual([]);
+        expect(violations).toEqual([]);
       });
     });
   }

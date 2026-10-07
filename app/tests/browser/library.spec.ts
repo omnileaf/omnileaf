@@ -1,8 +1,8 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import type { Locator, Page } from "@playwright/test";
 
 import { emitFakeEvent } from "./fake-backend.ts";
 import {
+  accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
@@ -87,9 +87,9 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.goto("/");
     await expect(emptyLibrary(page)).toBeVisible();
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const violations = await accessibilityViolations(page);
 
-    expect(results.violations).toEqual([]);
+    expect(violations).toEqual([]);
   });
 }
 

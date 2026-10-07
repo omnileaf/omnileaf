@@ -1,7 +1,7 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import type { Locator, Page } from "@playwright/test";
 
 import {
+  accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
@@ -137,9 +137,9 @@ test.describe("while the folder is being scanned", () => {
       await page.getByRole("button", { name: "Add a folder" }).click();
       await expect(page.getByRole("progressbar")).toBeVisible();
 
-      const results = await new AxeBuilder({ page }).analyze();
+      const violations = await accessibilityViolations(page);
 
-      expect(results.violations).toEqual([]);
+      expect(violations).toEqual([]);
     });
   }
 });
@@ -196,8 +196,8 @@ for (const colorScheme of ["light", "dark"] as const) {
       page.getByRole("heading", { level: 2, name: "Folders" }),
     ).toBeVisible();
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const violations = await accessibilityViolations(page);
 
-    expect(results.violations).toEqual([]);
+    expect(violations).toEqual([]);
   });
 }

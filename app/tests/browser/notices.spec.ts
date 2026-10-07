@@ -1,9 +1,8 @@
-import { AxeBuilder } from "@axe-core/playwright";
-
 import type { Page } from "@playwright/test";
 
 import { CommandFailure } from "./fake-backend.ts";
 import {
+  accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
@@ -148,8 +147,8 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
     await failToAddAFolder(page);
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const violations = await accessibilityViolations(page);
 
-    expect(results.violations).toEqual([]);
+    expect(violations).toEqual([]);
   });
 }

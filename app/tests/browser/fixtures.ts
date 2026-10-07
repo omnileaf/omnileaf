@@ -1,3 +1,4 @@
+import { AxeBuilder } from "@axe-core/playwright";
 import {
   expect,
   test as base,
@@ -100,6 +101,52 @@ export async function settle(locator: Locator): Promise<void> {
     .toBe(0);
 }
 
+type Violations = Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"];
+
+function runningAnimations(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    document
+      .getAnimations()
+      .filter(
+        (animation) =>
+          animation.playState === "running" &&
+          animation.effect?.getComputedTiming().iterations !== Infinity,
+      )
+      .map((animation) => {
+        const name =
+          animation instanceof CSSTransition
+            ? `transition of ${animation.transitionProperty}`
+            : animation instanceof CSSAnimation
+              ? `animation ${animation.animationName}`
+              : `animation ${animation.id}`;
+        const target =
+          animation.effect instanceof KeyframeEffect
+            ? animation.effect.target
+            : null;
+        const targetName =
+          target === null
+            ? "no element"
+            : [target.tagName.toLowerCase(), ...target.classList].join(".");
+        return `${name} on ${targetName}`;
+      }),
+  );
+}
+
+/**
+ * Waits until no animation or transition is running, since axe reads colours
+ * mid-fade as they are. An animation that repeats forever, such as a spinner,
+ * never ends, so it is not waited for.
+ */
+export async function accessibilityViolations(page: Page): Promise<Violations> {
+  await expect
+    .poll(() => runningAnimations(page), {
+      message: "animations still running before the axe check",
+    })
+    .toEqual([]);
+  const results = await new AxeBuilder({ page }).analyze();
+  return results.violations;
+}
+
 export const test = base.extend<{ backend: FakeBackend }>({
   backend: [DEFAULT_BACKEND, { option: true }],
   page: async ({ page, backend }, use) => {
@@ -108,4 +155,4 @@ export const test = base.extend<{ backend: FakeBackend }>({
   },
 });
 
-export { expect } from "@playwright/test";
+export { expect };

@@ -1,7 +1,7 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
 import {
+  accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
@@ -131,9 +131,9 @@ for (const platform of ["android", "ios", "linux"] as const) {
           page.getByRole("heading", { level: 1, name: "General" }),
         ).toBeVisible();
 
-        const results = await new AxeBuilder({ page }).analyze();
+        const violations = await accessibilityViolations(page);
 
-        expect(results.violations).toEqual([]);
+        expect(violations).toEqual([]);
       });
     });
   }
