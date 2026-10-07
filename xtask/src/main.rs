@@ -45,6 +45,9 @@ enum Command {
         /// The Android device or emulator `--only android` tests on, by name; it picks one when left out.
         #[arg(long)]
         android_device: Option<String>,
+        /// The iOS Simulator `--only ios` tests on, by name; it picks one when left out.
+        #[arg(long)]
+        ios_device: Option<String>,
     },
     /// Regenerate the interface's TypeScript bindings from the app's commands.
     Bindings,
@@ -100,16 +103,10 @@ fn main() -> anyhow::Result<()> {
         Command::Check {
             only,
             android_device,
+            ios_device,
         } => {
-            let process = if only == Some(check::Group::Android) {
-                ready_for_android_tests(android_device.as_deref())?
-            } else {
-                anyhow::ensure!(
-                    android_device.is_none(),
-                    "--android-device only applies with --only android"
-                );
-                Process::in_workspace()
-            };
+            let process =
+                process_for_check(only, android_device.as_deref(), ios_device.as_deref())?;
             check::run_all(check::select(check::STEPS, only), &process)?;
         }
         Command::Bindings => regenerate_bindings()?,
@@ -208,6 +205,39 @@ fn regenerate_bindings() -> anyhow::Result<()> {
         .context("run the bindings test")?;
     anyhow::ensure!(status.success(), "regenerating the bindings failed");
     Ok(())
+}
+
+fn process_for_check(
+    only: Option<check::Group>,
+    android_device: Option<&str>,
+    ios_device: Option<&str>,
+) -> anyhow::Result<Process> {
+    anyhow::ensure!(
+        android_device.is_none() || only == Some(check::Group::Android),
+        "--android-device only applies with --only android"
+    );
+    anyhow::ensure!(
+        ios_device.is_none() || only == Some(check::Group::Ios),
+        "--ios-device only applies with --only ios"
+    );
+    match only {
+        Some(check::Group::Android) => ready_for_android_tests(android_device),
+        Some(check::Group::Ios) => ready_for_ios_tests(ios_device),
+        Some(
+            check::Group::Rust
+            | check::Group::Portable
+            | check::Group::Interface
+            | check::Group::Browser
+            | check::Group::App,
+        )
+        | None => Ok(Process::in_workspace()),
+    }
+}
+
+fn ready_for_ios_tests(chosen: Option<&str>) -> anyhow::Result<Process> {
+    let process = Process::in_workspace();
+    let udid = test_device::ready_simulator(&process, chosen)?;
+    Ok(process.with_env(test_device::SIMULATOR_UDID, udid))
 }
 
 fn ready_for_android_tests(chosen: Option<&str>) -> anyhow::Result<Process> {

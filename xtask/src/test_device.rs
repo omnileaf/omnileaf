@@ -1,6 +1,7 @@
 //! Picks the phone, emulator or Simulator the mobile app tests run on.
 
 use std::{
+    ffi::OsStr,
     fmt,
     path::Path,
     process::Stdio,
@@ -17,11 +18,14 @@ use crate::{
 };
 
 pub(crate) const ANDROID_SERIAL: &str = "ANDROID_SERIAL";
+pub(crate) const SIMULATOR_UDID: &str = "OMNILEAF_SIMULATOR_UDID";
 
 const BOOT_TIMEOUT: Duration = Duration::from_secs(300);
 const BOOT_POLL: Duration = Duration::from_secs(2);
 const BOOT_COMPLETED: &[&str] = &["shell", "getprop", "sys.boot_completed"];
 const CPU_ABI: &[&str] = &["shell", "getprop", "ro.product.cpu.abi"];
+const IPHONE: &str = "iPhone";
+const XCRUN: &str = "xcrun";
 
 pub(crate) struct AndroidTestDevice {
     pub(crate) serial: String,
@@ -38,7 +42,9 @@ pub(crate) enum Pick<'a> {
 pub(crate) enum NoTestDevice {
     NotListed { chosen: String },
     Unusable { name: String, state: State },
-    NoneAvailable,
+    NotASimulator { name: String },
+    NoAndroidDevice,
+    NoSimulator,
 }
 
 impl fmt::Display for NoTestDevice {
@@ -46,14 +52,21 @@ impl fmt::Display for NoTestDevice {
         match self {
             Self::NotListed { chosen } => write!(
                 f,
-                "no Android device or emulator answers to {chosen}; cargo xtask devices lists them"
+                "nothing answers to {chosen}; cargo xtask devices lists what does"
             ),
             Self::Unusable { name, state } => write!(
                 f,
                 "{name} is {state}; unlock it and accept the debugging prompt, then try again"
             ),
-            Self::NoneAvailable => f.write_str(
+            Self::NotASimulator { name } => write!(
+                f,
+                "{name} is an iPhone, and the iOS app tests run on a Simulator"
+            ),
+            Self::NoAndroidDevice => f.write_str(
                 "no Android device or emulator found; connect a phone or create an emulator in Android Studio",
+            ),
+            Self::NoSimulator => f.write_str(
+                "no iOS Simulator found; install a Simulator runtime in Xcode's Components settings",
             ),
         }
     }
@@ -85,7 +98,46 @@ pub(crate) fn pick_android<'a>(
                 .find(|device| device.kind == Kind::AndroidEmulator && device.state == State::Off)
                 .map(Pick::Boot)
         })
-        .ok_or(NoTestDevice::NoneAvailable)
+        .ok_or(NoTestDevice::NoAndroidDevice)
+}
+
+/// Prefers the Simulator named, then a booted one, then an iPhone Simulator to boot.
+pub(crate) fn pick_simulator<'a>(
+    devices: &'a [Device],
+    chosen: Option<&str>,
+) -> Result<Pick<'a>, NoTestDevice> {
+    if let Some(chosen) = chosen {
+        let device = devices
+            .iter()
+            .find(|device| is_ios(device.kind) && device.answers_to(chosen))
+            .ok_or_else(|| NoTestDevice::NotListed {
+                chosen: chosen.to_owned(),
+            })?;
+        if device.kind != Kind::IosSimulator {
+            return Err(NoTestDevice::NotASimulator {
+                name: device.name.clone(),
+            });
+        }
+        return usable(device);
+    }
+    let simulators = || {
+        devices
+            .iter()
+            .filter(|device| device.kind == Kind::IosSimulator)
+    };
+    simulators()
+        .find(|simulator| simulator.state == State::Ready)
+        .map(Pick::Ready)
+        .or_else(|| {
+            simulators()
+                .find(|simulator| simulator.name.starts_with(IPHONE))
+                .map(Pick::Boot)
+        })
+        .ok_or(NoTestDevice::NoSimulator)
+}
+
+fn is_ios(kind: Kind) -> bool {
+    !is_android(kind)
 }
 
 fn is_android(kind: Kind) -> bool {
@@ -126,6 +178,38 @@ pub(crate) fn ready_android(
     let target = android::Target::for_abi(&abi)
         .with_context(|| format!("find a Tauri target for {serial}'s {} ABI", abi.trim()))?;
     Ok(AndroidTestDevice { serial, target })
+}
+
+/// Boots the Simulator it picks and leaves it running afterwards.
+pub(crate) fn ready_simulator(
+    machine: &impl Machine,
+    chosen: Option<&str>,
+) -> anyhow::Result<String> {
+    let devices = devices::ios_devices(machine)?;
+    let (simulator, needs_boot) = match pick_simulator(&devices, chosen)? {
+        Pick::Ready(simulator) => (simulator, false),
+        Pick::Boot(simulator) => (simulator, true),
+    };
+    let udid = simulator
+        .id
+        .clone()
+        .with_context(|| format!("find the udid of {}", simulator.name))?;
+    if needs_boot {
+        boot_simulator(machine, &simulator.name, &udid)?;
+    }
+    Ok(udid)
+}
+
+#[expect(clippy::print_stdout, reason = "progress output for the developer")]
+fn boot_simulator(machine: &impl Machine, name: &str, udid: &str) -> anyhow::Result<()> {
+    println!("==> boot the {name} Simulator");
+    machine
+        .stdout_of(OsStr::new(XCRUN), &["simctl", "boot", udid])
+        .with_context(|| format!("boot the {name} Simulator"))?;
+    machine
+        .stdout_of(OsStr::new(XCRUN), &["simctl", "bootstatus", udid, "-b"])
+        .with_context(|| format!("wait for the {name} Simulator to finish booting"))?;
+    Ok(())
 }
 
 #[expect(clippy::print_stdout, reason = "progress output for the developer")]
@@ -293,7 +377,77 @@ mod tests {
 
         assert_eq!(
             pick_android(&devices, None),
-            Err(NoTestDevice::NoneAvailable)
+            Err(NoTestDevice::NoAndroidDevice)
+        );
+    }
+
+    fn ios_listing() -> Vec<Device> {
+        vec![
+            device(Kind::IosDevice, State::Ready, "Test iPhone"),
+            device(Kind::IosSimulator, State::Off, "iPad Air 11-inch (M4)"),
+            device(Kind::IosSimulator, State::Off, "iPhone 18 Pro"),
+            device(Kind::IosSimulator, State::Ready, "iPhone 18 Pro Max"),
+            device(Kind::AndroidEmulator, State::Ready, "Pixel_10_Pro"),
+        ]
+    }
+
+    #[test]
+    fn prefers_a_booted_simulator() {
+        let devices = ios_listing();
+
+        assert_eq!(pick_simulator(&devices, None), Ok(Pick::Ready(&devices[3])));
+    }
+
+    #[test]
+    fn boots_an_iphone_simulator_when_none_is_booted() {
+        let devices = vec![
+            device(Kind::IosSimulator, State::Off, "iPad Air 11-inch (M4)"),
+            device(Kind::IosSimulator, State::Off, "iPhone 18 Pro"),
+        ];
+
+        assert_eq!(pick_simulator(&devices, None), Ok(Pick::Boot(&devices[1])));
+    }
+
+    #[test]
+    fn uses_the_simulator_named() {
+        let devices = ios_listing();
+
+        let picked = [Some("ipad air 11-inch (m4)"), Some("iPhone 18 Pro Max")]
+            .map(|chosen| pick_simulator(&devices, chosen));
+
+        assert_eq!(
+            picked,
+            [Ok(Pick::Boot(&devices[1])), Ok(Pick::Ready(&devices[3]))]
+        );
+    }
+
+    #[test]
+    fn refuses_a_named_iphone_or_android_device() {
+        let devices = ios_listing();
+
+        let picked = [Some("Test iPhone"), Some("Pixel_10_Pro")]
+            .map(|chosen| pick_simulator(&devices, chosen));
+
+        assert_eq!(
+            picked,
+            [
+                Err(NoTestDevice::NotASimulator {
+                    name: "Test iPhone".to_owned()
+                }),
+                Err(NoTestDevice::NotListed {
+                    chosen: "Pixel_10_Pro".to_owned()
+                }),
+            ]
+        );
+    }
+
+    #[test]
+    fn finds_nothing_without_a_simulator() {
+        let devices = vec![device(Kind::IosDevice, State::Ready, "Test iPhone")];
+
+        assert_eq!(
+            pick_simulator(&devices, None),
+            Err(NoTestDevice::NoSimulator)
         );
     }
 }
