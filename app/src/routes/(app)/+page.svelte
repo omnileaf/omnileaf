@@ -143,6 +143,7 @@
         }}
         {coverUrl}
         view={shown.view}
+        usesStandIns={screenshotMode.isOn}
       />
     </div>
   {/if}

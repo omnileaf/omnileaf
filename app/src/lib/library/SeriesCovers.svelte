@@ -14,6 +14,7 @@
   import CoverImage from "./CoverImage.svelte";
   import { coverLook } from "./cover-look";
   import type { CoverUrl } from "./cover-url";
+  import { realLook, standInLook } from "./series-look";
   import UnreadCount from "./UnreadCount.svelte";
 
   let {
@@ -22,12 +23,14 @@
     onNearEnd,
     coverUrl,
     view,
+    usesStandIns,
   }: {
     series: readonly LibrarySeries[];
     isComplete: boolean;
     onNearEnd?: () => void;
     coverUrl: CoverUrl;
     view: LibraryView;
+    usesStandIns: boolean;
   } = $props();
 
   interface DisplayLayout {
@@ -37,6 +40,7 @@
   }
 
   const look = $derived(coverLook(view.coversPerRow));
+  const lookOf = $derived(usesStandIns ? standInLook : realLook);
 
   const layout = $derived(
     (
@@ -67,14 +71,15 @@
 </script>
 
 {#snippet gridCell(one: LibrarySeries)}
+  {@const shown = lookOf(one)}
   <div
     class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
   >
-    <CoverImage cover={one.cover} {coverUrl} />
+    <CoverImage cover={shown.cover} {coverUrl} />
     <CoverBadges series={one} onCovers={view.onCovers} />
   </div>
   <div class="min-inline-none">
-    <p class={["truncate font-semibold", look.title]}>{one.title}</p>
+    <p class={["truncate font-semibold", look.title]}>{shown.title}</p>
     <p class={["text-caption text-muted medium:mbs-2xs", look.bookCount]}>
       {m.library_series_books({ count: one.bookCount })}
     </p>
@@ -82,10 +87,11 @@
 {/snippet}
 
 {#snippet compactCell(one: LibrarySeries)}
+  {@const shown = lookOf(one)}
   <div
     class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
   >
-    <CoverImage cover={one.cover} {coverUrl} />
+    <CoverImage cover={shown.cover} {coverUrl} />
     <CoverBadges series={one} onCovers={view.onCovers} />
     <div
       class="absolute inset-x-none inset-be-none bg-linear-to-t from-band from-55% to-transparent px-band pbs-band-fade pbe-sm medium:px-band-wide medium:pbe-band-wide"
@@ -96,33 +102,35 @@
           look.title,
         ]}
       >
-        {one.title}
+        {shown.title}
       </p>
     </div>
   </div>
 {/snippet}
 
 {#snippet coversCell(one: LibrarySeries)}
+  {@const shown = lookOf(one)}
   <div
-    title={one.title}
+    title={shown.title}
     class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
   >
-    <CoverImage cover={one.cover} {coverUrl} />
+    <CoverImage cover={shown.cover} {coverUrl} />
     <CoverBadges series={one} onCovers={view.onCovers} />
-    <p class="sr-only">{one.title}</p>
+    <p class="sr-only">{shown.title}</p>
   </div>
 {/snippet}
 
 {#snippet listRow(one: LibrarySeries)}
+  {@const shown = lookOf(one)}
   <div
     class="relative box-content aspect-cover shrink-0 overflow-hidden rounded-list-cover border border-cover-edge bg-chip inline-list-cover large:inline-list-cover-wide"
   >
-    <CoverImage cover={one.cover} {coverUrl} />
+    <CoverImage cover={shown.cover} {coverUrl} />
   </div>
   <div
     class="flex flex-1 flex-col gap-2xs min-inline-none large:flex-row large:items-center large:gap-lg"
   >
-    <p class="truncate text-lead font-semibold large:flex-1">{one.title}</p>
+    <p class="truncate text-lead font-semibold large:flex-1">{shown.title}</p>
     <p class="text-detail text-muted large:inline-list-detail">
       {m.library_series_books({ count: one.bookCount })}
     </p>
