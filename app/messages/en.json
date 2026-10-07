@@ -448,5 +448,22 @@
   "crash_report_send": "Send report",
   "crash_report_send_phone": "Report the problem",
   "crash_report_browser_unavailable": "Couldn't open your browser. Try again.",
-  "crash_report_not_sent": "Couldn't send the report. Try again."
+  "crash_report_not_sent": "Couldn't send the report. Try again.",
+  "advanced_title": "Advanced",
+  "advanced_summary": "Development build",
+  "advanced_note_title": "Development build",
+  "advanced_note_body": "These tools are only in development builds and never ship.",
+  "crash_tests_title": "Crash reports",
+  "crash_tests_follow_choice": "Reports follow your choice in {section}.",
+  "crash_test_panic": "Panic in the core",
+  "crash_test_panic_body": "Panics on a background thread, then offers the report the way the next launch would.",
+  "crash_test_interface": "Throw an interface error",
+  "crash_test_interface_body": "Throws an error the interface doesn't handle; its report is offered straight away.",
+  "crash_test_quit": "Crash and quit",
+  "crash_test_quit_body": "Panics and quits. Open Omnileaf again to see the report it kept.",
+  "crash_test_quit_title": "Crash Omnileaf now?",
+  "crash_test_quit_build": "{version} · Development build",
+  "crash_test_quit_note": "It quits straight away. Open it again to see the crash report it kept.",
+  "crash_test_quit_confirm": "Crash and quit",
+  "crash_test_quit_cancel": "Cancel"
 }
