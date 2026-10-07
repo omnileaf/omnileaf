@@ -90,7 +90,11 @@ function runningAnimations(page: Page): Promise<string[]> {
   return page.evaluate(() =>
     document
       .getAnimations()
-      .filter((animation) => animation.playState === "running")
+      .filter(
+        (animation) =>
+          animation.playState === "running" &&
+          animation.effect?.getComputedTiming().iterations !== Infinity,
+      )
       .map((animation) => {
         const name =
           animation instanceof CSSTransition
@@ -113,7 +117,8 @@ function runningAnimations(page: Page): Promise<string[]> {
 
 /**
  * Waits until no animation or transition is running, since axe reads colours
- * mid-fade as they are.
+ * mid-fade as they are. An animation that repeats forever, such as a spinner,
+ * never ends, so it is not waited for.
  */
 export async function accessibilityViolations(page: Page): Promise<Violations> {
   await expect
