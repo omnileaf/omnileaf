@@ -22,6 +22,11 @@ const WEBVIEW_TIMEOUT_MS = 60_000;
 
 const run = promisify(execFile);
 
+function chosenDevice(): { readonly "appium:udid"?: string } {
+  const serial = process.env.ANDROID_SERIAL;
+  return serial === undefined ? {} : { "appium:udid": serial };
+}
+
 async function clearDeviceLog(): Promise<void> {
   await run("adb", ["logcat", "-c"], { timeout: ADB_TIMEOUT_MS });
 }
@@ -47,6 +52,8 @@ export async function setup(
       platformName: "Android",
       "appium:automationName": "UiAutomator2",
       "appium:app": APP_PACKAGE,
+      "appium:enforceAppInstall": true,
+      ...chosenDevice(),
       "appium:autoWebview": true,
       "appium:autoWebviewTimeout": WEBVIEW_TIMEOUT_MS,
     },

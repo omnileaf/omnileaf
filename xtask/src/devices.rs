@@ -170,7 +170,12 @@ fn reported_name(machine: &impl Machine, adb: &Path, attached: &Attached) -> Opt
     }
 }
 
-fn adb_on(machine: &impl Machine, adb: &Path, serial: &str, args: &[&str]) -> Option<String> {
+pub(crate) fn adb_on(
+    machine: &impl Machine,
+    adb: &Path,
+    serial: &str,
+    args: &[&str],
+) -> Option<String> {
     let args: Vec<&str> = ["-s", serial]
         .into_iter()
         .chain(args.iter().copied())

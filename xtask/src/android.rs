@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const ANDROID_HOME: &str = "ANDROID_HOME";
+pub(crate) const ANDROID_HOME: &str = "ANDROID_HOME";
 const ANDROID_SDK_ROOT: &str = "ANDROID_SDK_ROOT";
 const NDK_HOME: &str = "NDK_HOME";
 const EMULATOR_SERIAL_PREFIX: &str = "emulator-";
@@ -25,6 +25,37 @@ pub(crate) struct Attached {
 impl Attached {
     pub(crate) fn is_emulator(&self) -> bool {
         self.serial.starts_with(EMULATOR_SERIAL_PREFIX)
+    }
+}
+
+/// The architectures Tauri builds Android apps for, named as its `--target` flag takes them.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Target {
+    Aarch64,
+    Armv7,
+    I686,
+    X86_64,
+}
+
+impl Target {
+    /// Reads the ABI a device reports in `ro.product.cpu.abi`.
+    pub(crate) fn for_abi(abi: &str) -> Option<Self> {
+        match abi.trim() {
+            "arm64-v8a" => Some(Self::Aarch64),
+            "armeabi-v7a" => Some(Self::Armv7),
+            "x86" => Some(Self::I686),
+            "x86_64" => Some(Self::X86_64),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn tauri_name(self) -> &'static str {
+        match self {
+            Self::Aarch64 => "aarch64",
+            Self::Armv7 => "armv7",
+            Self::I686 => "i686",
+            Self::X86_64 => "x86_64",
+        }
     }
 }
 
@@ -315,5 +346,25 @@ mod tests {
         let dump = "Bluetooth Status:\n  State:         ON\n  Name:          Pixel 9 Pro\n  Inner app:     com.android.bluetooth\n";
 
         assert_eq!(bluetooth_name(dump), Some("Pixel 9 Pro"));
+    }
+
+    #[test]
+    fn builds_for_the_architecture_each_abi_runs() {
+        let targets = ["arm64-v8a", "armeabi-v7a", "x86", "x86_64\n"].map(Target::for_abi);
+
+        assert_eq!(
+            targets,
+            [
+                Some(Target::Aarch64),
+                Some(Target::Armv7),
+                Some(Target::I686),
+                Some(Target::X86_64),
+            ]
+        );
+    }
+
+    #[test]
+    fn has_no_target_for_an_unknown_abi() {
+        assert_eq!(Target::for_abi("mips"), None);
     }
 }

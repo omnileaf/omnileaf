@@ -2,7 +2,7 @@
 
 use std::{
     env,
-    ffi::OsStr,
+    ffi::{OsStr, OsString},
     io,
     path::PathBuf,
     process::{Command, Stdio},
@@ -21,13 +21,21 @@ pub(crate) trait Machine {
 
 pub(crate) struct Process {
     root: PathBuf,
+    env: Vec<(&'static str, OsString)>,
 }
 
 impl Process {
     pub(crate) fn in_workspace() -> Self {
         Self {
             root: workspace::root(),
+            env: Vec::new(),
         }
+    }
+
+    /// Sets a variable for the gate steps it runs, leaving the tool probes untouched.
+    pub(crate) fn with_env(mut self, key: &'static str, value: impl Into<OsString>) -> Self {
+        self.env.push((key, value.into()));
+        self
     }
 }
 
@@ -37,6 +45,7 @@ impl Runner for Process {
         println!("==> {}", step.name);
         command_for(step.program)
             .args(step.args)
+            .envs(self.env.iter().map(|(key, value)| (key, value)))
             .current_dir(&self.root)
             .status()
             .map(|status| status.success())
@@ -122,5 +131,28 @@ mod tests {
 
         fs::remove_dir_all(&directory).unwrap();
         assert_eq!(found, None);
+    }
+
+    #[test]
+    fn runs_steps_with_the_variables_it_was_given() {
+        let process = Process::in_workspace().with_env("XTASK_PROBE", "set");
+        let (program, args): (&'static str, &'static [&'static str]) = if cfg!(windows) {
+            (
+                "cmd",
+                &["/C", "if %XTASK_PROBE%==set (exit 0) else (exit 1)"],
+            )
+        } else {
+            ("sh", &["-c", "test \"$XTASK_PROBE\" = set"])
+        };
+        let step = Step {
+            name: "probe",
+            group: crate::check::Group::Rust,
+            program,
+            args,
+        };
+
+        let passed = process.run(&step).unwrap();
+
+        assert!(passed);
     }
 }

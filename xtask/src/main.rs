@@ -15,6 +15,7 @@ mod lint_sync;
 mod policy;
 mod pre_push;
 mod process;
+mod test_device;
 mod workspace;
 
 use std::{
@@ -41,6 +42,9 @@ enum Command {
         /// Run only this group of checks.
         #[arg(long, value_enum)]
         only: Option<check::Group>,
+        /// The Android device or emulator `--only android` tests on, by name; it picks one when left out.
+        #[arg(long)]
+        android_device: Option<String>,
     },
     /// Regenerate the interface's TypeScript bindings from the app's commands.
     Bindings,
@@ -93,8 +97,20 @@ enum Command {
 
 fn main() -> anyhow::Result<()> {
     match Cli::parse().command {
-        Command::Check { only } => {
-            check::run_all(check::select(check::STEPS, only), &Process::in_workspace())?;
+        Command::Check {
+            only,
+            android_device,
+        } => {
+            let process = if only == Some(check::Group::Android) {
+                ready_for_android_tests(android_device.as_deref())?
+            } else {
+                anyhow::ensure!(
+                    android_device.is_none(),
+                    "--android-device only applies with --only android"
+                );
+                Process::in_workspace()
+            };
+            check::run_all(check::select(check::STEPS, only), &process)?;
         }
         Command::Bindings => regenerate_bindings()?,
         Command::Dev {
@@ -192,6 +208,17 @@ fn regenerate_bindings() -> anyhow::Result<()> {
         .context("run the bindings test")?;
     anyhow::ensure!(status.success(), "regenerating the bindings failed");
     Ok(())
+}
+
+fn ready_for_android_tests(chosen: Option<&str>) -> anyhow::Result<Process> {
+    let process = Process::in_workspace();
+    let toolchain = android::Toolchain::locate(|key| std::env::var_os(key), std::env::consts::OS)
+        .context("find the Android SDK; cargo xtask doctor shows how to install it")?;
+    let device = test_device::ready_android(&process, &toolchain, chosen)?;
+    test_device::build_android_app(&workspace::root(), device.target)?;
+    Ok(process
+        .with_env(test_device::ANDROID_SERIAL, device.serial)
+        .with_env(android::ANDROID_HOME, toolchain.sdk))
 }
 
 fn list_devices() -> anyhow::Result<()> {
