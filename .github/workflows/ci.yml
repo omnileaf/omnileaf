@@ -53,9 +53,6 @@ jobs:
         include:
           - platform: linux
             runner: ubuntu-24.04
-          - platform: macos
-            runner: macos-15
-            budget-slack: 2
           - platform: windows
             runner: windows-2025
             budget-slack: 2
@@ -64,30 +61,23 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install WebKitGTK
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev
-
-      - name: Install the pinned toolchain
-        run: rustup toolchain install
-
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: ./.github/actions/rust-gate
         with:
-          save-if: ${{ github.ref == 'refs/heads/main' }}
+          budget-slack: ${{ matrix.budget-slack }}
 
-      - uses: taiki-e/install-action@e407f7bafb71fd004bc5c2da3032e5470cbb6ef0 # v2.87.24
+  rust-macos:
+    name: rust gate (macos)
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          tool: cargo-nextest@0.9.146
+          persist-credentials: false
 
-      - name: Allow for stalls on shared runners in the timing budgets
-        if: matrix.budget-slack
-        shell: bash
-        env:
-          BUDGET_SLACK: ${{ matrix.budget-slack }}
-        run: echo "OMNILEAF_BUDGET_SLACK=$BUDGET_SLACK" >> "$GITHUB_ENV"
-
-      - name: Run the gate
-        run: cargo xtask check --only rust
+      - uses: ./.github/actions/rust-gate
+        with:
+          budget-slack: 2
 
   portable:
     name: portable gate
@@ -161,55 +151,35 @@ jobs:
         include:
           - platform: linux
             runner: ubuntu-24.04
-          - platform: macos
-            runner: macos-15
           - platform: windows
             runner: windows-2025
-    defaults:
-      run:
-        shell: bash
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Install the pinned toolchain
-        run: rustup toolchain install
-
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: ./.github/actions/fixtures-check
         with:
-          shared-key: xtask
-          save-if: ${{ github.ref == 'refs/heads/main' }}
+          platform: ${{ matrix.platform }}
 
-      - name: Generate the fixtures twice and hash them
-        run: |
-          for run in first second; do
-            cargo xtask fixtures --out "target/fixtures-$run"
-            (cd "target/fixtures-$run" && find . -type f | LC_ALL=C sort | while IFS= read -r file; do
-              printf '%s  %s\n' "$(git hash-object --no-filters "$file")" "$file"
-            done) > "target/fixtures-$run.hashes"
-          done
-          diff target/fixtures-first.hashes target/fixtures-second.hashes
-          cp target/fixtures-first.hashes "fixtures-${{ matrix.platform }}.hashes"
-
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+  fixtures-macos:
+    name: fixtures (macos)
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          name: fixtures-${{ matrix.platform }}
-          path: fixtures-${{ matrix.platform }}.hashes
-          if-no-files-found: error
-          retention-days: 3
+          persist-credentials: false
 
-      - name: Keep the generated fixtures for comparing platforms
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: ./.github/actions/fixtures-check
         with:
-          name: fixture-files-${{ matrix.platform }}
-          path: target/fixtures-first/
-          if-no-files-found: error
-          retention-days: 3
+          platform: macos
 
   fixtures-agree:
     name: fixtures agree across platforms
-    needs: fixtures
+    needs: [fixtures, fixtures-macos]
+    if: ${{ !cancelled() && needs.fixtures.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.fixtures-macos.result) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -221,8 +191,10 @@ jobs:
       - name: Compare the fixture hashes
         run: |
           status=0
-          diff fixtures-linux.hashes fixtures-macos.hashes || status=1
           diff fixtures-linux.hashes fixtures-windows.hashes || status=1
+          if [ -f fixtures-macos.hashes ]; then
+            diff fixtures-linux.hashes fixtures-macos.hashes || status=1
+          fi
           exit "$status"
 
   interface:
@@ -483,8 +455,6 @@ jobs:
         include:
           - platform: linux
             runner: ubuntu-24.04
-          - platform: macos
-            runner: macos-15
           - platform: windows
             runner: windows-2025
     steps:
@@ -492,49 +462,23 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install WebKitGTK and a virtual display
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev xvfb
+      - uses: ./.github/actions/app-gate
 
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+  app-macos:
+    name: app (macos)
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version-file: .node-version
-          cache: pnpm
+          persist-credentials: false
 
-      - name: Install interface dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install the pinned toolchain
-        run: rustup toolchain install
-
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-
-      - uses: taiki-e/install-action@e407f7bafb71fd004bc5c2da3032e5470cbb6ef0 # v2.87.24
-        with:
-          tool: cargo-nextest@0.9.146,cargo-deny@0.20.2,cargo-about@0.9.2
-
-      - name: Check the development tools
-        run: cargo xtask doctor
-
-      - name: Build and test the app
-        if: runner.os == 'Linux'
-        run: xvfb-run --auto-servernum cargo xtask check --only app
-
-      - name: Build and test the app
-        if: runner.os == 'macOS'
-        run: cargo xtask check --only app
-
-      - name: Build the app
-        if: runner.os == 'Windows'
-        run: pnpm --dir app tauri build --debug --no-bundle
+      - uses: ./.github/actions/app-gate
 
   prune-caches:
     name: prune caches
-    needs: [rust, portable, coverage, fixtures, interface, browser, android, ios, app]
+    needs: [rust, rust-macos, portable, coverage, fixtures, fixtures-macos, interface, browser, android, ios, app, app-macos]
     if: always() && (github.event_name == 'push' || github.event_name == 'schedule')
     runs-on: ubuntu-24.04
     timeout-minutes: 5

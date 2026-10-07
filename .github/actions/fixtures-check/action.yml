@@ -1,0 +1,48 @@
+name: Check the fixtures are deterministic
+description: Generates the fixtures twice on the checked-out repository, requires both runs to match, and uploads the hashes and files for comparing platforms.
+
+inputs:
+  platform:
+    description: The platform name the uploaded artifacts are labelled with.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install the pinned toolchain
+      shell: bash
+      run: rustup toolchain install
+
+    - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      with:
+        shared-key: xtask
+        save-if: ${{ github.ref == 'refs/heads/main' }}
+
+    - name: Generate the fixtures twice and hash them
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+      run: |
+        for run in first second; do
+          cargo xtask fixtures --out "target/fixtures-$run"
+          (cd "target/fixtures-$run" && find . -type f | LC_ALL=C sort | while IFS= read -r file; do
+            printf '%s  %s\n' "$(git hash-object --no-filters "$file")" "$file"
+          done) > "target/fixtures-$run.hashes"
+        done
+        diff target/fixtures-first.hashes target/fixtures-second.hashes
+        cp target/fixtures-first.hashes "fixtures-$PLATFORM.hashes"
+
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: fixtures-${{ inputs.platform }}
+        path: fixtures-${{ inputs.platform }}.hashes
+        if-no-files-found: error
+        retention-days: 3
+
+    - name: Keep the generated fixtures for comparing platforms
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: fixture-files-${{ inputs.platform }}
+        path: target/fixtures-first/
+        if-no-files-found: error
+        retention-days: 3

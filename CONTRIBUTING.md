@@ -51,6 +51,8 @@ After changing any of them, run `cargo xtask icons`. It runs Tauri's icon genera
 
 `cargo xtask check` runs the same checks as CI, in groups. `--only <group>` runs one of them: `rust`, `portable`, `interface`, `browser`, `app`, `android` or `ios`. A plain `cargo xtask check` runs every group except `android` and `ios`, which need an emulator or a Simulator. `cargo xtask doctor` lists the tools the groups need and shows how to install any that are missing. Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.
 
+CI runs the three macOS gates (`rust gate (macos)`, `app (macos)` and `fixtures (macos)`) when a pull request enters the merge queue, on every push to `main` and every night, not on each push to a pull request. GitHub gives a repository five macOS jobs at a time on every plan below Enterprise, so running them on every push left the merge queue waiting behind pull request runs. Those three checks show as skipped on a pull request, which still satisfies them, and Linux and Windows run on every push as before. Add the `macos` label to a pull request that changes platform-specific code to run them there before it is queued.
+
 ### Before you push
 
 Run `cargo xtask install-hooks` once per clone. Git then runs `cargo xtask pre-push` before every push, which checks the branch you have checked out in well under a minute: formatting, the content policy and the sync rules every time, the Rust licences when a `Cargo.toml`, `Cargo.lock` or `about.toml` changed, and the interface build, which checks the JavaScript licences, when a `package.json` or the pnpm lockfile changed. It needs a clean working tree, so it checks exactly what you push, and it names any other branch in the same push that it left unchecked.

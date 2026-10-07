@@ -1,0 +1,39 @@
+name: Run the Rust gate
+description: Sets up the pinned toolchain and test runner on the checked-out repository and runs the platform-dependent Rust checks.
+
+inputs:
+  budget-slack:
+    description: The OMNILEAF_BUDGET_SLACK to allow for stalls on shared runners; none when empty.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Install WebKitGTK
+      if: runner.os == 'Linux'
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev
+
+    - name: Install the pinned toolchain
+      shell: bash
+      run: rustup toolchain install
+
+    - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      with:
+        save-if: ${{ github.ref == 'refs/heads/main' }}
+
+    - uses: taiki-e/install-action@e407f7bafb71fd004bc5c2da3032e5470cbb6ef0 # v2.87.24
+      with:
+        tool: cargo-nextest@0.9.146
+
+    - name: Allow for stalls on shared runners in the timing budgets
+      if: inputs.budget-slack != ''
+      shell: bash
+      env:
+        BUDGET_SLACK: ${{ inputs.budget-slack }}
+      run: echo "OMNILEAF_BUDGET_SLACK=$BUDGET_SLACK" >> "$GITHUB_ENV"
+
+    - name: Run the gate
+      shell: bash
+      run: cargo xtask check --only rust
