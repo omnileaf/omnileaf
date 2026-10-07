@@ -1,6 +1,5 @@
-import { AxeBuilder } from "@axe-core/playwright";
-
 import {
+  accessibilityViolations,
   boxOf,
   EXPANDED_MIN_WIDTH,
   expect,
@@ -67,8 +66,8 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.goto(MISSING_ADDRESS);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const violations = await accessibilityViolations(page);
 
-    expect(results.violations).toEqual([]);
+    expect(violations).toEqual([]);
   });
 }

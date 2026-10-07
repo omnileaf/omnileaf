@@ -10,7 +10,7 @@
     },
     {
       "name": "@lucide/svelte",
-      "version": "1.48.0",
+      "version": "1.50.0",
       "licence": "ISC",
       "texts": [
         1
@@ -26,7 +26,7 @@
     },
     {
       "name": "@tauri-apps/api",
-      "version": "2.12.0",
+      "version": "2.12.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         3,

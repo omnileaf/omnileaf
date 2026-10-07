@@ -1,4 +1,3 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
 import javascript from "../../src/lib/licences/javascript.json" with { type: "json" };
@@ -9,6 +8,7 @@ import {
 import rust from "../../src/lib/licences/rust.json" with { type: "json" };
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import {
+  accessibilityViolations,
   boxOf,
   expect,
   MEDIUM_MIN_WIDTH,
@@ -208,9 +208,9 @@ for (const platform of ["android", "ios", "linux"] as const) {
         await page.emulateMedia({ colorScheme });
         await openLicences(page);
 
-        const results = await new AxeBuilder({ page }).analyze();
+        const violations = await accessibilityViolations(page);
 
-        expect(results.violations).toEqual([]);
+        expect(violations).toEqual([]);
       });
 
       test(`a licence text has no accessibility violations in the ${colorScheme} theme`, async ({
@@ -226,9 +226,9 @@ for (const platform of ["android", "ios", "linux"] as const) {
           MOST_USED.packages[0]?.name ?? "",
         );
 
-        const results = await new AxeBuilder({ page }).analyze();
+        const violations = await accessibilityViolations(page);
 
-        expect(results.violations).toEqual([]);
+        expect(violations).toEqual([]);
       });
     });
   }

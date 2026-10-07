@@ -51,6 +51,12 @@ After changing any of them, run `cargo xtask icons`. It runs Tauri's icon genera
 
 `cargo xtask check` runs the same checks as CI, in groups. `--only <group>` runs one of them: `rust`, `portable`, `interface`, `browser`, `app`, `android` or `ios`. A plain `cargo xtask check` runs every group except `android` and `ios`, which need an emulator or a Simulator. `cargo xtask doctor` lists the tools the groups need and shows how to install any that are missing. Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.
 
+### Before you push
+
+Run `cargo xtask install-hooks` once per clone. Git then runs `cargo xtask pre-push` before every push, which checks the branch you have checked out in well under a minute: formatting, the content policy and the sync rules every time, the Rust licences when a `Cargo.toml`, `Cargo.lock` or `about.toml` changed, and the interface build, which checks the JavaScript licences, when a `package.json` or the pnpm lockfile changed. It needs a clean working tree, so it checks exactly what you push, and it names any other branch in the same push that it left unchecked.
+
+The hook catches the drift that most often fails CI, not everything CI checks. Run `cargo xtask check`, or `--only` the groups your change touches, before opening or updating a pull request. In a stack, fix a failure on the lowest branch that has it, then restack the branches above.
+
 ### Rust
 
 The `rust` group runs on every platform in CI, because its answer can differ between them:
@@ -58,6 +64,8 @@ The `rust` group runs on every platform in CI, because its answer can differ bet
 - clippy over the workspace, with warnings as errors;
 - the tests, which also check that the interface's generated command bindings in `app/src/lib/ipc/bindings.ts` are current. After changing a command, regenerate them with `cargo xtask bindings`;
 - four release-build timing budgets: listing a 500-entry archive takes 3 ms or less, a page of the library sorted by title takes 2 ms or less at the 95th percentile over 10,000 series, rescanning an unchanged library of 1,000 books takes 300 ms or less, and a cover thumbnail made from a typical full-size colour scan, a JPEG page of about 1 MB with 4:2:0 chroma subsampling, takes 30 ms or less at the 95th percentile.
+
+Each timing budget is measured with the testkit's `SpeedTrial`: one untimed warm-up pass, then three timed passes, holding the fastest pass to the budget. A stall on a shared runner only ever adds time, so the fastest pass is the closest to the real cost, and the log shows every pass so a spread between them stays visible. Write a new speed test the same way rather than timing a single pass.
 
 The timing budgets hold exactly on your machine and on CI's Linux runner. The macOS and Windows runners are shared and sometimes stall, so CI sets `OMNILEAF_BUDGET_SLACK=2` there: a timing fails only beyond twice its budget, while the log still shows each measured time against the budget.
 

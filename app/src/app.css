@@ -54,6 +54,8 @@
   --text-detail--line-height: 1.125rem;
   --text-label: 0.875rem;
   --text-label--line-height: 1.25rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
   --text-brand: 1.3125rem;
   --text-brand--line-height: 1.5rem;
   --text-bar-title: 1.375rem;
@@ -74,6 +76,19 @@
   --text-cover-title--line-height: 1.125rem;
   --text-cover-title-wide: 0.875rem;
   --text-cover-title-wide--line-height: 1.25rem;
+  --text-cover-title-small: 0.75rem;
+  --text-cover-title-small--line-height: 1rem;
+  --text-cover-title-tiny: 0.6875rem;
+  --text-cover-title-tiny--line-height: 0.875rem;
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.25rem;
+  --text-badge: 0.6875rem;
+  --text-badge--line-height: 1;
+  --text-count: 1.0625rem;
+  --text-count--line-height: 1.5rem;
+
+  --leading-band: 1.2;
+  --leading-band-wide: 1.25;
   --text-app-name: 1.5rem;
   --text-app-name--line-height: 2rem;
   --text-page-title: 2rem;
@@ -118,6 +133,44 @@
   --spacing-cover-caption: 0.375rem;
   --spacing-cover-gap: 0.875rem;
   --spacing-cover-gap-wide: 1.25rem;
+  --spacing-cover-gap-tight: 0.625rem;
+  --spacing-cover-gap-loose: 1.125rem;
+  --spacing-band: 0.375rem;
+  --spacing-band-wide: 0.625rem;
+  --spacing-series-row: 5.5rem;
+  --spacing-series-row-wide: 4.75rem;
+  --spacing-series-row-pad-wide: 0.375rem;
+  --spacing-list-cover: 3rem;
+  --spacing-list-cover-wide: 2.625rem;
+  --spacing-list-detail: 10rem;
+  --spacing-title-count: 0.625rem;
+  --spacing-label: 0.625rem;
+  --spacing-header-control: 2.5rem;
+  --spacing-header-control-inline: 0.875rem;
+  --spacing-header-icon-desktop: 1.125rem;
+  --spacing-sheet-handle: 2.25rem;
+  --spacing-sheet-handle-block: 0.3125rem;
+  --spacing-sheet-inline: 1.25rem;
+  --spacing-sheet-gap: 1.125rem;
+  --spacing-sheet-bottom: max(var(--spacing-safe-bottom), 2.125rem);
+  --spacing-view-panel: 21.25rem;
+  --spacing-panel-inline: 1.125rem;
+  --spacing-panel-below: 0.5rem;
+  --spacing-segment: 2.5rem;
+  --spacing-segment-icon-desktop: 0.875rem;
+  --spacing-icon-gap: 0.375rem;
+  --spacing-stepper: 2rem;
+  --spacing-stepper-value: 1.75rem;
+  --spacing-switch-row: 3.25rem;
+  --spacing-checkbox-row: 1.875rem;
+  --spacing-badge-inset: 0.3125rem;
+  --spacing-badge-inset-wide: 0.4375rem;
+  --spacing-badge-block: 0.25rem;
+  --spacing-badge-block-wide: 0.3125rem;
+  --spacing-badge-inline: 0.375rem;
+  --spacing-badge-inline-wide: 0.4375rem;
+  --spacing-list-unread: 3rem;
+  --spacing-switch-inset: 0.1875rem;
   --spacing-pointer-target: 2.5rem;
   --spacing-pointer-button: 2.25rem;
   --spacing-dismiss: 1.75rem;
@@ -146,7 +199,6 @@
   --spacing-switch-length-compact: 2.75rem;
   --spacing-switch-thickness-compact: 1.625rem;
   --spacing-switch-knob-compact: 1.25rem;
-  --spacing-switch-inset: 0.1875rem;
   --spacing-cover-thumb: 3.5rem;
   --spacing-preview: 17.5rem;
   --spacing-safe-top: max(
@@ -187,13 +239,17 @@
   --radius-control: 0.5rem;
   --radius-card: 0.75rem;
   --radius-sheet: 1.25rem;
+  --radius-cover: 0.375rem;
+  --radius-list-cover: 0.25rem;
+  --radius-field: 0.625rem;
+  --radius-bottom-sheet: 1rem;
+  --radius-badge: 0.375rem;
 
   --aspect-cover: 2 / 3;
   --radius-tile: 0.625rem;
   --radius-button: 0.625rem;
   --radius-ios-button: 0.875rem;
   --radius-list: 0.625rem;
-  --radius-cover: 0.375rem;
   --radius-panel: 1rem;
   --radius-notice: 1.25rem;
 
@@ -209,6 +265,9 @@
     0 8px 28px var(--color-glass-shadow), 0 1px 3px var(--color-glass-contact);
   --shadow-dialog: 0 24px 60px rgb(0 0 0 / 0.35);
   --shadow-card: 0 24px 60px rgb(0 0 0 / 0.12);
+  --shadow-popover:
+    0 12px 32px var(--color-popover-shadow),
+    0 2px 6px var(--color-popover-contact);
   --shadow-knob: 0 1px 2px var(--color-knob-shadow);
   --shadow-notice: 0 12px 34px rgb(0 0 0 / 0.25);
   --shadow-notice-wide: 0 14px 40px rgb(0 0 0 / 0.2);
@@ -285,6 +344,10 @@
   --color-glass-shadow: rgb(28 27 24 / 0.16);
   --color-glass-contact: rgb(28 27 24 / 0.08);
   --color-cover-edge: rgb(28 27 24 / 0.1);
+  --color-band: rgb(20 19 17 / 0.74);
+  --color-on-band: #ffffff;
+  --color-popover-shadow: rgb(28 27 24 / 0.18);
+  --color-popover-contact: rgb(28 27 24 / 0.08);
 
   --transition-duration-fade: 150ms;
   --transition-duration-grow: 200ms;
@@ -478,6 +541,10 @@
   --color-glass-shadow: rgb(0 0 0 / 0.45);
   --color-glass-contact: transparent;
   --color-cover-edge: rgb(255 255 255 / 0.08);
+  --color-band: rgb(12 11 10 / 0.8);
+  --color-on-band: #f1ede4;
+  --color-popover-shadow: rgb(0 0 0 / 0.5);
+  --color-popover-contact: transparent;
 }
 
 :root[dir="rtl"] {
@@ -549,6 +616,27 @@
   box-sizing: border-box;
   block-size: calc(var(--row-count) * var(--row-stride));
   padding-block-start: calc(var(--first-row) * var(--row-stride));
+}
+
+@utility grid-cols-covers-per-row {
+  grid-template-columns: repeat(var(--phone-covers-per-row), minmax(0, 1fr));
+
+  @variant medium {
+    grid-template-columns: repeat(var(--tablet-covers-per-row), minmax(0, 1fr));
+  }
+
+  @variant large {
+    grid-template-columns: repeat(
+      var(--desktop-covers-per-row),
+      minmax(0, 1fr)
+    );
+  }
+}
+
+@utility anchored-below-button {
+  inset: auto;
+  inset-block-start: calc(var(--button-block-end) + var(--spacing-panel-below));
+  inset-inline-end: var(--button-inline-end);
 }
 
 @utility progress-track {

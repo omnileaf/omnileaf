@@ -1,8 +1,8 @@
 //! The commands the interface calls, and the TypeScript bindings generated from them.
 
 use omnileaf_engine::{
-    AppInfo, AppLanguage, Core, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan,
-    Library, ProjectLink, ScanProgress, SeriesCursor, SeriesPage,
+    AppInfo, AppLanguage, Core, CoversPerRow, FolderCursor, FolderId, FolderPage, FolderRescan,
+    FolderScan, Library, LibraryView, ProjectLink, ScanProgress, SeriesCursor, SeriesPage,
 };
 use tauri::{AppHandle, Manager, State, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -25,6 +25,9 @@ pub(crate) fn builder() -> Builder<Wry> {
             match_system_bars,
             library_folders,
             library_series,
+            library_series_count,
+            library_view,
+            set_library_view,
             remove_library_folder,
             rescan_library_folder,
             rescan_library_folders,
@@ -35,6 +38,8 @@ pub(crate) fn builder() -> Builder<Wry> {
             open_project_link
         ])
         .events(collect_events![LibraryChanged])
+        .constant("COVERS_PER_ROW", CoversPerRow::RANGES)
+        .constant("DEFAULT_LIBRARY_VIEW", LibraryView::default())
 }
 
 #[tauri::command]
@@ -119,6 +124,24 @@ async fn library_series(
     after: Option<SeriesCursor>,
 ) -> Result<SeriesPage, IpcError> {
     Ok(library.series(after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_series_count(library: State<'_, Library>) -> Result<u32, IpcError> {
+    Ok(library.series_count().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_view(library: State<'_, Library>) -> Result<LibraryView, IpcError> {
+    Ok(library.view().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn set_library_view(library: State<'_, Library>, view: LibraryView) -> Result<(), IpcError> {
+    Ok(library.set_view(view).await?)
 }
 
 #[tauri::command]

@@ -1,7 +1,7 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
 import {
+  accessibilityViolations,
   boxOf,
   EXPANDED_MIN_WIDTH,
   expect,
@@ -225,8 +225,8 @@ for (const colorScheme of ["light", "dark"] as const) {
       page.getByRole("heading", { level: 1, name: "Library" }),
     ).toBeVisible();
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const violations = await accessibilityViolations(page);
 
-    expect(results.violations).toEqual([]);
+    expect(violations).toEqual([]);
   });
 }

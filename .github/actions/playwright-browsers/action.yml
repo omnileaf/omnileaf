@@ -1,0 +1,48 @@
+name: Install the Playwright browsers
+description: Restores the browsers the pinned Playwright downloads, saving them from main only, and installs their system packages.
+
+inputs:
+  browsers:
+    description: The browsers to install, separated by spaces.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Name the browser cache
+      id: browsers
+      shell: bash
+      env:
+        BROWSERS: ${{ inputs.browsers }}
+        RUNNER_OS_NAME: ${{ runner.os }}
+      run: |
+        version="$(pnpm --dir app exec playwright --version | awk '{print $2}')"
+        echo "key=playwright-${RUNNER_OS_NAME}-${version}-${BROWSERS// /-}" >> "$GITHUB_OUTPUT"
+
+    - name: Restore the browsers
+      id: restore
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ steps.browsers.outputs.key }}
+
+    - name: Download the browsers and their system packages
+      if: steps.restore.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        BROWSERS: ${{ inputs.browsers }}
+      run: pnpm --dir app exec playwright install --with-deps $BROWSERS
+
+    - name: Install the browsers' system packages
+      if: steps.restore.outputs.cache-hit == 'true'
+      shell: bash
+      env:
+        BROWSERS: ${{ inputs.browsers }}
+      run: pnpm --dir app exec playwright install-deps $BROWSERS
+
+    - name: Keep the browsers for later runs
+      if: steps.restore.outputs.cache-hit != 'true' && github.ref == 'refs/heads/main'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ steps.browsers.outputs.key }}

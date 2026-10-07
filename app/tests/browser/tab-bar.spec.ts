@@ -1,8 +1,7 @@
-import { AxeBuilder } from "@axe-core/playwright";
-
 import type { Page } from "@playwright/test";
 
 import {
+  accessibilityViolations,
   boxOf,
   expect,
   MEDIUM_MIN_WIDTH,
@@ -74,9 +73,9 @@ test.describe("on iOS", () => {
         page.getByRole("heading", { level: 1, name: "History" }),
       ).toBeVisible();
 
-      const results = await new AxeBuilder({ page }).analyze();
+      const violations = await accessibilityViolations(page);
 
-      expect(results.violations).toEqual([]);
+      expect(violations).toEqual([]);
     });
   }
 });
@@ -105,9 +104,9 @@ test.describe("on Android", () => {
         page.getByRole("heading", { level: 1, name: "History" }),
       ).toBeVisible();
 
-      const results = await new AxeBuilder({ page }).analyze();
+      const violations = await accessibilityViolations(page);
 
-      expect(results.violations).toEqual([]);
+      expect(violations).toEqual([]);
     });
   }
 });

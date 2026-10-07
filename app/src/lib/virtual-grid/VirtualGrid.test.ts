@@ -14,9 +14,14 @@ interface Sample {
 const TEN_THOUSAND = 10_000;
 const COLUMNS = 4;
 const LABEL = "Samples";
+const FRAMES_TO_SETTLE = 3;
 
 const cell = createRawSnippet((sample: () => Sample) => ({
   render: () => `<p class="block-row">${sample().name}</p>`,
+}));
+
+const squareCell = createRawSnippet((sample: () => Sample) => ({
+  render: () => `<p class="aspect-square">${sample().name}</p>`,
 }));
 
 function samples(count: number): Sample[] {
@@ -32,7 +37,11 @@ afterEach(() => {
 
 async function renderGrid(
   count: number,
-  options: { isComplete?: boolean; onNearEnd?: () => void } = {},
+  options: {
+    isComplete?: boolean;
+    onNearEnd?: () => void;
+    cell?: typeof cell;
+  } = {},
 ) {
   const screen = await render(VirtualGrid<Sample>, {
     items: samples(count),
@@ -42,7 +51,7 @@ async function renderGrid(
     ...(options.onNearEnd === undefined
       ? {}
       : { onNearEnd: options.onNearEnd }),
-    cell,
+    cell: options.cell ?? cell,
     class: "grid-cols-4 gap-lg",
   });
   const list = screen.getByRole("list", { name: LABEL });
@@ -56,6 +65,13 @@ function nextFrame(): Promise<void> {
       resolve();
     });
   });
+}
+
+/** Waits out the frames a first layout takes, so a later change is the only thing left to lay out again. */
+async function settled(): Promise<void> {
+  for (let frame = 0; frame < FRAMES_TO_SETTLE; frame += 1) {
+    await nextFrame();
+  }
 }
 
 test("lays out only the rows near the screen out of ten thousand items", async () => {
@@ -88,6 +104,40 @@ test("lays out the rows scrolled to", async () => {
   await expect.element(middle).toBeInTheDocument();
   expect(list.getByText("Sample 1", { exact: true }).elements()).toHaveLength(
     0,
+  );
+});
+
+test("lays out the rows again once its items are laid out in more columns", async () => {
+  const { screen, list } = await renderGrid(TEN_THOUSAND);
+  await settled();
+  const before = list.getByRole("listitem").elements().length;
+
+  await screen.rerender({ class: "grid-cols-8 gap-lg" });
+
+  await expect
+    .poll(() => list.getByRole("listitem").elements().length)
+    .toBe(before * 2);
+});
+
+test("fills the screen again once its styles lay items as tall as they are wide out in more columns", async () => {
+  const { list } = await renderGrid(TEN_THOUSAND, { cell: squareCell });
+  await settled();
+
+  list.element().style.gridTemplateColumns = "repeat(8, minmax(0, 1fr))";
+
+  await expect
+    .poll(() => {
+      const items = list.getByRole("listitem").elements();
+      return items.at(-1)?.getBoundingClientRect().bottom ?? 0;
+    })
+    .toBeGreaterThanOrEqual(window.innerHeight);
+  const first = list.getByRole("listitem").first().element();
+  const rowGap = Number.parseFloat(getComputedStyle(list.element()).rowGap);
+  const stride = list
+    .element()
+    .parentElement?.style.getPropertyValue("--row-stride");
+  expect(stride).toBe(
+    `${String(first.getBoundingClientRect().height + rowGap)}px`,
   );
 });
 

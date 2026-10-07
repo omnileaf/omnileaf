@@ -2720,7 +2720,7 @@
     },
     {
       "name": "tauri",
-      "version": "2.12.0",
+      "version": "2.12.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         37
@@ -2728,7 +2728,7 @@
     },
     {
       "name": "tauri-codegen",
-      "version": "2.7.0",
+      "version": "2.7.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         37
@@ -2736,7 +2736,7 @@
     },
     {
       "name": "tauri-macros",
-      "version": "2.7.0",
+      "version": "2.7.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         37
@@ -2752,7 +2752,7 @@
     },
     {
       "name": "tauri-plugin-dialog",
-      "version": "2.8.0",
+      "version": "2.8.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         37
@@ -2776,7 +2776,7 @@
     },
     {
       "name": "tauri-runtime",
-      "version": "2.12.0",
+      "version": "2.12.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         37
@@ -2784,7 +2784,7 @@
     },
     {
       "name": "tauri-runtime-wry",
-      "version": "2.12.0",
+      "version": "2.12.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         37
@@ -3186,7 +3186,7 @@
     },
     {
       "name": "uuid",
-      "version": "1.26.1",
+      "version": "1.27.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         24
