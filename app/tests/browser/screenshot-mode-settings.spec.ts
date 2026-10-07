@@ -1,7 +1,11 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
-import { expect, onPlatform, test } from "./fixtures.ts";
+import {
+  accessibilityViolations,
+  expect,
+  onPlatform,
+  test,
+} from "./fixtures.ts";
 
 const TURNED_ON_AT = new Date("2026-10-03T21:14:00Z");
 
@@ -144,9 +148,9 @@ for (const colorScheme of ["light", "dark"] as const) {
         await mainSwitch(page).click();
       }
 
-      const results = await new AxeBuilder({ page }).analyze();
+      const violations = await accessibilityViolations(page);
 
-      expect(results.violations).toEqual([]);
+      expect(violations).toEqual([]);
     });
   }
 }

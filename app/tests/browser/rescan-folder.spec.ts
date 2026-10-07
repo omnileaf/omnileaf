@@ -1,8 +1,12 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import type { Locator, Page } from "@playwright/test";
 
 import type { FakeBackend } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  accessibilityViolations,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+} from "./fixtures.ts";
 
 type WireFolder = Awaited<
   ReturnType<FakeBackend["libraryFolders"]>
@@ -138,9 +142,9 @@ test.describe("with a folder whose files changed", () => {
       await rescanSampleComics(page);
       await expect(rescanReport(page)).toContainText("1 book added.");
 
-      const results = await new AxeBuilder({ page }).analyze();
+      const violations = await accessibilityViolations(page);
 
-      expect(results.violations).toEqual([]);
+      expect(violations).toEqual([]);
     });
   }
 });
@@ -207,9 +211,9 @@ test.describe("while a folder is being rescanned", () => {
       await rescanSampleComics(page);
       await expect(page.getByRole("progressbar")).toBeVisible();
 
-      const results = await new AxeBuilder({ page }).analyze();
+      const violations = await accessibilityViolations(page);
 
-      expect(results.violations).toEqual([]);
+      expect(violations).toEqual([]);
     });
   }
 });
@@ -251,9 +255,9 @@ test.describe("with a folder that isn't available", () => {
       await rescanSampleComics(page);
       await expect(rescanReport(page)).toContainText("isn't available");
 
-      const results = await new AxeBuilder({ page }).analyze();
+      const violations = await accessibilityViolations(page);
 
-      expect(results.violations).toEqual([]);
+      expect(violations).toEqual([]);
     });
   }
 });

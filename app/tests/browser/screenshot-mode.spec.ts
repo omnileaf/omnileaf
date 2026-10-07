@@ -1,7 +1,11 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  accessibilityViolations,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+} from "./fixtures.ts";
 
 const SHORTCUT = "Control+Shift+H";
 const TURNED_ON_AT = new Date("2026-10-03T21:14:00Z");
@@ -157,8 +161,8 @@ for (const colorScheme of ["light", "dark"] as const) {
     await turnOnScreenshotMode(page);
     await addFolder(page, EMPTY_LIBRARY);
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const violations = await accessibilityViolations(page);
 
-    expect(results.violations).toEqual([]);
+    expect(violations).toEqual([]);
   });
 }
