@@ -109,7 +109,7 @@ fn an_image_folder_hashes_its_image_names_sizes_and_outer_edges() {
     }))
     .unwrap();
 
-    let fingerprint = fingerprint_book(&scratch.join("Chapter 01")).unwrap();
+    let fingerprint = fingerprint_book(&scratch.path().join("Chapter 01")).unwrap();
 
     assert_eq!(fingerprint.kind(), FingerprintKind::Dir1);
     assert_eq!(
@@ -144,7 +144,7 @@ fn a_folder_without_images_has_no_fingerprint() {
     let scratch = ScratchFolder::new("empty-folder");
     scratch.write("Chapter 01/notes.txt", b"not a page");
 
-    let error = fingerprint_book(&scratch.join("Chapter 01")).unwrap_err();
+    let error = fingerprint_book(&scratch.path().join("Chapter 01")).unwrap_err();
 
     assert!(
         matches!(

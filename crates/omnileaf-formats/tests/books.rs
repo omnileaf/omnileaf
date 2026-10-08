@@ -90,7 +90,7 @@ fn lists_a_folders_images_in_reading_order() {
     scratch.write("Chapter/2.png", &page(1));
     scratch.write("Chapter/.hidden.png", &page(3));
     scratch.write("Chapter/notes.txt", b"not a page");
-    let folder = scratch.join("Chapter");
+    let folder = scratch.path().join("Chapter");
 
     let mut book = open_book(&folder).unwrap();
 
