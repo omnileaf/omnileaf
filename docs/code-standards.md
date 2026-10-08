@@ -36,6 +36,8 @@ No comments by default. Code that needs a comment to be understood isn't finishe
 - **Never in code:** references to documentation files, ticket numbers, history notes, `TODO` or `FIXME`, commented-out code, or section banners.
 - **Exempt:** lint suppressions with a reason, `// SAFETY:` above every `unsafe` block, `@ts-expect-error` with a reason, and build or codegen directives.
 
+`cargo xtask lint-comments` checks the rules above that a program can see. Whether a doc comment says more than its item's name stays a review call.
+
 ## Testing
 
 Test-driven by default. A change with behaviour starts with a failing test.
