@@ -11,5 +11,19 @@
     "verbatimModuleSyntax": true,
     "allowImportingTsExtensions": true,
     "skipLibCheck": true
-  }
+  },
+  "include": [
+    ".svelte-kit/ambient.d.ts",
+    ".svelte-kit/env.d.ts",
+    ".svelte-kit/non-ambient.d.ts",
+    ".svelte-kit/types/**/$types.d.ts",
+    "vite.config.ts",
+    "playwright.config.ts",
+    "src/**/*.js",
+    "src/**/*.ts",
+    "src/**/*.svelte",
+    "tests/**/*.ts",
+    "tests/**/*.svelte",
+    "scripts/**/*.ts"
+  ]
 }
