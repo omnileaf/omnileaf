@@ -18,7 +18,7 @@ use omnileaf_db::{
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
-use support::ScratchFolder;
+use support::{ScratchFolder, library_config};
 
 const ADDED_AT_MS: i64 = 1_790_000_000_000;
 const MODIFIED_AT_MS: i64 = 1_780_000_000_000;
@@ -35,7 +35,7 @@ impl Library {
     fn open(name: &str) -> Self {
         let folder = ScratchFolder::new(name);
         Self {
-            database: Database::open(&folder.config()).unwrap(),
+            database: Database::open(&library_config(&folder)).unwrap(),
             _folder: folder,
         }
     }

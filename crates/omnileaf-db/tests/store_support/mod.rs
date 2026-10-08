@@ -14,7 +14,7 @@ use omnileaf_db::{
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
 
-use crate::support::ScratchFolder;
+use crate::support::{ScratchFolder, library_config};
 
 pub(crate) const NOW_UNIX_MS: u64 = 1_790_000_000_000;
 
@@ -40,7 +40,7 @@ impl Clock for FakeClock {
 }
 
 pub(crate) fn open_store(folder: &ScratchFolder, clock: FakeClock) -> Store {
-    Store::new(Database::open(&folder.config()).unwrap(), clock)
+    Store::new(Database::open(&library_config(folder)).unwrap(), clock)
 }
 
 pub(crate) fn book(number: u32) -> BookId {

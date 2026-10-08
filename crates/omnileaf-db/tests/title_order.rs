@@ -12,7 +12,7 @@ use omnileaf_db::{
     catalog::{Cursor, NewSeries, Page, PageRequest, PageSize, SeriesOrder, series_page},
     store::{Changed, Clock, Store},
 };
-use support::ScratchFolder;
+use support::{ScratchFolder, library_config};
 
 const PAGE_SIZE: u16 = 3;
 const UNSORTED: [&str; 5] = [
@@ -44,7 +44,7 @@ impl Library {
     }
 
     fn reopen(folder: ScratchFolder) -> Self {
-        let database = Database::open(&folder.config()).unwrap();
+        let database = Database::open(&library_config(&folder)).unwrap();
         Self {
             store: Store::new(database, StoppedClock),
             _folder: folder,
@@ -450,13 +450,13 @@ async fn leaves_the_keys_alone_when_they_carry_this_build_s_stamp() {
 }
 
 async fn seed(folder: &ScratchFolder, titles: &[&str]) {
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(folder)).unwrap();
     let series: Vec<SeriesSeed<'_>> = titles.iter().copied().map(SeriesSeed::named).collect();
     seed_library(&database, &series).await;
 }
 
 fn tamper(folder: &ScratchFolder, sql: &str) {
-    Connection::open(folder.config().path)
+    Connection::open(library_config(folder).path)
         .unwrap()
         .execute_batch(sql)
         .unwrap();

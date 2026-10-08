@@ -15,7 +15,7 @@ use omnileaf_db::{
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId, SourceId};
-use support::ScratchFolder;
+use support::{ScratchFolder, library_config};
 
 const ADDED_AT_MS: i64 = 1_790_000_000_000;
 const MODIFIED_AT_MS: i64 = 1_780_000_000_000;
@@ -38,7 +38,7 @@ struct StoredFile {
 impl Library {
     async fn open(name: &str) -> Self {
         let folder = ScratchFolder::new(name);
-        let database = Database::open(&folder.config()).unwrap();
+        let database = Database::open(&library_config(&folder)).unwrap();
         let root = NewRoot {
             kind: RootKind::Linked,
             locator: RootLocator::Path(PathBuf::from("/media/Sample Library")),

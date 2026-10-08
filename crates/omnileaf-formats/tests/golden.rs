@@ -123,7 +123,7 @@ impl Recipe {
                 for entry in self.entries() {
                     scratch.write(&format!("{}/{}", self.name, entry.name), &entry.bytes);
                 }
-                scratch.join(self.name)
+                scratch.path().join(self.name)
             }
         }
     }

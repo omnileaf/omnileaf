@@ -12,7 +12,7 @@ use std::{
 };
 
 use omnileaf_db::{Connection, Database, Error, rusqlite};
-use support::{MMAP_SIZE_BYTES, ScratchFolder};
+use support::{MMAP_SIZE_BYTES, ScratchFolder, library_config};
 
 const NORMAL_SYNCHRONOUS: i64 = 1;
 const BUSY_TIMEOUT_MS: i64 = 5000;
@@ -20,7 +20,7 @@ const BUSY_TIMEOUT_MS: i64 = 5000;
 #[tokio::test]
 async fn configures_the_writer_for_write_ahead_logging_and_normal_sync() {
     let folder = ScratchFolder::new("writer-settings");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
 
     let settings = database
         .write(|transaction| {
@@ -52,7 +52,7 @@ async fn configures_the_writer_for_write_ahead_logging_and_normal_sync() {
 #[tokio::test]
 async fn configures_readers_with_foreign_keys_the_busy_timeout_and_memory_mapping() {
     let folder = ScratchFolder::new("reader-settings");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
 
     let settings = database
         .read(|connection| {
@@ -71,7 +71,7 @@ async fn configures_readers_with_foreign_keys_the_busy_timeout_and_memory_mappin
 #[tokio::test]
 async fn readers_refuse_to_write() {
     let folder = ScratchFolder::new("read-only");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     create_notes(&database).await;
 
     let outcome = database
@@ -93,7 +93,7 @@ async fn readers_refuse_to_write() {
 #[tokio::test]
 async fn runs_three_reads_at_the_same_time() {
     let folder = ScratchFolder::new("read-pool");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     let meeting = Arc::new(Meeting::default());
 
     let reads: Vec<_> = (0..3)
@@ -113,7 +113,7 @@ async fn runs_three_reads_at_the_same_time() {
 #[tokio::test]
 async fn runs_writes_in_the_order_they_were_submitted() {
     let folder = ScratchFolder::new("write-order");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     create_notes(&database).await;
     let bodies = numbered_notes();
 
@@ -131,7 +131,7 @@ async fn runs_writes_in_the_order_they_were_submitted() {
 #[tokio::test]
 async fn keeps_nothing_from_a_write_job_that_fails() {
     let folder = ScratchFolder::new("rollback");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     create_notes(&database).await;
 
     let outcome = database
@@ -149,7 +149,7 @@ async fn keeps_nothing_from_a_write_job_that_fails() {
 #[tokio::test]
 async fn keeps_writing_after_a_write_job_panics() {
     let folder = ScratchFolder::new("panic");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     create_notes(&database).await;
 
     let panicked = database
@@ -168,7 +168,7 @@ async fn keeps_writing_after_a_write_job_panics() {
 #[tokio::test]
 async fn finishes_submitted_writes_before_closing() {
     let folder = ScratchFolder::new("close");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     create_notes(&database).await;
     let bodies = numbered_notes();
 
@@ -177,7 +177,7 @@ async fn finishes_submitted_writes_before_closing() {
         .map(|body| add_note(&database, body.clone()))
         .collect();
     drop(database);
-    let reopened = Database::open(&folder.config()).unwrap();
+    let reopened = Database::open(&library_config(&folder)).unwrap();
 
     assert_eq!(note_bodies(&reopened).await, bodies);
 }
@@ -185,7 +185,7 @@ async fn finishes_submitted_writes_before_closing() {
 #[tokio::test]
 async fn leaves_no_write_ahead_log_behind_once_closed() {
     let folder = ScratchFolder::new("checkpoint");
-    let config = folder.config();
+    let config = library_config(&folder);
     let database = Database::open(&config).unwrap();
     create_notes(&database).await;
     add_note(&database, "kept".to_owned()).await.unwrap();
@@ -201,7 +201,7 @@ async fn leaves_no_write_ahead_log_behind_once_closed() {
 #[tokio::test]
 async fn reports_which_database_could_not_be_opened() {
     let folder = ScratchFolder::new("missing-folder");
-    let mut config = folder.config();
+    let mut config = library_config(&folder);
     config.path = config.path.with_file_name("missing").join("library.sqlite");
 
     let outcome = Database::open(&config);
@@ -212,7 +212,7 @@ async fn reports_which_database_could_not_be_opened() {
 #[test]
 fn names_the_database_a_blocked_migration_was_for() {
     let folder = ScratchFolder::new("locked");
-    let config = folder.config();
+    let config = library_config(&folder);
     let holder = rusqlite::Connection::open(&config.path).unwrap();
     holder
         .query_row("PRAGMA journal_mode = wal", [], |_| Ok(()))
@@ -227,7 +227,7 @@ fn names_the_database_a_blocked_migration_was_for() {
 #[tokio::test]
 async fn stamps_a_new_database_as_an_omnileaf_library() {
     let folder = ScratchFolder::new("application-id");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
 
     let application_id = database
         .read(|connection| pragma(connection, "application_id"))
@@ -240,14 +240,14 @@ async fn stamps_a_new_database_as_an_omnileaf_library() {
 #[tokio::test]
 async fn refuses_a_database_from_a_newer_build() {
     let folder = ScratchFolder::new("newer-schema");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     database
         .write(|transaction| Ok(transaction.pragma_update(None, "user_version", 9999)?))
         .await
         .unwrap();
     drop(database);
 
-    let outcome = Database::open(&folder.config());
+    let outcome = Database::open(&library_config(&folder));
 
     assert!(matches!(
         outcome,
@@ -258,7 +258,7 @@ async fn refuses_a_database_from_a_newer_build() {
 #[test]
 fn refuses_a_database_another_application_owns() {
     let folder = ScratchFolder::new("foreign");
-    let config = folder.config();
+    let config = library_config(&folder);
     let foreign = rusqlite::Connection::open(&config.path).unwrap();
     foreign.pragma_update(None, "application_id", 42).unwrap();
 
@@ -274,7 +274,7 @@ fn refuses_a_database_another_application_owns() {
 #[test]
 fn backs_up_an_unversioned_database_that_already_holds_tables() {
     let folder = ScratchFolder::new("unversioned");
-    let config = folder.config();
+    let config = library_config(&folder);
     rusqlite::Connection::open(&config.path)
         .unwrap()
         .execute_batch("CREATE TABLE note (body TEXT NOT NULL);")
@@ -288,7 +288,7 @@ fn backs_up_an_unversioned_database_that_already_holds_tables() {
 #[tokio::test]
 async fn backs_up_neither_a_new_database_nor_a_current_one() {
     let folder = ScratchFolder::new("no-backup");
-    let config = folder.config();
+    let config = library_config(&folder);
 
     drop(Database::open(&config).unwrap());
     drop(Database::open(&config).unwrap());

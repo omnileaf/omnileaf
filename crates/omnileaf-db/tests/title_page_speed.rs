@@ -14,7 +14,7 @@ use omnileaf_db::{
     catalog::{Cursor, PageRequest, PageSize, SeriesOrder, series_page},
 };
 use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
-use support::ScratchFolder;
+use support::{ScratchFolder, library_config};
 
 const SERIES_COUNT: u32 = 10_000;
 const PAGE_SIZE: u16 = 100;
@@ -37,7 +37,7 @@ async fn reads_each_title_page_of_10_000_series_within_2_ms_at_p95() {
         budget: TimingBudget::from_env(BUDGET),
     };
     let folder = ScratchFolder::new("title-page-speed");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     add_generated_series(&database).await;
 
     let outcome = trial

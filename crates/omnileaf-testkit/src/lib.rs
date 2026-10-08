@@ -5,6 +5,7 @@ mod error;
 mod generated_library;
 mod library;
 mod page;
+mod scratch_folder;
 mod speed_trial;
 mod timing_budget;
 
@@ -17,5 +18,6 @@ pub use library::{
 pub use page::{
     PageShape, full_chroma_scan_jpeg, page_jpeg, page_png, page_webp, subsampled_scan_jpeg,
 };
+pub use scratch_folder::ScratchFolder;
 pub use speed_trial::{Pass, Sampling, SpeedTrial, Statistic, TIMED_PASSES, TrialOutcome};
 pub use timing_budget::{BUDGET_SLACK_VARIABLE, InvalidBudgetSlack, TimingBudget};

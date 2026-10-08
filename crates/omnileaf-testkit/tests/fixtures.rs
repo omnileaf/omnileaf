@@ -6,15 +6,13 @@
 
 use std::{
     collections::BTreeSet,
-    env, fs,
+    fs,
     io::{Cursor, Read},
-    path::{Path, PathBuf},
-    process,
 };
 
 use omnileaf_testkit::{
     ArchiveEntry, Compression, GENERATED_LIBRARY_NAME, GeneratedLibrary, PageShape, SAMPLE_LIBRARY,
-    SAMPLE_LIBRARY_NAME, cbz, full_chroma_scan_jpeg, page_jpeg, page_png, page_webp,
+    SAMPLE_LIBRARY_NAME, ScratchFolder, cbz, full_chroma_scan_jpeg, page_jpeg, page_png, page_webp,
     subsampled_scan_jpeg, write_generated_library, write_sample_library,
 };
 use zip::{CompressionMethod, DateTime, ZipArchive};
@@ -27,31 +25,6 @@ const SOF0_COMPONENT_COUNT_OFFSET: usize = 9;
 const SOF0_COMPONENT_LENGTH: usize = 3;
 const TWICE_EACH_WAY: u8 = 0x22;
 const ONCE_EACH_WAY: u8 = 0x11;
-
-struct ScratchFolder(PathBuf);
-
-impl ScratchFolder {
-    fn new(name: &str) -> Self {
-        let path = env::temp_dir()
-            .join(format!("omnileaf-testkit-{}", process::id()))
-            .join(name);
-        if path.exists() {
-            fs::remove_dir_all(&path).unwrap();
-        }
-        fs::create_dir_all(&path).unwrap();
-        Self(path)
-    }
-
-    fn path(&self) -> &Path {
-        &self.0
-    }
-}
-
-impl Drop for ScratchFolder {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
-    }
-}
 
 fn dimensions(png: &[u8]) -> (u32, u32) {
     let reader = png::Decoder::new(Cursor::new(png)).read_info().unwrap();

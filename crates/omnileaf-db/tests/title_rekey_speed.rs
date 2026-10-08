@@ -9,7 +9,7 @@ use omnileaf_db::{
     store::{Clock, Store},
 };
 use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
-use support::ScratchFolder;
+use support::{ScratchFolder, library_config};
 
 const SERIES_COUNT: u32 = 10_000;
 const BUDGET: Duration = Duration::from_millis(150);
@@ -39,7 +39,7 @@ async fn keys_10_000_titles_again_for_each_language_within_150_ms() {
         budget: TimingBudget::from_env(BUDGET),
     };
     let folder = ScratchFolder::new("title-rekey-speed");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     add_generated_series(&database).await;
     let store = Store::new(database, StoppedClock);
 

@@ -10,7 +10,7 @@ use omnileaf_db::{
     library_view::{LibraryDisplay, OnCovers, StoredLibraryView, library_view, set_library_view},
 };
 use proptest::prelude::*;
-use support::ScratchFolder;
+use support::{ScratchFolder, library_config};
 
 const LIST_OF_FOUR: StoredLibraryView = StoredLibraryView {
     display: LibraryDisplay::List,
@@ -56,7 +56,7 @@ async fn set(database: &Database, view: StoredLibraryView) -> Result<(), Error> 
 async fn a_new_library_has_no_view_stored() {
     let folder = ScratchFolder::new("library-view-new");
 
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
 
     assert_eq!(stored(&database).await, None);
 }
@@ -64,11 +64,14 @@ async fn a_new_library_has_no_view_stored() {
 #[tokio::test]
 async fn remembers_the_view_after_the_library_reopens() {
     let folder = ScratchFolder::new("library-view-reopen");
-    set(&Database::open(&folder.config()).unwrap(), LIST_OF_FOUR)
-        .await
-        .unwrap();
+    set(
+        &Database::open(&library_config(&folder)).unwrap(),
+        LIST_OF_FOUR,
+    )
+    .await
+    .unwrap();
 
-    let reopened = Database::open(&folder.config()).unwrap();
+    let reopened = Database::open(&library_config(&folder)).unwrap();
 
     assert_eq!(stored(&reopened).await, Some(LIST_OF_FOUR));
 }
@@ -76,7 +79,7 @@ async fn remembers_the_view_after_the_library_reopens() {
 #[tokio::test]
 async fn remembers_covers_only() {
     let folder = ScratchFolder::new("library-view-covers");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     let covers_only = StoredLibraryView {
         display: LibraryDisplay::Covers,
         ..COMPACT_OF_TWO
@@ -90,7 +93,7 @@ async fn remembers_covers_only() {
 #[tokio::test]
 async fn keeps_only_the_view_set_last() {
     let folder = ScratchFolder::new("library-view-again");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     set(&database, LIST_OF_FOUR).await.unwrap();
 
     set(&database, COMPACT_OF_TWO).await.unwrap();
@@ -101,7 +104,7 @@ async fn keeps_only_the_view_set_last() {
 #[tokio::test]
 async fn refuses_more_covers_per_row_than_a_phone_holds_and_keeps_the_view_before() {
     let folder = ScratchFolder::new("library-view-too-many");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     set(&database, LIST_OF_FOUR).await.unwrap();
 
     let outcome = set(
@@ -179,7 +182,7 @@ proptest! {
     #[test]
     fn reads_back_any_view_within_the_ranges_as_it_was_set(view in any_view()) {
         let folder = ScratchFolder::new("library-view-any");
-        let database = Database::open(&folder.config()).unwrap();
+        let database = Database::open(&library_config(&folder)).unwrap();
         let runtime = tokio::runtime::Builder::new_current_thread().build().unwrap();
 
         let read = runtime.block_on(async {
