@@ -1,5 +1,3 @@
-//! Picks the phone, emulator or Simulator the mobile app tests run on.
-
 use std::{
     ffi::OsStr,
     fmt,

@@ -1,5 +1,3 @@
-//! The version details of the running app, gathered from the device.
-
 use omnileaf_engine::{AppInfo, BuildProfile, VersionDetails};
 use os_info::{Type, Version};
 

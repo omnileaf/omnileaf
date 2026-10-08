@@ -1,5 +1,3 @@
-//! Asks the user for a folder with the platform's own picker.
-
 use std::path::PathBuf;
 
 use tauri::AppHandle;

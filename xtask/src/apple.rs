@@ -1,5 +1,3 @@
-//! Reads the iOS Simulators and devices Xcode's tools report.
-
 use std::collections::BTreeMap;
 
 use serde::Deserialize;
