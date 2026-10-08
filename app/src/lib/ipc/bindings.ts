@@ -39,6 +39,8 @@ export const commands = {
 	sendCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("send_crash_report")),
 	copyCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_crash_report")),
 	declineCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("decline_crash_report")),
+	panicInCore: () => typedError<null, IpcError>(__TAURI_INVOKE("panic_in_core")),
+	crashAndQuit: () => typedError<null, IpcError>(__TAURI_INVOKE("crash_and_quit")),
 };
 
 /** Events */
@@ -56,6 +58,7 @@ export type AppInfo = {
 	version: string,
 	platform: Platform,
 	sourceCode: string,
+	isDevelopmentBuild: boolean,
 };
 
 /**  How many covers a row holds at each size the library is drawn at, chosen apart since each wants its own. */
@@ -125,7 +128,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "internal";
 
 /**  Series came, went, changed or sort in a new order, so a list of them should be read again. */
 export type LibraryChanged = null;

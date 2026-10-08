@@ -46,6 +46,7 @@ const FAILURES = {
   browserUnavailable: ADDING_FAILED,
   noCrashReport: ADDING_FAILED,
   crashReportUnavailable: ADDING_FAILED,
+  developmentBuildOnly: ADDING_FAILED,
   internal: ADDING_FAILED,
 } satisfies Record<IpcErrorCode, Failure>;
 

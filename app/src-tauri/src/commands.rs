@@ -1,5 +1,7 @@
 //! The commands the interface calls, and the TypeScript bindings generated from them.
 
+#[cfg(debug_assertions)]
+use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AppInfo, AppLanguage, Core, CoversPerRow, FolderCursor, FolderId, FolderPage, FolderRescan,
     FolderScan, InterfaceError, Library, LibraryView, ProjectLink, ScanProgress, SeriesCursor,
@@ -8,8 +10,10 @@ use omnileaf_engine::{
 use tauri::{AppHandle, Manager, State, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_opener::OpenerExt;
-use tauri_specta::{Builder, collect_commands, collect_events};
+use tauri_specta::{Builder, Commands, collect_commands, collect_events};
 
+#[cfg(debug_assertions)]
+use crate::crash_reporting::developer_crashes;
 use crate::{
     crash_reporting::{CrashReportOffer, CrashReporting},
     folder_picker::pick_folder,
@@ -20,9 +24,9 @@ use crate::{
     version_details,
 };
 
-pub(crate) fn builder() -> Builder<Wry> {
-    Builder::new()
-        .commands(collect_commands![
+macro_rules! app_commands {
+    ($($development_only:ident),*) => {
+        collect_commands![
             app_info,
             library_problem,
             add_library_folder,
@@ -45,11 +49,29 @@ pub(crate) fn builder() -> Builder<Wry> {
             offer_interface_error_report,
             send_crash_report,
             copy_crash_report,
-            decline_crash_report
-        ])
+            decline_crash_report,
+            $($development_only),*
+        ]
+    };
+}
+
+pub(crate) fn builder() -> Builder<Wry> {
+    Builder::new()
+        .commands(registered_commands())
         .events(collect_events![LibraryChanged])
         .constant("COVERS_PER_ROW", CoversPerRow::RANGES)
         .constant("DEFAULT_LIBRARY_VIEW", LibraryView::default())
+}
+
+/// Development builds add the commands that crash on purpose; release builds leave them out, though the bindings, generated from a development build, still list them.
+#[cfg(debug_assertions)]
+fn registered_commands() -> Commands<Wry> {
+    app_commands![panic_in_core, crash_and_quit]
+}
+
+#[cfg(not(debug_assertions))]
+fn registered_commands() -> Commands<Wry> {
+    app_commands![]
 }
 
 #[tauri::command]
@@ -269,6 +291,23 @@ async fn copy_crash_report(app: AppHandle) -> Result<(), IpcError> {
 #[specta::specta]
 async fn decline_crash_report(app: AppHandle) -> Result<(), IpcError> {
     off_the_runtime(move || app.state::<CrashReporting>().settle()).await
+}
+
+#[cfg(debug_assertions)]
+#[tauri::command]
+#[specta::specta]
+async fn panic_in_core() -> Result<(), IpcError> {
+    off_the_runtime(|| developer_crashes::panic_in_core(BuildProfile::CURRENT)).await
+}
+
+#[cfg(debug_assertions)]
+#[tauri::command]
+#[specta::specta]
+async fn crash_and_quit() -> Result<(), IpcError> {
+    off_the_runtime(|| {
+        developer_crashes::crash_and_quit(BuildProfile::CURRENT).map(|quit| match quit {})
+    })
+    .await
 }
 
 async fn off_the_runtime<T: Send + 'static>(

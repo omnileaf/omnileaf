@@ -1,5 +1,8 @@
 //! Keeps a report of a panic for the next run and offers reports to the person, who decides whether to send them.
 
+#[cfg(debug_assertions)]
+pub(crate) mod developer_crashes;
+
 use std::{
     backtrace::Backtrace,
     panic::{self, PanicHookInfo},
@@ -201,13 +204,14 @@ mod tests {
 
     use super::{CrashReporting, Reporter, set_panic_hook};
 
-    static PANIC_HOOK: Mutex<()> = Mutex::new(());
+    pub(super) static PANIC_HOOK: Mutex<()> = Mutex::new(());
 
-    fn sample_app() -> AppInfo {
+    pub(super) fn sample_app() -> AppInfo {
         AppInfo {
             version: "1.2.3".to_owned(),
             platform: Platform::Linux,
             source_code: "repo.example.org/omnileaf".to_owned(),
+            is_development_build: true,
         }
     }
 

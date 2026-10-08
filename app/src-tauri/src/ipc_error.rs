@@ -21,10 +21,15 @@ pub(crate) enum IpcErrorCode {
     BrowserUnavailable,
     NoCrashReport,
     CrashReportUnavailable,
+    #[cfg_attr(
+        not(debug_assertions),
+        expect(dead_code, reason = "only development builds offer crash tests")
+    )]
+    DevelopmentBuildOnly,
     Internal,
 }
 
-#[derive(Debug, Serialize, Type)]
+#[derive(Debug, PartialEq, Eq, Serialize, Type)]
 pub(crate) struct IpcError {
     code: IpcErrorCode,
     message: &'static str,
@@ -59,6 +64,14 @@ impl IpcError {
         Self {
             code: IpcErrorCode::NoCrashReport,
             message: "no crash report is waiting for a decision",
+        }
+    }
+
+    #[cfg(debug_assertions)]
+    pub(crate) fn development_build_only() -> Self {
+        Self {
+            code: IpcErrorCode::DevelopmentBuildOnly,
+            message: "only development builds can crash on purpose",
         }
     }
 

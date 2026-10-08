@@ -42,6 +42,7 @@ const SEND_OUTCOMES = {
   homeFolderKept: "notSent",
   clipboardUnavailable: "notSent",
   crashReportUnavailable: "notSent",
+  developmentBuildOnly: "notSent",
   internal: "notSent",
 } as const satisfies Record<IpcErrorCode, SendFailure | undefined>;
 

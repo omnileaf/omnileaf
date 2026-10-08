@@ -78,6 +78,7 @@ function renderPage(screenshotMode: "on" | "off") {
           version: "1.2.3",
           platform: "linux",
           sourceCode: "repo.example.org/omnileaf",
+          isDevelopmentBuild: false,
         },
         isFirstLaunch: false,
         libraryProblem: null,

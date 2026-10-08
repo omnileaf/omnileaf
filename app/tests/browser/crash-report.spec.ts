@@ -123,6 +123,7 @@ for (const platform of ["android", "linux"] as const) {
           version: "1.2.3",
           platform,
           sourceCode: "repo.example.org/omnileaf",
+          isDevelopmentBuild: false,
         }),
         ...fakeCrashReports(calls),
       },

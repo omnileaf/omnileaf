@@ -34,6 +34,7 @@ test("explains that folders stay where they are", async () => {
           version: "1.2.3",
           platform: "linux",
           sourceCode: "repo.example.org/omnileaf",
+          isDevelopmentBuild: false,
         },
         isFirstLaunch: false,
         libraryProblem: null,

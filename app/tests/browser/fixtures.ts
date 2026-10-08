@@ -26,8 +26,13 @@ export const MEDIUM_MIN_WIDTH = 600;
 export const EXPANDED_MIN_WIDTH = 840;
 export const LARGE_MIN_WIDTH = 1200;
 
-function fakeAppInfo(platform: Platform): AppInfo {
-  return { version: FAKE_APP_VERSION, platform, sourceCode: FAKE_SOURCE_CODE };
+export function fakeAppInfo(platform: Platform): AppInfo {
+  return {
+    version: FAKE_APP_VERSION,
+    platform,
+    sourceCode: FAKE_SOURCE_CODE,
+    isDevelopmentBuild: false,
+  };
 }
 
 export const DEFAULT_BACKEND: FakeBackend = {
@@ -62,6 +67,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   sendCrashReport: () => null,
   copyCrashReport: () => null,
   declineCrashReport: () => null,
+  panicInCore: () => null,
+  crashAndQuit: () => null,
 };
 
 export function onPlatform(platform: Platform): { backend: FakeBackend } {
