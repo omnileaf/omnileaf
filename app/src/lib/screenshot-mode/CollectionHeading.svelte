@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import PageHeading from "$lib/page/PageHeading.svelte";
+  import PageHeading from "#lib/page/PageHeading.svelte";
 
   import ScreenshotModeLabel from "./ScreenshotModeLabel.svelte";
 

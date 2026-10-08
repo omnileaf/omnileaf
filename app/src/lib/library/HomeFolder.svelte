@@ -2,8 +2,8 @@
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
-  import type { LibraryFolder } from "$lib/ipc/bindings";
-  import { m } from "$lib/paraglide/messages.js";
+  import type { LibraryFolder } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   import FolderRow from "./FolderRow.svelte";
   import type { FolderList } from "./library-folders.svelte";

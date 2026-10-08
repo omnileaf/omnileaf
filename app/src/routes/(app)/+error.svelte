@@ -3,8 +3,8 @@
 
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { m } from "$lib/paraglide/messages.js";
-  import ProblemScreen from "$lib/problems/ProblemScreen.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import ProblemScreen from "#lib/problems/ProblemScreen.svelte";
 
   const NOT_FOUND = 404;
 

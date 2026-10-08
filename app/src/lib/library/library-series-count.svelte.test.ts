@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest";
 
-import type { IpcError } from "$lib/ipc/bindings";
+import type { IpcError } from "#lib/ipc/bindings.ts";
 
 import {
   type CountSeries,

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import type { Platform } from "$lib/ipc/bindings";
+import type { Platform } from "#lib/ipc/bindings.ts";
 
 import {
   isScreenshotModeShortcut,

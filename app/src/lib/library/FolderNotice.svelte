@@ -2,9 +2,9 @@
   import { CircleAlert, CircleCheckBig } from "@lucide/svelte";
   import { onDestroy } from "svelte";
 
-  import type { FolderScan } from "$lib/ipc/bindings";
-  import { m } from "$lib/paraglide/messages.js";
-  import { standInName } from "$lib/screenshot-mode/stand-ins";
+  import type { FolderScan } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { standInName } from "#lib/screenshot-mode/stand-ins.ts";
 
   import type { FolderAdding, FolderOutcome } from "./folder-adding.svelte";
   import type { Notice } from "./notice";

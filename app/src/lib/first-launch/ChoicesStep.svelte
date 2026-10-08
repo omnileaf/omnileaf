@@ -1,8 +1,8 @@
 <script lang="ts">
   import { SlidersHorizontal } from "@lucide/svelte";
 
-  import ThemeChoice from "$lib/appearance/ThemeChoice.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import ThemeChoice from "#lib/appearance/ThemeChoice.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   import StepButton from "./StepButton.svelte";
   import type { DeviceKind } from "./device";

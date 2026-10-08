@@ -2,17 +2,17 @@
   import { ChevronLeft, ChevronRight, Keyboard } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
-  import type { Platform } from "$lib/ipc/bindings";
-  import { m } from "$lib/paraglide/messages.js";
+  import type { Platform } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     SCREENSHOT_MODE_OPTIONS,
     type ScreenshotModeOption,
-  } from "$lib/screenshot-mode/screenshot-mode";
-  import { getScreenshotMode } from "$lib/screenshot-mode/screenshot-mode.svelte";
-  import ScreenshotModePreview from "$lib/screenshot-mode/ScreenshotModePreview.svelte";
-  import ShortcutKeys from "$lib/screenshot-mode/ShortcutKeys.svelte";
-  import { screenshotModeStatus } from "$lib/screenshot-mode/status";
-  import SettingSwitch from "$lib/settings/SettingSwitch.svelte";
+  } from "#lib/screenshot-mode/screenshot-mode.ts";
+  import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import ScreenshotModePreview from "#lib/screenshot-mode/ScreenshotModePreview.svelte";
+  import ShortcutKeys from "#lib/screenshot-mode/ShortcutKeys.svelte";
+  import { screenshotModeStatus } from "#lib/screenshot-mode/status.ts";
+  import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
   import type { PageProps } from "./$types";
 

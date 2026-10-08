@@ -1,12 +1,12 @@
 <script lang="ts">
   import { FlaskConical } from "@lucide/svelte";
 
-  import { getCrashReporting } from "$lib/crash-report/crash-reporting.svelte";
-  import { CrashTests } from "$lib/crash-tests/crash-tests";
-  import CrashTestList from "$lib/crash-tests/CrashTestList.svelte";
-  import { commands } from "$lib/ipc/bindings";
-  import { m } from "$lib/paraglide/messages.js";
-  import SectionHeading from "$lib/settings/SectionHeading.svelte";
+  import { getCrashReporting } from "#lib/crash-report/crash-reporting.svelte.ts";
+  import { CrashTests } from "#lib/crash-tests/crash-tests.ts";
+  import CrashTestList from "#lib/crash-tests/CrashTestList.svelte";
+  import { commands } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   import type { PageProps } from "./$types";
 

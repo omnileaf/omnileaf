@@ -6,9 +6,9 @@
     LibraryDisplay,
     LibrarySeries,
     LibraryView,
-  } from "$lib/ipc/bindings";
-  import { m } from "$lib/paraglide/messages.js";
-  import VirtualGrid from "$lib/virtual-grid/VirtualGrid.svelte";
+  } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import CoverBadges from "./CoverBadges.svelte";
   import CoverImage from "./CoverImage.svelte";

@@ -2,12 +2,12 @@
   import { ChevronRight } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
-  import { languageName } from "$lib/language/language";
-  import { WindowWidth } from "$lib/page/breakpoints";
-  import { isPhone } from "$lib/page/platform";
-  import SectionHeading from "$lib/settings/SectionHeading.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { getLocale } from "$lib/paraglide/runtime.js";
+  import { languageName } from "#lib/language/language.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { isPhone } from "#lib/page/platform.ts";
+  import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
 
   import type { PageProps } from "./$types";
 

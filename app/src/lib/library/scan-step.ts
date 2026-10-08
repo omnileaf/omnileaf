@@ -1,4 +1,4 @@
-import type { ScanProgress } from "$lib/ipc/bindings";
+import type { ScanProgress } from "#lib/ipc/bindings.ts";
 
 /** How far a scan in progress has got, as a screen shows it. */
 export type ScanStep =

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { FolderKind } from "$lib/ipc/bindings";
-  import { m } from "$lib/paraglide/messages.js";
+  import type { FolderKind } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   import { folderTitle } from "./folder-title";
   import { rescanReport } from "./rescan-report";

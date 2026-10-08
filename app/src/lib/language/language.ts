@@ -7,7 +7,7 @@ import {
   isLocale,
   type Locale,
   locales,
-} from "$lib/paraglide/runtime.js";
+} from "#lib/paraglide/runtime.js";
 
 import { PSEUDO_LOCALE } from "./pseudo-locale";
 

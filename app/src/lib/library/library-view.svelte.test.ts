@@ -4,7 +4,7 @@ import {
   DEFAULT_LIBRARY_VIEW,
   type IpcError,
   type LibraryView,
-} from "$lib/ipc/bindings";
+} from "#lib/ipc/bindings.ts";
 
 import {
   LibraryViewSetting,

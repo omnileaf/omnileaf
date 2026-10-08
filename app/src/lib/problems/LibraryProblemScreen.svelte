@@ -1,9 +1,9 @@
 <script lang="ts">
   import { DatabaseZap, type LucideIcon, TriangleAlert } from "@lucide/svelte";
 
-  import type { LinkOpening } from "$lib/about/link-opening.svelte";
-  import type { LibraryProblem, ProjectLink } from "$lib/ipc/bindings";
-  import { m } from "$lib/paraglide/messages.js";
+  import type { LinkOpening } from "#lib/about/link-opening.svelte.ts";
+  import type { LibraryProblem, ProjectLink } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   import ProblemScreen from "./ProblemScreen.svelte";
 

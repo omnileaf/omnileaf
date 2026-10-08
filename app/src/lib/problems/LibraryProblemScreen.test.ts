@@ -1,8 +1,8 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import { LinkOpening } from "$lib/about/link-opening.svelte";
-import type { ProjectLink } from "$lib/ipc/bindings";
+import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
+import type { ProjectLink } from "#lib/ipc/bindings.ts";
 
 import LibraryProblemScreen from "./LibraryProblemScreen.svelte";
 

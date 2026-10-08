@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { groupByLicence } from "$lib/licences/licences";
-  import LicenceGroupList from "$lib/licences/LicenceGroupList.svelte";
-  import { WindowWidth } from "$lib/page/breakpoints";
-  import { isPhone } from "$lib/page/platform";
-  import { m } from "$lib/paraglide/messages.js";
-  import { getLocale } from "$lib/paraglide/runtime.js";
-  import SectionHeading from "$lib/settings/SectionHeading.svelte";
+  import { groupByLicence } from "#lib/licences/licences.ts";
+  import LicenceGroupList from "#lib/licences/LicenceGroupList.svelte";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { isPhone } from "#lib/page/platform.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
+  import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   import type { PageProps } from "./$types";
 

@@ -1,4 +1,4 @@
-import type { CoversPerRow } from "$lib/ipc/bindings";
+import type { CoversPerRow } from "#lib/ipc/bindings.ts";
 
 /** The classes a grid of covers takes from how many covers each size's rows hold, spaced tighter and lettered smaller as rows fill. */
 export interface CoverLook {

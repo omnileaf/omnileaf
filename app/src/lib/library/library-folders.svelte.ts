@@ -1,4 +1,4 @@
-import type { commands, FolderPage, LibraryFolder } from "$lib/ipc/bindings";
+import type { commands, FolderPage, LibraryFolder } from "#lib/ipc/bindings.ts";
 
 export type ListFolders = typeof commands.libraryFolders;
 export type RemoveFolder = typeof commands.removeLibraryFolder;

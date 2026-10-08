@@ -3,7 +3,7 @@ import type { ComponentProps } from "svelte";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import { Notices } from "$lib/notices/notices.svelte";
+import { Notices } from "#lib/notices/notices.svelte.ts";
 
 import { screenshotModeTurned } from "../../../../../tests/components/screenshot-mode";
 import WithScreenshotMode from "../../../../../tests/components/WithScreenshotMode.svelte";

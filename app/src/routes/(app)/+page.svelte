@@ -1,24 +1,24 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { commands, type LibraryView } from "$lib/ipc/bindings";
-  import { addFolderWithProgress } from "$lib/library/add-folder";
-  import AddFolderButton from "$lib/library/AddFolderButton.svelte";
-  import { coverUrl } from "$lib/library/cover-url";
-  import { FolderAdding } from "$lib/library/folder-adding.svelte";
-  import FolderNotice from "$lib/library/FolderNotice.svelte";
-  import { listenForLibraryChanges } from "$lib/library/library-changes";
-  import { LibrarySeriesList } from "$lib/library/library-series.svelte";
-  import { LibrarySeriesCount } from "$lib/library/library-series-count.svelte";
-  import { LibraryViewSetting } from "$lib/library/library-view.svelte";
-  import SeriesCount from "$lib/library/SeriesCount.svelte";
-  import SeriesCovers from "$lib/library/SeriesCovers.svelte";
-  import ViewOptions from "$lib/library/ViewOptions.svelte";
-  import LibraryGlyph from "$lib/navigation/LibraryGlyph.svelte";
-  import EmptyState from "$lib/page/EmptyState.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import CollectionHeading from "$lib/screenshot-mode/CollectionHeading.svelte";
-  import { getScreenshotMode } from "$lib/screenshot-mode/screenshot-mode.svelte";
+  import { commands, type LibraryView } from "#lib/ipc/bindings.ts";
+  import { addFolderWithProgress } from "#lib/library/add-folder.ts";
+  import AddFolderButton from "#lib/library/AddFolderButton.svelte";
+  import { coverUrl } from "#lib/library/cover-url.ts";
+  import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
+  import FolderNotice from "#lib/library/FolderNotice.svelte";
+  import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
+  import { LibrarySeriesList } from "#lib/library/library-series.svelte.ts";
+  import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
+  import { LibraryViewSetting } from "#lib/library/library-view.svelte.ts";
+  import SeriesCount from "#lib/library/SeriesCount.svelte";
+  import SeriesCovers from "#lib/library/SeriesCovers.svelte";
+  import ViewOptions from "#lib/library/ViewOptions.svelte";
+  import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
+  import EmptyState from "#lib/page/EmptyState.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
+  import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
 
   import type { PageProps } from "./$types";
 

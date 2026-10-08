@@ -1,6 +1,6 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   import NavigationIcon from "./NavigationIcon.svelte";
   import { type Section, SECTION_ROUTES } from "./sections";

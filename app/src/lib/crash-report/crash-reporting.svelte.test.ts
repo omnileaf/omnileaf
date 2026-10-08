@@ -4,7 +4,7 @@ import type {
   CrashReportOffer,
   IpcError,
   IpcErrorCode,
-} from "$lib/ipc/bindings";
+} from "#lib/ipc/bindings.ts";
 
 import { type CrashReportChoice, CrashReportSetting } from "./choice.svelte";
 import {

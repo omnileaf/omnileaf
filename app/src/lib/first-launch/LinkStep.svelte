@@ -1,13 +1,13 @@
 <script lang="ts">
   import { Link2 } from "@lucide/svelte";
 
-  import type { Platform } from "$lib/ipc/bindings";
-  import type { AddFolder } from "$lib/library/add-folder";
-  import type { LibraryFolders } from "$lib/library/library-folders.svelte";
-  import LinkedFolders from "$lib/library/LinkedFolders.svelte";
-  import { getScreenshotMode } from "$lib/screenshot-mode/screenshot-mode.svelte";
-  import type { Notices } from "$lib/notices/notices.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import type { Platform } from "#lib/ipc/bindings.ts";
+  import type { AddFolder } from "#lib/library/add-folder.ts";
+  import type { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
+  import LinkedFolders from "#lib/library/LinkedFolders.svelte";
+  import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import type { Notices } from "#lib/notices/notices.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";

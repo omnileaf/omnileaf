@@ -1,6 +1,6 @@
 import { Channel } from "@tauri-apps/api/core";
 
-import { commands, type ScanProgress } from "$lib/ipc/bindings";
+import { commands, type ScanProgress } from "#lib/ipc/bindings.ts";
 
 export type RescanFolder = (
   id: Parameters<typeof commands.rescanLibraryFolder>[0],

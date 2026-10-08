@@ -2,7 +2,7 @@
   import { ArrowLeft, ChevronLeft } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   import StepButton from "./StepButton.svelte";
   import { type FirstLaunchStep, numberOf } from "./steps";

@@ -2,9 +2,13 @@ import { expect, test } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
-import type { FolderScan, IpcErrorCode, ScanProgress } from "$lib/ipc/bindings";
-import NoticeHost from "$lib/notices/NoticeHost.svelte";
-import { Notices } from "$lib/notices/notices.svelte";
+import type {
+  FolderScan,
+  IpcErrorCode,
+  ScanProgress,
+} from "#lib/ipc/bindings.ts";
+import NoticeHost from "#lib/notices/NoticeHost.svelte";
+import { Notices } from "#lib/notices/notices.svelte.ts";
 
 import type { AddFolder } from "./add-folder";
 import AddFolderButton from "./AddFolderButton.svelte";

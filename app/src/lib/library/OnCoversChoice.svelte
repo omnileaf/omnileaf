@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { OnCovers } from "$lib/ipc/bindings";
-  import { m } from "$lib/paraglide/messages.js";
+  import type { OnCovers } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   import SwitchTrack from "./SwitchTrack.svelte";
 

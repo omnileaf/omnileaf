@@ -4,7 +4,7 @@
   import {
     type ScreenshotMode,
     setScreenshotMode,
-  } from "$lib/screenshot-mode/screenshot-mode.svelte";
+  } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
 
   interface Props {
     readonly screenshotMode: ScreenshotMode;

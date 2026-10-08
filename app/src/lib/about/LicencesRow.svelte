@@ -2,7 +2,7 @@
   import { ChevronRight } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   import { type AboutLook, ROW_ICON_SIZES, ROW_LOOKS } from "./look";
   import RowText from "./RowText.svelte";

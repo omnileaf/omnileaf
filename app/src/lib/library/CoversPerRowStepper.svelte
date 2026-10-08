@@ -2,9 +2,9 @@
   import { Minus, Plus } from "@lucide/svelte";
   import type { ClassValue } from "svelte/elements";
 
-  import { COVERS_PER_ROW } from "$lib/ipc/bindings";
-  import { m } from "$lib/paraglide/messages.js";
-  import { getLocale } from "$lib/paraglide/runtime.js";
+  import { COVERS_PER_ROW } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
 
   import type { ScreenSize } from "./library-view";
 

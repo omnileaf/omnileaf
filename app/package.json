@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "imports": {
-    "#branding/*": "@omnileaf/branding/*"
+    "#branding/*": "@omnileaf/branding/*",
+    "#lib/*": "./src/lib/*"
   },
   "scripts": {
     "dev": "vite dev",

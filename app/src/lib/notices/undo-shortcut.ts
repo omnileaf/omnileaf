@@ -1,6 +1,6 @@
-import type { Platform } from "$lib/ipc/bindings";
-import { usesCommandKey } from "$lib/page/platform";
-import { m } from "$lib/paraglide/messages.js";
+import type { Platform } from "#lib/ipc/bindings.ts";
+import { usesCommandKey } from "#lib/page/platform.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export interface UndoShortcut {
   readonly label: () => string;

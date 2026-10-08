@@ -1,13 +1,13 @@
 import { createContext } from "svelte";
 
-import { DetailsCopying } from "$lib/copying/details-copying.svelte";
+import { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
 import type {
   commands,
   CrashOrigin,
   CrashReportOffer,
   InterfaceError,
   IpcErrorCode,
-} from "$lib/ipc/bindings";
+} from "#lib/ipc/bindings.ts";
 
 import type { CrashReportChoice, CrashReportSetting } from "./choice.svelte";
 

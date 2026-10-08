@@ -5,7 +5,7 @@
 <script lang="ts">
   import { Check } from "@lucide/svelte";
 
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";

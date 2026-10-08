@@ -1,8 +1,8 @@
 <script lang="ts">
   import { ExternalLink } from "@lucide/svelte";
 
-  import type { ProjectLink } from "$lib/ipc/bindings";
-  import { m } from "$lib/paraglide/messages.js";
+  import type { ProjectLink } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   import type { LinkOpening } from "./link-opening.svelte";
   import {

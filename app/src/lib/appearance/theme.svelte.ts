@@ -5,7 +5,7 @@ import {
   type PreferenceStore,
   readPreference,
   rememberPreference,
-} from "$lib/preferences/preference-store";
+} from "#lib/preferences/preference-store.ts";
 
 import {
   parseThemePreference,

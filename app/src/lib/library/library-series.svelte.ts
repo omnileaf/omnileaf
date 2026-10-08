@@ -1,4 +1,4 @@
-import type { commands, LibrarySeries } from "$lib/ipc/bindings";
+import type { commands, LibrarySeries } from "#lib/ipc/bindings.ts";
 
 export type ListSeries = typeof commands.librarySeries;
 

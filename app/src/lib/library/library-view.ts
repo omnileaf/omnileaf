@@ -4,7 +4,7 @@ import {
   type LibraryDisplay,
   type LibraryView,
   type OnCovers,
-} from "$lib/ipc/bindings";
+} from "#lib/ipc/bindings.ts";
 
 export type ScreenSize = keyof CoversPerRow;
 

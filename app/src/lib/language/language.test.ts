@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from "vitest";
 
-import { baseLocale } from "$lib/paraglide/runtime.js";
+import { baseLocale } from "#lib/paraglide/runtime.js";
 
 import {
   rememberLanguageChoice,

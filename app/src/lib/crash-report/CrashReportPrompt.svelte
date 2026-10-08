@@ -1,8 +1,8 @@
 <script lang="ts">
   import { ArrowLeft, Bug, ChevronLeft } from "@lucide/svelte";
 
-  import type { CrashOrigin } from "$lib/ipc/bindings";
-  import { m } from "$lib/paraglide/messages.js";
+  import type { CrashOrigin } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   import AlwaysSendChoice from "./AlwaysSendChoice.svelte";
 

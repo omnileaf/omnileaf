@@ -1,41 +1,41 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { LinkOpening } from "$lib/about/link-opening.svelte";
+  import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
   import {
     setThemeSetting,
     themeSettingForDocument,
-  } from "$lib/appearance/theme.svelte";
+  } from "#lib/appearance/theme.svelte.ts";
   import {
     crashReportSettingForDocument,
     setCrashReportSetting,
-  } from "$lib/crash-report/choice.svelte";
+  } from "#lib/crash-report/choice.svelte.ts";
   import {
     CrashReporting,
     setCrashReporting,
-  } from "$lib/crash-report/crash-reporting.svelte";
-  import CrashReportPrompt from "$lib/crash-report/CrashReportPrompt.svelte";
-  import { appInterfaceErrors } from "$lib/crash-report/interface-error-relay";
-  import type { PromptLook } from "$lib/crash-report/look";
-  import { commands } from "$lib/ipc/bindings";
-  import { rescanEveryFolder } from "$lib/library/rescan-folder";
+  } from "#lib/crash-report/crash-reporting.svelte.ts";
+  import CrashReportPrompt from "#lib/crash-report/CrashReportPrompt.svelte";
+  import { appInterfaceErrors } from "#lib/crash-report/interface-error-relay.ts";
+  import type { PromptLook } from "#lib/crash-report/look.ts";
+  import { commands } from "#lib/ipc/bindings.ts";
+  import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import {
     languageSettingForDocument,
     setLanguageSetting,
-  } from "$lib/language/language.svelte";
-  import { WindowWidth } from "$lib/page/breakpoints";
-  import { isPhone } from "$lib/page/platform";
-  import { m } from "$lib/paraglide/messages.js";
-  import LibraryProblemScreen from "$lib/problems/LibraryProblemScreen.svelte";
+  } from "#lib/language/language.svelte.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { isPhone } from "#lib/page/platform.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import LibraryProblemScreen from "#lib/problems/LibraryProblemScreen.svelte";
   import {
     screenshotModeForDocument,
     setScreenshotMode,
-  } from "$lib/screenshot-mode/screenshot-mode.svelte";
-  import ScreenshotModeAnnouncement from "$lib/screenshot-mode/ScreenshotModeAnnouncement.svelte";
+  } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import ScreenshotModeAnnouncement from "#lib/screenshot-mode/ScreenshotModeAnnouncement.svelte";
   import {
     isScreenshotModeShortcut,
     screenshotModeShortcutOn,
-  } from "$lib/screenshot-mode/shortcut";
+  } from "#lib/screenshot-mode/shortcut.ts";
 
   import type { LayoutProps } from "./$types";
 

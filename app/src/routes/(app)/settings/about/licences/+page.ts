@@ -1,4 +1,4 @@
-import { loadLicensedPackages } from "$lib/licences/shipped";
+import { loadLicensedPackages } from "#lib/licences/shipped.ts";
 
 import type { PageLoad } from "./$types";
 

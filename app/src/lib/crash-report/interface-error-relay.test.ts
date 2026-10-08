@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import type { InterfaceError } from "$lib/ipc/bindings";
+import type { InterfaceError } from "#lib/ipc/bindings.ts";
 
 import { InterfaceErrorRelay } from "./interface-error-relay";
 

@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Check, Copy } from "@lucide/svelte";
 
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   import { type AboutLook, ROW_ICON_SIZES } from "./look";
-  import type { DetailsCopying } from "$lib/copying/details-copying.svelte";
+  import type { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
 
   const LOOKS = {
     phone:

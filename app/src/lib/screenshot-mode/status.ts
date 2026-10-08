@@ -1,6 +1,6 @@
-import { assertNever } from "$lib/assert-never";
-import { m } from "$lib/paraglide/messages.js";
-import { getLocale } from "$lib/paraglide/runtime.js";
+import { assertNever } from "#lib/assert-never.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { getLocale } from "#lib/paraglide/runtime.js";
 
 import type { ScreenshotModeActivity } from "./screenshot-mode";
 

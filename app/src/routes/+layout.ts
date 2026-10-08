@@ -1,9 +1,12 @@
 import { redirect } from "@sveltejs/kit";
 
 import { resolve } from "$app/paths";
-import { FIRST_LAUNCH_ROUTE, needsFirstLaunch } from "$lib/first-launch/gate";
-import { commands } from "$lib/ipc/bindings";
-import { Notices } from "$lib/notices/notices.svelte";
+import {
+  FIRST_LAUNCH_ROUTE,
+  needsFirstLaunch,
+} from "#lib/first-launch/gate.ts";
+import { commands } from "#lib/ipc/bindings.ts";
+import { Notices } from "#lib/notices/notices.svelte.ts";
 
 import type { LayoutLoad } from "./$types";
 

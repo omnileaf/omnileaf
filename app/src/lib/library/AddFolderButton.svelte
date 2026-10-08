@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Plus } from "@lucide/svelte";
 
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   import type { FolderAdding } from "./folder-adding.svelte";
 

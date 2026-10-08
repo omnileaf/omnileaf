@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { commands } from "$lib/ipc/bindings";
-  import { addFolderWithProgress } from "$lib/library/add-folder";
-  import LibraryFolderSettings from "$lib/library/LibraryFolderSettings.svelte";
-  import { rescanFolderWithProgress } from "$lib/library/rescan-folder";
-  import { m } from "$lib/paraglide/messages.js";
-  import { getScreenshotMode } from "$lib/screenshot-mode/screenshot-mode.svelte";
-  import SectionHeading from "$lib/settings/SectionHeading.svelte";
+  import { commands } from "#lib/ipc/bindings.ts";
+  import { addFolderWithProgress } from "#lib/library/add-folder.ts";
+  import LibraryFolderSettings from "#lib/library/LibraryFolderSettings.svelte";
+  import { rescanFolderWithProgress } from "#lib/library/rescan-folder.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   import type { PageProps } from "./$types";
 

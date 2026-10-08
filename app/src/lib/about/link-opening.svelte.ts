@@ -1,4 +1,4 @@
-import type { commands, ProjectLink } from "$lib/ipc/bindings";
+import type { commands, ProjectLink } from "#lib/ipc/bindings.ts";
 
 export type OpenProjectLink = typeof commands.openProjectLink;
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ScanLine } from "@lucide/svelte";
 
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   const ICON_SIZE = 14;
 </script>
