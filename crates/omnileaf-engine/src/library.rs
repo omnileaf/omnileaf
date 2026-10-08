@@ -21,7 +21,7 @@ use crate::{
     AppLanguage, CoversPerRowOutOfRange, FolderCursor, FolderId, FolderPage, FolderRescan,
     FolderScan, LibraryChanges, LibraryFolder, LibrarySeries, LibraryView, RescanOutcome,
     ResolvedBookmark, ScanProgress, SeriesCursor, SeriesPage,
-    bookmark_access::{Reopened, note_bookmarks_opened},
+    bookmark_access::{Reopened, as_read, note_bookmarks_opened},
     device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
     library_layout::folder_name,
@@ -266,6 +266,9 @@ impl Library {
         mut resolve: impl FnMut(&AppleBookmark) -> Result<ResolvedBookmark, E> + Send + 'static,
     ) -> Result<Vec<(FolderId, E)>, LibraryError> {
         let bookmarked = self.store.database().read(bookmarked_roots).await?;
+        if bookmarked.is_empty() {
+            return Ok(Vec::new());
+        }
         let resolved = spawn_blocking(move || {
             bookmarked
                 .into_iter()
@@ -277,30 +280,24 @@ impl Library {
         })
         .await?;
         let mut unopened = Vec::new();
+        let mut unreachable = Vec::new();
         let mut reopened = Vec::new();
         for (root, outcome) in resolved {
             match outcome {
                 Ok(resolved) => reopened.push(Reopened::of(root, resolved)),
-                Err(error) => unopened.push((root, error)),
+                Err(error) => {
+                    unreachable.push((root.id, as_read(&root)));
+                    unopened.push((FolderId(root.id), error));
+                }
             }
         }
-        let unreachable: Vec<RootId> = unopened
-            .iter()
-            .filter(|(root, _)| root.unavailable_since_ms.is_none())
-            .map(|(root, _)| root.id)
-            .collect();
-        if !unreachable.is_empty() || reopened.iter().any(Reopened::changes_anything) {
-            self.note_reopened(unreachable, reopened).await?;
-        }
-        Ok(unopened
-            .into_iter()
-            .map(|(root, error)| (FolderId(root.id), error))
-            .collect())
+        self.note_reopened(unreachable, reopened).await?;
+        Ok(unopened)
     }
 
     async fn note_reopened(
         &self,
-        unreachable: Vec<RootId>,
+        unreachable: Vec<(RootId, RootLocator)>,
         reopened: Vec<Reopened>,
     ) -> Result<(), LibraryError> {
         let since_ms = self.now_ms();

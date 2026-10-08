@@ -1,10 +1,10 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use omnileaf_db::{
     Error,
     catalog::{
-        AppleBookmark, BookmarkedRoot, RootId, RootLocator, mark_root_available,
-        mark_root_unavailable, relocate_root,
+        AppleBookmark, BookmarkedRoot, RootId, RootLocator, library_root, mark_root_available,
+        mark_root_unavailable, relocate_roots,
     },
     rusqlite::Transaction,
 };
@@ -16,98 +16,95 @@ pub struct ResolvedBookmark {
     pub refreshed: Option<AppleBookmark>,
 }
 
+/// A bookmarked folder as it was read, and where its bookmark opened it.
 pub(crate) struct Reopened {
     id: RootId,
-    was_unavailable: bool,
-    from: PathBuf,
-    to: PathBuf,
-    bookmark: AppleBookmark,
-    is_refreshed: bool,
+    read: RootLocator,
+    opened: RootLocator,
 }
 
 impl Reopened {
     pub(crate) fn of(root: BookmarkedRoot, resolved: ResolvedBookmark) -> Self {
+        let read = as_read(&root);
         Self {
             id: root.id,
-            was_unavailable: root.unavailable_since_ms.is_some(),
-            from: root.path,
-            to: resolved.path,
-            is_refreshed: resolved.refreshed.is_some(),
-            bookmark: resolved.refreshed.unwrap_or(root.bookmark),
+            opened: RootLocator::AppleBookmark {
+                path: resolved.path,
+                bookmark: resolved.refreshed.unwrap_or(root.bookmark),
+            },
+            read,
         }
     }
 
     fn has_moved(&self) -> bool {
-        self.from != self.to
-    }
-
-    fn needs_relocating(&self) -> bool {
-        self.has_moved() || self.is_refreshed
-    }
-
-    pub(crate) fn changes_anything(&self) -> bool {
-        self.was_unavailable || self.needs_relocating()
-    }
-
-    fn at(&self, path: &Path) -> RootLocator {
-        RootLocator::AppleBookmark {
-            path: path.to_path_buf(),
-            bookmark: self.bookmark.clone(),
-        }
+        self.opened.path() != self.read.path()
     }
 }
 
-/// Reports whether any folder's place or availability changed.
+pub(crate) fn as_read(root: &BookmarkedRoot) -> RootLocator {
+    RootLocator::AppleBookmark {
+        path: root.path.clone(),
+        bookmark: root.bookmark.clone(),
+    }
+}
+
+/// Reports whether any folder's place or availability changed, leaving alone each folder that changed since its bookmark was read.
 pub(crate) fn note_bookmarks_opened(
     transaction: &Transaction<'_>,
-    unreachable: &[RootId],
+    unreachable: &[(RootId, RootLocator)],
     reopened: &[Reopened],
     since_ms: i64,
 ) -> Result<bool, Error> {
     let mut changed = false;
-    for id in unreachable {
-        unless_removed(mark_root_unavailable(transaction, *id, since_ms))?;
-        changed = true;
+    for (id, read) in unreachable {
+        if is_as_read(transaction, *id, read)? {
+            changed |= set_availability(transaction, *id, Some(since_ms))?;
+        }
     }
-    for folder in reopened.iter().filter(|folder| folder.was_unavailable) {
-        unless_removed(mark_root_available(transaction, folder.id))?;
-        changed = true;
+    let mut unchanged = Vec::new();
+    for folder in reopened {
+        if is_as_read(transaction, folder.id, &folder.read)? {
+            unchanged.push(folder);
+        }
     }
-    let mut waiting: Vec<&Reopened> = reopened
+    let moves: Vec<(RootId, RootLocator)> = unchanged
         .iter()
-        .filter(|folder| folder.needs_relocating())
+        .filter(|folder| folder.opened != folder.read)
+        .map(|folder| (folder.id, folder.opened.clone()))
         .collect();
-    loop {
-        let mut blocked = Vec::new();
-        for folder in &waiting {
-            match relocate_root(transaction, folder.id, &folder.at(&folder.to)) {
-                Ok(()) => changed |= folder.has_moved(),
-                Err(Error::LocationTaken { .. }) => blocked.push(*folder),
-                Err(error) => unless_removed(Err(error))?,
-            }
-        }
-        if blocked.is_empty() || blocked.len() == waiting.len() {
-            return keep_where_they_were(transaction, &blocked).map(|()| changed);
-        }
-        waiting = blocked;
+    let staying = relocate_roots(transaction, &moves)?;
+    for folder in unchanged {
+        let has_arrived = !staying.contains(&folder.id);
+        changed |= has_arrived && folder.has_moved();
+        let unavailable_since_ms = (!has_arrived).then_some(since_ms);
+        changed |= set_availability(transaction, folder.id, unavailable_since_ms)?;
+    }
+    Ok(changed)
+}
+
+fn is_as_read(
+    transaction: &Transaction<'_>,
+    id: RootId,
+    read: &RootLocator,
+) -> Result<bool, Error> {
+    match library_root(transaction, id) {
+        Ok(root) => Ok(root.locator == *read),
+        Err(Error::UnknownRoot { .. }) => Ok(false),
+        Err(error) => Err(error),
     }
 }
 
-fn keep_where_they_were(transaction: &Transaction<'_>, blocked: &[&Reopened]) -> Result<(), Error> {
-    for folder in blocked {
-        tracing::warn!(folder = %folder.id, "keep a bookmarked folder where it was, since another library folder is where it moved to");
-        unless_removed(relocate_root(
-            transaction,
-            folder.id,
-            &folder.at(&folder.from),
-        ))?;
-    }
-    Ok(())
-}
-
-fn unless_removed(outcome: Result<(), Error>) -> Result<(), Error> {
-    match outcome {
-        Err(Error::UnknownRoot { .. }) => Ok(()),
-        other => other,
+fn set_availability(
+    transaction: &Transaction<'_>,
+    id: RootId,
+    unavailable_since_ms: Option<i64>,
+) -> Result<bool, Error> {
+    let was_unavailable = library_root(transaction, id)?
+        .unavailable_since_ms
+        .is_some();
+    match (was_unavailable, unavailable_since_ms) {
+        (false, None) | (true, Some(_)) => Ok(false),
+        (true, None) => mark_root_available(transaction, id).map(|()| true),
+        (false, Some(since_ms)) => mark_root_unavailable(transaction, id, since_ms).map(|()| true),
     }
 }

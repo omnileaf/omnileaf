@@ -239,14 +239,64 @@ async fn leaves_a_bookmarked_folder_in_place_when_another_library_folder_is_wher
 
     let failed = moved_to(&library, manga.path(), REFRESHED_BOOKMARK).await;
 
+    let kept = folder_named(&library, "Bookmarked Taken").await;
     assert!(failed.is_empty());
-    assert_eq!(
-        folder_named(&library, "Bookmarked Taken").await.location,
-        comics.path().display().to_string()
-    );
+    assert_eq!(kept.location, comics.path().display().to_string());
+    assert!(!kept.is_available);
     assert_eq!(
         bookmarks_asked_for(&library, comics.path()).await,
         [AppleBookmark::new(REFRESHED_BOOKMARK.to_vec())]
+    );
+}
+
+#[tokio::test]
+async fn follows_two_bookmarked_folders_that_traded_names() {
+    let home = ScratchFolder::new("library-restore-traded-home");
+    let parent = ScratchFolder::new("library-restore-traded");
+    let comics = parent.path().join("Comics");
+    let manga = parent.path().join("Manga");
+    let between = parent.path().join("Between");
+    std::fs::create_dir(&comics).unwrap();
+    std::fs::create_dir(&manga).unwrap();
+    let library = open(home.path()).await;
+    library
+        .add_folder(bookmarked(comics.clone(), b"first"), |_| {})
+        .await
+        .unwrap();
+    library
+        .add_folder(bookmarked(manga.clone(), b"second"), |_| {})
+        .await
+        .unwrap();
+    std::fs::rename(&comics, &between).unwrap();
+    std::fs::rename(&manga, &comics).unwrap();
+    std::fs::rename(&between, &manga).unwrap();
+    let traded: [(&[u8], PathBuf); 2] = [(b"first", manga.clone()), (b"second", comics.clone())];
+
+    library
+        .restore_folder_access(move |bookmark| {
+            traded
+                .iter()
+                .find(|(was, _)| bookmark.as_bytes() == *was)
+                .map(|(_, now)| ResolvedBookmark {
+                    path: now.clone(),
+                    refreshed: None,
+                })
+                .ok_or(DriveNotConnected)
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(
+        all_folders(&library)
+            .await
+            .iter()
+            .map(|folder| (folder.location.clone(), folder.is_available))
+            .collect::<Vec<_>>(),
+        [
+            (home.path().display().to_string(), true),
+            (manga.display().to_string(), true),
+            (comics.display().to_string(), true),
+        ]
     );
 }
 
