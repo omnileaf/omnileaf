@@ -1,5 +1,3 @@
-//! Matches the system bars' icons and the window behind the interface to the interface's light or dark theme.
-
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
