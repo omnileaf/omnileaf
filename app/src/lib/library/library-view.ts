@@ -6,7 +6,6 @@ import {
   type OnCovers,
 } from "$lib/ipc/bindings";
 
-/** The sizes the library is drawn at, each with covers per row of its own. */
 export type ScreenSize = keyof CoversPerRow;
 
 export const SCREEN_SIZES: readonly ScreenSize[] = [

@@ -149,11 +149,7 @@ function runningAnimations(page: Page): Promise<string[]> {
   );
 }
 
-/**
- * Waits until no animation or transition is running, since axe reads colours
- * mid-fade as they are. An animation that repeats forever, such as a spinner,
- * never ends, so it is not waited for.
- */
+/** Waits for every animation that ends, such as a fade, since axe reads colours mid-fade as they are. */
 export async function accessibilityViolations(page: Page): Promise<Violations> {
   await expect
     .poll(() => runningAnimations(page), {
