@@ -218,27 +218,35 @@ pub(crate) fn stored_location(locator: &RootLocator) -> StoredLocation<'_> {
 
 /// Reads a locator from a row holding its kind at `kind_column`, then its location and its bookmark.
 pub(crate) fn stored_locator(row: &Row<'_>, kind_column: usize) -> rusqlite::Result<RootLocator> {
-    let path = stored_root_path(row, kind_column)?;
-    match row.get_ref(kind_column)?.as_str()? {
+    let kind: String = row.get(kind_column)?;
+    let path = || native_path::stored_native_path(row, kind_column + 1);
+    match kind.as_str() {
+        PATH_LOCATOR => Ok(RootLocator::Path(path()?)),
         APPLE_BOOKMARK_LOCATOR => Ok(RootLocator::AppleBookmark {
-            path,
+            path: path()?,
             bookmark: AppleBookmark(row.get(kind_column + 2)?),
         }),
-        _ => Ok(RootLocator::Path(path)),
+        _ => Err(unsupported_locator(kind_column, kind)),
     }
 }
 
 /// Reads where a root's folder is from a row holding its locator kind at `kind_column` and its location in the column after.
 pub(crate) fn stored_root_path(row: &Row<'_>, kind_column: usize) -> rusqlite::Result<PathBuf> {
     let kind: String = row.get(kind_column)?;
-    if kind != PATH_LOCATOR && kind != APPLE_BOOKMARK_LOCATOR {
-        return Err(rusqlite::Error::FromSqlConversionFailure(
-            kind_column,
-            Type::Text,
-            Box::new(Error::UnsupportedLocator { kind }),
-        ));
+    match kind.as_str() {
+        PATH_LOCATOR | APPLE_BOOKMARK_LOCATOR => {
+            native_path::stored_native_path(row, kind_column + 1)
+        }
+        _ => Err(unsupported_locator(kind_column, kind)),
     }
-    native_path::stored_native_path(row, kind_column + 1)
+}
+
+fn unsupported_locator(kind_column: usize, kind: String) -> rusqlite::Error {
+    rusqlite::Error::FromSqlConversionFailure(
+        kind_column,
+        Type::Text,
+        Box::new(Error::UnsupportedLocator { kind }),
+    )
 }
 
 impl ToSql for RootKind {

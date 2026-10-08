@@ -16,7 +16,7 @@ use omnileaf_db::{
         AppleBookmark, BookmarkedRoot, LibraryRoot, NewBook, NewRoot, NewSeries, Page, PageRequest,
         PageSize, RootId, RootKind, RootLocator, add_book, add_root, add_series, bookmarked_roots,
         library_root, library_roots, mark_root_available, mark_root_unavailable, relocate_root,
-        remove_root, series_books, set_home_root,
+        relocate_roots, remove_root, series_books, set_home_root,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
@@ -76,6 +76,13 @@ impl Library {
         self.database
             .write(move |transaction| relocate_root(transaction, id, &locator))
             .await
+    }
+
+    async fn relocate_together(&self, moves: Vec<(RootId, RootLocator)>) -> Vec<RootId> {
+        self.database
+            .write(move |transaction| relocate_roots(transaction, &moves))
+            .await
+            .unwrap()
     }
 
     async fn locator(&self, id: RootId) -> RootLocator {
@@ -371,6 +378,114 @@ async fn reads_a_bookmarked_folder_the_home_folder_moved_into_by_its_path() {
         library.locator(comics).await,
         RootLocator::Path(PathBuf::from(COMICS))
     );
+}
+
+#[tokio::test]
+async fn moves_two_roots_that_trade_places() {
+    let library = Library::open("roots-trade-places");
+    let comics = library.add_bookmarked(COMICS, b"comics").await;
+    let manga = library.add_bookmarked(MANGA, b"manga").await;
+
+    let blocked = library
+        .relocate_together(vec![
+            (comics, bookmarked(MANGA, b"comics")),
+            (manga, bookmarked(COMICS, b"manga")),
+        ])
+        .await;
+
+    assert!(blocked.is_empty());
+    assert_eq!(library.locator(comics).await, bookmarked(MANGA, b"comics"));
+    assert_eq!(library.locator(manga).await, bookmarked(COMICS, b"manga"));
+}
+
+#[tokio::test]
+async fn moves_roots_that_follow_one_another() {
+    let library = Library::open("roots-follow");
+    let comics = library.add_bookmarked(COMICS, b"comics").await;
+    let manga = library.add_bookmarked(MANGA, b"manga").await;
+
+    let blocked = library
+        .relocate_together(vec![
+            (comics, bookmarked(MANGA, b"comics")),
+            (manga, bookmarked(SAMPLES, b"manga")),
+        ])
+        .await;
+
+    assert!(blocked.is_empty());
+    assert_eq!(library.locator(comics).await, bookmarked(MANGA, b"comics"));
+    assert_eq!(library.locator(manga).await, bookmarked(SAMPLES, b"manga"));
+}
+
+#[tokio::test]
+async fn keeps_a_root_in_its_place_with_its_new_bookmark_when_a_root_staying_put_holds_where_it_moved()
+ {
+    let library = Library::open("roots-blocked");
+    library.add(RootKind::Linked, MANGA).await;
+    let comics = library.add_bookmarked(COMICS, ICLOUD_BOOKMARK).await;
+
+    let blocked = library
+        .relocate_together(vec![(comics, bookmarked(MANGA, REFRESHED_BOOKMARK))])
+        .await;
+
+    assert_eq!(blocked, [comics]);
+    assert_eq!(
+        library.locator(comics).await,
+        bookmarked(COMICS, REFRESHED_BOOKMARK)
+    );
+}
+
+#[tokio::test]
+async fn keeps_a_root_moving_into_the_place_of_a_root_that_had_to_stay() {
+    let library = Library::open("roots-blocked-chain");
+    library.add(RootKind::Linked, SAMPLES).await;
+    let manga = library.add_bookmarked(MANGA, b"manga").await;
+    let comics = library.add_bookmarked(COMICS, b"comics").await;
+
+    let blocked = library
+        .relocate_together(vec![
+            (manga, bookmarked(SAMPLES, b"manga")),
+            (comics, bookmarked(MANGA, b"comics")),
+        ])
+        .await;
+
+    assert_eq!(blocked, [manga, comics]);
+    assert_eq!(library.locator(manga).await, bookmarked(MANGA, b"manga"));
+    assert_eq!(library.locator(comics).await, bookmarked(COMICS, b"comics"));
+}
+
+#[tokio::test]
+async fn moves_only_the_first_of_two_roots_heading_to_one_place() {
+    let library = Library::open("roots-same-place");
+    let comics = library.add_bookmarked(COMICS, b"comics").await;
+    let manga = library.add_bookmarked(MANGA, b"manga").await;
+
+    let blocked = library
+        .relocate_together(vec![
+            (comics, bookmarked(SAMPLES, b"comics")),
+            (manga, bookmarked(SAMPLES, b"manga")),
+        ])
+        .await;
+
+    assert_eq!(blocked, [manga]);
+    assert_eq!(
+        library.locator(comics).await,
+        bookmarked(SAMPLES, b"comics")
+    );
+    assert_eq!(library.locator(manga).await, bookmarked(MANGA, b"manga"));
+}
+
+#[tokio::test]
+async fn skips_a_root_removed_before_it_moves() {
+    let library = Library::open("roots-removed-before-move");
+    let comics = library.add_bookmarked(COMICS, ICLOUD_BOOKMARK).await;
+    library.remove(comics).await.unwrap();
+
+    let blocked = library
+        .relocate_together(vec![(comics, bookmarked(MANGA, REFRESHED_BOOKMARK))])
+        .await;
+
+    assert!(blocked.is_empty());
+    assert!(library.locations().await.is_empty());
 }
 
 #[tokio::test]

@@ -7,6 +7,7 @@ mod home_root;
 mod library_roots;
 mod native_path;
 mod page;
+mod relocated_roots;
 mod root;
 mod root_availability;
 mod root_files;
@@ -23,6 +24,7 @@ pub use cursor::Cursor;
 pub use home_root::set_home_root;
 pub use library_roots::{BookmarkedRoot, bookmarked_roots, library_root, library_roots};
 pub use page::{Page, PageRequest, PageSize};
+pub use relocated_roots::relocate_roots;
 pub use root::{
     AppleBookmark, LibraryRoot, NewRoot, RootId, RootKind, RootLocator, add_root, relocate_root,
     remove_root,
