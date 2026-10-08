@@ -9,8 +9,26 @@ use omnileaf_db::{
 };
 use omnileaf_sync_proto::{Fingerprint, ImageEntry};
 
-/// A series folder's name, when it was added, and the titles of its books.
-pub(crate) type SeriesSeed<'a> = (&'a str, i64, &'a [&'a str]);
+const ADDED_LONG_AGO_MS: i64 = 1;
+const ONE_BOOK: &[&str] = &["Volume 01"];
+
+#[derive(Clone, Copy)]
+pub(crate) struct SeriesSeed<'a> {
+    pub(crate) name: &'a str,
+    pub(crate) added_at_ms: i64,
+    pub(crate) book_titles: &'a [&'a str],
+}
+
+impl<'a> SeriesSeed<'a> {
+    /// A series added long ago holding one book, `Volume 01`.
+    pub(crate) const fn named(name: &'a str) -> Self {
+        Self {
+            name,
+            added_at_ms: ADDED_LONG_AGO_MS,
+            book_titles: ONE_BOOK,
+        }
+    }
+}
 
 /// Adds every series and its books in one transaction.
 pub(crate) async fn seed_library(database: &Database, series: &[SeriesSeed<'_>]) {
@@ -39,15 +57,16 @@ pub(crate) fn fingerprint(series: &str, title: &str) -> Fingerprint {
     Fingerprint::pmf1(pages).unwrap()
 }
 
-fn new_series(&(name, added_at_ms, titles): &SeriesSeed<'_>) -> (NewSeries, Vec<NewBook>) {
-    let series = NewSeries::local(name, added_at_ms).unwrap();
-    let books = titles
+fn new_series(seed: &SeriesSeed<'_>) -> (NewSeries, Vec<NewBook>) {
+    let series = NewSeries::local(seed.name, seed.added_at_ms).unwrap();
+    let books = seed
+        .book_titles
         .iter()
         .map(|&title| NewBook {
-            fingerprint: fingerprint(name, title),
+            fingerprint: fingerprint(seed.name, title),
             series: series.id(),
             title: title.to_owned(),
-            added_at_ms,
+            added_at_ms: seed.added_at_ms,
         })
         .collect();
     (series, books)

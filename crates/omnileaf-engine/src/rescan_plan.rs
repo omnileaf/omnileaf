@@ -1,5 +1,3 @@
-//! What a rescan must read, record and remove, worked out by comparing the folder with the catalog.
-
 use std::{
     collections::{BTreeMap, btree_map::Entry},
     path::{Path, PathBuf},

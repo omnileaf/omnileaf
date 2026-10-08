@@ -20,7 +20,6 @@ const SERIES_COUNT: u32 = 10_000;
 const PAGE_SIZE: u16 = 100;
 const PAGES: usize = (SERIES_COUNT / PAGE_SIZE as u32) as usize;
 const BUDGET: Duration = Duration::from_millis(2);
-const ONE_BOOK: &[&str] = &["Volume 01"];
 
 #[tokio::test]
 #[expect(
@@ -58,7 +57,10 @@ async fn add_generated_series(database: &Database) {
         .collect();
     let series: Vec<SeriesSeed<'_>> = names
         .iter()
-        .map(|(name, added_at_ms)| (name.as_str(), *added_at_ms, ONE_BOOK))
+        .map(|(name, added_at_ms)| SeriesSeed {
+            added_at_ms: *added_at_ms,
+            ..SeriesSeed::named(name.as_str())
+        })
         .collect();
     seed_library(database, &series).await;
 }

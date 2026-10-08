@@ -8,7 +8,13 @@ use crate::check::{Runner, STEPS, Step, run_all};
 
 pub(crate) const HOOKS_FOLDER: &str = ".githooks";
 
-const ALWAYS: &[&str] = &["format", "fuzz format", "policy", "sync rules"];
+const ALWAYS: &[&str] = &[
+    "format",
+    "fuzz format",
+    "policy",
+    "sync rules",
+    "comment rules",
+];
 const RUST_LICENCES: &str = "licences";
 const INTERFACE_BUILD: &str = "interface build";
 const RUST_LICENCE_INPUTS: &[&str] = &["Cargo.lock", "Cargo.toml", "about.toml"];
@@ -227,10 +233,19 @@ mod tests {
     }
 
     #[test]
-    fn always_checks_formatting_policy_and_sync_rules() {
+    fn always_checks_formatting_policy_sync_and_comment_rules() {
         let checks = names(Some(&["crates/omnileaf-db/src/lib.rs"]));
 
-        assert_eq!(checks, ["format", "fuzz format", "policy", "sync rules"]);
+        assert_eq!(
+            checks,
+            [
+                "format",
+                "fuzz format",
+                "policy",
+                "sync rules",
+                "comment rules"
+            ]
+        );
     }
 
     #[test]
@@ -270,6 +285,7 @@ mod tests {
                 "fuzz format",
                 "policy",
                 "sync rules",
+                "comment rules",
                 "interface build"
             ]
         );
@@ -287,6 +303,7 @@ mod tests {
                 "policy",
                 "licences",
                 "sync rules",
+                "comment rules",
                 "interface build"
             ]
         );

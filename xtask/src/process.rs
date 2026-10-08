@@ -1,5 +1,3 @@
-//! Runs gate steps and tool probes as child processes in the workspace root.
-
 use std::{
     env,
     ffi::{OsStr, OsString},

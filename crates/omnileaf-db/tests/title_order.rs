@@ -14,7 +14,6 @@ use omnileaf_db::{
 };
 use support::{ScratchFolder, library_config};
 
-const ONE_BOOK: &[&str] = &["Volume 01"];
 const PAGE_SIZE: u16 = 3;
 const UNSORTED: [&str; 5] = [
     "Echo Sample",
@@ -360,7 +359,7 @@ async fn keys_a_series_added_after_a_language_change_for_that_language() {
 
     seed_library(
         library.store.database(),
-        &[("Åsna", 1, ONE_BOOK), ("Apelsin", 1, ONE_BOOK)],
+        &[SeriesSeed::named("Åsna"), SeriesSeed::named("Apelsin")],
     )
     .await;
 
@@ -452,7 +451,7 @@ async fn leaves_the_keys_alone_when_they_carry_this_build_s_stamp() {
 
 async fn seed(folder: &ScratchFolder, titles: &[&str]) {
     let database = Database::open(&library_config(folder)).unwrap();
-    let series: Vec<SeriesSeed<'_>> = titles.iter().map(|title| (*title, 1, ONE_BOOK)).collect();
+    let series: Vec<SeriesSeed<'_>> = titles.iter().copied().map(SeriesSeed::named).collect();
     seed_library(&database, &series).await;
 }
 

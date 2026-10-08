@@ -1,5 +1,3 @@
-//! Regenerates the licences of the packages the app ships, or checks the committed Rust ones are current.
-
 use std::{env, fs, io, path::Path, process::Command};
 
 use anyhow::Context;

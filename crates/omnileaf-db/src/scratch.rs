@@ -33,7 +33,6 @@ impl ScratchLibrary {
         Self { folder, config }
     }
 
-    /// The steps SQLite plans for `sql` on a library with the latest schema.
     pub(crate) fn query_plan(&self, sql: &str) -> Vec<String> {
         drop(Database::open(&self.config).unwrap());
         let connection = Connection::open(&self.config.path).unwrap();

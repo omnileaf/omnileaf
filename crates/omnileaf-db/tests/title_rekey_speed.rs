@@ -14,7 +14,6 @@ use support::{ScratchFolder, library_config};
 const SERIES_COUNT: u32 = 10_000;
 const BUDGET: Duration = Duration::from_millis(150);
 const LANGUAGES: [&str; 4] = ["sv", "en", "sv", "en"];
-const ONE_BOOK: &[&str] = &["Volume 01"];
 
 struct StoppedClock;
 
@@ -68,7 +67,10 @@ async fn add_generated_series(database: &Database) {
         .collect();
     let series: Vec<SeriesSeed<'_>> = names
         .iter()
-        .map(|name| (name.as_str(), 0, ONE_BOOK))
+        .map(|name| SeriesSeed {
+            added_at_ms: 0,
+            ..SeriesSeed::named(name.as_str())
+        })
         .collect();
     seed_library(database, &series).await;
 }

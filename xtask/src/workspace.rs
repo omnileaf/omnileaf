@@ -1,5 +1,3 @@
-//! Reads the repository's files, tracked or not yet ignored, and its policy lists.
-
 use std::{
     env,
     ffi::OsString,

@@ -111,7 +111,6 @@ mod tests {
 
     type SentStatus = Arc<Mutex<Option<StatusCode>>>;
 
-    /// Sends a response by putting its status in `slot`.
     fn recorder(slot: &SentStatus) -> impl FnOnce(http::Response<Vec<u8>>) + use<> {
         let slot = Arc::clone(slot);
         move |response| *slot.lock().unwrap() = Some(response.status())

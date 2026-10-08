@@ -31,6 +31,18 @@ export default defineConfig(
     },
   },
   {
+    rules: {
+      "no-warning-comments": [
+        "error",
+        { terms: ["todo", "fixme", "xxx", "hack"], location: "anywhere" },
+      ],
+      "no-inline-comments": [
+        "error",
+        { ignorePattern: "@ts-expect-error|prettier-ignore" },
+      ],
+    },
+  },
+  {
     files: ["**/*.svelte", "**/*.svelte.ts"],
     languageOptions: {
       parserOptions: { parser: tseslint.parser, svelteConfig },

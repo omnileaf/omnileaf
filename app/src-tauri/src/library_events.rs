@@ -1,5 +1,3 @@
-//! The events that tell the interface its library changed underneath it.
-
 use omnileaf_engine::{Library, LibraryChanges};
 use serde::{Deserialize, Serialize};
 use specta::Type;

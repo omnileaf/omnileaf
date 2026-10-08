@@ -1,5 +1,3 @@
-//! Removes the app from a phone, emulator or Simulator so `dev --fresh` starts it with no data.
-
 use std::{
     env,
     ffi::OsStr,

@@ -15,11 +15,10 @@ use crate::{
 
 const TITLE_KEY_OF_SERIES: &str = "SELECT title_key FROM series WHERE id = ?1";
 
-/// The first page of a list in some order, the page after a cursor, and the sort values that place a row in that order.
 struct Listing<P> {
-    first: &'static str,
-    after: &'static str,
-    position: fn(&Row<'_>) -> rusqlite::Result<P>,
+    first_page_query: &'static str,
+    next_page_query: &'static str,
+    sort_position: fn(&Row<'_>) -> rusqlite::Result<P>,
 }
 
 /// Where a row sits in title order, short of the stamp its key was made under.
@@ -52,10 +51,10 @@ macro_rules! series_with_books {
 }
 
 macro_rules! listing {
-    (seek: $seek:literal, order: $order:literal, position: $position:expr $(,)?) => {
+    (seek: $seek:literal, order: $order:literal, sort_position: $position:expr $(,)?) => {
         Listing {
-            first: concat!(series_with_books!(), " ORDER BY ", $order, " LIMIT :limit"),
-            after: concat!(
+            first_page_query: concat!(series_with_books!(), " ORDER BY ", $order, " LIMIT :limit"),
+            next_page_query: concat!(
                 series_with_books!(),
                 " AND ",
                 $seek,
@@ -63,7 +62,7 @@ macro_rules! listing {
                 $order,
                 " LIMIT :limit"
             ),
-            position: $position,
+            sort_position: $position,
         }
     };
 }
@@ -71,7 +70,7 @@ macro_rules! listing {
 const BY_TITLE: Listing<TitlePlace> = listing! {
     seek: "(series.title_key, series.id) > (:after_key, :after_id)",
     order: "series.title_key, series.id",
-    position: |row| {
+    sort_position: |row| {
         Ok(TitlePlace {
             sort_key: row.get("title_key")?,
             id: stored_id(row, "id")?,
@@ -82,7 +81,7 @@ const BY_TITLE: Listing<TitlePlace> = listing! {
 const BY_RECENTLY_ADDED: Listing<Position> = listing! {
     seek: "(series.added_at_ms, series.id) < (:after_key, :after_id)",
     order: "series.added_at_ms DESC, series.id DESC",
-    position: |row| {
+    sort_position: |row| {
         Ok(Position::Added {
             added_at_ms: row.get("added_at_ms")?,
             id: stored_id(row, "id")?,
@@ -217,7 +216,7 @@ impl<P> Listing<P> {
         limit: i64,
     ) -> Result<Vec<(SeriesSummary, P)>, Error> {
         self.read(
-            connection.prepare(self.first)?,
+            connection.prepare(self.first_page_query)?,
             named_params! { ":limit": limit },
         )
     }
@@ -227,7 +226,7 @@ impl<P> Listing<P> {
         connection: &Connection,
         after_and_limit: &[(&str, &dyn ToSql)],
     ) -> Result<Vec<(SeriesSummary, P)>, Error> {
-        self.read(connection.prepare(self.after)?, after_and_limit)
+        self.read(connection.prepare(self.next_page_query)?, after_and_limit)
     }
 
     fn read(
@@ -235,7 +234,9 @@ impl<P> Listing<P> {
         mut statement: Statement<'_>,
         params: &[(&str, &dyn ToSql)],
     ) -> Result<Vec<(SeriesSummary, P)>, Error> {
-        let rows = statement.query_map(params, |row| Ok((summary(row)?, (self.position)(row)?)))?;
+        let rows = statement.query_map(params, |row| {
+            Ok((summary(row)?, (self.sort_position)(row)?))
+        })?;
         Ok(rows.collect::<Result<_, _>>()?)
     }
 }
@@ -286,7 +287,7 @@ mod tests {
     fn starts_at_the_head_of_the_title_index_without_reading_the_table_or_sorting() {
         let scratch = ScratchLibrary::new("first-title-plan");
 
-        let plan = scratch.query_plan(BY_TITLE.first);
+        let plan = scratch.query_plan(BY_TITLE.first_page_query);
 
         assert_eq!(
             plan,
@@ -298,7 +299,7 @@ mod tests {
     fn starts_at_the_head_of_the_recently_added_index_without_reading_the_table_or_sorting() {
         let scratch = ScratchLibrary::new("first-recently-added-plan");
 
-        let plan = scratch.query_plan(BY_RECENTLY_ADDED.first);
+        let plan = scratch.query_plan(BY_RECENTLY_ADDED.first_page_query);
 
         assert_eq!(
             plan,
@@ -310,7 +311,7 @@ mod tests {
     fn seeks_the_title_index_on_both_sort_columns_without_scanning_or_sorting() {
         let scratch = ScratchLibrary::new("title-plan");
 
-        let plan = scratch.query_plan(BY_TITLE.after);
+        let plan = scratch.query_plan(BY_TITLE.next_page_query);
 
         assert_eq!(
             plan,
@@ -324,7 +325,7 @@ mod tests {
     fn seeks_the_recently_added_index_on_both_sort_columns_without_scanning_or_sorting() {
         let scratch = ScratchLibrary::new("recently-added-plan");
 
-        let plan = scratch.query_plan(BY_RECENTLY_ADDED.after);
+        let plan = scratch.query_plan(BY_RECENTLY_ADDED.next_page_query);
 
         assert_eq!(
             plan,

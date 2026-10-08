@@ -1,5 +1,3 @@
-//! Checks that this machine has the tools the repository needs.
-
 use std::ffi::OsStr;
 
 use crate::{android, apple, licences::INSTALL_CARGO_ABOUT, process::Machine};

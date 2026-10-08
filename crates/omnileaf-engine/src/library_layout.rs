@@ -25,7 +25,6 @@ pub(crate) struct Layout {
     pub(crate) unreadable_folders: Vec<PathBuf>,
 }
 
-/// What one entry of a folder is to the walk.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum EntryKind {
     Folder,
