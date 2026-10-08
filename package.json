@@ -1,7 +1,7 @@
 {
   "name": "omnileaf",
   "private": true,
-  "packageManager": "pnpm@11.26.0",
+  "packageManager": "pnpm@12.10.1",
   "scripts": {
     "dev": "pnpm --dir app dev",
     "build": "pnpm --dir app build"
