@@ -30,7 +30,7 @@ cd app
 pnpm exec playwright test --project speed
 ```
 
-Each prints its timings as annotations. The first-paint spec asserts the median of nine openings; the scrolling spec scrolls 40 px a frame for 300 frames and counts a frame as dropped when it took more than one and a half refreshes at 60 Hz, allowing three of them.
+Each prints its timings as annotations. The first-paint spec asserts the median of nine openings; the scrolling spec scrolls 40 px a frame for 300 frames and counts a frame as dropped when it took more than one and a half refreshes at 60 Hz, allowing three of them in the pass that dropped the fewest of three timed passes, after one untimed warm-up pass.
 
 The middle of the whole catalog was probed by changing the scrolling spec to scroll to the foot of the list until the last of the 10,000 series was in, jump back to the middle, wait for every cover image to load, and then time the same 300 frames. The spec stays on the first pages because that probe drops a different number of frames on every run, too unsteady for a gate.
 
