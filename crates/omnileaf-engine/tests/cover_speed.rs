@@ -16,7 +16,7 @@ use omnileaf_testkit::{
     ArchiveEntry, Compression, PageShape, Sampling, SpeedTrial, Statistic, TimingBudget, cbz,
     page_jpeg, subsampled_scan_jpeg,
 };
-use support::{FixedClock, TempFolder};
+use support::{FixedClock, ScratchFolder};
 
 const BOOKS: u64 = 100;
 const PAGES_AFTER_THE_COVER: u32 = 3;
@@ -64,7 +64,7 @@ async fn cover_paths(library: &Library) -> Vec<String> {
 
 struct ColdCovers<'covers> {
     router: ResourceRouter,
-    _cache: TempFolder,
+    _cache: ScratchFolder,
     covers: Iter<'covers, String>,
 }
 
@@ -83,9 +83,9 @@ async fn makes_a_cold_cover_thumbnail_from_a_typical_colour_scan_within_30_ms_at
         },
         budget: TimingBudget::from_env(BUDGET),
     };
-    let comics = TempFolder::new("cover-speed-comics");
+    let comics = ScratchFolder::new("cover-speed-comics");
     write_scanned_library(&comics.path().join(FOLDER));
-    let home = TempFolder::new("cover-speed-home");
+    let home = ScratchFolder::new("cover-speed-home");
     let library = Library::open(home.path().to_path_buf(), FixedClock)
         .await
         .unwrap();
@@ -99,7 +99,7 @@ async fn makes_a_cold_cover_thumbnail_from_a_typical_colour_scan_within_30_ms_at
     let outcome = trial
         .run(
             async |pass| {
-                let cache = TempFolder::new(&format!("cover-speed-cache-{pass}"));
+                let cache = ScratchFolder::new(&format!("cover-speed-cache-{pass}"));
                 ColdCovers {
                     router: ResourceRouter::open(cache.path()).unwrap(),
                     _cache: cache,

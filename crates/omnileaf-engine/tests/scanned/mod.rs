@@ -11,20 +11,20 @@ use omnileaf_db::{
 };
 use omnileaf_engine::{FolderId, FolderScan, Library, ScanProgress};
 
-use crate::support::{FixedClock, TempFolder};
+use crate::support::{FixedClock, ScratchFolder};
 
 const DATABASE_FILE: &str = "library.sqlite";
 
 /// A scratch library holding one linked folder, read through a connection of its own.
 pub(crate) struct Scanned {
     pub(crate) library: Library,
-    pub(crate) home: TempFolder,
+    pub(crate) home: ScratchFolder,
     pub(crate) id: FolderId,
 }
 
 impl Scanned {
     pub(crate) async fn folder(name: &str, folder: &Path) -> (Self, FolderScan, Vec<ScanProgress>) {
-        let home = TempFolder::new(&format!("{name}-home"));
+        let home = ScratchFolder::new(&format!("{name}-home"));
         let library = Library::open(home.path().to_path_buf(), FixedClock)
             .await
             .unwrap();

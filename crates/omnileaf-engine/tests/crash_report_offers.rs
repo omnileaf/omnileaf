@@ -3,11 +3,9 @@
     reason = "the test folders are fixtures, so a failed set-up should stop the test"
 )]
 
-use std::{
-    env, fs,
-    path::{Path, PathBuf},
-    process, thread,
-};
+use std::{fs, path::PathBuf, thread};
+
+use omnileaf_testkit::ScratchFolder;
 
 use omnileaf_engine::{
     CrashReport, CrashReportError, CrashReportFile, CrashReportId, CrashReportOffers, CrashedApp,
@@ -16,23 +14,20 @@ use omnileaf_engine::{
 
 const BROWSER_URL_LIMIT: usize = 8000;
 
-struct TempFolder(PathBuf);
+/// A folder for crash reports that doesn't exist until a report is saved in it.
+struct ReportsFolder(ScratchFolder);
 
-impl TempFolder {
+impl ReportsFolder {
     fn new(name: &str) -> Self {
-        let path = env::temp_dir()
-            .join(format!("omnileaf-crash-reports-{}", process::id()))
-            .join(name);
-        let _ = fs::remove_dir_all(&path);
-        Self(path)
+        Self(ScratchFolder::new(name))
     }
 
-    fn path(&self) -> &Path {
-        &self.0
+    fn path(&self) -> PathBuf {
+        self.0.path().join("crash-reports")
     }
 
     fn file(&self) -> CrashReportFile {
-        CrashReportFile::in_folder(self.path())
+        CrashReportFile::in_folder(&self.path())
     }
 
     fn offers(&self) -> CrashReportOffers {
@@ -47,13 +42,6 @@ impl TempFolder {
     fn replace_saved_text(&self, text: &str) {
         let file = fs::read_dir(self.path()).unwrap().next().unwrap().unwrap();
         fs::write(file.path(), text).unwrap();
-    }
-}
-
-impl Drop for TempFolder {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
-        let _ = fs::remove_file(&self.0);
     }
 }
 
@@ -74,7 +62,7 @@ fn report(millis: u64, message: &str) -> CrashReport {
 
 #[test]
 fn offers_nothing_when_no_crash_was_saved() {
-    let folder = TempFolder::new("nothing-saved");
+    let folder = ReportsFolder::new("nothing-saved");
 
     let offered = folder.offers().offer_saved().unwrap();
 
@@ -83,7 +71,7 @@ fn offers_nothing_when_no_crash_was_saved() {
 
 #[test]
 fn offers_the_report_saved_by_an_earlier_run() {
-    let folder = TempFolder::new("earlier-run");
+    let folder = ReportsFolder::new("earlier-run");
     folder.file().save(&report(1, "first")).unwrap();
 
     let offered = folder.offers().offer_saved().unwrap();
@@ -93,7 +81,7 @@ fn offers_the_report_saved_by_an_earlier_run() {
 
 #[test]
 fn offers_a_new_report_and_keeps_it_for_the_next_run() {
-    let folder = TempFolder::new("kept-for-next-run");
+    let folder = ReportsFolder::new("kept-for-next-run");
     let offered = folder.offers().offer(report(1, "first")).unwrap();
 
     let next_run = folder.offers().offer_saved().unwrap();
@@ -104,7 +92,7 @@ fn offers_a_new_report_and_keeps_it_for_the_next_run() {
 
 #[test]
 fn keeps_the_report_on_offer_when_another_arrives() {
-    let folder = TempFolder::new("another-arrives");
+    let folder = ReportsFolder::new("another-arrives");
     let offers = folder.offers();
     offers.offer(report(1, "first")).unwrap();
 
@@ -116,7 +104,7 @@ fn keeps_the_report_on_offer_when_another_arrives() {
 
 #[test]
 fn keeps_offering_the_same_report_until_it_is_settled() {
-    let folder = TempFolder::new("same-until-settled");
+    let folder = ReportsFolder::new("same-until-settled");
     let offers = folder.offers();
     offers.offer(report(1, "first")).unwrap();
     folder.file().save(&report(2, "second")).unwrap();
@@ -128,7 +116,7 @@ fn keeps_offering_the_same_report_until_it_is_settled() {
 
 #[test]
 fn forgets_a_settled_report() {
-    let folder = TempFolder::new("settled");
+    let folder = ReportsFolder::new("settled");
     let offers = folder.offers();
     offers.offer(report(1, "first")).unwrap();
 
@@ -140,7 +128,7 @@ fn forgets_a_settled_report() {
 
 #[test]
 fn leaves_a_newer_saved_report_for_the_next_run() {
-    let folder = TempFolder::new("newer-saved");
+    let folder = ReportsFolder::new("newer-saved");
     let offers = folder.offers();
     offers.offer(report(1, "first")).unwrap();
     folder.file().save(&report(2, "second")).unwrap();
@@ -155,7 +143,7 @@ fn leaves_a_newer_saved_report_for_the_next_run() {
 
 #[test]
 fn discards_a_saved_report_it_cannot_read() {
-    let folder = TempFolder::new("unreadable");
+    let folder = ReportsFolder::new("unreadable");
     folder.file().save(&report(1, "first")).unwrap();
     folder.replace_saved_text("not a report");
 
@@ -168,7 +156,7 @@ fn discards_a_saved_report_it_cannot_read() {
 
 #[test]
 fn discards_a_saved_report_too_large_to_be_one() {
-    let folder = TempFolder::new("too-large");
+    let folder = ReportsFolder::new("too-large");
     folder.file().save(&report(1, "first")).unwrap();
     let edited = folder
         .saved_text()
@@ -184,7 +172,7 @@ fn discards_a_saved_report_too_large_to_be_one() {
 
 #[test]
 fn cleans_a_saved_report_again_when_reading_it() {
-    let folder = TempFolder::new("cleaned-again");
+    let folder = ReportsFolder::new("cleaned-again");
     folder.file().save(&report(1, "first")).unwrap();
     let edited = folder
         .saved_text()
@@ -198,7 +186,7 @@ fn cleans_a_saved_report_again_when_reading_it() {
 
 #[test]
 fn cleans_and_bounds_the_version_and_system_of_a_saved_report() {
-    let folder = TempFolder::new("cleaned-app");
+    let folder = ReportsFolder::new("cleaned-app");
     folder.file().save(&report(1, "first")).unwrap();
     let edited = folder
         .saved_text()
@@ -243,7 +231,7 @@ fn panic_report() -> CrashReport {
 
 #[test]
 fn keeps_where_a_saved_panic_happened() {
-    let folder = TempFolder::new("panic-location");
+    let folder = ReportsFolder::new("panic-location");
     folder.file().save(&panic_report()).unwrap();
 
     let offered = folder.offers().offer_saved().unwrap().unwrap();
@@ -258,7 +246,7 @@ fn keeps_where_a_saved_panic_happened() {
 
 #[test]
 fn bounds_where_a_saved_panic_happened() {
-    let folder = TempFolder::new("panic-location-bounded");
+    let folder = ReportsFolder::new("panic-location-bounded");
     folder.file().save(&panic_report()).unwrap();
     let edited = folder
         .saved_text()
@@ -275,7 +263,7 @@ fn bounds_where_a_saved_panic_happened() {
 
 #[test]
 fn saves_from_several_threads_at_once_without_losing_the_report() {
-    let folder = TempFolder::new("concurrent-saves");
+    let folder = ReportsFolder::new("concurrent-saves");
     let file = folder.file();
 
     let outcomes: Vec<bool> = thread::scope(|scope| {
@@ -312,7 +300,7 @@ fn offers_a_report_for_this_run_when_there_is_nowhere_to_keep_it() {
 
 #[test]
 fn still_offers_a_report_it_could_not_save() {
-    let folder = TempFolder::new("unsaved");
+    let folder = ReportsFolder::new("unsaved");
     fs::create_dir_all(folder.path().parent().unwrap()).unwrap();
     fs::write(folder.path(), "a file where the folder should be").unwrap();
     let offers = folder.offers();
