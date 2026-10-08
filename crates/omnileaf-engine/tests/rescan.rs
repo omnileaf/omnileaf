@@ -24,7 +24,7 @@ use omnileaf_engine::{
 };
 use omnileaf_sync_proto::BookId;
 use scanned::{Scanned, owned, whole_page};
-use support::{FixedClock, TempFolder};
+use support::{FixedClock, ScratchFolder};
 
 const SERIES_01: &str = "Sample Series 01";
 const SERIES_02: &str = "Sample Series 02";
@@ -35,12 +35,12 @@ const DATABASE_FILE: &str = "library.sqlite";
 /// A folder of three books in two series, scanned once into a library of its own.
 struct Rescanned {
     scanned: Scanned,
-    comics: TempFolder,
+    comics: ScratchFolder,
 }
 
 impl Rescanned {
     async fn new(name: &str) -> Self {
-        let comics = TempFolder::new(name);
+        let comics = ScratchFolder::new(name);
         write_book(&comics.path().join(SERIES_01).join("v01.cbz"), 1);
         write_book(&comics.path().join(SERIES_01).join("v02.cbz"), 2);
         write_book(&comics.path().join(SERIES_02).join("v01.cbz"), 3);
@@ -156,7 +156,8 @@ async fn finds_nothing_changed_when_no_file_did() {
 
 #[tokio::test]
 async fn finds_nothing_changed_in_an_unchanged_folder_of_images() {
-    let comics = TempFolder::new("rescan-images").with_files(&["Sample Series 01/notes.txt"]);
+    let comics = ScratchFolder::new("rescan-images");
+    comics.write("Sample Series 01/notes.txt", b"");
     write_page(&comics.path().join(SERIES_01).join("Ch 01"), 1);
     let (scanned, _, _) = Scanned::folder("rescan-images", comics.path()).await;
 
@@ -562,7 +563,7 @@ async fn marks_a_folder_available_again_once_it_is_added_again() {
 
 #[tokio::test]
 async fn finds_nothing_changed_in_a_folder_that_never_held_books() {
-    let comics = TempFolder::new("rescan-never-held-books");
+    let comics = ScratchFolder::new("rescan-never-held-books");
     let (scanned, _, _) = Scanned::folder("rescan-never-held-books", comics.path()).await;
 
     let rescan = scanned
@@ -640,7 +641,7 @@ async fn rescans_the_folders_after_one_removed_while_the_rescan_runs() {
     const HOME_BOOKS: u64 = 40;
     let folder = Rescanned::new("rescan-removed-meanwhile").await;
     let library = &folder.scanned.library;
-    let later = TempFolder::new("rescan-removed-meanwhile-later");
+    let later = ScratchFolder::new("rescan-removed-meanwhile-later");
     write_book(&later.path().join(SERIES_03).join("v01.cbz"), 4);
     write_book(&later.path().join(SERIES_03).join("v02.cbz"), 5);
     library

@@ -8,11 +8,11 @@ use std::collections::BTreeSet;
 
 use omnileaf_engine::Library;
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
-use support::{FixedClock, TempFolder};
+use support::{FixedClock, ScratchFolder};
 
 #[tokio::test]
 async fn lists_nothing_before_a_book_is_found() {
-    let home = TempFolder::new("series-empty-home");
+    let home = ScratchFolder::new("series-empty-home");
     let library = Library::open(home.path().to_path_buf(), FixedClock)
         .await
         .unwrap();
@@ -25,9 +25,9 @@ async fn lists_nothing_before_a_book_is_found() {
 
 #[tokio::test]
 async fn lists_the_series_found_by_title_each_with_a_cover() {
-    let comics = TempFolder::new("series-comics");
+    let comics = ScratchFolder::new("series-comics");
     write_sample_library(comics.path()).unwrap();
-    let home = TempFolder::new("series-home");
+    let home = ScratchFolder::new("series-home");
     let library = Library::open(home.path().to_path_buf(), FixedClock)
         .await
         .unwrap();
@@ -62,9 +62,9 @@ async fn lists_the_series_found_by_title_each_with_a_cover() {
 
 #[tokio::test]
 async fn counts_every_book_of_a_series_just_found_as_unread() {
-    let comics = TempFolder::new("series-unread-comics");
+    let comics = ScratchFolder::new("series-unread-comics");
     write_sample_library(comics.path()).unwrap();
-    let home = TempFolder::new("series-unread-home");
+    let home = ScratchFolder::new("series-unread-home");
     let library = Library::open(home.path().to_path_buf(), FixedClock)
         .await
         .unwrap();
@@ -85,9 +85,9 @@ async fn counts_every_book_of_a_series_just_found_as_unread() {
 
 #[tokio::test]
 async fn counts_the_series_found() {
-    let comics = TempFolder::new("series-count-comics");
+    let comics = ScratchFolder::new("series-count-comics");
     write_sample_library(comics.path()).unwrap();
-    let home = TempFolder::new("series-count-home");
+    let home = ScratchFolder::new("series-count-home");
     let library = Library::open(home.path().to_path_buf(), FixedClock)
         .await
         .unwrap();
@@ -103,9 +103,9 @@ async fn counts_the_series_found() {
 
 #[tokio::test]
 async fn names_each_series_by_an_id_of_its_own() {
-    let comics = TempFolder::new("series-ids-comics");
+    let comics = ScratchFolder::new("series-ids-comics");
     write_sample_library(comics.path()).unwrap();
-    let home = TempFolder::new("series-ids-home");
+    let home = ScratchFolder::new("series-ids-home");
     let library = Library::open(home.path().to_path_buf(), FixedClock)
         .await
         .unwrap();

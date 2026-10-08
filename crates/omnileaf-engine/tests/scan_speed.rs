@@ -7,7 +7,7 @@ use omnileaf_testkit::{
     GENERATED_LIBRARY_NAME, GeneratedLibrary, Sampling, SpeedTrial, TimingBudget,
     write_generated_library,
 };
-use support::{FixedClock, TempFolder};
+use support::{FixedClock, ScratchFolder};
 
 const LIBRARY: GeneratedLibrary = GeneratedLibrary {
     series: 100,
@@ -30,14 +30,15 @@ async fn scans_a_first_library_of_1_000_books_within_3_s() {
         sampling: Sampling::Once,
         budget: TimingBudget::from_env(BUDGET),
     };
-    let comics = TempFolder::new("scan-speed-comics")
-        .with_files(&["Generated Library/.DS_Store", "Generated Library/notes.txt"]);
+    let comics = ScratchFolder::new("scan-speed-comics");
+    comics.write("Generated Library/.DS_Store", b"");
+    comics.write("Generated Library/notes.txt", b"");
     write_generated_library(comics.path(), LIBRARY).unwrap();
 
     let outcome = trial
         .run(
             async |pass| {
-                let home = TempFolder::new(&format!("scan-speed-home-{pass}"));
+                let home = ScratchFolder::new(&format!("scan-speed-home-{pass}"));
                 let library = Library::open(home.path().to_path_buf(), FixedClock)
                     .await
                     .unwrap();
@@ -69,9 +70,9 @@ async fn rescans_an_unchanged_library_of_1_000_books_within_300_ms() {
         sampling: Sampling::Once,
         budget: TimingBudget::from_env(UNCHANGED_RESCAN_BUDGET),
     };
-    let comics = TempFolder::new("rescan-speed-comics");
+    let comics = ScratchFolder::new("rescan-speed-comics");
     write_generated_library(comics.path(), LIBRARY).unwrap();
-    let home = TempFolder::new("rescan-speed-home");
+    let home = ScratchFolder::new("rescan-speed-home");
     let library = Library::open(home.path().to_path_buf(), FixedClock)
         .await
         .unwrap();

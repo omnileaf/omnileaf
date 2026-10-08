@@ -19,7 +19,7 @@ use omnileaf_imaging::thumbnail;
 use omnileaf_testkit::{
     ArchiveEntry, Compression, PageShape, cbz, full_chroma_scan_jpeg, page_jpeg,
 };
-use support::{FixedClock, TempFolder};
+use support::{FixedClock, ScratchFolder};
 
 const SEED: u64 = 21;
 const PAGES: u32 = 3;
@@ -36,16 +36,16 @@ const FRONT_COVER_IS_THE_THIRD_PAGE: &str = r#"<?xml version="1.0"?>
 struct Covers {
     library: Library,
     router: ResourceRouter,
-    comics: TempFolder,
-    cache: TempFolder,
-    _home: TempFolder,
+    comics: ScratchFolder,
+    cache: ScratchFolder,
+    _home: ScratchFolder,
 }
 
 impl Covers {
     async fn with_book(name: &str, comic_info: Option<&str>) -> Self {
-        let comics = TempFolder::new(&format!("{name}-comics"));
+        let comics = ScratchFolder::new(&format!("{name}-comics"));
         write_book(&comics.path().join(FOLDER).join(BOOK), SEED, comic_info);
-        let home = TempFolder::new(&format!("{name}-home"));
+        let home = ScratchFolder::new(&format!("{name}-home"));
         let library = Library::open(home.path().to_path_buf(), FixedClock)
             .await
             .unwrap();
@@ -53,7 +53,7 @@ impl Covers {
             .add_folder(comics.path().join(FOLDER), |_| {})
             .await
             .unwrap();
-        let cache = TempFolder::new(&format!("{name}-cache"));
+        let cache = ScratchFolder::new(&format!("{name}-cache"));
         let router = ResourceRouter::open(cache.path()).unwrap();
         Self {
             library,
@@ -147,7 +147,7 @@ fn thumbnail_of(seed: u64, index: u32) -> Vec<u8> {
 
 #[test]
 fn leaves_its_cache_folder_alone_until_a_cover_is_asked_for() {
-    let cache = TempFolder::new("untouched-cache");
+    let cache = ScratchFolder::new("untouched-cache");
 
     let router = ResourceRouter::open(cache.path());
 

@@ -17,10 +17,10 @@ use omnileaf_testkit::{
     PageShape, SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, page_png, write_sample_library,
 };
 use scanned::{Scanned, owned};
-use support::TempFolder;
+use support::ScratchFolder;
 
-fn sample_library(name: &str) -> TempFolder {
-    let folder = TempFolder::new(name);
+fn sample_library(name: &str) -> ScratchFolder {
+    let folder = ScratchFolder::new(name);
     write_sample_library(folder.path()).unwrap();
     folder
 }
@@ -96,7 +96,7 @@ async fn counts_the_books_a_folder_holds() {
 
 #[tokio::test]
 async fn counts_a_book_held_twice_in_a_folder_once() {
-    let comics = TempFolder::new("scan-folder-copies");
+    let comics = ScratchFolder::new("scan-folder-copies");
     write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
     write_book(&comics.path().join("Copies/v01.cbz"), 1);
 
@@ -138,7 +138,7 @@ async fn reports_finding_the_books_then_reading_each_one_found() {
 
 #[tokio::test]
 async fn makes_a_book_at_the_top_of_the_folder_its_own_series() {
-    let comics = TempFolder::new("scan-one-shots");
+    let comics = ScratchFolder::new("scan-one-shots");
     write_book(&comics.path().join("Sample One-Shot.cbz"), 1);
     write_page(&comics.path().join("Sample Chapter"), 2);
 
@@ -152,7 +152,7 @@ async fn makes_a_book_at_the_top_of_the_folder_its_own_series() {
 
 #[tokio::test]
 async fn leaves_out_macos_resource_folders_and_hidden_files() {
-    let comics = TempFolder::new("scan-clutter");
+    let comics = ScratchFolder::new("scan-clutter");
     for (path, seed) in [
         ("Sample Series 01/v01.cbz", 1),
         ("Sample Series 01/.v02.cbz", 2),
@@ -170,7 +170,8 @@ async fn leaves_out_macos_resource_folders_and_hidden_files() {
 
 #[tokio::test]
 async fn counts_the_books_it_cannot_read_and_carries_on() {
-    let comics = TempFolder::new("scan-damaged").with_files(&["Sample Series 01/v02.cbz"]);
+    let comics = ScratchFolder::new("scan-damaged");
+    comics.write("Sample Series 01/v02.cbz", b"");
     write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
 
     let (scanned, scan, _) = Scanned::folder("scan-damaged", comics.path()).await;
@@ -181,7 +182,8 @@ async fn counts_the_books_it_cannot_read_and_carries_on() {
 
 #[tokio::test]
 async fn counts_the_rar_and_7z_books_it_cannot_open_yet_apart_from_damaged_ones() {
-    let comics = TempFolder::new("scan-not-yet").with_files(&["Sample Series 01/v02.cbz"]);
+    let comics = ScratchFolder::new("scan-not-yet");
+    comics.write("Sample Series 01/v02.cbz", b"");
     write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
     fs::write(
         comics.path().join("Sample Series 01/v03.cbr"),
@@ -204,7 +206,7 @@ async fn counts_the_rar_and_7z_books_it_cannot_open_yet_apart_from_damaged_ones(
 
 #[tokio::test]
 async fn titles_and_orders_books_by_file_name_whatever_their_comic_info_titles() {
-    let comics = TempFolder::new("scan-titles");
+    let comics = ScratchFolder::new("scan-titles");
     for (name, seed, story) in [
         ("v01", 1, "Sample Zebra Story"),
         ("v02", 2, "Sample Apple Story"),
@@ -223,7 +225,7 @@ async fn titles_and_orders_books_by_file_name_whatever_their_comic_info_titles()
 
 #[tokio::test]
 async fn titles_a_folder_of_images_by_its_whole_name_dots_included() {
-    let comics = TempFolder::new("scan-dotted-chapters");
+    let comics = ScratchFolder::new("scan-dotted-chapters");
     for (chapter, seed) in [("Ch 10.5", 1), ("Ch 10.6", 2)] {
         write_page(&comics.path().join("Sample Series 01").join(chapter), seed);
     }
@@ -235,7 +237,7 @@ async fn titles_a_folder_of_images_by_its_whole_name_dots_included() {
 
 #[tokio::test]
 async fn leaves_out_a_cover_image_beside_the_books_of_a_series() {
-    let comics = TempFolder::new("scan-series-cover");
+    let comics = ScratchFolder::new("scan-series-cover");
     let series = comics.path().join("Sample Series 01");
     write_book(&series.join("v01.cbz"), 1);
     fs::write(
@@ -252,7 +254,7 @@ async fn leaves_out_a_cover_image_beside_the_books_of_a_series() {
 
 #[tokio::test]
 async fn counts_only_the_series_that_hold_the_books_found() {
-    let comics = TempFolder::new("scan-duplicate-book");
+    let comics = ScratchFolder::new("scan-duplicate-book");
     for series in ["Sample Series 01", "Sample Series 02"] {
         write_book(&comics.path().join(series).join("v01.cbz"), 1);
     }
@@ -304,9 +306,9 @@ async fn refuses_to_scan_a_folder_missing_from_the_library() {
 #[cfg(unix)]
 #[tokio::test]
 async fn does_not_follow_symbolic_links() {
-    let target = TempFolder::new("scan-link-target");
+    let target = ScratchFolder::new("scan-link-target");
     write_book(&target.path().join("Sample Series 01/v01.cbz"), 1);
-    let comics = TempFolder::new("scan-with-link");
+    let comics = ScratchFolder::new("scan-with-link");
     std::os::unix::fs::symlink(target.path(), comics.path().join("Linked")).unwrap();
 
     let (_, scan, _) = Scanned::folder("scan-with-link", comics.path()).await;
@@ -318,7 +320,7 @@ async fn does_not_follow_symbolic_links() {
 #[tokio::test]
 async fn counts_the_folders_it_cannot_read_and_carries_on() {
     use std::os::unix::fs::PermissionsExt;
-    let comics = TempFolder::new("scan-locked");
+    let comics = ScratchFolder::new("scan-locked");
     write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
     let locked = comics.path().join("Sample Series 02");
     write_book(&locked.join("v01.cbz"), 2);

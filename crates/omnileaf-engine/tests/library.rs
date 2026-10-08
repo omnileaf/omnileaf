@@ -13,7 +13,7 @@ use omnileaf_engine::{
     TabletCoversPerRow,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
-use support::{FixedClock, TempFolder};
+use support::{FixedClock, ScratchFolder};
 
 const MORE_FOLDERS_THAN_A_PAGE_HOLDS: usize = 120;
 
@@ -57,7 +57,8 @@ fn kinds_and_names(folders: &[LibraryFolder]) -> Vec<(FolderKind, &str)> {
 
 #[tokio::test]
 async fn lists_the_home_folder_it_opened_in() {
-    let home = TempFolder::new("library-home").with_files(&["Omnileaf/.keep"]);
+    let home = ScratchFolder::new("library-home");
+    home.write("Omnileaf/.keep", b"");
     let home_folder = home.path().join("Omnileaf");
 
     let library = open(&home_folder).await;
@@ -72,8 +73,8 @@ async fn lists_the_home_folder_it_opened_in() {
 
 #[tokio::test]
 async fn adds_a_folder_and_scans_the_books_in_it() {
-    let home = TempFolder::new("library-add-home");
-    let comics = TempFolder::new("library-add-comics");
+    let home = ScratchFolder::new("library-add-home");
+    let comics = ScratchFolder::new("library-add-comics");
     write_sample_library(comics.path()).unwrap();
     let library = open(home.path()).await;
     let mut progress = Vec::new();
@@ -104,8 +105,8 @@ async fn adds_a_folder_and_scans_the_books_in_it() {
 
 #[tokio::test]
 async fn remembers_its_folders_after_a_restart() {
-    let home = TempFolder::new("library-restart-home");
-    let comics = TempFolder::new("Sample Comics");
+    let home = ScratchFolder::new("library-restart-home");
+    let comics = ScratchFolder::new("Sample Comics");
     let library = open(home.path()).await;
     library
         .add_folder(comics.path().to_path_buf(), |_| {})
@@ -126,7 +127,7 @@ async fn remembers_its_folders_after_a_restart() {
 
 #[tokio::test]
 async fn leaves_out_a_folder_it_cannot_read() {
-    let home = TempFolder::new("library-unreadable-home");
+    let home = ScratchFolder::new("library-unreadable-home");
     let library = open(home.path()).await;
 
     let outcome = library
@@ -145,8 +146,9 @@ async fn leaves_out_a_folder_it_cannot_read() {
 
 #[tokio::test]
 async fn forgets_a_removed_folder_and_leaves_its_files() {
-    let home = TempFolder::new("library-remove-home");
-    let comics = TempFolder::new("Removed Comics").with_files(&["one.cbz"]);
+    let home = ScratchFolder::new("library-remove-home");
+    let comics = ScratchFolder::new("Removed Comics");
+    comics.write("one.cbz", b"");
     let library = open(home.path()).await;
     library
         .add_folder(comics.path().to_path_buf(), |_| {})
@@ -165,7 +167,7 @@ async fn forgets_a_removed_folder_and_leaves_its_files() {
 
 #[tokio::test]
 async fn keeps_the_home_folder() {
-    let home = TempFolder::new("library-keep-home");
+    let home = ScratchFolder::new("library-keep-home");
     let library = open(home.path()).await;
     let home_folder = folder_named(&library, "library-keep-home").await;
 
@@ -177,8 +179,8 @@ async fn keeps_the_home_folder() {
 
 #[tokio::test]
 async fn reports_a_folder_already_removed() {
-    let home = TempFolder::new("library-removed-twice-home");
-    let comics = TempFolder::new("Removed Twice");
+    let home = ScratchFolder::new("library-removed-twice-home");
+    let comics = ScratchFolder::new("Removed Twice");
     let library = open(home.path()).await;
     library
         .add_folder(comics.path().to_path_buf(), |_| {})
@@ -195,7 +197,7 @@ async fn reports_a_folder_already_removed() {
 
 #[tokio::test]
 async fn takes_back_the_folder_id_it_gave_the_interface() {
-    let home = TempFolder::new("library-id-home");
+    let home = ScratchFolder::new("library-id-home");
     let library = open(home.path()).await;
     let home_folder = folder_named(&library, "library-id-home").await;
     let sent = serde_json::to_value(&home_folder).unwrap();
@@ -208,8 +210,8 @@ async fn takes_back_the_folder_id_it_gave_the_interface() {
 
 #[tokio::test]
 async fn pages_through_more_folders_than_one_page_holds() {
-    let home = TempFolder::new("library-pages-home");
-    let comics = TempFolder::new("library-pages-comics");
+    let home = ScratchFolder::new("library-pages-home");
+    let comics = ScratchFolder::new("library-pages-comics");
     let library = open(home.path()).await;
     for index in 0..MORE_FOLDERS_THAN_A_PAGE_HOLDS {
         let folder = comics.path().join(format!("Sample Series {index:03}"));
@@ -228,8 +230,8 @@ async fn pages_through_more_folders_than_one_page_holds() {
 
 #[tokio::test]
 async fn keeps_one_home_folder_at_its_new_location_after_the_home_moves() {
-    let parent = TempFolder::new("library-moved-home");
-    let comics = TempFolder::new("Moved Home Comics");
+    let parent = ScratchFolder::new("library-moved-home");
+    let comics = ScratchFolder::new("Moved Home Comics");
     let first_home = parent.path().join("Before");
     let moved_home = parent.path().join("After");
     let library = open(&first_home).await;
@@ -258,7 +260,7 @@ async fn keeps_one_home_folder_at_its_new_location_after_the_home_moves() {
 
 #[tokio::test]
 async fn opens_a_new_library_before_its_first_launch_is_finished() {
-    let home = TempFolder::new("library-first-launch-new");
+    let home = ScratchFolder::new("library-first-launch-new");
 
     let library = open(home.path()).await;
 
@@ -267,7 +269,7 @@ async fn opens_a_new_library_before_its_first_launch_is_finished() {
 
 #[tokio::test]
 async fn remembers_the_finished_first_launch_when_the_library_reopens() {
-    let home = TempFolder::new("library-first-launch-finished");
+    let home = ScratchFolder::new("library-first-launch-finished");
     open(home.path()).await.finish_first_launch().await.unwrap();
 
     let reopened = open(home.path()).await;
@@ -277,7 +279,7 @@ async fn remembers_the_finished_first_launch_when_the_library_reopens() {
 
 #[tokio::test]
 async fn draws_a_new_library_in_the_view_a_new_library_starts_with() {
-    let home = TempFolder::new("library-view-new");
+    let home = ScratchFolder::new("library-view-new");
 
     let view = open(home.path()).await.view().await.unwrap();
 
@@ -286,7 +288,7 @@ async fn draws_a_new_library_in_the_view_a_new_library_starts_with() {
 
 #[tokio::test]
 async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
-    let home = TempFolder::new("library-view-set");
+    let home = ScratchFolder::new("library-view-set");
     let list = LibraryView {
         display: LibraryDisplay::List,
         covers_per_row: CoversPerRow {
@@ -312,7 +314,7 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
 
 #[tokio::test]
 async fn stores_the_fewest_and_the_most_covers_per_row_each_size_offers() {
-    let home = TempFolder::new("library-view-ranges");
+    let home = ScratchFolder::new("library-view-ranges");
     let library = open(home.path()).await;
     let ranges = CoversPerRow::RANGES;
     let ends = [
@@ -341,7 +343,7 @@ async fn stores_the_fewest_and_the_most_covers_per_row_each_size_offers() {
 
 #[tokio::test]
 async fn announces_a_new_title_order_when_the_app_s_language_changes() {
-    let home = TempFolder::new("library-language-changed");
+    let home = ScratchFolder::new("library-language-changed");
     let library = open(home.path()).await;
     let mut changes = library.subscribe();
 
@@ -352,7 +354,7 @@ async fn announces_a_new_title_order_when_the_app_s_language_changes() {
 
 #[tokio::test]
 async fn keeps_the_title_order_when_the_app_s_language_is_the_one_titles_sort_by() {
-    let home = TempFolder::new("library-language-kept");
+    let home = ScratchFolder::new("library-language-kept");
     open(home.path())
         .await
         .set_language("sv".parse().unwrap())
@@ -368,7 +370,7 @@ async fn keeps_the_title_order_when_the_app_s_language_is_the_one_titles_sort_by
 
 #[tokio::test]
 async fn knows_a_library_a_newer_version_wrote() {
-    let home = TempFolder::new("library-from-a-newer-version");
+    let home = ScratchFolder::new("library-from-a-newer-version");
     drop(open(home.path()).await);
     let database =
         omnileaf_db::rusqlite::Connection::open(home.path().join("library.sqlite")).unwrap();

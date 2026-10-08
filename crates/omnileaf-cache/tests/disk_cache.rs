@@ -4,40 +4,17 @@
 )]
 
 use std::{
-    env,
     fs::{self, File},
-    path::{Path, PathBuf},
-    process,
+    path::Path,
     time::{Duration, SystemTime},
 };
 
 use omnileaf_cache::{CacheError, CacheKey, DiskCache};
+use omnileaf_testkit::ScratchFolder;
 use proptest::prelude::*;
 
 const BUDGET_BYTES: u64 = 300;
 const ENTRY_BYTES: usize = 100;
-
-struct ScratchFolder(PathBuf);
-
-impl ScratchFolder {
-    fn new(name: &str) -> Self {
-        let path = env::temp_dir()
-            .join(format!("omnileaf-cache-{}", process::id()))
-            .join(name);
-        let _ = fs::remove_dir_all(&path);
-        Self(path)
-    }
-
-    fn path(&self) -> &Path {
-        &self.0
-    }
-}
-
-impl Drop for ScratchFolder {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
-    }
-}
 
 fn key(text: &str) -> CacheKey {
     text.parse().unwrap()
@@ -176,7 +153,6 @@ fn shrinks_to_a_smaller_budget_when_opened_with_one() {
 #[test]
 fn removes_a_write_left_unfinished_by_a_crash() {
     let folder = ScratchFolder::new("unfinished");
-    fs::create_dir_all(folder.path()).unwrap();
     fs::write(folder.path().join("a.partial-1-0"), entry(1)).unwrap();
 
     let cache = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();
@@ -192,7 +168,6 @@ fn opens_without_the_entries_whose_details_it_cannot_read() {
     const LISTABLE_BUT_NOT_SEARCHABLE: u32 = 0o400;
     const OWNER_ONLY: u32 = 0o700;
     let folder = ScratchFolder::new("unreadable-entry");
-    fs::create_dir_all(folder.path()).unwrap();
     fs::write(folder.path().join("a"), entry(1)).unwrap();
     let set_mode = |mode| {
         fs::set_permissions(folder.path(), fs::Permissions::from_mode(mode)).unwrap();
