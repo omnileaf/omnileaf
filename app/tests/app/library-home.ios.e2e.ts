@@ -22,20 +22,30 @@ function capability(name: string): string {
   return value;
 }
 
-test("keeps the library in the Documents folder the Files app shows", async () => {
+test("keeps the library database inside the app, out of the folder the Files app shows", async () => {
+  const bundleId = capability("appium:bundleId");
   const { stdout } = await run(
     "xcrun",
     [
       "simctl",
       "get_app_container",
       capability("appium:udid"),
-      capability("appium:bundleId"),
+      bundleId,
       "data",
     ],
     { timeout: SIMCTL_TIMEOUT_MS },
   );
+  const container = stdout.trim();
 
-  const database = join(stdout.trim(), "Documents", LIBRARY_DATABASE);
+  const inFiles = join(container, "Documents", LIBRARY_DATABASE);
+  const inApp = join(
+    container,
+    "Library",
+    "Application Support",
+    bundleId,
+    LIBRARY_DATABASE,
+  );
 
-  await expect(access(database)).resolves.toBeUndefined();
+  await expect(access(inFiles)).rejects.toThrow();
+  await expect(access(inApp)).resolves.toBeUndefined();
 });

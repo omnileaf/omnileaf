@@ -13,10 +13,7 @@ mod runtime_config;
 mod system_bars;
 mod version_details;
 
-use std::{
-    error::Error,
-    path::{Path, PathBuf},
-};
+use std::{error::Error, path::Path};
 
 use omnileaf_engine::{Core, Library, ResourceRouter, SystemClock, describe_error};
 use tauri::{App, Manager};
@@ -78,7 +75,7 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     let data_dir = config.data_dir.as_deref();
     let home = match data_dir {
         Some(data_dir) => data_dir.to_path_buf(),
-        None => platform_library_home(app)?,
+        None => app.path().app_data_dir()?,
     };
     let library = tauri::async_runtime::block_on(Library::open(home, SystemClock))?;
     app.manage(LibraryChangesForwarding::start(
@@ -95,17 +92,6 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
         }
     }
     Ok(())
-}
-
-/// The Files app shows the app's Documents folder as On My iPhone › Omnileaf, or On My iPad on an iPad.
-#[cfg(target_os = "ios")]
-fn platform_library_home(app: &App) -> tauri::Result<PathBuf> {
-    app.path().document_dir()
-}
-
-#[cfg(not(target_os = "ios"))]
-fn platform_library_home(app: &App) -> tauri::Result<PathBuf> {
-    app.path().app_data_dir()
 }
 
 fn open_covers(app: &App, data_dir: Option<&Path>) -> Result<ResourceRouter, Box<dyn Error>> {
