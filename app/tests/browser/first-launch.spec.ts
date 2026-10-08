@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
+import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -75,13 +76,22 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
   },
 };
 
+const HOME_HEADING = "Where your library lives";
+const IOS_HOME_HEADING = "Your library lives in Files";
+
 const STEPS = [
   { heading: "Welcome to Omnileaf", leaveWith: "Get started" },
-  { heading: "Where your library lives", leaveWith: "Continue" },
+  { heading: HOME_HEADING, leaveWith: "Continue" },
   { heading: "Already have comics or books?", leaveWith: "Continue" },
   { heading: "A few choices", leaveWith: "Continue" },
   { heading: "You're all set", leaveWith: "Open my library" },
 ] as const;
+
+function headingOn(platform: Platform, stepHeading: string): string {
+  return platform === "ios" && stepHeading === HOME_HEADING
+    ? IOS_HOME_HEADING
+    : stepHeading;
+}
 
 test.use({ backend: FIRST_LAUNCH_BACKEND });
 
@@ -93,11 +103,16 @@ function heading(page: Page, name: string) {
   return page.getByRole("heading", { level: 1, name });
 }
 
-async function goTo(page: Page, stepHeading: string): Promise<void> {
+async function goTo(
+  page: Page,
+  stepHeading: string,
+  platform: Platform = "linux",
+): Promise<void> {
   await page.goto("/first-launch");
   for (const step of STEPS) {
-    await expect(heading(page, step.heading)).toBeVisible();
-    if (step.heading === stepHeading) {
+    const shown = headingOn(platform, step.heading);
+    await expect(heading(page, shown)).toBeVisible();
+    if (shown === stepHeading) {
       return;
     }
     await page.getByRole("button", { name: step.leaveWith }).click();
@@ -249,7 +264,7 @@ test.describe("buttons on ios", () => {
   test("makes the main step button 52px tall with 14px corners", async ({
     page,
   }) => {
-    await goTo(page, "Already have comics or books?");
+    await goTo(page, "Already have comics or books?", "ios");
 
     const shape = await shapeOf(page.getByRole("button", { name: "Continue" }));
 
@@ -374,10 +389,61 @@ test("sets the steps beside a shelf from 840px", async ({ page }) => {
   ).toBeVisible({ visible: isExpanded });
 });
 
-test("shows the home folder the library lives in", async ({ page }) => {
-  await goTo(page, "Where your library lives");
+for (const platform of ["android", "linux"] as const) {
+  test.describe(`the home folder on ${platform}`, () => {
+    test.use({
+      backend: {
+        ...FIRST_LAUNCH_BACKEND,
+        appInfo: onPlatform(platform).backend.appInfo,
+      },
+    });
 
-  await expect(page.getByText(HOME_FOLDER.location)).toBeVisible();
+    test("shows the path of the home folder the library lives in", async ({
+      page,
+    }) => {
+      await goTo(page, HOME_HEADING, platform);
+
+      await expect(page.getByText(HOME_FOLDER.location)).toBeVisible();
+    });
+  });
+}
+
+test.describe("the home folder on ios", () => {
+  test.use({
+    backend: {
+      ...FIRST_LAUNCH_BACKEND,
+      appInfo: onPlatform("ios").backend.appInfo,
+    },
+  });
+
+  test("names the folder the library lives in as the Files app does, without its path", async ({
+    page,
+  }) => {
+    const location =
+      viewportOf(page).width < MEDIUM_MIN_WIDTH
+        ? "On My iPhone › Omnileaf"
+        : "On My iPad › Omnileaf";
+
+    await goTo(page, IOS_HOME_HEADING, "ios");
+
+    await expect(page.getByText(location, { exact: true })).toBeVisible();
+    await expect(page.getByText(HOME_FOLDER.location)).toHaveCount(0);
+    await expect(
+      page.getByText(
+        "Your daily backups are kept here too, so they're easy to copy to another device.",
+      ),
+    ).toBeVisible();
+  });
+
+  test("leaves out the home folder's heading, as the board draws it", async ({
+    page,
+  }) => {
+    await goTo(page, IOS_HOME_HEADING, "ios");
+
+    await expect(
+      page.getByRole("heading", { name: "Home folder" }),
+    ).toHaveCount(0);
+  });
 });
 
 test("counts the steps between the welcome and the end", async ({ page }) => {
@@ -446,7 +512,7 @@ for (const { platform, hint } of [
           ? hint.onPhones
           : hint.fromMedium;
 
-      await goTo(page, "Already have comics or books?");
+      await goTo(page, "Already have comics or books?", platform);
 
       await expect(page.getByText(expected)).toBeVisible();
     });

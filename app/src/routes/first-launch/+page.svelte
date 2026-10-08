@@ -115,7 +115,12 @@
       {#if step === "welcome"}
         <WelcomeStep {device} onNext={next} />
       {:else if step === "home"}
-        <HomeStep folders={folders.list} onBack={back} onNext={next} />
+        <HomeStep
+          platform={data.appInfo.platform}
+          folders={folders.list}
+          onBack={back}
+          onNext={next}
+        />
       {:else if step === "link"}
         <LinkStep
           platform={data.appInfo.platform}
