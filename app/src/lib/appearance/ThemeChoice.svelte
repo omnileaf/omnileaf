@@ -14,15 +14,35 @@
     dark: m.theme_dark,
   } satisfies Record<ThemePreference, () => string>;
 
+  type Placement = "settings" | "first-launch";
+
+  const LOOKS = {
+    settings: {
+      section:
+        "touch:max-medium:rounded-list touch:max-medium:border touch:max-medium:border-border touch:max-medium:bg-card touch:max-medium:p-list-row",
+      title: "",
+      hint: "touch:medium:order-last desktop:order-last",
+    },
+    "first-launch": {
+      section: "",
+      title: "touch:max-medium:text-label touch:max-medium:font-bold",
+      hint: "order-last",
+    },
+  } satisfies Record<Placement, Record<"section" | "title" | "hint", string>>;
+
   let {
     title,
     hint,
+    placement = "settings",
     class: className,
   }: {
     title: string;
     hint?: Snippet | undefined;
+    placement?: Placement;
     class?: ClassValue;
   } = $props();
+
+  const look = $derived(LOOKS[placement]);
 
   const theme = getThemeSetting();
   const headingId = $props.id();
@@ -31,22 +51,19 @@
 
 <section
   aria-labelledby={headingId}
-  class={[
-    "flex flex-col gap-sm touch:max-medium:rounded-list touch:max-medium:border touch:max-medium:border-border touch:max-medium:bg-card touch:max-medium:p-list-row",
-    className,
-  ]}
+  class={["flex flex-col gap-sm", look.section, className]}
 >
   <h2
     id={headingId}
-    class="font-semibold touch:medium:text-label touch:medium:text-muted desktop:text-footnote desktop:text-muted"
+    class={[
+      "font-semibold touch:medium:text-label touch:medium:text-muted desktop:text-footnote desktop:text-muted",
+      look.title,
+    ]}
   >
     {title}
   </h2>
   {#if hint !== undefined}
-    <p
-      id={hintId}
-      class="text-footnote text-muted touch:medium:order-last desktop:order-last"
-    >
+    <p id={hintId} class={["text-footnote text-muted", look.hint]}>
       {@render hint()}
     </p>
   {/if}

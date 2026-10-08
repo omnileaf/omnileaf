@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
+import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -75,13 +76,22 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
   },
 };
 
+const HOME_HEADING = "Where your library lives";
+const IOS_HOME_HEADING = "Your backups and books are in Files";
+
 const STEPS = [
   { heading: "Welcome to Omnileaf", leaveWith: "Get started" },
-  { heading: "Where your library lives", leaveWith: "Continue" },
+  { heading: HOME_HEADING, leaveWith: "Continue" },
   { heading: "Already have comics or books?", leaveWith: "Continue" },
   { heading: "A few choices", leaveWith: "Continue" },
   { heading: "You're all set", leaveWith: "Open my library" },
 ] as const;
+
+function headingOn(platform: Platform, stepHeading: string): string {
+  return platform === "ios" && stepHeading === HOME_HEADING
+    ? IOS_HOME_HEADING
+    : stepHeading;
+}
 
 test.use({ backend: FIRST_LAUNCH_BACKEND });
 
@@ -93,11 +103,16 @@ function heading(page: Page, name: string) {
   return page.getByRole("heading", { level: 1, name });
 }
 
-async function goTo(page: Page, stepHeading: string): Promise<void> {
+async function goTo(
+  page: Page,
+  stepHeading: string,
+  platform: Platform = "linux",
+): Promise<void> {
   await page.goto("/first-launch");
   for (const step of STEPS) {
-    await expect(heading(page, step.heading)).toBeVisible();
-    if (step.heading === stepHeading) {
+    const shown = headingOn(platform, step.heading);
+    await expect(heading(page, shown)).toBeVisible();
+    if (shown === stepHeading) {
       return;
     }
     await page.getByRole("button", { name: step.leaveWith }).click();
@@ -249,7 +264,7 @@ test.describe("buttons on ios", () => {
   test("makes the main step button 52px tall with 14px corners", async ({
     page,
   }) => {
-    await goTo(page, "Already have comics or books?");
+    await goTo(page, "Already have comics or books?", "ios");
 
     const shape = await shapeOf(page.getByRole("button", { name: "Continue" }));
 
@@ -374,10 +389,62 @@ test("sets the steps beside a shelf from 840px", async ({ page }) => {
   ).toBeVisible({ visible: isExpanded });
 });
 
-test("shows the home folder the library lives in", async ({ page }) => {
-  await goTo(page, "Where your library lives");
+for (const platform of ["android", "linux"] as const) {
+  test.describe(`the home folder on ${platform}`, () => {
+    test.use({
+      backend: {
+        ...FIRST_LAUNCH_BACKEND,
+        appInfo: onPlatform(platform).backend.appInfo,
+      },
+    });
 
-  await expect(page.getByText(HOME_FOLDER.location)).toBeVisible();
+    test("shows the path of the home folder the library lives in", async ({
+      page,
+    }) => {
+      await goTo(page, HOME_HEADING, platform);
+
+      await expect(page.getByText(HOME_FOLDER.location)).toBeVisible();
+    });
+  });
+}
+
+test.describe("the home folder on ios", () => {
+  test.use({
+    backend: {
+      ...FIRST_LAUNCH_BACKEND,
+      appInfo: onPlatform("ios").backend.appInfo,
+    },
+  });
+
+  test("names the folder backups and books go in as the Files app does, without its path", async ({
+    page,
+  }) => {
+    const location =
+      viewportOf(page).width < MEDIUM_MIN_WIDTH
+        ? "On My iPhone › Omnileaf"
+        : "On My iPad › Omnileaf";
+
+    await goTo(page, IOS_HOME_HEADING, "ios");
+
+    await expect(page.getByText(location, { exact: true })).toBeVisible();
+    await expect(page.getByText(HOME_FOLDER.location)).toHaveCount(0);
+    await expect(
+      page.getByText(
+        "Omnileaf keeps your backups, and books you add, in its own folder in the Files app, so they're easy to copy or move. Your progress and categories stay safely inside the app.",
+      ),
+    ).toBeVisible();
+    await expect(page.getByText(/daily backups/)).toHaveCount(0);
+  });
+
+  test("leaves out the home folder's heading, as the board draws it", async ({
+    page,
+  }) => {
+    await goTo(page, IOS_HOME_HEADING, "ios");
+
+    await expect(
+      page.getByRole("heading", { name: "Home folder" }),
+    ).toHaveCount(0);
+  });
 });
 
 test("counts the steps between the welcome and the end", async ({ page }) => {
@@ -400,6 +467,105 @@ test("links a folder that already holds comics and lists it", async ({
     page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
   ).toHaveText(["Sample Comics /media/Sample Comics"]);
 });
+
+interface ControlLook {
+  width: number;
+  height: number;
+  border: string;
+  background: string;
+  radius: number;
+}
+
+function lookOf(control: Locator): Promise<ControlLook> {
+  return control.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      width: element.getBoundingClientRect().width,
+      height: element.getBoundingClientRect().height,
+      border: `${style.borderTopWidth} ${style.borderTopColor}`,
+      background: style.backgroundColor,
+      radius: Number.parseFloat(style.borderStartStartRadius),
+    };
+  });
+}
+
+function accentOf(page: Page): Promise<string> {
+  return page
+    .getByRole("button", { name: "Continue" })
+    .evaluate((button) => getComputedStyle(button).backgroundColor);
+}
+
+const TRANSPARENT = "rgba(0, 0, 0, 0)";
+const PHONE_ADD_FOLDER_HEIGHT = 52;
+const HAS_PHONE_CORNERS = {
+  ios: (radius: number) => radius === 14,
+  android: (radius: number) => radius >= PHONE_ADD_FOLDER_HEIGHT / 2,
+} as const;
+
+for (const platform of ["ios", "android"] as const) {
+  test.describe(`first launch on an ${platform} phone`, () => {
+    test.use({
+      backend: {
+        ...FIRST_LAUNCH_BACKEND,
+        appInfo: onPlatform(platform).backend.appInfo,
+      },
+    });
+
+    test.beforeEach(({ page }) => {
+      test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+      device.folders = [HOME_FOLDER, SAMPLE_COMICS];
+    });
+
+    test("puts a full-width outlined Add a folder under the folders, then the hint", async ({
+      page,
+    }) => {
+      await goTo(page, "Already have comics or books?", platform);
+      const folders = page.getByRole("region", { name: "Folders" });
+      const add = folders.getByRole("button", { name: "Add a folder" });
+      const hint = folders.getByText(/all work\.$/).filter({ visible: true });
+
+      const list = await boxOf(folders.getByRole("list"));
+      const button = await boxOf(add);
+      const hintBox = await boxOf(hint);
+      const look = await lookOf(add);
+
+      expect(button.y).toBeGreaterThan(list.y + list.height);
+      expect(hintBox.y).toBeGreaterThan(button.y + button.height);
+      expect(look.width).toBe(list.width);
+      expect(look.height).toBe(PHONE_ADD_FOLDER_HEIGHT);
+      expect(look.border).toBe(`1px ${await accentOf(page)}`);
+      expect(look.background).toBe(TRANSPARENT);
+      expect(HAS_PHONE_CORNERS[platform](look.radius)).toBe(true);
+    });
+
+    test("names each choice in bold, then its control, then its help, with no card", async ({
+      page,
+    }) => {
+      await goTo(page, "A few choices", platform);
+      const choice = page.getByRole("region", { name: "Appearance" });
+      const name = choice.getByRole("heading", { name: "Appearance" });
+      const control = choice.getByRole("radiogroup", { name: "Appearance" });
+      const help = choice.getByText(
+        "Paper light or dark, or follow your phone.",
+      );
+
+      const nameBox = await boxOf(name);
+      const controlBox = await boxOf(control);
+      const helpBox = await boxOf(help);
+      const nameStyle = await name.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { size: style.fontSize, weight: style.fontWeight };
+      });
+      const card = await lookOf(choice);
+
+      expect(controlBox.y).toBeGreaterThan(nameBox.y + nameBox.height);
+      expect(helpBox.y).toBeGreaterThan(controlBox.y + controlBox.height);
+      expect(nameStyle).toEqual({ size: "14px", weight: "700" });
+      expect(card.background).toBe(TRANSPARENT);
+      expect(card.border.startsWith("0px")).toBe(true);
+    });
+  });
+}
 
 test("skips linking folders for now", async ({ page }) => {
   await goTo(page, "Already have comics or books?");
@@ -446,7 +612,7 @@ for (const { platform, hint } of [
           ? hint.onPhones
           : hint.fromMedium;
 
-      await goTo(page, "Already have comics or books?");
+      await goTo(page, "Already have comics or books?", platform);
 
       await expect(page.getByText(expected)).toBeVisible();
     });

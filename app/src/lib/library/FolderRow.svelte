@@ -8,8 +8,11 @@
   import { folderTitle } from "./folder-title";
   import { ICON_SIZE } from "./icon-size";
 
-  let { folder, action }: { folder: LibraryFolder; action?: Snippet } =
-    $props();
+  let {
+    folder,
+    location,
+    action,
+  }: { folder: LibraryFolder; location?: Snippet; action?: Snippet } = $props();
 </script>
 
 <div
@@ -36,7 +39,13 @@
         {m.library_folder_unavailable()}
       </p>
     {/if}
-    <p class="truncate text-caption text-muted">{folder.location}</p>
+    <p class="truncate text-caption text-muted">
+      {#if location === undefined}
+        {folder.location}
+      {:else}
+        {@render location()}
+      {/if}
+    </p>
   </div>
   {@render action?.()}
 </div>

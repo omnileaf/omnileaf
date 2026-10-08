@@ -60,18 +60,17 @@
       {m.first_launch_link_title()}
     </StepHeader>
     <p class="text-step-body text-muted">{m.first_launch_link_body()}</p>
-    <div class="mbs-sm">
-      <LinkedFolders
-        {folders}
-        {addFolder}
-        {notices}
-        usesStandIns={screenshotMode.isOn}
-      >
-        {#snippet hint()}
-          <WidthWording wording={HINT[platform]} />
-        {/snippet}
-      </LinkedFolders>
-    </div>
+    <LinkedFolders
+      {folders}
+      {addFolder}
+      {notices}
+      usesStandIns={screenshotMode.isOn}
+      addPlacement="below-list"
+    >
+      {#snippet hint()}
+        <WidthWording wording={HINT[platform]} />
+      {/snippet}
+    </LinkedFolders>
   </div>
   {#snippet actions()}
     <StepButton kind="primary" onclick={onNext}>

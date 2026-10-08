@@ -17,6 +17,7 @@ const MOBILE_SESSION_TIMEOUT_MS = 330_000;
 const APP_SPECS = "tests/app/**/*.e2e.ts";
 const DESKTOP_ONLY_APP_SPECS = "tests/app/**/*.desktop.e2e.ts";
 const ANDROID_ONLY_APP_SPECS = "tests/app/**/*.android.e2e.ts";
+const IOS_ONLY_APP_SPECS = "tests/app/**/*.ios.e2e.ts";
 const HARNESS_TESTS = "tests/app/**/*.test.ts";
 const BRANDING = "../branding";
 /** The interface ships inside the app, so no newer version can appear while it runs. */
@@ -80,7 +81,11 @@ export default defineConfig({
         test: {
           name: "app",
           include: [APP_SPECS],
-          exclude: [...configDefaults.exclude, ANDROID_ONLY_APP_SPECS],
+          exclude: [
+            ...configDefaults.exclude,
+            ANDROID_ONLY_APP_SPECS,
+            IOS_ONLY_APP_SPECS,
+          ],
           environment: "node",
           fileParallelism: false,
           globalSetup: ["tests/app/desktop.ts"],
@@ -93,7 +98,11 @@ export default defineConfig({
         test: {
           name: "android",
           include: [APP_SPECS],
-          exclude: [...configDefaults.exclude, DESKTOP_ONLY_APP_SPECS],
+          exclude: [
+            ...configDefaults.exclude,
+            DESKTOP_ONLY_APP_SPECS,
+            IOS_ONLY_APP_SPECS,
+          ],
           environment: "node",
           fileParallelism: false,
           globalSetup: ["tests/app/android.ts"],

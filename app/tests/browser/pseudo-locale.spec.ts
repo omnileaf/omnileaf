@@ -1,17 +1,4 @@
-import { expect, test } from "./fixtures.ts";
-
-const PAGES = [
-  "/",
-  "/browse",
-  "/history",
-  "/settings",
-  "/settings/library",
-  "/settings/appearance",
-  "/settings/general",
-  "/settings/general/language",
-  "/settings/about",
-  "/settings/about/licences",
-];
+import { APP_PAGES, expect, test } from "./fixtures.ts";
 
 const UNMARKED_TEXT_SCRIPT = `(() => {
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
@@ -37,7 +24,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-for (const path of PAGES) {
+for (const path of APP_PAGES) {
   test(`${path} shows only translated text, without overflowing`, async ({
     page,
   }) => {

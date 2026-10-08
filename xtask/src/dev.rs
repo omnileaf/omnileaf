@@ -20,6 +20,7 @@ const DEV_SERVER: (&str, u16) = ("localhost", 1420);
 /// Run through `node` rather than `pnpm`, so stopping the dev server can't leave Vite behind.
 const VITE: &str = "node_modules/vite/bin/vite.js";
 const PHONE_DEV_HOST: &str = "TAURI_DEV_HOST";
+const LOOPBACK: &str = "127.0.0.1";
 const DEV_SERVER_TIMEOUT: Duration = Duration::from_secs(60);
 const DEV_SERVER_POLL: Duration = Duration::from_millis(250);
 const WINDOWS: &str = "windows";
@@ -42,13 +43,6 @@ enum Reach {
 enum Target {
     Virtual,
     Physical,
-}
-
-/// Where each phone platform runs, or `None` for a platform left out.
-#[derive(Debug, Default)]
-struct Targets {
-    android: Option<Target>,
-    ios: Option<Target>,
 }
 
 #[derive(Debug, Default)]
@@ -160,11 +154,10 @@ pub(crate) fn platforms_for(os: &str) -> Vec<Platform> {
     }
 }
 
-/// Tauri points a physical phone at this computer's network address and an emulator or Simulator at `localhost`, except on Windows, where Android always gets the network address.
-fn reach(targets: &Targets, os: &str) -> Reach {
-    let runs_on_a_phone = [targets.android, targets.ios].contains(&Some(Target::Physical));
-    let android_on_windows = os == WINDOWS && targets.android.is_some();
-    if runs_on_a_phone || android_on_windows {
+fn reach(platforms: &[Platform], ios: Option<Target>, os: &str) -> Reach {
+    let runs_on_an_iphone = ios == Some(Target::Physical);
+    let android_on_windows = os == WINDOWS && platforms.contains(&Platform::Android);
+    if runs_on_an_iphone || android_on_windows {
         Reach::Network
     } else {
         Reach::Localhost
@@ -188,62 +181,70 @@ fn target(chosen: Option<&str>, devices: &[Device]) -> Target {
     }
 }
 
-pub(crate) fn tauri_args(platform: Platform, devices: &Devices) -> Vec<String> {
+pub(crate) fn tauri_args(platform: Platform, devices: &Devices, os: &str) -> Vec<String> {
     let (subcommand, device): (&[&str], Option<&String>) = match platform {
         Platform::Desktop => (&["dev"], None),
         Platform::Ios => (&["ios", "dev"], devices.ios.as_ref()),
         Platform::Android => (&["android", "dev"], devices.android.as_ref()),
     };
+    let loopback_host: &[&str] = if platform == Platform::Android && os != WINDOWS {
+        &["--host", LOOPBACK]
+    } else {
+        &[]
+    };
     ["--dir", "app", "tauri"]
         .iter()
         .chain(subcommand)
         .chain(&["--config", WITHOUT_DEV_SERVER])
+        .chain(loopback_host)
         .map(ToString::to_string)
         .chain(device.cloned())
         .collect()
 }
 
 pub(crate) fn run(root: &Path, session: &Session) -> anyhow::Result<()> {
-    let targets = chosen_targets(
+    let ios = ios_target(
         &session.platforms,
-        &session.devices,
+        session.devices.ios.as_deref(),
         &Process::in_workspace(),
     )?;
-    let mut dev_server = start_dev_server(root, reach(&targets, env::consts::OS))?;
+    let reach = reach(&session.platforms, ios, env::consts::OS);
+    let mut dev_server = start_dev_server(root, reach)?;
     let outcome = wait_for_dev_server().and_then(|()| run_platforms(root, session));
     stop(&mut dev_server).context("stop the Vite dev server")?;
     outcome
 }
 
-fn chosen_targets(
+fn ios_target(
     platforms: &[Platform],
-    chosen: &Devices,
+    chosen: Option<&str>,
     machine: &impl Machine,
-) -> anyhow::Result<Targets> {
-    let android = platforms.contains(&Platform::Android).then(|| {
-        let listed = android::Toolchain::locate(|key| env::var_os(key), env::consts::OS)
-            .map(|toolchain| devices::android_devices(machine, &toolchain))
-            .unwrap_or_default();
-        target(chosen.android.as_deref(), &listed)
-    });
-    let ios = if platforms.contains(&Platform::Ios) {
-        let listed = devices::ios_devices(machine)?;
-        Some(target(chosen.ios.as_deref(), &listed))
-    } else {
-        None
-    };
-    Ok(Targets { android, ios })
+) -> anyhow::Result<Option<Target>> {
+    if !platforms.contains(&Platform::Ios) {
+        return Ok(None);
+    }
+    let listed = devices::ios_devices(machine)?;
+    Ok(Some(target(chosen, &listed)))
 }
 
 fn start_dev_server(root: &Path, reach: Reach) -> anyhow::Result<Child> {
     let mut vite = command_for("node");
-    vite.args([VITE, "dev"]).current_dir(root.join("app"));
+    vite.args([VITE, "dev"])
+        .args(vite_host_args(reach))
+        .current_dir(root.join("app"));
     if reach == Reach::Network {
         let address = local_ip_address::local_ip()
             .context("find this computer's network address for the phones")?;
         vite.env(PHONE_DEV_HOST, address.to_string());
     }
     vite.spawn().context("start the Vite dev server")
+}
+
+fn vite_host_args(reach: Reach) -> &'static [&'static str] {
+    match reach {
+        Reach::Localhost => &["--host", LOOPBACK],
+        Reach::Network => &[],
+    }
 }
 
 fn wait_for_dev_server() -> anyhow::Result<()> {
@@ -276,7 +277,7 @@ fn run_platforms(root: &Path, session: &Session) -> anyhow::Result<()> {
         .iter()
         .map(|&platform| {
             let mut app = command_for("pnpm");
-            app.args(tauri_args(platform, &session.devices))
+            app.args(tauri_args(platform, &session.devices, env::consts::OS))
                 .current_dir(root);
             if let Some((variable, folder)) =
                 data_folder_setting(platform, session.desktop_data.as_deref())
@@ -355,44 +356,41 @@ mod tests {
         }
     }
 
-    fn targets(android: Option<Target>, ios: Option<Target>) -> Targets {
-        Targets { android, ios }
-    }
+    const EVERY_PLATFORM: [Platform; 3] = [Platform::Desktop, Platform::Ios, Platform::Android];
 
     #[test]
-    fn keeps_the_dev_server_on_localhost_for_the_desktop_emulators_and_simulators() {
-        for (android, ios) in [
-            (None, None),
-            (Some(Target::Virtual), None),
-            (None, Some(Target::Virtual)),
-            (Some(Target::Virtual), Some(Target::Virtual)),
+    fn keeps_the_dev_server_on_localhost_for_android_the_desktop_and_simulators() {
+        for (platforms, ios) in [
+            (&[Platform::Desktop][..], None),
+            (&[Platform::Android], None),
+            (&EVERY_PLATFORM, Some(Target::Virtual)),
         ] {
-            let reached = reach(&targets(android, ios), "macos");
+            let reached = reach(platforms, ios, "macos");
 
-            assert_eq!(reached, Reach::Localhost, "{android:?} {ios:?}");
+            assert_eq!(reached, Reach::Localhost, "{platforms:?} {ios:?}");
         }
     }
 
     #[test]
-    fn opens_the_dev_server_to_the_network_for_a_physical_phone() {
-        for (android, ios) in [
-            (Some(Target::Physical), None),
-            (None, Some(Target::Physical)),
-            (Some(Target::Virtual), Some(Target::Physical)),
-        ] {
-            let reached = reach(&targets(android, ios), "macos");
+    fn opens_the_dev_server_to_the_network_for_an_iphone() {
+        let reached = reach(&EVERY_PLATFORM, Some(Target::Physical), "macos");
 
-            assert_eq!(reached, Reach::Network, "{android:?} {ios:?}");
-        }
+        assert_eq!(reached, Reach::Network);
+    }
+
+    #[test]
+    fn binds_a_dev_server_kept_on_localhost_to_ipv4_loopback() {
+        assert_eq!(vite_host_args(Reach::Localhost), ["--host", "127.0.0.1"]);
+        assert!(vite_host_args(Reach::Network).is_empty());
     }
 
     #[test]
     fn opens_the_dev_server_to_the_network_for_android_on_windows() {
+        assert_eq!(reach(&[Platform::Android], None, "windows"), Reach::Network);
         assert_eq!(
-            reach(&targets(Some(Target::Virtual), None), "windows"),
-            Reach::Network
+            reach(&[Platform::Desktop], None, "windows"),
+            Reach::Localhost
         );
-        assert_eq!(reach(&targets(None, None), "windows"), Reach::Localhost);
     }
 
     fn listed(kind: Kind, state: State, name: &str, id: Option<&str>) -> Device {
@@ -478,7 +476,7 @@ mod tests {
     #[test]
     fn starts_each_platform_without_its_own_dev_server() {
         for platform in [Platform::Desktop, Platform::Ios, Platform::Android] {
-            let args = tauri_args(platform, &Devices::default());
+            let args = tauri_args(platform, &Devices::default(), "linux");
 
             let config = args.iter().position(|arg| arg == "--config").unwrap();
             assert_eq!(args[config + 1], WITHOUT_DEV_SERVER);
@@ -488,15 +486,27 @@ mod tests {
     #[test]
     fn runs_the_right_tauri_command_for_each_platform() {
         let commands = [Platform::Desktop, Platform::Ios, Platform::Android]
-            .map(|platform| tauri_args(platform, &Devices::default()).join(" "));
+            .map(|platform| tauri_args(platform, &Devices::default(), "linux").join(" "));
 
         assert_eq!(
             commands,
             [
                 format!("--dir app tauri dev --config {WITHOUT_DEV_SERVER}"),
                 format!("--dir app tauri ios dev --config {WITHOUT_DEV_SERVER}"),
-                format!("--dir app tauri android dev --config {WITHOUT_DEV_SERVER}"),
+                format!(
+                    "--dir app tauri android dev --config {WITHOUT_DEV_SERVER} --host 127.0.0.1"
+                ),
             ]
+        );
+    }
+
+    #[test]
+    fn leaves_android_on_the_network_address_on_windows() {
+        let command = tauri_args(Platform::Android, &Devices::default(), "windows").join(" ");
+
+        assert_eq!(
+            command,
+            format!("--dir app tauri android dev --config {WITHOUT_DEV_SERVER}")
         );
     }
 
@@ -508,11 +518,13 @@ mod tests {
         };
 
         assert_eq!(
-            tauri_args(Platform::Ios, &devices).last().unwrap(),
+            tauri_args(Platform::Ios, &devices, "macos").last().unwrap(),
             "iPhone 16"
         );
         assert_eq!(
-            tauri_args(Platform::Android, &devices).last().unwrap(),
+            tauri_args(Platform::Android, &devices, "macos")
+                .last()
+                .unwrap(),
             "Pixel 8"
         );
     }

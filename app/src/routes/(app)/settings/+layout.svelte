@@ -55,7 +55,7 @@
     </nav>
   </div>
   <div
-    class="flex flex-1 flex-col two-pane:px-pane two-pane:pbs-page-top two-pane:pbe-xl"
+    class="flex flex-1 flex-col min-inline-none two-pane:px-pane two-pane:pbs-page-top two-pane:pbe-xl"
   >
     <div class="flex flex-1 flex-col two-pane:max-inline-section">
       {@render children()}

@@ -118,6 +118,52 @@ export async function settle(locator: Locator): Promise<void> {
     .toBe(0);
 }
 
+export const APP_PAGES = [
+  "/",
+  "/browse",
+  "/history",
+  "/settings",
+  "/settings/library",
+  "/settings/appearance",
+  "/settings/general",
+  "/settings/general/language",
+  "/settings/about",
+  "/settings/about/licences",
+] as const;
+
+/** Lists each element in `main` whose content spills out sideways, and "the page" when it scrolls sideways, leaving out truncated text, visually hidden text and what a negative margin pulls past the edge on purpose. */
+export function sidewaysOverflow(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const bleedOf = (element: Element): number =>
+      Math.max(
+        0,
+        ...[...element.querySelectorAll("*")].map(
+          (descendant) =>
+            -Number.parseFloat(getComputedStyle(descendant).marginInlineEnd),
+        ),
+      );
+    const overflowing: string[] = [];
+    for (const element of document.querySelectorAll("main *")) {
+      const style = getComputedStyle(element);
+      const isCutOnPurpose =
+        style.textOverflow === "ellipsis" || style.clipPath !== "none";
+      const overflow = element.scrollWidth - element.clientWidth;
+      if (
+        !isCutOnPurpose &&
+        element.clientWidth > 0 &&
+        overflow > 0 &&
+        overflow > bleedOf(element)
+      ) {
+        overflowing.push(element.outerHTML.slice(0, 120));
+      }
+    }
+    if (document.documentElement.scrollWidth > window.innerWidth) {
+      overflowing.push("the page");
+    }
+    return overflowing;
+  });
+}
+
 type Violations = Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"];
 
 function runningAnimations(page: Page): Promise<string[]> {

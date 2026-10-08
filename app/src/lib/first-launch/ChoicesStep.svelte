@@ -46,6 +46,7 @@
     <p class="text-step-body text-muted">{m.first_launch_choices_body()}</p>
     <ThemeChoice
       title={m.first_launch_choices_appearance()}
+      placement="first-launch"
       hint={appearanceHelp === undefined ? undefined : appearanceHelpText}
     />
   </div>

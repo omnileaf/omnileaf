@@ -6,6 +6,7 @@ import {
   EXPANDED_MIN_WIDTH,
   expect,
   MEDIUM_MIN_WIDTH,
+  sidewaysOverflow,
   test,
 } from "./fixtures.ts";
 
@@ -22,19 +23,6 @@ const SECTIONS = [
   "/settings/about",
   "/settings/about/licences",
 ] as const;
-
-const OVERFLOWING_SCRIPT = `(() => {
-  const overflowing = [];
-  for (const element of document.querySelectorAll("main *")) {
-    if (element.clientWidth > 0 && element.scrollWidth > element.clientWidth) {
-      overflowing.push(element.outerHTML.slice(0, 120));
-    }
-  }
-  if (document.documentElement.scrollWidth > window.innerWidth) {
-    overflowing.push("the page");
-  }
-  return overflowing;
-})()`;
 
 /** Found by its place, the first control of the Folders section, since its name is translated. */
 function addFolderButton(page: Page) {
@@ -89,7 +77,7 @@ for (const width of [MEDIUM_MIN_WIDTH, EXPANDED_MIN_WIDTH]) {
           const header = await boxOf(
             page.getByRole("heading", { level: 1 }).locator(".."),
           );
-          const overflowing: unknown = await page.evaluate(OVERFLOWING_SCRIPT);
+          const overflowing = await sidewaysOverflow(page);
 
           expect(header.width).toBeGreaterThanOrEqual(PANE_CONTENT_MIN_WIDTH);
           expect(overflowing).toEqual([]);
