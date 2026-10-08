@@ -14,7 +14,7 @@ use crate::{Error, catalog::native_path};
 const HOME_KIND: &str = "home";
 const LINKED_KIND: &str = "linked";
 const PATH_LOCATOR: &str = "path";
-const APPLE_BOOKMARK_LOCATOR: &str = "apple_bookmark";
+pub(crate) const APPLE_BOOKMARK_LOCATOR: &str = "apple_bookmark";
 const ID_COLUMN: usize = 0;
 const KIND_COLUMN: usize = 1;
 const LOCATOR_KIND_COLUMN: usize = 2;
@@ -112,7 +112,7 @@ pub fn add_root(transaction: &Transaction<'_>, root: &NewRoot) -> Result<RootId,
              VALUES (?1, ?2, ?3, ?4, ?5)
              ON CONFLICT (location) DO UPDATE
                  SET locator_kind = excluded.locator_kind, bookmark = excluded.bookmark
-                 WHERE library_root.kind = 'linked' AND excluded.locator_kind = 'apple_bookmark'",
+                 WHERE library_root.kind = ?6 AND excluded.locator_kind = ?7",
         )?
         .execute((
             root.kind,
@@ -120,6 +120,8 @@ pub fn add_root(transaction: &Transaction<'_>, root: &NewRoot) -> Result<RootId,
             &stored.location,
             stored.bookmark,
             root.added_at_ms,
+            RootKind::Linked,
+            APPLE_BOOKMARK_LOCATOR,
         ))?;
     let id = transaction
         .prepare("SELECT id FROM library_root WHERE location = ?1")?
@@ -216,23 +218,27 @@ pub(crate) fn stored_location(locator: &RootLocator) -> StoredLocation<'_> {
 
 /// Reads a locator from a row holding its kind at `kind_column`, then its location and its bookmark.
 pub(crate) fn stored_locator(row: &Row<'_>, kind_column: usize) -> rusqlite::Result<RootLocator> {
-    let location_column = kind_column + 1;
-    let bookmark_column = kind_column + 2;
-    let kind: String = row.get(kind_column)?;
-    match kind.as_str() {
-        PATH_LOCATOR => {
-            native_path::stored_native_path(row, location_column).map(RootLocator::Path)
-        }
+    let path = stored_root_path(row, kind_column)?;
+    match row.get_ref(kind_column)?.as_str()? {
         APPLE_BOOKMARK_LOCATOR => Ok(RootLocator::AppleBookmark {
-            path: native_path::stored_native_path(row, location_column)?,
-            bookmark: AppleBookmark(row.get(bookmark_column)?),
+            path,
+            bookmark: AppleBookmark(row.get(kind_column + 2)?),
         }),
-        _ => Err(rusqlite::Error::FromSqlConversionFailure(
+        _ => Ok(RootLocator::Path(path)),
+    }
+}
+
+/// Reads where a root's folder is from a row holding its locator kind at `kind_column` and its location in the column after.
+pub(crate) fn stored_root_path(row: &Row<'_>, kind_column: usize) -> rusqlite::Result<PathBuf> {
+    let kind: String = row.get(kind_column)?;
+    if kind != PATH_LOCATOR && kind != APPLE_BOOKMARK_LOCATOR {
+        return Err(rusqlite::Error::FromSqlConversionFailure(
             kind_column,
             Type::Text,
             Box::new(Error::UnsupportedLocator { kind }),
-        )),
+        ));
     }
+    native_path::stored_native_path(row, kind_column + 1)
 }
 
 impl ToSql for RootKind {

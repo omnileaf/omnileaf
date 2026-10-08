@@ -33,6 +33,7 @@ pub fn set_home_root(
             transaction
                 .prepare("UPDATE library_root SET kind = ?2 WHERE id = ?1")?
                 .execute((linked.0, RootKind::Home))?;
+            relocate_root(transaction, linked, locator)?;
             Ok(linked)
         }
         (Some(home), None) => {

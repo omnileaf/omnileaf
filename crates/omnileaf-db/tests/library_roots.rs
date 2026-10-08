@@ -13,8 +13,8 @@ use std::{
 use omnileaf_db::{
     Database, Error,
     catalog::{
-        AppleBookmark, LibraryRoot, NewBook, NewRoot, NewSeries, Page, PageRequest, PageSize,
-        RootId, RootKind, RootLocator, add_book, add_root, add_series, bookmarked_roots,
+        AppleBookmark, BookmarkedRoot, LibraryRoot, NewBook, NewRoot, NewSeries, Page, PageRequest,
+        PageSize, RootId, RootKind, RootLocator, add_book, add_root, add_series, bookmarked_roots,
         library_root, library_roots, mark_root_available, mark_root_unavailable, relocate_root,
         remove_root, series_books, set_home_root,
     },
@@ -349,11 +349,27 @@ async fn lists_only_the_linked_folders_kept_by_bookmarks() {
     let bookmarked_roots = library.database.read(bookmarked_roots).await.unwrap();
 
     assert_eq!(
-        bookmarked_roots
-            .into_iter()
-            .map(|root| (root.id, root.locator))
-            .collect::<Vec<_>>(),
-        [(comics, bookmarked(COMICS, ICLOUD_BOOKMARK))]
+        bookmarked_roots,
+        [BookmarkedRoot {
+            id: comics,
+            path: PathBuf::from(COMICS),
+            bookmark: AppleBookmark::new(ICLOUD_BOOKMARK.to_vec()),
+            unavailable_since_ms: None,
+        }]
+    );
+}
+
+#[tokio::test]
+async fn reads_a_bookmarked_folder_the_home_folder_moved_into_by_its_path() {
+    let library = Library::open("home-moved-into-bookmarked");
+    library.set_home(HOME).await;
+    let comics = library.add_bookmarked(COMICS, ICLOUD_BOOKMARK).await;
+
+    library.set_home(COMICS).await;
+
+    assert_eq!(
+        library.locator(comics).await,
+        RootLocator::Path(PathBuf::from(COMICS))
     );
 }
 

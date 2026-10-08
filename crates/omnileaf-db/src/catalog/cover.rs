@@ -5,16 +5,15 @@ use rusqlite::{Connection, OptionalExtension, Row};
 
 use crate::{
     Error,
-    catalog::{native_path, root::stored_locator, stored_id::stored_id},
+    catalog::{native_path, root::stored_root_path, stored_id::stored_id},
 };
 
 const FILE_OF_COVER: &str =
-    "SELECT library_root.locator_kind, library_root.location, library_root.bookmark,
-        book_file.location
+    "SELECT library_root.locator_kind, library_root.location, book_file.location
     FROM book_file JOIN library_root ON library_root.id = book_file.root_id
     WHERE book_file.id = ?1 AND book_file.book_id = ?2 AND book_file.rev = ?3";
 const ROOT_LOCATOR_KIND_COLUMN: usize = 0;
-const FILE_LOCATION_COLUMN: usize = 3;
+const FILE_LOCATION_COLUMN: usize = 2;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BookFileId(pub(crate) i64);
@@ -33,7 +32,7 @@ pub fn cover_file(connection: &Connection, cover: &Cover) -> Result<Option<PathB
     Ok(connection
         .prepare(FILE_OF_COVER)?
         .query_row((cover.file.0, cover.book.as_bytes(), cover.rev), |row| {
-            let folder = stored_locator(row, ROOT_LOCATOR_KIND_COLUMN)?.into_path();
+            let folder = stored_root_path(row, ROOT_LOCATOR_KIND_COLUMN)?;
             Ok(folder.join(native_path::stored_native_path(row, FILE_LOCATION_COLUMN)?))
         })
         .optional()?)

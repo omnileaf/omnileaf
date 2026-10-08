@@ -21,7 +21,7 @@ pub use book::{NewBook, add_book, remove_books_without_files};
 pub use cover::{BookFileId, Cover, cover_file};
 pub use cursor::Cursor;
 pub use home_root::set_home_root;
-pub use library_roots::{bookmarked_roots, library_root, library_roots};
+pub use library_roots::{BookmarkedRoot, bookmarked_roots, library_root, library_roots};
 pub use page::{Page, PageRequest, PageSize};
 pub use root::{
     AppleBookmark, LibraryRoot, NewRoot, RootId, RootKind, RootLocator, add_root, relocate_root,
