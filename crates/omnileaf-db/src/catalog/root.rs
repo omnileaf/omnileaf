@@ -48,8 +48,14 @@ pub enum RootLocator {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct AppleBookmark(Vec<u8>);
+
+impl fmt::Debug for AppleBookmark {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "AppleBookmark({} bytes)", self.0.len())
+    }
+}
 
 impl RootLocator {
     #[must_use]
@@ -96,7 +102,7 @@ pub struct LibraryRoot {
     pub unavailable_since_ms: Option<i64>,
 }
 
-/// Adding a folder the library already reads returns that root unchanged.
+/// Adding a folder the library already reads returns that root, which keeps a newer bookmark only when it's a linked folder.
 #[tracing::instrument(skip_all, fields(kind = ?root.kind))]
 pub fn add_root(transaction: &Transaction<'_>, root: &NewRoot) -> Result<RootId, Error> {
     let stored = stored_location(&root.locator);
@@ -104,7 +110,9 @@ pub fn add_root(transaction: &Transaction<'_>, root: &NewRoot) -> Result<RootId,
         .prepare(
             "INSERT INTO library_root (kind, locator_kind, location, bookmark, added_at_ms)
              VALUES (?1, ?2, ?3, ?4, ?5)
-             ON CONFLICT (location) DO NOTHING",
+             ON CONFLICT (location) DO UPDATE
+                 SET locator_kind = excluded.locator_kind, bookmark = excluded.bookmark
+                 WHERE library_root.kind = 'linked' AND excluded.locator_kind = 'apple_bookmark'",
         )?
         .execute((
             root.kind,
@@ -127,6 +135,16 @@ pub fn relocate_root(
     locator: &RootLocator,
 ) -> Result<(), Error> {
     let stored = stored_location(locator);
+    let holder: Option<i64> = transaction
+        .prepare("SELECT id FROM library_root WHERE location = ?1 AND id != ?2")?
+        .query_row((&stored.location, id.0), |row| row.get(0))
+        .optional()?;
+    if let Some(holder) = holder {
+        return Err(Error::LocationTaken {
+            id,
+            holder: RootId(holder),
+        });
+    }
     let relocated = transaction
         .prepare(
             "UPDATE library_root SET locator_kind = ?2, location = ?3, bookmark = ?4
@@ -266,6 +284,15 @@ mod tests {
 
             prop_assert!(matches!(read, Ok(read) if read == id));
         }
+    }
+
+    #[test]
+    fn debug_prints_a_bookmark_s_size_and_not_the_folder_it_opens() {
+        let bookmark = AppleBookmark::new(b"/private/var/mobile/Sample Comics".to_vec());
+
+        let printed = format!("{bookmark:?}");
+
+        assert_eq!(printed, "AppleBookmark(33 bytes)");
     }
 
     #[test]

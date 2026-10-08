@@ -19,6 +19,11 @@ const ONE_ROOT: &str = "SELECT
         id, kind, locator_kind, location, bookmark, added_at_ms, unavailable_since_ms
     FROM library_root
     WHERE id = ?1";
+const BOOKMARKED: &str = "SELECT
+        id, kind, locator_kind, location, bookmark, added_at_ms, unavailable_since_ms
+    FROM library_root
+    WHERE kind = 'linked' AND locator_kind = 'apple_bookmark'
+    ORDER BY id";
 
 /// Lists the home folder and the linked folders together, in the order they were added.
 #[tracing::instrument(skip_all, fields(size = ?request.size))]
@@ -42,6 +47,14 @@ pub fn library_roots(
         })?
         .collect::<Result<_, _>>()?;
     Ok(Page::of(rows, request.size))
+}
+
+pub fn bookmarked_roots(connection: &Connection) -> Result<Vec<LibraryRoot>, Error> {
+    let mut statement = connection.prepare(BOOKMARKED)?;
+    let roots = statement
+        .query_map([], stored_root)?
+        .collect::<Result<_, _>>()?;
+    Ok(roots)
 }
 
 /// Fails with [`Error::UnknownRoot`] when the library has no root with that id.
