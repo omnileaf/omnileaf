@@ -392,3 +392,39 @@ test.describe("when the browser can't open", () => {
     await expect(prompt(page)).toBeVisible();
   });
 });
+
+test.describe("when a page fails to open", () => {
+  const calls = freshCalls(null);
+
+  test.use({
+    backend: { ...DEFAULT_BACKEND, ...fakeCrashReports(calls) },
+  });
+
+  test.beforeEach(() => {
+    Object.assign(calls, freshCalls(null));
+  });
+
+  test("offers the error that stopped it", async ({ page }) => {
+    await page.goto("/settings/about");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "About" }),
+    ).toBeVisible();
+    await page.route("**/_app/immutable/nodes/**", (route) => route.abort());
+
+    await page
+      .getByRole("main")
+      .getByRole("link", { name: /^Open-source licences/ })
+      .click();
+
+    await expect.poll(() => calls.interfaceErrors).toHaveLength(1);
+  });
+
+  test("doesn't offer a missing page as an error", async ({ page }) => {
+    await page.goto("/nowhere");
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: "This page doesn't exist" }),
+    ).toBeVisible();
+    expect(calls.interfaceErrors).toEqual([]);
+  });
+});

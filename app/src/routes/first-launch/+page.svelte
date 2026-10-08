@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { goto, pushState } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import ChoicesStep from "#lib/first-launch/ChoicesStep.svelte";
@@ -54,10 +54,10 @@
     shownStep = step;
   });
 
-  function next(): void {
+  async function next(): Promise<void> {
     const after = stepAfter(step);
     if (after !== undefined) {
-      pushState("", { firstLaunchStep: after });
+      await goto("", { shallow: true, state: { firstLaunchStep: after } });
     }
   }
 
@@ -91,8 +91,8 @@
     isLeaving = true;
     await dropStepEntries();
     await goto(resolve(SECTION_ROUTE_IDS.library), {
-      replaceState: true,
-      invalidateAll: true,
+      replace: true,
+      refreshAll: true,
     });
     return "finished";
   }
