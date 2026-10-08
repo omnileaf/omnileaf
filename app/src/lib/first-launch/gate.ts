@@ -1,6 +1,7 @@
+import type { RouteId } from "$app/types";
 import type { commands } from "#lib/ipc/bindings.ts";
 
-export const FIRST_LAUNCH_ROUTE = "/first-launch";
+export const FIRST_LAUNCH_ROUTE = "/first-launch" satisfies RouteId;
 
 type FirstLaunchFinished = Awaited<
   ReturnType<typeof commands.firstLaunchFinished>

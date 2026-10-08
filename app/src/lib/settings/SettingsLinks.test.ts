@@ -6,8 +6,12 @@ import SettingsLinks from "./SettingsLinks.svelte";
 test("lists each page with its current value", async () => {
   const screen = await render(SettingsLinks, {
     links: [
-      { route: "/settings/library", label: "Library" },
-      { route: "/settings/appearance", label: "Appearance", value: "Dark" },
+      { route: "/(app)/settings/library", label: "Library" },
+      {
+        route: "/(app)/settings/appearance",
+        label: "Appearance",
+        value: "Dark",
+      },
     ],
   });
 

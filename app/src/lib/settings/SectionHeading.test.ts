@@ -24,7 +24,7 @@ test("links back to settings", async () => {
 test("links back to the page it sits under", async () => {
   const screen = await render(SectionHeading, {
     title: "Language",
-    parent: { route: "/settings/general", title: "General" },
+    parent: { route: "/(app)/settings/general", title: "General" },
   });
 
   const back = screen.getByRole("link", { name: "Back to General" });

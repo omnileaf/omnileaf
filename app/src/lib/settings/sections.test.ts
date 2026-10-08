@@ -50,28 +50,35 @@ test("leaves another section unmarked", () => {
 });
 
 test("lists settings and its sections beside the open page", () => {
-  const listed = ["/settings", "/settings/general", "/settings/about"] as const;
+  const listed = [
+    "/(app)/settings",
+    "/(app)/settings/general",
+    "/(app)/settings/about",
+  ] as const;
 
   expect(listed.map(isListedBeside)).toEqual([true, true, true]);
 });
 
 test("leaves a page under a section out of the list beside it", () => {
-  expect(isListedBeside("/settings/about/licences")).toBe(false);
+  expect(isListedBeside("/(app)/settings/about/licences")).toBe(false);
 });
 
 test("lists Advanced just above About in a development build", () => {
   const groups = routesIn(true);
 
-  expect(groups.at(-1)).toEqual(["/settings/advanced", "/settings/about"]);
+  expect(groups.at(-1)).toEqual([
+    "/(app)/settings/advanced",
+    "/(app)/settings/about",
+  ]);
 });
 
 test("leaves Advanced out of a release build entirely", () => {
   const groups = routesIn(false);
 
-  expect(groups.flat()).not.toContain("/settings/advanced");
-  expect(groups.at(-1)).toEqual(["/settings/about"]);
+  expect(groups.flat()).not.toContain("/(app)/settings/advanced");
+  expect(groups.at(-1)).toEqual(["/(app)/settings/about"]);
 });
 
 test("lists Advanced beside the open page", () => {
-  expect(isListedBeside("/settings/advanced")).toBe(true);
+  expect(isListedBeside("/(app)/settings/advanced")).toBe(true);
 });

@@ -55,7 +55,7 @@
 <SettingsLinks
   links={[
     {
-      route: "/settings/privacy/screenshot-mode",
+      route: "/(app)/settings/privacy/screenshot-mode",
       label: m.screenshot_mode_title(),
       value: screenshotMode.isOn ? m.switch_on() : m.switch_off(),
     },

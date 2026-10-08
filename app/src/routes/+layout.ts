@@ -23,7 +23,10 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
     return { appInfo, libraryProblem, isFirstLaunch: false, notices };
   }
   const isFirstLaunch = needsFirstLaunch(await commands.firstLaunchFinished());
-  if (isFirstLaunch && untrack(() => url.pathname) !== FIRST_LAUNCH_ROUTE) {
+  if (
+    isFirstLaunch &&
+    untrack(() => url.pathname) !== resolve(FIRST_LAUNCH_ROUTE)
+  ) {
     redirect(307, resolve(FIRST_LAUNCH_ROUTE));
   }
   return { appInfo, libraryProblem, isFirstLaunch, notices };

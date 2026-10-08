@@ -21,6 +21,7 @@
   import { commands } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
+  import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
   import NoticeHost from "#lib/notices/NoticeHost.svelte";
 
   import type { PageProps } from "./$types";
@@ -89,7 +90,10 @@
     }
     isLeaving = true;
     await dropStepEntries();
-    await goto(resolve("/"), { replaceState: true, invalidateAll: true });
+    await goto(resolve(SECTION_ROUTE_IDS.library), {
+      replaceState: true,
+      invalidateAll: true,
+    });
     return "finished";
   }
 </script>

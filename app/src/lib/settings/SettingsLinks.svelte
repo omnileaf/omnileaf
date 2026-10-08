@@ -1,8 +1,8 @@
 <script lang="ts" module>
-  import type { Pathname } from "$app/types";
+  import type { SettingsPage } from "./sections";
 
   export interface SettingsLink {
-    readonly route: Pathname;
+    readonly route: SettingsPage;
     readonly label: string;
     readonly value?: string;
   }

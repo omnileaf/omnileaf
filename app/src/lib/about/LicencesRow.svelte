@@ -11,7 +11,7 @@
 </script>
 
 <li>
-  <a href={resolve("/settings/about/licences")} class={ROW_LOOKS[look]}>
+  <a href={resolve("/(app)/settings/about/licences")} class={ROW_LOOKS[look]}>
     <RowText label={m.about_licences()} hint={m.about_licences_hint()} {look} />
     <ChevronRight
       size={ROW_ICON_SIZES[look]}

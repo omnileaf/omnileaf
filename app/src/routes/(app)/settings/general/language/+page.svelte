@@ -62,7 +62,7 @@
 
 <SectionHeading
   title={m.language_label()}
-  parent={{ route: "/settings/general", title: m.general_title() }}
+  parent={{ route: "/(app)/settings/general", title: m.general_title() }}
 />
 <div class="mbs-pane-gap flex flex-col gap-sm">
   <div

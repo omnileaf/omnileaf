@@ -11,7 +11,10 @@
 
 <SectionHeading
   title={licensed.name}
-  parent={{ route: "/settings/about/licences", title: m.about_licences() }}
+  parent={{
+    route: "/(app)/settings/about/licences",
+    title: m.about_licences(),
+  }}
 />
 <div class="mbs-pane-gap flex flex-col gap-xl two-pane:max-inline-section">
   <p class="text-label text-muted touch:max-medium:px-xs">

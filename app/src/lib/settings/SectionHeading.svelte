@@ -9,7 +9,7 @@
 
   let {
     title,
-    parent = { route: "/settings", title: m.settings_title() },
+    parent = { route: "/(app)/settings", title: m.settings_title() },
   }: { title: string; parent?: ParentPage } = $props();
 
   const ARROW_SIZE = 24;

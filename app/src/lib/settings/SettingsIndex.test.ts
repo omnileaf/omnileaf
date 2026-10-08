@@ -7,8 +7,8 @@ import SettingsIndex from "./SettingsIndex.svelte";
 const PROPS = {
   app: { isDevelopmentBuild: false },
   summaries: {
-    "/settings/appearance": { text: "Follows the system" },
-    "/settings/about": { text: "Version 1.2.3" },
+    "/(app)/settings/appearance": { text: "Follows the system" },
+    "/(app)/settings/about": { text: "Version 1.2.3" },
   },
 };
 
