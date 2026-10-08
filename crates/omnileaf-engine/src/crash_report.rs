@@ -72,7 +72,7 @@ impl CrashOrigin {
     }
 }
 
-/// A report about one crash, holding only text bounded to a readable length.
+/// A report about one crash, holding only text with names and paths taken out.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrashReport {
     id: CrashReportId,
@@ -114,7 +114,7 @@ impl CrashReport {
             id,
             app,
             origin: CrashOrigin::Panic,
-            message: scrub::bound(panic.message, MESSAGE_BYTE_LIMIT),
+            message: scrub::clean(panic.message, MESSAGE_BYTE_LIMIT),
             location: panic.location.map(|location| {
                 CodeLocation::package_relative(location.file, location.line, location.column)
             }),
@@ -133,7 +133,7 @@ impl CrashReport {
             id,
             app,
             origin: CrashOrigin::Interface,
-            message: scrub::bound(&error.message, MESSAGE_BYTE_LIMIT),
+            message: scrub::clean(&error.message, MESSAGE_BYTE_LIMIT),
             location: None,
             trace: clean_frames(stack.lines().map(str::trim).filter(|line| !line.is_empty())),
         }
@@ -149,7 +149,7 @@ fn clean_frames<'a>(frames: impl IntoIterator<Item = &'a str>) -> Vec<String> {
     frames
         .into_iter()
         .take(FRAME_LIMIT)
-        .map(|frame| scrub::bound(frame, FRAME_BYTE_LIMIT))
+        .map(|frame| scrub::clean(frame, FRAME_BYTE_LIMIT))
         .collect()
 }
 
