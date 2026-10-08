@@ -21,7 +21,7 @@ use crate::{
     AppLanguage, CoversPerRowOutOfRange, FolderCursor, FolderId, FolderPage, FolderRescan,
     FolderScan, LibraryChanges, LibraryFolder, LibrarySeries, LibraryView, RescanOutcome,
     ResolvedBookmark, ScanProgress, SeriesCursor, SeriesPage,
-    bookmark_access::{Reopened, as_read, note_bookmarks_opened},
+    bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
     library_layout::folder_name,
@@ -286,7 +286,7 @@ impl Library {
             match outcome {
                 Ok(resolved) => reopened.push(Reopened::of(root, resolved)),
                 Err(error) => {
-                    unreachable.push((root.id, as_read(&root)));
+                    unreachable.push(AsRead::of(&root));
                     unopened.push((FolderId(root.id), error));
                 }
             }
@@ -297,7 +297,7 @@ impl Library {
 
     async fn note_reopened(
         &self,
-        unreachable: Vec<(RootId, RootLocator)>,
+        unreachable: Vec<AsRead>,
         reopened: Vec<Reopened>,
     ) -> Result<(), LibraryError> {
         let since_ms = self.now_ms();

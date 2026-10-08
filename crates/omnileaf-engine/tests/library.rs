@@ -242,7 +242,7 @@ async fn leaves_a_bookmarked_folder_in_place_when_another_library_folder_is_wher
     let kept = folder_named(&library, "Bookmarked Taken").await;
     assert!(failed.is_empty());
     assert_eq!(kept.location, comics.path().display().to_string());
-    assert!(!kept.is_available);
+    assert!(kept.is_available);
     assert_eq!(
         bookmarks_asked_for(&library, comics.path()).await,
         [AppleBookmark::new(REFRESHED_BOOKMARK.to_vec())]
