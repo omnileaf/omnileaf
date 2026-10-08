@@ -174,7 +174,7 @@
   "about_copy_failed": "Couldn't copy the version details. Try again.",
   "about_source_code": "Source code",
   "about_report_problem": "Report a problem",
-  "about_report_problem_hint": "Opens a new issue in your browser",
+  "about_report_problem_hint": "Opens GitHub. You'll need a GitHub account.",
   "about_opens_in_browser": "Opens in your browser",
   "about_browser_unavailable": "Couldn't open your browser. Try again.",
   "about_licences": "Open-source licences",

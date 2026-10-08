@@ -60,7 +60,7 @@ test("says each project page opens in the browser", async () => {
   await expect
     .element(report)
     .toHaveAccessibleName(
-      "Report a problem Opens a new issue in your browser Opens in your browser",
+      "Report a problem Opens GitHub. You'll need a GitHub account. Opens in your browser",
     );
 });
 
