@@ -502,7 +502,7 @@ const HAS_PHONE_CORNERS = {
 } as const;
 
 for (const platform of ["ios", "android"] as const) {
-  test.describe(`the link step on an ${platform} phone`, () => {
+  test.describe(`first launch on an ${platform} phone`, () => {
     test.use({
       backend: {
         ...FIRST_LAUNCH_BACKEND,
@@ -535,6 +535,33 @@ for (const platform of ["ios", "android"] as const) {
       expect(look.border).toBe(`1px ${await accentOf(page)}`);
       expect(look.background).toBe(TRANSPARENT);
       expect(HAS_PHONE_CORNERS[platform](look.radius)).toBe(true);
+    });
+
+    test("names each choice in bold, then its control, then its help, with no card", async ({
+      page,
+    }) => {
+      await goTo(page, "A few choices", platform);
+      const choice = page.getByRole("region", { name: "Appearance" });
+      const name = choice.getByRole("heading", { name: "Appearance" });
+      const control = choice.getByRole("radiogroup", { name: "Appearance" });
+      const help = choice.getByText(
+        "Paper light or dark, or follow your phone.",
+      );
+
+      const nameBox = await boxOf(name);
+      const controlBox = await boxOf(control);
+      const helpBox = await boxOf(help);
+      const nameStyle = await name.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { size: style.fontSize, weight: style.fontWeight };
+      });
+      const card = await lookOf(choice);
+
+      expect(controlBox.y).toBeGreaterThan(nameBox.y + nameBox.height);
+      expect(helpBox.y).toBeGreaterThan(controlBox.y + controlBox.height);
+      expect(nameStyle).toEqual({ size: "14px", weight: "700" });
+      expect(card.background).toBe(TRANSPARENT);
+      expect(card.border.startsWith("0px")).toBe(true);
     });
   });
 }
