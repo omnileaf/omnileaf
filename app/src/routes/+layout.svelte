@@ -12,6 +12,7 @@
   } from "$lib/crash-report/choice.svelte";
   import { CrashReporting } from "$lib/crash-report/crash-reporting.svelte";
   import CrashReportPrompt from "$lib/crash-report/CrashReportPrompt.svelte";
+  import { appInterfaceErrors } from "$lib/crash-report/interface-error-relay";
   import { commands } from "$lib/ipc/bindings";
   import { rescanEveryFolder } from "$lib/library/rescan-folder";
   import {
@@ -77,6 +78,9 @@
     if (data.libraryProblem === null) {
       void rescanEveryFolder();
     }
+    return appInterfaceErrors.deliverTo((error) => {
+      void crashReporting.offerInterfaceError(error);
+    });
   });
 </script>
 

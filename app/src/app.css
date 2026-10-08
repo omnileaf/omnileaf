@@ -227,6 +227,7 @@
   --spacing-dialog-inset: 1.25rem;
   --spacing-dialog-gap: 1rem;
   --spacing-dialog-button: 2.5rem;
+  --spacing-checkbox: 1.125rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
@@ -286,6 +287,7 @@
   --radius-notice: 1.25rem;
   --radius-dialog: 1rem;
   --radius-dialog-button: 0.625rem;
+  --radius-checkbox: 0.3125rem;
 
   --container-notice: 27.5rem;
   --container-problem: 32.5rem;
@@ -376,6 +378,7 @@
   --color-dialog-shadow: rgb(28 27 24 / 0.22);
   --color-dialog-contact: rgb(28 27 24 / 0.08);
   --color-dialog-edge: transparent;
+  --color-control-edge: #8c867a;
   --color-icon-hole: var(--color-accent-soft);
   --color-glass: rgb(250 248 244 / 0.74);
   --color-glass-edge: rgb(255 255 255 / 0.7);
@@ -485,6 +488,13 @@
   @variant expanded {
     --spacing-gutter: 2rem;
     --text-page-title: 1.75rem;
+  }
+}
+
+:root {
+  @variant touch {
+    --spacing-checkbox: 1.25rem;
+    --radius-checkbox: 0.375rem;
   }
 }
 

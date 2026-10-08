@@ -17,6 +17,7 @@ const DIALOG_LOOK = {
   body: "14px",
   width: 420,
   well: "rgb(243, 240, 233)",
+  accent: "rgb(47, 111, 79)",
 };
 
 function prompt(page: Page): Locator {
@@ -154,5 +155,40 @@ test.describe("on desktop, the crash report dialog", () => {
     expect(send.x + send.width).toBe(
       Math.max(...boxes.map((box) => box.x + box.width)),
     );
+  });
+
+  test("ends its padding below the buttons while nothing failed", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const card = await boxOf(prompt(page));
+    const send = await boxOf(
+      prompt(page).getByRole("button", { name: "Send report" }),
+    );
+    const edge =
+      Number.parseFloat(await styleOf(prompt(page), "padding-block-end")) +
+      Number.parseFloat(await styleOf(prompt(page), "border-bottom-width"));
+
+    expect(card.y + card.height - (send.y + send.height)).toBe(edge);
+  });
+
+  test("offers Copy details as a text button at the start", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/");
+    await expect(prompt(page)).toBeVisible();
+
+    const copy = prompt(page).getByRole("button", { name: "Copy details" });
+    const starts = await Promise.all(
+      (await prompt(page).getByRole("button").all()).map(
+        async (button) => (await boxOf(button)).x,
+      ),
+    );
+
+    expect((await boxOf(copy)).x).toBe(Math.min(...starts));
+    expect(await styleOf(copy, "border-top-width")).toBe("0px");
+    expect(await styleOf(copy, "color")).toBe(DIALOG_LOOK.accent);
   });
 });
