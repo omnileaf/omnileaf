@@ -27,7 +27,6 @@ afterEach(() => {
   clearMocks();
 });
 
-/** Holds every request for the library's folders until the test answers it. */
 function holdFolderRequests(): {
   waiting: () => number;
   answer: (index: number, folders: readonly WireFolder[]) => void;

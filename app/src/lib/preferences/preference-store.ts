@@ -27,7 +27,6 @@ export function rememberPreference(
   }
 }
 
-/** The web view's storage, kept until the app has a settings store. */
 export function browserStorage(): PreferenceStore | undefined {
   try {
     return window.localStorage;

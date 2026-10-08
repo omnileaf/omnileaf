@@ -37,7 +37,6 @@ export class CrashReportSetting {
   }
 }
 
-/** The setting for this document; the choice is kept in the web view's storage until the app has a settings store. */
 export function crashReportSettingForDocument(): CrashReportSetting {
   return new CrashReportSetting(browserPreferenceStore());
 }
