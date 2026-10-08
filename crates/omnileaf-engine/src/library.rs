@@ -5,8 +5,8 @@ use omnileaf_db::{
     catalog::{
         AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator,
         SeriesOrder, add_root, bookmarked_roots, cover_file, library_root, library_roots,
-        mark_root_available, mark_root_unavailable, relocate_root, remove_root, root_book_count,
-        series_count, series_page, set_home_root,
+        mark_root_available, mark_root_unavailable, remove_root, root_book_count, series_count,
+        series_page, set_home_root,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_view::{library_view, set_library_view},
@@ -20,7 +20,8 @@ use tokio::{
 use crate::{
     AppLanguage, CoversPerRowOutOfRange, FolderCursor, FolderId, FolderPage, FolderRescan,
     FolderScan, LibraryChanges, LibraryFolder, LibrarySeries, LibraryView, RescanOutcome,
-    ScanProgress, SeriesCursor, SeriesPage,
+    ResolvedBookmark, ScanProgress, SeriesCursor, SeriesPage,
+    bookmark_access::{Reopened, note_bookmarks_opened},
     device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
     library_layout::folder_name,
@@ -38,13 +39,6 @@ const MAPPED_DATABASE_BYTES: u32 = if IS_MOBILE {
 } else {
     256 * MEBIBYTE
 };
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ResolvedBookmark {
-    pub path: PathBuf,
-    /// Present when the platform found the bookmark stale and made a new one to keep instead.
-    pub refreshed: Option<AppleBookmark>,
-}
 
 /// The library database in the home folder, and the folders it reads.
 pub struct Library {
@@ -265,54 +259,63 @@ impl Library {
         })
     }
 
-    /// Opens each linked folder kept by a bookmark through `resolve`, which may block, following any that moved.
-    /// Returns the folders whose bookmark wouldn't open, which read as unavailable until a rescan finds them.
+    /// Opens each linked folder kept by a bookmark through `resolve`, which may block, following the ones that moved and returning those whose bookmark wouldn't open.
     #[tracing::instrument(skip_all)]
     pub async fn restore_folder_access<E: Send + 'static>(
         &self,
         mut resolve: impl FnMut(&AppleBookmark) -> Result<ResolvedBookmark, E> + Send + 'static,
     ) -> Result<Vec<(FolderId, E)>, LibraryError> {
-        let _scanning = self.scanning.lock().await;
         let bookmarked = self.store.database().read(bookmarked_roots).await?;
         let resolved = spawn_blocking(move || {
             bookmarked
                 .into_iter()
-                .filter_map(|root| match root.locator {
-                    RootLocator::Path(_) => None,
-                    RootLocator::AppleBookmark { path, bookmark } => {
-                        let outcome = resolve(&bookmark);
-                        Some((root.id, path, bookmark, outcome))
-                    }
+                .map(|root| {
+                    let outcome = resolve(&root.bookmark);
+                    (root, outcome)
                 })
                 .collect::<Vec<_>>()
         })
         .await?;
         let mut unopened = Vec::new();
-        let mut moved = Vec::new();
-        for (id, path, bookmark, outcome) in resolved {
+        let mut reopened = Vec::new();
+        for (root, outcome) in resolved {
             match outcome {
-                Err(error) => unopened.push((id, error)),
-                Ok(ResolvedBookmark {
-                    path: resolved,
-                    refreshed: None,
-                }) if resolved == path => {}
-                Ok(resolved) => moved.push((
-                    id,
-                    RootLocator::AppleBookmark {
-                        path: resolved.path,
-                        bookmark: resolved.refreshed.unwrap_or(bookmark),
-                    },
-                )),
+                Ok(resolved) => reopened.push(Reopened::of(root, resolved)),
+                Err(error) => unopened.push((root, error)),
             }
         }
-        let unreachable: Vec<RootId> = unopened.iter().map(|(id, _)| *id).collect();
-        if self.note_bookmarks_opened(unreachable, moved).await? {
-            self.note_catalog_written();
+        let unreachable: Vec<RootId> = unopened
+            .iter()
+            .filter(|(root, _)| root.unavailable_since_ms.is_none())
+            .map(|(root, _)| root.id)
+            .collect();
+        if !unreachable.is_empty() || reopened.iter().any(Reopened::changes_anything) {
+            self.note_reopened(unreachable, reopened).await?;
         }
         Ok(unopened
             .into_iter()
-            .map(|(id, error)| (FolderId(id), error))
+            .map(|(root, error)| (FolderId(root.id), error))
             .collect())
+    }
+
+    async fn note_reopened(
+        &self,
+        unreachable: Vec<RootId>,
+        reopened: Vec<Reopened>,
+    ) -> Result<(), LibraryError> {
+        let since_ms = self.now_ms();
+        let _scanning = self.scanning.lock().await;
+        let changed = self
+            .store
+            .database()
+            .write(move |transaction| {
+                note_bookmarks_opened(transaction, &unreachable, &reopened, since_ms)
+            })
+            .await?;
+        if changed {
+            self.note_catalog_written();
+        }
+        Ok(())
     }
 
     /// Rescans the home folder and every linked folder in turn, in the order they were added, leaving out a folder removed meanwhile.
@@ -397,38 +400,6 @@ impl Library {
                 let id = add_root(transaction, &root)?;
                 mark_root_available(transaction, id)?;
                 Ok(id)
-            })
-            .await?)
-    }
-
-    /// Reports whether any folder moved, leaving one in place when another folder of the library is already where it moved to.
-    async fn note_bookmarks_opened(
-        &self,
-        unreachable: Vec<RootId>,
-        moved: Vec<(RootId, RootLocator)>,
-    ) -> Result<bool, LibraryError> {
-        if unreachable.is_empty() && moved.is_empty() {
-            return Ok(false);
-        }
-        let since_ms = self.now_ms();
-        Ok(self
-            .store
-            .database()
-            .write(move |transaction| {
-                for id in unreachable {
-                    mark_root_unavailable(transaction, id, since_ms)?;
-                }
-                let mut any_moved = false;
-                for (id, locator) in &moved {
-                    match relocate_root(transaction, *id, locator) {
-                        Ok(()) => any_moved = true,
-                        Err(omnileaf_db::Error::LocationTaken { id, holder }) => {
-                            tracing::warn!(folder = %id, %holder, "keep a bookmarked folder where it was, since another library folder is where it moved to");
-                        }
-                        Err(error) => return Err(error),
-                    }
-                }
-                Ok(any_moved)
             })
             .await?)
     }

@@ -105,6 +105,56 @@ async fn tells_of_a_bookmarked_folder_that_moved() {
 }
 
 #[tokio::test(start_paused = true)]
+async fn tells_of_a_bookmarked_folder_it_can_no_longer_reach() {
+    let home = ScratchFolder::new("changes-unreachable-home");
+    let comics = ScratchFolder::new("changes-unreachable");
+    let library = open(home.path()).await;
+    let picked = RootLocator::AppleBookmark {
+        path: comics.path().to_path_buf(),
+        bookmark: AppleBookmark::new(b"bookmark picked in Files".to_vec()),
+    };
+    library.add_folder(picked, |_| {}).await.unwrap();
+    let mut changes = library.changes();
+    caught_up(&mut changes).await;
+
+    library
+        .restore_folder_access(|_| {
+            Err::<ResolvedBookmark, _>(io::Error::from(io::ErrorKind::NotFound))
+        })
+        .await
+        .unwrap();
+
+    assert!(tells_of_a_change(&mut changes).await);
+}
+
+#[tokio::test(start_paused = true)]
+async fn tells_of_nothing_when_only_a_bookmark_was_made_again() {
+    let home = ScratchFolder::new("changes-refreshed-home");
+    let comics = ScratchFolder::new("changes-refreshed");
+    let library = open(home.path()).await;
+    let picked = RootLocator::AppleBookmark {
+        path: comics.path().to_path_buf(),
+        bookmark: AppleBookmark::new(b"bookmark picked in Files".to_vec()),
+    };
+    library.add_folder(picked, |_| {}).await.unwrap();
+    let mut changes = library.changes();
+    caught_up(&mut changes).await;
+    let same_place = comics.path().to_path_buf();
+
+    library
+        .restore_folder_access(move |_| {
+            Ok::<_, io::Error>(ResolvedBookmark {
+                path: same_place.clone(),
+                refreshed: Some(AppleBookmark::new(b"bookmark made again".to_vec())),
+            })
+        })
+        .await
+        .unwrap();
+
+    assert!(tells_of_no_change(&mut changes).await);
+}
+
+#[tokio::test(start_paused = true)]
 async fn tells_of_every_change_close_together_once() {
     let home = ScratchFolder::new("changes-burst-home");
     let comics = ScratchFolder::new("changes-burst-comics");

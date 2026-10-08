@@ -246,8 +246,76 @@ async fn leaves_a_bookmarked_folder_in_place_when_another_library_folder_is_wher
     );
     assert_eq!(
         bookmarks_asked_for(&library, comics.path()).await,
-        [AppleBookmark::new(PICKED_BOOKMARK.to_vec())]
+        [AppleBookmark::new(REFRESHED_BOOKMARK.to_vec())]
     );
+}
+
+#[tokio::test]
+async fn moves_a_bookmarked_folder_into_the_place_another_one_just_left() {
+    let home = ScratchFolder::new("library-restore-swap-home");
+    let parent = ScratchFolder::new("library-restore-swap");
+    let newer = parent.path().join("Comics new");
+    let current = parent.path().join("Comics");
+    let older = parent.path().join("Comics old");
+    std::fs::create_dir(&newer).unwrap();
+    std::fs::create_dir(&current).unwrap();
+    let library = open(home.path()).await;
+    library
+        .add_folder(bookmarked(newer.clone(), b"newer"), |_| {})
+        .await
+        .unwrap();
+    library
+        .add_folder(bookmarked(current.clone(), b"current"), |_| {})
+        .await
+        .unwrap();
+    std::fs::rename(&current, &older).unwrap();
+    std::fs::rename(&newer, &current).unwrap();
+    let renamed: [(&[u8], PathBuf); 2] = [(b"newer", current.clone()), (b"current", older.clone())];
+
+    library
+        .restore_folder_access(move |bookmark| {
+            renamed
+                .iter()
+                .find(|(was, _)| bookmark.as_bytes() == *was)
+                .map(|(_, now)| ResolvedBookmark {
+                    path: now.clone(),
+                    refreshed: None,
+                })
+                .ok_or(DriveNotConnected)
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(
+        all_folders(&library)
+            .await
+            .iter()
+            .map(|folder| folder.location.clone())
+            .collect::<Vec<_>>(),
+        [home.path(), &current, &older].map(|path| path.display().to_string())
+    );
+}
+
+#[tokio::test]
+async fn reads_a_bookmarked_folder_as_available_once_its_bookmark_opens_again() {
+    let home = ScratchFolder::new("library-restore-again-home");
+    let comics = ScratchFolder::new("Back Again");
+    let library = open(home.path()).await;
+    library
+        .add_folder(
+            bookmarked(comics.path().to_path_buf(), PICKED_BOOKMARK),
+            |_| {},
+        )
+        .await
+        .unwrap();
+    library
+        .restore_folder_access(|_| Err::<ResolvedBookmark, _>(DriveNotConnected))
+        .await
+        .unwrap();
+
+    bookmarks_asked_for(&library, comics.path()).await;
+
+    assert!(folder_named(&library, "Back Again").await.is_available);
 }
 
 #[tokio::test]
