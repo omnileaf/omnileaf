@@ -6,7 +6,7 @@
 mod library_seed;
 mod support;
 
-use library_seed::{fingerprint, seed_library};
+use library_seed::{SeriesSeed, fingerprint, seed_library};
 use omnileaf_db::{
     Database, Error,
     catalog::{NewBook, NewSeries, add_book, add_series},
@@ -370,7 +370,15 @@ async fn drops_a_removed_series_from_title_search() {
 }
 
 async fn add_local_series(database: &Database, folder_name: &str, titles: &[&str]) -> SeriesId {
-    seed_library(database, &[(folder_name, ADDED_AT_MS, titles)]).await;
+    seed_library(
+        database,
+        &[SeriesSeed {
+            added_at_ms: ADDED_AT_MS,
+            book_titles: titles,
+            ..SeriesSeed::named(folder_name)
+        }],
+    )
+    .await;
     NewSeries::local(folder_name, ADDED_AT_MS).unwrap().id()
 }
 
