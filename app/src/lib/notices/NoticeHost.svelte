@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Platform } from "$lib/ipc/bindings";
-  import { focusPageHeading } from "$lib/navigation/page-heading";
+  import type { Platform } from "#lib/ipc/bindings.ts";
+  import { focusPageHeading } from "#lib/navigation/page-heading.ts";
 
   import NoticeCard from "./NoticeCard.svelte";
   import type { NoticeAction, Notices } from "./notices.svelte";

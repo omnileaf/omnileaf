@@ -4,24 +4,24 @@
   import { goto, pushState } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import ChoicesStep from "$lib/first-launch/ChoicesStep.svelte";
-  import { deviceKindOf } from "$lib/first-launch/device";
-  import FirstLaunchPanel from "$lib/first-launch/FirstLaunchPanel.svelte";
-  import HomeStep from "$lib/first-launch/HomeStep.svelte";
-  import LinkStep from "$lib/first-launch/LinkStep.svelte";
+  import ChoicesStep from "#lib/first-launch/ChoicesStep.svelte";
+  import { deviceKindOf } from "#lib/first-launch/device.ts";
+  import FirstLaunchPanel from "#lib/first-launch/FirstLaunchPanel.svelte";
+  import HomeStep from "#lib/first-launch/HomeStep.svelte";
+  import LinkStep from "#lib/first-launch/LinkStep.svelte";
   import ReadyStep, {
     type FinishOutcome,
-  } from "$lib/first-launch/ReadyStep.svelte";
+  } from "#lib/first-launch/ReadyStep.svelte";
   import {
     FIRST_LAUNCH_STEPS,
     type FirstLaunchStep,
     stepAfter,
-  } from "$lib/first-launch/steps";
-  import WelcomeStep from "$lib/first-launch/WelcomeStep.svelte";
-  import { commands } from "$lib/ipc/bindings";
-  import { addFolderWithProgress } from "$lib/library/add-folder";
-  import { LibraryFolders } from "$lib/library/library-folders.svelte";
-  import NoticeHost from "$lib/notices/NoticeHost.svelte";
+  } from "#lib/first-launch/steps.ts";
+  import WelcomeStep from "#lib/first-launch/WelcomeStep.svelte";
+  import { commands } from "#lib/ipc/bindings.ts";
+  import { addFolderWithProgress } from "#lib/library/add-folder.ts";
+  import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
+  import NoticeHost from "#lib/notices/NoticeHost.svelte";
 
   import type { PageProps } from "./$types";
 

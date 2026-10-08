@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Folder, FolderMinus, ShieldCheck } from "@lucide/svelte";
 
-  import type { LibraryFolder } from "$lib/ipc/bindings";
-  import ConfirmDialog from "$lib/page/ConfirmDialog.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import type { LibraryFolder } from "#lib/ipc/bindings.ts";
+  import ConfirmDialog from "#lib/page/ConfirmDialog.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   import { folderTitle } from "./folder-title";
 

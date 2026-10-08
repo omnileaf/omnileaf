@@ -1,8 +1,8 @@
 import { FolderX, Lock, type LucideIcon, TriangleAlert } from "@lucide/svelte";
 
-import type { FolderScan, IpcErrorCode } from "$lib/ipc/bindings";
-import type { Notice, Notices } from "$lib/notices/notices.svelte";
-import { m } from "$lib/paraglide/messages.js";
+import type { FolderScan, IpcErrorCode } from "#lib/ipc/bindings.ts";
+import type { Notice, Notices } from "#lib/notices/notices.svelte.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 import type { AddFolder } from "./add-folder";
 import { followScan, type ScanStep } from "./scan-step";

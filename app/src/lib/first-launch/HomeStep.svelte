@@ -1,9 +1,9 @@
 <script lang="ts">
   import { House } from "@lucide/svelte";
 
-  import HomeFolder from "$lib/library/HomeFolder.svelte";
-  import type { FolderList } from "$lib/library/library-folders.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import HomeFolder from "#lib/library/HomeFolder.svelte";
+  import type { FolderList } from "#lib/library/library-folders.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";

@@ -1,4 +1,4 @@
-import type { LibraryFolder, RescanOutcome } from "$lib/ipc/bindings";
+import type { LibraryFolder, RescanOutcome } from "#lib/ipc/bindings.ts";
 
 import type { RescanFolder } from "./rescan-folder";
 import { followScan, type ScanStep } from "./scan-step";

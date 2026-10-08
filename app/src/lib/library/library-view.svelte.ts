@@ -3,7 +3,7 @@ import {
   DEFAULT_LIBRARY_VIEW,
   type IpcError,
   type LibraryView,
-} from "$lib/ipc/bindings";
+} from "#lib/ipc/bindings.ts";
 
 export type ReadLibraryView = typeof commands.libraryView;
 export type StoreLibraryView = typeof commands.setLibraryView;

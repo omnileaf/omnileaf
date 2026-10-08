@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ArrowRight } from "@lucide/svelte";
 
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   import PreviewSide from "./PreviewSide.svelte";
 

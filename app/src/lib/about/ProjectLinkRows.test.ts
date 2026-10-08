@@ -2,12 +2,12 @@ import { expect, test } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
-import type { ProjectLink } from "$lib/ipc/bindings";
+import type { ProjectLink } from "#lib/ipc/bindings.ts";
 
 import AboutFailures from "./AboutFailures.svelte";
 import { LinkOpening, type OpenProjectLink } from "./link-opening.svelte";
 import ProjectLinkRows from "./ProjectLinkRows.svelte";
-import { DetailsCopying } from "$lib/copying/details-copying.svelte";
+import { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
 
 type OpenResult = Awaited<ReturnType<OpenProjectLink>>;
 

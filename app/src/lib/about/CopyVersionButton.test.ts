@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
-import type { IpcErrorCode } from "$lib/ipc/bindings";
+import type { IpcErrorCode } from "#lib/ipc/bindings.ts";
 
 import AboutFailures from "./AboutFailures.svelte";
 import CopyVersionButton from "./CopyVersionButton.svelte";
@@ -11,7 +11,7 @@ import {
   COPIED_FOR_MS,
   type CopyDetails,
   DetailsCopying,
-} from "$lib/copying/details-copying.svelte";
+} from "#lib/copying/details-copying.svelte.ts";
 
 type CopyResult = Awaited<ReturnType<CopyDetails>>;
 

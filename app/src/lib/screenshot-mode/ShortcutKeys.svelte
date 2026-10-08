@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Platform } from "$lib/ipc/bindings";
+  import type { Platform } from "#lib/ipc/bindings.ts";
 
   import { screenshotModeShortcutOn } from "./shortcut";
 

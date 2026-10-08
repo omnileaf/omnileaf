@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { DEFAULT_LIBRARY_VIEW, type LibraryView } from "$lib/ipc/bindings";
+import { DEFAULT_LIBRARY_VIEW, type LibraryView } from "#lib/ipc/bindings.ts";
 
 import {
   withCoversPerRow,

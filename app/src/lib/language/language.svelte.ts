@@ -1,6 +1,6 @@
 import { createContext } from "svelte";
 
-import { baseLocale, getLocale, type Locale } from "$lib/paraglide/runtime.js";
+import { baseLocale, getLocale, type Locale } from "#lib/paraglide/runtime.js";
 
 import {
   browserLanguageStore,

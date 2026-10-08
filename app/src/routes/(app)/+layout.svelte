@@ -1,12 +1,12 @@
 <script lang="ts">
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
-  import { getLanguageSetting } from "$lib/language/language.svelte";
-  import AppNavigation from "$lib/navigation/AppNavigation.svelte";
-  import { makeBackGoUp, setBackGoesUp } from "$lib/navigation/back-goes-up";
-  import { focusPageHeading } from "$lib/navigation/page-heading";
-  import { sectionOf } from "$lib/navigation/sections";
-  import NoticeHost from "$lib/notices/NoticeHost.svelte";
+  import { getLanguageSetting } from "#lib/language/language.svelte.ts";
+  import AppNavigation from "#lib/navigation/AppNavigation.svelte";
+  import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
+  import { focusPageHeading } from "#lib/navigation/page-heading.ts";
+  import { sectionOf } from "#lib/navigation/sections.ts";
+  import NoticeHost from "#lib/notices/NoticeHost.svelte";
 
   import type { LayoutProps } from "./$types";
 

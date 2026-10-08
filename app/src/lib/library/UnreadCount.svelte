@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { ClassValue } from "svelte/elements";
 
-  import { m } from "$lib/paraglide/messages.js";
-  import { getLocale } from "$lib/paraglide/runtime.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
 
   let { count, class: className }: { count: number; class?: ClassValue } =
     $props();

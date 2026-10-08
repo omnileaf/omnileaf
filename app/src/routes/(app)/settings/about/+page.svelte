@@ -1,16 +1,16 @@
 <script lang="ts">
   import appIcon from "#branding/icon.svg";
-  import AboutFailures from "$lib/about/AboutFailures.svelte";
-  import CopyVersionButton from "$lib/about/CopyVersionButton.svelte";
-  import LicencesRow from "$lib/about/LicencesRow.svelte";
-  import { LinkOpening } from "$lib/about/link-opening.svelte";
-  import ProjectLinkRows from "$lib/about/ProjectLinkRows.svelte";
-  import { DetailsCopying } from "$lib/copying/details-copying.svelte";
-  import { commands } from "$lib/ipc/bindings";
-  import { WindowWidth } from "$lib/page/breakpoints";
-  import { isPhone } from "$lib/page/platform";
-  import { m } from "$lib/paraglide/messages.js";
-  import SectionHeading from "$lib/settings/SectionHeading.svelte";
+  import AboutFailures from "#lib/about/AboutFailures.svelte";
+  import CopyVersionButton from "#lib/about/CopyVersionButton.svelte";
+  import LicencesRow from "#lib/about/LicencesRow.svelte";
+  import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
+  import ProjectLinkRows from "#lib/about/ProjectLinkRows.svelte";
+  import { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
+  import { commands } from "#lib/ipc/bindings.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { isPhone } from "#lib/page/platform.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   import type { PageProps } from "./$types";
 

@@ -7,8 +7,8 @@ import {
   DEFAULT_LIBRARY_VIEW,
   events,
   type LibrarySeries,
-} from "$lib/ipc/bindings";
-import { Notices } from "$lib/notices/notices.svelte";
+} from "#lib/ipc/bindings.ts";
+import { Notices } from "#lib/notices/notices.svelte.ts";
 
 import { screenshotModeTurned } from "../../../tests/components/screenshot-mode";
 import WithScreenshotMode from "../../../tests/components/WithScreenshotMode.svelte";

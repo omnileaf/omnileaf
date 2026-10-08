@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   import { standInName, standInNumber } from "./stand-ins";
   import StandInCover from "./StandInCover.svelte";

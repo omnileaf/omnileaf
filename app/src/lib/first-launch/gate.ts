@@ -1,4 +1,4 @@
-import type { commands } from "$lib/ipc/bindings";
+import type { commands } from "#lib/ipc/bindings.ts";
 
 export const FIRST_LAUNCH_ROUTE = "/first-launch";
 

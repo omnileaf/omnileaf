@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { LibrarySeries, OnCovers } from "$lib/ipc/bindings";
+  import type { LibrarySeries, OnCovers } from "#lib/ipc/bindings.ts";
 
   import UnreadCount from "./UnreadCount.svelte";
 

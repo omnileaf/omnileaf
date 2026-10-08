@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import type { LibraryFolder } from "$lib/ipc/bindings";
-  import type { Notices } from "$lib/notices/notices.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import type { LibraryFolder } from "#lib/ipc/bindings.ts";
+  import type { Notices } from "#lib/notices/notices.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   import type { AddFolder } from "./add-folder";
   import HomeFolder from "./HomeFolder.svelte";

@@ -6,11 +6,11 @@ import {
   SquareTerminal,
 } from "@lucide/svelte";
 
-import type { AppInfo } from "$lib/ipc/bindings";
-import LibraryGlyph from "$lib/navigation/LibraryGlyph.svelte";
-import type { Glyph } from "$lib/page/glyph";
-import { m } from "$lib/paraglide/messages.js";
-import type { Locale } from "$lib/paraglide/runtime.js";
+import type { AppInfo } from "#lib/ipc/bindings.ts";
+import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
+import type { Glyph } from "#lib/page/glyph.ts";
+import { m } from "#lib/paraglide/messages.js";
+import type { Locale } from "#lib/paraglide/runtime.js";
 
 export type SettingsRoute =
   | "/settings/library"

@@ -2,8 +2,8 @@
   import { Bug, Play, Power, TriangleAlert } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
-  import type { Glyph } from "$lib/page/glyph";
-  import { m } from "$lib/paraglide/messages.js";
+  import type { Glyph } from "#lib/page/glyph.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   import CrashAndQuitDialog from "./CrashAndQuitDialog.svelte";
   import type { CrashTests } from "./crash-tests";

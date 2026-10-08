@@ -2,8 +2,8 @@ import type {
   FileChanges,
   LibraryFolder,
   RescanOutcome,
-} from "$lib/ipc/bindings";
-import { m } from "$lib/paraglide/messages.js";
+} from "#lib/ipc/bindings.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 import { folderTitle } from "./folder-title";
 

@@ -1,5 +1,8 @@
-import type { LibrarySeries } from "$lib/ipc/bindings";
-import { standInName, standInNumberFor } from "$lib/screenshot-mode/stand-ins";
+import type { LibrarySeries } from "#lib/ipc/bindings.ts";
+import {
+  standInName,
+  standInNumberFor,
+} from "#lib/screenshot-mode/stand-ins.ts";
 
 import type { CoverPath } from "./cover-url";
 

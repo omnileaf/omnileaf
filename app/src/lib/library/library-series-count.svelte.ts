@@ -1,4 +1,4 @@
-import type { commands, IpcError } from "$lib/ipc/bindings";
+import type { commands, IpcError } from "#lib/ipc/bindings.ts";
 
 export type CountSeries = typeof commands.librarySeriesCount;
 

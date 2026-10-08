@@ -1,8 +1,8 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { m } from "$lib/paraglide/messages.js";
-  import { sectionCurrent, settingsGroups } from "$lib/settings/sections";
+  import { m } from "#lib/paraglide/messages.js";
+  import { sectionCurrent, settingsGroups } from "#lib/settings/sections.ts";
 
   import type { LayoutProps } from "./$types";
 

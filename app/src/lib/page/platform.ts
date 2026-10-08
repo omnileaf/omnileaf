@@ -1,4 +1,4 @@
-import type { Platform } from "$lib/ipc/bindings";
+import type { Platform } from "#lib/ipc/bindings.ts";
 
 import type { WidthClass } from "./breakpoints";
 

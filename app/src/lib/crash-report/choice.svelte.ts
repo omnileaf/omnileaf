@@ -4,7 +4,7 @@ import {
   browserPreferenceStore,
   type PreferenceStore,
   StoredPreference,
-} from "$lib/preferences/stored-preference";
+} from "#lib/preferences/stored-preference.ts";
 
 const CHOICE_KEY = "omnileaf.crash-reports";
 

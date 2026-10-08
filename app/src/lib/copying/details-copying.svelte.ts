@@ -1,4 +1,4 @@
-import type { IpcError } from "$lib/ipc/bindings";
+import type { IpcError } from "#lib/ipc/bindings.ts";
 
 export type CopyDetails = () => Promise<
   { status: "ok"; data: null } | { status: "error"; error: IpcError }

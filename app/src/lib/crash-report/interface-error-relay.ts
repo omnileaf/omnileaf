@@ -1,4 +1,4 @@
-import type { InterfaceError } from "$lib/ipc/bindings";
+import type { InterfaceError } from "#lib/ipc/bindings.ts";
 
 type ErrorDelivery = (error: InterfaceError) => void;
 

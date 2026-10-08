@@ -3,7 +3,7 @@
 
   import { resolve } from "$app/paths";
 
-  import type { AppInfo } from "$lib/ipc/bindings";
+  import type { AppInfo } from "#lib/ipc/bindings.ts";
 
   import {
     type SectionSummary,

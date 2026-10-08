@@ -3,8 +3,8 @@
   import { tick } from "svelte";
 
   import { resolve } from "$app/paths";
-  import { type AboutLook, ROW_ICON_SIZES } from "$lib/about/look";
-  import { m } from "$lib/paraglide/messages.js";
+  import { type AboutLook, ROW_ICON_SIZES } from "#lib/about/look.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   import type { LicenceGroup } from "./licences";
 

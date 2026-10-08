@@ -2,7 +2,7 @@ import { Channel, type InvokeArgs } from "@tauri-apps/api/core";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
 
-import type { FolderScan, ScanProgress } from "$lib/ipc/bindings";
+import type { FolderScan, ScanProgress } from "#lib/ipc/bindings.ts";
 
 import { addFolderWithProgress } from "./add-folder";
 

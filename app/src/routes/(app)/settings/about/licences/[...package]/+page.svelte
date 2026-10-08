@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
-  import SectionHeading from "$lib/settings/SectionHeading.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   import type { PageProps } from "./$types";
 

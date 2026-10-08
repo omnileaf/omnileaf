@@ -1,20 +1,23 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
-  import type { ThemePreference } from "$lib/appearance/theme";
-  import { getThemeSetting } from "$lib/appearance/theme.svelte";
+  import type { ThemePreference } from "#lib/appearance/theme.ts";
+  import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
   import {
     type CrashReportChoice,
     getCrashReportSetting,
-  } from "$lib/crash-report/choice.svelte";
-  import { languageName } from "$lib/language/language";
-  import { getBackGoesUp } from "$lib/navigation/back-goes-up";
-  import { WindowWidth } from "$lib/page/breakpoints";
-  import PageHeading from "$lib/page/PageHeading.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { getLocale } from "$lib/paraglide/runtime.js";
-  import type { SectionSummary, SettingsRoute } from "$lib/settings/sections";
-  import SettingsIndex from "$lib/settings/SettingsIndex.svelte";
-  import { showsSectionsBeside } from "$lib/settings/panes";
+  } from "#lib/crash-report/choice.svelte.ts";
+  import { languageName } from "#lib/language/language.ts";
+  import { getBackGoesUp } from "#lib/navigation/back-goes-up.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import PageHeading from "#lib/page/PageHeading.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
+  import type {
+    SectionSummary,
+    SettingsRoute,
+  } from "#lib/settings/sections.ts";
+  import SettingsIndex from "#lib/settings/SettingsIndex.svelte";
+  import { showsSectionsBeside } from "#lib/settings/panes.ts";
 
   import type { PageProps } from "./$types";
 

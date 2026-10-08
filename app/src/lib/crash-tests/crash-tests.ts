@@ -1,5 +1,5 @@
-import type { CrashReporting } from "$lib/crash-report/crash-reporting.svelte";
-import type { commands, IpcError } from "$lib/ipc/bindings";
+import type { CrashReporting } from "#lib/crash-report/crash-reporting.svelte.ts";
+import type { commands, IpcError } from "#lib/ipc/bindings.ts";
 
 export type CrashTestBackend = Pick<
   typeof commands,

@@ -3,12 +3,12 @@
     CRASH_REPORT_CHOICES,
     type CrashReportChoice,
     getCrashReportSetting,
-  } from "$lib/crash-report/choice.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { getScreenshotMode } from "$lib/screenshot-mode/screenshot-mode.svelte";
-  import SectionHeading from "$lib/settings/SectionHeading.svelte";
-  import SegmentedChoice from "$lib/settings/SegmentedChoice.svelte";
-  import SettingsLinks from "$lib/settings/SettingsLinks.svelte";
+  } from "#lib/crash-report/choice.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import SegmentedChoice from "#lib/settings/SegmentedChoice.svelte";
+  import SettingsLinks from "#lib/settings/SettingsLinks.svelte";
 
   const CHOICE_LABELS = {
     ask: m.crash_reports_ask,

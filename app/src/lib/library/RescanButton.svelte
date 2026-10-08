@@ -1,8 +1,8 @@
 <script lang="ts">
   import { RefreshCw } from "@lucide/svelte";
 
-  import type { LibraryFolder } from "$lib/ipc/bindings";
-  import { m } from "$lib/paraglide/messages.js";
+  import type { LibraryFolder } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   import { folderTitle } from "./folder-title";
   import { ACTION_ICON_SIZE } from "./icon-size";

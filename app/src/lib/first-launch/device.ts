@@ -1,4 +1,4 @@
-import type { Platform } from "$lib/ipc/bindings";
+import type { Platform } from "#lib/ipc/bindings.ts";
 
 /** Which device the first launch's wording speaks of, since the steps promise what stays on it. */
 export type DeviceKind = "phone" | "desktop";

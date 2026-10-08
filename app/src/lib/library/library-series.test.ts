@@ -1,7 +1,7 @@
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
 
-import { commands, type LibrarySeries } from "$lib/ipc/bindings";
+import { commands, type LibrarySeries } from "#lib/ipc/bindings.ts";
 
 import { LibrarySeriesList } from "./library-series.svelte";
 

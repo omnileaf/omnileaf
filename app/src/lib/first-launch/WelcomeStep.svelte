@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Folder, Lock, Sparkles } from "@lucide/svelte";
 
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   import AppIcon from "./AppIcon.svelte";
   import type { DeviceKind } from "./device";

@@ -1,4 +1,4 @@
-import { events } from "$lib/ipc/bindings";
+import { events } from "#lib/ipc/bindings.ts";
 
 /** Calls `onChange` each time the core says the library changed, or `onListenFailed` if it can't listen, until the returned function stops listening. */
 export function listenForLibraryChanges(

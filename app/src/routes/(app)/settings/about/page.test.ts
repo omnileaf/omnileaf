@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import { Notices } from "$lib/notices/notices.svelte";
+import { Notices } from "#lib/notices/notices.svelte.ts";
 
 import Page from "./+page.svelte";
 

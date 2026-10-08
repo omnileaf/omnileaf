@@ -6,7 +6,7 @@ import {
   commands,
   DEFAULT_LIBRARY_VIEW,
   type LibrarySeries,
-} from "$lib/ipc/bindings";
+} from "#lib/ipc/bindings.ts";
 
 import type { CoverPath } from "./cover-url";
 import SeriesCovers from "./SeriesCovers.svelte";

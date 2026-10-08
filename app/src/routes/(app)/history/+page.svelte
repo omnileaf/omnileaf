@@ -1,10 +1,10 @@
 <script lang="ts">
   import { RotateCcwClock } from "@lucide/svelte";
 
-  import EmptyState from "$lib/page/EmptyState.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import CollectionHeading from "$lib/screenshot-mode/CollectionHeading.svelte";
-  import { getScreenshotMode } from "$lib/screenshot-mode/screenshot-mode.svelte";
+  import EmptyState from "#lib/page/EmptyState.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
+  import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
 
   const screenshotMode = getScreenshotMode();
 </script>

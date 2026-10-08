@@ -8,13 +8,13 @@
     languageName,
     LANGUAGES,
     systemLanguage,
-  } from "$lib/language/language";
-  import { getLanguageSetting } from "$lib/language/language.svelte";
-  import { textAroundValue } from "$lib/language/placeholder";
-  import { WindowWidth } from "$lib/page/breakpoints";
-  import { isPhone } from "$lib/page/platform";
-  import SectionHeading from "$lib/settings/SectionHeading.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/language/language.ts";
+  import { getLanguageSetting } from "#lib/language/language.svelte.ts";
+  import { textAroundValue } from "#lib/language/placeholder.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { isPhone } from "#lib/page/platform.ts";
+  import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   import type { PageProps } from "./$types";
 

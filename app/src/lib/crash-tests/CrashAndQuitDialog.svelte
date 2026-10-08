@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Info, Power } from "@lucide/svelte";
 
-  import AppIcon from "$lib/first-launch/AppIcon.svelte";
-  import ConfirmDialog from "$lib/page/ConfirmDialog.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import AppIcon from "#lib/first-launch/AppIcon.svelte";
+  import ConfirmDialog from "#lib/page/ConfirmDialog.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   const NOTE_ICON_SIZE = 16;
 

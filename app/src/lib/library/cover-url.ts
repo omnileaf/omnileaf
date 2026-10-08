@@ -1,6 +1,6 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
 
-import type { LibrarySeries } from "$lib/ipc/bindings";
+import type { LibrarySeries } from "#lib/ipc/bindings.ts";
 
 export type CoverPath = NonNullable<LibrarySeries["cover"]>;
 

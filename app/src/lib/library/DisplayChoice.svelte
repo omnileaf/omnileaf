@@ -8,8 +8,8 @@
   } from "@lucide/svelte";
   import type { Component } from "svelte";
 
-  import type { LibraryDisplay } from "$lib/ipc/bindings";
-  import { m } from "$lib/paraglide/messages.js";
+  import type { LibraryDisplay } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   interface Choice {
     readonly display: LibraryDisplay;

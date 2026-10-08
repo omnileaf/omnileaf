@@ -2,8 +2,8 @@
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
-  import { m } from "$lib/paraglide/messages.js";
-  import SegmentedChoice from "$lib/settings/SegmentedChoice.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import SegmentedChoice from "#lib/settings/SegmentedChoice.svelte";
 
   import { THEME_PREFERENCES, type ThemePreference } from "./theme";
   import { getThemeSetting } from "./theme.svelte";

@@ -1,7 +1,7 @@
 import { clearMocks, mockConvertFileSrc, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
 
-import { commands } from "$lib/ipc/bindings";
+import { commands } from "#lib/ipc/bindings.ts";
 
 import { type CoverPath, coverUrl } from "./cover-url";
 

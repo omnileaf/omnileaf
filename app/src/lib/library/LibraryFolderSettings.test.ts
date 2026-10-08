@@ -9,8 +9,8 @@ import {
   type LibraryFolder,
   type RescanOutcome,
   type ScanProgress,
-} from "$lib/ipc/bindings";
-import { Notices } from "$lib/notices/notices.svelte";
+} from "#lib/ipc/bindings.ts";
+import { Notices } from "#lib/notices/notices.svelte.ts";
 
 import type { AddFolder } from "./add-folder";
 import LibraryFolderSettings from "./LibraryFolderSettings.svelte";

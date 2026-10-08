@@ -1,4 +1,4 @@
-import type { Glyph } from "$lib/page/glyph";
+import type { Glyph } from "#lib/page/glyph.ts";
 
 export type Tone = "done" | "warning";
 
