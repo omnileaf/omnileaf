@@ -10,7 +10,10 @@
     crashReportSettingForDocument,
     setCrashReportSetting,
   } from "$lib/crash-report/choice.svelte";
-  import { CrashReporting } from "$lib/crash-report/crash-reporting.svelte";
+  import {
+    CrashReporting,
+    setCrashReporting,
+  } from "$lib/crash-report/crash-reporting.svelte";
   import CrashReportPrompt from "$lib/crash-report/CrashReportPrompt.svelte";
   import { appInterfaceErrors } from "$lib/crash-report/interface-error-relay";
   import type { PromptLook } from "$lib/crash-report/look";
@@ -46,7 +49,9 @@
   const crashReportSetting = setCrashReportSetting(
     crashReportSettingForDocument(),
   );
-  const crashReporting = new CrashReporting(commands, crashReportSetting);
+  const crashReporting = setCrashReporting(
+    new CrashReporting(commands, crashReportSetting),
+  );
   const screenshotModeShortcut = $derived(
     screenshotModeShortcutOn(data.appInfo.platform),
   );

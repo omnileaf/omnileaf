@@ -1,5 +1,12 @@
-import { Info, Palette, Settings2, Shield } from "@lucide/svelte";
+import {
+  Info,
+  Palette,
+  Settings2,
+  Shield,
+  SquareTerminal,
+} from "@lucide/svelte";
 
+import type { AppInfo } from "$lib/ipc/bindings";
 import LibraryGlyph from "$lib/navigation/LibraryGlyph.svelte";
 import type { Glyph } from "$lib/page/glyph";
 import { m } from "$lib/paraglide/messages.js";
@@ -10,6 +17,7 @@ export type SettingsRoute =
   | "/settings/appearance"
   | "/settings/privacy"
   | "/settings/general"
+  | "/settings/advanced"
   | "/settings/about";
 
 export type SettingsSubPage = "/settings/about/licences";
@@ -50,49 +58,58 @@ export function sectionCurrent(
   return isWithinSection(pathname, sectionPath) ? "true" : undefined;
 }
 
-export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [
-  [
-    {
-      route: "/settings/library",
-      label: m.library_title,
-      icon: LibraryGlyph,
-      tone: "accent",
-    },
-    {
-      route: "/settings/appearance",
-      label: m.appearance_title,
-      icon: Palette,
-      tone: "accent",
-    },
-    {
-      route: "/settings/privacy",
-      label: m.privacy_title,
-      icon: Shield,
-      tone: "accent",
-    },
-    {
-      route: "/settings/general",
-      label: m.general_title,
-      icon: Settings2,
-      tone: "accent",
-    },
-  ],
-  [
-    {
-      route: "/settings/about",
-      label: m.about_title,
-      icon: Info,
-      tone: "neutral",
-    },
-  ],
+const PREFERENCES: readonly SettingsSection[] = [
+  {
+    route: "/settings/library",
+    label: m.library_title,
+    icon: LibraryGlyph,
+    tone: "accent",
+  },
+  {
+    route: "/settings/appearance",
+    label: m.appearance_title,
+    icon: Palette,
+    tone: "accent",
+  },
+  {
+    route: "/settings/privacy",
+    label: m.privacy_title,
+    icon: Shield,
+    tone: "accent",
+  },
+  {
+    route: "/settings/general",
+    label: m.general_title,
+    icon: Settings2,
+    tone: "accent",
+  },
 ];
+
+const ADVANCED: SettingsSection = {
+  route: "/settings/advanced",
+  label: m.advanced_title,
+  icon: SquareTerminal,
+  tone: "neutral",
+};
+
+const ABOUT: SettingsSection = {
+  route: "/settings/about",
+  label: m.about_title,
+  icon: Info,
+  tone: "neutral",
+};
+
+/** The sections in their groups; only a development build has Advanced, which a release build leaves out rather than hides. */
+export function settingsGroups(
+  app: Pick<AppInfo, "isDevelopmentBuild">,
+): readonly (readonly SettingsSection[])[] {
+  return [PREFERENCES, app.isDevelopmentBuild ? [ADVANCED, ABOUT] : [ABOUT]];
+}
 
 /** Whether two panes already show a page in the section list, so a link back to it is not needed there. */
 export function isListedBeside(route: ParentPage["route"]): boolean {
   return (
     route === "/settings" ||
-    SETTINGS_GROUPS.some((group) =>
-      group.some((section) => section.route === route),
-    )
+    [...PREFERENCES, ADVANCED, ABOUT].some((section) => section.route === route)
   );
 }

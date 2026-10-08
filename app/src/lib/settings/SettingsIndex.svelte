@@ -3,16 +3,24 @@
 
   import { resolve } from "$app/paths";
 
+  import type { AppInfo } from "$lib/ipc/bindings";
+
   import {
     type SectionSummary,
-    SETTINGS_GROUPS,
     type SettingsRoute,
     type SettingsSection,
+    settingsGroups,
   } from "./sections";
 
   let {
+    app,
     summaries,
-  }: { summaries: Partial<Record<SettingsRoute, SectionSummary>> } = $props();
+  }: {
+    app: Pick<AppInfo, "isDevelopmentBuild">;
+    summaries: Partial<Record<SettingsRoute, SectionSummary>>;
+  } = $props();
+
+  const groups = $derived(settingsGroups(app));
 
   const ICON_SIZE = 20;
   const CHEVRON_SIZE = 18;
@@ -23,7 +31,7 @@
 </script>
 
 <div class="flex flex-col gap-xl desktop:gap-lg">
-  {#each SETTINGS_GROUPS as group, index (index)}
+  {#each groups as group, index (index)}
     <ul
       class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card"
     >
