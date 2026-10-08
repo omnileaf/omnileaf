@@ -5,7 +5,10 @@
 
 mod support;
 
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex},
+};
 
 use omnileaf_engine::{
     AppleBookmark, Changed, CoversPerRow, DesktopCoversPerRow, FolderId, FolderKind, Library,
@@ -30,18 +33,35 @@ fn bookmarked(path: PathBuf, bookmark: &[u8]) -> RootLocator {
 }
 
 async fn bookmarks_asked_for(library: &Library, path: &Path) -> Vec<AppleBookmark> {
-    let mut asked = Vec::new();
+    let asked = Arc::new(Mutex::new(Vec::new()));
+    let noted = Arc::clone(&asked);
+    let path = path.to_path_buf();
     library
-        .restore_folder_access(|bookmark| {
-            asked.push(bookmark.clone());
+        .restore_folder_access(move |bookmark| {
+            noted.lock().unwrap().push(bookmark.clone());
             Ok::<_, DriveNotConnected>(ResolvedBookmark {
-                path: path.to_path_buf(),
+                path: path.clone(),
                 refreshed: None,
             })
         })
         .await
         .unwrap();
-    asked
+    asked.lock().unwrap().clone()
+}
+
+async fn moved_to(
+    library: &Library,
+    path: &Path,
+    refreshed: &[u8],
+) -> Vec<(FolderId, DriveNotConnected)> {
+    let resolved = ResolvedBookmark {
+        path: path.to_path_buf(),
+        refreshed: Some(AppleBookmark::new(refreshed.to_vec())),
+    };
+    library
+        .restore_folder_access(move |_| Ok(resolved.clone()))
+        .await
+        .unwrap()
 }
 
 async fn open(home: &Path) -> Library {
@@ -186,15 +206,7 @@ async fn follows_a_bookmarked_folder_that_moved_and_keeps_its_new_bookmark() {
         .unwrap();
     std::fs::rename(&before, &after).unwrap();
 
-    let failed = library
-        .restore_folder_access(|_| {
-            Ok::<_, DriveNotConnected>(ResolvedBookmark {
-                path: after.clone(),
-                refreshed: Some(AppleBookmark::new(REFRESHED_BOOKMARK.to_vec())),
-            })
-        })
-        .await
-        .unwrap();
+    let failed = moved_to(&library, &after, REFRESHED_BOOKMARK).await;
 
     assert!(failed.is_empty());
     assert_eq!(
@@ -204,6 +216,37 @@ async fn follows_a_bookmarked_folder_that_moved_and_keeps_its_new_bookmark() {
     assert_eq!(
         bookmarks_asked_for(&library, &after).await,
         [AppleBookmark::new(REFRESHED_BOOKMARK.to_vec())]
+    );
+}
+
+#[tokio::test]
+async fn leaves_a_bookmarked_folder_in_place_when_another_library_folder_is_where_it_moved() {
+    let home = ScratchFolder::new("library-restore-taken-home");
+    let comics = ScratchFolder::new("Bookmarked Taken");
+    let manga = ScratchFolder::new("Already Linked");
+    let library = open(home.path()).await;
+    library
+        .add_folder(manga.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+    library
+        .add_folder(
+            bookmarked(comics.path().to_path_buf(), PICKED_BOOKMARK),
+            |_| {},
+        )
+        .await
+        .unwrap();
+
+    let failed = moved_to(&library, manga.path(), REFRESHED_BOOKMARK).await;
+
+    assert!(failed.is_empty());
+    assert_eq!(
+        folder_named(&library, "Bookmarked Taken").await.location,
+        comics.path().display().to_string()
+    );
+    assert_eq!(
+        bookmarks_asked_for(&library, comics.path()).await,
+        [AppleBookmark::new(PICKED_BOOKMARK.to_vec())]
     );
 }
 
@@ -228,7 +271,13 @@ async fn keeps_a_bookmarked_folder_and_its_books_when_its_bookmark_wont_open() {
         .unwrap();
 
     assert_eq!(failed, [(linked.id, DriveNotConnected)]);
-    assert_eq!(folder_named(&library, SAMPLE_LIBRARY_NAME).await, linked);
+    assert_eq!(
+        folder_named(&library, SAMPLE_LIBRARY_NAME).await,
+        LibraryFolder {
+            is_available: false,
+            ..linked
+        }
+    );
     assert_eq!(library.series_count().await.unwrap(), 3);
 }
 

@@ -11,10 +11,13 @@ mod books;
 )]
 mod support;
 
-use std::{fs, path::Path};
+use std::{fs, io, path::Path};
 
 use books::write_book;
-use omnileaf_engine::{LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges};
+use omnileaf_engine::{
+    AppleBookmark, LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges,
+    ResolvedBookmark, RootLocator,
+};
 use support::{FixedClock, ScratchFolder};
 use tokio::time::{Instant, timeout};
 
@@ -65,6 +68,36 @@ async fn tells_of_a_folder_added() {
 
     library
         .add_folder(comics.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+
+    assert!(tells_of_a_change(&mut changes).await);
+}
+
+#[tokio::test(start_paused = true)]
+async fn tells_of_a_bookmarked_folder_that_moved() {
+    let home = ScratchFolder::new("changes-moved-home");
+    let parent = ScratchFolder::new("changes-moved");
+    let before = parent.path().join("Before");
+    let after = parent.path().join("After");
+    fs::create_dir(&before).unwrap();
+    let library = open(home.path()).await;
+    let picked = RootLocator::AppleBookmark {
+        path: before.clone(),
+        bookmark: AppleBookmark::new(b"bookmark picked in Files".to_vec()),
+    };
+    library.add_folder(picked, |_| {}).await.unwrap();
+    fs::rename(&before, &after).unwrap();
+    let mut changes = library.changes();
+    caught_up(&mut changes).await;
+
+    library
+        .restore_folder_access(move |bookmark| {
+            Ok::<_, io::Error>(ResolvedBookmark {
+                path: after.clone(),
+                refreshed: Some(bookmark.clone()),
+            })
+        })
         .await
         .unwrap();
 
