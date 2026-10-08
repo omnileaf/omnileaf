@@ -106,11 +106,11 @@
 >
   <div
     bind:this={card}
-    class="flex flex-1 medium:flex-none medium:overflow-hidden medium:rounded-sheet medium:border medium:border-border medium:bg-background medium:shadow-card medium:inline-full medium:max-inline-first-launch-card medium:min-block-first-launch-card-tall"
+    class="flex flex-1 min-inline-none medium:flex-none medium:overflow-hidden medium:rounded-sheet medium:border medium:border-border medium:bg-background medium:shadow-card medium:inline-full medium:max-inline-first-launch-card medium:min-block-first-launch-card-tall"
   >
     <FirstLaunchPanel />
     <main
-      class="flex flex-1 flex-col ps-page-start pe-page-end pbs-safe-top pbe-page-bottom medium:p-2xl"
+      class="flex flex-1 flex-col ps-page-start pe-page-end pbs-safe-top pbe-page-bottom min-inline-none medium:p-2xl"
     >
       {#if step === "welcome"}
         <WelcomeStep {device} onNext={next} />
