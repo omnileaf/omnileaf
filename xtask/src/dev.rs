@@ -45,13 +45,6 @@ enum Target {
     Physical,
 }
 
-/// Where each phone platform runs, or `None` for a platform left out.
-#[derive(Debug, Default)]
-struct Targets {
-    android: Option<Target>,
-    ios: Option<Target>,
-}
-
 #[derive(Debug, Default)]
 pub(crate) struct Devices {
     pub(crate) ios: Option<String>,
@@ -161,9 +154,9 @@ pub(crate) fn platforms_for(os: &str) -> Vec<Platform> {
     }
 }
 
-fn reach(targets: &Targets, os: &str) -> Reach {
-    let runs_on_an_iphone = targets.ios == Some(Target::Physical);
-    let android_on_windows = os == WINDOWS && targets.android.is_some();
+fn reach(platforms: &[Platform], ios: Option<Target>, os: &str) -> Reach {
+    let runs_on_an_iphone = ios == Some(Target::Physical);
+    let android_on_windows = os == WINDOWS && platforms.contains(&Platform::Android);
     if runs_on_an_iphone || android_on_windows {
         Reach::Network
     } else {
@@ -210,35 +203,28 @@ pub(crate) fn tauri_args(platform: Platform, devices: &Devices, os: &str) -> Vec
 }
 
 pub(crate) fn run(root: &Path, session: &Session) -> anyhow::Result<()> {
-    let targets = chosen_targets(
+    let ios = ios_target(
         &session.platforms,
-        &session.devices,
+        session.devices.ios.as_deref(),
         &Process::in_workspace(),
     )?;
-    let mut dev_server = start_dev_server(root, reach(&targets, env::consts::OS))?;
+    let reach = reach(&session.platforms, ios, env::consts::OS);
+    let mut dev_server = start_dev_server(root, reach)?;
     let outcome = wait_for_dev_server().and_then(|()| run_platforms(root, session));
     stop(&mut dev_server).context("stop the Vite dev server")?;
     outcome
 }
 
-fn chosen_targets(
+fn ios_target(
     platforms: &[Platform],
-    chosen: &Devices,
+    chosen: Option<&str>,
     machine: &impl Machine,
-) -> anyhow::Result<Targets> {
-    let android = platforms.contains(&Platform::Android).then(|| {
-        let listed = android::Toolchain::locate(|key| env::var_os(key), env::consts::OS)
-            .map(|toolchain| devices::android_devices(machine, &toolchain))
-            .unwrap_or_default();
-        target(chosen.android.as_deref(), &listed)
-    });
-    let ios = if platforms.contains(&Platform::Ios) {
-        let listed = devices::ios_devices(machine)?;
-        Some(target(chosen.ios.as_deref(), &listed))
-    } else {
-        None
-    };
-    Ok(Targets { android, ios })
+) -> anyhow::Result<Option<Target>> {
+    if !platforms.contains(&Platform::Ios) {
+        return Ok(None);
+    }
+    let listed = devices::ios_devices(machine)?;
+    Ok(Some(target(chosen, &listed)))
 }
 
 fn start_dev_server(root: &Path, reach: Reach) -> anyhow::Result<Child> {
@@ -370,38 +356,26 @@ mod tests {
         }
     }
 
-    fn targets(android: Option<Target>, ios: Option<Target>) -> Targets {
-        Targets { android, ios }
-    }
+    const EVERY_PLATFORM: [Platform; 3] = [Platform::Desktop, Platform::Ios, Platform::Android];
 
     #[test]
-    fn keeps_the_dev_server_on_localhost_for_the_desktop_emulators_and_simulators() {
-        for (android, ios) in [
-            (None, None),
-            (Some(Target::Virtual), None),
-            (None, Some(Target::Virtual)),
-            (Some(Target::Virtual), Some(Target::Virtual)),
+    fn keeps_the_dev_server_on_localhost_for_android_the_desktop_and_simulators() {
+        for (platforms, ios) in [
+            (&[Platform::Desktop][..], None),
+            (&[Platform::Android], None),
+            (&EVERY_PLATFORM, Some(Target::Virtual)),
         ] {
-            let reached = reach(&targets(android, ios), "macos");
+            let reached = reach(platforms, ios, "macos");
 
-            assert_eq!(reached, Reach::Localhost, "{android:?} {ios:?}");
+            assert_eq!(reached, Reach::Localhost, "{platforms:?} {ios:?}");
         }
-    }
-
-    #[test]
-    fn keeps_the_dev_server_on_localhost_for_an_android_phone() {
-        let reached = reach(&targets(Some(Target::Physical), None), "macos");
-
-        assert_eq!(reached, Reach::Localhost);
     }
 
     #[test]
     fn opens_the_dev_server_to_the_network_for_an_iphone() {
-        for android in [None, Some(Target::Virtual), Some(Target::Physical)] {
-            let reached = reach(&targets(android, Some(Target::Physical)), "macos");
+        let reached = reach(&EVERY_PLATFORM, Some(Target::Physical), "macos");
 
-            assert_eq!(reached, Reach::Network, "{android:?}");
-        }
+        assert_eq!(reached, Reach::Network);
     }
 
     #[test]
@@ -412,11 +386,11 @@ mod tests {
 
     #[test]
     fn opens_the_dev_server_to_the_network_for_android_on_windows() {
+        assert_eq!(reach(&[Platform::Android], None, "windows"), Reach::Network);
         assert_eq!(
-            reach(&targets(Some(Target::Virtual), None), "windows"),
-            Reach::Network
+            reach(&[Platform::Desktop], None, "windows"),
+            Reach::Localhost
         );
-        assert_eq!(reach(&targets(None, None), "windows"), Reach::Localhost);
     }
 
     fn listed(kind: Kind, state: State, name: &str, id: Option<&str>) -> Device {
