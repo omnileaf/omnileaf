@@ -3,10 +3,10 @@ use std::{fs, io, path::PathBuf};
 use omnileaf_db::{
     Config, Database,
     catalog::{
-        Cover, NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator, SeriesOrder,
-        add_root, cover_file, library_root, library_roots, mark_root_available,
-        mark_root_unavailable, remove_root, root_book_count, series_count, series_page,
-        set_home_root,
+        AppleBookmark, Cover, LibraryRoot, NewRoot, PageRequest, PageSize, RootId, RootKind,
+        RootLocator, SeriesOrder, add_root, cover_file, library_root, library_roots,
+        mark_root_available, mark_root_unavailable, relocate_root, remove_root, root_book_count,
+        series_count, series_page, set_home_root,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_view::{library_view, set_library_view},
@@ -38,6 +38,13 @@ const MAPPED_DATABASE_BYTES: u32 = if IS_MOBILE {
 } else {
     256 * MEBIBYTE
 };
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ResolvedBookmark {
+    pub path: PathBuf,
+    /// Present when the platform found the bookmark stale and made a new one to keep instead.
+    pub refreshed: Option<AppleBookmark>,
+}
 
 /// The library database in the home folder, and the folders it reads.
 pub struct Library {
@@ -109,16 +116,18 @@ impl Library {
     }
 
     /// Remembers the folder and scans its books, adding nothing when the folder can't be read.
-    #[tracing::instrument(skip_all, fields(folder = %folder.display()))]
+    #[tracing::instrument(skip_all)]
     pub async fn add_folder(
         &self,
-        folder: PathBuf,
+        folder: impl Into<RootLocator>,
         mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderScan, LibraryError> {
+        let locator = folder.into();
+        let folder = locator.path().to_path_buf();
         let _scanning = self.scanning.lock().await;
         on_progress(ScanProgress::Finding);
         let layout = find_books_in(folder.clone()).await?;
-        let root = self.link(folder.clone()).await?;
+        let root = self.link(locator).await?;
         let target = self.target(root, RootKind::Linked, folder);
         scan(
             self.store.database(),
@@ -255,6 +264,48 @@ impl Library {
         })
     }
 
+    /// Opens each folder kept by a bookmark through `resolve`, following any that moved, and returns those whose bookmark wouldn't open.
+    #[tracing::instrument(skip_all)]
+    pub async fn restore_folder_access<E: Send>(
+        &self,
+        mut resolve: impl FnMut(&AppleBookmark) -> Result<ResolvedBookmark, E> + Send,
+    ) -> Result<Vec<(FolderId, E)>, LibraryError> {
+        let _scanning = self.scanning.lock().await;
+        let mut unopened = Vec::new();
+        let mut moved = Vec::new();
+        for root in self.roots().await? {
+            let (path, bookmark) = match root.locator {
+                RootLocator::Path(_) => continue,
+                RootLocator::AppleBookmark { path, bookmark } => (path, bookmark),
+            };
+            match resolve(&bookmark) {
+                Err(error) => unopened.push((FolderId(root.id), error)),
+                Ok(ResolvedBookmark {
+                    path: resolved,
+                    refreshed: None,
+                }) if resolved == path => {}
+                Ok(resolved) => moved.push((
+                    root.id,
+                    RootLocator::AppleBookmark {
+                        path: resolved.path,
+                        bookmark: resolved.refreshed.unwrap_or(bookmark),
+                    },
+                )),
+            }
+        }
+        if !moved.is_empty() {
+            self.store
+                .database()
+                .write(move |transaction| {
+                    moved
+                        .iter()
+                        .try_for_each(|(id, locator)| relocate_root(transaction, *id, locator))
+                })
+                .await?;
+        }
+        Ok(unopened)
+    }
+
     /// Rescans the home folder and every linked folder in turn, in the order they were added, leaving out a folder removed meanwhile.
     #[tracing::instrument(skip_all)]
     pub async fn rescan_folders(&self) -> Result<Vec<FolderRescan>, LibraryError> {
@@ -324,10 +375,10 @@ impl Library {
     }
 
     /// Reads a folder linked before as available again, since it was just read.
-    async fn link(&self, folder: PathBuf) -> Result<RootId, LibraryError> {
+    async fn link(&self, locator: RootLocator) -> Result<RootId, LibraryError> {
         let root = NewRoot {
             kind: RootKind::Linked,
-            locator: RootLocator::Path(folder),
+            locator,
             added_at_ms: self.now_ms(),
         };
         Ok(self
@@ -335,10 +386,32 @@ impl Library {
             .database()
             .write(move |transaction| {
                 let id = add_root(transaction, &root)?;
+                relocate_root(transaction, id, &root.locator)?;
                 mark_root_available(transaction, id)?;
                 Ok(id)
             })
             .await?)
+    }
+
+    async fn roots(&self) -> Result<Vec<LibraryRoot>, LibraryError> {
+        let mut roots = Vec::new();
+        let mut after = None;
+        loop {
+            let request = PageRequest {
+                after,
+                size: PageSize::try_from(FOLDERS_PER_PAGE)?,
+            };
+            let page = self
+                .store
+                .database()
+                .read(move |connection| library_roots(connection, &request))
+                .await?;
+            roots.extend(page.items);
+            match page.next {
+                Some(next) => after = Some(next),
+                None => return Ok(roots),
+            }
+        }
     }
 
     /// Writes only when the folder's availability changed, so an unchanged rescan stays a read.
