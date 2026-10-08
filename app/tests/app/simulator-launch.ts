@@ -45,24 +45,32 @@ async function launches(
   }
 }
 
+export interface LaunchableSimulator {
+  readonly launch: () => Promise<unknown>;
+  readonly saveLogs: () => Promise<string>;
+}
+
 /** Waits for the Simulator's launcher to register a just-installed app, launching again after a hung launch; when every launch hangs it saves the Simulator's logs and fails naming them. */
 export async function launchOnceRegistered(
   bundleId: string,
-  launch: () => Promise<unknown>,
-  saveLogs: () => Promise<string>,
+  simulator: LaunchableSimulator,
 ): Promise<void> {
   const what = `launching ${bundleId} on the Simulator`;
   try {
     await withAttempts(
       LAUNCH_ATTEMPTS,
       () =>
-        pollUntil(() => launches(launch, what), LAUNCHABLE_TIMEOUT_MS, what),
+        pollUntil(
+          () => launches(simulator.launch, what),
+          LAUNCHABLE_TIMEOUT_MS,
+          what,
+        ),
       isHung,
     );
   } catch (error) {
     if (error instanceof AggregateError) {
       throw new HungLaunchError(
-        `${what} hung ${String(LAUNCH_ATTEMPTS)} times; the Simulator's logs are in ${await saveLogs()}`,
+        `${what} hung ${String(LAUNCH_ATTEMPTS)} times; the Simulator's logs are in ${await simulator.saveLogs()}`,
         { cause: error },
       );
     }

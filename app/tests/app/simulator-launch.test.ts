@@ -81,7 +81,7 @@ test("keeps launching while the launcher does not know the app yet", async () =>
   const app = launchesInTurn([unknownToLauncher(), undefined]);
   const logs = logsSaver();
 
-  const launching = launchOnceRegistered(BUNDLE_ID, app.launch, logs.saveLogs);
+  const launching = launchOnceRegistered(BUNDLE_ID, { ...app, ...logs });
   await vi.runAllTimersAsync();
 
   await expect(launching).resolves.toBeUndefined();
@@ -92,7 +92,7 @@ test("launches again after a launch is killed by its timeout", async () => {
   const app = launchesInTurn([killedByItsTimeout(), undefined]);
   const logs = logsSaver();
 
-  await launchOnceRegistered(BUNDLE_ID, app.launch, logs.saveLogs);
+  await launchOnceRegistered(BUNDLE_ID, { ...app, ...logs });
 
   expect([app.launched(), logs.saved()]).toEqual([2, 0]);
 });
@@ -101,7 +101,7 @@ test("saves the launch logs and fails when every launch hangs", async () => {
   const app = launchesInTurn([killedByItsTimeout()]);
   const logs = logsSaver();
 
-  const launched = launchOnceRegistered(BUNDLE_ID, app.launch, logs.saveLogs);
+  const launched = launchOnceRegistered(BUNDLE_ID, { ...app, ...logs });
 
   await expect(launched).rejects.toThrow(HungLaunchError);
   await expect(launched).rejects.toThrow(
@@ -115,7 +115,7 @@ test("fails at once without saving logs when the launch is refused outright", as
   const app = launchesInTurn([refused, undefined]);
   const logs = logsSaver();
 
-  const launched = launchOnceRegistered(BUNDLE_ID, app.launch, logs.saveLogs);
+  const launched = launchOnceRegistered(BUNDLE_ID, { ...app, ...logs });
 
   await expect(launched).rejects.toBe(refused);
   expect([app.launched(), logs.saved()]).toEqual([1, 0]);

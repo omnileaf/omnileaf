@@ -122,9 +122,8 @@ async function installApp(simulator: Simulator): Promise<string> {
   });
   const bundleId = await bundleIdOf(APP_BUNDLE);
   await mkdir(TEST_RESULTS, { recursive: true });
-  await launchOnceRegistered(
-    bundleId,
-    () =>
+  await launchOnceRegistered(bundleId, {
+    launch: () =>
       run(
         "xcrun",
         [
@@ -138,8 +137,8 @@ async function installApp(simulator: Simulator): Promise<string> {
         ],
         { timeout: SIMCTL_TIMEOUT_MS },
       ),
-    () => saveLaunchLogs(simulator),
-  );
+    saveLogs: () => saveLaunchLogs(simulator),
+  });
   await run("xcrun", ["simctl", "terminate", simulator.udid, bundleId], {
     timeout: SIMCTL_TIMEOUT_MS,
   });
