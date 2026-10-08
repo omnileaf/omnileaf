@@ -467,6 +467,78 @@ test("links a folder that already holds comics and lists it", async ({
   ).toHaveText(["Sample Comics /media/Sample Comics"]);
 });
 
+interface ControlLook {
+  width: number;
+  height: number;
+  border: string;
+  background: string;
+  radius: number;
+}
+
+function lookOf(control: Locator): Promise<ControlLook> {
+  return control.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      width: element.getBoundingClientRect().width,
+      height: element.getBoundingClientRect().height,
+      border: `${style.borderTopWidth} ${style.borderTopColor}`,
+      background: style.backgroundColor,
+      radius: Number.parseFloat(style.borderStartStartRadius),
+    };
+  });
+}
+
+function accentOf(page: Page): Promise<string> {
+  return page
+    .getByRole("button", { name: "Continue" })
+    .evaluate((button) => getComputedStyle(button).backgroundColor);
+}
+
+const TRANSPARENT = "rgba(0, 0, 0, 0)";
+const PHONE_ADD_FOLDER_HEIGHT = 52;
+const HAS_PHONE_CORNERS = {
+  ios: (radius: number) => radius === 14,
+  android: (radius: number) => radius >= PHONE_ADD_FOLDER_HEIGHT / 2,
+} as const;
+
+for (const platform of ["ios", "android"] as const) {
+  test.describe(`the link step on an ${platform} phone`, () => {
+    test.use({
+      backend: {
+        ...FIRST_LAUNCH_BACKEND,
+        appInfo: onPlatform(platform).backend.appInfo,
+      },
+    });
+
+    test.beforeEach(({ page }) => {
+      test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+      device.folders = [HOME_FOLDER, SAMPLE_COMICS];
+    });
+
+    test("puts a full-width outlined Add a folder under the folders, then the hint", async ({
+      page,
+    }) => {
+      await goTo(page, "Already have comics or books?", platform);
+      const folders = page.getByRole("region", { name: "Folders" });
+      const add = folders.getByRole("button", { name: "Add a folder" });
+      const hint = folders.getByText(/all work\.$/).filter({ visible: true });
+
+      const list = await boxOf(folders.getByRole("list"));
+      const button = await boxOf(add);
+      const hintBox = await boxOf(hint);
+      const look = await lookOf(add);
+
+      expect(button.y).toBeGreaterThan(list.y + list.height);
+      expect(hintBox.y).toBeGreaterThan(button.y + button.height);
+      expect(look.width).toBe(list.width);
+      expect(look.height).toBe(PHONE_ADD_FOLDER_HEIGHT);
+      expect(look.border).toBe(`1px ${await accentOf(page)}`);
+      expect(look.background).toBe(TRANSPARENT);
+      expect(HAS_PHONE_CORNERS[platform](look.radius)).toBe(true);
+    });
+  });
+}
+
 test("skips linking folders for now", async ({ page }) => {
   await goTo(page, "Already have comics or books?");
 
