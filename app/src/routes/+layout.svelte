@@ -13,12 +13,15 @@
   import { CrashReporting } from "$lib/crash-report/crash-reporting.svelte";
   import CrashReportPrompt from "$lib/crash-report/CrashReportPrompt.svelte";
   import { appInterfaceErrors } from "$lib/crash-report/interface-error-relay";
+  import type { PromptLook } from "$lib/crash-report/look";
   import { commands } from "$lib/ipc/bindings";
   import { rescanEveryFolder } from "$lib/library/rescan-folder";
   import {
     languageSettingForDocument,
     setLanguageSetting,
   } from "$lib/language/language.svelte";
+  import { WindowWidth } from "$lib/page/breakpoints";
+  import { isPhone } from "$lib/page/platform";
   import { m } from "$lib/paraglide/messages.js";
   import LibraryProblemScreen from "$lib/problems/LibraryProblemScreen.svelte";
   import {
@@ -73,6 +76,11 @@
 
   const opening = new LinkOpening(commands.openProjectLink);
 
+  const width = new WindowWidth();
+  const promptLook: PromptLook = $derived(
+    isPhone(data.appInfo.platform, width.current) ? "phone" : "dialog",
+  );
+
   onMount(() => {
     void crashReporting.offerSaved();
     if (data.libraryProblem === null) {
@@ -105,4 +113,4 @@
 {#key language.resolved}
   <ScreenshotModeAnnouncement />
 {/key}
-<CrashReportPrompt reporting={crashReporting} />
+<CrashReportPrompt reporting={crashReporting} look={promptLook} />
