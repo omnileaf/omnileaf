@@ -161,6 +161,63 @@ test("passes over a match that is removed while it is checked", async () => {
   expect(await element.text()).toBe("About Version 1.2.3");
 });
 
+function serverReplacingItsElementOnce(
+  staleRoute: string,
+  answers: Readonly<Record<string, unknown>>,
+  requests: string[] = [],
+): Promise<URL> {
+  let lookups = 0;
+  return serve((route, response) => {
+    requests.push(route);
+    if (route === "POST /session") {
+      reply(response, 200, { sessionId: "replaced" });
+    } else if (route === "POST /session/replaced/elements") {
+      lookups += 1;
+      reply(response, 200, [{ [ELEMENT_KEY]: lookups === 1 ? "old" : "new" }]);
+    } else if (route.endsWith("/displayed")) {
+      reply(response, 200, true);
+    } else if (route === staleRoute) {
+      reply(response, 404, { error: "stale element reference", message: "" });
+    } else if (route in answers) {
+      reply(response, 200, answers[route]);
+    } else {
+      reply(response, 404, { error: "no such element", message: "" });
+    }
+  });
+}
+
+test("reads the text of the match that replaced one removed after it was found", async () => {
+  const session = await Session.start(
+    await serverReplacingItsElementOnce(
+      "GET /session/replaced/element/old/text",
+      { "GET /session/replaced/element/new/text": "Found 3 books" },
+    ),
+    {},
+  );
+  const element = await session.waitFor(xpath("//p"));
+
+  const text = await element.text();
+
+  expect(text).toBe("Found 3 books");
+});
+
+test("clicks the match that replaced one removed after it was found", async () => {
+  const requests: string[] = [];
+  const session = await Session.start(
+    await serverReplacingItsElementOnce(
+      "POST /session/replaced/element/old/click",
+      { "POST /session/replaced/element/new/click": null },
+      requests,
+    ),
+    {},
+  );
+  const element = await session.waitFor(xpath("//button"));
+
+  await element.click();
+
+  expect(requests).toContain("POST /session/replaced/element/new/click");
+});
+
 test("waits until a script run in the page says what it waits for holds", async () => {
   const FALSE_ANSWERS = 2;
   let runs = 0;

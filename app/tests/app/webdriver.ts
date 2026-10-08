@@ -172,11 +172,8 @@ export class Session {
     locator: Locator,
     timeoutMs = ELEMENT_TIMEOUT_MS,
   ): Promise<WebElement> {
-    return this.pollOnPage(
-      () => this.find(locator),
-      timeoutMs,
-      `the element at ${locator.value}`,
-    );
+    const id = await this.waitForId(locator, timeoutMs);
+    return this.elementAt(locator, id);
   }
 
   /** Runs `script` in the page until it returns `true`, for what no element's presence can show, such as an image having loaded. */
@@ -285,7 +282,40 @@ export class Session {
     }
   }
 
-  private async find(locator: Locator): Promise<WebElement | undefined> {
+  private async waitForId(
+    locator: Locator,
+    timeoutMs: number,
+  ): Promise<string> {
+    return this.pollOnPage(
+      () => this.findShown(locator),
+      timeoutMs,
+      `the element at ${locator.value}`,
+    );
+  }
+
+  /** A page that redraws between finding an element and using it leaves the id stale, so the match is found again once. */
+  private elementAt(locator: Locator, found: string): WebElement {
+    let id = found;
+    const use = async <T>(action: (id: string) => Promise<T>): Promise<T> => {
+      try {
+        return await action(id);
+      } catch (error) {
+        if (!(
+          error instanceof WebDriverError && error.code === STALE_ELEMENT
+        )) {
+          throw error;
+        }
+        id = await this.waitForId(locator, ELEMENT_TIMEOUT_MS);
+        return action(id);
+      }
+    };
+    return {
+      text: () => use((element) => this.textOf(element)),
+      click: () => use((element) => this.clickOn(element)),
+    };
+  }
+
+  private async findShown(locator: Locator): Promise<string | undefined> {
     const found = await send(`${this.endpoint}/elements`, "POST", locator);
     if (!Array.isArray(found)) {
       throw new Error("expected the elements found to be a list");
@@ -293,7 +323,7 @@ export class Session {
     for (const element of found) {
       const id = requireString(property(element, ELEMENT_KEY), "element id");
       if (await this.isShown(id)) {
-        return { text: () => this.textOf(id), click: () => this.clickOn(id) };
+        return id;
       }
     }
     return undefined;
