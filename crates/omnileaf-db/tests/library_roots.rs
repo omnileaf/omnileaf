@@ -159,9 +159,7 @@ impl Library {
             .await
             .items
             .into_iter()
-            .map(|root| match root.locator {
-                RootLocator::Path(path) => (root.kind, path),
-            })
+            .map(|root| (root.kind, root.locator.into_path()))
             .collect()
     }
 }

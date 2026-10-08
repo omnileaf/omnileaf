@@ -1,4 +1,8 @@
-use std::{fmt, path::PathBuf, str::FromStr};
+use std::{
+    fmt,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use rusqlite::{
     OptionalExtension, Row, ToSql, Transaction,
@@ -36,6 +40,22 @@ pub enum RootKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RootLocator {
     Path(PathBuf),
+}
+
+impl RootLocator {
+    #[must_use]
+    pub fn path(&self) -> &Path {
+        match self {
+            Self::Path(path) => path,
+        }
+    }
+
+    #[must_use]
+    pub fn into_path(self) -> PathBuf {
+        match self {
+            Self::Path(path) => path,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

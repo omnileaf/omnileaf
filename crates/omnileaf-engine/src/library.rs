@@ -227,7 +227,7 @@ impl Library {
             .database()
             .read(move |connection| library_root(connection, id.0))
             .await?;
-        let RootLocator::Path(folder) = root.locator;
+        let folder = root.locator.into_path();
         on_progress(ScanProgress::Finding);
         let outcome = match walk(folder.clone()).await? {
             Ok(layout) => {
