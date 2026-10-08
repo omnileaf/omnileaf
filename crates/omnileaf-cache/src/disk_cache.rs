@@ -35,14 +35,18 @@ impl DiskCache {
             source,
         };
         fs::create_dir_all(&folder).map_err(open_failed)?;
-        let mut found: Vec<Found> = fs::read_dir(&folder)
+        let mut found: Vec<FoundEntry> = fs::read_dir(&folder)
             .map_err(open_failed)?
             .filter_map(found_entry)
             .collect();
-        found.sort();
+        found.sort_by(|one, other| {
+            one.last_used
+                .cmp(&other.last_used)
+                .then_with(|| one.key.cmp(&other.key))
+        });
         let mut recency = Recency::default();
-        for (_, key, bytes) in found {
-            recency.record(key, bytes);
+        for entry in found {
+            recency.record(entry.key, entry.size_bytes);
         }
         let evicted = recency.evict_beyond(budget_bytes);
         let cache = Self {
@@ -165,11 +169,14 @@ impl DiskCache {
     }
 }
 
-/// When an entry was last used, its key and its size in bytes.
-type Found = (SystemTime, CacheKey, u64);
+struct FoundEntry {
+    last_used: SystemTime,
+    key: CacheKey,
+    size_bytes: u64,
+}
 
 /// Reads one listed file as an entry, leaving out anything else and any file that went or can't be read meanwhile.
-fn found_entry(entry: io::Result<DirEntry>) -> Option<Found> {
+fn found_entry(entry: io::Result<DirEntry>) -> Option<FoundEntry> {
     let entry = entry
         .inspect_err(|error| tracing::warn!(%error, "list a cache entry"))
         .ok()?;
@@ -188,9 +195,10 @@ fn found_entry(entry: io::Result<DirEntry>) -> Option<Found> {
             return None;
         }
     };
-    metadata.is_file().then(|| {
-        let last_used = metadata.modified().unwrap_or(USED_LONG_AGO);
-        (last_used, key, metadata.len())
+    metadata.is_file().then(|| FoundEntry {
+        last_used: metadata.modified().unwrap_or(USED_LONG_AGO),
+        key,
+        size_bytes: metadata.len(),
     })
 }
 
