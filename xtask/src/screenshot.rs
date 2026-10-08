@@ -1,5 +1,3 @@
-//! Saves what a running phone, emulator or Simulator shows to a PNG.
-
 use std::{
     fmt, fs,
     path::{Path, PathBuf},

@@ -1,5 +1,3 @@
-//! Settles which phone, emulator or Simulator `dev` runs on, asking when it isn't obvious.
-
 use std::io::{self, BufRead, IsTerminal, Write};
 
 use crate::devices::{self, Device, State, normalized};

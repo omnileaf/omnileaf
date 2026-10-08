@@ -1,5 +1,3 @@
-//! The licences of the Rust crates the app ships, read from cargo-about's report into the catalogue the interface shows.
-
 use std::{
     collections::{BTreeMap, BTreeSet},
     error::Error,
