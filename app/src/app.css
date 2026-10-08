@@ -104,6 +104,10 @@
   --text-app-name--line-height: 2rem;
   --text-page-title: 2rem;
   --text-page-title--line-height: 1.1;
+  --text-dialog-body: 0.875rem;
+  --text-dialog-body--line-height: 1.5;
+  --text-code: 0.75rem;
+  --text-code--line-height: 1.125rem;
 
   --tracking-tight: -0.01em;
   --tracking-normal: 0;
@@ -112,6 +116,7 @@
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
 
   --tracking-stand-in: 0.08em;
 
@@ -218,6 +223,10 @@
   --spacing-switch-knob-compact: 1.25rem;
   --spacing-cover-thumb: 3.5rem;
   --spacing-preview: 17.5rem;
+  --spacing-dialog-badge: 2.25rem;
+  --spacing-dialog-inset: 1.25rem;
+  --spacing-dialog-gap: 1rem;
+  --spacing-dialog-button: 2.5rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
@@ -252,6 +261,7 @@
   --container-narrow: 35rem;
   --container-segmented: 22.5rem;
   --container-segmented-touch: 30rem;
+  --container-crash-report: 26.25rem;
 
   --radius-control: 0.625rem;
   --radius-row: 0.5rem;
@@ -274,6 +284,8 @@
   --radius-list: 0.625rem;
   --radius-panel: 1rem;
   --radius-notice: 1.25rem;
+  --radius-dialog: 1rem;
+  --radius-dialog-button: 0.625rem;
 
   --container-notice: 27.5rem;
   --container-problem: 32.5rem;
@@ -361,6 +373,9 @@
   --color-toast-pressed: rgb(241 237 228 / 0.12);
   --color-toast-action-hover: #95d6ae;
   --color-toast-action-pressed: #6bb98a;
+  --color-dialog-shadow: rgb(28 27 24 / 0.22);
+  --color-dialog-contact: rgb(28 27 24 / 0.08);
+  --color-dialog-edge: transparent;
   --color-icon-hole: var(--color-accent-soft);
   --color-glass: rgb(250 248 244 / 0.74);
   --color-glass-edge: rgb(255 255 255 / 0.7);
@@ -372,9 +387,6 @@
   --color-on-band: #ffffff;
   --color-popover-shadow: rgb(28 27 24 / 0.18);
   --color-popover-contact: rgb(28 27 24 / 0.08);
-  --color-dialog-shadow: rgb(28 27 24 / 0.22);
-  --color-dialog-contact: rgb(28 27 24 / 0.08);
-  --color-dialog-edge: transparent;
 
   --transition-duration-fade: 150ms;
   --transition-duration-grow: 200ms;
@@ -527,6 +539,9 @@
   --color-well: #2b2823;
   --color-raised: #3a3630;
   --color-raised-shadow: rgb(0 0 0 / 0.5);
+  --color-dialog-shadow: rgb(0 0 0 / 0.55);
+  --color-dialog-contact: rgb(0 0 0 / 0.3);
+  --color-dialog-edge: #302d28;
   --color-bar: #1c1a17;
   --color-accent: #7fcb9d;
   --color-on-accent: #0f2418;
@@ -572,9 +587,6 @@
   --color-on-band: #f1ede4;
   --color-popover-shadow: rgb(0 0 0 / 0.5);
   --color-popover-contact: transparent;
-  --color-dialog-shadow: rgb(0 0 0 / 0.55);
-  --color-dialog-contact: rgb(0 0 0 / 0.3);
-  --color-dialog-edge: #302d28;
 }
 
 :root[dir="rtl"] {

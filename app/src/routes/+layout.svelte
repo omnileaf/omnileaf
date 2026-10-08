@@ -10,6 +10,8 @@
     crashReportSettingForDocument,
     setCrashReportSetting,
   } from "$lib/crash-report/choice.svelte";
+  import { CrashReporting } from "$lib/crash-report/crash-reporting.svelte";
+  import CrashReportPrompt from "$lib/crash-report/CrashReportPrompt.svelte";
   import { commands } from "$lib/ipc/bindings";
   import { rescanEveryFolder } from "$lib/library/rescan-folder";
   import {
@@ -37,7 +39,10 @@
   const themeSetting = setThemeSetting(themeSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
   const screenshotMode = setScreenshotMode(screenshotModeForDocument());
-  setCrashReportSetting(crashReportSettingForDocument());
+  const crashReportSetting = setCrashReportSetting(
+    crashReportSettingForDocument(),
+  );
+  const crashReporting = new CrashReporting(commands, crashReportSetting);
   const screenshotModeShortcut = $derived(
     screenshotModeShortcutOn(data.appInfo.platform),
   );
@@ -68,6 +73,7 @@
   const opening = new LinkOpening(commands.openProjectLink);
 
   onMount(() => {
+    void crashReporting.offerSaved();
     if (data.libraryProblem === null) {
       void rescanEveryFolder();
     }
@@ -95,3 +101,4 @@
 {#key language.resolved}
   <ScreenshotModeAnnouncement />
 {/key}
+<CrashReportPrompt reporting={crashReporting} />
