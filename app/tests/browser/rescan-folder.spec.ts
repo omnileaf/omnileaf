@@ -36,18 +36,13 @@ const NO_CHANGES = {
   unreadableFolders: 0,
 };
 
-/** Counts the times the app asks for every folder to be rescanned. */
-class StartRescans {
-  count = 0;
-}
-
-const startRescans = new StartRescans();
+const rescanEveryFolderCalls = { count: 0 };
 
 const FOLDERS_BACKEND: FakeBackend = {
   ...DEFAULT_BACKEND,
   libraryFolders: () => ({ folders: [HOME, SAMPLE_COMICS], next: null }),
   rescanLibraryFolders: () => {
-    startRescans.count += 1;
+    rescanEveryFolderCalls.count += 1;
     return [];
   },
 };
@@ -67,7 +62,7 @@ async function rescanSampleComics(page: Page): Promise<void> {
 test.use({ backend: FOLDERS_BACKEND });
 
 test.beforeEach(() => {
-  startRescans.count = 0;
+  rescanEveryFolderCalls.count = 0;
 });
 
 test("rescans every library folder once as the app starts", async ({
@@ -76,7 +71,7 @@ test("rescans every library folder once as the app starts", async ({
   await page.goto("/");
 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect.poll(() => startRescans.count).toBe(1);
+  await expect.poll(() => rescanEveryFolderCalls.count).toBe(1);
 });
 
 test("shows Rescan as an icon with its verb as the tooltip", async ({
