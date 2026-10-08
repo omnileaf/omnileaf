@@ -26,7 +26,6 @@ const APP_STDERR = join(TEST_RESULTS, "ios-app.stderr.log");
 const LAUNCH_HANG_LOGS = join(TEST_RESULTS, "ios-launch-hang.log");
 const LAUNCH_HANG_LOG_PROCESSES =
   'process == "SpringBoard" OR process == "Omnileaf" OR process == "installcoordinationd"';
-const LAUNCH_HANG_LOG_WINDOW = "3m";
 const SIMULATOR_LOG_BYTES = 64 * 1024 * 1024;
 const IOS_RUNTIME = /\.iOS-(\d+(?:-\d+)*)$/;
 const WEBDRIVERAGENT_LAUNCH_TIMEOUT_MS = 240_000;
@@ -39,6 +38,9 @@ const WEBDRIVERAGENT_URL = new URL(
 const WEBDRIVERAGENT_LAUNCH_ATTEMPTS = 3;
 const WEBDRIVERAGENT_READY_TIMEOUT_MS = 60_000;
 const SIMCTL_TIMEOUT_MS = 60_000;
+/** A CI Simulator's first launch of an app has taken almost four minutes, and stopping it early only leaves the next launch just as cold. */
+const APP_LAUNCH_TIMEOUT_MS = 600_000;
+const LAUNCH_HANG_LOG_WINDOW = `${String(APP_LAUNCH_TIMEOUT_MS / 60_000 + 1)}m`;
 const WEBVIEW_TIMEOUT_MS = 60_000;
 
 const run = promisify(execFile);
@@ -136,7 +138,7 @@ async function installApp(simulator: Simulator): Promise<string> {
           simulator.udid,
           bundleId,
         ],
-        { timeout: SIMCTL_TIMEOUT_MS },
+        { timeout: APP_LAUNCH_TIMEOUT_MS },
       ),
     () => saveLaunchLogs(simulator),
   );
