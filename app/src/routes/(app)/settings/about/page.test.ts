@@ -1,8 +1,6 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import { Notices } from "#lib/notices/notices.svelte.ts";
-
 import Page from "./+page.svelte";
 
 const PROPS = {
@@ -15,7 +13,6 @@ const PROPS = {
     },
     isFirstLaunch: false,
     libraryProblem: null,
-    notices: new Notices(),
   },
   params: {},
 };

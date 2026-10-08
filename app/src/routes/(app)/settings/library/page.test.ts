@@ -3,13 +3,11 @@ import type { ComponentProps } from "svelte";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import { Notices } from "#lib/notices/notices.svelte.ts";
-
 import { screenshotModeTurned } from "../../../../../tests/components/screenshot-mode";
-import WithScreenshotMode from "../../../../../tests/components/WithScreenshotMode.svelte";
+import WithAppContext from "../../../../../tests/components/WithAppContext.svelte";
 import Page from "./+page.svelte";
 
-const PageWithScreenshotMode = WithScreenshotMode<ComponentProps<typeof Page>>;
+const PageWithAppContext = WithAppContext<ComponentProps<typeof Page>>;
 
 beforeEach(() => {
   mockIPC((command) => {
@@ -25,23 +23,10 @@ afterEach(() => {
 });
 
 test("explains that folders stay where they are", async () => {
-  const screen = await render(PageWithScreenshotMode, {
+  const screen = await render(PageWithAppContext, {
     screenshotMode: screenshotModeTurned("off"),
     page: Page,
-    pageProps: {
-      data: {
-        appInfo: {
-          version: "1.2.3",
-          platform: "linux",
-          sourceCode: "repo.example.org/omnileaf",
-          isDevelopmentBuild: false,
-        },
-        isFirstLaunch: false,
-        libraryProblem: null,
-        notices: new Notices(),
-      },
-      params: {},
-    },
+    pageProps: {},
   });
 
   const folders = screen.getByRole("region", { name: "Folders" });

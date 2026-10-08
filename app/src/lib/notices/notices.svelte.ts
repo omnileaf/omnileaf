@@ -1,4 +1,5 @@
 import type { LucideIcon } from "@lucide/svelte";
+import { createContext } from "svelte";
 
 export type NoticeTone = "info" | "warning";
 
@@ -95,3 +96,5 @@ export class Notices {
     }, UNDO_WINDOW_MS);
   }
 }
+
+export const [getNotices, setNotices] = createContext<Notices>();

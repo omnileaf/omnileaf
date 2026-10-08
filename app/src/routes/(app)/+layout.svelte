@@ -7,12 +7,14 @@
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { sectionOf } from "#lib/navigation/sections.ts";
   import NoticeHost from "#lib/notices/NoticeHost.svelte";
+  import { getNotices } from "#lib/notices/notices.svelte.ts";
 
   import type { LayoutProps } from "./$types";
 
   let { children, data }: LayoutProps = $props();
 
   const language = getLanguageSetting();
+  const notices = getNotices();
   const backGoesUp = setBackGoesUp(makeBackGoUp());
 
   afterNavigate(({ type }) => {
@@ -37,7 +39,7 @@
   </main>
   <div class="relative z-notice order-1">
     {#key language.resolved}
-      <NoticeHost notices={data.notices} platform={data.appInfo.platform} />
+      <NoticeHost {notices} platform={data.appInfo.platform} />
     {/key}
   </div>
 </div>

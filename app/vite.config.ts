@@ -19,6 +19,8 @@ const DESKTOP_ONLY_APP_SPECS = "tests/app/**/*.desktop.e2e.ts";
 const ANDROID_ONLY_APP_SPECS = "tests/app/**/*.android.e2e.ts";
 const HARNESS_TESTS = "tests/app/**/*.test.ts";
 const BRANDING = "../branding";
+/** The interface ships inside the app, so no newer version can appear while it runs. */
+const NO_VERSION_POLLING = 0;
 
 const phoneDevHost = process.env.TAURI_DEV_HOST;
 const licencesMode: LicencesMode =
@@ -39,7 +41,10 @@ export default defineConfig({
   },
   plugins: [
     tailwindcss(),
-    sveltekit({ adapter: adapter({ fallback: "index.html" }) }),
+    sveltekit({
+      adapter: adapter({ fallback: "index.html" }),
+      version: { pollInterval: NO_VERSION_POLLING },
+    }),
     paraglideVitePlugin({
       project: "./project.inlang",
       outdir: "./src/lib/paraglide",

@@ -139,7 +139,7 @@
   </ul>
   <p class="mbs-xs text-detail text-muted touch:max-medium:px-xs">
     {beforeSection}<a
-      href={resolve("/settings/privacy")}
+      href={resolve("/(app)/settings/privacy")}
       class="font-semibold text-accent underline underline-offset-2"
       >{m.privacy_title()}</a
     >{afterSection}

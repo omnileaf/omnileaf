@@ -13,17 +13,22 @@ import { m } from "#lib/paraglide/messages.js";
 import type { Locale } from "#lib/paraglide/runtime.js";
 
 export type SettingsRoute =
-  | "/settings/library"
-  | "/settings/appearance"
-  | "/settings/privacy"
-  | "/settings/general"
-  | "/settings/advanced"
-  | "/settings/about";
+  | "/(app)/settings/library"
+  | "/(app)/settings/appearance"
+  | "/(app)/settings/privacy"
+  | "/(app)/settings/general"
+  | "/(app)/settings/advanced"
+  | "/(app)/settings/about";
 
-export type SettingsSubPage = "/settings/about/licences";
+export type SettingsSubPage =
+  | "/(app)/settings/about/licences"
+  | "/(app)/settings/general/language"
+  | "/(app)/settings/privacy/screenshot-mode";
+
+export type SettingsPage = "/(app)/settings" | SettingsRoute | SettingsSubPage;
 
 export interface ParentPage {
-  readonly route: "/settings" | SettingsRoute | SettingsSubPage;
+  readonly route: SettingsPage;
   readonly title: string;
 }
 
@@ -60,25 +65,25 @@ export function sectionCurrent(
 
 const PREFERENCES: readonly SettingsSection[] = [
   {
-    route: "/settings/library",
+    route: "/(app)/settings/library",
     label: m.library_title,
     icon: LibraryGlyph,
     tone: "accent",
   },
   {
-    route: "/settings/appearance",
+    route: "/(app)/settings/appearance",
     label: m.appearance_title,
     icon: Palette,
     tone: "accent",
   },
   {
-    route: "/settings/privacy",
+    route: "/(app)/settings/privacy",
     label: m.privacy_title,
     icon: Shield,
     tone: "accent",
   },
   {
-    route: "/settings/general",
+    route: "/(app)/settings/general",
     label: m.general_title,
     icon: Settings2,
     tone: "accent",
@@ -86,14 +91,14 @@ const PREFERENCES: readonly SettingsSection[] = [
 ];
 
 const ADVANCED: SettingsSection = {
-  route: "/settings/advanced",
+  route: "/(app)/settings/advanced",
   label: m.advanced_title,
   icon: SquareTerminal,
   tone: "neutral",
 };
 
 const ABOUT: SettingsSection = {
-  route: "/settings/about",
+  route: "/(app)/settings/about",
   label: m.about_title,
   icon: Info,
   tone: "neutral",
@@ -107,9 +112,9 @@ export function settingsGroups(
 }
 
 /** Whether two panes already show a page in the section list, so a link back to it is not needed there. */
-export function isListedBeside(route: ParentPage["route"]): boolean {
+export function isListedBeside(route: SettingsPage): boolean {
   return (
-    route === "/settings" ||
+    route === "/(app)/settings" ||
     [...PREFERENCES, ADVANCED, ABOUT].some((section) => section.route === route)
   );
 }

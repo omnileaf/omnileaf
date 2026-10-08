@@ -1,4 +1,3 @@
-import type { AfterNavigate } from "@sveltejs/kit";
 import { createContext } from "svelte";
 
 import {
@@ -6,6 +5,7 @@ import {
   beforeNavigate,
   goto,
   onNavigate,
+  type AfterNavigate,
 } from "$app/navigation";
 
 import { type HistoryMove, moveTo } from "./up-history";
@@ -27,15 +27,15 @@ export function makeBackGoUp(): BackGoesUp {
   const replacing = new Set<string>();
   let settle: (() => void) | undefined;
 
-  function record({ type, to, delta }: AfterNavigate): void {
-    const pathname = to?.url.pathname;
+  function record(navigation: AfterNavigate): void {
+    const pathname = navigation.to?.url.pathname;
     if (pathname === undefined) {
       return;
     }
-    if (type === "enter") {
+    if (navigation.type === "enter") {
       entries = [pathname];
-    } else if (type === "popstate" && delta < 0) {
-      entries = entries.slice(0, delta);
+    } else if (navigation.type === "popstate" && navigation.delta < 0) {
+      entries = entries.slice(0, navigation.delta);
     } else if (replacing.has(pathname)) {
       entries = [...entries.slice(0, -1), pathname];
     } else if (entries.at(-1) !== pathname) {
@@ -63,8 +63,7 @@ export function makeBackGoUp(): BackGoesUp {
     const { pathname } = new URL(target, location.href);
     replacing.add(pathname);
     try {
-      // eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass an address they already resolved
-      await goto(target, { replaceState: true });
+      await goto(target, { replace: true });
     } finally {
       replacing.delete(pathname);
     }

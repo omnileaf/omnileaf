@@ -21,7 +21,7 @@
 
   import type { PageProps } from "./$types";
 
-  const OPENING_SECTION: SettingsRoute = "/settings/library";
+  const OPENING_SECTION: SettingsRoute = "/(app)/settings/library";
   const THEME_SUMMARIES = {
     system: m.theme_follows_system,
     light: m.theme_light,
@@ -47,14 +47,16 @@
   });
 
   const summaries: Partial<Record<SettingsRoute, SectionSummary>> = $derived({
-    "/settings/appearance": { text: THEME_SUMMARIES[theme.preference]() },
-    "/settings/privacy": { text: PRIVACY_SUMMARIES[crashReports.choice]() },
-    "/settings/general": {
+    "/(app)/settings/appearance": { text: THEME_SUMMARIES[theme.preference]() },
+    "/(app)/settings/privacy": {
+      text: PRIVACY_SUMMARIES[crashReports.choice](),
+    },
+    "/(app)/settings/general": {
       text: languageName(getLocale()),
       lang: getLocale(),
     },
-    "/settings/advanced": { text: m.advanced_summary() },
-    "/settings/about": {
+    "/(app)/settings/advanced": { text: m.advanced_summary() },
+    "/(app)/settings/about": {
       text: m.app_version({ version: data.appInfo.version }),
     },
   });

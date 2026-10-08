@@ -25,7 +25,7 @@
 <div class="mbs-pane-gap flex flex-col gap-sm">
   <div class="rounded-list border border-border bg-card">
     <a
-      href={resolve("/settings/general/language")}
+      href={resolve("/(app)/settings/general/language")}
       aria-describedby={onPhone ? hintId : undefined}
       class={[
         "flex items-center gap-md rounded-list py-xs ps-lg pe-md transition-control min-block-phone-row hover:bg-hover active:bg-pressed",

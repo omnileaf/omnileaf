@@ -22,7 +22,7 @@
 
 <SectionHeading
   title={m.about_licences()}
-  parent={{ route: "/settings/about", title: m.about_title() }}
+  parent={{ route: "/(app)/settings/about", title: m.about_title() }}
 />
 <div
   class="mbs-pane-gap flex flex-col gap-pane-gap two-pane:max-inline-section"

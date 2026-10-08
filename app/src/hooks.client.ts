@@ -1,4 +1,4 @@
-import type { ClientInit, HandleClientError } from "@sveltejs/kit";
+import type { ClientInit, HandleClientError } from "@sveltejs/kit/hooks";
 
 import { appInterfaceErrors } from "#lib/crash-report/interface-error-relay.ts";
 import {
@@ -6,14 +6,12 @@ import {
   listenForInterfaceErrors,
 } from "#lib/crash-report/interface-errors.ts";
 
-const FIRST_SERVER_ERROR_STATUS = 500;
-
 export const init: ClientInit = () => {
   listenForInterfaceErrors(window, appInterfaceErrors.hear);
 };
 
-export const handleError: HandleClientError = ({ error, status }) => {
-  if (status >= FIRST_SERVER_ERROR_STATUS) {
+export const handleError: HandleClientError = ({ kind, error }) => {
+  if (kind === "unknown") {
     announceInterfaceError(window, error);
   }
 };

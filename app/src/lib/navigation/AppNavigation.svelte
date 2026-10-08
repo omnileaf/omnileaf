@@ -3,7 +3,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import NavigationIcon from "./NavigationIcon.svelte";
-  import { type Section, SECTION_ROUTES } from "./sections";
+  import { type Section, SECTION_ROUTE_IDS } from "./sections";
 
   interface Destination {
     readonly section: Section;
@@ -106,7 +106,7 @@
         ]}
       >
         <a
-          href={resolve(SECTION_ROUTES[destination.section])}
+          href={resolve(SECTION_ROUTE_IDS[destination.section])}
           aria-current={isSelected ? "page" : undefined}
           class={[
             "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-row expanded:px-md expanded:text-label desktop:expanded:min-block-pointer-target",

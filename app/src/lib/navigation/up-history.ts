@@ -1,4 +1,4 @@
-import { SECTION_ROUTES } from "./sections";
+import { SECTION_PATHNAMES } from "./sections";
 
 export type HistoryMove =
   | { readonly kind: "push" }
@@ -9,7 +9,7 @@ export type HistoryMove =
 function wayUp(pathname: string): readonly string[] {
   const segments = pathname.split("/").filter(Boolean);
   return [
-    SECTION_ROUTES.library,
+    SECTION_PATHNAMES.library,
     ...segments.map((_, index) => `/${segments.slice(0, index + 1).join("/")}`),
   ];
 }

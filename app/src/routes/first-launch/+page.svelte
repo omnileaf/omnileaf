@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { goto, pushState } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import ChoicesStep from "#lib/first-launch/ChoicesStep.svelte";
@@ -21,11 +21,15 @@
   import { commands } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
+  import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
   import NoticeHost from "#lib/notices/NoticeHost.svelte";
+  import { getNotices } from "#lib/notices/notices.svelte.ts";
 
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
+
+  const notices = getNotices();
 
   const device = $derived(deviceKindOf(data.appInfo.platform));
   let isLeaving = $state(false);
@@ -53,10 +57,10 @@
     shownStep = step;
   });
 
-  function next(): void {
+  async function next(): Promise<void> {
     const after = stepAfter(step);
     if (after !== undefined) {
-      pushState("", { firstLaunchStep: after });
+      await goto("", { shallow: true, state: { firstLaunchStep: after } });
     }
   }
 
@@ -89,7 +93,10 @@
     }
     isLeaving = true;
     await dropStepEntries();
-    await goto(resolve("/"), { replaceState: true, invalidateAll: true });
+    await goto(resolve(SECTION_ROUTE_IDS.library), {
+      replace: true,
+      refreshAll: true,
+    });
     return "finished";
   }
 </script>
@@ -114,7 +121,7 @@
           platform={data.appInfo.platform}
           {folders}
           addFolder={addFolderWithProgress}
-          notices={data.notices}
+          {notices}
           onBack={back}
           onNext={next}
         />
@@ -127,5 +134,5 @@
   </div>
 </div>
 <div class="fixed inset-x-none inset-be-safe-bottom z-notice">
-  <NoticeHost notices={data.notices} platform={data.appInfo.platform} />
+  <NoticeHost {notices} platform={data.appInfo.platform} />
 </div>
