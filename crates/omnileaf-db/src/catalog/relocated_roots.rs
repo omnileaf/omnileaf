@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use rusqlite::Transaction;
 
@@ -10,45 +10,49 @@ use crate::{
     },
 };
 
-/// Moves the roots together, so roots that trade places or follow one another all arrive, skipping any no longer in the library.
-/// Returns the roots whose new place a root staying put already holds, which keep their place and take the new bookmark.
+/// Moves the roots together so ones that trade places or follow one another all arrive, returning those kept in place with their new bookmark because a root staying put holds where they were going.
 #[tracing::instrument(skip_all, fields(roots = moves.len()))]
 pub fn relocate_roots(
     transaction: &Transaction<'_>,
     moves: &[(RootId, RootLocator)],
 ) -> Result<Vec<RootId>, Error> {
     let held = places_held(transaction)?;
-    let mut moving: BTreeMap<RootId, &RootLocator> = moves
-        .iter()
-        .filter(|(id, _)| held.values().any(|holder| holder == id))
-        .map(|(id, locator)| (*id, locator))
-        .collect();
+    let in_library: HashSet<RootId> = held.values().copied().collect();
+    let mut moving = BTreeMap::new();
+    for (id, locator) in moves {
+        let place = native_path::to_bytes(locator.path());
+        match held.get(&place) {
+            Some(holder) if holder == id => take_bookmark(transaction, *id, locator)?,
+            _ if !in_library.contains(id) => {}
+            _ => {
+                moving.insert(*id, (place, locator));
+            }
+        }
+    }
     let mut staying = Vec::new();
     loop {
         let stuck: Vec<RootId> = moving
             .iter()
-            .filter(|(id, locator)| is_stuck(**id, locator, &held, &moving))
+            .filter(|(id, (place, _))| is_stuck(**id, place, &held, &moving))
             .map(|(id, _)| *id)
             .collect();
         if stuck.is_empty() {
             break;
         }
-        for id in &stuck {
-            if let Some(locator) = moving.remove(id) {
-                staying.push((*id, locator));
+        for id in stuck {
+            if let Some((_, locator)) = moving.remove(&id) {
+                take_bookmark(transaction, id, locator)?;
+                staying.push(id);
             }
         }
     }
     for id in moving.keys() {
         park(transaction, *id)?;
     }
-    for (id, locator) in &moving {
+    for (id, (_, locator)) in &moving {
         relocate_root(transaction, *id, locator)?;
     }
-    for (id, locator) in &staying {
-        take_bookmark(transaction, *id, locator)?;
-    }
-    Ok(staying.into_iter().map(|(id, _)| id).collect())
+    Ok(staying)
 }
 
 fn places_held(transaction: &Transaction<'_>) -> Result<HashMap<Vec<u8>, RootId>, Error> {
@@ -61,17 +65,16 @@ fn places_held(transaction: &Transaction<'_>) -> Result<HashMap<Vec<u8>, RootId>
 
 fn is_stuck(
     id: RootId,
-    locator: &RootLocator,
+    place: &[u8],
     held: &HashMap<Vec<u8>, RootId>,
-    moving: &BTreeMap<RootId, &RootLocator>,
+    moving: &BTreeMap<RootId, (Vec<u8>, &RootLocator)>,
 ) -> bool {
-    let place = native_path::to_bytes(locator.path());
     let held_by_one_staying = held
-        .get(&place)
+        .get(place)
         .is_some_and(|holder| *holder != id && !moving.contains_key(holder));
     let wanted_by_one_before = moving
         .range(..id)
-        .any(|(_, other)| other.path() == locator.path());
+        .any(|(_, (other, _))| other.as_slice() == place);
     held_by_one_staying || wanted_by_one_before
 }
 

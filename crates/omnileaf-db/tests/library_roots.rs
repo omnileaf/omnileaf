@@ -475,6 +475,26 @@ async fn moves_only_the_first_of_two_roots_heading_to_one_place() {
 }
 
 #[tokio::test]
+async fn keeps_a_root_refreshing_its_bookmark_in_its_place_when_another_root_wants_it() {
+    let library = Library::open("roots-refresh-in-place");
+    let comics = library.add_bookmarked(COMICS, b"comics").await;
+    let manga = library.add_bookmarked(MANGA, b"manga").await;
+
+    let blocked = library
+        .relocate_together(vec![
+            (comics, bookmarked(MANGA, b"comics")),
+            (manga, bookmarked(MANGA, b"manga refreshed")),
+        ])
+        .await;
+
+    assert_eq!(blocked, [comics]);
+    assert_eq!(
+        library.locator(manga).await,
+        bookmarked(MANGA, b"manga refreshed")
+    );
+}
+
+#[tokio::test]
 async fn skips_a_root_removed_before_it_moves() {
     let library = Library::open("roots-removed-before-move");
     let comics = library.add_bookmarked(COMICS, ICLOUD_BOOKMARK).await;
