@@ -3,6 +3,7 @@ import type {
   commands,
   CrashOrigin,
   CrashReportOffer,
+  InterfaceError,
   IpcErrorCode,
 } from "$lib/ipc/bindings";
 
@@ -11,6 +12,7 @@ import type { CrashReportChoice, CrashReportSetting } from "./choice.svelte";
 export type CrashReportBackend = Pick<
   typeof commands,
   | "offerSavedCrashReport"
+  | "offerInterfaceErrorReport"
   | "sendCrashReport"
   | "copyCrashReport"
   | "declineCrashReport"
@@ -43,9 +45,11 @@ const SEND_OUTCOMES = {
   internal: "notSent",
 } as const satisfies Record<IpcErrorCode, SendFailure | undefined>;
 
-/** Offers crash reports as the person's choice says: asking first, sending without asking, or never. */
+/** Offers crash reports as the person's choice says: asking first, sending without asking, or never; interface errors at most once a session. */
 export class CrashReporting {
   prompt: CrashReportPrompt = $state(HIDDEN);
+
+  #interfaceErrorOffered = false;
 
   #isSending = false;
 
@@ -62,6 +66,17 @@ export class CrashReporting {
     const saved = await this.backend.offerSavedCrashReport();
     if (saved.status === "ok" && saved.data !== null) {
       await this.follow(saved.data);
+    }
+  }
+
+  async offerInterfaceError(error: InterfaceError): Promise<void> {
+    if (this.#interfaceErrorOffered) {
+      return;
+    }
+    this.#interfaceErrorOffered = true;
+    const offered = await this.backend.offerInterfaceErrorReport(error);
+    if (offered.status === "ok") {
+      await this.follow(offered.data);
     }
   }
 
