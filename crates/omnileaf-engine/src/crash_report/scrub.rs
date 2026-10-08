@@ -24,9 +24,7 @@ pub(crate) fn clean(text: &str, limit: usize) -> String {
     bound(&scrub(bounded), limit)
 }
 
-/// Replaces quoted text and anything path-shaped, since that is where names and titles appear in error messages.
-///
-/// A path runs to the end of its line, because names can contain spaces, and one that isn't rooted also takes the words before it.
+/// Replaces quoted text and paths, where names and titles appear in error messages, taking each path to the end of its line since names can hold spaces.
 fn scrub(text: &str) -> String {
     let mut cleaned = Cleaned::with_capacity(text.len());
     let mut rest = text.chars().peekable();
@@ -139,7 +137,6 @@ fn names_code(span: &str) -> bool {
         && (span.contains("::") || span.ends_with("()") || STANDARD_VARIANTS.contains(&span))
 }
 
-/// Skips a quoted span starting at `rest`, returning whether there was one.
 fn skip_quoted(rest: &mut Peekable<Chars<'_>>, at_token_start: bool) -> bool {
     let Some(open) = rest.peek().copied() else {
         return false;

@@ -100,7 +100,6 @@ export type FolderPage = {
 	next: string & { readonly __brand: "FolderCursor" } | null,
 };
 
-/**  What a rescan of one library folder found. */
 export type FolderRescan = {
 	id: string & { readonly __brand: "FolderId" },
 	name: string,

@@ -1,5 +1,3 @@
-//! Strings the interface's types keep apart, each under a brand of its own.
-
 use specta::{
     Type, Types,
     datatype::{DataType, Reference},

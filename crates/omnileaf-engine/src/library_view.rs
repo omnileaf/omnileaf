@@ -51,7 +51,6 @@ pub type PhoneCoversPerRow = CoversPerRowCount<2, 5>;
 pub type TabletCoversPerRow = CoversPerRowCount<3, 8>;
 pub type DesktopCoversPerRow = CoversPerRowCount<4, 12>;
 
-/// A number of covers per row from `FEWEST` to `MOST`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(into = "u8", try_from = "u8")]
 pub struct CoversPerRowCount<const FEWEST: u8, const MOST: u8>(u8);
@@ -63,7 +62,6 @@ pub struct CoversPerRowRange {
     pub most: u8,
 }
 
-/// The range of covers per row each size offers.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 pub struct CoversPerRowRanges {
     pub phone: CoversPerRowRange,
