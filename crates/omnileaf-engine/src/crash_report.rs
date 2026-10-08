@@ -1,5 +1,6 @@
 mod file;
 mod issue;
+mod offers;
 mod scrub;
 mod trace;
 
@@ -10,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::{AppInfo, Platform, ProjectLink};
 
 pub use file::{CrashReportError, CrashReportFile};
+pub use offers::{CrashReportOffers, UnsavedCrashReport};
 
 const MESSAGE_BYTE_LIMIT: usize = 240;
 const FRAME_LIMIT: usize = 12;

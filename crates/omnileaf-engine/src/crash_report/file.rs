@@ -6,7 +6,7 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
-use super::{CrashReport, StoredCrashReport};
+use super::{CrashReport, CrashReportId, StoredCrashReport};
 
 const FILE_NAME: &str = "crash-report.json";
 const UNFINISHED_SUFFIX: &str = "partial";
@@ -25,6 +25,8 @@ pub enum CrashReportError {
     Read(#[source] io::Error),
     #[error("parse the saved crash report")]
     Parse(#[source] serde_json::Error),
+    #[error("remove the saved crash report")]
+    Remove(#[source] io::Error),
 }
 
 /// The one crash report kept on disk between runs, so a crash can be offered when the app next opens.
@@ -69,6 +71,25 @@ impl CrashReportFile {
         serde_json::from_slice::<StoredCrashReport>(&text)
             .map(|stored| Some(CrashReport::from(stored)))
             .map_err(CrashReportError::Parse)
+    }
+
+    /// Removes the saved report only if it is still the one with `id`, though a crash saved between that check and the removal goes with it.
+    pub fn remove(&self, id: CrashReportId) -> Result<(), CrashReportError> {
+        match self.load() {
+            Ok(Some(saved)) if saved.id() != id => Ok(()),
+            Ok(None) => Ok(()),
+            Ok(Some(_)) | Err(CrashReportError::Parse(_)) => self.discard(),
+            Err(error) => Err(error),
+        }
+    }
+
+    pub(super) fn discard(&self) -> Result<(), CrashReportError> {
+        match fs::remove_file(self.path()) {
+            Err(error) if error.kind() != io::ErrorKind::NotFound => {
+                Err(CrashReportError::Remove(error))
+            }
+            _ => Ok(()),
+        }
     }
 
     fn path(&self) -> PathBuf {

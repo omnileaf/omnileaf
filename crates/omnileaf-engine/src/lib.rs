@@ -29,8 +29,8 @@ pub use app_language::AppLanguage;
 pub use clock::SystemClock;
 pub use cover_path::{CoverPath, MalformedCoverPath};
 pub use crash_report::{
-    CrashOrigin, CrashReport, CrashReportError, CrashReportFile, CrashReportId, CrashedApp,
-    InterfaceError, PanicDetails, SourceLocation,
+    CrashOrigin, CrashReport, CrashReportError, CrashReportFile, CrashReportId, CrashReportOffers,
+    CrashedApp, InterfaceError, PanicDetails, SourceLocation, UnsavedCrashReport,
 };
 pub use error_chain::describe_error;
 pub use library::{Library, LibraryError};
