@@ -2,7 +2,7 @@
 
 use std::error::Error;
 
-use omnileaf_engine::{LibraryError, describe_error};
+use omnileaf_engine::{CrashReportError, LibraryError, describe_error};
 use serde::Serialize;
 use specta::Type;
 
@@ -19,6 +19,8 @@ pub(crate) enum IpcErrorCode {
     HomeFolderKept,
     ClipboardUnavailable,
     BrowserUnavailable,
+    NoCrashReport,
+    CrashReportUnavailable,
     Internal,
 }
 
@@ -53,6 +55,13 @@ impl IpcError {
         }
     }
 
+    pub(crate) fn no_crash_report() -> Self {
+        Self {
+            code: IpcErrorCode::NoCrashReport,
+            message: "no crash report is waiting for a decision",
+        }
+    }
+
     pub(crate) fn internal(error: &dyn Error) -> Self {
         tracing::error!(error = %describe_error(error), "command failed");
         Self {
@@ -84,6 +93,16 @@ impl From<LibraryError> for IpcError {
         };
         tracing::warn!(error = %describe_error(&error), "library command refused");
         Self { code, message }
+    }
+}
+
+impl From<CrashReportError> for IpcError {
+    fn from(error: CrashReportError) -> Self {
+        tracing::warn!(error = %describe_error(&error), "handle a crash report");
+        Self {
+            code: IpcErrorCode::CrashReportUnavailable,
+            message: "the crash report could not be read or removed",
+        }
     }
 }
 

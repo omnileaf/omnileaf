@@ -54,6 +54,14 @@ export const DEFAULT_BACKEND: FakeBackend = {
   matchSystemBars: () => null,
   copyVersionDetails: () => null,
   openProjectLink: () => null,
+  offerSavedCrashReport: () => null,
+  offerInterfaceErrorReport: (error) => ({
+    details: error.message,
+    origin: "interface",
+  }),
+  sendCrashReport: () => null,
+  copyCrashReport: () => null,
+  declineCrashReport: () => null,
 };
 
 export function onPlatform(platform: Platform): { backend: FakeBackend } {
