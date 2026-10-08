@@ -19,8 +19,19 @@ use omnileaf_db::{
 use omnileaf_sync_proto::SeriesId;
 use support::{ScratchFolder, library_config};
 
-const ONE_BOOK: &[&str] = &["Volume 01"];
-const NO_BOOKS: &[&str] = &[];
+fn series_added_at(name: &str, added_at_ms: i64) -> SeriesSeed<'_> {
+    SeriesSeed {
+        added_at_ms,
+        ..SeriesSeed::named(name)
+    }
+}
+
+fn series_holding<'a>(name: &'a str, book_titles: &'a [&'a str]) -> SeriesSeed<'a> {
+    SeriesSeed {
+        book_titles,
+        ..SeriesSeed::named(name)
+    }
+}
 
 struct Library {
     database: Database,
@@ -98,11 +109,11 @@ fn book_titles(series: SeriesId) -> impl List + Clone {
 #[tokio::test]
 async fn pages_the_library_by_title_with_numbers_in_order_of_value() {
     let library = Library::with(&[
-        ("Sample Series 10", 1, ONE_BOOK),
-        ("Sample Series 9", 1, ONE_BOOK),
-        ("sample series 1", 1, ONE_BOOK),
-        ("Example Series", 1, ONE_BOOK),
-        ("Sample Series 2", 1, ONE_BOOK),
+        SeriesSeed::named("Sample Series 10"),
+        SeriesSeed::named("Sample Series 9"),
+        SeriesSeed::named("sample series 1"),
+        SeriesSeed::named("Example Series"),
+        SeriesSeed::named("Sample Series 2"),
     ])
     .await;
 
@@ -121,11 +132,11 @@ async fn pages_the_library_by_title_with_numbers_in_order_of_value() {
 #[tokio::test]
 async fn pages_the_library_by_most_recently_added_first() {
     let library = Library::with(&[
-        ("Sample Series 01", 20, ONE_BOOK),
-        ("Sample Series 02", 50, ONE_BOOK),
-        ("Sample Series 03", 30, ONE_BOOK),
-        ("Sample Series 04", 10, ONE_BOOK),
-        ("Sample Series 05", 40, ONE_BOOK),
+        series_added_at("Sample Series 01", 20),
+        series_added_at("Sample Series 02", 50),
+        series_added_at("Sample Series 03", 30),
+        series_added_at("Sample Series 04", 10),
+        series_added_at("Sample Series 05", 40),
     ])
     .await;
 
@@ -152,7 +163,7 @@ async fn pages_series_added_at_the_same_moment_by_descending_id() {
         "Sample Series 04",
         "Sample Series 05",
     ];
-    let library = Library::with(&names.map(|name| (name, 1, ONE_BOOK))).await;
+    let library = Library::with(&names.map(SeriesSeed::named)).await;
     let mut expected = names;
     expected.sort_by_key(|name| Reverse(series_id(name)));
 
@@ -166,8 +177,8 @@ async fn pages_series_added_at_the_same_moment_by_descending_id() {
 #[tokio::test]
 async fn ends_on_a_full_last_page_without_an_empty_one_after_it() {
     let library = Library::with(&[
-        ("Sample Series 01", 1, ONE_BOOK),
-        ("Sample Series 02", 1, ONE_BOOK),
+        SeriesSeed::named("Sample Series 01"),
+        SeriesSeed::named("Sample Series 02"),
     ])
     .await;
 
@@ -179,8 +190,8 @@ async fn ends_on_a_full_last_page_without_an_empty_one_after_it() {
 #[tokio::test]
 async fn leaves_series_without_books_off_the_library_pages() {
     let library = Library::with(&[
-        ("Sample Series 01", 1, NO_BOOKS),
-        ("Sample Series 02", 2, ONE_BOOK),
+        series_holding("Sample Series 01", &[]),
+        series_added_at("Sample Series 02", 2),
     ])
     .await;
 
@@ -197,9 +208,13 @@ async fn leaves_series_without_books_off_the_library_pages() {
 #[tokio::test]
 async fn counts_the_series_the_library_pages_list() {
     let library = Library::with(&[
-        ("Sample Series 01", 1, NO_BOOKS),
-        ("Sample Series 02", 2, ONE_BOOK),
-        ("Sample Series 03", 3, &["Volume 01", "Volume 02"]),
+        series_holding("Sample Series 01", &[]),
+        series_added_at("Sample Series 02", 2),
+        SeriesSeed {
+            added_at_ms: 3,
+            book_titles: &["Volume 01", "Volume 02"],
+            ..SeriesSeed::named("Sample Series 03")
+        },
     ])
     .await;
 
@@ -211,12 +226,11 @@ async fn counts_the_series_the_library_pages_list() {
 #[tokio::test]
 async fn counts_the_books_of_each_listed_series_not_marked_read() {
     let library = Library::with(&[
-        (
+        series_holding(
             "Sample Series 01",
-            1,
             &["Volume 01", "Volume 02", "Volume 03", "Volume 04"],
         ),
-        ("Sample Series 02", 1, &["Volume 01", "Volume 02"]),
+        series_holding("Sample Series 02", &["Volume 01", "Volume 02"]),
     ])
     .await;
     library
@@ -265,12 +279,11 @@ async fn counts_the_books_of_each_listed_series_not_marked_read() {
 #[tokio::test]
 async fn pages_a_series_books_in_natural_order() {
     let library = Library::with(&[
-        (
+        series_holding(
             "Sample Series 01",
-            1,
             &["Volume 10", "Volume 2", "volume 1", "Extra"],
         ),
-        ("Sample Series 02", 1, &["Volume 3"]),
+        series_holding("Sample Series 02", &["Volume 3"]),
     ])
     .await;
 
@@ -286,7 +299,7 @@ async fn pages_a_series_books_in_natural_order() {
 
 #[tokio::test]
 async fn gives_a_series_missing_from_the_catalog_an_empty_page_of_books() {
-    let library = Library::with(&[("Sample Series 01", 1, ONE_BOOK)]).await;
+    let library = Library::with(&[SeriesSeed::named("Sample Series 01")]).await;
 
     let pages = library
         .walk(book_titles(series_id("Sample Series 09")), 3)
@@ -298,8 +311,8 @@ async fn gives_a_series_missing_from_the_catalog_an_empty_page_of_books() {
 #[tokio::test]
 async fn refuses_to_continue_series_and_books_from_each_other_s_cursors() {
     let library = Library::with(&[
-        ("Sample Series 01", 1, &["Volume 01", "Volume 02"]),
-        ("Sample Series 02", 1, ONE_BOOK),
+        series_holding("Sample Series 01", &["Volume 01", "Volume 02"]),
+        SeriesSeed::named("Sample Series 02"),
     ])
     .await;
     let books = book_titles(series_id("Sample Series 01"));
@@ -322,8 +335,8 @@ async fn refuses_to_continue_series_and_books_from_each_other_s_cursors() {
 #[tokio::test]
 async fn refuses_to_continue_one_series_books_from_another_series_cursor() {
     let library = Library::with(&[
-        ("Sample Series 01", 1, &["Volume 01", "Volume 02"]),
-        ("Sample Series 02", 1, &["Volume 01", "Volume 02"]),
+        series_holding("Sample Series 01", &["Volume 01", "Volume 02"]),
+        series_holding("Sample Series 02", &["Volume 01", "Volume 02"]),
     ])
     .await;
     let first_series = book_titles(series_id("Sample Series 01"));
@@ -346,8 +359,8 @@ async fn refuses_to_continue_one_series_books_from_another_series_cursor() {
 #[tokio::test]
 async fn refuses_to_continue_one_series_order_from_another_s_cursor() {
     let library = Library::with(&[
-        ("Sample Series 01", 1, ONE_BOOK),
-        ("Sample Series 02", 2, ONE_BOOK),
+        SeriesSeed::named("Sample Series 01"),
+        series_added_at("Sample Series 02", 2),
     ])
     .await;
     let by_title = library.page(series_titles(SeriesOrder::Title), None, 1);

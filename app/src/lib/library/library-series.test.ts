@@ -68,7 +68,6 @@ function pagedFrom(catalog: () => readonly WireSeries[]) {
   return asked;
 }
 
-/** Holds every request until the test answers it. */
 function heldAnswers(): ((page: WirePage) => void)[] {
   const answers: ((page: WirePage) => void)[] = [];
   mockIPC(

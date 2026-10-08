@@ -1,5 +1,4 @@
-//! Regenerates the app icons, drawing the macOS one inside Apple's margin and writing the iOS ones
-//! without the alpha channel the App Store rejects.
+//! Regenerates the app icons, keeping the macOS one inside Apple's margin and the iOS ones free of the alpha channel the App Store rejects.
 
 use std::{
     env,

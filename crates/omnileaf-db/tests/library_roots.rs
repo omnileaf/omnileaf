@@ -166,7 +166,6 @@ impl Library {
     }
 }
 
-/// The root's row key, for seeding the tables that refer to it.
 fn row_key(id: RootId) -> i64 {
     id.to_string().parse().unwrap()
 }

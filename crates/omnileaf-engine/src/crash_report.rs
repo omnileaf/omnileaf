@@ -33,7 +33,6 @@ impl CrashReportId {
     }
 }
 
-/// The running app a crash report describes.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrashedApp {
     pub version: String,

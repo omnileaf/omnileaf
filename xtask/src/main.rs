@@ -13,6 +13,7 @@ mod fuzz_seeds;
 mod icons;
 mod licence_catalogue;
 mod licences;
+mod lint_comments;
 mod lint_sync;
 mod policy;
 mod pre_push;
@@ -105,6 +106,8 @@ enum Command {
         #[arg(long)]
         check: bool,
     },
+    /// Check that comments hold no plain notes, warning words or references, and that doc comments stay short.
+    LintComments,
     /// Check that only the write path writes synced state and the projections built from it.
     LintSync,
     /// Check the repository's files against its content rules.
@@ -210,6 +213,7 @@ fn main() -> anyhow::Result<()> {
             };
             licences::regenerate(&workspace::root(), mode)?;
         }
+        Command::LintComments => lint_comments()?,
         Command::LintSync => lint_sync()?,
         Command::Policy => enforce_policy()?,
         Command::PrePush { remote, .. } => {
@@ -330,6 +334,11 @@ fn enforce_policy() -> anyhow::Result<()> {
     let rules = workspace::policy(&root).context("read the policy lists")?;
     let violations = check_repository(&root, |files| policy::check(files, &rules))?;
     report(&violations, "policy")
+}
+
+fn lint_comments() -> anyhow::Result<()> {
+    let violations = check_repository(&workspace::root(), lint_comments::check)?;
+    report(&violations, "comment rule")
 }
 
 fn lint_sync() -> anyhow::Result<()> {

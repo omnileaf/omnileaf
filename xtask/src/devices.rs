@@ -1,5 +1,3 @@
-//! Lists the phones, emulators and Simulators the app can run on.
-
 use std::{ffi::OsStr, fmt, path::Path};
 
 use anyhow::Context;

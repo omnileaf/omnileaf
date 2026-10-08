@@ -59,7 +59,7 @@ CI runs the three macOS gates (`rust gate (macos)`, `app (macos)` and `fixtures 
 
 ### Before you push
 
-Run `cargo xtask install-hooks` once per clone. Git then runs `cargo xtask pre-push` before every push, which checks the branch you have checked out in well under a minute: formatting, the content policy and the sync rules every time, the Rust licences when a `Cargo.toml`, `Cargo.lock` or `about.toml` changed, and the interface build, which checks the JavaScript licences, when a `package.json` or the pnpm lockfile changed. It needs a clean working tree, so it checks exactly what you push, and it names any other branch in the same push that it left unchecked.
+Run `cargo xtask install-hooks` once per clone. Git then runs `cargo xtask pre-push` before every push, which checks the branch you have checked out in well under a minute: formatting, the content policy, the sync rules and the comment rules every time, the Rust licences when a `Cargo.toml`, `Cargo.lock` or `about.toml` changed, and the interface build, which checks the JavaScript licences, when a `package.json` or the pnpm lockfile changed. It needs a clean working tree, so it checks exactly what you push, and it names any other branch in the same push that it left unchecked.
 
 The hook catches the drift that most often fails CI, not everything CI checks. Run `cargo xtask check`, or `--only` the groups your change touches, before opening or updating a pull request. In a stack, fix a failure on the lowest branch that has it, then restack the branches above.
 
@@ -82,7 +82,8 @@ The `portable` group holds the Rust checks whose answer is the same everywhere, 
 - `cargo deny`: every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories;
 - `cargo xtask policy`, the content policy check below;
 - `cargo xtask licences --check`, the licence catalogue check below;
-- `cargo xtask lint-sync`, which checks how synced state is written.
+- `cargo xtask lint-sync`, which checks how synced state is written;
+- `cargo xtask lint-comments`, which checks the comments in the code.
 
 `cargo xtask lint-sync` keeps synced state behind its one write path:
 - only `crates/omnileaf-db/src/store/register.rs` writes `sync_register`, and only `store/local.rs` writes `sync_local`, so no migration writes either, apart from the one that creates `sync_local` with its first row;
@@ -90,6 +91,14 @@ The `portable` group holds the Rust checks whose answer is the same everywhere, 
 - a projection refers to no other table and holds no unique value, so it can always be rebuilt from the registers.
 
 Integration tests under `tests/` may still seed any table directly.
+
+`cargo xtask lint-comments` reads the comments that start a line in the Rust, TypeScript, JavaScript and Svelte files, leaving generated ones alone, and fails on:
+- a `//` comment, unless it is a directive a tool reads, such as `// SAFETY:`, `// eslint-disable-next-line … -- reason` or `// @ts-expect-error`;
+- a `/* */` block that isn't a `/** */` doc comment, and an HTML comment in a Svelte file that isn't a licence notice;
+- `TODO`, `FIXME`, `XXX` or `HACK`, a comment that only names a test phase, and an issue or ticket number, an ADR or a pointer to `docs/` or `AGENTS.md`;
+- a doc comment of more than three lines of prose, not counting blank lines, tags such as `@param`, or the `# Errors`, `# Panics` and `# Safety` headings.
+
+ESLint's `no-warning-comments` and `no-inline-comments` rules catch the warning words and comments after code in the editor too.
 
 ### Interface
 

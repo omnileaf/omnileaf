@@ -1,5 +1,3 @@
-//! The commands the interface calls, and the TypeScript bindings generated from them.
-
 #[cfg(debug_assertions)]
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{

@@ -7,7 +7,6 @@ export type RescanFolder = (
   onProgress: (progress: ScanProgress) => void,
 ) => ReturnType<typeof commands.rescanLibraryFolder>;
 
-/** Rescans one folder, handing each step of the rescan to `onProgress` as it arrives. */
 export const rescanFolderWithProgress: RescanFolder = (id, onProgress) =>
   commands.rescanLibraryFolder(id, new Channel(onProgress));
 
