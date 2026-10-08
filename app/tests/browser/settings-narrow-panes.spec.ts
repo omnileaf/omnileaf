@@ -18,6 +18,7 @@ const SECTIONS = [
   "/settings/appearance",
   "/settings/general",
   "/settings/general/language",
+  "/settings/privacy",
   "/settings/about",
   "/settings/about/licences",
 ] as const;

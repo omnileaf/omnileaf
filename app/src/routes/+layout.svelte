@@ -6,6 +6,10 @@
     setThemeSetting,
     themeSettingForDocument,
   } from "$lib/appearance/theme.svelte";
+  import {
+    crashReportSettingForDocument,
+    setCrashReportSetting,
+  } from "$lib/crash-report/choice.svelte";
   import { commands } from "$lib/ipc/bindings";
   import { rescanEveryFolder } from "$lib/library/rescan-folder";
   import {
@@ -33,6 +37,7 @@
   const themeSetting = setThemeSetting(themeSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
   const screenshotMode = setScreenshotMode(screenshotModeForDocument());
+  setCrashReportSetting(crashReportSettingForDocument());
   const screenshotModeShortcut = $derived(
     screenshotModeShortcutOn(data.appInfo.platform),
   );
