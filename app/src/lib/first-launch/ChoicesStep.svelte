@@ -2,6 +2,8 @@
   import { SlidersHorizontal } from "@lucide/svelte";
 
   import ThemeChoice from "#lib/appearance/ThemeChoice.svelte";
+  import WidthWording from "#lib/page/WidthWording.svelte";
+  import type { WordingByWidth } from "#lib/page/wording.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import StepButton from "./StepButton.svelte";
@@ -9,8 +11,6 @@
   import StepBadge from "./StepBadge.svelte";
   import StepFrame from "./StepFrame.svelte";
   import StepHeader from "./StepHeader.svelte";
-  import WidthWording from "./WidthWording.svelte";
-  import type { WordingByWidth } from "./wording";
 
   let {
     device,
