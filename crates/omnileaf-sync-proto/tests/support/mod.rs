@@ -25,7 +25,6 @@ pub(crate) fn raw1_samples(content: &[u8]) -> [&[u8]; RAW1_SAMPLE_COUNT] {
     Fingerprint::raw1_ranges(content.len() as u64).map(|range| sample(content, range))
 }
 
-/// The `dir1` fingerprint of a folder whose every file holds [`sample_file`] content of its size.
 pub(crate) fn dir1_of_sample_files(images: Vec<FolderImage>) -> Fingerprint {
     let manifest = FolderManifest::new(images).unwrap();
     let first = sample_file(manifest.first().size);

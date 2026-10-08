@@ -8,7 +8,6 @@ use crate::{
     },
 };
 
-/// Whether the series titles had to be keyed again.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Resorted {
     Unchanged,

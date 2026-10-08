@@ -2,7 +2,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use omnileaf_db::store::Clock;
 
-/// The device's wall clock.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct SystemClock;
 

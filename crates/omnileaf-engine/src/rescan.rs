@@ -18,7 +18,6 @@ use crate::{
     scan::{BOOKS_PER_BATCH, Target, read_book, saturating_u32},
 };
 
-/// What a rescan of one library folder found.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FolderRescan {
