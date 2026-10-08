@@ -20,7 +20,7 @@ export async function openLibraryPage(session: Session): Promise<void> {
   await session.waitFor(LIBRARY_LINK_WHEN_CURRENT);
 }
 
-/** Opens one WebDriver session past the first launch for the calling spec file's tests, starts each of them on the library page, and ends it after them. */
+/** Shares one WebDriver session, past the first launch, across the calling spec file and starts each test on the library page. */
 export function useAppSession(): () => Session {
   let session: Session | undefined;
 
