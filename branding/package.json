@@ -1,0 +1,8 @@
+{
+  "name": "@omnileaf/branding",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./*"
+  }
+}

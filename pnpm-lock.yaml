@@ -26,6 +26,9 @@ importers:
       '@inlang/plugin-message-format':
         specifier: 4.4.4
         version: 4.4.4
+      '@omnileaf/branding':
+        specifier: workspace:*
+        version: link:../branding
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -98,6 +101,8 @@ importers:
       vitest-browser-svelte:
         specifier: 3.1.0
         version: 3.1.0(svelte@5.57.1(@typescript-eslint/types@8.71.0))(vitest@5.0.3)
+
+  branding: {}
 
 packages:
 
