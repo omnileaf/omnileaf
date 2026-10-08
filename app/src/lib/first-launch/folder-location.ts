@@ -8,7 +8,7 @@ const IN_FILES = {
   fromMedium: m.first_launch_home_location_ipad,
 } satisfies WordingByWidth;
 
-/** The iOS home folder's path is a private container nobody can browse to, so it is named where the Files app shows it. */
+/** iOS names the home folder by the app's folder in the Files app, since its own path is a private container nobody can browse to. */
 export function folderLocation(
   folder: Pick<LibraryFolder, "kind" | "location">,
   platform: Platform,

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { House, Info } from "@lucide/svelte";
+  import { House } from "@lucide/svelte";
 
   import type { Platform } from "#lib/ipc/bindings.ts";
   import FolderRow from "#lib/library/FolderRow.svelte";
@@ -13,8 +13,6 @@
   import StepBadge from "./StepBadge.svelte";
   import StepHeader from "./StepHeader.svelte";
   import WidthWording from "./WidthWording.svelte";
-
-  const HINT_ICON_SIZE = 18;
 
   let {
     platform,
@@ -41,7 +39,7 @@
         ? m.first_launch_home_title_ios()
         : m.first_launch_home_title()}
     </StepHeader>
-    <p class="text-step-body text-muted">
+    <p class="text-step-body wrap-break-word text-muted">
       {isInFiles ? m.first_launch_home_body_ios() : m.first_launch_home_body()}
     </p>
     {#if isInFiles}
@@ -60,16 +58,6 @@
     {/if}
     {#if folders.kind === "failed"}
       <p class="px-xs">{m.library_folders_failed()}</p>
-    {/if}
-    {#if isInFiles}
-      <p class="flex gap-label text-label text-muted">
-        <Info
-          size={HINT_ICON_SIZE}
-          aria-hidden="true"
-          class="mbs-2xs shrink-0"
-        />
-        <span>{m.first_launch_home_hint_ios()}</span>
-      </p>
     {/if}
   </div>
   {#snippet actions()}

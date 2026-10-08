@@ -7,7 +7,10 @@ const GET_STARTED = xpath("//button[normalize-space()='Get started']");
 
 const STEPS = [
   {
-    headings: ["Where your library lives", "Your library lives in Files"],
+    headings: [
+      "Where your library lives",
+      "Your backups and books are in Files",
+    ],
     leaveWith: "Continue",
   },
   { headings: ["Already have comics or books?"], leaveWith: "Continue" },

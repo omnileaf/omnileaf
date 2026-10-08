@@ -77,7 +77,7 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
 };
 
 const HOME_HEADING = "Where your library lives";
-const IOS_HOME_HEADING = "Your library lives in Files";
+const IOS_HOME_HEADING = "Your backups and books are in Files";
 
 const STEPS = [
   { heading: "Welcome to Omnileaf", leaveWith: "Get started" },
@@ -416,7 +416,7 @@ test.describe("the home folder on ios", () => {
     },
   });
 
-  test("names the folder the library lives in as the Files app does, without its path", async ({
+  test("names the folder backups and books go in as the Files app does, without its path", async ({
     page,
   }) => {
     const location =
@@ -430,9 +430,10 @@ test.describe("the home folder on ios", () => {
     await expect(page.getByText(HOME_FOLDER.location)).toHaveCount(0);
     await expect(
       page.getByText(
-        "Your daily backups are kept here too, so they're easy to copy to another device.",
+        "Omnileaf keeps your backups, and books you add, in its own folder in the Files app, so they're easy to copy or move. Your progress and categories stay safely inside the app.",
       ),
     ).toBeVisible();
+    await expect(page.getByText(/daily backups/)).toHaveCount(0);
   });
 
   test("leaves out the home folder's heading, as the board draws it", async ({
