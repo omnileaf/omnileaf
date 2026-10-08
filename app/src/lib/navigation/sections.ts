@@ -1,4 +1,4 @@
-import type { RouteId } from "$app/types";
+import type { PageRouteId } from "$app/types";
 
 export type Section = "library" | "browse" | "history" | "settings";
 
@@ -14,7 +14,7 @@ export const SECTION_ROUTE_IDS = {
   browse: "/(app)/browse",
   history: "/(app)/history",
   settings: "/(app)/settings",
-} as const satisfies Record<Section, RouteId>;
+} as const satisfies Record<Section, PageRouteId>;
 
 const SECTIONS = Object.keys(SECTION_PATHNAMES).filter(
   (key): key is Section => key in SECTION_PATHNAMES,
