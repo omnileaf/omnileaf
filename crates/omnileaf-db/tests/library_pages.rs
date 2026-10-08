@@ -17,7 +17,7 @@ use omnileaf_db::{
     },
 };
 use omnileaf_sync_proto::SeriesId;
-use support::ScratchFolder;
+use support::{ScratchFolder, library_config};
 
 const ONE_BOOK: &[&str] = &["Volume 01"];
 const NO_BOOKS: &[&str] = &[];
@@ -30,7 +30,7 @@ struct Library {
 impl Library {
     async fn with(series: &[SeriesSeed<'_>]) -> Self {
         let folder = ScratchFolder::new("library-pages");
-        let database = Database::open(&folder.config()).unwrap();
+        let database = Database::open(&library_config(&folder)).unwrap();
         seed_library(&database, series).await;
         Self {
             database,

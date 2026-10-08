@@ -13,7 +13,7 @@ use omnileaf_db::{
     rusqlite::{self, ErrorCode, types::Value},
 };
 use omnileaf_sync_proto::{BookId, SeriesId, SourceId};
-use support::ScratchFolder;
+use support::{ScratchFolder, library_config};
 
 const ADDED_AT_MS: i64 = 1_790_000_000_000;
 const SERIES: &str = "Sample Series 01";
@@ -28,7 +28,7 @@ const TEXT_SOURCE_ID: &str = "0123456789abcdef";
 #[tokio::test]
 async fn counts_the_books_added_to_a_series() {
     let folder = ScratchFolder::new("count-books");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
 
     let series = add_local_series(&database, SERIES, TWO_BOOKS).await;
 
@@ -38,7 +38,7 @@ async fn counts_the_books_added_to_a_series() {
 #[tokio::test]
 async fn counts_a_book_out_once_it_is_removed() {
     let folder = ScratchFolder::new("uncount-books");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     let series = add_local_series(&database, SERIES, TWO_BOOKS).await;
 
     remove_book(&database, book_id(SERIES, "Volume 01")).await;
@@ -49,7 +49,7 @@ async fn counts_a_book_out_once_it_is_removed() {
 #[tokio::test]
 async fn moves_the_count_with_a_book_moved_to_another_series() {
     let folder = ScratchFolder::new("move-book");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     let from = add_local_series(&database, SERIES, TWO_BOOKS).await;
     let to = add_local_series(&database, "Sample Series 02", NO_BOOKS).await;
 
@@ -76,7 +76,7 @@ async fn moves_the_count_with_a_book_moved_to_another_series() {
 #[tokio::test]
 async fn refuses_a_book_for_a_series_missing_from_the_catalog() {
     let folder = ScratchFolder::new("unknown-series");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     let missing = NewSeries::local("Sample Series 09", ADDED_AT_MS)
         .unwrap()
         .id();
@@ -97,7 +97,7 @@ async fn refuses_a_book_for_a_series_missing_from_the_catalog() {
 #[tokio::test]
 async fn refuses_a_second_series_for_a_folder_name_that_normalises_alike() {
     let folder = ScratchFolder::new("same-series");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     add_local_series(&database, SERIES, NO_BOOKS).await;
 
     let outcome = database
@@ -115,7 +115,7 @@ async fn refuses_a_second_series_for_a_folder_name_that_normalises_alike() {
 #[tokio::test]
 async fn files_a_local_series_under_the_local_library_source() {
     let folder = ScratchFolder::new("local-source");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
 
     let series = add_local_series(&database, SERIES, NO_BOOKS).await;
 
@@ -128,7 +128,7 @@ async fn files_a_local_series_under_the_local_library_source() {
 #[tokio::test]
 async fn lets_another_source_hold_a_series_of_the_same_name() {
     let folder = ScratchFolder::new("other-source");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     add_local_series(&database, SERIES, NO_BOOKS).await;
 
     let outcome = add_sample_series_from(&database, OTHER_SOURCE_ID).await;
@@ -140,7 +140,7 @@ async fn lets_another_source_hold_a_series_of_the_same_name() {
 #[tokio::test]
 async fn refuses_a_source_named_by_text() {
     let folder = ScratchFolder::new("text-source");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
 
     let outcome = add_sample_series_from(&database, TEXT_SOURCE_ID).await;
 
@@ -150,7 +150,7 @@ async fn refuses_a_source_named_by_text() {
 #[tokio::test]
 async fn refuses_a_source_id_that_is_not_16_bytes() {
     let folder = ScratchFolder::new("short-source");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
 
     let outcome = add_sample_series_from(&database, SHORT_SOURCE_ID).await;
 
@@ -160,7 +160,7 @@ async fn refuses_a_source_id_that_is_not_16_bytes() {
 #[tokio::test]
 async fn keeps_the_fingerprint_a_book_id_comes_from_and_leaves_its_logical_key_unset() {
     let folder = ScratchFolder::new("book-identity");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
 
     add_local_series(&database, SERIES, ONE_BOOK).await;
 
@@ -187,7 +187,7 @@ async fn keeps_the_fingerprint_a_book_id_comes_from_and_leaves_its_logical_key_u
 #[tokio::test]
 async fn refuses_a_book_fingerprint_without_its_kind() {
     let folder = ScratchFolder::new("fingerprint-kind");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     add_local_series(&database, SERIES, ONE_BOOK).await;
 
     let outcome = database
@@ -205,7 +205,7 @@ async fn refuses_a_book_fingerprint_without_its_kind() {
 #[tokio::test]
 async fn keeps_a_library_folder_path_that_is_not_unicode_byte_for_byte() {
     let folder = ScratchFolder::new("root-bytes");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     let path = b"/sample/library-\xff".to_vec();
 
     database
@@ -238,7 +238,7 @@ async fn keeps_a_library_folder_path_that_is_not_unicode_byte_for_byte() {
 #[tokio::test]
 async fn refuses_a_second_link_to_a_folder_picked_again_with_a_new_bookmark() {
     let folder = ScratchFolder::new("root-twice");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     link_bookmarked_folder(&database, 1, b"first bookmark")
         .await
         .unwrap();
@@ -251,7 +251,7 @@ async fn refuses_a_second_link_to_a_folder_picked_again_with_a_new_bookmark() {
 #[tokio::test]
 async fn refuses_a_bookmarked_folder_without_its_bookmark() {
     let folder = ScratchFolder::new("root-no-bookmark");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
 
     let outcome = database
         .write(|transaction| {
@@ -269,7 +269,7 @@ async fn refuses_a_bookmarked_folder_without_its_bookmark() {
 #[tokio::test]
 async fn forgets_the_books_of_a_removed_series() {
     let folder = ScratchFolder::new("remove-series");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     let series = add_local_series(&database, SERIES, ONE_BOOK).await;
 
     database
@@ -285,7 +285,7 @@ async fn forgets_the_books_of_a_removed_series() {
 #[tokio::test]
 async fn forgets_the_book_files_of_a_removed_library_folder() {
     let folder = ScratchFolder::new("remove-root");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     add_local_series(&database, SERIES, ONE_BOOK).await;
     database
         .write(move |transaction| {
@@ -320,7 +320,7 @@ async fn forgets_the_book_files_of_a_removed_library_folder() {
 #[tokio::test]
 async fn finds_a_series_by_any_three_characters_of_its_title() {
     let folder = ScratchFolder::new("search-added");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     add_local_series(&database, SERIES, NO_BOOKS).await;
 
     let found = titles_matching(&database, "ies 0").await;
@@ -331,7 +331,7 @@ async fn finds_a_series_by_any_three_characters_of_its_title() {
 #[tokio::test]
 async fn searches_a_renamed_series_by_its_new_title_only() {
     let folder = ScratchFolder::new("search-renamed");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     let series = add_local_series(&database, SERIES, NO_BOOKS).await;
 
     database
@@ -356,7 +356,7 @@ async fn searches_a_renamed_series_by_its_new_title_only() {
 #[tokio::test]
 async fn drops_a_removed_series_from_title_search() {
     let folder = ScratchFolder::new("search-removed");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     let series = add_local_series(&database, SERIES, NO_BOOKS).await;
 
     database

@@ -14,7 +14,7 @@ use omnileaf_db::{
 };
 use omnileaf_sync_proto::{Hlc, Value};
 use store_support::{FakeClock, NOW_UNIX_MS, book, open_store, raise_furthest, set_position};
-use support::ScratchFolder;
+use support::{ScratchFolder, library_config};
 use tokio::sync::broadcast::error::TryRecvError;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -35,7 +35,7 @@ async fn gives_each_new_library_a_node_id_of_its_own() {
 
     let mut node_ids = Vec::new();
     for folder in &folders {
-        node_ids.push(local_node_id(&Database::open(&folder.config()).unwrap()).await);
+        node_ids.push(local_node_id(&Database::open(&library_config(folder)).unwrap()).await);
     }
 
     assert_ne!(node_ids.first(), node_ids.last());

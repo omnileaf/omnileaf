@@ -9,7 +9,7 @@ use omnileaf_db::{
     Database,
     first_launch::{finish_first_launch, first_launch_finished},
 };
-use support::ScratchFolder;
+use support::{ScratchFolder, library_config};
 
 const FINISHED_AT_MS: i64 = 1_790_000_000_000;
 const FINISHED_AGAIN_AT_MS: i64 = 1_790_000_060_000;
@@ -29,7 +29,7 @@ async fn finish(database: &Database, finished_at_ms: i64) {
 async fn a_new_library_has_not_finished_its_first_launch() {
     let folder = ScratchFolder::new("first-launch-new");
 
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
 
     assert!(!is_finished(&database).await);
 }
@@ -37,9 +37,13 @@ async fn a_new_library_has_not_finished_its_first_launch() {
 #[tokio::test]
 async fn remembers_the_first_launch_finished_after_the_library_reopens() {
     let folder = ScratchFolder::new("first-launch-reopen");
-    finish(&Database::open(&folder.config()).unwrap(), FINISHED_AT_MS).await;
+    finish(
+        &Database::open(&library_config(&folder)).unwrap(),
+        FINISHED_AT_MS,
+    )
+    .await;
 
-    let reopened = Database::open(&folder.config()).unwrap();
+    let reopened = Database::open(&library_config(&folder)).unwrap();
 
     assert!(is_finished(&reopened).await);
 }
@@ -47,7 +51,7 @@ async fn remembers_the_first_launch_finished_after_the_library_reopens() {
 #[tokio::test]
 async fn stays_finished_when_finished_again() {
     let folder = ScratchFolder::new("first-launch-again");
-    let database = Database::open(&folder.config()).unwrap();
+    let database = Database::open(&library_config(&folder)).unwrap();
     finish(&database, FINISHED_AT_MS).await;
 
     finish(&database, FINISHED_AGAIN_AT_MS).await;
