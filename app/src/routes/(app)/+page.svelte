@@ -15,14 +15,11 @@
   import SeriesCovers from "#lib/library/SeriesCovers.svelte";
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
+  import { getNotices } from "#lib/notices/notices.svelte.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
-
-  import type { PageProps } from "./$types";
-
-  let { data }: PageProps = $props();
 
   const screenshotMode = getScreenshotMode();
   const library = new LibrarySeriesList((after) =>
@@ -41,7 +38,8 @@
       reportError(error);
     },
   );
-  const adding = new FolderAdding(addFolderWithProgress, () => data.notices);
+  const notices = getNotices();
+  const adding = new FolderAdding(addFolderWithProgress, () => notices);
 
   const isEmpty = $derived(
     library.list.kind === "loaded" && library.list.series.length === 0,

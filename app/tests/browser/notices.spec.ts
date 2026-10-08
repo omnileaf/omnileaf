@@ -125,6 +125,27 @@ test("puts the warning away when the page changes", async ({ page }) => {
   await expect(page.getByRole("alert")).toBeEmpty();
 });
 
+test("keeps the warning when the open section's link is pressed again", async ({
+  page,
+}) => {
+  await failToAddAFolder(page);
+
+  await page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("link", { name: "Library" })
+    .click();
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Library" }),
+  ).toBeFocused();
+  await expect(page.getByRole("alert")).toHaveText(UNREADABLE);
+  await expect(
+    page.getByRole("alert").getByRole("button", {
+      name: "Choose another folder",
+    }),
+  ).toBeVisible();
+});
+
 test("rises into place", async ({ page }) => {
   await page.goto("/");
 

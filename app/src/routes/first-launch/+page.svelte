@@ -23,10 +23,13 @@
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
   import NoticeHost from "#lib/notices/NoticeHost.svelte";
+  import { getNotices } from "#lib/notices/notices.svelte.ts";
 
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
+
+  const notices = getNotices();
 
   const device = $derived(deviceKindOf(data.appInfo.platform));
   let isLeaving = $state(false);
@@ -118,7 +121,7 @@
           platform={data.appInfo.platform}
           {folders}
           addFolder={addFolderWithProgress}
-          notices={data.notices}
+          {notices}
           onBack={back}
           onNext={next}
         />
@@ -131,5 +134,5 @@
   </div>
 </div>
 <div class="fixed inset-x-none inset-be-safe-bottom z-notice">
-  <NoticeHost notices={data.notices} platform={data.appInfo.platform} />
+  <NoticeHost {notices} platform={data.appInfo.platform} />
 </div>

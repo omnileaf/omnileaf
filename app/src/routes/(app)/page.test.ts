@@ -8,13 +8,12 @@ import {
   events,
   type LibrarySeries,
 } from "#lib/ipc/bindings.ts";
-import { Notices } from "#lib/notices/notices.svelte.ts";
 
 import { screenshotModeTurned } from "../../../tests/components/screenshot-mode";
-import WithScreenshotMode from "../../../tests/components/WithScreenshotMode.svelte";
+import WithAppContext from "../../../tests/components/WithAppContext.svelte";
 import Page from "./+page.svelte";
 
-const PageWithScreenshotMode = WithScreenshotMode<ComponentProps<typeof Page>>;
+const PageWithAppContext = WithAppContext<ComponentProps<typeof Page>>;
 
 const COVER = "thumb/v1/0190a3e4-0000-8000-8000-000000000001/1/1";
 const EMPTY_LIBRARY = "Your library is empty";
@@ -69,23 +68,10 @@ afterEach(async () => {
 });
 
 function renderPage(screenshotMode: "on" | "off") {
-  return render(PageWithScreenshotMode, {
+  return render(PageWithAppContext, {
     screenshotMode: screenshotModeTurned(screenshotMode),
     page: Page,
-    pageProps: {
-      data: {
-        appInfo: {
-          version: "1.2.3",
-          platform: "linux",
-          sourceCode: "repo.example.org/omnileaf",
-          isDevelopmentBuild: false,
-        },
-        isFirstLaunch: false,
-        libraryProblem: null,
-        notices: new Notices(),
-      },
-      params: {},
-    },
+    pageProps: {},
   });
 }
 

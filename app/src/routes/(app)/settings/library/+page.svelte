@@ -3,15 +3,13 @@
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import LibraryFolderSettings from "#lib/library/LibraryFolderSettings.svelte";
   import { rescanFolderWithProgress } from "#lib/library/rescan-folder.ts";
+  import { getNotices } from "#lib/notices/notices.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
-  import type { PageProps } from "./$types";
-
-  let { data }: PageProps = $props();
-
   const screenshotMode = getScreenshotMode();
+  const notices = getNotices();
 </script>
 
 <SectionHeading title={m.library_title()} />
@@ -21,6 +19,6 @@
   countFolderBooks={commands.libraryFolderBookCount}
   addFolder={addFolderWithProgress}
   rescanFolder={rescanFolderWithProgress}
-  notices={data.notices}
+  {notices}
   usesStandIns={screenshotMode.isOn}
 />

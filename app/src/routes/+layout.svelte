@@ -23,6 +23,7 @@
     languageSettingForDocument,
     setLanguageSetting,
   } from "#lib/language/language.svelte.ts";
+  import { Notices, setNotices } from "#lib/notices/notices.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPhone } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -52,6 +53,7 @@
   const crashReporting = setCrashReporting(
     new CrashReporting(commands, crashReportSetting),
   );
+  setNotices(new Notices());
   const screenshotModeShortcut = $derived(
     screenshotModeShortcutOn(data.appInfo.platform),
   );
