@@ -9,11 +9,12 @@ use crate::{
 };
 
 const FILE_OF_COVER: &str =
-    "SELECT library_root.locator_kind, library_root.location, book_file.location
+    "SELECT library_root.locator_kind, library_root.location, library_root.bookmark,
+        book_file.location
     FROM book_file JOIN library_root ON library_root.id = book_file.root_id
     WHERE book_file.id = ?1 AND book_file.book_id = ?2 AND book_file.rev = ?3";
 const ROOT_LOCATOR_KIND_COLUMN: usize = 0;
-const FILE_LOCATION_COLUMN: usize = 2;
+const FILE_LOCATION_COLUMN: usize = 3;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BookFileId(pub(crate) i64);

@@ -23,7 +23,10 @@ pub use cursor::Cursor;
 pub use home_root::set_home_root;
 pub use library_roots::{library_root, library_roots};
 pub use page::{Page, PageRequest, PageSize};
-pub use root::{LibraryRoot, NewRoot, RootId, RootKind, RootLocator, add_root, remove_root};
+pub use root::{
+    AppleBookmark, LibraryRoot, NewRoot, RootId, RootKind, RootLocator, add_root, relocate_root,
+    remove_root,
+};
 pub use root_availability::{mark_root_available, mark_root_unavailable};
 pub use root_files::{StoredFile, remove_book_files, root_book_count, root_files};
 pub use scanned_book::{BookFile, ScannedBook, record_moved_books, record_scanned_books};

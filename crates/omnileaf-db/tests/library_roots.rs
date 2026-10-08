@@ -13,9 +13,10 @@ use std::{
 use omnileaf_db::{
     Database, Error,
     catalog::{
-        LibraryRoot, NewBook, NewRoot, NewSeries, Page, PageRequest, PageSize, RootId, RootKind,
-        RootLocator, add_book, add_root, add_series, library_root, library_roots,
-        mark_root_available, mark_root_unavailable, remove_root, series_books, set_home_root,
+        AppleBookmark, LibraryRoot, NewBook, NewRoot, NewSeries, Page, PageRequest, PageSize,
+        RootId, RootKind, RootLocator, add_book, add_root, add_series, library_root, library_roots,
+        mark_root_available, mark_root_unavailable, relocate_root, remove_root, series_books,
+        set_home_root,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
@@ -30,6 +31,8 @@ const COMICS: &str = "/media/Comics";
 const MANGA: &str = "/media/Manga";
 const SAMPLES: &str = "/media/Samples";
 const MOVED_HOME: &str = "/data/Moved/Omnileaf";
+const ICLOUD_BOOKMARK: &[u8] = b"book\x00\x00\x00\x00mark iCloud Drive";
+const REFRESHED_BOOKMARK: &[u8] = b"book\x00\x00\x00\x00mark refreshed";
 
 struct Library {
     database: Database,
@@ -55,6 +58,32 @@ impl Library {
             .write(move |transaction| add_root(transaction, &root))
             .await
             .unwrap()
+    }
+
+    async fn add_bookmarked(&self, path: &str, bookmark: &[u8]) -> RootId {
+        let root = NewRoot {
+            kind: RootKind::Linked,
+            locator: bookmarked(path, bookmark),
+            added_at_ms: ADDED_AT_MS,
+        };
+        self.database
+            .write(move |transaction| add_root(transaction, &root))
+            .await
+            .unwrap()
+    }
+
+    async fn relocate(&self, id: RootId, locator: RootLocator) -> Result<(), Error> {
+        self.database
+            .write(move |transaction| relocate_root(transaction, id, &locator))
+            .await
+    }
+
+    async fn locator(&self, id: RootId) -> RootLocator {
+        self.database
+            .read(move |connection| library_root(connection, id))
+            .await
+            .unwrap()
+            .locator
     }
 
     async fn set_home(&self, path: impl AsRef<Path>) -> RootId {
@@ -164,6 +193,13 @@ impl Library {
     }
 }
 
+fn bookmarked(path: &str, bookmark: &[u8]) -> RootLocator {
+    RootLocator::AppleBookmark {
+        path: PathBuf::from(path),
+        bookmark: AppleBookmark::new(bookmark.to_vec()),
+    }
+}
+
 fn row_key(id: RootId) -> i64 {
     id.to_string().parse().unwrap()
 }
@@ -249,6 +285,56 @@ async fn keeps_one_root_for_a_folder_added_twice() {
         library.locations().await,
         [(RootKind::Linked, PathBuf::from(COMICS))]
     );
+}
+
+#[tokio::test]
+async fn reads_a_bookmarked_folder_back_with_its_path_and_bookmark() {
+    let library = Library::open("root-bookmarked");
+
+    let comics = library.add_bookmarked(COMICS, ICLOUD_BOOKMARK).await;
+
+    assert_eq!(
+        library.locator(comics).await,
+        bookmarked(COMICS, ICLOUD_BOOKMARK)
+    );
+}
+
+#[tokio::test]
+async fn keeps_one_root_for_a_bookmarked_folder_picked_twice() {
+    let library = Library::open("root-bookmarked-twice");
+    let first = library.add_bookmarked(COMICS, ICLOUD_BOOKMARK).await;
+
+    let second = library.add_bookmarked(COMICS, REFRESHED_BOOKMARK).await;
+
+    assert_eq!(second, first);
+    assert_eq!(
+        library.locator(first).await,
+        bookmarked(COMICS, ICLOUD_BOOKMARK)
+    );
+}
+
+#[tokio::test]
+async fn moves_a_bookmarked_folder_to_where_its_bookmark_now_points() {
+    let library = Library::open("root-relocated");
+    let comics = library.add_bookmarked(COMICS, ICLOUD_BOOKMARK).await;
+    let moved = bookmarked(MANGA, REFRESHED_BOOKMARK);
+
+    library.relocate(comics, moved.clone()).await.unwrap();
+
+    assert_eq!(library.locator(comics).await, moved);
+}
+
+#[tokio::test]
+async fn refuses_to_move_a_root_missing_from_the_library() {
+    let library = Library::open("root-relocated-missing");
+    let comics = library.add_bookmarked(COMICS, ICLOUD_BOOKMARK).await;
+    library.remove(comics).await.unwrap();
+
+    let outcome = library
+        .relocate(comics, bookmarked(MANGA, REFRESHED_BOOKMARK))
+        .await;
+
+    assert!(matches!(outcome, Err(Error::UnknownRoot { id }) if id == comics));
 }
 
 #[tokio::test]

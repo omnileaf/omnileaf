@@ -14,11 +14,12 @@ use crate::{Error, catalog::native_path};
 const HOME_KIND: &str = "home";
 const LINKED_KIND: &str = "linked";
 const PATH_LOCATOR: &str = "path";
+const APPLE_BOOKMARK_LOCATOR: &str = "apple_bookmark";
 const ID_COLUMN: usize = 0;
 const KIND_COLUMN: usize = 1;
 const LOCATOR_KIND_COLUMN: usize = 2;
-const ADDED_AT_COLUMN: usize = 4;
-const UNAVAILABLE_SINCE_COLUMN: usize = 5;
+const ADDED_AT_COLUMN: usize = 5;
+const UNAVAILABLE_SINCE_COLUMN: usize = 6;
 const BOOKS_FOUND_ONLY_IN_ROOT: &str = "DELETE FROM book
     WHERE id IN (SELECT book_id FROM book_file WHERE root_id = ?1)
         AND NOT EXISTS (
@@ -40,21 +41,41 @@ pub enum RootKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RootLocator {
     Path(PathBuf),
+    /// A folder picked on iOS, readable only through its bookmark, at the path the bookmark last resolved to.
+    AppleBookmark {
+        path: PathBuf,
+        bookmark: AppleBookmark,
+    },
 }
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AppleBookmark(Vec<u8>);
 
 impl RootLocator {
     #[must_use]
     pub fn path(&self) -> &Path {
         match self {
-            Self::Path(path) => path,
+            Self::Path(path) | Self::AppleBookmark { path, .. } => path,
         }
     }
 
     #[must_use]
     pub fn into_path(self) -> PathBuf {
         match self {
-            Self::Path(path) => path,
+            Self::Path(path) | Self::AppleBookmark { path, .. } => path,
         }
+    }
+}
+
+impl AppleBookmark {
+    #[must_use]
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self(bytes)
+    }
+
+    #[must_use]
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
     }
 }
 
@@ -78,18 +99,44 @@ pub struct LibraryRoot {
 /// Adding a folder the library already reads returns that root unchanged.
 #[tracing::instrument(skip_all, fields(kind = ?root.kind))]
 pub fn add_root(transaction: &Transaction<'_>, root: &NewRoot) -> Result<RootId, Error> {
-    let (locator_kind, location) = stored_location(&root.locator);
+    let stored = stored_location(&root.locator);
     transaction
         .prepare(
-            "INSERT INTO library_root (kind, locator_kind, location, added_at_ms)
-             VALUES (?1, ?2, ?3, ?4)
+            "INSERT INTO library_root (kind, locator_kind, location, bookmark, added_at_ms)
+             VALUES (?1, ?2, ?3, ?4, ?5)
              ON CONFLICT (location) DO NOTHING",
         )?
-        .execute((root.kind, locator_kind, &location, root.added_at_ms))?;
+        .execute((
+            root.kind,
+            stored.kind,
+            &stored.location,
+            stored.bookmark,
+            root.added_at_ms,
+        ))?;
     let id = transaction
         .prepare("SELECT id FROM library_root WHERE location = ?1")?
-        .query_row([location], |row| row.get(0))?;
+        .query_row([stored.location], |row| row.get(0))?;
     Ok(RootId(id))
+}
+
+/// Points the root at where its folder is now, keeping its id and its books.
+#[tracing::instrument(skip_all, fields(root = %id))]
+pub fn relocate_root(
+    transaction: &Transaction<'_>,
+    id: RootId,
+    locator: &RootLocator,
+) -> Result<(), Error> {
+    let stored = stored_location(locator);
+    let relocated = transaction
+        .prepare(
+            "UPDATE library_root SET locator_kind = ?2, location = ?3, bookmark = ?4
+             WHERE id = ?1",
+        )?
+        .execute((id.0, stored.kind, &stored.location, stored.bookmark))?;
+    if relocated == 0 {
+        return Err(Error::UnknownRoot { id });
+    }
+    Ok(())
 }
 
 /// Removes a linked root and the books found only in it, leaving the files on disk alone.
@@ -117,7 +164,7 @@ pub(crate) fn forget_root(transaction: &Transaction<'_>, id: RootId) -> Result<(
     Ok(())
 }
 
-/// Reads a root from a row holding `id, kind, locator_kind, location, added_at_ms, unavailable_since_ms` in that order.
+/// Reads a root from a row holding `id, kind, locator_kind, location, bookmark, added_at_ms, unavailable_since_ms` in that order.
 pub(crate) fn stored_root(row: &Row<'_>) -> rusqlite::Result<LibraryRoot> {
     Ok(LibraryRoot {
         id: RootId(row.get(ID_COLUMN)?),
@@ -128,24 +175,46 @@ pub(crate) fn stored_root(row: &Row<'_>) -> rusqlite::Result<LibraryRoot> {
     })
 }
 
-pub(crate) fn stored_location(locator: &RootLocator) -> (&'static str, Vec<u8>) {
+pub(crate) struct StoredLocation<'a> {
+    pub(crate) kind: &'static str,
+    pub(crate) location: Vec<u8>,
+    pub(crate) bookmark: Option<&'a [u8]>,
+}
+
+pub(crate) fn stored_location(locator: &RootLocator) -> StoredLocation<'_> {
     match locator {
-        RootLocator::Path(path) => (PATH_LOCATOR, native_path::to_bytes(path)),
+        RootLocator::Path(path) => StoredLocation {
+            kind: PATH_LOCATOR,
+            location: native_path::to_bytes(path),
+            bookmark: None,
+        },
+        RootLocator::AppleBookmark { path, bookmark } => StoredLocation {
+            kind: APPLE_BOOKMARK_LOCATOR,
+            location: native_path::to_bytes(path),
+            bookmark: Some(bookmark.as_bytes()),
+        },
     }
 }
 
-/// Reads a locator from a row holding its kind at `kind_column` and its location in the column after.
+/// Reads a locator from a row holding its kind at `kind_column`, then its location and its bookmark.
 pub(crate) fn stored_locator(row: &Row<'_>, kind_column: usize) -> rusqlite::Result<RootLocator> {
     let location_column = kind_column + 1;
+    let bookmark_column = kind_column + 2;
     let kind: String = row.get(kind_column)?;
-    if kind != PATH_LOCATOR {
-        return Err(rusqlite::Error::FromSqlConversionFailure(
+    match kind.as_str() {
+        PATH_LOCATOR => {
+            native_path::stored_native_path(row, location_column).map(RootLocator::Path)
+        }
+        APPLE_BOOKMARK_LOCATOR => Ok(RootLocator::AppleBookmark {
+            path: native_path::stored_native_path(row, location_column)?,
+            bookmark: AppleBookmark(row.get(bookmark_column)?),
+        }),
+        _ => Err(rusqlite::Error::FromSqlConversionFailure(
             kind_column,
             Type::Text,
             Box::new(Error::UnsupportedLocator { kind }),
-        ));
+        )),
     }
-    native_path::stored_native_path(row, location_column).map(RootLocator::Path)
 }
 
 impl ToSql for RootKind {
