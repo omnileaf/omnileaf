@@ -11,6 +11,7 @@ thiserror.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
+omnileaf-testkit.workspace = true
 proptest.workspace = true
 
 [lints]

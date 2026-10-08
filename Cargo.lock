@@ -3182,6 +3182,7 @@ dependencies = [
 name = "omnileaf-cache"
 version = "0.0.0"
 dependencies = [
+ "omnileaf-testkit",
  "proptest",
  "thiserror 2.0.21",
  "tracing",
