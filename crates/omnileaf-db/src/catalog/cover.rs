@@ -15,7 +15,6 @@ const FILE_OF_COVER: &str =
 const ROOT_LOCATOR_KIND_COLUMN: usize = 0;
 const FILE_LOCATION_COLUMN: usize = 2;
 
-/// A book file's row key.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BookFileId(pub(crate) i64);
 

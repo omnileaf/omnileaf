@@ -26,7 +26,6 @@ pub trait Clock: Send + Sync + 'static {
     fn now_unix_ms(&self) -> u64;
 }
 
-/// What one committed write changed.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Changed {
     Registers {

@@ -74,7 +74,7 @@ pub(crate) fn add_or_refile_book(
     Ok(())
 }
 
-/// Deletes each of `books` that no file in any root holds any more, leaving its synced reading state for when it is found again, and returns how many it deleted.
+/// Deletes each of `books` that no root holds a file of any more, keeping its synced reading state for when it is found again.
 #[tracing::instrument(skip_all, fields(books = books.len()))]
 pub fn remove_books_without_files(
     transaction: &Transaction<'_>,
