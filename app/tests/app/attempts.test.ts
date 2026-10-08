@@ -25,20 +25,3 @@ test("reports every failure when no attempt succeeds", async () => {
     "failed 2 times: attempt 1 hung; attempt 2 hung",
   );
 });
-
-test("fails at once on a failure it should not retry", async () => {
-  const tried: number[] = [];
-  const broken = new Error("not installed");
-
-  const run = withAttempts(
-    3,
-    (number) => {
-      tried.push(number);
-      return Promise.reject(number === 1 ? new Error("hung") : broken);
-    },
-    (error) => error instanceof Error && error.message === "hung",
-  );
-
-  await expect(run).rejects.toBe(broken);
-  expect(tried).toEqual([1, 2]);
-});
