@@ -39,6 +39,7 @@ const WEBDRIVERAGENT_URL = new URL(
 const WEBDRIVERAGENT_LAUNCH_ATTEMPTS = 3;
 const WEBDRIVERAGENT_READY_TIMEOUT_MS = 60_000;
 const SIMCTL_TIMEOUT_MS = 60_000;
+const SIMULATOR_RESTART_TIMEOUT_MS = 300_000;
 const WEBVIEW_TIMEOUT_MS = 60_000;
 
 const run = promisify(execFile);
@@ -115,6 +116,16 @@ async function saveLaunchLogs(simulator: Simulator): Promise<string> {
   return LAUNCH_HANG_LOGS;
 }
 
+/** A Simulator whose launcher hung does not recover by being asked again, so it is shut down and booted to a finished boot. */
+async function restartSimulator(simulator: Simulator): Promise<void> {
+  await run("xcrun", ["simctl", "shutdown", simulator.udid], {
+    timeout: SIMULATOR_RESTART_TIMEOUT_MS,
+  });
+  await run("xcrun", ["simctl", "bootstatus", simulator.udid, "-b"], {
+    timeout: SIMULATOR_RESTART_TIMEOUT_MS,
+  });
+}
+
 /** Launches a just-installed app once to show it starts, keeping its output and, if the launch hangs, the Simulator's log. */
 async function installApp(simulator: Simulator): Promise<string> {
   await run("xcrun", ["simctl", "install", simulator.udid, APP_BUNDLE], {
@@ -137,6 +148,7 @@ async function installApp(simulator: Simulator): Promise<string> {
         ],
         { timeout: SIMCTL_TIMEOUT_MS },
       ),
+    restart: () => restartSimulator(simulator),
     saveLogs: () => saveLaunchLogs(simulator),
   });
   await run("xcrun", ["simctl", "terminate", simulator.udid, bundleId], {

@@ -42,13 +42,17 @@ function refusedOutright(): Error {
   });
 }
 
-function launchesInTurn(outcomes: readonly (Error | undefined)[]): {
+function launchesInTurn(
+  outcomes: readonly (Error | undefined)[],
+  events: string[] = [],
+): {
   readonly launch: () => Promise<void>;
   readonly launched: () => number;
 } {
   let calls = 0;
   return {
     launch: () => {
+      events.push("launch");
       const outcome = outcomes[Math.min(calls, outcomes.length - 1)];
       calls += 1;
       return outcome === undefined
@@ -56,6 +60,13 @@ function launchesInTurn(outcomes: readonly (Error | undefined)[]): {
         : Promise.reject(outcome);
     },
     launched: () => calls,
+  };
+}
+
+function restarter(events: string[], failure?: Error): () => Promise<void> {
+  return () => {
+    events.push("restart");
+    return failure === undefined ? Promise.resolve() : Promise.reject(failure);
   };
 }
 
@@ -81,7 +92,11 @@ test("keeps launching while the launcher does not know the app yet", async () =>
   const app = launchesInTurn([unknownToLauncher(), undefined]);
   const logs = logsSaver();
 
-  const launching = launchOnceRegistered(BUNDLE_ID, { ...app, ...logs });
+  const launching = launchOnceRegistered(BUNDLE_ID, {
+    ...app,
+    ...logs,
+    restart: restarter([]),
+  });
   await vi.runAllTimersAsync();
 
   await expect(launching).resolves.toBeUndefined();
@@ -92,7 +107,11 @@ test("launches again after a launch is killed by its timeout", async () => {
   const app = launchesInTurn([killedByItsTimeout(), undefined]);
   const logs = logsSaver();
 
-  await launchOnceRegistered(BUNDLE_ID, { ...app, ...logs });
+  await launchOnceRegistered(BUNDLE_ID, {
+    ...app,
+    ...logs,
+    restart: restarter([]),
+  });
 
   expect([app.launched(), logs.saved()]).toEqual([2, 0]);
 });
@@ -101,7 +120,11 @@ test("saves the launch logs and fails when every launch hangs", async () => {
   const app = launchesInTurn([killedByItsTimeout()]);
   const logs = logsSaver();
 
-  const launched = launchOnceRegistered(BUNDLE_ID, { ...app, ...logs });
+  const launched = launchOnceRegistered(BUNDLE_ID, {
+    ...app,
+    ...logs,
+    restart: restarter([]),
+  });
 
   await expect(launched).rejects.toThrow(HungLaunchError);
   await expect(launched).rejects.toThrow(
@@ -115,8 +138,71 @@ test("fails at once without saving logs when the launch is refused outright", as
   const app = launchesInTurn([refused, undefined]);
   const logs = logsSaver();
 
-  const launched = launchOnceRegistered(BUNDLE_ID, { ...app, ...logs });
+  const launched = launchOnceRegistered(BUNDLE_ID, {
+    ...app,
+    ...logs,
+    restart: restarter([]),
+  });
 
   await expect(launched).rejects.toBe(refused);
   expect([app.launched(), logs.saved()]).toEqual([1, 0]);
+});
+
+test("restarts the Simulator before launching again after a hang, not before the first launch", async () => {
+  const events: string[] = [];
+  const app = launchesInTurn([killedByItsTimeout(), undefined], events);
+  const logs = logsSaver();
+
+  await launchOnceRegistered(BUNDLE_ID, {
+    ...app,
+    ...logs,
+    restart: restarter(events),
+  });
+
+  expect(events).toEqual(["launch", "restart", "launch"]);
+});
+
+test("restarts the Simulator between every hung launch but not after the last", async () => {
+  const events: string[] = [];
+  const app = launchesInTurn([killedByItsTimeout()], events);
+  const logs = logsSaver();
+
+  const launched = launchOnceRegistered(BUNDLE_ID, {
+    ...app,
+    ...logs,
+    restart: restarter(events),
+  });
+
+  await expect(launched).rejects.toThrow(HungLaunchError);
+  expect(events).toEqual(["launch", "restart", "launch", "restart", "launch"]);
+});
+
+test("does not restart the Simulator when the first launch works", async () => {
+  const events: string[] = [];
+  const app = launchesInTurn([undefined], events);
+  const logs = logsSaver();
+
+  await launchOnceRegistered(BUNDLE_ID, {
+    ...app,
+    ...logs,
+    restart: restarter(events),
+  });
+
+  expect(events).toEqual(["launch"]);
+});
+
+test("fails with the restart's error when the Simulator can't be restarted", async () => {
+  const events: string[] = [];
+  const cannotRestart = new Error("Unable to shutdown device");
+  const app = launchesInTurn([killedByItsTimeout()], events);
+  const logs = logsSaver();
+
+  const launched = launchOnceRegistered(BUNDLE_ID, {
+    ...app,
+    ...logs,
+    restart: restarter(events, cannotRestart),
+  });
+
+  await expect(launched).rejects.toBe(cannotRestart);
+  expect(events).toEqual(["launch", "restart"]);
 });

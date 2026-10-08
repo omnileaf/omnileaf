@@ -47,10 +47,11 @@ async function launches(
 
 export interface LaunchableSimulator {
   readonly launch: () => Promise<unknown>;
+  readonly restart: () => Promise<void>;
   readonly saveLogs: () => Promise<string>;
 }
 
-/** Waits for the Simulator's launcher to register a just-installed app, launching again after a hung launch; when every launch hangs it saves the Simulator's logs and fails naming them. */
+/** Waits for the Simulator's launcher to register a just-installed app, restarting the Simulator and launching again after a hung launch; when every launch hangs it saves the Simulator's logs and fails naming them. */
 export async function launchOnceRegistered(
   bundleId: string,
   simulator: LaunchableSimulator,
@@ -59,12 +60,16 @@ export async function launchOnceRegistered(
   try {
     await withAttempts(
       LAUNCH_ATTEMPTS,
-      () =>
-        pollUntil(
+      async (attempt) => {
+        if (attempt > 1) {
+          await simulator.restart();
+        }
+        await pollUntil(
           () => launches(simulator.launch, what),
           LAUNCHABLE_TIMEOUT_MS,
           what,
-        ),
+        );
+      },
       isHung,
     );
   } catch (error) {
