@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import type { LibraryFolder } from "#lib/ipc/bindings.ts";
+  import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
   import type { Notices } from "#lib/notices/notices.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -27,6 +27,7 @@
     rescanFolder,
     notices,
     usesStandIns,
+    platform,
   }: {
     listFolders: ListFolders;
     removeFolder: RemoveFolder;
@@ -35,6 +36,7 @@
     rescanFolder: RescanFolder;
     notices: Notices;
     usesStandIns: boolean;
+    platform: Platform;
   } = $props();
 
   const folders = new LibraryFolders(
@@ -62,7 +64,7 @@
 <div
   class="mbs-pane-gap flex flex-col gap-pane-gap two-pane:max-inline-section"
 >
-  <HomeFolder folders={folders.list} rowAction={rescanButton}>
+  <HomeFolder folders={folders.list} {platform} rowAction={rescanButton}>
     <RescanStatus status={rescans.status} kind="home" />
     <p class="mbs-sm px-xs text-caption text-muted">
       {m.library_settings_home_folder_hint()}

@@ -54,7 +54,7 @@
         </div>
       {/if}
     {:else}
-      <HomeFolder {folders} class="mbs-sm" />
+      <HomeFolder {folders} {platform} class="mbs-sm" />
     {/if}
     {#if folders.kind === "failed"}
       <p class="px-xs">{m.library_folders_failed()}</p>

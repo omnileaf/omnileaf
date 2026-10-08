@@ -153,6 +153,7 @@ async function renderSettings({
     rescanFolder,
     notices: new Notices(),
     usesStandIns: false,
+    platform: "linux",
   });
   return {
     home: screen.getByRole("region", { name: "Home folder" }),
@@ -242,6 +243,7 @@ test("says when the folders couldn't be loaded", async () => {
     rescanFolder: NOTHING_CHANGED,
     notices: new Notices(),
     usesStandIns: false,
+    platform: "linux",
   });
 
   await expect
