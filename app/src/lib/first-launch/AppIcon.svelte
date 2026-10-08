@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { ClassValue } from "svelte/elements";
 
-  import iconUrl from "$branding/icon.svg?url";
+  import iconUrl from "#branding/icon.svg?url";
 
   let { class: className }: { class?: ClassValue } = $props();
 </script>

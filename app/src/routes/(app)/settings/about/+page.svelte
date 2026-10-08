@@ -1,5 +1,5 @@
 <script lang="ts">
-  import appIcon from "$branding/icon.svg";
+  import appIcon from "#branding/icon.svg";
   import AboutFailures from "$lib/about/AboutFailures.svelte";
   import CopyVersionButton from "$lib/about/CopyVersionButton.svelte";
   import LicencesRow from "$lib/about/LicencesRow.svelte";

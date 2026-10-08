@@ -5,8 +5,6 @@ import { defineConfig } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
-import svelteConfig from "./svelte.config.js";
-
 export default defineConfig(
   {
     ignores: [
@@ -45,7 +43,7 @@ export default defineConfig(
   {
     files: ["**/*.svelte", "**/*.svelte.ts"],
     languageOptions: {
-      parserOptions: { parser: tseslint.parser, svelteConfig },
+      parserOptions: { parser: tseslint.parser },
     },
   },
   {
