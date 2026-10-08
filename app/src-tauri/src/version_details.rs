@@ -4,17 +4,21 @@ use omnileaf_engine::{AppInfo, BuildProfile, VersionDetails};
 use os_info::{Type, Version};
 
 pub(crate) fn current(app: AppInfo) -> VersionDetails {
-    let system = os_info::get();
     VersionDetails {
         app,
         build: BuildProfile::CURRENT,
         architecture: std::env::consts::ARCH.to_owned(),
-        system: system_name(system.os_type(), system.version()),
+        system: system(),
         webview: tauri::webview_version()
             .inspect_err(|error| tracing::debug!(%error, "read the webview's version"))
             .ok(),
         runtime: format!("Tauri {}", tauri::VERSION),
     }
+}
+
+pub(crate) fn system() -> Option<String> {
+    let system = os_info::get();
+    system_name(system.os_type(), system.version())
 }
 
 fn system_name(os_type: Type, version: &Version) -> Option<String> {

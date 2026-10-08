@@ -11,6 +11,7 @@ import { startWebDriverProcess } from "./webdriver-process.ts";
 const WEBDRIVER_PORT = 4445;
 const WEBDRIVER_URL = new URL(`http://127.0.0.1:${String(WEBDRIVER_PORT)}/`);
 const PICKED_FOLDER_VARIABLE = "OMNILEAF_E2E_PICKED_FOLDER";
+const CRASH_REPORT_FOLDER_VARIABLE = "OMNILEAF_E2E_CRASH_REPORTS";
 const DATA_DIR_VARIABLE = "OMNILEAF_DATA_DIR";
 const EXECUTABLE_SUFFIX = process.platform === "win32" ? ".exe" : "";
 const APP_BINARY = fileURLToPath(
@@ -25,8 +26,10 @@ export async function setup(
 ): Promise<() => Promise<void>> {
   const library = await createSampleLibrary();
   const dataDir = await mkdtemp(join(tmpdir(), "omnileaf-e2e-data-"));
+  const crashReports = await mkdtemp(join(tmpdir(), "omnileaf-e2e-crashes-"));
   const removeFolders = async (): Promise<void> => {
     await rm(dataDir, { recursive: true, force: true });
+    await rm(crashReports, { recursive: true, force: true });
     await library.remove();
   };
   const stop = await startWebDriverProcess({
@@ -37,6 +40,7 @@ export async function setup(
       TAURI_WEBDRIVER_PORT: String(WEBDRIVER_PORT),
       [PICKED_FOLDER_VARIABLE]: library.folder,
       [DATA_DIR_VARIABLE]: dataDir,
+      [CRASH_REPORT_FOLDER_VARIABLE]: crashReports,
     },
     server: WEBDRIVER_URL,
   }).catch(async (error: unknown) => {

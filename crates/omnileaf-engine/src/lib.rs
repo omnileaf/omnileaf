@@ -30,7 +30,8 @@ pub use clock::SystemClock;
 pub use cover_path::{CoverPath, MalformedCoverPath};
 pub use crash_report::{
     CrashOrigin, CrashReport, CrashReportError, CrashReportFile, CrashReportId, CrashReportOffers,
-    CrashedApp, InterfaceError, PanicDetails, SourceLocation, UnsavedCrashReport,
+    CrashedApp, InterfaceError, PanicDetails, SourceLocation, UnsavedCrashReport, contain_panic,
+    is_panic_contained,
 };
 pub use error_chain::describe_error;
 pub use library::{Library, LibraryError};

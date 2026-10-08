@@ -1,6 +1,7 @@
 //! The Tauri shell, a thin adapter between the platform's webview and the Rust core.
 
 mod commands;
+mod crash_reporting;
 #[cfg(all(desktop, feature = "e2e"))]
 mod e2e;
 mod folder_picker;
@@ -46,6 +47,7 @@ pub fn run() {
         .invoke_handler(commands.invoke_handler())
         .register_asynchronous_uri_scheme_protocol(omni_protocol::SCHEME, omni_protocol::answer)
         .setup(move |app| {
+            crash_reporting::install(app.handle());
             commands.mount_events(app);
             let problem = open_library(app, &config?).err().map(|error| {
                 tracing::error!(error = %describe_error(error.as_ref()), "open the library");
@@ -59,7 +61,9 @@ pub fn run() {
     #[cfg(target_os = "android")]
     let app = app.plugin(system_bars::plugin());
     #[cfg(all(desktop, feature = "e2e"))]
-    let app = app.manage(e2e::PickedFolder::from_environment());
+    let app = app
+        .manage(e2e::PickedFolder::from_environment())
+        .manage(e2e::CrashReportFolder::from_environment());
     #[cfg(all(feature = "e2e", not(windows)))]
     let app = app.plugin(tauri_plugin_wdio_webdriver::init());
     app.run(tauri::generate_context!())
