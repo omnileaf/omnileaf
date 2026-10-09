@@ -6,6 +6,7 @@ import {
   needsFirstLaunch,
 } from "#lib/first-launch/gate.ts";
 import { commands } from "#lib/ipc/bindings.ts";
+import { followSystemTextSize } from "#lib/page/system-text-size.ts";
 
 import type { LayoutLoad } from "./$types";
 
@@ -17,6 +18,7 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
     commands.libraryProblem(),
   ]);
   document.documentElement.dataset.platform = appInfo.platform;
+  followSystemTextSize(appInfo.platform);
   if (libraryProblem !== null) {
     return { appInfo, libraryProblem, isFirstLaunch: false };
   }

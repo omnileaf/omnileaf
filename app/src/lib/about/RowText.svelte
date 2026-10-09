@@ -21,7 +21,7 @@
   const isAddress = $derived(hintKind === "address");
 </script>
 
-<span class="flex flex-1 flex-col">
+<span class="flex flex-1 flex-col wrap-anywhere">
   <span class={["font-semibold", LABELS[look]]}>{label}</span>
   <span
     dir={isAddress ? "ltr" : undefined}

@@ -12,7 +12,7 @@
 <div
   aria-hidden="true"
   class={[
-    "flex aspect-cover items-center justify-center rounded-cover border border-cover-edge text-caption font-bold tracking-stand-in text-muted bg-stand-in-pattern small-caps expanded:text-detail",
+    "flex aspect-cover items-center justify-center overflow-hidden rounded-cover border border-cover-edge text-caption font-bold tracking-stand-in text-muted bg-stand-in-pattern small-caps expanded:text-detail",
     className,
   ]}
 >

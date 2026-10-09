@@ -83,7 +83,7 @@
   ]}
 >
   <p
-    class="hidden px-xl pbs-xl pbe-xl text-brand font-bold tracking-tight expanded:block"
+    class="hidden px-xl pbs-xl pbe-xl text-brand font-bold tracking-tight wrap-anywhere expanded:block"
   >
     {m.app_name()}
   </p>
@@ -101,7 +101,7 @@
       {@const isArriving = destination.section === arriving}
       <li
         class={[
-          "flex-1 medium:flex-none ios:max-medium:flex",
+          "flex-1 min-inline-none medium:flex-none ios:max-medium:flex",
           destination.isAtSideEnd && "medium:mbs-auto",
         ]}
       >
@@ -142,7 +142,7 @@
               ]}
             />
           </span>
-          {destination.label()}
+          <span class="truncate max-inline-full">{destination.label()}</span>
         </a>
       </li>
     {/each}
