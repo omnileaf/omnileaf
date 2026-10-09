@@ -13,7 +13,8 @@ use books::write_book;
 use omnileaf_db::{
     Config, Database,
     catalog::{
-        PageRequest, PageSize, SeriesListing, SeriesOrder, SeriesSort, series_books, series_page,
+        BookListing, PageRequest, PageSize, SeriesListing, SeriesOrder, SeriesSort, series_books,
+        series_page,
     },
     rusqlite::{Connection, OpenFlags},
     store::{Store, reading_state},
@@ -85,9 +86,14 @@ fn only_book(database: &Path) -> BookId {
     .unwrap()
     .items;
     assert_eq!(series.len(), 1);
-    let books = series_books(&connection, series.first().unwrap().id, &whole_page)
-        .unwrap()
-        .items;
+    let books = series_books(
+        &connection,
+        series.first().unwrap().id,
+        BookListing::IN_ORDER,
+        &whole_page,
+    )
+    .unwrap()
+    .items;
     assert_eq!(books.len(), 1);
     books.first().unwrap().id
 }

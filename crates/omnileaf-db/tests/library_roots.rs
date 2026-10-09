@@ -13,9 +13,9 @@ use std::{
 use omnileaf_db::{
     Database, Error,
     catalog::{
-        AndroidTree, AppleBookmark, BookmarkedRoot, LibraryRoot, NewBook, NewRoot, NewSeries, Page,
-        PageRequest, PageSize, RootId, RootKind, RootLocator, TreeUri, add_book, add_root,
-        add_series, bookmarked_roots, library_root, library_roots, mark_root_available,
+        AndroidTree, AppleBookmark, BookListing, BookmarkedRoot, LibraryRoot, NewBook, NewRoot,
+        NewSeries, Page, PageRequest, PageSize, RootId, RootKind, RootLocator, TreeUri, add_book,
+        add_root, add_series, bookmarked_roots, library_root, library_roots, mark_root_available,
         mark_root_unavailable, relocate_root, relocate_roots, remove_root, series_books,
         set_home_root,
     },
@@ -631,7 +631,9 @@ async fn refuses_a_cursor_another_list_gave_out() {
     library.add_book(series, 2, &[]).await;
     let books = library
         .database
-        .read(move |connection| series_books(connection, series, &first_page(1)))
+        .read(move |connection| {
+            series_books(connection, series, BookListing::IN_ORDER, &first_page(1))
+        })
         .await
         .unwrap();
     let request = PageRequest {
