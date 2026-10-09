@@ -40,7 +40,8 @@ export class PagedList<Item, Cursor> {
   #latestLoad = 0;
   #listsBegun = 0;
   #next: Cursor | null = null;
-  #loadingMore: Promise<void> | undefined;
+  #loadingMore:
+    { readonly list: number; readonly read: Promise<void> } | undefined;
 
   constructor(private readonly readPage: ReadPage<Item, Cursor>) {}
 
@@ -53,15 +54,25 @@ export class PagedList<Item, Cursor> {
   /** Reads the first page of a new list, and only the most recently started load shows its list. */
   async start(): Promise<void> {
     this.#listsBegun += 1;
+    this.#next = null;
     await this.#loadAtLeast(0);
   }
 
   /** Reads the page after the last one shown, once at a time, until the list is complete, and drops it if another list was begun meanwhile. */
   loadMore(): Promise<void> {
-    this.#loadingMore ??= this.#readMore().finally(() => {
-      this.#loadingMore = undefined;
-    });
-    return this.#loadingMore;
+    const list = this.#listsBegun;
+    if (this.#loadingMore?.list !== list) {
+      const loading = {
+        list,
+        read: this.#readMore().finally(() => {
+          if (this.#loadingMore === loading) {
+            this.#loadingMore = undefined;
+          }
+        }),
+      };
+      this.#loadingMore = loading;
+    }
+    return this.#loadingMore.read;
   }
 
   /** Reads every page after the last one shown, a page at a time, until the list is complete or can't be read. */
