@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FolderMinus } from "@lucide/svelte";
-  import type { Snippet } from "svelte";
+  import { type Snippet, tick } from "svelte";
 
   import type { LibraryFolder } from "#lib/ipc/bindings.ts";
   import type { Notices } from "#lib/notices/notices.svelte.ts";
@@ -53,6 +53,17 @@
   const isBelowList = $derived(addPlacement === "below-list");
 
   let latestRemovalAsked = 0;
+  let removalAsker: HTMLButtonElement | undefined;
+
+  /** Apple platforms don't focus a button when it's clicked or tapped, so the closing dialog can't hand focus back to it by itself. */
+  async function returnFocusToAsker(): Promise<void> {
+    await tick();
+    if (removalAsker?.isConnected === true) {
+      removalAsker.focus();
+    } else {
+      foldersHeading?.focus();
+    }
+  }
 
   /** Only the latest question shows its count, so a slow count can't land on a folder asked about after it. */
   async function confirmRemoval(folder: LibraryFolder): Promise<void> {
@@ -123,7 +134,10 @@
               <RowActionButton
                 label={m.library_remove_folder_label({ name: folder.name })}
                 tooltip={m.library_remove_folder()}
-                onclick={() => {
+                onclick={(
+                  event: MouseEvent & { currentTarget: HTMLButtonElement },
+                ) => {
+                  removalAsker = event.currentTarget;
                   void confirmRemoval(folder);
                 }}
               >
@@ -168,5 +182,6 @@
   }}
   onCancel={() => {
     confirming = undefined;
+    void returnFocusToAsker();
   }}
 />

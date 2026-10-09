@@ -47,6 +47,7 @@ const RANGE_LABELS = {
 } as const satisfies Record<ScreenSize, string>;
 const SERIES_IN_CATALOG = 200;
 const FIRST_TITLE = "Sample Series 0001";
+const WHOLE_PIXEL = 1;
 const LONG_TITLE =
   "Sample Series 0001 Collected Edition, Volumes One to Thirty, with Every Extra Chapter (Digital)";
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;
@@ -222,29 +223,16 @@ test("ends a long compact title after two whole lines, cutting none in half", as
   await openWith(page, viewWith(page, "compact"));
   const title = firstSeries(page).getByText(LONG_TITLE);
 
-  const lines = await title.evaluate((element) => {
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    const clip = element.getBoundingClientRect();
-    const rows = [...range.getClientRects()].map((rect) => ({
-      top: Math.round(rect.top),
-      bottom: Math.round(rect.bottom),
-    }));
-    const unique = rows.filter(
-      (row, index) =>
-        rows.findIndex((other) => other.top === row.top) === index,
-    );
-    const top = Math.round(clip.top);
-    const bottom = Math.round(clip.bottom);
-    return {
-      shown: unique.filter((row) => row.top >= top && row.bottom <= bottom)
-        .length,
-      cut: unique.filter((row) => row.top < bottom && row.bottom > bottom)
-        .length,
-    };
-  });
+  const clamp = await title.evaluate((element) => ({
+    height: element.getBoundingClientRect().height,
+    lineHeight: Number.parseFloat(getComputedStyle(element).lineHeight),
+    isClamped: element.scrollHeight > element.clientHeight,
+  }));
 
-  expect(lines).toEqual({ shown: 2, cut: 0 });
+  expect(Math.abs(clamp.height - 2 * clamp.lineHeight)).toBeLessThan(
+    WHOLE_PIXEL,
+  );
+  expect(clamp.isClamped).toBe(true);
 });
 
 test("fades a compact title's band into the cover above it", async ({
