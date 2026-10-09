@@ -728,6 +728,7 @@
 @layer base {
   :root {
     color-scheme: light;
+    touch-action: pan-x pan-y;
   }
 
   body {
