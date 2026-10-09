@@ -11,6 +11,7 @@ const ANDROID_SDK_ROOT: &str = "ANDROID_SDK_ROOT";
 const NDK_HOME: &str = "NDK_HOME";
 const EMULATOR_SERIAL_PREFIX: &str = "emulator-";
 const MODEL_FIELD: &str = "model:";
+const TRANSPORT_FIELD: &str = "transport_id:";
 const BLUETOOTH_NAME_FIELD: &str = "name:";
 
 pub(crate) const LIST_ATTACHED: &[&str] = &["devices", "-l"];
@@ -20,6 +21,8 @@ pub(crate) struct Attached {
     pub(crate) serial: String,
     pub(crate) state: AdbState,
     pub(crate) model: Option<String>,
+    /// Changes each time the device connects again.
+    pub(crate) transport: Option<String>,
 }
 
 impl Attached {
@@ -100,13 +103,18 @@ pub(crate) fn attached_devices(listing: &str) -> Vec<Attached> {
             let mut fields = line.split_whitespace();
             let serial = fields.next()?.to_owned();
             let state = AdbState::from_adb(fields.next()?);
-            let model = fields
-                .find_map(|field| field.strip_prefix(MODEL_FIELD))
-                .map(str::to_owned);
+            let details: Vec<&str> = fields.collect();
+            let detail = |prefix: &str| {
+                details
+                    .iter()
+                    .find_map(|field| field.strip_prefix(prefix))
+                    .map(str::to_owned)
+            };
             Some(Attached {
                 serial,
                 state,
-                model,
+                model: detail(MODEL_FIELD),
+                transport: detail(TRANSPORT_FIELD),
             })
         })
         .collect()
@@ -278,7 +286,7 @@ mod tests {
     }
 
     #[test]
-    fn reads_each_attached_device_with_its_state_and_model() {
+    fn reads_each_attached_device_with_its_state_model_and_connection() {
         let listing = "List of devices attached\n\
             46181FDAP00204         device usb:34603008X product:caiman model:Pixel_9_Pro device:caiman transport_id:493\n\
             emulator-5554          device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64 device:emu64a transport_id:494\n\
@@ -294,16 +302,19 @@ mod tests {
                     serial: "46181FDAP00204".to_owned(),
                     state: AdbState::Ready,
                     model: Some("Pixel_9_Pro".to_owned()),
+                    transport: Some("493".to_owned()),
                 },
                 Attached {
                     serial: "emulator-5554".to_owned(),
                     state: AdbState::Ready,
                     model: Some("sdk_gphone64_arm64".to_owned()),
+                    transport: Some("494".to_owned()),
                 },
                 Attached {
                     serial: "R5CT10ABCDE".to_owned(),
                     state: AdbState::Unauthorized,
                     model: None,
+                    transport: Some("3".to_owned()),
                 },
             ]
         );
