@@ -19,17 +19,22 @@ export interface CreatedLibrary {
   remove(): Promise<void>;
 }
 
+/** Writes the sample library into `parent`, returning the folder it made there. */
+export async function writeSampleLibrary(parent: string): Promise<string> {
+  await promisify(execFile)("cargo", ["xtask", "fixtures", "--out", parent], {
+    cwd: WORKSPACE,
+  });
+  return join(parent, SAMPLE_LIBRARY.name);
+}
+
 export async function createSampleLibrary(): Promise<CreatedLibrary> {
   const parent = await mkdtemp(join(tmpdir(), "omnileaf-e2e-"));
   const remove = (): Promise<void> =>
     rm(parent, { recursive: true, force: true });
   try {
-    await promisify(execFile)("cargo", ["xtask", "fixtures", "--out", parent], {
-      cwd: WORKSPACE,
-    });
+    return { folder: await writeSampleLibrary(parent), remove };
   } catch (error) {
     await remove();
     throw error;
   }
-  return { folder: join(parent, SAMPLE_LIBRARY.name), remove };
 }
