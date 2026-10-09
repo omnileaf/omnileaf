@@ -15,10 +15,8 @@
   let { title, showsLabel, count, actions }: Props = $props();
 </script>
 
-<header class="flex flex-wrap items-center gap-x-title-count gap-y-2xs">
-  <div
-    class="flex flex-1 items-baseline gap-title-count min-inline-none expanded:flex-none"
-  >
+<header class="flex flex-wrap items-center gap-x-title-count gap-y-md">
+  <div class="flex items-baseline gap-title-count">
     <PageHeading {title} />
     {@render count?.()}
   </div>
