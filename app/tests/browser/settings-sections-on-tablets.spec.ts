@@ -6,6 +6,7 @@ import {
   EXPANDED_MIN_WIDTH,
   expect,
   LARGE_MIN_WIDTH,
+  MEDIUM_MIN_WIDTH,
   onPlatform,
   sidewaysOverflow,
   test,
@@ -27,47 +28,48 @@ interface LabelLines {
 }
 
 function labelLines(sections: Locator): Promise<LabelLines[]> {
-  return sections.evaluateAll((links) =>
-    links.map((link) => {
-      const label = link.querySelector("span");
-      const text = label?.firstChild;
-      if (label === null || !(text instanceof Text)) {
+  return sections.evaluateAll((links) => {
+    function linesOf(text: Text, start: number, end: number): number {
+      const range = document.createRange();
+      range.setStart(text, start);
+      range.setEnd(text, end);
+      let lines = 0;
+      let lineBottom = -Infinity;
+      for (const rect of range.getClientRects()) {
+        if (rect.width > 0 && rect.top >= lineBottom - 1) {
+          lines += 1;
+          lineBottom = rect.bottom;
+        }
+      }
+      return lines;
+    }
+
+    return links.map((link) => {
+      const text = link.querySelector("span")?.firstChild;
+      if (!(text instanceof Text)) {
         return {
           name: link.textContent.trim(),
           lines: 0,
           breaksInsideAWord: false,
         };
       }
-      const range = document.createRange();
-      const tops: number[] = [];
-      for (let index = 0; index < text.length; index += 1) {
-        range.setStart(text, index);
-        range.setEnd(text, index + 1);
-        tops.push(Math.round(range.getBoundingClientRect().top));
-      }
-      const characters = [...text.data];
-      const breaksInsideAWord = tops.some(
-        (top, index) =>
-          index > 0 &&
-          top > (tops[index - 1] ?? top) &&
-          characters[index - 1]?.trim() !== "" &&
-          characters[index]?.trim() !== "",
-      );
+      const words = [...text.data.matchAll(/\S+/g)];
       return {
         name: text.data.trim(),
-        lines: new Set(tops).size,
-        breaksInsideAWord,
+        lines: linesOf(text, 0, text.length),
+        breaksInsideAWord: words.some(
+          (word) => linesOf(text, word.index, word.index + word[0].length) > 1,
+        ),
       };
-    }),
-  );
+    });
+  });
 }
 
-test.beforeEach(({ page: _page }, testInfo) => {
-  test.skip(
-    !testInfo.project.name.endsWith("tablet"),
-    "tablet emulation sweeps its own windows",
-  );
-});
+test.skip(
+  ({ isMobile, viewport }) =>
+    !isMobile || (viewport?.width ?? 0) < MEDIUM_MIN_WIDTH,
+  "tablet emulation sweeps its own windows",
+);
 
 for (const platform of ["ios", "android"] as const) {
   for (const [language, messages] of [
