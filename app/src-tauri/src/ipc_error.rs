@@ -10,8 +10,8 @@ use specta::Type;
 #[serde(rename_all = "camelCase")]
 pub(crate) enum IpcErrorCode {
     #[cfg_attr(
-        desktop,
-        expect(dead_code, reason = "only mobile builds lack a folder picker for now")
+        not(target_os = "android"),
+        expect(dead_code, reason = "only Android lacks a folder picker for now")
     )]
     FolderPickerUnavailable,
     FolderUnreadable,
@@ -36,7 +36,7 @@ pub(crate) struct IpcError {
 }
 
 impl IpcError {
-    #[cfg(mobile)]
+    #[cfg(target_os = "android")]
     pub(crate) fn folder_picker_unavailable() -> Self {
         Self {
             code: IpcErrorCode::FolderPickerUnavailable,

@@ -3162,6 +3162,7 @@ version = "0.0.0"
 dependencies = [
  "omnileaf-db",
  "omnileaf-engine",
+ "omnileaf-folder-access",
  "os_info",
  "serde",
  "specta",
@@ -3226,6 +3227,17 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "omnileaf-folder-access"
+version = "0.0.0"
+dependencies = [
+ "omnileaf-engine",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
 ]
 
 [[package]]

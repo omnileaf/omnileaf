@@ -4,6 +4,8 @@ mod commands;
 mod crash_reporting;
 #[cfg(all(desktop, feature = "e2e"))]
 mod e2e;
+#[cfg(target_os = "ios")]
+mod folder_access;
 mod folder_picker;
 mod ipc_error;
 mod library_events;
@@ -60,6 +62,8 @@ pub fn run() {
     let app = app.plugin(tauri_plugin_dialog::init());
     #[cfg(target_os = "android")]
     let app = app.plugin(system_bars::plugin());
+    #[cfg(target_os = "ios")]
+    let app = app.plugin(omnileaf_folder_access::init());
     #[cfg(all(desktop, feature = "e2e"))]
     let app = app
         .manage(e2e::PickedFolder::from_environment())
@@ -83,6 +87,8 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
         &library,
     ));
     app.manage(library);
+    #[cfg(target_os = "ios")]
+    folder_access::reopen_picked_folders_in_background(app.handle().clone());
     match open_covers(app, data_dir) {
         Ok(covers) => {
             app.manage(covers);
