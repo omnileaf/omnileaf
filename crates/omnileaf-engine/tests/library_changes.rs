@@ -11,10 +11,13 @@ mod books;
 )]
 mod support;
 
-use std::{fs, path::Path};
+use std::{fs, io, path::Path};
 
 use books::write_book;
-use omnileaf_engine::{LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges};
+use omnileaf_engine::{
+    AppleBookmark, LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges,
+    ResolvedBookmark, RootLocator,
+};
 use support::{FixedClock, ScratchFolder};
 use tokio::time::{Instant, timeout};
 
@@ -69,6 +72,86 @@ async fn tells_of_a_folder_added() {
         .unwrap();
 
     assert!(tells_of_a_change(&mut changes).await);
+}
+
+#[tokio::test(start_paused = true)]
+async fn tells_of_a_bookmarked_folder_that_moved() {
+    let home = ScratchFolder::new("changes-moved-home");
+    let parent = ScratchFolder::new("changes-moved");
+    let before = parent.path().join("Before");
+    let after = parent.path().join("After");
+    fs::create_dir(&before).unwrap();
+    let library = open(home.path()).await;
+    let picked = RootLocator::AppleBookmark {
+        path: before.clone(),
+        bookmark: AppleBookmark::new(b"bookmark picked in Files".to_vec()),
+    };
+    library.add_folder(picked, |_| {}).await.unwrap();
+    fs::rename(&before, &after).unwrap();
+    let mut changes = library.changes();
+    caught_up(&mut changes).await;
+
+    library
+        .restore_folder_access(move |bookmark| {
+            Ok::<_, io::Error>(ResolvedBookmark {
+                path: after.clone(),
+                refreshed: Some(bookmark.clone()),
+            })
+        })
+        .await
+        .unwrap();
+
+    assert!(tells_of_a_change(&mut changes).await);
+}
+
+#[tokio::test(start_paused = true)]
+async fn tells_of_a_bookmarked_folder_it_can_no_longer_reach() {
+    let home = ScratchFolder::new("changes-unreachable-home");
+    let comics = ScratchFolder::new("changes-unreachable");
+    let library = open(home.path()).await;
+    let picked = RootLocator::AppleBookmark {
+        path: comics.path().to_path_buf(),
+        bookmark: AppleBookmark::new(b"bookmark picked in Files".to_vec()),
+    };
+    library.add_folder(picked, |_| {}).await.unwrap();
+    let mut changes = library.changes();
+    caught_up(&mut changes).await;
+
+    library
+        .restore_folder_access(|_| {
+            Err::<ResolvedBookmark, _>(io::Error::from(io::ErrorKind::NotFound))
+        })
+        .await
+        .unwrap();
+
+    assert!(tells_of_a_change(&mut changes).await);
+}
+
+#[tokio::test(start_paused = true)]
+async fn tells_of_nothing_when_only_a_bookmark_was_made_again() {
+    let home = ScratchFolder::new("changes-refreshed-home");
+    let comics = ScratchFolder::new("changes-refreshed");
+    let library = open(home.path()).await;
+    let picked = RootLocator::AppleBookmark {
+        path: comics.path().to_path_buf(),
+        bookmark: AppleBookmark::new(b"bookmark picked in Files".to_vec()),
+    };
+    library.add_folder(picked, |_| {}).await.unwrap();
+    let mut changes = library.changes();
+    caught_up(&mut changes).await;
+    let same_place = comics.path().to_path_buf();
+
+    library
+        .restore_folder_access(move |_| {
+            Ok::<_, io::Error>(ResolvedBookmark {
+                path: same_place.clone(),
+                refreshed: Some(AppleBookmark::new(b"bookmark made again".to_vec())),
+            })
+        })
+        .await
+        .unwrap();
+
+    assert!(tells_of_no_change(&mut changes).await);
 }
 
 #[tokio::test(start_paused = true)]

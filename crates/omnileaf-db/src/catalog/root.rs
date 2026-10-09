@@ -73,6 +73,12 @@ impl RootLocator {
     }
 }
 
+impl From<PathBuf> for RootLocator {
+    fn from(path: PathBuf) -> Self {
+        Self::Path(path)
+    }
+}
+
 impl AppleBookmark {
     #[must_use]
     pub fn new(bytes: Vec<u8>) -> Self {
