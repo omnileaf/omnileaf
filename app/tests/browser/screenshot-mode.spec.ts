@@ -147,7 +147,7 @@ for (const { path, region } of FOLDER_PLACES) {
     await addFolder(page, region);
 
     await expect(
-      page.getByText("Found 4 books in 1 series in Folder 01."),
+      page.getByText("Found 4 books in 1 series in Folder 848."),
     ).toBeVisible();
     await expect(page.locator("body")).not.toContainText(REAL_FOLDER_NAME);
   });
@@ -162,7 +162,7 @@ test("a folder name already on screen is replaced when it's turned on", async ({
   await turnOnScreenshotMode(page);
 
   await expect(
-    page.getByText("Found 4 books in 1 series in Folder 01."),
+    page.getByText("Found 4 books in 1 series in Folder 848."),
   ).toBeVisible();
   await expect(page.locator("body")).not.toContainText(REAL_FOLDER_NAME);
 });

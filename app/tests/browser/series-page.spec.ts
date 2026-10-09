@@ -702,7 +702,7 @@ test.describe("while Screenshot mode is on", () => {
     await expect(page.getByRole("main")).toContainText(
       `Continue ${standIn ?? ""} · Book 4 at page 15`,
     );
-    await expect(page.getByRole("main")).toContainText(/Folder \d{2,3}/);
+    await expect(page.getByRole("main")).toContainText("Folder 571");
     const shown = (await page.getByRole("main").textContent()) ?? "";
     expect(shown).not.toContain(SERIES_TITLE);
     expect(shown).not.toContain(SERIES_FOLDER);
