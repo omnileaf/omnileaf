@@ -512,6 +512,10 @@
   @variant max-large {
     --spacing-settings-list: 13rem;
     --spacing-pane: 1.5rem;
+
+    @variant touch {
+      --spacing-settings-list: 15rem;
+    }
   }
 }
 

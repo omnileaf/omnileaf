@@ -44,7 +44,7 @@
                 ]}
               >
                 <section.icon size={ICON_SIZE} class="shrink-0" />
-                <span class="wrap-break-word hyphens-auto min-inline-none"
+                <span class="wrap-break-word min-inline-none"
                   >{section.label()}</span
                 >
               </a>
