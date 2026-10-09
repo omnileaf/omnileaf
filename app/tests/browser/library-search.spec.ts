@@ -4,7 +4,7 @@ import {
   type LibrarySearch,
   SEARCH_MAX_CHARS,
 } from "../../src/lib/ipc/bindings.ts";
-import type { FakeBackend } from "./fake-backend.ts";
+import { emitFakeEvent, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -47,17 +47,21 @@ const CATALOG: readonly FakeSeries[] = [
 ];
 
 /** Finds the series holding every word typed and meeting each condition, as the engine would, on one page. */
-function found(search: LibrarySearch): WireSeries[] {
+function found(
+  search: LibrarySearch,
+  catalog: readonly FakeSeries[] = CATALOG,
+): WireSeries[] {
   const words = search.text.toLowerCase().split(/\s+/).filter(Boolean);
   const meets = (inclusion: string, holds: boolean) =>
     inclusion === "any" || holds === (inclusion === "only");
-  return CATALOG.filter(
-    ({ series, isStarted }) =>
-      words.every((word) => series.title.toLowerCase().includes(word)) &&
-      meets(search.filter.unread, series.unreadCount > 0) &&
-      meets(search.filter.started, isStarted) &&
-      meets(search.filter.finished, series.unreadCount === 0),
-  )
+  return catalog
+    .filter(
+      ({ series, isStarted }) =>
+        words.every((word) => series.title.toLowerCase().includes(word)) &&
+        meets(search.filter.unread, series.unreadCount > 0) &&
+        meets(search.filter.started, isStarted) &&
+        meets(search.filter.finished, series.unreadCount === 0),
+    )
     .map(({ series }) => series)
     .toSorted((one, other) => one.title.localeCompare(other.title));
 }
@@ -524,3 +528,45 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test.describe("as the library changes under a search", () => {
+  let shelf: readonly FakeSeries[] = CATALOG;
+
+  test.use({
+    backend: {
+      ...SEARCHING_BACKEND,
+      librarySearch: (_after, search) => ({
+        series: found(search, shelf),
+        next: null,
+      }),
+      librarySearchCount: (search) => found(search, shelf).length,
+    },
+  });
+
+  test.beforeEach(() => {
+    shelf = CATALOG;
+  });
+
+  test("keeps the highlight on the series it was on", async ({ page }) => {
+    test.skip(!isDesktop(page), "desktop only");
+    await page.goto("/search");
+    await searchField(page).fill("market");
+    await expectFound(page, ["Lantern Market", "Market Lanterns"]);
+    await searchField(page).press("ArrowDown");
+
+    shelf = [
+      fakeSeries(5, "Alpha Market", { unread: 1, isStarted: false }),
+      ...CATALOG,
+    ];
+    await emitFakeEvent(page, "library-changed");
+
+    await expectFound(page, [
+      "Alpha Market",
+      "Lantern Market",
+      "Market Lanterns",
+    ]);
+    await expect(
+      results(page).getByRole("option", { selected: true }),
+    ).toContainText("Lantern Market");
+  });
+});

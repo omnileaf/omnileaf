@@ -59,12 +59,16 @@
 
   const isLookingFor = $derived(hasSomethingToFind(query.search));
   const listId = $props.id();
-  let active: number | undefined = $state();
+  let activeKey: string | undefined = $state();
   const shown: readonly LibrarySeries[] = $derived(
     results.list.kind === "loaded" ? results.list.series : [],
   );
+  const activeIndex = $derived.by(() => {
+    const index = shown.findIndex((series) => series.id === activeKey);
+    return index === -1 ? undefined : index;
+  });
   const activeSeries = $derived(
-    active === undefined ? undefined : shown[active],
+    activeIndex === undefined ? undefined : shown[activeIndex],
   );
   const lookOf = $derived(screenshotMode.isOn ? standInLook : realLook);
 
@@ -114,7 +118,7 @@
       return activeSeries !== undefined;
     }
     const list = document.getElementById(listId);
-    const next = movedTo(key, active, {
+    const next = movedTo(key, activeIndex, {
       count: shown.length,
       columns: list === null ? 1 : columnsOf(list),
     });
@@ -122,13 +126,13 @@
     if (series === undefined) {
       return false;
     }
-    active = next;
+    activeKey = series.id;
     reveal(series);
     return true;
   }
 
   function lookAgain(): void {
-    active = undefined;
+    activeKey = undefined;
     void results.start();
     void found.load();
   }
