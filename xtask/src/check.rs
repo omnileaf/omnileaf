@@ -557,6 +557,7 @@ mod tests {
                 "listing speed",
                 "cb7 first page speed",
                 "title page speed",
+                "library filter speed",
                 "title re-key speed",
                 "scan speed",
                 "cover speed",
