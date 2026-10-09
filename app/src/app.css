@@ -47,7 +47,7 @@
         }
       }
       @variant medium {
-        @container (width >= 28em) {
+        @container (width >= 29em) {
           @slot;
         }
       }
@@ -75,10 +75,17 @@
         }
       }
       @variant medium {
-        @container (width < 28em) {
+        @container (width < 29em) {
           @slot;
         }
       }
+    }
+  }
+}
+@custom-variant heading-stacked {
+  @variant max-expanded {
+    @container (width < 16em) {
+      @slot;
     }
   }
 }
@@ -781,7 +788,7 @@
 }
 
 @utility grid-cols-collection-heading {
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-columns: auto auto minmax(0, 1fr) max-content;
 }
 
 @utility small-caps {

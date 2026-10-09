@@ -21,6 +21,8 @@ const HEIGHT = 900;
 const NARROW_PHONE_WIDTHS = [360, 375];
 const WIDE_PHONE_WIDTHS = [390, 430];
 const FILTERED_COUNT = 7;
+const LARGEST_TEXT = ":root { --text-scale: 2 !important; }";
+const LARGEST_TEXT_WIDTHS = [360, 375, 390, 430];
 const PLATFORMS = ["ios", "android", "linux"] as const;
 const LANGUAGES = { en: english, "en-XA": pseudo } as const;
 const SCREENSHOT_MODE = ["on", "off"] as const;
@@ -119,6 +121,17 @@ async function headingBoxes(
     count: library === "filled" ? await boxOf(countOf(page)) : undefined,
     label: screenshotMode === "on" ? await boxOf(labelOf(page)) : undefined,
   };
+}
+
+/** How many lines the text of `locator` runs over. */
+function linesOf(locator: Locator): Promise<number> {
+  return locator.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return new Set(
+      [...range.getClientRects()].map((rect) => Math.round(rect.top)),
+    ).size;
+  });
 }
 
 function isCrowded(a: Box, b: Box): boolean {
@@ -319,6 +332,64 @@ for (const platform of PLATFORMS) {
     });
   }
 }
+
+for (const platform of PLATFORMS) {
+  test.describe(`the heading on a ${platform} phone in a longer language`, () => {
+    test.use({ backend: backendFor(platform, "filled") });
+
+    test("keeps the title whole at 360px, without crowding or overflow", async ({
+      page,
+    }, testInfo) => {
+      test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
+      await page.addInitScript(() => {
+        localStorage.setItem("omnileaf.language", "en-XA");
+      });
+      await openAt(page, 360, "off");
+      await expect(countOf(page)).toBeVisible();
+
+      expect(
+        await linesOf(headingOf(page).getByRole("heading", { level: 1 })),
+      ).toBe(1);
+      expect(await crowdedParts(page, pseudo, "off", "filled")).toEqual([]);
+      expect(await sidewaysOverflow(page)).toEqual([]);
+    });
+  });
+}
+
+test.describe("the heading at the largest text size on an ios phone", () => {
+  test.use({ backend: backendFor("ios", "filled") });
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript((css) => {
+      document.addEventListener("DOMContentLoaded", () => {
+        const style = document.createElement("style");
+        style.textContent = css;
+        document.head.append(style);
+      });
+    }, LARGEST_TEXT);
+  });
+
+  for (const width of LARGEST_TEXT_WIDTHS) {
+    test(`keeps the title whole and sets the buttons on a row under the title and count at ${String(width)}px`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
+      await openAt(page, width, "off");
+      await expect(countOf(page)).toBeVisible();
+      const title = headingOf(page).getByRole("heading", { level: 1 });
+
+      const { buttons, count } = await headingBoxes(page, "filled", "off");
+
+      expect(await linesOf(title)).toBe(1);
+      const underCount = count === undefined ? 0 : count.y + count.height;
+      for (const button of buttons) {
+        expect(button.y).toBeGreaterThanOrEqual(underCount);
+      }
+      expect(await crowdedParts(page, english, "off", "filled")).toEqual([]);
+      expect(await sidewaysOverflow(page)).toEqual([]);
+    });
+  }
+});
 
 test.describe("the heading as a filter changes the count", () => {
   test.use({
