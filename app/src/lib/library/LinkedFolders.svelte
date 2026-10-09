@@ -94,7 +94,7 @@
   <div
     class={isBelowList
       ? "contents"
-      : "flex items-center justify-between gap-md"}
+      : "flex flex-wrap items-center justify-between gap-md"}
   >
     <h2
       id={headingId}
