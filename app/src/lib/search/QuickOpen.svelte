@@ -15,6 +15,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
+  import { isComposing } from "./composition";
   import { placesMatching } from "./places";
   import { type Choice, choiceKey } from "./quick-open-choice";
   import { quickOpenShortcutLabel } from "./quick-open-shortcut";
@@ -48,6 +49,7 @@
   let series: readonly LibrarySeries[] = $state([]);
   let active = $state(0);
   let latestSearch = 0;
+  let isKeyComposing = false;
 
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
   const id = $props.id();
@@ -149,7 +151,8 @@
   }
 
   function keyDown(event: KeyboardEvent): void {
-    if (choices.length === 0) {
+    isKeyComposing = isComposing(event);
+    if (isKeyComposing || choices.length === 0) {
       return;
     }
     switch (event.key) {
@@ -190,6 +193,11 @@
   aria-label={m.quick_open_title()}
   class="inset-bs-quick-open-top m-none mx-auto flex-col overflow-hidden rounded-dialog border border-border bg-card p-none text-foreground shadow-dialog inline-quick-open max-inline-full backdrop:bg-scrim open:flex"
   onclick={closeOnBackdrop}
+  oncancel={(event) => {
+    if (isKeyComposing) {
+      event.preventDefault();
+    }
+  }}
   onclose={() => {
     quickOpen.close();
   }}

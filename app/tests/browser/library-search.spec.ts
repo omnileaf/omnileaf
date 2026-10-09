@@ -380,6 +380,54 @@ for (const [asked, shown] of [
   });
 }
 
+/** Sends `key` the way an input method does while it composes, flagged as composing, or with the 229 key code some engines give instead. */
+async function composingKey(
+  field: Locator,
+  key: string,
+  flag: "isComposing" | "keyCode 229",
+): Promise<void> {
+  await field.evaluate(
+    (element, [pressed, marker]) => {
+      const event = new KeyboardEvent("keydown", {
+        key: pressed,
+        bubbles: true,
+        cancelable: true,
+        isComposing: marker === "isComposing",
+      });
+      if (marker === "keyCode 229") {
+        Object.defineProperty(event, "keyCode", { value: 229 });
+      }
+      element.dispatchEvent(event);
+    },
+    [key, flag] as const,
+  );
+}
+
+for (const flag of ["isComposing", "keyCode 229"] as const) {
+  test(`leaves the keys of an input method's composition to it, flagged by ${flag}`, async ({
+    page,
+  }) => {
+    test.skip(!isDesktop(page), "desktop only");
+    await page.goto("/search");
+    await searchField(page).fill("a");
+    await expect(results(page).getByRole("option")).toHaveCount(4);
+    await searchField(page).press("ArrowDown");
+    const active = await searchField(page).getAttribute(
+      "aria-activedescendant",
+    );
+
+    for (const key of ["ArrowRight", "ArrowDown", "Enter", "Escape"]) {
+      await composingKey(searchField(page), key, flag);
+    }
+
+    await expect(page).toHaveURL(/\/search$/);
+    await expect(searchField(page)).toHaveAttribute(
+      "aria-activedescendant",
+      active ?? "",
+    );
+  });
+}
+
 test("says when nothing is called what was typed", async ({ page }) => {
   await page.goto("/search");
 

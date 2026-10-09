@@ -102,7 +102,8 @@
   }
 
   /** Moves through the results, or opens the active one, for the keys they answer to. */
-  function navigate(key: string): boolean {
+  function navigate(event: KeyboardEvent): boolean {
+    const { key } = event;
     if (key === "Enter") {
       if (activeSeries !== undefined) {
         open(activeSeries);

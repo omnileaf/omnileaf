@@ -7,6 +7,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import ConditionChips from "./ConditionChips.svelte";
+  import { isComposing } from "./composition";
 
   const SEARCH_ICON_SIZE = 20;
   const CLEAR_ICON_SIZE = 14;
@@ -30,7 +31,7 @@
     listId: string;
     activeId: string | undefined;
     hasChoices: boolean;
-    onKey: (key: string) => boolean;
+    onKey: (event: KeyboardEvent) => boolean;
   } = $props();
 
   let input: HTMLInputElement | undefined = $state();
@@ -49,7 +50,10 @@
   }
 
   function keyDown(event: KeyboardEvent): void {
-    if (onKey(event.key)) {
+    if (isComposing(event)) {
+      return;
+    }
+    if (onKey(event)) {
       event.preventDefault();
       return;
     }

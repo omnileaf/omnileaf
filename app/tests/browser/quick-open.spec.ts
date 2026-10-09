@@ -193,6 +193,42 @@ test("goes to the page chosen with Enter", async ({ page }) => {
   ).toBeFocused();
 });
 
+for (const flag of ["isComposing", "keyCode 229"] as const) {
+  test(`leaves the keys of an input method's composition to it, flagged by ${flag}`, async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await pressQuickOpen(page);
+    await field(page).fill("se");
+    await expect(options(page)).toHaveCount(SERIES_SHOWN + PLACES_HOLDING_SE);
+    const before = await selected(page).textContent();
+
+    const kept = await field(page).evaluate((element, marker) => {
+      const send = (key: string): boolean => {
+        const event = new KeyboardEvent("keydown", {
+          key,
+          bubbles: true,
+          cancelable: true,
+          isComposing: marker === "isComposing",
+        });
+        if (marker === "keyCode 229") {
+          Object.defineProperty(event, "keyCode", { value: 229 });
+        }
+        return element.dispatchEvent(event);
+      };
+      const keys = ["ArrowDown", "Tab", "Enter", "Escape"].map(send);
+      const dialog = element.closest("dialog");
+      const cancel = new Event("cancel", { cancelable: true });
+      const closes = dialog?.dispatchEvent(cancel) ?? true;
+      return { keys, closes };
+    }, flag);
+
+    expect(kept).toEqual({ keys: [true, true, true, true], closes: false });
+    await expect(quickOpen(page)).toBeVisible();
+    await expect(selected(page)).toHaveText(before ?? "");
+  });
+}
+
 test("shows the series chosen on the search page", async ({ page }) => {
   await openLibrary(page);
   await pressQuickOpen(page);
