@@ -46,7 +46,9 @@ const SAMPLE_LIBRARY_FOLDER = xpath(
   `//XCUIElementTypeCell[starts-with(@name, '${SAMPLE_LIBRARY.name},')]`,
 );
 const OPEN_BUTTON = xpath("//XCUIElementTypeButton[@name='Open']");
-const RECENT_TAB = xpath("//XCUIElementTypeButton[@name='Recent']");
+const RECENT_TAB = xpath(
+  "//XCUIElementTypeButton[@name='Recent' or @name='Recents']",
+);
 const CANCEL_BUTTON = xpath("//XCUIElementTypeButton[@name='Cancel']");
 
 const SCAN_REPORT = `Found ${String(SAMPLE_LIBRARY.books)} books in ${String(SAMPLE_LIBRARY.series)} series in ${SAMPLE_LIBRARY.name}.`;
