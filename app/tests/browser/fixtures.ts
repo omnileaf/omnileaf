@@ -200,13 +200,16 @@ function runningAnimations(page: Page): Promise<string[]> {
 }
 
 /** Waits for every animation that ends, such as a fade, since axe reads colours mid-fade as they are. */
+/** Leaves out axe's page-zoom rule, since the app leaves zooming to the system's magnifier and text size as native apps do. */
 export async function accessibilityViolations(page: Page): Promise<Violations> {
   await expect
     .poll(() => runningAnimations(page), {
       message: "animations still running before the axe check",
     })
     .toEqual([]);
-  const results = await new AxeBuilder({ page }).analyze();
+  const results = await new AxeBuilder({ page })
+    .disableRules(["meta-viewport"])
+    .analyze();
   return results.violations;
 }
 

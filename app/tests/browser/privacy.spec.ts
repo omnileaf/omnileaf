@@ -1,7 +1,7 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
 import {
+  accessibilityViolations,
   EXPANDED_MIN_WIDTH,
   expect,
   onPlatform,
@@ -87,8 +87,6 @@ for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });
     await openPrivacy(page);
 
-    const results = await new AxeBuilder({ page }).analyze();
-
-    expect(results.violations).toEqual([]);
+    expect(await accessibilityViolations(page)).toEqual([]);
   });
 }

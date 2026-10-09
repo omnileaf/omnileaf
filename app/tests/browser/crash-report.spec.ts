@@ -1,4 +1,3 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
 import type {
@@ -8,6 +7,7 @@ import type {
 } from "../../src/lib/ipc/bindings.ts";
 import { CommandFailure } from "./fake-backend.ts";
 import {
+  accessibilityViolations,
   DEFAULT_BACKEND,
   expect,
   MEDIUM_MIN_WIDTH,
@@ -229,9 +229,7 @@ for (const platform of ["android", "linux"] as const) {
         await page.goto("/");
         await expect(prompt(page)).toBeVisible();
 
-        const results = await new AxeBuilder({ page }).analyze();
-
-        expect(results.violations).toEqual([]);
+        expect(await accessibilityViolations(page)).toEqual([]);
       });
     }
   });
