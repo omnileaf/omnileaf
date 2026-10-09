@@ -35,7 +35,12 @@
   let {
     platform,
     quickOpen,
-  }: { platform: Platform; quickOpen: QuickOpenState } = $props();
+    usesStandIns,
+  }: {
+    platform: Platform;
+    quickOpen: QuickOpenState;
+    usesStandIns: boolean;
+  } = $props();
 
   let dialog: HTMLDialogElement | undefined = $state();
   let text = $state("");
@@ -243,6 +248,7 @@
             id={optionId(index)}
             {choice}
             isActive={index === active}
+            {usesStandIns}
             onActivate={() => {
               active = index;
             }}

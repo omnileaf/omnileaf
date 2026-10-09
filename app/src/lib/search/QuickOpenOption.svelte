@@ -1,7 +1,7 @@
 <script lang="ts">
   import CoverImage from "#lib/library/CoverImage.svelte";
   import { coverUrl } from "#lib/library/cover-url.ts";
-  import { realLook } from "#lib/library/series-look.ts";
+  import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { Place } from "./places";
@@ -13,6 +13,7 @@
     id,
     choice,
     isActive,
+    usesStandIns,
     onActivate,
     onChoose,
     onKeyDown,
@@ -20,11 +21,13 @@
     id: string;
     choice: Choice;
     isActive: boolean;
+    usesStandIns: boolean;
     onActivate: () => void;
     onChoose: () => void;
     onKeyDown: (event: KeyboardEvent) => void;
   } = $props();
 
+  const lookOf = $derived(usesStandIns ? standInLook : realLook);
   const PlaceIcon: Place["icon"] | undefined = $derived(
     choice.kind === "place" ? choice.place.icon : undefined,
   );
@@ -47,7 +50,7 @@
     <span
       class="relative aspect-cover shrink-0 overflow-hidden rounded-quick-open-cover bg-chip inline-quick-open-cover"
     >
-      <CoverImage cover={realLook(choice.series).cover} {coverUrl} />
+      <CoverImage cover={lookOf(choice.series).cover} {coverUrl} />
     </span>
   {:else if PlaceIcon !== undefined}
     <span
@@ -58,7 +61,9 @@
   {/if}
   <span class="flex flex-1 flex-col min-inline-none">
     <span class="truncate text-small font-semibold">
-      {choice.kind === "series" ? choice.series.title : choice.place.label()}
+      {choice.kind === "series"
+        ? lookOf(choice.series).title
+        : choice.place.label()}
     </span>
     <span class="text-caption text-muted">
       {choice.kind === "series"

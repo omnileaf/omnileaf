@@ -16,6 +16,7 @@
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
+  import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import ConditionChips from "#lib/search/ConditionChips.svelte";
   import { filterWords } from "#lib/search/condition-labels.ts";
   import KeyHints from "#lib/search/KeyHints.svelte";
@@ -30,6 +31,8 @@
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
+
+  const screenshotMode = getScreenshotMode();
 
   const query = new SearchQuery(filterWords(), getLocale());
 
@@ -144,6 +147,7 @@
           void results.loadMore();
         }}
         {coverUrl}
+        usesStandIns={screenshotMode.isOn}
       />
     {/if}
   {/if}

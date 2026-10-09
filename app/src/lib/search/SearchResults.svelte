@@ -2,7 +2,7 @@
   import type { LibrarySeries } from "#lib/ipc/bindings.ts";
   import CoverImage from "#lib/library/CoverImage.svelte";
   import type { CoverUrl } from "#lib/library/cover-url.ts";
-  import { realLook } from "#lib/library/series-look.ts";
+  import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
@@ -13,20 +13,23 @@
     isComplete,
     onNearEnd,
     coverUrl,
+    usesStandIns,
   }: {
     series: readonly LibrarySeries[];
     count: number | undefined;
     isComplete: boolean;
     onNearEnd: () => void;
     coverUrl: CoverUrl;
+    usesStandIns: boolean;
   } = $props();
 
+  const lookOf = $derived(usesStandIns ? standInLook : realLook);
   const headingId = $props.id();
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
 </script>
 
 {#snippet found(one: LibrarySeries)}
-  {@const shown = realLook(one)}
+  {@const shown = lookOf(one)}
   <div
     class="relative box-content aspect-cover shrink-0 overflow-hidden rounded-result-cover border border-cover-edge bg-chip inline-result-cover medium:inline-result-cover-wide"
   >

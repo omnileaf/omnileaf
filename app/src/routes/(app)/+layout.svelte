@@ -9,6 +9,7 @@
   import SwipeableMain from "#lib/navigation/SwipeableMain.svelte";
   import NoticeHost from "#lib/notices/NoticeHost.svelte";
   import { getNotices } from "#lib/notices/notices.svelte.ts";
+  import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import QuickOpen from "#lib/search/QuickOpen.svelte";
   import { isQuickOpenShortcut } from "#lib/search/quick-open-shortcut.ts";
   import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
@@ -19,6 +20,7 @@
 
   const language = getLanguageSetting();
   const notices = getNotices();
+  const screenshotMode = getScreenshotMode();
   const backGoesUp = setBackGoesUp(makeBackGoUp());
   const quickOpen = new QuickOpenState();
 
@@ -56,5 +58,9 @@
   </div>
 </div>
 {#key language.resolved}
-  <QuickOpen platform={data.appInfo.platform} {quickOpen} />
+  <QuickOpen
+    platform={data.appInfo.platform}
+    {quickOpen}
+    usesStandIns={screenshotMode.isOn}
+  />
 {/key}
