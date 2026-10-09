@@ -428,6 +428,31 @@ for (const flag of ["isComposing", "keyCode 229"] as const) {
   });
 }
 
+test("leaves Shift, Control, Alt and Meta with the arrow keys and Home to the field", async ({
+  page,
+}) => {
+  test.skip(!isDesktop(page), "desktop only");
+  await page.goto("/search");
+  await searchField(page).fill("ar");
+  await expect(results(page).getByRole("option")).toHaveCount(3);
+  await searchField(page).press("ArrowDown");
+  const active = await searchField(page).getAttribute("aria-activedescendant");
+
+  await searchField(page).press("Shift+Home");
+  const selected = await searchField(page).evaluate(
+    (field: HTMLInputElement) => [field.selectionStart, field.selectionEnd],
+  );
+  for (const key of ["Control+ArrowRight", "Alt+ArrowDown", "Meta+ArrowLeft"]) {
+    await searchField(page).press(key);
+  }
+
+  expect(selected).toEqual([0, 2]);
+  await expect(searchField(page)).toHaveAttribute(
+    "aria-activedescendant",
+    active ?? "",
+  );
+});
+
 test("says when nothing is called what was typed", async ({ page }) => {
   await page.goto("/search");
 

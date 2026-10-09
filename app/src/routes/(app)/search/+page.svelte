@@ -101,8 +101,11 @@
     });
   }
 
-  /** Moves through the results, or opens the active one, for the keys they answer to. */
+  /** Moves through the results, or opens the active one, for the keys they answer to, leaving any key held with a modifier to the field. */
   function navigate(event: KeyboardEvent): boolean {
+    if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) {
+      return false;
+    }
     const { key } = event;
     if (key === "Enter") {
       if (activeSeries !== undefined) {
