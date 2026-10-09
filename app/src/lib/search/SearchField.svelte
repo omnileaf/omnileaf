@@ -17,12 +17,20 @@
     onType,
     onRemove,
     onEscape,
+    listId,
+    activeId,
+    hasChoices,
+    onKey,
   }: {
     text: string;
     conditions: readonly FilterCondition[];
     onType: (typed: string) => void;
     onRemove: (condition: FilterCondition) => void;
     onEscape: () => void;
+    listId: string;
+    activeId: string | undefined;
+    hasChoices: boolean;
+    onKey: (key: string) => boolean;
   } = $props();
 
   let input: HTMLInputElement | undefined = $state();
@@ -41,6 +49,10 @@
   }
 
   function keyDown(event: KeyboardEvent): void {
+    if (onKey(event.key)) {
+      event.preventDefault();
+      return;
+    }
     if (event.key === "Escape") {
       event.preventDefault();
       onEscape();
@@ -69,6 +81,11 @@
   <input
     bind:this={input}
     type="search"
+    role="combobox"
+    aria-controls={listId}
+    aria-expanded={hasChoices}
+    aria-autocomplete="list"
+    aria-activedescendant={activeId}
     data-arrival-focus
     aria-label={m.search_field()}
     placeholder={m.search_field()}

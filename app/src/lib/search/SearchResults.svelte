@@ -14,6 +14,8 @@
     onNearEnd,
     coverUrl,
     usesStandIns,
+    listId,
+    activeKey,
   }: {
     series: readonly LibrarySeries[];
     count: number | undefined;
@@ -21,6 +23,8 @@
     onNearEnd: () => void;
     coverUrl: CoverUrl;
     usesStandIns: boolean;
+    listId: string;
+    activeKey: string | undefined;
   } = $props();
 
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
@@ -71,7 +75,8 @@
     {isComplete}
     {onNearEnd}
     class="grid-cols-1 gap-sm medium:grid-cols-2 medium:gap-md large:grid-cols-3"
-    itemClass="flex items-center gap-md min-inline-none medium:items-start medium:rounded-card medium:border medium:border-border medium:bg-card medium:p-result-card"
+    itemClass="flex items-center gap-md min-inline-none medium:items-start medium:rounded-card medium:border medium:border-border medium:bg-card medium:p-result-card aria-selected:bg-accent-soft medium:aria-selected:border-accent medium:aria-selected:bg-accent-soft"
     cell={found}
+    listbox={{ id: listId, activeKey }}
   />
 </section>

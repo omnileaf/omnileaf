@@ -2,7 +2,14 @@
   import { onMount, type Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import { columnsOf, optionId } from "./grid-keys";
   import { rowWindow, type Seen } from "./row-window";
+
+  /** A list whose choices a field moves through, naming the active one in its aria-activedescendant. */
+  interface Listbox {
+    readonly id: string;
+    readonly activeKey: string | undefined;
+  }
 
   let {
     items,
@@ -15,6 +22,7 @@
     class: className,
     style,
     itemClass,
+    listbox,
   }: {
     items: readonly Item[];
     key: (item: Item) => string;
@@ -26,6 +34,7 @@
     class?: ClassValue;
     style?: string;
     itemClass?: ClassValue;
+    listbox?: Listbox | undefined;
   } = $props();
 
   const ITEMS_BEFORE_MEASURING = 24;
@@ -61,13 +70,9 @@
     if (first === null) {
       return undefined;
     }
-    const style = getComputedStyle(grid);
-    const columns = style.gridTemplateColumns
-      .split(" ")
-      .filter((track) => track !== "").length;
-    const rowGap = Number.parseFloat(style.rowGap);
+    const rowGap = Number.parseFloat(getComputedStyle(grid).rowGap);
     return {
-      columns: Math.max(1, columns),
+      columns: columnsOf(grid),
       rowStride:
         first.getBoundingClientRect().height +
         (Number.isNaN(rowGap) ? 0 : rowGap),
@@ -151,9 +156,21 @@
     ? undefined
     : `${String(measure.rowStride)}px`}
 >
-  <ul bind:this={list} aria-label={label} class={["grid", className]} {style}>
+  <ul
+    bind:this={list}
+    id={listbox?.id}
+    role={listbox === undefined ? undefined : "listbox"}
+    aria-label={label}
+    class={["grid", className]}
+    {style}
+  >
     {#each items.slice(shown.start, shown.end) as item, offset (key(item))}
       <li
+        id={listbox === undefined ? undefined : optionId(listbox.id, key(item))}
+        role={listbox === undefined ? undefined : "option"}
+        aria-selected={listbox === undefined
+          ? undefined
+          : key(item) === listbox.activeKey}
         aria-posinset={shown.start + offset + 1}
         aria-setsize={setSize}
         class={itemClass}

@@ -14,9 +14,13 @@
 
 <footer
   class={[
-    "hidden items-center justify-end gap-lg border-bs border-border text-caption text-muted block-key-hints large:flex",
+    "hidden items-center gap-lg border-bs border-border text-caption text-muted block-key-hints large:flex",
     className,
   ]}
 >
-  {m.search_key_quick_open({ shortcut: quickOpenShortcutLabel(platform) })}
+  <span>{m.search_key_move()}</span>
+  <span>{m.search_key_open()}</span>
+  <span class="ms-auto">
+    {m.search_key_quick_open({ shortcut: quickOpenShortcutLabel(platform) })}
+  </span>
 </footer>

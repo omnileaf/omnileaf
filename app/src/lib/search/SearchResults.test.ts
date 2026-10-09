@@ -29,9 +29,11 @@ test("shows a stand-in for each title and no cover while Screenshot mode is on",
     onNearEnd: () => undefined,
     coverUrl: fakeCoverUrl,
     usesStandIns: true,
+    listId: "results",
+    activeKey: undefined,
   });
 
-  const found = screen.getByRole("listitem").nth(0);
+  const found = screen.getByRole("option").nth(0);
   await expect.element(found.getByText(STAND_IN)).toBeVisible();
   expect(found.getByText(REAL_TITLE).elements()).toHaveLength(0);
   expect(found.getByRole("presentation").elements()).toHaveLength(0);
@@ -45,9 +47,11 @@ test("shows each real title and cover while Screenshot mode is off", async () =>
     onNearEnd: () => undefined,
     coverUrl: fakeCoverUrl,
     usesStandIns: false,
+    listId: "results",
+    activeKey: undefined,
   });
 
-  const found = screen.getByRole("listitem").nth(0);
+  const found = screen.getByRole("option").nth(0);
   await expect.element(found.getByText(REAL_TITLE)).toBeVisible();
   await expect.element(found.getByRole("presentation")).toBeInTheDocument();
 });

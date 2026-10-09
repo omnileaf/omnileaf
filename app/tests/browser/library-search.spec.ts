@@ -85,11 +85,11 @@ function isPhone(page: Page): boolean {
 function searchField(page: Page): Locator {
   return page
     .getByRole("main")
-    .getByRole("searchbox", { name: "Search your library" });
+    .getByRole("combobox", { name: "Search your library" });
 }
 
 function results(page: Page): Locator {
-  return page.getByRole("list", { name: "Series found" });
+  return page.getByRole("listbox", { name: "Series found" });
 }
 
 async function openSearch(page: Page): Promise<void> {
@@ -108,7 +108,7 @@ async function openSearch(page: Page): Promise<void> {
 }
 
 async function expectFound(page: Page, titles: readonly string[]) {
-  await expect(results(page).getByRole("listitem")).toHaveText(
+  await expect(results(page).getByRole("option")).toHaveText(
     titles.map((title) => new RegExp(title)),
   );
 }
@@ -277,6 +277,86 @@ test("draws Close beside the field at the 40px height the desktop board gives it
   const close = await boxOf(page.getByRole("link", { name: "Close" }));
 
   expect(close.height).toBe(40);
+});
+
+test("moves through the results with the arrow keys, Home and End, and opens one with Enter", async ({
+  page,
+}) => {
+  test.skip(!isDesktop(page), "desktop only");
+  await page.goto("/search");
+  await searchField(page).fill("a");
+  await expectFound(page, [
+    "Harbour Gate",
+    "Lantern Market",
+    "Market Lanterns",
+    "Sample Series 04",
+  ]);
+  const options = results(page).getByRole("option");
+  const active = async () => {
+    const id = await searchField(page).getAttribute("aria-activedescendant");
+    return id === null
+      ? undefined
+      : await page.locator(`[id="${id}"]`).textContent();
+  };
+
+  const visited: (string | null | undefined)[] = [];
+  for (const key of [
+    "ArrowDown",
+    "ArrowRight",
+    "ArrowLeft",
+    "ArrowDown",
+    "ArrowUp",
+    "End",
+    "Home",
+  ]) {
+    await searchField(page).press(key);
+    visited.push(await active());
+  }
+
+  expect(visited.map((text) => text?.match(/^\s*(\D+)/)?.[1]?.trim())).toEqual([
+    "Harbour Gate",
+    "Lantern Market",
+    "Harbour Gate",
+    "Sample Series",
+    "Harbour Gate",
+    "Sample Series",
+    "Harbour Gate",
+  ]);
+  await expect(options.first()).toHaveAttribute("aria-selected", "true");
+  await searchField(page).press("ArrowRight");
+  await searchField(page).press("Enter");
+  await expect(page).toHaveURL(/\/search\?title=Lantern\+Market$/);
+  await expect(searchField(page)).toHaveValue("Lantern Market");
+});
+
+test("moves the caret, not the results, once more is typed", async ({
+  page,
+}) => {
+  test.skip(!isDesktop(page), "desktop only");
+  await page.goto("/search");
+  await searchField(page).fill("a");
+  await expect(results(page).getByRole("option")).toHaveCount(4);
+  await searchField(page).press("ArrowDown");
+
+  await searchField(page).press("r");
+
+  await expect(searchField(page)).not.toHaveAttribute("aria-activedescendant");
+  await expect(
+    results(page).getByRole("option", { selected: true }),
+  ).toHaveCount(0);
+});
+
+test("lists the keys the results answer to under the desktop page", async ({
+  page,
+}) => {
+  test.skip(!isDesktop(page), "desktop only");
+  await page.goto("/search");
+
+  const hints = page.getByRole("main").locator("footer");
+
+  await expect(hints).toContainText("↑ ↓ to move");
+  await expect(hints).toContainText("Enter to open");
+  await expect(hints).toContainText("Ctrl K for quick open, anywhere");
 });
 
 test("says when nothing is called what was typed", async ({ page }) => {

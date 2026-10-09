@@ -85,11 +85,13 @@ function field(page: Page): Locator {
 }
 
 function searchField(page: Page): Locator {
-  return page.getByRole("searchbox", { name: "Search your library" });
+  return page.getByRole("combobox", { name: "Search your library" });
 }
 
 function seriesFound(page: Page): Locator {
-  return page.getByRole("list", { name: "Series found" }).getByRole("listitem");
+  return page
+    .getByRole("listbox", { name: "Series found" })
+    .getByRole("option");
 }
 
 function options(page: Page): Locator {
@@ -200,7 +202,7 @@ test("shows the series chosen on the search page", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/search\?title=Sample\+Series\+0007$/);
   await expect(
-    page.getByRole("list", { name: "Series found" }).getByRole("listitem"),
+    page.getByRole("listbox", { name: "Series found" }).getByRole("option"),
   ).toHaveText([/Sample Series 0007/]);
 });
 
@@ -209,7 +211,7 @@ test("shows another series chosen while the search page is open", async ({
 }) => {
   await page.goto("/search?q=Sample+Series+0007");
   await expect(
-    page.getByRole("list", { name: "Series found" }).getByRole("listitem"),
+    page.getByRole("listbox", { name: "Series found" }).getByRole("option"),
   ).toHaveText([/Sample Series 0007/]);
   await pressQuickOpen(page);
 
@@ -217,10 +219,10 @@ test("shows another series chosen while the search page is open", async ({
   await field(page).press("Enter");
 
   await expect(
-    page.getByRole("searchbox", { name: "Search your library" }),
+    page.getByRole("combobox", { name: "Search your library" }),
   ).toHaveValue("Sample Series 0008");
   await expect(
-    page.getByRole("list", { name: "Series found" }).getByRole("listitem"),
+    page.getByRole("listbox", { name: "Series found" }).getByRole("option"),
   ).toHaveText([/Sample Series 0008/]);
 });
 

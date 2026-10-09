@@ -1,10 +1,14 @@
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { commands, type LibrarySearch } from "#lib/ipc/bindings.ts";
+  import {
+    commands,
+    type LibrarySearch,
+    type LibrarySeries,
+  } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import {
@@ -12,6 +16,7 @@
     filtersOn,
   } from "#lib/library/library-listing.ts";
   import { LibrarySeriesList } from "#lib/library/library-series.svelte.ts";
+  import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -21,12 +26,13 @@
   import { filterWords } from "#lib/search/condition-labels.ts";
   import KeyHints from "#lib/search/KeyHints.svelte";
   import NothingFound from "#lib/search/NothingFound.svelte";
-  import { searchAskedIn } from "#lib/search/search-route.ts";
+  import { searchAskedIn, titleQuery } from "#lib/search/search-route.ts";
   import SearchField from "#lib/search/SearchField.svelte";
   import { SearchQuery } from "#lib/search/search-query.svelte.ts";
   import SearchResults from "#lib/search/SearchResults.svelte";
   import SearchStart from "#lib/search/SearchStart.svelte";
   import ShowChoices from "#lib/search/ShowChoices.svelte";
+  import { columnsOf, movedTo, optionId } from "#lib/virtual-grid/grid-keys.ts";
 
   import type { PageProps } from "./$types";
 
@@ -47,6 +53,15 @@
   );
 
   const isLookingFor = $derived(hasSomethingToFind(query.search));
+  const listId = $props.id();
+  let active: number | undefined = $state();
+  const shown: readonly LibrarySeries[] = $derived(
+    results.list.kind === "loaded" ? results.list.series : [],
+  );
+  const activeSeries = $derived(
+    active === undefined ? undefined : shown[active],
+  );
+  const lookOf = $derived(screenshotMode.isOn ? standInLook : realLook);
 
   function hasSomethingToFind(search: LibrarySearch): boolean {
     return search.text !== "" || filtersOn(search.filter) > 0;
@@ -68,7 +83,43 @@
     void goto(resolve(SECTION_ROUTE_IDS.library));
   }
 
+  /** Shows the series as quick open would, by its title, or its stand-in while Screenshot mode is on. */
+  function open(series: LibrarySeries): void {
+    void goto(`${resolve("/(app)/search")}${titleQuery(lookOf(series).title)}`);
+  }
+
+  function reveal(series: LibrarySeries): void {
+    void tick().then(() => {
+      document
+        .getElementById(optionId(listId, series.id))
+        ?.scrollIntoView({ block: "nearest" });
+    });
+  }
+
+  /** Moves through the results, or opens the active one, for the keys they answer to. */
+  function navigate(key: string): boolean {
+    if (key === "Enter") {
+      if (activeSeries !== undefined) {
+        open(activeSeries);
+      }
+      return activeSeries !== undefined;
+    }
+    const list = document.getElementById(listId);
+    const next = movedTo(key, active, {
+      count: shown.length,
+      columns: list === null ? 1 : columnsOf(list),
+    });
+    const series = next === undefined ? undefined : shown[next];
+    if (series === undefined) {
+      return false;
+    }
+    active = next;
+    reveal(series);
+    return true;
+  }
+
   function lookAgain(): void {
+    active = undefined;
     void results.start();
     void found.load();
   }
@@ -108,6 +159,12 @@
       onType={type}
       onRemove={toggle}
       onEscape={close}
+      {listId}
+      activeId={activeSeries === undefined
+        ? undefined
+        : optionId(listId, activeSeries.id)}
+      hasChoices={shown.length > 0}
+      onKey={navigate}
     />
     <a
       href={resolve(SECTION_ROUTE_IDS.library)}
@@ -148,6 +205,8 @@
         }}
         {coverUrl}
         usesStandIns={screenshotMode.isOn}
+        {listId}
+        activeKey={activeSeries?.id}
       />
     {/if}
   {/if}
