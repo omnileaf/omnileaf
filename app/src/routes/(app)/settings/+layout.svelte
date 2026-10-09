@@ -17,10 +17,10 @@
   class="flex flex-1 flex-col two-pane:-mx-gutter two-pane:-mbs-page-top two-pane:-mbe-page-bottom two-pane:flex-row"
 >
   <div
-    class="hidden shrink-0 flex-col gap-lg border-e border-border px-md pbs-page-top pbe-xl two-pane:flex two-pane:inline-settings-list"
+    class="hidden shrink-0 flex-col gap-lg border-e border-border px-md pbs-page-top pbe-xl two-pane:flex two-pane:inline-fit two-pane:max-inline-settings-list-widest two-pane:min-inline-settings-list"
   >
     <p
-      class="mbe-xs px-md text-page-title font-bold tracking-tight wrap-break-word hyphens-auto"
+      class="mbe-xs px-md text-page-title font-bold tracking-tight wrap-break-word"
     >
       {m.settings_title()}
     </p>
@@ -44,7 +44,9 @@
                 ]}
               >
                 <section.icon size={ICON_SIZE} class="shrink-0" />
-                <span class="wrap-break-word hyphens-auto min-inline-none"
+                <span
+                  data-label={section.label()}
+                  class="room-for-bold-label wrap-break-word min-inline-none"
                   >{section.label()}</span
                 >
               </a>

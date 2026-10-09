@@ -218,6 +218,7 @@
   --spacing-pane: 2.5rem;
   --spacing-pane-gap: 1.5rem;
   --spacing-settings-list: 17rem;
+  --spacing-settings-list-widest: 17rem;
   --spacing-problem-top: calc(10.625rem - var(--spacing-title-gap));
   --spacing-switch-length: 3.125rem;
   --spacing-switch-thickness: 1.875rem;
@@ -517,6 +518,7 @@
 
 :root {
   @variant desktop {
+    --spacing-settings-list-widest: var(--spacing-settings-list);
     --spacing-empty-lift: 3.25rem;
     --spacing-pane-gap: 1.25rem;
     --spacing-title-gap: 1.75rem;
@@ -655,6 +657,19 @@
       transparent 1px 7px
     ),
     var(--color-stand-in);
+}
+
+@utility room-for-bold-label {
+  display: flex;
+  flex-direction: column;
+
+  &::after {
+    content: attr(data-label) / "";
+    block-size: 0;
+    overflow: hidden;
+    visibility: hidden;
+    font-weight: var(--font-weight-bold);
+  }
 }
 
 @utility small-caps {
