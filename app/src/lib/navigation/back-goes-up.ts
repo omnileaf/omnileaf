@@ -26,6 +26,7 @@ export function makeBackGoUp(): BackGoesUp {
   let isPassingThrough = false;
   const replacing = new Set<string>();
   let settle: (() => void) | undefined;
+  let followedWhileMoving: URL | undefined;
 
   function record(navigation: AfterNavigate): void {
     const pathname = navigation.to?.url.pathname;
@@ -78,10 +79,29 @@ export function makeBackGoUp(): BackGoesUp {
 
   async function move(planned: Promise<void>): Promise<void> {
     isMoving = true;
+    let next: URL | undefined;
     try {
       await planned;
     } finally {
       isMoving = false;
+      next = followedWhileMoving;
+      followedWhileMoving = undefined;
+    }
+    if (next !== undefined && next.href !== location.href) {
+      await follow(moveTo(entries, next.pathname), next);
+    }
+  }
+
+  function follow(planned: HistoryMove, target: URL): Promise<void> {
+    switch (planned.kind) {
+      case "push":
+        return goto(target);
+      case "back":
+        return move(goBack(planned.steps));
+      case "replace":
+        return move(replace(planned, target));
+      default:
+        return assertNever(planned);
     }
   }
 
@@ -91,23 +111,15 @@ export function makeBackGoUp(): BackGoesUp {
     }
     if (isMoving) {
       cancel();
+      followedWhileMoving = to.url;
       return;
     }
     const planned = moveTo(entries, to.url.pathname);
-    switch (planned.kind) {
-      case "push":
-        return;
-      case "back":
-        cancel();
-        void move(goBack(planned.steps));
-        return;
-      case "replace":
-        cancel();
-        void move(replace(planned, to.url));
-        return;
-      default:
-        assertNever(planned);
+    if (planned.kind === "push") {
+      return;
     }
+    cancel();
+    void follow(planned, to.url);
   });
 
   onNavigate(record);

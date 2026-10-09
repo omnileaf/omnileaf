@@ -37,6 +37,23 @@ async function openSettingsPage(page: Page, label: string): Promise<void> {
   await expectPage(page, label);
 }
 
+/** Taps each of the main navigation's links named in `labels` within one task, before the app can react to the first. */
+async function tapMainLinksAtOnce(
+  page: Page,
+  labels: readonly string[],
+): Promise<void> {
+  await page.evaluate((names) => {
+    const links = [
+      ...document.querySelectorAll<HTMLAnchorElement>(
+        "nav[aria-label='Main'] a",
+      ),
+    ];
+    for (const name of names) {
+      links.find((link) => link.textContent.trim() === name)?.click();
+    }
+  }, labels);
+}
+
 async function expectPage(page: Page, title: string): Promise<void> {
   await expect(
     page.getByRole("heading", { level: 1, name: title }),
@@ -189,26 +206,39 @@ test("keeps the query of a link opened from a Settings page", async ({
   await expect(page).toHaveURL(/\/history\?from=about$/);
 });
 
-test("keeps the way back intact when two links are tapped at once", async ({
+test("opens the second of two links tapped at once from a Settings page, and keeps back going up", async ({
   page,
 }) => {
   await openSettings(page);
   await openSettingsPage(page, "About");
 
-  await page.evaluate(() => {
-    const navigation = document.querySelector("nav");
-    for (const label of ["Library", "History"]) {
-      [...(navigation?.querySelectorAll("a") ?? [])]
-        .find((link) => link.textContent.trim() === label)
-        ?.click();
-    }
-  });
-  const heading = page.getByRole("heading", { level: 1 });
-  await expect(heading).toHaveText(/^(Library|History)$/);
-  const landedOnHistory = (await heading.textContent()) === "History";
-  await page.goBack();
+  await tapMainLinksAtOnce(page, ["Library", "History"]);
 
-  await expect(page).toHaveURL(
-    landedOnHistory ? /^http:\/\/localhost:\d+\/$/ : OUTSIDE_THE_APP,
-  );
+  await expectPage(page, "History");
+  await page.goBack();
+  await expectLibrary(page);
+});
+
+test("opens a link followed while it is still going back, and keeps back going up", async ({
+  page,
+}) => {
+  await openSection(page, "Browse");
+
+  await tapMainLinksAtOnce(page, ["Library", "History"]);
+
+  await expectPage(page, "History");
+  await page.goBack();
+  await expectLibrary(page);
+});
+
+test("adds no second entry for a page tapped again while going back to it", async ({
+  page,
+}) => {
+  await openSection(page, "Browse");
+
+  await tapMainLinksAtOnce(page, ["Library", "Library"]);
+
+  await expectLibrary(page);
+  await page.goBack();
+  await expect(page).toHaveURL(OUTSIDE_THE_APP);
 });
