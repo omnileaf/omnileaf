@@ -11,6 +11,7 @@
     type Platform,
     SEARCH_MAX_CHARS,
   } from "#lib/ipc/bindings.ts";
+  import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
@@ -48,6 +49,7 @@
   let active = $state(0);
   let latestSearch = 0;
 
+  const lookOf = $derived(usesStandIns ? standInLook : realLook);
   const id = $props.id();
   const listboxId = `${id}-results`;
   const nothingFoundId = `${id}-nothing-found`;
@@ -126,7 +128,7 @@
     switch (choice.kind) {
       case "series":
         void goto(
-          `${resolve("/(app)/search")}${titleQuery(choice.series.title)}`,
+          `${resolve("/(app)/search")}${titleQuery(lookOf(choice.series).title)}`,
         );
         return;
       case "place":

@@ -206,6 +206,27 @@ test("shows the series chosen on the search page", async ({ page }) => {
   ).toHaveText([/Sample Series 0007/]);
 });
 
+test("fills the search field with a series' stand-in, never its title, while Screenshot mode is on", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "omnileaf.screenshotMode",
+      JSON.stringify({ activity: { kind: "on" } }),
+    );
+  });
+  await openLibrary(page);
+  await pressQuickOpen(page);
+  await field(page).fill("0007");
+
+  await options(page).first().click();
+
+  await expect(
+    page.getByRole("combobox", { name: "Search your library" }),
+  ).toHaveValue(/^Series \d{2,3}$/);
+  expect(page.url()).not.toContain("Sample");
+});
+
 test("shows another series chosen while the search page is open", async ({
   page,
 }) => {
