@@ -218,6 +218,7 @@
   --spacing-pane: 2.5rem;
   --spacing-pane-gap: 1.5rem;
   --spacing-settings-list: 17rem;
+  --spacing-settings-list-widest: 17rem;
   --spacing-problem-top: calc(10.625rem - var(--spacing-title-gap));
   --spacing-switch-length: 3.125rem;
   --spacing-switch-thickness: 1.875rem;
@@ -512,15 +513,12 @@
   @variant max-large {
     --spacing-settings-list: 13rem;
     --spacing-pane: 1.5rem;
-
-    @variant touch {
-      --spacing-settings-list: 15rem;
-    }
   }
 }
 
 :root {
   @variant desktop {
+    --spacing-settings-list-widest: var(--spacing-settings-list);
     --spacing-empty-lift: 3.25rem;
     --spacing-pane-gap: 1.25rem;
     --spacing-title-gap: 1.75rem;
