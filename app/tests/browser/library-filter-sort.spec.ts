@@ -17,6 +17,8 @@ import {
 } from "./fixtures.ts";
 import type { WireSeries } from "./series-catalog.ts";
 
+type Box = Awaited<ReturnType<typeof boxOf>>;
+
 interface FakeSeries {
   readonly series: WireSeries;
   readonly addedAt: number;
@@ -24,6 +26,8 @@ interface FakeSeries {
 }
 
 const PANEL_WIDTH = 380;
+const BADGE_ON_PHONES = 40;
+const BADGE_ON_WIDER_SCREENS = 36;
 
 function fakeSeries(
   number: number,
@@ -133,6 +137,12 @@ function filterAndSort(page: Page): Locator {
   return page.getByRole("dialog", { name: "Filter and sort" });
 }
 
+/** Whether `box` sits on the title's line, its middle inside the title's height. */
+function isBesideTitle(box: Box, title: Box): boolean {
+  const middle = box.y + box.height / 2;
+  return middle > title.y && middle < title.y + title.height;
+}
+
 function isPhone(page: Page): boolean {
   return screenSizeOf(page) === "phone";
 }
@@ -215,6 +225,46 @@ test("opens filter and sort from the library's header", async ({ page }) => {
     await expect(panel.getByRole("combobox", { name: "Sort by" })).toHaveValue(
       "title",
     );
+  }
+});
+
+test("heads filter and sort with a round accent badge beside its title, with Reset on the same line", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  const panel = await openFilterAndSort(page);
+  const title = panel.getByRole("heading", { name: "Filter and sort" });
+  const badge = title.locator("xpath=preceding-sibling::*[1]");
+  const size = isPhone(page) ? BADGE_ON_PHONES : BADGE_ON_WIDER_SCREENS;
+
+  const titleBox = await boxOf(title);
+  const badgeBox = await boxOf(badge);
+
+  expect([badgeBox.width, badgeBox.height]).toEqual([size, size]);
+  expect(badgeBox.x + badgeBox.width).toBeLessThanOrEqual(titleBox.x);
+  expect(isBesideTitle(badgeBox, titleBox)).toBe(true);
+  await expect(badge).toHaveAttribute("aria-hidden", "true");
+  await expect(badge.locator("svg")).toHaveCount(1);
+  expect(
+    await badge.evaluate((element) => {
+      const style = getComputedStyle(element);
+      const probe = document.createElement("span");
+      probe.style.backgroundColor = "var(--color-accent-soft)";
+      document.body.append(probe);
+      const accentSoft = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return [
+        style.backgroundColor === accentSoft,
+        Number.parseFloat(style.borderRadius) >= element.clientWidth / 2,
+      ];
+    }),
+  ).toEqual([true, true]);
+  const onTheTitleLine = [panel.getByRole("button", { name: "Reset" })];
+  if (!isPhone(page)) {
+    onTheTitleLine.push(panel.getByRole("button", { name: "Close" }));
+  }
+  for (const button of onTheTitleLine) {
+    expect(isBesideTitle(await boxOf(button), titleBox)).toBe(true);
   }
 });
 

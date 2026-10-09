@@ -8,6 +8,7 @@
     type LibraryListing,
     type LibrarySortBy,
   } from "#lib/ipc/bindings.ts";
+  import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
@@ -152,8 +153,9 @@
 >
   {#if isPanel.current}
     <div
-      class="flex items-center gap-sm ps-filter-panel-inline pe-lg pbs-filter-panel-top pbe-filter-panel-title-gap"
+      class="flex items-center gap-md ps-filter-panel-inline pe-lg pbs-filter-panel-top pbe-filter-panel-title-gap"
     >
+      <HeaderBadge icon={ListFilter} tone="bg-accent-soft text-accent" />
       <h2 id={titleId} class="flex-1 text-panel-title font-bold">
         {m.library_filter_and_sort()}
       </h2>
@@ -198,7 +200,8 @@
         aria-hidden="true"
         class="self-center rounded-full bg-step-off block-sheet-handle-block inline-sheet-handle"
       ></span>
-      <div class="flex items-center">
+      <div class="flex items-center gap-md">
+        <HeaderBadge icon={ListFilter} tone="bg-accent-soft text-accent" />
         <h2 id={titleId} class="flex-1 text-title font-bold">
           {m.library_filter_and_sort()}
         </h2>
