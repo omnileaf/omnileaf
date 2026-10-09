@@ -65,8 +65,14 @@ export class FakeShelf {
           upNext: this.#upNext() ?? null,
         };
       },
-      seriesBooks: (id, after) => {
-        const listed = id === SERIES_ID ? this.#books : [];
+      seriesBooks: (id, listing, after) => {
+        const shown =
+          listing.shown === "unread"
+            ? this.#books.filter((book) => book.reading.state !== "read")
+            : this.#books;
+        const ordered =
+          listing.direction === "descending" ? shown.toReversed() : shown;
+        const listed = id === SERIES_ID ? ordered : [];
         const start = after === null ? 0 : Number(after);
         const end = start + BOOKS_PER_PAGE;
         return {

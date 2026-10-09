@@ -28,9 +28,10 @@ pub enum LibrarySortBy {
 }
 
 /// Ascending lists titles from A to Z and series added earliest first.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum SortDirection {
+    #[default]
     Ascending,
     Descending,
 }
@@ -80,12 +81,18 @@ impl From<LibraryListing> for SeriesListing {
                     LibrarySortBy::Title => SeriesOrder::Title,
                     LibrarySortBy::DateAdded => SeriesOrder::DateAdded,
                 },
-                direction: match listing.sort.direction {
-                    SortDirection::Ascending => StoredDirection::Ascending,
-                    SortDirection::Descending => StoredDirection::Descending,
-                },
+                direction: listing.sort.direction.into(),
             },
             filter: listing.filter.into(),
+        }
+    }
+}
+
+impl From<SortDirection> for StoredDirection {
+    fn from(direction: SortDirection) -> Self {
+        match direction {
+            SortDirection::Ascending => Self::Ascending,
+            SortDirection::Descending => Self::Descending,
         }
     }
 }

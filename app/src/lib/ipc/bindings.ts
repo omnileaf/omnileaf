@@ -24,7 +24,7 @@ export const commands = {
 	librarySearch: (after: string & { readonly __brand: "SeriesCursor" } | null, search: LibrarySearch) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_search", { after, search })),
 	librarySearchCount: (search: LibrarySearch) => typedError<number, IpcError>(__TAURI_INVOKE("library_search_count", { search })),
 	seriesOverview: (id: string & { readonly __brand: "SeriesId" }) => typedError<SeriesOverview, IpcError>(__TAURI_INVOKE("series_overview", { id })),
-	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, after })),
+	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	libraryListing: () => typedError<LibraryListing, IpcError>(__TAURI_INVOKE("library_listing")),
 	setLibraryListing: (listing: LibraryListing) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_listing", { listing })),
@@ -82,6 +82,10 @@ export type BookReading = { state: "notStarted" } |
 { state: "started"; page: number | null } | { state: "read" };
 
 export type BooksRemoval = { kind: "removed"; books: number } | { kind: "kept" };
+
+export type BooksShown = "all" | 
+/**  Only the books not marked read. */
+"unread";
 
 export type CoversPerRow = {
 	phone: number,
@@ -228,6 +232,12 @@ export type SeriesBook = {
 	/**  When the library first found the book, as an RFC 3339 UTC timestamp. */
 	addedAt: string,
 	reading: BookReading,
+};
+
+/**  Which of a series' books its page lists, and which way round. */
+export type SeriesBookListing = {
+	shown: BooksShown,
+	direction: SortDirection,
 };
 
 export type SeriesBookPage = {

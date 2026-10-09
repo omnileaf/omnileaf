@@ -5,7 +5,7 @@ use omnileaf_engine::{
     AppInfo, AppLanguage, BookCursor, BookId, BooksRemoval, Core, CoversPerRow, FolderCursor,
     FolderId, FolderPage, FolderRescan, FolderScan, InterfaceError, Library, LibraryFilter,
     LibraryListing, LibrarySearch, LibraryView, ProjectLink, ReadMark, ScanProgress,
-    SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
+    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
 };
 use tauri::{AppHandle, Manager, State, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -264,9 +264,10 @@ async fn series_overview(
 async fn series_books(
     library: State<'_, Library>,
     id: SeriesId,
+    listing: SeriesBookListing,
     after: Option<BookCursor>,
 ) -> Result<SeriesBookPage, IpcError> {
-    Ok(library.series_books(id, after).await?)
+    Ok(library.series_books(id, listing, after).await?)
 }
 
 #[tauri::command]

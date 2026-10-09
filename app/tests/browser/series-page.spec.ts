@@ -59,7 +59,8 @@ const SHELF_BACKEND: FakeBackend = {
   librarySearch: () => ({ series: [LISTED_SERIES], next: null }),
   librarySearchCount: () => 1,
   seriesOverview: (id) => shelf.backend().seriesOverview(id),
-  seriesBooks: (id, after) => shelf.backend().seriesBooks(id, after),
+  seriesBooks: (id, listing, after) =>
+    shelf.backend().seriesBooks(id, listing, after),
   markBooks: (books, mark) => shelf.backend().markBooks(books, mark),
 };
 
