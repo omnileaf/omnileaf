@@ -1,10 +1,10 @@
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   expect,
-  MEDIUM_MIN_WIDTH,
+  IPAD_USER_AGENT,
+  IPHONE_USER_AGENT,
   onPlatform,
   test,
-  viewportOf,
 } from "./fixtures.ts";
 
 type WireFolder = Awaited<
@@ -41,22 +41,26 @@ function withFolders(platform: "ios" | "android" | "linux"): {
   };
 }
 
-test.describe("the home folder in Settings › Library on ios", () => {
-  test.use(withFolders("ios"));
+for (const [device, userAgent, location] of [
+  ["an iPhone", IPHONE_USER_AGENT, "On My iPhone › Omnileaf"],
+  ["an iPad", IPAD_USER_AGENT, "On My iPad › Omnileaf"],
+] as const) {
+  test.describe(`the home folder in Settings › Library on ${device}`, () => {
+    test.use({ ...withFolders("ios"), userAgent });
 
-  test("names where the Files app shows it, without the app's private path", async ({
-    page,
-  }) => {
-    const location =
-      viewportOf(page).width < MEDIUM_MIN_WIDTH
-        ? "On My iPhone › Omnileaf"
-        : "On My iPad › Omnileaf";
+    test("names where the Files app shows it on the device at any window width, without the app's private path", async ({
+      page,
+    }) => {
+      await page.goto("/settings/library");
 
-    await page.goto("/settings/library");
-
-    await expect(page.getByText(location, { exact: true })).toBeVisible();
-    await expect(page.getByText(IOS_CONTAINER)).toHaveCount(0);
+      await expect(page.getByText(location, { exact: true })).toBeVisible();
+      await expect(page.getByText(IOS_CONTAINER)).toHaveCount(0);
+    });
   });
+}
+
+test.describe("linked folders in Settings › Library on ios", () => {
+  test.use(withFolders("ios"));
 
   test("keeps the path of a linked folder", async ({ page }) => {
     await page.goto("/settings/library");

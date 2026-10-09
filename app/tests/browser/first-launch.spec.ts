@@ -7,6 +7,8 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   EXPANDED_MIN_WIDTH,
+  IPAD_USER_AGENT,
+  IPHONE_USER_AGENT,
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
@@ -414,15 +416,13 @@ test.describe("the home folder on ios", () => {
       ...FIRST_LAUNCH_BACKEND,
       appInfo: onPlatform("ios").backend.appInfo,
     },
+    userAgent: IPHONE_USER_AGENT,
   });
 
   test("names the folder backups and books go in as the Files app does, without its path", async ({
     page,
   }) => {
-    const location =
-      viewportOf(page).width < MEDIUM_MIN_WIDTH
-        ? "On My iPhone › Omnileaf"
-        : "On My iPad › Omnileaf";
+    const location = "On My iPhone › Omnileaf";
 
     await goTo(page, IOS_HOME_HEADING, "ios");
 
@@ -444,6 +444,33 @@ test.describe("the home folder on ios", () => {
     await expect(
       page.getByRole("heading", { name: "Home folder" }),
     ).toHaveCount(0);
+  });
+});
+
+test.describe("the home folder on an iPad", () => {
+  test.use({
+    backend: {
+      ...FIRST_LAUNCH_BACKEND,
+      appInfo: onPlatform("ios").backend.appInfo,
+    },
+    userAgent: IPAD_USER_AGENT,
+  });
+
+  test("names the folder backups and books go in as the Files app does, without its path", async ({
+    page,
+  }) => {
+    const location = "On My iPad › Omnileaf";
+
+    await goTo(page, IOS_HOME_HEADING, "ios");
+
+    await expect(page.getByText(location, { exact: true })).toBeVisible();
+    await expect(page.getByText(HOME_FOLDER.location)).toHaveCount(0);
+    await expect(
+      page.getByText(
+        "Omnileaf keeps your backups, and books you add, in its own folder in the Files app, so they're easy to copy or move. Your progress and categories stay safely inside the app.",
+      ),
+    ).toBeVisible();
+    await expect(page.getByText(/daily backups/)).toHaveCount(0);
   });
 });
 

@@ -3,7 +3,6 @@
   import type { ClassValue } from "svelte/elements";
 
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
-  import WidthWording from "#lib/page/WidthWording.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
   import { folderLocation } from "./folder-location";
@@ -36,7 +35,7 @@
     <div class="mbs-sm rounded-card border border-border bg-card">
       <FolderRow folder={home}>
         {#snippet location()}
-          <WidthWording wording={folderLocation(home, platform)} />
+          {folderLocation(home, platform)}
         {/snippet}
         {#snippet action()}
           {@render rowAction?.(home)}

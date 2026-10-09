@@ -2,11 +2,13 @@
   import { House } from "@lucide/svelte";
 
   import type { Platform } from "#lib/ipc/bindings.ts";
-  import { folderLocation } from "#lib/library/folder-location.ts";
+  import {
+    appleDeviceOf,
+    folderLocation,
+  } from "#lib/library/folder-location.ts";
   import FolderRow from "#lib/library/FolderRow.svelte";
   import HomeFolder from "#lib/library/HomeFolder.svelte";
   import type { FolderList } from "#lib/library/library-folders.svelte.ts";
-  import WidthWording from "#lib/page/WidthWording.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
   import StepButton from "./StepButton.svelte";
@@ -48,7 +50,11 @@
         <div class="rounded-card border border-border bg-card">
           <FolderRow folder={home}>
             {#snippet location()}
-              <WidthWording wording={folderLocation(home, platform)} />
+              {folderLocation(
+                home,
+                platform,
+                appleDeviceOf(navigator.userAgent),
+              )}
             {/snippet}
           </FolderRow>
         </div>
