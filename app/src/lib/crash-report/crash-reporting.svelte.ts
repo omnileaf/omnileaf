@@ -48,6 +48,7 @@ const SEND_OUTCOMES = {
   developmentBuildOnly: "notSent",
   seriesNotFound: "notSent",
   searchTooLong: "notSent",
+  cursorForAnotherList: "notSent",
   internal: "notSent",
 } as const satisfies Record<IpcErrorCode, SendFailure | undefined>;
 

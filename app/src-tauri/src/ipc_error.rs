@@ -31,6 +31,7 @@ pub(crate) enum IpcErrorCode {
     DevelopmentBuildOnly,
     SeriesNotFound,
     SearchTooLong,
+    CursorForAnotherList,
     Internal,
 }
 
@@ -112,6 +113,10 @@ impl From<LibraryError> for IpcError {
                 IpcErrorCode::SearchTooLong,
                 "the search is longer than a search reads",
             ),
+            LibraryError::CursorForAnotherList => (
+                IpcErrorCode::CursorForAnotherList,
+                "that page cursor belongs to another list",
+            ),
             LibraryError::CreateFolder { .. }
             | LibraryError::Database(_)
             | LibraryError::StoredView(_)
@@ -163,6 +168,7 @@ mod tests {
                 chars: 201,
                 max: 200,
             }),
+            code_for(LibraryError::from(omnileaf_db::Error::CursorForAnotherList)),
             code_for(LibraryError::CreateFolder {
                 path: PathBuf::from("/data/Omnileaf"),
                 source: io::Error::from(io::ErrorKind::StorageFull),
@@ -177,6 +183,7 @@ mod tests {
                 IpcErrorCode::HomeFolderKept,
                 IpcErrorCode::SeriesNotFound,
                 IpcErrorCode::SearchTooLong,
+                IpcErrorCode::CursorForAnotherList,
                 IpcErrorCode::Internal,
             ]
         );

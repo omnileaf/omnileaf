@@ -2,12 +2,18 @@ use std::{fmt, str::FromStr};
 
 use omnileaf_sync_proto::{BookId, SeriesId};
 
-use crate::{Error, title_key::TitleStamp};
+use crate::{
+    Error,
+    catalog::{BookListing, BooksShown, SortDirection},
+    title_key::TitleStamp,
+};
 
 const TITLE_TAG: u8 = 1;
 const ADDED_TAG: u8 = 2;
 const BOOK_TAG: u8 = 3;
 const ROOT_TAG: u8 = 4;
+const DESCENDING_BIT: u8 = 0b01;
+const UNREAD_BIT: u8 = 0b10;
 const ID_LENGTH: usize = 16;
 const MILLIS_LENGTH: usize = size_of::<i64>();
 const HEX_RADIX: u32 = 16;
@@ -26,8 +32,10 @@ pub(crate) enum Position {
         added_at_ms: i64,
         id: SeriesId,
     },
+    /// Carries the listing it was given out in, since a page in another order or of other books goes on from elsewhere.
     Book {
         series: SeriesId,
+        listing: BookListing,
         sort_key: Vec<u8>,
         id: BookId,
     },
@@ -49,9 +57,16 @@ impl Position {
             }
             Self::Book {
                 series,
+                listing,
                 sort_key,
                 id,
-            } => [&[BOOK_TAG][..], series.as_bytes(), id.as_bytes(), sort_key].concat(),
+            } => [
+                &[BOOK_TAG, listing_byte(*listing)][..],
+                series.as_bytes(),
+                id.as_bytes(),
+                sort_key,
+            ]
+            .concat(),
             Self::Root { id } => [&[ROOT_TAG][..], &id.to_be_bytes()].concat(),
         }
     }
@@ -76,10 +91,12 @@ impl Position {
                 })
             }
             BOOK_TAG => {
+                let (&listing, rest) = rest.split_first()?;
                 let (series, rest) = rest.split_first_chunk::<ID_LENGTH>()?;
                 let (id, sort_key) = rest.split_first_chunk::<ID_LENGTH>()?;
                 Some(Self::Book {
                     series: SeriesId::try_from(series.as_slice()).ok()?,
+                    listing: listing_from_byte(listing)?,
                     sort_key: sort_key.to_vec(),
                     id: BookId::try_from(id.as_slice()).ok()?,
                 })
@@ -90,6 +107,36 @@ impl Position {
             _ => None,
         }
     }
+}
+
+fn listing_byte(listing: BookListing) -> u8 {
+    let direction = match listing.direction {
+        SortDirection::Ascending => 0,
+        SortDirection::Descending => DESCENDING_BIT,
+    };
+    let shown = match listing.shown {
+        BooksShown::All => 0,
+        BooksShown::Unread => UNREAD_BIT,
+    };
+    direction | shown
+}
+
+fn listing_from_byte(byte: u8) -> Option<BookListing> {
+    if byte & !(DESCENDING_BIT | UNREAD_BIT) != 0 {
+        return None;
+    }
+    Some(BookListing {
+        shown: if byte & UNREAD_BIT == 0 {
+            BooksShown::All
+        } else {
+            BooksShown::Unread
+        },
+        direction: if byte & DESCENDING_BIT == 0 {
+            SortDirection::Ascending
+        } else {
+            SortDirection::Descending
+        },
+    })
 }
 
 impl fmt::Display for Cursor {
