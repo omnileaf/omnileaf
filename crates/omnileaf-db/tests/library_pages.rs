@@ -556,6 +556,39 @@ async fn refuses_to_continue_one_series_books_from_another_series_cursor() {
 }
 
 #[tokio::test]
+async fn refuses_to_continue_a_series_books_in_another_listing_from_a_cursor() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &["Volume 01", "Volume 02", "Volume 03"],
+    )])
+    .await;
+    let series = series_id("Sample Series 01");
+    let in_order = listed_book_titles(series, BookListing::IN_ORDER);
+    let cursor = library.page(in_order, None, 1).await.unwrap().next;
+    let others = [
+        BookListing {
+            direction: SortDirection::Descending,
+            ..BookListing::IN_ORDER
+        },
+        BookListing {
+            shown: BooksShown::Unread,
+            ..BookListing::IN_ORDER
+        },
+    ];
+
+    for other in others {
+        let outcome = library
+            .page(listed_book_titles(series, other), cursor.clone(), 1)
+            .await;
+
+        assert!(
+            matches!(outcome, Err(Error::CursorForAnotherList)),
+            "{other:?}: {outcome:?}"
+        );
+    }
+}
+
+#[tokio::test]
 async fn refuses_to_continue_one_series_order_from_another_s_cursor() {
     let library = Library::with(&[
         SeriesSeed::named("Sample Series 01"),

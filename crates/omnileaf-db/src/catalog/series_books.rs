@@ -124,9 +124,10 @@ pub fn series_books(
         ),
         Some(Position::Book {
             series: listed,
+            listing: given,
             sort_key,
             id,
-        }) if *listed == series => walk(
+        }) if *listed == series && *given == listing => walk(
             connection,
             series,
             listing,
@@ -165,13 +166,13 @@ fn walk(
             break;
         };
         let numbered = match (position, listing.direction) {
-            (None, _) => books_before(connection, &stored_book(series, row)?.1)? + 1,
+            (None, _) => books_before(connection, &stored_book(series, listing, row)?.1)? + 1,
             (Some(previous), SortDirection::Ascending) => previous + 1,
             (Some(previous), SortDirection::Descending) => previous - 1,
         };
         position = Some(numbered);
         if listing.holds(stored_reading(row)?) {
-            let (mut book, cursor) = stored_book(series, row)?;
+            let (mut book, cursor) = stored_book(series, listing, row)?;
             book.position = numbered;
             held.push((book, cursor));
         }
@@ -189,6 +190,7 @@ fn books_before(connection: &Connection, book: &Position) -> Result<u32, Error> 
         series,
         sort_key,
         id,
+        ..
     } = book
     else {
         return Err(Error::CursorForAnotherList);
@@ -207,7 +209,7 @@ pub fn up_next(connection: &Connection, series: SeriesId) -> Result<Option<BookS
         let mut statement = connection.prepare(query)?;
         let mut rows = statement.query(named_params! { ":series": series.as_bytes() })?;
         if let Some(row) = rows.next()? {
-            let (mut book, cursor) = stored_book(series, row)?;
+            let (mut book, cursor) = stored_book(series, BookListing::IN_ORDER, row)?;
             book.position = books_before(connection, &cursor)? + 1;
             (book.title, book.added_at_ms) =
                 connection.query_row(BOOK_DETAILS, [book.id.as_bytes()], |row| {
@@ -220,7 +222,11 @@ pub fn up_next(connection: &Connection, series: SeriesId) -> Result<Option<BookS
 }
 
 /// Reads a book's id and reading state, leaving its position, title and date for the caller, and the cursor just past it.
-fn stored_book(series: SeriesId, row: &Row<'_>) -> rusqlite::Result<(BookSummary, Position)> {
+fn stored_book(
+    series: SeriesId,
+    listing: BookListing,
+    row: &Row<'_>,
+) -> rusqlite::Result<(BookSummary, Position)> {
     let id = stored_id(row, "id")?;
     let book = BookSummary {
         id,
@@ -231,6 +237,7 @@ fn stored_book(series: SeriesId, row: &Row<'_>) -> rusqlite::Result<(BookSummary
     };
     let position = Position::Book {
         series,
+        listing,
         sort_key: row.get("title_sort_key")?,
         id,
     };

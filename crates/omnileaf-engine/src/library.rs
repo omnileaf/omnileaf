@@ -120,6 +120,8 @@ pub enum LibraryError {
     HomeFolderKept { id: FolderId },
     #[error("search for {chars} characters, more than the {max} a search reads")]
     SearchTooLong { chars: usize, max: u16 },
+    #[error("continue a list from a page cursor given out for another list or listing")]
+    CursorForAnotherList,
     #[error("reach the library database")]
     Database(#[source] omnileaf_db::Error),
     #[error("read the library view this device stored")]
@@ -917,6 +919,7 @@ impl From<omnileaf_db::Error> for LibraryError {
             omnileaf_db::Error::UnknownRoot { id } => Self::FolderNotFound { id: FolderId(id) },
             omnileaf_db::Error::HomeRoot { id } => Self::HomeFolderKept { id: FolderId(id) },
             omnileaf_db::Error::SearchTooLong { chars, max } => Self::SearchTooLong { chars, max },
+            omnileaf_db::Error::CursorForAnotherList => Self::CursorForAnotherList,
             other => Self::Database(other),
         }
     }
