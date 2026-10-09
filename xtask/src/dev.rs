@@ -3,6 +3,7 @@ use std::{
     net::{TcpStream, ToSocketAddrs},
     path::{Path, PathBuf},
     process::Child,
+    sync::mpsc::Sender,
     thread,
     time::{Duration, Instant},
 };
@@ -13,6 +14,7 @@ use clap::ValueEnum;
 use crate::{
     android, device_choice,
     devices::{self, Device, State},
+    port_forward::{self, PortForward},
     process::{Machine, Process, command_for},
 };
 
@@ -181,13 +183,18 @@ fn target(chosen: Option<&str>, devices: &[Device]) -> Target {
     }
 }
 
+/// Off Windows, Android reaches the dev server on its own loopback through `adb reverse`.
+fn forwards_the_dev_server(platform: Platform, os: &str) -> bool {
+    platform == Platform::Android && os != WINDOWS
+}
+
 pub(crate) fn tauri_args(platform: Platform, devices: &Devices, os: &str) -> Vec<String> {
     let (subcommand, device): (&[&str], Option<&String>) = match platform {
         Platform::Desktop => (&["dev"], None),
         Platform::Ios => (&["ios", "dev"], devices.ios.as_ref()),
         Platform::Android => (&["android", "dev"], devices.android.as_ref()),
     };
-    let loopback_host: &[&str] = if platform == Platform::Android && os != WINDOWS {
+    let loopback_host: &[&str] = if forwards_the_dev_server(platform, os) {
         &["--host", LOOPBACK]
     } else {
         &[]
@@ -210,9 +217,27 @@ pub(crate) fn run(root: &Path, session: &Session) -> anyhow::Result<()> {
     )?;
     let reach = reach(&session.platforms, ios, env::consts::OS);
     let mut dev_server = start_dev_server(root, reach)?;
-    let outcome = wait_for_dev_server().and_then(|()| run_platforms(root, session));
+    let outcome = wait_for_dev_server().and_then(|()| {
+        let _forwarding = keep_android_forwarded(&session.platforms);
+        run_platforms(root, session)
+    });
     stop(&mut dev_server).context("stop the Vite dev server")?;
     outcome
+}
+
+fn keep_android_forwarded(platforms: &[Platform]) -> Option<Sender<()>> {
+    let os = env::consts::OS;
+    if !platforms
+        .iter()
+        .any(|&platform| forwards_the_dev_server(platform, os))
+    {
+        return None;
+    }
+    let toolchain = android::Toolchain::locate(|key| env::var_os(key), os)?;
+    Some(port_forward::keep(
+        PortForward::new(toolchain.adb(), DEV_SERVER.1),
+        Process::in_workspace(),
+    ))
 }
 
 fn ios_target(
@@ -391,6 +416,15 @@ mod tests {
             reach(&[Platform::Desktop], None, "windows"),
             Reach::Localhost
         );
+    }
+
+    #[test]
+    fn forwards_the_dev_server_only_to_android_off_windows() {
+        assert!(forwards_the_dev_server(Platform::Android, "macos"));
+        assert!(forwards_the_dev_server(Platform::Android, "linux"));
+        assert!(!forwards_the_dev_server(Platform::Android, "windows"));
+        assert!(!forwards_the_dev_server(Platform::Ios, "macos"));
+        assert!(!forwards_the_dev_server(Platform::Desktop, "linux"));
     }
 
     fn listed(kind: Kind, state: State, name: &str, id: Option<&str>) -> Device {

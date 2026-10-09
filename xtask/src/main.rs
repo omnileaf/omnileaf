@@ -16,6 +16,7 @@ mod licences;
 mod lint_comments;
 mod lint_sync;
 mod policy;
+mod port_forward;
 mod pre_push;
 mod process;
 mod screenshot;
