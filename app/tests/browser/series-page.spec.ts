@@ -696,10 +696,11 @@ test.describe("while Screenshot mode is on", () => {
       page.getByRole("heading", { level: 1, name: standIn ?? "" }),
     ).toBeFocused();
     await expect(books(page).first()).toContainText(
-      new RegExp(`${standIn ?? ""} · Book \\d{2,3}`),
+      `${standIn ?? ""} · Book 1`,
     );
+    await expect(books(page).nth(3)).toContainText(`${standIn ?? ""} · Book 4`);
     await expect(page.getByRole("main")).toContainText(
-      `Continue ${standIn ?? ""} · Book`,
+      `Continue ${standIn ?? ""} · Book 4 at page 15`,
     );
     await expect(page.getByRole("main")).toContainText(/Folder \d{2,3}/);
     const shown = (await page.getByRole("main").textContent()) ?? "";
