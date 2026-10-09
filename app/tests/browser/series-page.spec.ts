@@ -498,6 +498,22 @@ test("fits the series page to the screen, picking books or not", async ({
   expect([fitsBefore, fitsWhilePicking]).toEqual([[], []]);
 });
 
+test("sets each book's added date on one line of the table", async ({
+  page,
+}) => {
+  test.skip(!isWide(page), "the books show as a table on wide screens");
+  await openSeries(page);
+
+  const added = books(page)
+    .first()
+    .getByText(/^Sep 21, 2026$/);
+  const lineHeight = await added.evaluate((element) =>
+    Number.parseFloat(getComputedStyle(element).lineHeight),
+  );
+
+  expect((await boxOf(added)).height).toBeLessThanOrEqual(lineHeight);
+});
+
 test.describe("on an iPhone", () => {
   const SNUG_GAP = 20;
 
