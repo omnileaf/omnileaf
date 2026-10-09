@@ -69,3 +69,58 @@ test("stops reading the rest of a list that can't be read", async () => {
 
   expect([calls, list.list]).toEqual([2, { kind: "failed" }]);
 });
+
+/** Pages that answer only when the test lets them, each page holding the cursor it was asked for and the next one along. */
+function heldPages(): {
+  readonly asked: (number | null)[];
+  readonly answer: (index: number, next: number | null) => void;
+  readonly list: PagedList<number, number>;
+} {
+  const asked: (number | null)[] = [];
+  const answers: ((page: PageResult<number, number>) => void)[] = [];
+  const list = new PagedList<number, number>((after) => {
+    asked.push(after);
+    return new Promise((resolve) => {
+      answers.push(resolve);
+    });
+  });
+  const answer = (index: number, next: number | null) => {
+    answers[index]?.({
+      status: "ok",
+      data: { items: [asked[index] ?? 0], next },
+    });
+  };
+  return { asked, answer, list };
+}
+
+test("asks for nothing past the list before once a new list has started", async () => {
+  const { asked, answer, list } = heldPages();
+  const loaded = list.load();
+  answer(0, 1);
+  await loaded;
+
+  const started = list.start();
+  await list.loadMore();
+  answer(1, 2);
+  await started;
+
+  expect(asked).toEqual([null, null]);
+});
+
+test("reads the next page of a new list though the list before was still reading one", async () => {
+  const { asked, answer, list } = heldPages();
+  const loaded = list.load();
+  answer(0, 1);
+  await loaded;
+  const olderMore = list.loadMore();
+  const started = list.start();
+  answer(2, 5);
+  await started;
+
+  const newerMore = list.loadMore();
+  answer(1, null);
+  answer(3, null);
+  await Promise.all([olderMore, newerMore]);
+
+  expect(asked).toEqual([null, 1, null, 5]);
+});

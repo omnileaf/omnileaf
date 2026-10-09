@@ -9,13 +9,17 @@ import type { SeriesId } from "./series-id";
 
 type BookCursor = NonNullable<Parameters<typeof commands.seriesBooks>[2]>;
 
-/** A series' books as `listing` asks when each page is read, a page at a time. */
+/** A series' books a page at a time, listed as `listing` asks when the list is read from its start, so every later page goes on in that listing. */
 export function seriesBookList(
   series: SeriesId,
   listing: () => SeriesBookListing,
 ): PagedList<SeriesBook, BookCursor> {
+  let listed: SeriesBookListing | undefined;
   return new PagedList(async (after) => {
-    const page = await commands.seriesBooks(series, listing(), after);
+    if (after === null || listed === undefined) {
+      listed = listing();
+    }
+    const page = await commands.seriesBooks(series, listed, after);
     return page.status === "ok"
       ? { status: "ok", data: { items: page.data.books, next: page.data.next } }
       : page;
