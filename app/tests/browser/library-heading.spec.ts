@@ -17,6 +17,7 @@ const WIDTHS = [
   320, 360, 390, 430, 599, 600, 768, 839, 840, 1024, 1199, 1200, 1280, 1920,
 ];
 const HEIGHT = 900;
+const PHONE_WIDTHS = [360, 390, 430];
 const PLATFORMS = ["ios", "android", "linux"] as const;
 const LANGUAGES = { en: english, "en-XA": pseudo } as const;
 const SCREENSHOT_MODE = ["on", "off"] as const;
@@ -164,4 +165,65 @@ for (const platform of PLATFORMS) {
       }
     }
   }
+}
+
+for (const platform of PLATFORMS) {
+  test.describe(`the heading's buttons on a ${platform} phone`, () => {
+    test.use({ backend: backendFor(platform, "filled") });
+
+    test("stay on the title's row beside a five-digit count, as the phone board draws them", async ({
+      page,
+    }, testInfo) => {
+      test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
+      await page.goto("/");
+      await expect(countOf(page)).toBeVisible();
+      await expect(headingOf(page).getByRole("button")).toHaveCount(2);
+
+      for (const width of PHONE_WIDTHS) {
+        await page.setViewportSize({ width, height: HEIGHT });
+        const title = await boxOf(
+          headingOf(page).getByRole("heading", { level: 1 }),
+        );
+
+        for (const button of await headingOf(page).getByRole("button").all()) {
+          const box = await boxOf(button);
+          expect(box.y, `at ${String(width)}px`).toBeLessThan(
+            title.y + title.height,
+          );
+        }
+      }
+    });
+
+    test("show Add a folder as a round icon the size of View options, each named in a tooltip", async ({
+      page,
+    }, testInfo) => {
+      test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
+      await page.goto("/");
+      const addFolder = headingOf(page).getByRole("button", {
+        name: english.library_add_folder,
+      });
+      const viewOptions = headingOf(page).getByRole("button", {
+        name: english.library_view_options,
+      });
+
+      const added = await boxOf(addFolder);
+      const options = await boxOf(viewOptions);
+
+      expect([added.width, added.height]).toEqual([
+        options.width,
+        options.height,
+      ]);
+      await expect(addFolder.getByText(english.library_add_folder)).toHaveClass(
+        /sr-only/,
+      );
+      await expect(addFolder).toHaveAttribute(
+        "title",
+        english.library_add_folder,
+      );
+      await expect(viewOptions).toHaveAttribute(
+        "title",
+        english.library_view_options,
+      );
+    });
+  });
 }

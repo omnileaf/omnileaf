@@ -91,6 +91,7 @@
   aria-haspopup="dialog"
   aria-expanded={isOpen}
   aria-label={m.library_view_options()}
+  title={m.library_view_options()}
   class={[
     "flex items-center justify-center gap-sm rounded-full transition-control block-touch-target inline-touch-target large:rounded-control large:border large:border-field large:px-header-control-inline large:text-small large:font-medium large:block-pointer-button large:inline-auto",
     isOpen
