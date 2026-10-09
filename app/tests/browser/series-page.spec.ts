@@ -1,6 +1,10 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { emitFakeEvent, type FakeBackend } from "./fake-backend.ts";
+import {
+  emitFakeEvent,
+  type FakeBackend,
+  fakeProtocolRoute,
+} from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -503,3 +507,66 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test.describe("while Screenshot mode is on", () => {
+  const COVER = `thumb/v1/${SERIES_ID}/1/1`;
+  const STAND_IN = /^Series \d{2,3}$/;
+  let coverRequests = 0;
+
+  test.use({
+    backend: {
+      ...SHELF_BACKEND,
+      librarySeries: () => ({
+        series: [{ ...LISTED_SERIES, cover: COVER }],
+        next: null,
+      }),
+      seriesOverview: async (id) => ({
+        ...(await shelf.backend().seriesOverview(id)),
+        cover: COVER,
+      }),
+    },
+  });
+
+  test.beforeEach(async ({ page }) => {
+    coverRequests = 0;
+    await page.route(fakeProtocolRoute("omni"), (route) => {
+      coverRequests += 1;
+      return route.abort();
+    });
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "omnileaf.screenshotMode",
+        JSON.stringify({ activity: { kind: "on" } }),
+      );
+    });
+  });
+
+  test("shows the series as the library's stand-in, with no title, folder or cover of its own", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const cover = page
+      .getByRole("list", { name: "Series" })
+      .getByRole("link")
+      .first();
+    const standIn = await cover.getByText(STAND_IN).textContent();
+
+    await cover.click();
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: standIn ?? "" }),
+    ).toBeFocused();
+    await expect(books(page).first()).toContainText(
+      new RegExp(`${standIn ?? ""} · Book \\d{2,3}`),
+    );
+    await expect(page.getByRole("main")).toContainText(
+      `Continue ${standIn ?? ""} · Book`,
+    );
+    await expect(page.getByRole("main")).toContainText(/Folder \d{2,3}/);
+    const shown = (await page.getByRole("main").textContent()) ?? "";
+    expect(shown).not.toContain(SERIES_TITLE);
+    expect(shown).not.toContain(SERIES_FOLDER);
+    expect(page.url()).not.toContain("Sample");
+    expect(coverRequests).toBe(0);
+  });
+});

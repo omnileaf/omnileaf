@@ -250,6 +250,28 @@ test("opens the series chosen on its own page", async ({ page }) => {
   ).toBeFocused();
 });
 
+test("opens a chosen series' page under its stand-in, never its title, while Screenshot mode is on", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "omnileaf.screenshotMode",
+      JSON.stringify({ activity: { kind: "on" } }),
+    );
+  });
+  await openLibrary(page);
+  await pressQuickOpen(page);
+  await field(page).fill("0007");
+
+  await options(page).first().click();
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    /^Series \d{2,3}$/,
+  );
+  await expect(page.getByRole("main")).not.toContainText("Sample Series");
+  expect(page.url()).not.toContain("Sample");
+});
+
 test("opens another series chosen while a series' page is open", async ({
   page,
 }) => {
