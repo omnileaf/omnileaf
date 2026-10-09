@@ -20,6 +20,8 @@ const WIDTHS = [
 ];
 const HEIGHT = 900;
 const PHONE_WIDTHS = [360, 375, 390, 430];
+/** Every width from just below a tablet's to a wide desktop's, 16px at a time, across each fold of the heading. */
+const RESIZE_SWEEP = Array.from({ length: 41 }, (_, step) => 800 + step * 16);
 const FILTERED_COUNT = 7;
 const LARGEST_TEXT = ":root { --text-scale: 2 !important; }";
 const LARGEST_TEXT_WIDTHS = [360, 375, 390, 430];
@@ -611,3 +613,59 @@ test.describe("the heading's search on linux", () => {
     expect(link).toBe(viewOptions);
   });
 });
+
+for (const platform of ["ios", "linux"] as const) {
+  test.describe(`the heading resized across its folds on ${platform}`, () => {
+    test.use({ backend: backendFor(platform, "filled") });
+
+    test("refits without a single page or interface error", async ({
+      page,
+    }, testInfo) => {
+      test.skip(
+        !testInfo.project.name.endsWith(SWEEPING_SCREEN[platform]),
+        "each engine resizes once, from the screen the platform runs on",
+      );
+      test.slow(true, "resizing the window 82 times takes WebKit a while");
+      const pageErrors: string[] = [];
+      page.on("pageerror", (error) => {
+        pageErrors.push(error.message);
+      });
+      await page.addInitScript(() => {
+        localStorage.setItem("omnileaf.language", "en-XA");
+        localStorage.setItem(
+          "omnileaf.screenshotMode",
+          JSON.stringify({ activity: { kind: "on" } }),
+        );
+        const heard: string[] = [];
+        Object.assign(window, { heardErrors: heard });
+        window.addEventListener("error", (event) => {
+          heard.push(event.message);
+        });
+        window.addEventListener("unhandledrejection", (event) => {
+          heard.push(String(event.reason));
+        });
+        window.addEventListener("omnileaf:interface-error", (event) => {
+          heard.push(String((event as CustomEvent).detail));
+        });
+      });
+      await openAt(page, RESIZE_SWEEP[0] ?? 0, "on");
+      await expect(countOf(page)).toBeVisible();
+
+      for (const width of [...RESIZE_SWEEP, ...RESIZE_SWEEP.toReversed()]) {
+        await page.setViewportSize({ width, height: HEIGHT });
+        await page.evaluate(
+          () =>
+            new Promise((settled) =>
+              requestAnimationFrame(() => requestAnimationFrame(settled)),
+            ),
+        );
+      }
+
+      const heard = await page.evaluate(
+        () => (window as unknown as { heardErrors: string[] }).heardErrors,
+      );
+      expect([...pageErrors, ...heard]).toEqual([]);
+      expect(await sidewaysOverflow(page)).toEqual([]);
+    });
+  });
+}

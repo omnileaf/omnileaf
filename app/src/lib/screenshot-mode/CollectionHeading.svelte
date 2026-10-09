@@ -38,14 +38,21 @@
       return;
     }
     const heading = header;
+    let pendingFit: number | undefined;
     const observer = new ResizeObserver(() => {
-      refit(heading);
+      pendingFit ??= requestAnimationFrame(() => {
+        pendingFit = undefined;
+        refit(heading);
+      });
     });
     observer.observe(heading);
     if (buttons !== undefined) {
       observer.observe(buttons);
     }
     return () => {
+      if (pendingFit !== undefined) {
+        cancelAnimationFrame(pendingFit);
+      }
       observer.disconnect();
     };
   });
