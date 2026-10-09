@@ -5,6 +5,7 @@
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
+  import type { Reveal } from "#lib/virtual-grid/grid-keys.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   let {
@@ -16,6 +17,7 @@
     usesStandIns,
     listId,
     activeKey,
+    onRevealReady,
   }: {
     series: readonly LibrarySeries[];
     count: number | undefined;
@@ -25,9 +27,11 @@
     usesStandIns: boolean;
     listId: string;
     activeKey: string | undefined;
+    onRevealReady?: ((reveal: Reveal) => void) | undefined;
   } = $props();
 
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
+
   const headingId = $props.id();
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
 </script>
@@ -64,6 +68,7 @@
       : m.search_series_heading({ count: numbers.format(count) })}
   </h2>
   <VirtualGrid
+    {onRevealReady}
     items={series}
     key={(one: LibrarySeries) => one.id}
     label={m.search_results()}

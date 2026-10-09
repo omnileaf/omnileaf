@@ -19,7 +19,7 @@ import {
   test,
   viewportOf,
 } from "./fixtures.ts";
-import type { WireSeries } from "./series-catalog.ts";
+import { sampleSeries, type WireSeries } from "./series-catalog.ts";
 
 interface FakeSeries {
   readonly series: WireSeries;
@@ -691,5 +691,51 @@ test.describe("the search page's one status", () => {
     await expect(status).toHaveText("Couldn't search your library. Try again.");
 
     await expect(status).toHaveAttribute("data-first", "yes");
+  });
+});
+
+test.describe("a long list of results", () => {
+  const LONG_LIST = sampleSeries(300);
+
+  test.use({
+    backend: {
+      ...SEARCHING_BACKEND,
+      librarySearch: () => ({ series: LONG_LIST, next: null }),
+      librarySearchCount: () => LONG_LIST.length,
+    },
+  });
+
+  /** The option the field names active, which must be drawn and in view for a screen reader and a sighted person alike. */
+  async function activeOption(page: Page): Promise<Locator> {
+    await expect(searchField(page)).toHaveAttribute("aria-activedescendant");
+    const id = await searchField(page).getAttribute("aria-activedescendant");
+    const option = page.locator(`[id="${id ?? ""}"]`);
+    await expect(option).toBeInViewport();
+    return option;
+  }
+
+  test("reveals the result End, Home and the arrows move to beyond the rows drawn", async ({
+    page,
+  }) => {
+    test.skip(!isDesktop(page), "desktop only");
+    await page.goto("/search");
+    await searchField(page).fill("sample");
+    await expect(results(page).getByRole("option").first()).toBeVisible();
+
+    await searchField(page).press("ArrowDown");
+    await searchField(page).press("End");
+    await expect(await activeOption(page)).toContainText(
+      LONG_LIST.at(-1)?.title ?? "",
+    );
+    await searchField(page).press("Home");
+    await expect(await activeOption(page)).toContainText(
+      LONG_LIST[0]?.title ?? "",
+    );
+    for (let row = 0; row < 20; row += 1) {
+      await searchField(page).press("ArrowDown");
+    }
+    await expect(await activeOption(page)).toContainText(
+      LONG_LIST[60]?.title ?? "",
+    );
   });
 });

@@ -1,8 +1,8 @@
 <script lang="ts" generics="Item">
-  import { onMount, type Snippet } from "svelte";
+  import { onMount, type Snippet, tick } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
-  import { columnsOf, optionId } from "./grid-keys";
+  import { columnsOf, optionId, type Reveal } from "./grid-keys";
   import { rowWindow, type Seen } from "./row-window";
 
   /** A list whose choices a field moves through, naming the active one in its aria-activedescendant. */
@@ -23,6 +23,7 @@
     style,
     itemClass,
     listbox,
+    onRevealReady,
   }: {
     items: readonly Item[];
     key: (item: Item) => string;
@@ -35,6 +36,7 @@
     style?: string;
     itemClass?: ClassValue;
     listbox?: Listbox | undefined;
+    onRevealReady?: ((reveal: Reveal) => void) | undefined;
   } = $props();
 
   const ITEMS_BEFORE_MEASURING = 24;
@@ -100,6 +102,45 @@
     );
   }
 
+  /** The nearest ancestor that scrolls, which the grid's rows scroll in. */
+  function scrollerOf(element: Element): Element {
+    for (
+      let ancestor = element.parentElement;
+      ancestor !== null;
+      ancestor = ancestor.parentElement
+    ) {
+      if (/auto|scroll/u.test(getComputedStyle(ancestor).overflowY)) {
+        return ancestor;
+      }
+    }
+    return document.scrollingElement ?? document.documentElement;
+  }
+
+  async function revealItem(index: number): Promise<HTMLElement | undefined> {
+    if (frame === undefined || list === undefined) {
+      return undefined;
+    }
+    const isDrawn = index >= shown.start && index < shown.end;
+    if (measure !== undefined && !isDrawn) {
+      const scroller = scrollerOf(frame);
+      const view = scroller.getBoundingClientRect();
+      const rowTop =
+        frame.getBoundingClientRect().top +
+        Math.floor(index / measure.columns) * measure.rowStride;
+      const below = rowTop + measure.rowStride - view.bottom;
+      scroller.scrollBy({
+        top: rowTop < view.top ? rowTop - view.top : Math.max(0, below),
+      });
+      look();
+      await tick();
+    }
+    const item = list.querySelector<HTMLElement>(
+      `:scope > [aria-posinset="${String(index + 1)}"]`,
+    );
+    item?.scrollIntoView({ block: "nearest" });
+    return item ?? undefined;
+  }
+
   let pendingLook: number | undefined;
 
   function lookNextFrame(): void {
@@ -110,6 +151,7 @@
   }
 
   onMount(() => {
+    onRevealReady?.(revealItem);
     look();
     const resized = new ResizeObserver(lookNextFrame);
     const restyled = new MutationObserver(look);

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick, untrack } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -38,7 +38,12 @@
   import SearchResults from "#lib/search/SearchResults.svelte";
   import SearchStart from "#lib/search/SearchStart.svelte";
   import ShowChoices from "#lib/search/ShowChoices.svelte";
-  import { columnsOf, movedTo, optionId } from "#lib/virtual-grid/grid-keys.ts";
+  import {
+    columnsOf,
+    movedTo,
+    optionId,
+    type Reveal,
+  } from "#lib/virtual-grid/grid-keys.ts";
 
   import type { PageProps } from "./$types";
 
@@ -83,6 +88,8 @@
   });
   const listId = $props.id();
   let activeKey: string | undefined = $state();
+  let drawnKey: string | undefined = $state();
+  let revealResult: Reveal | undefined = $state();
   const shown: readonly LibrarySeries[] = $derived(
     results.list.kind === "loaded" ? results.list.series : [],
   );
@@ -120,12 +127,12 @@
     void goto(`${resolve("/(app)/search")}${titleQuery(lookOf(series).title)}`);
   }
 
-  function reveal(series: LibrarySeries): void {
-    void tick().then(() => {
-      document
-        .getElementById(optionId(listId, series.id))
-        ?.scrollIntoView({ block: "nearest" });
-    });
+  /** Names the result active to the field only once it is drawn, so the field never points at a result the list has yet to draw. */
+  async function reveal(series: LibrarySeries, index: number): Promise<void> {
+    const drawn = await revealResult?.(index);
+    if (drawn !== undefined && activeKey === series.id) {
+      drawnKey = series.id;
+    }
   }
 
   /** Moves through the results, or opens the active one, for the keys they answer to, leaving any key held with a modifier to the field. */
@@ -148,12 +155,15 @@
       count: shown.length,
       columns: list === null ? 1 : columnsOf(list),
     });
-    const series = next === undefined ? undefined : shown[next];
+    if (next === undefined) {
+      return false;
+    }
+    const series = shown[next];
     if (series === undefined) {
       return false;
     }
     activeKey = series.id;
-    reveal(series);
+    void reveal(series, next);
     return true;
   }
 
@@ -217,7 +227,7 @@
       onRemove={toggle}
       onEscape={close}
       {listId}
-      activeId={activeSeries === undefined
+      activeId={activeSeries === undefined || drawnKey !== activeSeries.id
         ? undefined
         : optionId(listId, activeSeries.id)}
       hasChoices={shown.length > 0}
@@ -256,6 +266,9 @@
       {/if}
     {:else if results.list.kind === "loaded"}
       <SearchResults
+        onRevealReady={(reveal: Reveal) => {
+          revealResult = reveal;
+        }}
         series={results.list.series}
         count={found.count}
         isComplete={results.list.isComplete}
