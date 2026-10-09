@@ -221,6 +221,22 @@ test("shows only the series meeting the condition chosen", async ({ page }) => {
   await expectFound(page, ["Lantern Market"]);
 });
 
+test("names the field's clear button and each filter's remove button in a tooltip", async ({
+  page,
+}) => {
+  test.skip(isDesktop(page), "the clear button shows on phones and tablets");
+  await page.goto("/search");
+
+  await searchField(page).pressSequentially("unread market");
+
+  await expect(
+    page.getByRole("button", { name: "Clear", exact: true }),
+  ).toHaveAttribute("title", "Clear");
+  await expect(
+    page.getByRole("button", { name: "Remove the Unread filter" }),
+  ).toHaveAttribute("title", "Remove the Unread filter");
+});
+
 test("says when nothing is called what was typed", async ({ page }) => {
   await page.goto("/search");
 

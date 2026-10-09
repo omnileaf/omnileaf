@@ -52,6 +52,9 @@
         aria-label={m.search_remove_condition({
           condition: CONDITION_LABELS[condition](),
         })}
+        title={m.search_remove_condition({
+          condition: CONDITION_LABELS[condition](),
+        })}
         class={[
           "flex items-center justify-center rounded-full",
           LOOKS[look].remove,

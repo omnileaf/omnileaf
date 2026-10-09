@@ -62,6 +62,14 @@ function headingOf(page: Page): Locator {
     .filter({ has: page.getByRole("heading", { level: 1 }) });
 }
 
+/** The heading's buttons, with the search link phones and tablets show and the search field desktops show in its place. */
+function controlsOf(heading: Locator): Locator {
+  return heading
+    .getByRole("button")
+    .or(heading.getByRole("link"))
+    .or(heading.getByRole("searchbox"));
+}
+
 function countOf(page: Page): Locator {
   return headingOf(page).locator("p", { hasText: SERIES_COUNT_SHOWN }).first();
 }
@@ -112,7 +120,7 @@ async function headingBoxes(
 }> {
   const heading = headingOf(page);
   const buttons: Box[] = [];
-  for (const button of await heading.getByRole("button").all()) {
+  for (const button of await controlsOf(heading).all()) {
     buttons.push(await boxOf(button));
   }
   return {
@@ -166,7 +174,7 @@ async function crowdedParts(
     texts.push(["count", countOf(page)]);
   }
   const others: [string, Locator][] = [];
-  for (const button of await heading.getByRole("button").all()) {
+  for (const button of await controlsOf(heading).all()) {
     const name =
       (await button.getAttribute("aria-label")) ??
       (await button.textContent())?.trim() ??
@@ -216,8 +224,8 @@ for (const platform of PLATFORMS) {
               { language, screenshotMode },
             );
             await page.goto("/");
-            await expect(headingOf(page).getByRole("button")).toHaveCount(
-              library === "empty" ? 1 : 2,
+            await expect(controlsOf(headingOf(page))).toHaveCount(
+              library === "empty" ? 1 : 3,
             );
             if (library === "filled") {
               await expect(countOf(page)).toBeVisible();
@@ -258,8 +266,8 @@ for (const platform of PLATFORMS) {
               "phone widths only",
             );
             await openAt(page, width, screenshotMode);
-            await expect(headingOf(page).getByRole("button")).toHaveCount(
-              library === "empty" ? 1 : 2,
+            await expect(controlsOf(headingOf(page))).toHaveCount(
+              library === "empty" ? 1 : 3,
             );
 
             const { title, buttons, count, label } = await headingBoxes(
@@ -307,7 +315,7 @@ for (const platform of PLATFORMS) {
             "phone widths only",
           );
           await openAt(page, width, screenshotMode);
-          await expect(headingOf(page).getByRole("button")).toHaveCount(2);
+          await expect(controlsOf(headingOf(page))).toHaveCount(3);
 
           const { title, buttons, count } = await headingBoxes(
             page,
@@ -442,7 +450,7 @@ for (const platform of PLATFORMS) {
   test.describe(`the heading's buttons on a ${platform} phone`, () => {
     test.use({ backend: backendFor(platform, "filled") });
 
-    test("show every heading button as a round icon of one size, each named in a tooltip", async ({
+    test("show every heading button and the search link as a round icon of one size, each named in a tooltip", async ({
       page,
     }, testInfo) => {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
@@ -459,8 +467,12 @@ for (const platform of PLATFORMS) {
           }),
           english.library_filter_and_sort,
         ],
+        [
+          heading.getByRole("link", { name: english.search_open }),
+          english.search_open,
+        ],
       ] as const;
-      await expect(heading.getByRole("button")).toHaveCount(named.length);
+      await expect(controlsOf(heading)).toHaveCount(named.length);
 
       const sizes = new Set<string>();
       for (const [button] of named) {

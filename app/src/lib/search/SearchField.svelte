@@ -84,6 +84,7 @@
     <button
       type="button"
       aria-label={m.search_clear()}
+      title={m.search_clear()}
       class="flex shrink-0 items-center justify-center rounded-full bg-chip text-muted block-search-clear inline-search-clear large:hidden"
       onclick={() => {
         void type("");

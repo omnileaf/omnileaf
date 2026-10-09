@@ -24,6 +24,7 @@
 <a
   href={resolve("/(app)/search")}
   aria-label={m.search_open()}
+  title={m.search_open()}
   class="flex items-center justify-center rounded-full block-touch-target inline-touch-target large:hidden"
 >
   <Search size={ICON_SIZE} aria-hidden="true" />
