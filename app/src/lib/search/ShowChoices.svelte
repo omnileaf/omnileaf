@@ -55,8 +55,9 @@
     <button
       type="button"
       aria-pressed={choice.isPressed}
+      data-label={choice.label}
       class={[
-        "shrink-0 rounded-full border px-md text-detail whitespace-nowrap block-scope-chip",
+        "room-for-bold-label shrink-0 items-center justify-center rounded-full border px-md text-detail whitespace-nowrap block-scope-chip",
         choice.isPressed
           ? "border-accent bg-accent-soft font-bold"
           : "border-border font-medium",

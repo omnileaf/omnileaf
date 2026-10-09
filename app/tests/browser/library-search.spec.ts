@@ -7,6 +7,7 @@ import {
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   LARGE_MIN_WIDTH,
@@ -219,6 +220,36 @@ test("shows only the series meeting the condition chosen", async ({ page }) => {
     page.getByRole("button", { name: "Remove the Started filter" }),
   ).toBeVisible();
   await expectFound(page, ["Lantern Market"]);
+});
+
+test("keeps the boxes of the Show choices still as they are pressed", async ({
+  page,
+}) => {
+  test.skip(
+    isPhone(page),
+    "phones swap the choices for the chosen filters once one is pressed",
+  );
+  await page.goto("/search");
+  await searchField(page).fill("market");
+  await expectFound(page, ["Lantern Market", "Market Lanterns"]);
+  const choices = page.getByRole("group", { name: "Show" }).getByRole("button");
+  const boxesOf = async () => {
+    const boxes = [];
+    for (const choice of await choices.all()) {
+      boxes.push(await boxOf(choice));
+    }
+    return boxes;
+  };
+  const before = await boxesOf();
+
+  for (const name of ["Unread", "Started", "Everything"]) {
+    await choices.filter({ hasText: name }).click();
+    await expect(choices.filter({ hasText: name })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(await boxesOf()).toEqual(before);
+  }
 });
 
 test("names the field's clear button and each filter's remove button in a tooltip", async ({
