@@ -18,9 +18,16 @@
   let buttons: HTMLElement | undefined = $state();
   let isCrowded = $state(false);
   let roomNeeded = Number.POSITIVE_INFINITY;
+  let fittedButtons = 0;
 
-  /** Moves the count under the title while the row overflows, and back beside it once the heading is as wide as it was when moving it. */
+  /** Moves the count under the title while the row overflows, and back beside it once the heading is as wide as it was when moving it, starting over whenever the buttons change. */
   function refit(heading: HTMLElement): void {
+    const buttonCount = buttons?.childElementCount ?? 0;
+    if (buttonCount !== fittedButtons) {
+      fittedButtons = buttonCount;
+      roomNeeded = Number.POSITIVE_INFINITY;
+      isCrowded = false;
+    }
     if (getComputedStyle(heading).display !== "grid") {
       isCrowded = false;
       return;

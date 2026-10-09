@@ -3,7 +3,11 @@ import type { Locator, Page } from "@playwright/test";
 import english from "../../messages/en.json" with { type: "json" };
 import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
-import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
+import {
+  CommandFailure,
+  emitFakeEvent,
+  type FakeBackend,
+} from "./fake-backend.ts";
 import {
   boxOf,
   expect,
@@ -22,6 +26,7 @@ const HEIGHT = 900;
 const PHONE_WIDTHS = [360, 375, 390, 430];
 /** Every width from just below a tablet's to a wide desktop's, 16px at a time, across each fold of the heading. */
 const RESIZE_SWEEP = Array.from({ length: 41 }, (_, step) => 800 + step * 16);
+const TABLET_WIDTH = 840;
 const FILTERED_COUNT = 7;
 const LARGEST_TEXT = ":root { --text-scale: 2 !important; }";
 const LARGEST_TEXT_WIDTHS = [360, 375, 390, 430];
@@ -669,3 +674,48 @@ for (const platform of ["ios", "linux"] as const) {
     });
   });
 }
+
+test.describe("the heading after the library empties", () => {
+  let holdsSeries = true;
+  const filled = backendFor("ios", "filled");
+  test.use({
+    backend: {
+      ...filled,
+      librarySeries: (after, listing) =>
+        holdsSeries
+          ? filled.librarySeries(after, listing)
+          : { series: [], next: null },
+      librarySeriesCount: () => (holdsSeries ? SERIES_COUNT : 0),
+    },
+  });
+
+  test.beforeEach(() => {
+    holdsSeries = true;
+  });
+
+  test("offers Add a folder with its label once the library empties", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      !testInfo.project.name.endsWith("phone"),
+      "the screen ios sweeps from",
+    );
+    await page.addInitScript(() => {
+      localStorage.setItem("omnileaf.language", "en-XA");
+    });
+    await openAt(page, TABLET_WIDTH, "off");
+    await expect(countOf(page)).toBeVisible();
+    const addFolder = headingOf(page).getByRole("button", {
+      name: pseudo.library_add_folder,
+    });
+    await expect(addFolder).toHaveCount(0);
+
+    holdsSeries = false;
+    await emitFakeEvent(page, "library-changed");
+
+    await expect(controlsOf(headingOf(page))).toHaveCount(1);
+    await expect(
+      addFolder.getByText(pseudo.library_add_folder),
+    ).not.toHaveClass(/(^|\s)sr-only(\s|$)/);
+  });
+});
