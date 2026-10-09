@@ -4,8 +4,8 @@ const DEFAULT_SYSTEM_BODY = 17;
 const LARGEST_TEXT_SCALE = 2;
 const TEXT_SCALE = "--text-scale";
 const PROBE = "[data-system-text-size]";
-/** Starts the probe at the default size, so where WebKit's system font keyword doesn't apply it reads as the default instead of inheriting the page's size. */
-const PROBE_STYLE = `font-size: ${String(DEFAULT_SYSTEM_BODY)}px; font: -apple-system-body; position: fixed; inset-block-start: 0; visibility: hidden; pointer-events: none;`;
+/** Reads as the default size where WebKit ignores the system font keyword, and stays painted since WebKit reports no resize of hidden content. */
+const PROBE_STYLE = `font-size: ${String(DEFAULT_SYSTEM_BODY)}px; font: -apple-system-body; position: fixed; inset-block-start: 0; color: transparent; pointer-events: none;`;
 
 /** Never below 1, since WebKit on a Mac reports its system body font smaller than iOS's default. */
 export function textScaleFor(bodySize: number): number {
