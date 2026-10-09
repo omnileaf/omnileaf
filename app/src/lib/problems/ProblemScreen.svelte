@@ -40,7 +40,7 @@
   {#if detail !== undefined}
     <p
       dir="ltr"
-      class="self-stretch rounded-card bg-well px-list-row py-md font-mono text-caption break-all"
+      class="self-stretch rounded-card bg-well px-list-row py-md font-mono text-caption break-all select-text"
     >
       {detail}
     </p>
