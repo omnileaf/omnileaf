@@ -1,7 +1,12 @@
-import { expect, test } from "vitest";
+import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
+import { afterEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import type { LibrarySeries } from "#lib/ipc/bindings.ts";
+import {
+  commands,
+  DEFAULT_LIBRARY_LISTING,
+  type LibrarySeries,
+} from "#lib/ipc/bindings.ts";
 import type { CoverPath } from "#lib/library/cover-url.ts";
 
 import SearchResults from "./SearchResults.svelte";
@@ -9,21 +14,39 @@ import SearchResults from "./SearchResults.svelte";
 const REAL_TITLE = "Hidden Story";
 const STAND_IN = /^Series \d{2,3}$/;
 
-const FOUND = [
-  {
-    id: "0190a3e4-0000-8000-8000-0000000000a1",
-    title: REAL_TITLE,
-    bookCount: 3,
-    unreadCount: 3,
-    cover: "thumb/v1/0190a3e4-0000-8000-8000-0000000000a1/1/1",
-  },
-] as unknown as readonly LibrarySeries[];
+afterEach(() => {
+  clearMocks();
+});
+
+/** Series as only the backend hands them out, with their ids and covers' paths branded. */
+async function foundSeries(): Promise<readonly LibrarySeries[]> {
+  mockIPC(() => ({
+    series: [
+      {
+        id: "0190a3e4-0000-8000-8000-0000000000a1",
+        title: REAL_TITLE,
+        bookCount: 3,
+        unreadCount: 3,
+        cover: "thumb/v1/0190a3e4-0000-8000-8000-0000000000a1/1/1",
+      },
+    ],
+    next: null,
+  }));
+  const page = await commands.librarySearch(null, {
+    text: "hidden",
+    filter: DEFAULT_LIBRARY_LISTING.filter,
+  });
+  if (page.status === "error") {
+    throw new Error("the backend found no series");
+  }
+  return page.data.series;
+}
 
 const fakeCoverUrl = (path: CoverPath): string => `omni://localhost/${path}`;
 
 test("shows a stand-in for each title and no cover while Screenshot mode is on", async () => {
   const screen = await render(SearchResults, {
-    series: FOUND,
+    series: await foundSeries(),
     count: 1,
     isComplete: true,
     onNearEnd: () => undefined,
@@ -41,7 +64,7 @@ test("shows a stand-in for each title and no cover while Screenshot mode is on",
 
 test("shows each real title and cover while Screenshot mode is off", async () => {
   const screen = await render(SearchResults, {
-    series: FOUND,
+    series: await foundSeries(),
     count: 1,
     isComplete: true,
     onNearEnd: () => undefined,

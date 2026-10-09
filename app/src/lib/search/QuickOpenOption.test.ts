@@ -1,21 +1,42 @@
-import { clearMocks, mockConvertFileSrc } from "@tauri-apps/api/mocks";
+import { clearMocks, mockConvertFileSrc, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import type { LibrarySeries } from "#lib/ipc/bindings.ts";
+import {
+  commands,
+  DEFAULT_LIBRARY_LISTING,
+  type LibrarySeries,
+} from "#lib/ipc/bindings.ts";
 
 import QuickOpenOption from "./QuickOpenOption.svelte";
 
 const REAL_TITLE = "Hidden Story";
 const STAND_IN = /^Series \d{2,3}$/;
 
-const SERIES = {
-  id: "0190a3e4-0000-8000-8000-0000000000a1",
-  title: REAL_TITLE,
-  bookCount: 3,
-  unreadCount: 3,
-  cover: "thumb/v1/0190a3e4-0000-8000-8000-0000000000a1/1/1",
-} as unknown as LibrarySeries;
+/** A series as only the backend hands it out, with its id and cover's path branded. */
+async function found(): Promise<LibrarySeries> {
+  mockIPC(() => ({
+    series: [
+      {
+        id: "0190a3e4-0000-8000-8000-0000000000a1",
+        title: REAL_TITLE,
+        bookCount: 3,
+        unreadCount: 3,
+        cover: "thumb/v1/0190a3e4-0000-8000-8000-0000000000a1/1/1",
+      },
+    ],
+    next: null,
+  }));
+  const page = await commands.librarySearch(null, {
+    text: "hidden",
+    filter: DEFAULT_LIBRARY_LISTING.filter,
+  });
+  const [series] = page.status === "ok" ? page.data.series : [];
+  if (series === undefined) {
+    throw new Error("the backend found no series");
+  }
+  return series;
+}
 
 beforeEach(() => {
   mockConvertFileSrc("linux");
@@ -25,10 +46,11 @@ afterEach(() => {
   clearMocks();
 });
 
-function renderSeries(usesStandIns: boolean) {
+async function renderSeries(usesStandIns: boolean) {
+  const series = await found();
   return render(QuickOpenOption, {
     id: "option",
-    choice: { kind: "series", series: SERIES },
+    choice: { kind: "series", series },
     isActive: false,
     usesStandIns,
     onActivate: () => undefined,
