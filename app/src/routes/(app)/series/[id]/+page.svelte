@@ -8,6 +8,7 @@
     commands,
     type ReadMark,
     type SeriesBook,
+    type SeriesBookListing,
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
@@ -34,6 +35,10 @@
   const found = $derived(shown.kind === "found" ? shown : undefined);
 
   const screenshotMode = getScreenshotMode();
+  let listing: SeriesBookListing = $state({
+    shown: "all",
+    direction: "ascending",
+  });
   const foundId = $derived(found?.overview.id);
   const overview = $derived(
     found === undefined || !screenshotMode.isOn
@@ -46,12 +51,7 @@
       : (screenshotMode.isOn ? standInLook : realLook)(found.overview).cover,
   );
   const books = $derived(
-    foundId === undefined
-      ? undefined
-      : seriesBookList(foundId, () => ({
-          shown: "all",
-          direction: "ascending",
-        })),
+    foundId === undefined ? undefined : seriesBookList(foundId, () => listing),
   );
 
   function readAgain(): void {
@@ -130,6 +130,11 @@
                   )
                 : books.list.items}
               bookCount={found.overview.bookCount}
+              {listing}
+              onListing={(chosen: SeriesBookListing) => {
+                listing = chosen;
+                void books.start();
+              }}
               isComplete={books.list.isComplete}
               onNearEnd={() => {
                 void books.loadMore();

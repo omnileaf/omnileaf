@@ -484,6 +484,79 @@ test("picks the next book tapped after a long press the screen took over", async
   ).toBeVisible();
 });
 
+test("shows only the books not read, and the books the other way round", async ({
+  page,
+}) => {
+  await openSeries(page);
+  const show = page.getByRole("group", { name: "Show" });
+
+  await show.getByRole("button", { name: "Unread" }).click();
+
+  await expect(show.getByRole("button", { name: "Unread" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(books(page).first()).toHaveAttribute("aria-setsize", "9");
+  await expect(books(page).first()).toContainText(shelf.titleOf(3));
+
+  await page.getByRole("button", { name: "Show the last book first" }).click();
+
+  await expect(books(page).first()).toContainText(shelf.titleOf(11));
+  await expect(
+    page.getByRole("button", { name: "Show the books in order" }),
+  ).toBeVisible();
+
+  await show.getByRole("button", { name: "All" }).click();
+
+  await expect(books(page).first()).toHaveAttribute("aria-setsize", "12");
+  await expect(books(page).first()).toContainText(shelf.titleOf(11));
+});
+
+test("keeps the show choices and the order the same size whichever is chosen", async ({
+  page,
+}) => {
+  await openSeries(page);
+  const show = page.getByRole("group", { name: "Show" });
+  const sizes = async () =>
+    Promise.all(
+      [
+        show.getByRole("button", { name: "All" }),
+        show.getByRole("button", { name: "Unread" }),
+        page.getByRole("button", {
+          name: /^Show the (last book first|books in order)$/,
+        }),
+      ].map(async (control) => {
+        const { width, height } = await boxOf(control);
+        return { width, height };
+      }),
+    );
+  const before = await sizes();
+
+  await show.getByRole("button", { name: "Unread" }).click();
+  await page.getByRole("button", { name: "Show the last book first" }).click();
+  await expect(
+    page.getByRole("button", { name: "Show the books in order" }),
+  ).toBeVisible();
+
+  expect(await sizes()).toEqual(before);
+});
+
+test("says when every book of the series is read and only unread ones show", async ({
+  page,
+}) => {
+  shelf = new FakeShelf(Array.from({ length: 3 }, () => READ));
+  await openSeries(page);
+
+  await page
+    .getByRole("group", { name: "Show" })
+    .getByRole("button", { name: "Unread" })
+    .click();
+
+  await expect(
+    page.getByRole("main").getByText("Every book in this series is read."),
+  ).toBeVisible();
+});
+
 test("fits the series page to the screen, picking books or not", async ({
   page,
 }) => {
