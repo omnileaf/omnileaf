@@ -8,6 +8,7 @@ import {
   boxOf,
   expect,
   onPlatform,
+  settle,
   sidewaysOverflow,
   test,
   testOnlyInItsWebview,
@@ -559,3 +560,54 @@ for (const platform of PLATFORMS) {
     });
   });
 }
+
+test.describe("the heading's search on linux", () => {
+  test.use({ backend: backendFor("linux", "filled") });
+
+  test("draws the search field's border in the colour of the buttons beside it", async ({
+    page,
+  }, testInfo) => {
+    test.skip(!testInfo.project.name.endsWith("desktop"), "desktop only");
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openAt(page, 1280, "off");
+    const heading = headingOf(page);
+    const borderOf = (locator: Locator) =>
+      locator.evaluate((element) => getComputedStyle(element).borderTopColor);
+
+    const field = await borderOf(
+      heading
+        .getByRole("searchbox", { name: english.search_library_field })
+        .locator(".."),
+    );
+    const viewOptions = await borderOf(
+      heading.getByRole("button", { name: english.library_view_options }),
+    );
+
+    expect(field).toBe(viewOptions);
+  });
+
+  test("tints the search link under the pointer as it tints the buttons beside it", async ({
+    page,
+  }, testInfo) => {
+    test.skip(!testInfo.project.name.endsWith("desktop"), "desktop only");
+    await openAt(page, 1024, "off");
+    const heading = headingOf(page);
+    const tintOf = async (locator: Locator) => {
+      await locator.hover();
+      await settle(locator);
+      return locator.evaluate(
+        (element) => getComputedStyle(element).backgroundImage,
+      );
+    };
+
+    const link = await tintOf(
+      heading.getByRole("link", { name: english.search_open }),
+    );
+    const viewOptions = await tintOf(
+      heading.getByRole("button", { name: english.library_view_options }),
+    );
+
+    expect(viewOptions).not.toBe("none");
+    expect(link).toBe(viewOptions);
+  });
+});

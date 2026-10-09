@@ -25,12 +25,12 @@
   href={resolve("/(app)/search")}
   aria-label={m.search_open()}
   title={m.search_open()}
-  class="flex items-center justify-center rounded-full block-touch-target inline-touch-target large:hidden"
+  class="flex items-center justify-center rounded-full transition-control block-touch-target inline-touch-target hover:tint-hover active:tint-pressed large:hidden"
 >
   <Search size={ICON_SIZE} aria-hidden="true" />
 </a>
 <div
-  class="hidden items-center gap-sm rounded-control border border-border bg-card px-md text-muted block-pointer-button inline-library-search focus-within:border-accent large:flex"
+  class="hidden items-center gap-sm rounded-control border border-field bg-card px-md text-muted block-pointer-button inline-library-search focus-within:border-accent large:flex"
 >
   <Search size={FIELD_ICON_SIZE} aria-hidden="true" class="shrink-0" />
   <input
