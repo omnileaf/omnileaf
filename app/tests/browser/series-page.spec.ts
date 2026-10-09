@@ -12,6 +12,8 @@ import {
   expect,
   EXPANDED_MIN_WIDTH,
   LARGE_MIN_WIDTH,
+  MEDIUM_MIN_WIDTH,
+  onPlatform,
   sidewaysOverflow,
   test,
   viewportOf,
@@ -494,6 +496,37 @@ test("fits the series page to the screen, picking books or not", async ({
   const fitsWhilePicking = await sidewaysOverflow(page);
 
   expect([fitsBefore, fitsWhilePicking]).toEqual([[], []]);
+});
+
+test.describe("on an iPhone", () => {
+  const SNUG_GAP = 20;
+
+  test.use({
+    backend: { ...SHELF_BACKEND, appInfo: onPlatform("ios").backend.appInfo },
+  });
+
+  test("keeps the picked books' actions just above the tab bar", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "the tab bar floats on phones",
+    );
+    await openSeries(page);
+    await page.getByRole("button", { name: "Select", exact: true }).click();
+    await page
+      .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
+      .check();
+
+    const actions = await boxOf(
+      page.getByRole("group", { name: "Selected books" }),
+    );
+    const tabBar = await boxOf(page.getByRole("navigation", { name: "Main" }));
+
+    const gap = tabBar.y - (actions.y + actions.height);
+    expect(gap).toBeGreaterThanOrEqual(0);
+    expect(gap).toBeLessThanOrEqual(SNUG_GAP);
+  });
 });
 
 for (const colorScheme of ["light", "dark"] as const) {

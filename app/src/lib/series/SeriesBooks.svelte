@@ -291,7 +291,7 @@
     <div
       role="group"
       aria-label={m.series_selection_toolbar()}
-      class="sticky inset-be-lg grid grid-cols-2 gap-2xs rounded-selection-bar bg-selection-bar p-selection-bar-inset text-on-selection-bar shadow-selection-bar expanded:flex expanded:items-center expanded:gap-xs expanded:self-center expanded:rounded-selection-bar-wide expanded:ps-lg ios:max-medium:inset-be-floating-clearance"
+      class="sticky inset-be-lg grid grid-cols-2 gap-2xs rounded-selection-bar bg-selection-bar p-selection-bar-inset text-on-selection-bar shadow-selection-bar expanded:flex expanded:items-center expanded:gap-xs expanded:self-center expanded:rounded-selection-bar-wide expanded:ps-lg ios:max-medium:inset-be-none"
     >
       <span class="text-detail font-bold max-expanded:hidden expanded:me-sm">
         {m.series_selected_books({ count: selection.count })}
