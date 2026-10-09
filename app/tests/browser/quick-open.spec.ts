@@ -413,3 +413,81 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test.describe("while a search is still out", () => {
+  const HELD_TEXT = "sample";
+  let release: () => void = () => undefined;
+  let held: Promise<void> = Promise.resolve();
+
+  test.use({
+    backend: {
+      ...SEARCHING_BACKEND,
+      librarySearch: async (_after, search) => {
+        if (search.text === HELD_TEXT) {
+          await held;
+        }
+        return { series: found(search), next: null };
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    held = new Promise((resolve) => {
+      release = resolve;
+    });
+  });
+
+  test("opens nothing from the search before when Enter is pressed", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await pressQuickOpen(page);
+    await field(page).fill("0001");
+    await expect(selected(page)).toContainText("Sample Series 0001");
+
+    await field(page).fill(HELD_TEXT);
+    await field(page).press("Enter");
+
+    await expect(quickOpen(page)).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe("/");
+    release();
+    await expect(options(page)).toHaveCount(SERIES_SHOWN);
+  });
+
+  test("starts again from the first choice once the search answers", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await pressQuickOpen(page);
+    await field(page).fill("se");
+    await expect(options(page)).toHaveCount(SERIES_SHOWN + PLACES_HOLDING_SE);
+
+    await field(page).fill(HELD_TEXT);
+    for (let step = 0; step < 3; step += 1) {
+      await field(page).press("ArrowDown");
+    }
+    release();
+
+    await expect(options(page).first()).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  test("says nothing is called the text only once its search answers", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await pressQuickOpen(page);
+    await field(page).fill("zzz");
+    await expect(quickOpen(page).getByRole("status")).toHaveText(
+      "Nothing called “zzz”",
+    );
+
+    await field(page).fill(HELD_TEXT);
+
+    await expect(quickOpen(page).getByRole("status")).toHaveText("");
+    release();
+    await expect(options(page)).toHaveCount(SERIES_SHOWN);
+  });
+});

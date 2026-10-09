@@ -46,6 +46,7 @@
 
   let dialog: HTMLDialogElement | undefined = $state();
   let text = $state("");
+  let answered = $state("");
   let series: readonly LibrarySeries[] = $state([]);
   let active = $state(0);
   let latestSearch = 0;
@@ -80,6 +81,7 @@
     ].filter((group) => group.choices.length > 0);
   });
   const choices = $derived(groups.flatMap((group) => group.choices));
+  const isAnswered = $derived(answered === text);
 
   $effect(() => {
     if (quickOpen.isOpen && dialog?.open === false) {
@@ -89,6 +91,7 @@
 
   function showWithNothingTyped(): void {
     text = "";
+    answered = "";
     series = [];
     active = 0;
     latestSearch += 1;
@@ -101,6 +104,7 @@
     const search = ++latestSearch;
     if (typed.trim() === "") {
       series = [];
+      answered = typed;
       return;
     }
     const page = await commands.librarySearch(null, {
@@ -112,10 +116,11 @@
     }
     if (page.status === "error") {
       reportError(page.error);
-      series = [];
-      return;
     }
-    series = page.data.series.slice(0, SERIES_SHOWN);
+    series =
+      page.status === "ok" ? page.data.series.slice(0, SERIES_SHOWN) : [];
+    answered = typed;
+    active = 0;
   }
 
   function optionId(index: number): string {
@@ -166,7 +171,9 @@
         active = groupStartFrom(event.shiftKey ? -1 : 1);
         break;
       case "Enter":
-        choose(choices[active]);
+        if (isAnswered) {
+          choose(choices[active]);
+        }
         break;
       default:
         return;
@@ -279,7 +286,7 @@
       choices.length === 0 && "m-sm px-option-inline py-sm",
     ]}
   >
-    {#if choices.length === 0}
+    {#if choices.length === 0 && isAnswered}
       {m.search_nothing_called({ text: text.trim() })}
     {/if}
   </p>
