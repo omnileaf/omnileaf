@@ -268,6 +268,17 @@ test("names the field's clear button and each filter's remove button in a toolti
   ).toHaveAttribute("title", "Remove the Unread filter");
 });
 
+test("draws Close beside the field at the 40px height the desktop board gives it", async ({
+  page,
+}) => {
+  test.skip(!isDesktop(page), "desktop only");
+  await page.goto("/search");
+
+  const close = await boxOf(page.getByRole("link", { name: "Close" }));
+
+  expect(close.height).toBe(40);
+});
+
 test("says when nothing is called what was typed", async ({ page }) => {
   await page.goto("/search");
 

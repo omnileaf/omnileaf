@@ -111,7 +111,7 @@
     />
     <a
       href={resolve(SECTION_ROUTE_IDS.library)}
-      class="flex shrink-0 items-center px-search-cancel-inline text-body font-semibold text-accent block-search-cancel medium:rounded-field medium:px-md medium:text-small medium:block-pointer-button"
+      class="flex shrink-0 items-center px-search-cancel-inline text-body font-semibold text-accent block-search-cancel medium:rounded-field medium:px-md medium:text-small medium:block-pointer-target"
     >
       <span class="medium:hidden">{m.search_cancel()}</span>
       <span class="hidden medium:inline">{m.search_close()}</span>
