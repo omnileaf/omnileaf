@@ -7,14 +7,14 @@
   import LinkedFolders from "#lib/library/LinkedFolders.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import type { Notices } from "#lib/notices/notices.svelte.ts";
+  import WidthWording from "#lib/page/WidthWording.svelte";
+  import { atEveryWidth, type WordingByWidth } from "#lib/page/wording.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
   import StepBadge from "./StepBadge.svelte";
   import StepHeader from "./StepHeader.svelte";
-  import WidthWording from "./WidthWording.svelte";
-  import { atEveryWidth, type WordingByWidth } from "./wording";
 
   let {
     platform,

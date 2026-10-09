@@ -26,7 +26,19 @@ test("explains that folders stay where they are", async () => {
   const screen = await render(PageWithAppContext, {
     screenshotMode: screenshotModeTurned("off"),
     page: Page,
-    pageProps: {},
+    pageProps: {
+      params: {},
+      data: {
+        appInfo: {
+          version: "1.2.3",
+          platform: "linux",
+          sourceCode: "repo.example.org/omnileaf",
+          isDevelopmentBuild: false,
+        },
+        libraryProblem: null,
+        isFirstLaunch: false,
+      },
+    },
   });
 
   const folders = screen.getByRole("region", { name: "Folders" });

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { Folder, Lock, Sparkles } from "@lucide/svelte";
 
+  import WidthWording from "#lib/page/WidthWording.svelte";
+  import { atEveryWidth, type WordingByWidth } from "#lib/page/wording.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import AppIcon from "./AppIcon.svelte";
@@ -8,8 +10,6 @@
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
   import StepHeader from "./StepHeader.svelte";
-  import WidthWording from "./WidthWording.svelte";
-  import { atEveryWidth, type WordingByWidth } from "./wording";
 
   const PROMISE_ICON_SIZE = 20;
 
