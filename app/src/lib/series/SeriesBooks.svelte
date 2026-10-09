@@ -2,11 +2,16 @@
   import { Check, Eye, EyeOff, ListChecks } from "@lucide/svelte";
   import { tick } from "svelte";
 
-  import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
+  import type {
+    ReadMark,
+    SeriesBook,
+    SeriesBookListing,
+  } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
+  import BookListingChoices from "./BookListingChoices.svelte";
   import BookRowText from "./BookRowText.svelte";
   import { BookSelection } from "./book-selection.svelte";
   import { LongPress } from "./long-press";
@@ -26,6 +31,8 @@
   let {
     books,
     bookCount,
+    listing,
+    onListing,
     isComplete,
     onNearEnd,
     onLoadAll,
@@ -33,6 +40,8 @@
   }: {
     books: readonly SeriesBook[];
     bookCount: number;
+    listing: SeriesBookListing;
+    onListing: (listing: SeriesBookListing) => void;
     isComplete: boolean;
     onNearEnd: () => void;
     onLoadAll: () => Promise<void>;
@@ -260,6 +269,10 @@
       </button>
     {/if}
   </div>
+  <BookListingChoices {listing} onChoose={onListing} />
+  {#if isComplete && books.length === 0 && listing.shown === "unread"}
+    <p class="text-body text-muted">{m.series_no_unread()}</p>
+  {/if}
   <div
     class="max-medium:-ms-page-start max-medium:-me-page-end medium:overflow-hidden medium:rounded-card medium:border medium:border-border medium:bg-card"
   >
