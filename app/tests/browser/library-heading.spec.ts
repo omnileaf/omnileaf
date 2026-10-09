@@ -18,8 +18,7 @@ const WIDTHS = [
   320, 360, 390, 430, 599, 600, 768, 839, 840, 1024, 1199, 1200, 1280, 1920,
 ];
 const HEIGHT = 900;
-const NARROW_PHONE_WIDTHS = [360, 375];
-const WIDE_PHONE_WIDTHS = [390, 430];
+const PHONE_WIDTHS = [360, 375, 390, 430];
 const FILTERED_COUNT = 7;
 const LARGEST_TEXT = ":root { --text-scale: 2 !important; }";
 const LARGEST_TEXT_WIDTHS = [360, 375, 390, 430];
@@ -250,6 +249,23 @@ for (const platform of PLATFORMS) {
   }
 }
 
+/** Whether every button sits on one row of its own, under the title and above the count. */
+function isStackedUnder(
+  buttons: readonly Box[],
+  title: Box,
+  count: Box | undefined,
+): boolean {
+  const [first] = buttons;
+  return (
+    first !== undefined &&
+    buttons.every(
+      (button) =>
+        isOnRowOf(button, first) && button.y >= title.y + title.height,
+    ) &&
+    (count === undefined || count.y >= first.y + first.height)
+  );
+}
+
 for (const platform of PLATFORMS) {
   for (const screenshotMode of SCREENSHOT_MODE) {
     for (const library of LIBRARIES) {
@@ -257,7 +273,7 @@ for (const platform of PLATFORMS) {
         testOnlyInItsWebview(platform);
         test.use({ backend: backendFor(platform, library) });
 
-        for (const width of NARROW_PHONE_WIDTHS) {
+        for (const width of PHONE_WIDTHS) {
           test(`keeps the buttons on the title's row and moves the count and label under it at ${String(width)}px`, async ({
             page,
           }, testInfo) => {
@@ -276,9 +292,12 @@ for (const platform of PLATFORMS) {
               screenshotMode,
             );
 
-            for (const button of buttons) {
-              expect(isOnRowOf(button, title)).toBe(true);
-            }
+            const isOnTitleRow = buttons.every((button) =>
+              isOnRowOf(button, title),
+            );
+            const isNarrowDesktopWindow =
+              platform === "linux" && isStackedUnder(buttons, title, count);
+            expect(isOnTitleRow || isNarrowDesktopWindow).toBe(true);
             const underTitle = title.y + title.height;
             if (count !== undefined) {
               expect(count.y).toBeGreaterThanOrEqual(underTitle);
@@ -298,46 +317,6 @@ for (const platform of PLATFORMS) {
         }
       });
     }
-  }
-}
-
-for (const platform of PLATFORMS) {
-  for (const screenshotMode of SCREENSHOT_MODE) {
-    test.describe(`the heading on a wider ${platform} phone, Screenshot mode ${screenshotMode}`, () => {
-      test.use({ backend: backendFor(platform, "filled") });
-
-      for (const width of WIDE_PHONE_WIDTHS) {
-        test(`keeps the title, a five-digit count and the buttons on one row at ${String(width)}px, as the phone board draws them`, async ({
-          page,
-        }, testInfo) => {
-          test.skip(
-            !testInfo.project.name.endsWith("phone"),
-            "phone widths only",
-          );
-          await openAt(page, width, screenshotMode);
-          await expect(controlsOf(headingOf(page))).toHaveCount(3);
-
-          const { title, buttons, count } = await headingBoxes(
-            page,
-            "filled",
-            screenshotMode,
-          );
-
-          for (const button of buttons) {
-            expect(isOnRowOf(button, title)).toBe(true);
-          }
-          expect(count).toBeDefined();
-          if (count !== undefined) {
-            expect(isOnRowOf(count, title)).toBe(true);
-            expect(count.x).toBeGreaterThan(title.x + title.width);
-          }
-          expect(
-            await crowdedParts(page, english, screenshotMode, "filled"),
-          ).toEqual([]);
-          expect(await sidewaysOverflow(page)).toEqual([]);
-        });
-      }
-    });
   }
 }
 
@@ -408,7 +387,7 @@ test.describe("the heading as a filter changes the count", () => {
     },
   });
 
-  for (const width of [...NARROW_PHONE_WIDTHS, ...WIDE_PHONE_WIDTHS]) {
+  for (const width of PHONE_WIDTHS) {
     test(`keeps its rows when the count shrinks from five digits to one at ${String(width)}px`, async ({
       page,
     }, testInfo) => {

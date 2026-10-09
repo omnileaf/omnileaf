@@ -28,56 +28,21 @@
 }
 @custom-variant heading-one-row {
   @variant max-expanded {
-    @variant touch {
-      @variant max-medium {
-        @container (width >= 22em) {
-          @slot;
-        }
-      }
-      @variant medium {
-        @container (width >= 29em) {
-          @slot;
-        }
-      }
-    }
-    @variant desktop {
-      @variant max-medium {
-        @container (width >= 21em) {
-          @slot;
-        }
-      }
-      @variant medium {
-        @container (width >= 29em) {
-          @slot;
-        }
+    @variant medium {
+      @container (width >= 29em) {
+        @slot;
       }
     }
   }
 }
 @custom-variant heading-two-rows {
   @variant max-expanded {
-    @variant touch {
-      @variant max-medium {
-        @container (width < 22em) {
-          @slot;
-        }
-      }
-      @variant medium {
-        @container (width < 29em) {
-          @slot;
-        }
-      }
+    @variant max-medium {
+      @slot;
     }
-    @variant desktop {
-      @variant max-medium {
-        @container (width < 21em) {
-          @slot;
-        }
-      }
-      @variant medium {
-        @container (width < 29em) {
-          @slot;
-        }
+    @variant medium {
+      @container (width < 29em) {
+        @slot;
       }
     }
   }
