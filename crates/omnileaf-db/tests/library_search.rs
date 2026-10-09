@@ -162,6 +162,26 @@ async fn finds_a_few_characters_whatever_their_letter_case_beyond_ascii() {
     assert_eq!(found, [["Écho du Port"], ["Écho du Port"]]);
 }
 
+/// A Greek title ending in a capital sigma, a German one with a sharp s, and one whose accent is a combining mark.
+const FOLDED_SHELF: [SeriesSeed<'static>; 3] = [
+    SeriesSeed::named("ΟΔΟΣ"),
+    SeriesSeed::named("Straße"),
+    SeriesSeed::named("Cafe\u{301} Noir"),
+];
+
+#[tokio::test]
+async fn finds_a_few_characters_by_their_full_case_folding_and_composed_form() {
+    let library = Library::with("few-characters-folded", &FOLDED_SHELF).await;
+
+    let found = [
+        library.finding("ος").await,
+        library.finding("SS").await,
+        library.finding("\u{e9}").await,
+    ];
+
+    assert_eq!(found, [["ΟΔΟΣ"], ["Straße"], ["Cafe\u{301} Noir"]]);
+}
+
 #[tokio::test]
 async fn finds_wildcard_characters_only_where_a_title_holds_them() {
     let library = Library::with("wildcards", &SHELF).await;
