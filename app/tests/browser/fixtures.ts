@@ -135,9 +135,12 @@ export const APP_PAGES = [
   "/settings/about/licences",
 ] as const;
 
-/** Lists each element in `main` whose content spills out sideways, and "the page" when it scrolls sideways, leaving out truncated text, visually hidden text and what a negative margin pulls past the edge on purpose. */
-export function sidewaysOverflow(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
+/** Lists each element in `within` whose content spills out sideways, and "the page" when it scrolls sideways, leaving out truncated text, visually hidden text, decorative art that clips itself and what a negative margin pulls past the edge on purpose. */
+export function sidewaysOverflow(
+  page: Page,
+  within = "main",
+): Promise<string[]> {
+  return page.evaluate((scope) => {
     const bleedOf = (element: Element): number =>
       Math.max(
         0,
@@ -147,10 +150,15 @@ export function sidewaysOverflow(page: Page): Promise<string[]> {
         ),
       );
     const overflowing: string[] = [];
-    for (const element of document.querySelectorAll("main *")) {
+    for (const element of document.querySelectorAll(`${scope} *`)) {
       const style = getComputedStyle(element);
+      const isClippedArt =
+        ["hidden", "clip"].includes(style.overflowX) &&
+        element.matches("[aria-hidden=true]");
       const isCutOnPurpose =
-        style.textOverflow === "ellipsis" || style.clipPath !== "none";
+        style.textOverflow === "ellipsis" ||
+        style.clipPath !== "none" ||
+        isClippedArt;
       const overflow = element.scrollWidth - element.clientWidth;
       if (
         !isCutOnPurpose &&
@@ -165,7 +173,7 @@ export function sidewaysOverflow(page: Page): Promise<string[]> {
       overflowing.push("the page");
     }
     return overflowing;
-  });
+  }, within);
 }
 
 type Violations = Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"];
@@ -199,8 +207,7 @@ function runningAnimations(page: Page): Promise<string[]> {
   );
 }
 
-/** Waits for every animation that ends, such as a fade, since axe reads colours mid-fade as they are. */
-/** Leaves out axe's page-zoom rule, since the app leaves zooming to the system's magnifier and text size as native apps do. */
+/** Waits for every animation that ends, such as a fade, since axe reads colours mid-fade as they are, and leaves out axe's page-zoom rule, since the app leaves zooming to the system as native apps do. */
 export async function accessibilityViolations(page: Page): Promise<Violations> {
   await expect
     .poll(() => runningAnimations(page), {
