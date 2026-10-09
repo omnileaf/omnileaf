@@ -222,29 +222,15 @@ test("ends a long compact title after two whole lines, cutting none in half", as
   await openWith(page, viewWith(page, "compact"));
   const title = firstSeries(page).getByText(LONG_TITLE);
 
-  const lines = await title.evaluate((element) => {
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    const clip = element.getBoundingClientRect();
-    const rows = [...range.getClientRects()].map((rect) => ({
-      top: Math.round(rect.top),
-      bottom: Math.round(rect.bottom),
-    }));
-    const unique = rows.filter(
-      (row, index) =>
-        rows.findIndex((other) => other.top === row.top) === index,
-    );
-    const top = Math.round(clip.top);
-    const bottom = Math.round(clip.bottom);
-    return {
-      shown: unique.filter((row) => row.top >= top && row.bottom <= bottom)
-        .length,
-      cut: unique.filter((row) => row.top < bottom && row.bottom > bottom)
-        .length,
-    };
-  });
+  const clamp = await title.evaluate((element) => ({
+    linesShown:
+      element.getBoundingClientRect().height /
+      Number.parseFloat(getComputedStyle(element).lineHeight),
+    isClamped: element.scrollHeight > element.clientHeight,
+  }));
 
-  expect(lines).toEqual({ shown: 2, cut: 0 });
+  expect(clamp.linesShown).toBeCloseTo(2, 2);
+  expect(clamp.isClamped).toBe(true);
 });
 
 test("fades a compact title's band into the cover above it", async ({
