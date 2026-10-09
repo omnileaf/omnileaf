@@ -130,7 +130,7 @@ async fn lists_a_series_books_in_order_with_when_each_was_added() {
 }
 
 #[tokio::test]
-async fn lists_only_a_series_books_not_read_the_other_way_round() {
+async fn lists_only_a_series_books_not_read_the_other_way_round_numbered_by_place() {
     let sample = SampleLibrary::open("unread-books-reversed").await;
     let series = sample.series_named(FIRST_SERIES).await;
     let books = sample.books(series).await;
@@ -146,8 +146,14 @@ async fn lists_only_a_series_books_not_read_the_other_way_round() {
 
     let listed = sample.listed_books(series, unread_reversed).await;
 
-    let titles: Vec<&str> = listed.iter().map(|book| book.title.as_str()).collect();
-    assert_eq!(titles, ["Sample Series 01 v03", "Sample Series 01 v01"]);
+    let numbered: Vec<(&str, u32)> = listed
+        .iter()
+        .map(|book| (book.title.as_str(), book.position))
+        .collect();
+    assert_eq!(
+        numbered,
+        [("Sample Series 01 v03", 3), ("Sample Series 01 v01", 1)]
+    );
 }
 
 #[tokio::test]

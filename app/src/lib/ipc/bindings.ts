@@ -228,6 +228,8 @@ export type ScanProgress = { stage: "finding" } | { stage: "reading"; scanned: n
 
 export type SeriesBook = {
 	id: string & { readonly __brand: "BookId" },
+	/**  Where the book stands in its series' order, counting from 1, whichever of its books a list holds. */
+	position: number,
 	title: string,
 	/**  When the library first found the book, as an RFC 3339 UTC timestamp. */
 	addedAt: string,

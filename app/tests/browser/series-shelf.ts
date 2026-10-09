@@ -21,6 +21,7 @@ export class FakeShelf {
   constructor(readings: readonly WireReading[]) {
     this.#books = readings.map((reading, index) => ({
       id: `0190a3e4-0000-8000-8000-${String(index + 1).padStart(12, "0")}`,
+      position: index + 1,
       title: `${SERIES_TITLE} v${String(index + 1).padStart(2, "0")}`,
       addedAt: ADDED_AT,
       reading,
