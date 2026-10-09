@@ -12,6 +12,7 @@ import {
   expect,
   EXPANDED_MIN_WIDTH,
   LARGE_MIN_WIDTH,
+  sidewaysOverflow,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -478,6 +479,21 @@ test("picks the next book tapped after a long press the screen took over", async
   await expect(
     page.getByRole("heading", { level: 2, name: "2 selected" }),
   ).toBeVisible();
+});
+
+test("fits the series page to the screen, picking books or not", async ({
+  page,
+}) => {
+  await openSeries(page);
+  const fitsBefore = await sidewaysOverflow(page);
+  await page.getByRole("button", { name: "Select", exact: true }).click();
+  await page
+    .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
+    .check();
+
+  const fitsWhilePicking = await sidewaysOverflow(page);
+
+  expect([fitsBefore, fitsWhilePicking]).toEqual([[], []]);
 });
 
 for (const colorScheme of ["light", "dark"] as const) {
