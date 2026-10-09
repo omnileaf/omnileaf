@@ -3,6 +3,8 @@ import { isRecord, listOf } from "./json.ts";
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 const STALE_ELEMENT = "stale element reference";
 const NATIVE_CONTEXT = "NATIVE_APP";
+const SHOWN_BUTTON =
+  /<XCUIElementTypeButton\b[^>]*\bname="([^"]*)"[^>]*\bvisible="true"/g;
 const WEBVIEW_CONTEXT = "WEBVIEW";
 const RELAUNCH_TIMEOUT_MS = 60_000;
 const ELEMENT_TIMEOUT_MS = 10_000;
@@ -56,6 +58,16 @@ export function describePage(page: PageState): string {
       ? `"${text.slice(0, PAGE_TEXT_SHOWN)}…"`
       : `"${text}"`;
   return `the page at ${page.url} titled "${page.title}" shows ${text === "" ? "no text" : shown}`;
+}
+
+/** Names the buttons shown in an Appium page source, which is all a native screen offers to say what is on it. */
+export function describeNativeScreen(source: string): string {
+  const buttons = [...source.matchAll(SHOWN_BUTTON)].map(
+    ([, name]) => `"${name ?? ""}"`,
+  );
+  return buttons.length === 0
+    ? "the native screen shows no buttons"
+    : `the native screen shows the buttons ${buttons.join(", ")}`;
 }
 
 class NotReadyError extends Error {
@@ -331,7 +343,19 @@ export class Session {
         text: requireString(text, "page text"),
       });
     } catch (error) {
-      return `the page could not be read: ${error instanceof Error ? error.message : String(error)}`;
+      return this.describeNativeScreenInstead(error);
+    }
+  }
+
+  /** A native screen has no address or title to read, so it is described by the buttons in its page source. */
+  private async describeNativeScreenInstead(
+    pageError: unknown,
+  ): Promise<string> {
+    try {
+      const source = await send(`${this.endpoint}/source`, "GET");
+      return describeNativeScreen(requireString(source, "page source"));
+    } catch {
+      return `the page could not be read: ${pageError instanceof Error ? pageError.message : String(pageError)}`;
     }
   }
 

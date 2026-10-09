@@ -7,7 +7,12 @@ import type { AddressInfo } from "node:net";
 
 import { expect, onTestFinished, test } from "vitest";
 
-import { describePage, Session, xpath } from "./webdriver.ts";
+import {
+  describeNativeScreen,
+  describePage,
+  Session,
+  xpath,
+} from "./webdriver.ts";
 
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 
@@ -390,4 +395,22 @@ test("reports a failed native step, not the failed return from it", async () => 
   );
 
   await expect(steps).rejects.toThrow("the picker never opened");
+});
+
+test("names the buttons a native screen shows", () => {
+  const source = `<XCUIElementTypeApplication name="Omnileaf">
+    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Cancel" label="Cancel" visible="true"/>
+    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Hidden" label="Hidden" visible="false"/>
+    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Browse" label="Browse" visible="true"/>
+  </XCUIElementTypeApplication>`;
+
+  expect(describeNativeScreen(source)).toBe(
+    'the native screen shows the buttons "Cancel", "Browse"',
+  );
+});
+
+test("says when a native screen shows no buttons", () => {
+  expect(describeNativeScreen("<XCUIElementTypeApplication/>")).toBe(
+    "the native screen shows no buttons",
+  );
 });
