@@ -7,6 +7,7 @@ import {
   Languages,
   Palette,
   Settings,
+  Shield,
 } from "@lucide/svelte";
 
 import { m } from "#lib/paraglide/messages.js";
@@ -62,6 +63,12 @@ export const PLACES: readonly Place[] = [
     label: m.appearance_title,
     within: m.settings_title,
     icon: Palette,
+  },
+  {
+    route: "/(app)/settings/privacy",
+    label: m.privacy_title,
+    within: m.settings_title,
+    icon: Shield,
   },
   {
     route: "/(app)/settings/general",

@@ -36,7 +36,7 @@ const CATALOG: readonly WireSeries[] = [
   seriesTitled(14, LENGTHY_TITLE),
 ];
 const SERIES_SHOWN = 6;
-const PLACES_HOLDING_SE = 6;
+const PLACES_HOLDING_SE = 7;
 
 /** Every series here is unread and unstarted, so only a filter letting those through finds any. */
 function letsThrough(filter: LibraryFilter): boolean {
@@ -122,7 +122,7 @@ test("opens with Control K from anywhere, offering every page", async ({
 
   await expect(
     quickOpen(page).getByRole("group", { name: "Go to" }).getByRole("option"),
-  ).toHaveCount(8);
+  ).toHaveCount(9);
   await expect(selected(page)).toContainText("Library");
 });
 
@@ -144,6 +144,7 @@ test("finds series and pages by what is typed", async ({ page }) => {
     /^\s*Settings\s*$/,
     /Library/,
     /Appearance/,
+    /Privacy/,
     /General/,
     /About/,
   ]);
