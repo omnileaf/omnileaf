@@ -53,12 +53,16 @@
   const isBelowList = $derived(addPlacement === "below-list");
 
   let latestRemovalAsked = 0;
-  let removalAsker: HTMLElement | undefined;
+  let removalAsker: HTMLButtonElement | undefined;
 
   /** Apple platforms don't focus a button when it's clicked or tapped, so the closing dialog can't hand focus back to it by itself. */
   async function returnFocusToAsker(): Promise<void> {
     await tick();
-    removalAsker?.focus();
+    if (removalAsker?.isConnected === true) {
+      removalAsker.focus();
+    } else {
+      foldersHeading?.focus();
+    }
   }
 
   /** Only the latest question shows its count, so a slow count can't land on a folder asked about after it. */
@@ -130,11 +134,10 @@
               <RowActionButton
                 label={m.library_remove_folder_label({ name: folder.name })}
                 tooltip={m.library_remove_folder()}
-                onclick={(event: MouseEvent) => {
-                  removalAsker =
-                    event.currentTarget instanceof HTMLElement
-                      ? event.currentTarget
-                      : undefined;
+                onclick={(
+                  event: MouseEvent & { currentTarget: HTMLButtonElement },
+                ) => {
+                  removalAsker = event.currentTarget;
                   void confirmRemoval(folder);
                 }}
               >

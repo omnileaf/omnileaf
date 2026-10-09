@@ -11,7 +11,7 @@
     label: string;
     tooltip: string;
     disabled?: boolean;
-    onclick: (event: MouseEvent) => void;
+    onclick: (event: MouseEvent & { currentTarget: HTMLButtonElement }) => void;
     children: Snippet;
   } = $props();
 </script>
