@@ -41,77 +41,77 @@
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --text-tab: 0.625rem;
-  --text-tab--line-height: 0.75rem;
-  --text-caption: 0.75rem;
-  --text-caption--line-height: 1rem;
-  --text-footnote: 0.8125rem;
-  --text-footnote--line-height: 1.1875rem;
-  --text-callout: 0.9375rem;
-  --text-callout--line-height: 1.375rem;
-  --text-back-link: 1.0625rem;
-  --text-back-link--line-height: 1.375rem;
-  --text-detail: 0.8125rem;
-  --text-detail--line-height: 1.125rem;
-  --text-label: 0.875rem;
-  --text-label--line-height: 1.25rem;
-  --text-body: 1rem;
-  --text-body--line-height: 1.5rem;
-  --text-brand: 1.3125rem;
-  --text-brand--line-height: 1.5rem;
-  --text-bar-title: 1.375rem;
-  --text-bar-title--line-height: 1.75rem;
-  --text-group-title: 1.125rem;
-  --text-group-title--line-height: 1.5rem;
-  --text-panel-title: 1.0625rem;
+  --text-tab--line-height: calc(0.75 / 0.625);
+  --text-caption: calc(0.75rem * var(--text-scale));
+  --text-caption--line-height: calc(1 / 0.75);
+  --text-footnote: calc(0.8125rem * var(--text-scale));
+  --text-footnote--line-height: calc(1.1875 / 0.8125);
+  --text-callout: calc(0.9375rem * var(--text-scale));
+  --text-callout--line-height: calc(1.375 / 0.9375);
+  --text-back-link: calc(1.0625rem * var(--text-scale));
+  --text-back-link--line-height: calc(1.375 / 1.0625);
+  --text-detail: calc(0.8125rem * var(--text-scale));
+  --text-detail--line-height: calc(1.125 / 0.8125);
+  --text-label: calc(0.875rem * var(--text-scale));
+  --text-label--line-height: calc(1.25 / 0.875);
+  --text-body: calc(1rem * var(--text-scale));
+  --text-body--line-height: calc(1.5 / 1);
+  --text-brand: calc(1.3125rem * var(--text-scale));
+  --text-brand--line-height: calc(1.5 / 1.3125);
+  --text-bar-title: calc(1.375rem * var(--text-scale));
+  --text-bar-title--line-height: calc(1.75 / 1.375);
+  --text-group-title: calc(1.125rem * var(--text-scale));
+  --text-group-title--line-height: calc(1.5 / 1.125);
+  --text-panel-title: calc(1.0625rem * var(--text-scale));
   --text-panel-title--line-height: 1.3;
-  --text-title: 1.25rem;
-  --text-title--line-height: 1.75rem;
-  --text-dialog-title: 1.0625rem;
+  --text-title: calc(1.25rem * var(--text-scale));
+  --text-title--line-height: calc(1.75 / 1.25);
+  --text-dialog-title: calc(1.0625rem * var(--text-scale));
   --text-dialog-title--line-height: 1.3;
-  --text-sheet-title: 1.25rem;
+  --text-sheet-title: calc(1.25rem * var(--text-scale));
   --text-sheet-title--line-height: 1.3;
-  --text-headline: 1.5rem;
+  --text-headline: calc(1.5rem * var(--text-scale));
   --text-headline--line-height: 1.25;
-  --text-display: 1.75rem;
+  --text-display: calc(1.75rem * var(--text-scale));
   --text-display--line-height: 1.2;
-  --text-step-body: 0.9375rem;
+  --text-step-body: calc(0.9375rem * var(--text-scale));
   --text-step-body--line-height: 1.5;
-  --text-problem-title: 1.5rem;
+  --text-problem-title: calc(1.5rem * var(--text-scale));
   --text-problem-title--line-height: 1.25;
-  --text-reading: 0.9375rem;
+  --text-reading: calc(0.9375rem * var(--text-scale));
   --text-reading--line-height: 1.5;
-  --text-reading-small: 0.875rem;
+  --text-reading-small: calc(0.875rem * var(--text-scale));
   --text-reading-small--line-height: 1.5;
-  --text-lead: 0.9375rem;
-  --text-lead--line-height: 1.375rem;
-  --text-cover-title: 0.8125rem;
-  --text-cover-title--line-height: 1.125rem;
-  --text-cover-title-wide: 0.875rem;
-  --text-cover-title-wide--line-height: 1.25rem;
-  --text-cover-title-small: 0.75rem;
-  --text-cover-title-small--line-height: 1rem;
-  --text-cover-title-tiny: 0.6875rem;
-  --text-cover-title-tiny--line-height: 0.875rem;
-  --text-small: 0.875rem;
-  --text-small--line-height: 1.25rem;
-  --text-badge: 0.6875rem;
+  --text-lead: calc(0.9375rem * var(--text-scale));
+  --text-lead--line-height: calc(1.375 / 0.9375);
+  --text-cover-title: calc(0.8125rem * var(--text-scale));
+  --text-cover-title--line-height: calc(1.125 / 0.8125);
+  --text-cover-title-wide: calc(0.875rem * var(--text-scale));
+  --text-cover-title-wide--line-height: calc(1.25 / 0.875);
+  --text-cover-title-small: calc(0.75rem * var(--text-scale));
+  --text-cover-title-small--line-height: calc(1 / 0.75);
+  --text-cover-title-tiny: calc(0.6875rem * var(--text-scale));
+  --text-cover-title-tiny--line-height: calc(0.875 / 0.6875);
+  --text-small: calc(0.875rem * var(--text-scale));
+  --text-small--line-height: calc(1.25 / 0.875);
+  --text-badge: calc(0.6875rem * var(--text-scale));
   --text-badge--line-height: 1;
-  --text-count: 1.0625rem;
-  --text-count--line-height: 1.5rem;
+  --text-count: calc(1.0625rem * var(--text-scale));
+  --text-count--line-height: calc(1.5 / 1.0625);
 
   --leading-band: 1.2;
-  --text-app-name: 1.5rem;
-  --text-app-name--line-height: 2rem;
-  --text-page-title: 2rem;
+  --text-app-name: calc(1.5rem * var(--text-scale));
+  --text-app-name--line-height: calc(2 / 1.5);
+  --text-page-title: calc(2rem * var(--text-scale));
   --text-page-title--line-height: 1.1;
-  --text-crash-screen-title: 1.5rem;
+  --text-crash-screen-title: calc(1.5rem * var(--text-scale));
   --text-crash-screen-title--line-height: 1.25;
-  --text-crash-screen-body: 0.9375rem;
+  --text-crash-screen-body: calc(0.9375rem * var(--text-scale));
   --text-crash-screen-body--line-height: 1.5;
-  --text-dialog-body: 0.875rem;
+  --text-dialog-body: calc(0.875rem * var(--text-scale));
   --text-dialog-body--line-height: 1.5;
-  --text-code: 0.75rem;
-  --text-code--line-height: 1.125rem;
+  --text-code: calc(0.75rem * var(--text-scale));
+  --text-code--line-height: calc(1.125 / 0.75);
 
   --tracking-tight: -0.01em;
   --tracking-normal: 0;
@@ -272,6 +272,7 @@
   --container-segmented: 22.5rem;
   --container-segmented-touch: 30rem;
   --container-crash-report: 26.25rem;
+  --container-preview-sides: 18em;
 
   --radius-control: 0.625rem;
   --radius-row: 0.5rem;
@@ -487,18 +488,18 @@
     --spacing-empty-icon: 2.25rem;
     --spacing-header-badge: 2.25rem;
     --spacing-header-badge-icon: 1.125rem;
-    --text-display: 1.875rem;
-    --text-step-body: 0.875rem;
+    --text-display: calc(1.875rem * var(--text-scale));
+    --text-step-body: calc(0.875rem * var(--text-scale));
     --spacing-empty-lift: 9.5rem;
     --spacing-title-gap: 1.5rem;
     --spacing-gutter: 1.75rem;
-    --text-page-title: 1.875rem;
+    --text-page-title: calc(1.875rem * var(--text-scale));
     --text-page-title--line-height: 1.15;
   }
 
   @variant expanded {
     --spacing-gutter: 2rem;
-    --text-page-title: 1.75rem;
+    --text-page-title: calc(1.75rem * var(--text-scale));
   }
 }
 
@@ -522,7 +523,7 @@
     --spacing-empty-lift: 3.25rem;
     --spacing-pane-gap: 1.25rem;
     --spacing-title-gap: 1.75rem;
-    --text-page-title: 1.75rem;
+    --text-page-title: calc(1.75rem * var(--text-scale));
     --text-page-title--line-height: 1.15;
 
     @variant max-medium {
@@ -742,8 +743,24 @@
 
 @layer base {
   :root {
+    --text-scale: 1;
     color-scheme: light;
     touch-action: pan-x pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  a,
+  img {
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+  }
+
+  input:not([type="checkbox"], [type="radio"]),
+  textarea,
+  [contenteditable]:not([contenteditable="false"]) {
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   body {

@@ -98,7 +98,7 @@
     >
       <p
         class={[
-          "line-clamp-2 leading-band font-semibold text-on-band",
+          "line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band",
           look.title,
         ]}
       >

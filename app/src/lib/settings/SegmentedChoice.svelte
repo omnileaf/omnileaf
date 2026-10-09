@@ -27,7 +27,7 @@
   {#each options as option (option)}
     <label
       class={[
-        "relative flex flex-1 items-center justify-center rounded-tile text-callout transition-control block-option before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent",
+        "relative flex flex-1 items-center justify-center rounded-tile text-callout transition-control min-block-option before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent",
         chosen === option
           ? "bg-raised font-semibold text-foreground shadow-raised"
           : "font-medium text-muted hover:bg-hover",
