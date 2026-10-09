@@ -123,3 +123,28 @@ for (const platform of ["ios", "android"] as const) {
     });
   }
 }
+
+test.describe("the Settings sections on an iPad", () => {
+  test.use(onPlatform("ios"));
+
+  test("keep their column's width as the open section changes", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1180, height: 820 });
+    await page.goto("/settings/library");
+    const sections = page.getByRole("navigation", {
+      name: english.settings_sections_label,
+    });
+    const columnWidth = () =>
+      sections.evaluate(
+        (nav) => nav.parentElement?.getBoundingClientRect().width,
+      );
+    await expect(sections).toBeVisible();
+    const widthOnLibrary = await columnWidth();
+
+    await sections.getByRole("link", { name: english.privacy_title }).click();
+    await expect(page).toHaveURL("/settings/privacy");
+
+    expect(await columnWidth()).toBe(widthOnLibrary);
+  });
+});

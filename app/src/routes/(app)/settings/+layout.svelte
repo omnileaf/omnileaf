@@ -44,7 +44,9 @@
                 ]}
               >
                 <section.icon size={ICON_SIZE} class="shrink-0" />
-                <span class="wrap-break-word min-inline-none"
+                <span
+                  data-label={section.label()}
+                  class="room-for-bold-label wrap-break-word min-inline-none"
                   >{section.label()}</span
                 >
               </a>

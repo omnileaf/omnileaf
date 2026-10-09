@@ -659,6 +659,19 @@
     var(--color-stand-in);
 }
 
+@utility room-for-bold-label {
+  display: flex;
+  flex-direction: column;
+
+  &::after {
+    content: attr(data-label) / "";
+    block-size: 0;
+    overflow: hidden;
+    visibility: hidden;
+    font-weight: var(--font-weight-bold);
+  }
+}
+
 @utility small-caps {
   font-variant-caps: all-small-caps;
 }
