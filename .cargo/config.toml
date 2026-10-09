@@ -1,2 +1,5 @@
 [alias]
 xtask = "run --quiet --locked --package xtask --"
+
+[env]
+IPHONEOS_DEPLOYMENT_TARGET = "16.0"
