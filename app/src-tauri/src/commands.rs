@@ -115,18 +115,32 @@ async fn add_library_folder(
 #[tauri::command]
 #[specta::specta]
 async fn rescan_library_folder(
+    #[cfg_attr(
+        not(target_os = "ios"),
+        expect(unused_variables, reason = "only iOS reopens picked folders")
+    )]
+    app: AppHandle,
     library: State<'_, Library>,
     id: FolderId,
     on_progress: Channel<ScanProgress>,
 ) -> Result<FolderRescan, IpcError> {
+    #[cfg(target_os = "ios")]
+    crate::folder_access::reopen_picked_folders(&app, &library).await?;
     Ok(library.rescan_folder(id, reporting_to(on_progress)).await?)
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn rescan_library_folders(
+    #[cfg_attr(
+        not(target_os = "ios"),
+        expect(unused_variables, reason = "only iOS reopens picked folders")
+    )]
+    app: AppHandle,
     library: State<'_, Library>,
 ) -> Result<Vec<FolderRescan>, IpcError> {
+    #[cfg(target_os = "ios")]
+    crate::folder_access::reopen_picked_folders(&app, &library).await?;
     Ok(library.rescan_folders().await?)
 }
 

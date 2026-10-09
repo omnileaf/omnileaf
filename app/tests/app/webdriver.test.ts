@@ -7,7 +7,12 @@ import type { AddressInfo } from "node:net";
 
 import { expect, onTestFinished, test } from "vitest";
 
-import { describePage, Session, xpath } from "./webdriver.ts";
+import {
+  describeNativeScreen,
+  describePage,
+  Session,
+  xpath,
+} from "./webdriver.ts";
 
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 
@@ -36,7 +41,7 @@ function reply(response: ServerResponse, status: number, value: unknown) {
   response.end(JSON.stringify({ value }));
 }
 
-type Handler = (route: string, response: ServerResponse) => void;
+type Handler = (route: string, response: ServerResponse, body: string) => void;
 
 const SESSION_TIMEOUTS = /^POST \/session\/[^/]+\/timeouts$/;
 
@@ -60,7 +65,7 @@ async function serve(
         timeoutsSet.push(JSON.parse(body));
         reply(response, 200, null);
       } else {
-        handle(route, response);
+        handle(route, response, body);
       }
     });
   });
@@ -279,5 +284,133 @@ test("shortens long page text", () => {
 
   expect(description).toBe(
     `the page at http://tauri.localhost/ titled "Omnileaf" shows "${"a".repeat(200)}…"`,
+  );
+});
+
+/** Serves a page in the web view's context that records each context it is switched to. */
+async function serverSwitchingContexts(switched: string[]): Promise<URL> {
+  return serve((route, response) => {
+    if (route === "POST /session") {
+      reply(response, 200, { sessionId: "contexts" });
+    } else if (route === "GET /session/contexts/appium/context") {
+      reply(response, 200, "WEBVIEW_1");
+    } else if (route === "POST /session/contexts/appium/context") {
+      switched.push("switch");
+      reply(response, 200, null);
+    } else {
+      reply(response, 404, { error: "no such element", message: "" });
+    }
+  });
+}
+
+test("runs steps in the native context and comes back to the page's", async () => {
+  const switched: string[] = [];
+  const session = await Session.start(
+    await serverSwitchingContexts(switched),
+    {},
+  );
+
+  const answer = await session.inNativeContext(() => {
+    switched.push("step");
+    return Promise.resolve("picked");
+  });
+
+  expect(answer).toBe("picked");
+  expect(switched).toEqual(["switch", "step", "switch"]);
+});
+
+test("comes back to the page's context when a native step fails", async () => {
+  const switched: string[] = [];
+  const session = await Session.start(
+    await serverSwitchingContexts(switched),
+    {},
+  );
+
+  const steps = session.inNativeContext(() =>
+    Promise.reject(new Error("the picker never opened")),
+  );
+
+  await expect(steps).rejects.toThrow("the picker never opened");
+  expect(switched).toEqual(["switch", "switch"]);
+});
+
+test("relaunches the app and goes on in the web view of the new launch, not the old one", async () => {
+  const switchedTo: unknown[] = [];
+  let contextsAsked = 0;
+  const server = await serve((route, response, body) => {
+    if (route === "POST /session") {
+      reply(response, 200, { sessionId: "relaunch" });
+    } else if (route === "GET /session/relaunch/appium/context") {
+      reply(response, 200, "WEBVIEW_1");
+    } else if (route === "GET /session/relaunch/contexts") {
+      contextsAsked += 1;
+      reply(
+        response,
+        200,
+        contextsAsked < 3
+          ? ["NATIVE_APP", "WEBVIEW_1"]
+          : ["NATIVE_APP", "WEBVIEW_1", "WEBVIEW_2"],
+      );
+    } else if (route === "POST /session/relaunch/appium/context") {
+      switchedTo.push(JSON.parse(body));
+      reply(response, 200, null);
+    } else if (route === "POST /session/relaunch/execute/sync") {
+      reply(response, 200, null);
+    } else {
+      reply(response, 404, { error: "no such element", message: "" });
+    }
+  });
+  const session = await Session.start(server, {});
+
+  await session.relaunchApp("app.example");
+
+  expect(switchedTo).toEqual([{ name: "WEBVIEW_2" }]);
+});
+
+test("reports a failed native step, not the failed return from it", async () => {
+  let switches = 0;
+  const server = await serve((route, response) => {
+    if (route === "POST /session") {
+      reply(response, 200, { sessionId: "lost" });
+    } else if (route === "GET /session/lost/appium/context") {
+      reply(response, 200, "WEBVIEW_1");
+    } else if (route === "POST /session/lost/appium/context") {
+      switches += 1;
+      if (switches === 1) {
+        reply(response, 200, null);
+      } else {
+        reply(response, 500, {
+          error: "unknown error",
+          message: "the web view is gone",
+        });
+      }
+    } else {
+      reply(response, 404, { error: "no such element", message: "" });
+    }
+  });
+  const session = await Session.start(server, {});
+
+  const steps = session.inNativeContext(() =>
+    Promise.reject(new Error("the picker never opened")),
+  );
+
+  await expect(steps).rejects.toThrow("the picker never opened");
+});
+
+test("names the buttons a native screen shows", () => {
+  const source = `<XCUIElementTypeApplication name="Omnileaf">
+    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Cancel" label="Cancel" visible="true"/>
+    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Hidden" label="Hidden" visible="false"/>
+    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Browse" label="Browse" visible="true"/>
+  </XCUIElementTypeApplication>`;
+
+  expect(describeNativeScreen(source)).toBe(
+    'the native screen shows the buttons "Cancel", "Browse"',
+  );
+});
+
+test("says when a native screen shows no buttons", () => {
+  expect(describeNativeScreen("<XCUIElementTypeApplication/>")).toBe(
+    "the native screen shows no buttons",
   );
 });

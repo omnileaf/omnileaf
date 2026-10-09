@@ -259,6 +259,35 @@ pub(crate) const STEPS: &[Step] = &[
         args: &["--recursive", "run", "test:android"],
     },
     Step {
+        name: "ios lint",
+        group: Group::Ios,
+        program: "cargo",
+        args: &[
+            "clippy",
+            "--locked",
+            "--package",
+            "omnileaf-folder-access",
+            "--package",
+            "omnileaf-app",
+            "--target",
+            "aarch64-apple-ios-sim",
+            "--all-targets",
+            "--",
+            "--deny",
+            "warnings",
+        ],
+    },
+    Step {
+        name: "folder bookmark tests",
+        group: Group::Ios,
+        program: "swift",
+        args: &[
+            "test",
+            "--package-path",
+            "crates/omnileaf-folder-access/ios/FolderBookmarks",
+        ],
+    },
+    Step {
         name: "ios tests",
         group: Group::Ios,
         program: "pnpm",
@@ -504,6 +533,14 @@ mod tests {
                 "sync rules",
                 "comment rules",
             ]
+        );
+    }
+
+    #[test]
+    fn the_ios_group_checks_the_ios_only_code_before_running_the_app() {
+        assert_eq!(
+            names_in(Group::Ios),
+            ["ios lint", "folder bookmark tests", "ios tests"]
         );
     }
 

@@ -2,6 +2,11 @@ import { isRecord, listOf } from "./json.ts";
 
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 const STALE_ELEMENT = "stale element reference";
+const NATIVE_CONTEXT = "NATIVE_APP";
+const SHOWN_BUTTON =
+  /<XCUIElementTypeButton\b[^>]*\bname="([^"]*)"[^>]*\bvisible="true"/g;
+const WEBVIEW_CONTEXT = "WEBVIEW";
+const RELAUNCH_TIMEOUT_MS = 60_000;
 const ELEMENT_TIMEOUT_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 30_000;
 const SCRIPT_TIMEOUT_MS = 2_000;
@@ -53,6 +58,16 @@ export function describePage(page: PageState): string {
       ? `"${text.slice(0, PAGE_TEXT_SHOWN)}…"`
       : `"${text}"`;
   return `the page at ${page.url} titled "${page.title}" shows ${text === "" ? "no text" : shown}`;
+}
+
+/** Names the buttons shown in an Appium page source, which is all a native screen offers to say what is on it. */
+export function describeNativeScreen(source: string): string {
+  const buttons = [...source.matchAll(SHOWN_BUTTON)].map(
+    ([, name]) => `"${name ?? ""}"`,
+  );
+  return buttons.length === 0
+    ? "the native screen shows no buttons"
+    : `the native screen shows the buttons ${buttons.join(", ")}`;
 }
 
 class NotReadyError extends Error {
@@ -220,6 +235,56 @@ export class Session {
     });
   }
 
+  /** Runs `steps` against the device's own interface, such as a system sheet, then returns to the page's context even when a step fails. */
+  async inNativeContext<T>(steps: () => Promise<T>): Promise<T> {
+    const page = await this.currentContext();
+    await this.switchToContext(NATIVE_CONTEXT);
+    let answer: T;
+    try {
+      answer = await steps();
+    } catch (error) {
+      await this.switchToContext(page).catch(() => undefined);
+      throw error;
+    }
+    await this.switchToContext(page);
+    return answer;
+  }
+
+  /** Quits the app and opens it again, then carries on in the web view of the new launch rather than the one that went with the old. */
+  async relaunchApp(bundleId: string): Promise<void> {
+    const before = await this.currentContext();
+    await this.runMobileCommand("terminateApp", { bundleId });
+    await this.runMobileCommand("activateApp", { bundleId });
+    const webview = await pollUntil(
+      () => this.webviewContextOtherThan(before),
+      RELAUNCH_TIMEOUT_MS,
+      "the web view of the relaunched app",
+    );
+    await this.switchToContext(webview);
+  }
+
+  private async currentContext(): Promise<string> {
+    return requireString(
+      await send(`${this.endpoint}/appium/context`, "GET"),
+      "context",
+    );
+  }
+
+  private async switchToContext(name: string): Promise<void> {
+    await send(`${this.endpoint}/appium/context`, "POST", { name });
+  }
+
+  private async webviewContextOtherThan(
+    old: string,
+  ): Promise<string | undefined> {
+    const contexts = listOf(await send(`${this.endpoint}/contexts`, "GET")).map(
+      (context) => requireString(context, "context"),
+    );
+    return contexts.find(
+      (context) => context.startsWith(WEBVIEW_CONTEXT) && context !== old,
+    );
+  }
+
   async windows(): Promise<readonly string[]> {
     const handles = await send(`${this.endpoint}/window/handles`, "GET");
     return listOf(handles).map((handle) =>
@@ -278,7 +343,19 @@ export class Session {
         text: requireString(text, "page text"),
       });
     } catch (error) {
-      return `the page could not be read: ${error instanceof Error ? error.message : String(error)}`;
+      return this.describeNativeScreenInstead(error);
+    }
+  }
+
+  /** A native screen has no address or title to read, so it is described by the buttons in its page source. */
+  private async describeNativeScreenInstead(
+    pageError: unknown,
+  ): Promise<string> {
+    try {
+      const source = await send(`${this.endpoint}/source`, "GET");
+      return describeNativeScreen(requireString(source, "page source"));
+    } catch {
+      return `the page could not be read: ${pageError instanceof Error ? pageError.message : String(pageError)}`;
     }
   }
 

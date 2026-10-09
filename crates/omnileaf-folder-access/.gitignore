@@ -1,0 +1,8 @@
+/.tauri
+/permissions
+/ios/Package.resolved
+/ios/.build
+/ios/.swiftpm
+/ios/FolderBookmarks/Package.resolved
+/ios/FolderBookmarks/.build
+/ios/FolderBookmarks/.swiftpm

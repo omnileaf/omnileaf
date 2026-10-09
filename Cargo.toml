@@ -28,6 +28,7 @@ jpeg-encoder = { version = "0.7.1", default-features = false, features = ["std"]
 omnileaf-cache = { path = "crates/omnileaf-cache" }
 omnileaf-db = { path = "crates/omnileaf-db" }
 omnileaf-engine = { path = "crates/omnileaf-engine" }
+omnileaf-folder-access = { path = "crates/omnileaf-folder-access" }
 omnileaf-formats = { path = "crates/omnileaf-formats" }
 omnileaf-imaging = { path = "crates/omnileaf-imaging" }
 omnileaf-sync-proto = { path = "crates/omnileaf-sync-proto" }
@@ -43,6 +44,7 @@ specta = { version = "=2.0.0-rc.25", features = ["derive"] }
 specta-typescript = "=0.0.12"
 tauri = "2.12.0"
 tauri-build = "2.7.0"
+tauri-plugin = { version = "2.7.1", features = ["build"] }
 tauri-plugin-clipboard-manager = "2.4.1"
 tauri-plugin-dialog = "2.8.0"
 tauri-plugin-opener = "2.7.0"
