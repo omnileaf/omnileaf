@@ -28,7 +28,7 @@
     </div>
   {/if}
   {#if actions !== undefined}
-    <div class="ms-auto flex items-center gap-sm">
+    <div class="ms-auto flex items-center medium:gap-sm">
       {@render actions()}
     </div>
   {/if}

@@ -144,7 +144,9 @@ for (const platform of PLATFORMS) {
               { language, screenshotMode },
             );
             await page.goto("/");
-            await expect(headingOf(page).getByRole("button")).toHaveCount(1);
+            await expect(headingOf(page).getByRole("button")).toHaveCount(
+              library === "empty" ? 1 : 2,
+            );
             if (library === "filled") {
               await expect(countOf(page)).toBeVisible();
             }
@@ -179,7 +181,7 @@ for (const platform of PLATFORMS) {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
       await page.goto("/");
       await expect(countOf(page)).toBeVisible();
-      await expect(headingOf(page).getByRole("button")).toHaveCount(1);
+      await expect(headingOf(page).getByRole("button")).toHaveCount(2);
 
       for (const width of PHONE_WIDTHS) {
         await page.setViewportSize({ width, height: HEIGHT });
