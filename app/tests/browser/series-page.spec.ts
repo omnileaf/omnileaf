@@ -588,6 +588,78 @@ test("sets each book's added date on one line of the table", async ({
   expect((await boxOf(added)).height).toBeLessThanOrEqual(lineHeight);
 });
 
+for (const { platform, statusBar, target } of [
+  { platform: "ios", statusBar: 59, target: 44 },
+  { platform: "android", statusBar: 24, target: 48 },
+] as const) {
+  test.describe(`at the top of a phone on ${platform}`, () => {
+    test.use({
+      backend: {
+        ...SHELF_BACKEND,
+        appInfo: onPlatform(platform).backend.appInfo,
+      },
+    });
+
+    test.beforeEach(({ page }) => {
+      test.skip(
+        viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+        "phones pin a bar at the top",
+      );
+    });
+
+    async function openUnderStatusBar(page: Page): Promise<void> {
+      await openSeries(page);
+      await page.evaluate((inset) => {
+        document.documentElement.style.setProperty(
+          "--system-inset-top",
+          `${String(inset)}px`,
+        );
+      }, statusBar);
+    }
+
+    function back(page: Page): Locator {
+      return page.getByRole("link", { name: "Back to the library" });
+    }
+
+    function barTitle(page: Page): Locator {
+      return page.getByRole("main").locator("header").getByText(SERIES_TITLE);
+    }
+
+    test("keeps the way back pinned below the status bar and shows the title there once the page's title scrolls under it", async ({
+      page,
+    }) => {
+      await openUnderStatusBar(page);
+      const atRest = await boxOf(back(page));
+      const heading = await boxOf(
+        page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
+      );
+      await expect(barTitle(page)).toHaveCSS("opacity", "0");
+
+      await page.getByRole("main").evaluate((main) => {
+        main.scrollTo({ top: 600 });
+      });
+
+      await expect(barTitle(page)).toHaveCSS("opacity", "1");
+      const scrolled = await boxOf(back(page));
+      expect(scrolled.y).toBe(atRest.y);
+      expect(atRest.y).toBeGreaterThanOrEqual(statusBar);
+      expect(atRest.y + atRest.height).toBeLessThanOrEqual(heading.y);
+      expect(Math.min(atRest.width, atRest.height)).toBeGreaterThanOrEqual(
+        target,
+      );
+    });
+
+    test("shows and hides the title at once when motion is reduced", async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await openSeries(page);
+
+      await expect(barTitle(page)).toHaveCSS("transition-duration", "0s");
+    });
+  });
+}
+
 test.describe("on an iPhone", () => {
   const SNUG_GAP = 20;
 

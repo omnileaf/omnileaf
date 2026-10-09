@@ -54,6 +54,20 @@
     foundId === undefined ? undefined : seriesBookList(foundId, () => listing),
   );
 
+  let backLink: HTMLAnchorElement | undefined = $state();
+  let isTitleUnderBar = $state(false);
+
+  function lookAtTitle(): void {
+    const title = document.querySelector("main h1");
+    const bar = backLink?.parentElement;
+    isTitleUnderBar =
+      title !== null &&
+      bar !== null &&
+      bar !== undefined &&
+      title.getBoundingClientRect().bottom <=
+        bar.getBoundingClientRect().bottom;
+  }
+
   function readAgain(): void {
     void invalidate(SERIES_OVERVIEW);
     void books?.load();
@@ -72,6 +86,16 @@
     });
   });
 
+  onMount(() => {
+    document.addEventListener("scroll", lookAtTitle, {
+      capture: true,
+      passive: true,
+    });
+    return () => {
+      document.removeEventListener("scroll", lookAtTitle, { capture: true });
+    };
+  });
+
   onMount(() =>
     listenForLibraryChanges(() => {
       readAgain();
@@ -80,7 +104,7 @@
 </script>
 
 <div
-  class="relative isolate -me-page-end -mbs-page-top flex flex-col gap-lg pe-page-end pbs-page-top max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-xl medium:ps-xl"
+  class="relative isolate -me-page-end -mbs-page-top flex flex-col gap-lg pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-xl medium:ps-xl medium:pbs-page-top"
 >
   {#if found !== undefined}
     <div
@@ -100,14 +124,33 @@
       ></div>
     </div>
   {/if}
-  <a
-    href={resolve("/(app)")}
-    class="flex items-center justify-center self-start rounded-full bg-series-crumb text-small font-semibold text-on-series-crumb backdrop-blur-glass block-series-back inline-series-back medium:gap-xs medium:rounded-field medium:ps-sm medium:pe-md medium:inline-auto expanded:block-series-crumb"
+  <header
+    class={[
+      "flex items-center gap-sm motion-safe:transition-colors motion-safe:duration-fade max-medium:sticky max-medium:-inset-bs-page-top max-medium:z-series-bar max-medium:-ms-page-start max-medium:-me-page-end max-medium:ps-page-start max-medium:pe-page-end max-medium:pbs-series-bar-top max-medium:pbe-xs",
+      isTitleUnderBar && "max-medium:bg-background",
+    ]}
   >
-    <ChevronLeft size={BACK_ICON_SIZE} aria-hidden="true" />
-    <span class="sr-only medium:hidden">{m.series_back_label()}</span>
-    <span class="max-medium:hidden">{m.series_back()}</span>
-  </a>
+    <a
+      bind:this={backLink}
+      href={resolve("/(app)")}
+      class="flex shrink-0 items-center justify-center self-start rounded-full bg-series-crumb text-small font-semibold text-on-series-crumb backdrop-blur-glass block-series-back inline-series-back medium:gap-xs medium:rounded-field medium:ps-sm medium:pe-md medium:inline-auto expanded:block-series-crumb android:max-medium:block-touch-target android:max-medium:inline-touch-target"
+    >
+      <ChevronLeft size={BACK_ICON_SIZE} aria-hidden="true" />
+      <span class="sr-only medium:hidden">{m.series_back_label()}</span>
+      <span class="max-medium:hidden">{m.series_back()}</span>
+    </a>
+    {#if overview !== undefined}
+      <span
+        aria-hidden="true"
+        class={[
+          "truncate text-lead font-bold motion-safe:transition-opacity motion-safe:duration-fade medium:hidden",
+          isTitleUnderBar ? "opacity-100" : "opacity-0",
+        ]}
+      >
+        {overview.title}
+      </span>
+    {/if}
+  </header>
   {#if found !== undefined && overview !== undefined && cover !== undefined}
     <div
       class="flex flex-col gap-xl expanded:flex-row expanded:items-start expanded:gap-2xl"
