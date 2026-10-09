@@ -10,12 +10,19 @@
   const ARROW_SIZE = 20;
 </script>
 
-<div role="img" aria-label={m.screenshot_mode_preview_label()}>
-  <div inert class="flex items-center gap-sm expanded:items-start">
+<div
+  role="img"
+  aria-label={m.screenshot_mode_preview_label()}
+  class="@container text-detail"
+>
+  <div
+    inert
+    class="flex items-center gap-sm expanded:items-start @max-preview-sides:flex-col @max-preview-sides:items-start"
+  >
     <PreviewSide showsStandIn={false} isActive={!isOn} />
     <ArrowRight
       size={ARROW_SIZE}
-      class="shrink-0 text-faint expanded:self-center rtl:-scale-x-100"
+      class="shrink-0 text-faint expanded:self-center @max-preview-sides:ms-md @max-preview-sides:rotate-90 rtl:-scale-x-100"
     />
     <PreviewSide showsStandIn={true} isActive={isOn} />
   </div>
