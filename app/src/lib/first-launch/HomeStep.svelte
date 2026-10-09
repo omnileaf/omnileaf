@@ -2,17 +2,17 @@
   import { House } from "@lucide/svelte";
 
   import type { Platform } from "#lib/ipc/bindings.ts";
+  import { folderLocation } from "#lib/library/folder-location.ts";
   import FolderRow from "#lib/library/FolderRow.svelte";
   import HomeFolder from "#lib/library/HomeFolder.svelte";
   import type { FolderList } from "#lib/library/library-folders.svelte.ts";
+  import WidthWording from "#lib/page/WidthWording.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { folderLocation } from "./folder-location";
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
   import StepBadge from "./StepBadge.svelte";
   import StepHeader from "./StepHeader.svelte";
-  import WidthWording from "./WidthWording.svelte";
 
   let {
     platform,
@@ -54,7 +54,7 @@
         </div>
       {/if}
     {:else}
-      <HomeFolder {folders} class="mbs-sm" />
+      <HomeFolder {folders} {platform} class="mbs-sm" />
     {/if}
     {#if folders.kind === "failed"}
       <p class="px-xs">{m.library_folders_failed()}</p>

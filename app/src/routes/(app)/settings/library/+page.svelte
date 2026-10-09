@@ -8,6 +8,10 @@
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
+  import type { PageProps } from "./$types";
+
+  let { data }: PageProps = $props();
+
   const screenshotMode = getScreenshotMode();
   const notices = getNotices();
 </script>
@@ -21,4 +25,5 @@
   rescanFolder={rescanFolderWithProgress}
   {notices}
   usesStandIns={screenshotMode.isOn}
+  platform={data.appInfo.platform}
 />
