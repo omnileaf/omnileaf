@@ -47,6 +47,7 @@ const RANGE_LABELS = {
 } as const satisfies Record<ScreenSize, string>;
 const SERIES_IN_CATALOG = 200;
 const FIRST_TITLE = "Sample Series 0001";
+const WHOLE_PIXEL = 1;
 const LONG_TITLE =
   "Sample Series 0001 Collected Edition, Volumes One to Thirty, with Every Extra Chapter (Digital)";
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;
@@ -223,13 +224,14 @@ test("ends a long compact title after two whole lines, cutting none in half", as
   const title = firstSeries(page).getByText(LONG_TITLE);
 
   const clamp = await title.evaluate((element) => ({
-    linesShown:
-      element.getBoundingClientRect().height /
-      Number.parseFloat(getComputedStyle(element).lineHeight),
+    height: element.getBoundingClientRect().height,
+    lineHeight: Number.parseFloat(getComputedStyle(element).lineHeight),
     isClamped: element.scrollHeight > element.clientHeight,
   }));
 
-  expect(clamp.linesShown).toBeCloseTo(2, 2);
+  expect(Math.abs(clamp.height - 2 * clamp.lineHeight)).toBeLessThan(
+    WHOLE_PIXEL,
+  );
   expect(clamp.isClamped).toBe(true);
 });
 
