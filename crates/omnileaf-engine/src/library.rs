@@ -9,8 +9,8 @@ use std::{
 use omnileaf_db::{
     Config, Database,
     catalog::{
-        AndroidTree, AppleBookmark, BookListing, Cover, NewRoot, PageRequest, PageSize, RootId,
-        RootKind, RootLocator, SeriesFilter, SeriesListing, add_root, bookmarked_roots, cover_file,
+        AndroidTree, AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind,
+        RootLocator, SeriesFilter, SeriesListing, add_root, bookmarked_roots, cover_file,
         home_root, library_root, library_roots, mark_root_available, mark_root_unavailable,
         remove_book_files, remove_books_without_files, remove_root, root_book_count, root_files,
         series_books, series_count, series_overview, series_page, up_next,
@@ -31,7 +31,8 @@ use crate::{
     AppLanguage, BookCursor, BookId, BooksRemoval, CoversPerRowOutOfRange, FolderCursor, FolderId,
     FolderPage, FolderRescan, FolderScan, LibraryChanges, LibraryFilter, LibraryFolder,
     LibraryListing, LibrarySearch, LibraryView, ReadMark, RescanOutcome, ResolvedBookmark,
-    ScanProgress, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
+    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview,
+    SeriesPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     cover_thumbnails::CoverFile,
     describe_error,
@@ -305,10 +306,11 @@ impl Library {
         Ok(SeriesOverview::new(overview, up_next))
     }
 
-    /// Lists a series' books in order, giving a series missing from the library no books.
+    /// Lists a series' books as `listing` asks, giving a series missing from the library no books.
     pub async fn series_books(
         &self,
         id: SeriesId,
+        listing: SeriesBookListing,
         after: Option<BookCursor>,
     ) -> Result<SeriesBookPage, LibraryError> {
         let request = PageRequest {
@@ -318,7 +320,7 @@ impl Library {
         let page = self
             .store
             .database()
-            .read(move |connection| series_books(connection, id.0, BookListing::IN_ORDER, &request))
+            .read(move |connection| series_books(connection, id.0, listing.into(), &request))
             .await?;
         Ok(SeriesBookPage::from(page))
     }

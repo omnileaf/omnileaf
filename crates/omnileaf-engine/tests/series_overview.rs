@@ -10,7 +10,8 @@
 mod support;
 
 use omnileaf_engine::{
-    BookReading, Changed, Library, LibraryError, LibraryListing, ReadMark, SeriesBook, SeriesId,
+    BookReading, BooksShown, Changed, Library, LibraryError, LibraryListing, ReadMark, SeriesBook,
+    SeriesBookListing, SeriesId, SortDirection,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -57,7 +58,16 @@ impl SampleLibrary {
     }
 
     async fn books(&self, series: SeriesId) -> Vec<SeriesBook> {
-        self.library.series_books(series, None).await.unwrap().books
+        self.listed_books(series, SeriesBookListing::default())
+            .await
+    }
+
+    async fn listed_books(&self, series: SeriesId, listing: SeriesBookListing) -> Vec<SeriesBook> {
+        self.library
+            .series_books(series, listing, None)
+            .await
+            .unwrap()
+            .books
     }
 }
 
@@ -117,6 +127,27 @@ async fn lists_a_series_books_in_order_with_when_each_was_added() {
             ("Sample Series 01 v03", ADDED_AT, BookReading::NotStarted),
         ]
     );
+}
+
+#[tokio::test]
+async fn lists_only_a_series_books_not_read_the_other_way_round() {
+    let sample = SampleLibrary::open("unread-books-reversed").await;
+    let series = sample.series_named(FIRST_SERIES).await;
+    let books = sample.books(series).await;
+    sample
+        .library
+        .mark_books(vec![books[1].id], ReadMark::Read)
+        .await
+        .unwrap();
+    let unread_reversed = SeriesBookListing {
+        shown: BooksShown::Unread,
+        direction: SortDirection::Descending,
+    };
+
+    let listed = sample.listed_books(series, unread_reversed).await;
+
+    let titles: Vec<&str> = listed.iter().map(|book| book.title.as_str()).collect();
+    assert_eq!(titles, ["Sample Series 01 v03", "Sample Series 01 v01"]);
 }
 
 #[tokio::test]

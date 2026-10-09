@@ -46,7 +46,12 @@
       : (screenshotMode.isOn ? standInLook : realLook)(found.overview).cover,
   );
   const books = $derived(
-    foundId === undefined ? undefined : seriesBookList(foundId),
+    foundId === undefined
+      ? undefined
+      : seriesBookList(foundId, () => ({
+          shown: "all",
+          direction: "ascending",
+        })),
   );
 
   function readAgain(): void {

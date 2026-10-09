@@ -4,7 +4,7 @@ use omnileaf_db::catalog::{self, BookSummary, Cursor, Page};
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
-use crate::{ipc_brand::branded_string, utc_time::rfc3339_utc};
+use crate::{SortDirection, ipc_brand::branded_string, utc_time::rfc3339_utc};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -25,6 +25,35 @@ pub enum BookReading {
         page: Option<u32>,
     },
     Read,
+}
+
+/// Which of a series' books its page lists, and which way round.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SeriesBookListing {
+    pub shown: BooksShown,
+    pub direction: SortDirection,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum BooksShown {
+    #[default]
+    All,
+    /// Only the books not marked read.
+    Unread,
+}
+
+impl From<SeriesBookListing> for catalog::BookListing {
+    fn from(listing: SeriesBookListing) -> Self {
+        Self {
+            shown: match listing.shown {
+                BooksShown::All => catalog::BooksShown::All,
+                BooksShown::Unread => catalog::BooksShown::Unread,
+            },
+            direction: listing.direction.into(),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]

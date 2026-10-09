@@ -200,7 +200,8 @@ for (const platform of PLATFORMS) {
         backend: {
           ...onPlatform(platform).backend,
           seriesOverview: (id) => shelf.backend().seriesOverview(id),
-          seriesBooks: (id, after) => shelf.backend().seriesBooks(id, after),
+          seriesBooks: (id, listing, after) =>
+            shelf.backend().seriesBooks(id, listing, after),
         },
       });
 
