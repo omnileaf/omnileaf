@@ -9,8 +9,8 @@ use std::{
 use omnileaf_db::{
     Config, Database,
     catalog::{
-        AndroidTree, AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind,
-        RootLocator, SeriesFilter, SeriesListing, add_root, bookmarked_roots, cover_file,
+        AndroidTree, AppleBookmark, BookListing, Cover, NewRoot, PageRequest, PageSize, RootId,
+        RootKind, RootLocator, SeriesFilter, SeriesListing, add_root, bookmarked_roots, cover_file,
         home_root, library_root, library_roots, mark_root_available, mark_root_unavailable,
         remove_book_files, remove_books_without_files, remove_root, root_book_count, root_files,
         series_books, series_count, series_overview, series_page, up_next,
@@ -318,7 +318,7 @@ impl Library {
         let page = self
             .store
             .database()
-            .read(move |connection| series_books(connection, id.0, &request))
+            .read(move |connection| series_books(connection, id.0, BookListing::IN_ORDER, &request))
             .await?;
         Ok(SeriesBookPage::from(page))
     }

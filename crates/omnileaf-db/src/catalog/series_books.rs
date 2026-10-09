@@ -4,6 +4,7 @@ use rusqlite::{Connection, Row, Statement, ToSql, named_params};
 use crate::{
     Error,
     catalog::{
+        SortDirection,
         cursor::Position,
         page::{Page, PageRequest},
         stored_id::stored_id,
@@ -11,25 +12,45 @@ use crate::{
 };
 
 macro_rules! books_in_series {
-    ($($condition:literal)?) => {
+    ($direction:literal $(, $condition:expr)*) => {
         concat!(
             "SELECT book.id, book.title, book.title_sort_key, book.added_at_ms,
                 book_state.is_read, book_state.is_started, book_state.position_page
             FROM book
             LEFT JOIN book_state ON book_state.book_id = book.id
-            WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = :series) ",
-            $($condition,)?
-            " ORDER BY book.title_sort_key, book.id LIMIT :limit"
+            WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = :series)",
+            $(" AND ", $condition,)*
+            " ORDER BY book.title_sort_key ", $direction, ", book.id ", $direction,
+            " LIMIT :limit"
         )
     };
 }
 
-const FIRST_IN_SERIES: &str = books_in_series!();
-const NEXT_IN_SERIES: &str =
-    books_in_series!("AND (book.title_sort_key, book.id) > (:after_key, :after_id)");
+macro_rules! after_cursor {
+    (ASC) => {
+        "(book.title_sort_key, book.id) > (:after_key, :after_id)"
+    };
+    (DESC) => {
+        "(book.title_sort_key, book.id) < (:after_key, :after_id)"
+    };
+}
+
+macro_rules! not_read {
+    () => {
+        "book_state.is_read IS NOT 1"
+    };
+}
+
+const FIRST_IN_SERIES: &str = books_in_series!("ASC");
+const NEXT_IN_SERIES: &str = books_in_series!("ASC", after_cursor!(ASC));
+const LAST_IN_SERIES: &str = books_in_series!("DESC");
+const PREVIOUS_IN_SERIES: &str = books_in_series!("DESC", after_cursor!(DESC));
+const FIRST_UNREAD_IN_SERIES: &str = books_in_series!("ASC", not_read!());
+const NEXT_UNREAD_IN_SERIES: &str = books_in_series!("ASC", not_read!(), after_cursor!(ASC));
+const LAST_UNREAD_IN_SERIES: &str = books_in_series!("DESC", not_read!());
+const PREVIOUS_UNREAD_IN_SERIES: &str = books_in_series!("DESC", not_read!(), after_cursor!(DESC));
 const FIRST_STARTED_UNREAD: &str =
-    books_in_series!("AND book_state.is_started IS 1 AND book_state.is_read IS NOT 1");
-const FIRST_UNREAD: &str = books_in_series!("AND book_state.is_read IS NOT 1");
+    books_in_series!("ASC", "book_state.is_started IS 1", not_read!());
 const ONE_BOOK: i64 = 1;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -38,6 +59,40 @@ pub struct BookSummary {
     pub title: String,
     pub added_at_ms: i64,
     pub reading: BookReading,
+}
+
+/// Which of a series' books a list holds, and which way round.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BookListing {
+    pub shown: BooksShown,
+    pub direction: SortDirection,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BooksShown {
+    All,
+    /// Only the books not marked read.
+    Unread,
+}
+
+impl BookListing {
+    pub const IN_ORDER: Self = Self {
+        shown: BooksShown::All,
+        direction: SortDirection::Ascending,
+    };
+
+    const fn query(self, is_continued: bool) -> &'static str {
+        match (self.shown, self.direction, is_continued) {
+            (BooksShown::All, SortDirection::Ascending, false) => FIRST_IN_SERIES,
+            (BooksShown::All, SortDirection::Ascending, true) => NEXT_IN_SERIES,
+            (BooksShown::All, SortDirection::Descending, false) => LAST_IN_SERIES,
+            (BooksShown::All, SortDirection::Descending, true) => PREVIOUS_IN_SERIES,
+            (BooksShown::Unread, SortDirection::Ascending, false) => FIRST_UNREAD_IN_SERIES,
+            (BooksShown::Unread, SortDirection::Ascending, true) => NEXT_UNREAD_IN_SERIES,
+            (BooksShown::Unread, SortDirection::Descending, false) => LAST_UNREAD_IN_SERIES,
+            (BooksShown::Unread, SortDirection::Descending, true) => PREVIOUS_UNREAD_IN_SERIES,
+        }
+    }
 }
 
 /// How far a book has been read, as the synced registers last projected it.
@@ -51,10 +106,12 @@ pub enum BookReading {
     Read,
 }
 
-#[tracing::instrument(skip_all, fields(%series, size = ?request.size))]
+/// A series missing from the catalog has no books, so its page is empty.
+#[tracing::instrument(skip_all, fields(%series, ?listing, size = ?request.size))]
 pub fn series_books(
     connection: &Connection,
     series: SeriesId,
+    listing: BookListing,
     request: &PageRequest,
 ) -> Result<Page<BookSummary>, Error> {
     let series_id = series.as_bytes();
@@ -62,7 +119,7 @@ pub fn series_books(
     match request.after.as_ref().map(|cursor| &cursor.0) {
         None => read(
             series,
-            connection.prepare(FIRST_IN_SERIES)?,
+            connection.prepare(listing.query(false))?,
             named_params! { ":series": series_id, ":limit": limit },
         ),
         Some(Position::Book {
@@ -71,7 +128,7 @@ pub fn series_books(
             id,
         }) if *listed == series => read(
             series,
-            connection.prepare(NEXT_IN_SERIES)?,
+            connection.prepare(listing.query(true))?,
             named_params! {
                 ":series": series_id,
                 ":after_key": sort_key,
@@ -93,7 +150,7 @@ pub fn series_books(
 #[tracing::instrument(skip_all, fields(%series))]
 pub fn up_next(connection: &Connection, series: SeriesId) -> Result<Option<BookSummary>, Error> {
     let params = named_params! { ":series": series.as_bytes(), ":limit": ONE_BOOK };
-    for query in [FIRST_STARTED_UNREAD, FIRST_UNREAD] {
+    for query in [FIRST_STARTED_UNREAD, FIRST_UNREAD_IN_SERIES] {
         let found = read(series, connection.prepare(query)?, params)?;
         if let Some((book, _)) = found.into_iter().next() {
             return Ok(Some(book));
@@ -178,10 +235,38 @@ mod tests {
     }
 
     #[test]
+    fn lists_a_series_books_either_way_round_and_only_unread_by_index_without_sorting() {
+        let scratch = ScratchLibrary::new("book-listing-plans");
+        let listings = [BooksShown::All, BooksShown::Unread]
+            .into_iter()
+            .flat_map(|shown| {
+                [SortDirection::Ascending, SortDirection::Descending]
+                    .map(|direction| BookListing { shown, direction })
+            });
+
+        let plans: Vec<Vec<String>> = listings
+            .flat_map(|listing| [listing.query(false), listing.query(true)])
+            .map(|query| scratch.query_plan(query))
+            .collect();
+
+        for plan in plans {
+            assert!(
+                plan[0].starts_with("SEARCH book USING INDEX book_by_series (series_local_id=?"),
+                "{plan:?}"
+            );
+            assert!(
+                !plan.iter().any(|step| step.contains("TEMP B-TREE")),
+                "{plan:?}"
+            );
+        }
+    }
+
+    #[test]
     fn finds_what_is_up_next_by_walking_the_series_books_in_order_without_scanning_or_sorting() {
         let scratch = ScratchLibrary::new("up-next-plan");
 
-        let plans = [FIRST_STARTED_UNREAD, FIRST_UNREAD].map(|query| scratch.query_plan(query));
+        let plans =
+            [FIRST_STARTED_UNREAD, FIRST_UNREAD_IN_SERIES].map(|query| scratch.query_plan(query));
 
         let walking_in_order = [
             "SEARCH book USING INDEX book_by_series (series_local_id=?)",

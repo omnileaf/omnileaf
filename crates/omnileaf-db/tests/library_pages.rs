@@ -12,8 +12,9 @@ use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Connection, Database, Error,
     catalog::{
-        BookReading, Cursor, NewSeries, Page, PageRequest, PageSize, SeriesFilter, SeriesListing,
-        SeriesOrder, SeriesSort, series_books, series_count, series_page,
+        BookListing, BookReading, BooksShown, Cursor, NewSeries, Page, PageRequest, PageSize,
+        SeriesFilter, SeriesListing, SeriesOrder, SeriesSort, SortDirection, series_books,
+        series_count, series_page,
     },
 };
 use omnileaf_sync_proto::SeriesId;
@@ -100,8 +101,12 @@ fn series_titles(listing: SeriesListing) -> impl List + Clone {
 }
 
 fn book_titles(series: SeriesId) -> impl List + Clone {
+    listed_book_titles(series, BookListing::IN_ORDER)
+}
+
+fn listed_book_titles(series: SeriesId, listing: BookListing) -> impl List + Clone {
     move |connection: &Connection, request: &PageRequest| {
-        let page = series_books(connection, series, request)?;
+        let page = series_books(connection, series, listing, request)?;
         Ok(Page {
             items: page.items.into_iter().map(|book| book.title).collect(),
             next: page.next,
@@ -299,6 +304,87 @@ async fn pages_a_series_books_in_natural_order() {
 }
 
 #[tokio::test]
+async fn pages_a_series_books_in_reverse_natural_order() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &["Volume 10", "Volume 2", "volume 1", "Extra"],
+    )])
+    .await;
+    let reversed = BookListing {
+        direction: SortDirection::Descending,
+        ..BookListing::IN_ORDER
+    };
+
+    let pages = library
+        .walk(
+            listed_book_titles(series_id("Sample Series 01"), reversed),
+            3,
+        )
+        .await;
+
+    assert_eq!(
+        pages,
+        [vec!["Volume 10", "Volume 2", "volume 1"], vec!["Extra"]]
+    );
+}
+
+#[tokio::test]
+async fn pages_only_the_books_of_a_series_not_marked_read_either_way_round() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &[
+            "Volume 01",
+            "Volume 02",
+            "Volume 03",
+            "Volume 04",
+            "Volume 05",
+        ],
+    )])
+    .await;
+    library
+        .database
+        .write(|transaction| {
+            let mut state = transaction.prepare(
+                "INSERT INTO book_state (book_id, is_read) SELECT id, ?2 FROM book WHERE title = ?1",
+            )?;
+            state.execute(("Volume 01", true))?;
+            state.execute(("Volume 03", true))?;
+            state.execute(("Volume 04", false))?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+    let series = series_id("Sample Series 01");
+    let unread = |direction| BookListing {
+        shown: BooksShown::Unread,
+        direction,
+    };
+
+    let pages = [
+        library
+            .walk(
+                listed_book_titles(series, unread(SortDirection::Ascending)),
+                2,
+            )
+            .await,
+        library
+            .walk(
+                listed_book_titles(series, unread(SortDirection::Descending)),
+                2,
+            )
+            .await,
+    ];
+
+    assert_eq!(
+        pages,
+        [
+            vec![vec!["Volume 02", "Volume 04"], vec!["Volume 05"]],
+            vec![vec!["Volume 05", "Volume 04"], vec!["Volume 02"]],
+        ]
+    );
+}
+
+#[tokio::test]
 async fn tells_each_book_of_a_series_whether_it_is_read_started_or_not() {
     let library = Library::with(&[series_holding(
         "Sample Series 01",
@@ -334,7 +420,12 @@ async fn tells_each_book_of_a_series_whether_it_is_read_started_or_not() {
                 after: None,
                 size: PageSize::try_from(10).unwrap(),
             };
-            series_books(connection, series_id("Sample Series 01"), &request)
+            series_books(
+                connection,
+                series_id("Sample Series 01"),
+                BookListing::IN_ORDER,
+                &request,
+            )
         })
         .await
         .unwrap();
