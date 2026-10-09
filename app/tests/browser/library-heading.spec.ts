@@ -371,18 +371,36 @@ for (const platform of PLATFORMS) {
   test.describe(`the heading's buttons on a ${platform} phone`, () => {
     test.use({ backend: backendFor(platform, "filled") });
 
-    test("names View options in a tooltip", async ({ page }, testInfo) => {
+    test("show every heading button as a round icon of one size, each named in a tooltip", async ({
+      page,
+    }, testInfo) => {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
       await page.goto("/");
+      const heading = headingOf(page);
+      const named = [
+        [
+          heading.getByRole("button", { name: english.library_view_options }),
+          english.library_view_options,
+        ],
+        [
+          heading.getByRole("button", {
+            name: english.library_filter_and_sort,
+          }),
+          english.library_filter_and_sort,
+        ],
+      ] as const;
+      await expect(heading.getByRole("button")).toHaveCount(named.length);
 
-      const viewOptions = headingOf(page).getByRole("button", {
-        name: english.library_view_options,
-      });
+      const sizes = new Set<string>();
+      for (const [button] of named) {
+        const box = await boxOf(button);
+        sizes.add(`${String(box.width)}x${String(box.height)}`);
+      }
 
-      await expect(viewOptions).toHaveAttribute(
-        "title",
-        english.library_view_options,
-      );
+      expect([...sizes]).toHaveLength(1);
+      for (const [button, name] of named) {
+        await expect(button).toHaveAttribute("title", name);
+      }
     });
   });
 
