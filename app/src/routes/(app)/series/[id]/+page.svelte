@@ -11,12 +11,18 @@
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
+  import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import ReadingProgress from "#lib/series/ReadingProgress.svelte";
   import { seriesBookList } from "#lib/series/series-books.svelte.ts";
   import { SERIES_OVERVIEW } from "#lib/series/series-overview.ts";
   import SeriesBooks from "#lib/series/SeriesBooks.svelte";
   import SeriesHeader from "#lib/series/SeriesHeader.svelte";
+  import {
+    standInBook,
+    standInOverview,
+  } from "#lib/series/series-stand-ins.ts";
 
   import type { PageProps } from "./$types";
 
@@ -27,7 +33,18 @@
   const shown = $derived(data.shown);
   const found = $derived(shown.kind === "found" ? shown : undefined);
 
+  const screenshotMode = getScreenshotMode();
   const foundId = $derived(found?.overview.id);
+  const overview = $derived(
+    found === undefined || !screenshotMode.isOn
+      ? found?.overview
+      : standInOverview(found.overview),
+  );
+  const cover = $derived(
+    found === undefined
+      ? undefined
+      : (screenshotMode.isOn ? standInLook : realLook)(found.overview).cover,
+  );
   const books = $derived(
     foundId === undefined ? undefined : seriesBookList(foundId),
   );
@@ -65,9 +82,9 @@
       aria-hidden="true"
       class="absolute inset-x-none inset-bs-none z-series-band overflow-hidden bg-chip block-series-band medium:block-series-band-tablet expanded:block-series-band-wide"
     >
-      {#if found.overview.cover !== null}
+      {#if cover?.kind === "picture"}
         <img
-          src={coverUrl(found.overview.cover)}
+          src={coverUrl(cover.path)}
           alt=""
           decoding="async"
           class="scale-125 object-cover blur-series-band block-full inline-full"
@@ -86,15 +103,15 @@
     <span class="sr-only medium:hidden">{m.series_back_label()}</span>
     <span class="max-medium:hidden">{m.series_back()}</span>
   </a>
-  {#if found !== undefined}
+  {#if found !== undefined && overview !== undefined && cover !== undefined}
     <div
       class="flex flex-col gap-xl expanded:flex-row expanded:items-start expanded:gap-2xl"
     >
       <div
         class="flex flex-col gap-lg medium:gap-xl expanded:shrink-0 expanded:gap-lg expanded:inline-series-aside"
       >
-        <SeriesHeader overview={found.overview} {coverUrl} />
-        <ReadingProgress overview={found.overview} />
+        <SeriesHeader {overview} {cover} {coverUrl} />
+        <ReadingProgress {overview} />
       </div>
       <div class="flex flex-1 flex-col gap-sm min-inline-none">
         {#if books?.list.kind === "failed"}
@@ -102,7 +119,11 @@
         {:else if books?.list.kind === "loaded"}
           {#key foundId}
             <SeriesBooks
-              books={books.list.items}
+              books={screenshotMode.isOn
+                ? books.list.items.map((book) =>
+                    standInBook(book, found.overview.id),
+                  )
+                : books.list.items}
               bookCount={found.overview.bookCount}
               isComplete={books.list.isComplete}
               onNearEnd={() => {

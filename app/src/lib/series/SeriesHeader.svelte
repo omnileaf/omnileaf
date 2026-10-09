@@ -4,12 +4,16 @@
   import type { SeriesOverview } from "#lib/ipc/bindings.ts";
   import CoverImage from "#lib/library/CoverImage.svelte";
   import type { CoverUrl } from "#lib/library/cover-url.ts";
-  import { realLook } from "#lib/library/series-look.ts";
+  import type { ShownCover } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   const FOLDER_ICON_SIZE = 14;
 
-  let { overview, coverUrl }: { overview: SeriesOverview; coverUrl: CoverUrl } =
+  let {
+    overview,
+    cover,
+    coverUrl,
+  }: { overview: SeriesOverview; cover: ShownCover; coverUrl: CoverUrl } =
     $props();
 </script>
 
@@ -17,7 +21,7 @@
   <div
     class="relative aspect-cover shrink-0 overflow-hidden rounded-series-cover border border-series-cover-edge bg-chip shadow-series-cover inline-series-cover medium:inline-series-cover-tablet expanded:inline-series-cover-wide"
   >
-    <CoverImage cover={realLook(overview).cover} {coverUrl} />
+    <CoverImage {cover} {coverUrl} />
   </div>
   <div class="flex flex-col gap-xs pbe-xs min-inline-none">
     <h1
