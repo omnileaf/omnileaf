@@ -1,0 +1,22 @@
+[package]
+name = "omnileaf-folder-access"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+links = "omnileaf-folder-access"
+
+[dependencies]
+omnileaf-engine.workspace = true
+serde.workspace = true
+tauri.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[build-dependencies]
+tauri-plugin.workspace = true
+
+[lints]
+workspace = true
