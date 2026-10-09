@@ -36,3 +36,8 @@ function fnv1a(text: string): number {
 export function standInNumberFor(id: string): number {
   return (fnv1a(id) % STAND_IN_NUMBERS) + 1;
 }
+
+/** A folder's stand-in, drawn from its name since a folder shows by name wherever it appears. */
+export function folderStandIn(name: string): string {
+  return standInName("folder", standInNumberFor(name));
+}

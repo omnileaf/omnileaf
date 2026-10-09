@@ -2,6 +2,7 @@ import type { SeriesBook, SeriesOverview } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
 import { getLocale } from "#lib/paraglide/runtime.js";
 import {
+  folderStandIn,
   standInName,
   standInNumberFor,
 } from "#lib/screenshot-mode/stand-ins.ts";
@@ -25,10 +26,7 @@ export function standInOverview(overview: SeriesOverview): SeriesOverview {
     ...overview,
     title: standInName("series", standInNumberFor(overview.id)),
     cover: null,
-    folder:
-      overview.folder === null
-        ? null
-        : standInName("folder", standInNumberFor(overview.folder)),
+    folder: overview.folder === null ? null : folderStandIn(overview.folder),
     upNext:
       overview.upNext === null
         ? null

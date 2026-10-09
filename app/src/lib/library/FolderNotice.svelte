@@ -4,7 +4,7 @@
 
   import type { FolderScan } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
-  import { standInName } from "#lib/screenshot-mode/stand-ins.ts";
+  import { folderStandIn } from "#lib/screenshot-mode/stand-ins.ts";
 
   import type { FolderAdding, FolderOutcome } from "./folder-adding.svelte";
   import type { Notice } from "./notice";
@@ -19,8 +19,6 @@
 
   let { adding, usesStandIns, onDismissed }: Props = $props();
 
-  const SHOWN_FOLDER_STAND_IN = 1;
-
   const progressTitleId = $props.id();
 
   onDestroy(() => {
@@ -28,9 +26,7 @@
   });
 
   function shownName(scan: FolderScan): string {
-    return usesStandIns
-      ? standInName("folder", SHOWN_FOLDER_STAND_IN)
-      : scan.name;
+    return usesStandIns ? folderStandIn(scan.name) : scan.name;
   }
 
   function problemsIn(scan: FolderScan): string[] {
