@@ -385,6 +385,57 @@ async fn pages_only_the_books_of_a_series_not_marked_read_either_way_round() {
 }
 
 #[tokio::test]
+async fn numbers_each_book_by_its_place_in_the_series_whichever_books_are_listed() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &["Volume 3", "Volume 1", "Volume 4", "Volume 2"],
+    )])
+    .await;
+    library
+        .database
+        .write(|transaction| {
+            transaction.execute(
+                "INSERT INTO book_state (book_id, is_read) SELECT id, 1 FROM book WHERE title = 'Volume 2'",
+                [],
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+    let unread_last_first = BookListing {
+        shown: BooksShown::Unread,
+        direction: SortDirection::Descending,
+    };
+
+    let page = library
+        .database
+        .read(move |connection| {
+            let request = PageRequest {
+                after: None,
+                size: PageSize::try_from(10).unwrap(),
+            };
+            series_books(
+                connection,
+                series_id("Sample Series 01"),
+                unread_last_first,
+                &request,
+            )
+        })
+        .await
+        .unwrap();
+
+    let numbered: Vec<(&str, u32)> = page
+        .items
+        .iter()
+        .map(|book| (book.title.as_str(), book.position))
+        .collect();
+    assert_eq!(
+        numbered,
+        [("Volume 4", 4), ("Volume 3", 3), ("Volume 1", 1)]
+    );
+}
+
+#[tokio::test]
 async fn tells_each_book_of_a_series_whether_it_is_read_started_or_not() {
     let library = Library::with(&[series_holding(
         "Sample Series 01",

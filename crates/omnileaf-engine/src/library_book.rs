@@ -10,6 +10,8 @@ use crate::{SortDirection, ipc_brand::branded_string, utc_time::rfc3339_utc};
 #[serde(rename_all = "camelCase")]
 pub struct SeriesBook {
     pub id: BookId,
+    /// Where the book stands in its series' order, counting from 1, whichever of its books a list holds.
+    pub position: u32,
     pub title: String,
     /// When the library first found the book, as an RFC 3339 UTC timestamp.
     pub added_at: String,
@@ -85,6 +87,7 @@ impl From<BookSummary> for SeriesBook {
     fn from(book: BookSummary) -> Self {
         Self {
             id: BookId(book.id),
+            position: book.position,
             title: book.title,
             added_at: rfc3339_utc(book.added_at_ms),
             reading: book.reading.into(),
