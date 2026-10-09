@@ -137,7 +137,7 @@ pub(crate) fn title_rows(
 }
 
 /// Begins a read transaction unless the caller is in one already, which holds one snapshot by itself.
-fn snapshot(connection: &Connection) -> rusqlite::Result<Option<Transaction<'_>>> {
+pub(crate) fn snapshot(connection: &Connection) -> rusqlite::Result<Option<Transaction<'_>>> {
     if connection.is_autocommit() {
         connection.unchecked_transaction().map(Some)
     } else {

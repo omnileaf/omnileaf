@@ -7,6 +7,7 @@ use crate::{
         SortDirection,
         cursor::Position,
         page::{Page, PageRequest},
+        staged_rows::snapshot,
         stored_id::stored_id,
     },
 };
@@ -113,6 +114,7 @@ pub fn series_books(
     listing: BookListing,
     request: &PageRequest,
 ) -> Result<Page<BookSummary>, Error> {
+    let _snapshot = snapshot(connection)?;
     let series_id = series.as_bytes();
     let rows = match request.after.as_ref().map(|cursor| &cursor.0) {
         None => walk(
@@ -205,6 +207,7 @@ fn books_before(connection: &Connection, book: &Position) -> Result<u32, Error> 
 /// The book reading the series goes on from: its first book in order that is started and not read, or else its first book not read.
 #[tracing::instrument(skip_all, fields(%series))]
 pub fn up_next(connection: &Connection, series: SeriesId) -> Result<Option<BookSummary>, Error> {
+    let _snapshot = snapshot(connection)?;
     for query in [FIRST_STARTED_UNREAD, FIRST_UNREAD_IN_SERIES] {
         let mut statement = connection.prepare(query)?;
         let mut rows = statement.query(named_params! { ":series": series.as_bytes() })?;
