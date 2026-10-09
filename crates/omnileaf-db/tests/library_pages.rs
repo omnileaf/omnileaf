@@ -20,6 +20,9 @@ use omnileaf_db::{
 use omnileaf_sync_proto::SeriesId;
 use support::{ScratchFolder, library_config};
 
+/// How often, in steps of SQLite's machine, a read checks in, and which check-in lets the rescan run, well after the read has begun.
+const PROGRESS_STEPS: i32 = 10;
+const RESCAN_AT_CHECK_IN: u32 = 2;
 const A_TO_Z: SeriesListing = SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title));
 const NEWEST_FIRST: SeriesListing =
     SeriesListing::unfiltered(SeriesSort::descending(SeriesOrder::DateAdded));
@@ -436,6 +439,58 @@ async fn numbers_each_book_by_its_place_in_the_series_whichever_books_are_listed
 }
 
 #[tokio::test]
+async fn reads_a_page_of_books_as_the_series_stood_though_a_book_goes_meanwhile() {
+    let folder = ScratchFolder::new("books-read-whole");
+    let config = library_config(&folder);
+    let database = Database::open(&config).unwrap();
+    seed_library(
+        &database,
+        &[series_holding(
+            "Sample Series 01",
+            &["Volume 01", "Volume 02", "Volume 03"],
+        )],
+    )
+    .await;
+    let path = config.path.clone();
+
+    let page = database
+        .read(move |connection| {
+            let rescan = Connection::open(&path)?;
+            load_schema(connection)?;
+            let mut check_ins = 0;
+            connection.progress_handler(
+                PROGRESS_STEPS,
+                Some(move || {
+                    check_ins += 1;
+                    if check_ins == RESCAN_AT_CHECK_IN {
+                        rescan
+                            .execute("DELETE FROM book WHERE title = 'Volume 02'", [])
+                            .unwrap();
+                    }
+                    false
+                }),
+            )?;
+            let request = PageRequest {
+                after: None,
+                size: PageSize::try_from(10).unwrap(),
+            };
+            let page = series_books(
+                connection,
+                series_id("Sample Series 01"),
+                BookListing::IN_ORDER,
+                &request,
+            );
+            connection.progress_handler(0, None::<fn() -> bool>)?;
+            page
+        })
+        .await
+        .unwrap();
+
+    let titles: Vec<&str> = page.items.iter().map(|book| book.title.as_str()).collect();
+    assert_eq!(titles, ["Volume 01", "Volume 02", "Volume 03"]);
+}
+
+#[tokio::test]
 async fn tells_each_book_of_a_series_whether_it_is_read_started_or_not() {
     let library = Library::with(&[series_holding(
         "Sample Series 01",
@@ -650,6 +705,12 @@ fn holds_a_page_to_between_one_and_two_hundred_items() {
     let accepted = sizes.map(|size| PageSize::try_from(size).is_ok());
 
     assert_eq!(accepted, [false, true, true, false]);
+}
+
+/// Reads the schema in, so preparing the page's statements steps SQLite's machine no further.
+fn load_schema(connection: &Connection) -> Result<(), Error> {
+    connection.query_row("SELECT count(*) FROM book", [], |row| row.get::<_, i64>(0))?;
+    Ok(())
 }
 
 fn series_id(folder_name: &str) -> SeriesId {
