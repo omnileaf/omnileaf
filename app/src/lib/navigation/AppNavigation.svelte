@@ -83,7 +83,7 @@
   ]}
 >
   <p
-    class="hidden px-xl pbs-xl pbe-xl text-brand font-bold tracking-tight expanded:block"
+    class="hidden px-xl pbs-xl pbe-xl text-brand font-bold tracking-tight wrap-anywhere expanded:block"
   >
     {m.app_name()}
   </p>
