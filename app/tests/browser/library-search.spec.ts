@@ -4,7 +4,11 @@ import {
   type LibrarySearch,
   SEARCH_MAX_CHARS,
 } from "../../src/lib/ipc/bindings.ts";
-import { emitFakeEvent, type FakeBackend } from "./fake-backend.ts";
+import {
+  CommandFailure,
+  emitFakeEvent,
+  type FakeBackend,
+} from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -648,5 +652,44 @@ test.describe("while a search is still out", () => {
     await expectFound(page, ["Lantern Market", "Market Lanterns"]);
 
     expect(searches).toEqual(["market"]);
+  });
+});
+
+test.describe("the search page's one status", () => {
+  const FAILING_TEXT = "boom";
+
+  test.use({
+    backend: {
+      ...SEARCHING_BACKEND,
+      librarySearch: (_after, search) => {
+        if (search.text === FAILING_TEXT) {
+          throw new CommandFailure({
+            code: "internal",
+            message: "the search failed",
+          });
+        }
+        return { series: found(search), next: null };
+      },
+    },
+  });
+
+  test("announces what was found, that nothing was, and a failure, from the same place", async ({
+    page,
+  }) => {
+    await page.goto("/search");
+    const status = page.getByRole("main").getByRole("status");
+    await expect(status).toHaveCount(1);
+    await status.evaluate((element) => {
+      element.dataset.first = "yes";
+    });
+
+    await searchField(page).fill("market");
+    await expect(status).toHaveText("2 series found");
+    await searchField(page).fill("zzz");
+    await expect(status).toHaveText("Nothing called “zzz”");
+    await searchField(page).fill(FAILING_TEXT);
+    await expect(status).toHaveText("Couldn't search your library. Try again.");
+
+    await expect(status).toHaveAttribute("data-first", "yes");
   });
 });

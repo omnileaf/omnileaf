@@ -63,11 +63,6 @@
       ? m.quick_open_series()
       : m.search_series_heading({ count: numbers.format(count) })}
   </h2>
-  <p role="status" class="sr-only">
-    {#if count !== undefined}
-      {m.search_found({ count })}
-    {/if}
-  </p>
   <VirtualGrid
     items={series}
     key={(one: LibrarySeries) => one.id}

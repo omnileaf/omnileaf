@@ -27,6 +27,7 @@
   import { filterWords } from "#lib/search/condition-labels.ts";
   import KeyHints from "#lib/search/KeyHints.svelte";
   import NothingFound from "#lib/search/NothingFound.svelte";
+  import { nothingFoundTitle } from "#lib/search/nothing-found.ts";
   import {
     type AskedSearch,
     searchAskedIn,
@@ -63,6 +64,23 @@
   let answeredKey: string | undefined = $state();
   let latestLook = 0;
   const isAnswered = $derived(answeredKey === searchKey);
+  const announcement = $derived.by(() => {
+    if (!isLookingFor) {
+      return "";
+    }
+    if (results.list.kind === "failed") {
+      return m.search_failed();
+    }
+    if (!isAnswered || results.list.kind !== "loaded") {
+      return "";
+    }
+    if (results.list.series.length === 0) {
+      return nothingFoundTitle(query.search.text);
+    }
+    return found.count === undefined
+      ? ""
+      : m.search_found({ count: found.count });
+  });
   const listId = $props.id();
   let activeKey: string | undefined = $state();
   const shown: readonly LibrarySeries[] = $derived(
@@ -190,6 +208,7 @@
 
 <div class="flex flex-col gap-search-gap min-block-full">
   <h1 class="sr-only">{m.search_title()}</h1>
+  <p role="status" class="sr-only">{announcement}</p>
   <div class="flex items-center gap-sm large:gap-md">
     <SearchField
       text={query.text}

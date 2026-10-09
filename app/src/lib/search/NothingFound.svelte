@@ -3,6 +3,8 @@
 
   import { m } from "#lib/paraglide/messages.js";
 
+  import { nothingFoundTitle } from "./nothing-found";
+
   const ART_ICON_SIZE = 28;
 
   let { text }: { text: string } = $props();
@@ -20,7 +22,7 @@
     <ZoomOut size={ART_ICON_SIZE} aria-hidden="true" />
   </span>
   <h2 id={titleId} class="mbs-sm text-title font-bold large:text-heading">
-    {text === "" ? m.library_no_matches() : m.search_nothing_called({ text })}
+    {nothingFoundTitle(text)}
   </h2>
   {#if text !== ""}
     <p class="text-lead text-muted max-inline-nothing-found">
