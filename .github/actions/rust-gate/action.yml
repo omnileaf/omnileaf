@@ -27,6 +27,11 @@ runs:
       with:
         tool: cargo-nextest@0.9.146
 
+    - name: Keep the antivirus from scanning the scratch and build folders the timings write to
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: Add-MpPreference -ExclusionPath $env:TEMP, $env:RUNNER_TEMP, $env:GITHUB_WORKSPACE
+
     - name: Allow for stalls on shared runners in the timing budgets
       if: inputs.budget-slack != ''
       shell: bash
