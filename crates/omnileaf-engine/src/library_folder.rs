@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr};
 
-use omnileaf_db::catalog::{Cursor, LibraryRoot, RootId, RootKind, RootLocator};
+use omnileaf_db::catalog::{Cursor, LibraryRoot, RootId, RootKind};
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
@@ -44,7 +44,7 @@ pub struct FolderCursor(pub(crate) Cursor);
 
 impl From<LibraryRoot> for LibraryFolder {
     fn from(root: LibraryRoot) -> Self {
-        let RootLocator::Path(path) = root.locator;
+        let path = root.locator.into_path();
         Self {
             id: FolderId(root.id),
             kind: match root.kind {

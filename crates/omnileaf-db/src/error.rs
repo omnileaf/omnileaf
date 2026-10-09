@@ -45,6 +45,8 @@ pub enum Error {
     UnknownRoot { id: RootId },
     #[error("remove library folder {id}, the home folder the library lives in")]
     HomeRoot { id: RootId },
+    #[error("move library folder {id} to the folder library folder {holder} already reads")]
+    LocationTaken { id: RootId, holder: RootId },
     #[error("read a library folder stored as a {kind} locator, which this build can't open")]
     UnsupportedLocator { kind: String },
     #[error("read the library view drawn as {name:?}, which this build can't draw")]

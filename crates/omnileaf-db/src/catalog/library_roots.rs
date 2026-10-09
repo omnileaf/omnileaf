@@ -1,24 +1,40 @@
+use std::path::PathBuf;
+
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::{
     Error,
     catalog::{
         cursor::Position,
+        native_path,
         page::{Page, PageRequest},
-        root::{LibraryRoot, RootId, stored_root},
+        root::{APPLE_BOOKMARK_LOCATOR, AppleBookmark, LibraryRoot, RootId, RootKind, stored_root},
     },
 };
 
 const IN_ADDED_ORDER: &str = "SELECT
-        id, kind, locator_kind, location, added_at_ms, unavailable_since_ms
+        id, kind, locator_kind, location, bookmark, added_at_ms, unavailable_since_ms
     FROM library_root
     WHERE id > ?1
     ORDER BY id
     LIMIT ?2";
 const ONE_ROOT: &str = "SELECT
-        id, kind, locator_kind, location, added_at_ms, unavailable_since_ms
+        id, kind, locator_kind, location, bookmark, added_at_ms, unavailable_since_ms
     FROM library_root
     WHERE id = ?1";
+const BOOKMARKED: &str = "SELECT id, location, bookmark, unavailable_since_ms
+    FROM library_root
+    WHERE kind = ?1 AND locator_kind = ?2
+    ORDER BY id";
+
+/// A linked folder that only its bookmark can open, as it was last opened.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BookmarkedRoot {
+    pub id: RootId,
+    pub path: PathBuf,
+    pub bookmark: AppleBookmark,
+    pub unavailable_since_ms: Option<i64>,
+}
 
 /// Lists the home folder and the linked folders together, in the order they were added.
 #[tracing::instrument(skip_all, fields(size = ?request.size))]
@@ -42,6 +58,21 @@ pub fn library_roots(
         })?
         .collect::<Result<_, _>>()?;
     Ok(Page::of(rows, request.size))
+}
+
+pub fn bookmarked_roots(connection: &Connection) -> Result<Vec<BookmarkedRoot>, Error> {
+    let mut statement = connection.prepare(BOOKMARKED)?;
+    let roots = statement
+        .query_map((RootKind::Linked, APPLE_BOOKMARK_LOCATOR), |row| {
+            Ok(BookmarkedRoot {
+                id: RootId(row.get(0)?),
+                path: native_path::stored_native_path(row, 1)?,
+                bookmark: AppleBookmark::new(row.get(2)?),
+                unavailable_since_ms: row.get(3)?,
+            })
+        })?
+        .collect::<Result<_, _>>()?;
+    Ok(roots)
 }
 
 /// Fails with [`Error::UnknownRoot`] when the library has no root with that id.

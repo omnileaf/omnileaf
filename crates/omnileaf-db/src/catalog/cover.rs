@@ -5,7 +5,7 @@ use rusqlite::{Connection, OptionalExtension, Row};
 
 use crate::{
     Error,
-    catalog::{RootLocator, native_path, root::stored_locator, stored_id::stored_id},
+    catalog::{native_path, root::stored_root_path, stored_id::stored_id},
 };
 
 const FILE_OF_COVER: &str =
@@ -32,7 +32,7 @@ pub fn cover_file(connection: &Connection, cover: &Cover) -> Result<Option<PathB
     Ok(connection
         .prepare(FILE_OF_COVER)?
         .query_row((cover.file.0, cover.book.as_bytes(), cover.rev), |row| {
-            let RootLocator::Path(folder) = stored_locator(row, ROOT_LOCATOR_KIND_COLUMN)?;
+            let folder = stored_root_path(row, ROOT_LOCATOR_KIND_COLUMN)?;
             Ok(folder.join(native_path::stored_native_path(row, FILE_LOCATION_COLUMN)?))
         })
         .optional()?)

@@ -1,4 +1,8 @@
-use std::{fmt, path::PathBuf, str::FromStr};
+use std::{
+    fmt,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use rusqlite::{
     OptionalExtension, Row, ToSql, Transaction,
@@ -10,11 +14,12 @@ use crate::{Error, catalog::native_path};
 const HOME_KIND: &str = "home";
 const LINKED_KIND: &str = "linked";
 const PATH_LOCATOR: &str = "path";
+pub(crate) const APPLE_BOOKMARK_LOCATOR: &str = "apple_bookmark";
 const ID_COLUMN: usize = 0;
 const KIND_COLUMN: usize = 1;
 const LOCATOR_KIND_COLUMN: usize = 2;
-const ADDED_AT_COLUMN: usize = 4;
-const UNAVAILABLE_SINCE_COLUMN: usize = 5;
+const ADDED_AT_COLUMN: usize = 5;
+const UNAVAILABLE_SINCE_COLUMN: usize = 6;
 const BOOKS_FOUND_ONLY_IN_ROOT: &str = "DELETE FROM book
     WHERE id IN (SELECT book_id FROM book_file WHERE root_id = ?1)
         AND NOT EXISTS (
@@ -36,6 +41,48 @@ pub enum RootKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RootLocator {
     Path(PathBuf),
+    /// A folder picked on iOS, readable only through its bookmark, at the path the bookmark last resolved to.
+    AppleBookmark {
+        path: PathBuf,
+        bookmark: AppleBookmark,
+    },
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct AppleBookmark(Vec<u8>);
+
+impl fmt::Debug for AppleBookmark {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "AppleBookmark({} bytes)", self.0.len())
+    }
+}
+
+impl RootLocator {
+    #[must_use]
+    pub fn path(&self) -> &Path {
+        match self {
+            Self::Path(path) | Self::AppleBookmark { path, .. } => path,
+        }
+    }
+
+    #[must_use]
+    pub fn into_path(self) -> PathBuf {
+        match self {
+            Self::Path(path) | Self::AppleBookmark { path, .. } => path,
+        }
+    }
+}
+
+impl AppleBookmark {
+    #[must_use]
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self(bytes)
+    }
+
+    #[must_use]
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -55,21 +102,61 @@ pub struct LibraryRoot {
     pub unavailable_since_ms: Option<i64>,
 }
 
-/// Adding a folder the library already reads returns that root unchanged.
+/// Adding a folder the library already reads returns that root, which keeps a newer bookmark only when it's a linked folder.
 #[tracing::instrument(skip_all, fields(kind = ?root.kind))]
 pub fn add_root(transaction: &Transaction<'_>, root: &NewRoot) -> Result<RootId, Error> {
-    let (locator_kind, location) = stored_location(&root.locator);
+    let stored = stored_location(&root.locator);
     transaction
         .prepare(
-            "INSERT INTO library_root (kind, locator_kind, location, added_at_ms)
-             VALUES (?1, ?2, ?3, ?4)
-             ON CONFLICT (location) DO NOTHING",
+            "INSERT INTO library_root (kind, locator_kind, location, bookmark, added_at_ms)
+             VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT (location) DO UPDATE
+                 SET locator_kind = excluded.locator_kind, bookmark = excluded.bookmark
+                 WHERE library_root.kind = ?6 AND excluded.locator_kind = ?7",
         )?
-        .execute((root.kind, locator_kind, &location, root.added_at_ms))?;
+        .execute((
+            root.kind,
+            stored.kind,
+            &stored.location,
+            stored.bookmark,
+            root.added_at_ms,
+            RootKind::Linked,
+            APPLE_BOOKMARK_LOCATOR,
+        ))?;
     let id = transaction
         .prepare("SELECT id FROM library_root WHERE location = ?1")?
-        .query_row([location], |row| row.get(0))?;
+        .query_row([stored.location], |row| row.get(0))?;
     Ok(RootId(id))
+}
+
+/// Points the root at where its folder is now, keeping its id and its books.
+#[tracing::instrument(skip_all, fields(root = %id))]
+pub fn relocate_root(
+    transaction: &Transaction<'_>,
+    id: RootId,
+    locator: &RootLocator,
+) -> Result<(), Error> {
+    let stored = stored_location(locator);
+    let holder: Option<i64> = transaction
+        .prepare("SELECT id FROM library_root WHERE location = ?1 AND id != ?2")?
+        .query_row((&stored.location, id.0), |row| row.get(0))
+        .optional()?;
+    if let Some(holder) = holder {
+        return Err(Error::LocationTaken {
+            id,
+            holder: RootId(holder),
+        });
+    }
+    let relocated = transaction
+        .prepare(
+            "UPDATE library_root SET locator_kind = ?2, location = ?3, bookmark = ?4
+             WHERE id = ?1",
+        )?
+        .execute((id.0, stored.kind, &stored.location, stored.bookmark))?;
+    if relocated == 0 {
+        return Err(Error::UnknownRoot { id });
+    }
+    Ok(())
 }
 
 /// Removes a linked root and the books found only in it, leaving the files on disk alone.
@@ -97,7 +184,7 @@ pub(crate) fn forget_root(transaction: &Transaction<'_>, id: RootId) -> Result<(
     Ok(())
 }
 
-/// Reads a root from a row holding `id, kind, locator_kind, location, added_at_ms, unavailable_since_ms` in that order.
+/// Reads a root from a row holding `id, kind, locator_kind, location, bookmark, added_at_ms, unavailable_since_ms` in that order.
 pub(crate) fn stored_root(row: &Row<'_>) -> rusqlite::Result<LibraryRoot> {
     Ok(LibraryRoot {
         id: RootId(row.get(ID_COLUMN)?),
@@ -108,24 +195,58 @@ pub(crate) fn stored_root(row: &Row<'_>) -> rusqlite::Result<LibraryRoot> {
     })
 }
 
-pub(crate) fn stored_location(locator: &RootLocator) -> (&'static str, Vec<u8>) {
+pub(crate) struct StoredLocation<'a> {
+    pub(crate) kind: &'static str,
+    pub(crate) location: Vec<u8>,
+    pub(crate) bookmark: Option<&'a [u8]>,
+}
+
+pub(crate) fn stored_location(locator: &RootLocator) -> StoredLocation<'_> {
     match locator {
-        RootLocator::Path(path) => (PATH_LOCATOR, native_path::to_bytes(path)),
+        RootLocator::Path(path) => StoredLocation {
+            kind: PATH_LOCATOR,
+            location: native_path::to_bytes(path),
+            bookmark: None,
+        },
+        RootLocator::AppleBookmark { path, bookmark } => StoredLocation {
+            kind: APPLE_BOOKMARK_LOCATOR,
+            location: native_path::to_bytes(path),
+            bookmark: Some(bookmark.as_bytes()),
+        },
     }
 }
 
-/// Reads a locator from a row holding its kind at `kind_column` and its location in the column after.
+/// Reads a locator from a row holding its kind at `kind_column`, then its location and its bookmark.
 pub(crate) fn stored_locator(row: &Row<'_>, kind_column: usize) -> rusqlite::Result<RootLocator> {
-    let location_column = kind_column + 1;
     let kind: String = row.get(kind_column)?;
-    if kind != PATH_LOCATOR {
-        return Err(rusqlite::Error::FromSqlConversionFailure(
-            kind_column,
-            Type::Text,
-            Box::new(Error::UnsupportedLocator { kind }),
-        ));
+    let path = || native_path::stored_native_path(row, kind_column + 1);
+    match kind.as_str() {
+        PATH_LOCATOR => Ok(RootLocator::Path(path()?)),
+        APPLE_BOOKMARK_LOCATOR => Ok(RootLocator::AppleBookmark {
+            path: path()?,
+            bookmark: AppleBookmark(row.get(kind_column + 2)?),
+        }),
+        _ => Err(unsupported_locator(kind_column, kind)),
     }
-    native_path::stored_native_path(row, location_column).map(RootLocator::Path)
+}
+
+/// Reads where a root's folder is from a row holding its locator kind at `kind_column` and its location in the column after.
+pub(crate) fn stored_root_path(row: &Row<'_>, kind_column: usize) -> rusqlite::Result<PathBuf> {
+    let kind: String = row.get(kind_column)?;
+    match kind.as_str() {
+        PATH_LOCATOR | APPLE_BOOKMARK_LOCATOR => {
+            native_path::stored_native_path(row, kind_column + 1)
+        }
+        _ => Err(unsupported_locator(kind_column, kind)),
+    }
+}
+
+fn unsupported_locator(kind_column: usize, kind: String) -> rusqlite::Error {
+    rusqlite::Error::FromSqlConversionFailure(
+        kind_column,
+        Type::Text,
+        Box::new(Error::UnsupportedLocator { kind }),
+    )
 }
 
 impl ToSql for RootKind {
@@ -177,6 +298,15 @@ mod tests {
 
             prop_assert!(matches!(read, Ok(read) if read == id));
         }
+    }
+
+    #[test]
+    fn debug_prints_a_bookmark_s_size_and_not_the_folder_it_opens() {
+        let bookmark = AppleBookmark::new(b"/private/var/mobile/Sample Comics".to_vec());
+
+        let printed = format!("{bookmark:?}");
+
+        assert_eq!(printed, "AppleBookmark(33 bytes)");
     }
 
     #[test]
