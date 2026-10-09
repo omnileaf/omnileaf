@@ -11,6 +11,7 @@ import {
   FAKE_SOURCE_CODE,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  selectedByDoubleClick,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -94,6 +95,21 @@ test.describe("with a working clipboard and browser", () => {
       page.getByRole("button", { name: "Copied", exact: true }),
     ).toBeVisible();
     expect(copies.count).toBe(1);
+  });
+
+  test("lets the version be selected", async ({ page }) => {
+    await openAbout(page);
+
+    const selected = await selectedByDoubleClick(
+      page,
+      page
+        .getByRole("main")
+        .getByText(FAKE_APP_VERSION, { exact: false })
+        .filter({ visible: true })
+        .first(),
+    );
+
+    expect(selected.trim()).not.toBe("");
   });
 
   test("opens the source code in the browser", async ({ page }) => {
