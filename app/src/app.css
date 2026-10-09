@@ -746,6 +746,21 @@
     --text-scale: 1;
     color-scheme: light;
     touch-action: pan-x pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  a,
+  img {
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+  }
+
+  input:not([type="checkbox"], [type="radio"]),
+  textarea,
+  [contenteditable]:not([contenteditable="false"]) {
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   body {

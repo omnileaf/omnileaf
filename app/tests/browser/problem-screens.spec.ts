@@ -7,6 +7,7 @@ import {
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  selectedByDoubleClick,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -61,6 +62,18 @@ test("explains that an address leads nowhere and shows it", async ({
   await expect(
     page.getByRole("navigation", { name: "Main" }).getByRole("link"),
   ).toHaveCount(4);
+});
+
+test("lets the address of a missing page be selected", async ({ page }) => {
+  await page.goto(MISSING_ADDRESS);
+
+  const selected = await selectedByDoubleClick(
+    page,
+    page.getByText(MISSING_ADDRESS),
+  );
+
+  expect(selected.trim()).not.toBe("");
+  expect(MISSING_ADDRESS).toContain(selected.trim());
 });
 
 test("leads back to the library from a missing page", async ({ page }) => {

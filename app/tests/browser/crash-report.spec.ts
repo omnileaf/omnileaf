@@ -146,6 +146,17 @@ for (const platform of ["android", "linux"] as const) {
       expect(calls.sent).toBe(0);
     });
 
+    test("lets the report's details be selected", async ({ page }) => {
+      await page.goto("/");
+      const details = prompt(page).getByText("Panic: index out of bounds");
+
+      await details.click({ clickCount: 3 });
+
+      expect(await page.evaluate(() => getSelection()?.toString())).toContain(
+        "Panic: index out of bounds",
+      );
+    });
+
     test("moves focus into the report when it opens", async ({ page }) => {
       await page.goto("/");
 

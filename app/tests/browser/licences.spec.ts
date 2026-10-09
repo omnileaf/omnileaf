@@ -13,6 +13,7 @@ import {
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  selectedByDoubleClick,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -117,6 +118,24 @@ test("opens a package's licence text", async ({ page }) => {
   await expect(page.locator("[lang=en][dir=ltr]").first()).toContainText(
     text.text.trim().split("\n")[0] ?? "",
   );
+});
+
+test("lets a licence's text be selected", async ({ page }) => {
+  const [licensed] = MOST_USED.packages;
+  if (licensed === undefined) {
+    throw new Error("the most used licence has no package");
+  }
+  await openLicences(page);
+  await groupSection(page, MOST_USED.name)
+    .getByRole("link", { name: `${licensed.name} ${licensed.version}` })
+    .click();
+
+  const selected = await selectedByDoubleClick(
+    page,
+    page.getByRole("main").locator("[lang=en][dir=ltr]").first(),
+  );
+
+  expect(selected.trim()).not.toBe("");
 });
 
 test("leads a licence text back to the licences, even beside the sections", async ({

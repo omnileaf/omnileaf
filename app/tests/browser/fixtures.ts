@@ -220,6 +220,30 @@ export async function accessibilityViolations(page: Page): Promise<Violations> {
   return results.violations;
 }
 
+/** Double-clicks the first character `target` shows, as a reader picking a word would, and returns what that selected. */
+export async function selectedByDoubleClick(
+  page: Page,
+  target: Locator,
+): Promise<string> {
+  await target.scrollIntoViewIfNeeded();
+  const point = await target.evaluate((element) => {
+    const texts = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    for (let node = texts.nextNode(); node !== null; node = texts.nextNode()) {
+      const offset = node.textContent?.search(/\S/) ?? -1;
+      if (offset >= 0) {
+        const range = document.createRange();
+        range.setStart(node, offset);
+        range.setEnd(node, offset + 1);
+        const { x, y, width, height } = range.getBoundingClientRect();
+        return { x: x + width / 2, y: y + height / 2 };
+      }
+    }
+    throw new Error("the element shows no text");
+  });
+  await page.mouse.dblclick(point.x, point.y);
+  return page.evaluate(() => getSelection()?.toString() ?? "");
+}
+
 export const test = base.extend<{ backend: FakeBackend }>({
   backend: [DEFAULT_BACKEND, { option: true }],
   page: async ({ page, backend }, use) => {

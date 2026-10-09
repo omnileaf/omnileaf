@@ -34,7 +34,7 @@
       <p
         lang="en"
         dir="ltr"
-        class="rounded-list border border-border bg-card p-lg text-footnote wrap-break-word whitespace-pre-wrap"
+        class="rounded-list border border-border bg-card p-lg text-footnote wrap-break-word whitespace-pre-wrap select-text"
       >
         {licence.text}
       </p>

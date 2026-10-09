@@ -39,7 +39,9 @@
         >
           <span class="flex grow flex-col">
             <span class="font-semibold">{m.about_version()}</span>
-            <span class="text-footnote text-muted">{data.appInfo.version}</span>
+            <span class="text-footnote text-muted select-text"
+              >{data.appInfo.version}</span
+            >
           </span>
           <CopyVersionButton {copying} look="phone" />
         </li>
@@ -68,7 +70,7 @@
       />
       <div class="flex-1">
         <h2 class="text-group-title font-bold">{m.app_name()}</h2>
-        <p class="text-label text-muted">
+        <p class="text-label text-muted select-text">
           {m.app_version({ version: data.appInfo.version })}
         </p>
       </div>
