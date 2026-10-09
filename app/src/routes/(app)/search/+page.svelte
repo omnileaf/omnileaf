@@ -22,11 +22,16 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import { isStandInName } from "#lib/screenshot-mode/stand-ins.ts";
   import ConditionChips from "#lib/search/ConditionChips.svelte";
   import { filterWords } from "#lib/search/condition-labels.ts";
   import KeyHints from "#lib/search/KeyHints.svelte";
   import NothingFound from "#lib/search/NothingFound.svelte";
-  import { searchAskedIn, titleQuery } from "#lib/search/search-route.ts";
+  import {
+    type AskedSearch,
+    searchAskedIn,
+    titleQuery,
+  } from "#lib/search/search-route.ts";
   import SearchField from "#lib/search/SearchField.svelte";
   import { SearchQuery } from "#lib/search/search-query.svelte.ts";
   import SearchResults from "#lib/search/SearchResults.svelte";
@@ -124,11 +129,20 @@
     void found.load();
   }
 
+  /** Shows a title asked for while Screenshot mode is on only when it is a stand-in, so an address from before it was on reveals nothing. */
+  function shownWhileScreenshotting(asked: AskedSearch): AskedSearch {
+    const hidesTitle =
+      screenshotMode.isOn &&
+      asked.kind === "title" &&
+      !isStandInName("series", asked.text);
+    return hidesTitle ? { kind: "title", text: "" } : asked;
+  }
+
   /** Reads the whole address rather than its query, so arriving at the same one again still starts over. */
   function startOverOnArrival(): void {
     const arrival = page.url;
     untrack(() => {
-      query.startOver(searchAskedIn(arrival));
+      query.startOver(shownWhileScreenshotting(searchAskedIn(arrival)));
     });
   }
 

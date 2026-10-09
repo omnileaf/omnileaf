@@ -359,6 +359,27 @@ test("lists the keys the results answer to under the desktop page", async ({
   await expect(hints).toContainText("Ctrl K for quick open, anywhere");
 });
 
+for (const [asked, shown] of [
+  ["Lantern+Market", ""],
+  ["Series+123", "Series 123"],
+] as const) {
+  test(`shows a title from before Screenshot mode only when it is a stand-in, here ${shown === "" ? "nothing" : shown}`, async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "omnileaf.screenshotMode",
+        JSON.stringify({ activity: { kind: "on" } }),
+      );
+    });
+
+    await page.goto(`/search?title=${asked}`);
+
+    await expect(searchField(page)).toHaveValue(shown);
+    await expect(page.getByRole("main")).not.toContainText("Lantern Market");
+  });
+}
+
 test("says when nothing is called what was typed", async ({ page }) => {
   await page.goto("/search");
 
