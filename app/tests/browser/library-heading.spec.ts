@@ -18,7 +18,9 @@ const WIDTHS = [
   320, 360, 390, 430, 599, 600, 768, 839, 840, 1024, 1199, 1200, 1280, 1920,
 ];
 const HEIGHT = 900;
-const PHONE_WIDTHS = [360, 390, 430];
+const NARROW_PHONE_WIDTHS = [360, 375];
+const WIDE_PHONE_WIDTHS = [390, 430];
+const FILTERED_COUNT = 7;
 const PLATFORMS = ["ios", "android", "linux"] as const;
 const LANGUAGES = { en: english, "en-XA": pseudo } as const;
 const SCREENSHOT_MODE = ["on", "off"] as const;
@@ -60,6 +62,63 @@ function headingOf(page: Page): Locator {
 
 function countOf(page: Page): Locator {
   return headingOf(page).locator("p", { hasText: SERIES_COUNT_SHOWN }).first();
+}
+
+function centreOf(box: Box): number {
+  return box.y + box.height / 2;
+}
+
+/** Whether `box` sits on the row `row` draws, its middle inside the row's height. */
+function isOnRowOf(box: Box, row: Box): boolean {
+  const middle = centreOf(box);
+  return middle > row.y && middle < row.y + row.height;
+}
+
+function labelOf(page: Page): Locator {
+  return headingOf(page).getByText(english.screenshot_mode_title, {
+    exact: true,
+  });
+}
+
+async function openAt(
+  page: Page,
+  width: number,
+  screenshotMode: (typeof SCREENSHOT_MODE)[number],
+): Promise<void> {
+  await page.setViewportSize({ width, height: HEIGHT });
+  await page.addInitScript((screenshotMode) => {
+    if (screenshotMode === "on") {
+      localStorage.setItem(
+        "omnileaf.screenshotMode",
+        JSON.stringify({ activity: { kind: "on" } }),
+      );
+    }
+  }, screenshotMode);
+  await page.goto("/");
+}
+
+/** The boxes of the title, its buttons and, when shown, the count and the Screenshot mode label. */
+async function headingBoxes(
+  page: Page,
+  library: Library,
+  screenshotMode: (typeof SCREENSHOT_MODE)[number],
+): Promise<{
+  title: Box;
+  buttons: Box[];
+  count: Box | undefined;
+  label: Box | undefined;
+}> {
+  const heading = headingOf(page);
+  const buttons: Box[] = [];
+  for (const button of await heading.getByRole("button").all()) {
+    buttons.push(await boxOf(button));
+  }
+  return {
+    title: await boxOf(heading.getByRole("heading", { level: 1 })),
+    buttons,
+    count: library === "filled" ? await boxOf(countOf(page)) : undefined,
+    label: screenshotMode === "on" ? await boxOf(labelOf(page)) : undefined,
+  };
 }
 
 function isCrowded(a: Box, b: Box): boolean {
@@ -171,32 +230,146 @@ for (const platform of PLATFORMS) {
 }
 
 for (const platform of PLATFORMS) {
-  test.describe(`the heading's buttons on a ${platform} phone`, () => {
-    testOnlyInItsWebview(platform);
-    test.use({ backend: backendFor(platform, "filled") });
+  for (const screenshotMode of SCREENSHOT_MODE) {
+    for (const library of LIBRARIES) {
+      test.describe(`the heading on a ${platform} phone, Screenshot mode ${screenshotMode}, ${library} library`, () => {
+        testOnlyInItsWebview(platform);
+        test.use({ backend: backendFor(platform, library) });
 
-    test("stay on the title's row beside a five-digit count, as the phone board draws them", async ({
+        for (const width of NARROW_PHONE_WIDTHS) {
+          test(`keeps the buttons on the title's row and moves the count and label under it at ${String(width)}px`, async ({
+            page,
+          }, testInfo) => {
+            test.skip(
+              !testInfo.project.name.endsWith("phone"),
+              "phone widths only",
+            );
+            await openAt(page, width, screenshotMode);
+            await expect(headingOf(page).getByRole("button")).toHaveCount(
+              library === "empty" ? 1 : 3,
+            );
+
+            const { title, buttons, count, label } = await headingBoxes(
+              page,
+              library,
+              screenshotMode,
+            );
+
+            for (const button of buttons) {
+              expect(isOnRowOf(button, title)).toBe(true);
+            }
+            const underTitle = title.y + title.height;
+            if (count !== undefined) {
+              expect(count.y).toBeGreaterThanOrEqual(underTitle);
+            }
+            if (label !== undefined) {
+              expect(label.y).toBeGreaterThanOrEqual(underTitle);
+            }
+            if (count !== undefined && label !== undefined) {
+              expect(isOnRowOf(label, count)).toBe(true);
+              expect(label.x).toBeGreaterThan(count.x + count.width);
+            }
+            expect(
+              await crowdedParts(page, english, screenshotMode, library),
+            ).toEqual([]);
+            expect(await sidewaysOverflow(page)).toEqual([]);
+          });
+        }
+      });
+    }
+  }
+}
+
+for (const platform of PLATFORMS) {
+  for (const screenshotMode of SCREENSHOT_MODE) {
+    test.describe(`the heading on a wider ${platform} phone, Screenshot mode ${screenshotMode}`, () => {
+      test.use({ backend: backendFor(platform, "filled") });
+
+      for (const width of WIDE_PHONE_WIDTHS) {
+        test(`keeps the title, a five-digit count and the buttons on one row at ${String(width)}px, as the phone board draws them`, async ({
+          page,
+        }, testInfo) => {
+          test.skip(
+            !testInfo.project.name.endsWith("phone"),
+            "phone widths only",
+          );
+          await openAt(page, width, screenshotMode);
+          await expect(headingOf(page).getByRole("button")).toHaveCount(3);
+
+          const { title, buttons, count } = await headingBoxes(
+            page,
+            "filled",
+            screenshotMode,
+          );
+
+          for (const button of buttons) {
+            expect(isOnRowOf(button, title)).toBe(true);
+          }
+          expect(count).toBeDefined();
+          if (count !== undefined) {
+            expect(isOnRowOf(count, title)).toBe(true);
+            expect(count.x).toBeGreaterThan(title.x + title.width);
+          }
+          expect(
+            await crowdedParts(page, english, screenshotMode, "filled"),
+          ).toEqual([]);
+          expect(await sidewaysOverflow(page)).toEqual([]);
+        });
+      }
+    });
+  }
+}
+
+test.describe("the heading as a filter changes the count", () => {
+  test.use({
+    backend: {
+      ...backendFor("ios", "filled"),
+      librarySeriesCount: (filter) =>
+        filter.unread === "only" ? FILTERED_COUNT : SERIES_COUNT,
+    },
+  });
+
+  for (const width of [...NARROW_PHONE_WIDTHS, ...WIDE_PHONE_WIDTHS]) {
+    test(`keeps its rows when the count shrinks from five digits to one at ${String(width)}px`, async ({
       page,
     }, testInfo) => {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
-      await page.goto("/");
+      await openAt(page, width, "off");
       await expect(countOf(page)).toBeVisible();
-      await expect(headingOf(page).getByRole("button")).toHaveCount(2);
+      const before = await headingBoxes(page, "filled", "off");
 
-      for (const width of PHONE_WIDTHS) {
-        await page.setViewportSize({ width, height: HEIGHT });
-        const title = await boxOf(
-          headingOf(page).getByRole("heading", { level: 1 }),
-        );
+      await headingOf(page)
+        .getByRole("button", { name: /^Filter and sort/ })
+        .click();
+      const panel = page.getByRole("dialog", { name: "Filter and sort" });
+      await panel
+        .getByRole("radiogroup", { name: "Unread" })
+        .locator("label")
+        .filter({ hasText: "Only" })
+        .click();
+      await page.keyboard.press("Escape");
+      await expect(panel).toBeHidden();
+      await expect(
+        headingOf(page).getByText(String(FILTERED_COUNT), { exact: true }),
+      ).toBeVisible();
+      const after = await boxOf(
+        headingOf(page)
+          .locator("p", { hasText: String(FILTERED_COUNT) })
+          .first(),
+      );
 
-        for (const button of await headingOf(page).getByRole("button").all()) {
-          const box = await boxOf(button);
-          expect(box.y, `at ${String(width)}px`).toBeLessThan(
-            title.y + title.height,
-          );
-        }
-      }
+      expect(after.y).toBe(before.count?.y);
+      expect(after.x).toBe(before.count?.x);
+      const { title, buttons } = await headingBoxes(page, "empty", "off");
+      expect(title).toEqual(before.title);
+      expect(buttons).toEqual(before.buttons);
     });
+  }
+});
+
+for (const platform of PLATFORMS) {
+  test.describe(`the heading's buttons on a ${platform} phone`, () => {
+    test.use({ backend: backendFor(platform, "filled") });
 
     test("names View options in a tooltip", async ({ page }, testInfo) => {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");

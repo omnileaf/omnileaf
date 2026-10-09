@@ -170,15 +170,19 @@
   $effect(keepFocusOnPageOnceAddFolderGoes);
 </script>
 
+{#snippet shownCount()}
+  {#if seriesCount.count !== undefined}
+    <SeriesCount count={seriesCount.count} />
+  {/if}
+{/snippet}
+
 <CollectionHeading
   title={m.library_title()}
   showsLabel={screenshotMode.showsLabel}
+  count={showsItemCounts && seriesCount.count !== undefined
+    ? shownCount
+    : undefined}
 >
-  {#snippet count()}
-    {#if showsItemCounts && seriesCount.count !== undefined}
-      <SeriesCount count={seriesCount.count} />
-    {/if}
-  {/snippet}
   {#snippet actions()}
     {#if hasBooks && loaded !== undefined && chosenListing !== undefined}
       <FilterAndSort

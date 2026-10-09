@@ -26,6 +26,76 @@
     }
   }
 }
+@custom-variant heading-one-row {
+  @variant max-expanded {
+    @variant touch {
+      @variant max-medium {
+        @container (width >= 22em) {
+          @slot;
+        }
+      }
+      @variant medium {
+        @container (width >= 29em) {
+          @slot;
+        }
+      }
+    }
+    @variant desktop {
+      @variant max-medium {
+        @container (width >= 21em) {
+          @slot;
+        }
+      }
+      @variant medium {
+        @container (width >= 28em) {
+          @slot;
+        }
+      }
+    }
+  }
+}
+@custom-variant heading-two-rows {
+  @variant max-expanded {
+    @variant touch {
+      @variant max-medium {
+        @container (width < 22em) {
+          @slot;
+        }
+      }
+      @variant medium {
+        @container (width < 29em) {
+          @slot;
+        }
+      }
+    }
+    @variant desktop {
+      @variant max-medium {
+        @container (width < 21em) {
+          @slot;
+        }
+      }
+      @variant medium {
+        @container (width < 28em) {
+          @slot;
+        }
+      }
+    }
+  }
+}
+@custom-variant heading-label-inline {
+  @variant expanded {
+    @container (width >= 41em) {
+      @slot;
+    }
+  }
+}
+@custom-variant heading-label-below {
+  @variant expanded {
+    @container (width < 41em) {
+      @slot;
+    }
+  }
+}
 
 @theme {
   --*: initial;
@@ -708,6 +778,10 @@
     visibility: hidden;
     font-weight: var(--font-weight-bold);
   }
+}
+
+@utility grid-cols-collection-heading {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
 }
 
 @utility small-caps {
