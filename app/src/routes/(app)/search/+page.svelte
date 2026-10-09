@@ -58,6 +58,11 @@
   );
 
   const isLookingFor = $derived(hasSomethingToFind(query.search));
+  /** The search as typed with its edges trimmed, so a space after the words changes nothing. */
+  const searchKey = $derived(JSON.stringify(query.search));
+  let answeredKey: string | undefined = $state();
+  let latestLook = 0;
+  const isAnswered = $derived(answeredKey === searchKey);
   const listId = $props.id();
   let activeKey: string | undefined = $state();
   const shown: readonly LibrarySeries[] = $derived(
@@ -111,6 +116,9 @@
       return false;
     }
     const { key } = event;
+    if (!isAnswered) {
+      return false;
+    }
     if (key === "Enter") {
       if (activeSeries !== undefined) {
         open(activeSeries);
@@ -131,10 +139,15 @@
     return true;
   }
 
-  function lookAgain(): void {
+  /** Finds what `key` asks for, and marks it answered once the latest search has shown its results. */
+  async function lookAgain(key: string): Promise<void> {
     activeKey = undefined;
-    void results.start();
+    const look = ++latestLook;
     void found.load();
+    await results.start();
+    if (look === latestLook) {
+      answeredKey = key;
+    }
   }
 
   /** Shows a title asked for while Screenshot mode is on only when it is a stand-in, so an address from before it was on reveals nothing. */
@@ -157,8 +170,11 @@
   $effect.pre(startOverOnArrival);
 
   $effect(() => {
-    if (hasSomethingToFind(query.search)) {
-      untrack(lookAgain);
+    const key = searchKey;
+    if (untrack(() => isLookingFor)) {
+      untrack(() => {
+        void lookAgain(key);
+      });
     }
   });
 
@@ -216,7 +232,9 @@
     {#if results.list.kind === "failed"}
       <p class="text-body text-muted">{m.search_failed()}</p>
     {:else if results.list.kind === "loaded" && results.list.series.length === 0}
-      <NothingFound text={query.search.text} />
+      {#if isAnswered}
+        <NothingFound text={query.search.text} />
+      {/if}
     {:else if results.list.kind === "loaded"}
       <SearchResults
         series={results.list.series}

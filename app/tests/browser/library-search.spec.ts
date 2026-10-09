@@ -570,3 +570,83 @@ test.describe("as the library changes under a search", () => {
     ).toContainText("Lantern Market");
   });
 });
+
+test.describe("while a search is still out", () => {
+  const HELD_TEXT = "harbour";
+  let release: () => void = () => undefined;
+  let held: Promise<void> = Promise.resolve();
+  let searches: string[] = [];
+
+  test.use({
+    backend: {
+      ...SEARCHING_BACKEND,
+      librarySearch: async (_after, search) => {
+        searches.push(search.text);
+        if (search.text === HELD_TEXT) {
+          await held;
+        }
+        return { series: found(search), next: null };
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    searches = [];
+    held = new Promise((resolve) => {
+      release = resolve;
+    });
+  });
+
+  test("moves through and opens none of the results the search before found", async ({
+    page,
+  }) => {
+    test.skip(!isDesktop(page), "desktop only");
+    await page.goto("/search");
+    await searchField(page).fill("market");
+    await expectFound(page, ["Lantern Market", "Market Lanterns"]);
+
+    await searchField(page).fill(HELD_TEXT);
+    await searchField(page).press("ArrowDown");
+    await searchField(page).press("Enter");
+
+    await expect(searchField(page)).not.toHaveAttribute(
+      "aria-activedescendant",
+    );
+    expect(new URL(page.url()).search).toBe("");
+    release();
+    await expectFound(page, ["Harbour Gate"]);
+  });
+
+  test("says nothing is called the text only once its search answers", async ({
+    page,
+  }) => {
+    await page.goto("/search");
+    await searchField(page).fill("zzz");
+    await expect(
+      page.getByRole("heading", { name: "Nothing called “zzz”" }),
+    ).toBeVisible();
+
+    await searchField(page).fill(HELD_TEXT);
+
+    await expect(page.getByRole("main")).not.toContainText(
+      `Nothing called “${HELD_TEXT}”`,
+    );
+    release();
+    await expectFound(page, ["Harbour Gate"]);
+  });
+
+  test("searches again for nothing but a space typed after the words", async ({
+    page,
+  }) => {
+    await page.goto("/search");
+    await searchField(page).fill("market");
+    await expectFound(page, ["Lantern Market", "Market Lanterns"]);
+
+    await searchField(page).press("End");
+    await searchField(page).pressSequentially("  ");
+    await expect(searchField(page)).toHaveValue("market  ");
+    await expectFound(page, ["Lantern Market", "Market Lanterns"]);
+
+    expect(searches).toEqual(["market"]);
+  });
+});
