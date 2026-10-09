@@ -1,4 +1,3 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import type { Locator, Page } from "@playwright/test";
 
 import {
@@ -9,6 +8,7 @@ import {
 import type { ScreenSize } from "../../src/lib/library/library-view.ts";
 import { fakeProtocolRoute } from "./fake-backend.ts";
 import {
+  accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
@@ -226,9 +226,7 @@ test.describe("unread count", () => {
         unreadBadge(seriesNamed(page, FIRST_TITLE), FIRST_UNREAD),
       ).toBeVisible();
 
-      const results = await new AxeBuilder({ page }).analyze();
-
-      expect(results.violations).toEqual([]);
+      expect(await accessibilityViolations(page)).toEqual([]);
     });
   }
 });
