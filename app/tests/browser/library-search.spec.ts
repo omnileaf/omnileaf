@@ -599,6 +599,22 @@ test.describe("while a search is still out", () => {
     expect(new URL(page.url()).search).toBe("");
     release();
     await expectFound(page, ["Harbour Gate"]);
+    await expect(page).toHaveURL(/\/search$/);
+  });
+
+  test("opens none of the results the search before found when one is pressed", async ({
+    page,
+  }) => {
+    await page.goto("/search");
+    await searchField(page).fill("market");
+    await expectFound(page, ["Lantern Market", "Market Lanterns"]);
+
+    await searchField(page).fill(HELD_TEXT);
+    await results(page).getByRole("option").first().click();
+    release();
+
+    await expectFound(page, ["Harbour Gate"]);
+    await expect(page).toHaveURL(/\/search$/);
   });
 
   test("says nothing is called the text only once its search answers", async ({
