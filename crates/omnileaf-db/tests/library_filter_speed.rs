@@ -6,16 +6,17 @@
 mod library_seed;
 mod support;
 
-use std::time::{Duration, Instant};
+use std::{num::NonZeroUsize, time::Duration};
 
 use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Database,
     catalog::{
-        Inclusion, PageRequest, PageSize, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort,
-        series_count, series_page,
+        Cursor, Inclusion, PageRequest, PageSize, SeriesFilter, SeriesListing, SeriesOrder,
+        SeriesSort, series_count, series_page,
     },
 };
+use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
 use support::{ScratchFolder, library_config};
 
 const SERIES_COUNT: u32 = 10_000;
@@ -34,9 +35,8 @@ const BOOK_TITLES: [&str; 10] = [
 const EVERY_HUNDREDTH_FINISHED: u32 = 100;
 const EVERY_TENTH_STARTED: u32 = 10;
 const PAGE_SIZE: u16 = 100;
-const TIMINGS: usize = 40;
+const SAMPLES: usize = 40;
 const BUDGET: Duration = Duration::from_millis(2);
-const PERCENTILE: usize = 95;
 
 const SORTS: [SeriesSort; 4] = [
     SeriesSort::ascending(SeriesOrder::Title),
@@ -81,37 +81,29 @@ const FILTERS: [SeriesFilter; 7] = [
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
 async fn reads_each_sorted_and_filtered_page_of_10_000_series_within_2_ms_at_p95() {
+    let trial = trial_of("a sorted and filtered page of 100 from 10,000 series");
     let folder = ScratchFolder::new("filtered-page-speed");
     let database = Database::open(&library_config(&folder)).unwrap();
     add_generated_library(&database).await;
 
-    let mut slowest_case = (Duration::ZERO, String::new());
+    let mut over_budget = Vec::new();
     for sort in SORTS {
         for filter in FILTERS {
             let listing = SeriesListing { sort, filter };
-            walk_pages(&database, listing).await;
-            let mut timings: Vec<Duration> = Vec::new();
-            while timings.len() < TIMINGS {
-                timings.extend(walk_pages(&database, listing).await);
-            }
-            let p95 = percentile(&mut timings);
-            eprintln!("{listing:?}: p95 {p95:?} over {} pages", timings.len());
-            if p95 > slowest_case.0 {
-                slowest_case = (p95, format!("{listing:?}"));
+            let outcome = trial
+                .run(
+                    async |_| None,
+                    async |after| *after = read_page(&database, listing, after.take()).await,
+                )
+                .await;
+            eprintln!("{listing:?}: {outcome}");
+            if !outcome.is_within_budget() {
+                over_budget.push(format!("{listing:?}: {outcome}"));
             }
         }
     }
-    eprintln!(
-        "slowest p95 of a page of {PAGE_SIZE} from {SERIES_COUNT} series: {:?} for {}, budget {BUDGET:?}",
-        slowest_case.0, slowest_case.1
-    );
 
-    assert!(
-        slowest_case.0 <= BUDGET,
-        "a page of {} took {:?} at p95, over the {BUDGET:?} budget",
-        slowest_case.1,
-        slowest_case.0
-    );
+    assert_eq!(over_budget, Vec::<String>::new());
 }
 
 #[tokio::test]
@@ -121,40 +113,34 @@ async fn reads_each_sorted_and_filtered_page_of_10_000_series_within_2_ms_at_p95
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
 async fn counts_the_filtered_series_of_10_000_within_2_ms_at_p95() {
+    let trial = trial_of("a filtered count of 10,000 series");
     let folder = ScratchFolder::new("filtered-count-speed");
     let database = Database::open(&library_config(&folder)).unwrap();
     add_generated_library(&database).await;
 
-    let mut slowest_case = (Duration::ZERO, SeriesFilter::NONE);
+    let mut over_budget = Vec::new();
     for filter in FILTERS {
-        time_count(&database, filter).await;
-        let mut timings: Vec<Duration> = Vec::new();
-        for _ in 0..TIMINGS {
-            timings.push(time_count(&database, filter).await);
-        }
-        let p95 = percentile(&mut timings);
-        eprintln!("{filter:?}: p95 {p95:?} over {TIMINGS} counts");
-        if p95 > slowest_case.0 {
-            slowest_case = (p95, filter);
+        let outcome = trial
+            .run(async |_| (), async |()| count(&database, filter).await)
+            .await;
+        eprintln!("{filter:?}: {outcome}");
+        if !outcome.is_within_budget() {
+            over_budget.push(format!("{filter:?}: {outcome}"));
         }
     }
-    eprintln!(
-        "slowest p95 of a count of {SERIES_COUNT} series: {:?} for {:?}, budget {BUDGET:?}",
-        slowest_case.0, slowest_case.1
-    );
 
-    assert!(
-        slowest_case.0 <= BUDGET,
-        "counting through {:?} took {:?} at p95, over the {BUDGET:?} budget",
-        slowest_case.1,
-        slowest_case.0
-    );
+    assert_eq!(over_budget, Vec::<String>::new());
 }
 
-fn percentile(timings: &mut [Duration]) -> Duration {
-    timings.sort_unstable();
-    let index = (timings.len() * PERCENTILE).div_ceil(100).saturating_sub(1);
-    timings.get(index).copied().unwrap()
+fn trial_of(measured: &'static str) -> SpeedTrial {
+    SpeedTrial {
+        measured,
+        sampling: Sampling::Repeated {
+            samples: NonZeroUsize::new(SAMPLES).unwrap(),
+            statistic: Statistic::Percentile95,
+        },
+        budget: TimingBudget::from_env(BUDGET),
+    }
 }
 
 /// Adds ten books to each series, then marks every book of each hundredth series read and the first book of each tenth.
@@ -190,33 +176,26 @@ async fn add_generated_library(database: &Database) {
         .unwrap();
 }
 
-/// Times each page from the caller's side, waiting for a reader included.
-async fn walk_pages(database: &Database, listing: SeriesListing) -> Vec<Duration> {
-    let mut timings = Vec::new();
-    let mut after = None;
-    loop {
-        let request = PageRequest {
-            after,
-            size: PageSize::try_from(PAGE_SIZE).unwrap(),
-        };
-        let started = Instant::now();
-        let page = database
-            .read(move |connection| series_page(connection, &listing, &request))
-            .await
-            .unwrap();
-        timings.push(started.elapsed());
-        after = page.next;
-        if after.is_none() {
-            return timings;
-        }
-    }
+/// Reads the page after `after`, waiting for a reader included, and returns the cursor to the next one, or none after the last page so the walk starts over.
+async fn read_page(
+    database: &Database,
+    listing: SeriesListing,
+    after: Option<Cursor>,
+) -> Option<Cursor> {
+    let request = PageRequest {
+        after,
+        size: PageSize::try_from(PAGE_SIZE).unwrap(),
+    };
+    database
+        .read(move |connection| series_page(connection, &listing, &request))
+        .await
+        .unwrap()
+        .next
 }
 
-async fn time_count(database: &Database, filter: SeriesFilter) -> Duration {
-    let started = Instant::now();
+async fn count(database: &Database, filter: SeriesFilter) {
     database
         .read(move |connection| series_count(connection, &filter))
         .await
         .unwrap();
-    started.elapsed()
 }
