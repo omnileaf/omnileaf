@@ -525,6 +525,60 @@ test("keeps filter and sort inside the screen in a longer language", async ({
   expect(overflows).toBe(false);
 });
 
+for (const language of ["en", "en-XA"] as const) {
+  const text = (english: string) =>
+    language === "en" ? english : pseudoText(english);
+
+  test(`keeps the boxes of the tabs and of the Any, Only and Hide segments still as the choice changes in ${language}`, async ({
+    page,
+  }) => {
+    await page.addInitScript((language) => {
+      window.localStorage.setItem("omnileaf.language", language);
+    }, language);
+    await page.goto("/");
+    await expect(
+      page.getByRole("main").getByRole("listitem").first(),
+    ).toBeVisible();
+    await page
+      .locator("main header")
+      .getByRole("button", { name: text("Filter and sort") })
+      .click();
+    const panel = page.getByRole("dialog");
+    await expect(panel).toBeVisible();
+    const segments = panel
+      .getByRole("radiogroup", { name: text("Unread") })
+      .locator("label");
+    const tabs = panel.getByRole("tab");
+    const boxesOf = async (choices: Locator) => {
+      const boxes = [];
+      for (const choice of await choices.all()) {
+        boxes.push(await boxOf(choice));
+      }
+      return boxes;
+    };
+    const tabsBefore = await boxesOf(tabs);
+
+    if (isPhone(page)) {
+      for (const tab of [text("Sort"), text("Filter")]) {
+        await tabs.filter({ hasText: tab }).click();
+        await expect(tabs.filter({ hasText: tab })).toHaveAttribute(
+          "aria-selected",
+          "true",
+        );
+        expect(await boxesOf(tabs)).toEqual(tabsBefore);
+      }
+    }
+    const segmentsBefore = await boxesOf(segments);
+    for (const choice of [text("Hide"), text("Only")]) {
+      await segments.filter({ hasText: choice }).click();
+      await expect(
+        segments.filter({ hasText: choice }).locator("input"),
+      ).toBeChecked();
+      expect(await boxesOf(segments)).toEqual(segmentsBefore);
+    }
+  });
+}
+
 test("explains the unread and finished conditions on phones, where the sheet has room", async ({
   page,
 }) => {

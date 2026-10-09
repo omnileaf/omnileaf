@@ -218,7 +218,7 @@
       <div
         role="tablist"
         aria-labelledby={titleId}
-        class="grid grid-cols-2 gap-xs rounded-field bg-chip p-xs"
+        class="flex gap-xs rounded-field bg-chip p-xs"
       >
         {#each tabs as choice (choice.name)}
           <button
@@ -232,7 +232,7 @@
             tabindex={tab === choice.name ? 0 : -1}
             onkeydown={switchTab}
             class={[
-              "rounded-control text-lead min-block-segment",
+              "flex flex-auto items-center justify-center rounded-control px-sm text-lead min-block-segment",
               tab === choice.name
                 ? "bg-raised font-semibold shadow-raised"
                 : "font-medium text-muted",
@@ -241,7 +241,12 @@
               tab = choice.name;
             }}
           >
-            {choice.label}
+            <span
+              data-label={choice.label}
+              class="room-for-bold-label items-center"
+            >
+              {choice.label}
+            </span>
           </button>
         {/each}
       </div>
