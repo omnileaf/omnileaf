@@ -879,5 +879,6 @@
   "reader_not_found_body": "It may have been removed, or the folder holding it taken out of the library.",
   "reader_unreadable": "This book couldn't be opened",
   "reader_unreadable_body": "Its file may have moved, or be damaged.",
+  "reader_failed_title": "Something went wrong",
   "reader_failed": "Couldn't open this book. Try again later."
 }

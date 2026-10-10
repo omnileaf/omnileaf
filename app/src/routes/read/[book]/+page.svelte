@@ -3,6 +3,7 @@
 
   import { resolve } from "$app/paths";
   import { commands } from "#lib/ipc/bindings.ts";
+  import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getBookPresence } from "#lib/reader/book-presence.svelte.ts";
   import PagedReader from "#lib/reader/PagedReader.svelte";
@@ -13,19 +14,34 @@
   let { data }: PageProps = $props();
 
   const shown = $derived(data.shown);
+  const isFound = $derived(shown.kind === "found");
   const bookPresence = getBookPresence();
 
   $effect(() => {
-    bookPresence.isOpen = shown.kind === "found";
+    bookPresence.isOpen = isFound;
   });
 
-  onMount(() => {
+  $effect(() => {
+    if (!isFound) {
+      return;
+    }
     void commands.orientScreen("followDevice");
     const lockScale = allowPinchZoom();
     return () => {
-      bookPresence.isOpen = false;
       lockScale();
       void commands.orientScreen("portraitOnPhones");
+    };
+  });
+
+  $effect(() => {
+    if (shown.kind !== "found") {
+      focusPageHeading();
+    }
+  });
+
+  onMount(() => {
+    return () => {
+      bookPresence.isOpen = false;
       void commands.changeFullScreen("leave");
     };
   });
@@ -58,7 +74,7 @@
         <p class="text-body text-muted">{m.reader_unreadable_body()}</p>
       {:else}
         <h1 tabindex="-1" class="text-headline font-bold">
-          {m.library_title()}
+          {m.reader_failed_title()}
         </h1>
         <p class="text-body text-muted">{m.reader_failed()}</p>
       {/if}
