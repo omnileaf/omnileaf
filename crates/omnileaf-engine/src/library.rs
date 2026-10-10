@@ -35,6 +35,7 @@ use crate::{
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
+    library_folder::root_folder,
     library_layout::folder_name,
     moved_home::move_home,
     rescan::rescan,
@@ -164,8 +165,14 @@ impl Library {
         mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderScan, LibraryError> {
         let locator = self.folder_to_read(folder.into()).await?;
-        let files = self.files_of(&locator);
-        tracing::Span::current().record("folder", tracing::field::display(files.folder.display()));
+        let folder = root_folder(&locator);
+        tracing::Span::current().record("folder", tracing::field::display(folder.display()));
+        let Some(files) = self.files_of(&locator) else {
+            return Err(LibraryError::FolderUnreadable {
+                path: folder,
+                source: io::ErrorKind::Unsupported.into(),
+            });
+        };
         let _scanning = self.catalog_change_lock.lock().await;
         on_progress(ScanProgress::Finding);
         let layout = find_books_in(Arc::clone(&files.storage), files.folder.clone()).await?;
@@ -243,14 +250,17 @@ impl Library {
     }
 
     pub(crate) async fn cover_file(&self, cover: Cover) -> Result<Option<CoverFile>, LibraryError> {
-        let path = self
+        let file = self
             .store
             .database()
             .read(move |connection| cover_file(connection, &cover))
             .await?;
-        Ok(path.map(|path| CoverFile {
-            storage: Arc::clone(&self.local_storage),
-            path,
+        Ok(file.and_then(|(locator, location)| {
+            let files = self.files_of(&locator)?;
+            Some(CoverFile {
+                storage: files.storage,
+                path: files.folder.join(location),
+            })
         }))
     }
 
@@ -290,7 +300,7 @@ impl Library {
         let needing_storage = self.schedule().needing_storage(&ids, check);
         let mut first_seen_on = BTreeMap::new();
         for id in needing_storage {
-            if let Some(path) = folders.get(&id) {
+            if let Some(Some(path)) = folders.get(&id) {
                 first_seen_on.insert(id, storage_within_limit(conditions, path).await);
             }
         }
@@ -369,12 +379,30 @@ impl Library {
             .database()
             .read(move |connection| library_root(connection, id.0))
             .await?;
-        let files = self.files_of(&root.locator);
-        let name = folder_name(&files.folder);
+        let name = folder_name(&root_folder(&root.locator));
         on_progress(ScanProgress::Finding);
-        let outcome = match walk(Arc::clone(&files.storage), files.folder.clone()).await? {
+        let outcome = if let Some(files) = self.files_of(&root.locator) {
+            self.rescan_files(root.id, root.kind, files, on_progress)
+                .await?
+        } else {
+            tracing::warn!("keep the books of a folder this device can't open");
+            RescanOutcome::Unreachable
+        };
+        self.note_availability(root.id, root.unavailable_since_ms, &outcome)
+            .await?;
+        Ok(FolderRescan { id, name, outcome })
+    }
+
+    async fn rescan_files(
+        &self,
+        root: RootId,
+        kind: RootKind,
+        files: RootFiles,
+        on_progress: impl FnMut(ScanProgress) + Send,
+    ) -> Result<RescanOutcome, LibraryError> {
+        match walk(Arc::clone(&files.storage), files.folder.clone()).await? {
             Ok(layout) => {
-                let target = self.target(root.id, root.kind, files);
+                let target = self.target(root, kind, files);
                 let outcome =
                     rescan(&self.store, target, layout, self.noting_writes(on_progress)).await?;
                 if let RescanOutcome::Rescanned(changes) = &outcome
@@ -382,16 +410,13 @@ impl Library {
                 {
                     self.note_catalog_written();
                 }
-                outcome
+                Ok(outcome)
             }
             Err(error) => {
                 tracing::warn!(%error, "keep the books of a folder the rescan can't read");
-                RescanOutcome::Unreachable
+                Ok(RescanOutcome::Unreachable)
             }
-        };
-        self.note_availability(root.id, root.unavailable_since_ms, &outcome)
-            .await?;
-        Ok(FolderRescan { id, name, outcome })
+        }
     }
 
     #[tracing::instrument(skip_all, fields(folder = %id))]
@@ -404,7 +429,9 @@ impl Library {
         let root = database
             .read(move |connection| library_root(connection, id.0))
             .await?;
-        let files = self.files_of(&root.locator);
+        let Some(files) = self.files_of(&root.locator) else {
+            return Ok(BooksRemoval::Kept);
+        };
         let is_emptied = root.kind == RootKind::Linked
             && matches!(
                 walk(files.storage, files.folder).await?,
@@ -506,14 +533,14 @@ impl Library {
     async fn note_scheduled_rescan(
         &self,
         conditions: &impl RescanConditions,
-        folders: &BTreeMap<FolderId, PathBuf>,
+        folders: &BTreeMap<FolderId, Option<PathBuf>>,
         rescan: &FolderRescan,
     ) {
         match &rescan.outcome {
             RescanOutcome::Rescanned(_) => {
                 let storage = match folders.get(&rescan.id) {
-                    Some(path) => storage_within_limit(conditions, path).await,
-                    None => Storage::Local,
+                    Some(Some(path)) => storage_within_limit(conditions, path).await,
+                    Some(None) | None => Storage::Local,
                 };
                 self.schedule()
                     .read(rescan.id, storage, self.store.clock().now_unix_ms());
@@ -525,7 +552,7 @@ impl Library {
         }
     }
 
-    async fn listed_folders(&self) -> Result<BTreeMap<FolderId, PathBuf>, LibraryError> {
+    async fn listed_folders(&self) -> Result<BTreeMap<FolderId, Option<PathBuf>>, LibraryError> {
         let mut folders = BTreeMap::new();
         let mut after = None;
         loop {
@@ -538,11 +565,12 @@ impl Library {
                 .database()
                 .read(move |connection| library_roots(connection, &request))
                 .await?;
-            folders.extend(
-                page.items
-                    .into_iter()
-                    .map(|root| (FolderId(root.id), root.locator.into_path())),
-            );
+            folders.extend(page.items.into_iter().map(|root| {
+                (
+                    FolderId(root.id),
+                    root.locator.local_path().map(Path::to_path_buf),
+                )
+            }));
             match page.next {
                 Some(next) => after = Some(next),
                 None => return Ok(folders),
@@ -597,12 +625,14 @@ impl Library {
         let Some(home) = self.store.database().read(home_root).await? else {
             return Ok(picked);
         };
-        let is_inside_home =
-            picked.path() != home.locator.path() && picked.path().starts_with(home.locator.path());
+        let (folder, home_folder) = (root_folder(&picked), root_folder(&home.locator));
+        let is_inside_home = folder != home_folder && folder.starts_with(&home_folder);
         if !is_inside_home {
             return Ok(picked);
         }
-        let files = self.files_of(&picked);
+        let Some(files) = self.files_of(&picked) else {
+            return Ok(picked);
+        };
         let folder = files.folder.clone();
         spawn_blocking(move || files.storage.entries(&files.folder))
             .await?
@@ -673,15 +703,18 @@ impl Library {
         }
     }
 
-    fn files_of(&self, locator: &RootLocator) -> RootFiles {
-        match locator {
-            RootLocator::Path(folder) | RootLocator::AppleBookmark { path: folder, .. } => {
-                RootFiles {
-                    storage: Arc::clone(&self.local_storage),
-                    folder: folder.clone(),
-                }
+    /// Nothing for an Android folder, which this library has no way to open.
+    fn files_of(&self, locator: &RootLocator) -> Option<RootFiles> {
+        let storage = match locator {
+            RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
+                Arc::clone(&self.local_storage)
             }
-        }
+            RootLocator::AndroidTree(_) => return None,
+        };
+        Some(RootFiles {
+            storage,
+            folder: root_folder(locator),
+        })
     }
 
     fn target(&self, root: RootId, kind: RootKind, files: RootFiles) -> Target {
@@ -720,6 +753,7 @@ fn canonical_locator(locator: RootLocator) -> RootLocator {
             path: canonical_folder(path),
             bookmark,
         },
+        android @ RootLocator::AndroidTree(_) => android,
     }
 }
 

@@ -9,6 +9,8 @@ use omnileaf_db::{
     rusqlite::{Connection, Transaction},
 };
 
+use crate::library_folder::root_folder;
+
 pub(crate) fn move_home(
     transaction: &Transaction<'_>,
     home: &Path,
@@ -33,6 +35,6 @@ fn is_left_with_books(
     old_home: &LibraryRoot,
     home: &Path,
 ) -> Result<bool, Error> {
-    let old_folder = old_home.locator.path();
+    let old_folder = root_folder(&old_home.locator);
     Ok(old_folder != home && old_folder.is_dir() && root_book_count(connection, old_home.id)? > 0)
 }
