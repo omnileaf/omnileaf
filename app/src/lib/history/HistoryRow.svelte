@@ -1,8 +1,9 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
-  import EntryCover from "#lib/history/EntryCover.svelte";
   import { readingTime } from "#lib/history/reading-time.ts";
   import type { HistoryEntry } from "#lib/ipc/bindings.ts";
+  import { coverUrl } from "#lib/library/cover-url.ts";
+  import ListCover from "#lib/library/ListCover.svelte";
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { standInHistoryEntry } from "#lib/series/series-stand-ins.ts";
@@ -51,7 +52,11 @@
     {href}
     class="flex items-center gap-cover-gap min-block-history-row large:hidden"
   >
-    <EntryCover {cover} class="rounded-history-cover inline-list-cover" />
+    <ListCover
+      {cover}
+      {coverUrl}
+      class="rounded-history-cover inline-list-cover"
+    />
     <span class="flex flex-1 flex-col gap-2xs min-inline-none">
       <span class="truncate text-body font-semibold">{entry.seriesTitle}</span>
       <span class="text-small">{readTo}</span>
@@ -61,7 +66,11 @@
     </span>
   </a>
   <div class="hidden flex-1 items-center gap-lg large:flex">
-    <EntryCover {cover} class="rounded-list-cover inline-history-cover-wide" />
+    <ListCover
+      {cover}
+      {coverUrl}
+      class="rounded-list-cover inline-history-cover-wide"
+    />
     <span class="flex flex-1 flex-col gap-2xs min-inline-none">
       <span class="truncate text-lead font-semibold">{entry.seriesTitle}</span>
       <span class="text-detail text-muted">{readTo}</span>

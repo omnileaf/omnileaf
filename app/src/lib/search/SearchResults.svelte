@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { LibrarySeries } from "#lib/ipc/bindings.ts";
-  import CoverImage from "#lib/library/CoverImage.svelte";
   import type { CoverUrl } from "#lib/library/cover-url.ts";
+  import ListCover from "#lib/library/ListCover.svelte";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -40,11 +40,11 @@
 
 {#snippet found(one: LibrarySeries)}
   {@const shown = lookOf(one)}
-  <div
-    class="relative box-content aspect-cover shrink-0 overflow-hidden rounded-result-cover border border-cover-edge bg-chip inline-result-cover medium:inline-result-cover-wide"
-  >
-    <CoverImage cover={shown.cover} {coverUrl} />
-  </div>
+  <ListCover
+    cover={shown.cover}
+    {coverUrl}
+    class="rounded-result-cover inline-result-cover medium:inline-result-cover-wide"
+  />
   <div class="flex flex-col gap-2xs min-inline-none">
     <p
       class="truncate text-lead font-semibold medium:text-small medium:font-bold"
