@@ -21,7 +21,7 @@ use crate::{
     folder_picker::pick_folder,
     full_screen::{self, FullScreenChange},
     ipc_error::IpcError,
-    library_events::LibraryChanged,
+    library_events::{LibraryChanged, ReadingSaved},
     library_problem::{LibraryAtLaunch, LibraryProblem},
     screen_orientation::{self, ScreenOrientation},
     system_bars::{self, Theme, ThemePreference},
@@ -79,7 +79,7 @@ macro_rules! app_commands {
 pub(crate) fn builder() -> Builder<Wry> {
     Builder::new()
         .commands(registered_commands())
-        .events(collect_events![LibraryChanged])
+        .events(collect_events![LibraryChanged, ReadingSaved])
         .constant("COVERS_PER_ROW", CoversPerRow::RANGES)
         .constant("DEFAULT_LIBRARY_VIEW", LibraryView::default())
         .constant("DEFAULT_LIBRARY_LISTING", LibraryListing::default())

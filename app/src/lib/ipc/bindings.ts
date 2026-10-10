@@ -63,6 +63,7 @@ export const commands = {
 /** Events */
 export const events = {
 	libraryChanged: makeEvent<LibraryChanged>("library-changed"),
+	readingSaved: makeEvent<ReadingSaved>("reading-saved"),
 };
 
 /* Constants */
@@ -265,6 +266,11 @@ export type ProbedFormat = "webp" | "jxl";
 export type ProjectLink = "sourceCode" | "newIssue" | "latestRelease";
 
 export type ReadMark = "read" | "unread";
+
+export type ReadingSaved = {
+	book: string & { readonly __brand: "BookId" },
+	series: string & { readonly __brand: "SeriesId" },
+};
 
 export type RescanOutcome = {
 	kind: "rescanned",
