@@ -115,6 +115,49 @@ test("opens a book in the reader from its row", async ({ page }) => {
   await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(5)}$`));
 });
 
+test("picks a book tapped while picking rather than opening it", async ({
+  page,
+}) => {
+  await openSeries(page);
+  await page.getByRole("button", { name: "Select", exact: true }).click();
+
+  await books(page).getByText(shelf.titleOf(5)).click();
+
+  await expect(
+    page.getByRole("checkbox", { name: `Select ${shelf.titleOf(5)}` }),
+  ).toBeChecked();
+  await expect(books(page).getByRole("link")).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+});
+
+test("opens no book with the long press that starts picking", async ({
+  page,
+}) => {
+  test.skip(
+    !(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)),
+    "a long press is how a touch screen starts picking",
+  );
+  await page.clock.install();
+  await openSeries(page);
+  const row = books(page).getByText(shelf.titleOf(6));
+  await row.dispatchEvent("pointerdown", {
+    pointerType: "touch",
+    isPrimary: true,
+  });
+  await page.clock.runFor(600);
+  await row.dispatchEvent("pointerup", {
+    pointerType: "touch",
+    isPrimary: true,
+  });
+
+  await row.dispatchEvent("click");
+
+  await expect(
+    page.getByRole("heading", { level: 2, name: "1 selected" }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+});
+
 test("opens the book reading goes on from in the reader from the up next line", async ({
   page,
 }) => {
