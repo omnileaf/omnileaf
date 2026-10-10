@@ -17,7 +17,7 @@ use omnileaf_db::{
     library_view::{library_view, set_library_view},
     store::{Changed, Clock, Store},
 };
-use omnileaf_formats::{LocalStorage, Storage};
+use omnileaf_formats::LocalStorage;
 use tokio::{
     sync::{Mutex, MutexGuard, broadcast},
     task::spawn_blocking,
@@ -35,6 +35,7 @@ use crate::{
     library_changes::CatalogWritten,
     library_layout::folder_name,
     rescan::rescan,
+    rescan_conditions::{RescanConditions, Storage},
     rescan_schedule::RescanSchedule,
     scan::{Target, find_books_in, scan, walk},
 };
@@ -58,11 +59,11 @@ pub struct Library {
     scanning: Mutex<()>,
     schedule: sync::Mutex<RescanSchedule>,
     catalog_writes: broadcast::Sender<CatalogWritten>,
-    local_storage: Arc<dyn Storage>,
+    local_storage: Arc<dyn omnileaf_formats::Storage>,
 }
 
 struct RootFiles {
-    storage: Arc<dyn Storage>,
+    storage: Arc<dyn omnileaf_formats::Storage>,
     folder: PathBuf,
 }
 
@@ -257,12 +258,22 @@ impl Library {
     #[tracing::instrument(skip_all)]
     pub async fn rescan_due_folders(
         &self,
+        conditions: &impl RescanConditions,
         before_rescanning: impl Future<Output = ()>,
     ) -> Result<Vec<FolderRescan>, LibraryError> {
-        let folders = self.folder_ids().await?;
+        let folders = self.listed_folders().await?;
+        let ids: Vec<FolderId> = folders.iter().map(|(id, _)| *id).collect();
+        let location_of = |id: FolderId| {
+            folders
+                .iter()
+                .find_map(|(listed, path)| (*listed == id).then_some(path.as_path()))
+        };
+        let storage_of = |id: FolderId| {
+            location_of(id).map_or(Storage::Local, |path| conditions.storage_of(path))
+        };
         let due = self
             .schedule()
-            .due(&folders, self.store.clock().now_unix_ms());
+            .due(&ids, self.store.clock().now_unix_ms(), storage_of);
         if due.is_empty() {
             return Ok(Vec::new());
         }
@@ -277,7 +288,8 @@ impl Library {
             let now_ms = self.store.clock().now_unix_ms();
             match unless_removed(rescan) {
                 Ok(Some(rescan)) => {
-                    self.schedule().record(id, &rescan.outcome, now_ms);
+                    self.schedule()
+                        .record(id, &rescan.outcome, storage_of(id), now_ms);
                     rescans.push(rescan);
                 }
                 Ok(None) => {}
@@ -293,13 +305,17 @@ impl Library {
     /// Rescans each folder as its turn comes for as long as it's awaited, never starting one while another scan runs.
     pub async fn rescan_on_schedule<F: Future<Output = ()>>(
         &self,
+        conditions: &impl RescanConditions,
         mut before_rescanning: impl FnMut() -> F,
     ) {
         let mut checks = interval(SCHEDULE_CHECK_EVERY);
         checks.set_missed_tick_behavior(MissedTickBehavior::Delay);
         loop {
             checks.tick().await;
-            if let Err(error) = self.rescan_due_folders(before_rescanning()).await {
+            if let Err(error) = self
+                .rescan_due_folders(conditions, before_rescanning())
+                .await
+            {
                 tracing::warn!(error = %describe_error(&error), "rescan the folders whose turn came");
             }
         }
@@ -408,14 +424,31 @@ impl Library {
     }
 
     async fn folder_ids(&self) -> Result<Vec<FolderId>, LibraryError> {
-        let mut ids = Vec::new();
+        let folders = self.listed_folders().await?;
+        Ok(folders.into_iter().map(|(id, _)| id).collect())
+    }
+
+    async fn listed_folders(&self) -> Result<Vec<(FolderId, PathBuf)>, LibraryError> {
+        let mut folders = Vec::new();
         let mut after = None;
         loop {
-            let page = self.folders(after).await?;
-            ids.extend(page.folders.into_iter().map(|folder| folder.id));
+            let request = PageRequest {
+                after,
+                size: PageSize::try_from(FOLDERS_PER_PAGE)?,
+            };
+            let page = self
+                .store
+                .database()
+                .read(move |connection| library_roots(connection, &request))
+                .await?;
+            folders.extend(
+                page.items
+                    .into_iter()
+                    .map(|root| (FolderId(root.id), root.locator.into_path())),
+            );
             match page.next {
                 Some(next) => after = Some(next),
-                None => return Ok(ids),
+                None => return Ok(folders),
             }
         }
     }

@@ -13,6 +13,7 @@ mod support;
 
 use std::{
     fs,
+    path::Path,
     sync::{
         Arc,
         atomic::{AtomicU64, Ordering},
@@ -23,7 +24,8 @@ use std::{
 
 use books::write_book;
 use omnileaf_engine::{
-    Clock, FileChanges, FolderId, FolderRescan, Library, RESCAN_EVERY, RescanOutcome,
+    Clock, EXTERNAL_RESCAN_EVERY, FileChanges, FolderId, FolderRescan, Library, RESCAN_EVERY,
+    RescanConditions, RescanOutcome, Storage,
 };
 use support::{NOW_UNIX_MS, ScratchFolder};
 use tokio::sync::oneshot;
@@ -52,9 +54,25 @@ impl Clock for SteppedClock {
     }
 }
 
+/// A device whose every folder is on one kind of storage.
+struct Device {
+    storage: Storage,
+}
+
+impl RescanConditions for Device {
+    fn storage_of(&self, _folder: &Path) -> Storage {
+        self.storage
+    }
+}
+
+const LOCAL_DEVICE: Device = Device {
+    storage: Storage::Local,
+};
+
 /// A library linked to one folder of one book, whose schedule has already seen both its folders.
 struct Running {
     library: Library,
+    device: Device,
     clock: SteppedClock,
     comics: ScratchFolder,
     linked: FolderId,
@@ -63,6 +81,10 @@ struct Running {
 
 impl Running {
     async fn new(name: &str) -> Self {
+        Self::on(name, LOCAL_DEVICE).await
+    }
+
+    async fn on(name: &str, device: Device) -> Self {
         let comics = ScratchFolder::new(name);
         write_book(&comics.path().join(SERIES).join("v01.cbz"), 1);
         let home = ScratchFolder::new(&format!("{name}-home"));
@@ -82,10 +104,11 @@ impl Running {
             .last()
             .unwrap()
             .id;
-        let first_check = library.rescan_due_folders(async {}).await.unwrap();
+        let first_check = library.rescan_due_folders(&device, async {}).await.unwrap();
         assert_eq!(first_check, []);
         Self {
             library,
+            device,
             clock,
             comics,
             linked,
@@ -94,7 +117,10 @@ impl Running {
     }
 
     async fn rescan_due(&self) -> Vec<FolderRescan> {
-        self.library.rescan_due_folders(async {}).await.unwrap()
+        self.library
+            .rescan_due_folders(&self.device, async {})
+            .await
+            .unwrap()
     }
 
     fn outcome_of_linked(&self, rescans: &[FolderRescan]) -> Option<RescanOutcome> {
@@ -163,14 +189,43 @@ async fn prepares_for_rescanning_only_once_a_folder_has_its_turn() {
     let prepare = || async {
         prepared.fetch_add(1, Ordering::SeqCst);
     };
-    running.library.rescan_due_folders(prepare()).await.unwrap();
+    running
+        .library
+        .rescan_due_folders(&running.device, prepare())
+        .await
+        .unwrap();
     let before_the_turn = prepared.load(Ordering::SeqCst);
     running.clock.advance(RESCAN_EVERY);
 
-    running.library.rescan_due_folders(prepare()).await.unwrap();
+    running
+        .library
+        .rescan_due_folders(&running.device, prepare())
+        .await
+        .unwrap();
 
     assert_eq!(before_the_turn, 0);
     assert_eq!(prepared.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn waits_the_longer_turn_for_folders_on_external_storage() {
+    let running = Running::on(
+        "schedule-external",
+        Device {
+            storage: Storage::External,
+        },
+    )
+    .await;
+    running.clock.advance(RESCAN_EVERY);
+    let at_the_usual_turn = running.rescan_due().await;
+    running
+        .clock
+        .advance(EXTERNAL_RESCAN_EVERY.saturating_sub(RESCAN_EVERY));
+
+    let at_the_longer_turn = running.rescan_due().await;
+
+    assert_eq!(at_the_usual_turn, []);
+    assert_eq!(at_the_longer_turn.len(), 2);
 }
 
 #[tokio::test]
