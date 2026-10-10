@@ -5,7 +5,7 @@ export type ReaderAction =
   | "last"
   | "toggleControls"
   | "fullScreen"
-  | "close";
+  | "leave";
 
 const SPACE = " ";
 const CODE_ACTIONS: Readonly<Record<string, ReaderAction>> = {
@@ -32,7 +32,7 @@ const PLAIN_KEYS: Readonly<Record<string, ReaderAction>> = {
   PageUp: "previous",
   Home: "first",
   End: "last",
-  Escape: "close",
+  Escape: "leave",
 };
 
 /** What a key asks of a book read left to right, or nothing for a key the reader leaves alone. */

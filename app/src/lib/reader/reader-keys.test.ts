@@ -56,10 +56,10 @@ test("goes in or out of full screen with F, wherever the layout puts it", () => 
   expect(actions).toEqual(["fullScreen", "fullScreen", "fullScreen"]);
 });
 
-test("closes the book with Escape", () => {
+test("leaves full screen, or else the book, with Escape", () => {
   const action = readerActionFor(press("Escape"));
 
-  expect(action).toBe("close");
+  expect(action).toBe("leave");
 });
 
 test("leaves shortcuts held with another modifier and keys it has no use for alone", () => {

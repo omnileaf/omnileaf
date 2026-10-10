@@ -86,10 +86,18 @@
       case "fullScreen":
         void commands.changeFullScreen("toggle");
         return;
-      case "close":
-        void goto(resolve("/(app)"));
+      case "leave":
+        void leaveFullScreenOrBook();
         return;
     }
+  }
+
+  async function leaveFullScreenOrBook(): Promise<void> {
+    const left = await commands.changeFullScreen("leave");
+    if (left.status === "ok" && left.data) {
+      return;
+    }
+    await goto(resolve("/(app)"));
   }
 
   function onKey(event: KeyboardEvent): void {

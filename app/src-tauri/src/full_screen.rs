@@ -34,13 +34,14 @@ impl FullScreenChange {
 pub(crate) fn change(
     window: &tauri::WebviewWindow,
     change: FullScreenChange,
-) -> Result<(), IpcError> {
-    let is_full_screen = window
+) -> Result<bool, IpcError> {
+    let was_full_screen = window
         .is_fullscreen()
         .map_err(|error| IpcError::internal(&error))?;
     window
-        .set_fullscreen(change.is_full_screen_after(is_full_screen))
-        .map_err(|error| IpcError::internal(&error))
+        .set_fullscreen(change.is_full_screen_after(was_full_screen))
+        .map_err(|error| IpcError::internal(&error))?;
+    Ok(was_full_screen)
 }
 
 #[cfg(mobile)]
@@ -51,8 +52,8 @@ pub(crate) fn change(
 pub(crate) fn change(
     _window: &tauri::WebviewWindow,
     _change: FullScreenChange,
-) -> Result<(), IpcError> {
-    Ok(())
+) -> Result<bool, IpcError> {
+    Ok(false)
 }
 
 #[cfg(test)]

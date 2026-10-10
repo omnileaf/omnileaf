@@ -309,7 +309,8 @@ async fn orient_screen(app: AppHandle, orientation: ScreenOrientation) -> Result
     clippy::needless_pass_by_value,
     reason = "Tauri hands command arguments over by value"
 )]
-fn change_full_screen(window: WebviewWindow, change: FullScreenChange) -> Result<(), IpcError> {
+/// Answers whether the window was in full screen before the change.
+fn change_full_screen(window: WebviewWindow, change: FullScreenChange) -> Result<bool, IpcError> {
     full_screen::change(&window, change)
 }
 
