@@ -53,7 +53,7 @@ test("stays at its own size when pinched", async ({
     x: 100,
     y: 100,
     scaleFactor: PINCH_OUT,
-    gestureSourceType: "touch",
+    gestureSourceType: "default",
   });
 
   expect(await page.evaluate(() => window.visualViewport?.scale)).toBe(1);
