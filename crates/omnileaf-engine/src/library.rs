@@ -1,7 +1,7 @@
 use std::{
     collections::BTreeMap,
     fs, io,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{self, PoisonError},
     time::Duration,
 };
@@ -21,7 +21,7 @@ use omnileaf_db::{
 use tokio::{
     sync::{Mutex, MutexGuard, broadcast, watch},
     task::spawn_blocking,
-    time::{MissedTickBehavior, interval},
+    time::{MissedTickBehavior, interval, timeout},
 };
 
 use crate::{
@@ -45,6 +45,7 @@ const FOLDERS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
 const CATALOG_WRITE_BACKLOG: usize = 16;
 const SCHEDULE_CHECK_EVERY: Duration = Duration::from_mins(1);
+const STORAGE_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
 const MAPPED_DATABASE_BYTES: u32 = if IS_MOBILE {
     64 * MEBIBYTE
 } else {
@@ -245,7 +246,7 @@ impl Library {
         self.rescan_while_scanning(id, scanning, on_progress).await
     }
 
-    /// Rescans each folder whose turn has come, after awaiting `before_rescanning`, and leaves the rest for a later call once another scan is running.
+    /// Rescans each folder whose turn has come, after awaiting `before_rescanning`, and leaves the rest for a later call once another scan is running or scheduled rescans are turned off.
     #[tracing::instrument(skip_all)]
     pub async fn rescan_due_folders(
         &self,
@@ -254,17 +255,17 @@ impl Library {
     ) -> Result<Vec<FolderRescan>, LibraryError> {
         let folders = self.listed_folders().await?;
         let ids: Vec<FolderId> = folders.keys().copied().collect();
-        let unseen = self.schedule().unseen(&ids);
-        let mut first_seen_on = BTreeMap::new();
-        for id in unseen {
-            if let Some(path) = folders.get(&id) {
-                first_seen_on.insert(id, conditions.storage_of(path).await);
-            }
-        }
         let check = Check {
             at_ms: self.store.clock().now_unix_ms(),
             power: conditions.power_mode().await,
         };
+        let needing_storage = self.schedule().needing_storage(&ids, check);
+        let mut first_seen_on = BTreeMap::new();
+        for id in needing_storage {
+            if let Some(path) = folders.get(&id) {
+                first_seen_on.insert(id, storage_within_limit(conditions, path).await);
+            }
+        }
         let due = self.schedule().due(&ids, check, |id| {
             first_seen_on.get(&id).copied().unwrap_or(Storage::Local)
         });
@@ -274,6 +275,10 @@ impl Library {
         before_rescanning.await;
         let mut rescans = Vec::new();
         for id in due {
+            if !*self.is_scheduled.borrow() {
+                tracing::debug!("leave the folders whose turn came once scheduled rescans are off");
+                break;
+            }
             let Ok(scanning) = self.scanning.try_lock() else {
                 tracing::debug!("leave the folders whose turn came until no other scan runs");
                 break;
@@ -447,7 +452,7 @@ impl Library {
         match &rescan.outcome {
             RescanOutcome::Rescanned(_) => {
                 let storage = match folders.get(&rescan.id) {
-                    Some(path) => conditions.storage_of(path).await,
+                    Some(path) => storage_within_limit(conditions, path).await,
                     None => Storage::Local,
                 };
                 self.schedule()
@@ -609,6 +614,16 @@ impl Library {
     fn now_ms(&self) -> i64 {
         i64::try_from(self.store.clock().now_unix_ms()).unwrap_or(i64::MAX)
     }
+}
+
+/// Asks where a folder is stored, counting it as local when the answer fails to come, as it can from a network share that went away.
+async fn storage_within_limit(conditions: &impl RescanConditions, folder: &Path) -> Storage {
+    timeout(STORAGE_CHECK_TIMEOUT, conditions.storage_of(folder))
+        .await
+        .unwrap_or_else(|_| {
+            tracing::warn!(folder = %folder.display(), "find where a folder is stored in time");
+            Storage::Local
+        })
 }
 
 /// Leaves out a folder removed since the rescan listed it.

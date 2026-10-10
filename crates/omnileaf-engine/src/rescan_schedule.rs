@@ -53,8 +53,15 @@ impl RescanSchedule {
             .collect()
     }
 
-    /// The listed folders the schedule has yet to see, whose storage it needs before their first turn.
-    pub(crate) fn unseen(&self, folders: &[FolderId]) -> Vec<FolderId> {
+    /// The listed folders whose storage the check needs: the ones the schedule has yet to see, and none while the device saves power.
+    pub(crate) fn needing_storage(&self, folders: &[FolderId], check: Check) -> Vec<FolderId> {
+        match check.power {
+            PowerMode::Normal => self.unseen(folders),
+            PowerMode::Saving => Vec::new(),
+        }
+    }
+
+    fn unseen(&self, folders: &[FolderId]) -> Vec<FolderId> {
         folders
             .iter()
             .filter(|folder| !self.turns.contains_key(&folder.0))
@@ -367,11 +374,24 @@ mod tests {
     }
 
     #[test]
-    fn lists_only_the_folders_it_has_yet_to_see() {
+    fn needs_the_storage_of_only_the_folders_it_has_yet_to_see() {
         let schedule = seen(folder("1"));
 
-        let unseen = schedule.unseen(&[folder("1"), folder("2")]);
+        let needing = schedule.needing_storage(&[folder("1"), folder("2")], at(START_MS));
 
-        assert_eq!(unseen, [folder("2")]);
+        assert_eq!(needing, [folder("2")]);
+    }
+
+    #[test]
+    fn needs_no_storage_while_the_device_saves_power() {
+        let schedule = RescanSchedule::default();
+        let saving = Check {
+            at_ms: START_MS,
+            power: PowerMode::Saving,
+        };
+
+        let needing = schedule.needing_storage(&[folder("1")], saving);
+
+        assert_eq!(needing, []);
     }
 }

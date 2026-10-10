@@ -13,7 +13,7 @@ mod support;
 
 use std::{
     fs,
-    future::ready,
+    future::{pending, ready},
     path::Path,
     sync::{
         Arc,
@@ -59,14 +59,18 @@ impl Clock for SteppedClock {
     }
 }
 
-/// A device whose every folder is on one kind of storage, saving power while a test says so.
+/// A device whose every folder is on one kind of storage, or whose storage never answers, saving power while a test says so.
 struct Device {
-    storage: Storage,
+    storage: Option<Storage>,
     is_saving_power: AtomicBool,
 }
 
 impl Device {
     fn on(storage: Storage) -> Self {
+        Self::answering(Some(storage))
+    }
+
+    fn answering(storage: Option<Storage>) -> Self {
         Self {
             storage,
             is_saving_power: AtomicBool::new(false),
@@ -75,8 +79,11 @@ impl Device {
 }
 
 impl RescanConditions for Device {
-    fn storage_of(&self, _folder: &Path) -> impl Future<Output = Storage> + Send {
-        ready(self.storage)
+    async fn storage_of(&self, _folder: &Path) -> Storage {
+        match self.storage {
+            Some(storage) => storage,
+            None => pending().await,
+        }
     }
 
     fn power_mode(&self) -> impl Future<Output = PowerMode> + Send {
@@ -88,7 +95,7 @@ impl RescanConditions for Device {
     }
 }
 
-/// A library linked to one folder of one book, whose schedule has already seen both its folders.
+/// A library linked to one folder of one book, with scheduled rescans on and a schedule that has already seen both its folders.
 struct Running {
     library: Library,
     device: Device,
@@ -123,6 +130,7 @@ impl Running {
             .last()
             .unwrap()
             .id;
+        library.set_scheduled_rescans(true);
         let first_check = library.rescan_due_folders(&device, async {}).await.unwrap();
         assert_eq!(first_check, []);
         Self {
@@ -266,6 +274,16 @@ async fn rescans_no_folder_while_the_device_saves_power_and_catches_up_after() {
     assert_eq!(after.len(), 2);
 }
 
+#[tokio::test(start_paused = true)]
+async fn counts_a_folder_whose_storage_gives_no_answer_as_local() {
+    let running = Running::on("schedule-no-answer", Device::answering(None)).await;
+    running.clock.advance(RESCAN_EVERY);
+
+    let rescans = running.rescan_due().await;
+
+    assert_eq!(rescans.len(), 2);
+}
+
 #[tokio::test]
 async fn waits_twice_as_long_for_a_folder_it_cannot_read() {
     let running = Running::new("schedule-unreadable").await;
@@ -341,6 +359,7 @@ fn spawn_schedule(
 #[tokio::test(start_paused = true)]
 async fn checks_no_folder_until_scheduled_rescans_are_turned_on() {
     let running = Arc::new(Running::new("schedule-switched-on").await);
+    running.library.set_scheduled_rescans(false);
     running.clock.advance(RESCAN_EVERY);
     let (prepared, mut preparations) = unbounded_channel();
     let schedule = spawn_schedule(&running, prepared);
@@ -357,7 +376,6 @@ async fn checks_no_folder_until_scheduled_rescans_are_turned_on() {
 #[tokio::test(start_paused = true)]
 async fn checks_no_folder_once_scheduled_rescans_are_turned_off() {
     let running = Arc::new(Running::new("schedule-switched-off").await);
-    running.library.set_scheduled_rescans(true);
     running.clock.advance(RESCAN_EVERY);
     let (prepared, mut preparations) = unbounded_channel();
     let schedule = spawn_schedule(&running, prepared);
@@ -370,4 +388,20 @@ async fn checks_no_folder_once_scheduled_rescans_are_turned_off() {
 
     schedule.abort();
     assert!(once_off.is_err());
+}
+
+#[tokio::test]
+async fn rescans_no_further_folder_once_scheduled_rescans_are_turned_off() {
+    let running = Running::new("schedule-off-midway").await;
+    running.clock.advance(RESCAN_EVERY);
+
+    let rescans = running
+        .library
+        .rescan_due_folders(&running.device, async {
+            running.library.set_scheduled_rescans(false);
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(rescans, []);
 }
