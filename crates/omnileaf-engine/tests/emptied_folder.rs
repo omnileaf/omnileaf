@@ -11,7 +11,7 @@ mod support;
 use std::{fs, path::PathBuf};
 
 use books::write_book;
-use omnileaf_engine::{BooksRemoval, LibraryFolder, RescanOutcome};
+use omnileaf_engine::{BooksRemoval, FolderKind, LibraryFolder, RescanOutcome};
 use scanned::{Scanned, owned};
 use support::ScratchFolder;
 
@@ -147,4 +147,28 @@ async fn keeps_a_book_another_folder_also_holds() {
 
     assert_eq!(removal, BooksRemoval::Removed { books: 2 });
     assert_eq!(linked.scanned.books_in(SERIES_01), ["v01"]);
+}
+
+#[tokio::test]
+async fn never_removes_the_books_of_the_home_folder() {
+    let linked = Linked::new("emptied-home").await;
+    let home = linked
+        .scanned
+        .library
+        .folders(None)
+        .await
+        .unwrap()
+        .folders
+        .into_iter()
+        .find(|folder| folder.kind == FolderKind::Home)
+        .unwrap();
+
+    let removal = linked
+        .scanned
+        .library
+        .remove_books_of_emptied_folder(home.id)
+        .await
+        .unwrap();
+
+    assert_eq!(removal, BooksRemoval::Kept);
 }

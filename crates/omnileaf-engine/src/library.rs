@@ -259,7 +259,7 @@ impl Library {
         })
     }
 
-    /// Removes the books of a folder that's readable but holds none, which a rescan keeps in case its drive is unplugged.
+    /// Removes the books of a linked folder that's readable but holds none, which a rescan keeps in case its drive is unplugged.
     #[tracing::instrument(skip_all, fields(folder = %id))]
     pub async fn remove_books_of_emptied_folder(
         &self,
@@ -270,10 +270,11 @@ impl Library {
         let root = database
             .read(move |connection| library_root(connection, id.0))
             .await?;
-        let is_emptied = matches!(
-            walk(root.locator.into_path()).await?,
-            Ok(layout) if layout.is_empty()
-        );
+        let is_emptied = root.kind == RootKind::Linked
+            && matches!(
+                walk(root.locator.into_path()).await?,
+                Ok(layout) if layout.is_empty()
+            );
         if !is_emptied {
             return Ok(BooksRemoval::Kept);
         }
