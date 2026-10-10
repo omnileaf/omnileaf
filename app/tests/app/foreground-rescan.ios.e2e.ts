@@ -7,7 +7,7 @@ import { afterAll, beforeAll, expect, inject, test } from "vitest";
 
 import { openLibraryPage, useAppSession } from "./app-session.ts";
 import { createSampleLibrary } from "./sample-library.ts";
-import { xpath } from "./webdriver.ts";
+import { pollUntil, xpath } from "./webdriver.ts";
 
 const ADDED_SERIES = "Series Added While Away";
 const SAMPLE_PAGE = join("Sample Series 03", "Chapter 01", "001.png");
@@ -16,9 +16,8 @@ const SIMCTL_TIMEOUT_MS = 30_000;
 const RESCAN_TIMEOUT_MS = 60_000;
 const TEST_TIMEOUT_MS = 180_000;
 const STAYS_IN_THE_BACKGROUND = -1;
-
-/** The webview reports the app leaving under a second after it has, and not at all for a trip shorter than that. */
-const PAGE_SEES_THE_APP_AWAY = `return document.visibilityState === "hidden";`;
+const SUSPENDED_IN_THE_BACKGROUND = 2;
+const SUSPEND_TIMEOUT_MS = 30_000;
 
 const ADDED_SERIES_TITLE = xpath(
   `//main//*[normalize-space()='${ADDED_SERIES}']`,
@@ -60,6 +59,14 @@ async function removeAddedSeries(): Promise<void> {
   });
 }
 
+/** Asks the device rather than the page, since a page stops answering scripts once its app leaves the screen. */
+async function isSuspended(bundleId: string): Promise<true | undefined> {
+  const state = await appSession().runMobileCommand("queryAppState", {
+    bundleId,
+  });
+  return state === SUSPENDED_IN_THE_BACKGROUND ? true : undefined;
+}
+
 /** Writes a book of one sample page, since the library files a copy of a book it already holds under that book's own series. */
 async function addOnePageBook(sample: string, series: string): Promise<void> {
   const book = join(series, ADDED_BOOK);
@@ -80,21 +87,21 @@ test(
   "finds a book added to the home folder while the app was away once it comes back",
   { timeout: TEST_TIMEOUT_MS },
   async () => {
+    const bundleId = capability("appium:bundleId");
     const home = await homeFolder();
     const sample = await createSampleLibrary();
     try {
       await appSession().runMobileCommand("backgroundApp", {
         seconds: STAYS_IN_THE_BACKGROUND,
       });
-      await appSession().waitUntil(
-        PAGE_SEES_THE_APP_AWAY,
-        "the page to see the app leave the screen",
+      await pollUntil(
+        () => isSuspended(bundleId),
+        SUSPEND_TIMEOUT_MS,
+        "the app suspended in the background",
       );
       await addOnePageBook(sample.folder, join(home, ADDED_SERIES));
 
-      await appSession().runMobileCommand("activateApp", {
-        bundleId: capability("appium:bundleId"),
-      });
+      await appSession().runMobileCommand("activateApp", { bundleId });
 
       const title = await appSession().waitFor(
         ADDED_SERIES_TITLE,
