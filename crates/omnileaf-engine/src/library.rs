@@ -1,12 +1,16 @@
-use std::{fs, io, path::PathBuf};
+use std::{
+    fs, io,
+    path::PathBuf,
+    sync::{self, Arc, PoisonError},
+};
 
 use omnileaf_db::{
     Config, Database,
     catalog::{
-        AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator,
-        SeriesOrder, add_root, bookmarked_roots, cover_file, library_root, library_roots,
-        mark_root_available, mark_root_unavailable, remove_root, root_book_count, series_count,
-        series_page, set_home_root,
+        AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RemovedBooks, RootId, RootKind,
+        RootLocator, SeriesOrder, add_root, bookmarked_roots, cover_file, library_root,
+        library_roots, mark_root_available, mark_root_unavailable, put_back_root_books,
+        remove_root, remove_root_books, root_book_count, series_count, series_page, set_home_root,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_view::{library_view, set_library_view},
@@ -18,15 +22,15 @@ use tokio::{
 };
 
 use crate::{
-    AppLanguage, CoversPerRowOutOfRange, FolderCursor, FolderId, FolderPage, FolderRescan,
-    FolderScan, LibraryChanges, LibraryFolder, LibrarySeries, LibraryView, RescanOutcome,
-    ResolvedBookmark, ScanProgress, SeriesCursor, SeriesPage,
+    AppLanguage, BooksRemoval, CoversPerRowOutOfRange, FolderCursor, FolderId, FolderPage,
+    FolderRescan, FolderScan, LibraryChanges, LibraryFolder, LibrarySeries, LibraryView,
+    RescanOutcome, ResolvedBookmark, ScanProgress, SeriesCursor, SeriesPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
     library_layout::folder_name,
     rescan::rescan,
-    scan::{Target, find_books_in, scan, walk},
+    scan::{Target, find_books_in, saturating_u32, scan, walk},
 };
 
 const DATABASE_FILE: &str = "library.sqlite";
@@ -45,7 +49,14 @@ pub struct Library {
     store: Store,
     /// Held for each scan and folder removal, so none compares a folder with a catalog another is changing.
     scanning: Mutex<()>,
+    removed: sync::Mutex<Option<Arc<Removal>>>,
     catalog_writes: broadcast::Sender<CatalogWritten>,
+}
+
+/// The books last removed from a folder found empty, and when the folder had become unavailable, to put both back.
+struct Removal {
+    books: RemovedBooks,
+    unavailable_since_ms: Option<i64>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -103,6 +114,7 @@ impl Library {
         let library = Self {
             store: Store::new(database, clock),
             scanning: Mutex::new(()),
+            removed: sync::Mutex::default(),
             catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
         };
         library.set_home(home).await?;
@@ -257,6 +269,81 @@ impl Library {
             name: folder_name(&folder),
             outcome,
         })
+    }
+
+    /// Removes the books of a folder that's readable but holds none, which a rescan keeps in case its drive is unplugged, and keeps them to put back.
+    #[tracing::instrument(skip_all, fields(folder = %id))]
+    pub async fn remove_books_of_emptied_folder(
+        &self,
+        id: FolderId,
+    ) -> Result<BooksRemoval, LibraryError> {
+        let _scanning = self.scanning.lock().await;
+        let database = self.store.database();
+        let root = database
+            .read(move |connection| library_root(connection, id.0))
+            .await?;
+        let is_emptied = matches!(
+            walk(root.locator.into_path()).await?,
+            Ok(layout) if layout.is_empty()
+        );
+        if !is_emptied {
+            return Ok(BooksRemoval::Kept);
+        }
+        let books = database
+            .write(move |transaction| {
+                let books = remove_root_books(transaction, root.id)?;
+                mark_root_available(transaction, root.id)?;
+                Ok(books)
+            })
+            .await?;
+        let count = saturating_u32(books.book_count());
+        *self.removed() = Some(Arc::new(Removal {
+            books,
+            unavailable_since_ms: root.unavailable_since_ms,
+        }));
+        self.note_catalog_written();
+        Ok(BooksRemoval::Removed { books: count })
+    }
+
+    /// Puts back the books last removed from the folder as it was emptied, unless it holds books again, returning whether it did.
+    #[tracing::instrument(skip_all, fields(folder = %id))]
+    pub async fn put_back_removed_books(&self, id: FolderId) -> Result<bool, LibraryError> {
+        let _scanning = self.scanning.lock().await;
+        let Some(removal) = self
+            .removed()
+            .take_if(|removal| removal.books.root() == id.0)
+        else {
+            return Ok(false);
+        };
+        let putting_back = Arc::clone(&removal);
+        let put_back = self
+            .store
+            .database()
+            .write(move |transaction| {
+                let root = putting_back.books.root();
+                if root_book_count(transaction, root)? > 0 {
+                    return Ok(false);
+                }
+                match putting_back.unavailable_since_ms {
+                    Some(since_ms) => mark_root_unavailable(transaction, root, since_ms)?,
+                    None => mark_root_available(transaction, root)?,
+                }
+                put_back_root_books(transaction, &putting_back.books)?;
+                Ok(true)
+            })
+            .await;
+        match put_back {
+            Ok(is_put_back) => {
+                if is_put_back {
+                    self.note_catalog_written();
+                }
+                Ok(is_put_back)
+            }
+            Err(error) => {
+                *self.removed() = Some(removal);
+                Err(error.into())
+            }
+        }
     }
 
     /// Opens each linked folder kept by a bookmark through `resolve`, which may block, following the ones that moved and returning those whose bookmark wouldn't open.
@@ -453,6 +540,10 @@ impl Library {
             folder,
             added_at_ms: self.now_ms(),
         }
+    }
+
+    fn removed(&self) -> sync::MutexGuard<'_, Option<Arc<Removal>>> {
+        self.removed.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
     fn now_ms(&self) -> i64 {
