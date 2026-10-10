@@ -175,6 +175,27 @@ test("keeps a folder when a tap lands outside the removal question", async ({
   await expect(folders.getByRole("listitem")).toHaveCount(1);
 });
 
+test("keeps the removal question open when a press inside it ends outside", async ({
+  page,
+}) => {
+  await page.goto("/settings/library");
+  await page
+    .getByRole("region", { name: "Folders" })
+    .getByRole("button", { name: "Remove Sample Comics" })
+    .click();
+  const question = page.getByRole("alertdialog");
+  const title = question.getByRole("heading");
+  await expect(title).toBeVisible();
+  const box = await title.boundingBox();
+
+  await page.mouse.move(box?.x ?? 0, box?.y ?? 0);
+  await page.mouse.down();
+  await page.mouse.move(8, 8);
+  await page.mouse.up();
+
+  await expect(question).toBeVisible();
+});
+
 test("shows the folder and its books in the removal question", async ({
   page,
 }) => {
