@@ -2,17 +2,23 @@ use std::{
     collections::BTreeMap,
     ffi::OsStr,
     fmt,
-    fs::File,
-    io,
+    fs::{self, File, OpenOptions},
+    io::{self, Read, Seek, SeekFrom},
     path::{Component, Path, PathBuf},
-    sync::{Mutex, MutexGuard, PoisonError},
+    process,
+    sync::{
+        Mutex, MutexGuard, PoisonError,
+        atomic::{AtomicU64, Ordering},
+    },
     time::{Duration, SystemTime},
 };
 
 use omnileaf_engine::{AndroidTree, TreeUri};
-use omnileaf_formats::{Details, Entry, EntryKind, Storage};
+use omnileaf_formats::{Details, Entry, EntryKind, Limits, Storage};
 
 const FOLDER_LISTINGS_KEPT: usize = 1024;
+
+static COPIES_MADE: AtomicU64 = AtomicU64::new(0);
 
 /// A documents provider's view of the folders and files under the trees it granted.
 pub trait Documents: fmt::Debug + Send + Sync {
@@ -40,6 +46,8 @@ pub struct DocumentTree<D> {
     documents: D,
     tree: TreeUri,
     root: PathBuf,
+    copies: PathBuf,
+    copy_limit: u64,
     listings: Mutex<BTreeMap<PathBuf, Vec<Document>>>,
 }
 
@@ -68,11 +76,14 @@ impl Document {
 }
 
 impl<D: Documents> DocumentTree<D> {
-    pub fn new(documents: D, tree: &AndroidTree) -> Self {
+    /// Copies a document the provider can only stream into `copies`, unlinking the copy as soon as it is made.
+    pub fn new(documents: D, tree: &AndroidTree, copies: PathBuf) -> Self {
         Self {
             documents,
             tree: tree.uri().clone(),
             root: PathBuf::from(tree.name()),
+            copies,
+            copy_limit: Limits::default().max_total_bytes,
             listings: Mutex::default(),
         }
     }
@@ -173,7 +184,49 @@ impl<D: Documents> DocumentTree<D> {
     }
 
     fn open_document(&self, document: &Document) -> io::Result<File> {
-        self.documents.open(&self.tree, &document.id)
+        let file = self.documents.open(&self.tree, &document.id)?;
+        if file.metadata().is_ok_and(|metadata| metadata.is_file()) {
+            Ok(file)
+        } else {
+            self.copy(file)
+        }
+    }
+
+    fn copy(&self, streamed: File) -> io::Result<File> {
+        let mut copy = self.unnamed_copy()?;
+        let copied = io::copy(
+            &mut streamed.take(self.copy_limit.saturating_add(1)),
+            &mut copy,
+        )?;
+        if copied > self.copy_limit {
+            return Err(io::Error::new(
+                io::ErrorKind::FileTooLarge,
+                format!("streamed document is over {} bytes", self.copy_limit),
+            ));
+        }
+        copy.seek(SeekFrom::Start(0))?;
+        Ok(copy)
+    }
+
+    fn unnamed_copy(&self) -> io::Result<File> {
+        fs::create_dir_all(&self.copies)?;
+        loop {
+            let serial = COPIES_MADE.fetch_add(1, Ordering::Relaxed);
+            let path = self.copies.join(format!("{}-{serial}", process::id()));
+            let created = OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create_new(true)
+                .open(&path);
+            match created {
+                Ok(copy) => {
+                    fs::remove_file(&path)?;
+                    return Ok(copy);
+                }
+                Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
+                Err(error) => return Err(error),
+            }
+        }
     }
 }
 
@@ -250,11 +303,12 @@ fn is_one_name(name: &str) -> bool {
 mod tests {
     use std::{
         fs,
-        io::Read,
+        io::{Read, Write},
         sync::{
             Arc,
             atomic::{AtomicBool, AtomicUsize, Ordering},
         },
+        thread,
     };
 
     use omnileaf_testkit::ScratchFolder;
@@ -272,6 +326,7 @@ mod tests {
         failure: Mutex<Option<io::ErrorKind>>,
         listings: AtomicUsize,
         opens: AtomicUsize,
+        is_streaming: AtomicBool,
         hides_stamps: AtomicBool,
     }
 
@@ -284,6 +339,7 @@ mod tests {
                 failure: Mutex::default(),
                 listings: AtomicUsize::new(0),
                 opens: AtomicUsize::new(0),
+                is_streaming: AtomicBool::new(false),
                 hides_stamps: AtomicBool::new(false),
             })
         }
@@ -360,8 +416,33 @@ mod tests {
         fn open(&self, _tree: &TreeUri, document: &DocumentId) -> io::Result<File> {
             self.failed()?;
             self.opens.fetch_add(1, Ordering::SeqCst);
-            File::open(self.path_of(document))
+            let file = File::open(self.path_of(document))?;
+            if self.is_streaming.load(Ordering::SeqCst) {
+                Ok(streamed(file))
+            } else {
+                Ok(file)
+            }
         }
+    }
+
+    fn streamed(mut file: File) -> File {
+        let (reader, mut writer) = io::pipe().unwrap();
+        thread::spawn(move || {
+            let mut bytes = Vec::new();
+            file.read_to_end(&mut bytes).unwrap();
+            let _ = writer.write_all(&bytes);
+        });
+        file_of(reader)
+    }
+
+    #[cfg(unix)]
+    fn file_of(reader: io::PipeReader) -> File {
+        File::from(std::os::fd::OwnedFd::from(reader))
+    }
+
+    #[cfg(windows)]
+    fn file_of(reader: io::PipeReader) -> File {
+        File::from(std::os::windows::io::OwnedHandle::from(reader))
     }
 
     fn ms_of(time: SystemTime) -> i64 {
@@ -375,16 +456,26 @@ mod tests {
 
     struct Fixture {
         documents: Arc<FakeDocuments>,
+        copies: ScratchFolder,
         tree: DocumentTree<Arc<FakeDocuments>>,
     }
 
     impl Fixture {
         fn new() -> Self {
             let documents = FakeDocuments::new();
+            let copies = ScratchFolder::new("copies");
             let uri = TreeUri::parse("content://documents.test/tree/primary%3AComics".to_owned());
             let tree = AndroidTree::new(uri.unwrap(), TREE_NAME.to_owned(), String::new());
-            let tree = DocumentTree::new(Arc::clone(&documents), &tree.unwrap());
-            Self { documents, tree }
+            let tree = DocumentTree::new(
+                Arc::clone(&documents),
+                &tree.unwrap(),
+                copies.path().to_path_buf(),
+            );
+            Self {
+                documents,
+                copies,
+                tree,
+            }
         }
 
         fn write(&self, name: &str, bytes: &[u8]) -> PathBuf {
@@ -503,6 +594,47 @@ mod tests {
             }
         ));
         assert_eq!(fixture.opens(), 1);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn copies_a_document_the_provider_streams_into_a_file_it_can_seek() {
+        let fixture = Fixture::new();
+        fixture.write("a.cbz", BOOK);
+        fixture.documents.is_streaming.store(true, Ordering::SeqCst);
+
+        let mut file = fixture.tree.open(&in_tree("a.cbz")).unwrap();
+        file.seek(SeekFrom::Start(1)).unwrap();
+
+        assert_eq!(read_all(file), b"ook");
+        assert_eq!(fs::read_dir(fixture.copies.path()).unwrap().count(), 0);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn copies_a_streamed_document_past_a_copy_left_behind() {
+        let fixture = Fixture::new();
+        fixture.write("a.cbz", BOOK);
+        fixture.documents.is_streaming.store(true, Ordering::SeqCst);
+        let left_behind = format!("{}-{}", process::id(), COPIES_MADE.load(Ordering::SeqCst));
+        fixture.copies.write(&left_behind, b"");
+
+        let file = fixture.tree.open(&in_tree("a.cbz")).unwrap();
+
+        assert_eq!(read_all(file), BOOK);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn refuses_a_streamed_document_larger_than_the_limit() {
+        let mut fixture = Fixture::new();
+        fixture.write("a.cbz", BOOK);
+        fixture.documents.is_streaming.store(true, Ordering::SeqCst);
+        fixture.tree.copy_limit = 3;
+
+        let opened = fixture.tree.open(&in_tree("a.cbz"));
+
+        assert_eq!(opened.unwrap_err().kind(), io::ErrorKind::FileTooLarge);
     }
 
     #[test]
