@@ -20,10 +20,13 @@ import {
   BOOK_POSITION,
   BOOK_SERIES_TITLE,
   BOOK_TITLE,
+  NEXT_BOOK,
+  NOT_STARTED,
   PAGE_COUNT,
   PAGE_HEIGHT,
   PAGE_WIDTH,
   pageIndexOf,
+  PREVIOUS_BOOK,
   readerBackend,
   readerBook,
   servePages,
@@ -621,5 +624,95 @@ test.describe("while Screenshot mode is on", () => {
     const shown = (await page.getByRole("main").textContent()) ?? "";
     expect(shown).not.toContain(BOOK_SERIES_TITLE);
     expect(shown).not.toContain(BOOK_TITLE);
+  });
+});
+
+test.describe("the books either side", () => {
+  const changes: FullScreenChange[] = [];
+  const turns: ScreenOrientation[] = [];
+
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      openBook: (id) => ({ ...readerBook(NOT_STARTED), id }),
+      changeFullScreen: (change) => {
+        changes.push(change);
+        return null;
+      },
+      orientScreen: (orientation) => {
+        turns.push(orientation);
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    changes.length = 0;
+    turns.length = 0;
+  });
+
+  test("goes on to the next book and back to the one before from beside the slider", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await page
+      .getByRole("link", { name: `Next book: ${NEXT_BOOK.title}` })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/read/${NEXT_BOOK.id}$`));
+    await page
+      .getByRole("link", { name: `Previous book: ${PREVIOUS_BOOK.title}` })
+      .click();
+
+    await expect(page).toHaveURL(new RegExp(`/read/${PREVIOUS_BOOK.id}$`));
+  });
+
+  test("names the books either side beside the slider on a wide screen", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width < EXPANDED_MIN_WIDTH,
+      "the boards draw only their arrows on narrow screens",
+    );
+    await openBook(page);
+
+    await expect(page.getByText(PREVIOUS_BOOK.title)).toBeVisible();
+    await expect(page.getByText(NEXT_BOOK.title)).toBeVisible();
+  });
+
+  test("stays in full screen and keeps the screen turning on the way to the next book", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await page.keyboard.press("f");
+
+    await page
+      .getByRole("link", { name: `Next book: ${NEXT_BOOK.title}` })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/read/${NEXT_BOOK.id}$`));
+    await expect(slider(page)).toHaveValue("1");
+
+    expect(changes).toEqual(["toggle"]);
+    expect(turns).toEqual(["followDevice"]);
+  });
+});
+
+test.describe("the first book of a series", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      openBook: () => ({ ...readerBook(NOT_STARTED), previous: null }),
+    },
+  });
+
+  test("has no book before it to go back to", async ({ page }) => {
+    await openBook(page);
+
+    await expect(
+      page.getByRole("button", { name: "Previous book" }),
+    ).toBeDisabled();
+    await expect(
+      page.getByRole("link", { name: `Next book: ${NEXT_BOOK.title}` }),
+    ).toBeVisible();
   });
 });

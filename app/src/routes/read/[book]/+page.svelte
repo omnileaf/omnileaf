@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import { resolve } from "$app/paths";
+  import { commands } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
   import PagedReader from "#lib/reader/PagedReader.svelte";
 
@@ -8,6 +11,14 @@
   let { data }: PageProps = $props();
 
   const shown = $derived(data.shown);
+
+  onMount(() => {
+    void commands.orientScreen("followDevice");
+    return () => {
+      void commands.orientScreen("portraitOnPhones");
+      void commands.changeFullScreen("leave");
+    };
+  });
 </script>
 
 {#if shown.kind === "found"}

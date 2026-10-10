@@ -853,6 +853,10 @@
   "reader_show_controls": "Show the controls",
   "reader_hide_controls": "Hide the controls",
   "reader_full_screen": "Full screen",
+  "reader_previous_book": "Previous book: {title}",
+  "reader_next_book": "Next book: {title}",
+  "reader_no_previous_book": "Previous book",
+  "reader_no_next_book": "Next book",
   "reader_page": [
     {
       "declarations": ["input page", "local formattedPage = page: number"],

@@ -13,7 +13,7 @@
 
 <div
   dir="ltr"
-  class="relative rounded-full block-reader-slider has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-reader-accent expanded:flex-1 expanded:block-reader-slider-wide"
+  class="relative flex-1 rounded-full block-reader-slider has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-reader-accent expanded:block-reader-slider-wide"
   style:--progress={String(progress)}
 >
   <div

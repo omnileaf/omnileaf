@@ -101,11 +101,6 @@
 
   onMount(() => {
     heading?.focus();
-    void commands.orientScreen("followDevice");
-    return () => {
-      void commands.orientScreen("portraitOnPhones");
-      void commands.changeFullScreen("leave");
-    };
   });
 </script>
 
@@ -182,6 +177,8 @@
     <ReaderPanel
       shown={turner.shown}
       count={pageCount}
+      previous={named.previous}
+      next={named.next}
       onSeek={(index: number) => {
         turner.goTo(index);
       }}

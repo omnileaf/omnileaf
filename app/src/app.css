@@ -417,6 +417,7 @@
   --spacing-reader-thumb: 1.375rem;
   --spacing-reader-thumb-wide: 1.25rem;
   --spacing-reader-spinner: 2.5rem;
+  --spacing-reader-book-step: 12rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
@@ -644,6 +645,8 @@
   --color-reader-line: rgb(241 237 228 / 0.16);
   --color-reader-track: rgb(241 237 228 / 0.18);
   --color-reader-track-wide: rgb(241 237 228 / 0.2);
+  --color-reader-hover: rgb(241 237 228 / 0.08);
+  --color-reader-pressed: rgb(241 237 228 / 0.14);
 
   --transition-duration-fade: 150ms;
   --transition-duration-grow: 200ms;
