@@ -264,6 +264,60 @@ test("says which page is up to a screen reader as pages turn", async ({
   ).toBeAttached();
 });
 
+const ANNOUNCE_DELAY_MS = 300;
+
+/** Starts noting each change to what the reader's status says, and returns what it noted. */
+async function noteStatus(page: Page): Promise<() => Promise<string[]>> {
+  await page.evaluate(() => {
+    const status = document.querySelector('main > p[role="status"]');
+    if (status === null) {
+      throw new Error("the reader has no status");
+    }
+    const said: string[] = [];
+    Object.assign(window, { saidByStatus: said });
+    new MutationObserver(() => {
+      said.push(status.textContent.trim());
+    }).observe(status, { subtree: true, childList: true, characterData: true });
+  });
+  return () =>
+    page.evaluate(() =>
+      "saidByStatus" in window && Array.isArray(window.saidByStatus)
+        ? window.saidByStatus.map(String)
+        : [],
+    );
+}
+
+test("says only the page the turns stop on, once they stop", async ({
+  page,
+}) => {
+  await openBook(page);
+  await page.clock.install();
+  const said = await noteStatus(page);
+
+  for (const key of ["ArrowRight", "ArrowRight", "ArrowRight"]) {
+    await page.keyboard.press(key);
+  }
+  await expectOnPage(page, 4);
+  await page.clock.runFor(ANNOUNCE_DELAY_MS);
+
+  expect(await said()).toEqual(["Page 4 of 30"]);
+});
+
+test("leaves saying the page to the slider while it has focus", async ({
+  page,
+}) => {
+  await openBook(page);
+  await page.clock.install();
+  const said = await noteStatus(page);
+
+  await slider(page).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(slider(page)).toHaveAttribute("aria-valuetext", "Page 2 of 30");
+  await page.clock.runFor(ANNOUNCE_DELAY_MS);
+
+  expect(await said()).toEqual([]);
+});
+
 test("hides and shows the controls with a tap in the middle of the page and the M key", async ({
   page,
 }) => {
