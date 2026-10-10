@@ -42,7 +42,8 @@ function titleOf(day: LocalDay, calendar: HistoryCalendar): HistoryDayTitle {
     : { kind: "day", day };
 }
 
-function keyOf(title: HistoryDayTitle): string {
+/** Names a heading apart from every other heading History shows. */
+export function historyDayKey(title: HistoryDayTitle): string {
   return title.kind === "lastWeek" ? title.kind : String(title.day);
 }
 
@@ -62,7 +63,7 @@ export function historyDays(
   const gathered = new Map<string, Gathering>();
   for (const entry of entries) {
     const title = titleOf(entry.day.day, calendar);
-    const key = keyOf(title);
+    const key = historyDayKey(title);
     const current = gathered.get(key);
     if (current === undefined) {
       gathered.set(key, {
