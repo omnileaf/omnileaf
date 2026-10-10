@@ -8,6 +8,7 @@ mod library;
 mod page;
 mod scratch_folder;
 mod speed_trial;
+mod strip;
 mod timing_budget;
 
 pub use archive::{ArchiveEntry, Compression, cbz};
@@ -28,4 +29,5 @@ pub use page::{
 };
 pub use scratch_folder::ScratchFolder;
 pub use speed_trial::{Pass, Sampling, SpeedTrial, Statistic, TIMED_PASSES, TrialOutcome};
+pub use strip::strip_jpeg;
 pub use timing_budget::{BUDGET_SLACK_VARIABLE, InvalidBudgetSlack, TimingBudget};
