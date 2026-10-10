@@ -2,6 +2,8 @@
   import { Check, Eye, EyeOff, ListChecks } from "@lucide/svelte";
   import { tick } from "svelte";
 
+  import { beforeNavigate } from "$app/navigation";
+
   import type {
     ReadMark,
     SeriesBook,
@@ -147,6 +149,17 @@
       void end();
     }
   }
+
+  beforeNavigate((navigation) => {
+    if (
+      navigation.type === "popstate" &&
+      navigation.delta < 0 &&
+      selection.isSelecting
+    ) {
+      navigation.cancel();
+      void end();
+    }
+  });
 
   function announced(shown: Outcome): string {
     switch (shown.kind) {

@@ -696,6 +696,42 @@ for (const { platform, statusBar, target } of [
   });
 }
 
+test.describe("on Android", () => {
+  test.use({
+    backend: {
+      ...SHELF_BACKEND,
+      appInfo: onPlatform("android").backend.appInfo,
+    },
+  });
+
+  test("ends picking books with back, staying on the series, and leaves with back after", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("main")
+      .getByRole("link", { name: new RegExp(SERIES_TITLE) })
+      .click();
+    await expect(books(page).first()).toBeVisible();
+    await page.getByRole("button", { name: "Select", exact: true }).click();
+    await page
+      .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
+      .check();
+
+    await page.goBack();
+
+    await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+    await expect(
+      page.getByRole("heading", { level: 2, name: "12 books" }),
+    ).toBeVisible();
+    await expect(page.getByRole("checkbox")).toHaveCount(0);
+
+    await page.goBack();
+
+    await expect(page).toHaveURL(/\/$/);
+  });
+});
+
 test.describe("on an iPhone", () => {
   const SNUG_GAP = 20;
 
