@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 
 import english from "../../messages/en.json" with { type: "json" };
 import pseudo from "../../messages/en-XA.json" with { type: "json" };
-import type { FakeBackend } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   APP_PAGES,
   expect,
@@ -51,6 +51,18 @@ function withLongFolders(
       ],
       next: null,
     }),
+  };
+}
+
+function withoutFolderChooser(): FakeBackend {
+  return {
+    ...withLongFolders("linux", false),
+    addLibraryFolder: () => {
+      throw new CommandFailure({
+        code: "folderChooserMissing",
+        message: "no desktop portal or zenity can show a folder chooser",
+      });
+    },
   };
 }
 
@@ -116,4 +128,33 @@ for (const platform of PLATFORMS) {
       });
     });
   }
+}
+
+for (const [language, messages] of Object.entries(LANGUAGES)) {
+  test.describe(`on linux without a folder chooser in ${language}`, () => {
+    test.use({ backend: withoutFolderChooser() });
+
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript((chosen) => {
+        window.localStorage.setItem("omnileaf.language", chosen);
+      }, language);
+    });
+
+    test("fits the notice naming what to install to the screen", async ({
+      page,
+    }) => {
+      await page.goto("/settings/library");
+      await page
+        .getByRole("main")
+        .getByRole("button", { name: messages.library_add_folder, exact: true })
+        .click();
+      await expect(
+        page.getByText(messages.library_folder_chooser_missing_body),
+      ).toBeVisible();
+
+      const overflowing = await sidewaysOverflow(page);
+
+      expect(overflowing).toEqual([]);
+    });
+  });
 }

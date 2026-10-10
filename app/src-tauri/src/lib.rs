@@ -6,6 +6,8 @@ mod crash_reporting;
 mod e2e;
 #[cfg(target_os = "ios")]
 mod folder_access;
+#[cfg(any(target_os = "linux", test))]
+mod folder_chooser;
 mod folder_picker;
 mod ipc_error;
 mod library_events;
