@@ -1,8 +1,12 @@
+#[cfg(any(target_os = "ios", test))]
+use omnileaf_system_bars::InterfaceStyle;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
 #[cfg(target_os = "android")]
 pub(crate) use android::{match_theme, plugin};
+#[cfg(target_os = "ios")]
+pub(crate) use ios::match_theme;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
 #[serde(rename_all = "lowercase")]
@@ -139,10 +143,20 @@ impl WindowBackground {
     }
 }
 
-#[cfg(not(target_os = "android"))]
+/// Leaves a "System" choice unspecified, since a fixed style would stop the page following later changes to the system's appearance.
+#[cfg(any(target_os = "ios", test))]
+fn interface_style(preference: ThemePreference) -> InterfaceStyle {
+    match preference {
+        ThemePreference::System => InterfaceStyle::Unspecified,
+        ThemePreference::Light => InterfaceStyle::Light,
+        ThemePreference::Dark => InterfaceStyle::Dark,
+    }
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 #[expect(
     clippy::unused_async,
-    reason = "only Android waits for its activity to restyle the bars"
+    reason = "only Android and iOS wait for the app to restyle the bars"
 )]
 pub(crate) async fn match_theme(
     _app: &tauri::AppHandle,
@@ -219,10 +233,48 @@ mod android {
     }
 }
 
+#[cfg(target_os = "ios")]
+mod ios {
+    use omnileaf_system_bars::SystemBars;
+    use tauri::{AppHandle, Manager, Wry, plugin::mobile::PluginInvokeError};
+
+    use super::{Theme, ThemePreference, interface_style};
+    use crate::ipc_error::IpcError;
+
+    #[derive(Debug, thiserror::Error)]
+    enum SystemBarsError {
+        #[error("the system bars plugin is not registered")]
+        NotRegistered,
+        #[error("restyle the window and its status bar")]
+        Restyle(#[from] PluginInvokeError),
+    }
+
+    pub(crate) async fn match_theme(
+        app: &AppHandle,
+        _theme: Theme,
+        preference: ThemePreference,
+    ) -> Result<(), IpcError> {
+        restyle(app, preference)
+            .await
+            .map_err(|error| IpcError::internal(&error))
+    }
+
+    async fn restyle(app: &AppHandle, preference: ThemePreference) -> Result<(), SystemBarsError> {
+        let bars = app
+            .try_state::<SystemBars<Wry>>()
+            .ok_or(SystemBarsError::NotRegistered)?;
+        bars.show_style(interface_style(preference)).await?;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use omnileaf_system_bars::InterfaceStyle;
+
     use super::{
         BarIcons, PageBackground, StartingTheme, Theme, ThemePreference, WindowBackground,
+        interface_style,
     };
 
     const APP_CSS: &str = include_str!("../../src/app.css");
@@ -348,5 +400,26 @@ mod tests {
                 remembered: StartingTheme::Device,
             }
         );
+    }
+
+    #[test]
+    fn ios_keeps_a_chosen_light_theme_whatever_the_systems_appearance() {
+        let style = interface_style(ThemePreference::Light);
+
+        assert_eq!(style, InterfaceStyle::Light);
+    }
+
+    #[test]
+    fn ios_keeps_a_chosen_dark_theme_whatever_the_systems_appearance() {
+        let style = interface_style(ThemePreference::Dark);
+
+        assert_eq!(style, InterfaceStyle::Dark);
+    }
+
+    #[test]
+    fn ios_leaves_the_style_to_the_systems_appearance_while_the_theme_follows_it() {
+        let style = interface_style(ThemePreference::System);
+
+        assert_eq!(style, InterfaceStyle::Unspecified);
     }
 }
