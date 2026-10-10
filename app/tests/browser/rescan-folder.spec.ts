@@ -1,10 +1,13 @@
 import type { Locator, Page } from "@playwright/test";
 
+import pseudo from "../../messages/en-XA.json" with { type: "json" };
+
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   DEFAULT_BACKEND,
   expect,
+  sidewaysOverflow,
   test,
 } from "./fixtures.ts";
 
@@ -255,4 +258,107 @@ test.describe("with a folder that isn't available", () => {
       expect(violations).toEqual([]);
     });
   }
+});
+
+test.describe("with a folder found empty", () => {
+  const calls = { removed: [] as string[], putBack: [] as string[] };
+
+  test.use({
+    backend: {
+      ...FOLDERS_BACKEND,
+      rescanLibraryFolder: (id) => ({
+        id,
+        name: SAMPLE_COMICS.name,
+        outcome: { kind: "foundEmpty" },
+      }),
+      removeBooksOfEmptiedFolder: (id) => {
+        calls.removed.push(id);
+        return { kind: "removed", books: 3 };
+      },
+      putBackRemovedBooks: (id) => {
+        calls.putBack.push(id);
+        return true;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    calls.removed = [];
+    calls.putBack = [];
+  });
+
+  function removeItsBooks(page: Page): Locator {
+    return page
+      .getByRole("region", { name: "Folders" })
+      .getByRole("button", { name: "Remove its books" });
+  }
+
+  test("offers to remove the folder's books, then puts them back on Undo", async ({
+    page,
+  }) => {
+    await rescanSampleComics(page);
+    await expect(rescanReport(page)).toHaveText(
+      "Found no books in Sample Comics. Its books stay in your library in case its drive isn't connected.",
+    );
+
+    await removeItsBooks(page).click();
+    await expect(page.getByText("3 books removed")).toBeVisible();
+    await page.getByRole("button", { name: "Undo" }).click();
+
+    expect(calls.removed).toEqual([SAMPLE_COMICS.id]);
+    await expect.poll(() => calls.putBack).toEqual([SAMPLE_COMICS.id]);
+    await expect(page.getByText("3 books removed")).toBeHidden();
+    await expect(removeItsBooks(page)).toBeHidden();
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`the offer to remove the books has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await rescanSampleComics(page);
+      await expect(removeItsBooks(page)).toBeVisible();
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+
+    test(`the offer to undo the removal has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await rescanSampleComics(page);
+      await removeItsBooks(page).click();
+      await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
+
+  test("offers to remove the books in the pseudo-locale without overflowing", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem("omnileaf.language", "en-XA");
+    });
+    await page.goto("/settings/library");
+    await page
+      .getByRole("button", {
+        name: pseudo.library_rescan_folder_label.replace(
+          "{name}",
+          SAMPLE_COMICS.name,
+        ),
+      })
+      .click();
+
+    await expect(
+      page.getByRole("button", { name: pseudo.library_remove_books }),
+    ).toBeVisible();
+    const overflowing = await sidewaysOverflow(page);
+
+    expect(overflowing).toEqual([]);
+  });
 });

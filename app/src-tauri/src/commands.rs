@@ -1,9 +1,9 @@
 #[cfg(debug_assertions)]
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
-    AppInfo, AppLanguage, Core, CoversPerRow, FolderCursor, FolderId, FolderPage, FolderRescan,
-    FolderScan, InterfaceError, Library, LibraryView, ProjectLink, ScanProgress, SeriesCursor,
-    SeriesPage,
+    AppInfo, AppLanguage, BooksRemoval, Core, CoversPerRow, FolderCursor, FolderId, FolderPage,
+    FolderRescan, FolderScan, InterfaceError, Library, LibraryView, ProjectLink, ScanProgress,
+    SeriesCursor, SeriesPage,
 };
 use tauri::{AppHandle, Manager, State, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -38,6 +38,8 @@ macro_rules! app_commands {
             library_folder_book_count,
             rescan_library_folder,
             rescan_library_folders,
+            remove_books_of_emptied_folder,
+            put_back_removed_books,
             first_launch_finished,
             finish_first_launch,
             set_app_language,
@@ -142,6 +144,31 @@ async fn rescan_library_folders(
     #[cfg(target_os = "ios")]
     crate::folder_access::reopen_picked_folders(&app, &library).await?;
     Ok(library.rescan_folders().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn remove_books_of_emptied_folder(
+    #[cfg_attr(
+        not(target_os = "ios"),
+        expect(unused_variables, reason = "only iOS reopens picked folders")
+    )]
+    app: AppHandle,
+    library: State<'_, Library>,
+    id: FolderId,
+) -> Result<BooksRemoval, IpcError> {
+    #[cfg(target_os = "ios")]
+    crate::folder_access::reopen_picked_folders(&app, &library).await?;
+    Ok(library.remove_books_of_emptied_folder(id).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn put_back_removed_books(
+    library: State<'_, Library>,
+    id: FolderId,
+) -> Result<bool, IpcError> {
+    Ok(library.put_back_removed_books(id).await?)
 }
 
 fn reporting_to(on_progress: Channel<ScanProgress>) -> impl FnMut(ScanProgress) + Send {

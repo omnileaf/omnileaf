@@ -15,6 +15,7 @@ import { Notices } from "#lib/notices/notices.svelte.ts";
 import type { AddFolder } from "./add-folder";
 import LibraryFolderSettings from "./LibraryFolderSettings.svelte";
 import type { RescanFolder } from "./rescan-folder";
+import type { PutBackFolderBooks, RemoveFolderBooks } from "./rescans.svelte";
 
 type RemoveFolder = typeof commands.removeLibraryFolder;
 type CountFolderBooks = typeof commands.libraryFolderBookCount;
@@ -68,6 +69,11 @@ function rescanning(outcome: RescanOutcome): RescanFolder {
 }
 
 const NOTHING_CHANGED = rescanning({ kind: "rescanned", ...NO_CHANGES });
+const FOUND_EMPTY = rescanning({ kind: "foundEmpty" });
+const BOOKS_REMOVED: RemoveFolderBooks = () =>
+  Promise.resolve({ status: "ok", data: { kind: "removed", books: 3 } });
+const BOOKS_PUT_BACK: PutBackFolderBooks = () =>
+  Promise.resolve({ status: "ok", data: true });
 
 /** A rescan the test steps through and then finishes. */
 class PendingRescan {
@@ -139,23 +145,31 @@ async function renderSettings({
   removeFolder = NOTHING_REMOVED,
   rescanFolder = NOTHING_CHANGED,
   countFolderBooks = COUNTED,
+  removeFolderBooks = BOOKS_REMOVED,
+  putBackFolderBooks = BOOKS_PUT_BACK,
 }: {
   addFolder?: AddFolder;
   removeFolder?: RemoveFolder;
   rescanFolder?: RescanFolder;
   countFolderBooks?: CountFolderBooks;
+  removeFolderBooks?: RemoveFolderBooks;
+  putBackFolderBooks?: PutBackFolderBooks;
 } = {}) {
+  const notices = new Notices();
   const screen = await render(LibraryFolderSettings, {
     listFolders: commands.libraryFolders,
     removeFolder,
     countFolderBooks,
     addFolder,
     rescanFolder,
-    notices: new Notices(),
+    removeFolderBooks,
+    putBackFolderBooks,
+    notices,
     usesStandIns: false,
     platform: "linux",
   });
   return {
+    notices,
     home: screen.getByRole("region", { name: "Home folder" }),
     folders: screen.getByRole("region", { name: "Folders" }),
     dialog: screen.getByRole("alertdialog"),
@@ -241,6 +255,8 @@ test("says when the folders couldn't be loaded", async () => {
     countFolderBooks: COUNTED,
     addFolder: NOTHING_PICKED,
     rescanFolder: NOTHING_CHANGED,
+    removeFolderBooks: BOOKS_REMOVED,
+    putBackFolderBooks: BOOKS_PUT_BACK,
     notices: new Notices(),
     usesStandIns: false,
     platform: "linux",
@@ -785,6 +801,179 @@ test("keeps the books of a folder the rescan found empty", async () => {
     .toHaveTextContent(
       "Found no books in Sample Comics. Its books stay in your library in case its drive isn't connected.",
     );
+});
+
+test("offers to remove the books of a folder the rescan found empty", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders } = await renderSettings({ rescanFolder: FOUND_EMPTY });
+
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await expect
+    .element(folders.getByRole("button", { name: "Remove its books" }))
+    .toBeVisible();
+});
+
+test("never offers to remove the books of a folder the rescan couldn't reach", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders } = await renderSettings({
+    rescanFolder: rescanning({ kind: "unreachable" }),
+  });
+
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await expect
+    .element(rescanReport(folders))
+    .toHaveTextContent(
+      "Sample Comics isn't available. Its books stay in your library until it's back.",
+    );
+  expect(
+    folders.getByRole("button", { name: "Remove its books" }).elements(),
+  ).toEqual([]);
+});
+
+test("removes the books of the folder found empty and offers to undo", async () => {
+  serveFolders([HOME, COMICS]);
+  const removedFrom: FolderId[] = [];
+  const { folders, notices } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+    removeFolderBooks: (id) => {
+      removedFrom.push(id);
+      return BOOKS_REMOVED(id);
+    },
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+
+  await expect.poll(() => notices.undoOffer?.message).toBe("3 books removed");
+  expect(removedFrom).toEqual([COMICS.id]);
+  await expect.element(rescanReport(folders)).not.toBeInTheDocument();
+});
+
+test("puts the books back when the removal is undone", async () => {
+  serveFolders([HOME, COMICS]);
+  const putBackTo: FolderId[] = [];
+  const { folders, notices } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+    putBackFolderBooks: (id) => {
+      putBackTo.push(id);
+      return BOOKS_PUT_BACK(id);
+    },
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+  await expect.poll(() => notices.undoOffer).toBeDefined();
+
+  notices.undo();
+
+  await expect.poll(() => putBackTo).toEqual([COMICS.id]);
+});
+
+test("rescans a folder whose books stayed because it holds books again", async () => {
+  serveFolders([HOME, COMICS]);
+  const outcomes: RescanOutcome[] = [
+    { kind: "foundEmpty" },
+    { kind: "rescanned", ...NO_CHANGES, added: 2 },
+  ];
+  const { folders, notices } = await renderSettings({
+    rescanFolder: (id) =>
+      rescanning(outcomes.shift() ?? { kind: "foundEmpty" })(
+        id,
+        () => undefined,
+      ),
+    removeFolderBooks: () =>
+      Promise.resolve({ status: "ok", data: { kind: "kept" } }),
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+
+  await expect.element(folders.getByText("2 books added.")).toBeVisible();
+  expect(notices.undoOffer).toBeUndefined();
+});
+
+test("says when the books of a folder couldn't be removed", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+    removeFolderBooks: () =>
+      Promise.resolve({
+        status: "error",
+        error: { code: "internal", message: "from the backend" },
+      }),
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+
+  await expect
+    .element(rescanReport(folders))
+    .toHaveTextContent(
+      "Couldn't remove the books of Sample Comics. Try again.",
+    );
+});
+
+test("says when the books of a folder couldn't be put back", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders, notices } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+    putBackFolderBooks: () =>
+      Promise.resolve({
+        status: "error",
+        error: { code: "internal", message: "from the backend" },
+      }),
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+  await expect.poll(() => notices.undoOffer).toBeDefined();
+
+  notices.undo();
+
+  await expect
+    .element(rescanReport(folders))
+    .toHaveTextContent("Couldn't put back the books of Sample Comics.");
+});
+
+test("offers to remove the books again once removing them failed", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+    removeFolderBooks: () =>
+      Promise.resolve({
+        status: "error",
+        error: { code: "internal", message: "from the backend" },
+      }),
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+
+  await expect
+    .element(rescanReport(folders))
+    .toHaveTextContent(
+      "Couldn't remove the books of Sample Comics. Try again.",
+    );
+  await expect
+    .element(folders.getByRole("button", { name: "Remove its books" }))
+    .toBeVisible();
+});
+
+test("says when no books were kept to put back", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders, notices } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+    putBackFolderBooks: () => Promise.resolve({ status: "ok", data: false }),
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+  await expect.poll(() => notices.undoOffer).toBeDefined();
+
+  notices.undo();
+
+  await expect
+    .element(rescanReport(folders))
+    .toHaveTextContent("Couldn't put back the books of Sample Comics.");
 });
 
 test("says when a rescan failed", async () => {

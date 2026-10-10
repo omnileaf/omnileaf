@@ -313,6 +313,23 @@
   "library_rescan_unreachable": "{name} isn't available. Its books stay in your library until it's back.",
   "library_rescan_found_empty": "Found no books in {name}. Its books stay in your library in case its drive isn't connected.",
   "library_rescan_failed": "Couldn't rescan {name}. Try again.",
+  "library_remove_books": "Remove its books",
+  "library_books_removed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} book removed",
+        "countPlural=other": "{formattedCount} books removed"
+      }
+    }
+  ],
+  "library_remove_books_failed": "Couldn't remove the books of {name}. Try again.",
+  "library_put_back_books_failed": "Couldn't put back the books of {name}.",
   "library_folder_unavailable": "Not available",
   "appearance_title": "Appearance",
   "appearance_light_or_dark": "Light or dark",

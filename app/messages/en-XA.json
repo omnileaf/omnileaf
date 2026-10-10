@@ -313,6 +313,23 @@
   "library_rescan_unreachable": "⟦{name} íšñ'ţ áṽáíļáƀļé. Íţš ƀööķš šţáý íñ ýöûŕ ļíƀŕáŕý ûñţíļ íţ'š ƀáçķ.·····························⟧",
   "library_rescan_found_empty": "⟦Ƒöûñð ñö ƀööķš íñ {name}. Íţš ƀööķš šţáý íñ ýöûŕ ļíƀŕáŕý íñ çášé íţš ðŕíṽé íšñ'ţ çöññéçţéð.·····································⟧",
   "library_rescan_failed": "⟦Çöûļðñ'ţ ŕéšçáñ {name}. Ţŕý áĝáíñ.··············⟧",
+  "library_remove_books": "⟦Ŕéɱöṽé íţš ƀööķš·······⟧",
+  "library_books_removed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ ŕéɱöṽéð············⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš ŕéɱöṽéð············⟧"
+      }
+    }
+  ],
+  "library_remove_books_failed": "⟦Çöûļðñ'ţ ŕéɱöṽé ţĥé ƀööķš öƒ {name}. Ţŕý áĝáíñ.···················⟧",
+  "library_put_back_books_failed": "⟦Çöûļðñ'ţ þûţ ƀáçķ ţĥé ƀööķš öƒ {name}.················⟧",
   "library_folder_unavailable": "⟦Ñöţ áṽáíļáƀļé······⟧",
   "appearance_title": "⟦Áþþéáŕáñçé····⟧",
   "appearance_light_or_dark": "⟦Ļíĝĥţ öŕ ðáŕķ······⟧",
