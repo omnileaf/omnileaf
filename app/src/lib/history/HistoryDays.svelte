@@ -52,7 +52,9 @@
   }
 </script>
 
-<div class="flex flex-col gap-history-days large:gap-history-days-wide">
+<div
+  class="flex flex-col gap-history-days large:gap-history-days-wide touch:max-medium:px-xs"
+>
   {#each days as day, index (keyOf(day.title, index))}
     <section aria-labelledby={`${headingId}-${String(index)}`}>
       <h2
