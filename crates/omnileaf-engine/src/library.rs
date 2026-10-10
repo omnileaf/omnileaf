@@ -392,10 +392,10 @@ impl Library {
         self.reading.opened(book, page_count).await
     }
 
-    /// Saves the page reached in the book read now, so what is read next shows it, and reads on without it should the save fail.
+    /// Saves the page reached in the book read now, so what is read next shows it, and reads on without it should the save fail, which the save warns of itself.
     async fn save_reading_before_reading(&self) {
         if let Err(error) = self.reading.save_now().await {
-            tracing::warn!(error = %describe_error(&error), "save the page reached before reading the library");
+            tracing::debug!(error = %describe_error(&error), "save the page reached before reading the library");
         }
     }
 

@@ -10,7 +10,13 @@
 )]
 mod support;
 
-use std::{fs, path::Path, sync::mpsc, thread, time::Duration};
+use std::{
+    fs, io,
+    path::Path,
+    sync::{Arc, Mutex, mpsc},
+    thread,
+    time::Duration,
+};
 
 use omnileaf_engine::{
     BookId, BookReading, LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges,
@@ -195,6 +201,41 @@ async fn before_the_save_delay<T>(call: impl Future<Output = T>) -> T {
     drop(release);
     clock_held.await.unwrap().unwrap_err();
     output
+}
+
+/// The warnings logged on this thread, which runs the test and the library's tasks alike.
+#[derive(Clone, Default)]
+struct Warnings(Arc<Mutex<Vec<u8>>>);
+
+impl io::Write for Warnings {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        self.0.lock().unwrap().extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+impl Warnings {
+    fn listen(&self) -> tracing::subscriber::DefaultGuard {
+        let writer = self.clone();
+        tracing::subscriber::set_default(
+            tracing_subscriber::fmt()
+                .with_max_level(tracing::Level::WARN)
+                .with_ansi(false)
+                .with_writer(move || writer.clone())
+                .finish(),
+        )
+    }
+
+    fn logged(&self) -> Vec<String> {
+        String::from_utf8_lossy(&self.0.lock().unwrap())
+            .lines()
+            .map(str::to_owned)
+            .collect()
+    }
 }
 
 fn started_on(page_from_one: u32) -> BookReading {
@@ -421,6 +462,23 @@ async fn opens_a_book_opened_again_while_saves_fail_on_the_page_reading_reached(
     let again = shelf.open(0).await;
 
     assert_eq!((again.start_page, again.reading), (4, started_on(5)));
+}
+
+#[tokio::test(start_paused = true)]
+async fn warns_once_of_saves_that_keep_failing_however_often_the_library_is_read() {
+    let shelf = Shelf::with_two_books("warns-once-while-saves-fail").await;
+    let warnings = Warnings::default();
+    let _listening = warnings.listen();
+    shelf.refuse_saves();
+    let opened = shelf.restore(0).await;
+    shelf.show(&opened, 4).await;
+
+    for _ in 0..2 {
+        shelf.library.series_overview(opened.series).await.unwrap();
+        shelf.open(1).await;
+    }
+
+    assert_eq!(warnings.logged().len(), 1, "{:#?}", warnings.logged());
 }
 
 #[tokio::test(start_paused = true)]

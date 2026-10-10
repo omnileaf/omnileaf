@@ -188,7 +188,7 @@ impl Pages {
             None => {}
         }
         if let Err(error) = library.start_reading(id, opened.page_count).await {
-            tracing::warn!(error = %describe_error(&error), "save the page reached in the book read before this one");
+            tracing::debug!(error = %describe_error(&error), "save the page reached in the book read before this one");
         }
         let start = start_page(found.reading, opened.page_count);
         self.read_ahead(&opened, start_index(found.reading, opened.page_count));
