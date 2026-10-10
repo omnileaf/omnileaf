@@ -341,13 +341,14 @@ impl Library {
         Ok(SeriesBookPage::from(page))
     }
 
-    /// Marks the books read or unread in one write, leaving where each was opened at as it is.
+    /// Marks the books read or unread in one write, leaving where each was opened at as it is, once any reading not yet saved is, so that save never undoes the mark.
     #[tracing::instrument(skip_all, fields(books = books.len(), ?mark))]
     pub async fn mark_books(&self, books: Vec<BookId>, mark: ReadMark) -> Result<(), LibraryError> {
         let is_read = match mark {
             ReadMark::Read => true,
             ReadMark::Unread => false,
         };
+        self.reading.save_now().await?;
         Ok(self
             .store
             .write(move |writer| {

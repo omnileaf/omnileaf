@@ -14,7 +14,7 @@ use std::{fs, path::Path, time::Duration};
 
 use omnileaf_engine::{
     BookId, BookReading, Library, LibraryListing, OpenedBook, ProbedFormat, READING_SAVE_DELAY,
-    ResourceRouter, SeriesBookListing, SeriesId,
+    ReadMark, ResourceRouter, SeriesBookListing, SeriesId,
 };
 use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg};
 use support::{FixedClock, ScratchFolder};
@@ -328,4 +328,36 @@ async fn opens_a_book_read_before_on_the_page_reading_it_again_reached() {
         ),
         (0, 0, 3)
     );
+}
+
+#[tokio::test]
+async fn keeps_a_book_marked_unread_while_open_unread_after_the_save_that_comes_late() {
+    let shelf = Shelf::with_two_books("marked-unread").await;
+    let opened = shelf.restore(0).await;
+    shelf.show(&opened, LAST_PAGE).await;
+
+    shelf
+        .library
+        .mark_books(vec![opened.id], ReadMark::Unread)
+        .await
+        .unwrap();
+    shelf.close(&opened).await;
+
+    assert_eq!(shelf.reading(0).await, started_on(PAGES));
+}
+
+#[tokio::test]
+async fn keeps_a_book_marked_read_while_open_read_after_the_save_that_comes_late() {
+    let shelf = Shelf::with_two_books("marked-read").await;
+    let opened = shelf.restore(0).await;
+    shelf.show(&opened, 2).await;
+
+    shelf
+        .library
+        .mark_books(vec![opened.id], ReadMark::Read)
+        .await
+        .unwrap();
+    shelf.close(&opened).await;
+
+    assert_eq!(shelf.reading(0).await, BookReading::Read);
 }
