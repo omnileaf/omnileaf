@@ -100,7 +100,15 @@ async function pickSampleLibrary(session: Session): Promise<void> {
   });
 }
 
+/** Leaves for the library page first, so re-opening Library settings can't find the page it is replacing. */
+async function openLibrarySettings(): Promise<void> {
+  await openLibraryPage(appSession());
+  await (await appSession().waitFor(SETTINGS_LINK)).click();
+  await (await appSession().waitFor(LIBRARY_SETTINGS_LINK)).click();
+}
+
 async function addSampleLibrary(): Promise<string> {
+  await openLibrarySettings();
   await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
   await pickSampleLibrary(appSession());
   return (
@@ -152,9 +160,7 @@ test(
 
     await appSession().relaunchApp(capability("appium:bundleId"));
 
-    await openLibraryPage(appSession());
-    await (await appSession().waitFor(SETTINGS_LINK)).click();
-    await (await appSession().waitFor(LIBRARY_SETTINGS_LINK)).click();
+    await openLibrarySettings();
     await (await appSession().waitFor(RESCAN_SAMPLE_LIBRARY)).click();
     const report = await appSession().waitFor(
       UP_TO_DATE_REPORT,
@@ -168,6 +174,7 @@ test(
   "adds nothing when the Files picker is cancelled",
   { timeout: PICKER_TEST_TIMEOUT_MS },
   async () => {
+    await openLibrarySettings();
     await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
 
     await appSession().inNativeContext(async () => {
