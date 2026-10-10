@@ -443,7 +443,7 @@ impl Library {
 
     /// Saves at once the page the reader showed last and ends its reading session, as the app is put away.
     #[tracing::instrument(skip_all)]
-    pub async fn save_reading(&self) -> Result<(), LibraryError> {
+    pub async fn put_away(&self) -> Result<(), LibraryError> {
         self.reading.put_away().await
     }
 

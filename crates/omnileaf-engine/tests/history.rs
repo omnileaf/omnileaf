@@ -386,7 +386,7 @@ async fn counts_no_time_the_app_spent_put_away() {
     let shelf = Shelf::with_two_books("history-put-away").await;
     let opened = shelf.restore(0).await;
     shelf.clock.advance(MINUTE_MS);
-    shelf.library.save_reading().await.unwrap();
+    shelf.library.put_away().await.unwrap();
     shelf.clock.advance(3 * MINUTE_MS);
 
     shelf.close(&opened).await;
@@ -405,10 +405,10 @@ async fn lists_a_new_entry_for_reading_on_long_after_the_app_was_put_away() {
     let shelf = Shelf::with_two_books("history-back-from-away").await;
     let opened = shelf.restore(0).await;
     shelf.clock.advance(MINUTE_MS);
-    shelf.library.save_reading().await.unwrap();
+    shelf.library.put_away().await.unwrap();
     shelf.clock.advance(3 * MINUTE_MS);
     shelf.show(&opened, 1).await;
-    shelf.library.save_reading().await.unwrap();
+    shelf.library.put_away().await.unwrap();
     shelf.clock.advance(MINUTE_MS);
 
     shelf.close(&opened).await;
@@ -428,7 +428,7 @@ async fn keeps_the_local_time_reading_on_after_a_break_starts_at_once_the_device
     let utc_minus_five = UtcOffset::try_from(UTC_MINUS_FIVE).unwrap();
     let opened = shelf.restore(0).await;
     shelf.clock.advance(MINUTE_MS);
-    shelf.library.save_reading().await.unwrap();
+    shelf.library.put_away().await.unwrap();
     shelf.clock.advance(3 * MINUTE_MS);
 
     shelf.show_in(&opened, 1, utc_minus_five).await;

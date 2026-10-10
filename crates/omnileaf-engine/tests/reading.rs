@@ -320,7 +320,7 @@ async fn saves_the_page_shown_when_asked_to_with_the_book_still_open() {
     let opened = shelf.restore(0).await;
     shelf.show(&opened, 2).await;
 
-    shelf.library.save_reading().await.unwrap();
+    shelf.library.put_away().await.unwrap();
 
     assert_eq!(shelf.reading(0).await, started_on(3));
 }
@@ -370,7 +370,7 @@ async fn ignores_a_page_shown_in_a_book_closed_before() {
     shelf.close(&opened).await;
 
     shelf.show(&opened, 3).await;
-    shelf.library.save_reading().await.unwrap();
+    shelf.library.put_away().await.unwrap();
 
     assert_eq!(shelf.reading(0).await, BookReading::NotStarted);
 }
@@ -696,7 +696,7 @@ async fn tells_of_no_save_when_no_page_was_left_to_save() {
     shelf.show(&opened, 0).await;
 
     shelf.close(&opened).await;
-    shelf.library.save_reading().await.unwrap();
+    shelf.library.put_away().await.unwrap();
 
     assert_eq!(saved.try_recv(), Err(TryRecvError::Empty));
 }

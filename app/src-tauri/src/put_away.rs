@@ -52,7 +52,7 @@ pub(crate) fn save_when_put_away(app: &AppHandle, event: &RunEvent) {
     if put_away.waits_for_the_save() {
         if let Some(library) = app.try_state::<Library>() {
             warn_unless_saved(tauri::async_runtime::block_on(save_in_time(
-                library.save_reading(),
+                library.put_away(),
             )));
         }
         return;
@@ -60,7 +60,7 @@ pub(crate) fn save_when_put_away(app: &AppHandle, event: &RunEvent) {
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
         if let Some(library) = app.try_state::<Library>() {
-            warn_unless_saved(save_in_time(library.save_reading()).await);
+            warn_unless_saved(save_in_time(library.put_away()).await);
         }
     });
 }
