@@ -14,7 +14,8 @@ use omnileaf_imaging::{ImagingError, PageFormat, page_size, shrink_page, transco
 use tokio::sync::oneshot;
 
 use crate::{
-    BookId, BookPage, Library, LibraryError, OpenedBook, PagePath, ProbedFormat, SeriesId,
+    BookId, BookPage, Library, LibraryError, OpenedBook, PagePath, PageThumbnailPath, ProbedFormat,
+    SeriesId,
     decode_permits::DecodePermits,
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -441,13 +442,17 @@ fn opened_book(
 ) -> OpenedBook {
     let pages = (0_u32..)
         .zip(sizes)
-        .map(|(index, size)| BookPage {
-            path: PagePath {
+        .map(|(index, size)| {
+            let path = PagePath {
                 book: found.id,
                 rev: found.rev,
                 index,
-            },
-            size: size.map(Into::into),
+            };
+            BookPage {
+                path,
+                thumbnail: PageThumbnailPath(path),
+                size: size.map(Into::into),
+            }
         })
         .collect();
     OpenedBook {

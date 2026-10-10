@@ -18,6 +18,7 @@ use omnileaf_engine::{
     BookId, BookReading, Library, LibraryListing, OpenBookError, OpenedBook, PageDimensions,
     ProbedFormat, Resource, ResourceRouter, SeriesBookListing, SeriesId, SeriesNeighbour,
 };
+use omnileaf_imaging::{Size, page_size};
 use omnileaf_testkit::{
     ArchiveEntry, Compression, ENCODED_PAGE_HEIGHT, ENCODED_PAGE_WIDTH, INK_OVER_CLEAR_JXL,
     INK_OVER_PAPER_JXL, PageShape, cbz, page_jpeg, page_png, webp_header_only,
@@ -543,4 +544,47 @@ async fn serves_a_long_strip_as_it_is() {
     let resource = reader.page(&opened, 1).await;
 
     assert_eq!(resource, served("image/gif", strip));
+}
+
+#[tokio::test]
+async fn serves_a_small_thumbnail_of_a_page_kept_on_disk_for_next_time() {
+    let reader = Reader::with_book("page-thumbnail").await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    let thumbnail = format!("/{}", opened.pages[2].thumbnail);
+
+    let first = reader.router.respond(&reader.library, &thumbnail).await;
+    fs::remove_file(reader.book_path()).unwrap();
+    let again = reader
+        .fresh_router()
+        .respond(&reader.library, &thumbnail)
+        .await;
+
+    let Resource::Immutable { content_type, body } = &first else {
+        panic!("{first:?}");
+    };
+    assert_eq!(*content_type, "image/jpeg");
+    assert_eq!(
+        page_size(body).unwrap(),
+        Size {
+            width: 320,
+            height: 480
+        }
+    );
+    assert_eq!(again, first);
+}
+
+#[tokio::test]
+async fn finds_no_thumbnail_of_a_page_of_a_revision_since_replaced() {
+    let reader = Reader::with_book("page-thumbnail-replaced").await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let resource = reader
+        .router
+        .respond(
+            &reader.library,
+            &format!("/page-thumb/v1/{}/9/0", opened.id),
+        )
+        .await;
+
+    assert_eq!(resource, Resource::NotFound);
 }

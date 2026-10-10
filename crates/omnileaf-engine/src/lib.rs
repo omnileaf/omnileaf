@@ -31,6 +31,7 @@ mod opened_book;
 mod page_lane;
 mod page_path;
 mod page_sizes;
+mod page_thumbnail_path;
 mod pages;
 mod project_link;
 mod rescan;
@@ -80,6 +81,7 @@ pub use omnileaf_db::catalog::{AndroidTree, AppleBookmark, RootLocator, TreeUri}
 pub use omnileaf_db::store::{Changed, Clock};
 pub use opened_book::{BookPage, OpenedBook, PageDimensions, ProbedFormat, SeriesNeighbour};
 pub use page_path::{MalformedPagePath, PagePath};
+pub use page_thumbnail_path::{MalformedPageThumbnailPath, PageThumbnailPath};
 pub use pages::OpenBookError;
 pub use project_link::ProjectLink;
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};

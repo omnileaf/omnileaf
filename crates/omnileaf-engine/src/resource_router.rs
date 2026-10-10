@@ -1,9 +1,9 @@
 use std::{io, path::Path, sync::Arc};
 
 use crate::{
-    BookId, CoverPath, Library, OpenedBook, PagePath, ProbedFormat, Resource,
+    BookId, CoverPath, Library, OpenedBook, PagePath, PageThumbnailPath, ProbedFormat, Resource,
     cover_path::THUMBNAIL_VERSION,
-    cover_thumbnails::CoverThumbnails,
+    cover_thumbnails::{CoverThumbnails, ThumbnailError},
     decode_permits::{DECODES_AT_ONCE, DecodePermits},
     describe_error,
     pages::{OpenBookError, PAGE_CACHE_VERSION, Pages},
@@ -60,20 +60,13 @@ impl ResourceRouter {
         if let Ok(page) = route.parse::<PagePath>() {
             return self.page(library, page).await;
         }
+        if let Ok(PageThumbnailPath(page)) = route.parse() {
+            return thumbnail_resource(self.thumbnails.page_thumbnail(library, page).await);
+        }
         let Ok(cover) = route.parse::<CoverPath>() else {
             return Resource::NotFound;
         };
-        match self.thumbnails.thumbnail(library, cover.0).await {
-            Ok(Some(body)) => Resource::Immutable {
-                content_type: JPEG,
-                body,
-            },
-            Ok(None) => Resource::NotFound,
-            Err(error) => {
-                tracing::warn!(error = %describe_error(&error), "serve a cover thumbnail");
-                Resource::Failed
-            }
-        }
+        thumbnail_resource(self.thumbnails.thumbnail(library, cover.0).await)
     }
 
     async fn page(&self, library: &Library, page: PagePath) -> Resource {
@@ -91,6 +84,20 @@ impl ResourceRouter {
                 tracing::warn!(error = %describe_error(&error), "serve a page");
                 Resource::Failed
             }
+        }
+    }
+}
+
+fn thumbnail_resource(made: Result<Option<Vec<u8>>, ThumbnailError>) -> Resource {
+    match made {
+        Ok(Some(body)) => Resource::Immutable {
+            content_type: JPEG,
+            body,
+        },
+        Ok(None) => Resource::NotFound,
+        Err(error) => {
+            tracing::warn!(error = %describe_error(&error), "serve a thumbnail");
+            Resource::Failed
         }
     }
 }

@@ -3,7 +3,7 @@ use omnileaf_imaging::PageFormat;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::{BookId, BookReading, PagePath, SeriesId};
+use crate::{BookId, BookReading, PagePath, PageThumbnailPath, SeriesId};
 
 /// A book as the reader shows it, with every page it can ask the `omni` protocol for.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -36,6 +36,7 @@ pub struct SeriesNeighbour {
 #[serde(rename_all = "camelCase")]
 pub struct BookPage {
     pub path: PagePath,
+    pub thumbnail: PageThumbnailPath,
     /// Absent when the page's image header couldn't be read, or wasn't yet for a page far from where the book opened the first time.
     pub size: Option<PageDimensions>,
 }
