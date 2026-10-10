@@ -236,6 +236,30 @@ test("shows the pages near the one dragged to while the slider is dragged", asyn
   await expect(nearbyPages(page)).toBeHidden();
 });
 
+test("shows small thumbnails of the nearby pages, not the pages themselves", async ({
+  page,
+}) => {
+  await openBook(page);
+  const track = await boxOf(slider(page));
+  const y = track.y + track.height / 2;
+
+  await page.mouse.move(track.x + 2, y);
+  await page.mouse.down();
+  await page.mouse.move(track.x + track.width / 2, y, { steps: 4 });
+
+  const sources = await nearbyPages(page)
+    .getByRole("img")
+    .evaluateAll((images) =>
+      images.map((image) =>
+        image instanceof HTMLImageElement ? image.src : "",
+      ),
+    );
+  expect(sources.length).toBeGreaterThan(0);
+  for (const source of sources) {
+    expect(source).toContain("/page-thumb/v1/");
+  }
+});
+
 test("stays on the first and last pages when asked to turn past them", async ({
   page,
 }) => {

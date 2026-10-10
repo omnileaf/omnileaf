@@ -41,7 +41,7 @@
     >
       {#if page !== undefined}
         <img
-          src={omniUrl(page.path)}
+          src={omniUrl(page.thumbnail)}
           alt={m.reader_page({ page: index + 1 })}
           decoding="async"
           draggable="false"

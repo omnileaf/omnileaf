@@ -22,6 +22,7 @@ export const PAGE_COUNT = 30;
 export const PAGE_WIDTH = 1800;
 export const PAGE_HEIGHT = 2700;
 
+const PAGE_THUMBNAIL_PATH = new RegExp(`/page-thumb/v1/${BOOK_ID}/1/(\\d+)$`);
 const PAGE_PATH = new RegExp(`/page/v1/${BOOK_ID}/1/(\\d+)(?:\\?[^/]*)?$`);
 
 /** The reading state of a book and the page, counting from 0, the core opens it on. */
@@ -66,13 +67,26 @@ export function pageIndexOf(url: string): number | undefined {
   return found?.[1] === undefined ? undefined : Number(found[1]);
 }
 
+const IMMUTABLE = { "cache-control": "public, max-age=31536000, immutable" };
+
+/** Serves each page, after `before`, and each page's thumbnail, returning the pages asked for, not counting thumbnails. */
 export async function servePages(
   page: Page,
   before: (route: Route, index: number) => Promise<void> = async () => {},
 ): Promise<number[]> {
   const asked: number[] = [];
   await page.route(fakeProtocolRoute("omni"), async (route) => {
-    const index = pageIndexOf(route.request().url());
+    const url = route.request().url();
+    const thumbnailOf = PAGE_THUMBNAIL_PATH.exec(url)?.[1];
+    if (thumbnailOf !== undefined) {
+      await route.fulfill({
+        contentType: "image/svg+xml",
+        headers: IMMUTABLE,
+        body: pageImage(Number(thumbnailOf)),
+      });
+      return;
+    }
+    const index = pageIndexOf(url);
     if (index === undefined) {
       await route.fulfill({ status: 404 });
       return;
@@ -81,7 +95,7 @@ export async function servePages(
     await before(route, index);
     await route.fulfill({
       contentType: "image/svg+xml",
-      headers: { "cache-control": "public, max-age=31536000, immutable" },
+      headers: IMMUTABLE,
       body: pageImage(index),
     });
   });
