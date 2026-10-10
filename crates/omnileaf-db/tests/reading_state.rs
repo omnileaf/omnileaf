@@ -70,7 +70,8 @@ async fn carries_a_book_s_state_onto_another_book_through_synced_writes() {
                 Key::from(LatestKey::BookPosition(book(2))),
                 LatestKey::BookRead(book(2)).into(),
                 MaximumKey::BookFurthest(book(2)).into(),
-            ])
+            ]),
+            recounted: false,
         })
     );
 }

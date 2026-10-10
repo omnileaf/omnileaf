@@ -198,7 +198,8 @@ async fn announces_every_key_the_rebuild_projected() {
             keys: BTreeSet::from([
                 Key::from(LatestKey::BookPosition(book(1))),
                 Key::from(MaximumKey::BookFurthest(book(2))),
-            ])
+            ]),
+            recounted: true,
         })
     );
 }

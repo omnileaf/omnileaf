@@ -26,14 +26,17 @@ pub trait Clock: Send + Sync + 'static {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Changed {
-    Registers { keys: BTreeSet<Key> },
+    Registers {
+        keys: BTreeSet<Key>,
+        recounted: bool,
+    },
     TitleOrder,
 }
 
 impl Changed {
     fn is_empty(&self) -> bool {
         match self {
-            Self::Registers { keys } => keys.is_empty(),
+            Self::Registers { keys, .. } => keys.is_empty(),
             Self::TitleOrder => false,
         }
     }
