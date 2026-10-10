@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import { historyDays } from "#lib/history/history-days.ts";
 import type { HistoryEntry } from "#lib/ipc/bindings.ts";
 import { bookIdIn } from "#lib/reader/opened-book.ts";
+import type { SeriesId } from "#lib/series/series-id.ts";
 
 const FIRST = "0190a3e4-0000-8000-8000-0000000000b1";
 const SECOND = "0190a3e4-0000-8000-8000-0000000000b2";
@@ -11,6 +12,7 @@ const THIRD = "0190a3e4-0000-8000-8000-0000000000b3";
 const DAY_MS = 86_400_000;
 const NOON_MS = DAY_MS / 2;
 const MONDAY = 20_731;
+const SERIES = "0190a3e4-0000-8000-8000-0000000000a1" as SeriesId;
 
 function entry(
   book: string,
@@ -24,7 +26,9 @@ function entry(
   return {
     book: id,
     bookTitle: "Sample Series 01 v01",
+    series: SERIES,
     seriesTitle: "Sample Series 01",
+    position: 1,
     cover: null,
     startedAtMs: day * DAY_MS + NOON_MS,
     utcOffsetMinutes: 0,

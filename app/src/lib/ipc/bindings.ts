@@ -159,7 +159,10 @@ export type FullScreenChange =
 export type HistoryEntry = {
 	book: string & { readonly __brand: "BookId" },
 	bookTitle: string,
+	series: string & { readonly __brand: "SeriesId" },
 	seriesTitle: string,
+	/**  Where the book stands in its series' order, counting from 1. */
+	position: number,
 	/**  The book's own cover, absent while it has no file. */
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	/**  When the session started, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly. */

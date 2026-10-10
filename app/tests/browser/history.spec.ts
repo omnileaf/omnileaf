@@ -42,6 +42,10 @@ function bookId(number: number): string {
   return `0190a3e4-0000-8000-8000-${String(number).padStart(12, "0")}`;
 }
 
+function seriesId(number: number): string {
+  return `0190a3e4-0000-8000-8001-${String(number).padStart(12, "0")}`;
+}
+
 function seriesTitle(number: number): string {
   return `Sample Series ${String(number).padStart(2, "0")}`;
 }
@@ -60,7 +64,9 @@ function entry({
   return {
     book: bookId(number),
     bookTitle: bookTitle(number),
+    series: seriesId(number),
     seriesTitle: seriesTitle(number),
+    position: number,
     cover: null,
     startedAtMs: Date.parse(startedAt),
     utcOffsetMinutes: 0,
