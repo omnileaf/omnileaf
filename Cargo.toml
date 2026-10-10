@@ -32,6 +32,7 @@ omnileaf-folder-access = { path = "crates/omnileaf-folder-access" }
 omnileaf-formats = { path = "crates/omnileaf-formats" }
 omnileaf-imaging = { path = "crates/omnileaf-imaging" }
 omnileaf-sync-proto = { path = "crates/omnileaf-sync-proto" }
+omnileaf-system-bars = { path = "crates/omnileaf-system-bars" }
 omnileaf-testkit = { path = "crates/omnileaf-testkit" }
 os_info = { version = "3.15.0", default-features = false }
 png = "0.18.1"

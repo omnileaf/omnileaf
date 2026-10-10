@@ -3163,6 +3163,7 @@ dependencies = [
  "omnileaf-db",
  "omnileaf-engine",
  "omnileaf-folder-access",
+ "omnileaf-system-bars",
  "os_info",
  "serde",
  "specta",
@@ -3283,6 +3284,15 @@ dependencies = [
  "thiserror 2.0.21",
  "unicode-normalization",
  "uuid",
+]
+
+[[package]]
+name = "omnileaf-system-bars"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "tauri",
+ "tauri-plugin",
 ]
 
 [[package]]
