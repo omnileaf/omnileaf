@@ -255,7 +255,7 @@ impl Keeper {
         let reached: Vec<ReachedPage> =
             self.left_unsaved.values().copied().chain(reading).collect();
         if reached.is_empty() {
-            self.retry_at = None;
+            self.end_failed_run();
             return Ok(());
         }
         let outcome = self
@@ -274,8 +274,7 @@ impl Keeper {
 
     fn landed(&mut self, reached: &[ReachedPage], reading: Option<ReachedPage>) {
         self.left_unsaved.clear();
-        self.retry_at = None;
-        self.failed_in_a_row = 0;
+        self.end_failed_run();
         if let (Some(open), Some(reading)) = (self.session.as_mut(), reading) {
             open.saved(reading);
         }
@@ -284,6 +283,11 @@ impl Keeper {
                 tracing::trace!("no one is listening for reading saved");
             }
         }
+    }
+
+    fn end_failed_run(&mut self) {
+        self.retry_at = None;
+        self.failed_in_a_row = 0;
     }
 
     /// Tries again twice as long after each failure in a row, warning only of the first.
@@ -518,6 +522,43 @@ mod tests {
             .await;
         keeper.save().await.unwrap_err();
 
+        assert_eq!(
+            log.text().matches(" WARN ").count(),
+            2,
+            "log: {}",
+            log.text()
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn warns_again_for_saves_that_fail_after_the_reader_turned_back_to_the_saved_page() {
+        let folder = ScratchFolder::new("progress-warns-after-nothing-unsaved");
+        let mut keeper = keeper(&folder);
+        let log = CapturedLog::default();
+        let _logging = tracing::subscriber::set_default(log.subscriber());
+        refuse_saves(&keeper).await;
+        read(&mut keeper, book(1), 3).await;
+        keeper.save().await.unwrap_err();
+        keeper
+            .hear(Report::Shown {
+                book: book(1),
+                page: 0,
+            })
+            .await;
+        keeper.save().await.unwrap();
+        keeper
+            .hear(Report::Shown {
+                book: book(1),
+                page: 4,
+            })
+            .await;
+
+        keeper.save().await.unwrap_err();
+
+        assert_eq!(
+            keeper.due().map(|due| due - Instant::now()),
+            Some(READING_SAVE_DELAY)
+        );
         assert_eq!(
             log.text().matches(" WARN ").count(),
             2,
