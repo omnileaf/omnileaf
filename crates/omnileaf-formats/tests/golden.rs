@@ -7,7 +7,7 @@ mod support;
 
 use std::{fmt::Write, path::PathBuf};
 
-use omnileaf_formats::fingerprint_book;
+use omnileaf_formats::{Limits, fingerprint_book, open_book_with};
 use omnileaf_sync_proto::{Fingerprint, FingerprintKind};
 use omnileaf_testkit::{ArchiveEntry, Compression, cbz};
 use serde::Deserialize;
@@ -89,6 +89,18 @@ impl Variant {
     fn fingerprint(self) -> Fingerprint {
         let scratch = ScratchFolder::new(&format!("{self:?}"));
         fingerprint_book(&self.recipe().write(&scratch)).unwrap()
+    }
+
+    fn opened_fingerprint(self) -> Fingerprint {
+        let scratch = ScratchFolder::new(&format!("opened-{self:?}"));
+        let admitting_repeated_text = Limits {
+            max_compression_ratio: u64::MAX,
+            ..Limits::default()
+        };
+        open_book_with(&self.recipe().write(&scratch), &admitting_repeated_text)
+            .unwrap()
+            .fingerprint()
+            .unwrap()
     }
 }
 
@@ -179,6 +191,22 @@ fn fingerprints_match_the_golden_vectors() {
             "{:?}",
             vector.book
         );
+        assert_eq!(
+            hex(fingerprint.as_bytes()),
+            vector.fingerprint,
+            "{:?}",
+            vector.book
+        );
+    }
+}
+
+#[test]
+fn an_opened_book_fingerprints_to_the_golden_vectors() {
+    let golden: Golden = serde_json::from_str(include_str!("golden/fingerprints.json")).unwrap();
+
+    for vector in golden.vectors {
+        let fingerprint = vector.book.opened_fingerprint();
+
         assert_eq!(
             hex(fingerprint.as_bytes()),
             vector.fingerprint,

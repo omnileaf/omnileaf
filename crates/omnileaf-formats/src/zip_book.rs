@@ -1,31 +1,37 @@
 use std::{
     fs::File,
-    io::Read,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
+use omnileaf_sync_proto::Fingerprint;
 use zip::{ZipArchive, result::ZipError};
 
 use crate::{
     FormatError, Limits, Page,
     block_reader::BlockReader,
     book::in_reading_order,
+    error::read_failed,
+    fingerprint::archive_fingerprint,
     is_ignored, is_page_image,
-    limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME},
+    limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME, read_within},
 };
 
 #[derive(Debug)]
 pub struct ZipBook {
     path: PathBuf,
-    archive: ZipArchive<BlockReader<File>>,
+    /// Shared with the archive's reader, which seeks before every read, so sampling it never moves the reader.
+    file: Arc<File>,
+    archive: ZipArchive<BlockReader<Arc<File>>>,
     pages: Vec<Page>,
     entries: Vec<usize>,
     limits: Limits,
 }
 
 impl ZipBook {
-    pub(crate) fn open(path: &Path, limits: &Limits) -> Result<Self, FormatError> {
-        let mut archive = open_archive(path, limits)?;
+    pub(crate) fn from_file(file: File, path: &Path, limits: &Limits) -> Result<Self, FormatError> {
+        let file = Arc::new(file);
+        let mut archive = archive_from(Arc::clone(&file), path, limits)?;
         let mut found = Vec::new();
         let mut total: u64 = 0;
         for index in 0..archive.len() {
@@ -57,6 +63,7 @@ impl ZipBook {
         let (pages, entries) = in_reading_order(found);
         Ok(Self {
             path: path.to_owned(),
+            file,
             archive,
             pages,
             entries,
@@ -72,6 +79,10 @@ impl ZipBook {
         &self.path
     }
 
+    pub(crate) fn fingerprint(&mut self) -> Result<Fingerprint, FormatError> {
+        archive_fingerprint(&self.path, &mut self.archive, &*self.file)
+    }
+
     pub(crate) fn read_comic_info(&mut self) -> Result<Option<Vec<u8>>, FormatError> {
         let Some(name) = self
             .archive
@@ -85,18 +96,13 @@ impl ZipBook {
             .archive
             .by_name(&name)
             .map_err(|source| corrupt(&self.path, source))?;
-        let mut xml = Vec::new();
-        entry
-            .take(COMIC_INFO_LIMIT.saturating_add(1))
-            .read_to_end(&mut xml)
-            .map_err(|source| corrupt(&self.path, ZipError::Io(source)))?;
-        if u64::try_from(xml.len()).unwrap_or(u64::MAX) > COMIC_INFO_LIMIT {
-            return Err(FormatError::ComicInfoTooLarge {
+        read_within(entry, COMIC_INFO_LIMIT)
+            .map_err(|source| corrupt(&self.path, ZipError::Io(source)))?
+            .map(Some)
+            .ok_or_else(|| FormatError::ComicInfoTooLarge {
                 path: self.path.clone(),
                 limit: COMIC_INFO_LIMIT,
-            });
-        }
-        Ok(Some(xml))
+            })
     }
 
     /// Reads one page, stopping past the size limit in case the archive understates it.
@@ -108,39 +114,28 @@ impl ZipBook {
                 index,
             });
         };
-        let name = page.name.clone();
         let limit = self.limits.max_page_bytes;
         let entry = self
             .archive
             .by_index(entry_index)
             .map_err(|source| corrupt(&self.path, source))?;
-        let mut bytes = Vec::new();
-        entry
-            .take(limit.saturating_add(1))
-            .read_to_end(&mut bytes)
-            .map_err(|source| corrupt(&self.path, ZipError::Io(source)))?;
-        if u64::try_from(bytes.len()).unwrap_or(u64::MAX) > limit {
-            return Err(FormatError::PageTooLarge {
+        read_within(entry, limit)
+            .map_err(|source| corrupt(&self.path, ZipError::Io(source)))?
+            .ok_or_else(|| FormatError::PageTooLarge {
                 path: self.path.clone(),
-                name,
+                name: page.name.clone(),
                 limit,
-            });
-        }
-        Ok(bytes)
+            })
     }
 }
 
 /// Reads the archive's central directory, refusing more entries than the limits allow.
-pub(crate) fn open_archive(
+pub(crate) fn archive_from(
+    file: Arc<File>,
     path: &Path,
     limits: &Limits,
-) -> Result<ZipArchive<BlockReader<File>>, FormatError> {
-    let reader = File::open(path)
-        .and_then(BlockReader::new)
-        .map_err(|source| FormatError::Read {
-            path: path.to_owned(),
-            source,
-        })?;
+) -> Result<ZipArchive<BlockReader<Arc<File>>>, FormatError> {
+    let reader = BlockReader::new(file).map_err(read_failed(path))?;
     let archive = ZipArchive::new(reader).map_err(|source| corrupt(path, source))?;
     if archive.len() > limits.max_entries {
         return Err(FormatError::TooManyEntries {

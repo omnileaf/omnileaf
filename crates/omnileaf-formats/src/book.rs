@@ -1,8 +1,10 @@
-use std::path::Path;
+use std::{path::Path, sync::Arc};
+
+use omnileaf_sync_proto::Fingerprint;
 
 use crate::{
-    ComicInfo, FormatError, Limits, PageKind, container::Container, folder::FolderBook,
-    natural_cmp, parse_comic_info, zip_book::ZipBook,
+    ComicInfo, FormatError, Limits, LocalStorage, PageKind, Storage, container::Container,
+    folder::FolderBook, natural_cmp, parse_comic_info, zip_book::ZipBook,
 };
 
 const FIRST_PAGE: usize = 0;
@@ -61,6 +63,14 @@ impl Book {
         })
         .transpose()
     }
+
+    /// The same fingerprint [`crate::fingerprint_book`] gives, from the book already open.
+    pub fn fingerprint(&mut self) -> Result<Fingerprint, FormatError> {
+        match self {
+            Self::Archive(book) => book.fingerprint(),
+            Self::Folder(book) => book.fingerprint(),
+        }
+    }
 }
 
 pub fn open_book(path: &Path) -> Result<Book, FormatError> {
@@ -69,9 +79,18 @@ pub fn open_book(path: &Path) -> Result<Book, FormatError> {
 
 /// Opens a folder of images, or an archive recognised by its first bytes rather than its name.
 pub fn open_book_with(path: &Path, limits: &Limits) -> Result<Book, FormatError> {
-    match Container::of(path)? {
-        Container::Folder => FolderBook::open(path, limits).map(Book::Folder),
-        Container::Zip => ZipBook::open(path, limits).map(Book::Archive),
+    open_book_in(Arc::new(LocalStorage), path, limits)
+}
+
+/// Opens a folder of images, or an archive recognised by its first bytes, reading only through `storage`.
+pub fn open_book_in(
+    storage: Arc<dyn Storage>,
+    path: &Path,
+    limits: &Limits,
+) -> Result<Book, FormatError> {
+    match Container::of(&*storage, path)? {
+        Container::Folder => FolderBook::open(storage, path, limits).map(Book::Folder),
+        Container::Zip(file) => ZipBook::from_file(file, path, limits).map(Book::Archive),
     }
 }
 

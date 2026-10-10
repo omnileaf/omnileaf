@@ -13,7 +13,7 @@ mod natural;
 mod storage;
 mod zip_book;
 
-pub use book::{Book, Page, open_book, open_book_with};
+pub use book::{Book, Page, open_book, open_book_in, open_book_with};
 pub use comic_info::{
     ComicInfo, ComicInfoError, PageInfo, PageKind, ReadingDirection, parse_comic_info,
 };

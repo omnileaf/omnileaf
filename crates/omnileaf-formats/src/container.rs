@@ -1,38 +1,35 @@
 use std::{
-    fs::{self, File},
-    io::Read,
+    fs::File,
+    io::{self, Read},
     path::Path,
 };
 
-use crate::{FormatError, UnsupportedArchive};
+use crate::{Details, FormatError, Storage, UnsupportedArchive, error::read_failed};
 
 const SIGNATURE_LENGTH: u64 = 6;
 const ZIP_SIGNATURES: [&[u8]; 2] = [b"PK\x03\x04", b"PK\x05\x06"];
 const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07";
 const SEVEN_ZIP_SIGNATURE: &[u8] = b"7z\xbc\xaf\x27\x1c";
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub(crate) enum Container {
     Folder,
-    Zip,
+    Zip(File),
 }
 
 impl Container {
-    /// Recognises an archive by its first bytes rather than its name.
-    pub(crate) fn of(path: &Path) -> Result<Self, FormatError> {
-        let metadata = fs::metadata(path).map_err(|source| FormatError::Read {
-            path: path.to_owned(),
-            source,
-        })?;
-        if metadata.is_dir() {
+    /// Recognises an archive by its first bytes rather than its name, handing back the file it opened to look.
+    pub(crate) fn of(storage: &dyn Storage, path: &Path) -> Result<Self, FormatError> {
+        if let Details::Folder { .. } = storage.details(path).map_err(read_failed(path))? {
             return Ok(Self::Folder);
         }
-        let start = first_bytes(path)?;
+        let mut file = storage.open(path).map_err(read_failed(path))?;
+        let start = first_bytes(&mut file).map_err(read_failed(path))?;
         if ZIP_SIGNATURES
             .iter()
             .any(|signature| start.starts_with(signature))
         {
-            return Ok(Self::Zip);
+            return Ok(Self::Zip(file));
         }
         let path = path.to_owned();
         Err(match unsupported_archive(&start) {
@@ -52,16 +49,10 @@ fn unsupported_archive(start: &[u8]) -> Option<UnsupportedArchive> {
     }
 }
 
-fn first_bytes(path: &Path) -> Result<Vec<u8>, FormatError> {
-    let read_failed = |source| FormatError::Read {
-        path: path.to_owned(),
-        source,
-    };
+fn first_bytes(file: &mut File) -> io::Result<Vec<u8>> {
     let mut start = Vec::new();
-    File::open(path)
-        .map_err(read_failed)?
+    file.by_ref()
         .take(SIGNATURE_LENGTH)
-        .read_to_end(&mut start)
-        .map_err(read_failed)?;
+        .read_to_end(&mut start)?;
     Ok(start)
 }
