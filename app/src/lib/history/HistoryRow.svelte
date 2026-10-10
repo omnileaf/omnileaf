@@ -76,7 +76,7 @@
     <a
       {href}
       aria-label={action.label}
-      class="flex shrink-0 items-center justify-center rounded-control border border-field bg-card text-small font-semibold block-pointer-button inline-history-action hover:tint-hover active:tint-pressed"
+      class="flex shrink-0 items-center justify-center rounded-small-control border border-field bg-card text-small font-semibold block-pointer-button inline-history-action hover:tint-hover active:tint-pressed"
     >
       {action.text}
     </a>
