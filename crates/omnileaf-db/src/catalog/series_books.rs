@@ -167,22 +167,32 @@ fn walk(
         let Some(row) = rows.next()? else {
             break;
         };
+        let reading = stored_reading(row)?;
+        let stored = listing
+            .holds(reading)
+            .then(|| stored_book(series, listing, reading, row))
+            .transpose()?;
         let numbered = match (position, listing.direction) {
-            (None, _) => books_before(connection, &stored_book(series, listing, row)?.1)? + 1,
             (Some(previous), SortDirection::Ascending) => previous + 1,
             (Some(previous), SortDirection::Descending) => previous - 1,
+            (None, _) => {
+                let before = match &stored {
+                    Some((_, cursor)) => books_before(connection, cursor)?,
+                    None => {
+                        books_before(connection, &stored_book(series, listing, reading, row)?.1)?
+                    }
+                };
+                before + 1
+            }
         };
         position = Some(numbered);
-        if listing.holds(stored_reading(row)?) {
-            let (mut book, cursor) = stored_book(series, listing, row)?;
+        if let Some((mut book, cursor)) = stored {
             book.position = numbered;
             held.push((book, cursor));
         }
     }
-    let mut details = connection.prepare(BOOK_DETAILS)?;
     for (book, _) in &mut held {
-        (book.title, book.added_at_ms) =
-            details.query_row([book.id.as_bytes()], |row| Ok((row.get(0)?, row.get(1)?)))?;
+        fill_details(connection, book)?;
     }
     Ok(held)
 }
@@ -212,22 +222,30 @@ pub fn up_next(connection: &Connection, series: SeriesId) -> Result<Option<BookS
         let mut statement = connection.prepare(query)?;
         let mut rows = statement.query(named_params! { ":series": series.as_bytes() })?;
         if let Some(row) = rows.next()? {
-            let (mut book, cursor) = stored_book(series, BookListing::IN_ORDER, row)?;
+            let (mut book, cursor) =
+                stored_book(series, BookListing::IN_ORDER, stored_reading(row)?, row)?;
             book.position = books_before(connection, &cursor)? + 1;
-            (book.title, book.added_at_ms) =
-                connection.query_row(BOOK_DETAILS, [book.id.as_bytes()], |row| {
-                    Ok((row.get(0)?, row.get(1)?))
-                })?;
+            fill_details(connection, &mut book)?;
             return Ok(Some(book));
         }
     }
     Ok(None)
 }
 
+/// Reads the title and the date added that a walk of the index leaves out.
+fn fill_details(connection: &Connection, book: &mut BookSummary) -> Result<(), Error> {
+    (book.title, book.added_at_ms) =
+        connection.query_row(BOOK_DETAILS, [book.id.as_bytes()], |row| {
+            Ok((row.get(0)?, row.get(1)?))
+        })?;
+    Ok(())
+}
+
 /// Reads a book's id and reading state, leaving its position, title and date for the caller, and the cursor just past it.
 fn stored_book(
     series: SeriesId,
     listing: BookListing,
+    reading: BookReading,
     row: &Row<'_>,
 ) -> rusqlite::Result<(BookSummary, Position)> {
     let id = stored_id(row, "id")?;
@@ -236,7 +254,7 @@ fn stored_book(
         position: 0,
         title: String::new(),
         added_at_ms: 0,
-        reading: stored_reading(row)?,
+        reading,
     };
     let position = Position::Book {
         series,
