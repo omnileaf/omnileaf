@@ -255,6 +255,7 @@ impl Keeper {
         let reached: Vec<ReachedPage> =
             self.left_unsaved.values().copied().chain(reading).collect();
         if reached.is_empty() {
+            self.retry_at = None;
             return Ok(());
         }
         let outcome = self
@@ -473,6 +474,25 @@ mod tests {
             keeper.due().map(|due| due - Instant::now()),
             Some(READING_SAVE_DELAY)
         );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn waits_for_nothing_once_the_reader_turns_back_to_the_saved_page_after_a_save_failed() {
+        let folder = ScratchFolder::new("progress-backs-off-nothing-unsaved");
+        let mut keeper = keeper(&folder);
+        refuse_saves(&keeper).await;
+        read(&mut keeper, book(1), 3).await;
+        keeper.save().await.unwrap_err();
+        keeper
+            .hear(Report::Shown {
+                book: book(1),
+                page: 0,
+            })
+            .await;
+
+        keeper.save().await.unwrap();
+
+        assert_eq!(keeper.due(), None);
     }
 
     #[tokio::test(start_paused = true)]
