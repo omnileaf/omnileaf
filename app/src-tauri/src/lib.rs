@@ -9,6 +9,7 @@ mod folder_access;
 #[cfg(any(target_os = "linux", test))]
 mod folder_chooser;
 mod folder_picker;
+mod folder_storage;
 mod ipc_error;
 mod library_events;
 mod library_problem;
