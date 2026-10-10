@@ -268,6 +268,8 @@ pub(crate) const STEPS: &[Step] = &[
             "--package",
             "omnileaf-folder-access",
             "--package",
+            "omnileaf-edge-swipe",
+            "--package",
             "omnileaf-app",
             "--target",
             "aarch64-apple-ios-sim",

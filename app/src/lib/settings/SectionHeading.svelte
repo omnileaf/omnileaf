@@ -22,6 +22,7 @@
 >
   <a
     href={resolve(parent.route)}
+    data-back-link
     aria-label={m.back_to({ page: parent.title })}
     class={[
       "flex shrink-0 items-center gap-2xs transition-control hover:bg-hover active:bg-pressed",

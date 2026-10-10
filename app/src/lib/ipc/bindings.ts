@@ -17,6 +17,8 @@ export const commands = {
 	unreadableFolders: number,
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder", { onProgress })),
 	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
+	watchBackSwipes: (onSwipe: Channel<BackSwipe>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_back_swipes", { onSwipe })),
+	allowBackSwipe: (edge: "left" | "right" | null) => typedError<null, IpcError>(__TAURI_INVOKE("allow_back_swipe", { edge })),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
 	librarySeries: (after: string & { readonly __brand: "SeriesCursor" } | null) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_series", { after })),
 	librarySeriesCount: () => typedError<number, IpcError>(__TAURI_INVOKE("library_series_count")),
@@ -60,6 +62,9 @@ export type AppInfo = {
 	sourceCode: string,
 	isDevelopmentBuild: boolean,
 };
+
+/**  How far a swipe from the edge has come, as a share of the screen's width, and how fast it was going in screen widths a second when let go. */
+export type BackSwipe = { kind: "moved"; progress: number | null } | { kind: "released"; progress: number | null; velocity: number | null } | { kind: "cancelled" };
 
 /**  How many covers a row holds at each size the library is drawn at, chosen apart since each wants its own. */
 export type CoversPerRow = {
@@ -194,6 +199,8 @@ export type SeriesPage = {
 	/**  Absent on the last page. */
 	next: string & { readonly __brand: "SeriesCursor" } | null,
 };
+
+export type SwipeEdge = "left" | "right";
 
 export type Theme = "light" | "dark";
 

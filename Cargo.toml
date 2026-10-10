@@ -27,6 +27,7 @@ jpeg-decoder = { version = "0.3.2", default-features = false, features = ["rayon
 jpeg-encoder = { version = "0.7.1", default-features = false, features = ["std"] }
 omnileaf-cache = { path = "crates/omnileaf-cache" }
 omnileaf-db = { path = "crates/omnileaf-db" }
+omnileaf-edge-swipe = { path = "crates/omnileaf-edge-swipe" }
 omnileaf-engine = { path = "crates/omnileaf-engine" }
 omnileaf-folder-access = { path = "crates/omnileaf-folder-access" }
 omnileaf-formats = { path = "crates/omnileaf-formats" }
