@@ -41,6 +41,7 @@ macro_rules! app_commands {
             first_launch_finished,
             finish_first_launch,
             set_app_language,
+            set_scheduled_rescans,
             copy_version_details,
             open_project_link,
             offer_saved_crash_report,
@@ -247,6 +248,16 @@ async fn set_app_language(
     language: AppLanguage,
 ) -> Result<(), IpcError> {
     Ok(library.set_language(language).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+fn set_scheduled_rescans(library: State<'_, Library>, is_on: bool) {
+    library.set_scheduled_rescans(is_on);
 }
 
 #[tauri::command]
