@@ -418,10 +418,10 @@ impl Library {
         self.reading.closed(book).await
     }
 
-    /// Saves at once the page the reader showed last, such as before the app is put away.
+    /// Saves at once the page the reader showed last and ends its reading session, as the app is put away.
     #[tracing::instrument(skip_all)]
     pub async fn save_reading(&self) -> Result<(), LibraryError> {
-        self.reading.save_now().await
+        self.reading.put_away().await
     }
 
     /// Saves the page reached in the book read now, and keeps `book`'s length for when the reader restores it.

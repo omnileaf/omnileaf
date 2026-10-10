@@ -18,7 +18,7 @@ use std::sync::{
 use books::write_book;
 use omnileaf_engine::{
     BookId, BookReading, Clock, HistoryEntry, Library, LibraryListing, LocalDay, OpenedBook,
-    ProbedFormat, ReadTo, ResourceRouter, SeriesBookListing, UtcOffset,
+    ProbedFormat, ReadMark, ReadTo, ResourceRouter, SeriesBookListing, UtcOffset,
 };
 use support::{FixedClock, NOW_UNIX_MS, ScratchFolder};
 
@@ -288,6 +288,31 @@ async fn counts_the_time_read_since_a_day() {
 async fn lists_one_entry_for_a_page_read_for_longer_than_two_minutes() {
     let shelf = Shelf::with_two_books("history-long-page").await;
     let opened = shelf.restore(0).await;
+    shelf.clock.advance(3 * MINUTE_MS);
+    shelf.show(&opened, 1).await;
+
+    shelf.close(&opened).await;
+
+    let read: Vec<u32> = shelf
+        .entries()
+        .await
+        .iter()
+        .map(|entry| entry.read_seconds)
+        .collect();
+    assert_eq!(read, [180]);
+}
+
+#[tokio::test]
+async fn lists_one_entry_for_a_long_page_while_its_series_and_marks_are_read() {
+    let shelf = Shelf::with_two_books("history-long-page-series-read").await;
+    let opened = shelf.restore(0).await;
+    shelf.library.series_overview(opened.series).await.unwrap();
+    let other = shelf.book(1).await;
+    shelf
+        .library
+        .mark_books(vec![other], ReadMark::Read)
+        .await
+        .unwrap();
     shelf.clock.advance(3 * MINUTE_MS);
     shelf.show(&opened, 1).await;
 
