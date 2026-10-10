@@ -37,6 +37,9 @@ const FIRST_BOOK: &str = "Sample Series 01 v01";
 const SECOND_BOOK: &str = "Sample Series 01 v02";
 const MOVED_TO_SERIES: &str = "Sample Series 02";
 const HANG_LIMIT: Duration = Duration::from_secs(60);
+const DATABASE_FILE: &str = "library.sqlite";
+const REFUSE_SAVES: &str = "CREATE TRIGGER refuse_saves BEFORE INSERT ON sync_register
+    BEGIN SELECT RAISE(ABORT, 'saves refused'); END";
 
 struct Shelf {
     library: Library,
@@ -140,6 +143,14 @@ impl Shelf {
             .await
             .unwrap();
         opened
+    }
+
+    /// Makes every save of reading fail from now on, as a store that can't be written to does.
+    fn refuse_saves(&self) {
+        rusqlite::Connection::open(self.home.path().join(DATABASE_FILE))
+            .unwrap()
+            .execute_batch(REFUSE_SAVES)
+            .unwrap();
     }
 
     async fn show(&self, opened: &OpenedBook, page: u32) {
@@ -385,6 +396,31 @@ async fn opens_a_book_opened_again_before_its_save_on_the_page_reading_reached()
     .unwrap();
 
     assert_eq!(again.start_page, 4);
+}
+
+#[tokio::test(start_paused = true)]
+async fn opens_a_book_left_while_saves_fail_on_the_page_reading_reached() {
+    let shelf = Shelf::with_two_books("left-while-saves-fail").await;
+    shelf.refuse_saves();
+    let first = shelf.restore(0).await;
+    shelf.show(&first, 4).await;
+    shelf.restore(1).await;
+
+    let again = shelf.open(0).await;
+
+    assert_eq!((again.start_page, again.reading), (4, started_on(5)));
+}
+
+#[tokio::test(start_paused = true)]
+async fn opens_a_book_opened_again_while_saves_fail_on_the_page_reading_reached() {
+    let shelf = Shelf::with_two_books("opened-again-while-saves-fail").await;
+    shelf.refuse_saves();
+    let opened = shelf.restore(0).await;
+    shelf.show(&opened, 4).await;
+
+    let again = shelf.open(0).await;
+
+    assert_eq!((again.start_page, again.reading), (4, started_on(5)));
 }
 
 #[tokio::test(start_paused = true)]

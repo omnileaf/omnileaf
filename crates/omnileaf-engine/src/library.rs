@@ -469,8 +469,14 @@ impl Library {
         &self,
         book: BookId,
     ) -> Result<Option<BookToOpen>, LibraryError> {
-        self.save_reading_before_reading().await;
-        Ok(self
+        let unsaved = match self.reading.save_before_opening(book).await {
+            Ok(unsaved) => unsaved,
+            Err(error) => {
+                tracing::warn!(error = %describe_error(&error), "save the page reached before opening a book");
+                None
+            }
+        };
+        let to_open = self
             .store
             .database()
             .read(move |connection| {
@@ -479,7 +485,13 @@ impl Library {
                 };
                 Ok(place_in_series(connection, book.0)?.map(|place| BookToOpen { found, place }))
             })
-            .await?)
+            .await?;
+        Ok(to_open.map(|mut to_open| {
+            if let Some(unsaved) = unsaved {
+                to_open.found.reading = unsaved.saved_over(to_open.found.reading);
+            }
+            to_open
+        }))
     }
 
     pub(crate) async fn page_dimensions(
