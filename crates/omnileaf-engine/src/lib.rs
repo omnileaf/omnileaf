@@ -36,7 +36,7 @@ pub use crash_report::{
     is_panic_contained,
 };
 pub use error_chain::describe_error;
-pub use library::{Library, LibraryError};
+pub use library::{Library, LibraryError, OpenTree};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
@@ -45,8 +45,9 @@ pub use library_view::{
     DesktopCoversPerRow, LibraryDisplay, LibraryView, OnCovers, PhoneCoversPerRow,
     TabletCoversPerRow,
 };
-pub use omnileaf_db::catalog::{AppleBookmark, RootLocator};
+pub use omnileaf_db::catalog::{AndroidTree, AppleBookmark, RootLocator, TreeUri};
 pub use omnileaf_db::store::{Changed, Clock};
+pub use omnileaf_formats::Storage;
 pub use project_link::ProjectLink;
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
 pub use resource::Resource;

@@ -13,10 +13,11 @@ use std::{
 use omnileaf_db::{
     Database, Error,
     catalog::{
-        AppleBookmark, BookmarkedRoot, LibraryRoot, NewBook, NewRoot, NewSeries, Page, PageRequest,
-        PageSize, RootId, RootKind, RootLocator, add_book, add_root, add_series, bookmarked_roots,
-        library_root, library_roots, mark_root_available, mark_root_unavailable, relocate_root,
-        relocate_roots, remove_root, series_books, set_home_root,
+        AndroidTree, AppleBookmark, BookmarkedRoot, LibraryRoot, NewBook, NewRoot, NewSeries, Page,
+        PageRequest, PageSize, RootId, RootKind, RootLocator, TreeUri, add_book, add_root,
+        add_series, bookmarked_roots, library_root, library_roots, mark_root_available,
+        mark_root_unavailable, relocate_root, relocate_roots, remove_root, series_books,
+        set_home_root,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
@@ -33,6 +34,8 @@ const SAMPLES: &str = "/media/Samples";
 const MOVED_HOME: &str = "/data/Moved/Omnileaf";
 const ICLOUD_BOOKMARK: &[u8] = b"book\x00\x00\x00\x00mark iCloud Drive";
 const REFRESHED_BOOKMARK: &[u8] = b"book\x00\x00\x00\x00mark refreshed";
+const COMICS_TREE: &str = "content://documents.test/tree/primary%3ADocuments%2FComics";
+const INTERNAL_DOCUMENTS: &str = "Internal storage › Documents";
 
 struct Library {
     database: Database,
@@ -70,6 +73,33 @@ impl Library {
             .write(move |transaction| add_root(transaction, &root))
             .await
             .unwrap()
+    }
+
+    async fn add_tree(&self, place: &str) -> RootId {
+        let root = NewRoot {
+            kind: RootKind::Linked,
+            locator: comics_tree(place),
+            added_at_ms: ADDED_AT_MS,
+        };
+        self.database
+            .write(move |transaction| add_root(transaction, &root))
+            .await
+            .unwrap()
+    }
+
+    async fn insert_raw(&self, columns: &'static str, values: &'static str) -> Result<(), Error> {
+        self.database
+            .write(move |transaction| {
+                transaction.execute(
+                    &format!(
+                        "INSERT INTO library_root (kind, {columns}, added_at_ms)
+                         VALUES ('linked', {values}, 0)"
+                    ),
+                    [],
+                )?;
+                Ok(())
+            })
+            .await
     }
 
     async fn relocate(&self, id: RootId, locator: RootLocator) -> Result<(), Error> {
@@ -195,7 +225,7 @@ impl Library {
             .await
             .items
             .into_iter()
-            .map(|root| (root.kind, root.locator.into_path()))
+            .map(|root| (root.kind, root.locator.local_path().unwrap().to_path_buf()))
             .collect()
     }
 }
@@ -205,6 +235,25 @@ fn bookmarked(path: &str, bookmark: &[u8]) -> RootLocator {
         path: PathBuf::from(path),
         bookmark: AppleBookmark::new(bookmark.to_vec()),
     }
+}
+
+fn comics_tree(place: &str) -> RootLocator {
+    RootLocator::AndroidTree(
+        AndroidTree::new(
+            TreeUri::parse(COMICS_TREE.to_owned()).unwrap(),
+            "Comics".to_owned(),
+            place.to_owned(),
+        )
+        .unwrap(),
+    )
+}
+
+fn is_constraint_violation(outcome: &Result<(), Error>) -> bool {
+    matches!(
+        outcome,
+        Err(Error::Statement(rusqlite::Error::SqliteFailure(failure, _)))
+            if failure.code == rusqlite::ErrorCode::ConstraintViolation
+    )
 }
 
 fn row_key(id: RootId) -> i64 {
@@ -669,18 +718,13 @@ async fn gives_a_removed_folder_id_to_no_folder_added_later() {
 }
 
 #[tokio::test]
-async fn names_the_locator_of_a_stored_folder_it_cannot_open() {
-    let library = Library::open("root-unsupported-locator");
+async fn refuses_to_read_a_stored_android_folder_whose_address_is_not_a_document_tree() {
+    let library = Library::open("root-tree-not-a-tree");
     library
-        .database
-        .write(|transaction| {
-            transaction.execute(
-                "INSERT INTO library_root (kind, locator_kind, location, added_at_ms)
-                 VALUES ('linked', 'android_tree', x'01', 0)",
-                [],
-            )?;
-            Ok(())
-        })
+        .insert_raw(
+            "locator_kind, location, tree_name, tree_place",
+            "'android_tree', CAST('content://documents.test/document/1' AS BLOB), 'Comics', ''",
+        )
         .await
         .unwrap();
     let request = first_page(1);
@@ -693,11 +737,62 @@ async fn names_the_locator_of_a_stored_folder_it_cannot_open() {
     assert!(matches!(
         outcome,
         Err(Error::Statement(rusqlite::Error::FromSqlConversionFailure(_, _, source)))
-            if matches!(
-                source.downcast_ref::<Error>(),
-                Some(Error::UnsupportedLocator { kind }) if kind == "android_tree"
-            )
+            if matches!(source.downcast_ref::<Error>(), Some(Error::MalformedTreeUri { .. }))
     ));
+}
+
+#[tokio::test]
+async fn lists_an_android_folder_with_its_tree_name_and_place() {
+    let library = Library::open("root-tree");
+
+    let comics = library.add_tree(INTERNAL_DOCUMENTS).await;
+
+    assert_eq!(
+        library.locator(comics).await,
+        comics_tree(INTERNAL_DOCUMENTS)
+    );
+}
+
+#[tokio::test]
+async fn keeps_one_root_with_the_newer_place_for_an_android_folder_picked_twice() {
+    let library = Library::open("root-tree-twice");
+    let first = library.add_tree("Internal storage").await;
+
+    let second = library.add_tree(INTERNAL_DOCUMENTS).await;
+
+    assert_eq!(second, first);
+    assert_eq!(
+        library.locator(first).await,
+        comics_tree(INTERNAL_DOCUMENTS)
+    );
+}
+
+#[tokio::test]
+async fn refuses_an_android_folder_stored_without_a_name() {
+    let library = Library::open("root-tree-unnamed");
+
+    let outcome = library
+        .insert_raw(
+            "locator_kind, location, tree_place",
+            "'android_tree', x'01', 'Internal storage'",
+        )
+        .await;
+
+    assert!(is_constraint_violation(&outcome));
+}
+
+#[tokio::test]
+async fn refuses_a_path_folder_stored_with_a_tree_name() {
+    let library = Library::open("root-path-with-tree-name");
+
+    let outcome = library
+        .insert_raw(
+            "locator_kind, location, tree_name, tree_place",
+            "'path', x'2f6d65646961', 'Comics', ''",
+        )
+        .await;
+
+    assert!(is_constraint_violation(&outcome));
 }
 
 #[tokio::test]

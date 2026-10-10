@@ -77,7 +77,7 @@ impl Reopened {
     }
 
     fn has_moved(&self) -> bool {
-        self.opened.path() != self.read.locator.path()
+        self.opened.local_path() != self.read.locator.local_path()
     }
 }
 

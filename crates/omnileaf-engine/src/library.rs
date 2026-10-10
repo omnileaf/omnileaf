@@ -3,10 +3,10 @@ use std::{fs, io, path::PathBuf, sync::Arc};
 use omnileaf_db::{
     Config, Database,
     catalog::{
-        AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator,
-        SeriesOrder, add_root, bookmarked_roots, cover_file, library_root, library_roots,
-        mark_root_available, mark_root_unavailable, remove_root, root_book_count, series_count,
-        series_page, set_home_root,
+        AndroidTree, AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind,
+        RootLocator, SeriesOrder, add_root, bookmarked_roots, cover_file, library_root,
+        library_roots, mark_root_available, mark_root_unavailable, remove_root, root_book_count,
+        series_count, series_page, set_home_root,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_view::{library_view, set_library_view},
@@ -26,6 +26,7 @@ use crate::{
     cover_thumbnails::CoverFile,
     device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
+    library_folder::root_folder,
     library_layout::folder_name,
     rescan::rescan,
     scan::{Target, find_books_in, scan, walk},
@@ -42,6 +43,9 @@ const MAPPED_DATABASE_BYTES: u32 = if IS_MOBILE {
     256 * MEBIBYTE
 };
 
+/// Opens the storage an Android folder's books are read through, called on the async runtime so it must not block.
+pub type OpenTree = Arc<dyn Fn(&AndroidTree) -> Arc<dyn Storage> + Send + Sync>;
+
 /// The library database in the home folder, and the folders it reads.
 pub struct Library {
     store: Store,
@@ -49,6 +53,7 @@ pub struct Library {
     scanning: Mutex<()>,
     catalog_writes: broadcast::Sender<CatalogWritten>,
     local_storage: Arc<dyn Storage>,
+    open_tree: Option<OpenTree>,
 }
 
 struct RootFiles {
@@ -113,9 +118,19 @@ impl Library {
             scanning: Mutex::new(()),
             catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
             local_storage: Arc::new(LocalStorage),
+            open_tree: None,
         };
         library.set_home(home).await?;
         Ok(library)
+    }
+
+    /// Reads Android folders through the storage `open` gives for each, where a library without it finds them unreachable.
+    #[must_use]
+    pub fn reading_trees_with(self, open: OpenTree) -> Self {
+        Self {
+            open_tree: Some(open),
+            ..self
+        }
     }
 
     /// Remembers the folder and scans its books, adding nothing when the folder can't be read.
@@ -126,8 +141,14 @@ impl Library {
         mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderScan, LibraryError> {
         let locator = folder.into();
-        let files = self.files_of(&locator);
-        tracing::Span::current().record("folder", tracing::field::display(files.folder.display()));
+        let folder = root_folder(&locator);
+        tracing::Span::current().record("folder", tracing::field::display(folder.display()));
+        let Some(files) = self.files_of(&locator) else {
+            return Err(LibraryError::FolderUnreadable {
+                path: folder,
+                source: io::ErrorKind::Unsupported.into(),
+            });
+        };
         let _scanning = self.scanning.lock().await;
         on_progress(ScanProgress::Finding);
         let layout = find_books_in(Arc::clone(&files.storage), files.folder.clone()).await?;
@@ -206,16 +227,19 @@ impl Library {
             .await?)
     }
 
-    /// Where the cover's file is, or nothing once it has changed or gone since the cover was listed.
+    /// Where the cover's file is, or nothing once it has changed or gone since the cover was listed or its folder can't be opened here.
     pub(crate) async fn cover_file(&self, cover: Cover) -> Result<Option<CoverFile>, LibraryError> {
-        let path = self
+        let file = self
             .store
             .database()
             .read(move |connection| cover_file(connection, &cover))
             .await?;
-        Ok(path.map(|path| CoverFile {
-            storage: Arc::clone(&self.local_storage),
-            path,
+        Ok(file.and_then(|(locator, location)| {
+            let files = self.files_of(&locator)?;
+            Some(CoverFile {
+                storage: files.storage,
+                path: files.folder.join(location),
+            })
         }))
     }
 
@@ -244,12 +268,30 @@ impl Library {
             .database()
             .read(move |connection| library_root(connection, id.0))
             .await?;
-        let files = self.files_of(&root.locator);
-        let name = folder_name(&files.folder);
+        let name = folder_name(&root_folder(&root.locator));
         on_progress(ScanProgress::Finding);
-        let outcome = match walk(Arc::clone(&files.storage), files.folder.clone()).await? {
+        let outcome = if let Some(files) = self.files_of(&root.locator) {
+            self.rescan_files(root.id, root.kind, files, on_progress)
+                .await?
+        } else {
+            tracing::warn!("keep the books of a folder this device can't open");
+            RescanOutcome::Unreachable
+        };
+        self.note_availability(root.id, root.unavailable_since_ms, &outcome)
+            .await?;
+        Ok(FolderRescan { id, name, outcome })
+    }
+
+    async fn rescan_files(
+        &self,
+        root: RootId,
+        kind: RootKind,
+        files: RootFiles,
+        on_progress: impl FnMut(ScanProgress) + Send,
+    ) -> Result<RescanOutcome, LibraryError> {
+        match walk(Arc::clone(&files.storage), files.folder.clone()).await? {
             Ok(layout) => {
-                let target = self.target(root.id, root.kind, files);
+                let target = self.target(root, kind, files);
                 let outcome =
                     rescan(&self.store, target, layout, self.noting_writes(on_progress)).await?;
                 if let RescanOutcome::Rescanned(changes) = &outcome
@@ -257,16 +299,13 @@ impl Library {
                 {
                     self.note_catalog_written();
                 }
-                outcome
+                Ok(outcome)
             }
             Err(error) => {
                 tracing::warn!(%error, "keep the books of a folder the rescan can't read");
-                RescanOutcome::Unreachable
+                Ok(RescanOutcome::Unreachable)
             }
-        };
-        self.note_availability(root.id, root.unavailable_since_ms, &outcome)
-            .await?;
-        Ok(FolderRescan { id, name, outcome })
+        }
     }
 
     /// Opens each linked folder kept by a bookmark through `resolve`, which may block, following the ones that moved and returning those whose bookmark wouldn't open.
@@ -456,15 +495,18 @@ impl Library {
         }
     }
 
-    fn files_of(&self, locator: &RootLocator) -> RootFiles {
-        match locator {
-            RootLocator::Path(folder) | RootLocator::AppleBookmark { path: folder, .. } => {
-                RootFiles {
-                    storage: Arc::clone(&self.local_storage),
-                    folder: folder.clone(),
-                }
+    /// Nothing for an Android folder when this library has no way to open one.
+    fn files_of(&self, locator: &RootLocator) -> Option<RootFiles> {
+        let storage = match locator {
+            RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
+                Arc::clone(&self.local_storage)
             }
-        }
+            RootLocator::AndroidTree(tree) => self.open_tree.as_ref()?(tree),
+        };
+        Some(RootFiles {
+            storage,
+            folder: root_folder(locator),
+        })
     }
 
     fn target(&self, root: RootId, kind: RootKind, files: RootFiles) -> Target {

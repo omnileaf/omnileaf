@@ -26,8 +26,8 @@ pub use library_roots::{BookmarkedRoot, bookmarked_roots, library_root, library_
 pub use page::{Page, PageRequest, PageSize};
 pub use relocated_roots::relocate_roots;
 pub use root::{
-    AppleBookmark, LibraryRoot, NewRoot, RootId, RootKind, RootLocator, add_root, relocate_root,
-    remove_root,
+    AndroidTree, AppleBookmark, LibraryRoot, NewRoot, RootId, RootKind, RootLocator, TreeUri,
+    add_root, relocate_root, remove_root,
 };
 pub use root_availability::{mark_root_available, mark_root_unavailable};
 pub use root_files::{StoredFile, remove_book_files, root_book_count, root_files};

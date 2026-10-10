@@ -10,9 +10,9 @@ use std::path::{Path, PathBuf};
 use omnileaf_db::{
     Database,
     catalog::{
-        BookFile, Cover, NewRoot, NewSeries, PageRequest, PageSize, RootId, RootKind, RootLocator,
-        ScannedBook, SeriesOrder, add_root, cover_file, record_scanned_books, remove_book_files,
-        series_page,
+        AndroidTree, BookFile, Cover, NewRoot, NewSeries, PageRequest, PageSize, RootId, RootKind,
+        RootLocator, ScannedBook, SeriesOrder, TreeUri, add_root, cover_file, record_scanned_books,
+        remove_book_files, series_page,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
@@ -22,6 +22,7 @@ const ADDED_AT_MS: i64 = 1_790_000_000_000;
 const MODIFIED_AT_MS: i64 = 1_780_000_000_000;
 const ROOT_FOLDER: &str = "/media/Sample Library";
 const SERIES: &str = "Sample Series 01";
+const COMICS_TREE: &str = "content://documents.test/tree/primary%3ADocuments%2FComics";
 
 struct Library {
     database: Database,
@@ -31,11 +32,15 @@ struct Library {
 
 impl Library {
     async fn open(name: &str) -> Self {
+        Self::reading(name, RootLocator::Path(PathBuf::from(ROOT_FOLDER))).await
+    }
+
+    async fn reading(name: &str, locator: RootLocator) -> Self {
         let folder = ScratchFolder::new(name);
         let database = Database::open(&library_config(&folder)).unwrap();
         let root = NewRoot {
             kind: RootKind::Linked,
-            locator: RootLocator::Path(PathBuf::from(ROOT_FOLDER)),
+            locator,
             added_at_ms: ADDED_AT_MS,
         };
         let root = database
@@ -81,7 +86,7 @@ impl Library {
         page.items.first().unwrap().cover
     }
 
-    async fn file_of(&self, cover: Cover) -> Option<PathBuf> {
+    async fn file_of(&self, cover: Cover) -> Option<(RootLocator, PathBuf)> {
         self.database
             .read(move |connection| cover_file(connection, &cover))
             .await
@@ -94,6 +99,15 @@ fn fingerprint(page_crc: u32) -> Fingerprint {
         crc32: page_crc,
         size: 1,
     }])
+    .unwrap()
+}
+
+fn comics_tree() -> AndroidTree {
+    AndroidTree::new(
+        TreeUri::parse(COMICS_TREE.to_owned()).unwrap(),
+        "Comics".to_owned(),
+        "Internal storage › Documents".to_owned(),
+    )
     .unwrap()
 }
 
@@ -123,7 +137,31 @@ async fn finds_the_file_a_listed_cover_is_read_from() {
 
     assert_eq!(
         file,
-        Some(Path::new(ROOT_FOLDER).join(location_of("Volume 01")))
+        Some((
+            RootLocator::Path(PathBuf::from(ROOT_FOLDER)),
+            location_of("Volume 01")
+        ))
+    );
+}
+
+#[tokio::test]
+async fn names_the_android_folder_and_location_a_cover_is_read_from() {
+    let library = Library::reading(
+        "cover-file-in-tree",
+        RootLocator::AndroidTree(comics_tree()),
+    )
+    .await;
+    library.record("Volume 01", 1, 100).await;
+    let cover = library.listed_cover().await.unwrap();
+
+    let file = library.file_of(cover).await;
+
+    assert_eq!(
+        file,
+        Some((
+            RootLocator::AndroidTree(comics_tree()),
+            location_of("Volume 01")
+        ))
     );
 }
 
