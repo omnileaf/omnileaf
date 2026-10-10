@@ -1,6 +1,9 @@
 use std::{collections::HashMap, future, sync::Arc};
 
-use omnileaf_db::{Error, store::Store};
+use omnileaf_db::{
+    Error,
+    store::{Store, Writer},
+};
 use tokio::{
     sync::{mpsc, oneshot},
     task::JoinHandle,
@@ -9,7 +12,7 @@ use tokio::{
 
 use crate::{
     BookId, LibraryError, describe_error,
-    reading_session::{ReachedPage, ReadingSession},
+    reading_session::{READING_SAVE_DELAY, ReachedPage, ReadingSession},
 };
 
 const REPORT_BACKLOG: usize = 64;
@@ -100,13 +103,9 @@ impl ReadingProgress {
 }
 
 async fn keep(store: Arc<Store>, mut reports: mpsc::Receiver<Report>) {
-    let mut keeper = Keeper {
-        store,
-        session: None,
-        page_counts: HashMap::new(),
-    };
+    let mut keeper = Keeper::new(store);
     loop {
-        let due = keeper.session.as_ref().and_then(ReadingSession::save_at);
+        let due = keeper.due();
         let report = tokio::select! {
             report = reports.recv() => report,
             () = wait_until(due) => {
@@ -127,9 +126,28 @@ struct Keeper {
     store: Arc<Store>,
     session: Option<ReadingSession>,
     page_counts: HashMap<BookId, usize>,
+    /// The page reached in each book left before its save landed, which every save tries again.
+    left_unsaved: HashMap<BookId, ReachedPage>,
+    retry_at: Option<Instant>,
 }
 
 impl Keeper {
+    fn new(store: Arc<Store>) -> Self {
+        Self {
+            store,
+            session: None,
+            page_counts: HashMap::new(),
+            left_unsaved: HashMap::new(),
+            retry_at: None,
+        }
+    }
+
+    /// When the next save is due, or nothing while every page reached is saved.
+    fn due(&self) -> Option<Instant> {
+        let session_due = self.session.as_ref().and_then(ReadingSession::save_at);
+        session_due.into_iter().chain(self.retry_at).min()
+    }
+
     async fn hear(&mut self, report: Report) {
         match report {
             Report::Opened {
@@ -162,22 +180,31 @@ impl Keeper {
             tracing::debug!(%book, "ignore a restore of a book never opened");
             return;
         };
-        answer_or_warn(None, self.save().await);
+        if let Some(left) = self.session.take() {
+            self.leave(left);
+        }
         self.session = ReadingSession::opening(book, page_count).map(|mut opening| {
             opening.restored(page);
             opening
         });
+        answer_or_warn(None, self.save().await);
     }
 
-    /// Keeps reading a book whose save failed, so the next save tries it again.
+    /// Stops reading `book` and saves the page reached in it, which later saves try again should this one fail.
     async fn closed(&mut self, book: BookId) -> Result<(), Error> {
         self.page_counts.remove(&book);
-        if self.reading(book).is_none() {
+        let Some(left) = self.session.take_if(|open| open.book() == book) else {
+            tracing::debug!(%book, "ignore closing a book not read now");
             return Ok(());
+        };
+        self.leave(left);
+        self.save().await
+    }
+
+    fn leave(&mut self, left: ReadingSession) {
+        if let Some(reached) = left.unsaved() {
+            self.left_unsaved.insert(reached.book, reached);
         }
-        self.save().await?;
-        self.session = None;
-        Ok(())
     }
 
     /// The session of `book`, or nothing for a report about a book not read now.
@@ -191,33 +218,56 @@ impl Keeper {
 
     #[tracing::instrument(skip_all)]
     async fn save(&mut self) -> Result<(), Error> {
-        let Some(reached) = self.session.as_ref().and_then(ReadingSession::unsaved) else {
+        let reading = self.session.as_ref().and_then(ReadingSession::unsaved);
+        let reached: Vec<ReachedPage> =
+            self.left_unsaved.values().copied().chain(reading).collect();
+        if reached.is_empty() {
             return Ok(());
-        };
-        let ReachedPage {
-            book,
-            page,
-            is_last,
-        } = reached;
+        }
         let outcome = self
             .store
-            .write(move |writer| {
-                writer.set_position(book.0, page)?;
-                writer.raise_furthest(book.0, page)?;
-                if is_last {
-                    writer.set_read(book.0, true)?;
-                }
-                Ok(())
-            })
+            .write(move |writer| write_reached(writer, &reached))
             .await;
-        if let Some(open) = self.session.as_mut() {
-            match outcome {
-                Ok(()) => open.saved(reached),
-                Err(_) => open.save_failed(Instant::now()),
-            }
+        if outcome.is_ok() {
+            self.landed(reading);
+        } else {
+            self.failed();
         }
         outcome
     }
+
+    fn landed(&mut self, reading: Option<ReachedPage>) {
+        self.left_unsaved.clear();
+        self.retry_at = None;
+        if let (Some(open), Some(reading)) = (self.session.as_mut(), reading) {
+            open.saved(reading);
+        }
+    }
+
+    fn failed(&mut self) {
+        let now = Instant::now();
+        self.retry_at = Some(now + READING_SAVE_DELAY);
+        if let Some(open) = self.session.as_mut() {
+            open.save_failed(now);
+        }
+    }
+}
+
+/// Writes the pages in order, so a later page reached in a book overrides an earlier one.
+fn write_reached(writer: &mut Writer<'_>, reached: &[ReachedPage]) -> Result<(), Error> {
+    for &ReachedPage {
+        book,
+        page,
+        is_last,
+    } in reached
+    {
+        writer.set_position(book.0, page)?;
+        writer.raise_furthest(book.0, page)?;
+        if is_last {
+            writer.set_read(book.0, true)?;
+        }
+    }
+    Ok(())
 }
 
 async fn wait_until(due: Option<Instant>) {
@@ -244,13 +294,15 @@ fn answer_or_warn(asker: Option<Saved>, outcome: Result<(), Error>) {
 
 #[cfg(test)]
 mod tests {
-    use omnileaf_db::{Config, Database};
+    use omnileaf_db::{Config, Database, store::reading_state};
     use omnileaf_testkit::ScratchFolder;
 
     use super::*;
     use crate::{SystemClock, library_book::sample_book_id as book};
 
     const PAGE_COUNT: usize = 8;
+    const REFUSE_SAVES: &str = "CREATE TRIGGER refuse_saves BEFORE INSERT ON sync_register
+        BEGIN SELECT RAISE(ABORT, 'saves refused'); END";
 
     fn keeper(folder: &ScratchFolder) -> Keeper {
         let database = Database::open(&Config {
@@ -259,11 +311,7 @@ mod tests {
             mmap_size_bytes: 0,
         })
         .unwrap();
-        Keeper {
-            store: Arc::new(Store::new(database, SystemClock)),
-            session: None,
-            page_counts: HashMap::new(),
-        }
+        Keeper::new(Arc::new(Store::new(database, SystemClock)))
     }
 
     async fn open(keeper: &mut Keeper, book: BookId) {
@@ -275,6 +323,56 @@ mod tests {
                 saved,
             })
             .await;
+    }
+
+    /// Opens and restores the book on its first page, then shows `page`.
+    async fn read(keeper: &mut Keeper, book: BookId, page: u32) {
+        open(keeper, book).await;
+        keeper.hear(Report::Restored { book, page: 0 }).await;
+        keeper.hear(Report::Shown { book, page }).await;
+    }
+
+    async fn refuse_saves(keeper: &Keeper) {
+        keeper
+            .store
+            .database()
+            .write(|transaction| Ok(transaction.execute_batch(REFUSE_SAVES)?))
+            .await
+            .unwrap();
+    }
+
+    async fn allow_saves(keeper: &Keeper) {
+        keeper
+            .store
+            .database()
+            .write(|transaction| Ok(transaction.execute_batch("DROP TRIGGER refuse_saves")?))
+            .await
+            .unwrap();
+    }
+
+    async fn position(keeper: &Keeper, book: BookId) -> Option<u32> {
+        let state = keeper
+            .store
+            .database()
+            .read(move |connection| reading_state(connection, book.0))
+            .await
+            .unwrap();
+        state.and_then(|state| state.position_page)
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn keeps_the_page_reached_in_a_book_left_for_another_while_saves_fail_and_saves_it_later()
+    {
+        let folder = ScratchFolder::new("progress-left-unsaved");
+        let mut keeper = keeper(&folder);
+        read(&mut keeper, book(1), 3).await;
+        refuse_saves(&keeper).await;
+        read(&mut keeper, book(2), 0).await;
+        allow_saves(&keeper).await;
+
+        keeper.save().await.unwrap();
+
+        assert_eq!(position(&keeper, book(1)).await, Some(3));
     }
 
     #[tokio::test(start_paused = true)]
