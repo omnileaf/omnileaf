@@ -153,11 +153,12 @@ impl Keeper {
 
     /// Saves the book read before and reads `book` from now on, unless it is the book read already.
     async fn restored(&mut self, book: BookId, page: u32) {
+        let page_count = self.page_counts.remove(&book);
         if let Some(open) = self.session.as_mut().filter(|open| open.book() == book) {
             open.restored(page);
             return;
         }
-        let Some(&page_count) = self.page_counts.get(&book) else {
+        let Some(page_count) = page_count else {
             tracing::debug!(%book, "ignore a restore of a book never opened");
             return;
         };
@@ -170,6 +171,7 @@ impl Keeper {
 
     /// Keeps reading a book whose save failed, so the next save tries it again.
     async fn closed(&mut self, book: BookId) -> Result<(), Error> {
+        self.page_counts.remove(&book);
         if self.reading(book).is_none() {
             return Ok(());
         }
@@ -237,5 +239,69 @@ fn answer_or_warn(asker: Option<Saved>, outcome: Result<(), Error>) {
         (None, Err(error)) => {
             tracing::warn!(error = %describe_error(&error), "save the page reading reached");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use omnileaf_db::{Config, Database};
+    use omnileaf_testkit::ScratchFolder;
+
+    use super::*;
+    use crate::{SystemClock, library_book::sample_book_id as book};
+
+    const PAGE_COUNT: usize = 8;
+
+    fn keeper(folder: &ScratchFolder) -> Keeper {
+        let database = Database::open(&Config {
+            path: folder.path().join("library.sqlite"),
+            backup_dir: folder.path().join("backups"),
+            mmap_size_bytes: 0,
+        })
+        .unwrap();
+        Keeper {
+            store: Arc::new(Store::new(database, SystemClock)),
+            session: None,
+            page_counts: HashMap::new(),
+        }
+    }
+
+    async fn open(keeper: &mut Keeper, book: BookId) {
+        let (saved, _) = oneshot::channel();
+        keeper
+            .hear(Report::Opened {
+                book,
+                page_count: PAGE_COUNT,
+                saved,
+            })
+            .await;
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn forgets_a_book_s_length_once_the_reader_restores_or_closes_it() {
+        let folder = ScratchFolder::new("progress-forgets-lengths");
+        let mut keeper = keeper(&folder);
+        open(&mut keeper, book(1)).await;
+        open(&mut keeper, book(2)).await;
+
+        keeper
+            .hear(Report::Restored {
+                book: book(1),
+                page: 0,
+            })
+            .await;
+        let (saved, _) = oneshot::channel();
+        keeper
+            .hear(Report::Closed {
+                book: book(2),
+                saved,
+            })
+            .await;
+
+        assert!(
+            keeper.page_counts.is_empty(),
+            "kept {:?}",
+            keeper.page_counts
+        );
     }
 }
