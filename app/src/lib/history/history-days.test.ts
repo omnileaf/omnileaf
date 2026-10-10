@@ -76,7 +76,7 @@ test("gathers the sessions of each day in the order they are listed", () => {
   ]);
 });
 
-test("keeps a day apart from a later run of the same day, as sessions read in other zones list them", () => {
+test("gathers a day listed again after another, as sessions read in other zones list them, under its first heading", () => {
   const listed = [
     entry(THIRD, MONDAY, 900),
     entry(SECOND, MONDAY - 1, 600),
@@ -85,10 +85,24 @@ test("keeps a day apart from a later run of the same day, as sessions read in ot
 
   const days = historyDays(listed, ON_MONDAY);
 
-  expect(days.map((day) => day.title)).toEqual([
-    { kind: "day", day: MONDAY },
-    { kind: "day", day: MONDAY - 1 },
-    { kind: "day", day: MONDAY },
+  expect(summed(days)).toEqual([
+    [{ kind: "day", day: MONDAY }, 900, [THIRD, FIRST]],
+    [{ kind: "day", day: MONDAY - 1 }, 600, [SECOND]],
+  ]);
+});
+
+test("gathers last week listed again after a later day under its first heading", () => {
+  const listed = [
+    entry(THIRD, MONDAY - 3, 600),
+    entry(SECOND, MONDAY, 900),
+    entry(FIRST, MONDAY - 4, 300),
+  ];
+
+  const days = historyDays(listed, ON_WEDNESDAY);
+
+  expect(summed(days)).toEqual([
+    [{ kind: "lastWeek" }, 900, [THIRD, FIRST]],
+    [{ kind: "day", day: MONDAY }, 900, [SECOND]],
   ]);
 });
 
