@@ -5,6 +5,8 @@
   import { resolve } from "$app/paths";
   import { commands, type OpenedBook } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import { standInOpenedBook } from "#lib/series/series-stand-ins.ts";
 
   import { PageTurner } from "#lib/reader/page-turner.svelte.ts";
   import PageStack from "#lib/reader/PageStack.svelte";
@@ -24,6 +26,9 @@
   >;
 
   let { book }: { book: OpenedBook } = $props();
+
+  const screenshotMode = getScreenshotMode();
+  const named = $derived(screenshotMode.isOn ? standInOpenedBook(book) : book);
 
   const turner = untrack(
     () => new PageTurner(book.pages.length, book.startPage),
@@ -156,9 +161,9 @@
     ]}
   >
     <ReaderTopBar
-      seriesTitle={book.seriesTitle}
+      seriesTitle={named.seriesTitle}
       bookLine={m.reader_book_line({
-        title: book.title,
+        title: named.title,
         page: pageNumber,
         count: pageCount,
       })}

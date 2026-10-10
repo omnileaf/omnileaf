@@ -17,6 +17,7 @@ import {
 } from "./fixtures.ts";
 import {
   BOOK_ID,
+  BOOK_POSITION,
   BOOK_SERIES_TITLE,
   BOOK_TITLE,
   PAGE_COUNT,
@@ -591,3 +592,34 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test.describe("while Screenshot mode is on", () => {
+  const STAND_IN = /^Series \d{2,3}$/;
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "omnileaf.screenshotMode",
+        JSON.stringify({ activity: { kind: "on" } }),
+      );
+    });
+  });
+
+  test("names the series and book by their stand-ins, the book by its place in the series", async ({
+    page,
+  }) => {
+    await page.goto(`/read/${BOOK_ID}`);
+    const heading = page.getByRole("heading", { level: 1 });
+    await expect(heading).toHaveText(STAND_IN);
+    const standIn = (await heading.textContent()) ?? "";
+
+    await expect(
+      page.getByText(
+        `${standIn} · Book ${String(BOOK_POSITION)} · Page 1 of ${String(PAGE_COUNT)}`,
+      ),
+    ).toBeVisible();
+    const shown = (await page.getByRole("main").textContent()) ?? "";
+    expect(shown).not.toContain(BOOK_SERIES_TITLE);
+    expect(shown).not.toContain(BOOK_TITLE);
+  });
+});
