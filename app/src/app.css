@@ -94,6 +94,8 @@
   --text-tab: 0.625rem;
   --text-tab--line-height: calc(0.75 / 0.625);
   --text-caption: calc(0.75rem * var(--text-scale));
+  --text-reader-thumbnail: calc(0.6875rem * var(--text-scale));
+  --text-reader-thumbnail--line-height: calc(1 / 0.6875);
   --text-caption--line-height: calc(1 / 0.75);
   --text-footnote: calc(0.8125rem * var(--text-scale));
   --text-footnote--line-height: calc(1.1875 / 0.8125);
@@ -418,6 +420,10 @@
   --spacing-reader-thumb-wide: 1.25rem;
   --spacing-reader-spinner: 2.5rem;
   --spacing-reader-book-step: 12rem;
+  --spacing-reader-thumbnail: 2.875rem;
+  --spacing-reader-thumbnail-wide: 3.25rem;
+  --spacing-reader-filmstrip-gap: 0.625rem;
+  --spacing-reader-filmstrip-gap-wide: 0.75rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
@@ -494,6 +500,7 @@
   --radius-reader-panel: 1.625rem;
   --radius-reader-panel-wide: 1.375rem;
   --radius-reader-control-wide: 0.75rem;
+  --radius-reader-thumbnail: 0.25rem;
 
   --aspect-cover: 2 / 3;
   --radius-tile: 0.625rem;

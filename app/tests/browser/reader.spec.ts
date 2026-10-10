@@ -202,6 +202,39 @@ test("goes to any page with the slider", async ({ page }) => {
   await expect(slider(page)).toHaveAttribute("aria-valuetext", "Page 16 of 30");
 });
 
+function nearbyPages(page: Page): Locator {
+  return page.getByRole("list", { name: "Nearby pages" });
+}
+
+test("shows the pages near the one dragged to while the slider is dragged", async ({
+  page,
+}) => {
+  await openBook(page);
+  const track = await boxOf(slider(page));
+  const y = track.y + track.height / 2;
+  const isWide = viewportOf(page).width >= EXPANDED_MIN_WIDTH;
+
+  await page.mouse.move(track.x + 2, y);
+  await page.mouse.down();
+  await page.mouse.move(track.x + track.width / 2, y, { steps: 4 });
+
+  const shownNumber = Number(await slider(page).inputValue());
+  const near = nearbyPages(page).getByRole("listitem");
+  await expect(near).toHaveCount(isWide ? 7 : 5);
+  await expect(near.and(page.locator('[aria-current="page"]'))).toContainText(
+    String(shownNumber),
+  );
+  await expect(
+    nearbyPages(page).getByRole("img", {
+      name: `Page ${String(shownNumber + 1)}`,
+    }),
+  ).toBeVisible();
+
+  await page.mouse.up();
+
+  await expect(nearbyPages(page)).toBeHidden();
+});
+
 test("stays on the first and last pages when asked to turn past them", async ({
   page,
 }) => {

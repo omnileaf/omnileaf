@@ -175,8 +175,8 @@
     ]}
   >
     <ReaderPanel
+      pages={book.pages}
       shown={turner.shown}
-      count={pageCount}
       previous={named.previous}
       next={named.next}
       onSeek={(index: number) => {
