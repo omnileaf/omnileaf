@@ -135,6 +135,7 @@ impl Pages {
             book: found.id,
             rev: found.rev,
         };
+        self.lane.supersede_other_books(file);
         let shared = Arc::clone(&self.shared);
         let located = library
             .book_file(found)

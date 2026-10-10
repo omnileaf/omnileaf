@@ -5,6 +5,7 @@ use tokio::sync::oneshot;
 use crate::{
     PagePath,
     lane::{Job, JobQueue, Lane, LaneStopped, answered},
+    open_books::BookFileAt,
 };
 
 /// Room for every page the reader keeps around the one it shows, so only pages it left well behind are dropped.
@@ -123,6 +124,21 @@ impl PageLane {
             (superseded.answer)(Fate::Superseded);
         }
         async move { receiver.await.map_err(|_| LaneStopped)? }
+    }
+
+    /// Answers every page still waiting that isn't of `book` as superseded, so a book just opened never waits behind the one closed.
+    pub(crate) fn supersede_other_books(&self, book: BookFileAt) {
+        let superseded = self.0.queue(|queue| {
+            let (kept, superseded): (VecDeque<AskedPage>, VecDeque<AskedPage>) = queue
+                .asked_pages
+                .drain(..)
+                .partition(|asked| asked.path.book == book.book && asked.path.rev == book.rev);
+            queue.asked_pages = kept;
+            superseded
+        });
+        for asked in superseded {
+            (asked.answer)(Fate::Superseded);
+        }
     }
 
     /// Replaces the reading ahead still waiting with `jobs`, so it always follows the page read last.
@@ -279,6 +295,25 @@ mod tests {
         }
         assert_eq!(superseded, [26]);
         assert_eq!(*read.lock().unwrap(), [3, 20, 21, 22, 23, 24, 25, 4]);
+    }
+
+    #[tokio::test]
+    async fn answers_the_pages_still_asked_for_of_another_book_as_superseded_once_a_book_opens() {
+        let lane = PageLane::start("page-lane-other-book", ONE_WORKER).unwrap();
+        let (release, _occupied) = occupy(&lane);
+        let ran = Ran::default();
+        let closed = lane.read_page(page_of(book(1), 7), noting(&ran, "closed book"));
+        let opened = lane.read_page(page_of(book(2), 0), noting(&ran, "opened book"));
+
+        lane.supersede_other_books(BookFileAt {
+            book: book(2),
+            rev: 1,
+        });
+
+        drop(release);
+        assert!(matches!(closed.await, Err(AskedPageError::Superseded)));
+        opened.await.unwrap();
+        assert_eq!(*ran.lock().unwrap(), ["opened book"]);
     }
 
     #[tokio::test]
