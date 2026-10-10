@@ -12,11 +12,13 @@
     entries,
     isComplete,
     today,
+    usesStandIns,
     onNearEnd,
   }: {
     entries: readonly HistoryEntry[];
     isComplete: boolean;
     today: LocalDay;
+    usesStandIns: boolean;
     onNearEnd: () => void;
   } = $props();
 
@@ -39,7 +41,7 @@
       </h2>
       <ul>
         {#each day.entries as entry (`${entry.book}-${String(entry.startedAtMs)}`)}
-          <HistoryRow {entry} {locale} />
+          <HistoryRow {entry} {locale} {usesStandIns} />
         {/each}
       </ul>
     </section>

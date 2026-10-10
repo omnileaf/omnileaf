@@ -4,6 +4,7 @@ import {
   CommandFailure,
   emitFakeEvent,
   type FakeBackend,
+  fakeProtocolRoute,
 } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -340,6 +341,55 @@ test.describe("on a device whose region starts its weeks on Monday", () => {
     await openHistory(page);
 
     await expect(page.getByText("3 h 12 min read this week")).toBeVisible();
+  });
+});
+
+test.describe("with Screenshot mode on", () => {
+  let coverRequests = 0;
+
+  test.use({
+    backend: {
+      ...READ_BACKEND,
+      readingHistory: pagedSessions(
+        SESSIONS.map((session) => ({
+          ...session,
+          cover: `thumb/v1/${session.book}/1/1`,
+        })),
+      ),
+    },
+  });
+
+  test.beforeEach(async ({ page }) => {
+    coverRequests = 0;
+    await page.route(fakeProtocolRoute("omni"), (route) => {
+      coverRequests += 1;
+      return route.abort();
+    });
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "omnileaf.screenshotMode",
+        JSON.stringify({ activity: { kind: "on" } }),
+      );
+    });
+  });
+
+  test("shows stand-ins for every series and book, asks for no cover and keeps the times real", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    await expect(rows(page)).toHaveCount(SESSIONS.length);
+
+    const first = rows(page).first();
+    await expect(first).toContainText(
+      /Series \d{2,3} · Book 4 · page 14 of 30/,
+    );
+    await expect(first).toContainText(/9:40\sPM/);
+    for (const link of await rows(page).getByRole("link").all()) {
+      await expect(link).not.toHaveAccessibleName(/Sample Series/);
+    }
+    expect(await page.content()).not.toContain("Sample Series");
+    await expect(rows(page).getByRole("presentation")).toHaveCount(0);
+    expect(coverRequests).toBe(0);
   });
 });
 

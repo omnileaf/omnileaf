@@ -81,6 +81,7 @@
       entries={history.list.items}
       isComplete={history.list.isComplete}
       {today}
+      usesStandIns={screenshotMode.isOn}
       onNearEnd={() => {
         void history.loadMore();
       }}

@@ -6,14 +6,23 @@
   import type { HistoryEntry } from "#lib/ipc/bindings.ts";
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { standInHistoryEntry } from "#lib/series/series-stand-ins.ts";
 
-  let { entry, locale }: { entry: HistoryEntry; locale: string } = $props();
+  let {
+    entry: listed,
+    locale,
+    usesStandIns,
+  }: { entry: HistoryEntry; locale: string; usesStandIns: boolean } = $props();
+
+  const entry = $derived(usesStandIns ? standInHistoryEntry(listed) : listed);
 
   const href = $derived(resolve("/read/[book]", { book: entry.book }));
   const cover: ShownCover = $derived(
-    entry.cover === null
-      ? { kind: "none" }
-      : { kind: "picture", path: entry.cover },
+    usesStandIns
+      ? { kind: "standIn" }
+      : entry.cover === null
+        ? { kind: "none" }
+        : { kind: "picture", path: entry.cover },
   );
   const time = $derived(startedAtTime(entry, locale));
   const readFor = $derived(readingTime(entry.readSeconds));
