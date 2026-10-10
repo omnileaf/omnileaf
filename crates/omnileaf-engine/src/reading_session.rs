@@ -1,6 +1,6 @@
 use tokio::time::{Duration, Instant};
 
-use crate::BookId;
+use crate::{BookId, SeriesId};
 
 /// How long after the first page left unsaved reading is saved, however many pages are turned meanwhile.
 pub const READING_SAVE_DELAY: Duration = Duration::from_millis(1_500);
@@ -9,6 +9,7 @@ pub const READING_SAVE_DELAY: Duration = Duration::from_millis(1_500);
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct ReachedPage {
     pub(crate) book: BookId,
+    pub(crate) series: SeriesId,
     pub(crate) page: u32,
     pub(crate) is_last: bool,
 }
@@ -36,16 +37,18 @@ enum Stage {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct ReadingSession {
     book: BookId,
+    series: SeriesId,
     last_page: u32,
     stage: Stage,
 }
 
 impl ReadingSession {
     /// None for a book with no pages to read.
-    pub(crate) fn opening(book: BookId, page_count: usize) -> Option<Self> {
+    pub(crate) fn opening(book: BookId, series: SeriesId, page_count: usize) -> Option<Self> {
         let last_page = u32::try_from(page_count.checked_sub(1)?).unwrap_or(u32::MAX);
         Some(Self {
             book,
+            series,
             last_page,
             stage: Stage::Opening,
         })
@@ -101,6 +104,7 @@ impl ReadingSession {
         };
         Some(ReachedPage {
             book: self.book,
+            series: self.series,
             page: unsaved.page,
             is_last: unsaved.page == self.last_page,
         })
@@ -138,13 +142,13 @@ mod tests {
     use proptest::{collection::vec, prelude::*};
 
     use super::*;
-    use crate::library_book::sample_book_id as book;
+    use crate::{library_book::sample_book_id as book, library_series::sample_series_id};
 
     const PAGE_COUNT: usize = 8;
     const LAST_PAGE: u32 = 7;
 
     fn restored_on(page: u32) -> ReadingSession {
-        let mut session = ReadingSession::opening(book(1), PAGE_COUNT).unwrap();
+        let mut session = ReadingSession::opening(book(1), sample_series_id(), PAGE_COUNT).unwrap();
         session.restored(page);
         session
     }
@@ -152,6 +156,7 @@ mod tests {
     fn reached(page: u32) -> ReachedPage {
         ReachedPage {
             book: book(1),
+            series: sample_series_id(),
             page,
             is_last: page == LAST_PAGE,
         }
@@ -159,14 +164,14 @@ mod tests {
 
     #[test]
     fn opens_no_session_for_a_book_without_pages() {
-        let session = ReadingSession::opening(book(1), 0);
+        let session = ReadingSession::opening(book(1), sample_series_id(), 0);
 
         assert_eq!(session, None);
     }
 
     #[test]
     fn saves_nothing_shown_before_the_reader_restored_the_book() {
-        let mut session = ReadingSession::opening(book(1), PAGE_COUNT).unwrap();
+        let mut session = ReadingSession::opening(book(1), sample_series_id(), PAGE_COUNT).unwrap();
         session.shown(4, Instant::now());
 
         let saved = session.unsaved();
@@ -281,7 +286,7 @@ mod tests {
 
     #[test]
     fn ignores_a_page_past_the_book_s_end() {
-        let mut session = ReadingSession::opening(book(1), PAGE_COUNT).unwrap();
+        let mut session = ReadingSession::opening(book(1), sample_series_id(), PAGE_COUNT).unwrap();
         session.restored(LAST_PAGE + 1);
         session.restored(2);
 
@@ -323,7 +328,7 @@ mod tests {
         fn saves_only_after_the_restore_and_always_the_page_shown_last(
             reports in vec(any_report(), 0..32)
         ) {
-            let mut session = ReadingSession::opening(book(1), PAGE_COUNT).unwrap();
+            let mut session = ReadingSession::opening(book(1), sample_series_id(), PAGE_COUNT).unwrap();
             let now = Instant::now();
             let mut restored = None;
             let mut on_page = None;

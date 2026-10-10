@@ -88,6 +88,7 @@ pub use page_path::{MalformedPagePath, PagePath};
 pub use page_thumbnail_path::{MalformedPageThumbnailPath, PageThumbnailPath};
 pub use pages::OpenBookError;
 pub use project_link::ProjectLink;
+pub use reading_progress::ReadingSaved;
 pub use reading_session::READING_SAVE_DELAY;
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
 pub use rescan_conditions::{

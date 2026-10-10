@@ -44,7 +44,7 @@ use crate::{
     library_layout::folder_name,
     library_search::StoredSearch,
     moved_home::move_home,
-    reading_progress::ReadingProgress,
+    reading_progress::{ReadingProgress, ReadingSaved},
     rescan::rescan,
     rescan_conditions::{RescanConditions, Storage},
     rescan_schedule::{Check, RescanSchedule},
@@ -382,13 +382,20 @@ impl Library {
         self.reading.save_now().await
     }
 
-    /// Saves the page reached in the book read now, and keeps `book`'s length for when the reader restores it.
+    /// Saves the page reached in the book read now, and keeps `book`'s series and length for when the reader restores it.
     pub(crate) async fn start_reading(
         &self,
         book: BookId,
+        series: SeriesId,
         page_count: usize,
     ) -> Result<(), LibraryError> {
-        self.reading.opened(book, page_count).await
+        self.reading.opened(book, series, page_count).await
+    }
+
+    /// Each page reading reached once it is saved, whichever book it is in.
+    #[must_use]
+    pub fn reading_saved(&self) -> broadcast::Receiver<ReadingSaved> {
+        self.reading.subscribe()
     }
 
     pub async fn listing(&self) -> Result<LibraryListing, LibraryError> {

@@ -5,26 +5,41 @@ use omnileaf_db::{
     store::{Store, Writer},
 };
 use tokio::{
-    sync::{mpsc, oneshot},
+    sync::{broadcast, mpsc, oneshot},
     task::JoinHandle,
     time::{Duration, Instant, sleep_until},
 };
 
 use crate::{
-    BookId, LibraryError, describe_error,
+    BookId, LibraryError, SeriesId, describe_error,
     reading_session::{READING_SAVE_DELAY, ReachedPage, ReadingSession},
 };
 
 const REPORT_BACKLOG: usize = 64;
+const SAVED_BACKLOG: usize = 64;
 /// The longest a save waits to try again, however long the store keeps failing.
 const LONGEST_RETRY_WAIT: Duration = Duration::from_secs(60);
 
 type Saved = oneshot::Sender<Result<(), Error>>;
 
+/// A page reached in a book is saved, so what shows the book's place in its series is out of date.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ReadingSaved {
+    pub book: BookId,
+    pub series: SeriesId,
+}
+
+/// A book opened, which a session starts from once the reader restores it.
+#[derive(Clone, Copy, Debug)]
+struct Opened {
+    series: SeriesId,
+    page_count: usize,
+}
+
 enum Report {
     Opened {
         book: BookId,
-        page_count: usize,
+        opened: Opened,
         saved: Saved,
     },
     Restored {
@@ -47,6 +62,7 @@ enum Report {
 /// Saves where the reader is through the store's write path, a moment after each page turn and at once when asked.
 pub(crate) struct ReadingProgress {
     reports: mpsc::Sender<Report>,
+    saved: broadcast::Sender<ReadingSaved>,
     _task: JoinHandle<()>,
 }
 
@@ -54,17 +70,29 @@ impl ReadingProgress {
     /// Starts the task that saves progress, which saves whatever is unsaved and stops once this is dropped.
     pub(crate) fn start(store: Arc<Store>) -> Self {
         let (reports, received) = mpsc::channel(REPORT_BACKLOG);
+        let saved = broadcast::Sender::new(SAVED_BACKLOG);
         Self {
             reports,
-            _task: tokio::spawn(keep(store, received)),
+            _task: tokio::spawn(keep(Keeper::new(store, saved.clone()), received)),
+            saved,
         }
     }
 
-    /// Saves the page reached in the book read now, and keeps `book`'s length for when the reader restores it.
-    pub(crate) async fn opened(&self, book: BookId, page_count: usize) -> Result<(), LibraryError> {
+    /// A receiver that falls too far behind loses the oldest saves and is told how many it missed.
+    pub(crate) fn subscribe(&self) -> broadcast::Receiver<ReadingSaved> {
+        self.saved.subscribe()
+    }
+
+    /// Saves the page reached in the book read now, and keeps `book`'s series and length for when the reader restores it.
+    pub(crate) async fn opened(
+        &self,
+        book: BookId,
+        series: SeriesId,
+        page_count: usize,
+    ) -> Result<(), LibraryError> {
         self.ask(|saved| Report::Opened {
             book,
-            page_count,
+            opened: Opened { series, page_count },
             saved,
         })
         .await
@@ -104,8 +132,7 @@ impl ReadingProgress {
     }
 }
 
-async fn keep(store: Arc<Store>, mut reports: mpsc::Receiver<Report>) {
-    let mut keeper = Keeper::new(store);
+async fn keep(mut keeper: Keeper, mut reports: mpsc::Receiver<Report>) {
     loop {
         let due = keeper.due();
         let report = tokio::select! {
@@ -127,22 +154,24 @@ async fn keep(store: Arc<Store>, mut reports: mpsc::Receiver<Report>) {
 struct Keeper {
     store: Arc<Store>,
     session: Option<ReadingSession>,
-    page_counts: HashMap<BookId, usize>,
+    opened: HashMap<BookId, Opened>,
     /// The page reached in each book left before its save landed, which every save tries again.
     left_unsaved: HashMap<BookId, ReachedPage>,
     retry_at: Option<Instant>,
     failed_in_a_row: u32,
+    saved: broadcast::Sender<ReadingSaved>,
 }
 
 impl Keeper {
-    fn new(store: Arc<Store>) -> Self {
+    fn new(store: Arc<Store>, saved: broadcast::Sender<ReadingSaved>) -> Self {
         Self {
             store,
             session: None,
-            page_counts: HashMap::new(),
+            opened: HashMap::new(),
             left_unsaved: HashMap::new(),
             retry_at: None,
             failed_in_a_row: 0,
+            saved,
         }
     }
 
@@ -156,10 +185,10 @@ impl Keeper {
         match report {
             Report::Opened {
                 book,
-                page_count,
+                opened,
                 saved,
             } => {
-                self.page_counts.insert(book, page_count);
+                self.opened.insert(book, opened);
                 answer(Some(saved), self.save().await);
             }
             Report::Restored { book, page } => self.restored(book, page).await,
@@ -175,19 +204,19 @@ impl Keeper {
 
     /// Saves the book read before and reads `book` from now on, unless it is the book read already.
     async fn restored(&mut self, book: BookId, page: u32) {
-        let page_count = self.page_counts.remove(&book);
+        let opened = self.opened.remove(&book);
         if let Some(open) = self.session.as_mut().filter(|open| open.book() == book) {
             open.restored(page);
             return;
         }
-        let Some(page_count) = page_count else {
+        let Some(Opened { series, page_count }) = opened else {
             tracing::debug!(%book, "ignore a restore of a book never opened");
             return;
         };
         if let Some(left) = self.session.take() {
             self.leave(left);
         }
-        self.session = ReadingSession::opening(book, page_count).map(|mut opening| {
+        self.session = ReadingSession::opening(book, series, page_count).map(|mut opening| {
             opening.restored(page);
             opening
         });
@@ -196,7 +225,7 @@ impl Keeper {
 
     /// Stops reading `book` and saves the page reached in it, which later saves try again should this one fail.
     async fn closed(&mut self, book: BookId) -> Result<(), Error> {
-        self.page_counts.remove(&book);
+        self.opened.remove(&book);
         let Some(left) = self.session.take_if(|open| open.book() == book) else {
             tracing::debug!(%book, "ignore closing a book not read now");
             return Ok(());
@@ -230,21 +259,29 @@ impl Keeper {
         }
         let outcome = self
             .store
-            .write(move |writer| write_reached(writer, &reached))
+            .write({
+                let reached = reached.clone();
+                move |writer| write_reached(writer, &reached)
+            })
             .await;
         match &outcome {
-            Ok(()) => self.landed(reading),
+            Ok(()) => self.landed(&reached, reading),
             Err(error) => self.failed(error),
         }
         outcome
     }
 
-    fn landed(&mut self, reading: Option<ReachedPage>) {
+    fn landed(&mut self, reached: &[ReachedPage], reading: Option<ReachedPage>) {
         self.left_unsaved.clear();
         self.retry_at = None;
         self.failed_in_a_row = 0;
         if let (Some(open), Some(reading)) = (self.session.as_mut(), reading) {
             open.saved(reading);
+        }
+        for &ReachedPage { book, series, .. } in reached {
+            if self.saved.send(ReadingSaved { book, series }).is_err() {
+                tracing::trace!("no one is listening for reading saved");
+            }
         }
     }
 
@@ -273,6 +310,7 @@ fn write_reached(writer: &mut Writer<'_>, reached: &[ReachedPage]) -> Result<(),
         book,
         page,
         is_last,
+        ..
     } in reached
     {
         writer.set_position(book.0, page)?;
@@ -307,7 +345,10 @@ mod tests {
     use tokio::time::Duration;
 
     use super::*;
-    use crate::{SystemClock, captured_log::CapturedLog, library_book::sample_book_id as book};
+    use crate::{
+        SystemClock, captured_log::CapturedLog, library_book::sample_book_id as book,
+        library_series::sample_series_id,
+    };
 
     const PAGE_COUNT: usize = 8;
     const REFUSE_SAVES: &str = "CREATE TRIGGER refuse_saves BEFORE INSERT ON sync_register
@@ -320,7 +361,10 @@ mod tests {
             mmap_size_bytes: 0,
         })
         .unwrap();
-        Keeper::new(Arc::new(Store::new(database, SystemClock)))
+        Keeper::new(
+            Arc::new(Store::new(database, SystemClock)),
+            broadcast::Sender::new(SAVED_BACKLOG),
+        )
     }
 
     async fn open(keeper: &mut Keeper, book: BookId) {
@@ -328,7 +372,10 @@ mod tests {
         keeper
             .hear(Report::Opened {
                 book,
-                page_count: PAGE_COUNT,
+                opened: Opened {
+                    series: sample_series_id(),
+                    page_count: PAGE_COUNT,
+                },
                 saved,
             })
             .await;
@@ -480,10 +527,6 @@ mod tests {
             })
             .await;
 
-        assert!(
-            keeper.page_counts.is_empty(),
-            "kept {:?}",
-            keeper.page_counts
-        );
+        assert!(keeper.opened.is_empty(), "kept {:?}", keeper.opened);
     }
 }
