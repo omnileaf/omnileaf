@@ -86,8 +86,12 @@
 
   async function mark(picked: SeriesBook["id"][], read: ReadMark) {
     const marked = await commands.markBooks(picked, read);
+    if (marked.status === "error") {
+      reportError(marked.error);
+      return false;
+    }
     readAgain();
-    return marked.status === "ok";
+    return true;
   }
 
   $effect(() => {
