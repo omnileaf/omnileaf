@@ -1,6 +1,8 @@
 mod support;
 
-use omnileaf_formats::{ComicInfoError, PageKind, ReadingDirection, open_book, parse_comic_info};
+use omnileaf_formats::{
+    ComicInfoError, FormatError, PageKind, ReadingDirection, open_book, parse_comic_info,
+};
 use omnileaf_testkit::{Compression, PageShape, cbz, page_png};
 use support::{ScratchFolder, entry};
 
@@ -172,4 +174,40 @@ fn has_no_comic_info_when_the_book_carries_none() {
     let info = open_book(&path).unwrap().comic_info().unwrap();
 
     assert!(info.is_none());
+}
+
+#[test]
+fn reads_a_folders_comic_info_whatever_the_case_of_its_name() {
+    let scratch = ScratchFolder::new("folder-case");
+    scratch.write(
+        "Chapter 01/1.png",
+        &page_png(5, 0, PageShape::Portrait).unwrap(),
+    );
+    scratch.write("Chapter 01/comicinfo.XML", FULL.as_bytes());
+
+    let info = open_book(&scratch.path().join("Chapter 01"))
+        .unwrap()
+        .comic_info()
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(info.series.as_deref(), Some("Sample Series 04"));
+}
+
+#[test]
+fn refuses_a_folders_comic_info_larger_than_the_limit() {
+    let scratch = ScratchFolder::new("folder-large");
+    scratch.write(
+        "Chapter 01/1.png",
+        &page_png(5, 0, PageShape::Portrait).unwrap(),
+    );
+    scratch.write("Chapter 01/ComicInfo.xml", &vec![b' '; 1024 * 1024 + 1]);
+    let mut book = open_book(&scratch.path().join("Chapter 01")).unwrap();
+
+    let error = book.comic_info().unwrap_err();
+
+    assert!(
+        matches!(error, FormatError::ComicInfoTooLarge { .. }),
+        "{error:?}"
+    );
 }
