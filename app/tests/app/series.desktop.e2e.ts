@@ -1,13 +1,8 @@
 import { expect, test } from "vitest";
 
-import { useAppSession } from "./app-session.ts";
+import { addSampleLibrary, useAppSession } from "./app-session.ts";
 import { xpath } from "./webdriver.ts";
 
-const LIBRARY_LINK = xpath("//nav//a[normalize-space()='Library']");
-const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
-const FINISHED_SCAN_REPORT = xpath(
-  "//*[@role='status'][starts-with(normalize-space(), 'Found ')]",
-);
 const FIRST_SERIES_COVER = xpath(
   "//ul[@aria-label='Series']//a[.//*[normalize-space()='Sample Series 01']]",
 );
@@ -25,9 +20,7 @@ const READ_COUNT = xpath("//main//p[normalize-space()='1 of 3 read']");
 const appSession = useAppSession();
 
 async function openFirstSeries(): Promise<void> {
-  await (await appSession().waitFor(LIBRARY_LINK)).click();
-  await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
-  await appSession().waitFor(FINISHED_SCAN_REPORT);
+  await addSampleLibrary(appSession());
   await (await appSession().waitFor(FIRST_SERIES_COVER)).click();
   await appSession().waitFor(SERIES_HEADING);
 }
