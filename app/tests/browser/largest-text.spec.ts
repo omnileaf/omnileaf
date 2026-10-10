@@ -1,12 +1,14 @@
 import type { Page } from "@playwright/test";
 
+import english from "../../messages/en.json" with { type: "json" };
+import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import {
   COVERS_PER_ROW,
   type CoversPerRow,
   DEFAULT_LIBRARY_VIEW,
   type LibraryDisplay,
 } from "../../src/lib/ipc/bindings.ts";
-import { fakeProtocolRoute } from "./fake-backend.ts";
+import { type FakeBackend, fakeProtocolRoute } from "./fake-backend.ts";
 import {
   APP_PAGES,
   expect,
@@ -54,6 +56,59 @@ const COVERS_PER_ROW_CHOICES = {
 } as const satisfies Record<string, CoversPerRow>;
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;
 const FIRST_LAUNCH_STEPS = ["welcome", "home", "link", "choices", "ready"];
+const IPAD_PRO_LANDSCAPE = { width: 1376, height: 1032 };
+const TOUCH_TARGET_PX = 48;
+const MESSAGES = { en: english, "en-XA": pseudo } as const;
+const READ_AT_MS = Date.parse("2026-10-05T19:05:00.000Z");
+const DAY_MS = 86_400_000;
+
+type WireEntry = Awaited<
+  ReturnType<FakeBackend["readingHistory"]>
+>["entries"][number];
+
+function historyEntry(
+  number: number,
+  reading: WireEntry["reading"],
+): WireEntry {
+  return {
+    book: `0190a3e4-0000-8000-8000-00000000000${String(number)}`,
+    bookTitle: `Sample Series 0${String(number)} v0${String(number)}`,
+    series: `0190a3e4-0000-8000-8001-00000000000${String(number)}`,
+    seriesTitle: `Sample Series 0${String(number)}`,
+    position: number,
+    cover: null,
+    startedAtMs: READ_AT_MS - number * 60_000,
+    utcOffsetMinutes: 0,
+    readSeconds: 600,
+    readTo:
+      reading.state === "read"
+        ? { state: "end" }
+        : { state: "page", page: 14, pageCount: 30 },
+    reading,
+    day: { day: Math.floor(READ_AT_MS / DAY_MS), readSeconds: 1200 },
+  };
+}
+
+const READ_ENTRIES = [
+  historyEntry(1, { state: "started", page: 14 }),
+  historyEntry(2, { state: "read" }),
+];
+
+/** How each visible link sits in its box: whether its text spills out, and how tall it is. */
+function linkFits(page: Page): Promise<{ spills: boolean; height: number }[]> {
+  return page
+    .getByRole("main")
+    .getByRole("link")
+    .filter({ visible: true })
+    .evaluateAll((links) =>
+      links.map((link) => ({
+        spills:
+          link.scrollWidth > link.clientWidth ||
+          link.scrollHeight > link.clientHeight,
+        height: link.getBoundingClientRect().height,
+      })),
+    );
+}
 
 function headingSpill(page: Page): Promise<number> {
   return page
@@ -222,6 +277,48 @@ for (const platform of PLATFORMS) {
               .check();
           }
 
+          await expectNothingSpills(page);
+        });
+      }
+    });
+
+    test.describe("in History with books read", () => {
+      test.use({
+        backend: {
+          ...onPlatform(platform).backend,
+          readingHistory: () => ({ entries: READ_ENTRIES, next: null }),
+          readingTimeSince: () => 1200,
+        },
+      });
+
+      for (const [language, messages] of Object.entries(MESSAGES)) {
+        test(`fits each session's link to its text and a finger in an iPad's widest landscape window in ${language}`, async ({
+          page,
+        }) => {
+          await page.addInitScript((chosen) => {
+            window.localStorage.setItem("omnileaf.language", chosen);
+          }, language);
+          await page.setViewportSize(IPAD_PRO_LANDSCAPE);
+          await page.goto("/history");
+          await expect(
+            page.getByRole("heading", {
+              level: 1,
+              name: messages.history_title,
+            }),
+          ).toBeVisible();
+          await expect(
+            page.getByRole("main").getByRole("link").filter({ visible: true }),
+          ).toHaveCount(READ_ENTRIES.length);
+          await page.evaluate(() => document.fonts.ready);
+
+          const fits = await linkFits(page);
+
+          expect(fits.map(({ spills }) => spills)).toEqual(
+            READ_ENTRIES.map(() => false),
+          );
+          for (const { height } of fits) {
+            expect(height).toBeGreaterThanOrEqual(TOUCH_TARGET_PX);
+          }
           await expectNothingSpills(page);
         });
       }

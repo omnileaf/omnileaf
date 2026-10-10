@@ -46,11 +46,11 @@
 </script>
 
 <li
-  class="large:flex large:items-center large:border-be large:border-border large:min-block-history-row-wide"
+  class="desktop:large:flex desktop:large:items-center desktop:large:border-be desktop:large:border-border desktop:large:min-block-history-row-wide"
 >
   <a
     {href}
-    class="flex items-center gap-cover-gap min-block-history-row large:hidden"
+    class="flex items-center gap-cover-gap min-block-history-row desktop:large:hidden"
   >
     <ListCover
       {cover}
@@ -65,7 +65,7 @@
       </span>
     </span>
   </a>
-  <div class="hidden flex-1 items-center gap-lg large:flex">
+  <div class="hidden flex-1 items-center gap-lg desktop:large:flex">
     <ListCover
       {cover}
       {coverUrl}
@@ -89,7 +89,7 @@
     <a
       {href}
       aria-label={action.label}
-      class="flex shrink-0 items-center justify-center rounded-small-control border border-field bg-card text-small font-semibold block-pointer-button inline-history-action hover:tint-hover active:tint-pressed"
+      class="flex shrink-0 items-center justify-center rounded-small-control border border-field bg-card px-md text-small font-semibold whitespace-nowrap min-block-pointer-button min-inline-history-action hover:tint-hover active:tint-pressed"
     >
       {action.text}
     </a>
