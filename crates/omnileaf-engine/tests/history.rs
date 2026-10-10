@@ -17,8 +17,8 @@ use std::sync::{
 
 use books::write_book;
 use omnileaf_engine::{
-    BookId, BookReading, Clock, HistoryEntry, Library, LibraryListing, LocalDay, OpenedBook,
-    ProbedFormat, ReadMark, ReadTo, ResourceRouter, SeriesBookListing, UtcOffset,
+    BookId, BookReading, Clock, FolderKind, HistoryEntry, Library, LibraryListing, LocalDay,
+    OpenedBook, ProbedFormat, ReadMark, ReadTo, ResourceRouter, SeriesBookListing, UtcOffset,
 };
 use support::{FixedClock, NOW_UNIX_MS, ScratchFolder};
 
@@ -282,6 +282,36 @@ async fn counts_the_time_read_since_a_day() {
     let read_seconds = shelf.library.reading_time_since(SOME_MONDAY).await.unwrap();
 
     assert_eq!(read_seconds, 120);
+}
+
+#[tokio::test]
+async fn counts_the_time_read_between_two_days_in_books_no_longer_in_the_library_too() {
+    let shelf = Shelf::with_two_books("history-between").await;
+    let opened = shelf.restore(0).await;
+    shelf.clock.advance(2 * MINUTE_MS);
+    shelf.close(&opened).await;
+    let folders = shelf.library.folders(None).await.unwrap().folders;
+    let linked = folders
+        .iter()
+        .find(|folder| folder.kind == FolderKind::Linked)
+        .unwrap();
+    shelf.library.remove_folder(linked.id).await.unwrap();
+    let day_before = LocalDay(SOME_MONDAY.0 - 1);
+
+    let read_seconds = [
+        shelf
+            .library
+            .reading_time_between(day_before, SOME_MONDAY)
+            .await
+            .unwrap(),
+        shelf
+            .library
+            .reading_time_between(day_before, day_before)
+            .await
+            .unwrap(),
+    ];
+
+    assert_eq!((shelf.entries().await.len(), read_seconds), (0, [120, 0]));
 }
 
 #[tokio::test]

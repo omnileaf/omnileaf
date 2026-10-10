@@ -378,6 +378,24 @@ impl Library {
         Ok(whole_seconds(read_ms))
     }
 
+    /// Seconds read from the start of `first_day` to the end of `last_day`, in the local time each session started at.
+    pub async fn reading_time_between(
+        &self,
+        first_day: LocalDay,
+        last_day: LocalDay,
+    ) -> Result<u32, LibraryError> {
+        let days = first_day.0..=last_day.0;
+        let read_ms_by_day = self
+            .store
+            .database()
+            .read(move |connection| reading_time_by_day(connection, days))
+            .await?;
+        let read_ms = read_ms_by_day
+            .values()
+            .fold(0_i64, |sum, &read_ms| sum.saturating_add(read_ms));
+        Ok(whole_seconds(read_ms))
+    }
+
     /// Marks the books read or unread in one write, leaving where each was opened at as it is, once any reading not yet saved is, so that save never undoes the mark.
     #[tracing::instrument(skip_all, fields(books = books.len(), ?mark))]
     pub async fn mark_books(&self, books: Vec<BookId>, mark: ReadMark) -> Result<(), LibraryError> {
