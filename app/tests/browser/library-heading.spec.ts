@@ -29,6 +29,8 @@ const RESIZE_SWEEP = Array.from({ length: 41 }, (_, step) => 800 + step * 16);
 const TABLET_WIDTH = 840;
 const FILTERED_COUNT = 7;
 const LARGEST_TEXT = ":root { --text-scale: 2 !important; }";
+const LARGER_TEXT = ":root { --text-scale: 1.3 !important; }";
+const CROWDED_WIDTH = 1240;
 const LARGEST_TEXT_WIDTHS = [360, 375, 390, 430];
 const PLATFORMS = ["ios", "android", "linux"] as const;
 const LANGUAGES = { en: english, "en-XA": pseudo } as const;
@@ -717,5 +719,39 @@ test.describe("the heading after the library empties", () => {
     await expect(
       addFolder.getByText(pseudo.library_add_folder),
     ).not.toHaveClass(/(^|\s)sr-only(\s|$)/);
+  });
+
+  test("sets the Screenshot mode label back beside the title once the count it gave way to goes", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      !testInfo.project.name.endsWith("phone"),
+      "the screen ios sweeps from",
+    );
+    await page.addInitScript((css) => {
+      localStorage.setItem("omnileaf.language", "en-XA");
+      document.addEventListener("DOMContentLoaded", () => {
+        const style = document.createElement("style");
+        style.textContent = css;
+        document.head.append(style);
+      });
+    }, LARGER_TEXT);
+    await openAt(page, CROWDED_WIDTH, "on");
+    await expect(countOf(page)).toBeVisible();
+    const title = headingOf(page).getByRole("heading", { level: 1 });
+    const labelSits = async (): Promise<"beside" | "below"> => {
+      const titleBox = await boxOf(title);
+      const label = headingOf(page).getByText(pseudo.screenshot_mode_title, {
+        exact: true,
+      });
+      return isOnRowOf(await boxOf(label), titleBox) ? "beside" : "below";
+    };
+    await expect.poll(labelSits).toBe("below");
+
+    holdsSeries = false;
+    await emitFakeEvent(page, "library-changed");
+    await expect(controlsOf(headingOf(page))).toHaveCount(1);
+
+    await expect.poll(labelSits).toBe("beside");
   });
 });
