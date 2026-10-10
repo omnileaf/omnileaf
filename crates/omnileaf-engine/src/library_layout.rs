@@ -60,6 +60,11 @@ pub(crate) fn find_books(root: &Path) -> io::Result<Layout> {
 }
 
 impl Layout {
+    /// Nothing in a folder that holds no books and no subfolder it couldn't read can still be a book.
+    pub(crate) fn is_empty(&self) -> bool {
+        self.books.is_empty() && self.unreadable_folders.is_empty()
+    }
+
     fn take_in(
         &mut self,
         folder: &Path,
