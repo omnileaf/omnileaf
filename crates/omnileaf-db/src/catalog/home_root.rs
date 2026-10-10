@@ -1,9 +1,33 @@
-use rusqlite::{OptionalExtension, Transaction};
+use rusqlite::{Connection, OptionalExtension, Transaction};
 
 use crate::{
     Error,
-    catalog::root::{RootId, RootKind, RootLocator, forget_root, relocate_root, stored_location},
+    catalog::root::{
+        LibraryRoot, RootId, RootKind, RootLocator, forget_root, relocate_root, stored_location,
+        stored_root,
+    },
 };
+
+const HOME_ROOT: &str = "SELECT
+        id, kind, locator_kind, location, bookmark, added_at_ms, unavailable_since_ms
+    FROM library_root
+    WHERE kind = ?1";
+
+pub fn home_root(connection: &Connection) -> Result<Option<LibraryRoot>, Error> {
+    Ok(connection
+        .prepare(HOME_ROOT)?
+        .query_row([RootKind::Home], stored_root)
+        .optional()?)
+}
+
+/// Makes the home root a linked one with its id and books, so the next home set elsewhere leaves it in the library.
+#[tracing::instrument(skip_all)]
+pub fn keep_home_root_as_linked(transaction: &Transaction<'_>) -> Result<(), Error> {
+    transaction
+        .prepare("UPDATE library_root SET kind = ?2 WHERE kind = ?1")?
+        .execute((RootKind::Home, RootKind::Linked))?;
+    Ok(())
+}
 
 /// Points the one home root at `locator` and keeps its id, so a moved home folder never lingers as a second home.
 /// A linked root already at `locator` becomes the home instead, and the old home goes with the books found only in it.

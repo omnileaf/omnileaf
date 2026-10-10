@@ -99,7 +99,7 @@ impl From<LibraryError> for IpcError {
                 IpcErrorCode::HomeFolderKept,
                 "the home folder stays in the library",
             ),
-            LibraryError::CreateHome { .. }
+            LibraryError::CreateFolder { .. }
             | LibraryError::Database(_)
             | LibraryError::StoredView(_)
             | LibraryError::Interrupted(_) => return Self::internal(&error),
@@ -143,7 +143,7 @@ mod tests {
             code_for(unreadable),
             code_for(LibraryError::FolderNotFound { id }),
             code_for(LibraryError::HomeFolderKept { id }),
-            code_for(LibraryError::CreateHome {
+            code_for(LibraryError::CreateFolder {
                 path: PathBuf::from("/data/Omnileaf"),
                 source: io::Error::from(io::ErrorKind::StorageFull),
             }),

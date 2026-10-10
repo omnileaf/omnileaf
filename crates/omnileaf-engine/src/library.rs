@@ -6,7 +6,7 @@ use omnileaf_db::{
         AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator,
         SeriesOrder, add_root, bookmarked_roots, cover_file, library_root, library_roots,
         mark_root_available, mark_root_unavailable, remove_root, root_book_count, series_count,
-        series_page, set_home_root,
+        series_page,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_view::{library_view, set_library_view},
@@ -25,6 +25,7 @@ use crate::{
     device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
     library_layout::folder_name,
+    moved_home::move_home,
     rescan::rescan,
     scan::{Target, find_books_in, scan, walk},
 };
@@ -40,7 +41,23 @@ const MAPPED_DATABASE_BYTES: u32 = if IS_MOBILE {
     256 * MEBIBYTE
 };
 
-/// The library database in the home folder, and the folders it reads.
+/// Where the library keeps its database, and the home folder it always reads.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LibraryFolders {
+    pub database: PathBuf,
+    pub home: PathBuf,
+}
+
+impl From<PathBuf> for LibraryFolders {
+    fn from(folder: PathBuf) -> Self {
+        Self {
+            database: folder.clone(),
+            home: folder,
+        }
+    }
+}
+
+/// The library database, and the folders it reads.
 pub struct Library {
     store: Store,
     /// Held for each scan and folder removal, so none compares a folder with a catalog another is changing.
@@ -50,8 +67,8 @@ pub struct Library {
 
 #[derive(Debug, thiserror::Error)]
 pub enum LibraryError {
-    #[error("create the home folder {}", path.display())]
-    CreateHome {
+    #[error("create the library folder {}", path.display())]
+    CreateFolder {
         path: PathBuf,
         #[source]
         source: io::Error,
@@ -83,20 +100,26 @@ impl LibraryError {
 }
 
 impl Library {
-    /// Opens the library kept in `home`, creating the folder and its database on the first run.
-    #[tracing::instrument(skip_all, fields(home = %home.display()))]
-    pub async fn open(home: PathBuf, clock: impl Clock) -> Result<Self, LibraryError> {
+    /// Opens the library, creating its folders and its database on the first run.
+    #[tracing::instrument(skip_all)]
+    pub async fn open(
+        folders: impl Into<LibraryFolders>,
+        clock: impl Clock,
+    ) -> Result<Self, LibraryError> {
+        let LibraryFolders { database, home } = folders.into();
         let config = Config {
-            path: home.join(DATABASE_FILE),
+            path: database.join(DATABASE_FILE),
             backup_dir: home.join(BACKUP_FOLDER),
             mmap_size_bytes: MAPPED_DATABASE_BYTES,
         };
-        let created = home.clone();
+        let folders = [database, home.clone()];
         let database = spawn_blocking(move || {
-            fs::create_dir_all(&created).map_err(|source| LibraryError::CreateHome {
-                path: created,
-                source,
-            })?;
+            for folder in folders {
+                fs::create_dir_all(&folder).map_err(|source| LibraryError::CreateFolder {
+                    path: folder,
+                    source,
+                })?;
+            }
             Ok::<_, LibraryError>(Database::open(&config)?)
         })
         .await??;
@@ -374,11 +397,10 @@ impl Library {
     }
 
     async fn set_home(&self, home: PathBuf) -> Result<(), LibraryError> {
-        let locator = RootLocator::Path(home);
         let added_at_ms = self.now_ms();
         self.store
             .database()
-            .write(move |transaction| set_home_root(transaction, &locator, added_at_ms))
+            .write(move |transaction| move_home(transaction, &home, added_at_ms))
             .await?;
         Ok(())
     }
