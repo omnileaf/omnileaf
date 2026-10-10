@@ -2,6 +2,7 @@
   import { dayFormats, dayName } from "#lib/history/day-name.ts";
   import {
     type HistoryCalendar,
+    historyDayKey,
     type HistoryDayTitle,
     historyDays,
   } from "#lib/history/history-days.ts";
@@ -45,10 +46,6 @@
       : dayName(title.day, calendar, dayNames);
   }
 
-  function keyOf(title: HistoryDayTitle, index: number): string {
-    return `${title.kind === "lastWeek" ? title.kind : String(title.day)}-${String(index)}`;
-  }
-
   /** Last week gathers several days under one heading, so its times carry their weekday. */
   function timeOf(title: HistoryDayTitle, entry: HistoryEntry): string {
     return title.kind === "lastWeek"
@@ -60,7 +57,7 @@
 <div
   class="flex flex-col gap-history-days large:gap-history-days-wide touch:max-medium:px-xs"
 >
-  {#each days as day, index (keyOf(day.title, index))}
+  {#each days as day, index (historyDayKey(day.title))}
     <section aria-labelledby={`${headingId}-${String(index)}`}>
       <h2
         id={`${headingId}-${String(index)}`}
