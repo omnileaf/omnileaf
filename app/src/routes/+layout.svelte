@@ -25,7 +25,7 @@
   } from "#lib/language/language.svelte.ts";
   import { Notices, setNotices } from "#lib/notices/notices.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { isPhone } from "#lib/page/platform.ts";
+  import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import LibraryProblemScreen from "#lib/problems/LibraryProblemScreen.svelte";
   import {
@@ -77,6 +77,31 @@
     screenshotMode.settle();
   }
 
+  const rescansOnReturn = $derived(
+    !isPointer(data.appInfo.platform) && data.libraryProblem === null,
+  );
+
+  let isRescanningOnReturn = false;
+
+  async function rescanOnReturn(): Promise<void> {
+    if (isRescanningOnReturn) {
+      return;
+    }
+    isRescanningOnReturn = true;
+    try {
+      await rescanEveryFolder();
+    } finally {
+      isRescanningOnReturn = false;
+    }
+  }
+
+  function followVisibility(): void {
+    settleScreenshotMode();
+    if (rescansOnReturn && document.visibilityState === "visible") {
+      void rescanOnReturn();
+    }
+  }
+
   $effect(() => {
     void commands.matchSystemBars(
       themeSetting.resolved,
@@ -119,7 +144,7 @@
   onfocus={settleScreenshotMode}
   onpageshow={settleScreenshotMode}
 />
-<svelte:document onvisibilitychange={settleScreenshotMode} />
+<svelte:document onvisibilitychange={followVisibility} />
 
 <svelte:head>
   {#key language.resolved}
