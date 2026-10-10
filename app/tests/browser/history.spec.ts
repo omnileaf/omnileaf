@@ -207,11 +207,21 @@ test.describe("with books read", () => {
     ).toHaveCount(2);
     await expect(
       page
-        .getByRole("region", { name: "Tuesday 1 h 10 min" })
+        .getByRole("region", { name: "Last week 1 h 10 min" })
         .getByRole("listitem"),
     ).toHaveCount(1);
     await expect(rows(page).first()).toContainText(seriesTitle(4));
     await expect(rows(page).last()).toContainText(seriesTitle(6));
+  });
+
+  test("gives the weekday with the time of a session read last week", async ({
+    page,
+  }) => {
+    await openHistory(page);
+
+    await expect(
+      page.getByRole("region", { name: /^Last week/ }).getByRole("listitem"),
+    ).toContainText(/Tue 8:10\sPM/);
   });
 
   test("says how long was read this week", async ({ page }) => {

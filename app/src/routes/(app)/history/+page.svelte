@@ -23,13 +23,17 @@
   let today = $state(localDayOf(new Date()));
   let readThisWeekSeconds: number | undefined = $state();
 
+  const calendar = $derived({
+    today,
+    weekStart: weekStartOf(today, firstDayOfWeek(deviceLocale())),
+  });
+
   const hasEntries = $derived(
     history.list.kind === "loaded" && history.list.items.length > 0,
   );
 
   async function readThisWeek(): Promise<void> {
-    const firstDay = weekStartOf(today, firstDayOfWeek(deviceLocale()));
-    const read = await commands.readingTimeSince(firstDay);
+    const read = await commands.readingTimeSince(calendar.weekStart);
     if (read.status === "error") {
       reportError(read.error);
       return;
@@ -80,7 +84,7 @@
     <HistoryDays
       entries={history.list.items}
       isComplete={history.list.isComplete}
-      {today}
+      {calendar}
       usesStandIns={screenshotMode.isOn}
       onNearEnd={() => {
         void history.loadMore();

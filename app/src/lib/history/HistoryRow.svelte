@@ -2,7 +2,6 @@
   import { resolve } from "$app/paths";
   import EntryCover from "#lib/history/EntryCover.svelte";
   import { readingTime } from "#lib/history/reading-time.ts";
-  import { startedAtTime } from "#lib/history/started-at.ts";
   import type { HistoryEntry } from "#lib/ipc/bindings.ts";
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -10,9 +9,9 @@
 
   let {
     entry: listed,
-    locale,
+    time,
     usesStandIns,
-  }: { entry: HistoryEntry; locale: string; usesStandIns: boolean } = $props();
+  }: { entry: HistoryEntry; time: string; usesStandIns: boolean } = $props();
 
   const entry = $derived(usesStandIns ? standInHistoryEntry(listed) : listed);
 
@@ -24,7 +23,6 @@
         ? { kind: "none" }
         : { kind: "picture", path: entry.cover },
   );
-  const time = $derived(startedAtTime(entry, locale));
   const readFor = $derived(readingTime(entry.readSeconds));
   const readTo = $derived(
     entry.readTo.state === "page"
