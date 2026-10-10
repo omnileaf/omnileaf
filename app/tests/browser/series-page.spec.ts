@@ -512,6 +512,42 @@ test("shows only the books not read, and the books the other way round", async (
   await expect(books(page).first()).toContainText(shelf.titleOf(11));
 });
 
+test("marks every book picked, though another listing leaves some of them out", async ({
+  page,
+}) => {
+  await openSeries(page);
+  await page.getByRole("button", { name: "Select", exact: true }).click();
+  await page
+    .getByRole("checkbox", { name: `Select ${shelf.titleOf(0)}` })
+    .check();
+  await page
+    .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
+    .check();
+
+  await page
+    .getByRole("group", { name: "Show" })
+    .getByRole("button", { name: "Unread" })
+    .click();
+  await expect(books(page).first()).toHaveAttribute("aria-setsize", "9");
+  await expect(
+    page.getByRole("heading", { level: 2, name: "2 selected" }),
+  ).toBeVisible();
+  await page
+    .getByRole("group", { name: "Selected books" })
+    .getByRole("button", { name: "Mark unread" })
+    .click();
+
+  await expect(
+    page
+      .getByRole("main")
+      .getByRole("status")
+      .filter({ hasText: "Marked 2 books unread" }),
+  ).toBeAttached();
+  expect(shelf.marked).toEqual([
+    { books: [shelf.books[0]?.id, shelf.books[4]?.id], mark: "unread" },
+  ]);
+});
+
 test("keeps the show choices and the order the same size whichever is chosen", async ({
   page,
 }) => {

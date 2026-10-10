@@ -121,7 +121,7 @@
   }
 
   async function mark(read: ReadMark): Promise<void> {
-    const picked = selection.pickedIn(ids);
+    const picked = selection.picked;
     const isMarked = await onMark(picked, read);
     if (isMarked) {
       outcome = { kind: "marked", mark: read, count: picked.length };
