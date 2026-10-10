@@ -1,14 +1,6 @@
 import type { HistoryCalendar } from "#lib/history/history-days.ts";
-import type { LocalDay } from "#lib/history/local-date.ts";
+import { type LocalDay, noonUtcOf } from "#lib/history/local-date.ts";
 import { m } from "#lib/paraglide/messages.js";
-
-const MS_PER_DAY = 86_400_000;
-const NOON_MS = MS_PER_DAY / 2;
-
-/** Noon UTC of a day, which every zone's formatter puts on the same day once told the zone is UTC. */
-function noonUtcOf(day: LocalDay): Date {
-  return new Date(day * MS_PER_DAY + NOON_MS);
-}
 
 /** What History calls a day: today, yesterday, a weekday within this week, or else its date. */
 export function dayName(
