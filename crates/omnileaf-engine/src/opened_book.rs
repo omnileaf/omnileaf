@@ -36,7 +36,7 @@ pub struct SeriesNeighbour {
 #[serde(rename_all = "camelCase")]
 pub struct BookPage {
     pub path: PagePath,
-    /// Absent when the page's image header couldn't be read.
+    /// Absent when the page's image header couldn't be read, or wasn't yet for a page far from where the book opened the first time.
     pub size: Option<PageDimensions>,
 }
 

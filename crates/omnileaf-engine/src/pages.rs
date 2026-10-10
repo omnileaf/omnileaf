@@ -2,14 +2,16 @@ use std::{
     collections::HashSet,
     io,
     num::NonZeroUsize,
+    ops::Range,
     path::PathBuf,
     sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock, PoisonError, RwLock},
 };
 
 use omnileaf_cache::{CacheError, CacheKey, DiskCache, MemoryCache};
-use omnileaf_db::catalog::{self, BookReading as StoredReading};
-use omnileaf_formats::{Book, FormatError};
+use omnileaf_db::catalog::{BookFileId, BookReading as StoredReading};
+use omnileaf_formats::FormatError;
 use omnileaf_imaging::{ImagingError, PageFormat, page_size, shrink_page, transcode};
+use tokio::sync::oneshot;
 
 use crate::{
     BookId, BookPage, Library, LibraryError, OpenedBook, PagePath, ProbedFormat, SeriesId,
@@ -20,6 +22,7 @@ use crate::{
     library::BookToOpen,
     open_books::{BookFileAt, OpenBook, OpenBooks, PageAt},
     page_lane::{AskedPageError, PageLane},
+    page_sizes::{PageSizes, SizeFill, SizeFills, fill_sizes, opening_window, probe_window},
 };
 
 /// Changes whenever pages are transcoded differently, so no transcode made the old way is served again.
@@ -29,8 +32,6 @@ const TRANSCODE_BUDGET_BYTES: u64 = (if IS_MOBILE { 128 } else { 512 }) * MEBIBY
 const PAGES_READ_AHEAD: usize = 4;
 /// Android's webview decodes no image past a 25th of the device's memory, about 40 megapixels at four bytes each on a 4 GB phone, so a page past it is shrunk or refused rather than left to fail or end the renderer, while a strip 1,080 pixels wide still runs 37,000 tall.
 const PAGE_PIXEL_BUDGET: u64 = 40_000_000;
-/// Enough of a page for its header to give its size, unless metadata comes first and pushes the header further in.
-const SIZE_PROBE_BYTES: u64 = 32 * 1024;
 pub(crate) const WORKERS: NonZeroUsize = if IS_MOBILE {
     NonZeroUsize::MIN
 } else {
@@ -54,6 +55,7 @@ struct Shared {
     memory: Mutex<MemoryCache<PagePath, ServedPage>>,
     in_flight: PagesInFlight,
     books: OpenBooks,
+    size_fills: SizeFills,
     undecodable: RwLock<HashSet<ProbedFormat>>,
     transcode_folder: PathBuf,
     transcodes: OnceLock<Option<DiskCache>>,
@@ -112,6 +114,7 @@ impl Pages {
                 memory: Mutex::new(MemoryCache::new(MEMORY_BUDGET_BYTES)),
                 in_flight: PagesInFlight::default(),
                 books: OpenBooks::default(),
+                size_fills: SizeFills::default(),
                 undecodable: RwLock::default(),
                 transcode_folder,
                 transcodes: OnceLock::new(),
@@ -120,7 +123,7 @@ impl Pages {
         })
     }
 
-    /// Opens the book's file, reading and storing the size of each page the first time, and starts reading ahead from where reading goes on.
+    /// Opens the book's file and starts reading ahead from where reading goes on, the first time reading the sizes of the pages around there and the rest after it opens.
     pub(crate) async fn open_book(
         &self,
         library: &Library,
@@ -137,40 +140,79 @@ impl Pages {
             .await?
             .ok_or(OpenBookError::BookNotFound { id })?;
         let found = &to_open.found;
-        let stored = library.page_dimensions(found.file, found.rev).await?;
         let file = BookFileAt {
             book: found.id,
             rev: found.rev,
         };
         self.lane.supersede_other_books(file);
+        let filled = match self.shared.size_fills.take(file) {
+            Some(pending) => pending.sizes.await.ok(),
+            None => None,
+        };
+        let is_filled = filled.is_some();
+        let known = match filled {
+            Some(sizes) => Some(sizes),
+            None => library.page_dimensions(found.file, found.rev).await?,
+        };
         let shared = Arc::clone(&self.shared);
         let located = library
             .book_file(found)
             .ok_or(OpenBookError::FolderClosed { id })?;
-        let (opened, sizes, is_probed) = self
+        let reading = found.reading;
+        let (opened, sizes, probed) = self
             .lane
             .run(move || {
                 let opened = shared.books.open(file, &located)?;
-                Ok::<_, FormatError>(match stored {
-                    Some(sizes) if sizes.len() == opened.page_count => (opened, sizes, false),
+                Ok::<_, FormatError>(match known {
+                    Some(sizes) if sizes.len() == opened.page_count => (opened, sizes, None),
                     _ => {
-                        let sizes = probe_sizes(&mut opened.lock());
-                        (opened, sizes, true)
+                        let window = opening_window(
+                            start_index(reading, opened.page_count),
+                            PAGES_READ_AHEAD,
+                            opened.page_count,
+                        );
+                        let sizes = probe_window(&mut opened.lock(), &window);
+                        (opened, sizes, Some(window))
                     }
                 })
             })
             .await?
             .map_err(|source| OpenBookError::Unreadable { id, source })?;
-        if is_probed
-            && let Err(error) = library
-                .store_page_dimensions(found.file, found.rev, sizes.clone())
-                .await
-        {
-            tracing::warn!(error = %describe_error(&error), "keep the size of each page for the next time the book opens");
+        match probed {
+            Some(window) if window.len() < opened.page_count => {
+                self.fill_sizes_later(&opened, found.file, sizes.clone(), window);
+            }
+            Some(_) => store_sizes(library, found.file, found.rev, sizes.clone()).await,
+            None if is_filled => store_sizes(library, found.file, found.rev, sizes.clone()).await,
+            None => {}
         }
         let start = start_page(found.reading, opened.page_count);
-        self.read_ahead(&opened, usize::try_from(start).unwrap_or(usize::MAX));
+        self.read_ahead(&opened, start_index(found.reading, opened.page_count));
         Ok(opened_book(to_open, &sizes, start))
+    }
+
+    /// Reads the sizes of the pages outside `window` once nothing more urgent waits, keeping them to store when they are done.
+    fn fill_sizes_later(
+        &self,
+        opened: &OpenBook,
+        file: BookFileId,
+        sizes: PageSizes,
+        window: Range<usize>,
+    ) {
+        let (sender, receiver) = oneshot::channel();
+        let reading = opened.clone();
+        self.lane.read_sizes(Box::new(move || {
+            if sender.send(fill_sizes(&reading, sizes, &window)).is_err() {
+                tracing::trace!("the router stopped waiting for a book's page sizes");
+            }
+        }));
+        self.shared.size_fills.insert(
+            opened.file,
+            SizeFill {
+                file,
+                sizes: receiver,
+            },
+        );
     }
 
     /// The page, or nothing for a page of a revision the library no longer holds or past the end of its book.
@@ -213,6 +255,9 @@ impl Pages {
                 .await??
         };
         self.read_ahead(&opened, page.index.saturating_add(1));
+        if let Some((file, sizes)) = self.shared.size_fills.take_finished(opened.file) {
+            store_sizes(library, file, path.rev, sizes).await;
+        }
         Ok(Some(served))
     }
 
@@ -379,37 +424,19 @@ fn start_page(reading: StoredReading, page_count: usize) -> u32 {
     }
 }
 
-fn probe_sizes(book: &mut Book) -> Vec<Option<catalog::PageDimensions>> {
-    (0..book.pages().len())
-        .map(|index| match probe_size(book, index) {
-            Ok(size) => Some(size),
-            Err(error) => {
-                tracing::debug!(index, error = %describe_error(error.as_ref()), "read the size of a page");
-                None
-            }
-        })
-        .collect()
+fn start_index(reading: StoredReading, page_count: usize) -> usize {
+    usize::try_from(start_page(reading, page_count)).unwrap_or(usize::MAX)
 }
 
-/// Reads the size from the start of the page, or from the whole page when its header runs further in.
-fn probe_size(
-    book: &mut Book,
-    index: usize,
-) -> Result<catalog::PageDimensions, Box<dyn std::error::Error + Send + Sync>> {
-    let start = book.read_page_start(index, SIZE_PROBE_BYTES)?;
-    let size = match page_size(&start) {
-        Err(ImagingError::Truncated) => page_size(&book.read_page(index)?)?,
-        read => read?,
-    };
-    Ok(catalog::PageDimensions {
-        width: size.width,
-        height: size.height,
-    })
+async fn store_sizes(library: &Library, file: BookFileId, rev: u32, sizes: PageSizes) {
+    if let Err(error) = library.store_page_dimensions(file, rev, sizes).await {
+        tracing::warn!(error = %describe_error(&error), "keep the size of each page for the next time the book opens");
+    }
 }
 
 fn opened_book(
     BookToOpen { found, place }: BookToOpen,
-    sizes: &[Option<catalog::PageDimensions>],
+    sizes: &[Option<omnileaf_db::catalog::PageDimensions>],
     start_page: u32,
 ) -> OpenedBook {
     let pages = (0_u32..)

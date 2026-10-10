@@ -292,6 +292,31 @@ async fn gives_the_same_page_sizes_when_the_book_is_opened_again() {
 }
 
 #[tokio::test]
+async fn reads_the_sizes_of_the_pages_far_from_the_start_after_the_book_opens() {
+    const LONG_BOOK: u32 = 12;
+    const FAR_PAGE: usize = 10;
+    let mut pages: Vec<Vec<u8>> = (0..LONG_BOOK)
+        .map(|index| page_jpeg(SEED, index, PageShape::Portrait).unwrap())
+        .collect();
+    pages[FAR_PAGE] = page_png(SEED, 10, PageShape::Spread).unwrap();
+    let reader = Reader::with_pages("deferred-sizes", &pages).await;
+
+    let first = reader.open(NOTHING_UNDECODABLE).await;
+    let again = reader.open(NOTHING_UNDECODABLE).await;
+    let after_a_restart = reader
+        .fresh_router()
+        .open_book(&reader.library, first.id, NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+
+    assert_eq!(first.pages[0].size, Some(PORTRAIT));
+    assert_eq!(first.pages[FAR_PAGE].size, None);
+    assert_eq!(again.pages[FAR_PAGE].size, Some(SPREAD));
+    assert!(again.pages.iter().all(|page| page.size.is_some()));
+    assert_eq!(after_a_restart.pages, again.pages);
+}
+
+#[tokio::test]
 async fn leaves_a_page_whose_header_cannot_be_read_without_a_size() {
     let mut pages = portrait_pages(SEED);
     pages[1] = b"\x89PNG\r\n\x1a\n not a header".to_vec();
