@@ -455,6 +455,9 @@ impl Library {
         &self,
         book: BookId,
     ) -> Result<Option<BookToOpen>, LibraryError> {
+        if let Err(error) = self.reading.save_now().await {
+            tracing::warn!(error = %describe_error(&error), "save the page reached before reading where to open the book");
+        }
         Ok(self
             .store
             .database()

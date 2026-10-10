@@ -340,6 +340,21 @@ async fn opens_a_book_read_before_on_the_page_reading_it_again_reached() {
 }
 
 #[tokio::test(start_paused = true)]
+async fn opens_a_book_opened_again_before_its_save_on_the_page_reading_reached() {
+    let shelf = Shelf::with_two_books("opened-again-early").await;
+    let opened = shelf.restore(0).await;
+    shelf.show(&opened, 4).await;
+
+    let again = shelf
+        .router
+        .open_book(&shelf.library, opened.id, Vec::<ProbedFormat>::new())
+        .await
+        .unwrap();
+
+    assert_eq!(again.start_page, 4);
+}
+
+#[tokio::test(start_paused = true)]
 async fn keeps_a_book_marked_unread_while_open_unread_after_the_save_that_comes_late() {
     let shelf = Shelf::with_two_books("marked-unread").await;
     let opened = shelf.restore(0).await;
