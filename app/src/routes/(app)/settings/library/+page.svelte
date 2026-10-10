@@ -23,6 +23,7 @@
   countFolderBooks={commands.libraryFolderBookCount}
   addFolder={addFolderWithProgress}
   rescanFolder={rescanFolderWithProgress}
+  removeFolderBooks={commands.removeBooksOfEmptiedFolder}
   {notices}
   usesStandIns={screenshotMode.isOn}
   platform={data.appInfo.platform}

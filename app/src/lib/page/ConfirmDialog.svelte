@@ -33,6 +33,22 @@
   const bodyId = `${id}-body`;
 
   let dialog: HTMLDialogElement | undefined = $state();
+  let isPressedOutside = false;
+
+  function isOutside(
+    event: MouseEvent & { currentTarget: HTMLDialogElement },
+  ): boolean {
+    if (event.target !== event.currentTarget) {
+      return false;
+    }
+    const box = event.currentTarget.getBoundingClientRect();
+    return (
+      event.clientX < box.left ||
+      event.clientX > box.right ||
+      event.clientY < box.top ||
+      event.clientY > box.bottom
+    );
+  }
 
   $effect(() => {
     if (isOpen && dialog?.open === false) {
@@ -52,6 +68,14 @@
   oncancel={(event) => {
     event.preventDefault();
     onCancel();
+  }}
+  onpointerdown={(event) => {
+    isPressedOutside = isOutside(event);
+  }}
+  onclick={(event) => {
+    if (isPressedOutside && isOutside(event)) {
+      onCancel();
+    }
   }}
 >
   {#if isOpen}

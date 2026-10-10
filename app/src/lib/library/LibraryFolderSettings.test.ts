@@ -15,6 +15,7 @@ import { Notices } from "#lib/notices/notices.svelte.ts";
 import type { AddFolder } from "./add-folder";
 import LibraryFolderSettings from "./LibraryFolderSettings.svelte";
 import type { RescanFolder } from "./rescan-folder";
+import type { RemoveFolderBooks } from "./rescans.svelte";
 
 type RemoveFolder = typeof commands.removeLibraryFolder;
 type CountFolderBooks = typeof commands.libraryFolderBookCount;
@@ -68,6 +69,9 @@ function rescanning(outcome: RescanOutcome): RescanFolder {
 }
 
 const NOTHING_CHANGED = rescanning({ kind: "rescanned", ...NO_CHANGES });
+const FOUND_EMPTY = rescanning({ kind: "foundEmpty" });
+const BOOKS_REMOVED: RemoveFolderBooks = () =>
+  Promise.resolve({ status: "ok", data: { kind: "removed", books: 3 } });
 
 /** A rescan the test steps through and then finishes. */
 class PendingRescan {
@@ -139,23 +143,28 @@ async function renderSettings({
   removeFolder = NOTHING_REMOVED,
   rescanFolder = NOTHING_CHANGED,
   countFolderBooks = COUNTED,
+  removeFolderBooks = BOOKS_REMOVED,
 }: {
   addFolder?: AddFolder;
   removeFolder?: RemoveFolder;
   rescanFolder?: RescanFolder;
   countFolderBooks?: CountFolderBooks;
+  removeFolderBooks?: RemoveFolderBooks;
 } = {}) {
+  const notices = new Notices();
   const screen = await render(LibraryFolderSettings, {
     listFolders: commands.libraryFolders,
     removeFolder,
     countFolderBooks,
     addFolder,
     rescanFolder,
-    notices: new Notices(),
+    removeFolderBooks,
+    notices,
     usesStandIns: false,
     platform: "linux",
   });
   return {
+    notices,
     home: screen.getByRole("region", { name: "Home folder" }),
     folders: screen.getByRole("region", { name: "Folders" }),
     dialog: screen.getByRole("alertdialog"),
@@ -241,6 +250,7 @@ test("says when the folders couldn't be loaded", async () => {
     countFolderBooks: COUNTED,
     addFolder: NOTHING_PICKED,
     rescanFolder: NOTHING_CHANGED,
+    removeFolderBooks: BOOKS_REMOVED,
     notices: new Notices(),
     usesStandIns: false,
     platform: "linux",
@@ -518,6 +528,29 @@ test("keeps the folder when the removal is cancelled", async () => {
     .toHaveTextContent("Sample Comics /media/Sample Comics");
 });
 
+test("keeps the folder when a tap lands outside the removal question", async () => {
+  const library = [HOME, COMICS];
+  serveFolders(library);
+  const { removeFolder, removed } = removingFrom(library);
+  const { folders, dialog } = await renderSettings({ removeFolder });
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await dialog.click({ position: { x: 10, y: -20 } });
+
+  await expect.element(dialog).not.toBeInTheDocument();
+  expect(removed).toEqual([]);
+});
+
+test("keeps the removal question open when a tap lands on its edge", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders, dialog } = await renderSettings();
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await dialog.click({ position: { x: 2, y: 2 } });
+
+  await expect.element(dialog).toBeVisible();
+});
+
 test("says when a folder couldn't be removed", async () => {
   serveFolders([HOME, COMICS]);
   const { folders, dialog } = await renderSettings({
@@ -772,10 +805,381 @@ test("keeps the books of a folder the rescan couldn't reach", async () => {
     );
 });
 
-test("keeps the books of a folder the rescan found empty", async () => {
+/** A library whose `COMICS` a rescan finds empty, so the backend marks it unavailable as it does. */
+function emptyingComics(): {
+  library: WireFolder[];
+  rescanFolder: RescanFolder;
+} {
+  const library = [HOME, COMICS];
+  return {
+    library,
+    rescanFolder: (id) => {
+      library.splice(1, 1, { ...COMICS, isAvailable: false });
+      return FOUND_EMPTY(id, () => undefined);
+    },
+  };
+}
+
+function comicsRow(folders: Locator): Locator {
+  return folders.getByRole("listitem").filter({ hasText: COMICS.name });
+}
+
+const REMOVAL_FAILED: RemoveFolderBooks = () =>
+  Promise.resolve({
+    status: "error",
+    error: { code: "internal", message: "from the backend" },
+  });
+
+test("marks a folder the rescan found empty as having no books, not as unavailable", async () => {
+  const { library, rescanFolder } = emptyingComics();
+  serveFolders(library);
+  const { folders } = await renderSettings({ rescanFolder });
+
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await expect
+    .element(comicsRow(folders).getByText("No books found"))
+    .toBeVisible();
+  await expect
+    .element(comicsRow(folders).getByText("Not available"))
+    .not.toBeInTheDocument();
+});
+
+test("warns under its row that a folder the rescan found empty looks empty", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders } = await renderSettings({ rescanFolder: FOUND_EMPTY });
+
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  const warning = comicsRow(folders).getByRole("status");
+  await expect
+    .element(
+      warning.getByRole("heading", { name: "Sample Comics looks empty" }),
+    )
+    .toBeVisible();
+  await expect
+    .element(
+      warning.getByText(
+        "Its books stay in your library in case its drive isn't connected. If you emptied it, remove them.",
+      ),
+    )
+    .toBeVisible();
+  await expect
+    .element(warning.getByRole("button", { name: "Rescan", exact: true }))
+    .toBeVisible();
+  await expect
+    .element(warning.getByRole("button", { name: "Remove its books" }))
+    .toBeVisible();
+});
+
+test("leaves a folder found empty out of the rescan report, since its warning says it", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders } = await renderSettings({ rescanFolder: FOUND_EMPTY });
+
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await expect
+    .element(folders.getByRole("button", { name: "Remove its books" }))
+    .toBeVisible();
+  expect(
+    folders
+      .getByText("Found no books in Sample Comics", { exact: false })
+      .elements(),
+  ).toEqual([]);
+});
+
+test("keeps the warning of a folder found empty while another folder is rescanned", async () => {
+  serveFolders([HOME, COMICS, MANGA]);
+  const rescans: RescanOutcome[] = [
+    { kind: "foundEmpty" },
+    { kind: "rescanned", ...NO_CHANGES },
+  ];
+  const { folders } = await renderSettings({
+    rescanFolder: (id) =>
+      rescanning(rescans.shift() ?? { kind: "foundEmpty" })(
+        id,
+        () => undefined,
+      ),
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  await expect
+    .element(folders.getByRole("button", { name: "Remove its books" }))
+    .toBeVisible();
+
+  await folders.getByRole("button", { name: "Rescan Sample Manga" }).click();
+
+  await expect
+    .element(folders.getByText("Sample Manga is up to date."))
+    .toBeVisible();
+  await expect
+    .element(folders.getByRole("button", { name: "Remove its books" }))
+    .toBeVisible();
+});
+
+test("rescans a folder found empty from its warning", async () => {
+  serveFolders([HOME, COMICS]);
+  const rescans: RescanOutcome[] = [
+    { kind: "foundEmpty" },
+    { kind: "rescanned", ...NO_CHANGES, added: 2 },
+  ];
+  const { folders } = await renderSettings({
+    rescanFolder: (id) =>
+      rescanning(rescans.shift() ?? { kind: "foundEmpty" })(
+        id,
+        () => undefined,
+      ),
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await comicsRow(folders)
+    .getByRole("button", { name: "Rescan", exact: true })
+    .click();
+
+  await expect.element(folders.getByText("2 books added.")).toBeVisible();
+  await expect
+    .element(folders.getByRole("button", { name: "Remove its books" }))
+    .not.toBeInTheDocument();
+});
+
+test("asks before removing the books of a folder found empty", async () => {
+  serveFolders([HOME, COMICS]);
+  const removedFrom: FolderId[] = [];
+  const { folders, dialog } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+    removeFolderBooks: (id) => {
+      removedFrom.push(id);
+      return BOOKS_REMOVED(id);
+    },
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+
+  await expect
+    .element(
+      dialog.getByRole("heading", {
+        name: "Remove 342 books from Sample Comics?",
+      }),
+    )
+    .toBeVisible();
+  expect(removedFrom).toEqual([]);
+});
+
+test("shows the folder with its place and books, and what goes with them", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders, dialog } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+
+  await expect
+    .element(dialog.getByText("Sample Comics", { exact: true }))
+    .toBeVisible();
+  await expect
+    .element(dialog.getByText("/media/Sample Comics · 342 books"))
+    .toBeVisible();
+  await expect
+    .element(
+      dialog.getByText(
+        "Their files weren't found. Reading progress and notes will be removed too.",
+      ),
+    )
+    .toBeVisible();
+});
+
+test("asks without a count when the books couldn't be counted", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders, dialog } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+    countFolderBooks: () =>
+      Promise.resolve({
+        status: "error",
+        error: { code: "internal", message: "from the backend" },
+      }),
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+
+  await expect
+    .element(
+      dialog.getByRole("heading", {
+        name: "Remove the books of Sample Comics?",
+      }),
+    )
+    .toBeVisible();
+});
+
+test("drops the question to remove the books once the folder is rescanned while they're counted", async () => {
+  serveFolders([HOME, COMICS]);
+  let finishCounting: (books: number) => void = () => undefined;
+  const rescans: RescanOutcome[] = [{ kind: "foundEmpty" }];
+  const { folders, dialog } = await renderSettings({
+    rescanFolder: (id) => {
+      const outcome = rescans.shift();
+      return outcome === undefined
+        ? new Promise(() => undefined)
+        : rescanning(outcome)(id, () => undefined);
+    },
+    countFolderBooks: () =>
+      new Promise((resolve) => {
+        finishCounting = (books) => {
+          resolve({ status: "ok", data: books });
+        };
+      }),
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+  await comicsRow(folders)
+    .getByRole("button", { name: "Rescan", exact: true })
+    .click();
+
+  finishCounting(BOOKS_IN_COMICS);
+
+  await expect.element(folders.getByRole("progressbar")).toBeInTheDocument();
+  expect(dialog.elements()).toEqual([]);
+});
+
+test("starts the question to remove the books on Cancel", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders, dialog } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+
+  await expect
+    .element(dialog.getByRole("button", { name: "Cancel" }))
+    .toHaveFocus();
+});
+
+test("keeps the books and the warning when the question is cancelled", async () => {
+  serveFolders([HOME, COMICS]);
+  const removedFrom: FolderId[] = [];
+  const { folders, dialog } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+    removeFolderBooks: (id) => {
+      removedFrom.push(id);
+      return BOOKS_REMOVED(id);
+    },
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  const removeItsBooks = folders.getByRole("button", {
+    name: "Remove its books",
+  });
+  await removeItsBooks.click();
+
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+
+  await expect.element(dialog).not.toBeInTheDocument();
+  expect(removedFrom).toEqual([]);
+  await expect.element(removeItsBooks).toHaveFocus();
+});
+
+test("removes the books once asked, says how many went and moves to the folder's row", async () => {
+  const { library, rescanFolder } = emptyingComics();
+  serveFolders(library);
+  const removedFrom: FolderId[] = [];
+  const { folders, dialog, notices } = await renderSettings({
+    rescanFolder,
+    removeFolderBooks: (id) => {
+      removedFrom.push(id);
+      library.splice(1, 1, COMICS);
+      return BOOKS_REMOVED(id);
+    },
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+
+  await dialog.getByRole("button", { name: "Remove books" }).click();
+
+  await expect.poll(() => notices.message).toBe("3 books removed");
+  expect(removedFrom).toEqual([COMICS.id]);
+  await expect.element(comicsRow(folders)).toHaveFocus();
+  await expect
+    .element(comicsRow(folders))
+    .toHaveTextContent("Sample Comics /media/Sample Comics");
+});
+
+test("rescans a folder whose books stayed because it holds books again", async () => {
+  serveFolders([HOME, COMICS]);
+  const outcomes: RescanOutcome[] = [
+    { kind: "foundEmpty" },
+    { kind: "rescanned", ...NO_CHANGES, added: 2 },
+  ];
+  const { folders, dialog, notices } = await renderSettings({
+    rescanFolder: (id) =>
+      rescanning(outcomes.shift() ?? { kind: "foundEmpty" })(
+        id,
+        () => undefined,
+      ),
+    removeFolderBooks: () =>
+      Promise.resolve({ status: "ok", data: { kind: "kept" } }),
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+
+  await dialog.getByRole("button", { name: "Remove books" }).click();
+
+  await expect.element(folders.getByText("2 books added.")).toBeVisible();
+  expect(notices.message).toBeUndefined();
+  await expect.element(comicsRow(folders)).toHaveFocus();
+});
+
+test("turns the warning into an alert when the books couldn't be removed", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders, dialog } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+    removeFolderBooks: REMOVAL_FAILED,
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+
+  await dialog.getByRole("button", { name: "Remove books" }).click();
+
+  const alert = comicsRow(folders).getByRole("alert");
+  await expect
+    .element(alert.getByRole("heading", { name: "Couldn't remove the books" }))
+    .toBeVisible();
+  await expect
+    .element(
+      alert.getByText(
+        "Nothing in your library has changed. Try again, or rescan Sample Comics first.",
+      ),
+    )
+    .toBeVisible();
+  await expect
+    .element(alert.getByRole("button", { name: "Rescan", exact: true }))
+    .toBeVisible();
+  await expect
+    .element(alert.getByRole("button", { name: "Try again" }))
+    .toHaveFocus();
+});
+
+test("tries removing the books again without asking again", async () => {
+  serveFolders([HOME, COMICS]);
+  const results = [REMOVAL_FAILED, BOOKS_REMOVED];
+  const { folders, dialog, notices } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+    removeFolderBooks: (id) => (results.shift() ?? BOOKS_REMOVED)(id),
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+  await dialog.getByRole("button", { name: "Remove books" }).click();
+
+  await folders.getByRole("button", { name: "Try again" }).click();
+
+  await expect.poll(() => notices.message).toBe("3 books removed");
+  expect(dialog.elements()).toEqual([]);
+});
+
+test("never offers to remove the books of a folder the rescan couldn't reach", async () => {
   serveFolders([HOME, COMICS]);
   const { folders } = await renderSettings({
-    rescanFolder: rescanning({ kind: "foundEmpty" }),
+    rescanFolder: rescanning({ kind: "unreachable" }),
   });
 
   await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
@@ -783,8 +1187,11 @@ test("keeps the books of a folder the rescan found empty", async () => {
   await expect
     .element(rescanReport(folders))
     .toHaveTextContent(
-      "Found no books in Sample Comics. Its books stay in your library in case its drive isn't connected.",
+      "Sample Comics isn't available. Its books stay in your library until it's back.",
     );
+  expect(
+    folders.getByRole("button", { name: "Remove its books" }).elements(),
+  ).toEqual([]);
 });
 
 test("says when a rescan failed", async () => {

@@ -605,6 +605,29 @@ async fn keeps_the_books_under_a_subfolder_it_cannot_read() {
     );
 }
 
+#[cfg(unix)]
+#[tokio::test]
+async fn rescans_rather_than_finds_empty_a_folder_left_with_only_a_subfolder_it_cannot_read() {
+    use std::os::unix::fs::PermissionsExt;
+    let folder = Rescanned::new("rescan-only-locked").await;
+    fs::remove_dir_all(folder.path(SERIES_01)).unwrap();
+    let locked = folder.path(SERIES_02);
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).unwrap();
+
+    let outcome = folder.changes().await;
+
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o755)).unwrap();
+    assert_eq!(
+        outcome,
+        rescanned(FileChanges {
+            removed: 2,
+            unreadable_folders: 1,
+            ..FileChanges::default()
+        })
+    );
+    assert_eq!(folder.scanned.series(), owned(&[(SERIES_02, 1)]));
+}
+
 #[tokio::test]
 async fn rescans_the_home_folder_and_every_linked_folder_in_the_order_they_were_added() {
     let folder = Rescanned::new("rescan-every-folder").await;

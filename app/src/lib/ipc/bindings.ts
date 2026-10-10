@@ -26,6 +26,7 @@ export const commands = {
 	libraryFolderBookCount: (id: string & { readonly __brand: "FolderId" }) => typedError<number, IpcError>(__TAURI_INVOKE("library_folder_book_count", { id })),
 	rescanLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<FolderRescan, IpcError>(__TAURI_INVOKE("rescan_library_folder", { id, onProgress })),
 	rescanLibraryFolders: () => typedError<FolderRescan[], IpcError>(__TAURI_INVOKE("rescan_library_folders")),
+	removeBooksOfEmptiedFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<BooksRemoval, IpcError>(__TAURI_INVOKE("remove_books_of_emptied_folder", { id })),
 	firstLaunchFinished: () => typedError<boolean, IpcError>(__TAURI_INVOKE("first_launch_finished")),
 	finishFirstLaunch: () => typedError<null, IpcError>(__TAURI_INVOKE("finish_first_launch")),
 	setAppLanguage: (language: string) => typedError<null, IpcError>(__TAURI_INVOKE("set_app_language", { language })),
@@ -60,6 +61,13 @@ export type AppInfo = {
 	sourceCode: string,
 	isDevelopmentBuild: boolean,
 };
+
+/**  What asking to remove the books of a folder found empty did. */
+export type BooksRemoval = 
+/**  Counts only the books no other folder holds, since those stay. */
+{ kind: "removed"; books: number } | 
+/**  The folder couldn't be read in full or holds books again, so nothing was removed. */
+{ kind: "kept" };
 
 /**  How many covers a row holds at each size the library is drawn at, chosen apart since each wants its own. */
 export type CoversPerRow = {

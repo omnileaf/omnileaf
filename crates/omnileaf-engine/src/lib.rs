@@ -4,6 +4,7 @@ mod app_info;
 mod app_language;
 mod background_lane;
 mod bookmark_access;
+mod books_removal;
 mod clock;
 mod cover_path;
 mod cover_thumbnails;
@@ -28,6 +29,7 @@ mod version_details;
 pub use app_info::{AppInfo, Platform};
 pub use app_language::AppLanguage;
 pub use bookmark_access::ResolvedBookmark;
+pub use books_removal::BooksRemoval;
 pub use clock::SystemClock;
 pub use cover_path::{CoverPath, MalformedCoverPath};
 pub use crash_report::{

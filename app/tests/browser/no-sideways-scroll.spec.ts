@@ -51,6 +51,11 @@ function withLongFolders(
       ],
       next: null,
     }),
+    rescanLibraryFolder: (id) => ({
+      id,
+      name: LONG_FOLDER_NAME,
+      outcome: { kind: "foundEmpty" },
+    }),
   };
 }
 
@@ -111,6 +116,49 @@ for (const platform of PLATFORMS) {
             expect(overflowing).toEqual([]);
           });
         }
+
+        test("fits a folder found empty, with its offer to remove its books", async ({
+          page,
+        }) => {
+          await page.goto("/settings/library");
+          await page
+            .getByRole("button", {
+              name: messages.library_rescan_folder_label.replace(
+                "{name}",
+                LONG_FOLDER_NAME,
+              ),
+            })
+            .click();
+          await expect(
+            page.getByRole("button", { name: messages.library_remove_books }),
+          ).toBeVisible();
+
+          const overflowing = await sidewaysOverflow(page);
+
+          expect(overflowing).toEqual([]);
+        });
+
+        test("fits the question to remove the books of a folder found empty", async ({
+          page,
+        }) => {
+          await page.goto("/settings/library");
+          await page
+            .getByRole("button", {
+              name: messages.library_rescan_folder_label.replace(
+                "{name}",
+                LONG_FOLDER_NAME,
+              ),
+            })
+            .click();
+          await page
+            .getByRole("button", { name: messages.library_remove_books })
+            .click();
+          await expect(page.getByRole("alertdialog")).toBeVisible();
+
+          const overflowing = await sidewaysOverflow(page);
+
+          expect(overflowing).toEqual([]);
+        });
       });
 
       test.describe("on first launch", () => {

@@ -57,6 +57,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
     });
   },
   rescanLibraryFolders: () => [],
+  removeBooksOfEmptiedFolder: () => ({ kind: "kept" }),
   firstLaunchFinished: () => true,
   finishFirstLaunch: () => null,
   setAppLanguage: () => null,

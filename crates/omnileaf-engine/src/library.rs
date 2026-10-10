@@ -5,8 +5,8 @@ use omnileaf_db::{
     catalog::{
         AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator,
         SeriesOrder, add_root, bookmarked_roots, cover_file, library_root, library_roots,
-        mark_root_available, mark_root_unavailable, remove_root, root_book_count, series_count,
-        series_page, set_home_root,
+        mark_root_available, mark_root_unavailable, remove_book_files, remove_books_without_files,
+        remove_root, root_book_count, root_files, series_count, series_page, set_home_root,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_view::{library_view, set_library_view},
@@ -19,16 +19,16 @@ use tokio::{
 };
 
 use crate::{
-    AppLanguage, CoversPerRowOutOfRange, FolderCursor, FolderId, FolderPage, FolderRescan,
-    FolderScan, LibraryChanges, LibraryFolder, LibrarySeries, LibraryView, RescanOutcome,
-    ResolvedBookmark, ScanProgress, SeriesCursor, SeriesPage,
+    AppLanguage, BooksRemoval, CoversPerRowOutOfRange, FolderCursor, FolderId, FolderPage,
+    FolderRescan, FolderScan, LibraryChanges, LibraryFolder, LibrarySeries, LibraryView,
+    RescanOutcome, ResolvedBookmark, ScanProgress, SeriesCursor, SeriesPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     cover_thumbnails::CoverFile,
     device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
     library_layout::folder_name,
     rescan::rescan,
-    scan::{Target, find_books_in, scan, walk},
+    scan::{Target, find_books_in, saturating_u32, scan, walk},
 };
 
 const DATABASE_FILE: &str = "library.sqlite";
@@ -267,6 +267,44 @@ impl Library {
         self.note_availability(root.id, root.unavailable_since_ms, &outcome)
             .await?;
         Ok(FolderRescan { id, name, outcome })
+    }
+
+    /// Removes the books of a linked folder that's readable but holds none, which a rescan keeps in case its drive is unplugged.
+    #[tracing::instrument(skip_all, fields(folder = %id))]
+    pub async fn remove_books_of_emptied_folder(
+        &self,
+        id: FolderId,
+    ) -> Result<BooksRemoval, LibraryError> {
+        let _scanning = self.scanning.lock().await;
+        let database = self.store.database();
+        let root = database
+            .read(move |connection| library_root(connection, id.0))
+            .await?;
+        let files = self.files_of(&root.locator);
+        let is_emptied = root.kind == RootKind::Linked
+            && matches!(
+                walk(files.storage, files.folder).await?,
+                Ok(layout) if layout.is_empty()
+            );
+        if !is_emptied {
+            return Ok(BooksRemoval::Kept);
+        }
+        let removed = database
+            .write(move |transaction| {
+                let locations: Vec<PathBuf> = root_files(transaction, root.id)?
+                    .into_iter()
+                    .map(|file| file.location)
+                    .collect();
+                let held = remove_book_files(transaction, root.id, &locations)?;
+                let removed = remove_books_without_files(transaction, &held)?;
+                mark_root_available(transaction, root.id)?;
+                Ok(removed)
+            })
+            .await?;
+        self.note_catalog_written();
+        Ok(BooksRemoval::Removed {
+            books: saturating_u32(removed),
+        })
     }
 
     /// Opens each linked folder kept by a bookmark through `resolve`, which may block, following the ones that moved and returning those whose bookmark wouldn't open.

@@ -313,9 +313,48 @@
     }
   ],
   "library_rescan_unreachable": "⟦{name} íšñ'ţ áṽáíļáƀļé. Íţš ƀööķš šţáý íñ ýöûŕ ļíƀŕáŕý ûñţíļ íţ'š ƀáçķ.·····························⟧",
-  "library_rescan_found_empty": "⟦Ƒöûñð ñö ƀööķš íñ {name}. Íţš ƀööķš šţáý íñ ýöûŕ ļíƀŕáŕý íñ çášé íţš ðŕíṽé íšñ'ţ çöññéçţéð.·····································⟧",
   "library_rescan_failed": "⟦Çöûļðñ'ţ ŕéšçáñ {name}. Ţŕý áĝáíñ.··············⟧",
+  "library_remove_books": "⟦Ŕéɱöṽé íţš ƀööķš·······⟧",
+  "library_books_removed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ ŕéɱöṽéð············⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš ŕéɱöṽéð············⟧"
+      }
+    }
+  ],
+  "library_found_empty_title": "⟦{name} ļööķš éɱþţý········⟧",
+  "library_found_empty_body": "⟦Íţš ƀööķš šţáý íñ ýöûŕ ļíƀŕáŕý íñ çášé íţš ðŕíṽé íšñ'ţ çöññéçţéð. Íƒ ýöû éɱþţíéð íţ, ŕéɱöṽé ţĥéɱ.·······································⟧",
+  "library_remove_books_title": [
+    {
+      "declarations": [
+        "input count",
+        "input name",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ŕéɱöṽé {formattedCount} ƀööķ ƒŕöɱ {name}?·················⟧",
+        "countPlural=other": "⟦Ŕéɱöṽé {formattedCount} ƀööķš ƒŕöɱ {name}?·················⟧"
+      }
+    }
+  ],
+  "library_remove_books_title_uncounted": "⟦Ŕéɱöṽé ţĥé ƀööķš öƒ {name}?···········⟧",
+  "library_remove_books_note": "⟦Ţĥéíŕ ƒíļéš ŵéŕéñ'ţ ƒöûñð. Ŕéáðíñĝ þŕöĝŕéšš áñð ñöţéš ŵíļļ ƀé ŕéɱöṽéð ţöö.······························⟧",
+  "library_remove_books_confirm": "⟦Ŕéɱöṽé ƀööķš·····⟧",
+  "library_remove_books_cancel": "⟦Çáñçéļ···⟧",
+  "library_remove_books_failed": "⟦Çöûļðñ'ţ ŕéɱöṽé ţĥé ƀööķš··········⟧",
+  "library_remove_books_failed_body": "⟦Ñöţĥíñĝ íñ ýöûŕ ļíƀŕáŕý ĥáš çĥáñĝéð. Ţŕý áĝáíñ, öŕ ŕéšçáñ {name} ƒíŕšţ.·····························⟧",
+  "library_remove_books_try_again": "⟦Ţŕý áĝáíñ····⟧",
   "library_folder_unavailable": "⟦Ñöţ áṽáíļáƀļé······⟧",
+  "library_folder_found_empty": "⟦Ñö ƀööķš ƒöûñð······⟧",
   "appearance_title": "⟦Áþþéáŕáñçé····⟧",
   "appearance_light_or_dark": "⟦Ļíĝĥţ öŕ ðáŕķ······⟧",
   "appearance_system_hint": "⟦Šýšţéɱ ƒöļļöŵš ţĥé ðéṽíçé'š šéţţíñĝ áñð çĥáñĝéš ŵíţĥ íţ.·······················⟧",

@@ -21,6 +21,8 @@
     addFolder,
     notices,
     rowAction,
+    rowNotice,
+    isFoundEmpty,
     status,
     usesStandIns,
     hint,
@@ -30,6 +32,8 @@
     addFolder: AddFolder;
     notices: Notices;
     rowAction?: Snippet<[LibraryFolder]>;
+    rowNotice?: Snippet<[LibraryFolder]>;
+    isFoundEmpty?: (folder: LibraryFolder) => boolean;
     status?: Snippet;
     usesStandIns: boolean;
     hint?: Snippet | undefined;
@@ -52,8 +56,14 @@
   const headingId = $props.id();
   const isBelowList = $derived(addPlacement === "below-list");
 
+  const rows: Record<LibraryFolder["id"], HTMLLIElement> = {};
+
   let latestRemovalAsked = 0;
   let removalAsker: HTMLButtonElement | undefined;
+
+  export function focusRow(folder: LibraryFolder): void {
+    rows[folder.id]?.focus();
+  }
 
   /** Apple platforms don't focus a button when it's clicked or tapped, so the closing dialog can't hand focus back to it by itself. */
   async function returnFocusToAsker(): Promise<void> {
@@ -127,8 +137,12 @@
       ]}
     >
       {#each folders.list.linked as folder (folder.id)}
-        <li>
-          <FolderRow {folder}>
+        <li
+          bind:this={rows[folder.id]}
+          tabindex="-1"
+          class="focus-visible:rounded-card focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent"
+        >
+          <FolderRow {folder} isFoundEmpty={isFoundEmpty?.(folder) ?? false}>
             {#snippet action()}
               {@render rowAction?.(folder)}
               <RowActionButton
@@ -145,6 +159,7 @@
               </RowActionButton>
             {/snippet}
           </FolderRow>
+          {@render rowNotice?.(folder)}
         </li>
       {/each}
     </ul>

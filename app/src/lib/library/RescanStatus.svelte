@@ -20,6 +20,7 @@
       case undefined:
       case "finding":
       case "reading":
+      case "removingBooks":
         return [];
       case "failed":
         return [m.library_rescan_failed({ name: folderTitle(shown.folder) })];
