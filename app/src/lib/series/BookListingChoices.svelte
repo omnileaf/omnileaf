@@ -49,11 +49,11 @@
   <button
     type="button"
     aria-label={isReversed
-      ? m.series_order_to_first_first()
-      : m.series_order_to_last_first()}
+      ? m.series_order_last_first_change()
+      : m.series_order_first_first_change()}
     title={isReversed
-      ? m.series_order_to_first_first()
-      : m.series_order_to_last_first()}
+      ? m.series_order_last_first_change()
+      : m.series_order_first_first_change()}
     class="flex shrink-0 items-center gap-icon-gap rounded-full border border-border bg-card px-md text-detail font-semibold block-scope-chip hover:bg-hover"
     onclick={() => {
       onChoose({
