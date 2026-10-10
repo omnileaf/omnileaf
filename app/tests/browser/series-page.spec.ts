@@ -27,6 +27,7 @@ import {
 } from "./series-shelf.ts";
 
 const LIBRARY_CHANGED = "library-changed";
+const JUST_UNDER = 6;
 const READ = { state: "read" } as const;
 const NOT_STARTED = { state: "notStarted" } as const;
 const ON_PAGE_15 = { state: "started", page: 15 } as const;
@@ -716,6 +717,31 @@ for (const { platform, statusBar, target } of [
       expect(Math.min(atRest.width, atRest.height)).toBeGreaterThanOrEqual(
         target,
       );
+    });
+
+    test("takes the title away again once larger text brings the page's title back out from under the bar", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      const heading = page.getByRole("heading", {
+        level: 1,
+        name: SERIES_TITLE,
+      });
+      const bar = page.getByRole("main").locator("header");
+      const under =
+        (await boxOf(heading)).y +
+        (await boxOf(heading)).height -
+        ((await boxOf(bar)).y + (await boxOf(bar)).height);
+      await page.getByRole("main").evaluate((main, by) => {
+        main.scrollTo({ top: by });
+      }, under + JUST_UNDER);
+      await expect(barTitle(page)).toHaveCSS("opacity", "1");
+
+      await page.evaluate(() => {
+        document.documentElement.style.setProperty("--text-scale", "2");
+      });
+
+      await expect(barTitle(page)).toHaveCSS("opacity", "0");
     });
 
     test("shows and hides the title at once when motion is reduced", async ({
