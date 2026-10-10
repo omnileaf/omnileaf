@@ -27,9 +27,12 @@ const TUESDAY_SMALL_HOURS = new Date("2026-10-06T01:00:00Z");
 const LIBRARY_CHANGED = "library-changed";
 const MINUTE = 60;
 const READ_THIS_WEEK = 3 * 60 * MINUTE + 12 * MINUTE;
+const READ_LAST_WEEK = 70 * MINUTE;
 const ENTRIES_PER_PAGE = 50;
 const DAY_MS = 86_400_000;
 const MONDAY = Date.UTC(2026, 9, 5) / DAY_MS;
+const LAST_WEEK_FIRST = MONDAY - 8;
+const LAST_WEEK_LAST = MONDAY - 2;
 const DESKTOP_TITLE_GAP = 14;
 const DESKTOP_DAYS_TOP = 22;
 const DESKTOP_ACTION_RADIUS = "8px";
@@ -146,6 +149,10 @@ const READ_BACKEND: FakeBackend = {
   ...DEFAULT_BACKEND,
   readingHistory: pagedSessions(SESSIONS),
   readingTimeSince: () => READ_THIS_WEEK,
+  readingTimeBetween: (firstDay, lastDay) =>
+    firstDay === LAST_WEEK_FIRST && lastDay === LAST_WEEK_LAST
+      ? READ_LAST_WEEK
+      : 0,
 };
 
 function isDesktop(page: Page): boolean {
@@ -379,6 +386,25 @@ for (const platform of ["ios", "android"] as const) {
     });
   });
 }
+
+test.describe("with a day last week read only in a book no longer in the library", () => {
+  test.use({
+    backend: {
+      ...READ_BACKEND,
+      readingTimeBetween: () => READ_LAST_WEEK + 55 * MINUTE,
+    },
+  });
+
+  test("counts that day's time in last week's total, as the week's total counts it", async ({
+    page,
+  }) => {
+    await openHistory(page);
+
+    await expect(
+      page.getByRole("region", { name: "Last week 2 h 5 min" }),
+    ).toBeVisible();
+  });
+});
 
 test.describe("on a device whose region starts its weeks on Monday", () => {
   test.use({

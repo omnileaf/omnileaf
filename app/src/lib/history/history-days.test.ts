@@ -4,6 +4,7 @@ import {
   type HistoryCalendar,
   type HistoryDay,
   historyDays,
+  lastWeekDays,
 } from "#lib/history/history-days.ts";
 import type { HistoryEntry } from "#lib/ipc/bindings.ts";
 import { bookIdIn } from "#lib/reader/opened-book.ts";
@@ -120,5 +121,29 @@ test("keeps yesterday a day of its own when this week starts today", () => {
   expect(summed(days)).toEqual([
     [{ kind: "day", day: MONDAY - 1 }, 600, [THIRD]],
     [{ kind: "lastWeek" }, 300, [SECOND]],
+  ]);
+});
+
+test("takes last week's time read from the time counted over its days when given, as a day read only in a book since removed lists no session", () => {
+  const listed = [
+    entry(THIRD, MONDAY, 900),
+    entry(SECOND, MONDAY - 2, 600),
+    entry(FIRST, MONDAY - 7, 300),
+  ];
+
+  const days = historyDays(listed, ON_WEDNESDAY, 1_500);
+
+  expect(summed(days)).toEqual([
+    [{ kind: "day", day: MONDAY }, 900, [THIRD]],
+    [{ kind: "lastWeek" }, 1_500, [SECOND, FIRST]],
+  ]);
+});
+
+test("gathers the seven days before this week into last week, leaving out yesterday", () => {
+  const gathered = [ON_WEDNESDAY, ON_MONDAY].map(lastWeekDays);
+
+  expect(gathered).toEqual([
+    { first: MONDAY - 7, last: MONDAY - 1 },
+    { first: MONDAY - 7, last: MONDAY - 2 },
   ]);
 });

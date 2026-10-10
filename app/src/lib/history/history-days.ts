@@ -19,15 +19,25 @@ export interface HistoryDay {
   readonly entries: readonly HistoryEntry[];
 }
 
+/** The first and last of the days History gathers under last week. */
+export interface DayRange {
+  readonly first: LocalDay;
+  readonly last: LocalDay;
+}
+
 const DAYS_PER_WEEK = 7;
 
-function titleOf(
-  day: LocalDay,
-  { today, weekStart }: HistoryCalendar,
-): HistoryDayTitle {
-  const isYesterdayOrLater = today - day <= 1;
-  const isLastWeek = day < weekStart && day >= weekStart - DAYS_PER_WEEK;
-  return isLastWeek && !isYesterdayOrLater
+/** The seven days before this week, but for yesterday, which keeps a name of its own. */
+export function lastWeekDays({ today, weekStart }: HistoryCalendar): DayRange {
+  return {
+    first: weekStart - DAYS_PER_WEEK,
+    last: Math.min(weekStart - 1, today - 2),
+  };
+}
+
+function titleOf(day: LocalDay, calendar: HistoryCalendar): HistoryDayTitle {
+  const { first, last } = lastWeekDays(calendar);
+  return day >= first && day <= last
     ? { kind: "lastWeek" }
     : { kind: "day", day };
 }
@@ -45,10 +55,11 @@ interface Gathering {
   readonly daysCounted: Set<LocalDay>;
 }
 
-/** Gathers sessions listed newest first into their days, keeping their order, and last week's days into one. */
+/** Gathers sessions listed newest first into their days, keeping their order, and last week's days into one, read for `lastWeekReadSeconds` once known. */
 export function historyDays(
   entries: readonly HistoryEntry[],
   calendar: HistoryCalendar,
+  lastWeekReadSeconds?: number,
 ): HistoryDay[] {
   const days: Gathering[] = [];
   for (const entry of entries) {
@@ -71,7 +82,10 @@ export function historyDays(
   }
   return days.map(({ title, readSeconds, entries: listed }) => ({
     title,
-    readSeconds,
+    readSeconds:
+      title.kind === "lastWeek" && lastWeekReadSeconds !== undefined
+        ? lastWeekReadSeconds
+        : readSeconds,
     entries: listed,
   }));
 }

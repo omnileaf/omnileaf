@@ -2,6 +2,7 @@
   import { RotateCcwClock } from "@lucide/svelte";
   import { onMount } from "svelte";
 
+  import { lastWeekDays } from "#lib/history/history-days.ts";
   import HistoryDays from "#lib/history/HistoryDays.svelte";
   import { historyList } from "#lib/history/history-list.svelte.ts";
   import {
@@ -22,6 +23,7 @@
   const history = historyList();
   let today = $state(localDayOf(new Date()));
   let readThisWeekSeconds: number | undefined = $state();
+  let readLastWeekSeconds: number | undefined = $state();
 
   const calendar = $derived({
     today,
@@ -41,15 +43,27 @@
     readThisWeekSeconds = read.data;
   }
 
+  async function readLastWeek(): Promise<void> {
+    const { first, last } = lastWeekDays(calendar);
+    const read = await commands.readingTimeBetween(first, last);
+    if (read.status === "error") {
+      reportError(read.error);
+      return;
+    }
+    readLastWeekSeconds = read.data;
+  }
+
   function readAgain(): void {
     today = localDayOf(new Date());
     void history.load();
     void readThisWeek();
+    void readLastWeek();
   }
 
   onMount(() => {
     void history.start();
     void readThisWeek();
+    void readLastWeek();
     return listenForLibraryChanges(readAgain, reportError);
   });
 </script>
@@ -85,6 +99,7 @@
       entries={history.list.items}
       isComplete={history.list.isComplete}
       {calendar}
+      lastWeekReadSeconds={readLastWeekSeconds}
       usesStandIns={screenshotMode.isOn}
       onNearEnd={() => {
         void history.loadMore();

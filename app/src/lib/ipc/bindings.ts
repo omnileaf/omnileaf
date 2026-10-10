@@ -32,6 +32,7 @@ export const commands = {
 	closeBook: (id: string & { readonly __brand: "BookId" }) => typedError<null, IpcError>(__TAURI_INVOKE("close_book", { id })),
 	readingHistory: (after: string & { readonly __brand: "HistoryCursor" } | null) => typedError<HistoryPage, IpcError>(__TAURI_INVOKE("reading_history", { after })),
 	readingTimeSince: (firstDay: number) => typedError<number, IpcError>(__TAURI_INVOKE("reading_time_since", { firstDay })),
+	readingTimeBetween: (firstDay: number, lastDay: number) => typedError<number, IpcError>(__TAURI_INVOKE("reading_time_between", { firstDay, lastDay })),
 	orientScreen: (orientation: ScreenOrientation) => typedError<null, IpcError>(__TAURI_INVOKE("orient_screen", { orientation })),
 	/**  Answers whether the window was in full screen before the change. */
 	changeFullScreen: (change: FullScreenChange) => typedError<boolean, IpcError>(__TAURI_INVOKE("change_full_screen", { change })),

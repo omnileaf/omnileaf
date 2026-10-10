@@ -20,19 +20,21 @@
     entries,
     isComplete,
     calendar,
+    lastWeekReadSeconds,
     usesStandIns,
     onNearEnd,
   }: {
     entries: readonly HistoryEntry[];
     isComplete: boolean;
     calendar: HistoryCalendar;
+    lastWeekReadSeconds: number | undefined;
     usesStandIns: boolean;
     onNearEnd: () => void;
   } = $props();
 
   const locale = getLocale();
   const headingId = $props.id();
-  const days = $derived(historyDays(entries, calendar));
+  const days = $derived(historyDays(entries, calendar, lastWeekReadSeconds));
 
   function nameOf(title: HistoryDayTitle): string {
     return title.kind === "lastWeek"
