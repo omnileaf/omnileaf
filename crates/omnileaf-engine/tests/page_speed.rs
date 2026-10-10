@@ -108,7 +108,7 @@ impl UnopenedBooks {
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
 async fn opens_a_book_never_opened_before_to_its_first_page_within_150_ms_at_p95() {
     let trial = SpeedTrial {
-        measured: "the first page of a book of 30 1800x2700 4:2:0 JPEG scans never opened before, its page sizes read on the way",
+        measured: "the first page of a book of 30 1800x2700 4:2:0 JPEG scans never opened before, the sizes of the pages around it read on the way and the rest left for later",
         sampling: Sampling::Repeated {
             samples: NonZeroUsize::new(usize::try_from(BOOKS).unwrap()).unwrap(),
             statistic: Statistic::Percentile95,
