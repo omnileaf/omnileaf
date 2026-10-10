@@ -25,6 +25,7 @@ test("finds every page inside one by that page's name", () => {
     "/(app)/settings/appearance",
     "/(app)/settings/privacy",
     "/(app)/settings/general",
+    "/(app)/settings/advanced",
     "/(app)/settings/about",
   ]);
 });
