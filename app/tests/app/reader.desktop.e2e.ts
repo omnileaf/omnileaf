@@ -1,20 +1,19 @@
 import { afterEach, expect, test } from "vitest";
 
-import { addSampleLibrary, useAppSession } from "./app-session.ts";
+import { useAppSession } from "./app-session.ts";
 import { pageShownScript } from "./page-shown.ts";
+import {
+  BACK_TO_THE_LIBRARY,
+  FIRST_SERIES_COVER,
+  NEXT_PAGE,
+  openSampleBook,
+  openSampleSeries,
+  sampleBookLink,
+} from "./sample-book.ts";
 import { xpath } from "./webdriver.ts";
 
-const FIRST_SERIES_COVER = xpath(
-  "//ul[@aria-label='Series']//a[.//*[normalize-space()='Sample Series 01']]",
-);
-const FIRST_BOOK_LINK = xpath(
-  "//ul[@aria-label='Books']/li[1]//a[starts-with(normalize-space(), 'Sample Series 01 v01')]",
-);
+const FIRST_BOOK_LINK = sampleBookLink(1);
 const SERIES_HEADING = xpath("//h1[normalize-space()='Sample Series 01']");
-const NEXT_PAGE = xpath("//button[@aria-label='Next page']");
-const BACK_TO_THE_LIBRARY = xpath(
-  "//main//a[@href='/'] | //nav//a[normalize-space()='Library']",
-);
 
 const appSession = useAppSession();
 
@@ -23,10 +22,7 @@ afterEach(async () => {
 });
 
 async function openFirstBook(): Promise<void> {
-  await addSampleLibrary(appSession());
-  await (await appSession().waitFor(FIRST_SERIES_COVER)).click();
-  await (await appSession().waitFor(FIRST_BOOK_LINK)).click();
-  await appSession().waitFor(NEXT_PAGE);
+  await openSampleBook(appSession(), 1);
 }
 
 test("opens a book of the folder added on its first page, read from the omni protocol", async () => {
@@ -105,8 +101,7 @@ async function turnAPage(): Promise<number> {
 }
 
 test("shows on the series page the page reached in a book started before once it goes straight there from the book", async () => {
-  await addSampleLibrary(appSession());
-  await (await appSession().waitFor(FIRST_SERIES_COVER)).click();
+  await openSampleSeries(appSession());
   await appSession().waitFor(SERIES_HEADING);
   const series = new URL(await appSession().url()).pathname;
   await (await appSession().waitFor(FIRST_BOOK_LINK)).click();
