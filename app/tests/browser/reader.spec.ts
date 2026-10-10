@@ -503,19 +503,23 @@ test.describe("the screen's orientation", () => {
 
 test.describe("full screen", () => {
   const changes: FullScreenChange[] = [];
+  let isFullScreen = false;
 
   test.use({
     backend: {
       ...readerBackend(DEFAULT_BACKEND),
       changeFullScreen: (change) => {
         changes.push(change);
-        return null;
+        const wasFullScreen = isFullScreen;
+        isFullScreen = change === "toggle" && !wasFullScreen;
+        return wasFullScreen;
       },
     },
   });
 
   test.beforeEach(() => {
     changes.length = 0;
+    isFullScreen = false;
   });
 
   test("goes in or out of full screen with F and leaves it when the book closes", async ({
@@ -524,9 +528,27 @@ test.describe("full screen", () => {
     await openBook(page);
 
     await page.keyboard.press("f");
+    await page.keyboard.press("f");
     await page.keyboard.press("Escape");
 
+    await expect(page).toHaveURL(/\/$/);
+    await expect
+      .poll(() => changes)
+      .toEqual(["toggle", "toggle", "leave", "leave"]);
+  });
+
+  test("leaves full screen with Escape before a second Escape closes the book", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await page.keyboard.press("f");
+
+    await page.keyboard.press("Escape");
     await expect.poll(() => changes).toEqual(["toggle", "leave"]);
+    await expect(slider(page)).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await expect(page).toHaveURL(/\/$/);
   });
 
   test("goes in or out of full screen with the top bar's button on a wide screen", async ({
@@ -741,7 +763,7 @@ test.describe("the books either side", () => {
       openBook: (id) => ({ ...readerBook(NOT_STARTED), id }),
       changeFullScreen: (change) => {
         changes.push(change);
-        return null;
+        return false;
       },
       orientScreen: (orientation) => {
         turns.push(orientation);

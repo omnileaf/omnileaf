@@ -58,7 +58,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   seriesBooks: () => ({ books: [], next: null }),
   markBooks: () => null,
   orientScreen: () => null,
-  changeFullScreen: () => null,
+  changeFullScreen: () => false,
   openBook: () => {
     throw new CommandFailure({
       code: "bookNotFound",
