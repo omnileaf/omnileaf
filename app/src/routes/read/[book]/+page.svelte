@@ -5,6 +5,7 @@
   import { commands } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
   import PagedReader from "#lib/reader/PagedReader.svelte";
+  import { allowPinchZoom } from "#lib/reader/pinch-zoom.ts";
 
   import type { PageProps } from "./$types";
 
@@ -14,7 +15,9 @@
 
   onMount(() => {
     void commands.orientScreen("followDevice");
+    const lockScale = allowPinchZoom();
     return () => {
+      lockScale();
       void commands.orientScreen("portraitOnPhones");
       void commands.changeFullScreen("leave");
     };

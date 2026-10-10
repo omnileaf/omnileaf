@@ -829,3 +829,53 @@ test.describe("with a pointer", () => {
     ).toHaveAttribute("title", "Full screen");
   });
 });
+
+test.describe("zooming", () => {
+  function viewportSettings(page: Page): Promise<Record<string, string>> {
+    return page.evaluate(() => {
+      const content =
+        document
+          .querySelector('meta[name="viewport"]')
+          ?.getAttribute("content") ?? "";
+      return Object.fromEntries(
+        content.split(",").map((setting) => {
+          const [key = "", value = ""] = setting.split("=");
+          return [key.trim(), value.trim()];
+        }),
+      );
+    });
+  }
+
+  function rootTouchAction(page: Page): Promise<string> {
+    return page.evaluate(
+      () => getComputedStyle(document.documentElement).touchAction,
+    );
+  }
+
+  test("lets a page be pinched to zoom while a book is open", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    const settings = await viewportSettings(page);
+
+    expect(settings).not.toHaveProperty("maximum-scale");
+    expect(settings).not.toHaveProperty("user-scalable");
+    expect(await rootTouchAction(page)).toBe("manipulation");
+  });
+
+  test("keeps the rest of the app from zooming again once the book closes", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await page.keyboard.press("Escape");
+    await expect(page).toHaveURL(/\/$/);
+
+    expect(await viewportSettings(page)).toMatchObject({
+      "maximum-scale": "1",
+      "user-scalable": "no",
+    });
+    expect(await rootTouchAction(page)).toBe("pan-x pan-y");
+  });
+});

@@ -1131,6 +1131,10 @@
     user-select: none;
   }
 
+  :root[data-pinch-zoom] {
+    touch-action: manipulation;
+  }
+
   a,
   img {
     -webkit-touch-callout: none;
