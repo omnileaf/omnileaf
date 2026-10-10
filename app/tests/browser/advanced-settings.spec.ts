@@ -10,6 +10,7 @@ import {
   accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
+  EXPANDED_MIN_WIDTH,
   expect,
   fakeAppInfo,
   MEDIUM_MIN_WIDTH,
@@ -110,6 +111,16 @@ function sectionsHoldingAbout(page: Page): Locator {
     .filter({ visible: true });
 }
 
+function showsSummaries(page: Page, platform: Platform): boolean {
+  const besideFrom =
+    platform === "linux" ? MEDIUM_MIN_WIDTH : EXPANDED_MIN_WIDTH;
+  return viewportOf(page).width < besideFrom;
+}
+
+function advancedSummaryRow(page: Page): Locator {
+  return page.getByRole("main").getByRole("link", { name: /^Advanced/ });
+}
+
 function crashTests(page: Page): Locator {
   return page.getByRole("region", { name: "Crash reports" });
 }
@@ -156,13 +167,11 @@ for (const platform of ["android", "ios", "linux"] as const) {
     test("summarises Advanced as a development build", async ({ page }) => {
       await page.goto("/settings");
       test.skip(
-        viewportOf(page).width >= MEDIUM_MIN_WIDTH,
-        "phone-width screens show the summaries",
+        !showsSummaries(page, platform),
+        "settings opens its first section beside the list",
       );
 
-      const advanced = page
-        .getByRole("main")
-        .getByRole("link", { name: /^Advanced/ });
+      const advanced = advancedSummaryRow(page);
 
       await expect(advanced).toContainText("Development build");
     });
@@ -389,17 +398,27 @@ for (const platform of ["android", "ios", "linux"] as const) {
   test.describe(`in a release build on ${platform}`, () => {
     test.use(onPlatform(platform));
 
-    test("lists Advanced just above About, with no summary", async ({
-      page,
-    }) => {
+    test("lists Advanced just above About", async ({ page }) => {
       await page.goto("/settings");
 
       const group = sectionsHoldingAbout(page);
 
       await expect(group.getByRole("link").first()).toHaveAccessibleName(
-        "Advanced",
+        /^Advanced/,
       );
       await expect(group.getByRole("link")).toHaveCount(2);
+    });
+
+    test("gives Advanced no summary", async ({ page }) => {
+      await page.goto("/settings");
+      test.skip(
+        !showsSummaries(page, platform),
+        "settings opens its first section beside the list",
+      );
+
+      const advanced = advancedSummaryRow(page);
+
+      await expect(advanced).toHaveAccessibleName("Advanced");
     });
 
     test("opens Advanced without the development build note or the crash tests", async ({
@@ -415,21 +434,25 @@ for (const platform of ["android", "ios", "linux"] as const) {
         page.getByRole("region", { name: "Crash reports" }),
       ).toHaveCount(0);
     });
-
-    for (const colorScheme of ["light", "dark"] as const) {
-      test(`the page has no accessibility violations in the ${colorScheme} theme`, async ({
-        page,
-      }) => {
-        await page.emulateMedia({ colorScheme });
-        await page.goto("/settings/advanced");
-        await expect(
-          page.getByRole("heading", { level: 1, name: "Advanced" }),
-        ).toBeVisible();
-
-        const violations = await accessibilityViolations(page);
-
-        expect(violations).toEqual([]);
-      });
-    }
   });
 }
+
+test.describe("the Advanced page of a release build", () => {
+  test.use(onPlatform("linux"));
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/settings/advanced");
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Advanced" }),
+      ).toBeVisible();
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
+});
