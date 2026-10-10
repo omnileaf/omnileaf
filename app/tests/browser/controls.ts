@@ -80,8 +80,8 @@ export function addFolderBesideFolders(page: Page): Locator {
 export function addFolderInPageHeading(page: Page): Locator {
   return page
     .getByRole("main")
-    .getByRole("button", { name: "Add a folder" })
-    .first();
+    .locator("header")
+    .getByRole("button", { name: "Add a folder" });
 }
 
 export function destination(page: Page, name: string): Locator {
