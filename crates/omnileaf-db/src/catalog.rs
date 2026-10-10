@@ -24,6 +24,7 @@ mod series_search;
 mod staged_rows;
 mod stored_id;
 
+pub(crate) use book::series_of_book;
 pub use book::{NewBook, add_book, remove_books_without_files};
 pub use book_to_read::{BookToRead, book_to_read};
 pub use cover::{BookFileId, Cover, cover_file};

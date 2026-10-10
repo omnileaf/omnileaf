@@ -34,6 +34,7 @@ const FOLDER: &str = "Sample Library";
 const SERIES: &str = "Sample Series 01";
 const FIRST_BOOK: &str = "Sample Series 01 v01";
 const SECOND_BOOK: &str = "Sample Series 01 v02";
+const MOVED_TO_SERIES: &str = "Sample Series 02";
 const HANG_LIMIT: Duration = Duration::from_secs(60);
 
 struct Shelf {
@@ -481,6 +482,56 @@ async fn tells_of_the_book_and_series_of_each_page_saved() {
         })
     };
     assert_eq!(told, [of(&first), of(&second), Err(TryRecvError::Empty)]);
+}
+
+#[tokio::test(start_paused = true)]
+async fn tells_of_the_series_a_book_is_in_when_its_page_saves_after_a_rescan_moved_it() {
+    let shelf = Shelf::with_two_books("saved-moved").await;
+    let opened = shelf.restore(0).await;
+    let moved_to = shelf.comics.path().join(FOLDER).join(MOVED_TO_SERIES);
+    fs::create_dir_all(&moved_to).unwrap();
+    fs::rename(
+        shelf
+            .comics
+            .path()
+            .join(FOLDER)
+            .join(SERIES)
+            .join(format!("{FIRST_BOOK}.cbz")),
+        moved_to.join(format!("{FIRST_BOOK}.cbz")),
+    )
+    .unwrap();
+    let folder = shelf
+        .library
+        .folders(None)
+        .await
+        .unwrap()
+        .folders
+        .pop()
+        .unwrap();
+    shelf
+        .library
+        .rescan_folder(folder.id, |_| {})
+        .await
+        .unwrap();
+    let mut saved = shelf.library.reading_saved();
+    shelf.show(&opened, 2).await;
+
+    shelf.close(&opened).await;
+
+    let told = saved.try_recv().unwrap();
+    assert_ne!(told.series, opened.series);
+    assert_eq!(
+        shelf
+            .library
+            .series_books(told.series, SeriesBookListing::default(), None)
+            .await
+            .unwrap()
+            .books
+            .iter()
+            .map(|book| book.id)
+            .collect::<Vec<_>>(),
+        [opened.id]
+    );
 }
 
 #[tokio::test(start_paused = true)]

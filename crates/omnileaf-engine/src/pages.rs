@@ -187,10 +187,7 @@ impl Pages {
             None if is_filled => store_sizes(library, found.file, found.rev, sizes.clone()).await,
             None => {}
         }
-        if let Err(error) = library
-            .start_reading(id, SeriesId(found.series), opened.page_count)
-            .await
-        {
+        if let Err(error) = library.start_reading(id, opened.page_count).await {
             tracing::warn!(error = %describe_error(&error), "save the page reached in the book read before this one");
         }
         let start = start_page(found.reading, opened.page_count);
