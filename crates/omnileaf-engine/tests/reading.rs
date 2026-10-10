@@ -10,7 +10,7 @@
 )]
 mod support;
 
-use std::{fs, path::Path, thread, time::Duration};
+use std::{fs, path::Path, sync::mpsc, thread, time::Duration};
 
 use omnileaf_engine::{
     BookId, BookReading, LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges,
@@ -24,6 +24,7 @@ use tokio::{
         broadcast::{self, error::TryRecvError},
         oneshot,
     },
+    task,
     time::{Instant, timeout},
 };
 
@@ -175,6 +176,16 @@ async fn saved(changes: &mut broadcast::Receiver<omnileaf_engine::Changed>) {
     saved.expect("a save in time").unwrap();
 }
 
+/// Runs `call` with the paused clock held still, so no save waiting out the save delay can land during it.
+async fn before_the_save_delay<T>(call: impl Future<Output = T>) -> T {
+    let (release, released) = mpsc::channel::<()>();
+    let clock_held = task::spawn_blocking(move || released.recv());
+    let output = call.await;
+    drop(release);
+    clock_held.await.unwrap().unwrap_err();
+    output
+}
+
 fn started_on(page_from_one: u32) -> BookReading {
     BookReading::Started {
         page: Some(page_from_one),
@@ -238,7 +249,9 @@ async fn reads_a_series_with_the_page_reached_in_its_book_read_now_before_that_p
     let opened = shelf.restore(0).await;
     shelf.show(&opened, 4).await;
 
-    let overview = shelf.library.series_overview(opened.series).await.unwrap();
+    let overview = before_the_save_delay(shelf.library.series_overview(opened.series))
+        .await
+        .unwrap();
 
     assert_eq!(
         overview.up_next.map(|book| book.reading),
@@ -363,11 +376,13 @@ async fn opens_a_book_opened_again_before_its_save_on_the_page_reading_reached()
     let opened = shelf.restore(0).await;
     shelf.show(&opened, 4).await;
 
-    let again = shelf
-        .router
-        .open_book(&shelf.library, opened.id, Vec::<ProbedFormat>::new())
-        .await
-        .unwrap();
+    let again = before_the_save_delay(shelf.router.open_book(
+        &shelf.library,
+        opened.id,
+        Vec::<ProbedFormat>::new(),
+    ))
+    .await
+    .unwrap();
 
     assert_eq!(again.start_page, 4);
 }
