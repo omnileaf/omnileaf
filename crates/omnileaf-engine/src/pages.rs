@@ -7,7 +7,7 @@ use std::{
 };
 
 use omnileaf_cache::{CacheError, CacheKey, DiskCache, MemoryCache};
-use omnileaf_db::catalog::{self, BookReading as StoredReading, BookToRead};
+use omnileaf_db::catalog::{self, BookReading as StoredReading};
 use omnileaf_formats::{Book, FormatError};
 use omnileaf_imaging::{ImagingError, PageFormat, page_size, transcode};
 
@@ -16,6 +16,7 @@ use crate::{
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
     lane::{Job, LaneStopped},
+    library::BookToOpen,
     open_books::{BookFileAt, OpenBook, OpenBooks, PageAt},
     page_lane::{AskedPageError, PageLane},
 };
@@ -124,10 +125,11 @@ impl Pages {
             .undecodable
             .write()
             .unwrap_or_else(PoisonError::into_inner) = undecodable.into_iter().collect();
-        let found = library
-            .book_to_read(id)
+        let to_open = library
+            .book_to_open(id)
             .await?
             .ok_or(OpenBookError::BookNotFound { id })?;
+        let found = &to_open.found;
         let stored = library.page_dimensions(found.file, found.rev).await?;
         let file = BookFileAt {
             book: found.id,
@@ -135,7 +137,7 @@ impl Pages {
         };
         let shared = Arc::clone(&self.shared);
         let located = library
-            .book_file(&found)
+            .book_file(found)
             .ok_or(OpenBookError::FolderClosed { id })?;
         let (opened, sizes, is_probed) = self
             .lane
@@ -160,7 +162,7 @@ impl Pages {
         }
         let start = start_page(found.reading, opened.page_count);
         self.read_ahead(&opened, usize::try_from(start).unwrap_or(usize::MAX));
-        Ok(opened_book(found, &sizes, start))
+        Ok(opened_book(to_open, &sizes, start))
     }
 
     /// The page, or nothing for a page of a revision the library no longer holds or past the end of its book.
@@ -348,7 +350,7 @@ fn probe_size(
 }
 
 fn opened_book(
-    found: BookToRead,
+    BookToOpen { found, place }: BookToOpen,
     sizes: &[Option<catalog::PageDimensions>],
     start_page: u32,
 ) -> OpenedBook {
@@ -371,6 +373,9 @@ fn opened_book(
         pages,
         start_page,
         reading: found.reading.into(),
+        position: place.position,
+        previous: place.previous.map(Into::into),
+        next: place.next.map(Into::into),
     }
 }
 

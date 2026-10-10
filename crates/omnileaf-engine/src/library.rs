@@ -10,11 +10,12 @@ use omnileaf_db::{
     Config, Database,
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookToRead, Cover, NewRoot, PageDimensions,
-        PageRequest, PageSize, RootId, RootKind, RootLocator, SeriesFilter, SeriesListing,
-        add_root, book_to_read, bookmarked_roots, cover_file, home_root, library_root,
-        library_roots, mark_root_available, mark_root_unavailable, page_dimensions,
-        remove_book_files, remove_books_without_files, remove_root, root_book_count, root_files,
-        series_books, series_count, series_overview, series_page, store_page_dimensions, up_next,
+        PageRequest, PageSize, PlaceInSeries, RootId, RootKind, RootLocator, SeriesFilter,
+        SeriesListing, add_root, book_to_read, bookmarked_roots, cover_file, home_root,
+        library_root, library_roots, mark_root_available, mark_root_unavailable, page_dimensions,
+        place_in_series, remove_book_files, remove_books_without_files, remove_root,
+        root_book_count, root_files, series_books, series_count, series_overview, series_page,
+        store_page_dimensions, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_listing::{library_listing, set_library_listing},
@@ -136,6 +137,12 @@ impl LibraryError {
     pub fn was_written_by_a_newer_version(&self) -> bool {
         matches!(self, Self::Database(omnileaf_db::Error::NewerSchema { .. }))
     }
+}
+
+/// A book as the catalog holds it for the reader, with its place in its series.
+pub(crate) struct BookToOpen {
+    pub(crate) found: BookToRead,
+    pub(crate) place: PlaceInSeries,
 }
 
 impl Library {
@@ -402,6 +409,22 @@ impl Library {
             .store
             .database()
             .read(move |connection| book_to_read(connection, book.0))
+            .await?)
+    }
+
+    pub(crate) async fn book_to_open(
+        &self,
+        book: BookId,
+    ) -> Result<Option<BookToOpen>, LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| {
+                let Some(found) = book_to_read(connection, book.0)? else {
+                    return Ok(None);
+                };
+                Ok(place_in_series(connection, book.0)?.map(|place| BookToOpen { found, place }))
+            })
             .await?)
     }
 

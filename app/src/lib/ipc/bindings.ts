@@ -240,6 +240,10 @@ export type OpenedBook = {
 	/**  The page the reader opens on, counting from 0. */
 	startPage: number,
 	reading: BookReading,
+	/**  Where the book stands in its series' order, counting from 1. */
+	position: number,
+	previous: SeriesNeighbour | null,
+	next: SeriesNeighbour | null,
 };
 
 /**  A page's size in pixels. */
@@ -289,6 +293,12 @@ export type SeriesBookPage = {
 	books: SeriesBook[],
 	/**  Absent on the last page. */
 	next: string & { readonly __brand: "BookCursor" } | null,
+};
+
+/**  A book beside the opened one in its series' order. */
+export type SeriesNeighbour = {
+	id: string & { readonly __brand: "BookId" },
+	title: string,
 };
 
 /**  What a series' page shows above its books. */

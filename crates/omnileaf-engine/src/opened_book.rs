@@ -18,6 +18,18 @@ pub struct OpenedBook {
     /// The page the reader opens on, counting from 0.
     pub start_page: u32,
     pub reading: BookReading,
+    /// Where the book stands in its series' order, counting from 1.
+    pub position: u32,
+    pub previous: Option<SeriesNeighbour>,
+    pub next: Option<SeriesNeighbour>,
+}
+
+/// A book beside the opened one in its series' order.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SeriesNeighbour {
+    pub id: BookId,
+    pub title: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -54,6 +66,15 @@ impl ProbedFormat {
             | PageFormat::Png
             | PageFormat::Gif
             | PageFormat::Bmp => None,
+        }
+    }
+}
+
+impl From<catalog::SeriesNeighbour> for SeriesNeighbour {
+    fn from(neighbour: catalog::SeriesNeighbour) -> Self {
+        Self {
+            id: BookId(neighbour.id),
+            title: neighbour.title,
         }
     }
 }
