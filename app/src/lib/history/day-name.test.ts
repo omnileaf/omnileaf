@@ -1,15 +1,15 @@
 import { expect, test } from "vitest";
 
-import { dayName } from "#lib/history/day-name.ts";
+import { dayFormats, dayName } from "#lib/history/day-name.ts";
 import type { HistoryCalendar } from "#lib/history/history-days.ts";
 
 const MONDAY = 20_731;
-const LOCALE = "en-US";
+const FORMATS = dayFormats("en-US");
 const ON_MONDAY: HistoryCalendar = { today: MONDAY, weekStart: MONDAY };
 const ON_THURSDAY: HistoryCalendar = { today: MONDAY + 3, weekStart: MONDAY };
 
 function named(daysAgo: number): string {
-  return dayName(MONDAY - daysAgo, ON_MONDAY, LOCALE);
+  return dayName(MONDAY - daysAgo, ON_MONDAY, FORMATS);
 }
 
 test("calls today and the day before by name", () => {
@@ -20,7 +20,7 @@ test("calls today and the day before by name", () => {
 
 test("calls the other days of this week by their weekday", () => {
   const names = [MONDAY, MONDAY + 1].map((day) =>
-    dayName(day, ON_THURSDAY, LOCALE),
+    dayName(day, ON_THURSDAY, FORMATS),
   );
 
   expect(names).toEqual(["Monday", "Tuesday"]);
@@ -49,7 +49,7 @@ test("gives the date of a day after today, which only a clock set back reaches",
 });
 
 test("writes the date the way the locale does", () => {
-  const name = dayName(MONDAY - 7, ON_MONDAY, "en-GB");
+  const name = dayName(MONDAY - 7, ON_MONDAY, dayFormats("en-GB"));
 
   expect(name).toBe("Monday 28 September");
 });
