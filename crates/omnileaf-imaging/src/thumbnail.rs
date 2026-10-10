@@ -31,7 +31,7 @@ pub fn thumbnail(image: &[u8]) -> Result<Thumbnail, ImagingError> {
     })
 }
 
-fn resize(decoded: &Decoded, source: Size, plan: Plan) -> Result<Vec<u8>, ImagingError> {
+pub(crate) fn resize(decoded: &Decoded, source: Size, plan: Plan) -> Result<Vec<u8>, ImagingError> {
     let failed = |source: Box<dyn std::error::Error + Send + Sync>| ImagingError::Resize {
         size: decoded.size,
         source,

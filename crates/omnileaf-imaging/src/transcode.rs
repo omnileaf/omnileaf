@@ -28,7 +28,7 @@ pub struct Transcoded {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Layout {
+pub(crate) enum Layout {
     Grey,
     GreyAlpha,
     Rgb,
@@ -36,10 +36,10 @@ enum Layout {
 }
 
 /// Decoded samples, one byte each, row by row in the order their layout names.
-struct Pixels {
-    size: Size,
-    layout: Layout,
-    samples: Vec<u8>,
+pub(crate) struct Pixels {
+    pub(crate) size: Size,
+    pub(crate) layout: Layout,
+    pub(crate) samples: Vec<u8>,
 }
 
 /// Turns a WebP or JPEG XL page into a JPEG, or into a PNG when it has transparency or is too large for a JPEG.
@@ -134,7 +134,7 @@ fn decode_jxl(page: &[u8]) -> Result<Pixels, ImagingError> {
     })
 }
 
-fn encode(pixels: &Pixels) -> Result<Transcoded, ImagingError> {
+pub(crate) fn encode(pixels: &Pixels) -> Result<Transcoded, ImagingError> {
     let jpeg_size = u16::try_from(pixels.size.width)
         .ok()
         .zip(u16::try_from(pixels.size.height).ok());

@@ -9,7 +9,7 @@ use std::{
 use omnileaf_cache::{CacheError, CacheKey, DiskCache, MemoryCache};
 use omnileaf_db::catalog::{self, BookReading as StoredReading};
 use omnileaf_formats::{Book, FormatError};
-use omnileaf_imaging::{ImagingError, PageFormat, page_size, transcode};
+use omnileaf_imaging::{ImagingError, PageFormat, page_size, shrink_page, transcode};
 
 use crate::{
     BookId, BookPage, Library, LibraryError, OpenedBook, PagePath, ProbedFormat, SeriesId,
@@ -27,6 +27,8 @@ pub(crate) const PAGE_CACHE_VERSION: &str = "v1";
 const MEMORY_BUDGET_BYTES: u64 = (if IS_MOBILE { 48 } else { 256 }) * MEBIBYTE as u64;
 const TRANSCODE_BUDGET_BYTES: u64 = (if IS_MOBILE { 128 } else { 512 }) * MEBIBYTE as u64;
 const PAGES_READ_AHEAD: usize = 4;
+/// Android's webview decodes no image past a 25th of the device's memory, about 40 megapixels at four bytes each on a 4 GB phone, so a page past it is shrunk or refused rather than left to fail or end the renderer, while a strip 1,080 pixels wide still runs 37,000 tall.
+const PAGE_PIXEL_BUDGET: u64 = 40_000_000;
 /// Enough of a page for its header to give its size, unless metadata comes first and pushes the header further in.
 const SIZE_PROBE_BYTES: u64 = 32 * 1024;
 pub(crate) const WORKERS: NonZeroUsize = if IS_MOBILE {
@@ -258,10 +260,11 @@ impl Shared {
         Ok(page)
     }
 
-    /// The page's own bytes, or a transcode of them in a format the webview shows.
+    /// The page's own bytes, or a transcode of them in a format the webview shows and within [`PAGE_PIXEL_BUDGET`].
     fn prepared(&self, path: PagePath, bytes: Vec<u8>) -> Result<ServedPage, PageError> {
         let format = PageFormat::sniff(&bytes).ok_or(PageError::NotAnImage)?;
-        if !self.needs_transcoding(format) {
+        let is_oversized = page_size(&bytes)?.pixels() > PAGE_PIXEL_BUDGET;
+        if !is_oversized && !self.needs_transcoding(format) {
             return Ok(ServedPage {
                 content_type: format.content_type(),
                 bytes,
@@ -279,7 +282,11 @@ impl Shared {
         }
         let transcoded = {
             let _decoding = self.decodes.hold();
-            transcode(&bytes)?
+            if is_oversized {
+                shrink_page(&bytes, PAGE_PIXEL_BUDGET)?
+            } else {
+                transcode(&bytes)?
+            }
         };
         if let Some(Err(error)) = cache.map(|cache| cache.put(&key, &transcoded.bytes)) {
             tracing::warn!(%path, error = %describe_error(&error), "keep a transcoded page for next time");

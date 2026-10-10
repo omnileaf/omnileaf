@@ -20,7 +20,7 @@ use omnileaf_engine::{
 };
 use omnileaf_testkit::{
     ArchiveEntry, Compression, ENCODED_PAGE_HEIGHT, ENCODED_PAGE_WIDTH, INK_OVER_CLEAR_JXL,
-    INK_OVER_PAPER_JXL, PageShape, cbz, page_jpeg, page_png,
+    INK_OVER_PAPER_JXL, PageShape, cbz, page_jpeg, page_png, webp_header_only,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -162,6 +162,17 @@ fn extension_of(bytes: &[u8]) -> &'static str {
     } else {
         ".png"
     }
+}
+
+/// A GIF's header claiming `width` by `height`, which is all a page passed to the webview as it is needs.
+fn gif_header(width: u16, height: u16) -> Vec<u8> {
+    [
+        &b"GIF89a"[..],
+        &width.to_le_bytes(),
+        &height.to_le_bytes(),
+        &[0; 8],
+    ]
+    .concat()
 }
 
 fn served(content_type: &'static str, body: Vec<u8>) -> Resource {
@@ -481,4 +492,30 @@ async fn fails_a_page_that_is_no_image() {
     let resource = reader.page(&opened, 1).await;
 
     assert_eq!(resource, Resource::Failed);
+}
+
+#[tokio::test]
+async fn refuses_a_page_whose_header_claims_more_pixels_than_a_webview_can_draw() {
+    let mut pages = portrait_pages(SEED);
+    pages[1] = gif_header(u16::MAX, u16::MAX);
+    pages[2] = webp_header_only(16_384, 16_384);
+    let reader = Reader::with_pages("hostile-header", &pages).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let resources = [reader.page(&opened, 1).await, reader.page(&opened, 2).await];
+
+    assert_eq!(resources, [Resource::Failed, Resource::Failed]);
+}
+
+#[tokio::test]
+async fn serves_a_long_strip_as_it_is() {
+    let strip = gif_header(1080, 30_000);
+    let mut pages = portrait_pages(SEED);
+    pages[1] = strip.clone();
+    let reader = Reader::with_pages("long-strip", &pages).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let resource = reader.page(&opened, 1).await;
+
+    assert_eq!(resource, served("image/gif", strip));
 }
