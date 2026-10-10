@@ -137,10 +137,10 @@ test("keeps the page scrolled where it was when switching", async ({
   });
   await openInPseudoLocale(page);
   const main = page.getByRole("main");
-  const scrolledTo = await main.evaluate((element) => {
-    element.scrollTop = element.scrollHeight;
-    return element.scrollTop;
+  await optionRow(page, "English").evaluate((row) => {
+    row.scrollIntoView({ block: "start" });
   });
+  const scrolledTo = await main.evaluate((element) => element.scrollTop);
 
   await chooseEnglish(page);
 

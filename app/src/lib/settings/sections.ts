@@ -6,7 +6,6 @@ import {
   SquareTerminal,
 } from "@lucide/svelte";
 
-import type { AppInfo } from "#lib/ipc/bindings.ts";
 import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
 import type { Glyph } from "#lib/page/glyph.ts";
 import { m } from "#lib/paraglide/messages.js";
@@ -104,17 +103,15 @@ const ABOUT: SettingsSection = {
   tone: "neutral",
 };
 
-/** The sections in their groups; only a development build has Advanced, which a release build leaves out rather than hides. */
-export function settingsGroups(
-  app: Pick<AppInfo, "isDevelopmentBuild">,
-): readonly (readonly SettingsSection[])[] {
-  return [PREFERENCES, app.isDevelopmentBuild ? [ADVANCED, ABOUT] : [ABOUT]];
-}
+export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [
+  PREFERENCES,
+  [ADVANCED, ABOUT],
+];
 
 /** Whether two panes already show a page in the section list, so a link back to it is not needed there. */
 export function isListedBeside(route: SettingsPage): boolean {
   return (
     route === "/(app)/settings" ||
-    [...PREFERENCES, ADVANCED, ABOUT].some((section) => section.route === route)
+    SETTINGS_GROUPS.flat().some((section) => section.route === route)
   );
 }
