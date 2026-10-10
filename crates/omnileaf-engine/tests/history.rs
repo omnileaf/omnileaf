@@ -182,6 +182,17 @@ async fn lists_a_book_read_from_the_page_restored_until_it_closes() {
 }
 
 #[tokio::test]
+async fn lists_a_book_read_with_its_series_and_place_in_it() {
+    let shelf = Shelf::with_two_books("history-place").await;
+    let opened = shelf.restore(1).await;
+
+    shelf.close(&opened).await;
+
+    let entry = shelf.entries().await.into_iter().next().unwrap();
+    assert_eq!((entry.series, entry.position), (opened.series, 2));
+}
+
+#[tokio::test]
 async fn lists_nothing_for_a_book_opened_but_never_restored() {
     let shelf = Shelf::with_two_books("history-not-restored").await;
     let opened = shelf.open(0).await;

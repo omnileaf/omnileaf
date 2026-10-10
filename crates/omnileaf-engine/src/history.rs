@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
 use crate::{
-    BookId, BookReading, CoverPath, UtcOffset, UtcOffsetOutOfRange, ipc_brand::branded_string,
-    reading_session::is_last_page,
+    BookId, BookReading, CoverPath, SeriesId, UtcOffset, UtcOffsetOutOfRange,
+    ipc_brand::branded_string, reading_session::is_last_page,
 };
 
 const MS_PER_SECOND: i64 = 1_000;
@@ -20,7 +20,10 @@ const MS_PER_SECOND: i64 = 1_000;
 pub struct HistoryEntry {
     pub book: BookId,
     pub book_title: String,
+    pub series: SeriesId,
     pub series_title: String,
+    /// Where the book stands in its series' order, counting from 1.
+    pub position: u32,
     /// The book's own cover, absent while it has no file.
     pub cover: Option<CoverPath>,
     /// When the session started, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly.
@@ -127,7 +130,9 @@ impl HistoryEntry {
         Ok(Self {
             book: BookId(entry.book),
             book_title: entry.book_title,
+            series: SeriesId(entry.series),
             series_title: entry.series_title,
+            position: entry.position,
             cover: entry.cover.map(CoverPath),
             started_at_ms: entry.started_at_ms,
             utc_offset_minutes: UtcOffset::try_from(entry.utc_offset_minutes)?,
@@ -224,7 +229,9 @@ mod tests {
             [HistoryEntry {
                 book: sample_book_id(1),
                 book_title: "Sample Series 01 v01".to_owned(),
+                series: SeriesId(omnileaf_sync_proto::SeriesId::local("Sample Series 01").unwrap()),
                 series_title: "Sample Series 01".to_owned(),
+                position: 1,
                 cover: None,
                 started_at_ms: STARTED_AT_MS,
                 utc_offset_minutes: UtcOffset::try_from(600).unwrap(),
