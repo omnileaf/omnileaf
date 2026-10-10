@@ -21,10 +21,7 @@ test("starts picking from the book held down, with that book picked", () => {
 
   selection.begin(at(2));
 
-  expect([selection.isSelecting, selection.pickedIn(BOOKS)]).toEqual([
-    true,
-    [at(2)],
-  ]);
+  expect([selection.isSelecting, selection.picked]).toEqual([true, [at(2)]]);
 });
 
 test("starts picking from the select button with nothing picked", () => {
@@ -53,7 +50,7 @@ test("picks the books between the one last toggled and the one shift-clicked, ei
 
   selection.extendTo(at(1), BOOKS);
 
-  expect(selection.pickedIn(BOOKS)).toEqual([at(1), at(2), at(3), at(4)]);
+  expect(selection.picked.toSorted()).toEqual([at(1), at(2), at(3), at(4)]);
 });
 
 test("picks only the book shift-clicked when none was toggled before", () => {
@@ -62,7 +59,7 @@ test("picks only the book shift-clicked when none was toggled before", () => {
 
   selection.extendTo(at(3), BOOKS);
 
-  expect(selection.pickedIn(BOOKS)).toEqual([at(3)]);
+  expect(selection.picked).toEqual([at(3)]);
 });
 
 test("keeps picking from the last book toggled after shift-clicking a book no longer listed", () => {
@@ -72,7 +69,7 @@ test("keeps picking from the last book toggled after shift-clicking a book no lo
 
   selection.extendTo(at(2), BOOKS.slice(1));
 
-  expect(selection.pickedIn(BOOKS)).toEqual([at(2), at(3), at(4)]);
+  expect(selection.picked.toSorted()).toEqual([at(2), at(3), at(4)]);
 });
 
 test("picks every book listed", () => {
@@ -84,14 +81,12 @@ test("picks every book listed", () => {
   expect(selection.count).toBe(BOOKS.length);
 });
 
-test("leaves out a picked book no longer listed", () => {
+test("keeps a picked book a list no longer shows", () => {
   const selection = new BookSelection<string>();
   selection.begin(at(0));
   selection.toggle(at(5));
 
-  const picked = selection.pickedIn(BOOKS.slice(1));
-
-  expect(picked).toEqual([at(5)]);
+  expect(selection.picked).toEqual([at(0), at(5)]);
 });
 
 test("stops picking with nothing picked", () => {

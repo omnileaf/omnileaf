@@ -50,9 +50,9 @@ export class BookSelection<BookId> {
     }
   }
 
-  /** The picked books still listed, in the list's order. */
-  pickedIn(listed: readonly BookId[]): BookId[] {
-    return listed.filter((book) => this.#picked.has(book));
+  /** Every book picked, in the order it was picked, whether the list shows it now or not. */
+  get picked(): BookId[] {
+    return [...this.#picked];
   }
 
   end(): void {
