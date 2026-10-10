@@ -5,7 +5,7 @@ use omnileaf_engine::{
     FolderScan, InterfaceError, Library, LibraryView, ProjectLink, ScanProgress, SeriesCursor,
     SeriesPage,
 };
-use tauri::{AppHandle, Manager, State, Wry, ipc::Channel};
+use tauri::{AppHandle, Manager, State, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_opener::OpenerExt;
 use tauri_specta::{Builder, Commands, collect_commands, collect_events};
@@ -95,13 +95,11 @@ fn library_problem(launch: State<'_, LibraryAtLaunch>) -> Option<LibraryProblem>
 #[tauri::command]
 #[specta::specta]
 async fn add_library_folder(
-    app: AppHandle,
+    window: Window,
     library: State<'_, Library>,
     on_progress: Channel<ScanProgress>,
 ) -> Result<Option<FolderScan>, IpcError> {
-    let picked = tauri::async_runtime::spawn_blocking(move || pick_folder(&app))
-        .await
-        .map_err(|error| IpcError::internal(&error))??;
+    let picked = off_the_runtime(move || pick_folder(&window)).await?;
     let Some(folder) = picked else {
         return Ok(None);
     };
