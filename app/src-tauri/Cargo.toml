@@ -50,6 +50,7 @@ tauri-plugin-wdio-webdriver = { workspace = true, optional = true }
 
 [dev-dependencies]
 omnileaf-db.workspace = true
+tauri = { workspace = true, features = ["test"] }
 
 [lints]
 workspace = true
