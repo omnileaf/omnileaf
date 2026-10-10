@@ -65,6 +65,21 @@ impl ReadingSession {
         }
     }
 
+    /// Leaves the page restored to unsaved, to save over `left`, a page reached before and saved ahead of it.
+    pub(crate) fn restored_over(&mut self, left: u32, now: Instant) {
+        if let Stage::Restored { page } = self.stage
+            && page != left
+        {
+            self.stage = Stage::Reading {
+                saved: left,
+                unsaved: Some(Unsaved {
+                    page,
+                    save_at: now,
+                }),
+            };
+        }
+    }
+
     /// Leaves a session still opening, or a page past the book's end, as it is.
     pub(crate) fn shown(&mut self, page: u32, now: Instant) {
         if page > self.last_page {

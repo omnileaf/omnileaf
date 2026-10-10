@@ -216,8 +216,12 @@ impl Keeper {
         if let Some(left) = self.session.take() {
             self.leave(left);
         }
+        let left = self.left_unsaved.get(&book).map(|left| left.page);
         self.session = ReadingSession::opening(book, series, page_count).map(|mut opening| {
             opening.restored(page);
+            if let Some(left) = left {
+                opening.restored_over(left, Instant::now());
+            }
             opening
         });
         answer(None, self.save().await);
@@ -434,6 +438,37 @@ mod tests {
         keeper.save().await.unwrap();
 
         assert_eq!(position(&keeper, book(1)).await, Some(3));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn saves_the_page_a_book_is_reopened_on_over_the_page_left_unsaved_in_it() {
+        let folder = ScratchFolder::new("progress-reopened-over-left-unsaved");
+        let mut keeper = keeper(&folder);
+        refuse_saves(&keeper).await;
+        read(&mut keeper, book(1), 3).await;
+        read(&mut keeper, book(2), 0).await;
+        open(&mut keeper, book(1)).await;
+        keeper
+            .hear(Report::Restored {
+                book: book(1),
+                page: 1,
+            })
+            .await;
+        allow_saves(&keeper).await;
+
+        keeper.save().await.unwrap();
+
+        let state = keeper
+            .store
+            .database()
+            .read(|connection| reading_state(connection, book(1).0))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            (state.position_page, state.furthest_page),
+            (Some(1), Some(3))
+        );
     }
 
     #[tokio::test(start_paused = true)]
