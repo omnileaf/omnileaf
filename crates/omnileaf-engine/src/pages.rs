@@ -306,10 +306,10 @@ impl Shared {
         Ok(page)
     }
 
-    /// The page's own bytes, or a transcode of them in a format the webview shows and within [`PAGE_PIXEL_BUDGET`].
+    /// The page's own bytes, or a transcode of them in a format the webview shows and within [`PAGE_PIXEL_BUDGET`] when its header gives its size.
     fn prepared(&self, path: PagePath, bytes: Vec<u8>) -> Result<ServedPage, PageError> {
         let format = PageFormat::sniff(&bytes).ok_or(PageError::NotAnImage)?;
-        let is_oversized = page_size(&bytes)?.pixels() > PAGE_PIXEL_BUDGET;
+        let is_oversized = page_size(&bytes).is_ok_and(|size| size.pixels() > PAGE_PIXEL_BUDGET);
         if !is_oversized && !self.needs_transcoding(format) {
             return Ok(ServedPage {
                 content_type: format.content_type(),

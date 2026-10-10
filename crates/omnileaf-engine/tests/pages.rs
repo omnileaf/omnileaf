@@ -39,6 +39,8 @@ const SPREAD: PageDimensions = PageDimensions {
     height: 600,
 };
 const NOTHING_UNDECODABLE: Vec<ProbedFormat> = Vec::new();
+/// A byte JPEG lets any marker begin with, which a decoder skips but the size reader here doesn't.
+const FILL_BYTE: u8 = 0xFF;
 
 struct Reader {
     library: Library,
@@ -587,4 +589,19 @@ async fn finds_no_thumbnail_of_a_page_of_a_revision_since_replaced() {
         .await;
 
     assert_eq!(resource, Resource::NotFound);
+}
+
+#[tokio::test]
+async fn serves_a_page_as_it_is_when_its_header_does_not_give_its_size() {
+    let mut odd = page_jpeg(SEED, 1, PageShape::Portrait).unwrap();
+    odd.insert(2, FILL_BYTE);
+    let mut pages = portrait_pages(SEED);
+    pages[1] = odd.clone();
+    let reader = Reader::with_pages("unsized-page", &pages).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let resource = reader.page(&opened, 1).await;
+
+    assert!(page_size(&odd).is_err());
+    assert_eq!(resource, served("image/jpeg", odd));
 }
