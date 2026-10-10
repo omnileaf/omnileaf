@@ -349,18 +349,34 @@ test("says so when a page can't be shown", async ({ page }) => {
   await expect(page.getByText("This page couldn't be shown.")).toBeVisible();
 });
 
-test("shows a page that failed once when it loads on coming back to it", async ({
-  page,
-}) => {
-  let hasFailedOnce = false;
+/** Fails the first `times` requests for the first page, then serves it. */
+async function failFirstPage(page: Page, times: number): Promise<void> {
+  let failures = 0;
   await page.route(fakeProtocolRoute("omni"), async (route) => {
-    if (pageIndexOf(route.request().url()) === 0 && !hasFailedOnce) {
-      hasFailedOnce = true;
+    if (pageIndexOf(route.request().url()) === 0 && failures < times) {
+      failures += 1;
       await route.abort();
       return;
     }
     await route.fallback();
   });
+}
+
+test("shows a page whose first request failed without waiting to come back to it", async ({
+  page,
+}) => {
+  await failFirstPage(page, 1);
+
+  await openBook(page);
+
+  await expectOnPage(page, 1);
+  await expect(page.getByText("This page couldn't be shown.")).toHaveCount(0);
+});
+
+test("shows a page that failed again on asking twice when it loads on coming back to it", async ({
+  page,
+}) => {
+  await failFirstPage(page, 2);
   await openBook(page);
   await expect(page.getByText("This page couldn't be shown.")).toBeVisible();
   await page.keyboard.press("End");
