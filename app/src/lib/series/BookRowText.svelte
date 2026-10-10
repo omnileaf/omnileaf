@@ -7,7 +7,7 @@
   let { book, dates }: { book: SeriesBook; dates: Intl.DateTimeFormat } =
     $props();
 
-  const added = $derived(dates.format(new Date(book.addedAt)));
+  const added = $derived(dates.format(book.addedAtMs));
 </script>
 
 <span

@@ -32,7 +32,6 @@ mod resource;
 mod resource_router;
 mod scan;
 mod series_overview;
-mod utc_time;
 mod version_details;
 
 pub use app_info::{AppInfo, Platform};
