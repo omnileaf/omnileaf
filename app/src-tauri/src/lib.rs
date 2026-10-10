@@ -17,7 +17,7 @@ mod version_details;
 
 use std::{error::Error, path::Path};
 
-use omnileaf_engine::{Core, Library, ResourceRouter, SystemClock, describe_error};
+use omnileaf_engine::{Core, Library, LibraryFolders, ResourceRouter, SystemClock, describe_error};
 use tauri::{App, Manager};
 
 use crate::{
@@ -77,11 +77,8 @@ pub fn run() {
 /// Opens the library before the window shows, since every library command needs it, and starts its covers without waiting on their cache.
 fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>> {
     let data_dir = config.data_dir.as_deref();
-    let home = match data_dir {
-        Some(data_dir) => data_dir.to_path_buf(),
-        None => app.path().app_data_dir()?,
-    };
-    let library = tauri::async_runtime::block_on(Library::open(home, SystemClock))?;
+    let folders = library_folders(app, data_dir)?;
+    let library = tauri::async_runtime::block_on(Library::open(folders, SystemClock))?;
     app.manage(LibraryChangesForwarding::start(
         app.handle().clone(),
         &library,
@@ -98,6 +95,20 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
         }
     }
     Ok(())
+}
+
+/// On iOS the home is the folder the Files app shows as On My iPhone › Omnileaf, and the database stays out of it.
+fn library_folders(app: &App, data_dir: Option<&Path>) -> tauri::Result<LibraryFolders> {
+    if let Some(data_dir) = data_dir {
+        return Ok(LibraryFolders::from(data_dir.to_path_buf()));
+    }
+    let database = app.path().app_data_dir()?;
+    let home = if cfg!(target_os = "ios") {
+        app.path().document_dir()?
+    } else {
+        database.clone()
+    };
+    Ok(LibraryFolders { database, home })
 }
 
 fn open_covers(app: &App, data_dir: Option<&Path>) -> Result<ResourceRouter, Box<dyn Error>> {
