@@ -1,16 +1,16 @@
 use std::{
     collections::BTreeSet,
     error::Error,
-    fs::{self, Metadata},
     io,
     path::{Path, PathBuf, StripPrefixError},
+    sync::Arc,
 };
 
 use omnileaf_db::{
     Database,
     catalog::{BookFile, NewSeries, RootId, RootKind, ScannedBook, record_scanned_books},
 };
-use omnileaf_formats::{Book, FormatError, fingerprint_book, open_book};
+use omnileaf_formats::{Book, Details, FormatError, Limits, Storage, open_book_in};
 use omnileaf_sync_proto::{KeyError, SeriesId};
 use serde::Serialize;
 use specta::Type;
@@ -78,6 +78,7 @@ pub(crate) struct FileStamp {
 pub(crate) struct Target {
     pub(crate) root: RootId,
     pub(crate) kind: RootKind,
+    pub(crate) storage: Arc<dyn Storage>,
     pub(crate) folder: PathBuf,
     pub(crate) added_at_ms: i64,
 }
@@ -92,8 +93,11 @@ struct Tally {
 }
 
 /// Fails only when the folder itself can't be read.
-pub(crate) async fn find_books_in(folder: PathBuf) -> Result<Layout, LibraryError> {
-    walk(folder.clone())
+pub(crate) async fn find_books_in(
+    storage: Arc<dyn Storage>,
+    folder: PathBuf,
+) -> Result<Layout, LibraryError> {
+    walk(storage, folder.clone())
         .await?
         .map_err(|source| LibraryError::FolderUnreadable {
             path: folder,
@@ -102,8 +106,11 @@ pub(crate) async fn find_books_in(folder: PathBuf) -> Result<Layout, LibraryErro
 }
 
 /// Hands back the walk's own failure to read the folder for the caller to decide what it means.
-pub(crate) async fn walk(folder: PathBuf) -> Result<io::Result<Layout>, LibraryError> {
-    Ok(spawn_blocking(move || find_books(&folder)).await?)
+pub(crate) async fn walk(
+    storage: Arc<dyn Storage>,
+    folder: PathBuf,
+) -> Result<io::Result<Layout>, LibraryError> {
+    Ok(spawn_blocking(move || find_books(&*storage, &folder)).await?)
 }
 
 /// Records the books found in batches of one transaction each, reporting progress after every batch.
@@ -188,10 +195,10 @@ pub(crate) fn warn_unreadable(found: &FoundBook, error: &UnreadableBook) {
 
 fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
     let location = found.path.strip_prefix(&target.folder)?.to_path_buf();
-    let book = open_book(&found.path)?;
-    let fingerprint = fingerprint_book(&found.path)?;
-    let metadata = fs::metadata(&found.path)?;
-    let stamp = FileStamp::of(&metadata, || Ok(book))?;
+    let mut book = open_book_in(Arc::clone(&target.storage), &found.path, &Limits::default())?;
+    let fingerprint = book.fingerprint()?;
+    let details = target.storage.details(&found.path)?;
+    let stamp = FileStamp::of(details, || Ok(book))?;
     Ok(ScannedBook {
         series: NewSeries::local(&found.series, target.added_at_ms)?,
         fingerprint,
@@ -207,29 +214,36 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
 }
 
 impl FileStamp {
-    pub(crate) fn read(path: &Path) -> Result<Self, UnreadableBook> {
-        Self::of(&fs::metadata(path)?, || open_book(path))
+    pub(crate) fn read(storage: &Arc<dyn Storage>, path: &Path) -> Result<Self, UnreadableBook> {
+        Self::of(storage.details(path)?, || {
+            open_book_in(Arc::clone(storage), path, &Limits::default())
+        })
     }
 
     /// Opens a folder of images to add up its pages, since a folder's own size says nothing about them.
     fn of(
-        metadata: &Metadata,
+        details: Details,
         open: impl FnOnce() -> Result<Book, FormatError>,
     ) -> Result<Self, UnreadableBook> {
-        let size_bytes = if metadata.is_dir() {
-            open()?.pages().iter().map(|page| page.size).sum()
-        } else {
-            metadata.len()
+        let (Details::Folder { modified } | Details::File { modified, .. }) = details;
+        let modified = modified.ok_or_else(|| io::Error::from(io::ErrorKind::Unsupported))?;
+        let size_bytes = match details {
+            Details::Folder { .. } => open()?.pages().iter().map(|page| page.size).sum(),
+            Details::File { size, .. } => size,
         };
         Ok(Self {
             size_bytes,
-            modified_at_ms: i64::try_from(unix_ms(metadata.modified()?)).unwrap_or(i64::MAX),
+            modified_at_ms: i64::try_from(unix_ms(modified)).unwrap_or(i64::MAX),
         })
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::time::{Duration, SystemTime};
+
+    use omnileaf_formats::LocalStorage;
+
     use super::*;
 
     #[test]
@@ -237,6 +251,7 @@ mod tests {
         let target = Target {
             root: "1".parse().unwrap(),
             kind: RootKind::Linked,
+            storage: Arc::new(LocalStorage),
             folder: PathBuf::from("/media/Sample Library"),
             added_at_ms: 0,
         };
@@ -249,5 +264,46 @@ mod tests {
         let read = read_found_book(&found, &target);
 
         assert!(matches!(read, Err(UnreadableBook::OutsideFolder(_))));
+    }
+
+    #[test]
+    fn stamps_a_file_with_the_size_and_change_time_its_storage_gives() {
+        let details = Details::File {
+            size: 2048,
+            modified: Some(SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000)),
+        };
+
+        let stamp = FileStamp::of(details, || unreachable!("a file's size is its own")).unwrap();
+
+        assert_eq!(
+            stamp,
+            FileStamp {
+                size_bytes: 2048,
+                modified_at_ms: 1_700_000_000_000,
+            }
+        );
+    }
+
+    #[test]
+    fn refuses_a_book_whose_storage_cannot_tell_when_it_last_changed() {
+        let details = Details::File {
+            size: 2048,
+            modified: None,
+        };
+
+        let stamp = FileStamp::of(details, || unreachable!("a file's size is its own"));
+
+        assert!(matches!(stamp, Err(UnreadableBook::Metadata(_))));
+    }
+
+    #[test]
+    fn refuses_a_folder_book_with_no_change_time_without_opening_it() {
+        let details = Details::Folder { modified: None };
+
+        let stamp = FileStamp::of(details, || {
+            unreachable!("the stamp is refused before the pages are added up")
+        });
+
+        assert!(matches!(stamp, Err(UnreadableBook::Metadata(_))));
     }
 }
