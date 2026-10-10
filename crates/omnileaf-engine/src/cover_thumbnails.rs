@@ -15,6 +15,7 @@ use tokio::{sync::OnceCell, task::spawn_blocking};
 use crate::{
     Library, LibraryError,
     background_lane::BackgroundLane,
+    decode_permits::DecodePermits,
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
     file_in_storage::FileInStorage,
@@ -23,7 +24,7 @@ use crate::{
 
 const CACHE_BUDGET_BYTES: u64 = (if IS_MOBILE { 300 } else { 1024 }) * MEBIBYTE as u64;
 /// One worker on a phone, whose OS ends an app holding too much memory while each decode may hold a few hundred megabytes.
-const WORKERS: NonZeroUsize = if IS_MOBILE {
+pub(crate) const WORKERS: NonZeroUsize = if IS_MOBILE {
     NonZeroUsize::MIN
 } else {
     NonZeroUsize::MIN.saturating_add(1)
@@ -34,6 +35,7 @@ pub(crate) struct CoverThumbnails {
     folder: PathBuf,
     cache: OnceCell<Option<Arc<DiskCache>>>,
     lane: BackgroundLane,
+    decodes: Arc<DecodePermits>,
     failed_covers: Mutex<HashSet<CacheKey>>,
 }
 
@@ -56,11 +58,12 @@ pub(crate) enum ThumbnailError {
 }
 
 impl CoverThumbnails {
-    pub(crate) fn open(folder: PathBuf) -> io::Result<Self> {
+    pub(crate) fn open(folder: PathBuf, decodes: Arc<DecodePermits>) -> io::Result<Self> {
         Ok(Self {
             folder,
             cache: OnceCell::new(),
             lane: BackgroundLane::start(WORKER_NAME, WORKERS)?,
+            decodes,
             failed_covers: Mutex::default(),
         })
     }
@@ -87,9 +90,10 @@ impl CoverThumbnails {
             return Ok(None);
         };
         let made_key = key.clone();
+        let decodes = Arc::clone(&self.decodes);
         let made = self
             .lane
-            .run(move || make_thumbnail(cache.as_deref(), &made_key, &file))
+            .run(move || make_thumbnail(cache.as_deref(), &made_key, &file, &decodes))
             .await?;
         if let Err(ThumbnailError::Imaging(_)) = made {
             self.failed_covers().insert(key);
@@ -143,6 +147,7 @@ fn make_thumbnail(
     cache: Option<&DiskCache>,
     key: &CacheKey,
     file: &FileInStorage,
+    decodes: &DecodePermits,
 ) -> Result<Vec<u8>, ThumbnailError> {
     if let Some(cached) = cache.and_then(|cache| cached_thumbnail(cache, key)) {
         return Ok(cached);
@@ -157,7 +162,10 @@ fn make_thumbnail(
         None
     });
     let page = book.read_page(book.cover_page(comic_info.as_ref()))?;
-    let made = thumbnail(&page)?.jpeg;
+    let made = {
+        let _decoding = decodes.hold();
+        thumbnail(&page)?.jpeg
+    };
     if let Some(Err(error)) = cache.map(|cache| cache.put(key, &made)) {
         tracing::warn!(
             file = %file.path.display(),

@@ -13,6 +13,7 @@ use omnileaf_imaging::{ImagingError, PageFormat, page_size, transcode};
 
 use crate::{
     BookId, BookPage, Library, LibraryError, OpenedBook, PagePath, ProbedFormat, SeriesId,
+    decode_permits::DecodePermits,
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
     lane::{Job, LaneStopped},
@@ -28,7 +29,7 @@ const TRANSCODE_BUDGET_BYTES: u64 = (if IS_MOBILE { 128 } else { 512 }) * MEBIBY
 const PAGES_READ_AHEAD: usize = 4;
 /// Enough of a page for its header to give its size, unless metadata comes first and pushes the header further in.
 const SIZE_PROBE_BYTES: u64 = 32 * 1024;
-const WORKERS: NonZeroUsize = if IS_MOBILE {
+pub(crate) const WORKERS: NonZeroUsize = if IS_MOBILE {
     NonZeroUsize::MIN
 } else {
     NonZeroUsize::MIN.saturating_add(1)
@@ -54,6 +55,7 @@ struct Shared {
     undecodable: RwLock<HashSet<ProbedFormat>>,
     transcode_folder: PathBuf,
     transcodes: OnceLock<Option<DiskCache>>,
+    decodes: Arc<DecodePermits>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -101,7 +103,7 @@ impl PageError {
 
 impl Pages {
     /// Leaves the transcode folder alone until a page needs transcoding.
-    pub(crate) fn open(transcode_folder: PathBuf) -> io::Result<Self> {
+    pub(crate) fn open(transcode_folder: PathBuf, decodes: Arc<DecodePermits>) -> io::Result<Self> {
         Ok(Self {
             lane: PageLane::start(WORKER_NAME, WORKERS)?,
             shared: Arc::new(Shared {
@@ -111,6 +113,7 @@ impl Pages {
                 undecodable: RwLock::default(),
                 transcode_folder,
                 transcodes: OnceLock::new(),
+                decodes,
             }),
         })
     }
@@ -274,7 +277,10 @@ impl Shared {
                 bytes: cached,
             });
         }
-        let transcoded = transcode(&bytes)?;
+        let transcoded = {
+            let _decoding = self.decodes.hold();
+            transcode(&bytes)?
+        };
         if let Some(Err(error)) = cache.map(|cache| cache.put(&key, &transcoded.bytes)) {
             tracing::warn!(%path, error = %describe_error(&error), "keep a transcoded page for next time");
         }
@@ -455,7 +461,11 @@ mod tests {
     fn hands_a_page_two_jobs_ask_for_at_once_to_both_from_a_single_transcode() {
         let folder = ScratchFolder::new("pages-in-flight");
         let stored = webp_book(&folder);
-        let pages = Pages::open(folder.path().join("transcodes")).unwrap();
+        let pages = Pages::open(
+            folder.path().join("transcodes"),
+            Arc::new(DecodePermits::new(1)),
+        )
+        .unwrap();
         *pages.shared.undecodable.write().unwrap() = HashSet::from([ProbedFormat::Webp]);
         let file = BookFileAt {
             book: omnileaf_sync_proto::BookId::local(

@@ -7,6 +7,7 @@ mod clock;
 mod cover_path;
 mod cover_thumbnails;
 mod crash_report;
+mod decode_permits;
 mod device_class;
 mod error_chain;
 mod external_storage;
