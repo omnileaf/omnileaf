@@ -77,6 +77,8 @@ pub(crate) struct ReadingSession {
     utc_offset: UtcOffset,
     stage: Stage,
     continuity: Continuity,
+    /// Whether the app was put away with no page shown since, so a save landing meanwhile leaves the session broken.
+    is_put_away: bool,
 }
 
 impl ReadingSession {
@@ -89,6 +91,7 @@ impl ReadingSession {
             utc_offset,
             stage: Stage::Opening,
             continuity: Continuity::AfterBreak,
+            is_put_away: false,
         })
     }
 
@@ -102,12 +105,15 @@ impl ReadingSession {
     }
 
     pub(crate) fn recorded(&mut self) {
-        self.continuity = Continuity::Unbroken;
+        if !self.is_put_away {
+            self.continuity = Continuity::Unbroken;
+        }
     }
 
     /// Leaves the next record to carry the session on only within two minutes, as the app may stay put away for long.
     pub(crate) fn put_away(&mut self) {
         self.continuity = Continuity::AfterBreak;
+        self.is_put_away = true;
     }
 
     pub(crate) fn moved_to(&mut self, utc_offset: UtcOffset) {
@@ -135,6 +141,7 @@ impl ReadingSession {
 
     /// Leaves a session still opening, or a page past the book's end, as it is.
     pub(crate) fn shown(&mut self, page: u32, now: Instant) {
+        self.is_put_away = false;
         if page > self.last_page {
             return;
         }
@@ -477,6 +484,27 @@ mod tests {
         session.put_away();
 
         assert_eq!(session.continuity(), Continuity::AfterBreak);
+    }
+
+    #[test]
+    fn stays_broken_when_recorded_while_put_away() {
+        let mut session = restored_on(0);
+        session.put_away();
+
+        session.recorded();
+
+        assert_eq!(session.continuity(), Continuity::AfterBreak);
+    }
+
+    #[test]
+    fn goes_on_unbroken_once_recorded_after_a_page_shown_since_put_away() {
+        let mut session = restored_on(0);
+        session.put_away();
+        session.shown(1, Instant::now());
+
+        session.recorded();
+
+        assert_eq!(session.continuity(), Continuity::Unbroken);
     }
 
     #[derive(Clone, Copy, Debug)]
