@@ -2,9 +2,16 @@ use std::{collections::BTreeMap, time::Duration};
 
 use omnileaf_db::catalog::RootId;
 
-use crate::{FolderId, RescanOutcome, Storage};
+use crate::{FolderId, PowerMode, Storage};
 
 const LONGEST_WAIT: Duration = Duration::from_hours(1);
+
+/// One look at the schedule: when it happens and the power mode the device is in then.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Check {
+    pub(crate) at_ms: u64,
+    pub(crate) power: PowerMode,
+}
 
 /// When each folder's next scheduled rescan comes, waiting longer after each rescan that couldn't read it.
 #[derive(Debug, Default)]
@@ -21,13 +28,17 @@ struct Turn {
 }
 
 impl RescanSchedule {
-    /// The listed folders whose turn has come, counting a folder listed for the first time as just scanned on the storage `storage_of` finds it on.
+    /// The listed folders whose turn has come, none while the device saves power, counting a folder listed for the first time as just scanned on the storage `storage_of` finds it on.
     pub(crate) fn due(
         &mut self,
         folders: &[FolderId],
-        now_ms: u64,
+        check: Check,
         mut storage_of: impl FnMut(FolderId) -> Storage,
     ) -> Vec<FolderId> {
+        if check.power == PowerMode::Saving {
+            return Vec::new();
+        }
+        let now_ms = check.at_ms;
         self.turns
             .retain(|root, _| folders.iter().any(|folder| folder.0 == *root));
         folders
@@ -42,43 +53,31 @@ impl RescanSchedule {
             .collect()
     }
 
-    /// Notes a rescan of the folder, which `storage` was found on as it ended.
-    pub(crate) fn record(
-        &mut self,
-        folder: FolderId,
-        outcome: &RescanOutcome,
-        storage: Storage,
-        now_ms: u64,
-    ) {
-        match outcome {
-            RescanOutcome::Rescanned(_) => {
-                self.turns.insert(folder.0, Turn::read_at(now_ms, storage));
-            }
-            RescanOutcome::Unreachable | RescanOutcome::FoundEmpty => {
-                self.missed_on(folder, storage, now_ms);
-            }
-        }
+    /// The listed folders the schedule has yet to see, whose storage it needs before their first turn.
+    pub(crate) fn unseen(&self, folders: &[FolderId]) -> Vec<FolderId> {
+        folders
+            .iter()
+            .filter(|folder| !self.turns.contains_key(&folder.0))
+            .copied()
+            .collect()
     }
 
+    /// Notes a rescan that read the folder, which it found on `storage`.
+    pub(crate) fn read(&mut self, folder: FolderId, storage: Storage, now_ms: u64) {
+        self.turns.insert(folder.0, Turn::read_at(now_ms, storage));
+    }
+
+    /// Notes a rescan that couldn't read the folder, keeping the storage it was last found on.
     pub(crate) fn missed(&mut self, folder: FolderId, now_ms: u64) {
-        let storage = self
+        let (misses, storage) = self
             .turns
             .get(&folder.0)
-            .map_or(Storage::Local, |turn| turn.storage);
-        self.missed_on(folder, storage, now_ms);
-    }
-
-    fn missed_on(&mut self, folder: FolderId, storage: Storage, now_ms: u64) {
-        let misses = self
-            .turns
-            .get(&folder.0)
-            .map_or(0, |turn| turn.misses)
-            .saturating_add(1);
+            .map_or((0, Storage::Local), |turn| (turn.misses, turn.storage));
         self.turns.insert(
             folder.0,
             Turn {
                 since_ms: now_ms,
-                misses,
+                misses: misses.saturating_add(1),
                 storage,
             },
         );
@@ -108,7 +107,7 @@ impl Turn {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{EXTERNAL_RESCAN_EVERY, FileChanges, RESCAN_EVERY};
+    use crate::{EXTERNAL_RESCAN_EVERY, RESCAN_EVERY};
 
     const START_MS: u64 = 1_790_000_000_000;
 
@@ -120,18 +119,21 @@ mod tests {
         u64::try_from(wait.as_millis()).unwrap()
     }
 
-    fn local(_: FolderId) -> Storage {
-        Storage::Local
+    fn at(at_ms: u64) -> Check {
+        Check {
+            at_ms,
+            power: PowerMode::Normal,
+        }
     }
 
-    fn read() -> RescanOutcome {
-        RescanOutcome::Rescanned(FileChanges::default())
+    fn local(_: FolderId) -> Storage {
+        Storage::Local
     }
 
     /// A schedule that has seen the folder at the start, so its first turn comes one wait later.
     fn seen(folder: FolderId) -> RescanSchedule {
         let mut schedule = RescanSchedule::default();
-        schedule.due(&[folder], START_MS, local);
+        schedule.due(&[folder], at(START_MS), local);
         schedule
     }
 
@@ -139,7 +141,7 @@ mod tests {
     fn counts_a_folder_listed_for_the_first_time_as_just_scanned() {
         let mut schedule = RescanSchedule::default();
 
-        let due = schedule.due(&[folder("1")], START_MS, local);
+        let due = schedule.due(&[folder("1")], at(START_MS), local);
 
         assert_eq!(due, []);
     }
@@ -148,8 +150,8 @@ mod tests {
     fn gives_a_folder_its_turn_once_the_wait_is_over() {
         let mut schedule = seen(folder("1"));
 
-        let early = schedule.due(&[folder("1")], START_MS + ms(RESCAN_EVERY) - 1, local);
-        let on_time = schedule.due(&[folder("1")], START_MS + ms(RESCAN_EVERY), local);
+        let early = schedule.due(&[folder("1")], at(START_MS + ms(RESCAN_EVERY) - 1), local);
+        let on_time = schedule.due(&[folder("1")], at(START_MS + ms(RESCAN_EVERY)), local);
 
         assert_eq!(early, []);
         assert_eq!(on_time, [folder("1")]);
@@ -160,14 +162,14 @@ mod tests {
         let mut schedule = seen(folder("1"));
         let read_at = START_MS + ms(RESCAN_EVERY) + 7;
 
-        schedule.record(folder("1"), &read(), Storage::Local, read_at);
+        schedule.read(folder("1"), Storage::Local, read_at);
 
         assert_eq!(
-            schedule.due(&[folder("1")], read_at + ms(RESCAN_EVERY) - 1, local),
+            schedule.due(&[folder("1")], at(read_at + ms(RESCAN_EVERY) - 1), local),
             []
         );
         assert_eq!(
-            schedule.due(&[folder("1")], read_at + ms(RESCAN_EVERY), local),
+            schedule.due(&[folder("1")], at(read_at + ms(RESCAN_EVERY)), local),
             [folder("1")]
         );
     }
@@ -177,23 +179,17 @@ mod tests {
         let mut schedule = seen(folder("1"));
         let mut now = START_MS;
 
-        for (outcome, minutes) in [
-            (RescanOutcome::Unreachable, 10),
-            (RescanOutcome::FoundEmpty, 20),
-            (RescanOutcome::Unreachable, 40),
-            (RescanOutcome::Unreachable, 60),
-            (RescanOutcome::Unreachable, 60),
-        ] {
-            schedule.record(folder("1"), &outcome, Storage::Local, now);
+        for minutes in [10, 20, 40, 60, 60] {
+            schedule.missed(folder("1"), now);
             let turn = now + ms(Duration::from_mins(minutes));
 
             assert_eq!(
-                schedule.due(&[folder("1")], turn - 1, local),
+                schedule.due(&[folder("1")], at(turn - 1), local),
                 [],
                 "{minutes} minutes"
             );
             assert_eq!(
-                schedule.due(&[folder("1")], turn, local),
+                schedule.due(&[folder("1")], at(turn), local),
                 [folder("1")],
                 "{minutes} minutes"
             );
@@ -204,23 +200,13 @@ mod tests {
     #[test]
     fn goes_back_to_the_usual_wait_once_the_folder_is_read_again() {
         let mut schedule = seen(folder("1"));
-        schedule.record(
-            folder("1"),
-            &RescanOutcome::Unreachable,
-            Storage::Local,
-            START_MS,
-        );
-        schedule.record(
-            folder("1"),
-            &RescanOutcome::Unreachable,
-            Storage::Local,
-            START_MS,
-        );
+        schedule.missed(folder("1"), START_MS);
+        schedule.missed(folder("1"), START_MS);
 
-        schedule.record(folder("1"), &read(), Storage::Local, START_MS);
+        schedule.read(folder("1"), Storage::Local, START_MS);
 
         assert_eq!(
-            schedule.due(&[folder("1")], START_MS + ms(RESCAN_EVERY), local),
+            schedule.due(&[folder("1")], at(START_MS + ms(RESCAN_EVERY)), local),
             [folder("1")]
         );
     }
@@ -232,11 +218,11 @@ mod tests {
         schedule.missed(folder("1"), START_MS);
 
         assert_eq!(
-            schedule.due(&[folder("1")], START_MS + ms(RESCAN_EVERY), local),
+            schedule.due(&[folder("1")], at(START_MS + ms(RESCAN_EVERY)), local),
             []
         );
         assert_eq!(
-            schedule.due(&[folder("1")], START_MS + 2 * ms(RESCAN_EVERY), local),
+            schedule.due(&[folder("1")], at(START_MS + 2 * ms(RESCAN_EVERY)), local),
             [folder("1")]
         );
     }
@@ -245,7 +231,7 @@ mod tests {
     fn gives_a_folder_its_turn_once_the_clock_is_set_back() {
         let mut schedule = seen(folder("1"));
 
-        let due = schedule.due(&[folder("1")], START_MS - 1, local);
+        let due = schedule.due(&[folder("1")], at(START_MS - 1), local);
 
         assert_eq!(due, [folder("1")]);
     }
@@ -253,17 +239,12 @@ mod tests {
     #[test]
     fn keeps_each_folder_to_its_own_turn() {
         let mut schedule = RescanSchedule::default();
-        schedule.due(&[folder("1"), folder("2")], START_MS, local);
-        schedule.record(
-            folder("2"),
-            &RescanOutcome::Unreachable,
-            Storage::Local,
-            START_MS,
-        );
+        schedule.due(&[folder("1"), folder("2")], at(START_MS), local);
+        schedule.missed(folder("2"), START_MS);
 
         let due = schedule.due(
             &[folder("1"), folder("2")],
-            START_MS + ms(RESCAN_EVERY),
+            at(START_MS + ms(RESCAN_EVERY)),
             local,
         );
 
@@ -273,14 +254,18 @@ mod tests {
     #[test]
     fn waits_the_longer_wait_for_a_folder_on_external_storage() {
         let mut schedule = RescanSchedule::default();
-        schedule.due(&[folder("1")], START_MS, |_| Storage::External);
+        schedule.due(&[folder("1")], at(START_MS), |_| Storage::External);
 
         let early = schedule.due(
             &[folder("1")],
-            START_MS + ms(EXTERNAL_RESCAN_EVERY) - 1,
+            at(START_MS + ms(EXTERNAL_RESCAN_EVERY) - 1),
             local,
         );
-        let on_time = schedule.due(&[folder("1")], START_MS + ms(EXTERNAL_RESCAN_EVERY), local);
+        let on_time = schedule.due(
+            &[folder("1")],
+            at(START_MS + ms(EXTERNAL_RESCAN_EVERY)),
+            local,
+        );
 
         assert_eq!(early, []);
         assert_eq!(on_time, [folder("1")]);
@@ -288,29 +273,20 @@ mod tests {
 
     #[test]
     fn doubles_the_longer_wait_after_a_missed_rescan_up_to_an_hour() {
-        let mut schedule = seen(folder("1"));
-        schedule.record(
-            folder("1"),
-            &RescanOutcome::Unreachable,
-            Storage::External,
-            START_MS,
-        );
+        let mut schedule = RescanSchedule::default();
+        schedule.due(&[folder("1")], at(START_MS), |_| Storage::External);
+        schedule.missed(folder("1"), START_MS);
         let after_one_miss = START_MS + ms(Duration::from_hours(1));
-        schedule.record(
-            folder("1"),
-            &RescanOutcome::Unreachable,
-            Storage::External,
-            after_one_miss,
-        );
+        schedule.missed(folder("1"), after_one_miss);
 
         let early = schedule.due(
             &[folder("1")],
-            after_one_miss + ms(Duration::from_hours(1)) - 1,
+            at(after_one_miss + ms(Duration::from_hours(1)) - 1),
             local,
         );
         let on_time = schedule.due(
             &[folder("1")],
-            after_one_miss + ms(Duration::from_hours(1)),
+            at(after_one_miss + ms(Duration::from_hours(1))),
             local,
         );
 
@@ -322,14 +298,18 @@ mod tests {
     fn follows_the_storage_a_rescan_found_the_folder_on() {
         let mut schedule = seen(folder("1"));
 
-        schedule.record(folder("1"), &read(), Storage::External, START_MS);
+        schedule.read(folder("1"), Storage::External, START_MS);
 
         assert_eq!(
-            schedule.due(&[folder("1")], START_MS + ms(RESCAN_EVERY), local),
+            schedule.due(&[folder("1")], at(START_MS + ms(RESCAN_EVERY)), local),
             []
         );
         assert_eq!(
-            schedule.due(&[folder("1")], START_MS + ms(EXTERNAL_RESCAN_EVERY), local),
+            schedule.due(
+                &[folder("1")],
+                at(START_MS + ms(EXTERNAL_RESCAN_EVERY)),
+                local
+            ),
             [folder("1")]
         );
     }
@@ -337,14 +317,14 @@ mod tests {
     #[test]
     fn keeps_the_storage_it_knew_after_a_rescan_that_failed() {
         let mut schedule = RescanSchedule::default();
-        schedule.due(&[folder("1")], START_MS, |_| Storage::External);
+        schedule.due(&[folder("1")], at(START_MS), |_| Storage::External);
 
         schedule.missed(folder("1"), START_MS);
 
         assert_eq!(
             schedule.due(
                 &[folder("1")],
-                START_MS + ms(Duration::from_hours(1)) - 1,
+                at(START_MS + ms(Duration::from_hours(1)) - 1),
                 local
             ),
             []
@@ -352,10 +332,46 @@ mod tests {
         assert_eq!(
             schedule.due(
                 &[folder("1")],
-                START_MS + ms(Duration::from_hours(1)),
+                at(START_MS + ms(Duration::from_hours(1))),
                 local
             ),
             [folder("1")]
         );
+    }
+
+    #[test]
+    fn gives_no_folder_its_turn_while_the_device_saves_power() {
+        let mut schedule = seen(folder("1"));
+        let saving = Check {
+            at_ms: START_MS + ms(RESCAN_EVERY),
+            power: PowerMode::Saving,
+        };
+
+        let due = schedule.due(&[folder("1")], saving, local);
+
+        assert_eq!(due, []);
+    }
+
+    #[test]
+    fn gives_a_folder_its_turn_once_the_device_stops_saving_power() {
+        let mut schedule = seen(folder("1"));
+        let saving = Check {
+            at_ms: START_MS + ms(RESCAN_EVERY),
+            power: PowerMode::Saving,
+        };
+        schedule.due(&[folder("1")], saving, local);
+
+        let due = schedule.due(&[folder("1")], at(START_MS + ms(RESCAN_EVERY) + 1), local);
+
+        assert_eq!(due, [folder("1")]);
+    }
+
+    #[test]
+    fn lists_only_the_folders_it_has_yet_to_see() {
+        let schedule = seen(folder("1"));
+
+        let unseen = schedule.unseen(&[folder("1"), folder("2")]);
+
+        assert_eq!(unseen, [folder("2")]);
     }
 }

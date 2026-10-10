@@ -22,7 +22,15 @@ impl Storage {
     }
 }
 
-/// What the device reports about where a folder is stored, read when the schedule first lists a folder and after each rescan that reads it.
-pub trait RescanConditions: Send + Sync + 'static {
-    fn storage_of(&self, folder: &Path) -> Storage;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PowerMode {
+    Normal,
+    /// Low Power Mode, Battery Saver or the power saver profile, whichever the device has.
+    Saving,
+}
+
+/// What the device reports for the schedule: where a folder is stored, read when it's first listed and after each rescan that reads it, and its power mode, read at each check.
+pub trait RescanConditions: Send + Sync {
+    fn storage_of(&self, folder: &Path) -> impl Future<Output = Storage> + Send;
+    fn power_mode(&self) -> impl Future<Output = PowerMode> + Send;
 }
