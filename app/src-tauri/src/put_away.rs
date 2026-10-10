@@ -9,15 +9,65 @@ use tokio::time::{error::Elapsed, timeout};
 /// Short enough that waiting on a busy database never holds up the system putting the app away.
 const SAVE_LIMIT: Duration = Duration::from_secs(2);
 
-/// Saves the page the reader showed last, waiting for the save so it is written before the app can be stopped.
-pub(crate) fn save_when_put_away(app: &AppHandle, event: &RunEvent) {
-    if !is_put_away(event) {
-        return;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PutAway {
+    /// The process ends once the event returns, so the save is waited for.
+    Exiting,
+    /// The system keeps the process alive a while, and the delayed save backs this one up, so the UI thread never waits.
+    #[cfg_attr(
+        not(any(mobile, test)),
+        expect(
+            dead_code,
+            reason = "only phones and tablets send the app to the background"
+        )
+    )]
+    Backgrounded,
+}
+
+impl PutAway {
+    fn of(event: &RunEvent) -> Option<Self> {
+        match event {
+            RunEvent::Exit => Some(Self::Exiting),
+            #[cfg(mobile)]
+            RunEvent::WindowEvent {
+                event: tauri::WindowEvent::Suspended,
+                ..
+            } => Some(Self::Backgrounded),
+            _ => None,
+        }
     }
-    let Some(library) = app.try_state::<Library>() else {
+
+    const fn waits_for_the_save(self) -> bool {
+        match self {
+            Self::Exiting => true,
+            Self::Backgrounded => false,
+        }
+    }
+}
+
+/// Saves the page the reader showed last, waiting for the save only when the app exits.
+pub(crate) fn save_when_put_away(app: &AppHandle, event: &RunEvent) {
+    let Some(put_away) = PutAway::of(event) else {
         return;
     };
-    match tauri::async_runtime::block_on(save_in_time(library.save_reading())) {
+    if put_away.waits_for_the_save() {
+        if let Some(library) = app.try_state::<Library>() {
+            warn_unless_saved(tauri::async_runtime::block_on(save_in_time(
+                library.save_reading(),
+            )));
+        }
+        return;
+    }
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Some(library) = app.try_state::<Library>() {
+            warn_unless_saved(save_in_time(library.save_reading()).await);
+        }
+    });
+}
+
+fn warn_unless_saved(saved: Result<Result<(), LibraryError>, Elapsed>) {
+    match saved {
         Ok(Ok(())) => {}
         Ok(Err(error)) => {
             tracing::warn!(error = %describe_error(&error), "save the page reading reached as the app is put away");
@@ -34,18 +84,6 @@ async fn save_in_time(
     timeout(SAVE_LIMIT, save).await
 }
 
-fn is_put_away(event: &RunEvent) -> bool {
-    match event {
-        RunEvent::Exit => true,
-        #[cfg(mobile)]
-        RunEvent::WindowEvent {
-            event: tauri::WindowEvent::Suspended,
-            ..
-        } => true,
-        _ => false,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -54,9 +92,16 @@ mod tests {
     fn counts_the_app_exiting_as_put_away() {
         let events = [RunEvent::Exit, RunEvent::Ready, RunEvent::MainEventsCleared];
 
-        let put_away = events.map(|event| is_put_away(&event));
+        let put_away = events.map(|event| PutAway::of(&event));
 
-        assert_eq!(put_away, [true, false, false]);
+        assert_eq!(put_away, [Some(PutAway::Exiting), None, None]);
+    }
+
+    #[test]
+    fn waits_for_the_save_only_as_the_app_exits() {
+        let waits = [PutAway::Exiting, PutAway::Backgrounded].map(PutAway::waits_for_the_save);
+
+        assert_eq!(waits, [true, false]);
     }
 
     #[tokio::test(start_paused = true)]
