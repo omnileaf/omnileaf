@@ -17,9 +17,11 @@
   } from "#lib/reader/reader-keys.ts";
   import ReaderPanel from "#lib/reader/ReaderPanel.svelte";
   import ReaderTopBar from "#lib/reader/ReaderTopBar.svelte";
+  import { isZoomedIn, zoneAction } from "#lib/reader/reader-zoom.ts";
   import { Swipe, type SwipeTurn } from "#lib/reader/swipe.ts";
 
   const SWIPE_MIN_PX = 48;
+  const RESTING_SCALE = 1;
   /** Long enough that turning pages in a run announces only the page they stop on. */
   const ANNOUNCE_DELAY_MS = 300;
   const TURN_STEPS = { next: 1, previous: -1 } as const satisfies Record<
@@ -38,6 +40,7 @@
   const swipe = new Swipe(SWIPE_MIN_PX);
   let areControlsShown = $state(true);
   let heading: HTMLHeadingElement | undefined = $state();
+  let viewportScale = $state(RESTING_SCALE);
 
   const pageNumber = $derived(turner.shown + 1);
   const pageCount = $derived(book.pages.length);
@@ -102,11 +105,12 @@
   }
 
   /** Leaves no tapped zone focused, so Space goes on turning pages rather than pressing the zone tapped last. */
-  function onZone(event: MouseEvent, action: ReaderAction): void {
+  function onZone(event: MouseEvent, zone: ReaderAction): void {
     if (isPointerClick(event) && event.currentTarget instanceof HTMLElement) {
       event.currentTarget.blur();
     }
-    if (!swipe.isClickASwipe()) {
+    const action = zoneAction(zone, viewportScale);
+    if (!swipe.isClickASwipe() && action !== undefined) {
       act(action);
     }
   }
@@ -117,13 +121,25 @@
 
   function onSwipeEnd(event: PointerEvent): void {
     const turn = swipe.ended(event);
-    if (turn !== undefined) {
+    if (turn !== undefined && !isZoomedIn(viewportScale)) {
       turner.turn(TURN_STEPS[turn]);
     }
   }
 
   onMount(() => {
     heading?.focus();
+    const viewport = window.visualViewport;
+    if (viewport === null) {
+      return;
+    }
+    const followScale = (): void => {
+      viewportScale = viewport.scale;
+    };
+    followScale();
+    viewport.addEventListener("resize", followScale);
+    return () => {
+      viewport.removeEventListener("resize", followScale);
+    };
   });
 </script>
 
@@ -136,7 +152,12 @@
   <div
     dir="ltr"
     role="presentation"
-    class="absolute inset-none flex touch-pan-y touch-pinch-zoom"
+    class={[
+      "absolute inset-none flex",
+      isZoomedIn(viewportScale)
+        ? "touch-manipulation"
+        : "touch-pan-y touch-pinch-zoom",
+    ]}
     onpointerdown={(event) => {
       swipe.started(event);
     }}

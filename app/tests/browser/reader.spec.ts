@@ -900,6 +900,58 @@ test.describe("with a pointer", () => {
   });
 });
 
+test.describe("pinched in", () => {
+  async function pinchTo(page: Page, scale: number): Promise<void> {
+    await page.evaluate((pinched) => {
+      const viewport = window.visualViewport;
+      if (viewport === null) {
+        throw new Error("the browser has no visual viewport");
+      }
+      Object.defineProperty(viewport, "scale", {
+        configurable: true,
+        get: () => pinched,
+      });
+      viewport.dispatchEvent(new Event("resize"));
+    }, scale);
+  }
+
+  function surfaceTouchAction(page: Page): Promise<string> {
+    return zone(page, "Next page")
+      .locator("..")
+      .evaluate((surface) => getComputedStyle(surface).touchAction);
+  }
+
+  test("lets a drag pan the zoomed page either way rather than turn it", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await pinchTo(page, 2);
+
+    await expect.poll(() => surfaceTouchAction(page)).toBe("manipulation");
+    await swipe(page, -SWIPE_PX);
+    await zone(page, "Next page").click();
+    await zone(page, "Previous page").click();
+    await expect(slider(page)).toHaveValue("1");
+    await expectOnPage(page, 1);
+  });
+
+  test("turns pages with swipes and taps again once zoomed back out", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await pinchTo(page, 2);
+
+    await pinchTo(page, 1);
+
+    await expect.poll(() => surfaceTouchAction(page)).toBe("pan-y pinch-zoom");
+    await swipe(page, -SWIPE_PX);
+    await expectOnPage(page, 2);
+    await zone(page, "Next page").click();
+    await expectOnPage(page, 3);
+  });
+});
+
 test.describe("zooming", () => {
   function viewportSettings(page: Page): Promise<Record<string, string>> {
     return page.evaluate(() => {
