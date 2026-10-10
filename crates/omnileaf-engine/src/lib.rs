@@ -30,6 +30,7 @@ mod open_books;
 mod opened_book;
 mod page_lane;
 mod page_path;
+mod page_sizes;
 mod pages;
 mod project_link;
 mod rescan;

@@ -19,6 +19,7 @@ pub(crate) struct ByUrgency {
     interactive: VecDeque<Job>,
     asked_pages: VecDeque<AskedPage>,
     prefetch: VecDeque<Job>,
+    size_reads: VecDeque<Job>,
 }
 
 struct AskedPage {
@@ -49,6 +50,7 @@ impl JobQueue for ByUrgency {
                     .map(|asked| -> Job { Box::new(move || (asked.answer)(Fate::Read)) })
             })
             .or_else(|| self.prefetch.pop_front())
+            .or_else(|| self.size_reads.pop_front())
     }
 }
 
@@ -139,6 +141,11 @@ impl PageLane {
         for asked in superseded {
             (asked.answer)(Fate::Superseded);
         }
+    }
+
+    /// Queues the reading of page sizes behind everything else, never replaced by later reading ahead.
+    pub(crate) fn read_sizes(&self, job: Job) {
+        self.0.queue(|queue| queue.size_reads.push_back(job));
     }
 
     /// Replaces the reading ahead still waiting with `jobs`, so it always follows the page read last.

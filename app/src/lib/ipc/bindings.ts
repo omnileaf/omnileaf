@@ -82,7 +82,7 @@ export type BackSwipe = { kind: "moved"; progress: number | null } | { kind: "re
 
 export type BookPage = {
 	path: string & { readonly __brand: "PagePath" },
-	/**  Absent when the page's image header couldn't be read. */
+	/**  Absent when the page's image header couldn't be read, or wasn't yet for a page far from where the book opened the first time. */
 	size: PageDimensions | null,
 };
 
