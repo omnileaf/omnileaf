@@ -593,6 +593,23 @@ test.describe("with sessions at the widest times and lengths", () => {
   }
 });
 
+test.describe("on an iPad as wide as a desktop", () => {
+  test.use({
+    backend: { ...READ_BACKEND, appInfo: () => fakeAppInfo("ios") },
+    viewport: { width: 1376, height: 1032 },
+  });
+
+  test("draws a session as one link, as on a phone, rather than a row with a button sized for a pointer", async ({
+    page,
+  }) => {
+    await openHistory(page);
+
+    const links = rows(page).first().getByRole("link");
+    await expect(links).toHaveCount(1);
+    await expect(links).toHaveAccessibleName(new RegExp(`^${seriesTitle(4)}`));
+  });
+});
+
 test.describe("with a long history", () => {
   const many = Array.from({ length: 2 * ENTRIES_PER_PAGE + 10 }, (_, index) =>
     entry({
