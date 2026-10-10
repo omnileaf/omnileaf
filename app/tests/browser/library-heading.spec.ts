@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from "node:util";
+
 import type { Locator, Page } from "@playwright/test";
 
 import english from "../../messages/en.json" with { type: "json" };
@@ -94,12 +96,6 @@ function isOnRowOf(box: Box, row: Box): boolean {
   return middle > row.y && middle < row.y + row.height;
 }
 
-function labelOf(page: Page): Locator {
-  return headingOf(page).getByText(english.screenshot_mode_title, {
-    exact: true,
-  });
-}
-
 async function openAt(
   page: Page,
   width: number,
@@ -117,28 +113,79 @@ async function openAt(
   await page.goto("/");
 }
 
-/** The boxes of the title, its buttons and, when shown, the count and the Screenshot mode label. */
-async function headingBoxes(
+interface HeadingParts {
+  readonly title: Box;
+  readonly count: Box | undefined;
+  readonly label: Box | undefined;
+  /** Each button, link or search field, named by its label or text. */
+  readonly controls: readonly (readonly [string, Box])[];
+}
+
+/** Measures the heading's parts in one round trip, then lets two frames pass before answering, so a refit due when it measured, which waits a frame, has run before the next measure. */
+async function measureHeading(
   page: Page,
-  library: Library,
-  screenshotMode: (typeof SCREENSHOT_MODE)[number],
-): Promise<{
-  title: Box;
-  buttons: Box[];
-  count: Box | undefined;
-  label: Box | undefined;
-}> {
+  messages: typeof english,
+): Promise<HeadingParts> {
   const heading = headingOf(page);
-  const buttons: Box[] = [];
-  for (const button of await controlsOf(heading).all()) {
-    buttons.push(await boxOf(button));
+  const parts = heading
+    .getByRole("heading", { level: 1 })
+    .or(countOf(page))
+    .or(heading.getByText(messages.screenshot_mode_title, { exact: true }))
+    .or(controlsOf(heading));
+  const measured = await parts.evaluateAll(async (elements) => {
+    const found = elements.map((element) => {
+      const { x, y, width, height } = element.getBoundingClientRect();
+      const kind = element.matches("h1")
+        ? "title"
+        : element.matches("p")
+          ? "count"
+          : element.matches("button, a, input")
+            ? "control"
+            : "label";
+      const name =
+        element.getAttribute("aria-label") ?? element.textContent.trim();
+      return { kind, name, box: { x, y, width, height } };
+    });
+    await new Promise((settled) =>
+      requestAnimationFrame(() => requestAnimationFrame(settled)),
+    );
+    return found;
+  });
+  const boxOfKind = (kind: string): Box | undefined =>
+    measured.find((part) => part.kind === kind)?.box;
+  const title = boxOfKind("title");
+  if (title === undefined) {
+    throw new Error("the heading has no title");
   }
   return {
-    title: await boxOf(heading.getByRole("heading", { level: 1 })),
-    buttons,
-    count: library === "filled" ? await boxOf(countOf(page)) : undefined,
-    label: screenshotMode === "on" ? await boxOf(labelOf(page)) : undefined,
+    title,
+    count: boxOfKind("count"),
+    label: boxOfKind("label"),
+    controls: measured
+      .filter((part) => part.kind === "control")
+      .map((part) => [part.name, part.box] as const),
   };
+}
+
+/** Measures the heading once it has settled: its fonts loaded, and no refit left to run between two measures. */
+async function settledHeading(
+  page: Page,
+  messages: typeof english = english,
+): Promise<HeadingParts> {
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  let measured = await measureHeading(page, messages);
+  await expect
+    .poll(
+      async () => {
+        const again = await measureHeading(page, messages);
+        const isSettled = isDeepStrictEqual(again, measured);
+        measured = again;
+        return isSettled;
+      },
+      { message: "the heading settles" },
+    )
+    .toBe(true);
+  return measured;
 }
 
 /** How many lines the text of `locator` runs over. */
@@ -160,47 +207,23 @@ function isCrowded(a: Box, b: Box): boolean {
   return !apartSideways && !apartUpAndDown;
 }
 
-async function boxesOf(
-  parts: readonly (readonly [string, Locator])[],
-): Promise<[string, Box][]> {
-  const boxes: [string, Box][] = [];
-  for (const [name, part] of parts) {
-    boxes.push([name, await boxOf(part)]);
+/** Each pair of the title or count and a control or the Screenshot mode label that sit too close. */
+function crowdedParts({
+  title,
+  count,
+  label,
+  controls,
+}: HeadingParts): string[] {
+  const texts: (readonly [string, Box])[] = [["title", title]];
+  if (count !== undefined) {
+    texts.push(["count", count]);
   }
-  return boxes;
-}
-
-async function crowdedParts(
-  page: Page,
-  messages: typeof english,
-  screenshotMode: (typeof SCREENSHOT_MODE)[number],
-  library: Library,
-): Promise<string[]> {
-  const heading = headingOf(page);
-  const texts: [string, Locator][] = [
-    ["title", heading.getByRole("heading", { level: 1 })],
-  ];
-  if (library === "filled") {
-    texts.push(["count", countOf(page)]);
+  const others = [...controls];
+  if (label !== undefined) {
+    others.push(["Screenshot mode label", label]);
   }
-  const others: [string, Locator][] = [];
-  for (const button of await controlsOf(heading).all()) {
-    const name =
-      (await button.getAttribute("aria-label")) ??
-      (await button.textContent())?.trim() ??
-      "button";
-    others.push([name, button]);
-  }
-  if (screenshotMode === "on") {
-    others.push([
-      "Screenshot mode label",
-      heading.getByText(messages.screenshot_mode_title, { exact: true }),
-    ]);
-  }
-  const textBoxes = await boxesOf(texts);
-  const otherBoxes = await boxesOf(others);
-  return textBoxes.flatMap(([textName, text]) =>
-    otherBoxes
+  return texts.flatMap(([textName, text]) =>
+    others
       .filter(([, other]) => isCrowded(text, other))
       .map(([otherName]) => `${textName} / ${otherName}`),
   );
@@ -244,10 +267,20 @@ for (const platform of PLATFORMS) {
             for (const width of WIDTHS) {
               await page.setViewportSize({ width, height: HEIGHT });
 
+              const parts = await settledHeading(page, messages);
+
               expect(
-                await crowdedParts(page, messages, screenshotMode, library),
+                {
+                  crowded: crowdedParts(parts),
+                  hasCount: parts.count !== undefined,
+                  hasLabel: parts.label !== undefined,
+                },
                 `at ${String(width)}px`,
-              ).toEqual([]);
+              ).toEqual({
+                crowded: [],
+                hasCount: library === "filled",
+                hasLabel: screenshotMode === "on",
+              });
               expect(
                 await sidewaysOverflow(page),
                 `at ${String(width)}px`,
@@ -297,12 +330,14 @@ for (const platform of PLATFORMS) {
               library === "empty" ? 1 : 3,
             );
 
-            const { title, buttons, count, label } = await headingBoxes(
-              page,
-              library,
-              screenshotMode,
-            );
+            const parts = await settledHeading(page);
+            const { title, count, label } = parts;
+            const buttons = parts.controls.map(([, box]) => box);
 
+            expect([count !== undefined, label !== undefined]).toEqual([
+              library === "filled",
+              screenshotMode === "on",
+            ]);
             const isOnTitleRow = buttons.every((button) =>
               isOnRowOf(button, title),
             );
@@ -320,9 +355,7 @@ for (const platform of PLATFORMS) {
               expect(isOnRowOf(label, count)).toBe(true);
               expect(label.x).toBeGreaterThan(count.x + count.width);
             }
-            expect(
-              await crowdedParts(page, english, screenshotMode, library),
-            ).toEqual([]);
+            expect(crowdedParts(parts)).toEqual([]);
             expect(await sidewaysOverflow(page)).toEqual([]);
           });
         }
@@ -345,10 +378,12 @@ for (const platform of PLATFORMS) {
       await openAt(page, 360, "off");
       await expect(countOf(page)).toBeVisible();
 
+      const parts = await settledHeading(page, pseudo);
+
       expect(
         await linesOf(headingOf(page).getByRole("heading", { level: 1 })),
       ).toBe(1);
-      expect(await crowdedParts(page, pseudo, "off", "filled")).toEqual([]);
+      expect(crowdedParts(parts)).toEqual([]);
       expect(await sidewaysOverflow(page)).toEqual([]);
     });
   });
@@ -376,14 +411,15 @@ test.describe("the heading at the largest text size on an ios phone", () => {
       await expect(countOf(page)).toBeVisible();
       const title = headingOf(page).getByRole("heading", { level: 1 });
 
-      const { buttons, count } = await headingBoxes(page, "filled", "off");
+      const parts = await settledHeading(page);
 
       expect(await linesOf(title)).toBe(1);
-      const underCount = count === undefined ? 0 : count.y + count.height;
-      for (const button of buttons) {
+      const underCount =
+        parts.count === undefined ? 0 : parts.count.y + parts.count.height;
+      for (const [, button] of parts.controls) {
         expect(button.y).toBeGreaterThanOrEqual(underCount);
       }
-      expect(await crowdedParts(page, english, "off", "filled")).toEqual([]);
+      expect(crowdedParts(parts)).toEqual([]);
       expect(await sidewaysOverflow(page)).toEqual([]);
     });
   }
@@ -416,16 +452,15 @@ for (const platform of PLATFORMS) {
         await expect(countOf(page)).toBeVisible();
         const title = headingOf(page).getByRole("heading", { level: 1 });
 
-        await expect
-          .poll(() =>
-            headingOf(page).evaluate(
-              (heading) => heading.scrollWidth - heading.clientWidth,
-            ),
-          )
-          .toBe(0);
+        const parts = await settledHeading(page, pseudo);
 
+        expect(
+          await headingOf(page).evaluate(
+            (heading) => heading.scrollWidth - heading.clientWidth,
+          ),
+        ).toBe(0);
         expect(await linesOf(title)).toBe(1);
-        expect(await crowdedParts(page, pseudo, "on", "filled")).toEqual([]);
+        expect(crowdedParts(parts)).toEqual([]);
       });
     }
   });
@@ -447,7 +482,7 @@ test.describe("the heading as a filter changes the count", () => {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
       await openAt(page, width, "off");
       await expect(countOf(page)).toBeVisible();
-      const before = await headingBoxes(page, "filled", "off");
+      const before = await settledHeading(page);
 
       await headingOf(page)
         .getByRole("button", { name: /^Filter and sort/ })
@@ -463,17 +498,19 @@ test.describe("the heading as a filter changes the count", () => {
       await expect(
         headingOf(page).getByText(String(FILTERED_COUNT), { exact: true }),
       ).toBeVisible();
-      const after = await boxOf(
+      const after = await settledHeading(page);
+      const count = await boxOf(
         headingOf(page)
           .locator("p", { hasText: String(FILTERED_COUNT) })
           .first(),
       );
 
-      expect(after.y).toBe(before.count?.y);
-      expect(after.x).toBe(before.count?.x);
-      const { title, buttons } = await headingBoxes(page, "empty", "off");
-      expect(title).toEqual(before.title);
-      expect(buttons).toEqual(before.buttons);
+      expect(count.y).toBe(before.count?.y);
+      expect(count.x).toBe(before.count?.x);
+      expect(after.title).toEqual(before.title);
+      const boxesOf = (parts: HeadingParts): Box[] =>
+        parts.controls.map(([, box]) => box);
+      expect(boxesOf(after)).toEqual(boxesOf(before));
     });
   }
 });
