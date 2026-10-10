@@ -2,7 +2,6 @@
   import { RotateCcwClock } from "@lucide/svelte";
   import { onMount } from "svelte";
 
-  import { lastWeekDays } from "#lib/history/history-days.ts";
   import HistoryDays from "#lib/history/HistoryDays.svelte";
   import { historyList } from "#lib/history/history-list.svelte.ts";
   import {
@@ -12,6 +11,7 @@
     weekStartOf,
   } from "#lib/history/local-date.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
+  import { WeekTotals } from "#lib/history/week-totals.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
@@ -22,8 +22,15 @@
   const screenshotMode = getScreenshotMode();
   const history = historyList();
   let today = $state(localDayOf(new Date()));
-  let readThisWeekSeconds: number | undefined = $state();
-  let readLastWeekSeconds: number | undefined = $state();
+  const weekTotals = new WeekTotals(
+    {
+      since: (first) => commands.readingTimeSince(first),
+      between: (first, last) => commands.readingTimeBetween(first, last),
+    },
+    (error) => {
+      reportError(error);
+    },
+  );
 
   const calendar = $derived({
     today,
@@ -34,36 +41,15 @@
     history.list.kind === "loaded" && history.list.items.length > 0,
   );
 
-  async function readThisWeek(): Promise<void> {
-    const read = await commands.readingTimeSince(calendar.weekStart);
-    if (read.status === "error") {
-      reportError(read.error);
-      return;
-    }
-    readThisWeekSeconds = read.data;
-  }
-
-  async function readLastWeek(): Promise<void> {
-    const { first, last } = lastWeekDays(calendar);
-    const read = await commands.readingTimeBetween(first, last);
-    if (read.status === "error") {
-      reportError(read.error);
-      return;
-    }
-    readLastWeekSeconds = read.data;
-  }
-
   function readAgain(): void {
     today = localDayOf(new Date());
     void history.load();
-    void readThisWeek();
-    void readLastWeek();
+    void weekTotals.read(calendar);
   }
 
   onMount(() => {
     void history.start();
-    void readThisWeek();
-    void readLastWeek();
+    void weekTotals.read(calendar);
     return listenForLibraryChanges(readAgain, reportError);
   });
 </script>
@@ -71,7 +57,7 @@
 {#snippet readThisWeekTotal()}
   <p class="text-small text-muted large:ms-xs">
     {m.history_read_this_week({
-      duration: readingTime(readThisWeekSeconds ?? 0),
+      duration: readingTime(weekTotals.thisWeekSeconds ?? 0),
     })}
   </p>
 {/snippet}
@@ -80,8 +66,8 @@
   title={m.history_title()}
   showsLabel={screenshotMode.showsLabel}
   count={hasEntries &&
-  readThisWeekSeconds !== undefined &&
-  readThisWeekSeconds > 0
+  weekTotals.thisWeekSeconds !== undefined &&
+  weekTotals.thisWeekSeconds > 0
     ? readThisWeekTotal
     : undefined}
 />
@@ -99,7 +85,7 @@
       entries={history.list.items}
       isComplete={history.list.isComplete}
       {calendar}
-      lastWeekReadSeconds={readLastWeekSeconds}
+      lastWeekReadSeconds={weekTotals.lastWeekSeconds}
       usesStandIns={screenshotMode.isOn}
       onNearEnd={() => {
         void history.loadMore();
