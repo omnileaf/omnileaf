@@ -3265,6 +3265,8 @@ name = "omnileaf-folder-access"
 version = "0.0.0"
 dependencies = [
  "omnileaf-engine",
+ "omnileaf-formats",
+ "omnileaf-testkit",
  "serde",
  "serde_json",
  "tauri",
