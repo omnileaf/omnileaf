@@ -44,6 +44,7 @@ export function readerBook({ reading, startPage }: WireOpening): WireBook {
     seriesTitle: BOOK_SERIES_TITLE,
     pages: Array.from({ length: PAGE_COUNT }, (_, index) => ({
       path: `page/v1/${BOOK_ID}/1/${String(index)}`,
+      thumbnail: `page-thumb/v1/${BOOK_ID}/1/${String(index)}`,
       size: { width: PAGE_WIDTH, height: PAGE_HEIGHT },
     })),
     startPage,
