@@ -115,8 +115,8 @@ impl ReadingSession {
         }
     }
 
-    /// Leaves the page shown last unsaved, to save again a delay after `now`.
-    pub(crate) fn save_failed(&mut self, now: Instant) {
+    /// Leaves the page shown last unsaved, to save again at `retry_at`.
+    pub(crate) fn save_failed(&mut self, retry_at: Instant) {
         if let Stage::Reading {
             saved,
             unsaved: Some(unsaved),
@@ -125,7 +125,7 @@ impl ReadingSession {
             self.stage = Stage::Reading {
                 saved,
                 unsaved: Some(Unsaved {
-                    save_at: now + READING_SAVE_DELAY,
+                    save_at: retry_at,
                     ..unsaved
                 }),
             };
@@ -209,16 +209,16 @@ mod tests {
     }
 
     #[test]
-    fn saves_again_a_delay_after_a_save_that_failed() {
+    fn saves_again_when_told_after_a_save_that_failed() {
         let mut session = restored_on(0);
         let first = Instant::now();
         session.shown(2, first);
-        let failed = first + READING_SAVE_DELAY;
+        let retry_at = first + READING_SAVE_DELAY * 3;
 
-        session.save_failed(failed);
+        session.save_failed(retry_at);
 
         assert_eq!(session.unsaved(), Some(reached(2)));
-        assert_eq!(session.save_at(), Some(failed + READING_SAVE_DELAY));
+        assert_eq!(session.save_at(), Some(retry_at));
     }
 
     #[test]

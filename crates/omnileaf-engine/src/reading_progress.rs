@@ -7,7 +7,7 @@ use omnileaf_db::{
 use tokio::{
     sync::{mpsc, oneshot},
     task::JoinHandle,
-    time::{Instant, sleep_until},
+    time::{Duration, Instant, sleep_until},
 };
 
 use crate::{
@@ -16,6 +16,8 @@ use crate::{
 };
 
 const REPORT_BACKLOG: usize = 64;
+/// The longest a save waits to try again, however long the store keeps failing.
+const LONGEST_RETRY_WAIT: Duration = Duration::from_secs(60);
 
 type Saved = oneshot::Sender<Result<(), Error>>;
 
@@ -109,12 +111,12 @@ async fn keep(store: Arc<Store>, mut reports: mpsc::Receiver<Report>) {
         let report = tokio::select! {
             report = reports.recv() => report,
             () = wait_until(due) => {
-                answer_or_warn(None, keeper.save().await);
+                answer(None, keeper.save().await);
                 continue;
             }
         };
         let Some(report) = report else {
-            answer_or_warn(None, keeper.save().await);
+            answer(None, keeper.save().await);
             return;
         };
         keeper.hear(report).await;
@@ -129,6 +131,7 @@ struct Keeper {
     /// The page reached in each book left before its save landed, which every save tries again.
     left_unsaved: HashMap<BookId, ReachedPage>,
     retry_at: Option<Instant>,
+    failed_in_a_row: u32,
 }
 
 impl Keeper {
@@ -139,6 +142,7 @@ impl Keeper {
             page_counts: HashMap::new(),
             left_unsaved: HashMap::new(),
             retry_at: None,
+            failed_in_a_row: 0,
         }
     }
 
@@ -156,7 +160,7 @@ impl Keeper {
                 saved,
             } => {
                 self.page_counts.insert(book, page_count);
-                answer_or_warn(Some(saved), self.save().await);
+                answer(Some(saved), self.save().await);
             }
             Report::Restored { book, page } => self.restored(book, page).await,
             Report::Shown { book, page } => {
@@ -164,8 +168,8 @@ impl Keeper {
                     open.shown(page, Instant::now());
                 }
             }
-            Report::Closed { book, saved } => answer_or_warn(Some(saved), self.closed(book).await),
-            Report::SaveNow { saved } => answer_or_warn(Some(saved), self.save().await),
+            Report::Closed { book, saved } => answer(Some(saved), self.closed(book).await),
+            Report::SaveNow { saved } => answer(Some(saved), self.save().await),
         }
     }
 
@@ -187,7 +191,7 @@ impl Keeper {
             opening.restored(page);
             opening
         });
-        answer_or_warn(None, self.save().await);
+        answer(None, self.save().await);
     }
 
     /// Stops reading `book` and saves the page reached in it, which later saves try again should this one fail.
@@ -228,10 +232,9 @@ impl Keeper {
             .store
             .write(move |writer| write_reached(writer, &reached))
             .await;
-        if outcome.is_ok() {
-            self.landed(reading);
-        } else {
-            self.failed();
+        match &outcome {
+            Ok(()) => self.landed(reading),
+            Err(error) => self.failed(error),
         }
         outcome
     }
@@ -239,16 +242,27 @@ impl Keeper {
     fn landed(&mut self, reading: Option<ReachedPage>) {
         self.left_unsaved.clear();
         self.retry_at = None;
+        self.failed_in_a_row = 0;
         if let (Some(open), Some(reading)) = (self.session.as_mut(), reading) {
             open.saved(reading);
         }
     }
 
-    fn failed(&mut self) {
-        let now = Instant::now();
-        self.retry_at = Some(now + READING_SAVE_DELAY);
+    /// Tries again twice as long after each failure in a row, warning only of the first.
+    fn failed(&mut self, error: &Error) {
+        if self.failed_in_a_row == 0 {
+            tracing::warn!(error = %describe_error(error), "save the page reading reached, trying again until it saves");
+        } else {
+            tracing::debug!(error = %describe_error(error), failed_in_a_row = self.failed_in_a_row, "save the page reading reached again");
+        }
+        let wait = READING_SAVE_DELAY
+            .saturating_mul(2_u32.saturating_pow(self.failed_in_a_row))
+            .min(LONGEST_RETRY_WAIT);
+        self.failed_in_a_row = self.failed_in_a_row.saturating_add(1);
+        let retry_at = Instant::now() + wait;
+        self.retry_at = Some(retry_at);
         if let Some(open) = self.session.as_mut() {
-            open.save_failed(now);
+            open.save_failed(retry_at);
         }
     }
 }
@@ -277,18 +291,12 @@ async fn wait_until(due: Option<Instant>) {
     }
 }
 
-/// Hands the outcome to whoever asked for the save, or logs a failure no one asked about.
-fn answer_or_warn(asker: Option<Saved>, outcome: Result<(), Error>) {
-    match (asker, outcome) {
-        (Some(asker), outcome) => {
-            if asker.send(outcome).is_err() {
-                tracing::debug!("a save finished after its asker stopped waiting");
-            }
-        }
-        (None, Ok(())) => {}
-        (None, Err(error)) => {
-            tracing::warn!(error = %describe_error(&error), "save the page reading reached");
-        }
+/// Hands the outcome to whoever asked for the save, the save itself having logged any failure.
+fn answer(asker: Option<Saved>, outcome: Result<(), Error>) {
+    if let Some(asker) = asker
+        && asker.send(outcome).is_err()
+    {
+        tracing::debug!("a save finished after its asker stopped waiting");
     }
 }
 
@@ -296,9 +304,10 @@ fn answer_or_warn(asker: Option<Saved>, outcome: Result<(), Error>) {
 mod tests {
     use omnileaf_db::{Config, Database, store::reading_state};
     use omnileaf_testkit::ScratchFolder;
+    use tokio::time::Duration;
 
     use super::*;
-    use crate::{SystemClock, library_book::sample_book_id as book};
+    use crate::{SystemClock, captured_log::CapturedLog, library_book::sample_book_id as book};
 
     const PAGE_COUNT: usize = 8;
     const REFUSE_SAVES: &str = "CREATE TRIGGER refuse_saves BEFORE INSERT ON sync_register
@@ -373,6 +382,81 @@ mod tests {
         keeper.save().await.unwrap();
 
         assert_eq!(position(&keeper, book(1)).await, Some(3));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn waits_twice_as_long_after_each_save_that_fails_up_to_a_minute() {
+        let folder = ScratchFolder::new("progress-backs-off");
+        let mut keeper = keeper(&folder);
+        refuse_saves(&keeper).await;
+        read(&mut keeper, book(1), 3).await;
+
+        let mut waits = Vec::new();
+        for _ in 0..8 {
+            keeper.save().await.unwrap_err();
+            waits.push(keeper.due().unwrap() - Instant::now());
+        }
+
+        let expected = [1_500, 3_000, 6_000, 12_000, 24_000, 48_000, 60_000, 60_000]
+            .map(Duration::from_millis);
+        assert_eq!(waits, expected);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn waits_a_moment_again_once_a_save_lands_after_some_failed() {
+        let folder = ScratchFolder::new("progress-backs-off-again");
+        let mut keeper = keeper(&folder);
+        refuse_saves(&keeper).await;
+        read(&mut keeper, book(1), 3).await;
+        keeper.save().await.unwrap_err();
+        keeper.save().await.unwrap_err();
+        allow_saves(&keeper).await;
+        keeper.save().await.unwrap();
+        refuse_saves(&keeper).await;
+        keeper
+            .hear(Report::Shown {
+                book: book(1),
+                page: 4,
+            })
+            .await;
+
+        keeper.save().await.unwrap_err();
+
+        assert_eq!(
+            keeper.due().map(|due| due - Instant::now()),
+            Some(READING_SAVE_DELAY)
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn warns_once_for_each_run_of_saves_that_fail() {
+        let folder = ScratchFolder::new("progress-warns-once");
+        let mut keeper = keeper(&folder);
+        let log = CapturedLog::default();
+        let _logging = tracing::subscriber::set_default(log.subscriber());
+        refuse_saves(&keeper).await;
+        read(&mut keeper, book(1), 3).await;
+
+        for _ in 0..3 {
+            keeper.save().await.unwrap_err();
+        }
+        allow_saves(&keeper).await;
+        keeper.save().await.unwrap();
+        refuse_saves(&keeper).await;
+        keeper
+            .hear(Report::Shown {
+                book: book(1),
+                page: 4,
+            })
+            .await;
+        keeper.save().await.unwrap_err();
+
+        assert_eq!(
+            log.text().matches(" WARN ").count(),
+            2,
+            "log: {}",
+            log.text()
+        );
     }
 
     #[tokio::test(start_paused = true)]
