@@ -261,7 +261,7 @@ test.describe("with a folder that isn't available", () => {
 });
 
 test.describe("with a folder found empty", () => {
-  const calls = { removed: [] as string[], putBack: [] as string[] };
+  const calls = { removed: [] as string[] };
 
   test.use({
     backend: {
@@ -275,16 +275,11 @@ test.describe("with a folder found empty", () => {
         calls.removed.push(id);
         return { kind: "removed", books: 3 };
       },
-      putBackRemovedBooks: (id) => {
-        calls.putBack.push(id);
-        return true;
-      },
     },
   });
 
   test.beforeEach(() => {
     calls.removed = [];
-    calls.putBack = [];
   });
 
   function removeItsBooks(page: Page): Locator {
@@ -293,7 +288,7 @@ test.describe("with a folder found empty", () => {
       .getByRole("button", { name: "Remove its books" });
   }
 
-  test("offers to remove the folder's books, then puts them back on Undo", async ({
+  test("offers to remove the folder's books, then says how many went", async ({
     page,
   }) => {
     await rescanSampleComics(page);
@@ -302,12 +297,9 @@ test.describe("with a folder found empty", () => {
     );
 
     await removeItsBooks(page).click();
-    await expect(page.getByText("3 books removed")).toBeVisible();
-    await page.getByRole("button", { name: "Undo" }).click();
 
+    await expect(page.getByText("3 books removed")).toBeVisible();
     expect(calls.removed).toEqual([SAMPLE_COMICS.id]);
-    await expect.poll(() => calls.putBack).toEqual([SAMPLE_COMICS.id]);
-    await expect(page.getByText("3 books removed")).toBeHidden();
     await expect(removeItsBooks(page)).toBeHidden();
   });
 
@@ -324,13 +316,13 @@ test.describe("with a folder found empty", () => {
       expect(violations).toEqual([]);
     });
 
-    test(`the offer to undo the removal has no accessibility violations in the ${colorScheme} theme`, async ({
+    test(`the notice of the books removed has no accessibility violations in the ${colorScheme} theme`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme });
       await rescanSampleComics(page);
       await removeItsBooks(page).click();
-      await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
+      await expect(page.getByText("3 books removed")).toBeVisible();
 
       const violations = await accessibilityViolations(page);
 

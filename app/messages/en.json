@@ -329,7 +329,6 @@
     }
   ],
   "library_remove_books_failed": "Couldn't remove the books of {name}. Try again.",
-  "library_put_back_books_failed": "Couldn't put back the books of {name}.",
   "library_folder_unavailable": "Not available",
   "appearance_title": "Appearance",
   "appearance_light_or_dark": "Light or dark",

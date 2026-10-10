@@ -11,10 +11,8 @@ mod support;
 use std::{fs, path::PathBuf};
 
 use books::write_book;
-use omnileaf_db::catalog::{SeriesOrder, series_books, series_page};
 use omnileaf_engine::{BooksRemoval, LibraryFolder, RescanOutcome};
-use omnileaf_sync_proto::BookId;
-use scanned::{Scanned, owned, whole_page};
+use scanned::{Scanned, owned};
 use support::ScratchFolder;
 
 const SERIES_01: &str = "Sample Series 01";
@@ -62,14 +60,6 @@ impl Linked {
             .unwrap()
     }
 
-    async fn put_back(&self) -> bool {
-        self.scanned
-            .library
-            .put_back_removed_books(self.scanned.id)
-            .await
-            .unwrap()
-    }
-
     async fn folder(&self) -> LibraryFolder {
         self.scanned
             .library
@@ -80,21 +70,6 @@ impl Linked {
             .into_iter()
             .find(|folder| folder.id == self.scanned.id)
             .unwrap()
-    }
-
-    fn book_ids(&self) -> Vec<BookId> {
-        let connection = self.scanned.connection();
-        series_page(&connection, SeriesOrder::Title, &whole_page())
-            .unwrap()
-            .items
-            .into_iter()
-            .flat_map(|series| {
-                series_books(&connection, series.id, &whole_page())
-                    .unwrap()
-                    .items
-            })
-            .map(|book| book.id)
-            .collect()
     }
 }
 
@@ -156,60 +131,20 @@ async fn keeps_every_book_of_a_folder_with_a_subfolder_it_cannot_read() {
 }
 
 #[tokio::test]
-async fn puts_back_the_books_it_removed_under_their_own_ids() {
-    let linked = Linked::new("emptied-put-back").await;
-    linked.empty().await;
-    let before = linked.book_ids();
-    linked.remove_books().await;
-
-    let is_put_back = linked.put_back().await;
-
-    assert!(is_put_back);
-    assert_eq!(linked.scanned.series(), every_series());
-    assert_eq!(linked.book_ids(), before);
-    assert_eq!(linked.scanned.books_in(SERIES_01), ["v01", "v02"]);
-    assert!(!linked.folder().await.is_available);
-}
-
-#[tokio::test]
-async fn puts_back_nothing_for_a_folder_whose_books_it_did_not_remove() {
-    let linked = Linked::new("emptied-nothing-kept").await;
-    linked.empty().await;
-
-    let is_put_back = linked.put_back().await;
-
-    assert!(!is_put_back);
-    assert_eq!(linked.scanned.series(), every_series());
-}
-
-#[tokio::test]
-async fn puts_back_the_books_only_once() {
-    let linked = Linked::new("emptied-put-back-once").await;
-    linked.empty().await;
-    linked.remove_books().await;
-    linked.put_back().await;
-
-    let is_put_back_again = linked.put_back().await;
-
-    assert!(!is_put_back_again);
-}
-
-#[tokio::test]
-async fn puts_back_nothing_once_the_folder_holds_books_again() {
-    let linked = Linked::new("emptied-refilled-before-undo").await;
-    linked.empty().await;
-    linked.remove_books().await;
-    write_book(&linked.path(SERIES_01).join("v09.cbz"), 9);
+async fn keeps_a_book_another_folder_also_holds() {
+    let linked = Linked::new("emptied-shared").await;
+    let other = ScratchFolder::new("emptied-shared-other");
+    write_book(&other.path().join(SERIES_01).join("v01.cbz"), 1);
     linked
         .scanned
         .library
-        .rescan_folder(linked.scanned.id, |_| {})
+        .add_folder(other.path().to_path_buf(), |_| {})
         .await
         .unwrap();
+    linked.empty().await;
 
-    let is_put_back = linked.put_back().await;
+    let removal = linked.remove_books().await;
 
-    assert!(!is_put_back);
-    assert_eq!(linked.scanned.series(), owned(&[(SERIES_01, 1)]));
-    assert!(linked.folder().await.is_available);
+    assert_eq!(removal, BooksRemoval::Removed { books: 2 });
+    assert_eq!(linked.scanned.books_in(SERIES_01), ["v01"]);
 }

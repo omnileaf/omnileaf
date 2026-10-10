@@ -17,11 +17,7 @@
   import LinkedFolders from "./LinkedFolders.svelte";
   import RescanButton from "./RescanButton.svelte";
   import type { RescanFolder } from "./rescan-folder";
-  import {
-    type PutBackFolderBooks,
-    type RemoveFolderBooks,
-    Rescans,
-  } from "./rescans.svelte";
+  import { type RemoveFolderBooks, Rescans } from "./rescans.svelte";
   import RescanStatus from "./RescanStatus.svelte";
 
   let {
@@ -31,7 +27,6 @@
     addFolder,
     rescanFolder,
     removeFolderBooks,
-    putBackFolderBooks,
     notices,
     usesStandIns,
     platform,
@@ -42,7 +37,6 @@
     addFolder: AddFolder;
     rescanFolder: RescanFolder;
     removeFolderBooks: RemoveFolderBooks;
-    putBackFolderBooks: PutBackFolderBooks;
     notices: Notices;
     usesStandIns: boolean;
     platform: Platform;
@@ -56,7 +50,6 @@
   const rescans = new Rescans(
     (id, onProgress) => rescanFolder(id, onProgress),
     (id) => removeFolderBooks(id),
-    (id) => putBackFolderBooks(id),
   );
 
   onMount(() => {
@@ -73,21 +66,11 @@
     if (removed === undefined) {
       return;
     }
-    notices.offerUndo({
-      message: m.library_books_removed({ count: removed }),
-      undo: () => {
-        void putBackBooks(folder);
-      },
-    });
+    notices.tell(m.library_books_removed({ count: removed }));
   }
 
   function startRemovingBooks(folder: LibraryFolder): void {
     void removeBooks(folder);
-  }
-
-  async function putBackBooks(folder: LibraryFolder): Promise<void> {
-    await rescans.putBackBooks(folder);
-    void folders.load();
   }
 </script>
 

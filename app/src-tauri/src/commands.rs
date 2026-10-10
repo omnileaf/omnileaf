@@ -39,7 +39,6 @@ macro_rules! app_commands {
             rescan_library_folder,
             rescan_library_folders,
             remove_books_of_emptied_folder,
-            put_back_removed_books,
             first_launch_finished,
             finish_first_launch,
             set_app_language,
@@ -160,15 +159,6 @@ async fn remove_books_of_emptied_folder(
     #[cfg(target_os = "ios")]
     crate::folder_access::reopen_picked_folders(&app, &library).await?;
     Ok(library.remove_books_of_emptied_folder(id).await?)
-}
-
-#[tauri::command]
-#[specta::specta]
-async fn put_back_removed_books(
-    library: State<'_, Library>,
-    id: FolderId,
-) -> Result<bool, IpcError> {
-    Ok(library.put_back_removed_books(id).await?)
 }
 
 fn reporting_to(on_progress: Channel<ScanProgress>) -> impl FnMut(ScanProgress) + Send {

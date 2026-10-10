@@ -43,10 +43,6 @@
         return [
           m.library_remove_books_failed({ name: folderTitle(shown.folder) }),
         ];
-      case "putBackFailed":
-        return [
-          m.library_put_back_books_failed({ name: folderTitle(shown.folder) }),
-        ];
     }
   });
 </script>

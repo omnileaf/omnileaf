@@ -8,7 +8,6 @@ import type { RescanFolder } from "./rescan-folder";
 import { followScan, type ScanStep } from "./scan-step";
 
 export type RemoveFolderBooks = typeof commands.removeBooksOfEmptiedFolder;
-export type PutBackFolderBooks = typeof commands.putBackRemovedBooks;
 
 export type RescanStatus =
   | { readonly kind: "idle" }
@@ -20,7 +19,7 @@ export type RescanStatus =
     }
   | { readonly kind: "failed"; readonly folder: LibraryFolder }
   | {
-      readonly kind: "removingBooks" | "removalFailed" | "putBackFailed";
+      readonly kind: "removingBooks" | "removalFailed";
       readonly folder: LibraryFolder;
     };
 
@@ -31,7 +30,6 @@ export class Rescans {
   constructor(
     private readonly rescanFolder: RescanFolder,
     private readonly removeFolderBooks: RemoveFolderBooks,
-    private readonly putBackFolderBooks: PutBackFolderBooks,
   ) {}
 
   get isBusy(): boolean {
@@ -82,13 +80,5 @@ export class Rescans {
     }
     this.status = { kind: "idle" };
     return result.data.books;
-  }
-
-  /** Counts nothing kept for the folder, as when it holds books again, as failing to put them back. */
-  async putBackBooks(folder: LibraryFolder): Promise<void> {
-    const result = await this.putBackFolderBooks(folder.id);
-    if (result.status === "error" || !result.data) {
-      this.status = { kind: "putBackFailed", folder };
-    }
   }
 }

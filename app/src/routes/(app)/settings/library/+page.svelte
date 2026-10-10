@@ -24,7 +24,6 @@
   addFolder={addFolderWithProgress}
   rescanFolder={rescanFolderWithProgress}
   removeFolderBooks={commands.removeBooksOfEmptiedFolder}
-  putBackFolderBooks={commands.putBackRemovedBooks}
   {notices}
   usesStandIns={screenshotMode.isOn}
   platform={data.appInfo.platform}
