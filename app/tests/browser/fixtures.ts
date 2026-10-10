@@ -60,6 +60,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   firstLaunchFinished: () => true,
   finishFirstLaunch: () => null,
   setAppLanguage: () => null,
+  setScheduledRescans: () => undefined,
   matchSystemBars: () => null,
   copyVersionDetails: () => null,
   openProjectLink: () => null,

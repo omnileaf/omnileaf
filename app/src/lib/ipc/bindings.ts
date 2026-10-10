@@ -29,6 +29,7 @@ export const commands = {
 	firstLaunchFinished: () => typedError<boolean, IpcError>(__TAURI_INVOKE("first_launch_finished")),
 	finishFirstLaunch: () => typedError<null, IpcError>(__TAURI_INVOKE("finish_first_launch")),
 	setAppLanguage: (language: string) => typedError<null, IpcError>(__TAURI_INVOKE("set_app_language", { language })),
+	setScheduledRescans: (isOn: boolean) => __TAURI_INVOKE<void>("set_scheduled_rescans", { isOn }),
 	copyVersionDetails: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_version_details")),
 	openProjectLink: (link: ProjectLink) => typedError<null, IpcError>(__TAURI_INVOKE("open_project_link", { link })),
 	offerSavedCrashReport: () => typedError<{
