@@ -1,6 +1,10 @@
 import { expect, test } from "vitest";
 
-import { historyDays } from "#lib/history/history-days.ts";
+import {
+  type HistoryCalendar,
+  type HistoryDay,
+  historyDays,
+} from "#lib/history/history-days.ts";
 import type { HistoryEntry } from "#lib/ipc/bindings.ts";
 import { bookIdIn } from "#lib/reader/opened-book.ts";
 import type { SeriesId } from "#lib/series/series-id.ts";
@@ -12,6 +16,17 @@ const THIRD = "0190a3e4-0000-8000-8000-0000000000b3";
 const DAY_MS = 86_400_000;
 const NOON_MS = DAY_MS / 2;
 const MONDAY = 20_731;
+const WEDNESDAY = MONDAY + 2;
+const ON_MONDAY: HistoryCalendar = { today: MONDAY, weekStart: MONDAY };
+const ON_WEDNESDAY: HistoryCalendar = { today: WEDNESDAY, weekStart: MONDAY };
+
+function summed(days: readonly HistoryDay[]): unknown[] {
+  return days.map((day) => [
+    day.title,
+    day.readSeconds,
+    day.entries.map((one) => one.book),
+  ]);
+}
 const SERIES = "0190a3e4-0000-8000-8000-0000000000a1" as SeriesId;
 
 function entry(
@@ -40,7 +55,7 @@ function entry(
 }
 
 test("has no days without sessions", () => {
-  const days = historyDays([]);
+  const days = historyDays([], ON_MONDAY);
 
   expect(days).toEqual([]);
 });
@@ -49,20 +64,14 @@ test("gathers the sessions of each day in the order they are listed", () => {
   const listed = [
     entry(THIRD, MONDAY, 900),
     entry(SECOND, MONDAY, 900),
-    entry(FIRST, MONDAY - 2, 300),
+    entry(FIRST, MONDAY - 14, 300),
   ];
 
-  const days = historyDays(listed);
+  const days = historyDays(listed, ON_MONDAY);
 
-  expect(
-    days.map((day) => [
-      day.day,
-      day.readSeconds,
-      day.entries.map((one) => one.book),
-    ]),
-  ).toEqual([
-    [MONDAY, 900, [THIRD, SECOND]],
-    [MONDAY - 2, 300, [FIRST]],
+  expect(summed(days)).toEqual([
+    [{ kind: "day", day: MONDAY }, 900, [THIRD, SECOND]],
+    [{ kind: "day", day: MONDAY - 14 }, 300, [FIRST]],
   ]);
 });
 
@@ -73,7 +82,43 @@ test("keeps a day apart from a later run of the same day, as sessions read in ot
     entry(FIRST, MONDAY, 900),
   ];
 
-  const days = historyDays(listed);
+  const days = historyDays(listed, ON_MONDAY);
 
-  expect(days.map((day) => day.day)).toEqual([MONDAY, MONDAY - 1, MONDAY]);
+  expect(days.map((day) => day.title)).toEqual([
+    { kind: "day", day: MONDAY },
+    { kind: "day", day: MONDAY - 1 },
+    { kind: "day", day: MONDAY },
+  ]);
+});
+
+test("gathers the days of the week before this one into last week, adding up the time read on each", () => {
+  const listed = [
+    entry(THIRD, MONDAY, 900),
+    entry(SECOND, MONDAY - 2, 600),
+    entry(FIRST, MONDAY - 2, 600),
+    entry(FIRST, MONDAY - 7, 300),
+    entry(SECOND, MONDAY - 8, 120),
+  ];
+
+  const days = historyDays(listed, ON_WEDNESDAY);
+
+  expect(summed(days)).toEqual([
+    [{ kind: "day", day: MONDAY }, 900, [THIRD]],
+    [{ kind: "lastWeek" }, 900, [SECOND, FIRST, FIRST]],
+    [{ kind: "day", day: MONDAY - 8 }, 120, [SECOND]],
+  ]);
+});
+
+test("keeps yesterday a day of its own when this week starts today", () => {
+  const listed = [
+    entry(THIRD, MONDAY - 1, 600),
+    entry(SECOND, MONDAY - 3, 300),
+  ];
+
+  const days = historyDays(listed, ON_MONDAY);
+
+  expect(summed(days)).toEqual([
+    [{ kind: "day", day: MONDAY - 1 }, 600, [THIRD]],
+    [{ kind: "lastWeek" }, 300, [SECOND]],
+  ]);
 });

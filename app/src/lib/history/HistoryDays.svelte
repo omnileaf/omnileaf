@@ -1,47 +1,76 @@
 <script lang="ts">
   import { dayName } from "#lib/history/day-name.ts";
-  import { historyDays } from "#lib/history/history-days.ts";
+  import {
+    type HistoryCalendar,
+    type HistoryDayTitle,
+    historyDays,
+  } from "#lib/history/history-days.ts";
   import HistoryRow from "#lib/history/HistoryRow.svelte";
-  import type { LocalDay } from "#lib/history/local-date.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
+  import {
+    startedAtTime,
+    startedAtWeekdayTime,
+  } from "#lib/history/started-at.ts";
   import type { HistoryEntry } from "#lib/ipc/bindings.ts";
   import { whenInView } from "#lib/paging/in-view.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
   let {
     entries,
     isComplete,
-    today,
+    calendar,
     usesStandIns,
     onNearEnd,
   }: {
     entries: readonly HistoryEntry[];
     isComplete: boolean;
-    today: LocalDay;
+    calendar: HistoryCalendar;
     usesStandIns: boolean;
     onNearEnd: () => void;
   } = $props();
 
   const locale = getLocale();
   const headingId = $props.id();
-  const days = $derived(historyDays(entries));
+  const days = $derived(historyDays(entries, calendar));
+
+  function nameOf(title: HistoryDayTitle): string {
+    return title.kind === "lastWeek"
+      ? m.history_last_week()
+      : dayName(title.day, calendar, locale);
+  }
+
+  function keyOf(title: HistoryDayTitle, index: number): string {
+    return `${title.kind === "lastWeek" ? title.kind : String(title.day)}-${String(index)}`;
+  }
+
+  /** Last week gathers several days under one heading, so its times carry their weekday. */
+  function timeFormatOf(
+    title: HistoryDayTitle,
+  ): (entry: HistoryEntry, locale: string) => string {
+    return title.kind === "lastWeek" ? startedAtWeekdayTime : startedAtTime;
+  }
 </script>
 
 <div class="flex flex-col gap-history-days large:gap-history-days-wide">
-  {#each days as day, index (`${String(day.day)}-${String(index)}`)}
+  {#each days as day, index (keyOf(day.title, index))}
     <section aria-labelledby={`${headingId}-${String(index)}`}>
       <h2
         id={`${headingId}-${String(index)}`}
         class="mbe-2xs flex items-baseline justify-between gap-sm text-lead font-bold large:justify-start large:text-small"
       >
-        <span>{dayName(day.day, today, locale)}</span>
+        <span>{nameOf(day.title)}</span>
         <span class="text-detail font-regular text-muted large:font-medium">
           {readingTime(day.readSeconds)}
         </span>
       </h2>
       <ul>
         {#each day.entries as entry (`${entry.book}-${String(entry.startedAtMs)}`)}
-          <HistoryRow {entry} {locale} {usesStandIns} />
+          <HistoryRow
+            {entry}
+            time={timeFormatOf(day.title)(entry, locale)}
+            {usesStandIns}
+          />
         {/each}
       </ul>
     </section>

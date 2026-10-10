@@ -253,6 +253,7 @@
   "history_read_this_week": "{duration} read this week",
   "history_today": "Today",
   "history_yesterday": "Yesterday",
+  "history_last_week": "Last week",
   "history_read_to_page": [
     {
       "declarations": [

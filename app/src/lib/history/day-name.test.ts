@@ -1,12 +1,15 @@
 import { expect, test } from "vitest";
 
 import { dayName } from "#lib/history/day-name.ts";
+import type { HistoryCalendar } from "#lib/history/history-days.ts";
 
 const MONDAY = 20_731;
 const LOCALE = "en-US";
+const ON_MONDAY: HistoryCalendar = { today: MONDAY, weekStart: MONDAY };
+const ON_THURSDAY: HistoryCalendar = { today: MONDAY + 3, weekStart: MONDAY };
 
 function named(daysAgo: number): string {
-  return dayName(MONDAY - daysAgo, MONDAY, LOCALE);
+  return dayName(MONDAY - daysAgo, ON_MONDAY, LOCALE);
 }
 
 test("calls today and the day before by name", () => {
@@ -15,16 +18,22 @@ test("calls today and the day before by name", () => {
   expect(names).toEqual(["Today", "Yesterday"]);
 });
 
-test("calls the other days of the week before by their weekday", () => {
-  const names = [named(2), named(6)];
+test("calls the other days of this week by their weekday", () => {
+  const names = [MONDAY, MONDAY + 1].map((day) =>
+    dayName(day, ON_THURSDAY, LOCALE),
+  );
 
-  expect(names).toEqual(["Saturday", "Tuesday"]);
+  expect(names).toEqual(["Monday", "Tuesday"]);
 });
 
-test("gives a day a week or more before its date", () => {
-  const names = [named(7), named(264)];
+test("gives a day before this week its date", () => {
+  const names = [named(2), named(7), named(264)];
 
-  expect(names).toEqual(["Monday, September 28", "Wednesday, January 14"]);
+  expect(names).toEqual([
+    "Saturday, October 3",
+    "Monday, September 28",
+    "Wednesday, January 14",
+  ]);
 });
 
 test("gives the year of a day in another year", () => {
@@ -40,7 +49,7 @@ test("gives the date of a day after today, which only a clock set back reaches",
 });
 
 test("writes the date the way the locale does", () => {
-  const name = dayName(MONDAY - 7, MONDAY, "en-GB");
+  const name = dayName(MONDAY - 7, ON_MONDAY, "en-GB");
 
   expect(name).toBe("Monday 28 September");
 });

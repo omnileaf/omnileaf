@@ -1,19 +1,19 @@
+import type { HistoryCalendar } from "#lib/history/history-days.ts";
 import type { LocalDay } from "#lib/history/local-date.ts";
 import { m } from "#lib/paraglide/messages.js";
 
 const MS_PER_DAY = 86_400_000;
 const NOON_MS = MS_PER_DAY / 2;
-const DAYS_NAMED_BY_WEEKDAY = 6;
 
 /** Noon UTC of a day, which every zone's formatter puts on the same day once told the zone is UTC. */
 function noonUtcOf(day: LocalDay): Date {
   return new Date(day * MS_PER_DAY + NOON_MS);
 }
 
-/** What History calls a day: today, yesterday, a weekday within the week before, or else its date. */
+/** What History calls a day: today, yesterday, a weekday within this week, or else its date. */
 export function dayName(
   day: LocalDay,
-  today: LocalDay,
+  { today, weekStart }: HistoryCalendar,
   locale: string,
 ): string {
   const daysAgo = today - day;
@@ -24,7 +24,7 @@ export function dayName(
     return m.history_yesterday();
   }
   const noon = noonUtcOf(day);
-  if (daysAgo > 1 && daysAgo <= DAYS_NAMED_BY_WEEKDAY) {
+  if (daysAgo > 1 && day >= weekStart) {
     return new Intl.DateTimeFormat(locale, {
       weekday: "long",
       timeZone: "UTC",
