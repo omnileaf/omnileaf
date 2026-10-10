@@ -279,6 +279,23 @@ test("reads the address of the page shown", async () => {
   expect(url).toBe("about:blank");
 });
 
+test("goes back a page as the system's back gesture does", async () => {
+  const routes: string[] = [];
+  const server = await serve((route, response) => {
+    routes.push(route);
+    if (route === "POST /session") {
+      reply(response, 200, { sessionId: "1", capabilities: {} });
+    } else {
+      reply(response, 200, null);
+    }
+  });
+  const session = await Session.start(server, {});
+
+  await session.back();
+
+  expect(routes).toContain("POST /session/1/back");
+});
+
 test("describes the page by its address, title and text", () => {
   const description = describePage({
     url: "http://tauri.localhost/",

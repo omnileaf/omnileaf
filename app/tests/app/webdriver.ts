@@ -325,6 +325,10 @@ export class Session {
     );
   }
 
+  async back(): Promise<void> {
+    await send(`${this.endpoint}/back`, "POST", {});
+  }
+
   async end(): Promise<void> {
     await send(this.endpoint, "DELETE");
   }
