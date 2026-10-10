@@ -30,7 +30,7 @@ export interface WireOpening {
   readonly startPage: number;
 }
 
-const NOT_STARTED: WireOpening = {
+export const NOT_STARTED: WireOpening = {
   reading: { state: "notStarted" },
   startPage: 0,
 };
