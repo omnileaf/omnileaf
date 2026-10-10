@@ -201,7 +201,7 @@ impl Pages {
             let shared = Arc::clone(&self.shared);
             let reading = opened.clone();
             self.lane
-                .read_page(move || shared.serve(&reading, page))
+                .read_page(page.path, move || shared.serve(&reading, page))
                 .await??
         };
         self.read_ahead(&opened, page.index.saturating_add(1));

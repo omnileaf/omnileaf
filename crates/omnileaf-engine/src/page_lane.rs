@@ -1,8 +1,11 @@
-use std::{collections::VecDeque, io, num::NonZeroUsize};
+use std::{cmp::Reverse, collections::VecDeque, io, num::NonZeroUsize};
 
 use tokio::sync::oneshot;
 
-use crate::lane::{Job, JobQueue, Lane, LaneStopped, answered};
+use crate::{
+    PagePath,
+    lane::{Job, JobQueue, Lane, LaneStopped, answered},
+};
 
 /// Room for every page the reader keeps around the one it shows, so only pages it left well behind are dropped.
 pub(crate) const ASKED_PAGES_WAITING: usize = 8;
@@ -17,7 +20,10 @@ pub(crate) struct ByUrgency {
     prefetch: VecDeque<Job>,
 }
 
-type AskedPage = Box<dyn FnOnce(Fate) + Send>;
+struct AskedPage {
+    path: PagePath,
+    answer: Box<dyn FnOnce(Fate) + Send>,
+}
 
 enum Fate {
     Read,
@@ -39,21 +45,35 @@ impl JobQueue for ByUrgency {
             .or_else(|| {
                 self.asked_pages
                     .pop_front()
-                    .map(|asked| -> Job { Box::new(move || asked(Fate::Read)) })
+                    .map(|asked| -> Job { Box::new(move || (asked.answer)(Fate::Read)) })
             })
             .or_else(|| self.prefetch.pop_front())
     }
 }
 
 impl ByUrgency {
-    /// Queues the page, handing back the oldest page waiting when it no longer fits.
+    /// Queues the page, handing back the page waiting furthest from it, the oldest of those as far, when it no longer fits.
     fn ask(&mut self, page: AskedPage) -> Option<AskedPage> {
+        let newest = page.path;
         self.asked_pages.push_back(page);
-        if self.asked_pages.len() > ASKED_PAGES_WAITING {
-            self.asked_pages.pop_front()
-        } else {
-            None
+        if self.asked_pages.len() <= ASKED_PAGES_WAITING {
+            return None;
         }
+        let (furthest, _) = self
+            .asked_pages
+            .iter()
+            .enumerate()
+            .max_by_key(|(position, asked)| (distance(asked.path, newest), Reverse(*position)))?;
+        self.asked_pages.remove(furthest)
+    }
+}
+
+/// How many pages apart two pages are, a page of another book or revision counting as furthest of all.
+fn distance(page: PagePath, from: PagePath) -> u32 {
+    if page.book == from.book && page.rev == from.rev {
+        page.index.abs_diff(from.index)
+    } else {
+        u32::MAX
     }
 }
 
@@ -76,9 +96,10 @@ impl PageLane {
         answer
     }
 
-    /// Queues the reading of a page behind the pages asked for before it, dropping the oldest still waiting once more than [`ASKED_PAGES_WAITING`] wait.
+    /// Queues the reading of a page behind the pages asked for before it, dropping the one furthest from it once more than [`ASKED_PAGES_WAITING`] wait.
     pub(crate) fn read_page<T, F>(
         &self,
+        path: PagePath,
         read: F,
     ) -> impl Future<Output = Result<T, AskedPageError>> + use<T, F>
     where
@@ -86,7 +107,7 @@ impl PageLane {
         F: FnOnce() -> T + Send + 'static,
     {
         let (sender, receiver) = oneshot::channel();
-        let asked: AskedPage = Box::new(move |fate| {
+        let answer: Box<dyn FnOnce(Fate) + Send> = Box::new(move |fate| {
             if sender.is_closed() {
                 return;
             }
@@ -98,8 +119,8 @@ impl PageLane {
                 tracing::trace!("the caller stopped waiting while its page was read");
             }
         });
-        if let Some(superseded) = self.0.queue(|queue| queue.ask(asked)) {
-            superseded(Fate::Superseded);
+        if let Some(superseded) = self.0.queue(|queue| queue.ask(AskedPage { path, answer })) {
+            (superseded.answer)(Fate::Superseded);
         }
         async move { receiver.await.map_err(|_| LaneStopped)? }
     }
@@ -116,6 +137,8 @@ mod tests {
         sync::{Arc, Mutex, mpsc},
         time::Duration,
     };
+
+    use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
 
     use super::*;
 
@@ -139,6 +162,18 @@ mod tests {
         });
         has_started.recv_timeout(WAIT).unwrap();
         (release, occupied)
+    }
+
+    fn book(crc32: u32) -> BookId {
+        BookId::local(&Fingerprint::pmf1([ImageEntry { crc32, size: 1 }]).unwrap())
+    }
+
+    fn page_of(book: BookId, index: u32) -> PagePath {
+        PagePath {
+            book,
+            rev: 1,
+            index,
+        }
     }
 
     fn noting(ran: &Ran, name: &'static str) -> impl FnOnce() + Send + 'static {
@@ -187,15 +222,18 @@ mod tests {
         let lane = PageLane::start("page-lane-burst", ONE_WORKER).unwrap();
         let (release, _occupied) = occupy(&lane);
         let read = Arc::new(Mutex::new(Vec::new()));
+        let shown = book(1);
         let burst: Vec<_> = (0..50)
             .map(|page| {
                 let read = Arc::clone(&read);
-                lane.read_page(move || read.lock().unwrap().push(page))
+                lane.read_page(page_of(shown, page), move || {
+                    read.lock().unwrap().push(page);
+                })
             })
             .collect();
         let newest = {
             let read = Arc::clone(&read);
-            lane.read_page(move || read.lock().unwrap().push(50))
+            lane.read_page(page_of(shown, 50), move || read.lock().unwrap().push(50))
         };
 
         drop(release);
@@ -207,9 +245,40 @@ mod tests {
                 superseded += 1;
             }
         }
-        let kept = 51 - ASKED_PAGES_WAITING;
+        let kept = 51 - u32::try_from(ASKED_PAGES_WAITING).unwrap();
         assert_eq!(*read.lock().unwrap(), (kept..=50).collect::<Vec<_>>());
-        assert_eq!(superseded, kept);
+        assert_eq!(superseded, usize::try_from(kept).unwrap());
+    }
+
+    #[tokio::test]
+    async fn drops_the_page_furthest_from_the_one_asked_for_last_when_too_many_wait() {
+        let lane = PageLane::start("page-lane-furthest", ONE_WORKER).unwrap();
+        let (release, _occupied) = occupy(&lane);
+        let shown = book(1);
+        let read = Arc::new(Mutex::new(Vec::new()));
+        let asked: Vec<_> = [3, 20, 21, 22, 23, 24, 25, 26, 4]
+            .into_iter()
+            .map(|page| {
+                let read = Arc::clone(&read);
+                (
+                    page,
+                    lane.read_page(page_of(shown, page), move || {
+                        read.lock().unwrap().push(page);
+                    }),
+                )
+            })
+            .collect();
+
+        drop(release);
+
+        let mut superseded = Vec::new();
+        for (page, answer) in asked {
+            if let Err(AskedPageError::Superseded) = answer.await {
+                superseded.push(page);
+            }
+        }
+        assert_eq!(superseded, [26]);
+        assert_eq!(*read.lock().unwrap(), [3, 20, 21, 22, 23, 24, 25, 4]);
     }
 
     #[tokio::test]
@@ -219,7 +288,7 @@ mod tests {
         let ran = Ran::default();
         let (ahead, finished) = prefetching_until_done(&ran, &["ahead 1"]);
         lane.prefetch(ahead);
-        let asked = lane.read_page(noting(&ran, "asked"));
+        let asked = lane.read_page(page_of(book(1), 0), noting(&ran, "asked"));
 
         drop(release);
 
