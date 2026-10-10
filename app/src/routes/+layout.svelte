@@ -32,6 +32,10 @@
     screenshotModeForDocument,
     setScreenshotMode,
   } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import {
+    scheduledRescansSettingForDocument,
+    setScheduledRescansSetting,
+  } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
   import ScreenshotModeAnnouncement from "#lib/screenshot-mode/ScreenshotModeAnnouncement.svelte";
   import {
     isScreenshotModeShortcut,
@@ -52,6 +56,9 @@
   );
   const crashReporting = setCrashReporting(
     new CrashReporting(commands, crashReportSetting),
+  );
+  const scheduledRescans = setScheduledRescansSetting(
+    scheduledRescansSettingForDocument(),
   );
   setNotices(new Notices());
   const screenshotModeShortcut = $derived(
@@ -79,6 +86,14 @@
 
   $effect(() => {
     void commands.setAppLanguage(language.resolved);
+  });
+
+  $effect(() => {
+    if (data.libraryProblem === null) {
+      void commands.setScheduledRescans(
+        scheduledRescans.isOnFor(data.appInfo.platform),
+      );
+    }
   });
 
   const opening = new LinkOpening(commands.openProjectLink);
