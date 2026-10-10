@@ -66,11 +66,15 @@
       <span class="truncate text-lead font-semibold">{entry.seriesTitle}</span>
       <span class="text-detail text-muted">{readTo}</span>
     </span>
-    <span class="shrink-0 text-detail text-muted inline-history-time">
+    <span
+      class="shrink-0 text-detail whitespace-nowrap text-muted min-inline-history-time"
+    >
       <span class="sr-only">{m.history_started_at({ time })}</span>
       <span aria-hidden="true">{time}</span>
     </span>
-    <span class="shrink-0 text-detail text-muted inline-history-length">
+    <span
+      class="shrink-0 text-detail whitespace-nowrap text-muted min-inline-history-length"
+    >
       {m.history_read_for({ duration: readFor })}
     </span>
     <a
