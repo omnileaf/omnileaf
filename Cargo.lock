@@ -3192,6 +3192,7 @@ version = "0.0.0"
 dependencies = [
  "objc2-foundation",
  "omnileaf-db",
+ "omnileaf-edge-swipe",
  "omnileaf-engine",
  "omnileaf-folder-access",
  "omnileaf-system-bars",
@@ -3239,6 +3240,16 @@ dependencies = [
  "tokio",
  "tracing",
  "unicode-normalization",
+]
+
+[[package]]
+name = "omnileaf-edge-swipe"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "specta",
+ "tauri",
+ "tauri-plugin",
 ]
 
 [[package]]

@@ -17,6 +17,7 @@ e2e = ["dep:tauri-plugin-wdio-webdriver"]
 tauri-build.workspace = true
 
 [dependencies]
+omnileaf-edge-swipe.workspace = true
 omnileaf-engine.workspace = true
 os_info.workspace = true
 serde.workspace = true
