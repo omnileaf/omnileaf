@@ -258,3 +258,89 @@ fn reports_a_page_index_past_the_end() {
         "{error:?}"
     );
 }
+
+#[cfg(unix)]
+#[test]
+fn skips_an_image_linked_into_a_folder() {
+    let scratch = ScratchFolder::new("folder-link");
+    let elsewhere = scratch.write("Elsewhere/2.png", &page(1));
+    scratch.write("Chapter/1.png", &page(0));
+    std::os::unix::fs::symlink(elsewhere, scratch.path().join("Chapter/2.png")).unwrap();
+
+    let names = page_names(&scratch.path().join("Chapter"));
+
+    assert_eq!(names, ["1.png"]);
+}
+
+#[test]
+fn refuses_a_folder_with_more_entries_than_the_limit() {
+    let scratch = ScratchFolder::new("folder-entries");
+    for index in 0..3 {
+        scratch.write(&format!("Chapter/{index}.png"), &page(index));
+    }
+    let limits = Limits {
+        max_entries: 2,
+        ..Limits::default()
+    };
+
+    let error = open_book_with(&scratch.path().join("Chapter"), &limits).unwrap_err();
+
+    assert!(
+        matches!(error, FormatError::TooManyEntries { count: 3, .. }),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn refuses_a_folder_page_larger_than_the_limit() {
+    let scratch = ScratchFolder::new("folder-page-size");
+    scratch.write("Chapter/1.png", &page(0));
+    let limits = Limits {
+        max_page_bytes: 64,
+        ..Limits::default()
+    };
+
+    let error = open_book_with(&scratch.path().join("Chapter"), &limits).unwrap_err();
+
+    assert!(
+        matches!(error, FormatError::PageTooLarge { .. }),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn refuses_a_folder_holding_more_bytes_in_total_than_the_limit() {
+    let scratch = ScratchFolder::new("folder-total");
+    scratch.write("Chapter/1.png", &page(0));
+    scratch.write("Chapter/2.png", &page(1));
+    let limits = Limits {
+        max_total_bytes: u64::try_from(page(0).len()).unwrap() + 1,
+        ..Limits::default()
+    };
+
+    let error = open_book_with(&scratch.path().join("Chapter"), &limits).unwrap_err();
+
+    assert!(
+        matches!(error, FormatError::TooLargeInTotal { .. }),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn refuses_a_folder_page_that_grew_past_the_limit_after_opening() {
+    let scratch = ScratchFolder::new("folder-grown");
+    let file = scratch.write("Chapter/1.png", &[0; 16]);
+    let limits = Limits {
+        max_page_bytes: 64,
+        ..Limits::default()
+    };
+    let mut book = open_book_with(&scratch.path().join("Chapter"), &limits).unwrap();
+    std::fs::write(file, [0; 65]).unwrap();
+
+    let error = book.read_page(0).unwrap_err();
+
+    assert!(
+        matches!(error, FormatError::PageTooLarge { .. }),
+        "{error:?}"
+    );
+}

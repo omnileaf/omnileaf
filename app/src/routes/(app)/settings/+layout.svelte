@@ -2,13 +2,11 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { m } from "#lib/paraglide/messages.js";
-  import { sectionCurrent, settingsGroups } from "#lib/settings/sections.ts";
+  import { SETTINGS_GROUPS, sectionCurrent } from "#lib/settings/sections.ts";
 
   import type { LayoutProps } from "./$types";
 
-  let { data, children }: LayoutProps = $props();
-
-  const groups = $derived(settingsGroups(data.appInfo));
+  let { children }: LayoutProps = $props();
 
   const ICON_SIZE = 18;
 </script>
@@ -25,7 +23,7 @@
       {m.settings_title()}
     </p>
     <nav aria-label={m.settings_sections_label()} class="flex flex-col gap-lg">
-      {#each groups as group, index (index)}
+      {#each SETTINGS_GROUPS as group, index (index)}
         <ul class="flex flex-col gap-2xs">
           {#each group as section (section.route)}
             {@const current = sectionCurrent(

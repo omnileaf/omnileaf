@@ -153,6 +153,8 @@
   "library_choose_another_folder": "Choose another folder",
   "library_folder_picker_unavailable_title": "Adding folders isn't available on this device yet",
   "library_folder_picker_unavailable_body": "It's coming in a later version of Omnileaf.",
+  "library_folder_chooser_missing_title": "Couldn't open a folder chooser",
+  "library_folder_chooser_missing_body": "Omnileaf opens folders through xdg-desktop-portal. Install it and the portal for your desktop, such as xdg-desktop-portal-gnome, xdg-desktop-portal-kde or xdg-desktop-portal-gtk. Your library hasn't changed.",
   "library_add_folder_failed_title": "Couldn't add the folder",
   "library_add_folder_failed_body": "Something went wrong inside Omnileaf. Your library hasn't changed.",
   "library_add_folder_try_again": "Try again",

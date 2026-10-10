@@ -68,8 +68,8 @@ pub(crate) async fn rescan(
     if looks_unplugged(target.kind, &layout, &stored) {
         return Ok(RescanOutcome::FoundEmpty);
     }
-    let folder = target.folder.clone();
-    let (mut plan, to_read) = spawn_blocking(move || Plan::new(&folder, layout, stored)).await?;
+    let planning = target.clone();
+    let (mut plan, to_read) = spawn_blocking(move || Plan::new(&planning, layout, stored)).await?;
     record_changed(database, &target, &mut plan, to_read, on_progress).await?;
     let (changes, forgetting) = plan.finish();
     carry_reading_states(store, forgetting.replaced.clone()).await?;

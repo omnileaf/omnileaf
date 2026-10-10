@@ -40,6 +40,12 @@ const FAILURES = {
     body: m.library_folder_picker_unavailable_body,
     retry: undefined,
   },
+  folderChooserMissing: {
+    icon: FolderX,
+    title: m.library_folder_chooser_missing_title,
+    body: m.library_folder_chooser_missing_body,
+    retry: m.library_add_folder_try_again,
+  },
   folderNotFound: ADDING_FAILED,
   homeFolderKept: ADDING_FAILED,
   clipboardUnavailable: ADDING_FAILED,

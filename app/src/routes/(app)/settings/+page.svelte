@@ -55,7 +55,9 @@
       text: languageName(getLocale()),
       lang: getLocale(),
     },
-    "/(app)/settings/advanced": { text: m.advanced_summary() },
+    ...(data.appInfo.isDevelopmentBuild && {
+      "/(app)/settings/advanced": { text: m.advanced_summary() },
+    }),
     "/(app)/settings/about": {
       text: m.app_version({ version: data.appInfo.version }),
     },
@@ -65,6 +67,6 @@
 <div class="two-pane:hidden">
   <PageHeading title={m.settings_title()} />
   <div class="mbs-lg">
-    <SettingsIndex app={data.appInfo} {summaries} />
+    <SettingsIndex {summaries} />
   </div>
 </div>

@@ -5,7 +5,6 @@ import { render } from "vitest-browser-svelte";
 import SettingsIndex from "./SettingsIndex.svelte";
 
 const PROPS = {
-  app: { isDevelopmentBuild: false },
   summaries: {
     "/(app)/settings/appearance": { text: "Follows the system" },
     "/(app)/settings/about": { text: "Version 1.2.3" },
@@ -29,15 +28,6 @@ test("groups Library, Appearance, Privacy and security and General together", as
       .toBeVisible();
   }
   expect(group.getByRole("listitem").elements()).toHaveLength(4);
-});
-
-test("keeps About in a group of its own", async () => {
-  await render(SettingsIndex, PROPS);
-
-  const group = groupHolding("About");
-
-  await expect.element(group).toBeVisible();
-  expect(group.getByRole("listitem").elements()).toHaveLength(1);
 });
 
 test("shows a section's summary under its name", async () => {
@@ -65,8 +55,8 @@ test("names a section without a summary by its title alone", async () => {
     .toBeVisible();
 });
 
-test("lists Advanced above About in a development build", async () => {
-  await render(SettingsIndex, { ...PROPS, app: { isDevelopmentBuild: true } });
+test("lists Advanced above About", async () => {
+  await render(SettingsIndex, PROPS);
 
   const group = groupHolding("About");
   const links = group.getByRole("link");
@@ -74,15 +64,4 @@ test("lists Advanced above About in a development build", async () => {
   await expect.element(links.nth(0)).toHaveAccessibleName("Advanced");
   await expect.element(links.nth(1)).toHaveAccessibleName(/^About/);
   expect(links.elements()).toHaveLength(2);
-});
-
-test("leaves Advanced out of a release build", async () => {
-  const screen = await render(SettingsIndex, PROPS);
-
-  await expect
-    .element(screen.getByRole("link", { name: /^About/ }))
-    .toBeVisible();
-  expect(screen.getByRole("link", { name: /^Advanced/ }).elements()).toEqual(
-    [],
-  );
 });

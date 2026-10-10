@@ -1,4 +1,7 @@
-use std::{fmt, io, path::PathBuf};
+use std::{
+    fmt, io,
+    path::{Path, PathBuf},
+};
 
 use omnileaf_sync_proto::FingerprintError;
 
@@ -68,4 +71,11 @@ pub enum FormatError {
         path: PathBuf,
         source: FingerprintError,
     },
+}
+
+pub(crate) fn read_failed(path: &Path) -> impl FnOnce(io::Error) -> FormatError {
+    move |source| FormatError::Read {
+        path: path.to_owned(),
+        source,
+    }
 }

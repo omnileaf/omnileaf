@@ -11,6 +11,8 @@ pub(crate) fn pick_folder(app: &AppHandle) -> Result<Option<RootLocator>, IpcErr
     if let Some(folder) = crate::e2e::picked_folder(app) {
         return Ok(Some(folder.into()));
     }
+    #[cfg(target_os = "linux")]
+    crate::folder_chooser::require_installed_folder_chooser()?;
     app.dialog()
         .file()
         .blocking_pick_folder()

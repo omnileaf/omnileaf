@@ -10,9 +10,11 @@ import {
   accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
+  EXPANDED_MIN_WIDTH,
   expect,
   fakeAppInfo,
   MEDIUM_MIN_WIDTH,
+  onPlatform,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -102,6 +104,23 @@ function lookOf(page: Page, platform: Platform): Look {
   return viewportOf(page).width < MEDIUM_MIN_WIDTH ? "phone" : "touchPane";
 }
 
+function sectionsHoldingAbout(page: Page): Locator {
+  return page
+    .getByRole("list")
+    .filter({ has: page.getByRole("link", { name: /^About/ }) })
+    .filter({ visible: true });
+}
+
+function showsSummaries(page: Page, platform: Platform): boolean {
+  const besideFrom =
+    platform === "linux" ? MEDIUM_MIN_WIDTH : EXPANDED_MIN_WIDTH;
+  return viewportOf(page).width < besideFrom;
+}
+
+function advancedSummaryRow(page: Page): Locator {
+  return page.getByRole("main").getByRole("link", { name: /^Advanced/ });
+}
+
 function crashTests(page: Page): Locator {
   return page.getByRole("region", { name: "Crash reports" });
 }
@@ -137,15 +156,24 @@ for (const platform of ["android", "ios", "linux"] as const) {
     test("lists Advanced just above About", async ({ page }) => {
       await page.goto("/settings");
 
-      const group = page
-        .getByRole("list")
-        .filter({ has: page.getByRole("link", { name: /^About/ }) })
-        .filter({ visible: true });
+      const group = sectionsHoldingAbout(page);
 
       await expect(group.getByRole("link").first()).toHaveAccessibleName(
         /^Advanced/,
       );
       await expect(group.getByRole("link")).toHaveCount(2);
+    });
+
+    test("summarises Advanced as a development build", async ({ page }) => {
+      await page.goto("/settings");
+      test.skip(
+        !showsSummaries(page, platform),
+        "settings opens its first section beside the list",
+      );
+
+      const advanced = advancedSummaryRow(page);
+
+      await expect(advanced).toContainText("Development build");
     });
 
     test("heads the page Advanced, under a note that it never ships", async ({
@@ -366,28 +394,65 @@ test.describe("the crash question on a phone", () => {
   });
 });
 
-test.describe("in a release build", () => {
-  test.use({ backend: DEFAULT_BACKEND });
+for (const platform of ["android", "ios", "linux"] as const) {
+  test.describe(`in a release build on ${platform}`, () => {
+    test.use(onPlatform(platform));
 
-  test("leaves Advanced out of Settings", async ({ page }) => {
-    await page.goto("/settings/about");
+    test("lists Advanced just above About", async ({ page }) => {
+      await page.goto("/settings");
 
-    await expect(
-      page.getByRole("heading", { level: 1, name: "About" }),
-    ).toBeVisible();
-    await expect(page.getByRole("link", { name: /^Advanced/ })).toHaveCount(0);
+      const group = sectionsHoldingAbout(page);
+
+      await expect(group.getByRole("link").first()).toHaveAccessibleName(
+        /^Advanced/,
+      );
+      await expect(group.getByRole("link")).toHaveCount(2);
+    });
+
+    test("gives Advanced no summary", async ({ page }) => {
+      await page.goto("/settings");
+      test.skip(
+        !showsSummaries(page, platform),
+        "settings opens its first section beside the list",
+      );
+
+      const advanced = advancedSummaryRow(page);
+
+      await expect(advanced).toHaveAccessibleName("Advanced");
+    });
+
+    test("opens Advanced without the development build note or the crash tests", async ({
+      page,
+    }) => {
+      await page.goto("/settings/advanced");
+
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Advanced" }),
+      ).toBeVisible();
+      await expect(page.getByRole("note")).toHaveCount(0);
+      await expect(
+        page.getByRole("region", { name: "Crash reports" }),
+      ).toHaveCount(0);
+    });
   });
+}
 
-  test("treats the Advanced address as a page that doesn't exist", async ({
-    page,
-  }) => {
-    await page.goto("/settings/advanced");
+test.describe("the Advanced page of a release build", () => {
+  test.use(onPlatform("linux"));
 
-    await expect(
-      page.getByRole("heading", { name: "This page doesn't exist" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("region", { name: "Crash reports" }),
-    ).toHaveCount(0);
-  });
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/settings/advanced");
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Advanced" }),
+      ).toBeVisible();
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
 });

@@ -14,6 +14,11 @@ pub(crate) enum IpcErrorCode {
         expect(dead_code, reason = "only Android lacks a folder picker for now")
     )]
     FolderPickerUnavailable,
+    #[cfg_attr(
+        not(any(target_os = "linux", test)),
+        expect(dead_code, reason = "only Linux desktops can lack a folder chooser")
+    )]
+    FolderChooserMissing,
     FolderUnreadable,
     FolderNotFound,
     HomeFolderKept,
@@ -41,6 +46,14 @@ impl IpcError {
         Self {
             code: IpcErrorCode::FolderPickerUnavailable,
             message: "this platform has no folder picker yet",
+        }
+    }
+
+    #[cfg(any(target_os = "linux", test))]
+    pub(crate) fn folder_chooser_missing() -> Self {
+        Self {
+            code: IpcErrorCode::FolderChooserMissing,
+            message: "no desktop portal or zenity can show a folder chooser",
         }
     }
 

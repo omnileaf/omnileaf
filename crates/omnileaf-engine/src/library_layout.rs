@@ -2,11 +2,11 @@
 
 use std::{
     ffi::OsStr,
-    fs, io,
+    io,
     path::{Path, PathBuf},
 };
 
-use omnileaf_formats::{is_ignored, is_page_image};
+use omnileaf_formats::{self as formats, Entry, Storage, is_ignored, is_page_image};
 
 const COMIC_EXTENSIONS: &[&str] = &["cbz", "cbr", "cb7"];
 
@@ -43,11 +43,11 @@ enum Place {
 }
 
 /// Fails only when `root` itself can't be read; a subfolder that can't be read is counted and skipped.
-pub(crate) fn find_books(root: &Path) -> io::Result<Layout> {
+pub(crate) fn find_books(storage: &dyn Storage, root: &Path) -> io::Result<Layout> {
     let mut layout = Layout::default();
     let mut pending = vec![(root.to_path_buf(), Place::Root)];
     while let Some((folder, place)) = pending.pop() {
-        match fs::read_dir(&folder) {
+        match storage.entries(&folder) {
             Ok(entries) => layout.take_in(&folder, place, entries, &mut pending),
             Err(error) if place == Place::Root => return Err(error),
             Err(_) => layout.unreadable_folders.push(folder),
@@ -69,26 +69,20 @@ impl Layout {
         &mut self,
         folder: &Path,
         place: Place,
-        entries: fs::ReadDir,
+        entries: Vec<Entry>,
         pending: &mut Vec<(PathBuf, Place)>,
     ) {
         let mut holds_pages = false;
         let mut holds_comics = false;
         for entry in entries {
-            let Ok(entry) = entry else {
-                self.note_unreadable(folder);
-                continue;
-            };
-            let file_name = entry.file_name();
-            let name = file_name.to_string_lossy();
-            if is_ignored(&name) {
+            if is_ignored(&entry.name.to_string_lossy()) {
                 continue;
             }
-            match EntryKind::of(&entry.file_type(), &file_name) {
-                EntryKind::Folder => pending.push((entry.path(), place.inner())),
+            match EntryKind::of(&entry) {
+                EntryKind::Folder => pending.push((folder.join(&entry.name), place.inner())),
                 EntryKind::Comic => {
                     holds_comics = true;
-                    let path = entry.path();
+                    let path = folder.join(&entry.name);
                     let title = file_stem(&path);
                     let series = match place {
                         Place::Root => title.clone(),
@@ -130,13 +124,15 @@ impl Layout {
 }
 
 impl EntryKind {
-    fn of(file_type: &io::Result<fs::FileType>, file_name: &OsStr) -> Self {
-        match file_type {
-            Err(_) => Self::Unreadable,
-            Ok(kind) if kind.is_dir() => Self::Folder,
-            Ok(kind) if kind.is_file() && is_comic(file_name) => Self::Comic,
-            Ok(kind) if kind.is_file() && is_page_image(&file_name.to_string_lossy()) => Self::Page,
-            _ => Self::Other,
+    fn of(entry: &Entry) -> Self {
+        match entry.kind {
+            formats::EntryKind::Unreadable(_) => Self::Unreadable,
+            formats::EntryKind::Folder => Self::Folder,
+            formats::EntryKind::File { .. } if is_comic(&entry.name) => Self::Comic,
+            formats::EntryKind::File { .. } if is_page_image(&entry.name.to_string_lossy()) => {
+                Self::Page
+            }
+            formats::EntryKind::File { .. } | formats::EntryKind::Other => Self::Other,
         }
     }
 }
@@ -181,9 +177,12 @@ mod tests {
 
     #[test]
     fn reads_an_entry_whose_kind_cannot_be_read_as_unreadable_rather_than_not_a_book() {
-        let failed = Err(io::Error::from(io::ErrorKind::PermissionDenied));
+        let failed = Entry {
+            name: "v01.cbz".into(),
+            kind: formats::EntryKind::Unreadable(io::ErrorKind::PermissionDenied),
+        };
 
-        let kind = EntryKind::of(&failed, OsStr::new("v01.cbz"));
+        let kind = EntryKind::of(&failed);
 
         assert_eq!(kind, EntryKind::Unreadable);
     }
