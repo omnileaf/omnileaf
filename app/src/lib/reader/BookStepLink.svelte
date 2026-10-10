@@ -46,6 +46,7 @@
     type="button"
     disabled
     aria-label={shape.unavailable()}
+    title={shape.unavailable()}
     class={[look, "opacity-40"]}
   >
     <shape.icon size={ICON_SIZE} aria-hidden="true" class="expanded:hidden" />
