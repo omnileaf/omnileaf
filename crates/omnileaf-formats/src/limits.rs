@@ -1,3 +1,5 @@
+use std::io::{self, Read};
+
 const MIB: u64 = 1024 * 1024;
 
 pub(crate) const COMIC_INFO_LIMIT: u64 = MIB;
@@ -21,4 +23,13 @@ impl Default for Limits {
             max_compression_ratio: 100,
         }
     }
+}
+
+/// Reads all of `reader`, or gives `None` once it holds more than `limit` bytes.
+pub(crate) fn read_within(reader: impl Read, limit: u64) -> io::Result<Option<Vec<u8>>> {
+    let mut bytes = Vec::new();
+    reader
+        .take(limit.saturating_add(1))
+        .read_to_end(&mut bytes)?;
+    Ok((u64::try_from(bytes.len()).unwrap_or(u64::MAX) <= limit).then_some(bytes))
 }
