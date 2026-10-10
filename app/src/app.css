@@ -68,6 +68,7 @@
     }
   }
 }
+@custom-variant heading-crowded (&:where([data-crowded] *));
 
 @theme {
   --*: initial;
