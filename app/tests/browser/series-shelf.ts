@@ -38,6 +38,11 @@ export class FakeShelf {
     return this.#books;
   }
 
+  /** Reads the book to `page`, as the core saves a page turned in it. */
+  readTo(index: number, page: number): void {
+    this.#bookAt(index).reading = { state: "started", page };
+  }
+
   titleOf(index: number): string {
     return this.#bookAt(index).title;
   }
