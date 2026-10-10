@@ -1,4 +1,5 @@
 import type {
+  HistoryEntry,
   OpenedBook,
   SeriesBook,
   SeriesNeighbour,
@@ -55,5 +56,20 @@ export function standInOpenedBook(book: OpenedBook): OpenedBook {
     seriesTitle: standInLook(series).title,
     previous: neighbour(book.previous, book.position - 1),
     next: neighbour(book.next, book.position + 1),
+  };
+}
+
+/** Names the entry's series and book as the library and the series page do, leaving the cover's path behind. */
+export function standInHistoryEntry(entry: HistoryEntry): HistoryEntry {
+  const series: NamedSeries = {
+    id: entry.series,
+    title: entry.seriesTitle,
+    cover: null,
+  };
+  return {
+    ...entry,
+    seriesTitle: standInLook(series).title,
+    bookTitle: standInBookTitles(series)(entry.position),
+    cover: null,
   };
 }
