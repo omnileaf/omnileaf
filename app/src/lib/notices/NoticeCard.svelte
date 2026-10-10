@@ -53,7 +53,7 @@
     >
       <notice.icon aria-hidden="true" size={ICON_SIZE} />
     </span>
-    <p class="flex grow flex-col gap-2xs">
+    <p class="flex grow flex-col gap-2xs wrap-anywhere">
       <span class="text-callout font-bold desktop:text-label"
         >{notice.title}</span
       >

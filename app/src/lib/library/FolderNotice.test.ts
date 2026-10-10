@@ -219,6 +219,11 @@ test.each<[IpcErrorCode, string, string]>([
     "It's coming in a later version of Omnileaf.",
   ],
   [
+    "folderChooserMissing",
+    "Couldn't open a folder chooser",
+    "Omnileaf opens folders through xdg-desktop-portal. Install it and the portal for your desktop, such as xdg-desktop-portal-gnome, xdg-desktop-portal-kde or xdg-desktop-portal-gtk. Your library hasn't changed.",
+  ],
+  [
     "internal",
     "Couldn't add the folder",
     "Something went wrong inside Omnileaf. Your library hasn't changed.",
@@ -245,6 +250,7 @@ test.each<[IpcErrorCode, string, string]>([
 
 test.each<[IpcErrorCode, string]>([
   ["folderUnreadable", "Choose another folder"],
+  ["folderChooserMissing", "Try again"],
   ["internal", "Try again"],
 ])("opens the picker again from the %s warning", async (code, retry) => {
   const { status, button } = await renderWith(

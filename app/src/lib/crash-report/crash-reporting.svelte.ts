@@ -39,6 +39,7 @@ const SEND_OUTCOMES = {
   noCrashReport: undefined,
   browserUnavailable: "browserUnavailable",
   folderPickerUnavailable: "notSent",
+  folderChooserMissing: "notSent",
   folderUnreadable: "notSent",
   folderNotFound: "notSent",
   homeFolderKept: "notSent",
