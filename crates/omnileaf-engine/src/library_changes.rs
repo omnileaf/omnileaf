@@ -64,8 +64,16 @@ fn heard_catalog(written: &Result<CatalogWritten, RecvError>) -> Heard {
 
 fn heard_synced(changed: &Result<Changed, RecvError>) -> Heard {
     match changed {
-        Ok(Changed::TitleOrder) | Err(RecvError::Lagged(_)) => Heard::Change,
-        Ok(Changed::Registers { .. }) => Heard::Unrelated,
+        Ok(
+            Changed::TitleOrder
+            | Changed::Registers {
+                recounted: true, ..
+            },
+        )
+        | Err(RecvError::Lagged(_)) => Heard::Change,
+        Ok(Changed::Registers {
+            recounted: false, ..
+        }) => Heard::Unrelated,
         Err(RecvError::Closed) => Heard::Closed,
     }
 }

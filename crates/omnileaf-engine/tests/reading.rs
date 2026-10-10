@@ -13,8 +13,9 @@ mod support;
 use std::{fs, path::Path, time::Duration};
 
 use omnileaf_engine::{
-    BookId, BookReading, Library, LibraryListing, OpenedBook, ProbedFormat, READING_SAVE_DELAY,
-    ReadMark, ResourceRouter, SeriesBookListing, SeriesId,
+    BookId, BookReading, LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges,
+    LibraryListing, OpenedBook, ProbedFormat, READING_SAVE_DELAY, ReadMark, ResourceRouter,
+    SeriesBookListing, SeriesId,
 };
 use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg};
 use support::{FixedClock, ScratchFolder};
@@ -360,4 +361,77 @@ async fn keeps_a_book_marked_read_while_open_read_after_the_save_that_comes_late
     shelf.close(&opened).await;
 
     assert_eq!(shelf.reading(0).await, BookReading::Read);
+}
+
+/// Every change already told of, so a test can wait for the one it makes next.
+async fn caught_up(changes: &mut LibraryChanges) {
+    while timeout(LIBRARY_CHANGES_GATHERED_FOR * 2, changes.next())
+        .await
+        .is_ok()
+    {}
+}
+
+async fn tells_of_a_change(changes: &mut LibraryChanges) -> bool {
+    timeout(LIBRARY_CHANGES_GATHERED_FOR * 4, changes.next())
+        .await
+        .is_ok_and(|told| told == Some(LibraryChanged))
+}
+
+async fn tells_of_no_change(changes: &mut LibraryChanges) -> bool {
+    timeout(LIBRARY_CHANGES_GATHERED_FOR * 4, changes.next())
+        .await
+        .is_err()
+}
+
+#[tokio::test]
+async fn tells_the_library_of_the_first_page_saved_in_a_book() {
+    let shelf = Shelf::with_two_books("first-save-told").await;
+    let mut changes = shelf.library.changes();
+    caught_up(&mut changes).await;
+    let opened = shelf.restore(0).await;
+    shelf.show(&opened, 2).await;
+
+    shelf.close(&opened).await;
+
+    assert!(tells_of_a_change(&mut changes).await);
+}
+
+#[tokio::test]
+async fn tells_the_library_nothing_of_a_later_page_saved_in_a_started_book() {
+    let shelf = Shelf::with_two_books("later-save-untold").await;
+    let first = shelf.restore(0).await;
+    shelf.show(&first, 2).await;
+    shelf.close(&first).await;
+    let mut changes = shelf.library.changes();
+    caught_up(&mut changes).await;
+    let again = shelf.restore(0).await;
+    shelf.show(&again, 3).await;
+
+    shelf.close(&again).await;
+
+    assert_eq!(shelf.reading(0).await, started_on(4));
+    assert!(tells_of_no_change(&mut changes).await);
+}
+
+#[tokio::test]
+async fn tells_the_library_of_books_marked_read_and_unread() {
+    let shelf = Shelf::with_two_books("marks-told").await;
+    let book = shelf.book(0).await;
+    let mut changes = shelf.library.changes();
+    caught_up(&mut changes).await;
+
+    shelf
+        .library
+        .mark_books(vec![book], ReadMark::Read)
+        .await
+        .unwrap();
+    let told_read = tells_of_a_change(&mut changes).await;
+    shelf
+        .library
+        .mark_books(vec![book], ReadMark::Unread)
+        .await
+        .unwrap();
+    let told_unread = tells_of_a_change(&mut changes).await;
+
+    assert_eq!((told_read, told_unread), (true, true));
 }
