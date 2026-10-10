@@ -686,6 +686,7 @@ test.describe("saving where reading is", () => {
 
 test.describe("the local time reading begins at", () => {
   const offsets: number[] = [];
+  const shownOffsets: number[] = [];
 
   test.use({
     timezoneId: "Asia/Kolkata",
@@ -695,11 +696,16 @@ test.describe("the local time reading begins at", () => {
         offsets.push(utcOffset);
         return null;
       },
+      pageShown: (_id, _page, utcOffset) => {
+        shownOffsets.push(utcOffset);
+        return null;
+      },
     },
   });
 
   test.beforeEach(() => {
     offsets.length = 0;
+    shownOffsets.length = 0;
   });
 
   test("tells the core how far the device's clock is ahead of UTC as the book opens", async ({
@@ -708,6 +714,16 @@ test.describe("the local time reading begins at", () => {
     await openBook(page);
 
     await expect.poll(() => offsets).toEqual([330]);
+  });
+
+  test("tells the core how far the device's clock is ahead of UTC with each page turned to, as a session may start on it", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await zone(page, "Next page").click();
+
+    await expect.poll(() => shownOffsets).toEqual([330]);
   });
 });
 

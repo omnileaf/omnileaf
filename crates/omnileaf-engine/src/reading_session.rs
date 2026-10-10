@@ -110,6 +110,10 @@ impl ReadingSession {
         self.continuity = Continuity::AfterBreak;
     }
 
+    pub(crate) fn moved_to(&mut self, utc_offset: UtcOffset) {
+        self.utc_offset = utc_offset;
+    }
+
     /// Leaves a session restored before, or a page past the book's end, as it is.
     pub(crate) fn restored(&mut self, page: u32) {
         if self.stage == Stage::Opening && page <= self.last_page {

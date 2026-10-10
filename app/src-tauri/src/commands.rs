@@ -316,8 +316,13 @@ async fn reading_restored(
 
 #[tauri::command]
 #[specta::specta]
-async fn page_shown(library: State<'_, Library>, id: BookId, page: u32) -> Result<(), IpcError> {
-    Ok(library.page_shown(id, page).await?)
+async fn page_shown(
+    library: State<'_, Library>,
+    id: BookId,
+    page: u32,
+    utc_offset: UtcOffset,
+) -> Result<(), IpcError> {
+    Ok(library.page_shown(id, page, utc_offset).await?)
 }
 
 #[tauri::command]

@@ -44,6 +44,7 @@ enum Report {
     Shown {
         book: BookId,
         page: u32,
+        utc_offset: UtcOffset,
     },
     Closed {
         book: BookId,
@@ -111,8 +112,19 @@ impl ReadingProgress {
         .await
     }
 
-    pub(crate) async fn shown(&self, book: BookId, page: u32) -> Result<(), LibraryError> {
-        self.tell(Report::Shown { book, page }).await
+    /// Reads the device's offset from UTC afresh, so a session started after a break keeps the local time it starts at.
+    pub(crate) async fn shown(
+        &self,
+        book: BookId,
+        page: u32,
+        utc_offset: UtcOffset,
+    ) -> Result<(), LibraryError> {
+        self.tell(Report::Shown {
+            book,
+            page,
+            utc_offset,
+        })
+        .await
     }
 
     pub(crate) async fn closed(&self, book: BookId) -> Result<(), LibraryError> {
@@ -221,8 +233,13 @@ impl Keeper {
                 utc_offset,
                 saved,
             } => answer(Some(saved), self.restored(book, page, utc_offset).await),
-            Report::Shown { book, page } => {
+            Report::Shown {
+                book,
+                page,
+                utc_offset,
+            } => {
                 if let Some(open) = self.reading(book) {
+                    open.moved_to(utc_offset);
                     open.shown(page, Instant::now());
                 }
             }
@@ -506,7 +523,13 @@ mod tests {
     async fn read(keeper: &mut Keeper, book: BookId, page: u32) {
         open(keeper, book).await;
         restore(keeper, book, 0).await;
-        keeper.hear(Report::Shown { book, page }).await;
+        keeper
+            .hear(Report::Shown {
+                book,
+                page,
+                utc_offset: UtcOffset::UTC,
+            })
+            .await;
     }
 
     async fn restore(keeper: &mut Keeper, book: BookId, page: u32) {
@@ -719,6 +742,7 @@ mod tests {
             .hear(Report::Shown {
                 book: book(1),
                 page: 4,
+                utc_offset: UtcOffset::UTC,
             })
             .await;
 
@@ -741,6 +765,7 @@ mod tests {
             .hear(Report::Shown {
                 book: book(1),
                 page: 0,
+                utc_offset: UtcOffset::UTC,
             })
             .await;
 
@@ -768,6 +793,7 @@ mod tests {
             .hear(Report::Shown {
                 book: book(1),
                 page: 4,
+                utc_offset: UtcOffset::UTC,
             })
             .await;
         keeper.save().await.unwrap_err();
@@ -793,6 +819,7 @@ mod tests {
             .hear(Report::Shown {
                 book: book(1),
                 page: 0,
+                utc_offset: UtcOffset::UTC,
             })
             .await;
         keeper.save().await.unwrap();
@@ -800,6 +827,7 @@ mod tests {
             .hear(Report::Shown {
                 book: book(1),
                 page: 4,
+                utc_offset: UtcOffset::UTC,
             })
             .await;
 

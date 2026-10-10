@@ -160,7 +160,10 @@ impl Shelf {
     }
 
     async fn show(&self, opened: &OpenedBook, page: u32) {
-        self.library.page_shown(opened.id, page).await.unwrap();
+        self.library
+            .page_shown(opened.id, page, UtcOffset::UTC)
+            .await
+            .unwrap();
     }
 
     async fn close(&self, opened: &OpenedBook) {
