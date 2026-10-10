@@ -21,7 +21,7 @@
   import SeriesBooks from "#lib/series/SeriesBooks.svelte";
   import SeriesHeader from "#lib/series/SeriesHeader.svelte";
   import {
-    standInBook,
+    bookStandIns,
     standInOverview,
   } from "#lib/series/series-stand-ins.ts";
 
@@ -180,9 +180,7 @@
           {#key foundId}
             <SeriesBooks
               books={screenshotMode.isOn
-                ? books.list.items.map((book) =>
-                    standInBook(book, found.overview.id),
-                  )
+                ? books.list.items.map(bookStandIns(found.overview))
                 : books.list.items}
               bookCount={found.overview.bookCount}
               {listing}
