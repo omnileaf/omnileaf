@@ -11,7 +11,9 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  fakeAppInfo,
   LARGE_MIN_WIDTH,
+  MEDIUM_MIN_WIDTH,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -31,6 +33,7 @@ const MONDAY = Date.UTC(2026, 9, 5) / DAY_MS;
 const DESKTOP_TITLE_GAP = 14;
 const DESKTOP_DAYS_TOP = 22;
 const DESKTOP_ACTION_RADIUS = "8px";
+const PHONE_LIST_INSET = 20;
 
 interface Session {
   readonly number: number;
@@ -350,6 +353,32 @@ test.describe("with books read", () => {
     });
   }
 });
+
+for (const platform of ["ios", "android"] as const) {
+  test.describe(`on an ${platform} phone`, () => {
+    test.use({
+      backend: { ...READ_BACKEND, appInfo: () => fakeAppInfo(platform) },
+    });
+
+    test("sets the days and their sessions in from both sides of a phone as the board does", async ({
+      page,
+    }) => {
+      test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+      await openHistory(page);
+
+      const firstDay = await boxOf(days(page).first());
+      const firstRow = await boxOf(rows(page).first());
+
+      for (const box of [firstDay, firstRow]) {
+        expect(box.x).toBeCloseTo(PHONE_LIST_INSET, 0);
+        expect(viewportOf(page).width - (box.x + box.width)).toBeCloseTo(
+          PHONE_LIST_INSET,
+          0,
+        );
+      }
+    });
+  });
+}
 
 test.describe("on a device whose region starts its weeks on Monday", () => {
   test.use({
