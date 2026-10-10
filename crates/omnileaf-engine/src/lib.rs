@@ -3,6 +3,8 @@ mod app_language;
 mod background_lane;
 mod bookmark_access;
 mod books_removal;
+#[cfg(test)]
+mod captured_log;
 mod clock;
 mod cover_path;
 mod cover_thumbnails;
