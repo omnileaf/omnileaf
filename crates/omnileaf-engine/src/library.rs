@@ -9,8 +9,8 @@ use std::{
 use omnileaf_db::{
     Config, Database,
     catalog::{
-        AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator,
-        SeriesOrder, add_root, bookmarked_roots, cover_file, home_root, library_root,
+        AndroidTree, AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind,
+        RootLocator, SeriesOrder, add_root, bookmarked_roots, cover_file, home_root, library_root,
         library_roots, mark_root_available, mark_root_unavailable, remove_book_files,
         remove_books_without_files, remove_root, root_book_count, root_files, series_count,
         series_page,
@@ -76,6 +76,8 @@ impl From<PathBuf> for LibraryFolders {
     }
 }
 
+pub type OpenTree = Arc<dyn Fn(&AndroidTree) -> Arc<dyn omnileaf_formats::Storage> + Send + Sync>;
+
 pub struct Library {
     store: Store,
     catalog_change_lock: Mutex<()>,
@@ -83,6 +85,7 @@ pub struct Library {
     is_scheduled: watch::Sender<bool>,
     catalog_writes: broadcast::Sender<CatalogWritten>,
     local_storage: Arc<dyn omnileaf_formats::Storage>,
+    open_tree: Option<OpenTree>,
 }
 
 struct RootFiles {
@@ -153,9 +156,18 @@ impl Library {
             is_scheduled: watch::Sender::new(false),
             catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
             local_storage: Arc::new(LocalStorage),
+            open_tree: None,
         };
         library.set_home(home).await?;
         Ok(library)
+    }
+
+    #[must_use]
+    pub fn reading_trees_with(self, open: OpenTree) -> Self {
+        Self {
+            open_tree: Some(open),
+            ..self
+        }
     }
 
     #[tracing::instrument(skip_all, fields(folder))]
@@ -703,13 +715,13 @@ impl Library {
         }
     }
 
-    /// Nothing for an Android folder, which this library has no way to open.
+    /// Nothing for an Android folder when this library has no way to open one.
     fn files_of(&self, locator: &RootLocator) -> Option<RootFiles> {
         let storage = match locator {
             RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
                 Arc::clone(&self.local_storage)
             }
-            RootLocator::AndroidTree(_) => return None,
+            RootLocator::AndroidTree(tree) => self.open_tree.as_ref()?(tree),
         };
         Some(RootFiles {
             storage,
