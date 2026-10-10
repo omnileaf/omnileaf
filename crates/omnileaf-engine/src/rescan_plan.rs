@@ -9,7 +9,7 @@ use omnileaf_sync_proto::BookId;
 use crate::{
     FileChanges,
     library_layout::{FoundBook, Layout},
-    scan::{FileStamp, UnreadableBook, saturating_u32, warn_unreadable},
+    scan::{FileStamp, Target, UnreadableBook, saturating_u32, warn_unreadable},
 };
 
 /// A book found at a location the catalog has no file for, or whose file changed since.
@@ -56,7 +56,7 @@ pub(crate) struct Forgetting {
 impl Plan {
     /// Compares each book found with the file the catalog holds at its location, by size and modification time alone, returning the books to read.
     pub(crate) fn new(
-        folder: &Path,
+        target: &Target,
         layout: Layout,
         stored: Vec<StoredFile>,
     ) -> (Self, Vec<ToRead>) {
@@ -75,9 +75,9 @@ impl Plan {
             replaced: Vec::new(),
         };
         for found in layout.books {
-            to_read.extend(plan.compare(folder, found, &mut stored));
+            to_read.extend(plan.compare(target, found, &mut stored));
         }
-        let unread = relative_to(folder, &layout.unreadable_folders);
+        let unread = relative_to(&target.folder, &layout.unreadable_folders);
         for (location, file) in stored {
             if !unread
                 .iter()
@@ -142,16 +142,20 @@ impl Plan {
     /// The book to read when its location is new to the catalog or its file changed since.
     fn compare(
         &mut self,
-        folder: &Path,
+        target: &Target,
         found: FoundBook,
         stored: &mut BTreeMap<PathBuf, StoredFile>,
     ) -> Option<ToRead> {
-        let Ok(location) = found.path.strip_prefix(folder).map(Path::to_path_buf) else {
+        let Ok(location) = found
+            .path
+            .strip_prefix(&target.folder)
+            .map(Path::to_path_buf)
+        else {
             self.changes.unreadable_books = self.changes.unreadable_books.saturating_add(1);
             return None;
         };
         let known = stored.remove(&location);
-        match FileStamp::read(&found.path) {
+        match FileStamp::read(&target.storage, &found.path) {
             Ok(stamp) if known.as_ref().map(FileStamp::from) == Some(stamp) => None,
             Ok(_) => Some(ToRead {
                 found,

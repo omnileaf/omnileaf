@@ -1,4 +1,4 @@
-use std::{fs, io, path::PathBuf};
+use std::{fs, io, path::PathBuf, sync::Arc};
 
 use omnileaf_db::{
     Config, Database,
@@ -12,6 +12,7 @@ use omnileaf_db::{
     library_view::{library_view, set_library_view},
     store::{Changed, Clock, Store},
 };
+use omnileaf_formats::{LocalStorage, Storage};
 use tokio::{
     sync::{Mutex, broadcast},
     task::spawn_blocking,
@@ -46,6 +47,12 @@ pub struct Library {
     /// Held for each scan and folder removal, so none compares a folder with a catalog another is changing.
     scanning: Mutex<()>,
     catalog_writes: broadcast::Sender<CatalogWritten>,
+    local_storage: Arc<dyn Storage>,
+}
+
+struct RootFiles {
+    storage: Arc<dyn Storage>,
+    folder: PathBuf,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -104,6 +111,7 @@ impl Library {
             store: Store::new(database, clock),
             scanning: Mutex::new(()),
             catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
+            local_storage: Arc::new(LocalStorage),
         };
         library.set_home(home).await?;
         Ok(library)
@@ -117,13 +125,13 @@ impl Library {
         mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderScan, LibraryError> {
         let locator = folder.into();
-        let folder = locator.path().to_path_buf();
-        tracing::Span::current().record("folder", tracing::field::display(folder.display()));
+        let files = self.files_of(&locator);
+        tracing::Span::current().record("folder", tracing::field::display(files.folder.display()));
         let _scanning = self.scanning.lock().await;
         on_progress(ScanProgress::Finding);
-        let layout = find_books_in(folder.clone()).await?;
+        let layout = find_books_in(Arc::clone(&files.storage), files.folder.clone()).await?;
         let root = self.link(locator).await?;
-        let target = self.target(root, RootKind::Linked, folder);
+        let target = self.target(root, RootKind::Linked, files);
         scan(
             self.store.database(),
             target,
@@ -231,11 +239,12 @@ impl Library {
             .database()
             .read(move |connection| library_root(connection, id.0))
             .await?;
-        let folder = root.locator.into_path();
+        let files = self.files_of(&root.locator);
+        let name = folder_name(&files.folder);
         on_progress(ScanProgress::Finding);
-        let outcome = match walk(folder.clone()).await? {
+        let outcome = match walk(Arc::clone(&files.storage), files.folder.clone()).await? {
             Ok(layout) => {
-                let target = self.target(root.id, root.kind, folder.clone());
+                let target = self.target(root.id, root.kind, files);
                 let outcome =
                     rescan(&self.store, target, layout, self.noting_writes(on_progress)).await?;
                 if let RescanOutcome::Rescanned(changes) = &outcome
@@ -252,11 +261,7 @@ impl Library {
         };
         self.note_availability(root.id, root.unavailable_since_ms, &outcome)
             .await?;
-        Ok(FolderRescan {
-            id,
-            name: folder_name(&folder),
-            outcome,
-        })
+        Ok(FolderRescan { id, name, outcome })
     }
 
     /// Opens each linked folder kept by a bookmark through `resolve`, which may block, following the ones that moved and returning those whose bookmark wouldn't open.
@@ -446,11 +451,23 @@ impl Library {
         }
     }
 
-    fn target(&self, root: RootId, kind: RootKind, folder: PathBuf) -> Target {
+    fn files_of(&self, locator: &RootLocator) -> RootFiles {
+        match locator {
+            RootLocator::Path(folder) | RootLocator::AppleBookmark { path: folder, .. } => {
+                RootFiles {
+                    storage: Arc::clone(&self.local_storage),
+                    folder: folder.clone(),
+                }
+            }
+        }
+    }
+
+    fn target(&self, root: RootId, kind: RootKind, files: RootFiles) -> Target {
         Target {
             root,
             kind,
-            folder,
+            storage: files.storage,
+            folder: files.folder,
             added_at_ms: self.now_ms(),
         }
     }
