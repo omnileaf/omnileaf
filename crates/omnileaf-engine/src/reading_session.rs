@@ -1,7 +1,8 @@
-use omnileaf_db::catalog::BookReading as StoredReading;
+use omnileaf_db::{
+    catalog::BookReading as StoredReading,
+    store::{Continuity, SessionPlace},
+};
 use tokio::time::{Duration, Instant};
-
-use omnileaf_db::store::{Continuity, SessionPlace};
 
 use crate::{BookId, UtcOffset};
 
@@ -36,9 +37,7 @@ impl ReachedPage {
             utc_offset_minutes: self.utc_offset.minutes(),
         }
     }
-}
 
-impl ReachedPage {
     /// The reading stored once this page saves, which marks the book read on its last page and unread on any other.
     pub(crate) const fn stored(self) -> StoredReading {
         let position_page = Some(self.page);
