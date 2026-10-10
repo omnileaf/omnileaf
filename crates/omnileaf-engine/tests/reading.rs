@@ -10,7 +10,7 @@
 )]
 mod support;
 
-use std::{fs, path::Path, time::Duration};
+use std::{fs, path::Path, thread, time::Duration};
 
 use omnileaf_engine::{
     BookId, BookReading, LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges,
@@ -19,7 +19,10 @@ use omnileaf_engine::{
 };
 use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg};
 use support::{FixedClock, ScratchFolder};
-use tokio::{sync::broadcast, time::timeout};
+use tokio::{
+    sync::{broadcast, oneshot},
+    time::{Instant, timeout},
+};
 
 const SEED: u64 = 47;
 const PAGES: u32 = 6;
@@ -28,9 +31,7 @@ const FOLDER: &str = "Sample Library";
 const SERIES: &str = "Sample Series 01";
 const FIRST_BOOK: &str = "Sample Series 01 v01";
 const SECOND_BOOK: &str = "Sample Series 01 v02";
-const SAVE_WAIT: Duration = READING_SAVE_DELAY.saturating_mul(4);
-const JUST_BEFORE_THE_SAVE: Duration =
-    READING_SAVE_DELAY.saturating_sub(Duration::from_millis(100));
+const HANG_LIMIT: Duration = Duration::from_secs(60);
 
 struct Shelf {
     library: Library,
@@ -156,11 +157,18 @@ fn write_book(path: &Path, seed: u64) {
     fs::write(path, cbz(&entries, Compression::Stored).unwrap()).unwrap();
 }
 
+/// Waits for the next save, failing on the real clock rather than hanging, since a paused clock's timeout would fire while the store writes on its own thread.
 async fn saved(changes: &mut broadcast::Receiver<omnileaf_engine::Changed>) {
-    timeout(SAVE_WAIT, changes.recv())
-        .await
-        .expect("a save within the time the core waits before saving")
-        .unwrap();
+    let (expired, expiry) = oneshot::channel();
+    thread::spawn(move || {
+        thread::sleep(HANG_LIMIT);
+        expired.send(()).ok();
+    });
+    let saved = tokio::select! {
+        saved = changes.recv() => Some(saved),
+        _ = expiry => None,
+    };
+    saved.expect("a save in time").unwrap();
 }
 
 fn started_on(page_from_one: u32) -> BookReading {
@@ -169,7 +177,7 @@ fn started_on(page_from_one: u32) -> BookReading {
     }
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn saves_the_page_reading_reached_when_the_book_closes() {
     let shelf = Shelf::with_two_books("closed").await;
     let opened = shelf.restore(0).await;
@@ -181,7 +189,7 @@ async fn saves_the_page_reading_reached_when_the_book_closes() {
     assert_eq!(shelf.reading(0).await, started_on(4));
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn saves_nothing_the_reader_shows_before_it_restores_the_book() {
     let shelf = Shelf::with_two_books("before-restore").await;
     let opened = shelf.open(0).await;
@@ -192,21 +200,21 @@ async fn saves_nothing_the_reader_shows_before_it_restores_the_book() {
     assert_eq!(shelf.reading(0).await, BookReading::NotStarted);
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn saves_the_page_shown_once_the_save_delay_has_passed_with_the_book_still_open() {
     let shelf = Shelf::with_two_books("delayed").await;
     let opened = shelf.restore(0).await;
     let mut changes = shelf.library.subscribe();
 
     shelf.show(&opened, 2).await;
-    let early = timeout(JUST_BEFORE_THE_SAVE, changes.recv()).await;
+    let shown_at = Instant::now();
     saved(&mut changes).await;
 
-    assert!(early.is_err(), "saved early: {early:?}");
+    assert_eq!(shown_at.elapsed(), READING_SAVE_DELAY);
     assert_eq!(shelf.reading(0).await, started_on(3));
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn opens_the_book_on_the_page_saved_once_the_library_opens_again() {
     let shelf = Shelf::with_two_books("resumed").await;
     let opened = shelf.restore(0).await;
@@ -220,7 +228,7 @@ async fn opens_the_book_on_the_page_saved_once_the_library_opens_again() {
     assert_eq!(again.start_page, 4);
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn saves_the_page_shown_when_asked_to_with_the_book_still_open() {
     let shelf = Shelf::with_two_books("asked").await;
     let opened = shelf.restore(0).await;
@@ -231,7 +239,7 @@ async fn saves_the_page_shown_when_asked_to_with_the_book_still_open() {
     assert_eq!(shelf.reading(0).await, started_on(3));
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn marks_the_book_read_once_its_last_page_is_saved() {
     let shelf = Shelf::with_two_books("finished").await;
     let opened = shelf.restore(0).await;
@@ -242,7 +250,7 @@ async fn marks_the_book_read_once_its_last_page_is_saved() {
     assert_eq!(shelf.reading(0).await, BookReading::Read);
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn ignores_a_page_shown_in_a_book_closed_before() {
     let shelf = Shelf::with_two_books("closed-before").await;
     let opened = shelf.restore(0).await;
@@ -254,7 +262,7 @@ async fn ignores_a_page_shown_in_a_book_closed_before() {
     assert_eq!(shelf.reading(0).await, BookReading::NotStarted);
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn saves_the_page_reached_in_a_book_when_the_next_one_opens() {
     let shelf = Shelf::with_two_books("next-book").await;
     let first = shelf.restore(0).await;
@@ -265,7 +273,7 @@ async fn saves_the_page_reached_in_a_book_when_the_next_one_opens() {
     assert_eq!(shelf.reading(0).await, started_on(3));
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn saves_the_page_reached_in_a_book_when_the_reader_restores_the_next_one() {
     let shelf = Shelf::with_two_books("next-restored").await;
     let first = shelf.restore(0).await;
@@ -282,7 +290,7 @@ async fn saves_the_page_reached_in_a_book_when_the_reader_restores_the_next_one(
     assert_eq!(shelf.reading(0).await, started_on(3));
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn keeps_saving_the_book_restored_when_an_open_begun_before_it_finishes_after_it() {
     let shelf = Shelf::with_two_books("late-open").await;
     let read = shelf.restore(1).await;
@@ -294,7 +302,7 @@ async fn keeps_saving_the_book_restored_when_an_open_begun_before_it_finishes_af
     assert_eq!(shelf.reading(1).await, started_on(4));
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn keeps_a_page_shown_in_one_book_out_of_the_book_read_after_it() {
     let shelf = Shelf::with_two_books("other-book").await;
     let first = shelf.restore(0).await;
@@ -309,7 +317,7 @@ async fn keeps_a_page_shown_in_one_book_out_of_the_book_read_after_it() {
     );
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn opens_a_book_read_before_on_the_page_reading_it_again_reached() {
     let shelf = Shelf::with_two_books("read-again").await;
     let first_reading = shelf.restore(0).await;
@@ -331,7 +339,7 @@ async fn opens_a_book_read_before_on_the_page_reading_it_again_reached() {
     );
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn keeps_a_book_marked_unread_while_open_unread_after_the_save_that_comes_late() {
     let shelf = Shelf::with_two_books("marked-unread").await;
     let opened = shelf.restore(0).await;
@@ -347,7 +355,7 @@ async fn keeps_a_book_marked_unread_while_open_unread_after_the_save_that_comes_
     assert_eq!(shelf.reading(0).await, started_on(PAGES));
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn keeps_a_book_marked_read_while_open_read_after_the_save_that_comes_late() {
     let shelf = Shelf::with_two_books("marked-read").await;
     let opened = shelf.restore(0).await;
@@ -383,7 +391,7 @@ async fn tells_of_no_change(changes: &mut LibraryChanges) -> bool {
         .is_err()
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn tells_the_library_of_the_first_page_saved_in_a_book() {
     let shelf = Shelf::with_two_books("first-save-told").await;
     let mut changes = shelf.library.changes();
@@ -396,7 +404,7 @@ async fn tells_the_library_of_the_first_page_saved_in_a_book() {
     assert!(tells_of_a_change(&mut changes).await);
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn tells_the_library_nothing_of_a_later_page_saved_in_a_started_book() {
     let shelf = Shelf::with_two_books("later-save-untold").await;
     let first = shelf.restore(0).await;
@@ -413,7 +421,7 @@ async fn tells_the_library_nothing_of_a_later_page_saved_in_a_started_book() {
     assert!(tells_of_no_change(&mut changes).await);
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn tells_the_library_of_books_marked_read_and_unread() {
     let shelf = Shelf::with_two_books("marks-told").await;
     let book = shelf.book(0).await;
