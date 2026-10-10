@@ -23,13 +23,11 @@ const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
 const FINISHED_SCAN_REPORT = xpath(
   "//*[@role='status'][starts-with(normalize-space(), 'Found ')]",
 );
-const LIBRARY_LINK_WHEN_CURRENT = xpath(
-  `${LIBRARY_LINK.value}[@aria-current='page']`,
-);
+const ON_LIBRARY_PAGE = "return location.pathname === '/';";
 
 export async function openLibraryPage(session: Session): Promise<void> {
   await (await session.waitFor(LIBRARY_LINK)).click();
-  await session.waitFor(LIBRARY_LINK_WHEN_CURRENT);
+  await session.waitUntil(ON_LIBRARY_PAGE, "the library page");
 }
 
 async function sessionCapabilities(app: AppUnderTest): Promise<Capabilities> {
