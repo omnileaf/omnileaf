@@ -52,6 +52,9 @@ enum Report {
     SaveNow {
         saved: Saved,
     },
+    PutAway {
+        saved: Saved,
+    },
     SaveBeforeOpening {
         book: BookId,
         unsaved: oneshot::Sender<Option<ReachedPage>>,
@@ -118,6 +121,11 @@ impl ReadingProgress {
 
     pub(crate) async fn save_now(&self) -> Result<(), LibraryError> {
         self.ask(|saved| Report::SaveNow { saved }).await
+    }
+
+    /// Saves at once and ends the reading session, so the time the app spends put away never counts as reading.
+    pub(crate) async fn put_away(&self) -> Result<(), LibraryError> {
+        self.ask(|saved| Report::PutAway { saved }).await
     }
 
     /// Saves whatever reading reached, answering with the page reached in `book` still unsaved should the save fail.
@@ -219,7 +227,8 @@ impl Keeper {
                 }
             }
             Report::Closed { book, saved } => answer(Some(saved), self.closed(book).await),
-            Report::SaveNow { saved } => answer(Some(saved), self.save_now().await),
+            Report::SaveNow { saved } => answer(Some(saved), self.save().await),
+            Report::PutAway { saved } => answer(Some(saved), self.stop_reading().await),
             Report::SaveBeforeOpening { book, unsaved } => {
                 answer(None, self.save().await);
                 answer(Some(unsaved), self.unsaved_in(book));
@@ -281,7 +290,7 @@ impl Keeper {
             tracing::debug!(%book, "ignore closing a book not read now");
             return Ok(());
         }
-        let saved = self.save_now().await;
+        let saved = self.stop_reading().await;
         if let Some(left) = self.session.take() {
             self.leave(left);
         }
@@ -295,7 +304,7 @@ impl Keeper {
     }
 
     /// Saves the page shown last and ends the reading session at this moment.
-    async fn save_now(&mut self) -> Result<(), Error> {
+    async fn stop_reading(&mut self) -> Result<(), Error> {
         self.save().await?;
         let Some(open) = self.session.as_mut() else {
             return Ok(());
