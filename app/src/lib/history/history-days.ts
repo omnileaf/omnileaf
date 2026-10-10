@@ -42,10 +42,8 @@ function titleOf(day: LocalDay, calendar: HistoryCalendar): HistoryDayTitle {
     : { kind: "day", day };
 }
 
-function isSameTitle(one: HistoryDayTitle, other: HistoryDayTitle): boolean {
-  return one.kind === "lastWeek"
-    ? other.kind === "lastWeek"
-    : other.kind === "day" && other.day === one.day;
+function keyOf(title: HistoryDayTitle): string {
+  return title.kind === "lastWeek" ? title.kind : String(title.day);
 }
 
 interface Gathering {
@@ -55,18 +53,19 @@ interface Gathering {
   readonly daysCounted: Set<LocalDay>;
 }
 
-/** Gathers sessions listed newest first into their days, keeping their order, and last week's days into one, read for `lastWeekReadSeconds` once known. */
+/** Gathers sessions listed newest first under the heading of their day, or of last week, in the order each heading is first listed, and last week read for `lastWeekReadSeconds` once known. */
 export function historyDays(
   entries: readonly HistoryEntry[],
   calendar: HistoryCalendar,
   lastWeekReadSeconds?: number,
 ): HistoryDay[] {
-  const days: Gathering[] = [];
+  const gathered = new Map<string, Gathering>();
   for (const entry of entries) {
     const title = titleOf(entry.day.day, calendar);
-    const current = days.at(-1);
-    if (current === undefined || !isSameTitle(current.title, title)) {
-      days.push({
+    const key = keyOf(title);
+    const current = gathered.get(key);
+    if (current === undefined) {
+      gathered.set(key, {
         title,
         readSeconds: entry.day.readSeconds,
         entries: [entry],
@@ -80,6 +79,7 @@ export function historyDays(
       current.readSeconds += entry.day.readSeconds;
     }
   }
+  const days = [...gathered.values()];
   return days.map(({ title, readSeconds, entries: listed }) => ({
     title,
     readSeconds:
