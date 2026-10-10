@@ -96,10 +96,10 @@ impl Linked {
             .map(|book| book.id)
             .collect()
     }
+}
 
-    fn every_series(&self) -> Vec<(String, u32)> {
-        owned(&[(SERIES_01, 2), (SERIES_02, 1)])
-    }
+fn every_series() -> Vec<(String, u32)> {
+    owned(&[(SERIES_01, 2), (SERIES_02, 1)])
 }
 
 #[tokio::test]
@@ -124,7 +124,7 @@ async fn keeps_every_book_of_a_folder_that_is_missing() {
 
     fs::rename(&unplugged, linked.comics.path()).unwrap();
     assert_eq!(removal, BooksRemoval::Kept);
-    assert_eq!(linked.scanned.series(), linked.every_series());
+    assert_eq!(linked.scanned.series(), every_series());
 }
 
 #[tokio::test]
@@ -136,7 +136,7 @@ async fn keeps_every_book_of_a_folder_that_holds_books_again() {
     let removal = linked.remove_books().await;
 
     assert_eq!(removal, BooksRemoval::Kept);
-    assert_eq!(linked.scanned.series(), linked.every_series());
+    assert_eq!(linked.scanned.series(), every_series());
 }
 
 #[cfg(unix)]
@@ -152,7 +152,7 @@ async fn keeps_every_book_of_a_folder_with_a_subfolder_it_cannot_read() {
 
     fs::set_permissions(&locked, fs::Permissions::from_mode(0o755)).unwrap();
     assert_eq!(removal, BooksRemoval::Kept);
-    assert_eq!(linked.scanned.series(), linked.every_series());
+    assert_eq!(linked.scanned.series(), every_series());
 }
 
 #[tokio::test]
@@ -165,7 +165,7 @@ async fn puts_back_the_books_it_removed_under_their_own_ids() {
     let is_put_back = linked.put_back().await;
 
     assert!(is_put_back);
-    assert_eq!(linked.scanned.series(), linked.every_series());
+    assert_eq!(linked.scanned.series(), every_series());
     assert_eq!(linked.book_ids(), before);
     assert_eq!(linked.scanned.books_in(SERIES_01), ["v01", "v02"]);
     assert!(!linked.folder().await.is_available);
@@ -179,7 +179,7 @@ async fn puts_back_nothing_for_a_folder_whose_books_it_did_not_remove() {
     let is_put_back = linked.put_back().await;
 
     assert!(!is_put_back);
-    assert_eq!(linked.scanned.series(), linked.every_series());
+    assert_eq!(linked.scanned.series(), every_series());
 }
 
 #[tokio::test]
