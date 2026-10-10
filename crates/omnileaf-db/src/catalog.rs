@@ -7,6 +7,7 @@ mod library_roots;
 mod native_path;
 mod page;
 mod page_dimensions;
+mod place_in_series;
 mod relocated_roots;
 mod root;
 mod root_availability;
@@ -31,6 +32,7 @@ pub use home_root::{home_root, keep_home_root_as_linked, set_home_root};
 pub use library_roots::{BookmarkedRoot, bookmarked_roots, library_root, library_roots};
 pub use page::{Page, PageRequest, PageSize};
 pub use page_dimensions::{PageDimensions, page_dimensions, store_page_dimensions};
+pub use place_in_series::{PlaceInSeries, SeriesNeighbour, place_in_series};
 pub use relocated_roots::relocate_roots;
 pub use root::{
     AndroidTree, AppleBookmark, LibraryRoot, NewRoot, RootId, RootKind, RootLocator, TreeUri,

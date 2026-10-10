@@ -14,9 +14,10 @@ use std::path::{Path, PathBuf};
 
 use omnileaf_db::{
     catalog::{
-        BookFile, BookReading, BookToRead, NewRoot, NewSeries, PageDimensions, RootId, RootKind,
-        RootLocator, ScannedBook, add_root, book_to_read, page_dimensions, record_scanned_books,
-        remove_book_files, store_page_dimensions,
+        BookFile, BookReading, BookToRead, NewRoot, NewSeries, PageDimensions, PlaceInSeries,
+        RootId, RootKind, RootLocator, ScannedBook, SeriesNeighbour, add_root, book_to_read,
+        page_dimensions, place_in_series, record_scanned_books, remove_book_files,
+        store_page_dimensions,
     },
     store::Store,
 };
@@ -96,6 +97,14 @@ impl Library {
             .unwrap()
     }
 
+    async fn place_of(&self, id: BookId) -> Option<PlaceInSeries> {
+        self.store
+            .database()
+            .read(move |connection| place_in_series(connection, id))
+            .await
+            .unwrap()
+    }
+
     async fn store_pages(&self, book: &BookToRead, pages: Vec<Option<PageDimensions>>) {
         let (file, rev) = (book.file, book.rev);
         self.store
@@ -117,6 +126,13 @@ impl Library {
 
 fn title_of(number: u32) -> String {
     format!("{SERIES} v{number:02}")
+}
+
+fn neighbour(number: u32) -> SeriesNeighbour {
+    SeriesNeighbour {
+        id: book(number),
+        title: title_of(number),
+    }
 }
 
 fn location_of(number: u32) -> PathBuf {
@@ -269,4 +285,61 @@ async fn forgets_the_page_sizes_of_a_file_removed_from_the_library() {
         .unwrap();
 
     assert_eq!(library.pages_of(&found).await, None);
+}
+
+#[tokio::test]
+async fn places_a_book_in_its_series_between_the_books_either_side_in_title_order() {
+    let library = Library::open("place-between").await;
+    for number in [3, 1, 2] {
+        library.record(number, location_of(number), 100).await;
+    }
+
+    let place = library.place_of(book(2)).await;
+
+    assert_eq!(
+        place,
+        Some(PlaceInSeries {
+            position: 2,
+            previous: Some(neighbour(1)),
+            next: Some(neighbour(3)),
+        })
+    );
+}
+
+#[tokio::test]
+async fn gives_the_first_book_none_before_it_and_the_last_none_after_it() {
+    let library = Library::open("place-ends").await;
+    for number in [1, 2] {
+        library.record(number, location_of(number), 100).await;
+    }
+
+    let first = library.place_of(book(1)).await;
+    let last = library.place_of(book(2)).await;
+
+    assert_eq!(
+        first,
+        Some(PlaceInSeries {
+            position: 1,
+            previous: None,
+            next: Some(neighbour(2)),
+        })
+    );
+    assert_eq!(
+        last,
+        Some(PlaceInSeries {
+            position: 2,
+            previous: Some(neighbour(1)),
+            next: None,
+        })
+    );
+}
+
+#[tokio::test]
+async fn finds_no_place_for_a_book_the_library_does_not_hold() {
+    let library = Library::open("place-missing").await;
+    library.record(1, location_of(1), 100).await;
+
+    let place = library.place_of(book(2)).await;
+
+    assert_eq!(place, None);
 }
