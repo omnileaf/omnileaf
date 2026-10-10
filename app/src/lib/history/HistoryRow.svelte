@@ -4,7 +4,7 @@
   import type { HistoryEntry } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import ListCover from "#lib/library/ListCover.svelte";
-  import type { ShownCover } from "#lib/library/series-look.ts";
+  import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { standInHistoryEntry } from "#lib/series/series-stand-ins.ts";
 
@@ -17,12 +17,12 @@
   const entry = $derived(usesStandIns ? standInHistoryEntry(listed) : listed);
 
   const href = $derived(resolve("/read/[book]", { book: entry.book }));
-  const cover: ShownCover = $derived(
-    usesStandIns
-      ? { kind: "standIn" }
-      : entry.cover === null
-        ? { kind: "none" }
-        : { kind: "picture", path: entry.cover },
+  const cover = $derived(
+    (usesStandIns ? standInLook : realLook)({
+      id: listed.series,
+      title: listed.seriesTitle,
+      cover: listed.cover,
+    }).cover,
   );
   const readFor = $derived(readingTime(entry.readSeconds));
   const readTo = $derived(
