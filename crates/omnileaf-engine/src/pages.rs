@@ -3,7 +3,7 @@ use std::{
     io,
     num::NonZeroUsize,
     path::PathBuf,
-    sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError, RwLock},
+    sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock, PoisonError, RwLock},
 };
 
 use omnileaf_cache::{CacheError, CacheKey, DiskCache, MemoryCache};
@@ -49,6 +49,7 @@ pub(crate) struct Pages {
 
 struct Shared {
     memory: Mutex<MemoryCache<PagePath, ServedPage>>,
+    in_flight: PagesInFlight,
     books: OpenBooks,
     undecodable: RwLock<HashSet<ProbedFormat>>,
     transcode_folder: PathBuf,
@@ -105,6 +106,7 @@ impl Pages {
             lane: PageLane::start(WORKER_NAME, WORKERS)?,
             shared: Arc::new(Shared {
                 memory: Mutex::new(MemoryCache::new(MEMORY_BUDGET_BYTES)),
+                in_flight: PagesInFlight::default(),
                 books: OpenBooks::default(),
                 undecodable: RwLock::default(),
                 transcode_folder,
@@ -209,14 +211,15 @@ impl Pages {
         Ok(Some(served))
     }
 
-    /// Replaces the reading ahead still waiting with the pages from `first` on that memory doesn't hold yet.
+    /// Replaces the reading ahead still waiting with the pages from `first` on that memory doesn't hold and no job is reading yet.
     fn read_ahead(&self, opened: &OpenBook, first: usize) {
         let memory = self.shared.memory();
         let jobs = (first..opened.page_count)
             .take(PAGES_READ_AHEAD)
             .filter_map(|index| {
                 let page = opened.page(u32::try_from(index).ok()?)?;
-                (!memory.contains(&page.path)).then_some(page)
+                (!memory.contains(&page.path) && !self.shared.in_flight.contains(&page.path))
+                    .then_some(page)
             })
             .map(|page| -> Job {
                 let shared = Arc::clone(&self.shared);
@@ -238,16 +241,14 @@ impl Shared {
         self.memory.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// Reads the page into memory unless another job read it meanwhile, holding the book so two jobs never read the same page at once.
+    /// Reads the page into memory unless another job read it meanwhile, a job asking for a page another is reading waiting for that one's result.
     fn serve(&self, opened: &OpenBook, page: PageAt) -> Result<Arc<ServedPage>, PageError> {
         let PageAt { path, index } = page;
-        let bytes = {
-            let mut book = opened.lock();
-            if let Some(page) = self.memory().get(&path) {
-                return Ok(page);
-            }
-            book.read_page(index)?
-        };
+        let _claim = self.in_flight.claim(path);
+        if let Some(page) = self.memory().get(&path) {
+            return Ok(page);
+        }
+        let bytes = opened.lock().read_page(index)?;
         let page = Arc::new(self.prepared(path, bytes)?);
         let weight = u64::try_from(page.bytes.len()).unwrap_or(u64::MAX);
         self.memory().insert(path, Arc::clone(&page), weight);
@@ -304,6 +305,49 @@ impl Shared {
                 },
             )
             .as_ref()
+    }
+}
+
+/// The pages a job is reading, so a second job for one waits for the first rather than reading and transcoding it again.
+#[derive(Default)]
+struct PagesInFlight {
+    reading: Mutex<HashSet<PagePath>>,
+    finished: Condvar,
+}
+
+/// A page one job reads until the claim is dropped, its result in memory by then unless reading it failed.
+struct PageClaim<'pages> {
+    pages: &'pages PagesInFlight,
+    path: PagePath,
+}
+
+impl PagesInFlight {
+    /// Claims the page, first waiting for any other job reading it to finish.
+    fn claim(&self, path: PagePath) -> PageClaim<'_> {
+        let mut reading = self.reading();
+        while reading.contains(&path) {
+            reading = self
+                .finished
+                .wait(reading)
+                .unwrap_or_else(PoisonError::into_inner);
+        }
+        reading.insert(path);
+        PageClaim { pages: self, path }
+    }
+
+    fn contains(&self, path: &PagePath) -> bool {
+        self.reading().contains(path)
+    }
+
+    fn reading(&self) -> MutexGuard<'_, HashSet<PagePath>> {
+        self.reading.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+impl Drop for PageClaim<'_> {
+    fn drop(&mut self) {
+        self.pages.reading().remove(&self.path);
+        self.pages.finished.notify_all();
     }
 }
 
@@ -382,9 +426,63 @@ fn opened_book(
 
 #[cfg(test)]
 mod tests {
+    use std::{sync::Barrier, thread};
+
+    use omnileaf_formats::LocalStorage;
+    use omnileaf_sync_proto::{Fingerprint, ImageEntry};
+    use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, ScratchFolder, cbz, page_webp};
+
     use super::*;
+    use crate::file_in_storage::FileInStorage;
 
     const PAGE_COUNT: usize = 30;
+    const RACED_PAGES: u32 = 12;
+
+    fn webp_book(folder: &ScratchFolder) -> FileInStorage {
+        let entries: Vec<ArchiveEntry> = (0..RACED_PAGES)
+            .map(|index| ArchiveEntry {
+                name: format!("{index:03}.webp"),
+                bytes: page_webp(7, index, PageShape::Spread).unwrap(),
+            })
+            .collect();
+        FileInStorage {
+            storage: Arc::new(LocalStorage),
+            path: folder.write("book.cbz", &cbz(&entries, Compression::Stored).unwrap()),
+        }
+    }
+
+    #[test]
+    fn hands_a_page_two_jobs_ask_for_at_once_to_both_from_a_single_transcode() {
+        let folder = ScratchFolder::new("pages-in-flight");
+        let stored = webp_book(&folder);
+        let pages = Pages::open(folder.path().join("transcodes")).unwrap();
+        *pages.shared.undecodable.write().unwrap() = HashSet::from([ProbedFormat::Webp]);
+        let file = BookFileAt {
+            book: omnileaf_sync_proto::BookId::local(
+                &Fingerprint::pmf1([ImageEntry { crc32: 7, size: 1 }]).unwrap(),
+            ),
+            rev: 1,
+        };
+        let opened = pages.shared.books.open(file, &stored).unwrap();
+
+        let shared_both = (0..RACED_PAGES).all(|index| {
+            let page = opened.page(index).unwrap();
+            let start = Barrier::new(2);
+            let [first, second] = thread::scope(|scope| {
+                [(); 2]
+                    .map(|()| {
+                        scope.spawn(|| {
+                            start.wait();
+                            pages.shared.serve(&opened, page).unwrap()
+                        })
+                    })
+                    .map(|job| job.join().unwrap())
+            });
+            Arc::ptr_eq(&first, &second)
+        });
+
+        assert!(shared_both);
+    }
 
     fn started_at(position_page: Option<u32>) -> StoredReading {
         StoredReading::Started { position_page }
