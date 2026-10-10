@@ -13,6 +13,7 @@
 
   import CoverBadges from "./CoverBadges.svelte";
   import CoverImage from "./CoverImage.svelte";
+  import ListCover from "./ListCover.svelte";
   import { coverLook } from "./cover-look";
   import { SCREEN_SIZES } from "./library-view";
   import type { CoverUrl } from "./cover-url";
@@ -152,11 +153,11 @@
     href={resolve("/(app)/series/[id]", { id: one.id })}
     class="box-content flex items-center gap-cover-gap border-be border-border py-sm min-block-series-row large:gap-lg large:py-series-row-pad-wide large:min-block-series-row-wide"
   >
-    <div
-      class="relative box-content aspect-cover shrink-0 overflow-hidden rounded-list-cover border border-cover-edge bg-chip inline-list-cover large:inline-list-cover-wide"
-    >
-      <CoverImage cover={shown.cover} {coverUrl} />
-    </div>
+    <ListCover
+      cover={shown.cover}
+      {coverUrl}
+      class="rounded-list-cover inline-list-cover large:inline-list-cover-wide"
+    />
     <div
       class="flex flex-1 flex-col gap-2xs min-inline-none large:flex-row large:items-center large:gap-lg"
     >
