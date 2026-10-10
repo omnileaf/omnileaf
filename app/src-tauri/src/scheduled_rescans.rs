@@ -3,6 +3,8 @@ use std::path::Path;
 use omnileaf_engine::{Library, RescanConditions, Storage};
 use tauri::{AppHandle, Manager, async_runtime::JoinHandle};
 
+use crate::folder_storage;
+
 /// Rescans the library's folders as their turns come, for as long as the app runs.
 pub(crate) struct ScheduledRescans {
     _task: JoinHandle<()>,
@@ -11,8 +13,8 @@ pub(crate) struct ScheduledRescans {
 struct ThisDevice;
 
 impl RescanConditions for ThisDevice {
-    fn storage_of(&self, _folder: &Path) -> Storage {
-        Storage::Local
+    fn storage_of(&self, folder: &Path) -> Storage {
+        folder_storage::storage_of(folder)
     }
 }
 

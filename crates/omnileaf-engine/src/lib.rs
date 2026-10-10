@@ -10,6 +10,7 @@ mod cover_thumbnails;
 mod crash_report;
 mod device_class;
 mod error_chain;
+mod external_storage;
 mod ipc_brand;
 mod library;
 mod library_changes;
@@ -38,6 +39,7 @@ pub use crash_report::{
     is_panic_contained,
 };
 pub use error_chain::describe_error;
+pub use external_storage::{storage_by_device, storage_in_mountinfo, storage_of_windows_path};
 pub use library::{Library, LibraryError};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};

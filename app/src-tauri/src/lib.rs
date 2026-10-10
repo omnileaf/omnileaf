@@ -7,6 +7,7 @@ mod e2e;
 #[cfg(target_os = "ios")]
 mod folder_access;
 mod folder_picker;
+mod folder_storage;
 mod ipc_error;
 mod library_events;
 mod library_problem;
