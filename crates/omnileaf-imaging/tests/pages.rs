@@ -10,7 +10,7 @@ use omnileaf_imaging::{ImagingError, PageFormat, Size, page_size, shrink_page, t
 use omnileaf_testkit::{
     ENCODED_PAGE_HEIGHT, ENCODED_PAGE_INK, ENCODED_PAGE_PAPER, ENCODED_PAGE_WIDTH,
     INK_OVER_CLEAR_JXL, INK_OVER_PAPER_AVIF, INK_OVER_PAPER_JXL, PageShape, jxl_header_only,
-    page_jpeg, page_png, page_webp, webp_header_only,
+    page_jpeg, page_png, page_webp, strip_jpeg, webp_header_only,
 };
 
 const SEED: u64 = 5;
@@ -306,5 +306,21 @@ fn refuses_to_shrink_a_page_whose_decode_would_outgrow_the_memory_budget() {
     assert!(
         matches!(shrunk, Err(ImagingError::TooLarge { .. })),
         "{shrunk:?}"
+    );
+}
+
+#[test]
+fn shrinks_a_jpeg_by_decoding_it_at_the_largest_built_in_scale_within_the_pixels_allowed() {
+    let strip = strip_jpeg(400, 6000).unwrap();
+
+    let shrunk = shrink_page(&strip, 1_000_000).unwrap();
+
+    assert_eq!(shrunk.format, PageFormat::Jpeg);
+    assert_eq!(
+        page_size(&shrunk.bytes).unwrap(),
+        Size {
+            width: 200,
+            height: 3000
+        }
     );
 }

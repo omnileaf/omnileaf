@@ -21,7 +21,7 @@ use omnileaf_engine::{
 use omnileaf_imaging::{Size, page_size};
 use omnileaf_testkit::{
     ArchiveEntry, Compression, ENCODED_PAGE_HEIGHT, ENCODED_PAGE_WIDTH, INK_OVER_CLEAR_JXL,
-    INK_OVER_PAPER_JXL, PageShape, cbz, page_jpeg, page_png, webp_header_only,
+    INK_OVER_PAPER_JXL, PageShape, cbz, page_jpeg, page_png, strip_jpeg, webp_header_only,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -55,10 +55,27 @@ impl Reader {
         Self::with_books(name, &[(BOOK, pages.to_vec())]).await
     }
 
+    /// A book stored without compression, for pages that deflate far enough to look like an archive bomb.
+    async fn with_stored_pages(name: &str, pages: &[Vec<u8>]) -> Self {
+        Self::with_books_compressed(name, &[(BOOK, pages.to_vec())], Compression::Stored).await
+    }
+
     async fn with_books(name: &str, books: &[(&str, Vec<Vec<u8>>)]) -> Self {
+        Self::with_books_compressed(name, books, Compression::Deflated).await
+    }
+
+    async fn with_books_compressed(
+        name: &str,
+        books: &[(&str, Vec<Vec<u8>>)],
+        compression: Compression,
+    ) -> Self {
         let comics = ScratchFolder::new(&format!("{name}-comics"));
         for (title, pages) in books {
-            write_named_book(&comics.path().join(FOLDER).join(SERIES), title, pages);
+            write_named_book(
+                &comics.path().join(FOLDER).join(SERIES),
+                (title, pages),
+                compression,
+            );
         }
         let home = ScratchFolder::new(&format!("{name}-home"));
         let library = Library::open(home.path().to_path_buf(), FixedClock)
@@ -137,10 +154,10 @@ fn portrait_pages(seed: u64) -> Vec<Vec<u8>> {
 }
 
 fn write_book(series: &Path, pages: &[Vec<u8>]) {
-    write_named_book(series, BOOK, pages);
+    write_named_book(series, (BOOK, pages), Compression::Deflated);
 }
 
-fn write_named_book(series: &Path, title: &str, pages: &[Vec<u8>]) {
+fn write_named_book(series: &Path, (title, pages): (&str, &[Vec<u8>]), compression: Compression) {
     let entries: Vec<ArchiveEntry> = pages
         .iter()
         .enumerate()
@@ -152,7 +169,7 @@ fn write_named_book(series: &Path, title: &str, pages: &[Vec<u8>]) {
     fs::create_dir_all(series).unwrap();
     fs::write(
         series.join(format!("{title}.cbz")),
-        cbz(&entries, Compression::Deflated).unwrap(),
+        cbz(&entries, compression).unwrap(),
     )
     .unwrap();
 }
@@ -604,4 +621,26 @@ async fn serves_a_page_as_it_is_when_its_header_does_not_give_its_size() {
 
     assert!(page_size(&odd).is_err());
     assert_eq!(resource, served("image/jpeg", odd));
+}
+
+#[tokio::test]
+async fn shrinks_a_jpeg_strip_with_more_pixels_than_a_webview_can_draw_to_half_its_size() {
+    let mut pages = portrait_pages(SEED);
+    pages[1] = strip_jpeg(800, 50_100).unwrap();
+    let reader = Reader::with_stored_pages("long-jpeg-strip", &pages).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let resource = reader.page(&opened, 1).await;
+
+    let Resource::Immutable { content_type, body } = &resource else {
+        panic!("{resource:?}");
+    };
+    assert_eq!(*content_type, "image/jpeg");
+    assert_eq!(
+        page_size(body).unwrap(),
+        Size {
+            width: 400,
+            height: 25_050
+        }
+    );
 }
