@@ -4,14 +4,8 @@ import {
   isListedBeside,
   isWithinSection,
   sectionCurrent,
-  settingsGroups,
+  SETTINGS_GROUPS,
 } from "./sections";
-
-function routesIn(isDevelopmentBuild: boolean): string[][] {
-  return settingsGroups({ isDevelopmentBuild }).map((group) =>
-    group.map((section) => section.route),
-  );
-}
 
 test("counts a section's own page as within it", () => {
   expect(isWithinSection("/settings/general", "/settings/general")).toBe(true);
@@ -63,20 +57,10 @@ test("leaves a page under a section out of the list beside it", () => {
   expect(isListedBeside("/(app)/settings/about/licences")).toBe(false);
 });
 
-test("lists Advanced just above About in a development build", () => {
-  const groups = routesIn(true);
+test("lists Advanced just above About", () => {
+  const routes = SETTINGS_GROUPS.at(-1)?.map((section) => section.route);
 
-  expect(groups.at(-1)).toEqual([
-    "/(app)/settings/advanced",
-    "/(app)/settings/about",
-  ]);
-});
-
-test("leaves Advanced out of a release build entirely", () => {
-  const groups = routesIn(false);
-
-  expect(groups.flat()).not.toContain("/(app)/settings/advanced");
-  expect(groups.at(-1)).toEqual(["/(app)/settings/about"]);
+  expect(routes).toEqual(["/(app)/settings/advanced", "/(app)/settings/about"]);
 });
 
 test("lists Advanced beside the open page", () => {

@@ -131,6 +131,7 @@ export const APP_PAGES = [
   "/settings/appearance",
   "/settings/general",
   "/settings/general/language",
+  "/settings/advanced",
   "/settings/about",
   "/settings/about/licences",
 ] as const;
