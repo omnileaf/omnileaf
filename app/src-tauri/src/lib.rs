@@ -12,6 +12,7 @@ mod ipc_error;
 mod library_events;
 mod library_problem;
 mod omni_protocol;
+mod power_mode;
 mod runtime_config;
 mod scheduled_rescans;
 mod system_bars;

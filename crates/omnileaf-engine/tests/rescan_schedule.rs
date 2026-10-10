@@ -13,10 +13,11 @@ mod support;
 
 use std::{
     fs,
+    future::ready,
     path::Path,
     sync::{
         Arc,
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
         mpsc,
     },
     time::Duration,
@@ -24,14 +25,18 @@ use std::{
 
 use books::write_book;
 use omnileaf_engine::{
-    Clock, EXTERNAL_RESCAN_EVERY, FileChanges, FolderId, FolderRescan, Library, RESCAN_EVERY,
-    RescanConditions, RescanOutcome, Storage,
+    Clock, EXTERNAL_RESCAN_EVERY, FileChanges, FolderId, FolderRescan, Library, PowerMode,
+    RESCAN_EVERY, RescanConditions, RescanOutcome, Storage,
 };
 use support::{NOW_UNIX_MS, ScratchFolder};
-use tokio::sync::oneshot;
+use tokio::{
+    sync::{mpsc::unbounded_channel, oneshot},
+    time::timeout,
+};
 
 const SERIES: &str = "Sample Series 01";
 const JUST_BEFORE: Duration = Duration::from_millis(1);
+const SEVERAL_CHECKS: Duration = Duration::from_mins(10);
 
 /// A clock that stands still until a test moves it on.
 #[derive(Clone)]
@@ -54,20 +59,34 @@ impl Clock for SteppedClock {
     }
 }
 
-/// A device whose every folder is on one kind of storage.
+/// A device whose every folder is on one kind of storage, saving power while a test says so.
 struct Device {
     storage: Storage,
+    is_saving_power: AtomicBool,
 }
 
-impl RescanConditions for Device {
-    fn storage_of(&self, _folder: &Path) -> Storage {
-        self.storage
+impl Device {
+    fn on(storage: Storage) -> Self {
+        Self {
+            storage,
+            is_saving_power: AtomicBool::new(false),
+        }
     }
 }
 
-const LOCAL_DEVICE: Device = Device {
-    storage: Storage::Local,
-};
+impl RescanConditions for Device {
+    fn storage_of(&self, _folder: &Path) -> impl Future<Output = Storage> + Send {
+        ready(self.storage)
+    }
+
+    fn power_mode(&self) -> impl Future<Output = PowerMode> + Send {
+        ready(if self.is_saving_power.load(Ordering::SeqCst) {
+            PowerMode::Saving
+        } else {
+            PowerMode::Normal
+        })
+    }
+}
 
 /// A library linked to one folder of one book, whose schedule has already seen both its folders.
 struct Running {
@@ -81,7 +100,7 @@ struct Running {
 
 impl Running {
     async fn new(name: &str) -> Self {
-        Self::on(name, LOCAL_DEVICE).await
+        Self::on(name, Device::on(Storage::Local)).await
     }
 
     async fn on(name: &str, device: Device) -> Self {
@@ -121,6 +140,14 @@ impl Running {
             .rescan_due_folders(&self.device, async {})
             .await
             .unwrap()
+    }
+
+    /// Returns once the scheduled check under way lets go of the library, by rescanning a folder by hand, which leaves the schedule as it was.
+    async fn wait_for_the_check_under_way(&self) {
+        self.library
+            .rescan_folder(self.linked, |_| {})
+            .await
+            .unwrap();
     }
 
     fn outcome_of_linked(&self, rescans: &[FolderRescan]) -> Option<RescanOutcome> {
@@ -209,13 +236,7 @@ async fn prepares_for_rescanning_only_once_a_folder_has_its_turn() {
 
 #[tokio::test]
 async fn waits_the_longer_turn_for_folders_on_external_storage() {
-    let running = Running::on(
-        "schedule-external",
-        Device {
-            storage: Storage::External,
-        },
-    )
-    .await;
+    let running = Running::on("schedule-external", Device::on(Storage::External)).await;
     running.clock.advance(RESCAN_EVERY);
     let at_the_usual_turn = running.rescan_due().await;
     running
@@ -226,6 +247,23 @@ async fn waits_the_longer_turn_for_folders_on_external_storage() {
 
     assert_eq!(at_the_usual_turn, []);
     assert_eq!(at_the_longer_turn.len(), 2);
+}
+
+#[tokio::test]
+async fn rescans_no_folder_while_the_device_saves_power_and_catches_up_after() {
+    let running = Running::new("schedule-saving-power").await;
+    running.clock.advance(RESCAN_EVERY);
+    running.device.is_saving_power.store(true, Ordering::SeqCst);
+    let while_saving = running.rescan_due().await;
+    running
+        .device
+        .is_saving_power
+        .store(false, Ordering::SeqCst);
+
+    let after = running.rescan_due().await;
+
+    assert_eq!(while_saving, []);
+    assert_eq!(after.len(), 2);
 }
 
 #[tokio::test]
@@ -281,4 +319,55 @@ async fn leaves_the_folders_for_a_later_turn_while_another_scan_runs() {
 
     assert_eq!(while_scanning, []);
     assert_eq!(after.len(), 2);
+}
+
+/// Runs the schedule of `running` in the background, sending on `prepared` each time a folder's turn comes.
+fn spawn_schedule(
+    running: &Arc<Running>,
+    prepared: tokio::sync::mpsc::UnboundedSender<()>,
+) -> tokio::task::JoinHandle<()> {
+    let running = Arc::clone(running);
+    tokio::spawn(async move {
+        running
+            .library
+            .rescan_on_schedule(&running.device, move || {
+                let _ = prepared.send(());
+                async {}
+            })
+            .await;
+    })
+}
+
+#[tokio::test(start_paused = true)]
+async fn checks_no_folder_until_scheduled_rescans_are_turned_on() {
+    let running = Arc::new(Running::new("schedule-switched-on").await);
+    running.clock.advance(RESCAN_EVERY);
+    let (prepared, mut preparations) = unbounded_channel();
+    let schedule = spawn_schedule(&running, prepared);
+    let while_off = timeout(SEVERAL_CHECKS, preparations.recv()).await;
+
+    running.library.set_scheduled_rescans(true);
+    let once_on = preparations.recv().await;
+
+    schedule.abort();
+    assert!(while_off.is_err());
+    assert_eq!(once_on, Some(()));
+}
+
+#[tokio::test(start_paused = true)]
+async fn checks_no_folder_once_scheduled_rescans_are_turned_off() {
+    let running = Arc::new(Running::new("schedule-switched-off").await);
+    running.library.set_scheduled_rescans(true);
+    running.clock.advance(RESCAN_EVERY);
+    let (prepared, mut preparations) = unbounded_channel();
+    let schedule = spawn_schedule(&running, prepared);
+    preparations.recv().await;
+
+    running.library.set_scheduled_rescans(false);
+    running.wait_for_the_check_under_way().await;
+    running.clock.advance(RESCAN_EVERY);
+    let once_off = timeout(SEVERAL_CHECKS, preparations.recv()).await;
+
+    schedule.abort();
+    assert!(once_off.is_err());
 }
