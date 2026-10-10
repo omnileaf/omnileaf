@@ -266,7 +266,7 @@ async fn announces_the_books_marked_as_a_synced_change() {
 
     let announced = changes.try_recv().unwrap();
     assert!(
-        matches!(&announced, Changed::Registers { keys } if keys.len() == 1),
+        matches!(&announced, Changed::Registers { keys, recounted: true } if keys.len() == 1),
         "{announced:?}"
     );
 }

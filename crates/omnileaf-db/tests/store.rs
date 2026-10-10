@@ -167,7 +167,8 @@ async fn announces_the_keys_a_write_changed_once_it_commits() {
                 Key::from(LatestKey::BookPosition(book(1))),
                 Key::from(MaximumKey::BookFurthest(book(1))),
                 Key::from(LatestKey::BookRead(book(2))),
-            ])
+            ]),
+            recounted: false,
         })
     );
 }

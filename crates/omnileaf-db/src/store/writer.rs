@@ -1,7 +1,7 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use omnileaf_sync_proto::{BookId, MergeClass, Register, Value};
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 
 use crate::{
     Error,
@@ -15,11 +15,20 @@ use crate::{
     },
 };
 
+const STAGE_OF_BOOK: &str = "SELECT book_state.is_read IS 1,
+        (book_state.is_read IS 1 OR book_state.position_page IS NOT NULL
+            OR book_state.furthest_page IS NOT NULL) IS 1
+    FROM book LEFT JOIN book_state ON book_state.book_id = book.id WHERE book.id = ?1";
+
+type ReadingStage = (bool, bool);
+
 pub struct Writer<'t> {
     connection: &'t Connection,
     local: LocalReplica,
     now_unix_ms: u64,
     changed: BTreeSet<Key>,
+    /// Each written book of the catalog as it stood before the job wrote anything, which the series counts follow.
+    stages_before: BTreeMap<BookId, ReadingStage>,
     has_failed: bool,
 }
 
@@ -30,6 +39,7 @@ impl<'t> Writer<'t> {
             local: LocalReplica::read(connection)?,
             now_unix_ms,
             changed: BTreeSet::new(),
+            stages_before: BTreeMap::new(),
             has_failed: false,
         })
     }
@@ -96,6 +106,7 @@ impl<'t> Writer<'t> {
             value: value.to_cbor(),
         };
         let seq = self.local.next_seq();
+        self.note_stage_before(key.book())?;
         if register::upsert(self.connection, &key.address(), &register, seq)? {
             projector::project(self.connection, key, value)?;
             self.local.advance_seq_saturating();
@@ -104,11 +115,40 @@ impl<'t> Writer<'t> {
         Ok(())
     }
 
+    fn note_stage_before(&mut self, book: BookId) -> Result<(), Error> {
+        if self.stages_before.contains_key(&book) {
+            return Ok(());
+        }
+        if let Some(stage) = stage_of(self.connection, book)? {
+            self.stages_before.insert(book, stage);
+        }
+        Ok(())
+    }
+
+    fn is_recounted(&self) -> Result<bool, Error> {
+        for (book, before) in &self.stages_before {
+            if stage_of(self.connection, *book)? != Some(*before) {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     pub(crate) fn finish(self) -> Result<Changed, Error> {
         if self.has_failed {
             return Err(Error::FailedWriteIgnored);
         }
         self.local.save(self.connection)?;
-        Ok(Changed::Registers { keys: self.changed })
+        Ok(Changed::Registers {
+            recounted: self.is_recounted()?,
+            keys: self.changed,
+        })
     }
+}
+
+fn stage_of(connection: &Connection, book: BookId) -> Result<Option<ReadingStage>, Error> {
+    Ok(connection
+        .prepare(STAGE_OF_BOOK)?
+        .query_row([book.as_bytes()], |row| Ok((row.get(0)?, row.get(1)?)))
+        .optional()?)
 }
