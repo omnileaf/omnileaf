@@ -429,8 +429,8 @@
   --spacing-history-days: 0.875rem;
   --spacing-history-days-wide: 1.375rem;
   --spacing-history-cover-wide: 2.5rem;
-  --spacing-history-time: 4rem;
-  --spacing-history-length: 7rem;
+  --spacing-history-time: 6.25rem;
+  --spacing-history-length: 9rem;
   --spacing-history-action: 6.5rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),

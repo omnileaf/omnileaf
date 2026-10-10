@@ -1,5 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
+import english from "../../messages/en.json" with { type: "json" };
+import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import {
   CommandFailure,
   emitFakeEvent,
@@ -37,6 +39,7 @@ const DESKTOP_TITLE_GAP = 14;
 const DESKTOP_DAYS_TOP = 22;
 const DESKTOP_ACTION_RADIUS = "8px";
 const PHONE_LIST_INSET = 20;
+const LANGUAGES = { en: english, "en-XA": pseudo } as const;
 
 interface Session {
   readonly number: number;
@@ -167,12 +170,35 @@ function rows(page: Page): Locator {
   return days(page).getByRole("listitem");
 }
 
-async function openHistory(page: Page): Promise<void> {
+async function openHistory(page: Page, title = "History"): Promise<void> {
   await page.clock.setFixedTime(MONDAY_EVENING);
   await page.goto("/history");
   await expect(
-    page.getByRole("heading", { level: 1, name: "History" }),
+    page.getByRole("heading", { level: 1, name: title }),
   ).toBeVisible();
+}
+
+/** Matches text starting the way `message` does, up to its first placeholder. */
+function startOf(message: string): RegExp {
+  const start = message.slice(0, message.indexOf("{"));
+  return new RegExp(
+    `^${start.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}`,
+  );
+}
+
+/** How many lines each cell's text takes, and whether it stays inside the cell. */
+async function linesOf(
+  cells: Locator,
+): Promise<{ lines: number; fits: boolean }[]> {
+  return cells.evaluateAll((elements) =>
+    elements.map((element) => ({
+      lines: Math.round(
+        element.getBoundingClientRect().height /
+          Number.parseFloat(getComputedStyle(element).lineHeight),
+      ),
+      fits: element.scrollWidth <= element.clientWidth,
+    })),
+  );
 }
 
 test.describe("before anything is read", () => {
@@ -470,6 +496,101 @@ test.describe("with Screenshot mode on", () => {
     await expect(rows(page).getByRole("presentation")).toHaveCount(0);
     expect(coverRequests).toBe(0);
   });
+});
+
+test.describe("with sessions at the widest times and lengths", () => {
+  const widest = [
+    entry({
+      number: 3,
+      startedAt: "2026-10-05T12:58:00.000Z",
+      minutes: 8 * 60 + 58,
+      readTo: ON_PAGE_14,
+      dayMinutes: 8 * 60 + 58,
+    }),
+    entry({
+      number: 5,
+      startedAt: "2026-09-30T12:58:00.000Z",
+      minutes: 118,
+      readTo: ON_PAGE_14,
+      dayMinutes: 118,
+    }),
+    entry({
+      number: 8,
+      startedAt: "2026-09-15T12:58:00.000Z",
+      minutes: 58,
+      readTo: ON_PAGE_14,
+      dayMinutes: 58,
+    }),
+  ];
+
+  test.use({
+    backend: { ...READ_BACKEND, readingHistory: pagedSessions(widest) },
+  });
+
+  test("names a day before last week by its full date", async ({ page }) => {
+    await openHistory(page);
+
+    await expect(
+      page.getByRole("region", { name: "Tuesday, September 15 58 min" }),
+    ).toBeVisible();
+  });
+
+  test("lines each session's time and length up in columns on a desktop", async ({
+    page,
+  }) => {
+    test.skip(!isDesktop(page), "desktops only");
+    await openHistory(page);
+    await page.evaluate(() => document.fonts.ready);
+    const widthsOf = (cells: Locator): Promise<number[]> =>
+      cells.evaluateAll((elements) =>
+        elements.map((element) => element.getBoundingClientRect().width),
+      );
+
+    const columns = [
+      await widthsOf(
+        rows(page)
+          .getByText(/^Started at /)
+          .locator("xpath=.."),
+      ),
+      await widthsOf(
+        rows(page)
+          .getByText(/^Read for /)
+          .filter({ visible: true }),
+      ),
+    ];
+
+    expect(columns.map((widths) => new Set(widths).size)).toEqual([1, 1]);
+  });
+
+  for (const [language, messages] of Object.entries(LANGUAGES)) {
+    test(`keeps each session's time and length on one line on a desktop in ${language}`, async ({
+      page,
+    }) => {
+      test.skip(!isDesktop(page), "desktops only");
+      await page.addInitScript((chosen) => {
+        window.localStorage.setItem("omnileaf.language", chosen);
+      }, language);
+      await openHistory(page, messages.history_title);
+      const times = rows(page)
+        .getByText(startOf(messages.history_started_at))
+        .locator("xpath=..");
+      const lengths = rows(page)
+        .getByText(startOf(messages.history_read_for))
+        .filter({ visible: true });
+      await expect(times).toHaveCount(widest.length);
+      await expect(lengths).toHaveCount(widest.length);
+      await page.evaluate(() => document.fonts.ready);
+
+      const cells = [...(await linesOf(times)), ...(await linesOf(lengths))];
+
+      expect(cells).toEqual(
+        Array.from({ length: 2 * widest.length }, () => ({
+          lines: 1,
+          fits: true,
+        })),
+      );
+    });
+  }
 });
 
 test.describe("with a long history", () => {
