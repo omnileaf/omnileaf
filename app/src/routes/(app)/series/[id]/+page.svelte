@@ -54,18 +54,29 @@
     foundId === undefined ? undefined : seriesBookList(foundId, () => listing),
   );
 
-  let backLink: HTMLAnchorElement | undefined = $state();
+  let barHeight = $state(0);
   let isTitleUnderBar = $state(false);
 
-  function lookAtTitle(): void {
+  /** Watches the page's title against the bar, so the bar shows the title once the page's title is under it, however the page moved. */
+  function watchTitleUnderBar(barBottom: number): () => void {
     const title = document.querySelector("main h1");
-    const bar = backLink?.parentElement;
-    isTitleUnderBar =
-      title !== null &&
-      bar !== null &&
-      bar !== undefined &&
-      title.getBoundingClientRect().bottom <=
-        bar.getBoundingClientRect().bottom;
+    if (title === null) {
+      return () => undefined;
+    }
+    const watching = new IntersectionObserver(
+      ([seen]) => {
+        if (seen !== undefined) {
+          isTitleUnderBar =
+            !seen.isIntersecting &&
+            seen.boundingClientRect.bottom <= (seen.rootBounds?.top ?? 0);
+        }
+      },
+      { rootMargin: `${String(-barBottom)}px 0px 0px 0px` },
+    );
+    watching.observe(title);
+    return () => {
+      watching.disconnect();
+    };
   }
 
   function readAgain(): void {
@@ -86,14 +97,11 @@
     });
   });
 
-  onMount(() => {
-    document.addEventListener("scroll", lookAtTitle, {
-      capture: true,
-      passive: true,
-    });
-    return () => {
-      document.removeEventListener("scroll", lookAtTitle, { capture: true });
-    };
+  $effect(() => {
+    if (overview !== undefined && barHeight > 0) {
+      return watchTitleUnderBar(barHeight);
+    }
+    return undefined;
   });
 
   onMount(() =>
@@ -125,13 +133,13 @@
     </div>
   {/if}
   <header
+    bind:clientHeight={barHeight}
     class={[
       "flex items-center gap-sm motion-safe:transition-colors motion-safe:duration-fade max-medium:sticky max-medium:-inset-bs-page-top max-medium:z-series-bar max-medium:-ms-page-start max-medium:-me-page-end max-medium:ps-page-start max-medium:pe-page-end max-medium:pbs-series-bar-top max-medium:pbe-xs",
       isTitleUnderBar && "max-medium:bg-background",
     ]}
   >
     <a
-      bind:this={backLink}
       href={resolve("/(app)")}
       class="flex shrink-0 items-center justify-center self-start rounded-full bg-series-crumb text-small font-semibold text-on-series-crumb backdrop-blur-glass block-series-back inline-series-back medium:gap-xs medium:rounded-field medium:ps-sm medium:pe-md medium:inline-auto expanded:block-series-crumb android:max-medium:block-touch-target android:max-medium:inline-touch-target"
     >
