@@ -6,7 +6,7 @@ use omnileaf_db::{
         AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator,
         SeriesOrder, add_root, bookmarked_roots, cover_file, library_root, library_roots,
         mark_root_available, mark_root_unavailable, remove_root, root_book_count, series_count,
-        series_page, set_home_root,
+        series_page,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_view::{library_view, set_library_view},
@@ -25,6 +25,7 @@ use crate::{
     device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
     library_layout::folder_name,
+    moved_home::move_home,
     rescan::rescan,
     scan::{Target, find_books_in, scan, walk},
 };
@@ -396,11 +397,10 @@ impl Library {
     }
 
     async fn set_home(&self, home: PathBuf) -> Result<(), LibraryError> {
-        let locator = RootLocator::Path(home);
         let added_at_ms = self.now_ms();
         self.store
             .database()
-            .write(move |transaction| set_home_root(transaction, &locator, added_at_ms))
+            .write(move |transaction| move_home(transaction, &home, added_at_ms))
             .await?;
         Ok(())
     }

@@ -22,6 +22,7 @@ use support::{FixedClock, ScratchFolder};
 
 const DATABASE_FILE: &str = "library.sqlite";
 const SERIES_01: &str = "Sample Series 01";
+const SERIES_02: &str = "Sample Series 02";
 const PAGE_READ_TO: u32 = 5;
 
 async fn open_together(folder: &Path) -> Library {
@@ -147,6 +148,30 @@ async fn keeps_the_books_and_reading_state_of_a_home_moved_with_its_files() {
     );
     assert_eq!(only_book(database.path()), book);
     assert_eq!(position_of(database.path(), book), Some(PAGE_READ_TO));
+}
+
+#[tokio::test]
+async fn keeps_the_books_and_reading_state_of_a_home_left_behind_as_a_linked_folder() {
+    let data = ScratchFolder::new("home-left-data");
+    let documents = ScratchFolder::new("home-left-documents");
+    let book = library_read_in(data.path(), data.path()).await;
+    write_book(&documents.path().join(SERIES_02).join("v01.cbz"), 2);
+    let library = open_apart(data.path(), documents.path()).await;
+
+    library.rescan_folders().await.unwrap();
+
+    assert_eq!(
+        folders(&library).await,
+        [
+            (FolderKind::Linked, "home-left-data".to_owned()),
+            (FolderKind::Home, "home-left-documents".to_owned()),
+        ]
+    );
+    assert_eq!(
+        series_titles(&library).await,
+        [(SERIES_01.to_owned(), 1), (SERIES_02.to_owned(), 1)]
+    );
+    assert_eq!(position_of(data.path(), book), Some(PAGE_READ_TO));
 }
 
 #[tokio::test]

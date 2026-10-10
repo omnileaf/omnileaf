@@ -17,6 +17,7 @@ mod library_folder;
 mod library_layout;
 mod library_series;
 mod library_view;
+mod moved_home;
 mod project_link;
 mod rescan;
 mod rescan_plan;
