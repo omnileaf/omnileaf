@@ -499,12 +499,14 @@ test("shows only the books not read, and the books the other way round", async (
   await expect(books(page).first()).toHaveAttribute("aria-setsize", "9");
   await expect(books(page).first()).toContainText(shelf.titleOf(3));
 
-  await page.getByRole("button", { name: "Show the last book first" }).click();
+  await page
+    .getByRole("button", { name: "Order: in order. Change to last first" })
+    .click();
 
   await expect(books(page).first()).toContainText(shelf.titleOf(11));
   await expect(
-    page.getByRole("button", { name: "Show the books in order" }),
-  ).toBeVisible();
+    page.getByRole("button", { name: "Order: last first. Change to in order" }),
+  ).toHaveAttribute("title", "Order: last first. Change to in order");
 
   await show.getByRole("button", { name: "All" }).click();
 
@@ -559,7 +561,7 @@ test("keeps the show choices and the order the same size whichever is chosen", a
         show.getByRole("button", { name: "All" }),
         show.getByRole("button", { name: "Unread" }),
         page.getByRole("button", {
-          name: /^Show the (last book first|books in order)$/,
+          name: /^Order: /,
         }),
       ].map(async (control) => {
         const { width, height } = await boxOf(control);
@@ -569,9 +571,11 @@ test("keeps the show choices and the order the same size whichever is chosen", a
   const before = await sizes();
 
   await show.getByRole("button", { name: "Unread" }).click();
-  await page.getByRole("button", { name: "Show the last book first" }).click();
+  await page
+    .getByRole("button", { name: "Order: in order. Change to last first" })
+    .click();
   await expect(
-    page.getByRole("button", { name: "Show the books in order" }),
+    page.getByRole("button", { name: "Order: last first. Change to in order" }),
   ).toBeVisible();
 
   expect(await sizes()).toEqual(before);
