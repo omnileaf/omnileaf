@@ -50,6 +50,10 @@ enum Report {
     SaveNow {
         saved: Saved,
     },
+    SaveBeforeOpening {
+        book: BookId,
+        unsaved: oneshot::Sender<Option<ReachedPage>>,
+    },
 }
 
 /// Saves where the reader is through the store's write path, a moment after each page turn and at once when asked.
@@ -101,6 +105,17 @@ impl ReadingProgress {
 
     pub(crate) async fn save_now(&self) -> Result<(), LibraryError> {
         self.ask(|saved| Report::SaveNow { saved }).await
+    }
+
+    /// Saves whatever reading reached, answering with the page reached in `book` still unsaved should the save fail.
+    pub(crate) async fn save_before_opening(
+        &self,
+        book: BookId,
+    ) -> Result<Option<ReachedPage>, LibraryError> {
+        let (unsaved, answered) = oneshot::channel();
+        self.tell(Report::SaveBeforeOpening { book, unsaved })
+            .await?;
+        answered.await.map_err(|_| LibraryError::ReadingStopped)
     }
 
     async fn tell(&self, report: Report) -> Result<(), LibraryError> {
@@ -187,7 +202,20 @@ impl Keeper {
             }
             Report::Closed { book, saved } => answer(Some(saved), self.closed(book).await),
             Report::SaveNow { saved } => answer(Some(saved), self.save().await),
+            Report::SaveBeforeOpening { book, unsaved } => {
+                answer(None, self.save().await);
+                answer(Some(unsaved), self.unsaved_in(book));
+            }
         }
+    }
+
+    /// The page reached in `book`, read now or left before, that no save has landed yet.
+    fn unsaved_in(&self, book: BookId) -> Option<ReachedPage> {
+        self.session
+            .as_ref()
+            .filter(|open| open.book() == book)
+            .and_then(ReadingSession::unsaved)
+            .or_else(|| self.left_unsaved.get(&book).copied())
     }
 
     /// Saves the book read before and reads `book` from now on, unless it is the book read already.
@@ -341,7 +369,7 @@ async fn wait_until(due: Option<Instant>) {
 }
 
 /// Hands the outcome to whoever asked for the save, the save itself having logged any failure.
-fn answer(asker: Option<Saved>, outcome: Result<(), Error>) {
+fn answer<T>(asker: Option<oneshot::Sender<T>>, outcome: T) {
     if let Some(asker) = asker
         && asker.send(outcome).is_err()
     {

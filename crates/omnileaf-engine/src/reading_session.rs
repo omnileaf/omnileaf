@@ -1,3 +1,4 @@
+use omnileaf_db::catalog::BookReading as StoredReading;
 use tokio::time::{Duration, Instant};
 
 use crate::BookId;
@@ -11,6 +12,18 @@ pub(crate) struct ReachedPage {
     pub(crate) book: BookId,
     pub(crate) page: u32,
     pub(crate) is_last: bool,
+}
+
+impl ReachedPage {
+    /// The reading stored once this page saves over `stored`, which a save of the book's last page marks read.
+    pub(crate) const fn saved_over(self, stored: StoredReading) -> StoredReading {
+        let position_page = Some(self.page);
+        if self.is_last || matches!(stored, StoredReading::Read { .. }) {
+            StoredReading::Read { position_page }
+        } else {
+            StoredReading::Started { position_page }
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -310,6 +323,37 @@ mod tests {
         session.shown(4, Instant::now());
 
         assert_eq!(session.unsaved(), Some(reached(4)));
+    }
+
+    #[test]
+    fn reads_as_read_once_its_last_page_or_any_page_of_a_book_read_saves_over_it() {
+        let started = StoredReading::Started {
+            position_page: Some(2),
+        };
+        let read = StoredReading::Read {
+            position_page: Some(LAST_PAGE),
+        };
+
+        let stored = [
+            reached(4).saved_over(started),
+            reached(LAST_PAGE).saved_over(started),
+            reached(4).saved_over(read),
+        ];
+
+        assert_eq!(
+            stored,
+            [
+                StoredReading::Started {
+                    position_page: Some(4)
+                },
+                StoredReading::Read {
+                    position_page: Some(LAST_PAGE)
+                },
+                StoredReading::Read {
+                    position_page: Some(4)
+                },
+            ]
+        );
     }
 
     #[derive(Clone, Copy, Debug)]
