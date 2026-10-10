@@ -2,13 +2,13 @@ use std::{
     collections::HashSet,
     io,
     num::NonZeroUsize,
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::{Arc, Mutex, MutexGuard, PoisonError},
 };
 
 use omnileaf_cache::{CacheError, CacheKey, DiskCache};
 use omnileaf_db::catalog::Cover;
-use omnileaf_formats::{FormatError, open_book};
+use omnileaf_formats::{FormatError, Limits, Storage, open_book_in};
 use omnileaf_imaging::{ImagingError, is_whole_jpeg, thumbnail};
 use tokio::{sync::OnceCell, task::spawn_blocking};
 
@@ -27,6 +27,11 @@ const WORKERS: NonZeroUsize = if IS_MOBILE {
     NonZeroUsize::MIN.saturating_add(1)
 };
 const WORKER_NAME: &str = "omnileaf-thumbnails";
+
+pub(crate) struct CoverFile {
+    pub(crate) storage: Arc<dyn Storage>,
+    pub(crate) path: PathBuf,
+}
 
 /// Cover thumbnails, kept on disk under a byte budget and made on a background lane when missing.
 pub(crate) struct CoverThumbnails {
@@ -147,15 +152,15 @@ fn cached_thumbnail(cache: &DiskCache, key: &CacheKey) -> Option<Vec<u8>> {
 fn make_thumbnail(
     cache: Option<&DiskCache>,
     key: &CacheKey,
-    file: &Path,
+    file: &CoverFile,
 ) -> Result<Vec<u8>, ThumbnailError> {
     if let Some(cached) = cache.and_then(|cache| cached_thumbnail(cache, key)) {
         return Ok(cached);
     }
-    let mut book = open_book(file)?;
+    let mut book = open_book_in(Arc::clone(&file.storage), &file.path, &Limits::default())?;
     let comic_info = book.comic_info().unwrap_or_else(|error| {
         tracing::warn!(
-            file = %file.display(),
+            file = %file.path.display(),
             error = %describe_error(&error),
             "show the first page of a book whose ComicInfo can't be read"
         );
@@ -165,7 +170,7 @@ fn make_thumbnail(
     let made = thumbnail(&page)?.jpeg;
     if let Some(Err(error)) = cache.map(|cache| cache.put(key, &made)) {
         tracing::warn!(
-            file = %file.display(),
+            file = %file.path.display(),
             error = %describe_error(&error),
             "keep a cover thumbnail for next time"
         );

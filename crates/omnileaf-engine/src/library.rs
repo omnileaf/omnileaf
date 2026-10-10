@@ -23,6 +23,7 @@ use crate::{
     FolderScan, LibraryChanges, LibraryFolder, LibrarySeries, LibraryView, RescanOutcome,
     ResolvedBookmark, ScanProgress, SeriesCursor, SeriesPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
+    cover_thumbnails::CoverFile,
     device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
     library_layout::folder_name,
@@ -206,12 +207,16 @@ impl Library {
     }
 
     /// Where the cover's file is, or nothing once it has changed or gone since the cover was listed.
-    pub(crate) async fn cover_file(&self, cover: Cover) -> Result<Option<PathBuf>, LibraryError> {
-        Ok(self
+    pub(crate) async fn cover_file(&self, cover: Cover) -> Result<Option<CoverFile>, LibraryError> {
+        let path = self
             .store
             .database()
             .read(move |connection| cover_file(connection, &cover))
-            .await?)
+            .await?;
+        Ok(path.map(|path| CoverFile {
+            storage: Arc::clone(&self.local_storage),
+            path,
+        }))
     }
 
     /// Forgets the folder and the books found only in it, leaving its files where they are, once any scan in progress ends.
