@@ -322,15 +322,17 @@ impl Keeper {
 
     /// Saves the page shown last and ends the reading session at this moment.
     async fn stop_reading(&mut self) -> Result<(), Error> {
-        self.save().await?;
+        let saved = self.save().await;
         let Some(open) = self.session.as_mut() else {
-            return Ok(());
+            return saved;
         };
         let (book, continuity) = (open.book(), open.continuity());
         open.put_away();
-        self.store
+        let stopped = self
+            .store
             .write(move |writer| writer.record_reading_stopped(book.0, continuity))
-            .await
+            .await;
+        saved.and(stopped)
     }
 
     /// Records the reading session going on in the book read now, from the page it stands on.
@@ -483,19 +485,43 @@ fn answer<T>(asker: Option<oneshot::Sender<T>>, outcome: T) {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::{AtomicU64, Ordering};
+
     use omnileaf_db::{Config, Database, store::reading_state};
     use omnileaf_testkit::ScratchFolder;
     use tokio::time::Duration;
 
     use super::*;
-    use crate::{SystemClock, captured_log::CapturedLog, library_book::sample_book_id as book};
+    use crate::{
+        Clock, SystemClock, captured_log::CapturedLog, library_book::sample_book_id as book,
+    };
 
     const PAGE_COUNT: usize = 8;
     const LAST_PAGE: u32 = 7;
+    const LONGER_THAN_A_BREAK_MS: u64 = 3 * 60_000;
     const REFUSE_SAVES: &str = "CREATE TRIGGER refuse_saves BEFORE INSERT ON sync_register
         BEGIN SELECT RAISE(ABORT, 'saves refused'); END";
 
+    #[derive(Clone)]
+    struct SteppedClock(Arc<AtomicU64>);
+
+    impl SteppedClock {
+        fn advance(&self, ms: u64) {
+            self.0.fetch_add(ms, Ordering::Relaxed);
+        }
+    }
+
+    impl Clock for SteppedClock {
+        fn now_unix_ms(&self) -> u64 {
+            self.0.load(Ordering::Relaxed)
+        }
+    }
+
     fn keeper(folder: &ScratchFolder) -> Keeper {
+        keeper_on(folder, SystemClock)
+    }
+
+    fn keeper_on(folder: &ScratchFolder, clock: impl Clock) -> Keeper {
         let database = Database::open(&Config {
             path: folder.path().join("library.sqlite"),
             backup_dir: folder.path().join("backups"),
@@ -503,7 +529,7 @@ mod tests {
         })
         .unwrap();
         Keeper::new(
-            Arc::new(Store::new(database, SystemClock)),
+            Arc::new(Store::new(database, clock)),
             broadcast::Sender::new(SAVED_BACKLOG),
         )
     }
@@ -542,6 +568,21 @@ mod tests {
                 saved,
             })
             .await;
+    }
+
+    async fn show(keeper: &mut Keeper, book: BookId, page: u32) {
+        keeper
+            .hear(Report::Shown {
+                book,
+                page,
+                utc_offset: UtcOffset::UTC,
+            })
+            .await;
+    }
+
+    async fn put_away(keeper: &mut Keeper) {
+        let (saved, _) = oneshot::channel();
+        keeper.hear(Report::PutAway { saved }).await;
     }
 
     async fn refuse_saves(keeper: &Keeper) {
@@ -668,6 +709,51 @@ mod tests {
                 session_of(book(2), 0),
                 session_of(book(1), 1)
             ]
+        );
+    }
+
+    fn put_away_clock() -> SteppedClock {
+        SteppedClock(Arc::new(AtomicU64::new(1_790_000_000_000)))
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn records_a_new_session_for_reading_on_long_after_a_put_away_whose_save_failed() {
+        let folder = ScratchFolder::new("progress-put-away-unsaved");
+        let clock = put_away_clock();
+        let mut keeper = keeper_on(&folder, clock.clone());
+        read(&mut keeper, book(1), 3).await;
+        refuse_saves(&keeper).await;
+        put_away(&mut keeper).await;
+        allow_saves(&keeper).await;
+        clock.advance(LONGER_THAN_A_BREAK_MS);
+        show(&mut keeper, book(1), 4).await;
+
+        keeper.save().await.unwrap();
+
+        assert_eq!(
+            sessions(&keeper).await,
+            [session_of(book(1), 0), session_of(book(1), 4)]
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn records_a_new_session_for_reading_on_long_after_a_put_away_whose_save_landed_later() {
+        let folder = ScratchFolder::new("progress-put-away-saved-later");
+        let clock = put_away_clock();
+        let mut keeper = keeper_on(&folder, clock.clone());
+        read(&mut keeper, book(1), 3).await;
+        refuse_saves(&keeper).await;
+        put_away(&mut keeper).await;
+        allow_saves(&keeper).await;
+        keeper.save().await.unwrap();
+        clock.advance(LONGER_THAN_A_BREAK_MS);
+        show(&mut keeper, book(1), 4).await;
+
+        keeper.save().await.unwrap();
+
+        assert_eq!(
+            sessions(&keeper).await,
+            [session_of(book(1), 3), session_of(book(1), 4)]
         );
     }
 
