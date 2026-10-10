@@ -51,6 +51,7 @@ macro_rules! app_commands {
             close_book,
             reading_history,
             reading_time_since,
+            reading_time_between,
             orient_screen,
             change_full_screen,
             library_listing,
@@ -341,6 +342,16 @@ async fn reading_time_since(
     first_day: LocalDay,
 ) -> Result<u32, IpcError> {
     Ok(library.reading_time_since(first_day).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn reading_time_between(
+    library: State<'_, Library>,
+    first_day: LocalDay,
+    last_day: LocalDay,
+) -> Result<u32, IpcError> {
+    Ok(library.reading_time_between(first_day, last_day).await?)
 }
 
 #[tauri::command]
