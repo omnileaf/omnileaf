@@ -30,6 +30,7 @@ const DAY_MS = 86_400_000;
 const MONDAY = Date.UTC(2026, 9, 5) / DAY_MS;
 const DESKTOP_TITLE_GAP = 14;
 const DESKTOP_DAYS_TOP = 22;
+const DESKTOP_ACTION_RADIUS = "8px";
 
 interface Session {
   readonly number: number;
@@ -304,6 +305,19 @@ test.describe("with books read", () => {
       DESKTOP_DAYS_TOP,
       0,
     );
+  });
+
+  test("rounds each row's button the way the desktop board does", async ({
+    page,
+  }) => {
+    test.skip(!isDesktop(page), "desktops only");
+    await openHistory(page);
+
+    const action = page.getByRole("link", {
+      name: `Continue ${seriesTitle(4)}, ${bookTitle(4)}`,
+    });
+
+    await expect(action).toHaveCSS("border-radius", DESKTOP_ACTION_RADIUS);
   });
 
   test("names the days again from the date the list is read again on", async ({
