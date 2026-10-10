@@ -2,7 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 
 import pseudo from "../../messages/en-XA.json" with { type: "json" };
 
-import type { FakeBackend } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   DEFAULT_BACKEND,
@@ -55,6 +55,19 @@ function rescanReport(page: Page): Locator {
     .getByRole("region", { name: "Folders" })
     .getByRole("status")
     .filter({ hasText: SAMPLE_COMICS.name });
+}
+
+function sampleComicsRow(page: Page): Locator {
+  return page
+    .getByRole("region", { name: "Folders" })
+    .getByRole("listitem")
+    .filter({ hasText: SAMPLE_COMICS.name });
+}
+
+function removeItsBooks(page: Page): Locator {
+  return page
+    .getByRole("region", { name: "Folders" })
+    .getByRole("button", { name: "Remove its books" });
 }
 
 async function rescanSampleComics(page: Page): Promise<void> {
@@ -266,6 +279,7 @@ test.describe("with a folder found empty", () => {
   test.use({
     backend: {
       ...FOLDERS_BACKEND,
+      libraryFolderBookCount: () => 3,
       rescanLibraryFolder: (id) => ({
         id,
         name: SAMPLE_COMICS.name,
@@ -282,34 +296,94 @@ test.describe("with a folder found empty", () => {
     calls.removed = [];
   });
 
-  function removeItsBooks(page: Page): Locator {
-    return page
-      .getByRole("region", { name: "Folders" })
-      .getByRole("button", { name: "Remove its books" });
-  }
+  test("warns under the folder's row that it looks empty", async ({ page }) => {
+    await rescanSampleComics(page);
 
-  test("offers to remove the folder's books, then says how many went", async ({
+    const row = sampleComicsRow(page);
+    await expect(row.getByText("No books found")).toBeVisible();
+    await expect(
+      row
+        .getByRole("status")
+        .getByRole("heading", { name: "Sample Comics looks empty" }),
+    ).toBeVisible();
+    await expect(removeItsBooks(page)).toBeVisible();
+  });
+
+  test("asks first, then removes the books, says how many went and moves to the folder's row", async ({
     page,
   }) => {
     await rescanSampleComics(page);
-    await expect(rescanReport(page)).toHaveText(
-      "Found no books in Sample Comics. Its books stay in your library in case its drive isn't connected.",
-    );
-
     await removeItsBooks(page).click();
+    const question = page.getByRole("alertdialog", {
+      name: "Remove 3 books from Sample Comics?",
+    });
+    await expect(question).toBeVisible();
+
+    await question.getByRole("button", { name: "Remove books" }).click();
 
     await expect(page.getByText("3 books removed")).toBeVisible();
     expect(calls.removed).toEqual([SAMPLE_COMICS.id]);
     await expect(removeItsBooks(page)).toBeHidden();
+    await expect(sampleComicsRow(page)).toBeFocused();
+  });
+
+  test("starts the question on Cancel", async ({ page }) => {
+    await rescanSampleComics(page);
+
+    await removeItsBooks(page).click();
+
+    await expect(
+      page.getByRole("alertdialog").getByRole("button", { name: "Cancel" }),
+    ).toBeFocused();
+  });
+
+  test("keeps the books when the question is dismissed with Escape", async ({
+    page,
+  }) => {
+    await rescanSampleComics(page);
+    await removeItsBooks(page).click();
+    await expect(page.getByRole("alertdialog")).toBeVisible();
+
+    await page.keyboard.press("Escape");
+
+    await expect(page.getByRole("alertdialog")).toBeHidden();
+    expect(calls.removed).toEqual([]);
+    await expect(removeItsBooks(page)).toBeFocused();
+  });
+
+  test("keeps the books when a tap lands outside the question", async ({
+    page,
+  }) => {
+    await rescanSampleComics(page);
+    await removeItsBooks(page).click();
+    await expect(page.getByRole("alertdialog")).toBeVisible();
+
+    await page.mouse.click(8, 8);
+
+    await expect(page.getByRole("alertdialog")).toBeHidden();
+    expect(calls.removed).toEqual([]);
   });
 
   for (const colorScheme of ["light", "dark"] as const) {
-    test(`the offer to remove the books has no accessibility violations in the ${colorScheme} theme`, async ({
+    test(`the warning of a folder found empty has no accessibility violations in the ${colorScheme} theme`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme });
       await rescanSampleComics(page);
       await expect(removeItsBooks(page)).toBeVisible();
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+
+    test(`the question to remove the books has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await rescanSampleComics(page);
+      await removeItsBooks(page).click();
+      await expect(page.getByRole("alertdialog")).toBeVisible();
 
       const violations = await accessibilityViolations(page);
 
@@ -322,6 +396,10 @@ test.describe("with a folder found empty", () => {
       await page.emulateMedia({ colorScheme });
       await rescanSampleComics(page);
       await removeItsBooks(page).click();
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Remove books" })
+        .click();
       await expect(page.getByText("3 books removed")).toBeVisible();
 
       const violations = await accessibilityViolations(page);
@@ -330,7 +408,7 @@ test.describe("with a folder found empty", () => {
     });
   }
 
-  test("offers to remove the books in the pseudo-locale without overflowing", async ({
+  test("warns of a folder found empty in the pseudo-locale without overflowing", async ({
     page,
   }) => {
     await page.addInitScript(() => {
@@ -353,4 +431,65 @@ test.describe("with a folder found empty", () => {
 
     expect(overflowing).toEqual([]);
   });
+});
+
+test.describe("with a folder whose books couldn't be removed", () => {
+  test.use({
+    backend: {
+      ...FOLDERS_BACKEND,
+      rescanLibraryFolder: (id) => ({
+        id,
+        name: SAMPLE_COMICS.name,
+        outcome: { kind: "foundEmpty" },
+      }),
+      removeBooksOfEmptiedFolder: () => {
+        throw new CommandFailure({
+          code: "internal",
+          message: "the catalog couldn't be written",
+        });
+      },
+    },
+  });
+
+  async function failToRemoveBooks(page: Page): Promise<void> {
+    await rescanSampleComics(page);
+    await removeItsBooks(page).click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Remove books" })
+      .click();
+  }
+
+  test("turns the warning into an alert offering to try again", async ({
+    page,
+  }) => {
+    await failToRemoveBooks(page);
+
+    const alert = sampleComicsRow(page).getByRole("alert");
+    await expect(
+      alert.getByRole("heading", { name: "Couldn't remove the books" }),
+    ).toBeVisible();
+    await expect(
+      alert.getByRole("button", { name: "Rescan", exact: true }),
+    ).toBeVisible();
+    await expect(
+      alert.getByRole("button", { name: "Try again" }),
+    ).toBeVisible();
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`the alert of books not removed has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await failToRemoveBooks(page);
+      await expect(
+        page.getByRole("button", { name: "Try again" }),
+      ).toBeVisible();
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
 });

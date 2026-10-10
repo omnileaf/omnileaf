@@ -1,3 +1,5 @@
+import { SvelteMap } from "svelte/reactivity";
+
 import type {
   commands,
   LibraryFolder,
@@ -18,14 +20,16 @@ export type RescanStatus =
       readonly outcome: RescanOutcome;
     }
   | { readonly kind: "failed"; readonly folder: LibraryFolder }
-  | {
-      readonly kind: "removingBooks" | "removalFailed";
-      readonly folder: LibraryFolder;
-    };
+  | { readonly kind: "removingBooks"; readonly folder: LibraryFolder };
 
-/** The one folder rescan Settings runs at a time, and what it found. */
+/** What a folder a rescan found empty offers until it's rescanned again or its books are removed. */
+export type EmptiedFolder = "foundEmpty" | "removalFailed";
+
+/** The one folder rescan or removal of books Settings runs at a time, and the folders found empty. */
 export class Rescans {
   status: RescanStatus = $state({ kind: "idle" });
+
+  readonly #emptied = new SvelteMap<LibraryFolder["id"], EmptiedFolder>();
 
   constructor(
     private readonly rescanFolder: RescanFolder,
@@ -48,6 +52,10 @@ export class Rescans {
     );
   }
 
+  emptied(folder: LibraryFolder): EmptiedFolder | undefined {
+    return this.#emptied.get(folder.id);
+  }
+
   /** Resolves once the rescan is over, whatever it found. */
   async rescan(folder: LibraryFolder): Promise<void> {
     this.status = { kind: "finding", folder };
@@ -60,10 +68,17 @@ export class Rescans {
         },
       ),
     );
-    this.status =
-      result.status === "ok"
-        ? { kind: "finished", folder, outcome: result.data.outcome }
-        : { kind: "failed", folder };
+    if (result.status === "error") {
+      this.status = { kind: "failed", folder };
+      return;
+    }
+    const { outcome } = result.data;
+    this.status = { kind: "finished", folder, outcome };
+    if (outcome.kind === "foundEmpty") {
+      this.#emptied.set(folder.id, "foundEmpty");
+    } else {
+      this.#emptied.delete(folder.id);
+    }
   }
 
   /** Resolves to how many books went, or to nothing once they stayed and a rescan shows why, or the removal failed. */
@@ -71,13 +86,15 @@ export class Rescans {
     this.status = { kind: "removingBooks", folder };
     const result = await this.removeFolderBooks(folder.id);
     if (result.status === "error") {
-      this.status = { kind: "removalFailed", folder };
+      this.#emptied.set(folder.id, "removalFailed");
+      this.status = { kind: "idle" };
       return undefined;
     }
     if (result.data.kind === "kept") {
       await this.rescan(folder);
       return undefined;
     }
+    this.#emptied.delete(folder.id);
     this.status = { kind: "idle" };
     return result.data.books;
   }
