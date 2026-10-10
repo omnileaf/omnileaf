@@ -3,10 +3,10 @@ use std::{fs, io, path::PathBuf, sync::Arc};
 use omnileaf_db::{
     Config, Database,
     catalog::{
-        AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator,
-        SeriesOrder, add_root, bookmarked_roots, cover_file, library_root, library_roots,
-        mark_root_available, mark_root_unavailable, remove_root, root_book_count, series_count,
-        series_page, set_home_root,
+        AndroidTree, AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind,
+        RootLocator, SeriesOrder, add_root, bookmarked_roots, cover_file, library_root,
+        library_roots, mark_root_available, mark_root_unavailable, remove_root, root_book_count,
+        series_count, series_page, set_home_root,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_view::{library_view, set_library_view},
@@ -43,6 +43,9 @@ const MAPPED_DATABASE_BYTES: u32 = if IS_MOBILE {
     256 * MEBIBYTE
 };
 
+/// Opens the storage an Android folder's books are read through, called on the async runtime so it must not block.
+pub type OpenTree = Arc<dyn Fn(&AndroidTree) -> Arc<dyn Storage> + Send + Sync>;
+
 /// The library database in the home folder, and the folders it reads.
 pub struct Library {
     store: Store,
@@ -50,6 +53,7 @@ pub struct Library {
     scanning: Mutex<()>,
     catalog_writes: broadcast::Sender<CatalogWritten>,
     local_storage: Arc<dyn Storage>,
+    open_tree: Option<OpenTree>,
 }
 
 struct RootFiles {
@@ -114,9 +118,19 @@ impl Library {
             scanning: Mutex::new(()),
             catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
             local_storage: Arc::new(LocalStorage),
+            open_tree: None,
         };
         library.set_home(home).await?;
         Ok(library)
+    }
+
+    /// Reads Android folders through the storage `open` gives for each, where a library without it finds them unreachable.
+    #[must_use]
+    pub fn reading_trees_with(self, open: OpenTree) -> Self {
+        Self {
+            open_tree: Some(open),
+            ..self
+        }
     }
 
     /// Remembers the folder and scans its books, adding nothing when the folder can't be read.
@@ -481,13 +495,13 @@ impl Library {
         }
     }
 
-    /// Nothing for an Android folder, which this library has no way to open.
+    /// Nothing for an Android folder when this library has no way to open one.
     fn files_of(&self, locator: &RootLocator) -> Option<RootFiles> {
         let storage = match locator {
             RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
                 Arc::clone(&self.local_storage)
             }
-            RootLocator::AndroidTree(_) => return None,
+            RootLocator::AndroidTree(tree) => self.open_tree.as_ref()?(tree),
         };
         Some(RootFiles {
             storage,
