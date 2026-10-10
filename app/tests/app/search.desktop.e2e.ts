@@ -1,12 +1,8 @@
 import { expect, test } from "vitest";
 
-import { useAppSession } from "./app-session.ts";
+import { addSampleLibrary, useAppSession } from "./app-session.ts";
 import { xpath } from "./webdriver.ts";
 
-const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
-const FINISHED_SCAN_REPORT = xpath(
-  "//*[@role='status'][starts-with(normalize-space(), 'Found ')]",
-);
 const SERIES_FOUND = xpath("//ul[@aria-label='Series found']/li");
 const QUICK_OPEN_SERIES = xpath(
   "//dialog[@open]//*[@role='group'][@aria-labelledby][.//*[normalize-space()='Series']]//*[@role='option']",
@@ -31,13 +27,8 @@ return true;`;
 
 const appSession = useAppSession();
 
-async function addSampleLibrary(): Promise<void> {
-  await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
-  await appSession().waitFor(FINISHED_SCAN_REPORT);
-}
-
 test("finds a series of the folder added by a word of its title", async () => {
-  await addSampleLibrary();
+  await addSampleLibrary(appSession());
 
   await appSession().waitUntil(TYPE_IN_LIBRARY_SEARCH, "the search field");
 
@@ -46,7 +37,7 @@ test("finds a series of the folder added by a word of its title", async () => {
 });
 
 test("offers the series of the folder added in quick open", async () => {
-  await addSampleLibrary();
+  await addSampleLibrary(appSession());
 
   await appSession().waitUntil(OPEN_QUICK_OPEN_AND_TYPE, "quick open's field");
 
