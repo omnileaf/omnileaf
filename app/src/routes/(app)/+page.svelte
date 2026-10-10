@@ -15,6 +15,7 @@
   import SeriesCovers from "#lib/library/SeriesCovers.svelte";
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
+  import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.svelte.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -52,6 +53,7 @@
       : undefined,
   );
   const showsItemCounts = $derived(shown?.view.showsItemCounts === true);
+  const offersAddFolder = $derived(isEmpty || library.list.kind === "failed");
 
   $effect(() => {
     if (showsItemCounts) {
@@ -59,8 +61,8 @@
     }
   });
 
-  let headingAddFolder: HTMLButtonElement | undefined = $state();
   let emptyAddFolder: HTMLButtonElement | undefined = $state();
+  let headingAddFolder: HTMLButtonElement | undefined = $state();
 
   onMount(() => {
     void library.load();
@@ -73,9 +75,29 @@
     }, reportError);
   });
 
-  function focusAddFolder(): void {
-    (isEmpty ? emptyAddFolder : headingAddFolder)?.focus();
+  function returnFocusFromNotice(): void {
+    if (isEmpty) {
+      emptyAddFolder?.focus();
+    } else if (offersAddFolder) {
+      headingAddFolder?.focus();
+    } else {
+      focusPageHeading();
+    }
   }
+
+  let offeredAddFolder = false;
+
+  /** The heading's Add a folder goes once the library has books, so focus moves to the title rather than fall out of the page. */
+  $effect(() => {
+    if (
+      offeredAddFolder &&
+      !offersAddFolder &&
+      document.activeElement === document.body
+    ) {
+      focusPageHeading();
+    }
+    offeredAddFolder = offersAddFolder;
+  });
 </script>
 
 <CollectionHeading
@@ -96,11 +118,13 @@
         }}
       />
     {/if}
-    <AddFolderButton
-      bind:element={headingAddFolder}
-      {adding}
-      placement="page-heading"
-    />
+    {#if offersAddFolder}
+      <AddFolderButton
+        bind:element={headingAddFolder}
+        {adding}
+        placement="page-heading"
+      />
+    {/if}
   {/snippet}
 </CollectionHeading>
 {#if isEmpty}
@@ -118,7 +142,7 @@
       <FolderNotice
         {adding}
         usesStandIns={screenshotMode.isOn}
-        onDismissed={focusAddFolder}
+        onDismissed={returnFocusFromNotice}
       />
     </div>
   </EmptyState>
@@ -127,7 +151,7 @@
     <FolderNotice
       {adding}
       usesStandIns={screenshotMode.isOn}
-      onDismissed={focusAddFolder}
+      onDismissed={returnFocusFromNotice}
     />
   </div>
   {#if library.list.kind === "failed"}

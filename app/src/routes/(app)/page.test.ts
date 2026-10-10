@@ -96,7 +96,7 @@ test("shows that the library is empty and how to fill it", async () => {
     .toBeVisible();
 });
 
-test("offers to add a folder beside the title once the library has series", async () => {
+test("leaves adding folders to Settings once the library has series", async () => {
   mockConvertFileSrc("linux");
   listing(() => [SAMPLE_SERIES]);
 
@@ -107,7 +107,7 @@ test("offers to add a folder beside the title once the library has series", asyn
     .toBeVisible();
   await expect
     .element(screen.getByRole("button", { name: "Add a folder" }))
-    .toBeVisible();
+    .not.toBeInTheDocument();
 });
 
 test("leaves the library unlabelled while Screenshot mode is off", async () => {

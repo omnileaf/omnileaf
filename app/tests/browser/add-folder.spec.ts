@@ -10,8 +10,11 @@ import {
   test,
   viewportOf,
 } from "./fixtures.ts";
+import { CommandFailure, emitFakeEvent } from "./fake-backend.ts";
+import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const EMPTY_LIBRARY = "Your library is empty";
+const LIBRARY_CHANGED = "library-changed";
 const SAMPLE_LIBRARY_SCANNED = {
   ...DEFAULT_BACKEND,
   addLibraryFolder: () => ({
@@ -105,6 +108,128 @@ test.describe("with a folder of books", () => {
       expect((await boxOf(button)).width).toBe(before.width);
     });
   }
+});
+
+test.describe("once a folder brings the library its first books", () => {
+  const added = { hasBooks: false };
+  test.use({
+    backend: {
+      ...SAMPLE_LIBRARY_SCANNED,
+      addLibraryFolder: () => {
+        added.hasBooks = true;
+        return SAMPLE_LIBRARY_SCANNED.addLibraryFolder();
+      },
+      librarySeries: pagedSeries(() => (added.hasBooks ? sampleSeries(3) : [])),
+      librarySeriesCount: () => (added.hasBooks ? 3 : 0),
+    },
+  });
+
+  test.beforeEach(() => {
+    added.hasBooks = false;
+  });
+
+  test("moves focus to the library's title once the books arrive, since the heading's Add a folder goes with the empty library", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const headingAddFolder = page
+      .getByRole("main")
+      .locator("header")
+      .getByRole("button", { name: "Add a folder" });
+    await headingAddFolder.focus();
+    await page.keyboard.press("Enter");
+    await expect(scanReport(page, "Found")).toBeVisible();
+
+    await emitFakeEvent(page, LIBRARY_CHANGED);
+
+    await expect(headingAddFolder).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Library" }),
+    ).toBeFocused();
+  });
+
+  test("returns focus to the library's title once the notice is dismissed", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await addFolderIn(page, EMPTY_LIBRARY).click();
+    const report = scanReport(page, "Found");
+    await expect(report).toBeVisible();
+    await emitFakeEvent(page, LIBRARY_CHANGED);
+    await expect(page.getByRole("region", { name: EMPTY_LIBRARY })).toHaveCount(
+      0,
+    );
+
+    await report.getByRole("button", { name: "Dismiss" }).click();
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Library" }),
+    ).toBeFocused();
+  });
+});
+
+test.describe("once a folder brings books to a library that couldn't be read", () => {
+  const added = { hasBooks: false };
+  test.use({
+    backend: {
+      ...SAMPLE_LIBRARY_SCANNED,
+      addLibraryFolder: () => {
+        added.hasBooks = true;
+        return SAMPLE_LIBRARY_SCANNED.addLibraryFolder();
+      },
+      librarySeries: pagedSeries(() => {
+        if (!added.hasBooks) {
+          throw new CommandFailure({
+            code: "internal",
+            message: "the library could not be read",
+          });
+        }
+        return sampleSeries(3);
+      }),
+      librarySeriesCount: () => 3,
+    },
+  });
+
+  test.beforeEach(() => {
+    added.hasBooks = false;
+  });
+
+  test("moves focus to the library's title once the books arrive", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const headingAddFolder = page
+      .getByRole("main")
+      .locator("header")
+      .getByRole("button", { name: "Add a folder" });
+    await headingAddFolder.focus();
+    await page.keyboard.press("Enter");
+    await expect(scanReport(page, "Found")).toBeVisible();
+
+    await emitFakeEvent(page, LIBRARY_CHANGED);
+
+    await expect(headingAddFolder).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Library" }),
+    ).toBeFocused();
+  });
+
+  test("returns focus to the heading's Add a folder when the notice is dismissed before the library reloads", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const headingAddFolder = page
+      .getByRole("main")
+      .locator("header")
+      .getByRole("button", { name: "Add a folder" });
+    await headingAddFolder.click();
+    const report = scanReport(page, "Found");
+    await expect(report).toBeVisible();
+
+    await report.getByRole("button", { name: "Dismiss" }).click();
+
+    await expect(headingAddFolder).toBeFocused();
+  });
 });
 
 test.describe("while the folder is being scanned", () => {
