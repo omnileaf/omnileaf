@@ -233,6 +233,20 @@ async fn opens_the_book_on_the_page_saved_once_the_library_opens_again() {
 }
 
 #[tokio::test(start_paused = true)]
+async fn reads_a_series_with_the_page_reached_in_its_book_read_now_before_that_page_saves() {
+    let shelf = Shelf::with_two_books("series-read-early").await;
+    let opened = shelf.restore(0).await;
+    shelf.show(&opened, 4).await;
+
+    let overview = shelf.library.series_overview(opened.series).await.unwrap();
+
+    assert_eq!(
+        overview.up_next.map(|book| book.reading),
+        Some(started_on(5))
+    );
+}
+
+#[tokio::test(start_paused = true)]
 async fn saves_the_page_shown_when_asked_to_with_the_book_still_open() {
     let shelf = Shelf::with_two_books("asked").await;
     let opened = shelf.restore(0).await;
