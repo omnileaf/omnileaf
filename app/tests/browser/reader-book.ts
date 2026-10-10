@@ -22,7 +22,7 @@ export const PAGE_COUNT = 30;
 export const PAGE_WIDTH = 1800;
 export const PAGE_HEIGHT = 2700;
 
-const PAGE_PATH = new RegExp(`/page/v1/${BOOK_ID}/1/(\\d+)$`);
+const PAGE_PATH = new RegExp(`/page/v1/${BOOK_ID}/1/(\\d+)(?:\\?[^/]*)?$`);
 
 /** The reading state of a book and the page, counting from 0, the core opens it on. */
 export interface WireOpening {
