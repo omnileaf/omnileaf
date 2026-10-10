@@ -1,22 +1,16 @@
 import { afterEach, expect, test } from "vitest";
 
-import { addSampleLibrary, useAppSession } from "./app-session.ts";
+import { mainNavigationLink, useAppSession } from "./app-session.ts";
 import { pageShownScript } from "./page-shown.ts";
+import {
+  BACK_TO_THE_LIBRARY,
+  NEXT_PAGE,
+  openSampleBook,
+} from "./sample-book.ts";
 import { xpath } from "./webdriver.ts";
 
 const PAGE_READ_TO = 3;
-const HISTORY_LINK = xpath("//nav//a[normalize-space()='History']");
-const FIRST_SERIES_COVER = xpath(
-  "//ul[@aria-label='Series']//a[.//*[normalize-space()='Sample Series 01']]",
-);
-const THIRD_BOOK_LINK = xpath(
-  "//ul[@aria-label='Books']/li[3]//a[starts-with(normalize-space(), 'Sample Series 01 v03')]",
-);
-const NEXT_PAGE = xpath("//button[@aria-label='Next page']");
 const BACK_FROM_THE_READER = xpath("//main//a[@href='/']");
-const BACK_TO_THE_LIBRARY = xpath(
-  "//main//a[@href='/'] | //nav//a[normalize-space()='Library']",
-);
 const LIBRARY_HEADING = xpath("//h1[normalize-space()='Library']");
 const LATEST_SESSION = xpath(
   `//main//section[1]//li[1][contains(normalize-space(), 'Sample Series 01 v03 · page ${String(PAGE_READ_TO)} of 8')]`,
@@ -36,9 +30,7 @@ afterEach(async () => {
 });
 
 async function readThirdBookTo(page: number): Promise<void> {
-  await addSampleLibrary(appSession());
-  await (await appSession().waitFor(FIRST_SERIES_COVER)).click();
-  await (await appSession().waitFor(THIRD_BOOK_LINK)).click();
+  await openSampleBook(appSession(), 3);
   await appSession().waitUntil(pageShownScript(1), "the first page shown");
   for (let shown = 2; shown <= page; shown += 1) {
     await (await appSession().waitFor(NEXT_PAGE)).click();
@@ -53,7 +45,7 @@ test("continues the book read last from History on the page it was left on", asy
   await readThirdBookTo(PAGE_READ_TO);
   await (await appSession().waitFor(BACK_FROM_THE_READER)).click();
 
-  await (await appSession().waitFor(HISTORY_LINK)).click();
+  await (await appSession().waitFor(mainNavigationLink("History"))).click();
   await appSession().waitFor(LATEST_SESSION);
   await appSession().waitUntil(
     CONTINUE_LATEST_SESSION,
