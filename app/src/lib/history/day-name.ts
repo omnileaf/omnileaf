@@ -2,11 +2,35 @@ import type { HistoryCalendar } from "#lib/history/history-days.ts";
 import { type LocalDay, noonUtcOf } from "#lib/history/local-date.ts";
 import { m } from "#lib/paraglide/messages.js";
 
+/** The ways History writes a day's name, built once for a locale. */
+export interface DayFormats {
+  readonly weekday: Intl.DateTimeFormat;
+  readonly date: Intl.DateTimeFormat;
+  readonly dateWithYear: Intl.DateTimeFormat;
+}
+
+export function dayFormats(locale: string): DayFormats {
+  const date: Intl.DateTimeFormatOptions = {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  };
+  return {
+    weekday: new Intl.DateTimeFormat(locale, {
+      weekday: "long",
+      timeZone: "UTC",
+    }),
+    date: new Intl.DateTimeFormat(locale, date),
+    dateWithYear: new Intl.DateTimeFormat(locale, { ...date, year: "numeric" }),
+  };
+}
+
 /** What History calls a day: today, yesterday, a weekday within this week, or else its date. */
 export function dayName(
   day: LocalDay,
   { today, weekStart }: HistoryCalendar,
-  locale: string,
+  formats: DayFormats,
 ): string {
   const daysAgo = today - day;
   if (daysAgo === 0) {
@@ -17,18 +41,9 @@ export function dayName(
   }
   const noon = noonUtcOf(day);
   if (daysAgo > 1 && day >= weekStart) {
-    return new Intl.DateTimeFormat(locale, {
-      weekday: "long",
-      timeZone: "UTC",
-    }).format(noon);
+    return formats.weekday.format(noon);
   }
   const isThisYear =
     noon.getUTCFullYear() === noonUtcOf(today).getUTCFullYear();
-  return new Intl.DateTimeFormat(locale, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    ...(isThisYear ? {} : { year: "numeric" }),
-    timeZone: "UTC",
-  }).format(noon);
+  return (isThisYear ? formats.date : formats.dateWithYear).format(noon);
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { dayName } from "#lib/history/day-name.ts";
+  import { dayFormats, dayName } from "#lib/history/day-name.ts";
   import {
     type HistoryCalendar,
     type HistoryDayTitle,
@@ -8,6 +8,7 @@
   import HistoryRow from "#lib/history/HistoryRow.svelte";
   import { readingTime } from "#lib/history/reading-time.ts";
   import {
+    startedAtFormats,
     startedAtTime,
     startedAtWeekdayTime,
   } from "#lib/history/started-at.ts";
@@ -33,13 +34,15 @@
   } = $props();
 
   const locale = getLocale();
+  const dayNames = dayFormats(locale);
+  const startTimes = startedAtFormats(locale);
   const headingId = $props.id();
   const days = $derived(historyDays(entries, calendar, lastWeekReadSeconds));
 
   function nameOf(title: HistoryDayTitle): string {
     return title.kind === "lastWeek"
       ? m.history_last_week()
-      : dayName(title.day, calendar, locale);
+      : dayName(title.day, calendar, dayNames);
   }
 
   function keyOf(title: HistoryDayTitle, index: number): string {
@@ -47,10 +50,10 @@
   }
 
   /** Last week gathers several days under one heading, so its times carry their weekday. */
-  function timeFormatOf(
-    title: HistoryDayTitle,
-  ): (entry: HistoryEntry, locale: string) => string {
-    return title.kind === "lastWeek" ? startedAtWeekdayTime : startedAtTime;
+  function timeOf(title: HistoryDayTitle, entry: HistoryEntry): string {
+    return title.kind === "lastWeek"
+      ? startedAtWeekdayTime(entry, startTimes)
+      : startedAtTime(entry, startTimes);
   }
 </script>
 
@@ -70,11 +73,7 @@
       </h2>
       <ul>
         {#each day.entries as entry (`${entry.book}-${String(entry.startedAtMs)}`)}
-          <HistoryRow
-            {entry}
-            time={timeFormatOf(day.title)(entry, locale)}
-            {usesStandIns}
-          />
+          <HistoryRow {entry} time={timeOf(day.title, entry)} {usesStandIns} />
         {/each}
       </ul>
     </section>
