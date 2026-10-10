@@ -32,6 +32,7 @@ const LARGEST_TEXT = ":root { --text-scale: 2 !important; }";
 const LARGER_TEXT = ":root { --text-scale: 1.3 !important; }";
 const CROWDED_WIDTH = 1240;
 const LARGEST_TEXT_WIDTHS = [360, 375, 390, 430];
+const LARGEST_TEXT_WIDE_WIDTHS = [840, 1024, 1200];
 const PLATFORMS = ["ios", "android", "linux"] as const;
 const LANGUAGES = { en: english, "en-XA": pseudo } as const;
 const SCREENSHOT_MODE = ["on", "off"] as const;
@@ -387,6 +388,48 @@ test.describe("the heading at the largest text size on an ios phone", () => {
     });
   }
 });
+
+for (const platform of PLATFORMS) {
+  test.describe(`the heading at the largest text size in a longer language with Screenshot mode on, wide on ${platform}`, () => {
+    test.use({ backend: backendFor(platform, "filled") });
+
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript((css) => {
+        localStorage.setItem("omnileaf.language", "en-XA");
+        document.addEventListener("DOMContentLoaded", () => {
+          const style = document.createElement("style");
+          style.textContent = css;
+          document.head.append(style);
+        });
+      }, LARGEST_TEXT);
+    });
+
+    for (const width of LARGEST_TEXT_WIDE_WIDTHS) {
+      test(`keeps the title whole and nothing spilling sideways at ${String(width)}px`, async ({
+        page,
+      }, testInfo) => {
+        test.skip(
+          !testInfo.project.name.endsWith(SWEEPING_SCREEN[platform]),
+          "each engine checks the width once, from the screen the platform runs on",
+        );
+        await openAt(page, width, "on");
+        await expect(countOf(page)).toBeVisible();
+        const title = headingOf(page).getByRole("heading", { level: 1 });
+
+        await expect
+          .poll(() =>
+            headingOf(page).evaluate(
+              (heading) => heading.scrollWidth - heading.clientWidth,
+            ),
+          )
+          .toBe(0);
+
+        expect(await linesOf(title)).toBe(1);
+        expect(await crowdedParts(page, pseudo, "on", "filled")).toEqual([]);
+      });
+    }
+  });
+}
 
 test.describe("the heading as a filter changes the count", () => {
   test.use({

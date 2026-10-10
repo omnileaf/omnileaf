@@ -14,30 +14,39 @@
 
   let { title, showsLabel, count, actions }: Props = $props();
 
+  /** How much the heading gives up to fit its row: nothing, then the count's place beside the title, then the buttons' place on the title's row. */
+  const FITS = ["roomy", "crowded", "stacked"] as const;
+
   let header: HTMLElement | undefined = $state();
   let buttons: HTMLElement | undefined = $state();
-  let isCrowded = $state(false);
-  let roomNeeded = Number.POSITIVE_INFINITY;
+  let fitIndex = $state(0);
+  const roomNeeded: number[] = [];
   let fittedButtons = 0;
 
-  /** Moves the count under the title while the row overflows, and back beside it once the heading is as wide as it was when moving it, starting over whenever the buttons change. */
-  function refit(heading: HTMLElement): void {
+  const fitting = $derived(FITS[fitIndex]);
+
+  /** Gives up one more thing while the row overflows and takes it back once the heading is as wide as it was when giving it up, starting over whenever the buttons change; true when the fit changed. */
+  function refit(heading: HTMLElement): boolean {
+    const fitted = fitIndex;
     const buttonCount = buttons?.childElementCount ?? 0;
     if (buttonCount !== fittedButtons) {
       fittedButtons = buttonCount;
-      roomNeeded = Number.POSITIVE_INFINITY;
-      isCrowded = false;
+      roomNeeded.length = 0;
+      fitIndex = 0;
     }
     if (getComputedStyle(heading).display !== "grid") {
-      isCrowded = false;
-      return;
+      fitIndex = 0;
+      return fitIndex !== fitted;
     }
-    if (!isCrowded && heading.scrollWidth > heading.clientWidth) {
-      roomNeeded = heading.scrollWidth;
-      isCrowded = true;
-    } else if (isCrowded && heading.clientWidth >= roomNeeded) {
-      isCrowded = false;
+    const overflows = heading.scrollWidth > heading.clientWidth;
+    const regained = roomNeeded[fitIndex - 1] ?? Number.POSITIVE_INFINITY;
+    if (overflows && fitIndex < FITS.length - 1) {
+      roomNeeded[fitIndex] = heading.scrollWidth;
+      fitIndex += 1;
+    } else if (fitIndex > 0 && heading.clientWidth >= regained) {
+      fitIndex -= 1;
     }
+    return fitIndex !== fitted;
   }
 
   $effect(() => {
@@ -46,12 +55,15 @@
     }
     const heading = header;
     let pendingFit: number | undefined;
-    const observer = new ResizeObserver(() => {
+    const fitSoon = (): void => {
       pendingFit ??= requestAnimationFrame(() => {
         pendingFit = undefined;
-        refit(heading);
+        if (refit(heading)) {
+          fitSoon();
+        }
       });
-    });
+    };
+    const observer = new ResizeObserver(fitSoon);
     observer.observe(heading);
     if (buttons !== undefined) {
       observer.observe(buttons);
@@ -68,7 +80,8 @@
 <div class="@container text-body">
   <header
     bind:this={header}
-    data-crowded={isCrowded || undefined}
+    data-crowded={fitting !== "roomy" || undefined}
+    data-stacked={fitting === "stacked" || undefined}
     class="grid grid-cols-collection-heading items-center heading-two-rows:flex heading-two-rows:flex-wrap heading-two-rows:gap-x-title-count heading-two-rows:gap-y-2xs"
   >
     <div
@@ -102,7 +115,7 @@
     {#if actions !== undefined}
       <div
         bind:this={buttons}
-        class="col-start-4 row-start-1 ms-title-count flex items-center justify-self-end medium:gap-sm heading-two-rows:order-2 heading-two-rows:ms-auto heading-stacked:order-6 heading-stacked:mbs-sm heading-stacked:basis-full heading-stacked:justify-end"
+        class="col-start-4 row-start-1 ms-title-count flex items-center justify-self-end medium:gap-sm heading-two-rows:order-2 heading-two-rows:ms-auto heading-stacked:order-6 heading-stacked:col-span-full heading-stacked:col-start-1 heading-stacked:row-start-auto heading-stacked:mbs-sm heading-stacked:basis-full heading-stacked:justify-end"
       >
         {@render actions()}
       </div>

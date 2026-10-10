@@ -53,6 +53,9 @@
       @slot;
     }
   }
+  &:where([data-stacked] *) {
+    @slot;
+  }
 }
 @custom-variant heading-label-inline {
   @variant expanded {
