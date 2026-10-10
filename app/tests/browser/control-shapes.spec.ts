@@ -60,7 +60,7 @@ function emptyStateAddFolder(page: Page): Locator {
 }
 
 function displayTrack(panel: Locator): Locator {
-  return panel.getByRole("group", { name: "Display" }).locator("div").first();
+  return panel.getByRole("radiogroup", { name: "Display" });
 }
 
 function displaySegment(panel: Locator, name: string): Locator {
