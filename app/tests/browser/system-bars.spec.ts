@@ -1,5 +1,6 @@
 import type { Theme, ThemePreference } from "../../src/lib/ipc/bindings.ts";
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import { BOOK_ID, NOT_STARTED, readerBook, servePages } from "./reader-book.ts";
 
 const reportedThemes: Theme[] = [];
 const reportedPreferences: ThemePreference[] = [];
@@ -7,6 +8,7 @@ const reportedPreferences: ThemePreference[] = [];
 test.use({
   backend: {
     ...DEFAULT_BACKEND,
+    openBook: (id) => ({ ...readerBook(NOT_STARTED), id }),
     matchSystemBars: (theme, preference) => {
       reportedThemes.push(theme);
       reportedPreferences.push(preference);
@@ -65,4 +67,31 @@ test("reports that the theme follows the device until one is chosen", async ({
   await page.locator("label").filter({ hasText: "Dark" }).click();
 
   await expect.poll(lastReportedPreference).toBe("dark");
+});
+
+test("asks for light bar icons over the dark reader while a book is open, whatever the theme", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await servePages(page);
+  await page.goto("/");
+  await expect.poll(lastReportedTheme).toBe("light");
+
+  await page.goto(`/read/${BOOK_ID}`);
+  await expect.poll(lastReportedTheme).toBe("dark");
+  await page.keyboard.press("Escape");
+
+  await expect.poll(lastReportedTheme).toBe("light");
+  expect(lastReportedPreference()).toBe("system");
+});
+
+test("draws the bars for the app's own theme over a book that couldn't be opened", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "light" });
+
+  await page.goto("/read/not-a-book");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  expect(lastReportedTheme()).toBe("light");
 });

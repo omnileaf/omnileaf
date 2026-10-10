@@ -22,3 +22,8 @@ export function parseThemePreference(value: string | null): ThemePreference {
     THEME_PREFERENCES.find((preference) => preference === value) ?? "system"
   );
 }
+
+/** The theme the system bars are drawn for: the reader's dark page while a book is open, whatever the app's theme. */
+export function systemBarsTheme(theme: Theme, isBookOpen: boolean): Theme {
+  return isBookOpen ? "dark" : theme;
+}

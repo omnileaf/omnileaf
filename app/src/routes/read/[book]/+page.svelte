@@ -4,6 +4,7 @@
   import { resolve } from "$app/paths";
   import { commands } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { getBookPresence } from "#lib/reader/book-presence.svelte.ts";
   import PagedReader from "#lib/reader/PagedReader.svelte";
   import { allowPinchZoom } from "#lib/reader/pinch-zoom.ts";
 
@@ -12,11 +13,17 @@
   let { data }: PageProps = $props();
 
   const shown = $derived(data.shown);
+  const bookPresence = getBookPresence();
+
+  $effect(() => {
+    bookPresence.isOpen = shown.kind === "found";
+  });
 
   onMount(() => {
     void commands.orientScreen("followDevice");
     const lockScale = allowPinchZoom();
     return () => {
+      bookPresence.isOpen = false;
       lockScale();
       void commands.orientScreen("portraitOnPhones");
       void commands.changeFullScreen("leave");
