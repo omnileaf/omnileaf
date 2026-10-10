@@ -5,11 +5,22 @@
     shown,
     count,
     onSeek,
-  }: { shown: number; count: number; onSeek: (index: number) => void } =
-    $props();
+    onDrag,
+  }: {
+    shown: number;
+    count: number;
+    onSeek: (index: number) => void;
+    onDrag: (isDragged: boolean) => void;
+  } = $props();
+
+  function letGo(): void {
+    onDrag(false);
+  }
 
   const progress = $derived(count > 1 ? shown / (count - 1) : 0);
 </script>
+
+<svelte:window onpointerup={letGo} onpointercancel={letGo} />
 
 <div
   dir="ltr"
@@ -36,6 +47,9 @@
     class="absolute inset-none mx-none my-auto cursor-pointer opacity-0 block-full inline-full android:block-touch-target"
     oninput={(event) => {
       onSeek(Number(event.currentTarget.value) - 1);
+    }}
+    onpointerdown={() => {
+      onDrag(true);
     }}
   />
 </div>
