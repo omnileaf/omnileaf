@@ -590,6 +590,64 @@ mod tests {
         );
     }
 
+    async fn sessions(keeper: &Keeper) -> Vec<(Vec<u8>, u32)> {
+        keeper
+            .store
+            .database()
+            .read(|connection| {
+                let mut listed =
+                    connection.prepare("SELECT book_id, page FROM reading_session ORDER BY id")?;
+                let rows = listed.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+                Ok(rows.collect::<Result<Vec<_>, _>>()?)
+            })
+            .await
+            .unwrap()
+    }
+
+    fn session_of(book: BookId, page: u32) -> (Vec<u8>, u32) {
+        (book.0.as_bytes().to_vec(), page)
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn records_no_session_for_the_page_left_unsaved_in_a_book_once_it_saves_later() {
+        let folder = ScratchFolder::new("progress-left-unsaved-sessions");
+        let mut keeper = keeper(&folder);
+        refuse_saves(&keeper).await;
+        read(&mut keeper, book(1), 3).await;
+        read(&mut keeper, book(2), 0).await;
+        allow_saves(&keeper).await;
+
+        keeper.save().await.unwrap();
+
+        assert_eq!(
+            sessions(&keeper).await,
+            [session_of(book(1), 0), session_of(book(2), 0)]
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn records_one_new_session_for_a_book_reopened_over_the_page_left_unsaved_in_it() {
+        let folder = ScratchFolder::new("progress-reopened-sessions");
+        let mut keeper = keeper(&folder);
+        refuse_saves(&keeper).await;
+        read(&mut keeper, book(1), 3).await;
+        read(&mut keeper, book(2), 0).await;
+        open(&mut keeper, book(1)).await;
+        restore(&mut keeper, book(1), 1).await;
+        allow_saves(&keeper).await;
+
+        keeper.save().await.unwrap();
+
+        assert_eq!(
+            sessions(&keeper).await,
+            [
+                session_of(book(1), 0),
+                session_of(book(2), 0),
+                session_of(book(1), 1)
+            ]
+        );
+    }
+
     #[tokio::test(start_paused = true)]
     async fn marks_each_book_read_or_unread_by_the_later_of_its_pages_saved_together() {
         let folder = ScratchFolder::new("progress-read-by-later-page");
