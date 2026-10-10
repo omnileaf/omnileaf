@@ -266,6 +266,35 @@ test("picks every book in the series, past the ones read so far", async ({
   ).toBeVisible();
 });
 
+test("says it is busy picking every book until all are read in, then how many are picked", async ({
+  page,
+}) => {
+  shelf = new FakeShelf(
+    Array.from({ length: BOOKS_PER_PAGE + 5 }, () => NOT_STARTED),
+  );
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.goto(`/series/${SERIES_ID}`);
+  await expect(books(page).first()).toBeVisible();
+  shelf.holdPagesAfterTheFirst(held);
+  await page.getByRole("button", { name: "Select", exact: true }).click();
+  const selectAll = page.getByRole("button", { name: "Select all" });
+
+  await selectAll.click();
+
+  await expect(selectAll).toHaveAttribute("aria-busy", "true");
+  release();
+  await expect(selectAll).not.toHaveAttribute("aria-busy", "true");
+  await expect(
+    page
+      .getByRole("main")
+      .getByRole("status")
+      .filter({ hasText: "105 selected" }),
+  ).toBeAttached();
+});
+
 function pickedLongSeries(): FakeShelf {
   return new FakeShelf(
     Array.from({ length: BOOKS_PER_PAGE + 5 }, () => NOT_STARTED),

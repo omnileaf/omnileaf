@@ -17,6 +17,7 @@ export const BOOKS_PER_PAGE = 100;
 export class FakeShelf {
   readonly marked: { readonly books: string[]; readonly mark: string }[] = [];
   readonly #books: WireBook[];
+  #laterPages: Promise<void> = Promise.resolve();
 
   constructor(readings: readonly WireReading[]) {
     this.#books = readings.map((reading, index) => ({
@@ -26,6 +27,11 @@ export class FakeShelf {
       addedAt: ADDED_AT,
       reading,
     }));
+  }
+
+  /** Holds every page after the first until `released` settles, as a slow core would. */
+  holdPagesAfterTheFirst(released: Promise<void>): void {
+    this.#laterPages = released;
   }
 
   get books(): readonly WireBook[] {
@@ -66,7 +72,10 @@ export class FakeShelf {
           upNext: this.#upNext() ?? null,
         };
       },
-      seriesBooks: (id, listing, after) => {
+      seriesBooks: async (id, listing, after) => {
+        if (after !== null) {
+          await this.#laterPages;
+        }
         const shown =
           listing.shown === "unread"
             ? this.#books.filter((book) => book.reading.state !== "read")

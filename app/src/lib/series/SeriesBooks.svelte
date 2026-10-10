@@ -57,7 +57,8 @@
         readonly mark: ReadMark;
         readonly count: number;
       }
-    | { readonly kind: "failed" };
+    | { readonly kind: "failed" }
+    | { readonly kind: "pickedAll"; readonly count: number };
 
   const selection = new BookSelection<BookId>();
   const longPress = new LongPress(LONG_PRESS_MS);
@@ -117,9 +118,17 @@
     }
   }
 
+  let isPickingAll = $state(false);
+
   async function pickAll(): Promise<void> {
-    await onLoadAll();
+    isPickingAll = true;
+    try {
+      await onLoadAll();
+    } finally {
+      isPickingAll = false;
+    }
     selection.pickAll(ids);
+    outcome = { kind: "pickedAll", count: selection.count };
   }
 
   async function mark(read: ReadMark): Promise<void> {
@@ -171,6 +180,8 @@
           : m.series_marked_unread({ count: shown.count });
       case "failed":
         return m.series_mark_failed();
+      case "pickedAll":
+        return m.series_selected_count({ count: shown.count });
     }
   }
 </script>
@@ -252,6 +263,7 @@
       <button
         bind:this={selectAllButton}
         type="button"
+        aria-busy={isPickingAll}
         class="rounded-control border border-border bg-card px-md text-detail font-semibold block-series-back expanded:block-series-crumb"
         onclick={() => {
           void pickAll();
