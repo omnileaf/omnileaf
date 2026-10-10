@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 
 import english from "../../messages/en.json" with { type: "json" };
 import pseudo from "../../messages/en-XA.json" with { type: "json" };
-import type { FakeBackend } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   APP_PAGES,
   expect,
@@ -54,6 +54,13 @@ function withLongFolders(
   };
 }
 
+function withAddFolder(
+  platform: (typeof PLATFORMS)[number],
+  addLibraryFolder: FakeBackend["addLibraryFolder"],
+): FakeBackend {
+  return { ...onPlatform(platform).backend, addLibraryFolder };
+}
+
 /** Leaves each step by the name its button has in `messages`, since the names are translated. */
 async function goToStep(
   page: Page,
@@ -99,6 +106,63 @@ for (const platform of PLATFORMS) {
             expect(overflowing).toEqual([]);
           });
         }
+      });
+
+      test.describe("when a folder can't be read", () => {
+        test.use({
+          backend: withAddFolder(platform, () => {
+            throw new CommandFailure({
+              code: "folderUnreadable",
+              message: "the folder could not be read",
+            });
+          }),
+        });
+
+        test("fits the floating notice to the screen", async ({ page }) => {
+          await page.goto("/");
+          await page
+            .getByRole("region", { name: messages.library_empty })
+            .getByRole("button", { name: messages.library_add_folder })
+            .click();
+          await expect(page.getByRole("alert")).toContainText(
+            messages.library_folder_unreadable_title,
+          );
+
+          const overflowing = await sidewaysOverflow(page, "[role=alert]");
+
+          expect(overflowing).toEqual([]);
+        });
+      });
+
+      test.describe("when a folder is added with books it couldn't read", () => {
+        test.use({
+          backend: withAddFolder(platform, () => ({
+            name: LONG_FOLDER_NAME,
+            series: 3,
+            books: 7,
+            unreadableBooks: 2,
+            unsupportedBooks: 1,
+            unreadableFolders: 1,
+          })),
+        });
+
+        test("fits the add-folder report to the screen", async ({ page }) => {
+          await page.goto("/settings/library");
+          await page
+            .getByRole("region", { name: messages.library_settings_folders })
+            .getByRole("button", { name: messages.library_add_folder })
+            .click();
+          await expect(
+            page
+              .getByRole("main")
+              .getByRole("status")
+              .filter({ hasText: LONG_FOLDER_NAME }),
+          ).toBeVisible();
+
+          const overflowing = await sidewaysOverflow(page);
+
+          expect(overflowing).toEqual([]);
+        });
       });
 
       test.describe("on first launch", () => {
