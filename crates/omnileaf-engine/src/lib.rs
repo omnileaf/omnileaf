@@ -76,7 +76,7 @@ pub use library_view::{
 };
 pub use omnileaf_db::catalog::{AndroidTree, AppleBookmark, RootLocator, TreeUri};
 pub use omnileaf_db::store::{Changed, Clock};
-pub use opened_book::{BookPage, OpenedBook, PageDimensions, ProbedFormat};
+pub use opened_book::{BookPage, OpenedBook, PageDimensions, ProbedFormat, SeriesNeighbour};
 pub use page_path::{MalformedPagePath, PagePath};
 pub use pages::OpenBookError;
 pub use project_link::ProjectLink;

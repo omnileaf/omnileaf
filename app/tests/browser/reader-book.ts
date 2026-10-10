@@ -7,7 +7,16 @@ type WireReading = WireBook["reading"];
 
 export const BOOK_ID = "0190a3e4-0000-8000-8000-0000000000b1";
 export const BOOK_SERIES_ID = "0190a3e4-0000-8000-8000-0000000000a1";
-export const BOOK_TITLE = "Sample Series 01 v01";
+export const BOOK_TITLE = "Sample Series 01 v02";
+export const BOOK_POSITION = 2;
+export const PREVIOUS_BOOK = {
+  id: "0190a3e4-0000-8000-8000-0000000000b0",
+  title: "Sample Series 01 v01",
+};
+export const NEXT_BOOK = {
+  id: "0190a3e4-0000-8000-8000-0000000000b2",
+  title: "Sample Series 01 v03",
+};
 export const BOOK_SERIES_TITLE = "Sample Series 01";
 export const PAGE_COUNT = 30;
 export const PAGE_WIDTH = 1800;
@@ -39,6 +48,9 @@ export function readerBook({ reading, startPage }: WireOpening): WireBook {
     })),
     startPage,
     reading,
+    position: BOOK_POSITION,
+    previous: PREVIOUS_BOOK,
+    next: NEXT_BOOK,
   };
 }
 

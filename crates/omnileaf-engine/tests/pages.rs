@@ -16,7 +16,7 @@ use std::{
 
 use omnileaf_engine::{
     BookId, BookReading, Library, LibraryListing, OpenBookError, OpenedBook, PageDimensions,
-    ProbedFormat, Resource, ResourceRouter, SeriesBookListing, SeriesId,
+    ProbedFormat, Resource, ResourceRouter, SeriesBookListing, SeriesId, SeriesNeighbour,
 };
 use omnileaf_testkit::{
     ArchiveEntry, Compression, ENCODED_PAGE_HEIGHT, ENCODED_PAGE_WIDTH, INK_OVER_CLEAR_JXL,
@@ -49,8 +49,14 @@ struct Reader {
 
 impl Reader {
     async fn with_pages(name: &str, pages: &[Vec<u8>]) -> Self {
+        Self::with_books(name, &[(BOOK, pages.to_vec())]).await
+    }
+
+    async fn with_books(name: &str, books: &[(&str, Vec<Vec<u8>>)]) -> Self {
         let comics = ScratchFolder::new(&format!("{name}-comics"));
-        write_book(&comics.path().join(FOLDER).join(SERIES), pages);
+        for (title, pages) in books {
+            write_named_book(&comics.path().join(FOLDER).join(SERIES), title, pages);
+        }
         let home = ScratchFolder::new(&format!("{name}-home"));
         let library = Library::open(home.path().to_path_buf(), FixedClock)
             .await
@@ -128,6 +134,10 @@ fn portrait_pages(seed: u64) -> Vec<Vec<u8>> {
 }
 
 fn write_book(series: &Path, pages: &[Vec<u8>]) {
+    write_named_book(series, BOOK, pages);
+}
+
+fn write_named_book(series: &Path, title: &str, pages: &[Vec<u8>]) {
     let entries: Vec<ArchiveEntry> = pages
         .iter()
         .enumerate()
@@ -138,7 +148,7 @@ fn write_book(series: &Path, pages: &[Vec<u8>]) {
         .collect();
     fs::create_dir_all(series).unwrap();
     fs::write(
-        series.join(format!("{BOOK}.cbz")),
+        series.join(format!("{title}.cbz")),
         cbz(&entries, Compression::Deflated).unwrap(),
     )
     .unwrap();
@@ -180,6 +190,59 @@ async fn opens_a_book_with_its_series_and_every_page_in_reading_order() {
         .map(|index| format!("page/v1/{book}/1/{index}"))
         .collect();
     assert_eq!(paths, expected);
+}
+
+#[tokio::test]
+async fn opens_a_book_with_its_place_in_the_series_and_the_books_either_side() {
+    let titles = [
+        "Sample Series 01 v01",
+        "Sample Series 01 v02",
+        "Sample Series 01 v03",
+    ];
+    let books: Vec<(&str, Vec<Vec<u8>>)> = (0_u64..)
+        .zip(titles)
+        .map(|(seed, title)| (title, portrait_pages(SEED + seed)))
+        .collect();
+    let reader = Reader::with_books("place", &books).await;
+    let listed = reader
+        .library
+        .series_books(reader.series().await, SeriesBookListing::default(), None)
+        .await
+        .unwrap();
+    let ids: Vec<BookId> = listed.books.iter().map(|book| book.id).collect();
+
+    let middle = reader
+        .router
+        .open_book(&reader.library, ids[1], NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+
+    assert_eq!(middle.position, 2);
+    assert_eq!(
+        middle.previous,
+        Some(SeriesNeighbour {
+            id: ids[0],
+            title: titles[0].to_owned(),
+        })
+    );
+    assert_eq!(
+        middle.next,
+        Some(SeriesNeighbour {
+            id: ids[2],
+            title: titles[2].to_owned(),
+        })
+    );
+}
+
+#[tokio::test]
+async fn opens_a_book_alone_in_its_series_with_no_book_either_side() {
+    let reader = Reader::with_book("alone").await;
+
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(opened.position, 1);
+    assert_eq!(opened.previous, None);
+    assert_eq!(opened.next, None);
 }
 
 #[tokio::test]
