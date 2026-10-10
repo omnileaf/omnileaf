@@ -528,6 +528,29 @@ test("keeps the folder when the removal is cancelled", async () => {
     .toHaveTextContent("Sample Comics /media/Sample Comics");
 });
 
+test("keeps the folder when a tap lands outside the removal question", async () => {
+  const library = [HOME, COMICS];
+  serveFolders(library);
+  const { removeFolder, removed } = removingFrom(library);
+  const { folders, dialog } = await renderSettings({ removeFolder });
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await dialog.click({ position: { x: 10, y: -20 } });
+
+  await expect.element(dialog).not.toBeInTheDocument();
+  expect(removed).toEqual([]);
+});
+
+test("keeps the removal question open when a tap lands on its edge", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders, dialog } = await renderSettings();
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await dialog.click({ position: { x: 2, y: 2 } });
+
+  await expect.element(dialog).toBeVisible();
+});
+
 test("says when a folder couldn't be removed", async () => {
   serveFolders([HOME, COMICS]);
   const { folders, dialog } = await renderSettings({

@@ -161,6 +161,20 @@ test("keeps a folder when the removal is dismissed with Escape", async ({
   await expect(remove).toBeFocused();
 });
 
+test("keeps a folder when a tap lands outside the removal question", async ({
+  page,
+}) => {
+  await page.goto("/settings/library");
+  const folders = page.getByRole("region", { name: "Folders" });
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+  await expect(page.getByRole("alertdialog")).toBeVisible();
+
+  await page.mouse.click(8, 8);
+
+  await expect(page.getByRole("alertdialog")).toBeHidden();
+  await expect(folders.getByRole("listitem")).toHaveCount(1);
+});
+
 test("shows the folder and its books in the removal question", async ({
   page,
 }) => {

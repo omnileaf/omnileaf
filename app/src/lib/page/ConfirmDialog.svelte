@@ -34,6 +34,16 @@
 
   let dialog: HTMLDialogElement | undefined = $state();
 
+  function isOutside(element: Element, event: MouseEvent): boolean {
+    const box = element.getBoundingClientRect();
+    return (
+      event.clientX < box.left ||
+      event.clientX > box.right ||
+      event.clientY < box.top ||
+      event.clientY > box.bottom
+    );
+  }
+
   $effect(() => {
     if (isOpen && dialog?.open === false) {
       dialog.showModal();
@@ -52,6 +62,14 @@
   oncancel={(event) => {
     event.preventDefault();
     onCancel();
+  }}
+  onclick={(event) => {
+    if (
+      event.target === event.currentTarget &&
+      isOutside(event.currentTarget, event)
+    ) {
+      onCancel();
+    }
   }}
 >
   {#if isOpen}
