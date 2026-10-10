@@ -60,7 +60,7 @@ function emptyStateAddFolder(page: Page): Locator {
 }
 
 function displayTrack(panel: Locator): Locator {
-  return panel.getByRole("group", { name: "Display" }).locator("div").first();
+  return panel.getByRole("radiogroup", { name: "Display" });
 }
 
 function displaySegment(panel: Locator, name: string): Locator {
@@ -108,6 +108,27 @@ test.describe("in every segmented control", () => {
   });
 });
 
+test.describe("on a desktop with an empty library", () => {
+  test.use({ backend: onPlatform("linux").backend });
+
+  test.beforeEach(({ page }) => {
+    test.skip(viewportOf(page).width < LARGE_MIN_WIDTH, "a desktop window");
+  });
+
+  test("draws the library heading's Add a folder 36px tall with 10px corners", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const addFolder = addFolderInPageHeading(page);
+    await expect(addFolder).toBeVisible();
+
+    const box = await boxOf(addFolder);
+
+    expect(box.height).toBe(PAGE_BUTTON_HEIGHT);
+    expect(await cornerOf(addFolder)).toBe(BUTTON_CORNER);
+  });
+});
+
 test.describe("on a desktop", () => {
   test.use({ backend: withSeries("linux") });
 
@@ -117,11 +138,9 @@ test.describe("on a desktop", () => {
 
   test("rounds buttons to 10px", async ({ page }) => {
     await page.goto("/");
-    const headingAddFolder = addFolderInPageHeading(page);
     const viewTrigger = viewOptionsButton(page);
     await expect(viewTrigger).toBeVisible();
 
-    const headingCorner = await cornerOf(headingAddFolder);
     const viewCorner = await cornerOf(viewTrigger);
     await page.goto("/settings/library");
     const foldersCorner = await cornerOf(addFolderBesideFolders(page));
@@ -130,8 +149,7 @@ test.describe("on a desktop", () => {
       page.getByRole("button", { name: "Copy version details" }),
     );
 
-    expect([headingCorner, viewCorner, foldersCorner, copyCorner]).toEqual([
-      BUTTON_CORNER,
+    expect([viewCorner, foldersCorner, copyCorner]).toEqual([
       BUTTON_CORNER,
       BUTTON_CORNER,
       BUTTON_CORNER,
@@ -152,14 +170,14 @@ test.describe("on a desktop", () => {
     expect(await cornerOf(section)).toBe(ROW_CORNER);
   });
 
-  test("draws the library heading's buttons 36px tall", async ({ page }) => {
+  test("draws the library heading's View options 36px tall", async ({
+    page,
+  }) => {
     await page.goto("/");
     await expect(viewOptionsButton(page)).toBeVisible();
 
-    const addFolder = await boxOf(addFolderInPageHeading(page));
     const view = await boxOf(viewOptionsButton(page));
 
-    expect(addFolder.height).toBe(PAGE_BUTTON_HEIGHT);
     expect(view.height).toBe(PAGE_BUTTON_HEIGHT);
   });
 

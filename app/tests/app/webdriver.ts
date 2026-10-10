@@ -323,7 +323,7 @@ export class Session {
     await send(`${this.endpoint}/timeouts`, "POST", { script: timeoutMs });
   }
 
-  private async run(script: string): Promise<unknown> {
+  async run(script: string): Promise<unknown> {
     return send(`${this.endpoint}/execute/sync`, "POST", { script, args: [] });
   }
 

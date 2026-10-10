@@ -37,11 +37,7 @@ const LOADED_HOME_FOLDER = xpath(
   "//section[.//h2[normalize-space()='Home folder']]//p[normalize-space()='Omnileaf']",
 );
 
-const LIBRARY_LINK = xpath("//nav//a[normalize-space()='Library']");
 const VIEW_OPTIONS_BUTTON = xpath("//button[@aria-label='View options']");
-const LIBRARY_ADD_FOLDER_BUTTON = xpath(
-  "//main[.//button[@aria-label='View options']]//button[normalize-space()='Add a folder']",
-);
 const LIST_CHOICE = xpath(
   "//dialog[@open]//label[.//span[not(@aria-hidden='true')][normalize-space()='List']]",
 );
@@ -72,8 +68,10 @@ test("adds a folder, waits for its scan and reports the series and books in it",
 });
 
 test("shows the cover of every series it found, read through the app's own protocol", async () => {
+  await openLibrarySettings();
   await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
   await appSession().waitFor(FINISHED_SCAN_REPORT);
+  await openLibraryPage(appSession());
 
   const shown = appSession().waitUntil(
     EVERY_COVER_SHOWN,
@@ -121,9 +119,10 @@ test("rescans a folder from Settings › Library and finds nothing changed", asy
 });
 
 test("draws the library as the list chosen in its view options after the app reloads", async () => {
-  await (await appSession().waitFor(LIBRARY_LINK)).click();
-  await (await appSession().waitFor(LIBRARY_ADD_FOLDER_BUTTON)).click();
+  await openLibrarySettings();
+  await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
   await appSession().waitFor(FINISHED_SCAN_REPORT);
+  await openLibraryPage(appSession());
   await (await appSession().waitFor(VIEW_OPTIONS_BUTTON)).click();
   await (await appSession().waitFor(LIST_CHOICE)).click();
   await appSession().waitUntil(SERIES_IN_ONE_COLUMN, "the series in a list");

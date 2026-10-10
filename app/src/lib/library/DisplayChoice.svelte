@@ -33,13 +33,19 @@
     $props();
 
   const group = $props.id();
+  const labelId = `${group}-label`;
 </script>
 
-<fieldset class="min-inline-none">
-  <legend class="text-detail font-semibold text-muted large:text-caption">
+<div>
+  <p
+    id={labelId}
+    class="text-detail font-semibold text-muted large:text-caption"
+  >
     {m.library_view_display()}
-  </legend>
+  </p>
   <div
+    role="radiogroup"
+    aria-labelledby={labelId}
     class="mbs-sm flex gap-xs rounded-field bg-chip p-xs large:mbs-icon-gap large:rounded-small-control large:p-segment-track"
   >
     {#each CHOICES as choice (choice.display)}
@@ -80,4 +86,4 @@
       </label>
     {/each}
   </div>
-</fieldset>
+</div>

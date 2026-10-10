@@ -3,7 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 import english from "../../messages/en.json" with { type: "json" };
 import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
-import type { FakeBackend } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   boxOf,
   expect,
@@ -25,6 +25,7 @@ const LIBRARIES = ["empty", "filled"] as const;
 const SERIES_COUNT = 12_345;
 const SERIES_COUNT_SHOWN = /12\D?345/;
 const MIN_GAP = 2;
+const TOUCH_TARGET = 48;
 
 type Platform = (typeof PLATFORMS)[number];
 type Library = (typeof LIBRARIES)[number];
@@ -141,9 +142,7 @@ for (const platform of PLATFORMS) {
               { language, screenshotMode },
             );
             await page.goto("/");
-            await expect(headingOf(page).getByRole("button")).toHaveCount(
-              library === "empty" ? 1 : 2,
-            );
+            await expect(headingOf(page).getByRole("button")).toHaveCount(1);
             if (library === "filled") {
               await expect(countOf(page)).toBeVisible();
             }
@@ -177,7 +176,7 @@ for (const platform of PLATFORMS) {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
       await page.goto("/");
       await expect(countOf(page)).toBeVisible();
-      await expect(headingOf(page).getByRole("button")).toHaveCount(2);
+      await expect(headingOf(page).getByRole("button")).toHaveCount(1);
 
       for (const width of PHONE_WIDTHS) {
         await page.setViewportSize({ width, height: HEIGHT });
@@ -194,36 +193,111 @@ for (const platform of PLATFORMS) {
       }
     });
 
-    test("show Add a folder as a round icon the size of View options, each named in a tooltip", async ({
-      page,
-    }, testInfo) => {
+    test("names View options in a tooltip", async ({ page }, testInfo) => {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
       await page.goto("/");
-      const addFolder = headingOf(page).getByRole("button", {
-        name: english.library_add_folder,
-      });
+
       const viewOptions = headingOf(page).getByRole("button", {
         name: english.library_view_options,
       });
 
-      const added = await boxOf(addFolder);
-      const options = await boxOf(viewOptions);
-
-      expect([added.width, added.height]).toEqual([
-        options.width,
-        options.height,
-      ]);
-      await expect(addFolder.getByText(english.library_add_folder)).toHaveClass(
-        /sr-only/,
-      );
-      await expect(addFolder).toHaveAttribute(
-        "title",
-        english.library_add_folder,
-      );
       await expect(viewOptions).toHaveAttribute(
         "title",
         english.library_view_options,
       );
+    });
+  });
+
+  test.describe(`the library heading on ${platform}`, () => {
+    test.describe("with books in the library", () => {
+      test.use({ backend: backendFor(platform, "filled") });
+
+      test("leaves adding folders to Settings › Library and offers View options", async ({
+        page,
+      }) => {
+        await page.goto("/");
+        await expect(countOf(page)).toBeVisible();
+
+        const heading = headingOf(page);
+
+        await expect(
+          heading.getByRole("button", { name: english.library_view_options }),
+        ).toBeVisible();
+        await expect(
+          heading.getByRole("button", { name: english.library_add_folder }),
+        ).toHaveCount(0);
+      });
+    });
+
+    test.describe("with an empty library", () => {
+      test.use({ backend: backendFor(platform, "empty") });
+
+      test("offers Add a folder beside the title", async ({ page }) => {
+        await page.goto("/");
+
+        const addFolder = headingOf(page).getByRole("button", {
+          name: english.library_add_folder,
+        });
+
+        await expect(addFolder).toBeVisible();
+        await expect(addFolder).toHaveAttribute(
+          "title",
+          english.library_add_folder,
+        );
+      });
+
+      test("draws Add a folder as a round touch-sized icon on a phone", async ({
+        page,
+      }, testInfo) => {
+        test.skip(
+          !testInfo.project.name.endsWith("phone"),
+          "phone widths only",
+        );
+        test.skip(platform === "linux", "touch platforms only");
+        await page.goto("/");
+        const addFolder = headingOf(page).getByRole("button", {
+          name: english.library_add_folder,
+        });
+
+        const box = await boxOf(addFolder);
+
+        expect([box.width, box.height]).toEqual([TOUCH_TARGET, TOUCH_TARGET]);
+        await expect(
+          addFolder.getByText(english.library_add_folder),
+        ).toHaveClass(/sr-only/);
+        expect(
+          await addFolder.evaluate((element) =>
+            Number.parseFloat(getComputedStyle(element).borderStartStartRadius),
+          ),
+        ).toBeGreaterThanOrEqual(TOUCH_TARGET / 2);
+      });
+    });
+
+    test.describe("when the library can't be read", () => {
+      test.use({
+        backend: {
+          ...backendFor(platform, "empty"),
+          librarySeries: () => {
+            throw new CommandFailure({
+              code: "internal",
+              message: "the library could not be read",
+            });
+          },
+        },
+      });
+
+      test("still offers Add a folder", async ({ page }) => {
+        await page.goto("/");
+        await expect(
+          page.getByText(english.library_series_failed),
+        ).toBeVisible();
+
+        await expect(
+          headingOf(page).getByRole("button", {
+            name: english.library_add_folder,
+          }),
+        ).toBeVisible();
+      });
     });
   });
 }
