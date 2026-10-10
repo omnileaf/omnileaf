@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import {
+  CommandFailure,
   emitFakeEvent,
   type FakeBackend,
   fakeProtocolRoute,
@@ -542,6 +543,56 @@ test("shows only the books not read, and the books the other way round", async (
 
   await expect(books(page).first()).toHaveAttribute("aria-setsize", "12");
   await expect(books(page).first()).toContainText(shelf.titleOf(11));
+});
+
+test.describe("when marking books fails", () => {
+  let reported: string[] = [];
+  let overviewsRead = 0;
+
+  test.use({
+    backend: {
+      ...SHELF_BACKEND,
+      seriesOverview: (id) => {
+        overviewsRead += 1;
+        return shelf.backend().seriesOverview(id);
+      },
+      markBooks: () => {
+        throw new CommandFailure({
+          code: "internal",
+          message: "something went wrong inside the app",
+        });
+      },
+      offerInterfaceErrorReport: (error) => {
+        reported.push(error.message);
+        return DEFAULT_BACKEND.offerInterfaceErrorReport(error);
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    reported = [];
+    overviewsRead = 0;
+  });
+
+  test("reports the failure and reads nothing again", async ({ page }) => {
+    await openSeries(page);
+    const readBefore = overviewsRead;
+    await page.getByRole("button", { name: "Select", exact: true }).click();
+    await page
+      .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
+      .check();
+
+    await page
+      .getByRole("group", { name: "Selected books" })
+      .getByRole("button", { name: "Mark read" })
+      .click();
+
+    await expect(
+      page.getByRole("main").getByText("Couldn't mark those books. Try again."),
+    ).toBeVisible();
+    await expect.poll(() => reported).toHaveLength(1);
+    expect(overviewsRead).toBe(readBefore);
+  });
 });
 
 test("marks every book picked, though another listing leaves some of them out", async ({
