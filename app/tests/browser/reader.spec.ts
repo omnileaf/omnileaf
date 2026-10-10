@@ -902,6 +902,15 @@ test.describe("the first book of a series", () => {
       page.getByRole("link", { name: `Next book: ${NEXT_BOOK.title}` }),
     ).toBeVisible();
   });
+  test("names the missing book before it in a tooltip, as the links have", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await expect(
+      page.getByRole("button", { name: "Previous book" }),
+    ).toHaveAttribute("title", "Previous book");
+  });
 });
 
 test.describe("on an iPad in landscape", () => {
