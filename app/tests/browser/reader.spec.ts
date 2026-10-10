@@ -290,6 +290,17 @@ test("says which page is up to a screen reader as pages turn", async ({
 
 const ANNOUNCE_DELAY_MS = 300;
 
+/** A jump ahead well clear of the time a loaded machine takes between installing the clock and pausing it. */
+const PAUSE_AHEAD_MS = 60_000;
+
+/** Opens the book on a clock of the test's own, then holds it still, so the page's timers fire only as the test runs it on. */
+async function openBookWithTimeStopped(page: Page): Promise<void> {
+  await page.clock.install();
+  await openBook(page);
+  const now = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(now + PAUSE_AHEAD_MS);
+}
+
 /** Starts noting each change to what the reader's status says, and returns what it noted. */
 async function noteStatus(page: Page): Promise<() => Promise<string[]>> {
   await page.evaluate(() => {
@@ -314,8 +325,7 @@ async function noteStatus(page: Page): Promise<() => Promise<string[]>> {
 test("says only the page the turns stop on, once they stop", async ({
   page,
 }) => {
-  await openBook(page);
-  await page.clock.install();
+  await openBookWithTimeStopped(page);
   const said = await noteStatus(page);
 
   for (const key of ["ArrowRight", "ArrowRight", "ArrowRight"]) {
@@ -330,8 +340,7 @@ test("says only the page the turns stop on, once they stop", async ({
 test("leaves saying the page to the slider while it has focus", async ({
   page,
 }) => {
-  await openBook(page);
-  await page.clock.install();
+  await openBookWithTimeStopped(page);
   const said = await noteStatus(page);
 
   await slider(page).focus();
