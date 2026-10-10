@@ -26,7 +26,8 @@
 >
   <a
     href={resolve("/(app)")}
-    class="relative flex shrink-0 items-center justify-center gap-xs rounded-full block-reader-control inline-reader-control expanded:rounded-reader-control-wide expanded:ps-reader-back-start-wide expanded:pe-md expanded:text-small expanded:font-semibold expanded:block-reader-control-wide expanded:inline-auto android:before:absolute android:before:block-touch-target android:before:inline-touch-target"
+    title={m.reader_back_label()}
+    class="relative flex shrink-0 items-center justify-center gap-xs rounded-full transition-control block-reader-control inline-reader-control hover:tint-reader-hover active:tint-reader-pressed expanded:rounded-reader-control-wide expanded:ps-reader-back-start-wide expanded:pe-md expanded:text-small expanded:font-semibold expanded:block-reader-control-wide expanded:inline-auto android:before:absolute android:before:block-touch-target android:before:inline-touch-target"
   >
     <ArrowLeft
       size={BACK_ICON_SIZE}
@@ -67,7 +68,8 @@
   <button
     type="button"
     aria-label={m.reader_full_screen()}
-    class="hidden shrink-0 items-center justify-center rounded-reader-control-wide block-reader-control-wide inline-reader-control-wide expanded:flex ios:hidden android:hidden"
+    title={m.reader_full_screen()}
+    class="hidden shrink-0 items-center justify-center rounded-reader-control-wide transition-control block-reader-control-wide inline-reader-control-wide hover:tint-reader-hover active:tint-reader-pressed expanded:flex ios:hidden android:hidden"
     onclick={onFullScreen}
   >
     <Maximize size={BAR_ICON_SIZE_WIDE} aria-hidden="true" />

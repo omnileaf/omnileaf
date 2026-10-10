@@ -12,6 +12,7 @@ import {
   EXPANDED_MIN_WIDTH,
   expect,
   onPlatform,
+  settle,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -775,5 +776,56 @@ test.describe("on an iPad in landscape", () => {
     for (const height of sizes) {
       expect(height).toBeGreaterThanOrEqual(IOS_TOUCH_TARGET_PX);
     }
+  });
+});
+
+test.describe("with a pointer", () => {
+  test.skip(({ isMobile }) => isMobile, "pointer screens only");
+
+  async function tintOf(control: Locator): Promise<string> {
+    await settle(control);
+    return control.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return `${style.backgroundColor} ${style.backgroundImage}`;
+    });
+  }
+
+  const READER_CONTROLS = [
+    { name: "the back link", find: controls },
+    {
+      name: "the full screen button",
+      find: (page: Page) => page.getByRole("button", { name: "Full screen" }),
+    },
+    {
+      name: "the next book's link",
+      find: (page: Page) =>
+        page.getByRole("link", { name: `Next book: ${NEXT_BOOK.title}` }),
+    },
+  ];
+
+  for (const { name, find } of READER_CONTROLS) {
+    test(`tints ${name} under the pointer and deepens it while pressed`, async ({
+      page,
+    }) => {
+      await openBook(page);
+      const control = find(page);
+      const resting = await tintOf(control);
+
+      await control.hover();
+      const hovered = await tintOf(control);
+      await page.mouse.down();
+      const pressed = await tintOf(control);
+
+      expect(hovered).not.toBe(resting);
+      expect(pressed).not.toBe(hovered);
+    });
+  }
+
+  test("names the full screen button in a tooltip", async ({ page }) => {
+    await openBook(page);
+
+    await expect(
+      page.getByRole("button", { name: "Full screen" }),
+    ).toHaveAttribute("title", "Full screen");
   });
 });
