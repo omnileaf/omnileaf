@@ -10,6 +10,7 @@ mod fingerprint;
 mod folder;
 mod limits;
 mod natural;
+mod storage;
 mod zip_book;
 
 pub use book::{Book, Page, open_book, open_book_with};
@@ -21,3 +22,4 @@ pub use error::{FormatError, UnsupportedArchive};
 pub use fingerprint::{fingerprint_book, fingerprint_book_with};
 pub use limits::Limits;
 pub use natural::natural_cmp;
+pub use storage::{Details, Entry, EntryKind, LocalStorage, Storage};

@@ -118,6 +118,49 @@ fn an_image_folder_hashes_its_image_names_sizes_and_outer_edges() {
     );
 }
 
+#[cfg(unix)]
+#[test]
+fn an_image_folder_leaves_out_images_linked_into_it() {
+    let scratch = ScratchFolder::new("folder-link");
+    for page in pages() {
+        scratch.write(&format!("Chapter 01/{}", page.name), &page.bytes);
+    }
+    let elsewhere = scratch.write("Elsewhere/004.png", &page(4));
+    std::os::unix::fs::symlink(elsewhere, scratch.path().join("Chapter 01/004.png")).unwrap();
+    let manifest = FolderManifest::new(pages().into_iter().map(|page| FolderImage {
+        size: page.bytes.len() as u64,
+        name: page.name,
+    }))
+    .unwrap();
+
+    let fingerprint = fingerprint_book(&scratch.path().join("Chapter 01")).unwrap();
+
+    assert_eq!(
+        fingerprint,
+        Fingerprint::dir1(&manifest, &page(1), &page(3)).unwrap()
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn an_image_folder_whose_entries_cannot_be_read_has_no_fingerprint() {
+    use std::os::unix::fs::PermissionsExt;
+    let scratch = ScratchFolder::new("folder-locked");
+    for page in pages() {
+        scratch.write(&format!("Chapter 01/{}", page.name), &page.bytes);
+    }
+    let folder = scratch.path().join("Chapter 01");
+    fs::set_permissions(&folder, fs::Permissions::from_mode(0o444)).unwrap();
+
+    let result = fingerprint_book(&folder);
+
+    fs::set_permissions(&folder, fs::Permissions::from_mode(0o755)).unwrap();
+    assert!(
+        matches!(result, Err(FormatError::Read { .. })),
+        "{result:?}"
+    );
+}
+
 #[test]
 fn samples_the_raw_bytes_of_an_archive_without_images() {
     let scratch = ScratchFolder::new("raw");
