@@ -36,6 +36,12 @@ thiserror.workspace = true
 [target.'cfg(target_os = "ios")'.dependencies]
 omnileaf-folder-access.workspace = true
 
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+objc2-foundation.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus.workspace = true
+
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-dialog.workspace = true
 

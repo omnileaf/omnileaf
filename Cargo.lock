@@ -3160,6 +3160,7 @@ dependencies = [
 name = "omnileaf-app"
 version = "0.0.0"
 dependencies = [
+ "objc2-foundation",
  "omnileaf-db",
  "omnileaf-engine",
  "omnileaf-folder-access",
@@ -3177,6 +3178,7 @@ dependencies = [
  "thiserror 2.0.21",
  "tracing",
  "tracing-subscriber",
+ "zbus",
 ]
 
 [[package]]

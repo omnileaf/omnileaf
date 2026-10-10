@@ -25,13 +25,17 @@
   } from "#lib/language/language.svelte.ts";
   import { Notices, setNotices } from "#lib/notices/notices.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { isPhone } from "#lib/page/platform.ts";
+  import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import LibraryProblemScreen from "#lib/problems/LibraryProblemScreen.svelte";
   import {
     screenshotModeForDocument,
     setScreenshotMode,
   } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import {
+    scheduledRescansSettingForDocument,
+    setScheduledRescansSetting,
+  } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
   import ScreenshotModeAnnouncement from "#lib/screenshot-mode/ScreenshotModeAnnouncement.svelte";
   import {
     isScreenshotModeShortcut,
@@ -53,6 +57,9 @@
   const crashReporting = setCrashReporting(
     new CrashReporting(commands, crashReportSetting),
   );
+  const scheduledRescans = setScheduledRescansSetting(
+    scheduledRescansSettingForDocument(),
+  );
   setNotices(new Notices());
   const screenshotModeShortcut = $derived(
     screenshotModeShortcutOn(data.appInfo.platform),
@@ -70,6 +77,31 @@
     screenshotMode.settle();
   }
 
+  const rescansOnReturn = $derived(
+    !isPointer(data.appInfo.platform) && data.libraryProblem === null,
+  );
+
+  let isRescanningOnReturn = false;
+
+  async function rescanOnReturn(): Promise<void> {
+    if (isRescanningOnReturn) {
+      return;
+    }
+    isRescanningOnReturn = true;
+    try {
+      await rescanEveryFolder();
+    } finally {
+      isRescanningOnReturn = false;
+    }
+  }
+
+  function followVisibility(): void {
+    settleScreenshotMode();
+    if (rescansOnReturn && document.visibilityState === "visible") {
+      void rescanOnReturn();
+    }
+  }
+
   $effect(() => {
     void commands.matchSystemBars(
       themeSetting.resolved,
@@ -79,6 +111,14 @@
 
   $effect(() => {
     void commands.setAppLanguage(language.resolved);
+  });
+
+  $effect(() => {
+    if (data.libraryProblem === null) {
+      void commands.setScheduledRescans(
+        scheduledRescans.isOnFor(data.appInfo.platform),
+      );
+    }
   });
 
   const opening = new LinkOpening(commands.openProjectLink);
@@ -104,7 +144,7 @@
   onfocus={settleScreenshotMode}
   onpageshow={settleScreenshotMode}
 />
-<svelte:document onvisibilitychange={settleScreenshotMode} />
+<svelte:document onvisibilitychange={followVisibility} />
 
 <svelte:head>
   {#key language.resolved}

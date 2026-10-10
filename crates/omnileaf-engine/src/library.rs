@@ -1,6 +1,7 @@
 use std::{
+    collections::BTreeMap,
     fs, io,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{self, PoisonError},
     time::Duration,
 };
@@ -18,9 +19,9 @@ use omnileaf_db::{
     store::{Changed, Clock, Store},
 };
 use tokio::{
-    sync::{Mutex, MutexGuard, broadcast},
+    sync::{Mutex, MutexGuard, broadcast, watch},
     task::spawn_blocking,
-    time::{MissedTickBehavior, interval},
+    time::{MissedTickBehavior, interval, timeout},
 };
 
 use crate::{
@@ -34,7 +35,7 @@ use crate::{
     library_layout::folder_name,
     rescan::rescan,
     rescan_conditions::{RescanConditions, Storage},
-    rescan_schedule::RescanSchedule,
+    rescan_schedule::{Check, RescanSchedule},
     scan::{Target, find_books_in, scan, walk},
 };
 
@@ -44,6 +45,7 @@ const FOLDERS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
 const CATALOG_WRITE_BACKLOG: usize = 16;
 const SCHEDULE_CHECK_EVERY: Duration = Duration::from_mins(1);
+const STORAGE_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
 const MAPPED_DATABASE_BYTES: u32 = if IS_MOBILE {
     64 * MEBIBYTE
 } else {
@@ -56,6 +58,8 @@ pub struct Library {
     /// Held for each scan and folder removal, so none compares a folder with a catalog another is changing.
     scanning: Mutex<()>,
     schedule: sync::Mutex<RescanSchedule>,
+    /// Off until the app sets it from the person's choice.
+    is_scheduled: watch::Sender<bool>,
     catalog_writes: broadcast::Sender<CatalogWritten>,
 }
 
@@ -115,6 +119,7 @@ impl Library {
             store: Store::new(database, clock),
             scanning: Mutex::new(()),
             schedule: sync::Mutex::default(),
+            is_scheduled: watch::Sender::new(false),
             catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
         };
         library.set_home(home).await?;
@@ -241,7 +246,7 @@ impl Library {
         self.rescan_while_scanning(id, scanning, on_progress).await
     }
 
-    /// Rescans each folder whose turn has come, after awaiting `before_rescanning`, and leaves the rest for a later call once another scan is running.
+    /// Rescans each folder whose turn has come, after awaiting `before_rescanning`, and leaves the rest for a later call once another scan is running or scheduled rescans are turned off.
     #[tracing::instrument(skip_all)]
     pub async fn rescan_due_folders(
         &self,
@@ -249,56 +254,75 @@ impl Library {
         before_rescanning: impl Future<Output = ()>,
     ) -> Result<Vec<FolderRescan>, LibraryError> {
         let folders = self.listed_folders().await?;
-        let ids: Vec<FolderId> = folders.iter().map(|(id, _)| *id).collect();
-        let location_of = |id: FolderId| {
-            folders
-                .iter()
-                .find_map(|(listed, path)| (*listed == id).then_some(path.as_path()))
+        let ids: Vec<FolderId> = folders.keys().copied().collect();
+        let check = Check {
+            at_ms: self.store.clock().now_unix_ms(),
+            power: conditions.power_mode().await,
         };
-        let storage_of = |id: FolderId| {
-            location_of(id).map_or(Storage::Local, |path| conditions.storage_of(path))
-        };
-        let due = self
-            .schedule()
-            .due(&ids, self.store.clock().now_unix_ms(), storage_of);
+        let needing_storage = self.schedule().needing_storage(&ids, check);
+        let mut first_seen_on = BTreeMap::new();
+        for id in needing_storage {
+            if let Some(path) = folders.get(&id) {
+                first_seen_on.insert(id, storage_within_limit(conditions, path).await);
+            }
+        }
+        let due = self.schedule().due(&ids, check, |id| {
+            first_seen_on.get(&id).copied().unwrap_or(Storage::Local)
+        });
         if due.is_empty() {
             return Ok(Vec::new());
         }
         before_rescanning.await;
         let mut rescans = Vec::new();
         for id in due {
+            if !*self.is_scheduled.borrow() {
+                tracing::debug!("leave the folders whose turn came once scheduled rescans are off");
+                break;
+            }
             let Ok(scanning) = self.scanning.try_lock() else {
                 tracing::debug!("leave the folders whose turn came until no other scan runs");
                 break;
             };
             let rescan = self.rescan_while_scanning(id, scanning, |_| {}).await;
-            let now_ms = self.store.clock().now_unix_ms();
             match unless_removed(rescan) {
                 Ok(Some(rescan)) => {
-                    self.schedule()
-                        .record(id, &rescan.outcome, storage_of(id), now_ms);
+                    self.note_scheduled_rescan(conditions, &folders, &rescan)
+                        .await;
                     rescans.push(rescan);
                 }
                 Ok(None) => {}
                 Err(error) => {
                     tracing::warn!(folder = %id, error = %describe_error(&error), "rescan a folder whose turn came");
-                    self.schedule().missed(id, now_ms);
+                    self.schedule().missed(id, self.store.clock().now_unix_ms());
                 }
             }
         }
         Ok(rescans)
     }
 
-    /// Rescans each folder as its turn comes for as long as it's awaited, never starting one while another scan runs.
+    /// Starts or stops the scheduled rescans, letting a rescan already under way finish.
+    pub fn set_scheduled_rescans(&self, is_on: bool) {
+        self.is_scheduled.send_replace(is_on);
+    }
+
+    /// Rescans each folder as its turn comes for as long as it's awaited and scheduled rescans are on, never starting one while another scan runs.
     pub async fn rescan_on_schedule<F: Future<Output = ()>>(
         &self,
         conditions: &impl RescanConditions,
         mut before_rescanning: impl FnMut() -> F,
     ) {
+        let mut is_scheduled = self.is_scheduled.subscribe();
         let mut checks = interval(SCHEDULE_CHECK_EVERY);
         checks.set_missed_tick_behavior(MissedTickBehavior::Delay);
         loop {
-            checks.tick().await;
+            if is_scheduled.wait_for(|is_on| *is_on).await.is_err() {
+                return;
+            }
+            tokio::select! {
+                biased;
+                _ = is_scheduled.changed() => continue,
+                _ = checks.tick() => {}
+            }
             if let Err(error) = self
                 .rescan_due_folders(conditions, before_rescanning())
                 .await
@@ -415,11 +439,34 @@ impl Library {
 
     async fn folder_ids(&self) -> Result<Vec<FolderId>, LibraryError> {
         let folders = self.listed_folders().await?;
-        Ok(folders.into_iter().map(|(id, _)| id).collect())
+        Ok(folders.into_keys().collect())
     }
 
-    async fn listed_folders(&self) -> Result<Vec<(FolderId, PathBuf)>, LibraryError> {
-        let mut folders = Vec::new();
+    /// Notes a scheduled rescan in the schedule, finding again where a folder it read is stored.
+    async fn note_scheduled_rescan(
+        &self,
+        conditions: &impl RescanConditions,
+        folders: &BTreeMap<FolderId, PathBuf>,
+        rescan: &FolderRescan,
+    ) {
+        match &rescan.outcome {
+            RescanOutcome::Rescanned(_) => {
+                let storage = match folders.get(&rescan.id) {
+                    Some(path) => storage_within_limit(conditions, path).await,
+                    None => Storage::Local,
+                };
+                self.schedule()
+                    .read(rescan.id, storage, self.store.clock().now_unix_ms());
+            }
+            RescanOutcome::Unreachable | RescanOutcome::FoundEmpty => {
+                self.schedule()
+                    .missed(rescan.id, self.store.clock().now_unix_ms());
+            }
+        }
+    }
+
+    async fn listed_folders(&self) -> Result<BTreeMap<FolderId, PathBuf>, LibraryError> {
+        let mut folders = BTreeMap::new();
         let mut after = None;
         loop {
             let request = PageRequest {
@@ -567,6 +614,16 @@ impl Library {
     fn now_ms(&self) -> i64 {
         i64::try_from(self.store.clock().now_unix_ms()).unwrap_or(i64::MAX)
     }
+}
+
+/// Asks where a folder is stored, counting it as local when the answer fails to come, as it can from a network share that went away.
+async fn storage_within_limit(conditions: &impl RescanConditions, folder: &Path) -> Storage {
+    timeout(STORAGE_CHECK_TIMEOUT, conditions.storage_of(folder))
+        .await
+        .unwrap_or_else(|_| {
+            tracing::warn!(folder = %folder.display(), "find where a folder is stored in time");
+            Storage::Local
+        })
 }
 
 /// Leaves out a folder removed since the rescan listed it.

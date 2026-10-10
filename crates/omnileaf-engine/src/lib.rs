@@ -53,7 +53,9 @@ pub use omnileaf_db::catalog::{AppleBookmark, RootLocator};
 pub use omnileaf_db::store::{Changed, Clock};
 pub use project_link::ProjectLink;
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
-pub use rescan_conditions::{EXTERNAL_RESCAN_EVERY, RESCAN_EVERY, RescanConditions, Storage};
+pub use rescan_conditions::{
+    EXTERNAL_RESCAN_EVERY, PowerMode, RESCAN_EVERY, RescanConditions, Storage,
+};
 pub use resource::Resource;
 pub use resource_router::{ResourceRouter, ResourceRouterError};
 pub use scan::{FolderScan, ScanProgress};

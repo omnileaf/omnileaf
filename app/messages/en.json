@@ -457,6 +457,8 @@
   "advanced_summary": "Development build",
   "advanced_note_title": "Development build",
   "advanced_note_body": "These tools are only in development builds and never ship.",
+  "advanced_scheduled_rescans": "Check folders for new books while Omnileaf is open",
+  "advanced_scheduled_rescans_help": "New books show up without a rescan. Turn off to save battery.",
   "crash_tests_title": "Crash reports",
   "crash_tests_follow_choice": "Reports follow your choice in {section}.",
   "crash_test_panic": "Panic in the core",
