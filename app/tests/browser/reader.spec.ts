@@ -749,3 +749,31 @@ test.describe("the first book of a series", () => {
     ).toBeVisible();
   });
 });
+
+test.describe("on an iPad in landscape", () => {
+  const IOS_TOUCH_TARGET_PX = 44;
+
+  test.use({
+    backend: readerBackend(onPlatform("ios").backend),
+    viewport: { width: 1180, height: 820 },
+  });
+
+  test("lays the reader out as on desktop with controls sized for touch", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await expect(page.getByText("Library", { exact: true })).toBeVisible();
+    await expect(page.getByText(NEXT_BOOK.title)).toBeVisible();
+    const sizes = await Promise.all(
+      [
+        controls(page),
+        slider(page),
+        page.getByRole("link", { name: `Next book: ${NEXT_BOOK.title}` }),
+      ].map(async (control) => (await boxOf(control)).height),
+    );
+    for (const height of sizes) {
+      expect(height).toBeGreaterThanOrEqual(IOS_TOUCH_TARGET_PX);
+    }
+  });
+});
