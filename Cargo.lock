@@ -3161,6 +3161,7 @@ name = "omnileaf-app"
 version = "0.0.0"
 dependencies = [
  "omnileaf-db",
+ "omnileaf-edge-swipe",
  "omnileaf-engine",
  "omnileaf-folder-access",
  "os_info",
@@ -3206,6 +3207,16 @@ dependencies = [
  "tokio",
  "tracing",
  "unicode-normalization",
+]
+
+[[package]]
+name = "omnileaf-edge-swipe"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "specta",
+ "tauri",
+ "tauri-plugin",
 ]
 
 [[package]]

@@ -1,3 +1,4 @@
+use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 #[cfg(debug_assertions)]
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
@@ -13,6 +14,7 @@ use tauri_specta::{Builder, Commands, collect_commands, collect_events};
 #[cfg(debug_assertions)]
 use crate::crash_reporting::developer_crashes;
 use crate::{
+    back_swipe,
     crash_reporting::{CrashReportOffer, CrashReporting},
     folder_picker::pick_folder,
     ipc_error::IpcError,
@@ -29,6 +31,8 @@ macro_rules! app_commands {
             library_problem,
             add_library_folder,
             match_system_bars,
+            watch_back_swipes,
+            allow_back_swipe,
             library_folders,
             library_series,
             library_series_count,
@@ -160,6 +164,18 @@ async fn match_system_bars(
     preference: ThemePreference,
 ) -> Result<(), IpcError> {
     system_bars::match_theme(&app, theme, preference).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn watch_back_swipes(app: AppHandle, on_swipe: Channel<BackSwipe>) -> Result<(), IpcError> {
+    back_swipe::watch(&app, on_swipe).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn allow_back_swipe(app: AppHandle, edge: Option<SwipeEdge>) -> Result<(), IpcError> {
+    back_swipe::allow(&app, edge).await
 }
 
 #[tauri::command]
