@@ -52,14 +52,18 @@ interface Simulator {
 }
 
 async function bundleIdOf(app: string): Promise<string> {
-  const { stdout } = await run("plutil", [
-    "-extract",
-    "CFBundleIdentifier",
-    "raw",
-    "-o",
-    "-",
-    join(app, "Info.plist"),
-  ]);
+  const { stdout } = await run(
+    "plutil",
+    [
+      "-extract",
+      "CFBundleIdentifier",
+      "raw",
+      "-o",
+      "-",
+      join(app, "Info.plist"),
+    ],
+    { timeout: SIMCTL_TIMEOUT_MS },
+  );
   return stdout.trim();
 }
 
@@ -187,13 +191,11 @@ function bootedIosSimulator(
 }
 
 async function findBootedSimulator(): Promise<Simulator> {
-  const { stdout } = await run("xcrun", [
-    "simctl",
-    "list",
-    "devices",
-    "booted",
-    "--json",
-  ]);
+  const { stdout } = await run(
+    "xcrun",
+    ["simctl", "list", "devices", "booted", "--json"],
+    { timeout: SIMCTL_TIMEOUT_MS },
+  );
   const simulator = bootedIosSimulator(
     JSON.parse(stdout),
     process.env.OMNILEAF_SIMULATOR_UDID,
