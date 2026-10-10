@@ -28,6 +28,11 @@ pub struct SeriesPage {
 #[serde(into = "String", try_from = "String")]
 pub struct SeriesId(pub(crate) omnileaf_sync_proto::SeriesId);
 
+#[cfg(test)]
+pub(crate) fn sample_series_id() -> SeriesId {
+    SeriesId(omnileaf_sync_proto::SeriesId::local("Sample Series").unwrap())
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(into = "String", try_from = "String")]
 pub struct SeriesCursor(pub(crate) Cursor);

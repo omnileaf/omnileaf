@@ -14,13 +14,16 @@ use std::{fs, path::Path, thread, time::Duration};
 
 use omnileaf_engine::{
     BookId, BookReading, LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges,
-    LibraryListing, OpenedBook, ProbedFormat, READING_SAVE_DELAY, ReadMark, ResourceRouter,
-    SeriesBookListing, SeriesId,
+    LibraryListing, OpenedBook, ProbedFormat, READING_SAVE_DELAY, ReadMark, ReadingSaved,
+    ResourceRouter, SeriesBookListing, SeriesId,
 };
 use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg};
 use support::{FixedClock, ScratchFolder};
 use tokio::{
-    sync::{broadcast, oneshot},
+    sync::{
+        broadcast::{self, error::TryRecvError},
+        oneshot,
+    },
     time::{Instant, timeout},
 };
 
@@ -457,4 +460,39 @@ async fn tells_the_library_of_books_marked_read_and_unread() {
     let told_unread = tells_of_a_change(&mut changes).await;
 
     assert_eq!((told_read, told_unread), (true, true));
+}
+
+#[tokio::test(start_paused = true)]
+async fn tells_of_the_book_and_series_of_each_page_saved() {
+    let shelf = Shelf::with_two_books("saved-told").await;
+    let mut saved = shelf.library.reading_saved();
+    let first = shelf.restore(0).await;
+    shelf.show(&first, 2).await;
+    let second = shelf.restore(1).await;
+    shelf.show(&second, 3).await;
+
+    shelf.close(&second).await;
+
+    let told = [saved.try_recv(), saved.try_recv(), saved.try_recv()];
+    let of = |opened: &OpenedBook| {
+        Ok(ReadingSaved {
+            book: opened.id,
+            series: opened.series,
+        })
+    };
+    assert_eq!(told, [of(&first), of(&second), Err(TryRecvError::Empty)]);
+}
+
+#[tokio::test(start_paused = true)]
+async fn tells_of_no_save_when_no_page_was_left_to_save() {
+    let shelf = Shelf::with_two_books("saved-untold").await;
+    let mut saved = shelf.library.reading_saved();
+    let opened = shelf.restore(0).await;
+    shelf.show(&opened, 2).await;
+    shelf.show(&opened, 0).await;
+
+    shelf.close(&opened).await;
+    shelf.library.save_reading().await.unwrap();
+
+    assert_eq!(saved.try_recv(), Err(TryRecvError::Empty));
 }
