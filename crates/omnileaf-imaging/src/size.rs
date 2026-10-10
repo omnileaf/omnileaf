@@ -5,7 +5,8 @@ pub struct Size {
 }
 
 impl Size {
-    pub(crate) fn pixels(self) -> u64 {
+    #[must_use]
+    pub fn pixels(self) -> u64 {
         u64::from(self.width) * u64::from(self.height)
     }
 

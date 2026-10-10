@@ -6,7 +6,7 @@
 
 use std::io::Cursor;
 
-use omnileaf_imaging::{ImagingError, PageFormat, Size, page_size, transcode};
+use omnileaf_imaging::{ImagingError, PageFormat, Size, page_size, shrink_page, transcode};
 use omnileaf_testkit::{
     ENCODED_PAGE_HEIGHT, ENCODED_PAGE_INK, ENCODED_PAGE_PAPER, ENCODED_PAGE_WIDTH,
     INK_OVER_CLEAR_JXL, INK_OVER_PAPER_AVIF, INK_OVER_PAPER_JXL, PageShape, jxl_header_only,
@@ -263,5 +263,48 @@ fn refuses_to_transcode_a_jpeg_xl_whose_pixels_outgrow_the_memory_budget_before_
     assert!(
         matches!(transcoded, Err(ImagingError::TooLarge { .. })),
         "{transcoded:?}"
+    );
+}
+
+#[test]
+fn shrinks_a_page_to_the_pixels_allowed_keeping_its_shape() {
+    let page = portrait(page_png);
+
+    let shrunk = shrink_page(&page, PORTRAIT.pixels() / 4).unwrap();
+
+    assert_eq!(shrunk.format, PageFormat::Jpeg);
+    assert_eq!(
+        page_size(&shrunk.bytes).unwrap(),
+        Size {
+            width: PORTRAIT.width / 2,
+            height: PORTRAIT.height / 2
+        }
+    );
+}
+
+#[test]
+fn refuses_to_shrink_a_page_in_a_format_no_decoder_here_reads() {
+    let gif = gif_header(Size {
+        width: 60_000,
+        height: 60_000,
+    });
+
+    let shrunk = shrink_page(&gif, PORTRAIT.pixels());
+
+    assert!(
+        matches!(shrunk, Err(ImagingError::Unsupported)),
+        "{shrunk:?}"
+    );
+}
+
+#[test]
+fn refuses_to_shrink_a_page_whose_decode_would_outgrow_the_memory_budget() {
+    let huge = webp_header_only(16_000, 16_000);
+
+    let shrunk = shrink_page(&huge, PORTRAIT.pixels());
+
+    assert!(
+        matches!(shrunk, Err(ImagingError::TooLarge { .. })),
+        "{shrunk:?}"
     );
 }
