@@ -10,7 +10,7 @@ type WireReading = WireBook["reading"];
 export const SERIES_ID = "0190a3e4-0000-8000-8000-0000000000a4";
 export const SERIES_TITLE = "Sample Series 04";
 export const SERIES_FOLDER = "Sample Library";
-export const ADDED_AT = "2026-09-21T14:13:20.000Z";
+export const ADDED_AT_MS = 1_790_000_000_000;
 export const BOOKS_PER_PAGE = 100;
 
 /** A series' books, as the core holds them, that marking books read changes. */
@@ -24,7 +24,7 @@ export class FakeShelf {
       id: `0190a3e4-0000-8000-8000-${String(index + 1).padStart(12, "0")}`,
       position: index + 1,
       title: `${SERIES_TITLE} v${String(index + 1).padStart(2, "0")}`,
-      addedAt: ADDED_AT,
+      addedAtMs: ADDED_AT_MS,
       reading,
     }));
   }

@@ -4,7 +4,7 @@ use omnileaf_db::catalog::{self, BookSummary, Cursor, Page};
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
-use crate::{SortDirection, ipc_brand::branded_string, utc_time::rfc3339_utc};
+use crate::{SortDirection, ipc_brand::branded_string};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -13,8 +13,9 @@ pub struct SeriesBook {
     /// Where the book stands in its series' order, counting from 1, whichever of its books a list holds.
     pub position: u32,
     pub title: String,
-    /// When the library first found the book, as an RFC 3339 UTC timestamp.
-    pub added_at: String,
+    /// When the library first found the book, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly.
+    #[specta(type = i32)]
+    pub added_at_ms: i64,
     pub reading: BookReading,
 }
 
@@ -89,7 +90,7 @@ impl From<BookSummary> for SeriesBook {
             id: BookId(book.id),
             position: book.position,
             title: book.title,
-            added_at: rfc3339_utc(book.added_at_ms),
+            added_at_ms: book.added_at_ms,
             reading: book.reading.into(),
         }
     }

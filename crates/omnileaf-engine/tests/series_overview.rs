@@ -17,7 +17,7 @@ use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
 
 const FIRST_SERIES: &str = "Sample Series 01";
-const ADDED_AT: &str = "2026-09-21T14:13:20.000Z";
+const ADDED_AT_MS: i64 = 1_790_000_000_000;
 
 struct SampleLibrary {
     library: Library,
@@ -115,16 +115,16 @@ async fn lists_a_series_books_in_order_with_when_each_was_added() {
 
     let books = sample.books(series).await;
 
-    let listed: Vec<(&str, &str, BookReading)> = books
+    let listed: Vec<(&str, i64, BookReading)> = books
         .iter()
-        .map(|book| (book.title.as_str(), book.added_at.as_str(), book.reading))
+        .map(|book| (book.title.as_str(), book.added_at_ms, book.reading))
         .collect();
     assert_eq!(
         listed,
         [
-            ("Sample Series 01 v01", ADDED_AT, BookReading::NotStarted),
-            ("Sample Series 01 v02", ADDED_AT, BookReading::NotStarted),
-            ("Sample Series 01 v03", ADDED_AT, BookReading::NotStarted),
+            ("Sample Series 01 v01", ADDED_AT_MS, BookReading::NotStarted),
+            ("Sample Series 01 v02", ADDED_AT_MS, BookReading::NotStarted),
+            ("Sample Series 01 v03", ADDED_AT_MS, BookReading::NotStarted),
         ]
     );
 }

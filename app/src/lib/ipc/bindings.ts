@@ -231,8 +231,8 @@ export type SeriesBook = {
 	/**  Where the book stands in its series' order, counting from 1, whichever of its books a list holds. */
 	position: number,
 	title: string,
-	/**  When the library first found the book, as an RFC 3339 UTC timestamp. */
-	addedAt: string,
+	/**  When the library first found the book, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly. */
+	addedAtMs: number,
 	reading: BookReading,
 };
 
