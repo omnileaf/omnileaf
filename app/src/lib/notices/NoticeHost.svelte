@@ -2,6 +2,7 @@
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
 
+  import MessageBar from "./MessageBar.svelte";
   import NoticeCard from "./NoticeCard.svelte";
   import type { NoticeAction, Notices } from "./notices.svelte";
   import UndoBar from "./UndoBar.svelte";
@@ -14,6 +15,7 @@
 
   const shown = $derived(notices.shown);
   const undoOffer = $derived(notices.undoOffer);
+  const message = $derived(notices.message);
   const shortcut = $derived(undoShortcutOn(platform));
 
   let status: HTMLElement | undefined;
@@ -98,6 +100,10 @@
           notices.release();
         }}
       />
+    {/key}
+  {:else if message !== undefined}
+    {#key message}
+      <MessageBar {message} />
     {/key}
   {/if}
 </div>

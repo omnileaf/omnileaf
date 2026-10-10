@@ -4,6 +4,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import type { UndoOffer } from "./notices.svelte";
+  import { TOAST_BAR } from "./toast-bar";
   import type { UndoShortcut } from "./undo-shortcut";
 
   const DISMISS_ICON_SIZE = 16;
@@ -26,7 +27,7 @@
 </script>
 
 <div
-  class="absolute inset-x-md inset-be-md flex items-center gap-md rounded-panel bg-toast p-sm ps-lg text-on-toast shadow-undo motion-safe:animate-notice-rise medium:fixed medium:inset-x-notice-end medium:inset-be-page-bottom medium:mx-auto medium:shadow-undo-wide medium:inline-fit ios:max-medium:inset-be-floating-clearance"
+  class={[TOAST_BAR, "p-sm ps-lg"]}
   onfocusin={onHold}
   onfocusout={onRelease}
 >
