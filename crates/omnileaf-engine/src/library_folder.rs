@@ -1,10 +1,12 @@
-use std::{fmt, str::FromStr};
+use std::{fmt, path::PathBuf, str::FromStr};
 
-use omnileaf_db::catalog::{Cursor, LibraryRoot, RootId, RootKind};
+use omnileaf_db::catalog::{AndroidTree, Cursor, LibraryRoot, RootId, RootKind, RootLocator};
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
 use crate::{ipc_brand::branded_string, library_layout::folder_name};
+
+const PLACE_SEPARATOR: &str = " › ";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -44,17 +46,39 @@ pub struct FolderCursor(pub(crate) Cursor);
 
 impl From<LibraryRoot> for LibraryFolder {
     fn from(root: LibraryRoot) -> Self {
-        let path = root.locator.into_path();
+        let location = match &root.locator {
+            RootLocator::Path(path) | RootLocator::AppleBookmark { path, .. } => {
+                path.display().to_string()
+            }
+            RootLocator::AndroidTree(tree) => tree_location(tree),
+        };
         Self {
             id: FolderId(root.id),
             kind: match root.kind {
                 RootKind::Home => FolderKind::Home,
                 RootKind::Linked => FolderKind::Linked,
             },
-            name: folder_name(&path),
-            location: path.display().to_string(),
+            name: folder_name(&root_folder(&root.locator)),
+            location,
             is_available: root.unavailable_since_ms.is_none(),
         }
+    }
+}
+
+/// The folder the root's books are filed under, which for an Android folder is its name alone.
+pub(crate) fn root_folder(locator: &RootLocator) -> PathBuf {
+    match locator {
+        RootLocator::Path(folder) | RootLocator::AppleBookmark { path: folder, .. } => {
+            folder.clone()
+        }
+        RootLocator::AndroidTree(tree) => PathBuf::from(tree.name()),
+    }
+}
+
+fn tree_location(tree: &AndroidTree) -> String {
+    match tree.place() {
+        "" => tree.name().to_owned(),
+        place => format!("{place}{PLACE_SEPARATOR}{}", tree.name()),
     }
 }
 
@@ -109,5 +133,47 @@ impl Type for FolderId {
 impl Type for FolderCursor {
     fn definition(types: &mut Types) -> DataType {
         branded_string("FolderCursor", types)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use omnileaf_db::catalog::TreeUri;
+
+    use super::*;
+
+    const COMICS_TREE: &str = "content://documents.test/tree/primary%3ADocuments%2FComics";
+
+    fn tree_folder(place: &str) -> LibraryFolder {
+        let tree = AndroidTree::new(
+            TreeUri::parse(COMICS_TREE.to_owned()).unwrap(),
+            "Comics".to_owned(),
+            place.to_owned(),
+        )
+        .unwrap();
+        LibraryFolder::from(LibraryRoot {
+            id: "1".parse().unwrap(),
+            kind: RootKind::Linked,
+            locator: RootLocator::AndroidTree(tree),
+            added_at_ms: 0,
+            unavailable_since_ms: None,
+        })
+    }
+
+    #[test]
+    fn lists_an_android_folder_by_its_place_and_name() {
+        let folder = tree_folder("Internal storage › Documents");
+
+        assert_eq!(
+            (folder.name.as_str(), folder.location.as_str()),
+            ("Comics", "Internal storage › Documents › Comics")
+        );
+    }
+
+    #[test]
+    fn lists_an_android_folder_with_no_place_by_its_name_alone() {
+        let folder = tree_folder("");
+
+        assert_eq!(folder.location, "Comics");
     }
 }

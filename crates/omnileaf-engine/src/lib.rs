@@ -45,7 +45,7 @@ pub use library_view::{
     DesktopCoversPerRow, LibraryDisplay, LibraryView, OnCovers, PhoneCoversPerRow,
     TabletCoversPerRow,
 };
-pub use omnileaf_db::catalog::{AppleBookmark, RootLocator};
+pub use omnileaf_db::catalog::{AndroidTree, AppleBookmark, RootLocator, TreeUri};
 pub use omnileaf_db::store::{Changed, Clock};
 pub use project_link::ProjectLink;
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};

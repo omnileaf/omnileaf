@@ -50,6 +50,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0013_create_library_view"),
     migration!("0014_store_series_source_ids_as_sixteen_bytes"),
     migration!("0015_allow_covers_only_library_view"),
+    migration!("0021_add_android_tree_labels"),
 ];
 
 pub(crate) fn pending(
@@ -403,6 +404,31 @@ mod tests {
             .collect::<Result<_, _>>()
             .unwrap();
         assert_eq!(file_roots, [7]);
+    }
+
+    #[test]
+    fn keeps_the_library_folders_when_android_folder_labels_arrive() {
+        let scratch = ScratchLibrary::new("tree-labels-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..15]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO library_root (id, kind, locator_kind, location, bookmark, added_at_ms)
+                 VALUES (7, 'linked', 'path', x'2f6d65646961', NULL, 0),
+                        (8, 'linked', 'apple_bookmark', x'2f6d65646962', x'01', 0);",
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let roots: Vec<(i64, Option<String>, Option<String>)> = connection
+            .prepare("SELECT id, tree_name, tree_place FROM library_root ORDER BY id")
+            .unwrap()
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(roots, [(7, None, None), (8, None, None)]);
     }
 
     #[test]

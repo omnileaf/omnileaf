@@ -5,15 +5,20 @@ use rusqlite::{Connection, OptionalExtension, Row};
 
 use crate::{
     Error,
-    catalog::{native_path, root::stored_root_path, stored_id::stored_id},
+    catalog::{
+        native_path,
+        root::{RootLocator, stored_locator},
+        stored_id::stored_id,
+    },
 };
 
 const FILE_OF_COVER: &str =
-    "SELECT library_root.locator_kind, library_root.location, book_file.location
+    "SELECT library_root.locator_kind, library_root.location, library_root.bookmark,
+        library_root.tree_name, library_root.tree_place, book_file.location
     FROM book_file JOIN library_root ON library_root.id = book_file.root_id
     WHERE book_file.id = ?1 AND book_file.book_id = ?2 AND book_file.rev = ?3";
 const ROOT_LOCATOR_KIND_COLUMN: usize = 0;
-const FILE_LOCATION_COLUMN: usize = 2;
+const FILE_LOCATION_COLUMN: usize = 5;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BookFileId(pub(crate) i64);
@@ -26,14 +31,19 @@ pub struct Cover {
     pub rev: u32,
 }
 
-/// Where the cover's file is on disk, or nothing once that file has changed or gone since the cover was listed.
+/// The root holding the cover's file and where the file is inside it, or nothing once that file has changed or gone since the cover was listed.
 #[tracing::instrument(skip_all, fields(book = %cover.book, file = %cover.file, rev = cover.rev))]
-pub fn cover_file(connection: &Connection, cover: &Cover) -> Result<Option<PathBuf>, Error> {
+pub fn cover_file(
+    connection: &Connection,
+    cover: &Cover,
+) -> Result<Option<(RootLocator, PathBuf)>, Error> {
     Ok(connection
         .prepare(FILE_OF_COVER)?
         .query_row((cover.file.0, cover.book.as_bytes(), cover.rev), |row| {
-            let folder = stored_root_path(row, ROOT_LOCATOR_KIND_COLUMN)?;
-            Ok(folder.join(native_path::stored_native_path(row, FILE_LOCATION_COLUMN)?))
+            Ok((
+                stored_locator(row, ROOT_LOCATOR_KIND_COLUMN)?,
+                native_path::stored_native_path(row, FILE_LOCATION_COLUMN)?,
+            ))
         })
         .optional()?)
 }
