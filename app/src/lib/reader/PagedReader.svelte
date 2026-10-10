@@ -39,7 +39,8 @@
   const CORE: ReadingCore = {
     restored: (id, page) =>
       commands.readingRestored(id, page, utcOffsetMinutes(new Date())),
-    shown: (id, page) => commands.pageShown(id, page),
+    shown: (id, page) =>
+      commands.pageShown(id, page, utcOffsetMinutes(new Date())),
     closed: (id) => commands.closeBook(id),
   };
 

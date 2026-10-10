@@ -116,8 +116,15 @@ impl Shelf {
         self.restore_in(index, UtcOffset::UTC).await
     }
 
+    async fn show_in(&self, opened: &OpenedBook, page: u32, offset: UtcOffset) {
+        self.library
+            .page_shown(opened.id, page, offset)
+            .await
+            .unwrap();
+    }
+
     async fn show(&self, opened: &OpenedBook, page: u32) {
-        self.library.page_shown(opened.id, page).await.unwrap();
+        self.show_in(opened, page, UtcOffset::UTC).await;
     }
 
     async fn close(&self, opened: &OpenedBook) {
@@ -413,4 +420,25 @@ async fn lists_a_new_entry_for_reading_on_long_after_the_app_was_put_away() {
         .map(|entry| entry.read_seconds)
         .collect();
     assert_eq!(read, [60, 60]);
+}
+
+#[tokio::test]
+async fn keeps_the_local_time_reading_on_after_a_break_starts_at_once_the_device_changes_zone() {
+    let shelf = Shelf::with_two_books("history-zone-after-break").await;
+    let utc_minus_five = UtcOffset::try_from(UTC_MINUS_FIVE).unwrap();
+    let opened = shelf.restore(0).await;
+    shelf.clock.advance(MINUTE_MS);
+    shelf.library.save_reading().await.unwrap();
+    shelf.clock.advance(3 * MINUTE_MS);
+
+    shelf.show_in(&opened, 1, utc_minus_five).await;
+    shelf.close(&opened).await;
+
+    let offsets: Vec<UtcOffset> = shelf
+        .entries()
+        .await
+        .iter()
+        .map(|entry| entry.utc_offset_minutes)
+        .collect();
+    assert_eq!(offsets, [utc_minus_five, UtcOffset::UTC]);
 }

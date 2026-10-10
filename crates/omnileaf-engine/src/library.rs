@@ -426,8 +426,13 @@ impl Library {
     }
 
     /// Saves the page within a moment, unless the reader hasn't restored the book yet or has closed it.
-    pub async fn page_shown(&self, book: BookId, page: u32) -> Result<(), LibraryError> {
-        self.reading.shown(book, page).await
+    pub async fn page_shown(
+        &self,
+        book: BookId,
+        page: u32,
+        utc_offset: UtcOffset,
+    ) -> Result<(), LibraryError> {
+        self.reading.shown(book, page, utc_offset).await
     }
 
     /// Saves the page the reader showed last in the book, and nothing it shows in it from then on.
