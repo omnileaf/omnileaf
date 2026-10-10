@@ -20,6 +20,8 @@
   import { Swipe, type SwipeTurn } from "#lib/reader/swipe.ts";
 
   const SWIPE_MIN_PX = 48;
+  /** Long enough that turning pages in a run announces only the page they stop on. */
+  const ANNOUNCE_DELAY_MS = 300;
   const TURN_STEPS = { next: 1, previous: -1 } as const satisfies Record<
     SwipeTurn,
     number
@@ -39,6 +41,27 @@
 
   const pageNumber = $derived(turner.shown + 1);
   const pageCount = $derived(book.pages.length);
+  const pageLine = $derived(
+    m.reader_slider_value({ page: pageNumber, count: pageCount }),
+  );
+  let announced = $state(untrack(() => pageLine));
+
+  function isSliderFocused(): boolean {
+    const focused = document.activeElement;
+    return focused instanceof HTMLInputElement && focused.type === "range";
+  }
+
+  $effect(() => {
+    const line = pageLine;
+    const waiting = setTimeout(() => {
+      if (!isSliderFocused()) {
+        announced = line;
+      }
+    }, ANNOUNCE_DELAY_MS);
+    return () => {
+      clearTimeout(waiting);
+    };
+  });
 
   function act(action: ReaderAction): void {
     switch (action) {
@@ -184,7 +207,5 @@
       }}
     />
   </div>
-  <p role="status" class="sr-only">
-    {m.reader_slider_value({ page: pageNumber, count: pageCount })}
-  </p>
+  <p role="status" class="sr-only">{announced}</p>
 </main>
