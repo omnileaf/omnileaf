@@ -2,15 +2,14 @@
   import type { Snippet } from "svelte";
 
   import type { Glyph } from "./glyph";
-
-  const BADGE_ICON_SIZE = 18;
+  import HeaderBadge from "./HeaderBadge.svelte";
 
   const BUTTON =
     "rounded-full px-lg text-body font-semibold transition-control min-block-touch-button focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ios:max-medium:rounded-ios-button medium:rounded-button medium:text-label medium:min-block-pointer-target";
 
   let {
     isOpen,
-    icon: Icon,
+    icon,
     title,
     confirmLabel,
     cancelLabel,
@@ -60,12 +59,7 @@
       class="self-center rounded-full bg-step-off block-sheet-handle-block inline-sheet-handle medium:hidden"
     ></span>
     <div class="flex items-center gap-md">
-      <span
-        aria-hidden="true"
-        class="flex shrink-0 items-center justify-center rounded-full bg-danger-soft text-danger block-header-badge inline-header-badge"
-      >
-        <Icon size={BADGE_ICON_SIZE} />
-      </span>
+      <HeaderBadge {icon} tone="bg-danger-soft text-danger" />
       <h2
         id={titleId}
         class="text-dialog-title font-bold max-medium:text-sheet-title"
