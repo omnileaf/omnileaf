@@ -1,23 +1,23 @@
 <script lang="ts">
   import { X } from "@lucide/svelte";
 
+  import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { Notice, NoticeAction, NoticeTone } from "./notices.svelte";
 
-  const ICON_SIZE = 20;
   const DISMISS_ICON_SIZE = 16;
 
   const TONES = {
     info: {
       card: "border-border bg-card text-foreground",
-      icon: "bg-accent-soft",
+      badge: "bg-accent-soft",
     },
     warning: {
       card: "border-warning-edge bg-warning-soft text-on-warning",
-      icon: "bg-warning",
+      badge: "bg-warning",
     },
-  } satisfies Record<NoticeTone, { card: string; icon: string }>;
+  } satisfies Record<NoticeTone, { card: string; badge: string }>;
 
   const EMPHASES = {
     primary:
@@ -44,30 +44,21 @@
     tone.card,
   ]}
 >
-  <div class="flex items-start gap-md">
-    <span
-      class={[
-        "flex shrink-0 items-center justify-center rounded-control p-sm",
-        tone.icon,
-      ]}
-    >
-      <notice.icon aria-hidden="true" size={ICON_SIZE} />
-    </span>
-    <p class="flex grow flex-col gap-2xs">
-      <span class="text-callout font-bold desktop:text-label"
-        >{notice.title}</span
-      >
-      <span class="text-detail opacity-85">{notice.body}</span>
+  <div class="flex items-center gap-md">
+    <HeaderBadge icon={notice.icon} tone={tone.badge} />
+    <p class="grow text-callout font-bold desktop:text-label">
+      {notice.title}
     </p>
     <button
       type="button"
       aria-label={m.notice_dismiss()}
-      class="-me-sm -mbs-sm flex shrink-0 items-center justify-center rounded-full opacity-70 transition-control min-block-touch-target min-inline-touch-target before:absolute before:rounded-full before:transition-control before:block-pointer-target before:inline-pointer-target hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed"
+      class="-my-sm -me-sm flex shrink-0 items-center justify-center rounded-full opacity-70 transition-control min-block-touch-target min-inline-touch-target before:absolute before:rounded-full before:transition-control before:block-pointer-target before:inline-pointer-target hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed"
       onclick={onDismiss}
     >
       <X aria-hidden="true" size={DISMISS_ICON_SIZE} class="relative" />
     </button>
   </div>
+  <p class="text-detail opacity-85">{notice.body}</p>
   {#if notice.actions.length > 0}
     <div class="flex flex-wrap justify-end gap-sm">
       {#each notice.actions as action (action.label)}
