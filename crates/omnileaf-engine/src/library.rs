@@ -307,6 +307,7 @@ impl Library {
 
     /// Fails with [`LibraryError::SeriesNotFound`] for a series the library doesn't show, being missing or empty of books.
     pub async fn series_overview(&self, id: SeriesId) -> Result<SeriesOverview, LibraryError> {
+        self.save_reading_before_reading().await;
         let series = id.0;
         let found = self
             .store
@@ -391,6 +392,13 @@ impl Library {
         self.reading.opened(book, page_count).await
     }
 
+    /// Saves the page reached in the book read now, so what is read next shows it, and reads on without it should the save fail.
+    async fn save_reading_before_reading(&self) {
+        if let Err(error) = self.reading.save_now().await {
+            tracing::warn!(error = %describe_error(&error), "save the page reached before reading the library");
+        }
+    }
+
     /// Each page reading reached once it is saved, whichever book it is in.
     #[must_use]
     pub fn reading_saved(&self) -> broadcast::Receiver<ReadingSaved> {
@@ -461,9 +469,7 @@ impl Library {
         &self,
         book: BookId,
     ) -> Result<Option<BookToOpen>, LibraryError> {
-        if let Err(error) = self.reading.save_now().await {
-            tracing::warn!(error = %describe_error(&error), "save the page reached before reading where to open the book");
-        }
+        self.save_reading_before_reading().await;
         Ok(self
             .store
             .database()
