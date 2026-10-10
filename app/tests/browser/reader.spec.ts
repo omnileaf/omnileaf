@@ -684,6 +684,67 @@ test.describe("a book the library doesn't hold", () => {
       page.getByRole("heading", { name: "This book isn't in your library" }),
     ).toBeVisible();
   });
+
+  test("lands on the heading saying so", async ({ page }) => {
+    await page.goto(`/read/${BOOK_ID}`);
+
+    await expect(
+      page.getByRole("heading", { name: "This book isn't in your library" }),
+    ).toBeFocused();
+  });
+});
+
+test.describe("a book that couldn't be opened for a reason of the app's own", () => {
+  const turns: ScreenOrientation[] = [];
+
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      openBook: () => {
+        throw new CommandFailure({
+          code: "internal",
+          message: "the library database could not be reached",
+        });
+      },
+      orientScreen: (orientation) => {
+        turns.push(orientation);
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    turns.length = 0;
+  });
+
+  test("lands on a heading of its own saying something went wrong", async ({
+    page,
+  }) => {
+    await page.goto(`/read/${BOOK_ID}`);
+
+    const heading = page.getByRole("heading", {
+      level: 1,
+      name: "Something went wrong",
+    });
+    await expect(heading).toBeFocused();
+    await expect(page.getByText("Couldn't open this book.")).toBeVisible();
+  });
+
+  test("keeps the screen upright and the interface unzoomed, as no book is shown", async ({
+    page,
+  }) => {
+    await page.goto(`/read/${BOOK_ID}`);
+    await expect(
+      page.getByRole("heading", { name: "Something went wrong" }),
+    ).toBeVisible();
+
+    const viewport = await page
+      .locator('meta[name="viewport"]')
+      .getAttribute("content");
+
+    expect(viewport).toContain("maximum-scale=1");
+    expect(turns).toEqual([]);
+  });
 });
 
 test.describe("a book whose file can't be read", () => {
