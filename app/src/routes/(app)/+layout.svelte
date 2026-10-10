@@ -6,6 +6,7 @@
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { sectionOf } from "#lib/navigation/sections.ts";
+  import SwipeableMain from "#lib/navigation/SwipeableMain.svelte";
   import NoticeHost from "#lib/notices/NoticeHost.svelte";
   import { getNotices } from "#lib/notices/notices.svelte.ts";
 
@@ -26,17 +27,15 @@
   });
 </script>
 
-<div class="flex flex-col-reverse block-dvh medium:flex-row">
+<div class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row">
   {#key language.resolved}
     <AppNavigation current={sectionOf(page.url.pathname)} />
   {/key}
-  <main
-    class="order-2 flex flex-1 flex-col overflow-y-auto px-gutter py-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance"
-  >
+  <SwipeableMain isIos={data.appInfo.platform === "ios"}>
     {#key language.resolved}
       {@render children()}
     {/key}
-  </main>
+  </SwipeableMain>
   <div class="relative z-notice order-1">
     {#key language.resolved}
       <NoticeHost {notices} platform={data.appInfo.platform} />
