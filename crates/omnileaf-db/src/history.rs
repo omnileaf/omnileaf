@@ -2,7 +2,7 @@
 
 use std::{collections::BTreeMap, ops::RangeInclusive};
 
-use omnileaf_sync_proto::BookId;
+use omnileaf_sync_proto::{BookId, SeriesId};
 use rusqlite::{Connection, Row, Statement, ToSql, named_params};
 
 use crate::{
@@ -20,7 +20,11 @@ macro_rules! sessions_newest_first {
                 reading_session.started_at_ms, reading_session.ended_at_ms,
                 reading_session.utc_offset_minutes, reading_session.local_day,
                 reading_session.page, reading_session.page_count,
-                book.title AS book_title, series.title AS series_title,
+                book.title AS book_title, series.id AS series_id, series.title AS series_title,
+                (SELECT count(*) FROM book AS earlier
+                    WHERE earlier.series_local_id = book.series_local_id
+                        AND (earlier.title_sort_key, earlier.id) < (book.title_sort_key, book.id))
+                    + 1 AS position,
                 cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
                 book_state.is_read, book_state.is_started, book_state.position_page
             FROM reading_session
@@ -52,7 +56,10 @@ const READING_TIME_SINCE: &str = "SELECT coalesce(sum(ended_at_ms - started_at_m
 pub struct HistoryEntry {
     pub book: BookId,
     pub book_title: String,
+    pub series: SeriesId,
     pub series_title: String,
+    /// Where the book stands in its series' title order, counting from 1.
+    pub position: u32,
     /// The book's own cover, absent while it has no file.
     pub cover: Option<Cover>,
     pub started_at_ms: i64,
@@ -134,7 +141,9 @@ fn stored_entry(row: &Row<'_>) -> rusqlite::Result<HistoryEntry> {
     Ok(HistoryEntry {
         book: stored_id(row, "book_id")?,
         book_title: row.get("book_title")?,
+        series: stored_id(row, "series_id")?,
         series_title: row.get("series_title")?,
+        position: row.get("position")?,
         cover: stored_cover(row)?,
         started_at_ms: row.get("started_at_ms")?,
         ended_at_ms: row.get("ended_at_ms")?,
@@ -157,9 +166,11 @@ mod tests {
             "SEARCH book USING PRIMARY KEY (id=?)",
             "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
             "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
-            "CORRELATED SCALAR SUBQUERY 1",
+            "CORRELATED SCALAR SUBQUERY 2",
             "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
             "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN",
+            "CORRELATED SCALAR SUBQUERY 1",
+            "SEARCH earlier USING COVERING INDEX book_by_series (series_local_id=? AND (title_sort_key,id)<(?,?))",
         ]
         .map(str::to_owned)
         .to_vec()

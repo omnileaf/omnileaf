@@ -26,7 +26,7 @@ use omnileaf_db::{
     history::{HistoryEntry, history_page, reading_time_by_day, reading_time_since},
     store::{Continuity, SessionPlace, Store},
 };
-use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
+use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
 use store_support::{FakeClock, NOW_UNIX_MS, book, open_store};
 use support::ScratchFolder;
 
@@ -207,6 +207,28 @@ async fn lists_a_session_with_its_book_series_times_and_page_reached() {
     assert_eq!((entry.page, entry.page_count), (7, PAGE_COUNT));
     assert_eq!(entry.reading, BookReading::NotStarted);
     assert_eq!(page.next, None);
+}
+
+#[tokio::test]
+async fn lists_a_session_with_its_book_s_series_and_place_in_it() {
+    let history = History::open("history-place").await;
+    history.read(book(2), NOW_UNIX_MS, NOW_UNIX_MS, 0).await;
+    history.read(book(4), NOW_UNIX_MS, NOW_UNIX_MS, 0).await;
+
+    let page = history.page(50, None).await.unwrap();
+
+    let places: Vec<(SeriesId, u32)> = page
+        .items
+        .iter()
+        .map(|entry| (entry.series, entry.position))
+        .collect();
+    assert_eq!(
+        places,
+        [
+            (SeriesId::local(SECOND_SERIES).unwrap(), 1),
+            (SeriesId::local(FIRST_SERIES).unwrap(), 2),
+        ]
+    );
 }
 
 #[tokio::test]

@@ -188,7 +188,9 @@ mod tests {
         history::HistoryEntry {
             book: sample_book_id(1).0,
             book_title: "Sample Series 01 v01".to_owned(),
+            series: omnileaf_sync_proto::SeriesId::local("Sample Series 01").unwrap(),
             series_title: "Sample Series 01".to_owned(),
+            position: 1,
             cover: None,
             started_at_ms: STARTED_AT_MS,
             ended_at_ms: STARTED_AT_MS + 90_500,
