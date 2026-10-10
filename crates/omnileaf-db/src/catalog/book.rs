@@ -1,7 +1,7 @@
 use omnileaf_sync_proto::{BookId, Fingerprint, FingerprintKind, SeriesId};
-use rusqlite::Transaction;
+use rusqlite::{Connection, OptionalExtension, Transaction};
 
-use crate::{Error, book_order::book_order_key};
+use crate::{Error, book_order::book_order_key, catalog::stored_id::stored_id};
 
 macro_rules! insert_book {
     ($on_conflict:literal) => {
@@ -23,6 +23,8 @@ const ADD_OR_REFILE_BOOK: &str = insert_book!(
         title = excluded.title,
         title_sort_key = excluded.title_sort_key"
 );
+const SERIES_OF_BOOK: &str = "SELECT series.id AS series_id FROM book
+    JOIN series ON series.local_id = book.series_local_id WHERE book.id = ?1";
 const SERIES_EXISTS: &str = "SELECT EXISTS (SELECT 1 FROM series WHERE id = ?1)";
 const REMOVE_BOOK_WITHOUT_FILES: &str = "DELETE FROM book
     WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM book_file WHERE book_id = ?1)";
@@ -82,6 +84,17 @@ pub fn remove_books_without_files(
         removed = remove.execute([book.as_bytes()])?.saturating_add(removed);
     }
     Ok(removed)
+}
+
+/// None for a book missing from the catalog.
+pub(crate) fn series_of_book(
+    connection: &Connection,
+    book: BookId,
+) -> Result<Option<SeriesId>, Error> {
+    Ok(connection
+        .prepare(SERIES_OF_BOOK)?
+        .query_row([book.as_bytes()], |row| stored_id(row, "series_id"))
+        .optional()?)
 }
 
 fn series_exists(transaction: &Transaction<'_>, series: SeriesId) -> Result<bool, Error> {

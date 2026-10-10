@@ -1,10 +1,11 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use omnileaf_sync_proto::{BookId, MergeClass, Register, Value};
+use omnileaf_sync_proto::{BookId, MergeClass, Register, SeriesId, Value};
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::{
     Error,
+    catalog::series_of_book,
     store::{
         Changed,
         key::{Key, LatestKey, MaximumKey},
@@ -93,6 +94,11 @@ impl<'t> Writer<'t> {
             self.set_read(to, is_read)?;
         }
         Ok(())
+    }
+
+    /// None for a book missing from the catalog.
+    pub fn series_of(&self, book: BookId) -> Result<Option<SeriesId>, Error> {
+        series_of_book(self.connection, book)
     }
 
     fn set(&mut self, key: LatestKey, value: Value) -> Result<(), Error> {
