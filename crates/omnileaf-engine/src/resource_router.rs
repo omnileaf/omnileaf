@@ -1,9 +1,10 @@
-use std::{io, path::Path};
+use std::{io, path::Path, sync::Arc};
 
 use crate::{
     BookId, CoverPath, Library, OpenedBook, PagePath, ProbedFormat, Resource,
     cover_path::THUMBNAIL_VERSION,
     cover_thumbnails::CoverThumbnails,
+    decode_permits::{DECODES_AT_ONCE, DecodePermits},
     describe_error,
     pages::{OpenBookError, PAGE_CACHE_VERSION, Pages},
 };
@@ -29,10 +30,15 @@ impl ResourceRouter {
     /// The platform may empty `cache_folder` whenever it needs the space.
     #[tracing::instrument(skip_all, fields(cache_folder = %cache_folder.display()))]
     pub fn open(cache_folder: &Path) -> Result<Self, ResourceRouterError> {
+        let decodes = Arc::new(DecodePermits::new(DECODES_AT_ONCE));
         let folder = cache_folder.join(THUMBNAIL_FOLDER).join(THUMBNAIL_VERSION);
-        let thumbnails = CoverThumbnails::open(folder).map_err(ResourceRouterError::Workers)?;
-        let pages = Pages::open(cache_folder.join(PAGE_FOLDER).join(PAGE_CACHE_VERSION))
-            .map_err(ResourceRouterError::PageWorkers)?;
+        let thumbnails = CoverThumbnails::open(folder, Arc::clone(&decodes))
+            .map_err(ResourceRouterError::Workers)?;
+        let pages = Pages::open(
+            cache_folder.join(PAGE_FOLDER).join(PAGE_CACHE_VERSION),
+            decodes,
+        )
+        .map_err(ResourceRouterError::PageWorkers)?;
         Ok(Self { thumbnails, pages })
     }
 
