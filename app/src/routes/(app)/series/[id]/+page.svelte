@@ -11,7 +11,10 @@
     type SeriesBookListing,
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
-  import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
+  import {
+    listenForLibraryChanges,
+    listenForReadingSaved,
+  } from "#lib/library/library-changes.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
@@ -113,6 +116,19 @@
       readAgain();
     }, reportError),
   );
+
+  $effect(() => {
+    if (foundId === undefined) {
+      return undefined;
+    }
+    return listenForReadingSaved(
+      foundId,
+      () => {
+        readAgain();
+      },
+      reportError,
+    );
+  });
 </script>
 
 <div

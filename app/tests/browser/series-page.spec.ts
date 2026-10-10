@@ -31,6 +31,7 @@ import {
 } from "./series-shelf.ts";
 
 const LIBRARY_CHANGED = "library-changed";
+const READING_SAVED = "reading-saved";
 const JUST_UNDER = 6;
 const SWIPED_PAST_HALFWAY = 0.7;
 const READ = { state: "read" } as const;
@@ -168,6 +169,23 @@ test("opens the book reading goes on from in the reader from the up next line", 
     .click();
 
   await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(3)}$`));
+});
+
+test("shows how far a book is read once a page turned in it is saved", async ({
+  page,
+}) => {
+  await openSeries(page);
+  shelf.readTo(3, 22);
+
+  await emitFakeEvent(page, READING_SAVED, {
+    book: shelf.idOf(3),
+    series: SERIES_ID,
+  });
+
+  await expect(
+    page.getByRole("main").getByText(`Continue ${shelf.titleOf(3)} at page 22`),
+  ).toBeVisible();
+  await expect(books(page).nth(3)).toContainText("Page 22");
 });
 
 test("lists the series' books in order with how far each has been read", async ({
