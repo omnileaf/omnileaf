@@ -10,6 +10,7 @@ const FIRST_SERIES_COVER = xpath(
 const FIRST_BOOK_LINK = xpath(
   "//ul[@aria-label='Books']/li[1]//a[starts-with(normalize-space(), 'Sample Series 01 v01')]",
 );
+const SERIES_HEADING = xpath("//h1[normalize-space()='Sample Series 01']");
 const NEXT_PAGE = xpath("//button[@aria-label='Next page']");
 const BACK_TO_THE_LIBRARY = xpath(
   "//main//a[@href='/'] | //nav//a[normalize-space()='Library']",
@@ -50,4 +51,35 @@ test("turns to the next page with a tap on the page's right edge", async () => {
     xpath("//header//p[contains(normalize-space(), 'Page 2 of 8')]"),
   );
   expect(await line.text()).toBe("Sample Series 01 v01 · Page 2 of 8");
+});
+
+test("shows on the series page the page reached once back from the book through the library", async () => {
+  await openFirstBook();
+  const line = await appSession().waitFor(
+    xpath("//header//p[contains(normalize-space(), ' of 8')]"),
+  );
+  const opened = Number(/Page (\d+) of 8/.exec(await line.text())?.[1]);
+  const reached = opened + 1;
+  await (await appSession().waitFor(NEXT_PAGE)).click();
+  await appSession().waitUntil(
+    pageShownScript(reached),
+    `page ${String(reached)} shown`,
+  );
+
+  await appSession().back();
+  await (await appSession().waitFor(FIRST_SERIES_COVER)).click();
+
+  await appSession().waitFor(SERIES_HEADING);
+  const row = await appSession().waitFor(
+    xpath(
+      `//ul[@aria-label='Books']/li[1][contains(normalize-space(), 'Page ${String(reached)}')]`,
+    ),
+  );
+  const upNext = await appSession().waitFor(
+    xpath("//main//a[starts-with(normalize-space(), 'Continue ')]"),
+  );
+  expect(await row.text()).toContain(`Page ${String(reached)}`);
+  expect(await upNext.text()).toBe(
+    `Continue Sample Series 01 v01 at page ${String(reached)}`,
+  );
 });
