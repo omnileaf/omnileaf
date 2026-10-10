@@ -10,6 +10,7 @@ import { APPIUM_URL, startAppium } from "./appium.ts";
 import { withAttempts } from "./attempts.ts";
 import { isRecord, listOf } from "./json.ts";
 import { launchOnceRegistered } from "./simulator-launch.ts";
+import { selectedXcode, simulatorWindowApp } from "./simulator-window.ts";
 import { waitUntilReady } from "./webdriver.ts";
 
 const APP_BUNDLE = fileURLToPath(
@@ -219,13 +220,13 @@ export async function setup(
       "appium:platformVersion": simulator.platformVersion,
       "appium:bundleId": bundleId,
       "appium:noReset": true,
-      "appium:isHeadless": true,
       "appium:autoWebview": true,
       "appium:additionalWebviewBundleIds": [WEBVIEW_PROCESS],
       "appium:webviewConnectTimeout": WEBVIEW_TIMEOUT_MS,
       "appium:showXcodeLog": true,
       ...webDriverAgent,
     },
+    simulatorWindowApp: simulatorWindowApp(await selectedXcode()),
   });
   return stop;
 }
