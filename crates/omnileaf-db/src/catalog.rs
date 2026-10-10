@@ -21,7 +21,7 @@ mod stored_id;
 pub use book::{NewBook, add_book, remove_books_without_files};
 pub use cover::{BookFileId, Cover, cover_file};
 pub use cursor::Cursor;
-pub use home_root::set_home_root;
+pub use home_root::{home_root, keep_home_root_as_linked, set_home_root};
 pub use library_roots::{BookmarkedRoot, bookmarked_roots, library_root, library_roots};
 pub use page::{Page, PageRequest, PageSize};
 pub use relocated_roots::relocate_roots;
