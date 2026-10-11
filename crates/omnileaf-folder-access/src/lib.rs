@@ -2,6 +2,11 @@ mod document_tree;
 mod grants;
 #[cfg(target_os = "ios")]
 mod ios;
+#[cfg_attr(
+    not(any(target_os = "android", test)),
+    expect(dead_code, reason = "only Android's folders have a place to work out")
+)]
+mod place;
 mod reply;
 
 pub use document_tree::{Document, DocumentId, DocumentTree, Documents};
