@@ -274,6 +274,7 @@
   --container-segmented-touch: 30rem;
   --container-crash-report: 26.25rem;
   --container-preview-sides: 18em;
+  --container-cover-title: calc(2.25em + 1.25rem);
 
   --radius-control: 0.625rem;
   --radius-row: 0.5rem;

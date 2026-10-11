@@ -45,7 +45,10 @@ const PANEL_WIDTH = 360;
 const LARGEST_TEXT_SCALE = 2;
 const NARROWEST_COVER = 40;
 const NARROWEST_SCREENS = [320, 600, 840, 1200];
+const TABLET_NARROWEST = 600;
 const EXPANDED_TABLET = 840;
+const TEXT_SCALES = [1, 1.15, 1.3, 1.5, 1.75, 2];
+const NARROW_COMPACT_WIDTHS = [600, 640, 700, 744, 840, 900, 1200];
 const DENSE_GRID_WIDTHS = [600, 744, 840, 1024, 1200, 1280, 1440];
 const SCREEN_HEIGHT = 900;
 const SCROLL_RETRY_MS = 500;
@@ -258,6 +261,55 @@ test.describe("at every text size", () => {
     expect(Math.min(...widths)).toBeGreaterThanOrEqual(
       NARROWEST_COVER * LARGEST_TEXT_SCALE,
     );
+  });
+
+  for (const scale of TEXT_SCALES) {
+    test(`keeps every compact title whole or out of sight in the narrowest covers with the text at ${String(scale)} times its size`, async ({
+      page,
+    }) => {
+      firstTitle = LONG_TITLE;
+      await setTextScale(page, scale);
+      await openWith(page, {
+        ...DEFAULT_LIBRARY_VIEW,
+        display: "compact",
+        coversPerRow: MOST_COVERS_PER_ROW,
+      });
+
+      for (const width of NARROW_COMPACT_WIDTHS) {
+        await page.setViewportSize({ width, height: SCREEN_HEIGHT });
+
+        expect(await sidewaysOverflow(page), `at ${String(width)}px`).toEqual(
+          [],
+        );
+      }
+    });
+  }
+
+  test("hides a compact title from covers too narrow to hold it, still naming the series", async ({
+    page,
+  }) => {
+    await page.setViewportSize({
+      width: TABLET_NARROWEST,
+      height: SCREEN_HEIGHT,
+    });
+    await openWith(page, {
+      ...DEFAULT_LIBRARY_VIEW,
+      display: "compact",
+      coversPerRow: MOST_COVERS_PER_ROW,
+    });
+    const title = firstSeries(page).getByText(FIRST_TITLE);
+
+    const narrow = await boxOf(title);
+    const narrowSnapshot = await firstSeries(page).ariaSnapshot();
+    await page.setViewportSize({
+      width: EXPANDED_TABLET,
+      height: SCREEN_HEIGHT,
+    });
+    const roomy = await boxOf(title);
+
+    expect(narrow.width * narrow.height).toBeLessThanOrEqual(1);
+    expect(roomy.width * roomy.height).toBeGreaterThan(1);
+    expect(narrowSnapshot).toContain(FIRST_TITLE);
   });
 
   test("lays out the rows by the covers the largest text draws, as far as the last series", async ({

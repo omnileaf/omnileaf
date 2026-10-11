@@ -94,18 +94,18 @@
 {#snippet compactCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
   <div
-    class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+    class={[
+      "@container relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
+      look.title,
+    ]}
   >
     <CoverImage cover={shown.cover} {coverUrl} />
     <CoverBadges series={one} onCovers={view.onCovers} />
     <div
-      class="absolute inset-x-none inset-be-none bg-linear-to-t from-band from-55% to-transparent px-band pbs-band-fade pbe-sm medium:px-band-wide medium:pbe-band-wide"
+      class="absolute inset-x-none inset-be-none bg-linear-to-t from-band from-55% to-transparent px-band pbs-band-fade pbe-sm medium:px-band-wide medium:pbe-band-wide @max-cover-title:bg-none"
     >
       <p
-        class={[
-          "line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band",
-          look.title,
-        ]}
+        class="line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band @max-cover-title:sr-only"
       >
         {shown.title}
       </p>
