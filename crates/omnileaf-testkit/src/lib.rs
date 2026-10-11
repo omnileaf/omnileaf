@@ -1,5 +1,3 @@
-//! Deterministic test fixtures (page images, comic archives and a sample library) and the timing budgets speed tests enforce.
-
 mod archive;
 mod error;
 mod generated_library;

@@ -7,7 +7,6 @@ pub const GENERATED_LIBRARY_NAME: &str = "Generated Library";
 const COVER_SEED: u64 = 0xC0FE;
 const SHARED_PAGE_SEED: u64 = 0x5A3E;
 
-/// A library of many small books for timing scans.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct GeneratedLibrary {
     pub series: u16,
@@ -22,7 +21,6 @@ impl GeneratedLibrary {
     }
 }
 
-/// Gives each book a cover of its own and the same remaining pages, so every book has its own fingerprint while only one page per book is drawn.
 pub fn write_generated_library(
     root: &Path,
     library: GeneratedLibrary,

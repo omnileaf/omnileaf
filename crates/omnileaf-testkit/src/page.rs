@@ -36,7 +36,6 @@ impl PageShape {
     }
 }
 
-/// A page tinted by `seed` and `index` with a dark band whose position follows `index`, so every page is distinct and reproducible.
 pub fn page_png(seed: u64, index: u32, shape: PageShape) -> Result<Vec<u8>, FixtureError> {
     let pixels = page_pixels(seed, index, shape);
     let mut bytes = Vec::new();
@@ -49,7 +48,6 @@ pub fn page_png(seed: u64, index: u32, shape: PageShape) -> Result<Vec<u8>, Fixt
     Ok(bytes)
 }
 
-/// The page [`page_png`] draws, as a JPEG.
 pub fn page_jpeg(seed: u64, index: u32, shape: PageShape) -> Result<Vec<u8>, FixtureError> {
     let page = RgbImage {
         pixels: page_pixels(seed, index, shape),
@@ -59,7 +57,6 @@ pub fn page_jpeg(seed: u64, index: u32, shape: PageShape) -> Result<Vec<u8>, Fix
     page.to_jpeg(SamplingFactor::R_4_4_4)
 }
 
-/// The page [`page_png`] draws, as a lossless WebP.
 pub fn page_webp(seed: u64, index: u32, shape: PageShape) -> Result<Vec<u8>, FixtureError> {
     let pixels = page_pixels(seed, index, shape);
     let mut bytes = Vec::new();
@@ -72,12 +69,10 @@ pub fn page_webp(seed: u64, index: u32, shape: PageShape) -> Result<Vec<u8>, Fix
     Ok(bytes)
 }
 
-/// A full-resolution colour comic scan with chroma at full resolution (4:4:4), the slowest common kind of page to make a cover from.
 pub fn full_chroma_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
     scan_jpeg(seed, FULL_CHROMA_SCAN_GRAIN, SamplingFactor::R_4_4_4)
 }
 
-/// A full-resolution colour comic scan with 4:2:0 chroma subsampling, the common default, weighing about a megabyte.
 pub fn subsampled_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
     scan_jpeg(seed, SUBSAMPLED_SCAN_GRAIN, SamplingFactor::R_4_2_0)
 }
