@@ -99,7 +99,6 @@ impl TreeUri {
 }
 
 impl AndroidTree {
-    /// Refuses a name that isn't exactly one folder name, since the library reads the tree as a folder of that name.
     pub fn new(uri: TreeUri, name: String, place: String) -> Result<Self, Error> {
         if is_one_folder_name(&name) {
             Ok(Self { uri, name, place })
@@ -118,7 +117,6 @@ impl AndroidTree {
         &self.name
     }
 
-    /// Where the folder is, such as the storage volume and the folders above it, already joined for display.
     #[must_use]
     pub fn place(&self) -> &str {
         &self.place

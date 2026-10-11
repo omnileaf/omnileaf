@@ -35,7 +35,6 @@ const ARCHIVE_BOOKS: usize = 5;
 const IMAGE_FOLDER_BOOKS: usize = 2;
 const IMAGES_OPENED_PER_IMAGE_FOLDER: usize = 2;
 
-/// Serves a scratch folder's sample library as the tree named after it, counting every file it opens.
 struct TreeOfFolder {
     scratch: ScratchFolder,
     opened: Mutex<Vec<PathBuf>>,
@@ -96,7 +95,6 @@ impl Storage for TreeOfFolder {
     }
 }
 
-/// A device whose every folder with a path is on the storage it starts from, using power normally.
 struct LocalDevice;
 
 impl RescanConditions for LocalDevice {

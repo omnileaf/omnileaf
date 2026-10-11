@@ -61,7 +61,6 @@ impl From<LibraryRoot> for LibraryFolder {
     }
 }
 
-/// The folder the root's books are filed under, which for an Android folder is its name alone.
 pub(crate) fn root_folder(locator: &RootLocator) -> PathBuf {
     match locator {
         RootLocator::Path(folder) | RootLocator::AppleBookmark { path: folder, .. } => {

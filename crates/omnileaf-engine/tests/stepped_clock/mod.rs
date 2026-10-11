@@ -10,7 +10,6 @@ use omnileaf_engine::Clock;
 
 use crate::support::NOW_UNIX_MS;
 
-/// A clock that stands still until a test moves it on.
 #[derive(Clone)]
 pub(crate) struct SteppedClock(Arc<AtomicU64>);
 

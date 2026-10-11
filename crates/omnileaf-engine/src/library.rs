@@ -715,7 +715,6 @@ impl Library {
         }
     }
 
-    /// Nothing for an Android folder when this library has no way to open one.
     fn files_of(&self, locator: &RootLocator) -> Option<RootFiles> {
         let storage = match locator {
             RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
