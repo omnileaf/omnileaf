@@ -9,13 +9,14 @@ import {
   APP_PAGES,
   expect,
   onPlatform,
+  setTextScale,
   sidewaysOverflow,
   test,
   testOnlyInItsWebview,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
-const LARGEST_TEXT = ":root { --text-scale: 2 !important; }";
+const LARGEST_TEXT_SCALE = 2;
 const PAGES = [
   ...APP_PAGES,
   "/settings/privacy",
@@ -75,13 +76,7 @@ for (const platform of PLATFORMS) {
     test.use(onPlatform(platform));
 
     test.beforeEach(async ({ page }) => {
-      await page.addInitScript((css) => {
-        document.addEventListener("DOMContentLoaded", () => {
-          const style = document.createElement("style");
-          style.textContent = css;
-          document.head.append(style);
-        });
-      }, LARGEST_TEXT);
+      await setTextScale(page, LARGEST_TEXT_SCALE);
     });
 
     async function expectNothingSpills(page: Page): Promise<void> {

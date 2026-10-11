@@ -104,6 +104,19 @@ export function screenSizeOf(page: Page): ScreenSize {
   return width >= MEDIUM_MIN_WIDTH ? "tablet" : "phone";
 }
 
+export async function setTextScale(page: Page, scale: number): Promise<void> {
+  await page.addInitScript(
+    (css) => {
+      document.addEventListener("DOMContentLoaded", () => {
+        const style = document.createElement("style");
+        style.textContent = css;
+        document.head.append(style);
+      });
+    },
+    `:root { --text-scale: ${String(scale)} !important; }`,
+  );
+}
+
 type Box = NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>;
 
 export async function boxOf(locator: Locator): Promise<Box> {
