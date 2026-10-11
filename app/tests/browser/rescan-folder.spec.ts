@@ -5,6 +5,7 @@ import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   sidewaysOverflow,
@@ -307,6 +308,22 @@ test.describe("with a folder found empty", () => {
         .getByRole("heading", { name: "Sample Comics looks empty" }),
     ).toBeVisible();
     await expect(removeItsBooks(page)).toBeVisible();
+  });
+
+  test("marks the folder's status with a coloured dot", async ({ page }) => {
+    await rescanSampleComics(page);
+
+    const status = sampleComicsRow(page).getByText("No books found");
+    await expect(status).toBeVisible();
+    const dot = status.locator("[aria-hidden='true']");
+
+    const box = await boxOf(dot);
+    const colour = await dot.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+    expect(box.width).toBeGreaterThan(0);
+    expect(box.width).toBe(box.height);
+    expect(colour).not.toBe("rgba(0, 0, 0, 0)");
   });
 
   test("asks first, then removes the books, says how many went and moves to the folder's row", async ({

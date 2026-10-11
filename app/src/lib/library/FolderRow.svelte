@@ -47,8 +47,12 @@
     <p class="truncate font-semibold">{folderTitle(folder)}</p>
     {#if status !== undefined}
       <p
-        class="mbs-2xs rounded-badge bg-warning-soft px-xs text-caption font-semibold inline-fit"
+        class="mbs-2xs flex items-center gap-xs rounded-badge bg-warning-soft px-xs text-caption font-semibold inline-fit"
       >
+        <span
+          aria-hidden="true"
+          class="shrink-0 rounded-full bg-warning block-step-dot inline-step-dot"
+        ></span>
         {status}
       </p>
     {/if}
