@@ -26,8 +26,8 @@ use std::{
 
 use books::write_book;
 use omnileaf_engine::{
-    EXTERNAL_RESCAN_EVERY, FileChanges, FolderId, FolderRescan, Library, PowerMode, RESCAN_EVERY,
-    RescanConditions, RescanOutcome, Storage,
+    EXTERNAL_RESCAN_EVERY, FileChanges, FolderId, FolderRescan, LIBRARY_CHANGES_GATHERED_FOR,
+    Library, LibraryChanged, PowerMode, RESCAN_EVERY, RescanConditions, RescanOutcome, Storage,
 };
 use stepped_clock::SteppedClock;
 use support::ScratchFolder;
@@ -171,6 +171,44 @@ async fn rescans_every_folder_once_its_turn_comes_and_finds_the_books_added_mean
             added: 1,
             ..FileChanges::default()
         }))
+    );
+}
+
+#[tokio::test]
+async fn tells_of_no_library_change_when_a_folder_whose_turn_came_holds_nothing_new() {
+    let running = Running::new("schedule-quiet").await;
+    let mut changes = running.library.changes();
+    running.clock.advance(RESCAN_EVERY);
+
+    let rescans = running.rescan_due().await;
+
+    assert_eq!(
+        running.outcome_of_linked(&rescans),
+        Some(RescanOutcome::Rescanned(FileChanges::default()))
+    );
+    assert!(
+        timeout(LIBRARY_CHANGES_GATHERED_FOR * 4, changes.next())
+            .await
+            .is_err()
+    );
+}
+
+#[tokio::test]
+async fn tells_of_one_library_change_for_the_books_a_folder_whose_turn_came_holds_anew() {
+    let running = Running::new("schedule-told").await;
+    let mut changes = running.library.changes();
+    write_book(&running.comics.path().join(SERIES).join("v02.cbz"), 2);
+    write_book(&running.comics.path().join(SERIES).join("v03.cbz"), 3);
+    running.clock.advance(RESCAN_EVERY);
+
+    running.rescan_due().await;
+
+    let told = timeout(LIBRARY_CHANGES_GATHERED_FOR * 4, changes.next()).await;
+    assert_eq!(told.ok().flatten(), Some(LibraryChanged));
+    assert!(
+        timeout(LIBRARY_CHANGES_GATHERED_FOR * 4, changes.next())
+            .await
+            .is_err()
     );
 }
 
