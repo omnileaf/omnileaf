@@ -81,7 +81,7 @@ impl fmt::Display for Violation {
             ),
             Self::RestatedDoc { path, line } => write!(
                 f,
-                "{path}:{line}: a doc comment that restates the name; delete it, or state the platform quirk it works around"
+                "{path}:{line}: a doc comment that restates the name; delete it, or say what the name can't, such as the platform quirk it works around"
             ),
         }
     }
@@ -95,7 +95,7 @@ const GENERATED: &[&str] = &[
     "app/src/lib/licences/",
     "app/src-tauri/gen/",
 ];
-const RUST_DOC_MARKERS: &[&str] = &["///", MODULE_DOC_MARKER];
+const RUST_DOC_MARKERS: &[&str] = &[ITEM_DOC_MARKER, MODULE_DOC_MARKER];
 const DIRECTIVES: &[&str] = &[
     "SAFETY:",
     "eslint-disable",
@@ -116,8 +116,10 @@ const LICENCE_MARK: &str = "License";
 const MODULE_DOC_MARKER: &str = "//!";
 const FILLER_WORDS: &[&str] = &[
     "a", "an", "the", "of", "to", "for", "by", "in", "on", "with", "from", "as", "and", "or",
-    "its", "it", "this", "is", "get", "return", "set", "create", "make", "new",
+    "its", "it", "this", "is", "get", "gets", "return", "returns", "set", "sets", "create",
+    "creates", "make", "makes", "new",
 ];
+const ITEM_DOC_MARKER: &str = "///";
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
@@ -167,6 +169,10 @@ impl Comment {
                 .is_some_and(|(last, _)| last + 1 == number)
     }
 
+    fn documents_an_item(&self) -> bool {
+        matches!(self.kind, Kind::RustDoc(ITEM_DOC_MARKER) | Kind::DocBlock)
+    }
+
     fn prose_lines(&self) -> usize {
         self.lines.iter().filter(|(_, line)| is_prose(line)).count()
     }
@@ -210,7 +216,8 @@ fn comments_in(path: &str, source: &str) -> Vec<Comment> {
     let reads_html = path.ends_with(SVELTE_EXTENSION);
     let mut comments: Vec<Comment> = Vec::new();
     let mut open: Option<Comment> = None;
-    for (number, line) in (1..).zip(source.lines()) {
+    let lines: Vec<&str> = source.lines().collect();
+    for (number, line) in (1..).zip(&lines) {
         let trimmed = line.trim_start();
         if let Some(mut comment) = open.take() {
             if comment.push(number, trimmed) {
@@ -243,8 +250,10 @@ fn comments_in(path: &str, source: &str) -> Vec<Comment> {
         }
     }
     comments.extend(open);
-    let lines: Vec<&str> = source.lines().collect();
-    for comment in &mut comments {
+    for comment in comments
+        .iter_mut()
+        .filter(|comment| comment.documents_an_item())
+    {
         comment.item = item_after(&lines, comment);
     }
     comments
@@ -252,12 +261,18 @@ fn comments_in(path: &str, source: &str) -> Vec<Comment> {
 
 fn item_after(lines: &[&str], comment: &Comment) -> Option<String> {
     let (last, _) = comment.lines.last()?;
-    lines
-        .iter()
-        .skip(*last)
-        .map(|line| line.trim())
-        .find(|line| !line.is_empty() && !line.starts_with("#[") && !line.starts_with('@'))
-        .map(str::to_owned)
+    let mut is_inside_attribute = false;
+    for line in lines.iter().skip(*last).map(|line| line.trim()) {
+        if is_inside_attribute || line.starts_with("#[") {
+            is_inside_attribute = !line.ends_with(']');
+            continue;
+        }
+        if line.is_empty() || line.starts_with('@') || line.starts_with("//") {
+            continue;
+        }
+        return Some(line.to_owned());
+    }
+    None
 }
 
 fn opening(trimmed: &str, reads_html: bool) -> Option<(Kind, &str)> {
@@ -331,11 +346,10 @@ fn shape_violation(path: &str, comment: &Comment, text: &str) -> Option<Violatio
                     prose_lines,
                 });
             }
-            let documents_an_item = comment.kind != Kind::RustDoc(MODULE_DOC_MARKER);
             comment
                 .item
                 .as_deref()
-                .filter(|item| documents_an_item && is_restatement(text, item))
+                .filter(|item| is_restatement(text, item))
                 .map(|_| Violation::RestatedDoc { path, line })
         }
     }
@@ -348,9 +362,9 @@ fn is_restatement(text: &str, item: &str) -> bool {
         .map(|word| singular(&word))
         .collect();
     let mut said = text
-        .split(|c: char| !c.is_ascii_alphabetic())
-        .map(str::to_ascii_lowercase)
-        .filter(|word| !word.is_empty() && !is_filler(word))
+        .split(|c: char| !c.is_ascii_alphabetic() && c != '\'')
+        .map(|word| word.trim_end_matches("'s").to_ascii_lowercase())
+        .filter(|word| !word.is_empty() && !FILLER_WORDS.contains(&word.as_str()))
         .map(|word| singular(&word))
         .peekable();
     said.peek().is_some() && said.all(|word| named.contains(&word))
@@ -364,16 +378,11 @@ fn camel_case_words(identifier: &str) -> Vec<String> {
             words.push(String::new());
         }
         previous_is_lowercase = c.is_ascii_lowercase();
-        words
-            .last_mut()
-            .into_iter()
-            .for_each(|word| word.push(c.to_ascii_lowercase()));
+        if let Some(word) = words.last_mut() {
+            word.push(c.to_ascii_lowercase());
+        }
     }
     words
-}
-
-fn is_filler(word: &str) -> bool {
-    FILLER_WORDS.contains(&word) || FILLER_WORDS.contains(&singular(word).as_str())
 }
 
 fn singular(word: &str) -> String {
@@ -778,5 +787,53 @@ mod tests {
         let violations = checked("crates/a/src/lib.rs", "//! Scan.\n\nfn scan() {}\n");
 
         assert!(violations.is_empty(), "{violations:?}");
+    }
+
+    #[test]
+    fn looks_past_an_attribute_spread_over_several_lines() {
+        let violations = checked(
+            "crates/a/src/lib.rs",
+            "/// Opens the library.\n#[expect(\n    clippy::too_many_lines,\n    reason = \"the steps read in order\"\n)]\nfn open_library() {}\n",
+        );
+
+        assert_eq!(
+            violations,
+            [Violation::RestatedDoc {
+                path: "crates/a/src/lib.rs".to_owned(),
+                line: 1
+            }]
+        );
+    }
+
+    #[test]
+    fn looks_past_a_directive_to_the_item() {
+        let violations = checked(
+            "app/src/lib/a.ts",
+            "/** The folder title. */\n// eslint-disable-next-line no-undef -- the global is injected\nexport const folderTitle = load();\n",
+        );
+
+        assert_eq!(
+            violations,
+            [Violation::RestatedDoc {
+                path: "app/src/lib/a.ts".to_owned(),
+                line: 1
+            }]
+        );
+    }
+
+    #[test]
+    fn reads_a_possessive_as_its_noun() {
+        let violations = checked(
+            "crates/a/src/lib.rs",
+            "/// The library's view.\nfn library_view() {}\n",
+        );
+
+        assert_eq!(
+            violations,
+            [Violation::RestatedDoc {
+                path: "crates/a/src/lib.rs".to_owned(),
+                line: 1
+            }]
+        );
     }
 }
