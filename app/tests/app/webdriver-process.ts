@@ -1,15 +1,19 @@
-import { type ChildProcess, spawn } from "node:child_process";
-import { once } from "node:events";
+import { type ChildProcess, execFile, spawn } from "node:child_process";
+import { promisify } from "node:util";
 
-import { waitUntilReady } from "./webdriver.ts";
+import { pollUntil, waitUntilReady } from "./webdriver.ts";
 
 const STARTUP_TIMEOUT_MS = 60_000;
+const STOP_GRACE_MS = 10_000;
+
+const run = promisify(execFile);
 
 export interface WebDriverProcess {
   readonly command: string;
   readonly args: readonly string[];
   readonly env: NodeJS.ProcessEnv;
   readonly server: URL;
+  readonly startupTimeoutMs?: number;
 }
 
 function failIfItStops(child: ChildProcess, command: string): Promise<never> {
@@ -25,13 +29,75 @@ function failIfItStops(child: ChildProcess, command: string): Promise<never> {
   });
 }
 
+/** Lists every process below `pid`, since a server such as Appium starts helpers like xcodebuild in their own process group. */
+async function descendantsOf(pid: number): Promise<number[]> {
+  const { stdout } = await run("ps", ["-A", "-o", "pid=,ppid="]);
+  const childrenOf = new Map<number, number[]>();
+  for (const line of stdout.trim().split("\n")) {
+    const [child = 0, parent = 0] = line.trim().split(/\s+/).map(Number);
+    childrenOf.set(parent, [...(childrenOf.get(parent) ?? []), child]);
+  }
+  const found: number[] = [];
+  const pending = [pid];
+  for (let next = pending.pop(); next !== undefined; next = pending.pop()) {
+    const children = childrenOf.get(next) ?? [];
+    found.push(...children);
+    pending.push(...children);
+  }
+  return found;
+}
+
+function signalled(pid: number, signal: NodeJS.Signals | 0): boolean {
+  try {
+    process.kill(pid, signal);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isRunning(pid: number): boolean {
+  return signalled(pid, 0);
+}
+
+function signalEach(pids: readonly number[], signal: NodeJS.Signals): void {
+  for (const pid of pids) {
+    signalled(pid, signal);
+  }
+}
+
+function waitUntilGone(pids: readonly number[]): Promise<true> {
+  return pollUntil(
+    () => Promise.resolve(pids.some(isRunning) ? undefined : true),
+    STOP_GRACE_MS,
+    `processes ${pids.join(", ")} to stop`,
+  );
+}
+
+/** Windows has neither `ps` nor SIGTERM, so `taskkill` ends the server and every process below it at once. */
+async function stopTreeOnWindows(pid: number): Promise<void> {
+  await run("taskkill", ["/PID", String(pid), "/T", "/F"]);
+  await waitUntilGone([pid]);
+}
+
 async function stop(child: ChildProcess): Promise<void> {
-  if (child.exitCode !== null) {
+  if (
+    child.pid === undefined ||
+    child.exitCode !== null ||
+    child.signalCode !== null
+  ) {
     return;
   }
-  const exited = once(child, "exit");
-  child.kill();
-  await exited;
+  if (process.platform === "win32") {
+    await stopTreeOnWindows(child.pid);
+    return;
+  }
+  const pids = [child.pid, ...(await descendantsOf(child.pid))];
+  signalEach(pids, "SIGTERM");
+  await waitUntilGone(pids).catch(() => {
+    signalEach(pids, "SIGKILL");
+    return waitUntilGone(pids);
+  });
 }
 
 export async function startWebDriverProcess(
@@ -41,9 +107,22 @@ export async function startWebDriverProcess(
     env: launch.env,
     stdio: "inherit",
   });
-  await Promise.race([
-    waitUntilReady(launch.server, STARTUP_TIMEOUT_MS),
-    failIfItStops(child, launch.command),
-  ]);
+  try {
+    await Promise.race([
+      waitUntilReady(
+        launch.server,
+        launch.startupTimeoutMs ?? STARTUP_TIMEOUT_MS,
+      ),
+      failIfItStops(child, launch.command),
+    ]);
+  } catch (error) {
+    await stop(child).catch((stopError: unknown) => {
+      throw new AggregateError(
+        [error, stopError],
+        `${launch.command} didn't start, and stopping what it started failed`,
+      );
+    });
+    throw error;
+  }
   return () => stop(child);
 }
