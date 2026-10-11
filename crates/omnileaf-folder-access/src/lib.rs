@@ -8,6 +8,11 @@ mod ios;
 )]
 mod place;
 mod reply;
+#[cfg_attr(
+    not(any(target_os = "android", test)),
+    expect(dead_code, reason = "only the Android plugin sends and answers these")
+)]
+mod tree_messages;
 
 pub use document_tree::{Document, DocumentId, DocumentTree, Documents};
 pub use grants::{PersistedGrant, grants_to_release};
