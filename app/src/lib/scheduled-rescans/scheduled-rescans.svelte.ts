@@ -31,7 +31,6 @@ function parseChoice(value: string | null): boolean | undefined {
     : undefined;
 }
 
-/** Whether the app checks the library's folders for new books while it's open, on by default only where a battery matters less. */
 export class ScheduledRescansSetting {
   #choice: boolean | undefined = $state();
 

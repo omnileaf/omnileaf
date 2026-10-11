@@ -30,7 +30,6 @@ type Showing =
 export const UNDO_WINDOW_MS = 10_000;
 export const MESSAGE_WINDOW_MS = 5_000;
 
-/** The notice, undo offer or message on screen, at most one: showing another replaces it. */
 export class Notices {
   #showing: Showing | undefined = $state.raw();
   #lapse: ReturnType<typeof setTimeout> | undefined;

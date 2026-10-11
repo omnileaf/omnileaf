@@ -1,6 +1,5 @@
 import type { CoversPerRow } from "#lib/ipc/bindings.ts";
 
-/** The classes a grid of covers takes from how many covers each size's rows hold, spaced tighter and lettered smaller as rows fill. */
 export interface CoverLook {
   readonly gap: string;
   readonly title: string;
@@ -8,12 +7,10 @@ export interface CoverLook {
 }
 
 interface DenserLook {
-  /** The fewest covers per row this look is drawn for, up to the next look's. */
-  readonly from: number;
+  readonly fromCoversPerRow: number;
   readonly look: CoverLook;
 }
 
-/** A size's look for its fewest covers per row, and the denser looks that replace it as rows fill, densest first. */
 interface SizeLooks {
   readonly base: CoverLook;
   readonly denser: readonly DenserLook[];
@@ -27,7 +24,7 @@ const PHONE_LOOKS: SizeLooks = {
   },
   denser: [
     {
-      from: 5,
+      fromCoversPerRow: 5,
       look: {
         gap: "max-medium:gap-sm",
         title: "max-medium:text-cover-title-tiny",
@@ -35,7 +32,7 @@ const PHONE_LOOKS: SizeLooks = {
       },
     },
     {
-      from: 4,
+      fromCoversPerRow: 4,
       look: {
         gap: "max-medium:gap-cover-gap-tight",
         title: "max-medium:text-cover-title-small",
@@ -53,7 +50,7 @@ const TABLET_LOOKS: SizeLooks = {
   },
   denser: [
     {
-      from: 7,
+      fromCoversPerRow: 7,
       look: {
         gap: "medium:max-large:gap-cover-gap",
         title: "medium:max-large:text-cover-title-wide",
@@ -71,7 +68,7 @@ const DESKTOP_LOOKS: SizeLooks = {
   },
   denser: [
     {
-      from: 9,
+      fromCoversPerRow: 9,
       look: {
         gap: "large:gap-cover-gap",
         title: "large:text-cover-title-small",
@@ -79,7 +76,7 @@ const DESKTOP_LOOKS: SizeLooks = {
       },
     },
     {
-      from: 7,
+      fromCoversPerRow: 7,
       look: {
         gap: "large:gap-cover-gap-loose",
         title: "large:text-cover-title",
@@ -91,7 +88,9 @@ const DESKTOP_LOOKS: SizeLooks = {
 
 function lookFor(looks: SizeLooks, coversPerRow: number): CoverLook {
   return (
-    looks.denser.find(({ from }) => coversPerRow >= from)?.look ?? looks.base
+    looks.denser.find(
+      ({ fromCoversPerRow }) => coversPerRow >= fromCoversPerRow,
+    )?.look ?? looks.base
   );
 }
 

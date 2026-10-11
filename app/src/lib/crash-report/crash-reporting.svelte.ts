@@ -49,7 +49,6 @@ const SEND_OUTCOMES = {
   internal: "notSent",
 } as const satisfies Record<IpcErrorCode, SendFailure | undefined>;
 
-/** Offers crash reports as the person's choice says: asking first, sending without asking, or never; interface errors at most once a session. */
 export class CrashReporting {
   prompt: CrashReportPrompt = $state(HIDDEN);
 

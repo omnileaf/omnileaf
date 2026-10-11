@@ -1,6 +1,5 @@
 import type { ScanProgress } from "#lib/ipc/bindings.ts";
 
-/** How far a scan in progress has got, as a screen shows it. */
 export type ScanStep =
   | { readonly kind: "finding" }
   | {
@@ -9,7 +8,7 @@ export type ScanStep =
       readonly total: number;
     };
 
-/** Progress can arrive after the result it led to, which must not turn back into a scan in progress. */
+/** A Tauri channel can deliver progress after the command's result, which must not turn back into a scan in progress. */
 export function followScan(
   isScanning: () => boolean,
   show: (step: ScanStep) => void,

@@ -24,7 +24,6 @@ type Read =
   | { readonly kind: "failed" }
   | { readonly kind: "superseded" };
 
-/** The library's series, read a page at a time as far as the screen has needed them. */
 export class LibrarySeriesList {
   list: SeriesList = $state({ kind: "loading" });
 
@@ -35,7 +34,6 @@ export class LibrarySeriesList {
 
   constructor(private readonly listSeries: ListSeries) {}
 
-  /** Reads from the start as many series as the list shows, at least a page, and only the most recently started load shows its list. */
   async load(): Promise<void> {
     const load = ++this.#latestLoad;
     const shown = this.list.kind === "loaded" ? this.list.series.length : 0;
@@ -45,7 +43,6 @@ export class LibrarySeriesList {
     }
   }
 
-  /** Reads the page after the last one shown, once at a time, until the list is complete, and drops it if another list was shown meanwhile. */
   async loadMore(): Promise<void> {
     const after = this.#next;
     if (this.list.kind !== "loaded" || after === null || this.#isLoadingMore) {

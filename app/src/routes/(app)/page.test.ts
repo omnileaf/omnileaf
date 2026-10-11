@@ -31,14 +31,12 @@ const SAMPLE_SERIES: WireSeries = {
   cover: COVER,
 };
 
-/** Lets a closed page stop listening, which it does once a promise settles, before the mocks it stops through go. */
 function settled(): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve);
   });
 }
 
-/** Lists whatever `catalog` holds when asked, counting how often the page asked, and draws the library as a new one is drawn. */
 function listing(catalog: () => readonly WireSeries[]): { asked: number } {
   const counted = { asked: 0 };
   mockIPC(

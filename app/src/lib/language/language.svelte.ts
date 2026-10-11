@@ -12,7 +12,6 @@ import {
   useChosenLanguage,
 } from "./language";
 
-/** Shows the chosen interface language in place and marks it on `root`, following the device while the choice is "system". */
 export class LanguageSetting {
   choice: LanguageChoice = $state("system");
   resolved: Locale = $state(baseLocale);

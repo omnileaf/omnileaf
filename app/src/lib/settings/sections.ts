@@ -108,7 +108,6 @@ export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [
   [ADVANCED, ABOUT],
 ];
 
-/** Whether two panes already show a page in the section list, so a link back to it is not needed there. */
 export function isListedBeside(route: SettingsPage): boolean {
   return (
     route === "/(app)/settings" ||

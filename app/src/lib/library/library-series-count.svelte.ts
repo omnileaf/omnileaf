@@ -2,7 +2,6 @@ import type { commands, IpcError } from "#lib/ipc/bindings.ts";
 
 export type CountSeries = typeof commands.librarySeriesCount;
 
-/** How many series the library holds, as last counted. */
 export class LibrarySeriesCount {
   count: number | undefined = $state();
 
@@ -13,7 +12,6 @@ export class LibrarySeriesCount {
     private readonly onFailure: (error: IpcError) => void,
   ) {}
 
-  /** Keeps only the most recently started count, and no count once counting fails, reporting why. */
   async load(): Promise<void> {
     const load = ++this.#latestLoad;
     const result = await this.countSeries();

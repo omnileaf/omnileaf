@@ -17,9 +17,8 @@ export function standInNumber(number: number): string {
   }).format(number);
 }
 
-/** `number` belongs to the thing itself, not its place in a list, so gaps reveal nothing about what's hidden. */
-export function standInName(kind: StandInKind, number: number): string {
-  return STAND_IN_NAMES[kind]({ number: standInNumber(number) });
+export function standInName(kind: StandInKind, ownNumber: number): string {
+  return STAND_IN_NAMES[kind]({ number: standInNumber(ownNumber) });
 }
 
 const FNV_OFFSET_BASIS = 0x811c9dc5;
@@ -34,7 +33,6 @@ function fnv1a(text: string): number {
   return hash;
 }
 
-/** The 32-bit FNV-1a hash of `id` folded into 1 to 999, so a thing keeps its number on every screen, list and reload. */
 export function standInNumberFor(id: string): number {
   return (fnv1a(id) % STAND_IN_NUMBERS) + 1;
 }

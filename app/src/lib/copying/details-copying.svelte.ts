@@ -8,7 +8,6 @@ export type CopyOutcome = "idle" | "copied" | "failed";
 
 export const COPIED_FOR_MS = 2000;
 
-/** Copies details to the clipboard through the backend and says so for a moment, or says why it couldn't. */
 export class DetailsCopying {
   outcome: CopyOutcome = $state("idle");
 

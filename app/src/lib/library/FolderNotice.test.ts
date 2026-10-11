@@ -17,7 +17,6 @@ import FolderNotice from "./FolderNotice.svelte";
 
 type AddFolderResult = Awaited<ReturnType<AddFolder>>;
 
-/** A folder being added whose scan the test steps through and then finishes. */
 class PendingScan {
   report: (progress: ScanProgress) => void = () => undefined;
   finish: (result: AddFolderResult) => void = () => undefined;

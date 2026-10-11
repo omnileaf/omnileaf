@@ -46,7 +46,6 @@ function sampleSeries(count: number): WireSeries[] {
   }));
 }
 
-/** Answers each request with the page of `catalog` after its cursor, which is the index the page starts at. */
 function pagedFrom(catalog: () => readonly WireSeries[]) {
   const asked: (string | null)[] = [];
   mockIPC((_, args) => {

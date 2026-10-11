@@ -3,7 +3,6 @@ export interface ScreenCopy {
   readonly scrollTop: number;
 }
 
-/** Keeps a still copy of each screen as it is left, so a swipe back can show it before the app has gone back to it. */
 export class PreviousScreens {
   readonly #copies = new Map<string, ScreenCopy>();
 
@@ -15,7 +14,6 @@ export class PreviousScreens {
     return this.#copies.get(pathname);
   }
 
-  /** Drops every copy but those of the screens a back link can lead up to from `pathname`. */
   forgetAllButAbove(pathname: string): void {
     for (const kept of this.#copies.keys()) {
       if (!pathname.startsWith(`${kept}/`)) {

@@ -26,7 +26,6 @@ export const realLook: LookOf = (series) => ({
       : { kind: "picture", path: series.cover },
 });
 
-/** Leaves the cover's path behind, so no picture of it is ever asked for. */
 export const standInLook: LookOf = (series) => ({
   title: standInName("series", standInNumberFor(series.id)),
   cover: { kind: "standIn" },

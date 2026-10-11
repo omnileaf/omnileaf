@@ -7,7 +7,6 @@ type FirstLaunchFinished = Awaited<
   ReturnType<typeof commands.firstLaunchFinished>
 >;
 
-/** A device that can't read whether it finished opens on the library, so a failed read never traps it in the first launch. */
 export function needsFirstLaunch(finished: FirstLaunchFinished): boolean {
   return finished.status === "ok" && !finished.data;
 }

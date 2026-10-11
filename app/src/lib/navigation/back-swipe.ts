@@ -2,7 +2,6 @@ import type { SwipeEdge } from "#lib/ipc/bindings.ts";
 
 export type TextDirection = "ltr" | "rtl";
 
-/** Where each screen sits during a swipe back, as shares of the screen's width towards the side it goes back to. */
 export interface ScreenPlacement {
   readonly current: number;
   readonly previous: number;
@@ -12,8 +11,7 @@ export interface ScreenPlacement {
 const PREVIOUS_SCREEN_OFFSET = 0.3;
 const PREVIOUS_SCREEN_DIMMING = 0.12;
 const HALFWAY = 0.5;
-/** Screen widths a second, about 300 points a second on an iPhone. */
-const FLICK_VELOCITY = 0.75;
+const FLICK_SCREEN_WIDTHS_PER_SECOND = 0.75;
 
 const BACK_EDGES = {
   ltr: "left",
@@ -41,8 +39,8 @@ export function placeScreens(
 }
 
 export function isGoingBack(progress: number, velocity: number): boolean {
-  if (velocity > FLICK_VELOCITY) {
+  if (velocity > FLICK_SCREEN_WIDTHS_PER_SECOND) {
     return true;
   }
-  return progress > HALFWAY && velocity > -FLICK_VELOCITY;
+  return progress > HALFWAY && velocity > -FLICK_SCREEN_WIDTHS_PER_SECOND;
 }

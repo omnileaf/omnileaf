@@ -68,7 +68,6 @@
     window.history.back();
   }
 
-  /** Goes back to the entry the first launch opened on, so the library replaces it and back leaves the app instead of replaying the steps. */
   function dropStepEntries(): Promise<void> {
     const stepEntries = FIRST_LAUNCH_STEPS.indexOf(step);
     if (stepEntries === 0) {

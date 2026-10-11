@@ -21,7 +21,6 @@ export interface DarkModeQuery {
   addEventListener(type: "change", listener: () => void): void;
 }
 
-/** Applies the light or dark choice to `root` as `data-theme`, following the device while the choice is "system". */
 export class ThemeSetting {
   preference: ThemePreference = $state("system");
   resolved: Theme = $state("light");

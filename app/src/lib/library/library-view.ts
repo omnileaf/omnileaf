@@ -21,7 +21,6 @@ export function withDisplay(
   return { ...view, display };
 }
 
-/** Holds `count` to the range `size` offers, so a step past either end changes nothing. */
 export function withCoversPerRow(
   view: LibraryView,
   size: ScreenSize,

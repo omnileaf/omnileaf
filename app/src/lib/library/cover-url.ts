@@ -8,6 +8,6 @@ export type CoverUrl = (path: CoverPath) => string;
 
 const OMNI_SCHEME = "omni";
 
-/** Where the webview loads a cover from: the app's `omni` protocol, whose base each platform spells its own way, then the path unescaped. */
+/** Each platform spells the base of a Tauri custom protocol its own way, so `convertFileSrc` builds it. */
 export const coverUrl: CoverUrl = (path) =>
   `${convertFileSrc("", OMNI_SCHEME)}${path}`;

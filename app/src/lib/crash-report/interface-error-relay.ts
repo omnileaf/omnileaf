@@ -2,7 +2,6 @@ import type { InterfaceError } from "#lib/ipc/bindings.ts";
 
 type ErrorDelivery = (error: InterfaceError) => void;
 
-/** Holds the first error heard before anything takes delivery, since errors during startup arrive before the app has mounted. */
 export class InterfaceErrorRelay {
   #waiting: InterfaceError | undefined;
 

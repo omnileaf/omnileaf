@@ -12,7 +12,6 @@ export function describeInterfaceError(reason: unknown): InterfaceError {
   return { message: String(reason), stack: null };
 }
 
-/** Hears every error the interface doesn't handle itself, and returns a way to stop listening. */
 export function listenForInterfaceErrors(
   target: Window,
   onError: (error: InterfaceError) => void,

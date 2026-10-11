@@ -2,7 +2,6 @@ import type { commands, ProjectLink } from "#lib/ipc/bindings.ts";
 
 export type OpenProjectLink = typeof commands.openProjectLink;
 
-/** Opens the project's pages in the browser and remembers whether the last attempt failed. */
 export class LinkOpening {
   hasFailed = $state(false);
 

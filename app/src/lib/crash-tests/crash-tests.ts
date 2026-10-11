@@ -6,7 +6,6 @@ export type CrashTestBackend = Pick<
   "panicInCore" | "crashAndQuit"
 >;
 
-/** Lets an error escape every handler, as a bug in the interface would. */
 export type ThrowUnhandled = (error: Error) => void;
 
 export class InterfaceErrorTest extends Error {
@@ -30,7 +29,6 @@ const throwOnNextTask: ThrowUnhandled = (error) => {
   });
 };
 
-/** The crash tests a development build offers, each ending in the report a person would be offered. */
 export class CrashTests {
   constructor(
     private readonly backend: CrashTestBackend,

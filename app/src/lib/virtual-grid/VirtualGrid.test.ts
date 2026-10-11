@@ -67,7 +67,6 @@ function nextFrame(): Promise<void> {
   });
 }
 
-/** Waits out the frames a first layout takes, so a later change is the only thing left to lay out again. */
 async function settled(): Promise<void> {
   for (let frame = 0; frame < FRAMES_TO_SETTLE; frame += 1) {
     await nextFrame();

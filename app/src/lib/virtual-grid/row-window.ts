@@ -1,17 +1,14 @@
 export interface GridShape {
   readonly count: number;
   readonly columns: number;
-  /** A row's height plus the gap below it, in pixels. */
   readonly rowStride: number;
 }
 
-/** The part of the grid on screen, in pixels from the grid's top edge, so `top` is negative while the grid starts below the screen's top. */
 export interface Seen {
   readonly top: number;
   readonly bottom: number;
 }
 
-/** The rows to lay out, and the items in them from `start` up to but not including `end`. */
 export interface RowWindow {
   readonly firstRow: number;
   readonly rows: number;

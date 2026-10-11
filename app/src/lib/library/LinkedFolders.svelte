@@ -75,7 +75,6 @@
     }
   }
 
-  /** Only the latest question shows its count, so a slow count can't land on a folder asked about after it. */
   async function confirmRemoval(folder: LibraryFolder): Promise<void> {
     const asked = ++latestRemovalAsked;
     confirming = folder;

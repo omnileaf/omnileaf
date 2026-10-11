@@ -23,7 +23,6 @@ const UNREADABLE_LINES = [
   ["unreadableFolders", m.library_folder_unreadable_subfolders],
 ] as const satisfies readonly (readonly [keyof FileChanges, Counted])[];
 
-/** One sentence per line, naming the home folder as the app does elsewhere, and none for a folder found empty, which its row warns of. */
 export function rescanReport(
   folder: LibraryFolder,
   outcome: RescanOutcome,

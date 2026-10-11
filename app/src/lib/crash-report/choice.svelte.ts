@@ -20,7 +20,6 @@ function parseCrashReportChoice(value: string | null): CrashReportChoice {
   return CRASH_REPORT_CHOICES.find((choice) => choice === value) ?? "ask";
 }
 
-/** What happens to a crash report: asked about, sent without asking, or never offered. */
 export class CrashReportSetting {
   choice: CrashReportChoice = $state("ask");
 
