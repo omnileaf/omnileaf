@@ -18,6 +18,8 @@ const APP_SPECS = "tests/app/**/*.e2e.ts";
 const DESKTOP_ONLY_APP_SPECS = "tests/app/**/*.desktop.e2e.ts";
 const ANDROID_ONLY_APP_SPECS = "tests/app/**/*.android.e2e.ts";
 const IOS_ONLY_APP_SPECS = "tests/app/**/*.ios.e2e.ts";
+const SLOW_APP_SPECS = "tests/app/**/*.slow.e2e.ts";
+const SLOW_ANDROID_APP_SPECS = "tests/app/**/*.android.slow.e2e.ts";
 const HARNESS_TESTS = "tests/app/**/*.test.ts";
 const BRANDING = "../branding";
 /** The interface ships inside the app, so no newer version can appear while it runs. */
@@ -85,6 +87,7 @@ export default defineConfig({
             ...configDefaults.exclude,
             ANDROID_ONLY_APP_SPECS,
             IOS_ONLY_APP_SPECS,
+            SLOW_APP_SPECS,
           ],
           environment: "node",
           fileParallelism: false,
@@ -102,7 +105,20 @@ export default defineConfig({
             ...configDefaults.exclude,
             DESKTOP_ONLY_APP_SPECS,
             IOS_ONLY_APP_SPECS,
+            SLOW_APP_SPECS,
           ],
+          environment: "node",
+          fileParallelism: false,
+          globalSetup: ["tests/app/android.ts"],
+          expect: { requireAssertions: true },
+          testTimeout: APP_TEST_TIMEOUT_MS,
+          hookTimeout: MOBILE_SESSION_TIMEOUT_MS,
+        },
+      },
+      {
+        test: {
+          name: "android-slow",
+          include: [SLOW_ANDROID_APP_SPECS],
           environment: "node",
           fileParallelism: false,
           globalSetup: ["tests/app/android.ts"],
@@ -119,6 +135,7 @@ export default defineConfig({
             ...configDefaults.exclude,
             DESKTOP_ONLY_APP_SPECS,
             ANDROID_ONLY_APP_SPECS,
+            SLOW_APP_SPECS,
           ],
           environment: "node",
           fileParallelism: false,
