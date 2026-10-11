@@ -64,7 +64,6 @@ impl Library {
             .await
     }
 
-    /// Passes every cursor through its text form, as one crossing to the interface would.
     async fn walk<L: List + Clone>(&self, list: L, size: u16) -> Vec<Vec<String>> {
         let mut pages = Vec::new();
         let mut after = None;

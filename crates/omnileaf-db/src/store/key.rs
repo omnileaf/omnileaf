@@ -5,14 +5,12 @@ const POSITION: &str = "pos";
 const READ: &str = "read";
 const FURTHEST: &str = "max";
 
-/// A register that keeps the last write.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LatestKey {
     BookPosition(BookId),
     BookRead(BookId),
 }
 
-/// A register that keeps the write of highest rank.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum MaximumKey {
     BookFurthest(BookId),
@@ -36,7 +34,6 @@ impl From<MaximumKey> for Key {
     }
 }
 
-/// Where a register is stored, under the names every device gives it.
 pub(crate) struct Address {
     pub(crate) entity: &'static str,
     pub(crate) id: [u8; 16],
@@ -51,7 +48,6 @@ impl Key {
         }
     }
 
-    /// None for a register a newer version wrote, which is kept and passed on but not projected.
     pub(crate) fn stored(entity: &str, id: &[u8], field: &str) -> Result<Option<Self>, IdError> {
         let book = || BookId::try_from(id);
         Ok(match (entity, field) {
@@ -94,7 +90,6 @@ mod tests {
 
     use super::*;
 
-    /// Walks the keys through a match with no catch-all, so a new key fails to build here until it joins the walk.
     fn every_key(book: BookId) -> Vec<Key> {
         let mut keys = Vec::new();
         let mut next = Some(Key::from(LatestKey::BookPosition(book)));

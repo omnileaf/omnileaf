@@ -10,7 +10,6 @@ use crate::{
     },
 };
 
-/// Moves the roots together so ones that trade places or follow one another all arrive, returning those kept in place with their new bookmark because a root staying put holds where they were going.
 #[tracing::instrument(skip_all, fields(roots = moves.len()))]
 pub fn relocate_roots(
     transaction: &Transaction<'_>,

@@ -60,7 +60,7 @@ async fn keys_10_000_titles_again_for_each_language_within_150_ms() {
     assert!(outcome.is_within_budget(), "{outcome}");
 }
 
-/// Starts every title with a letter Swedish files after Z and English files under A, so each switch between them changes every key.
+/// Swedish collation files Ä after Z where English files it under A, so each switch between them changes every key.
 async fn add_generated_series(database: &Database) {
     let names: Vec<String> = (0..SERIES_COUNT)
         .map(|number| format!("Ärger Sample {number:05}"))

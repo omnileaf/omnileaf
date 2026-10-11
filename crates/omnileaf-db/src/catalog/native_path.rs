@@ -1,10 +1,9 @@
-//! A path as the platform spells it, so a folder whose name isn't valid Unicode is stored exactly.
+//! A folder name need not be valid Unicode, so a path is stored as the platform spells it.
 
 use std::path::{Path, PathBuf};
 
 use rusqlite::{Row, types::Type};
 
-/// Reads the path stored in `column`, failing the row when its bytes can't be one.
 pub(crate) fn stored_native_path(row: &Row<'_>, column: usize) -> rusqlite::Result<PathBuf> {
     from_bytes(row.get(column)?).ok_or_else(|| {
         rusqlite::Error::InvalidColumnType(column, "location".to_owned(), Type::Blob)

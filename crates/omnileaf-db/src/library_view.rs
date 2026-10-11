@@ -1,5 +1,3 @@
-//! How this device draws the library, which never syncs since each device has its own screen.
-
 use rusqlite::{Connection, OptionalExtension, Row, Transaction};
 
 use crate::Error;
@@ -40,7 +38,6 @@ pub enum LibraryDisplay {
     List,
 }
 
-/// The view as stored, its covers per row held to their ranges by the schema alone.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct StoredLibraryView {
     pub display: LibraryDisplay,
@@ -51,7 +48,6 @@ pub struct StoredLibraryView {
     pub on_covers: OnCovers,
 }
 
-/// What each cover carries besides its picture and title.
 #[expect(
     clippy::struct_excessive_bools,
     reason = "each is a switch of its own in the view options"
@@ -65,7 +61,6 @@ pub struct OnCovers {
     pub shows_continue_button: bool,
 }
 
-/// None until a view is first set on this device.
 pub fn library_view(connection: &Connection) -> Result<Option<StoredLibraryView>, Error> {
     let row = connection
         .prepare(STORED_VIEW)?

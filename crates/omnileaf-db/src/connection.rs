@@ -41,7 +41,7 @@ fn configure(connection: &Connection, config: &Config) -> rusqlite::Result<()> {
     connection.pragma_update(None, "mmap_size", i64::from(config.mmap_size_bytes))
 }
 
-/// Returns the journal mode SQLite settled on, which stays as it was where the file system can't hold a write-ahead log.
+/// SQLite keeps its old journal mode where the file system can't hold a write-ahead log, so this returns the mode it settled on.
 fn configure_writing(connection: &Connection) -> rusqlite::Result<String> {
     connection.pragma_update(None, "synchronous", "NORMAL")?;
     connection.pragma_update_and_check(None, "journal_mode", WRITE_AHEAD_LOG, |row| row.get(0))

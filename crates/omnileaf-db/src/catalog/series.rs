@@ -21,7 +21,6 @@ pub struct NewSeries {
 }
 
 impl NewSeries {
-    /// A series of the local library, titled and identified by its folder's name.
     pub fn local(folder_name: &str, added_at_ms: i64) -> Result<Self, KeyError> {
         Ok(Self {
             id: SeriesId::local(folder_name)?,
@@ -44,7 +43,6 @@ pub fn add_series(transaction: &Transaction<'_>, series: &NewSeries) -> Result<(
     insert(&mut transaction.prepare(ADD_SERIES)?, series, &collation)
 }
 
-/// Leaves a series already in the catalog as it is, title included.
 pub(crate) fn add_series_unless_present(
     transaction: &Transaction<'_>,
     series: &NewSeries,

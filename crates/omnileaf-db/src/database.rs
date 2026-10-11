@@ -11,16 +11,14 @@ use crate::{
 
 const READER_COUNT: usize = 3;
 
-/// Dropping it blocks until every job already submitted has run.
 pub struct Database {
-    /// Declared before the writer and the checkpointer so the readers close first and the checkpointer last, leaving it to checkpoint and remove the log.
+    /// Fields drop in declaration order, and the last SQLite connection to close checkpoints and removes the write-ahead log.
     readers: ConnectionWorkers,
     writer: ConnectionWorkers,
     checkpointer: Checkpointer,
 }
 
 impl Database {
-    /// Blocks while it opens the file, brings its schema up to date and re-keys titles made by another build, so call it off the async runtime.
     #[tracing::instrument(skip_all, fields(path = %config.path.display()))]
     pub fn open(config: &Config) -> Result<Self, Error> {
         let mut writer = migrated_writer(config, MIGRATIONS)?;
@@ -49,7 +47,6 @@ impl Database {
         })
     }
 
-    /// Runs the job in one immediate transaction on the writer thread, committing only when it succeeds.
     pub fn write<T, F>(&self, job: F) -> impl Future<Output = Result<T, Error>> + use<T, F>
     where
         T: Send + 'static,
@@ -58,7 +55,6 @@ impl Database {
         self.write_then(job, |_| {})
     }
 
-    /// Runs `committed` on the writer thread straight after the commit, so whatever it announces is already durable.
     pub(crate) fn write_then<T, F, C>(
         &self,
         job: F,

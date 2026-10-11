@@ -18,7 +18,6 @@ const FILE_LOCATION_COLUMN: usize = 2;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BookFileId(pub(crate) i64);
 
-/// The file a book's cover is read from, at the revision of it the cover shows.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Cover {
     pub book: BookId,
@@ -26,7 +25,6 @@ pub struct Cover {
     pub rev: u32,
 }
 
-/// Where the cover's file is on disk, or nothing once that file has changed or gone since the cover was listed.
 #[tracing::instrument(skip_all, fields(book = %cover.book, file = %cover.file, rev = cover.rev))]
 pub fn cover_file(connection: &Connection, cover: &Cover) -> Result<Option<PathBuf>, Error> {
     Ok(connection
@@ -38,7 +36,6 @@ pub fn cover_file(connection: &Connection, cover: &Cover) -> Result<Option<PathB
         .optional()?)
 }
 
-/// Reads the cover from a row's `cover_book`, `cover_file` and `cover_rev`, which a series without a book file leaves null.
 pub(crate) fn stored_cover(row: &Row<'_>) -> rusqlite::Result<Option<Cover>> {
     let Some(file) = row.get::<_, Option<i64>>("cover_file")? else {
         return Ok(None);

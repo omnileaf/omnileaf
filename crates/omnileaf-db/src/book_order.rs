@@ -1,10 +1,8 @@
 use unicode_normalization::UnicodeNormalization;
 
-/// Sorts a digit run where its first digit would, since no letter or symbol falls between the digits.
 const NUMBER_MARKER: u8 = b'0';
 const ZERO: char = '0';
 
-/// Bytes that order a series' books as natural sort orders their titles (case and width ignored, digit runs by value), short of its final tie-break.
 pub(crate) fn book_order_key(title: &str) -> Vec<u8> {
     let mut key = Vec::with_capacity(title.len());
     let mut digits = String::new();
@@ -22,7 +20,6 @@ pub(crate) fn book_order_key(title: &str) -> Vec<u8> {
     key
 }
 
-/// Writes the digit count before the digits and the leading zeros after, so a larger value and then more zeros sort later.
 fn push_number(key: &mut Vec<u8>, digits: &str) {
     if digits.is_empty() {
         return;
@@ -50,7 +47,6 @@ mod tests {
 
     const TITLE: &str = "[a-zA-Z0-9 ._ßİ０-９①Ａ-Ｚ一-三-]{0,16}";
 
-    /// Mixes unrelated titles with ones differing only in case or in leading zeros, which random pairs almost never do.
     fn title_pairs() -> impl Strategy<Value = (String, String)> {
         prop_oneof![
             (TITLE, TITLE),

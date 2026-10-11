@@ -8,14 +8,13 @@ use crate::{
     title_key::{Language, TitleCollation},
 };
 
-/// Moves only when the code that makes keys changes, since its settings and article lists reach the stamp by themselves.
 const RULES_VERSION: u32 = 1;
 const ICU_VERSIONS: &str = env!("OMNILEAF_ICU_VERSIONS");
 const STAMP_CONTEXT: &str = "omnileaf.app 2026-10 title-key-stamp v1";
 const FIELD_END: &[u8] = &[0];
 const THE_STAMP: i64 = 1;
 
-/// Names the language, our rules and the ICU4X build that made a set of title keys, since keys made by any other compare differently.
+/// Title keys compare correctly only against keys made under the same language, rules and ICU4X build.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct TitleStamp([u8; TitleStamp::LENGTH]);
 
@@ -50,7 +49,6 @@ impl From<[u8; TitleStamp::LENGTH]> for TitleStamp {
     }
 }
 
-/// The language the stored title keys were made for, falling back to the root collation when the stored tag can't be read.
 pub(crate) fn stored_language(connection: &Connection) -> Result<Language, Error> {
     let tag: String = connection
         .prepare("SELECT locale FROM title_key_stamp WHERE id = ?1")?

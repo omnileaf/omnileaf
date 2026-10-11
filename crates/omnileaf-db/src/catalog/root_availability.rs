@@ -7,7 +7,6 @@ const MARK_UNAVAILABLE: &str = "UPDATE library_root
     WHERE id = ?1";
 const MARK_AVAILABLE: &str = "UPDATE library_root SET unavailable_since_ms = NULL WHERE id = ?1";
 
-/// Keeps the time the root was first found unavailable when it stays away across rescans.
 #[tracing::instrument(skip_all, fields(root = %id))]
 pub fn mark_root_unavailable(
     transaction: &Transaction<'_>,

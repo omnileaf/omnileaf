@@ -1,5 +1,3 @@
-//! The library database: SQLite, written through one thread and read through a small pool.
-
 mod backup;
 mod book_order;
 pub mod catalog;

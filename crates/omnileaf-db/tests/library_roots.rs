@@ -137,7 +137,6 @@ impl Library {
         id
     }
 
-    /// Adds a book with a copy of its file in each of `roots`.
     async fn add_book(&self, series: SeriesId, index: u8, roots: &[RootId]) -> BookId {
         let book = NewBook {
             fingerprint: Fingerprint::pmf1([ImageEntry {

@@ -17,7 +17,7 @@ pub(crate) struct ScratchLibrary {
 }
 
 impl ScratchLibrary {
-    /// Gives every call its own folder, so tests running as threads of one process never share one.
+    /// Cargo runs tests as threads of one process, so every call gets a folder of its own.
     pub(crate) fn new(name: &str) -> Self {
         let serial = CREATED.fetch_add(1, Ordering::Relaxed);
         let folder = env::temp_dir()

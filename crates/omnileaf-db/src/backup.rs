@@ -4,7 +4,6 @@ use rusqlite::Connection;
 
 use crate::Error;
 
-/// Copies the database into the backup folder, replacing an earlier copy of the same schema version only once the new one is complete.
 pub(crate) fn back_up(
     connection: &Connection,
     backup_dir: &Path,

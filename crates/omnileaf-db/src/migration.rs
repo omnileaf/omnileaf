@@ -33,7 +33,6 @@ macro_rules! migration {
     };
 }
 
-/// Applied in order, and never edited once released; schema version N means the first N have run.
 pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0001_mark_omnileaf_library"),
     migration!("0002_create_catalog"),
@@ -109,7 +108,7 @@ impl StoredSchema {
     }
 }
 
-/// Turns foreign key enforcement off while migrating, since rebuilding a table would otherwise cascade-delete the rows referring to it.
+/// Turns SQLite foreign key enforcement off while migrating, since rebuilding a table would otherwise cascade-delete the rows referring to it.
 pub(crate) fn apply(
     connection: &mut Connection,
     path: &Path,
@@ -126,7 +125,6 @@ pub(crate) fn apply(
     migrated.and(enforced)
 }
 
-/// Reads the schema version again inside the write lock, so migrations another connection applied meanwhile are skipped.
 fn migrate(
     connection: &mut Connection,
     path: &Path,

@@ -14,7 +14,6 @@ pub(crate) enum Resorted {
     Rekeyed,
 }
 
-/// Keys every series title again for `language` within the caller's transaction, unless the stored keys carry this build's stamp for it.
 #[tracing::instrument(skip_all, fields(%language))]
 pub(crate) fn sort_titles_for(
     connection: &Connection,
@@ -30,7 +29,6 @@ pub(crate) fn sort_titles_for(
     Ok(Resorted::Rekeyed)
 }
 
-/// Keys the titles again for the language they were last sorted for, when they were keyed by other rules or another ICU4X build.
 pub(crate) fn keep_titles_sorted(connection: &Connection) -> Result<Resorted, Error> {
     sort_titles_for(connection, &stored_language(connection)?)
 }

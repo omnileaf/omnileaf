@@ -14,7 +14,6 @@ use crate::Error;
 
 type Job = Box<dyn FnOnce(&mut Connection) + Send>;
 
-/// Threads that each own one connection and take jobs from a shared queue in the order they were submitted.
 pub(crate) struct ConnectionWorkers {
     jobs: Option<Sender<Job>>,
     threads: Vec<JoinHandle<()>>,
@@ -71,7 +70,6 @@ impl Drop for ConnectionWorkers {
     }
 }
 
-/// Turns a panicking job into an error, so its thread lives on to serve the next one.
 fn run_unwinding<T>(
     job: impl FnOnce(&mut Connection) -> Result<T, Error>,
     connection: &mut Connection,

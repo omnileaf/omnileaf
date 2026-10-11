@@ -65,7 +65,6 @@ impl Library {
         self.titles_after(None).await
     }
 
-    /// Passes every cursor through its text form, as one crossing to the interface would.
     async fn titles_after(&self, mut after: Option<Cursor>) -> Vec<String> {
         let mut titles = Vec::new();
         loop {

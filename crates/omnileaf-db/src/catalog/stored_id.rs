@@ -1,7 +1,6 @@
 use omnileaf_sync_proto::IdError;
 use rusqlite::{Row, types::Type};
 
-/// Fails the row rather than trust a stored id that isn't a derived one.
 pub(crate) fn stored_id<T>(row: &Row<'_>, column: &str) -> rusqlite::Result<T>
 where
     T: for<'bytes> TryFrom<&'bytes [u8], Error = IdError>,

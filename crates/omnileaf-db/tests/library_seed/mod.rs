@@ -20,7 +20,6 @@ pub(crate) struct SeriesSeed<'a> {
 }
 
 impl<'a> SeriesSeed<'a> {
-    /// A series added long ago holding one book, `Volume 01`.
     pub(crate) const fn named(name: &'a str) -> Self {
         Self {
             name,
@@ -30,7 +29,6 @@ impl<'a> SeriesSeed<'a> {
     }
 }
 
-/// Adds every series and its books in one transaction.
 pub(crate) async fn seed_library(database: &Database, series: &[SeriesSeed<'_>]) {
     let rows: Vec<(NewSeries, Vec<NewBook>)> = series.iter().map(new_series).collect();
     database
@@ -47,7 +45,6 @@ pub(crate) async fn seed_library(database: &Database, series: &[SeriesSeed<'_>])
         .unwrap();
 }
 
-/// A fingerprint that differs for every series and title, as a fingerprint of the book's pages would.
 pub(crate) fn fingerprint(series: &str, title: &str) -> Fingerprint {
     let name = format!("{series}/{title}");
     let pages = name.bytes().zip(0..).map(|(byte, crc32)| ImageEntry {

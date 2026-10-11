@@ -3,8 +3,7 @@ use std::path::PathBuf;
 #[derive(Clone, Debug)]
 pub struct Config {
     pub path: PathBuf,
-    /// Where a copy of the database goes before a migration changes it.
     pub backup_dir: PathBuf,
-    /// How much of the file SQLite may map into memory, in bytes; zero turns mapping off.
+    /// SQLite turns memory mapping off when this is zero.
     pub mmap_size_bytes: u32,
 }
