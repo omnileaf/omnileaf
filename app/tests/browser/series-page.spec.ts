@@ -982,6 +982,21 @@ test.describe("swiping back from the edge on an iPhone", () => {
     await expect(page).toHaveURL(/\/$/);
   });
 
+  test("lets no swipe from the edge reach a book opened in the reader", async ({
+    page,
+  }) => {
+    await openFromTheLibrary(page);
+    await expect.poll(() => allowedEdges.at(-1)).toBe("left");
+
+    await books(page)
+      .filter({ hasText: shelf.titleOf(5) })
+      .getByRole("link")
+      .click();
+
+    await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(5)}$`));
+    await expect.poll(() => allowedEdges.at(-1)).toBeNull();
+  });
+
   test("ends picking books with a swipe back, staying on the series, and leaves with the next", async ({
     page,
   }) => {

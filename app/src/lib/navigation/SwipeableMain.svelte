@@ -198,10 +198,15 @@
     );
   });
 
+  /** Screens outside the app's navigation, such as the reader, have no way back for a swipe to take. */
   onMount(() => {
-    if (isIos) {
-      void commands.watchBackSwipes(new Channel(follow));
+    if (!isIos) {
+      return;
     }
+    void commands.watchBackSwipes(new Channel(follow));
+    return () => {
+      void commands.allowBackSwipe(null);
+    };
   });
 </script>
 
