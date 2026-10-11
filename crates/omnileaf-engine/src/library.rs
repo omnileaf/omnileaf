@@ -77,7 +77,7 @@ impl From<PathBuf> for LibraryFolders {
 
 pub struct Library {
     store: Store,
-    scanning: Mutex<()>,
+    catalog_change_lock: Mutex<()>,
     schedule: sync::Mutex<RescanSchedule>,
     is_scheduled: watch::Sender<bool>,
     catalog_writes: broadcast::Sender<CatalogWritten>,
@@ -147,7 +147,7 @@ impl Library {
         .await??;
         let library = Self {
             store: Store::new(database, clock),
-            scanning: Mutex::new(()),
+            catalog_change_lock: Mutex::new(()),
             schedule: sync::Mutex::default(),
             is_scheduled: watch::Sender::new(false),
             catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
@@ -166,7 +166,7 @@ impl Library {
         let locator = self.folder_to_read(folder.into()).await?;
         let files = self.files_of(&locator);
         tracing::Span::current().record("folder", tracing::field::display(files.folder.display()));
-        let _scanning = self.scanning.lock().await;
+        let _scanning = self.catalog_change_lock.lock().await;
         on_progress(ScanProgress::Finding);
         let layout = find_books_in(Arc::clone(&files.storage), files.folder.clone()).await?;
         let root = self.link(locator).await?;
@@ -256,7 +256,7 @@ impl Library {
 
     #[tracing::instrument(skip_all, fields(folder = %id))]
     pub async fn remove_folder(&self, id: FolderId) -> Result<(), LibraryError> {
-        let _scanning = self.scanning.lock().await;
+        let _scanning = self.catalog_change_lock.lock().await;
         self.store
             .database()
             .write(move |transaction| remove_root(transaction, id.0))
@@ -271,7 +271,7 @@ impl Library {
         id: FolderId,
         on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderRescan, LibraryError> {
-        let scanning = self.scanning.lock().await;
+        let scanning = self.catalog_change_lock.lock().await;
         self.rescan_while_scanning(id, scanning, on_progress).await
     }
 
@@ -307,7 +307,7 @@ impl Library {
                 tracing::debug!("leave the folders whose turn came once scheduled rescans are off");
                 break;
             }
-            let Ok(scanning) = self.scanning.try_lock() else {
+            let Ok(scanning) = self.catalog_change_lock.try_lock() else {
                 tracing::debug!("leave the folders whose turn came until no other scan runs");
                 break;
             };
@@ -399,7 +399,7 @@ impl Library {
         &self,
         id: FolderId,
     ) -> Result<BooksRemoval, LibraryError> {
-        let _scanning = self.scanning.lock().await;
+        let _scanning = self.catalog_change_lock.lock().await;
         let database = self.store.database();
         let root = database
             .read(move |connection| library_root(connection, id.0))
@@ -475,7 +475,7 @@ impl Library {
         reopened: Vec<Reopened>,
     ) -> Result<(), LibraryError> {
         let since_ms = self.now_ms();
-        let _scanning = self.scanning.lock().await;
+        let _scanning = self.catalog_change_lock.lock().await;
         let changed = self
             .store
             .database()
