@@ -150,6 +150,18 @@ Settings › About › Open-source licences lists every package the app ships, f
 
 The archive and ComicInfo readers have fuzz targets in `fuzz/`, which sits outside the workspace and builds with the nightly toolchain pinned in `fuzz/rust-toolchain.toml`. Install `cargo-fuzz` once with `cargo install cargo-fuzz@0.13.2 --locked` and write the seed inputs with `cargo xtask fuzz-seeds`. Then, from `fuzz/`, `cargo fuzz list` names the targets and `cargo fuzz run open_book -- -max_total_time=120` fuzzes one for two minutes. A crash leaves its input in `fuzz/artifacts/`; turn it into a regression test in `crates/omnileaf-formats` before fixing it. CI fuzzes every target each night, sharing 15 minutes between them, and keeps any crash inputs as an artifact. The fuzz crate depends on `libfuzzer-sys`, which carries LLVM's NCSA licence; it never ships and sits outside the workspace, so it's left out of the licence rule above.
 
+## Releasing
+
+Pushing a tag such as `v0.1.0` runs `.github/workflows/release.yml`, which builds the Linux packages, a universal macOS disk image, the Windows installer and an Android APK at the tag's version, then drafts a GitHub release with notes from the merged pull requests. A tag with a suffix, such as `v0.1.0-rc.1`, drafts a pre-release. Check the draft, then publish it.
+
+Each platform is signed only when its secrets are set; otherwise the workflow warns and carries on:
+
+- **macOS:** `APPLE_CERTIFICATE` (the Developer ID Application certificate as a base64 `.p12`), `APPLE_CERTIFICATE_PASSWORD` and `APPLE_SIGNING_IDENTITY` sign the app, and `APPLE_API_ISSUER`, `APPLE_API_KEY` and `APPLE_API_KEY_P8` (the App Store Connect key's contents) notarize it.
+- **Windows:** the installer goes to SignPath when `SIGNPATH_API_TOKEN` is set, with the repository variables `SIGNPATH_ORGANIZATION_ID`, `SIGNPATH_PROJECT_SLUG`, `SIGNPATH_SIGNING_POLICY_SLUG` and `SIGNPATH_ARTIFACT_CONFIGURATION_SLUG`.
+- **Android:** `ANDROID_KEYSTORE` (the keystore as base64), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. An unsigned APK can't be installed, so without them the release has no APK. Make the keystore once with `keytool -genkeypair -v -keystore omnileaf-release.jks -alias omnileaf -keyalg RSA -keysize 4096 -validity 10000` and keep it, and its passwords, somewhere safe: every later update must be signed with the same key. `base64 -i omnileaf-release.jks | pbcopy` copies it for the secret on macOS.
+
+The Android build reads the keystore from `ANDROID_KEYSTORE_PATH`, with `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`, so setting those signs a local release build too.
+
 ## Definition of done
 
 A pull request is ready when:
