@@ -15,7 +15,6 @@ use crate::support::{FixedClock, ScratchFolder};
 
 const DATABASE_FILE: &str = "library.sqlite";
 
-/// A scratch library holding one linked folder, read through a connection of its own.
 pub(crate) struct Scanned {
     pub(crate) library: Library,
     pub(crate) home: ScratchFolder,
@@ -38,7 +37,6 @@ impl Scanned {
         (Self { library, home, id }, scan, progress)
     }
 
-    /// Each listed series' title and book count, in title order.
     pub(crate) fn series(&self) -> Vec<(String, u32)> {
         self.series_summaries()
             .into_iter()

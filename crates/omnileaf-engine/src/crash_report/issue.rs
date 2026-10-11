@@ -1,4 +1,3 @@
-/// Appends `fields` to `form` as query parameters, percent-encoding everything but unreserved characters.
 pub(super) fn prefilled(form: &str, fields: &[(&str, &str)]) -> String {
     fields
         .iter()

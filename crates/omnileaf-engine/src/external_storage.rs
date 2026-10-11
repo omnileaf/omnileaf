@@ -40,7 +40,7 @@ impl Mount<'_> {
     }
 }
 
-/// Reads one line of a mountinfo table, whose fields after the mount point end in `- type source options`.
+/// A Linux mountinfo line's fields after the mount point end in `- type source options`.
 fn mount_in(line: &str) -> Option<Mount<'_>> {
     let mut fields = line.split(' ');
     let point = fields.nth(4)?;
@@ -59,7 +59,6 @@ fn unescape_mount_point(point: &str) -> String {
         .replace("\\134", "\\")
 }
 
-/// Finds the file system holding `folder`, an absolute path with its links resolved, in a Linux `/proc/self/mountinfo`.
 #[must_use]
 pub fn storage_in_mountinfo(mountinfo: &str, folder: &Path) -> Storage {
     let holding = mountinfo
@@ -86,7 +85,6 @@ pub fn storage_of_windows_path(path: &str) -> Storage {
     }
 }
 
-/// A folder on another device than every one the system starts from is external; with none of those known, it counts as local.
 #[must_use]
 pub fn storage_by_device(folder: u64, startup: &[u64]) -> Storage {
     if startup.is_empty() || startup.contains(&folder) {

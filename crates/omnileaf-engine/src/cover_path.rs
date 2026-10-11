@@ -7,10 +7,8 @@ use specta::{Type, Types, datatype::DataType};
 use crate::ipc_brand::branded_string;
 
 const THUMBNAIL_ROUTE: &str = "thumb";
-/// Changes whenever thumbnails are made differently, so no cache keeps serving the old ones under the same path.
 pub(crate) const THUMBNAIL_VERSION: &str = "v1";
 
-/// Where the interface finds a book's cover thumbnail, relative to the app's `omni` protocol, naming ids and never a path on disk.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(into = "String")]
 pub struct CoverPath(pub(crate) Cover);

@@ -10,7 +10,6 @@ const PANIC_MACHINERY: &[&str] = &[
     "std::panicking::",
 ];
 
-/// Names a source file from its package down, so no folder of the machine that built it shows.
 pub(super) fn package_relative(file: &str) -> String {
     let components: Vec<&str> = file
         .split(SEPARATORS)
@@ -24,7 +23,6 @@ pub(super) fn package_relative(file: &str) -> String {
     components.get(from..).unwrap_or_default().join("/")
 }
 
-/// The function names of a standard library backtrace, from the code that panicked to the thread's start.
 pub(super) fn frame_names(backtrace: &str) -> Vec<&str> {
     let names: Vec<&str> = backtrace.lines().filter_map(frame_name).collect();
     let start = names

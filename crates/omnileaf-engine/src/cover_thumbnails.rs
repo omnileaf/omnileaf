@@ -20,7 +20,7 @@ use crate::{
 };
 
 const CACHE_BUDGET_BYTES: u64 = (if IS_MOBILE { 300 } else { 1024 }) * MEBIBYTE as u64;
-/// One worker on a phone, since each decode may hold a few hundred megabytes at once.
+/// One worker on a phone, whose OS ends an app holding too much memory while each decode may hold a few hundred megabytes.
 const WORKERS: NonZeroUsize = if IS_MOBILE {
     NonZeroUsize::MIN
 } else {
@@ -33,12 +33,10 @@ pub(crate) struct CoverFile {
     pub(crate) path: PathBuf,
 }
 
-/// Cover thumbnails, kept on disk under a byte budget and made on a background lane when missing.
 pub(crate) struct CoverThumbnails {
     folder: PathBuf,
     cache: OnceCell<Option<Arc<DiskCache>>>,
     lane: BackgroundLane,
-    /// Covers whose page couldn't be made into a thumbnail, which fail again without another decode until their file changes.
     failed_covers: Mutex<HashSet<CacheKey>>,
 }
 
@@ -61,7 +59,6 @@ pub(crate) enum ThumbnailError {
 }
 
 impl CoverThumbnails {
-    /// Leaves the cache folder alone until the first cover is asked for, so opening never waits on its files.
     pub(crate) fn open(folder: PathBuf) -> io::Result<Self> {
         Ok(Self {
             folder,
@@ -71,7 +68,6 @@ impl CoverThumbnails {
         })
     }
 
-    /// The cover's thumbnail as a JPEG, or nothing once its file has changed or gone since the cover was listed.
     pub(crate) async fn thumbnail(
         &self,
         library: &Library,
@@ -110,7 +106,6 @@ impl CoverThumbnails {
             .unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// The cache, opened by whichever request comes first, or nothing when it can't be opened.
     async fn cache(&self) -> Option<Arc<DiskCache>> {
         self.cache
             .get_or_init(|| open_cache(self.folder.clone()))
@@ -137,7 +132,6 @@ fn cache_key(cover: Cover) -> Result<CacheKey, CacheError> {
     format!("{}-{}-{}", cover.book, cover.file, cover.rev).parse()
 }
 
-/// The thumbnail the cache holds, letting go of one a lost write cut short so it is made again.
 fn cached_thumbnail(cache: &DiskCache, key: &CacheKey) -> Option<Vec<u8>> {
     let cached = cache.get(key)?;
     if is_whole_jpeg(&cached) {
@@ -148,7 +142,6 @@ fn cached_thumbnail(cache: &DiskCache, key: &CacheKey) -> Option<Vec<u8>> {
     None
 }
 
-/// Reads the page the book shows as its cover and stores its thumbnail, unless another request stored it meanwhile.
 fn make_thumbnail(
     cache: Option<&DiskCache>,
     key: &CacheKey,

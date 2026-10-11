@@ -1,5 +1,3 @@
-//! Where books sit in a library folder: a folder is a series, a file at the top is a one-shot, and a folder of images and no comics is a book.
-
 use std::{
     ffi::OsStr,
     io,
@@ -19,9 +17,7 @@ pub(crate) struct FoundBook {
 
 #[derive(Debug, Default)]
 pub(crate) struct Layout {
-    /// In path order, so a scan always meets them in the same order.
     pub(crate) books: Vec<FoundBook>,
-    /// Each folder the walk couldn't read in full, so nothing under it can be told gone.
     pub(crate) unreadable_folders: Vec<PathBuf>,
 }
 
@@ -30,7 +26,6 @@ enum EntryKind {
     Folder,
     Comic,
     Page,
-    /// Its kind couldn't be read, so it may be a folder or a book.
     Unreadable,
     Other,
 }
@@ -42,7 +37,6 @@ enum Place {
     Nested,
 }
 
-/// Fails only when `root` itself can't be read; a subfolder that can't be read is counted and skipped.
 pub(crate) fn find_books(storage: &dyn Storage, root: &Path) -> io::Result<Layout> {
     let mut layout = Layout::default();
     let mut pending = vec![(root.to_path_buf(), Place::Root)];
@@ -60,7 +54,6 @@ pub(crate) fn find_books(storage: &dyn Storage, root: &Path) -> io::Result<Layou
 }
 
 impl Layout {
-    /// Nothing in a folder that holds no books and no subfolder it couldn't read can still be a book.
     pub(crate) fn is_empty(&self) -> bool {
         self.books.is_empty() && self.unreadable_folders.is_empty()
     }
@@ -115,7 +108,6 @@ impl Layout {
         }
     }
 
-    /// Counts each folder once, however many of its entries failed.
     fn note_unreadable(&mut self, folder: &Path) {
         if self.unreadable_folders.last().map(PathBuf::as_path) != Some(folder) {
             self.unreadable_folders.push(folder.to_path_buf());

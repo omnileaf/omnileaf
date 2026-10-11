@@ -1,5 +1,3 @@
-//! The headless core that the app's commands drive.
-
 mod app_info;
 mod app_language;
 mod background_lane;

@@ -13,7 +13,6 @@ pub struct LibraryFolder {
     pub kind: FolderKind,
     pub name: String,
     pub location: String,
-    /// False since a rescan last found the folder missing, unreadable or empty of the books it held.
     pub is_available: bool,
 }
 
@@ -28,16 +27,13 @@ pub enum FolderKind {
 #[serde(rename_all = "camelCase")]
 pub struct FolderPage {
     pub folders: Vec<LibraryFolder>,
-    /// Absent on the last page.
     pub next: Option<FolderCursor>,
 }
 
-/// Crosses to the interface as an opaque string, which it hands back unchanged to name the folder.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(into = "String", try_from = "String")]
 pub struct FolderId(pub(crate) RootId);
 
-/// Where the next page of folders starts, handed back unchanged by whoever asked for the previous page.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(into = "String", try_from = "String")]
 pub struct FolderCursor(pub(crate) Cursor);

@@ -10,7 +10,6 @@ use tokio::sync::oneshot;
 
 type Job = Box<dyn FnOnce() + Send>;
 
-/// Runs blocking work on its own threads, newest job first, so what was asked for last, such as the covers now on screen, comes first.
 pub(crate) struct BackgroundLane {
     shared: Arc<Shared>,
     workers: Vec<JoinHandle<()>>,
@@ -28,7 +27,6 @@ struct Queue {
     is_closing: bool,
 }
 
-/// The lane stopped before the job ran, because the app is closing.
 #[derive(Debug, thiserror::Error)]
 #[error("run a job on a lane that has stopped")]
 pub(crate) struct LaneStopped;
@@ -47,7 +45,6 @@ impl BackgroundLane {
         Ok(Self { shared, workers })
     }
 
-    /// Queues the job at once and resolves to its result, never running it if the caller stops waiting before its turn.
     pub(crate) fn run<T, F>(
         &self,
         job: F,
@@ -70,7 +67,6 @@ impl BackgroundLane {
 }
 
 impl Drop for BackgroundLane {
-    /// Lets each worker finish the job in hand and drops the rest unrun, so their callers hear the lane stopped.
     fn drop(&mut self) {
         self.shared.queue().is_closing = true;
         self.shared.job_added.notify_all();
@@ -92,8 +88,7 @@ impl Shared {
         self.job_added.notify_one();
     }
 
-    /// The newest job, or nothing once the lane is closing.
-    fn next_job(&self) -> Option<Job> {
+    fn newest_job(&self) -> Option<Job> {
         let mut queue = self.queue();
         loop {
             if queue.is_closing {
@@ -110,7 +105,7 @@ impl Shared {
     }
 
     fn work(&self) {
-        while let Some(job) = self.next_job() {
+        while let Some(job) = self.newest_job() {
             if panic::catch_unwind(AssertUnwindSafe(job)).is_err() {
                 tracing::error!("a background job panicked");
             }
@@ -127,7 +122,6 @@ mod tests {
     const ONE_WORKER: NonZeroUsize = NonZeroUsize::MIN;
     const WAIT: Duration = Duration::from_secs(10);
 
-    /// Occupies the lane's only worker until the returned sender is dropped.
     fn occupy(
         lane: &BackgroundLane,
     ) -> (

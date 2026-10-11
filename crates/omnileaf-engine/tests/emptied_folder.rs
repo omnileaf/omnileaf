@@ -18,7 +18,6 @@ use support::ScratchFolder;
 const SERIES_01: &str = "Sample Series 01";
 const SERIES_02: &str = "Sample Series 02";
 
-/// A folder of three books in two series, scanned once into a library of its own.
 struct Linked {
     scanned: Scanned,
     comics: ScratchFolder,
@@ -38,7 +37,6 @@ impl Linked {
         self.comics.path().join(location)
     }
 
-    /// Takes every book out of the folder and rescans it, which keeps them as it finds the folder empty.
     async fn empty(&self) {
         for series in [SERIES_01, SERIES_02] {
             fs::remove_dir_all(self.path(series)).unwrap();

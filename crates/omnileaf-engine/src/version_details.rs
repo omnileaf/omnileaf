@@ -23,7 +23,6 @@ impl BuildProfile {
     }
 }
 
-/// What a bug report needs to know about the running app, written as plain text by `Display`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VersionDetails {
     pub app: AppInfo,

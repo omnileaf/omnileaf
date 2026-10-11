@@ -12,9 +12,7 @@ pub struct LibrarySeries {
     pub id: SeriesId,
     pub title: String,
     pub book_count: u32,
-    /// Its books not marked read.
     pub unread_count: u32,
-    /// The cover of its first book by title, absent while none of its books has a file.
     pub cover: Option<CoverPath>,
 }
 
@@ -22,16 +20,13 @@ pub struct LibrarySeries {
 #[serde(rename_all = "camelCase")]
 pub struct SeriesPage {
     pub series: Vec<LibrarySeries>,
-    /// Absent on the last page.
     pub next: Option<SeriesCursor>,
 }
 
-/// Crosses to the interface as an opaque string, so it can tell one series from another however the list reorders.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(into = "String")]
 pub struct SeriesId(pub(crate) omnileaf_sync_proto::SeriesId);
 
-/// Where the next page of series starts, handed back unchanged by whoever asked for the previous page.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(into = "String", try_from = "String")]
 pub struct SeriesCursor(pub(crate) Cursor);

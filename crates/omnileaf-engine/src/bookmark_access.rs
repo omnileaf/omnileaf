@@ -12,11 +12,10 @@ use omnileaf_db::{
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ResolvedBookmark {
     pub path: PathBuf,
-    /// Present when the platform found the bookmark stale and made a new one to keep instead.
+    /// Present when macOS or iOS found the bookmark stale and made a new one to keep instead.
     pub refreshed: Option<AppleBookmark>,
 }
 
-/// A bookmarked folder as it was before its bookmark was opened.
 pub(crate) struct AsRead {
     id: RootId,
     locator: RootLocator,
@@ -81,7 +80,6 @@ impl Reopened {
     }
 }
 
-/// Reports whether any folder's place or availability changed, leaving alone each folder that changed since it was read.
 pub(crate) fn note_bookmarks_opened(
     transaction: &Transaction<'_>,
     unreachable: &[AsRead],

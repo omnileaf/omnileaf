@@ -1,6 +1,5 @@
 use std::error::Error;
 
-/// The error's message followed by each of its causes', so one log line says what failed and why.
 #[must_use]
 pub fn describe_error(error: &dyn Error) -> String {
     let mut description = error.to_string();
