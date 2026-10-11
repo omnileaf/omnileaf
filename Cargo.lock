@@ -3196,6 +3196,7 @@ dependencies = [
  "omnileaf-engine",
  "omnileaf-folder-access",
  "omnileaf-system-bars",
+ "omnileaf-windows-probes",
  "os_info",
  "serde",
  "serde_json",
@@ -3352,6 +3353,13 @@ dependencies = [
  "thiserror 2.0.21",
  "tokio",
  "zip",
+]
+
+[[package]]
+name = "omnileaf-windows-probes"
+version = "0.0.0"
+dependencies = [
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
