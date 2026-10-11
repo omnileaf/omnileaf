@@ -15,6 +15,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   screenSizeOf,
+  setTextScale,
   sidewaysOverflow,
   test,
   viewportOf,
@@ -41,8 +42,18 @@ interface ListLook {
 }
 
 const PANEL_WIDTH = 360;
+const LARGEST_TEXT_SCALE = 2;
+const NARROWEST_COVER = 40;
+const NARROWEST_SCREENS = [320, 600, 840, 1200];
+const EXPANDED_TABLET = 840;
 const DENSE_GRID_WIDTHS = [600, 744, 840, 1024, 1200, 1280, 1440];
 const SCREEN_HEIGHT = 900;
+const SCROLL_RETRY_MS = 500;
+const MOST_COVERS_PER_ROW = {
+  phone: COVERS_PER_ROW.phone.most,
+  tablet: COVERS_PER_ROW.tablet.most,
+  desktop: COVERS_PER_ROW.desktop.most,
+} as const satisfies CoversPerRow;
 const MOST_COVERS_PER_ROW_WITH_BOOK_COUNTS = {
   phone: 3,
   tablet: 8,
@@ -55,6 +66,7 @@ const RANGE_LABELS = {
   desktop: "4 to 12",
 } as const satisfies Record<ScreenSize, string>;
 const SERIES_IN_CATALOG = 200;
+const LAST_TITLE = `Sample Series ${String(SERIES_IN_CATALOG).padStart(4, "0")}`;
 const FIRST_TITLE = "Sample Series 0001";
 const WHOLE_PIXEL = 1;
 const LONG_TITLE =
@@ -164,6 +176,15 @@ function columnsOf(list: Locator): Promise<number> {
   );
 }
 
+function columnWidthsOf(list: Locator): Promise<number[]> {
+  return list.evaluate((element) =>
+    getComputedStyle(element)
+      .gridTemplateColumns.split(" ")
+      .filter((track) => track !== "")
+      .map((track) => Number.parseFloat(track)),
+  );
+}
+
 function pixels(locator: Locator, property: "columnGap" | "fontSize") {
   return locator.evaluate(
     (element, name) => Number.parseFloat(getComputedStyle(element)[name]),
@@ -201,6 +222,82 @@ test.describe("at every text size", () => {
     ({ isMobile }) => isMobile,
     "each engine sets every width itself, from the desktop",
   );
+
+  test("draws each size's most covers per row down to its narrowest screen at the default text size", async ({
+    page,
+  }) => {
+    for (const width of NARROWEST_SCREENS) {
+      await page.setViewportSize({ width, height: SCREEN_HEIGHT });
+      await openWith(page, {
+        ...DEFAULT_LIBRARY_VIEW,
+        coversPerRow: MOST_COVERS_PER_ROW,
+      });
+
+      expect(await columnsOf(seriesList(page)), `at ${String(width)}px`).toBe(
+        MOST_COVERS_PER_ROW[screenSizeOf(page)],
+      );
+    }
+  });
+
+  test("draws fewer, wider covers per row than asked once the largest text needs the room", async ({
+    page,
+  }) => {
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await page.setViewportSize({
+      width: EXPANDED_TABLET,
+      height: SCREEN_HEIGHT,
+    });
+
+    await openWith(page, {
+      ...DEFAULT_LIBRARY_VIEW,
+      coversPerRow: MOST_COVERS_PER_ROW,
+    });
+
+    const widths = await columnWidthsOf(seriesList(page));
+    expect(widths.length).toBeLessThan(MOST_COVERS_PER_ROW.tablet);
+    expect(Math.min(...widths)).toBeGreaterThanOrEqual(
+      NARROWEST_COVER * LARGEST_TEXT_SCALE,
+    );
+  });
+
+  test("lays out the rows by the covers the largest text draws, as far as the last series", async ({
+    page,
+  }) => {
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await page.setViewportSize({
+      width: EXPANDED_TABLET,
+      height: SCREEN_HEIGHT,
+    });
+    await openWith(page, {
+      ...DEFAULT_LIBRARY_VIEW,
+      coversPerRow: MOST_COVERS_PER_ROW,
+    });
+    const columns = await columnsOf(seriesList(page));
+    await expectRowsToFillTheScreen(page);
+
+    const last = seriesList(page).getByText(LAST_TITLE);
+    await expect(async () => {
+      await page.getByRole("main").evaluate((main) => {
+        main.scrollTo({ top: main.scrollHeight });
+      });
+      await expect(last).toBeInViewport({ timeout: SCROLL_RETRY_MS });
+    }).toPass({ intervals: [SCROLL_RETRY_MS] });
+
+    const firstLaidOut = await seriesList(page)
+      .getByRole("listitem")
+      .first()
+      .getAttribute("aria-posinset");
+    expect((Number(firstLaidOut) - 1) % columns).toBe(0);
+    await expect(seriesList(page).getByRole("listitem").last()).toHaveAttribute(
+      "aria-posinset",
+      String(SERIES_IN_CATALOG),
+    );
+    expect(
+      await seriesList(page).evaluate((list) =>
+        list.parentElement?.style.getPropertyValue("--row-count"),
+      ),
+    ).toBe(String(Math.ceil(SERIES_IN_CATALOG / columns)));
+  });
 
   test("keeps a dense grid's book counts inside their columns in the pseudo-locale at every width", async ({
     page,

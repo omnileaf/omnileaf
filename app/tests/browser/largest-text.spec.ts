@@ -1,6 +1,8 @@
 import type { Page } from "@playwright/test";
 
 import {
+  COVERS_PER_ROW,
+  type CoversPerRow,
   DEFAULT_LIBRARY_VIEW,
   type LibraryDisplay,
 } from "../../src/lib/ipc/bindings.ts";
@@ -31,7 +33,24 @@ const DISPLAYS: readonly LibraryDisplay[] = [
   "covers",
   "list",
 ];
-const SERIES_IN_LIBRARY = 24;
+const SERIES_IN_LIBRARY = 60;
+const LIBRARY_WIDTHS = [390, 744, 840, 1024, 1200, 1280, 1440];
+const LIBRARY_HEIGHT = 900;
+const SWEEPING_SCREEN = "-tablet";
+const LANGUAGES = ["en", "en-XA"] as const;
+const COVERS_PER_ROW_CHOICES = {
+  "the default covers per row": DEFAULT_LIBRARY_VIEW.coversPerRow,
+  "the most covers per row": {
+    phone: COVERS_PER_ROW.phone.most,
+    tablet: COVERS_PER_ROW.tablet.most,
+    desktop: COVERS_PER_ROW.desktop.most,
+  },
+  "the most covers per row that still show book counts": {
+    phone: 3,
+    tablet: 8,
+    desktop: 8,
+  },
+} as const satisfies Record<string, CoversPerRow>;
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;
 const FIRST_LAUNCH_STEPS = ["welcome", "home", "link", "choices", "ready"];
 
@@ -79,9 +98,9 @@ for (const platform of PLATFORMS) {
       await setTextScale(page, LARGEST_TEXT_SCALE);
     });
 
-    async function expectNothingSpills(page: Page): Promise<void> {
-      expect(await sidewaysOverflow(page, "body")).toEqual([]);
-      expect(await textSpillingDown(page)).toEqual([]);
+    async function expectNothingSpills(page: Page, where = ""): Promise<void> {
+      expect(await sidewaysOverflow(page, "body"), where).toEqual([]);
+      expect(await textSpillingDown(page), where).toEqual([]);
     }
 
     for (const path of PAGES) {
@@ -104,33 +123,59 @@ for (const platform of PLATFORMS) {
     }
 
     for (const display of DISPLAYS) {
-      test.describe(`with series shown as ${display}`, () => {
-        test.use({
-          backend: {
-            ...onPlatform(platform).backend,
-            librarySeries: pagedSeries(() =>
-              sampleSeries(SERIES_IN_LIBRARY).map((series, index) => ({
-                ...series,
-                cover: `thumb/v1/0190a3e4-0000-8000-8000-000000000001/${String(index + 1)}/1`,
-              })),
-            ),
-            librarySeriesCount: () => SERIES_IN_LIBRARY,
-            libraryView: () => ({ ...DEFAULT_LIBRARY_VIEW, display }),
-          },
-        });
+      for (const [choice, coversPerRow] of Object.entries(
+        COVERS_PER_ROW_CHOICES,
+      )) {
+        for (const language of LANGUAGES) {
+          test.describe(`with series shown as ${display} at ${choice} in ${language}`, () => {
+            test.use({
+              backend: {
+                ...onPlatform(platform).backend,
+                librarySeries: pagedSeries(() =>
+                  sampleSeries(SERIES_IN_LIBRARY).map((series, index) => ({
+                    ...series,
+                    cover: `thumb/v1/0190a3e4-0000-8000-8000-000000000001/${String(index + 1)}/1`,
+                  })),
+                ),
+                librarySeriesCount: () => SERIES_IN_LIBRARY,
+                libraryView: () => ({
+                  ...DEFAULT_LIBRARY_VIEW,
+                  display,
+                  coversPerRow,
+                }),
+              },
+            });
 
-        test("fits the library without spilling", async ({ page }) => {
-          await page.route(fakeProtocolRoute("omni"), (route) =>
-            route.fulfill({ contentType: "image/svg+xml", body: COVER_IMAGE }),
-          );
-          await page.goto("/");
-          await expect(
-            page.getByText("Sample Series 0001").first(),
-          ).toBeVisible();
+            test("fits the library without spilling at every width", async ({
+              page,
+            }, testInfo) => {
+              test.skip(
+                !testInfo.project.name.endsWith(SWEEPING_SCREEN),
+                "each engine sweeps every width once, from a tablet",
+              );
+              await page.addInitScript((chosen) => {
+                localStorage.setItem("omnileaf.language", chosen);
+              }, language);
+              await page.route(fakeProtocolRoute("omni"), (route) =>
+                route.fulfill({
+                  contentType: "image/svg+xml",
+                  body: COVER_IMAGE,
+                }),
+              );
+              await page.goto("/");
+              await expect(
+                page.getByText("Sample Series 0001").first(),
+              ).toBeVisible();
 
-          await expectNothingSpills(page);
-        });
-      });
+              for (const width of LIBRARY_WIDTHS) {
+                await page.setViewportSize({ width, height: LIBRARY_HEIGHT });
+
+                await expectNothingSpills(page, `at ${String(width)}px`);
+              }
+            });
+          });
+        }
+      }
     }
 
     test.describe("on first launch", () => {

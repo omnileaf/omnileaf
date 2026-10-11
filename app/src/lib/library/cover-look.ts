@@ -18,7 +18,7 @@ interface SizeLooks {
 
 const PHONE_LOOKS: SizeLooks = {
   base: {
-    gap: "max-medium:gap-cover-gap",
+    gap: "max-medium:covers-gap-cover-gap",
     title: "max-medium:text-cover-title",
     bookCount: "",
   },
@@ -26,7 +26,7 @@ const PHONE_LOOKS: SizeLooks = {
     {
       fromCoversPerRow: 5,
       look: {
-        gap: "max-medium:gap-sm",
+        gap: "max-medium:covers-gap-sm",
         title: "max-medium:text-cover-title-tiny",
         bookCount: "max-medium:hidden",
       },
@@ -34,7 +34,7 @@ const PHONE_LOOKS: SizeLooks = {
     {
       fromCoversPerRow: 4,
       look: {
-        gap: "max-medium:gap-cover-gap-tight",
+        gap: "max-medium:covers-gap-cover-gap-tight",
         title: "max-medium:text-cover-title-small",
         bookCount: "max-medium:hidden",
       },
@@ -44,7 +44,7 @@ const PHONE_LOOKS: SizeLooks = {
 
 const TABLET_LOOKS: SizeLooks = {
   base: {
-    gap: "medium:max-large:gap-cover-gap-wide",
+    gap: "medium:max-large:covers-gap-cover-gap-wide",
     title: "medium:max-large:text-cover-title-wide",
     bookCount: "",
   },
@@ -52,7 +52,7 @@ const TABLET_LOOKS: SizeLooks = {
     {
       fromCoversPerRow: 7,
       look: {
-        gap: "medium:max-large:gap-cover-gap",
+        gap: "medium:max-large:covers-gap-cover-gap",
         title: "medium:max-large:text-cover-title-wide",
         bookCount: "",
       },
@@ -62,7 +62,7 @@ const TABLET_LOOKS: SizeLooks = {
 
 const DESKTOP_LOOKS: SizeLooks = {
   base: {
-    gap: "large:gap-xl",
+    gap: "large:covers-gap-xl",
     title: "large:text-cover-title-wide",
     bookCount: "",
   },
@@ -70,7 +70,7 @@ const DESKTOP_LOOKS: SizeLooks = {
     {
       fromCoversPerRow: 9,
       look: {
-        gap: "large:gap-cover-gap",
+        gap: "large:covers-gap-cover-gap",
         title: "large:text-cover-title-small",
         bookCount: "large:hidden",
       },
@@ -78,7 +78,7 @@ const DESKTOP_LOOKS: SizeLooks = {
     {
       fromCoversPerRow: 7,
       look: {
-        gap: "large:gap-cover-gap-loose",
+        gap: "large:covers-gap-cover-gap-loose",
         title: "large:text-cover-title",
         bookCount: "",
       },
