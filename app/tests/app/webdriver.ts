@@ -191,6 +191,26 @@ export class Session {
     return this.elementAt(locator, id);
   }
 
+  /** Answers `undefined` rather than failing when nothing matches within `timeoutMs`, for what may not be there at all. */
+  async findWithin(
+    locator: Locator,
+    timeoutMs: number,
+  ): Promise<WebElement | undefined> {
+    try {
+      const id = await pollUntil(
+        () => this.findShown(locator),
+        timeoutMs,
+        `the element at ${locator.value}`,
+      );
+      return this.elementAt(locator, id);
+    } catch (error) {
+      if (error instanceof NotReadyError) {
+        return undefined;
+      }
+      throw error;
+    }
+  }
+
   /** Runs `script` in the page until it returns `true`, for what no element's presence can show, such as an image having loaded. */
   async waitUntil(
     script: string,
