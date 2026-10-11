@@ -156,6 +156,7 @@
   --spacing-cover-gap-tight: 0.625rem;
   --spacing-cover-gap-loose: 1.125rem;
   --spacing-cover-min: 2.5rem;
+  --spacing-compact-cover-min: calc(2.125em + 0.875rem);
   --spacing-band: 0.375rem;
   --spacing-band-wide: 0.625rem;
   --spacing-band-fade: 1.25rem;
@@ -274,7 +275,8 @@
   --container-segmented-touch: 30rem;
   --container-crash-report: 26.25rem;
   --container-preview-sides: 18em;
-  --container-cover-title: calc(2.25em + 1.25rem);
+  --container-cover-title: calc(2.125em + 0.6875rem);
+  --container-cover-title-wide: calc(2.125em + 1.25rem);
 
   --radius-control: 0.625rem;
   --radius-row: 0.5rem;
@@ -709,6 +711,10 @@
   gap: var(--covers-gap);
 }
 
+@utility covers-fit-titles {
+  --covers-title-min: var(--spacing-compact-cover-min);
+}
+
 @utility grid-cols-covers-per-row {
   --covers-per-row: var(--phone-covers-per-row);
   --covers-track-slack: 1px;
@@ -717,6 +723,7 @@
     minmax(
       max(
         calc(var(--spacing-cover-min) * var(--text-scale)),
+        var(--covers-title-min, 0px),
         calc(
           (100% - (var(--covers-per-row) - 1) * var(--covers-gap)) /
             var(--covers-per-row) - var(--covers-track-slack)

@@ -48,7 +48,8 @@ const NARROWEST_SCREENS = [320, 600, 840, 1200];
 const TABLET_NARROWEST = 600;
 const EXPANDED_TABLET = 840;
 const TEXT_SCALES = [1, 1.15, 1.3, 1.5, 1.75, 2];
-const NARROW_COMPACT_WIDTHS = [600, 640, 700, 744, 840, 900, 1200];
+const COMPACT_WIDTHS = [600, 640, 700, 744, 840, 900, 1024, 1200, 1280, 1440];
+const DRAWN_DISPLAYS = ["grid", "compact", "covers"] as const;
 const DENSE_GRID_WIDTHS = [600, 744, 840, 1024, 1200, 1280, 1440];
 const SCREEN_HEIGHT = 900;
 const SCROLL_RETRY_MS = 500;
@@ -188,6 +189,16 @@ function columnWidthsOf(list: Locator): Promise<number[]> {
   );
 }
 
+function titlesOutOfSight(list: Locator): Promise<number> {
+  return list.evaluate(
+    (element) =>
+      [...element.querySelectorAll("li p")].filter((title) => {
+        const { width, height } = title.getBoundingClientRect();
+        return width * height <= 1;
+      }).length,
+  );
+}
+
 function pixels(locator: Locator, property: "columnGap" | "fontSize") {
   return locator.evaluate(
     (element, name) => Number.parseFloat(getComputedStyle(element)[name]),
@@ -226,21 +237,24 @@ test.describe("at every text size", () => {
     "each engine sets every width itself, from the desktop",
   );
 
-  test("draws each size's most covers per row down to its narrowest screen at the default text size", async ({
-    page,
-  }) => {
-    for (const width of NARROWEST_SCREENS) {
-      await page.setViewportSize({ width, height: SCREEN_HEIGHT });
-      await openWith(page, {
-        ...DEFAULT_LIBRARY_VIEW,
-        coversPerRow: MOST_COVERS_PER_ROW,
-      });
+  for (const display of DRAWN_DISPLAYS) {
+    test(`draws each size's most covers per row as ${display} down to its narrowest screen at the default text size`, async ({
+      page,
+    }) => {
+      for (const width of NARROWEST_SCREENS) {
+        await page.setViewportSize({ width, height: SCREEN_HEIGHT });
+        await openWith(page, {
+          ...DEFAULT_LIBRARY_VIEW,
+          display,
+          coversPerRow: MOST_COVERS_PER_ROW,
+        });
 
-      expect(await columnsOf(seriesList(page)), `at ${String(width)}px`).toBe(
-        MOST_COVERS_PER_ROW[screenSizeOf(page)],
-      );
-    }
-  });
+        expect(await columnsOf(seriesList(page)), `at ${String(width)}px`).toBe(
+          MOST_COVERS_PER_ROW[screenSizeOf(page)],
+        );
+      }
+    });
+  }
 
   test("draws fewer, wider covers per row than asked once the largest text needs the room", async ({
     page,
@@ -264,7 +278,7 @@ test.describe("at every text size", () => {
   });
 
   for (const scale of TEXT_SCALES) {
-    test(`keeps every compact title whole or out of sight in the narrowest covers with the text at ${String(scale)} times its size`, async ({
+    test(`keeps every compact title in sight and whole in the narrowest covers with the text at ${String(scale)} times its size`, async ({
       page,
     }) => {
       firstTitle = LONG_TITLE;
@@ -275,41 +289,38 @@ test.describe("at every text size", () => {
         coversPerRow: MOST_COVERS_PER_ROW,
       });
 
-      for (const width of NARROW_COMPACT_WIDTHS) {
+      for (const width of COMPACT_WIDTHS) {
         await page.setViewportSize({ width, height: SCREEN_HEIGHT });
 
         expect(await sidewaysOverflow(page), `at ${String(width)}px`).toEqual(
           [],
         );
+        expect(
+          await titlesOutOfSight(seriesList(page)),
+          `at ${String(width)}px`,
+        ).toBe(0);
       }
     });
   }
 
-  test("hides a compact title from covers too narrow to hold it, still naming the series", async ({
+  test("shows a compact title in a tablet's narrowest covers at the most covers per row", async ({
     page,
   }) => {
     await page.setViewportSize({
       width: TABLET_NARROWEST,
       height: SCREEN_HEIGHT,
     });
+
     await openWith(page, {
       ...DEFAULT_LIBRARY_VIEW,
       display: "compact",
       coversPerRow: MOST_COVERS_PER_ROW,
     });
-    const title = firstSeries(page).getByText(FIRST_TITLE);
 
-    const narrow = await boxOf(title);
-    const narrowSnapshot = await firstSeries(page).ariaSnapshot();
-    await page.setViewportSize({
-      width: EXPANDED_TABLET,
-      height: SCREEN_HEIGHT,
-    });
-    const roomy = await boxOf(title);
-
-    expect(narrow.width * narrow.height).toBeLessThanOrEqual(1);
-    expect(roomy.width * roomy.height).toBeGreaterThan(1);
-    expect(narrowSnapshot).toContain(FIRST_TITLE);
+    const title = await boxOf(firstSeries(page).getByText(FIRST_TITLE));
+    expect(await columnsOf(seriesList(page))).toBe(MOST_COVERS_PER_ROW.tablet);
+    expect(title.width * title.height).toBeGreaterThan(1);
+    expect(await sidewaysOverflow(page)).toEqual([]);
   });
 
   test("lays out the rows by the covers the largest text draws, as far as the last series", async ({
