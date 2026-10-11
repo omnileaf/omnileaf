@@ -35,6 +35,7 @@ thiserror.workspace = true
 
 [target.'cfg(target_os = "ios")'.dependencies]
 omnileaf-folder-access.workspace = true
+omnileaf-system-bars.workspace = true
 
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 objc2-foundation.workspace = true
@@ -53,6 +54,7 @@ tauri-plugin-wdio-webdriver = { workspace = true, optional = true }
 
 [dev-dependencies]
 omnileaf-db.workspace = true
+omnileaf-system-bars.workspace = true
 tauri = { workspace = true, features = ["test"] }
 
 [lints]
