@@ -51,7 +51,7 @@
       >
         <span
           aria-hidden="true"
-          class="shrink-0 rounded-full bg-warning block-step-dot inline-step-dot"
+          class="shrink-0 rounded-full bg-warning-strong block-step-dot inline-step-dot"
         ></span>
         {status}
       </p>
