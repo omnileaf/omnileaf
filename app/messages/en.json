@@ -347,7 +347,7 @@
     }
   ],
   "library_remove_books_title_uncounted": "Remove the books of {name}?",
-  "library_remove_books_note": "Their files weren't found. Reading progress and notes will be removed too.",
+  "library_remove_books_note": "Their files weren't found. If they come back, their reading progress returns with them.",
   "library_remove_books_confirm": "Remove books",
   "library_remove_books_cancel": "Cancel",
   "library_remove_books_failed": "Couldn't remove the books",

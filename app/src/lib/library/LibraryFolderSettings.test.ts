@@ -983,7 +983,7 @@ test("shows the folder with its place and books, and what goes with them", async
   await expect
     .element(
       dialog.getByText(
-        "Their files weren't found. Reading progress and notes will be removed too.",
+        "Their files weren't found. If they come back, their reading progress returns with them.",
       ),
     )
     .toBeVisible();
