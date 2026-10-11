@@ -35,21 +35,20 @@ function capability(name: string): string {
   return value;
 }
 
-/** The library's home folder, which the app keeps in its Application Support folder beside the library database. */
+/** The library's home folder, which the Files app shows as On My iPhone › Omnileaf. */
 async function homeFolder(): Promise<string> {
-  const bundleId = capability("appium:bundleId");
   const { stdout } = await run(
     "xcrun",
     [
       "simctl",
       "get_app_container",
       capability("appium:udid"),
-      bundleId,
+      capability("appium:bundleId"),
       "data",
     ],
     { timeout: SIMCTL_TIMEOUT_MS },
   );
-  return join(stdout.trim(), "Library", "Application Support", bundleId);
+  return join(stdout.trim(), "Documents");
 }
 
 async function removeAddedSeries(): Promise<void> {
