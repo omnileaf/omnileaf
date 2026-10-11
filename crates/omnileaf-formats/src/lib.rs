@@ -8,6 +8,7 @@ mod fingerprint;
 mod folder;
 mod limits;
 mod natural;
+mod sevenz_book;
 mod storage;
 mod zip_book;
 
