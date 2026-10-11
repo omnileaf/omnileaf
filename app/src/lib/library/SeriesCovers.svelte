@@ -80,7 +80,12 @@
   </div>
   <div class="min-inline-none">
     <p class={["truncate font-semibold", look.title]}>{shown.title}</p>
-    <p class={["text-caption text-muted medium:mbs-2xs", look.bookCount]}>
+    <p
+      class={[
+        "truncate text-caption text-muted medium:mbs-2xs",
+        look.bookCount,
+      ]}
+    >
       {m.library_series_books({ count: one.bookCount })}
     </p>
   </div>

@@ -2,6 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 
 import {
   COVERS_PER_ROW,
+  type CoversPerRow,
   DEFAULT_LIBRARY_VIEW,
   type LibraryDisplay,
   type LibraryView,
@@ -14,6 +15,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   screenSizeOf,
+  sidewaysOverflow,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -39,6 +41,13 @@ interface ListLook {
 }
 
 const PANEL_WIDTH = 360;
+const DENSE_GRID_WIDTHS = [600, 744, 840, 1024, 1200, 1280, 1440];
+const SCREEN_HEIGHT = 900;
+const MOST_COVERS_PER_ROW_WITH_BOOK_COUNTS = {
+  phone: 3,
+  tablet: 8,
+  desktop: 8,
+} as const satisfies CoversPerRow;
 
 const RANGE_LABELS = {
   phone: "2 to 5 on this phone",
@@ -185,6 +194,33 @@ test("spaces the grid and sizes its titles for each number of covers per row", a
     expect(await pixels(title, "fontSize")).toBe(look.titleSize);
     await expect(bookCount).toBeVisible({ visible: look.showsBookCount });
   }
+});
+
+test.describe("at every text size", () => {
+  test.skip(
+    ({ isMobile }) => isMobile,
+    "each engine sets every width itself, from the desktop",
+  );
+
+  test("keeps a dense grid's book counts inside their columns in the pseudo-locale at every width", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("omnileaf.language", "en-XA");
+    });
+    storedView = {
+      ...DEFAULT_LIBRARY_VIEW,
+      coversPerRow: MOST_COVERS_PER_ROW_WITH_BOOK_COUNTS,
+    };
+    await page.goto("/");
+    await expect(page.getByText(FIRST_TITLE).first()).toBeVisible();
+
+    for (const width of DENSE_GRID_WIDTHS) {
+      await page.setViewportSize({ width, height: SCREEN_HEIGHT });
+
+      expect(await sidewaysOverflow(page), `at ${String(width)}px`).toEqual([]);
+    }
+  });
 });
 
 test("draws a compact grid with each title on a band across the foot of its cover", async ({
