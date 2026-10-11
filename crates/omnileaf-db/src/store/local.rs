@@ -34,6 +34,7 @@ impl LocalReplica {
         self.next_seq
     }
 
+    /// SQLite integers stop at `i64::MAX`, so a saturated number fails to save rather than being reused.
     pub(crate) const fn advance_seq_saturating(&mut self) {
         self.next_seq = self.next_seq.saturating_add(1);
     }
