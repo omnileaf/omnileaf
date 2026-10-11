@@ -1,3 +1,5 @@
+#[cfg(unix)]
+mod descriptor;
 mod document_tree;
 mod grants;
 #[cfg(target_os = "ios")]
