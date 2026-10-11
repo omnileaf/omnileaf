@@ -6,7 +6,9 @@
   import CrashTestList from "#lib/crash-tests/CrashTestList.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { getScheduledRescansSetting } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
   import type { PageProps } from "./$types";
 
@@ -15,11 +17,24 @@
   let { data }: PageProps = $props();
 
   const tests = new CrashTests(commands, getCrashReporting());
+  const scheduledRescans = getScheduledRescansSetting();
+  const isCheckingFolders = $derived(
+    scheduledRescans.isOnFor(data.appInfo.platform),
+  );
 </script>
 
 <SectionHeading title={m.advanced_title()} />
-{#if data.appInfo.isDevelopmentBuild}
-  <div class="mbs-pane-gap flex flex-col gap-pane-gap">
+<div class="mbs-pane-gap flex flex-col gap-pane-gap">
+  <SettingSwitch
+    label={m.advanced_scheduled_rescans()}
+    description={m.advanced_scheduled_rescans_help()}
+    isOn={isCheckingFolders}
+    onToggle={() => {
+      scheduledRescans.turn(!isCheckingFolders);
+    }}
+    class="rounded-card border border-border bg-card"
+  />
+  {#if data.appInfo.isDevelopmentBuild}
     <div
       role="note"
       class="flex items-start gap-md rounded-card border border-border bg-card py-md ps-md pe-list-row touch:max-medium:ps-list-row"
@@ -38,5 +53,5 @@
       </span>
     </div>
     <CrashTestList {tests} version={data.appInfo.version} />
-  </div>
-{/if}
+  {/if}
+</div>

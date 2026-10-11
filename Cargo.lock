@@ -3190,6 +3190,7 @@ dependencies = [
 name = "omnileaf-app"
 version = "0.0.0"
 dependencies = [
+ "objc2-foundation",
  "omnileaf-db",
  "omnileaf-engine",
  "omnileaf-folder-access",
