@@ -117,18 +117,17 @@ struct KeyName {
 impl KeyName {
     const fn new(name: &'static str) -> Self {
         Self {
-            length_prefix: fixed_length_prefix(name.len()),
+            length_prefix: compile_time_length_prefix(name.len()),
             name,
         }
     }
 }
 
-/// Only for lengths known at compile time, where the assertion fails the build rather than panicking.
 #[expect(
     clippy::cast_possible_truncation,
     reason = "the assertion keeps the length within u32"
 )]
-const fn fixed_length_prefix(length: usize) -> [u8; 4] {
+const fn compile_time_length_prefix(length: usize) -> [u8; 4] {
     assert!(length <= u32::MAX as usize);
     (length as u32).to_le_bytes()
 }
@@ -144,7 +143,7 @@ impl NaturalKey {
     }
 
     fn fixed_part<const LENGTH: usize>(mut self, part: &[u8; LENGTH]) -> Self {
-        self.0.update(&const { fixed_length_prefix(LENGTH) });
+        self.0.update(&const { compile_time_length_prefix(LENGTH) });
         self.0.update(part);
         self
     }

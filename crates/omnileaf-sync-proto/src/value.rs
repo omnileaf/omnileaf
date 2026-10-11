@@ -9,7 +9,7 @@ const NULL: u8 = 0xf6;
 
 const INITIAL_BYTE_LENGTH: usize = 1;
 
-/// A register value the reading state knows, written as deterministic CBOR so every device encodes it to the same bytes.
+/// Written as deterministic CBOR so every device encodes a value to the same bytes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Value {
     Null,

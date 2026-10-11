@@ -88,7 +88,6 @@ fn any_register() -> impl Strategy<Value = Register> {
         .prop_map(|(class, hlc, node, value)| write(class, hlc, node, value))
 }
 
-/// The writes alongside the same writes, some of them twice, in a shuffled order.
 fn redelivered(writes: Vec<Register>) -> impl Strategy<Value = (Vec<Register>, Vec<Register>)> {
     let count = writes.len();
     subsequence(writes.clone(), 0..=count).prop_flat_map(move |repeats| {
