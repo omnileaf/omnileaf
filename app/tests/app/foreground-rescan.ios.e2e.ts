@@ -16,8 +16,8 @@ const SIMCTL_TIMEOUT_MS = 30_000;
 const RESCAN_TIMEOUT_MS = 60_000;
 const TEST_TIMEOUT_MS = 180_000;
 const STAYS_IN_THE_BACKGROUND = -1;
-const SUSPENDED_IN_THE_BACKGROUND = 2;
-const SUSPEND_TIMEOUT_MS = 30_000;
+const BACKGROUND_APP_STATES: ReadonlySet<unknown> = new Set([2, 3]);
+const LEAVE_SCREEN_TIMEOUT_MS = 30_000;
 
 const ADDED_SERIES_TITLE = xpath(
   `//main//*[normalize-space()='${ADDED_SERIES}']`,
@@ -59,12 +59,12 @@ async function removeAddedSeries(): Promise<void> {
   });
 }
 
-/** Asks the device rather than the page, since a page stops answering scripts once its app leaves the screen. */
-async function isSuspended(bundleId: string): Promise<true | undefined> {
+/** Asks the device rather than the page, since a page stops answering scripts once its app leaves the screen; the app may run on in the background or be suspended. */
+async function isInBackground(bundleId: string): Promise<true | undefined> {
   const state = await appSession().runMobileCommand("queryAppState", {
     bundleId,
   });
-  return state === SUSPENDED_IN_THE_BACKGROUND ? true : undefined;
+  return BACKGROUND_APP_STATES.has(state) ? true : undefined;
 }
 
 /** Writes a book of one sample page, since the library files a copy of a book it already holds under that book's own series. */
@@ -95,9 +95,9 @@ test(
         seconds: STAYS_IN_THE_BACKGROUND,
       });
       await pollUntil(
-        () => isSuspended(bundleId),
-        SUSPEND_TIMEOUT_MS,
-        "the app suspended in the background",
+        () => isInBackground(bundleId),
+        LEAVE_SCREEN_TIMEOUT_MS,
+        "the app in the background",
       );
       await addOnePageBook(sample.folder, join(home, ADDED_SERIES));
 
