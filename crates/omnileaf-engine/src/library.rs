@@ -1,4 +1,9 @@
-use std::{fs, io, path::PathBuf, sync::Arc};
+use std::{
+    fs, io,
+    path::PathBuf,
+    sync::{self, Arc, PoisonError},
+    time::Duration,
+};
 
 use omnileaf_db::{
     Config, Database,
@@ -12,10 +17,11 @@ use omnileaf_db::{
     library_view::{library_view, set_library_view},
     store::{Changed, Clock, Store},
 };
-use omnileaf_formats::{LocalStorage, Storage};
+use omnileaf_formats::LocalStorage;
 use tokio::{
-    sync::{Mutex, broadcast},
+    sync::{Mutex, MutexGuard, broadcast},
     task::spawn_blocking,
+    time::{MissedTickBehavior, interval},
 };
 
 use crate::{
@@ -24,10 +30,13 @@ use crate::{
     RescanOutcome, ResolvedBookmark, ScanProgress, SeriesCursor, SeriesPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     cover_thumbnails::CoverFile,
+    describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
     library_changes::CatalogWritten,
     library_layout::folder_name,
     rescan::rescan,
+    rescan_conditions::{RescanConditions, Storage},
+    rescan_schedule::RescanSchedule,
     scan::{Target, find_books_in, saturating_u32, scan, walk},
 };
 
@@ -36,6 +45,7 @@ const BACKUP_FOLDER: &str = "backups";
 const FOLDERS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
 const CATALOG_WRITE_BACKLOG: usize = 16;
+const SCHEDULE_CHECK_EVERY: Duration = Duration::from_mins(1);
 const MAPPED_DATABASE_BYTES: u32 = if IS_MOBILE {
     64 * MEBIBYTE
 } else {
@@ -47,12 +57,13 @@ pub struct Library {
     store: Store,
     /// Held for each scan and folder removal, so none compares a folder with a catalog another is changing.
     scanning: Mutex<()>,
+    schedule: sync::Mutex<RescanSchedule>,
     catalog_writes: broadcast::Sender<CatalogWritten>,
-    local_storage: Arc<dyn Storage>,
+    local_storage: Arc<dyn omnileaf_formats::Storage>,
 }
 
 struct RootFiles {
-    storage: Arc<dyn Storage>,
+    storage: Arc<dyn omnileaf_formats::Storage>,
     folder: PathBuf,
 }
 
@@ -111,6 +122,7 @@ impl Library {
         let library = Self {
             store: Store::new(database, clock),
             scanning: Mutex::new(()),
+            schedule: sync::Mutex::default(),
             catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
             local_storage: Arc::new(LocalStorage),
         };
@@ -236,9 +248,85 @@ impl Library {
     pub async fn rescan_folder(
         &self,
         id: FolderId,
+        on_progress: impl FnMut(ScanProgress) + Send,
+    ) -> Result<FolderRescan, LibraryError> {
+        let scanning = self.scanning.lock().await;
+        self.rescan_while_scanning(id, scanning, on_progress).await
+    }
+
+    /// Rescans each folder whose turn has come, after awaiting `before_rescanning`, and leaves the rest for a later call once another scan is running.
+    #[tracing::instrument(skip_all)]
+    pub async fn rescan_due_folders(
+        &self,
+        conditions: &impl RescanConditions,
+        before_rescanning: impl Future<Output = ()>,
+    ) -> Result<Vec<FolderRescan>, LibraryError> {
+        let folders = self.listed_folders().await?;
+        let ids: Vec<FolderId> = folders.iter().map(|(id, _)| *id).collect();
+        let location_of = |id: FolderId| {
+            folders
+                .iter()
+                .find_map(|(listed, path)| (*listed == id).then_some(path.as_path()))
+        };
+        let storage_of = |id: FolderId| {
+            location_of(id).map_or(Storage::Local, |path| conditions.storage_of(path))
+        };
+        let due = self
+            .schedule()
+            .due(&ids, self.store.clock().now_unix_ms(), storage_of);
+        if due.is_empty() {
+            return Ok(Vec::new());
+        }
+        before_rescanning.await;
+        let mut rescans = Vec::new();
+        for id in due {
+            let Ok(scanning) = self.scanning.try_lock() else {
+                tracing::debug!("leave the folders whose turn came until no other scan runs");
+                break;
+            };
+            let rescan = self.rescan_while_scanning(id, scanning, |_| {}).await;
+            let now_ms = self.store.clock().now_unix_ms();
+            match unless_removed(rescan) {
+                Ok(Some(rescan)) => {
+                    self.schedule()
+                        .record(id, &rescan.outcome, storage_of(id), now_ms);
+                    rescans.push(rescan);
+                }
+                Ok(None) => {}
+                Err(error) => {
+                    tracing::warn!(folder = %id, error = %describe_error(&error), "rescan a folder whose turn came");
+                    self.schedule().missed(id, now_ms);
+                }
+            }
+        }
+        Ok(rescans)
+    }
+
+    /// Rescans each folder as its turn comes for as long as it's awaited, never starting one while another scan runs.
+    pub async fn rescan_on_schedule<F: Future<Output = ()>>(
+        &self,
+        conditions: &impl RescanConditions,
+        mut before_rescanning: impl FnMut() -> F,
+    ) {
+        let mut checks = interval(SCHEDULE_CHECK_EVERY);
+        checks.set_missed_tick_behavior(MissedTickBehavior::Delay);
+        loop {
+            checks.tick().await;
+            if let Err(error) = self
+                .rescan_due_folders(conditions, before_rescanning())
+                .await
+            {
+                tracing::warn!(error = %describe_error(&error), "rescan the folders whose turn came");
+            }
+        }
+    }
+
+    async fn rescan_while_scanning(
+        &self,
+        id: FolderId,
+        _scanning: MutexGuard<'_, ()>,
         mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderRescan, LibraryError> {
-        let _scanning = self.scanning.lock().await;
         let root = self
             .store
             .database()
@@ -367,21 +455,38 @@ impl Library {
     #[tracing::instrument(skip_all)]
     pub async fn rescan_folders(&self) -> Result<Vec<FolderRescan>, LibraryError> {
         let mut rescans = Vec::new();
+        for id in self.folder_ids().await? {
+            rescans.extend(unless_removed(self.rescan_folder(id, |_| {}).await)?);
+        }
+        Ok(rescans)
+    }
+
+    async fn folder_ids(&self) -> Result<Vec<FolderId>, LibraryError> {
+        let folders = self.listed_folders().await?;
+        Ok(folders.into_iter().map(|(id, _)| id).collect())
+    }
+
+    async fn listed_folders(&self) -> Result<Vec<(FolderId, PathBuf)>, LibraryError> {
+        let mut folders = Vec::new();
         let mut after = None;
         loop {
-            let page = self.folders(after).await?;
-            for folder in page.folders {
-                match self.rescan_folder(folder.id, |_| {}).await {
-                    Ok(rescan) => rescans.push(rescan),
-                    Err(LibraryError::FolderNotFound { id }) => {
-                        tracing::debug!(folder = %id, "skip a folder removed since the rescan listed it");
-                    }
-                    Err(error) => return Err(error),
-                }
-            }
+            let request = PageRequest {
+                after,
+                size: PageSize::try_from(FOLDERS_PER_PAGE)?,
+            };
+            let page = self
+                .store
+                .database()
+                .read(move |connection| library_roots(connection, &request))
+                .await?;
+            folders.extend(
+                page.items
+                    .into_iter()
+                    .map(|root| (FolderId(root.id), root.locator.into_path())),
+            );
             match page.next {
                 Some(next) => after = Some(next),
-                None => return Ok(rescans),
+                None => return Ok(folders),
             }
         }
     }
@@ -515,8 +620,26 @@ impl Library {
         }
     }
 
+    fn schedule(&self) -> sync::MutexGuard<'_, RescanSchedule> {
+        self.schedule.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
     fn now_ms(&self) -> i64 {
         i64::try_from(self.store.clock().now_unix_ms()).unwrap_or(i64::MAX)
+    }
+}
+
+/// Leaves out a folder removed since the rescan listed it.
+fn unless_removed(
+    rescan: Result<FolderRescan, LibraryError>,
+) -> Result<Option<FolderRescan>, LibraryError> {
+    match rescan {
+        Ok(rescan) => Ok(Some(rescan)),
+        Err(LibraryError::FolderNotFound { id }) => {
+            tracing::debug!(folder = %id, "skip a folder removed since the rescan listed it");
+            Ok(None)
+        }
+        Err(error) => Err(error),
     }
 }
 

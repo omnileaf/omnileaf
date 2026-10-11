@@ -9,11 +9,13 @@ mod folder_access;
 #[cfg(any(target_os = "linux", test))]
 mod folder_chooser;
 mod folder_picker;
+mod folder_storage;
 mod ipc_error;
 mod library_events;
 mod library_problem;
 mod omni_protocol;
 mod runtime_config;
+mod scheduled_rescans;
 mod system_bars;
 mod version_details;
 
@@ -26,6 +28,7 @@ use crate::{
     library_events::LibraryChangesForwarding,
     library_problem::{LibraryAtLaunch, LibraryProblem},
     runtime_config::RuntimeConfig,
+    scheduled_rescans::ScheduledRescans,
 };
 
 /// Where the cache goes inside a data folder set for tests, so they leave nothing in the platform's cache folder.
@@ -89,6 +92,7 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
         &library,
     ));
     app.manage(library);
+    app.manage(ScheduledRescans::start(app.handle().clone()));
     #[cfg(target_os = "ios")]
     folder_access::reopen_picked_folders_in_background(app.handle().clone());
     match open_covers(app, data_dir) {
