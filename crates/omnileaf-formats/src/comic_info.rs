@@ -76,7 +76,7 @@ pub enum ComicInfoError {
     NotComicInfo,
 }
 
-/// Reads a ComicInfo.xml document, refusing document type declarations so no external entity is ever read.
+/// Refuses document type declarations so no XML external entity is ever read.
 pub fn parse_comic_info(xml: &[u8]) -> Result<ComicInfo, ComicInfoError> {
     let mut reader = Reader::from_reader(xml);
     let mut info = ComicInfo::default();

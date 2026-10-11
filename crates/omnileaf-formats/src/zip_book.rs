@@ -20,7 +20,6 @@ use crate::{
 #[derive(Debug)]
 pub struct ZipBook {
     path: PathBuf,
-    /// Shared with the archive's reader, which seeks before every read, so sampling it never moves the reader.
     file: Arc<File>,
     archive: ZipArchive<BlockReader<Arc<File>>>,
     pages: Vec<Page>,
@@ -105,7 +104,7 @@ impl ZipBook {
             })
     }
 
-    /// Reads one page, stopping past the size limit in case the archive understates it.
+    /// Stops past the page size limit because a ZIP entry's recorded size can understate its real size.
     pub(crate) fn read_page(&mut self, index: usize) -> Result<Vec<u8>, FormatError> {
         let (Some(&entry_index), Some(page)) = (self.entries.get(index), self.pages.get(index))
         else {
@@ -129,7 +128,6 @@ impl ZipBook {
     }
 }
 
-/// Reads the archive's central directory, refusing more entries than the limits allow.
 pub(crate) fn archive_from(
     file: Arc<File>,
     path: &Path,

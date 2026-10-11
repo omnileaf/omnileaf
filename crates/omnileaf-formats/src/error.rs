@@ -7,7 +7,6 @@ use omnileaf_sync_proto::FingerprintError;
 
 use crate::ComicInfoError;
 
-/// An archive format Omnileaf recognises but can't open in this version.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum UnsupportedArchive {
     Rar,

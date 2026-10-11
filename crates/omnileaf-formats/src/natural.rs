@@ -17,7 +17,6 @@ impl Token {
     }
 }
 
-/// Orders names as people read them, ignoring case and width and comparing digit runs by value; only identical names compare equal.
 #[must_use]
 pub fn natural_cmp(left: &str, right: &str) -> Ordering {
     compare_tokens(&tokens(left), &tokens(right)).then_with(|| left.cmp(right))

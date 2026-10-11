@@ -18,7 +18,7 @@ pub(crate) enum Container {
 }
 
 impl Container {
-    /// Recognises an archive by its first bytes rather than its name, handing back the file it opened to look.
+    /// Recognises an archive by its magic bytes rather than its file extension.
     pub(crate) fn of(storage: &dyn Storage, path: &Path) -> Result<Self, FormatError> {
         if let Details::Folder { .. } = storage.details(path).map_err(read_failed(path))? {
             return Ok(Self::Folder);

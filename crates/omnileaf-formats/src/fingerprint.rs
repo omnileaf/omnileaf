@@ -24,7 +24,6 @@ pub fn fingerprint_book(path: &Path) -> Result<Fingerprint, FormatError> {
     fingerprint_book_with(path, &Limits::default())
 }
 
-/// Fingerprints an archive by its images' CRC-32s and sizes, or by sampled bytes when it has none, and a folder by its images' names, sizes and outer edges.
 pub fn fingerprint_book_with(path: &Path, limits: &Limits) -> Result<Fingerprint, FormatError> {
     match Container::of(&LocalStorage, path)? {
         Container::Folder => {
@@ -39,7 +38,7 @@ pub fn fingerprint_book_with(path: &Path, limits: &Limits) -> Result<Fingerprint
     }
 }
 
-/// Takes each image's CRC-32 and size from the central directory, so no entry is decompressed, and samples `raw` only when the archive has no images.
+/// A ZIP central directory records each entry's CRC-32 and size, so fingerprinting decompresses no entry.
 pub(crate) fn archive_fingerprint<R: Read + Seek>(
     path: &Path,
     archive: &mut ZipArchive<R>,
@@ -63,7 +62,6 @@ pub(crate) fn archive_fingerprint<R: Read + Seek>(
     Fingerprint::pmf1(images).map_err(|source| fingerprint_failed(path, source))
 }
 
-/// Reads only the head of the first image and the tail of the last, so scanning never reads a whole folder.
 pub(crate) fn folder_fingerprint(
     storage: &dyn Storage,
     path: &Path,

@@ -2,7 +2,6 @@ use std::io::{self, Read, Seek, SeekFrom};
 
 const BLOCK_LENGTH: u64 = 64 * 1024;
 
-/// Serves small reads from one cached block, so listing an archive costs a few reads of the file rather than several per entry.
 #[derive(Debug)]
 pub(crate) struct BlockReader<R> {
     inner: R,

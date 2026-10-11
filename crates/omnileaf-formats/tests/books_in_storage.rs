@@ -32,7 +32,6 @@ fn names_of(book: &Book) -> Vec<String> {
     book.pages().iter().map(|page| page.name.clone()).collect()
 }
 
-/// Serves a real folder under paths relative to it, counting each kind of call.
 #[derive(Debug, Default)]
 struct CountingStorage {
     root: PathBuf,
@@ -82,7 +81,6 @@ impl Storage for CountingStorage {
     }
 }
 
-/// A folder holding one page and one entry its storage can't read.
 #[derive(Debug)]
 struct FolderWithAnUnreadableEntry;
 

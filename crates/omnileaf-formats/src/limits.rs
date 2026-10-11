@@ -5,7 +5,6 @@ const MIB: u64 = 1024 * 1024;
 pub(crate) const COMIC_INFO_LIMIT: u64 = MIB;
 pub(crate) const COMIC_INFO_NAME: &str = "ComicInfo.xml";
 
-/// Bounds that keep a damaged or hostile archive from exhausting memory or disk.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Limits {
     pub max_entries: usize,
@@ -25,7 +24,6 @@ impl Default for Limits {
     }
 }
 
-/// Reads all of `reader`, or gives `None` once it holds more than `limit` bytes.
 pub(crate) fn read_within(reader: impl Read, limit: u64) -> io::Result<Option<Vec<u8>>> {
     let mut bytes = Vec::new();
     reader

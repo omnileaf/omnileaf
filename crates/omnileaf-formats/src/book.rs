@@ -22,7 +22,6 @@ pub enum Book {
 }
 
 impl Book {
-    /// The pages in reading order.
     #[must_use]
     pub fn pages(&self) -> &[Page] {
         match self {
@@ -31,7 +30,6 @@ impl Book {
         }
     }
 
-    /// The page the book shows as its cover: the first its [`ComicInfo`] marks as the front cover, or else its first page.
     #[must_use]
     pub fn cover_page(&self, comic_info: Option<&ComicInfo>) -> usize {
         comic_info
@@ -52,7 +50,6 @@ impl Book {
         }
     }
 
-    /// The book's ComicInfo.xml, if it has one; a damaged one is an error, never a reason the book can't open.
     pub fn comic_info(&mut self) -> Result<Option<ComicInfo>, FormatError> {
         let (path, xml) = match self {
             Self::Archive(book) => (book.path().to_owned(), book.read_comic_info()?),
@@ -64,7 +61,6 @@ impl Book {
         .transpose()
     }
 
-    /// The same fingerprint [`crate::fingerprint_book`] gives, from the book already open.
     pub fn fingerprint(&mut self) -> Result<Fingerprint, FormatError> {
         match self {
             Self::Archive(book) => book.fingerprint(),
@@ -77,12 +73,10 @@ pub fn open_book(path: &Path) -> Result<Book, FormatError> {
     open_book_with(path, &Limits::default())
 }
 
-/// Opens a folder of images, or an archive recognised by its first bytes rather than its name.
 pub fn open_book_with(path: &Path, limits: &Limits) -> Result<Book, FormatError> {
     open_book_in(Arc::new(LocalStorage), path, limits)
 }
 
-/// Opens a folder of images, or an archive recognised by its first bytes, reading only through `storage`.
 pub fn open_book_in(
     storage: Arc<dyn Storage>,
     path: &Path,
