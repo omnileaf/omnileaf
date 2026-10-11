@@ -17,6 +17,8 @@ mod power_mode;
 mod runtime_config;
 mod scheduled_rescans;
 mod system_bars;
+#[cfg(target_os = "android")]
+mod tree_storage;
 mod version_details;
 
 use std::{
@@ -69,6 +71,7 @@ pub fn run() {
     let app = app.plugin(tauri_plugin_dialog::init());
     #[cfg(target_os = "android")]
     let app = app
+        .plugin(omnileaf_folder_access::init())
         .plugin(system_bars::plugin())
         .plugin(power_mode::plugin());
     #[cfg(target_os = "ios")]
@@ -90,6 +93,8 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     let data_dir = config.data_dir.as_deref();
     let folders = library_folders(app, data_dir)?;
     let library = tauri::async_runtime::block_on(Library::open(folders, SystemClock))?;
+    #[cfg(target_os = "android")]
+    let library = tree_storage::read_trees(app, library, data_dir);
     app.manage(LibraryChangesForwarding::start(
         app.handle().clone(),
         &library,
