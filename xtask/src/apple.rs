@@ -82,7 +82,6 @@ struct SimctlDevice {
     state: String,
 }
 
-/// Reads `xcrun simctl list devices available --json`, keeping the iOS Simulators.
 pub(crate) fn ios_simulators(listing: &str) -> serde_json::Result<Vec<Simulator>> {
     let listing: SimctlListing = serde_json::from_str(listing)?;
     Ok(listing
@@ -101,7 +100,7 @@ pub(crate) fn ios_simulators(listing: &str) -> serde_json::Result<Vec<Simulator>
         .collect())
 }
 
-/// Reads `xcrun devicectl list devices`, keeping the physical iOS devices, which are reachable while they have a transport.
+/// `xcrun devicectl` reports a transport type only for a device it can reach.
 pub(crate) fn physical_ios_devices(listing: &str) -> serde_json::Result<Vec<PhysicalDevice>> {
     let listing: DevicectlListing = serde_json::from_str(listing)?;
     Ok(listing

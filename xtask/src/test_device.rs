@@ -72,7 +72,6 @@ impl fmt::Display for NoTestDevice {
 
 impl std::error::Error for NoTestDevice {}
 
-/// Prefers the device named, then a running emulator, then a connected phone, then an emulator to boot.
 pub(crate) fn pick_android<'a>(
     devices: &'a [Device],
     chosen: Option<&str>,
@@ -99,7 +98,6 @@ pub(crate) fn pick_android<'a>(
         .ok_or(NoTestDevice::NoAndroidDevice)
 }
 
-/// Prefers the Simulator named, then a booted one, then an iPhone Simulator to boot.
 pub(crate) fn pick_simulator<'a>(
     devices: &'a [Device],
     chosen: Option<&str>,
@@ -156,7 +154,6 @@ pub(crate) fn usable(device: &Device) -> Result<Pick<'_>, NoTestDevice> {
     }
 }
 
-/// Boots the emulator it picks and leaves it running afterwards, as Android Studio does.
 pub(crate) fn ready_android(
     machine: &impl Machine,
     toolchain: &android::Toolchain,
@@ -178,7 +175,6 @@ pub(crate) fn ready_android(
     Ok(AndroidTestDevice { serial, target })
 }
 
-/// Boots the Simulator it picks and leaves it running afterwards.
 pub(crate) fn ready_simulator(
     machine: &impl Machine,
     chosen: Option<&str>,

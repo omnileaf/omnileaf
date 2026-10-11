@@ -1,5 +1,3 @@
-//! The quick checks git runs before a push, chosen by what the pushed commits change.
-
 use std::{path::Path, process::Command};
 
 use anyhow::{Context, bail};
@@ -35,7 +33,6 @@ pub(crate) enum Base<'a> {
 }
 
 impl PushedRef {
-    /// What the pushed commits are compared with, or `None` for a deleted branch, which carries nothing to check.
     pub(crate) fn base(&self) -> Option<Base<'_>> {
         if is_missing(&self.local_sha) {
             None
@@ -68,7 +65,6 @@ pub(crate) fn parse(lines: &str) -> Vec<PushedRef> {
         .collect()
 }
 
-/// The gate steps for a push changing `changed`, in gate order; `None` means what changed is unknown, so every drift check runs.
 pub(crate) fn checks_for(changed: Option<&[String]>) -> Vec<&'static Step> {
     let touches = |inputs: &[&str]| {
         changed.is_none_or(|paths| paths.iter().any(|path| inputs.contains(&file_name(path))))
@@ -89,7 +85,6 @@ fn file_name(path: &str) -> &str {
     path.rsplit('/').next().unwrap_or(path)
 }
 
-/// Checks the pushed branch that is checked out, since the checks read the working tree, and names any other pushed branch it leaves unchecked.
 #[expect(
     clippy::print_stdout,
     reason = "the hook tells the developer what it skipped"
@@ -127,7 +122,7 @@ pub(crate) fn run(
     Ok(())
 }
 
-/// The commit to compare with, or `None` when git can't tell, such as a remote commit this clone hasn't fetched.
+/// Git can hand the hook a remote commit this clone hasn't fetched, which leaves nothing to compare with.
 fn base_commit(root: &Path, remote: &str, base: &Base<'_>) -> Option<String> {
     match base {
         Base::Remote(sha) => git(
@@ -156,7 +151,6 @@ fn git(root: &Path, args: &[&str]) -> anyhow::Result<String> {
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
 }
 
-/// Points git at the committed hooks, so every clone runs the same checks before a push.
 pub(crate) fn install_hooks(root: &Path) -> anyhow::Result<()> {
     git(root, &["config", "core.hooksPath", HOOKS_FOLDER]).map(drop)
 }

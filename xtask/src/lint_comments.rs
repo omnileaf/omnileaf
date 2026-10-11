@@ -1,5 +1,3 @@
-//! The comment rules no single linter checks across Rust and TypeScript: no plain or block comments, no warning words, phase labels or references elsewhere, and short doc comments.
-
 use std::fmt;
 
 use crate::policy::RepositoryFile;
@@ -134,7 +132,6 @@ struct Comment {
 }
 
 impl Comment {
-    /// Returns whether the comment ends on this line.
     fn push(&mut self, number: usize, text: &str) -> bool {
         let (inside, closed) = match self.kind.closer() {
             Some(closer) => text
@@ -195,7 +192,6 @@ fn violations_in(file: &RepositoryFile<'_>) -> Vec<Violation> {
         .collect()
 }
 
-/// Reads only comments that start a line, so a `//` or `/*` inside a string on a line of code never counts.
 fn comments_in(path: &str, source: &str) -> Vec<Comment> {
     let reads_html = path.ends_with(SVELTE_EXTENSION);
     let mut comments: Vec<Comment> = Vec::new();

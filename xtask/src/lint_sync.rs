@@ -1,5 +1,3 @@
-//! The sync rules no compiler checks: only the write path writes the sync tables, and projections carry no references or unique values.
-
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt,
@@ -187,9 +185,8 @@ fn schema_of(migrations: &[(&str, String)]) -> Schema {
     schema
 }
 
-/// Tables an `INSERT`, `REPLACE`, `UPDATE` or `DELETE` in lowercased source names, whether in SQL files or Rust string literals.
-fn written_tables(text: &str) -> BTreeSet<String> {
-    let words: Vec<&str> = text.split_whitespace().collect();
+fn written_tables(lowercased: &str) -> BTreeSet<String> {
+    let words: Vec<&str> = lowercased.split_whitespace().collect();
     let name_at = |index: usize| words.get(index).map_or("", |word| leading_name(word));
     let mut tables = BTreeSet::new();
     for (index, word) in words.iter().enumerate() {
@@ -214,7 +211,6 @@ fn is_name_char(character: char) -> bool {
     character.is_ascii_alphanumeric() || character == '_'
 }
 
-/// The name a word starts with once quotes and brackets are dropped, as in `"book_state(book_id`.
 fn leading_name(word: &str) -> &str {
     let name = word.trim_start_matches(|character| !is_name_char(character));
     let end = name
@@ -223,7 +219,6 @@ fn leading_name(word: &str) -> &str {
     name.get(..end).unwrap_or_default()
 }
 
-/// The keyword a word ends with, as in `execute("delete`; empty when punctuation follows, as in `.into()`.
 fn trailing_keyword(word: &str) -> &str {
     let start = word
         .rfind(|character| !is_name_char(character))

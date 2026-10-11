@@ -37,7 +37,6 @@ impl fmt::Display for NoScreen {
 
 impl std::error::Error for NoScreen {}
 
-/// Takes the running device named, or the only running one.
 pub(crate) fn pick_running<'a>(
     devices: &'a [Device],
     chosen: Option<&str>,
@@ -59,7 +58,6 @@ pub(crate) fn pick_running<'a>(
     }
 }
 
-/// Names the file after the device and the second it was taken, keeping only characters safe in any file system.
 pub(crate) fn file_name(device: &Device, taken_at_secs: u64) -> String {
     let words: Vec<&str> = device
         .name
@@ -69,7 +67,6 @@ pub(crate) fn file_name(device: &Device, taken_at_secs: u64) -> String {
     format!("{}-{taken_at_secs}.png", words.join("-"))
 }
 
-/// Writes the screenshot into `folder`, creating it, and returns the file's path.
 pub(crate) fn capture(
     device: &Device,
     android: Option<&android::Toolchain>,

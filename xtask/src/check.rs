@@ -1,5 +1,3 @@
-//! The local gate, running the same checks as CI's fast lane.
-
 use std::{error::Error, fmt, io};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
@@ -15,8 +13,7 @@ pub(crate) enum Group {
 }
 
 impl Group {
-    /// The mobile tests need a running emulator or Simulator and Appium, so they run only when asked for.
-    fn runs_by_default(self) -> bool {
+    fn runs_without_a_device(self) -> bool {
         !matches!(self, Self::Android | Self::Ios)
     }
 }
@@ -336,7 +333,10 @@ pub(crate) fn select(steps: &[Step], only: Option<Group>) -> Vec<&Step> {
     steps
         .iter()
         .filter(|step| {
-            only.map_or_else(|| step.group.runs_by_default(), |group| step.group == group)
+            only.map_or_else(
+                || step.group.runs_without_a_device(),
+                |group| step.group == group,
+            )
         })
         .collect()
 }

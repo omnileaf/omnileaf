@@ -33,7 +33,6 @@ const FULL_COMIC_INFO: &str = r#"<?xml version="1.0" encoding="utf-8"?>
 </ComicInfo>"#;
 const BARE_COMIC_INFO: &str = "<ComicInfo/>";
 
-/// Writes small seed inputs for each fuzz target into `corpus`, leaving inputs the fuzzer has added in place.
 pub(crate) fn generate(corpus: &Path) -> anyhow::Result<Vec<PathBuf>> {
     let mut written = Vec::new();
     for target in ARCHIVE_TARGETS {

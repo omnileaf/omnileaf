@@ -29,7 +29,6 @@ pub(crate) enum Probe {
     IosSimulators,
 }
 
-/// What the probes need to know about the machine beyond the programs on its path.
 pub(crate) struct Host<'a> {
     pub(crate) os: &'a str,
     pub(crate) android: Option<&'a android::Toolchain>,
