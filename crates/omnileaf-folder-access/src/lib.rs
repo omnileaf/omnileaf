@@ -1,3 +1,5 @@
+#[cfg(target_os = "android")]
+mod android;
 #[cfg(unix)]
 mod descriptor;
 mod document_tree;
@@ -16,6 +18,8 @@ mod reply;
 )]
 mod tree_messages;
 
+#[cfg(target_os = "android")]
+pub use android::{FolderAccess, init};
 pub use document_tree::{Document, DocumentId, DocumentTree, Documents};
 pub use grants::{PersistedGrant, grants_to_release};
 #[cfg(target_os = "ios")]
