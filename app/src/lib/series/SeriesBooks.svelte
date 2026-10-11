@@ -9,6 +9,7 @@
     SeriesBook,
     SeriesBookListing,
   } from "#lib/ipc/bindings.ts";
+  import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
@@ -158,6 +159,16 @@
       void end();
     }
   }
+
+  $effect(() =>
+    takeBackWithinScreen(() => {
+      if (!selection.isSelecting) {
+        return false;
+      }
+      void end();
+      return true;
+    }),
+  );
 
   beforeNavigate((navigation) => {
     if (

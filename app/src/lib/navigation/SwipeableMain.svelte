@@ -11,7 +11,8 @@
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
 
-  import { backSwipeEdge, type TextDirection } from "./back-swipe";
+  import { backSwipeEdge, isGoingBack, type TextDirection } from "./back-swipe";
+  import { isBackTakenByScreen } from "./back-within-screen";
   import { BackSwipeScreens } from "./back-swipe-screens.svelte";
   import { PreviousScreens, type ScreenCopy } from "./previous-screens";
 
@@ -103,10 +104,20 @@
       swipeStart = startOf(main);
     }
     if (swipeStart !== undefined) {
-      screens.follow(acrossScreen(swipe, swipeStart.area));
+      screens.follow(unlessTakenByScreen(acrossScreen(swipe, swipeStart.area)));
     }
   }
 
+  /** Springs a swipe let go to go back into place instead when the screen goes back within itself. */
+  function unlessTakenByScreen(swipe: BackSwipe): BackSwipe {
+    return swipe.kind === "released" &&
+      isGoingBack(swipe.progress ?? 0, swipe.velocity ?? 0) &&
+      isBackTakenByScreen()
+      ? { kind: "cancelled" }
+      : swipe;
+  }
+
+  /** Settles once the screen's transitions end or are cancelled, at once when none run. */
   async function settleOnceMoved(screen: HTMLElement): Promise<void> {
     await Promise.allSettled(
       screen.getAnimations().map((animation) => animation.finished),
