@@ -30,7 +30,7 @@ fn folder_dialog<R: tauri::Runtime>(
     window.dialog().file().set_parent(window)
 }
 
-#[cfg(target_os = "ios")]
+#[cfg(mobile)]
 pub(crate) fn pick_folder(window: &Window) -> Result<Option<RootLocator>, IpcError> {
     use omnileaf_folder_access::FolderAccess;
     use tauri::Manager;
@@ -39,11 +39,6 @@ pub(crate) fn pick_folder(window: &Window) -> Result<Option<RootLocator>, IpcErr
         .state::<FolderAccess<tauri::Wry>>()
         .pick_folder()
         .map_err(|error| IpcError::internal(&error))
-}
-
-#[cfg(target_os = "android")]
-pub(crate) fn pick_folder(_window: &Window) -> Result<Option<RootLocator>, IpcError> {
-    Err(IpcError::folder_picker_unavailable())
 }
 
 #[cfg(all(test, desktop))]
