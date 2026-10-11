@@ -33,7 +33,7 @@ pub struct FolderPage {
 }
 
 /// Crosses to the interface as an opaque string, which it hands back unchanged to name the folder.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(into = "String", try_from = "String")]
 pub struct FolderId(pub(crate) RootId);
 
