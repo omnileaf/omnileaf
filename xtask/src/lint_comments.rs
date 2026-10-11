@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{collections::BTreeSet, fmt};
 
 use crate::policy::RepositoryFile;
 
@@ -35,6 +35,10 @@ pub(crate) enum Violation {
         line: usize,
         prose_lines: usize,
     },
+    RestatedDoc {
+        path: String,
+        line: usize,
+    },
 }
 
 impl fmt::Display for Violation {
@@ -42,7 +46,7 @@ impl fmt::Display for Violation {
         match self {
             Self::PlainComment { path, line } => write!(
                 f,
-                "{path}:{line}: a plain comment; let the code say it, or state a contract in a doc comment"
+                "{path}:{line}: a plain comment; let the code say it, or state a platform quirk in a doc comment on the declaration"
             ),
             Self::BlockComment { path, line } => {
                 write!(f, "{path}:{line}: a block comment that isn't a doc comment")
@@ -75,6 +79,10 @@ impl fmt::Display for Violation {
                 f,
                 "{path}:{line}: a doc comment of {prose_lines} lines; keep it to {MOST_DOC_PROSE_LINES} and move the rest to the docs folder"
             ),
+            Self::RestatedDoc { path, line } => write!(
+                f,
+                "{path}:{line}: a doc comment that restates the name; delete it, or state the platform quirk it works around"
+            ),
         }
     }
 }
@@ -87,7 +95,7 @@ const GENERATED: &[&str] = &[
     "app/src/lib/licences/",
     "app/src-tauri/gen/",
 ];
-const RUST_DOC_MARKERS: &[&str] = &["///", "//!"];
+const RUST_DOC_MARKERS: &[&str] = &["///", MODULE_DOC_MARKER];
 const DIRECTIVES: &[&str] = &[
     "SAFETY:",
     "eslint-disable",
@@ -105,6 +113,11 @@ const DECISION_RECORD: &str = "ADR";
 const DOCUMENT_POINTERS: &[&str] = &["docs/", "AGENTS.md"];
 const DOC_HEADINGS: &[&str] = &["# Errors", "# Panics", "# Safety"];
 const LICENCE_MARK: &str = "License";
+const MODULE_DOC_MARKER: &str = "//!";
+const FILLER_WORDS: &[&str] = &[
+    "a", "an", "the", "of", "to", "for", "by", "in", "on", "with", "from", "as", "and", "or",
+    "its", "it", "this", "is", "get", "return", "set", "create", "make", "new",
+];
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
@@ -129,6 +142,7 @@ struct Comment {
     kind: Kind,
     start: usize,
     lines: Vec<(usize, String)>,
+    item: Option<String>,
 }
 
 impl Comment {
@@ -220,6 +234,7 @@ fn comments_in(path: &str, source: &str) -> Vec<Comment> {
             kind,
             start: number,
             lines: Vec::new(),
+            item: None,
         };
         if comment.push(number, rest) {
             comments.push(comment);
@@ -228,7 +243,21 @@ fn comments_in(path: &str, source: &str) -> Vec<Comment> {
         }
     }
     comments.extend(open);
+    let lines: Vec<&str> = source.lines().collect();
+    for comment in &mut comments {
+        comment.item = item_after(&lines, comment);
+    }
     comments
+}
+
+fn item_after(lines: &[&str], comment: &Comment) -> Option<String> {
+    let (last, _) = comment.lines.last()?;
+    lines
+        .iter()
+        .skip(*last)
+        .map(|line| line.trim())
+        .find(|line| !line.is_empty() && !line.starts_with("#[") && !line.starts_with('@'))
+        .map(str::to_owned)
 }
 
 fn opening(trimmed: &str, reads_html: bool) -> Option<(Kind, &str)> {
@@ -295,12 +324,62 @@ fn shape_violation(path: &str, comment: &Comment, text: &str) -> Option<Violatio
         Kind::Html => Some(Violation::HtmlComment { path, line }),
         Kind::RustDoc(_) | Kind::DocBlock => {
             let prose_lines = comment.prose_lines();
-            (prose_lines > MOST_DOC_PROSE_LINES).then_some(Violation::LongDoc {
-                path,
-                line,
-                prose_lines,
-            })
+            if prose_lines > MOST_DOC_PROSE_LINES {
+                return Some(Violation::LongDoc {
+                    path,
+                    line,
+                    prose_lines,
+                });
+            }
+            let documents_an_item = comment.kind != Kind::RustDoc(MODULE_DOC_MARKER);
+            comment
+                .item
+                .as_deref()
+                .filter(|item| documents_an_item && is_restatement(text, item))
+                .map(|_| Violation::RestatedDoc { path, line })
         }
+    }
+}
+
+fn is_restatement(text: &str, item: &str) -> bool {
+    let named: BTreeSet<String> = item
+        .split(|c: char| !c.is_ascii_alphanumeric())
+        .flat_map(camel_case_words)
+        .map(|word| singular(&word))
+        .collect();
+    let mut said = text
+        .split(|c: char| !c.is_ascii_alphabetic())
+        .map(str::to_ascii_lowercase)
+        .filter(|word| !word.is_empty() && !is_filler(word))
+        .map(|word| singular(&word))
+        .peekable();
+    said.peek().is_some() && said.all(|word| named.contains(&word))
+}
+
+fn camel_case_words(identifier: &str) -> Vec<String> {
+    let mut words: Vec<String> = Vec::new();
+    let mut previous_is_lowercase = false;
+    for c in identifier.chars() {
+        if words.is_empty() || (c.is_ascii_uppercase() && previous_is_lowercase) {
+            words.push(String::new());
+        }
+        previous_is_lowercase = c.is_ascii_lowercase();
+        words
+            .last_mut()
+            .into_iter()
+            .for_each(|word| word.push(c.to_ascii_lowercase()));
+    }
+    words
+}
+
+fn is_filler(word: &str) -> bool {
+    FILLER_WORDS.contains(&word) || FILLER_WORDS.contains(&singular(word).as_str())
+}
+
+fn singular(word: &str) -> String {
+    match word.strip_suffix('s') {
+        Some(stem) if stem.len() > 2 => stem.to_owned(),
+        _ => word.to_owned(),
     }
 }
 
@@ -417,11 +496,11 @@ mod tests {
         let files = [
             text(
                 "crates/a/src/lib.rs",
-                "//! A crate.\n\n/// A function.\nfn f() {}\n",
+                "//! A crate.\n\n/// Windows holds the file open until the handle drops.\nfn f() {}\n",
             ),
             text(
                 "app/src/lib/a.ts",
-                "/** A function. */\nexport function f() {}\n",
+                "/** WebKit reports no height until the first resize. */\nexport function f() {}\n",
             ),
         ];
 
@@ -632,6 +711,71 @@ mod tests {
         ];
 
         let violations = check(&files);
+
+        assert!(violations.is_empty(), "{violations:?}");
+    }
+
+    #[test]
+    fn flags_a_doc_comment_that_restates_the_function_name() {
+        let violations = checked(
+            "crates/a/src/lib.rs",
+            "/// Gets the user by id.\nfn get_user_by_id(id: UserId) {}\n",
+        );
+
+        assert_eq!(
+            violations,
+            [Violation::RestatedDoc {
+                path: "crates/a/src/lib.rs".to_owned(),
+                line: 1
+            }]
+        );
+    }
+
+    #[test]
+    fn flags_a_tsdoc_that_restates_the_name() {
+        let violations = checked(
+            "app/src/lib/a.ts",
+            "/** The library view. */\nexport const libraryView = load();\n",
+        );
+
+        assert_eq!(
+            violations,
+            [Violation::RestatedDoc {
+                path: "app/src/lib/a.ts".to_owned(),
+                line: 1
+            }]
+        );
+    }
+
+    #[test]
+    fn looks_past_attributes_to_the_item() {
+        let violations = checked(
+            "crates/a/src/lib.rs",
+            "/// Opens the library.\n#[tracing::instrument]\npub async fn open_library() {}\n",
+        );
+
+        assert_eq!(
+            violations,
+            [Violation::RestatedDoc {
+                path: "crates/a/src/lib.rs".to_owned(),
+                line: 1
+            }]
+        );
+    }
+
+    #[test]
+    fn allows_a_doc_comment_that_adds_a_fact() {
+        let violations = checked(
+            "crates/a/src/lib.rs",
+            "/// iOS declines access to a folder inside the app's own container.\nfn take_access(folder: &Path) {}\n",
+        );
+
+        assert!(violations.is_empty(), "{violations:?}");
+    }
+
+    #[test]
+    fn allows_a_module_doc_that_names_its_first_item() {
+        let violations = checked("crates/a/src/lib.rs", "//! Scan.\n\nfn scan() {}\n");
 
         assert!(violations.is_empty(), "{violations:?}");
     }

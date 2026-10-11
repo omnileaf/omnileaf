@@ -99,6 +99,7 @@ Integration tests under `tests/` may still seed any table directly.
 - a `/* */` block that isn't a `/** */` doc comment, and an HTML comment in a Svelte file that isn't a licence notice;
 - `TODO`, `FIXME`, `XXX` or `HACK`, a comment that only names a test phase, and an issue or ticket number, an ADR or a pointer to `docs/` or `AGENTS.md`;
 - a doc comment of more than three lines of prose, not counting blank lines, tags such as `@param`, or the `# Errors`, `# Panics` and `# Safety` headings.
+- a doc comment on an item whose words, apart from filler such as "the" or "gets", all appear in the item's own line, like `/// Gets the user by id.` on `fn get_user_by_id`.
 
 ESLint's `no-warning-comments` and `no-inline-comments` rules catch the warning words and comments after code in the editor too.
 

@@ -105,7 +105,7 @@ enum Command {
         #[arg(long)]
         check: bool,
     },
-    /// Check that comments hold no plain notes, warning words or references, and that doc comments stay short.
+    /// Check that comments hold no plain notes, warning words or references, and that doc comments stay short and don't restate their item.
     LintComments,
     /// Check that only the write path writes synced state and the projections built from it.
     LintSync,
