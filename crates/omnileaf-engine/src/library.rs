@@ -10,9 +10,10 @@ use omnileaf_db::{
     Config, Database,
     catalog::{
         AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind, RootLocator,
-        SeriesOrder, add_root, bookmarked_roots, cover_file, library_root, library_roots,
-        mark_root_available, mark_root_unavailable, remove_book_files, remove_books_without_files,
-        remove_root, root_book_count, root_files, series_count, series_page,
+        SeriesOrder, add_root, bookmarked_roots, cover_file, home_root, library_root,
+        library_roots, mark_root_available, mark_root_unavailable, remove_book_files,
+        remove_books_without_files, remove_root, root_book_count, root_files, series_count,
+        series_page,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     library_view::{library_view, set_library_view},
@@ -49,6 +50,10 @@ const SERIES_PER_PAGE: u16 = 50;
 const CATALOG_WRITE_BACKLOG: usize = 16;
 const SCHEDULE_CHECK_EVERY: Duration = Duration::from_mins(1);
 const STORAGE_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
+#[cfg(target_vendor = "apple")]
+const APPLE_PRIVATE_FOLDER: &str = "/private";
+#[cfg(target_vendor = "apple")]
+const APPLE_FOLDER_LINKED_TO_PRIVATE: &str = "var";
 const MAPPED_DATABASE_BYTES: u32 = if IS_MOBILE {
     64 * MEBIBYTE
 } else {
@@ -165,7 +170,7 @@ impl Library {
         folder: impl Into<RootLocator>,
         mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderScan, LibraryError> {
-        let locator = folder.into();
+        let locator = self.folder_to_read(folder.into()).await?;
         let files = self.files_of(&locator);
         tracing::Span::current().record("folder", tracing::field::display(files.folder.display()));
         let _scanning = self.scanning.lock().await;
@@ -456,7 +461,10 @@ impl Library {
             bookmarked
                 .into_iter()
                 .map(|root| {
-                    let outcome = resolve(&root.bookmark);
+                    let outcome = resolve(&root.bookmark).map(|resolved| ResolvedBookmark {
+                        path: canonical_folder(resolved.path),
+                        ..resolved
+                    });
                     (root, outcome)
                 })
                 .collect::<Vec<_>>()
@@ -597,12 +605,29 @@ impl Library {
     }
 
     async fn set_home(&self, home: PathBuf) -> Result<(), LibraryError> {
+        let home = canonical_folder(home);
         let added_at_ms = self.now_ms();
         self.store
             .database()
             .write(move |transaction| move_home(transaction, &home, added_at_ms))
             .await?;
         Ok(())
+    }
+
+    /// A readable folder inside the home is read as the home, which already holds its books.
+    async fn folder_to_read(&self, picked: RootLocator) -> Result<RootLocator, LibraryError> {
+        let picked = canonical_locator(picked);
+        let Some(home) = self.store.database().read(home_root).await? else {
+            return Ok(picked);
+        };
+        let is_inside_home =
+            picked.path() != home.locator.path() && picked.path().starts_with(home.locator.path());
+        if !is_inside_home {
+            return Ok(picked);
+        }
+        let files = self.files_of(&picked);
+        find_books_in(files.storage, files.folder).await?;
+        Ok(home.locator)
     }
 
     /// Reads a folder linked before as available again, since it was just read.
@@ -706,6 +731,32 @@ async fn storage_within_limit(conditions: &impl RescanConditions, folder: &Path)
             tracing::warn!(folder = %folder.display(), "find where a folder is stored in time");
             Storage::Local
         })
+}
+
+fn canonical_locator(locator: RootLocator) -> RootLocator {
+    match locator {
+        RootLocator::Path(path) => RootLocator::Path(canonical_folder(path)),
+        RootLocator::AppleBookmark { path, bookmark } => RootLocator::AppleBookmark {
+            path: canonical_folder(path),
+            bookmark,
+        },
+    }
+}
+
+/// Spells a folder reached through Apple's `/private` links, such as `/private/var`, the way the shorter link does.
+#[cfg(target_vendor = "apple")]
+fn canonical_folder(folder: PathBuf) -> PathBuf {
+    match folder.strip_prefix(APPLE_PRIVATE_FOLDER) {
+        Ok(linked) if linked.starts_with(APPLE_FOLDER_LINKED_TO_PRIVATE) => {
+            Path::new("/").join(linked)
+        }
+        _ => folder,
+    }
+}
+
+#[cfg(not(target_vendor = "apple"))]
+fn canonical_folder(folder: PathBuf) -> PathBuf {
+    folder
 }
 
 /// Leaves out a folder removed since the rescan listed it.

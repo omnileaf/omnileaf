@@ -582,6 +582,118 @@ async fn keeps_one_home_folder_at_its_new_location_after_the_home_moves() {
 }
 
 #[tokio::test]
+async fn reads_a_folder_picked_inside_the_home_as_the_home() {
+    let home = ScratchFolder::new("library-inside-home");
+    write_sample_library(home.path()).unwrap();
+    let library = open(home.path()).await;
+    library.rescan_folders().await.unwrap();
+
+    let scan = library
+        .add_folder(home.path().join(SAMPLE_LIBRARY_NAME), |_| {})
+        .await
+        .unwrap();
+
+    assert_eq!((scan.series, scan.books), (3, 7));
+    assert_eq!(
+        kinds_and_names(&all_folders(&library).await),
+        [(FolderKind::Home, "library-inside-home")]
+    );
+    assert_eq!(library.series_count().await.unwrap(), 3);
+}
+
+#[cfg(target_vendor = "apple")]
+fn spelled_through_private(folder: &Path) -> PathBuf {
+    Path::new("/private").join(folder.strip_prefix("/").unwrap())
+}
+
+#[cfg(target_vendor = "apple")]
+#[tokio::test]
+async fn reads_the_home_picked_through_private_var_as_the_home() {
+    let home = ScratchFolder::new("library-private-home");
+    write_sample_library(home.path()).unwrap();
+    let library = open(home.path()).await;
+
+    library
+        .add_folder(
+            bookmarked(spelled_through_private(home.path()), PICKED_BOOKMARK),
+            |_| {},
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        kinds_and_names(&all_folders(&library).await),
+        [(FolderKind::Home, "library-private-home")]
+    );
+}
+
+#[cfg(target_vendor = "apple")]
+#[tokio::test]
+async fn reads_a_folder_picked_inside_the_home_through_private_var_as_the_home() {
+    let home = ScratchFolder::new("library-private-inside-home");
+    write_sample_library(home.path()).unwrap();
+    let library = open(home.path()).await;
+    let picked = spelled_through_private(&home.path().join(SAMPLE_LIBRARY_NAME));
+
+    let scan = library
+        .add_folder(bookmarked(picked, PICKED_BOOKMARK), |_| {})
+        .await
+        .unwrap();
+
+    assert_eq!((scan.series, scan.books), (3, 7));
+    assert_eq!(
+        kinds_and_names(&all_folders(&library).await),
+        [(FolderKind::Home, "library-private-inside-home")]
+    );
+}
+
+#[cfg(target_vendor = "apple")]
+#[tokio::test]
+async fn reads_the_home_picked_through_var_once_it_opened_through_private_var() {
+    let home = ScratchFolder::new("library-opened-private-home");
+    let library = open(&spelled_through_private(home.path())).await;
+
+    library
+        .add_folder(home.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+
+    let folders = all_folders(&library).await;
+    assert_eq!(
+        kinds_and_names(&folders),
+        [(FolderKind::Home, "library-opened-private-home")]
+    );
+    assert_eq!(
+        folders.first().map(|folder| folder.location.clone()),
+        Some(home.path().display().to_string())
+    );
+}
+
+#[cfg(target_vendor = "apple")]
+#[tokio::test]
+async fn keeps_a_bookmarked_folder_where_it_was_when_its_bookmark_opens_through_private_var() {
+    let home = ScratchFolder::new("library-private-reopened-home");
+    let comics = ScratchFolder::new("Reopened Through Private");
+    let library = open(home.path()).await;
+    library
+        .add_folder(
+            bookmarked(comics.path().to_path_buf(), PICKED_BOOKMARK),
+            |_| {},
+        )
+        .await
+        .unwrap();
+
+    bookmarks_asked_for(&library, &spelled_through_private(comics.path())).await;
+
+    assert_eq!(
+        folder_named(&library, "Reopened Through Private")
+            .await
+            .location,
+        comics.path().display().to_string()
+    );
+}
+
+#[tokio::test]
 async fn opens_a_new_library_before_its_first_launch_is_finished() {
     let home = ScratchFolder::new("library-first-launch-new");
 
