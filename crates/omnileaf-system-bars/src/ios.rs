@@ -30,7 +30,6 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
 }
 
 impl<R: Runtime> SystemBars<R> {
-    /// Shows `style` now and keeps it for the next launch, which starts in it before the page loads.
     pub async fn show_style(&self, style: InterfaceStyle) -> Result<(), PluginInvokeError> {
         self.0
             .run_mobile_plugin_async("showStyle", ShownStyle { style })

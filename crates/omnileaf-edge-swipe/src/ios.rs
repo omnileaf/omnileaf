@@ -34,14 +34,12 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
 }
 
 impl<R: Runtime> EdgeSwipe<R> {
-    /// Sends every swipe from the allowed edge to `channel`, replacing any channel watched before.
     pub async fn watch(&self, channel: Channel<BackSwipe>) -> Result<(), PluginInvokeError> {
         self.0
             .run_mobile_plugin_async("watch", Watching { channel })
             .await
     }
 
-    /// Follows swipes from `edge` only, or from neither edge on a screen with nothing to go back to.
     pub async fn allow(&self, edge: Option<SwipeEdge>) -> Result<(), PluginInvokeError> {
         self.0
             .run_mobile_plugin_async("allow", AllowedEdge { edge })

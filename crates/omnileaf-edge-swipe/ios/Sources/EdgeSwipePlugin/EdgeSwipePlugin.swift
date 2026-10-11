@@ -5,14 +5,13 @@ import os
 
 private let logger = Logger(subsystem: "app.omnileaf", category: "edge-swipe")
 
-/// How far from the edge, in points, a swipe may start, as wide as the system's own swipe back.
+/// As wide, in points, as the system's own swipe back.
 private let edgeWidth: CGFloat = 20
 
 enum SwipeEdge: String, Decodable {
   case left
   case right
 
-  /// Turns a movement across the screen into one towards going back, which runs away from this edge.
   func backwards(_ distance: CGFloat) -> CGFloat {
     switch self {
     case .left: distance
@@ -87,7 +86,6 @@ final class EdgeSwipePlugin: Plugin {
   }
 }
 
-/// Reports a pan that starts at the allowed edge as the share of the web view's width it has crossed.
 @MainActor
 final class SwipeFollower: NSObject, UIGestureRecognizerDelegate {
   var channel: Channel?

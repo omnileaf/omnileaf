@@ -8,7 +8,6 @@ pub enum SwipeEdge {
     Right,
 }
 
-/// How far a swipe from the edge has come, as a share of the screen's width, and how fast it was going in screen widths a second when let go.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Type)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum BackSwipe {

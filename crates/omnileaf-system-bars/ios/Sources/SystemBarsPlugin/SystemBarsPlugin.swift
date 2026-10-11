@@ -81,7 +81,7 @@ private func reject(_ invoke: Invoke, _ error: Error) {
   invoke.reject(error.localizedDescription)
 }
 
-/// Styles the whole window, so the screens it presents follow too, then restyles the status bar, which takes the root view controller's style.
+/// The status bar takes the root view controller's style, so it is restyled after the window.
 @MainActor
 private func show(_ style: InterfaceStyle, in root: UIViewController?) throws {
   guard let root, let window = root.view.window else {
