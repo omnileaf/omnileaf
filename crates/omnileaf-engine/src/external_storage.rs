@@ -27,6 +27,7 @@ const WINDOWS_VERBATIM_PREFIX: &str = r"\\?\";
 const WINDOWS_DEVICE_PREFIX: &str = r"\\.\";
 const WINDOWS_REMOVABLE_DRIVE: u32 = 2;
 const WINDOWS_REMOTE_DRIVE: u32 = 4;
+const WINDOWS_DISC_DRIVE: u32 = 5;
 
 struct Mount<'a> {
     point: PathBuf,
@@ -85,7 +86,7 @@ pub fn storage_of_windows_path(path: &str, drive_type_of: impl FnOnce(&str) -> u
         windows_drive_root(path).is_some_and(|root| {
             matches!(
                 drive_type_of(&root),
-                WINDOWS_REMOVABLE_DRIVE | WINDOWS_REMOTE_DRIVE
+                WINDOWS_REMOVABLE_DRIVE | WINDOWS_REMOTE_DRIVE | WINDOWS_DISC_DRIVE
             )
         })
     };
@@ -220,6 +221,14 @@ mod tests {
                 "{drive_type}"
             );
         }
+    }
+
+    #[test]
+    fn counts_a_folder_on_a_disc_or_mounted_image_as_external() {
+        assert_eq!(
+            on_windows_drive_of_type(WINDOWS_DISC_DRIVE, r"F:\Comics"),
+            Storage::External
+        );
     }
 
     #[test]
