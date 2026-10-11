@@ -601,6 +601,20 @@ async fn reads_a_folder_picked_inside_the_home_as_the_home() {
     assert_eq!(library.series_count().await.unwrap(), 3);
 }
 
+#[tokio::test]
+async fn refuses_a_missing_folder_picked_inside_the_home() {
+    let home = ScratchFolder::new("library-missing-inside-home");
+    let library = open(home.path()).await;
+
+    let added = library.add_folder(home.path().join("Gone"), |_| {}).await;
+
+    assert!(matches!(added, Err(LibraryError::FolderUnreadable { .. })));
+    assert_eq!(
+        kinds_and_names(&all_folders(&library).await),
+        [(FolderKind::Home, "library-missing-inside-home")]
+    );
+}
+
 #[cfg(target_vendor = "apple")]
 fn spelled_through_private(folder: &Path) -> PathBuf {
     Path::new("/private").join(folder.strip_prefix("/").unwrap())

@@ -626,7 +626,13 @@ impl Library {
             return Ok(picked);
         }
         let files = self.files_of(&picked);
-        find_books_in(files.storage, files.folder).await?;
+        let folder = files.folder.clone();
+        spawn_blocking(move || files.storage.entries(&files.folder))
+            .await?
+            .map_err(|source| LibraryError::FolderUnreadable {
+                path: folder,
+                source,
+            })?;
         Ok(home.locator)
     }
 
