@@ -3,11 +3,13 @@
     reason = "each test opens its own library in a scratch folder, so a failed set-up should stop the test"
 )]
 
+mod stepped_clock;
 mod support;
 
 use std::{
     fmt,
     fs::File,
+    future::ready,
     io,
     path::{Path, PathBuf},
     sync::{
@@ -18,10 +20,12 @@ use std::{
 
 use omnileaf_engine::{
     AndroidTree, FileChanges, FolderKind, Library, LibraryError, LibraryFolder, OpenTree,
-    RescanOutcome, Resource, ResourceRouter, RootLocator, TreeUri,
+    PowerMode, RESCAN_EVERY, RescanConditions, RescanOutcome, Resource, ResourceRouter,
+    RootLocator, TreeUri,
 };
 use omnileaf_formats::{Details, Entry, LocalStorage, Storage};
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
+use stepped_clock::SteppedClock;
 use support::{FixedClock, ScratchFolder};
 
 const COMICS_TREE: &str = "content://documents.test/tree/primary%3ADocuments%2FComics";
@@ -89,6 +93,19 @@ impl Storage for TreeOfFolder {
     fn open(&self, file: &Path) -> io::Result<File> {
         self.opened.lock().unwrap().push(file.to_path_buf());
         LocalStorage.open(&self.on_device(file)?)
+    }
+}
+
+/// A device whose every folder with a path is on the storage it starts from, using power normally.
+struct LocalDevice;
+
+impl RescanConditions for LocalDevice {
+    fn storage_of(&self, _folder: &Path) -> impl Future<Output = omnileaf_engine::Storage> + Send {
+        ready(omnileaf_engine::Storage::Local)
+    }
+
+    fn power_mode(&self) -> impl Future<Output = PowerMode> + Send {
+        ready(PowerMode::Normal)
     }
 }
 
@@ -258,4 +275,30 @@ async fn serves_the_cover_of_a_book_in_an_android_folder() {
         }
     ));
     assert_eq!(tree.take_opened().len(), 1);
+}
+
+#[tokio::test]
+async fn gives_an_android_folder_its_turn_on_the_rescan_schedule() {
+    let home = ScratchFolder::new("tree-schedule-home");
+    let tree = TreeOfFolder::new("tree-schedule-comics");
+    let clock = SteppedClock::new();
+    let library = Library::open(home.path().to_path_buf(), clock.clone())
+        .await
+        .unwrap()
+        .reading_trees_with(tree.opener());
+    library.set_scheduled_rescans(true);
+    library.add_folder(sample_tree(), |_| {}).await.unwrap();
+    let folder = linked_folder(&library).await;
+    library
+        .rescan_due_folders(&LocalDevice, async {})
+        .await
+        .unwrap();
+    clock.advance(RESCAN_EVERY);
+
+    let rescans = library
+        .rescan_due_folders(&LocalDevice, async {})
+        .await
+        .unwrap();
+
+    assert!(rescans.iter().any(|rescan| rescan.id == folder.id));
 }
