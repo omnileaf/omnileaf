@@ -22,7 +22,6 @@ static COPIES_MADE: AtomicU64 = AtomicU64::new(0);
 
 /// A documents provider's view of the folders and files under the trees it granted.
 pub trait Documents: fmt::Debug + Send + Sync {
-    /// Lists `folder`, or the tree's own folder when it is `None`.
     fn children(&self, tree: &TreeUri, folder: Option<&DocumentId>) -> io::Result<Vec<Document>>;
     fn open(&self, tree: &TreeUri, document: &DocumentId) -> io::Result<File>;
 }
@@ -40,7 +39,6 @@ pub struct Document {
     pub modified_ms: Option<i64>,
 }
 
-/// Reads a granted tree as a folder named after it, so the library walks it like any other folder.
 #[derive(Debug)]
 pub struct DocumentTree<D> {
     documents: D,
@@ -318,7 +316,6 @@ mod tests {
     const TREE_NAME: &str = "Comics";
     const BOOK: &[u8] = b"book";
 
-    /// Serves a scratch folder as the tree, handing out ids that say nothing about where a document is.
     struct FakeDocuments {
         folder: ScratchFolder,
         paths: Mutex<Vec<PathBuf>>,

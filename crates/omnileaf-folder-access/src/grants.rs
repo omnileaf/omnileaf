@@ -1,13 +1,11 @@
 use omnileaf_engine::TreeUri;
 
-/// A folder grant the system still holds for the app, and when the app took it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PersistedGrant {
     pub uri: TreeUri,
     pub persisted_at_ms: i64,
 }
 
-/// Leaves alone a grant taken after the folders were listed, since it may belong to a folder still being added.
 #[must_use]
 pub fn grants_to_release(
     persisted: &[PersistedGrant],
