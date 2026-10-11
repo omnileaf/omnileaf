@@ -456,6 +456,13 @@ mod tests {
 
     struct Fixture {
         documents: Arc<FakeDocuments>,
+        #[cfg_attr(
+            not(unix),
+            expect(
+                dead_code,
+                reason = "only Unix unlinks a copy it holds open, so only there do the copy tests run"
+            )
+        )]
         copies: ScratchFolder,
         tree: DocumentTree<Arc<FakeDocuments>>,
     }
