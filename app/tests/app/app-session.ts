@@ -1,7 +1,14 @@
 import { afterAll, beforeAll, beforeEach, inject } from "vitest";
 
+import type { AppUnderTest } from "./app-under-test.ts";
 import { finishFirstLaunchIfShown } from "./first-launch.ts";
-import { type Locator, Session, xpath } from "./webdriver.ts";
+import { followSimulatorWindow } from "./simulator-window.ts";
+import {
+  type Capabilities,
+  type Locator,
+  Session,
+  xpath,
+} from "./webdriver.ts";
 
 const MAIN_NAVIGATION = "//nav[@aria-label='Main']";
 
@@ -20,13 +27,23 @@ export async function openLibraryPage(session: Session): Promise<void> {
   await session.waitFor(LIBRARY_LINK_WHEN_CURRENT);
 }
 
+async function sessionCapabilities(app: AppUnderTest): Promise<Capabilities> {
+  if (app.simulatorWindowApp === undefined) {
+    return app.capabilities;
+  }
+  return followSimulatorWindow(app.capabilities, app.simulatorWindowApp);
+}
+
 /** Shares one WebDriver session, past the first launch, across the calling spec file and starts each test on the library page. */
 export function useAppSession(): () => Session {
   let session: Session | undefined;
 
   beforeAll(async () => {
     const app = inject("appUnderTest");
-    session = await Session.start(new URL(app.server), app.capabilities);
+    session = await Session.start(
+      new URL(app.server),
+      await sessionCapabilities(app),
+    );
     await finishFirstLaunchIfShown(session);
   });
 

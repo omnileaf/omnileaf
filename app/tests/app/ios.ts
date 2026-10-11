@@ -10,6 +10,7 @@ import { APPIUM_URL, startAppium } from "./appium.ts";
 import { withAttempts } from "./attempts.ts";
 import { isRecord, listOf } from "./json.ts";
 import { launchOnceRegistered } from "./simulator-launch.ts";
+import { selectedXcode, simulatorWindowApp } from "./simulator-window.ts";
 import { waitUntilReady } from "./webdriver.ts";
 
 const APP_BUNDLE = fileURLToPath(
@@ -51,14 +52,18 @@ interface Simulator {
 }
 
 async function bundleIdOf(app: string): Promise<string> {
-  const { stdout } = await run("plutil", [
-    "-extract",
-    "CFBundleIdentifier",
-    "raw",
-    "-o",
-    "-",
-    join(app, "Info.plist"),
-  ]);
+  const { stdout } = await run(
+    "plutil",
+    [
+      "-extract",
+      "CFBundleIdentifier",
+      "raw",
+      "-o",
+      "-",
+      join(app, "Info.plist"),
+    ],
+    { timeout: SIMCTL_TIMEOUT_MS },
+  );
   return stdout.trim();
 }
 
@@ -186,13 +191,11 @@ function bootedIosSimulator(
 }
 
 async function findBootedSimulator(): Promise<Simulator> {
-  const { stdout } = await run("xcrun", [
-    "simctl",
-    "list",
-    "devices",
-    "booted",
-    "--json",
-  ]);
+  const { stdout } = await run(
+    "xcrun",
+    ["simctl", "list", "devices", "booted", "--json"],
+    { timeout: SIMCTL_TIMEOUT_MS },
+  );
   const simulator = bootedIosSimulator(
     JSON.parse(stdout),
     process.env.OMNILEAF_SIMULATOR_UDID,
@@ -219,13 +222,13 @@ export async function setup(
       "appium:platformVersion": simulator.platformVersion,
       "appium:bundleId": bundleId,
       "appium:noReset": true,
-      "appium:isHeadless": true,
       "appium:autoWebview": true,
       "appium:additionalWebviewBundleIds": [WEBVIEW_PROCESS],
       "appium:webviewConnectTimeout": WEBVIEW_TIMEOUT_MS,
       "appium:showXcodeLog": true,
       ...webDriverAgent,
     },
+    simulatorWindowApp: simulatorWindowApp(await selectedXcode()),
   });
   return stop;
 }
