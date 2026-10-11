@@ -21,6 +21,7 @@
     series,
     isComplete,
     onNearEnd,
+    onColumns,
     coverUrl,
     view,
     usesStandIns,
@@ -28,6 +29,7 @@
     series: readonly LibrarySeries[];
     isComplete: boolean;
     onNearEnd?: () => void;
+    onColumns?: (columns: number) => void;
     coverUrl: CoverUrl;
     view: LibraryView;
     usesStandIns: boolean;
@@ -161,6 +163,7 @@
     label={m.library_series_list()}
     {isComplete}
     {...onNearEnd === undefined ? {} : { onNearEnd }}
+    {...onColumns === undefined ? {} : { onColumns }}
     class={layout.list}
     itemClass={layout.item}
     cell={layout.cell}

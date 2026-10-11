@@ -19,11 +19,13 @@
   let {
     size,
     count,
+    drawn,
     onCount,
     class: className,
   }: {
     size: ScreenSize;
     count: number;
+    drawn: number | undefined;
     onCount: (count: number) => void;
     class?: ClassValue;
   } = $props();
@@ -31,59 +33,71 @@
   const { fewest, most } = $derived(COVERS_PER_ROW[size]);
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
   const labelId = $props.id();
+  const coversThatFit = $derived(
+    drawn !== undefined && drawn < count ? drawn : undefined,
+  );
 </script>
 
-<div class={["items-center gap-md large:gap-label", className]}>
-  <div class="flex-1">
-    <p id={labelId} class="text-body font-semibold large:text-small">
-      {m.library_covers_per_row()}
-    </p>
-    <p class="text-detail text-muted large:text-caption">
-      {RANGE_LABELS[size]({
-        fewest: numbers.format(fewest),
-        most: numbers.format(most),
-      })}
-    </p>
+<div class={["flex-col", className]}>
+  <div class="flex items-center gap-md large:gap-label">
+    <div class="flex-1">
+      <p id={labelId} class="text-body font-semibold large:text-small">
+        {m.library_covers_per_row()}
+      </p>
+      <p class="text-detail text-muted large:text-caption">
+        {RANGE_LABELS[size]({
+          fewest: numbers.format(fewest),
+          most: numbers.format(most),
+        })}
+      </p>
+    </div>
+    <div
+      role="group"
+      aria-labelledby={labelId}
+      class="flex items-center rounded-field border border-border large:rounded-small-control"
+    >
+      <button
+        type="button"
+        aria-label={m.library_fewer_covers_per_row()}
+        disabled={count <= fewest}
+        class="flex items-center justify-center rounded-s-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-s-small-control large:block-stepper large:inline-stepper"
+        onclick={() => {
+          onCount(count - 1);
+        }}
+      >
+        <Minus
+          size={ICON_SIZE}
+          aria-hidden="true"
+          class="large:block-lg large:inline-lg"
+        />
+      </button>
+      <output
+        class="text-center text-count font-bold min-inline-stepper-value large:text-small large:min-inline-xl"
+      >
+        {numbers.format(count)}
+      </output>
+      <button
+        type="button"
+        aria-label={m.library_more_covers_per_row()}
+        disabled={count >= most}
+        class="flex items-center justify-center rounded-e-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-e-small-control large:block-stepper large:inline-stepper"
+        onclick={() => {
+          onCount(count + 1);
+        }}
+      >
+        <Plus
+          size={ICON_SIZE}
+          aria-hidden="true"
+          class="large:block-lg large:inline-lg"
+        />
+      </button>
+    </div>
   </div>
-  <div
-    role="group"
-    aria-labelledby={labelId}
-    class="flex items-center rounded-field border border-border large:rounded-small-control"
-  >
-    <button
-      type="button"
-      aria-label={m.library_fewer_covers_per_row()}
-      disabled={count <= fewest}
-      class="flex items-center justify-center rounded-s-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-s-small-control large:block-stepper large:inline-stepper"
-      onclick={() => {
-        onCount(count - 1);
-      }}
-    >
-      <Minus
-        size={ICON_SIZE}
-        aria-hidden="true"
-        class="large:block-lg large:inline-lg"
-      />
-    </button>
-    <output
-      class="text-center text-count font-bold min-inline-stepper-value large:text-small large:min-inline-xl"
-    >
-      {numbers.format(count)}
-    </output>
-    <button
-      type="button"
-      aria-label={m.library_more_covers_per_row()}
-      disabled={count >= most}
-      class="flex items-center justify-center rounded-e-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-e-small-control large:block-stepper large:inline-stepper"
-      onclick={() => {
-        onCount(count + 1);
-      }}
-    >
-      <Plus
-        size={ICON_SIZE}
-        aria-hidden="true"
-        class="large:block-lg large:inline-lg"
-      />
-    </button>
+  <div aria-live="polite">
+    {#if coversThatFit !== undefined}
+      <p class="mbs-xs text-footnote text-muted large:text-caption">
+        {m.library_covers_per_row_fit({ count: coversThatFit })}
+      </p>
+    {/if}
   </div>
 </div>

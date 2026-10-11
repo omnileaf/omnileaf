@@ -61,6 +61,7 @@
     }
   });
 
+  let coversDrawn: number | undefined = $state();
   let emptyAddFolder: HTMLButtonElement | undefined = $state();
   let headingAddFolder: HTMLButtonElement | undefined = $state();
 
@@ -114,6 +115,7 @@
     {#if shown !== undefined}
       <ViewOptions
         view={shown.view}
+        {coversDrawn}
         onChoose={(chosen: LibraryView) => {
           view.choose(chosen);
         }}
@@ -164,6 +166,9 @@
         isComplete={shown.series.isComplete}
         onNearEnd={() => {
           void library.loadMore();
+        }}
+        onColumns={(columns: number) => {
+          coversDrawn = columns;
         }}
         {coverUrl}
         view={shown.view}

@@ -45,6 +45,20 @@
   "library_covers_per_row_range": "{fewest} to {most}",
   "library_covers_per_row_range_phone": "{fewest} to {most} on this phone",
   "library_covers_per_row_range_tablet": "{fewest} to {most} on this tablet",
+  "library_covers_per_row_fit": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} fits at this text size",
+        "countPlural=other": "{formattedCount} fit at this text size"
+      }
+    }
+  ],
   "library_fewer_covers_per_row": "Fewer covers per row",
   "library_more_covers_per_row": "More covers per row",
   "library_item_counts": "Item counts",

@@ -621,6 +621,60 @@ test.describe("view options", () => {
     await expectRowsToFillTheScreen(page);
   });
 
+  test("says how many covers fit once the largest text leaves room for fewer than asked", async ({
+    page,
+  }) => {
+    const { most } = COVERS_PER_ROW[screenSizeOf(page)];
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await openWith(page, viewWith(page, "grid", most));
+    const fit = await columnsOf(seriesList(page));
+
+    const options = await openViewOptions(page);
+
+    const hint = options
+      .getByText(`${String(fit)} fit at this text size`, { exact: true })
+      .filter({ visible: true });
+    expect(fit).toBeLessThan(most);
+    await expect(hint).toBeVisible();
+    await expect(
+      hint.locator("xpath=ancestor::*[@aria-live='polite']"),
+    ).toHaveCount(1);
+  });
+
+  test("stops saying how many covers fit once no more are asked for than fit", async ({
+    page,
+  }) => {
+    const { most } = COVERS_PER_ROW[screenSizeOf(page)];
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await openWith(page, viewWith(page, "grid", most));
+    const fit = await columnsOf(seriesList(page));
+    const options = await openViewOptions(page);
+
+    for (let count = most; count > fit; count -= 1) {
+      await stepButton(options, "Fewer").click();
+    }
+
+    await expect(
+      options.locator("output").filter({ visible: true }),
+    ).toHaveText(String(fit));
+    await expect(
+      options.getByText(/fits? at this text size$/).filter({ visible: true }),
+    ).toHaveCount(0);
+  });
+
+  test("says nothing of how many covers fit at the default text size", async ({
+    page,
+  }) => {
+    const { most } = COVERS_PER_ROW[screenSizeOf(page)];
+    await openWith(page, viewWith(page, "grid", most));
+
+    const options = await openViewOptions(page);
+
+    await expect(
+      options.getByText(/fits? at this text size$/).filter({ visible: true }),
+    ).toHaveCount(0);
+  });
+
   test("goes no lower than the fewest covers per row this size offers", async ({
     page,
   }) => {

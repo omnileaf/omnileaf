@@ -45,6 +45,20 @@
   "library_covers_per_row_range": "⟦{fewest} ţö {most}········⟧",
   "library_covers_per_row_range_phone": "⟦{fewest} ţö {most} öñ ţĥíš þĥöñé·············⟧",
   "library_covers_per_row_range_tablet": "⟦{fewest} ţö {most} öñ ţĥíš ţáƀļéţ··············⟧",
+  "library_covers_per_row_fit": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƒíţš áţ ţĥíš ţéẋţ šížé················⟧",
+        "countPlural=other": "⟦{formattedCount} ƒíţ áţ ţĥíš ţéẋţ šížé················⟧"
+      }
+    }
+  ],
   "library_fewer_covers_per_row": "⟦Ƒéŵéŕ çöṽéŕš þéŕ ŕöŵ········⟧",
   "library_more_covers_per_row": "⟦Ṁöŕé çöṽéŕš þéŕ ŕöŵ········⟧",
   "library_item_counts": "⟦Íţéɱ çöûñţš·····⟧",

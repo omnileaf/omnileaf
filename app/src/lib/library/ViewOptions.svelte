@@ -36,8 +36,17 @@
 
   let {
     view,
+    coversDrawn,
     onChoose,
-  }: { view: LibraryView; onChoose: (view: LibraryView) => void } = $props();
+  }: {
+    view: LibraryView;
+    coversDrawn: number | undefined;
+    onChoose: (view: LibraryView) => void;
+  } = $props();
+
+  const coversInARow = $derived(
+    view.display === "list" ? undefined : coversDrawn,
+  );
 
   let button: HTMLButtonElement | undefined = $state();
   let dialog: HTMLDialogElement | undefined = $state();
@@ -155,6 +164,7 @@
       <CoversPerRowStepper
         {size}
         count={view.coversPerRow[size]}
+        drawn={coversInARow}
         class={STEPPERS[size]}
         onCount={(count: number) => {
           onChoose(withCoversPerRow(view, size, count));
