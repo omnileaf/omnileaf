@@ -1,9 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
 
+import type { BackSwipe, SwipeEdge } from "../../src/lib/ipc/bindings.ts";
+
 import {
   CommandFailure,
   emitFakeEvent,
   type FakeBackend,
+  type FakeChannel,
   fakeProtocolRoute,
 } from "./fake-backend.ts";
 import {
@@ -29,6 +32,7 @@ import {
 
 const LIBRARY_CHANGED = "library-changed";
 const JUST_UNDER = 6;
+const SWIPED_PAST_HALFWAY = 0.7;
 const READ = { state: "read" } as const;
 const NOT_STARTED = { state: "notStarted" } as const;
 const ON_PAGE_15 = { state: "started", page: 15 } as const;
@@ -837,6 +841,84 @@ test.describe("on Android", () => {
     await expect(page.getByRole("checkbox")).toHaveCount(0);
 
     await page.goBack();
+
+    await expect(page).toHaveURL(/\/$/);
+  });
+});
+
+test.describe("swiping back from the edge on an iPhone", () => {
+  let swipes: FakeChannel<BackSwipe> | undefined;
+  const allowedEdges: (SwipeEdge | null)[] = [];
+
+  test.use({
+    backend: {
+      ...SHELF_BACKEND,
+      appInfo: onPlatform("ios").backend.appInfo,
+      watchBackSwipes: (channel) => {
+        swipes = channel;
+        return null;
+      },
+      allowBackSwipe: (edge) => {
+        allowedEdges.push(edge);
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    swipes = undefined;
+    allowedEdges.length = 0;
+  });
+
+  async function openFromTheLibrary(page: Page): Promise<void> {
+    await page.goto("/");
+    await page
+      .getByRole("main")
+      .getByRole("link", { name: new RegExp(SERIES_TITLE) })
+      .click();
+    await expect(books(page).first()).toBeVisible();
+  }
+
+  async function swipeBack(): Promise<void> {
+    await expect.poll(() => swipes).toBeDefined();
+    await swipes?.send({ kind: "moved", progress: SWIPED_PAST_HALFWAY });
+    await swipes?.send({
+      kind: "released",
+      progress: SWIPED_PAST_HALFWAY,
+      velocity: 0,
+    });
+  }
+
+  test("goes back to the library with a swipe from the left edge", async ({
+    page,
+  }) => {
+    await openFromTheLibrary(page);
+    await expect.poll(() => allowedEdges.at(-1)).toBe("left");
+
+    await swipeBack();
+
+    await expect(page).toHaveURL(/\/$/);
+  });
+
+  test("ends picking books with a swipe back, staying on the series, and leaves with the next", async ({
+    page,
+  }) => {
+    await openFromTheLibrary(page);
+    const start = await boxOf(page.getByRole("main"));
+    await page.getByRole("button", { name: "Select", exact: true }).click();
+    await page
+      .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
+      .check();
+
+    await swipeBack();
+
+    await expect(page.getByRole("checkbox")).toHaveCount(0);
+    await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+    await expect
+      .poll(async () => (await boxOf(page.getByRole("main"))).x)
+      .toBe(start.x);
+
+    await swipeBack();
 
     await expect(page).toHaveURL(/\/$/);
   });

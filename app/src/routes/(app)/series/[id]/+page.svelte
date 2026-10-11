@@ -145,6 +145,7 @@
   >
     <a
       href={resolve("/(app)")}
+      data-back-link
       class="flex shrink-0 items-center justify-center self-start rounded-full bg-series-crumb text-small font-semibold text-on-series-crumb backdrop-blur-glass block-series-back inline-series-back medium:gap-xs medium:rounded-field medium:ps-sm medium:pe-md medium:inline-auto expanded:block-series-crumb android:max-medium:block-touch-target android:max-medium:inline-touch-target"
     >
       <ChevronLeft size={BACK_ICON_SIZE} aria-hidden="true" />
