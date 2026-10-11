@@ -19,7 +19,10 @@ mod scheduled_rescans;
 mod system_bars;
 mod version_details;
 
-use std::{error::Error, path::Path};
+use std::{
+    error::Error,
+    path::{Path, PathBuf},
+};
 
 use omnileaf_engine::{Core, Library, LibraryFolders, ResourceRouter, SystemClock, describe_error};
 use tauri::{App, Manager};
@@ -121,9 +124,12 @@ fn library_folders(app: &App, data_dir: Option<&Path>) -> tauri::Result<LibraryF
 }
 
 fn open_covers(app: &App, data_dir: Option<&Path>) -> Result<ResourceRouter, Box<dyn Error>> {
-    let cache = match data_dir {
-        Some(data_dir) => data_dir.join(CACHE_FOLDER),
-        None => app.path().app_cache_dir()?,
-    };
-    Ok(ResourceRouter::open(&cache)?)
+    Ok(ResourceRouter::open(&cache_folder(app, data_dir)?)?)
+}
+
+fn cache_folder(app: &App, data_dir: Option<&Path>) -> tauri::Result<PathBuf> {
+    match data_dir {
+        Some(data_dir) => Ok(data_dir.join(CACHE_FOLDER)),
+        None => app.path().app_cache_dir(),
+    }
 }
