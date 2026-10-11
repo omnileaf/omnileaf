@@ -340,7 +340,7 @@ test.describe("with a folder found empty", () => {
     ).toBeVisible();
     await expect(
       question.getByText(
-        "The folder stays linked, and its files are never touched.",
+        "The folder stays linked, and its files are never touched. Reading progress is kept and comes back if the books do.",
       ),
     ).toBeVisible();
 
