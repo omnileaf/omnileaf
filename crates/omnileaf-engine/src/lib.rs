@@ -10,6 +10,8 @@ mod crash_report;
 mod device_class;
 mod error_chain;
 mod external_storage;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+mod folder_watch;
 mod ipc_brand;
 mod library;
 mod library_changes;
@@ -41,6 +43,8 @@ pub use crash_report::{
 };
 pub use error_chain::describe_error;
 pub use external_storage::{storage_by_device, storage_in_mountinfo, storage_of_windows_path};
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+pub use folder_watch::{AppFiles, FolderWatch};
 pub use library::{Library, LibraryError, LibraryFolders, OpenTree};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};

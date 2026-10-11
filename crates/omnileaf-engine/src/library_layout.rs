@@ -152,7 +152,7 @@ pub(crate) fn folder_name(folder: &Path) -> String {
     )
 }
 
-fn is_comic(name: &OsStr) -> bool {
+pub(crate) fn is_comic(name: &OsStr) -> bool {
     Path::new(name)
         .extension()
         .and_then(OsStr::to_str)
