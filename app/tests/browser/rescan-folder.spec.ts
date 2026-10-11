@@ -315,13 +315,24 @@ test.describe("with a folder found empty", () => {
     await rescanSampleComics(page);
     await removeItsBooks(page).click();
     const question = page.getByRole("alertdialog", {
-      name: "Remove 3 books from Sample Comics?",
+      name: "Remove its books?",
     });
     await expect(question).toBeVisible();
+    await expect(
+      question.getByText("3 books in your library", { exact: false }),
+    ).toBeVisible();
+    await expect(
+      question.getByText(
+        "The folder stays linked, and its files are never touched.",
+      ),
+    ).toBeVisible();
 
-    await question.getByRole("button", { name: "Remove books" }).click();
+    await question.getByRole("button", { name: "Remove 3 books" }).click();
 
-    await expect(page.getByText("3 books removed")).toBeVisible();
+    await expect(
+      page.getByText("Removed 3 books of Sample Comics"),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Undo" })).toHaveCount(0);
     expect(calls.removed).toEqual([SAMPLE_COMICS.id]);
     await expect(removeItsBooks(page)).toBeHidden();
     await expect(sampleComicsRow(page)).toBeFocused();
@@ -398,9 +409,11 @@ test.describe("with a folder found empty", () => {
       await removeItsBooks(page).click();
       await page
         .getByRole("alertdialog")
-        .getByRole("button", { name: "Remove books" })
+        .getByRole("button", { name: "Remove 3 books" })
         .click();
-      await expect(page.getByText("3 books removed")).toBeVisible();
+      await expect(
+        page.getByText("Removed 3 books of Sample Comics"),
+      ).toBeVisible();
 
       const violations = await accessibilityViolations(page);
 
@@ -437,6 +450,7 @@ test.describe("with a folder whose books couldn't be removed", () => {
   test.use({
     backend: {
       ...FOLDERS_BACKEND,
+      libraryFolderBookCount: () => 3,
       rescanLibraryFolder: (id) => ({
         id,
         name: SAMPLE_COMICS.name,
@@ -456,7 +470,7 @@ test.describe("with a folder whose books couldn't be removed", () => {
     await removeItsBooks(page).click();
     await page
       .getByRole("alertdialog")
-      .getByRole("button", { name: "Remove books" })
+      .getByRole("button", { name: "Remove 3 books" })
       .click();
   }
 

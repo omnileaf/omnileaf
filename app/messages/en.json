@@ -319,36 +319,51 @@
     {
       "declarations": [
         "input count",
-        "local countPlural = count: plural",
-        "local formattedCount = count: number"
-      ],
-      "selectors": ["countPlural"],
-      "match": {
-        "countPlural=one": "{formattedCount} book removed",
-        "countPlural=other": "{formattedCount} books removed"
-      }
-    }
-  ],
-  "library_found_empty_title": "{name} looks empty",
-  "library_found_empty_body": "Its books stay in your library in case its drive isn't connected. If you emptied it, remove them.",
-  "library_remove_books_title": [
-    {
-      "declarations": [
-        "input count",
         "input name",
         "local countPlural = count: plural",
         "local formattedCount = count: number"
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "Remove {formattedCount} book from {name}?",
-        "countPlural=other": "Remove {formattedCount} books from {name}?"
+        "countPlural=one": "Removed {formattedCount} book of {name}",
+        "countPlural=other": "Removed {formattedCount} books of {name}"
       }
     }
   ],
-  "library_remove_books_title_uncounted": "Remove the books of {name}?",
-  "library_remove_books_note": "Their files weren't found. If they come back, their reading progress returns with them.",
-  "library_remove_books_confirm": "Remove books",
+  "library_found_empty_title": "{name} looks empty",
+  "library_found_empty_body": "Its books stay in your library in case its drive isn't connected. If you emptied it, remove them.",
+  "library_remove_books_title": "Remove its books?",
+  "library_remove_books_detail": [
+    {
+      "declarations": [
+        "input books",
+        "input location",
+        "local booksPlural = books: plural",
+        "local formattedBooks = books: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "{location} · {formattedBooks} book in your library",
+        "booksPlural=other": "{location} · {formattedBooks} books in your library"
+      }
+    }
+  ],
+  "library_remove_books_note": "The folder stays linked, and its files are never touched.",
+  "library_remove_books_confirm": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Remove {formattedCount} book",
+        "countPlural=other": "Remove {formattedCount} books"
+      }
+    }
+  ],
+  "library_remove_books_confirm_uncounted": "Remove the books",
   "library_remove_books_cancel": "Cancel",
   "library_remove_books_failed": "Couldn't remove the books",
   "library_remove_books_failed_body": "Nothing in your library has changed. Try again, or rescan {name} first.",
