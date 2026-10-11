@@ -3437,6 +3437,7 @@ dependencies = [
  "jpeg-decoder",
  "jpeg-encoder",
  "png 0.18.1",
+ "sevenz-rust2",
  "thiserror 2.0.21",
  "tokio",
  "zip",

@@ -77,6 +77,17 @@ pub fn subsampled_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
     scan_jpeg(seed, SUBSAMPLED_SCAN_GRAIN, SamplingFactor::R_4_2_0)
 }
 
+/// Bytes no compressor can shrink, standing in for a JPEG page's entropy-coded data where only its size matters.
+#[must_use]
+pub fn incompressible_bytes(seed: u64, length: usize) -> Vec<u8> {
+    (0_u64..)
+        .flat_map(|block| {
+            splitmix64(seed.wrapping_add(block.wrapping_mul(GOLDEN_GAMMA))).to_le_bytes()
+        })
+        .take(length)
+        .collect()
+}
+
 fn scan_jpeg(seed: u64, grain: u8, chroma: SamplingFactor) -> Result<Vec<u8>, FixtureError> {
     let ground = tint(seed, 0);
     let width = u32::from(SCAN_WIDTH);

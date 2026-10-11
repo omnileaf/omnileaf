@@ -11,10 +11,12 @@ use std::{
 };
 
 use omnileaf_testkit::{
-    ArchiveEntry, Compression, GENERATED_LIBRARY_NAME, GeneratedLibrary, PageShape, SAMPLE_LIBRARY,
-    SAMPLE_LIBRARY_NAME, ScratchFolder, cbz, full_chroma_scan_jpeg, page_jpeg, page_png, page_webp,
-    subsampled_scan_jpeg, write_generated_library, write_sample_library,
+    ArchiveEntry, Compression, GENERATED_LIBRARY_NAME, GeneratedLibrary, Packing, PageShape,
+    SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, ScratchFolder, cb7, cbz, full_chroma_scan_jpeg,
+    incompressible_bytes, page_jpeg, page_png, page_webp, subsampled_scan_jpeg,
+    write_generated_library, write_sample_library,
 };
+use sevenz_rust2::{ArchiveReader, Password};
 use zip::{CompressionMethod, DateTime, ZipArchive};
 
 const SEED: u64 = 7;
@@ -62,6 +64,25 @@ fn sample_entries() -> Vec<ArchiveEntry> {
             name: format!("{:03}.png", index + 1),
             bytes: page_png(SEED, index, PageShape::Portrait).unwrap(),
         })
+        .collect()
+}
+
+fn read_cb7(bytes: Vec<u8>, password: &str) -> Result<Vec<(String, Vec<u8>)>, sevenz_rust2::Error> {
+    let mut archive = ArchiveReader::new(Cursor::new(bytes), Password::from(password))?;
+    let mut entries = Vec::new();
+    archive.for_each_entries(|entry, reader| {
+        let mut bytes = Vec::new();
+        reader.read_to_end(&mut bytes)?;
+        entries.push((entry.name().to_owned(), bytes));
+        Ok(true)
+    })?;
+    Ok(entries)
+}
+
+fn named_bytes(entries: &[ArchiveEntry]) -> Vec<(String, Vec<u8>)> {
+    entries
+        .iter()
+        .map(|entry| (entry.name.clone(), entry.bytes.clone()))
         .collect()
 }
 
@@ -227,6 +248,75 @@ fn stamps_every_archive_entry_with_the_same_fixed_time() {
             Some(DateTime::default())
         );
     }
+}
+
+#[test]
+fn keeps_cb7_entries_in_the_order_given_with_their_bytes() {
+    let entries = sample_entries();
+    for packing in [Packing::Solid, Packing::PerEntry] {
+        let archive = cb7(&entries, packing).unwrap();
+
+        let read = read_cb7(archive, "").unwrap();
+
+        assert_eq!(read, named_bytes(&entries), "{packing:?}");
+    }
+}
+
+#[test]
+fn packs_a_solid_cb7_in_one_block_and_otherwise_one_block_per_entry() {
+    for (packing, blocks) in [(Packing::Solid, 1), (Packing::PerEntry, 3)] {
+        let archive = cb7(&sample_entries(), packing).unwrap();
+
+        let reader = ArchiveReader::new(Cursor::new(archive), Password::empty()).unwrap();
+
+        assert_eq!(reader.archive().blocks.len(), blocks, "{packing:?}");
+    }
+}
+
+#[test]
+fn generates_the_same_cb7_every_time() {
+    let first = cb7(&sample_entries(), Packing::Solid).unwrap();
+
+    let second = cb7(&sample_entries(), Packing::Solid).unwrap();
+
+    assert_eq!(first, second);
+}
+
+#[test]
+fn writes_an_empty_cb7_entry_as_a_file_with_no_stream() {
+    let entries = [ArchiveEntry {
+        name: "empty.png".to_owned(),
+        bytes: Vec::new(),
+    }];
+
+    let archive = cb7(&entries, Packing::Solid).unwrap();
+
+    let reader = ArchiveReader::new(Cursor::new(archive), Password::empty()).unwrap();
+    let file = &reader.archive().files[0];
+    assert_eq!(
+        (file.name(), file.has_stream, file.is_directory),
+        ("empty.png", false, false)
+    );
+}
+
+#[test]
+fn generates_the_same_incompressible_bytes_every_time() {
+    let first = incompressible_bytes(SEED, 4096);
+
+    let second = incompressible_bytes(SEED, 4096);
+
+    assert_eq!((first.len(), &first), (4096, &second));
+}
+
+#[test]
+fn makes_incompressible_bytes_that_deflate_cannot_shrink() {
+    let bytes = incompressible_bytes(SEED, 64 * 1024);
+
+    let mut deflated = flate2::write::DeflateEncoder::new(Vec::new(), flate2::Compression::best());
+    std::io::Write::write_all(&mut deflated, &bytes).unwrap();
+    let deflated = deflated.finish().unwrap();
+
+    assert!(deflated.len() >= bytes.len(), "{} bytes", deflated.len());
 }
 
 #[test]

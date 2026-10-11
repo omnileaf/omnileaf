@@ -14,4 +14,6 @@ pub enum FixtureError {
     Webp(#[from] image_webp::EncodingError),
     #[error("build an archive")]
     Archive(#[from] zip::result::ZipError),
+    #[error("build a 7z archive")]
+    SevenZipArchive(#[from] sevenz_rust2::Error),
 }

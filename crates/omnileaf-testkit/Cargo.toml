@@ -11,6 +11,7 @@ flate2.workspace = true
 image-webp.workspace = true
 jpeg-encoder.workspace = true
 png.workspace = true
+sevenz-rust2 = { workspace = true, features = ["compress"] }
 thiserror.workspace = true
 zip.workspace = true
 
