@@ -48,6 +48,9 @@ const NARROWEST_SCREENS = [320, 600, 840, 1200];
 const TABLET_NARROWEST = 600;
 const EXPANDED_TABLET = 840;
 const TEXT_SCALES = [1, 1.15, 1.3, 1.5, 1.75, 2];
+const LARGE_TEXT_SCALES = [1.5, 2];
+const READABLE_TITLE_WIDTHS = [840, 1280];
+const READABLE_TITLE_EMS = 5;
 const COMPACT_WIDTHS = [600, 640, 700, 744, 840, 900, 1024, 1200, 1280, 1440];
 const DRAWN_DISPLAYS = ["grid", "compact", "covers"] as const;
 const DENSE_GRID_WIDTHS = [600, 744, 840, 1024, 1200, 1280, 1440];
@@ -299,6 +302,33 @@ test.describe("at every text size", () => {
           await titlesOutOfSight(seriesList(page)),
           `at ${String(width)}px`,
         ).toBe(0);
+      }
+    });
+  }
+
+  for (const scale of LARGE_TEXT_SCALES) {
+    test(`gives a compact title room for about eight characters a line with the text at ${String(scale)} times its size`, async ({
+      page,
+    }) => {
+      await setTextScale(page, scale);
+      await openWith(page, {
+        ...DEFAULT_LIBRARY_VIEW,
+        display: "compact",
+        coversPerRow: MOST_COVERS_PER_ROW,
+      });
+      const title = firstSeries(page).getByText(FIRST_TITLE);
+
+      for (const width of READABLE_TITLE_WIDTHS) {
+        await page.setViewportSize({ width, height: SCREEN_HEIGHT });
+
+        const room = await title.evaluate(
+          (element) =>
+            element.clientWidth /
+            Number.parseFloat(getComputedStyle(element).fontSize),
+        );
+        expect(room, `at ${String(width)}px`).toBeGreaterThanOrEqual(
+          READABLE_TITLE_EMS,
+        );
       }
     });
   }
