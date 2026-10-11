@@ -24,8 +24,8 @@ export function columnsThatFit({ widths, space, gap }: SegmentRoom): number {
 }
 
 /**
- * Calls `onFit` with the columns the segments fit in whenever `ruler`, which spans `track` and holds one unwrapped copy of each segment, resizes; returns a stop.
- * Fits at once when the ruler first shows, so a sheet opens at its settled height, and on the next frame after any later resize.
+ * Refits a frame after a resize, since a layout change inside the observer's callback is a resize loop the browser reports as an error.
+ * A closed dialog's content measures 0 wide, so the control fits again as its dialog opens.
  */
 export function followFittingColumns(
   track: HTMLElement,
@@ -33,9 +33,13 @@ export function followFittingColumns(
   onFit: (columns: number) => void,
 ): () => void {
   const fit = (): void => {
+    const rulerWidth = ruler.getBoundingClientRect().width;
+    if (rulerWidth === 0) {
+      return;
+    }
     const style = getComputedStyle(track);
     const space =
-      ruler.getBoundingClientRect().width -
+      rulerWidth -
       Number.parseFloat(style.paddingInlineStart) -
       Number.parseFloat(style.paddingInlineEnd);
     const widths = [...ruler.children].map(
@@ -49,26 +53,23 @@ export function followFittingColumns(
       }),
     );
   };
-  let isShown = false;
   let frame = 0;
-  const observer = new ResizeObserver(() => {
-    const wasShown = isShown;
-    isShown = ruler.getBoundingClientRect().width > 0;
+  const resizes = new ResizeObserver(() => {
     cancelAnimationFrame(frame);
-    if (!isShown) {
-      return;
-    }
-    if (wasShown) {
-      frame = requestAnimationFrame(fit);
-    } else {
-      fit();
-    }
+    frame = requestAnimationFrame(fit);
   });
+  const opening = new MutationObserver(fit);
+  fit();
+  const dialog = track.closest("dialog");
+  if (dialog !== null) {
+    opening.observe(dialog, { attributeFilter: ["open"] });
+  }
   for (const element of [ruler, ...ruler.children]) {
-    observer.observe(element);
+    resizes.observe(element);
   }
   return () => {
-    observer.disconnect();
+    resizes.disconnect();
+    opening.disconnect();
     cancelAnimationFrame(frame);
   };
 }

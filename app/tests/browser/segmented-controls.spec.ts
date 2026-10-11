@@ -28,10 +28,13 @@ interface Segment {
 
 const LANGUAGES = { en: english, "en-XA": pseudo } as const;
 const PLATFORMS = {
-  ios: { project: "webkit-phone", target: 44 },
-  android: { project: "chromium-phone", target: 48 },
-  linux: { project: "chromium-desktop", target: 40 },
-} as const satisfies Record<string, { project: string; target: number }>;
+  ios: { project: "webkit-phone", target: 44, screenWidth: 390 },
+  android: { project: "chromium-phone", target: 48, screenWidth: 390 },
+  linux: { project: "chromium-desktop", target: 40, screenWidth: 1280 },
+} as const satisfies Record<
+  string,
+  { project: string; target: number; screenWidth: number }
+>;
 const TEXT_SCALES = [1, 1.3, 1.5, 2] as const;
 const WIDTHS = [320, 390, 744, 1024, 1440] as const;
 const HEIGHT = 844;
@@ -39,6 +42,11 @@ const ONE_ROW_WIDTHS: readonly number[] = [390, 1440];
 const GLYPH_OVERSHOOT = 4;
 const SAME_WIDTH = 1;
 const SERIES = sampleSeries(12);
+const LARGEST_TEXT_SCALE = 2;
+const CLASSIC_SCROLLBARS =
+  "::-webkit-scrollbar { width: 15px; height: 15px; } ::-webkit-scrollbar-thumb { background: gray; }";
+const TALL = 1600;
+const SWEEP_WIDTHS = [320, 390, 600, 744, 1200, 1440] as const;
 
 function withSeries(platform: Platform): FakeBackend {
   return {
@@ -120,17 +128,18 @@ const CONTROLS: readonly SegmentedControl[] = [
   },
 ];
 
+async function addStyle(page: Page, css: string): Promise<void> {
+  await page.addInitScript((sheet) => {
+    document.addEventListener("DOMContentLoaded", () => {
+      const style = document.createElement("style");
+      style.textContent = sheet;
+      document.head.append(style);
+    });
+  }, css);
+}
+
 async function scaleText(page: Page, scale: number): Promise<void> {
-  await page.addInitScript(
-    (css) => {
-      document.addEventListener("DOMContentLoaded", () => {
-        const style = document.createElement("style");
-        style.textContent = css;
-        document.head.append(style);
-      });
-    },
-    `:root { --text-scale: ${String(scale)} !important; }`,
-  );
+  await addStyle(page, `:root { --text-scale: ${String(scale)} !important; }`);
 }
 
 function nextFrames(page: Page): Promise<void> {
@@ -279,5 +288,164 @@ for (const [platform, { project, target }] of Object.entries(PLATFORMS)) {
         });
       }
     }
+  });
+}
+
+interface HeardErrors {
+  heardErrors?: string[];
+}
+
+/** Hears a resize observer's callback changing a control's layout as an error too, since the browser only reports it once the change loops. */
+async function listenForErrors(page: Page): Promise<() => Promise<string[]>> {
+  const thrown: string[] = [];
+  page.on("pageerror", (error) => {
+    thrown.push(error.message);
+  });
+  await page.addInitScript(() => {
+    const heard: string[] = [];
+    (window as Window & HeardErrors).heardErrors = heard;
+    window.addEventListener("error", (event) => heard.push(event.message));
+    window.addEventListener("omnileaf:interface-error", (event) => {
+      heard.push(String(event instanceof CustomEvent ? event.detail : event));
+    });
+    const layoutOfControls = (): string =>
+      [...document.querySelectorAll("[role=radiogroup]")]
+        .map(
+          (group) => `${group.className}|${group.getAttribute("style") ?? ""}`,
+        )
+        .join("\n");
+    const Observer = window.ResizeObserver;
+    window.ResizeObserver = class extends Observer {
+      constructor(callback: ResizeObserverCallback) {
+        super((entries, observer) => {
+          const before = layoutOfControls();
+          callback(entries, observer);
+          queueMicrotask(() => {
+            if (layoutOfControls() !== before) {
+              heard.push(
+                "a resize observer's callback changed a segmented control's layout",
+              );
+            }
+          });
+        });
+      }
+    };
+  });
+  return async () => [
+    ...thrown,
+    ...(await page.evaluate(
+      () => (window as Window & HeardErrors).heardErrors ?? [],
+    )),
+  ];
+}
+
+function displayGroup(page: Page): Locator {
+  return page
+    .getByRole("dialog", { name: english.library_view })
+    .getByRole("radiogroup", { name: english.library_view_display });
+}
+
+function rowsInFirstFrame(page: Page): Promise<number> {
+  return page.evaluate(
+    (opener) =>
+      new Promise<number>((resolve) => {
+        document
+          .querySelector<HTMLButtonElement>(
+            `main button[aria-label="${opener}"]`,
+          )
+          ?.click();
+        requestAnimationFrame(() => {
+          const segments = document.querySelectorAll(
+            "dialog[open] [role=radiogroup] label",
+          );
+          resolve(
+            new Set(
+              [...segments].map((segment) =>
+                Math.round(segment.getBoundingClientRect().top),
+              ),
+            ).size,
+          );
+        });
+      }),
+    english.library_view_options,
+  );
+}
+
+for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
+  test.describe(`View options on ${platform} at the largest text`, () => {
+    test.use({ backend: withSeries(platform as Platform) });
+
+    test.beforeEach(async ({ page }, testInfo) => {
+      test.skip(
+        testInfo.project.name !== project,
+        `${platform} is checked in ${project}`,
+      );
+      await scaleText(page, LARGEST_TEXT_SCALE);
+      await page.setViewportSize({
+        width: screenWidth,
+        height: TALL,
+      });
+    });
+
+    test("opens with the displays already in the rows they keep", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      await expect(
+        page
+          .getByRole("main")
+          .getByRole("button", { name: english.library_view_options }),
+      ).toBeVisible();
+
+      const firstFrame = await rowsInFirstFrame(page);
+      await nextFrames(page);
+      const settled = rowsOf(await segmentsOf(displayGroup(page))).length;
+
+      expect(settled).toBeGreaterThan(1);
+      expect(firstFrame).toBe(settled);
+    });
+
+    test("raises no error while the displays wrap and unwrap beside a classic scrollbar", async ({
+      page,
+    }) => {
+      await addStyle(page, CLASSIC_SCROLLBARS);
+      const errors = await listenForErrors(page);
+      await page.goto("/");
+      await page
+        .getByRole("main")
+        .getByRole("button", { name: english.library_view_options })
+        .click();
+      await nextFrames(page);
+      const rows = rowsOf(await segmentsOf(displayGroup(page)));
+      const rowStep = (rows[1]?.[0]?.y ?? 0) - (rows[0]?.[0]?.y ?? 0);
+      const wrappedHeight = await page
+        .getByRole("dialog", { name: english.library_view })
+        .evaluate((dialog) => dialog.scrollHeight);
+      await page.keyboard.press("Escape");
+      const { width } = page.viewportSize() ?? { width: 0 };
+      await page.setViewportSize({
+        width,
+        height: wrappedHeight - Math.round(rowStep / 2),
+      });
+
+      await page
+        .getByRole("main")
+        .getByRole("button", { name: english.library_view_options })
+        .click();
+      await nextFrames(page);
+      for (const sweptWidth of [
+        ...SWEEP_WIDTHS,
+        ...[...SWEEP_WIDTHS].reverse(),
+      ]) {
+        await page.setViewportSize({
+          width: sweptWidth,
+          height: wrappedHeight - Math.round(rowStep / 2),
+        });
+        await nextFrames(page);
+      }
+
+      expect(rowStep).toBeGreaterThan(0);
+      expect(await errors()).toEqual([]);
+    });
   });
 }
