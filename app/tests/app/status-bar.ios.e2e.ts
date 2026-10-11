@@ -67,7 +67,6 @@ async function screenshot(): Promise<Buffer> {
   return readFile(SCREENSHOT);
 }
 
-/** Gives the screen time to draw what `isSettled` waits for, answering with the last screenshot taken. */
 async function settledScreenshot(
   isSettled: (shot: Buffer) => boolean,
 ): Promise<Buffer> {

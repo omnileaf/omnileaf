@@ -69,7 +69,6 @@ const GRID_LOOKS = {
   ],
 } as const satisfies Record<ScreenSize, readonly GridLook[]>;
 
-/** A row's height with its padding and the line under it, and the cover inside its edge. */
 const LIST_LOOKS = {
   phone: { rowHeight: 105, coverWidth: 48, coverHeight: 72 },
   tablet: { rowHeight: 105, coverWidth: 48, coverHeight: 72 },

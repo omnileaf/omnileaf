@@ -24,7 +24,6 @@ const SECTIONS = [
   "/settings/about/licences",
 ] as const;
 
-/** Found by its place, the first control of the Folders section, since its name is translated. */
 function addFolderButton(page: Page) {
   return page
     .getByRole("main")

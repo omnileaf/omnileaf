@@ -13,7 +13,6 @@ const TEN_THOUSAND = 10_000;
 const FRAMES = 300;
 const SCROLL_PER_FRAME_PX = 40;
 const FRAME_BUDGET_MS = 1000 / 60;
-/** A frame this long missed the screen's next refresh, which at 60 Hz comes every 16.7 ms. */
 const DROPPED_FRAME_MS = FRAME_BUDGET_MS * 1.5;
 const MOST_DROPPED_FRAMES = 3;
 const TIMED_PASSES = 3;
@@ -46,7 +45,6 @@ interface Scrolled {
   readonly droppedFrames: number;
 }
 
-/** Scrolls the page a step each frame and times every frame it took. */
 function scrollFrameByFrame(
   page: Page,
   frames: number,

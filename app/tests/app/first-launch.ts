@@ -25,7 +25,6 @@ function headingNamed(names: readonly string[]): Locator {
   return xpath(`//h1[${anyName}]`);
 }
 
-/** Goes through every step of the first launch when the app opens on it, as it does until one session has finished it. */
 export async function finishFirstLaunchIfShown(
   session: Session,
 ): Promise<void> {

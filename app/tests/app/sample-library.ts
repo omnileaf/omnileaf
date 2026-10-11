@@ -5,7 +5,6 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
-/** The generated sample library that `cargo xtask fixtures` writes. */
 export const SAMPLE_LIBRARY = {
   name: "Sample Library",
   series: 3,
@@ -19,7 +18,6 @@ export interface CreatedLibrary {
   remove(): Promise<void>;
 }
 
-/** Writes the sample library into `parent`, returning the folder it made there. */
 export async function writeSampleLibrary(parent: string): Promise<string> {
   await promisify(execFile)("cargo", ["xtask", "fixtures", "--out", parent], {
     cwd: WORKSPACE,

@@ -10,11 +10,9 @@ const RED_WEIGHT = 0.2126;
 const GREEN_WEIGHT = 0.7152;
 const BLUE_WEIGHT = 0.0722;
 
-/** The status bar's clock, as shares of the screen, clear of the screen's rounded corner. */
 const CLOCK_AREA: Area = { left: 0.1, right: 0.3, top: 0.01, bottom: 0.06 };
 const MIDDLE_AREA: Area = { left: 0.1, right: 0.9, top: 0.4, bottom: 0.6 };
 
-/** A part of the screen, as shares of its width and height. */
 interface Area {
   readonly left: number;
   readonly right: number;
@@ -87,7 +85,6 @@ export function isMiddleOfScreenDark(screenshot: Buffer): boolean {
 }
 
 export interface StatusBarReading {
-  /** How far the clock stands out from the page behind it, from 0 for invisible to 1 for black on white. */
   readonly contrast: number;
   readonly isPageDark: boolean;
 }

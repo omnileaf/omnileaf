@@ -14,10 +14,8 @@ declare global {
   }
 }
 
-/** The screen reads only the first page of these, so this times the interface rather than the catalog query. */
 const CATALOG = sampleSeries(TEN_THOUSAND);
 
-/** Notes when the next click lands, and when the frame showing the first series after it has painted. */
 function timeTheNextGrid(): void {
   window.__omnileafLibraryClickedAt = undefined;
   window.__omnileafGridPaintedAt = undefined;

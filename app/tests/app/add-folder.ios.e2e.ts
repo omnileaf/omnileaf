@@ -100,7 +100,6 @@ async function pickSampleLibrary(session: Session): Promise<void> {
   });
 }
 
-/** Leaves for the library page first, so re-opening Library settings can't find the page it is replacing. */
 async function openLibrarySettings(): Promise<void> {
   await openLibraryPage(appSession());
   await (await appSession().waitFor(SETTINGS_LINK)).click();
@@ -116,7 +115,6 @@ async function addSampleLibrary(): Promise<string> {
   ).text();
 }
 
-/** Closes a picker a failed test left open, so the next test starts on the app's page, not on Files. */
 async function closeAnyPicker(session: Session): Promise<void> {
   await session.inNativeContext(async () => {
     try {

@@ -6,7 +6,6 @@ export type WireSeries = Awaited<
 
 export const SERIES_PER_PAGE = 50;
 
-/** Generated series named "Sample Series 0001" onwards, with no covers so specs need no image routes. */
 export function sampleSeries(count: number, from = 1): WireSeries[] {
   return Array.from({ length: count }, (_, index) => {
     const number = String(from + index).padStart(4, "0");
@@ -20,7 +19,6 @@ export function sampleSeries(count: number, from = 1): WireSeries[] {
   });
 }
 
-/** Lists whatever `catalog` holds when asked, a page at a time, with each page's start as its cursor. */
 export function pagedSeries(
   catalog: () => readonly WireSeries[],
 ): FakeBackend["librarySeries"] {

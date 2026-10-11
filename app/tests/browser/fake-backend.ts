@@ -11,12 +11,10 @@ type Outcome<Result> = [Success<Result>] extends [never]
   ? Result
   : Success<Result>["data"];
 
-/** The end of a channel the fake backend holds, sending each message to the page as the Rust side would. */
 export interface FakeChannel<Message> {
   send(message: Message): Promise<void>;
 }
 
-/** A value as it crosses the bridge, where branded ids are the plain strings they're minted from. */
 type Wire<Value> =
   Value extends Channel<infer Message>
     ? FakeChannel<Message>
@@ -36,7 +34,6 @@ export type FakeBackend = {
   ) => Answer<Name> | Promise<Answer<Name>>;
 };
 
-/** Thrown by a fake command to fail the way the Rust side does, with a typed error. */
 export class CommandFailure extends Error {
   constructor(readonly error: IpcError) {
     super(error.message);
@@ -57,7 +54,6 @@ declare global {
 const BRIDGE = "__omnileafFakeInvoke";
 const FAKE_PROTOCOL_PREFIX = "__protocol__/";
 
-/** Where the page asks for what a custom protocol such as `omni` would serve, as a route on the preview server a spec can answer. */
 export function fakeProtocolRoute(protocol: string): string {
   return `**/${FAKE_PROTOCOL_PREFIX}${protocol}/**`;
 }
@@ -120,7 +116,6 @@ function isCommand(
   return Object.hasOwn(backend, name);
 }
 
-/** Turns a channel, which crosses the bridge as its id, back into something the fake can send on. */
 function onTheFakeSide(page: Page, value: unknown): unknown {
   if (typeof value !== "string" || !value.startsWith(CHANNEL_PREFIX)) {
     return value;
@@ -140,10 +135,7 @@ function onTheFakeSide(page: Page, value: unknown): unknown {
   return channel;
 }
 
-/**
- * The bindings send arguments as an object in parameter order, so its values
- * line up with the handler's parameters.
- */
+/** The bindings send arguments as an object in parameter order, so its values line up with the handler's parameters. */
 async function answer(
   page: Page,
   backend: FakeBackend,
@@ -169,7 +161,6 @@ async function answer(
   }
 }
 
-/** Sends an event to the page the way the Rust side emits one to every window. */
 export async function emitFakeEvent(
   page: Page,
   event: string,

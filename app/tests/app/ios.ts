@@ -99,7 +99,6 @@ async function launchWebDriverAgent(
   });
 }
 
-/** Saves the Simulator's recent log from the launcher, the installer and the app, for a launch that hung. */
 async function saveLaunchLogs(simulator: Simulator): Promise<string> {
   const { stdout } = await run(
     "xcrun",
@@ -122,7 +121,6 @@ async function saveLaunchLogs(simulator: Simulator): Promise<string> {
   return LAUNCH_HANG_LOGS;
 }
 
-/** Launches a just-installed app once to show it starts, keeping its output and, if the launch hangs, the Simulator's log. */
 async function installApp(simulator: Simulator): Promise<string> {
   await run("xcrun", ["simctl", "install", simulator.udid, APP_BUNDLE], {
     timeout: SIMCTL_TIMEOUT_MS,

@@ -96,7 +96,6 @@ export function viewportOf(page: Page): ViewportSize {
   return viewport;
 }
 
-/** The size the library draws the page's screen at, each with covers per row of its own. */
 export function screenSizeOf(page: Page): ScreenSize {
   const { width } = viewportOf(page);
   if (width >= LARGE_MIN_WIDTH) {
@@ -115,7 +114,6 @@ export async function boxOf(locator: Locator): Promise<Box> {
   return box;
 }
 
-/** Waits until nothing in `locator`'s subtree is animating, polling so it also catches transitions that start while it waits. */
 export async function settle(locator: Locator): Promise<void> {
   await expect
     .poll(() =>
@@ -140,7 +138,6 @@ export const APP_PAGES = [
   "/settings/about/licences",
 ] as const;
 
-/** Lists each element in `within` whose content spills out sideways, and "the page" when it scrolls sideways, leaving out truncated text, visually hidden text, decorative art that clips itself and what a negative margin pulls past the edge on purpose. */
 export function sidewaysOverflow(
   page: Page,
   within = "main",
@@ -212,7 +209,9 @@ function runningAnimations(page: Page): Promise<string[]> {
   );
 }
 
-/** Waits for every animation that ends, such as a fade, since axe reads colours mid-fade as they are, and leaves out axe's page-zoom rule, since the app leaves zooming to the system as native apps do. */
+const PAGE_ZOOM_RULE_LEFT_TO_THE_SYSTEM = "meta-viewport";
+
+/** Waits out animations that end first, since axe reads colours mid-fade as they are. */
 export async function accessibilityViolations(page: Page): Promise<Violations> {
   await expect
     .poll(() => runningAnimations(page), {
@@ -220,12 +219,11 @@ export async function accessibilityViolations(page: Page): Promise<Violations> {
     })
     .toEqual([]);
   const results = await new AxeBuilder({ page })
-    .disableRules(["meta-viewport"])
+    .disableRules([PAGE_ZOOM_RULE_LEFT_TO_THE_SYSTEM])
     .analyze();
   return results.violations;
 }
 
-/** Double-clicks the first character `target` shows, as a reader picking a word would, and returns what that selected. */
 export async function selectedByDoubleClick(
   page: Page,
   target: Locator,

@@ -56,7 +56,6 @@ async function swipe(...steps: readonly BackSwipe[]): Promise<void> {
   }
 }
 
-/** The share of the web view's width a finger crosses to cross `share` of the screen it moves. */
 async function acrossScreen(page: Page, share: number): Promise<number> {
   const screen = await boxOf(page.getByRole("main"));
   return (share * screen.width) / viewportOf(page).width;

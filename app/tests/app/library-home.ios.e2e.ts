@@ -46,12 +46,10 @@ async function appContainer(): Promise<string> {
   return stdout.trim();
 }
 
-/** The app's folder that the Files app shows as On My iPhone › Omnileaf. */
 async function onMyIphoneOmnileaf(): Promise<string> {
   return join(await appContainer(), "Documents");
 }
 
-/** Copies all but the last page of a sample chapter, so the copy is a book of its own rather than the sample one again. */
 async function copyNewBookInto(folder: string): Promise<void> {
   const sample = await createSampleLibrary();
   try {

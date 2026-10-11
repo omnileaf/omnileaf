@@ -36,7 +36,6 @@ const SAMPLE_COMICS: WireFolder = {
   isAvailable: true,
 };
 
-/** A device that hasn't finished its first launch until the test finishes it. */
 class Device {
   finishes = 0;
   failsToFinish = false;
