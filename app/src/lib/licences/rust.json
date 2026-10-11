@@ -3515,14 +3515,6 @@
     },
     {
       "name": "windows-sys",
-      "version": "0.59.0",
-      "licence": "MIT OR Apache-2.0",
-      "texts": [
-        6
-      ]
-    },
-    {
-      "name": "windows-sys",
       "version": "0.60.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
@@ -3540,14 +3532,6 @@
     {
       "name": "windows-targets",
       "version": "0.42.2",
-      "licence": "MIT OR Apache-2.0",
-      "texts": [
-        6
-      ]
-    },
-    {
-      "name": "windows-targets",
-      "version": "0.52.6",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         6
@@ -3579,14 +3563,6 @@
     },
     {
       "name": "windows_x86_64_gnu",
-      "version": "0.52.6",
-      "licence": "MIT OR Apache-2.0",
-      "texts": [
-        6
-      ]
-    },
-    {
-      "name": "windows_x86_64_gnu",
       "version": "0.53.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
@@ -3596,14 +3572,6 @@
     {
       "name": "windows_x86_64_msvc",
       "version": "0.42.2",
-      "licence": "MIT OR Apache-2.0",
-      "texts": [
-        6
-      ]
-    },
-    {
-      "name": "windows_x86_64_msvc",
-      "version": "0.52.6",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         6
