@@ -3,6 +3,9 @@
   import type { Component } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import { followFittingColumns } from "./segment-columns";
+  import SegmentFace from "./SegmentFace.svelte";
+
   type Size = "small" | "regular";
 
   interface Props {
@@ -18,27 +21,26 @@
     readonly class?: ClassValue;
   }
 
-  const ICON_SIZE = 16;
-
   const LOOKS = {
     small: {
       track:
         "gap-xs rounded-field p-xs large:rounded-small-control large:p-segment-track",
-      segment:
-        "flex-auto gap-icon-gap rounded-small-control px-sm text-detail block-segment min-inline-none large:rounded-segment large:text-caption large:block-segment-compact",
-      text: "truncate",
+      segment: "rounded-small-control min-block-segment large:rounded-segment",
+      onRow: "flex-auto desktop:large:min-block-segment-compact",
+      face: "gap-icon-gap px-sm text-detail large:text-caption",
       icon: "large:block-segment-icon-desktop large:inline-segment-icon-desktop",
     },
     regular: {
       track:
         "gap-2xs rounded-card p-2xs touch:medium:max-inline-segmented-touch desktop:max-inline-segmented",
-      segment: "flex-1 rounded-tile text-callout min-block-option",
-      text: "",
+      segment: "rounded-tile min-block-option",
+      onRow: "flex-1",
+      face: "text-callout",
       icon: "",
     },
   } satisfies Record<
     Size,
-    Record<"track" | "segment" | "text" | "icon", string>
+    Record<"track" | "segment" | "onRow" | "face" | "icon", string>
   >;
 
   let {
@@ -55,20 +57,47 @@
   }: Props = $props();
 
   const look = $derived(LOOKS[size]);
+
+  let track: HTMLElement | undefined = $state();
+  let ruler: HTMLElement | undefined = $state();
+  let fittedColumns: number | undefined = $state();
+  const columns = $derived(fittedColumns ?? options.length);
+  const isOneRow = $derived(columns === options.length);
+
+  $effect(() => {
+    if (track === undefined || ruler === undefined) {
+      return;
+    }
+    return followFittingColumns(track, ruler, (fitted) => {
+      fittedColumns = fitted;
+    });
+  });
 </script>
 
 <div
+  bind:this={track}
   role="radiogroup"
   aria-labelledby={labelledBy}
   aria-describedby={describedBy}
-  class={["flex bg-chip", look.track, className]}
+  style:grid-template-columns={isOneRow
+    ? undefined
+    : `repeat(${String(columns)}, minmax(0, 1fr))`}
+  class={[
+    "relative bg-chip",
+    isOneRow ? "flex" : "grid",
+    look.track,
+    className,
+  ]}
 >
   {#each options as option (option)}
-    {@const Icon = icons?.[option]}
     <label
       class={[
         "relative flex items-center justify-center transition-control before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent",
         look.segment,
+        look.face,
+        isOneRow
+          ? [look.onRow, "text-nowrap"]
+          : "min-inline-none touch:min-block-touch-target",
         chosen === option
           ? "bg-raised font-semibold text-foreground shadow-raised"
           : "font-medium text-muted hover:bg-hover",
@@ -84,20 +113,28 @@
           onChoose(option);
         }}
       />
-      {#if Icon !== undefined}
-        <Icon size={ICON_SIZE} aria-hidden="true" class={look.icon} />
-      {/if}
-      <span class="grid min-inline-none">
-        <span
-          aria-hidden="true"
-          class={["invisible col-start-1 row-start-1 font-semibold", look.text]}
-        >
-          {labels[option]()}
-        </span>
-        <span class={["col-start-1 row-start-1", look.text]}>
-          {labels[option]()}
-        </span>
-      </span>
+      <SegmentFace
+        label={labels[option]()}
+        icon={icons?.[option]}
+        iconClass={look.icon}
+        isShown
+      />
     </label>
   {/each}
+  <span
+    bind:this={ruler}
+    aria-hidden="true"
+    class="invisible absolute inset-x-none inset-bs-none flex overflow-hidden block-none"
+  >
+    {#each options as option (option)}
+      <span class={["flex flex-none items-center", look.face]}>
+        <SegmentFace
+          label={labels[option]()}
+          icon={icons?.[option]}
+          iconClass={look.icon}
+          isShown={false}
+        />
+      </span>
+    {/each}
+  </span>
 </div>

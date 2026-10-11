@@ -506,16 +506,22 @@ test.describe("view options", () => {
             throw new Error("a display segment has no label");
           }
           return {
+            top: Math.round(box.top),
             start: Math.round((icon?.left ?? words.left) - box.left),
             end: Math.round(box.right - words.right),
           };
         }),
       );
+    const isOneRow = new Set(gaps.map((gap) => gap.top)).size === 1;
 
     const [first] = gaps;
     for (const gap of gaps) {
       expect(Math.abs(gap.start - gap.end)).toBeLessThanOrEqual(1);
-      expect(Math.abs(gap.start - (first?.start ?? 0))).toBeLessThanOrEqual(1);
+      if (isOneRow) {
+        expect(Math.abs(gap.start - (first?.start ?? 0))).toBeLessThanOrEqual(
+          1,
+        );
+      }
     }
   });
 
