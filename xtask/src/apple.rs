@@ -60,7 +60,7 @@ struct DeviceProperties {
 #[derive(Deserialize)]
 struct HardwareProperties {
     platform: String,
-    reality: String,
+    reality: Option<String>,
     udid: String,
 }
 
@@ -108,7 +108,9 @@ pub(crate) fn physical_ios_devices(listing: &str) -> serde_json::Result<Vec<Phys
         .result
         .devices
         .into_iter()
-        .filter(|device| device.hardware.reality == PHYSICAL && device.hardware.platform == IOS)
+        .filter(|device| {
+            device.hardware.reality.as_deref() == Some(PHYSICAL) && device.hardware.platform == IOS
+        })
         .map(|device| PhysicalDevice {
             name: device.device.name,
             udid: device.hardware.udid,
@@ -207,6 +209,37 @@ mod tests {
                     is_reachable: false,
                 },
             ]
+        );
+    }
+
+    #[test]
+    fn leaves_out_a_paired_watch_that_does_not_say_whether_it_is_physical() {
+        let listing = r#"{
+          "result" : {
+            "devices" : [
+              {
+                "connectionProperties" : { "pairingState" : "paired", "transportType" : "wired" },
+                "deviceProperties" : { "name" : "Test iPhone" },
+                "hardwareProperties" : { "platform" : "iOS", "reality" : "physical", "udid" : "00008140-000A1B2C3D4E5F60" }
+              },
+              {
+                "connectionProperties" : { "pairingState" : "paired" },
+                "deviceProperties" : { "name" : "Test Watch" },
+                "hardwareProperties" : { "platform" : "watchOS", "udid" : "00008140-000A1B2C3D4E5F62" }
+              }
+            ]
+          }
+        }"#;
+
+        let devices = physical_ios_devices(listing).unwrap();
+
+        assert_eq!(
+            devices,
+            [PhysicalDevice {
+                name: "Test iPhone".to_owned(),
+                udid: "00008140-000A1B2C3D4E5F60".to_owned(),
+                is_reachable: true,
+            }]
         );
     }
 }
