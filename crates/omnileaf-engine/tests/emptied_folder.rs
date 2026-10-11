@@ -11,12 +11,19 @@ mod support;
 use std::{fs, path::PathBuf};
 
 use books::write_book;
+use omnileaf_db::{
+    Config, Database,
+    catalog::{SeriesOrder, series_books, series_page},
+    store::{ReadingState, Store, reading_state},
+};
 use omnileaf_engine::{BooksRemoval, FolderKind, LibraryFolder, RescanOutcome};
-use scanned::{Scanned, owned};
-use support::ScratchFolder;
+use omnileaf_sync_proto::BookId;
+use scanned::{Scanned, owned, whole_page};
+use support::{FixedClock, ScratchFolder};
 
 const SERIES_01: &str = "Sample Series 01";
 const SERIES_02: &str = "Sample Series 02";
+const DATABASE_FILE: &str = "library.sqlite";
 
 struct Linked {
     scanned: Scanned,
@@ -41,13 +48,7 @@ impl Linked {
         for series in [SERIES_01, SERIES_02] {
             fs::remove_dir_all(self.path(series)).unwrap();
         }
-        let rescan = self
-            .scanned
-            .library
-            .rescan_folder(self.scanned.id, |_| {})
-            .await
-            .unwrap();
-        assert_eq!(rescan.outcome, RescanOutcome::FoundEmpty);
+        assert_eq!(self.rescan().await, RescanOutcome::FoundEmpty);
     }
 
     async fn remove_books(&self) -> BooksRemoval {
@@ -56,6 +57,50 @@ impl Linked {
             .remove_books_of_emptied_folder(self.scanned.id)
             .await
             .unwrap()
+    }
+
+    async fn rescan(&self) -> RescanOutcome {
+        self.scanned
+            .library
+            .rescan_folder(self.scanned.id, |_| {})
+            .await
+            .unwrap()
+            .outcome
+    }
+
+    fn first_book_in(&self, title: &str) -> BookId {
+        let connection = self.scanned.connection();
+        let series = series_page(&connection, SeriesOrder::Title, &whole_page())
+            .unwrap()
+            .items
+            .into_iter()
+            .find(|series| series.title == title)
+            .unwrap();
+        series_books(&connection, series.id, &whole_page())
+            .unwrap()
+            .items
+            .first()
+            .unwrap()
+            .id
+    }
+
+    async fn set_position(&self, book: BookId, page: u32) {
+        let home = self.scanned.home.path();
+        let config = Config {
+            path: home.join(DATABASE_FILE),
+            backup_dir: home.join("backups"),
+            mmap_size_bytes: 0,
+        };
+        Store::new(Database::open(&config).unwrap(), FixedClock)
+            .write(move |writer| writer.set_position(book, page))
+            .await
+            .unwrap();
+    }
+
+    fn position_of(&self, book: BookId) -> Option<u32> {
+        reading_state(&self.scanned.connection(), book)
+            .unwrap()
+            .and_then(|state: ReadingState| state.position_page)
     }
 
     async fn folder(&self) -> LibraryFolder {
@@ -85,6 +130,24 @@ async fn removes_every_book_of_a_folder_found_empty_and_marks_it_available() {
     assert_eq!(removal, BooksRemoval::Removed { books: 3 });
     assert_eq!(linked.scanned.series(), owned(&[]));
     assert!(linked.folder().await.is_available);
+}
+
+#[tokio::test]
+async fn keeps_the_reading_progress_of_removed_books_for_when_they_return() {
+    let linked = Linked::new("emptied-progress").await;
+    let book = linked.first_book_in(SERIES_02);
+    linked.set_position(book, 8).await;
+    linked.empty().await;
+    assert_eq!(
+        linked.remove_books().await,
+        BooksRemoval::Removed { books: 3 }
+    );
+    write_book(&linked.path(SERIES_02).join("v01.cbz"), 3);
+
+    linked.rescan().await;
+
+    assert_eq!(linked.first_book_in(SERIES_02), book);
+    assert_eq!(linked.position_of(book), Some(8));
 }
 
 #[tokio::test]
