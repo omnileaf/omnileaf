@@ -33,6 +33,7 @@ tracing-subscriber.workspace = true
 
 [target.'cfg(target_os = "android")'.dependencies]
 thiserror.workspace = true
+tokio = { workspace = true, features = ["time"] }
 
 [target.'cfg(target_os = "ios")'.dependencies]
 omnileaf-folder-access.workspace = true
@@ -56,6 +57,7 @@ tauri-plugin-wdio-webdriver = { workspace = true, optional = true }
 [dev-dependencies]
 omnileaf-db.workspace = true
 omnileaf-system-bars.workspace = true
+serde_json.workspace = true
 tauri = { workspace = true, features = ["test"] }
 
 [lints]

@@ -33,7 +33,7 @@ impl ScheduledRescans {
             _task: tauri::async_runtime::spawn(async move {
                 let library = app.state::<Library>();
                 let device = ThisDevice {
-                    power: PowerModeProbe::connect().await,
+                    power: PowerModeProbe::connect(&app).await,
                 };
                 #[cfg(target_os = "ios")]
                 library

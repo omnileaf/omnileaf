@@ -68,7 +68,9 @@ pub fn run() {
     #[cfg(desktop)]
     let app = app.plugin(tauri_plugin_dialog::init());
     #[cfg(target_os = "android")]
-    let app = app.plugin(system_bars::plugin());
+    let app = app
+        .plugin(system_bars::plugin())
+        .plugin(power_mode::plugin());
     #[cfg(target_os = "ios")]
     let app = app
         .plugin(omnileaf_folder_access::init())
