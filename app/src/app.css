@@ -56,7 +56,7 @@
   --text-label--line-height: calc(1.25 / 0.875);
   --text-body: calc(1rem * var(--text-scale));
   --text-body--line-height: calc(1.5 / 1);
-  --text-brand: calc(1.3125rem * var(--text-scale));
+  --text-brand: min(calc(1.3125rem * var(--text-scale)), 2rem);
   --text-brand--line-height: calc(1.5 / 1.3125);
   --text-bar-title: calc(1.375rem * var(--text-scale));
   --text-bar-title--line-height: calc(1.75 / 1.375);

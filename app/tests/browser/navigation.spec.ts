@@ -1,3 +1,5 @@
+import english from "../../messages/en.json" with { type: "json" };
+import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import {
   accessibilityViolations,
   boxOf,
@@ -6,12 +8,17 @@ import {
   FAKE_APP_VERSION,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  setTextScale,
+  sidewaysOverflow,
   test,
   testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
 const COLOR_SCHEMES = ["light", "dark"] as const;
+const LARGEST_TEXT_SCALE = 2;
+const SIDEBAR_WIDTHS = [840, 1024, 1200, 1280, 1440];
+const BRAND_NAMES = { en: english.app_name, "en-XA": pseudo.app_name } as const;
 
 const SECTIONS = [
   {
@@ -210,3 +217,59 @@ for (const { platform, rowHeight, iconSize } of [
     });
   });
 }
+
+for (const [language, brand] of Object.entries(BRAND_NAMES)) {
+  test(`keeps the sidebar's brand on one unbroken line with the largest text in ${language}`, async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(
+      isMobile,
+      "each engine sets every sidebar width itself, from the desktop",
+    );
+    await page.addInitScript((chosen) => {
+      localStorage.setItem("omnileaf.language", chosen);
+    }, language);
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await page.goto("/settings");
+    const name = page.getByRole("navigation").getByText(brand, { exact: true });
+
+    for (const width of SIDEBAR_WIDTHS) {
+      await page.setViewportSize({ width, height: 900 });
+
+      const lines = await name.evaluate((element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        return new Set(
+          [...range.getClientRects()].map(({ top }) => Math.round(top)),
+        ).size;
+      });
+      expect(lines, `at ${String(width)}px`).toBe(1);
+      expect(
+        await sidewaysOverflow(page, "nav"),
+        `at ${String(width)}px`,
+      ).toEqual([]);
+      await expect(name).toHaveAttribute("title", brand);
+    }
+  });
+}
+
+test("shows the whole brand in the sidebar with the largest text", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, "the sidebar shows from the desktop");
+  await setTextScale(page, LARGEST_TEXT_SCALE);
+  await page.setViewportSize({ width: EXPANDED_MIN_WIDTH, height: 900 });
+
+  await page.goto("/settings");
+
+  const name = page
+    .getByRole("navigation")
+    .getByText(english.app_name, { exact: true });
+  expect(
+    await name.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true);
+});
