@@ -19,6 +19,7 @@ mod library_folder;
 mod library_layout;
 mod library_series;
 mod library_view;
+mod moved_home;
 mod project_link;
 mod rescan;
 mod rescan_conditions;
@@ -42,7 +43,7 @@ pub use crash_report::{
 };
 pub use error_chain::describe_error;
 pub use external_storage::{storage_by_device, storage_in_mountinfo, storage_of_windows_path};
-pub use library::{Library, LibraryError};
+pub use library::{Library, LibraryError, LibraryFolders};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
