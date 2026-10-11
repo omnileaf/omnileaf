@@ -25,6 +25,9 @@ const PLUGIN_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
 #[cfg(any(target_os = "linux", test))]
 const POWER_SAVER_PROFILE: &str = "power-saver";
 
+#[cfg(any(windows, test))]
+const BATTERY_SAVER_ON: u8 = 1;
+
 pub(crate) struct PowerModeProbe {
     #[cfg(target_os = "linux")]
     system_bus: Option<zbus::Connection>,
@@ -108,7 +111,10 @@ impl PowerModeProbe {
         reason = "only Linux and Android keep something to read the power mode through"
     )]
     pub(crate) fn power_mode(&self) -> impl Future<Output = PowerMode> {
-        ready(PowerMode::Normal)
+        ready(
+            omnileaf_windows_probes::system_status_flag()
+                .map_or(PowerMode::Normal, power_mode_of_system_status_flag),
+        )
     }
 }
 
@@ -147,6 +153,15 @@ impl AndroidPowerSaving {
 #[cfg(any(target_os = "linux", test))]
 fn power_mode_of_profile(profile: &str) -> PowerMode {
     if profile == POWER_SAVER_PROFILE {
+        PowerMode::Saving
+    } else {
+        PowerMode::Normal
+    }
+}
+
+#[cfg(any(windows, test))]
+fn power_mode_of_system_status_flag(flag: u8) -> PowerMode {
+    if flag == BATTERY_SAVER_ON {
         PowerMode::Saving
     } else {
         PowerMode::Normal
@@ -236,5 +251,15 @@ mod tests {
                 "{profile}"
             );
         }
+    }
+
+    #[test]
+    fn saves_power_while_windows_battery_saver_is_on() {
+        assert_eq!(power_mode_of_system_status_flag(1), PowerMode::Saving);
+    }
+
+    #[test]
+    fn runs_normally_while_windows_battery_saver_is_off() {
+        assert_eq!(power_mode_of_system_status_flag(0), PowerMode::Normal);
     }
 }
