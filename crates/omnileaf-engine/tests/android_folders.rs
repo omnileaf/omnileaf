@@ -19,8 +19,8 @@ use std::{
 };
 
 use omnileaf_engine::{
-    AndroidTree, FileChanges, FolderKind, Library, LibraryError, LibraryFolder, OpenTree,
-    PowerMode, RESCAN_EVERY, RescanConditions, RescanOutcome, Resource, ResourceRouter,
+    AndroidTree, BooksRemoval, FileChanges, FolderKind, Library, LibraryError, LibraryFolder,
+    OpenTree, PowerMode, RESCAN_EVERY, RescanConditions, RescanOutcome, Resource, ResourceRouter,
     RootLocator, TreeUri,
 };
 use omnileaf_formats::{Details, Entry, LocalStorage, Storage};
@@ -247,6 +247,28 @@ async fn reports_an_android_folder_unreachable_when_nothing_can_open_it() {
     assert_eq!(outcome, RescanOutcome::Unreachable);
     let folder = linked_folder(&reopened).await;
     assert!(!folder.is_available);
+    assert_eq!(
+        reopened.folder_book_count(folder.id).await.unwrap(),
+        SAMPLE_BOOKS
+    );
+}
+
+#[tokio::test]
+async fn keeps_the_books_of_an_android_folder_nothing_can_open_when_asked_to_remove_them() {
+    let home = ScratchFolder::new("tree-unopened-removal-home");
+    let tree = TreeOfFolder::new("tree-unopened-removal-comics");
+    let library = open_reading(home.path(), &tree).await;
+    library.add_folder(sample_tree(), |_| {}).await.unwrap();
+    drop(library);
+    let reopened = open(home.path()).await;
+    let folder = linked_folder(&reopened).await;
+
+    let removal = reopened
+        .remove_books_of_emptied_folder(folder.id)
+        .await
+        .unwrap();
+
+    assert_eq!(removal, BooksRemoval::Kept);
     assert_eq!(
         reopened.folder_book_count(folder.id).await.unwrap(),
         SAMPLE_BOOKS
