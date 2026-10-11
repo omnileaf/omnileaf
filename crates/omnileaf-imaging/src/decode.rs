@@ -10,32 +10,28 @@ use png::{ColorType, Transformations};
 
 use crate::{ImageFormat, ImagingError, Size};
 
-/// The most memory one decode may take, its decoder's working buffers and the pixels it hands back counted together.
 const MAX_DECODED_BYTES: u64 = 256 * 1024 * 1024;
 const RGB_BYTES_PER_PIXEL: u64 = 3;
 /// Each sample of a progressive JPEG keeps a 16-bit coefficient at full size until its last scan.
 const COEFFICIENT_BYTES: u64 = 2;
 /// The widest block a JPEG pads its samples to, which its coefficients take room for.
 const MAX_JPEG_MCU_EDGE: u64 = 32;
-/// The WebP decoder's working buffers per pixel, at most a 32-bit ARGB plane for a lossless image.
+/// The WebP decoder's working buffers need at most a 32-bit ARGB plane per pixel for a lossless image.
 const WEBP_WORKING_BYTES_PER_PIXEL: u64 = 4;
 const OPAQUE: u8 = u8::MAX;
 
-/// An image whose format and size are known from its header, before any pixel is decoded.
 pub(crate) struct Source<'bytes> {
     bytes: &'bytes [u8],
     pub(crate) format: ImageFormat,
     pub(crate) size: Size,
 }
 
-/// Decoded pixels, three bytes each, red, green and blue, row by row.
 pub(crate) struct Decoded {
     pub(crate) size: Size,
     pub(crate) rgb: Vec<u8>,
 }
 
 impl<'bytes> Source<'bytes> {
-    /// Reads the image's header, without decoding any pixel.
     pub(crate) fn probe(bytes: &'bytes [u8]) -> Result<Self, ImagingError> {
         let format = ImageFormat::sniff(bytes).ok_or(ImagingError::Unsupported)?;
         let size = guarded(format, || match format {
@@ -53,9 +49,7 @@ impl<'bytes> Source<'bytes> {
         })
     }
 
-    /// Decodes a JPEG at the smallest of its built-in scales still `at_least` as large in one direction; other formats decode in full.
-    ///
-    /// Refuses an image whose decode would need more memory than allowed, worked out from its header before anything is allocated.
+    /// A JPEG decodes at the smallest of its built-in DCT scales still `at_least` as large in one direction, while other formats decode in full.
     pub(crate) fn decode(&self, at_least: Size) -> Result<Decoded, ImagingError> {
         let Self {
             bytes,
@@ -89,7 +83,7 @@ fn rgb_bytes(size: Size) -> u64 {
     size.pixels().saturating_mul(RGB_BYTES_PER_PIXEL)
 }
 
-/// Turns a decoder's panic on a damaged image into an error, so one bad page never takes the app down.
+/// Image decoders can panic on a damaged image, so a panic here becomes an error.
 fn guarded<T>(
     format: ImageFormat,
     decode: impl FnOnce() -> Result<T, ImagingError>,
@@ -149,7 +143,6 @@ fn decode_jpeg(bytes: &[u8], source: Size, at_least: Size) -> Result<Decoded, Im
     })
 }
 
-/// The decoder's planes and its output at the scaled size, the RGB copy of them, and a progressive image's full-size coefficients.
 fn jpeg_decode_bytes(source: Size, scaled: Size, info: jpeg_decoder::ImageInfo) -> u64 {
     let samples_per_pixel = as_u64(info.pixel_format.pixel_bytes());
     let scaled_bytes = scaled
@@ -270,7 +263,6 @@ fn clamped(length: u32) -> u16 {
     u16::try_from(length).unwrap_or(u16::MAX)
 }
 
-/// Converts each pixel of `CHANNELS` bytes into an RGB copy allocated once at its final size.
 fn to_rgb<const CHANNELS: usize>(
     pixels: &[u8],
     convert: impl Fn([u8; CHANNELS]) -> [u8; 3],
