@@ -1,5 +1,3 @@
-//! The Tauri shell, a thin adapter between the platform's webview and the Rust core.
-
 mod back_swipe;
 mod commands;
 mod crash_reporting;
@@ -33,7 +31,6 @@ use crate::{
     scheduled_rescans::ScheduledRescans,
 };
 
-/// Where the cache goes inside a data folder set for tests, so they leave nothing in the platform's cache folder.
 const CACHE_FOLDER: &str = "cache";
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -84,7 +81,6 @@ pub fn run() {
         .expect("start the Tauri runtime");
 }
 
-/// Opens the library before the window shows, since every library command needs it, and starts its covers without waiting on their cache.
 fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>> {
     let data_dir = config.data_dir.as_deref();
     let folders = library_folders(app, data_dir)?;
@@ -108,7 +104,7 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     Ok(())
 }
 
-/// On iOS the home is the folder the Files app shows as On My iPhone › Omnileaf, and the database stays out of it.
+/// On iOS the Files app shows the documents folder as On My iPhone › Omnileaf, so the database stays out of it.
 fn library_folders(app: &App, data_dir: Option<&Path>) -> tauri::Result<LibraryFolders> {
     if let Some(data_dir) = data_dir {
         return Ok(LibraryFolders::from(data_dir.to_path_buf()));

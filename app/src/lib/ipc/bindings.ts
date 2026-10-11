@@ -12,7 +12,6 @@ export const commands = {
 	series: number,
 	books: number,
 	unreadableBooks: number,
-	/**  Books in an archive format this version recognises but can't open yet, such as CBR. */
 	unsupportedBooks: number,
 	unreadableFolders: number,
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder", { onProgress })),
@@ -65,43 +64,29 @@ export type AppInfo = {
 	isDevelopmentBuild: boolean,
 };
 
-/**  How far a swipe from the edge has come, as a share of the screen's width, and how fast it was going in screen widths a second when let go. */
 export type BackSwipe = { kind: "moved"; progress: number | null } | { kind: "released"; progress: number | null; velocity: number | null } | { kind: "cancelled" };
 
-/**  What asking to remove the books of a folder found empty did. */
-export type BooksRemoval = 
-/**  Counts only the books no other folder holds, since those stay. */
-{ kind: "removed"; books: number } | 
-/**  The folder couldn't be read in full or holds books again, so nothing was removed. */
-{ kind: "kept" };
+export type BooksRemoval = { kind: "removed"; books: number } | { kind: "kept" };
 
-/**  How many covers a row holds at each size the library is drawn at, chosen apart since each wants its own. */
 export type CoversPerRow = {
 	phone: number,
 	tablet: number,
 	desktop: number,
 };
 
-/**  What crashed: the app itself, or only its interface. */
 export type CrashOrigin = "panic" | "interface";
 
-/**  A crash report as the interface shows it, for the person to read before deciding. */
 export type CrashReportOffer = {
 	details: string,
 	origin: CrashOrigin,
 };
 
-/**  The book files a rescan found added, changed, moved or gone since the folder was last read. */
 export type FileChanges = {
 	added: number,
-	/**  Includes a file that now holds another book. */
 	updated: number,
-	/**  Found at a new place with the same content, so the book keeps its id and reading state. */
 	moved: number,
-	/**  Books left with no file anywhere once theirs here went, so deleting one of two copies removes none. */
 	removed: number,
 	unreadableBooks: number,
-	/**  Books in an archive format this version recognises but can't open yet, such as CBR. */
 	unsupportedBooks: number,
 	unreadableFolders: number,
 };
@@ -110,7 +95,6 @@ export type FolderKind = "home" | "linked";
 
 export type FolderPage = {
 	folders: LibraryFolder[],
-	/**  Absent on the last page. */
 	next: string & { readonly __brand: "FolderCursor" } | null,
 };
 
@@ -125,12 +109,10 @@ export type FolderScan = {
 	series: number,
 	books: number,
 	unreadableBooks: number,
-	/**  Books in an archive format this version recognises but can't open yet, such as CBR. */
 	unsupportedBooks: number,
 	unreadableFolders: number,
 };
 
-/**  An error the interface didn't handle, as the webview describes it. */
 export type InterfaceError = {
 	message: string,
 	stack: string | null,
@@ -143,7 +125,6 @@ export type IpcError = {
 
 export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "internal";
 
-/**  Series came, went, changed or sort in a new order, so a list of them should be read again. */
 export type LibraryChanged = null;
 
 export type LibraryDisplay = "grid" | "compact" | "covers" | "list";
@@ -153,7 +134,6 @@ export type LibraryFolder = {
 	kind: FolderKind,
 	name: string,
 	location: string,
-	/**  False since a rescan last found the folder missing, unreadable or empty of the books it held. */
 	isAvailable: boolean,
 };
 
@@ -163,22 +143,17 @@ export type LibrarySeries = {
 	id: string & { readonly __brand: "SeriesId" },
 	title: string,
 	bookCount: number,
-	/**  Its books not marked read. */
 	unreadCount: number,
-	/**  The cover of its first book by title, absent while none of its books has a file. */
 	cover: string & { readonly __brand: "CoverPath" } | null,
 };
 
-/**  How this device draws the library. */
 export type LibraryView = {
 	display: LibraryDisplay,
 	coversPerRow: CoversPerRow,
-	/**  Whether the number of series shows beside the library's title. */
 	showsItemCounts: boolean,
 	onCovers: OnCovers,
 };
 
-/**  What each cover carries besides its picture and title, each drawn only for a series with something to show. */
 export type OnCovers = {
 	showsUnreadCount: boolean,
 	showsDownloaded: boolean,
@@ -189,23 +164,16 @@ export type OnCovers = {
 
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
-/**  The project's pages the app opens in the system browser; the interface names one, never a URL. */
 export type ProjectLink = "sourceCode" | "newIssue" | "latestRelease";
 
 export type RescanOutcome = {
 	kind: "rescanned",
-} & FileChanges | 
-/**  The folder couldn't be read, so every book found in it before stays. */
-{ kind: "unreachable" } | 
-/**  The linked folder held no books where the library had some, as an unplugged drive's empty mount point does, so they stay. */
-{ kind: "foundEmpty" };
+} & FileChanges | { kind: "unreachable" } | { kind: "foundEmpty" };
 
-/**  How far a scan has got: still finding the books in the folder, or reading the ones it found. */
 export type ScanProgress = { stage: "finding" } | { stage: "reading"; scanned: number; total: number };
 
 export type SeriesPage = {
 	series: LibrarySeries[],
-	/**  Absent on the last page. */
 	next: string & { readonly __brand: "SeriesCursor" } | null,
 };
 

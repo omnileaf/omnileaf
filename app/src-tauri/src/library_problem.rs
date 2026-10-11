@@ -1,5 +1,3 @@
-//! Why the library didn't open at launch, so the interface explains it instead of the app quitting.
-
 use std::error::Error;
 
 use omnileaf_engine::LibraryError;
@@ -26,7 +24,6 @@ impl LibraryProblem {
     }
 }
 
-/// What became of opening the library at launch, managed whether or not it opened.
 pub(crate) struct LibraryAtLaunch {
     pub(crate) problem: Option<LibraryProblem>,
 }

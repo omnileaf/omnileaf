@@ -17,7 +17,6 @@ pub(crate) async fn reopen_picked_folders<R: Runtime>(
     Ok(())
 }
 
-/// Reopens the picked folders once the library is open, so a slow drive or cloud folder can't hold up the first screen.
 pub(crate) fn reopen_picked_folders_in_background<R: Runtime>(app: AppHandle<R>) {
     tauri::async_runtime::spawn(async move {
         let library = app.state::<Library>();

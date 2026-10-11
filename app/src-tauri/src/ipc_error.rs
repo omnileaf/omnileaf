@@ -1,5 +1,3 @@
-//! The error every fallible command returns: a stable code for the interface and a safe message.
-
 use std::error::Error;
 
 use omnileaf_engine::{CrashReportError, LibraryError, describe_error};

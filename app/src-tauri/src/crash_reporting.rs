@@ -1,5 +1,3 @@
-//! Keeps a report of a panic for the next run and offers reports to the person, who decides whether to send them.
-
 #[cfg(debug_assertions)]
 pub(crate) mod developer_crashes;
 
@@ -23,7 +21,6 @@ use crate::ipc_error::IpcError;
 
 const NO_MESSAGE: &str = "the panic carried no message";
 
-/// A crash report as the interface shows it, for the person to read before deciding.
 #[derive(Debug, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct CrashReportOffer {
@@ -73,7 +70,6 @@ impl CrashReporting {
         Ok(self.offers.settle()?)
     }
 
-    /// Ends the offer of a report that has gone out; a copy left on disk only comes back next time, so it is logged rather than reported.
     pub(crate) fn settle_sent(&self) {
         if let Err(error) = self.offers.settle() {
             tracing::warn!(error = ?error, "remove the crash report that was sent");
@@ -81,7 +77,6 @@ impl CrashReporting {
     }
 }
 
-/// Starts keeping reports of panics, and offers them through the app's state; without a folder for them, reports last only for this run.
 pub(crate) fn install(app: &AppHandle) {
     let reporter = Arc::new(Reporter::new(app.state::<Core>().app_info()));
     learn_system_off_the_main_thread(Arc::clone(&reporter));
@@ -99,7 +94,6 @@ pub(crate) fn install(app: &AppHandle) {
     app.manage(CrashReporting { offers, reporter });
 }
 
-/// Reads the system's name while the app starts, so a panic report can include it without looking it up inside the panic hook.
 fn learn_system_off_the_main_thread(reporter: Arc<Reporter>) {
     drop(tauri::async_runtime::spawn_blocking(move || {
         reporter.learn_system();
@@ -114,7 +108,6 @@ fn report_folder(app: &AppHandle) -> tauri::Result<PathBuf> {
     app.path().app_local_data_dir()
 }
 
-/// Describes the running app in a report, reading the system's name once, outside any panic.
 pub(crate) struct Reporter {
     version: String,
     platform: Platform,

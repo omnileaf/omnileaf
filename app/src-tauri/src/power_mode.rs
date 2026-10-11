@@ -18,7 +18,6 @@ const SYSTEM_BUS_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2
 #[cfg(any(target_os = "linux", test))]
 const POWER_SAVER_PROFILE: &str = "power-saver";
 
-/// Reads whether the device saves power, where the platform reports it without a plugin.
 pub(crate) struct PowerModeProbe {
     #[cfg(target_os = "linux")]
     system_bus: Option<zbus::Connection>,

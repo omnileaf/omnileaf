@@ -1,5 +1,3 @@
-//! Crashes a development build on purpose, so its crash reports can be tried out.
-
 use std::{convert::Infallible, process, thread};
 
 use omnileaf_engine::BuildProfile;
@@ -8,10 +6,8 @@ use crate::ipc_error::IpcError;
 
 const PANIC_MESSAGE: &str = "a crash test in Settings › Advanced panicked on purpose";
 
-/// The code a Rust program exits with after a panic nothing caught.
 const PANIC_EXIT_CODE: i32 = 101;
 
-/// Panics on a thread of its own and waits for it, so the panic hook has kept the report by the time this returns.
 pub(crate) fn panic_in_core(build: BuildProfile) -> Result<(), IpcError> {
     refuse_outside_development(build)?;
     let panicking = thread::Builder::new()
@@ -24,7 +20,6 @@ pub(crate) fn panic_in_core(build: BuildProfile) -> Result<(), IpcError> {
     Ok(())
 }
 
-/// Panics as `panic_in_core` does, then ends the process the way an uncaught panic would, leaving the report for the next launch.
 pub(crate) fn crash_and_quit(build: BuildProfile) -> Result<Infallible, IpcError> {
     panic_in_core(build)?;
     process::exit(PANIC_EXIT_CODE)
