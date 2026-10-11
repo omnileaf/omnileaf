@@ -3,17 +3,12 @@ import type {
   LibraryFolder,
   RescanOutcome,
 } from "#lib/ipc/bindings.ts";
+import { assertNever } from "#lib/assert-never.ts";
 import { m } from "#lib/paraglide/messages.js";
 
 import { folderTitle } from "./folder-title";
 
-type Named = (inputs: { name: string }) => string;
 type Counted = (inputs: { count: number }) => string;
-
-const KEPT_BOOKS = {
-  unreachable: m.library_rescan_unreachable,
-  foundEmpty: m.library_rescan_found_empty,
-} satisfies Record<Exclude<RescanOutcome["kind"], "rescanned">, Named>;
 
 const CHANGE_LINES = [
   ["added", m.library_rescan_added],
@@ -28,15 +23,25 @@ const UNREADABLE_LINES = [
   ["unreadableFolders", m.library_folder_unreadable_subfolders],
 ] as const satisfies readonly (readonly [keyof FileChanges, Counted])[];
 
-/** One sentence per line, naming the home folder as the app does elsewhere. */
+/** One sentence per line, naming the home folder as the app does elsewhere, and none for a folder found empty, which its row warns of. */
 export function rescanReport(
   folder: LibraryFolder,
   outcome: RescanOutcome,
 ): string[] {
   const name = folderTitle(folder);
-  if (outcome.kind !== "rescanned") {
-    return [KEPT_BOOKS[outcome.kind]({ name })];
+  switch (outcome.kind) {
+    case "unreachable":
+      return [m.library_rescan_unreachable({ name })];
+    case "foundEmpty":
+      return [];
+    case "rescanned":
+      return rescannedReport(name, outcome);
+    default:
+      return assertNever(outcome);
   }
+}
+
+function rescannedReport(name: string, outcome: FileChanges): string[] {
   const changed = countedLines(outcome, CHANGE_LINES);
   const headline =
     changed.length === 0

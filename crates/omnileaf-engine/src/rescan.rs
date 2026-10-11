@@ -81,7 +81,7 @@ pub(crate) async fn rescan(
 fn looks_unplugged(kind: RootKind, layout: &Layout, stored: &[StoredFile]) -> bool {
     match kind {
         RootKind::Home => false,
-        RootKind::Linked => layout.books.is_empty() && !stored.is_empty(),
+        RootKind::Linked => layout.is_empty() && !stored.is_empty(),
     }
 }
 

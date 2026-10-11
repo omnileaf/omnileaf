@@ -10,9 +10,22 @@
 
   let {
     folder,
+    isFoundEmpty = false,
     location,
     action,
-  }: { folder: LibraryFolder; location?: Snippet; action?: Snippet } = $props();
+  }: {
+    folder: LibraryFolder;
+    isFoundEmpty?: boolean;
+    location?: Snippet;
+    action?: Snippet;
+  } = $props();
+
+  const status = $derived.by((): string | undefined => {
+    if (isFoundEmpty) {
+      return m.library_folder_found_empty();
+    }
+    return folder.isAvailable ? undefined : m.library_folder_unavailable();
+  });
 </script>
 
 <div
@@ -32,11 +45,11 @@
   </span>
   <div class="flex-1 min-inline-none">
     <p class="truncate font-semibold">{folderTitle(folder)}</p>
-    {#if !folder.isAvailable}
+    {#if status !== undefined}
       <p
         class="mbs-2xs rounded-badge bg-warning-soft px-xs text-caption font-semibold inline-fit"
       >
-        {m.library_folder_unavailable()}
+        {status}
       </p>
     {/if}
     <p class="truncate text-caption text-muted">
