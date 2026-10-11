@@ -24,11 +24,17 @@ const END: u8 = 0x00;
 const NOT_EXTERNAL: u8 = 0x00;
 const HAS_PROPERTIES: u8 = 0x20;
 
+const LZMA: &[u8] = &[0x03, 0x01, 0x01];
+const LZMA2: &[u8] = &[0x21];
 const AES: &[u8] = &[0x06, 0xF1, 0x07, 0x01];
 const PPMD: &[u8] = &[0x03, 0x04, 0x01];
 const AES_PROPERTIES: [u8; 2] = [0xC8, 0x00];
 const PPMD_PROPERTIES: [u8; 5] = [6, 0, 0, 0, 1];
+const LZMA_ONE_MIB_DICTIONARY: [u8; 5] = [0x5D, 0x00, 0x00, 0x10, 0x00];
+const LZMA2_FOUR_GIB_DICTIONARY: [u8; 1] = [40];
 const PACKED: [u8; 16] = [0x5A; 16];
+const ONE_TIB: u64 = 1 << 40;
+const DECLARED_FILES: u64 = 4 * 1024 * 1024;
 
 struct Coder<'a> {
     id: &'a [u8],
@@ -188,6 +194,56 @@ fn refuses_a_cb7_packed_with_a_method_this_app_cannot_decode() {
 
     assert!(
         matches!(&error, FormatError::UnsupportedCompression { method, .. } if method == "PPMD"),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn refuses_a_cb7_whose_header_needs_a_huge_dictionary() {
+    let lzma2 = Coder {
+        id: LZMA2,
+        properties: &LZMA2_FOUR_GIB_DICTIONARY,
+    };
+
+    let error = open_error(
+        "crafted-header-dictionary",
+        &archive(&encoded_header(&lzma2, 64)),
+    );
+
+    assert!(
+        matches!(error, FormatError::DictionaryTooLarge { .. }),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn refuses_a_cb7_whose_header_unpacks_past_the_limit() {
+    let lzma = Coder {
+        id: LZMA,
+        properties: &LZMA_ONE_MIB_DICTIONARY,
+    };
+
+    let error = open_error(
+        "crafted-header-unpack",
+        &archive(&encoded_header(&lzma, ONE_TIB)),
+    );
+
+    assert!(
+        matches!(error, FormatError::HeaderTooLarge { .. }),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn refuses_a_cb7_whose_header_declares_millions_of_files() {
+    let mut header = vec![HEADER, FILES_INFO];
+    header.extend(number(DECLARED_FILES));
+    header.resize(usize::try_from(DECLARED_FILES).unwrap() + PACKED.len(), END);
+
+    let error = open_error("crafted-header-files", &archive(&header));
+
+    assert!(
+        matches!(error, FormatError::HeaderTooLarge { .. }),
         "{error:?}"
     );
 }

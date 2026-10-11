@@ -17,6 +17,7 @@ use crate::{
     fingerprint::{fingerprint_failed, raw_fingerprint},
     is_ignored, is_page_image,
     limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME, read_within},
+    sevenz_header::check_header,
 };
 
 const MIB: u64 = 1024 * 1024;
@@ -43,7 +44,7 @@ const DECODABLE_METHODS: [&[u8]; 13] = [
 ];
 
 /// The decoder allocates the whole dictionary an archive declares before reading a byte, so a tiny hostile archive could otherwise claim gigabytes.
-const MAX_DICTIONARY_BYTES: u64 = 256 * MIB;
+pub(crate) const MAX_DICTIONARY_BYTES: u64 = 256 * MIB;
 
 type Source = BlockReader<File>;
 
@@ -206,6 +207,7 @@ fn read_archive(
     limits: &Limits,
 ) -> Result<(Source, Archive), FormatError> {
     let mut source = BlockReader::new(file).map_err(read_failed(path))?;
+    check_header(&mut source, path, limits)?;
     let archive =
         Archive::read(&mut source, &Password::empty()).map_err(|source| corrupt(path, source))?;
     if archive.files.len() > limits.max_entries {
@@ -331,7 +333,7 @@ fn method_name(method: &[u8]) -> String {
 }
 
 /// The 7z format gives an LZMA coder's dictionary as four little-endian bytes after its properties byte, and an LZMA2 coder's as a one-byte size code.
-fn dictionary_bytes(method: &[u8], properties: &[u8]) -> u64 {
+pub(crate) fn dictionary_bytes(method: &[u8], properties: &[u8]) -> u64 {
     if method == EncoderMethod::ID_LZMA {
         properties
             .get(LZMA_DICTIONARY)

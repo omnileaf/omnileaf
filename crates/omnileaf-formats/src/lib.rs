@@ -9,6 +9,7 @@ mod folder;
 mod limits;
 mod natural;
 mod sevenz_book;
+mod sevenz_header;
 mod storage;
 mod zip_book;
 

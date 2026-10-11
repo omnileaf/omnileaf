@@ -43,6 +43,8 @@ pub enum FormatError {
     },
     #[error("{} is password-protected, which this app can't open", path.display())]
     Encrypted { path: PathBuf },
+    #[error("the index of {} is larger than the {limit} bytes allowed", path.display())]
+    HeaderTooLarge { path: PathBuf, limit: u64 },
     #[error("{} is compressed with {method}, which this app can't decode", path.display())]
     UnsupportedCompression { path: PathBuf, method: String },
     #[error("{} needs a decoding dictionary larger than the {limit} bytes allowed", path.display())]
