@@ -21,8 +21,15 @@ pub(crate) async fn reopen_picked_folders<R: Runtime>(
 pub(crate) fn reopen_picked_folders_in_background<R: Runtime>(app: AppHandle<R>) {
     tauri::async_runtime::spawn(async move {
         let library = app.state::<Library>();
-        if let Err(error) = reopen_picked_folders(&app, &library).await {
-            tracing::warn!(error = %describe_error(&error), "reopen the folders picked in Files");
-        }
+        reopen_picked_folders_or_warn(&app, &library).await;
     });
+}
+
+pub(crate) async fn reopen_picked_folders_or_warn<R: Runtime>(
+    app: &impl Manager<R>,
+    library: &Library,
+) {
+    if let Err(error) = reopen_picked_folders(app, library).await {
+        tracing::warn!(error = %describe_error(&error), "reopen the folders picked in Files");
+    }
 }
