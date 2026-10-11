@@ -55,6 +55,7 @@
 
 <a
   href={resolve("/(app)/settings/privacy")}
+  data-back-link
   class="inline-flex items-center gap-2xs font-medium text-accent min-block-touch-target hover:underline expanded:text-detail expanded:font-semibold"
 >
   <ChevronLeft size={CHEVRON_SIZE} class="expanded:hidden rtl:-scale-x-100" />

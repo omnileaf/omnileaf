@@ -1,5 +1,6 @@
 //! The Tauri shell, a thin adapter between the platform's webview and the Rust core.
 
+mod back_swipe;
 mod commands;
 mod crash_reporting;
 #[cfg(all(desktop, feature = "e2e"))]
@@ -71,7 +72,8 @@ pub fn run() {
     #[cfg(target_os = "ios")]
     let app = app
         .plugin(omnileaf_folder_access::init())
-        .plugin(omnileaf_system_bars::init());
+        .plugin(omnileaf_system_bars::init())
+        .plugin(omnileaf_edge_swipe::init());
     #[cfg(all(desktop, feature = "e2e"))]
     let app = app
         .manage(e2e::PickedFolder::from_environment())

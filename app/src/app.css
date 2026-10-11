@@ -303,6 +303,7 @@
   --container-notice: 27.5rem;
   --container-problem: 32.5rem;
 
+  --z-index-tab-bar: 1;
   --z-index-notice: 10;
 
   --blur-glass: 24px;
@@ -322,8 +323,11 @@
   --shadow-notice-wide: 0 14px 40px rgb(0 0 0 / 0.2);
   --shadow-undo: 0 12px 34px rgb(0 0 0 / 0.3);
   --shadow-undo-wide: 0 14px 40px rgb(0 0 0 / 0.3);
+  --shadow-back-swipe: -10px 0 28px rgb(0 0 0 / 0.18);
+  --shadow-back-swipe-rtl: 10px 0 28px rgb(0 0 0 / 0.18);
 
   --color-background: #faf8f4;
+  --color-back-swipe-dim: #000000;
   --color-foreground: #1c1b18;
   --color-muted: #5f5b52;
   --color-sidebar-ink: #4a473f;
