@@ -21,6 +21,12 @@ const APP_BINARY = fileURLToPath(
   ),
 );
 
+declare module "vitest" {
+  interface ProvidedContext {
+    libraryHome: string;
+  }
+}
+
 export async function setup(
   project: TestProject,
 ): Promise<() => Promise<void>> {
@@ -47,6 +53,7 @@ export async function setup(
     await removeFolders();
     throw error;
   });
+  project.provide("libraryHome", dataDir);
   project.provide("appUnderTest", {
     server: WEBDRIVER_URL.href,
     capabilities: {},

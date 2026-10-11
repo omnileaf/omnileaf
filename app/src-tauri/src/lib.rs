@@ -9,6 +9,8 @@ mod folder_access;
 mod folder_chooser;
 mod folder_picker;
 mod folder_storage;
+#[cfg(desktop)]
+mod folder_watch;
 mod ipc_error;
 mod library_events;
 mod library_problem;
@@ -101,6 +103,8 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     ));
     app.manage(library);
     app.manage(ScheduledRescans::start(app.handle().clone()));
+    #[cfg(desktop)]
+    app.manage(folder_watch::FolderWatching::start(app, data_dir)?);
     #[cfg(target_os = "ios")]
     folder_access::reopen_picked_folders_in_background(app.handle().clone());
     match open_covers(app, data_dir) {
