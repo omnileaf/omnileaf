@@ -3,7 +3,7 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
-import { afterEach, beforeAll, expect, inject, test } from "vitest";
+import { afterEach, beforeAll, beforeEach, expect, inject, test } from "vitest";
 
 import {
   mainNavigationLink,
@@ -17,10 +17,11 @@ const FILES_APP = "com.apple.DocumentsApp";
 const ON_MY_DEVICE_GROUP = "group.com.apple.FileProvider.LocalStorage";
 const ON_MY_DEVICE_FOLDER = "File Provider Storage";
 const SIMCTL_TIMEOUT_MS = 30_000;
+const PICKER_APPEARS_TIMEOUT_MS = 60_000;
 const PICKER_TIMEOUT_MS = 20_000;
 const SCAN_TIMEOUT_MS = 60_000;
 const LEFT_OPEN_TIMEOUT_MS = 1_000;
-const PICKER_TEST_TIMEOUT_MS = 180_000;
+const PICKER_TEST_TIMEOUT_MS = 220_000;
 
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
 const READY_ADD_FOLDER_BUTTON = xpath(
@@ -91,7 +92,9 @@ async function onMyDeviceFolder(): Promise<string> {
 /** Walks the Files picker to the sample library from wherever it opens, since it reopens where it was last left. */
 async function pickSampleLibrary(session: Session): Promise<void> {
   await session.inNativeContext(async () => {
-    await (await session.waitFor(BROWSE_TAB, PICKER_TIMEOUT_MS)).click();
+    await (
+      await session.waitFor(BROWSE_TAB, PICKER_APPEARS_TIMEOUT_MS)
+    ).click();
     await (await session.waitFor(ON_MY_DEVICE, PICKER_TIMEOUT_MS)).click();
     await (
       await session.waitFor(SAMPLE_LIBRARY_FOLDER, PICKER_TIMEOUT_MS)
@@ -115,13 +118,16 @@ async function addSampleLibrary(): Promise<string> {
   ).text();
 }
 
-async function closeAnyPicker(session: Session): Promise<void> {
+async function closeAnyPicker(
+  session: Session,
+  timeoutMs: number,
+): Promise<void> {
   await session.inNativeContext(async () => {
-    try {
-      await (await session.waitFor(RECENT_TAB, LEFT_OPEN_TIMEOUT_MS)).click();
-    } catch {
+    const recentTab = await session.findWithin(RECENT_TAB, timeoutMs);
+    if (recentTab === undefined) {
       return;
     }
+    await recentTab.click();
     await (await session.waitFor(CANCEL_BUTTON, PICKER_TIMEOUT_MS)).click();
   });
 }
@@ -136,8 +142,16 @@ beforeAll(async () => {
   await writeSampleLibrary(onMyDevice);
 });
 
-afterEach(async () => {
-  await closeAnyPicker(appSession());
+beforeEach(async () => {
+  await closeAnyPicker(appSession(), LEFT_OPEN_TIMEOUT_MS);
+});
+
+afterEach(async ({ task }) => {
+  const hasFailed = task.result?.state === "fail";
+  await closeAnyPicker(
+    appSession(),
+    hasFailed ? PICKER_APPEARS_TIMEOUT_MS : LEFT_OPEN_TIMEOUT_MS,
+  );
 });
 
 test(
@@ -176,7 +190,9 @@ test(
     await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
 
     await appSession().inNativeContext(async () => {
-      await (await appSession().waitFor(RECENT_TAB, PICKER_TIMEOUT_MS)).click();
+      await (
+        await appSession().waitFor(RECENT_TAB, PICKER_APPEARS_TIMEOUT_MS)
+      ).click();
       await (
         await appSession().waitFor(CANCEL_BUTTON, PICKER_TIMEOUT_MS)
       ).click();

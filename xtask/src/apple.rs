@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use serde::Deserialize;
+use serde::{Deserialize, de::DeserializeOwned};
 
 pub(crate) const LIST_SIMULATORS: &[&str] = &["simctl", "list", "devices", "available", "--json"];
 pub(crate) const LIST_DEVICES: &[&str] = &[
@@ -39,7 +39,7 @@ struct DevicectlListing {
 
 #[derive(Deserialize)]
 struct DevicectlResult {
-    devices: Vec<DevicectlDevice>,
+    devices: Vec<serde_json::Value>,
 }
 
 #[derive(Deserialize)]
@@ -72,7 +72,7 @@ struct ConnectionProperties {
 
 #[derive(Deserialize)]
 struct SimctlListing {
-    devices: BTreeMap<String, Vec<SimctlDevice>>,
+    devices: BTreeMap<String, Vec<serde_json::Value>>,
 }
 
 #[derive(Deserialize)]
@@ -82,6 +82,12 @@ struct SimctlDevice {
     state: String,
 }
 
+/// Xcode lists some devices, such as one it can't pair with, without every field the listing reads.
+fn usable<T: DeserializeOwned>(entries: Vec<serde_json::Value>) -> impl Iterator<Item = T> {
+    entries
+        .into_iter()
+        .filter_map(|entry| serde_json::from_value(entry).ok())
+}
 pub(crate) fn ios_simulators(listing: &str) -> serde_json::Result<Vec<Simulator>> {
     let listing: SimctlListing = serde_json::from_str(listing)?;
     Ok(listing
@@ -89,12 +95,14 @@ pub(crate) fn ios_simulators(listing: &str) -> serde_json::Result<Vec<Simulator>
         .into_iter()
         .filter_map(|(runtime, devices)| {
             let version = runtime.strip_prefix(IOS_RUNTIME_PREFIX)?.replace('-', ".");
-            Some(devices.into_iter().map(move |device| Simulator {
-                is_booted: device.state == BOOTED,
-                name: device.name,
-                udid: device.udid,
-                ios_version: version.clone(),
-            }))
+            Some(
+                usable::<SimctlDevice>(devices).map(move |device| Simulator {
+                    is_booted: device.state == BOOTED,
+                    name: device.name,
+                    udid: device.udid,
+                    ios_version: version.clone(),
+                }),
+            )
         })
         .flatten()
         .collect())
@@ -103,10 +111,7 @@ pub(crate) fn ios_simulators(listing: &str) -> serde_json::Result<Vec<Simulator>
 /// `xcrun devicectl` reports a transport type only for a device it can reach.
 pub(crate) fn physical_ios_devices(listing: &str) -> serde_json::Result<Vec<PhysicalDevice>> {
     let listing: DevicectlListing = serde_json::from_str(listing)?;
-    Ok(listing
-        .result
-        .devices
-        .into_iter()
+    Ok(usable::<DevicectlDevice>(listing.result.devices)
         .filter(|device| {
             device.hardware.reality.as_deref() == Some(PHYSICAL) && device.hardware.platform == IOS
         })
@@ -238,6 +243,61 @@ mod tests {
                 name: "Test iPhone".to_owned(),
                 udid: "00008140-000A1B2C3D4E5F60".to_owned(),
                 is_reachable: true,
+            }]
+        );
+    }
+
+    #[test]
+    fn skips_a_device_that_leaves_out_what_the_listing_needs() {
+        let listing = r#"{
+          "result" : {
+            "devices" : [
+              {
+                "connectionProperties" : { "pairingState" : "unsupported", "tunnelState" : "unavailable" },
+                "deviceProperties" : { "bootState" : "booted", "ddiServicesAvailable" : false },
+                "hardwareProperties" : { "deviceType" : "iPad", "platform" : "iOS", "productType" : "iPad4,4" }
+              },
+              {
+                "connectionProperties" : { "pairingState" : "paired", "transportType" : "wired" },
+                "deviceProperties" : { "name" : "Test iPhone" },
+                "hardwareProperties" : { "platform" : "iOS", "reality" : "physical", "udid" : "00008140-000A1B2C3D4E5F60" }
+              }
+            ]
+          }
+        }"#;
+
+        let devices = physical_ios_devices(listing).unwrap();
+
+        assert_eq!(
+            devices,
+            [PhysicalDevice {
+                name: "Test iPhone".to_owned(),
+                udid: "00008140-000A1B2C3D4E5F60".to_owned(),
+                is_reachable: true,
+            }]
+        );
+    }
+
+    #[test]
+    fn skips_a_simulator_that_leaves_out_what_the_listing_needs() {
+        let listing = r#"{
+          "devices" : {
+            "com.apple.CoreSimulator.SimRuntime.iOS-27-0" : [
+              { "udid" : "0D3C4E5F-0000-0000-0000-000000000009", "isAvailable" : true, "state" : "Shutdown" },
+              { "udid" : "75BD17D7-0A6C-48A1-9768-568ACF690500", "isAvailable" : true, "state" : "Booted", "name" : "iPhone 18 Pro" }
+            ]
+          }
+        }"#;
+
+        let simulators = ios_simulators(listing).unwrap();
+
+        assert_eq!(
+            simulators,
+            [Simulator {
+                name: "iPhone 18 Pro".to_owned(),
+                udid: "75BD17D7-0A6C-48A1-9768-568ACF690500".to_owned(),
+                ios_version: "27.0".to_owned(),
+                is_booted: true,
             }]
         );
     }

@@ -51,6 +51,11 @@ interface Simulator {
   readonly platformVersion: string;
 }
 
+interface WebDriverAgent {
+  readonly capabilities: Record<string, unknown>;
+  readonly stop: () => Promise<void>;
+}
+
 async function bundleIdOf(app: string): Promise<string> {
   const { stdout } = await run(
     "plutil",
@@ -67,15 +72,26 @@ async function bundleIdOf(app: string): Promise<string> {
   return stdout.trim();
 }
 
+/** Stops an app this run launched, which `simctl` reports as a failure when the app has already stopped. */
+async function terminateIfRunning(
+  simulator: Simulator,
+  bundleId: string,
+): Promise<void> {
+  await run("xcrun", ["simctl", "terminate", simulator.udid, bundleId], {
+    timeout: SIMCTL_TIMEOUT_MS,
+  }).catch(() => undefined);
+}
+
 /** Appium's own launch of a prebuilt WebDriverAgent can hang with no timeout, so it is launched here instead. */
 async function launchWebDriverAgent(
   simulator: Simulator,
   agent: string,
-): Promise<void> {
+): Promise<() => Promise<void>> {
   await run("xcrun", ["simctl", "install", simulator.udid, agent], {
     timeout: SIMCTL_TIMEOUT_MS,
   });
   const bundleId = await bundleIdOf(agent);
+  const stop = () => terminateIfRunning(simulator, bundleId);
   await withAttempts(WEBDRIVERAGENT_LAUNCH_ATTEMPTS, async () => {
     await run(
       "xcrun",
@@ -96,7 +112,11 @@ async function launchWebDriverAgent(
       },
     );
     await waitUntilReady(WEBDRIVERAGENT_URL, WEBDRIVERAGENT_READY_TIMEOUT_MS);
+  }).catch(async (error: unknown) => {
+    await stop();
+    throw error;
   });
+  return stop;
 }
 
 async function saveLaunchLogs(simulator: Simulator): Promise<string> {
@@ -151,14 +171,21 @@ async function installApp(simulator: Simulator): Promise<string> {
   return bundleId;
 }
 
-async function webDriverAgentCapabilities(
+async function prepareWebDriverAgent(
   simulator: Simulator,
-): Promise<Record<string, unknown>> {
+): Promise<WebDriverAgent> {
   if (PREBUILT_WEBDRIVERAGENT === undefined) {
-    return { "appium:wdaLaunchTimeout": WEBDRIVERAGENT_LAUNCH_TIMEOUT_MS };
+    return {
+      capabilities: {
+        "appium:wdaLaunchTimeout": WEBDRIVERAGENT_LAUNCH_TIMEOUT_MS,
+      },
+      stop: () => Promise.resolve(),
+    };
   }
-  await launchWebDriverAgent(simulator, PREBUILT_WEBDRIVERAGENT);
-  return { "appium:webDriverAgentUrl": WEBDRIVERAGENT_URL.origin };
+  return {
+    capabilities: { "appium:webDriverAgentUrl": WEBDRIVERAGENT_URL.origin },
+    stop: await launchWebDriverAgent(simulator, PREBUILT_WEBDRIVERAGENT),
+  };
 }
 
 function simulatorsOn(runtime: string, devices: unknown): Simulator[] {
@@ -209,8 +236,12 @@ export async function setup(
 ): Promise<() => Promise<void>> {
   const simulator = await findBootedSimulator();
   const bundleId = await installApp(simulator);
-  const webDriverAgent = await webDriverAgentCapabilities(simulator);
-  const stop = await startAppium([]);
+  const windowApp = simulatorWindowApp(await selectedXcode());
+  const webDriverAgent = await prepareWebDriverAgent(simulator);
+  const stopAppium = await startAppium([]).catch(async (error: unknown) => {
+    await webDriverAgent.stop();
+    throw error;
+  });
   project.provide("appUnderTest", {
     server: APPIUM_URL.href,
     capabilities: {
@@ -224,9 +255,15 @@ export async function setup(
       "appium:additionalWebviewBundleIds": [WEBVIEW_PROCESS],
       "appium:webviewConnectTimeout": WEBVIEW_TIMEOUT_MS,
       "appium:showXcodeLog": true,
-      ...webDriverAgent,
+      ...webDriverAgent.capabilities,
     },
-    simulatorWindowApp: simulatorWindowApp(await selectedXcode()),
+    simulatorWindowApp: windowApp,
   });
-  return stop;
+  return async () => {
+    try {
+      await stopAppium();
+    } finally {
+      await webDriverAgent.stop();
+    }
+  };
 }

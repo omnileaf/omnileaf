@@ -189,6 +189,24 @@ export class Session {
     return this.elementAt(locator, id);
   }
 
+  async findWithin(
+    locator: Locator,
+    timeoutMs: number,
+  ): Promise<WebElement | undefined> {
+    try {
+      const id = await pollUntil(
+        () => this.findShown(locator),
+        timeoutMs,
+        `the element at ${locator.value}`,
+      );
+      return this.elementAt(locator, id);
+    } catch (error) {
+      if (error instanceof NotReadyError) {
+        return undefined;
+      }
+      throw error;
+    }
+  }
   async waitUntil(
     script: string,
     what: string,

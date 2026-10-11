@@ -107,6 +107,25 @@ test("says what the page shows when an element never appears", async () => {
   );
 });
 
+test("answers nothing when no element appears within the time given", async () => {
+  const session = await Session.start(await serverShowing(BLANK_PAGE), {});
+
+  const found = await session.findWithin(xpath("//h1"), 50);
+
+  expect(found).toBeUndefined();
+});
+
+test("finds an element the page shows within the time given", async () => {
+  const session = await Session.start(
+    await serverShowing(PAGE_WITH_A_HIDDEN_DUPLICATE),
+    {},
+  );
+
+  const found = await session.findWithin(xpath("//a"), 50);
+
+  expect(await found?.text()).toBe("About Version 1.2.3");
+});
+
 test("reloads the page and waits for the fresh one", async () => {
   const OLD_PAGE_CHECKS = 2;
   let scriptsRun = 0;

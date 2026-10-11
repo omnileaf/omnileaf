@@ -323,6 +323,9 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'mobile')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    permissions:
+      contents: read
+      pull-requests: read
     env:
       NDK_VERSION: 27.1.12297006
     steps:
@@ -369,14 +372,35 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Run the slow Android specs nightly, or when a mobile pull request changes scheduled rescans
+        id: slow-specs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          PULL_REQUEST: ${{ github.event.pull_request.number }}
+        run: |
+          changed_scheduled_rescans() {
+            changed=$(gh pr diff "$PULL_REQUEST" --repo "$GITHUB_REPOSITORY" --name-only) || return 0
+            grep -qE '^(crates/omnileaf-engine/src/rescan|app/src-tauri/src/(scheduled_rescans|power_mode)\.rs|app/src-tauri/gen/android/app/src/main/java/app/omnileaf/PowerSavingPlugin\.kt|app/tests/app/[^/]+\.android\.slow\.e2e\.ts)' <<< "$changed"
+          }
+          if [ "$EVENT" = schedule ] || { [ "$EVENT" = pull_request ] && changed_scheduled_rescans; }; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and test the app on an emulator
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        env:
+          RUN_SLOW_SPECS: ${{ steps.slow-specs.outputs.run }}
         with:
           api-level: 34
           target: default
           arch: x86_64
           disable-animations: true
-          script: cargo xtask check --only android
+          script: |
+            cargo xtask check --only android
+            if [ "$RUN_SLOW_SPECS" = true ]; then pnpm --dir app test:android:slow; fi
 
       - name: Keep the Appium log of failed tests
         if: failure()
