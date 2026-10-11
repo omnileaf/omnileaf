@@ -1,5 +1,3 @@
-//! Repository content rules: no bundled sources, known hosts only, listed binaries, neutral wording.
-
 use std::{fmt, path::Path};
 
 pub(crate) struct RepositoryFile<'a> {

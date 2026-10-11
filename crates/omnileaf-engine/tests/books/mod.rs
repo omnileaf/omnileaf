@@ -9,7 +9,6 @@ use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_png};
 
 const PAGES_PER_BOOK: u32 = 2;
 
-/// Writes a comic whose pages, and so whose fingerprint, follow from `seed`.
 pub(crate) fn write_book(path: &Path, seed: u64) {
     write_book_with(path, seed, None);
 }
@@ -31,7 +30,6 @@ pub(crate) fn write_book_with(path: &Path, seed: u64, comic_info: Option<&str>) 
     fs::write(path, cbz(&entries, Compression::Stored).unwrap()).unwrap();
 }
 
-/// Writes a one-page book of images into `folder`.
 pub(crate) fn write_page(folder: &Path, seed: u64) {
     fs::create_dir_all(folder).unwrap();
     fs::write(

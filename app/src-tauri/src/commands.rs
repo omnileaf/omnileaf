@@ -67,7 +67,6 @@ pub(crate) fn builder() -> Builder<Wry> {
         .constant("DEFAULT_LIBRARY_VIEW", LibraryView::default())
 }
 
-/// Development builds add the commands that crash on purpose; release builds leave them out, though the bindings, generated from a development build, still list them.
 #[cfg(debug_assertions)]
 fn registered_commands() -> Commands<Wry> {
     app_commands![panic_in_core, crash_and_quit]

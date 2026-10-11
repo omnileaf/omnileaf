@@ -2,7 +2,6 @@ use std::{fmt, str::FromStr};
 
 use crate::CacheError;
 
-/// A name that is always a plain file name, so an entry can never land outside the cache folder.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct CacheKey(String);
 

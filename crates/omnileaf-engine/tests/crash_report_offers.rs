@@ -14,7 +14,6 @@ use omnileaf_engine::{
 
 const BROWSER_URL_LIMIT: usize = 8000;
 
-/// A folder for crash reports that doesn't exist until a report is saved in it.
 struct ReportsFolder(ScratchFolder);
 
 impl ReportsFolder {

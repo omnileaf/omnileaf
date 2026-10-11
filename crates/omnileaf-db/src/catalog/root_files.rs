@@ -17,17 +17,14 @@ const REMOVE_FILE: &str = "DELETE FROM book_file
     RETURNING book_id";
 const LOCATION_COLUMN: usize = 1;
 
-/// A book file as the catalog last recorded it, for a rescan to tell what changed on disk since.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StoredFile {
     pub book: BookId,
-    /// Relative to the root.
     pub location: PathBuf,
     pub size_bytes: u64,
     pub modified_at_ms: i64,
 }
 
-/// Every file the catalog holds for the root, in no particular order.
 #[tracing::instrument(skip_all, fields(%root))]
 pub fn root_files(connection: &Connection, root: RootId) -> Result<Vec<StoredFile>, Error> {
     Ok(connection
@@ -36,14 +33,12 @@ pub fn root_files(connection: &Connection, root: RootId) -> Result<Vec<StoredFil
         .collect::<Result<_, _>>()?)
 }
 
-/// Counts the books with at least one file in the root, so a book held twice there counts once.
 pub fn root_book_count(connection: &Connection, root: RootId) -> Result<u32, Error> {
     Ok(connection
         .prepare(BOOKS_IN_ROOT)?
         .query_row([root.0], |row| row.get(0))?)
 }
 
-/// Deletes the root's files at `locations` and returns the books they held, once for each file deleted.
 #[tracing::instrument(skip_all, fields(%root, files = locations.len()))]
 pub fn remove_book_files(
     transaction: &Transaction<'_>,

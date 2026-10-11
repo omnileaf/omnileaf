@@ -39,7 +39,6 @@ function storing(): StoreLibraryView {
   return () => Promise.resolve(STORED_OK);
 }
 
-/** A store that waits to be let go, recording each view it was handed. */
 function heldStore(): {
   store: StoreLibraryView;
   stored: LibraryView[];

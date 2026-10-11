@@ -64,7 +64,7 @@
   let booksRemovalAsker: HTMLButtonElement | undefined;
   let latestBooksRemovalAsked = 0;
 
-  /** Apple platforms don't focus a clicked button, so focus goes back to it by hand, or to the folder's row once its warning is gone. */
+  /** Apple platforms don't focus a clicked button, so focus goes back to it by hand. */
   async function returnFocus(
     asker: HTMLButtonElement | undefined,
     folder: LibraryFolder,
@@ -77,7 +77,6 @@
     }
   }
 
-  /** Only the latest question opens, and none once the folder's warning was rescanned or another removal or rescan started while the books were counted. */
   async function askToRemoveBooks(
     folder: LibraryFolder,
     asker: HTMLButtonElement,

@@ -33,7 +33,6 @@ const SERIES_IN_LIBRARY = 24;
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;
 const FIRST_LAUNCH_STEPS = ["welcome", "home", "link", "choices", "ready"];
 
-/** Lists text taller than its box that isn't clamped on purpose, beyond what a glyph's overshoot accounts for. */
 function textSpillingDown(page: Page): Promise<string[]> {
   return page.evaluate((overshoot) => {
     const spilled: string[] = [];

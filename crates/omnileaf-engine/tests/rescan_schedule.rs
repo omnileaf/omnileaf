@@ -38,7 +38,6 @@ const SERIES: &str = "Sample Series 01";
 const JUST_BEFORE: Duration = Duration::from_millis(1);
 const SEVERAL_CHECKS: Duration = Duration::from_mins(10);
 
-/// A clock that stands still until a test moves it on.
 #[derive(Clone)]
 struct SteppedClock(Arc<AtomicU64>);
 
@@ -59,7 +58,6 @@ impl Clock for SteppedClock {
     }
 }
 
-/// A device whose every folder is on one kind of storage, or whose storage never answers, saving power while a test says so.
 struct Device {
     storage: Option<Storage>,
     is_saving_power: AtomicBool,
@@ -95,7 +93,6 @@ impl RescanConditions for Device {
     }
 }
 
-/// A library linked to one folder of one book, with scheduled rescans on and a schedule that has already seen both its folders.
 struct Running {
     library: Library,
     device: Device,
@@ -150,7 +147,6 @@ impl Running {
             .unwrap()
     }
 
-    /// Returns once the scheduled check under way lets go of the library, by rescanning a folder by hand, which leaves the schedule as it was.
     async fn wait_for_the_check_under_way(&self) {
         self.library
             .rescan_folder(self.linked, |_| {})
@@ -339,7 +335,6 @@ async fn leaves_the_folders_for_a_later_turn_while_another_scan_runs() {
     assert_eq!(after.len(), 2);
 }
 
-/// Runs the schedule of `running` in the background, sending on `prepared` each time a folder's turn comes.
 fn spawn_schedule(
     running: &Arc<Running>,
     prepared: tokio::sync::mpsc::UnboundedSender<()>,

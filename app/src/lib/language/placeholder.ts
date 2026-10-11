@@ -5,7 +5,6 @@ export interface TextAround {
   readonly after: string;
 }
 
-/** Splits a whole-sentence message around its one value, so the value can be marked up apart from the words. */
 export function textAroundValue(
   format: (value: string) => string,
 ): TextAround | undefined {

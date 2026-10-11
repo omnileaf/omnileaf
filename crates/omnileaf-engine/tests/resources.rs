@@ -85,7 +85,6 @@ impl Covers {
         self.router = ResourceRouter::open(self.cache.path()).unwrap();
     }
 
-    /// The one thumbnail the cache holds, once a cover has been served.
     fn cached_thumbnail(&self) -> PathBuf {
         let mut entries = fs::read_dir(self.cache.path().join("thumbs").join("v1")).unwrap();
         let entry = entries.next().unwrap().unwrap().path();
@@ -93,7 +92,6 @@ impl Covers {
         entry
     }
 
-    /// Serves the cover once so its thumbnail is cached, then damages that entry and restarts.
     async fn cached_then_damaged(&mut self, damage: impl FnOnce(&Path)) -> CoverPath {
         let cover = self.cover().await;
         self.request_cover(cover).await;

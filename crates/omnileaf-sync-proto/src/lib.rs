@@ -1,5 +1,3 @@
-//! The sync contract shared by every device and the sync server: stable ids, content fingerprints, the hybrid logical clock and how registers merge.
-
 mod clock;
 mod fingerprint;
 mod id;

@@ -71,7 +71,6 @@ test("keeps the newer list when an older load finishes after it", async () => {
   expect(folders.list).toEqual({ kind: "loaded", home: HOME, linked: [] });
 });
 
-/** Loads `folder` as the only linked folder, so the test holds it as the library hands it out. */
 async function loadLinked(
   folders: LibraryFolders,
   folder: WireFolder,

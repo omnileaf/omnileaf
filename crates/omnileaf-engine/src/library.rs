@@ -60,7 +60,6 @@ const MAPPED_DATABASE_BYTES: u32 = if IS_MOBILE {
     256 * MEBIBYTE
 };
 
-/// Where the library keeps its database, and the home folder it always reads.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LibraryFolders {
     pub database: PathBuf,
@@ -76,13 +75,10 @@ impl From<PathBuf> for LibraryFolders {
     }
 }
 
-/// The library database, and the folders it reads.
 pub struct Library {
     store: Store,
-    /// Held for each scan and folder removal, so none compares a folder with a catalog another is changing.
-    scanning: Mutex<()>,
+    catalog_change_lock: Mutex<()>,
     schedule: sync::Mutex<RescanSchedule>,
-    /// Off until the app sets it from the person's choice.
     is_scheduled: watch::Sender<bool>,
     catalog_writes: broadcast::Sender<CatalogWritten>,
     local_storage: Arc<dyn omnileaf_formats::Storage>,
@@ -120,7 +116,6 @@ pub enum LibraryError {
 }
 
 impl LibraryError {
-    /// True when a newer Omnileaf last wrote the library, which this build leaves alone rather than misread.
     #[must_use]
     pub fn was_written_by_a_newer_version(&self) -> bool {
         matches!(self, Self::Database(omnileaf_db::Error::NewerSchema { .. }))
@@ -128,7 +123,6 @@ impl LibraryError {
 }
 
 impl Library {
-    /// Opens the library, creating its folders and its database on the first run.
     #[tracing::instrument(skip_all)]
     pub async fn open(
         folders: impl Into<LibraryFolders>,
@@ -153,7 +147,7 @@ impl Library {
         .await??;
         let library = Self {
             store: Store::new(database, clock),
-            scanning: Mutex::new(()),
+            catalog_change_lock: Mutex::new(()),
             schedule: sync::Mutex::default(),
             is_scheduled: watch::Sender::new(false),
             catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
@@ -163,7 +157,6 @@ impl Library {
         Ok(library)
     }
 
-    /// Remembers the folder and scans its books, adding nothing when the folder can't be read.
     #[tracing::instrument(skip_all, fields(folder))]
     pub async fn add_folder(
         &self,
@@ -173,7 +166,7 @@ impl Library {
         let locator = self.folder_to_read(folder.into()).await?;
         let files = self.files_of(&locator);
         tracing::Span::current().record("folder", tracing::field::display(files.folder.display()));
-        let _scanning = self.scanning.lock().await;
+        let _scanning = self.catalog_change_lock.lock().await;
         on_progress(ScanProgress::Finding);
         let layout = find_books_in(Arc::clone(&files.storage), files.folder.clone()).await?;
         let root = self.link(locator).await?;
@@ -203,7 +196,6 @@ impl Library {
         })
     }
 
-    /// Lists the series holding books, by title.
     pub async fn series(&self, after: Option<SeriesCursor>) -> Result<SeriesPage, LibraryError> {
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
@@ -232,7 +224,6 @@ impl Library {
         Ok(self.store.database().read(series_count).await?)
     }
 
-    /// The view this device last set, or the one a new library starts with.
     pub async fn view(&self) -> Result<LibraryView, LibraryError> {
         let stored = self.store.database().read(library_view).await?;
         stored.map_or_else(
@@ -251,7 +242,6 @@ impl Library {
             .await?)
     }
 
-    /// Where the cover's file is, or nothing once it has changed or gone since the cover was listed.
     pub(crate) async fn cover_file(&self, cover: Cover) -> Result<Option<CoverFile>, LibraryError> {
         let path = self
             .store
@@ -264,10 +254,9 @@ impl Library {
         }))
     }
 
-    /// Forgets the folder and the books found only in it, leaving its files where they are, once any scan in progress ends.
     #[tracing::instrument(skip_all, fields(folder = %id))]
     pub async fn remove_folder(&self, id: FolderId) -> Result<(), LibraryError> {
-        let _scanning = self.scanning.lock().await;
+        let _scanning = self.catalog_change_lock.lock().await;
         self.store
             .database()
             .write(move |transaction| remove_root(transaction, id.0))
@@ -276,18 +265,16 @@ impl Library {
         Ok(())
     }
 
-    /// Brings the catalog in line with the folder's files, removing nothing when the folder can't be read or looks unplugged.
     #[tracing::instrument(skip_all, fields(folder = %id))]
     pub async fn rescan_folder(
         &self,
         id: FolderId,
         on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderRescan, LibraryError> {
-        let scanning = self.scanning.lock().await;
+        let scanning = self.catalog_change_lock.lock().await;
         self.rescan_while_scanning(id, scanning, on_progress).await
     }
 
-    /// Rescans each folder whose turn has come, after awaiting `before_rescanning`, and leaves the rest for a later call once another scan is running or scheduled rescans are turned off.
     #[tracing::instrument(skip_all)]
     pub async fn rescan_due_folders(
         &self,
@@ -320,7 +307,7 @@ impl Library {
                 tracing::debug!("leave the folders whose turn came once scheduled rescans are off");
                 break;
             }
-            let Ok(scanning) = self.scanning.try_lock() else {
+            let Ok(scanning) = self.catalog_change_lock.try_lock() else {
                 tracing::debug!("leave the folders whose turn came until no other scan runs");
                 break;
             };
@@ -341,12 +328,10 @@ impl Library {
         Ok(rescans)
     }
 
-    /// Starts or stops the scheduled rescans, letting a rescan already under way finish.
     pub fn set_scheduled_rescans(&self, is_on: bool) {
         self.is_scheduled.send_replace(is_on);
     }
 
-    /// Rescans each folder as its turn comes for as long as it's awaited and scheduled rescans are on, never starting one while another scan runs.
     pub async fn rescan_on_schedule<F: Future<Output = ()>>(
         &self,
         conditions: &impl RescanConditions,
@@ -409,13 +394,12 @@ impl Library {
         Ok(FolderRescan { id, name, outcome })
     }
 
-    /// Removes the books of a linked folder that's readable but holds none, which a rescan keeps in case its drive is unplugged.
     #[tracing::instrument(skip_all, fields(folder = %id))]
     pub async fn remove_books_of_emptied_folder(
         &self,
         id: FolderId,
     ) -> Result<BooksRemoval, LibraryError> {
-        let _scanning = self.scanning.lock().await;
+        let _scanning = self.catalog_change_lock.lock().await;
         let database = self.store.database();
         let root = database
             .read(move |connection| library_root(connection, id.0))
@@ -447,7 +431,6 @@ impl Library {
         })
     }
 
-    /// Opens each linked folder kept by a bookmark through `resolve`, which may block, following the ones that moved and returning those whose bookmark wouldn't open.
     #[tracing::instrument(skip_all)]
     pub async fn restore_folder_access<E: Send + 'static>(
         &self,
@@ -492,7 +475,7 @@ impl Library {
         reopened: Vec<Reopened>,
     ) -> Result<(), LibraryError> {
         let since_ms = self.now_ms();
-        let _scanning = self.scanning.lock().await;
+        let _scanning = self.catalog_change_lock.lock().await;
         let changed = self
             .store
             .database()
@@ -506,7 +489,6 @@ impl Library {
         Ok(())
     }
 
-    /// Rescans the home folder and every linked folder in turn, in the order they were added, leaving out a folder removed meanwhile.
     #[tracing::instrument(skip_all)]
     pub async fn rescan_folders(&self) -> Result<Vec<FolderRescan>, LibraryError> {
         let mut rescans = Vec::new();
@@ -521,7 +503,6 @@ impl Library {
         Ok(folders.into_keys().collect())
     }
 
-    /// Notes a scheduled rescan in the schedule, finding again where a folder it read is stored.
     async fn note_scheduled_rescan(
         &self,
         conditions: &impl RescanConditions,
@@ -569,13 +550,11 @@ impl Library {
         }
     }
 
-    /// Sorts the library's titles for the app's language, keying them again only when it isn't the one they sort by.
     #[tracing::instrument(skip_all, fields(%language))]
     pub async fn set_language(&self, language: AppLanguage) -> Result<(), LibraryError> {
         Ok(self.store.sort_titles_for(language.0).await?)
     }
 
-    /// A receiver that falls too far behind loses the oldest changes and is told how many it missed.
     #[must_use]
     pub fn subscribe(&self) -> broadcast::Receiver<Changed> {
         self.store.subscribe()
@@ -593,7 +572,6 @@ impl Library {
         Ok(self.store.database().read(first_launch_finished).await?)
     }
 
-    /// Records the first launch as finished for good, so it never shows again on this device.
     #[tracing::instrument(skip_all)]
     pub async fn finish_first_launch(&self) -> Result<(), LibraryError> {
         let finished_at_ms = self.now_ms();
@@ -614,7 +592,6 @@ impl Library {
         Ok(())
     }
 
-    /// A readable folder inside the home is read as the home, which already holds its books.
     async fn folder_to_read(&self, picked: RootLocator) -> Result<RootLocator, LibraryError> {
         let picked = canonical_locator(picked);
         let Some(home) = self.store.database().read(home_root).await? else {
@@ -636,7 +613,6 @@ impl Library {
         Ok(home.locator)
     }
 
-    /// Reads a folder linked before as available again, since it was just read.
     async fn link(&self, locator: RootLocator) -> Result<RootId, LibraryError> {
         let root = NewRoot {
             kind: RootKind::Linked,
@@ -654,7 +630,6 @@ impl Library {
             .await?)
     }
 
-    /// Writes only when the folder's availability changed, so an unchanged rescan stays a read.
     async fn note_availability(
         &self,
         root: RootId,
@@ -680,7 +655,6 @@ impl Library {
         Ok(())
     }
 
-    /// Scans report their progress after recording each batch, so a report of books read is a catalog written.
     fn noting_writes<'a>(
         &'a self,
         mut on_progress: impl FnMut(ScanProgress) + Send + 'a,
@@ -729,7 +703,7 @@ impl Library {
     }
 }
 
-/// Asks where a folder is stored, counting it as local when the answer fails to come, as it can from a network share that went away.
+/// A network share that went away can leave the question of where a folder is stored unanswered, so no answer in time counts as local.
 async fn storage_within_limit(conditions: &impl RescanConditions, folder: &Path) -> Storage {
     timeout(STORAGE_CHECK_TIMEOUT, conditions.storage_of(folder))
         .await
@@ -765,7 +739,6 @@ fn canonical_folder(folder: PathBuf) -> PathBuf {
     folder
 }
 
-/// Leaves out a folder removed since the rescan listed it.
 fn unless_removed(
     rescan: Result<FolderRescan, LibraryError>,
 ) -> Result<Option<FolderRescan>, LibraryError> {

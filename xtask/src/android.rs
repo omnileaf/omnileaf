@@ -1,5 +1,3 @@
-//! Finds the Android SDK and NDK where Tauri looks for them, and reads what its tools report.
-
 use std::{
     ffi::OsString,
     fs,
@@ -21,7 +19,7 @@ pub(crate) struct Attached {
     pub(crate) serial: String,
     pub(crate) state: AdbState,
     pub(crate) model: Option<String>,
-    /// Changes each time the device connects again.
+    /// adb gives a device a new transport id each time it connects again.
     pub(crate) transport: Option<String>,
 }
 
@@ -31,7 +29,6 @@ impl Attached {
     }
 }
 
-/// The architectures Tauri builds Android apps for, named as its `--target` flag takes them.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Target {
     Aarch64,
@@ -41,7 +38,6 @@ pub(crate) enum Target {
 }
 
 impl Target {
-    /// Reads the ABI a device reports in `ro.product.cpu.abi`.
     pub(crate) fn for_abi(abi: &str) -> Option<Self> {
         match abi.trim() {
             "arm64-v8a" => Some(Self::Aarch64),
@@ -94,7 +90,7 @@ impl Toolchain {
     }
 }
 
-/// Reads `adb devices -l`, one device per line after its header.
+/// `adb devices -l` prints a header line before one line per device.
 pub(crate) fn attached_devices(listing: &str) -> Vec<Attached> {
     listing
         .lines()
@@ -130,7 +126,6 @@ impl AdbState {
     }
 }
 
-/// Finds the name Tauri matches an Android phone by in `adb shell dumpsys bluetooth_manager`.
 pub(crate) fn bluetooth_name(dump: &str) -> Option<&str> {
     dump.lines()
         .find_map(|line| {
@@ -144,7 +139,7 @@ pub(crate) fn bluetooth_name(dump: &str) -> Option<&str> {
         .filter(|name| !name.is_empty())
 }
 
-/// Reads `emulator -list-avds`, which can mix its own log lines in with the names.
+/// `emulator -list-avds` can mix its own log lines in with the names.
 pub(crate) fn virtual_device_names(listing: &str) -> Vec<&str> {
     listing
         .lines()

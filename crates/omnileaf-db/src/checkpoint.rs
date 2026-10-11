@@ -1,5 +1,3 @@
-//! Copies the write-ahead log back into the database file on a thread of its own, so no write waits for that copy or its flushes.
-
 use std::{
     cell::Cell,
     ffi::c_int,
@@ -11,7 +9,7 @@ use rusqlite::{Connection, hooks::Wal};
 
 use crate::Error;
 
-/// The log length SQLite checkpoints at by itself, kept so the log grows no longer than it would have.
+/// SQLite's default auto-checkpoint threshold, so the log grows no longer than it would have.
 const CHECKPOINT_DUE_AT_FRAMES: c_int = 1000;
 const WAITING_REQUESTS: usize = 1;
 
@@ -19,7 +17,6 @@ thread_local! {
     static IS_CHECKPOINT_DUE: Cell<bool> = const { Cell::new(false) };
 }
 
-/// Dropping it blocks until every checkpoint already asked for has run.
 pub(crate) struct Checkpointer {
     requests: Option<SyncSender<()>>,
     thread: Option<JoinHandle<()>>,
@@ -60,7 +57,6 @@ impl Drop for Checkpointer {
 pub(crate) struct CheckpointRequests(Option<SyncSender<()>>);
 
 impl CheckpointRequests {
-    /// Asks for a checkpoint when the last commit on this thread left the log long enough to need one, folding it into one already waiting.
     pub(crate) fn request_if_due(&self) {
         if !IS_CHECKPOINT_DUE.replace(false) {
             return;
@@ -79,7 +75,6 @@ impl CheckpointRequests {
     }
 }
 
-/// Stops the connection checkpointing after its own commits, noting on the committing thread when the log is due for one instead.
 pub(crate) fn hand_checkpoints_over(connection: &Connection) {
     connection.wal_hook(Some(note_log_length));
 }
@@ -103,7 +98,7 @@ fn serve(connection: &Connection, requested: &Receiver<()>) {
     }
 }
 
-/// Copies what it can without waiting on readers or the writer, as SQLite's own checkpoints after a commit do.
+/// A passive checkpoint never waits on readers or the writer, as SQLite's own checkpoints after a commit do.
 fn checkpoint(connection: &Connection) -> rusqlite::Result<()> {
     connection.query_row("PRAGMA wal_checkpoint(PASSIVE)", [], |_| Ok(()))
 }

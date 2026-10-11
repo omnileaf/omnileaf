@@ -28,14 +28,12 @@ const SWITCHES = {
 
 const SWITCH_NAMES = Object.keys(SWITCHES) as (keyof OnCovers)[];
 
-/** How tall each choice's row is, with a switch below the large size and a checkbox at it. */
 const SWITCH_ROW_HEIGHT = {
   phone: 48,
   tablet: 48,
   desktop: 30,
 } as const satisfies Record<ScreenSize, number>;
 
-/** How far the unread count sits inside its cover's top and start edges. */
 const BADGE_INSET = {
   phone: 5,
   tablet: 7,

@@ -4,7 +4,6 @@ use crate::Error;
 
 const SERIES_WITH_BOOKS: &str = "SELECT count(*) FROM series WHERE book_count > 0";
 
-/// Counts the series the library shows, which are those holding at least one book.
 pub fn series_count(connection: &Connection) -> Result<u32, Error> {
     Ok(connection
         .prepare(SERIES_WITH_BOOKS)?

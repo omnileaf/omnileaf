@@ -12,14 +12,11 @@ const ID_LENGTH: usize = 16;
 const MILLIS_LENGTH: usize = size_of::<i64>();
 const HEX_RADIX: u32 = 16;
 
-/// Where the next page of a list starts, handed back unchanged by whoever asked for the previous page.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Cursor(pub(crate) Position);
 
-/// The sort values of the last row on a page, which the next page starts after.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Position {
-    /// Carries the stamp its key was made under, since a key made under another compares differently.
     Title {
         stamp: TitleStamp,
         sort_key: Vec<u8>,

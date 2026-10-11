@@ -57,7 +57,6 @@ impl Kind {
 }
 
 impl Device {
-    /// Matches the id exactly, or the name ignoring case and everything but letters and digits, so `iphone-18-pro-max` finds `iPhone 18 Pro Max`.
     pub(crate) fn answers_to(&self, chosen: &str) -> bool {
         let wanted = normalized(chosen);
         self.id.as_deref() == Some(chosen)
@@ -65,7 +64,6 @@ impl Device {
     }
 }
 
-/// A `cargo xtask dev` line that runs on `device`, quoting the name when the shell needs it.
 pub(crate) fn example_command(device: &Device) -> String {
     format!(
         "cargo xtask dev {} {}",
@@ -85,7 +83,6 @@ fn shell_word(name: &str) -> String {
     }
 }
 
-/// One example per kind of device listed, preferring a ready one, then a note that names are forgiving.
 pub(crate) fn examples(devices: &[Device]) -> Vec<String> {
     let picked: Vec<&Device> = EXAMPLE_KINDS
         .iter()
@@ -250,7 +247,7 @@ fn attached_device(machine: &impl Machine, adb: &Path, attached: &Attached) -> D
     }
 }
 
-/// Asks for the name Tauri matches `--android-device` against: the AVD's, or the phone's Bluetooth name.
+/// Tauri matches `--android-device` against an emulator's AVD name or a phone's Bluetooth name.
 fn reported_name(machine: &impl Machine, adb: &Path, attached: &Attached) -> Option<String> {
     if attached.is_emulator() {
         let output = adb_on(machine, adb, &attached.serial, AVD_NAME)?;

@@ -1,5 +1,3 @@
-//! The library folders and the series and books found in them, which every device derives from its own files.
-
 mod book;
 mod cover;
 mod cursor;

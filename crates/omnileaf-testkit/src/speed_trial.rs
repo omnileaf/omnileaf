@@ -80,7 +80,6 @@ impl Display for Pass {
     }
 }
 
-/// Times one untimed warm-up pass and [`TIMED_PASSES`] timed passes, and holds the fastest to the budget, since a stalled runner only ever adds time.
 #[derive(Clone, Copy, Debug)]
 pub struct SpeedTrial {
     pub measured: &'static str,
@@ -89,7 +88,6 @@ pub struct SpeedTrial {
 }
 
 impl SpeedTrial {
-    /// Sets up each pass with `set_up_pass` and times only `sample`, dropping one pass's state before setting up the next.
     pub async fn run<P>(
         &self,
         mut set_up_pass: impl AsyncFnMut(Pass) -> P,
@@ -123,7 +121,6 @@ pub struct TrialOutcome {
 }
 
 impl TrialOutcome {
-    /// Panics on no passes or an empty pass, since a trial always times at least one sample in each.
     #[must_use]
     pub fn from_passes(trial: SpeedTrial, mut passes: Vec<Vec<Duration>>) -> Self {
         assert!(!passes.is_empty(), "a speed trial needs at least one pass");

@@ -1,12 +1,9 @@
-//! The settings the app reads from its environment once, at startup.
-
 use std::{env, ffi::OsString, path::PathBuf};
 
 const DATA_DIR_VARIABLE: &str = "OMNILEAF_DATA_DIR";
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct RuntimeConfig {
-    /// Where the library lives instead of the platform's app data folder, so tests start from an empty one.
     pub(crate) data_dir: Option<PathBuf>,
 }
 

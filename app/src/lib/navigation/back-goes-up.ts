@@ -13,13 +13,10 @@ import { type HistoryMove, moveTo } from "./up-history";
 type Replacing = Extract<HistoryMove, { kind: "replace" }>;
 
 export interface BackGoesUp {
-  /** True while back passes through a page on the way to the one a link asked for, which should not take focus. */
   readonly isPassingThrough: boolean;
-  /** Opens `target` in place of the current page, so back skips a page that only leads on to another. */
   replaceWith(target: string | URL): Promise<void>;
 }
 
-/** Shapes the history as links are followed so back goes up a level, as Android's back button should, instead of retracing every page. */
 export function makeBackGoUp(): BackGoesUp {
   let entries: readonly string[] = [];
   let isMoving = false;

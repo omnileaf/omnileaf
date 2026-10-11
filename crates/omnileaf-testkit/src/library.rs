@@ -66,7 +66,6 @@ pub const SAMPLE_LIBRARY: &[SeriesSpec] = &[
     },
 ];
 
-/// Writes the sample library into `root` and returns the files written, relative to `root` and sorted.
 pub fn write_sample_library(root: &Path) -> Result<Vec<PathBuf>, FixtureError> {
     let mut written = Vec::new();
     for (series, series_seed) in SAMPLE_LIBRARY.iter().zip(LIBRARY_SEED..) {

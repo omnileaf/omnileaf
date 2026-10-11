@@ -96,7 +96,6 @@ async function chooseBeforeOpening(
   );
 }
 
-/** Throws errors nothing handles, resolving once the page has heard them all. */
 async function throwUnhandled(page: Page, times: number): Promise<void> {
   await page.evaluate(async (count) => {
     for (let n = 0; n < count; n += 1) {

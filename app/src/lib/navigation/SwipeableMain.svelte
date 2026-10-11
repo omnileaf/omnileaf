@@ -53,8 +53,7 @@
         },
   );
 
-  /** A link hidden by `display: none`, as where the sections are listed beside, has no boxes. */
-  function backLinkIn(screen: HTMLElement): HTMLAnchorElement | null {
+  function shownBackLinkIn(screen: HTMLElement): HTMLAnchorElement | null {
     const link = screen.querySelector<HTMLAnchorElement>(BACK_LINK);
     return link !== null && link.getClientRects().length > 0 ? link : null;
   }
@@ -64,13 +63,13 @@
   }
 
   function goBack(): boolean {
-    const link = main === undefined ? null : backLinkIn(main);
+    const link = main === undefined ? null : shownBackLinkIn(main);
     link?.click();
     return link !== null;
   }
 
   function startOf(screen: HTMLElement): SwipeStart | undefined {
-    const link = backLinkIn(screen);
+    const link = shownBackLinkIn(screen);
     if (link === null) {
       return undefined;
     }
@@ -81,7 +80,6 @@
     };
   }
 
-  /** Restates a swipe measured across the whole web view as one across the screen it moves. */
   function acrossScreen(swipe: BackSwipe, screen: DOMRect): BackSwipe {
     const scale = window.innerWidth / screen.width;
     switch (swipe.kind) {
@@ -109,7 +107,6 @@
     }
   }
 
-  /** Settles once the screen's transitions end or are cancelled, at once when none run. */
   async function settleOnceMoved(screen: HTMLElement): Promise<void> {
     await Promise.allSettled(
       screen.getAnimations().map((animation) => animation.finished),
@@ -133,7 +130,6 @@
     );
   }
 
-  /** A setting changed on a screen may show on the screens above it, so their copies are no longer true to them. */
   function forgetCopiesOnSettingChange(screen: HTMLElement): () => void {
     const forgetCopies = () => {
       previousScreens.forgetAll();
@@ -156,8 +152,7 @@
     }
   });
 
-  /** Waits for the heading to take the focus on arrival, which scrolls the screen to it. */
-  function scrollAsShown(copy: ScreenCopy): void {
+  function restoreScrollAfterHeadingFocus(copy: ScreenCopy): void {
     requestAnimationFrame(() => {
       if (main !== undefined) {
         main.scrollTop = copy.scrollTop;
@@ -170,7 +165,7 @@
       ? swipeStart?.previousScreen
       : undefined;
     if (landedOn !== undefined) {
-      scrollAsShown(landedOn);
+      restoreScrollAfterHeadingFocus(landedOn);
     }
     screens.arrived();
     previousScreens.forgetAllButAbove(page.url.pathname);
@@ -188,7 +183,7 @@
     }
     allowedFor = screenShown;
     void commands.allowBackSwipe(
-      backSwipeEdge(backLinkIn(main) !== null, directionOf(main)),
+      backSwipeEdge(shownBackLinkIn(main) !== null, directionOf(main)),
     );
   });
 

@@ -35,7 +35,6 @@ function capability(name: string): string {
   return value;
 }
 
-/** The library's home folder, which the Files app shows as On My iPhone › Omnileaf. */
 async function homeFolder(): Promise<string> {
   const { stdout } = await run(
     "xcrun",
@@ -58,7 +57,7 @@ async function removeAddedSeries(): Promise<void> {
   });
 }
 
-/** Asks the device rather than the page, since a page stops answering scripts once its app leaves the screen; the app may run on in the background or be suspended. */
+/** Asks the device rather than the page, since a page stops answering scripts once its app leaves the screen. */
 async function isInBackground(bundleId: string): Promise<true | undefined> {
   const state = await appSession().runMobileCommand("queryAppState", {
     bundleId,
@@ -66,14 +65,12 @@ async function isInBackground(bundleId: string): Promise<true | undefined> {
   return BACKGROUND_APP_STATES.has(state) ? true : undefined;
 }
 
-/** Writes a book of one sample page, since the library files a copy of a book it already holds under that book's own series. */
 async function addOnePageBook(sample: string, series: string): Promise<void> {
   const book = join(series, ADDED_BOOK);
   await mkdir(book, { recursive: true });
   await cp(join(sample, SAMPLE_PAGE), join(book, "001.png"));
 }
 
-/** Removes a series an earlier run left, relaunching so the launch rescan takes it out of the library too. */
 beforeAll(async () => {
   await removeAddedSeries();
   await appSession().relaunchApp(capability("appium:bundleId"));

@@ -87,8 +87,7 @@
 
   let offeredAddFolder = false;
 
-  /** The heading's Add a folder goes once the library has books, so focus moves to the title rather than fall out of the page. */
-  $effect(() => {
+  function keepFocusOnPageOnceAddFolderGoes(): void {
     if (
       offeredAddFolder &&
       !offersAddFolder &&
@@ -97,7 +96,9 @@
       focusPageHeading();
     }
     offeredAddFolder = offersAddFolder;
-  });
+  }
+
+  $effect(keepFocusOnPageOnceAddFolderGoes);
 </script>
 
 <CollectionHeading

@@ -103,7 +103,7 @@ enum StartingTheme {
     expect(dead_code, reason = "only Android starts in a remembered theme")
 )]
 impl StartingTheme {
-    /// Remembers only a light or dark choice, so under System a cold start and its splash screen keep following the device's dark mode.
+    /// Remembers only a light or dark choice, so under System an Android cold start and its splash screen keep following the device's dark mode.
     fn for_preference(preference: ThemePreference) -> Self {
         match preference {
             ThemePreference::System => Self::Device,
@@ -143,7 +143,7 @@ impl WindowBackground {
     }
 }
 
-/// Leaves a "System" choice unspecified, since a fixed style would stop the page following later changes to the system's appearance.
+/// A fixed iOS interface style would stop the page following later changes to the system's appearance, so System stays unspecified.
 #[cfg(any(target_os = "ios", test))]
 fn interface_style(preference: ThemePreference) -> InterfaceStyle {
     match preference {

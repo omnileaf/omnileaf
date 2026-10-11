@@ -30,30 +30,22 @@ pub struct FolderRescan {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum RescanOutcome {
     Rescanned(FileChanges),
-    /// The folder couldn't be read, so every book found in it before stays.
     Unreachable,
-    /// The linked folder held no books where the library had some, as an unplugged drive's empty mount point does, so they stay.
     FoundEmpty,
 }
 
-/// The book files a rescan found added, changed, moved or gone since the folder was last read.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FileChanges {
     pub added: u32,
-    /// Includes a file that now holds another book.
     pub updated: u32,
-    /// Found at a new place with the same content, so the book keeps its id and reading state.
     pub moved: u32,
-    /// Books left with no file anywhere once theirs here went, so deleting one of two copies removes none.
     pub removed: u32,
     pub unreadable_books: u32,
-    /// Books in an archive format this version recognises but can't open yet, such as CBR.
     pub unsupported_books: u32,
     pub unreadable_folders: u32,
 }
 
-/// Brings the catalog in line with a folder walked successfully, leaving it as it was when the folder looks unplugged.
 pub(crate) async fn rescan(
     store: &Store,
     target: Target,
@@ -77,7 +69,7 @@ pub(crate) async fn rescan(
     Ok(RescanOutcome::Rescanned(FileChanges { removed, ..changes }))
 }
 
-/// No books where the catalog holds some is what an unmounted drive or share looks like, which the home folder holding the open library can never be.
+/// An unmounted drive or share leaves an empty mount point, which the home folder holding the open library can never be.
 fn looks_unplugged(kind: RootKind, layout: &Layout, stored: &[StoredFile]) -> bool {
     match kind {
         RootKind::Home => false,
@@ -85,7 +77,6 @@ fn looks_unplugged(kind: RootKind, layout: &Layout, stored: &[StoredFile]) -> bo
     }
 }
 
-/// Reads and records the new and changed books in batches of one transaction each, reporting progress after every batch.
 async fn record_changed(
     database: &Database,
     target: &Target,
@@ -129,7 +120,6 @@ async fn read_batch(target: &Target, batch: Vec<ToRead>) -> Result<Vec<ReadBook>
     .await?)
 }
 
-/// Gives each book now in a replaced book's file the reading state it had, as synced writes.
 async fn carry_reading_states(
     store: &Store,
     replaced: Vec<Replacement>,
@@ -146,7 +136,6 @@ async fn carry_reading_states(
         .await?)
 }
 
-/// Removes the files gone from the folder and each book left with no file anywhere in one transaction, counting only the books whose files went.
 async fn forget(
     database: &Database,
     root: RootId,

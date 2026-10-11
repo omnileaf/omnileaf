@@ -9,7 +9,6 @@ use omnileaf_db::{
     rusqlite::{Connection, Transaction},
 };
 
-/// Points the home root at `home`, keeping a home left behind that still holds books as a linked folder rather than dropping them.
 pub(crate) fn move_home(
     transaction: &Transaction<'_>,
     home: &Path,
@@ -28,7 +27,7 @@ pub(crate) fn move_home(
     Ok(())
 }
 
-/// A home whose folder is gone moved with its files, as an app container does, so only one still there is left behind.
+/// An iOS app container moves to a new path along with its files, so only an old home still on disk is left with books.
 fn is_left_with_books(
     connection: &Connection,
     old_home: &LibraryRoot,

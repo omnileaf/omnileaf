@@ -67,7 +67,7 @@ final class FolderAccessPlugin: Plugin {
   }
 }
 
-/// Shows one folder picker at a time, full screen so it can't be swiped away without an answer.
+/// Presents full screen so the picker can't be swiped away without an answer.
 @MainActor
 final class FolderPicker: NSObject, UIDocumentPickerDelegate {
   private static var shown: FolderPicker?

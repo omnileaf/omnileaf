@@ -1,5 +1,3 @@
-//! The single write path for synced state, where every change is a register write stamped by this device's clock.
-
 mod key;
 mod local;
 mod projector;
@@ -22,16 +20,13 @@ use crate::{
 const CHANGE_BACKLOG: usize = 64;
 
 pub trait Clock: Send + Sync + 'static {
-    /// Milliseconds since the Unix epoch, free to jump backwards since stamps never do.
+    /// The wall clock can jump backwards, which the stamps never do.
     fn now_unix_ms(&self) -> u64;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Changed {
-    Registers {
-        keys: BTreeSet<Key>,
-    },
-    /// Every series title was keyed again, so lists in title order read in a new order from here on.
+    Registers { keys: BTreeSet<Key> },
     TitleOrder,
 }
 
@@ -70,13 +65,12 @@ impl Store {
         self.clock.as_ref()
     }
 
-    /// A receiver that falls too far behind loses the oldest changes and is told how many it missed.
+    /// A tokio broadcast receiver that falls too far behind loses the oldest changes and is told how many it missed.
     #[must_use]
     pub fn subscribe(&self) -> broadcast::Receiver<Changed> {
         self.subscribers.subscribe()
     }
 
-    /// Runs the job in one transaction that commits only when it and every write it made succeed, stamping each write later than every earlier one.
     pub fn write<T, F>(&self, job: F) -> impl Future<Output = Result<T, Error>> + use<T, F>
     where
         T: Send + 'static,
@@ -96,7 +90,6 @@ impl Store {
         async move { Ok(written.await?.0) }
     }
 
-    /// Recomputes every projection from the registers alone, in one transaction, and announces every key it projected.
     pub fn rebuild_projections(&self) -> impl Future<Output = Result<(), Error>> + use<> {
         let subscribers = self.subscribers.clone();
         let rebuilt = self.database.write_then(
@@ -106,7 +99,6 @@ impl Store {
         async move { rebuilt.await.map(drop) }
     }
 
-    /// Keys every series title again for `language`, in one transaction readers never see half of, unless they are keyed for it already.
     pub fn sort_titles_for(
         &self,
         language: Language,

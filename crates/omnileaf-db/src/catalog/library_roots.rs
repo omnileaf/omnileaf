@@ -27,7 +27,7 @@ const BOOKMARKED: &str = "SELECT id, location, bookmark, unavailable_since_ms
     WHERE kind = ?1 AND locator_kind = ?2
     ORDER BY id";
 
-/// A linked folder that only its bookmark can open, as it was last opened.
+/// An iOS folder the user picked opens only through its security-scoped bookmark.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BookmarkedRoot {
     pub id: RootId,
@@ -36,7 +36,6 @@ pub struct BookmarkedRoot {
     pub unavailable_since_ms: Option<i64>,
 }
 
-/// Lists the home folder and the linked folders together, in the order they were added.
 #[tracing::instrument(skip_all, fields(size = ?request.size))]
 pub fn library_roots(
     connection: &Connection,
@@ -75,7 +74,6 @@ pub fn bookmarked_roots(connection: &Connection) -> Result<Vec<BookmarkedRoot>, 
     Ok(roots)
 }
 
-/// Fails with [`Error::UnknownRoot`] when the library has no root with that id.
 pub fn library_root(connection: &Connection, id: RootId) -> Result<LibraryRoot, Error> {
     connection
         .prepare(ONE_ROOT)?

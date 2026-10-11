@@ -12,49 +12,41 @@ use crate::{
     scan::{FileStamp, Target, UnreadableBook, saturating_u32, warn_unreadable},
 };
 
-/// A book found at a location the catalog has no file for, or whose file changed since.
 pub(crate) struct ToRead {
     pub(crate) found: FoundBook,
-    /// The book the catalog last recorded at this location, absent for a new location.
     pub(crate) replacing: Option<BookId>,
 }
 
 pub(crate) struct Plan {
     changes: FileChanges,
     gone: Vec<PathBuf>,
-    /// How many of each book's files went, so a book found at a new place can be told moved rather than added.
     gone_books: BTreeMap<BookId, u32>,
     replaced: Vec<Replacement>,
 }
 
-/// A book whose file now holds another book, removed at the end unless found elsewhere, whose reading state the new book takes on.
 #[derive(Clone, Copy)]
 pub(crate) struct Replacement {
     pub(crate) old: BookId,
     pub(crate) new: BookId,
 }
 
-/// A book read for a rescan, beside the book its location held before.
 pub(crate) struct ReadBook {
     pub(crate) book: Result<ScannedBook, UnreadableBook>,
     pub(crate) replacing: Option<BookId>,
 }
 
-/// The books read in one batch, split by how each is recorded.
 #[derive(Default)]
 pub(crate) struct Recording {
     pub(crate) unmoved: Vec<ScannedBook>,
     pub(crate) moved: Vec<ScannedBook>,
 }
 
-/// What the catalog loses once every changed book is recorded.
 pub(crate) struct Forgetting {
     pub(crate) gone: Vec<PathBuf>,
     pub(crate) replaced: Vec<Replacement>,
 }
 
 impl Plan {
-    /// Compares each book found with the file the catalog holds at its location, by size and modification time alone, returning the books to read.
     pub(crate) fn new(
         target: &Target,
         layout: Layout,
@@ -89,7 +81,6 @@ impl Plan {
         (plan, to_read)
     }
 
-    /// Sorts the books read in one batch into those found again, at a new place, or unreadable.
     pub(crate) fn sort(&mut self, read: Vec<ReadBook>) -> Recording {
         let mut recording = Recording::default();
         for ReadBook { book, replacing } in read {
@@ -130,7 +121,6 @@ impl Plan {
         recording
     }
 
-    /// Leaves the books removed for the caller to count once it has forgotten them.
     pub(crate) fn finish(self) -> (FileChanges, Forgetting) {
         let forgetting = Forgetting {
             gone: self.gone,
@@ -139,7 +129,6 @@ impl Plan {
         (self.changes, forgetting)
     }
 
-    /// The book to read when its location is new to the catalog or its file changed since.
     fn compare(
         &mut self,
         target: &Target,

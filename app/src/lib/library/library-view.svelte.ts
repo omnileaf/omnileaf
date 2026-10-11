@@ -12,7 +12,7 @@ export type ViewReading =
   | { readonly kind: "reading" }
   | { readonly kind: "read"; readonly view: LibraryView };
 
-/** How this device draws the library, kept in the library's database since the web view's storage may be wiped. */
+/** Kept in the library's database, since the web view's storage may be wiped. */
 export class LibraryViewSetting {
   reading: ViewReading = $state({ kind: "reading" });
 
@@ -25,7 +25,6 @@ export class LibraryViewSetting {
     private readonly onFailure: (error: IpcError) => void,
   ) {}
 
-  /** Falls back to the view a new library starts with when the stored one can't be read, unless a view was chosen meanwhile. */
   async load(): Promise<void> {
     const result = await this.read();
     if (result.status === "error") {
@@ -39,7 +38,6 @@ export class LibraryViewSetting {
     }
   }
 
-  /** Draws the view at once and stores it after any store under way, so the view chosen last is the one kept. */
   choose(view: LibraryView): void {
     this.reading = { kind: "read", view };
     this.#unstored = view;

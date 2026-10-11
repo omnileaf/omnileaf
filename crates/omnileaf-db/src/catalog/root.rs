@@ -26,22 +26,20 @@ const BOOKS_FOUND_ONLY_IN_ROOT: &str = "DELETE FROM book
             SELECT 1 FROM book_file WHERE book_id = book.id AND root_id != ?1
         )";
 
-/// A library root's row key, never handed to a later root because the table counts its ids up without reusing them.
+/// SQLite's AUTOINCREMENT never reuses a deleted row's id, so no later root takes this one.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RootId(pub(crate) i64);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RootKind {
-    /// The folder Omnileaf keeps its own data in, which the library always reads.
     Home,
-    /// A folder of the user's that Omnileaf reads where it is and never changes.
     Linked,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RootLocator {
     Path(PathBuf),
-    /// A folder picked on iOS, readable only through its bookmark, at the path the bookmark last resolved to.
+    /// iOS lets the app read a folder the user picked only through its security-scoped bookmark.
     AppleBookmark {
         path: PathBuf,
         bookmark: AppleBookmark,
@@ -104,11 +102,9 @@ pub struct LibraryRoot {
     pub kind: RootKind,
     pub locator: RootLocator,
     pub added_at_ms: i64,
-    /// Absent while the root was found the last time it was read.
     pub unavailable_since_ms: Option<i64>,
 }
 
-/// Adding a folder the library already reads returns that root, which keeps a newer bookmark only when it's a linked folder.
 #[tracing::instrument(skip_all, fields(kind = ?root.kind))]
 pub fn add_root(transaction: &Transaction<'_>, root: &NewRoot) -> Result<RootId, Error> {
     let stored = stored_location(&root.locator);
@@ -135,7 +131,6 @@ pub fn add_root(transaction: &Transaction<'_>, root: &NewRoot) -> Result<RootId,
     Ok(RootId(id))
 }
 
-/// Points the root at where its folder is now, keeping its id and its books.
 #[tracing::instrument(skip_all, fields(root = %id))]
 pub fn relocate_root(
     transaction: &Transaction<'_>,
@@ -165,7 +160,6 @@ pub fn relocate_root(
     Ok(())
 }
 
-/// Removes a linked root and the books found only in it, leaving the files on disk alone.
 #[tracing::instrument(skip_all, fields(root = %id))]
 pub fn remove_root(transaction: &Transaction<'_>, id: RootId) -> Result<(), Error> {
     let kind: Option<RootKind> = transaction
@@ -179,7 +173,6 @@ pub fn remove_root(transaction: &Transaction<'_>, id: RootId) -> Result<(), Erro
     }
 }
 
-/// Deletes the root and the books found only in it, whatever its kind.
 pub(crate) fn forget_root(transaction: &Transaction<'_>, id: RootId) -> Result<(), Error> {
     transaction
         .prepare(BOOKS_FOUND_ONLY_IN_ROOT)?
@@ -190,7 +183,6 @@ pub(crate) fn forget_root(transaction: &Transaction<'_>, id: RootId) -> Result<(
     Ok(())
 }
 
-/// Reads a root from a row holding `id, kind, locator_kind, location, bookmark, added_at_ms, unavailable_since_ms` in that order.
 pub(crate) fn stored_root(row: &Row<'_>) -> rusqlite::Result<LibraryRoot> {
     Ok(LibraryRoot {
         id: RootId(row.get(ID_COLUMN)?),
@@ -222,7 +214,6 @@ pub(crate) fn stored_location(locator: &RootLocator) -> StoredLocation<'_> {
     }
 }
 
-/// Reads a locator from a row holding its kind at `kind_column`, then its location and its bookmark.
 pub(crate) fn stored_locator(row: &Row<'_>, kind_column: usize) -> rusqlite::Result<RootLocator> {
     let kind: String = row.get(kind_column)?;
     let path = || native_path::stored_native_path(row, kind_column + 1);
@@ -236,7 +227,6 @@ pub(crate) fn stored_locator(row: &Row<'_>, kind_column: usize) -> rusqlite::Res
     }
 }
 
-/// Reads where a root's folder is from a row holding its locator kind at `kind_column` and its location in the column after.
 pub(crate) fn stored_root_path(row: &Row<'_>, kind_column: usize) -> rusqlite::Result<PathBuf> {
     let kind: String = row.get(kind_column)?;
     match kind.as_str() {

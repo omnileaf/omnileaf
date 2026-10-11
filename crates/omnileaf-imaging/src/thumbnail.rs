@@ -14,14 +14,12 @@ pub const THUMBNAIL_WIDTH: u32 = 320;
 const MAX_HEIGHT_PER_WIDTH: u32 = 2;
 const JPEG_QUALITY: u8 = 80;
 
-/// A JPEG small enough to show many of at once.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Thumbnail {
     pub jpeg: Vec<u8>,
     pub size: Size,
 }
 
-/// Makes a thumbnail [`THUMBNAIL_WIDTH`] wide, or as wide as the image when it is narrower, showing only the top of a tall strip.
 pub fn thumbnail(image: &[u8]) -> Result<Thumbnail, ImagingError> {
     let source = Source::probe(image)?;
     let plan = Plan::for_source(source.size, THUMBNAIL_WIDTH, MAX_HEIGHT_PER_WIDTH);
@@ -33,7 +31,6 @@ pub fn thumbnail(image: &[u8]) -> Result<Thumbnail, ImagingError> {
     })
 }
 
-/// Shrinks the decoded pixels with Lanczos3, cropping in proportion when the decoder already scaled them down.
 fn resize(decoded: &Decoded, source: Size, plan: Plan) -> Result<Vec<u8>, ImagingError> {
     let failed = |source: Box<dyn std::error::Error + Send + Sync>| ImagingError::Resize {
         size: decoded.size,

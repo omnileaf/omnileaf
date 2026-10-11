@@ -44,7 +44,6 @@ pub(crate) struct Catalogue {
     pub(crate) texts: Vec<LicenceText>,
 }
 
-/// One shipped package, naming its licence as declared and the indexes of its texts in the catalogue.
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub(crate) struct Package {
     pub(crate) name: String,

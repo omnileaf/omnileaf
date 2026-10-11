@@ -1,8 +1,6 @@
-//! Whether a Linux desktop can show a folder chooser, so a missing one isn't taken for a cancelled pick.
-
 use crate::ipc_error::IpcError;
 
-/// Asks the desktop portal only when zenity, the dialog plugin's fallback, is missing.
+/// The dialog plugin takes a missing Linux folder chooser for a cancelled pick, so this asks the desktop portal when zenity, its fallback, is missing.
 pub(crate) fn require_folder_chooser(
     has_zenity: bool,
     portal_offers_chooser: impl FnOnce() -> bool,

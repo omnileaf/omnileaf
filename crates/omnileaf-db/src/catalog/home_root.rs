@@ -20,7 +20,6 @@ pub fn home_root(connection: &Connection) -> Result<Option<LibraryRoot>, Error> 
         .optional()?)
 }
 
-/// Makes the home root a linked one with its id and books, so the next home set elsewhere leaves it in the library.
 #[tracing::instrument(skip_all)]
 pub fn keep_home_root_as_linked(transaction: &Transaction<'_>) -> Result<(), Error> {
     transaction
@@ -29,8 +28,6 @@ pub fn keep_home_root_as_linked(transaction: &Transaction<'_>) -> Result<(), Err
     Ok(())
 }
 
-/// Points the one home root at `locator` and keeps its id, so a moved home folder never lingers as a second home.
-/// A linked root already at `locator` becomes the home instead, and the old home goes with the books found only in it.
 #[tracing::instrument(skip_all)]
 pub fn set_home_root(
     transaction: &Transaction<'_>,

@@ -72,7 +72,6 @@ fn is_close(left: [u8; 3], right: [u8; 3]) -> bool {
         .all(|(left, right)| left.abs_diff(right) <= COLOUR_TOLERANCE)
 }
 
-/// A PNG whose header promises an RGBA image of `size` but whose pixels stop as soon as they start.
 fn png_header_only(size: Size) -> Vec<u8> {
     let mut bytes = Vec::new();
     let mut encoder = Encoder::new(&mut bytes, size.width, size.height);
@@ -84,7 +83,6 @@ fn png_header_only(size: Size) -> Vec<u8> {
     bytes
 }
 
-/// A lossless WebP whose header promises an image of `size` with alpha but whose pixels never come.
 fn webp_header_only(size: Size) -> Vec<u8> {
     let packed = (size.width - 1) | ((size.height - 1) << VP8L_LENGTH_BITS) | VP8L_ALPHA_BIT;
     let payload = [&[VP8L_SIGNATURE][..], &packed.to_le_bytes(), &[0; 3]].concat();

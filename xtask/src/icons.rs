@@ -1,5 +1,3 @@
-//! Regenerates the app icons, keeping the macOS one inside Apple's margin and the iOS ones free of the alpha channel the App Store rejects.
-
 use std::{
     env,
     ffi::OsStr,
@@ -58,6 +56,7 @@ fn replace_macos_icon(root: &Path) -> anyhow::Result<()> {
     generated.and(removed)
 }
 
+/// The App Store rejects iOS app icons that carry an alpha channel.
 fn remove_ios_alpha_channels(root: &Path) -> anyhow::Result<()> {
     for icon in ios_icons(root)? {
         let png = fs::read(&icon).with_context(|| format!("read {}", icon.display()))?;

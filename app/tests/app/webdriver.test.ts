@@ -53,7 +53,6 @@ async function bodyOf(request: IncomingMessage): Promise<string> {
   return Buffer.concat(chunks).toString();
 }
 
-/** Serves `handle`'s routes, answering every session's timeouts itself and recording each one set in `timeoutsSet`. */
 async function serve(
   handle: Handler,
   timeoutsSet: unknown[] = [],
@@ -306,7 +305,6 @@ test("shortens long page text", () => {
   );
 });
 
-/** Serves a page in the web view's context that records each context it is switched to. */
 async function serverSwitchingContexts(switched: string[]): Promise<URL> {
   return serve((route, response) => {
     if (route === "POST /session") {

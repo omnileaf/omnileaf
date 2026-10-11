@@ -6,7 +6,6 @@ use crate::{Error, store::key::Address};
 const LAST_WRITER_WINS: &str = "lww";
 const MAXIMUM: &str = "max";
 
-/// Orders the stored and the new write exactly as [`Register::merge`] does: class and rank, clock, node, then value bytes.
 const UPSERT: &str =
     "INSERT INTO sync_register (entity, id, field, class, hlc, node, seq, rank, value)
     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
@@ -17,7 +16,6 @@ const UPSERT: &str =
             excluded.value)
         > (class = 'max', coalesce(rank, 0), hlc, node, value)";
 
-/// Keeps whichever of the stored write and this one the merge rule prefers, returning whether this one won.
 pub(crate) fn upsert(
     connection: &Connection,
     address: &Address,
@@ -105,7 +103,6 @@ mod tests {
         })
     }
 
-    /// The writes alongside the same writes, some of them twice, in a shuffled order.
     fn redelivered(writes: Vec<Register>) -> impl Strategy<Value = (Vec<Register>, Vec<Register>)> {
         let count = writes.len();
         subsequence(writes.clone(), 0..=count).prop_flat_map(move |repeats| {

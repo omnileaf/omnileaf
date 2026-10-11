@@ -2,12 +2,9 @@ use icu_locale_core::subtags::{self, language};
 
 use crate::title_key::Language;
 
-/// A leading article of one language, written in lower case.
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum Article {
-    /// Stands apart, with a space before the next word.
     Word(&'static str),
-    /// Runs into the next word after an apostrophe.
     Elided(&'static str),
 }
 
@@ -49,7 +46,6 @@ pub(crate) fn articles_of(language: &Language) -> &'static [Article] {
         .map_or(NO_ARTICLES, |(_, articles)| articles)
 }
 
-/// Drops the first article only when another word follows it, so a title that is only an article keeps it.
 pub(crate) fn without_leading_article<'t>(title: &'t str, articles: &[Article]) -> &'t str {
     articles
         .iter()

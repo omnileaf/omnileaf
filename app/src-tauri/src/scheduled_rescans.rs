@@ -5,7 +5,6 @@ use tauri::{AppHandle, Manager, async_runtime::JoinHandle};
 
 use crate::{folder_storage, power_mode::PowerModeProbe};
 
-/// Rescans the library's folders as their turns come, for as long as the app runs.
 pub(crate) struct ScheduledRescans {
     _task: JoinHandle<()>,
 }

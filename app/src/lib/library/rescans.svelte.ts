@@ -22,10 +22,8 @@ export type RescanStatus =
   | { readonly kind: "failed"; readonly folder: LibraryFolder }
   | { readonly kind: "removingBooks"; readonly folder: LibraryFolder };
 
-/** What a folder a rescan found empty offers until it's rescanned again or its books are removed. */
 export type EmptiedFolder = "foundEmpty" | "removalFailed";
 
-/** The one folder rescan or removal of books Settings runs at a time, and the folders found empty. */
 export class Rescans {
   status: RescanStatus = $state({ kind: "idle" });
 
@@ -56,7 +54,6 @@ export class Rescans {
     return this.#emptied.get(folder.id);
   }
 
-  /** Resolves once the rescan is over, whatever it found. */
   async rescan(folder: LibraryFolder): Promise<void> {
     this.status = { kind: "finding", folder };
     const result = await this.rescanFolder(
@@ -81,7 +78,6 @@ export class Rescans {
     }
   }
 
-  /** Resolves to how many books went, or to nothing once they stayed and a rescan shows why, or the removal failed. */
   async removeBooks(folder: LibraryFolder): Promise<number | undefined> {
     this.status = { kind: "removingBooks", folder };
     const result = await this.removeFolderBooks(folder.id);

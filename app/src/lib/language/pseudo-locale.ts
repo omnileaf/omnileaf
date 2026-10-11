@@ -66,7 +66,6 @@ export type Message =
       readonly match: Readonly<Record<string, string>>;
     }[];
 
-/** Accents the text outside placeholders, pads it by 40% and marks both ends, so untranslated or clipped text stands out. */
 export function pseudoText(text: string): string {
   const accented = text
     .split(PLACEHOLDER)

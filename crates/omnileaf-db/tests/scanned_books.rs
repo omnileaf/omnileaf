@@ -133,13 +133,13 @@ fn fingerprint(page_crc: u32) -> Fingerprint {
     .unwrap()
 }
 
-/// The bytes the catalog keeps for a location, which spell the path the way the platform does.
+/// Unix stores a path as its raw bytes.
 #[cfg(unix)]
 fn stored_location(location: &str) -> Vec<u8> {
     location.as_bytes().to_vec()
 }
 
-/// The bytes the catalog keeps for a location, which spell the path the way the platform does.
+/// Windows stores a path as little-endian UTF-16 units.
 #[cfg(windows)]
 fn stored_location(location: &str) -> Vec<u8> {
     location.encode_utf16().flat_map(u16::to_le_bytes).collect()

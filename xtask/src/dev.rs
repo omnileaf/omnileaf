@@ -53,7 +53,6 @@ pub(crate) struct Devices {
     pub(crate) android: Option<String>,
 }
 
-/// What `dev` starts: the platforms, the devices they run on, and a data folder for the desktop app in place of its usual one.
 #[derive(Debug, Default)]
 pub(crate) struct Session {
     pub(crate) platforms: Vec<Platform>,
@@ -61,7 +60,6 @@ pub(crate) struct Session {
     pub(crate) desktop_data: Option<PathBuf>,
 }
 
-/// The data folder setting a platform's app starts with; only the desktop app reads one, from the computer it runs on.
 fn data_folder_setting(
     platform: Platform,
     desktop_data: Option<&Path>,
@@ -90,7 +88,6 @@ impl std::fmt::Display for DeviceWithoutPlatform {
 
 impl std::error::Error for DeviceWithoutPlatform {}
 
-/// Runs the platforms asked for, or else the ones whose device is named, or else every one this machine builds for.
 pub(crate) fn platforms_to_run(
     explicit: &[Platform],
     chosen: &Devices,
@@ -117,7 +114,7 @@ pub(crate) fn platforms_to_run(
     }
 }
 
-/// Settles the device for each phone platform that runs, so Tauri gets an exact name and never has to ask.
+/// Tauri asks for a device unless it gets an exact name, so each phone platform's device is settled first.
 pub(crate) fn settle_devices(
     platforms: &[Platform],
     chosen: &Devices,
@@ -166,7 +163,6 @@ fn reach(platforms: &[Platform], ios: Option<Target>, os: &str) -> Reach {
     }
 }
 
-/// Treats a name that isn't a known emulator or Simulator as a phone, since a phone needs the dev server on the network.
 fn target(chosen: Option<&str>, devices: &[Device]) -> Target {
     let is_physical = match chosen {
         Some(chosen) => !devices
@@ -183,7 +179,6 @@ fn target(chosen: Option<&str>, devices: &[Device]) -> Target {
     }
 }
 
-/// Off Windows, Android reaches the dev server on its own loopback through `adb reverse`.
 fn forwards_the_dev_server(platform: Platform, os: &str) -> bool {
     platform == Platform::Android && os != WINDOWS
 }

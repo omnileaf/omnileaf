@@ -23,7 +23,6 @@
 
   const ICON_SIZE = 22;
 
-  /** Each size's stepper shows only while the screen is that size, so only the covers per row in view change. */
   const STEPPERS = {
     phone: "flex medium:hidden",
     tablet: "hidden medium:flex large:hidden",

@@ -22,7 +22,6 @@ pub(crate) enum Choice<'a> {
     NoneAvailable,
 }
 
-/// Picks from one platform's devices: the one the name finds, or else the only ready one, and otherwise says what to ask.
 pub(crate) fn resolve<'a>(devices: &'a [Device], chosen: Option<&str>) -> Choice<'a> {
     let usable: Vec<&Device> = devices.iter().filter(|device| is_usable(device)).collect();
     let Some(chosen) = chosen else {
@@ -92,7 +91,6 @@ fn no_match<'a>(usable: Vec<&'a Device>, chosen: &str) -> Choice<'a> {
     }
 }
 
-/// Settles one platform's device into the name Tauri matches, asking in a terminal when the choice isn't obvious.
 pub(crate) fn settle(
     platform: &str,
     devices: &[Device],
@@ -126,7 +124,6 @@ fn heading(platform: &str, reason: &Reason) -> String {
     }
 }
 
-/// What to print instead of asking when no one can answer, ending in a command to copy.
 fn unanswerable(heading: &str, options: &[&Device]) -> String {
     let example = options.first().map(|device| {
         format!(
@@ -166,7 +163,6 @@ fn ask<'a>(heading: &str, options: &[&'a Device]) -> anyhow::Result<&'a Device> 
     anyhow::bail!("{}", unanswerable(heading, options))
 }
 
-/// Numbers the options, showing each one's kind and state so a phone and an emulator with similar names stay apart.
 pub(crate) fn menu_lines(options: &[&Device]) -> Vec<String> {
     let name_width = options
         .iter()
@@ -193,7 +189,6 @@ pub(crate) fn menu_lines(options: &[&Device]) -> Vec<String> {
         .collect()
 }
 
-/// Reads a 1-based pick from the menu, returning its 0-based index.
 pub(crate) fn parse_pick(input: &str, count: usize) -> Option<usize> {
     let number: usize = input.trim().parse().ok()?;
     (1..=count).contains(&number).then(|| number - 1)

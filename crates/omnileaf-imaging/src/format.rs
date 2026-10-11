@@ -13,7 +13,6 @@ pub enum ImageFormat {
 }
 
 impl ImageFormat {
-    /// Recognises an image by its first bytes, never its name.
     pub(crate) fn sniff(bytes: &[u8]) -> Option<Self> {
         if bytes.starts_with(JPEG_MAGIC) {
             Some(Self::Jpeg)
@@ -27,7 +26,7 @@ impl ImageFormat {
     }
 }
 
-/// Whether the bytes run from a JPEG's start marker to its end marker, which a write cut short never does.
+/// A JPEG runs from its start marker to its end marker, which a write cut short never reaches.
 #[must_use]
 pub fn is_whole_jpeg(bytes: &[u8]) -> bool {
     bytes.starts_with(JPEG_MAGIC) && bytes.ends_with(JPEG_END_MARKER)

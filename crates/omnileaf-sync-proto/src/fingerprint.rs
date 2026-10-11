@@ -19,21 +19,19 @@ pub enum FingerprintKind {
     Raw1,
 }
 
-/// An image entry's CRC-32 and uncompressed size, as the archive's own index records them.
+/// An image entry's CRC-32 and uncompressed size as a ZIP central directory records them.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ImageEntry {
     pub crc32: u32,
     pub size: u64,
 }
 
-/// An image file directly inside a book folder, by its file name and size in bytes.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FolderImage {
     pub name: String,
     pub size: u64,
 }
 
-/// A folder's images in `dir1` order, which decides the two files whose edges [`Fingerprint::dir1`] samples.
 #[derive(Clone, Debug)]
 pub struct FolderManifest {
     entries: Vec<(String, u64)>,
@@ -42,7 +40,6 @@ pub struct FolderManifest {
 }
 
 impl FolderManifest {
-    /// Fails with [`FingerprintError::NoImages`] for a folder without images; names that normalise alike are ordered by size, then by their own bytes.
     pub fn new(images: impl IntoIterator<Item = FolderImage>) -> Result<Self, FingerprintError> {
         let mut keyed: Vec<(String, FolderImage)> = images
             .into_iter()
@@ -76,13 +73,11 @@ impl FolderManifest {
         &self.last
     }
 
-    /// The bytes of the first file that [`Fingerprint::dir1`] takes as its head sample.
     #[must_use]
     pub fn head_range(&self) -> Range<u64> {
         0..DIR1_EDGE_LENGTH.min(self.first.size)
     }
 
-    /// The bytes of the last file that [`Fingerprint::dir1`] takes as its tail sample.
     #[must_use]
     pub fn tail_range(&self) -> Range<u64> {
         let size = self.last.size;
@@ -123,7 +118,6 @@ impl Fingerprint {
         &self.digest
     }
 
-    /// Fails with [`FingerprintError::NoImages`] for an archive without images, which takes [`Fingerprint::raw1`] instead.
     pub fn pmf1(entries: impl IntoIterator<Item = ImageEntry>) -> Result<Self, FingerprintError> {
         let mut entries: Vec<ImageEntry> = entries.into_iter().collect();
         if entries.is_empty() {
@@ -140,7 +134,6 @@ impl Fingerprint {
         Ok(Self::finish(FingerprintKind::Pmf1, &hasher))
     }
 
-    /// Takes the bytes of [`FolderManifest::head_range`] and [`FolderManifest::tail_range`].
     pub fn dir1(
         manifest: &FolderManifest,
         head: &[u8],
@@ -163,7 +156,6 @@ impl Fingerprint {
         Ok(Self::finish(FingerprintKind::Dir1, &hasher))
     }
 
-    /// The byte ranges `raw1` hashes, in order: the first and last 64 KiB, then 16 KiB at `size * i / 9` for `i` in 1..=8, each cut short at the end of the file.
     #[must_use]
     pub fn raw1_ranges(size: u64) -> [Range<u64>; RAW1_SAMPLE_COUNT] {
         let edge = RAW1_EDGE_LENGTH.min(size);
@@ -177,7 +169,6 @@ impl Fingerprint {
         })
     }
 
-    /// Takes the bytes of each range from [`Fingerprint::raw1_ranges`], in the same order.
     pub fn raw1(size: u64, samples: &[&[u8]; RAW1_SAMPLE_COUNT]) -> Result<Self, FingerprintError> {
         let mut hasher = blake3::Hasher::new_derive_key(RAW1_CONTEXT);
         hasher.update(&size.to_le_bytes());
@@ -212,7 +203,6 @@ fn check_sample(index: usize, sample: &[u8], range: &Range<u64>) -> Result<(), F
     })
 }
 
-/// `size * ninths / 9` rounded down, without overflowing for any file size.
 const fn ninth_of(size: u64, ninths: u64) -> u64 {
     size / RAW1_SLICE_SPACING * ninths + size % RAW1_SLICE_SPACING * ninths / RAW1_SLICE_SPACING
 }

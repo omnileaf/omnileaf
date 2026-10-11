@@ -56,7 +56,6 @@ const FAILURES = {
   internal: ADDING_FAILED,
 } satisfies Record<IpcErrorCode, Failure>;
 
-/** One Add a folder flow, shared by every button that starts it and the notice that reports it. */
 export class FolderAdding {
   outcome: FolderOutcome = $state({ kind: "idle" });
   #failure: Notice | undefined;

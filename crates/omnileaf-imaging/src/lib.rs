@@ -1,5 +1,3 @@
-//! Decoding, resizing and encoding the images the interface shows.
-
 mod decode;
 mod error;
 mod format;

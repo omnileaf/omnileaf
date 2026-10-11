@@ -7,14 +7,13 @@ use std::{
 
 static CREATED: AtomicUsize = AtomicUsize::new(0);
 
-/// An empty folder under the system's temporary folder, removed with what it holds when dropped.
 pub struct ScratchFolder {
     holder: PathBuf,
     path: PathBuf,
 }
 
 impl ScratchFolder {
-    /// Gives every call a folder of its own named `name`, so tests running as threads of one process never share one.
+    /// Cargo runs tests as threads of one process, so every call gets a folder of its own.
     #[must_use]
     #[expect(
         clippy::panic,
@@ -40,7 +39,6 @@ impl ScratchFolder {
         &self.path
     }
 
-    /// Writes `bytes` at `name` inside the folder, making the folders on its way, and returns where.
     #[expect(
         clippy::panic,
         reason = "a scratch folder is test set-up, so a failure should stop the test"

@@ -25,7 +25,6 @@ pub enum Platform {
 }
 
 impl Platform {
-    /// The platform this build targets; other Unix systems count as Linux, the nearest look.
     pub const CURRENT: Self = if cfg!(target_os = "android") {
         Self::Android
     } else if cfg!(target_os = "ios") {

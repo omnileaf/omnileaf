@@ -10,7 +10,6 @@ pub struct UnsavedCrashReport {
     pub source: CrashReportError,
 }
 
-/// The report the person is being asked about, which stays the same until they decide.
 #[derive(Debug)]
 pub struct CrashReportOffers {
     file: Option<CrashReportFile>,
@@ -26,7 +25,6 @@ impl CrashReportOffers {
         }
     }
 
-    /// Offers reports for this run only, for when there is nowhere to keep them between runs.
     #[must_use]
     pub fn in_memory() -> Self {
         Self {
@@ -35,7 +33,6 @@ impl CrashReportOffers {
         }
     }
 
-    /// Offers the report saved by an earlier run, or the one already on offer.
     pub fn offer_saved(&self) -> Result<Option<CrashReport>, CrashReportError> {
         let mut offered = self.lock();
         if let (None, Some(file)) = (offered.as_ref(), &self.file) {
@@ -50,10 +47,6 @@ impl CrashReportOffers {
         Ok(offered.clone())
     }
 
-    /// Saves and offers `report`, unless another is already on offer, which is returned instead.
-    ///
-    /// # Errors
-    /// A report that couldn't be saved is still on offer, and the error carries it.
     pub fn offer(&self, report: CrashReport) -> Result<CrashReport, UnsavedCrashReport> {
         let mut offered = self.lock();
         if let Some(earlier) = offered.as_ref() {
@@ -77,7 +70,6 @@ impl CrashReportOffers {
         self.lock().clone()
     }
 
-    /// Ends the offer once the person has sent or declined the report.
     pub fn settle(&self) -> Result<(), CrashReportError> {
         let settled = self.lock().take();
         match (settled, &self.file) {

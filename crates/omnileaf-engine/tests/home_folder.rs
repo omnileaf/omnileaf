@@ -86,7 +86,6 @@ fn only_book(database: &Path) -> BookId {
     books.first().unwrap().id
 }
 
-/// Writes through a store of its own on the library's database, as reading a book would.
 async fn read_to_page(database: &Path, book: BookId) {
     let config = Config {
         path: database.join(DATABASE_FILE),
@@ -105,7 +104,6 @@ fn position_of(database: &Path, book: BookId) -> Option<u32> {
         .and_then(|state| state.position_page)
 }
 
-/// Opens a library whose one book is in its home, read to a page, returning that book.
 async fn library_read_in(database: &Path, home: &Path) -> BookId {
     write_book(&home.join(SERIES_01).join("v01.cbz"), 1);
     let library = open_apart(database, home).await;

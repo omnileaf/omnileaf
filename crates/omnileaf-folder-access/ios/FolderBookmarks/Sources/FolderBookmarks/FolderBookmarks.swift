@@ -27,7 +27,7 @@ public final class FolderBookmarks: @unchecked Sendable {
 
   public init() {}
 
-  /// Bookmarks a folder the person just picked, named by the path its bookmark resolves to so later resolutions compare equal.
+  /// Names the folder by the path its bookmark resolves to, so later resolutions compare equal.
   public func bookmark(for picked: URL) throws -> BookmarkedFolder {
     let isAccessing = picked.startAccessingSecurityScopedResource()
     defer {
@@ -52,7 +52,7 @@ public final class FolderBookmarks: @unchecked Sendable {
     return ResolvedFolder(path: folder.path, refreshedBookmark: refreshed)
   }
 
-  /// Takes access once per folder, since a folder inside the app's own container needs none and reports so by declining.
+  /// A folder inside the app's own container needs no security-scoped access and reports so by declining.
   private func keepAccess(to folder: URL) {
     lock.withLock {
       guard accessed[folder.path] == nil, folder.startAccessingSecurityScopedResource() else {

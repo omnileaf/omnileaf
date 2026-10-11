@@ -69,7 +69,6 @@ async function isScheduledChecksSwitchOn(): Promise<boolean> {
   return isOn === true;
 }
 
-/** Opens a main section and waits until the navigation marks it current, so nothing found afterwards belongs to the page before. */
 async function openSection(name: string): Promise<void> {
   await open(mainNavigationLink(name));
   await appSession().waitFor(
@@ -91,7 +90,7 @@ async function removeAddedSeries(): Promise<void> {
   await adbShell(`run-as ${APP_ID} rm -rf "${ADDED_SERIES}"`);
 }
 
-/** Writes a book of one sample page into the home folder, the app's own data folder that only `run-as` can reach. */
+/** The home folder is the app's own data folder, which only `run-as` can reach. */
 async function addOnePageBook(sample: string): Promise<void> {
   await run("adb", ["push", join(sample, SAMPLE_PAGE), PUSHED_PAGE], {
     timeout: ADB_TIMEOUT_MS,
@@ -102,7 +101,7 @@ async function addOnePageBook(sample: string): Promise<void> {
   );
 }
 
-/** Reads the library page every few seconds for `durationMs`, which also keeps Appium from ending a session that goes quiet for a minute. */
+/** Appium ends a session that goes quiet for a minute, which these reads also prevent. */
 async function libraryPageFor(durationMs: number): Promise<string[]> {
   const shown: string[] = [];
   const until = performance.now() + durationMs;
@@ -115,7 +114,7 @@ async function libraryPageFor(durationMs: number): Promise<string[]> {
 
 let stayAwakeBefore = "0";
 
-/** Keeps the screen on while the battery reads as unplugged, since a locked phone sends the app to the background, then unplugs it, since Android turns Battery Saver off while charging, and reloads so the launch rescan drops a series an earlier run left. */
+/** A locked phone sends the app to the background, and Android turns Battery Saver off while charging. */
 beforeAll(async () => {
   stayAwakeBefore = (
     await run(
@@ -134,7 +133,6 @@ beforeAll(async () => {
   await openLibraryPage(appSession());
 });
 
-/** Puts the device back as it was, running every step even when one fails, so a failed run doesn't leave Battery Saver on or the battery unplugged. */
 afterAll(async () => {
   const steps = [
     () => setBatterySaver(false),

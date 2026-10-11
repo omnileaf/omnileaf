@@ -21,7 +21,6 @@ struct Listing<P> {
     sort_position: fn(&Row<'_>) -> rusqlite::Result<P>,
 }
 
-/// Where a row sits in title order, short of the stamp its key was made under.
 struct TitlePlace {
     sort_key: Vec<u8>,
     id: SeriesId,
@@ -100,16 +99,11 @@ pub struct SeriesSummary {
     pub id: SeriesId,
     pub title: String,
     pub book_count: u32,
-    /// Its books no one has marked read, so a book with no reading state counts.
     pub unread_count: u32,
     pub added_at_ms: i64,
-    /// The cover of the series' first book in title order, absent while none of its books has a file.
     pub cover: Option<Cover>,
 }
 
-/// Lists only the series holding at least one book, which are the ones the library shows.
-///
-/// A title cursor from before the titles were keyed again carries on after its series' new place, or fails with [`Error::StaleCursor`] when that series has gone.
 #[tracing::instrument(skip_all, fields(?order, size = ?request.size))]
 pub fn series_page(
     connection: &Connection,
@@ -125,7 +119,6 @@ pub fn series_page(
     Ok(Page::of(rows, request.size))
 }
 
-/// Reads the stamp and the rows in one snapshot, so a re-key committing meanwhile can't mix keys made under two stamps.
 fn title_rows(
     connection: &Connection,
     after: Option<&Position>,
@@ -156,7 +149,6 @@ fn title_rows(
         .collect())
 }
 
-/// Begins a read transaction unless the caller is in one already, which holds one snapshot by itself.
 fn snapshot(connection: &Connection) -> rusqlite::Result<Option<Transaction<'_>>> {
     if connection.is_autocommit() {
         connection.unchecked_transaction().map(Some)
@@ -165,7 +157,6 @@ fn snapshot(connection: &Connection) -> rusqlite::Result<Option<Transaction<'_>>
     }
 }
 
-/// The cursor's place under the current stamp, which is its series' new key when the titles were keyed again since.
 fn place_after(
     connection: &Connection,
     current: TitleStamp,
@@ -257,7 +248,6 @@ mod tests {
     use super::*;
     use crate::scratch::ScratchLibrary;
 
-    /// Each listed series finds its first book and that book's first file by index, sorting nothing.
     const COVER_BY_INDEX: [&str; 6] = [
         "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
         "CORRELATED SCALAR SUBQUERY 4",
@@ -267,7 +257,6 @@ mod tests {
         "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
     ];
 
-    /// Each listed series counts its read books through its own books' index and their states' keys.
     const UNREAD_BY_INDEX: [&str; 3] = [
         "CORRELATED SCALAR SUBQUERY 1",
         "SEARCH read_book USING COVERING INDEX book_by_series (series_local_id=?)",

@@ -1,7 +1,7 @@
 use icu_casemap::CaseMapper;
 use unicode_normalization::UnicodeNormalization;
 
-/// Applies NFKC, full case folding, then NFKC again to recompose marks folding split apart (keeping `norm` idempotent), and collapses whitespace.
+/// Applies NFKC again after full case folding, which can split apart marks that NFKC composed.
 #[must_use]
 pub fn norm(text: &str) -> String {
     let compatible: String = text.nfkc().collect();

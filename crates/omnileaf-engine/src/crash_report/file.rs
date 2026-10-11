@@ -12,7 +12,6 @@ const FILE_NAME: &str = "crash-report.json";
 const UNFINISHED_SUFFIX: &str = "partial";
 const MAX_SAVED_BYTES: u64 = 64 * 1024;
 
-/// Numbers every save in the process, so saves on two threads at once never write the same side file.
 static SAVES: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug, thiserror::Error)]
@@ -29,7 +28,6 @@ pub enum CrashReportError {
     Remove(#[source] io::Error),
 }
 
-/// The one crash report kept on disk between runs, so a crash can be offered when the app next opens.
 #[derive(Clone, Debug)]
 pub struct CrashReportFile {
     folder: PathBuf,
@@ -43,7 +41,6 @@ impl CrashReportFile {
         }
     }
 
-    /// Replaces any saved report, writing to a side file first so a crash mid-write leaves the old one whole.
     pub fn save(&self, report: &CrashReport) -> Result<(), CrashReportError> {
         let text = serde_json::to_vec(&StoredCrashReport::from(report))
             .map_err(CrashReportError::Encode)?;
@@ -57,7 +54,6 @@ impl CrashReportFile {
             })
     }
 
-    /// Reads at most a report's worth of the file, so a damaged one fails to parse rather than filling memory.
     pub fn load(&self) -> Result<Option<CrashReport>, CrashReportError> {
         let mut text = Vec::new();
         let read = File::open(self.path())
@@ -73,7 +69,6 @@ impl CrashReportFile {
             .map_err(CrashReportError::Parse)
     }
 
-    /// Removes the saved report only if it is still the one with `id`, though a crash saved between that check and the removal goes with it.
     pub fn remove(&self, id: CrashReportId) -> Result<(), CrashReportError> {
         match self.load() {
             Ok(Some(saved)) if saved.id() != id => Ok(()),

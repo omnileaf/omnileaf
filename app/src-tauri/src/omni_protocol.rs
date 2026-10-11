@@ -1,5 +1,3 @@
-//! The `omni` protocol, which hands the webview covers by id so it never reads a file itself.
-
 use omnileaf_engine::{Library, Resource, ResourceRouter};
 use tauri::{
     Manager, Runtime, UriSchemeContext, UriSchemeResponder,
@@ -11,7 +9,6 @@ const NO_SNIFFING: &str = "nosniff";
 const KEEP_FOR_GOOD: &str = "public, max-age=31536000, immutable";
 const NOT_STORED: &str = "no-store";
 
-/// Answers off the protocol's thread, since making a thumbnail can take a while, and always answers even if that work panics.
 #[expect(
     clippy::needless_pass_by_value,
     reason = "Tauri hands protocol requests over by value"
@@ -45,7 +42,6 @@ pub(crate) fn answer<R: Runtime>(
 
 type Respond = Box<dyn FnOnce(http::Response<Vec<u8>>) + Send>;
 
-/// Answers its request exactly once, with a failure when the work behind it stops before it finishes.
 struct Answer {
     respond: Option<Respond>,
 }

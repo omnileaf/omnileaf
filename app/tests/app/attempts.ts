@@ -2,7 +2,6 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-/** Retries set-up that can hang or fail outside the app, such as launching a helper on a device. */
 export async function withAttempts<T>(
   attempts: number,
   attempt: (number: number) => Promise<T>,

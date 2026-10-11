@@ -1,5 +1,3 @@
-//! Keeps the dev server's port forwarded to every attached Android device while a dev session runs.
-
 use std::{
     collections::HashMap,
     path::PathBuf,
@@ -17,7 +15,6 @@ use crate::{
 const CHECK_EVERY: Duration = Duration::from_secs(2);
 const LIST_FORWARDS: &[&str] = &["reverse", "--list"];
 
-/// The connection each device was last forwarded on, by serial.
 pub(crate) type Seen = HashMap<String, Option<String>>;
 
 pub(crate) struct PortForward {
@@ -33,7 +30,7 @@ impl PortForward {
         }
     }
 
-    /// Replaces the forward on each ready device that is new or has connected again since `seen`, since adb can still list a forward that no longer works and Tauri keeps any it finds, and adds back any forward missing from the rest.
+    /// Replaces the forward on a new or reconnected device, since adb can still list a forward that no longer works.
     pub(crate) fn follow(&self, machine: &impl Machine, seen: &mut Seen) {
         let Some(listing) = machine.stdout_of(self.adb.as_os_str(), android::LIST_ATTACHED) else {
             return;
@@ -73,7 +70,7 @@ impl PortForward {
         .is_some()
     }
 
-    /// Reads `adb reverse --list`, where each line names the connection, then the device's port and the computer's.
+    /// `adb reverse --list` prints each forward as the connection, then the device's port and the computer's.
     fn is_forwarded(&self, machine: &impl Machine, serial: &str) -> bool {
         adb_on(machine, &self.adb, serial, LIST_FORWARDS).is_some_and(|listing| {
             listing.lines().any(|line| {
@@ -84,7 +81,7 @@ impl PortForward {
     }
 }
 
-/// Forwards to the attached devices, then follows them as they connect again until the returned sender is dropped, all off the caller's thread so a stuck adb can't hold up the session.
+/// Follows the devices off the caller's thread, so a stuck adb can't hold up the dev session.
 pub(crate) fn keep(forward: PortForward, machine: impl Machine + Send + 'static) -> Sender<()> {
     let (stop, stopped) = mpsc::channel();
     thread::spawn(move || {

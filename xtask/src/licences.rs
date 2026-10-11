@@ -17,7 +17,6 @@ pub(crate) enum Mode {
     Check,
 }
 
-/// The interface build checks the JavaScript licences itself, so checking covers the Rust ones only.
 pub(crate) fn regenerate(root: &Path, mode: Mode) -> anyhow::Result<()> {
     let report = cargo_about_report(root)?;
     let catalogue = catalogue(&report).context("list the Rust crates' licences")?;
@@ -57,8 +56,7 @@ fn write_javascript_catalogue(root: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Fetches every target's crates first, so cargo-about can stay offline and never
-/// fill a missing licence from the network, which would make its report vary.
+/// Online, cargo-about fills a missing licence from the network, which makes its report vary.
 fn cargo_about_report(root: &Path) -> anyhow::Result<String> {
     ensure_pinned_cargo_about(root)?;
     let fetched = Command::new("cargo")
@@ -91,7 +89,6 @@ fn write_cargo_about_report(root: &Path, path: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Reads the report `write` leaves at `path`, and removes it whether or not `write` succeeds.
 fn take_report(
     path: &Path,
     write: impl FnOnce(&Path) -> anyhow::Result<()>,

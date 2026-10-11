@@ -6,20 +6,17 @@ use crate::{FolderId, PowerMode, Storage};
 
 const LONGEST_WAIT: Duration = Duration::from_hours(1);
 
-/// One look at the schedule: when it happens and the power mode the device is in then.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Check {
     pub(crate) at_ms: u64,
     pub(crate) power: PowerMode,
 }
 
-/// When each folder's next scheduled rescan comes, waiting longer after each rescan that couldn't read it.
 #[derive(Debug, Default)]
 pub(crate) struct RescanSchedule {
     turns: BTreeMap<RootId, Turn>,
 }
 
-/// A folder's wait runs from `since_ms`, so a clock set back before it ends the wait rather than stretching it.
 #[derive(Clone, Copy, Debug)]
 struct Turn {
     since_ms: u64,
@@ -28,7 +25,6 @@ struct Turn {
 }
 
 impl RescanSchedule {
-    /// The listed folders whose turn has come, none while the device saves power, counting a folder listed for the first time as just scanned on the storage `storage_of` finds it on.
     pub(crate) fn due(
         &mut self,
         folders: &[FolderId],
@@ -53,7 +49,6 @@ impl RescanSchedule {
             .collect()
     }
 
-    /// The listed folders whose storage the check needs: the ones the schedule has yet to see, and none while the device saves power.
     pub(crate) fn needing_storage(&self, folders: &[FolderId], check: Check) -> Vec<FolderId> {
         match check.power {
             PowerMode::Normal => self.unseen(folders),
@@ -69,12 +64,10 @@ impl RescanSchedule {
             .collect()
     }
 
-    /// Notes a rescan that read the folder, which it found on `storage`.
     pub(crate) fn read(&mut self, folder: FolderId, storage: Storage, now_ms: u64) {
         self.turns.insert(folder.0, Turn::read_at(now_ms, storage));
     }
 
-    /// Notes a rescan that couldn't read the folder, keeping the storage it was last found on.
     pub(crate) fn missed(&mut self, folder: FolderId, now_ms: u64) {
         let (misses, storage) = self
             .turns
@@ -137,7 +130,6 @@ mod tests {
         Storage::Local
     }
 
-    /// A schedule that has seen the folder at the start, so its first turn comes one wait later.
     fn seen(folder: FolderId) -> RescanSchedule {
         let mut schedule = RescanSchedule::default();
         schedule.due(&[folder], at(START_MS), local);

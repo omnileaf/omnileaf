@@ -38,7 +38,6 @@ fn write_books(folder: &Path, count: u64) {
     }
 }
 
-/// Every change already told of, so a test can wait for the one it makes next.
 async fn caught_up(changes: &mut LibraryChanges) {
     while timeout(LIBRARY_CHANGES_GATHERED_FOR * 2, changes.next())
         .await

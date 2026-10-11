@@ -78,7 +78,6 @@ function withAddFolder(
   return { ...onPlatform(platform).backend, addLibraryFolder };
 }
 
-/** Leaves each step by the name its button has in `messages`, since the names are translated. */
 async function goToStep(
   page: Page,
   messages: StepButtonNames,

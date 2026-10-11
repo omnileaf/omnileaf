@@ -37,7 +37,6 @@ async function openSettingsPage(page: Page, label: string): Promise<void> {
   await expectPage(page, label);
 }
 
-/** Taps each of the main navigation's links named in `labels` within one task, before the app can react to the first. */
 async function tapMainLinksAtOnce(
   page: Page,
   labels: readonly string[],

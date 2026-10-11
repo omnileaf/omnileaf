@@ -24,7 +24,6 @@ use crate::{
 
 pub(crate) const BOOKS_PER_BATCH: usize = 32;
 
-/// How far a scan has got: still finding the books in the folder, or reading the ones it found.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(tag = "stage", rename_all = "camelCase")]
 pub enum ScanProgress {
@@ -39,7 +38,6 @@ pub struct FolderScan {
     pub series: u32,
     pub books: u32,
     pub unreadable_books: u32,
-    /// Books in an archive format this version recognises but can't open yet, such as CBR.
     pub unsupported_books: u32,
     pub unreadable_folders: u32,
 }
@@ -57,7 +55,6 @@ pub(crate) enum UnreadableBook {
 }
 
 impl UnreadableBook {
-    /// Whether the book is in an archive format this version recognises but can't open yet, rather than damaged.
     pub(crate) fn is_unsupported_archive(&self) -> bool {
         matches!(
             self,
@@ -66,14 +63,12 @@ impl UnreadableBook {
     }
 }
 
-/// Size and modification time, which tell a rescan whether a book's file changed without reading it again.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct FileStamp {
     pub(crate) size_bytes: u64,
     pub(crate) modified_at_ms: i64,
 }
 
-/// The root a scan records its books under, and when it found them.
 #[derive(Clone)]
 pub(crate) struct Target {
     pub(crate) root: RootId,
@@ -92,7 +87,6 @@ struct Tally {
     series: BTreeSet<SeriesId>,
 }
 
-/// Fails only when the folder itself can't be read.
 pub(crate) async fn find_books_in(
     storage: Arc<dyn Storage>,
     folder: PathBuf,
@@ -105,7 +99,6 @@ pub(crate) async fn find_books_in(
         })
 }
 
-/// Hands back the walk's own failure to read the folder for the caller to decide what it means.
 pub(crate) async fn walk(
     storage: Arc<dyn Storage>,
     folder: PathBuf,
@@ -113,7 +106,6 @@ pub(crate) async fn walk(
     Ok(spawn_blocking(move || find_books(&*storage, &folder)).await?)
 }
 
-/// Records the books found in batches of one transaction each, reporting progress after every batch.
 pub(crate) async fn scan(
     database: &Database,
     target: Target,
@@ -220,7 +212,6 @@ impl FileStamp {
         })
     }
 
-    /// Opens a folder of images to add up its pages, since a folder's own size says nothing about them.
     fn of(
         details: Details,
         open: impl FnOnce() -> Result<Book, FormatError>,

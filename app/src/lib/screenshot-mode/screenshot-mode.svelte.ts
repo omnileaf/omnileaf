@@ -24,7 +24,6 @@ const PREFERENCE_KEY = "omnileaf.screenshotMode";
 
 export interface Clock {
   now(): number;
-  /** Runs `run` once `time` comes, unless the returned function cancels it first. */
   at(time: number, run: () => void): () => void;
 }
 

@@ -22,7 +22,6 @@ pub struct TimingBudget {
 }
 
 impl TimingBudget {
-    /// Scales `nominal` by `OMNILEAF_BUDGET_SLACK`, which CI sets where shared runners stall, and panics on a value that is not a number of at least 1.
     #[must_use]
     #[expect(
         clippy::panic,

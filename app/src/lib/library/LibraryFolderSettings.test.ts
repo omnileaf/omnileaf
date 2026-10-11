@@ -73,7 +73,6 @@ const FOUND_EMPTY = rescanning({ kind: "foundEmpty" });
 const BOOKS_REMOVED: RemoveFolderBooks = () =>
   Promise.resolve({ status: "ok", data: { kind: "removed", books: 3 } });
 
-/** A rescan the test steps through and then finishes. */
 class PendingRescan {
   report: (progress: ScanProgress) => void = () => undefined;
   finish: (outcome: RescanOutcome) => void = () => undefined;
@@ -92,7 +91,6 @@ afterEach(() => {
   clearMocks();
 });
 
-/** Answers the library's folders from `folders` as it is at each call, one folder to a page, through the real IPC client. */
 function serveFolders(folders: readonly WireFolder[]): void {
   mockIPC((command, payload) => {
     if (command !== "library_folders") {
@@ -107,7 +105,6 @@ function serveFolders(folders: readonly WireFolder[]): void {
   });
 }
 
-/** Removes folders from `library` and records which ones it was asked to remove. */
 function removingFrom(library: WireFolder[]): {
   removeFolder: RemoveFolder;
   removed: FolderId[];
@@ -126,7 +123,6 @@ function removingFrom(library: WireFolder[]): {
   };
 }
 
-/** The report of a rescan, apart from the report of adding a folder that shares the section. */
 function rescanReport(region: Locator): Locator {
   return region.getByRole("status").filter({ hasText: COMICS.name });
 }
@@ -805,7 +801,6 @@ test("keeps the books of a folder the rescan couldn't reach", async () => {
     );
 });
 
-/** A library whose `COMICS` a rescan finds empty, so the backend marks it unavailable as it does. */
 function emptyingComics(): {
   library: WireFolder[];
   rescanFolder: RescanFolder;

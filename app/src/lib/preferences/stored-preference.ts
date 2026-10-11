@@ -3,7 +3,7 @@ export interface PreferenceStore {
   setItem(key: string, value: string): void;
 }
 
-/** One choice kept in the web view's storage, which can refuse reads and writes, so a refusal reads as nothing stored. */
+/** The web view's storage can refuse reads and writes, so a refusal reads as nothing stored. */
 export class StoredPreference {
   constructor(
     private readonly store: PreferenceStore | undefined,

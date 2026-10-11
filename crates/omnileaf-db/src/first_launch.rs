@@ -1,5 +1,3 @@
-//! Whether this device has been through its first launch, which never syncs since each device sets up its own folders.
-
 use rusqlite::{Connection, Transaction};
 
 use crate::Error;
@@ -12,7 +10,6 @@ pub fn first_launch_finished(connection: &Connection) -> Result<bool, Error> {
         .query_row([], |row| row.get(0))?)
 }
 
-/// Keeps the time of the first finish, so finishing again changes nothing.
 pub fn finish_first_launch(
     transaction: &Transaction<'_>,
     finished_at_ms: i64,

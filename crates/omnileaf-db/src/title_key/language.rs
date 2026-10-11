@@ -4,19 +4,17 @@ use icu_locale_core::{Locale, subtags};
 
 use crate::Error;
 
-/// The app's language, as the BCP 47 tag whose collation and leading articles titles sort by.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Language(Locale);
 
 impl Language {
-    /// The root collation, which already suits most languages without a tailoring of their own.
+    /// The ICU root collation already suits most languages without a tailoring of their own.
     pub(crate) const ROOT: Self = Self(Locale::UNKNOWN);
 
     pub(crate) const fn locale(&self) -> &Locale {
         &self.0
     }
 
-    /// The language subtag alone, such as `fr` for `fr-CA`.
     pub(crate) const fn subtag(&self) -> subtags::Language {
         self.0.id.language
     }

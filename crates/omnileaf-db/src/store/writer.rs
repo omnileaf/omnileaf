@@ -15,7 +15,6 @@ use crate::{
     },
 };
 
-/// The writes one [`crate::store::Store::write`] job makes, each stamped later than the one before.
 pub struct Writer<'t> {
     connection: &'t Connection,
     local: LocalReplica,
@@ -45,13 +44,11 @@ impl<'t> Writer<'t> {
         self.set(LatestKey::BookRead(book), Value::Bool(is_read))
     }
 
-    /// Writes null, which outlives every earlier value so a stale device cannot bring one back.
     #[tracing::instrument(skip_all, fields(?key))]
     pub fn clear(&mut self, key: LatestKey) -> Result<(), Error> {
         self.set(key, Value::Null)
     }
 
-    /// Changes nothing, and takes no sequence number, unless `page` is at or past the furthest page stored.
     #[tracing::instrument(skip_all, fields(%book, page))]
     pub fn raise_furthest(&mut self, book: BookId, page: u32) -> Result<(), Error> {
         let furthest = MaximumKey::BookFurthest(book);
@@ -59,7 +56,6 @@ impl<'t> Writer<'t> {
         self.write(furthest.into(), class, Value::Unsigned(page.into()))
     }
 
-    /// Copies `from`'s position, furthest page and read flag onto `to`, unless `to` has reading state of its own.
     #[tracing::instrument(skip_all, fields(%from, %to))]
     pub fn carry_reading_state(&mut self, from: BookId, to: BookId) -> Result<(), Error> {
         if reading_state(self.connection, to)?.is_some() {
@@ -84,7 +80,6 @@ impl<'t> Writer<'t> {
         self.write(key.into(), MergeClass::LastWriterWins, value)
     }
 
-    /// Fails every later write and the commit once one write fails, so no job can keep half of one.
     fn write(&mut self, key: Key, class: MergeClass, value: Value) -> Result<(), Error> {
         if self.has_failed {
             return Err(Error::FailedWriteIgnored);
@@ -103,7 +98,7 @@ impl<'t> Writer<'t> {
         let seq = self.local.next_seq();
         if register::upsert(self.connection, &key.address(), &register, seq)? {
             projector::project(self.connection, key, value)?;
-            self.local.advance_seq();
+            self.local.advance_seq_saturating();
             self.changed.insert(key);
         }
         Ok(())

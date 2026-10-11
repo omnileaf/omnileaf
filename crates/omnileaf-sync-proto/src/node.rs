@@ -1,6 +1,5 @@
 pub const NODE_ID_LENGTH: usize = 16;
 
-/// The device that made a write, by the id it picked at random when its library was created.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NodeId([u8; NODE_ID_LENGTH]);
 

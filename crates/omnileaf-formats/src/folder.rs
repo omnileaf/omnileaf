@@ -15,7 +15,6 @@ use crate::{
     limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME, read_within},
 };
 
-/// A folder whose images, directly inside it, are one book's pages.
 #[derive(Debug)]
 pub struct FolderBook {
     storage: Arc<dyn Storage>,
@@ -122,7 +121,6 @@ impl FolderBook {
     }
 }
 
-/// Lists what is directly inside the folder, refusing more entries than the limits allow or any entry it can't read.
 pub(crate) fn read_folder(
     storage: &dyn Storage,
     path: &Path,
@@ -157,7 +155,7 @@ fn is_comic_info(entry: &Entry) -> bool {
             .eq_ignore_ascii_case(COMIC_INFO_NAME)
 }
 
-/// Refuses a file larger than `limit` by its size before reading it, and again while reading in case it grows.
+/// Checks the limit again while reading because a file can grow after its size is read.
 fn read_file_within(storage: &dyn Storage, file: &Path, limit: u64) -> io::Result<Option<Vec<u8>>> {
     let opened = storage.open(file)?;
     if opened.metadata()?.len() > limit {

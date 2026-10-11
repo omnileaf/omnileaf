@@ -12,12 +12,9 @@ use std::{
 
 use crate::{CacheError, CacheKey, recency::Recency};
 
-/// Marks a file still being written, which a key never contains, so one a crash left behind is never read as an entry.
 const PARTIAL_MARKER: &str = ".partial-";
-/// When an entry whose file has no readable modification time was last used, so it goes first.
 const USED_LONG_AGO: SystemTime = SystemTime::UNIX_EPOCH;
 
-/// Entries are files named by their key, and the file's modification time remembers when it was last used across restarts.
 #[derive(Debug)]
 pub struct DiskCache {
     folder: PathBuf,
@@ -27,7 +24,6 @@ pub struct DiskCache {
 }
 
 impl DiskCache {
-    /// Blocks while it lists the folder, creating it if missing, so call it off the async runtime.
     #[tracing::instrument(skip_all, fields(folder = %folder.display(), budget_bytes))]
     pub fn open(folder: PathBuf, budget_bytes: u64) -> Result<Self, CacheError> {
         let open_failed = |source| CacheError::Open {
@@ -59,7 +55,6 @@ impl DiskCache {
         Ok(cache)
     }
 
-    /// Misses an entry it can't read now, letting go of a damaged one or one a lost write left empty so it is made again; blocks on the file system.
     #[must_use]
     pub fn get(&self, key: &CacheKey) -> Option<Vec<u8>> {
         if !self.recency().touch(key) {
@@ -92,7 +87,6 @@ impl DiskCache {
         }
     }
 
-    /// Stores nothing for an entry larger than the whole budget, and blocks on the file system.
     pub fn put(&self, key: &CacheKey, bytes: &[u8]) -> Result<(), CacheError> {
         let size = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
         if size > self.budget_bytes {
@@ -122,7 +116,6 @@ impl DiskCache {
         Ok(())
     }
 
-    /// Lets go of an entry its reader found damaged, still counting one whose file stays, and blocks on the file system.
     pub fn remove(&self, key: &CacheKey) {
         let mut recency = self.recency();
         if self.remove_file(key) {
@@ -139,7 +132,6 @@ impl DiskCache {
         self.folder.join(key.as_file_name())
     }
 
-    /// A name no other write uses, so two writers of one key never share a partial file.
     fn partial_path_of(&self, key: &CacheKey) -> PathBuf {
         let write = self.next_write.fetch_add(1, Ordering::Relaxed);
         self.folder
@@ -152,7 +144,6 @@ impl DiskCache {
         }
     }
 
-    /// Whether the entry's file is gone, removed now or before.
     fn remove_file(&self, key: &CacheKey) -> bool {
         match fs::remove_file(self.path_of(key)) {
             Ok(()) => true,
@@ -175,7 +166,6 @@ struct FoundEntry {
     size_bytes: u64,
 }
 
-/// Reads one listed file as an entry, leaving out anything else and any file that went or can't be read meanwhile.
 fn found_entry(entry: io::Result<DirEntry>) -> Option<FoundEntry> {
     let entry = entry
         .inspect_err(|error| tracing::warn!(%error, "list a cache entry"))
@@ -202,7 +192,6 @@ fn found_entry(entry: io::Result<DirEntry>) -> Option<FoundEntry> {
     })
 }
 
-/// Remembers the entry was just used through a handle of its own, so an entry it may only read is still served.
 fn mark_used(path: &Path, key: &CacheKey) {
     let marked = File::options()
         .write(true)
@@ -219,7 +208,6 @@ fn remove_leftover(path: &Path) {
     }
 }
 
-/// A read error every later read of the entry would meet too, unlike a passing one such as a busy file.
 fn means_damaged(error: &io::Error) -> bool {
     matches!(
         error.kind(),

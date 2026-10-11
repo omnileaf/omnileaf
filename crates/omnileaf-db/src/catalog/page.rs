@@ -9,7 +9,6 @@ pub struct PageSize(u16);
 impl PageSize {
     pub const MAX: u16 = 200;
 
-    /// One row more than the page holds, so whether another page follows shows without a second query.
     pub(crate) fn rows_to_fetch(self) -> i64 {
         i64::from(self.0) + 1
     }
@@ -43,12 +42,10 @@ pub struct PageRequest {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Page<T> {
     pub items: Vec<T>,
-    /// Absent on the last page.
     pub next: Option<Cursor>,
 }
 
 impl<T> Page<T> {
-    /// Takes the rows fetched for a page of `size`, where a row beyond the page means another page follows.
     pub(crate) fn of(mut rows: Vec<(T, Position)>, size: PageSize) -> Self {
         let has_more = rows.len() > size.items();
         rows.truncate(size.items());

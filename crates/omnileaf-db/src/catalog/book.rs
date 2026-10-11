@@ -42,7 +42,6 @@ impl NewBook {
     }
 }
 
-/// Fails with [`Error::UnknownSeries`] when the book's series isn't in the catalog yet.
 #[tracing::instrument(skip_all, fields(book = %book.id(), series = %book.series))]
 pub fn add_book(transaction: &Transaction<'_>, book: &NewBook) -> Result<(), Error> {
     if insert(transaction, book, ADD_BOOK)? == 0 {
@@ -51,7 +50,6 @@ pub fn add_book(transaction: &Transaction<'_>, book: &NewBook) -> Result<(), Err
     Ok(())
 }
 
-/// Leaves a book already in the catalog in the series it was first found in, and fails like [`add_book`] when its series is missing.
 pub(crate) fn add_book_unless_present(
     transaction: &Transaction<'_>,
     book: &NewBook,
@@ -63,7 +61,6 @@ pub(crate) fn add_book_unless_present(
     Ok(())
 }
 
-/// Moves a book already in the catalog into `book`'s series under its title, keeping when it was added, and fails like [`add_book`] when that series is missing.
 pub(crate) fn add_or_refile_book(
     transaction: &Transaction<'_>,
     book: &NewBook,
@@ -74,7 +71,6 @@ pub(crate) fn add_or_refile_book(
     Ok(())
 }
 
-/// Deletes each of `books` that no root holds a file of any more, keeping its synced reading state for when it is found again.
 #[tracing::instrument(skip_all, fields(books = books.len()))]
 pub fn remove_books_without_files(
     transaction: &Transaction<'_>,

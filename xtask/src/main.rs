@@ -1,5 +1,3 @@
-//! Repository automation, run as `cargo xtask <command>`.
-
 mod android;
 mod apple;
 mod check;
@@ -107,7 +105,7 @@ enum Command {
         #[arg(long)]
         check: bool,
     },
-    /// Check that comments hold no plain notes, warning words or references, and that doc comments stay short.
+    /// Check that comments hold no plain notes, warning words or references, and that doc comments stay short and don't restate their item.
     LintComments,
     /// Check that only the write path writes synced state and the projections built from it.
     LintSync,
@@ -157,7 +155,7 @@ fn main() -> anyhow::Result<()> {
             let root = workspace::root();
             let mut desktop_data = None;
             if fresh {
-                fresh::clear(&root, &platforms, &devices)?;
+                fresh::clear_phones(&root, &platforms, &devices)?;
                 if platforms.contains(&dev::Platform::Desktop) {
                     desktop_data = Some(fresh::start_desktop_data(&root)?);
                 }
@@ -282,7 +280,7 @@ fn process_for_check(
 fn ready_for_ios_tests(chosen: Option<&str>) -> anyhow::Result<Process> {
     let process = Process::in_workspace();
     let udid = test_device::ready_simulator(&process, chosen)?;
-    Ok(process.with_env(test_device::SIMULATOR_UDID, udid))
+    Ok(process.with_step_env(test_device::SIMULATOR_UDID, udid))
 }
 
 fn ready_for_android_tests(chosen: Option<&str>) -> anyhow::Result<Process> {
@@ -292,8 +290,8 @@ fn ready_for_android_tests(chosen: Option<&str>) -> anyhow::Result<Process> {
     let device = test_device::ready_android(&process, &toolchain, chosen)?;
     test_device::build_android_app(&workspace::root(), device.target)?;
     Ok(process
-        .with_env(test_device::ANDROID_SERIAL, device.serial)
-        .with_env(android::ANDROID_HOME, toolchain.sdk))
+        .with_step_env(test_device::ANDROID_SERIAL, device.serial)
+        .with_step_env(android::ANDROID_HOME, toolchain.sdk))
 }
 
 fn take_screenshot(chosen: Option<&str>) -> anyhow::Result<()> {

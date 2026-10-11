@@ -34,7 +34,6 @@ const SAMPLE_LIBRARY: WireFolder = {
   isAvailable: true,
 };
 
-/** A library that keeps what each test adds, set back before the next test. */
 class SampleLibrary {
   folders: WireFolder[] = [];
 

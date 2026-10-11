@@ -1,7 +1,6 @@
 const ICU_PREFIX: &str = "icu_";
 const SEPARATOR: &str = ",";
 
-/// Lists every `icu_` package a `Cargo.lock` holds as `name version`, sorted, so any change to ICU4X's code or data changes the list.
 pub(crate) fn icu_versions(lock: &str) -> String {
     let mut packages = Vec::new();
     let mut name = None;

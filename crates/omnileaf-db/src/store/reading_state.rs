@@ -7,7 +7,6 @@ const STATE_OF_BOOK: &str = "SELECT position_page, furthest_page, is_read
     FROM book_state
     WHERE book_id = ?1";
 
-/// Where a reader is in one book, as the synced registers last projected it.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct ReadingState {
     pub position_page: Option<u32>,
@@ -15,7 +14,6 @@ pub struct ReadingState {
     pub is_read: Option<bool>,
 }
 
-/// None for a book nothing has been read in, or whose every reading register was cleared.
 pub fn reading_state(connection: &Connection, book: BookId) -> Result<Option<ReadingState>, Error> {
     let state = connection
         .prepare(STATE_OF_BOOK)?

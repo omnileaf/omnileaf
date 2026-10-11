@@ -43,7 +43,6 @@ async function launches(
   }
 }
 
-/** Waits for the Simulator's launcher to register a just-installed app, failing with the Simulator's logs when a launch overruns its own timeout. */
 export async function launchOnceRegistered(
   bundleId: string,
   launch: () => Promise<unknown>,

@@ -38,7 +38,6 @@ function addFolderIn(page: Page, region: string) {
     .getByRole("button", { name: "Add a folder" });
 }
 
-/** The report of adding a folder, apart from the rescan reports Settings › Library also shows. */
 function scanReport(page: Page, opening: string): Locator {
   return page
     .getByRole("main")

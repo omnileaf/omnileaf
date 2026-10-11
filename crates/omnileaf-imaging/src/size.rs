@@ -14,10 +14,8 @@ impl Size {
     }
 }
 
-/// How much of a source image a thumbnail shows, and how large it is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct Plan {
-    /// The rows from the top of the source the thumbnail shows, all of them unless the source is a tall strip.
     pub(crate) shown_height: u32,
     pub(crate) output: Size,
 }
@@ -37,7 +35,6 @@ impl Plan {
         }
     }
 
-    /// The size the whole source shrinks to at the thumbnail's scale, which a decoder that scales as it decodes needs at least.
     pub(crate) fn whole_source_at_output_scale(self, source: Size) -> Size {
         Size {
             width: self.output.width,
@@ -46,7 +43,6 @@ impl Plan {
     }
 }
 
-/// Rounds `length * numerator / denominator` to the nearest whole pixel.
 fn scaled(length: u32, numerator: u32, denominator: u32) -> u32 {
     let denominator = u64::from(denominator.max(1));
     let rounded = (u64::from(length) * u64::from(numerator) + denominator / 2) / denominator;

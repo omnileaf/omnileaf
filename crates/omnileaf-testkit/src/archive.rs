@@ -29,7 +29,7 @@ pub struct ArchiveEntry {
     pub bytes: Vec<u8>,
 }
 
-/// A comic archive holding `entries` in the order given, with a fixed time, permissions and host system so the bytes never vary.
+/// Fixes each entry's time, permissions and host system, which a ZIP records, so the bytes never vary.
 pub fn cbz(entries: &[ArchiveEntry], compression: Compression) -> Result<Vec<u8>, FixtureError> {
     let options = SimpleFileOptions::default()
         .compression_method(compression.method())

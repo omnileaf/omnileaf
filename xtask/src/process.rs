@@ -11,9 +11,7 @@ use crate::{
     workspace,
 };
 
-/// The programs on this machine, behind a seam the tests replace with a fake.
 pub(crate) trait Machine {
-    /// Returns `None` when the program can't start or exits unsuccessfully.
     fn stdout_of(&self, program: &OsStr, args: &[&str]) -> Option<String>;
 }
 
@@ -30,8 +28,7 @@ impl Process {
         }
     }
 
-    /// Sets a variable for the gate steps it runs, leaving the tool probes untouched.
-    pub(crate) fn with_env(mut self, key: &'static str, value: impl Into<OsString>) -> Self {
+    pub(crate) fn with_step_env(mut self, key: &'static str, value: impl Into<OsString>) -> Self {
         self.env.push((key, value.into()));
         self
     }
@@ -65,8 +62,7 @@ impl Machine for Process {
 
 const DEFAULT_WINDOWS_EXTENSIONS: &str = ".COM;.EXE;.BAT;.CMD";
 
-/// Windows installs tools such as pnpm as `.cmd` shims, which `Command` only
-/// finds when it is given their full path.
+/// Windows installs tools such as pnpm as `.cmd` shims, which `Command` finds only by their full path.
 pub(crate) fn command_for(program: impl AsRef<OsStr>) -> Command {
     let program = program.as_ref();
     if cfg!(windows)
@@ -133,7 +129,7 @@ mod tests {
 
     #[test]
     fn runs_steps_with_the_variables_it_was_given() {
-        let process = Process::in_workspace().with_env("XTASK_PROBE", "set");
+        let process = Process::in_workspace().with_step_env("XTASK_PROBE", "set");
         let (program, args): (&'static str, &'static [&'static str]) = if cfg!(windows) {
             (
                 "cmd",

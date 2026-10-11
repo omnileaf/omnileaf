@@ -47,7 +47,6 @@ pub struct SourceLocation<'a> {
     pub column: u32,
 }
 
-/// What a panic hook sees, before anything personal is taken out.
 #[derive(Clone, Copy, Debug)]
 pub struct PanicDetails<'a> {
     pub message: &'a str,
@@ -55,7 +54,6 @@ pub struct PanicDetails<'a> {
     pub backtrace: &'a str,
 }
 
-/// An error the interface didn't handle, as the webview describes it.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct InterfaceError {
@@ -63,7 +61,6 @@ pub struct InterfaceError {
     pub stack: Option<String>,
 }
 
-/// What crashed: the app itself, or only its interface.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum CrashOrigin {
@@ -94,7 +91,6 @@ impl CrashOrigin {
     }
 }
 
-/// A report about one crash, holding only text with names and paths taken out.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrashReport {
     id: CrashReportId,
@@ -105,7 +101,6 @@ pub struct CrashReport {
     trace: Vec<String>,
 }
 
-/// Where a panic happened, with the file named from its package down.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct CodeLocation {
     file: String,
@@ -171,7 +166,6 @@ impl CrashReport {
         self.origin
     }
 
-    /// A new bug report in the project's tracker, filled in with this report for the person to read and submit.
     #[must_use]
     pub fn new_issue_url(&self) -> String {
         let title = format!(
@@ -191,7 +185,6 @@ impl CrashReport {
     }
 }
 
-/// How a report is kept on disk; reading one back cleans its text again, since the file is outside the app's control.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct StoredCrashReport {

@@ -32,7 +32,6 @@ function counting(platform: Platform): FakeBackend {
   };
 }
 
-/** Hides the page and shows it again, as a phone does when the app leaves the screen and comes back. */
 async function leaveAndComeBack(page: Page): Promise<void> {
   await page.evaluate(() => {
     for (const state of ["hidden", "visible"]) {
@@ -45,7 +44,6 @@ async function leaveAndComeBack(page: Page): Promise<void> {
   });
 }
 
-/** Sends one more command through the bridge and waits for it, so every command the page sent before it has arrived. */
 async function settleCommands(page: Page): Promise<void> {
   const told = calls.schedules.length;
   await page.getByRole("switch", { name: SWITCH_NAME }).click();

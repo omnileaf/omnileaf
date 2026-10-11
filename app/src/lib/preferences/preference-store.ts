@@ -3,7 +3,7 @@ export interface PreferenceStore {
   setItem(key: string, value: string): void;
 }
 
-/** Storage can be blocked or full, so a choice that can't be read or kept falls back to the default. */
+/** Web storage can be blocked or full, so a choice that can't be read or kept falls back to the default. */
 export function readPreference(
   store: PreferenceStore | undefined,
   key: string,

@@ -23,7 +23,6 @@ const PAGES_AFTER_THE_COVER: u32 = 3;
 const FOLDER: &str = "Scanned Library";
 const BUDGET: Duration = Duration::from_millis(30);
 
-/// One book in each series, so every book's cover is listed, each opening on a typical full-size colour scan.
 fn write_scanned_library(root: &std::path::Path) {
     for book in 0..BOOKS {
         let series = format!("Sample Series {book:02}");

@@ -11,7 +11,6 @@ impl Clock for SystemClock {
     }
 }
 
-/// Saturates at the epoch for a clock set before 1970, and at `u64::MAX` past the far future.
 pub(crate) fn unix_ms(now: SystemTime) -> u64 {
     match now.duration_since(UNIX_EPOCH) {
         Ok(elapsed) => u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX),

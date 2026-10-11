@@ -15,7 +15,6 @@ export type FolderList =
 
 export type RemoveOutcome = "removed" | "failed";
 
-/** The library's folders, read page by page until the backend says there are no more. */
 export class LibraryFolders {
   list: FolderList = $state({ kind: "loading" });
 
@@ -27,7 +26,6 @@ export class LibraryFolders {
     private readonly countFolderBooks: CountFolderBooks,
   ) {}
 
-  /** Only the most recently started load shows its list, so a slower older one can't bring back stale folders. */
   async load(): Promise<void> {
     const load = ++this.#latestLoad;
     const folders: LibraryFolder[] = [];
@@ -54,7 +52,6 @@ export class LibraryFolders {
     }
   }
 
-  /** A folder something else already removed counts as removed, since the list then matches what was asked for. */
   async remove(folder: LibraryFolder): Promise<RemoveOutcome> {
     const result = await this.removeFolder(folder.id);
     if (result.status === "error" && result.error.code !== "folderNotFound") {
@@ -64,7 +61,6 @@ export class LibraryFolders {
     return "removed";
   }
 
-  /** Leaves the count out when it couldn't be read, since it only adds detail to what the folder is. */
   async countBooks(folder: LibraryFolder): Promise<number | undefined> {
     const result = await this.countFolderBooks(folder.id);
     return result.status === "ok" ? result.data : undefined;

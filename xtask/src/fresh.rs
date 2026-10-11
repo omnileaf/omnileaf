@@ -46,7 +46,6 @@ impl fmt::Display for NoFreshDevice {
 
 impl std::error::Error for NoFreshDevice {}
 
-/// Picks from one platform's devices: the one named, booting it if it's switched off, or else the only running one.
 pub(crate) fn pick<'a>(
     devices: &'a [Device],
     chosen: Option<&str>,
@@ -86,8 +85,11 @@ struct TauriConfig {
     identifier: String,
 }
 
-/// Removes the app from each phone platform's device; the desktop app gets a new data folder instead.
-pub(crate) fn clear(root: &Path, platforms: &[Platform], chosen: &Devices) -> anyhow::Result<()> {
+pub(crate) fn clear_phones(
+    root: &Path,
+    platforms: &[Platform],
+    chosen: &Devices,
+) -> anyhow::Result<()> {
     let config_path = root.join(TAURI_CONFIG);
     let config = fs::read_to_string(&config_path)
         .with_context(|| format!("read {}", config_path.display()))?;
@@ -175,7 +177,6 @@ fn clear_ios(machine: &impl Machine, chosen: Option<&str>, identifier: &str) -> 
     Ok(())
 }
 
-/// Makes the desktop app's data folder for this fresh run and says where it is, leaving the usual one untouched.
 #[expect(clippy::print_stdout, reason = "progress output for the developer")]
 pub(crate) fn start_desktop_data(root: &Path) -> anyhow::Result<PathBuf> {
     let run = SystemTime::now()
@@ -191,7 +192,6 @@ pub(crate) fn start_desktop_data(root: &Path) -> anyhow::Result<PathBuf> {
     Ok(folder)
 }
 
-/// A new folder for one fresh run's desktop data under `target`, so the developer's own library stays as it was.
 pub(crate) fn desktop_data_folder(root: &Path, run: u64) -> PathBuf {
     root.join(DESKTOP_DEV_DATA).join(run.to_string())
 }

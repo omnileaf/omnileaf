@@ -8,7 +8,6 @@ use crate::{
 const THUMBNAIL_FOLDER: &str = "thumbs";
 const JPEG: &str = "image/jpeg";
 
-/// Answers the `omni` protocol's requests for cover thumbnails, by ids in the path and never by a path on disk.
 pub struct ResourceRouter {
     thumbnails: CoverThumbnails,
 }
@@ -20,7 +19,7 @@ pub enum ResourceRouterError {
 }
 
 impl ResourceRouter {
-    /// Keeps thumbnails under `cache_folder`, which the platform may empty whenever it needs the space.
+    /// The platform may empty `cache_folder` whenever it needs the space.
     #[tracing::instrument(skip_all, fields(cache_folder = %cache_folder.display()))]
     pub fn open(cache_folder: &Path) -> Result<Self, ResourceRouterError> {
         let folder = cache_folder.join(THUMBNAIL_FOLDER).join(THUMBNAIL_VERSION);
@@ -28,7 +27,6 @@ impl ResourceRouter {
         Ok(Self { thumbnails })
     }
 
-    /// Answers a request for `path`, the request URL's path, such as `/thumb/v1/…`.
     #[tracing::instrument(skip_all, fields(%path))]
     pub async fn respond(&self, library: &Library, path: &str) -> Resource {
         let Some(cover) = path

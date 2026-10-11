@@ -60,7 +60,6 @@ export function describePage(page: PageState): string {
   return `the page at ${page.url} titled "${page.title}" shows ${text === "" ? "no text" : shown}`;
 }
 
-/** Names the buttons shown in an Appium page source, which is all a native screen offers to say what is on it. */
 export function describeNativeScreen(source: string): string {
   const buttons = [...source.matchAll(SHOWN_BUTTON)].map(
     ([, name]) => `"${name ?? ""}"`,
@@ -182,7 +181,6 @@ export class Session {
     return session;
   }
 
-  /** Waits for the first match the page displays, since some layouts keep a hidden copy of a control. */
   async waitFor(
     locator: Locator,
     timeoutMs = ELEMENT_TIMEOUT_MS,
@@ -191,7 +189,6 @@ export class Session {
     return this.elementAt(locator, id);
   }
 
-  /** Answers `undefined` rather than failing when nothing matches within `timeoutMs`, for what may not be there at all. */
   async findWithin(
     locator: Locator,
     timeoutMs: number,
@@ -210,8 +207,6 @@ export class Session {
       throw error;
     }
   }
-
-  /** Runs `script` in the page until it returns `true`, for what no element's presence can show, such as an image having loaded. */
   async waitUntil(
     script: string,
     what: string,
@@ -224,7 +219,6 @@ export class Session {
     );
   }
 
-  /** Marks the page and reloads it once the script has returned, then asks the page until one without the mark answers. */
   async reload(): Promise<void> {
     await this.run(RELOAD_SCRIPT);
     await pollUntil(
@@ -247,7 +241,6 @@ export class Session {
     }
   }
 
-  /** Runs one of the Appium driver's own `mobile:` commands, which act on the device rather than the page. */
   async runMobileCommand(name: string, options: object): Promise<unknown> {
     return send(`${this.endpoint}/execute/sync`, "POST", {
       script: `mobile: ${name}`,
@@ -255,7 +248,6 @@ export class Session {
     });
   }
 
-  /** Runs `steps` against the device's own interface, such as a system sheet, then returns to the page's context even when a step fails. */
   async inNativeContext<T>(steps: () => Promise<T>): Promise<T> {
     const page = await this.currentContext();
     await this.switchToContext(NATIVE_CONTEXT);
@@ -270,7 +262,6 @@ export class Session {
     return answer;
   }
 
-  /** Quits the app and opens it again, then carries on in the web view of the new launch rather than the one that went with the old. */
   async relaunchApp(bundleId: string): Promise<void> {
     const before = await this.currentContext();
     await this.runMobileCommand("terminateApp", { bundleId });
@@ -320,7 +311,6 @@ export class Session {
     await send(this.endpoint, "DELETE");
   }
 
-  /** Polls like {@link pollUntil}, saying what the page showed when it gives up. */
   private async pollOnPage<T>(
     attempt: () => Promise<T | undefined>,
     timeoutMs: number,

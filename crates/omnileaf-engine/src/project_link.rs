@@ -1,7 +1,6 @@
 use serde::Deserialize;
 use specta::Type;
 
-/// The project's pages the app opens in the system browser; the interface names one, never a URL.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum ProjectLink {

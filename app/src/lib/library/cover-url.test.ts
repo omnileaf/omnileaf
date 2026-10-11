@@ -11,7 +11,6 @@ afterEach(() => {
   clearMocks();
 });
 
-/** A cover path as only the backend hands one out. */
 async function listedCover(): Promise<CoverPath> {
   mockIPC(() => ({
     series: [

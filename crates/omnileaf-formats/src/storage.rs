@@ -7,7 +7,6 @@ use std::{
     time::SystemTime,
 };
 
-/// Where books are read from, so the readers and the fingerprint never reach a file any other way.
 pub trait Storage: fmt::Debug + Send + Sync {
     /// What is directly inside `folder`, without following links.
     fn entries(&self, folder: &Path) -> io::Result<Vec<Entry>>;
@@ -41,7 +40,6 @@ pub enum Details {
     },
 }
 
-/// The device's own file system.
 #[derive(Clone, Copy, Debug)]
 pub struct LocalStorage;
 

@@ -18,7 +18,6 @@ const PROJECT_FURTHEST: &str = "INSERT INTO book_state (book_id, furthest_page) 
 const PROJECT_READ: &str = "INSERT INTO book_state (book_id, is_read) VALUES (?1, ?2)
     ON CONFLICT (book_id) DO UPDATE SET is_read = excluded.is_read";
 
-/// The columns one register feeds, set from its current value alone so replaying the registers in any order rebuilds the same rows.
 enum Projection {
     Position { book: BookId, page: Option<u32> },
     Furthest { book: BookId, page: Option<u32> },
@@ -26,7 +25,6 @@ enum Projection {
 }
 
 impl Projection {
-    /// None when the value is not the kind the key's field holds.
     fn of(key: Key, value: Value) -> Option<Self> {
         Some(match key {
             Key::Latest(LatestKey::BookPosition(book)) => Self::Position {
@@ -66,7 +64,6 @@ pub(crate) fn project(connection: &Connection, key: Key, value: Value) -> Result
     Ok(())
 }
 
-/// Leaves out, with a warning, every register this version cannot project, so one bad register never blocks the rest.
 #[tracing::instrument(skip_all)]
 pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
     connection.execute("DELETE FROM book_state", [])?;

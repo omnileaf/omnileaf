@@ -3,7 +3,6 @@ use rusqlite::Connection;
 
 use crate::Error;
 
-/// This device's own sync state: its node id, the last stamp it gave out and the sequence number its next change takes.
 pub(crate) struct LocalReplica {
     node: NodeId,
     hlc: Hlc,
@@ -35,8 +34,8 @@ impl LocalReplica {
         self.next_seq
     }
 
-    /// Saturates rather than wraps, so a number past what the table stores fails to save instead of being reused.
-    pub(crate) const fn advance_seq(&mut self) {
+    /// SQLite integers stop at `i64::MAX`, so a saturated number fails to save rather than being reused.
+    pub(crate) const fn advance_seq_saturating(&mut self) {
         self.next_seq = self.next_seq.saturating_add(1);
     }
 

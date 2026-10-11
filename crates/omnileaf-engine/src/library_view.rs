@@ -4,18 +4,15 @@ use omnileaf_db::library_view::{
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
-/// How this device draws the library.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LibraryView {
     pub display: LibraryDisplay,
     pub covers_per_row: CoversPerRow,
-    /// Whether the number of series shows beside the library's title.
     pub shows_item_counts: bool,
     pub on_covers: OnCovers,
 }
 
-/// What each cover carries besides its picture and title, each drawn only for a series with something to show.
 #[expect(
     clippy::struct_excessive_bools,
     reason = "each is a switch of its own in the view options"
@@ -39,7 +36,6 @@ pub enum LibraryDisplay {
     List,
 }
 
-/// How many covers a row holds at each size the library is drawn at, chosen apart since each wants its own.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 pub struct CoversPerRow {
     pub phone: PhoneCoversPerRow,
@@ -55,7 +51,6 @@ pub type DesktopCoversPerRow = CoversPerRowCount<4, 12>;
 #[serde(into = "u8", try_from = "u8")]
 pub struct CoversPerRowCount<const FEWEST: u8, const MOST: u8>(u8);
 
-/// The fewest and most covers a row holds at one size.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 pub struct CoversPerRowRange {
     pub fewest: u8,

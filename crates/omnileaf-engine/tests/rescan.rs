@@ -32,7 +32,6 @@ const SERIES_03: &str = "Sample Series 03";
 const CHANGED_AT: Duration = Duration::from_secs(1_800_000_001);
 const DATABASE_FILE: &str = "library.sqlite";
 
-/// A folder of three books in two series, scanned once into a library of its own.
 struct Rescanned {
     scanned: Scanned,
     comics: ScratchFolder,
@@ -83,7 +82,6 @@ impl Rescanned {
             .collect()
     }
 
-    /// Writes through a store of its own on the library's database, as reading a book would.
     async fn set_position(&self, book: BookId, page: u32) {
         let home = self.scanned.home.path();
         let config = Config {
@@ -120,7 +118,6 @@ async fn folder_listed(library: &Library, scanned: &Scanned) -> Option<LibraryFo
         .find(|folder| folder.id == scanned.id)
 }
 
-/// Gives a changed file a modification time no earlier write shares, so a rescan can't mistake it for the old one.
 fn mark_changed(path: &Path) {
     fs::File::options()
         .write(true)
@@ -658,7 +655,6 @@ async fn rescans_the_home_folder_and_every_linked_folder_in_the_order_they_were_
     );
 }
 
-/// Removes a folder once the rescan has listed it and recorded the first batch of the home folder's books, so the removal lands mid-rescan.
 #[tokio::test]
 async fn rescans_the_folders_after_one_removed_while_the_rescan_runs() {
     const HOME_BOOKS: u64 = 40;

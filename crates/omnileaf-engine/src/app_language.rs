@@ -4,7 +4,6 @@ use omnileaf_db::Language;
 use serde::Deserialize;
 use specta::{Type, Types, datatype::DataType};
 
-/// The language the interface shows, as the BCP 47 tag it chose, which the library sorts titles by.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(try_from = "String")]
 pub struct AppLanguage(pub(crate) Language);

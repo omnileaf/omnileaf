@@ -51,7 +51,6 @@ const SCAN_REPORT = `Found ${String(SAMPLE_LIBRARY.books)} books in ${String(SAM
 
 const appSession = useAppSession();
 
-/** Leaves for the library page first, so re-opening Library settings can't find the page it is replacing. */
 async function openLibrarySettings(): Promise<void> {
   await openLibraryPage(appSession());
   await (await appSession().waitFor(SETTINGS_LINK)).click();

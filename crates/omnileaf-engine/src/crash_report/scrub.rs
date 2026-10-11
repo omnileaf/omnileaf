@@ -18,13 +18,11 @@ const CONTENT_EXTENSIONS: &[&str] = &[
 const URL_SCHEME_END: &str = "://";
 const RAW_BYTES_PER_KEPT_BYTE: usize = 64;
 
-/// Cleans `text` and keeps at most `limit` bytes of it, cutting before a placeholder rather than through one.
 pub(crate) fn clean(text: &str, limit: usize) -> String {
     let bounded = prefix_within(text, limit.saturating_mul(RAW_BYTES_PER_KEPT_BYTE));
     bound(&scrub(bounded), limit)
 }
 
-/// Replaces quoted text and paths, where names and titles appear in error messages, taking each path to the end of its line since names can hold spaces.
 fn scrub(text: &str) -> String {
     let mut cleaned = Cleaned::with_capacity(text.len());
     let mut rest = text.chars().peekable();
@@ -50,7 +48,6 @@ fn scrub(text: &str) -> String {
     cleaned.text
 }
 
-/// Text cleaned so far, remembering where its current run of words began, since a relative path can begin with any of them.
 struct Cleaned {
     text: String,
     words_start: Option<usize>,
@@ -91,7 +88,6 @@ fn is_token_opener(next: char) -> bool {
     next == APOSTROPHE || WORD_RUN_BREAKS.contains(&next)
 }
 
-/// Keeps at most `limit` bytes of `text`, cutting before a placeholder rather than through one.
 pub(super) fn bound(text: &str, limit: usize) -> String {
     if text.len() <= limit {
         return text.to_owned();
@@ -117,7 +113,6 @@ fn prefix_within(text: &str, budget: usize) -> &str {
     text.get(..cut).unwrap_or_default()
 }
 
-/// The length of a backtick span naming code, as standard panic messages have, rather than text that could be a title.
 fn code_span_length(rest: &Peekable<Chars<'_>>) -> Option<usize> {
     let mut chars = rest.clone();
     if chars.next() != Some(CODE_QUOTE) {
@@ -172,7 +167,6 @@ fn skip_through(rest: &mut Peekable<Chars<'_>>, close: char) {
     }
 }
 
-/// The length of a single-quoted span on one line with no other quotes inside, closed by a quote that ends a word.
 fn single_quoted_length(rest: &Peekable<Chars<'_>>) -> Option<usize> {
     let mut chars = rest.clone().skip(1).peekable();
     let mut length = 1_usize;
@@ -200,7 +194,6 @@ fn skip_line(rest: &mut Peekable<Chars<'_>>) {
     while rest.next_if(|next| *next != '\n').is_some() {}
 }
 
-/// Where a path found at a token begins: at the token for a rooted path, or with the words before it for any other.
 #[derive(Clone, Copy)]
 enum PathStart {
     Token,

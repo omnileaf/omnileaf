@@ -65,7 +65,6 @@ async fn add_generated_series(database: &Database) {
     seed_library(database, &series).await;
 }
 
-/// Reads the full title page after `after`, waiting for a reader included, and returns the cursor to the next one.
 async fn read_title_page(database: &Database, after: Option<Cursor>) -> Option<Cursor> {
     let request = PageRequest {
         after,

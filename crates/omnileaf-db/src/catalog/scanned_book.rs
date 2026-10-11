@@ -31,7 +31,6 @@ const SERIES_OF_BOOK: &str = "SELECT series.id
      FROM book JOIN series ON series.local_id = book.series_local_id
      WHERE book.id = ?1";
 
-/// A book file found in a library root, with the series its place on disk puts it in.
 #[derive(Clone, Debug)]
 pub struct ScannedBook {
     pub series: NewSeries,
@@ -41,7 +40,6 @@ pub struct ScannedBook {
     pub file: BookFile,
 }
 
-/// Where a book already in the catalog stays when one of its files is recorded.
 #[derive(Clone, Copy)]
 enum Filing {
     WhereFirstFound,
@@ -51,13 +49,11 @@ enum Filing {
 #[derive(Clone, Debug)]
 pub struct BookFile {
     pub root: RootId,
-    /// Relative to the root.
     pub location: PathBuf,
     pub size_bytes: u64,
     pub modified_at_ms: i64,
 }
 
-/// Adds each book's series and the book unless the catalog has them, points the file's row at the book, and returns the series each book is filed in.
 #[tracing::instrument(skip_all, fields(books = scanned.len()))]
 pub fn record_scanned_books(
     transaction: &Transaction<'_>,
@@ -66,7 +62,6 @@ pub fn record_scanned_books(
     record(transaction, scanned, Filing::WhereFirstFound)
 }
 
-/// Records books found at a new place after their old one went, refiling each in the series and under the title its new place gives it.
 #[tracing::instrument(skip_all, fields(books = moved.len()))]
 pub fn record_moved_books(
     transaction: &Transaction<'_>,

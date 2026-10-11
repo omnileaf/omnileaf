@@ -16,14 +16,12 @@ use crate::{
 
 const NUMERIC_ORDERING: CollationNumericOrdering = CollationNumericOrdering::True;
 
-/// Makes the sort keys titles are listed by, which compare bytewise in the order the language's readers expect.
 pub(crate) struct TitleCollation {
     collator: CollatorBorrowed<'static>,
     articles: &'static [Article],
 }
 
 impl TitleCollation {
-    /// Sorts numbers by value, and lets case, accents, then punctuation and spaces decide only between titles otherwise equal.
     pub(crate) fn new(language: &Language) -> Result<Self, Error> {
         let mut preferences = CollatorPreferences::from(language.locale());
         preferences.numeric_ordering = Some(NUMERIC_ORDERING);
@@ -38,12 +36,10 @@ impl TitleCollation {
         })
     }
 
-    /// The collation of the language the stored title keys were made for, which new titles must be keyed by to sort among them.
     pub(crate) fn stored(connection: &Connection) -> Result<Self, Error> {
         Self::new(&stored_language(connection)?)
     }
 
-    /// Describes every setting the keys depend on besides ICU4X's own code and data, so the stamp moves whenever one of them does.
     pub(crate) fn rules(language: &Language) -> String {
         format!(
             "{:?} {NUMERIC_ORDERING:?} {:?}",
@@ -52,7 +48,6 @@ impl TitleCollation {
         )
     }
 
-    /// Keys the title without its leading article, so it files under the word readers look it up by.
     pub(crate) fn key(&self, title: &str) -> Vec<u8> {
         let sorted_by = without_leading_article(title, self.articles);
         let mut key = Vec::with_capacity(sorted_by.len());
