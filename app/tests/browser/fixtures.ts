@@ -255,17 +255,20 @@ export const test = base.extend<{ backend: FakeBackend }>({
   },
 });
 
-/** Each platform's app shows its interface in that platform's own webview: Chromium in Android's WebView and Windows' WebView2, WebKit on Apple platforms and in Linux's WebKitGTK. */
+/** Android's WebView is Chromium and iOS's is WebKit, but the desktop interface, the same on every desktop, ships in both: WebView2 on Windows, WebKit on macOS and Linux. */
 const WEBVIEW_ENGINE = {
   android: "chromium",
-  windows: "chromium",
   ios: "webkit",
-  macos: "webkit",
-  linux: "webkit",
-} as const satisfies Record<Platform, "chromium" | "webkit">;
+  windows: null,
+  macos: null,
+  linux: null,
+} as const satisfies Record<Platform, "chromium" | "webkit" | null>;
 
 export function testOnlyInItsWebview(platform: Platform): void {
   const engine = WEBVIEW_ENGINE[platform];
+  if (engine === null) {
+    return;
+  }
   test.skip(
     ({ browserName }) => browserName !== engine,
     `${platform} shows the interface in ${engine}`,

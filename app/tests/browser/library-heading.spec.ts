@@ -129,7 +129,7 @@ for (const platform of PLATFORMS) {
           }, testInfo) => {
             test.skip(
               !testInfo.project.name.endsWith(SWEEPING_SCREEN[platform]),
-              "each platform sweeps every width once, in its own engine, from the screen it runs on",
+              "each platform sweeps every width once per engine it ships in, from the screen it runs on",
             );
             await page.addInitScript(
               ({ language, screenshotMode }) => {
