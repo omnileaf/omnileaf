@@ -286,8 +286,20 @@ async fn set_app_language(
     clippy::needless_pass_by_value,
     reason = "Tauri hands command arguments over by value"
 )]
-fn set_scheduled_rescans(library: State<'_, Library>, is_on: bool) {
+fn set_scheduled_rescans(
+    #[cfg_attr(
+        mobile,
+        expect(unused_variables, reason = "only the desktop watches folders")
+    )]
+    app: AppHandle,
+    library: State<'_, Library>,
+    is_on: bool,
+) {
     library.set_scheduled_rescans(is_on);
+    #[cfg(desktop)]
+    if let Some(watching) = app.try_state::<crate::folder_watch::FolderWatching>() {
+        watching.turn(is_on);
+    }
 }
 
 #[tauri::command]
