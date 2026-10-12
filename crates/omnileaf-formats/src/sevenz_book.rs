@@ -220,7 +220,6 @@ fn read_archive(
     Ok((source, archive))
 }
 
-/// Takes each image's CRC-32 and size from the header as for a zip, and samples the file instead when there are no images or one has no CRC.
 fn archive_fingerprint(
     path: &Path,
     archive: &Archive,
@@ -264,7 +263,6 @@ fn escapes_the_archive(name: &str) -> bool {
     name.starts_with(SEPARATORS) || name.split(SEPARATORS).any(|part| part == PARENT_FOLDER)
 }
 
-/// Refuses a block this app can't decode, or one whose dictionary or expansion passes the limits, since a solid block's entries share its packed bytes.
 fn check_block(
     path: &Path,
     archive: &Archive,

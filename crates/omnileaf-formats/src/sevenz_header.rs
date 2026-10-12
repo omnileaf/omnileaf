@@ -263,7 +263,6 @@ impl<'a> HeaderReader<'a> {
         Some(value)
     }
 
-    /// A count of items that each take at least one byte, so one larger than what is left can't be honest.
     fn count(&mut self) -> Option<usize> {
         usize::try_from(self.number()?)
             .ok()
