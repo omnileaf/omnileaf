@@ -355,12 +355,12 @@ async fn listed_folders(library: &Library) -> Result<BTreeMap<FolderId, Listed>,
     let mut after = None;
     loop {
         let page = library.folders(after).await?;
-        folders.extend(page.folders.into_iter().map(|folder| {
+        folders.extend(page.folders.into_iter().filter_map(|folder| {
             let listed = Listed {
-                path: PathBuf::from(folder.location),
+                path: path_to_watch(folder.location)?,
                 is_available: folder.is_available,
             };
-            (folder.id, listed)
+            Some((folder.id, listed))
         }));
         match page.next {
             Some(next) => after = Some(next),
@@ -369,9 +369,35 @@ async fn listed_folders(library: &Library) -> Result<BTreeMap<FolderId, Listed>,
     }
 }
 
+fn path_to_watch(location: String) -> Option<PathBuf> {
+    let path = PathBuf::from(location);
+    path.is_absolute().then_some(path)
+}
+
 async fn sleep_until_some(at: Option<Instant>) {
     match at {
         Some(at) => sleep_until(at).await,
         None => future::pending().await,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn watches_a_folder_listed_at_a_path() {
+        let location = std::env::temp_dir().join("Comics");
+
+        let path = path_to_watch(location.display().to_string());
+
+        assert_eq!(path, Some(location));
+    }
+
+    #[test]
+    fn leaves_an_android_folder_listed_by_its_place_and_name_unwatched() {
+        let path = path_to_watch("Internal storage › Documents › Comics".to_owned());
+
+        assert_eq!(path, None);
     }
 }
