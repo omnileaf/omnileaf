@@ -44,7 +44,6 @@ impl PutAway {
     }
 }
 
-/// Saves the page the reader showed last, waiting for the save only when the app exits.
 pub(crate) fn save_when_put_away(app: &AppHandle, event: &RunEvent) {
     let Some(put_away) = PutAway::of(event) else {
         return;
