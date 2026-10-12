@@ -56,6 +56,8 @@ const projects: Project[] =
 export default defineConfig({
   testDir: "tests/browser",
   forbidOnly: true,
+  fullyParallel: true,
+  workers: process.env.CI ? "100%" : undefined,
   retries: 0,
   reporter: "list",
   use: {
