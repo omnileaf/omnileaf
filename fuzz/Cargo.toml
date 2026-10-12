@@ -55,3 +55,10 @@ path = "fuzz_targets/comic_info.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "read_cb7"
+path = "fuzz_targets/read_cb7.rs"
+test = false
+doc = false
+bench = false

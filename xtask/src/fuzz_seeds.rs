@@ -4,11 +4,11 @@ use std::{
 };
 
 use anyhow::Context;
-use omnileaf_testkit::{ArchiveEntry, Compression, cbz};
+use omnileaf_testkit::{ArchiveEntry, Compression, Packing, cb7, cbz};
 
 pub(crate) const CORPUS: &str = "fuzz/corpus";
 
-const ARCHIVE_TARGETS: [&str; 2] = ["open_book", "read_book"];
+const ARCHIVE_TARGETS: [&str; 3] = ["open_book", "read_book", "read_cb7"];
 const COMIC_INFO_TARGET: &str = "comic_info";
 const PNG_SIGNATURE: &[u8] = b"\x89PNG\r\n\x1a\n";
 const COMIC_INFO_NAME: &str = "ComicInfo.xml";
@@ -64,6 +64,9 @@ fn archive_seeds() -> anyhow::Result<Vec<(&'static str, Vec<u8>)>> {
         ("stored.cbz", cbz(&book, Compression::Stored)?),
         ("deflated.cbz", cbz(&book, Compression::Deflated)?),
         ("cluttered.cbz", cbz(&cluttered, Compression::Deflated)?),
+        ("solid.cb7", cb7(&book, Packing::Solid)?),
+        ("per-entry.cb7", cb7(&book, Packing::PerEntry)?),
+        ("cluttered.cb7", cb7(&cluttered, Packing::Solid)?),
     ])
 }
 
