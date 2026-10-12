@@ -32,6 +32,11 @@ pub struct AppFiles {
     pub folders: Vec<PathBuf>,
 }
 
+#[derive(Debug)]
+pub struct FolderWatchSwitch {
+    is_on: watch::Sender<bool>,
+}
+
 pub struct FolderWatch<'a> {
     library: &'a Library,
     roots: Arc<Roots>,
@@ -57,12 +62,25 @@ struct Armed {
     outcomes: Vec<(FolderId, Result<(), String>)>,
 }
 
+impl FolderWatchSwitch {
+    #[must_use]
+    pub fn off() -> Self {
+        Self {
+            is_on: watch::Sender::new(false),
+        }
+    }
+
+    pub fn turn(&self, is_on: bool) {
+        self.is_on.send_replace(is_on);
+    }
+}
+
 impl Library {
-    /// Watches every folder the library lists while `is_on` holds true, so the changes made from then on reach [`FolderWatch::rescan_on_change`].
+    /// Watches every folder the library lists while `switch` is on, so the changes made from then on reach [`FolderWatch::rescan_on_change`].
     pub async fn watch_folders(
         &self,
         app_files: &AppFiles,
-        is_on: watch::Receiver<bool>,
+        switch: &FolderWatchSwitch,
     ) -> FolderWatch<'_> {
         let mut watch = FolderWatch {
             library: self,
@@ -72,7 +90,7 @@ impl Library {
             watcher: None,
             arming: None,
             rearm: Vec::new(),
-            is_on,
+            is_on: switch.is_on.subscribe(),
             can_switch: true,
         };
         if *watch.is_on.borrow() {
