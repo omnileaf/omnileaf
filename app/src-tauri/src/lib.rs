@@ -17,9 +17,14 @@ mod power_mode;
 mod runtime_config;
 mod scheduled_rescans;
 mod system_bars;
+#[cfg(target_os = "android")]
+mod tree_storage;
 mod version_details;
 
-use std::{error::Error, path::Path};
+use std::{
+    error::Error,
+    path::{Path, PathBuf},
+};
 
 use omnileaf_engine::{Core, Library, LibraryFolders, ResourceRouter, SystemClock, describe_error};
 use tauri::{App, Manager};
@@ -66,6 +71,7 @@ pub fn run() {
     let app = app.plugin(tauri_plugin_dialog::init());
     #[cfg(target_os = "android")]
     let app = app
+        .plugin(omnileaf_folder_access::init())
         .plugin(system_bars::plugin())
         .plugin(power_mode::plugin());
     #[cfg(target_os = "ios")]
@@ -87,6 +93,8 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     let data_dir = config.data_dir.as_deref();
     let folders = library_folders(app, data_dir)?;
     let library = tauri::async_runtime::block_on(Library::open(folders, SystemClock))?;
+    #[cfg(target_os = "android")]
+    let library = tree_storage::read_trees(app, library, data_dir);
     app.manage(LibraryChangesForwarding::start(
         app.handle().clone(),
         &library,
@@ -121,9 +129,12 @@ fn library_folders(app: &App, data_dir: Option<&Path>) -> tauri::Result<LibraryF
 }
 
 fn open_covers(app: &App, data_dir: Option<&Path>) -> Result<ResourceRouter, Box<dyn Error>> {
-    let cache = match data_dir {
-        Some(data_dir) => data_dir.join(CACHE_FOLDER),
-        None => app.path().app_cache_dir()?,
-    };
-    Ok(ResourceRouter::open(&cache)?)
+    Ok(ResourceRouter::open(&cache_folder(app, data_dir)?)?)
+}
+
+fn cache_folder(app: &App, data_dir: Option<&Path>) -> tauri::Result<PathBuf> {
+    match data_dir {
+        Some(data_dir) => Ok(data_dir.join(CACHE_FOLDER)),
+        None => app.path().app_cache_dir(),
+    }
 }

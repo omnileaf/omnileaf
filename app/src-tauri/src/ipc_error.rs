@@ -7,9 +7,9 @@ use specta::Type;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum IpcErrorCode {
-    #[cfg_attr(
-        not(target_os = "android"),
-        expect(dead_code, reason = "only Android lacks a folder picker for now")
+    #[expect(
+        dead_code,
+        reason = "the interface keeps its notice for this code until it stops showing it"
     )]
     FolderPickerUnavailable,
     #[cfg_attr(
@@ -39,14 +39,6 @@ pub(crate) struct IpcError {
 }
 
 impl IpcError {
-    #[cfg(target_os = "android")]
-    pub(crate) fn folder_picker_unavailable() -> Self {
-        Self {
-            code: IpcErrorCode::FolderPickerUnavailable,
-            message: "this platform has no folder picker yet",
-        }
-    }
-
     #[cfg(any(target_os = "linux", test))]
     pub(crate) fn folder_chooser_missing() -> Self {
         Self {
