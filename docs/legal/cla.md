@@ -1,7 +1,5 @@
 # Omnileaf Individual Contributor License Agreement
 
-> **Status: draft, not yet in effect.** This agreement takes effect once the text has had legal review. Until then, pull requests from outside contributors can't be merged.
-
 Thank you for your interest in contributing to Omnileaf, a project of Omnileaf Pty Ltd (ACN 702 747 671, ABN 83 702 747 671), a company registered in New South Wales, Australia ("We" or "Us").
 
 This contributor agreement ("Agreement") documents the rights granted by contributors to Us. To make this document effective, please sign it electronically through the CLA Assistant check that appears on your first pull request. This is a legally binding document, so please read it carefully before agreeing to it. The Agreement may cover more than one software project managed by Us.
