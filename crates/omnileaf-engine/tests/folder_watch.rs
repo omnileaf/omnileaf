@@ -29,9 +29,7 @@ const SHOWN_WITHIN: Duration = Duration::from_secs(3);
 const STAYS_UNLISTED_FOR: Duration = SHOWN_WITHIN;
 const WATCH_SET_UP_WITHIN: Duration = Duration::from_secs(5);
 const SHOWN_ONCE_SWITCHED_ON_WITHIN: Duration = WATCH_SET_UP_WITHIN.saturating_add(SHOWN_WITHIN);
-/// A folder that can't be watched is tried again a few seconds later, then rescanned once watched.
 const RETRIED_FOLDER_SHOWN_WITHIN: Duration = Duration::from_secs(12);
-/// A folder added while the watch runs is found at the watch's next look at the library's folders.
 const ADDED_FOLDER_SHOWN_WITHIN: Duration = Duration::from_secs(5);
 
 async fn series_titles(library: &Library) -> Vec<String> {

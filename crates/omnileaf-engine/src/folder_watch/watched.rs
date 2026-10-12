@@ -48,7 +48,6 @@ impl Plan {
 }
 
 impl WatchedFolders {
-    /// Takes in the folders listed now, returning the watches to stop and those to set up, afresh or again.
     pub(super) fn plan(
         &mut self,
         listed: BTreeMap<FolderId, Listed>,
@@ -88,7 +87,6 @@ impl WatchedFolders {
         plan
     }
 
-    /// Notes how each watch set up went, returning the folders watched now.
     pub(super) fn record(
         &mut self,
         outcomes: Vec<(FolderId, Result<(), String>)>,
@@ -125,7 +123,6 @@ impl WatchedFolders {
         self.folders.keys().copied().collect()
     }
 
-    /// Sets every watch up again, as a new system watch holds none of the old one's.
     pub(super) fn forget_watches(&mut self, now: Instant) {
         for watched in self.folders.values_mut() {
             if matches!(watched.arming, Arming::Armed) {

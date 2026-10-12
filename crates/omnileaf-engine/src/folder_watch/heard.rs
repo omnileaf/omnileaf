@@ -10,7 +10,6 @@ use tokio::sync::Notify;
 use super::roots::Roots;
 use crate::FolderId;
 
-/// What the system's watch reported since it was last taken, holding each folder once however many events named it.
 #[derive(Debug, Default)]
 pub(super) struct Heard {
     folders: Mutex<HeardFolders>,
@@ -20,19 +19,17 @@ pub(super) struct Heard {
 #[derive(Debug, Default, PartialEq, Eq)]
 pub(super) struct HeardFolders {
     pub(super) changed: BTreeSet<FolderId>,
-    /// Folders whose watch may have missed changes or stopped, to be watched again.
     pub(super) broken: BTreeSet<FolderId>,
 }
 
 impl Heard {
-    /// Runs on the thread the system's watch reports on, so it only notes the folders and wakes whoever waits.
     pub(super) fn take_in(&self, roots: &Roots, event: notify::Result<Event>) {
         match event {
-            Ok(event) if event.need_rescan() => self.broken(roots.enclosing(&event.paths)),
+            Ok(event) if event.need_rescan() => self.broken(roots.enclosing_or_every(&event.paths)),
             Ok(event) => self.changed(roots.concerned(&event)),
             Err(error) => {
                 tracing::warn!(%error, "hear of changes in the library folders, watching them again");
-                self.broken(roots.enclosing(&error.paths));
+                self.broken(roots.enclosing_or_every(&error.paths));
             }
         }
     }

@@ -25,7 +25,6 @@ const ARMING_TIMEOUT: Duration = Duration::from_secs(5);
 /// Windows ends a watch without a word once changes overflow its buffer, so each burst's watch is set up again before its rescan.
 const IS_WATCH_ENDED_BY_A_BURST: bool = cfg!(windows);
 
-/// Where the app keeps files of its own, which can sit inside a library folder and never hold books.
 #[derive(Clone, Debug)]
 pub struct AppFiles {
     pub library: LibraryFolders,
@@ -42,7 +41,6 @@ pub struct FolderWatch<'a> {
     roots: Arc<Roots>,
     heard: Arc<Heard>,
     folders: WatchedFolders,
-    /// Away while an arming holds it, which hands it back once done.
     watcher: Option<RecommendedWatcher>,
     arming: Option<Arming>,
     rearm: Vec<FolderId>,
@@ -50,7 +48,6 @@ pub struct FolderWatch<'a> {
     can_switch: bool,
 }
 
-/// One set-up of watches at a time, so a network share that never answers ties up one thread at most.
 struct Arming {
     planned: Vec<FolderId>,
     is_stale: bool,
@@ -76,7 +73,6 @@ impl FolderWatchSwitch {
 }
 
 impl Library {
-    /// Watches every folder the library lists while `switch` is on, so the changes made from then on reach [`FolderWatch::rescan_on_change`].
     pub async fn watch_folders(
         &self,
         app_files: &AppFiles,
@@ -101,7 +97,6 @@ impl Library {
 }
 
 impl FolderWatch<'_> {
-    /// Rescans each folder whose files changed once they have been quiet for a moment, following the folders the library lists, for as long as it's awaited and switched on.
     pub async fn rescan_on_change(mut self) {
         let mut bursts = Bursts::default();
         let mut checks = interval_at(
@@ -175,7 +170,6 @@ impl FolderWatch<'_> {
         self.rearm.extend(heard.broken);
     }
 
-    /// Notes each folder watched afresh for a rescan, which finds whatever changed before its watch began.
     async fn follow_and_note(&mut self, bursts: &mut Bursts, rescanning_anyway: &[FolderId]) {
         for id in self.follow_folders().await {
             if !rescanning_anyway.contains(&id) {
@@ -184,7 +178,6 @@ impl FolderWatch<'_> {
         }
     }
 
-    /// Brings the watches in line with the folders listed now, returning the folders it started watching.
     async fn follow_folders(&mut self) -> Vec<FolderId> {
         let mut armed = self.finish_arming_if_done().await;
         if self.arming.is_some() {

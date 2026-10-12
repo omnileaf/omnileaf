@@ -33,7 +33,6 @@ struct Root {
 #[derive(Clone, Debug)]
 enum AppPath {
     Folder(PathBuf),
-    /// The file and those beside it whose names extend its own, as a database's journal does.
     FileWithSidecars(PathBuf),
 }
 
@@ -90,8 +89,7 @@ impl Roots {
             .collect()
     }
 
-    /// Every folder when no path is named, as when the system dropped events it can't say anything more about.
-    pub(super) fn enclosing(&self, paths: &[PathBuf]) -> BTreeSet<FolderId> {
+    pub(super) fn enclosing_or_every(&self, paths: &[PathBuf]) -> BTreeSet<FolderId> {
         self.read()
             .iter()
             .filter(|(_, root)| {
@@ -138,7 +136,6 @@ impl Root {
 }
 
 impl AppPath {
-    /// Where the app path sits inside the folder, leaving out one that is the folder itself or outside it.
     fn within(&self, folder: &Path) -> Option<Self> {
         let (path, kind): (&Path, fn(PathBuf) -> Self) = match self {
             Self::Folder(path) => (path, Self::Folder),
@@ -177,7 +174,7 @@ fn is_folder_change(kind: EventKind) -> bool {
     )
 }
 
-/// A path gone by the time its event arrives may have been a folder of books whatever its name, so only one still there can be ruled out.
+/// The system reports a move or removal once the path is gone, so whether it was a folder of books can no longer be asked.
 fn is_folder_or_gone(path: &Path, kind: EventKind) -> bool {
     match fs::metadata(path) {
         Ok(metadata) => metadata.is_dir(),
@@ -404,8 +401,8 @@ mod tests {
     fn names_the_folders_holding_a_path_or_all_of_them_for_none() {
         let roots = roots_of(&[("1", Path::new(BOOKS)), ("2", Path::new("/comics"))]);
 
-        let named = roots.enclosing(&[PathBuf::from("/comics/Sample")]);
-        let unnamed = roots.enclosing(&[]);
+        let named = roots.enclosing_or_every(&[PathBuf::from("/comics/Sample")]);
+        let unnamed = roots.enclosing_or_every(&[]);
 
         assert_eq!(named, only("2"));
         assert_eq!(unnamed, BTreeSet::from([folder("1"), folder("2")]));
@@ -433,6 +430,6 @@ mod tests {
 
         roots.clear();
 
-        assert!(roots.enclosing(&[]).is_empty());
+        assert!(roots.enclosing_or_every(&[]).is_empty());
     }
 }
