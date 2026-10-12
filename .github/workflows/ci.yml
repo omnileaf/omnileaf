@@ -239,7 +239,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4]
     env:
       PLAYWRIGHT_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
     steps:
@@ -317,6 +317,18 @@ jobs:
           name: browser-test-traces-${{ matrix.shard }}
           path: app/test-results/
           retention-days: 7
+
+  browser-tests:
+    name: browser tests
+    needs: browser
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Pass only when every shard passed
+        env:
+          SHARDS: ${{ needs.browser.result }}
+        run: test "$SHARDS" = success
 
   android:
     name: android
