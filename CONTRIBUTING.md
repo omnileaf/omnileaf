@@ -13,7 +13,7 @@ Thanks for your interest in Omnileaf. The project is in early development, so th
 
 Omnileaf is licensed under the [GPL-3.0-only](LICENSE). Contributions are accepted under a [Contributor License Agreement](docs/legal/cla.md) based on the Harmony individual agreement. It lets the project distribute your contribution under the GPL and also under other terms, such as those of app stores whose terms are incompatible with the GPL. You keep the copyright to your work.
 
-The agreement is still being finalised. Until it's in effect, pull requests from outside contributors can't be merged. Issues, bug reports and discussion are very welcome in the meantime.
+You sign it once, on your first pull request: the CLA Assistant check comments with a link, and you agree with your GitHub account. It then covers all your later contributions. A pull request can't be merged until everyone whose commits it holds has signed.
 
 ## How changes land
 
