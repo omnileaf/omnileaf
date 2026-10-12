@@ -10,6 +10,7 @@ import {
   onPlatform,
   sidewaysOverflow,
   test,
+  testOnlyInItsWebview,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
@@ -120,6 +121,7 @@ for (const platform of PLATFORMS) {
     for (const screenshotMode of SCREENSHOT_MODE) {
       for (const library of LIBRARIES) {
         test.describe(`${platform} in ${language}, Screenshot mode ${screenshotMode}, ${library} library`, () => {
+          testOnlyInItsWebview(platform);
           test.use({ backend: backendFor(platform, library) });
 
           test("keeps the title and count clear of the heading's buttons at every width", async ({
@@ -127,7 +129,7 @@ for (const platform of PLATFORMS) {
           }, testInfo) => {
             test.skip(
               !testInfo.project.name.endsWith(SWEEPING_SCREEN[platform]),
-              "each engine sweeps every width once, from the screen the platform runs on",
+              "each platform sweeps every width once per engine it ships in, from the screen it runs on",
             );
             await page.addInitScript(
               ({ language, screenshotMode }) => {
@@ -168,6 +170,7 @@ for (const platform of PLATFORMS) {
 
 for (const platform of PLATFORMS) {
   test.describe(`the heading's buttons on a ${platform} phone`, () => {
+    testOnlyInItsWebview(platform);
     test.use({ backend: backendFor(platform, "filled") });
 
     test("stay on the title's row beside a five-digit count, as the phone board draws them", async ({

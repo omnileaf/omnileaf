@@ -5,6 +5,7 @@ import {
   expect,
   onPlatform,
   test,
+  testOnlyInItsWebview,
 } from "./fixtures.ts";
 
 const TURNED_ON_AT = new Date("2026-10-03T21:14:00Z");
@@ -115,6 +116,7 @@ const SHORTCUT_HINTS = [
 
 for (const { platform, keys } of SHORTCUT_HINTS) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test(`the shortcut is shown as ${keys}`, async ({ page }) => {

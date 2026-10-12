@@ -8,6 +8,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -106,6 +107,7 @@ test.describe("on a desktop", () => {
 
 for (const platform of ["android", "ios"] as const) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test("keeps the settings sections to their own page below the sidebar width", async ({
@@ -167,6 +169,7 @@ test.describe("on an iOS phone", () => {
 
 for (const platform of ["android", "ios", "linux"] as const) {
   test.describe(`on ${platform} in a right-to-left language`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test("points the way back to settings toward the start of the line", async ({
@@ -192,6 +195,7 @@ for (const { platform, gap } of [
   { platform: "android", gap: 24 },
 ] as const) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     for (const { path, region } of [

@@ -6,6 +6,7 @@ import {
   expect,
   onPlatform,
   test,
+  testOnlyInItsWebview,
 } from "./fixtures.ts";
 
 const SHORTCUT = "Control+Shift+H";
@@ -79,6 +80,7 @@ test("Command Shift H does nothing off a Mac", async ({ page }) => {
 
 for (const platform of ["macos", "ios"] as const) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test("Command Shift H turns Screenshot mode on and off", async ({

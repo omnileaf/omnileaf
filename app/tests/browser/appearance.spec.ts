@@ -6,6 +6,7 @@ import {
   onPlatform,
   settle,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -114,6 +115,7 @@ test("chooses an option from just outside its visible edge", async ({
 
 for (const platform of ["android", "ios", "linux"] as const) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test("explains what System follows in the group's description", async ({

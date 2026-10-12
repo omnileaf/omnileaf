@@ -7,6 +7,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -144,6 +145,7 @@ test("shows the version the backend reports in Settings › About", async ({
 
 for (const platform of ["android", "ios"] as const) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test("goes back to Settings from a settings section", async ({ page }) => {
@@ -188,6 +190,7 @@ for (const { platform, rowHeight, iconSize } of [
   { platform: "android", rowHeight: 48, iconSize: 22 },
 ] as const) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test(`draws the sidebar's rows ${String(rowHeight)}px tall with ${String(iconSize)}px icons`, async ({

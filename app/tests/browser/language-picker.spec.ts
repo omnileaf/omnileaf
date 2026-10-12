@@ -7,6 +7,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -296,6 +297,7 @@ test.describe("on a desktop", () => {
 for (const platform of ["android", "ios", "linux"] as const) {
   for (const colorScheme of ["light", "dark"] as const) {
     test.describe(`on ${platform}`, () => {
+      testOnlyInItsWebview(platform);
       test.use(onPlatform(platform));
 
       test(`Settings › General › Language has no accessibility violations in the ${colorScheme} theme`, async ({

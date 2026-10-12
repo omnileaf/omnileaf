@@ -9,6 +9,7 @@ import {
   onPlatform,
   sidewaysOverflow,
   test,
+  testOnlyInItsWebview,
 } from "./fixtures.ts";
 
 const SIMULATOR_HOME =
@@ -103,6 +104,7 @@ async function goToStep(
 for (const platform of PLATFORMS) {
   for (const [language, messages] of Object.entries(LANGUAGES)) {
     test.describe(`on ${platform} in ${language}`, () => {
+      testOnlyInItsWebview(platform);
       test.beforeEach(async ({ page }) => {
         await page.addInitScript((chosen) => {
           window.localStorage.setItem("omnileaf.language", chosen);

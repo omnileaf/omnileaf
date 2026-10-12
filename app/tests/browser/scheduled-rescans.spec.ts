@@ -1,7 +1,13 @@
 import type { Page } from "@playwright/test";
 
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
-import { boxOf, expect, onPlatform, test } from "./fixtures.ts";
+import {
+  boxOf,
+  expect,
+  onPlatform,
+  test,
+  testOnlyInItsWebview,
+} from "./fixtures.ts";
 
 const SWITCH_NAME = "Check folders for new books while Omnileaf is open";
 const SWITCH_HELP =
@@ -22,6 +28,7 @@ function scheduledRescansSwitch(page: Page) {
 
 for (const platform of ["ios", "android", "linux"] as const) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     const told: boolean[] = [];
 
     test.use({
