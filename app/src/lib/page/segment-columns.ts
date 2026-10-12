@@ -23,10 +23,7 @@ export function columnsThatFit({ widths, space, gap }: SegmentRoom): number {
   );
 }
 
-/**
- * Refits a frame after a resize, since a layout change inside the observer's callback is a resize loop the browser reports as an error.
- * A closed dialog's content measures 0 wide, so the control fits again as its dialog opens.
- */
+/** Refits a frame after a resize, since a layout change inside the observer's callback is a resize loop the browser reports as an error. */
 export function followFittingColumns(
   track: HTMLElement,
   ruler: HTMLElement,

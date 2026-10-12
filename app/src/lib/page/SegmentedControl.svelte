@@ -26,7 +26,7 @@
       track:
         "gap-xs rounded-field p-xs large:rounded-small-control large:p-segment-track",
       segment: "rounded-small-control min-block-segment large:rounded-segment",
-      onRow: "flex-auto desktop:large:min-block-segment-compact",
+      onRow: "flex-auto large:min-block-segment-compact",
       face: "gap-icon-gap px-sm text-detail large:text-caption",
       icon: "large:block-segment-icon-desktop large:inline-segment-icon-desktop",
     },
