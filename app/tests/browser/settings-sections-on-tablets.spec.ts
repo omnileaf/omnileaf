@@ -127,6 +127,7 @@ for (const platform of ["ios", "android"] as const) {
 }
 
 test.describe("the Settings sections on an iPad", () => {
+  testOnlyInItsWebview("ios");
   test.use(onPlatform("ios"));
 
   test("keep their column's width as the open section changes", async ({

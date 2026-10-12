@@ -9,6 +9,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
@@ -232,6 +233,7 @@ test.describe("on a desktop", () => {
 });
 
 test.describe("on an Android phone", () => {
+  testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
   test.beforeEach(({ page }) => {
@@ -294,6 +296,7 @@ test.describe("on an Android phone", () => {
 });
 
 test.describe("on an iPhone", () => {
+  testOnlyInItsWebview("ios");
   test.use(onPlatform("ios"));
 
   test.beforeEach(({ page }) => {

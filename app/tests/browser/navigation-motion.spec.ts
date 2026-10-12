@@ -8,6 +8,7 @@ import {
   onPlatform,
   settle,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -248,6 +249,7 @@ function testTurningTheScreen(): void {
 }
 
 test.describe("on Android", () => {
+  testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
   test("grows the new tab's pill in and fades the old one out", async ({
@@ -286,6 +288,7 @@ test.describe("on Android", () => {
 });
 
 test.describe("on iOS", () => {
+  testOnlyInItsWebview("ios");
   test.use(onPlatform("ios"));
 
   test("slides one glass pill under the new tab", async ({ page }) => {

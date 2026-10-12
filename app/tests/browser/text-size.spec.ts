@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { expect, onPlatform, test } from "./fixtures.ts";
+import { expect, onPlatform, test, testOnlyInItsWebview } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const LARGEST_SCALE = 2;
@@ -62,6 +62,7 @@ test("grows the interface's text and its line spacing with the text scale", asyn
 });
 
 test.describe("on iOS", () => {
+  testOnlyInItsWebview("ios");
   test.use(onPlatform("ios"));
 
   test("follows the Dynamic Type size", async ({ page }) => {
@@ -125,6 +126,7 @@ test.describe("on iOS", () => {
 });
 
 test.describe("on iOS with series in the library", () => {
+  testOnlyInItsWebview("ios");
   test.use({
     backend: {
       ...onPlatform("ios").backend,
@@ -155,6 +157,7 @@ test.describe("on iOS with series in the library", () => {
 });
 
 test.describe("on Android", () => {
+  testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
   test("leaves the text to the web view's own text zoom", async ({ page }) => {
