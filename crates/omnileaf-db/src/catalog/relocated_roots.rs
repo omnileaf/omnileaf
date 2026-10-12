@@ -4,10 +4,7 @@ use rusqlite::Transaction;
 
 use crate::{
     Error,
-    catalog::{
-        native_path,
-        root::{RootId, RootLocator, relocate_root, stored_location},
-    },
+    catalog::root::{RootId, RootLocator, relocate_root, stored_location},
 };
 
 #[tracing::instrument(skip_all, fields(roots = moves.len()))]
@@ -19,7 +16,7 @@ pub fn relocate_roots(
     let in_library: HashSet<RootId> = held.values().copied().collect();
     let mut moving = BTreeMap::new();
     for (id, locator) in moves {
-        let place = native_path::to_bytes(locator.path());
+        let place = stored_location(locator).location;
         match held.get(&place) {
             Some(holder) if holder == id => take_bookmark(transaction, *id, locator)?,
             _ if !in_library.contains(id) => {}

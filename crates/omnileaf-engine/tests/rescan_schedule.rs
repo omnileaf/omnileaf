@@ -5,6 +5,7 @@
 
 #[expect(dead_code, reason = "these tests write whole books, never loose pages")]
 mod books;
+mod stepped_clock;
 #[expect(
     dead_code,
     reason = "these tests move a clock of their own rather than read the fixed one"
@@ -25,10 +26,11 @@ use std::{
 
 use books::write_book;
 use omnileaf_engine::{
-    Clock, EXTERNAL_RESCAN_EVERY, FileChanges, FolderId, FolderRescan, Library, PowerMode,
-    RESCAN_EVERY, RescanConditions, RescanOutcome, Storage,
+    EXTERNAL_RESCAN_EVERY, FileChanges, FolderId, FolderRescan, Library, PowerMode, RESCAN_EVERY,
+    RescanConditions, RescanOutcome, Storage,
 };
-use support::{NOW_UNIX_MS, ScratchFolder};
+use stepped_clock::SteppedClock;
+use support::ScratchFolder;
 use tokio::{
     sync::{mpsc::unbounded_channel, oneshot},
     time::timeout,
@@ -37,26 +39,6 @@ use tokio::{
 const SERIES: &str = "Sample Series 01";
 const JUST_BEFORE: Duration = Duration::from_millis(1);
 const SEVERAL_CHECKS: Duration = Duration::from_mins(10);
-
-#[derive(Clone)]
-struct SteppedClock(Arc<AtomicU64>);
-
-impl SteppedClock {
-    fn new() -> Self {
-        Self(Arc::new(AtomicU64::new(NOW_UNIX_MS)))
-    }
-
-    fn advance(&self, by: Duration) {
-        let by_ms = u64::try_from(by.as_millis()).unwrap();
-        self.0.fetch_add(by_ms, Ordering::SeqCst);
-    }
-}
-
-impl Clock for SteppedClock {
-    fn now_unix_ms(&self) -> u64 {
-        self.0.load(Ordering::SeqCst)
-    }
-}
 
 struct Device {
     storage: Option<Storage>,

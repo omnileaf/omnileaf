@@ -41,7 +41,7 @@ pub use crash_report::{
 };
 pub use error_chain::describe_error;
 pub use external_storage::{storage_by_device, storage_in_mountinfo, storage_of_windows_path};
-pub use library::{Library, LibraryError, LibraryFolders};
+pub use library::{Library, LibraryError, LibraryFolders, OpenTree};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
@@ -50,7 +50,7 @@ pub use library_view::{
     DesktopCoversPerRow, LibraryDisplay, LibraryView, OnCovers, PhoneCoversPerRow,
     TabletCoversPerRow,
 };
-pub use omnileaf_db::catalog::{AppleBookmark, RootLocator};
+pub use omnileaf_db::catalog::{AndroidTree, AppleBookmark, RootLocator, TreeUri};
 pub use omnileaf_db::store::{Changed, Clock};
 pub use project_link::ProjectLink;
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
