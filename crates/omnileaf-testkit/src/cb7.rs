@@ -15,7 +15,6 @@ pub enum Packing {
     PerEntry,
 }
 
-/// A 7z comic archive holding `entries` in the order given, folders (names ending in `/`) and then empty files first as 7-Zip writes them, with no times so the bytes never vary.
 pub fn cb7(entries: &[ArchiveEntry], packing: Packing) -> Result<Vec<u8>, FixtureError> {
     let mut writer = ArchiveWriter::new(Cursor::new(Vec::new()))?;
     writer.set_content_methods(vec![Lzma2Options::from_level(FASTEST_PRESET).into()]);

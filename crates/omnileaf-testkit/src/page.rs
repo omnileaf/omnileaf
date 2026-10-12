@@ -77,7 +77,6 @@ pub fn subsampled_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
     scan_jpeg(seed, SUBSAMPLED_SCAN_GRAIN, SamplingFactor::R_4_2_0)
 }
 
-/// Bytes no compressor can shrink, standing in for a JPEG page's entropy-coded data where only its size matters.
 #[must_use]
 pub fn incompressible_bytes(seed: u64, length: usize) -> Vec<u8> {
     (0_u64..)
