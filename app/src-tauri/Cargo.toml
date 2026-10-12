@@ -51,6 +51,9 @@ zbus.workspace = true
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 zbus = { workspace = true, features = ["async-io", "p2p"] }
 
+[target.'cfg(windows)'.dependencies]
+omnileaf-windows-probes.workspace = true
+
 [target.'cfg(not(windows))'.dependencies]
 tauri-plugin-wdio-webdriver = { workspace = true, optional = true }
 
