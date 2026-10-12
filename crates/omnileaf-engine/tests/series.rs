@@ -21,7 +21,6 @@ use support::{FixedClock, NOW_UNIX_MS, ScratchFolder};
 /// The sample series in the order [`library_adding_one_series_at_a_time`] adds them, each in a folder of its own, which is not their title order.
 const ADDED_ORDER: [&str; 3] = ["Sample Series 02", "Sample Series 03", "Sample Series 01"];
 
-/// Moves on a millisecond each time it is read, so each folder added after another was added later.
 struct SteppingClock(AtomicU64);
 
 impl Clock for SteppingClock {

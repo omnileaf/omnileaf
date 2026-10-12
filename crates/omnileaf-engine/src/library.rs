@@ -146,7 +146,6 @@ impl LibraryError {
     }
 }
 
-/// A book as the catalog holds it for the reader, with its place in its series.
 pub(crate) struct BookToOpen {
     pub(crate) found: BookToRead,
     pub(crate) place: PlaceInSeries,
@@ -243,7 +242,6 @@ impl Library {
         })
     }
 
-    /// Lists the series holding books that the listing's filter lets through, in its order.
     pub async fn series(
         &self,
         listing: LibraryListing,
@@ -279,7 +277,6 @@ impl Library {
             .await?)
     }
 
-    /// Lists in title order the series whose titles hold the search's text, of those holding books its filter lets through.
     pub async fn search(
         &self,
         search: LibrarySearch,
@@ -298,7 +295,6 @@ impl Library {
         Ok(SeriesPage::from(page))
     }
 
-    /// Counts the series [`Library::search`] lists for the same search.
     pub async fn search_count(&self, search: LibrarySearch) -> Result<u32, LibraryError> {
         let search = StoredSearch::parse(&search)?;
         Ok(self
@@ -463,7 +459,6 @@ impl Library {
         }
     }
 
-    /// Each page reading reached once it is saved, whichever book it is in.
     #[must_use]
     pub fn reading_saved(&self) -> broadcast::Receiver<ReadingSaved> {
         self.reading.subscribe()

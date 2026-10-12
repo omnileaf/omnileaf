@@ -10,7 +10,7 @@ use crate::{SortDirection, ipc_brand::branded_string};
 #[serde(rename_all = "camelCase")]
 pub struct SeriesBook {
     pub id: BookId,
-    /// Where the book stands in its series' order, counting from 1, whichever of its books a list holds.
+    /// Counting from 1 in the series' order, whichever of its books a list holds.
     pub position: u32,
     pub title: String,
     /// When the library first found the book, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly.
@@ -30,7 +30,6 @@ pub enum BookReading {
     Read,
 }
 
-/// Which of a series' books its page lists, and which way round.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SeriesBookListing {
@@ -43,7 +42,6 @@ pub struct SeriesBookListing {
 pub enum BooksShown {
     #[default]
     All,
-    /// Only the books not marked read.
     Unread,
 }
 
@@ -70,7 +68,6 @@ pub enum ReadMark {
 #[serde(rename_all = "camelCase")]
 pub struct SeriesBookPage {
     pub books: Vec<SeriesBook>,
-    /// Absent on the last page.
     pub next: Option<BookCursor>,
 }
 

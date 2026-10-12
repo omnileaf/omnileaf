@@ -5,7 +5,6 @@ use omnileaf_db::catalog::{
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-/// Which series the library lists and in what order.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LibraryListing {
@@ -36,7 +35,6 @@ pub enum SortDirection {
     Descending,
 }
 
-/// What a series' books' reading state must be for the library to list it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LibraryFilter {
@@ -48,7 +46,6 @@ pub struct LibraryFilter {
     pub finished: Inclusion,
 }
 
-/// Whether the library lists series meeting a condition alongside the rest, only those, or only the rest.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum Inclusion {

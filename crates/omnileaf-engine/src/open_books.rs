@@ -11,14 +11,12 @@ use crate::{PagePath, file_in_storage::FileInStorage};
 /// How many books stay open at once, enough to go back and forth between a few without reading their archives' directories again.
 const KEPT_OPEN: usize = 4;
 
-/// A book file at one revision.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct BookFileAt {
     pub(crate) book: BookId,
     pub(crate) rev: u32,
 }
 
-/// A book file opened once and shared by every page read from it.
 #[derive(Clone)]
 pub(crate) struct OpenBook {
     pub(crate) file: BookFileAt,
@@ -26,7 +24,6 @@ pub(crate) struct OpenBook {
     book: Arc<Mutex<Book>>,
 }
 
-/// One page of an open book, by its path and its place in the book.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct PageAt {
     pub(crate) path: PagePath,
@@ -38,7 +35,6 @@ pub(crate) struct PageAt {
 pub(crate) struct OpenBooks(Mutex<VecDeque<OpenBook>>);
 
 impl OpenBook {
-    /// The page at `index`, counting from 0, or nothing past the book's end.
     pub(crate) fn page(&self, index: u32) -> Option<PageAt> {
         let at = usize::try_from(index)
             .ok()
@@ -53,7 +49,6 @@ impl OpenBook {
         })
     }
 
-    /// Holds the book, so pages are read from it one at a time.
     pub(crate) fn lock(&self) -> MutexGuard<'_, Book> {
         self.book.lock().unwrap_or_else(PoisonError::into_inner)
     }

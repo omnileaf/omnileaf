@@ -60,7 +60,6 @@ pub(crate) enum ThumbnailError {
     FailedBefore,
 }
 
-/// The page of a book a thumbnail shows.
 #[derive(Clone, Copy)]
 enum Pictured {
     Cover,
@@ -116,7 +115,6 @@ impl CoverThumbnails {
         self.thumbnail_of(key, found).await
     }
 
-    /// The thumbnail under `key`, made from the page `found` names when the cache doesn't hold it.
     async fn thumbnail_of(
         &self,
         key: CacheKey,

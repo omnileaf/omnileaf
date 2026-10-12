@@ -170,7 +170,6 @@ mod tests {
 
     type Ran = Arc<Mutex<Vec<&'static str>>>;
 
-    /// Occupies the lane's only worker until the returned sender is dropped.
     fn occupy(
         lane: &PageLane,
     ) -> (
@@ -211,7 +210,6 @@ mod tests {
             .collect()
     }
 
-    /// The reading ahead of `names`, then a job that says it has all run.
     fn prefetching_until_done(ran: &Ran, names: &[&'static str]) -> (Vec<Job>, mpsc::Receiver<()>) {
         let (done, finished) = mpsc::channel();
         let mut jobs = prefetching(ran, names);
