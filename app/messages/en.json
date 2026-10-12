@@ -129,8 +129,8 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "{formattedCount} book is a CBR or CB7 file, which this version can't open yet.",
-        "countPlural=other": "{formattedCount} books are CBR or CB7 files, which this version can't open yet."
+        "countPlural=one": "{formattedCount} book is a CBR file, which this version can't open yet.",
+        "countPlural=other": "{formattedCount} books are CBR files, which this version can't open yet."
       }
     }
   ],

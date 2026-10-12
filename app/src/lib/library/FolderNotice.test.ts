@@ -165,7 +165,7 @@ test("says which books are in a format this version can't open yet", async () =>
   await expect
     .element(status)
     .toHaveTextContent(
-      "Found 7 books in 3 series in Sample Library. Couldn't read 1 book in it. 16 books are CBR or CB7 files, which this version can't open yet.",
+      "Found 7 books in 3 series in Sample Library. Couldn't read 1 book in it. 16 books are CBR files, which this version can't open yet.",
     );
 });
 

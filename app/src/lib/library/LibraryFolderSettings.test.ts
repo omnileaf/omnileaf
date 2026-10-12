@@ -723,7 +723,7 @@ test("reports the books and folders a rescan couldn't read or open yet", async (
   expect(linesOf(rescanReport(folders))).toEqual([
     "Sample Comics is up to date.",
     "Couldn't read 1 book in it.",
-    "3 books are CBR or CB7 files, which this version can't open yet.",
+    "3 books are CBR files, which this version can't open yet.",
     "Couldn't read 2 folders inside it.",
   ]);
 });

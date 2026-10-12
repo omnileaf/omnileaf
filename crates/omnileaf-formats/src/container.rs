@@ -15,6 +15,7 @@ const SEVEN_ZIP_SIGNATURE: &[u8] = b"7z\xbc\xaf\x27\x1c";
 pub(crate) enum Container {
     Folder,
     Zip(File),
+    SevenZip(File),
 }
 
 impl Container {
@@ -31,21 +32,18 @@ impl Container {
         {
             return Ok(Self::Zip(file));
         }
+        if start.starts_with(SEVEN_ZIP_SIGNATURE) {
+            return Ok(Self::SevenZip(file));
+        }
         let path = path.to_owned();
-        Err(match unsupported_archive(&start) {
-            Some(archive) => FormatError::ArchiveNotSupportedYet { path, archive },
-            None => FormatError::Unsupported { path },
+        Err(if start.starts_with(RAR_SIGNATURE) {
+            FormatError::ArchiveNotSupportedYet {
+                path,
+                archive: UnsupportedArchive::Rar,
+            }
+        } else {
+            FormatError::Unsupported { path }
         })
-    }
-}
-
-fn unsupported_archive(start: &[u8]) -> Option<UnsupportedArchive> {
-    if start.starts_with(RAR_SIGNATURE) {
-        Some(UnsupportedArchive::Rar)
-    } else if start.starts_with(SEVEN_ZIP_SIGNATURE) {
-        Some(UnsupportedArchive::SevenZip)
-    } else {
-        None
     }
 }
 

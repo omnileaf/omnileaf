@@ -4,7 +4,8 @@ use omnileaf_sync_proto::Fingerprint;
 
 use crate::{
     ComicInfo, FormatError, Limits, LocalStorage, PageKind, Storage, container::Container,
-    folder::FolderBook, natural_cmp, parse_comic_info, zip_book::ZipBook,
+    folder::FolderBook, natural_cmp, parse_comic_info, sevenz_book::SevenZipBook,
+    zip_book::ZipBook,
 };
 
 const FIRST_PAGE: usize = 0;
@@ -18,6 +19,7 @@ pub struct Page {
 #[derive(Debug)]
 pub enum Book {
     Archive(ZipBook),
+    SevenZip(SevenZipBook),
     Folder(FolderBook),
 }
 
@@ -26,6 +28,7 @@ impl Book {
     pub fn pages(&self) -> &[Page] {
         match self {
             Self::Archive(book) => book.pages(),
+            Self::SevenZip(book) => book.pages(),
             Self::Folder(book) => book.pages(),
         }
     }
@@ -46,6 +49,7 @@ impl Book {
     pub fn read_page(&mut self, index: usize) -> Result<Vec<u8>, FormatError> {
         match self {
             Self::Archive(book) => book.read_page(index),
+            Self::SevenZip(book) => book.read_page(index),
             Self::Folder(book) => book.read_page(index),
         }
     }
@@ -53,6 +57,7 @@ impl Book {
     pub fn comic_info(&mut self) -> Result<Option<ComicInfo>, FormatError> {
         let (path, xml) = match self {
             Self::Archive(book) => (book.path().to_owned(), book.read_comic_info()?),
+            Self::SevenZip(book) => (book.path().to_owned(), book.read_comic_info()?),
             Self::Folder(book) => (book.path().to_owned(), book.read_comic_info()?),
         };
         xml.map(|xml| {
@@ -64,6 +69,7 @@ impl Book {
     pub fn fingerprint(&mut self) -> Result<Fingerprint, FormatError> {
         match self {
             Self::Archive(book) => book.fingerprint(),
+            Self::SevenZip(book) => book.fingerprint(),
             Self::Folder(book) => book.fingerprint(),
         }
     }
@@ -85,6 +91,9 @@ pub fn open_book_in(
     match Container::of(&*storage, path)? {
         Container::Folder => FolderBook::open(storage, path, limits).map(Book::Folder),
         Container::Zip(file) => ZipBook::from_file(file, path, limits).map(Book::Archive),
+        Container::SevenZip(file) => {
+            SevenZipBook::from_file(file, path, limits).map(Book::SevenZip)
+        }
     }
 }
 

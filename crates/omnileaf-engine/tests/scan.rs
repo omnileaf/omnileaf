@@ -14,7 +14,8 @@ use omnileaf_db::rusqlite::types::Value;
 use omnileaf_engine::{FileChanges, FolderScan, LibraryError, RescanOutcome, ScanProgress};
 use omnileaf_sync_proto::SourceId;
 use omnileaf_testkit::{
-    PageShape, SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, page_png, write_sample_library,
+    ArchiveEntry, Packing, PageShape, SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, cb7, page_png,
+    write_sample_library,
 };
 use scanned::{Scanned, owned};
 use support::ScratchFolder;
@@ -181,7 +182,7 @@ async fn counts_the_books_it_cannot_read_and_carries_on() {
 }
 
 #[tokio::test]
-async fn counts_the_rar_and_7z_books_it_cannot_open_yet_apart_from_damaged_ones() {
+async fn counts_the_rar_books_it_cannot_open_yet_apart_from_damaged_ones() {
     let comics = ScratchFolder::new("scan-not-yet");
     comics.write("Sample Series 01/v02.cbz", b"");
     write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
@@ -190,18 +191,32 @@ async fn counts_the_rar_and_7z_books_it_cannot_open_yet_apart_from_damaged_ones(
         b"Rar!\x1a\x07\x01\x00",
     )
     .unwrap();
-    fs::write(
-        comics.path().join("Sample Series 01/v04.cb7"),
-        b"7z\xbc\xaf\x27\x1c",
-    )
-    .unwrap();
 
     let (_, scan, _) = Scanned::folder("scan-not-yet", comics.path()).await;
 
     assert_eq!(
         (scan.books, scan.unreadable_books, scan.unsupported_books),
-        (1, 1, 2)
+        (1, 1, 1)
     );
+}
+
+#[tokio::test]
+async fn scans_a_cb7_as_a_book_of_its_series() {
+    let comics = ScratchFolder::new("scan-cb7");
+    write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
+    let pages = [ArchiveEntry {
+        name: "001.png".to_owned(),
+        bytes: page_png(2, 0, PageShape::Portrait).unwrap(),
+    }];
+    comics.write(
+        "Sample Series 01/v02.cb7",
+        &cb7(&pages, Packing::Solid).unwrap(),
+    );
+
+    let (scanned, scan, _) = Scanned::folder("scan-cb7", comics.path()).await;
+
+    assert_eq!(scanned.books_in("Sample Series 01"), ["v01", "v02"]);
+    assert_eq!((scan.books, scan.unreadable_books), (2, 0));
 }
 
 #[tokio::test]

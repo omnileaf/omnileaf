@@ -10,14 +10,12 @@ use crate::ComicInfoError;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum UnsupportedArchive {
     Rar,
-    SevenZip,
 }
 
 impl fmt::Display for UnsupportedArchive {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
             Self::Rar => "RAR",
-            Self::SevenZip => "7z",
         })
     }
 }
@@ -38,6 +36,19 @@ pub enum FormatError {
         path: PathBuf,
         source: zip::result::ZipError,
     },
+    #[error("{} is damaged", path.display())]
+    CorruptSevenZip {
+        path: PathBuf,
+        source: sevenz_rust2::Error,
+    },
+    #[error("{} is password-protected, which this app can't open", path.display())]
+    Encrypted { path: PathBuf },
+    #[error("the index of {} is larger than the {limit} bytes allowed", path.display())]
+    HeaderTooLarge { path: PathBuf, limit: u64 },
+    #[error("{} is compressed with {method}, which this app can't decode", path.display())]
+    UnsupportedCompression { path: PathBuf, method: String },
+    #[error("{} needs a decoding dictionary larger than the {limit} bytes allowed", path.display())]
+    DictionaryTooLarge { path: PathBuf, limit: u64 },
     #[error("{} has no pages", path.display())]
     NoPages { path: PathBuf },
     #[error("{} has {count} entries, more than the {limit} allowed", path.display())]

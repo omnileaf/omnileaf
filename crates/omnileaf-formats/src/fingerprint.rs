@@ -17,6 +17,7 @@ use crate::{
     entries::is_fingerprinted_image,
     error::read_failed,
     folder::read_folder,
+    sevenz_book,
     zip_book::{archive_from, corrupt},
 };
 
@@ -35,6 +36,7 @@ pub fn fingerprint_book_with(path: &Path, limits: &Limits) -> Result<Fingerprint
             let mut archive = archive_from(Arc::clone(&file), path, limits)?;
             archive_fingerprint(path, &mut archive, &*file)
         }
+        Container::SevenZip(file) => sevenz_book::fingerprint(file, path, limits),
     }
 }
 
@@ -105,7 +107,10 @@ fn read_image_range(
         .map_err(read_failed(file))
 }
 
-fn raw_fingerprint(path: &Path, mut reader: impl Read + Seek) -> Result<Fingerprint, FormatError> {
+pub(crate) fn raw_fingerprint(
+    path: &Path,
+    mut reader: impl Read + Seek,
+) -> Result<Fingerprint, FormatError> {
     let size = reader.seek(SeekFrom::End(0)).map_err(read_failed(path))?;
     let mut samples: [Vec<u8>; RAW1_SAMPLE_COUNT] = Default::default();
     for (sample, range) in samples.iter_mut().zip(Fingerprint::raw1_ranges(size)) {
@@ -124,7 +129,7 @@ fn read_range(reader: &mut (impl Read + Seek), range: Range<u64>) -> io::Result<
     Ok(bytes)
 }
 
-fn fingerprint_failed(path: &Path, source: FingerprintError) -> FormatError {
+pub(crate) fn fingerprint_failed(path: &Path, source: FingerprintError) -> FormatError {
     FormatError::Fingerprint {
         path: path.to_owned(),
         source,

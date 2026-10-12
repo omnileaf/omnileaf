@@ -112,31 +112,24 @@ fn refuses_a_file_that_is_not_an_archive() {
 }
 
 #[test]
-fn recognises_rar_and_7z_archives_it_cannot_open_yet() {
+fn recognises_rar_archives_it_cannot_open_yet() {
     let scratch = ScratchFolder::new("not-yet");
-    for (name, signature, expected) in [
-        (
-            "rar4.cbr",
-            b"Rar!\x1a\x07\x00".as_slice(),
-            UnsupportedArchive::Rar,
-        ),
-        (
-            "rar5.cbr",
-            b"Rar!\x1a\x07\x01\x00".as_slice(),
-            UnsupportedArchive::Rar,
-        ),
-        (
-            "book.cb7",
-            b"7z\xbc\xaf\x27\x1c\x00\x04".as_slice(),
-            UnsupportedArchive::SevenZip,
-        ),
+    for (name, signature) in [
+        ("rar4.cbr", b"Rar!\x1a\x07\x00".as_slice()),
+        ("rar5.cbr", b"Rar!\x1a\x07\x01\x00".as_slice()),
     ] {
         let path = scratch.write(name, signature);
 
         let error = open_book(&path).unwrap_err();
 
         assert!(
-            matches!(error, FormatError::ArchiveNotSupportedYet { archive, .. } if archive == expected),
+            matches!(
+                error,
+                FormatError::ArchiveNotSupportedYet {
+                    archive: UnsupportedArchive::Rar,
+                    ..
+                }
+            ),
             "{name}: {error:?}"
         );
     }
