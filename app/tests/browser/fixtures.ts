@@ -104,6 +104,8 @@ export function screenSizeOf(page: Page): ScreenSize {
   return width >= MEDIUM_MIN_WIDTH ? "tablet" : "phone";
 }
 
+export const LARGEST_TEXT_SCALE = 2;
+
 export async function setTextScale(page: Page, scale: number): Promise<void> {
   await page.addInitScript(
     (css) => {

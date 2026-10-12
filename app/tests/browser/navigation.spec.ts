@@ -8,6 +8,7 @@ import {
   FAKE_APP_VERSION,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  LARGEST_TEXT_SCALE,
   setTextScale,
   sidewaysOverflow,
   test,
@@ -16,7 +17,6 @@ import {
 } from "./fixtures.ts";
 
 const COLOR_SCHEMES = ["light", "dark"] as const;
-const LARGEST_TEXT_SCALE = 2;
 const SIDEBAR_WIDTHS = [840, 1024, 1200, 1280, 1440];
 const BRAND_NAMES = { en: english.app_name, "en-XA": pseudo.app_name } as const;
 

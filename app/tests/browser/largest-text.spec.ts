@@ -11,6 +11,7 @@ import {
   APP_PAGES,
   expect,
   onPlatform,
+  LARGEST_TEXT_SCALE,
   setTextScale,
   sidewaysOverflow,
   test,
@@ -18,7 +19,6 @@ import {
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
-const LARGEST_TEXT_SCALE = 2;
 const PAGES = [
   ...APP_PAGES,
   "/settings/privacy",

@@ -15,6 +15,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   screenSizeOf,
+  LARGEST_TEXT_SCALE,
   setTextScale,
   sidewaysOverflow,
   test,
@@ -42,7 +43,6 @@ interface ListLook {
 }
 
 const PANEL_WIDTH = 360;
-const LARGEST_TEXT_SCALE = 2;
 const NARROWEST_COVER = 40;
 const NARROWEST_SCREENS = [320, 600, 840, 1200];
 const TABLET_NARROWEST = 600;
