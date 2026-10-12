@@ -15,6 +15,7 @@ import {
   onPlatform,
   selectedByDoubleClick,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -153,6 +154,7 @@ test("leads a licence text back to the licences, even beside the sections", asyn
 
 for (const platform of ["android", "ios"] as const) {
   test.describe(`on an ${platform} phone`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test("lists the packages on 60px rows and leads back to About", async ({
@@ -196,6 +198,7 @@ const PANE_ROWS: readonly { platform: Platform; rowHeight: number }[] = [
 
 for (const { platform, rowHeight } of PANE_ROWS) {
   test.describe(`on ${platform} beside the phone width`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test(`lists the packages on ${String(rowHeight)}px rows in 14px text`, async ({
@@ -219,6 +222,7 @@ for (const { platform, rowHeight } of PANE_ROWS) {
 for (const platform of ["android", "ios", "linux"] as const) {
   for (const colorScheme of ["light", "dark"] as const) {
     test.describe(`on ${platform}`, () => {
+      testOnlyInItsWebview(platform);
       test.use(onPlatform(platform));
 
       test(`Settings › About › Open-source licences has no accessibility violations in the ${colorScheme} theme`, async ({

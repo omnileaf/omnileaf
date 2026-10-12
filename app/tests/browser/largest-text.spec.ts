@@ -11,6 +11,7 @@ import {
   onPlatform,
   sidewaysOverflow,
   test,
+  testOnlyInItsWebview,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
@@ -70,6 +71,7 @@ test.skip(
 
 for (const platform of PLATFORMS) {
   test.describe(`with the largest text on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test.beforeEach(async ({ page }) => {

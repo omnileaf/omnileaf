@@ -1,5 +1,5 @@
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
-import { expect, onPlatform, test } from "./fixtures.ts";
+import { expect, onPlatform, test, testOnlyInItsWebview } from "./fixtures.ts";
 
 const PLATFORMS: readonly Platform[] = [
   "android",
@@ -11,6 +11,7 @@ const PLATFORMS: readonly Platform[] = [
 
 for (const platform of PLATFORMS) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test("marks the page with the platform the core reports", async ({

@@ -13,6 +13,7 @@ import {
   onPlatform,
   selectedByDoubleClick,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -177,6 +178,7 @@ test("shows where the source code lives", async ({ page }) => {
 
 for (const platform of ["android", "ios"] as const) {
   test.describe(`on an ${platform} phone`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test("puts the version in the list beside Copy version details, on 64px rows", async ({
@@ -241,6 +243,7 @@ const PANE_SIZES: readonly {
 
 for (const { platform, buttonHeight } of PANE_SIZES) {
   test.describe(`on ${platform} beside the phone width`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test(`heads the pane with the version and a ${String(buttonHeight)}px copy button over 56px rows`, async ({
@@ -310,6 +313,7 @@ test.describe("in a desktop window under 600px", () => {
 for (const platform of ["android", "ios", "linux"] as const) {
   for (const colorScheme of ["light", "dark"] as const) {
     test.describe(`on ${platform}`, () => {
+      testOnlyInItsWebview(platform);
       test.use(onPlatform(platform));
 
       test(`Settings › About has no accessibility violations in the ${colorScheme} theme`, async ({
