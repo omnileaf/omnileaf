@@ -70,6 +70,10 @@ impl Roots {
         self.write().remove(&id);
     }
 
+    pub(super) fn clear(&self) {
+        self.write().clear();
+    }
+
     pub(super) fn concerned(&self, event: &Event) -> BTreeSet<FolderId> {
         if is_a_read(event.kind) {
             return BTreeSet::new();
@@ -421,5 +425,14 @@ mod tests {
                 ))
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn forgets_every_folder_once_watching_stops() {
+        let roots = roots_of(&[("1", Path::new(BOOKS)), ("2", Path::new("/comics"))]);
+
+        roots.clear();
+
+        assert!(roots.enclosing(&[]).is_empty());
     }
 }

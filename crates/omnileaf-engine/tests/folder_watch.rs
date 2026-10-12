@@ -19,13 +19,16 @@ use books::write_book;
 use omnileaf_engine::{AppFiles, FolderWatch, Library, LibraryFolders};
 use scanned::Scanned;
 use support::ScratchFolder;
-use tokio::time::timeout;
+use tokio::{sync::watch, time::timeout};
 
 const SERIES_01: &str = "Sample Series 01";
 const SERIES_02: &str = "Sample Series 02";
 const SERIES_03: &str = "Sample Series 03";
 const DOTTED_SERIES: &str = "Sample Series Vol. 2";
 const SHOWN_WITHIN: Duration = Duration::from_secs(3);
+const STAYS_UNLISTED_FOR: Duration = SHOWN_WITHIN;
+const WATCH_SET_UP_WITHIN: Duration = Duration::from_secs(5);
+const SHOWN_ONCE_SWITCHED_ON_WITHIN: Duration = WATCH_SET_UP_WITHIN.saturating_add(SHOWN_WITHIN);
 /// A folder that can't be watched is tried again a few seconds later, then rescanned once watched.
 const RETRIED_FOLDER_SHOWN_WITHIN: Duration = Duration::from_secs(12);
 /// A folder added while the watch runs is found at the watch's next look at the library's folders.
@@ -42,22 +45,35 @@ async fn series_titles(library: &Library) -> Vec<String> {
         .collect()
 }
 
-async fn comes_to_list(
-    watch: FolderWatch<'_>,
-    library: &Library,
-    expected: &[&str],
-    limit: Duration,
-) -> bool {
+async fn lists_within(library: &Library, expected: &[&str], limit: Duration) -> bool {
     let mut changes = library.changes();
     let listed = async {
         while series_titles(library).await != expected {
             changes.next().await;
         }
     };
+    timeout(limit, listed).await.is_ok()
+}
+
+async fn while_watching<T>(watch: FolderWatch<'_>, body: impl Future<Output = T>) -> Option<T> {
     tokio::select! {
-        () = watch.rescan_on_change() => false,
-        listed = timeout(limit, listed) => listed.is_ok(),
+        biased;
+        done = body => Some(done),
+        () = watch.rescan_on_change() => None,
     }
+}
+
+async fn comes_to_list(
+    watch: FolderWatch<'_>,
+    library: &Library,
+    expected: &[&str],
+    limit: Duration,
+) -> bool {
+    while_watching(watch, lists_within(library, expected, limit)).await == Some(true)
+}
+
+fn switched_on_for_good() -> watch::Receiver<bool> {
+    watch::channel(true).1
 }
 
 fn app_files(scanned: &Scanned) -> AppFiles {
@@ -78,7 +94,10 @@ async fn linked(name: &str) -> (Scanned, ScratchFolder) {
 #[tokio::test]
 async fn lists_a_book_added_to_a_watched_folder_within_three_seconds() {
     let (scanned, comics) = linked("watch-added").await;
-    let watch = scanned.library.watch_folders(&app_files(&scanned)).await;
+    let watch = scanned
+        .library
+        .watch_folders(&app_files(&scanned), switched_on_for_good())
+        .await;
 
     write_book(&comics.path().join(SERIES_03).join("v01.cbz"), 3);
 
@@ -96,7 +115,10 @@ async fn lists_a_book_added_to_a_watched_folder_within_three_seconds() {
 #[tokio::test]
 async fn stops_listing_a_book_removed_from_a_watched_folder_within_three_seconds() {
     let (scanned, comics) = linked("watch-removed").await;
-    let watch = scanned.library.watch_folders(&app_files(&scanned)).await;
+    let watch = scanned
+        .library
+        .watch_folders(&app_files(&scanned), switched_on_for_good())
+        .await;
 
     fs::remove_dir_all(comics.path().join(SERIES_02)).unwrap();
 
@@ -107,7 +129,10 @@ async fn stops_listing_a_book_removed_from_a_watched_folder_within_three_seconds
 async fn watches_a_folder_added_while_watching() {
     let (scanned, _comics) = linked("watch-following").await;
     let added = ScratchFolder::new("watch-following-added");
-    let watch = scanned.library.watch_folders(&app_files(&scanned)).await;
+    let watch = scanned
+        .library
+        .watch_folders(&app_files(&scanned), switched_on_for_good())
+        .await;
     let watching = async {
         scanned
             .library
@@ -137,7 +162,10 @@ async fn stops_listing_a_series_folder_moved_out_with_a_dot_in_its_name() {
     write_book(&comics.path().join(SERIES_01).join("v01.cbz"), 1);
     write_book(&comics.path().join(DOTTED_SERIES).join("v01.cbz"), 2);
     let (scanned, _, _) = Scanned::folder("watch-moved-out", comics.path()).await;
-    let watch = scanned.library.watch_folders(&app_files(&scanned)).await;
+    let watch = scanned
+        .library
+        .watch_folders(&app_files(&scanned), switched_on_for_good())
+        .await;
 
     fs::rename(
         comics.path().join(DOTTED_SERIES),
@@ -154,7 +182,10 @@ async fn watches_a_folder_missing_at_first_once_it_is_back() {
     let parked = ScratchFolder::new("watch-missing-parked");
     let parked_at = parked.path().join("comics");
     fs::rename(comics.path(), &parked_at).unwrap();
-    let watch = scanned.library.watch_folders(&app_files(&scanned)).await;
+    let watch = scanned
+        .library
+        .watch_folders(&app_files(&scanned), switched_on_for_good())
+        .await;
 
     fs::rename(&parked_at, comics.path()).unwrap();
     write_book(&comics.path().join(SERIES_03).join("v01.cbz"), 3);
@@ -168,4 +199,73 @@ async fn watches_a_folder_missing_at_first_once_it_is_back() {
         )
         .await
     );
+}
+
+#[tokio::test]
+async fn leaves_a_book_added_while_watching_is_off_unlisted() {
+    let (scanned, comics) = linked("watch-off").await;
+    let (switch, is_on) = watch::channel(true);
+    let watch = scanned
+        .library
+        .watch_folders(&app_files(&scanned), is_on)
+        .await;
+
+    let listed = while_watching(watch, async {
+        switch.send_replace(false);
+        write_book(&comics.path().join(SERIES_03).join("v01.cbz"), 3);
+        lists_within(
+            &scanned.library,
+            &[SERIES_01, SERIES_02, SERIES_03],
+            STAYS_UNLISTED_FOR,
+        )
+        .await
+    })
+    .await;
+
+    assert_eq!(listed, Some(false));
+}
+
+#[tokio::test]
+async fn lists_a_book_added_while_watching_was_off_once_it_is_on_again() {
+    let (scanned, comics) = linked("watch-off-then-on").await;
+    let (switch, is_on) = watch::channel(true);
+    let watch = scanned
+        .library
+        .watch_folders(&app_files(&scanned), is_on)
+        .await;
+    let all = [SERIES_01, SERIES_02, SERIES_03];
+
+    let listed = while_watching(watch, async {
+        switch.send_replace(false);
+        write_book(&comics.path().join(SERIES_03).join("v01.cbz"), 3);
+        let while_off = lists_within(&scanned.library, &all, STAYS_UNLISTED_FOR).await;
+        switch.send_replace(true);
+        let once_on = lists_within(&scanned.library, &all, SHOWN_ONCE_SWITCHED_ON_WITHIN).await;
+        (while_off, once_on)
+    })
+    .await;
+
+    assert_eq!(listed, Some((false, true)));
+}
+
+#[tokio::test]
+async fn lists_a_book_added_before_watching_is_first_switched_on_once_it_is() {
+    let (scanned, comics) = linked("watch-first-on").await;
+    let (switch, is_on) = watch::channel(false);
+    let watch = scanned
+        .library
+        .watch_folders(&app_files(&scanned), is_on)
+        .await;
+    let all = [SERIES_01, SERIES_02, SERIES_03];
+
+    let listed = while_watching(watch, async {
+        write_book(&comics.path().join(SERIES_03).join("v01.cbz"), 3);
+        let before_on = lists_within(&scanned.library, &all, STAYS_UNLISTED_FOR).await;
+        switch.send_replace(true);
+        let once_on = lists_within(&scanned.library, &all, SHOWN_ONCE_SWITCHED_ON_WITHIN).await;
+        (before_on, once_on)
+    })
+    .await;
+
+    assert_eq!(listed, Some((false, true)));
 }

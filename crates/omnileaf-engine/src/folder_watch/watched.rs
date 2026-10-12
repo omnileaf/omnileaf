@@ -121,6 +121,10 @@ impl WatchedFolders {
         armed
     }
 
+    pub(super) fn ids(&self) -> Vec<FolderId> {
+        self.folders.keys().copied().collect()
+    }
+
     /// Sets every watch up again, as a new system watch holds none of the old one's.
     pub(super) fn forget_watches(&mut self, now: Instant) {
         for watched in self.folders.values_mut() {
@@ -348,5 +352,26 @@ mod tests {
         );
 
         assert_eq!(plan.arm, arm(&[("1", "/books"), ("2", "/comics")]));
+    }
+
+    #[test]
+    fn names_every_folder_it_follows_watched_or_not() {
+        let now = Instant::now();
+        let mut watched = WatchedFolders::default();
+        watched.plan(
+            listing(&[("1", listed("/books")), ("2", listed("/comics"))]),
+            &BTreeSet::new(),
+            now,
+        );
+
+        watched.record(
+            vec![
+                (folder("1"), Ok(())),
+                (folder("2"), Err("denied".to_owned())),
+            ],
+            now,
+        );
+
+        assert_eq!(watched.ids(), vec![folder("1"), folder("2")]);
     }
 }

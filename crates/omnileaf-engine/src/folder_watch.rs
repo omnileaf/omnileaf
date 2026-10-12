@@ -7,6 +7,7 @@ use std::{collections::BTreeMap, future, mem, path::PathBuf, sync::Arc, time::Du
 
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use tokio::{
+    sync::watch,
     task::{JoinError, JoinHandle, spawn_blocking},
     time::{Instant, MissedTickBehavior, interval_at, sleep_until, timeout},
 };
@@ -40,11 +41,14 @@ pub struct FolderWatch<'a> {
     watcher: Option<RecommendedWatcher>,
     arming: Option<Arming>,
     rearm: Vec<FolderId>,
+    is_on: watch::Receiver<bool>,
+    can_switch: bool,
 }
 
 /// One set-up of watches at a time, so a network share that never answers ties up one thread at most.
 struct Arming {
     planned: Vec<FolderId>,
+    is_stale: bool,
     task: JoinHandle<Armed>,
 }
 
@@ -54,8 +58,12 @@ struct Armed {
 }
 
 impl Library {
-    /// Watches every folder the library lists, so the changes made from now on reach [`FolderWatch::rescan_on_change`].
-    pub async fn watch_folders(&self, app_files: &AppFiles) -> FolderWatch<'_> {
+    /// Watches every folder the library lists while `is_on` holds true, so the changes made from then on reach [`FolderWatch::rescan_on_change`].
+    pub async fn watch_folders(
+        &self,
+        app_files: &AppFiles,
+        is_on: watch::Receiver<bool>,
+    ) -> FolderWatch<'_> {
         let mut watch = FolderWatch {
             library: self,
             roots: Arc::new(Roots::new(app_files)),
@@ -64,14 +72,18 @@ impl Library {
             watcher: None,
             arming: None,
             rearm: Vec::new(),
+            is_on,
+            can_switch: true,
         };
-        watch.follow_folders().await;
+        if *watch.is_on.borrow() {
+            watch.follow_folders().await;
+        }
         watch
     }
 }
 
 impl FolderWatch<'_> {
-    /// Rescans each folder whose files changed once they have been quiet for a moment, following the folders the library lists, for as long as it's awaited.
+    /// Rescans each folder whose files changed once they have been quiet for a moment, following the folders the library lists, for as long as it's awaited and switched on.
     pub async fn rescan_on_change(mut self) {
         let mut bursts = Bursts::default();
         let mut checks = interval_at(
@@ -80,9 +92,20 @@ impl FolderWatch<'_> {
         );
         checks.set_missed_tick_behavior(MissedTickBehavior::Delay);
         loop {
+            if !*self.is_on.borrow_and_update() {
+                self.stop_watching(&mut bursts).await;
+                if self.is_on.wait_for(|is_on| *is_on).await.is_err() {
+                    return;
+                }
+                self.resume(&mut bursts).await;
+            }
             self.take_in_heard(&mut bursts);
             let quiet_at = bursts.next_quiet_at();
             tokio::select! {
+                biased;
+                switched = self.is_on.changed(), if self.can_switch => {
+                    self.can_switch = switched.is_ok();
+                }
                 () = self.heard.told() => {}
                 _ = checks.tick() => self.follow_and_note(&mut bursts, &[]).await,
                 () = sleep_until_some(quiet_at) => {
@@ -92,10 +115,36 @@ impl FolderWatch<'_> {
                         self.follow_and_note(&mut bursts, &quiet).await;
                     }
                     for id in quiet {
+                        if !*self.is_on.borrow() {
+                            break;
+                        }
                         self.rescan(id).await;
                     }
                 }
             }
+        }
+    }
+
+    async fn stop_watching(&mut self, bursts: &mut Bursts) {
+        if let Some(arming) = self.arming.as_mut() {
+            arming.is_stale = true;
+        }
+        if let Some(watcher) = self.watcher.take() {
+            retire(watcher).await;
+        }
+        self.folders = WatchedFolders::default();
+        self.roots.clear();
+        self.rearm.clear();
+        self.heard.take();
+        *bursts = Bursts::default();
+    }
+
+    async fn resume(&mut self, bursts: &mut Bursts) {
+        self.heard.take();
+        self.follow_folders().await;
+        let now = Instant::now();
+        for id in self.folders.ids() {
+            bursts.note(id, now);
         }
     }
 
@@ -150,6 +199,7 @@ impl FolderWatch<'_> {
         let heard = Arc::clone(&self.heard);
         self.arming = Some(Arming {
             planned,
+            is_stale: false,
             task: spawn_blocking(move || arm(plan, watcher, &roots, &heard)),
         });
     }
@@ -158,7 +208,8 @@ impl FolderWatch<'_> {
         match self.arming.take() {
             Some(arming) if arming.task.is_finished() => {
                 let armed = arming.task.await;
-                self.take_armed(armed, arming.planned)
+                self.take_armed(armed, arming.planned, arming.is_stale)
+                    .await
             }
             unfinished => {
                 self.arming = unfinished;
@@ -175,21 +226,32 @@ impl FolderWatch<'_> {
             tracing::warn!("watch the library folders in time, leaving the watch to finish");
             return Vec::new();
         };
-        let planned = self
+        let (planned, is_stale) = self
             .arming
             .take()
-            .map(|arming| arming.planned)
+            .map(|arming| (arming.planned, arming.is_stale))
             .unwrap_or_default();
-        self.take_armed(armed, planned)
+        self.take_armed(armed, planned, is_stale).await
     }
 
-    fn take_armed(
+    async fn take_armed(
         &mut self,
         armed: Result<Armed, JoinError>,
         planned: Vec<FolderId>,
+        is_stale: bool,
     ) -> Vec<FolderId> {
         let now = Instant::now();
         match armed {
+            Ok(Armed { watcher, .. }) if is_stale => {
+                if let Some(watcher) = watcher {
+                    retire(watcher).await;
+                }
+                Vec::new()
+            }
+            Err(error) if is_stale => {
+                tracing::debug!(%error, "watch the library folders while watching was turned off");
+                Vec::new()
+            }
             Ok(Armed { watcher, outcomes }) => {
                 self.watcher = watcher;
                 self.folders.record(outcomes, now)
@@ -259,6 +321,15 @@ fn arm(
     Armed {
         watcher: Some(watcher),
         outcomes,
+    }
+}
+
+/// Stops the system watch on a thread of its own, since stopping waits on the thread it reports on.
+async fn retire(watcher: RecommendedWatcher) {
+    match timeout(ARMING_TIMEOUT, spawn_blocking(move || drop(watcher))).await {
+        Ok(Ok(())) => {}
+        Ok(Err(error)) => tracing::warn!(%error, "stop watching the library folders"),
+        Err(_) => tracing::warn!("stop watching the library folders in time, leaving it to stop"),
     }
 }
 
