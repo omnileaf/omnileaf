@@ -27,7 +27,6 @@ const BOOK_TO_READ: &str =
 const ROOT_LOCATOR_KIND_COLUMN: usize = 0;
 const FILE_LOCATION_COLUMN: usize = 5;
 
-/// A book as the reader opens it: what it is called, where it is read from, and how far it has been read.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BookToRead {
     pub id: BookId,

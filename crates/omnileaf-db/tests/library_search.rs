@@ -68,7 +68,6 @@ impl Library {
             .concat()
     }
 
-    /// Passes every cursor through its text form, as one crossing to the interface would.
     async fn pages(&self, search: &SeriesSearch, size: u16) -> Vec<Vec<String>> {
         let mut pages = Vec::new();
         let mut after: Option<Cursor> = None;
@@ -162,7 +161,6 @@ async fn finds_a_few_characters_whatever_their_letter_case_beyond_ascii() {
     assert_eq!(found, [["Écho du Port"], ["Écho du Port"]]);
 }
 
-/// A Greek title ending in a capital sigma, a German one with a sharp s, and one whose accent is a combining mark.
 const FOLDED_SHELF: [SeriesSeed<'static>; 3] = [
     SeriesSeed::named("ΟΔΟΣ"),
     SeriesSeed::named("Straße"),

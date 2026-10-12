@@ -8,7 +8,6 @@ use crate::{
 const SERIES_WITH_BOOKS: &str =
     "SELECT count(*) FROM series WHERE reading_stage IN (:unstarted, :in_progress, :finished)";
 
-/// Counts the series the library lists through `filter`, which are those holding at least one book that it lets through.
 pub fn series_count(connection: &Connection, filter: &SeriesFilter) -> Result<u32, Error> {
     let params = StageParams::of(*filter);
     Ok(connection

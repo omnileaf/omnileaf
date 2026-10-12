@@ -21,7 +21,6 @@ pub(crate) struct Listing<P> {
     pub(crate) sort_position: fn(&Row<'_>) -> rusqlite::Result<P>,
 }
 
-/// Where a row sits in title order, short of the stamp its key was made under.
 pub(crate) struct TitlePlace {
     pub(crate) sort_key: Vec<u8>,
     pub(crate) id: SeriesId,
@@ -89,12 +88,10 @@ macro_rules! listing {
 pub(crate) use listing;
 pub(crate) use series_at_stage;
 
-/// What every page read binds besides where it starts.
 pub(crate) struct Read<'c> {
     pub(crate) connection: &'c Connection,
     pub(crate) filter: SeriesFilter,
     pub(crate) limit: i64,
-    /// Whatever the listing's own condition binds.
     pub(crate) bound: &'c [(&'static str, &'c dyn ToSql)],
 }
 
@@ -221,7 +218,6 @@ pub(crate) mod plans {
     /// The numbers SQLite gives each stage's two cover subqueries, outer first.
     const COVER_SUBQUERIES_OF_EACH_STAGE: [(u8, u8); 3] = [(3, 1), (7, 5), (11, 9)];
 
-    /// Reads each stage in order through `series_step` and merges the three.
     pub(crate) fn merging_each_stage(series_step: &str) -> Vec<String> {
         merging(
             COVER_SUBQUERIES_OF_EACH_STAGE
@@ -229,7 +225,6 @@ pub(crate) mod plans {
         )
     }
 
-    /// A stage's own steps, then each of its series finding its first book and that book's first file by index, sorting nothing.
     pub(crate) fn with_covers(stage_steps: Vec<String>, (outer, inner): (u8, u8)) -> Vec<String> {
         stage_steps
             .into_iter()
@@ -245,7 +240,6 @@ pub(crate) mod plans {
             .collect()
     }
 
-    /// Merges the stages read in order, so no step sorts.
     pub(crate) fn merging([unstarted, in_progress, finished]: [Vec<String>; 3]) -> Vec<String> {
         ["MERGE (UNION ALL)", "LEFT", "MERGE (UNION ALL)", "LEFT"]
             .map(ToOwned::to_owned)

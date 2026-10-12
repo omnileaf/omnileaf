@@ -33,7 +33,6 @@ const FIVE_VOLUMES: &[&str] = &[
     "Volume 05",
 ];
 
-/// A book's position, furthest page and read flag, as the reading registers project them.
 type BookState<'a> = (&'a str, Option<u32>, Option<u32>, Option<bool>);
 
 fn holding<'a>(name: &'a str, book_titles: &'a [&'a str]) -> SeriesSeed<'a> {

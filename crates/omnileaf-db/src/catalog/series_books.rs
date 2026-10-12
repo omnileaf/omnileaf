@@ -53,14 +53,13 @@ const BOOKS_BEFORE: &str = "SELECT count(*) FROM book
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BookSummary {
     pub id: BookId,
-    /// Where the book stands in its series' order, counting from 1, whichever of its books a list holds.
+    /// Counting from 1 in the series' order, whichever of its books a list holds.
     pub position: u32,
     pub title: String,
     pub added_at_ms: i64,
     pub reading: BookReading,
 }
 
-/// Which of a series' books a list holds, and which way round.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BookListing {
     pub shown: BooksShown,
@@ -70,7 +69,6 @@ pub struct BookListing {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BooksShown {
     All,
-    /// Only the books not marked read.
     Unread,
 }
 
@@ -89,13 +87,11 @@ impl BookListing {
         }
     }
 
-    /// Whether the list holds a book read as `reading` says.
     fn holds(self, reading: BookReading) -> bool {
         self.shown == BooksShown::All || !matches!(reading, BookReading::Read { .. })
     }
 }
 
-/// How far a book has been read, as the synced registers last projected it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BookReading {
     NotStarted,
@@ -154,7 +150,6 @@ pub fn series_books(
     Ok(Page::of(rows, request.size))
 }
 
-/// Walks the series' books in the listing's order from the cursor, numbering each, until a page and one more are held.
 fn walk(
     connection: &Connection,
     series: SeriesId,
@@ -236,7 +231,6 @@ pub fn up_next(connection: &Connection, series: SeriesId) -> Result<Option<BookS
     Ok(None)
 }
 
-/// Reads the title and the date added that a walk of the index leaves out.
 fn fill_details(connection: &Connection, book: &mut BookSummary) -> Result<(), Error> {
     (book.title, book.added_at_ms) =
         connection.query_row(BOOK_DETAILS, [book.id.as_bytes()], |row| {

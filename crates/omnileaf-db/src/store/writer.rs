@@ -101,7 +101,6 @@ impl<'t> Writer<'t> {
         Ok(reading_state(self.connection, book)?.and_then(|state| state.is_read) == Some(true))
     }
 
-    /// None for a book missing from the catalog.
     pub fn series_of(&self, book: BookId) -> Result<Option<SeriesId>, Error> {
         series_of_book(self.connection, book)
     }

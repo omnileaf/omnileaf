@@ -131,7 +131,6 @@ impl History {
             .unwrap();
     }
 
-    /// Passes the cursor through its text form, as one crossing to the interface would.
     async fn page(&self, size: u16, after: Option<Cursor>) -> Result<Page<HistoryEntry>, Error> {
         let request = PageRequest {
             after: after.map(|cursor| cursor.to_string().parse().unwrap()),
