@@ -61,7 +61,12 @@
     }
   });
 
-  let coversDrawn: number | undefined = $state();
+  let measuredColumns: number | undefined = $state();
+  const coversDrawn = $derived(
+    library.list.kind === "failed" || shown?.series.series.length === 0
+      ? undefined
+      : measuredColumns,
+  );
   let emptyAddFolder: HTMLButtonElement | undefined = $state();
   let headingAddFolder: HTMLButtonElement | undefined = $state();
 
@@ -168,7 +173,7 @@
           void library.loadMore();
         }}
         onColumns={(columns: number) => {
-          coversDrawn = columns;
+          measuredColumns = columns;
         }}
         {coverUrl}
         view={shown.view}

@@ -730,7 +730,7 @@
         calc(var(--spacing-cover-min) * var(--text-scale)),
         var(--covers-title-min, 0px),
         calc(
-          (100% - (var(--covers-per-row) - 1) * var(--covers-gap)) /
+          (100% - (var(--covers-per-row) - 1) * var(--covers-gap, 0px)) /
             var(--covers-per-row) - var(--covers-track-slack)
         )
       ),
