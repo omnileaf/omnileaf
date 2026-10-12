@@ -3,14 +3,12 @@ import type { BookId } from "#lib/reader/opened-book.ts";
 
 type Heard = ReturnType<typeof commands.pageShown>;
 
-/** Where the core hears about reading, each report settling once it is heard. */
 export interface ReadingCore {
   restored(book: BookId, page: number): Heard;
   shown(book: BookId, page: number): Heard;
   closed(book: BookId): Heard;
 }
 
-/** Tells the core the page reading was restored to, then each page shown after it, until the book closes. */
 export class ReadingReport {
   #isRestored = false;
   #isClosed = false;

@@ -9,7 +9,6 @@
     readonly change: () => string;
   }
 
-  /** How each sort names its two directions, ascending first. */
   const WORDING = {
     title: [
       { label: m.library_sort_a_to_z, change: m.library_sort_a_to_z_change },

@@ -119,7 +119,6 @@
     void goto(resolve("/(app)/series/[id]", { id: series.id }));
   }
 
-  /** Opens a result pressed, as Enter would, once the search it belongs to has answered. */
   function choose(series: LibrarySeries): void {
     if (!isAnswered) {
       return;
@@ -136,7 +135,6 @@
     }
   }
 
-  /** Moves through the results, or opens the active one, for the keys they answer to, leaving any key held with a modifier to the field. */
   function navigate(event: KeyboardEvent): boolean {
     if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) {
       return false;
@@ -168,7 +166,6 @@
     return true;
   }
 
-  /** Finds what `key` asks for, and marks it answered once the latest search has shown its results. */
   async function lookAgain(key: string): Promise<void> {
     activeKey = undefined;
     const look = ++latestLook;

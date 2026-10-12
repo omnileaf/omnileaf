@@ -134,7 +134,6 @@ const SESSIONS: readonly WireEntry[] = [
   }),
 ];
 
-/** Lists whatever `sessions` holds when asked, a page at a time, with each page's start as its cursor. */
 function pagedSessions(
   sessions: readonly WireEntry[],
 ): FakeBackend["readingHistory"] {
@@ -178,7 +177,6 @@ async function openHistory(page: Page, title = "History"): Promise<void> {
   ).toBeVisible();
 }
 
-/** Matches text starting the way `message` does, up to its first placeholder. */
 function startOf(message: string): RegExp {
   const start = message.slice(0, message.indexOf("{"));
   return new RegExp(
@@ -186,7 +184,6 @@ function startOf(message: string): RegExp {
   );
 }
 
-/** How many lines each cell's text takes, and whether it stays inside the cell. */
 async function linesOf(
   cells: Locator,
 ): Promise<{ lines: number; fits: boolean }[]> {

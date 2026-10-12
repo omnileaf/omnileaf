@@ -1,6 +1,5 @@
 import type { IpcError } from "#lib/ipc/bindings.ts";
 
-/** One page of a list, and where the page after it starts, absent on the last page. */
 export interface ListPage<Item, Cursor> {
   readonly items: readonly Item[];
   readonly next: Cursor | null;
@@ -10,7 +9,6 @@ export type PageResult<Item, Cursor> =
   | { readonly status: "ok"; readonly data: ListPage<Item, Cursor> }
   | { readonly status: "error"; readonly error: IpcError };
 
-/** Reads the page after a cursor, or the first page without one. */
 export type ReadPage<Item, Cursor> = (
   after: Cursor | null,
 ) => Promise<PageResult<Item, Cursor>>;
@@ -33,7 +31,6 @@ type Read<Item, Cursor> =
   | { readonly kind: "failed" }
   | { readonly kind: "superseded" };
 
-/** A list the core pages by cursor, read a page at a time as far as the screen has needed it. */
 export class PagedList<Item, Cursor> {
   list: ListState<Item> = $state({ kind: "loading" });
 
@@ -51,7 +48,6 @@ export class PagedList<Item, Cursor> {
     await this.#loadAtLeast(shown);
   }
 
-  /** Reads the first page of a new list, and only the most recently started load shows its list. */
   async start(): Promise<void> {
     this.#listsBegun += 1;
     this.#next = null;
@@ -75,7 +71,6 @@ export class PagedList<Item, Cursor> {
     return this.#loadingMore.read;
   }
 
-  /** Reads every page after the last one shown, a page at a time, until the list is complete or can't be read. */
   async loadAll(): Promise<void> {
     while (this.list.kind === "loaded" && this.#next !== null) {
       await this.loadMore();

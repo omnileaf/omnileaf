@@ -10,7 +10,6 @@ import { m } from "#lib/paraglide/messages.js";
 import { getLocale } from "#lib/paraglide/runtime.js";
 import { folderStandIn } from "#lib/screenshot-mode/stand-ins.ts";
 
-/** The series a book is in, with no cover to show for it. */
 function seriesOf(
   book: Pick<HistoryEntry, "series" | "seriesTitle">,
 ): NamedSeries {
@@ -44,7 +43,6 @@ export function standInOverview(overview: SeriesOverview): SeriesOverview {
   };
 }
 
-/** Names the books either side by the places beside the opened book's own. */
 export function standInOpenedBook(book: OpenedBook): OpenedBook {
   const series = seriesOf(book);
   const titled = standInBookTitles(series);
@@ -62,7 +60,6 @@ export function standInOpenedBook(book: OpenedBook): OpenedBook {
   };
 }
 
-/** Names the entry's series and book as the library and the series page do, leaving the cover's path behind. */
 export function standInHistoryEntry(entry: HistoryEntry): HistoryEntry {
   const series = seriesOf(entry);
   return {

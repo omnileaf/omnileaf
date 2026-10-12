@@ -37,7 +37,6 @@ async function sessionCapabilities(app: AppUnderTest): Promise<Capabilities> {
   return followSimulatorWindow(app.capabilities, app.simulatorWindowApp);
 }
 
-/** Adds the folder the app picks from Settings › Library, where Add a folder stays once the library has books, and returns to the library page once its scan reports. */
 export async function addSampleLibrary(session: Session): Promise<void> {
   await openLibraryPage(session);
   await (await session.waitFor(SETTINGS_LINK)).click();
@@ -47,7 +46,6 @@ export async function addSampleLibrary(session: Session): Promise<void> {
   await openLibraryPage(session);
 }
 
-/** Shares one WebDriver session, past the first launch, across the calling spec file and starts each test on the library page. */
 export function useAppSession(): () => Session {
   let session: Session | undefined;
 

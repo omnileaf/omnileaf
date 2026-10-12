@@ -5,7 +5,6 @@
   import { columnsOf, optionId, type Reveal } from "./grid-keys";
   import { rowWindow, type Seen } from "./row-window";
 
-  /** A list whose choices a field moves through, naming the active one in its aria-activedescendant. */
   interface Listbox {
     readonly id: string;
     readonly activeKey: string | undefined;
@@ -103,7 +102,6 @@
     );
   }
 
-  /** The nearest ancestor that scrolls, which the grid's rows scroll in. */
   function scrollerOf(element: Element): Element {
     for (
       let ancestor = element.parentElement;

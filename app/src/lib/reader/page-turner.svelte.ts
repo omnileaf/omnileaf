@@ -1,4 +1,3 @@
-/** Which page of a book is shown, counting from 0, kept within the book however far a turn asks to go. */
 export class PageTurner {
   readonly count: number;
   #shown = $state(0);

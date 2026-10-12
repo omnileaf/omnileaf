@@ -35,7 +35,6 @@ const PLAIN_KEYS: Readonly<Record<string, ReaderAction>> = {
   Escape: "leave",
 };
 
-/** What a key asks of a book read left to right, or nothing for a key the reader leaves alone. */
 export function readerActionFor(
   event: KeyboardEvent,
 ): ReaderAction | undefined {

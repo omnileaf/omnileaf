@@ -13,7 +13,6 @@ import QuickOpenOption from "./QuickOpenOption.svelte";
 const REAL_TITLE = "Hidden Story";
 const STAND_IN = /^Series \d{2,3}$/;
 
-/** A series as only the backend hands it out, with its id and cover's path branded. */
 async function found(): Promise<LibrarySeries> {
   mockIPC(() => ({
     series: [

@@ -1,25 +1,21 @@
 import type { LocalDay } from "#lib/history/local-date.ts";
 import type { HistoryEntry } from "#lib/ipc/bindings.ts";
 
-/** The days History names: today, and the first day of the week holding it. */
 export interface HistoryCalendar {
   readonly today: LocalDay;
   readonly weekStart: LocalDay;
 }
 
-/** A day of its own, or the days of the week before this one gathered together. */
 export type HistoryDayTitle =
   | { readonly kind: "day"; readonly day: LocalDay }
   | { readonly kind: "lastWeek" };
 
-/** The sessions started on one local day, or on the days of last week, and how long was read on them. */
 export interface HistoryDay {
   readonly title: HistoryDayTitle;
   readonly readSeconds: number;
   readonly entries: readonly HistoryEntry[];
 }
 
-/** The first and last of the days History gathers under last week. */
 export interface DayRange {
   readonly first: LocalDay;
   readonly last: LocalDay;
@@ -42,7 +38,6 @@ function titleOf(day: LocalDay, calendar: HistoryCalendar): HistoryDayTitle {
     : { kind: "day", day };
 }
 
-/** Names a heading apart from every other heading History shows. */
 export function historyDayKey(title: HistoryDayTitle): string {
   return title.kind === "lastWeek" ? title.kind : String(title.day);
 }
@@ -54,7 +49,6 @@ interface Gathering {
   readonly daysCounted: Set<LocalDay>;
 }
 
-/** Gathers sessions listed newest first under the heading of their day, or of last week, in the order each heading is first listed, and last week read for `lastWeekReadSeconds` once known. */
 export function historyDays(
   entries: readonly HistoryEntry[],
   calendar: HistoryCalendar,

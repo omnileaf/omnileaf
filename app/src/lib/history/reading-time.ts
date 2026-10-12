@@ -3,7 +3,6 @@ import { m } from "#lib/paraglide/messages.js";
 const SECONDS_PER_MINUTE = 60;
 const MINUTES_PER_HOUR = 60;
 
-/** How long was read, in hours and whole minutes. */
 export function readingTime(seconds: number): string {
   const totalMinutes = Math.floor(seconds / SECONDS_PER_MINUTE);
   const hours = Math.floor(totalMinutes / MINUTES_PER_HOUR);

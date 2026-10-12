@@ -25,7 +25,6 @@ export const PAGE_HEIGHT = 2700;
 const PAGE_THUMBNAIL_PATH = new RegExp(`/page-thumb/v1/${BOOK_ID}/1/(\\d+)$`);
 const PAGE_PATH = new RegExp(`/page/v1/${BOOK_ID}/1/(\\d+)(?:\\?[^/]*)?$`);
 
-/** The reading state of a book and the page, counting from 0, the core opens it on. */
 export interface WireOpening {
   readonly reading: WireReading;
   readonly startPage: number;
@@ -36,7 +35,6 @@ export const NOT_STARTED: WireOpening = {
   startPage: 0,
 };
 
-/** A generated book whose pages are all the same portrait size. */
 export function readerBook({ reading, startPage }: WireOpening): WireBook {
   return {
     id: BOOK_ID,
@@ -56,12 +54,10 @@ export function readerBook({ reading, startPage }: WireOpening): WireBook {
   };
 }
 
-/** A page drawn with its number, so a screenshot shows which one is up. */
 function pageImage(index: number): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${String(PAGE_WIDTH)}" height="${String(PAGE_HEIGHT)}" viewBox="0 0 ${String(PAGE_WIDTH)} ${String(PAGE_HEIGHT)}"><rect width="${String(PAGE_WIDTH)}" height="${String(PAGE_HEIGHT)}" fill="#f4f1ea"/><rect x="120" y="120" width="1560" height="1100" fill="#d9d4c8" stroke="#1c1b18" stroke-width="12"/><text x="900" y="2000" font-size="400" text-anchor="middle" fill="#1c1b18">${String(index + 1)}</text></svg>`;
 }
 
-/** The index of the page a request is for, or nothing for any other request. */
 export function pageIndexOf(url: string): number | undefined {
   const found = PAGE_PATH.exec(url);
   return found?.[1] === undefined ? undefined : Number(found[1]);
@@ -69,7 +65,6 @@ export function pageIndexOf(url: string): number | undefined {
 
 const IMMUTABLE = { "cache-control": "public, max-age=31536000, immutable" };
 
-/** Serves each page, after `before`, and each page's thumbnail, returning the pages asked for, not counting thumbnails. */
 export async function servePages(
   page: Page,
   before: (route: Route, index: number) => Promise<void> = async () => {},

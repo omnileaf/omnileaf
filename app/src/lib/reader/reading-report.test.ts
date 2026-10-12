@@ -31,7 +31,6 @@ function ignoreFailure(): void {
   return;
 }
 
-/** A core that hears each report at once, or holds every page shown until the test lets it through, and answers the first page shown as told. */
 function listeningCore({
   holdsPagesShown = false,
   answerToFirstPageShown = (): Promise<CoreAnswer> => Promise.resolve(HEARD),

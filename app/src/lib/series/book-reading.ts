@@ -1,7 +1,6 @@
 import type { BookReading } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
 
-/** How far a book has been read, in a word or two, with what an unread book shows instead. */
 export function readingWords(
   reading: BookReading,
   unread: () => string,

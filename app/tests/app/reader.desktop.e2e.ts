@@ -85,7 +85,6 @@ function followLinkScript(pathname: string): string {
   return `const link = document.createElement("a"); link.href = ${JSON.stringify(pathname)}; document.body.append(link); link.click(); return true;`;
 }
 
-/** Turns from the page the book opened on to the next, returning the page reached. */
 async function turnAPage(): Promise<number> {
   const line = await appSession().waitFor(
     xpath("//header//p[contains(normalize-space(), ' of 8')]"),

@@ -25,7 +25,6 @@
     readonly name: "series" | "places";
     readonly label: string;
     readonly choices: readonly Choice[];
-    /** Where the group's first choice sits among every choice shown. */
     readonly start: number;
   }
 
@@ -139,7 +138,6 @@
     }
   }
 
-  /** The first choice of the group after the active one's, or before it, going round. */
   function groupStartFrom(step: 1 | -1): number {
     const current = groups.findLastIndex((group) => group.start <= active);
     const next = (current + step + groups.length) % groups.length;

@@ -3,7 +3,6 @@
   import { omniUrl } from "#lib/omni/omni-url.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  /** Pages either side of the one dragged to, the outermost shown on wide screens only, as the boards draw them. */
   const REACH = 3;
   const PHONE_REACH = 2;
   const PORTRAIT_RATIO = "2 / 3";

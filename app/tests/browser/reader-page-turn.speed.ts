@@ -14,7 +14,6 @@ declare global {
   }
 }
 
-/** Notes when the next key goes down, and when page `number` is shown and laid out after it. */
 function timeTheTurnTo(number: number): void {
   window.__omnileafKeyPressedAt = undefined;
   window.__omnileafPageShownAt = undefined;

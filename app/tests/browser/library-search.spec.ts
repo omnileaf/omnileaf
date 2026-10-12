@@ -50,7 +50,6 @@ const CATALOG: readonly FakeSeries[] = [
   fakeSeries(4, "Sample Series 04", { unread: 0, isStarted: true }),
 ];
 
-/** Finds the series holding every word typed and meeting each condition, as the engine would, on one page. */
 function found(
   search: LibrarySearch,
   catalog: readonly FakeSeries[] = CATALOG,

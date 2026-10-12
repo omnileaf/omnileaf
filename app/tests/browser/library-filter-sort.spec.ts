@@ -85,7 +85,6 @@ function letThrough(filter: LibraryFilter): readonly FakeSeries[] {
   );
 }
 
-/** Lists the catalog as the engine would, filtered and then sorted, on one page. */
 function listed(listing: LibraryListing): WireSeries[] {
   const sign = listing.sort.direction === "ascending" ? 1 : -1;
   return letThrough(listing.filter)
@@ -139,7 +138,6 @@ function filterAndSort(page: Page): Locator {
   return page.getByRole("dialog", { name: "Filter and sort" });
 }
 
-/** Whether `box` sits on the title's line, its middle inside the title's height. */
 function isBesideTitle(box: Box, title: Box): boolean {
   const middle = box.y + box.height / 2;
   return middle > title.y && middle < title.y + title.height;

@@ -1,4 +1,3 @@
-/** Tells a finger held on a row from a tap, and swallows the click a held finger ends with. */
 export class LongPress {
   #holding: ReturnType<typeof setTimeout> | undefined;
   #isClickSwallowed = false;

@@ -11,7 +11,6 @@
   const ICON_SIZE = 22;
   const FIELD_ICON_SIZE = 18;
 
-  /** Carries on typing in the search page's own field. */
   function openSearch(
     event: Event & { currentTarget: HTMLInputElement },
   ): void {

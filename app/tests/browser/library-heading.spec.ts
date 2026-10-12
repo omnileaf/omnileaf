@@ -26,7 +26,6 @@ const WIDTHS = [
 ];
 const HEIGHT = 900;
 const PHONE_WIDTHS = [360, 375, 390, 430];
-/** Every width from just below a tablet's to a wide desktop's, 16px at a time, across each fold of the heading. */
 const RESIZE_SWEEP = Array.from({ length: 41 }, (_, step) => 800 + step * 16);
 const TABLET_WIDTH = 840;
 const FILTERED_COUNT = 7;
@@ -74,7 +73,6 @@ function headingOf(page: Page): Locator {
     .filter({ has: page.getByRole("heading", { level: 1 }) });
 }
 
-/** The heading's buttons, with the search link phones and tablets show and the search field desktops show in its place. */
 function controlsOf(heading: Locator): Locator {
   return heading
     .getByRole("button")
@@ -90,7 +88,6 @@ function centreOf(box: Box): number {
   return box.y + box.height / 2;
 }
 
-/** Whether `box` sits on the row `row` draws, its middle inside the row's height. */
 function isOnRowOf(box: Box, row: Box): boolean {
   const middle = centreOf(box);
   return middle > row.y && middle < row.y + row.height;
@@ -117,7 +114,6 @@ interface HeadingParts {
   readonly title: Box;
   readonly count: Box | undefined;
   readonly label: Box | undefined;
-  /** Each button, link or search field, named by its label or text. */
   readonly controls: readonly (readonly [string, Box])[];
 }
 
@@ -188,7 +184,6 @@ async function settledHeading(
   return measured;
 }
 
-/** How many lines the text of `locator` runs over. */
 function linesOf(locator: Locator): Promise<number> {
   return locator.evaluate((element) => {
     const range = document.createRange();
@@ -207,7 +202,6 @@ function isCrowded(a: Box, b: Box): boolean {
   return !apartSideways && !apartUpAndDown;
 }
 
-/** Each pair of the title or count and a control or the Screenshot mode label that sit too close. */
 function crowdedParts({
   title,
   count,
@@ -293,7 +287,6 @@ for (const platform of PLATFORMS) {
   }
 }
 
-/** Whether every button sits on one row of its own, under the title and above the count. */
 function isStackedUnder(
   buttons: readonly Box[],
   title: Box,
