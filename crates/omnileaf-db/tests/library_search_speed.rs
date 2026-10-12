@@ -26,7 +26,6 @@ const PAGE_SIZE: u16 = 50;
 const SAMPLES: usize = 40;
 const BUDGET: Duration = Duration::from_millis(10);
 
-/// Words every title holds, words a tenth, a hundredth and one title hold, words none holds, and as few characters as a search takes, found everywhere or nowhere.
 const TEXTS: [&str; 9] = [
     "sample",
     "sample series",
@@ -48,7 +47,6 @@ const FILTERS: [SeriesFilter; 2] = [
     },
 ];
 
-/// What one change to the search reads next: its first page, the page after it when there is one, then its count.
 enum Read {
     FirstPage,
     PageAfter(Cursor),
@@ -99,7 +97,6 @@ async fn searches_10_000_series_within_10_ms_at_p95() {
     assert_eq!(over_budget, Vec::<String>::new());
 }
 
-/// Adds a book to each series, then marks the book of each hundredth series read.
 async fn add_generated_library(database: &Database) {
     add_generated_series(database, &BOOK_TITLES).await;
     database
@@ -116,7 +113,6 @@ async fn add_generated_library(database: &Database) {
         .unwrap();
 }
 
-/// Reads one step of the search, waiting for a reader included, and returns the step after it.
 async fn read(database: &Database, search: &SeriesSearch, step: Read) -> Read {
     let search = search.clone();
     match step {

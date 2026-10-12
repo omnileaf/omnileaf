@@ -8,7 +8,6 @@ const STORE_PAGES: &str = "INSERT INTO book_pages (file_id, rev, manifest) VALUE
 const BYTES_PER_PAGE: usize = 8;
 const UNKNOWN: u32 = 0;
 
-/// A page's size in pixels, as its image's header gives it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct PageDimensions {
     pub width: u32,

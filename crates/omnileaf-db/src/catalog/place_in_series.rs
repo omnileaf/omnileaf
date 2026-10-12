@@ -16,7 +16,6 @@ const NEXT_BOOK: &str = "SELECT id, title FROM book
     WHERE series_local_id = :series AND (title_sort_key, id) > (:key, :id)
     ORDER BY title_sort_key, id LIMIT 1";
 
-/// Where a book stands in its series' title order, and the books either side of it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PlaceInSeries {
     /// Counting from 1.
@@ -31,7 +30,6 @@ pub struct SeriesNeighbour {
     pub title: String,
 }
 
-/// None for a book missing from the catalog.
 #[tracing::instrument(skip_all, fields(%book))]
 pub fn place_in_series(
     connection: &Connection,

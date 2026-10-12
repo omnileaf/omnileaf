@@ -38,14 +38,12 @@ const CONTAINING_COUNT: &str = "SELECT count(*) FROM series
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
         AND instr(fold_case(title), :characters) > 0";
 
-/// Which series a search finds: those whose titles hold its text, of those holding books its filter lets through.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeriesSearch {
     pub text: SearchText,
     pub filter: SeriesFilter,
 }
 
-/// Lists what the search finds in title order, carrying on from a title cursor as the library's own title list does.
 #[tracing::instrument(skip_all, fields(filter = ?search.filter, size = ?request.size))]
 pub fn search_page(
     connection: &Connection,
@@ -65,7 +63,6 @@ pub fn search_page(
     Ok(Page::of(rows, request.size))
 }
 
-/// Counts the series [`search_page`] lists for the same search.
 #[tracing::instrument(skip_all, fields(filter = ?search.filter))]
 pub fn search_count(connection: &Connection, search: &SeriesSearch) -> Result<u32, Error> {
     let lookup = &search.text.0;
@@ -117,7 +114,6 @@ mod tests {
     const SUBQUERIES_OF_EACH_MATCHED_STAGE: [(u8, (u8, u8)); 3] =
         [(5, (4, 2)), (10, (9, 7)), (15, (14, 12))];
 
-    /// Matches the phrases once, then looks up each series a stage reads among those matched.
     fn matching_each_stage(series_step: &str) -> Vec<String> {
         merging(SUBQUERIES_OF_EACH_MATCHED_STAGE.map(|(list, covers)| {
             let matched_once: &[&str] = if list == SUBQUERIES_OF_EACH_MATCHED_STAGE[0].0 {

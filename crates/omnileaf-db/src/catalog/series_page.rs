@@ -13,7 +13,6 @@ use crate::{
     },
 };
 
-/// One order's lists, each way round.
 struct Directions<P> {
     ascending: Listing<P>,
     descending: Listing<P>,

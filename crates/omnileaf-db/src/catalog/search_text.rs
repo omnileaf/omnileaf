@@ -1,6 +1,5 @@
 use crate::{Error, letter_case::fold_case};
 
-/// What a search finds in series titles, parsed once from the words typed.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SearchText(pub(crate) Lookup);
 

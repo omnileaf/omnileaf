@@ -20,7 +20,6 @@ const OVERVIEW_OF_SERIES: &str = concat!(
 );
 const ROOT_LOCATOR_KIND_COLUMN: usize = 0;
 
-/// What a series' own page shows above its books.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeriesOverview {
     pub id: SeriesId,
@@ -29,7 +28,6 @@ pub struct SeriesOverview {
     pub read_count: u32,
     /// The cover the library shows for the series, absent while none of its books has a file.
     pub cover: Option<Cover>,
-    /// The library folder holding the cover's file.
     pub folder: Option<RootLocator>,
 }
 

@@ -86,7 +86,6 @@ pub fn remove_books_without_files(
     Ok(removed)
 }
 
-/// None for a book missing from the catalog.
 pub(crate) fn series_of_book(
     connection: &Connection,
     book: BookId,

@@ -52,7 +52,6 @@ async fn reads_each_title_page_of_10_000_series_within_2_ms_at_p95() {
     assert!(outcome.is_within_budget(), "{outcome}");
 }
 
-/// Reads the full title page after `after`, waiting for a reader included, and returns the cursor to the next one.
 async fn read_title_page(database: &Database, after: Option<Cursor>) -> Option<Cursor> {
     let request = PageRequest {
         after,
