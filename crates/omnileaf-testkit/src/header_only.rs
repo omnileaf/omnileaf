@@ -1,5 +1,3 @@
-//! Images that are only a header, claiming whatever size a test needs without the pixels to fill it.
-
 const VP8L_SIGNATURE: u8 = 0x2F;
 const VP8L_LENGTH_BITS: u32 = 14;
 const VP8L_ALPHA_BIT: u32 = 1 << (2 * VP8L_LENGTH_BITS);
@@ -34,7 +32,6 @@ pub fn webp_header_only(width: u32, height: u32) -> Vec<u8> {
     .concat()
 }
 
-/// A bare JPEG XL codestream's size header claiming `width` by `height`.
 #[must_use]
 pub fn jxl_header_only(width: u32, height: u32) -> Vec<u8> {
     let mut bits = 0_u128;

@@ -126,7 +126,6 @@ impl ZipBook {
         Ok(bytes)
     }
 
-    /// The page's name and what `read` makes of its bytes.
     fn read_entry<T>(
         &mut self,
         index: usize,

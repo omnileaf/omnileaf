@@ -2,7 +2,6 @@ use std::{collections::HashMap, hash::Hash, sync::Arc};
 
 use crate::recency::Recency;
 
-/// Values kept in memory under a byte budget, dropping the least recently used first.
 #[derive(Debug)]
 pub struct MemoryCache<K, V> {
     budget_bytes: u64,
@@ -20,7 +19,6 @@ impl<K: Clone + Eq + Hash, V> MemoryCache<K, V> {
         }
     }
 
-    /// The value, which becomes the most recently used.
     pub fn get(&mut self, key: &K) -> Option<Arc<V>> {
         if !self.recency.touch(key) {
             return None;

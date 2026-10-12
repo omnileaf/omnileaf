@@ -17,10 +17,8 @@ use crate::{
 
 const JPEG_QUALITY: u8 = 90;
 const FIRST_FRAME: usize = 0;
-/// The most samples a pixel decodes to, an RGBA one.
 const MOST_CHANNELS: u64 = 4;
 
-/// A page in a format every webview shows.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Transcoded {
     pub format: PageFormat,
@@ -35,14 +33,12 @@ pub(crate) enum Layout {
     Rgba,
 }
 
-/// Decoded samples, one byte each, row by row in the order their layout names.
 pub(crate) struct Pixels {
     pub(crate) size: Size,
     pub(crate) layout: Layout,
     pub(crate) samples: Vec<u8>,
 }
 
-/// Turns a WebP or JPEG XL page into a JPEG, or into a PNG when it has transparency or is too large for a JPEG.
 pub fn transcode(page: &[u8]) -> Result<Transcoded, ImagingError> {
     let format = PageFormat::sniff(page).ok_or(ImagingError::Unsupported)?;
     let decode = match format {
