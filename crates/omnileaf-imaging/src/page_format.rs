@@ -1,6 +1,5 @@
 use imagesize::{Compression, ImageType};
 
-/// The image formats a page may be stored in.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum PageFormat {
     Jpeg,
@@ -13,7 +12,6 @@ pub enum PageFormat {
 }
 
 impl PageFormat {
-    /// Recognises a page by its first bytes, never its name.
     #[must_use]
     pub fn sniff(bytes: &[u8]) -> Option<Self> {
         imagesize::image_type(bytes).ok().and_then(Self::of)

@@ -26,7 +26,6 @@ const PORTRAIT: Size = Size {
 const TRANSPARENT: u8 = 0;
 const OPAQUE: u8 = u8::MAX;
 
-/// A GIF's header, which is all a page's size is read from.
 fn gif_header(size: Size) -> Vec<u8> {
     let mut header = b"GIF89a".to_vec();
     header.extend_from_slice(&u16::try_from(size.width).unwrap().to_le_bytes());
@@ -35,7 +34,6 @@ fn gif_header(size: Size) -> Vec<u8> {
     header
 }
 
-/// A bitmap's file and info headers, which are all a page's size is read from.
 fn bmp_header(size: Size) -> Vec<u8> {
     let mut header = b"BM".to_vec();
     header.extend_from_slice(&[0; 12]);

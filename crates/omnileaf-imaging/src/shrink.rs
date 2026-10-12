@@ -6,11 +6,9 @@ use crate::{
     transcode::{Layout, Pixels, encode},
 };
 
-/// The fractions of its size a JPEG decodes at by scaling its blocks, largest first.
 const JPEG_SCALE_DIVISORS: [u32; 4] = [1, 2, 4, 8];
 const SMALLEST_JPEG_SCALE_DIVISOR: u32 = 8;
 
-/// Shrinks a JPEG, PNG or WebP page to at most `max_pixels`, keeping its shape, within the decode budget; other formats are unsupported.
 pub fn shrink_page(page: &[u8], max_pixels: u64) -> Result<Transcoded, ImagingError> {
     let source = Source::probe(page)?;
     let decoded = match source.format {
@@ -34,7 +32,6 @@ pub fn shrink_page(page: &[u8], max_pixels: u64) -> Result<Transcoded, ImagingEr
     })
 }
 
-/// Decodes a JPEG at the largest of its built-in scales within `max_pixels`, or the next one down while that decode outgrows the decode budget.
 fn decode_jpeg_within(source: &Source<'_>, max_pixels: u64) -> Result<Decoded, ImagingError> {
     let mut decoded = Err(ImagingError::Unsupported);
     for divisor in JPEG_SCALE_DIVISORS {
@@ -53,7 +50,6 @@ fn decode_jpeg_within(source: &Source<'_>, max_pixels: u64) -> Result<Decoded, I
     decoded
 }
 
-/// The largest size of the same shape within `max_pixels`, never larger than `size` itself.
 fn fitted(size: Size, max_pixels: u64) -> Size {
     if size.pixels() <= max_pixels {
         return size;

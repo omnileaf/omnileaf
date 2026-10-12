@@ -54,7 +54,6 @@ impl Book {
         }
     }
 
-    /// Reads no more than the first `length` bytes of a page, all of it when it is shorter.
     pub fn read_page_start(&mut self, index: usize, length: u64) -> Result<Vec<u8>, FormatError> {
         match self {
             Self::Archive(book) => book.read_page_start(index, length),
