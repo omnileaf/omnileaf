@@ -307,7 +307,7 @@ jobs:
         run: cargo xtask check --only browser
 
       - name: Time the interface on its own
-        if: matrix.shard == strategy.job-total
+        if: matrix.shard == 1
         run: env -u PLAYWRIGHT_SHARD pnpm --dir app test:e2e --project speed --no-deps
 
       - name: Keep the traces of failed tests

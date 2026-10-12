@@ -6,8 +6,6 @@ import { shardFromEnvironment } from "./tests/shard.ts";
 const PREVIEW_PORT = 4173;
 const PREVIEW_URL = `http://localhost:${String(PREVIEW_PORT)}`;
 
-const ENGINES = ["chromium", "webkit"] as const;
-
 const SCREENS = {
   phone: {
     viewport: { width: 390, height: 844 },
@@ -33,12 +31,23 @@ const SPEED_SPECS = "**/*.speed.ts";
 
 const shard = shardFromEnvironment(process.env.PLAYWRIGHT_SHARD);
 
-const screenProjects = Object.entries(SCREENS).flatMap(([screen, emulation]) =>
-  ENGINES.map((browserName) => ({
-    name: `${browserName}-${screen}`,
-    use: { browserName, ...emulation },
-  })),
-) satisfies Project[];
+/** Playwright gives each shard a contiguous run of tests in project order, and WebKit takes about twice as long as Chromium, so each shard pairs a Chromium project with a WebKit one. */
+const PROJECT_ORDER = [
+  ["chromium", "phone"],
+  ["webkit", "desktop"],
+  ["chromium", "tablet"],
+  ["webkit", "phone"],
+  ["chromium", "desktop"],
+  ["webkit", "tablet"],
+] as const satisfies readonly (readonly [
+  "chromium" | "webkit",
+  keyof typeof SCREENS,
+])[];
+
+const screenProjects = PROJECT_ORDER.map(([browserName, screen]) => ({
+  name: `${browserName}-${screen}`,
+  use: { browserName, ...SCREENS[screen] },
+})) satisfies Project[];
 
 /** Times the interface on its own, one spec at a time once every other spec has finished, so no other load can push a timing over its budget. */
 const speedProject: Project = {
