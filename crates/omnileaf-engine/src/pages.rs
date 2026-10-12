@@ -31,7 +31,7 @@ pub(crate) const PAGE_CACHE_VERSION: &str = "v1";
 const MEMORY_BUDGET_BYTES: u64 = (if IS_MOBILE { 48 } else { 256 }) * MEBIBYTE as u64;
 const TRANSCODE_BUDGET_BYTES: u64 = (if IS_MOBILE { 128 } else { 512 }) * MEBIBYTE as u64;
 const PAGES_READ_AHEAD: usize = 4;
-/// Android's webview decodes no image past a 25th of the device's memory, about 40 megapixels at four bytes each on a 4 GB phone, so a page past it is shrunk or refused rather than left to fail or end the renderer, while a strip 1,080 pixels wide still runs 37,000 tall.
+/// Android's webview decodes no image past a 25th of the device's memory, about 40 megapixels at four bytes each on a 4 GB phone, so a page past it is shrunk or refused rather than left to end the renderer.
 const PAGE_PIXEL_BUDGET: u64 = 40_000_000;
 pub(crate) const WORKERS: NonZeroUsize = if IS_MOBILE {
     NonZeroUsize::MIN
@@ -40,13 +40,11 @@ pub(crate) const WORKERS: NonZeroUsize = if IS_MOBILE {
 };
 const WORKER_NAME: &str = "omnileaf-pages";
 
-/// A page as the `omni` protocol hands it to the webview.
 pub(crate) struct ServedPage {
     pub(crate) content_type: &'static str,
     pub(crate) bytes: Vec<u8>,
 }
 
-/// The pages of the books being read: kept in memory under a byte budget, read ahead of the reader and transcoded where the webview needs it.
 pub(crate) struct Pages {
     lane: PageLane,
     shared: Arc<Shared>,
@@ -100,14 +98,12 @@ pub(crate) enum PageError {
 }
 
 impl PageError {
-    /// Whether the reader asked for newer pages before this one's turn came, so nobody waits for it any more.
     pub(crate) fn is_superseded(&self) -> bool {
         matches!(self, Self::Asked(AskedPageError::Superseded))
     }
 }
 
 impl Pages {
-    /// Leaves the transcode folder alone until a page needs transcoding.
     pub(crate) fn open(transcode_folder: PathBuf, decodes: Arc<DecodePermits>) -> io::Result<Self> {
         Ok(Self {
             lane: PageLane::start(WORKER_NAME, WORKERS)?,
@@ -195,7 +191,6 @@ impl Pages {
         Ok(opened_book(to_open, &sizes, start))
     }
 
-    /// Reads the sizes of the pages outside `window` once nothing more urgent waits, keeping them to store when they are done.
     fn fill_sizes_later(
         &self,
         opened: &OpenBook,
@@ -265,7 +260,6 @@ impl Pages {
         Ok(Some(served))
     }
 
-    /// Replaces the reading ahead still waiting with the pages from `first` on that memory doesn't hold and no job is reading yet.
     fn read_ahead(&self, opened: &OpenBook, first: usize) {
         let memory = self.shared.memory();
         let jobs = (first..opened.page_count)
@@ -309,7 +303,6 @@ impl Shared {
         Ok(page)
     }
 
-    /// The page's own bytes, or a transcode of them in a format the webview shows and within [`PAGE_PIXEL_BUDGET`] when its header gives its size.
     fn prepared(&self, path: PagePath, bytes: Vec<u8>) -> Result<ServedPage, PageError> {
         let format = PageFormat::sniff(&bytes).ok_or(PageError::NotAnImage)?;
         let is_oversized = page_size(&bytes).is_ok_and(|size| size.pixels() > PAGE_PIXEL_BUDGET);
@@ -354,7 +347,6 @@ impl Shared {
         ProbedFormat::of(format).is_some_and(|probed| undecodable.contains(&probed))
     }
 
-    /// The transcode cache, opened by whichever page needs it first, or nothing when it can't be opened.
     fn transcodes(&self) -> Option<&DiskCache> {
         self.transcodes
             .get_or_init(
@@ -377,14 +369,12 @@ struct PagesInFlight {
     finished: Condvar,
 }
 
-/// A page one job reads until the claim is dropped, its result in memory by then unless reading it failed.
 struct PageClaim<'pages> {
     pages: &'pages PagesInFlight,
     path: PagePath,
 }
 
 impl PagesInFlight {
-    /// Claims the page, first waiting for any other job reading it to finish.
     fn claim(&self, path: PagePath) -> PageClaim<'_> {
         let mut reading = self.reading();
         while reading.contains(&path) {

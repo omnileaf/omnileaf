@@ -80,7 +80,6 @@ impl Shelf {
         }
     }
 
-    /// The same folders opened again, as after the app was stopped and launched again.
     async fn reopened(self) -> Self {
         let Self {
             library,
@@ -141,7 +140,6 @@ impl Shelf {
             .unwrap()
     }
 
-    /// Opens the book as the reader does, showing the page it starts on.
     async fn restore(&self, index: usize) -> OpenedBook {
         let opened = self.open(index).await;
         self.library
@@ -151,7 +149,6 @@ impl Shelf {
         opened
     }
 
-    /// Makes every save of reading fail from now on, as a store that can't be written to does.
     fn refuse_saves(&self) {
         rusqlite::Connection::open(self.home.path().join(DATABASE_FILE))
             .unwrap()
@@ -543,7 +540,6 @@ async fn keeps_a_book_marked_read_while_open_read_after_the_save_that_comes_late
     assert_eq!(shelf.reading(0).await, BookReading::Read);
 }
 
-/// Every change already told of, so a test can wait for the one it makes next.
 async fn caught_up(changes: &mut LibraryChanges) {
     while timeout(LIBRARY_CHANGES_GATHERED_FOR * 2, changes.next())
         .await

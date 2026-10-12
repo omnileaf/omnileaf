@@ -22,7 +22,6 @@ const LONGEST_RETRY_WAIT: Duration = Duration::from_secs(60);
 
 type Saved = oneshot::Sender<Result<(), Error>>;
 
-/// A page reached in a book is saved, so what shows the book's place in its series is out of date.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ReadingSaved {
     pub book: BookId,
@@ -62,7 +61,6 @@ enum Report {
     },
 }
 
-/// Saves where the reader is through the store's write path, a moment after each page turn and at once when asked.
 pub(crate) struct ReadingProgress {
     reports: mpsc::Sender<Report>,
     saved: broadcast::Sender<ReadingSaved>,
@@ -70,7 +68,6 @@ pub(crate) struct ReadingProgress {
 }
 
 impl ReadingProgress {
-    /// Starts the task that saves progress, which saves whatever is unsaved and stops once this is dropped.
     pub(crate) fn start(store: Arc<Store>) -> Self {
         let (reports, received) = mpsc::channel(REPORT_BACKLOG);
         let saved = broadcast::Sender::new(SAVED_BACKLOG);
@@ -211,7 +208,6 @@ impl Keeper {
         }
     }
 
-    /// When the next save is due, or nothing while every page reached is saved.
     fn due(&self) -> Option<Instant> {
         let session_due = self.session.as_ref().and_then(ReadingSession::save_at);
         session_due.into_iter().chain(self.retry_at).min()
@@ -253,7 +249,6 @@ impl Keeper {
         }
     }
 
-    /// The page reached in `book`, read now or left before, that no save has landed yet.
     fn unsaved_in(&self, book: BookId) -> Option<ReachedPage> {
         self.session
             .as_ref()
@@ -320,7 +315,6 @@ impl Keeper {
         }
     }
 
-    /// Saves the page shown last and ends the reading session at this moment.
     async fn stop_reading(&mut self) -> Result<(), Error> {
         let saved = self.save().await;
         let Some(open) = self.session.as_mut() else {
@@ -335,7 +329,6 @@ impl Keeper {
         saved.and(stopped)
     }
 
-    /// Records the reading session going on in the book read now, from the page it stands on.
     async fn record_reading(&mut self) -> Result<(), Error> {
         let Some(open) = self.session.as_mut() else {
             return Ok(());
@@ -354,7 +347,6 @@ impl Keeper {
         outcome
     }
 
-    /// The session of `book`, or nothing for a report about a book not read now.
     fn reading(&mut self, book: BookId) -> Option<&mut ReadingSession> {
         let open = self.session.as_mut().filter(|open| open.book() == book);
         if open.is_none() {
@@ -474,7 +466,6 @@ async fn wait_until(due: Option<Instant>) {
     }
 }
 
-/// Hands the outcome to whoever asked for the save, the save itself having logged any failure.
 fn answer<T>(asker: Option<oneshot::Sender<T>>, outcome: T) {
     if let Some(asker) = asker
         && asker.send(outcome).is_err()
@@ -545,7 +536,6 @@ mod tests {
             .await;
     }
 
-    /// Opens and restores the book on its first page, then shows `page`.
     async fn read(keeper: &mut Keeper, book: BookId, page: u32) {
         open(keeper, book).await;
         restore(keeper, book, 0).await;

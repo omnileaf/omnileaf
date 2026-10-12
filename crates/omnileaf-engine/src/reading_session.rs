@@ -9,12 +9,10 @@ use crate::{BookId, UtcOffset};
 /// How long after the first page left unsaved reading is saved, however many pages are turned meanwhile.
 pub const READING_SAVE_DELAY: Duration = Duration::from_millis(1_500);
 
-/// Whether `page`, counting from 0, is the last of `page_count`, which finishes the book.
 pub(crate) const fn is_last_page(page: u32, page_count: u32) -> bool {
     page.saturating_add(1) >= page_count
 }
 
-/// A page reading reached, for the store to save.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct ReachedPage {
     pub(crate) book: BookId,
@@ -28,7 +26,6 @@ impl ReachedPage {
         is_last_page(self.page, self.page_count)
     }
 
-    /// Where the reading session the page belongs to stands.
     pub(crate) const fn place(self) -> SessionPlace {
         SessionPlace {
             book: self.book.0,
@@ -68,7 +65,6 @@ enum Stage {
     },
 }
 
-/// One book's reading, from opening it until it closes, counting pages from 0.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct ReadingSession {
     book: BookId,
@@ -98,7 +94,6 @@ impl ReadingSession {
         self.book
     }
 
-    /// Whether reading has gone on without a break since its session was last recorded.
     pub(crate) const fn continuity(&self) -> Continuity {
         self.continuity
     }
@@ -156,7 +151,6 @@ impl ReadingSession {
         self.stage = Stage::Reading { saved, unsaved };
     }
 
-    /// When the page shown last is due to be saved, or nothing while every page shown is saved.
     pub(crate) fn save_at(&self) -> Option<Instant> {
         match self.stage {
             Stage::Reading {
@@ -167,7 +161,6 @@ impl ReadingSession {
         }
     }
 
-    /// The page shown last, or nothing when it is saved already.
     pub(crate) fn unsaved(&self) -> Option<ReachedPage> {
         let Stage::Reading {
             unsaved: Some(unsaved),
@@ -179,7 +172,6 @@ impl ReadingSession {
         Some(self.reached(unsaved.page))
     }
 
-    /// The page reading stands on, saved or not, or nothing while the reader hasn't restored the book.
     pub(crate) fn on_page(&self) -> Option<ReachedPage> {
         let page = match self.stage {
             Stage::Opening => return None,
@@ -207,7 +199,6 @@ impl ReadingSession {
         }
     }
 
-    /// Leaves the page shown last unsaved, to save again at `retry_at`.
     pub(crate) fn save_failed(&mut self, retry_at: Instant) {
         if let Stage::Reading {
             saved,

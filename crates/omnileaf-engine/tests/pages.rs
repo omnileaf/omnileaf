@@ -100,7 +100,6 @@ impl Reader {
         Self::with_pages(name, &portrait_pages(SEED)).await
     }
 
-    /// A router that hasn't served or opened anything yet, as after a restart.
     fn fresh_router(&self) -> ResourceRouter {
         ResourceRouter::open(self.cache.path()).unwrap()
     }
@@ -184,7 +183,6 @@ fn extension_of(bytes: &[u8]) -> &'static str {
     }
 }
 
-/// A GIF's header claiming `width` by `height`, which is all a page passed to the webview as it is needs.
 fn gif_header(width: u16, height: u16) -> Vec<u8> {
     [
         &b"GIF89a"[..],

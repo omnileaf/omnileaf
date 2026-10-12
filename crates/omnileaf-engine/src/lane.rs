@@ -10,12 +10,10 @@ use tokio::sync::oneshot;
 
 pub(crate) type Job = Box<dyn FnOnce() + Send>;
 
-/// The order a lane's workers take its jobs in.
 pub(crate) trait JobQueue: Default + Send + 'static {
     fn next(&mut self) -> Option<Job>;
 }
 
-/// Runs blocking work on threads of its own, taking jobs in the order its queue gives them.
 pub(crate) struct Lane<Q: JobQueue> {
     shared: Arc<Shared<Q>>,
     workers: Vec<JoinHandle<()>>,
@@ -82,7 +80,6 @@ impl<Q: JobQueue> Shared<Q> {
         self.state.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// The next job, or nothing once the lane is closing.
     fn next_job(&self) -> Option<Job> {
         let mut state = self.state();
         loop {
