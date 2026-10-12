@@ -4,7 +4,6 @@ import { PagedList, type PageResult } from "./paged-list.svelte";
 
 const PAGE_SIZE = 2;
 
-/** Pages through `count` numbers, with each page's start as its cursor, noting every cursor asked for. */
 function numbers(count: number): {
   readonly asked: (number | null)[];
   readonly list: PagedList<number, number>;
@@ -70,7 +69,6 @@ test("stops reading the rest of a list that can't be read", async () => {
   expect([calls, list.list]).toEqual([2, { kind: "failed" }]);
 });
 
-/** Pages that answer only when the test lets them, each page holding the cursor it was asked for and the next one along. */
 function heldPages(): {
   readonly asked: (number | null)[];
   readonly answer: (index: number, next: number | null) => void;

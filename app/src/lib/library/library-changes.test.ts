@@ -13,7 +13,6 @@ const SERIES = "0190a3e4-0000-8000-8000-0000000000a4";
 const OTHER_SERIES = "0190a3e4-0000-8000-8000-0000000000a5";
 const BOOK = "0190a3e4-0000-8000-8000-000000000004";
 
-/** Lets a listener the core is asked for start listening. */
 function listening(): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve);

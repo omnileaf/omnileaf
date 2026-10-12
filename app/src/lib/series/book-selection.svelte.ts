@@ -1,6 +1,5 @@
 import { SvelteSet } from "svelte/reactivity";
 
-/** Which of a series' books are picked to mark at once, while picking them. */
 export class BookSelection<BookId> {
   isSelecting = $state(false);
 
@@ -15,7 +14,6 @@ export class BookSelection<BookId> {
     return this.#picked.has(book);
   }
 
-  /** Starts picking, with `book` picked when picking starts from one. */
   begin(book?: BookId): void {
     this.isSelecting = true;
     if (book !== undefined) {
@@ -30,7 +28,6 @@ export class BookSelection<BookId> {
     this.#anchor = book;
   }
 
-  /** Picks every book listed between the book last toggled and `book`, both included. */
   extendTo(book: BookId, listed: readonly BookId[]): void {
     const end = listed.indexOf(book);
     if (end === -1) {

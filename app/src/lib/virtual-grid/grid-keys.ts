@@ -1,4 +1,3 @@
-/** Scrolls the item at an index into view, drawing its row first when it lies beyond the rows drawn, and resolves with it once drawn. */
 export type Reveal = (index: number) => Promise<HTMLElement | undefined>;
 
 export function optionId(listId: string, key: string): string {

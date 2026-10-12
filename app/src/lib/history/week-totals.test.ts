@@ -16,7 +16,6 @@ function seconds(read: number): Answer {
   return { status: "ok", data: read };
 }
 
-/** Answers each read only when told, noting every answer still owed. */
 function heldReads(): {
   readonly reads: WeekReads;
   readonly owed: ((answer: Answer) => void)[];

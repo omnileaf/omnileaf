@@ -18,7 +18,6 @@ const APP_BINARY = fileURLToPath(
 
 export interface DesktopLaunch {
   readonly webDriverPort: number;
-  /** Where the app keeps its library, which a later launch on the same folder finds again. */
   readonly dataDir: string;
   readonly pickedFolder: string;
   /** Where the app keeps crash reports, so tests leave none in the platform's folders. */
@@ -29,7 +28,6 @@ export interface DesktopApp extends RunningProcess {
   readonly server: URL;
 }
 
-/** Launches the end-to-end build of the app and waits for its WebDriver server. */
 export async function launchDesktopApp(
   launch: DesktopLaunch,
 ): Promise<DesktopApp> {

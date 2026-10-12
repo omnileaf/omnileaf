@@ -5,7 +5,6 @@ export interface Size {
 
 const NOTHING: Size = { width: 0, height: 0 };
 
-/** The size a page takes shown whole in the space, as large as fits, scaled up or down. */
 export function fittedSize(page: Size, space: Size): Size {
   if (page.width <= 0 || page.height <= 0) {
     return NOTHING;

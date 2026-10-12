@@ -25,7 +25,6 @@
 
   type Tab = "filter" | "sort";
 
-  /** Wider than a phone, filter and sort stand together in a panel at the end of the screen. */
   const PANEL_SCREENS = "(min-width: 600px)";
   const ICON_SIZE = 22;
   const CLOSE_ICON_SIZE = 18;

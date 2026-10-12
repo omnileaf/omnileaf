@@ -9,7 +9,6 @@ export const CONDITION_LABELS = {
   finished: m.library_filter_finished,
 } as const satisfies Record<FilterCondition, () => string>;
 
-/** What each filter word turns into, said after the word in the hints. */
 export const CONDITION_HINTS = {
   unread: m.search_word_becomes_unread,
   started: m.search_word_becomes_started,

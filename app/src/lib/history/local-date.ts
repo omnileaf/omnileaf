@@ -7,7 +7,6 @@ const DAYS_PER_WEEK = 7;
 const MONDAY = 1;
 const WEEKDAY_OF_DAY_ZERO = 4;
 
-/** The device's day at a moment. */
 export function localDayOf(at: Date): LocalDay {
   return Date.UTC(at.getFullYear(), at.getMonth(), at.getDate()) / MS_PER_DAY;
 }
@@ -25,7 +24,7 @@ function weekdayOf(day: LocalDay): number {
   );
 }
 
-/** The first day of the week holding `day`, for weeks that start on `firstDay`, 1 being Monday and 7 Sunday. */
+/** Weeks start on `firstDay`, 1 being Monday and 7 Sunday. */
 export function weekStartOf(day: LocalDay, firstDay: number): LocalDay {
   return day - ((weekdayOf(day) - firstDay + DAYS_PER_WEEK) % DAYS_PER_WEEK);
 }

@@ -17,7 +17,6 @@ export interface WebDriverProcess {
 }
 
 export interface RunningProcess {
-  /** Asks the process to end, letting it finish what it was doing. */
   stop(): Promise<void>;
   /** Ends the process at once, as the system ends an app it needs the memory of, with no chance to save anything. */
   kill(): Promise<void>;

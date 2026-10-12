@@ -5,17 +5,14 @@ import {
 
 const FINISHED_WORD = /(\S+)\s+/gu;
 
-/** The word someone types for each condition, in the interface's language. */
 export type FilterWords = Readonly<Record<FilterCondition, string>>;
 
 export interface TypedFilters {
-  /** What was typed, less each filter word taken out and the space after it. */
   readonly text: string;
   /** Each condition a filter word named, once, in the order typed. */
   readonly conditions: readonly FilterCondition[];
 }
 
-/** Takes each filter word someone has finished, by typing a space after it, out of the text as the condition it names. */
 export function takeFilterWords(
   typed: string,
   words: FilterWords,

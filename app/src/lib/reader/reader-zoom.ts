@@ -5,7 +5,6 @@ const RESTING_SCALE = 1;
 const SCALE_TOLERANCE = 0.01;
 const PAGE_TURNS: ReadonlySet<ReaderAction> = new Set(["next", "previous"]);
 
-/** Whether a page pinched to `scale` is zoomed in past where it rests, when a drag pans it rather than turning it. */
 export function isZoomedIn(scale: number): boolean {
   return scale > RESTING_SCALE + SCALE_TOLERANCE;
 }

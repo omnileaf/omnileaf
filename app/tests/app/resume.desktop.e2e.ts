@@ -35,7 +35,6 @@ let crashReports: string | undefined;
 let app: DesktopApp | undefined;
 let session: Session | undefined;
 
-/** Whether the core holds the first book of the series as read up to `page`, asked through the app's own commands. */
 function pageSavedScript(series: string, page: number): string {
   return `return window.__TAURI_INTERNALS__.invoke("series_books", { id: ${JSON.stringify(series)}, listing: { shown: "all", direction: "ascending" }, after: null }).then((books) => books.books[0]?.reading?.page === ${String(page)}, () => false);`;
 }
@@ -47,7 +46,6 @@ function current(): Session {
   return session;
 }
 
-/** Launches the app on its own data folder, which a launch after a kill finds again, and opens a session past the first launch. */
 async function launch(): Promise<void> {
   if (dataDir === undefined || crashReports === undefined) {
     throw new Error("the data folders were not made");
@@ -63,7 +61,6 @@ async function launch(): Promise<void> {
   await (await session.waitFor(LIBRARY_LINK)).click();
 }
 
-/** Opens the first series' page, returning the series' id from its address. */
 async function openFirstSeries(): Promise<string> {
   await (await current().waitFor(FIRST_SERIES_COVER)).click();
   await current().waitFor(SERIES_HEADING);

@@ -60,7 +60,6 @@
   let barHeight = $state(0);
   let isTitleUnderBar = $state(false);
 
-  /** Watches the page's title against the bar, so the bar shows the title once the page's title is under it, however the page moved. */
   function watchTitleUnderBar(barBottom: number): () => void {
     const title = document.querySelector("main h1");
     if (title === null) {

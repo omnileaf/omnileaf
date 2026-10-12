@@ -3,7 +3,6 @@ import type { IpcError } from "#lib/ipc/bindings.ts";
 type Result<Data> =
   { status: "ok"; data: Data } | { status: "error"; error: IpcError };
 
-/** Where a choice is kept, and the one to use when the kept one can't be read. */
 export interface ChoiceStorage<Value> {
   readonly read: () => Promise<Result<Value>>;
   readonly store: (value: Value) => Promise<Result<null>>;
