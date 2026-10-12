@@ -953,7 +953,7 @@ test("asks before removing the books of a folder found empty", async () => {
   await expect
     .element(
       dialog.getByRole("heading", {
-        name: "Remove 342 books from Sample Comics?",
+        name: "Remove its books?",
       }),
     )
     .toBeVisible();
@@ -973,18 +973,20 @@ test("shows the folder with its place and books, and what goes with them", async
     .element(dialog.getByText("Sample Comics", { exact: true }))
     .toBeVisible();
   await expect
-    .element(dialog.getByText("/media/Sample Comics · 342 books"))
+    .element(
+      dialog.getByText("/media/Sample Comics · 342 books in your library"),
+    )
     .toBeVisible();
   await expect
     .element(
       dialog.getByText(
-        "Their files weren't found. If they come back, their reading progress returns with them.",
+        "The folder stays linked, and its files are never touched. Reading progress is kept and comes back if the books do.",
       ),
     )
     .toBeVisible();
 });
 
-test("asks without a count when the books couldn't be counted", async () => {
+test("offers to remove the books without a count when they couldn't be counted", async () => {
   serveFolders([HOME, COMICS]);
   const { folders, dialog } = await renderSettings({
     rescanFolder: FOUND_EMPTY,
@@ -999,11 +1001,10 @@ test("asks without a count when the books couldn't be counted", async () => {
   await folders.getByRole("button", { name: "Remove its books" }).click();
 
   await expect
-    .element(
-      dialog.getByRole("heading", {
-        name: "Remove the books of Sample Comics?",
-      }),
-    )
+    .element(dialog.getByRole("heading", { name: "Remove its books?" }))
+    .toBeVisible();
+  await expect
+    .element(dialog.getByRole("button", { name: "Remove the books" }))
     .toBeVisible();
 });
 
@@ -1089,14 +1090,31 @@ test("removes the books once asked, says how many went and moves to the folder's
   await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
   await folders.getByRole("button", { name: "Remove its books" }).click();
 
-  await dialog.getByRole("button", { name: "Remove books" }).click();
+  await dialog.getByRole("button", { name: "Remove 342 books" }).click();
 
-  await expect.poll(() => notices.message).toBe("3 books removed");
+  await expect
+    .poll(() => notices.message)
+    .toBe("Removed 3 books of Sample Comics");
   expect(removedFrom).toEqual([COMICS.id]);
   await expect.element(comicsRow(folders)).toHaveFocus();
   await expect
     .element(comicsRow(folders))
     .toHaveTextContent("Sample Comics /media/Sample Comics");
+});
+
+test("offers no undo once the books of a folder found empty are removed", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders, dialog, notices } = await renderSettings({
+    rescanFolder: FOUND_EMPTY,
+    removeFolderBooks: BOOKS_REMOVED,
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  await folders.getByRole("button", { name: "Remove its books" }).click();
+
+  await dialog.getByRole("button", { name: "Remove 342 books" }).click();
+
+  await expect.poll(() => notices.message).toBeDefined();
+  expect(notices.undoOffer).toBeUndefined();
 });
 
 test("rescans a folder whose books stayed because it holds books again", async () => {
@@ -1117,7 +1135,7 @@ test("rescans a folder whose books stayed because it holds books again", async (
   await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
   await folders.getByRole("button", { name: "Remove its books" }).click();
 
-  await dialog.getByRole("button", { name: "Remove books" }).click();
+  await dialog.getByRole("button", { name: "Remove 342 books" }).click();
 
   await expect.element(folders.getByText("2 books added.")).toBeVisible();
   expect(notices.message).toBeUndefined();
@@ -1133,7 +1151,7 @@ test("turns the warning into an alert when the books couldn't be removed", async
   await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
   await folders.getByRole("button", { name: "Remove its books" }).click();
 
-  await dialog.getByRole("button", { name: "Remove books" }).click();
+  await dialog.getByRole("button", { name: "Remove 342 books" }).click();
 
   const alert = comicsRow(folders).getByRole("alert");
   await expect
@@ -1163,11 +1181,13 @@ test("tries removing the books again without asking again", async () => {
   });
   await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
   await folders.getByRole("button", { name: "Remove its books" }).click();
-  await dialog.getByRole("button", { name: "Remove books" }).click();
+  await dialog.getByRole("button", { name: "Remove 342 books" }).click();
 
   await folders.getByRole("button", { name: "Try again" }).click();
 
-  await expect.poll(() => notices.message).toBe("3 books removed");
+  await expect
+    .poll(() => notices.message)
+    .toBe("Removed 3 books of Sample Comics");
   expect(dialog.elements()).toEqual([]);
 });
 

@@ -5,7 +5,6 @@
   import ConfirmDialog from "#lib/page/ConfirmDialog.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { folderTitle } from "./folder-title";
   import FolderWell from "./FolderWell.svelte";
 
   const NOTE_ICON_SIZE = 16;
@@ -21,20 +20,15 @@
     onConfirm: (folder: LibraryFolder) => void;
     onCancel: () => void;
   } = $props();
-
-  function titleOf(folder: LibraryFolder): string {
-    const name = folderTitle(folder);
-    return books === undefined
-      ? m.library_remove_books_title_uncounted({ name })
-      : m.library_remove_books_title({ count: books, name });
-  }
 </script>
 
 <ConfirmDialog
   isOpen={folder !== undefined}
   icon={Trash}
-  title={folder === undefined ? "" : titleOf(folder)}
-  confirmLabel={m.library_remove_books_confirm()}
+  title={m.library_remove_books_title()}
+  confirmLabel={books === undefined
+    ? m.library_remove_books_confirm_uncounted()
+    : m.library_remove_books_confirm({ count: books })}
   cancelLabel={m.library_remove_books_cancel()}
   onConfirm={() => {
     if (folder !== undefined) {
@@ -44,7 +38,12 @@
   {onCancel}
 >
   {#if folder !== undefined}
-    <FolderWell {folder} {books} />
+    <FolderWell
+      {folder}
+      detail={books === undefined
+        ? folder.location
+        : m.library_remove_books_detail({ location: folder.location, books })}
+    />
     <p
       class="flex items-start gap-sm text-footnote text-muted max-medium:text-label"
     >

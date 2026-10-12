@@ -36,7 +36,12 @@
   {onCancel}
 >
   {#if folder !== undefined}
-    <FolderWell {folder} {books} />
+    <FolderWell
+      {folder}
+      detail={books === undefined
+        ? folder.location
+        : m.library_remove_folder_detail({ location: folder.location, books })}
+    />
     <p
       class="flex items-start gap-sm text-footnote text-muted max-medium:text-label"
     >

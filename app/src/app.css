@@ -379,6 +379,7 @@
   --color-sample-cover-ink: #f6e7d8;
   --color-warning: #f3e0b8;
   --color-warning-edge: #ebd6a8;
+  --color-warning-strong: #b06f00;
   --color-on-warning: #3b2f1e;
   --color-toast: #1c1b18;
   --color-on-toast: #f1ede4;
@@ -593,6 +594,7 @@
   --color-stand-in-stripe: rgb(255 255 255 / 0.06);
   --color-warning: #5a4a2a;
   --color-warning-edge: #5a4a2a;
+  --color-warning-strong: #e0a83a;
   --color-on-warning: #f1ede4;
   --color-toast: #f1ede4;
   --color-on-toast: #1c1b18;

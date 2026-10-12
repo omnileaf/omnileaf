@@ -7,6 +7,7 @@
 
   import type { AddFolder } from "./add-folder";
   import EmptiedFolderCard from "./EmptiedFolderCard.svelte";
+  import { folderTitle } from "./folder-title";
   import HomeFolder from "./HomeFolder.svelte";
   import {
     type CountFolderBooks,
@@ -100,7 +101,9 @@
     await folders.load();
     await returnFocus(asker, folder);
     if (removed !== undefined) {
-      notices.tell(m.library_books_removed({ count: removed }));
+      notices.tell(
+        m.library_books_removed({ count: removed, name: folderTitle(folder) }),
+      );
     }
   }
 

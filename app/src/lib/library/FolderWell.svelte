@@ -2,20 +2,11 @@
   import { Folder } from "@lucide/svelte";
 
   import type { LibraryFolder } from "#lib/ipc/bindings.ts";
-  import { m } from "#lib/paraglide/messages.js";
-
   import { folderTitle } from "./folder-title";
 
   const FOLDER_ICON_SIZE = 18;
 
-  let { folder, books }: { folder: LibraryFolder; books: number | undefined } =
-    $props();
-
-  const detail = $derived(
-    books === undefined
-      ? folder.location
-      : m.library_remove_folder_detail({ location: folder.location, books }),
-  );
+  let { folder, detail }: { folder: LibraryFolder; detail: string } = $props();
 </script>
 
 <div class="flex items-center gap-md rounded-card bg-well px-list-row py-md">

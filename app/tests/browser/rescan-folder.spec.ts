@@ -5,6 +5,7 @@ import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   sidewaysOverflow,
@@ -29,6 +30,7 @@ const SAMPLE_COMICS: WireFolder = {
   location: "/media/Sample Comics",
   isAvailable: true,
 };
+const MIN_GRAPHIC_CONTRAST = 3;
 const NO_CHANGES = {
   added: 0,
   updated: 0,
@@ -309,19 +311,87 @@ test.describe("with a folder found empty", () => {
     await expect(removeItsBooks(page)).toBeVisible();
   });
 
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`marks the folder's status with a dot that stands out in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await rescanSampleComics(page);
+
+      const status = sampleComicsRow(page).getByText("No books found");
+      await expect(status).toBeVisible();
+      const dot = status.locator("[aria-hidden='true']");
+      const box = await boxOf(dot);
+      const contrast = await dot.evaluate((element) => {
+        const channels = (colour: string): number[] =>
+          (colour.match(/[\d.]+/g) ?? []).map(Number);
+        const isPainted = (colour: string): boolean =>
+          (channels(colour)[3] ?? 1) > 0;
+        const luminance = (colour: string): number => {
+          const [red = 0, green = 0, blue = 0] = channels(colour)
+            .slice(0, 3)
+            .map((channel) => {
+              const value = channel / 255;
+              return value <= 0.03928
+                ? value / 12.92
+                : ((value + 0.055) / 1.055) ** 2.4;
+            });
+          return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+        };
+        const ratio = (one: string, other: string): number => {
+          const [lighter, darker] = [luminance(one), luminance(other)].sort(
+            (a, b) => b - a,
+          );
+          return ((lighter ?? 0) + 0.05) / ((darker ?? 0) + 0.05);
+        };
+        const backgroundOf = (from: Element | null): string => {
+          for (let at = from; at !== null; at = at.parentElement) {
+            const colour = getComputedStyle(at).backgroundColor;
+            if (isPainted(colour)) {
+              return colour;
+            }
+          }
+          return "rgb(255, 255, 255)";
+        };
+        const pill = element.parentElement;
+        const dotColour = getComputedStyle(element).backgroundColor;
+        return {
+          pill: ratio(dotColour, backgroundOf(pill)),
+          surface: ratio(dotColour, backgroundOf(pill?.parentElement ?? null)),
+        };
+      });
+
+      expect(box.width).toBeGreaterThan(0);
+      expect(box.width).toBe(box.height);
+      expect(contrast.pill).toBeGreaterThanOrEqual(MIN_GRAPHIC_CONTRAST);
+      expect(contrast.surface).toBeGreaterThanOrEqual(MIN_GRAPHIC_CONTRAST);
+    });
+  }
+
   test("asks first, then removes the books, says how many went and moves to the folder's row", async ({
     page,
   }) => {
     await rescanSampleComics(page);
     await removeItsBooks(page).click();
     const question = page.getByRole("alertdialog", {
-      name: "Remove 3 books from Sample Comics?",
+      name: "Remove its books?",
     });
     await expect(question).toBeVisible();
+    await expect(
+      question.getByText("3 books in your library", { exact: false }),
+    ).toBeVisible();
+    await expect(
+      question.getByText(
+        "The folder stays linked, and its files are never touched. Reading progress is kept and comes back if the books do.",
+      ),
+    ).toBeVisible();
 
-    await question.getByRole("button", { name: "Remove books" }).click();
+    await question.getByRole("button", { name: "Remove 3 books" }).click();
 
-    await expect(page.getByText("3 books removed")).toBeVisible();
+    await expect(
+      page.getByText("Removed 3 books of Sample Comics"),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Undo" })).toHaveCount(0);
     expect(calls.removed).toEqual([SAMPLE_COMICS.id]);
     await expect(removeItsBooks(page)).toBeHidden();
     await expect(sampleComicsRow(page)).toBeFocused();
@@ -398,9 +468,11 @@ test.describe("with a folder found empty", () => {
       await removeItsBooks(page).click();
       await page
         .getByRole("alertdialog")
-        .getByRole("button", { name: "Remove books" })
+        .getByRole("button", { name: "Remove 3 books" })
         .click();
-      await expect(page.getByText("3 books removed")).toBeVisible();
+      await expect(
+        page.getByText("Removed 3 books of Sample Comics"),
+      ).toBeVisible();
 
       const violations = await accessibilityViolations(page);
 
@@ -437,6 +509,7 @@ test.describe("with a folder whose books couldn't be removed", () => {
   test.use({
     backend: {
       ...FOLDERS_BACKEND,
+      libraryFolderBookCount: () => 3,
       rescanLibraryFolder: (id) => ({
         id,
         name: SAMPLE_COMICS.name,
@@ -456,7 +529,7 @@ test.describe("with a folder whose books couldn't be removed", () => {
     await removeItsBooks(page).click();
     await page
       .getByRole("alertdialog")
-      .getByRole("button", { name: "Remove books" })
+      .getByRole("button", { name: "Remove 3 books" })
       .click();
   }
 

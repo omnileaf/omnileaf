@@ -3,12 +3,11 @@
 
   import type { LibraryFolder } from "#lib/ipc/bindings.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
+  import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
   import { folderTitle } from "./folder-title";
   import type { EmptiedFolder } from "./rescans.svelte";
-
-  const BADGE_ICON_SIZE = 18;
 
   const BUTTON =
     "rounded-full px-lg text-detail font-bold transition-control min-block-touch-target focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60 medium:rounded-control desktop:rounded-control desktop:px-md desktop:min-block-compact-button";
@@ -72,15 +71,7 @@
   ]}
 >
   <div class="flex items-center gap-md">
-    <span
-      aria-hidden="true"
-      class={[
-        "flex shrink-0 items-center justify-center rounded-full block-icon-tile inline-icon-tile",
-        look.badge,
-      ]}
-    >
-      <look.icon size={BADGE_ICON_SIZE} />
-    </span>
+    <HeaderBadge icon={look.icon} tone={look.badge} />
     <h3 id={titleId} class="text-callout font-bold desktop:text-label">
       {look.title({ name })}
     </h3>

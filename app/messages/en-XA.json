@@ -319,36 +319,51 @@
     {
       "declarations": [
         "input count",
-        "local countPlural = count: plural",
-        "local formattedCount = count: number"
-      ],
-      "selectors": ["countPlural"],
-      "match": {
-        "countPlural=one": "⟦{formattedCount} ƀööķ ŕéɱöṽéð············⟧",
-        "countPlural=other": "⟦{formattedCount} ƀööķš ŕéɱöṽéð············⟧"
-      }
-    }
-  ],
-  "library_found_empty_title": "⟦{name} ļööķš éɱþţý········⟧",
-  "library_found_empty_body": "⟦Íţš ƀööķš šţáý íñ ýöûŕ ļíƀŕáŕý íñ çášé íţš ðŕíṽé íšñ'ţ çöññéçţéð. Íƒ ýöû éɱþţíéð íţ, ŕéɱöṽé ţĥéɱ.·······································⟧",
-  "library_remove_books_title": [
-    {
-      "declarations": [
-        "input count",
         "input name",
         "local countPlural = count: plural",
         "local formattedCount = count: number"
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "⟦Ŕéɱöṽé {formattedCount} ƀööķ ƒŕöɱ {name}?·················⟧",
-        "countPlural=other": "⟦Ŕéɱöṽé {formattedCount} ƀööķš ƒŕöɱ {name}?·················⟧"
+        "countPlural=one": "⟦Ŕéɱöṽéð {formattedCount} ƀööķ öƒ {name}················⟧",
+        "countPlural=other": "⟦Ŕéɱöṽéð {formattedCount} ƀööķš öƒ {name}················⟧"
       }
     }
   ],
-  "library_remove_books_title_uncounted": "⟦Ŕéɱöṽé ţĥé ƀööķš öƒ {name}?···········⟧",
-  "library_remove_books_note": "⟦Ţĥéíŕ ƒíļéš ŵéŕéñ'ţ ƒöûñð. Íƒ ţĥéý çöɱé ƀáçķ, ţĥéíŕ ŕéáðíñĝ þŕöĝŕéšš ŕéţûŕñš ŵíţĥ ţĥéɱ.···································⟧",
-  "library_remove_books_confirm": "⟦Ŕéɱöṽé ƀööķš·····⟧",
+  "library_found_empty_title": "⟦{name} ļööķš éɱþţý········⟧",
+  "library_found_empty_body": "⟦Íţš ƀööķš šţáý íñ ýöûŕ ļíƀŕáŕý íñ çášé íţš ðŕíṽé íšñ'ţ çöññéçţéð. Íƒ ýöû éɱþţíéð íţ, ŕéɱöṽé ţĥéɱ.·······································⟧",
+  "library_remove_books_title": "⟦Ŕéɱöṽé íţš ƀööķš?·······⟧",
+  "library_remove_books_detail": [
+    {
+      "declarations": [
+        "input books",
+        "input location",
+        "local booksPlural = books: plural",
+        "local formattedBooks = books: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "⟦{location} · {formattedBooks} ƀööķ íñ ýöûŕ ļíƀŕáŕý····················⟧",
+        "booksPlural=other": "⟦{location} · {formattedBooks} ƀööķš íñ ýöûŕ ļíƀŕáŕý·····················⟧"
+      }
+    }
+  ],
+  "library_remove_books_note": "⟦Ţĥé ƒöļðéŕ šţáýš ļíñķéð, áñð íţš ƒíļéš áŕé ñéṽéŕ ţöûçĥéð. Ŕéáðíñĝ þŕöĝŕéšš íš ķéþţ áñð çöɱéš ƀáçķ íƒ ţĥé ƀööķš ðö.··············································⟧",
+  "library_remove_books_confirm": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ŕéɱöṽé {formattedCount} ƀööķ············⟧",
+        "countPlural=other": "⟦Ŕéɱöṽé {formattedCount} ƀööķš············⟧"
+      }
+    }
+  ],
+  "library_remove_books_confirm_uncounted": "⟦Ŕéɱöṽé ţĥé ƀööķš·······⟧",
   "library_remove_books_cancel": "⟦Çáñçéļ···⟧",
   "library_remove_books_failed": "⟦Çöûļðñ'ţ ŕéɱöṽé ţĥé ƀööķš··········⟧",
   "library_remove_books_failed_body": "⟦Ñöţĥíñĝ íñ ýöûŕ ļíƀŕáŕý ĥáš çĥáñĝéð. Ţŕý áĝáíñ, öŕ ŕéšçáñ {name} ƒíŕšţ.·····························⟧",
