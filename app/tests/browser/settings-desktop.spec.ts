@@ -150,6 +150,7 @@ for (const platform of ["android", "ios"] as const) {
 }
 
 test.describe("on an iOS phone", () => {
+  testOnlyInItsWebview("ios");
   test.use(onPlatform("ios"));
 
   test("leads a section back to settings with a 17px chevron and label", async ({

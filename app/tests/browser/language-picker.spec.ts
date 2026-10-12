@@ -197,6 +197,7 @@ test("names the system's own language while another is chosen", async ({
 });
 
 test.describe("on an Android phone", () => {
+  testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
   test("lists every option in one group of 56px rows over a footnote", async ({
@@ -227,6 +228,7 @@ test.describe("on an Android phone", () => {
 });
 
 test.describe("on an Android tablet", () => {
+  testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
   test("sets the system language apart on 48px rows with a 20px check", async ({

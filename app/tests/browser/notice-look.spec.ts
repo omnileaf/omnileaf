@@ -10,6 +10,7 @@ import {
   onPlatform,
   settle,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -189,6 +190,7 @@ for (const card of [FLOATING_NOTICE, ADD_FOLDER_REPORT]) {
   });
 
   test.describe(`the ${card.name} on an Android phone`, () => {
+    testOnlyInItsWebview("android");
     test.use({
       backend: {
         ...card.backend,

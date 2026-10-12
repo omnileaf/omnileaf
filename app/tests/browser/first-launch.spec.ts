@@ -238,6 +238,7 @@ test.describe("buttons on a desktop", () => {
 });
 
 test.describe("buttons on android", () => {
+  testOnlyInItsWebview("android");
   test.use({
     backend: {
       ...FIRST_LAUNCH_BACKEND,
@@ -256,6 +257,7 @@ test.describe("buttons on android", () => {
 });
 
 test.describe("buttons on ios", () => {
+  testOnlyInItsWebview("ios");
   test.use({
     backend: {
       ...FIRST_LAUNCH_BACKEND,
@@ -413,6 +415,7 @@ for (const platform of ["android", "linux"] as const) {
 }
 
 test.describe("the home folder on ios", () => {
+  testOnlyInItsWebview("ios");
   test.use({
     backend: {
       ...FIRST_LAUNCH_BACKEND,
@@ -450,6 +453,7 @@ test.describe("the home folder on ios", () => {
 });
 
 test.describe("the home folder on an iPad", () => {
+  testOnlyInItsWebview("ios");
   test.use({
     backend: {
       ...FIRST_LAUNCH_BACKEND,
@@ -651,6 +655,7 @@ for (const { platform, hint } of [
 }
 
 test.describe("on android", () => {
+  testOnlyInItsWebview("android");
   test.use({
     backend: {
       ...FIRST_LAUNCH_BACKEND,

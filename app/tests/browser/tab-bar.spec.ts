@@ -7,6 +7,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -15,6 +16,7 @@ function navigationBox(page: Page) {
 }
 
 test.describe("on iOS", () => {
+  testOnlyInItsWebview("ios");
   test.use(onPlatform("ios"));
 
   test("floats the bottom bar inset from the screen's edges on phones", async ({
@@ -81,6 +83,7 @@ test.describe("on iOS", () => {
 });
 
 test.describe("on Android", () => {
+  testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
   test("keeps the bottom bar full width on phones", async ({ page }) => {

@@ -78,6 +78,7 @@ test("points the Language row's chevron toward the end of the line in a right-to
 });
 
 test.describe("on an Android phone", () => {
+  testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
   test("explains the system language under a 56px row", async ({ page }) => {
@@ -92,6 +93,7 @@ test.describe("on an Android phone", () => {
 });
 
 test.describe("on an Android tablet", () => {
+  testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
   test("shows the Language row 48px tall", async ({ page }) => {
