@@ -5,6 +5,7 @@ import {
   IPHONE_USER_AGENT,
   onPlatform,
   test,
+  testOnlyInItsWebview,
 } from "./fixtures.ts";
 
 type WireFolder = Awaited<
@@ -71,6 +72,7 @@ test.describe("linked folders in Settings › Library on ios", () => {
 
 for (const platform of ["android", "linux"] as const) {
   test.describe(`the home folder in Settings › Library on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(withFolders(platform));
 
     test("shows the home folder's path", async ({ page }) => {

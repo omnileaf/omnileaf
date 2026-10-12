@@ -8,6 +8,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 import { CommandFailure, emitFakeEvent } from "./fake-backend.ts";
@@ -287,6 +288,7 @@ for (const { platform, buttonHeight } of [
   { platform: "android", buttonHeight: 48 },
 ] as const) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test(`puts a ${String(buttonHeight)}px Add a folder at the end of the Folders heading`, async ({
@@ -332,6 +334,7 @@ for (const { platform, titleSize } of [
   { platform: "android", titleSize: "15px" },
 ] as const) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use({
       backend: {
         ...SAMPLE_LIBRARY_SCANNED,

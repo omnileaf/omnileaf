@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
-import { expect, onPlatform, test } from "./fixtures.ts";
+import { expect, onPlatform, test, testOnlyInItsWebview } from "./fixtures.ts";
 
 const SWITCH_NAME = "Check folders for new books while Omnileaf is open";
 
@@ -64,6 +64,7 @@ test.beforeEach(() => {
 
 for (const platform of ["ios", "android", "linux"] as const) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use({ backend: counting(platform) });
 
     test(`${RESCANS_ON_RETURN[platform] ? "rescans every folder again" : "leaves the folders alone"} when the app comes back to the screen`, async ({

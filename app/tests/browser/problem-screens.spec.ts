@@ -9,6 +9,7 @@ import {
   onPlatform,
   selectedByDoubleClick,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -165,6 +166,7 @@ test("explains the problem in muted ink with its details on the well", async ({
 
 for (const platform of ["linux", "android", "ios"] as const) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test.beforeEach(({ page }) => {

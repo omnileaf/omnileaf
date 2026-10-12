@@ -7,6 +7,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -71,6 +72,7 @@ function styleOf(locator: Locator, property: string): Promise<string> {
 
 for (const platform of ["android", "ios", "linux"] as const) {
   test.describe(`on ${platform}, the crash report header`, () => {
+    testOnlyInItsWebview(platform);
     test.use({
       backend: {
         ...onPlatform(platform).backend,
@@ -230,6 +232,7 @@ test.describe("on desktop, the crash report dialog", () => {
 
 for (const platform of ["android", "ios"] as const) {
   test.describe(`on an ${platform} phone, the crash report screen`, () => {
+    testOnlyInItsWebview(platform);
     test.use({
       backend: {
         ...onPlatform(platform).backend,

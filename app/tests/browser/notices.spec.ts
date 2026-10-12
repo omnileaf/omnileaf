@@ -9,6 +9,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -204,6 +205,7 @@ test("draws the warning's action 32px tall with 10px corners on a desktop", asyn
 });
 
 test.describe("on Android", () => {
+  testOnlyInItsWebview("android");
   test.use({
     backend: {
       ...FAILS_TO_READ_THE_FOLDER,

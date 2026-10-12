@@ -12,6 +12,7 @@ import {
   expect,
   MEDIUM_MIN_WIDTH,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -113,6 +114,7 @@ function isPhoneScreen(page: Page, platform: Platform): boolean {
 
 for (const platform of ["android", "linux"] as const) {
   test.describe(`on ${platform}, after a crash`, () => {
+    testOnlyInItsWebview(platform);
     const calls = freshCalls();
 
     test.use({

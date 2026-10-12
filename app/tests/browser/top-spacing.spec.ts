@@ -7,6 +7,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -35,6 +36,7 @@ const LAYOUTS = [
 
 for (const { platform, titleGap, titleStart } of LAYOUTS) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test("places the page title where the boards draw it", async ({ page }) => {

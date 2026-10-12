@@ -10,6 +10,7 @@ import {
   onPlatform,
   sidewaysOverflow,
   test,
+  testOnlyInItsWebview,
 } from "./fixtures.ts";
 
 const NARROWEST_TABLET = { width: EXPANDED_MIN_WIDTH, height: 1180 };
@@ -77,6 +78,7 @@ for (const platform of ["ios", "android"] as const) {
     ["en-XA", pseudo],
   ] as const) {
     test.describe(`the Settings sections on ${platform} tablets in ${language}`, () => {
+      testOnlyInItsWebview(platform);
       test.use(onPlatform(platform));
 
       test("keep every section's name whole, on one line in English", async ({
@@ -125,6 +127,7 @@ for (const platform of ["ios", "android"] as const) {
 }
 
 test.describe("the Settings sections on an iPad", () => {
+  testOnlyInItsWebview("ios");
   test.use(onPlatform("ios"));
 
   test("keep their column's width as the open section changes", async ({

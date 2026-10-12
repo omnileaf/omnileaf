@@ -14,6 +14,7 @@ import {
   onPlatform,
   settle,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -237,6 +238,7 @@ test.describe("buttons on a desktop", () => {
 });
 
 test.describe("buttons on android", () => {
+  testOnlyInItsWebview("android");
   test.use({
     backend: {
       ...FIRST_LAUNCH_BACKEND,
@@ -255,6 +257,7 @@ test.describe("buttons on android", () => {
 });
 
 test.describe("buttons on ios", () => {
+  testOnlyInItsWebview("ios");
   test.use({
     backend: {
       ...FIRST_LAUNCH_BACKEND,
@@ -354,6 +357,7 @@ for (const { platform, wording } of [
   },
 ] as const) {
   test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use({
       backend: {
         ...FIRST_LAUNCH_BACKEND,
@@ -392,6 +396,7 @@ test("sets the steps beside a shelf from 840px", async ({ page }) => {
 
 for (const platform of ["android", "linux"] as const) {
   test.describe(`the home folder on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use({
       backend: {
         ...FIRST_LAUNCH_BACKEND,
@@ -410,6 +415,7 @@ for (const platform of ["android", "linux"] as const) {
 }
 
 test.describe("the home folder on ios", () => {
+  testOnlyInItsWebview("ios");
   test.use({
     backend: {
       ...FIRST_LAUNCH_BACKEND,
@@ -447,6 +453,7 @@ test.describe("the home folder on ios", () => {
 });
 
 test.describe("the home folder on an iPad", () => {
+  testOnlyInItsWebview("ios");
   test.use({
     backend: {
       ...FIRST_LAUNCH_BACKEND,
@@ -530,6 +537,7 @@ const HAS_PHONE_CORNERS = {
 
 for (const platform of ["ios", "android"] as const) {
   test.describe(`first launch on an ${platform} phone`, () => {
+    testOnlyInItsWebview(platform);
     test.use({
       backend: {
         ...FIRST_LAUNCH_BACKEND,
@@ -625,6 +633,7 @@ for (const { platform, hint } of [
   },
 ] as const) {
   test.describe(`linking on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use({
       backend: {
         ...FIRST_LAUNCH_BACKEND,
@@ -646,6 +655,7 @@ for (const { platform, hint } of [
 }
 
 test.describe("on android", () => {
+  testOnlyInItsWebview("android");
   test.use({
     backend: {
       ...FIRST_LAUNCH_BACKEND,

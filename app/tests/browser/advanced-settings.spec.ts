@@ -16,6 +16,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -145,6 +146,7 @@ async function openCrashQuestion(page: Page): Promise<Locator> {
 
 for (const platform of ["android", "ios", "linux"] as const) {
   test.describe(`in a development build on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     const calls = freshCalls();
 
     test.use({ backend: developmentBuild(platform, calls) });
@@ -396,6 +398,7 @@ test.describe("the crash question on a phone", () => {
 
 for (const platform of ["android", "ios", "linux"] as const) {
   test.describe(`in a release build on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
     test("lists Advanced just above About", async ({ page }) => {

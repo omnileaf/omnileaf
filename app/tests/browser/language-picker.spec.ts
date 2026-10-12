@@ -7,6 +7,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -196,6 +197,7 @@ test("names the system's own language while another is chosen", async ({
 });
 
 test.describe("on an Android phone", () => {
+  testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
   test("lists every option in one group of 56px rows over a footnote", async ({
@@ -226,6 +228,7 @@ test.describe("on an Android phone", () => {
 });
 
 test.describe("on an Android tablet", () => {
+  testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
   test("sets the system language apart on 48px rows with a 20px check", async ({
@@ -296,6 +299,7 @@ test.describe("on a desktop", () => {
 for (const platform of ["android", "ios", "linux"] as const) {
   for (const colorScheme of ["light", "dark"] as const) {
     test.describe(`on ${platform}`, () => {
+      testOnlyInItsWebview(platform);
       test.use(onPlatform(platform));
 
       test(`Settings › General › Language has no accessibility violations in the ${colorScheme} theme`, async ({

@@ -8,6 +8,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -77,6 +78,7 @@ test("points the Language row's chevron toward the end of the line in a right-to
 });
 
 test.describe("on an Android phone", () => {
+  testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
   test("explains the system language under a 56px row", async ({ page }) => {
@@ -91,6 +93,7 @@ test.describe("on an Android phone", () => {
 });
 
 test.describe("on an Android tablet", () => {
+  testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
   test("shows the Language row 48px tall", async ({ page }) => {
@@ -120,6 +123,7 @@ test.describe("on a desktop", () => {
 for (const platform of ["android", "ios", "linux"] as const) {
   for (const colorScheme of ["light", "dark"] as const) {
     test.describe(`on ${platform}`, () => {
+      testOnlyInItsWebview(platform);
       test.use(onPlatform(platform));
 
       test(`Settings › General has no accessibility violations in the ${colorScheme} theme`, async ({
