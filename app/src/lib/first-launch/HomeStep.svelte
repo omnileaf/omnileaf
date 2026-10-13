@@ -15,23 +15,24 @@
   import StepFrame from "./StepFrame.svelte";
   import StepBadge from "./StepBadge.svelte";
   import StepHeader from "./StepHeader.svelte";
+  import type { FirstLaunchStep } from "./steps";
 
   let {
     platform,
     folders,
-    onBack,
+    onBackTo,
     onNext,
   }: {
     platform: Platform;
     folders: FolderList;
-    onBack: () => void;
+    onBackTo: (step: FirstLaunchStep) => void;
     onNext: () => void;
   } = $props();
 
   const isInFiles = $derived(platform === "ios");
 </script>
 
-<StepFrame step="home" {onBack}>
+<StepFrame step="home" {onBackTo}>
   <div class="flex flex-col gap-lg">
     <StepHeader scale="headline">
       {#snippet badge()}

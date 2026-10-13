@@ -1,69 +1,83 @@
 <script lang="ts">
-  import { ArrowLeft, ChevronLeft } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
+  import {
+    Stepper,
+    StepperIndicator,
+    StepperItem,
+    StepperNav,
+    StepperSeparator,
+    StepperTitle,
+    StepperTrigger,
+  } from "#lib/components/ui/stepper/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import StepButton from "./StepButton.svelte";
-  import { type FirstLaunchStep, numberOf } from "./steps";
-  import StepProgress from "./StepProgress.svelte";
+  import {
+    type FirstLaunchStep,
+    NUMBERED_STEPS,
+    type NumberedStep,
+    numberOf,
+  } from "./steps";
 
-  const BACK_ICON_SIZE = 24;
+  const NAMES = {
+    home: m.first_launch_step_home,
+    link: m.first_launch_step_link,
+    choices: m.first_launch_step_choices,
+  } satisfies Record<NumberedStep, () => string>;
 
   let {
     step,
-    onBack,
+    onBackTo,
     children,
     actions,
   }: {
     step: FirstLaunchStep;
-    onBack?: () => void;
+    onBackTo?: (step: FirstLaunchStep) => void;
     children: Snippet;
     actions: Snippet;
   } = $props();
 
   const position = $derived(numberOf(step));
+
+  function goBackTo(chosen: number): void {
+    const earlier = NUMBERED_STEPS[chosen - 1];
+    if (earlier !== undefined) {
+      onBackTo?.(earlier);
+    }
+  }
 </script>
 
 {#if position !== undefined}
-  <header class="flex items-center gap-sm min-block-touch-target medium:mbe-xl">
-    {#if onBack !== undefined}
-      <button
-        type="button"
-        class="flex items-center justify-center rounded-full transition-control min-block-touch-target min-inline-touch-target hover:bg-hover active:bg-pressed medium:hidden ios:gap-2xs ios:pe-sm ios:text-accent"
-        onclick={onBack}
-      >
-        <ArrowLeft
-          size={BACK_ICON_SIZE}
-          aria-hidden="true"
-          class="ios:hidden"
-        />
-        <ChevronLeft
-          size={BACK_ICON_SIZE}
-          aria-hidden="true"
-          class="hidden ios:block"
-        />
-        <span class="sr-only ios:not-sr-only">{m.first_launch_back()}</span>
-      </button>
-    {/if}
-    <StepProgress {position} />
+  <header class="pbs-xs medium:mbe-xl">
+    <Stepper bind:step={() => position.number, goBackTo}>
+      <StepperNav aria-label={m.first_launch_progress_label()}>
+        {#each NUMBERED_STEPS as numbered, index (numbered)}
+          <StepperItem>
+            <StepperTrigger
+              aria-label={m.first_launch_step_position({
+                name: NAMES[numbered](),
+                number: index + 1,
+                count: position.count,
+              })}
+            >
+              <StepperIndicator />
+              <StepperTitle>{NAMES[numbered]()}</StepperTitle>
+            </StepperTrigger>
+            <StepperSeparator />
+          </StepperItem>
+        {/each}
+      </StepperNav>
+    </Stepper>
   </header>
 {/if}
 <div class="flex flex-1 flex-col pbs-xl medium:pbs-none">
   {@render children()}
 </div>
 <div class="flex flex-col gap-xs pbs-xl medium:flex-row medium:items-center">
-  {#if onBack !== undefined}
-    <div class="hidden medium:block">
-      <StepButton kind="outlined" onclick={onBack}>
-        {m.first_launch_back()}
-      </StepButton>
-    </div>
-  {/if}
   <div
     class={[
       "flex flex-col gap-xs medium:flex-row-reverse medium:gap-sm",
-      onBack !== undefined && "medium:ms-auto",
+      position !== undefined && "medium:ms-auto",
     ]}
   >
     {@render actions()}
