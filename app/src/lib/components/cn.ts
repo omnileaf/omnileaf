@@ -195,6 +195,8 @@ export const TOKEN_THEME = {
     "history-row",
     "history-row-wide",
     "history-section",
+    "history-sessions-cover",
+    "history-sheet",
     "history-time",
     "icon-badge",
     "icon-gap",

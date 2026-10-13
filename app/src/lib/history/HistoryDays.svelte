@@ -25,6 +25,7 @@
     lastWeekReadSeconds,
     usesStandIns,
     onNearEnd,
+    onOpenSessions,
   }: {
     entries: readonly HistoryEntry[];
     isComplete: boolean;
@@ -32,6 +33,7 @@
     lastWeekReadSeconds: number | undefined;
     usesStandIns: boolean;
     onNearEnd: () => void;
+    onOpenSessions: (entry: HistoryEntry) => void;
   } = $props();
 
   const locale = getLocale();
@@ -85,7 +87,14 @@
         class="divide-y divide-border overflow-hidden rounded-card border border-border bg-card desktop:large:rounded-none desktop:large:border-none"
       >
         {#each day.entries as entry (`${entry.book}-${String(entry.startedAtMs)}`)}
-          <HistoryRow {entry} time={timeOf(day.title, entry)} {usesStandIns} />
+          <HistoryRow
+            {entry}
+            time={timeOf(day.title, entry)}
+            {usesStandIns}
+            onOpenSessions={() => {
+              onOpenSessions(entry);
+            }}
+          />
         {/each}
       </ul>
     </section>

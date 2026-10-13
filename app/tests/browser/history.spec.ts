@@ -769,3 +769,126 @@ test.describe("when history can't be read", () => {
     ).toBeVisible();
   });
 });
+
+test.describe("a book's reading sessions", () => {
+  const BOOK = 4;
+  const ofTheBook = [
+    SESSIONS[0],
+    entry({
+      number: BOOK,
+      startedAt: "2026-10-04T20:00:00.000Z",
+      minutes: 50,
+      readTo: { state: "page", page: 9, pageCount: 30 },
+      dayMinutes: 70,
+    }),
+    entry({
+      number: BOOK,
+      startedAt: "2026-10-02T18:30:00.000Z",
+      minutes: 38,
+      readTo: { state: "page", page: 4, pageCount: 30 },
+      dayMinutes: 38,
+    }),
+  ].flatMap((session) => (session === undefined ? [] : [session]));
+
+  test.use({
+    backend: {
+      ...READ_BACKEND,
+      readingHistory: (after, of) =>
+        pagedSessions(of.kind === "book" ? ofTheBook : SESSIONS)(after, of),
+      bookSessions: () => ({
+        sessions: 3,
+        readSeconds: 112 * MINUTE,
+        firstDay: MONDAY - 3,
+        lastDay: MONDAY,
+      }),
+    },
+  });
+
+  async function expectSessionsIn(shown: Locator): Promise<void> {
+    await expect(shown).toContainText(seriesTitle(BOOK));
+    await expect(shown.getByRole("term")).toHaveText([
+      "Time read",
+      "Sessions",
+      "First opened",
+      "Last read",
+    ]);
+    await expect(shown.getByRole("definition")).toHaveText([
+      "1 h 52 min",
+      "3",
+      "Friday, October 2",
+      "Today",
+    ]);
+    const sessions = shown.getByRole("listitem");
+    await expect(sessions).toHaveCount(3);
+    await expect(sessions.first()).toContainText(
+      /Today.*9:40\sPM · 24 min.*to page 14/,
+    );
+    await expect(sessions.last()).toContainText("to page 4");
+    await expect(
+      shown.getByRole("link", { name: "Open series" }),
+    ).toHaveAttribute("href", `/series/${seriesId(BOOK)}`);
+    await expect(shown.getByRole("link", { name: "Continue" })).toHaveAttribute(
+      "href",
+      `/read/${bookId(BOOK)}`,
+    );
+  }
+
+  test("opens in a sheet from the side by clicking a row on a desktop, and closes with Escape", async ({
+    page,
+  }) => {
+    test.skip(!isDesktop(page), "desktops only");
+    await openHistory(page);
+
+    const time = await boxOf(
+      rows(page)
+        .first()
+        .getByText(/^9:40\sPM$/),
+    );
+
+    await page.mouse.click(time.x + time.width / 2, time.y + time.height / 2);
+
+    const sheet = page.getByRole("dialog", { name: "Reading sessions" });
+    await expectSessionsIn(sheet);
+    await page.keyboard.press("Escape");
+    await expect(sheet).toHaveCount(0);
+  });
+
+  test("shows on a page of their own, with a way back to History", async ({
+    page,
+  }) => {
+    await page.clock.setFixedTime(MONDAY_EVENING);
+    await page.goto(`/history/${bookId(BOOK)}`);
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Reading sessions" }),
+    ).toBeVisible();
+    await expectSessionsIn(page.getByRole("main"));
+    await page.getByRole("link", { name: "Back to History" }).click();
+    await expect(page).toHaveURL(/\/history$/);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the sheet or on the page in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.clock.setFixedTime(MONDAY_EVENING);
+      if (isDesktop(page)) {
+        await page.goto("/history");
+        await page
+          .getByRole("button", { name: /^Reading sessions of / })
+          .first()
+          .click();
+      } else {
+        await page.goto(`/history/${bookId(BOOK)}`);
+      }
+      await expect(
+        page.getByRole("list", { name: "Sessions" }).getByRole("listitem"),
+      ).toHaveCount(3);
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
+});
