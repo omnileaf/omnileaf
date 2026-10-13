@@ -8,7 +8,9 @@ import {
   onPlatform,
   test,
   testOnlyInItsWebview,
+  transitionsOf,
   viewportOf,
+  watchTransitions,
 } from "./fixtures.ts";
 
 const SAVED_PANIC: CrashReportOffer = {
@@ -124,6 +126,20 @@ test.describe("on desktop, the crash report dialog", () => {
       ...onPlatform("linux").backend,
       offerSavedCrashReport: () => SAVED_PANIC,
     },
+  });
+
+  test("fades in, which reduced motion turns into appearing at once", async ({
+    page,
+  }) => {
+    const transitions = await watchTransitions(page);
+
+    await page.goto("/");
+
+    await expect.poll(transitions).toContain("alertdialog opacity");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.reload();
+    await expect(prompt(page)).toBeVisible();
+    expect(await transitionsOf(prompt(page))).toEqual([]);
   });
 
   test("frames itself as the confirm dialog does", async ({ page }) => {
