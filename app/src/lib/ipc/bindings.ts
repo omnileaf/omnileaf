@@ -32,6 +32,13 @@ export const commands = {
 	closeBook: (id: string & { readonly __brand: "BookId" }) => typedError<null, IpcError>(__TAURI_INVOKE("close_book", { id })),
 	readingHistory: (after: string & { readonly __brand: "HistoryCursor" } | null, of: HistoryOf) => typedError<HistoryPage, IpcError>(__TAURI_INVOKE("reading_history", { after, of })),
 	readingWeek: (weekStart: number, today: number) => typedError<ReadingWeek, IpcError>(__TAURI_INVOKE("reading_week", { weekStart, today })),
+	bookSessions: (id: string & { readonly __brand: "BookId" }) => typedError<{
+	sessions: number,
+	readSeconds: number,
+	firstDay: number,
+	lastDay: number,
+} | null, IpcError>(__TAURI_INVOKE("book_sessions", { id })),
+	historySeries: () => typedError<HistorySeries[], IpcError>(__TAURI_INVOKE("history_series")),
 	readingTimeBetween: (firstDay: number, lastDay: number) => typedError<number, IpcError>(__TAURI_INVOKE("reading_time_between", { firstDay, lastDay })),
 	bookReadTime: (id: string & { readonly __brand: "BookId" }) => typedError<number, IpcError>(__TAURI_INVOKE("book_read_time", { id })),
 	orientScreen: (orientation: ScreenOrientation) => typedError<null, IpcError>(__TAURI_INVOKE("orient_screen", { orientation })),
@@ -98,6 +105,13 @@ export type BookPage = {
 export type BookReading = { state: "notStarted" } | 
 /**  The page is where reading goes on from, counting from 1, and absent when only the furthest page read is known. */
 { state: "started"; page: number | null } | { state: "read" };
+
+export type BookSessions = {
+	sessions: number,
+	readSeconds: number,
+	firstDay: number,
+	lastDay: number,
+};
 
 export type BooksRemoval = { kind: "removed"; books: number } | { kind: "kept" };
 
@@ -174,6 +188,11 @@ export type HistoryOf = { kind: "everything" } | { kind: "series"; series: strin
 export type HistoryPage = {
 	entries: HistoryEntry[],
 	next: string & { readonly __brand: "HistoryCursor" } | null,
+};
+
+export type HistorySeries = {
+	id: string & { readonly __brand: "SeriesId" },
+	title: string,
 };
 
 export type Inclusion = "any" | "only" | "hide";

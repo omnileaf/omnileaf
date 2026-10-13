@@ -24,8 +24,8 @@ use omnileaf_db::{
         remove_books_without_files,
     },
     history::{
-        HistoryEntry, HistoryOf, ReadingSince, book_reading_time, days_in_a_row, history_page,
-        reading_since, reading_time_by_day,
+        BookSessions, HistoryEntry, HistoryOf, ReadingSince, book_reading_time, book_sessions,
+        days_in_a_row, history_page, reading_since, reading_time_by_day, series_read,
     },
     store::{Continuity, SessionPlace, Store},
 };
@@ -682,4 +682,68 @@ async fn pages_through_the_sessions_of_one_book_the_latest_first() {
         [2, 3, 5].map(|hours_ago| ms(NOW_UNIX_MS - hours_ago * HOUR_MS))
     );
     assert_eq!(books_of(&second), [book(2)]);
+}
+
+#[tokio::test]
+async fn adds_up_a_book_s_sessions_with_the_days_it_was_first_and_last_read() {
+    let history = History::open("history-book-sessions").await;
+    let three_days_ago_ms = NOW_UNIX_MS - 3 * DAY_MS;
+    history
+        .read(
+            book(2),
+            three_days_ago_ms,
+            three_days_ago_ms + 20 * MINUTE_MS,
+            7,
+        )
+        .await;
+    history
+        .read(book(2), NOW_UNIX_MS, NOW_UNIX_MS + 5 * MINUTE_MS, 9)
+        .await;
+    history.read_days_ago(3, 1).await;
+
+    let sessions = [book(2), book(1)].map(|read| {
+        history
+            .store
+            .database()
+            .read(move |connection| book_sessions(connection, read))
+    });
+    let [read, unread] = sessions;
+
+    assert_eq!(
+        (read.await.unwrap(), unread.await.unwrap()),
+        (
+            Some(BookSessions {
+                sessions: 2,
+                read_ms: ms(25 * MINUTE_MS),
+                first_day: today() - 3,
+                last_day: today(),
+            }),
+            None
+        )
+    );
+}
+
+#[tokio::test]
+async fn names_the_series_read_in_title_order() {
+    let history = History::open("history-series-read").await;
+    history.shelve("Sample Series 00", 5).await;
+    history.read_days_ago(4, 2).await;
+    history.read_days_ago(2, 1).await;
+    history.read_days_ago(3, 0).await;
+
+    let series = history.store.database().read(series_read).await.unwrap();
+
+    assert_eq!(
+        series,
+        [
+            (
+                SeriesId::local(FIRST_SERIES).unwrap(),
+                FIRST_SERIES.to_owned()
+            ),
+            (
+                SeriesId::local(SECOND_SERIES).unwrap(),
+                SECOND_SERIES.to_owned()
+            ),
+        ]
+    );
 }

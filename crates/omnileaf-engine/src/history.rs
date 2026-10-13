@@ -75,6 +75,33 @@ impl From<HistoryOf> for history::HistoryOf {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
+pub struct BookSessions {
+    pub sessions: u32,
+    pub read_seconds: u32,
+    pub first_day: LocalDay,
+    pub last_day: LocalDay,
+}
+
+impl From<history::BookSessions> for BookSessions {
+    fn from(summed: history::BookSessions) -> Self {
+        Self {
+            sessions: summed.sessions,
+            read_seconds: whole_seconds(summed.read_ms),
+            first_day: LocalDay(summed.first_day),
+            last_day: LocalDay(summed.last_day),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct HistorySeries {
+    pub id: SeriesId,
+    pub title: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct ReadingWeek {
     pub read_seconds: u32,
     pub books_opened: u32,

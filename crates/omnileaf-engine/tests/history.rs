@@ -17,9 +17,9 @@ use std::sync::{
 
 use books::write_book;
 use omnileaf_engine::{
-    BookId, BookReading, Clock, FolderKind, HistoryEntry, HistoryOf, Library, LibraryListing,
-    LocalDay, OpenedBook, ProbedFormat, ReadMark, ReadTo, ReadingWeek, ResourceRouter,
-    SeriesBookListing, UtcOffset,
+    BookId, BookReading, BookSessions, Clock, FolderKind, HistoryEntry, HistoryOf, HistorySeries,
+    Library, LibraryListing, LocalDay, OpenedBook, ProbedFormat, ReadMark, ReadTo, ReadingWeek,
+    ResourceRouter, SeriesBookListing, UtcOffset,
 };
 use support::{FixedClock, NOW_UNIX_MS, ScratchFolder};
 
@@ -507,4 +507,48 @@ async fn lists_the_sessions_of_one_book_alone() {
 
     let books: Vec<BookId> = page.entries.iter().map(|entry| entry.book).collect();
     assert_eq!(books, [first.id]);
+}
+
+#[tokio::test]
+async fn adds_up_the_sessions_of_a_book_read_and_none_of_one_not() {
+    let shelf = Shelf::with_two_books("history-book-sessions").await;
+    let opened = shelf.restore(0).await;
+    shelf.clock.advance(2 * MINUTE_MS);
+    shelf.close(&opened).await;
+    let unread = shelf.book(1).await;
+
+    let summed = [
+        shelf.library.book_sessions(opened.id).await.unwrap(),
+        shelf.library.book_sessions(unread).await.unwrap(),
+    ];
+
+    assert_eq!(
+        summed,
+        [
+            Some(BookSessions {
+                sessions: 1,
+                read_seconds: 120,
+                first_day: SOME_MONDAY,
+                last_day: SOME_MONDAY,
+            }),
+            None
+        ]
+    );
+}
+
+#[tokio::test]
+async fn names_the_series_with_any_reading() {
+    let shelf = Shelf::with_two_books("history-series").await;
+    let opened = shelf.restore(0).await;
+    shelf.close(&opened).await;
+
+    let series = shelf.library.history_series().await.unwrap();
+
+    assert_eq!(
+        series,
+        [HistorySeries {
+            id: opened.series,
+            title: SERIES.to_owned(),
+        }]
+    );
 }

@@ -2,12 +2,12 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 #[cfg(debug_assertions)]
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
-    AppInfo, AppLanguage, BookCursor, BookId, BooksRemoval, Core, CoversPerRow, FolderCursor,
-    FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage,
-    InterfaceError, Library, LibraryFilter, LibraryListing, LibrarySearch, LibraryView, LocalDay,
-    OpenedBook, ProbedFormat, ProjectLink, ReadMark, ReadingWeek, ResourceRouter, ScanProgress,
-    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
-    UtcOffset,
+    AppInfo, AppLanguage, BookCursor, BookId, BookSessions, BooksRemoval, Core, CoversPerRow,
+    FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryOf,
+    HistoryPage, HistorySeries, InterfaceError, Library, LibraryFilter, LibraryListing,
+    LibrarySearch, LibraryView, LocalDay, OpenedBook, ProbedFormat, ProjectLink, ReadMark,
+    ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
+    SeriesId, SeriesOverview, SeriesPage, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -52,6 +52,8 @@ macro_rules! app_commands {
             close_book,
             reading_history,
             reading_week,
+            book_sessions,
+            history_series,
             reading_time_between,
             book_read_time,
             orient_screen,
@@ -361,6 +363,21 @@ async fn reading_time_between(
     last_day: LocalDay,
 ) -> Result<u32, IpcError> {
     Ok(library.reading_time_between(first_day, last_day).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn book_sessions(
+    library: State<'_, Library>,
+    id: BookId,
+) -> Result<Option<BookSessions>, IpcError> {
+    Ok(library.book_sessions(id).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn history_series(library: State<'_, Library>) -> Result<Vec<HistorySeries>, IpcError> {
+    Ok(library.history_series().await?)
 }
 
 #[tauri::command]
