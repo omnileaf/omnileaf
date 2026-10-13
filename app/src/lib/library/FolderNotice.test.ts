@@ -1,5 +1,5 @@
 import { tick } from "svelte";
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
@@ -8,8 +8,10 @@ import type {
   IpcErrorCode,
   ScanProgress,
 } from "#lib/ipc/bindings.ts";
-import NoticeHost from "#lib/notices/NoticeHost.svelte";
-import { Notices } from "#lib/notices/notices.svelte.ts";
+import { Notices } from "#lib/notices/notices.ts";
+import Toasts from "#lib/notices/Toasts.svelte";
+
+import { clearToasts } from "../../../tests/components/clear-toasts";
 
 import type { AddFolder } from "./add-folder";
 import "../../app.css";
@@ -61,6 +63,14 @@ function failed(code: IpcErrorCode): AddFolderResult {
 
 const CANCELLED: AddFolderResult = { status: "ok", data: null };
 
+afterEach(async () => {
+  await clearToasts();
+});
+
+function toastSaying(text: string) {
+  return page.getByRole("listitem").filter({ hasText: text });
+}
+
 async function renderWith(
   addFolder: AddFolder,
   { usesStandIns } = { usesStandIns: false },
@@ -76,7 +86,7 @@ async function renderWith(
       dismissals.count += 1;
     },
   });
-  await render(NoticeHost, { notices, platform: "linux" });
+  await render(Toasts, { notices, platform: "linux", theme: "light" });
   return {
     notices,
     unmount: notice.unmount,
@@ -241,13 +251,14 @@ test.each<[IpcErrorCode, string, string]>([
     "Something went wrong inside Omnileaf. Your library hasn't changed.",
   ],
 ])("warns when adding fails with %s", async (code, title, body) => {
-  const { notices, button } = await renderWith(answering(failed(code)));
+  const { button } = await renderWith(answering(failed(code)));
 
   await button.click();
 
-  await expect
-    .poll(() => notices.shown)
-    .toMatchObject({ tone: "warning", title, body });
+  const warning = toastSaying(title);
+  await expect.element(warning.getByText(title, { exact: true })).toBeVisible();
+  await expect.element(warning.getByText(body, { exact: true })).toBeVisible();
+  await expect.element(warning).toHaveAttribute("aria-live", "assertive");
 });
 
 test.each<[IpcErrorCode, string]>([
@@ -268,28 +279,34 @@ test.each<[IpcErrorCode, string]>([
 });
 
 test("offers no retry when the device has no folder picker", async () => {
-  const { notices, button } = await renderWith(
+  const { button } = await renderWith(
     answering(failed("folderPickerUnavailable")),
   );
 
   await button.click();
 
-  await expect.poll(() => notices.shown?.actions).toEqual([]);
+  const warning = toastSaying("Adding folders isn't available");
+  await expect.element(warning).toBeVisible();
+  expect(warning.getByRole("button").elements()).toHaveLength(1);
+  await expect
+    .element(warning.getByRole("button"))
+    .toHaveAccessibleName("Dismiss");
 });
 
 test("puts a failure warning away once a folder is added", async () => {
-  const { notices, button, status } = await renderWith(
+  const { button, status } = await renderWith(
     answering(failed("folderUnreadable"), scanned({})),
   );
   await button.click();
-  await expect.poll(() => notices.shown).toBeDefined();
+  const warning = toastSaying("Couldn't read that folder");
+  await expect.element(warning).toBeVisible();
 
   await button.click();
 
   await expect
     .element(status)
     .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
-  expect(notices.shown).toBeUndefined();
+  await expect.element(warning).not.toBeInTheDocument();
 });
 
 test("disables the button while the folder is being added and scanned", async () => {
@@ -395,13 +412,14 @@ test("keeps the result when word of the scan arrives after it finished", async (
 });
 
 test("withdraws its warning once it's gone from the page", async () => {
-  const { notices, button, unmount } = await renderWith(
+  const { button, unmount } = await renderWith(
     answering(failed("folderUnreadable")),
   );
   await button.click();
-  await expect.poll(() => notices.shown).toBeDefined();
+  const warning = toastSaying("Couldn't read that folder");
+  await expect.element(warning).toBeVisible();
 
   await unmount();
 
-  expect(notices.shown).toBeUndefined();
+  await expect.element(warning).not.toBeInTheDocument();
 });
