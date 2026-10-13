@@ -5,6 +5,14 @@ const ABOUT_COPY =
   "inline-flex items-center gap-sm text-start text-callout font-semibold min-block-touch-target min-inline-none";
 
 export const BUTTON_LOOKS = {
+  text: "font-semibold text-accent",
+  quiet:
+    "font-semibold text-accent transition-control enabled:hover:bg-hover enabled:active:bg-pressed",
+  filled: "bg-accent text-on-accent",
+  outline: "rounded-control border border-border bg-card font-semibold",
+  icon: "flex items-center justify-center rounded-full",
+  "header-control":
+    "flex items-center justify-center gap-sm rounded-full transition-control large:rounded-control large:border large:border-field large:text-small large:font-medium",
   "about-copy-phone": `${ABOUT_COPY} rounded-tile px-md text-accent transition-control hover:bg-hover active:bg-pressed`,
   "about-copy-pane": `${ABOUT_COPY} rounded-control border border-border bg-card ps-md pe-list-row hover:tint-hover active:tint-pressed desktop:text-label desktop:min-block-pointer-button`,
   "confirm-cancel": `${CONFIRM} bg-chip hover:tint-hover active:tint-pressed medium:border medium:border-border medium:bg-card`,
