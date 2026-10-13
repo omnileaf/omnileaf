@@ -29,6 +29,7 @@ interface Calls {
   declined: number;
   copied: number;
   interfaceErrors: InterfaceError[];
+  sending: PromiseWithResolvers<void> | undefined;
 }
 
 function fakeCrashReports(calls: Calls) {
@@ -42,7 +43,8 @@ function fakeCrashReports(calls: Calls) {
       };
       return calls.offered;
     },
-    sendCrashReport: () => {
+    sendCrashReport: async () => {
+      await calls.sending?.promise;
       calls.sent += 1;
       calls.offered = null;
       return null;
@@ -66,6 +68,7 @@ function freshCalls(saved: CrashReportOffer | null = SAVED_PANIC): Calls {
     declined: 0,
     copied: 0,
     interfaceErrors: [],
+    sending: undefined,
   };
 }
 
@@ -194,6 +197,17 @@ for (const platform of ["android", "linux"] as const) {
 
       await expect(prompt(page)).toBeHidden();
       expect(calls.sent).toBe(1);
+    });
+
+    test("shows the report is sending until it has gone", async ({ page }) => {
+      calls.sending = Promise.withResolvers();
+      await page.goto("/");
+
+      await sendButton(page).click();
+
+      await expect(sendButton(page)).toHaveAttribute("aria-busy", "true");
+      calls.sending.resolve();
+      await expect(prompt(page)).toBeHidden();
     });
 
     test("copies the details and says so", async ({ page }) => {
