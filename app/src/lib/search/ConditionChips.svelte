@@ -2,6 +2,7 @@
   import { X } from "@lucide/svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { FilterCondition } from "#lib/library/library-listing.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -55,15 +56,15 @@
         label={removeLabel}
         type="button"
         aria-label={removeLabel}
-        class={[
-          "flex items-center justify-center rounded-full",
-          LOOKS[look].remove,
-        ]}
         onclick={() => {
           onRemove(condition);
         }}
       >
-        <X size={REMOVE_ICON_SIZE} strokeWidth={2.5} aria-hidden="true" />
+        {#snippet child({ props })}
+          <Button {...props} look="icon" class={LOOKS[look].remove}>
+            <X size={REMOVE_ICON_SIZE} strokeWidth={2.5} aria-hidden="true" />
+          </Button>
+        {/snippet}
       </Tooltip>
     </li>
   {/each}

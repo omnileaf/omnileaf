@@ -2,6 +2,7 @@
   import { Search, X } from "@lucide/svelte";
   import { onMount, tick } from "svelte";
 
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
   import type { FilterCondition } from "#lib/library/library-listing.ts";
@@ -107,13 +108,20 @@
       label={m.search_clear()}
       type="button"
       aria-label={m.search_clear()}
-      class="flex shrink-0 items-center justify-center rounded-full bg-chip text-muted block-search-clear inline-search-clear large:hidden"
       onclick={() => {
         void type("");
         input?.focus();
       }}
     >
-      <X size={CLEAR_ICON_SIZE} strokeWidth={2.5} aria-hidden="true" />
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          look="icon"
+          class="shrink-0 bg-chip text-muted block-search-clear inline-search-clear large:hidden"
+        >
+          <X size={CLEAR_ICON_SIZE} strokeWidth={2.5} aria-hidden="true" />
+        </Button>
+      {/snippet}
     </Tooltip>
   {/if}
   <kbd
