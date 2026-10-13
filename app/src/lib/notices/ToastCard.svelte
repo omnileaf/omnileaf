@@ -6,6 +6,7 @@
   import { X } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { NoticeAction, NoticeTone } from "./notices";
@@ -61,17 +62,18 @@
     {@render children?.()}
   </div>
   {#if action !== undefined}
-    <button
+    <Button
       type="button"
+      look="inverse"
       aria-keyshortcuts={shortcut?.keys}
-      class="rounded-full bg-foreground px-lg text-detail font-bold text-card transition-control max-inline-3/5 min-block-touch-target hover:opacity-85 active:opacity-70 desktop:px-md desktop:min-block-compact-button"
+      class="px-lg text-detail max-inline-3/5 min-block-touch-target desktop:px-md desktop:min-block-compact-button"
       onclick={() => {
         onDismiss();
         action.run();
       }}
     >
       {action.label}
-    </button>
+    </Button>
   {/if}
   {#if shortcut !== undefined}
     <kbd
@@ -81,12 +83,13 @@
       {shortcut.label}
     </kbd>
   {/if}
-  <button
+  <Button
     type="button"
+    look="dismiss"
     aria-label={m.notice_dismiss()}
-    class="-my-sm flex shrink-0 items-center justify-center rounded-full opacity-70 transition-control block-touch-target inline-touch-target before:absolute before:rounded-full before:transition-control before:block-pointer-target before:inline-pointer-target hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed desktop:my-none desktop:block-dismiss desktop:inline-dismiss"
+    class="-my-sm shrink-0 block-touch-target inline-touch-target before:block-pointer-target before:inline-pointer-target desktop:my-none desktop:block-dismiss desktop:inline-dismiss"
     onclick={onDismiss}
   >
     <X aria-hidden="true" size={DISMISS_ICON_SIZE} class="relative" />
-  </button>
+  </Button>
 </div>
