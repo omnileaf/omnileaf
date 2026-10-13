@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ArrowLeft, ChevronLeft, Maximize } from "@lucide/svelte";
+  import type { Snippet } from "svelte";
 
   import {
     Breadcrumb,
@@ -19,12 +20,14 @@
     seriesHref,
     seriesTitle,
     bookTitle,
+    quickSettings,
     onFullScreen,
     heading = $bindable(),
   }: {
     seriesHref: string;
     seriesTitle: string;
     bookTitle: string;
+    quickSettings: Snippet;
     onFullScreen: () => void;
     heading?: HTMLHeadingElement | undefined;
   } = $props();
@@ -88,6 +91,17 @@
       <BreadcrumbPage class="font-semibold">{bookTitle}</BreadcrumbPage>
     </BreadcrumbItem>
   </Breadcrumb>
+  <div
+    role="group"
+    aria-label={m.reader_quick_settings()}
+    class="hidden shrink-0 items-center gap-2xs rounded-reader-control-wide bg-reader-hover p-2xs expanded:flex"
+  >
+    {@render quickSettings()}
+  </div>
+  <span
+    aria-hidden="true"
+    class="hidden shrink-0 bg-reader-line block-reader-divider inline-px expanded:block ios:hidden android:hidden"
+  ></span>
   <Tooltip
     label={m.reader_full_screen()}
     type="button"

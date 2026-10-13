@@ -689,6 +689,140 @@ test("turns to a page read ahead without waiting for it", async ({ page }) => {
   ).toHaveCount(0);
 });
 
+function directionButton(page: Page): Locator {
+  return page.getByRole("button", { name: /^(Left to right|Right to left)/ });
+}
+
+async function chooseDirection(page: Page, name: string): Promise<void> {
+  await directionButton(page).click();
+  await page.getByRole("menuitemradio", { name }).click();
+  await expect(page.getByRole("menu")).toBeHidden();
+}
+
+test.describe("the reading direction", () => {
+  test("reads left to right until chosen otherwise, saying the app chose it", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await expect(directionButton(page)).toHaveText(
+      /^\s*Left to right\s*auto$/i,
+    );
+  });
+
+  test("turns on with the left tap, the left arrow and a swipe to the right once right to left is chosen", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await chooseDirection(page, "Right to left");
+    await expect(directionButton(page)).toHaveText("Right to left");
+
+    const next = await boxOf(zone(page, "Next page"));
+    const previous = await boxOf(zone(page, "Previous page"));
+    expect(next.x).toBeLessThan(previous.x);
+    await zone(page, "Next page").click();
+    await expectOnPage(page, 2);
+    await page.keyboard.press("ArrowLeft");
+    await expectOnPage(page, 3);
+    await swipe(page, SWIPE_PX);
+
+    await expectOnPage(page, 4);
+  });
+
+  test("fills the slider from the right in a book read right to left", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await chooseDirection(page, "Right to left");
+    await page.keyboard.press("End");
+    await expectOnPage(page, PAGE_COUNT);
+
+    const track = await boxOf(slider(page));
+    const thumb = await boxOf(page.locator(".reader-progress-thumb"));
+
+    expect(thumb.x - track.x).toBeLessThan(track.width / 2);
+  });
+
+  test("keeps the previous chapter on the left and the next on the right in a book read right to left", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await chooseDirection(page, "Right to left");
+
+    const previous = await boxOf(
+      page.getByRole("link", {
+        name: `Previous chapter: ${PREVIOUS_BOOK.title}`,
+      }),
+    );
+    const next = await boxOf(
+      page.getByRole("link", { name: `Next chapter: ${NEXT_BOOK.title}` }),
+    );
+
+    expect(previous.x).toBeLessThan(next.x);
+  });
+
+  test("remembers the direction chosen for the series", async ({ page }) => {
+    await openBook(page);
+    await chooseDirection(page, "Right to left");
+
+    await page.reload();
+
+    await expect(directionButton(page)).toHaveText("Right to left");
+  });
+
+  test("goes back to letting the app choose", async ({ page }) => {
+    await openBook(page);
+    await chooseDirection(page, "Right to left");
+
+    await chooseDirection(page, "Automatic");
+
+    await expect(directionButton(page)).toHaveText(
+      /^\s*Left to right\s*auto$/i,
+    );
+  });
+
+  test("closes the direction menu with Escape and stays in the book", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await directionButton(page).click();
+    await expect(page.getByRole("menu")).toBeVisible();
+
+    await page.keyboard.press("Escape");
+
+    await expect(page.getByRole("menu")).toBeHidden();
+    await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+  });
+
+  test("keeps the controls up while the direction menu is open", async ({
+    page,
+  }) => {
+    await openBookBeforeControlsHide(page);
+    await directionButton(page).click();
+
+    await page.clock.runFor(CONTROLS_HIDE_AFTER_MS * 2);
+
+    await expectControlsShown(page);
+  });
+
+  test("puts the quick settings in the top bar on a wide screen and above the slider on a phone", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    const quickSettings = page.getByRole("group", { name: "Quick settings" });
+    const bar =
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH
+        ? page.locator("main > header")
+        : page.locator("main > div:has(input[type=range])");
+
+    await expect(
+      bar.getByRole("group", { name: "Quick settings" }),
+    ).toBeVisible();
+    await expect(quickSettings).toHaveCount(1);
+  });
+});
+
 test.describe("the screen's orientation", () => {
   const asked: ScreenOrientation[] = [];
 
