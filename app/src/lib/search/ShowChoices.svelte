@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ClassValue } from "svelte/elements";
 
+  import { Toggle } from "#lib/components/ui/toggle/index.ts";
   import {
     FILTER_CONDITIONS,
     type FilterCondition,
@@ -52,19 +53,11 @@
   class={["flex gap-icon-gap overflow-x-auto", className]}
 >
   {#each choices as choice (choice.name)}
-    <button
-      type="button"
-      aria-pressed={choice.isPressed}
+    <Toggle
+      bind:pressed={() => choice.isPressed, choice.choose}
       data-label={choice.label}
-      class={[
-        "room-for-bold-label shrink-0 items-center justify-center rounded-full border px-md text-detail whitespace-nowrap block-scope-chip",
-        choice.isPressed
-          ? "border-accent bg-accent-soft font-bold"
-          : "border-border font-medium",
-      ]}
-      onclick={choice.choose}
     >
       {choice.label}
-    </button>
+    </Toggle>
   {/each}
 </div>
