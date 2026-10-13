@@ -9,13 +9,13 @@ use std::{
 
 use omnileaf_cache::{CacheError, CacheKey, DiskCache, MemoryCache};
 use omnileaf_db::catalog::{BookFileId, BookReading as StoredReading};
-use omnileaf_formats::FormatError;
+use omnileaf_formats::{Book, FormatError};
 use omnileaf_imaging::{ImagingError, PageFormat, page_size, shrink_page, transcode};
 use tokio::sync::oneshot;
 
 use crate::{
     BookId, BookPage, Library, LibraryError, OpenedBook, PagePath, PageThumbnailPath, ProbedFormat,
-    SeriesId,
+    ReadingDirection, SeriesId,
     decode_permits::DecodePermits,
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -156,12 +156,15 @@ impl Pages {
             .book_file(found)
             .ok_or(OpenBookError::FolderClosed { id })?;
         let reading = found.reading;
-        let (opened, sizes, probed) = self
+        let (opened, sizes, probed, direction) = self
             .lane
             .run(move || {
                 let opened = shared.books.open(file, &located)?;
+                let direction = written_direction(&mut opened.lock());
                 Ok::<_, FormatError>(match known {
-                    Some(sizes) if sizes.len() == opened.page_count => (opened, sizes, None),
+                    Some(sizes) if sizes.len() == opened.page_count => {
+                        (opened, sizes, None, direction)
+                    }
                     _ => {
                         let window = opening_window(
                             start_index(reading, opened.page_count),
@@ -169,7 +172,7 @@ impl Pages {
                             opened.page_count,
                         );
                         let sizes = probe_window(&mut opened.lock(), &window);
-                        (opened, sizes, Some(window))
+                        (opened, sizes, Some(window), direction)
                     }
                 })
             })
@@ -188,7 +191,7 @@ impl Pages {
         }
         let start = start_page(found.reading, opened.page_count);
         self.read_ahead(&opened, start_index(found.reading, opened.page_count));
-        Ok(opened_book(to_open, &sizes, start))
+        Ok(opened_book(to_open, &sizes, start, direction))
     }
 
     fn fill_sizes_later(
@@ -435,6 +438,7 @@ fn opened_book(
     BookToOpen { found, place }: BookToOpen,
     sizes: &[Option<omnileaf_db::catalog::PageDimensions>],
     start_page: u32,
+    reading_direction: Option<ReadingDirection>,
 ) -> OpenedBook {
     let pages = (0_u32..)
         .zip(sizes)
@@ -462,7 +466,20 @@ fn opened_book(
         position: place.position,
         previous: place.previous.map(Into::into),
         next: place.next.map(Into::into),
+        reading_direction,
     }
+}
+
+/// The direction the book's `ComicInfo` gives, none when it can't be read.
+fn written_direction(book: &mut Book) -> Option<ReadingDirection> {
+    let comic_info = book.comic_info().unwrap_or_else(|error| {
+        tracing::debug!(
+            error = %describe_error(&error),
+            "leave the reading direction to the reader for a book whose ComicInfo can't be read"
+        );
+        None
+    });
+    comic_info?.reading_direction.map(Into::into)
 }
 
 #[cfg(test)]

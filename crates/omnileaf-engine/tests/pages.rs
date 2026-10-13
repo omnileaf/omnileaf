@@ -16,7 +16,8 @@ use std::{
 
 use omnileaf_engine::{
     BookId, BookReading, Library, LibraryListing, OpenBookError, OpenedBook, PageDimensions,
-    ProbedFormat, ReadMark, Resource, ResourceRouter, SeriesBookListing, SeriesId,
+    ProbedFormat, ReadMark, ReadingDirection, Resource, ResourceRouter, SeriesBookListing,
+    SeriesId,
 };
 use omnileaf_imaging::{Size, page_size};
 use omnileaf_testkit::{
@@ -77,6 +78,25 @@ impl Reader {
                 compression,
             );
         }
+        Self::over(name, comics).await
+    }
+
+    async fn with_comic_info(name: &str, comic_info: &[u8]) -> Self {
+        let comics = ScratchFolder::new(&format!("{name}-comics"));
+        let mut entries = page_entries(&portrait_pages(SEED));
+        entries.push(ArchiveEntry {
+            name: "ComicInfo.xml".to_owned(),
+            bytes: comic_info.to_vec(),
+        });
+        write_cbz(
+            &comics.path().join(FOLDER).join(SERIES),
+            BOOK,
+            &cbz(&entries, Compression::Deflated).unwrap(),
+        );
+        Self::over(name, comics).await
+    }
+
+    async fn over(name: &str, comics: ScratchFolder) -> Self {
         let home = ScratchFolder::new(&format!("{name}-home"));
         let library = Library::open(home.path().to_path_buf(), FixedClock)
             .await
@@ -157,20 +177,27 @@ fn write_book(series: &Path, pages: &[Vec<u8>]) {
 }
 
 fn write_named_book(series: &Path, (title, pages): (&str, &[Vec<u8>]), compression: Compression) {
-    let entries: Vec<ArchiveEntry> = pages
+    write_cbz(
+        series,
+        title,
+        &cbz(&page_entries(pages), compression).unwrap(),
+    );
+}
+
+fn page_entries(pages: &[Vec<u8>]) -> Vec<ArchiveEntry> {
+    pages
         .iter()
         .enumerate()
         .map(|(index, bytes)| ArchiveEntry {
             name: format!("{:03}.img", index + 1).replace(".img", extension_of(bytes)),
             bytes: bytes.clone(),
         })
-        .collect();
+        .collect()
+}
+
+fn write_cbz(series: &Path, title: &str, archive: &[u8]) {
     fs::create_dir_all(series).unwrap();
-    fs::write(
-        series.join(format!("{title}.cbz")),
-        cbz(&entries, compression).unwrap(),
-    )
-    .unwrap();
+    fs::write(series.join(format!("{title}.cbz")), archive).unwrap();
 }
 
 fn extension_of(bytes: &[u8]) -> &'static str {
@@ -291,6 +318,42 @@ async fn shows_the_next_book_by_its_own_cover_and_how_far_it_was_read() {
             .starts_with(&format!("thumb/v1/{}/", ids[1]))
     }));
     assert_eq!(next.reading, BookReading::Read);
+}
+
+#[tokio::test]
+async fn reads_a_book_the_way_its_comic_info_says() {
+    for (manga, direction) in [
+        ("YesAndRightToLeft", Some(ReadingDirection::RightToLeft)),
+        ("No", Some(ReadingDirection::LeftToRight)),
+        ("Unknown", None),
+    ] {
+        let comic_info = format!("<ComicInfo><Manga>{manga}</Manga></ComicInfo>");
+        let reader =
+            Reader::with_comic_info(&format!("direction-{manga}"), comic_info.as_bytes()).await;
+
+        let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+        assert_eq!(opened.reading_direction, direction, "{manga}");
+    }
+}
+
+#[tokio::test]
+async fn leaves_the_direction_unknown_for_a_book_without_comic_info() {
+    let reader = Reader::with_book("no-comic-info").await;
+
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(opened.reading_direction, None);
+}
+
+#[tokio::test]
+async fn opens_a_book_whose_comic_info_is_malformed_with_no_direction() {
+    let reader = Reader::with_comic_info("bad-comic-info", b"<ComicInfo><Manga>Yes</Title>").await;
+
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(opened.reading_direction, None);
+    assert_eq!(opened.pages.len(), PAGES as usize);
 }
 
 #[tokio::test]
