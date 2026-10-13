@@ -5,6 +5,7 @@
   import { beforeNavigate } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
+  import { LongPress } from "#lib/components/long-press.ts";
   import type {
     ReadMark,
     SeriesBook,
@@ -18,7 +19,6 @@
   import BookListingChoices from "./BookListingChoices.svelte";
   import BookRowText from "./BookRowText.svelte";
   import { BookSelection } from "./book-selection.svelte";
-  import { LongPress } from "./long-press";
 
   type BookId = SeriesBook["id"];
 

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-import { LongPress } from "./long-press";
+import { LongPress } from "./long-press.ts";
 
 const HELD_MS = 500;
 
