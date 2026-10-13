@@ -4,10 +4,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::Context;
+
 pub(crate) const ANDROID_HOME: &str = "ANDROID_HOME";
 const ANDROID_SDK_ROOT: &str = "ANDROID_SDK_ROOT";
 const NDK_HOME: &str = "NDK_HOME";
 const NDK_SOURCE_PROPERTIES: &str = "source.properties";
+const PINNED_NDK_FILE: &str = ".android-ndk-version";
 const NDK_REVISION_FIELD: &str = "Pkg.Revision";
 const EMULATOR_SERIAL_PREFIX: &str = "emulator-";
 const MODEL_FIELD: &str = "model:";
@@ -66,8 +69,6 @@ pub(crate) enum AdbState {
     Unauthorized,
     Offline,
 }
-
-pub(crate) const PINNED_NDK: &str = include_str!("../../.android-ndk-version").trim_ascii();
 
 #[derive(Debug)]
 pub(crate) struct Toolchain {
@@ -194,6 +195,18 @@ impl Ndk {
     }
 }
 
+pub(crate) fn pinned_ndk(root: &Path) -> anyhow::Result<String> {
+    let file = root.join(PINNED_NDK_FILE);
+    let contents = fs::read_to_string(&file).with_context(|| format!("read {}", file.display()))?;
+    let version = contents.trim();
+    anyhow::ensure!(
+        !version.is_empty(),
+        "{} names no NDK version",
+        file.display()
+    );
+    Ok(version.to_owned())
+}
+
 fn ndk_revision(source_properties: &str) -> Option<&str> {
     source_properties
         .lines()
@@ -224,6 +237,8 @@ fn version_numbers(name: &str) -> Option<Vec<u32>> {
 
 #[cfg(test)]
 mod tests {
+    use std::{env, process};
+
     use super::*;
 
     fn env_with(
@@ -306,6 +321,44 @@ mod tests {
         let properties = "Pkg.Desc = Android NDK\nPkg.BaseRevision = 30.0.16248370\n";
 
         assert_eq!(ndk_revision(properties), None);
+    }
+
+    fn scratch(name: &str) -> PathBuf {
+        let folder = env::temp_dir().join(format!("omnileaf-xtask-{name}-{}", process::id()));
+        fs::create_dir_all(&folder).unwrap();
+        folder
+    }
+
+    #[test]
+    fn reads_the_pinned_ndk_version_without_its_line_break() {
+        let root = scratch("pinned-ndk");
+        fs::write(root.join(PINNED_NDK_FILE), "30.0.16248370\n").unwrap();
+
+        let pinned = pinned_ndk(&root);
+
+        fs::remove_dir_all(&root).unwrap();
+        assert_eq!(pinned.unwrap(), "30.0.16248370");
+    }
+
+    #[test]
+    fn fails_without_a_pinned_ndk_version_file() {
+        let root = scratch("no-pinned-ndk");
+
+        let pinned = pinned_ndk(&root);
+
+        fs::remove_dir_all(&root).unwrap();
+        assert!(pinned.is_err());
+    }
+
+    #[test]
+    fn fails_on_an_empty_pinned_ndk_version_file() {
+        let root = scratch("empty-pinned-ndk");
+        fs::write(root.join(PINNED_NDK_FILE), "\n").unwrap();
+
+        let pinned = pinned_ndk(&root);
+
+        fs::remove_dir_all(&root).unwrap();
+        assert!(pinned.is_err());
     }
 
     #[test]

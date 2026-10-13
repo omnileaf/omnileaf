@@ -23,9 +23,7 @@ pub(crate) enum Probe {
     },
     RustTargets(&'static [&'static str]),
     AndroidSdk,
-    AndroidNdk {
-        pinned: &'static str,
-    },
+    AndroidNdk,
     Adb,
     AndroidVirtualDevices,
     IosSimulators,
@@ -34,6 +32,7 @@ pub(crate) enum Probe {
 pub(crate) struct Host<'a> {
     pub(crate) os: &'a str,
     pub(crate) android: Option<&'a android::Toolchain>,
+    pub(crate) pinned_ndk: &'a str,
 }
 
 pub(crate) const REQUIREMENTS: &[Requirement] = &[
@@ -128,9 +127,7 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
         name: "android-ndk",
         os: None,
         need: Need::ForPhones,
-        probe: Probe::AndroidNdk {
-            pinned: android::PINNED_NDK,
-        },
+        probe: Probe::AndroidNdk,
         fix: "install the NDK from Android Studio's SDK Manager, or set NDK_HOME",
     },
     Requirement {
@@ -231,10 +228,10 @@ pub(crate) fn examine(
             host.android
                 .map(|android| android.sdk.display().to_string()),
         ),
-        Probe::AndroidNdk { pinned } => host
+        Probe::AndroidNdk => host
             .android
             .and_then(|android| android.ndk.as_ref())
-            .map_or(Finding::Missing, |ndk| compare_ndk(ndk, pinned)),
+            .map_or(Finding::Missing, |ndk| compare_ndk(ndk, host.pinned_ndk)),
         Probe::Adb => found(
             host.android
                 .and_then(|android| machine.stdout_of(android.adb().as_os_str(), &["--version"]))
@@ -355,6 +352,7 @@ mod tests {
     const LINUX: Host<'static> = Host {
         os: "linux",
         android: None,
+        pinned_ndk: PINNED,
     };
 
     fn requirement(need: Need, probe: Probe) -> Requirement {
@@ -387,10 +385,11 @@ mod tests {
         let host = Host {
             os: "linux",
             android: Some(toolchain),
+            pinned_ndk: PINNED,
         };
 
         examine(
-            &requirement(Need::ForPhones, Probe::AndroidNdk { pinned: PINNED }),
+            &requirement(Need::ForPhones, Probe::AndroidNdk),
             &FakeMachine { installed: &[] },
             &host,
         )
@@ -470,6 +469,7 @@ mod tests {
         let mac = Host {
             os: "macos",
             android: None,
+            pinned_ndk: PINNED,
         };
 
         let report = render(&[TOOL, linux_only], &machine, &mac);
@@ -516,7 +516,7 @@ mod tests {
 
         let findings = [
             Probe::AndroidSdk,
-            Probe::AndroidNdk { pinned: PINNED },
+            Probe::AndroidNdk,
             Probe::Adb,
             Probe::AndroidVirtualDevices,
         ]
@@ -531,10 +531,11 @@ mod tests {
         let host = Host {
             os: "linux",
             android: Some(&toolchain),
+            pinned_ndk: PINNED,
         };
         let machine = FakeMachine { installed: &[] };
 
-        let findings = [Probe::AndroidSdk, Probe::AndroidNdk { pinned: PINNED }]
+        let findings = [Probe::AndroidSdk, Probe::AndroidNdk]
             .map(|probe| examine(&requirement(Need::ForPhones, probe), &machine, &host));
 
         assert_eq!(
@@ -586,8 +587,9 @@ mod tests {
         let host = Host {
             os: "linux",
             android: Some(&toolchain),
+            pinned_ndk: PINNED,
         };
-        let ndk = requirement(Need::ForPhones, Probe::AndroidNdk { pinned: PINNED });
+        let ndk = requirement(Need::ForPhones, Probe::AndroidNdk);
 
         let report = render(&[ndk], &FakeMachine { installed: &[] }, &host);
 
@@ -602,6 +604,7 @@ mod tests {
         let host = Host {
             os: "linux",
             android: Some(&toolchain),
+            pinned_ndk: PINNED,
         };
         let machine = FakeMachine {
             installed: &[
@@ -635,6 +638,7 @@ mod tests {
         let host = Host {
             os: "linux",
             android: Some(&toolchain),
+            pinned_ndk: PINNED,
         };
         let machine = FakeMachine {
             installed: &[("/sdk/emulator/emulator", "")],

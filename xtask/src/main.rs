@@ -179,9 +179,11 @@ fn main() -> anyhow::Result<()> {
         Command::Doctor => {
             let os = std::env::consts::OS;
             let android = android::Toolchain::locate(|key| std::env::var_os(key), os);
+            let pinned_ndk = android::pinned_ndk(&workspace::root())?;
             let host = doctor::Host {
                 os,
                 android: android.as_ref(),
+                pinned_ndk: &pinned_ndk,
             };
             let report = doctor::render(doctor::REQUIREMENTS, &Process::in_workspace(), &host);
             print_lines(&report.lines);
