@@ -1060,27 +1060,6 @@
   }
 }
 
-@utility side-panel-motion {
-  @media (prefers-reduced-motion: no-preference) {
-    --panel-from: 100% 0;
-    transition-property: translate;
-    transition-duration: var(--transition-duration-slide);
-    transition-timing-function: var(--ease-glass);
-
-    &:dir(rtl) {
-      --panel-from: -100% 0;
-    }
-
-    @starting-style {
-      translate: var(--panel-from);
-    }
-
-    &[data-state="closed"] {
-      translate: var(--panel-from);
-    }
-  }
-}
-
 @utility fade-motion {
   @media (prefers-reduced-motion: no-preference) {
     transition-property: opacity;
