@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { LoaderCircle } from "@lucide/svelte";
   import { Button as ButtonPrimitive } from "bits-ui";
 
   import { cn } from "#lib/components/cn.ts";
+  import { Spinner } from "#lib/components/ui/spinner/index.ts";
 
   import { BUTTON_LOOKS, type ButtonLook } from "./looks.ts";
 
@@ -60,11 +60,7 @@
   {...restProps}
 >
   {#if isBusy}
-    <LoaderCircle
-      size={BUSY_ICON_SIZE}
-      aria-hidden="true"
-      class="shrink-0 motion-safe:animate-spin"
-    />
+    <Spinner size={BUSY_ICON_SIZE} class="shrink-0" />
   {/if}
   {@render children?.()}
 </ButtonPrimitive.Root>
