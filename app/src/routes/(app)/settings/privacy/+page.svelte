@@ -7,7 +7,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
-  import SegmentedChoice from "#lib/settings/SegmentedChoice.svelte";
+  import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import SettingsLinks from "#lib/settings/SettingsLinks.svelte";
 
   const CHOICE_LABELS = {
@@ -40,7 +40,7 @@
   >
     {m.privacy_crash_reports_hint()}
   </p>
-  <SegmentedChoice
+  <SegmentedControl
     name="crash-reports"
     options={CRASH_REPORT_CHOICES}
     labels={CHOICE_LABELS}

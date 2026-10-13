@@ -3,7 +3,7 @@
   import type { ClassValue } from "svelte/elements";
 
   import { m } from "#lib/paraglide/messages.js";
-  import SegmentedChoice from "#lib/settings/SegmentedChoice.svelte";
+  import SegmentedControl from "#lib/page/SegmentedControl.svelte";
 
   import { THEME_PREFERENCES, type ThemePreference } from "./theme";
   import { getThemeSetting } from "./theme.svelte";
@@ -67,7 +67,7 @@
       {@render hint()}
     </p>
   {/if}
-  <SegmentedChoice
+  <SegmentedControl
     name={headingId}
     options={THEME_PREFERENCES}
     labels={THEME_LABELS}

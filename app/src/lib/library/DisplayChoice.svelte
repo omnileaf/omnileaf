@@ -9,22 +9,29 @@
   import type { Component } from "svelte";
 
   import type { LibraryDisplay } from "#lib/ipc/bindings.ts";
+  import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
-  interface Choice {
-    readonly display: LibraryDisplay;
-    readonly label: () => string;
-    readonly icon: Component<LucideProps>;
-  }
-
-  const ICON_SIZE = 16;
-
-  const CHOICES: readonly Choice[] = [
-    { display: "grid", label: m.library_display_grid, icon: LayoutGrid },
-    { display: "compact", label: m.library_display_compact, icon: Grid3x3 },
-    { display: "covers", label: m.library_display_covers, icon: Images },
-    { display: "list", label: m.library_display_list, icon: List },
+  const DISPLAYS: readonly LibraryDisplay[] = [
+    "grid",
+    "compact",
+    "covers",
+    "list",
   ];
+
+  const LABELS = {
+    grid: m.library_display_grid,
+    compact: m.library_display_compact,
+    covers: m.library_display_covers,
+    list: m.library_display_list,
+  } satisfies Record<LibraryDisplay, () => string>;
+
+  const ICONS = {
+    grid: LayoutGrid,
+    compact: Grid3x3,
+    covers: Images,
+    list: List,
+  } satisfies Record<LibraryDisplay, Component<LucideProps>>;
 
   let {
     chosen,
@@ -43,47 +50,15 @@
   >
     {m.library_view_display()}
   </p>
-  <div
-    role="radiogroup"
-    aria-labelledby={labelId}
-    class="mbs-sm flex gap-xs rounded-field bg-chip p-xs large:mbs-icon-gap large:rounded-small-control large:p-segment-track"
-  >
-    {#each CHOICES as choice (choice.display)}
-      <label
-        class={[
-          "relative flex flex-auto items-center justify-center gap-icon-gap rounded-small-control px-sm text-detail transition-control block-segment min-inline-none before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent large:rounded-segment large:text-caption large:block-segment-compact",
-          chosen === choice.display
-            ? "bg-raised font-semibold shadow-raised"
-            : "font-medium text-muted hover:bg-hover",
-        ]}
-      >
-        <input
-          type="radio"
-          name={group}
-          value={choice.display}
-          class="sr-only"
-          checked={chosen === choice.display}
-          onchange={() => {
-            onChoose(choice.display);
-          }}
-        />
-        <choice.icon
-          size={ICON_SIZE}
-          aria-hidden="true"
-          class="large:block-segment-icon-desktop large:inline-segment-icon-desktop"
-        />
-        <span class="grid min-inline-none">
-          <span
-            aria-hidden="true"
-            class="invisible col-start-1 row-start-1 truncate font-semibold"
-          >
-            {choice.label()}
-          </span>
-          <span class="col-start-1 row-start-1 truncate">
-            {choice.label()}
-          </span>
-        </span>
-      </label>
-    {/each}
-  </div>
+  <SegmentedControl
+    name={group}
+    options={DISPLAYS}
+    labels={LABELS}
+    icons={ICONS}
+    {chosen}
+    labelledBy={labelId}
+    size="small"
+    {onChoose}
+    class="mbs-sm large:mbs-icon-gap"
+  />
 </div>
