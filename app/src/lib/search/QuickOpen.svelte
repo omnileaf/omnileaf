@@ -7,6 +7,7 @@
   import { resolve } from "$app/paths";
   import { DialogContent } from "#lib/components/ui/dialog/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
+  import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import {
     commands,
@@ -225,8 +226,8 @@
       bind:value={selectedKey}
       class="flex flex-col min-block-none"
     >
-      <div
-        class="flex items-center gap-label border-be border-border px-lg block-quick-open-field"
+      <InputGroup
+        class="gap-label border-be border-border px-lg block-quick-open-field"
       >
         <Search size={SEARCH_ICON_SIZE} aria-hidden="true" class="shrink-0" />
         <Command.Input value={text} maxlength={SEARCH_MAX_CHARS} autofocus>
@@ -250,7 +251,7 @@
           {/snippet}
         </Command.Input>
         <Kbd aria-hidden="true">{m.search_escape_key()}</Kbd>
-      </div>
+      </InputGroup>
       <Command.List
         id={listboxId}
         aria-label={m.quick_open_results()}

@@ -4,6 +4,7 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
+  import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
@@ -78,8 +79,8 @@
   }
 </script>
 
-<div
-  class="flex flex-1 items-center gap-sm rounded-search-field border-2 border-border bg-card px-md block-search-field min-inline-none focus-within:border-accent large:rounded-card large:ps-search-field-inline large:pe-md large:block-search-field-wide"
+<InputGroup
+  class="flex-1 gap-sm rounded-search-field border-2 border-border bg-card px-md block-search-field min-inline-none focus-within:border-accent large:rounded-card large:ps-search-field-inline large:pe-md large:block-search-field-wide"
 >
   <Search size={SEARCH_ICON_SIZE} aria-hidden="true" class="shrink-0" />
   {#if conditions.length > 0}
@@ -131,4 +132,4 @@
   <Kbd aria-hidden="true" class="hidden large:inline">
     {m.search_escape_key()}
   </Kbd>
-</div>
+</InputGroup>

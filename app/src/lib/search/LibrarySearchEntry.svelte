@@ -4,6 +4,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { Input } from "#lib/components/ui/input/index.ts";
+  import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -34,8 +35,8 @@
     </a>
   {/snippet}
 </Tooltip>
-<div
-  class="hidden items-center gap-sm rounded-control border border-field bg-card px-md text-muted block-pointer-button inline-library-search focus-within:border-accent large:flex"
+<InputGroup
+  class="hidden gap-sm rounded-control border border-field bg-card px-md text-muted block-pointer-button inline-library-search focus-within:border-accent large:flex"
 >
   <Search size={FIELD_ICON_SIZE} aria-hidden="true" class="shrink-0" />
   <Input
@@ -46,4 +47,4 @@
     class="no-search-cancel text-small text-foreground"
     oninput={openSearch}
   />
-</div>
+</InputGroup>
