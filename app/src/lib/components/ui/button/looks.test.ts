@@ -32,6 +32,11 @@ test.each<[ButtonLook, string[]]>([
     "row-action",
     ["rounded-full", "text-muted", "enabled:hover:before:bg-hover"],
   ],
+  ["chip", ["rounded-full", "border-border", "hover:bg-hover"]],
+  [
+    "toolbar-action",
+    ["rounded-selection-action", "expanded:bg-selection-action"],
+  ],
 ])("draws the %s look with its colours and shape", (look, signature) => {
   const classes = classesOf(look);
 

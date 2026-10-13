@@ -17,6 +17,9 @@ export const BUTTON_LOOKS = {
   icon: "flex items-center justify-center rounded-full",
   "header-control":
     "flex items-center justify-center gap-sm rounded-full transition-control large:rounded-control large:border large:border-field large:text-small large:font-medium",
+  chip: "rounded-full border border-border bg-card font-semibold hover:bg-hover",
+  "toolbar-action":
+    "flex flex-col items-center justify-center rounded-selection-action font-semibold expanded:flex-row expanded:rounded-selection-action-wide expanded:bg-selection-action",
   "row-action":
     "flex items-center justify-center rounded-full text-muted transition-control before:absolute before:rounded-full before:transition-control focus-visible:outline-2 focus-visible:outline-accent enabled:hover:text-foreground enabled:hover:before:bg-hover enabled:active:text-foreground enabled:active:before:bg-pressed disabled:opacity-60",
   "about-copy-phone": `${ABOUT_COPY} rounded-tile px-md text-accent transition-control hover:bg-hover active:bg-pressed`,

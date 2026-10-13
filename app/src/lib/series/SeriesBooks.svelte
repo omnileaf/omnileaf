@@ -4,6 +4,7 @@
 
   import { beforeNavigate } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
   import { LongPress } from "#lib/components/long-press.ts";
   import type {
@@ -71,8 +72,8 @@
 
   let outcome: Outcome = $state({ kind: "none" });
   let section: HTMLElement | undefined = $state();
-  let selectButton: HTMLButtonElement | undefined = $state();
-  let selectAllButton: HTMLButtonElement | undefined = $state();
+  let selectButton: HTMLElement | null = $state(null);
+  let selectAllButton: HTMLElement | null = $state(null);
 
   function pickRunOnShift(event: MouseEvent, book: SeriesBook): void {
     if (event.shiftKey) {
@@ -271,38 +272,41 @@
       <span class="text-detail text-muted max-large:hidden">
         {m.series_select_range_hint()}
       </span>
-      <button
-        bind:this={selectAllButton}
+      <Button
+        bind:ref={selectAllButton}
         type="button"
+        look="outline"
         aria-busy={isPickingAll}
-        class="rounded-control border border-border bg-card px-md text-detail font-semibold block-series-back expanded:block-series-crumb"
+        class="px-md text-detail block-series-back expanded:block-series-crumb"
         onclick={() => {
           void pickAll();
         }}
       >
         {m.series_select_all()}
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
-        class="rounded-control bg-accent px-md text-detail font-bold text-on-accent block-series-back expanded:block-series-crumb"
+        look="filled"
+        class="rounded-control px-md text-detail font-bold block-series-back expanded:block-series-crumb"
         onclick={() => {
           void end();
         }}
       >
         {m.series_select_done()}
-      </button>
+      </Button>
     {:else}
-      <button
-        bind:this={selectButton}
+      <Button
+        bind:ref={selectButton}
         type="button"
-        class="flex items-center gap-icon-gap rounded-control border border-border bg-card px-md text-detail font-semibold block-series-back expanded:block-series-crumb"
+        look="outline"
+        class="flex items-center gap-icon-gap px-md text-detail block-series-back expanded:block-series-crumb"
         onclick={() => {
           void begin();
         }}
       >
         <ListChecks size={ICON_SIZE} aria-hidden="true" />
         {m.series_select()}
-      </button>
+      </Button>
     {/if}
   </div>
   <BookListingChoices {listing} onChoose={onListing} />
@@ -346,16 +350,17 @@
         {m.series_selected_books({ count: selection.count })}
       </span>
       {#each MARKS as { mark: read, icon: Icon, label } (read)}
-        <button
+        <Button
           type="button"
-          class="flex flex-col items-center justify-center gap-xs rounded-selection-action text-caption font-semibold min-block-selection-action expanded:flex-row expanded:gap-icon-gap expanded:rounded-selection-action-wide expanded:bg-selection-action expanded:px-md expanded:text-detail expanded:min-block-selection-action-wide"
+          look="toolbar-action"
+          class="gap-xs text-caption min-block-selection-action expanded:gap-icon-gap expanded:px-md expanded:text-detail expanded:min-block-selection-action-wide"
           onclick={() => {
             void mark(read);
           }}
         >
           <Icon size={ACTION_ICON_SIZE} aria-hidden="true" />
           {label()}
-        </button>
+        </Button>
       {/each}
     </div>
   {/if}
