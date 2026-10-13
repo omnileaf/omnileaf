@@ -3,6 +3,7 @@
 
   import type { LibraryFolder } from "#lib/ipc/bindings.ts";
   import ConfirmDialog from "#lib/page/ConfirmDialog.svelte";
+  import { lastShown } from "#lib/page/last-shown.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import FolderWell from "./FolderWell.svelte";
@@ -20,6 +21,8 @@
     onConfirm: (folder: LibraryFolder) => void;
     onCancel: () => void;
   } = $props();
+
+  const shown = lastShown(() => folder);
 </script>
 
 <ConfirmDialog
@@ -35,12 +38,15 @@
   }}
   {onCancel}
 >
-  {#if folder !== undefined}
+  {#if shown.current !== undefined}
     <FolderWell
-      {folder}
+      folder={shown.current}
       detail={books === undefined
-        ? folder.location
-        : m.library_remove_folder_detail({ location: folder.location, books })}
+        ? shown.current.location
+        : m.library_remove_folder_detail({
+            location: shown.current.location,
+            books,
+          })}
     />
     <p
       class="flex items-start gap-sm text-footnote text-muted max-medium:text-label"

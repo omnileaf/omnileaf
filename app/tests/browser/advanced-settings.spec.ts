@@ -15,6 +15,7 @@ import {
   fakeAppInfo,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  settle,
   test,
   testOnlyInItsWebview,
   viewportOf,
@@ -141,6 +142,7 @@ async function openCrashQuestion(page: Page): Promise<Locator> {
   await crashTest(page, "Crash and quit").click();
   const dialog = page.getByRole("alertdialog", { name: "Crash Omnileaf now?" });
   await expect(dialog).toBeVisible();
+  await settle(dialog);
   return dialog;
 }
 
