@@ -244,6 +244,8 @@ export const TOKEN_THEME = {
     "pointer-target",
     "preview",
     "problem-top",
+    "progress",
+    "progress-compact",
     "quick-open",
     "quick-open-cover",
     "quick-open-field",
