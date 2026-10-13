@@ -21,7 +21,9 @@ import {
   setTextScale,
   sidewaysOverflow,
   test,
+  transitionsOf,
   viewportOf,
+  watchTransitions,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 import {
@@ -890,6 +892,26 @@ test.describe("view options", () => {
     await expect(
       (await openViewOptions(page)).getByRole("radio", { name: "Compact" }),
     ).toBeChecked();
+  });
+
+  test("slides up on a phone and fades in on wider screens, which reduced motion turns into appearing at once", async ({
+    page,
+  }) => {
+    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    const transitions = await watchTransitions(page);
+
+    await viewOptionsButton(page).click();
+
+    await expect
+      .poll(transitions)
+      .toContain(
+        screenSizeOf(page) === "phone" ? "dialog translate" : "dialog opacity",
+      );
+    await page.keyboard.press("Escape");
+    await expect(viewOptions(page)).toBeHidden();
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openViewOptions(page);
+    expect(await transitionsOf(viewOptions(page))).toEqual([]);
   });
 
   test("closes on Escape and hands focus back to the button that opened it", async ({

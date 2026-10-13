@@ -42,7 +42,7 @@ const LOADED_HOME_FOLDER = xpath(
 );
 
 const VIEW_OPTIONS_BUTTON = xpath("//button[@aria-label='View options']");
-const LIST_CHOICE = segmentedOption("//dialog[@open]", "List");
+const LIST_CHOICE = segmentedOption("//*[@aria-modal='true'][@data-state='open']", "List");
 const SERIES_IN_ONE_COLUMN = `const series = document.querySelector("ul[aria-label='Series']");
 return series !== null && series.children.length > 0 && getComputedStyle(series).gridTemplateColumns.split(" ").length === 1;`;
 

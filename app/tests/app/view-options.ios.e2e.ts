@@ -4,20 +4,24 @@ import { useAppSession } from "./app-session.ts";
 import { xpath } from "./webdriver.ts";
 
 const VIEW_OPTIONS_BUTTON = xpath("//button[@aria-label='View options']");
-const OPEN_SHEET = xpath("//dialog[@open]//h2[normalize-space()='View']");
-const DONE = xpath("//dialog[@open]//button[normalize-space()='Done']");
+const OPEN_SHEET = xpath(
+  "//*[@aria-modal='true'][@data-state='open']//*[@role='heading'][normalize-space()='View']",
+);
+const DONE = xpath(
+  "//*[@aria-modal='true'][@data-state='open']//button[normalize-space()='Done']",
+);
 const FEWER = "Fewer covers per row";
 const MORE = "More covers per row";
-const SHEET_CONTENT_HEIGHT = `return document.querySelector("dialog[open]").scrollHeight;`;
-const COVERS_PER_ROW = `document.querySelector("dialog[open] output").textContent.trim()`;
-const CAN_SHOW_FEWER = `return !document.querySelector("dialog[open] button[aria-label='${FEWER}']").disabled;`;
+const SHEET_CONTENT_HEIGHT = `return document.querySelector("[aria-modal=true][data-state=open]").scrollHeight;`;
+const COVERS_PER_ROW = `document.querySelector("[aria-modal=true][data-state=open] output").textContent.trim()`;
+const CAN_SHOW_FEWER = `return !document.querySelector("[aria-modal=true][data-state=open] button[aria-label='${FEWER}']").disabled;`;
 
 const appSession = useAppSession();
 
 async function stepCoversPerRow(label: string): Promise<void> {
   const before = await appSession().run(`return ${COVERS_PER_ROW};`);
   const step = xpath(
-    `//dialog[@open]//button[@aria-label='${label}'][not(@disabled)]`,
+    `//*[@aria-modal='true'][@data-state='open']//button[@aria-label='${label}'][not(@disabled)]`,
   );
 
   await (await appSession().waitFor(step)).click();
