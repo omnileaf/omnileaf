@@ -7,6 +7,8 @@ use std::{
 pub(crate) const ANDROID_HOME: &str = "ANDROID_HOME";
 const ANDROID_SDK_ROOT: &str = "ANDROID_SDK_ROOT";
 const NDK_HOME: &str = "NDK_HOME";
+const NDK_SOURCE_PROPERTIES: &str = "source.properties";
+const NDK_REVISION_FIELD: &str = "Pkg.Revision";
 const EMULATOR_SERIAL_PREFIX: &str = "emulator-";
 const MODEL_FIELD: &str = "model:";
 const TRANSPORT_FIELD: &str = "transport_id:";
@@ -65,10 +67,18 @@ pub(crate) enum AdbState {
     Offline,
 }
 
+pub(crate) const PINNED_NDK: &str = include_str!("../../.android-ndk-version").trim_ascii();
+
 #[derive(Debug)]
 pub(crate) struct Toolchain {
     pub(crate) sdk: PathBuf,
-    pub(crate) ndk: Option<PathBuf>,
+    pub(crate) ndk: Option<Ndk>,
+}
+
+#[derive(Debug)]
+pub(crate) struct Ndk {
+    pub(crate) path: PathBuf,
+    pub(crate) revision: Option<String>,
 }
 
 impl Toolchain {
@@ -77,7 +87,8 @@ impl Toolchain {
         let ndk = env(NDK_HOME)
             .map(PathBuf::from)
             .or_else(|| newest_ndk(&sdk.join("ndk")))
-            .filter(|ndk| ndk.is_dir());
+            .filter(|ndk| ndk.is_dir())
+            .map(Ndk::at);
         Some(Self { sdk, ndk })
     }
 
@@ -172,6 +183,26 @@ fn default_sdk_path(env: &impl Fn(&str) -> Option<OsString>, os: &str) -> Option
     })
 }
 
+impl Ndk {
+    fn at(path: PathBuf) -> Self {
+        let revision = fs::read_to_string(path.join(NDK_SOURCE_PROPERTIES))
+            .ok()
+            .as_deref()
+            .and_then(ndk_revision)
+            .map(str::to_owned);
+        Self { path, revision }
+    }
+}
+
+fn ndk_revision(source_properties: &str) -> Option<&str> {
+    source_properties
+        .lines()
+        .filter_map(|line| line.split_once('='))
+        .find(|(key, _)| key.trim() == NDK_REVISION_FIELD)
+        .map(|(_, value)| value.trim())
+        .filter(|revision| !revision.is_empty())
+}
+
 fn newest_ndk(versions: &Path) -> Option<PathBuf> {
     let names: Vec<String> = fs::read_dir(versions)
         .ok()?
@@ -261,6 +292,20 @@ mod tests {
         let names = ["9.9.1", "27.1.12297006", "29.0.13846066", "10.0.0"];
 
         assert_eq!(newest_version(names.into_iter()), Some("29.0.13846066"));
+    }
+
+    #[test]
+    fn reads_the_ndk_revision_from_its_source_properties() {
+        let properties = "Pkg.Desc = Android NDK\nPkg.Revision = 30.0.16248370\nPkg.BaseRevision = 30.0.16248370\n";
+
+        assert_eq!(ndk_revision(properties), Some("30.0.16248370"));
+    }
+
+    #[test]
+    fn finds_no_ndk_revision_without_the_field() {
+        let properties = "Pkg.Desc = Android NDK\nPkg.BaseRevision = 30.0.16248370\n";
+
+        assert_eq!(ndk_revision(properties), None);
     }
 
     #[test]
