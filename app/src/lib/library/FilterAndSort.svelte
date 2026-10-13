@@ -166,15 +166,21 @@
           >
             {m.library_reset()}
           </Button>
-          <Button
-            type="button"
-            look="icon"
+          <Tooltip
+            label={m.library_close()}
             aria-label={m.library_close()}
-            class="rounded-badge text-muted block-panel-button inline-panel-button"
             onclick={close}
           >
-            <X size={CLOSE_ICON_SIZE} aria-hidden="true" />
-          </Button>
+            {#snippet child({ props })}
+              <Button
+                {...props}
+                look="icon"
+                class="rounded-badge text-muted block-panel-button inline-panel-button"
+              >
+                <X size={CLOSE_ICON_SIZE} aria-hidden="true" />
+              </Button>
+            {/snippet}
+          </Tooltip>
         </div>
         <div
           class="flex flex-1 flex-col gap-filter-panel-gap overflow-y-auto px-filter-panel-inline pbs-xs pbe-md min-block-none"

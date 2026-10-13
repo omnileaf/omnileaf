@@ -7,6 +7,7 @@ import {
   accessibilityViolations,
   DEFAULT_BACKEND,
   expect,
+  screenSizeOf,
   test,
 } from "./fixtures.ts";
 import {
@@ -49,6 +50,7 @@ interface IconAction {
   readonly backend: FakeBackend;
   readonly reach: (page: Page) => Promise<Locator>;
   readonly label: string;
+  readonly isShownOn?: (page: Page) => boolean;
 }
 
 const SERIES_COUNT = 3;
@@ -60,6 +62,10 @@ const SERIES_BACKEND: FakeBackend = {
   setLibraryView: () => null,
   librarySeriesCount: () => SERIES_COUNT,
 };
+
+function isPhoneScreen(page: Page): boolean {
+  return screenSizeOf(page) === "phone";
+}
 
 function coversPerRowStep(label: string): IconAction {
   return {
@@ -109,6 +115,22 @@ const ICON_ACTIONS: readonly IconAction[] = [
   },
   coversPerRowStep("Fewer covers per row"),
   coversPerRowStep("More covers per row"),
+  {
+    screen: "Filter and sort",
+    backend: SERIES_BACKEND,
+    reach: async (page) => {
+      await page.goto("/");
+      await page
+        .locator("main header")
+        .getByRole("button", { name: /^Filter and sort/ })
+        .click();
+      return page
+        .getByRole("dialog", { name: "Filter and sort" })
+        .getByRole("button", { name: "Close" });
+    },
+    label: "Close",
+    isShownOn: (page) => !isPhoneScreen(page),
+  },
 ];
 
 function tooltipOf(page: Page, label: string): Locator {
@@ -138,13 +160,14 @@ async function liftFingerFrom(action: Locator): Promise<void> {
   await action.dispatchEvent("click");
 }
 
-for (const { screen, backend, reach, label } of ICON_ACTIONS) {
+for (const { screen, backend, reach, label, isShownOn } of ICON_ACTIONS) {
   test.describe(`the icon actions on ${screen}`, () => {
     test.use({ backend });
 
     test(`names ${label} in a tooltip while the pointer rests on it`, async ({
       page,
     }) => {
+      test.skip(isShownOn?.(page) === false, `not shown on this screen`);
       const action = await reach(page);
 
       await action.hover();
@@ -158,6 +181,7 @@ for (const { screen, backend, reach, label } of ICON_ACTIONS) {
       test(`shows the ${label} tooltip with no accessibility violations in the ${colorScheme} theme`, async ({
         page,
       }) => {
+        test.skip(isShownOn?.(page) === false, `not shown on this screen`);
         await page.emulateMedia({ colorScheme });
         const action = await reach(page);
         await action.hover();
