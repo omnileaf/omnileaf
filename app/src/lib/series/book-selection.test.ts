@@ -97,3 +97,19 @@ test("stops picking with nothing picked", () => {
 
   expect([selection.isSelecting, selection.count]).toEqual([false, 0]);
 });
+
+test("has every book listed only once each of them is picked", () => {
+  const selection = new BookSelection<string>();
+  selection.toggle(at(0));
+  const withOne = selection.hasAll(BOOKS);
+
+  selection.pickAll(BOOKS);
+
+  expect([withOne, selection.hasAll(BOOKS)]).toEqual([false, true]);
+});
+
+test("has not every book of an empty list", () => {
+  const selection = new BookSelection<string>();
+
+  expect(selection.hasAll([])).toBe(false);
+});

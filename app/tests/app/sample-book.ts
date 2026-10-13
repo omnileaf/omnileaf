@@ -12,9 +12,14 @@ export const FIRST_SERIES_COVER = xpath(
   "//ul[@aria-label='Series']//a[.//*[normalize-space()='Sample Series 01']]",
 );
 
+/** The XPath of a book's row in the series' table, counting from 1 below its heading row. */
+export function sampleBookRow(position: number): string {
+  return `//table[@aria-label='Books']//tr[@aria-rowindex='${String(position + 1)}']`;
+}
+
 export function sampleBookLink(position: number): Locator {
   return xpath(
-    `//ul[@aria-label='Books']/li[${String(position)}]//a[starts-with(normalize-space(), 'Sample Series 01 v0${String(position)}')]`,
+    `${sampleBookRow(position)}//a[starts-with(normalize-space(), 'Sample Series 01 v0${String(position)}')]`,
   );
 }
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Eye, EyeOff, ListChecks } from "@lucide/svelte";
   import { tick } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
 
   import { beforeNavigate } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -8,11 +9,13 @@
   import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
   import { LongPress } from "#lib/components/long-press.ts";
   import type {
+    Platform,
     ReadMark,
     SeriesBook,
     SeriesBookListing,
   } from "#lib/ipc/bindings.ts";
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
+  import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { shortcut } from "#lib/shortcut.ts";
@@ -20,6 +23,7 @@
 
   import BookListingChoices from "./BookListingChoices.svelte";
   import BookRowText from "./BookRowText.svelte";
+  import BookTable from "./BookTable.svelte";
   import { BookSelection } from "./book-selection.svelte";
 
   type BookId = SeriesBook["id"];
@@ -41,6 +45,7 @@
     onNearEnd,
     onLoadAll,
     onMark,
+    platform,
   }: {
     books: readonly SeriesBook[];
     bookCount: number;
@@ -50,6 +55,7 @@
     onNearEnd: () => void;
     onLoadAll: () => Promise<void>;
     onMark: (books: BookId[], mark: ReadMark) => Promise<boolean>;
+    platform: Platform;
   } = $props();
 
   type Outcome =
@@ -63,6 +69,7 @@
     | { readonly kind: "pickedAll"; readonly count: number };
 
   const selection = new BookSelection<BookId>();
+  const isWide = new MediaQuery(EXPANDED_QUERY);
   const longPress = new LongPress(LONG_PRESS_MS);
   const headingId = $props.id();
   const dates = $derived(
@@ -74,6 +81,9 @@
   let section: HTMLElement | undefined = $state();
   let selectButton: HTMLElement | null = $state(null);
   let selectAllButton: HTMLElement | null = $state(null);
+  let selectAllBox: HTMLElement | null = $state(null);
+
+  const isPicking = $derived(selection.isSelecting || selection.count > 0);
 
   function pickRunOnShift(event: MouseEvent, book: SeriesBook): void {
     if (event.shiftKey) {
@@ -114,7 +124,7 @@
     selection.end();
     if (isFocusToKeep) {
       await tick();
-      selectButton?.focus();
+      (isWide.current ? selectAllBox : selectButton)?.focus();
     }
   }
 
@@ -131,14 +141,17 @@
     outcome = { kind: "pickedAll", count: selection.count };
   }
 
-  async function mark(read: ReadMark): Promise<void> {
-    const picked = selection.picked;
+  async function markBooks(picked: BookId[], read: ReadMark): Promise<boolean> {
     const isMarked = await onMark(picked, read);
-    if (isMarked) {
-      outcome = { kind: "marked", mark: read, count: picked.length };
+    outcome = isMarked
+      ? { kind: "marked", mark: read, count: picked.length }
+      : { kind: "failed" };
+    return isMarked;
+  }
+
+  async function mark(read: ReadMark): Promise<void> {
+    if (await markBooks(selection.picked, read)) {
       await end();
-    } else {
-      outcome = { kind: "failed" };
     }
   }
 
@@ -157,7 +170,7 @@
 
   $effect(() =>
     takeBackWithinScreen(() => {
-      if (!selection.isSelecting) {
+      if (!isPicking) {
         return false;
       }
       void end();
@@ -166,11 +179,7 @@
   );
 
   beforeNavigate((navigation) => {
-    if (
-      navigation.type === "popstate" &&
-      navigation.delta < 0 &&
-      selection.isSelecting
-    ) {
+    if (navigation.type === "popstate" && navigation.delta < 0 && isPicking) {
       navigation.cancel();
       void end();
     }
@@ -251,8 +260,17 @@
     longPress.clicked(event);
   }}
   {@attach shortcut(
-    ...(selection.isSelecting
-      ? [{ key: "Escape", run: endUnlessFromDialog }]
+    ...(isPicking ? [{ key: "Escape", run: endUnlessFromDialog }] : []),
+    ...(isWide.current
+      ? [
+          {
+            key: "a",
+            command: platform,
+            run: () => {
+              void pickAll();
+            },
+          },
+        ]
       : []),
   )}
 />
@@ -268,16 +286,17 @@
         ? m.series_selected_count({ count: selection.count })
         : m.series_books_heading({ count: bookCount })}
     </h2>
-    {#if selection.isSelecting}
+    {#if isWide.current}
       <span class="text-detail text-muted max-large:hidden">
         {m.series_select_range_hint()}
       </span>
+    {:else if selection.isSelecting}
       <Button
         bind:ref={selectAllButton}
         type="button"
         look="outline"
         aria-busy={isPickingAll}
-        class="px-md text-detail block-series-back expanded:block-series-crumb"
+        class="px-md text-detail block-series-back"
         onclick={() => {
           void pickAll();
         }}
@@ -287,7 +306,7 @@
       <Button
         type="button"
         look="filled"
-        class="rounded-control px-md text-detail font-bold block-series-back expanded:block-series-crumb"
+        class="rounded-control px-md text-detail font-bold block-series-back"
         onclick={() => {
           void end();
         }}
@@ -299,7 +318,7 @@
         bind:ref={selectButton}
         type="button"
         look="outline"
-        class="flex items-center gap-icon-gap px-md text-detail block-series-back expanded:block-series-crumb"
+        class="flex items-center gap-icon-gap px-md text-detail block-series-back"
         onclick={() => {
           void begin();
         }}
@@ -313,34 +332,39 @@
   {#if isComplete && books.length === 0 && listing.shown === "unread"}
     <p class="text-body text-muted">{m.series_no_unread()}</p>
   {/if}
-  <div
-    class="max-medium:-ms-page-start max-medium:-me-page-end medium:overflow-hidden medium:rounded-card medium:border medium:border-border medium:bg-card"
-  >
-    <div
-      aria-hidden="true"
-      class="flex items-center gap-md border-be border-border px-md text-caption font-semibold text-muted block-series-columns max-expanded:hidden"
-    >
-      {#if selection.isSelecting}
-        <span class="shrink-0 inline-series-check-wide"></span>
-      {/if}
-      <span class="flex-1">{m.series_column_book()}</span>
-      <span class="inline-series-column-added">{m.series_column_added()}</span>
-      <span class="inline-series-column-progress">
-        {m.series_column_progress()}
-      </span>
-    </div>
-    <VirtualGrid
-      items={books}
-      key={(book: SeriesBook) => book.id}
-      label={m.series_books_list()}
+  {#if isWide.current}
+    <BookTable
+      bind:selectAllBox
+      {books}
+      {dates}
       {isComplete}
       {onNearEnd}
-      class="grid-cols-1"
-      itemClass="border-be border-border last:max-medium:border-be-0 medium:last:border-be-0"
-      cell={row}
+      {selection}
+      {isPickingAll}
+      onPickAll={() => {
+        void pickAll();
+      }}
+      onClear={() => {
+        void end();
+      }}
     />
-  </div>
-  {#if selection.isSelecting && selection.count > 0}
+  {:else}
+    <div
+      class="max-medium:-ms-page-start max-medium:-me-page-end medium:overflow-hidden medium:rounded-card medium:border medium:border-border medium:bg-card"
+    >
+      <VirtualGrid
+        items={books}
+        key={(book: SeriesBook) => book.id}
+        label={m.series_books_list()}
+        {isComplete}
+        {onNearEnd}
+        class="grid-cols-1"
+        itemClass="border-be border-border last:max-medium:border-be-0 medium:last:border-be-0"
+        cell={row}
+      />
+    </div>
+  {/if}
+  {#if isPicking && selection.count > 0}
     <div
       role="group"
       aria-label={m.series_selection_toolbar()}
