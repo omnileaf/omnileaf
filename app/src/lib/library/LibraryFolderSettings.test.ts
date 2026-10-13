@@ -330,6 +330,20 @@ test("asks before removing a folder", async () => {
   expect(removed).toEqual([]);
 });
 
+test("titles the removal question with a real second-level heading", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders, dialog } = await renderSettings();
+
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  const title = dialog.getByRole("heading", {
+    name: "Remove this folder?",
+    level: 2,
+  });
+  await expect.element(title).toBeVisible();
+  expect(title.element().tagName).toBe("H2");
+});
+
 test("shows the folder being removed with its location and books", async () => {
   serveFolders([HOME, COMICS]);
   const { folders, dialog } = await renderSettings();

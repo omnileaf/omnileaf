@@ -2,7 +2,10 @@
   import { AlertDialog } from "bits-ui";
   import type { Snippet } from "svelte";
 
-  import { DialogContent } from "#lib/components/ui/dialog/index.ts";
+  import {
+    DialogContent,
+    DialogTitle,
+  } from "#lib/components/ui/dialog/index.ts";
 
   import type { Glyph } from "./glyph";
   import HeaderBadge from "./HeaderBadge.svelte";
@@ -50,11 +53,11 @@
     ></span>
     <div class="flex items-center gap-md">
       <HeaderBadge {icon} tone="bg-danger-soft text-danger" />
-      <AlertDialog.Title
+      <DialogTitle
         class="text-dialog-title font-bold max-medium:text-sheet-title"
       >
         {title}
-      </AlertDialog.Title>
+      </DialogTitle>
     </div>
     <AlertDialog.Description class="flex flex-col gap-md">
       {@render children()}

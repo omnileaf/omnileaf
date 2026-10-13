@@ -2,7 +2,10 @@
   import { SlidersHorizontal } from "@lucide/svelte";
   import { Dialog } from "bits-ui";
 
-  import { DialogContent } from "#lib/components/ui/dialog/index.ts";
+  import {
+    DialogContent,
+    DialogTitle,
+  } from "#lib/components/ui/dialog/index.ts";
 
   import type {
     LibraryDisplay,
@@ -135,11 +138,11 @@
         class="self-center rounded-full bg-step-off block-sheet-handle-block inline-sheet-handle medium:hidden"
       ></span>
       <div class="flex items-center">
-        <Dialog.Title
+        <DialogTitle
           class="flex-1 text-title font-bold medium:text-panel-title"
         >
           {m.library_view()}
-        </Dialog.Title>
+        </DialogTitle>
         <button
           type="button"
           class="rounded-control px-xs text-body font-semibold text-accent transition-control min-block-touch-target hover:bg-hover active:bg-pressed medium:hidden"
