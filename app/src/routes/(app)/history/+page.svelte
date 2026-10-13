@@ -10,7 +10,7 @@
     localDayOf,
     weekStartOf,
   } from "#lib/history/local-date.ts";
-  import { readingTime } from "#lib/history/reading-time.ts";
+  import WeekCards from "#lib/history/WeekCards.svelte";
   import { WeekTotals } from "#lib/history/week-totals.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
@@ -37,10 +37,6 @@
     weekStart: weekStartOf(today, firstDayOfWeek(deviceLocale())),
   });
 
-  const hasEntries = $derived(
-    history.list.kind === "loaded" && history.list.items.length > 0,
-  );
-
   function readAgain(): void {
     today = localDayOf(new Date());
     void history.load();
@@ -54,22 +50,9 @@
   });
 </script>
 
-{#snippet readThisWeekTotal()}
-  <p class="text-small text-muted large:ms-xs">
-    {m.history_read_this_week({
-      duration: readingTime(weekTotals.thisWeek?.readSeconds ?? 0),
-    })}
-  </p>
-{/snippet}
-
 <CollectionHeading
   title={m.history_title()}
   showsLabel={screenshotMode.showsLabel}
-  count={hasEntries &&
-  weekTotals.thisWeek !== undefined &&
-  weekTotals.thisWeek.readSeconds > 0
-    ? readThisWeekTotal
-    : undefined}
 />
 {#if history.list.kind === "failed"}
   <p class="mbs-sm text-muted">{m.history_failed()}</p>
@@ -80,7 +63,12 @@
     body={m.history_empty_body()}
   />
 {:else if history.list.kind === "loaded"}
-  <div class="mbs-lg large:mbs-history-days-wide">
+  <div
+    class="mbs-lg flex flex-col gap-lg large:mbs-history-section large:gap-history-section"
+  >
+    {#if weekTotals.thisWeek !== undefined}
+      <WeekCards week={weekTotals.thisWeek} />
+    {/if}
     <HistoryDays
       entries={history.list.items}
       isComplete={history.list.isComplete}

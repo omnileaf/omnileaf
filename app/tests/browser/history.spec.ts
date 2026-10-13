@@ -36,8 +36,7 @@ const DAY_MS = 86_400_000;
 const MONDAY = Date.UTC(2026, 9, 5) / DAY_MS;
 const LAST_WEEK_FIRST = MONDAY - 8;
 const LAST_WEEK_LAST = MONDAY - 2;
-const DESKTOP_TITLE_GAP = 14;
-const DESKTOP_DAYS_TOP = 22;
+const DESKTOP_SECTION_GAP = 18;
 const DESKTOP_ACTION_RADIUS = "8px";
 const PHONE_LIST_INSET = 20;
 const LANGUAGES = { en: english, "en-XA": pseudo } as const;
@@ -152,8 +151,10 @@ const READ_BACKEND: FakeBackend = {
   ...DEFAULT_BACKEND,
   readingHistory: pagedSessions(SESSIONS),
   readingWeek: () => ({
-    ...NOTHING_READ_THIS_WEEK,
     readSeconds: READ_THIS_WEEK,
+    booksOpened: 6,
+    booksFinished: 2,
+    daysInARow: 4,
   }),
   readingTimeBetween: (firstDay, lastDay) =>
     firstDay === LAST_WEEK_FIRST && lastDay === LAST_WEEK_LAST
@@ -166,7 +167,14 @@ function isDesktop(page: Page): boolean {
 }
 
 function days(page: Page): Locator {
-  return page.getByRole("main").getByRole("region");
+  return page
+    .getByRole("main")
+    .getByRole("region")
+    .filter({ has: page.getByRole("heading", { level: 2 }) });
+}
+
+function week(page: Page): Locator {
+  return page.getByRole("region", { name: "This week" });
 }
 
 function rows(page: Page): Locator {
@@ -222,7 +230,7 @@ test.describe("before anything is read", () => {
     await expect(
       page.getByRole("button", { name: "Clear history" }),
     ).toHaveCount(0);
-    await expect(page.getByText(/read this week/)).toHaveCount(0);
+    await expect(page.getByText("Read this week")).toHaveCount(0);
   });
 });
 
@@ -262,10 +270,24 @@ test.describe("with books read", () => {
     ).toContainText(/Tue 8:10\sPM/);
   });
 
-  test("says how long was read this week", async ({ page }) => {
+  test("sums up the week, with the books opened and finished from a tablet up", async ({
+    page,
+  }) => {
     await openHistory(page);
+    const isPhone = viewportOf(page).width < MEDIUM_MIN_WIDTH;
 
-    await expect(page.getByText("3 h 12 min read this week")).toBeVisible();
+    const cards = week(page).getByRole("listitem");
+
+    await expect(cards).toHaveText(
+      isPhone
+        ? [/Read this week\s*3 h 12 min$/, /Days in a row\s*4$/]
+        : [
+            /Read this week\s*3 h 12 min$/,
+            /Books opened\s*6$/,
+            /Finished\s*2$/,
+            /Days in a row\s*4$/,
+          ],
+    );
   });
 
   test("says where each session left its book, when it began and how long it went on", async ({
@@ -324,22 +346,22 @@ test.describe("with books read", () => {
     );
   });
 
-  test("spaces the title, the week's total and the first day the way the desktop board does", async ({
+  test("sets the week between the header and the days the way the desktop board does", async ({
     page,
   }) => {
     test.skip(!isDesktop(page), "desktops only");
     await openHistory(page);
-    const title = await boxOf(
-      page.getByRole("heading", { level: 1, name: "History" }),
-    );
-    const week = await boxOf(page.getByText("3 h 12 min read this week"));
     const header = await boxOf(page.getByRole("main").locator("header"));
 
+    const summed = await boxOf(week(page));
     const firstDay = await boxOf(days(page).first());
 
-    expect(week.x - (title.x + title.width)).toBeCloseTo(DESKTOP_TITLE_GAP, 0);
-    expect(firstDay.y - (header.y + header.height)).toBeCloseTo(
-      DESKTOP_DAYS_TOP,
+    expect(summed.y - (header.y + header.height)).toBeCloseTo(
+      DESKTOP_SECTION_GAP,
+      0,
+    );
+    expect(firstDay.y - (summed.y + summed.height)).toBeCloseTo(
+      DESKTOP_SECTION_GAP,
       0,
     );
   });
@@ -448,7 +470,9 @@ test.describe("on a device whose region starts its weeks on Monday", () => {
   test("counts the time read this week from Monday", async ({ page }) => {
     await openHistory(page);
 
-    await expect(page.getByText("3 h 12 min read this week")).toBeVisible();
+    await expect(week(page).getByRole("listitem").first()).toHaveText(
+      /3 h 12 min$/,
+    );
   });
 });
 

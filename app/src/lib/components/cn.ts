@@ -189,6 +189,7 @@ export const TOKEN_THEME = {
     "history-length",
     "history-row",
     "history-row-wide",
+    "history-section",
     "history-time",
     "icon-badge",
     "icon-gap",
