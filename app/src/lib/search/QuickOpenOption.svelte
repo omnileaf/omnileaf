@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { Command } from "bits-ui";
+
   import CoverImage from "#lib/library/CoverImage.svelte";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { Place } from "./places";
-  import type { Choice } from "./quick-open-choice";
+  import { type Choice, choiceKey } from "./quick-open-choice";
 
   const PLACE_ICON_SIZE = 16;
 
@@ -14,17 +16,13 @@
     choice,
     isActive,
     usesStandIns,
-    onActivate,
     onChoose,
-    onKeyDown,
   }: {
     id: string;
     choice: Choice;
     isActive: boolean;
     usesStandIns: boolean;
-    onActivate: () => void;
     onChoose: () => void;
-    onKeyDown: (event: KeyboardEvent) => void;
   } = $props();
 
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
@@ -33,18 +31,14 @@
   );
 </script>
 
-<div
+<Command.Item
   {id}
-  role="option"
-  aria-selected={isActive}
-  tabindex="-1"
+  value={choiceKey(choice)}
   class={[
     "flex cursor-default items-center gap-md rounded-field px-option-inline py-xs min-block-quick-open-option",
     isActive && "bg-accent-soft",
   ]}
-  onpointermove={onActivate}
-  onclick={onChoose}
-  onkeydown={onKeyDown}
+  onSelect={onChoose}
 >
   {#if choice.kind === "series"}
     <span
@@ -76,4 +70,4 @@
       {m.search_key_open()}
     </span>
   {/if}
-</div>
+</Command.Item>

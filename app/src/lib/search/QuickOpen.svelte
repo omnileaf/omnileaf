@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Search } from "@lucide/svelte";
-  import { Dialog } from "bits-ui";
+  import { Command, Dialog } from "bits-ui";
   import { untrack } from "svelte";
 
   import { goto } from "$app/navigation";
@@ -46,7 +46,7 @@
   let text = $state("");
   let answered = $state("");
   let series: readonly LibrarySeries[] = $state([]);
-  let active = $state(0);
+  let selectedKey = $state("");
   let latestSearch = 0;
 
   const id = $props.id();
@@ -78,6 +78,12 @@
   });
   const choices = $derived(groups.flatMap((group) => group.choices));
   const isAnswered = $derived(answered === text);
+  const active = $derived(
+    Math.max(
+      0,
+      choices.findIndex((choice) => choiceKey(choice) === selectedKey),
+    ),
+  );
 
   $effect(() => {
     if (quickOpen.isOpen) {
@@ -89,17 +95,18 @@
     text = "";
     answered = "";
     series = [];
-    active = 0;
+    selectFirstChoice();
     latestSearch += 1;
   }
 
   async function lookFor(typed: string): Promise<void> {
     text = typed;
-    active = 0;
+    selectedKey = "";
     const search = ++latestSearch;
     if (typed.trim() === "") {
       series = [];
       answered = typed;
+      selectFirstChoice();
       return;
     }
     const page = await commands.librarySearch(null, {
@@ -115,11 +122,23 @@
     series =
       page.status === "ok" ? page.data.series.slice(0, SERIES_SHOWN) : [];
     answered = typed;
-    active = 0;
+    selectFirstChoice();
   }
 
-  function optionId(index: number): string {
-    return `${id}-option-${String(index)}`;
+  function optionId(choice: Choice): string {
+    return `${id}-option-${choiceKey(choice)}`;
+  }
+
+  function activeDescendant(props: unknown): string | undefined {
+    if (typeof props !== "object" || props === null) {
+      return undefined;
+    }
+    const value = (props as Record<string, unknown>)["aria-activedescendant"];
+    return typeof value === "string" ? value : undefined;
+  }
+
+  function selectFirstChoice(): void {
+    selectedKey = choices[0] === undefined ? "" : choiceKey(choices[0]);
   }
 
   function choose(choice: Choice | undefined): void {
@@ -143,40 +162,38 @@
     return groups[next]?.start ?? 0;
   }
 
-  function moveBy(step: 1 | -1): void {
-    active = (active + step + choices.length) % choices.length;
-  }
-
-  function keyDown(event: KeyboardEvent): void {
+  function keyDownInInput(event: KeyboardEvent): void {
     if (isComposing(event)) {
       event.stopPropagation();
       return;
     }
-    if (choices.length === 0) {
-      return;
-    }
     switch (event.key) {
-      case "ArrowDown":
-        moveBy(1);
-        break;
-      case "ArrowUp":
-        moveBy(-1);
-        break;
-      case "Tab":
-        active = groupStartFrom(event.shiftKey ? -1 : 1);
-        break;
-      case "Enter":
-        if (isAnswered) {
-          choose(choices[active]);
+      case "Tab": {
+        if (choices.length === 0) {
+          return;
         }
+        const nextChoice = choices[groupStartFrom(event.shiftKey ? -1 : 1)];
+        if (nextChoice === undefined) {
+          return;
+        }
+        selectedKey = choiceKey(nextChoice);
+        event.preventDefault();
+        event.stopPropagation();
+        break;
+      }
+      case "Enter":
+        if (!isAnswered) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        break;
+      case "Home":
+      case "End":
+        event.stopPropagation();
         break;
       default:
         return;
     }
-    event.preventDefault();
-    document
-      .getElementById(optionId(active))
-      ?.scrollIntoView({ block: "nearest" });
   }
 
   function type(event: Event & { currentTarget: HTMLInputElement }): void {
@@ -198,77 +215,81 @@
     aria-label={m.quick_open_title()}
     class="inset-none inset-bs-quick-open-top mx-auto flex flex-col overflow-hidden rounded-dialog border border-border bg-card text-foreground fade-motion shadow-dialog block-fit inline-quick-open max-block-dialog-limit max-inline-full"
   >
-    <div
-      class="flex items-center gap-label border-be border-border px-lg block-quick-open-field"
+    <Command.Root
+      label={m.quick_open_title()}
+      shouldFilter={false}
+      loop
+      vimBindings={false}
+      bind:value={selectedKey}
+      class="flex flex-col min-block-none"
     >
-      <Search size={SEARCH_ICON_SIZE} aria-hidden="true" class="shrink-0" />
-      <input
-        type="text"
-        role="combobox"
-        aria-label={m.quick_open_field()}
-        aria-expanded={choices.length > 0}
-        aria-controls={listboxId}
-        aria-autocomplete="list"
-        aria-describedby={nothingFoundId}
-        aria-activedescendant={choices.length > 0
-          ? optionId(active)
-          : undefined}
-        autocomplete="off"
-        spellcheck="false"
-        maxlength={SEARCH_MAX_CHARS}
-        value={text}
-        class="flex-1 bg-transparent text-quick-open outline-none min-inline-none"
-        oninput={type}
-        onkeydown={keyDown}
-      />
-      <kbd
-        aria-hidden="true"
-        class="shrink-0 rounded-badge border border-border bg-chip px-key-inline py-key-block font-ui text-caption font-bold"
+      <div
+        class="flex items-center gap-label border-be border-border px-lg block-quick-open-field"
       >
-        {m.search_escape_key()}
-      </kbd>
-    </div>
-    <div
-      id={listboxId}
-      role="listbox"
-      aria-label={m.quick_open_results()}
-      class={[
-        "flex flex-col gap-2xs overflow-y-auto max-block-quick-open-results",
-        choices.length > 0 && "p-sm",
-      ]}
-    >
-      {#each groups as group (group.name)}
-        {@const headingId = `${id}-${group.name}`}
-        <div
-          role="group"
-          aria-labelledby={headingId}
-          class="flex flex-col gap-2xs"
-        >
-          <div
-            id={headingId}
-            class="px-option-inline pbs-group-label-top pbe-xs text-overline font-bold tracking-overline text-muted uppercase"
-          >
-            {group.label}
-          </div>
-          {#each group.choices as choice, offset (choiceKey(choice))}
-            {@const index = group.start + offset}
-            <QuickOpenOption
-              id={optionId(index)}
-              {choice}
-              isActive={index === active}
-              {usesStandIns}
-              onActivate={() => {
-                active = index;
-              }}
-              onChoose={() => {
-                choose(choice);
-              }}
-              onKeyDown={keyDown}
+        <Search size={SEARCH_ICON_SIZE} aria-hidden="true" class="shrink-0" />
+        <Command.Input value={text} maxlength={SEARCH_MAX_CHARS} autofocus>
+          {#snippet child({ props })}
+            <input
+              {...props}
+              aria-label={m.quick_open_field()}
+              aria-labelledby={undefined}
+              aria-expanded={choices.length > 0}
+              aria-controls={listboxId}
+              aria-describedby={nothingFoundId}
+              aria-activedescendant={choices.length > 0
+                ? activeDescendant(props)
+                : undefined}
+              maxlength={SEARCH_MAX_CHARS}
+              value={text}
+              class="flex-1 bg-transparent text-quick-open outline-none min-inline-none"
+              oninput={type}
+              onkeydown={keyDownInInput}
             />
+          {/snippet}
+        </Command.Input>
+        <kbd
+          aria-hidden="true"
+          class="shrink-0 rounded-badge border border-border bg-chip px-key-inline py-key-block font-ui text-caption font-bold"
+        >
+          {m.search_escape_key()}
+        </kbd>
+      </div>
+      <Command.List
+        id={listboxId}
+        aria-label={m.quick_open_results()}
+        class={[
+          "overflow-y-auto max-block-quick-open-results",
+          choices.length > 0 && "p-sm",
+        ]}
+      >
+        <Command.Viewport class="flex flex-col gap-2xs">
+          {#each groups as group (group.name)}
+            {@const headingId = `${id}-${group.name}`}
+            <Command.Group value={group.name}>
+              <Command.GroupHeading
+                id={headingId}
+                class="px-option-inline pbs-group-label-top pbe-xs text-overline font-bold tracking-overline text-muted uppercase"
+              >
+                {group.label}
+              </Command.GroupHeading>
+              <Command.GroupItems class="flex flex-col gap-2xs">
+                {#each group.choices as choice (choiceKey(choice))}
+                  <QuickOpenOption
+                    id={optionId(choice)}
+                    {choice}
+                    isActive={choiceKey(choice) === selectedKey}
+                    {usesStandIns}
+                    onChoose={() => {
+                      choose(choice);
+                    }}
+                  />
+                {/each}
+              </Command.GroupItems>
+            </Command.Group>
           {/each}
-        </div>
-      {/each}
-    </div>
+        </Command.Viewport>
+      </Command.List>
+    </Command.Root>
     <p
       id={nothingFoundId}
       role="status"
