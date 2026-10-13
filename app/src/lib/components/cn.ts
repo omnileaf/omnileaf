@@ -342,6 +342,7 @@ export const TOKEN_THEME = {
     "series-row-check",
     "series-row-pad-wide",
     "series-row-wide",
+    "series-search",
     "settings-icon",
     "settings-list",
     "settings-list-widest",
