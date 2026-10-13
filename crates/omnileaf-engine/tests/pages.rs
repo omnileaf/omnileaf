@@ -566,7 +566,7 @@ async fn serves_a_long_strip_as_it_is() {
 }
 
 #[tokio::test]
-async fn serves_a_small_thumbnail_of_a_page_kept_on_disk_for_next_time() {
+async fn serves_a_thumbnail_of_a_page_at_the_filmstrip_size_kept_on_disk_for_next_time() {
     let reader = Reader::with_book("page-thumbnail").await;
     let opened = reader.open(NOTHING_UNDECODABLE).await;
     let thumbnail = format!("/{}", opened.pages[2].thumbnail);
@@ -585,8 +585,8 @@ async fn serves_a_small_thumbnail_of_a_page_kept_on_disk_for_next_time() {
     assert_eq!(
         page_size(body).unwrap(),
         Size {
-            width: 320,
-            height: 480
+            width: 160,
+            height: 240
         }
     );
     assert_eq!(again, first);

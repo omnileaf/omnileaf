@@ -15,7 +15,7 @@ use std::{
 };
 
 use omnileaf_engine::{CoverPath, Library, LibraryListing, Resource, ResourceRouter};
-use omnileaf_imaging::thumbnail;
+use omnileaf_imaging::{THUMBNAIL_WIDTH, thumbnail};
 use omnileaf_testkit::{
     ArchiveEntry, Compression, PageShape, cbz, full_chroma_scan_jpeg, page_jpeg,
 };
@@ -144,7 +144,7 @@ fn jpeg(body: Vec<u8>) -> Resource {
 }
 
 fn thumbnail_of(seed: u64, index: u32) -> Vec<u8> {
-    thumbnail(&page(seed, index)).unwrap().jpeg
+    thumbnail(&page(seed, index), THUMBNAIL_WIDTH).unwrap().jpeg
 }
 
 #[test]
@@ -202,7 +202,7 @@ async fn serves_the_thumbnail_of_a_full_chroma_scan_as_its_cover() {
     let scan = full_chroma_scan_jpeg(SEED).unwrap();
     write_book_of(&covers.book_path(), std::slice::from_ref(&scan));
     covers.library.rescan_folders().await.unwrap();
-    let expected = thumbnail(&scan).unwrap();
+    let expected = thumbnail(&scan, THUMBNAIL_WIDTH).unwrap();
 
     let resource = covers.request_cover(covers.cover().await).await;
 

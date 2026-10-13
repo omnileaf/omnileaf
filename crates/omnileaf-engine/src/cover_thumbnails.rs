@@ -10,7 +10,7 @@ use std::{
 use omnileaf_cache::{CacheError, CacheKey, DiskCache};
 use omnileaf_db::catalog::Cover;
 use omnileaf_formats::{Book, FormatError, Limits, open_book_in};
-use omnileaf_imaging::{ImagingError, is_whole_jpeg, thumbnail};
+use omnileaf_imaging::{ImagingError, THUMBNAIL_WIDTH, is_whole_jpeg, thumbnail};
 use tokio::{sync::OnceCell, task::spawn_blocking};
 
 use crate::{
@@ -31,6 +31,8 @@ pub(crate) const WORKERS: NonZeroUsize = if IS_MOBILE {
     NonZeroUsize::MIN.saturating_add(1)
 };
 const WORKER_NAME: &str = "omnileaf-thumbnails";
+/// Enough for the slider's filmstrip, which draws a page about 50 points wide, on a screen of three pixels to the point.
+const PAGE_THUMBNAIL_WIDTH: u32 = 160;
 
 pub(crate) struct CoverThumbnails {
     folder: PathBuf,
@@ -63,6 +65,15 @@ pub(crate) enum ThumbnailError {
 enum Pictured {
     Cover,
     Page(u32),
+}
+
+impl Pictured {
+    const fn width(self) -> u32 {
+        match self {
+            Self::Cover => THUMBNAIL_WIDTH,
+            Self::Page(_) => PAGE_THUMBNAIL_WIDTH,
+        }
+    }
 }
 
 impl CoverThumbnails {
@@ -210,7 +221,7 @@ fn make_thumbnail(
     let page = book.read_page(index)?;
     let made = {
         let _decoding = decodes.hold();
-        thumbnail(&page)?.jpeg
+        thumbnail(&page, pictured.width())?.jpeg
     };
     if let Some(Err(error)) = cache.map(|cache| cache.put(key, &made)) {
         tracing::warn!(
