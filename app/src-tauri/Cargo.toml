@@ -44,6 +44,9 @@ omnileaf-system-bars.workspace = true
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 objc2-foundation.workspace = true
 
+[target.'cfg(target_os = "macos")'.dependencies]
+dispatch2.workspace = true
+
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-dialog.workspace = true
 

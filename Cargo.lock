@@ -3480,6 +3480,7 @@ dependencies = [
 name = "omnileaf-app"
 version = "0.0.0"
 dependencies = [
+ "dispatch2",
  "objc2-foundation",
  "omnileaf-db",
  "omnileaf-edge-swipe",
