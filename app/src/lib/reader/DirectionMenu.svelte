@@ -49,7 +49,7 @@
     <ArrowLeftRight size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
     <span class="flex items-center gap-xs">
       {CHOICE_NAMES[reading.direction]()}
-      {#if reading.choice === "automatic"}
+      {#if reading.isDetected}
         <span
           class="rounded-full bg-reader-lit px-xs text-reader-thumbnail font-bold tracking-overline text-reader-accent uppercase"
           >{m.reader_direction_auto()}</span
