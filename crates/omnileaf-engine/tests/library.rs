@@ -69,6 +69,12 @@ async fn open(home: &Path) -> Library {
     Library::open(home.to_path_buf(), FixedClock).await.unwrap()
 }
 
+/// Windows refuses to move a folder holding an open file, and a dropped library's save task closes its database only once it next runs.
+async fn close(library: Library) {
+    drop(library);
+    tokio::task::yield_now().await;
+}
+
 async fn all_folders(library: &Library) -> Vec<LibraryFolder> {
     let mut folders = Vec::new();
     let mut after = None;
@@ -569,7 +575,7 @@ async fn keeps_one_home_folder_at_its_new_location_after_the_home_moves() {
         .add_folder(comics.path().to_path_buf(), |_| {})
         .await
         .unwrap();
-    drop(library);
+    close(library).await;
     std::fs::rename(&first_home, &moved_home).unwrap();
 
     let reopened = open(&moved_home).await;
