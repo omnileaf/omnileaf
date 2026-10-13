@@ -6,6 +6,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { DialogContent } from "#lib/components/ui/dialog/index.ts";
+  import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import {
     commands,
     DEFAULT_LIBRARY_LISTING,
@@ -247,12 +248,7 @@
             />
           {/snippet}
         </Command.Input>
-        <kbd
-          aria-hidden="true"
-          class="shrink-0 rounded-badge border border-border bg-chip px-key-inline py-key-block font-ui text-caption font-bold"
-        >
-          {m.search_escape_key()}
-        </kbd>
+        <Kbd aria-hidden="true">{m.search_escape_key()}</Kbd>
       </div>
       <Command.List
         id={listboxId}

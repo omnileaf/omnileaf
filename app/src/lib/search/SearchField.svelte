@@ -3,6 +3,7 @@
   import { onMount, tick } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
   import type { FilterCondition } from "#lib/library/library-listing.ts";
@@ -124,10 +125,7 @@
       {/snippet}
     </Tooltip>
   {/if}
-  <kbd
-    aria-hidden="true"
-    class="hidden shrink-0 rounded-badge border border-border bg-chip px-key-inline py-key-block font-ui text-caption font-bold large:inline"
-  >
+  <Kbd aria-hidden="true" class="hidden large:inline">
     {m.search_escape_key()}
-  </kbd>
+  </Kbd>
 </div>

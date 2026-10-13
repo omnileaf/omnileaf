@@ -7,6 +7,7 @@
   import type { Snippet } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -77,12 +78,9 @@
     </Button>
   {/if}
   {#if shortcut !== undefined}
-    <kbd
-      aria-hidden="true"
-      class="hidden shrink-0 rounded-badge border border-border bg-chip px-key-inline py-key-block font-ui text-caption font-bold text-muted desktop:inline"
-    >
+    <Kbd aria-hidden="true" class="hidden text-muted desktop:inline">
       {shortcut.label}
-    </kbd>
+    </Kbd>
   {/if}
   <Tooltip
     label={m.notice_dismiss()}
