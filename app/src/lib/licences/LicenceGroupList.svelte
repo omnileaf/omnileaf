@@ -4,6 +4,7 @@
 
   import { resolve } from "$app/paths";
   import { type AboutLook, ROW_ICON_SIZES } from "#lib/about/look.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { LicenceGroup } from "./licences";
@@ -81,12 +82,10 @@
     {/each}
     {#if hasMore}
       <li>
-        <button
+        <Button
           type="button"
-          class={[
-            "flex items-center text-start font-semibold text-accent transition-control inline-full hover:bg-hover active:bg-pressed",
-            ROWS[look],
-          ]}
+          look="row"
+          class={["font-semibold text-accent inline-full", ROWS[look]]}
           onclick={() => {
             void showAll();
           }}
@@ -95,7 +94,7 @@
             {m.licences_show_all({ count: group.packages.length })}
           </span>
           <ChevronDown size={ROW_ICON_SIZES[look]} class="shrink-0" />
-        </button>
+        </Button>
       </li>
     {/if}
   </ul>
