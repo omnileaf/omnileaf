@@ -38,10 +38,7 @@ async function openSection(page: Page, path: string): Promise<void> {
   if (path === "/settings/library") {
     await addFolderButton(page).click();
     await expect(
-      page
-        .getByRole("main")
-        .getByRole("status")
-        .filter({ hasText: SCANNED_FOLDER }),
+      page.locator("[data-sonner-toast]").filter({ hasText: SCANNED_FOLDER }),
     ).toBeVisible();
   }
 }
