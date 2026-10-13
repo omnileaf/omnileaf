@@ -66,6 +66,14 @@ const SERIES_BACKEND: FakeBackend = {
 
 const ANDROID_BACKEND = onPlatform("android").backend;
 
+const CRASHED_ON_ANDROID: FakeBackend = {
+  ...ANDROID_BACKEND,
+  offerSavedCrashReport: () => ({
+    details: "Omnileaf 1.2.3 on Android\nPanic: index out of bounds\n",
+    origin: "panic",
+  }),
+};
+
 function isPhoneScreen(page: Page): boolean {
   return screenSizeOf(page) === "phone";
 }
@@ -133,6 +141,18 @@ const ICON_ACTIONS: readonly IconAction[] = [
     },
     label: "Close",
     isShownOn: (page) => !isPhoneScreen(page),
+  },
+  {
+    screen: "the crash report on an Android phone",
+    backend: CRASHED_ON_ANDROID,
+    reach: async (page) => {
+      await page.goto("/");
+      return page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Don't send" });
+    },
+    label: "Don't send",
+    isShownOn: isPhoneScreen,
   },
   {
     screen: "an Android settings page",

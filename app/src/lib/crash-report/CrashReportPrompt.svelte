@@ -11,6 +11,7 @@
     CopyButton,
     type CopyLabels,
   } from "#lib/components/ui/copy-button/index.ts";
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
 
   import type { CrashOrigin } from "#lib/ipc/bindings.ts";
   import { lastShown } from "#lib/page/last-shown.svelte.ts";
@@ -101,22 +102,28 @@
           class="flex flex-col ps-safe-start pe-safe-end pbs-safe-top pbe-safe-bottom min-block-full"
         >
           <header class="mbs-sm flex items-center gap-xs ps-sm">
-            <Button
-              type="button"
-              look="icon"
+            <Tooltip
+              label={m.crash_report_decline()}
               aria-label={m.crash_report_decline()}
-              class="block-touch-target inline-touch-target"
               onclick={decline}
             >
-              <ArrowLeft
-                size={BACK_ARROW_SIZE}
-                class="hidden rtl:-scale-x-100 android:block"
-              />
-              <ChevronLeft
-                size={BACK_CHEVRON_SIZE}
-                class="rtl:-scale-x-100 android:hidden"
-              />
-            </Button>
+              {#snippet child({ props })}
+                <Button
+                  {...props}
+                  look="icon"
+                  class="block-touch-target inline-touch-target"
+                >
+                  <ArrowLeft
+                    size={BACK_ARROW_SIZE}
+                    class="hidden rtl:-scale-x-100 android:block"
+                  />
+                  <ChevronLeft
+                    size={BACK_CHEVRON_SIZE}
+                    class="rtl:-scale-x-100 android:hidden"
+                  />
+                </Button>
+              {/snippet}
+            </Tooltip>
             <span class="text-callout font-semibold">{m.app_name()}</span>
           </header>
           <div
