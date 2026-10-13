@@ -593,6 +593,43 @@ test.describe("with sessions at the widest times and lengths", () => {
   }
 });
 
+test.describe("with a series and book named past the width of a row", () => {
+  const LONG_NAME =
+    "Attack on Titan v01-v30 (Digital) (LostNerevarine+Hexer+danke-Empire) ".repeat(
+      3,
+    );
+
+  test.use({
+    backend: {
+      ...READ_BACKEND,
+      readingHistory: pagedSessions(
+        SESSIONS.map((session) => ({
+          ...session,
+          seriesTitle: LONG_NAME,
+          bookTitle: LONG_NAME,
+        })),
+      ),
+    },
+  });
+
+  test("keeps each row's button whole inside the list on a desktop", async ({
+    page,
+  }) => {
+    test.skip(!isDesktop(page), "desktops only");
+    await openHistory(page);
+    const list = days(page).first().getByRole("list");
+    const buttons = rows(page).getByRole("link").filter({ visible: true });
+    await expect(buttons).toHaveCount(SESSIONS.length);
+
+    const listEnd = (await boxOf(list)).x + (await boxOf(list)).width;
+    const buttonEnds = await buttons.evaluateAll((elements) =>
+      elements.map((element) => element.getBoundingClientRect().right),
+    );
+
+    expect(buttonEnds.every((end) => end <= listEnd + 0.5)).toBe(true);
+  });
+});
+
 test.describe("on an iPad as wide as a desktop", () => {
   test.use({
     backend: { ...READ_BACKEND, appInfo: () => fakeAppInfo("ios") },
