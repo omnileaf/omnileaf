@@ -361,6 +361,52 @@ mod tests {
         assert!(pinned.is_err());
     }
 
+    fn install_ndk(folder: &Path, revision: &str) {
+        fs::create_dir_all(folder).unwrap();
+        fs::write(
+            folder.join(NDK_SOURCE_PROPERTIES),
+            format!("Pkg.Desc = Android NDK\nPkg.Revision = {revision}\n"),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn reads_an_ndk_version_from_its_folder() {
+        let folder = scratch("ndk-with-version");
+        install_ndk(&folder, "30.0.16248370");
+
+        let ndk = Ndk::at(folder.clone());
+
+        fs::remove_dir_all(&folder).unwrap();
+        assert_eq!(ndk.revision.as_deref(), Some("30.0.16248370"));
+    }
+
+    #[test]
+    fn reads_no_version_from_an_ndk_folder_without_source_properties() {
+        let folder = scratch("ndk-without-version");
+
+        let ndk = Ndk::at(folder.clone());
+
+        fs::remove_dir_all(&folder).unwrap();
+        assert_eq!(ndk.revision, None);
+    }
+
+    #[test]
+    fn locates_the_newest_ndk_in_the_sdk_with_its_version() {
+        let sdk = scratch("sdk-with-ndks");
+        install_ndk(&sdk.join("ndk").join("27.1.12297006"), "27.1.12297006");
+        install_ndk(&sdk.join("ndk").join("30.0.16248370"), "30.0.16248370");
+        let home = sdk.clone().into_os_string();
+
+        let toolchain =
+            Toolchain::locate(|key| (key == ANDROID_HOME).then(|| home.clone()), "linux");
+
+        fs::remove_dir_all(&sdk).unwrap();
+        let ndk = toolchain.unwrap().ndk.unwrap();
+        assert_eq!(ndk.path, sdk.join("ndk").join("30.0.16248370"));
+        assert_eq!(ndk.revision.as_deref(), Some("30.0.16248370"));
+    }
+
     #[test]
     fn ignores_folders_that_are_not_versions() {
         let names = [".DS_Store", "27.1.12297006", "side-by-side"];
