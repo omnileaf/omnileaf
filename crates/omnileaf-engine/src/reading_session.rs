@@ -15,10 +15,10 @@ pub(crate) struct ReachedPage {
 }
 
 impl ReachedPage {
-    /// The reading stored once this page saves over `stored`, which a save of the book's last page marks read.
-    pub(crate) const fn saved_over(self, stored: StoredReading) -> StoredReading {
+    /// The reading stored once this page saves, which marks the book read on its last page and unread on any other.
+    pub(crate) const fn stored(self) -> StoredReading {
         let position_page = Some(self.page);
-        if self.is_last || matches!(stored, StoredReading::Read { .. }) {
+        if self.is_last {
             StoredReading::Read { position_page }
         } else {
             StoredReading::Started { position_page }
@@ -326,19 +326,8 @@ mod tests {
     }
 
     #[test]
-    fn reads_as_read_once_its_last_page_or_any_page_of_a_book_read_saves_over_it() {
-        let started = StoredReading::Started {
-            position_page: Some(2),
-        };
-        let read = StoredReading::Read {
-            position_page: Some(LAST_PAGE),
-        };
-
-        let stored = [
-            reached(4).saved_over(started),
-            reached(LAST_PAGE).saved_over(started),
-            reached(4).saved_over(read),
-        ];
+    fn reads_as_read_once_its_last_page_saves_and_as_started_once_any_other_page_does() {
+        let stored = [reached(4).stored(), reached(LAST_PAGE).stored()];
 
         assert_eq!(
             stored,
@@ -348,9 +337,6 @@ mod tests {
                 },
                 StoredReading::Read {
                     position_page: Some(LAST_PAGE)
-                },
-                StoredReading::Read {
-                    position_page: Some(4)
                 },
             ]
         );

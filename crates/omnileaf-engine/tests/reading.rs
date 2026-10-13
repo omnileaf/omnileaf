@@ -334,6 +334,33 @@ async fn marks_the_book_read_once_its_last_page_is_saved() {
 }
 
 #[tokio::test(start_paused = true)]
+async fn marks_a_read_book_unread_once_a_page_before_its_last_is_saved() {
+    let shelf = Shelf::with_two_books("read-again-unread").await;
+    let finished = shelf.restore(0).await;
+    shelf.show(&finished, LAST_PAGE).await;
+    shelf.close(&finished).await;
+    let again = shelf.restore(0).await;
+    shelf.show(&again, 3).await;
+
+    shelf.close(&again).await;
+
+    assert_eq!(shelf.reading(0).await, started_on(4));
+}
+
+#[tokio::test(start_paused = true)]
+async fn keeps_a_read_book_read_when_it_closes_again_with_no_page_turned() {
+    let shelf = Shelf::with_two_books("reopened-read").await;
+    let finished = shelf.restore(0).await;
+    shelf.show(&finished, LAST_PAGE).await;
+    shelf.close(&finished).await;
+    let again = shelf.restore(0).await;
+
+    shelf.close(&again).await;
+
+    assert_eq!(shelf.reading(0).await, BookReading::Read);
+}
+
+#[tokio::test(start_paused = true)]
 async fn ignores_a_page_shown_in_a_book_closed_before() {
     let shelf = Shelf::with_two_books("closed-before").await;
     let opened = shelf.restore(0).await;

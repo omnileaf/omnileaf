@@ -347,6 +347,8 @@ fn write_reached(
         writer.raise_furthest(book.0, page)?;
         if is_last {
             writer.set_read(book.0, true)?;
+        } else if writer.is_read(book.0)? {
+            writer.set_read(book.0, false)?;
         }
         if told.iter().any(|saved| saved.book == book) {
             continue;
@@ -387,6 +389,7 @@ mod tests {
     use crate::{SystemClock, captured_log::CapturedLog, library_book::sample_book_id as book};
 
     const PAGE_COUNT: usize = 8;
+    const LAST_PAGE: u32 = 7;
     const REFUSE_SAVES: &str = "CREATE TRIGGER refuse_saves BEFORE INSERT ON sync_register
         BEGIN SELECT RAISE(ABORT, 'saves refused'); END";
 
@@ -493,6 +496,43 @@ mod tests {
             (state.position_page, state.furthest_page),
             (Some(1), Some(3))
         );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn marks_each_book_read_or_unread_by_the_later_of_its_pages_saved_together() {
+        let folder = ScratchFolder::new("progress-read-by-later-page");
+        let keeper = keeper(&folder);
+        let reached = |book, page| ReachedPage {
+            book,
+            page,
+            is_last: page == LAST_PAGE,
+        };
+        let pages = [
+            reached(book(1), LAST_PAGE),
+            reached(book(1), 3),
+            reached(book(2), 3),
+            reached(book(2), LAST_PAGE),
+        ];
+
+        keeper
+            .store
+            .write(move |writer| write_reached(writer, &pages))
+            .await
+            .unwrap();
+
+        let read = keeper
+            .store
+            .database()
+            .read(|connection| {
+                [book(1), book(2)]
+                    .map(|book| reading_state(connection, book.0))
+                    .into_iter()
+                    .map(|state| Ok(state?.and_then(|state| state.is_read)))
+                    .collect::<Result<Vec<_>, Error>>()
+            })
+            .await
+            .unwrap();
+        assert_eq!(read, [Some(false), Some(true)]);
     }
 
     #[tokio::test(start_paused = true)]
