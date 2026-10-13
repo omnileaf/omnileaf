@@ -159,6 +159,7 @@ export const TOKEN_THEME = {
     "dialog-button",
     "dialog-gap",
     "dialog-inset",
+    "dialog-limit",
     "dismiss",
     "empty-art",
     "empty-icon",
