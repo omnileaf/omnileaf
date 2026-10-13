@@ -1,5 +1,6 @@
 packages:
   - app
   - branding
+  - site
 verifyDepsBeforeRun: install
 enableGlobalVirtualStore: false
