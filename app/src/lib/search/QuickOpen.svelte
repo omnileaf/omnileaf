@@ -1,9 +1,11 @@
 <script lang="ts">
   import { Search } from "@lucide/svelte";
+  import { Dialog } from "bits-ui";
   import { untrack } from "svelte";
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { DialogContent } from "#lib/components/ui/dialog/index.ts";
   import {
     commands,
     DEFAULT_LIBRARY_LISTING,
@@ -41,13 +43,11 @@
     usesStandIns: boolean;
   } = $props();
 
-  let dialog: HTMLDialogElement | undefined = $state();
   let text = $state("");
   let answered = $state("");
   let series: readonly LibrarySeries[] = $state([]);
   let active = $state(0);
   let latestSearch = 0;
-  let isKeyComposing = false;
 
   const id = $props.id();
   const listboxId = `${id}-results`;
@@ -80,7 +80,7 @@
   const isAnswered = $derived(answered === text);
 
   $effect(() => {
-    if (quickOpen.isOpen && dialog?.open === false) {
+    if (quickOpen.isOpen) {
       untrack(showWithNothingTyped);
     }
   });
@@ -91,7 +91,6 @@
     series = [];
     active = 0;
     latestSearch += 1;
-    dialog?.showModal();
   }
 
   async function lookFor(typed: string): Promise<void> {
@@ -127,7 +126,7 @@
     if (choice === undefined) {
       return;
     }
-    dialog?.close();
+    quickOpen.close();
     switch (choice.kind) {
       case "series":
         void goto(resolve("/(app)/series/[id]", { id: choice.series.id }));
@@ -149,8 +148,11 @@
   }
 
   function keyDown(event: KeyboardEvent): void {
-    isKeyComposing = isComposing(event);
-    if (isKeyComposing || choices.length === 0) {
+    if (isComposing(event)) {
+      event.stopPropagation();
+      return;
+    }
+    if (choices.length === 0) {
       return;
     }
     switch (event.key) {
@@ -180,117 +182,114 @@
   function type(event: Event & { currentTarget: HTMLInputElement }): void {
     void lookFor(event.currentTarget.value);
   }
-
-  function closeOnBackdrop(event: MouseEvent): void {
-    if (event.target === dialog) {
-      dialog.close();
-    }
-  }
 </script>
 
-<dialog
-  bind:this={dialog}
-  aria-label={m.quick_open_title()}
-  class="inset-bs-quick-open-top m-none mx-auto flex-col overflow-hidden rounded-dialog border border-border bg-card p-none text-foreground shadow-dialog inline-quick-open max-inline-full backdrop:bg-scrim open:flex"
-  onclick={closeOnBackdrop}
-  oncancel={(event) => {
-    if (isKeyComposing) {
-      event.preventDefault();
+<Dialog.Root
+  bind:open={
+    () => quickOpen.isOpen,
+    (open: boolean) => {
+      if (!open) {
+        quickOpen.close();
+      }
     }
-  }}
-  onclose={() => {
-    quickOpen.close();
-  }}
+  }
 >
-  <div
-    class="flex items-center gap-label border-be border-border px-lg block-quick-open-field"
+  <DialogContent
+    aria-label={m.quick_open_title()}
+    class="inset-none inset-bs-quick-open-top mx-auto flex flex-col overflow-hidden rounded-dialog border border-border bg-card text-foreground fade-motion shadow-dialog block-fit inline-quick-open max-block-dialog-limit max-inline-full"
   >
-    <Search size={SEARCH_ICON_SIZE} aria-hidden="true" class="shrink-0" />
-    <input
-      type="text"
-      role="combobox"
-      aria-label={m.quick_open_field()}
-      aria-expanded={choices.length > 0}
-      aria-controls={listboxId}
-      aria-autocomplete="list"
-      aria-describedby={nothingFoundId}
-      aria-activedescendant={choices.length > 0 ? optionId(active) : undefined}
-      autocomplete="off"
-      spellcheck="false"
-      maxlength={SEARCH_MAX_CHARS}
-      value={text}
-      class="flex-1 bg-transparent text-quick-open outline-none min-inline-none"
-      oninput={type}
-      onkeydown={keyDown}
-    />
-    <kbd
-      aria-hidden="true"
-      class="shrink-0 rounded-badge border border-border bg-chip px-key-inline py-key-block font-ui text-caption font-bold"
+    <div
+      class="flex items-center gap-label border-be border-border px-lg block-quick-open-field"
     >
-      {m.search_escape_key()}
-    </kbd>
-  </div>
-  <div
-    id={listboxId}
-    role="listbox"
-    aria-label={m.quick_open_results()}
-    class={[
-      "flex flex-col gap-2xs overflow-y-auto max-block-quick-open-results",
-      choices.length > 0 && "p-sm",
-    ]}
-  >
-    {#each groups as group (group.name)}
-      {@const headingId = `${id}-${group.name}`}
-      <div
-        role="group"
-        aria-labelledby={headingId}
-        class="flex flex-col gap-2xs"
+      <Search size={SEARCH_ICON_SIZE} aria-hidden="true" class="shrink-0" />
+      <input
+        type="text"
+        role="combobox"
+        aria-label={m.quick_open_field()}
+        aria-expanded={choices.length > 0}
+        aria-controls={listboxId}
+        aria-autocomplete="list"
+        aria-describedby={nothingFoundId}
+        aria-activedescendant={choices.length > 0
+          ? optionId(active)
+          : undefined}
+        autocomplete="off"
+        spellcheck="false"
+        maxlength={SEARCH_MAX_CHARS}
+        value={text}
+        class="flex-1 bg-transparent text-quick-open outline-none min-inline-none"
+        oninput={type}
+        onkeydown={keyDown}
+      />
+      <kbd
+        aria-hidden="true"
+        class="shrink-0 rounded-badge border border-border bg-chip px-key-inline py-key-block font-ui text-caption font-bold"
       >
+        {m.search_escape_key()}
+      </kbd>
+    </div>
+    <div
+      id={listboxId}
+      role="listbox"
+      aria-label={m.quick_open_results()}
+      class={[
+        "flex flex-col gap-2xs overflow-y-auto max-block-quick-open-results",
+        choices.length > 0 && "p-sm",
+      ]}
+    >
+      {#each groups as group (group.name)}
+        {@const headingId = `${id}-${group.name}`}
         <div
-          id={headingId}
-          class="px-option-inline pbs-group-label-top pbe-xs text-overline font-bold tracking-overline text-muted uppercase"
+          role="group"
+          aria-labelledby={headingId}
+          class="flex flex-col gap-2xs"
         >
-          {group.label}
+          <div
+            id={headingId}
+            class="px-option-inline pbs-group-label-top pbe-xs text-overline font-bold tracking-overline text-muted uppercase"
+          >
+            {group.label}
+          </div>
+          {#each group.choices as choice, offset (choiceKey(choice))}
+            {@const index = group.start + offset}
+            <QuickOpenOption
+              id={optionId(index)}
+              {choice}
+              isActive={index === active}
+              {usesStandIns}
+              onActivate={() => {
+                active = index;
+              }}
+              onChoose={() => {
+                choose(choice);
+              }}
+              onKeyDown={keyDown}
+            />
+          {/each}
         </div>
-        {#each group.choices as choice, offset (choiceKey(choice))}
-          {@const index = group.start + offset}
-          <QuickOpenOption
-            id={optionId(index)}
-            {choice}
-            isActive={index === active}
-            {usesStandIns}
-            onActivate={() => {
-              active = index;
-            }}
-            onChoose={() => {
-              choose(choice);
-            }}
-            onKeyDown={keyDown}
-          />
-        {/each}
-      </div>
-    {/each}
-  </div>
-  <p
-    id={nothingFoundId}
-    role="status"
-    class={[
-      "text-small text-muted",
-      choices.length === 0 && "m-sm px-option-inline py-sm",
-    ]}
-  >
-    {#if choices.length === 0 && isAnswered}
-      {m.search_nothing_called({ text: text.trim() })}
-    {/if}
-  </p>
-  <footer
-    class="flex items-center gap-lg border-bs border-border px-lg text-caption text-muted block-key-hints"
-  >
-    <span>{m.search_key_move()}</span>
-    <span>{m.search_key_open()}</span>
-    <span>{m.search_key_next_group()}</span>
-    <span class="ms-auto">
-      {m.quick_open_anywhere({ shortcut: quickOpenShortcutLabel(platform) })}
-    </span>
-  </footer>
-</dialog>
+      {/each}
+    </div>
+    <p
+      id={nothingFoundId}
+      role="status"
+      class={[
+        "text-small text-muted",
+        choices.length === 0 && "m-sm px-option-inline py-sm",
+      ]}
+    >
+      {#if choices.length === 0 && isAnswered}
+        {m.search_nothing_called({ text: text.trim() })}
+      {/if}
+    </p>
+    <footer
+      class="flex items-center gap-lg border-bs border-border px-lg text-caption text-muted block-key-hints"
+    >
+      <span>{m.search_key_move()}</span>
+      <span>{m.search_key_open()}</span>
+      <span>{m.search_key_next_group()}</span>
+      <span class="ms-auto">
+        {m.quick_open_anywhere({ shortcut: quickOpenShortcutLabel(platform) })}
+      </span>
+    </footer>
+  </DialogContent>
+</Dialog.Root>

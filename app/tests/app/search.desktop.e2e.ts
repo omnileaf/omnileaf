@@ -5,7 +5,7 @@ import { xpath } from "./webdriver.ts";
 
 const SERIES_FOUND = xpath("//ul[@aria-label='Series found']/li");
 const QUICK_OPEN_SERIES = xpath(
-  "//dialog[@open]//*[@role='group'][@aria-labelledby][.//*[normalize-space()='Series']]//*[@role='option']",
+  "//*[@aria-modal='true'][@data-state='open']//*[@role='group'][@aria-labelledby][.//*[normalize-space()='Series']]//*[@role='option']",
 );
 
 /** Types into the library header's search field the way a keystroke would, since the driver has no keyboard. */
@@ -15,7 +15,7 @@ field.value = "series 02";
 field.dispatchEvent(new Event("input", { bubbles: true }));
 return true;`;
 
-const OPEN_QUICK_OPEN_AND_TYPE = `const field = document.querySelector("dialog[open] input[role='combobox']");
+const OPEN_QUICK_OPEN_AND_TYPE = `const field = document.querySelector("[aria-modal=true][data-state=open] input[role='combobox']");
 if (field === null) {
   const modifier = document.documentElement.dataset.platform === "macos" ? { metaKey: true } : { ctrlKey: true };
   window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ...modifier }));
