@@ -179,17 +179,20 @@ for (const platform of PLATFORMS) {
           }),
         });
 
-        test("fits the floating notice to the screen", async ({ page }) => {
+        test("fits the warning toast to the screen", async ({ page }) => {
           await page.goto("/");
           await page
             .getByRole("region", { name: messages.library_empty })
             .getByRole("button", { name: messages.library_add_folder })
             .click();
-          await expect(page.getByRole("alert")).toContainText(
+          await expect(page.locator("[data-sonner-toast]")).toContainText(
             messages.library_folder_unreadable_title,
           );
 
-          const overflowing = await sidewaysOverflow(page, "[role=alert]");
+          const overflowing = await sidewaysOverflow(
+            page,
+            "[data-sonner-toast]",
+          );
 
           expect(overflowing).toEqual([]);
         });
@@ -207,7 +210,7 @@ for (const platform of PLATFORMS) {
           })),
         });
 
-        test("fits the add-folder report to the screen", async ({ page }) => {
+        test("fits the add-folder result to the screen", async ({ page }) => {
           await page.goto("/settings/library");
           await page
             .getByRole("region", { name: messages.library_settings_folders })
@@ -215,12 +218,14 @@ for (const platform of PLATFORMS) {
             .click();
           await expect(
             page
-              .getByRole("main")
-              .getByRole("status")
+              .locator("[data-sonner-toast]")
               .filter({ hasText: LONG_FOLDER_NAME }),
           ).toBeVisible();
 
-          const overflowing = await sidewaysOverflow(page);
+          const overflowing = await sidewaysOverflow(
+            page,
+            "[data-sonner-toast]",
+          );
 
           expect(overflowing).toEqual([]);
         });

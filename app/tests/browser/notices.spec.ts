@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
@@ -8,21 +8,25 @@ import {
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  settle,
   test,
   testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 
+const UNREADABLE_TITLE = "Couldn't read that folder";
 const UNREADABLE =
   "Couldn't read that folder Omnileaf may not be allowed to open it, or it may have moved. Your library hasn't changed. Choose another folder";
 
 const CORNER_INSET = 24;
-const NOTICE_WIDTH = 440;
+const PHONE_INSET = 12;
+const TOAST_WIDTH = 404;
 const POINTER_TITLE_SIZE = "14px";
 const TOUCH_TITLE_SIZE = "15px";
 const BODY_SIZE = "13px";
+const ICON_SIZE = 20;
 const POINTER_ACTION_HEIGHT = 32;
-const ACTION_CORNER = "10px";
+const LONG_WAIT_MS = 60_000;
 
 const FAILS_TO_READ_THE_FOLDER: FakeBackend = {
   ...DEFAULT_BACKEND,
@@ -42,34 +46,74 @@ function emptyLibraryAddFolder(page: Page) {
     .getByRole("button", { name: "Add a folder" });
 }
 
+function warningToast(page: Page): Locator {
+  return page
+    .getByRole("region", { name: "Notifications F6" })
+    .getByRole("listitem")
+    .filter({ hasText: UNREADABLE_TITLE });
+}
+
 async function failToAddAFolder(page: Page) {
   await page.goto("/");
   await emptyLibraryAddFolder(page).click();
-  const warning = page.getByRole("alert");
+  const warning = warningToast(page);
   await expect(warning).toHaveText(UNREADABLE);
-  const card = warning.locator(":scope > *");
-  await card.evaluate((element) =>
-    Promise.all(element.getAnimations().map(({ finished }) => finished)),
-  );
-  return card;
+  await settle(warning);
+  return { warning, card: warning.locator(":scope > div") };
+}
+
+function colourOf(page: Page, token: string): Promise<string> {
+  return page.evaluate((name) => {
+    const probe = document.createElement("div");
+    probe.style.color = `var(${name})`;
+    document.body.append(probe);
+    const colour = getComputedStyle(probe).color;
+    probe.remove();
+    return colour;
+  }, token);
 }
 
 test("warns that the folder couldn't be read and offers another", async ({
   page,
 }) => {
-  await failToAddAFolder(page);
+  const { warning } = await failToAddAFolder(page);
 
   await expect(
-    page.getByRole("alert").getByRole("button", {
-      name: "Choose another folder",
-    }),
+    warning.getByRole("button", { name: "Choose another folder" }),
   ).toBeVisible();
+  await expect(warning).toHaveAttribute("aria-live", "assertive");
 });
 
-test("shows the warning just above the navigation on phones", async ({
+test("draws the warning in the warning colours", async ({ page }) => {
+  const { card } = await failToAddAFolder(page);
+
+  await expect(card).toHaveCSS(
+    "background-color",
+    await colourOf(page, "--color-warning-soft"),
+  );
+  await expect(card).toHaveCSS(
+    "border-top-color",
+    await colourOf(page, "--color-warning-edge"),
+  );
+  await expect(card).toHaveCSS(
+    "color",
+    await colourOf(page, "--color-on-warning"),
+  );
+});
+
+test("keeps the warning until it's dismissed", async ({ page }) => {
+  await page.clock.install();
+  const { warning } = await failToAddAFolder(page);
+
+  await page.clock.runFor(LONG_WAIT_MS);
+
+  await expect(warning).toHaveAttribute("data-removed", "false");
+});
+
+test("shows the warning full width just above the navigation on phones", async ({
   page,
 }) => {
-  const card = await failToAddAFolder(page);
+  const { card } = await failToAddAFolder(page);
   const viewport = viewportOf(page);
   test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
 
@@ -79,20 +123,20 @@ test("shows the warning just above the navigation on phones", async ({
   );
 
   expect(box.y + box.height).toBeLessThan(navigation.y);
-  expect(box.x).toBeGreaterThan(0);
-  expect(box.x + box.width).toBeLessThan(viewport.width);
+  expect(box.x).toBe(PHONE_INSET);
+  expect(viewport.width - (box.x + box.width)).toBe(PHONE_INSET);
 });
 
 test("shows the warning in the bottom corner on tablets and desktops", async ({
   page,
 }) => {
-  const card = await failToAddAFolder(page);
+  const { card } = await failToAddAFolder(page);
   const viewport = viewportOf(page);
   test.skip(viewport.width < MEDIUM_MIN_WIDTH, "tablets and desktops only");
 
   const box = await boxOf(card);
 
-  expect(box.width).toBe(NOTICE_WIDTH);
+  expect(box.width).toBe(TOAST_WIDTH);
   expect(viewport.width - (box.x + box.width)).toBe(CORNER_INSET);
   expect(viewport.height - (box.y + box.height)).toBe(CORNER_INSET);
 });
@@ -100,20 +144,31 @@ test("shows the warning in the bottom corner on tablets and desktops", async ({
 test("reaches the warning from the keyboard after the page", async ({
   page,
 }) => {
-  await failToAddAFolder(page);
+  const { warning } = await failToAddAFolder(page);
   await emptyLibraryAddFolder(page).focus();
 
   await page.keyboard.press("Tab");
-  const dismiss = page.getByRole("button", { name: "Dismiss" });
-  await expect(dismiss).toBeFocused();
+  await expect(warning).toBeFocused();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
+  await expect(warning.getByRole("button", { name: "Dismiss" })).toBeFocused();
   await page.keyboard.press("Enter");
 
-  await expect(page.getByRole("alert")).toBeEmpty();
+  await expect(warning).toHaveCount(0);
   await expect(emptyLibraryAddFolder(page)).toBeFocused();
 });
 
+test("jumps to the notifications with F6", async ({ page }) => {
+  const { warning } = await failToAddAFolder(page);
+
+  await page.keyboard.press("F6");
+  await page.keyboard.press("Tab");
+
+  await expect(warning).toBeFocused();
+});
+
 test("puts the warning away when the page changes", async ({ page }) => {
-  await failToAddAFolder(page);
+  const { warning } = await failToAddAFolder(page);
 
   await page
     .getByRole("navigation", { name: "Main" })
@@ -123,13 +178,13 @@ test("puts the warning away when the page changes", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Browse" }),
   ).toBeFocused();
-  await expect(page.getByRole("alert")).toBeEmpty();
+  await expect(warning).toHaveCount(0);
 });
 
 test("keeps the warning when the open section's link is pressed again", async ({
   page,
 }) => {
-  await failToAddAFolder(page);
+  const { warning } = await failToAddAFolder(page);
 
   await page
     .getByRole("navigation", { name: "Main" })
@@ -139,22 +194,15 @@ test("keeps the warning when the open section's link is pressed again", async ({
   await expect(
     page.getByRole("heading", { level: 1, name: "Library" }),
   ).toBeFocused();
-  await expect(page.getByRole("alert")).toHaveText(UNREADABLE);
-  await expect(
-    page.getByRole("alert").getByRole("button", {
-      name: "Choose another folder",
-    }),
-  ).toBeVisible();
+  await expect(warning).toHaveText(UNREADABLE);
 });
 
-test("rises into place", async ({ page }) => {
+test("slides into place", async ({ page }) => {
   await page.goto("/");
 
   await emptyLibraryAddFolder(page).click();
 
-  const card = page.getByRole("alert").locator(":scope > *");
-
-  await expect(card).toHaveCSS("animation-name", "notice-rise");
+  await expect(warningToast(page)).not.toHaveCSS("transition-duration", "0s");
 });
 
 test("appears at once with reduce motion", async ({ page }) => {
@@ -163,9 +211,8 @@ test("appears at once with reduce motion", async ({ page }) => {
 
   await emptyLibraryAddFolder(page).click();
 
-  const card = page.getByRole("alert").locator(":scope > *");
-  await expect(card).toBeVisible();
-  await expect(card).toHaveCSS("animation-name", "none");
+  await expect(warningToast(page)).toBeVisible();
+  await expect(warningToast(page)).toHaveCSS("transition-duration", "0s");
 });
 
 for (const colorScheme of ["light", "dark"] as const) {
@@ -181,27 +228,39 @@ for (const colorScheme of ["light", "dark"] as const) {
   });
 }
 
-test("sets the warning's title at 14px over a 13px body on a desktop", async ({
+test("sets a 20px icon beside a 14px title over a 13px body on a desktop", async ({
   page,
 }) => {
-  const card = await failToAddAFolder(page);
+  const { card } = await failToAddAFolder(page);
 
-  const title = card.getByText("Couldn't read that folder", { exact: true });
+  const icon = await boxOf(card.locator("svg").first());
+  const title = card.getByText(UNREADABLE_TITLE, { exact: true });
   const body = card.getByText(/^Omnileaf may not be allowed/);
 
+  expect([icon.width, icon.height]).toEqual([ICON_SIZE, ICON_SIZE]);
+  expect(icon.x + icon.width).toBeLessThan((await boxOf(title)).x);
   await expect(title).toHaveCSS("font-size", POINTER_TITLE_SIZE);
   await expect(body).toHaveCSS("font-size", BODY_SIZE);
 });
 
-test("draws the warning's action 32px tall with 10px corners on a desktop", async ({
+test("draws the warning's action as a 32px pill on a desktop", async ({
   page,
 }) => {
-  const card = await failToAddAFolder(page);
+  const { card } = await failToAddAFolder(page);
 
   const action = card.getByRole("button", { name: "Choose another folder" });
+  const box = await boxOf(action);
 
-  expect((await boxOf(action)).height).toBe(POINTER_ACTION_HEIGHT);
-  await expect(action).toHaveCSS("border-top-left-radius", ACTION_CORNER);
+  expect(box.height).toBe(POINTER_ACTION_HEIGHT);
+  await expect(action).toHaveCSS(
+    "background-color",
+    await colourOf(page, "--color-foreground"),
+  );
+  await expect(action).toHaveCSS("color", await colourOf(page, "--color-card"));
+  const radius = await action.evaluate((element) =>
+    Number.parseFloat(getComputedStyle(element).borderTopLeftRadius),
+  );
+  expect(radius).toBeGreaterThanOrEqual(box.height / 2);
 });
 
 test.describe("on Android", () => {
@@ -213,10 +272,11 @@ test.describe("on Android", () => {
     },
   });
 
-  test("sets the warning's title at 15px", async ({ page }) => {
-    const card = await failToAddAFolder(page);
+  test("sets the warning's title at 15px on a phone", async ({ page }) => {
+    const { card } = await failToAddAFolder(page);
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
 
-    const title = card.getByText("Couldn't read that folder", { exact: true });
+    const title = card.getByText(UNREADABLE_TITLE, { exact: true });
 
     await expect(title).toHaveCSS("font-size", TOUCH_TITLE_SIZE);
   });
