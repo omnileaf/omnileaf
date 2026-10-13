@@ -39,7 +39,7 @@ const LOADED_HOME_FOLDER = xpath(
 
 const VIEW_OPTIONS_BUTTON = xpath("//button[@aria-label='View options']");
 const LIST_CHOICE = xpath(
-  "//dialog[@open]//*[@role='radio'][.//span[not(@aria-hidden='true')][normalize-space()='List']]",
+  "//*[@aria-modal='true'][@data-state='open']//*[@role='radio'][.//span[not(@aria-hidden='true')][normalize-space()='List']]",
 );
 const SERIES_IN_ONE_COLUMN = `const series = document.querySelector("ul[aria-label='Series']");
 return series !== null && series.children.length > 0 && getComputedStyle(series).gridTemplateColumns.split(" ").length === 1;`;
