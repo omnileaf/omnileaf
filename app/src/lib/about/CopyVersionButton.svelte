@@ -1,43 +1,27 @@
 <script lang="ts">
-  import { Check, Copy } from "@lucide/svelte";
-
+  import type { ButtonLook } from "#lib/components/ui/button/index.ts";
+  import { CopyButton } from "#lib/components/ui/copy-button/index.ts";
+  import type { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { type AboutLook, ROW_ICON_SIZES } from "./look";
-  import type { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
 
   const LOOKS = {
-    phone:
-      "rounded-tile px-md text-accent transition-control hover:bg-hover active:bg-pressed",
-    pane: "rounded-control border border-border bg-card ps-md pe-list-row hover:tint-hover active:tint-pressed desktop:text-label desktop:min-block-pointer-button",
-  } satisfies Record<AboutLook, string>;
+    phone: "about-copy-phone",
+    pane: "about-copy-pane",
+  } satisfies Record<AboutLook, ButtonLook>;
 
   let { copying, look }: { copying: DetailsCopying; look: AboutLook } =
     $props();
-
-  const isCopied = $derived(copying.outcome === "copied");
 </script>
 
-<button
-  type="button"
-  class={[
-    "inline-flex items-center gap-sm text-start text-callout font-semibold min-block-touch-target min-inline-none",
-    LOOKS[look],
-  ]}
-  onclick={() => {
-    void copying.copy();
+<CopyButton
+  {copying}
+  look={LOOKS[look]}
+  iconSize={ROW_ICON_SIZES[look]}
+  labels={{
+    copy: m.about_copy_version_details(),
+    copied: m.about_version_details_copied(),
+    copiedStatus: m.about_version_details_copied_status(),
   }}
->
-  {#if isCopied}
-    <Check size={ROW_ICON_SIZES[look]} class="shrink-0" />
-    <span>{m.about_version_details_copied()}</span>
-  {:else}
-    <Copy size={ROW_ICON_SIZES[look]} class="shrink-0" />
-    <span>{m.about_copy_version_details()}</span>
-  {/if}
-</button>
-<span role="status" class="sr-only">
-  {#if isCopied}
-    {m.about_version_details_copied_status()}
-  {/if}
-</span>
+/>
