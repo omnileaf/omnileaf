@@ -116,7 +116,7 @@
 </script>
 
 <div
-  class="relative isolate -me-page-end -mbs-page-top flex flex-col gap-lg pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-xl medium:ps-xl medium:pbs-page-top"
+  class="relative isolate -me-page-end -mbs-page-top flex flex-col gap-lg pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-gutter medium:ps-gutter medium:pbs-page-top"
 >
   {#if found !== undefined}
     <div

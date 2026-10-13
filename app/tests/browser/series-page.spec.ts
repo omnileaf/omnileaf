@@ -199,6 +199,22 @@ test("sets the books beside the series on wide screens and under it on narrow on
   }
 });
 
+test("spreads the cover's colour from one edge of the page to the other", async ({
+  page,
+}) => {
+  await openSeries(page);
+
+  const main = page.getByRole("main");
+  const band = await boxOf(main.locator(":scope > div > [aria-hidden='true']"));
+  const area = await boxOf(main);
+  const areaWidth = await main.evaluate((element) => element.clientWidth);
+
+  expect({ start: band.x, end: band.x + band.width }).toEqual({
+    start: area.x,
+    end: area.x + areaWidth,
+  });
+});
+
 test("marks the books picked read", async ({ page }) => {
   await openSeries(page);
 
