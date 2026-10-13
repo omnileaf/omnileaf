@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { commands } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import LibraryFolderSettings from "#lib/library/LibraryFolderSettings.svelte";
@@ -27,4 +29,7 @@
   {notices}
   usesStandIns={screenshotMode.isOn}
   platform={data.appInfo.platform}
+  onShowBooks={() => {
+    void goto(resolve("/(app)"));
+  }}
 />

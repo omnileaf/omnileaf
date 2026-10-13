@@ -1,5 +1,5 @@
 import { tick } from "svelte";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
@@ -8,7 +8,7 @@ import type {
   IpcErrorCode,
   ScanProgress,
 } from "#lib/ipc/bindings.ts";
-import { Notices } from "#lib/notices/notices.ts";
+import { NOTICE_WINDOW_MS, Notices } from "#lib/notices/notices.ts";
 import Toasts from "#lib/notices/Toasts.svelte";
 
 import { clearToasts } from "../../../tests/components/clear-toasts";
@@ -73,7 +73,9 @@ function toastSaying(text: string) {
 
 async function renderWith(
   addFolder: AddFolder,
-  { usesStandIns } = { usesStandIns: false },
+  { usesStandIns, onShow }: { usesStandIns: boolean; onShow?: () => void } = {
+    usesStandIns: false,
+  },
 ) {
   const notices = new Notices();
   const adding = new FolderAdding(addFolder, () => notices);
@@ -81,7 +83,9 @@ async function renderWith(
   await render(AddFolderButton, { adding, placement: "empty-state" });
   const notice = await render(FolderNotice, {
     adding,
+    notices,
     usesStandIns,
+    onShow,
     onDismissed: () => {
       dismissals.count += 1;
     },
@@ -96,53 +100,51 @@ async function renderWith(
   };
 }
 
-test("reports the books and series the scan found in the picked folder", async () => {
-  const { button, status } = await renderWith(answering(scanned({})));
+test("reports the books the scan added from the picked folder", async () => {
+  const { button } = await renderWith(answering(scanned({})));
 
   await button.click();
 
   await expect
-    .element(status)
-    .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
+    .element(toastSaying("Added 7 books from Sample Library"))
+    .toBeVisible();
 });
 
 test("names the folder with the stand-in its name gives it while Screenshot mode is on", async () => {
-  const { button, status } = await renderWith(answering(scanned({})), {
+  const { button } = await renderWith(answering(scanned({})), {
     usesStandIns: true,
   });
 
   await button.click();
 
   await expect
-    .element(status)
-    .toHaveTextContent("Found 7 books in 3 series in Folder 571.");
+    .element(toastSaying("Added 7 books from Folder 571"))
+    .toBeVisible();
 });
 
-test("counts a single book in a single series in the singular", async () => {
-  const { button, status } = await renderWith(
+test("counts a single book in the singular", async () => {
+  const { button } = await renderWith(
     answering(scanned({ books: 1, series: 1 })),
   );
 
   await button.click();
 
   await expect
-    .element(status)
-    .toHaveTextContent("Found 1 book in 1 series in Sample Library.");
+    .element(toastSaying("Added 1 book from Sample Library"))
+    .toBeVisible();
 });
 
 test("formats the book count for the locale", async () => {
-  const { button, status } = await renderWith(
-    answering(scanned({ books: 1234 })),
-  );
+  const { button } = await renderWith(answering(scanned({ books: 1234 })));
 
   await button.click();
 
   await expect
-    .element(status)
-    .toHaveTextContent("Found 1,234 books in 3 series in Sample Library.");
+    .element(toastSaying("Added 1,234 books from Sample Library"))
+    .toBeVisible();
 });
 
-test("says so when the folder holds no books", async () => {
+test("says so in the page when the folder holds no books", async () => {
   const { button, status } = await renderWith(
     answering(scanned({ books: 0, series: 0 })),
   );
@@ -152,71 +154,141 @@ test("says so when the folder holds no books", async () => {
   await expect
     .element(status)
     .toHaveTextContent("Found no books in Sample Library.");
+  expect(page.getByRole("listitem").elements()).toEqual([]);
 });
 
 test("mentions the books and folders inside it that couldn't be read", async () => {
-  const { button, status } = await renderWith(
+  const { button } = await renderWith(
     answering(scanned({ unreadableBooks: 1, unreadableFolders: 2 })),
   );
 
   await button.click();
 
   await expect
-    .element(status)
-    .toHaveTextContent(
-      "Found 7 books in 3 series in Sample Library. Couldn't read 1 book in it. Couldn't read 2 folders inside it.",
-    );
+    .element(
+      toastSaying("Added 7 books").getByText(
+        "Couldn't read 1 book in it. Couldn't read 2 folders inside it.",
+      ),
+    )
+    .toBeVisible();
 });
 
 test("says which books are in a format this version can't open yet", async () => {
-  const { button, status } = await renderWith(
+  const { button } = await renderWith(
     answering(scanned({ unreadableBooks: 1, unsupportedBooks: 16 })),
   );
 
   await button.click();
 
   await expect
-    .element(status)
-    .toHaveTextContent(
-      "Found 7 books in 3 series in Sample Library. Couldn't read 1 book in it. 16 books are CBR files, which this version can't open yet.",
-    );
+    .element(
+      toastSaying("Added 7 books").getByText(
+        "Couldn't read 1 book in it. 16 books are CBR files, which this version can't open yet.",
+      ),
+    )
+    .toBeVisible();
 });
 
-test("clears the last result when the picker is cancelled", async () => {
-  const { button, status } = await renderWith(
-    answering(scanned({}), CANCELLED),
-  );
-  await button.click();
-  await expect
-    .element(status)
-    .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
+test("shows nothing when the picker is cancelled", async () => {
+  const { button, status } = await renderWith(answering(CANCELLED));
 
   await button.click();
 
+  await expect.element(button).toBeEnabled();
+  expect(page.getByRole("listitem").elements()).toEqual([]);
   await expect.element(status).toHaveTextContent("");
 });
 
-test("clears the result when it is dismissed", async () => {
-  const { button, status } = await renderWith(answering(scanned({})));
+test("puts the result away when it is dismissed", async () => {
+  const { button } = await renderWith(answering(scanned({})));
   await button.click();
-  await expect
-    .element(status)
-    .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
+  const result = toastSaying("Added 7 books");
 
-  await status.getByRole("button", { name: "Dismiss" }).click();
+  await result.getByRole("button", { name: "Dismiss" }).click();
 
-  await expect.element(status).toHaveTextContent("");
+  await expect.element(result).not.toBeInTheDocument();
 });
 
-test("tells the page once the notice is dismissed", async () => {
+test("tells the page once the notice in it is dismissed", async () => {
   const { button, status, dismissals } = await renderWith(
-    answering(scanned({})),
+    answering(scanned({ books: 0, series: 0 })),
   );
   await button.click();
 
   await status.getByRole("button", { name: "Dismiss" }).click();
 
   expect(dismissals.count).toBe(1);
+});
+
+test("offers to show the books when the page can", async () => {
+  const shown = { count: 0 };
+  const { button } = await renderWith(answering(scanned({})), {
+    usesStandIns: false,
+    onShow: () => {
+      shown.count += 1;
+    },
+  });
+  await button.click();
+
+  await toastSaying("Added 7 books")
+    .getByRole("button", { name: "Show" })
+    .click();
+
+  expect(shown.count).toBe(1);
+});
+
+test("offers no Show where the books are already in view", async () => {
+  const { button } = await renderWith(answering(scanned({})));
+
+  await button.click();
+
+  const result = toastSaying("Added 7 books");
+  await expect.element(result).toBeVisible();
+  expect(result.getByRole("button", { name: "Show" }).elements()).toEqual([]);
+});
+
+test("turns the finding toast into the result in the same place", async () => {
+  const scan = new PendingScan();
+  const { button } = await renderWith(scan.addFolder);
+  await button.click();
+  scan.report({ stage: "finding", found: 3 });
+  const finding = toastSaying("Finding books");
+  await expect.element(finding).toBeVisible();
+  const shownWhileFinding = finding.element();
+
+  scan.finish(scanned({}));
+
+  await expect
+    .element(toastSaying("Added 7 books from Sample Library"))
+    .toBeVisible();
+  expect(toastSaying("Added 7 books").element()).toBe(shownWhileFinding);
+  expect(page.getByRole("listitem").elements()).toHaveLength(1);
+});
+
+test("keeps finding books for as long as the scan runs", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const scan = new PendingScan();
+  const { button } = await renderWith(scan.addFolder);
+  await button.click();
+  scan.report({ stage: "reading", scanned: 1, total: 7 });
+  const finding = toastSaying("Finding books");
+  await expect.element(finding).toBeVisible();
+
+  vi.advanceTimersByTime(NOTICE_WINDOW_MS * 10);
+
+  await expect.element(finding).toHaveAttribute("data-removed", "false");
+});
+
+test("closes the result by itself after a few seconds", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const { button } = await renderWith(answering(scanned({})));
+  await button.click();
+  const result = toastSaying("Added 7 books");
+  await expect.element(result).toBeVisible();
+
+  vi.advanceTimersByTime(NOTICE_WINDOW_MS);
+
+  await expect.element(result).toHaveAttribute("data-removed", "true");
 });
 
 test.each<[IpcErrorCode, string, string]>([
@@ -266,16 +338,14 @@ test.each<[IpcErrorCode, string]>([
   ["folderChooserMissing", "Try again"],
   ["internal", "Try again"],
 ])("opens the picker again from the %s warning", async (code, retry) => {
-  const { status, button } = await renderWith(
-    answering(failed(code), scanned({})),
-  );
+  const { button } = await renderWith(answering(failed(code), scanned({})));
   await button.click();
 
   await page.getByRole("button", { name: retry }).click();
 
   await expect
-    .element(status)
-    .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
+    .element(toastSaying("Added 7 books from Sample Library"))
+    .toBeVisible();
 });
 
 test("offers no retry when the device has no folder picker", async () => {
@@ -294,7 +364,7 @@ test("offers no retry when the device has no folder picker", async () => {
 });
 
 test("puts a failure warning away once a folder is added", async () => {
-  const { button, status } = await renderWith(
+  const { button } = await renderWith(
     answering(failed("folderUnreadable"), scanned({})),
   );
   await button.click();
@@ -304,8 +374,8 @@ test("puts a failure warning away once a folder is added", async () => {
   await button.click();
 
   await expect
-    .element(status)
-    .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
+    .element(toastSaying("Added 7 books from Sample Library"))
+    .toBeVisible();
   await expect.element(warning).not.toBeInTheDocument();
 });
 
@@ -369,15 +439,15 @@ test("eases the count found so far up instead of jumping to it", async () => {
 
 test("announces that books are being found without announcing each count", async () => {
   const scan = new PendingScan();
-  const { button, status } = await renderWith(scan.addFolder);
+  const { button } = await renderWith(scan.addFolder);
   await button.click();
   scan.report({ stage: "finding", found: 0 });
 
   scan.report({ stage: "reading", scanned: 32, total: 100 });
 
-  await expect.element(page.getByText("32 of 100 books")).toBeVisible();
-  await expect.element(status).toHaveTextContent("Finding books");
-  await expect.element(status).not.toHaveTextContent("32");
+  const count = toastSaying("Finding books").getByText("32 of 100 books");
+  await expect.element(count).toBeVisible();
+  await expect.element(count).toHaveAttribute("aria-hidden", "true");
 });
 
 test("says it is finding books before the scan has counted them", async () => {
@@ -397,18 +467,16 @@ test("says it is finding books before the scan has counted them", async () => {
 
 test("keeps the result when word of the scan arrives after it finished", async () => {
   const scan = new PendingScan();
-  const { button, status } = await renderWith(scan.addFolder);
+  const { button } = await renderWith(scan.addFolder);
   await button.click();
   scan.finish(scanned({}));
-  await expect
-    .element(status)
-    .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
+  const result = toastSaying("Added 7 books from Sample Library");
+  await expect.element(result).toBeVisible();
 
   scan.report({ stage: "reading", scanned: 7, total: 7 });
 
-  await expect
-    .element(status)
-    .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
+  await expect.element(result).toBeVisible();
+  expect(page.getByRole("listitem").elements()).toHaveLength(1);
 });
 
 test("withdraws its warning once it's gone from the page", async () => {

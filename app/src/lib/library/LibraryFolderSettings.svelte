@@ -33,6 +33,7 @@
     notices,
     usesStandIns,
     platform,
+    onShowBooks,
   }: {
     listFolders: ListFolders;
     removeFolder: RemoveFolder;
@@ -43,6 +44,7 @@
     notices: Notices;
     usesStandIns: boolean;
     platform: Platform;
+    onShowBooks?: (() => void) | undefined;
   } = $props();
 
   const folders = new LibraryFolders(
@@ -150,6 +152,7 @@
     {addFolder}
     {notices}
     {usesStandIns}
+    {onShowBooks}
     rowAction={rescanButton}
     isFoundEmpty={(folder: LibraryFolder) =>
       rescans.emptied(folder) !== undefined}

@@ -27,6 +27,7 @@
     usesStandIns,
     hint,
     addPlacement = "section-heading",
+    onShowBooks,
   }: {
     folders: LibraryFolders;
     addFolder: AddFolder;
@@ -37,6 +38,7 @@
     status?: Snippet;
     usesStandIns: boolean;
     hint?: Snippet | undefined;
+    onShowBooks?: (() => void) | undefined;
     addPlacement?: "section-heading" | "below-list";
   } = $props();
 
@@ -180,7 +182,9 @@
   <div class="mbs-sm">
     <FolderNotice
       {adding}
+      {notices}
       {usesStandIns}
+      onShow={onShowBooks}
       onDismissed={() => {
         addButton?.focus();
       }}
