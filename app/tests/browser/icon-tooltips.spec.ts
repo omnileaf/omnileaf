@@ -2,7 +2,7 @@ import type { Locator, Page, TestInfo } from "@playwright/test";
 
 import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
 
-import type { FakeBackend } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   DEFAULT_BACKEND,
@@ -74,6 +74,16 @@ const CRASHED_ON_ANDROID: FakeBackend = {
   }),
 };
 
+const FAILS_TO_READ_THE_FOLDER: FakeBackend = {
+  ...DEFAULT_BACKEND,
+  addLibraryFolder: () => {
+    throw new CommandFailure({
+      code: "folderUnreadable",
+      message: "the folder could not be read",
+    });
+  },
+};
+
 function isPhoneScreen(page: Page): boolean {
   return screenSizeOf(page) === "phone";
 }
@@ -141,6 +151,21 @@ const ICON_ACTIONS: readonly IconAction[] = [
     },
     label: "Close",
     isShownOn: (page) => !isPhoneScreen(page),
+  },
+  {
+    screen: "a notice",
+    backend: FAILS_TO_READ_THE_FOLDER,
+    reach: async (page) => {
+      await page.goto("/");
+      await page
+        .getByRole("region", { name: "Your library is empty" })
+        .getByRole("button", { name: "Add a folder" })
+        .click();
+      return page
+        .getByRole("region", { name: "Notifications F6" })
+        .getByRole("button", { name: "Dismiss" });
+    },
+    label: "Dismiss",
   },
   {
     screen: "the crash report on an Android phone",

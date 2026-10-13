@@ -7,6 +7,7 @@
   import type { Snippet } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { NoticeAction, NoticeTone } from "./notices";
@@ -83,13 +84,19 @@
       {shortcut.label}
     </kbd>
   {/if}
-  <Button
-    type="button"
-    look="dismiss"
+  <Tooltip
+    label={m.notice_dismiss()}
     aria-label={m.notice_dismiss()}
-    class="-my-sm shrink-0 block-touch-target inline-touch-target before:block-pointer-target before:inline-pointer-target desktop:my-none desktop:block-dismiss desktop:inline-dismiss"
     onclick={onDismiss}
   >
-    <X aria-hidden="true" size={DISMISS_ICON_SIZE} class="relative" />
-  </Button>
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        look="dismiss"
+        class="-my-sm shrink-0 block-touch-target inline-touch-target before:block-pointer-target before:inline-pointer-target desktop:my-none desktop:block-dismiss desktop:inline-dismiss"
+      >
+        <X aria-hidden="true" size={DISMISS_ICON_SIZE} class="relative" />
+      </Button>
+    {/snippet}
+  </Tooltip>
 </div>
