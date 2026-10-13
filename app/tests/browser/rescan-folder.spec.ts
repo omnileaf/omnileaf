@@ -124,7 +124,7 @@ test.describe("with a folder whose files changed", () => {
     backend: {
       ...FOLDERS_BACKEND,
       rescanLibraryFolder: async (id, onProgress) => {
-        await onProgress.send({ stage: "finding" });
+        await onProgress.send({ stage: "finding", found: 0 });
         await onProgress.send({ stage: "reading", scanned: 2, total: 2 });
         return {
           id,
