@@ -1,5 +1,8 @@
 <script lang="ts">
   import { SOURCE_URL } from "#lib/links.ts";
+  import PlanCard from "#lib/PlanCard.svelte";
+  import { PLANS } from "#lib/plans.ts";
+  import Shelf from "#lib/Shelf.svelte";
 
   const TAGLINE = "Open-source reader for manga, comics and books";
 </script>
@@ -36,6 +39,37 @@
           >Follow on GitHub</a
         >
       </div>
+    </div>
+    <Shelf />
+  </section>
+
+  <section
+    aria-labelledby="plans-heading"
+    class="border-y border-border bg-well"
+  >
+    <div class="mx-auto flex flex-col gap-8 px-6 py-16 max-inline-page">
+      <h2 id="plans-heading" class="m-0 font-display text-heading font-bold">
+        What it is being built to do
+      </h2>
+      <div class="flex flex-wrap gap-4">
+        {#each PLANS as plan (plan.title)}
+          <PlanCard {plan} />
+        {/each}
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="guides-heading" class="border-bs border-border">
+    <div
+      class="mx-auto flex flex-wrap items-baseline justify-between gap-3 px-6 py-12 max-inline-page"
+    >
+      <h2 id="guides-heading" class="m-0 font-display text-title font-bold">
+        Guides
+      </h2>
+      <p class="m-0 grow basis-90 text-muted">
+        Guides to using Omnileaf and to building plugins for it will live here.
+        Coming later.
+      </p>
     </div>
   </section>
 </main>

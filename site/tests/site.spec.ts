@@ -89,3 +89,18 @@ for (const colorScheme of ["light", "dark"] as const) {
     });
   }
 }
+
+test("labels each feature in the works with its status", async ({ page }) => {
+  await page.goto("/");
+
+  const plans = page.getByRole("region", {
+    name: "What it is being built to do",
+  });
+
+  await expect(plans.getByRole("article")).toHaveText([
+    /In development\s*Your own files/,
+    /Planned\s*Catalogs and servers/,
+    /Planned\s*Sync across devices/,
+    /Planned\s*Offline reading/,
+  ]);
+});
