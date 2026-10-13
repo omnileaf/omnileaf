@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import { afterAll, beforeAll, describe, expect, inject, test } from "vitest";
 
 import { mainNavigationLink, useAppSession } from "./app-session.ts";
+import { segmentedOption } from "./segmented-control.ts";
 import { isMiddleOfScreenDark, readStatusBar } from "./status-bar.ts";
 import { xpath } from "./webdriver.ts";
 
@@ -34,10 +35,6 @@ const RECENT_TAB = xpath(
 );
 const CANCEL_BUTTON = xpath("//XCUIElementTypeButton[@name='Cancel']");
 
-function themeOption(label: string): ReturnType<typeof xpath> {
-  return xpath(`//main//label[normalize-space()='${label}']`);
-}
-
 const run = promisify(execFile);
 
 const appSession = useAppSession();
@@ -55,7 +52,7 @@ function simulatorUdid(): string {
 async function chooseTheme(label: string): Promise<void> {
   await (await appSession().waitFor(SETTINGS_LINK)).click();
   await (await appSession().waitFor(APPEARANCE_LINK)).click();
-  await (await appSession().waitFor(themeOption(label))).click();
+  await (await appSession().waitFor(segmentedOption("//main", label))).click();
 }
 
 async function screenshot(): Promise<Buffer> {
