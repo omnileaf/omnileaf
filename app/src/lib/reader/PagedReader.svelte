@@ -7,13 +7,13 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import { standInOpenedBook } from "#lib/series/series-stand-ins.ts";
+  import { shortcut } from "#lib/shortcut.ts";
 
   import { PageTurner } from "#lib/reader/page-turner.svelte.ts";
   import PageStack from "#lib/reader/PageStack.svelte";
   import {
-    isKeyForFocusedControl,
     type ReaderAction,
-    readerActionFor,
+    readerShortcuts,
   } from "#lib/reader/reader-keys.ts";
   import { ReaderControls } from "#lib/reader/reader-controls.svelte.ts";
   import ReaderPanel from "#lib/reader/ReaderPanel.svelte";
@@ -144,18 +144,6 @@
     await goto(resolve("/(app)"));
   }
 
-  function onKey(event: KeyboardEvent): void {
-    if (event.defaultPrevented || isKeyForFocusedControl(event)) {
-      return;
-    }
-    const action = readerActionFor(event);
-    if (action === undefined) {
-      return;
-    }
-    event.preventDefault();
-    act(action);
-  }
-
   /** Leaves no tapped zone focused, so Space goes on turning pages rather than pressing the zone tapped last. */
   function onZone(event: MouseEvent, zone: ReaderAction): void {
     if (isPointerClick(event) && event.currentTarget instanceof HTMLElement) {
@@ -216,7 +204,7 @@
   });
 </script>
 
-<svelte:window onkeydown={onKey} />
+<svelte:window {@attach shortcut(...readerShortcuts(act))} />
 
 <main
   class="fixed inset-none overflow-hidden bg-reader text-on-reader expanded:bg-reader-wide"
