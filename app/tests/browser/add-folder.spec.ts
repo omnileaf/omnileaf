@@ -120,6 +120,7 @@ test.describe("with a folder of books", () => {
       await addFolder.focus();
       await page.keyboard.press("Enter");
       await expect(scanToast(page, "Added")).toBeVisible();
+      await addFolder.focus();
 
       await dismissFromTheKeyboard(page);
 
@@ -258,6 +259,7 @@ test.describe("once a folder brings books to a library that couldn't be read", (
     await headingAddFolder.focus();
     await page.keyboard.press("Enter");
     await expect(scanToast(page, "Added")).toBeVisible();
+    await headingAddFolder.focus();
 
     await dismissFromTheKeyboard(page);
 

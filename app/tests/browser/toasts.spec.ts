@@ -52,7 +52,8 @@ async function stackTwoWarnings(page: Page) {
     .getByRole("button", { name: "Add a folder" });
   await addFolder.click();
   await expect(toastSaying(page, "Couldn't read that folder")).toBeVisible();
-  await addFolder.click();
+  await addFolder.focus();
+  await page.keyboard.press("Enter");
   const newer = toastSaying(page, "Couldn't add the folder");
   const older = toastSaying(page, "Couldn't read that folder");
   await expect(newer).toHaveAttribute("data-front", "true");
