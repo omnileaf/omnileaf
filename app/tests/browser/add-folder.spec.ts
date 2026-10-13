@@ -39,54 +39,89 @@ function addFolderIn(page: Page, region: string) {
     .getByRole("button", { name: "Add a folder" });
 }
 
-function scanReport(page: Page, opening: string): Locator {
+const ADDED = "Added 7 books from Sample Library";
+const RESULT_LIFETIME_MS = 5_000;
+
+function scanToast(page: Page, opening: string): Locator {
   return page
-    .getByRole("main")
-    .getByRole("status")
+    .getByRole("region", { name: "Notifications F6" })
+    .getByRole("listitem")
     .filter({ hasText: opening });
+}
+
+async function dismissFromTheKeyboard(page: Page): Promise<void> {
+  await page.keyboard.press("F6");
+  await scanToast(page, "Added")
+    .getByRole("button", { name: "Dismiss" })
+    .focus();
+  await page.keyboard.press("Enter");
 }
 
 test.describe("with a folder of books", () => {
   test.use({ backend: SAMPLE_LIBRARY_SCANNED });
 
   for (const { place, path, region } of PLACES) {
-    test(`adds a folder from ${place} and reports the books scanned in it`, async ({
+    test(`adds a folder from ${place} and reports the books it added`, async ({
       page,
     }) => {
       await page.goto(path);
 
       await addFolderIn(page, region).click();
 
-      await expect(scanReport(page, "Found")).toHaveText(
-        "Found 7 books in 3 series in Sample Library.",
-      );
+      await expect(scanToast(page, "Added")).toContainText(ADDED);
     });
   }
 
-  test("lets the notice under the folders be dismissed", async ({ page }) => {
+  test("lets the result be dismissed", async ({ page }) => {
     await page.goto("/settings/library");
     await page.getByRole("button", { name: "Add a folder" }).click();
-    const report = scanReport(page, "Found");
-    await expect(report).toHaveText(
-      "Found 7 books in 3 series in Sample Library.",
-    );
+    const report = scanToast(page, "Added");
+    await expect(report).toContainText(ADDED);
 
     await report.getByRole("button", { name: "Dismiss" }).click();
 
     await expect(report).toHaveCount(0);
   });
 
+  test("shows the books in the library from Settings › Library", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library");
+    await page.getByRole("button", { name: "Add a folder" }).click();
+
+    await scanToast(page, "Added")
+      .getByRole("button", { name: "Show" })
+      .click();
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Library" }),
+    ).toBeFocused();
+    await expect(page).toHaveURL(/\/$/);
+  });
+
+  test("closes the result by itself after a few seconds", async ({ page }) => {
+    await page.clock.install();
+    await page.goto("/settings/library");
+    await page.getByRole("button", { name: "Add a folder" }).click();
+    const report = scanToast(page, "Added");
+    await expect(report).toContainText(ADDED);
+
+    await page.clock.runFor(RESULT_LIFETIME_MS);
+
+    await expect(report).toHaveCount(0);
+  });
+
   for (const { place, path, region } of PLACES) {
-    test(`returns focus to Add a folder in ${place} once the notice is dismissed`, async ({
+    test(`returns focus to Add a folder in ${place} once the result is dismissed`, async ({
       page,
     }) => {
       await page.goto(path);
       const addFolder = addFolderIn(page, region);
-      await addFolder.click();
-      const report = scanReport(page, "Found");
-      await expect(report).toBeVisible();
+      await addFolder.focus();
+      await page.keyboard.press("Enter");
+      await expect(scanToast(page, "Added")).toBeVisible();
 
-      await report.getByRole("button", { name: "Dismiss" }).click();
+      await dismissFromTheKeyboard(page);
 
       await expect(addFolder).toBeFocused();
     });
@@ -102,9 +137,7 @@ test.describe("with a folder of books", () => {
 
       await button.click();
 
-      await expect(scanReport(page, "Found")).toHaveText(
-        "Found 7 books in 3 series in Sample Library.",
-      );
+      await expect(scanToast(page, "Added")).toContainText(ADDED);
       expect((await boxOf(button)).width).toBe(before.width);
     });
   }
@@ -138,7 +171,7 @@ test.describe("once a folder brings the library its first books", () => {
       .getByRole("button", { name: "Add a folder" });
     await headingAddFolder.focus();
     await page.keyboard.press("Enter");
-    await expect(scanReport(page, "Found")).toBeVisible();
+    await expect(scanToast(page, "Added")).toBeVisible();
 
     await emitFakeEvent(page, LIBRARY_CHANGED);
 
@@ -148,12 +181,12 @@ test.describe("once a folder brings the library its first books", () => {
     ).toBeFocused();
   });
 
-  test("returns focus to the library's title once the notice is dismissed", async ({
+  test("returns focus to the library's title once the result is dismissed", async ({
     page,
   }) => {
     await page.goto("/");
     await addFolderIn(page, EMPTY_LIBRARY).click();
-    const report = scanReport(page, "Found");
+    const report = scanToast(page, "Added");
     await expect(report).toBeVisible();
     await emitFakeEvent(page, LIBRARY_CHANGED);
     await expect(page.getByRole("region", { name: EMPTY_LIBRARY })).toHaveCount(
@@ -204,7 +237,7 @@ test.describe("once a folder brings books to a library that couldn't be read", (
       .getByRole("button", { name: "Add a folder" });
     await headingAddFolder.focus();
     await page.keyboard.press("Enter");
-    await expect(scanReport(page, "Found")).toBeVisible();
+    await expect(scanToast(page, "Added")).toBeVisible();
 
     await emitFakeEvent(page, LIBRARY_CHANGED);
 
@@ -214,7 +247,7 @@ test.describe("once a folder brings books to a library that couldn't be read", (
     ).toBeFocused();
   });
 
-  test("returns focus to the heading's Add a folder when the notice is dismissed before the library reloads", async ({
+  test("returns focus to the heading's Add a folder when the result is dismissed before the library reloads", async ({
     page,
   }) => {
     await page.goto("/");
@@ -222,11 +255,11 @@ test.describe("once a folder brings books to a library that couldn't be read", (
       .getByRole("main")
       .locator("header")
       .getByRole("button", { name: "Add a folder" });
-    await headingAddFolder.click();
-    const report = scanReport(page, "Found");
-    await expect(report).toBeVisible();
+    await headingAddFolder.focus();
+    await page.keyboard.press("Enter");
+    await expect(scanToast(page, "Added")).toBeVisible();
 
-    await report.getByRole("button", { name: "Dismiss" }).click();
+    await dismissFromTheKeyboard(page);
 
     await expect(headingAddFolder).toBeFocused();
   });
@@ -248,7 +281,7 @@ test.describe("while the folder is being scanned", () => {
 
     await page.getByRole("button", { name: "Add a folder" }).click();
 
-    await expect(scanReport(page, "Finding books")).toHaveText("Finding books");
+    await expect(scanToast(page, "Finding books")).toBeVisible();
     const bar = page.getByRole("progressbar", { name: "Finding books" });
     await expect(bar).toHaveAttribute("aria-valuenow", "32");
     await expect(bar).toHaveAccessibleDescription("32 of 100 books");
@@ -340,6 +373,84 @@ test.describe("while the scan is still finding books", () => {
   }
 });
 
+test.describe("from finding books to the result", () => {
+  const scan: { finish: () => void } = { finish: () => undefined };
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      addLibraryFolder: async (onProgress) => {
+        await onProgress.send({ stage: "finding", found: 214 });
+        await new Promise<void>((resolve) => {
+          scan.finish = resolve;
+        });
+        return SAMPLE_LIBRARY_SCANNED.addLibraryFolder();
+      },
+    },
+  });
+
+  test("turns the finding toast into the result in the same place", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library");
+    await page.getByRole("button", { name: "Add a folder" }).click();
+    const finding = scanToast(page, "Finding books");
+    await expect(finding).toContainText("214 so far");
+    const place = await boxOf(finding);
+
+    scan.finish();
+
+    const result = scanToast(page, "Added");
+    await expect(result).toContainText(ADDED);
+    await expect(page.getByRole("progressbar")).toHaveCount(0);
+    expect(await result.getAttribute("data-index")).toBe("0");
+    expect((await boxOf(result)).x).toBe(place.x);
+    await expect(
+      page
+        .getByRole("region", { name: "Notifications F6" })
+        .getByRole("listitem"),
+    ).toHaveCount(1);
+  });
+
+  test("turns its spinner while finding books", async ({ page }) => {
+    await page.goto("/settings/library");
+
+    await page.getByRole("button", { name: "Add a folder" }).click();
+
+    await expect(
+      scanToast(page, "Finding books").locator("svg").first(),
+    ).toHaveCSS("animation-name", "spin");
+  });
+
+  test("holds its spinner still when motion is reduced", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/settings/library");
+
+    await page.getByRole("button", { name: "Add a folder" }).click();
+
+    await expect(
+      scanToast(page, "Finding books").locator("svg").first(),
+    ).toHaveCSS("animation-name", "none");
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`the finished scan has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/settings/library");
+      await page.getByRole("button", { name: "Add a folder" }).click();
+      await expect(scanToast(page, "Finding books")).toBeVisible();
+
+      scan.finish();
+
+      await expect(scanToast(page, "Added")).toContainText(ADDED);
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
+});
+
 test("opens Settings › Library from Settings", async ({ page }) => {
   await page.goto("/settings");
 
@@ -412,9 +523,7 @@ for (const { platform, titleSize } of [
       },
     });
 
-    test(`titles the report under the folders at ${titleSize}`, async ({
-      page,
-    }) => {
+    test(`titles the result at ${titleSize}`, async ({ page }) => {
       test.skip(
         platform === "android" && viewportOf(page).width >= MEDIUM_MIN_WIDTH,
         "phones only",
@@ -424,9 +533,7 @@ for (const { platform, titleSize } of [
       await addFolderIn(page, "Folders").click();
 
       await expect(
-        scanReport(page, "Found").getByText(
-          "Found 7 books in 3 series in Sample Library.",
-        ),
+        scanToast(page, "Added").getByText(ADDED, { exact: true }),
       ).toHaveCSS("font-size", titleSize);
     });
   });
