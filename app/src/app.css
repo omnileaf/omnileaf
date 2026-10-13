@@ -1044,22 +1044,6 @@
   }
 }
 
-@utility sheet-motion {
-  @media (prefers-reduced-motion: no-preference) {
-    transition-property: translate;
-    transition-duration: var(--transition-duration-slide);
-    transition-timing-function: var(--ease-glass);
-
-    @starting-style {
-      translate: 0 100%;
-    }
-
-    &[data-state="closed"] {
-      translate: 0 100%;
-    }
-  }
-}
-
 @utility fade-motion {
   @media (prefers-reduced-motion: no-preference) {
     transition-property: opacity;
