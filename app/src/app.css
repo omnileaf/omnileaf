@@ -385,7 +385,6 @@
   --spacing-series-cover-tablet: 9.5rem;
   --spacing-series-cover-wide: 8.25rem;
   --spacing-series-aside: 21.25rem;
-  --spacing-series-progress: 0.375rem;
   --spacing-book-row: 3.875rem;
   --spacing-book-row-wide: 2.875rem;
   --spacing-series-columns: 2.125rem;
@@ -1107,29 +1106,6 @@
 @utility no-search-cancel {
   &::-webkit-search-cancel-button {
     display: none;
-  }
-}
-
-@utility progress-track {
-  appearance: none;
-  display: block;
-  inline-size: 100%;
-  border: none;
-  border-radius: var(--radius-control);
-  overflow: hidden;
-  background-color: var(--color-chip);
-  color: var(--color-accent);
-
-  &::-webkit-progress-bar {
-    background-color: var(--color-chip);
-  }
-
-  &::-webkit-progress-value {
-    background-color: var(--color-accent);
-  }
-
-  &::-moz-progress-bar {
-    background-color: var(--color-accent);
   }
 }
 

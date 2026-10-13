@@ -1,5 +1,6 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
+  import { Progress } from "#lib/components/ui/progress/index.ts";
   import type { SeriesBook, SeriesOverview } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -40,13 +41,12 @@
     {/if}
   </p>
   <div class="flex flex-col gap-xs">
-    <progress
+    <Progress
       aria-labelledby={countId}
-      class="progress-track block-series-progress"
       max={overview.bookCount}
       value={overview.readCount}
-    ></progress>
-    <p id={countId} class="text-caption text-muted">
+    />
+    <p id={countId} class="text-caption text-muted tabular-nums">
       {m.series_read_count({
         read: overview.readCount,
         total: overview.bookCount,
