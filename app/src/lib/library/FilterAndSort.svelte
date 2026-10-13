@@ -140,7 +140,7 @@
 <dialog
   bind:this={dialog}
   aria-labelledby={titleId}
-  class="m-none overflow-hidden border-0 border-border bg-card p-none text-foreground max-block-full max-inline-full backdrop:bg-scrim open:flex open:flex-col max-medium:inset-x-none max-medium:inset-bs-sheet-top max-medium:inset-be-none max-medium:rounded-ss-bottom-sheet max-medium:rounded-se-bottom-sheet max-medium:block-auto max-medium:inline-full medium:inset-s-auto medium:inset-e-none medium:inset-bs-none medium:inset-be-none medium:border-s medium:side-panel-shadow medium:block-auto medium:inline-filter-panel medium:backdrop:bg-transparent"
+  class="m-none overflow-hidden border-0 border-border bg-card p-none text-foreground max-block-full max-inline-full backdrop:bg-scrim open:flex open:flex-col max-medium:inset-x-none max-medium:inset-bs-sheet-top max-medium:inset-be-none max-medium:sheet-motion max-medium:rounded-ss-bottom-sheet max-medium:rounded-se-bottom-sheet max-medium:block-auto max-medium:inline-full medium:inset-s-auto medium:inset-e-none medium:inset-bs-none medium:inset-be-none medium:side-panel-motion medium:border-s medium:side-panel-shadow medium:block-auto medium:inline-filter-panel medium:backdrop:bg-transparent"
   onclose={() => {
     isOpen = false;
     button?.focus();

@@ -868,6 +868,63 @@
   inset-inline-end: var(--button-inline-end);
 }
 
+@utility sheet-motion {
+  @media (prefers-reduced-motion: no-preference) {
+    translate: 0 100%;
+    transition-property: translate, display, overlay;
+    transition-duration: var(--transition-duration-slide);
+    transition-timing-function: var(--ease-glass);
+    transition-behavior: allow-discrete;
+
+    &[open] {
+      translate: 0 0;
+
+      @starting-style {
+        translate: 0 100%;
+      }
+    }
+
+    &::backdrop {
+      opacity: 0;
+      transition-property: opacity, display, overlay;
+      transition-duration: var(--transition-duration-slide);
+      transition-timing-function: var(--ease-glass);
+      transition-behavior: allow-discrete;
+    }
+
+    &[open]::backdrop {
+      opacity: 1;
+
+      @starting-style {
+        opacity: 0;
+      }
+    }
+  }
+}
+
+@utility side-panel-motion {
+  @media (prefers-reduced-motion: no-preference) {
+    --panel-from: 100% 0;
+    translate: var(--panel-from);
+    transition-property: translate, display, overlay;
+    transition-duration: var(--transition-duration-slide);
+    transition-timing-function: var(--ease-glass);
+    transition-behavior: allow-discrete;
+
+    &:dir(rtl) {
+      --panel-from: -100% 0;
+    }
+
+    &[open] {
+      translate: 0 0;
+
+      @starting-style {
+        translate: var(--panel-from);
+      }
+    }
+  }
+}
+
 @utility progress-track {
   appearance: none;
   display: block;

@@ -13,6 +13,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   screenSizeOf,
+  settle,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -166,6 +167,7 @@ async function expectTitles(page: Page, numbers: readonly number[]) {
 async function openFilterAndSort(page: Page): Promise<Locator> {
   await filterButton(page).click();
   await expect(filterAndSort(page)).toBeVisible();
+  await settle(filterAndSort(page));
   return filterAndSort(page);
 }
 
@@ -546,6 +548,7 @@ for (const language of ["en", "en-XA"] as const) {
       .click();
     const panel = page.getByRole("dialog");
     await expect(panel).toBeVisible();
+    await settle(panel);
     const segments = panel
       .getByRole("radiogroup", { name: text("Unread") })
       .locator("label");
@@ -655,4 +658,34 @@ test.describe("when a filter leaves no series", () => {
     await expectTitles(page, [1, 2, 3, 4, 5, 6]);
     await expect(filterAndSort(page)).toBeVisible();
   });
+});
+
+test("slides in as it opens, which reduced motion turns into appearing at once", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await filterButton(page).click();
+  await expect(filterAndSort(page)).toBeVisible();
+
+  const slides = await filterAndSort(page).evaluate((dialog) =>
+    dialog
+      .getAnimations()
+      .map(
+        (animation) =>
+          animation instanceof CSSTransition && animation.transitionProperty,
+      ),
+  );
+
+  expect(slides).toContain("translate");
+
+  await page.keyboard.press("Escape");
+  await expect(filterAndSort(page)).toBeHidden();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await filterButton(page).click();
+  await expect(filterAndSort(page)).toBeVisible();
+  expect(
+    await filterAndSort(page).evaluate(
+      (dialog) => dialog.getAnimations().length,
+    ),
+  ).toBe(0);
 });
