@@ -8,16 +8,17 @@
     TableHeader,
     TableRow,
   } from "#lib/components/ui/table/index.ts";
-  import type { SeriesBook } from "#lib/ipc/bindings.ts";
+  import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
   import VirtualTable from "#lib/virtual-grid/VirtualTable.svelte";
 
+  import BookMenu from "./BookMenu.svelte";
   import { readingWords } from "./book-reading";
   import type { BookSelection } from "./book-selection.svelte";
 
   type BookId = SeriesBook["id"];
 
-  const COLUMNS = 4;
+  const COLUMNS = 5;
 
   let {
     books,
@@ -28,6 +29,7 @@
     isPickingAll,
     onPickAll,
     onClear,
+    onMark,
     selectAllBox = $bindable(null),
   }: {
     books: readonly SeriesBook[];
@@ -38,6 +40,7 @@
     isPickingAll: boolean;
     onPickAll: () => void;
     onClear: () => void;
+    onMark: (books: BookId[], mark: ReadMark) => void;
     selectAllBox?: HTMLElement | null;
   } = $props();
 
@@ -93,6 +96,9 @@
           </TableHead>
           <TableHead class="inline-series-column-progress">
             {m.series_column_progress()}
+          </TableHead>
+          <TableHead class="inline-series-row-actions">
+            <span class="sr-only">{m.series_column_actions()}</span>
           </TableHead>
         </tr>
       </TableHeader>
@@ -154,6 +160,14 @@
           class={["text-caption", isPicked ? "text-foreground" : "text-muted"]}
         >
           {readingWords(book.reading, m.series_book_unread)}
+        </TableCell>
+        <TableCell>
+          <BookMenu
+            {book}
+            onMark={(mark: ReadMark) => {
+              onMark([book.id], mark);
+            }}
+          />
         </TableCell>
       </TableRow>
     {/snippet}

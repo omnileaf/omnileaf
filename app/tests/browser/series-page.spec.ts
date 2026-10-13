@@ -602,6 +602,12 @@ test.describe("in the table on wide screens", () => {
     test.skip(!isWide(page), "the books show as a table on wide screens");
   });
 
+  function rowMenu(page: Page, index: number): Locator {
+    return page.getByRole("button", {
+      name: `More for ${shelf.titleOf(index)}`,
+    });
+  }
+
   test("keeps a checkbox on every book, with no picking to start", async ({
     page,
   }) => {
@@ -685,14 +691,40 @@ test.describe("in the table on wide screens", () => {
     expect(bar.y + bar.height).toBeLessThan(viewportOf(page).height);
   });
 
+  test("marks a book read from its menu", async ({ page }) => {
+    await openSeries(page);
+
+    await rowMenu(page, 5).click();
+    await page.getByRole("menuitem", { name: "Mark read" }).click();
+
+    expect(shelf.marked).toEqual([{ books: [shelf.idOf(5)], mark: "read" }]);
+    await expect(books(page).nth(5)).toContainText("Read");
+  });
+
+  test("offers to mark a read book unread, and to read it from its menu", async ({
+    page,
+  }) => {
+    await openSeries(page);
+
+    await rowMenu(page, 0).click();
+
+    await expect(page.getByRole("menuitem")).toHaveText([
+      "Start reading",
+      "Mark unread",
+    ]);
+    await page.getByRole("menuitem", { name: "Start reading" }).click();
+    await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(0)}$`));
+  });
+
   for (const colorScheme of ["light", "dark"] as const) {
-    test(`the selection bar has no accessibility violations in the ${colorScheme} theme`, async ({
+    test(`a book's menu and the selection bar have no accessibility violations in the ${colorScheme} theme`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme });
       await openSeries(page);
       await pickBooks(page, 0, 4);
-      await expect(selectedBooks(page)).toBeVisible();
+      await rowMenu(page, 3).click();
+      await expect(page.getByRole("menu")).toBeVisible();
 
       const violations = await accessibilityViolations(page);
 

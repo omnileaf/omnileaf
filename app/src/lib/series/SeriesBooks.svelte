@@ -348,6 +348,9 @@
       onClear={() => {
         void end();
       }}
+      onMark={(picked: BookId[], read: ReadMark) => {
+        void markBooks(picked, read);
+      }}
     />
     {#if selection.count > 0}
       <SelectionBar

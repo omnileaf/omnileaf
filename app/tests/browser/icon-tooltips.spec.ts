@@ -165,6 +165,16 @@ const ICON_ACTIONS: readonly IconAction[] = [
   seriesBarStep("Mark read"),
   seriesBarStep("Mark unread"),
   seriesBarStep("Clear the selection"),
+  {
+    screen: "a series' book",
+    backend: SHELF.backend(),
+    reach: async (page) => {
+      await page.goto(`/series/${SERIES_ID}`);
+      return page.getByRole("button", { name: `More for ${SHELF.titleOf(1)}` });
+    },
+    label: "More",
+    isShownOn: isWideScreen,
+  },
   coversPerRowStep("Fewer covers per row"),
   coversPerRowStep("More covers per row"),
   {
