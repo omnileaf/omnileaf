@@ -2,6 +2,7 @@
   import { Search, X } from "@lucide/svelte";
   import { onMount, tick } from "svelte";
 
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
   import type { FilterCondition } from "#lib/library/library-listing.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -102,10 +103,10 @@
     onkeydown={keyDown}
   />
   {#if text !== ""}
-    <button
+    <Tooltip
+      label={m.search_clear()}
       type="button"
       aria-label={m.search_clear()}
-      title={m.search_clear()}
       class="flex shrink-0 items-center justify-center rounded-full bg-chip text-muted block-search-clear inline-search-clear large:hidden"
       onclick={() => {
         void type("");
@@ -113,7 +114,7 @@
       }}
     >
       <X size={CLEAR_ICON_SIZE} strokeWidth={2.5} aria-hidden="true" />
-    </button>
+    </Tooltip>
   {/if}
   <kbd
     aria-hidden="true"

@@ -267,12 +267,12 @@ test("names the field's clear button and each filter's remove button in a toolti
 
   await searchField(page).pressSequentially("unread market");
 
-  await expect(
-    page.getByRole("button", { name: "Clear", exact: true }),
-  ).toHaveAttribute("title", "Clear");
-  await expect(
-    page.getByRole("button", { name: "Remove the Unread filter" }),
-  ).toHaveAttribute("title", "Remove the Unread filter");
+  for (const name of ["Clear", "Remove the Unread filter"]) {
+    const action = page.getByRole("button", { name, exact: true });
+    await action.hover();
+    await expect(action).toHaveAccessibleDescription(name);
+    await expect(action).not.toHaveAttribute("title");
+  }
 });
 
 test("draws Close beside the field at the 40px height the desktop board gives it", async ({
