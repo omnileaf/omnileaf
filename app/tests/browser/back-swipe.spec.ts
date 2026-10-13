@@ -271,10 +271,7 @@ test("shows no screen in a language the app has since left", async ({
   await page.locator('main a[href="/settings/general/language"]').click();
   await expect(page).toHaveURL("/settings/general/language");
 
-  await page
-    .locator("label")
-    .filter({ has: page.getByRole("radio", { name: "English", exact: true }) })
-    .click();
+  await page.getByRole("radio", { name: "English", exact: true }).click();
   await expect(heading(page, "Language")).toBeVisible();
   await swipe({ kind: "moved", progress: 0.5 });
 
