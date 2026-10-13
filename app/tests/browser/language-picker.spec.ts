@@ -28,12 +28,8 @@ function option(page: Page, name: string) {
   return page.getByRole("radio", { name, exact: true });
 }
 
-function optionRow(page: Page, name: string) {
-  return page.locator("label").filter({ has: option(page, name) });
-}
-
 async function chooseEnglish(page: Page): Promise<void> {
-  await optionRow(page, "English").click();
+  await option(page, "English").click();
 }
 
 async function openInPseudoLocale(page: Page): Promise<void> {
@@ -63,7 +59,7 @@ test("checks the system language until another is chosen", async ({ page }) => {
 test("writes each language in its own name", async ({ page }) => {
   await page.goto(LANGUAGE_PAGE);
 
-  await expect(optionRow(page, "English").locator("[lang]")).toHaveAttribute(
+  await expect(option(page, "English").locator("[lang]")).toHaveAttribute(
     "lang",
     "en",
   );
@@ -76,19 +72,19 @@ test("moves the check to a chosen language and keeps it", async ({ page }) => {
   await page.reload();
 
   await expect(option(page, "English")).toBeChecked();
-  await expect(optionRow(page, "English").locator("svg")).toBeVisible();
-  await expect(optionRow(page, SYSTEM_OPTION).locator("svg")).toHaveCount(0);
+  await expect(option(page, "English").locator("svg")).toBeVisible();
+  await expect(option(page, SYSTEM_OPTION).locator("svg")).toHaveCount(0);
 });
 
 test("goes back to the system language", async ({ page }) => {
   await page.goto(LANGUAGE_PAGE);
   await chooseEnglish(page);
 
-  await optionRow(page, SYSTEM_OPTION).click();
+  await option(page, SYSTEM_OPTION).click();
   await page.reload();
 
   await expect(option(page, SYSTEM_OPTION)).toBeChecked();
-  await expect(optionRow(page, SYSTEM_OPTION).locator("svg")).toBeVisible();
+  await expect(option(page, SYSTEM_OPTION).locator("svg")).toBeVisible();
 });
 
 test("switches the interface to a chosen language without reloading", async ({
@@ -138,7 +134,7 @@ test("keeps the page scrolled where it was when switching", async ({
   });
   await openInPseudoLocale(page);
   const main = page.getByRole("main");
-  await optionRow(page, "English").evaluate((row) => {
+  await option(page, "English").evaluate((row) => {
     row.scrollIntoView({ block: "start" });
   });
   const scrolledTo = await main.evaluate((element) => element.scrollTop);
@@ -169,7 +165,7 @@ test("only moves the check when the chosen language is the one already showing",
   await chooseEnglish(page);
 
   await expect(option(page, "English")).toBeChecked();
-  await expect(optionRow(page, SYSTEM_OPTION).locator("svg")).toHaveCount(0);
+  await expect(option(page, SYSTEM_OPTION).locator("svg")).toHaveCount(0);
   await expect(heading).toHaveAttribute("data-untouched");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   expect(await documentStart(page)).toBe(startedAt);
@@ -187,7 +183,7 @@ test("names the system's own language while another is chosen", async ({
   const system = page.getByRole("radio").first();
   const systemName = page
     .getByRole("radiogroup")
-    .locator("label")
+    .getByRole("radio")
     .first()
     .locator("[lang]");
 
@@ -206,9 +202,9 @@ test.describe("on an Android phone", () => {
     await page.goto(LANGUAGE_PAGE);
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
 
-    const system = await boxOf(optionRow(page, SYSTEM_OPTION));
-    const english = await boxOf(optionRow(page, "English"));
-    const check = await boxOf(optionRow(page, SYSTEM_OPTION).locator("svg"));
+    const system = await boxOf(option(page, SYSTEM_OPTION));
+    const english = await boxOf(option(page, "English"));
+    const check = await boxOf(option(page, SYSTEM_OPTION).locator("svg"));
 
     expect(english.height).toBe(PHONE_ROW_HEIGHT);
     expect(system.height).toBeGreaterThanOrEqual(PHONE_ROW_HEIGHT);
@@ -237,9 +233,9 @@ test.describe("on an Android tablet", () => {
     await page.goto(LANGUAGE_PAGE);
     test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "tablets only");
 
-    const system = await boxOf(optionRow(page, SYSTEM_OPTION));
-    const english = await boxOf(optionRow(page, "English"));
-    const check = await boxOf(optionRow(page, SYSTEM_OPTION).locator("svg"));
+    const system = await boxOf(option(page, SYSTEM_OPTION));
+    const english = await boxOf(option(page, "English"));
+    const check = await boxOf(option(page, SYSTEM_OPTION).locator("svg"));
 
     expect(system.height).toBe(TOUCH_ROW_HEIGHT);
     expect(check.width).toBe(CHECK_SIZE);
@@ -258,9 +254,9 @@ test.describe("on a desktop", () => {
   }) => {
     await page.goto(LANGUAGE_PAGE);
 
-    const system = await boxOf(optionRow(page, SYSTEM_OPTION));
-    const english = await boxOf(optionRow(page, "English"));
-    const check = await boxOf(optionRow(page, SYSTEM_OPTION).locator("svg"));
+    const system = await boxOf(option(page, SYSTEM_OPTION));
+    const english = await boxOf(option(page, "English"));
+    const check = await boxOf(option(page, SYSTEM_OPTION).locator("svg"));
 
     expect(system.height).toBe(POINTER_ROW_HEIGHT);
     expect(english.y - (system.y + system.height)).toBeGreaterThanOrEqual(

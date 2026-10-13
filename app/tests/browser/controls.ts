@@ -43,7 +43,7 @@ export const CONTROLS: readonly Control[] = [
   {
     name: "a language option",
     path: "/settings/general/language",
-    find: (page) => page.locator("label").last(),
+    find: (page) => page.getByRole("radio").last(),
   },
   {
     name: "a row in About",

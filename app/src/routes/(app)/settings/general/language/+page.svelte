@@ -3,6 +3,10 @@
   import { tick } from "svelte";
 
   import {
+    RadioGroup,
+    RadioGroupItem,
+  } from "#lib/components/ui/radio-group/index.ts";
+  import {
     LANGUAGE_CHOICES,
     type LanguageChoice,
     languageName,
@@ -21,7 +25,6 @@
   const PHONE_CHECK_SIZE = 22;
   const CHECK_SIZE = 20;
   const CHECK_STROKE = 2.4;
-  const LANGUAGE_FIELD = "language";
 
   let { data }: PageProps = $props();
 
@@ -40,23 +43,17 @@
 
   const footnoteId = $props.id();
 
-  async function choose(
-    choice: LanguageChoice,
-    option: HTMLInputElement,
-  ): Promise<void> {
-    language.choose(choice);
-    await tick();
-    if (!option.isConnected) {
-      focusChosenOption();
-    }
+  function optionId(choice: LanguageChoice): string {
+    return `language-${choice}`;
   }
 
-  function focusChosenOption(): void {
-    document
-      .querySelector<HTMLInputElement>(
-        `input[name="${LANGUAGE_FIELD}"]:checked`,
-      )
-      ?.focus();
+  async function choose(choice: LanguageChoice): Promise<void> {
+    const option = document.getElementById(optionId(choice));
+    language.choose(choice);
+    await tick();
+    if (option !== null && !option.isConnected) {
+      document.getElementById(optionId(choice))?.focus();
+    }
   }
 </script>
 
@@ -65,8 +62,12 @@
   parent={{ route: "/(app)/settings/general", title: m.general_title() }}
 />
 <div class="mbs-pane-gap flex flex-col gap-sm">
-  <div
-    role="radiogroup"
+  <RadioGroup
+    options={LANGUAGE_CHOICES}
+    chosen={language.choice}
+    onChoose={(choice: LanguageChoice) => {
+      void choose(choice);
+    }}
     aria-label={m.language_label()}
     aria-describedby={onPhone ? footnoteId : undefined}
     class="flex flex-col gap-lg"
@@ -77,24 +78,16 @@
       >
         {#each group as choice (choice)}
           {@const isChosen = language.choice === choice}
-          <label
+          <RadioGroupItem
+            id={optionId(choice)}
+            value={choice}
             class={[
-              "flex items-center gap-md py-xs ps-lg pe-list-row transition-control min-block-phone-row first:rounded-ss-list first:rounded-se-list last:rounded-ee-list last:rounded-es-list hover:bg-hover active:bg-pressed has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-accent",
+              "flex items-center gap-md py-xs ps-lg pe-list-row text-start transition-control inline-full min-block-phone-row first:rounded-ss-list first:rounded-se-list last:rounded-ee-list last:rounded-es-list hover:bg-hover focus-visible:-outline-offset-2 active:bg-pressed",
               "touch:medium:py-none touch:medium:ps-list-row touch:medium:min-block-touch-target",
               "desktop:py-none desktop:ps-list-row desktop:text-callout desktop:min-block-settings-row",
               isChosen ? "font-semibold" : "font-medium",
             ]}
           >
-            <input
-              type="radio"
-              name={LANGUAGE_FIELD}
-              value={choice}
-              class="sr-only"
-              checked={isChosen}
-              onchange={(event) => {
-                void choose(choice, event.currentTarget);
-              }}
-            />
             {#if choice === "system"}
               <span class="flex-1">
                 {#if systemLabel === undefined}
@@ -114,11 +107,11 @@
                 class="shrink-0 text-accent"
               />
             {/if}
-          </label>
+          </RadioGroupItem>
         {/each}
       </div>
     {/each}
-  </div>
+  </RadioGroup>
   {#if onPhone}
     <p id={footnoteId} class="px-xs text-footnote text-muted">
       {m.language_more_coming()}
