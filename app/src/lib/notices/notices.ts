@@ -125,8 +125,13 @@ export class Notices {
   ): Shown {
     toastsMade += 1;
     const id = `notice-${String(toastsMade)}`;
+    let isDismissed = false;
     const handle: ToastHandle = {
       dismiss: () => {
+        if (isDismissed) {
+          return;
+        }
+        isDismissed = true;
         this.#forget(id);
         toast.dismiss(id);
       },

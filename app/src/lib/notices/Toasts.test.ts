@@ -1,4 +1,6 @@
 import { CircleCheck, TriangleAlert } from "@lucide/svelte";
+import { flushSync } from "svelte";
+import { toast } from "svelte-sonner";
 import { afterEach, expect, test, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
@@ -9,6 +11,7 @@ import { clearToasts } from "../../../tests/components/clear-toasts";
 import "../../app.css";
 
 import { type Notice, NOTICE_WINDOW_MS, Notices } from "./notices";
+import SelfDismissingToastHarness from "./SelfDismissingToastHarness.svelte";
 import Toasts from "./Toasts.svelte";
 
 const READY: Notice = {
@@ -124,6 +127,19 @@ test("puts a toast away when it's dismissed", async () => {
   await page.getByRole("button", { name: "Dismiss" }).click();
 
   await expect.element(toastSaying(UNAVAILABLE.title)).not.toBeInTheDocument();
+});
+
+test("puts a toast away when its content dismisses it as it renders", async () => {
+  const notices = await renderToasts();
+  notices.present(
+    SelfDismissingToastHarness,
+    (handle) => ({ toast: handle }),
+    "polite",
+  );
+
+  flushSync();
+
+  expect(toast.getActiveToasts()).toEqual([]);
 });
 
 test("runs a notice's action and puts the toast away", async () => {
