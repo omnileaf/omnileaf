@@ -143,10 +143,11 @@ async fn finds_nothing_changed_when_no_file_did() {
 
     assert_eq!(rescan.outcome, rescanned(FileChanges::default()));
     assert_eq!(rescan.name, folder.folder().await.name);
+    assert_eq!(progress.first(), Some(&ScanProgress::Finding { found: 0 }));
     assert_eq!(
-        progress,
+        progress[progress.len() - 2..],
         [
-            ScanProgress::Finding,
+            ScanProgress::Finding { found: 3 },
             ScanProgress::Reading {
                 scanned: 0,
                 total: 0

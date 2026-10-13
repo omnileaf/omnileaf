@@ -14,7 +14,7 @@ use omnileaf_formats::{Book, Details, FormatError, Limits, Storage, open_book_in
 use omnileaf_sync_proto::{KeyError, SeriesId};
 use serde::Serialize;
 use specta::Type;
-use tokio::task::spawn_blocking;
+use tokio::{sync::watch, task::spawn_blocking};
 
 use crate::{
     LibraryError,
@@ -27,7 +27,7 @@ pub(crate) const BOOKS_PER_BATCH: usize = 32;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(tag = "stage", rename_all = "camelCase")]
 pub enum ScanProgress {
-    Finding,
+    Finding { found: u32 },
     Reading { scanned: u32, total: u32 },
 }
 
@@ -90,8 +90,9 @@ struct Tally {
 pub(crate) async fn find_books_in(
     storage: Arc<dyn Storage>,
     folder: PathBuf,
+    on_progress: impl FnMut(ScanProgress) + Send,
 ) -> Result<Layout, LibraryError> {
-    walk(storage, folder.clone())
+    walk(storage, folder.clone(), on_progress)
         .await?
         .map_err(|source| LibraryError::FolderUnreadable {
             path: folder,
@@ -102,8 +103,23 @@ pub(crate) async fn find_books_in(
 pub(crate) async fn walk(
     storage: Arc<dyn Storage>,
     folder: PathBuf,
+    mut on_progress: impl FnMut(ScanProgress) + Send,
 ) -> Result<io::Result<Layout>, LibraryError> {
-    Ok(spawn_blocking(move || find_books(&*storage, &folder)).await?)
+    let (found, mut found_so_far) = watch::channel(0);
+    let mut walking = spawn_blocking(move || {
+        find_books(&*storage, &folder, |count| {
+            found.send_replace(count);
+        })
+    });
+    loop {
+        tokio::select! {
+            biased;
+            Ok(()) = found_so_far.changed() => on_progress(ScanProgress::Finding {
+                found: saturating_u32(*found_so_far.borrow_and_update()),
+            }),
+            walked = &mut walking => return Ok(walked?),
+        }
+    }
 }
 
 pub(crate) async fn scan(
