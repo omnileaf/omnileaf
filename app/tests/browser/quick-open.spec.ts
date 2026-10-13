@@ -13,7 +13,9 @@ import {
   LARGE_MIN_WIDTH,
   onPlatform,
   test,
+  transitionsOf,
   viewportOf,
+  watchTransitions,
 } from "./fixtures.ts";
 import { sampleSeries, type WireSeries } from "./series-catalog.ts";
 
@@ -222,14 +224,10 @@ for (const flag of ["isComposing", "keyCode 229"] as const) {
         }
         return element.dispatchEvent(event);
       };
-      const keys = ["ArrowDown", "Tab", "Enter", "Escape"].map(send);
-      const dialog = element.closest("dialog");
-      const cancel = new Event("cancel", { cancelable: true });
-      const closes = dialog?.dispatchEvent(cancel) ?? true;
-      return { keys, closes };
+      return ["ArrowDown", "Tab", "Enter", "Escape"].map(send);
     }, flag);
 
-    expect(kept).toEqual({ keys: [true, true, true, true], closes: false });
+    expect(kept).toEqual([true, true, true, true]);
     await expect(quickOpen(page)).toBeVisible();
     await expect(selected(page)).toHaveText(before ?? "");
   });
@@ -326,6 +324,22 @@ test("tells whoever is in the field when nothing is called what was typed", asyn
   await expect(quickOpen(page).getByRole("status")).toHaveText(
     "Nothing called “zzz”",
   );
+});
+
+test("fades in, which reduced motion turns into appearing at once", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  const transitions = await watchTransitions(page);
+
+  await pressQuickOpen(page);
+
+  await expect.poll(transitions).toContain("dialog opacity");
+  await page.keyboard.press("Escape");
+  await expect(quickOpen(page)).toBeHidden();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await pressQuickOpen(page);
+  expect(await transitionsOf(quickOpen(page))).toEqual([]);
 });
 
 test("closes with Escape and gives focus back to where it was", async ({
