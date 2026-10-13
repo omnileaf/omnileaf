@@ -1,5 +1,5 @@
 name: Install the Android NDK
-description: Installs the pinned Android NDK through the SDK manager and points NDK_HOME at it.
+description: Points NDK_HOME at the pinned Android NDK, installing it through the SDK manager only when the runner lacks it.
 
 runs:
   using: composite
@@ -9,5 +9,11 @@ runs:
       env:
         NDK_VERSION: 27.1.12297006
       run: |
-        "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION" > /dev/null
-        echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+        ndk="$ANDROID_HOME/ndk/$NDK_VERSION"
+        if [[ -f "$ndk/source.properties" ]] && grep -qxF "Pkg.Revision = $NDK_VERSION" "$ndk/source.properties"; then
+          echo "Using NDK $NDK_VERSION from the runner image"
+        else
+          echo "Installing NDK $NDK_VERSION"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION" > /dev/null
+        fi
+        echo "NDK_HOME=$ndk" >> "$GITHUB_ENV"
