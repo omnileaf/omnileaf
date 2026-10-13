@@ -213,8 +213,13 @@ impl Library {
             });
         };
         let _scanning = self.catalog_change_lock.lock().await;
-        on_progress(ScanProgress::Finding);
-        let layout = find_books_in(Arc::clone(&files.storage), files.folder.clone()).await?;
+        on_progress(ScanProgress::Finding { found: 0 });
+        let layout = find_books_in(
+            Arc::clone(&files.storage),
+            files.folder.clone(),
+            &mut on_progress,
+        )
+        .await?;
         let root = self.link(locator).await?;
         let target = self.target(root, RootKind::Linked, files);
         scan(
@@ -694,7 +699,7 @@ impl Library {
             .read(move |connection| library_root(connection, id.0))
             .await?;
         let name = folder_name(&root_folder(&root.locator));
-        on_progress(ScanProgress::Finding);
+        on_progress(ScanProgress::Finding { found: 0 });
         let outcome = if let Some(files) = self.files_of(&root.locator) {
             self.rescan_files(root.id, root.kind, files, on_progress)
                 .await?
@@ -712,9 +717,15 @@ impl Library {
         root: RootId,
         kind: RootKind,
         files: RootFiles,
-        on_progress: impl FnMut(ScanProgress) + Send,
+        mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<RescanOutcome, LibraryError> {
-        match walk(Arc::clone(&files.storage), files.folder.clone()).await? {
+        match walk(
+            Arc::clone(&files.storage),
+            files.folder.clone(),
+            &mut on_progress,
+        )
+        .await?
+        {
             Ok(layout) => {
                 let target = self.target(root, kind, files);
                 let outcome =
@@ -748,7 +759,7 @@ impl Library {
         };
         let is_emptied = root.kind == RootKind::Linked
             && matches!(
-                walk(files.storage, files.folder).await?,
+                walk(files.storage, files.folder, |_| {}).await?,
                 Ok(layout) if layout.is_empty()
             );
         if !is_emptied {

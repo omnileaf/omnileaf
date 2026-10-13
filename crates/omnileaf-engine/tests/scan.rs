@@ -116,25 +116,51 @@ async fn reports_finding_the_books_then_reading_each_one_found() {
     let (_, _, progress) =
         Scanned::folder("scan-progress", &comics.path().join(SAMPLE_LIBRARY_NAME)).await;
 
-    assert_eq!(progress.first(), Some(&ScanProgress::Finding),);
+    let reading = &progress[finding_steps(&progress).len()..];
+    assert_eq!(progress.first(), Some(&ScanProgress::Finding { found: 0 }));
     assert_eq!(
-        progress.get(1),
+        reading.first(),
         Some(&ScanProgress::Reading {
             scanned: 0,
             total: 7
         })
     );
     assert_eq!(
-        progress.last(),
+        reading.last(),
         Some(&ScanProgress::Reading {
             scanned: 7,
             total: 7
         })
     );
-    assert!(progress.is_sorted_by_key(|step| match step {
-        ScanProgress::Finding => None,
+    assert!(reading.is_sorted_by_key(|step| match step {
+        ScanProgress::Finding { .. } => None,
         ScanProgress::Reading { scanned, .. } => Some(*scanned),
     }));
+}
+
+#[tokio::test]
+async fn counts_the_books_found_so_far_until_all_are_found() {
+    let comics = sample_library("scan-found-so-far");
+
+    let (_, _, progress) = Scanned::folder(
+        "scan-found-so-far",
+        &comics.path().join(SAMPLE_LIBRARY_NAME),
+    )
+    .await;
+
+    let found = finding_steps(&progress);
+    assert!(found.windows(2).all(|pair| pair[0] < pair[1]));
+    assert_eq!(found.last(), Some(&7));
+}
+
+fn finding_steps(progress: &[ScanProgress]) -> Vec<u32> {
+    progress
+        .iter()
+        .map_while(|step| match step {
+            ScanProgress::Finding { found } => Some(*found),
+            ScanProgress::Reading { .. } => None,
+        })
+        .collect()
 }
 
 #[tokio::test]
@@ -350,7 +376,7 @@ async fn counts_the_folders_it_cannot_read_and_carries_on() {
 #[test]
 fn tells_the_interface_each_stage_of_a_scan_by_name() {
     let stages = [
-        ScanProgress::Finding,
+        ScanProgress::Finding { found: 4 },
         ScanProgress::Reading {
             scanned: 3,
             total: 7,
@@ -362,7 +388,7 @@ fn tells_the_interface_each_stage_of_a_scan_by_name() {
     assert_eq!(
         sent,
         [
-            serde_json::json!({ "stage": "finding" }),
+            serde_json::json!({ "stage": "finding", "found": 4 }),
             serde_json::json!({ "stage": "reading", "scanned": 3, "total": 7 }),
         ]
     );
