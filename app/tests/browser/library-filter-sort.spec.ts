@@ -660,6 +660,29 @@ test.describe("when a filter leaves no series", () => {
   });
 });
 
+test.describe("when the library holds no series and a filter is stored", () => {
+  test.use({
+    backend: {
+      ...FILTERING_BACKEND,
+      librarySeries: () => ({ series: [], next: null }),
+      librarySeriesCount: () => 0,
+      libraryListing: () => ({
+        ...DEFAULT_LIBRARY_LISTING,
+        filter: { ...DEFAULT_LIBRARY_LISTING.filter, unread: "only" },
+      }),
+    },
+  });
+
+  test("says the library is empty and offers adding a folder instead of blaming the filter", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await expect(page.getByText("Your library is empty")).toBeVisible();
+    await expect(page.getByText("No series match these filters.")).toBeHidden();
+  });
+});
+
 test("slides in as it opens, which reduced motion turns into appearing at once", async ({
   page,
 }) => {

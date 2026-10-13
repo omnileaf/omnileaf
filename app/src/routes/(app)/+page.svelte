@@ -74,14 +74,16 @@
   const listsNothing = $derived(
     library.list.kind === "loaded" && library.list.series.length === 0,
   );
-  const isEmpty = $derived(listsNothing && !isListFiltered);
+  let holdsNoSeries = $state(false);
+  const isEmpty = $derived(listsNothing && (!isListFiltered || holdsNoSeries));
   const loaded = $derived(
     library.list.kind === "loaded" && view.reading.kind === "read"
       ? { series: library.list, view: view.reading.value }
       : undefined,
   );
   const hasBooks = $derived(
-    loaded !== undefined && (loaded.series.series.length > 0 || isListFiltered),
+    loaded !== undefined &&
+      (loaded.series.series.length > 0 || (isListFiltered && !holdsNoSeries)),
   );
   const showsItemCounts = $derived(
     hasBooks && loaded?.view.showsItemCounts === true,
@@ -110,6 +112,18 @@
           chosenListing !== undefined && filtersOn(chosenListing.filter) > 0,
       );
     }
+  });
+
+  $effect(() => {
+    holdsNoSeries = false;
+    if (!listsNothing || !isListFiltered) {
+      return;
+    }
+    void commands
+      .librarySeriesCount(DEFAULT_LIBRARY_LISTING.filter)
+      .then((result) => {
+        holdsNoSeries = result.status === "ok" && result.data === 0;
+      });
   });
 
   $effect(() => {
