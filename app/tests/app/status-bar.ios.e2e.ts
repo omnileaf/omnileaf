@@ -35,7 +35,9 @@ const RECENT_TAB = xpath(
 const CANCEL_BUTTON = xpath("//XCUIElementTypeButton[@name='Cancel']");
 
 function themeOption(label: string): ReturnType<typeof xpath> {
-  return xpath(`//main//label[normalize-space()='${label}']`);
+  return xpath(
+    `//main//*[@role='radio'][.//span[not(@aria-hidden='true')][normalize-space()='${label}']]`,
+  );
 }
 
 const run = promisify(execFile);
