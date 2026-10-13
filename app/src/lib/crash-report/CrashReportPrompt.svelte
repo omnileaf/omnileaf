@@ -58,8 +58,8 @@
     content?.querySelector<HTMLElement>("[data-prompt-title]")?.focus();
   }
 
-  function send(): void {
-    void (alwaysSend ? reporting.sendAlways() : reporting.sendThisTime());
+  function send(): Promise<void> {
+    return alwaysSend ? reporting.sendAlways() : reporting.sendThisTime();
   }
 
   function decline(): void {
@@ -137,7 +137,11 @@
             <ReportDetails details={offer.details} />
             <AlwaysSendChoice bind:checked={alwaysSend} {look} />
             <div class="mbs-sm flex flex-col gap-sm self-stretch">
-              <Button type="button" look="crash-phone-primary" onclick={send}>
+              <Button
+                type="button"
+                look="crash-phone-primary"
+                onClickPromise={send}
+              >
                 {m.crash_report_send_phone()}
               </Button>
               <Button type="button" look="crash-phone-secondary" onclick={copy}>
@@ -186,7 +190,11 @@
             >
               {m.crash_report_decline()}
             </Button>
-            <Button type="button" look="crash-dialog-primary" onclick={send}>
+            <Button
+              type="button"
+              look="crash-dialog-primary"
+              onClickPromise={send}
+            >
               {m.crash_report_send()}
             </Button>
           </div>
