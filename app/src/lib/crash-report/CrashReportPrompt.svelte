@@ -101,10 +101,11 @@
           class="flex flex-col ps-safe-start pe-safe-end pbs-safe-top pbe-safe-bottom min-block-full"
         >
           <header class="mbs-sm flex items-center gap-xs ps-sm">
-            <button
+            <Button
               type="button"
+              look="icon"
               aria-label={m.crash_report_decline()}
-              class="flex items-center justify-center rounded-full block-touch-target inline-touch-target"
+              class="block-touch-target inline-touch-target"
               onclick={decline}
             >
               <ArrowLeft
@@ -115,7 +116,7 @@
                 size={BACK_CHEVRON_SIZE}
                 class="rtl:-scale-x-100 android:hidden"
               />
-            </button>
+            </Button>
             <span class="text-callout font-semibold">{m.app_name()}</span>
           </header>
           <div
