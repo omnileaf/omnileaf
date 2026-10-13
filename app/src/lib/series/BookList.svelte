@@ -16,6 +16,7 @@
   import BookSheet from "./BookSheet.svelte";
   import { RowSwipe } from "./row-swipe.svelte";
   import type { SwipeOutcome } from "./swipe";
+  import { getSwipeActionsSetting } from "./swipe-actions.svelte";
 
   type BookId = SeriesBook["id"];
 
@@ -48,10 +49,16 @@
 
   const longPress = new LongPress(LONG_PRESS_MS);
   const ids = $derived(books.map((book) => book.id));
-  const swipe = new RowSwipe((side) => side === "towardEnd");
+  const swipeActions = getSwipeActionsSetting();
+  const swipe = new RowSwipe(
+    (side) => swipeActions.actionFor(side) !== "nothing",
+  );
 
   function swiped(book: SeriesBook, outcome: SwipeOutcome): void {
-    if (outcome.kind === "act") {
+    if (
+      outcome.kind === "act" &&
+      swipeActions.actionFor(outcome.side) === "markRead"
+    ) {
       onSwiped(book, bookActions(book.reading).mark, "swiped");
     }
   }
@@ -102,9 +109,11 @@
     </label>
   {:else}
     {@const side = swipe.sideOf(book.id)}
+    {@const action =
+      side === undefined ? "nothing" : swipeActions.actionFor(side)}
     {@const mark = bookActions(book.reading).mark}
     <div class="relative overflow-hidden">
-      {#if side !== undefined}
+      {#if side !== undefined && action === "markRead"}
         <div
           class={[
             "absolute inset-none flex items-center bg-accent px-sm text-on-accent",
