@@ -1,5 +1,8 @@
 //! Puts the app's window in full screen for reading, on the platforms whose windows have one.
 
+#[cfg(any(target_os = "macos", test))]
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use serde::Deserialize;
 use specta::Type;
 
@@ -30,6 +33,51 @@ impl FullScreenChange {
     }
 }
 
+/// Follows the window in and out of full screen, to tell when it has just come back to a window.
+#[cfg(any(target_os = "macos", test))]
+#[derive(Default)]
+pub(crate) struct FullScreenWatch {
+    was_full_screen: AtomicBool,
+}
+
+#[cfg(any(target_os = "macos", test))]
+impl FullScreenWatch {
+    pub(crate) fn has_left(&self, is_full_screen: bool) -> bool {
+        let was_full_screen = self.was_full_screen.swap(is_full_screen, Ordering::SeqCst);
+        was_full_screen && !is_full_screen
+    }
+}
+
+/// Gives the page back the keys once the window leaves full screen, which tao hands to its own view behind the page as the window's style comes back.
+///
+/// Tao queues that hand-over on the main queue as the window leaves, so the page takes the keys back in a job queued after it.
+#[cfg(target_os = "macos")]
+pub(crate) fn keep_keys_on_leaving(window: &tauri::Window, event: &tauri::WindowEvent) {
+    use tauri::Manager;
+
+    if !matches!(event, tauri::WindowEvent::Resized(_)) {
+        return;
+    }
+    let is_full_screen = match window.is_fullscreen() {
+        Ok(is_full_screen) => is_full_screen,
+        Err(error) => {
+            tracing::warn!(%error, "tell whether the window is in full screen");
+            return;
+        }
+    };
+    if !window.state::<FullScreenWatch>().has_left(is_full_screen) {
+        return;
+    }
+    let webviews = window.webviews();
+    dispatch2::DispatchQueue::main().exec_async(move || {
+        for webview in webviews {
+            if let Err(error) = webview.set_focus() {
+                tracing::warn!(%error, "give the keys back to the page after full screen");
+            }
+        }
+    });
+}
+
 #[cfg(desktop)]
 pub(crate) fn change(
     window: &tauri::WebviewWindow,
@@ -58,7 +106,17 @@ pub(crate) fn change(
 
 #[cfg(test)]
 mod tests {
-    use super::FullScreenChange;
+    use super::{FullScreenChange, FullScreenWatch};
+
+    #[test]
+    fn tells_only_when_the_window_has_just_left_full_screen() {
+        let watch = FullScreenWatch::default();
+
+        let left =
+            [false, true, true, false, false].map(|is_full_screen| watch.has_left(is_full_screen));
+
+        assert_eq!(left, [false, false, false, true, false]);
+    }
 
     #[test]
     fn toggles_between_a_window_and_full_screen() {

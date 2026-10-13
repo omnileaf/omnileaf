@@ -73,6 +73,10 @@ pub fn run() {
         });
     #[cfg(desktop)]
     let app = app.plugin(tauri_plugin_dialog::init());
+    #[cfg(target_os = "macos")]
+    let app = app
+        .manage(full_screen::FullScreenWatch::default())
+        .on_window_event(full_screen::keep_keys_on_leaving);
     #[cfg(target_os = "android")]
     let app = app
         .plugin(omnileaf_folder_access::init())
