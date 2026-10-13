@@ -1,6 +1,7 @@
 /.tauri
 /android/.tauri
 /android/build
+/android/.gradle
 /permissions
 /ios/Package.resolved
 /ios/.build
