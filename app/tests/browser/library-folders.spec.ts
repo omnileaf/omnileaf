@@ -5,7 +5,11 @@ import {
   DEFAULT_BACKEND,
   expect,
   MEDIUM_MIN_WIDTH,
+  settle,
   test,
+  transitionsOf,
+  viewportOf,
+  watchTransitions,
 } from "./fixtures.ts";
 
 type WireFolder = Awaited<
@@ -144,6 +148,33 @@ test("removes a folder once the removal is confirmed", async ({ page }) => {
   ).toBeFocused();
 });
 
+test("slides the removal question up on a phone and fades it in on wider screens, which reduced motion turns into appearing at once", async ({
+  page,
+}) => {
+  await page.goto("/settings/library");
+  const remove = page
+    .getByRole("region", { name: "Folders" })
+    .getByRole("button", { name: "Remove Sample Comics" });
+  const question = page.getByRole("alertdialog");
+  const transitions = await watchTransitions(page);
+
+  await remove.click();
+
+  await expect
+    .poll(transitions)
+    .toContain(
+      viewportOf(page).width < MEDIUM_MIN_WIDTH
+        ? "alertdialog translate"
+        : "alertdialog opacity",
+    );
+  await page.keyboard.press("Escape");
+  await expect(question).toBeHidden();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await remove.click();
+  await expect(question).toBeVisible();
+  expect(await transitionsOf(question)).toEqual([]);
+});
+
 test("keeps a folder when the removal is dismissed with Escape", async ({
   page,
 }) => {
@@ -224,6 +255,7 @@ test("marks the removal question with a round danger badge", async ({
   await page.goto("/settings/library");
 
   await page.getByRole("button", { name: "Remove Sample Comics" }).click();
+  await settle(page.getByRole("alertdialog"));
 
   const badge = page
     .getByRole("alertdialog")
@@ -249,6 +281,7 @@ test.describe("from medium screens up", () => {
     await page.goto("/settings/library");
     await page.getByRole("button", { name: "Remove Sample Comics" }).click();
     const dialog = page.getByRole("alertdialog");
+    await settle(dialog);
 
     const cancel = await boxOf(dialog.getByRole("button", { name: "Cancel" }));
     const remove = await boxOf(
@@ -277,6 +310,7 @@ test.describe("on phones", () => {
     await page.goto("/settings/library");
     await page.getByRole("button", { name: "Remove Sample Comics" }).click();
     const dialog = page.getByRole("alertdialog");
+    await settle(dialog);
     const sheet = await boxOf(dialog);
 
     const remove = await boxOf(
