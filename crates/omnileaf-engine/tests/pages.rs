@@ -16,7 +16,7 @@ use std::{
 
 use omnileaf_engine::{
     BookId, BookReading, Library, LibraryListing, OpenBookError, OpenedBook, PageDimensions,
-    ProbedFormat, Resource, ResourceRouter, SeriesBookListing, SeriesId, SeriesNeighbour,
+    ProbedFormat, ReadMark, Resource, ResourceRouter, SeriesBookListing, SeriesId,
 };
 use omnileaf_imaging::{Size, page_size};
 use omnileaf_testkit::{
@@ -248,19 +248,49 @@ async fn opens_a_book_with_its_place_in_the_series_and_the_books_either_side() {
 
     assert_eq!(middle.position, 2);
     assert_eq!(
-        middle.previous,
-        Some(SeriesNeighbour {
-            id: ids[0],
-            title: titles[0].to_owned(),
-        })
+        middle
+            .previous
+            .map(|neighbour| (neighbour.id, neighbour.title)),
+        Some((ids[0], titles[0].to_owned()))
     );
     assert_eq!(
-        middle.next,
-        Some(SeriesNeighbour {
-            id: ids[2],
-            title: titles[2].to_owned(),
-        })
+        middle.next.map(|neighbour| (neighbour.id, neighbour.title)),
+        Some((ids[2], titles[2].to_owned()))
     );
+}
+
+#[tokio::test]
+async fn shows_the_next_book_by_its_own_cover_and_how_far_it_was_read() {
+    let books: Vec<(&str, Vec<Vec<u8>>)> = vec![
+        ("Sample Series 01 v01", portrait_pages(SEED)),
+        ("Sample Series 01 v02", portrait_pages(SEED + 1)),
+    ];
+    let reader = Reader::with_books("next-cover", &books).await;
+    let listed = reader
+        .library
+        .series_books(reader.series().await, SeriesBookListing::default(), None)
+        .await
+        .unwrap();
+    let ids: Vec<BookId> = listed.books.iter().map(|book| book.id).collect();
+    reader
+        .library
+        .mark_books(vec![ids[1]], ReadMark::Read)
+        .await
+        .unwrap();
+
+    let first = reader
+        .router
+        .open_book(&reader.library, ids[0], NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+
+    let next = first.next.unwrap();
+    assert!(next.cover.is_some_and(|cover| {
+        cover
+            .to_string()
+            .starts_with(&format!("thumb/v1/{}/", ids[1]))
+    }));
+    assert_eq!(next.reading, BookReading::Read);
 }
 
 #[tokio::test]

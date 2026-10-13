@@ -3,18 +3,37 @@ use rusqlite::{Connection, OptionalExtension, named_params};
 
 use crate::{
     Error,
-    catalog::{staged_rows::snapshot, stored_id::stored_id},
+    catalog::{
+        BookReading, Cover, cover::stored_cover, series_books::stored_reading,
+        staged_rows::snapshot, stored_id::stored_id,
+    },
 };
 
 const BOOK_KEY: &str = "SELECT series_local_id, title_sort_key FROM book WHERE id = ?1";
 const BOOKS_BEFORE: &str = "SELECT count(*) FROM book
     WHERE series_local_id = :series AND (title_sort_key, id) < (:key, :id)";
-const PREVIOUS_BOOK: &str = "SELECT id, title FROM book
-    WHERE series_local_id = :series AND (title_sort_key, id) < (:key, :id)
-    ORDER BY title_sort_key DESC, id DESC LIMIT 1";
-const NEXT_BOOK: &str = "SELECT id, title FROM book
-    WHERE series_local_id = :series AND (title_sort_key, id) > (:key, :id)
-    ORDER BY title_sort_key, id LIMIT 1";
+
+macro_rules! neighbour {
+    ($beside:literal, $order:literal) => {
+        concat!(
+            "SELECT book.id, book.title,
+                cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
+                book_state.is_read, book_state.is_started, book_state.position_page
+            FROM book
+            LEFT JOIN book_file AS cover
+                ON cover.id = (SELECT min(id) FROM book_file WHERE book_file.book_id = book.id)
+            LEFT JOIN book_state ON book_state.book_id = book.id
+            WHERE book.series_local_id = :series AND (book.title_sort_key, book.id) ",
+            $beside,
+            " (:key, :id) ORDER BY ",
+            $order,
+            " LIMIT 1"
+        )
+    };
+}
+
+const PREVIOUS_BOOK: &str = neighbour!("<", "book.title_sort_key DESC, book.id DESC");
+const NEXT_BOOK: &str = neighbour!(">", "book.title_sort_key, book.id");
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PlaceInSeries {
@@ -28,6 +47,9 @@ pub struct PlaceInSeries {
 pub struct SeriesNeighbour {
     pub id: BookId,
     pub title: String,
+    /// The book's own cover, absent while it has no file.
+    pub cover: Option<Cover>,
+    pub reading: BookReading,
 }
 
 #[tracing::instrument(skip_all, fields(%book))]
@@ -67,6 +89,8 @@ fn neighbour(
             Ok(SeriesNeighbour {
                 id: stored_id(row, "id")?,
                 title: row.get("title")?,
+                cover: stored_cover(row)?,
+                reading: stored_reading(row)?,
             })
         })
         .optional()?)
@@ -83,18 +107,25 @@ mod tests {
 
         let plans = [BOOKS_BEFORE, PREVIOUS_BOOK, NEXT_BOOK].map(|query| scratch.query_plan(query));
 
+        let neighbour_plan = |beside: &str| {
+            vec![
+                format!(
+                    "SEARCH book USING INDEX book_by_series (series_local_id=? AND (title_sort_key,id){beside}(?,?))"
+                ),
+                "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN".to_owned(),
+                "CORRELATED SCALAR SUBQUERY 1".to_owned(),
+                "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)".to_owned(),
+                "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN".to_owned(),
+            ]
+        };
         assert_eq!(
             plans,
             [
                 vec![
-                    "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND (title_sort_key,id)<(?,?))"
+                    "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND (title_sort_key,id)<(?,?))".to_owned()
                 ],
-                vec![
-                    "SEARCH book USING INDEX book_by_series (series_local_id=? AND (title_sort_key,id)<(?,?))"
-                ],
-                vec![
-                    "SEARCH book USING INDEX book_by_series (series_local_id=? AND (title_sort_key,id)>(?,?))"
-                ],
+                neighbour_plan("<"),
+                neighbour_plan(">"),
             ]
         );
     }

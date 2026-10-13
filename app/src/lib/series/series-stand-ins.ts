@@ -50,7 +50,9 @@ export function standInOpenedBook(book: OpenedBook): OpenedBook {
     beside: SeriesNeighbour | null,
     position: number,
   ): SeriesNeighbour | null =>
-    beside === null ? null : { ...beside, title: titled(position) };
+    beside === null
+      ? null
+      : { ...beside, title: titled(position), cover: null };
   return {
     ...book,
     title: titled(book.position),

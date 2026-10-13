@@ -33,6 +33,7 @@ export const commands = {
 	readingHistory: (after: string & { readonly __brand: "HistoryCursor" } | null) => typedError<HistoryPage, IpcError>(__TAURI_INVOKE("reading_history", { after })),
 	readingTimeSince: (firstDay: number) => typedError<number, IpcError>(__TAURI_INVOKE("reading_time_since", { firstDay })),
 	readingTimeBetween: (firstDay: number, lastDay: number) => typedError<number, IpcError>(__TAURI_INVOKE("reading_time_between", { firstDay, lastDay })),
+	bookReadTime: (id: string & { readonly __brand: "BookId" }) => typedError<number, IpcError>(__TAURI_INVOKE("book_read_time", { id })),
 	orientScreen: (orientation: ScreenOrientation) => typedError<null, IpcError>(__TAURI_INVOKE("orient_screen", { orientation })),
 	changeFullScreen: (change: FullScreenChange) => typedError<boolean, IpcError>(__TAURI_INVOKE("change_full_screen", { change })),
 	libraryListing: () => typedError<LibraryListing, IpcError>(__TAURI_INVOKE("library_listing")),
@@ -328,6 +329,9 @@ export type SeriesBookPage = {
 export type SeriesNeighbour = {
 	id: string & { readonly __brand: "BookId" },
 	title: string,
+	/**  The book's own cover, absent while it has no file. */
+	cover: string & { readonly __brand: "CoverPath" } | null,
+	reading: BookReading,
 };
 
 export type SeriesOverview = {

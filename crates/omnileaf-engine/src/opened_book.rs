@@ -3,7 +3,7 @@ use omnileaf_imaging::PageFormat;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::{BookId, BookReading, PagePath, PageThumbnailPath, SeriesId};
+use crate::{BookId, BookReading, CoverPath, PagePath, PageThumbnailPath, SeriesId};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -28,6 +28,9 @@ pub struct OpenedBook {
 pub struct SeriesNeighbour {
     pub id: BookId,
     pub title: String,
+    /// The book's own cover, absent while it has no file.
+    pub cover: Option<CoverPath>,
+    pub reading: BookReading,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -73,6 +76,8 @@ impl From<catalog::SeriesNeighbour> for SeriesNeighbour {
         Self {
             id: BookId(neighbour.id),
             title: neighbour.title,
+            cover: neighbour.cover.map(CoverPath),
+            reading: neighbour.reading.into(),
         }
     }
 }
