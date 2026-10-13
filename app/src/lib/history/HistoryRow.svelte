@@ -65,7 +65,9 @@
       </span>
     </span>
   </a>
-  <div class="hidden flex-1 items-center gap-lg desktop:large:flex">
+  <div
+    class="hidden flex-1 items-center gap-lg min-inline-none desktop:large:flex"
+  >
     <ListCover
       {cover}
       {coverUrl}
