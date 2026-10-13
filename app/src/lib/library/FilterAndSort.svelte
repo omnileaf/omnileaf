@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ListFilter, X } from "@lucide/svelte";
-  import { Dialog } from "bits-ui";
+  import { Dialog, Tabs } from "bits-ui";
   import { MediaQuery } from "svelte/reactivity";
 
   import {
@@ -10,6 +10,7 @@
     type LibrarySortBy,
   } from "#lib/ipc/bindings.ts";
   import { DialogContent } from "#lib/components/ui/dialog/index.ts";
+  import { TabsList, TabsTrigger } from "#lib/components/ui/tabs/index.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -47,7 +48,7 @@
 
   let button: HTMLButtonElement | undefined = $state();
   let isOpen = $state(false);
-  let tab: Tab = $state("filter");
+  let tab: string = $state("filter");
 
   const titleId = $props.id();
   const filtersCount = $derived(filtersOn(listing.filter));
@@ -94,15 +95,6 @@
 
   function choose(condition: FilterCondition, inclusion: Inclusion): void {
     onChoose(filteredBy(listing, condition, inclusion));
-  }
-
-  function switchTab(event: KeyboardEvent): void {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
-      return;
-    }
-    event.preventDefault();
-    tab = tab === "filter" ? "sort" : "filter";
-    document.getElementById(`${titleId}-${tab}-tab`)?.focus();
   }
 </script>
 
@@ -191,80 +183,61 @@
         </p>
       </div>
     {:else}
-      <div class="flex flex-col gap-md px-sheet-inline pbs-sm pbe-xs">
-        <span
-          aria-hidden="true"
-          class="self-center rounded-full bg-step-off block-sheet-handle-block inline-sheet-handle"
-        ></span>
-        <div class="flex items-center gap-md">
-          <HeaderBadge icon={ListFilter} tone="bg-accent-soft text-accent" />
-          <Dialog.Title id={titleId} class="flex-1 text-title font-bold">
-            {m.library_filter_and_sort()}
-          </Dialog.Title>
-          <button
-            type="button"
-            class="px-xs text-body font-semibold text-accent min-block-touch-target"
-            onclick={() => {
-              onChoose(DEFAULT_LIBRARY_LISTING);
-            }}
-          >
-            {m.library_reset()}
-          </button>
-        </div>
-        <div
-          role="tablist"
-          aria-labelledby={titleId}
-          class="flex gap-xs rounded-field bg-chip p-xs"
-        >
-          {#each tabs as choice (choice.name)}
+      <Tabs.Root bind:value={tab} class="contents">
+        <div class="flex flex-col gap-md px-sheet-inline pbs-sm pbe-xs">
+          <span
+            aria-hidden="true"
+            class="self-center rounded-full bg-step-off block-sheet-handle-block inline-sheet-handle"
+          ></span>
+          <div class="flex items-center gap-md">
+            <HeaderBadge icon={ListFilter} tone="bg-accent-soft text-accent" />
+            <Dialog.Title id={titleId} class="flex-1 text-title font-bold">
+              {m.library_filter_and_sort()}
+            </Dialog.Title>
             <button
-              id={`${titleId}-${choice.name}-tab`}
               type="button"
-              role="tab"
-              aria-selected={tab === choice.name}
-              aria-controls={tab === choice.name
-                ? `${titleId}-${choice.name}-panel`
-                : undefined}
-              tabindex={tab === choice.name ? 0 : -1}
-              onkeydown={switchTab}
-              class={[
-                "flex flex-auto items-center justify-center rounded-control px-sm text-lead min-block-segment",
-                tab === choice.name
-                  ? "bg-raised font-semibold shadow-raised"
-                  : "font-medium text-muted",
-              ]}
+              class="px-xs text-body font-semibold text-accent min-block-touch-target"
               onclick={() => {
-                tab = choice.name;
+                onChoose(DEFAULT_LIBRARY_LISTING);
               }}
             >
-              <span
-                data-label={choice.label}
-                class="room-for-bold-label items-center"
-              >
-                {choice.label}
-              </span>
+              {m.library_reset()}
             </button>
-          {/each}
+          </div>
+          <TabsList aria-labelledby={titleId}>
+            {#each tabs as choice (choice.name)}
+              <TabsTrigger value={choice.name}>
+                <span
+                  data-label={choice.label}
+                  class="room-for-bold-label items-center"
+                >
+                  {choice.label}
+                </span>
+              </TabsTrigger>
+            {/each}
+          </TabsList>
         </div>
-      </div>
-      <div
-        id={`${titleId}-${tab}-panel`}
-        role="tabpanel"
-        aria-labelledby={`${titleId}-${tab}-tab`}
-        class="flex-1 overflow-y-auto min-block-none"
-      >
-        {#if tab === "filter"}
+        <Tabs.Content
+          value="filter"
+          tabindex={-1}
+          class="flex-1 overflow-y-auto min-block-none"
+        >
           <div class="flex flex-col px-sheet-inline pbs-sm pbe-lg">
             <FilterConditions filter={listing.filter} onChoose={choose} />
           </div>
-        {:else}
+        </Tabs.Content>
+        <Tabs.Content
+          value="sort"
+          tabindex={-1}
+          class="flex-1 overflow-y-auto min-block-none"
+        >
           <SortChoices
             sort={listing.sort}
             onSortBy={sortBy}
             onReverse={reverse}
           />
-        {/if}
-      </div>
+        </Tabs.Content>
+      </Tabs.Root>
       <div
         class="border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom"
       >
