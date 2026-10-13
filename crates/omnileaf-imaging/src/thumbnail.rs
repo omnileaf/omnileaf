@@ -20,9 +20,9 @@ pub struct Thumbnail {
     pub size: Size,
 }
 
-pub fn thumbnail(image: &[u8]) -> Result<Thumbnail, ImagingError> {
+pub fn thumbnail(image: &[u8], width: u32) -> Result<Thumbnail, ImagingError> {
     let source = Source::probe(image)?;
-    let plan = Plan::for_source(source.size, THUMBNAIL_WIDTH, MAX_HEIGHT_PER_WIDTH);
+    let plan = Plan::for_source(source.size, width, MAX_HEIGHT_PER_WIDTH);
     let decoded = source.decode(plan.whole_source_at_output_scale(source.size))?;
     let rgb = resize(&decoded, source.size, plan)?;
     Ok(Thumbnail {

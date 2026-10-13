@@ -103,7 +103,7 @@ fn with_sof_size(jpeg: &[u8], width: u16, height: u16) -> Vec<u8> {
 fn makes_a_jpeg_thumbnail_320_px_wide_from_a_full_chroma_scan() {
     let scan = full_chroma_scan_jpeg(SEED).unwrap();
 
-    let thumbnail = thumbnail(&scan).unwrap();
+    let thumbnail = thumbnail(&scan, THUMBNAIL_WIDTH).unwrap();
 
     let expected = Size {
         width: THUMBNAIL_WIDTH,
@@ -117,7 +117,7 @@ fn makes_a_jpeg_thumbnail_320_px_wide_from_a_full_chroma_scan() {
 fn makes_a_jpeg_thumbnail_320_px_wide_from_a_4_2_0_scan() {
     let scan = subsampled_scan_jpeg(SEED).unwrap();
 
-    let thumbnail = thumbnail(&scan).unwrap();
+    let thumbnail = thumbnail(&scan, THUMBNAIL_WIDTH).unwrap();
 
     let expected = Size {
         width: THUMBNAIL_WIDTH,
@@ -131,7 +131,7 @@ fn makes_a_jpeg_thumbnail_320_px_wide_from_a_4_2_0_scan() {
 fn makes_a_thumbnail_from_a_png_page() {
     let page = page_png(SEED, 0, PageShape::Portrait).unwrap();
 
-    let thumbnail = thumbnail(&page).unwrap();
+    let thumbnail = thumbnail(&page, THUMBNAIL_WIDTH).unwrap();
 
     assert_eq!(
         decoded(&thumbnail.jpeg).0,
@@ -146,7 +146,7 @@ fn makes_a_thumbnail_from_a_png_page() {
 fn makes_a_thumbnail_from_a_webp_page() {
     let page = page_webp(SEED, 0, PageShape::Portrait).unwrap();
 
-    let thumbnail = thumbnail(&page).unwrap();
+    let thumbnail = thumbnail(&page, THUMBNAIL_WIDTH).unwrap();
 
     assert_eq!(
         decoded(&thumbnail.jpeg).0,
@@ -161,7 +161,7 @@ fn makes_a_thumbnail_from_a_webp_page() {
 fn keeps_the_shape_of_a_landscape_spread() {
     let spread = page_jpeg(SEED, 0, PageShape::Spread).unwrap();
 
-    let thumbnail = thumbnail(&spread).unwrap();
+    let thumbnail = thumbnail(&spread, THUMBNAIL_WIDTH).unwrap();
 
     assert_eq!(
         thumbnail.size,
@@ -180,7 +180,7 @@ fn keeps_a_page_narrower_than_a_thumbnail_at_its_own_size() {
     };
     let page = png_of(size, ColorType::Rgb, &[90, 120, 150]);
 
-    let thumbnail = thumbnail(&page).unwrap();
+    let thumbnail = thumbnail(&page, THUMBNAIL_WIDTH).unwrap();
 
     assert_eq!(decoded(&thumbnail.jpeg).0, size);
 }
@@ -196,7 +196,7 @@ fn shows_only_the_top_of_a_tall_strip() {
         &[90, 120, 150],
     );
 
-    let thumbnail = thumbnail(&strip).unwrap();
+    let thumbnail = thumbnail(&strip, THUMBNAIL_WIDTH).unwrap();
 
     assert_eq!(
         thumbnail.size,
@@ -211,7 +211,7 @@ fn shows_only_the_top_of_a_tall_strip() {
 fn keeps_the_colours_of_the_page() {
     let page = page_png(SEED, PAGE_WITH_ITS_BAND_AT_THE_FOOT, PageShape::Portrait).unwrap();
 
-    let thumbnail = thumbnail(&page).unwrap();
+    let thumbnail = thumbnail(&page, THUMBNAIL_WIDTH).unwrap();
 
     let (size, pixels) = decoded(&thumbnail.jpeg);
     let shown = centre_pixel(size, &pixels);
@@ -233,7 +233,7 @@ fn lays_a_transparent_page_on_white() {
         &[20, 40, 60, 0],
     );
 
-    let thumbnail = thumbnail(&page).unwrap();
+    let thumbnail = thumbnail(&page, THUMBNAIL_WIDTH).unwrap();
 
     let (size, pixels) = decoded(&thumbnail.jpeg);
     let shown = centre_pixel(size, &pixels);
@@ -244,7 +244,7 @@ fn lays_a_transparent_page_on_white() {
 fn refuses_an_image_in_a_format_it_cannot_read() {
     let gif = b"GIF89a\x01\x00\x01\x00\x00\x00\x00;";
 
-    let outcome = thumbnail(gif);
+    let outcome = thumbnail(gif, THUMBNAIL_WIDTH);
 
     assert!(matches!(outcome, Err(ImagingError::Unsupported)));
 }
@@ -253,7 +253,7 @@ fn refuses_an_image_in_a_format_it_cannot_read() {
 fn refuses_a_damaged_jpeg() {
     let damaged = [&[0xFF, 0xD8, 0xFF, 0xC0][..], &[0x13; 64]].concat();
 
-    let outcome = thumbnail(&damaged);
+    let outcome = thumbnail(&damaged, THUMBNAIL_WIDTH);
 
     assert!(matches!(
         outcome,
@@ -266,7 +266,7 @@ fn refuses_a_jpeg_too_large_to_decode_within_the_memory_budget() {
     let page = page_jpeg(SEED, 0, PageShape::Portrait).unwrap();
     let huge = with_sof_size(&page, 60_000, 60_000);
 
-    let outcome = thumbnail(&huge);
+    let outcome = thumbnail(&huge, THUMBNAIL_WIDTH);
 
     assert!(matches!(outcome, Err(ImagingError::TooLarge { .. })));
 }
@@ -276,7 +276,7 @@ fn refuses_a_progressive_jpeg_whose_full_size_coefficients_outgrow_the_memory_bu
     let page = page_jpeg(SEED, 0, PageShape::Portrait).unwrap();
     let huge = with_sof_size(&as_progressive(&page), 12_000, 12_000);
 
-    let outcome = thumbnail(&huge);
+    let outcome = thumbnail(&huge, THUMBNAIL_WIDTH);
 
     assert!(
         matches!(outcome, Err(ImagingError::TooLarge { .. })),
@@ -291,7 +291,7 @@ fn refuses_a_png_whose_pixels_outgrow_the_memory_budget_before_decoding_it() {
         height: 14_000,
     });
 
-    let outcome = thumbnail(&huge);
+    let outcome = thumbnail(&huge, THUMBNAIL_WIDTH);
 
     assert!(
         matches!(outcome, Err(ImagingError::TooLarge { .. })),
@@ -303,7 +303,7 @@ fn refuses_a_png_whose_pixels_outgrow_the_memory_budget_before_decoding_it() {
 fn refuses_a_webp_whose_pixels_outgrow_the_memory_budget_before_decoding_it() {
     let huge = webp_header_only(14_000, 14_000);
 
-    let outcome = thumbnail(&huge);
+    let outcome = thumbnail(&huge, THUMBNAIL_WIDTH);
 
     assert!(
         matches!(outcome, Err(ImagingError::TooLarge { .. })),
@@ -313,9 +313,12 @@ fn refuses_a_webp_whose_pixels_outgrow_the_memory_budget_before_decoding_it() {
 
 #[test]
 fn tells_a_whole_thumbnail_from_one_cut_short() {
-    let whole = thumbnail(&page_jpeg(SEED, 0, PageShape::Portrait).unwrap())
-        .unwrap()
-        .jpeg;
+    let whole = thumbnail(
+        &page_jpeg(SEED, 0, PageShape::Portrait).unwrap(),
+        THUMBNAIL_WIDTH,
+    )
+    .unwrap()
+    .jpeg;
     let cut_short = &whole[..whole.len() / 2];
 
     let empty: &[u8] = &[];
