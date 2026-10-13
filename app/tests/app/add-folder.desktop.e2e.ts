@@ -14,7 +14,7 @@ import { xpath } from "./webdriver.ts";
 
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
 const FINISHED_SCAN_REPORT = xpath(
-  "//*[@role='status'][starts-with(normalize-space(), 'Found ')]",
+  "//li[@data-sonner-toast]//p[starts-with(normalize-space(), 'Added ')]",
 );
 const SETTINGS_LINK = mainNavigationLink("Settings");
 const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
@@ -57,7 +57,7 @@ const FIRST_COVER = `return document.querySelector("ul[aria-label='Series'] img"
 const COVER_ON_PAGE_SHOWN = `const cover = document.querySelector("img");
 return cover !== null && cover.complete && cover.naturalWidth > 0;`;
 
-const SCAN_REPORT = `Found ${String(SAMPLE_LIBRARY.books)} books in ${String(SAMPLE_LIBRARY.series)} series in ${SAMPLE_LIBRARY.name}.`;
+const SCAN_REPORT = `Added ${String(SAMPLE_LIBRARY.books)} books from ${SAMPLE_LIBRARY.name}`;
 
 const appSession = useAppSession();
 
