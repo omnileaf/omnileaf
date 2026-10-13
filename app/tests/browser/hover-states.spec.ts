@@ -181,10 +181,10 @@ test.describe("with a pointer", () => {
     }) => {
       await page.goto("/settings/library");
       await addFolderBesideFolders(page).click();
-      const dismiss = page
-        .getByRole("main")
-        .getByRole("status")
-        .getByRole("button", { name: "Dismiss" });
+      const toast = page.locator("[data-sonner-toast]");
+      await expect(toast).toBeVisible();
+      await settle(toast);
+      const dismiss = toast.getByRole("button", { name: "Dismiss" });
       const resting = await paintOf(dismiss, "::before");
       const restingInk = await inkOf(dismiss);
 
@@ -210,10 +210,10 @@ test.describe("with a pointer", () => {
     }) => {
       await page.goto("/settings/library");
       await addFolderBesideFolders(page).click();
-      const dismiss = page
-        .getByRole("main")
-        .getByRole("status")
-        .getByRole("button", { name: "Dismiss" });
+      const toast = page.locator("[data-sonner-toast]");
+      await expect(toast).toBeVisible();
+      await settle(toast);
+      const dismiss = toast.getByRole("button", { name: "Dismiss" });
       const before = await boxOf(dismiss);
 
       await dismiss.hover();
