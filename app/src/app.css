@@ -539,6 +539,7 @@
   --z-index-tab-bar: 1;
   --z-index-notice: 10;
   --z-index-dialog: 20;
+  --z-index-tooltip: 30;
 
   --blur-glass: 24px;
   --blur-series-band: 40px;
