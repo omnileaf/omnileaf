@@ -50,3 +50,17 @@ test("shows what follows the label inside the switch", async () => {
     .element(screen.getByRole("switch", { name: LABEL }).getByText("Ctrl H"))
     .toBeVisible();
 });
+
+test("stays as its owner says when pressed", async () => {
+  const screen = await render(SettingSwitch, {
+    label: LABEL,
+    description: DESCRIPTION,
+    isOn: false,
+    onToggle: () => undefined,
+  });
+  const toggle = screen.getByRole("switch", { name: LABEL });
+
+  await toggle.click();
+
+  await expect.element(toggle).not.toBeChecked();
+});
