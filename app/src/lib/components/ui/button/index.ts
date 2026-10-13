@@ -1,1 +1,2 @@
-export { default as Button, type ButtonLook } from "./button.svelte";
+export { default as Button } from "./button.svelte";
+export { type ButtonLook } from "./looks.ts";
