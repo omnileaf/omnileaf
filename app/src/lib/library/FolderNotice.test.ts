@@ -322,7 +322,7 @@ test("announces that books are being found without announcing each count", async
   const scan = new PendingScan();
   const { button, status } = await renderWith(scan.addFolder);
   await button.click();
-  scan.report({ stage: "finding" });
+  scan.report({ stage: "finding", found: 0 });
 
   scan.report({ stage: "reading", scanned: 32, total: 100 });
 
@@ -336,7 +336,7 @@ test("says it is finding books before the scan has counted them", async () => {
   const { button } = await renderWith(scan.addFolder);
   await button.click();
 
-  scan.report({ stage: "finding" });
+  scan.report({ stage: "finding", found: 0 });
 
   const bar = page.getByRole("progressbar", {
     name: "Finding books",
