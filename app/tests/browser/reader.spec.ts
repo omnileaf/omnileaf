@@ -72,6 +72,23 @@ function controls(page: Page): Locator {
   return page.getByRole("link", { name: /Library|Back to the library/ });
 }
 
+/** The bars holding the controls, which stay reachable by keyboard and screen reader while hidden. */
+function controlBars(page: Page): Locator {
+  return page.locator("main > header, main > div:has(input[type=range])");
+}
+
+async function expectControlsShown(page: Page): Promise<void> {
+  for (const bar of await controlBars(page).all()) {
+    await expect(bar).toHaveCSS("opacity", "1");
+  }
+}
+
+async function expectControlsHidden(page: Page): Promise<void> {
+  for (const bar of await controlBars(page).all()) {
+    await expect(bar).toHaveCSS("opacity", "0");
+  }
+}
+
 async function swipe(page: Page, across: number): Promise<void> {
   const surface = zone(page, "Next page").locator("..");
   const box = await boxOf(surface);
@@ -165,7 +182,7 @@ test("keeps turning pages with Space after a tap shows or hides the controls", a
   await page.keyboard.press("Space");
 
   await expect(shownPage(page, 2)).toBeVisible();
-  await expect(controls(page)).toBeHidden();
+  await expectControlsHidden(page);
 });
 
 test("jumps to the last and first pages with End and Home", async ({
@@ -357,13 +374,85 @@ test("hides and shows the controls with a tap in the middle of the page and the 
   await openBook(page);
 
   await zone(page, "Hide the controls").click();
-  await expect(controls(page)).toBeHidden();
-  await expect(slider(page)).toBeHidden();
+  await expectControlsHidden(page);
   await zone(page, "Show the controls").click();
-  await expect(controls(page)).toBeVisible();
+  await expectControlsShown(page);
   await page.keyboard.press("m");
 
-  await expect(controls(page)).toBeHidden();
+  await expectControlsHidden(page);
+});
+
+const CONTROLS_HIDE_AFTER_MS = 3000;
+/** Long enough for the book to open, and well short of the time the controls stay up for. */
+const OPENING_MS = 1000;
+
+/** Opens the book and holds its clock still before the controls would hide by themselves. */
+async function openBookBeforeControlsHide(page: Page): Promise<void> {
+  await page.clock.install();
+  const opened = await page.evaluate(() => Date.now());
+  await openBook(page);
+  await page.clock.pauseAt(opened + OPENING_MS);
+}
+
+test("shows the controls as a book opens, then hides them by themselves", async ({
+  page,
+}) => {
+  await openBookBeforeControlsHide(page);
+  await expectControlsShown(page);
+
+  await page.clock.runFor(CONTROLS_HIDE_AFTER_MS);
+
+  await expectControlsHidden(page);
+});
+
+test("hides the controls at once on a page turn", async ({ page }) => {
+  await openBookBeforeControlsHide(page);
+
+  await page.keyboard.press("ArrowRight");
+
+  await expectControlsHidden(page);
+});
+
+test("hides the controls shown by a tap again after the same delay", async ({
+  page,
+}) => {
+  await openBookBeforeControlsHide(page);
+  await page.keyboard.press("ArrowRight");
+  await zone(page, "Show the controls").click();
+
+  await page.clock.runFor(CONTROLS_HIDE_AFTER_MS - 1);
+  await expectControlsShown(page);
+  await page.clock.runFor(1);
+
+  await expectControlsHidden(page);
+});
+
+test("keeps the controls up while the pointer rests on them", async ({
+  page,
+}) => {
+  await openBookBeforeControlsHide(page);
+  await slider(page).hover();
+
+  await page.clock.runFor(CONTROLS_HIDE_AFTER_MS * 2);
+  await expectControlsShown(page);
+  const { width, height } = viewportOf(page);
+  await page.mouse.move(width / 2, height / 2);
+  await page.clock.runFor(CONTROLS_HIDE_AFTER_MS);
+
+  await expectControlsHidden(page);
+});
+
+test("shows hidden controls for a control reached with the keyboard and keeps them while it has focus", async ({
+  page,
+}) => {
+  await openBookBeforeControlsHide(page);
+  await page.keyboard.press("ArrowRight");
+  await expectControlsHidden(page);
+
+  await controls(page).focus();
+  await page.clock.runFor(CONTROLS_HIDE_AFTER_MS * 2);
+
+  await expectControlsShown(page);
 });
 
 test("fades the controls in and out, unless motion is reduced", async ({

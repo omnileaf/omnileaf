@@ -15,6 +15,7 @@
     type ReaderAction,
     readerActionFor,
   } from "#lib/reader/reader-keys.ts";
+  import { ReaderControls } from "#lib/reader/reader-controls.svelte.ts";
   import ReaderPanel from "#lib/reader/ReaderPanel.svelte";
   import ReaderTopBar from "#lib/reader/ReaderTopBar.svelte";
   import { isZoomedIn, zoneAction } from "#lib/reader/reader-zoom.ts";
@@ -24,6 +25,7 @@
   const RESTING_SCALE = 1;
   /** Long enough that turning pages in a run announces only the page they stop on. */
   const ANNOUNCE_DELAY_MS = 300;
+  const CONTROLS_HIDE_AFTER_MS = 3000;
   const TURN_STEPS = { next: 1, previous: -1 } as const satisfies Record<
     SwipeTurn,
     number
@@ -38,7 +40,7 @@
     () => new PageTurner(book.pages.length, book.startPage),
   );
   const swipe = new Swipe(SWIPE_MIN_PX);
-  let areControlsShown = $state(true);
+  const controls = new ReaderControls(CONTROLS_HIDE_AFTER_MS);
   let heading: HTMLHeadingElement | undefined = $state();
   let viewportScale = $state(RESTING_SCALE);
 
@@ -69,19 +71,19 @@
   function act(action: ReaderAction): void {
     switch (action) {
       case "next":
-        turner.turn(1);
+        turnBy(1);
         return;
       case "previous":
-        turner.turn(-1);
+        turnBy(-1);
         return;
       case "first":
-        turner.goTo(0);
+        turnTo(0);
         return;
       case "last":
-        turner.goTo(pageCount - 1);
+        turnTo(pageCount - 1);
         return;
       case "toggleControls":
-        areControlsShown = !areControlsShown;
+        controls.toggle();
         return;
       case "fullScreen":
         void commands.changeFullScreen("toggle");
@@ -89,6 +91,29 @@
       case "leave":
         void leaveFullScreenOrBook();
         return;
+    }
+  }
+
+  function turnBy(step: number): void {
+    turner.turn(step);
+    controls.hide();
+  }
+
+  function turnTo(index: number): void {
+    turner.goTo(index);
+    controls.hide();
+  }
+
+  /** Shows the controls for a focused control, holding them up only while it was focused from the keyboard, and never for the heading focused as the book opens. */
+  function onControlFocus(event: FocusEvent): void {
+    const { target } = event;
+    if (!(target instanceof HTMLElement) || target.tabIndex < 0) {
+      return;
+    }
+    if (target.matches(":focus-visible")) {
+      controls.focused();
+    } else {
+      controls.show();
     }
   }
 
@@ -127,15 +152,34 @@
     return event.detail > 0;
   }
 
+  const controlEvents = {
+    onpointerenter: () => {
+      controls.pointerEntered();
+    },
+    onpointerleave: () => {
+      controls.pointerLeft();
+    },
+    onfocusin: onControlFocus,
+    onfocusout: () => {
+      controls.blurred();
+    },
+  };
+
   function onSwipeEnd(event: PointerEvent): void {
     const turn = swipe.ended(event);
     if (turn !== undefined && !isZoomedIn(viewportScale)) {
-      turner.turn(TURN_STEPS[turn]);
+      turnBy(TURN_STEPS[turn]);
     }
   }
 
   onMount(() => {
     heading?.focus();
+    return () => {
+      controls.stop();
+    };
+  });
+
+  onMount(() => {
     const viewport = window.visualViewport;
     if (viewport === null) {
       return;
@@ -184,7 +228,7 @@
     ></button>
     <button
       type="button"
-      aria-label={areControlsShown
+      aria-label={controls.isShown
         ? m.reader_hide_controls()
         : m.reader_show_controls()}
       class="flex-1 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
@@ -204,8 +248,9 @@
   <header
     class={[
       "absolute inset-x-reader-bar-inline inset-bs-reader-bar-top transition-all motion-safe:duration-fade motion-safe:ease-out expanded:inset-x-lg expanded:inset-bs-md",
-      !areControlsShown && "invisible opacity-0",
+      !controls.isShown && "pointer-events-none opacity-0",
     ]}
+    {...controlEvents}
   >
     <ReaderTopBar
       seriesTitle={named.seriesTitle}
@@ -223,8 +268,9 @@
   <div
     class={[
       "absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom transition-all motion-safe:duration-fade motion-safe:ease-out expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock",
-      !areControlsShown && "invisible opacity-0",
+      !controls.isShown && "pointer-events-none opacity-0",
     ]}
+    {...controlEvents}
   >
     <ReaderPanel
       pages={book.pages}
