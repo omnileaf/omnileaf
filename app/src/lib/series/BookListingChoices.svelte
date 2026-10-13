@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowDownUp } from "@lucide/svelte";
 
+  import { Toggle } from "#lib/components/ui/toggle/index.ts";
   import type { BooksShown, SeriesBookListing } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -27,23 +28,17 @@
 <div class="flex flex-wrap items-center justify-between gap-sm">
   <div role="group" aria-label={m.series_show()} class="flex gap-icon-gap">
     {#each SHOWN as { shown, label } (shown)}
-      {@const isPressed = listing.shown === shown}
-      <button
-        type="button"
-        aria-pressed={isPressed}
+      <Toggle
+        bind:pressed={
+          () => listing.shown === shown,
+          () => {
+            onChoose({ ...listing, shown });
+          }
+        }
         data-label={label()}
-        class={[
-          "room-for-bold-label shrink-0 items-center justify-center rounded-full border px-md text-detail whitespace-nowrap block-scope-chip",
-          isPressed
-            ? "border-accent bg-accent-soft font-bold"
-            : "border-border font-medium",
-        ]}
-        onclick={() => {
-          onChoose({ ...listing, shown });
-        }}
       >
         {label()}
-      </button>
+      </Toggle>
     {/each}
   </div>
   <button
