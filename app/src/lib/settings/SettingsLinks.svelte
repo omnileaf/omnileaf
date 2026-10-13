@@ -12,6 +12,7 @@
   import { ChevronRight } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
+  import { Item, ItemDescription } from "#lib/components/ui/item/index.ts";
 
   let { links }: { readonly links: readonly SettingsLink[] } = $props();
 
@@ -23,16 +24,20 @@
 >
   {#each links as link (link.route)}
     <li class="group">
-      <a
-        href={resolve(link.route)}
-        class="flex items-center gap-sm px-lg transition-control min-block-touch-target group-first:rounded-ss-card group-first:rounded-se-card group-last:rounded-ee-card group-last:rounded-es-card hover:bg-hover active:bg-pressed"
-      >
-        <span class="flex-1">{link.label}</span>
-        {#if link.value !== undefined}
-          <span class="text-muted">{link.value}</span>
-        {/if}
-        <ChevronRight size={CHEVRON_SIZE} class="text-muted rtl:-scale-x-100" />
-      </a>
+      <Item look="settings-link">
+        {#snippet child({ props })}
+          <a href={resolve(link.route)} {...props}>
+            <span class="flex-1">{link.label}</span>
+            {#if link.value !== undefined}
+              <ItemDescription>{link.value}</ItemDescription>
+            {/if}
+            <ChevronRight
+              size={CHEVRON_SIZE}
+              class="text-muted rtl:-scale-x-100"
+            />
+          </a>
+        {/snippet}
+      </Item>
     </li>
   {/each}
 </ul>
