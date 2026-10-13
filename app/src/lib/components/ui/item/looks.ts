@@ -12,6 +12,10 @@ export const ITEM_LOOKS = {
   "about-pane": `${ABOUT_ROW} gap-md py-xs min-block-phone-row`,
   "about-version":
     "flex flex-wrap items-center gap-md py-sm ps-list-row pe-sm min-block-4xl",
+  "history-phone":
+    "flex items-center gap-cover-gap min-block-history-row desktop:large:hidden",
+  "history-desktop":
+    "hidden flex-1 items-center gap-lg min-inline-none desktop:large:flex",
 } satisfies Record<string, string>;
 
 export type ItemLook = keyof typeof ITEM_LOOKS;
