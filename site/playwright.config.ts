@@ -1,5 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
+import { shardFromEnvironment } from "../app/tests/shard.ts";
+
 const PREVIEW_PORT = 4174;
 const PREVIEW_URL = `http://localhost:${String(PREVIEW_PORT)}`;
 
@@ -37,6 +39,7 @@ export default defineConfig({
       use: { browserName, ...device },
     })),
   ),
+  shard: shardFromEnvironment(process.env.PLAYWRIGHT_SHARD),
   webServer: {
     command: `pnpm build && pnpm preview --port ${String(PREVIEW_PORT)} --strictPort`,
     url: PREVIEW_URL,
