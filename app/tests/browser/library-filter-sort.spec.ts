@@ -190,8 +190,7 @@ async function filterBy(
   await showFilters(panel, page);
   await panel
     .getByRole("radiogroup", { name: condition })
-    .locator("label")
-    .filter({ hasText: inclusion })
+    .getByRole("radio", { name: inclusion })
     .click();
 }
 
@@ -199,7 +198,7 @@ async function sortBy(page: Page, sort: "Title" | "Date added") {
   const panel = filterAndSort(page);
   await showSorts(panel, page);
   if (isPhone(page)) {
-    await panel.locator("label").filter({ hasText: sort }).click();
+    await panel.getByRole("radio", { name: sort }).click();
   } else {
     await panel.getByRole("combobox", { name: "Sort by" }).selectOption(sort);
   }
@@ -549,7 +548,7 @@ for (const language of ["en", "en-XA"] as const) {
     await settle(panel);
     const segments = panel
       .getByRole("radiogroup", { name: text("Unread") })
-      .locator("label");
+      .getByRole("radio");
     const tabs = panel.getByRole("tab");
     const boxesOf = async (choices: Locator) => {
       const boxes = [];
@@ -573,9 +572,7 @@ for (const language of ["en", "en-XA"] as const) {
     const segmentsBefore = await boxesOf(segments);
     for (const choice of [text("Hide"), text("Only")]) {
       await segments.filter({ hasText: choice }).click();
-      await expect(
-        segments.filter({ hasText: choice }).locator("input"),
-      ).toBeChecked();
+      await expect(segments.filter({ hasText: choice })).toBeChecked();
       expect(await boxesOf(segments)).toEqual(segmentsBefore);
     }
   });
