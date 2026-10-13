@@ -9,8 +9,8 @@ const FIRST_SERIES_COVER = xpath(
 const SERIES_HEADING = xpath("//h1[normalize-space()='Sample Series 01']");
 const FIRST_BOOK = xpath("//ul[@aria-label='Books']/li[1]");
 const SELECT_BUTTON = xpath("//main//button[normalize-space()='Select']");
-const FIRST_BOOK_CHECKBOX = xpath(
-  "//*[@role='checkbox'][@aria-label='Select Sample Series 01 v01']",
+const LAST_BOOK_CHECKBOX = xpath(
+  "//*[@role='checkbox'][@aria-label='Select Sample Series 01 v03']",
 );
 const MARK_READ_BUTTON = xpath(
   "//*[@role='group'][@aria-label='Selected books']//button[normalize-space()='Mark read']",
@@ -36,7 +36,7 @@ test("opens a series of the folder added on its own page, with its books in orde
 test("marks a book of the series read", async () => {
   await openFirstSeries();
   await (await appSession().waitFor(SELECT_BUTTON)).click();
-  await (await appSession().waitFor(FIRST_BOOK_CHECKBOX)).click();
+  await (await appSession().waitFor(LAST_BOOK_CHECKBOX)).click();
 
   await (await appSession().waitFor(MARK_READ_BUTTON)).click();
 
