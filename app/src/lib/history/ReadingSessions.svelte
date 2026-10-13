@@ -40,7 +40,7 @@
   let { book, usesStandIns }: { book: BookId; usesStandIns: boolean } =
     $props();
 
-  const sessions = untrack(() => historyList({ kind: "book", book }));
+  const sessions = untrack(() => historyList(() => ({ kind: "book", book })));
   const headingId = $props.id();
   const locale = getLocale();
   const dayNames = dayFormats(locale);

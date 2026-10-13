@@ -963,3 +963,63 @@ test.describe("a session's menu", () => {
     });
   }
 });
+
+test.describe("with a series chosen", () => {
+  test.use({
+    backend: {
+      ...READ_BACKEND,
+      historySeries: () =>
+        [1, 4, 7].map((number) => ({
+          id: seriesId(number),
+          title: seriesTitle(number),
+        })),
+      readingHistory: (after, of) =>
+        pagedSessions(
+          of.kind === "series"
+            ? SESSIONS.filter((session) => session.series === of.series)
+            : SESSIONS,
+        )(after, of),
+    },
+  });
+
+  test("shows only that series' sessions on a desktop, and every series again", async ({
+    page,
+  }) => {
+    test.skip(!isDesktop(page), "desktops only");
+    await openHistory(page);
+    const chooser = page.getByRole("combobox", { name: "Show sessions from" });
+    await expect(chooser.getByRole("option")).toHaveText([
+      "All series",
+      seriesTitle(1),
+      seriesTitle(4),
+      seriesTitle(7),
+    ]);
+
+    await chooser.selectOption({ label: seriesTitle(7) });
+
+    await expect(rows(page)).toHaveCount(1);
+    await expect(rows(page).first()).toContainText(seriesTitle(7));
+    await chooser.selectOption({ label: "All series" });
+    await expect(rows(page)).toHaveCount(SESSIONS.length);
+  });
+
+  test("names every series by its stand-in with Screenshot mode on", async ({
+    page,
+  }) => {
+    test.skip(!isDesktop(page), "desktops only");
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "omnileaf.screenshotMode",
+        JSON.stringify({ activity: { kind: "on" } }),
+      );
+    });
+    await openHistory(page);
+
+    const options = page
+      .getByRole("combobox", { name: "Show sessions from" })
+      .getByRole("option");
+
+    await expect(options).toHaveCount(4);
+    await expect(options.filter({ hasText: "Sample Series" })).toHaveCount(0);
+  });
+});
