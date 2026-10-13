@@ -7,6 +7,7 @@ import type { Plugin } from "vite";
 import {
   catalogueOf,
   type LicenceFile,
+  licenceOf,
   packageRootOf,
   type ShippedPackage,
 } from "../src/lib/licences/shipped-packages.ts";
@@ -22,11 +23,14 @@ const CLIENT_ENVIRONMENT = "client";
 /** Packages whose code reaches the bundle without a module import: Tailwind's base styles and Paraglide's generated runtime. */
 const EMBEDDED_PACKAGES = ["tailwindcss", "@inlang/paraglide-js"] as const;
 
+function declared(manifest: unknown, name: string): unknown {
+  return typeof manifest === "object" && manifest !== null
+    ? Reflect.get(manifest, name)
+    : undefined;
+}
+
 function field(manifest: unknown, name: string, root: string): string {
-  const value: unknown =
-    typeof manifest === "object" && manifest !== null
-      ? Reflect.get(manifest, name)
-      : undefined;
+  const value = declared(manifest, name);
   if (typeof value !== "string") {
     throw new Error(`read ${root}/package.json: no "${name}" string`);
   }
@@ -52,12 +56,13 @@ async function shippedPackage(root: string): Promise<ShippedPackage> {
   const manifest: unknown = JSON.parse(
     await readFile(join(root, "package.json"), "utf8"),
   );
-  return {
-    name: field(manifest, "name", root),
-    version: field(manifest, "version", root),
-    licence: field(manifest, "license", root),
-    files: await licenceFiles(root),
-  };
+  const name = field(manifest, "name", root);
+  const version = field(manifest, "version", root);
+  const licence = licenceOf(name, version, declared(manifest, "license"));
+  if (licence === undefined) {
+    throw new Error(`read ${root}/package.json: no "license" string`);
+  }
+  return { name, version, licence, files: await licenceFiles(root) };
 }
 
 async function committedCatalogue(path: string): Promise<string | undefined> {

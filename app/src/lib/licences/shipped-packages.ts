@@ -13,6 +13,11 @@ export interface ShippedPackage {
   readonly files: readonly LicenceFile[];
 }
 
+/** Licences granted by a package's licence file but missing from its manifest, by name and version so an upgrade is checked again. */
+const UNDECLARED_LICENCES: ReadonlyMap<string, string> = new Map([
+  ["svelte-toolbelt@0.10.6", "MIT"],
+]);
+
 const NODE_MODULES = "/node_modules/";
 const SCOPE_PREFIX = "@";
 const VIRTUAL_PREFIX = "\0";
@@ -31,6 +36,17 @@ export function packageRootOf(moduleId: string): string | undefined {
     "node_modules",
     ...inside.slice(0, nameLength),
   ].join("/");
+}
+
+/** The licence a package's manifest declares, else the one it is known to ship without declaring. */
+export function licenceOf(
+  name: string,
+  version: string,
+  declared: unknown,
+): string | undefined {
+  return typeof declared === "string"
+    ? declared
+    : UNDECLARED_LICENCES.get(`${name}@${version}`);
 }
 
 function byNameThenVersion(a: ShippedPackage, b: ShippedPackage): number {
