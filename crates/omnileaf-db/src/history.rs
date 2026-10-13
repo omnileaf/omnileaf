@@ -45,9 +45,15 @@ const READING_TIME_BY_DAY: &str = "SELECT local_day, sum(ended_at_ms - started_a
     FROM reading_session
     WHERE local_day BETWEEN ?1 AND ?2
     GROUP BY local_day";
-const READING_TIME_SINCE: &str = "SELECT coalesce(sum(ended_at_ms - started_at_ms), 0)
+const READING_SINCE: &str = "SELECT coalesce(sum(ended_at_ms - started_at_ms), 0) AS read_ms,
+        count(DISTINCT book_id) AS books_opened,
+        count(DISTINCT CASE WHEN page + 1 >= page_count THEN book_id END) AS books_finished
     FROM reading_session
     WHERE local_day >= ?1";
+const DAYS_READ_UP_TO: &str = "SELECT DISTINCT local_day
+    FROM reading_session
+    WHERE local_day <= ?1
+    ORDER BY local_day DESC";
 const BOOK_READING_TIME: &str = "SELECT coalesce(sum(ended_at_ms - started_at_ms), 0)
     FROM reading_session
     WHERE book_id = ?1";
@@ -115,11 +121,43 @@ pub fn reading_time_by_day(
     Ok(rows.collect::<Result<_, _>>()?)
 }
 
-/// Milliseconds read from the start of local day `first_day` on.
-pub fn reading_time_since(connection: &Connection, first_day: i64) -> Result<i64, Error> {
+/// What was read from the start of a local day on, whether or not its books are still in the library.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct ReadingSince {
+    pub read_ms: i64,
+    pub books_opened: u32,
+    /// Books a session reached the last page of.
+    pub books_finished: u32,
+}
+
+pub fn reading_since(connection: &Connection, first_day: i64) -> Result<ReadingSince, Error> {
     Ok(connection
-        .prepare(READING_TIME_SINCE)?
-        .query_row([first_day], |row| row.get(0))?)
+        .prepare(READING_SINCE)?
+        .query_row([first_day], |row| {
+            Ok(ReadingSince {
+                read_ms: row.get("read_ms")?,
+                books_opened: row.get("books_opened")?,
+                books_finished: row.get("books_finished")?,
+            })
+        })?)
+}
+
+/// Local days read on in a row up to `today`, or up to yesterday while today has no reading yet.
+pub fn days_in_a_row(connection: &Connection, today: i64) -> Result<u32, Error> {
+    let mut statement = connection.prepare(DAYS_READ_UP_TO)?;
+    let days = statement.query_map([today], |row| row.get::<_, i64>("local_day"))?;
+    let mut streak = 0;
+    let mut next_day = today;
+    for day in days {
+        let day = day?;
+        let carries_on = day == next_day || (streak == 0 && day == today - 1);
+        if !carries_on {
+            break;
+        }
+        streak += 1;
+        next_day = day - 1;
+    }
+    Ok(streak)
 }
 
 /// Milliseconds spent reading `book` over all its sessions.
@@ -213,16 +251,41 @@ mod tests {
     fn adds_up_reading_by_day_from_the_day_index_alone() {
         let scratch = ScratchLibrary::new("reading-by-day-plan");
 
-        let plans = [READING_TIME_BY_DAY, READING_TIME_SINCE].map(|sql| scratch.query_plan(sql));
+        let plan = scratch.query_plan(READING_TIME_BY_DAY);
 
         assert_eq!(
-            plans,
+            plan,
             [
-                [
-                    "SEARCH reading_session USING INDEX reading_session_by_day (local_day>? AND local_day<?)"
-                ],
-                ["SEARCH reading_session USING INDEX reading_session_by_day (local_day>?)"],
+                "SEARCH reading_session USING INDEX reading_session_by_day (local_day>? AND local_day<?)"
             ]
+        );
+    }
+
+    #[test]
+    fn reads_the_days_since_from_the_day_index_counting_each_book_once() {
+        let scratch = ScratchLibrary::new("reading-since-plan");
+
+        let plan = scratch.query_plan(READING_SINCE);
+
+        assert_eq!(
+            plan,
+            [
+                "USE TEMP B-TREE FOR count(DISTINCT)",
+                "USE TEMP B-TREE FOR count(DISTINCT)",
+                "SEARCH reading_session USING INDEX reading_session_by_day (local_day>?)",
+            ]
+        );
+    }
+
+    #[test]
+    fn walks_back_through_the_days_read_on_from_the_day_index_without_sorting() {
+        let scratch = ScratchLibrary::new("days-read-plan");
+
+        let plan = scratch.query_plan(DAYS_READ_UP_TO);
+
+        assert_eq!(
+            plan,
+            ["SEARCH reading_session USING INDEX reading_session_by_day (local_day<?)"]
         );
     }
 

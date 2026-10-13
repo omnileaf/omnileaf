@@ -18,7 +18,8 @@ use std::sync::{
 use books::write_book;
 use omnileaf_engine::{
     BookId, BookReading, Clock, FolderKind, HistoryEntry, Library, LibraryListing, LocalDay,
-    OpenedBook, ProbedFormat, ReadMark, ReadTo, ResourceRouter, SeriesBookListing, UtcOffset,
+    OpenedBook, ProbedFormat, ReadMark, ReadTo, ReadingWeek, ResourceRouter, SeriesBookListing,
+    UtcOffset,
 };
 use support::{FixedClock, NOW_UNIX_MS, ScratchFolder};
 
@@ -154,12 +155,23 @@ async fn lists_no_history_before_anything_is_read() {
 }
 
 #[tokio::test]
-async fn counts_no_time_read_before_anything_is_read() {
+async fn counts_nothing_read_this_week_before_anything_is_read() {
     let (library, _home) = empty_library("history-no-time").await;
 
-    let read_seconds = library.reading_time_since(SOME_MONDAY).await.unwrap();
+    let week = library
+        .reading_week(SOME_MONDAY, SOME_MONDAY)
+        .await
+        .unwrap();
 
-    assert_eq!(read_seconds, 0);
+    assert_eq!(
+        week,
+        ReadingWeek {
+            read_seconds: 0,
+            books_opened: 0,
+            books_finished: 0,
+            days_in_a_row: 0,
+        }
+    );
 }
 
 #[tokio::test]
@@ -280,15 +292,30 @@ async fn lists_each_book_read_the_latest_first() {
 }
 
 #[tokio::test]
-async fn counts_the_time_read_since_a_day() {
+async fn counts_the_time_books_and_days_read_this_week() {
     let shelf = Shelf::with_two_books("history-since").await;
-    let opened = shelf.restore(0).await;
+    let finished = shelf.restore(0).await;
     shelf.clock.advance(2 * MINUTE_MS);
-    shelf.close(&opened).await;
+    shelf.show(&finished, PAGE_COUNT - 1).await;
+    shelf.close(&finished).await;
+    let started = shelf.restore(1).await;
+    shelf.close(&started).await;
 
-    let read_seconds = shelf.library.reading_time_since(SOME_MONDAY).await.unwrap();
+    let week = shelf
+        .library
+        .reading_week(SOME_MONDAY, SOME_MONDAY)
+        .await
+        .unwrap();
 
-    assert_eq!(read_seconds, 120);
+    assert_eq!(
+        week,
+        ReadingWeek {
+            read_seconds: 120,
+            books_opened: 2,
+            books_finished: 1,
+            days_in_a_row: 1,
+        }
+    );
 }
 
 #[tokio::test]

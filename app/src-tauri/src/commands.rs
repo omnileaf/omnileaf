@@ -5,8 +5,9 @@ use omnileaf_engine::{
     AppInfo, AppLanguage, BookCursor, BookId, BooksRemoval, Core, CoversPerRow, FolderCursor,
     FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryPage, InterfaceError,
     Library, LibraryFilter, LibraryListing, LibrarySearch, LibraryView, LocalDay, OpenedBook,
-    ProbedFormat, ProjectLink, ReadMark, ResourceRouter, ScanProgress, SeriesBookListing,
-    SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage, UtcOffset,
+    ProbedFormat, ProjectLink, ReadMark, ReadingWeek, ResourceRouter, ScanProgress,
+    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
+    UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -50,7 +51,7 @@ macro_rules! app_commands {
             page_shown,
             close_book,
             reading_history,
-            reading_time_since,
+            reading_week,
             reading_time_between,
             book_read_time,
             orient_screen,
@@ -343,11 +344,12 @@ async fn reading_history(
 
 #[tauri::command]
 #[specta::specta]
-async fn reading_time_since(
+async fn reading_week(
     library: State<'_, Library>,
-    first_day: LocalDay,
-) -> Result<u32, IpcError> {
-    Ok(library.reading_time_since(first_day).await?)
+    week_start: LocalDay,
+    today: LocalDay,
+) -> Result<ReadingWeek, IpcError> {
+    Ok(library.reading_week(week_start, today).await?)
 }
 
 #[tauri::command]

@@ -18,7 +18,7 @@ use omnileaf_db::{
         store_page_dimensions, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
-    history::{book_reading_time, history_page, reading_time_by_day, reading_time_since},
+    history::{book_reading_time, days_in_a_row, history_page, reading_since, reading_time_by_day},
     library_listing::{library_listing, set_library_listing},
     library_view::{library_view, set_library_view},
     store::{Changed, Clock, Store},
@@ -34,8 +34,8 @@ use crate::{
     AppLanguage, BookCursor, BookId, BooksRemoval, CoversPerRowOutOfRange, FolderCursor, FolderId,
     FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryPage, LibraryChanges,
     LibraryFilter, LibraryFolder, LibraryListing, LibrarySearch, LibraryView, LocalDay, ReadMark,
-    RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
-    SeriesId, SeriesOverview, SeriesPage, UtcOffset,
+    ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage,
+    SeriesCursor, SeriesId, SeriesOverview, SeriesPage, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -368,15 +368,28 @@ impl Library {
         Ok(HistoryPage::new(page, &read_ms_by_day))
     }
 
-    /// Seconds read from the start of `first_day` on, in the local time each session started at.
-    pub async fn reading_time_since(&self, first_day: LocalDay) -> Result<u32, LibraryError> {
-        let first_day = first_day.0;
-        let read_ms = self
+    /// What was read from the start of `week_start` on, and the days read in a row up to `today`, in the local time each session started at.
+    pub async fn reading_week(
+        &self,
+        week_start: LocalDay,
+        today: LocalDay,
+    ) -> Result<ReadingWeek, LibraryError> {
+        let (since, days_in_a_row) = self
             .store
             .database()
-            .read(move |connection| reading_time_since(connection, first_day))
+            .read(move |connection| {
+                Ok((
+                    reading_since(connection, week_start.0)?,
+                    days_in_a_row(connection, today.0)?,
+                ))
+            })
             .await?;
-        Ok(whole_seconds(read_ms))
+        Ok(ReadingWeek {
+            read_seconds: whole_seconds(since.read_ms),
+            books_opened: since.books_opened,
+            books_finished: since.books_finished,
+            days_in_a_row,
+        })
     }
 
     /// Seconds spent reading `book` over all its sessions, once any reading not yet saved is.

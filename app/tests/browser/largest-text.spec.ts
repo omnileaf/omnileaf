@@ -14,6 +14,7 @@ import {
   expect,
   onPlatform,
   LARGEST_TEXT_SCALE,
+  NOTHING_READ_THIS_WEEK,
   setTextScale,
   sidewaysOverflow,
   test,
@@ -296,7 +297,7 @@ for (const platform of PLATFORMS) {
         backend: {
           ...onPlatform(platform).backend,
           readingHistory: () => ({ entries: READ_ENTRIES, next: null }),
-          readingTimeSince: () => 1200,
+          readingWeek: () => ({ ...NOTHING_READ_THIS_WEEK, readSeconds: 1200 }),
         },
       });
 

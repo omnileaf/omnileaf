@@ -24,7 +24,8 @@ use omnileaf_db::{
         remove_books_without_files,
     },
     history::{
-        HistoryEntry, book_reading_time, history_page, reading_time_by_day, reading_time_since,
+        HistoryEntry, ReadingSince, book_reading_time, days_in_a_row, history_page, reading_since,
+        reading_time_by_day,
     },
     store::{Continuity, SessionPlace, Store},
 };
@@ -41,6 +42,8 @@ const HOUR_MS: u64 = 60 * MINUTE_MS;
 const DAY_MS: u64 = 24 * HOUR_MS;
 const PAGE_COUNT: u32 = 24;
 const UTC_PLUS_TEN: i16 = 600;
+const UTC_MINUS_FIVE: i16 = -300;
+const LAST_PAGE: u32 = PAGE_COUNT - 1;
 
 fn local_day_of(at_ms: u64) -> i64 {
     (ms(at_ms) + i64::from(UTC_PLUS_TEN) * ms(MINUTE_MS)).div_euclid(ms(DAY_MS))
@@ -48,6 +51,10 @@ fn local_day_of(at_ms: u64) -> i64 {
 
 fn today() -> i64 {
     local_day_of(NOW_UNIX_MS)
+}
+
+fn start_of_today_ms() -> u64 {
+    u64::try_from(today() * ms(DAY_MS) - i64::from(UTC_PLUS_TEN) * ms(MINUTE_MS)).unwrap()
 }
 
 struct History {
@@ -110,11 +117,22 @@ impl History {
     }
 
     async fn read(&self, book: BookId, from_ms: u64, to_ms: u64, page: u32) {
+        self.read_in(UTC_PLUS_TEN, book, (from_ms, to_ms), page)
+            .await;
+    }
+
+    async fn read_in(
+        &self,
+        utc_offset_minutes: i16,
+        book: BookId,
+        (from_ms, to_ms): (u64, u64),
+        page: u32,
+    ) {
         let place = SessionPlace {
             book,
             page,
             page_count: PAGE_COUNT,
-            utc_offset_minutes: UTC_PLUS_TEN,
+            utc_offset_minutes,
         };
         let minutes = (from_ms..to_ms).step_by(usize::try_from(MINUTE_MS).unwrap());
         for at_ms in minutes.chain([to_ms]) {
@@ -170,12 +188,25 @@ impl History {
             .unwrap()
     }
 
-    async fn since(&self, first_day: i64) -> i64 {
+    async fn since(&self, first_day: i64) -> ReadingSince {
         self.store
             .database()
-            .read(move |connection| reading_time_since(connection, first_day))
+            .read(move |connection| reading_since(connection, first_day))
             .await
             .unwrap()
+    }
+
+    async fn days_in_a_row(&self) -> u32 {
+        self.store
+            .database()
+            .read(move |connection| days_in_a_row(connection, today()))
+            .await
+            .unwrap()
+    }
+
+    async fn read_days_ago(&self, number: u32, days_ago: u64) {
+        let at_ms = NOW_UNIX_MS - days_ago * DAY_MS;
+        self.read(book(number), at_ms, at_ms + MINUTE_MS, 0).await;
     }
 }
 
@@ -434,7 +465,7 @@ async fn adds_up_the_time_read_from_a_day_on() {
 
     let since = history.since(local_day_of(NOW_UNIX_MS - DAY_MS)).await;
 
-    assert_eq!(since, ms(10 * MINUTE_MS));
+    assert_eq!(since.read_ms, ms(10 * MINUTE_MS));
 }
 
 #[tokio::test]
@@ -446,7 +477,7 @@ async fn reads_nothing_on_a_day_with_no_reading() {
         history.since(today()).await,
     );
 
-    assert_eq!((by_day, since), (BTreeMap::new(), 0));
+    assert_eq!((by_day, since), (BTreeMap::new(), ReadingSince::default()));
 }
 
 #[tokio::test]
@@ -474,4 +505,114 @@ async fn adds_up_the_time_spent_reading_one_book_over_its_sessions() {
     ];
 
     assert_eq!(spent, [ms(50 * MINUTE_MS), 0]);
+}
+
+#[tokio::test]
+async fn counts_the_books_opened_and_finished_from_a_day_on() {
+    let history = History::open("history-books-since").await;
+    let three_days_ago_ms = NOW_UNIX_MS - 3 * DAY_MS;
+    let yesterday_ms = NOW_UNIX_MS - DAY_MS;
+    history
+        .read(book(1), three_days_ago_ms, three_days_ago_ms, LAST_PAGE)
+        .await;
+    history.read(book(2), yesterday_ms, yesterday_ms, 5).await;
+    history
+        .read(
+            book(2),
+            NOW_UNIX_MS - HOUR_MS,
+            NOW_UNIX_MS - HOUR_MS,
+            LAST_PAGE,
+        )
+        .await;
+    history.read(book(3), NOW_UNIX_MS, NOW_UNIX_MS, 3).await;
+    history
+        .read(
+            book(4),
+            NOW_UNIX_MS + HOUR_MS,
+            NOW_UNIX_MS + HOUR_MS,
+            LAST_PAGE,
+        )
+        .await;
+
+    let since = history.since(local_day_of(yesterday_ms)).await;
+
+    assert_eq!((since.books_opened, since.books_finished), (3, 2));
+}
+
+#[tokio::test]
+async fn counts_the_days_read_in_a_row_up_to_today() {
+    let history = History::open("history-streak").await;
+    for (number, days_ago) in [(1, 0), (2, 1), (3, 1), (4, 2), (1, 4)] {
+        history.read_days_ago(number, days_ago).await;
+    }
+
+    let streak = history.days_in_a_row().await;
+
+    assert_eq!(streak, 3);
+}
+
+#[tokio::test]
+async fn keeps_the_days_in_a_row_until_today_ends_without_reading() {
+    let history = History::open("history-streak-yesterday").await;
+    for (number, days_ago) in [(1, 1), (2, 2)] {
+        history.read_days_ago(number, days_ago).await;
+    }
+
+    let streak = history.days_in_a_row().await;
+
+    assert_eq!(streak, 2);
+}
+
+#[tokio::test]
+async fn counts_no_days_in_a_row_once_a_whole_day_goes_unread() {
+    let history = History::open("history-streak-broken").await;
+    for (number, days_ago) in [(1, 2), (2, 3)] {
+        history.read_days_ago(number, days_ago).await;
+    }
+
+    let streak = history.days_in_a_row().await;
+
+    assert_eq!(streak, 0);
+}
+
+#[tokio::test]
+async fn counts_a_session_read_across_midnight_on_the_day_it_began() {
+    let history = History::open("history-streak-midnight").await;
+    let midnight_ms = start_of_today_ms();
+    history
+        .read(
+            book(1),
+            midnight_ms - 10 * MINUTE_MS,
+            midnight_ms + 20 * MINUTE_MS,
+            0,
+        )
+        .await;
+    history.read_days_ago(2, 3).await;
+
+    let streak = history.days_in_a_row().await;
+
+    assert_eq!(streak, 1);
+}
+
+#[tokio::test]
+async fn counts_each_session_on_the_local_day_of_the_time_zone_it_was_read_in() {
+    let history = History::open("history-streak-zones").await;
+    let this_morning_ms = start_of_today_ms() + HOUR_MS;
+    history
+        .read_in(UTC_PLUS_TEN, book(1), (this_morning_ms, this_morning_ms), 0)
+        .await;
+    let two_hours_earlier_ms = this_morning_ms - 2 * HOUR_MS;
+    history
+        .read_in(
+            UTC_MINUS_FIVE,
+            book(2),
+            (two_hours_earlier_ms, two_hours_earlier_ms),
+            0,
+        )
+        .await;
+    history.read_days_ago(3, 2).await;
+
+    let streak = history.days_in_a_row().await;
+
+    assert_eq!(streak, 3);
 }
