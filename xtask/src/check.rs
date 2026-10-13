@@ -259,7 +259,12 @@ pub(crate) const STEPS: &[Step] = &[
         name: "browser tests",
         group: Group::Browser,
         program: "pnpm",
-        args: &["--recursive", "run", "test:e2e"],
+        args: &[
+            "--recursive",
+            "--workspace-concurrency=1",
+            "run",
+            "test:e2e",
+        ],
     },
     Step {
         name: "app tests",
