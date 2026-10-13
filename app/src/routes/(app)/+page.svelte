@@ -61,6 +61,12 @@
     }
   });
 
+  let measuredColumns: number | undefined = $state();
+  const coversDrawn = $derived(
+    library.list.kind === "failed" || shown?.series.series.length === 0
+      ? undefined
+      : measuredColumns,
+  );
   let emptyAddFolder: HTMLButtonElement | undefined = $state();
   let headingAddFolder: HTMLButtonElement | undefined = $state();
 
@@ -114,6 +120,7 @@
     {#if shown !== undefined}
       <ViewOptions
         view={shown.view}
+        {coversDrawn}
         onChoose={(chosen: LibraryView) => {
           view.choose(chosen);
         }}
@@ -164,6 +171,9 @@
         isComplete={shown.series.isComplete}
         onNearEnd={() => {
           void library.loadMore();
+        }}
+        onColumns={(columns: number) => {
+          measuredColumns = columns;
         }}
         {coverUrl}
         view={shown.view}

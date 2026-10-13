@@ -2,6 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 
 import {
   COVERS_PER_ROW,
+  type CoversPerRow,
   DEFAULT_LIBRARY_VIEW,
   type LibraryDisplay,
   type LibraryView,
@@ -14,6 +15,9 @@ import {
   DEFAULT_BACKEND,
   expect,
   screenSizeOf,
+  LARGEST_TEXT_SCALE,
+  setTextScale,
+  sidewaysOverflow,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -39,6 +43,29 @@ interface ListLook {
 }
 
 const PANEL_WIDTH = 360;
+const NARROWEST_COVER = 40;
+const NARROWEST_SCREENS = [320, 600, 840, 1200];
+const TABLET_NARROWEST = 600;
+const EXPANDED_TABLET = 840;
+const TEXT_SCALES = [1, 1.15, 1.3, 1.5, 1.75, 2];
+const LARGE_TEXT_SCALES = [1.5, 2];
+const READABLE_TITLE_WIDTHS = [840, 1280];
+const READABLE_TITLE_EMS = 5;
+const COMPACT_WIDTHS = [600, 640, 700, 744, 840, 900, 1024, 1200, 1280, 1440];
+const DRAWN_DISPLAYS = ["grid", "compact", "covers"] as const;
+const DENSE_GRID_WIDTHS = [600, 744, 840, 1024, 1200, 1280, 1440];
+const SCREEN_HEIGHT = 900;
+const SCROLL_RETRY_MS = 500;
+const MOST_COVERS_PER_ROW = {
+  phone: COVERS_PER_ROW.phone.most,
+  tablet: COVERS_PER_ROW.tablet.most,
+  desktop: COVERS_PER_ROW.desktop.most,
+} as const satisfies CoversPerRow;
+const MOST_COVERS_PER_ROW_WITH_BOOK_COUNTS = {
+  phone: 3,
+  tablet: 8,
+  desktop: 8,
+} as const satisfies CoversPerRow;
 
 const RANGE_LABELS = {
   phone: "2 to 5 on this phone",
@@ -46,6 +73,7 @@ const RANGE_LABELS = {
   desktop: "4 to 12",
 } as const satisfies Record<ScreenSize, string>;
 const SERIES_IN_CATALOG = 200;
+const LAST_TITLE = `Sample Series ${String(SERIES_IN_CATALOG).padStart(4, "0")}`;
 const FIRST_TITLE = "Sample Series 0001";
 const WHOLE_PIXEL = 1;
 const LONG_TITLE =
@@ -155,6 +183,25 @@ function columnsOf(list: Locator): Promise<number> {
   );
 }
 
+function columnWidthsOf(list: Locator): Promise<number[]> {
+  return list.evaluate((element) =>
+    getComputedStyle(element)
+      .gridTemplateColumns.split(" ")
+      .filter((track) => track !== "")
+      .map((track) => Number.parseFloat(track)),
+  );
+}
+
+function titlesOutOfSight(list: Locator): Promise<number> {
+  return list.evaluate(
+    (element) =>
+      [...element.querySelectorAll("li p")].filter((title) => {
+        const { width, height } = title.getBoundingClientRect();
+        return width * height <= 1;
+      }).length,
+  );
+}
+
 function pixels(locator: Locator, property: "columnGap" | "fontSize") {
   return locator.evaluate(
     (element, name) => Number.parseFloat(getComputedStyle(element)[name]),
@@ -185,6 +232,185 @@ test("spaces the grid and sizes its titles for each number of covers per row", a
     expect(await pixels(title, "fontSize")).toBe(look.titleSize);
     await expect(bookCount).toBeVisible({ visible: look.showsBookCount });
   }
+});
+
+test.describe("at every text size", () => {
+  test.skip(
+    ({ isMobile }) => isMobile,
+    "each engine sets every width itself, from the desktop",
+  );
+
+  for (const display of DRAWN_DISPLAYS) {
+    test(`draws each size's most covers per row as ${display} down to its narrowest screen at the default text size`, async ({
+      page,
+    }) => {
+      for (const width of NARROWEST_SCREENS) {
+        await page.setViewportSize({ width, height: SCREEN_HEIGHT });
+        await openWith(page, {
+          ...DEFAULT_LIBRARY_VIEW,
+          display,
+          coversPerRow: MOST_COVERS_PER_ROW,
+        });
+
+        expect(await columnsOf(seriesList(page)), `at ${String(width)}px`).toBe(
+          MOST_COVERS_PER_ROW[screenSizeOf(page)],
+        );
+      }
+    });
+  }
+
+  test("draws fewer, wider covers per row than asked once the largest text needs the room", async ({
+    page,
+  }) => {
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await page.setViewportSize({
+      width: EXPANDED_TABLET,
+      height: SCREEN_HEIGHT,
+    });
+
+    await openWith(page, {
+      ...DEFAULT_LIBRARY_VIEW,
+      coversPerRow: MOST_COVERS_PER_ROW,
+    });
+
+    const widths = await columnWidthsOf(seriesList(page));
+    expect(widths.length).toBeLessThan(MOST_COVERS_PER_ROW.tablet);
+    expect(Math.min(...widths)).toBeGreaterThanOrEqual(
+      NARROWEST_COVER * LARGEST_TEXT_SCALE,
+    );
+  });
+
+  for (const scale of TEXT_SCALES) {
+    test(`keeps every compact title in sight and whole in the narrowest covers with the text at ${String(scale)} times its size`, async ({
+      page,
+    }) => {
+      firstTitle = LONG_TITLE;
+      await setTextScale(page, scale);
+      await openWith(page, {
+        ...DEFAULT_LIBRARY_VIEW,
+        display: "compact",
+        coversPerRow: MOST_COVERS_PER_ROW,
+      });
+
+      for (const width of COMPACT_WIDTHS) {
+        await page.setViewportSize({ width, height: SCREEN_HEIGHT });
+
+        expect(await sidewaysOverflow(page), `at ${String(width)}px`).toEqual(
+          [],
+        );
+        expect(
+          await titlesOutOfSight(seriesList(page)),
+          `at ${String(width)}px`,
+        ).toBe(0);
+      }
+    });
+  }
+
+  for (const scale of LARGE_TEXT_SCALES) {
+    test(`gives a compact title room for about eight characters a line with the text at ${String(scale)} times its size`, async ({
+      page,
+    }) => {
+      await setTextScale(page, scale);
+      await openWith(page, {
+        ...DEFAULT_LIBRARY_VIEW,
+        display: "compact",
+        coversPerRow: MOST_COVERS_PER_ROW,
+      });
+      const title = firstSeries(page).getByText(FIRST_TITLE);
+
+      for (const width of READABLE_TITLE_WIDTHS) {
+        await page.setViewportSize({ width, height: SCREEN_HEIGHT });
+
+        const room = await title.evaluate(
+          (element) =>
+            element.clientWidth /
+            Number.parseFloat(getComputedStyle(element).fontSize),
+        );
+        expect(room, `at ${String(width)}px`).toBeGreaterThanOrEqual(
+          READABLE_TITLE_EMS,
+        );
+      }
+    });
+  }
+
+  test("shows a compact title in a tablet's narrowest covers at the most covers per row", async ({
+    page,
+  }) => {
+    await page.setViewportSize({
+      width: TABLET_NARROWEST,
+      height: SCREEN_HEIGHT,
+    });
+
+    await openWith(page, {
+      ...DEFAULT_LIBRARY_VIEW,
+      display: "compact",
+      coversPerRow: MOST_COVERS_PER_ROW,
+    });
+
+    const title = await boxOf(firstSeries(page).getByText(FIRST_TITLE));
+    expect(await columnsOf(seriesList(page))).toBe(MOST_COVERS_PER_ROW.tablet);
+    expect(title.width * title.height).toBeGreaterThan(1);
+    expect(await sidewaysOverflow(page)).toEqual([]);
+  });
+
+  test("lays out the rows by the covers the largest text draws, as far as the last series", async ({
+    page,
+  }) => {
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await page.setViewportSize({
+      width: EXPANDED_TABLET,
+      height: SCREEN_HEIGHT,
+    });
+    await openWith(page, {
+      ...DEFAULT_LIBRARY_VIEW,
+      coversPerRow: MOST_COVERS_PER_ROW,
+    });
+    const columns = await columnsOf(seriesList(page));
+    await expectRowsToFillTheScreen(page);
+
+    const last = seriesList(page).getByText(LAST_TITLE);
+    await expect(async () => {
+      await page.getByRole("main").evaluate((main) => {
+        main.scrollTo({ top: main.scrollHeight });
+      });
+      await expect(last).toBeInViewport({ timeout: SCROLL_RETRY_MS });
+    }).toPass({ intervals: [SCROLL_RETRY_MS] });
+
+    const firstLaidOut = await seriesList(page)
+      .getByRole("listitem")
+      .first()
+      .getAttribute("aria-posinset");
+    expect((Number(firstLaidOut) - 1) % columns).toBe(0);
+    await expect(seriesList(page).getByRole("listitem").last()).toHaveAttribute(
+      "aria-posinset",
+      String(SERIES_IN_CATALOG),
+    );
+    expect(
+      await seriesList(page).evaluate((list) =>
+        list.parentElement?.style.getPropertyValue("--row-count"),
+      ),
+    ).toBe(String(Math.ceil(SERIES_IN_CATALOG / columns)));
+  });
+
+  test("keeps a dense grid's book counts inside their columns in the pseudo-locale at every width", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("omnileaf.language", "en-XA");
+    });
+    storedView = {
+      ...DEFAULT_LIBRARY_VIEW,
+      coversPerRow: MOST_COVERS_PER_ROW_WITH_BOOK_COUNTS,
+    };
+    await page.goto("/");
+    await expect(page.getByText(FIRST_TITLE).first()).toBeVisible();
+
+    for (const width of DENSE_GRID_WIDTHS) {
+      await page.setViewportSize({ width, height: SCREEN_HEIGHT });
+
+      expect(await sidewaysOverflow(page), `at ${String(width)}px`).toEqual([]);
+    }
+  });
 });
 
 test("draws a compact grid with each title on a band across the foot of its cover", async ({
@@ -434,6 +660,60 @@ test.describe("view options", () => {
     await page.keyboard.press("Escape");
 
     await expectRowsToFillTheScreen(page);
+  });
+
+  test("says how many covers fit once the largest text leaves room for fewer than asked", async ({
+    page,
+  }) => {
+    const { most } = COVERS_PER_ROW[screenSizeOf(page)];
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await openWith(page, viewWith(page, "grid", most));
+    const fit = await columnsOf(seriesList(page));
+
+    const options = await openViewOptions(page);
+
+    const hint = options
+      .getByText(`${String(fit)} fit at this text size`, { exact: true })
+      .filter({ visible: true });
+    expect(fit).toBeLessThan(most);
+    await expect(hint).toBeVisible();
+    await expect(
+      hint.locator("xpath=ancestor::*[@aria-live='polite']"),
+    ).toHaveCount(1);
+  });
+
+  test("stops saying how many covers fit once no more are asked for than fit", async ({
+    page,
+  }) => {
+    const { most } = COVERS_PER_ROW[screenSizeOf(page)];
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await openWith(page, viewWith(page, "grid", most));
+    const fit = await columnsOf(seriesList(page));
+    const options = await openViewOptions(page);
+
+    for (let count = most; count > fit; count -= 1) {
+      await stepButton(options, "Fewer").click();
+    }
+
+    await expect(
+      options.locator("output").filter({ visible: true }),
+    ).toHaveText(String(fit));
+    await expect(
+      options.getByText(/fits? at this text size$/).filter({ visible: true }),
+    ).toHaveCount(0);
+  });
+
+  test("says nothing of how many covers fit at the default text size", async ({
+    page,
+  }) => {
+    const { most } = COVERS_PER_ROW[screenSizeOf(page)];
+    await openWith(page, viewWith(page, "grid", most));
+
+    const options = await openViewOptions(page);
+
+    await expect(
+      options.getByText(/fits? at this text size$/).filter({ visible: true }),
+    ).toHaveCount(0);
   });
 
   test("goes no lower than the fewest covers per row this size offers", async ({

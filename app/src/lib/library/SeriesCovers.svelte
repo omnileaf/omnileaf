@@ -21,6 +21,7 @@
     series,
     isComplete,
     onNearEnd,
+    onColumns,
     coverUrl,
     view,
     usesStandIns,
@@ -28,6 +29,7 @@
     series: readonly LibrarySeries[];
     isComplete: boolean;
     onNearEnd?: () => void;
+    onColumns?: (columns: number) => void;
     coverUrl: CoverUrl;
     view: LibraryView;
     usesStandIns: boolean;
@@ -51,7 +53,11 @@
           cell: gridCell,
         },
         compact: {
-          list: ["grid-cols-covers-per-row", look.gap],
+          list: [
+            "grid-cols-covers-per-row covers-fit-titles",
+            look.gap,
+            look.title,
+          ],
           item: "min-inline-none",
           cell: compactCell,
         },
@@ -80,7 +86,12 @@
   </div>
   <div class="min-inline-none">
     <p class={["truncate font-semibold", look.title]}>{shown.title}</p>
-    <p class={["text-caption text-muted medium:mbs-2xs", look.bookCount]}>
+    <p
+      class={[
+        "truncate text-caption text-muted medium:mbs-2xs",
+        look.bookCount,
+      ]}
+    >
       {m.library_series_books({ count: one.bookCount })}
     </p>
   </div>
@@ -89,18 +100,15 @@
 {#snippet compactCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
   <div
-    class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+    class="@container relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
   >
     <CoverImage cover={shown.cover} {coverUrl} />
     <CoverBadges series={one} onCovers={view.onCovers} />
     <div
-      class="absolute inset-x-none inset-be-none bg-linear-to-t from-band from-55% to-transparent px-band pbs-band-fade pbe-sm medium:px-band-wide medium:pbe-band-wide"
+      class="absolute inset-x-none inset-be-none bg-linear-to-t from-band from-55% to-transparent px-band pbs-band-fade pbe-sm medium:px-band-wide medium:pbe-band-wide @max-cover-title:bg-none @max-cover-title-wide:px-band"
     >
       <p
-        class={[
-          "line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band",
-          look.title,
-        ]}
+        class="line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band @max-cover-title:sr-only"
       >
         {shown.title}
       </p>
@@ -156,6 +164,7 @@
     label={m.library_series_list()}
     {isComplete}
     {...onNearEnd === undefined ? {} : { onNearEnd }}
+    {...onColumns === undefined ? {} : { onColumns }}
     class={layout.list}
     itemClass={layout.item}
     cell={layout.cell}

@@ -56,7 +56,7 @@
   --text-label--line-height: calc(1.25 / 0.875);
   --text-body: calc(1rem * var(--text-scale));
   --text-body--line-height: calc(1.5 / 1);
-  --text-brand: calc(1.3125rem * var(--text-scale));
+  --text-brand: min(calc(1.3125rem * var(--text-scale)), 2rem);
   --text-brand--line-height: calc(1.5 / 1.3125);
   --text-bar-title: calc(1.375rem * var(--text-scale));
   --text-bar-title--line-height: calc(1.75 / 1.375);
@@ -155,6 +155,9 @@
   --spacing-cover-gap-wide: 1.25rem;
   --spacing-cover-gap-tight: 0.625rem;
   --spacing-cover-gap-loose: 1.125rem;
+  --spacing-cover-min: 2.5rem;
+  --spacing-compact-cover-min: calc(2.125em + 0.875rem);
+  --spacing-compact-cover-readable: calc(5.25em + 1.375rem);
   --spacing-band: 0.375rem;
   --spacing-band-wide: 0.625rem;
   --spacing-band-fade: 1.25rem;
@@ -273,6 +276,8 @@
   --container-segmented-touch: 30rem;
   --container-crash-report: 26.25rem;
   --container-preview-sides: 18em;
+  --container-cover-title: calc(2.125em + 0.6875rem);
+  --container-cover-title-wide: calc(2.125em + 1.25rem);
 
   --radius-control: 0.625rem;
   --radius-row: 0.5rem;
@@ -702,18 +707,43 @@
   padding-block-start: calc(var(--first-row) * var(--row-stride));
 }
 
+@utility covers-gap-* {
+  --covers-gap: --value(--spacing-*);
+  gap: var(--covers-gap);
+}
+
+@utility covers-fit-titles {
+  --covers-readable-share: min(1, (var(--text-scale) - 1) * 2);
+  --covers-title-min: max(
+    var(--spacing-compact-cover-min),
+    var(--spacing-compact-cover-readable) * var(--covers-readable-share)
+  );
+}
+
 @utility grid-cols-covers-per-row {
-  grid-template-columns: repeat(var(--phone-covers-per-row), minmax(0, 1fr));
+  --covers-per-row: var(--phone-covers-per-row);
+  --covers-track-slack: 1px;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(
+      max(
+        calc(var(--spacing-cover-min) * var(--text-scale)),
+        var(--covers-title-min, 0px),
+        calc(
+          (100% - (var(--covers-per-row) - 1) * var(--covers-gap, 0px)) /
+            var(--covers-per-row) - var(--covers-track-slack)
+        )
+      ),
+      1fr
+    )
+  );
 
   @variant medium {
-    grid-template-columns: repeat(var(--tablet-covers-per-row), minmax(0, 1fr));
+    --covers-per-row: var(--tablet-covers-per-row);
   }
 
   @variant large {
-    grid-template-columns: repeat(
-      var(--desktop-covers-per-row),
-      minmax(0, 1fr)
-    );
+    --covers-per-row: var(--desktop-covers-per-row);
   }
 }
 

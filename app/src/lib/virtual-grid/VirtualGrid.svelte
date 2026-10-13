@@ -10,6 +10,7 @@
     label,
     isComplete,
     onNearEnd,
+    onColumns,
     cell,
     class: className,
     itemClass,
@@ -19,6 +20,7 @@
     label: string;
     isComplete: boolean;
     onNearEnd?: () => void;
+    onColumns?: (columns: number) => void;
     cell: Snippet<[Item]>;
     class?: ClassValue;
     itemClass?: ClassValue;
@@ -79,6 +81,7 @@
     const latest = measured(list);
     if (latest !== undefined && !isSameMeasure(latest, measure)) {
       measure = latest;
+      onColumns?.(latest.columns);
     }
   }
 
