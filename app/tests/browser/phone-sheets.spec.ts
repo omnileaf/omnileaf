@@ -117,3 +117,20 @@ test("springs back at once when motion is reduced", async ({ page }) => {
   expect(await transitionsOf(sheet)).toEqual([]);
   expect((await boxOf(sheet)).y).toBeCloseTo(before.y, 0);
 });
+
+test("closes filter and sort when dragged down by its header", async ({
+  page,
+}) => {
+  await page
+    .locator("main header")
+    .getByRole("button", { name: /^Filter and sort/ })
+    .click();
+  const sheet = page.getByRole("dialog", { name: "Filter and sort" });
+  await expect(sheet).toBeVisible();
+  await settle(sheet);
+
+  await pullDown(page, sheet, LONG_PULL);
+  await letGoSlowly(page);
+
+  await expect(sheet).toBeHidden();
+});
