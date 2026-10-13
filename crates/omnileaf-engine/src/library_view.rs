@@ -10,6 +10,8 @@ pub struct LibraryView {
     pub display: LibraryDisplay,
     pub covers_per_row: CoversPerRow,
     pub shows_item_counts: bool,
+    /// Shows the books started and not finished in a row above the library.
+    pub shows_continue_row: bool,
     pub on_covers: OnCovers,
 }
 
@@ -130,6 +132,7 @@ impl Default for LibraryView {
                 desktop: CoversPerRowCount(6),
             },
             shows_item_counts: false,
+            shows_continue_row: false,
             on_covers: OnCovers {
                 shows_unread_count: true,
                 shows_downloaded: true,
@@ -178,6 +181,7 @@ impl From<LibraryView> for StoredLibraryView {
             tablet_covers_per_row: view.covers_per_row.tablet.get(),
             desktop_covers_per_row: view.covers_per_row.desktop.get(),
             shows_item_counts: view.shows_item_counts,
+            shows_continue_row: view.shows_continue_row,
             on_covers: view.on_covers.into(),
         }
     }
@@ -200,6 +204,7 @@ impl TryFrom<StoredLibraryView> for LibraryView {
                 desktop: stored.desktop_covers_per_row.try_into()?,
             },
             shows_item_counts: stored.shows_item_counts,
+            shows_continue_row: stored.shows_continue_row,
             on_covers: stored.on_covers.into(),
         })
     }
@@ -241,6 +246,13 @@ mod tests {
     }
 
     #[test]
+    fn leaves_a_new_library_without_the_continue_reading_row() {
+        let view = LibraryView::default();
+
+        assert!(!view.shows_continue_row);
+    }
+
+    #[test]
     fn crosses_to_the_interface_with_each_size_s_covers_per_row_as_a_number() {
         let view = LibraryView::default();
 
@@ -252,6 +264,7 @@ mod tests {
                 "display": "grid",
                 "coversPerRow": { "phone": 3, "tablet": 5, "desktop": 6 },
                 "showsItemCounts": false,
+                "showsContinueRow": false,
                 "onCovers": {
                     "showsUnreadCount": true,
                     "showsDownloaded": true,
@@ -269,6 +282,7 @@ mod tests {
             "display": "list",
             "coversPerRow": { "phone": 6, "tablet": 5, "desktop": 6 },
             "showsItemCounts": false,
+                "showsContinueRow": false,
             "onCovers": {
                 "showsUnreadCount": true,
                 "showsDownloaded": true,
@@ -334,6 +348,7 @@ mod tests {
                 desktop: DesktopCoversPerRow::try_from(12).unwrap(),
             },
             shows_item_counts: true,
+            shows_continue_row: true,
             on_covers: OnCovers {
                 shows_unread_count: false,
                 shows_downloaded: true,

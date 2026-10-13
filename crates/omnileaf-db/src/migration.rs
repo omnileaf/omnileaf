@@ -56,6 +56,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0020_create_book_pages"),
     migration!("0021_create_reading_sessions"),
     migration!("0022_index_reading_sessions_by_book"),
+    migration!("0023_add_continue_row_to_library_view"),
 ];
 
 pub(crate) fn pending(

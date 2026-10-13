@@ -81,7 +81,7 @@ export const COVERS_PER_ROW = {"desktop":{"fewest":4,"most":12},"phone":{"fewest
 
 export const DEFAULT_LIBRARY_LISTING = {"filter":{"finished":"any","started":"any","unread":"any"},"sort":{"by":"title","direction":"ascending"}} as const;
 
-export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsItemCounts":false} as const;
+export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsContinueRow":false,"showsItemCounts":false} as const;
 
 export const SEARCH_MAX_CHARS = 200 as const;
 
@@ -262,6 +262,8 @@ export type LibraryView = {
 	display: LibraryDisplay,
 	coversPerRow: CoversPerRow,
 	showsItemCounts: boolean,
+	/**  Shows the books started and not finished in a row above the library. */
+	showsContinueRow: boolean,
 	onCovers: OnCovers,
 };
 
