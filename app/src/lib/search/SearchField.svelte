@@ -3,6 +3,7 @@
   import { onMount, tick } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Input } from "#lib/components/ui/input/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
@@ -37,7 +38,7 @@
     onKey: (event: KeyboardEvent) => boolean;
   } = $props();
 
-  let input: HTMLInputElement | undefined = $state();
+  let input = $state<HTMLInputElement | null>(null);
 
   onMount(() => {
     input?.setSelectionRange(text.length, text.length);
@@ -47,9 +48,13 @@
   async function type(typed: string): Promise<void> {
     onType(typed);
     await tick();
-    if (input !== undefined && input.value !== text) {
+    if (input !== null && input.value !== text) {
       input.value = text;
     }
+  }
+
+  function typeIn(event: Event & { currentTarget: HTMLInputElement }): void {
+    void type(event.currentTarget.value);
   }
 
   function keyDown(event: KeyboardEvent): void {
@@ -85,8 +90,8 @@
       class="hidden shrink-0 flex-nowrap medium:flex"
     />
   {/if}
-  <input
-    bind:this={input}
+  <Input
+    bind:ref={input}
     type="search"
     role="combobox"
     aria-controls={listId}
@@ -98,10 +103,8 @@
     placeholder={m.search_field()}
     maxlength={SEARCH_MAX_CHARS}
     value={text}
-    class="no-search-cancel flex-1 bg-transparent text-body outline-none min-inline-none placeholder:text-muted large:text-search-wide"
-    oninput={(event) => {
-      void type(event.currentTarget.value);
-    }}
+    class="no-search-cancel text-body large:text-search-wide"
+    oninput={typeIn}
     onkeydown={keyDown}
   />
   {#if text !== ""}
