@@ -48,7 +48,7 @@
     },
   );
 
-  let addButton: HTMLButtonElement | undefined = $state();
+  let addButton: HTMLElement | null = $state(null);
   let confirming: LibraryFolder | undefined = $state();
   let confirmingBooks: number | undefined = $state();
   let notRemoved: LibraryFolder | undefined = $state();

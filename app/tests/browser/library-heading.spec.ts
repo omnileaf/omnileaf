@@ -543,7 +543,9 @@ for (const platform of PLATFORMS) {
 
       expect([...sizes]).toHaveLength(1);
       for (const [button, name] of named) {
-        await expect(button).toHaveAttribute("title", name);
+        await button.hover();
+        await expect(button).toHaveAccessibleDescription(name);
+        await expect(button).not.toHaveAttribute("title");
       }
     });
   });
@@ -580,10 +582,11 @@ for (const platform of PLATFORMS) {
         });
 
         await expect(addFolder).toBeVisible();
-        await expect(addFolder).toHaveAttribute(
-          "title",
+        await addFolder.hover();
+        await expect(addFolder).toHaveAccessibleDescription(
           english.library_add_folder,
         );
+        await expect(addFolder).not.toHaveAttribute("title");
       });
 
       test("draws Add a folder as a round touch-sized icon on a phone", async ({
