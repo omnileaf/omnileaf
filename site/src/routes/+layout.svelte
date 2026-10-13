@@ -4,7 +4,7 @@
   import type { Snippet } from "svelte";
 
   import iconUrl from "#branding/icon.svg?url";
-  import { SOURCE_URL } from "#lib/links.ts";
+  import { SECURITY_TXT_PATH, SOURCE_URL } from "#lib/links.ts";
 
   let { children }: { children: Snippet } = $props();
 
@@ -27,6 +27,11 @@
   </a>
   <nav aria-label="Main" class="flex flex-wrap gap-1">
     <a
+      href="/#security"
+      class="inline-flex items-center rounded-control px-3.5 font-medium text-foreground no-underline min-block-11"
+      >Security</a
+    >
+    <a
       href={SOURCE_URL}
       class="inline-flex items-center rounded-control px-3.5 font-medium text-foreground no-underline min-block-11"
       >GitHub</a
@@ -44,6 +49,7 @@
     <div class="flex flex-wrap gap-5">
       <a href={SOURCE_URL} class="text-muted">Source on GitHub</a>
       <span>Licence GPL-3.0-only</span>
+      <a href={SECURITY_TXT_PATH} class="text-muted">security.txt</a>
     </div>
   </div>
 </footer>
