@@ -12,8 +12,8 @@
   import Toasts from "#lib/notices/Toasts.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import QuickOpen from "#lib/search/QuickOpen.svelte";
-  import { isQuickOpenShortcut } from "#lib/search/quick-open-shortcut.ts";
   import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
+  import { shortcut } from "#lib/shortcut.ts";
 
   import type { LayoutProps } from "./$types";
 
@@ -26,13 +26,6 @@
   const backGoesUp = setBackGoesUp(makeBackGoUp());
   const quickOpen = new QuickOpenState();
 
-  function openQuickOpen(event: KeyboardEvent): void {
-    if (isQuickOpenShortcut(event, data.appInfo.platform)) {
-      event.preventDefault();
-      quickOpen.open();
-    }
-  }
-
   afterNavigate(({ type }) => {
     const isProblem = page.error !== null;
     const isArrival = type !== "enter" && !backGoesUp.isPassingThrough;
@@ -42,7 +35,17 @@
   });
 </script>
 
-<svelte:window onkeydown={openQuickOpen} />
+<svelte:window
+  {@attach shortcut({
+    key: "k",
+    command: data.appInfo.platform,
+    shift: false,
+    inTextFields: true,
+    run: () => {
+      quickOpen.open();
+    },
+  })}
+/>
 
 <div class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row">
   {#key language.resolved}
