@@ -259,7 +259,7 @@ for (const platform of PLATFORMS) {
             );
             await openAt(page, width, screenshotMode);
             await expect(headingOf(page).getByRole("button")).toHaveCount(
-              library === "empty" ? 1 : 3,
+              library === "empty" ? 1 : 2,
             );
 
             const { title, buttons, count, label } = await headingBoxes(
@@ -307,7 +307,7 @@ for (const platform of PLATFORMS) {
             "phone widths only",
           );
           await openAt(page, width, screenshotMode);
-          await expect(headingOf(page).getByRole("button")).toHaveCount(3);
+          await expect(headingOf(page).getByRole("button")).toHaveCount(2);
 
           const { title, buttons, count } = await headingBoxes(
             page,
