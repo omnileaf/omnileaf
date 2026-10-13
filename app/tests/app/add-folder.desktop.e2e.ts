@@ -6,6 +6,7 @@ import {
   useAppSession,
 } from "./app-session.ts";
 import { SAMPLE_LIBRARY } from "./sample-library.ts";
+import { segmentedOption } from "./segmented-control.ts";
 import { xpath } from "./webdriver.ts";
 
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
@@ -38,9 +39,7 @@ const LOADED_HOME_FOLDER = xpath(
 );
 
 const VIEW_OPTIONS_BUTTON = xpath("//button[@aria-label='View options']");
-const LIST_CHOICE = xpath(
-  "//dialog[@open]//label[.//span[not(@aria-hidden='true')][normalize-space()='List']]",
-);
+const LIST_CHOICE = segmentedOption("//dialog[@open]", "List");
 const SERIES_IN_ONE_COLUMN = `const series = document.querySelector("ul[aria-label='Series']");
 return series !== null && series.children.length > 0 && getComputedStyle(series).gridTemplateColumns.split(" ").length === 1;`;
 
