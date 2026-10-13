@@ -14,6 +14,7 @@
     SeriesBookListing,
   } from "#lib/ipc/bindings.ts";
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -69,6 +70,7 @@
 
   const selection = new BookSelection<BookId>();
   const isWide = new MediaQuery(EXPANDED_QUERY);
+  const notices = getNotices();
   const headingId = $props.id();
   const dates = $derived(
     new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }),
@@ -128,6 +130,25 @@
       ? { kind: "marked", mark: read, count: picked.length }
       : { kind: "failed" };
     return isMarked;
+  }
+
+  async function markSwiped(
+    book: SeriesBook,
+    read: ReadMark,
+    how: "swiped" | "tapped",
+  ): Promise<void> {
+    const isMarked = await markBooks([book.id], read);
+    if (isMarked && how === "swiped") {
+      notices.offerUndo({
+        title:
+          read === "read"
+            ? m.series_marked_book_read({ title: book.title })
+            : m.series_marked_book_unread({ title: book.title }),
+        undo: () => {
+          void markBooks([book.id], read === "read" ? "unread" : "read");
+        },
+      });
+    }
   }
 
   async function mark(read: ReadMark): Promise<void> {
@@ -320,6 +341,13 @@
       }}
       onMark={(picked: BookId[], read: ReadMark) => {
         void markBooks(picked, read);
+      }}
+      onSwiped={(
+        book: SeriesBook,
+        read: ReadMark,
+        how: "swiped" | "tapped",
+      ) => {
+        void markSwiped(book, read, how);
       }}
     />
     {#if selection.isSelecting && selection.count > 0}

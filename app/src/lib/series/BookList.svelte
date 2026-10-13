@@ -1,19 +1,26 @@
 <script lang="ts">
+  import { Eye, EyeOff } from "@lucide/svelte";
+
   import { resolve } from "$app/paths";
   import { LongPress } from "#lib/components/long-press.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
+  import { bookActions } from "./book-actions";
   import BookRowText from "./BookRowText.svelte";
   import type { BookSelection } from "./book-selection.svelte";
   import BookSheet from "./BookSheet.svelte";
+  import { RowSwipe } from "./row-swipe.svelte";
+  import type { SwipeOutcome } from "./swipe";
 
   type BookId = SeriesBook["id"];
 
   const LONG_PRESS_MS = 500;
+  const SWIPE_ICON_SIZE = 20;
 
   let {
     books,
@@ -23,6 +30,7 @@
     selection,
     onStartPicking,
     onMark,
+    onSwiped,
   }: {
     books: readonly SeriesBook[];
     dates: Intl.DateTimeFormat;
@@ -31,10 +39,22 @@
     selection: BookSelection<BookId>;
     onStartPicking: (book: SeriesBook) => void;
     onMark: (books: BookId[], mark: ReadMark) => void;
+    onSwiped: (
+      book: SeriesBook,
+      mark: ReadMark,
+      how: "swiped" | "tapped",
+    ) => void;
   } = $props();
 
   const longPress = new LongPress(LONG_PRESS_MS);
   const ids = $derived(books.map((book) => book.id));
+  const swipe = new RowSwipe((side) => side === "towardEnd");
+
+  function swiped(book: SeriesBook, outcome: SwipeOutcome): void {
+    if (outcome.kind === "act") {
+      onSwiped(book, bookActions(book.reading).mark, "swiped");
+    }
+  }
 
   function releasePress(): void {
     longPress.released();
@@ -81,37 +101,92 @@
       <BookRowText {book} {dates} />
     </label>
   {:else}
-    <div
-      role="presentation"
-      class="flex items-center gap-xs ps-md pe-2xs select-none min-block-book-row"
-      onpointerdown={(event) => {
-        longPress.pressed(event, () => {
-          onStartPicking(book);
-        });
-      }}
-      onpointerup={releasePress}
-      onpointercancel={releasePress}
-      onpointerleave={releasePress}
-      oncontextmenu={(event) => {
-        event.preventDefault();
-      }}
-    >
-      <a
-        href={resolve("/read/[book]", { book: book.id })}
-        draggable="false"
-        class="flex flex-1 items-center self-stretch min-inline-none"
+    {@const side = swipe.sideOf(book.id)}
+    {@const mark = bookActions(book.reading).mark}
+    <div class="relative overflow-hidden">
+      {#if side !== undefined}
+        <div
+          class={[
+            "absolute inset-none flex items-center bg-accent px-sm text-on-accent",
+            side === "towardEnd" ? "justify-start" : "justify-end",
+          ]}
+        >
+          <Button
+            type="button"
+            look="icon"
+            tabindex={swipe.isRevealed(book.id) ? 0 : -1}
+            aria-hidden={!swipe.isRevealed(book.id)}
+            class="flex-col gap-2xs px-md text-caption font-bold min-block-touch-target"
+            onclick={() => {
+              swipe.close();
+              onSwiped(book, mark, "tapped");
+            }}
+          >
+            {#if mark === "read"}
+              <Eye size={SWIPE_ICON_SIZE} aria-hidden="true" />
+              {m.series_mark_read()}
+            {:else}
+              <EyeOff size={SWIPE_ICON_SIZE} aria-hidden="true" />
+              {m.series_mark_unread()}
+            {/if}
+          </Button>
+        </div>
+      {/if}
+      <div
+        role="presentation"
+        data-swiped
+        class={[
+          "relative flex touch-pan-y items-center gap-xs bg-card ps-md pe-2xs select-none min-block-book-row",
+          !swipe.isDragging &&
+            "motion-safe:transition-transform motion-safe:duration-slide",
+        ]}
+        style:translate="{swipe.offsetOf(book.id)}px 0"
+        onpointerdown={(event) => {
+          if (event.currentTarget instanceof HTMLElement) {
+            swipe.pressed(event, book.id, event.currentTarget);
+          }
+          longPress.pressed(event, () => {
+            onStartPicking(book);
+          });
+        }}
+        onpointermove={(event) => {
+          if (swipe.moved(event)) {
+            releasePress();
+          }
+        }}
+        onpointerup={() => {
+          releasePress();
+          swiped(book, swipe.released());
+        }}
+        onpointercancel={() => {
+          releasePress();
+          swipe.cancelled();
+        }}
+        onpointerleave={releasePress}
+        onclickcapture={(event) => {
+          swipe.clicked(event, book.id);
+        }}
+        oncontextmenu={(event) => {
+          event.preventDefault();
+        }}
       >
-        <BookRowText {book} {dates} />
-      </a>
-      <BookSheet
-        {book}
-        onMark={(mark: ReadMark) => {
-          onMark([book.id], mark);
-        }}
-        onSelect={() => {
-          onStartPicking(book);
-        }}
-      />
+        <a
+          href={resolve("/read/[book]", { book: book.id })}
+          draggable="false"
+          class="flex flex-1 items-center self-stretch min-inline-none"
+        >
+          <BookRowText {book} {dates} />
+        </a>
+        <BookSheet
+          {book}
+          onMark={(chosen: ReadMark) => {
+            onMark([book.id], chosen);
+          }}
+          onSelect={() => {
+            onStartPicking(book);
+          }}
+        />
+      </div>
     </div>
   {/if}
 {/snippet}
