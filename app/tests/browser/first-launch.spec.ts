@@ -522,25 +522,37 @@ function lookOf(control: Locator): Promise<ControlLook> {
     return {
       width: element.getBoundingClientRect().width,
       height: element.getBoundingClientRect().height,
-      border: `${style.borderTopWidth} ${style.borderTopColor}`,
+      border: `${style.borderTopWidth} ${style.borderTopStyle} ${style.borderTopColor}`,
       background: style.backgroundColor,
       radius: Number.parseFloat(style.borderStartStartRadius),
     };
   });
 }
 
-function accentOf(page: Page): Promise<string> {
-  return page
-    .getByRole("button", { name: "Continue" })
-    .evaluate((button) => getComputedStyle(button).backgroundColor);
-}
-
 const TRANSPARENT = "rgba(0, 0, 0, 0)";
-const PHONE_ADD_FOLDER_HEIGHT = 52;
+const LONG_ADD_FOLDER_HEIGHT = 56;
 const HAS_PHONE_CORNERS = {
   ios: (radius: number) => radius === 14,
-  android: (radius: number) => radius >= PHONE_ADD_FOLDER_HEIGHT / 2,
+  android: (radius: number) => radius >= LONG_ADD_FOLDER_HEIGHT / 2,
 } as const;
+
+test("draws Add a folder as one long dashed accent button with a plus", async ({
+  page,
+}) => {
+  await goTo(page, "Already have comics or books?");
+  const add = page
+    .getByRole("region", { name: "Folders" })
+    .getByRole("button", { name: "Add a folder" });
+
+  const look = await lookOf(add);
+
+  expect(look.height).toBe(LONG_ADD_FOLDER_HEIGHT);
+  expect(look.border).toBe(
+    `1px dashed ${await colorOf(page, "--color-accent")}`,
+  );
+  expect(look.background).toBe(await colorOf(page, "--color-accent-soft"));
+  await expect(add.locator("svg")).toHaveCount(1);
+});
 
 for (const platform of ["ios", "android"] as const) {
   test.describe(`first launch on an ${platform} phone`, () => {
@@ -557,7 +569,7 @@ for (const platform of ["ios", "android"] as const) {
       device.folders = [HOME_FOLDER, SAMPLE_COMICS];
     });
 
-    test("puts a full-width outlined Add a folder under the folders, then the hint", async ({
+    test("puts a full-width Add a folder under the folders, then the hint", async ({
       page,
     }) => {
       await goTo(page, "Already have comics or books?", platform);
@@ -573,9 +585,6 @@ for (const platform of ["ios", "android"] as const) {
       expect(button.y).toBeGreaterThan(list.y + list.height);
       expect(hintBox.y).toBeGreaterThan(button.y + button.height);
       expect(look.width).toBe(list.width);
-      expect(look.height).toBe(PHONE_ADD_FOLDER_HEIGHT);
-      expect(look.border).toBe(`1px ${await accentOf(page)}`);
-      expect(look.background).toBe(TRANSPARENT);
       expect(HAS_PHONE_CORNERS[platform](look.radius)).toBe(true);
     });
 
