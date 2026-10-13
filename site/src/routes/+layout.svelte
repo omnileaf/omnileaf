@@ -43,7 +43,7 @@
     <span>© {year} Omnileaf Pty Ltd</span>
     <div class="flex flex-wrap gap-5">
       <a href={SOURCE_URL} class="text-muted">Source on GitHub</a>
-      <span>Licence GPL-3.0</span>
+      <span>Licence GPL-3.0-only</span>
     </div>
   </div>
 </footer>
