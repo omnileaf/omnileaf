@@ -1,7 +1,11 @@
 <script lang="ts">
   import { ArrowLeft, Bug, ChevronLeft } from "@lucide/svelte";
+  import { AlertDialog } from "bits-ui";
+
+  import { DialogContent } from "#lib/components/ui/dialog/index.ts";
 
   import type { CrashOrigin } from "#lib/ipc/bindings.ts";
+  import { lastShown } from "#lib/page/last-shown.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import AlwaysSendChoice from "./AlwaysSendChoice.svelte";
@@ -16,9 +20,9 @@
 
   const LOOKS = {
     phone:
-      "border-none inset-none m-none overflow-y-auto bg-background block-dvh inline-full max-block-full max-inline-full",
+      "inset-none overflow-auto bg-background block-dvh inline-full max-block-full",
     dialog:
-      "m-auto overflow-y-auto rounded-dialog border border-dialog-edge bg-card p-dialog-inset shadow-dialog inline-full max-inline-crash-report backdrop:bg-scrim",
+      "inset-none m-auto overflow-auto rounded-dialog border border-dialog-edge bg-card p-dialog-inset shadow-dialog block-fit inline-full max-block-dialog-limit max-inline-crash-report",
   } satisfies Record<PromptLook, string>;
 
   const PHONE_BADGE_ICON_SIZE = 20;
@@ -35,23 +39,19 @@
     interface: m.crash_report_body,
   } satisfies Record<CrashOrigin, () => string>;
 
-  const titleId = $props.id();
-  const bodyId = `${titleId}-body`;
-
   let alwaysSend = $state(false);
+  let content: HTMLElement | null = $state(null);
 
   const asking = $derived(
     reporting.prompt.kind === "asking" ? reporting.prompt : undefined,
   );
+  const shown = lastShown(() => asking);
   const isCopied = $derived(reporting.copying.outcome === "copied");
 
-  function openModally(dialog: HTMLDialogElement): () => void {
+  function startAsking(event: Event): void {
+    event.preventDefault();
     alwaysSend = false;
-    dialog.showModal();
-    dialog.querySelector<HTMLElement>("[data-prompt-title]")?.focus();
-    return () => {
-      dialog.close();
-    };
+    content?.querySelector<HTMLElement>("[data-prompt-title]")?.focus();
   }
 
   function send(): void {
@@ -67,138 +67,144 @@
   }
 </script>
 
-{#if asking !== undefined}
-  <dialog
-    {@attach openModally}
-    role="alertdialog"
-    aria-labelledby={titleId}
-    aria-describedby={bodyId}
-    oncancel={(event) => {
-      event.preventDefault();
-      decline();
-    }}
-    class={["text-foreground", LOOKS[look]]}
+<AlertDialog.Root
+  bind:open={
+    () => asking !== undefined,
+    (open: boolean) => {
+      if (!open) {
+        decline();
+      }
+    }
+  }
+>
+  <DialogContent
+    bind:ref={content}
+    class={["text-foreground fade-motion", LOOKS[look]]}
+    interactOutsideBehavior="ignore"
+    onOpenAutoFocus={startAsking}
   >
-    {#if look === "phone"}
-      <div
-        class="flex flex-col ps-safe-start pe-safe-end pbs-safe-top pbe-safe-bottom min-block-full"
-      >
-        <header class="mbs-sm flex items-center gap-xs ps-sm">
-          <button
-            type="button"
-            aria-label={m.crash_report_decline()}
-            class="flex items-center justify-center rounded-full block-touch-target inline-touch-target"
-            onclick={decline}
-          >
-            <ArrowLeft
-              size={BACK_ARROW_SIZE}
-              class="hidden rtl:-scale-x-100 android:block"
-            />
-            <ChevronLeft
-              size={BACK_CHEVRON_SIZE}
-              class="rtl:-scale-x-100 android:hidden"
-            />
-          </button>
-          <span class="text-callout font-semibold">{m.app_name()}</span>
-        </header>
+    {#if shown.current !== undefined}
+      {@const offer = shown.current}
+      {#if look === "phone"}
         <div
-          class="flex flex-col items-start gap-dialog-gap px-crash-screen-inset pbs-crash-screen-top pbe-xl"
+          class="flex flex-col ps-safe-start pe-safe-end pbs-safe-top pbe-safe-bottom min-block-full"
         >
+          <header class="mbs-sm flex items-center gap-xs ps-sm">
+            <button
+              type="button"
+              aria-label={m.crash_report_decline()}
+              class="flex items-center justify-center rounded-full block-touch-target inline-touch-target"
+              onclick={decline}
+            >
+              <ArrowLeft
+                size={BACK_ARROW_SIZE}
+                class="hidden rtl:-scale-x-100 android:block"
+              />
+              <ChevronLeft
+                size={BACK_CHEVRON_SIZE}
+                class="rtl:-scale-x-100 android:hidden"
+              />
+            </button>
+            <span class="text-callout font-semibold">{m.app_name()}</span>
+          </header>
+          <div
+            class="flex flex-col items-start gap-dialog-gap px-crash-screen-inset pbs-crash-screen-top pbe-xl"
+          >
+            <div class="flex items-center gap-md">
+              <span
+                aria-hidden="true"
+                data-prompt-badge
+                class="flex shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent block-crash-screen-badge inline-crash-screen-badge"
+              >
+                <Bug size={PHONE_BADGE_ICON_SIZE} />
+              </span>
+              <AlertDialog.Title
+                level={1}
+                tabindex={-1}
+                data-prompt-title
+                class="text-crash-screen-title font-bold tracking-tight"
+              >
+                {m.crash_report_title_now()}
+              </AlertDialog.Title>
+            </div>
+            <AlertDialog.Description class="text-crash-screen-body text-muted">
+              {PHONE_BODIES[offer.origin]()}
+            </AlertDialog.Description>
+            <ReportDetails details={offer.details} />
+            <AlwaysSendChoice bind:checked={alwaysSend} {look} />
+            <div class="mbs-sm flex flex-col gap-sm self-stretch">
+              <button
+                type="button"
+                class="rounded-full bg-accent text-callout font-bold text-on-accent min-block-crash-screen-button ios:rounded-crash-screen-button"
+                onclick={send}
+              >
+                {m.crash_report_send_phone()}
+              </button>
+              <button
+                type="button"
+                class="rounded-full border border-quiet-edge text-callout font-bold min-block-crash-screen-button ios:rounded-crash-screen-button"
+                onclick={copy}
+              >
+                {isCopied ? m.crash_report_copied() : m.crash_report_copy()}
+              </button>
+            </div>
+            <ReportFailures {reporting} />
+          </div>
+        </div>
+      {:else}
+        <div class="flex flex-col gap-dialog-gap">
           <div class="flex items-center gap-md">
             <span
               aria-hidden="true"
               data-prompt-badge
-              class="flex shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent block-crash-screen-badge inline-crash-screen-badge"
+              class="flex shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent block-dialog-badge inline-dialog-badge"
             >
-              <Bug size={PHONE_BADGE_ICON_SIZE} />
+              <Bug size={DIALOG_BADGE_ICON_SIZE} />
             </span>
-            <h1
-              id={titleId}
-              tabindex="-1"
+            <AlertDialog.Title
+              tabindex={-1}
               data-prompt-title
-              class="text-crash-screen-title font-bold tracking-tight"
+              class="text-dialog-title font-bold"
             >
-              {m.crash_report_title_now()}
-            </h1>
+              {TITLES[offer.origin]()}
+            </AlertDialog.Title>
           </div>
-          <p id={bodyId} class="text-crash-screen-body text-muted">
-            {PHONE_BODIES[asking.origin]()}
-          </p>
-          <ReportDetails details={asking.details} />
+          <AlertDialog.Description class="-mbs-xs text-dialog-body text-muted">
+            {m.crash_report_body()}
+          </AlertDialog.Description>
+          <ReportDetails details={offer.details} />
           <AlwaysSendChoice bind:checked={alwaysSend} {look} />
-          <div class="mbs-sm flex flex-col gap-sm self-stretch">
+          <div class="mbs-xs flex flex-wrap items-center justify-end gap-sm">
             <button
               type="button"
-              class="rounded-full bg-accent text-callout font-bold text-on-accent min-block-crash-screen-button ios:rounded-crash-screen-button"
-              onclick={send}
-            >
-              {m.crash_report_send_phone()}
-            </button>
-            <button
-              type="button"
-              class="rounded-full border border-quiet-edge text-callout font-bold min-block-crash-screen-button ios:rounded-crash-screen-button"
+              class="me-auto rounded-dialog-button px-md text-label font-semibold text-accent min-block-dialog-button touch:min-block-touch-target"
               onclick={copy}
             >
               {isCopied ? m.crash_report_copied() : m.crash_report_copy()}
             </button>
+            <button
+              type="button"
+              class="rounded-dialog-button border border-border px-lg text-label font-semibold min-block-dialog-button touch:min-block-touch-target"
+              onclick={decline}
+            >
+              {m.crash_report_decline()}
+            </button>
+            <button
+              type="button"
+              class="rounded-dialog-button bg-accent px-lg text-label font-semibold text-on-accent min-block-dialog-button touch:min-block-touch-target"
+              onclick={send}
+            >
+              {m.crash_report_send()}
+            </button>
           </div>
           <ReportFailures {reporting} />
         </div>
-      </div>
-    {:else}
-      <div class="flex flex-col gap-dialog-gap">
-        <div class="flex items-center gap-md">
-          <span
-            aria-hidden="true"
-            data-prompt-badge
-            class="flex shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent block-dialog-badge inline-dialog-badge"
-          >
-            <Bug size={DIALOG_BADGE_ICON_SIZE} />
-          </span>
-          <h2
-            id={titleId}
-            tabindex="-1"
-            data-prompt-title
-            class="text-dialog-title font-bold"
-          >
-            {TITLES[asking.origin]()}
-          </h2>
-        </div>
-        <p id={bodyId} class="-mbs-xs text-dialog-body text-muted">
-          {m.crash_report_body()}
-        </p>
-        <ReportDetails details={asking.details} />
-        <AlwaysSendChoice bind:checked={alwaysSend} {look} />
-        <div class="mbs-xs flex flex-wrap items-center justify-end gap-sm">
-          <button
-            type="button"
-            class="me-auto rounded-dialog-button px-md text-label font-semibold text-accent min-block-dialog-button touch:min-block-touch-target"
-            onclick={copy}
-          >
-            {isCopied ? m.crash_report_copied() : m.crash_report_copy()}
-          </button>
-          <button
-            type="button"
-            class="rounded-dialog-button border border-border px-lg text-label font-semibold min-block-dialog-button touch:min-block-touch-target"
-            onclick={decline}
-          >
-            {m.crash_report_decline()}
-          </button>
-          <button
-            type="button"
-            class="rounded-dialog-button bg-accent px-lg text-label font-semibold text-on-accent min-block-dialog-button touch:min-block-touch-target"
-            onclick={send}
-          >
-            {m.crash_report_send()}
-          </button>
-        </div>
-        <ReportFailures {reporting} />
-      </div>
+      {/if}
     {/if}
     <span role="status" class="sr-only">
       {#if isCopied}
         {m.crash_report_copied_status()}
       {/if}
     </span>
-  </dialog>
-{/if}
+  </DialogContent>
+</AlertDialog.Root>
