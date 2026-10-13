@@ -4,10 +4,7 @@
   import { MediaQuery } from "svelte/reactivity";
 
   import { beforeNavigate } from "$app/navigation";
-  import { resolve } from "$app/paths";
   import { Button } from "#lib/components/ui/button/index.ts";
-  import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
-  import { LongPress } from "#lib/components/long-press.ts";
   import type {
     Platform,
     ReadMark,
@@ -19,10 +16,9 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { shortcut } from "#lib/shortcut.ts";
-  import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
+  import BookList from "./BookList.svelte";
   import BookListingChoices from "./BookListingChoices.svelte";
-  import BookRowText from "./BookRowText.svelte";
   import { booksMatching } from "./book-search";
   import BookTable from "./BookTable.svelte";
   import { BookSelection } from "./book-selection.svelte";
@@ -30,7 +26,6 @@
 
   type BookId = SeriesBook["id"];
 
-  const LONG_PRESS_MS = 500;
   const ICON_SIZE = 16;
   const ACTION_ICON_SIZE = 20;
   const MARKS = [
@@ -72,7 +67,6 @@
 
   const selection = new BookSelection<BookId>();
   const isWide = new MediaQuery(EXPANDED_QUERY);
-  const longPress = new LongPress(LONG_PRESS_MS);
   const headingId = $props.id();
   const dates = $derived(
     new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }),
@@ -89,23 +83,10 @@
 
   const isPicking = $derived(selection.isSelecting || selection.count > 0);
 
-  function pickRunOnShift(event: MouseEvent, book: SeriesBook): void {
-    if (event.shiftKey) {
-      event.preventDefault();
-      selection.extendTo(book.id, ids);
-    }
-  }
-
   function startPickingFrom(book: SeriesBook): void {
     outcome = { kind: "none" };
     selection.begin(book.id);
   }
-
-  function releasePress(): void {
-    longPress.released();
-  }
-
-  $effect(() => releasePress);
 
   async function begin(): Promise<void> {
     outcome = { kind: "none" };
@@ -205,64 +186,7 @@
   }
 </script>
 
-{#snippet row(book: SeriesBook)}
-  {@const isPicked = selection.has(book.id)}
-  {#if selection.isSelecting}
-    <label
-      class={[
-        "flex cursor-pointer items-center gap-md min-block-book-row max-medium:ps-page-start max-medium:pe-md medium:px-lg expanded:gap-md expanded:px-md expanded:min-block-book-row-wide",
-        isPicked && "bg-selected-row",
-      ]}
-    >
-      <Checkbox
-        bind:checked={
-          () => isPicked,
-          () => {
-            selection.toggle(book.id);
-          }
-        }
-        aria-label={m.series_select_book({ title: book.title })}
-        class="rounded-series-check border-check-off block-series-check inline-series-check expanded:rounded-series-check-wide expanded:block-series-check-wide expanded:inline-series-check-wide"
-        onclick={(event: MouseEvent) => {
-          pickRunOnShift(event, book);
-        }}
-      />
-      <BookRowText {book} {dates} />
-    </label>
-  {:else}
-    <div
-      role="presentation"
-      class="flex items-center gap-md select-none min-block-book-row max-medium:ps-page-start max-medium:pe-md medium:px-lg expanded:px-md expanded:min-block-book-row-wide"
-      onpointerdown={(event) => {
-        longPress.pressed(event, () => {
-          startPickingFrom(book);
-        });
-      }}
-      onpointerup={releasePress}
-      onpointercancel={releasePress}
-      onpointerleave={releasePress}
-      oncontextmenu={(event) => {
-        event.preventDefault();
-      }}
-    >
-      <a
-        href={resolve("/read/[book]", { book: book.id })}
-        draggable="false"
-        class="flex flex-1 items-center self-stretch min-inline-none"
-      >
-        <BookRowText {book} {dates} />
-      </a>
-    </div>
-  {/if}
-{/snippet}
-
 <svelte:window
-  onpointerdowncapture={() => {
-    longPress.pointerWentDown();
-  }}
-  onclickcapture={(event: MouseEvent) => {
-    longPress.clicked(event);
-  }}
   {@attach shortcut(
     ...(isPicking ? [{ key: "Escape", run: endUnlessFromDialog }] : []),
     ...(isWide.current
@@ -381,20 +305,14 @@
       />
     {/if}
   {:else}
-    <div
-      class="max-medium:-ms-page-start max-medium:-me-page-end medium:overflow-hidden medium:rounded-card medium:border medium:border-border medium:bg-card"
-    >
-      <VirtualGrid
-        items={shownBooks}
-        key={(book: SeriesBook) => book.id}
-        label={m.series_books_list()}
-        {isComplete}
-        {onNearEnd}
-        class="grid-cols-1"
-        itemClass="border-be border-border last:max-medium:border-be-0 medium:last:border-be-0"
-        cell={row}
-      />
-    </div>
+    <BookList
+      books={shownBooks}
+      {dates}
+      {isComplete}
+      {onNearEnd}
+      {selection}
+      onStartPicking={startPickingFrom}
+    />
     {#if selection.isSelecting && selection.count > 0}
       <div
         role="group"
