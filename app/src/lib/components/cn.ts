@@ -334,7 +334,6 @@ export const TOKEN_THEME = {
     "series-crumb",
     "series-fade",
     "series-fade-wide",
-    "series-progress",
     "series-row",
     "series-row-pad-wide",
     "series-row-wide",
