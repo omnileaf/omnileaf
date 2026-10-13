@@ -65,6 +65,7 @@ export const TOKEN_THEME = {
     "toast",
   ],
   radius: [
+    "alert",
     "badge",
     "bottom-sheet",
     "button",
@@ -121,6 +122,7 @@ export const TOKEN_THEME = {
     "4xl",
     "action-row",
     "active-dot",
+    "alert-block",
     "app-icon",
     "badge-block",
     "badge-block-wide",
