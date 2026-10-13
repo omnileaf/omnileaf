@@ -47,7 +47,7 @@
   <span aria-hidden="true" class="flex shrink-0 self-start">
     {@render icon()}
   </span>
-  <div class="flex flex-1 flex-col gap-2xs min-inline-none">
+  <div class="flex flex-auto flex-col gap-2xs min-inline-none">
     <p class="text-label font-bold touch:max-medium:text-callout">
       {#if typeof title === "string"}
         {title}
@@ -64,7 +64,7 @@
     <button
       type="button"
       aria-keyshortcuts={shortcut?.keys}
-      class="shrink-0 rounded-full bg-foreground px-lg text-detail font-bold text-card transition-control min-block-touch-target hover:opacity-85 active:opacity-70 desktop:px-md desktop:min-block-compact-button"
+      class="rounded-full bg-foreground px-lg text-detail font-bold text-card transition-control min-block-touch-target hover:opacity-85 active:opacity-70 desktop:px-md desktop:min-block-compact-button"
       onclick={() => {
         onDismiss();
         action.run();
