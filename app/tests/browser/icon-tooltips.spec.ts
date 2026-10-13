@@ -7,6 +7,7 @@ import {
   accessibilityViolations,
   DEFAULT_BACKEND,
   expect,
+  onPlatform,
   screenSizeOf,
   test,
 } from "./fixtures.ts";
@@ -62,6 +63,8 @@ const SERIES_BACKEND: FakeBackend = {
   setLibraryView: () => null,
   librarySeriesCount: () => SERIES_COUNT,
 };
+
+const ANDROID_BACKEND = onPlatform("android").backend;
 
 function isPhoneScreen(page: Page): boolean {
   return screenSizeOf(page) === "phone";
@@ -130,6 +133,19 @@ const ICON_ACTIONS: readonly IconAction[] = [
     },
     label: "Close",
     isShownOn: (page) => !isPhoneScreen(page),
+  },
+  {
+    screen: "an Android settings page",
+    backend: ANDROID_BACKEND,
+    reach: async (page) => {
+      await page.goto("/settings/about/licences");
+      await page
+        .locator('main a[href^="/settings/about/licences/"]')
+        .first()
+        .click();
+      return page.getByRole("link", { name: "Back to Open-source licences" });
+    },
+    label: "Back to Open-source licences",
   },
 ];
 
