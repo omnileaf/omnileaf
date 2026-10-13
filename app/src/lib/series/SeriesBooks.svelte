@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { Check, Eye, EyeOff, ListChecks } from "@lucide/svelte";
+  import { Eye, EyeOff, ListChecks } from "@lucide/svelte";
   import { tick } from "svelte";
 
   import { beforeNavigate } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
   import type {
     ReadMark,
     SeriesBook,
@@ -24,8 +25,6 @@
   const LONG_PRESS_MS = 500;
   const ICON_SIZE = 16;
   const ACTION_ICON_SIZE = 20;
-  const CHECK_ICON_SIZE = 14;
-  const CHECK_STROKE_WIDTH = 3;
   const MARKS = [
     { mark: "read", icon: Eye, label: m.series_mark_read },
     { mark: "unread", icon: EyeOff, label: m.series_mark_unread },
@@ -74,13 +73,11 @@
   let selectButton: HTMLButtonElement | undefined = $state();
   let selectAllButton: HTMLButtonElement | undefined = $state();
 
-  function pick(event: MouseEvent, book: SeriesBook): void {
+  function pickRunOnShift(event: MouseEvent, book: SeriesBook): void {
     if (event.shiftKey) {
       event.preventDefault();
       selection.extendTo(book.id, ids);
-      return;
     }
-    selection.toggle(book.id);
   }
 
   function startPickingFrom(book: SeriesBook): void {
@@ -206,23 +203,19 @@
         isPicked && "bg-selected-row",
       ]}
     >
-      <span class="relative flex shrink-0">
-        <input
-          type="checkbox"
-          checked={isPicked}
-          aria-label={m.series_select_book({ title: book.title })}
-          class="peer appearance-none rounded-series-check border-2 border-check-off block-series-check inline-series-check checked:border-accent checked:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent expanded:rounded-series-check-wide expanded:block-series-check-wide expanded:inline-series-check-wide"
-          onclick={(event) => {
-            pick(event, book);
-          }}
-        />
-        <Check
-          size={CHECK_ICON_SIZE}
-          strokeWidth={CHECK_STROKE_WIDTH}
-          aria-hidden="true"
-          class="pointer-events-none absolute inset-none m-auto hidden text-on-accent peer-checked:block"
-        />
-      </span>
+      <Checkbox
+        bind:checked={
+          () => isPicked,
+          () => {
+            selection.toggle(book.id);
+          }
+        }
+        aria-label={m.series_select_book({ title: book.title })}
+        class="rounded-series-check border-check-off block-series-check inline-series-check expanded:rounded-series-check-wide expanded:block-series-check-wide expanded:inline-series-check-wide"
+        onclick={(event: MouseEvent) => {
+          pickRunOnShift(event, book);
+        }}
+      />
       <BookRowText {book} {dates} />
     </label>
   {:else}

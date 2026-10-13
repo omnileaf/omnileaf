@@ -131,6 +131,22 @@ test("picks a book tapped while picking rather than opening it", async ({
   await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
 });
 
+test("picks a book with the space key", async ({ page }) => {
+  await openSeries(page);
+  await page.getByRole("button", { name: "Select", exact: true }).click();
+
+  await page
+    .getByRole("checkbox", { name: `Select ${shelf.titleOf(5)}` })
+    .press("Space");
+
+  await expect(
+    page.getByRole("checkbox", { name: `Select ${shelf.titleOf(5)}` }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "1 selected" }),
+  ).toBeVisible();
+});
+
 test("opens no book with the long press that starts picking", async ({
   page,
 }) => {

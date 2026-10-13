@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { Check } from "@lucide/svelte";
-
+  import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { PromptLook } from "./look";
@@ -14,9 +13,6 @@
     phone: "text-label",
     dialog: "text-footnote",
   } satisfies Record<PromptLook, string>;
-
-  const CHECK_SIZE = 14;
-  const CHECK_STROKE = 3;
 </script>
 
 <label
@@ -25,18 +21,6 @@
     LOOKS[look],
   ]}
 >
-  <span class="relative flex shrink-0">
-    <input
-      type="checkbox"
-      bind:checked
-      class="peer cursor-pointer appearance-none rounded-checkbox border-2 border-control-edge block-checkbox inline-checkbox checked:border-accent checked:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-    />
-    <Check
-      size={CHECK_SIZE}
-      strokeWidth={CHECK_STROKE}
-      aria-hidden="true"
-      class="pointer-events-none absolute inset-none m-auto hidden text-on-accent peer-checked:block"
-    />
-  </span>
+  <Checkbox bind:checked class="cursor-pointer" />
   {m.crash_report_always()}
 </label>
