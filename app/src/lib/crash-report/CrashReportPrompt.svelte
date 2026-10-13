@@ -2,7 +2,10 @@
   import { ArrowLeft, Bug, ChevronLeft } from "@lucide/svelte";
   import { AlertDialog } from "bits-ui";
 
-  import { DialogContent } from "#lib/components/ui/dialog/index.ts";
+  import {
+    DialogContent,
+    DialogTitle,
+  } from "#lib/components/ui/dialog/index.ts";
 
   import type { CrashOrigin } from "#lib/ipc/bindings.ts";
   import { lastShown } from "#lib/page/last-shown.svelte.ts";
@@ -118,14 +121,14 @@
               >
                 <Bug size={PHONE_BADGE_ICON_SIZE} />
               </span>
-              <AlertDialog.Title
+              <DialogTitle
                 level={1}
                 tabindex={-1}
                 data-prompt-title
                 class="text-crash-screen-title font-bold tracking-tight"
               >
                 {m.crash_report_title_now()}
-              </AlertDialog.Title>
+              </DialogTitle>
             </div>
             <AlertDialog.Description class="text-crash-screen-body text-muted">
               {PHONE_BODIES[offer.origin]()}
@@ -161,13 +164,13 @@
             >
               <Bug size={DIALOG_BADGE_ICON_SIZE} />
             </span>
-            <AlertDialog.Title
+            <DialogTitle
               tabindex={-1}
               data-prompt-title
               class="text-dialog-title font-bold"
             >
               {TITLES[offer.origin]()}
-            </AlertDialog.Title>
+            </DialogTitle>
           </div>
           <AlertDialog.Description class="-mbs-xs text-dialog-body text-muted">
             {m.crash_report_body()}
