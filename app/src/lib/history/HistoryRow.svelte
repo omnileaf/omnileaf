@@ -1,5 +1,9 @@
 <script lang="ts">
+  import { Play, RotateCcw } from "@lucide/svelte";
+
   import { resolve } from "$app/paths";
+  import { cn } from "#lib/components/cn.ts";
+  import { BUTTON_LOOKS } from "#lib/components/ui/button/looks.ts";
   import {
     Item,
     ItemContent,
@@ -7,12 +11,15 @@
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
+  import SessionProgress from "#lib/history/SessionProgress.svelte";
   import type { HistoryEntry } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import ListCover from "#lib/library/ListCover.svelte";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { standInHistoryEntry } from "#lib/series/series-stand-ins.ts";
+
+  const ACTION_ICON_SIZE = 13;
 
   let {
     entry: listed,
@@ -31,43 +38,49 @@
     }).cover,
   );
   const readFor = $derived(readingTime(entry.readSeconds));
-  const readTo = $derived(
-    entry.readTo.state === "page"
-      ? m.history_read_to_page({
-          book: entry.bookTitle,
-          page: entry.readTo.page,
-          count: entry.readTo.pageCount,
-        })
-      : m.history_read_to_end({ book: entry.bookTitle }),
-  );
   const named = $derived({ series: entry.seriesTitle, book: entry.bookTitle });
   const action = $derived(
     entry.reading.state === "read"
       ? {
           text: m.history_read_again(),
           label: m.history_read_again_label(named),
+          icon: RotateCcw,
         }
-      : { text: m.history_continue(), label: m.history_continue_label(named) },
+      : {
+          text: m.history_continue(),
+          label: m.history_continue_label(named),
+          icon: Play,
+        },
   );
 </script>
 
-<li
-  class="desktop:large:flex desktop:large:items-center desktop:large:border-be desktop:large:border-border desktop:large:min-block-history-row-wide"
->
+<li class="desktop:large:flex desktop:large:ps-lg desktop:large:pe-md">
   <Item look="history-phone">
     {#snippet child({ props })}
       <a {href} {...props}>
         <ListCover
           {cover}
           {coverUrl}
-          class="rounded-history-cover inline-list-cover"
+          class="rounded-history-cover inline-history-cover"
         />
         <ItemContent class="gap-2xs min-inline-none">
-          <ItemTitle class="truncate text-body">{entry.seriesTitle}</ItemTitle>
-          <span class="text-small">{readTo}</span>
-          <ItemDescription class="text-detail">
-            {m.history_started_and_read_for({ time, duration: readFor })}
+          <ItemTitle class="truncate text-lead font-semibold">
+            {entry.seriesTitle}
+          </ItemTitle>
+          <ItemDescription class="truncate text-detail">
+            {entry.bookTitle}
           </ItemDescription>
+          <span
+            class="flex items-center gap-sm text-caption text-muted tabular-nums"
+          >
+            <SessionProgress
+              readTo={entry.readTo}
+              bar="shrink-0 inline-history-bar"
+            />
+            <span class="truncate">
+              {m.history_time_and_length({ time, duration: readFor })}
+            </span>
+          </span>
         </ItemContent>
       </a>
     {/snippet}
@@ -79,26 +92,46 @@
       class="rounded-list-cover inline-history-cover-wide"
     />
     <ItemContent class="gap-2xs min-inline-none">
-      <ItemTitle class="truncate text-lead">{entry.seriesTitle}</ItemTitle>
-      <ItemDescription class="text-detail">{readTo}</ItemDescription>
+      <ItemTitle class="truncate text-small font-semibold">
+        {entry.seriesTitle}
+      </ItemTitle>
+      <ItemDescription class="truncate text-detail">
+        {entry.bookTitle}
+      </ItemDescription>
     </ItemContent>
     <span
-      class="shrink-0 text-detail whitespace-nowrap text-muted min-inline-history-time"
+      class="shrink-0 text-detail whitespace-nowrap text-muted tabular-nums min-inline-history-time"
     >
       <span class="sr-only">{m.history_started_at({ time })}</span>
       <span aria-hidden="true">{time}</span>
     </span>
     <span
-      class="shrink-0 text-detail whitespace-nowrap text-muted min-inline-history-length"
+      class="shrink-0 text-detail whitespace-nowrap text-muted tabular-nums min-inline-history-length"
     >
-      {m.history_read_for({ duration: readFor })}
+      <span class="sr-only">{m.history_read_for({ duration: readFor })}</span>
+      <span aria-hidden="true">{readFor}</span>
     </span>
-    <a
-      {href}
-      aria-label={action.label}
-      class="flex shrink-0 items-center justify-center rounded-small-control border border-field bg-card px-md text-small font-semibold whitespace-nowrap min-block-pointer-button min-inline-history-action hover:tint-hover active:tint-pressed"
+    <span
+      class="flex shrink-0 items-center gap-sm text-caption text-muted tabular-nums inline-history-progress"
     >
-      {action.text}
-    </a>
+      <SessionProgress readTo={entry.readTo} bar="flex-1" />
+    </span>
+    <span class="flex shrink-0 justify-end min-inline-history-actions">
+      <a
+        {href}
+        aria-label={action.label}
+        class={cn(
+          BUTTON_LOOKS.outline,
+          "flex items-center justify-center gap-icon-gap rounded-small-control px-md text-detail whitespace-nowrap shadow-raised min-block-pointer-button min-inline-history-action hover:tint-hover active:tint-pressed",
+        )}
+      >
+        <action.icon
+          size={ACTION_ICON_SIZE}
+          aria-hidden="true"
+          fill={action.icon === Play ? "currentColor" : "none"}
+        />
+        {action.text}
+      </a>
+    </span>
   </Item>
 </li>

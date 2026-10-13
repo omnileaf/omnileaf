@@ -265,22 +265,14 @@
   "history_today": "⟦Ţöðáý··⟧",
   "history_yesterday": "⟦Ýéšţéŕðáý····⟧",
   "history_last_week": "⟦Ļášţ ŵééķ····⟧",
-  "history_read_to_page": [
-    {
-      "declarations": [
-        "input book",
-        "input page",
-        "input count",
-        "local formattedPage = page: number",
-        "local formattedCount = count: number"
-      ],
-      "match": {
-        "*": "⟦{book} · þáĝé {formattedPage} öƒ {formattedCount}····················⟧"
-      }
-    }
-  ],
-  "history_read_to_end": "⟦{book} · ƒíñíšĥéð·······⟧",
-  "history_started_and_read_for": "⟦{time} · ŕéáð ƒöŕ {duration}············⟧",
+  "history_column_book": "⟦Ɓööķ··⟧",
+  "history_column_started": "⟦Šţáŕţéð···⟧",
+  "history_column_read_for": "⟦Ŕéáð ƒöŕ····⟧",
+  "history_column_progress": "⟦Þŕöĝŕéšš····⟧",
+  "history_page_of": "⟦Þáĝé {page} öƒ {count}·········⟧",
+  "history_pages": "⟦{page} / {count}·······⟧",
+  "history_finished": "⟦Ƒíñíšĥéð····⟧",
+  "history_time_and_length": "⟦{time} · {duration}········⟧",
   "history_started_at": "⟦Šţáŕţéð áţ {time}·······⟧",
   "history_read_for": "⟦Ŕéáð ƒöŕ {duration}········⟧",
   "history_continue": "⟦Çöñţíñûé····⟧",

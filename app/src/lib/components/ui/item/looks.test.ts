@@ -18,7 +18,7 @@ test.each<[ItemLook, string[]]>([
   ["about-phone", ["inline-full", "px-list-row", "min-block-4xl"]],
   ["about-pane", ["inline-full", "px-list-row", "min-block-phone-row"]],
   ["about-version", ["flex-wrap", "ps-list-row", "min-block-4xl"]],
-  ["history-phone", ["flex", "gap-cover-gap", "desktop:large:hidden"]],
+  ["history-phone", ["flex", "gap-md", "desktop:large:hidden"]],
   ["history-desktop", ["hidden", "min-inline-none", "desktop:large:flex"]],
   ["settings-section", ["ps-list-row", "hover:bg-hover", "desktop:py-none"]],
 ])("lays out the %s row with its own spacing", (look, signature) => {
