@@ -5,16 +5,6 @@ ALTER TABLE series ADD COLUMN read_count INTEGER NOT NULL DEFAULT 0 CHECK (read_
 
 ALTER TABLE series ADD COLUMN started_count INTEGER NOT NULL DEFAULT 0 CHECK (started_count >= 0);
 
-DROP INDEX series_by_title;
-
-CREATE INDEX series_by_title ON series (title_key, id, book_count, read_count, started_count)
-    WHERE book_count > 0;
-
-DROP INDEX series_by_added;
-
-CREATE INDEX series_by_added ON series (added_at_ms, id, book_count, read_count, started_count)
-    WHERE book_count > 0;
-
 UPDATE series SET
     read_count = (
         SELECT count(*) FROM book JOIN book_state ON book_state.book_id = book.id
