@@ -39,7 +39,7 @@ On Linux, Add a folder opens the desktop's own file chooser through xdg-desktop-
 Android builds need:
 - JDK 21;
 - the Android SDK, in Android Studio's default location or with `ANDROID_HOME` pointing at it;
-- the Android NDK, version 27.1.12297006 as CI uses. Tauri takes the newest one in the SDK, or the one `NDK_HOME` points at.
+- the Android NDK, version 30.0.16248370 as CI uses. Tauri takes the newest one in the SDK, or the one `NDK_HOME` points at.
 
 Add the Rust Android targets once with `rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android`. `pnpm --dir app tauri android dev` runs the app on a connected device or a running emulator. The Android project in `app/src-tauri/gen/android` is committed, and the app supports Android 8.0 (API 26) and later.
 

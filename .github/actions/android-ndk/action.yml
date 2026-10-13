@@ -7,7 +7,7 @@ runs:
     - name: Install the Android NDK
       shell: bash
       env:
-        NDK_VERSION: 27.1.12297006
+        NDK_VERSION: 30.0.16248370
       run: |
         ndk="$ANDROID_HOME/ndk/$NDK_VERSION"
         if [[ -f "$ndk/source.properties" ]] && grep -qxF "Pkg.Revision = $NDK_VERSION" "$ndk/source.properties"; then
