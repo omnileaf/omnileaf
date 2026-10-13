@@ -288,8 +288,10 @@ fn compare_ndk(ndk: &android::Ndk, pinned: &str) -> Finding {
         Some(revision) => Finding::Differs {
             detail: format!("{path} is NDK {revision}, CI builds with {pinned}"),
         },
-        None => Finding::Differs {
-            detail: format!("{path} has no version in source.properties, CI builds with {pinned}"),
+        None => Finding::Broken {
+            detail: format!(
+                "{path} has no version in source.properties, so it isn't a usable NDK: point NDK_HOME at an installed NDK or install one from Android Studio's SDK Manager"
+            ),
         },
     }
 }
@@ -584,15 +586,15 @@ mod tests {
     }
 
     #[test]
-    fn reports_an_ndk_with_no_readable_version_as_differing() {
+    fn reports_an_ndk_with_no_readable_version_as_broken() {
         let toolchain = sdk_with_ndk_revision(None);
 
         let finding = examine_ndk(&toolchain);
 
         assert_eq!(
             finding,
-            Finding::Differs {
-                detail: "/sdk/ndk/29.0.13846066 has no version in source.properties, CI builds with 29.0.13846066"
+            Finding::Broken {
+                detail: "/sdk/ndk/29.0.13846066 has no version in source.properties, so it isn't a usable NDK: point NDK_HOME at an installed NDK or install one from Android Studio's SDK Manager"
                     .to_owned()
             }
         );
