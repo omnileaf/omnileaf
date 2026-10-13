@@ -1,45 +1,19 @@
 <script lang="ts">
   import { SlidersHorizontal } from "@lucide/svelte";
-  import { Dialog } from "bits-ui";
+  import { Dialog, Popover } from "bits-ui";
+  import { MediaQuery } from "svelte/reactivity";
 
-  import {
-    DialogContent,
-    DialogTitle,
-  } from "#lib/components/ui/dialog/index.ts";
-
-  import type {
-    LibraryDisplay,
-    LibraryView,
-    OnCovers,
-  } from "#lib/ipc/bindings.ts";
+  import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
+  import { DrawerContent } from "#lib/components/ui/drawer/index.ts";
+  import { PopoverContent } from "#lib/components/ui/popover/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import type { LibraryView } from "#lib/ipc/bindings.ts";
+  import { MEDIUM_QUERY } from "#lib/page/breakpoints.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import CoversPerRowStepper from "./CoversPerRowStepper.svelte";
-  import DisplayChoice from "./DisplayChoice.svelte";
-  import ItemCountsChoice from "./ItemCountsChoice.svelte";
-  import OnCoversChoice from "./OnCoversChoice.svelte";
-  import {
-    SCREEN_SIZES,
-    type ScreenSize,
-    withCoversPerRow,
-    withDisplay,
-    withItemCounts,
-    withOnCovers,
-  } from "./library-view";
+  import ViewChoices from "./ViewChoices.svelte";
 
   const ICON_SIZE = 22;
-
-  const STEPPERS = {
-    phone: "flex medium:hidden",
-    tablet: "hidden medium:flex large:hidden",
-    desktop: "hidden large:flex",
-  } satisfies Record<ScreenSize, string>;
-
-  interface ButtonEdge {
-    readonly blockEnd: number;
-    readonly inlineEnd: number;
-  }
 
   let {
     view,
@@ -51,28 +25,17 @@
     onChoose: (view: LibraryView) => void;
   } = $props();
 
-  const coversInARow = $derived(
-    view.display === "list" ? undefined : coversDrawn,
-  );
+  const isWide = new MediaQuery(MEDIUM_QUERY);
+  const titleId = $props.id();
 
   let button = $state<HTMLElement | null>(null);
   let isOpen = $state(false);
-  let edge: ButtonEdge = $state({ blockEnd: 0, inlineEnd: 0 });
-
-  function edgeOf(opener: HTMLElement): ButtonEdge {
-    const box = opener.getBoundingClientRect();
-    const isRightToLeft = getComputedStyle(opener).direction === "rtl";
-    return {
-      blockEnd: box.bottom,
-      inlineEnd: isRightToLeft ? box.left : window.innerWidth - box.right,
-    };
-  }
+  let direction: "ltr" | "rtl" = $state("ltr");
 
   function open(): void {
-    if (button === null) {
-      return;
+    if (button !== null) {
+      direction = getComputedStyle(button).direction === "rtl" ? "rtl" : "ltr";
     }
-    edge = edgeOf(button);
     isOpen = true;
   }
 
@@ -84,21 +47,6 @@
     event.preventDefault();
     button?.focus();
   }
-
-  $effect(() => {
-    if (!isOpen) {
-      return;
-    }
-    const follow = (): void => {
-      if (button !== null) {
-        edge = edgeOf(button);
-      }
-    };
-    window.addEventListener("resize", follow, { passive: true });
-    return () => {
-      window.removeEventListener("resize", follow);
-    };
-  });
 </script>
 
 <Tooltip
@@ -124,63 +72,42 @@
   <span class="hidden large:inline">{m.library_view()}</span>
 </Tooltip>
 
-<Dialog.Root bind:open={isOpen}>
-  <DialogContent
-    style="--button-block-end: {edge.blockEnd}px; --button-inline-end: {edge.inlineEnd}px"
-    class="inset-none mbs-auto overflow-auto border-border bg-card text-foreground block-fit max-block-full max-medium:sheet-motion max-medium:rounded-ss-bottom-sheet max-medium:rounded-se-bottom-sheet max-medium:inline-full medium:anchored-below-button medium:rounded-card medium:border medium:fade-motion medium:shadow-popover medium:inline-view-panel"
-    scrimClass="medium:bg-transparent"
-    onCloseAutoFocus={focusButton}
-  >
-    <div
-      class="flex flex-col gap-sheet-gap px-sheet-inline pbs-sm pbe-sheet-bottom medium:gap-lg medium:px-panel-inline medium:pbs-lg medium:pbe-panel-inline"
+{#if isWide.current}
+  <Popover.Root bind:open={isOpen}>
+    <PopoverContent
+      customAnchor={button}
+      dir={direction}
+      align="end"
+      aria-labelledby={titleId}
+      class="flex flex-col gap-lg overflow-auto px-panel-inline pbs-lg pbe-panel-inline inline-view-panel max-block-full"
+      onCloseAutoFocus={focusButton}
     >
-      <span
-        aria-hidden="true"
-        class="self-center rounded-full bg-step-off block-sheet-handle-block inline-sheet-handle medium:hidden"
-      ></span>
-      <div class="flex items-center">
-        <DialogTitle
-          class="flex-1 text-title font-bold medium:text-panel-title"
-        >
+      <h2 id={titleId} class="text-panel-title font-bold">
+        {m.library_view()}
+      </h2>
+      <ViewChoices {view} {coversDrawn} {onChoose} />
+    </PopoverContent>
+  </Popover.Root>
+{:else}
+  <Dialog.Root bind:open={isOpen}>
+    <DrawerContent onDismiss={close} onCloseAutoFocus={focusButton}>
+      <div class="flex items-center px-sheet-inline pbs-sheet-gap">
+        <DialogTitle class="flex-1 text-title font-bold">
           {m.library_view()}
         </DialogTitle>
         <button
           type="button"
-          class="rounded-control px-xs text-body font-semibold text-accent transition-control min-block-touch-target hover:bg-hover active:bg-pressed medium:hidden"
+          class="rounded-control px-xs text-body font-semibold text-accent transition-control min-block-touch-target hover:bg-hover active:bg-pressed"
           onclick={close}
         >
           {m.library_view_done()}
         </button>
       </div>
-      <DisplayChoice
-        chosen={view.display}
-        onChoose={(display: LibraryDisplay) => {
-          onChoose(withDisplay(view, display));
-        }}
-      />
-      {#each SCREEN_SIZES as size (size)}
-        <CoversPerRowStepper
-          {size}
-          count={view.coversPerRow[size]}
-          drawn={coversInARow}
-          class={STEPPERS[size]}
-          onCount={(count: number) => {
-            onChoose(withCoversPerRow(view, size, count));
-          }}
-        />
-      {/each}
-      <ItemCountsChoice
-        isShown={view.showsItemCounts}
-        onChoose={(isShown: boolean) => {
-          onChoose(withItemCounts(view, isShown));
-        }}
-      />
-      <OnCoversChoice
-        onCovers={view.onCovers}
-        onChoose={(name: keyof OnCovers, isShown: boolean) => {
-          onChoose(withOnCovers(view, name, isShown));
-        }}
-      />
-    </div>
-  </DialogContent>
-</Dialog.Root>
+      <div
+        class="flex flex-col gap-sheet-gap overflow-auto px-sheet-inline pbs-sheet-gap pbe-sheet-bottom min-block-none"
+      >
+        <ViewChoices {view} {coversDrawn} {onChoose} />
+      </div>
+    </DrawerContent>
+  </Dialog.Root>
+{/if}
