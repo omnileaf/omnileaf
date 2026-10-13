@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Plus } from "@lucide/svelte";
 
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { FolderAdding } from "./folder-adding.svelte";
@@ -24,24 +25,24 @@
   let {
     adding,
     placement,
-    element = $bindable(),
+    element = $bindable(null),
   }: {
     adding: FolderAdding;
     placement: Placement;
-    element?: HTMLButtonElement | undefined;
+    element?: HTMLElement | null;
   } = $props();
 
   const isInHeading = $derived(placement === "page-heading");
 </script>
 
-<button
-  bind:this={element}
+<Tooltip
+  bind:ref={element}
+  label={isInHeading ? m.library_add_folder() : undefined}
   type="button"
   class={[
     "inline-flex shrink-0 items-center justify-center font-semibold transition-control disabled:opacity-60",
     LOOKS[placement],
   ]}
-  title={isInHeading ? m.library_add_folder() : undefined}
   disabled={adding.isAdding}
   onclick={() => {
     void adding.add();
@@ -51,4 +52,4 @@
   <span class={{ "max-medium:sr-only": isInHeading }}
     >{m.library_add_folder()}</span
   >
-</button>
+</Tooltip>

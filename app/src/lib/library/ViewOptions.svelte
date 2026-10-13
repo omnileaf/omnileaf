@@ -12,6 +12,7 @@
     LibraryView,
     OnCovers,
   } from "#lib/ipc/bindings.ts";
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import CoversPerRowStepper from "./CoversPerRowStepper.svelte";
@@ -54,11 +55,11 @@
     view.display === "list" ? undefined : coversDrawn,
   );
 
-  let button: HTMLButtonElement | undefined = $state();
+  let button = $state<HTMLElement | null>(null);
   let isOpen = $state(false);
   let edge: ButtonEdge = $state({ blockEnd: 0, inlineEnd: 0 });
 
-  function edgeOf(opener: HTMLButtonElement): ButtonEdge {
+  function edgeOf(opener: HTMLElement): ButtonEdge {
     const box = opener.getBoundingClientRect();
     const isRightToLeft = getComputedStyle(opener).direction === "rtl";
     return {
@@ -68,7 +69,7 @@
   }
 
   function open(): void {
-    if (button === undefined) {
+    if (button === null) {
       return;
     }
     edge = edgeOf(button);
@@ -89,7 +90,7 @@
       return;
     }
     const follow = (): void => {
-      if (button !== undefined) {
+      if (button !== null) {
         edge = edgeOf(button);
       }
     };
@@ -100,13 +101,13 @@
   });
 </script>
 
-<button
-  bind:this={button}
+<Tooltip
+  bind:ref={button}
+  label={m.library_view_options()}
   type="button"
   aria-haspopup="dialog"
   aria-expanded={isOpen}
   aria-label={m.library_view_options()}
-  title={m.library_view_options()}
   class={[
     "flex items-center justify-center gap-sm rounded-full transition-control block-touch-target inline-touch-target large:rounded-control large:border large:border-field large:px-header-control-inline large:text-small large:font-medium large:block-pointer-button large:inline-auto",
     isOpen
@@ -121,7 +122,7 @@
     class="large:block-header-icon-desktop large:inline-header-icon-desktop"
   />
   <span class="hidden large:inline">{m.library_view()}</span>
-</button>
+</Tooltip>
 
 <Dialog.Root bind:open={isOpen}>
   <DialogContent

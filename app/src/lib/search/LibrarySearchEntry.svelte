@@ -3,6 +3,7 @@
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -20,14 +21,18 @@
   }
 </script>
 
-<a
-  href={resolve("/(app)/search")}
-  aria-label={m.search_open()}
-  title={m.search_open()}
-  class="flex items-center justify-center rounded-full transition-control block-touch-target inline-touch-target hover:tint-hover active:tint-pressed large:hidden"
->
-  <Search size={ICON_SIZE} aria-hidden="true" />
-</a>
+<Tooltip label={m.search_open()}>
+  {#snippet child({ props })}
+    <a
+      {...props}
+      href={resolve("/(app)/search")}
+      aria-label={m.search_open()}
+      class="flex items-center justify-center rounded-full transition-control block-touch-target inline-touch-target hover:tint-hover active:tint-pressed large:hidden"
+    >
+      <Search size={ICON_SIZE} aria-hidden="true" />
+    </a>
+  {/snippet}
+</Tooltip>
 <div
   class="hidden items-center gap-sm rounded-control border border-field bg-card px-md text-muted block-pointer-button inline-library-search focus-within:border-accent large:flex"
 >

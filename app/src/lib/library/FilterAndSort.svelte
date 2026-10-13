@@ -14,6 +14,7 @@
     DialogTitle,
   } from "#lib/components/ui/dialog/index.ts";
   import { TabsList, TabsTrigger } from "#lib/components/ui/tabs/index.ts";
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -49,7 +50,7 @@
 
   const isPanel = new MediaQuery(PANEL_SCREENS);
 
-  let button: HTMLButtonElement | undefined = $state();
+  let button: HTMLElement | null = $state(null);
   let isOpen = $state(false);
   let tab: string = $state("filter");
 
@@ -101,13 +102,13 @@
   }
 </script>
 
-<button
-  bind:this={button}
+<Tooltip
+  bind:ref={button}
+  label={buttonLabel}
   type="button"
   aria-haspopup="dialog"
   aria-expanded={isOpen}
   aria-label={buttonLabel}
-  title={buttonLabel}
   class={[
     "relative flex items-center justify-center gap-sm rounded-full transition-control block-touch-target inline-touch-target large:rounded-control large:border large:border-field large:ps-header-control-inline large:pe-md large:text-small large:font-medium large:block-pointer-button large:inline-auto",
     isOpen
@@ -134,7 +135,7 @@
       {numbers.format(filtersCount)}
     </span>
   {/if}
-</button>
+</Tooltip>
 
 <Dialog.Root bind:open={isOpen}>
   <DialogContent
