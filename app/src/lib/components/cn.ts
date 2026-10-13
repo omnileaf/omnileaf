@@ -353,8 +353,10 @@ export const TOKEN_THEME = {
     "sm",
     "sort-direction",
     "sort-row",
+    "step-circle",
     "step-dot",
     "step-dot-current",
+    "step-line",
     "stepper",
     "stepper-value",
     "switch-inset",
@@ -386,6 +388,7 @@ export const TOKEN_THEME = {
     "notice-rise",
     "pill-grow",
     "spin",
+    "step-grow",
   ],
   blur: ["glass", "reader", "series-band"],
 } as const;
