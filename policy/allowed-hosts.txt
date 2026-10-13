@@ -8,6 +8,7 @@ omnileaf.app
 rustup.rs
 schemas.android.com
 services.gradle.org
+shadcn-svelte-extras.com
 shadcn-svelte.com
 www.apache.org
 www.apple.com
