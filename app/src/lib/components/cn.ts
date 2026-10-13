@@ -214,6 +214,7 @@ export const TOKEN_THEME = {
     "list-detail",
     "list-row",
     "list-unread",
+    "long-button",
     "md",
     "none",
     "nothing-found",

@@ -16,7 +16,7 @@
     "section-heading":
       "gap-xs rounded-control bg-accent ps-md pe-lg text-callout text-on-accent enabled:hover:bg-accent-hover enabled:active:bg-accent-pressed min-block-touch-target android:max-medium:rounded-full ios:max-medium:rounded-phone-button desktop:text-label desktop:min-block-pointer-button",
     "below-list":
-      "gap-sm rounded-control border border-accent px-lg text-accent inline-full enabled:hover:bg-hover enabled:active:bg-pressed min-block-touch-target touch:max-medium:font-bold touch:max-medium:min-block-phone-button android:max-medium:rounded-full ios:max-medium:rounded-phone-button desktop:text-label desktop:min-block-pointer-target",
+      "gap-sm rounded-control border border-dashed border-accent bg-accent-soft px-lg text-accent inline-full enabled:hover:tint-hover enabled:active:tint-pressed min-block-long-button touch:max-medium:font-bold android:max-medium:rounded-full ios:max-medium:rounded-phone-button desktop:text-label",
   } satisfies Record<Placement, string>;
 
   const ICON_SIZE = 20;
