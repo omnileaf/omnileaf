@@ -18,6 +18,23 @@ const UNDECLARED_LICENCES: ReadonlyMap<string, string> = new Map([
   ["svelte-toolbelt@0.10.6", "MIT"],
 ]);
 
+/** Code ported into the app from a package, kept in a folder beside that package's licence file. */
+export interface PortedCode {
+  readonly name: string;
+  readonly version: string;
+  readonly licence: string;
+  readonly folder: string;
+}
+
+export const PORTED_CODE: readonly PortedCode[] = [
+  {
+    name: "vaul-svelte",
+    version: "1.0.0-next.7",
+    licence: "MIT",
+    folder: "src/lib/components/ui/drawer",
+  },
+];
+
 const NODE_MODULES = "/node_modules/";
 const SCOPE_PREFIX = "@";
 const VIRTUAL_PREFIX = "\0";
@@ -36,6 +53,13 @@ export function packageRootOf(moduleId: string): string | undefined {
     "node_modules",
     ...inside.slice(0, nameLength),
   ].join("/");
+}
+
+export function isFolderShipped(
+  folder: string,
+  moduleIds: readonly string[],
+): boolean {
+  return moduleIds.some((id) => id.startsWith(`${folder}/`));
 }
 
 /** The licence a package's manifest declares, else the one it is known to ship without declaring. */

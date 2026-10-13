@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 
 import {
   catalogueOf,
+  isFolderShipped,
   licenceOf,
   packageRootOf,
   type ShippedPackage,
@@ -122,4 +123,21 @@ test("knows the licence a package ships without declaring it", () => {
 
 test("knows no licence for another version of that package", () => {
   expect(licenceOf("svelte-toolbelt", "0.11.0", undefined)).toBeUndefined();
+});
+
+test("ships a ported folder once a bundled module comes from it", () => {
+  const isShipped = isFolderShipped("/work/app/src/lib/ported", [
+    "/work/app/src/routes/+page.svelte",
+    "/work/app/src/lib/ported/drag.ts",
+  ]);
+
+  expect(isShipped).toBe(true);
+});
+
+test("leaves out a ported folder no bundled module comes from, even one named like it", () => {
+  const isShipped = isFolderShipped("/work/app/src/lib/ported", [
+    "/work/app/src/lib/ported-elsewhere/drag.ts",
+  ]);
+
+  expect(isShipped).toBe(false);
 });

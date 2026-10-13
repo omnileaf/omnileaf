@@ -6,9 +6,12 @@ import type { Plugin } from "vite";
 
 import {
   catalogueOf,
+  isFolderShipped,
   type LicenceFile,
   licenceOf,
   packageRootOf,
+  PORTED_CODE,
+  type PortedCode,
   type ShippedPackage,
 } from "../src/lib/licences/shipped-packages.ts";
 
@@ -65,6 +68,16 @@ async function shippedPackage(root: string): Promise<ShippedPackage> {
   return { name, version, licence, files: await licenceFiles(root) };
 }
 
+async function portedPackage(ported: PortedCode): Promise<ShippedPackage> {
+  const { name, version, licence, folder } = ported;
+  return {
+    name,
+    version,
+    licence,
+    files: await licenceFiles(join(APP_ROOT, folder)),
+  };
+}
+
 async function committedCatalogue(path: string): Promise<string | undefined> {
   try {
     return await readFile(path, "utf8");
@@ -84,19 +97,25 @@ export function javascriptLicences(mode: LicencesMode): Plugin {
     applyToEnvironment: (environment) =>
       environment.name === CLIENT_ENVIRONMENT,
     async generateBundle(_options, bundle) {
+      const moduleIds = Object.values(bundle).flatMap((output) =>
+        output.type === "chunk" ? output.moduleIds : [],
+      );
       const roots = new Set<string>();
-      for (const output of Object.values(bundle)) {
-        const ids = output.type === "chunk" ? output.moduleIds : [];
-        for (const root of ids.map(packageRootOf)) {
-          if (root !== undefined) {
-            roots.add(await realpath(root));
-          }
+      for (const root of moduleIds.map(packageRootOf)) {
+        if (root !== undefined) {
+          roots.add(await realpath(root));
         }
       }
       for (const name of EMBEDDED_PACKAGES) {
         roots.add(await realpath(join(APP_ROOT, "node_modules", name)));
       }
-      const packages = await Promise.all([...roots].map(shippedPackage));
+      const ported = PORTED_CODE.filter(({ folder }) =>
+        isFolderShipped(join(APP_ROOT, folder), moduleIds),
+      );
+      const packages = await Promise.all([
+        ...[...roots].map(shippedPackage),
+        ...ported.map(portedPackage),
+      ]);
       const generated = `${JSON.stringify(catalogueOf(packages), null, 2)}\n`;
       const path = join(APP_ROOT, CATALOGUE);
       if (mode === "write") {
