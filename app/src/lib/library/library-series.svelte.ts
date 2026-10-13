@@ -42,7 +42,6 @@ export class LibrarySeriesList {
     await this.#loadAtLeast(shown);
   }
 
-  /** Reads the first page of a list in a new listing, and only the most recently started load shows its list. */
   async start(): Promise<void> {
     this.#listsBegun += 1;
     await this.#loadAtLeast(0);

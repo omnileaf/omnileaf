@@ -139,8 +139,6 @@ pub struct SeriesSummary {
     pub cover: Option<Cover>,
 }
 
-/// Lists only the series holding at least one book, which are the ones the library shows, and of those only the ones the listing's filter lets through.
-///
 /// A title cursor from before the titles were keyed again carries on after its series' new place, or fails with [`Error::StaleCursor`] when that series has gone.
 #[tracing::instrument(skip_all, fields(?listing, size = ?request.size))]
 pub fn series_page(

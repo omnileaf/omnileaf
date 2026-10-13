@@ -247,7 +247,6 @@ impl Library {
             .await?)
     }
 
-    /// Counts the series holding books that `filter` lets through.
     pub async fn series_count(&self, filter: LibraryFilter) -> Result<u32, LibraryError> {
         let filter = SeriesFilter::from(filter);
         Ok(self
@@ -257,7 +256,6 @@ impl Library {
             .await?)
     }
 
-    /// The listing this device last set, or the one a new library starts with.
     pub async fn listing(&self) -> Result<LibraryListing, LibraryError> {
         let stored = self.store.database().read(library_listing).await?;
         Ok(stored.map_or_else(LibraryListing::default, LibraryListing::from))
