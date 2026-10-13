@@ -2,6 +2,7 @@
   import { SOURCE_URL } from "#lib/links.ts";
   import PlanCard from "#lib/PlanCard.svelte";
   import { PLANS } from "#lib/plans.ts";
+  import SecuritySection from "#lib/SecuritySection.svelte";
   import Shelf from "#lib/Shelf.svelte";
 
   const TAGLINE = "Open-source reader for manga, comics and books";
@@ -38,6 +39,11 @@
           class="inline-flex items-center rounded-control bg-accent px-5.5 font-semibold text-on-accent no-underline min-block-12"
           >Follow on GitHub</a
         >
+        <a
+          href="#security"
+          class="inline-flex items-center rounded-control border border-border px-5.5 font-semibold text-foreground no-underline min-block-12"
+          >Security</a
+        >
       </div>
     </div>
     <Shelf />
@@ -58,6 +64,8 @@
       </div>
     </div>
   </section>
+
+  <SecuritySection />
 
   <section aria-labelledby="guides-heading" class="border-bs border-border">
     <div

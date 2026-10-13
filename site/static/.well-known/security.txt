@@ -1,0 +1,5 @@
+Contact: mailto:security@omnileaf.app
+Expires: 2027-10-13T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://omnileaf.app/.well-known/security.txt
+Policy: https://omnileaf.app/#security
