@@ -21,23 +21,70 @@
 </script>
 
 <script lang="ts">
+  import { LoaderCircle } from "@lucide/svelte";
   import { Button as ButtonPrimitive } from "bits-ui";
 
   import { cn } from "#lib/components/cn.ts";
+
+  type ButtonElementProps = Extract<
+    ButtonPrimitive.RootProps,
+    { href?: never }
+  >;
+  type ClickEvent = Parameters<NonNullable<ButtonElementProps["onclick"]>>[0];
 
   let {
     ref = $bindable(null),
     look,
     class: className,
     children,
+    onclick,
+    onClickPromise,
     ...restProps
-  }: ButtonPrimitive.RootProps & { look: ButtonLook } = $props();
+  }: ButtonElementProps & {
+    look: ButtonLook;
+    onClickPromise?: (event: MouseEvent) => Promise<void>;
+  } = $props();
+
+  const BUSY_ICON_SIZE = 18;
+
+  let isBusy = $state(false);
+
+  async function click(event: ClickEvent): Promise<void> {
+    if (isBusy) {
+      event.preventDefault();
+      return;
+    }
+    onclick?.(event);
+    if (onClickPromise === undefined) {
+      return;
+    }
+    isBusy = true;
+    try {
+      await onClickPromise(event);
+    } finally {
+      isBusy = false;
+    }
+  }
 </script>
 
 <ButtonPrimitive.Root
   bind:ref
-  class={cn(LOOKS[look], className)}
+  class={cn(
+    LOOKS[look],
+    isBusy && "inline-flex items-center justify-center gap-sm",
+    className,
+  )}
+  aria-busy={isBusy || undefined}
+  aria-disabled={isBusy || undefined}
+  onclick={click}
   {...restProps}
 >
+  {#if isBusy}
+    <LoaderCircle
+      size={BUSY_ICON_SIZE}
+      aria-hidden="true"
+      class="shrink-0 motion-safe:animate-spin"
+    />
+  {/if}
   {@render children?.()}
 </ButtonPrimitive.Root>
