@@ -36,7 +36,7 @@ async function addFolder(page: Page, region: string): Promise<void> {
     .getByRole("region", { name: region })
     .getByRole("button", { name: "Add a folder" })
     .click();
-  await expect(page.getByText(/^Found 4 books in /)).toBeVisible();
+  await expect(page.getByText(/^Added 4 books from /)).toBeVisible();
 }
 
 function screenshotModeLabel(page: Page) {
@@ -147,7 +147,7 @@ for (const { path, region } of FOLDER_PLACES) {
     await addFolder(page, region);
 
     await expect(
-      page.getByText("Found 4 books in 1 series in Folder 848."),
+      page.getByText("Added 4 books from Folder 848", { exact: true }),
     ).toBeVisible();
     await expect(page.locator("body")).not.toContainText(REAL_FOLDER_NAME);
   });
@@ -162,7 +162,7 @@ test("a folder name already on screen is replaced when it's turned on", async ({
   await turnOnScreenshotMode(page);
 
   await expect(
-    page.getByText("Found 4 books in 1 series in Folder 848."),
+    page.getByText("Added 4 books from Folder 848", { exact: true }),
   ).toBeVisible();
   await expect(page.locator("body")).not.toContainText(REAL_FOLDER_NAME);
 });
