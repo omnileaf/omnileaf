@@ -382,11 +382,11 @@
   --spacing-key-block: 0.1875rem;
   --spacing-series-back: 2.75rem;
   --spacing-series-crumb: 2.125rem;
-  --spacing-series-band: 20.625rem;
-  --spacing-series-band-tablet: 18.75rem;
-  --spacing-series-band-wide: 15rem;
-  --spacing-series-fade: 12.5rem;
-  --spacing-series-fade-wide: 11.25rem;
+  --spacing-series-band: 7.5rem;
+  --spacing-series-band-tablet: 8.75rem;
+  --spacing-series-band-wide: 8.75rem;
+  --spacing-series-fade: 5rem;
+  --spacing-series-fade-wide: 6.25rem;
   --spacing-series-cover: 7.375rem;
   --spacing-series-cover-tablet: 9.5rem;
   --spacing-series-cover-wide: 8.25rem;

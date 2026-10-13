@@ -741,6 +741,7 @@
   "quick_open_shortcut_mac": "⌘ K",
   "series_back": "Library",
   "series_back_label": "Back to the library",
+  "series_breadcrumb": "Breadcrumb",
   "series_folder": "Folder",
   "series_failed": "Couldn't load this series. Try again later.",
   "series_not_found": "This series isn't in your library",
@@ -758,7 +759,6 @@
       }
     }
   ],
-  "series_up_next": "Up next",
   "series_continue_at": [
     {
       "declarations": [
@@ -857,6 +857,8 @@
   "series_start_reading": "Start reading",
   "series_mark_read": "Mark read",
   "series_mark_unread": "Mark unread",
+  "series_mark_all_read": "Mark all read",
+  "series_mark_all_unread": "Mark all unread",
   "series_mark_failed": "Couldn't mark those books. Try again.",
   "series_marked_read": [
     {

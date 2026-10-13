@@ -741,6 +741,7 @@
   "quick_open_shortcut_mac": "⟦⌘ Ķ··⟧",
   "series_back": "⟦Ļíƀŕáŕý···⟧",
   "series_back_label": "⟦Ɓáçķ ţö ţĥé ļíƀŕáŕý········⟧",
+  "series_breadcrumb": "⟦Ɓŕéáðçŕûɱƀ····⟧",
   "series_folder": "⟦Ƒöļðéŕ···⟧",
   "series_failed": "⟦Çöûļðñ'ţ ļöáð ţĥíš šéŕíéš. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
   "series_not_found": "⟦Ţĥíš šéŕíéš íšñ'ţ íñ ýöûŕ ļíƀŕáŕý··············⟧",
@@ -758,7 +759,6 @@
       }
     }
   ],
-  "series_up_next": "⟦Ûþ ñéẋţ···⟧",
   "series_continue_at": [
     {
       "declarations": [
@@ -857,6 +857,8 @@
   "series_start_reading": "⟦Šţáŕţ ŕéáðíñĝ······⟧",
   "series_mark_read": "⟦Ṁáŕķ ŕéáð····⟧",
   "series_mark_unread": "⟦Ṁáŕķ ûñŕéáð·····⟧",
+  "series_mark_all_read": "⟦Ṁáŕķ áļļ ŕéáð······⟧",
+  "series_mark_all_unread": "⟦Ṁáŕķ áļļ ûñŕéáð······⟧",
   "series_mark_failed": "⟦Çöûļðñ'ţ ɱáŕķ ţĥöšé ƀööķš. Ţŕý áĝáíñ.···············⟧",
   "series_marked_read": [
     {
