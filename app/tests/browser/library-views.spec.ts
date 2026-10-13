@@ -633,6 +633,42 @@ test.describe("view options", () => {
     });
   });
 
+  test("never shows how many covers fit, even for a frame, while each step asked for fits", async ({
+    page,
+  }) => {
+    const size = screenSizeOf(page);
+    const { most } = COVERS_PER_ROW[size];
+    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    const options = await openViewOptions(page);
+    await page.evaluate(() => {
+      const seen: string[] = [];
+      Object.assign(window, { fitNotesSeen: seen });
+      const sample = () => {
+        const shown = document.body.innerText;
+        if (shown.includes("at this text size")) {
+          seen.push(shown);
+        }
+        requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+
+    for (
+      let count = DEFAULT_LIBRARY_VIEW.coversPerRow[size];
+      count < most;
+      count += 1
+    ) {
+      await stepButton(options, "More").click();
+      await expect.poll(() => columnsOf(seriesList(page))).toBe(count + 1);
+    }
+
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { fitNotesSeen: string[] }).fitNotesSeen,
+      ),
+    ).toEqual([]);
+  });
+
   test("lays the rows out again to fill the screen once a row holds the most covers", async ({
     page,
   }) => {

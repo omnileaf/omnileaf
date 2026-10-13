@@ -13,6 +13,7 @@
   import CoverBadges from "./CoverBadges.svelte";
   import CoverImage from "./CoverImage.svelte";
   import { coverLook } from "./cover-look";
+  import { SCREEN_SIZES } from "./library-view";
   import type { CoverUrl } from "./cover-url";
   import { realLook, standInLook } from "./series-look";
   import UnreadCount from "./UnreadCount.svelte";
@@ -73,6 +74,12 @@
         },
       } satisfies Record<LibraryDisplay, DisplayLayout>
     )[view.display],
+  );
+
+  const coversPerRow = $derived(
+    SCREEN_SIZES.map(
+      (size) => `--${size}-covers-per-row: ${String(view.coversPerRow[size])}`,
+    ).join("; "),
   );
 </script>
 
@@ -153,20 +160,15 @@
   {/if}
 {/snippet}
 
-<div
-  style:--phone-covers-per-row={String(view.coversPerRow.phone)}
-  style:--tablet-covers-per-row={String(view.coversPerRow.tablet)}
-  style:--desktop-covers-per-row={String(view.coversPerRow.desktop)}
->
-  <VirtualGrid
-    items={series}
-    key={(one: LibrarySeries) => one.id}
-    label={m.library_series_list()}
-    {isComplete}
-    {...onNearEnd === undefined ? {} : { onNearEnd }}
-    {...onColumns === undefined ? {} : { onColumns }}
-    class={layout.list}
-    itemClass={layout.item}
-    cell={layout.cell}
-  />
-</div>
+<VirtualGrid
+  items={series}
+  key={(one: LibrarySeries) => one.id}
+  label={m.library_series_list()}
+  {isComplete}
+  {...onNearEnd === undefined ? {} : { onNearEnd }}
+  {...onColumns === undefined ? {} : { onColumns }}
+  class={layout.list}
+  style={coversPerRow}
+  itemClass={layout.item}
+  cell={layout.cell}
+/>
