@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
-  import SwitchTrack from "./SwitchTrack.svelte";
+  import { Switch } from "#lib/components/ui/switch/index.ts";
 
   type Prominence = "main" | "option";
 
@@ -35,17 +35,14 @@
   const id = $props.id();
 </script>
 
-<button
-  type="button"
-  role="switch"
-  aria-checked={isOn}
+<Switch
+  bind:checked={() => isOn, onToggle}
   aria-labelledby="{id}-label"
   aria-describedby="{id}-description"
   class={[
     "flex items-center gap-md px-lg py-md text-start inline-full min-block-touch-target hover:tint-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent active:tint-pressed",
     className,
   ]}
-  onclick={onToggle}
 >
   <span class="flex flex-1 flex-col gap-2xs">
     <span id="{id}-label" class={LABEL_WEIGHT[prominence]}>{label}</span>
@@ -58,5 +55,4 @@
     >
   </span>
   {@render trailing?.()}
-  <SwitchTrack {isOn} />
-</button>
+</Switch>
