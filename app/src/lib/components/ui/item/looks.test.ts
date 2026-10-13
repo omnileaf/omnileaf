@@ -15,6 +15,9 @@ test("keeps every class of every look through the class merge", () => {
 test.each<[ItemLook, string[]]>([
   ["folder", ["flex", "items-center", "min-block-row"]],
   ["settings-link", ["px-lg", "hover:bg-hover", "group-first:rounded-ss-card"]],
+  ["about-phone", ["inline-full", "px-list-row", "min-block-4xl"]],
+  ["about-pane", ["inline-full", "px-list-row", "min-block-phone-row"]],
+  ["about-version", ["flex-wrap", "ps-list-row", "min-block-4xl"]],
   ["settings-section", ["ps-list-row", "hover:bg-hover", "desktop:py-none"]],
 ])("lays out the %s row with its spacing and states", (look, signature) => {
   const classes = cn(ITEM_LOOKS[look]).split(" ");

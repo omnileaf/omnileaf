@@ -5,6 +5,12 @@
   import LicencesRow from "#lib/about/LicencesRow.svelte";
   import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
   import ProjectLinkRows from "#lib/about/ProjectLinkRows.svelte";
+  import {
+    Item,
+    ItemContent,
+    ItemDescription,
+    ItemTitle,
+  } from "#lib/components/ui/item/index.ts";
   import { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -34,17 +40,19 @@
       <ul
         class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card"
       >
-        <li
-          class="flex flex-wrap items-center gap-md py-sm ps-list-row pe-sm min-block-4xl"
-        >
-          <span class="flex grow flex-col">
-            <span class="font-semibold">{m.about_version()}</span>
-            <span class="text-footnote text-muted select-text"
-              >{data.appInfo.version}</span
-            >
-          </span>
-          <CopyVersionButton {copying} look="phone" />
-        </li>
+        <Item look="about-version">
+          {#snippet child({ props })}
+            <li {...props}>
+              <ItemContent class="flex-auto">
+                <ItemTitle>{m.about_version()}</ItemTitle>
+                <ItemDescription class="text-footnote select-text"
+                  >{data.appInfo.version}</ItemDescription
+                >
+              </ItemContent>
+              <CopyVersionButton {copying} look="phone" />
+            </li>
+          {/snippet}
+        </Item>
         <ProjectLinkRows
           {opening}
           sourceCode={data.appInfo.sourceCode}
