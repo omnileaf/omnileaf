@@ -292,6 +292,22 @@ async fn counts_the_time_read_since_a_day() {
 }
 
 #[tokio::test]
+async fn counts_the_time_spent_reading_a_book_with_the_reading_not_yet_saved() {
+    let shelf = Shelf::with_two_books("history-book-time").await;
+    let opened = shelf.restore(0).await;
+    shelf.clock.advance(2 * MINUTE_MS);
+    shelf.show(&opened, PAGE_COUNT - 1).await;
+    let other = shelf.book(1).await;
+
+    let spent = [
+        shelf.library.book_read_time(opened.id).await.unwrap(),
+        shelf.library.book_read_time(other).await.unwrap(),
+    ];
+
+    assert_eq!(spent, [120, 0]);
+}
+
+#[tokio::test]
 async fn counts_the_time_read_between_two_days_in_books_no_longer_in_the_library_too() {
     let shelf = Shelf::with_two_books("history-between").await;
     let opened = shelf.restore(0).await;
