@@ -1,5 +1,6 @@
 mod android;
 mod apple;
+mod changes;
 mod check;
 mod dev;
 mod device_choice;
@@ -52,6 +53,12 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
+    /// Print which areas a change touches since a commit, as `area=true` or `area=false` lines for CI to choose its jobs from; every area when no commit is given.
+    Changes {
+        /// The commit the change starts from.
+        #[arg(long)]
+        base: Option<String>,
+    },
     /// Run the checks CI runs on every pull request.
     Check {
         /// Run only this group of checks.
@@ -130,6 +137,7 @@ enum Command {
 
 fn main() -> anyhow::Result<()> {
     match Cli::parse().command {
+        Command::Changes { base } => print_changed_areas(base.as_deref())?,
         Command::Check {
             only,
             android_device,
@@ -215,16 +223,7 @@ fn main() -> anyhow::Result<()> {
         Command::LintComments => lint_comments()?,
         Command::LintSync => lint_sync()?,
         Command::Policy => enforce_policy()?,
-        Command::PrePush { remote, .. } => {
-            let pushed =
-                std::io::read_to_string(std::io::stdin()).context("read the pushed refs")?;
-            pre_push::run(
-                &workspace::root(),
-                &remote,
-                &pushed,
-                &Process::in_workspace(),
-            )?;
-        }
+        Command::PrePush { remote, .. } => check_push(&remote)?,
         Command::InstallHooks => pre_push::install_hooks(&workspace::root())?,
         Command::Screenshot { device } => take_screenshot(device.as_deref())?,
     }
@@ -364,6 +363,22 @@ fn report(violations: &[impl Display], rule: &str) -> anyhow::Result<()> {
         "{} {rule} violation(s)",
         violations.len()
     );
+    Ok(())
+}
+
+fn check_push(remote: &str) -> anyhow::Result<()> {
+    let pushed = std::io::read_to_string(std::io::stdin()).context("read the pushed refs")?;
+    pre_push::run(
+        &workspace::root(),
+        remote,
+        &pushed,
+        &Process::in_workspace(),
+    )
+}
+
+fn print_changed_areas(base: Option<&str>) -> anyhow::Result<()> {
+    let areas = changes::areas_since(&workspace::root(), base)?;
+    print_lines(&areas.outputs());
     Ok(())
 }
 

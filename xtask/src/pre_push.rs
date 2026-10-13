@@ -113,11 +113,7 @@ pub(crate) fn run(
     if !git(root, &["status", "--porcelain", "--untracked-files=no"])?.is_empty() {
         bail!("commit or stash your changes before pushing, so the checks see what you push");
     }
-    let changed = base.and_then(|base| {
-        git(root, &["diff", "--name-only", &base, "HEAD"])
-            .ok()
-            .map(|paths| paths.lines().map(str::to_owned).collect::<Vec<_>>())
-    });
+    let changed = base.and_then(|base| changed_files(root, &base).ok());
     run_all(checks_for(changed.as_deref()), runner)?;
     Ok(())
 }
@@ -137,6 +133,19 @@ fn base_commit(root: &Path, remote: &str, base: &Base<'_>) -> Option<String> {
         .ok(),
         Base::WhereItLeftMain => git(root, &["merge-base", "HEAD", &format!("{remote}/main")]).ok(),
     }
+}
+
+/// Git reports only the new side of a rename without `--no-renames`, and quotes unusual paths without `-z`.
+pub(crate) fn changed_files(root: &Path, base: &str) -> anyhow::Result<Vec<String>> {
+    let listing = git(
+        root,
+        &["diff", "--name-only", "--no-renames", "-z", base, "HEAD"],
+    )?;
+    Ok(listing
+        .split('\0')
+        .filter(|path| !path.is_empty())
+        .map(str::to_owned)
+        .collect())
 }
 
 fn git(root: &Path, args: &[&str]) -> anyhow::Result<String> {
