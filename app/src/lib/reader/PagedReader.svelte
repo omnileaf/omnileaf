@@ -4,6 +4,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { commands, type OpenedBook } from "#lib/ipc/bindings.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import { standInOpenedBook } from "#lib/series/series-stand-ins.ts";
@@ -31,6 +32,8 @@
   } from "#lib/reader/reading-direction.svelte.ts";
   import { Swipe } from "#lib/reader/swipe.ts";
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
+  import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
+  import UpNext from "#lib/up-next/UpNext.svelte";
 
   const SWIPE_MIN_PX = 48;
   const RESTING_SCALE = 1;
@@ -56,13 +59,18 @@
     closed: (id) => commands.closeBook(id),
   };
 
-  let { book }: { book: OpenedBook } = $props();
+  let { book, opensAtEnd }: { book: OpenedBook; opensAtEnd: boolean } =
+    $props();
 
   const screenshotMode = getScreenshotMode();
   const named = $derived(screenshotMode.isOn ? standInOpenedBook(book) : book);
 
   const turner = untrack(
-    () => new PageTurner(book.pages.length, book.startPage),
+    () =>
+      new PageTurner(
+        book.pages.length,
+        opensAtEnd ? book.pages.length - 1 : book.startPage,
+      ),
   );
   const report = untrack(
     () =>
@@ -72,6 +80,8 @@
   );
   const swipe = new Swipe(SWIPE_MIN_PX);
   const controls = new ReaderControls(CONTROLS_HIDE_AFTER_MS);
+  const skipUpNext = getSkipUpNextSetting();
+  const notices = getNotices();
   const reading = untrack(() => seriesReadingDirection(book.series));
   const leftTurn = $derived(inReadingOrder("previous", reading.direction));
   const rightTurn = $derived(inReadingOrder("next", reading.direction));
@@ -85,6 +95,11 @@
   );
   const seriesHref = $derived(
     resolve("/(app)/series/[id]", { id: book.series }),
+  );
+  const nextHref = $derived(
+    book.next === null
+      ? undefined
+      : resolve("/read/[book]", { book: book.next.id }),
   );
   let announced = $state(untrack(() => pageLine));
 
@@ -132,8 +147,38 @@
   }
 
   function turnBy(step: number): void {
+    if (step > 0 && turner.isPastEnd) {
+      startNextBook();
+      return;
+    }
     turner.turn(step);
     controls.hide();
+    if (turner.isPastEnd && skipUpNext.isOn) {
+      goStraightOn();
+    }
+  }
+
+  function startNextBook(): void {
+    if (nextHref !== undefined) {
+      void goto(nextHref, { replaceState: true });
+    }
+  }
+
+  function goStraightOn(): void {
+    if (named.next === null) {
+      return;
+    }
+    const finished = resolve("/read/[book]", { book: book.id });
+    startNextBook();
+    notices.offerUndo({
+      title: m.reader_now_reading({ title: named.next.title }),
+      undo: () => {
+        void goto(finished, {
+          replaceState: true,
+          state: { readerOpensAtEnd: true },
+        });
+      },
+    });
   }
 
   function turnTo(index: number): void {
@@ -300,53 +345,64 @@
       }}
     ></button>
   </div>
-  <header
-    class={[
-      "absolute inset-x-reader-bar-inline inset-bs-reader-bar-top transition-all motion-safe:duration-fade motion-safe:ease-out expanded:inset-x-lg expanded:inset-bs-md",
-      !controls.isShown && "pointer-events-none opacity-0",
-    ]}
-    {...controlEvents}
-  >
-    <ReaderTopBar
-      {seriesHref}
+  <h1 bind:this={heading} tabindex="-1" class="sr-only">{named.title}</h1>
+  {#if turner.isPastEnd}
+    <UpNext
+      book={book.id}
+      title={named.title}
       seriesTitle={named.seriesTitle}
-      bookTitle={named.title}
-      {quickSettings}
-      onFullScreen={() => {
-        act("fullScreen");
-      }}
-      bind:heading
-    />
-  </header>
-  <div
-    class={[
-      "absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom transition-all motion-safe:duration-fade motion-safe:ease-out expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock",
-      !controls.isShown && "pointer-events-none opacity-0",
-    ]}
-    {...controlEvents}
-  >
-    <ReaderPanel
-      pages={book.pages}
-      shown={turner.shown}
-      previous={named.previous}
+      {seriesHref}
       next={named.next}
-      direction={reading.direction}
-      {quickSettings}
-      onSeek={(index: number) => {
-        turner.goTo(index);
-      }}
+      {nextHref}
     />
-  </div>
-  {#if !controls.isShown}
-    <div
-      aria-hidden="true"
-      class="pointer-events-none absolute inset-x-none inset-be-reader-bar-bottom flex justify-center"
+  {:else}
+    <header
+      class={[
+        "absolute inset-x-reader-bar-inline inset-bs-reader-bar-top transition-all motion-safe:duration-fade motion-safe:ease-out expanded:inset-x-lg expanded:inset-bs-md",
+        !controls.isShown && "pointer-events-none opacity-0",
+      ]}
+      {...controlEvents}
     >
-      <span
-        class="rounded-full bg-reader-glass px-sm py-2xs text-caption font-semibold text-reader-muted tabular-nums"
-        >{m.reader_position({ page: pageNumber, count: pageCount })}</span
-      >
+      <ReaderTopBar
+        {seriesHref}
+        seriesTitle={named.seriesTitle}
+        bookTitle={named.title}
+        {quickSettings}
+        onFullScreen={() => {
+          act("fullScreen");
+        }}
+      />
+    </header>
+    <div
+      class={[
+        "absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom transition-all motion-safe:duration-fade motion-safe:ease-out expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock",
+        !controls.isShown && "pointer-events-none opacity-0",
+      ]}
+      {...controlEvents}
+    >
+      <ReaderPanel
+        pages={book.pages}
+        shown={turner.shown}
+        previous={named.previous}
+        next={named.next}
+        direction={reading.direction}
+        {quickSettings}
+        onSeek={(index: number) => {
+          turner.goTo(index);
+        }}
+      />
     </div>
+    {#if !controls.isShown}
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-x-none inset-be-reader-bar-bottom flex justify-center"
+      >
+        <span
+          class="rounded-full bg-reader-glass px-sm py-2xs text-caption font-semibold text-reader-muted tabular-nums"
+          >{m.reader_position({ page: pageNumber, count: pageCount })}</span
+        >
+      </div>
+    {/if}
   {/if}
   <p role="status" class="sr-only">{announced}</p>
 </main>
