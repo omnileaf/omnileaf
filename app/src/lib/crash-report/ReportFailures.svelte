@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { CircleAlert } from "@lucide/svelte";
+
+  import { Alert, AlertTitle } from "#lib/components/ui/alert/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { CrashReporting, SendFailure } from "./crash-reporting.svelte";
@@ -17,11 +20,18 @@
   const isQuiet = $derived(!isCopyFailed && failure === undefined);
 </script>
 
-<div role="alert" class={["text-footnote", isQuiet && "-mbs-dialog-gap"]}>
+<div
+  role="alert"
+  class={["flex flex-col gap-sm", isQuiet && "-mbs-dialog-gap"]}
+>
   {#if isCopyFailed}
-    <p>{m.crash_report_copy_failed()}</p>
+    <Alert tone="warning" icon={CircleAlert}>
+      <AlertTitle>{m.crash_report_copy_failed()}</AlertTitle>
+    </Alert>
   {/if}
   {#if failure !== undefined}
-    <p>{SEND_FAILURES[failure]()}</p>
+    <Alert tone="warning" icon={CircleAlert}>
+      <AlertTitle>{SEND_FAILURES[failure]()}</AlertTitle>
+    </Alert>
   {/if}
 </div>
