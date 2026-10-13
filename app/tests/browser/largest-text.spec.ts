@@ -54,6 +54,13 @@ const COVERS_PER_ROW_CHOICES = {
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;
 const FIRST_LAUNCH_STEPS = ["welcome", "home", "link", "choices", "ready"];
 
+function headingSpill(page: Page): Promise<number> {
+  return page
+    .locator("main header")
+    .first()
+    .evaluate((heading) => heading.scrollWidth - heading.clientWidth);
+}
+
 function textSpillingDown(page: Page): Promise<string[]> {
   return page.evaluate((overshoot) => {
     const spilled: string[] = [];
@@ -171,6 +178,9 @@ for (const platform of PLATFORMS) {
                 await page.setViewportSize({ width, height: LIBRARY_HEIGHT });
 
                 await expectNothingSpills(page, `at ${String(width)}px`);
+                expect(await headingSpill(page), `at ${String(width)}px`).toBe(
+                  0,
+                );
               }
             });
           });

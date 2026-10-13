@@ -36,6 +36,11 @@
   }
 }
 @custom-variant heading-two-rows {
+  @variant expanded {
+    @container (width < 31em) {
+      @slot;
+    }
+  }
   @variant max-expanded {
     @variant max-medium {
       @slot;
