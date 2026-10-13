@@ -759,7 +759,7 @@ test("shows how far a rescan has got", async () => {
     .toHaveTextContent("Checking Sample Comics for changes");
   await expect
     .element(folders.getByRole("progressbar"))
-    .toHaveAttribute("value", "3");
+    .toHaveAttribute("aria-valuenow", "3");
   await expect.element(folders.getByText("3 of 7 books")).toBeVisible();
 });
 

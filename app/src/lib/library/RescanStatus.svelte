@@ -30,8 +30,10 @@
   });
 </script>
 
-<div class="mbs-sm px-xs">
-  <div role="status">
+<div
+  class="mbs-sm flex flex-wrap items-baseline justify-between gap-x-sm px-xs"
+>
+  <div role="status" class="flex-1">
     {#if shown?.kind === "finding" || shown?.kind === "reading"}
       <p id={progressTitleId} class="font-semibold">
         {m.library_rescan_checking({ name: folderTitle(shown.folder) })}
@@ -42,6 +44,10 @@
     {/each}
   </div>
   {#if shown?.kind === "finding" || shown?.kind === "reading"}
-    <ScanProgressBar step={shown} titleId={progressTitleId} />
+    <ScanProgressBar
+      step={shown}
+      titleId={progressTitleId}
+      class="block-progress-compact"
+    />
   {/if}
 </div>

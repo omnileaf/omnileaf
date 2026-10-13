@@ -79,15 +79,17 @@
   }
 </script>
 
-<div role="status">
+<div class="flex flex-wrap items-baseline justify-between gap-x-sm">
+  <div role="status" class="flex-1">
+    {#if adding.outcome.kind === "finding" || adding.outcome.kind === "reading"}
+      <p id={progressTitleId} class="font-semibold">
+        {m.library_scan_finding()}
+      </p>
+    {:else if notice !== undefined}
+      <NoticeCard {notice} onDismiss={dismiss} />
+    {/if}
+  </div>
   {#if adding.outcome.kind === "finding" || adding.outcome.kind === "reading"}
-    <p id={progressTitleId} class="font-semibold">
-      {m.library_scan_finding()}
-    </p>
-  {:else if notice !== undefined}
-    <NoticeCard {notice} onDismiss={dismiss} />
+    <ScanProgressBar step={adding.outcome} titleId={progressTitleId} />
   {/if}
 </div>
-{#if adding.outcome.kind === "finding" || adding.outcome.kind === "reading"}
-  <ScanProgressBar step={adding.outcome} titleId={progressTitleId} />
-{/if}

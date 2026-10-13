@@ -179,7 +179,7 @@ test.describe("while a folder is being rescanned", () => {
     const bar = page.getByRole("progressbar", {
       name: "Checking Sample Comics for changes",
     });
-    await expect(bar).toHaveAttribute("value", "3");
+    await expect(bar).toHaveAttribute("aria-valuenow", "3");
     await expect(bar).toHaveAccessibleDescription("3 of 7 books");
     await expect(
       page.getByRole("button", { name: "Rescan Omnileaf" }),

@@ -250,8 +250,22 @@ test.describe("while the folder is being scanned", () => {
 
     await expect(scanReport(page, "Finding books")).toHaveText("Finding books");
     const bar = page.getByRole("progressbar", { name: "Finding books" });
-    await expect(bar).toHaveAttribute("value", "32");
+    await expect(bar).toHaveAttribute("aria-valuenow", "32");
     await expect(bar).toHaveAccessibleDescription("32 of 100 books");
+  });
+
+  test("fills the bar without animating when motion is reduced", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/settings/library");
+
+    await page.getByRole("button", { name: "Add a folder" }).click();
+
+    const fill = page
+      .getByRole("progressbar", { name: "Finding books" })
+      .locator("div");
+    await expect(fill).toHaveCSS("transition-duration", "0s");
   });
 
   for (const colorScheme of ["light", "dark"] as const) {
@@ -262,6 +276,62 @@ test.describe("while the folder is being scanned", () => {
       await page.goto("/settings/library");
       await page.getByRole("button", { name: "Add a folder" }).click();
       await expect(page.getByRole("progressbar")).toBeVisible();
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
+});
+
+test.describe("while the scan is still finding books", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      addLibraryFolder: async (onProgress) => {
+        await onProgress.send({ stage: "finding", found: 214 });
+        return new Promise(() => undefined);
+      },
+    },
+  });
+
+  test("runs a moving band and counts the books found so far", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library");
+
+    await page.getByRole("button", { name: "Add a folder" }).click();
+
+    const bar = page.getByRole("progressbar", { name: "Finding books" });
+    await expect(bar).toHaveAccessibleDescription("214 so far");
+    await expect(bar).not.toHaveAttribute("aria-valuenow");
+    await expect(bar.locator("div")).toHaveCSS(
+      "animation-name",
+      "progress-band",
+    );
+  });
+
+  test("holds the band still when motion is reduced", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/settings/library");
+
+    await page.getByRole("button", { name: "Add a folder" }).click();
+
+    const bar = page.getByRole("progressbar", { name: "Finding books" });
+    await expect(bar).toHaveAccessibleDescription("214 so far");
+    await expect(bar.locator("div")).toHaveCSS("animation-name", "none");
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`the band has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/settings/library");
+      await page.getByRole("button", { name: "Add a folder" }).click();
+      await expect(
+        page.getByRole("progressbar", { name: "Finding books" }),
+      ).toHaveAccessibleDescription("214 so far");
 
       const violations = await accessibilityViolations(page);
 

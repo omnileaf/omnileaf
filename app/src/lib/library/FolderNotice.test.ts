@@ -1,3 +1,4 @@
+import { tick } from "svelte";
 import { expect, test } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
@@ -11,6 +12,8 @@ import NoticeHost from "#lib/notices/NoticeHost.svelte";
 import { Notices } from "#lib/notices/notices.svelte.ts";
 
 import type { AddFolder } from "./add-folder";
+import "../../app.css";
+
 import AddFolderButton from "./AddFolderButton.svelte";
 import { FolderAdding } from "./folder-adding.svelte";
 import FolderNotice from "./FolderNotice.svelte";
@@ -313,9 +316,38 @@ test("shows how far the scan has got while it runs", async () => {
     name: "Finding books",
     exact: true,
   });
-  await expect.element(bar).toHaveAttribute("value", "32");
-  await expect.element(bar).toHaveAttribute("max", "100");
+  await expect.element(bar).toHaveAttribute("aria-valuenow", "32");
+  await expect.element(bar).toHaveAttribute("aria-valuemax", "100");
   await expect.element(bar).toHaveAccessibleDescription("32 of 100 books");
+});
+
+test("counts the books found so far before the total is known", async () => {
+  const scan = new PendingScan();
+  const { button } = await renderWith(scan.addFolder);
+  await button.click();
+
+  scan.report({ stage: "finding", found: 214 });
+
+  const bar = page.getByRole("progressbar", {
+    name: "Finding books",
+    exact: true,
+  });
+  await expect.element(bar).toHaveAccessibleDescription("214 so far");
+  await expect.element(bar).not.toHaveAttribute("aria-valuenow");
+});
+
+test("eases the count found so far up instead of jumping to it", async () => {
+  const scan = new PendingScan();
+  const { button } = await renderWith(scan.addFolder);
+  await button.click();
+  scan.report({ stage: "finding", found: 0 });
+  await tick();
+
+  scan.report({ stage: "finding", found: 214 });
+  await tick();
+
+  expect(page.getByText("214 so far").query()).toBeNull();
+  await expect.element(page.getByText("214 so far")).toBeVisible();
 });
 
 test("announces that books are being found without announcing each count", async () => {
@@ -343,7 +375,7 @@ test("says it is finding books before the scan has counted them", async () => {
     exact: true,
   });
   await expect.element(bar).toBeVisible();
-  await expect.element(bar).not.toHaveAttribute("value");
+  await expect.element(bar).not.toHaveAttribute("aria-valuenow");
 });
 
 test("keeps the result when word of the scan arrives after it finished", async () => {
