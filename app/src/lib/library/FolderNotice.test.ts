@@ -93,6 +93,7 @@ async function renderWith(
   await render(Toasts, { notices, platform: "linux", theme: "light" });
   return {
     notices,
+    adding,
     unmount: notice.unmount,
     button: page.getByRole("button", { name: "Add a folder" }),
     status: page.elementLocator(notice.container).getByRole("status"),
@@ -262,6 +263,22 @@ test("turns the finding toast into the result in the same place", async () => {
     .element(toastSaying("Added 7 books from Sample Library"))
     .toBeVisible();
   expect(toastSaying("Added 7 books").element()).toBe(shownWhileFinding);
+  expect(page.getByRole("listitem").elements()).toHaveLength(1);
+});
+
+test("keeps one toast when the page swaps in another notice for the same scan", async () => {
+  const { button, notices, adding } = await renderWith(answering(scanned({})));
+  await button.click();
+  await expect.element(toastSaying("Added 7 books")).toBeVisible();
+
+  await render(FolderNotice, {
+    adding,
+    notices,
+    usesStandIns: false,
+    onDismissed: () => undefined,
+  });
+
+  await expect.element(toastSaying("Added 7 books")).toBeVisible();
   expect(page.getByRole("listitem").elements()).toHaveLength(1);
 });
 

@@ -69,7 +69,7 @@
     );
   }
 
-  let wasFollowed = false;
+  let wasFollowed = untrack(() => isFollowedInToast(adding.outcome));
 
   $effect(() => {
     const isFollowed = isFollowedInToast(adding.outcome);
