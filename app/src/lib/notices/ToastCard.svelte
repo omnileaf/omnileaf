@@ -29,7 +29,7 @@
   }: {
     tone: NoticeTone;
     icon: Snippet;
-    title: string;
+    title: string | Snippet;
     body?: string | undefined;
     action?: NoticeAction | undefined;
     shortcut?: { readonly label: string; readonly keys: string } | undefined;
@@ -48,7 +48,13 @@
     {@render icon()}
   </span>
   <div class="flex flex-1 flex-col gap-2xs min-inline-none">
-    <p class="text-label font-bold touch:max-medium:text-callout">{title}</p>
+    <p class="text-label font-bold touch:max-medium:text-callout">
+      {#if typeof title === "string"}
+        {title}
+      {:else}
+        {@render title()}
+      {/if}
+    </p>
     {#if body !== undefined}
       <p class="text-footnote opacity-85">{body}</p>
     {/if}
