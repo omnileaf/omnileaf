@@ -12,8 +12,9 @@ use library_seed::{SeriesSeed, fingerprint, seed_library};
 use omnileaf_db::{
     Database,
     catalog::{
-        BookFile, BookReading, NewRoot, NewSeries, RootId, RootKind, RootLocator, ScannedBook,
-        SeriesOverview, add_root, record_scanned_books, series_overview, up_next,
+        AndroidTree, AppleBookmark, BookFile, BookReading, NewRoot, NewSeries, RootId, RootKind,
+        RootLocator, ScannedBook, SeriesOverview, TreeUri, add_root, record_scanned_books,
+        series_overview, up_next,
     },
 };
 use omnileaf_sync_proto::SeriesId;
@@ -21,6 +22,8 @@ use support::{ScratchFolder, library_config};
 
 const ADDED_AT_MS: i64 = 1_790_000_000_000;
 const ROOT_FOLDER: &str = "/media/Sample Library";
+const COMICS_TREE: &str = "content://documents.test/tree/primary%3ADocuments%2FComics";
+const FOLDER_BOOKMARK: &[u8] = b"bookmark of the sample library";
 const SERIES: &str = "Sample Series 01";
 const FIVE_VOLUMES: &[&str] = &[
     "Volume 01",
@@ -58,8 +61,12 @@ impl Library {
     }
 
     async fn with_files(titles: &[&str]) -> Self {
+        Self::with_files_in(RootLocator::Path(PathBuf::from(ROOT_FOLDER)), titles).await
+    }
+
+    async fn with_files_in(folder: RootLocator, titles: &[&str]) -> Self {
         let library = Self::with(&[]).await;
-        let root = library.add_root().await;
+        let root = library.add_root(folder).await;
         let scanned: Vec<ScannedBook> = titles
             .iter()
             .map(|&title| ScannedBook {
@@ -83,10 +90,10 @@ impl Library {
         library
     }
 
-    async fn add_root(&self) -> RootId {
+    async fn add_root(&self, locator: RootLocator) -> RootId {
         let root = NewRoot {
             kind: RootKind::Linked,
-            locator: RootLocator::Path(PathBuf::from(ROOT_FOLDER)),
+            locator,
             added_at_ms: ADDED_AT_MS,
         };
         self.database
@@ -127,6 +134,22 @@ impl Library {
             .await
             .unwrap()
             .map(|book| (book.title, book.reading))
+    }
+}
+
+fn comics_tree() -> AndroidTree {
+    AndroidTree::new(
+        TreeUri::parse(COMICS_TREE.to_owned()).unwrap(),
+        "Comics".to_owned(),
+        "Internal storage › Documents".to_owned(),
+    )
+    .unwrap()
+}
+
+fn bookmarked_folder() -> RootLocator {
+    RootLocator::AppleBookmark {
+        path: PathBuf::from(ROOT_FOLDER),
+        bookmark: AppleBookmark::new(FOLDER_BOOKMARK.to_vec()),
     }
 }
 
@@ -174,6 +197,28 @@ async fn shows_a_series_with_the_cover_the_library_gives_it_and_the_folder_holdi
             Some(RootLocator::Path(PathBuf::from(ROOT_FOLDER))),
         )
     );
+}
+
+#[tokio::test]
+async fn names_the_android_folder_holding_the_cover_of_a_series() {
+    let library =
+        Library::with_files_in(RootLocator::AndroidTree(comics_tree()), &["Volume 01"]).await;
+
+    let overview = library.overview(SERIES).await.unwrap();
+
+    assert_eq!(
+        overview.folder,
+        Some(RootLocator::AndroidTree(comics_tree()))
+    );
+}
+
+#[tokio::test]
+async fn names_the_bookmarked_folder_holding_the_cover_of_a_series() {
+    let library = Library::with_files_in(bookmarked_folder(), &["Volume 01"]).await;
+
+    let overview = library.overview(SERIES).await.unwrap();
+
+    assert_eq!(overview.folder, Some(bookmarked_folder()));
 }
 
 #[tokio::test]
