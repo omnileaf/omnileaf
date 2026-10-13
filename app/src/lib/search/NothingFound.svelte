@@ -1,6 +1,12 @@
 <script lang="ts">
   import { ZoomOut } from "@lucide/svelte";
 
+  import {
+    Empty,
+    EmptyDescription,
+    EmptyMedia,
+    EmptyTitle,
+  } from "#lib/components/ui/empty/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { nothingFoundTitle } from "./nothing-found";
@@ -12,21 +18,19 @@
   const titleId = $props.id();
 </script>
 
-<section
+<Empty
   aria-labelledby={titleId}
-  class="flex flex-1 flex-col items-center justify-center gap-md px-2xl pbe-nothing-found-lift text-center"
+  class="flex-1 justify-center px-2xl pbe-nothing-found-lift"
 >
-  <span
-    class="flex items-center justify-center rounded-full bg-accent-soft block-empty-art inline-empty-art"
-  >
+  <EmptyMedia>
     <ZoomOut size={ART_ICON_SIZE} aria-hidden="true" />
-  </span>
-  <h2 id={titleId} class="mbs-sm text-title font-bold large:text-heading">
+  </EmptyMedia>
+  <EmptyTitle id={titleId} class="large:text-heading">
     {nothingFoundTitle(text)}
-  </h2>
+  </EmptyTitle>
   {#if text !== ""}
-    <p class="text-lead text-muted max-inline-nothing-found">
+    <EmptyDescription class="text-lead max-inline-nothing-found">
       {m.search_nothing_hint()}
-    </p>
+    </EmptyDescription>
   {/if}
-</section>
+</Empty>
