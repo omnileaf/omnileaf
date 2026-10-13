@@ -396,6 +396,20 @@ test("puts a failure warning away once a folder is added", async () => {
   await expect.element(warning).not.toBeInTheDocument();
 });
 
+test("swaps the finding toast for the warning when the scan fails", async () => {
+  const scan = new PendingScan();
+  const { button } = await renderWith(scan.addFolder);
+  await button.click();
+  scan.report({ stage: "reading", scanned: 1, total: 7 });
+  const finding = toastSaying("Finding books");
+  await expect.element(finding).toBeVisible();
+
+  scan.finish(failed("internal"));
+
+  await expect.element(toastSaying("Couldn't add the folder")).toBeVisible();
+  await expect.element(finding).not.toBeInTheDocument();
+});
+
 test("disables the button while the folder is being added and scanned", async () => {
   const scan = new PendingScan();
   const { button } = await renderWith(scan.addFolder);
