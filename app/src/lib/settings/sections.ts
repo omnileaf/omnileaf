@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   Info,
   Palette,
   Settings2,
@@ -14,6 +15,7 @@ import type { Locale } from "#lib/paraglide/runtime.js";
 export type SettingsRoute =
   | "/(app)/settings/library"
   | "/(app)/settings/appearance"
+  | "/(app)/settings/reading"
   | "/(app)/settings/privacy"
   | "/(app)/settings/general"
   | "/(app)/settings/advanced"
@@ -73,6 +75,12 @@ const PREFERENCES: readonly SettingsSection[] = [
     route: "/(app)/settings/appearance",
     label: m.appearance_title,
     icon: Palette,
+    tone: "accent",
+  },
+  {
+    route: "/(app)/settings/reading",
+    label: m.reading_title,
+    icon: BookOpen,
     tone: "accent",
   },
   {

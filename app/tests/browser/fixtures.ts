@@ -212,6 +212,7 @@ export const APP_PAGES = [
   "/settings",
   "/settings/library",
   "/settings/appearance",
+  "/settings/reading",
   "/settings/general",
   "/settings/general/language",
   "/settings/advanced",

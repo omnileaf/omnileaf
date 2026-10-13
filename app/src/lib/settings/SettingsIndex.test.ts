@@ -17,17 +17,22 @@ function groupHolding(name: string) {
     .filter({ has: page.getByRole("link", { name: new RegExp(`^${name}`) }) });
 }
 
-test("groups Library, Appearance, Privacy and security and General together", async () => {
+test("groups Library, Appearance, Reading, Privacy and security and General together", async () => {
   await render(SettingsIndex, PROPS);
 
   const group = groupHolding("Library");
 
-  for (const name of ["Appearance", "Privacy and security", "General"]) {
+  for (const name of [
+    "Appearance",
+    "Reading",
+    "Privacy and security",
+    "General",
+  ]) {
     await expect
       .element(group.getByRole("link", { name: new RegExp(`^${name}`) }))
       .toBeVisible();
   }
-  expect(group.getByRole("listitem").elements()).toHaveLength(4);
+  expect(group.getByRole("listitem").elements()).toHaveLength(5);
 });
 
 test("shows a section's summary under its name", async () => {
