@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 
 import {
   catalogueOf,
+  licenceOf,
   packageRootOf,
   type ShippedPackage,
 } from "./shipped-packages";
@@ -109,4 +110,16 @@ test("writes line endings as newlines", () => {
   ]);
 
   expect(catalogue.texts[0]?.text).toBe("first\nsecond\n");
+});
+
+test("takes the licence a package's manifest declares", () => {
+  expect(licenceOf("sample-alpha", "1.0.0", "Apache-2.0")).toBe("Apache-2.0");
+});
+
+test("knows the licence a package ships without declaring it", () => {
+  expect(licenceOf("svelte-toolbelt", "0.10.6", undefined)).toBe("MIT");
+});
+
+test("knows no licence for another version of that package", () => {
+  expect(licenceOf("svelte-toolbelt", "0.11.0", undefined)).toBeUndefined();
 });
