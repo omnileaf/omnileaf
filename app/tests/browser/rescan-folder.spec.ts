@@ -102,7 +102,9 @@ test("shows Rescan as an icon with its verb as the tooltip", async ({
     page.getByRole("button", { name: "Rescan Sample Comics" }),
   ]) {
     await expect(rescan).toHaveText("");
-    await expect(rescan).toHaveAttribute("title", "Rescan");
+    await rescan.hover();
+    await expect(rescan).toHaveAccessibleDescription("Rescan");
+    await expect(rescan).not.toHaveAttribute("title");
   }
 });
 
