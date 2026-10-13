@@ -1,6 +1,6 @@
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
-import { type Locator, userEvent } from "vitest/browser";
+import { type Locator, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import {
@@ -10,7 +10,10 @@ import {
   type RescanOutcome,
   type ScanProgress,
 } from "#lib/ipc/bindings.ts";
-import { Notices } from "#lib/notices/notices.svelte.ts";
+import { Notices } from "#lib/notices/notices.ts";
+import Toasts from "#lib/notices/Toasts.svelte";
+
+import { clearToasts } from "../../../tests/components/clear-toasts";
 
 import type { AddFolder } from "./add-folder";
 import LibraryFolderSettings from "./LibraryFolderSettings.svelte";
@@ -87,8 +90,9 @@ class PendingRescan {
   };
 }
 
-afterEach(() => {
+afterEach(async () => {
   clearMocks();
+  await clearToasts();
 });
 
 function serveFolders(folders: readonly WireFolder[]): void {
@@ -159,8 +163,10 @@ async function renderSettings({
     usesStandIns: false,
     platform: "linux",
   });
+  await render(Toasts, { notices, platform: "linux", theme: "light" });
   return {
     notices,
+    toasts: page.getByRole("region", { name: "Notifications F6" }),
     home: screen.getByRole("region", { name: "Home folder" }),
     folders: screen.getByRole("region", { name: "Folders" }),
     dialog: screen.getByRole("alertdialog"),
@@ -1101,7 +1107,7 @@ test("removes the books once asked, says how many went and moves to the folder's
   const { library, rescanFolder } = emptyingComics();
   serveFolders(library);
   const removedFrom: FolderId[] = [];
-  const { folders, dialog, notices } = await renderSettings({
+  const { folders, dialog, toasts } = await renderSettings({
     rescanFolder,
     removeFolderBooks: (id) => {
       removedFrom.push(id);
@@ -1115,8 +1121,8 @@ test("removes the books once asked, says how many went and moves to the folder's
   await dialog.getByRole("button", { name: "Remove 342 books" }).click();
 
   await expect
-    .poll(() => notices.message)
-    .toBe("Removed 3 books of Sample Comics");
+    .element(toasts)
+    .toHaveTextContent("Removed 3 books of Sample Comics");
   expect(removedFrom).toEqual([COMICS.id]);
   await expect.element(comicsRow(folders)).toHaveFocus();
   await expect
@@ -1126,7 +1132,7 @@ test("removes the books once asked, says how many went and moves to the folder's
 
 test("offers no undo once the books of a folder found empty are removed", async () => {
   serveFolders([HOME, COMICS]);
-  const { folders, dialog, notices } = await renderSettings({
+  const { folders, dialog, notices, toasts } = await renderSettings({
     rescanFolder: FOUND_EMPTY,
     removeFolderBooks: BOOKS_REMOVED,
   });
@@ -1135,7 +1141,9 @@ test("offers no undo once the books of a folder found empty are removed", async 
 
   await dialog.getByRole("button", { name: "Remove 342 books" }).click();
 
-  await expect.poll(() => notices.message).toBeDefined();
+  await expect
+    .element(toasts.getByText("Removed 3 books of Sample Comics"))
+    .toBeVisible();
   expect(notices.undoOffer).toBeUndefined();
 });
 
@@ -1145,7 +1153,7 @@ test("rescans a folder whose books stayed because it holds books again", async (
     { kind: "foundEmpty" },
     { kind: "rescanned", ...NO_CHANGES, added: 2 },
   ];
-  const { folders, dialog, notices } = await renderSettings({
+  const { folders, dialog, toasts } = await renderSettings({
     rescanFolder: (id) =>
       rescanning(outcomes.shift() ?? { kind: "foundEmpty" })(
         id,
@@ -1160,7 +1168,7 @@ test("rescans a folder whose books stayed because it holds books again", async (
   await dialog.getByRole("button", { name: "Remove 342 books" }).click();
 
   await expect.element(folders.getByText("2 books added.")).toBeVisible();
-  expect(notices.message).toBeUndefined();
+  expect(toasts.getByText(/^Removed/).elements()).toEqual([]);
   await expect.element(comicsRow(folders)).toHaveFocus();
 });
 
@@ -1197,7 +1205,7 @@ test("turns the warning into an alert when the books couldn't be removed", async
 test("tries removing the books again without asking again", async () => {
   serveFolders([HOME, COMICS]);
   const results = [REMOVAL_FAILED, BOOKS_REMOVED];
-  const { folders, dialog, notices } = await renderSettings({
+  const { folders, dialog, toasts } = await renderSettings({
     rescanFolder: FOUND_EMPTY,
     removeFolderBooks: (id) => (results.shift() ?? BOOKS_REMOVED)(id),
   });
@@ -1208,8 +1216,8 @@ test("tries removing the books again without asking again", async () => {
   await folders.getByRole("button", { name: "Try again" }).click();
 
   await expect
-    .poll(() => notices.message)
-    .toBe("Removed 3 books of Sample Comics");
+    .element(toasts)
+    .toHaveTextContent("Removed 3 books of Sample Comics");
   expect(dialog.elements()).toEqual([]);
 });
 

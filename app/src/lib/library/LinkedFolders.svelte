@@ -3,7 +3,7 @@
   import { type Snippet, tick } from "svelte";
 
   import type { LibraryFolder } from "#lib/ipc/bindings.ts";
-  import type { Notices } from "#lib/notices/notices.svelte.ts";
+  import type { Notices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { AddFolder } from "./add-folder";

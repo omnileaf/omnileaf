@@ -1,8 +1,9 @@
 <script lang="ts">
+  import { Trash } from "@lucide/svelte";
   import { onMount, tick } from "svelte";
 
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
-  import type { Notices } from "#lib/notices/notices.svelte.ts";
+  import type { Notices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { AddFolder } from "./add-folder";
@@ -101,9 +102,14 @@
     await folders.load();
     await returnFocus(asker, folder);
     if (removed !== undefined) {
-      notices.tell(
-        m.library_books_removed({ count: removed, name: folderTitle(folder) }),
-      );
+      notices.show({
+        tone: "plain",
+        icon: Trash,
+        title: m.library_books_removed({
+          count: removed,
+          name: folderTitle(folder),
+        }),
+      });
     }
   }
 

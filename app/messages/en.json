@@ -627,6 +627,7 @@
   "screenshot_mode_preview_label": "Preview of one cover with Screenshot mode off and on",
   "stand_in_folder": "Folder {number}",
   "notice_dismiss": "Dismiss",
+  "notice_region": "Notifications",
   "settings_sections_label": "Settings sections",
   "undo_action": "Undo",
   "undo_shortcut_control": "Ctrl Z",

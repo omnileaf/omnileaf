@@ -1,14 +1,15 @@
 <script lang="ts">
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
+  import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import AppNavigation from "#lib/navigation/AppNavigation.svelte";
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import { focusArrival } from "#lib/navigation/page-heading.ts";
   import { sectionOf } from "#lib/navigation/sections.ts";
   import SwipeableMain from "#lib/navigation/SwipeableMain.svelte";
-  import NoticeHost from "#lib/notices/NoticeHost.svelte";
-  import { getNotices } from "#lib/notices/notices.svelte.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
+  import Toasts from "#lib/notices/Toasts.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import QuickOpen from "#lib/search/QuickOpen.svelte";
   import { isQuickOpenShortcut } from "#lib/search/quick-open-shortcut.ts";
@@ -20,6 +21,7 @@
 
   const language = getLanguageSetting();
   const notices = getNotices();
+  const theme = getThemeSetting();
   const screenshotMode = getScreenshotMode();
   const backGoesUp = setBackGoesUp(makeBackGoUp());
   const quickOpen = new QuickOpenState();
@@ -51,9 +53,15 @@
       {@render children()}
     {/key}
   </SwipeableMain>
-  <div class="relative z-notice order-1">
+  <div
+    class="relative z-notice order-1 ios:max-medium:fixed ios:max-medium:inset-x-none ios:max-medium:inset-be-toast-lift"
+  >
     {#key language.resolved}
-      <NoticeHost {notices} platform={data.appInfo.platform} />
+      <Toasts
+        {notices}
+        platform={data.appInfo.platform}
+        theme={theme.resolved}
+      />
     {/key}
   </div>
 </div>

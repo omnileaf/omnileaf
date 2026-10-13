@@ -4,6 +4,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
+  import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
   import ChoicesStep from "#lib/first-launch/ChoicesStep.svelte";
   import { deviceKindOf } from "#lib/first-launch/device.ts";
   import FirstLaunchPanel from "#lib/first-launch/FirstLaunchPanel.svelte";
@@ -22,14 +23,15 @@
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
-  import NoticeHost from "#lib/notices/NoticeHost.svelte";
-  import { getNotices } from "#lib/notices/notices.svelte.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
+  import Toasts from "#lib/notices/Toasts.svelte";
 
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 
   const notices = getNotices();
+  const theme = getThemeSetting();
 
   const device = $derived(deviceKindOf(data.appInfo.platform));
   let isLeaving = $state(false);
@@ -140,5 +142,5 @@
   </div>
 </div>
 <div class="fixed inset-x-none inset-be-safe-bottom z-notice">
-  <NoticeHost {notices} platform={data.appInfo.platform} />
+  <Toasts {notices} platform={data.appInfo.platform} theme={theme.resolved} />
 </div>

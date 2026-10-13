@@ -1,7 +1,7 @@
 import { FolderX, Lock, type LucideIcon, TriangleAlert } from "@lucide/svelte";
 
 import type { FolderScan, IpcErrorCode } from "#lib/ipc/bindings.ts";
-import type { Notice, Notices } from "#lib/notices/notices.svelte.ts";
+import type { Notice, Notices } from "#lib/notices/notices.ts";
 import { m } from "#lib/paraglide/messages.js";
 
 import type { AddFolder } from "./add-folder";
@@ -117,23 +117,23 @@ export class FolderAdding {
 
   #failureNotice(code: IpcErrorCode): Notice {
     const { icon, title, body, retry }: Failure = FAILURES[code];
-    return {
+    const notice: Notice = {
       tone: "warning",
       icon,
       title: title(),
       body: body(),
-      actions:
-        retry === undefined
-          ? []
-          : [
-              {
-                label: retry(),
-                emphasis: "primary",
-                run: () => {
-                  void this.add();
-                },
-              },
-            ],
+    };
+    if (retry === undefined) {
+      return notice;
+    }
+    return {
+      ...notice,
+      action: {
+        label: retry(),
+        run: () => {
+          void this.add();
+        },
+      },
     };
   }
 }

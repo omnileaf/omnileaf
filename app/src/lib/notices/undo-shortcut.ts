@@ -1,3 +1,5 @@
+import { createContext } from "svelte";
+
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { usesCommandKey } from "#lib/page/platform.ts";
 import { m } from "#lib/paraglide/messages.js";
@@ -41,3 +43,5 @@ export function isUndoPressed(
     isZKey(event)
   );
 }
+
+export const [getUndoShortcut, setUndoShortcut] = createContext<UndoShortcut>();
