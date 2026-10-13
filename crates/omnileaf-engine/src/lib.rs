@@ -66,7 +66,7 @@ pub use external_storage::{storage_by_device, storage_in_mountinfo, storage_of_w
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub use folder_watch::{AppFiles, FolderWatch, FolderWatchSwitch};
 pub use history::{
-    HistoryCursor, HistoryEntry, HistoryPage, LocalDay, ReadTo, ReadingDay, ReadingWeek,
+    HistoryCursor, HistoryEntry, HistoryOf, HistoryPage, LocalDay, ReadTo, ReadingDay, ReadingWeek,
 };
 pub use lane::LaneStopped;
 pub use library::{Library, LibraryError, LibraryFolders, OpenTree};

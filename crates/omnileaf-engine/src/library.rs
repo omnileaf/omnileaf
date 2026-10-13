@@ -32,7 +32,7 @@ use tokio::{
 
 use crate::{
     AppLanguage, BookCursor, BookId, BooksRemoval, CoversPerRowOutOfRange, FolderCursor, FolderId,
-    FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryPage, LibraryChanges,
+    FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage, LibraryChanges,
     LibraryFilter, LibraryFolder, LibraryListing, LibrarySearch, LibraryView, LocalDay, ReadMark,
     ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage,
     SeriesCursor, SeriesId, SeriesOverview, SeriesPage, UtcOffset,
@@ -346,8 +346,12 @@ impl Library {
         Ok(SeriesBookPage::from(page))
     }
 
-    /// Lists the reading sessions of books still in the library, the latest started first, each with the time read on its day.
-    pub async fn history(&self, after: Option<HistoryCursor>) -> Result<HistoryPage, LibraryError> {
+    /// Lists the reading sessions `of` asks for whose books are still in the library, the latest started first, each with the time read on its day.
+    pub async fn history(
+        &self,
+        after: Option<HistoryCursor>,
+        of: HistoryOf,
+    ) -> Result<HistoryPage, LibraryError> {
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SESSIONS_PER_PAGE)?,
@@ -356,7 +360,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let page = history_page(connection, &request)?;
+                let page = history_page(connection, of.into(), &request)?;
                 let days = page.items.iter().map(|entry| entry.local_day);
                 let read_ms_by_day = match (days.clone().min(), days.max()) {
                     (Some(first), Some(last)) => reading_time_by_day(connection, first..=last)?,

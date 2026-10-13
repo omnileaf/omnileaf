@@ -50,6 +50,29 @@ pub enum ReadTo {
     End,
 }
 
+/// Which reading sessions a page of History lists.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum HistoryOf {
+    Everything,
+    Series { series: SeriesId },
+    Book { book: BookId },
+}
+
+impl From<HistoryOf> for history::HistoryOf {
+    fn from(of: HistoryOf) -> Self {
+        match of {
+            HistoryOf::Everything => Self::Everything,
+            HistoryOf::Series { series } => Self::Series(series.0),
+            HistoryOf::Book { book } => Self::Book(book.0),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ReadingWeek {

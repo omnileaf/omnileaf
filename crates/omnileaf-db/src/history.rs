@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, ops::RangeInclusive};
 
 use omnileaf_sync_proto::{BookId, SeriesId};
-use rusqlite::{Connection, Row, Statement, ToSql, named_params};
+use rusqlite::{Connection, Row, Statement, ToSql};
 
 use crate::{
     Error,
@@ -12,7 +12,7 @@ use crate::{
 };
 
 macro_rules! sessions_newest_first {
-    ($($condition:literal)?) => {
+    ($from:literal, $condition:literal) => {
         concat!(
             "SELECT reading_session.id AS session_id, reading_session.book_id,
                 reading_session.started_at_ms, reading_session.ended_at_ms,
@@ -24,22 +24,52 @@ macro_rules! sessions_newest_first {
                         AND (earlier.title_sort_key, earlier.id) < (book.title_sort_key, book.id))
                     + 1 AS position,
                 cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
-                book_state.is_read, book_state.is_started, book_state.position_page
-            FROM reading_session
-            CROSS JOIN book ON book.id = reading_session.book_id
-            JOIN series ON series.local_id = book.series_local_id
-            LEFT JOIN book_file AS cover
+                book_state.is_read, book_state.is_started, book_state.position_page ",
+            $from,
+            " LEFT JOIN book_file AS cover
                 ON cover.id = (SELECT min(id) FROM book_file WHERE book_file.book_id = book.id)
             LEFT JOIN book_state ON book_state.book_id = book.id ",
-            $($condition,)?
+            $condition,
             " ORDER BY reading_session.started_at_ms DESC, reading_session.id DESC LIMIT :limit"
         )
     };
 }
 
-const FIRST_SESSIONS: &str = sessions_newest_first!();
-const SESSIONS_BEFORE: &str = sessions_newest_first!(
+macro_rules! from_sessions {
+    ($condition:literal) => {
+        sessions_newest_first!(
+            "FROM reading_session
+            CROSS JOIN book ON book.id = reading_session.book_id
+            JOIN series ON series.local_id = book.series_local_id",
+            $condition
+        )
+    };
+}
+
+macro_rules! from_series {
+    ($condition:literal) => {
+        sessions_newest_first!(
+            "FROM series
+            CROSS JOIN book ON book.series_local_id = series.local_id
+            CROSS JOIN reading_session ON reading_session.book_id = book.id",
+            $condition
+        )
+    };
+}
+
+const FIRST_SESSIONS: &str = from_sessions!("");
+const SESSIONS_BEFORE: &str = from_sessions!(
     "WHERE (reading_session.started_at_ms, reading_session.id) < (:after_started_at_ms, :after_id)"
+);
+const FIRST_SESSIONS_OF_SERIES: &str = from_series!("WHERE series.id = :series");
+const SESSIONS_OF_SERIES_BEFORE: &str = from_series!(
+    "WHERE series.id = :series
+        AND (reading_session.started_at_ms, reading_session.id) < (:after_started_at_ms, :after_id)"
+);
+const FIRST_SESSIONS_OF_BOOK: &str = from_sessions!("WHERE reading_session.book_id = :book");
+const SESSIONS_OF_BOOK_BEFORE: &str = from_sessions!(
+    "WHERE reading_session.book_id = :book
+        AND (reading_session.started_at_ms, reading_session.id) < (:after_started_at_ms, :after_id)"
 );
 const READING_TIME_BY_DAY: &str = "SELECT local_day, sum(ended_at_ms - started_at_ms) AS read_ms
     FROM reading_session
@@ -79,33 +109,60 @@ pub struct HistoryEntry {
     pub reading: BookReading,
 }
 
+/// Which sessions a page of history lists.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HistoryOf {
+    Everything,
+    Series(SeriesId),
+    Book(BookId),
+}
+
 /// Lists the sessions of books still in the library, the latest started first.
-#[tracing::instrument(skip_all, fields(size = ?request.size))]
+#[tracing::instrument(skip_all, fields(?of, size = ?request.size))]
 pub fn history_page(
     connection: &Connection,
+    of: HistoryOf,
     request: &PageRequest,
 ) -> Result<Page<HistoryEntry>, Error> {
     let limit = request.size.rows_to_fetch();
-    let rows = match request.after.as_ref().map(|cursor| &cursor.0) {
-        None => read(
-            connection.prepare(FIRST_SESSIONS)?,
-            named_params! { ":limit": limit },
-        ),
-        Some(Position::Session { started_at_ms, id }) => read(
-            connection.prepare(SESSIONS_BEFORE)?,
-            named_params! {
-                ":after_started_at_ms": started_at_ms,
-                ":after_id": id,
-                ":limit": limit,
-            },
-        ),
+    let after = match request.after.as_ref().map(|cursor| &cursor.0) {
+        None => None,
+        Some(Position::Session { started_at_ms, id }) => Some((*started_at_ms, *id)),
         Some(
             Position::Title { .. }
             | Position::Added { .. }
             | Position::Book { .. }
             | Position::Root { .. },
-        ) => Err(Error::CursorForAnotherList),
-    }?;
+        ) => return Err(Error::CursorForAnotherList),
+    };
+    let (first, before, filter) = match &of {
+        HistoryOf::Everything => (FIRST_SESSIONS, SESSIONS_BEFORE, None),
+        HistoryOf::Series(series) => (
+            FIRST_SESSIONS_OF_SERIES,
+            SESSIONS_OF_SERIES_BEFORE,
+            Some((":series", series.as_bytes())),
+        ),
+        HistoryOf::Book(book) => (
+            FIRST_SESSIONS_OF_BOOK,
+            SESSIONS_OF_BOOK_BEFORE,
+            Some((":book", book.as_bytes())),
+        ),
+    };
+    let mut params: Vec<(&str, &dyn ToSql)> = vec![(":limit", &limit)];
+    if let Some((name, id)) = &filter {
+        params.push((name, id));
+    }
+    let sql = match &after {
+        None => first,
+        Some((started_at_ms, id)) => {
+            params.extend([
+                (":after_started_at_ms", started_at_ms as &dyn ToSql),
+                (":after_id", id),
+            ]);
+            before
+        }
+    };
+    let rows = read(connection.prepare(sql)?, &params)?;
     Ok(Page::of(rows, request.size))
 }
 
@@ -205,20 +262,32 @@ mod tests {
     use super::*;
     use crate::scratch::ScratchLibrary;
 
+    const SESSION_DETAILS: [&str; 6] = [
+        "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
+        "CORRELATED SCALAR SUBQUERY 2",
+        "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
+        "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN",
+        "CORRELATED SCALAR SUBQUERY 1",
+        "SEARCH earlier USING COVERING INDEX book_by_series (series_local_id=? AND (title_sort_key,id)<(?,?))",
+    ];
+
+    fn plan_of(walk: &[&str], sort: &[&str]) -> Vec<String> {
+        [walk, &SESSION_DETAILS, sort]
+            .concat()
+            .into_iter()
+            .map(str::to_owned)
+            .collect()
+    }
+
     fn sessions_plan(walk: &str) -> Vec<String> {
-        [
-            walk,
-            "SEARCH book USING PRIMARY KEY (id=?)",
-            "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
-            "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
-            "CORRELATED SCALAR SUBQUERY 2",
-            "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
-            "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN",
-            "CORRELATED SCALAR SUBQUERY 1",
-            "SEARCH earlier USING COVERING INDEX book_by_series (series_local_id=? AND (title_sort_key,id)<(?,?))",
-        ]
-        .map(str::to_owned)
-        .to_vec()
+        plan_of(
+            &[
+                walk,
+                "SEARCH book USING PRIMARY KEY (id=?)",
+                "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
+            ],
+            &[],
+        )
     }
 
     #[test]
@@ -244,6 +313,62 @@ mod tests {
             sessions_plan(
                 "SEARCH reading_session USING INDEX reading_session_by_start (started_at_ms<?)"
             )
+        );
+    }
+
+    #[test]
+    fn lists_a_series_sessions_from_its_books_alone() {
+        let scratch = ScratchLibrary::new("series-sessions-plan");
+
+        let plans = [FIRST_SESSIONS_OF_SERIES, SESSIONS_OF_SERIES_BEFORE]
+            .map(|sql| scratch.query_plan(sql));
+
+        let walk = |sessions: &str| {
+            plan_of(
+                &[
+                    "SEARCH series USING INDEX sqlite_autoindex_series_1 (id=?)",
+                    "SEARCH book USING INDEX book_by_series (series_local_id=?)",
+                    sessions,
+                ],
+                &["USE TEMP B-TREE FOR ORDER BY"],
+            )
+        };
+        assert_eq!(
+            plans,
+            [
+                walk("SEARCH reading_session USING INDEX reading_session_by_book (book_id=?)"),
+                walk(
+                    "SEARCH reading_session USING INDEX reading_session_by_book (book_id=? AND started_at_ms<?)"
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn lists_a_book_s_sessions_from_the_book_index() {
+        let scratch = ScratchLibrary::new("book-sessions-plan");
+
+        let plans =
+            [FIRST_SESSIONS_OF_BOOK, SESSIONS_OF_BOOK_BEFORE].map(|sql| scratch.query_plan(sql));
+
+        let walk = |sessions: &str| {
+            plan_of(
+                &[
+                    sessions,
+                    "SEARCH book USING PRIMARY KEY (id=?)",
+                    "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
+                ],
+                &["USE TEMP B-TREE FOR LAST TERM OF ORDER BY"],
+            )
+        };
+        assert_eq!(
+            plans,
+            [
+                walk("SEARCH reading_session USING INDEX reading_session_by_book (book_id=?)"),
+                walk(
+                    "SEARCH reading_session USING INDEX reading_session_by_book (book_id=? AND started_at_ms<?)"
+                ),
+            ]
         );
     }
 

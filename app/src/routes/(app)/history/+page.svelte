@@ -20,7 +20,7 @@
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
 
   const screenshotMode = getScreenshotMode();
-  const history = historyList();
+  const history = historyList({ kind: "everything" });
   let today = $state(localDayOf(new Date()));
   const weekTotals = new WeekTotals(
     {
