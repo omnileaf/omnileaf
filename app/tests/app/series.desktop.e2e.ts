@@ -10,7 +10,7 @@ const SERIES_HEADING = xpath("//h1[normalize-space()='Sample Series 01']");
 const FIRST_BOOK = xpath("//ul[@aria-label='Books']/li[1]");
 const SELECT_BUTTON = xpath("//main//button[normalize-space()='Select']");
 const FIRST_BOOK_CHECKBOX = xpath(
-  "//input[@type='checkbox'][@aria-label='Select Sample Series 01 v01']",
+  "//*[@role='checkbox'][@aria-label='Select Sample Series 01 v01']",
 );
 const MARK_READ_BUTTON = xpath(
   "//*[@role='group'][@aria-label='Selected books']//button[normalize-space()='Mark read']",
