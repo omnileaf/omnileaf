@@ -13,6 +13,7 @@
     onColumns,
     cell,
     class: className,
+    style,
     itemClass,
   }: {
     items: readonly Item[];
@@ -23,6 +24,7 @@
     onColumns?: (columns: number) => void;
     cell: Snippet<[Item]>;
     class?: ClassValue;
+    style?: string;
     itemClass?: ClassValue;
   } = $props();
 
@@ -105,6 +107,10 @@
   onMount(() => {
     look();
     const resized = new ResizeObserver(lookNextFrame);
+    const restyled = new MutationObserver(look);
+    if (list !== undefined) {
+      restyled.observe(list, { attributeFilter: ["class", "style"] });
+    }
     for (const laidOut of [frame, list]) {
       if (laidOut !== undefined) {
         resized.observe(laidOut);
@@ -120,6 +126,7 @@
         cancelAnimationFrame(pendingLook);
       }
       resized.disconnect();
+      restyled.disconnect();
       document.removeEventListener("scroll", lookNextFrame, { capture: true });
       window.removeEventListener("resize", lookNextFrame);
     };
@@ -144,7 +151,7 @@
     ? undefined
     : `${String(measure.rowStride)}px`}
 >
-  <ul bind:this={list} aria-label={label} class={["grid", className]}>
+  <ul bind:this={list} aria-label={label} class={["grid", className]} {style}>
     {#each items.slice(shown.start, shown.end) as item, offset (key(item))}
       <li
         aria-posinset={shown.start + offset + 1}
