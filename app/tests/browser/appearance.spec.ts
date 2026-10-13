@@ -29,7 +29,7 @@ async function chooseTheme(
     .getByRole("main")
     .getByRole("link", { name: "Appearance" })
     .click();
-  await page.locator("label").filter({ hasText: label }).click();
+  await page.getByRole("radio", { name: label }).click();
   await expect(page.getByRole("radio", { name: label })).toBeChecked();
   await settle(page.locator(":root"));
 }
@@ -81,7 +81,7 @@ for (const { colorScheme, shadow } of [
 
     await chooseTheme(page, "System");
 
-    await expect(page.locator("label").filter({ hasText: "System" })).toHaveCSS(
+    await expect(page.getByRole("radio", { name: "System" })).toHaveCSS(
       "box-shadow",
       shadow,
     );
@@ -93,9 +93,7 @@ test("draws the light or dark options 40px tall in a 44px track", async ({
 }) => {
   await chooseTheme(page, "System");
 
-  const option = await boxOf(
-    page.locator("label").filter({ hasText: "Light" }),
-  );
+  const option = await boxOf(page.getByRole("radio", { name: "Light" }));
   const track = await boxOf(page.getByRole("radiogroup"));
 
   expect(option.height).toBe(OPTION_HEIGHT);
@@ -106,7 +104,7 @@ test("chooses an option from just outside its visible edge", async ({
   page,
 }) => {
   await chooseTheme(page, "System");
-  const option = await boxOf(page.locator("label").filter({ hasText: "Dark" }));
+  const option = await boxOf(page.getByRole("radio", { name: "Dark" }));
 
   await page.mouse.click(option.x + option.width / 2, option.y - TAP_OVERHANG);
 

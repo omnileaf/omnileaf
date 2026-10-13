@@ -41,7 +41,6 @@
     {m.privacy_crash_reports_hint()}
   </p>
   <SegmentedControl
-    name="crash-reports"
     options={CRASH_REPORT_CHOICES}
     labels={CHOICE_LABELS}
     chosen={crashReports.choice}

@@ -308,10 +308,7 @@ test("shows no screen with a choice made since it was left", async ({
     .click();
   await expect(heading(page, PARENT_TITLE)).toBeVisible();
 
-  await page
-    .locator("label")
-    .filter({ has: page.getByRole("radio", { name: "Always send" }) })
-    .click();
+  await page.getByRole("radio", { name: "Always send" }).click();
   await swipe({ kind: "moved", progress: 0.5 });
 
   await expect(page.locator("[data-previous-screen]")).toBeAttached();

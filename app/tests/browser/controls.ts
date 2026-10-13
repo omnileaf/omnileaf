@@ -12,7 +12,7 @@ export interface Control {
 export const THEME_OPTION: Control = {
   name: "a theme option",
   path: "/settings/appearance",
-  find: (page) => page.locator("label").filter({ hasText: "Dark" }),
+  find: (page) => page.getByRole("radio", { name: "Dark" }),
 };
 
 export const CONTROLS: readonly Control[] = [

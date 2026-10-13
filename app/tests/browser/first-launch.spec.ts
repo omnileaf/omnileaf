@@ -685,8 +685,7 @@ test("turns the app dark from the choices", async ({ page }) => {
 
   await page
     .getByRole("radiogroup", { name: "Appearance" })
-    .locator("label")
-    .filter({ hasText: "Dark" })
+    .getByRole("radio", { name: "Dark" })
     .click();
 
   await expect(page.getByRole("radio", { name: "Dark" })).toBeChecked();

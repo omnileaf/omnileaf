@@ -17,5 +17,9 @@ export async function openViewOptions(page: Page): Promise<Locator> {
 }
 
 export async function choose(options: Locator, label: string): Promise<void> {
-  await options.locator("label").filter({ hasText: label }).click();
+  await options
+    .locator("label")
+    .or(options.getByRole("radio"))
+    .filter({ hasText: label })
+    .click();
 }
