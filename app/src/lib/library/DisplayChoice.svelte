@@ -39,8 +39,8 @@
   }: { chosen: LibraryDisplay; onChoose: (display: LibraryDisplay) => void } =
     $props();
 
-  const group = $props.id();
-  const labelId = `${group}-label`;
+  const id = $props.id();
+  const labelId = `${id}-label`;
 </script>
 
 <div>
@@ -51,7 +51,6 @@
     {m.library_view_display()}
   </p>
   <SegmentedControl
-    name={group}
     options={DISPLAYS}
     labels={LABELS}
     icons={ICONS}

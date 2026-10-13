@@ -68,7 +68,6 @@
     </p>
   {/if}
   <SegmentedControl
-    name={headingId}
     options={THEME_PREFERENCES}
     labels={THEME_LABELS}
     chosen={theme.preference}

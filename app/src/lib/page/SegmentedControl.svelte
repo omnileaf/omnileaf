@@ -3,13 +3,17 @@
   import type { Component } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import {
+    RadioGroup,
+    RadioGroupItem,
+  } from "#lib/components/ui/radio-group/index.ts";
+
   import { followFittingColumns } from "./segment-columns";
   import SegmentFace from "./SegmentFace.svelte";
 
   type Size = "small" | "regular";
 
   interface Props {
-    readonly name: string;
     readonly options: readonly Option[];
     readonly labels: Record<Option, () => string>;
     readonly icons?: Record<Option, Component<LucideProps>> | undefined;
@@ -44,7 +48,6 @@
   >;
 
   let {
-    name,
     options,
     labels,
     icons,
@@ -58,14 +61,14 @@
 
   const look = $derived(LOOKS[size]);
 
-  let track: HTMLElement | undefined = $state();
+  let track = $state<HTMLElement | null>(null);
   let ruler: HTMLElement | undefined = $state();
   let fittedColumns: number | undefined = $state();
   const columns = $derived(fittedColumns ?? options.length);
   const isOneRow = $derived(columns === options.length);
 
   $effect(() => {
-    if (track === undefined || ruler === undefined) {
+    if (track === null || ruler === undefined) {
       return;
     }
     return followFittingColumns(track, ruler, (fitted) => {
@@ -74,14 +77,17 @@
   });
 </script>
 
-<div
-  bind:this={track}
-  role="radiogroup"
+<RadioGroup
+  bind:ref={track}
+  {options}
+  {chosen}
+  {onChoose}
+  orientation="horizontal"
   aria-labelledby={labelledBy}
   aria-describedby={describedBy}
-  style:grid-template-columns={isOneRow
+  style={isOneRow
     ? undefined
-    : `repeat(${String(columns)}, minmax(0, 1fr))`}
+    : `grid-template-columns: repeat(${String(columns)}, minmax(0, 1fr))`}
   class={[
     "relative bg-chip",
     isOneRow ? "flex" : "grid",
@@ -90,9 +96,10 @@
   ]}
 >
   {#each options as option (option)}
-    <label
+    <RadioGroupItem
+      value={option}
       class={[
-        "relative flex items-center justify-center transition-control before:absolute before:inset-x-none before:-inset-y-xs has-focus-visible:outline-2 has-focus-visible:outline-accent",
+        "relative flex items-center justify-center transition-control before:absolute before:inset-x-none before:-inset-y-xs",
         look.segment,
         look.face,
         isOneRow
@@ -103,23 +110,13 @@
           : "font-medium text-muted hover:bg-hover",
       ]}
     >
-      <input
-        type="radio"
-        {name}
-        value={option}
-        class="sr-only"
-        checked={chosen === option}
-        onchange={() => {
-          onChoose(option);
-        }}
-      />
       <SegmentFace
         label={labels[option]()}
         icon={icons?.[option]}
         iconClass={look.icon}
         isShown
       />
-    </label>
+    </RadioGroupItem>
   {/each}
   <span
     bind:this={ruler}
@@ -137,4 +134,4 @@
       </span>
     {/each}
   </span>
-</div>
+</RadioGroup>

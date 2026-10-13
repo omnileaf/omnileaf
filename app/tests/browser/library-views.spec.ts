@@ -799,8 +799,7 @@ test.describe("view options", () => {
     const options = await openViewOptions(page);
 
     const overflowing = await options
-      .locator("label")
-      .filter({ has: page.getByRole("radio") })
+      .getByRole("radio")
       .evaluateAll((labels) =>
         labels
           .filter((label) => label.scrollWidth > label.clientWidth)
@@ -814,26 +813,23 @@ test.describe("view options", () => {
     await openWith(page, viewWith(page, "compact"));
     const options = await openViewOptions(page);
 
-    const gaps = await options
-      .locator("label")
-      .filter({ has: page.getByRole("radio") })
-      .evaluateAll((labels) =>
-        labels.map((label) => {
-          const box = label.getBoundingClientRect();
-          const icon = label.querySelector("svg")?.getBoundingClientRect();
-          const words = label
-            .querySelector("span > span:not([aria-hidden])")
-            ?.getBoundingClientRect();
-          if (words === undefined) {
-            throw new Error("a display segment has no label");
-          }
-          return {
-            top: Math.round(box.top),
-            start: Math.round((icon?.left ?? words.left) - box.left),
-            end: Math.round(box.right - words.right),
-          };
-        }),
-      );
+    const gaps = await options.getByRole("radio").evaluateAll((labels) =>
+      labels.map((label) => {
+        const box = label.getBoundingClientRect();
+        const icon = label.querySelector("svg")?.getBoundingClientRect();
+        const words = label
+          .querySelector("span > span:not([aria-hidden])")
+          ?.getBoundingClientRect();
+        if (words === undefined) {
+          throw new Error("a display segment has no label");
+        }
+        return {
+          top: Math.round(box.top),
+          start: Math.round((icon?.left ?? words.left) - box.left),
+          end: Math.round(box.right - words.right),
+        };
+      }),
+    );
     const isOneRow = new Set(gaps.map((gap) => gap.top)).size === 1;
 
     const [first] = gaps;
@@ -854,8 +850,7 @@ test.describe("view options", () => {
     const options = await openViewOptions(page);
     const widths = () =>
       options
-        .locator("label")
-        .filter({ has: page.getByRole("radio") })
+        .getByRole("radio")
         .evaluateAll((labels) =>
           labels.map((label) =>
             Math.round(label.getBoundingClientRect().width),
