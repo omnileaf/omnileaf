@@ -59,8 +59,14 @@ pub enum ReadTo {
 )]
 pub enum HistoryOf {
     Everything,
-    Series { series: SeriesId },
-    Book { book: BookId },
+    Series {
+        series: SeriesId,
+    },
+    Book {
+        book: BookId,
+    },
+    /// The latest session of each book started and not finished, for the library's Continue reading row.
+    Unfinished,
 }
 
 impl From<HistoryOf> for history::HistoryOf {
@@ -69,6 +75,7 @@ impl From<HistoryOf> for history::HistoryOf {
             HistoryOf::Everything => Self::Everything,
             HistoryOf::Series { series } => Self::Series(series.0),
             HistoryOf::Book { book } => Self::Book(book.0),
+            HistoryOf::Unfinished => Self::Unfinished,
         }
     }
 }

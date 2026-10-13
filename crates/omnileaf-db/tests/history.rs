@@ -30,7 +30,7 @@ use omnileaf_db::{
     store::{Continuity, SessionPlace, Store},
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
-use store_support::{FakeClock, NOW_UNIX_MS, book, open_store};
+use store_support::{FakeClock, NOW_UNIX_MS, book, open_store, set_position};
 use support::ScratchFolder;
 
 const ADDED_AT_MS: i64 = 1_780_000_000_000;
@@ -746,4 +746,35 @@ async fn names_the_series_read_in_title_order() {
             ),
         ]
     );
+}
+
+#[tokio::test]
+async fn pages_through_the_latest_session_of_each_book_started_and_not_finished() {
+    let history = History::open("history-unfinished").await;
+    for (number, hours_ago) in [(1, 5), (2, 4), (1, 3), (3, 2), (4, 1)] {
+        read_hours_ago(&history, number, hours_ago).await;
+    }
+    for number in [1, 2, 3] {
+        set_position(&history.store, book(number), 2).await.unwrap();
+    }
+    history.mark_read(book(3)).await;
+
+    let first = history
+        .page_of(HistoryOf::Unfinished, 1, None)
+        .await
+        .unwrap();
+    let second = history
+        .page_of(HistoryOf::Unfinished, 1, first.next.clone())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        [books_of(&first), books_of(&second)],
+        [vec![book(1)], vec![book(2)]]
+    );
+    assert_eq!(
+        first.items.first().map(|entry| entry.started_at_ms),
+        Some(ms(NOW_UNIX_MS - 3 * HOUR_MS))
+    );
+    assert_eq!(second.next, None);
 }

@@ -71,6 +71,19 @@ const SESSIONS_OF_BOOK_BEFORE: &str = from_sessions!(
     "WHERE reading_session.book_id = :book
         AND (reading_session.started_at_ms, reading_session.id) < (:after_started_at_ms, :after_id)"
 );
+const FIRST_UNFINISHED: &str = from_sessions!(
+    "WHERE book_state.is_started IS 1 AND book_state.is_read IS NOT 1
+        AND NOT EXISTS (SELECT 1 FROM reading_session AS later
+            WHERE later.book_id = reading_session.book_id
+                AND later.started_at_ms > reading_session.started_at_ms)"
+);
+const UNFINISHED_BEFORE: &str = from_sessions!(
+    "WHERE book_state.is_started IS 1 AND book_state.is_read IS NOT 1
+        AND NOT EXISTS (SELECT 1 FROM reading_session AS later
+            WHERE later.book_id = reading_session.book_id
+                AND later.started_at_ms > reading_session.started_at_ms)
+        AND (reading_session.started_at_ms, reading_session.id) < (:after_started_at_ms, :after_id)"
+);
 const READING_TIME_BY_DAY: &str = "SELECT local_day, sum(ended_at_ms - started_at_ms) AS read_ms
     FROM reading_session
     WHERE local_day BETWEEN ?1 AND ?2
@@ -127,6 +140,8 @@ pub enum HistoryOf {
     Everything,
     Series(SeriesId),
     Book(BookId),
+    /// The latest session of each book started and not marked read.
+    Unfinished,
 }
 
 /// Lists the sessions of books still in the library, the latest started first.
@@ -149,6 +164,7 @@ pub fn history_page(
     };
     let (first, before, filter) = match &of {
         HistoryOf::Everything => (FIRST_SESSIONS, SESSIONS_BEFORE, None),
+        HistoryOf::Unfinished => (FIRST_UNFINISHED, UNFINISHED_BEFORE, None),
         HistoryOf::Series(series) => (
             FIRST_SESSIONS_OF_SERIES,
             SESSIONS_OF_SERIES_BEFORE,
@@ -386,6 +402,35 @@ mod tests {
                 walk("SEARCH reading_session USING INDEX reading_session_by_book (book_id=?)"),
                 walk(
                     "SEARCH reading_session USING INDEX reading_session_by_book (book_id=? AND started_at_ms<?)"
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn walks_back_through_the_start_index_for_the_books_to_continue() {
+        let scratch = ScratchLibrary::new("unfinished-plan");
+
+        let plans = [FIRST_UNFINISHED, UNFINISHED_BEFORE].map(|sql| scratch.query_plan(sql));
+
+        let walk = |sessions: &str| {
+            plan_of(
+                &[
+                    sessions,
+                    "CORRELATED SCALAR SUBQUERY 3",
+                    "SEARCH later USING COVERING INDEX reading_session_by_book (book_id=? AND started_at_ms>?)",
+                    "SEARCH book USING PRIMARY KEY (id=?)",
+                    "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
+                ],
+                &[],
+            )
+        };
+        assert_eq!(
+            plans,
+            [
+                walk("SCAN reading_session USING INDEX reading_session_by_start"),
+                walk(
+                    "SEARCH reading_session USING INDEX reading_session_by_start (started_at_ms<?)"
                 ),
             ]
         );
