@@ -28,6 +28,24 @@ test("prerenders the not-found page for the web server", async ({
   expect(await response.text()).toContain("Page not found");
 });
 
+test("links the not-found page's styles from the site root", async ({
+  request,
+}) => {
+  const response = await request.get("/404");
+
+  const html = await response.text();
+
+  expect(html).toMatch(/<link href="\/_app\/[^"]+\.css" rel="stylesheet"/);
+});
+
+test("keeps the not-found page out of search results", async ({ page }) => {
+  await page.goto("/404");
+
+  const robots = page.locator('meta[name="robots"]');
+
+  await expect(robots).toHaveAttribute("content", "noindex");
+});
+
 test("ships no JavaScript", async ({ page }) => {
   await page.goto("/");
 

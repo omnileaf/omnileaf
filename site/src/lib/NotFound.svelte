@@ -1,5 +1,6 @@
 <svelte:head>
   <title>Page not found · Omnileaf</title>
+  <meta name="robots" content="noindex" />
 </svelte:head>
 
 <main

@@ -7,5 +7,8 @@ const BRANDING = "../branding";
 
 export default defineConfig({
   server: { fs: { allow: [BRANDING] } },
-  plugins: [tailwindcss(), sveltekit({ adapter: adapter() })],
+  plugins: [
+    tailwindcss(),
+    sveltekit({ adapter: adapter(), paths: { relative: false } }),
+  ],
 });
