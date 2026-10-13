@@ -152,7 +152,7 @@
         <div
           class="flex items-center gap-md ps-filter-panel-inline pe-lg pbs-filter-panel-top pbe-filter-panel-title-gap"
         >
-          <HeaderBadge icon={ListFilter} tone="bg-accent-soft text-accent" />
+          <HeaderBadge icon={ListFilter} look="header-accent" />
           <DialogTitle class="flex-1 text-panel-title font-bold">
             {m.library_filter_and_sort()}
           </DialogTitle>
@@ -207,10 +207,7 @@
         <Tabs.Root bind:value={tab} class="contents">
           <div class="flex flex-col gap-md px-sheet-inline pbs-md pbe-xs">
             <div class="flex items-center gap-md">
-              <HeaderBadge
-                icon={ListFilter}
-                tone="bg-accent-soft text-accent"
-              />
+              <HeaderBadge icon={ListFilter} look="header-accent" />
               <DialogTitle id={titleId} class="flex-1 text-title font-bold">
                 {m.library_filter_and_sort()}
               </DialogTitle>

@@ -46,7 +46,7 @@
     onDismiss={onCancel}
   >
     <div class="flex items-center gap-md">
-      <HeaderBadge {icon} tone="bg-danger-soft text-danger" />
+      <HeaderBadge {icon} look="header-danger" />
       <DialogTitle
         class="text-dialog-title font-bold max-medium:text-sheet-title"
       >

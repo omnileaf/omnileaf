@@ -1,19 +1,16 @@
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import { Badge, type BadgeLook } from "#lib/components/ui/badge/index.ts";
 
   import type { Glyph } from "./glyph";
 
   const ICON_SIZE = 18;
 
-  let { icon: Icon, tone }: { icon: Glyph; tone: ClassValue } = $props();
+  let {
+    icon: Icon,
+    look,
+  }: { icon: Glyph; look: Extract<BadgeLook, `header-${string}`> } = $props();
 </script>
 
-<span
-  aria-hidden="true"
-  class={[
-    "flex shrink-0 items-center justify-center rounded-full block-header-badge inline-header-badge",
-    tone,
-  ]}
->
+<Badge {look} aria-hidden="true">
   <Icon size={ICON_SIZE} />
-</span>
+</Badge>

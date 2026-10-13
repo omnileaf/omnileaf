@@ -170,7 +170,7 @@
       <div class="flex shrink-0 justify-end large:inline-list-unread">
         <UnreadCount
           count={one.unreadCount}
-          class="rounded-badge px-sm py-2xs text-caption"
+          class="px-sm py-2xs text-caption"
         />
       </div>
     {/if}
