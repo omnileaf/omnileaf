@@ -23,6 +23,40 @@ env:
   GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
 
 jobs:
+  changes:
+    name: changed areas
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      BASE: ${{ github.event_name == 'pull_request' && 'HEAD^1' || github.event.merge_group.base_sha }}
+    outputs:
+      native: ${{ steps.areas.outputs.native }}
+      app: ${{ steps.areas.outputs.app }}
+      site: ${{ steps.areas.outputs.site }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Fetch the commit the merge queue starts from
+        if: github.event_name == 'merge_group'
+        run: git fetch --no-tags --depth=1 origin "$BASE"
+
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: xtask
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Find the areas the change touches
+        id: areas
+        run: |
+          areas=$(cargo xtask changes ${BASE:+--base "$BASE"})
+          echo "$areas" | tee -a "$GITHUB_OUTPUT"
+
   secrets:
     name: secret scan
     runs-on: ubuntu-24.04
@@ -45,6 +79,8 @@ jobs:
 
   rust:
     name: rust gate (${{ matrix.platform }})
+    needs: changes
+    if: ${{ !cancelled() }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
@@ -57,17 +93,20 @@ jobs:
             runner: windows-2025
             budget-slack: 2
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - if: needs.changes.outputs.native != 'false'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: ./.github/actions/rust-gate
+      - if: needs.changes.outputs.native != 'false'
+        uses: ./.github/actions/rust-gate
         with:
           budget-slack: ${{ matrix.budget-slack }}
 
   rust-macos:
     name: rust gate (macos)
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.native != 'false' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')) }}
     runs-on: macos-15
     timeout-minutes: 30
     steps:
@@ -104,6 +143,8 @@ jobs:
 
   coverage:
     name: coverage
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.native != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -143,6 +184,8 @@ jobs:
 
   fixtures:
     name: fixtures (${{ matrix.platform }})
+    needs: changes
+    if: ${{ !cancelled() }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     strategy:
@@ -154,17 +197,20 @@ jobs:
           - platform: windows
             runner: windows-2025
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - if: needs.changes.outputs.native != 'false'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: ./.github/actions/fixtures-check
+      - if: needs.changes.outputs.native != 'false'
+        uses: ./.github/actions/fixtures-check
         with:
           platform: ${{ matrix.platform }}
 
   fixtures-macos:
     name: fixtures (macos)
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.native != 'false' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')) }}
     runs-on: macos-15
     timeout-minutes: 20
     steps:
@@ -178,8 +224,8 @@ jobs:
 
   fixtures-agree:
     name: fixtures agree across platforms
-    needs: [fixtures, fixtures-macos]
-    if: ${{ !cancelled() && needs.fixtures.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.fixtures-macos.result) }}
+    needs: [changes, fixtures, fixtures-macos]
+    if: ${{ !cancelled() && needs.changes.outputs.native != 'false' && needs.fixtures.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.fixtures-macos.result) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -234,6 +280,8 @@ jobs:
 
   browser:
     name: browser tests (${{ matrix.shard }}/${{ strategy.job-total }})
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.outputs.app != 'false' || needs.changes.outputs.site != 'false') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
@@ -295,19 +343,17 @@ jobs:
           path: ~/browser-packages
           key: ${{ steps.browser-packages.outputs.key }}
 
-      - name: Install the pinned toolchain
-        run: rustup toolchain install
+      - name: Run the app's browser tests
+        id: app-browser-tests
+        if: needs.changes.outputs.app != 'false'
+        run: pnpm --dir app test:e2e
 
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          shared-key: xtask
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-
-      - name: Run the browser tests
-        run: cargo xtask check --only browser
+      - name: Run the website's browser tests
+        if: ${{ !cancelled() && needs.changes.outputs.site != 'false' && (success() || steps.app-browser-tests.outcome == 'failure') }}
+        run: pnpm --dir site test:e2e
 
       - name: Time the interface on its own
-        if: matrix.shard == 1
+        if: matrix.shard == 1 && needs.changes.outputs.app != 'false'
         run: env -u PLAYWRIGHT_SHARD pnpm --dir app test:e2e --project speed --no-deps
 
       - name: Keep the traces of failed tests
@@ -327,10 +373,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Pass only when every shard passed
+      - name: Pass only when every shard passed, or none were needed
         env:
           SHARDS: ${{ needs.browser.result }}
-        run: test "$SHARDS" = success
+        run: test "$SHARDS" = success || test "$SHARDS" = skipped
 
   android:
     name: android
@@ -485,6 +531,8 @@ jobs:
 
   app:
     name: app (${{ matrix.platform }})
+    needs: changes
+    if: ${{ !cancelled() }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 40
     strategy:
@@ -496,15 +544,18 @@ jobs:
           - platform: windows
             runner: windows-2025
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - if: (needs.changes.outputs.native != 'false' || needs.changes.outputs.app != 'false')
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: ./.github/actions/app-gate
+      - if: (needs.changes.outputs.native != 'false' || needs.changes.outputs.app != 'false')
+        uses: ./.github/actions/app-gate
 
   app-macos:
     name: app (macos)
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.outputs.native != 'false' || needs.changes.outputs.app != 'false') && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')) }}
     runs-on: macos-15
     timeout-minutes: 40
     steps:
