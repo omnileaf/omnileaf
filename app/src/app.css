@@ -297,6 +297,8 @@
   --spacing-settings-list-widest: 17rem;
   --spacing-problem-top: calc(10.625rem - var(--spacing-title-gap));
   --spacing-switch-length: 3.125rem;
+  --spacing-progress: 0.5rem;
+  --spacing-progress-compact: 0.375rem;
   --spacing-switch-thickness: 1.875rem;
   --spacing-switch-knob: 1.5rem;
   --spacing-switch-length-compact: 2.75rem;
@@ -672,6 +674,7 @@
   --transition-duration-slide: 350ms;
   --transition-duration-move: 300ms;
   --transition-duration-spin: 1s;
+  --transition-duration-band: 1.4s;
 
   --ease-out: ease-out;
   --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
@@ -1127,6 +1130,25 @@
 
   &::-moz-progress-bar {
     background-color: var(--color-accent);
+  }
+}
+
+@keyframes progress-band {
+  from {
+    translate: -100%;
+  }
+  to {
+    translate: 300%;
+  }
+}
+
+@utility progress-band {
+  inline-size: calc(100% / 3);
+  translate: 100%;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: progress-band var(--transition-duration-band) var(--ease-out)
+      infinite;
   }
 }
 
