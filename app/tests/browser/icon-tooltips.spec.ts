@@ -7,9 +7,11 @@ import {
   accessibilityViolations,
   DEFAULT_BACKEND,
   expect,
+  EXPANDED_MIN_WIDTH,
   onPlatform,
   screenSizeOf,
   test,
+  viewportOf,
 } from "./fixtures.ts";
 import {
   BOOK_ID,
@@ -18,6 +20,7 @@ import {
   servePages,
 } from "./reader-book.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
+import { FakeShelf, SERIES_ID } from "./series-shelf.ts";
 import { openViewOptions } from "./view-options.ts";
 
 const REMOVE_FOLDER = "Remove folder";
@@ -88,6 +91,31 @@ function isPhoneScreen(page: Page): boolean {
   return screenSizeOf(page) === "phone";
 }
 
+function isWideScreen(page: Page): boolean {
+  return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
+}
+
+const SHELF = new FakeShelf([{ state: "read" }, { state: "notStarted" }]);
+
+async function pickFirstBook(page: Page): Promise<Locator> {
+  await page.goto(`/series/${SERIES_ID}`);
+  await page
+    .getByRole("checkbox", { name: `Select ${SHELF.titleOf(0)}` })
+    .check();
+  return page.getByRole("group", { name: "Selected books" });
+}
+
+function seriesBarStep(label: string): IconAction {
+  return {
+    screen: "the series' selection bar",
+    backend: SHELF.backend(),
+    reach: async (page) =>
+      (await pickFirstBook(page)).getByRole("button", { name: label }),
+    label,
+    isShownOn: isWideScreen,
+  };
+}
+
 function coversPerRowStep(label: string): IconAction {
   return {
     screen: "View options",
@@ -134,6 +162,9 @@ const ICON_ACTIONS: readonly IconAction[] = [
     },
     label: NEXT_BOOK_LABEL,
   },
+  seriesBarStep("Mark read"),
+  seriesBarStep("Mark unread"),
+  seriesBarStep("Clear the selection"),
   coversPerRowStep("Fewer covers per row"),
   coversPerRowStep("More covers per row"),
   {
