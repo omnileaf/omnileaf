@@ -229,7 +229,6 @@ export const TOKEN_THEME = {
     "pane",
     "pane-app-icon",
     "pane-gap",
-    "panel-below",
     "panel-button",
     "panel-field",
     "panel-glow",

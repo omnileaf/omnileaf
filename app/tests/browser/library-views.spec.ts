@@ -47,6 +47,7 @@ interface ListLook {
 }
 
 const PANEL_WIDTH = 360;
+const NARROWING = 100;
 const NARROWEST_COVER = 40;
 const NARROWEST_SCREENS = [320, 600, 840, 1200];
 const TABLET_NARROWEST = 600;
@@ -981,6 +982,28 @@ test.describe("view options", () => {
     } else {
       expect(panel.x).toBeCloseTo(button.x, 0);
     }
+  });
+
+  test("keeps the panel under its button's end as the window narrows", async ({
+    page,
+  }) => {
+    test.skip(screenSizeOf(page) === "phone", "wider screens only");
+    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    const options = await openViewOptions(page);
+    const { width, height } = viewportOf(page);
+
+    await page.setViewportSize({ width: width - NARROWING, height });
+
+    await expect
+      .poll(async () => {
+        const panel = await boxOf(options);
+        const button = await boxOf(viewOptionsButton(page));
+        return Math.round(panel.x + panel.width - (button.x + button.width));
+      })
+      .toBe(0);
+    expect((await boxOf(options)).y).toBeGreaterThan(
+      (await boxOf(viewOptionsButton(page))).y,
+    );
   });
 
   test("keeps the view options inside the screen in a longer language", async ({
