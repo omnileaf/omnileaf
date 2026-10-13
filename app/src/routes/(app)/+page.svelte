@@ -248,6 +248,7 @@
       />
       <FolderNotice
         {adding}
+        {notices}
         usesStandIns={screenshotMode.isOn}
         onDismissed={returnFocusFromNotice}
       />
@@ -257,6 +258,7 @@
   <div class="mbs-sm">
     <FolderNotice
       {adding}
+      {notices}
       usesStandIns={screenshotMode.isOn}
       onDismissed={returnFocusFromNotice}
     />

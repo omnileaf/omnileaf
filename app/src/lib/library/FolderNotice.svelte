@@ -1,25 +1,26 @@
 <script lang="ts">
   import { CircleAlert, CircleCheckBig } from "@lucide/svelte";
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
 
   import type { FolderScan } from "#lib/ipc/bindings.ts";
+  import type { Notices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { folderStandIn } from "#lib/screenshot-mode/stand-ins.ts";
 
   import type { FolderAdding, FolderOutcome } from "./folder-adding.svelte";
   import type { Notice } from "./notice";
   import NoticeCard from "./NoticeCard.svelte";
-  import ScanProgressBar from "./ScanProgressBar.svelte";
+  import ScanToast from "./ScanToast.svelte";
 
   interface Props {
     readonly adding: FolderAdding;
+    readonly notices: Notices;
     readonly usesStandIns: boolean;
+    readonly onShow?: (() => void) | undefined;
     readonly onDismissed: () => void;
   }
 
-  let { adding, usesStandIns, onDismissed }: Props = $props();
-
-  const progressTitleId = $props.id();
+  let { adding, notices, usesStandIns, onShow, onDismissed }: Props = $props();
 
   onDestroy(() => {
     adding.withdrawFailure();
@@ -29,8 +30,8 @@
     return usesStandIns ? folderStandIn(scan.name) : scan.name;
   }
 
-  function problemsIn(scan: FolderScan): string[] {
-    return [
+  function problemsIn(scan: FolderScan): string | undefined {
+    const problems = [
       scan.unreadableBooks > 0
         ? m.library_folder_unreadable_books({ count: scan.unreadableBooks })
         : undefined,
@@ -43,35 +44,55 @@
           })
         : undefined,
     ].filter((problem) => problem !== undefined);
+    return problems.length === 0 ? undefined : problems.join(" ");
   }
 
-  function noticeFor(outcome: FolderOutcome): Notice | undefined {
-    if (outcome.kind !== "scanned") {
+  function isFollowedInToast(outcome: FolderOutcome): boolean {
+    return (
+      outcome.kind === "finding" ||
+      outcome.kind === "reading" ||
+      (outcome.kind === "scanned" && outcome.scan.books > 0)
+    );
+  }
+
+  function followInToast(): void {
+    notices.present(
+      ScanToast,
+      (toast) => ({
+        adding,
+        toast,
+        folderName: shownName,
+        problemsIn,
+        onShow,
+      }),
+      "polite",
+    );
+  }
+
+  let wasFollowed = false;
+
+  $effect(() => {
+    const isFollowed = isFollowedInToast(adding.outcome);
+    if (isFollowed && !wasFollowed) {
+      untrack(followInToast);
+    }
+    wasFollowed = isFollowed;
+  });
+
+  function emptyFolderNotice(outcome: FolderOutcome): Notice | undefined {
+    if (outcome.kind !== "scanned" || outcome.scan.books > 0) {
       return undefined;
     }
     const { scan } = outcome;
-    const name = shownName(scan);
-    const title =
-      scan.books === 0
-        ? m.library_folder_no_books({ name })
-        : m.library_folder_scanned({
-            books: scan.books,
-            series: scan.series,
-            name,
-          });
-    const problems = problemsIn(scan);
-    if (problems.length === 0) {
+    const title = m.library_folder_no_books({ name: shownName(scan) });
+    const body = problemsIn(scan);
+    if (body === undefined) {
       return { tone: "done", icon: CircleCheckBig, title };
     }
-    return {
-      tone: "warning",
-      icon: CircleAlert,
-      title,
-      body: problems.join(" "),
-    };
+    return { tone: "warning", icon: CircleAlert, title, body };
   }
 
-  const notice = $derived(noticeFor(adding.outcome));
+  const notice = $derived(emptyFolderNotice(adding.outcome));
 
   function dismiss(): void {
     adding.dismiss();
@@ -79,17 +100,8 @@
   }
 </script>
 
-<div class="flex flex-wrap items-baseline justify-between gap-x-sm">
-  <div role="status" class="flex-1">
-    {#if adding.outcome.kind === "finding" || adding.outcome.kind === "reading"}
-      <p id={progressTitleId} class="font-semibold">
-        {m.library_scan_finding()}
-      </p>
-    {:else if notice !== undefined}
-      <NoticeCard {notice} onDismiss={dismiss} />
-    {/if}
-  </div>
-  {#if adding.outcome.kind === "finding" || adding.outcome.kind === "reading"}
-    <ScanProgressBar step={adding.outcome} titleId={progressTitleId} />
+<div role="status">
+  {#if notice !== undefined}
+    <NoticeCard {notice} onDismiss={dismiss} />
   {/if}
 </div>

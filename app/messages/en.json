@@ -179,24 +179,23 @@
       }
     }
   ],
-  "library_folder_scanned": [
+  "library_folder_no_books": "Found no books in {name}.",
+  "library_scan_added": [
     {
       "declarations": [
         "input books",
-        "input series",
         "input name",
         "local booksPlural = books: plural",
-        "local formattedBooks = books: number",
-        "local formattedSeries = series: number"
+        "local formattedBooks = books: number"
       ],
       "selectors": ["booksPlural"],
       "match": {
-        "booksPlural=one": "Found {formattedBooks} book in {formattedSeries} series in {name}.",
-        "booksPlural=other": "Found {formattedBooks} books in {formattedSeries} series in {name}."
+        "booksPlural=one": "Added {formattedBooks} book from {name}",
+        "booksPlural=other": "Added {formattedBooks} books from {name}"
       }
     }
   ],
-  "library_folder_no_books": "Found no books in {name}.",
+  "library_scan_show": "Show",
   "library_folder_unreadable_books": [
     {
       "declarations": [
