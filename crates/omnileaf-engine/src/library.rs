@@ -488,7 +488,7 @@ impl Library {
             .await?;
         Ok(to_open.map(|mut to_open| {
             if let Some(unsaved) = unsaved {
-                to_open.found.reading = unsaved.saved_over(to_open.found.reading);
+                to_open.found.reading = unsaved.stored();
             }
             to_open
         }))
