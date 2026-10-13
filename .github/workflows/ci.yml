@@ -369,7 +369,7 @@ jobs:
   browser-tests:
     name: browser tests
     needs: browser
-    if: always()
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
