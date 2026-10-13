@@ -26,6 +26,7 @@ const TOUCH_TITLE_SIZE = "15px";
 const BODY_SIZE = "13px";
 const ICON_SIZE = 20;
 const POINTER_ACTION_HEIGHT = 32;
+const TOUCH_ACTION_HEIGHT = 48;
 const LONG_WAIT_MS = 60_000;
 
 const FAILS_TO_READ_THE_FOLDER: FakeBackend = {
@@ -279,5 +280,16 @@ test.describe("on Android", () => {
     const title = card.getByText(UNREADABLE_TITLE, { exact: true });
 
     await expect(title).toHaveCSS("font-size", TOUCH_TITLE_SIZE);
+  });
+
+  test("keeps the warning's action on one 48px line on a phone", async ({
+    page,
+  }) => {
+    const { card } = await failToAddAFolder(page);
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+
+    const action = card.getByRole("button", { name: "Choose another folder" });
+
+    expect((await boxOf(action)).height).toBe(TOUCH_ACTION_HEIGHT);
   });
 });
