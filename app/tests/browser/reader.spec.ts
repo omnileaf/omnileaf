@@ -1154,9 +1154,10 @@ test.describe("the first book of a series", () => {
   }) => {
     await openBook(page);
 
-    await expect(
-      page.getByRole("button", { name: "Previous book" }),
-    ).toHaveAttribute("title", "Previous book");
+    const previous = page.getByRole("button", { name: "Previous book" });
+    await previous.hover();
+    await expect(previous).toHaveAccessibleDescription("Previous book");
+    await expect(previous).not.toHaveAttribute("title");
   });
 });
 
@@ -1233,9 +1234,10 @@ test.describe("with a pointer", () => {
   test("names the full screen button in a tooltip", async ({ page }) => {
     await openBook(page);
 
-    await expect(
-      page.getByRole("button", { name: "Full screen" }),
-    ).toHaveAttribute("title", "Full screen");
+    const fullScreen = page.getByRole("button", { name: "Full screen" });
+    await fullScreen.hover();
+    await expect(fullScreen).toHaveAccessibleDescription("Full screen");
+    await expect(fullScreen).not.toHaveAttribute("title");
   });
 });
 
