@@ -298,7 +298,10 @@ test('shows Remove as an icon with "Remove folder" as the tooltip', async () => 
 
   const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
   await expect.element(remove).toHaveTextContent("");
-  await expect.element(remove).toHaveAttribute("title", "Remove folder");
+  await userEvent.hover(remove);
+
+  await expect.element(remove).toHaveAccessibleDescription("Remove folder");
+  await expect.element(remove).not.toHaveAttribute("title");
 });
 
 test("reaches Remove from the keyboard", async () => {
@@ -626,7 +629,10 @@ test("shows Rescan as an icon with its verb as the tooltip", async () => {
     folders.getByRole("button", { name: "Rescan Sample Comics" }),
   ]) {
     await expect.element(rescan).toHaveTextContent("");
-    await expect.element(rescan).toHaveAttribute("title", "Rescan");
+    await userEvent.hover(rescan);
+
+    await expect.element(rescan).toHaveAccessibleDescription("Rescan");
+    await expect.element(rescan).not.toHaveAttribute("title");
   }
 });
 
