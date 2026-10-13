@@ -14,6 +14,7 @@
   import FilterAndSort from "#lib/library/FilterAndSort.svelte";
   import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
   import FolderNotice from "#lib/library/FolderNotice.svelte";
+  import ContinueRow from "#lib/library/ContinueRow.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { filtersOn, withoutFilters } from "#lib/library/library-listing.ts";
   import { librarySeriesList } from "#lib/library/library-series.svelte.ts";
@@ -272,6 +273,11 @@
       }}
     />
   {:else if loaded !== undefined}
+    {#if loaded.view.showsContinueRow}
+      <div class="mbs-xl">
+        <ContinueRow usesStandIns={screenshotMode.isOn} />
+      </div>
+    {/if}
     <div class="mbs-xl">
       <SeriesCovers
         series={loaded.series.items}
