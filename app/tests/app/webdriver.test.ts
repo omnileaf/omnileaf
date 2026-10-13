@@ -351,6 +351,33 @@ test("comes back to the page's context when a native step fails", async () => {
   expect(switched).toEqual(["switch", "switch"]);
 });
 
+test("comes back to the page's context through the older route when a native driver knows only that one", async () => {
+  const switchedTo: unknown[] = [];
+  const server = await serve((route, response, body) => {
+    if (route === "POST /session") {
+      reply(response, 200, { sessionId: "older" });
+    } else if (route === "GET /session/older/appium/context") {
+      reply(response, 200, "WEBVIEW_1");
+    } else if (
+      route === "POST /session/older/appium/context" &&
+      switchedTo.length === 0
+    ) {
+      switchedTo.push(JSON.parse(body));
+      reply(response, 200, null);
+    } else if (route === "POST /session/older/context") {
+      switchedTo.push(JSON.parse(body));
+      reply(response, 200, null);
+    } else {
+      reply(response, 404, { error: "unknown command", message: "" });
+    }
+  });
+  const session = await Session.start(server, {});
+
+  await session.inNativeContext(() => Promise.resolve());
+
+  expect(switchedTo).toEqual([{ name: "NATIVE_APP" }, { name: "WEBVIEW_1" }]);
+});
+
 test("relaunches the app and goes on in the web view of the new launch, not the old one", async () => {
   const switchedTo: unknown[] = [];
   let contextsAsked = 0;
