@@ -88,3 +88,14 @@ print_stdout = "warn"
 todo = "warn"
 unimplemented = "warn"
 unwrap_used = "warn"
+
+[profile.dev.package]
+crc32fast.opt-level = 3
+fast_image_resize.opt-level = 3
+fdeflate.opt-level = 3
+image-webp.opt-level = 3
+jpeg-decoder.opt-level = 3
+jpeg-encoder.opt-level = 3
+miniz_oxide.opt-level = 3
+omnileaf-imaging.opt-level = 3
+png.opt-level = 3
