@@ -1,6 +1,9 @@
 <script lang="ts">
   import { ArrowDownUp, ChevronDown, Search } from "@lucide/svelte";
 
+  import { tick } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
+
   import { Button } from "#lib/components/ui/button/index.ts";
   import {
     DropdownMenu,
@@ -15,11 +18,13 @@
     ToggleGroup,
     ToggleGroupItem,
   } from "#lib/components/ui/toggle-group/index.ts";
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type {
     BooksShown,
     SeriesBookListing,
     SortDirection,
   } from "#lib/ipc/bindings.ts";
+  import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   const SHOWN = [
@@ -37,6 +42,18 @@
     label: () => string;
   }[];
   const ICON_SIZE = 15;
+
+  const isWide = new MediaQuery(EXPANDED_QUERY);
+  let isSearching = $state(false);
+  let searchField = $state<HTMLInputElement | null>(null);
+
+  async function reveal(): Promise<void> {
+    isSearching = !isSearching;
+    await tick();
+    if (isSearching) {
+      searchField?.focus();
+    }
+  }
 
   let {
     listing,
@@ -67,10 +84,14 @@
 
 <div class="flex flex-wrap items-center gap-sm">
   <InputGroup
-    class="gap-sm rounded-control border border-field bg-card px-sm text-muted block-pointer-target inline-series-search focus-within:border-accent"
+    class={[
+      "gap-sm rounded-control border border-field bg-card px-sm text-muted block-pointer-target inline-series-search focus-within:border-accent max-expanded:order-last max-expanded:inline-full",
+      !isSearching && "max-expanded:hidden",
+    ]}
   >
     <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
     <Input
+      bind:ref={searchField}
       type="search"
       aria-label={m.series_find_book()}
       placeholder={m.series_find_book()}
@@ -83,6 +104,7 @@
   </InputGroup>
   <ToggleGroup
     aria-label={m.series_show()}
+    class="max-expanded:flex-1"
     bind:value={
       () => listing.shown,
       (chosen: string) => {
@@ -93,37 +115,70 @@
     }
   >
     {#each SHOWN as { shown, label } (shown)}
-      <ToggleGroupItem value={shown} data-label={label()}>
+      <ToggleGroupItem
+        value={shown}
+        data-label={label()}
+        class="max-expanded:flex-1"
+      >
         {label()}
       </ToggleGroupItem>
     {/each}
   </ToggleGroup>
-  <DropdownMenu>
-    <DropdownMenuTrigger>
+  {#if !isWide.current}
+    <Tooltip
+      label={m.series_find_book()}
+      type="button"
+      aria-label={m.series_find_book()}
+      aria-expanded={isSearching}
+      onclick={() => {
+        void reveal();
+      }}
+    >
       {#snippet child({ props })}
         <Button
           {...props}
           look="outline"
-          aria-label={m.series_sort({ order })}
-          class="ms-auto flex shrink-0 items-center gap-icon-gap px-md text-detail block-pointer-target"
+          class="flex shrink-0 items-center justify-center block-pointer-target inline-pointer-target"
         >
-          <ArrowDownUp size={ICON_SIZE} aria-hidden="true" />
-          <span class="grid">
-            {#each ORDERS as { direction, label } (direction)}
-              <span
-                class={[
-                  "col-start-1 row-start-1",
-                  listing.direction !== direction && "invisible",
-                ]}
-              >
-                {label()}
-              </span>
-            {/each}
-          </span>
-          <ChevronDown size={ICON_SIZE} aria-hidden="true" class="text-muted" />
+          <Search size={ICON_SIZE} aria-hidden="true" />
         </Button>
       {/snippet}
-    </DropdownMenuTrigger>
+    </Tooltip>
+  {/if}
+  <DropdownMenu>
+    <Tooltip label={isWide.current ? undefined : m.series_sort({ order })}>
+      {#snippet child({ props: tip })}
+        <DropdownMenuTrigger {...tip}>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              look="outline"
+              aria-label={m.series_sort({ order })}
+              class="flex shrink-0 items-center justify-center gap-icon-gap block-pointer-target max-expanded:inline-pointer-target expanded:ms-auto expanded:px-md expanded:text-detail"
+            >
+              <ArrowDownUp size={ICON_SIZE} aria-hidden="true" />
+              <span class="grid max-expanded:hidden">
+                {#each ORDERS as { direction, label } (direction)}
+                  <span
+                    class={[
+                      "col-start-1 row-start-1",
+                      listing.direction !== direction && "invisible",
+                    ]}
+                  >
+                    {label()}
+                  </span>
+                {/each}
+              </span>
+              <ChevronDown
+                size={ICON_SIZE}
+                aria-hidden="true"
+                class="text-muted max-expanded:hidden"
+              />
+            </Button>
+          {/snippet}
+        </DropdownMenuTrigger>
+      {/snippet}
+    </Tooltip>
     <DropdownMenuContent to="main" align="end" class="min-inline-book-menu">
       <DropdownMenuRadioGroup
         value={listing.direction}

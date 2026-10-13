@@ -33,10 +33,6 @@ test.each<[ButtonLook, string[]]>([
     ["rounded-full", "text-muted", "enabled:hover:before:bg-hover"],
   ],
   ["chip", ["rounded-full", "border-border", "hover:bg-hover"]],
-  [
-    "toolbar-action",
-    ["rounded-selection-action", "expanded:bg-selection-action"],
-  ],
   ["row", ["flex", "text-start", "hover:bg-hover", "active:bg-pressed"]],
   ["inverse", ["rounded-full", "bg-foreground", "text-card"]],
   ["dismiss", ["rounded-full", "opacity-70", "hover:before:bg-hover"]],
