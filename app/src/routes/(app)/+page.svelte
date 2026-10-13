@@ -69,20 +69,19 @@
   const chosenListing = $derived(
     listing.reading.kind === "read" ? listing.reading.value : undefined,
   );
-  const isFiltered = $derived(
-    chosenListing !== undefined && filtersOn(chosenListing.filter) > 0,
-  );
+  let isListFiltered = $state(false);
+
   const listsNothing = $derived(
     library.list.kind === "loaded" && library.list.series.length === 0,
   );
-  const isEmpty = $derived(listsNothing && !isFiltered);
+  const isEmpty = $derived(listsNothing && !isListFiltered);
   const loaded = $derived(
     library.list.kind === "loaded" && view.reading.kind === "read"
       ? { series: library.list, view: view.reading.value }
       : undefined,
   );
   const hasBooks = $derived(
-    loaded !== undefined && (loaded.series.series.length > 0 || isFiltered),
+    loaded !== undefined && (loaded.series.series.length > 0 || isListFiltered),
   );
   const showsItemCounts = $derived(
     hasBooks && loaded?.view.showsItemCounts === true,
@@ -103,6 +102,15 @@
     listing.choose(chosen);
     document.querySelector("main")?.scrollTo({ top: 0 });
   }
+
+  $effect.pre(() => {
+    if (library.list.kind === "loaded") {
+      isListFiltered = untrack(
+        () =>
+          chosenListing !== undefined && filtersOn(chosenListing.filter) > 0,
+      );
+    }
+  });
 
   $effect(() => {
     if (chosenListing === undefined) {

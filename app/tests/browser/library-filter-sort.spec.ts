@@ -6,6 +6,7 @@ import {
   type LibraryListing,
 } from "../../src/lib/ipc/bindings.ts";
 import { pseudoText } from "../../src/lib/language/pseudo-locale.ts";
+import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -103,21 +104,21 @@ function titles(numbers: readonly number[]): string[] {
 
 let storedListing: LibraryListing = DEFAULT_LIBRARY_LISTING;
 
-test.use({
-  backend: {
-    ...DEFAULT_BACKEND,
-    librarySeries: (_after, listing) => ({
-      series: listed(listing),
-      next: null,
-    }),
-    librarySeriesCount: (filter) => letThrough(filter).length,
-    libraryListing: () => storedListing,
-    setLibraryListing: (listing) => {
-      storedListing = listing;
-      return null;
-    },
+const FILTERING_BACKEND = {
+  ...DEFAULT_BACKEND,
+  librarySeries: (_after, listing) => ({
+    series: listed(listing),
+    next: null,
+  }),
+  librarySeriesCount: (filter) => letThrough(filter).length,
+  libraryListing: () => storedListing,
+  setLibraryListing: (listing) => {
+    storedListing = listing;
+    return null;
   },
-});
+} satisfies FakeBackend;
+
+test.use({ backend: FILTERING_BACKEND });
 
 test.beforeEach(() => {
   storedListing = DEFAULT_LIBRARY_LISTING;
@@ -626,4 +627,32 @@ test("the sort list has no accessibility violations", async ({ page }) => {
 
   expect(violations).toEqual([]);
   expect(await listedTitles(page)).toHaveLength(CATALOG.length);
+});
+
+test.describe("when a filter leaves no series", () => {
+  test.use({
+    backend: {
+      ...FILTERING_BACKEND,
+      librarySeries: (after, listing) =>
+        listing.filter.started === "only"
+          ? { series: [], next: null }
+          : FILTERING_BACKEND.librarySeries(after, listing),
+    },
+  });
+
+  test("keeps filter and sort open as the filter is set back to Any, and lists the series again", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await openFilterAndSort(page);
+    await filterBy(page, "Started", "Only");
+    await expect(
+      page.getByText("No series match these filters."),
+    ).toBeVisible();
+
+    await filterBy(page, "Started", "Any");
+
+    await expectTitles(page, [1, 2, 3, 4, 5, 6]);
+    await expect(filterAndSort(page)).toBeVisible();
+  });
 });
