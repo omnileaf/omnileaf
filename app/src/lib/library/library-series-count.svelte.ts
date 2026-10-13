@@ -15,6 +15,7 @@ export class LibrarySeriesCount {
 
   async load(): Promise<void> {
     const load = ++this.#latestLoad;
+    this.count = undefined;
     const result = await this.countSeries();
     if (result.status === "error") {
       this.onFailure(result.error);
