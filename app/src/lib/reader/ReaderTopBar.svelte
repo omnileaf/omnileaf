@@ -2,6 +2,7 @@
   import { ArrowLeft, ChevronLeft, Maximize } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -74,9 +75,16 @@
     label={m.reader_full_screen()}
     type="button"
     aria-label={m.reader_full_screen()}
-    class="hidden shrink-0 items-center justify-center rounded-reader-control-wide transition-control block-reader-control-wide inline-reader-control-wide hover:tint-reader-hover active:tint-reader-pressed expanded:flex ios:hidden android:hidden"
     onclick={onFullScreen}
   >
-    <Maximize size={BAR_ICON_SIZE_WIDE} aria-hidden="true" />
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        look="icon"
+        class="hidden shrink-0 rounded-reader-control-wide transition-control block-reader-control-wide inline-reader-control-wide hover:tint-reader-hover active:tint-reader-pressed expanded:flex ios:hidden android:hidden"
+      >
+        <Maximize size={BAR_ICON_SIZE_WIDE} aria-hidden="true" />
+      </Button>
+    {/snippet}
   </Tooltip>
 </div>
