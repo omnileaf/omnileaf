@@ -8,11 +8,17 @@ export const BUTTON_LOOKS = {
   text: "font-semibold text-accent",
   quiet:
     "font-semibold text-accent transition-control enabled:hover:bg-hover enabled:active:bg-pressed",
+  primary:
+    "bg-accent text-on-accent transition-control enabled:hover:bg-accent-hover enabled:active:bg-accent-pressed",
   filled: "bg-accent text-on-accent",
   outline: "rounded-control border border-border bg-card font-semibold",
+  tinted:
+    "transition-control enabled:hover:tint-hover enabled:active:tint-pressed",
   icon: "flex items-center justify-center rounded-full",
   "header-control":
     "flex items-center justify-center gap-sm rounded-full transition-control large:rounded-control large:border large:border-field large:text-small large:font-medium",
+  "row-action":
+    "flex items-center justify-center rounded-full text-muted transition-control before:absolute before:rounded-full before:transition-control focus-visible:outline-2 focus-visible:outline-accent enabled:hover:text-foreground enabled:hover:before:bg-hover enabled:active:text-foreground enabled:active:before:bg-pressed disabled:opacity-60",
   "about-copy-phone": `${ABOUT_COPY} rounded-tile px-md text-accent transition-control hover:bg-hover active:bg-pressed`,
   "about-copy-pane": `${ABOUT_COPY} rounded-control border border-border bg-card ps-md pe-list-row hover:tint-hover active:tint-pressed desktop:text-label desktop:min-block-pointer-button`,
   "confirm-cancel": `${CONFIRM} bg-chip hover:tint-hover active:tint-pressed medium:border medium:border-border medium:bg-card`,

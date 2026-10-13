@@ -22,10 +22,16 @@ test.each<[ButtonLook, string[]]>([
     "quiet",
     ["text-accent", "enabled:hover:bg-hover", "enabled:active:bg-pressed"],
   ],
+  ["primary", ["bg-accent", "text-on-accent", "enabled:hover:bg-accent-hover"]],
   ["filled", ["bg-accent", "text-on-accent"]],
   ["outline", ["rounded-control", "border", "border-border", "bg-card"]],
+  ["tinted", ["enabled:hover:tint-hover", "enabled:active:tint-pressed"]],
   ["icon", ["flex", "items-center", "justify-center", "rounded-full"]],
   ["header-control", ["rounded-full", "large:rounded-control", "large:border"]],
+  [
+    "row-action",
+    ["rounded-full", "text-muted", "enabled:hover:before:bg-hover"],
+  ],
 ])("draws the %s look with its colours and shape", (look, signature) => {
   const classes = classesOf(look);
 

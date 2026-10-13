@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
 
   let {
@@ -18,13 +19,14 @@
   } = $props();
 </script>
 
-<Tooltip
-  label={tooltip}
-  type="button"
-  aria-label={label}
-  {disabled}
-  class="flex shrink-0 items-center justify-center rounded-full text-muted transition-control block-touch-target inline-touch-target before:absolute before:rounded-full before:transition-control before:block-pointer-target before:inline-pointer-target focus-visible:outline-2 focus-visible:outline-accent enabled:hover:text-foreground enabled:hover:before:bg-hover enabled:active:text-foreground enabled:active:before:bg-pressed disabled:opacity-60"
-  {onclick}
->
-  {@render children()}
+<Tooltip label={tooltip} type="button" aria-label={label} {disabled} {onclick}>
+  {#snippet child({ props })}
+    <Button
+      {...props}
+      look="row-action"
+      class="shrink-0 block-touch-target inline-touch-target before:block-pointer-target before:inline-pointer-target"
+    >
+      {@render children()}
+    </Button>
+  {/snippet}
 </Tooltip>
