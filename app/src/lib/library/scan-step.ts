@@ -1,7 +1,7 @@
 import type { ScanProgress } from "#lib/ipc/bindings.ts";
 
 export type ScanStep =
-  | { readonly kind: "finding" }
+  | { readonly kind: "finding"; readonly found: number }
   | {
       readonly kind: "reading";
       readonly scanned: number;
@@ -19,7 +19,7 @@ export function followScan(
     }
     show(
       progress.stage === "finding"
-        ? { kind: "finding" }
+        ? { kind: "finding", found: progress.found }
         : {
             kind: "reading",
             scanned: progress.scanned,

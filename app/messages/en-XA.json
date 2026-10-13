@@ -155,6 +155,14 @@
   "app_version": "⟦Ṽéŕšíöñ {version}·······⟧",
   "library_add_folder": "⟦Áðð á ƒöļðéŕ·····⟧",
   "library_scan_finding": "⟦Ƒíñðíñĝ ƀööķš······⟧",
+  "library_scan_found_so_far": [
+    {
+      "declarations": ["input found", "local formattedFound = found: number"],
+      "match": {
+        "*": "⟦{formattedFound} šö ƒáŕ··········⟧"
+      }
+    }
+  ],
   "library_scan_progress": [
     {
       "declarations": [
