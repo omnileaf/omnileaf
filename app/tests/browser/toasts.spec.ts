@@ -50,7 +50,8 @@ async function stackTwoWarnings(page: Page) {
   const addFolder = page
     .getByRole("region", { name: "Your library is empty" })
     .getByRole("button", { name: "Add a folder" });
-  await addFolder.click();
+  await addFolder.focus();
+  await page.keyboard.press("Enter");
   await expect(toastSaying(page, "Couldn't read that folder")).toBeVisible();
   await addFolder.focus();
   await page.keyboard.press("Enter");
