@@ -875,22 +875,9 @@
       }
     }
   ],
-  "reader_back": "⟦Ļíƀŕáŕý···⟧",
   "reader_back_label": "⟦Ɓáçķ ţö ţĥé ļíƀŕáŕý········⟧",
-  "reader_book_line": [
-    {
-      "declarations": [
-        "input title",
-        "input page",
-        "input count",
-        "local formattedPage = page: number",
-        "local formattedCount = count: number"
-      ],
-      "match": {
-        "*": "⟦{title} · Þáĝé {formattedPage} öƒ {formattedCount}····················⟧"
-      }
-    }
-  ],
+  "reader_back_to_series": "⟦Ɓáçķ ţö {series}·······⟧",
+  "reader_breadcrumb": "⟦Ɓŕéáðçŕûɱƀ····⟧",
   "reader_position": [
     {
       "declarations": [
@@ -924,10 +911,10 @@
   "reader_hide_controls": "⟦Ĥíðé ţĥé çöñţŕöļš·······⟧",
   "reader_full_screen": "⟦Ƒûļļ šçŕééñ·····⟧",
   "reader_nearby_pages": "⟦Ñéáŕƀý þáĝéš·····⟧",
-  "reader_previous_book": "⟦Þŕéṽíöûš ƀööķ: {title}·········⟧",
-  "reader_next_book": "⟦Ñéẋţ ƀööķ: {title}········⟧",
-  "reader_no_previous_book": "⟦Þŕéṽíöûš ƀööķ······⟧",
-  "reader_no_next_book": "⟦Ñéẋţ ƀööķ····⟧",
+  "reader_previous_chapter": "⟦Þŕéṽíöûš çĥáþţéŕ: {title}··········⟧",
+  "reader_next_chapter": "⟦Ñéẋţ çĥáþţéŕ: {title}·········⟧",
+  "reader_no_previous_chapter": "⟦Þŕéṽíöûš çĥáþţéŕ·······⟧",
+  "reader_no_next_chapter": "⟦Ñéẋţ çĥáþţéŕ·····⟧",
   "reader_page": [
     {
       "declarations": ["input page", "local formattedPage = page: number"],

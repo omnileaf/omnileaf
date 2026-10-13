@@ -875,22 +875,9 @@
       }
     }
   ],
-  "reader_back": "Library",
   "reader_back_label": "Back to the library",
-  "reader_book_line": [
-    {
-      "declarations": [
-        "input title",
-        "input page",
-        "input count",
-        "local formattedPage = page: number",
-        "local formattedCount = count: number"
-      ],
-      "match": {
-        "*": "{title} · Page {formattedPage} of {formattedCount}"
-      }
-    }
-  ],
+  "reader_back_to_series": "Back to {series}",
+  "reader_breadcrumb": "Breadcrumb",
   "reader_position": [
     {
       "declarations": [
@@ -924,10 +911,10 @@
   "reader_hide_controls": "Hide the controls",
   "reader_full_screen": "Full screen",
   "reader_nearby_pages": "Nearby pages",
-  "reader_previous_book": "Previous book: {title}",
-  "reader_next_book": "Next book: {title}",
-  "reader_no_previous_book": "Previous book",
-  "reader_no_next_book": "Next book",
+  "reader_previous_chapter": "Previous chapter: {title}",
+  "reader_next_chapter": "Next chapter: {title}",
+  "reader_no_previous_chapter": "Previous chapter",
+  "reader_no_next_chapter": "Next chapter",
   "reader_page": [
     {
       "declarations": ["input page", "local formattedPage = page: number"],
