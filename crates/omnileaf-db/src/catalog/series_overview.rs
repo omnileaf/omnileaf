@@ -9,7 +9,8 @@ use crate::{
 };
 
 const OVERVIEW_OF_SERIES: &str = concat!(
-    "SELECT library_root.locator_kind, library_root.location,
+    "SELECT library_root.locator_kind, library_root.location, library_root.bookmark,
+        library_root.tree_name, library_root.tree_place,
         series.id AS id, series.title, series.book_count, series.read_count,
         cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev
     FROM series ",
