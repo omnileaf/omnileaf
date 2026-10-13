@@ -355,7 +355,6 @@ export const TOKEN_THEME = {
     "sort-row",
     "step-circle",
     "step-dot",
-    "step-dot-current",
     "step-line",
     "stepper",
     "stepper-value",

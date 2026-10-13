@@ -64,8 +64,10 @@
     }
   }
 
-  function back(): void {
-    window.history.back();
+  function backTo(earlier: FirstLaunchStep): void {
+    window.history.go(
+      FIRST_LAUNCH_STEPS.indexOf(earlier) - FIRST_LAUNCH_STEPS.indexOf(step),
+    );
   }
 
   function dropStepEntries(): Promise<void> {
@@ -117,7 +119,7 @@
         <HomeStep
           platform={data.appInfo.platform}
           folders={folders.list}
-          onBack={back}
+          onBackTo={backTo}
           onNext={next}
         />
       {:else if step === "link"}
@@ -126,11 +128,11 @@
           {folders}
           addFolder={addFolderWithProgress}
           {notices}
-          onBack={back}
+          onBackTo={backTo}
           onNext={next}
         />
       {:else if step === "choices"}
-        <ChoicesStep {device} onBack={back} onNext={next} />
+        <ChoicesStep {device} onBackTo={backTo} onNext={next} />
       {:else}
         <ReadyStep onFinish={finish} />
       {/if}

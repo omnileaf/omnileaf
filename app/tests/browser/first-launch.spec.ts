@@ -227,9 +227,6 @@ test.describe("buttons on a desktop", () => {
       page.getByRole("button", { name: "Continue" }),
       page.getByRole("button", { name: /^Skip/ }),
     ];
-    if (viewportOf(page).width >= MEDIUM_MIN_WIDTH) {
-      buttons.push(page.getByRole("button", { name: "Back" }).last());
-    }
 
     const shapes = await Promise.all(buttons.map(shapeOf));
 
@@ -483,10 +480,20 @@ test.describe("the home folder on an iPad", () => {
 test("counts the steps between the welcome and the end", async ({ page }) => {
   await goTo(page, "Where your library lives");
 
-  const progress = page.getByRole("progressbar", { name: "Setting up" });
+  const steps = page.getByRole("list", { name: "Setting up" });
 
-  await expect(progress).toHaveAttribute("aria-valuenow", "1");
-  await expect(progress).toHaveAttribute("aria-valuetext", "1 of 3");
+  for (const name of [
+    "Home folder, step 1 of 3",
+    "Your folders, step 2 of 3",
+    "Choices, step 3 of 3",
+  ]) {
+    await expect(
+      steps.getByRole("button", { name, exact: true }),
+    ).toBeVisible();
+  }
+  await expect(steps.locator('[aria-current="step"]')).toHaveAccessibleName(
+    "Home folder, step 1 of 3",
+  );
 });
 
 test("links a folder that already holds comics and lists it", async ({
@@ -692,12 +699,38 @@ test("turns the app dark from the choices", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
-test("goes back a step with the Back button", async ({ page }) => {
+function stepNamed(page: Page, name: string): Locator {
+  return page
+    .getByRole("list", { name: "Setting up" })
+    .getByRole("button", { name });
+}
+
+test("goes back to a finished step when it is tapped", async ({ page }) => {
+  await goTo(page, "A few choices");
+
+  await stepNamed(page, "Home folder, step 1 of 3").click();
+
+  await expect(heading(page, HOME_HEADING)).toBeFocused();
+});
+
+test("goes back from a tapped step the way it came", async ({ page }) => {
+  await goTo(page, "A few choices");
+  await stepNamed(page, "Home folder, step 1 of 3").click();
+  await expect(heading(page, HOME_HEADING)).toBeVisible();
+
+  await page.goBack();
+
+  await expect(heading(page, "Welcome to Omnileaf")).toBeVisible();
+});
+
+test("keeps the steps ahead from being chosen yet", async ({ page }) => {
   await goTo(page, "Where your library lives");
+  const ahead = stepNamed(page, "Choices, step 3 of 3");
 
-  await page.getByRole("button", { name: "Back" }).click();
+  await ahead.click({ force: true });
 
-  await expect(heading(page, "Welcome to Omnileaf")).toBeFocused();
+  await expect(ahead).toHaveAttribute("aria-disabled", "true");
+  await expect(heading(page, HOME_HEADING)).toBeVisible();
 });
 
 test("goes back a step with the browser's back", async ({ page }) => {
@@ -722,42 +755,170 @@ test("stays on the last step and says so when finishing fails", async ({
   await expect(page).toHaveURL("/first-launch");
 });
 
-test("puts the Back button above the step on phones and beside its actions from 600px", async ({
+test("heads the step with the steps and leaves out a Back button", async ({
   page,
 }) => {
-  await goTo(page, "Where your library lives");
+  await goTo(page, "Already have comics or books?");
 
-  const back = page.getByRole("button", { name: "Back" });
-  const next = page.getByRole("button", { name: "Continue" });
-  const isPhone = viewportOf(page).width < MEDIUM_MIN_WIDTH;
+  const steps = await boxOf(page.getByRole("list", { name: "Setting up" }));
+  const title = await boxOf(heading(page, "Already have comics or books?"));
 
-  const backBox = await back.boundingBox();
-  const nextBox = await next.boundingBox();
-  const backIsAbove =
-    backBox !== null && nextBox !== null && backBox.y < nextBox.y;
-  expect(backIsAbove).toBe(isPhone);
+  expect(steps.y + steps.height).toBeLessThanOrEqual(title.y);
+  await expect(page.getByRole("button", { name: "Back" })).toHaveCount(0);
 });
 
-function transitionsIn(locator: Locator): Promise<string[]> {
-  return locator.evaluate((root) =>
-    [...root.querySelectorAll("*")]
-      .map((element) => getComputedStyle(element).transitionDuration)
-      .filter((duration) => duration !== "0s"),
-  );
+function circleOf(step: Locator): Locator {
+  return step.locator("xpath=*[1]");
 }
 
+function lineAfter(step: Locator): Locator {
+  return step.locator("xpath=following-sibling::*[last()]");
+}
+
+function lineBefore(step: Locator): Locator {
+  return step.locator("xpath=following-sibling::*[1]");
+}
+
+function lineColor(line: Locator): Promise<string> {
+  return line.evaluate((element) => getComputedStyle(element).backgroundColor);
+}
+
+function colorOf(page: Page, token: string): Promise<string> {
+  return page.evaluate((name) => {
+    const probe = document.createElement("span");
+    probe.style.color = `var(${name})`;
+    document.body.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  }, token);
+}
+
+interface StepLook {
+  size: number;
+  fill: string;
+  ring: string;
+  hasCheck: boolean;
+  number: string;
+  nameWeight: string;
+}
+
+async function lookOfStep(step: Locator): Promise<StepLook> {
+  await settle(step);
+  return step.evaluate((button) => {
+    const [circle, name] = [...button.children];
+    if (circle === undefined || name === undefined) {
+      throw new Error("the step has no circle and name");
+    }
+    const circleStyle = getComputedStyle(circle);
+    return {
+      size: circle.getBoundingClientRect().width,
+      fill: circleStyle.backgroundColor,
+      ring: circleStyle.boxShadow,
+      hasCheck: circle.querySelector("svg") !== null,
+      number: circle.textContent.trim(),
+      nameWeight: getComputedStyle(name).fontWeight,
+    };
+  });
+}
+
+test("checks the finished steps and fills the line after each with the accent", async ({
+  page,
+}) => {
+  await goTo(page, "A few choices");
+  const accent = await colorOf(page, "--color-accent");
+  const home = stepNamed(page, "Home folder, step 1 of 3");
+  const folders = stepNamed(page, "Your folders, step 2 of 3");
+  const choices = stepNamed(page, "Choices, step 3 of 3");
+
+  const looks = await Promise.all([home, folders].map(lookOfStep));
+  const lines = await Promise.all(
+    [
+      lineAfter(home),
+      lineBefore(folders),
+      lineAfter(folders),
+      lineBefore(choices),
+    ].map(lineColor),
+  );
+
+  expect(looks.map((look) => [look.hasCheck, look.fill])).toEqual([
+    [true, accent],
+    [true, accent],
+  ]);
+  expect(lines).toEqual([accent, accent, accent, accent]);
+});
+
+test("fills the current step with the accent, rings it softly and names it in bold", async ({
+  page,
+}) => {
+  await goTo(page, "Already have comics or books?");
+  const current = stepNamed(page, "Your folders, step 2 of 3");
+  const accent = await colorOf(page, "--color-accent");
+  const softAccent = await colorOf(page, "--color-accent-soft");
+
+  const look = await lookOfStep(current);
+
+  await expect(current).toHaveAttribute("aria-current", "step");
+  expect(look).toMatchObject({
+    size: 28,
+    fill: accent,
+    hasCheck: false,
+    number: "2",
+    nameWeight: "700",
+  });
+  expect(look.ring).toContain(softAccent);
+});
+
+test("greys the steps ahead and the line before them", async ({ page }) => {
+  await goTo(page, "Already have comics or books?");
+  const current = stepNamed(page, "Your folders, step 2 of 3");
+  const ahead = stepNamed(page, "Choices, step 3 of 3");
+  const grey = await colorOf(page, "--color-step-off");
+
+  const look = await lookOfStep(ahead);
+  const lines = await Promise.all(
+    [lineAfter(current), lineBefore(ahead)].map((line) =>
+      line.evaluate((element) => ({
+        color: getComputedStyle(element).backgroundColor,
+        thickness: element.getBoundingClientRect().height,
+      })),
+    ),
+  );
+
+  expect([look.size, look.fill, look.number]).toEqual([28, grey, "3"]);
+  expect(lines).toEqual([
+    { color: grey, thickness: 4 },
+    { color: grey, thickness: 4 },
+  ]);
+});
+
+test("names each step under its circle", async ({ page }) => {
+  await goTo(page, "Already have comics or books?");
+  const current = stepNamed(page, "Your folders, step 2 of 3");
+
+  const circle = await boxOf(circleOf(current));
+  const name = await boxOf(current.getByText("Your folders"));
+
+  expect(name.y).toBeGreaterThanOrEqual(circle.y + circle.height);
+  expect(
+    Math.abs(name.x + name.width / 2 - (circle.x + circle.width / 2)),
+  ).toBeLessThan(1);
+});
+
 for (const reducedMotion of ["no-preference", "reduce"] as const) {
-  test(`moves the progress dots only without reduce motion (${reducedMotion})`, async ({
+  test(`grows the current step's circle in only without reduce motion (${reducedMotion})`, async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion });
     await goTo(page, "Where your library lives");
 
-    const transitions = await transitionsIn(
-      page.getByRole("progressbar", { name: "Setting up" }),
-    );
+    const animation = await circleOf(
+      stepNamed(page, "Home folder, step 1 of 3"),
+    ).evaluate((circle) => getComputedStyle(circle).animationName);
 
-    expect(transitions.length > 0).toBe(reducedMotion === "no-preference");
+    expect(animation).toBe(
+      reducedMotion === "no-preference" ? "step-grow" : "none",
+    );
   });
 }
 
