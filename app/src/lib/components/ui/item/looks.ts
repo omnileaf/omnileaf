@@ -13,7 +13,7 @@ export const ITEM_LOOKS = {
   "about-version":
     "flex flex-wrap items-center gap-md py-sm ps-list-row pe-sm min-block-4xl",
   "history-phone":
-    "flex flex-1 items-center gap-md px-md transition-control min-inline-none min-block-history-row hover:bg-hover active:bg-pressed desktop:large:hidden",
+    "flex flex-1 items-center gap-md ps-md pe-xs transition-control min-inline-none min-block-history-row hover:bg-hover active:bg-pressed desktop:large:hidden",
   "history-desktop":
     "hidden flex-1 items-center gap-lg min-inline-none min-block-history-row-wide desktop:large:flex",
 } satisfies Record<string, string>;

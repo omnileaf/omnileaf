@@ -285,6 +285,8 @@
   "history_reached_page": "⟦ţö þáĝé {page}······⟧",
   "history_reached_end": "⟦ţö ţĥé éñð····⟧",
   "history_open_series": "⟦Öþéñ šéŕíéš·····⟧",
+  "history_more": "⟦Ṁöŕé ƒöŕ {book}······⟧",
+  "history_more_short": "⟦Ṁöŕé··⟧",
   "history_started_at": "⟦Šţáŕţéð áţ {time}·······⟧",
   "history_read_for": "⟦Ŕéáð ƒöŕ {duration}········⟧",
   "history_continue": "⟦Çöñţíñûé····⟧",

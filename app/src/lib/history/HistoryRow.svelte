@@ -11,6 +11,8 @@
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
+  import HistoryRowMenu from "#lib/history/HistoryRowMenu.svelte";
+  import HistoryRowSheet from "#lib/history/HistoryRowSheet.svelte";
   import SessionProgress from "#lib/history/SessionProgress.svelte";
   import type { HistoryEntry } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
@@ -61,7 +63,7 @@
 </script>
 
 <li
-  class="desktop:large:relative desktop:large:flex desktop:large:ps-lg desktop:large:pe-md desktop:large:hover:bg-hover"
+  class="flex items-center desktop:large:relative desktop:large:ps-lg desktop:large:pe-md desktop:large:hover:bg-hover"
 >
   <Item look="history-phone">
     {#snippet child({ props })}
@@ -93,6 +95,7 @@
       </a>
     {/snippet}
   </Item>
+  <HistoryRowSheet {entry} {cover} />
   <Item look="history-desktop">
     <ListCover
       {cover}
@@ -131,7 +134,9 @@
     >
       <SessionProgress readTo={entry.readTo} bar="flex-1" />
     </span>
-    <span class="flex shrink-0 justify-end min-inline-history-actions">
+    <span
+      class="flex shrink-0 items-center justify-end gap-xs min-inline-history-actions"
+    >
       <a
         {href}
         aria-label={action.label}
@@ -147,6 +152,7 @@
         />
         {action.text}
       </a>
+      <HistoryRowMenu {entry} {onOpenSessions} />
     </span>
   </Item>
 </li>

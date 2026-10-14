@@ -285,6 +285,8 @@
   "history_reached_page": "to page {page}",
   "history_reached_end": "to the end",
   "history_open_series": "Open series",
+  "history_more": "More for {book}",
+  "history_more_short": "More",
   "history_started_at": "Started at {time}",
   "history_read_for": "Read for {duration}",
   "history_continue": "Continue",

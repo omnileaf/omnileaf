@@ -892,3 +892,74 @@ test.describe("a book's reading sessions", () => {
     });
   }
 });
+
+test.describe("a session's menu", () => {
+  test.use({ backend: READ_BACKEND });
+
+  function moreFor(page: Page, number: number): Locator {
+    return page
+      .getByRole("button", { name: `More for ${bookTitle(number)}` })
+      .filter({ visible: true });
+  }
+
+  test("opens the book's reading sessions or its series from a menu on a desktop", async ({
+    page,
+  }) => {
+    test.skip(!isDesktop(page), "desktops only");
+    await openHistory(page);
+
+    await moreFor(page, 4).click();
+    await expect(page.getByRole("menuitem")).toHaveText([
+      "Reading sessions",
+      "Open series",
+    ]);
+    await page.getByRole("menuitem", { name: "Reading sessions" }).click();
+    await expect(
+      page.getByRole("dialog", { name: "Reading sessions" }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    await moreFor(page, 4).click();
+    await page.getByRole("menuitem", { name: "Open series" }).click();
+
+    await expect(page).toHaveURL(new RegExp(`/series/${seriesId(4)}$`));
+  });
+
+  test("opens the book's actions in a sheet from the bottom on a phone or tablet", async ({
+    page,
+  }) => {
+    test.skip(isDesktop(page), "phones and tablets only");
+    await openHistory(page);
+
+    await moreFor(page, 7).click();
+
+    const sheet = page.getByRole("dialog", { name: seriesTitle(7) });
+    await expect(sheet.getByRole("link")).toHaveText([
+      "Read again",
+      "Reading sessions",
+      "Open series",
+    ]);
+    await expect(
+      sheet.getByRole("link", { name: "Reading sessions" }),
+    ).toHaveAttribute("href", `/history/${bookId(7)}`);
+    await expect(
+      sheet.getByRole("link", { name: "Open series" }),
+    ).toHaveAttribute("href", `/series/${seriesId(7)}`);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations with it open in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await openHistory(page);
+
+      await moreFor(page, 4).click();
+      await expect(
+        page.getByRole(isDesktop(page) ? "menu" : "dialog"),
+      ).toBeVisible();
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
+});
