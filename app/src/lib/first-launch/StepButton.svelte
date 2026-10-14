@@ -6,8 +6,6 @@
       "bg-accent font-bold text-on-accent enabled:hover:bg-accent-hover enabled:active:bg-accent-pressed touch:min-block-touch-button",
     quiet:
       "font-semibold text-accent enabled:hover:bg-hover enabled:active:bg-pressed",
-    outlined:
-      "border border-border font-semibold enabled:hover:bg-hover enabled:active:bg-pressed",
   } as const;
 
   let {

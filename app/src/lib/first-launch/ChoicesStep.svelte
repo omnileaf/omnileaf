@@ -11,12 +11,17 @@
   import StepBadge from "./StepBadge.svelte";
   import StepFrame from "./StepFrame.svelte";
   import StepHeader from "./StepHeader.svelte";
+  import type { FirstLaunchStep } from "./steps";
 
   let {
     device,
-    onBack,
+    onBackTo,
     onNext,
-  }: { device: DeviceKind; onBack: () => void; onNext: () => void } = $props();
+  }: {
+    device: DeviceKind;
+    onBackTo: (step: FirstLaunchStep) => void;
+    onNext: () => void;
+  } = $props();
 
   const APPEARANCE_HELP = {
     phone: {
@@ -35,7 +40,7 @@
   {/if}
 {/snippet}
 
-<StepFrame step="choices" {onBack}>
+<StepFrame step="choices" {onBackTo}>
   <div class="flex flex-col gap-lg">
     <StepHeader scale="headline">
       {#snippet badge()}
