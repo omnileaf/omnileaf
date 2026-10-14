@@ -55,6 +55,7 @@ export function readerBook({ reading, startPage }: WireOpening): WireBook {
     position: BOOK_POSITION,
     previous: PREVIOUS_BOOK,
     next: NEXT_BOOK,
+    readingDirection: null,
   };
 }
 

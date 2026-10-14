@@ -265,6 +265,8 @@ export type OpenedBook = {
 	position: number,
 	previous: SeriesNeighbour | null,
 	next: SeriesNeighbour | null,
+	/**  Absent when the book's details don't say which way it reads. */
+	readingDirection: ReadingDirection | null,
 };
 
 /**  In pixels. */
@@ -290,6 +292,8 @@ export type ReadingDay = {
 	day: number,
 	readSeconds: number,
 };
+
+export type ReadingDirection = "leftToRight" | "rightToLeft";
 
 export type ReadingSaved = {
 	book: string & { readonly __brand: "BookId" },

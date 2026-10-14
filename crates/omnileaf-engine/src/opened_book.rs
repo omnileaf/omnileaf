@@ -21,6 +21,15 @@ pub struct OpenedBook {
     pub position: u32,
     pub previous: Option<SeriesNeighbour>,
     pub next: Option<SeriesNeighbour>,
+    /// Absent when the book's details don't say which way it reads.
+    pub reading_direction: Option<ReadingDirection>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ReadingDirection {
+    LeftToRight,
+    RightToLeft,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -67,6 +76,15 @@ impl ProbedFormat {
             | PageFormat::Png
             | PageFormat::Gif
             | PageFormat::Bmp => None,
+        }
+    }
+}
+
+impl From<omnileaf_formats::ReadingDirection> for ReadingDirection {
+    fn from(direction: omnileaf_formats::ReadingDirection) -> Self {
+        match direction {
+            omnileaf_formats::ReadingDirection::LeftToRight => Self::LeftToRight,
+            omnileaf_formats::ReadingDirection::RightToLeft => Self::RightToLeft,
         }
     }
 }
