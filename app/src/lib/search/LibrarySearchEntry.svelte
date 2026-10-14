@@ -40,7 +40,7 @@
   {/snippet}
 </Tooltip>
 <InputGroup
-  class="hidden gap-sm rounded-control border border-field bg-card px-md text-muted block-pointer-button inline-library-search focus-within:border-accent large:flex"
+  class="hidden gap-sm rounded-control border border-field bg-card px-md text-muted block-pointer-button inline-library-search focus-within:border-accent in-toolbar:inline-library-search-toolbar large:flex"
 >
   <Search size={FIELD_ICON_SIZE} aria-hidden="true" class="shrink-0" />
   <Input
