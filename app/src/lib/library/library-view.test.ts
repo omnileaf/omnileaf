@@ -47,10 +47,10 @@ test("changes how the library is drawn and keeps the covers per row", () => {
 });
 
 test("turns the item counts on and off", () => {
-  const shown = withItemCounts(DEFAULT_LIBRARY_VIEW, true);
+  const shown = withItemCounts(VIEW, true);
 
   expect(shown.showsItemCounts).toBe(true);
-  expect(withItemCounts(shown, false)).toEqual(DEFAULT_LIBRARY_VIEW);
+  expect(withItemCounts(shown, false)).toEqual(VIEW);
 });
 
 test("turns the Continue reading row on and off", () => {
