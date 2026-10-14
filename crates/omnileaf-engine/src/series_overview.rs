@@ -23,6 +23,27 @@ pub struct SeriesOverview {
     pub creators: Vec<SeriesCreator>,
     pub summary: Option<String>,
     pub tags: Vec<String>,
+    /// Other series in the library that share a creator or a tag with this one.
+    pub related: Vec<RelatedSeries>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RelatedSeries {
+    pub id: SeriesId,
+    pub title: String,
+    pub cover: Option<CoverPath>,
+    pub book_count: u32,
+    pub read_count: u32,
+    pub reason: RelatedReason,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum RelatedReason {
+    SameWriter,
+    SameArtist,
+    SharedTag { tag: String },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -58,6 +79,7 @@ impl SeriesOverview {
             creators: Vec::new(),
             summary: None,
             tags: Vec::new(),
+            related: Vec::new(),
         }
     }
 }
@@ -78,6 +100,11 @@ mod tests {
             },
             None,
         )
+    }
+
+    #[test]
+    fn finds_no_related_series_until_the_library_reads_creators_and_tags() {
+        assert_eq!(sample_overview().related, Vec::new());
     }
 
     #[test]
