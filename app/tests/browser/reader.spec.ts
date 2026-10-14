@@ -692,17 +692,24 @@ function directionButton(page: Page): Locator {
 
 async function chooseDirection(page: Page, name: string): Promise<void> {
   await directionButton(page).click();
-  await page.getByRole("menuitemradio", { name }).click();
+  await page
+    .getByRole("menuitemradio", {
+      name: name === "Automatic" ? /^Automatic/ : name,
+      exact: name !== "Automatic",
+    })
+    .click();
   await expect(page.getByRole("menu")).toBeHidden();
 }
 
 test.describe("the reading direction", () => {
-  test("reads left to right until chosen otherwise when the book doesn't say, with no sign the app detected it", async ({
+  test("reads left to right until chosen otherwise when the book doesn't say, marking the choice as the app's", async ({
     page,
   }) => {
     await openBook(page);
 
-    await expect(directionButton(page)).toHaveText("Left to right");
+    await expect(directionButton(page)).toHaveAccessibleName(
+      "Left to right AUTO",
+    );
   });
 
   test("turns on with the left tap, the left arrow and a swipe to the right once right to left is chosen", async ({
@@ -710,7 +717,7 @@ test.describe("the reading direction", () => {
   }) => {
     await openBook(page);
     await chooseDirection(page, "Right to left");
-    await expect(directionButton(page)).toHaveText("Right to left");
+    await expect(directionButton(page)).toHaveAccessibleName("Right to left");
 
     const next = await boxOf(zone(page, "Next page"));
     const previous = await boxOf(zone(page, "Previous page"));
@@ -762,7 +769,7 @@ test.describe("the reading direction", () => {
 
     await page.reload();
 
-    await expect(directionButton(page)).toHaveText("Right to left");
+    await expect(directionButton(page)).toHaveAccessibleName("Right to left");
   });
 
   test("goes back to letting the app choose", async ({ page }) => {
@@ -771,7 +778,9 @@ test.describe("the reading direction", () => {
 
     await chooseDirection(page, "Automatic");
 
-    await expect(directionButton(page)).toHaveText("Left to right");
+    await expect(directionButton(page)).toHaveAccessibleName(
+      "Left to right AUTO",
+    );
   });
 
   test.describe("in a book that says it reads right to left", () => {
@@ -790,8 +799,8 @@ test.describe("the reading direction", () => {
     }) => {
       await openBook(page);
 
-      await expect(directionButton(page)).toHaveText(
-        /^\s*Right to left\s*auto$/i,
+      await expect(directionButton(page)).toHaveAccessibleName(
+        "Right to left AUTO",
       );
       const next = await boxOf(zone(page, "Next page"));
       const previous = await boxOf(zone(page, "Previous page"));
@@ -803,7 +812,7 @@ test.describe("the reading direction", () => {
 
       await chooseDirection(page, "Left to right");
 
-      await expect(directionButton(page)).toHaveText("Left to right");
+      await expect(directionButton(page)).toHaveAccessibleName("Left to right");
     });
   });
 
@@ -846,32 +855,36 @@ test.describe("the reading direction", () => {
       bar.getByRole("group", { name: "Quick settings" }),
     ).toBeVisible();
     await expect(quickSettings).toHaveCount(1);
-    await expect(quickSettings.getByRole("button")).toHaveText([
-      /^\s*Left to right/,
-      "Two pages",
-      "Fit height",
-      "Light",
-    ]);
+    await expect(quickSettings.getByRole("button")).toHaveText(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH
+        ? [/^\s*Left to right/, "Two pages", "Fit height", "Light"]
+        : [/^\s*Left to right/, "Two pages", "Light"],
+    );
   });
 });
 
 test.describe("the controls still to come", () => {
   const COMING_SOON = [
-    "Two pages",
-    "Fit height",
-    "Light",
-    "Keyboard shortcuts",
-    "Bookmark this page",
+    { name: "Two pages", isDesktopOnly: false },
+    { name: "Fit height", isDesktopOnly: true },
+    { name: "Light", isDesktopOnly: false },
+    { name: "Keyboard shortcuts", isDesktopOnly: true },
+    { name: "Bookmark this page", isDesktopOnly: false },
+    { name: "Reading settings", isDesktopOnly: false },
   ] as const;
 
   function comingSoon(page: Page, name: string): Locator {
     return page.getByRole("button", { name, exact: true });
   }
 
-  for (const name of COMING_SOON) {
+  for (const { name, isDesktopOnly } of COMING_SOON) {
     test(`shows ${name} as unavailable yet reachable, saying it's coming soon`, async ({
       page,
     }) => {
+      test.skip(
+        isDesktopOnly && viewportOf(page).width < EXPANDED_MIN_WIDTH,
+        "a desktop control",
+      );
       await openBook(page);
       const control = comingSoon(page, name);
 
@@ -891,6 +904,10 @@ test.describe("the controls still to come", () => {
     test(`does nothing when ${name} is clicked or pressed`, async ({
       page,
     }) => {
+      test.skip(
+        isDesktopOnly && viewportOf(page).width < EXPANDED_MIN_WIDTH,
+        "a desktop control",
+      );
       await openBook(page);
       const control = comingSoon(page, name);
 
@@ -910,6 +927,10 @@ test.describe("the controls still to come", () => {
   test("puts keyboard shortcuts and the bookmark in the top bar, before full screen", async ({
     page,
   }) => {
+    test.skip(
+      viewportOf(page).width < EXPANDED_MIN_WIDTH,
+      "phones leave keyboard shortcuts out",
+    );
     await openBook(page);
     const bar = page.locator("main > header");
 

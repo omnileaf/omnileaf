@@ -433,6 +433,15 @@
   --spacing-skeleton-card-wide: 9rem;
   --spacing-related-cover: 9rem;
   --spacing-creator-crumb: 22.5rem;
+  --spacing-reader-dense: 2.75rem;
+  --spacing-reader-top: 3.75rem;
+  --spacing-reader-top-wide: 3.25rem;
+  --spacing-reader-count: 4rem;
+  --spacing-reader-count-wide: 5rem;
+  --spacing-reader-crumb-series: 13.75rem;
+  --spacing-reader-crumb-book: 12.5rem;
+  --spacing-slider-track: 0.375rem;
+  --spacing-reader-note: 15rem;
   --spacing-series-columns: 2.5rem;
   --spacing-series-column-added: 6.5rem;
   --spacing-series-column-progress: 7.875rem;
@@ -623,6 +632,7 @@
   --shadow-back-swipe-rtl: 10px 0 28px rgb(0 0 0 / 0.18);
   --shadow-series-cover: var(--shadow-lg);
   --shadow-card-rest: var(--shadow-sm);
+  --shadow-reader-glass: var(--shadow-lg);
   --shadow-reader-bar: 0 10px 30px rgb(0 0 0 / 0.35);
   --shadow-reader-bar-wide: 0 10px 30px rgb(0 0 0 / 0.3);
   --shadow-reader-thumb: 0 1px 4px rgb(0 0 0 / 0.5);
@@ -750,6 +760,7 @@
   --radius-shadcn-control: var(--radius-md);
   --radius-empty-media: var(--radius-lg);
   --radius-link: var(--radius-sm);
+  --radius-reader-glass: var(--radius-xl);
   --radius-tooltip: var(--tooltip-radius);
   --blur-menu: var(--menu-blur);
   --color-menu: var(--menu-surface);
@@ -1095,15 +1106,7 @@
 }
 
 @utility reader-progress-thumb {
-  inset-inline-start: calc(
-    var(--progress) * (100% - var(--spacing-reader-thumb))
-  );
-
-  @variant expanded {
-    inset-inline-start: calc(
-      var(--progress) * (100% - var(--spacing-reader-thumb-wide))
-    );
-  }
+  inset-inline-start: calc(var(--progress) * (100% - var(--spacing-lg)));
 }
 
 @utility side-panel-shadow {

@@ -57,6 +57,7 @@
   {#key shown.book.id}
     <PagedReader
       book={shown.book}
+      platform={data.appInfo.platform}
       opensAtEnd={page.state.readerOpensAtEnd === true}
     />
   {/key}
