@@ -19,7 +19,7 @@ const USED_LONG_AGO: SystemTime = SystemTime::UNIX_EPOCH;
 pub struct DiskCache {
     folder: PathBuf,
     budget_bytes: u64,
-    recency: Mutex<Recency>,
+    recency: Mutex<Recency<CacheKey>>,
     next_write: AtomicU64,
 }
 
@@ -155,7 +155,7 @@ impl DiskCache {
         }
     }
 
-    fn recency(&self) -> MutexGuard<'_, Recency> {
+    fn recency(&self) -> MutexGuard<'_, Recency<CacheKey>> {
         self.recency.lock().unwrap_or_else(PoisonError::into_inner)
     }
 }

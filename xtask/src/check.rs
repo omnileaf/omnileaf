@@ -243,6 +243,24 @@ pub(crate) const STEPS: &[Step] = &[
         ],
     },
     Step {
+        name: "page speed",
+        group: Group::Rust,
+        program: "cargo",
+        args: &[
+            "nextest",
+            "run",
+            "--package",
+            "omnileaf-engine",
+            "--test",
+            "page_speed",
+            "--release",
+            "--run-ignored",
+            "only",
+            "--no-capture",
+            "--locked",
+        ],
+    },
+    Step {
         name: "webassembly",
         group: Group::Portable,
         program: "cargo",
@@ -599,6 +617,7 @@ mod tests {
                 "title re-key speed",
                 "scan speed",
                 "cover speed",
+                "page speed",
             ]
         );
     }

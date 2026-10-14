@@ -7,12 +7,15 @@ mod clock;
 mod cover_path;
 mod cover_thumbnails;
 mod crash_report;
+mod decode_permits;
 mod device_class;
 mod error_chain;
 mod external_storage;
+mod file_in_storage;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 mod folder_watch;
 mod ipc_brand;
+mod lane;
 mod library;
 mod library_book;
 mod library_changes;
@@ -23,6 +26,13 @@ mod library_search;
 mod library_series;
 mod library_view;
 mod moved_home;
+mod open_books;
+mod opened_book;
+mod page_lane;
+mod page_path;
+mod page_sizes;
+mod page_thumbnail_path;
+mod pages;
 mod project_link;
 mod rescan;
 mod rescan_conditions;
@@ -49,6 +59,7 @@ pub use error_chain::describe_error;
 pub use external_storage::{storage_by_device, storage_in_mountinfo, storage_of_windows_path};
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub use folder_watch::{AppFiles, FolderWatch, FolderWatchSwitch};
+pub use lane::LaneStopped;
 pub use library::{Library, LibraryError, LibraryFolders, OpenTree};
 pub use library_book::{
     BookCursor, BookId, BookReading, BooksShown, ReadMark, SeriesBook, SeriesBookListing,
@@ -68,6 +79,10 @@ pub use library_view::{
 };
 pub use omnileaf_db::catalog::{AndroidTree, AppleBookmark, RootLocator, TreeUri};
 pub use omnileaf_db::store::{Changed, Clock};
+pub use opened_book::{BookPage, OpenedBook, PageDimensions, ProbedFormat, SeriesNeighbour};
+pub use page_path::{MalformedPagePath, PagePath};
+pub use page_thumbnail_path::{MalformedPageThumbnailPath, PageThumbnailPath};
+pub use pages::OpenBookError;
 pub use project_link::ProjectLink;
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
 pub use rescan_conditions::{

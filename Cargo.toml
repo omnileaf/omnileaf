@@ -17,6 +17,7 @@ blake3 = { version = "1.8.7", default-features = false, features = ["pure"] }
 clap = { version = "4.6.7", features = ["derive"] }
 local-ip-address = "0.6.13"
 notify = "8.2.0"
+dispatch2 = { version = "0.3.1", default-features = false, features = ["std"] }
 objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSProcessInfo"] }
 fast_image_resize = { version = "6.1.0", default-features = false, features = ["std"] }
 flate2 = { version = "1.1.10", default-features = false, features = ["rust_backend"] }
@@ -25,8 +26,10 @@ icu_collator = "=2.3.1"
 icu_locale_core = { version = "=2.3.0", features = ["alloc"] }
 icu_provider = { version = "=2.3.1", default-features = false }
 image-webp = "0.2.4"
+imagesize = { version = "0.14.0", default-features = false, features = ["bmp", "gif", "heif", "jpeg", "jxl", "png", "webp"] }
 jpeg-decoder = { version = "0.3.2", default-features = false, features = ["rayon"] }
 jpeg-encoder = { version = "0.7.1", default-features = false, features = ["std"] }
+jxl-oxide = { version = "0.12.6", default-features = false }
 omnileaf-cache = { path = "crates/omnileaf-cache" }
 omnileaf-db = { path = "crates/omnileaf-db" }
 omnileaf-edge-swipe = { path = "crates/omnileaf-edge-swipe" }
@@ -87,3 +90,14 @@ print_stdout = "warn"
 todo = "warn"
 unimplemented = "warn"
 unwrap_used = "warn"
+
+[profile.dev.package]
+crc32fast.opt-level = 3
+fast_image_resize.opt-level = 3
+fdeflate.opt-level = 3
+image-webp.opt-level = 3
+jpeg-decoder.opt-level = 3
+jpeg-encoder.opt-level = 3
+miniz_oxide.opt-level = 3
+omnileaf-imaging.opt-level = 3
+png.opt-level = 3

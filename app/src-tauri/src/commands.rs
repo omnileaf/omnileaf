@@ -4,10 +4,11 @@ use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AppInfo, AppLanguage, BookCursor, BookId, BooksRemoval, Core, CoversPerRow, FolderCursor,
     FolderId, FolderPage, FolderRescan, FolderScan, InterfaceError, Library, LibraryFilter,
-    LibraryListing, LibrarySearch, LibraryView, ProjectLink, ReadMark, ScanProgress,
-    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
+    LibraryListing, LibrarySearch, LibraryView, OpenedBook, ProbedFormat, ProjectLink, ReadMark,
+    ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
+    SeriesOverview, SeriesPage,
 };
-use tauri::{AppHandle, Manager, State, Window, Wry, ipc::Channel};
+use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_opener::OpenerExt;
 use tauri_specta::{Builder, Commands, collect_commands, collect_events};
@@ -18,9 +19,11 @@ use crate::{
     back_swipe,
     crash_reporting::{CrashReportOffer, CrashReporting},
     folder_picker::pick_folder,
+    full_screen::{self, FullScreenChange},
     ipc_error::IpcError,
     library_events::LibraryChanged,
     library_problem::{LibraryAtLaunch, LibraryProblem},
+    screen_orientation::{self, ScreenOrientation},
     system_bars::{self, Theme, ThemePreference},
     version_details,
 };
@@ -42,6 +45,9 @@ macro_rules! app_commands {
             series_overview,
             series_books,
             mark_books,
+            open_book,
+            orient_screen,
+            change_full_screen,
             library_listing,
             set_library_listing,
             library_view,
@@ -278,6 +284,34 @@ async fn mark_books(
     mark: ReadMark,
 ) -> Result<(), IpcError> {
     Ok(library.mark_books(books, mark).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn open_book(
+    library: State<'_, Library>,
+    router: State<'_, ResourceRouter>,
+    id: BookId,
+    undecodable: Vec<ProbedFormat>,
+) -> Result<OpenedBook, IpcError> {
+    Ok(router.open_book(&library, id, undecodable).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn orient_screen(app: AppHandle, orientation: ScreenOrientation) -> Result<(), IpcError> {
+    screen_orientation::orient(&app, orientation).await
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+/// Answers whether the window was in full screen before the change.
+fn change_full_screen(window: WebviewWindow, change: FullScreenChange) -> Result<bool, IpcError> {
+    full_screen::change(&window, change)
 }
 
 #[tauri::command]

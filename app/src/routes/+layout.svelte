@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
 
   import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
+  import { systemBarsTheme } from "#lib/appearance/theme.ts";
   import {
     setThemeSetting,
     themeSettingForDocument,
@@ -27,6 +28,10 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import {
+    BookPresence,
+    setBookPresence,
+  } from "#lib/reader/book-presence.svelte.ts";
   import LibraryProblemScreen from "#lib/problems/LibraryProblemScreen.svelte";
   import {
     screenshotModeForDocument,
@@ -61,6 +66,7 @@
     scheduledRescansSettingForDocument(),
   );
   setNotices(new Notices());
+  const bookPresence = setBookPresence(new BookPresence());
   const screenshotModeShortcut = $derived(
     screenshotModeShortcutOn(data.appInfo.platform),
   );
@@ -104,7 +110,7 @@
 
   $effect(() => {
     void commands.matchSystemBars(
-      themeSetting.resolved,
+      systemBarsTheme(themeSetting.resolved, bookPresence.isOpen),
       themeSetting.preference,
     );
   });

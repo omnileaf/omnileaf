@@ -57,6 +57,14 @@ export const DEFAULT_BACKEND: FakeBackend = {
   },
   seriesBooks: () => ({ books: [], next: null }),
   markBooks: () => null,
+  orientScreen: () => null,
+  changeFullScreen: () => false,
+  openBook: () => {
+    throw new CommandFailure({
+      code: "bookNotFound",
+      message: "that book isn't in the library",
+    });
+  },
   libraryListing: () => DEFAULT_LIBRARY_LISTING,
   setLibraryListing: () => null,
   libraryView: () => DEFAULT_LIBRARY_VIEW,
@@ -166,6 +174,7 @@ export const APP_PAGES = [
   "/settings/about/licences",
   "/search",
   "/series/0190a3e4-0000-8000-8000-00000000000f",
+  "/read/0190a3e4-0000-8000-8000-00000000000f",
 ] as const;
 
 export function sidewaysOverflow(

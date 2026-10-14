@@ -21,7 +21,15 @@
       "version": "1.1.5",
       "licence": "Unlicense OR MIT",
       "texts": [
-        106
+        107
+      ]
+    },
+    {
+      "name": "alloc-no-stdlib",
+      "version": "2.0.4",
+      "licence": "BSD-3-Clause",
+      "texts": [
+        43
       ]
     },
     {
@@ -30,6 +38,14 @@
       "licence": "BSD-3-Clause",
       "texts": [
         43
+      ]
+    },
+    {
+      "name": "alloc-stdlib",
+      "version": "0.2.4",
+      "licence": "BSD-3-Clause",
+      "texts": [
+        44
       ]
     },
     {
@@ -165,7 +181,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -173,7 +189,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -283,6 +299,14 @@
     },
     {
       "name": "brotli-decompressor",
+      "version": "5.0.3",
+      "licence": "BSD-3-Clause OR MIT",
+      "texts": [
+        43
+      ]
+    },
+    {
+      "name": "brotli-decompressor",
       "version": "6.0.1",
       "licence": "BSD-3-Clause OR MIT",
       "texts": [
@@ -302,7 +326,7 @@
       "version": "1.5.0",
       "licence": "Unlicense OR MIT",
       "texts": [
-        106
+        107
       ]
     },
     {
@@ -310,7 +334,7 @@
       "version": "0.1.0",
       "licence": "Unlicense OR MIT",
       "texts": [
-        106
+        107
       ]
     },
     {
@@ -326,7 +350,7 @@
       "version": "0.18.5",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -334,7 +358,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -358,7 +382,7 @@
       "version": "0.19.2",
       "licence": "MIT",
       "texts": [
-        99
+        100
       ]
     },
     {
@@ -398,7 +422,7 @@
       "version": "4.6.8",
       "licence": "MIT",
       "texts": [
-        109
+        110
       ]
     },
     {
@@ -526,7 +550,7 @@
       "version": "0.37.0",
       "licence": "MPL-2.0",
       "texts": [
-        121
+        122
       ]
     },
     {
@@ -534,7 +558,7 @@
       "version": "0.7.1",
       "licence": "MPL-2.0",
       "texts": [
-        121
+        122
       ]
     },
     {
@@ -614,7 +638,7 @@
       "version": "2.1.1",
       "licence": "MIT",
       "texts": [
-        111
+        112
       ]
     },
     {
@@ -622,7 +646,7 @@
       "version": "2.1.1",
       "licence": "MIT",
       "texts": [
-        111
+        112
       ]
     },
     {
@@ -735,7 +759,7 @@
       "version": "0.3.5",
       "licence": "MPL-2.0",
       "texts": [
-        120
+        121
       ]
     },
     {
@@ -775,7 +799,7 @@
       "version": "1.1.1",
       "licence": "MIT",
       "texts": [
-        99
+        100
       ]
     },
     {
@@ -927,7 +951,7 @@
       "version": "0.1.5",
       "licence": "Zlib",
       "texts": [
-        125
+        126
       ]
     },
     {
@@ -935,7 +959,7 @@
       "version": "0.2.0",
       "licence": "Zlib",
       "texts": [
-        125
+        126
       ]
     },
     {
@@ -975,7 +999,7 @@
       "version": "4.1.0",
       "licence": "MIT",
       "texts": [
-        110
+        111
       ]
     },
     {
@@ -1055,7 +1079,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1063,7 +1087,7 @@
       "version": "0.18.5",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1071,7 +1095,7 @@
       "version": "0.18.0",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1079,7 +1103,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1087,7 +1111,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1095,7 +1119,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1103,7 +1127,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1111,7 +1135,7 @@
       "version": "0.14.7",
       "licence": "MIT",
       "texts": [
-        118
+        119
       ]
     },
     {
@@ -1143,7 +1167,7 @@
       "version": "0.18.4",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1151,7 +1175,7 @@
       "version": "0.18.1",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1159,7 +1183,7 @@
       "version": "0.18.5",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1167,7 +1191,7 @@
       "version": "0.18.5",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1175,7 +1199,7 @@
       "version": "0.18.1",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1191,7 +1215,7 @@
       "version": "0.18.0",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1199,7 +1223,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1207,7 +1231,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1215,7 +1239,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -1335,7 +1359,7 @@
       "version": "2.3.0",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1343,7 +1367,7 @@
       "version": "2.3.0",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1351,7 +1375,7 @@
       "version": "2.3.1",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1359,7 +1383,7 @@
       "version": "2.3.0",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1367,7 +1391,7 @@
       "version": "2.3.0",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1375,7 +1399,7 @@
       "version": "2.3.0",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1383,7 +1407,7 @@
       "version": "2.3.0",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1391,7 +1415,7 @@
       "version": "2.3.0",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1399,7 +1423,7 @@
       "version": "2.3.0",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1407,7 +1431,7 @@
       "version": "2.3.0",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1415,7 +1439,7 @@
       "version": "2.3.0",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1423,7 +1447,7 @@
       "version": "2.3.0",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1431,7 +1455,7 @@
       "version": "2.3.1",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1472,6 +1496,14 @@
       "licence": "MIT OR Apache-2.0",
       "texts": [
         41
+      ]
+    },
+    {
+      "name": "imagesize",
+      "version": "0.14.0",
+      "licence": "MIT",
+      "texts": [
+        99
       ]
     },
     {
@@ -1543,7 +1575,7 @@
       "version": "1.1.2",
       "licence": "MIT",
       "texts": [
-        103
+        104
       ]
     },
     {
@@ -1551,7 +1583,7 @@
       "version": "1.1.1",
       "licence": "MIT",
       "texts": [
-        102
+        103
       ]
     },
     {
@@ -1617,6 +1649,110 @@
       "licence": "MIT OR Apache-2.0",
       "texts": [
         17
+      ]
+    },
+    {
+      "name": "jxl-bitstream",
+      "version": "1.1.0",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        41
+      ]
+    },
+    {
+      "name": "jxl-coding",
+      "version": "1.0.1",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        41
+      ]
+    },
+    {
+      "name": "jxl-color",
+      "version": "0.11.0",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        41
+      ]
+    },
+    {
+      "name": "jxl-frame",
+      "version": "0.13.3",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        41
+      ]
+    },
+    {
+      "name": "jxl-grid",
+      "version": "0.6.2",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        41
+      ]
+    },
+    {
+      "name": "jxl-image",
+      "version": "0.13.0",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        41
+      ]
+    },
+    {
+      "name": "jxl-jbr",
+      "version": "0.2.1",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        41
+      ]
+    },
+    {
+      "name": "jxl-modular",
+      "version": "0.11.3",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        41
+      ]
+    },
+    {
+      "name": "jxl-oxide",
+      "version": "0.12.6",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        41
+      ]
+    },
+    {
+      "name": "jxl-oxide-common",
+      "version": "1.0.0",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        41
+      ]
+    },
+    {
+      "name": "jxl-render",
+      "version": "0.12.4",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        41
+      ]
+    },
+    {
+      "name": "jxl-threadpool",
+      "version": "1.0.0",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        41
+      ]
+    },
+    {
+      "name": "jxl-vardct",
+      "version": "0.11.1",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        41
       ]
     },
     {
@@ -1697,7 +1833,7 @@
       "version": "0.8.3",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -1745,7 +1881,7 @@
       "version": "2.8.3",
       "licence": "Unlicense OR MIT",
       "texts": [
-        106
+        107
       ]
     },
     {
@@ -1841,7 +1977,7 @@
       "version": "0.31.3",
       "licence": "MIT",
       "texts": [
-        107
+        108
       ]
     },
     {
@@ -1873,7 +2009,7 @@
       "version": "0.50.3",
       "licence": "MIT",
       "texts": [
-        117
+        118
       ]
     },
     {
@@ -2049,7 +2185,7 @@
       "version": "5.4.4",
       "licence": "MIT",
       "texts": [
-        116
+        117
       ]
     },
     {
@@ -2057,7 +2193,7 @@
       "version": "0.2.0",
       "licence": "MPL-2.0",
       "texts": [
-        122
+        123
       ]
     },
     {
@@ -2073,7 +2209,7 @@
       "version": "3.15.0",
       "licence": "MIT",
       "texts": [
-        114
+        115
       ]
     },
     {
@@ -2081,7 +2217,7 @@
       "version": "1.2.3",
       "licence": "MIT",
       "texts": [
-        115
+        116
       ]
     },
     {
@@ -2089,7 +2225,7 @@
       "version": "0.18.3",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -2097,7 +2233,7 @@
       "version": "0.18.0",
       "licence": "MIT",
       "texts": [
-        101
+        102
       ]
     },
     {
@@ -2153,7 +2289,7 @@
       "version": "0.13.1",
       "licence": "MIT",
       "texts": [
-        105
+        106
       ]
     },
     {
@@ -2161,7 +2297,7 @@
       "version": "0.13.1",
       "licence": "MIT",
       "texts": [
-        105
+        106
       ]
     },
     {
@@ -2169,7 +2305,7 @@
       "version": "0.13.1",
       "licence": "MIT",
       "texts": [
-        105
+        106
       ]
     },
     {
@@ -2177,7 +2313,7 @@
       "version": "0.13.1",
       "licence": "MIT",
       "texts": [
-        105
+        106
       ]
     },
     {
@@ -2241,7 +2377,7 @@
       "version": "0.1.6",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -2337,7 +2473,7 @@
       "version": "0.41.0",
       "licence": "MIT",
       "texts": [
-        112
+        113
       ]
     },
     {
@@ -2345,7 +2481,7 @@
       "version": "0.42.0",
       "licence": "MIT",
       "texts": [
-        112
+        113
       ]
     },
     {
@@ -2482,7 +2618,7 @@
       "version": "1.0.6",
       "licence": "Unlicense OR MIT",
       "texts": [
-        113
+        114
       ]
     },
     {
@@ -2523,7 +2659,7 @@
       "version": "0.38.0",
       "licence": "MPL-2.0",
       "texts": [
-        122
+        123
       ]
     },
     {
@@ -2723,7 +2859,7 @@
       "version": "0.5.0",
       "licence": "MIT",
       "texts": [
-        102
+        103
       ]
     },
     {
@@ -2731,7 +2867,7 @@
       "version": "0.5.0",
       "licence": "MIT",
       "texts": [
-        102
+        103
       ]
     },
     {
@@ -2795,7 +2931,7 @@
       "version": "0.11.1",
       "licence": "MIT",
       "texts": [
-        108
+        109
       ]
     },
     {
@@ -3051,7 +3187,7 @@
       "version": "0.8.4",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -3204,7 +3340,7 @@
       "licence": "MIT",
       "texts": [
         72,
-        104
+        105
       ]
     },
     {
@@ -3277,7 +3413,7 @@
       "licence": "(MIT OR Apache-2.0) AND Unicode-3.0",
       "texts": [
         41,
-        123
+        124
       ]
     },
     {
@@ -3309,7 +3445,7 @@
       "version": "2.1.3",
       "licence": "MIT",
       "texts": [
-        119
+        120
       ]
     },
     {
@@ -3349,7 +3485,7 @@
       "version": "2.5.0",
       "licence": "Unlicense OR MIT",
       "texts": [
-        106
+        107
       ]
     },
     {
@@ -3486,7 +3622,7 @@
       "version": "0.1.11",
       "licence": "Unlicense OR MIT",
       "texts": [
-        113
+        114
       ]
     },
     {
@@ -3662,7 +3798,7 @@
       "version": "0.5.40",
       "licence": "MIT",
       "texts": [
-        100
+        101
       ]
     },
     {
@@ -3670,7 +3806,7 @@
       "version": "1.0.4",
       "licence": "MIT",
       "texts": [
-        100
+        101
       ]
     },
     {
@@ -3694,7 +3830,7 @@
       "version": "0.6.4",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -3710,7 +3846,7 @@
       "version": "2.21.0",
       "licence": "MIT",
       "texts": [
-        99
+        100
       ]
     },
     {
@@ -3718,7 +3854,7 @@
       "version": "2.21.0",
       "licence": "MIT",
       "texts": [
-        99
+        100
       ]
     },
     {
@@ -3742,7 +3878,7 @@
       "version": "0.8.3",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -3750,7 +3886,7 @@
       "version": "0.8.4",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -3806,7 +3942,7 @@
       "version": "0.1.8",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -3814,7 +3950,7 @@
       "version": "0.1.8",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -3822,7 +3958,7 @@
       "version": "0.2.5",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -3830,7 +3966,7 @@
       "version": "0.11.8",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -3838,7 +3974,7 @@
       "version": "0.11.6",
       "licence": "Unicode-3.0",
       "texts": [
-        124
+        125
       ]
     },
     {
@@ -3846,7 +3982,7 @@
       "version": "8.6.0",
       "licence": "MIT",
       "texts": [
-        104
+        105
       ]
     },
     {
@@ -3854,7 +3990,7 @@
       "version": "1.0.23",
       "licence": "MIT",
       "texts": [
-        99
+        100
       ]
     },
     {
@@ -3894,7 +4030,7 @@
       "version": "4.2.0",
       "licence": "MIT",
       "texts": [
-        99
+        100
       ]
     }
   ],
@@ -4294,6 +4430,10 @@
     {
       "licence": "MIT",
       "text": "MIT License\n\nCopyright (c) [2021] [Marvin Countryman]\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "licence": "MIT",
+      "text": "MIT License\n\nCopyright (c) 2017 Maiddog\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
     },
     {
       "licence": "MIT",

@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::{ImageFormat, Size};
+use crate::{ImageFormat, PageFormat, Size};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ImagingError {
@@ -24,6 +24,22 @@ pub enum ImagingError {
     },
     #[error("encode a {} by {} thumbnail, larger than a JPEG can hold", size.width, size.height)]
     TooLargeToEncode { size: Size },
-    #[error("encode a thumbnail")]
+    #[error("encode a JPEG")]
     Encode(#[source] jpeg_encoder::EncodingError),
+    #[error("read the size of an image whose header runs past the bytes read")]
+    Truncated,
+    #[error("read the size of an image whose header is damaged")]
+    UnreadableHeader,
+    #[error("transcode a page in {format:?}, when only WebP and JPEG XL pages are transcoded")]
+    NotTranscodable { format: PageFormat },
+    #[error("transcode a {format:?} page its decoder gave up on")]
+    DamagedPage { format: PageFormat },
+    #[error("decode a {format:?} page to transcode it")]
+    Transcode {
+        format: PageFormat,
+        #[source]
+        source: Box<dyn Error + Send + Sync>,
+    },
+    #[error("encode a PNG")]
+    EncodePng(#[source] png::EncodingError),
 }

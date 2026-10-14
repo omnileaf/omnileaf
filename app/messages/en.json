@@ -804,5 +804,81 @@
         "countPlural=other": "Marked {formattedCount} books unread"
       }
     }
-  ]
+  ],
+  "reader_back": "Library",
+  "reader_back_label": "Back to the library",
+  "reader_book_line": [
+    {
+      "declarations": [
+        "input title",
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "{title} · Page {formattedPage} of {formattedCount}"
+      }
+    }
+  ],
+  "reader_position": [
+    {
+      "declarations": [
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "{formattedPage} / {formattedCount}"
+      }
+    }
+  ],
+  "reader_slider": "Page",
+  "reader_slider_value": [
+    {
+      "declarations": [
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "Page {formattedPage} of {formattedCount}"
+      }
+    }
+  ],
+  "reader_previous_page": "Previous page",
+  "reader_next_page": "Next page",
+  "reader_show_controls": "Show the controls",
+  "reader_hide_controls": "Hide the controls",
+  "reader_full_screen": "Full screen",
+  "reader_nearby_pages": "Nearby pages",
+  "reader_previous_book": "Previous book: {title}",
+  "reader_next_book": "Next book: {title}",
+  "reader_no_previous_book": "Previous book",
+  "reader_no_next_book": "Next book",
+  "reader_page": [
+    {
+      "declarations": ["input page", "local formattedPage = page: number"],
+      "match": {
+        "*": "Page {formattedPage}"
+      }
+    }
+  ],
+  "reader_page_loading": [
+    {
+      "declarations": ["input page", "local formattedPage = page: number"],
+      "match": {
+        "*": "Loading page {formattedPage}"
+      }
+    }
+  ],
+  "reader_page_failed": "This page couldn't be shown.",
+  "reader_not_found": "This book isn't in your library",
+  "reader_not_found_body": "It may have been removed, or the folder holding it taken out of the library.",
+  "reader_unreadable": "This book couldn't be opened",
+  "reader_unreadable_body": "Its file may have moved, or be damaged.",
+  "reader_failed_title": "Something went wrong",
+  "reader_failed": "Couldn't open this book. Try again later."
 }

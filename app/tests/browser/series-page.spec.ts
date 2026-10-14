@@ -104,6 +104,72 @@ test("shows a series' title, folder and how far it has been read", async ({
   ).toHaveJSProperty("value", 3);
 });
 
+test("opens a book in the reader from its row", async ({ page }) => {
+  await openSeries(page);
+
+  await books(page)
+    .filter({ hasText: shelf.titleOf(5) })
+    .getByRole("link")
+    .click();
+
+  await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(5)}$`));
+});
+
+test("picks a book tapped while picking rather than opening it", async ({
+  page,
+}) => {
+  await openSeries(page);
+  await page.getByRole("button", { name: "Select", exact: true }).click();
+
+  await books(page).getByText(shelf.titleOf(5)).click();
+
+  await expect(
+    page.getByRole("checkbox", { name: `Select ${shelf.titleOf(5)}` }),
+  ).toBeChecked();
+  await expect(books(page).getByRole("link")).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+});
+
+test("opens no book with the long press that starts picking", async ({
+  page,
+}) => {
+  test.skip(
+    !(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)),
+    "a long press is how a touch screen starts picking",
+  );
+  await page.clock.install();
+  await openSeries(page);
+  const row = books(page).getByText(shelf.titleOf(6));
+  await row.dispatchEvent("pointerdown", {
+    pointerType: "touch",
+    isPrimary: true,
+  });
+  await page.clock.runFor(600);
+  await row.dispatchEvent("pointerup", {
+    pointerType: "touch",
+    isPrimary: true,
+  });
+
+  await row.dispatchEvent("click");
+
+  await expect(
+    page.getByRole("heading", { level: 2, name: "1 selected" }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+});
+
+test("opens the book reading goes on from in the reader from the up next line", async ({
+  page,
+}) => {
+  await openSeries(page);
+
+  await page
+    .getByRole("link", { name: `Continue ${shelf.titleOf(3)} at page 15` })
+    .click();
+
+  await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(3)}$`));
+});
+
 test("lists the series' books in order with how far each has been read", async ({
   page,
 }) => {
@@ -914,6 +980,21 @@ test.describe("swiping back from the edge on an iPhone", () => {
     await swipeBack();
 
     await expect(page).toHaveURL(/\/$/);
+  });
+
+  test("lets no swipe from the edge reach a book opened in the reader", async ({
+    page,
+  }) => {
+    await openFromTheLibrary(page);
+    await expect.poll(() => allowedEdges.at(-1)).toBe("left");
+
+    await books(page)
+      .filter({ hasText: shelf.titleOf(5) })
+      .getByRole("link")
+      .click();
+
+    await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(5)}$`));
+    await expect.poll(() => allowedEdges.at(-1)).toBeNull();
   });
 
   test("ends picking books with a swipe back, staying on the series, and leaves with the next", async ({

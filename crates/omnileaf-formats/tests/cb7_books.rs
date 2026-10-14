@@ -14,6 +14,7 @@ use omnileaf_testkit::{ArchiveEntry, Compression, Packing, PageShape, cb7, cbz, 
 use support::{ScratchFolder, entry};
 
 const SEED: u64 = 13;
+const START_LENGTH: u64 = 64;
 const PACKINGS: [Packing; 2] = [Packing::Solid, Packing::PerEntry];
 const COMIC_INFO: &str = "<ComicInfo><Series>Sample Series 01</Series></ComicInfo>";
 
@@ -63,6 +64,25 @@ fn reads_every_page_of_a_cb7_back_exactly_in_any_order() {
             .collect();
 
         assert_eq!(pages, [page(2), page(0), page(1)], "{packing:?}");
+    }
+}
+
+#[test]
+fn reads_the_start_of_a_cb7_page_and_all_of_a_page_shorter_than_asked_for() {
+    let scratch = ScratchFolder::new("cb7-read-start");
+    for packing in PACKINGS {
+        let path = scratch.write("book.cb7", &cb7(&three_pages(), packing).unwrap());
+        let mut book = open_book(&path).unwrap();
+
+        let start = book.read_page_start(1, START_LENGTH).unwrap();
+        let whole = book.read_page_start(1, u64::MAX).unwrap();
+
+        assert_eq!(
+            start,
+            page(1)[..usize::try_from(START_LENGTH).unwrap()],
+            "{packing:?}"
+        );
+        assert_eq!(whole, page(1), "{packing:?}");
     }
 }
 

@@ -11,6 +11,7 @@ mod folder_picker;
 mod folder_storage;
 #[cfg(desktop)]
 mod folder_watch;
+mod full_screen;
 mod ipc_error;
 mod library_events;
 mod library_problem;
@@ -18,6 +19,7 @@ mod omni_protocol;
 mod power_mode;
 mod runtime_config;
 mod scheduled_rescans;
+mod screen_orientation;
 mod system_bars;
 #[cfg(target_os = "android")]
 mod tree_storage;
@@ -73,11 +75,16 @@ pub fn run() {
     let app = app.plugin(tauri_plugin_dialog::init());
     #[cfg(target_os = "linux")]
     let app = app.on_page_load(omni_protocol::show_to_every_page);
+    #[cfg(target_os = "macos")]
+    let app = app
+        .manage(full_screen::FullScreenWatch::default())
+        .on_window_event(full_screen::keep_keys_on_leaving);
     #[cfg(target_os = "android")]
     let app = app
         .plugin(omnileaf_folder_access::init())
         .plugin(system_bars::plugin())
-        .plugin(power_mode::plugin());
+        .plugin(power_mode::plugin())
+        .plugin(screen_orientation::plugin());
     #[cfg(target_os = "ios")]
     let app = app
         .plugin(omnileaf_folder_access::init())
@@ -109,12 +116,12 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     app.manage(folder_watch::FolderWatching::start(app, data_dir)?);
     #[cfg(target_os = "ios")]
     folder_access::reopen_picked_folders_in_background(app.handle().clone());
-    match open_covers(app, data_dir) {
+    match open_resources(app, data_dir) {
         Ok(covers) => {
             app.manage(covers);
         }
         Err(error) => {
-            tracing::error!(error = %describe_error(error.as_ref()), "start the covers, which won't show");
+            tracing::error!(error = %describe_error(error.as_ref()), "start the covers and pages, which won't show");
         }
     }
     Ok(())
@@ -134,7 +141,7 @@ fn library_folders(app: &App, data_dir: Option<&Path>) -> tauri::Result<LibraryF
     Ok(LibraryFolders { database, home })
 }
 
-fn open_covers(app: &App, data_dir: Option<&Path>) -> Result<ResourceRouter, Box<dyn Error>> {
+fn open_resources(app: &App, data_dir: Option<&Path>) -> Result<ResourceRouter, Box<dyn Error>> {
     Ok(ResourceRouter::open(&cache_folder(app, data_dir)?)?)
 }
 
