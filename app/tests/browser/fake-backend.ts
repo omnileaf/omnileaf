@@ -1,44 +1,19 @@
 import type { Page } from "@playwright/test";
-import type { Channel } from "@tauri-apps/api/core";
 
-import type { commands, IpcError } from "../../src/lib/ipc/bindings.ts";
+import type { IpcError } from "../../src/lib/ipc/bindings.ts";
+import {
+  bindingName,
+  CommandFailure,
+  type FakeBackend,
+  type FakeChannel,
+  isCommand,
+} from "../../src/lib/ipc/fake-backend.ts";
 
-type Commands = typeof commands;
-
-type Success<Result> = Extract<Result, { status: "ok"; data: unknown }>;
-
-type Outcome<Result> = [Success<Result>] extends [never]
-  ? Result
-  : Success<Result>["data"];
-
-export interface FakeChannel<Message> {
-  send(message: Message): Promise<void>;
-}
-
-type Wire<Value> =
-  Value extends Channel<infer Message>
-    ? FakeChannel<Message>
-    : Value extends { readonly __brand: string }
-      ? string
-      : Value extends object
-        ? { [Key in keyof Value]: Wire<Value[Key]> }
-        : Value;
-
-type Answer<Name extends keyof Commands> = Wire<
-  Outcome<Awaited<ReturnType<Commands[Name]>>>
->;
-
-export type FakeBackend = {
-  [Name in keyof Commands]: (
-    ...args: Wire<Parameters<Commands[Name]>>
-  ) => Answer<Name> | Promise<Answer<Name>>;
-};
-
-export class CommandFailure extends Error {
-  constructor(readonly error: IpcError) {
-    super(error.message);
-  }
-}
+export {
+  CommandFailure,
+  type FakeBackend,
+  type FakeChannel,
+} from "../../src/lib/ipc/fake-backend.ts";
 
 type CommandArguments = Record<string, unknown>;
 
@@ -102,19 +77,6 @@ Object.defineProperty(window, "__TAURI_INTERNALS__", {
     },
   },
 });`;
-
-function bindingName(command: string): string {
-  return command.replace(/_([a-z0-9])/g, (_, next: string) =>
-    next.toUpperCase(),
-  );
-}
-
-function isCommand(
-  backend: FakeBackend,
-  name: string,
-): name is keyof FakeBackend {
-  return Object.hasOwn(backend, name);
-}
 
 function onTheFakeSide(page: Page, value: unknown): unknown {
   if (typeof value !== "string" || !value.startsWith(CHANNEL_PREFIX)) {
