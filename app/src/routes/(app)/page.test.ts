@@ -48,6 +48,9 @@ function listing(catalog: () => readonly WireSeries[]): { asked: number } {
       if (command === "library_listing") {
         return DEFAULT_LIBRARY_LISTING;
       }
+      if (command === "library_series_count") {
+        return catalog().length;
+      }
       if (command !== "library_series") {
         throw new Error(`the page called \`${command}\``);
       }
@@ -69,11 +72,22 @@ afterEach(async () => {
   clearMocks();
 });
 
+const LAYOUT_DATA = {
+  appInfo: {
+    version: "1.2.3",
+    platform: "linux",
+    sourceCode: "repo.example.org/omnileaf",
+    isDevelopmentBuild: false,
+  },
+  libraryProblem: null,
+  isFirstLaunch: false,
+} as const;
+
 function renderPage(screenshotMode: "on" | "off") {
   return render(PageWithAppContext, {
     screenshotMode: screenshotModeTurned(screenshotMode),
     page: Page,
-    pageProps: {},
+    pageProps: { data: LAYOUT_DATA, params: {} },
   });
 }
 
