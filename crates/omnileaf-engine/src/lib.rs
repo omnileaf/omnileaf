@@ -105,7 +105,7 @@ pub use rescan_conditions::{
 pub use resource::Resource;
 pub use resource_router::{ResourceRouter, ResourceRouterError};
 pub use scan::{FolderScan, ScanProgress};
-pub use series_overview::SeriesOverview;
+pub use series_overview::{CreatorRole, SeriesCreator, SeriesOverview};
 pub use utc_offset::{UtcOffset, UtcOffsetOutOfRange};
 pub use version_details::{BuildProfile, VersionDetails};
 

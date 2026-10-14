@@ -25,6 +25,9 @@ export class FakeShelf {
       title: `${SERIES_TITLE} v${String(index + 1).padStart(2, "0")}`,
       addedAtMs: ADDED_AT_MS,
       reading,
+      pageCount: null,
+      isBookmarked: false,
+      isNew: false,
     }));
   }
 
@@ -72,6 +75,10 @@ export class FakeShelf {
           cover: null,
           folder: SERIES_FOLDER,
           upNext: this.#upNext() ?? null,
+          format: null,
+          creators: [],
+          summary: null,
+          tags: [],
         };
       },
       seriesBooks: async (id, listing, after) => {
