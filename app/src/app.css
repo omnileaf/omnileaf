@@ -501,7 +501,9 @@
   --spacing-title-gap: 1rem;
   --spacing-page-top: calc(var(--spacing-safe-top) + var(--spacing-title-gap));
   --spacing-series-bar-top: calc(var(--spacing-safe-top) + var(--spacing-sm));
-  --spacing-series-bar-start: calc(var(--spacing-safe-start) + var(--spacing-sm));
+  --spacing-series-bar-start: calc(
+    var(--spacing-safe-start) + var(--spacing-sm)
+  );
   --spacing-series-bar-end: calc(var(--spacing-safe-end) + var(--spacing-sm));
   --spacing-page-bottom: calc(var(--spacing-safe-bottom) + var(--spacing-xl));
   --spacing-gutter: 1rem;
