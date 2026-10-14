@@ -39,6 +39,7 @@ pub(crate) fn storage_of(folder: &Path) -> Storage {
     omnileaf_engine::storage_of_windows_path(
         &folder.to_string_lossy(),
         omnileaf_windows_probes::drive_type,
+        omnileaf_windows_probes::bus_type,
     )
 }
 
