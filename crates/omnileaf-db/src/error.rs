@@ -55,6 +55,8 @@ pub enum Error {
     MalformedTreeUri { uri: String },
     #[error("read {name:?} as an Android folder's name, which isn't one folder name")]
     MalformedTreeName { name: String },
+    #[error("read the library listing stored with {name:?}, which this build can't list by")]
+    UnsupportedLibraryListing { name: String },
     #[error("read a library folder id that isn't one the library gave out")]
     MalformedRootId,
     #[error("read a book file id that isn't one the library gave out")]
@@ -68,6 +70,8 @@ pub enum Error {
         language: String,
         source: icu_provider::DataError,
     },
+    #[error("search for {chars} characters, more than the {max} a search reads")]
+    SearchTooLong { chars: usize, max: u16 },
     #[error("read a page cursor that isn't one the library gave out")]
     MalformedCursor,
     #[error("continue a list from a cursor another list gave out")]

@@ -1,85 +1,53 @@
 use omnileaf_sync_proto::SeriesId;
-use rusqlite::{Connection, OptionalExtension, Row, Statement, ToSql, Transaction, named_params};
+use rusqlite::{Connection, named_params};
 
 use crate::{
     Error,
     catalog::{
         Cover,
-        cover::stored_cover,
         cursor::Position,
         page::{Page, PageRequest},
+        series_listing::{SeriesListing, SeriesOrder, SortDirection},
+        staged_rows::{Listing, Read, TitlePlace, listing, title_place, title_rows},
         stored_id::stored_id,
     },
-    title_key::{TitleStamp, stored_stamp},
 };
 
-const TITLE_KEY_OF_SERIES: &str = "SELECT title_key FROM series WHERE id = ?1";
-
-struct Listing<P> {
-    first_page_query: &'static str,
-    next_page_query: &'static str,
-    sort_position: fn(&Row<'_>) -> rusqlite::Result<P>,
+/// One order's lists, each way round.
+struct Directions<P> {
+    ascending: Listing<P>,
+    descending: Listing<P>,
 }
 
-struct TitlePlace {
-    sort_key: Vec<u8>,
-    id: SeriesId,
-}
-
-macro_rules! series_with_books {
-    () => {
-        "SELECT series.id, series.title, series.title_key, series.book_count, series.added_at_ms,
-            cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
-            series.book_count - (
-                SELECT count(*)
-                FROM book AS read_book
-                JOIN book_state ON book_state.book_id = read_book.id
-                WHERE read_book.series_local_id = series.local_id AND book_state.is_read = 1
-            ) AS unread_count
-        FROM series
-        LEFT JOIN book_file AS cover ON cover.id = (
-            SELECT (SELECT min(book_file.id) FROM book_file WHERE book_file.book_id = book.id)
-            FROM book
-            WHERE book.series_local_id = series.local_id
-                AND EXISTS (SELECT 1 FROM book_file WHERE book_file.book_id = book.id)
-            ORDER BY book.title_sort_key, book.id
-            LIMIT 1
-        )
-        WHERE series.book_count > 0"
-    };
-}
-
-macro_rules! listing {
-    (seek: $seek:literal, order: $order:literal, sort_position: $position:expr $(,)?) => {
-        Listing {
-            first_page_query: concat!(series_with_books!(), " ORDER BY ", $order, " LIMIT :limit"),
-            next_page_query: concat!(
-                series_with_books!(),
-                " AND ",
-                $seek,
-                " ORDER BY ",
-                $order,
-                " LIMIT :limit"
-            ),
-            sort_position: $position,
+/// Both ways round an order on the series column `key`, with the id breaking ties so every row has one place.
+macro_rules! directions {
+    (key: $key:literal, sort_position: $position:expr $(,)?) => {
+        Directions {
+            ascending: listing! {
+                with: "",
+                condition: "",
+                seek: concat!("(series.", $key, ", series.id) > (:after_key, :after_id)"),
+                order: concat!($key, ", id"),
+                sort_position: $position,
+            },
+            descending: listing! {
+                with: "",
+                condition: "",
+                seek: concat!("(series.", $key, ", series.id) < (:after_key, :after_id)"),
+                order: concat!($key, " DESC, id DESC"),
+                sort_position: $position,
+            },
         }
     };
 }
 
-const BY_TITLE: Listing<TitlePlace> = listing! {
-    seek: "(series.title_key, series.id) > (:after_key, :after_id)",
-    order: "series.title_key, series.id",
-    sort_position: |row| {
-        Ok(TitlePlace {
-            sort_key: row.get("title_key")?,
-            id: stored_id(row, "id")?,
-        })
-    },
+const BY_TITLE: Directions<TitlePlace> = directions! {
+    key: "title_key",
+    sort_position: title_place,
 };
 
-const BY_RECENTLY_ADDED: Listing<Position> = listing! {
-    seek: "(series.added_at_ms, series.id) < (:after_key, :after_id)",
-    order: "series.added_at_ms DESC, series.id DESC",
+const BY_DATE_ADDED: Directions<Position> = directions! {
+    key: "added_at_ms",
     sort_position: |row| {
         Ok(Position::Added {
             added_at_ms: row.get("added_at_ms")?,
@@ -87,12 +55,6 @@ const BY_RECENTLY_ADDED: Listing<Position> = listing! {
         })
     },
 };
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SeriesOrder {
-    Title,
-    RecentlyAdded,
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeriesSummary {
@@ -104,95 +66,38 @@ pub struct SeriesSummary {
     pub cover: Option<Cover>,
 }
 
-#[tracing::instrument(skip_all, fields(?order, size = ?request.size))]
+/// A title cursor from before the titles were keyed again carries on after its series' new place, or fails with [`Error::StaleCursor`] when that series has gone.
+#[tracing::instrument(skip_all, fields(?listing, size = ?request.size))]
 pub fn series_page(
     connection: &Connection,
-    order: SeriesOrder,
+    listing: &SeriesListing,
     request: &PageRequest,
 ) -> Result<Page<SeriesSummary>, Error> {
+    let read = Read {
+        connection,
+        filter: listing.filter,
+        limit: request.size.rows_to_fetch(),
+        bound: &[],
+    };
     let after = request.after.as_ref().map(|cursor| &cursor.0);
-    let limit = request.size.rows_to_fetch();
-    let rows = match order {
-        SeriesOrder::Title => title_rows(connection, after, limit),
-        SeriesOrder::RecentlyAdded => recently_added_rows(connection, after, limit),
+    let direction = listing.sort.direction;
+    let rows = match listing.sort.order {
+        SeriesOrder::Title => title_rows(&read, BY_TITLE.toward(direction), after),
+        SeriesOrder::DateAdded => date_added_rows(&read, BY_DATE_ADDED.toward(direction), after),
     }?;
     Ok(Page::of(rows, request.size))
 }
 
-fn title_rows(
-    connection: &Connection,
+fn date_added_rows(
+    read: &Read<'_>,
+    listing: &Listing<Position>,
     after: Option<&Position>,
-    limit: i64,
-) -> Result<Vec<(SeriesSummary, Position)>, Error> {
-    let _snapshot = snapshot(connection)?;
-    let stamp = stored_stamp(connection)?;
-    let place = after
-        .map(|position| place_after(connection, stamp, position))
-        .transpose()?;
-    let rows = match place {
-        Some(TitlePlace { sort_key, id }) => BY_TITLE.rows_after(
-            connection,
-            named_params! { ":after_key": sort_key, ":after_id": id.as_bytes(), ":limit": limit },
-        ),
-        None => BY_TITLE.first_rows(connection, limit),
-    }?;
-    Ok(rows
-        .into_iter()
-        .map(|(series, TitlePlace { sort_key, id })| {
-            let position = Position::Title {
-                stamp,
-                sort_key,
-                id,
-            };
-            (series, position)
-        })
-        .collect())
-}
-
-fn snapshot(connection: &Connection) -> rusqlite::Result<Option<Transaction<'_>>> {
-    if connection.is_autocommit() {
-        connection.unchecked_transaction().map(Some)
-    } else {
-        Ok(None)
-    }
-}
-
-fn place_after(
-    connection: &Connection,
-    current: TitleStamp,
-    after: &Position,
-) -> Result<TitlePlace, Error> {
-    match after {
-        Position::Title {
-            stamp,
-            sort_key,
-            id,
-        } if *stamp == current => Ok(TitlePlace {
-            sort_key: sort_key.clone(),
-            id: *id,
-        }),
-        Position::Title { id, .. } => connection
-            .prepare(TITLE_KEY_OF_SERIES)?
-            .query_row([id.as_bytes()], |row| row.get(0))
-            .optional()?
-            .map(|sort_key| TitlePlace { sort_key, id: *id })
-            .ok_or(Error::StaleCursor),
-        Position::Added { .. } | Position::Book { .. } | Position::Root { .. } => {
-            Err(Error::CursorForAnotherList)
-        }
-    }
-}
-
-fn recently_added_rows(
-    connection: &Connection,
-    after: Option<&Position>,
-    limit: i64,
 ) -> Result<Vec<(SeriesSummary, Position)>, Error> {
     match after {
-        None => BY_RECENTLY_ADDED.first_rows(connection, limit),
-        Some(Position::Added { added_at_ms, id }) => BY_RECENTLY_ADDED.rows_after(
-            connection,
-            named_params! { ":after_key": added_at_ms, ":after_id": id.as_bytes(), ":limit": limit },
+        None => listing.first_rows(read),
+        Some(Position::Added { added_at_ms, id }) => listing.rows_after(
+            read,
+            named_params! { ":after_key": added_at_ms, ":after_id": id.as_bytes() },
         ),
         Some(Position::Title { .. } | Position::Book { .. } | Position::Root { .. }) => {
             Err(Error::CursorForAnotherList)
@@ -200,139 +105,90 @@ fn recently_added_rows(
     }
 }
 
-impl<P> Listing<P> {
-    fn first_rows(
-        &self,
-        connection: &Connection,
-        limit: i64,
-    ) -> Result<Vec<(SeriesSummary, P)>, Error> {
-        self.read(
-            connection.prepare(self.first_page_query)?,
-            named_params! { ":limit": limit },
-        )
+impl<P> Directions<P> {
+    const fn toward(&self, direction: SortDirection) -> &Listing<P> {
+        match direction {
+            SortDirection::Ascending => &self.ascending,
+            SortDirection::Descending => &self.descending,
+        }
     }
-
-    fn rows_after(
-        &self,
-        connection: &Connection,
-        after_and_limit: &[(&str, &dyn ToSql)],
-    ) -> Result<Vec<(SeriesSummary, P)>, Error> {
-        self.read(connection.prepare(self.next_page_query)?, after_and_limit)
-    }
-
-    fn read(
-        &self,
-        mut statement: Statement<'_>,
-        params: &[(&str, &dyn ToSql)],
-    ) -> Result<Vec<(SeriesSummary, P)>, Error> {
-        let rows = statement.query_map(params, |row| {
-            Ok((summary(row)?, (self.sort_position)(row)?))
-        })?;
-        Ok(rows.collect::<Result<_, _>>()?)
-    }
-}
-
-fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
-    Ok(SeriesSummary {
-        id: stored_id(row, "id")?,
-        title: row.get("title")?,
-        book_count: row.get("book_count")?,
-        unread_count: row.get("unread_count")?,
-        added_at_ms: row.get("added_at_ms")?,
-        cover: stored_cover(row)?,
-    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::scratch::ScratchLibrary;
+    use crate::{catalog::staged_rows::plans::merging_each_stage, scratch::ScratchLibrary};
 
-    const COVER_BY_INDEX: [&str; 6] = [
-        "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
-        "CORRELATED SCALAR SUBQUERY 4",
-        "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)",
-        "SEARCH book_file EXISTS USING COVERING INDEX book_file_by_book (book_id=?)",
-        "CORRELATED SCALAR SUBQUERY 2",
-        "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
-    ];
-
-    const UNREAD_BY_INDEX: [&str; 3] = [
-        "CORRELATED SCALAR SUBQUERY 1",
-        "SEARCH read_book USING COVERING INDEX book_by_series (series_local_id=?)",
-        "SEARCH book_state USING PRIMARY KEY (book_id=?)",
-    ];
-
-    fn with_covers_and_unread_counts(series_step: &str) -> Vec<String> {
-        [series_step]
-            .into_iter()
-            .chain(COVER_BY_INDEX)
-            .chain(UNREAD_BY_INDEX)
-            .map(ToOwned::to_owned)
-            .collect()
+    fn plans_of<P>(
+        scratch: &ScratchLibrary,
+        pick: fn(&Listing<P>) -> &'static str,
+        directions: &Directions<P>,
+    ) -> [Vec<String>; 2] {
+        [
+            scratch.query_plan(pick(&directions.ascending)),
+            scratch.query_plan(pick(&directions.descending)),
+        ]
     }
 
     #[test]
-    fn starts_at_the_head_of_the_title_index_without_reading_the_table_or_sorting() {
+    fn starts_each_stage_at_either_end_of_its_stretch_of_the_title_index_without_sorting() {
         let scratch = ScratchLibrary::new("first-title-plan");
 
-        let plan = scratch.query_plan(BY_TITLE.first_page_query);
+        let plans = plans_of(&scratch, |listing| listing.first_page_query, &BY_TITLE);
 
-        assert_eq!(
-            plan,
-            with_covers_and_unread_counts("SCAN series USING INDEX series_by_title")
+        let from_the_head = merging_each_stage(
+            "SEARCH series USING INDEX series_by_stage_and_title (reading_stage=?)",
         );
+        assert_eq!(plans, [from_the_head.clone(), from_the_head]);
     }
 
     #[test]
-    fn starts_at_the_head_of_the_recently_added_index_without_reading_the_table_or_sorting() {
-        let scratch = ScratchLibrary::new("first-recently-added-plan");
+    fn starts_each_stage_at_either_end_of_its_stretch_of_the_date_added_index_without_sorting() {
+        let scratch = ScratchLibrary::new("first-date-added-plan");
 
-        let plan = scratch.query_plan(BY_RECENTLY_ADDED.first_page_query);
+        let plans = plans_of(&scratch, |listing| listing.first_page_query, &BY_DATE_ADDED);
 
-        assert_eq!(
-            plan,
-            with_covers_and_unread_counts("SCAN series USING INDEX series_by_added")
+        let from_the_head = merging_each_stage(
+            "SEARCH series USING INDEX series_by_stage_and_added (reading_stage=?)",
         );
+        assert_eq!(plans, [from_the_head.clone(), from_the_head]);
     }
 
     #[test]
-    fn seeks_the_title_index_on_both_sort_columns_without_scanning_or_sorting() {
+    fn seeks_each_stage_of_the_title_index_either_way_on_both_sort_columns_without_sorting() {
         let scratch = ScratchLibrary::new("title-plan");
 
-        let plan = scratch.query_plan(BY_TITLE.next_page_query);
+        let plans = plans_of(&scratch, |listing| listing.next_page_query, &BY_TITLE);
 
         assert_eq!(
-            plan,
-            with_covers_and_unread_counts(
-                "SEARCH series USING INDEX series_by_title ((title_key,id)>(?,?))"
-            )
+            plans,
+            [
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_title (reading_stage=? AND (title_key,id)>(?,?))"
+                ),
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_title (reading_stage=? AND (title_key,id)<(?,?))"
+                ),
+            ]
         );
     }
 
     #[test]
-    fn seeks_the_recently_added_index_on_both_sort_columns_without_scanning_or_sorting() {
-        let scratch = ScratchLibrary::new("recently-added-plan");
+    fn seeks_each_stage_of_the_date_added_index_either_way_on_both_sort_columns_without_sorting() {
+        let scratch = ScratchLibrary::new("date-added-plan");
 
-        let plan = scratch.query_plan(BY_RECENTLY_ADDED.next_page_query);
-
-        assert_eq!(
-            plan,
-            with_covers_and_unread_counts(
-                "SEARCH series USING INDEX series_by_added ((added_at_ms,id)<(?,?))"
-            )
-        );
-    }
-
-    #[test]
-    fn finds_the_new_key_of_a_cursor_s_series_by_its_id() {
-        let scratch = ScratchLibrary::new("title-key-of-series-plan");
-
-        let plan = scratch.query_plan(TITLE_KEY_OF_SERIES);
+        let plans = plans_of(&scratch, |listing| listing.next_page_query, &BY_DATE_ADDED);
 
         assert_eq!(
-            plan,
-            ["SEARCH series USING INDEX sqlite_autoindex_series_1 (id=?)"]
+            plans,
+            [
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_added (reading_stage=? AND (added_at_ms,id)>(?,?))"
+                ),
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_added (reading_stage=? AND (added_at_ms,id)<(?,?))"
+                ),
+            ]
         );
     }
 }

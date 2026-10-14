@@ -83,6 +83,75 @@
       }
     }
   ],
+  "library_filter_and_sort": "⟦Ƒíļţéŕ áñð šöŕţ······⟧",
+  "library_filter_and_sort_filtered": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ƒíļţéŕ áñð šöŕţ, {formattedCount} ƒíļţéŕ öñ··················⟧",
+        "countPlural=other": "⟦Ƒíļţéŕ áñð šöŕţ, {formattedCount} ƒíļţéŕš öñ··················⟧"
+      }
+    }
+  ],
+  "library_filter": "⟦Ƒíļţéŕ···⟧",
+  "library_filter_with_count": "⟦Ƒíļţéŕ · {count}·······⟧",
+  "library_sort": "⟦Šöŕţ··⟧",
+  "library_sort_by": "⟦Šöŕţ ƀý···⟧",
+  "library_reset": "⟦Ŕéšéţ··⟧",
+  "library_close": "⟦Çļöšé··⟧",
+  "library_sort_title": "⟦Ţíţļé··⟧",
+  "library_sort_date_added": "⟦Ðáţé áððéð····⟧",
+  "library_sort_a_to_z": "⟦Á ţö Ž···⟧",
+  "library_sort_z_to_a": "⟦Ž ţö Á···⟧",
+  "library_sort_newest_first": "⟦Ñéŵéšţ ƒíŕšţ·····⟧",
+  "library_sort_oldest_first": "⟦Öļðéšţ ƒíŕšţ·····⟧",
+  "library_sort_a_to_z_change": "⟦Öŕðéŕ: Á ţö Ž. Çĥáñĝé ţö Ž ţö Á·············⟧",
+  "library_sort_z_to_a_change": "⟦Öŕðéŕ: Ž ţö Á. Çĥáñĝé ţö Á ţö Ž·············⟧",
+  "library_sort_newest_first_change": "⟦Öŕðéŕ: ñéŵéšţ ƒíŕšţ. Çĥáñĝé ţö öļðéšţ ƒíŕšţ··················⟧",
+  "library_sort_oldest_first_change": "⟦Öŕðéŕ: öļðéšţ ƒíŕšţ. Çĥáñĝé ţö ñéŵéšţ ƒíŕšţ··················⟧",
+  "library_filter_unread": "⟦Ûñŕéáð···⟧",
+  "library_filter_unread_hint": "⟦Ĥáš ƀööķš ýöû ĥáṽéñ'ţ ŕéáð···········⟧",
+  "library_filter_started": "⟦Šţáŕţéð···⟧",
+  "library_filter_finished": "⟦Ƒíñíšĥéð····⟧",
+  "library_filter_finished_hint": "⟦Ýöû'ṽé ŕéáð éṽéŕý ƀööķ·········⟧",
+  "library_filter_any": "⟦Áñý··⟧",
+  "library_filter_only": "⟦Öñļý··⟧",
+  "library_filter_hide": "⟦Ĥíðé··⟧",
+  "library_show_series": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Šĥöŵ {formattedCount} šéŕíéš············⟧",
+        "countPlural=other": "⟦Šĥöŵ {formattedCount} šéŕíéš············⟧"
+      }
+    }
+  ],
+  "library_series_match": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šéŕíéš ɱáţçĥéš·············⟧",
+        "countPlural=other": "⟦{formattedCount} šéŕíéš ɱáţçĥ············⟧"
+      }
+    }
+  ],
+  "library_no_matches": "⟦Ñö šéŕíéš ɱáţçĥ ţĥéšé ƒíļţéŕš.············⟧",
+  "library_clear_filters": "⟦Çļéáŕ ƒíļţéŕš······⟧",
   "app_version": "⟦Ṽéŕšíöñ {version}·······⟧",
   "library_add_folder": "⟦Áðð á ƒöļðéŕ·····⟧",
   "library_scan_finding": "⟦Ƒíñðíñĝ ƀööķš······⟧",
@@ -541,5 +610,59 @@
   "crash_test_quit_build": "⟦{version} · Ðéṽéļöþɱéñţ ƀûíļð············⟧",
   "crash_test_quit_note": "⟦Íţ ǫûíţš šţŕáíĝĥţ áŵáý. Öþéñ íţ áĝáíñ ţö šéé ţĥé çŕášĥ ŕéþöŕţ íţ ķéþţ.····························⟧",
   "crash_test_quit_confirm": "⟦Çŕášĥ áñð ǫûíţ······⟧",
-  "crash_test_quit_cancel": "⟦Çáñçéļ···⟧"
+  "crash_test_quit_cancel": "⟦Çáñçéļ···⟧",
+  "search_title": "⟦Šéáŕçĥ···⟧",
+  "search_open": "⟦Šéáŕçĥ···⟧",
+  "search_library_field": "⟦Šéáŕçĥ ţĥé ļíƀŕáŕý········⟧",
+  "search_library_placeholder": "⟦Šéáŕçĥ···⟧",
+  "search_field": "⟦Šéáŕçĥ ýöûŕ ļíƀŕáŕý········⟧",
+  "search_clear": "⟦Çļéáŕ··⟧",
+  "search_cancel": "⟦Çáñçéļ···⟧",
+  "search_close": "⟦Çļöšé··⟧",
+  "search_escape_key": "⟦Éšç··⟧",
+  "search_by": "⟦Šéáŕçĥ ƀý····⟧",
+  "search_by_title": "⟦Ţíţļé öŕ šéŕíéš······⟧",
+  "search_by_title_example": "⟦Áñý þáŕţ öƒ á šéŕíéš' ñáɱé···········⟧",
+  "search_type_to_filter": "⟦Ţýþé ţö ƒíļţéŕ······⟧",
+  "search_word_unread": "⟦ûñŕéáð···⟧",
+  "search_word_started": "⟦šţáŕţéð···⟧",
+  "search_word_finished": "⟦ƒíñíšĥéð····⟧",
+  "search_word_becomes_unread": "⟦→ öñļý ûñŕéáð······⟧",
+  "search_word_becomes_started": "⟦→ öñļý šţáŕţéð······⟧",
+  "search_word_becomes_finished": "⟦→ öñļý ƒíñíšĥéð······⟧",
+  "search_show": "⟦Šĥöŵ··⟧",
+  "search_everything": "⟦Éṽéŕýţĥíñĝ····⟧",
+  "search_remove_condition": "⟦Ŕéɱöṽé ţĥé {condition} ƒíļţéŕ············⟧",
+  "search_conditions": "⟦Ƒíļţéŕš···⟧",
+  "search_series_heading": "⟦Šéŕíéš · {count}·······⟧",
+  "search_results": "⟦Šéŕíéš ƒöûñð·····⟧",
+  "search_found": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šéŕíéš ƒöûñð············⟧",
+        "countPlural=other": "⟦{formattedCount} šéŕíéš ƒöûñð············⟧"
+      }
+    }
+  ],
+  "search_nothing_called": "⟦Ñöţĥíñĝ çáļļéð “{text}”··········⟧",
+  "search_nothing_hint": "⟦Çĥéçķ ţĥé šþéļļíñĝ, öŕ šéáŕçĥ ƒöŕ þáŕţ öƒ á ţíţļé.····················⟧",
+  "search_failed": "⟦Çöûļðñ'ţ šéáŕçĥ ýöûŕ ļíƀŕáŕý. Ţŕý áĝáíñ.················⟧",
+  "search_key_move": "⟦↑ ↓ ţö ɱöṽé·····⟧",
+  "search_key_open": "⟦Éñţéŕ ţö öþéñ······⟧",
+  "search_key_next_group": "⟦Ţáƀ ƒöŕ ţĥé ñéẋţ ĝŕöûþ·········⟧",
+  "search_key_quick_open": "⟦{shortcut} ƒöŕ ǫûíçķ öþéñ, áñýŵĥéŕé··············⟧",
+  "quick_open_title": "⟦Ǫûíçķ öþéñ····⟧",
+  "quick_open_field": "⟦Šéáŕçĥ öŕ ĝö ţö á þáĝé·········⟧",
+  "quick_open_results": "⟦Ŕéšûļţš···⟧",
+  "quick_open_series": "⟦Šéŕíéš···⟧",
+  "quick_open_places": "⟦Ĝö ţö··⟧",
+  "quick_open_anywhere": "⟦{shortcut} ƒŕöɱ áñýŵĥéŕé··········⟧",
+  "quick_open_shortcut": "⟦Çţŕļ Ķ···⟧",
+  "quick_open_shortcut_mac": "⟦⌘ Ķ··⟧"
 }

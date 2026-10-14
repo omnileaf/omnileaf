@@ -3,11 +3,16 @@ import type { Locator, Page } from "@playwright/test";
 import english from "../../messages/en.json" with { type: "json" };
 import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
-import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
+import {
+  CommandFailure,
+  emitFakeEvent,
+  type FakeBackend,
+} from "./fake-backend.ts";
 import {
   boxOf,
   expect,
   onPlatform,
+  settle,
   sidewaysOverflow,
   test,
   testOnlyInItsWebview,
@@ -18,7 +23,16 @@ const WIDTHS = [
   320, 360, 390, 430, 599, 600, 768, 839, 840, 1024, 1199, 1200, 1280, 1920,
 ];
 const HEIGHT = 900;
-const PHONE_WIDTHS = [360, 390, 430];
+const PHONE_WIDTHS = [360, 375, 390, 430];
+/** Every width from just below a tablet's to a wide desktop's, 16px at a time, across each fold of the heading. */
+const RESIZE_SWEEP = Array.from({ length: 41 }, (_, step) => 800 + step * 16);
+const TABLET_WIDTH = 840;
+const FILTERED_COUNT = 7;
+const LARGEST_TEXT = ":root { --text-scale: 2 !important; }";
+const LARGER_TEXT = ":root { --text-scale: 1.3 !important; }";
+const CROWDED_WIDTH = 1240;
+const LARGEST_TEXT_WIDTHS = [360, 375, 390, 430];
+const LARGEST_TEXT_WIDE_WIDTHS = [840, 1024, 1200];
 const PLATFORMS = ["ios", "android", "linux"] as const;
 const LANGUAGES = { en: english, "en-XA": pseudo } as const;
 const SCREENSHOT_MODE = ["on", "off"] as const;
@@ -58,8 +72,84 @@ function headingOf(page: Page): Locator {
     .filter({ has: page.getByRole("heading", { level: 1 }) });
 }
 
+/** The heading's buttons, with the search link phones and tablets show and the search field desktops show in its place. */
+function controlsOf(heading: Locator): Locator {
+  return heading
+    .getByRole("button")
+    .or(heading.getByRole("link"))
+    .or(heading.getByRole("searchbox"));
+}
+
 function countOf(page: Page): Locator {
   return headingOf(page).locator("p", { hasText: SERIES_COUNT_SHOWN }).first();
+}
+
+function centreOf(box: Box): number {
+  return box.y + box.height / 2;
+}
+
+/** Whether `box` sits on the row `row` draws, its middle inside the row's height. */
+function isOnRowOf(box: Box, row: Box): boolean {
+  const middle = centreOf(box);
+  return middle > row.y && middle < row.y + row.height;
+}
+
+function labelOf(page: Page): Locator {
+  return headingOf(page).getByText(english.screenshot_mode_title, {
+    exact: true,
+  });
+}
+
+async function openAt(
+  page: Page,
+  width: number,
+  screenshotMode: (typeof SCREENSHOT_MODE)[number],
+): Promise<void> {
+  await page.setViewportSize({ width, height: HEIGHT });
+  await page.addInitScript((screenshotMode) => {
+    if (screenshotMode === "on") {
+      localStorage.setItem(
+        "omnileaf.screenshotMode",
+        JSON.stringify({ activity: { kind: "on" } }),
+      );
+    }
+  }, screenshotMode);
+  await page.goto("/");
+}
+
+/** The boxes of the title, its buttons and, when shown, the count and the Screenshot mode label. */
+async function headingBoxes(
+  page: Page,
+  library: Library,
+  screenshotMode: (typeof SCREENSHOT_MODE)[number],
+): Promise<{
+  title: Box;
+  buttons: Box[];
+  count: Box | undefined;
+  label: Box | undefined;
+}> {
+  const heading = headingOf(page);
+  const buttons: Box[] = [];
+  for (const button of await controlsOf(heading).all()) {
+    buttons.push(await boxOf(button));
+  }
+  return {
+    title: await boxOf(heading.getByRole("heading", { level: 1 })),
+    buttons,
+    count: library === "filled" ? await boxOf(countOf(page)) : undefined,
+    label: screenshotMode === "on" ? await boxOf(labelOf(page)) : undefined,
+  };
+}
+
+/** How many lines the text of `locator` runs over. */
+function linesOf(locator: Locator): Promise<number> {
+  return locator.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return new Set(
+      [...range.getClientRects()].map((rect) => Math.round(rect.top)),
+    ).size;
+  });
 }
 
 function isCrowded(a: Box, b: Box): boolean {
@@ -94,7 +184,7 @@ async function crowdedParts(
     texts.push(["count", countOf(page)]);
   }
   const others: [string, Locator][] = [];
-  for (const button of await heading.getByRole("button").all()) {
+  for (const button of await controlsOf(heading).all()) {
     const name =
       (await button.getAttribute("aria-label")) ??
       (await button.textContent())?.trim() ??
@@ -144,7 +234,9 @@ for (const platform of PLATFORMS) {
               { language, screenshotMode },
             );
             await page.goto("/");
-            await expect(headingOf(page).getByRole("button")).toHaveCount(1);
+            await expect(controlsOf(headingOf(page))).toHaveCount(
+              library === "empty" ? 1 : 3,
+            );
             if (library === "filled") {
               await expect(countOf(page)).toBeVisible();
             }
@@ -168,46 +260,262 @@ for (const platform of PLATFORMS) {
   }
 }
 
+/** Whether every button sits on one row of its own, under the title and above the count. */
+function isStackedUnder(
+  buttons: readonly Box[],
+  title: Box,
+  count: Box | undefined,
+): boolean {
+  const [first] = buttons;
+  return (
+    first !== undefined &&
+    buttons.every(
+      (button) =>
+        isOnRowOf(button, first) && button.y >= title.y + title.height,
+    ) &&
+    (count === undefined || count.y >= first.y + first.height)
+  );
+}
+
 for (const platform of PLATFORMS) {
-  test.describe(`the heading's buttons on a ${platform} phone`, () => {
-    testOnlyInItsWebview(platform);
+  for (const screenshotMode of SCREENSHOT_MODE) {
+    for (const library of LIBRARIES) {
+      test.describe(`the heading on a ${platform} phone, Screenshot mode ${screenshotMode}, ${library} library`, () => {
+        testOnlyInItsWebview(platform);
+        test.use({ backend: backendFor(platform, library) });
+
+        for (const width of PHONE_WIDTHS) {
+          test(`keeps the buttons on the title's row and moves the count and label under it at ${String(width)}px`, async ({
+            page,
+          }, testInfo) => {
+            test.skip(
+              !testInfo.project.name.endsWith("phone"),
+              "phone widths only",
+            );
+            await openAt(page, width, screenshotMode);
+            await expect(controlsOf(headingOf(page))).toHaveCount(
+              library === "empty" ? 1 : 3,
+            );
+
+            const { title, buttons, count, label } = await headingBoxes(
+              page,
+              library,
+              screenshotMode,
+            );
+
+            const isOnTitleRow = buttons.every((button) =>
+              isOnRowOf(button, title),
+            );
+            const isNarrowDesktopWindow =
+              platform === "linux" && isStackedUnder(buttons, title, count);
+            expect(isOnTitleRow || isNarrowDesktopWindow).toBe(true);
+            const underTitle = title.y + title.height;
+            if (count !== undefined) {
+              expect(count.y).toBeGreaterThanOrEqual(underTitle);
+            }
+            if (label !== undefined) {
+              expect(label.y).toBeGreaterThanOrEqual(underTitle);
+            }
+            if (count !== undefined && label !== undefined) {
+              expect(isOnRowOf(label, count)).toBe(true);
+              expect(label.x).toBeGreaterThan(count.x + count.width);
+            }
+            expect(
+              await crowdedParts(page, english, screenshotMode, library),
+            ).toEqual([]);
+            expect(await sidewaysOverflow(page)).toEqual([]);
+          });
+        }
+      });
+    }
+  }
+}
+
+for (const platform of PLATFORMS) {
+  test.describe(`the heading on a ${platform} phone in a longer language`, () => {
     test.use({ backend: backendFor(platform, "filled") });
 
-    test("stay on the title's row beside a five-digit count, as the phone board draws them", async ({
+    test("keeps the title whole at 360px, without crowding or overflow", async ({
+      page,
+    }, testInfo) => {
+      test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
+      await page.addInitScript(() => {
+        localStorage.setItem("omnileaf.language", "en-XA");
+      });
+      await openAt(page, 360, "off");
+      await expect(countOf(page)).toBeVisible();
+
+      expect(
+        await linesOf(headingOf(page).getByRole("heading", { level: 1 })),
+      ).toBe(1);
+      expect(await crowdedParts(page, pseudo, "off", "filled")).toEqual([]);
+      expect(await sidewaysOverflow(page)).toEqual([]);
+    });
+  });
+}
+
+test.describe("the heading at the largest text size on an ios phone", () => {
+  test.use({ backend: backendFor("ios", "filled") });
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript((css) => {
+      document.addEventListener("DOMContentLoaded", () => {
+        const style = document.createElement("style");
+        style.textContent = css;
+        document.head.append(style);
+      });
+    }, LARGEST_TEXT);
+  });
+
+  for (const width of LARGEST_TEXT_WIDTHS) {
+    test(`keeps the title whole and sets the buttons on a row under the title and count at ${String(width)}px`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
+      await openAt(page, width, "off");
+      await expect(countOf(page)).toBeVisible();
+      const title = headingOf(page).getByRole("heading", { level: 1 });
+
+      const { buttons, count } = await headingBoxes(page, "filled", "off");
+
+      expect(await linesOf(title)).toBe(1);
+      const underCount = count === undefined ? 0 : count.y + count.height;
+      for (const button of buttons) {
+        expect(button.y).toBeGreaterThanOrEqual(underCount);
+      }
+      expect(await crowdedParts(page, english, "off", "filled")).toEqual([]);
+      expect(await sidewaysOverflow(page)).toEqual([]);
+    });
+  }
+});
+
+for (const platform of PLATFORMS) {
+  test.describe(`the heading at the largest text size in a longer language with Screenshot mode on, wide on ${platform}`, () => {
+    test.use({ backend: backendFor(platform, "filled") });
+
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript((css) => {
+        localStorage.setItem("omnileaf.language", "en-XA");
+        document.addEventListener("DOMContentLoaded", () => {
+          const style = document.createElement("style");
+          style.textContent = css;
+          document.head.append(style);
+        });
+      }, LARGEST_TEXT);
+    });
+
+    for (const width of LARGEST_TEXT_WIDE_WIDTHS) {
+      test(`keeps the title whole and nothing spilling sideways at ${String(width)}px`, async ({
+        page,
+      }, testInfo) => {
+        test.skip(
+          !testInfo.project.name.endsWith(SWEEPING_SCREEN[platform]),
+          "each engine checks the width once, from the screen the platform runs on",
+        );
+        await openAt(page, width, "on");
+        await expect(countOf(page)).toBeVisible();
+        const title = headingOf(page).getByRole("heading", { level: 1 });
+
+        await expect
+          .poll(() =>
+            headingOf(page).evaluate(
+              (heading) => heading.scrollWidth - heading.clientWidth,
+            ),
+          )
+          .toBe(0);
+
+        expect(await linesOf(title)).toBe(1);
+        expect(await crowdedParts(page, pseudo, "on", "filled")).toEqual([]);
+      });
+    }
+  });
+}
+
+test.describe("the heading as a filter changes the count", () => {
+  test.use({
+    backend: {
+      ...backendFor("ios", "filled"),
+      librarySeriesCount: (filter) =>
+        filter.unread === "only" ? FILTERED_COUNT : SERIES_COUNT,
+    },
+  });
+
+  for (const width of PHONE_WIDTHS) {
+    test(`keeps its rows when the count shrinks from five digits to one at ${String(width)}px`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
+      await openAt(page, width, "off");
+      await expect(countOf(page)).toBeVisible();
+      const before = await headingBoxes(page, "filled", "off");
+
+      await headingOf(page)
+        .getByRole("button", { name: /^Filter and sort/ })
+        .click();
+      const panel = page.getByRole("dialog", { name: "Filter and sort" });
+      await panel
+        .getByRole("radiogroup", { name: "Unread" })
+        .locator("label")
+        .filter({ hasText: "Only" })
+        .click();
+      await page.keyboard.press("Escape");
+      await expect(panel).toBeHidden();
+      await expect(
+        headingOf(page).getByText(String(FILTERED_COUNT), { exact: true }),
+      ).toBeVisible();
+      const after = await boxOf(
+        headingOf(page)
+          .locator("p", { hasText: String(FILTERED_COUNT) })
+          .first(),
+      );
+
+      expect(after.y).toBe(before.count?.y);
+      expect(after.x).toBe(before.count?.x);
+      const { title, buttons } = await headingBoxes(page, "empty", "off");
+      expect(title).toEqual(before.title);
+      expect(buttons).toEqual(before.buttons);
+    });
+  }
+});
+
+for (const platform of PLATFORMS) {
+  test.describe(`the heading's buttons on a ${platform} phone`, () => {
+    test.use({ backend: backendFor(platform, "filled") });
+
+    test("show every heading button and the search link as a round icon of one size, each named in a tooltip", async ({
       page,
     }, testInfo) => {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
       await page.goto("/");
-      await expect(countOf(page)).toBeVisible();
-      await expect(headingOf(page).getByRole("button")).toHaveCount(1);
+      const heading = headingOf(page);
+      const named = [
+        [
+          heading.getByRole("button", { name: english.library_view_options }),
+          english.library_view_options,
+        ],
+        [
+          heading.getByRole("button", {
+            name: english.library_filter_and_sort,
+          }),
+          english.library_filter_and_sort,
+        ],
+        [
+          heading.getByRole("link", { name: english.search_open }),
+          english.search_open,
+        ],
+      ] as const;
+      await expect(controlsOf(heading)).toHaveCount(named.length);
 
-      for (const width of PHONE_WIDTHS) {
-        await page.setViewportSize({ width, height: HEIGHT });
-        const title = await boxOf(
-          headingOf(page).getByRole("heading", { level: 1 }),
-        );
-
-        for (const button of await headingOf(page).getByRole("button").all()) {
-          const box = await boxOf(button);
-          expect(box.y, `at ${String(width)}px`).toBeLessThan(
-            title.y + title.height,
-          );
-        }
+      const sizes = new Set<string>();
+      for (const [button] of named) {
+        const box = await boxOf(button);
+        sizes.add(`${String(box.width)}x${String(box.height)}`);
       }
-    });
 
-    test("names View options in a tooltip", async ({ page }, testInfo) => {
-      test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
-      await page.goto("/");
-
-      const viewOptions = headingOf(page).getByRole("button", {
-        name: english.library_view_options,
-      });
-
-      await expect(viewOptions).toHaveAttribute(
-        "title",
-        english.library_view_options,
-      );
+      expect([...sizes]).toHaveLength(1);
+      for (const [button, name] of named) {
+        await expect(button).toHaveAttribute("title", name);
+      }
     });
   });
 
@@ -304,3 +612,189 @@ for (const platform of PLATFORMS) {
     });
   });
 }
+
+test.describe("the heading's search on linux", () => {
+  test.use({ backend: backendFor("linux", "filled") });
+
+  test("draws the search field's border in the colour of the buttons beside it", async ({
+    page,
+  }, testInfo) => {
+    test.skip(!testInfo.project.name.endsWith("desktop"), "desktop only");
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openAt(page, 1280, "off");
+    const heading = headingOf(page);
+    const borderOf = (locator: Locator) =>
+      locator.evaluate((element) => getComputedStyle(element).borderTopColor);
+
+    const field = await borderOf(
+      heading
+        .getByRole("searchbox", { name: english.search_library_field })
+        .locator(".."),
+    );
+    const viewOptions = await borderOf(
+      heading.getByRole("button", { name: english.library_view_options }),
+    );
+
+    expect(field).toBe(viewOptions);
+  });
+
+  test("tints the search link under the pointer as it tints the buttons beside it", async ({
+    page,
+  }, testInfo) => {
+    test.skip(!testInfo.project.name.endsWith("desktop"), "desktop only");
+    await openAt(page, 1024, "off");
+    const heading = headingOf(page);
+    const tintOf = async (locator: Locator) => {
+      await locator.hover();
+      await settle(locator);
+      return locator.evaluate(
+        (element) => getComputedStyle(element).backgroundImage,
+      );
+    };
+
+    const link = await tintOf(
+      heading.getByRole("link", { name: english.search_open }),
+    );
+    const viewOptions = await tintOf(
+      heading.getByRole("button", { name: english.library_view_options }),
+    );
+
+    expect(viewOptions).not.toBe("none");
+    expect(link).toBe(viewOptions);
+  });
+});
+
+for (const platform of ["ios", "linux"] as const) {
+  test.describe(`the heading resized across its folds on ${platform}`, () => {
+    test.use({ backend: backendFor(platform, "filled") });
+
+    test("refits without a single page or interface error", async ({
+      page,
+    }, testInfo) => {
+      test.skip(
+        !testInfo.project.name.endsWith(SWEEPING_SCREEN[platform]),
+        "each engine resizes once, from the screen the platform runs on",
+      );
+      test.slow(true, "resizing the window 82 times takes WebKit a while");
+      const pageErrors: string[] = [];
+      page.on("pageerror", (error) => {
+        pageErrors.push(error.message);
+      });
+      await page.addInitScript(() => {
+        localStorage.setItem("omnileaf.language", "en-XA");
+        localStorage.setItem(
+          "omnileaf.screenshotMode",
+          JSON.stringify({ activity: { kind: "on" } }),
+        );
+        const heard: string[] = [];
+        Object.assign(window, { heardErrors: heard });
+        window.addEventListener("error", (event) => {
+          heard.push(event.message);
+        });
+        window.addEventListener("unhandledrejection", (event) => {
+          heard.push(String(event.reason));
+        });
+        window.addEventListener("omnileaf:interface-error", (event) => {
+          heard.push(String((event as CustomEvent).detail));
+        });
+      });
+      await openAt(page, RESIZE_SWEEP[0] ?? 0, "on");
+      await expect(countOf(page)).toBeVisible();
+
+      for (const width of [...RESIZE_SWEEP, ...RESIZE_SWEEP.toReversed()]) {
+        await page.setViewportSize({ width, height: HEIGHT });
+        await page.evaluate(
+          () =>
+            new Promise((settled) =>
+              requestAnimationFrame(() => requestAnimationFrame(settled)),
+            ),
+        );
+      }
+
+      const heard = await page.evaluate(
+        () => (window as unknown as { heardErrors: string[] }).heardErrors,
+      );
+      expect([...pageErrors, ...heard]).toEqual([]);
+      expect(await sidewaysOverflow(page)).toEqual([]);
+    });
+  });
+}
+
+test.describe("the heading after the library empties", () => {
+  let holdsSeries = true;
+  const filled = backendFor("ios", "filled");
+  test.use({
+    backend: {
+      ...filled,
+      librarySeries: (after, listing) =>
+        holdsSeries
+          ? filled.librarySeries(after, listing)
+          : { series: [], next: null },
+      librarySeriesCount: () => (holdsSeries ? SERIES_COUNT : 0),
+    },
+  });
+
+  test.beforeEach(() => {
+    holdsSeries = true;
+  });
+
+  test("offers Add a folder with its label once the library empties", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      !testInfo.project.name.endsWith("phone"),
+      "the screen ios sweeps from",
+    );
+    await page.addInitScript(() => {
+      localStorage.setItem("omnileaf.language", "en-XA");
+    });
+    await openAt(page, TABLET_WIDTH, "off");
+    await expect(countOf(page)).toBeVisible();
+    const addFolder = headingOf(page).getByRole("button", {
+      name: pseudo.library_add_folder,
+    });
+    await expect(addFolder).toHaveCount(0);
+
+    holdsSeries = false;
+    await emitFakeEvent(page, "library-changed");
+
+    await expect(controlsOf(headingOf(page))).toHaveCount(1);
+    await expect(
+      addFolder.getByText(pseudo.library_add_folder),
+    ).not.toHaveClass(/(^|\s)sr-only(\s|$)/);
+  });
+
+  test("sets the Screenshot mode label back beside the title once the count it gave way to goes", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      !testInfo.project.name.endsWith("phone"),
+      "the screen ios sweeps from",
+    );
+    await page.addInitScript((css) => {
+      localStorage.setItem("omnileaf.language", "en-XA");
+      document.addEventListener("DOMContentLoaded", () => {
+        const style = document.createElement("style");
+        style.textContent = css;
+        document.head.append(style);
+      });
+    }, LARGER_TEXT);
+    await openAt(page, CROWDED_WIDTH, "on");
+    await expect(countOf(page)).toBeVisible();
+    const title = headingOf(page).getByRole("heading", { level: 1 });
+    const labelSits = async (): Promise<"beside" | "below"> => {
+      const titleBox = await boxOf(title);
+      const label = headingOf(page).getByText(pseudo.screenshot_mode_title, {
+        exact: true,
+      });
+      return isOnRowOf(await boxOf(label), titleBox) ? "beside" : "below";
+    };
+    await expect.poll(labelSits).toBe("below");
+
+    holdsSeries = false;
+    await emitFakeEvent(page, "library-changed");
+    await expect(controlsOf(headingOf(page))).toHaveCount(1);
+
+    await expect.poll(labelSits).toBe("beside");
+  });
+});

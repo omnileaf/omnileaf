@@ -7,7 +7,7 @@ use std::{
 
 use rusqlite::{Connection, params_from_iter, types::Null};
 
-use crate::{Config, Database};
+use crate::{Config, Database, letter_case::add_fold_case};
 
 static CREATED: AtomicUsize = AtomicUsize::new(0);
 
@@ -36,6 +36,7 @@ impl ScratchLibrary {
     pub(crate) fn query_plan(&self, sql: &str) -> Vec<String> {
         drop(Database::open(&self.config).unwrap());
         let connection = Connection::open(&self.config.path).unwrap();
+        add_fold_case(&connection).unwrap();
         let mut statement = connection
             .prepare(&format!("EXPLAIN QUERY PLAN {sql}"))
             .unwrap();

@@ -20,8 +20,8 @@ use std::{
 
 use omnileaf_engine::{
     AndroidTree, BooksRemoval, FileChanges, FolderKind, Library, LibraryError, LibraryFolder,
-    OpenTree, PowerMode, RESCAN_EVERY, RescanConditions, RescanOutcome, Resource, ResourceRouter,
-    RootLocator, TreeUri,
+    LibraryListing, OpenTree, PowerMode, RESCAN_EVERY, RescanConditions, RescanOutcome, Resource,
+    ResourceRouter, RootLocator, TreeUri,
 };
 use omnileaf_formats::{Details, Entry, LocalStorage, Storage};
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
@@ -281,7 +281,10 @@ async fn serves_the_cover_of_a_book_in_an_android_folder() {
     let library = open_reading(home.path(), &tree).await;
     library.add_folder(sample_tree(), |_| {}).await.unwrap();
     let router = ResourceRouter::open(cache.path()).unwrap();
-    let series = library.series(None).await.unwrap();
+    let series = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap();
     let cover = series.series.first().unwrap().cover.unwrap();
     tree.take_opened();
 

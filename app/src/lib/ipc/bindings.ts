@@ -19,8 +19,12 @@ export const commands = {
 	watchBackSwipes: (onSwipe: Channel<BackSwipe>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_back_swipes", { onSwipe })),
 	allowBackSwipe: (edge: "left" | "right" | null) => typedError<null, IpcError>(__TAURI_INVOKE("allow_back_swipe", { edge })),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
-	librarySeries: (after: string & { readonly __brand: "SeriesCursor" } | null) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_series", { after })),
-	librarySeriesCount: () => typedError<number, IpcError>(__TAURI_INVOKE("library_series_count")),
+	librarySeries: (after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_series", { after, listing })),
+	librarySeriesCount: (filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("library_series_count", { filter })),
+	librarySearch: (after: string & { readonly __brand: "SeriesCursor" } | null, search: LibrarySearch) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_search", { after, search })),
+	librarySearchCount: (search: LibrarySearch) => typedError<number, IpcError>(__TAURI_INVOKE("library_search_count", { search })),
+	libraryListing: () => typedError<LibraryListing, IpcError>(__TAURI_INVOKE("library_listing")),
+	setLibraryListing: (listing: LibraryListing) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_listing", { listing })),
 	libraryView: () => typedError<LibraryView, IpcError>(__TAURI_INVOKE("library_view")),
 	setLibraryView: (view: LibraryView) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_view", { view })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
@@ -54,7 +58,11 @@ export const events = {
 /* Constants */
 export const COVERS_PER_ROW = {"desktop":{"fewest":4,"most":12},"phone":{"fewest":2,"most":5},"tablet":{"fewest":3,"most":8}} as const;
 
+export const DEFAULT_LIBRARY_LISTING = {"filter":{"finished":"any","started":"any","unread":"any"},"sort":{"by":"title","direction":"ascending"}} as const;
+
 export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsItemCounts":false} as const;
+
+export const SEARCH_MAX_CHARS = 200 as const;
 
 /* Types */
 export type AppInfo = {
@@ -113,6 +121,9 @@ export type FolderScan = {
 	unreadableFolders: number,
 };
 
+/**  Whether the library lists series meeting a condition alongside the rest, only those, or only the rest. */
+export type Inclusion = "any" | "only" | "hide";
+
 export type InterfaceError = {
 	message: string,
 	stack: string | null,
@@ -123,11 +134,21 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "searchTooLong" | "internal";
 
 export type LibraryChanged = null;
 
 export type LibraryDisplay = "grid" | "compact" | "covers" | "list";
+
+/**  What a series' books' reading state must be for the library to list it. */
+export type LibraryFilter = {
+	/**  Holds a book not marked read. */
+	unread: Inclusion,
+	/**  Holds a book opened, or marked read. */
+	started: Inclusion,
+	/**  Has every book marked read. */
+	finished: Inclusion,
+};
 
 export type LibraryFolder = {
 	id: string & { readonly __brand: "FolderId" },
@@ -137,7 +158,20 @@ export type LibraryFolder = {
 	isAvailable: boolean,
 };
 
+/**  Which series the library lists and in what order. */
+export type LibraryListing = {
+	sort: LibrarySort,
+	filter: LibraryFilter,
+};
+
 export type LibraryProblem = "writtenByANewerVersion" | "couldNotOpen";
+
+/**  What someone typed to find series by title, and the filter the series found must also pass. */
+export type LibrarySearch = {
+	/**  Text of nothing but white space finds every series the filter lets through. */
+	text: string,
+	filter: LibraryFilter,
+};
 
 export type LibrarySeries = {
 	id: string & { readonly __brand: "SeriesId" },
@@ -146,6 +180,13 @@ export type LibrarySeries = {
 	unreadCount: number,
 	cover: string & { readonly __brand: "CoverPath" } | null,
 };
+
+export type LibrarySort = {
+	by: LibrarySortBy,
+	direction: SortDirection,
+};
+
+export type LibrarySortBy = "title" | "dateAdded";
 
 export type LibraryView = {
 	display: LibraryDisplay,
@@ -176,6 +217,9 @@ export type SeriesPage = {
 	series: LibrarySeries[],
 	next: string & { readonly __brand: "SeriesCursor" } | null,
 };
+
+/**  Ascending lists titles from A to Z and series added earliest first. */
+export type SortDirection = "ascending" | "descending";
 
 export type SwipeEdge = "left" | "right";
 

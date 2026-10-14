@@ -7,6 +7,7 @@ import {
   type LibraryDisplay,
   type LibraryView,
 } from "../../src/lib/ipc/bindings.ts";
+import { pseudoText } from "../../src/lib/language/pseudo-locale.ts";
 import type { ScreenSize } from "../../src/lib/library/library-view.ts";
 import { fakeProtocolRoute } from "./fake-backend.ts";
 import {
@@ -14,6 +15,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  MEDIUM_MIN_WIDTH,
   screenSizeOf,
   LARGEST_TEXT_SCALE,
   setTextScale,
@@ -767,7 +769,7 @@ test.describe("view options", () => {
     await expect.poll(() => storedView.coversPerRow[size]).toBe(fewest);
   });
 
-  test("shows how many series the library holds beside its title once item counts are on", async ({
+  test("shows how many series the library holds beside its title once item counts are on, or under it on a phone", async ({
     page,
   }) => {
     await openWith(page, DEFAULT_LIBRARY_VIEW);
@@ -784,7 +786,11 @@ test.describe("view options", () => {
       page.getByRole("heading", { level: 1, name: "Library" }),
     );
     const shown = await boxOf(count.locator(".."));
-    expect(shown.x).toBeGreaterThan(title.x + title.width);
+    if (viewportOf(page).width < MEDIUM_MIN_WIDTH) {
+      expect(shown.y).toBeGreaterThanOrEqual(title.y + title.height);
+    } else {
+      expect(shown.x).toBeGreaterThan(title.x + title.width);
+    }
     await expect.poll(() => storedView.showsItemCounts).toBe(true);
   });
 
@@ -974,7 +980,7 @@ test.describe("view options", () => {
 
     await page
       .getByRole("main")
-      .locator('button[aria-haspopup="dialog"]')
+      .getByRole("button", { name: pseudoText("View options") })
       .click();
     const options = page.getByRole("dialog");
     await expect(options).toBeVisible();

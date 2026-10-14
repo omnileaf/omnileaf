@@ -16,7 +16,7 @@ use std::{
 use books::{write_book, write_book_with, write_page};
 use omnileaf_db::{
     Config, Database,
-    catalog::{SeriesOrder, series_books, series_page},
+    catalog::{SeriesListing, SeriesOrder, SeriesSort, series_books, series_page},
     store::{ReadingState, Store, reading_state},
 };
 use omnileaf_engine::{
@@ -68,12 +68,16 @@ impl Rescanned {
 
     fn book_ids_in(&self, title: &str) -> Vec<BookId> {
         let connection = self.scanned.connection();
-        let series = series_page(&connection, SeriesOrder::Title, &whole_page())
-            .unwrap()
-            .items
-            .into_iter()
-            .find(|series| series.title == title)
-            .unwrap();
+        let series = series_page(
+            &connection,
+            &SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title)),
+            &whole_page(),
+        )
+        .unwrap()
+        .items
+        .into_iter()
+        .find(|series| series.title == title)
+        .unwrap();
         series_books(&connection, series.id, &whole_page())
             .unwrap()
             .items

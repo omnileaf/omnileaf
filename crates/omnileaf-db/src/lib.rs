@@ -10,6 +10,8 @@ pub mod first_launch;
 #[cfg(test)]
 #[path = "../build/icu_versions.rs"]
 mod icu_versions;
+mod letter_case;
+pub mod library_listing;
 pub mod library_view;
 mod migration;
 #[cfg(test)]

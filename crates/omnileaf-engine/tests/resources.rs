@@ -14,7 +14,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use omnileaf_engine::{CoverPath, Library, Resource, ResourceRouter};
+use omnileaf_engine::{CoverPath, Library, LibraryListing, Resource, ResourceRouter};
 use omnileaf_imaging::thumbnail;
 use omnileaf_testkit::{
     ArchiveEntry, Compression, PageShape, cbz, full_chroma_scan_jpeg, page_jpeg,
@@ -69,7 +69,11 @@ impl Covers {
     }
 
     async fn cover(&self) -> CoverPath {
-        let page = self.library.series(None).await.unwrap();
+        let page = self
+            .library
+            .series(LibraryListing::default(), None)
+            .await
+            .unwrap();
         page.series.first().unwrap().cover.unwrap()
     }
 

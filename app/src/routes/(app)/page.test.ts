@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, test } from "vitest";
 import { cleanup, render } from "vitest-browser-svelte";
 
 import {
+  DEFAULT_LIBRARY_LISTING,
   DEFAULT_LIBRARY_VIEW,
   events,
   type LibrarySeries,
@@ -43,6 +44,9 @@ function listing(catalog: () => readonly WireSeries[]): { asked: number } {
     (command) => {
       if (command === "library_view") {
         return DEFAULT_LIBRARY_VIEW;
+      }
+      if (command === "library_listing") {
+        return DEFAULT_LIBRARY_LISTING;
       }
       if (command !== "library_series") {
         throw new Error(`the page called \`${command}\``);
@@ -129,6 +133,9 @@ test("says when the library's series can't be listed", async () => {
     (command) => {
       if (command === "library_view") {
         return DEFAULT_LIBRARY_VIEW;
+      }
+      if (command === "library_listing") {
+        return DEFAULT_LIBRARY_LISTING;
       }
       // eslint-disable-next-line @typescript-eslint/only-throw-error -- a failed command rejects with its plain error object, which is what the bindings read
       throw {

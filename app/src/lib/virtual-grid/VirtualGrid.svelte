@@ -1,8 +1,15 @@
 <script lang="ts" generics="Item">
-  import { onMount, type Snippet } from "svelte";
+  import { onMount, type Snippet, tick } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import { columnsOf, optionId, type Reveal } from "./grid-keys";
   import { rowWindow, type Seen } from "./row-window";
+
+  /** A list whose choices a field moves through, naming the active one in its aria-activedescendant. */
+  interface Listbox {
+    readonly id: string;
+    readonly activeKey: string | undefined;
+  }
 
   let {
     items,
@@ -15,6 +22,8 @@
     class: className,
     style,
     itemClass,
+    listbox,
+    onRevealReady,
   }: {
     items: readonly Item[];
     key: (item: Item) => string;
@@ -26,6 +35,8 @@
     class?: ClassValue;
     style?: string;
     itemClass?: ClassValue;
+    listbox?: Listbox | undefined;
+    onRevealReady?: ((reveal: Reveal) => void) | undefined;
   } = $props();
 
   const ITEMS_BEFORE_MEASURING = 24;
@@ -61,13 +72,9 @@
     if (first === null) {
       return undefined;
     }
-    const style = getComputedStyle(grid);
-    const columns = style.gridTemplateColumns
-      .split(" ")
-      .filter((track) => track !== "").length;
-    const rowGap = Number.parseFloat(style.rowGap);
+    const rowGap = Number.parseFloat(getComputedStyle(grid).rowGap);
     return {
-      columns: Math.max(1, columns),
+      columns: columnsOf(grid),
       rowStride:
         first.getBoundingClientRect().height +
         (Number.isNaN(rowGap) ? 0 : rowGap),
@@ -95,6 +102,45 @@
     );
   }
 
+  /** The nearest ancestor that scrolls, which the grid's rows scroll in. */
+  function scrollerOf(element: Element): Element {
+    for (
+      let ancestor = element.parentElement;
+      ancestor !== null;
+      ancestor = ancestor.parentElement
+    ) {
+      if (/auto|scroll/u.test(getComputedStyle(ancestor).overflowY)) {
+        return ancestor;
+      }
+    }
+    return document.scrollingElement ?? document.documentElement;
+  }
+
+  async function revealItem(index: number): Promise<HTMLElement | undefined> {
+    if (frame === undefined || list === undefined) {
+      return undefined;
+    }
+    const isDrawn = index >= shown.start && index < shown.end;
+    if (measure !== undefined && !isDrawn) {
+      const scroller = scrollerOf(frame);
+      const view = scroller.getBoundingClientRect();
+      const rowTop =
+        frame.getBoundingClientRect().top +
+        Math.floor(index / measure.columns) * measure.rowStride;
+      const below = rowTop + measure.rowStride - view.bottom;
+      scroller.scrollBy({
+        top: rowTop < view.top ? rowTop - view.top : Math.max(0, below),
+      });
+      look();
+      await tick();
+    }
+    const item = list.querySelector<HTMLElement>(
+      `:scope > [aria-posinset="${String(index + 1)}"]`,
+    );
+    item?.scrollIntoView({ block: "nearest" });
+    return item ?? undefined;
+  }
+
   let pendingLook: number | undefined;
 
   function lookNextFrame(): void {
@@ -105,6 +151,7 @@
   }
 
   onMount(() => {
+    onRevealReady?.(revealItem);
     look();
     const resized = new ResizeObserver(lookNextFrame);
     const restyled = new MutationObserver(look);
@@ -151,9 +198,21 @@
     ? undefined
     : `${String(measure.rowStride)}px`}
 >
-  <ul bind:this={list} aria-label={label} class={["grid", className]} {style}>
+  <ul
+    bind:this={list}
+    id={listbox?.id}
+    role={listbox === undefined ? undefined : "listbox"}
+    aria-label={label}
+    class={["grid", className]}
+    {style}
+  >
     {#each items.slice(shown.start, shown.end) as item, offset (key(item))}
       <li
+        id={listbox === undefined ? undefined : optionId(listbox.id, key(item))}
+        role={listbox === undefined ? undefined : "option"}
+        aria-selected={listbox === undefined
+          ? undefined
+          : key(item) === listbox.activeKey}
         aria-posinset={shown.start + offset + 1}
         aria-setsize={setSize}
         class={itemClass}

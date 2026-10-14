@@ -13,7 +13,7 @@ use std::{fs, path::PathBuf};
 use books::write_book;
 use omnileaf_db::{
     Config, Database,
-    catalog::{SeriesOrder, series_books, series_page},
+    catalog::{SeriesListing, SeriesOrder, SeriesSort, series_books, series_page},
     store::{ReadingState, Store, reading_state},
 };
 use omnileaf_engine::{BooksRemoval, FolderKind, LibraryFolder, RescanOutcome};
@@ -70,12 +70,16 @@ impl Linked {
 
     fn first_book_in(&self, title: &str) -> BookId {
         let connection = self.scanned.connection();
-        let series = series_page(&connection, SeriesOrder::Title, &whole_page())
-            .unwrap()
-            .items
-            .into_iter()
-            .find(|series| series.title == title)
-            .unwrap();
+        let series = series_page(
+            &connection,
+            &SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title)),
+            &whole_page(),
+        )
+        .unwrap()
+        .items
+        .into_iter()
+        .find(|series| series.title == title)
+        .unwrap();
         series_books(&connection, series.id, &whole_page())
             .unwrap()
             .items

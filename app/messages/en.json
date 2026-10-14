@@ -83,6 +83,75 @@
       }
     }
   ],
+  "library_filter_and_sort": "Filter and sort",
+  "library_filter_and_sort_filtered": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Filter and sort, {formattedCount} filter on",
+        "countPlural=other": "Filter and sort, {formattedCount} filters on"
+      }
+    }
+  ],
+  "library_filter": "Filter",
+  "library_filter_with_count": "Filter · {count}",
+  "library_sort": "Sort",
+  "library_sort_by": "Sort by",
+  "library_reset": "Reset",
+  "library_close": "Close",
+  "library_sort_title": "Title",
+  "library_sort_date_added": "Date added",
+  "library_sort_a_to_z": "A to Z",
+  "library_sort_z_to_a": "Z to A",
+  "library_sort_newest_first": "Newest first",
+  "library_sort_oldest_first": "Oldest first",
+  "library_sort_a_to_z_change": "Order: A to Z. Change to Z to A",
+  "library_sort_z_to_a_change": "Order: Z to A. Change to A to Z",
+  "library_sort_newest_first_change": "Order: newest first. Change to oldest first",
+  "library_sort_oldest_first_change": "Order: oldest first. Change to newest first",
+  "library_filter_unread": "Unread",
+  "library_filter_unread_hint": "Has books you haven't read",
+  "library_filter_started": "Started",
+  "library_filter_finished": "Finished",
+  "library_filter_finished_hint": "You've read every book",
+  "library_filter_any": "Any",
+  "library_filter_only": "Only",
+  "library_filter_hide": "Hide",
+  "library_show_series": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Show {formattedCount} series",
+        "countPlural=other": "Show {formattedCount} series"
+      }
+    }
+  ],
+  "library_series_match": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} series matches",
+        "countPlural=other": "{formattedCount} series match"
+      }
+    }
+  ],
+  "library_no_matches": "No series match these filters.",
+  "library_clear_filters": "Clear filters",
   "app_version": "Version {version}",
   "library_add_folder": "Add a folder",
   "library_scan_finding": "Finding books",
@@ -541,5 +610,59 @@
   "crash_test_quit_build": "{version} · Development build",
   "crash_test_quit_note": "It quits straight away. Open it again to see the crash report it kept.",
   "crash_test_quit_confirm": "Crash and quit",
-  "crash_test_quit_cancel": "Cancel"
+  "crash_test_quit_cancel": "Cancel",
+  "search_title": "Search",
+  "search_open": "Search",
+  "search_library_field": "Search the library",
+  "search_library_placeholder": "Search",
+  "search_field": "Search your library",
+  "search_clear": "Clear",
+  "search_cancel": "Cancel",
+  "search_close": "Close",
+  "search_escape_key": "Esc",
+  "search_by": "Search by",
+  "search_by_title": "Title or series",
+  "search_by_title_example": "Any part of a series' name",
+  "search_type_to_filter": "Type to filter",
+  "search_word_unread": "unread",
+  "search_word_started": "started",
+  "search_word_finished": "finished",
+  "search_word_becomes_unread": "→ only unread",
+  "search_word_becomes_started": "→ only started",
+  "search_word_becomes_finished": "→ only finished",
+  "search_show": "Show",
+  "search_everything": "Everything",
+  "search_remove_condition": "Remove the {condition} filter",
+  "search_conditions": "Filters",
+  "search_series_heading": "Series · {count}",
+  "search_results": "Series found",
+  "search_found": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} series found",
+        "countPlural=other": "{formattedCount} series found"
+      }
+    }
+  ],
+  "search_nothing_called": "Nothing called “{text}”",
+  "search_nothing_hint": "Check the spelling, or search for part of a title.",
+  "search_failed": "Couldn't search your library. Try again.",
+  "search_key_move": "↑ ↓ to move",
+  "search_key_open": "Enter to open",
+  "search_key_next_group": "Tab for the next group",
+  "search_key_quick_open": "{shortcut} for quick open, anywhere",
+  "quick_open_title": "Quick open",
+  "quick_open_field": "Search or go to a page",
+  "quick_open_results": "Results",
+  "quick_open_series": "Series",
+  "quick_open_places": "Go to",
+  "quick_open_anywhere": "{shortcut} from anywhere",
+  "quick_open_shortcut": "Ctrl K",
+  "quick_open_shortcut_mac": "⌘ K"
 }
