@@ -74,7 +74,7 @@ function helperPid(file: string): Promise<number> {
 
 test("stops the processes the server started on its own when it stops the server", async () => {
   const pidFile = await helperPidFile();
-  const stop = await startWebDriverProcess({
+  const server = await startWebDriverProcess({
     command: process.execPath,
     args: ["-e", SPAWNS_A_DETACHED_HELPER, pidFile],
     env: process.env,
@@ -82,7 +82,7 @@ test("stops the processes the server started on its own when it stops the server
   });
   const helper = await helperPid(pidFile);
 
-  await stop();
+  await server.stop();
 
   expect(isRunning(helper)).toBe(false);
 });

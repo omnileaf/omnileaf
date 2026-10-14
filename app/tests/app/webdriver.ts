@@ -318,6 +318,17 @@ export class Session {
     await send(`${this.endpoint}/window`, "POST", { handle });
   }
 
+  async url(): Promise<string> {
+    return requireString(
+      await send(`${this.endpoint}/url`, "GET"),
+      "page address",
+    );
+  }
+
+  async back(): Promise<void> {
+    await send(`${this.endpoint}/back`, "POST", {});
+  }
+
   async end(): Promise<void> {
     await send(this.endpoint, "DELETE");
   }

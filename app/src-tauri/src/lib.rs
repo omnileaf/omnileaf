@@ -17,6 +17,7 @@ mod library_events;
 mod library_problem;
 mod omni_protocol;
 mod power_mode;
+mod put_away;
 mod runtime_config;
 mod scheduled_rescans;
 mod screen_orientation;
@@ -96,8 +97,9 @@ pub fn run() {
         .manage(e2e::CrashReportFolder::from_environment());
     #[cfg(all(feature = "e2e", not(windows)))]
     let app = app.plugin(tauri_plugin_wdio_webdriver::init());
-    app.run(tauri::generate_context!())
-        .expect("start the Tauri runtime");
+    app.build(tauri::generate_context!())
+        .expect("start the Tauri runtime")
+        .run(|app, event| put_away::save_when_put_away(app, &event));
 }
 
 fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>> {

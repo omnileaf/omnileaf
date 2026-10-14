@@ -16,6 +16,13 @@ export interface WebDriverProcess {
   readonly startupTimeoutMs?: number;
 }
 
+export interface RunningProcess {
+  /** Asks the process to end, letting it finish what it was doing. */
+  stop(): Promise<void>;
+  /** Ends the process at once, as the system ends an app it needs the memory of, with no chance to save anything. */
+  kill(): Promise<void>;
+}
+
 function failIfItStops(child: ChildProcess, command: string): Promise<never> {
   return new Promise((_, reject) => {
     child.once("error", (error) => {
@@ -80,7 +87,10 @@ async function stopTreeOnWindows(pid: number): Promise<void> {
   await waitUntilGone([pid]);
 }
 
-async function stop(child: ChildProcess): Promise<void> {
+async function end(
+  child: ChildProcess,
+  signal: NodeJS.Signals = "SIGTERM",
+): Promise<void> {
   if (
     child.pid === undefined ||
     child.exitCode !== null ||
@@ -93,7 +103,7 @@ async function stop(child: ChildProcess): Promise<void> {
     return;
   }
   const pids = [child.pid, ...(await descendantsOf(child.pid))];
-  signalEach(pids, "SIGTERM");
+  signalEach(pids, signal);
   await waitUntilGone(pids).catch(() => {
     signalEach(pids, "SIGKILL");
     return waitUntilGone(pids);
@@ -102,7 +112,7 @@ async function stop(child: ChildProcess): Promise<void> {
 
 export async function startWebDriverProcess(
   launch: WebDriverProcess,
-): Promise<() => Promise<void>> {
+): Promise<RunningProcess> {
   const child = spawn(launch.command, launch.args, {
     env: launch.env,
     stdio: "inherit",
@@ -116,7 +126,7 @@ export async function startWebDriverProcess(
       failIfItStops(child, launch.command),
     ]);
   } catch (error) {
-    await stop(child).catch((stopError: unknown) => {
+    await end(child).catch((stopError: unknown) => {
       throw new AggregateError(
         [error, stopError],
         `${launch.command} didn't start, and stopping what it started failed`,
@@ -124,5 +134,5 @@ export async function startWebDriverProcess(
     });
     throw error;
   }
-  return () => stop(child);
+  return { stop: () => end(child), kill: () => end(child, "SIGKILL") };
 }

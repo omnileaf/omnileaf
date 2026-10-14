@@ -3560,6 +3560,7 @@ dependencies = [
  "omnileaf-sync-proto",
  "omnileaf-testkit",
  "proptest",
+ "rusqlite",
  "serde",
  "serde_json",
  "specta",

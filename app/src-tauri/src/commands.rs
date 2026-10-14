@@ -21,7 +21,7 @@ use crate::{
     folder_picker::pick_folder,
     full_screen::{self, FullScreenChange},
     ipc_error::IpcError,
-    library_events::LibraryChanged,
+    library_events::{LibraryChanged, ReadingSaved},
     library_problem::{LibraryAtLaunch, LibraryProblem},
     screen_orientation::{self, ScreenOrientation},
     system_bars::{self, Theme, ThemePreference},
@@ -46,6 +46,9 @@ macro_rules! app_commands {
             series_books,
             mark_books,
             open_book,
+            reading_restored,
+            page_shown,
+            close_book,
             orient_screen,
             change_full_screen,
             library_listing,
@@ -76,7 +79,7 @@ macro_rules! app_commands {
 pub(crate) fn builder() -> Builder<Wry> {
     Builder::new()
         .commands(registered_commands())
-        .events(collect_events![LibraryChanged])
+        .events(collect_events![LibraryChanged, ReadingSaved])
         .constant("COVERS_PER_ROW", CoversPerRow::RANGES)
         .constant("DEFAULT_LIBRARY_VIEW", LibraryView::default())
         .constant("DEFAULT_LIBRARY_LISTING", LibraryListing::default())
@@ -295,6 +298,28 @@ async fn open_book(
     undecodable: Vec<ProbedFormat>,
 ) -> Result<OpenedBook, IpcError> {
     Ok(router.open_book(&library, id, undecodable).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn reading_restored(
+    library: State<'_, Library>,
+    id: BookId,
+    page: u32,
+) -> Result<(), IpcError> {
+    Ok(library.reading_restored(id, page).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn page_shown(library: State<'_, Library>, id: BookId, page: u32) -> Result<(), IpcError> {
+    Ok(library.page_shown(id, page).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn close_book(library: State<'_, Library>, id: BookId) -> Result<(), IpcError> {
+    Ok(library.close_book(id).await?)
 }
 
 #[tauri::command]

@@ -27,6 +27,9 @@ export const commands = {
 	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
+	readingRestored: (id: string & { readonly __brand: "BookId" }, page: number) => typedError<null, IpcError>(__TAURI_INVOKE("reading_restored", { id, page })),
+	pageShown: (id: string & { readonly __brand: "BookId" }, page: number) => typedError<null, IpcError>(__TAURI_INVOKE("page_shown", { id, page })),
+	closeBook: (id: string & { readonly __brand: "BookId" }) => typedError<null, IpcError>(__TAURI_INVOKE("close_book", { id })),
 	orientScreen: (orientation: ScreenOrientation) => typedError<null, IpcError>(__TAURI_INVOKE("orient_screen", { orientation })),
 	/**  Answers whether the window was in full screen before the change. */
 	changeFullScreen: (change: FullScreenChange) => typedError<boolean, IpcError>(__TAURI_INVOKE("change_full_screen", { change })),
@@ -60,6 +63,7 @@ export const commands = {
 /** Events */
 export const events = {
 	libraryChanged: makeEvent<LibraryChanged>("library-changed"),
+	readingSaved: makeEvent<ReadingSaved>("reading-saved"),
 };
 
 /* Constants */
@@ -262,6 +266,11 @@ export type ProbedFormat = "webp" | "jxl";
 export type ProjectLink = "sourceCode" | "newIssue" | "latestRelease";
 
 export type ReadMark = "read" | "unread";
+
+export type ReadingSaved = {
+	book: string & { readonly __brand: "BookId" },
+	series: string & { readonly __brand: "SeriesId" },
+};
 
 export type RescanOutcome = {
 	kind: "rescanned",

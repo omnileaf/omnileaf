@@ -41,6 +41,13 @@ pub(crate) struct Address {
 }
 
 impl Key {
+    pub(crate) const fn book(self) -> BookId {
+        match self {
+            Self::Latest(LatestKey::BookPosition(book) | LatestKey::BookRead(book))
+            | Self::Maximum(MaximumKey::BookFurthest(book)) => book,
+        }
+    }
+
     pub(crate) const fn address(self) -> Address {
         match self {
             Self::Latest(key) => key.address(),

@@ -3,6 +3,8 @@ mod app_language;
 mod background_lane;
 mod bookmark_access;
 mod books_removal;
+#[cfg(test)]
+mod captured_log;
 mod clock;
 mod cover_path;
 mod cover_thumbnails;
@@ -34,6 +36,8 @@ mod page_sizes;
 mod page_thumbnail_path;
 mod pages;
 mod project_link;
+mod reading_progress;
+mod reading_session;
 mod rescan;
 mod rescan_conditions;
 mod rescan_plan;
@@ -84,6 +88,8 @@ pub use page_path::{MalformedPagePath, PagePath};
 pub use page_thumbnail_path::{MalformedPageThumbnailPath, PageThumbnailPath};
 pub use pages::OpenBookError;
 pub use project_link::ProjectLink;
+pub use reading_progress::ReadingSaved;
+pub use reading_session::READING_SAVE_DELAY;
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
 pub use rescan_conditions::{
     EXTERNAL_RESCAN_EVERY, PowerMode, RESCAN_EVERY, RescanConditions, Storage,

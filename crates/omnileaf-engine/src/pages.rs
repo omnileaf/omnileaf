@@ -187,6 +187,9 @@ impl Pages {
             None if is_filled => store_sizes(library, found.file, found.rev, sizes.clone()).await,
             None => {}
         }
+        if let Err(error) = library.start_reading(id, opened.page_count).await {
+            tracing::debug!(error = %describe_error(&error), "save the page reached in the book read before this one");
+        }
         let start = start_page(found.reading, opened.page_count);
         self.read_ahead(&opened, start_index(found.reading, opened.page_count));
         Ok(opened_book(to_open, &sizes, start))
@@ -410,18 +413,21 @@ impl Drop for PageClaim<'_> {
     }
 }
 
-/// The page reading goes on from, counting from 0, or the first page of a book not started.
+/// The page reading goes on from, counting from 0, or the first page of a book not started or read to its end.
 fn start_page(reading: StoredReading, page_count: usize) -> u32 {
     let last = u32::try_from(page_count.saturating_sub(1)).unwrap_or(u32::MAX);
     match reading {
         StoredReading::Started {
             position_page: Some(page),
         } => page.min(last),
+        StoredReading::Read {
+            position_page: Some(page),
+        } if page < last => page,
         StoredReading::Started {
             position_page: None,
         }
-        | StoredReading::NotStarted
-        | StoredReading::Read => 0,
+        | StoredReading::Read { .. }
+        | StoredReading::NotStarted => 0,
     }
 }
 
@@ -537,6 +543,25 @@ mod tests {
         StoredReading::Started { position_page }
     }
 
+    fn read_at(position_page: Option<u32>) -> StoredReading {
+        StoredReading::Read { position_page }
+    }
+
+    #[test]
+    fn opens_a_book_read_before_on_the_page_reading_it_again_reached() {
+        let start = start_page(read_at(Some(13)), PAGE_COUNT);
+
+        assert_eq!(start, 13);
+    }
+
+    #[test]
+    fn opens_on_the_first_page_a_book_read_to_its_last_page() {
+        let starts =
+            [read_at(Some(29)), read_at(Some(40))].map(|reading| start_page(reading, PAGE_COUNT));
+
+        assert_eq!(starts, [0, 0]);
+    }
+
     #[test]
     fn opens_a_started_book_on_the_page_reading_goes_on_from() {
         let start = start_page(started_at(Some(13)), PAGE_COUNT);
@@ -553,12 +578,8 @@ mod tests {
 
     #[test]
     fn opens_on_the_first_page_a_book_with_no_position_to_go_on_from() {
-        let starts = [
-            StoredReading::NotStarted,
-            started_at(None),
-            StoredReading::Read,
-        ]
-        .map(|reading| start_page(reading, PAGE_COUNT));
+        let starts = [StoredReading::NotStarted, started_at(None), read_at(None)]
+            .map(|reading| start_page(reading, PAGE_COUNT));
 
         assert_eq!(starts, [0, 0, 0]);
     }

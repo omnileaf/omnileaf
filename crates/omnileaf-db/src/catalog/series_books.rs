@@ -91,7 +91,7 @@ impl BookListing {
 
     /// Whether the list holds a book read as `reading` says.
     fn holds(self, reading: BookReading) -> bool {
-        self.shown == BooksShown::All || reading != BookReading::Read
+        self.shown == BooksShown::All || !matches!(reading, BookReading::Read { .. })
     }
 }
 
@@ -103,7 +103,10 @@ pub enum BookReading {
     Started {
         position_page: Option<u32>,
     },
-    Read,
+    /// Marked read, with the position saved last, which is absent when none was saved.
+    Read {
+        position_page: Option<u32>,
+    },
 }
 
 /// A series missing from the catalog has no books, so its page is empty.
@@ -270,7 +273,9 @@ pub(crate) fn stored_reading(row: &Row<'_>) -> rusqlite::Result<BookReading> {
     let is_read: Option<bool> = row.get("is_read")?;
     let is_started: Option<bool> = row.get("is_started")?;
     Ok(match (is_read, is_started) {
-        (Some(true), _) => BookReading::Read,
+        (Some(true), _) => BookReading::Read {
+            position_page: row.get("position_page")?,
+        },
         (_, Some(true)) => BookReading::Started {
             position_page: row.get("position_page")?,
         },

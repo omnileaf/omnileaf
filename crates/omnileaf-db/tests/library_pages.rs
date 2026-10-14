@@ -540,7 +540,9 @@ async fn tells_each_book_of_a_series_whether_it_is_read_started_or_not() {
     assert_eq!(
         readings,
         [
-            BookReading::Read,
+            BookReading::Read {
+                position_page: Some(30)
+            },
             BookReading::Started {
                 position_page: Some(4)
             },

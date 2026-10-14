@@ -623,6 +623,67 @@ test.describe("the screen's orientation", () => {
   });
 });
 
+test.describe("saving where reading is", () => {
+  const heard: string[] = [];
+
+  test.use({
+    backend: {
+      ...readerBackend(DEFAULT_BACKEND, {
+        reading: { state: "started", page: 14 },
+        startPage: 13,
+      }),
+      readingRestored: (id, page) => {
+        heard.push(`restored ${id} ${String(page)}`);
+        return null;
+      },
+      pageShown: (id, page) => {
+        heard.push(`shown ${id} ${String(page)}`);
+        return null;
+      },
+      closeBook: (id) => {
+        heard.push(`closed ${id}`);
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    heard.length = 0;
+  });
+
+  test("tells the core the page it opened on, then each page turned to", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await expectOnPage(page, 14);
+
+    await zone(page, "Next page").click();
+    await expectOnPage(page, 15);
+    await page.keyboard.press("Home");
+
+    await expect
+      .poll(() => heard)
+      .toEqual([
+        `restored ${BOOK_ID} 13`,
+        `shown ${BOOK_ID} 14`,
+        `shown ${BOOK_ID} 0`,
+      ]);
+  });
+
+  test("tells the core the book closed once it goes back to the library", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await expect.poll(() => heard).toEqual([`restored ${BOOK_ID} 13`]);
+
+    await page.keyboard.press("Escape");
+
+    await expect
+      .poll(() => heard)
+      .toEqual([`restored ${BOOK_ID} 13`, `closed ${BOOK_ID}`]);
+  });
+});
+
 test.describe("full screen", () => {
   const changes: FullScreenChange[] = [];
   let isFullScreen = false;

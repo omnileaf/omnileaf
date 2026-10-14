@@ -17,7 +17,8 @@ use std::{fs, time::Duration};
 
 use books::write_book;
 use omnileaf_engine::{
-    AppFiles, FolderWatch, FolderWatchSwitch, Library, LibraryFolders, LibraryListing,
+    AppFiles, FolderWatch, FolderWatchSwitch, LIBRARY_CHANGES_GATHERED_FOR, Library,
+    LibraryChanged, LibraryFolders, LibraryListing,
 };
 use scanned::Scanned;
 use support::ScratchFolder;
@@ -112,6 +113,49 @@ async fn lists_a_book_added_to_a_watched_folder_within_three_seconds() {
         )
         .await
     );
+}
+
+#[tokio::test]
+async fn tells_of_one_library_change_for_the_books_added_to_a_watched_folder() {
+    let (scanned, comics) = linked("watch-told").await;
+    let mut changes = scanned.library.changes();
+    let watch = scanned
+        .library
+        .watch_folders(&app_files(&scanned), &switched_on())
+        .await;
+
+    let told = while_watching(watch, async {
+        write_book(&comics.path().join(SERIES_03).join("v01.cbz"), 3);
+        write_book(&comics.path().join(SERIES_03).join("v02.cbz"), 4);
+        let told = timeout(SHOWN_WITHIN, changes.next()).await;
+        let told_again = timeout(LIBRARY_CHANGES_GATHERED_FOR * 4, changes.next()).await;
+        (told.ok().flatten(), told_again.is_ok())
+    })
+    .await;
+
+    assert_eq!(told, Some((Some(LibraryChanged), false)));
+}
+
+#[tokio::test]
+async fn tells_of_no_library_change_when_a_watched_folder_holds_nothing_new() {
+    let (scanned, comics) = linked("watch-quiet").await;
+    let mut changes = scanned.library.changes();
+    let watch = scanned
+        .library
+        .watch_folders(&app_files(&scanned), &switched_on())
+        .await;
+
+    let told = while_watching(watch, async {
+        fs::write(
+            comics.path().join(SERIES_01).join("notes.txt"),
+            "not a book",
+        )
+        .unwrap();
+        timeout(STAYS_UNLISTED_FOR, changes.next()).await.is_ok()
+    })
+    .await;
+
+    assert_eq!(told, Some(false));
 }
 
 #[tokio::test]

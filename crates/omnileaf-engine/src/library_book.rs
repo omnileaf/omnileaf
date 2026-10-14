@@ -75,7 +75,7 @@ pub struct SeriesBookPage {
 }
 
 /// Crosses to the interface as an opaque string, which it hands back unchanged to name the book.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(into = "String", try_from = "String")]
 pub struct BookId(pub(crate) omnileaf_sync_proto::BookId);
 
@@ -103,7 +103,7 @@ impl From<catalog::BookReading> for BookReading {
             catalog::BookReading::Started { position_page } => Self::Started {
                 page: position_page.map(|index| index.saturating_add(1)),
             },
-            catalog::BookReading::Read => Self::Read,
+            catalog::BookReading::Read { .. } => Self::Read,
         }
     }
 }
@@ -161,6 +161,18 @@ impl Type for BookCursor {
     fn definition(types: &mut Types) -> DataType {
         branded_string("BookCursor", types)
     }
+}
+
+#[cfg(test)]
+pub(crate) fn sample_book_id(seed: u32) -> BookId {
+    use omnileaf_sync_proto::{Fingerprint, ImageEntry};
+
+    let fingerprint = Fingerprint::pmf1([ImageEntry {
+        crc32: seed,
+        size: 1,
+    }])
+    .unwrap();
+    BookId(omnileaf_sync_proto::BookId::local(&fingerprint))
 }
 
 #[cfg(test)]

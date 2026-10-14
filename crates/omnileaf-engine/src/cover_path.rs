@@ -63,15 +63,14 @@ impl Type for CoverPath {
 
 #[cfg(test)]
 mod tests {
-    use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
     use proptest::prelude::*;
 
     use super::*;
+    use crate::library_book::sample_book_id;
 
     fn cover(crc32: u32, file: i64, rev: u32) -> CoverPath {
-        let fingerprint = Fingerprint::pmf1([ImageEntry { crc32, size: 1 }]).unwrap();
         CoverPath(Cover {
-            book: BookId::local(&fingerprint),
+            book: sample_book_id(crc32).0,
             file: file.to_string().parse().unwrap(),
             rev,
         })

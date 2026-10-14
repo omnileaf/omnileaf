@@ -44,6 +44,7 @@ use crate::{
     library_layout::folder_name,
     library_search::StoredSearch,
     moved_home::move_home,
+    reading_progress::{ReadingProgress, ReadingSaved},
     rescan::rescan,
     rescan_conditions::{RescanConditions, Storage},
     rescan_schedule::{Check, RescanSchedule},
@@ -86,7 +87,8 @@ impl From<PathBuf> for LibraryFolders {
 pub type OpenTree = Arc<dyn Fn(&AndroidTree) -> Arc<dyn omnileaf_formats::Storage> + Send + Sync>;
 
 pub struct Library {
-    store: Store,
+    store: Arc<Store>,
+    reading: ReadingProgress,
     catalog_change_lock: Mutex<()>,
     schedule: sync::Mutex<RescanSchedule>,
     is_scheduled: watch::Sender<bool>,
@@ -130,6 +132,8 @@ pub enum LibraryError {
     StoredView(#[source] CoversPerRowOutOfRange),
     #[error("run blocking library work")]
     Interrupted(#[from] tokio::task::JoinError),
+    #[error("reach the task that saves reading progress, which has stopped")]
+    ReadingStopped,
 }
 
 impl LibraryError {
@@ -168,8 +172,10 @@ impl Library {
             Ok::<_, LibraryError>(Database::open(&config)?)
         })
         .await??;
+        let store = Arc::new(Store::new(database, clock));
         let library = Self {
-            store: Store::new(database, clock),
+            reading: ReadingProgress::start(Arc::clone(&store)),
+            store,
             catalog_change_lock: Mutex::new(()),
             schedule: sync::Mutex::default(),
             is_scheduled: watch::Sender::new(false),
@@ -301,6 +307,7 @@ impl Library {
 
     /// Fails with [`LibraryError::SeriesNotFound`] for a series the library doesn't show, being missing or empty of books.
     pub async fn series_overview(&self, id: SeriesId) -> Result<SeriesOverview, LibraryError> {
+        self.save_reading_before_reading().await;
         let series = id.0;
         let found = self
             .store
@@ -335,13 +342,14 @@ impl Library {
         Ok(SeriesBookPage::from(page))
     }
 
-    /// Marks the books read or unread in one write, leaving where each was opened at as it is.
+    /// Marks the books read or unread in one write, leaving where each was opened at as it is, once any reading not yet saved is, so that save never undoes the mark.
     #[tracing::instrument(skip_all, fields(books = books.len(), ?mark))]
     pub async fn mark_books(&self, books: Vec<BookId>, mark: ReadMark) -> Result<(), LibraryError> {
         let is_read = match mark {
             ReadMark::Read => true,
             ReadMark::Unread => false,
         };
+        self.reading.save_now().await?;
         Ok(self
             .store
             .write(move |writer| {
@@ -350,6 +358,51 @@ impl Library {
                     .try_for_each(|book| writer.set_read(book.0, is_read))
             })
             .await?)
+    }
+
+    /// Saves the page reached in the book read before, then the pages the reader shows in this one after the page it opened on.
+    #[tracing::instrument(skip_all, fields(%book, page))]
+    pub async fn reading_restored(&self, book: BookId, page: u32) -> Result<(), LibraryError> {
+        self.reading.restored(book, page).await
+    }
+
+    /// Saves the page within a moment, unless the reader hasn't restored the book yet or has closed it.
+    pub async fn page_shown(&self, book: BookId, page: u32) -> Result<(), LibraryError> {
+        self.reading.shown(book, page).await
+    }
+
+    /// Saves the page the reader showed last in the book, and nothing it shows in it from then on.
+    #[tracing::instrument(skip_all, fields(%book))]
+    pub async fn close_book(&self, book: BookId) -> Result<(), LibraryError> {
+        self.reading.closed(book).await
+    }
+
+    /// Saves at once the page the reader showed last, such as before the app is put away.
+    #[tracing::instrument(skip_all)]
+    pub async fn save_reading(&self) -> Result<(), LibraryError> {
+        self.reading.save_now().await
+    }
+
+    /// Saves the page reached in the book read now, and keeps `book`'s length for when the reader restores it.
+    pub(crate) async fn start_reading(
+        &self,
+        book: BookId,
+        page_count: usize,
+    ) -> Result<(), LibraryError> {
+        self.reading.opened(book, page_count).await
+    }
+
+    /// Saves the page reached in the book read now, so what is read next shows it, and reads on without it should the save fail, which the save warns of itself.
+    async fn save_reading_before_reading(&self) {
+        if let Err(error) = self.reading.save_now().await {
+            tracing::debug!(error = %describe_error(&error), "save the page reached before reading the library");
+        }
+    }
+
+    /// Each page reading reached once it is saved, whichever book it is in.
+    #[must_use]
+    pub fn reading_saved(&self) -> broadcast::Receiver<ReadingSaved> {
+        self.reading.subscribe()
     }
 
     pub async fn listing(&self) -> Result<LibraryListing, LibraryError> {
@@ -416,7 +469,14 @@ impl Library {
         &self,
         book: BookId,
     ) -> Result<Option<BookToOpen>, LibraryError> {
-        Ok(self
+        let unsaved = match self.reading.save_before_opening(book).await {
+            Ok(unsaved) => unsaved,
+            Err(error) => {
+                tracing::warn!(error = %describe_error(&error), "save the page reached before opening a book");
+                None
+            }
+        };
+        let to_open = self
             .store
             .database()
             .read(move |connection| {
@@ -425,7 +485,13 @@ impl Library {
                 };
                 Ok(place_in_series(connection, book.0)?.map(|place| BookToOpen { found, place }))
             })
-            .await?)
+            .await?;
+        Ok(to_open.map(|mut to_open| {
+            if let Some(unsaved) = unsaved {
+                to_open.found.reading = unsaved.stored();
+            }
+            to_open
+        }))
     }
 
     pub(crate) async fn page_dimensions(

@@ -26,45 +26,17 @@ pub(crate) fn unix_ms(now: SystemTime) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        io,
-        sync::{Arc, Mutex},
-        time::Duration,
-    };
+    use std::time::Duration;
 
     use super::*;
-
-    #[derive(Clone, Default)]
-    struct CapturedLog(Arc<Mutex<Vec<u8>>>);
-
-    impl io::Write for CapturedLog {
-        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-            self.0.lock().unwrap().extend_from_slice(bytes);
-            Ok(bytes.len())
-        }
-
-        fn flush(&mut self) -> io::Result<()> {
-            Ok(())
-        }
-    }
-
-    impl CapturedLog {
-        fn text(&self) -> String {
-            String::from_utf8_lossy(&self.0.lock().unwrap()).into_owned()
-        }
-    }
+    use crate::captured_log::CapturedLog;
 
     #[test]
     fn warns_when_it_reads_a_clock_set_before_1970_as_the_epoch() {
         let log = CapturedLog::default();
-        let writer = log.clone();
-        let subscriber = tracing_subscriber::fmt()
-            .with_writer(move || writer.clone())
-            .with_ansi(false)
-            .finish();
         let before_1970 = UNIX_EPOCH - Duration::from_secs(1);
 
-        let read = tracing::subscriber::with_default(subscriber, || unix_ms(before_1970));
+        let read = tracing::subscriber::with_default(log.subscriber(), || unix_ms(before_1970));
 
         assert_eq!(read, 0);
         assert!(log.text().contains("WARN"), "log: {}", log.text());
