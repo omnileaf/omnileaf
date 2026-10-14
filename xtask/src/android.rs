@@ -4,9 +4,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::Context;
+
 pub(crate) const ANDROID_HOME: &str = "ANDROID_HOME";
 const ANDROID_SDK_ROOT: &str = "ANDROID_SDK_ROOT";
 const NDK_HOME: &str = "NDK_HOME";
+const NDK_SOURCE_PROPERTIES: &str = "source.properties";
+const PINNED_NDK_FILE: &str = ".android-ndk-version";
+const NDK_REVISION_FIELD: &str = "Pkg.Revision";
 const EMULATOR_SERIAL_PREFIX: &str = "emulator-";
 const MODEL_FIELD: &str = "model:";
 const TRANSPORT_FIELD: &str = "transport_id:";
@@ -68,7 +73,13 @@ pub(crate) enum AdbState {
 #[derive(Debug)]
 pub(crate) struct Toolchain {
     pub(crate) sdk: PathBuf,
-    pub(crate) ndk: Option<PathBuf>,
+    pub(crate) ndk: Option<Ndk>,
+}
+
+#[derive(Debug)]
+pub(crate) struct Ndk {
+    pub(crate) path: PathBuf,
+    pub(crate) revision: Option<String>,
 }
 
 impl Toolchain {
@@ -77,7 +88,8 @@ impl Toolchain {
         let ndk = env(NDK_HOME)
             .map(PathBuf::from)
             .or_else(|| newest_ndk(&sdk.join("ndk")))
-            .filter(|ndk| ndk.is_dir());
+            .filter(|ndk| ndk.is_dir())
+            .map(Ndk::at);
         Some(Self { sdk, ndk })
     }
 
@@ -172,6 +184,38 @@ fn default_sdk_path(env: &impl Fn(&str) -> Option<OsString>, os: &str) -> Option
     })
 }
 
+impl Ndk {
+    fn at(path: PathBuf) -> Self {
+        let revision = fs::read_to_string(path.join(NDK_SOURCE_PROPERTIES))
+            .ok()
+            .as_deref()
+            .and_then(ndk_revision)
+            .map(str::to_owned);
+        Self { path, revision }
+    }
+}
+
+pub(crate) fn pinned_ndk(root: &Path) -> anyhow::Result<String> {
+    let file = root.join(PINNED_NDK_FILE);
+    let contents = fs::read_to_string(&file).with_context(|| format!("read {}", file.display()))?;
+    let version = contents.trim();
+    anyhow::ensure!(
+        !version.is_empty(),
+        "{} names no NDK version",
+        file.display()
+    );
+    Ok(version.to_owned())
+}
+
+fn ndk_revision(source_properties: &str) -> Option<&str> {
+    source_properties
+        .lines()
+        .filter_map(|line| line.split_once('='))
+        .find(|(key, _)| key.trim() == NDK_REVISION_FIELD)
+        .map(|(_, value)| value.trim())
+        .filter(|revision| !revision.is_empty())
+}
+
 fn newest_ndk(versions: &Path) -> Option<PathBuf> {
     let names: Vec<String> = fs::read_dir(versions)
         .ok()?
@@ -193,6 +237,8 @@ fn version_numbers(name: &str) -> Option<Vec<u32>> {
 
 #[cfg(test)]
 mod tests {
+    use std::{env, process};
+
     use super::*;
 
     fn env_with(
@@ -261,6 +307,104 @@ mod tests {
         let names = ["9.9.1", "27.1.12297006", "29.0.13846066", "10.0.0"];
 
         assert_eq!(newest_version(names.into_iter()), Some("29.0.13846066"));
+    }
+
+    #[test]
+    fn reads_the_ndk_revision_from_its_source_properties() {
+        let properties = "Pkg.Desc = Android NDK\nPkg.Revision = 30.0.16248370\nPkg.BaseRevision = 30.0.16248370\n";
+
+        assert_eq!(ndk_revision(properties), Some("30.0.16248370"));
+    }
+
+    #[test]
+    fn finds_no_ndk_revision_without_the_field() {
+        let properties = "Pkg.Desc = Android NDK\nPkg.BaseRevision = 30.0.16248370\n";
+
+        assert_eq!(ndk_revision(properties), None);
+    }
+
+    fn scratch(name: &str) -> PathBuf {
+        let folder = env::temp_dir().join(format!("omnileaf-xtask-{name}-{}", process::id()));
+        fs::create_dir_all(&folder).unwrap();
+        folder
+    }
+
+    #[test]
+    fn reads_the_pinned_ndk_version_without_its_line_break() {
+        let root = scratch("pinned-ndk");
+        fs::write(root.join(PINNED_NDK_FILE), "30.0.16248370\n").unwrap();
+
+        let pinned = pinned_ndk(&root);
+
+        fs::remove_dir_all(&root).unwrap();
+        assert_eq!(pinned.unwrap(), "30.0.16248370");
+    }
+
+    #[test]
+    fn fails_without_a_pinned_ndk_version_file() {
+        let root = scratch("no-pinned-ndk");
+
+        let pinned = pinned_ndk(&root);
+
+        fs::remove_dir_all(&root).unwrap();
+        assert!(pinned.is_err());
+    }
+
+    #[test]
+    fn fails_on_an_empty_pinned_ndk_version_file() {
+        let root = scratch("empty-pinned-ndk");
+        fs::write(root.join(PINNED_NDK_FILE), "\n").unwrap();
+
+        let pinned = pinned_ndk(&root);
+
+        fs::remove_dir_all(&root).unwrap();
+        assert!(pinned.is_err());
+    }
+
+    fn install_ndk(folder: &Path, revision: &str) {
+        fs::create_dir_all(folder).unwrap();
+        fs::write(
+            folder.join(NDK_SOURCE_PROPERTIES),
+            format!("Pkg.Desc = Android NDK\nPkg.Revision = {revision}\n"),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn reads_an_ndk_version_from_its_folder() {
+        let folder = scratch("ndk-with-version");
+        install_ndk(&folder, "30.0.16248370");
+
+        let ndk = Ndk::at(folder.clone());
+
+        fs::remove_dir_all(&folder).unwrap();
+        assert_eq!(ndk.revision.as_deref(), Some("30.0.16248370"));
+    }
+
+    #[test]
+    fn reads_no_version_from_an_ndk_folder_without_source_properties() {
+        let folder = scratch("ndk-without-version");
+
+        let ndk = Ndk::at(folder.clone());
+
+        fs::remove_dir_all(&folder).unwrap();
+        assert_eq!(ndk.revision, None);
+    }
+
+    #[test]
+    fn locates_the_newest_ndk_in_the_sdk_with_its_version() {
+        let sdk = scratch("sdk-with-ndks");
+        install_ndk(&sdk.join("ndk").join("27.1.12297006"), "27.1.12297006");
+        install_ndk(&sdk.join("ndk").join("30.0.16248370"), "30.0.16248370");
+        let home = sdk.clone().into_os_string();
+
+        let toolchain =
+            Toolchain::locate(|key| (key == ANDROID_HOME).then(|| home.clone()), "linux");
+
+        fs::remove_dir_all(&sdk).unwrap();
+        let ndk = toolchain.unwrap().ndk.unwrap();
+        assert_eq!(ndk.path, sdk.join("ndk").join("30.0.16248370"));
+        assert_eq!(ndk.revision.as_deref(), Some("30.0.16248370"));
     }
 
     #[test]

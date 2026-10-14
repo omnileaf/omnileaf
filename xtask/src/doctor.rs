@@ -32,6 +32,7 @@ pub(crate) enum Probe {
 pub(crate) struct Host<'a> {
     pub(crate) os: &'a str,
     pub(crate) android: Option<&'a android::Toolchain>,
+    pub(crate) pinned_ndk: &'a str,
 }
 
 pub(crate) const REQUIREMENTS: &[Requirement] = &[
@@ -189,6 +190,7 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum Finding {
     Present { detail: String },
+    Differs { detail: String },
     Missing,
 }
 
@@ -205,44 +207,73 @@ pub(crate) fn examine(
     machine: &impl Machine,
     host: &Host<'_>,
 ) -> Finding {
-    let detail = match requirement.probe {
-        Probe::Command { program, args } => machine
-            .stdout_of(OsStr::new(program), args)
-            .as_deref()
-            .and_then(first_line),
-        Probe::RustTargets(targets) => machine
-            .stdout_of(OsStr::new("rustup"), RUSTUP_INSTALLED_TARGETS)
-            .filter(|installed| {
-                targets
-                    .iter()
-                    .all(|target| installed.lines().any(|line| line == *target))
-            })
-            .map(|_| targets.join(", ")),
-        Probe::AndroidSdk => host
-            .android
-            .map(|android| android.sdk.display().to_string()),
+    match requirement.probe {
+        Probe::Command { program, args } => found(
+            machine
+                .stdout_of(OsStr::new(program), args)
+                .as_deref()
+                .and_then(first_line),
+        ),
+        Probe::RustTargets(targets) => found(
+            machine
+                .stdout_of(OsStr::new("rustup"), RUSTUP_INSTALLED_TARGETS)
+                .filter(|installed| {
+                    targets
+                        .iter()
+                        .all(|target| installed.lines().any(|line| line == *target))
+                })
+                .map(|_| targets.join(", ")),
+        ),
+        Probe::AndroidSdk => found(
+            host.android
+                .map(|android| android.sdk.display().to_string()),
+        ),
         Probe::AndroidNdk => host
             .android
             .and_then(|android| android.ndk.as_ref())
-            .map(|ndk| ndk.display().to_string()),
-        Probe::Adb => host
-            .android
-            .and_then(|android| machine.stdout_of(android.adb().as_os_str(), &["--version"]))
-            .as_deref()
-            .and_then(first_line),
-        Probe::AndroidVirtualDevices => host
-            .android
-            .and_then(|android| machine.stdout_of(android.emulator().as_os_str(), &["-list-avds"]))
-            .map(|listing| android::virtual_device_names(&listing).join(", "))
-            .filter(|names| !names.is_empty()),
-        Probe::IosSimulators => machine
-            .stdout_of(OsStr::new("xcrun"), apple::LIST_SIMULATORS)
-            .and_then(|listing| apple::ios_simulators(&listing).ok())
-            .map(|simulators| simulators.len())
-            .filter(|count| *count > 0)
-            .map(|count| format!("{count} iOS Simulators")),
-    };
+            .map_or(Finding::Missing, |ndk| compare_ndk(ndk, host.pinned_ndk)),
+        Probe::Adb => found(
+            host.android
+                .and_then(|android| machine.stdout_of(android.adb().as_os_str(), &["--version"]))
+                .as_deref()
+                .and_then(first_line),
+        ),
+        Probe::AndroidVirtualDevices => found(
+            host.android
+                .and_then(|android| {
+                    machine.stdout_of(android.emulator().as_os_str(), &["-list-avds"])
+                })
+                .map(|listing| android::virtual_device_names(&listing).join(", "))
+                .filter(|names| !names.is_empty()),
+        ),
+        Probe::IosSimulators => found(
+            machine
+                .stdout_of(OsStr::new("xcrun"), apple::LIST_SIMULATORS)
+                .and_then(|listing| apple::ios_simulators(&listing).ok())
+                .map(|simulators| simulators.len())
+                .filter(|count| *count > 0)
+                .map(|count| format!("{count} iOS Simulators")),
+        ),
+    }
+}
+
+fn found(detail: Option<String>) -> Finding {
     detail.map_or(Finding::Missing, |detail| Finding::Present { detail })
+}
+
+fn compare_ndk(ndk: &android::Ndk, pinned: &str) -> Finding {
+    let path = ndk.path.display();
+    match ndk.revision.as_deref() {
+        Some(revision) if revision == pinned => Finding::Present {
+            detail: path.to_string(),
+        },
+        Some(revision) => Finding::Differs {
+            detail: format!("{path} is NDK {revision}, CI builds with {pinned}"),
+        },
+        None => Finding::Differs {
+            detail: format!("{path} has no version in source.properties, CI builds with {pinned}"),
+        },
+    }
 }
 
 fn first_line(output: &str) -> Option<String> {
@@ -290,6 +321,7 @@ pub(crate) fn render(
 fn line(requirement: &Requirement, finding: Finding) -> String {
     let (status, text) = match finding {
         Finding::Present { detail } => ("ok", detail),
+        Finding::Differs { detail } => ("differs", format!("{detail}: {}", requirement.fix)),
         Finding::Missing => ("missing", requirement.fix.to_owned()),
     };
     format!(
@@ -320,6 +352,7 @@ mod tests {
     const LINUX: Host<'static> = Host {
         os: "linux",
         android: None,
+        pinned_ndk: PINNED,
     };
 
     fn requirement(need: Need, probe: Probe) -> Requirement {
@@ -332,11 +365,34 @@ mod tests {
         }
     }
 
+    const PINNED: &str = "29.0.13846066";
+
     fn sdk() -> android::Toolchain {
+        sdk_with_ndk_revision(Some(PINNED))
+    }
+
+    fn sdk_with_ndk_revision(revision: Option<&str>) -> android::Toolchain {
         android::Toolchain {
             sdk: PathBuf::from("/sdk"),
-            ndk: Some(PathBuf::from("/sdk/ndk/29.0.13846066")),
+            ndk: Some(android::Ndk {
+                path: PathBuf::from("/sdk/ndk/29.0.13846066"),
+                revision: revision.map(str::to_owned),
+            }),
         }
+    }
+
+    fn examine_ndk(toolchain: &android::Toolchain) -> Finding {
+        let host = Host {
+            os: "linux",
+            android: Some(toolchain),
+            pinned_ndk: PINNED,
+        };
+
+        examine(
+            &requirement(Need::ForPhones, Probe::AndroidNdk),
+            &FakeMachine { installed: &[] },
+            &host,
+        )
     }
 
     const TOOL: Requirement = Requirement {
@@ -413,6 +469,7 @@ mod tests {
         let mac = Host {
             os: "macos",
             android: None,
+            pinned_ndk: PINNED,
         };
 
         let report = render(&[TOOL, linux_only], &machine, &mac);
@@ -474,6 +531,7 @@ mod tests {
         let host = Host {
             os: "linux",
             android: Some(&toolchain),
+            pinned_ndk: PINNED,
         };
         let machine = FakeMachine { installed: &[] };
 
@@ -494,11 +552,59 @@ mod tests {
     }
 
     #[test]
+    fn reports_an_ndk_that_differs_from_the_pinned_version() {
+        let toolchain = sdk_with_ndk_revision(Some("27.1.12297006"));
+
+        let finding = examine_ndk(&toolchain);
+
+        assert_eq!(
+            finding,
+            Finding::Differs {
+                detail: "/sdk/ndk/29.0.13846066 is NDK 27.1.12297006, CI builds with 29.0.13846066"
+                    .to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn reports_an_ndk_with_no_readable_version_as_differing() {
+        let toolchain = sdk_with_ndk_revision(None);
+
+        let finding = examine_ndk(&toolchain);
+
+        assert_eq!(
+            finding,
+            Finding::Differs {
+                detail: "/sdk/ndk/29.0.13846066 has no version in source.properties, CI builds with 29.0.13846066"
+                    .to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn warns_about_a_differing_ndk_without_counting_it_missing() {
+        let toolchain = sdk_with_ndk_revision(Some("27.1.12297006"));
+        let host = Host {
+            os: "linux",
+            android: Some(&toolchain),
+            pinned_ndk: PINNED,
+        };
+        let ndk = requirement(Need::ForPhones, Probe::AndroidNdk);
+
+        let report = render(&[ndk], &FakeMachine { installed: &[] }, &host);
+
+        assert_eq!((report.missing, report.missing_for_phones), (0, 0));
+        assert!(report.lines[0].starts_with("differs"));
+        assert!(report.lines[0].ends_with("CI builds with 29.0.13846066: install it"));
+    }
+
+    #[test]
     fn runs_adb_and_the_emulator_from_the_sdk() {
         let toolchain = sdk();
         let host = Host {
             os: "linux",
             android: Some(&toolchain),
+            pinned_ndk: PINNED,
         };
         let machine = FakeMachine {
             installed: &[
@@ -532,6 +638,7 @@ mod tests {
         let host = Host {
             os: "linux",
             android: Some(&toolchain),
+            pinned_ndk: PINNED,
         };
         let machine = FakeMachine {
             installed: &[("/sdk/emulator/emulator", "")],
