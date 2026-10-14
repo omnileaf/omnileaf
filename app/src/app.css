@@ -101,6 +101,7 @@
   }
 }
 @custom-variant closed (&[data-state="closed"]);
+@custom-variant with-card-action (&:has(> [data-slot="card-action"]));
 @custom-variant while-picking (&:where(main:has([data-picking]) *));
 
 @theme {
@@ -959,6 +960,10 @@
 
 @utility grid-cols-collection-heading {
   grid-template-columns: auto auto minmax(0, 1fr) max-content;
+}
+
+@utility grid-cols-card-header {
+  grid-template-columns: minmax(0, 1fr) fit-content(50%);
 }
 
 @utility grid-cols-alert {
