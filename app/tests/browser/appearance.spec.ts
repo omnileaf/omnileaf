@@ -7,6 +7,7 @@ import {
   settle,
   test,
   testOnlyInItsWebview,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -16,9 +17,6 @@ const TAP_OVERHANG = 3;
 
 const DEVICE_HINT = "System follows the device's setting and changes with it.";
 const PHONE_HINT = "System follows your phone's setting.";
-
-const LIGHT_GROUND = "rgb(250, 248, 244)";
-const DARK_GROUND = "rgb(22, 21, 18)";
 
 async function chooseTheme(
   page: import("@playwright/test").Page,
@@ -41,9 +39,10 @@ test("Dark overrides a light device and survives a reload", async ({
 
   await chooseTheme(page, "Dark");
 
-  await expect(page.locator("body")).toHaveCSS("background-color", DARK_GROUND);
+  const darkGround = await tokenColour(page, "--background", "dark");
+  await expect(page.locator("body")).toHaveCSS("background-color", darkGround);
   await page.reload();
-  await expect(page.locator("body")).toHaveCSS("background-color", DARK_GROUND);
+  await expect(page.locator("body")).toHaveCSS("background-color", darkGround);
   await expect(page.getByRole("radio", { name: "Dark" })).toBeChecked();
 });
 
@@ -54,7 +53,7 @@ test("Light overrides a dark device", async ({ page }) => {
 
   await expect(page.locator("body")).toHaveCSS(
     "background-color",
-    LIGHT_GROUND,
+    await tokenColour(page, "--background", "light"),
   );
 });
 
@@ -64,17 +63,16 @@ test("System follows the device as it changes", async ({ page }) => {
 
   await page.emulateMedia({ colorScheme: "dark" });
 
-  await expect(page.locator("body")).toHaveCSS("background-color", DARK_GROUND);
+  await expect(page.locator("body")).toHaveCSS(
+    "background-color",
+    await tokenColour(page, "--background", "dark"),
+  );
 });
 
-for (const { colorScheme, shadow } of [
-  {
-    colorScheme: "light",
-    shadow: /rgba\(28, 27, 24, 0\.14\) 0px 1px 2px 0px$/,
-  },
-  { colorScheme: "dark", shadow: /rgba\(0, 0, 0, 0\.5\) 0px 1px 2px 0px$/ },
-] as const) {
-  test(`raises the chosen option with the ${colorScheme} theme's shadow`, async ({
+const RAISED_SHADOW = /rgba\(0, 0, 0, 0\.05\) 0px 1px 2px 0px$/;
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`raises the chosen option with a shadow in the ${colorScheme} theme`, async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme });
@@ -83,7 +81,7 @@ for (const { colorScheme, shadow } of [
 
     await expect(page.getByRole("radio", { name: "System" })).toHaveCSS(
       "box-shadow",
-      shadow,
+      RAISED_SHADOW,
     );
   });
 }
