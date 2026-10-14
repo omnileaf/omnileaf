@@ -393,6 +393,7 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
     test("opens with the displays already in the rows they keep", async ({
       page,
     }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
       await page.goto("/");
       await expect(
         page
