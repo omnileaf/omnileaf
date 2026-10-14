@@ -210,6 +210,9 @@ export function sampleBackend(
       title: book.title,
       addedAtMs: addedAt(series) - (series.books.length - index) * DAY_MS,
       reading: wireReading(book.reading),
+      pageCount: book.pageCount,
+      isBookmarked: book.isBookmarked,
+      isNew: book.isNew,
     };
   }
 
@@ -346,6 +349,10 @@ export function sampleBackend(
         cover: coverOf(series),
         folder: `${LIBRARY_FOLDER_LOCATION}/${series.title}`,
         upNext: upNextOf(series),
+        format: series.format,
+        creators: series.creators.map((creator) => ({ ...creator })),
+        summary: series.summary ?? null,
+        tags: [...series.tags],
       };
     },
     seriesBooks: async (id, chosen, after) => {
