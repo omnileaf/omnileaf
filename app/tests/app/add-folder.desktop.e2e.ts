@@ -17,7 +17,7 @@ const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
 const SETTINGS_LINK = mainNavigationLink("Settings");
 const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
 const LINKED_FOLDER_NAMES = xpath(
-  "//section[.//h2[normalize-space()='Folders']]//li//p[1]",
+  "//section[.//h2[normalize-space()='Folders']]//li//*[@data-slot='item-title']",
 );
 const REMOVE_SAMPLE_LIBRARY = xpath(
   `//button[@aria-label='Remove ${SAMPLE_LIBRARY.name}']`,
@@ -36,7 +36,7 @@ const UP_TO_DATE_REPORT = xpath(
   `//*[@role='status']/p[normalize-space()='${SAMPLE_LIBRARY.name} is up to date.']`,
 );
 const LOADED_HOME_FOLDER = xpath(
-  "//section[.//h2[normalize-space()='Home folder']]//p[normalize-space()='Omnileaf']",
+  "//section[.//h2[normalize-space()='Home folder']]//*[@data-slot='item-title'][normalize-space()='Omnileaf']",
 );
 
 const VIEW_OPTIONS_BUTTON = xpath("//button[@aria-label='View options']");
