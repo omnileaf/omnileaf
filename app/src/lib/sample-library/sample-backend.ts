@@ -167,6 +167,12 @@ export function sampleBackend(
     };
   }
 
+  function seriesBy(creator: string): SampleSeries[] {
+    return library.filter((series) =>
+      series.creators.some(({ name }) => name === creator),
+    );
+  }
+
   function seriesWith(id: string): SampleSeries {
     const found = library.find(
       (series) => sampleSeriesId(series.number) === id,
@@ -357,7 +363,10 @@ export function sampleBackend(
         folder: LIBRARY_FOLDER_NAME,
         upNext: booksOf(series).length === 0 ? null : upNextOf(series),
         format: series.format,
-        creators: series.creators.map((creator) => ({ ...creator })),
+        creators: series.creators.map((creator) => ({
+          ...creator,
+          seriesCount: seriesBy(creator.name).length,
+        })),
         summary: series.summary ?? null,
         tags: [...series.tags],
         related: series.related.map(({ number, reason }) => {
@@ -384,6 +393,14 @@ export function sampleBackend(
       const page = pageOf(ordered, after);
       return { books: page.items, next: page.next };
     },
+    creatorSeries: (creator) =>
+      seriesBy(creator).map((series) => ({
+        id: sampleSeriesId(series.number),
+        title: series.title,
+        cover: coverOf(series),
+        role:
+          series.creators.find(({ name }) => name === creator)?.role ?? null,
+      })),
     markBooks: (books, mark) => {
       for (const id of books) {
         setReading(
