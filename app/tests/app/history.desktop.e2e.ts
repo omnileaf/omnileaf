@@ -14,7 +14,7 @@ import { xpath } from "./webdriver.ts";
 const PAGE_READ_TO = 3;
 const LIBRARY_HEADING = xpath("//h1[normalize-space()='Library']");
 const LATEST_SESSION = xpath(
-  `//main//section[1]//li[1][contains(normalize-space(), 'Sample Series 01 v03 · page ${String(PAGE_READ_TO)} of 8')]`,
+  `//main//section[1]//li[1][.//*[@data-slot='item-description'][normalize-space()='Sample Series 01 v03']][.//*[@aria-label='Page ${String(PAGE_READ_TO)} of 8']]`,
 );
 
 const CONTINUE_LATEST_SESSION = `const link = [...document.querySelectorAll("main section li a")].find((shown) => shown.offsetParent !== null);
