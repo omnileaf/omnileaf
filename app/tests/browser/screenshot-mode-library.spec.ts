@@ -11,6 +11,7 @@ import {
   DEFAULT_BACKEND,
   EXPANDED_MIN_WIDTH,
   expect,
+  MEDIUM_MIN_WIDTH,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -192,12 +193,13 @@ test.describe("the label", () => {
     ).toBeLessThanOrEqual(CENTRE_TOLERANCE);
   });
 
-  test("sits on its own row under the heading on a narrower screen", async ({
+  test("sits on its own row under the heading on a tablet", async ({
     page,
   }) => {
+    const { width } = viewportOf(page);
     test.skip(
-      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
-      "narrower screens only",
+      width < MEDIUM_MIN_WIDTH || width >= EXPANDED_MIN_WIDTH,
+      "tablets only",
     );
     await turnOnScreenshotMode(page);
     await openLibrary(page, "grid");
@@ -211,6 +213,21 @@ test.describe("the label", () => {
     expect(pill.y).toBeGreaterThanOrEqual(
       Math.max(title.y + title.height, options.y + options.height),
     );
+  });
+
+  test("sits beside the count under the title on a phone", async ({ page }) => {
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await turnOnScreenshotMode(page);
+    await openLibrary(page, "grid");
+
+    const title = await boxOf(page.getByRole("heading", { level: 1 }));
+    const number = await boxOf(count(page));
+    const pill = await boxOf(label(page));
+
+    expect(number.y).toBeGreaterThanOrEqual(title.y + title.height);
+    expect(pill.x).toBeGreaterThanOrEqual(number.x + number.width);
+    expect(pill.y).toBeLessThan(number.y + number.height);
+    expect(pill.y + pill.height).toBeGreaterThan(number.y);
   });
 
   for (const isOn of [true, false]) {

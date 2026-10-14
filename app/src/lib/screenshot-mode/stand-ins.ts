@@ -36,3 +36,10 @@ function fnv1a(text: string): number {
 export function standInNumberFor(id: string): number {
   return (fnv1a(id) % STAND_IN_NUMBERS) + 1;
 }
+
+/** Whether `name` is one a stand-in of `kind` takes, as a number from 1 to 999 gives it. */
+export function isStandInName(kind: StandInKind, name: string): boolean {
+  return Array.from({ length: STAND_IN_NUMBERS }, (_, index) =>
+    standInName(kind, index + 1),
+  ).includes(name);
+}

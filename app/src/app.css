@@ -28,56 +28,26 @@
 }
 @custom-variant heading-one-row {
   @variant max-expanded {
-    @variant touch {
-      @variant max-medium {
-        @container (width >= 22em) {
-          @slot;
-        }
-      }
-      @variant medium {
-        @container (width >= 29em) {
-          @slot;
-        }
-      }
-    }
-    @variant desktop {
-      @variant max-medium {
-        @container (width >= 21em) {
-          @slot;
-        }
-      }
-      @variant medium {
-        @container (width >= 29em) {
-          @slot;
-        }
+    @variant medium {
+      @container (width >= 29em) {
+        @slot;
       }
     }
   }
 }
 @custom-variant heading-two-rows {
-  @variant max-expanded {
-    @variant touch {
-      @variant max-medium {
-        @container (width < 22em) {
-          @slot;
-        }
-      }
-      @variant medium {
-        @container (width < 29em) {
-          @slot;
-        }
-      }
+  @variant expanded {
+    @container (width < 31em) {
+      @slot;
     }
-    @variant desktop {
-      @variant max-medium {
-        @container (width < 21em) {
-          @slot;
-        }
-      }
-      @variant medium {
-        @container (width < 29em) {
-          @slot;
-        }
+  }
+  @variant max-expanded {
+    @variant max-medium {
+      @slot;
+    }
+    @variant medium {
+      @container (width < 29em) {
+        @slot;
       }
     }
   }
@@ -87,6 +57,9 @@
     @container (width < 16em) {
       @slot;
     }
+  }
+  &:where([data-stacked] *) {
+    @slot;
   }
 }
 @custom-variant heading-label-inline {
@@ -103,6 +76,7 @@
     }
   }
 }
+@custom-variant heading-crowded (&:where([data-crowded] *));
 
 @theme {
   --*: initial;
@@ -175,6 +149,18 @@
   --text-badge--line-height: 1;
   --text-count: calc(1.0625rem * var(--text-scale));
   --text-count--line-height: calc(1.5 / 1.0625);
+
+  --text-search-wide: calc(1.0625rem * var(--text-scale));
+  --text-search-wide--line-height: calc(1.5 / 1.0625);
+  --text-heading: calc(1.375rem * var(--text-scale));
+  --text-heading--line-height: calc(1.75 / 1.375);
+  --text-quick-open: calc(1.125rem * var(--text-scale));
+  --text-quick-open--line-height: calc(1.5 / 1.125);
+  --text-overline: calc(0.6875rem * var(--text-scale));
+  --text-overline--line-height: calc(1 / 0.6875);
+
+  --tracking-overline: 0.06em;
+  --tracking-heading-caps: 0.04em;
 
   --leading-band: 1.2;
   --text-app-name: calc(1.5rem * var(--text-scale));
@@ -338,6 +324,44 @@
   --spacing-select-end: 2.125rem;
   --spacing-panel-button: 2rem;
   --spacing-sheet-top: 3.75rem;
+  --spacing-library-search: 15rem;
+  --spacing-search-field: 2.875rem;
+  --spacing-search-field-wide: 3.125rem;
+  --spacing-search-field-inline: 0.875rem;
+  --spacing-search-gap: 0.875rem;
+  --spacing-search-clear: 1.75rem;
+  --spacing-search-cancel: 2.75rem;
+  --spacing-search-cancel-inline: 0.375rem;
+  --spacing-search-chip: 1.875rem;
+  --spacing-search-chip-wide: 1.75rem;
+  --spacing-search-chip-start: 0.6875rem;
+  --spacing-chip-remove: 1.375rem;
+  --spacing-chip-remove-wide: 1.25rem;
+  --spacing-scope-chip: 2rem;
+  --spacing-hint-chip: 2rem;
+  --spacing-hint-chip-wide: 2.125rem;
+  --spacing-search-kind: 3.25rem;
+  --spacing-search-kind-inline: 0.875rem;
+  --spacing-search-kind-icon: 2rem;
+  --spacing-search-kind-icon-wide: 2.125rem;
+  --spacing-section-gap: 1.375rem;
+  --spacing-result-cover: 2.5rem;
+  --spacing-result-cover-wide: 3.25rem;
+  --spacing-result-card: 0.625rem;
+  --spacing-nothing-found: 26.25rem;
+  --spacing-nothing-found-lift: 10rem;
+  --spacing-quick-open: 40rem;
+  --spacing-quick-open-top: 5.625rem;
+  --spacing-quick-open-field: 3.5rem;
+  --spacing-quick-open-results: 32.5rem;
+  --spacing-quick-open-cover: 1.5rem;
+  --spacing-quick-open-option: 2.75rem;
+  --spacing-option-inline: 0.625rem;
+  --spacing-option-icon: 1.75rem;
+  --spacing-group-label-top: 0.5rem;
+  --spacing-key-hints: 2.5rem;
+  --spacing-key-inline: 0.4375rem;
+  --spacing-key-block: 0.1875rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
@@ -393,6 +417,13 @@
   --radius-inclusion: 0.5625rem;
   --radius-inclusion-option: 0.4375rem;
   --radius-inclusion-option-wide: 0.3125rem;
+  --radius-search-field: 0.875rem;
+  --radius-search-kind: 0.5625rem;
+  --radius-search-kind-wide: 0.625rem;
+  --radius-search-tile: 0.875rem;
+  --radius-sheet-card: 1rem;
+  --radius-result-cover: 0.3125rem;
+  --radius-quick-open-cover: 0.1875rem;
 
   --aspect-cover: 2 / 3;
   --radius-tile: 0.625rem;
@@ -922,6 +953,12 @@
         translate: var(--panel-from);
       }
     }
+  }
+}
+
+@utility no-search-cancel {
+  &::-webkit-search-cancel-button {
+    display: none;
   }
 }
 

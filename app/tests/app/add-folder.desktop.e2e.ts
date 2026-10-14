@@ -66,6 +66,7 @@ async function openLibrarySettings(): Promise<void> {
 }
 
 test("adds a folder, waits for its scan and reports the series and books in it", async () => {
+  await openLibrarySettings();
   const button = await appSession().waitFor(ADD_FOLDER_BUTTON);
 
   await button.click();

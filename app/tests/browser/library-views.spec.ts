@@ -15,6 +15,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  MEDIUM_MIN_WIDTH,
   screenSizeOf,
   LARGEST_TEXT_SCALE,
   setTextScale,
@@ -768,7 +769,7 @@ test.describe("view options", () => {
     await expect.poll(() => storedView.coversPerRow[size]).toBe(fewest);
   });
 
-  test("shows how many series the library holds beside its title once item counts are on", async ({
+  test("shows how many series the library holds beside its title once item counts are on, or under it on a phone", async ({
     page,
   }) => {
     await openWith(page, DEFAULT_LIBRARY_VIEW);
@@ -785,7 +786,11 @@ test.describe("view options", () => {
       page.getByRole("heading", { level: 1, name: "Library" }),
     );
     const shown = await boxOf(count.locator(".."));
-    expect(shown.x).toBeGreaterThan(title.x + title.width);
+    if (viewportOf(page).width < MEDIUM_MIN_WIDTH) {
+      expect(shown.y).toBeGreaterThanOrEqual(title.y + title.height);
+    } else {
+      expect(shown.x).toBeGreaterThan(title.x + title.width);
+    }
     await expect.poll(() => storedView.showsItemCounts).toBe(true);
   });
 

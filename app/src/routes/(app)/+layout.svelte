@@ -4,11 +4,15 @@
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import AppNavigation from "#lib/navigation/AppNavigation.svelte";
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
-  import { focusPageHeading } from "#lib/navigation/page-heading.ts";
+  import { focusArrival } from "#lib/navigation/page-heading.ts";
   import { sectionOf } from "#lib/navigation/sections.ts";
   import SwipeableMain from "#lib/navigation/SwipeableMain.svelte";
   import NoticeHost from "#lib/notices/NoticeHost.svelte";
   import { getNotices } from "#lib/notices/notices.svelte.ts";
+  import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import QuickOpen from "#lib/search/QuickOpen.svelte";
+  import { isQuickOpenShortcut } from "#lib/search/quick-open-shortcut.ts";
+  import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
 
   import type { LayoutProps } from "./$types";
 
@@ -16,16 +20,27 @@
 
   const language = getLanguageSetting();
   const notices = getNotices();
+  const screenshotMode = getScreenshotMode();
   const backGoesUp = setBackGoesUp(makeBackGoUp());
+  const quickOpen = new QuickOpenState();
+
+  function openQuickOpen(event: KeyboardEvent): void {
+    if (isQuickOpenShortcut(event, data.appInfo.platform)) {
+      event.preventDefault();
+      quickOpen.open();
+    }
+  }
 
   afterNavigate(({ type }) => {
     const isProblem = page.error !== null;
     const isArrival = type !== "enter" && !backGoesUp.isPassingThrough;
     if (isArrival || isProblem) {
-      focusPageHeading();
+      focusArrival();
     }
   });
 </script>
+
+<svelte:window onkeydown={openQuickOpen} />
 
 <div class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row">
   {#key language.resolved}
@@ -42,3 +57,10 @@
     {/key}
   </div>
 </div>
+{#key language.resolved}
+  <QuickOpen
+    platform={data.appInfo.platform}
+    {quickOpen}
+    usesStandIns={screenshotMode.isOn}
+  />
+{/key}

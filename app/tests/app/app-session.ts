@@ -17,6 +17,12 @@ export function mainNavigationLink(name: string): Locator {
 }
 
 const LIBRARY_LINK = mainNavigationLink("Library");
+const SETTINGS_LINK = mainNavigationLink("Settings");
+const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
+const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
+const FINISHED_SCAN_REPORT = xpath(
+  "//*[@role='status'][starts-with(normalize-space(), 'Found ')]",
+);
 const LIBRARY_LINK_WHEN_CURRENT = xpath(
   `${LIBRARY_LINK.value}[@aria-current='page']`,
 );
@@ -33,6 +39,17 @@ async function sessionCapabilities(app: AppUnderTest): Promise<Capabilities> {
   return followSimulatorWindow(app.capabilities, app.simulatorWindowApp);
 }
 
+/** Adds the folder the app picks from Settings › Library, where Add a folder stays once the library has books, and returns to the library page once its scan reports. */
+export async function addSampleLibrary(session: Session): Promise<void> {
+  await openLibraryPage(session);
+  await (await session.waitFor(SETTINGS_LINK)).click();
+  await (await session.waitFor(LIBRARY_SETTINGS_LINK)).click();
+  await (await session.waitFor(ADD_FOLDER_BUTTON)).click();
+  await session.waitFor(FINISHED_SCAN_REPORT);
+  await openLibraryPage(session);
+}
+
+/** Shares one WebDriver session, past the first launch, across the calling spec file and starts each test on the library page. */
 export function useAppSession(): () => Session {
   let session: Session | undefined;
 

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use omnileaf_db::catalog::{Cursor, SeriesSummary};
+use omnileaf_db::catalog::{Cursor, Page, SeriesSummary};
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
@@ -39,6 +39,15 @@ impl From<SeriesSummary> for LibrarySeries {
             book_count: series.book_count,
             unread_count: series.unread_count,
             cover: series.cover.map(CoverPath),
+        }
+    }
+}
+
+impl From<Page<SeriesSummary>> for SeriesPage {
+    fn from(page: Page<SeriesSummary>) -> Self {
+        Self {
+            series: page.items.into_iter().map(LibrarySeries::from).collect(),
+            next: page.next.map(SeriesCursor),
         }
     }
 }

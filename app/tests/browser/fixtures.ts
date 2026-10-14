@@ -47,6 +47,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   libraryFolders: () => ({ folders: [], next: null }),
   librarySeries: () => ({ series: [], next: null }),
   librarySeriesCount: () => 0,
+  librarySearch: () => ({ series: [], next: null }),
+  librarySearchCount: () => 0,
   libraryListing: () => DEFAULT_LIBRARY_LISTING,
   setLibraryListing: () => null,
   libraryView: () => DEFAULT_LIBRARY_VIEW,
@@ -154,6 +156,7 @@ export const APP_PAGES = [
   "/settings/advanced",
   "/settings/about",
   "/settings/about/licences",
+  "/search",
 ] as const;
 
 export function sidewaysOverflow(

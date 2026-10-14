@@ -4,19 +4,20 @@
 )]
 
 mod library_seed;
+mod speed;
 mod support;
 
 use std::{num::NonZeroUsize, time::Duration};
 
-use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Database,
     catalog::{Cursor, PageRequest, PageSize, SeriesListing, SeriesOrder, SeriesSort, series_page},
 };
 use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
+use speed::{SERIES_COUNT, add_generated_series};
 use support::{ScratchFolder, library_config};
 
-const SERIES_COUNT: u32 = 10_000;
+const BOOK_TITLES: [&str; 1] = ["Volume 01"];
 const PAGE_SIZE: u16 = 100;
 const PAGES: usize = (SERIES_COUNT / PAGE_SIZE as u32) as usize;
 const BUDGET: Duration = Duration::from_millis(2);
@@ -38,7 +39,7 @@ async fn reads_each_title_page_of_10_000_series_within_2_ms_at_p95() {
     };
     let folder = ScratchFolder::new("title-page-speed");
     let database = Database::open(&library_config(&folder)).unwrap();
-    add_generated_series(&database).await;
+    add_generated_series(&database, &BOOK_TITLES).await;
 
     let outcome = trial
         .run(
@@ -51,20 +52,7 @@ async fn reads_each_title_page_of_10_000_series_within_2_ms_at_p95() {
     assert!(outcome.is_within_budget(), "{outcome}");
 }
 
-async fn add_generated_series(database: &Database) {
-    let names: Vec<(String, i64)> = (0..SERIES_COUNT)
-        .map(|number| (format!("Sample Series {number:05}"), i64::from(number)))
-        .collect();
-    let series: Vec<SeriesSeed<'_>> = names
-        .iter()
-        .map(|(name, added_at_ms)| SeriesSeed {
-            added_at_ms: *added_at_ms,
-            ..SeriesSeed::named(name.as_str())
-        })
-        .collect();
-    seed_library(database, &series).await;
-}
-
+/// Reads the full title page after `after`, waiting for a reader included, and returns the cursor to the next one.
 async fn read_title_page(database: &Database, after: Option<Cursor>) -> Option<Cursor> {
     let request = PageRequest {
         after,
