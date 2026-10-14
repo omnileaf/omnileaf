@@ -382,3 +382,60 @@ async fn rescans_no_further_folder_once_scheduled_rescans_are_turned_off() {
 
     assert_eq!(rescans, []);
 }
+
+#[tokio::test]
+async fn rescans_no_folder_while_a_book_is_open_and_catches_up_once_it_closes() {
+    let running = Running::new("schedule-reading").await;
+    running.clock.advance(RESCAN_EVERY);
+    running.library.set_book_open(true);
+    let while_reading = running.rescan_due().await;
+    running.library.set_book_open(false);
+
+    let after = running.rescan_due().await;
+
+    assert_eq!(while_reading, []);
+    assert_eq!(after.len(), 2);
+}
+
+#[tokio::test]
+async fn rescans_no_further_folder_once_a_book_opens() {
+    let running = Running::new("schedule-reading-midway").await;
+    running.clock.advance(RESCAN_EVERY);
+
+    let rescans = running
+        .library
+        .rescan_due_folders(&running.device, async {
+            running.library.set_book_open(true);
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(rescans, []);
+}
+
+#[tokio::test(start_paused = true)]
+async fn checks_no_folder_while_a_book_is_open_and_checks_once_it_closes() {
+    let running = Arc::new(Running::new("schedule-reading-held").await);
+    running.library.set_book_open(true);
+    running.clock.advance(RESCAN_EVERY);
+    let (prepared, mut preparations) = unbounded_channel();
+    let schedule = spawn_schedule(&running, prepared);
+    let while_reading = timeout(SEVERAL_CHECKS, preparations.recv()).await;
+
+    running.library.set_book_open(false);
+    let once_closed = preparations.recv().await;
+
+    schedule.abort();
+    assert!(while_reading.is_err());
+    assert_eq!(once_closed, Some(()));
+}
+
+#[tokio::test]
+async fn rescans_every_folder_asked_for_while_a_book_is_open() {
+    let running = Running::new("schedule-reading-by-hand").await;
+    running.library.set_book_open(true);
+
+    let rescans = running.library.rescan_folders().await.unwrap();
+
+    assert_eq!(rescans.len(), 2);
+}
