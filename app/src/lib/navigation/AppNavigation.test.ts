@@ -1,12 +1,28 @@
+import type { ComponentProps } from "svelte";
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
+import { screenshotModeTurned } from "../../../tests/components/screenshot-mode.ts";
+import WithAppContext from "../../../tests/components/WithAppContext.svelte";
 import AppNavigation from "./AppNavigation.svelte";
+import type { Section } from "./sections.ts";
+
+const NavigationWithAppContext = WithAppContext<
+  ComponentProps<typeof AppNavigation>
+>;
+
+function renderNavigation(current: Section) {
+  return render(NavigationWithAppContext, {
+    screenshotMode: screenshotModeTurned("off"),
+    page: AppNavigation,
+    pageProps: { current },
+  });
+}
 
 const SECTION_LABELS = ["Library", "Browse", "History", "Settings"];
 
 test("links to every section", async () => {
-  const screen = await render(AppNavigation, { current: "library" });
+  const screen = await renderNavigation("library");
 
   const navigation = screen.getByRole("navigation", { name: "Main" });
 
@@ -18,7 +34,7 @@ test("links to every section", async () => {
 });
 
 test("marks only the current section as the current page", async () => {
-  const screen = await render(AppNavigation, { current: "history" });
+  const screen = await renderNavigation("history");
 
   await expect
     .element(screen.getByRole("link", { name: "History" }))
@@ -31,7 +47,7 @@ test("marks only the current section as the current page", async () => {
 });
 
 test("fills only the current section's icon", async () => {
-  const screen = await render(AppNavigation, { current: "browse" });
+  const screen = await renderNavigation("browse");
 
   const filledIn = (label: string) =>
     screen
