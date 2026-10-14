@@ -455,6 +455,9 @@
   --spacing-history-series-filter: 15rem;
   --spacing-history-sessions-cover: 4rem;
   --spacing-history-sheet: 28.75rem;
+  --spacing-continue-card: 18.75rem;
+  --spacing-continue-card-wide: 20rem;
+  --spacing-continue-cover: 3.25rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
@@ -915,6 +918,14 @@
 
 @utility inline-tab {
   inline-size: calc(100% / var(--tab-count));
+}
+
+@utility inline-continue-third {
+  inline-size: calc((100% - 2 * var(--spacing-md)) / 3);
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
 }
 
 @utility bg-stand-in-pattern {
