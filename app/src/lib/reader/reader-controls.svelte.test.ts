@@ -4,12 +4,49 @@ import { ReaderControls } from "./reader-controls.svelte";
 
 const HIDE_AFTER_MS = 3000;
 
+const frames: FrameRequestCallback[] = [];
+
+function drawFrame(): void {
+  for (const callback of frames.splice(0)) {
+    callback(performance.now());
+  }
+}
+
+function drawFramesAtOnce(): void {
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+    callback(performance.now());
+    return 0;
+  });
+}
+
+function holdFrames(): void {
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) =>
+    frames.push(callback),
+  );
+}
+
 beforeEach(() => {
-  vi.useFakeTimers();
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  drawFramesAtOnce();
+  vi.stubGlobal("cancelAnimationFrame", () => undefined);
 });
 
 afterEach(() => {
+  frames.length = 0;
+  vi.unstubAllGlobals();
   vi.useRealTimers();
+});
+
+test("counts the delay from the frame the controls are first drawn in, however late it comes", () => {
+  holdFrames();
+  const controls = new ReaderControls(HIDE_AFTER_MS);
+
+  vi.advanceTimersByTime(HIDE_AFTER_MS * 2);
+  const isShownBeforeDrawn = controls.isShown;
+  drawFrame();
+  vi.advanceTimersByTime(HIDE_AFTER_MS);
+
+  expect([isShownBeforeDrawn, controls.isShown]).toEqual([true, false]);
 });
 
 test("shows the controls as the book opens and hides them once the delay passes", () => {
