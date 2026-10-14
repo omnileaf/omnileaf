@@ -6,7 +6,12 @@ import {
   listenForInterfaceErrors,
 } from "#lib/crash-report/interface-errors.ts";
 
-export const init: ClientInit = () => {
+export const init: ClientInit = async () => {
+  if (import.meta.env.DEV && import.meta.env.VITE_SAMPLE_LIBRARY === "on") {
+    const { installSampleLibrary } =
+      await import("#lib/sample-library/install-sample-library.ts");
+    installSampleLibrary(window);
+  }
   listenForInterfaceErrors(window, appInterfaceErrors.hear);
 };
 
