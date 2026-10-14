@@ -55,7 +55,7 @@
           "relative flex flex-auto items-center justify-center rounded-inclusion-option px-sm text-detail block-inclusion min-inline-inclusion-option before:absolute before:inset-x-none before:-inset-y-sm medium:rounded-inclusion-option-wide medium:px-icon-gap medium:text-caption medium:block-inclusion-wide medium:min-inline-inclusion-option-wide medium:before:-inset-y-2xs",
           chosen === inclusion
             ? "bg-raised font-semibold shadow-raised"
-            : "font-medium text-muted",
+            : "font-medium text-foreground",
         ]}
       >
         <span
