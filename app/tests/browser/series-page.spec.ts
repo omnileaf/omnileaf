@@ -967,7 +967,7 @@ test.describe("swiping a book in the list", () => {
     page,
   }) => {
     await openSeries(page);
-    await swipe(page, 5, -260);
+    await swipe(page, 5, -FULL_SWIPE);
     const markedBefore = shelf.marked.length;
     await page.goto("/settings/reading");
     await page
