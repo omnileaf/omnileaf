@@ -846,6 +846,87 @@ test.describe("the reading direction", () => {
       bar.getByRole("group", { name: "Quick settings" }),
     ).toBeVisible();
     await expect(quickSettings).toHaveCount(1);
+    await expect(quickSettings.getByRole("button")).toHaveText([
+      /^\s*Left to right/,
+      "Two pages",
+      "Fit height",
+      "Light",
+    ]);
+  });
+});
+
+test.describe("the controls still to come", () => {
+  const COMING_SOON = [
+    "Two pages",
+    "Fit height",
+    "Light",
+    "Keyboard shortcuts",
+    "Bookmark this page",
+  ] as const;
+
+  function comingSoon(page: Page, name: string): Locator {
+    return page.getByRole("button", { name, exact: true });
+  }
+
+  for (const name of COMING_SOON) {
+    test(`shows ${name} as unavailable yet reachable, saying it's coming soon`, async ({
+      page,
+    }) => {
+      await openBook(page);
+      const control = comingSoon(page, name);
+
+      await control.hover();
+
+      await expect(control).toHaveAttribute("aria-disabled", "true");
+      await expect(control).not.toHaveAttribute("disabled");
+      await expect(
+        page.getByText(`${name} · coming soon`, { exact: true }),
+      ).toBeVisible();
+      await expect(control).toHaveAccessibleDescription(
+        `${name} · coming soon`,
+      );
+      await expect(control).not.toHaveAttribute("title");
+    });
+
+    test(`does nothing when ${name} is clicked or pressed`, async ({
+      page,
+    }) => {
+      await openBook(page);
+      const control = comingSoon(page, name);
+
+      await control.click({ force: true });
+      await control.focus();
+      await page.keyboard.press("Enter");
+      await page.keyboard.press("Space");
+
+      await expect(control).toBeFocused();
+      await expectOnPage(page, 1);
+      await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+      await expect(page.getByRole("menu")).toHaveCount(0);
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+    });
+  }
+
+  test("puts keyboard shortcuts and the bookmark in the top bar, before full screen", async ({
+    page,
+  }) => {
+    await openBook(page);
+    const bar = page.locator("main > header");
+
+    const shortcuts = await boxOf(
+      bar.getByRole("button", { name: "Keyboard shortcuts" }),
+    );
+    const bookmark = await boxOf(
+      bar.getByRole("button", { name: "Bookmark this page" }),
+    );
+
+    expect(shortcuts.x).toBeLessThan(bookmark.x);
+    if (viewportOf(page).width >= EXPANDED_MIN_WIDTH) {
+      const fullScreen = await boxOf(
+        bar.getByRole("button", { name: "Full screen" }),
+      );
+      expect(bookmark.x).toBeLessThan(fullScreen.x);
+    }
   });
 });
 

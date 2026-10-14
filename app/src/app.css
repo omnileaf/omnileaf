@@ -1144,7 +1144,7 @@
 
   @media (pointer: fine) {
     a[href],
-    button:not(:disabled),
+    button:not(:disabled, [aria-disabled="true"]),
     [role="button"]:not([aria-disabled="true"]),
     summary,
     select:not(:disabled),

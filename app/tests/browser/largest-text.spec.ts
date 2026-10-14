@@ -20,6 +20,7 @@ import {
   test,
   testOnlyInItsWebview,
 } from "./fixtures.ts";
+import { BOOK_ID, readerBackend, servePages } from "./reader-book.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
@@ -184,6 +185,20 @@ for (const platform of PLATFORMS) {
         await expectNothingSpills(page);
       });
     }
+
+    test.describe("with a book open", () => {
+      test.use({ backend: readerBackend(onPlatform(platform).backend) });
+
+      test("fits the reader's controls without spilling", async ({ page }) => {
+        await servePages(page);
+        await page.goto(`/read/${BOOK_ID}`);
+        await expect(
+          page.getByRole("group", { name: "Quick settings" }),
+        ).toBeVisible();
+
+        await expectNothingSpills(page);
+      });
+    });
 
     for (const display of DISPLAYS) {
       for (const [choice, coversPerRow] of Object.entries(

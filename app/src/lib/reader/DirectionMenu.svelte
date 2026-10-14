@@ -54,7 +54,7 @@
       aria-hidden="true"
       class="shrink-0"
     />
-    <span class="flex items-center gap-xs">
+    <span class="flex flex-wrap items-center justify-center gap-xs">
       {CHOICE_NAMES[reading.direction]()}
       {#if reading.isDetected}
         <span

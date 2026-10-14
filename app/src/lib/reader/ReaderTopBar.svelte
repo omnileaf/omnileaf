@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { ArrowLeft, ChevronLeft, Maximize } from "@lucide/svelte";
+  import {
+    ArrowLeft,
+    Bookmark,
+    ChevronLeft,
+    Keyboard,
+    Maximize,
+  } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
   import {
@@ -12,9 +18,14 @@
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import ComingSoon from "#lib/reader/ComingSoon.svelte";
+
   const BACK_ICON_SIZE = 24;
   const BACK_ICON_SIZE_WIDE = 20;
   const BAR_ICON_SIZE_WIDE = 19;
+  const BAR_ICON_SIZE = 20;
+  const UPCOMING_TOOL_LOOK =
+    "relative flex shrink-0 items-center justify-center rounded-full block-reader-control inline-reader-control expanded:rounded-reader-control-wide expanded:block-reader-control-wide expanded:inline-reader-control-wide android:before:absolute android:before:block-touch-target android:before:inline-touch-target";
 
   let {
     seriesHref,
@@ -97,8 +108,14 @@
   </div>
   <span
     aria-hidden="true"
-    class="hidden shrink-0 bg-reader-line block-reader-divider inline-px expanded:block ios:hidden android:hidden"
+    class="hidden shrink-0 bg-reader-line block-reader-divider inline-px expanded:block"
   ></span>
+  <ComingSoon label={m.reader_keyboard_shortcuts()} class={UPCOMING_TOOL_LOOK}>
+    <Keyboard size={BAR_ICON_SIZE} aria-hidden="true" />
+  </ComingSoon>
+  <ComingSoon label={m.reader_bookmark()} class={UPCOMING_TOOL_LOOK}>
+    <Bookmark size={BAR_ICON_SIZE} aria-hidden="true" />
+  </ComingSoon>
   <Tooltip
     label={m.reader_full_screen()}
     type="button"

@@ -31,6 +31,7 @@
     seriesReadingDirection,
   } from "#lib/reader/reading-direction.svelte.ts";
   import { Swipe } from "#lib/reader/swipe.ts";
+  import UpcomingQuickSettings from "#lib/reader/UpcomingQuickSettings.svelte";
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
   import UpNext from "#lib/up-next/UpNext.svelte";
@@ -292,6 +293,7 @@
       }
     }}
   />
+  <UpcomingQuickSettings />
 {/snippet}
 
 <main

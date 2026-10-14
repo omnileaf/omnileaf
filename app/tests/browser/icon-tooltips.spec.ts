@@ -129,6 +129,21 @@ function coversPerRowStep(label: string): IconAction {
   };
 }
 
+function readerComingSoonStep(name: string): IconAction {
+  return {
+    screen: "the reader's top bar",
+    backend: readerBackend(DEFAULT_BACKEND),
+    reach: async (page) => {
+      await servePages(page);
+      await page.goto(`/read/${BOOK_ID}`);
+      return page
+        .locator("main > header")
+        .getByRole("button", { name, exact: true });
+    },
+    label: `${name} · coming soon`,
+  };
+}
+
 const ICON_ACTIONS: readonly IconAction[] = [
   {
     screen: "Settings › Library",
@@ -162,6 +177,8 @@ const ICON_ACTIONS: readonly IconAction[] = [
     },
     label: NEXT_BOOK_LABEL,
   },
+  readerComingSoonStep("Keyboard shortcuts"),
+  readerComingSoonStep("Bookmark this page"),
   seriesBarStep("Mark read"),
   seriesBarStep("Mark unread"),
   seriesBarStep("Clear the selection"),
