@@ -387,17 +387,22 @@ test("hides and shows the controls with a tap in the middle of the page and the 
 });
 
 const CONTROLS_HIDE_AFTER_MS = 3000;
-/** Playwright's clock draws a frame every 16ms, and the controls count their time from the frame they are drawn in. */
+/** Playwright's clock draws a frame every 16ms; the controls count their time from the frame they are drawn in, or from the one after the opening page. */
 const FRAME_MS = 16;
 /** Far enough ahead for the pause to arrive before it, and well short of the time the controls stay up for. */
 const CONTROLS_PAUSE_AHEAD_MS = 500;
 
-/** Opens the book and holds its clock still before the controls would hide by themselves. */
+async function pauseClockSoon(page: Page): Promise<void> {
+  const now = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(now + CONTROLS_PAUSE_AHEAD_MS);
+}
+
+/** Opens the book and holds its clock still once its first page shows, before the controls would hide by themselves. */
 async function openBookBeforeControlsHide(page: Page): Promise<void> {
   await page.clock.install();
   await openBook(page);
-  const opened = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(opened + CONTROLS_PAUSE_AHEAD_MS);
+  await expect(shownPage(page, 1)).toBeVisible();
+  await pauseClockSoon(page);
 }
 
 test("shows the controls as a book opens, then hides them by themselves", async ({
@@ -407,6 +412,27 @@ test("shows the controls as a book opens, then hides them by themselves", async 
   await expectControlsShown(page);
 
   await page.clock.runFor(CONTROLS_HIDE_AFTER_MS);
+
+  await expectControlsHidden(page);
+});
+
+test("keeps the controls up while the book's first page is on its way", async ({
+  page,
+}) => {
+  let release = (): void => {};
+  const arrival = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await servePages(page, () => arrival);
+  await page.clock.install();
+  await openBook(page);
+  await pauseClockSoon(page);
+
+  await page.clock.runFor(CONTROLS_HIDE_AFTER_MS * 2);
+  await expectControlsShown(page);
+  release();
+  await expect(shownPage(page, 1)).toBeVisible();
+  await page.clock.runFor(CONTROLS_HIDE_AFTER_MS + 2 * FRAME_MS);
 
   await expectControlsHidden(page);
 });

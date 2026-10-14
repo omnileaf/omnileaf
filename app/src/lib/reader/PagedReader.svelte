@@ -90,6 +90,7 @@
   );
   const swipe = new Swipe(SWIPE_MIN_PX);
   const controls = new ReaderControls(CONTROLS_HIDE_AFTER_MS);
+  let hasOpened = false;
   const skipUpNext = getSkipUpNextSetting();
   const notices = getNotices();
   const reading = untrack(() =>
@@ -340,7 +341,16 @@
     }
   }}
 >
-  <PageStack pages={book.pages} shown={turner.shown} />
+  <PageStack
+    pages={book.pages}
+    shown={turner.shown}
+    onShownReady={() => {
+      if (!hasOpened) {
+        hasOpened = true;
+        controls.bookOpened();
+      }
+    }}
+  />
   <div
     dir="ltr"
     role="presentation"
