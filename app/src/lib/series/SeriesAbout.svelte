@@ -94,6 +94,7 @@
       </h1>
       <SeriesCredits
         creators={overview.creators}
+        from={overview.id}
         onShowAll={() => {
           void showAllCreators();
         }}

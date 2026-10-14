@@ -876,6 +876,24 @@
   "series_no_books": "⟦Ñö ƀööķš íñ ţĥíš šéŕíéš··········⟧",
   "series_no_books_count": "⟦Ñö ƀööķš····⟧",
   "series_related": "⟦Áļšö íñ ýöûŕ ļíƀŕáŕý········⟧",
+  "creator_series_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šéŕíéš íñ ýöûŕ ļíƀŕáŕý················⟧",
+        "countPlural=other": "⟦{formattedCount} šéŕíéš íñ ýöûŕ ļíƀŕáŕý················⟧"
+      }
+    }
+  ],
+  "creator_series_list": "⟦Šéŕíéš ƀý {name}·······⟧",
+  "creator_empty": "⟦Ñö šéŕíéš ƀý {name} íñ ýöûŕ ļíƀŕáŕý··············⟧",
+  "creator_empty_body": "⟦Ţĥéíŕ ƒíļéš ɱáý ĥáṽé ɱöṽéð öŕ ƀééñ ŕéɱöṽéð. Ñöţĥíñĝ éļšé íñ ýöûŕ ļíƀŕáŕý ĥáš çĥáñĝéð.··································⟧",
+  "creator_back_to": "⟦Ɓáçķ ţö {title}······⟧",
   "series_related_writer": "⟦Šáɱé ŵŕíţéŕ·····⟧",
   "series_related_artist": "⟦Šáɱé áŕţíšţ·····⟧",
   "series_related_not_started": "⟦Ñöţ šţáŕţéð·····⟧",

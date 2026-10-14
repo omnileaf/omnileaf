@@ -876,6 +876,24 @@
   "series_no_books": "No books in this series",
   "series_no_books_count": "No books",
   "series_related": "Also in your library",
+  "creator_series_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} series in your library",
+        "countPlural=other": "{formattedCount} series in your library"
+      }
+    }
+  ],
+  "creator_series_list": "Series by {name}",
+  "creator_empty": "No series by {name} in your library",
+  "creator_empty_body": "Their files may have moved or been removed. Nothing else in your library has changed.",
+  "creator_back_to": "Back to {title}",
   "series_related_writer": "Same writer",
   "series_related_artist": "Same artist",
   "series_related_not_started": "Not started",
