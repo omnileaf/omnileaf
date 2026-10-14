@@ -82,7 +82,9 @@
   const controls = new ReaderControls(CONTROLS_HIDE_AFTER_MS);
   const skipUpNext = getSkipUpNextSetting();
   const notices = getNotices();
-  const reading = untrack(() => seriesReadingDirection(book.series));
+  const reading = untrack(() =>
+    seriesReadingDirection(book.series, book.readingDirection),
+  );
   const leftTurn = $derived(inReadingOrder("previous", reading.direction));
   const rightTurn = $derived(inReadingOrder("next", reading.direction));
   let heading: HTMLHeadingElement | undefined = $state();

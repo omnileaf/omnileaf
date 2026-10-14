@@ -697,14 +697,12 @@ async function chooseDirection(page: Page, name: string): Promise<void> {
 }
 
 test.describe("the reading direction", () => {
-  test("reads left to right until chosen otherwise, saying the app chose it", async ({
+  test("reads left to right until chosen otherwise when the book doesn't say, with no sign the app detected it", async ({
     page,
   }) => {
     await openBook(page);
 
-    await expect(directionButton(page)).toHaveText(
-      /^\s*Left to right\s*auto$/i,
-    );
+    await expect(directionButton(page)).toHaveText("Left to right");
   });
 
   test("turns on with the left tap, the left arrow and a swipe to the right once right to left is chosen", async ({
@@ -773,9 +771,40 @@ test.describe("the reading direction", () => {
 
     await chooseDirection(page, "Automatic");
 
-    await expect(directionButton(page)).toHaveText(
-      /^\s*Left to right\s*auto$/i,
-    );
+    await expect(directionButton(page)).toHaveText("Left to right");
+  });
+
+  test.describe("in a book that says it reads right to left", () => {
+    test.use({
+      backend: {
+        ...readerBackend(DEFAULT_BACKEND),
+        openBook: () => ({
+          ...readerBook(NOT_STARTED),
+          readingDirection: "rightToLeft",
+        }),
+      },
+    });
+
+    test("reads right to left, saying the app detected it", async ({
+      page,
+    }) => {
+      await openBook(page);
+
+      await expect(directionButton(page)).toHaveText(
+        /^\s*Right to left\s*auto$/i,
+      );
+      const next = await boxOf(zone(page, "Next page"));
+      const previous = await boxOf(zone(page, "Previous page"));
+      expect(next.x).toBeLessThan(previous.x);
+    });
+
+    test("reads left to right once chosen by hand", async ({ page }) => {
+      await openBook(page);
+
+      await chooseDirection(page, "Left to right");
+
+      await expect(directionButton(page)).toHaveText("Left to right");
+    });
   });
 
   test("closes the direction menu with Escape and stays in the book", async ({
