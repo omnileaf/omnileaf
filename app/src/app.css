@@ -92,9 +92,6 @@
   --breakpoint-expanded: 840px;
   --breakpoint-large: 1200px;
 
-  --font-ui:
-    system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto,
-    sans-serif;
   --font-display: Georgia, serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
@@ -697,10 +694,23 @@
 }
 
 @theme inline {
+  --font-ui: var(--platform-font);
+  --shadow-menu: var(--menu-shadow);
+  --radius-menu: var(--menu-radius);
+  --radius-tooltip: var(--tooltip-radius);
+  --blur-menu: var(--menu-blur);
+  --color-menu: var(--menu-surface);
+  --color-menu-edge: var(--menu-edge);
+  --color-menu-highlight: var(--menu-highlight);
+  --color-on-menu-highlight: var(--menu-highlight-foreground);
+  --color-tooltip: var(--tooltip-surface);
+  --color-on-tooltip: var(--tooltip-foreground);
+  --color-tooltip-edge: var(--tooltip-edge);
+  --color-switch-on: var(--switch-on);
   --color-background: var(--background);
   --color-back-swipe-dim: oklch(0 0 0);
   --color-foreground: var(--foreground);
-  --color-muted: var(--muted-foreground);
+  --color-muted: var(--secondary-text);
   --color-sidebar-ink: var(--sidebar-foreground);
   --color-faint: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
   --color-border: var(--border);

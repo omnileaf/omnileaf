@@ -61,7 +61,7 @@
         aria-hidden="true"
         sideOffset={TRIGGER_GAP_PX}
         collisionPadding={SCREEN_EDGE_GAP_PX}
-        class="z-tooltip rounded-card border border-border bg-card px-md py-xs text-detail font-medium text-foreground fade-motion shadow-popover"
+        class="z-tooltip rounded-tooltip border border-tooltip-edge bg-tooltip px-md py-xs text-detail font-medium text-on-tooltip fade-motion shadow-popover"
       >
         {label}
       </TooltipPrimitive.Content>
