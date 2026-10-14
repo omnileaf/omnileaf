@@ -2,7 +2,6 @@ import type { Locator } from "@playwright/test";
 
 import {
   addFolderBesideFolders,
-  addFolderInPageHeading,
   CONTROLS,
   DESKTOP,
   destination,
@@ -97,8 +96,8 @@ test.describe("with a pointer", () => {
   }
 
   test("keeps an outlined button's card under its tint", async ({ page }) => {
-    await page.goto("/");
-    const button = addFolderInPageHeading(page);
+    await page.goto("/settings/about");
+    const button = page.getByRole("button", { name: "Copy version details" });
     const card = await backgroundColorOf(button);
 
     await button.hover();

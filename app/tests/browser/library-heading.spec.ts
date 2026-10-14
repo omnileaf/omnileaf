@@ -41,7 +41,6 @@ const LIBRARIES = ["empty", "filled"] as const;
 const SERIES_COUNT = 12_345;
 const SERIES_COUNT_SHOWN = /12\D?345/;
 const MIN_GAP = 2;
-const TOUCH_TARGET = 48;
 
 type Platform = (typeof PLATFORMS)[number];
 type Library = (typeof LIBRARIES)[number];
@@ -169,6 +168,9 @@ async function settledHeading(
   messages: typeof english = english,
 ): Promise<HeadingParts> {
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await expect(
+    headingOf(page).getByRole("heading", { level: 1 }),
+  ).toBeVisible();
   let measured = await measureHeading(page, messages);
   await expect
     .poll(
@@ -252,7 +254,7 @@ for (const platform of PLATFORMS) {
             );
             await page.goto("/");
             await expect(controlsOf(headingOf(page))).toHaveCount(
-              library === "empty" ? 1 : 3,
+              library === "empty" ? 0 : 3,
             );
             if (library === "filled") {
               await expect(countOf(page)).toBeVisible();
@@ -320,7 +322,7 @@ for (const platform of PLATFORMS) {
             );
             await openAt(page, width, screenshotMode);
             await expect(controlsOf(headingOf(page))).toHaveCount(
-              library === "empty" ? 1 : 3,
+              library === "empty" ? 0 : 3,
             );
 
             const parts = await settledHeading(page);
@@ -488,7 +490,9 @@ test.describe("the heading as a filter changes the count", () => {
       await page.keyboard.press("Escape");
       await expect(panel).toBeHidden();
       await expect(
-        headingOf(page).getByText(String(FILTERED_COUNT), { exact: true }),
+        headingOf(page).getByText(`${String(FILTERED_COUNT)} series`, {
+          exact: true,
+        }),
       ).toBeVisible();
       const after = await settledHeading(page);
       const count = await boxOf(
@@ -574,45 +578,23 @@ for (const platform of PLATFORMS) {
     test.describe("with an empty library", () => {
       test.use({ backend: backendFor(platform, "empty") });
 
-      test("offers Add a folder beside the title", async ({ page }) => {
-        await page.goto("/");
-
-        const addFolder = headingOf(page).getByRole("button", {
-          name: english.library_add_folder,
-        });
-
-        await expect(addFolder).toBeVisible();
-        await addFolder.hover();
-        await expect(addFolder).toHaveAccessibleDescription(
-          english.library_add_folder,
-        );
-        await expect(addFolder).not.toHaveAttribute("title");
-      });
-
-      test("draws Add a folder as a round touch-sized icon on a phone", async ({
+      test("offers Add a folder in the empty library, not in its heading", async ({
         page,
-      }, testInfo) => {
-        test.skip(
-          !testInfo.project.name.endsWith("phone"),
-          "phone widths only",
-        );
-        test.skip(platform === "linux", "touch platforms only");
+      }) => {
         await page.goto("/");
-        const addFolder = headingOf(page).getByRole("button", {
-          name: english.library_add_folder,
+
+        const empty = page.getByRole("region", {
+          name: english.library_empty,
         });
 
-        const box = await boxOf(addFolder);
-
-        expect([box.width, box.height]).toEqual([TOUCH_TARGET, TOUCH_TARGET]);
         await expect(
-          addFolder.getByText(english.library_add_folder),
-        ).toHaveClass(/sr-only/);
-        expect(
-          await addFolder.evaluate((element) =>
-            Number.parseFloat(getComputedStyle(element).borderStartStartRadius),
-          ),
-        ).toBeGreaterThanOrEqual(TOUCH_TARGET / 2);
+          empty.getByRole("button", { name: english.library_add_folder }),
+        ).toBeVisible();
+        await expect(
+          headingOf(page).getByRole("button", {
+            name: english.library_add_folder,
+          }),
+        ).toHaveCount(0);
       });
     });
 
@@ -629,17 +611,25 @@ for (const platform of PLATFORMS) {
         },
       });
 
-      test("still offers Add a folder", async ({ page }) => {
+      test("says nothing changed and offers Try again in place of Add a folder", async ({
+        page,
+      }) => {
         await page.goto("/");
-        await expect(
-          page.getByText(english.library_series_failed),
-        ).toBeVisible();
+
+        const problem = page.getByRole("alert");
 
         await expect(
-          headingOf(page).getByRole("button", {
-            name: english.library_add_folder,
-          }),
+          problem.getByRole("heading", { name: english.library_series_failed }),
         ).toBeVisible();
+        await expect(
+          problem.getByText(english.library_unchanged),
+        ).toBeVisible();
+        await expect(
+          problem.getByRole("button", { name: english.library_try_again }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: english.library_add_folder }),
+        ).toHaveCount(0);
       });
     });
   });
@@ -770,7 +760,7 @@ test.describe("the heading after the library empties", () => {
     holdsSeries = true;
   });
 
-  test("offers Add a folder with its label once the library empties", async ({
+  test("offers Add a folder in the empty library once it empties", async ({
     page,
   }, testInfo) => {
     test.skip(
@@ -782,18 +772,16 @@ test.describe("the heading after the library empties", () => {
     });
     await openAt(page, TABLET_WIDTH, "off");
     await expect(countOf(page)).toBeVisible();
-    const addFolder = headingOf(page).getByRole("button", {
-      name: pseudo.library_add_folder,
-    });
-    await expect(addFolder).toHaveCount(0);
 
     holdsSeries = false;
     await emitFakeEvent(page, "library-changed");
 
-    await expect(controlsOf(headingOf(page))).toHaveCount(1);
+    await expect(controlsOf(headingOf(page))).toHaveCount(0);
     await expect(
-      addFolder.getByText(pseudo.library_add_folder),
-    ).not.toHaveClass(/(^|\s)sr-only(\s|$)/);
+      page
+        .getByRole("region", { name: pseudo.library_empty })
+        .getByRole("button", { name: pseudo.library_add_folder }),
+    ).toBeVisible();
   });
 
   test("sets the Screenshot mode label back beside the title once the count it gave way to goes", async ({
@@ -825,7 +813,7 @@ test.describe("the heading after the library empties", () => {
 
     holdsSeries = false;
     await emitFakeEvent(page, "library-changed");
-    await expect(controlsOf(headingOf(page))).toHaveCount(1);
+    await expect(controlsOf(headingOf(page))).toHaveCount(0);
 
     await expect.poll(labelSits).toBe("beside");
   });

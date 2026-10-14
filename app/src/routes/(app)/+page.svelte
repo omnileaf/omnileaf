@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { CircleAlert, FolderOpen, RefreshCw } from "@lucide/svelte";
   import { onMount, untrack } from "svelte";
 
   import {
@@ -15,6 +16,7 @@
   import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
   import FolderNotice from "#lib/library/FolderNotice.svelte";
   import ContinueRow from "#lib/library/ContinueRow.svelte";
+  import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { filtersOn, withoutFilters } from "#lib/library/library-listing.ts";
   import { librarySeriesList } from "#lib/library/library-series.svelte.ts";
@@ -24,14 +26,20 @@
   import SeriesCovers from "#lib/library/SeriesCovers.svelte";
   import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
   import ViewOptions from "#lib/library/ViewOptions.svelte";
-  import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import LibrarySearchEntry from "#lib/search/LibrarySearchEntry.svelte";
+
+  import type { PageProps } from "./$types";
+
+  let { data }: PageProps = $props();
+
+  const TRY_AGAIN_ICON_SIZE = 16;
 
   const screenshotMode = getScreenshotMode();
   const listing = new StoredChoice<LibraryListing>(
@@ -91,7 +99,6 @@
     hasBooks && loaded?.view.showsItemCounts === true,
   );
   const countsSeries = $derived(showsItemCounts || isCountWanted);
-  const offersAddFolder = $derived(isEmpty || library.list.kind === "failed");
 
   function listedBy(): LibraryListing {
     if (chosenListing === undefined) {
@@ -152,7 +159,6 @@
       : measuredColumns,
   );
   let emptyAddFolder: HTMLElement | null = $state(null);
-  let headingAddFolder: HTMLElement | null = $state(null);
 
   onMount(() => {
     void listing.load();
@@ -171,8 +177,6 @@
   function returnFocusFromNotice(): void {
     if (isEmpty) {
       emptyAddFolder?.focus();
-    } else if (offersAddFolder) {
-      headingAddFolder?.focus();
     } else {
       focusPageHeading();
     }
@@ -183,12 +187,12 @@
   function keepFocusOnPageOnceAddFolderGoes(): void {
     if (
       offeredAddFolder &&
-      !offersAddFolder &&
+      !isEmpty &&
       document.activeElement === document.body
     ) {
       focusPageHeading();
     }
-    offeredAddFolder = offersAddFolder;
+    offeredAddFolder = isEmpty;
   }
 
   $effect(keepFocusOnPageOnceAddFolderGoes);
@@ -209,7 +213,7 @@
 >
   {#snippet actions()}
     {#if hasBooks && loaded !== undefined && chosenListing !== undefined}
-      <LibrarySearchEntry />
+      <LibrarySearchEntry platform={data.appInfo.platform} />
       <FilterAndSort
         listing={chosenListing}
         matching={seriesCount.count}
@@ -226,22 +230,15 @@
         }}
       />
     {/if}
-    {#if offersAddFolder}
-      <AddFolderButton
-        bind:element={headingAddFolder}
-        {adding}
-        placement="page-heading"
-      />
-    {/if}
   {/snippet}
 </CollectionHeading>
 {#if isEmpty}
   <EmptyState
-    icon={LibraryGlyph}
+    icon={FolderOpen}
     title={m.library_empty()}
     body={m.library_empty_body()}
   >
-    <div class="mbs-sm flex flex-col items-center gap-md max-inline-prose">
+    <div class="mbs-lg flex flex-col items-center gap-md max-inline-prose">
       <AddFolderButton
         bind:element={emptyAddFolder}
         {adding}
@@ -255,7 +252,34 @@
       />
     </div>
   </EmptyState>
-{:else if library.list.kind !== "loading"}
+{:else if library.list.kind === "loading"}
+  <div class="mbs-lg medium:mbs-xl">
+    <CoverSkeletons
+      {...view.reading.kind === "read"
+        ? { coversPerRow: view.reading.value.coversPerRow }
+        : {}}
+    />
+  </div>
+{:else if library.list.kind === "failed"}
+  <EmptyState
+    icon={CircleAlert}
+    title={m.library_series_failed()}
+    body={m.library_unchanged()}
+    role="alert"
+  >
+    <Button
+      type="button"
+      look="outline"
+      class="mbs-lg flex items-center gap-sm rounded-shadcn-control px-lg font-medium min-block-touch-target desktop:text-label desktop:min-block-pointer-button"
+      onclick={() => {
+        void library.load();
+      }}
+    >
+      <RefreshCw size={TRY_AGAIN_ICON_SIZE} aria-hidden="true" />
+      {m.library_try_again()}
+    </Button>
+  </EmptyState>
+{:else}
   <div class="mbs-sm">
     <FolderNotice
       {adding}
@@ -264,9 +288,7 @@
       onDismissed={returnFocusFromNotice}
     />
   </div>
-  {#if library.list.kind === "failed"}
-    <p class="mbs-sm text-muted">{m.library_series_failed()}</p>
-  {:else if listsNothing && chosenListing !== undefined}
+  {#if listsNothing && chosenListing !== undefined}
     <NoMatches
       onClear={() => {
         chooseListing(withoutFilters(chosenListing));
@@ -274,11 +296,11 @@
     />
   {:else if loaded !== undefined}
     {#if loaded.view.showsContinueRow}
-      <div class="mbs-xl">
+      <div class="mbs-lg medium:mbs-xl">
         <ContinueRow usesStandIns={screenshotMode.isOn} />
       </div>
     {/if}
-    <div class="mbs-xl">
+    <div class="mbs-lg medium:mbs-xl">
       <SeriesCovers
         series={loaded.series.items}
         isComplete={loaded.series.isComplete}
