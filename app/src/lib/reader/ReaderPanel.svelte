@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { cn } from "#lib/components/cn.ts";
   import type { BookPage, SeriesNeighbour } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -8,6 +9,8 @@
   import NearbyPages from "#lib/reader/NearbyPages.svelte";
   import PageSlider from "#lib/reader/PageSlider.svelte";
   import type { ReadingDirection } from "#lib/reader/reading-direction.svelte.ts";
+
+  import { READER_GLASS } from "./reader-bar.ts";
 
   let {
     pages,
@@ -32,7 +35,10 @@
 </script>
 
 <div
-  class="flex flex-col gap-reader-panel-gap rounded-reader-panel border border-reader-glass-edge bg-reader-glass px-reader-panel-inline pbs-reader-panel-top pbe-reader-panel-bottom shadow-reader-bar backdrop-blur-reader backdrop-saturate-140 expanded:rounded-reader-panel-wide expanded:bg-reader-glass-wide expanded:px-reader-panel-inline-wide expanded:pbe-reader-panel-bottom-wide expanded:shadow-reader-bar-wide"
+  class={cn(
+    READER_GLASS,
+    "flex flex-col gap-sm p-sm expanded:justify-center expanded:py-none expanded:min-block-reader-top-wide",
+  )}
 >
   {#if isDragged}
     <NearbyPages {pages} {shown} />
@@ -40,14 +46,14 @@
   <div
     role="group"
     aria-label={m.reader_quick_settings()}
-    class="flex flex-wrap gap-2xs border-be border-reader-line pbe-2xs expanded:hidden"
+    class="flex flex-wrap items-stretch rounded-shadcn-control shadow-raised expanded:hidden"
   >
     {@render quickSettings()}
   </div>
-  <div dir="ltr" class="flex items-center gap-2xs expanded:gap-reader-dock-gap">
+  <div dir="ltr" class="flex items-center gap-xs expanded:gap-sm">
     <BookStepLink step="previous" neighbour={previous} />
     <span
-      class="shrink-0 text-center text-caption font-bold whitespace-nowrap tabular-nums min-inline-reader-control expanded:text-detail"
+      class="shrink-0 text-center text-small font-medium whitespace-nowrap tabular-nums min-inline-reader-count expanded:min-inline-reader-count-wide"
     >
       {m.reader_position({ page: shown + 1, count })}
     </span>

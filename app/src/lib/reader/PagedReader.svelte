@@ -1,9 +1,14 @@
 <script lang="ts">
+  import { Eye } from "@lucide/svelte";
   import { onMount, untrack } from "svelte";
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { commands, type OpenedBook } from "#lib/ipc/bindings.ts";
+  import {
+    commands,
+    type OpenedBook,
+    type Platform,
+  } from "#lib/ipc/bindings.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
@@ -18,6 +23,7 @@
     readerShortcuts,
   } from "#lib/reader/reader-keys.ts";
   import { ReaderControls } from "#lib/reader/reader-controls.svelte.ts";
+  import ReaderMore from "#lib/reader/ReaderMore.svelte";
   import ReaderPanel from "#lib/reader/ReaderPanel.svelte";
   import ReaderTopBar from "#lib/reader/ReaderTopBar.svelte";
   import { isZoomedIn, zoneAction } from "#lib/reader/reader-zoom.ts";
@@ -60,8 +66,11 @@
     closed: (id) => commands.closeBook(id),
   };
 
-  let { book, opensAtEnd }: { book: OpenedBook; opensAtEnd: boolean } =
-    $props();
+  let {
+    book,
+    platform,
+    opensAtEnd,
+  }: { book: OpenedBook; platform: Platform; opensAtEnd: boolean } = $props();
 
   const screenshotMode = getScreenshotMode();
   const named = $derived(screenshotMode.isOn ? standInOpenedBook(book) : book);
@@ -105,6 +114,23 @@
       : resolve("/read/[book]", { book: book.next.id }),
   );
   let announced = $state(untrack(() => pageLine));
+
+  async function markRead(): Promise<void> {
+    const marked = await commands.markBooks([book.id], "read");
+    if (marked.status === "error") {
+      reportError(marked.error);
+      return;
+    }
+    notices.show({ tone: "plain", icon: Eye, title: m.reader_marked_read() });
+  }
+
+  function holdControls(isOpen: boolean): void {
+    if (isOpen) {
+      controls.hold();
+    } else {
+      controls.release();
+    }
+  }
 
   function isSliderFocused(): boolean {
     const focused = document.activeElement;
@@ -285,18 +311,28 @@
 {#snippet quickSettings()}
   <DirectionMenu
     {reading}
-    onOpenChange={(isOpen: boolean) => {
-      if (isOpen) {
-        controls.hold();
-      } else {
-        controls.release();
-      }
-    }}
+    seriesTitle={named.seriesTitle}
+    onOpenChange={holdControls}
   />
   <UpcomingQuickSettings />
 {/snippet}
 
+{#snippet more()}
+  <ReaderMore
+    title={named.title}
+    {platform}
+    onMarkRead={() => {
+      void markRead();
+    }}
+    onStartOver={() => {
+      turner.goTo(0);
+    }}
+    onOpenChange={holdControls}
+  />
+{/snippet}
+
 <main
+  data-theme="dark"
   class="fixed inset-none overflow-hidden bg-reader text-on-reader expanded:bg-reader-wide"
   onpointermove={(event) => {
     if (isAtRevealEdge(event)) {
@@ -371,7 +407,10 @@
         {seriesHref}
         seriesTitle={named.seriesTitle}
         bookTitle={named.title}
+        {pageNumber}
+        {pageCount}
         {quickSettings}
+        {more}
         onFullScreen={() => {
           act("fullScreen");
         }}
