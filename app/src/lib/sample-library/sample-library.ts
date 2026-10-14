@@ -1,4 +1,8 @@
-import type { CreatorRole, ReadingDirection } from "#lib/ipc/bindings.ts";
+import type {
+  CreatorRole,
+  ReadingDirection,
+  RelatedReason,
+} from "#lib/ipc/bindings.ts";
 
 export type SampleArt = 1 | 2 | 3 | 4 | 5;
 
@@ -32,7 +36,13 @@ export interface SampleSeries {
   readonly summary: string | undefined;
   readonly tags: readonly string[];
   readonly readingDirection: ReadingDirection | null;
+  readonly related: readonly SampleRelation[];
   readonly books: readonly SampleBook[];
+}
+
+export interface SampleRelation {
+  readonly number: number;
+  readonly reason: RelatedReason;
 }
 
 const ID_PREFIX = "5a4d1e00-0000-4000";
@@ -157,7 +167,12 @@ function series(
   details: Partial<
     Pick<
       SampleSeries,
-      "format" | "creators" | "summary" | "tags" | "readingDirection"
+      | "format"
+      | "creators"
+      | "summary"
+      | "tags"
+      | "readingDirection"
+      | "related"
     >
   > = {},
 ): SampleSeries {
@@ -170,6 +185,7 @@ function series(
     summary: details.summary,
     tags: details.tags ?? [],
     readingDirection: details.readingDirection ?? null,
+    related: details.related ?? [],
     books,
   };
 }
@@ -189,6 +205,11 @@ export function sampleLibrary(sixthVolume: SampleFile): SampleSeries[] {
       summary:
         "A lighthouse keeper’s apprentice spends a winter at the harbour gate, writing letters to a sister across the northern sea.",
       tags: ["Slice of life", "Seinen", "Sea", "Letters"],
+      related: [
+        { number: 7, reason: { kind: "sameWriter" } },
+        { number: 6, reason: { kind: "sharedTag", tag: "Slice of life" } },
+        { number: 1, reason: { kind: "sameWriter" } },
+      ],
     }),
     series(2, numbered(2), 3, volumes(5, 5)),
     series(
