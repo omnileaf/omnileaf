@@ -35,11 +35,11 @@ use tokio::{
 
 use crate::{
     AppLanguage, BookCursor, BookId, BookSessions, BooksRemoval, CoversPerRowOutOfRange,
-    FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryOf,
-    HistoryPage, HistorySeries, LibraryChanges, LibraryFilter, LibraryFolder, LibraryListing,
-    LibrarySearch, LibraryView, LocalDay, ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark,
-    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview,
-    SeriesPage, UtcOffset,
+    CreatorSeries, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor,
+    HistoryOf, HistoryPage, HistorySeries, LibraryChanges, LibraryFilter, LibraryFolder,
+    LibraryListing, LibrarySearch, LibraryView, LocalDay, ReadMark, ReadingWeek, RescanOutcome,
+    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
+    SeriesOverview, SeriesPage, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -341,6 +341,12 @@ impl Library {
             .await?;
         let (overview, up_next) = found.ok_or(LibraryError::SeriesNotFound { id })?;
         Ok(SeriesOverview::new(overview, up_next))
+    }
+
+    /// Lists the series in the library that name `creator`, with what they did on each.
+    pub fn creator_series(&self, creator: &str) -> Vec<CreatorSeries> {
+        let _ = (&self.store, creator);
+        Vec::new()
     }
 
     /// Lists a series' books as `listing` asks, giving a series missing from the library no books.

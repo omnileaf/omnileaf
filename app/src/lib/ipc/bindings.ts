@@ -25,6 +25,7 @@ export const commands = {
 	librarySearchCount: (search: LibrarySearch) => typedError<number, IpcError>(__TAURI_INVOKE("library_search_count", { search })),
 	seriesOverview: (id: string & { readonly __brand: "SeriesId" }) => typedError<SeriesOverview, IpcError>(__TAURI_INVOKE("series_overview", { id })),
 	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
+	creatorSeries: (creator: string) => __TAURI_INVOKE<CreatorSeries[]>("creator_series", { creator }),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
 	readingRestored: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("reading_restored", { id, page, utcOffset })),
@@ -131,6 +132,13 @@ export type CrashReportOffer = {
 };
 
 export type CreatorRole = "story" | "art" | "storyAndArt";
+
+export type CreatorSeries = {
+	id: string & { readonly __brand: "SeriesId" },
+	title: string,
+	cover: string & { readonly __brand: "CoverPath" } | null,
+	role: CreatorRole | null,
+};
 
 export type FileChanges = {
 	added: number,
@@ -386,6 +394,8 @@ export type SeriesCreator = {
 	name: string,
 	/**  Absent when the books' details name the creator without saying what they did. */
 	role: CreatorRole | null,
+	/**  How many series in the library name this creator, this one included. */
+	seriesCount: number,
 };
 
 export type SeriesNeighbour = {
