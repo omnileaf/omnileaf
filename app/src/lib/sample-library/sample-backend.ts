@@ -347,7 +347,7 @@ export function sampleBackend(
         bookCount: series.books.length,
         readCount: series.books.filter(isRead).length,
         cover: coverOf(series),
-        folder: `${LIBRARY_FOLDER_LOCATION}/${series.title}`,
+        folder: LIBRARY_FOLDER_NAME,
         upNext: upNextOf(series),
         format: series.format,
         creators: series.creators.map((creator) => ({ ...creator })),
