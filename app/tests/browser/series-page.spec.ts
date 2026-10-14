@@ -394,6 +394,70 @@ test("spreads the cover's colour from one edge of the page to the other", async 
   });
 });
 
+test("fades the cover's colour out before the series' title", async ({
+  page,
+}) => {
+  await openSeries(page);
+
+  const band = await boxOf(
+    page.getByRole("main").locator(":scope > div > [aria-hidden='true']"),
+  );
+  const title = await boxOf(
+    page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
+  );
+
+  expect(band.y + band.height).toBeLessThanOrEqual(title.y);
+});
+
+test("leads back to the library through a breadcrumb beside the page's name on wider screens", async ({
+  page,
+}) => {
+  test.skip(
+    viewportOf(page).width < MEDIUM_MIN_WIDTH,
+    "phones show a back button",
+  );
+  await openSeries(page);
+
+  const crumbs = page.getByRole("navigation", { name: "Breadcrumb" });
+
+  await expect(crumbs.getByRole("link", { name: "Library" })).toBeVisible();
+  await expect(crumbs.getByText(SERIES_TITLE)).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+});
+
+test("marks every book of the series read, and back with Undo", async ({
+  page,
+}) => {
+  await openSeries(page);
+
+  await page.getByRole("button", { name: "Mark all read" }).click();
+
+  await expect(
+    page.getByRole("progressbar", { name: "12 of 12 read" }),
+  ).toBeVisible();
+  expect(shelf.marked).toEqual([
+    {
+      books: shelf.books.slice(3).map(({ id }) => id),
+      mark: "read",
+    },
+  ]);
+  await expect(
+    page.getByRole("button", { name: "Mark all unread" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Undo" }).click();
+
+  await expect(
+    page.getByRole("progressbar", { name: "3 of 12 read" }),
+  ).toBeVisible();
+  expect(shelf.marked.at(-1)).toEqual({
+    books: shelf.books.slice(3).map(({ id }) => id),
+    mark: "unread",
+  });
+});
+
 test("marks the books picked read", async ({ page }) => {
   await openSeries(page);
 
@@ -1061,6 +1125,7 @@ for (const { platform, statusBar, target } of [
         (await boxOf(heading)).height -
         ((await boxOf(bar)).y + (await boxOf(bar)).height);
       await page.getByRole("main").evaluate((main, by) => {
+        main.style.overflowAnchor = "none";
         main.scrollTo({ top: by });
       }, under + JUST_UNDER);
       await expect(barTitle(page)).toHaveCSS("opacity", "1");
