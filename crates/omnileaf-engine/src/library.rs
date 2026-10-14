@@ -18,7 +18,10 @@ use omnileaf_db::{
         store_page_dimensions, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
-    history::{book_reading_time, days_in_a_row, history_page, reading_since, reading_time_by_day},
+    history::{
+        book_reading_time, book_sessions, days_in_a_row, history_page, reading_since,
+        reading_time_by_day, series_read,
+    },
     library_listing::{library_listing, set_library_listing},
     library_view::{library_view, set_library_view},
     store::{Changed, Clock, Store},
@@ -31,11 +34,12 @@ use tokio::{
 };
 
 use crate::{
-    AppLanguage, BookCursor, BookId, BooksRemoval, CoversPerRowOutOfRange, FolderCursor, FolderId,
-    FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage, LibraryChanges,
-    LibraryFilter, LibraryFolder, LibraryListing, LibrarySearch, LibraryView, LocalDay, ReadMark,
-    ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage,
-    SeriesCursor, SeriesId, SeriesOverview, SeriesPage, UtcOffset,
+    AppLanguage, BookCursor, BookId, BookSessions, BooksRemoval, CoversPerRowOutOfRange,
+    FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryOf,
+    HistoryPage, HistorySeries, LibraryChanges, LibraryFilter, LibraryFolder, LibraryListing,
+    LibrarySearch, LibraryView, LocalDay, ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark,
+    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview,
+    SeriesPage, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -394,6 +398,28 @@ impl Library {
             books_finished: since.books_finished,
             days_in_a_row,
         })
+    }
+
+    /// Adds up `book`'s reading sessions, giving none for a book never read.
+    pub async fn book_sessions(&self, book: BookId) -> Result<Option<BookSessions>, LibraryError> {
+        let summed = self
+            .store
+            .database()
+            .read(move |connection| book_sessions(connection, book.0))
+            .await?;
+        Ok(summed.map(BookSessions::from))
+    }
+
+    /// The series in the library with any reading, in title order.
+    pub async fn history_series(&self) -> Result<Vec<HistorySeries>, LibraryError> {
+        let series = self.store.database().read(series_read).await?;
+        Ok(series
+            .into_iter()
+            .map(|(id, title)| HistorySeries {
+                id: SeriesId(id),
+                title,
+            })
+            .collect())
     }
 
     /// Seconds spent reading `book` over all its sessions, once any reading not yet saved is.

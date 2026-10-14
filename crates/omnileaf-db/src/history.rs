@@ -80,6 +80,18 @@ const READING_SINCE: &str = "SELECT coalesce(sum(ended_at_ms - started_at_ms), 0
         count(DISTINCT CASE WHEN page + 1 >= page_count THEN book_id END) AS books_finished
     FROM reading_session
     WHERE local_day >= ?1";
+const BOOK_SESSIONS: &str = "SELECT count(*) AS sessions,
+        coalesce(sum(ended_at_ms - started_at_ms), 0) AS read_ms,
+        min(local_day) AS first_day, max(local_day) AS last_day
+    FROM reading_session
+    WHERE book_id = ?1";
+const SERIES_READ: &str = "SELECT series.id, series.title
+    FROM series
+    WHERE series.book_count > 0
+        AND EXISTS (SELECT 1 FROM book
+            CROSS JOIN reading_session ON reading_session.book_id = book.id
+            WHERE book.series_local_id = series.local_id)
+    ORDER BY series.title_key, series.id";
 const DAYS_READ_UP_TO: &str = "SELECT DISTINCT local_day
     FROM reading_session
     WHERE local_day <= ?1
@@ -222,6 +234,41 @@ pub fn book_reading_time(connection: &Connection, book: BookId) -> Result<i64, E
     Ok(connection
         .prepare(BOOK_READING_TIME)?
         .query_row([book.as_bytes()], |row| row.get(0))?)
+}
+
+/// A book's reading sessions added up, its first and last days counted from 1970-01-01 in the local time each began at.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BookSessions {
+    pub sessions: u32,
+    pub read_ms: i64,
+    pub first_day: i64,
+    pub last_day: i64,
+}
+
+/// Adds up `book`'s sessions, giving none for a book never read.
+pub fn book_sessions(connection: &Connection, book: BookId) -> Result<Option<BookSessions>, Error> {
+    Ok(connection
+        .prepare(BOOK_SESSIONS)?
+        .query_row([book.as_bytes()], |row| {
+            let first_day: Option<i64> = row.get("first_day")?;
+            let last_day: Option<i64> = row.get("last_day")?;
+            let (sessions, read_ms) = (row.get("sessions")?, row.get("read_ms")?);
+            Ok(first_day
+                .zip(last_day)
+                .map(|(first_day, last_day)| BookSessions {
+                    sessions,
+                    read_ms,
+                    first_day,
+                    last_day,
+                }))
+        })?)
+}
+
+/// The series in the library with any reading, in title order.
+pub fn series_read(connection: &Connection) -> Result<Vec<(SeriesId, String)>, Error> {
+    let mut statement = connection.prepare(SERIES_READ)?;
+    let rows = statement.query_map([], |row| Ok((stored_id(row, "id")?, row.get("title")?)))?;
+    Ok(rows.collect::<Result<_, _>>()?)
 }
 
 fn read(
@@ -411,6 +458,36 @@ mod tests {
         assert_eq!(
             plan,
             ["SEARCH reading_session USING INDEX reading_session_by_day (local_day<?)"]
+        );
+    }
+
+    #[test]
+    fn adds_up_a_book_s_sessions_from_the_book_index() {
+        let scratch = ScratchLibrary::new("book-sessions-sum-plan");
+
+        let plan = scratch.query_plan(BOOK_SESSIONS);
+
+        assert_eq!(
+            plan,
+            ["SEARCH reading_session USING INDEX reading_session_by_book (book_id=?)"]
+        );
+    }
+
+    #[test]
+    fn looks_for_each_series_reading_through_the_book_and_session_indexes() {
+        let scratch = ScratchLibrary::new("series-read-plan");
+
+        let plan = scratch.query_plan(SERIES_READ);
+
+        assert_eq!(
+            plan,
+            [
+                "SCAN series",
+                "CORRELATED SCALAR SUBQUERY 1",
+                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)",
+                "SEARCH reading_session USING COVERING INDEX reading_session_by_book (book_id=?)",
+                "USE TEMP B-TREE FOR ORDER BY",
+            ]
         );
     }
 
