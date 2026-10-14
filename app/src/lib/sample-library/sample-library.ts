@@ -1,4 +1,4 @@
-import type { ReadingDirection } from "#lib/ipc/bindings.ts";
+import type { CreatorRole, ReadingDirection } from "#lib/ipc/bindings.ts";
 
 export type SampleArt = 1 | 2 | 3 | 4 | 5;
 
@@ -20,7 +20,7 @@ export interface SampleBook {
 
 export interface SampleCreator {
   readonly name: string;
-  readonly role: string;
+  readonly role: CreatorRole | null;
 }
 
 export interface SampleSeries {
@@ -182,10 +182,10 @@ function numbered(number: number): string {
 export function sampleLibrary(sixthVolume: SampleFile): SampleSeries[] {
   return [
     series(1, numbered(1), 1, volumes(12, 9), {
-      creators: [{ name: AUTHOR_A, role: "Story and art" }],
+      creators: [{ name: AUTHOR_A, role: "storyAndArt" }],
     }),
     series(4, numbered(4), 2, sample04Books(sixthVolume), {
-      creators: [{ name: AUTHOR_A, role: "Story and art" }],
+      creators: [{ name: AUTHOR_A, role: "storyAndArt" }],
       summary:
         "A lighthouse keeper’s apprentice spends a winter at the harbour gate, writing letters to a sister across the northern sea.",
       tags: ["Slice of life", "Seinen", "Sea", "Letters"],
@@ -203,10 +203,10 @@ export function sampleLibrary(sixthVolume: SampleFile): SampleSeries[] {
       {
         format: "Light novel",
         creators: [
-          { name: AUTHOR_A, role: "Story" },
-          { name: "Author B", role: "Story" },
-          { name: "Author C", role: "Art" },
-          { name: "Author D", role: "Art" },
+          { name: AUTHOR_A, role: "story" },
+          { name: "Author B", role: "story" },
+          { name: "Author C", role: "art" },
+          { name: "Author D", role: "art" },
         ],
         summary:
           "A lighthouse keeper’s apprentice spends a winter at the harbour gate, writing letters to a sister across the northern sea.",
@@ -218,7 +218,7 @@ export function sampleLibrary(sixthVolume: SampleFile): SampleSeries[] {
     }),
     series(5, numbered(5), 1, volumes(1, 1)),
     series(6, numbered(6), 3, volumes(9, 7), {
-      creators: [{ name: AUTHOR_A, role: "Story" }],
+      creators: [{ name: AUTHOR_A, role: "story" }],
       tags: ["Slice of life"],
     }),
     series(8, numbered(8), 2, volumes(4, 0)),
@@ -227,7 +227,7 @@ export function sampleLibrary(sixthVolume: SampleFile): SampleSeries[] {
     series(11, numbered(11), 1, longSeriesBooks()),
     series(12, numbered(12), 3, volumes(30, 0)),
     series(7, numbered(7), 4, volumes(5, 3), {
-      creators: [{ name: AUTHOR_A, role: "Story" }],
+      creators: [{ name: AUTHOR_A, role: "story" }],
     }),
     series(13, numbered(13), 5, volumes(7, 2)),
     series(14, numbered(14), 1, volumes(3, 0)),
