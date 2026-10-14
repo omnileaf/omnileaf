@@ -26,6 +26,7 @@ export const commands = {
 	seriesOverview: (id: string & { readonly __brand: "SeriesId" }) => typedError<SeriesOverview, IpcError>(__TAURI_INVOKE("series_overview", { id })),
 	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
 	creatorSeries: (creator: string) => __TAURI_INVOKE<CreatorSeries[]>("creator_series", { creator }),
+	bookmarkPages: (book: string & { readonly __brand: "BookId" }, pages: number[], isBookmarked: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("bookmark_pages", { book, pages, isBookmarked })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
 	readingRestored: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("reading_restored", { id, page, utcOffset })),
@@ -219,7 +220,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "internal";
 
 export type LibraryChanged = null;
 
