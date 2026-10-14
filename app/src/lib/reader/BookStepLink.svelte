@@ -7,9 +7,11 @@
   import type { SeriesNeighbour } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { READER_BUTTON, READER_ICON_SIZE } from "./reader-bar.ts";
+
   type Step = "previous" | "next";
 
-  const ICON_SIZE = 20;
+  const ICON_SIZE = READER_ICON_SIZE;
   const STEPS = {
     previous: {
       label: m.reader_previous_chapter,
@@ -23,8 +25,7 @@
     },
   } as const satisfies Record<Step, unknown>;
 
-  const LOOK =
-    "relative flex shrink-0 items-center justify-center rounded-full text-on-reader transition-control block-reader-control inline-reader-control expanded:rounded-reader-control-wide expanded:border expanded:border-reader-glass-edge expanded:bg-reader-hover expanded:block-reader-control-wide expanded:inline-reader-control-wide android:before:absolute android:before:block-touch-target android:before:inline-touch-target";
+  const LOOK = READER_BUTTON;
 
   let { step, neighbour }: { step: Step; neighbour: SeriesNeighbour | null } =
     $props();
@@ -54,7 +55,7 @@
         href={resolve("/read/[book]", { book: neighbour.id })}
         data-sveltekit-replacestate
         aria-label={label}
-        class={[LOOK, "hover:tint-reader-hover active:tint-reader-pressed"]}
+        class={LOOK}
       >
         <shape.icon size={ICON_SIZE} aria-hidden="true" />
       </a>
