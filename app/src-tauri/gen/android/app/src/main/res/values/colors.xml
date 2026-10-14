@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="page_background_light">#faf8f4</color>
-    <color name="page_background_dark">#161512</color>
+    <color name="page_background_light">#ffffff</color>
+    <color name="page_background_dark">#0a0a0a</color>
     <color name="page_background">@color/page_background_light</color>
 </resources>
