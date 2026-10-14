@@ -2,8 +2,12 @@
   import { onMount } from "svelte";
 
   import { resolve } from "$app/paths";
+  import { page } from "$app/state";
+  import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
+  import Toasts from "#lib/notices/Toasts.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { getBookPresence } from "#lib/reader/book-presence.svelte.ts";
   import PagedReader from "#lib/reader/PagedReader.svelte";
@@ -16,6 +20,8 @@
   const shown = $derived(data.shown);
   const isFound = $derived(shown.kind === "found");
   const bookPresence = getBookPresence();
+  const notices = getNotices();
+  const theme = getThemeSetting();
 
   $effect(() => {
     bookPresence.isOpen = isFound;
@@ -49,7 +55,10 @@
 
 {#if shown.kind === "found"}
   {#key shown.book.id}
-    <PagedReader book={shown.book} />
+    <PagedReader
+      book={shown.book}
+      opensAtEnd={page.state.readerOpensAtEnd === true}
+    />
   {/key}
 {:else}
   <main
@@ -81,3 +90,6 @@
     </div>
   </main>
 {/if}
+<div class="fixed inset-x-none inset-be-safe-bottom z-notice">
+  <Toasts {notices} platform={data.appInfo.platform} theme={theme.resolved} />
+</div>

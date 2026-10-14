@@ -373,6 +373,8 @@ export const TOKEN_THEME = {
     "toast-lift",
     "touch-button",
     "touch-target",
+    "up-next",
+    "up-next-cover",
     "view-panel",
     "xl",
     "xs",

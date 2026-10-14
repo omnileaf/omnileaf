@@ -22,20 +22,17 @@
     bookTitle,
     quickSettings,
     onFullScreen,
-    heading = $bindable(),
   }: {
     seriesHref: string;
     seriesTitle: string;
     bookTitle: string;
     quickSettings: Snippet;
     onFullScreen: () => void;
-    heading?: HTMLHeadingElement | undefined;
   } = $props();
 
   const backLabel = $derived(m.reader_back_to_series({ series: seriesTitle }));
 </script>
 
-<h1 bind:this={heading} tabindex="-1" class="sr-only">{bookTitle}</h1>
 <div
   class="flex items-center gap-2xs rounded-reader-bar border border-reader-glass-edge bg-reader-glass p-xs shadow-reader-bar backdrop-blur-reader backdrop-saturate-140 expanded:gap-xs expanded:rounded-reader-bar-wide expanded:bg-reader-glass-wide expanded:px-reader-bar-inline-wide expanded:py-reader-bar-block-wide expanded:shadow-reader-bar-wide"
 >

@@ -285,17 +285,14 @@ test("shows small thumbnails of the nearby pages, not the pages themselves", asy
   }
 });
 
-test("stays on the first and last pages when asked to turn past them", async ({
+test("stays on the first page when asked to turn back from it", async ({
   page,
 }) => {
   await openBook(page);
 
   await zone(page, "Previous page").click();
-  await expectOnPage(page, 1);
-  await page.keyboard.press("End");
-  await zone(page, "Next page").click();
 
-  await expectOnPage(page, PAGE_COUNT);
+  await expectOnPage(page, 1);
 });
 
 test("says which page is up to a screen reader as pages turn", async ({
