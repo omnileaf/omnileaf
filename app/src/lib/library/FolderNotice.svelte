@@ -2,14 +2,20 @@
   import { CircleAlert, CircleCheckBig } from "@lucide/svelte";
   import { onDestroy, untrack } from "svelte";
 
+  import {
+    Alert,
+    AlertDescription,
+    AlertDismiss,
+    AlertTitle,
+    type AlertTone,
+  } from "#lib/components/ui/alert/index.ts";
   import type { FolderScan } from "#lib/ipc/bindings.ts";
   import type { Notices } from "#lib/notices/notices.ts";
+  import type { Glyph } from "#lib/page/glyph.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { folderStandIn } from "#lib/screenshot-mode/stand-ins.ts";
 
   import type { FolderAdding, FolderOutcome } from "./folder-adding.svelte";
-  import type { Notice } from "./notice";
-  import NoticeCard from "./NoticeCard.svelte";
   import ScanToast from "./ScanToast.svelte";
 
   interface Props {
@@ -18,6 +24,13 @@
     readonly usesStandIns: boolean;
     readonly onShow?: (() => void) | undefined;
     readonly onDismissed: () => void;
+  }
+
+  interface EmptyFolderNotice {
+    readonly tone: AlertTone;
+    readonly icon: Glyph;
+    readonly title: string;
+    readonly body?: string;
   }
 
   let { adding, notices, usesStandIns, onShow, onDismissed }: Props = $props();
@@ -79,7 +92,9 @@
     wasFollowed = isFollowed;
   });
 
-  function emptyFolderNotice(outcome: FolderOutcome): Notice | undefined {
+  function emptyFolderNotice(
+    outcome: FolderOutcome,
+  ): EmptyFolderNotice | undefined {
     if (outcome.kind !== "scanned" || outcome.scan.books > 0) {
       return undefined;
     }
@@ -87,7 +102,7 @@
     const title = m.library_folder_no_books({ name: shownName(scan) });
     const body = problemsIn(scan);
     if (body === undefined) {
-      return { tone: "done", icon: CircleCheckBig, title };
+      return { tone: "plain", icon: CircleCheckBig, title };
     }
     return { tone: "warning", icon: CircleAlert, title, body };
   }
@@ -102,6 +117,12 @@
 
 <div role="status">
   {#if notice !== undefined}
-    <NoticeCard {notice} onDismiss={dismiss} />
+    <Alert tone={notice.tone} icon={notice.icon}>
+      <AlertTitle>{notice.title}</AlertTitle>
+      <AlertDismiss label={m.notice_dismiss()} onDismiss={dismiss} />
+      {#if notice.body !== undefined}
+        <AlertDescription>{notice.body}</AlertDescription>
+      {/if}
+    </Alert>
   {/if}
 </div>
