@@ -3,9 +3,9 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AppInfo, AppLanguage, BookCursor, BookId, BooksRemoval, Core, CoversPerRow, FolderCursor,
-    FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryPage, InterfaceError,
-    Library, LibraryFilter, LibraryListing, LibrarySearch, LibraryView, LocalDay, OpenedBook,
-    ProbedFormat, ProjectLink, ReadMark, ReadingWeek, ResourceRouter, ScanProgress,
+    FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage,
+    InterfaceError, Library, LibraryFilter, LibraryListing, LibrarySearch, LibraryView, LocalDay,
+    OpenedBook, ProbedFormat, ProjectLink, ReadMark, ReadingWeek, ResourceRouter, ScanProgress,
     SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
     UtcOffset,
 };
@@ -338,8 +338,9 @@ async fn close_book(library: State<'_, Library>, id: BookId) -> Result<(), IpcEr
 async fn reading_history(
     library: State<'_, Library>,
     after: Option<HistoryCursor>,
+    of: HistoryOf,
 ) -> Result<HistoryPage, IpcError> {
-    Ok(library.history(after).await?)
+    Ok(library.history(after, of).await?)
 }
 
 #[tauri::command]

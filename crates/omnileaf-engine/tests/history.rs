@@ -17,9 +17,9 @@ use std::sync::{
 
 use books::write_book;
 use omnileaf_engine::{
-    BookId, BookReading, Clock, FolderKind, HistoryEntry, Library, LibraryListing, LocalDay,
-    OpenedBook, ProbedFormat, ReadMark, ReadTo, ReadingWeek, ResourceRouter, SeriesBookListing,
-    UtcOffset,
+    BookId, BookReading, Clock, FolderKind, HistoryEntry, HistoryOf, Library, LibraryListing,
+    LocalDay, OpenedBook, ProbedFormat, ReadMark, ReadTo, ReadingWeek, ResourceRouter,
+    SeriesBookListing, UtcOffset,
 };
 use support::{FixedClock, NOW_UNIX_MS, ScratchFolder};
 
@@ -133,7 +133,11 @@ impl Shelf {
     }
 
     async fn entries(&self) -> Vec<HistoryEntry> {
-        self.library.history(None).await.unwrap().entries
+        self.library
+            .history(None, HistoryOf::Everything)
+            .await
+            .unwrap()
+            .entries
     }
 }
 
@@ -149,7 +153,7 @@ async fn empty_library(name: &str) -> (Library, ScratchFolder) {
 async fn lists_no_history_before_anything_is_read() {
     let (library, _home) = empty_library("history-empty").await;
 
-    let page = library.history(None).await.unwrap();
+    let page = library.history(None, HistoryOf::Everything).await.unwrap();
 
     assert_eq!((page.entries, page.next), (Vec::new(), None));
 }
@@ -484,4 +488,23 @@ async fn keeps_the_local_time_reading_on_after_a_break_starts_at_once_the_device
         .map(|entry| entry.utc_offset_minutes)
         .collect();
     assert_eq!(offsets, [utc_minus_five, UtcOffset::UTC]);
+}
+
+#[tokio::test]
+async fn lists_the_sessions_of_one_book_alone() {
+    let shelf = Shelf::with_two_books("history-of-book").await;
+    let first = shelf.restore(0).await;
+    shelf.close(&first).await;
+    shelf.clock.advance(5 * MINUTE_MS);
+    let second = shelf.restore(1).await;
+    shelf.close(&second).await;
+
+    let page = shelf
+        .library
+        .history(None, HistoryOf::Book { book: first.id })
+        .await
+        .unwrap();
+
+    let books: Vec<BookId> = page.entries.iter().map(|entry| entry.book).collect();
+    assert_eq!(books, [first.id]);
 }

@@ -24,8 +24,8 @@ use omnileaf_db::{
         remove_books_without_files,
     },
     history::{
-        HistoryEntry, ReadingSince, book_reading_time, days_in_a_row, history_page, reading_since,
-        reading_time_by_day,
+        HistoryEntry, HistoryOf, ReadingSince, book_reading_time, days_in_a_row, history_page,
+        reading_since, reading_time_by_day,
     },
     store::{Continuity, SessionPlace, Store},
 };
@@ -152,13 +152,22 @@ impl History {
     }
 
     async fn page(&self, size: u16, after: Option<Cursor>) -> Result<Page<HistoryEntry>, Error> {
+        self.page_of(HistoryOf::Everything, size, after).await
+    }
+
+    async fn page_of(
+        &self,
+        of: HistoryOf,
+        size: u16,
+        after: Option<Cursor>,
+    ) -> Result<Page<HistoryEntry>, Error> {
         let request = PageRequest {
             after: after.map(|cursor| cursor.to_string().parse().unwrap()),
             size: PageSize::try_from(size).unwrap(),
         };
         self.store
             .database()
-            .read(move |connection| history_page(connection, &request))
+            .read(move |connection| history_page(connection, of, &request))
             .await
     }
 
@@ -615,4 +624,62 @@ async fn counts_each_session_on_the_local_day_of_the_time_zone_it_was_read_in() 
     let streak = history.days_in_a_row().await;
 
     assert_eq!(streak, 3);
+}
+
+async fn read_hours_ago(history: &History, number: u32, hours_ago: u64) {
+    let at_ms = NOW_UNIX_MS - hours_ago * HOUR_MS;
+    history.read(book(number), at_ms, at_ms, 0).await;
+}
+
+fn books_of(page: &Page<HistoryEntry>) -> Vec<BookId> {
+    page.items.iter().map(|entry| entry.book).collect()
+}
+
+#[tokio::test]
+async fn pages_through_the_sessions_of_one_series_the_latest_first() {
+    let history = History::open("history-of-series").await;
+    for (number, hours_ago) in [(1, 6), (4, 5), (2, 4), (4, 3), (3, 2), (1, 1)] {
+        read_hours_ago(&history, number, hours_ago).await;
+    }
+    let first_series = HistoryOf::Series(SeriesId::local(FIRST_SERIES).unwrap());
+
+    let first = history.page_of(first_series, 2, None).await.unwrap();
+    let second = history
+        .page_of(first_series, 2, first.next.clone())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        [books_of(&first), books_of(&second)],
+        [vec![book(1), book(3)], vec![book(2), book(1)]]
+    );
+    assert_eq!(second.next, None);
+}
+
+#[tokio::test]
+async fn pages_through_the_sessions_of_one_book_the_latest_first() {
+    let history = History::open("history-of-book").await;
+    for (number, hours_ago) in [(2, 5), (1, 4), (2, 3), (2, 2), (3, 1)] {
+        read_hours_ago(&history, number, hours_ago).await;
+    }
+
+    let first = history
+        .page_of(HistoryOf::Book(book(2)), 2, None)
+        .await
+        .unwrap();
+    let second = history
+        .page_of(HistoryOf::Book(book(2)), 2, first.next.clone())
+        .await
+        .unwrap();
+
+    let started: Vec<i64> = [&first, &second]
+        .iter()
+        .flat_map(|page| page.items.iter())
+        .map(|entry| entry.started_at_ms)
+        .collect();
+    assert_eq!(
+        started,
+        [2, 3, 5].map(|hours_ago| ms(NOW_UNIX_MS - hours_ago * HOUR_MS))
+    );
+    assert_eq!(books_of(&second), [book(2)]);
 }
