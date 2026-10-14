@@ -99,9 +99,12 @@ fn date_added_rows(
             read,
             named_params! { ":after_key": added_at_ms, ":after_id": id.as_bytes() },
         ),
-        Some(Position::Title { .. } | Position::Book { .. } | Position::Root { .. }) => {
-            Err(Error::CursorForAnotherList)
-        }
+        Some(
+            Position::Title { .. }
+            | Position::Book { .. }
+            | Position::Root { .. }
+            | Position::Session { .. },
+        ) => Err(Error::CursorForAnotherList),
     }
 }
 

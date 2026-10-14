@@ -24,6 +24,7 @@
     ReadingReport,
   } from "#lib/reader/reading-report.ts";
   import { Swipe, type SwipeTurn } from "#lib/reader/swipe.ts";
+  import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
 
   const SWIPE_MIN_PX = 48;
   const RESTING_SCALE = 1;
@@ -36,8 +37,10 @@
   >;
 
   const CORE: ReadingCore = {
-    restored: (id, page) => commands.readingRestored(id, page),
-    shown: (id, page) => commands.pageShown(id, page),
+    restored: (id, page) =>
+      commands.readingRestored(id, page, utcOffsetMinutes(new Date())),
+    shown: (id, page) =>
+      commands.pageShown(id, page, utcOffsetMinutes(new Date())),
     closed: (id) => commands.closeBook(id),
   };
 

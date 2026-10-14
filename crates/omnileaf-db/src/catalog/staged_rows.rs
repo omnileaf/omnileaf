@@ -166,9 +166,10 @@ fn place_after(
             .optional()?
             .map(|sort_key| TitlePlace { sort_key, id: *id })
             .ok_or(Error::StaleCursor),
-        Position::Added { .. } | Position::Book { .. } | Position::Root { .. } => {
-            Err(Error::CursorForAnotherList)
-        }
+        Position::Added { .. }
+        | Position::Book { .. }
+        | Position::Root { .. }
+        | Position::Session { .. } => Err(Error::CursorForAnotherList),
     }
 }
 

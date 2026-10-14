@@ -3,10 +3,10 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AppInfo, AppLanguage, BookCursor, BookId, BooksRemoval, Core, CoversPerRow, FolderCursor,
-    FolderId, FolderPage, FolderRescan, FolderScan, InterfaceError, Library, LibraryFilter,
-    LibraryListing, LibrarySearch, LibraryView, OpenedBook, ProbedFormat, ProjectLink, ReadMark,
-    ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
-    SeriesOverview, SeriesPage,
+    FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryPage, InterfaceError,
+    Library, LibraryFilter, LibraryListing, LibrarySearch, LibraryView, LocalDay, OpenedBook,
+    ProbedFormat, ProjectLink, ReadMark, ResourceRouter, ScanProgress, SeriesBookListing,
+    SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -49,6 +49,9 @@ macro_rules! app_commands {
             reading_restored,
             page_shown,
             close_book,
+            reading_history,
+            reading_time_since,
+            reading_time_between,
             orient_screen,
             change_full_screen,
             library_listing,
@@ -306,20 +309,54 @@ async fn reading_restored(
     library: State<'_, Library>,
     id: BookId,
     page: u32,
+    utc_offset: UtcOffset,
 ) -> Result<(), IpcError> {
-    Ok(library.reading_restored(id, page).await?)
+    Ok(library.reading_restored(id, page, utc_offset).await?)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn page_shown(library: State<'_, Library>, id: BookId, page: u32) -> Result<(), IpcError> {
-    Ok(library.page_shown(id, page).await?)
+async fn page_shown(
+    library: State<'_, Library>,
+    id: BookId,
+    page: u32,
+    utc_offset: UtcOffset,
+) -> Result<(), IpcError> {
+    Ok(library.page_shown(id, page, utc_offset).await?)
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn close_book(library: State<'_, Library>, id: BookId) -> Result<(), IpcError> {
     Ok(library.close_book(id).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn reading_history(
+    library: State<'_, Library>,
+    after: Option<HistoryCursor>,
+) -> Result<HistoryPage, IpcError> {
+    Ok(library.history(after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn reading_time_since(
+    library: State<'_, Library>,
+    first_day: LocalDay,
+) -> Result<u32, IpcError> {
+    Ok(library.reading_time_since(first_day).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn reading_time_between(
+    library: State<'_, Library>,
+    first_day: LocalDay,
+    last_day: LocalDay,
+) -> Result<u32, IpcError> {
+    Ok(library.reading_time_between(first_day, last_day).await?)
 }
 
 #[tauri::command]

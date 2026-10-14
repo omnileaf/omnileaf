@@ -424,6 +424,14 @@
   --spacing-reader-thumbnail-wide: 3.25rem;
   --spacing-reader-filmstrip-gap: 0.625rem;
   --spacing-reader-filmstrip-gap-wide: 0.75rem;
+  --spacing-history-row: 5.5rem;
+  --spacing-history-row-wide: 4.75rem;
+  --spacing-history-days: 0.875rem;
+  --spacing-history-days-wide: 1.375rem;
+  --spacing-history-cover-wide: 2.5rem;
+  --spacing-history-time: 6.25rem;
+  --spacing-history-length: 9rem;
+  --spacing-history-action: 6.5rem;
   --spacing-safe-top: max(
     env(safe-area-inset-top),
     var(--system-inset-top, 0px)
@@ -494,6 +502,8 @@
   --radius-selection-bar-wide: 1rem;
   --radius-selection-action: 0.875rem;
   --radius-selection-action-wide: 0.625rem;
+
+  --radius-history-cover: 0.3125rem;
 
   --radius-reader-bar: 1.5rem;
   --radius-reader-bar-wide: 1.125rem;

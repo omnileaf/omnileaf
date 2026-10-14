@@ -249,6 +249,66 @@
   "history_title": "⟦Ĥíšţöŕý···⟧",
   "history_empty_title": "⟦Ñöţĥíñĝ ŕéáð ýéţ·······⟧",
   "history_empty_body": "⟦Ɓööķš ýöû öþéñ šĥöŵ ûþ ĥéŕé, ñéŵéšţ ƒíŕšţ, šö ýöû çáñ þíçķ ûþ ŵĥéŕé ýöû ļéƒţ öƒƒ.·································⟧",
+  "history_failed": "⟦Çöûļðñ'ţ ļöáð ýöûŕ ĥíšţöŕý. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
+  "history_read_this_week": "⟦{duration} ŕéáð ţĥíš ŵééķ··········⟧",
+  "history_today": "⟦Ţöðáý··⟧",
+  "history_yesterday": "⟦Ýéšţéŕðáý····⟧",
+  "history_last_week": "⟦Ļášţ ŵééķ····⟧",
+  "history_read_to_page": [
+    {
+      "declarations": [
+        "input book",
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "⟦{book} · þáĝé {formattedPage} öƒ {formattedCount}····················⟧"
+      }
+    }
+  ],
+  "history_read_to_end": "⟦{book} · ƒíñíšĥéð·······⟧",
+  "history_started_and_read_for": "⟦{time} · ŕéáð ƒöŕ {duration}············⟧",
+  "history_started_at": "⟦Šţáŕţéð áţ {time}·······⟧",
+  "history_read_for": "⟦Ŕéáð ƒöŕ {duration}········⟧",
+  "history_continue": "⟦Çöñţíñûé····⟧",
+  "history_continue_label": "⟦Çöñţíñûé {series}, {book}··········⟧",
+  "history_read_again": "⟦Ŕéáð áĝáíñ····⟧",
+  "history_read_again_label": "⟦Ŕéáð áĝáíñ {series}, {book}···········⟧",
+  "history_under_a_minute": "⟦ûñðéŕ 1 ɱíñ·····⟧",
+  "history_minutes": [
+    {
+      "declarations": [
+        "input minutes",
+        "local formattedMinutes = minutes: number"
+      ],
+      "match": {
+        "*": "⟦{formattedMinutes} ɱíñ·········⟧"
+      }
+    }
+  ],
+  "history_hours": [
+    {
+      "declarations": ["input hours", "local formattedHours = hours: number"],
+      "match": {
+        "*": "⟦{formattedHours} ĥ········⟧"
+      }
+    }
+  ],
+  "history_hours_and_minutes": [
+    {
+      "declarations": [
+        "input hours",
+        "input minutes",
+        "local formattedHours = hours: number",
+        "local formattedMinutes = minutes: number"
+      ],
+      "match": {
+        "*": "⟦{formattedHours} ĥ {formattedMinutes} ɱíñ·················⟧"
+      }
+    }
+  ],
   "settings_title": "⟦Šéţţíñĝš····⟧",
   "about_title": "⟦Áƀöûţ··⟧",
   "about_licence": "⟦Öɱñíļéáƒ íš ƒŕéé šöƒţŵáŕé. Ýöû çáñ šĥáŕé áñð çĥáñĝé íţ ûñðéŕ ţĥé ĜÑÛ Ĝéñéŕáļ Þûƀļíç Ļíçéñšé, ṽéŕšíöñ 3.··········································⟧",

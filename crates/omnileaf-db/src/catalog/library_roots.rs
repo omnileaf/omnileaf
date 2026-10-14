@@ -46,7 +46,12 @@ pub fn library_roots(
     let after = match request.after.as_ref().map(|cursor| &cursor.0) {
         None => i64::MIN,
         Some(Position::Root { id }) => *id,
-        Some(Position::Title { .. } | Position::Added { .. } | Position::Book { .. }) => {
+        Some(
+            Position::Title { .. }
+            | Position::Added { .. }
+            | Position::Book { .. }
+            | Position::Session { .. },
+        ) => {
             return Err(Error::CursorForAnotherList);
         }
     };

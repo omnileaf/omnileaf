@@ -21,7 +21,7 @@ use std::{
 use omnileaf_engine::{
     BookId, BookReading, LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges,
     LibraryListing, OpenedBook, ProbedFormat, READING_SAVE_DELAY, ReadMark, ReadingSaved,
-    ResourceRouter, SeriesBookListing, SeriesId,
+    ResourceRouter, SeriesBookListing, SeriesId, UtcOffset,
 };
 use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg};
 use support::{FixedClock, ScratchFolder};
@@ -145,7 +145,7 @@ impl Shelf {
     async fn restore(&self, index: usize) -> OpenedBook {
         let opened = self.open(index).await;
         self.library
-            .reading_restored(opened.id, opened.start_page)
+            .reading_restored(opened.id, opened.start_page, UtcOffset::UTC)
             .await
             .unwrap();
         opened
@@ -160,7 +160,10 @@ impl Shelf {
     }
 
     async fn show(&self, opened: &OpenedBook, page: u32) {
-        self.library.page_shown(opened.id, page).await.unwrap();
+        self.library
+            .page_shown(opened.id, page, UtcOffset::UTC)
+            .await
+            .unwrap();
     }
 
     async fn close(&self, opened: &OpenedBook) {
@@ -317,7 +320,7 @@ async fn saves_the_page_shown_when_asked_to_with_the_book_still_open() {
     let opened = shelf.restore(0).await;
     shelf.show(&opened, 2).await;
 
-    shelf.library.save_reading().await.unwrap();
+    shelf.library.put_away().await.unwrap();
 
     assert_eq!(shelf.reading(0).await, started_on(3));
 }
@@ -367,7 +370,7 @@ async fn ignores_a_page_shown_in_a_book_closed_before() {
     shelf.close(&opened).await;
 
     shelf.show(&opened, 3).await;
-    shelf.library.save_reading().await.unwrap();
+    shelf.library.put_away().await.unwrap();
 
     assert_eq!(shelf.reading(0).await, BookReading::NotStarted);
 }
@@ -392,7 +395,7 @@ async fn saves_the_page_reached_in_a_book_when_the_reader_restores_the_next_one(
 
     shelf
         .library
-        .reading_restored(second.id, second.start_page)
+        .reading_restored(second.id, second.start_page, UtcOffset::UTC)
         .await
         .unwrap();
     shelf.close(&second).await;
@@ -693,7 +696,7 @@ async fn tells_of_no_save_when_no_page_was_left_to_save() {
     shelf.show(&opened, 0).await;
 
     shelf.close(&opened).await;
-    shelf.library.save_reading().await.unwrap();
+    shelf.library.put_away().await.unwrap();
 
     assert_eq!(saved.try_recv(), Err(TryRecvError::Empty));
 }

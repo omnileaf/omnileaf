@@ -1,4 +1,5 @@
 import type {
+  HistoryEntry,
   OpenedBook,
   SeriesBook,
   SeriesNeighbour,
@@ -8,6 +9,13 @@ import { type NamedSeries, standInLook } from "#lib/library/series-look.ts";
 import { m } from "#lib/paraglide/messages.js";
 import { getLocale } from "#lib/paraglide/runtime.js";
 import { folderStandIn } from "#lib/screenshot-mode/stand-ins.ts";
+
+/** The series a book is in, with no cover to show for it. */
+function seriesOf(
+  book: Pick<HistoryEntry, "series" | "seriesTitle">,
+): NamedSeries {
+  return { id: book.series, title: book.seriesTitle, cover: null };
+}
 
 /** Names a book after its series' stand-in and its place in the series, so the series keeps the number the library gives it. */
 function standInBookTitles(series: NamedSeries): (position: number) => string {
@@ -38,11 +46,7 @@ export function standInOverview(overview: SeriesOverview): SeriesOverview {
 
 /** Names the books either side by the places beside the opened book's own. */
 export function standInOpenedBook(book: OpenedBook): OpenedBook {
-  const series: NamedSeries = {
-    id: book.series,
-    title: book.seriesTitle,
-    cover: null,
-  };
+  const series = seriesOf(book);
   const titled = standInBookTitles(series);
   const neighbour = (
     beside: SeriesNeighbour | null,
@@ -55,5 +59,16 @@ export function standInOpenedBook(book: OpenedBook): OpenedBook {
     seriesTitle: standInLook(series).title,
     previous: neighbour(book.previous, book.position - 1),
     next: neighbour(book.next, book.position + 1),
+  };
+}
+
+/** Names the entry's series and book as the library and the series page do, leaving the cover's path behind. */
+export function standInHistoryEntry(entry: HistoryEntry): HistoryEntry {
+  const series = seriesOf(entry);
+  return {
+    ...entry,
+    seriesTitle: standInLook(series).title,
+    bookTitle: standInBookTitles(series)(entry.position),
+    cover: null,
   };
 }

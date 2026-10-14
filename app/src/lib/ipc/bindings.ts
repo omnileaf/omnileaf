@@ -27,9 +27,12 @@ export const commands = {
 	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
-	readingRestored: (id: string & { readonly __brand: "BookId" }, page: number) => typedError<null, IpcError>(__TAURI_INVOKE("reading_restored", { id, page })),
-	pageShown: (id: string & { readonly __brand: "BookId" }, page: number) => typedError<null, IpcError>(__TAURI_INVOKE("page_shown", { id, page })),
+	readingRestored: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("reading_restored", { id, page, utcOffset })),
+	pageShown: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("page_shown", { id, page, utcOffset })),
 	closeBook: (id: string & { readonly __brand: "BookId" }) => typedError<null, IpcError>(__TAURI_INVOKE("close_book", { id })),
+	readingHistory: (after: string & { readonly __brand: "HistoryCursor" } | null) => typedError<HistoryPage, IpcError>(__TAURI_INVOKE("reading_history", { after })),
+	readingTimeSince: (firstDay: number) => typedError<number, IpcError>(__TAURI_INVOKE("reading_time_since", { firstDay })),
+	readingTimeBetween: (firstDay: number, lastDay: number) => typedError<number, IpcError>(__TAURI_INVOKE("reading_time_between", { firstDay, lastDay })),
 	orientScreen: (orientation: ScreenOrientation) => typedError<null, IpcError>(__TAURI_INVOKE("orient_screen", { orientation })),
 	/**  Answers whether the window was in full screen before the change. */
 	changeFullScreen: (change: FullScreenChange) => typedError<boolean, IpcError>(__TAURI_INVOKE("change_full_screen", { change })),
@@ -153,6 +156,33 @@ export type FullScreenChange =
 /**  Goes back to a window, as when the reader closes. */
 "leave";
 
+/**  One reading session, as History lists it. */
+export type HistoryEntry = {
+	book: string & { readonly __brand: "BookId" },
+	bookTitle: string,
+	series: string & { readonly __brand: "SeriesId" },
+	seriesTitle: string,
+	/**  Where the book stands in its series' order, counting from 1. */
+	position: number,
+	/**  The book's own cover, absent while it has no file. */
+	cover: string & { readonly __brand: "CoverPath" } | null,
+	/**  When the session started, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly. */
+	startedAtMs: number,
+	/**  How far the device's clock was ahead of UTC as the session started, so it shows at the local time it was read at. */
+	utcOffsetMinutes: number,
+	readSeconds: number,
+	readTo: ReadTo,
+	/**  How far the book has been read since, which decides whether reading it goes on or starts again. */
+	reading: BookReading,
+	day: ReadingDay,
+};
+
+export type HistoryPage = {
+	entries: HistoryEntry[],
+	/**  Absent on the last page. */
+	next: string & { readonly __brand: "HistoryCursor" } | null,
+};
+
 /**  Whether the library lists series meeting a condition alongside the rest, only those, or only the rest. */
 export type Inclusion = "any" | "only" | "hide";
 
@@ -266,6 +296,17 @@ export type ProbedFormat = "webp" | "jxl";
 export type ProjectLink = "sourceCode" | "newIssue" | "latestRelease";
 
 export type ReadMark = "read" | "unread";
+
+/**  Where a session left the book. */
+export type ReadTo = 
+/**  The page counts from 1. */
+{ state: "page"; page: number; pageCount: number } | { state: "end" };
+
+/**  A day in the local time sessions started at, and how long was read on it. */
+export type ReadingDay = {
+	day: number,
+	readSeconds: number,
+};
 
 export type ReadingSaved = {
 	book: string & { readonly __brand: "BookId" },

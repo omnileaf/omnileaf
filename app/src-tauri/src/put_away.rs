@@ -1,9 +1,9 @@
-//! What the app saves as it is put away, closed or sent to the background, while the system may stop it at any moment after.
+//! What the app saves as it is put away, closed, sent to the background or its window left out of use, while the system may stop it at any moment after.
 
 use std::time::Duration;
 
 use omnileaf_engine::{Library, LibraryError, describe_error};
-use tauri::{AppHandle, Manager, RunEvent};
+use tauri::{AppHandle, Manager, RunEvent, WindowEvent};
 use tokio::time::{error::Elapsed, timeout};
 
 /// Short enough that waiting on a busy database never holds up the system putting the app away.
@@ -13,14 +13,7 @@ const SAVE_LIMIT: Duration = Duration::from_secs(2);
 enum PutAway {
     /// The process ends once the event returns, so the save is waited for.
     Exiting,
-    /// The system keeps the process alive a while, and the delayed save backs this one up, so the UI thread never waits.
-    #[cfg_attr(
-        not(any(mobile, test)),
-        expect(
-            dead_code,
-            reason = "only phones and tablets send the app to the background"
-        )
-    )]
+    /// The app goes to the background, or its window out of use, and the delayed save backs this one up, so the UI thread never waits.
     Backgrounded,
 }
 
@@ -28,11 +21,17 @@ impl PutAway {
     fn of(event: &RunEvent) -> Option<Self> {
         match event {
             RunEvent::Exit => Some(Self::Exiting),
+            RunEvent::WindowEvent { event, .. } => Self::of_window(event),
+            _ => None,
+        }
+    }
+
+    fn of_window(event: &WindowEvent) -> Option<Self> {
+        match event {
             #[cfg(mobile)]
-            RunEvent::WindowEvent {
-                event: tauri::WindowEvent::Suspended,
-                ..
-            } => Some(Self::Backgrounded),
+            WindowEvent::Suspended => Some(Self::Backgrounded),
+            #[cfg(desktop)]
+            WindowEvent::Focused(false) => Some(Self::Backgrounded),
             _ => None,
         }
     }
@@ -53,7 +52,7 @@ pub(crate) fn save_when_put_away(app: &AppHandle, event: &RunEvent) {
     if put_away.waits_for_the_save() {
         if let Some(library) = app.try_state::<Library>() {
             warn_unless_saved(tauri::async_runtime::block_on(save_in_time(
-                library.save_reading(),
+                library.put_away(),
             )));
         }
         return;
@@ -61,7 +60,7 @@ pub(crate) fn save_when_put_away(app: &AppHandle, event: &RunEvent) {
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
         if let Some(library) = app.try_state::<Library>() {
-            warn_unless_saved(save_in_time(library.save_reading()).await);
+            warn_unless_saved(save_in_time(library.put_away()).await);
         }
     });
 }
@@ -95,6 +94,16 @@ mod tests {
         let put_away = events.map(|event| PutAway::of(&event));
 
         assert_eq!(put_away, [Some(PutAway::Exiting), None, None]);
+    }
+
+    #[cfg(desktop)]
+    #[test]
+    fn counts_the_window_going_out_of_use_as_put_away_on_desktop() {
+        let events = [WindowEvent::Focused(false), WindowEvent::Focused(true)];
+
+        let put_away = events.map(|event| PutAway::of_window(&event));
+
+        assert_eq!(put_away, [Some(PutAway::Backgrounded), None]);
     }
 
     #[test]

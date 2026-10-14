@@ -11,7 +11,7 @@ use tokio::{
 };
 
 use crate::{
-    BookId, LibraryError, SeriesId, describe_error,
+    BookId, LibraryError, SeriesId, UtcOffset, describe_error,
     reading_session::{READING_SAVE_DELAY, ReachedPage, ReadingSession},
 };
 
@@ -38,16 +38,22 @@ enum Report {
     Restored {
         book: BookId,
         page: u32,
+        utc_offset: UtcOffset,
+        saved: Saved,
     },
     Shown {
         book: BookId,
         page: u32,
+        utc_offset: UtcOffset,
     },
     Closed {
         book: BookId,
         saved: Saved,
     },
     SaveNow {
+        saved: Saved,
+    },
+    PutAway {
         saved: Saved,
     },
     SaveBeforeOpening {
@@ -90,13 +96,35 @@ impl ReadingProgress {
         .await
     }
 
-    /// Saves the page reached in the book read before, and saves from now on the pages shown in `book`.
-    pub(crate) async fn restored(&self, book: BookId, page: u32) -> Result<(), LibraryError> {
-        self.tell(Report::Restored { book, page }).await
+    /// Saves the page reached in the book read before, then records a reading session in `book` and saves from now on the pages shown in it.
+    pub(crate) async fn restored(
+        &self,
+        book: BookId,
+        page: u32,
+        utc_offset: UtcOffset,
+    ) -> Result<(), LibraryError> {
+        self.ask(|saved| Report::Restored {
+            book,
+            page,
+            utc_offset,
+            saved,
+        })
+        .await
     }
 
-    pub(crate) async fn shown(&self, book: BookId, page: u32) -> Result<(), LibraryError> {
-        self.tell(Report::Shown { book, page }).await
+    /// Reads the device's offset from UTC afresh, so a session started after a break keeps the local time it starts at.
+    pub(crate) async fn shown(
+        &self,
+        book: BookId,
+        page: u32,
+        utc_offset: UtcOffset,
+    ) -> Result<(), LibraryError> {
+        self.tell(Report::Shown {
+            book,
+            page,
+            utc_offset,
+        })
+        .await
     }
 
     pub(crate) async fn closed(&self, book: BookId) -> Result<(), LibraryError> {
@@ -105,6 +133,11 @@ impl ReadingProgress {
 
     pub(crate) async fn save_now(&self) -> Result<(), LibraryError> {
         self.ask(|saved| Report::SaveNow { saved }).await
+    }
+
+    /// Saves at once and ends the reading session, so the time the app spends put away never counts as reading.
+    pub(crate) async fn put_away(&self) -> Result<(), LibraryError> {
+        self.ask(|saved| Report::PutAway { saved }).await
     }
 
     /// Saves whatever reading reached, answering with the page reached in `book` still unsaved should the save fail.
@@ -194,14 +227,25 @@ impl Keeper {
                 self.page_counts.insert(book, page_count);
                 answer(Some(saved), self.save().await);
             }
-            Report::Restored { book, page } => self.restored(book, page).await,
-            Report::Shown { book, page } => {
+            Report::Restored {
+                book,
+                page,
+                utc_offset,
+                saved,
+            } => answer(Some(saved), self.restored(book, page, utc_offset).await),
+            Report::Shown {
+                book,
+                page,
+                utc_offset,
+            } => {
                 if let Some(open) = self.reading(book) {
+                    open.moved_to(utc_offset);
                     open.shown(page, Instant::now());
                 }
             }
             Report::Closed { book, saved } => answer(Some(saved), self.closed(book).await),
             Report::SaveNow { saved } => answer(Some(saved), self.save().await),
+            Report::PutAway { saved } => answer(Some(saved), self.stop_reading().await),
             Report::SaveBeforeOpening { book, unsaved } => {
                 answer(None, self.save().await);
                 answer(Some(unsaved), self.unsaved_in(book));
@@ -218,22 +262,30 @@ impl Keeper {
             .or_else(|| self.left_unsaved.get(&book).copied())
     }
 
-    /// Saves the book read before and reads `book` from now on, unless it is the book read already.
-    async fn restored(&mut self, book: BookId, page: u32) {
+    /// Saves the book read before and reads `book` from now on, unless it is the book read already, failing only when its session can't be recorded.
+    async fn restored(
+        &mut self,
+        book: BookId,
+        page: u32,
+        utc_offset: UtcOffset,
+    ) -> Result<(), Error> {
         let page_count = self.page_counts.remove(&book);
         if let Some(open) = self.session.as_mut().filter(|open| open.book() == book) {
             open.restored(page);
-            return;
+            return Ok(());
         }
         let Some(page_count) = page_count else {
             tracing::debug!(%book, "ignore a restore of a book never opened");
-            return;
+            return Ok(());
         };
+        if self.session.is_some() {
+            answer(None, self.save().await);
+        }
         if let Some(left) = self.session.take() {
             self.leave(left);
         }
         let left = self.left_unsaved.get(&book).map(|left| left.page);
-        self.session = ReadingSession::opening(book, page_count).map(|mut opening| {
+        self.session = ReadingSession::opening(book, page_count, utc_offset).map(|mut opening| {
             opening.restored(page);
             if let Some(left) = left {
                 opening.restored_over(left, Instant::now());
@@ -241,23 +293,65 @@ impl Keeper {
             opening
         });
         answer(None, self.save().await);
+        self.record_reading().await
     }
 
     /// Stops reading `book` and saves the page reached in it, which later saves try again should this one fail.
     async fn closed(&mut self, book: BookId) -> Result<(), Error> {
         self.page_counts.remove(&book);
-        let Some(left) = self.session.take_if(|open| open.book() == book) else {
+        if !self
+            .session
+            .as_ref()
+            .is_some_and(|open| open.book() == book)
+        {
             tracing::debug!(%book, "ignore closing a book not read now");
             return Ok(());
-        };
-        self.leave(left);
-        self.save().await
+        }
+        let saved = self.stop_reading().await;
+        if let Some(left) = self.session.take() {
+            self.leave(left);
+        }
+        saved
     }
 
     fn leave(&mut self, left: ReadingSession) {
         if let Some(reached) = left.unsaved() {
             self.left_unsaved.insert(reached.book, reached);
         }
+    }
+
+    /// Saves the page shown last and ends the reading session at this moment.
+    async fn stop_reading(&mut self) -> Result<(), Error> {
+        let saved = self.save().await;
+        let Some(open) = self.session.as_mut() else {
+            return saved;
+        };
+        let (book, continuity) = (open.book(), open.continuity());
+        open.put_away();
+        let stopped = self
+            .store
+            .write(move |writer| writer.record_reading_stopped(book.0, continuity))
+            .await;
+        saved.and(stopped)
+    }
+
+    /// Records the reading session going on in the book read now, from the page it stands on.
+    async fn record_reading(&mut self) -> Result<(), Error> {
+        let Some(open) = self.session.as_mut() else {
+            return Ok(());
+        };
+        let Some(reached) = open.on_page() else {
+            return Ok(());
+        };
+        let (place, continuity) = (reached.place(), open.continuity());
+        let outcome = self
+            .store
+            .write(move |writer| writer.record_reading(&place, continuity))
+            .await;
+        if outcome.is_ok() {
+            open.recorded();
+        }
+        outcome
     }
 
     /// The session of `book`, or nothing for a report about a book not read now.
@@ -271,20 +365,33 @@ impl Keeper {
 
     #[tracing::instrument(skip_all)]
     async fn save(&mut self) -> Result<(), Error> {
-        let reading = self.session.as_ref().and_then(ReadingSession::unsaved);
-        let reached: Vec<ReachedPage> =
-            self.left_unsaved.values().copied().chain(reading).collect();
+        let reading = self
+            .session
+            .as_ref()
+            .and_then(|open| Some((open.unsaved()?, open.continuity())));
+        let reached: Vec<ReachedPage> = self
+            .left_unsaved
+            .values()
+            .copied()
+            .chain(reading.map(|(reached, _)| reached))
+            .collect();
         if reached.is_empty() {
             self.end_failed_run();
             return Ok(());
         }
         let outcome = self
             .store
-            .write(move |writer| write_reached(writer, &reached))
+            .write(move |writer| {
+                let told = write_reached(writer, &reached)?;
+                if let Some((reading, continuity)) = reading {
+                    writer.record_reading(&reading.place(), continuity)?;
+                }
+                Ok(told)
+            })
             .await;
         match outcome {
             Ok(told) => {
-                self.landed(&told, reading);
+                self.landed(&told, reading.map(|(reached, _)| reached));
                 Ok(())
             }
             Err(error) => {
@@ -299,6 +406,7 @@ impl Keeper {
         self.end_failed_run();
         if let (Some(open), Some(reading)) = (self.session.as_mut(), reading) {
             open.saved(reading);
+            open.recorded();
         }
         for &saved in told {
             if self.saved.send(saved).is_err() {
@@ -337,15 +445,11 @@ fn write_reached(
     reached: &[ReachedPage],
 ) -> Result<Vec<ReadingSaved>, Error> {
     let mut told: Vec<ReadingSaved> = Vec::new();
-    for &ReachedPage {
-        book,
-        page,
-        is_last,
-    } in reached
-    {
+    for reached in reached {
+        let ReachedPage { book, page, .. } = *reached;
         writer.set_position(book.0, page)?;
         writer.raise_furthest(book.0, page)?;
-        if is_last {
+        if reached.is_last() {
             writer.set_read(book.0, true)?;
         } else if writer.is_read(book.0)? {
             writer.set_read(book.0, false)?;
@@ -381,19 +485,43 @@ fn answer<T>(asker: Option<oneshot::Sender<T>>, outcome: T) {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::{AtomicU64, Ordering};
+
     use omnileaf_db::{Config, Database, store::reading_state};
     use omnileaf_testkit::ScratchFolder;
     use tokio::time::Duration;
 
     use super::*;
-    use crate::{SystemClock, captured_log::CapturedLog, library_book::sample_book_id as book};
+    use crate::{
+        Clock, SystemClock, captured_log::CapturedLog, library_book::sample_book_id as book,
+    };
 
     const PAGE_COUNT: usize = 8;
     const LAST_PAGE: u32 = 7;
+    const LONGER_THAN_A_BREAK_MS: u64 = 3 * 60_000;
     const REFUSE_SAVES: &str = "CREATE TRIGGER refuse_saves BEFORE INSERT ON sync_register
         BEGIN SELECT RAISE(ABORT, 'saves refused'); END";
 
+    #[derive(Clone)]
+    struct SteppedClock(Arc<AtomicU64>);
+
+    impl SteppedClock {
+        fn advance(&self, ms: u64) {
+            self.0.fetch_add(ms, Ordering::Relaxed);
+        }
+    }
+
+    impl Clock for SteppedClock {
+        fn now_unix_ms(&self) -> u64 {
+            self.0.load(Ordering::Relaxed)
+        }
+    }
+
     fn keeper(folder: &ScratchFolder) -> Keeper {
+        keeper_on(folder, SystemClock)
+    }
+
+    fn keeper_on(folder: &ScratchFolder, clock: impl Clock) -> Keeper {
         let database = Database::open(&Config {
             path: folder.path().join("library.sqlite"),
             backup_dir: folder.path().join("backups"),
@@ -401,7 +529,7 @@ mod tests {
         })
         .unwrap();
         Keeper::new(
-            Arc::new(Store::new(database, SystemClock)),
+            Arc::new(Store::new(database, clock)),
             broadcast::Sender::new(SAVED_BACKLOG),
         )
     }
@@ -420,8 +548,41 @@ mod tests {
     /// Opens and restores the book on its first page, then shows `page`.
     async fn read(keeper: &mut Keeper, book: BookId, page: u32) {
         open(keeper, book).await;
-        keeper.hear(Report::Restored { book, page: 0 }).await;
-        keeper.hear(Report::Shown { book, page }).await;
+        restore(keeper, book, 0).await;
+        keeper
+            .hear(Report::Shown {
+                book,
+                page,
+                utc_offset: UtcOffset::UTC,
+            })
+            .await;
+    }
+
+    async fn restore(keeper: &mut Keeper, book: BookId, page: u32) {
+        let (saved, _) = oneshot::channel();
+        keeper
+            .hear(Report::Restored {
+                book,
+                page,
+                utc_offset: UtcOffset::UTC,
+                saved,
+            })
+            .await;
+    }
+
+    async fn show(keeper: &mut Keeper, book: BookId, page: u32) {
+        keeper
+            .hear(Report::Shown {
+                book,
+                page,
+                utc_offset: UtcOffset::UTC,
+            })
+            .await;
+    }
+
+    async fn put_away(keeper: &mut Keeper) {
+        let (saved, _) = oneshot::channel();
+        keeper.hear(Report::PutAway { saved }).await;
     }
 
     async fn refuse_saves(keeper: &Keeper) {
@@ -475,12 +636,7 @@ mod tests {
         read(&mut keeper, book(1), 3).await;
         read(&mut keeper, book(2), 0).await;
         open(&mut keeper, book(1)).await;
-        keeper
-            .hear(Report::Restored {
-                book: book(1),
-                page: 1,
-            })
-            .await;
+        restore(&mut keeper, book(1), 1).await;
         allow_saves(&keeper).await;
 
         keeper.save().await.unwrap();
@@ -498,6 +654,109 @@ mod tests {
         );
     }
 
+    async fn sessions(keeper: &Keeper) -> Vec<(Vec<u8>, u32)> {
+        keeper
+            .store
+            .database()
+            .read(|connection| {
+                let mut listed =
+                    connection.prepare("SELECT book_id, page FROM reading_session ORDER BY id")?;
+                let rows = listed.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+                Ok(rows.collect::<Result<Vec<_>, _>>()?)
+            })
+            .await
+            .unwrap()
+    }
+
+    fn session_of(book: BookId, page: u32) -> (Vec<u8>, u32) {
+        (book.0.as_bytes().to_vec(), page)
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn records_no_session_for_the_page_left_unsaved_in_a_book_once_it_saves_later() {
+        let folder = ScratchFolder::new("progress-left-unsaved-sessions");
+        let mut keeper = keeper(&folder);
+        refuse_saves(&keeper).await;
+        read(&mut keeper, book(1), 3).await;
+        read(&mut keeper, book(2), 0).await;
+        allow_saves(&keeper).await;
+
+        keeper.save().await.unwrap();
+
+        assert_eq!(
+            sessions(&keeper).await,
+            [session_of(book(1), 0), session_of(book(2), 0)]
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn records_one_new_session_for_a_book_reopened_over_the_page_left_unsaved_in_it() {
+        let folder = ScratchFolder::new("progress-reopened-sessions");
+        let mut keeper = keeper(&folder);
+        refuse_saves(&keeper).await;
+        read(&mut keeper, book(1), 3).await;
+        read(&mut keeper, book(2), 0).await;
+        open(&mut keeper, book(1)).await;
+        restore(&mut keeper, book(1), 1).await;
+        allow_saves(&keeper).await;
+
+        keeper.save().await.unwrap();
+
+        assert_eq!(
+            sessions(&keeper).await,
+            [
+                session_of(book(1), 0),
+                session_of(book(2), 0),
+                session_of(book(1), 1)
+            ]
+        );
+    }
+
+    fn put_away_clock() -> SteppedClock {
+        SteppedClock(Arc::new(AtomicU64::new(1_790_000_000_000)))
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn records_a_new_session_for_reading_on_long_after_a_put_away_whose_save_failed() {
+        let folder = ScratchFolder::new("progress-put-away-unsaved");
+        let clock = put_away_clock();
+        let mut keeper = keeper_on(&folder, clock.clone());
+        read(&mut keeper, book(1), 3).await;
+        refuse_saves(&keeper).await;
+        put_away(&mut keeper).await;
+        allow_saves(&keeper).await;
+        clock.advance(LONGER_THAN_A_BREAK_MS);
+        show(&mut keeper, book(1), 4).await;
+
+        keeper.save().await.unwrap();
+
+        assert_eq!(
+            sessions(&keeper).await,
+            [session_of(book(1), 0), session_of(book(1), 4)]
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn records_a_new_session_for_reading_on_long_after_a_put_away_whose_save_landed_later() {
+        let folder = ScratchFolder::new("progress-put-away-saved-later");
+        let clock = put_away_clock();
+        let mut keeper = keeper_on(&folder, clock.clone());
+        read(&mut keeper, book(1), 3).await;
+        refuse_saves(&keeper).await;
+        put_away(&mut keeper).await;
+        allow_saves(&keeper).await;
+        keeper.save().await.unwrap();
+        clock.advance(LONGER_THAN_A_BREAK_MS);
+        show(&mut keeper, book(1), 4).await;
+
+        keeper.save().await.unwrap();
+
+        assert_eq!(
+            sessions(&keeper).await,
+            [session_of(book(1), 3), session_of(book(1), 4)]
+        );
+    }
+
     #[tokio::test(start_paused = true)]
     async fn marks_each_book_read_or_unread_by_the_later_of_its_pages_saved_together() {
         let folder = ScratchFolder::new("progress-read-by-later-page");
@@ -505,7 +764,8 @@ mod tests {
         let reached = |book, page| ReachedPage {
             book,
             page,
-            is_last: page == LAST_PAGE,
+            page_count: LAST_PAGE + 1,
+            utc_offset: UtcOffset::UTC,
         };
         let pages = [
             reached(book(1), LAST_PAGE),
@@ -568,6 +828,7 @@ mod tests {
             .hear(Report::Shown {
                 book: book(1),
                 page: 4,
+                utc_offset: UtcOffset::UTC,
             })
             .await;
 
@@ -590,6 +851,7 @@ mod tests {
             .hear(Report::Shown {
                 book: book(1),
                 page: 0,
+                utc_offset: UtcOffset::UTC,
             })
             .await;
 
@@ -617,6 +879,7 @@ mod tests {
             .hear(Report::Shown {
                 book: book(1),
                 page: 4,
+                utc_offset: UtcOffset::UTC,
             })
             .await;
         keeper.save().await.unwrap_err();
@@ -642,6 +905,7 @@ mod tests {
             .hear(Report::Shown {
                 book: book(1),
                 page: 0,
+                utc_offset: UtcOffset::UTC,
             })
             .await;
         keeper.save().await.unwrap();
@@ -649,6 +913,7 @@ mod tests {
             .hear(Report::Shown {
                 book: book(1),
                 page: 4,
+                utc_offset: UtcOffset::UTC,
             })
             .await;
 
@@ -673,12 +938,7 @@ mod tests {
         open(&mut keeper, book(1)).await;
         open(&mut keeper, book(2)).await;
 
-        keeper
-            .hear(Report::Restored {
-                book: book(1),
-                page: 0,
-            })
-            .await;
+        restore(&mut keeper, book(1), 0).await;
         let (saved, _) = oneshot::channel();
         keeper
             .hear(Report::Closed {
