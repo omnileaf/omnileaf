@@ -141,3 +141,11 @@ test("leaves out a ported folder no bundled module comes from, even one named li
 
   expect(isShipped).toBe(false);
 });
+
+test("ships a ported folder named with Windows separators once a bundled module comes from it", () => {
+  const isShipped = isFolderShipped("C:\\work\\app\\src\\lib\\ported", [
+    "C:/work/app/src/lib/ported/drag.ts",
+  ]);
+
+  expect(isShipped).toBe(true);
+});

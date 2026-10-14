@@ -55,11 +55,17 @@ export function packageRootOf(moduleId: string): string | undefined {
   ].join("/");
 }
 
+function withForwardSlashes(path: string): string {
+  return path.replaceAll("\\", "/");
+}
+
+/** Matches paths of either separator, since Node names the folder with backslashes on Windows while Vite names modules with slashes. */
 export function isFolderShipped(
   folder: string,
   moduleIds: readonly string[],
 ): boolean {
-  return moduleIds.some((id) => id.startsWith(`${folder}/`));
+  const inside = `${withForwardSlashes(folder)}/`;
+  return moduleIds.some((id) => withForwardSlashes(id).startsWith(inside));
 }
 
 /** The licence a package's manifest declares, else the one it is known to ship without declaring. */
