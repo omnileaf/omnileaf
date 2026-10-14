@@ -17,6 +17,7 @@ const STORED: LibraryView = {
   display: "list",
   coversPerRow: { phone: 4, tablet: 6, desktop: 9 },
   showsItemCounts: true,
+  showsContinueRow: true,
   onCovers: { ...DEFAULT_LIBRARY_VIEW.onCovers, showsLanguage: true },
 };
 const COMPACT: LibraryView = { ...STORED, display: "compact" };

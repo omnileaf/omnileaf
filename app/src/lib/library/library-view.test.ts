@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import { DEFAULT_LIBRARY_VIEW, type LibraryView } from "#lib/ipc/bindings.ts";
 
 import {
+  withContinueRow,
   withCoversPerRow,
   withDisplay,
   withItemCounts,
@@ -13,6 +14,7 @@ const VIEW: LibraryView = {
   display: "grid",
   coversPerRow: { phone: 3, tablet: 5, desktop: 6 },
   showsItemCounts: false,
+  showsContinueRow: false,
   onCovers: DEFAULT_LIBRARY_VIEW.onCovers,
 };
 
@@ -49,6 +51,13 @@ test("turns the item counts on and off", () => {
 
   expect(shown.showsItemCounts).toBe(true);
   expect(withItemCounts(shown, false)).toEqual(DEFAULT_LIBRARY_VIEW);
+});
+
+test("turns the Continue reading row on and off", () => {
+  const shown = withContinueRow(DEFAULT_LIBRARY_VIEW, true);
+
+  expect(shown.showsContinueRow).toBe(true);
+  expect(withContinueRow(shown, false)).toEqual(DEFAULT_LIBRARY_VIEW);
 });
 
 test("turns one thing covers show on or off and keeps the rest", () => {

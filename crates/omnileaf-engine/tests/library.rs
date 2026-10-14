@@ -765,6 +765,7 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
             desktop: DesktopCoversPerRow::try_from(9).unwrap(),
         },
         shows_item_counts: true,
+        shows_continue_row: true,
         on_covers: OnCovers {
             shows_unread_count: false,
             shows_downloaded: false,

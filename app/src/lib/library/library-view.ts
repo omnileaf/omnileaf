@@ -36,6 +36,13 @@ export function withCoversPerRow(
   };
 }
 
+export function withContinueRow(
+  view: LibraryView,
+  showsContinueRow: boolean,
+): LibraryView {
+  return { ...view, showsContinueRow };
+}
+
 export function withItemCounts(
   view: LibraryView,
   showsItemCounts: boolean,

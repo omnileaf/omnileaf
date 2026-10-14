@@ -5,6 +5,7 @@
     OnCovers,
   } from "#lib/ipc/bindings.ts";
 
+  import ContinueRowChoice from "./ContinueRowChoice.svelte";
   import CoversPerRowStepper from "./CoversPerRowStepper.svelte";
   import DisplayChoice from "./DisplayChoice.svelte";
   import ItemCountsChoice from "./ItemCountsChoice.svelte";
@@ -12,6 +13,7 @@
   import {
     SCREEN_SIZES,
     type ScreenSize,
+    withContinueRow,
     withCoversPerRow,
     withDisplay,
     withItemCounts,
@@ -60,6 +62,12 @@
   isShown={view.showsItemCounts}
   onChoose={(isShown: boolean) => {
     onChoose(withItemCounts(view, isShown));
+  }}
+/>
+<ContinueRowChoice
+  isShown={view.showsContinueRow}
+  onChoose={(isShown: boolean) => {
+    onChoose(withContinueRow(view, isShown));
   }}
 />
 <OnCoversChoice
