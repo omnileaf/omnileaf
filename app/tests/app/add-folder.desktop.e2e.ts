@@ -1,4 +1,7 @@
-import { expect, test } from "vitest";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+
+import { expect, onTestFinished, test } from "vitest";
 
 import {
   mainNavigationLink,
@@ -47,6 +50,11 @@ return series !== null && series.children.length > 0 && getComputedStyle(series)
 const EVERY_COVER_SHOWN = `const covers = [...document.querySelectorAll("ul[aria-label='Series'] img")];
 return covers.length === ${String(SAMPLE_LIBRARY.series)} && covers.every((cover) => cover.complete && cover.naturalWidth > 0);`;
 
+const FIRST_COVER = `return document.querySelector("ul[aria-label='Series'] img")?.src ?? null;`;
+
+const COVER_ON_PAGE_SHOWN = `const cover = document.querySelector("img");
+return cover !== null && cover.complete && cover.naturalWidth > 0;`;
+
 const SCAN_REPORT = `Found ${String(SAMPLE_LIBRARY.books)} books in ${String(SAMPLE_LIBRARY.series)} series in ${SAMPLE_LIBRARY.name}.`;
 
 const appSession = useAppSession();
@@ -79,6 +87,50 @@ test("shows the cover of every series it found, read through the app's own proto
 
   await expect(shown).resolves.toBeUndefined();
 });
+
+async function servePageShowing(cover: string): Promise<URL> {
+  const server = createServer((_request, response) => {
+    response.writeHead(200, { "content-type": "text/html" });
+    response.end(`<!doctype html><img alt="" src="${cover}">`);
+  });
+  await new Promise<void>((listening) => {
+    server.listen(0, "127.0.0.1", listening);
+  });
+  onTestFinished(() => {
+    server.close();
+  });
+  const { port } = server.address() as AddressInfo;
+  return new URL(`http://127.0.0.1:${String(port)}/`);
+}
+
+test.runIf(process.platform === "linux")(
+  "shows a cover to a page served over http, as the dev server serves the app's",
+  async () => {
+    await openLibrarySettings();
+    await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
+    await appSession().waitFor(FINISHED_SCAN_REPORT);
+    await openLibraryPage(appSession());
+    await appSession().waitUntil(
+      EVERY_COVER_SHOWN,
+      "a loaded cover for every series",
+    );
+    const cover = String(await appSession().run(FIRST_COVER));
+    const page = await servePageShowing(cover);
+    onTestFinished(async () => {
+      await appSession().run("setTimeout(() => history.back()); return null;");
+    });
+
+    await appSession().run(
+      `setTimeout(() => location.assign(${JSON.stringify(page.href)})); return null;`,
+    );
+
+    const shown = appSession().waitUntil(
+      `return location.origin === ${JSON.stringify(page.origin)} && (() => { ${COVER_ON_PAGE_SHOWN} })();`,
+      "the cover on the page served over http",
+    );
+    await expect(shown).resolves.toBeUndefined();
+  },
+);
 
 test("adds a folder from Settings › Library and lists it there", async () => {
   await openLibrarySettings();

@@ -62,6 +62,7 @@ tracing = "0.1.44"
 tracing-subscriber = "0.3.23"
 unicode-normalization = "0.1.25"
 uuid = { version = "1.26.1", default-features = false, features = ["v8"] }
+webkit2gtk = { version = "2.0.2", features = ["v2_34"] }
 windows-sys = { version = "0.61.2", features = ["Win32_Storage_FileSystem", "Win32_System_Power"] }
 zbus = { version = "5.19.0", default-features = false, features = ["tokio"] }
 zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2"] }
