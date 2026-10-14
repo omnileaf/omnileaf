@@ -389,15 +389,15 @@ test("hides and shows the controls with a tap in the middle of the page and the 
 const CONTROLS_HIDE_AFTER_MS = 3000;
 /** Playwright's clock draws a frame every 16ms, and the controls count their time from the frame they are drawn in. */
 const FRAME_MS = 16;
-/** Long enough for the book to open, and well short of the time the controls stay up for. */
-const OPENING_MS = 1000;
+/** Far enough ahead for the pause to arrive before it, and well short of the time the controls stay up for. */
+const CONTROLS_PAUSE_AHEAD_MS = 500;
 
 /** Opens the book and holds its clock still before the controls would hide by themselves. */
 async function openBookBeforeControlsHide(page: Page): Promise<void> {
   await page.clock.install();
-  const opened = await page.evaluate(() => Date.now());
   await openBook(page);
-  await page.clock.pauseAt(opened + OPENING_MS);
+  const opened = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(opened + CONTROLS_PAUSE_AHEAD_MS);
 }
 
 test("shows the controls as a book opens, then hides them by themselves", async ({
