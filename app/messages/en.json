@@ -1144,6 +1144,26 @@
   "reader_light": "Light",
   "reader_keyboard_shortcuts": "Keyboard shortcuts",
   "reader_bookmark": "Bookmark this page",
+  "reader_settings": "Reading settings",
+  "reader_more": "More",
+  "reader_mark_read": "Mark read",
+  "reader_start_over": "Start over",
+  "reader_show_file": "Show the file",
+  "reader_show_in_folder": "Show in folder",
+  "reader_book_at_page": [
+    {
+      "declarations": [
+        "input title",
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "{title} · Page {formattedPage} of {formattedCount}"
+      }
+    }
+  ],
   "reader_coming_soon": "{feature} · coming soon",
   "reader_next_key": "→",
   "reader_finished": "{title} finished",
@@ -1161,7 +1181,11 @@
   "reader_now_reading": "Now reading {title}",
   "reader_direction": "Reading direction",
   "reader_direction_automatic": "Automatic",
-  "reader_direction_auto": "Auto",
+  "reader_direction_auto": "AUTO",
+  "reader_direction_automatic_left_to_right": "Automatic (left to right)",
+  "reader_direction_automatic_right_to_left": "Automatic (right to left)",
+  "reader_direction_found": "Found in its details. Remembered for {series}.",
+  "reader_direction_remembered": "Remembered for {series}.",
   "reader_left_to_right": "Left to right",
   "reader_right_to_left": "Right to left",
   "reader_nearby_pages": "Nearby pages",

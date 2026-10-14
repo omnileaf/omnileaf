@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { ArrowLeftRight } from "@lucide/svelte";
+  import {
+    ArrowLeft,
+    ArrowLeftRight,
+    ArrowRight,
+    ChevronDown,
+    Scan,
+  } from "@lucide/svelte";
   import { DropdownMenu } from "bits-ui";
 
   import {
@@ -11,6 +17,7 @@
   import {
     QUICK_SETTING_ICON_SIZE,
     QUICK_SETTING_LOOK,
+    QUICK_SETTING_ON,
   } from "#lib/reader/quick-setting.ts";
   import {
     DIRECTION_CHOICES,
@@ -18,19 +25,37 @@
     type SeriesReadingDirection,
   } from "#lib/reader/reading-direction.svelte.ts";
 
-  const CHOICE_NAMES = {
-    automatic: m.reader_direction_automatic,
+  const DIRECTION_NAMES = {
     leftToRight: m.reader_left_to_right,
     rightToLeft: m.reader_right_to_left,
-  } satisfies Record<DirectionChoice, () => string>;
+  } as const;
+  const AUTOMATIC_NAMES = {
+    leftToRight: m.reader_direction_automatic_left_to_right,
+    rightToLeft: m.reader_direction_automatic_right_to_left,
+  } as const;
+  const CHOICE_ICONS = {
+    automatic: Scan,
+    leftToRight: ArrowRight,
+    rightToLeft: ArrowLeft,
+  } as const;
 
   let {
     reading,
+    seriesTitle,
     onOpenChange,
   }: {
     reading: SeriesReadingDirection;
+    seriesTitle: string;
     onOpenChange: (isOpen: boolean) => void;
   } = $props();
+
+  const isAutomatic = $derived(reading.choice === "automatic");
+
+  function choiceName(choice: DirectionChoice): string {
+    return choice === "automatic"
+      ? AUTOMATIC_NAMES[reading.direction]()
+      : DIRECTION_NAMES[choice]();
+  }
 
   function choose(value: string): void {
     const choice = DIRECTION_CHOICES.find((candidate) => candidate === value);
@@ -44,9 +69,7 @@
   <DropdownMenu.Trigger
     class={[
       QUICK_SETTING_LOOK,
-      reading.direction === "rightToLeft"
-        ? "bg-reader-lit text-on-reader-lit"
-        : "hover:tint-reader-hover active:tint-reader-pressed",
+      reading.direction === "rightToLeft" && QUICK_SETTING_ON,
     ]}
   >
     <ArrowLeftRight
@@ -54,23 +77,54 @@
       aria-hidden="true"
       class="shrink-0"
     />
-    <span class="flex flex-wrap items-center justify-center gap-xs">
-      {CHOICE_NAMES[reading.direction]()}
-      {#if reading.isDetected}
+    <span class="grid">
+      {#each ["leftToRight", "rightToLeft"] as const as shown (shown)}
         <span
-          class="rounded-full bg-reader-lit px-xs text-reader-thumbnail font-bold tracking-overline text-reader-accent uppercase"
-          >{m.reader_direction_auto()}</span
+          class={[
+            "col-start-1 row-start-1",
+            reading.direction !== shown && "invisible",
+          ]}
+          aria-hidden={reading.direction !== shown}
         >
-      {/if}
+          {DIRECTION_NAMES[shown]()}
+        </span>
+      {/each}
     </span>
+    <span
+      class={[
+        "rounded-shadcn-control border border-border px-xs text-caption font-medium",
+        !isAutomatic && "invisible",
+      ]}
+      aria-hidden={!isAutomatic}
+    >
+      {m.reader_direction_auto()}
+    </span>
+    <ChevronDown
+      size={QUICK_SETTING_ICON_SIZE}
+      aria-hidden="true"
+      class="hidden shrink-0 opacity-50 expanded:block"
+    />
   </DropdownMenu.Trigger>
-  <DropdownMenuContent aria-label={m.reader_direction()}>
+  <DropdownMenuContent to="main" aria-label={m.reader_direction()}>
+    <p class="px-sm py-icon-gap text-caption font-medium text-muted">
+      {m.reader_direction()}
+    </p>
     <DropdownMenu.RadioGroup value={reading.choice} onValueChange={choose}>
       {#each DIRECTION_CHOICES as choice (choice)}
-        <DropdownMenuRadioItem value={choice}
-          >{CHOICE_NAMES[choice]()}</DropdownMenuRadioItem
-        >
+        {@const Icon = CHOICE_ICONS[choice]}
+        <DropdownMenuRadioItem value={choice}>
+          <span class="flex items-center gap-sm">
+            <Icon size={QUICK_SETTING_ICON_SIZE} aria-hidden="true" />
+            {choiceName(choice)}
+          </span>
+        </DropdownMenuRadioItem>
       {/each}
     </DropdownMenu.RadioGroup>
+    <DropdownMenu.Separator class="-mx-xs my-xs border-bs border-border" />
+    <p class="px-sm py-icon-gap text-caption text-muted max-inline-reader-note">
+      {reading.isDetected
+        ? m.reader_direction_found({ series: seriesTitle })
+        : m.reader_direction_remembered({ series: seriesTitle })}
+    </p>
   </DropdownMenuContent>
 </DropdownMenu.Root>

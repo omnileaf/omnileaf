@@ -1144,6 +1144,26 @@
   "reader_light": "⟦Ļíĝĥţ··⟧",
   "reader_keyboard_shortcuts": "⟦Ķéýƀöáŕð šĥöŕţçûţš········⟧",
   "reader_bookmark": "⟦Ɓööķɱáŕķ ţĥíš þáĝé········⟧",
+  "reader_settings": "⟦Ŕéáðíñĝ šéţţíñĝš·······⟧",
+  "reader_more": "⟦Ṁöŕé··⟧",
+  "reader_mark_read": "⟦Ṁáŕķ ŕéáð····⟧",
+  "reader_start_over": "⟦Šţáŕţ öṽéŕ····⟧",
+  "reader_show_file": "⟦Šĥöŵ ţĥé ƒíļé······⟧",
+  "reader_show_in_folder": "⟦Šĥöŵ íñ ƒöļðéŕ······⟧",
+  "reader_book_at_page": [
+    {
+      "declarations": [
+        "input title",
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "⟦{title} · Þáĝé {formattedPage} öƒ {formattedCount}····················⟧"
+      }
+    }
+  ],
   "reader_coming_soon": "⟦{feature} · çöɱíñĝ šööñ··········⟧",
   "reader_next_key": "⟦→·⟧",
   "reader_finished": "⟦{title} ƒíñíšĥéð·······⟧",
@@ -1161,7 +1181,11 @@
   "reader_now_reading": "⟦Ñöŵ ŕéáðíñĝ {title}········⟧",
   "reader_direction": "⟦Ŕéáðíñĝ ðíŕéçţíöñ·······⟧",
   "reader_direction_automatic": "⟦Áûţöɱáţíç····⟧",
-  "reader_direction_auto": "⟦Áûţö··⟧",
+  "reader_direction_auto": "⟦ÁÛŢÖ··⟧",
+  "reader_direction_automatic_left_to_right": "⟦Áûţöɱáţíç (ļéƒţ ţö ŕíĝĥţ)··········⟧",
+  "reader_direction_automatic_right_to_left": "⟦Áûţöɱáţíç (ŕíĝĥţ ţö ļéƒţ)··········⟧",
+  "reader_direction_found": "⟦Ƒöûñð íñ íţš ðéţáíļš. Ŕéɱéɱƀéŕéð ƒöŕ {series}.···················⟧",
+  "reader_direction_remembered": "⟦Ŕéɱéɱƀéŕéð ƒöŕ {series}.··········⟧",
   "reader_left_to_right": "⟦Ļéƒţ ţö ŕíĝĥţ······⟧",
   "reader_right_to_left": "⟦Ŕíĝĥţ ţö ļéƒţ······⟧",
   "reader_nearby_pages": "⟦Ñéáŕƀý þáĝéš·····⟧",

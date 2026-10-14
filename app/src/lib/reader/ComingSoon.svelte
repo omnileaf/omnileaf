@@ -18,7 +18,7 @@
   aria-disabled="true"
   aria-label={label}
   class={cn(
-    "text-reader-muted focus-visible:outline-2 focus-visible:outline-reader-accent",
+    "text-muted focus-visible:outline-2 focus-visible:outline-accent",
     className,
   )}
 >
