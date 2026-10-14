@@ -2,7 +2,7 @@
   import type { OnCovers } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import SwitchTrack from "./SwitchTrack.svelte";
+  import SwitchLookCheckbox from "./SwitchLookCheckbox.svelte";
 
   interface Choice {
     readonly name: keyof OnCovers;
@@ -49,16 +49,15 @@
     <label
       class="flex items-center gap-md text-body min-block-touch-target large:gap-label large:text-small large:min-block-checkbox-row"
     >
-      <input
-        type="checkbox"
-        class="peer sr-only large:not-sr-only large:order-first large:m-none large:shrink-0 large:accent-accent large:block-lg large:inline-lg"
-        checked={onCovers[choice.name]}
-        onchange={(event) => {
-          onChoose(choice.name, event.currentTarget.checked);
-        }}
+      <SwitchLookCheckbox
+        bind:checked={
+          () => onCovers[choice.name],
+          (isShown: boolean) => {
+            onChoose(choice.name, isShown);
+          }
+        }
       />
       <span class="flex-1">{choice.label()}</span>
-      <SwitchTrack class="large:hidden" />
     </label>
   {/each}
 </div>
