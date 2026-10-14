@@ -128,11 +128,21 @@ fn title_of(number: u32) -> String {
     format!("{SERIES} v{number:02}")
 }
 
-fn neighbour(number: u32) -> SeriesNeighbour {
-    SeriesNeighbour {
-        id: book(number),
-        title: title_of(number),
-    }
+type Named = (BookId, String);
+
+fn neighbour(number: u32) -> Named {
+    (book(number), title_of(number))
+}
+
+fn named(place: Option<PlaceInSeries>) -> Option<(u32, Option<Named>, Option<Named>)> {
+    let name = |neighbour: SeriesNeighbour| (neighbour.id, neighbour.title);
+    place.map(|place| {
+        (
+            place.position,
+            place.previous.map(name),
+            place.next.map(name),
+        )
+    })
 }
 
 fn location_of(number: u32) -> PathBuf {
@@ -297,12 +307,32 @@ async fn places_a_book_in_its_series_between_the_books_either_side_in_title_orde
     let place = library.place_of(book(2)).await;
 
     assert_eq!(
-        place,
-        Some(PlaceInSeries {
-            position: 2,
-            previous: Some(neighbour(1)),
-            next: Some(neighbour(3)),
-        })
+        named(place),
+        Some((2, Some(neighbour(1)), Some(neighbour(3))))
+    );
+}
+
+#[tokio::test]
+async fn shows_the_next_book_by_its_own_cover_and_how_far_it_was_read() {
+    let library = Library::open("place-next-cover").await;
+    for number in [1, 2] {
+        library.record(number, location_of(number), 100).await;
+    }
+    set_position(&library.store, book(2), 13).await.unwrap();
+
+    let next = library.place_of(book(1)).await.and_then(|place| place.next);
+
+    assert_eq!(
+        next.map(|next| (
+            next.cover.map(|cover| (cover.book, cover.rev)),
+            next.reading
+        )),
+        Some((
+            Some((book(2), 1)),
+            BookReading::Started {
+                position_page: Some(13)
+            }
+        ))
     );
 }
 
@@ -316,22 +346,8 @@ async fn gives_the_first_book_none_before_it_and_the_last_none_after_it() {
     let first = library.place_of(book(1)).await;
     let last = library.place_of(book(2)).await;
 
-    assert_eq!(
-        first,
-        Some(PlaceInSeries {
-            position: 1,
-            previous: None,
-            next: Some(neighbour(2)),
-        })
-    );
-    assert_eq!(
-        last,
-        Some(PlaceInSeries {
-            position: 2,
-            previous: Some(neighbour(1)),
-            next: None,
-        })
-    );
+    assert_eq!(named(first), Some((1, None, Some(neighbour(2)))));
+    assert_eq!(named(last), Some((2, Some(neighbour(1)), None)));
 }
 
 #[tokio::test]

@@ -71,6 +71,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   readingHistory: () => ({ entries: [], next: null }),
   readingTimeSince: () => 0,
   readingTimeBetween: () => 0,
+  bookReadTime: () => 0,
   libraryListing: () => DEFAULT_LIBRARY_LISTING,
   setLibraryListing: () => null,
   libraryView: () => DEFAULT_LIBRARY_VIEW,

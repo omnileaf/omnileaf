@@ -23,7 +23,9 @@ use omnileaf_db::{
         RootKind, RootLocator, ScannedBook, add_root, record_scanned_books, remove_book_files,
         remove_books_without_files,
     },
-    history::{HistoryEntry, history_page, reading_time_by_day, reading_time_since},
+    history::{
+        HistoryEntry, book_reading_time, history_page, reading_time_by_day, reading_time_since,
+    },
     store::{Continuity, SessionPlace, Store},
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
@@ -156,6 +158,14 @@ impl History {
         self.store
             .database()
             .read(move |connection| reading_time_by_day(connection, days))
+            .await
+            .unwrap()
+    }
+
+    async fn spent_on(&self, book: BookId) -> i64 {
+        self.store
+            .database()
+            .read(move |connection| book_reading_time(connection, book))
             .await
             .unwrap()
     }
@@ -437,4 +447,31 @@ async fn reads_nothing_on_a_day_with_no_reading() {
     );
 
     assert_eq!((by_day, since), (BTreeMap::new(), 0));
+}
+
+#[tokio::test]
+async fn adds_up_the_time_spent_reading_one_book_over_its_sessions() {
+    let history = History::open("history-book-time").await;
+    let earlier_ms = NOW_UNIX_MS - DAY_MS;
+    history
+        .read(book(2), earlier_ms, earlier_ms + 20 * MINUTE_MS, 7)
+        .await;
+    history
+        .read(
+            book(3),
+            NOW_UNIX_MS - HOUR_MS,
+            NOW_UNIX_MS - 50 * MINUTE_MS,
+            0,
+        )
+        .await;
+    history
+        .read(book(2), NOW_UNIX_MS - 30 * MINUTE_MS, NOW_UNIX_MS, 23)
+        .await;
+
+    let spent = [
+        history.spent_on(book(2)).await,
+        history.spent_on(book(1)).await,
+    ];
+
+    assert_eq!(spent, [ms(50 * MINUTE_MS), 0]);
 }
