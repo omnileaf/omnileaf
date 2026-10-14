@@ -14,7 +14,7 @@
   bind:ref
   data-slot="toggle-group-item"
   class={cn(
-    "room-for-bold-label items-center justify-center rounded-small-control px-md text-detail font-medium whitespace-nowrap text-muted transition-control min-block-segment aria-checked:bg-card aria-checked:font-bold aria-checked:text-foreground aria-checked:shadow-raised",
+    "room-for-bold-label items-center justify-center rounded-small-control px-md text-detail font-medium whitespace-nowrap text-foreground transition-control min-block-segment aria-checked:bg-card aria-checked:font-bold aria-checked:text-foreground aria-checked:shadow-raised",
     className,
   )}
   {...restProps}
