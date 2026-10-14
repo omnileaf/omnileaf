@@ -57,7 +57,7 @@ test("continues the book read last from History on the page it was left on", asy
     `page ${String(PAGE_READ_TO)} shown again`,
   );
   await appSession().waitFor(
-    xpath("//main/h1[normalize-space()='Sample Series 01 v03']"),
+    xpath("//main//h1[normalize-space()='Sample Series 01 v03']"),
   );
   const count = await appSession().waitFor(shownPageCount(PAGE_READ_TO, 8));
   expect(await count.text()).toBe("3 / 8");

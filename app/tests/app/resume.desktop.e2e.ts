@@ -124,7 +124,7 @@ test(
       `page ${String(PAGE_READ_TO)} shown again`,
     );
     await current().waitFor(
-      xpath("//main/h1[normalize-space()='Sample Series 01 v01']"),
+      xpath("//main//h1[normalize-space()='Sample Series 01 v01']"),
     );
     const count = await current().waitFor(
       xpath(`//main//span[normalize-space()='${String(PAGE_READ_TO)} / 8']`),

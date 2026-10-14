@@ -18,7 +18,7 @@ import { xpath } from "./webdriver.ts";
 const FIRST_BOOK_LINK = sampleBookLink(1);
 const SERIES_HEADING = xpath("//h1[normalize-space()='Sample Series 01']");
 const FIRST_BOOK_HEADING = xpath(
-  "//main/h1[normalize-space()='Sample Series 01 v01']",
+  "//main//h1[normalize-space()='Sample Series 01 v01']",
 );
 const PAGE_COUNT_SHOWN = xpath(
   "//main//span[contains(normalize-space(), ' / 8')]",
