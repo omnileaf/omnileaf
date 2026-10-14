@@ -273,6 +273,7 @@ export const TOKEN_THEME = {
     "reader-panel-inline",
     "reader-panel-inline-wide",
     "reader-panel-top",
+    "reader-quick",
     "reader-slider",
     "reader-slider-wide",
     "reader-spinner",

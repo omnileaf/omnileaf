@@ -9,6 +9,7 @@
   import { standInOpenedBook } from "#lib/series/series-stand-ins.ts";
   import { shortcut } from "#lib/shortcut.ts";
 
+  import DirectionMenu from "#lib/reader/DirectionMenu.svelte";
   import { PageTurner } from "#lib/reader/page-turner.svelte.ts";
   import PageStack from "#lib/reader/PageStack.svelte";
   import {
@@ -23,7 +24,12 @@
     type ReadingCore,
     ReadingReport,
   } from "#lib/reader/reading-report.ts";
-  import { Swipe, type SwipeTurn } from "#lib/reader/swipe.ts";
+  import {
+    inReadingOrder,
+    type PageTurn,
+    seriesReadingDirection,
+  } from "#lib/reader/reading-direction.svelte.ts";
+  import { Swipe } from "#lib/reader/swipe.ts";
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
 
   const SWIPE_MIN_PX = 48;
@@ -34,9 +40,13 @@
   /** How near the window's top or bottom the pointer brings hidden controls back. */
   const REVEAL_EDGE_PX = 48;
   const TURN_STEPS = { next: 1, previous: -1 } as const satisfies Record<
-    SwipeTurn,
+    PageTurn,
     number
   >;
+  const TURN_LABELS = {
+    next: m.reader_next_page,
+    previous: m.reader_previous_page,
+  } satisfies Record<PageTurn, () => string>;
 
   const CORE: ReadingCore = {
     restored: (id, page) =>
@@ -62,6 +72,9 @@
   );
   const swipe = new Swipe(SWIPE_MIN_PX);
   const controls = new ReaderControls(CONTROLS_HIDE_AFTER_MS);
+  const reading = untrack(() => seriesReadingDirection(book.series));
+  const leftTurn = $derived(inReadingOrder("previous", reading.direction));
+  const rightTurn = $derived(inReadingOrder("next", reading.direction));
   let heading: HTMLHeadingElement | undefined = $state();
   let viewportScale = $state(RESTING_SCALE);
 
@@ -188,7 +201,7 @@
   function onSwipeEnd(event: PointerEvent): void {
     const turn = swipe.ended(event);
     if (turn !== undefined && !isZoomedIn(viewportScale)) {
-      turnBy(TURN_STEPS[turn]);
+      turnBy(TURN_STEPS[inReadingOrder(turn, reading.direction)]);
     }
   }
 
@@ -217,7 +230,22 @@
   });
 </script>
 
-<svelte:window {@attach shortcut(...readerShortcuts(act))} />
+<svelte:window
+  {@attach shortcut(...readerShortcuts(act, () => reading.direction))}
+/>
+
+{#snippet quickSettings()}
+  <DirectionMenu
+    {reading}
+    onOpenChange={(isOpen: boolean) => {
+      if (isOpen) {
+        controls.hold();
+      } else {
+        controls.release();
+      }
+    }}
+  />
+{/snippet}
 
 <main
   class="fixed inset-none overflow-hidden bg-reader text-on-reader expanded:bg-reader-wide"
@@ -247,10 +275,10 @@
   >
     <button
       type="button"
-      aria-label={m.reader_previous_page()}
+      aria-label={TURN_LABELS[leftTurn]()}
       class="shrink-0 cursor-w-resize inline-3/10 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent expanded:inline-1/3"
       onclick={(event) => {
-        onZone(event, "previous");
+        onZone(event, leftTurn);
       }}
     ></button>
     <button
@@ -265,10 +293,10 @@
     ></button>
     <button
       type="button"
-      aria-label={m.reader_next_page()}
+      aria-label={TURN_LABELS[rightTurn]()}
       class="shrink-0 cursor-e-resize inline-3/10 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent expanded:inline-1/3"
       onclick={(event) => {
-        onZone(event, "next");
+        onZone(event, rightTurn);
       }}
     ></button>
   </div>
@@ -283,6 +311,7 @@
       {seriesHref}
       seriesTitle={named.seriesTitle}
       bookTitle={named.title}
+      {quickSettings}
       onFullScreen={() => {
         act("fullScreen");
       }}
@@ -301,6 +330,8 @@
       shown={turner.shown}
       previous={named.previous}
       next={named.next}
+      direction={reading.direction}
+      {quickSettings}
       onSeek={(index: number) => {
         turner.goTo(index);
       }}

@@ -408,6 +408,7 @@
   --spacing-reader-bar-inline-wide: 0.375rem;
   --spacing-reader-control: 2.75rem;
   --spacing-reader-control-wide: 2.375rem;
+  --spacing-reader-quick: 3.25rem;
   --spacing-reader-back-start-wide: 0.375rem;
   --spacing-reader-title-start-wide: 0.625rem;
   --spacing-reader-divider: 1.375rem;
@@ -666,6 +667,8 @@
   --color-reader-track-wide: rgb(241 237 228 / 0.2);
   --color-reader-hover: rgb(241 237 228 / 0.08);
   --color-reader-pressed: rgb(241 237 228 / 0.14);
+  --color-reader-lit: #243a2c;
+  --color-on-reader-lit: #bfe6cc;
 
   --transition-duration-fade: 150ms;
   --transition-duration-grow: 200ms;

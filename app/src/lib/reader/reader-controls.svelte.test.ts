@@ -95,3 +95,16 @@ test("hides nothing once stopped, as when the reader closes", () => {
 
   expect(controls.isShown).toBe(true);
 });
+
+test("keeps the controls while a menu opened from them is up, though focus moves into it, then hides them the delay after it closes", () => {
+  const controls = new ReaderControls(HIDE_AFTER_MS);
+  controls.hold();
+  controls.blurred();
+
+  vi.advanceTimersByTime(HIDE_AFTER_MS * 2);
+  const isShownWhileHeld = controls.isShown;
+  controls.release();
+  vi.advanceTimersByTime(HIDE_AFTER_MS);
+
+  expect([isShownWhileHeld, controls.isShown]).toEqual([true, false]);
+});

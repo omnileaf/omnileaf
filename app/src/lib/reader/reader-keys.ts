@@ -1,3 +1,7 @@
+import {
+  inReadingOrder,
+  type ReadingDirection,
+} from "#lib/reader/reading-direction.svelte.ts";
 import type { Shortcut } from "#lib/shortcut.ts";
 
 export type ReaderAction =
@@ -8,6 +12,8 @@ export type ReaderAction =
   | "toggleControls"
   | "fullScreen"
   | "leave";
+
+const ARROWS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowRight"]);
 
 type ReaderKey = Pick<Shortcut, "key" | "shift"> & {
   readonly action: ReaderAction;
@@ -27,15 +33,24 @@ const READER_KEYS: readonly ReaderKey[] = [
   { key: "f", action: "fullScreen" },
 ];
 
-/** The reader's keys, taken on its slider too since the shortcut leaves a slider its own keys. */
+function isPageTurn(action: ReaderAction): action is "next" | "previous" {
+  return action === "next" || action === "previous";
+}
+
+/** The reader's keys, taken on its slider too since the shortcut leaves a slider its own keys, with the arrows turning the way the book reads. */
 export function readerShortcuts(
   act: (action: ReaderAction) => void,
+  direction: () => ReadingDirection,
 ): Shortcut[] {
   return READER_KEYS.map(({ action, ...keys }) => ({
     ...keys,
     inTextFields: true,
     run: () => {
-      act(action);
+      act(
+        ARROWS.has(keys.key) && isPageTurn(action)
+          ? inReadingOrder(action, direction())
+          : action,
+      );
     },
   }));
 }

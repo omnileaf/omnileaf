@@ -3,6 +3,7 @@ import { afterEach, expect, test } from "vitest";
 import { shortcut } from "#lib/shortcut.ts";
 
 import { type ReaderAction, readerShortcuts } from "./reader-keys";
+import type { ReadingDirection } from "./reading-direction.svelte";
 
 const detachments: (() => void)[] = [];
 
@@ -15,13 +16,17 @@ afterEach(() => {
 function actionsFor(
   presses: readonly KeyboardEventInit[],
   target: EventTarget = document.body,
+  direction: ReadingDirection = "leftToRight",
 ): ReaderAction[] {
   const actions: ReaderAction[] = [];
   detachments.push(
     shortcut(
-      ...readerShortcuts((action) => {
-        actions.push(action);
-      }),
+      ...readerShortcuts(
+        (action) => {
+          actions.push(action);
+        },
+        () => direction,
+      ),
     )(window),
   );
   for (const init of presses) {
@@ -54,6 +59,21 @@ test("turns back with the left arrow, Page Up and Shift with Space", () => {
   ]);
 
   expect(actions).toEqual(["previous", "previous", "previous"]);
+});
+
+test("turns on with the left arrow and back with the right in a book read right to left, leaving the other keys as they are", () => {
+  const actions = actionsFor(
+    [
+      { key: "ArrowLeft" },
+      { key: "ArrowRight" },
+      { key: "PageDown" },
+      { key: " ", code: "Space" },
+    ],
+    document.body,
+    "rightToLeft",
+  );
+
+  expect(actions).toEqual(["next", "previous", "next", "next"]);
 });
 
 test("jumps to the first and last pages with Home and End", () => {
