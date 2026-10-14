@@ -183,7 +183,9 @@ export type HistoryEntry = {
 };
 
 /**  Which reading sessions a page of History lists. */
-export type HistoryOf = { kind: "everything" } | { kind: "series"; series: string & { readonly __brand: "SeriesId" } } | { kind: "book"; book: string & { readonly __brand: "BookId" } };
+export type HistoryOf = { kind: "everything" } | { kind: "series"; series: string & { readonly __brand: "SeriesId" } } | { kind: "book"; book: string & { readonly __brand: "BookId" } } | 
+/**  The latest session of each book started and not finished, for the library's Continue reading row. */
+{ kind: "unfinished" };
 
 export type HistoryPage = {
 	entries: HistoryEntry[],

@@ -552,3 +552,30 @@ async fn names_the_series_with_any_reading() {
         }]
     );
 }
+
+#[tokio::test]
+async fn lists_the_books_started_and_not_finished_for_continuing() {
+    let shelf = Shelf::with_two_books("history-unfinished").await;
+    let finished = shelf.restore(0).await;
+    shelf.show(&finished, PAGE_COUNT - 1).await;
+    shelf.close(&finished).await;
+    shelf.clock.advance(5 * MINUTE_MS);
+    let started = shelf.restore(1).await;
+    shelf.clock.advance(MINUTE_MS);
+    shelf.show(&started, PAGE_COUNT - 1).await;
+    shelf.close(&started).await;
+    shelf
+        .library
+        .mark_books(vec![started.id], ReadMark::Unread)
+        .await
+        .unwrap();
+
+    let page = shelf
+        .library
+        .history(None, HistoryOf::Unfinished)
+        .await
+        .unwrap();
+
+    let books: Vec<BookId> = page.entries.iter().map(|entry| entry.book).collect();
+    assert_eq!(books, [started.id]);
+}
