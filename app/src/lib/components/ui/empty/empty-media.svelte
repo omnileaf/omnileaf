@@ -16,7 +16,7 @@
   bind:this={ref}
   data-slot="empty-media"
   class={cn(
-    "flex items-center justify-center rounded-full bg-accent-soft block-empty-art inline-empty-art",
+    "flex items-center justify-center rounded-empty-media bg-chip text-foreground block-empty-art inline-empty-art",
     className,
   )}
   {...restProps}
