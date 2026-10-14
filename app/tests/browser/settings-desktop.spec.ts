@@ -9,10 +9,10 @@ import {
   onPlatform,
   test,
   testOnlyInItsWebview,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 
-const ACCENT = "rgb(47, 111, 79)";
 const POINTER_ROW_HEIGHT = 44;
 const NARROW_BACK_LINK_HEIGHT = 32;
 const TOUCH_TARGET = 48;
@@ -86,7 +86,10 @@ test.describe("on a desktop", () => {
 
     const row = await boxOf(open);
 
-    await expect(open).toHaveCSS("color", ACCENT);
+    await expect(open).toHaveCSS(
+      "color",
+      await tokenColour(page, "--color-accent"),
+    );
     await expect(open).toHaveCSS("font-weight", "700");
     expect(row.height).toBe(POINTER_ROW_HEIGHT);
   });
