@@ -360,6 +360,17 @@ export function sampleBackend(
         creators: series.creators.map((creator) => ({ ...creator })),
         summary: series.summary ?? null,
         tags: [...series.tags],
+        related: series.related.map(({ number, reason }) => {
+          const other = seriesWith(sampleSeriesId(number));
+          return {
+            id: sampleSeriesId(number),
+            title: other.title,
+            cover: coverOf(other),
+            bookCount: other.books.length,
+            readCount: other.books.filter(isRead).length,
+            reason,
+          };
+        }),
       };
     },
     seriesBooks: async (id, chosen, after) => {
