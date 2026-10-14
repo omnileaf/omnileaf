@@ -17,6 +17,7 @@ mod library;
 mod library_changes;
 mod library_folder;
 mod library_layout;
+mod library_listing;
 mod library_series;
 mod library_view;
 mod moved_home;
@@ -48,6 +49,9 @@ pub use folder_watch::{AppFiles, FolderWatch, FolderWatchSwitch};
 pub use library::{Library, LibraryError, LibraryFolders, OpenTree};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
+pub use library_listing::{
+    Inclusion, LibraryFilter, LibraryListing, LibrarySort, LibrarySortBy, SortDirection,
+};
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
 pub use library_view::{
     CoversPerRow, CoversPerRowCount, CoversPerRowOutOfRange, CoversPerRowRange, CoversPerRowRanges,

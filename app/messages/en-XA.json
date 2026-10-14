@@ -83,6 +83,75 @@
       }
     }
   ],
+  "library_filter_and_sort": "⟦Ƒíļţéŕ áñð šöŕţ······⟧",
+  "library_filter_and_sort_filtered": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ƒíļţéŕ áñð šöŕţ, {formattedCount} ƒíļţéŕ öñ··················⟧",
+        "countPlural=other": "⟦Ƒíļţéŕ áñð šöŕţ, {formattedCount} ƒíļţéŕš öñ··················⟧"
+      }
+    }
+  ],
+  "library_filter": "⟦Ƒíļţéŕ···⟧",
+  "library_filter_with_count": "⟦Ƒíļţéŕ · {count}·······⟧",
+  "library_sort": "⟦Šöŕţ··⟧",
+  "library_sort_by": "⟦Šöŕţ ƀý···⟧",
+  "library_reset": "⟦Ŕéšéţ··⟧",
+  "library_close": "⟦Çļöšé··⟧",
+  "library_sort_title": "⟦Ţíţļé··⟧",
+  "library_sort_date_added": "⟦Ðáţé áððéð····⟧",
+  "library_sort_a_to_z": "⟦Á ţö Ž···⟧",
+  "library_sort_z_to_a": "⟦Ž ţö Á···⟧",
+  "library_sort_newest_first": "⟦Ñéŵéšţ ƒíŕšţ·····⟧",
+  "library_sort_oldest_first": "⟦Öļðéšţ ƒíŕšţ·····⟧",
+  "library_sort_a_to_z_change": "⟦Öŕðéŕ: Á ţö Ž. Çĥáñĝé ţö Ž ţö Á·············⟧",
+  "library_sort_z_to_a_change": "⟦Öŕðéŕ: Ž ţö Á. Çĥáñĝé ţö Á ţö Ž·············⟧",
+  "library_sort_newest_first_change": "⟦Öŕðéŕ: ñéŵéšţ ƒíŕšţ. Çĥáñĝé ţö öļðéšţ ƒíŕšţ··················⟧",
+  "library_sort_oldest_first_change": "⟦Öŕðéŕ: öļðéšţ ƒíŕšţ. Çĥáñĝé ţö ñéŵéšţ ƒíŕšţ··················⟧",
+  "library_filter_unread": "⟦Ûñŕéáð···⟧",
+  "library_filter_unread_hint": "⟦Ĥáš ƀööķš ýöû ĥáṽéñ'ţ ŕéáð···········⟧",
+  "library_filter_started": "⟦Šţáŕţéð···⟧",
+  "library_filter_finished": "⟦Ƒíñíšĥéð····⟧",
+  "library_filter_finished_hint": "⟦Ýöû'ṽé ŕéáð éṽéŕý ƀööķ·········⟧",
+  "library_filter_any": "⟦Áñý··⟧",
+  "library_filter_only": "⟦Öñļý··⟧",
+  "library_filter_hide": "⟦Ĥíðé··⟧",
+  "library_show_series": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Šĥöŵ {formattedCount} šéŕíéš············⟧",
+        "countPlural=other": "⟦Šĥöŵ {formattedCount} šéŕíéš············⟧"
+      }
+    }
+  ],
+  "library_series_match": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šéŕíéš ɱáţçĥéš·············⟧",
+        "countPlural=other": "⟦{formattedCount} šéŕíéš ɱáţçĥ············⟧"
+      }
+    }
+  ],
+  "library_no_matches": "⟦Ñö šéŕíéš ɱáţçĥ ţĥéšé ƒíļţéŕš.············⟧",
+  "library_clear_filters": "⟦Çļéáŕ ƒíļţéŕš······⟧",
   "app_version": "⟦Ṽéŕšíöñ {version}·······⟧",
   "library_add_folder": "⟦Áðð á ƒöļðéŕ·····⟧",
   "library_scan_finding": "⟦Ƒíñðíñĝ ƀööķš······⟧",

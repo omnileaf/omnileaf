@@ -10,12 +10,13 @@ use omnileaf_db::{
     Config, Database,
     catalog::{
         AndroidTree, AppleBookmark, Cover, NewRoot, PageRequest, PageSize, RootId, RootKind,
-        RootLocator, SeriesOrder, add_root, bookmarked_roots, cover_file, home_root, library_root,
-        library_roots, mark_root_available, mark_root_unavailable, remove_book_files,
-        remove_books_without_files, remove_root, root_book_count, root_files, series_count,
-        series_page,
+        RootLocator, SeriesFilter, SeriesListing, add_root, bookmarked_roots, cover_file,
+        home_root, library_root, library_roots, mark_root_available, mark_root_unavailable,
+        remove_book_files, remove_books_without_files, remove_root, root_book_count, root_files,
+        series_count, series_page,
     },
     first_launch::{finish_first_launch, first_launch_finished},
+    library_listing::{library_listing, set_library_listing},
     library_view::{library_view, set_library_view},
     store::{Changed, Clock, Store},
 };
@@ -28,8 +29,9 @@ use tokio::{
 
 use crate::{
     AppLanguage, BooksRemoval, CoversPerRowOutOfRange, FolderCursor, FolderId, FolderPage,
-    FolderRescan, FolderScan, LibraryChanges, LibraryFolder, LibrarySeries, LibraryView,
-    RescanOutcome, ResolvedBookmark, ScanProgress, SeriesCursor, SeriesPage,
+    FolderRescan, FolderScan, LibraryChanges, LibraryFilter, LibraryFolder, LibraryListing,
+    LibrarySeries, LibraryView, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesCursor,
+    SeriesPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     cover_thumbnails::CoverFile,
     describe_error,
@@ -215,15 +217,21 @@ impl Library {
         })
     }
 
-    pub async fn series(&self, after: Option<SeriesCursor>) -> Result<SeriesPage, LibraryError> {
+    /// Lists the series holding books that the listing's filter lets through, in its order.
+    pub async fn series(
+        &self,
+        listing: LibraryListing,
+        after: Option<SeriesCursor>,
+    ) -> Result<SeriesPage, LibraryError> {
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
         };
+        let listing = SeriesListing::from(listing);
         let page = self
             .store
             .database()
-            .read(move |connection| series_page(connection, SeriesOrder::Title, &request))
+            .read(move |connection| series_page(connection, &listing, &request))
             .await?;
         Ok(SeriesPage {
             series: page.items.into_iter().map(LibrarySeries::from).collect(),
@@ -239,8 +247,28 @@ impl Library {
             .await?)
     }
 
-    pub async fn series_count(&self) -> Result<u32, LibraryError> {
-        Ok(self.store.database().read(series_count).await?)
+    pub async fn series_count(&self, filter: LibraryFilter) -> Result<u32, LibraryError> {
+        let filter = SeriesFilter::from(filter);
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| series_count(connection, &filter))
+            .await?)
+    }
+
+    pub async fn listing(&self) -> Result<LibraryListing, LibraryError> {
+        let stored = self.store.database().read(library_listing).await?;
+        Ok(stored.map_or_else(LibraryListing::default, LibraryListing::from))
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn set_listing(&self, listing: LibraryListing) -> Result<(), LibraryError> {
+        let stored = SeriesListing::from(listing);
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| set_library_listing(transaction, &stored))
+            .await?)
     }
 
     pub async fn view(&self) -> Result<LibraryView, LibraryError> {

@@ -11,9 +11,10 @@ use std::{
 };
 
 use omnileaf_engine::{
-    AppleBookmark, Changed, CoversPerRow, DesktopCoversPerRow, FolderId, FolderKind, Library,
-    LibraryDisplay, LibraryError, LibraryFolder, LibraryView, OnCovers, PhoneCoversPerRow,
-    ResolvedBookmark, RootLocator, ScanProgress, TabletCoversPerRow,
+    AppleBookmark, Changed, CoversPerRow, DesktopCoversPerRow, FolderId, FolderKind, Inclusion,
+    Library, LibraryDisplay, LibraryError, LibraryFilter, LibraryFolder, LibraryListing,
+    LibrarySort, LibrarySortBy, LibraryView, OnCovers, PhoneCoversPerRow, ResolvedBookmark,
+    RootLocator, ScanProgress, SortDirection, TabletCoversPerRow,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -396,7 +397,13 @@ async fn keeps_a_bookmarked_folder_and_its_books_when_its_bookmark_wont_open() {
             ..linked
         }
     );
-    assert_eq!(library.series_count().await.unwrap(), 3);
+    assert_eq!(
+        library
+            .series_count(LibraryListing::default().filter)
+            .await
+            .unwrap(),
+        3
+    );
 }
 
 #[tokio::test]
@@ -598,7 +605,13 @@ async fn reads_a_folder_picked_inside_the_home_as_the_home() {
         kinds_and_names(&all_folders(&library).await),
         [(FolderKind::Home, "library-inside-home")]
     );
-    assert_eq!(library.series_count().await.unwrap(), 3);
+    assert_eq!(
+        library
+            .series_count(LibraryListing::default().filter)
+            .await
+            .unwrap(),
+        3
+    );
 }
 
 #[tokio::test]
@@ -759,6 +772,40 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
     let reopened = open(home.path()).await;
 
     assert_eq!(reopened.view().await.unwrap(), list);
+}
+
+#[tokio::test]
+async fn lists_a_new_library_in_the_order_a_new_library_starts_with() {
+    let home = ScratchFolder::new("library-listing-new");
+
+    let listing = open(home.path()).await.listing().await.unwrap();
+
+    assert_eq!(listing, LibraryListing::default());
+}
+
+#[tokio::test]
+async fn remembers_the_listing_set_on_this_device_when_the_library_reopens() {
+    let home = ScratchFolder::new("library-listing-set");
+    let unread_newest_first = LibraryListing {
+        sort: LibrarySort {
+            by: LibrarySortBy::DateAdded,
+            direction: SortDirection::Descending,
+        },
+        filter: LibraryFilter {
+            unread: Inclusion::Only,
+            started: Inclusion::Hide,
+            finished: Inclusion::Any,
+        },
+    };
+    open(home.path())
+        .await
+        .set_listing(unread_newest_first)
+        .await
+        .unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.listing().await.unwrap(), unread_newest_first);
 }
 
 #[tokio::test]

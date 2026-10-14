@@ -1,18 +1,27 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
 
-  import { commands, type LibraryView } from "#lib/ipc/bindings.ts";
+  import {
+    commands,
+    DEFAULT_LIBRARY_LISTING,
+    DEFAULT_LIBRARY_VIEW,
+    type LibraryListing,
+    type LibraryView,
+  } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import AddFolderButton from "#lib/library/AddFolderButton.svelte";
   import { coverUrl } from "#lib/library/cover-url.ts";
+  import FilterAndSort from "#lib/library/FilterAndSort.svelte";
   import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
   import FolderNotice from "#lib/library/FolderNotice.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
+  import { filtersOn, withoutFilters } from "#lib/library/library-listing.ts";
   import { LibrarySeriesList } from "#lib/library/library-series.svelte.ts";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
-  import { LibraryViewSetting } from "#lib/library/library-view.svelte.ts";
+  import NoMatches from "#lib/library/NoMatches.svelte";
   import SeriesCount from "#lib/library/SeriesCount.svelte";
   import SeriesCovers from "#lib/library/SeriesCovers.svelte";
+  import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
@@ -23,18 +32,31 @@
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
 
   const screenshotMode = getScreenshotMode();
-  const library = new LibrarySeriesList((after) =>
-    commands.librarySeries(after),
-  );
-  const seriesCount = new LibrarySeriesCount(
-    () => commands.librarySeriesCount(),
+  const listing = new StoredChoice<LibraryListing>(
+    {
+      read: () => commands.libraryListing(),
+      store: (chosen: LibraryListing) => commands.setLibraryListing(chosen),
+      fallback: DEFAULT_LIBRARY_LISTING,
+    },
     (error) => {
       reportError(error);
     },
   );
-  const view = new LibraryViewSetting(
-    () => commands.libraryView(),
-    (chosen) => commands.setLibraryView(chosen),
+  const library = new LibrarySeriesList((after) =>
+    commands.librarySeries(after, listedBy()),
+  );
+  const seriesCount = new LibrarySeriesCount(
+    () => commands.librarySeriesCount(listedBy().filter),
+    (error) => {
+      reportError(error);
+    },
+  );
+  const view = new StoredChoice<LibraryView>(
+    {
+      read: () => commands.libraryView(),
+      store: (chosen: LibraryView) => commands.setLibraryView(chosen),
+      fallback: DEFAULT_LIBRARY_VIEW,
+    },
     (error) => {
       reportError(error);
     },
@@ -42,28 +64,88 @@
   const notices = getNotices();
   const adding = new FolderAdding(addFolderWithProgress, () => notices);
 
-  const isEmpty = $derived(
+  let isCountWanted = $state(false);
+
+  const chosenListing = $derived(
+    listing.reading.kind === "read" ? listing.reading.value : undefined,
+  );
+  let isListFiltered = $state(false);
+
+  const listsNothing = $derived(
     library.list.kind === "loaded" && library.list.series.length === 0,
   );
-  const shown = $derived(
-    library.list.kind === "loaded" &&
-      library.list.series.length > 0 &&
-      view.reading.kind === "read"
-      ? { series: library.list, view: view.reading.view }
+  let holdsNoSeries = $state(false);
+  const isEmpty = $derived(listsNothing && (!isListFiltered || holdsNoSeries));
+  const loaded = $derived(
+    library.list.kind === "loaded" && view.reading.kind === "read"
+      ? { series: library.list, view: view.reading.value }
       : undefined,
   );
-  const showsItemCounts = $derived(shown?.view.showsItemCounts === true);
+  const hasBooks = $derived(
+    loaded !== undefined &&
+      (loaded.series.series.length > 0 || (isListFiltered && !holdsNoSeries)),
+  );
+  const showsItemCounts = $derived(
+    hasBooks && loaded?.view.showsItemCounts === true,
+  );
+  const countsSeries = $derived(showsItemCounts || isCountWanted);
   const offersAddFolder = $derived(isEmpty || library.list.kind === "failed");
 
+  function listedBy(): LibraryListing {
+    if (chosenListing === undefined) {
+      throw new Error(
+        "the library's series were asked for before their listing was read",
+      );
+    }
+    return chosenListing;
+  }
+
+  function chooseListing(chosen: LibraryListing): void {
+    listing.choose(chosen);
+    document.querySelector("main")?.scrollTo({ top: 0 });
+  }
+
+  $effect.pre(() => {
+    if (library.list.kind === "loaded") {
+      isListFiltered = untrack(
+        () =>
+          chosenListing !== undefined && filtersOn(chosenListing.filter) > 0,
+      );
+    }
+  });
+
   $effect(() => {
-    if (showsItemCounts) {
-      void seriesCount.load();
+    holdsNoSeries = false;
+    if (!listsNothing || !isListFiltered) {
+      return;
+    }
+    void commands
+      .librarySeriesCount(DEFAULT_LIBRARY_LISTING.filter)
+      .then((result) => {
+        holdsNoSeries = result.status === "ok" && result.data === 0;
+      });
+  });
+
+  $effect(() => {
+    if (chosenListing === undefined) {
+      return;
+    }
+    untrack(() => {
+      void library.start();
+    });
+  });
+
+  $effect(() => {
+    if (chosenListing !== undefined && countsSeries) {
+      untrack(() => {
+        void seriesCount.load();
+      });
     }
   });
 
   let measuredColumns: number | undefined = $state();
   const coversDrawn = $derived(
-    library.list.kind === "failed" || shown?.series.series.length === 0
+    library.list.kind === "failed" || loaded?.series.series.length === 0
       ? undefined
       : measuredColumns,
   );
@@ -71,11 +153,14 @@
   let headingAddFolder: HTMLButtonElement | undefined = $state();
 
   onMount(() => {
-    void library.load();
+    void listing.load();
     void view.load();
     return listenForLibraryChanges(() => {
+      if (chosenListing === undefined) {
+        return;
+      }
       void library.load();
-      if (showsItemCounts) {
+      if (countsSeries) {
         void seriesCount.load();
       }
     }, reportError);
@@ -107,19 +192,31 @@
   $effect(keepFocusOnPageOnceAddFolderGoes);
 </script>
 
+{#snippet shownCount()}
+  {#if seriesCount.count !== undefined}
+    <SeriesCount count={seriesCount.count} />
+  {/if}
+{/snippet}
+
 <CollectionHeading
   title={m.library_title()}
   showsLabel={screenshotMode.showsLabel}
+  count={showsItemCounts && seriesCount.count !== undefined
+    ? shownCount
+    : undefined}
 >
-  {#snippet count()}
-    {#if showsItemCounts && seriesCount.count !== undefined}
-      <SeriesCount count={seriesCount.count} />
-    {/if}
-  {/snippet}
   {#snippet actions()}
-    {#if shown !== undefined}
+    {#if hasBooks && loaded !== undefined && chosenListing !== undefined}
+      <FilterAndSort
+        listing={chosenListing}
+        matching={seriesCount.count}
+        onChoose={chooseListing}
+        onOpen={() => {
+          isCountWanted = true;
+        }}
+      />
       <ViewOptions
-        view={shown.view}
+        view={loaded.view}
         {coversDrawn}
         onChoose={(chosen: LibraryView) => {
           view.choose(chosen);
@@ -164,11 +261,17 @@
   </div>
   {#if library.list.kind === "failed"}
     <p class="mbs-sm text-muted">{m.library_series_failed()}</p>
-  {:else if shown !== undefined}
+  {:else if listsNothing && chosenListing !== undefined}
+    <NoMatches
+      onClear={() => {
+        chooseListing(withoutFilters(chosenListing));
+      }}
+    />
+  {:else if loaded !== undefined}
     <div class="mbs-xl">
       <SeriesCovers
-        series={shown.series.series}
-        isComplete={shown.series.isComplete}
+        series={loaded.series.series}
+        isComplete={loaded.series.isComplete}
         onNearEnd={() => {
           void library.loadMore();
         }}
@@ -176,7 +279,7 @@
           measuredColumns = columns;
         }}
         {coverUrl}
-        view={shown.view}
+        view={loaded.view}
         usesStandIns={screenshotMode.isOn}
       />
     </div>

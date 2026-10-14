@@ -13,6 +13,7 @@ mod scanned_book;
 mod series;
 mod series_books;
 mod series_count;
+mod series_listing;
 mod series_page;
 mod stored_id;
 
@@ -33,4 +34,7 @@ pub use scanned_book::{BookFile, ScannedBook, record_moved_books, record_scanned
 pub use series::{NewSeries, add_series};
 pub use series_books::{BookSummary, series_books};
 pub use series_count::series_count;
-pub use series_page::{SeriesOrder, SeriesSummary, series_page};
+pub use series_listing::{
+    Inclusion, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort, SortDirection,
+};
+pub use series_page::{SeriesSummary, series_page};

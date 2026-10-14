@@ -55,6 +55,8 @@ pub enum Error {
     MalformedTreeUri { uri: String },
     #[error("read {name:?} as an Android folder's name, which isn't one folder name")]
     MalformedTreeName { name: String },
+    #[error("read the library listing stored with {name:?}, which this build can't list by")]
+    UnsupportedLibraryListing { name: String },
     #[error("read a library folder id that isn't one the library gave out")]
     MalformedRootId,
     #[error("read a book file id that isn't one the library gave out")]

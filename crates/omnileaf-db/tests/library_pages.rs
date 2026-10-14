@@ -12,12 +12,16 @@ use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Connection, Database, Error,
     catalog::{
-        Cursor, NewSeries, Page, PageRequest, PageSize, SeriesOrder, series_books, series_count,
-        series_page,
+        Cursor, NewSeries, Page, PageRequest, PageSize, SeriesFilter, SeriesListing, SeriesOrder,
+        SeriesSort, series_books, series_count, series_page,
     },
 };
 use omnileaf_sync_proto::SeriesId;
 use support::{ScratchFolder, library_config};
+
+const A_TO_Z: SeriesListing = SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title));
+const NEWEST_FIRST: SeriesListing =
+    SeriesListing::unfiltered(SeriesSort::descending(SeriesOrder::DateAdded));
 
 fn series_added_at(name: &str, added_at_ms: i64) -> SeriesSeed<'_> {
     SeriesSeed {
@@ -85,9 +89,9 @@ impl<F> List for F where
 {
 }
 
-fn series_titles(order: SeriesOrder) -> impl List + Clone {
+fn series_titles(listing: SeriesListing) -> impl List + Clone {
     move |connection: &Connection, request: &PageRequest| {
-        let page = series_page(connection, order, request)?;
+        let page = series_page(connection, &listing, request)?;
         Ok(Page {
             items: page.items.into_iter().map(|series| series.title).collect(),
             next: page.next,
@@ -116,7 +120,7 @@ async fn pages_the_library_by_title_with_numbers_in_order_of_value() {
     ])
     .await;
 
-    let pages = library.walk(series_titles(SeriesOrder::Title), 2).await;
+    let pages = library.walk(series_titles(A_TO_Z), 2).await;
 
     assert_eq!(
         pages,
@@ -139,9 +143,7 @@ async fn pages_the_library_by_most_recently_added_first() {
     ])
     .await;
 
-    let pages = library
-        .walk(series_titles(SeriesOrder::RecentlyAdded), 2)
-        .await;
+    let pages = library.walk(series_titles(NEWEST_FIRST), 2).await;
 
     assert_eq!(
         pages,
@@ -166,9 +168,7 @@ async fn pages_series_added_at_the_same_moment_by_descending_id() {
     let mut expected = names;
     expected.sort_by_key(|name| Reverse(series_id(name)));
 
-    let pages = library
-        .walk(series_titles(SeriesOrder::RecentlyAdded), 2)
-        .await;
+    let pages = library.walk(series_titles(NEWEST_FIRST), 2).await;
 
     assert_eq!(pages.concat(), expected);
 }
@@ -181,7 +181,7 @@ async fn ends_on_a_full_last_page_without_an_empty_one_after_it() {
     ])
     .await;
 
-    let pages = library.walk(series_titles(SeriesOrder::Title), 2).await;
+    let pages = library.walk(series_titles(A_TO_Z), 2).await;
 
     assert_eq!(pages, [["Sample Series 01", "Sample Series 02"]]);
 }
@@ -195,10 +195,8 @@ async fn leaves_series_without_books_off_the_library_pages() {
     .await;
 
     let pages = [
-        library.walk(series_titles(SeriesOrder::Title), 10).await,
-        library
-            .walk(series_titles(SeriesOrder::RecentlyAdded), 10)
-            .await,
+        library.walk(series_titles(A_TO_Z), 10).await,
+        library.walk(series_titles(NEWEST_FIRST), 10).await,
     ];
 
     assert_eq!(pages, [[["Sample Series 02"]], [["Sample Series 02"]]]);
@@ -217,7 +215,11 @@ async fn counts_the_series_the_library_pages_list() {
     ])
     .await;
 
-    let count = library.database.read(series_count).await.unwrap();
+    let count = library
+        .database
+        .read(|connection| series_count(connection, &SeriesFilter::NONE))
+        .await
+        .unwrap();
 
     assert_eq!(count, 2);
 }
@@ -256,7 +258,7 @@ async fn counts_the_books_of_each_listed_series_not_marked_read() {
                 after: None,
                 size: PageSize::try_from(10).unwrap(),
             };
-            series_page(connection, SeriesOrder::Title, &request)
+            series_page(connection, &A_TO_Z, &request)
         })
         .await
         .unwrap();
@@ -315,15 +317,13 @@ async fn refuses_to_continue_series_and_books_from_each_other_s_cursors() {
     ])
     .await;
     let books = book_titles(series_id("Sample Series 01"));
-    let by_title = library.page(series_titles(SeriesOrder::Title), None, 1);
+    let by_title = library.page(series_titles(A_TO_Z), None, 1);
     let title_cursor = by_title.await.unwrap().next;
     let books_cursor = library.page(books.clone(), None, 1).await.unwrap().next;
 
     let outcomes = [
         library.page(books, title_cursor, 1).await,
-        library
-            .page(series_titles(SeriesOrder::Title), books_cursor, 1)
-            .await,
+        library.page(series_titles(A_TO_Z), books_cursor, 1).await,
     ];
 
     for outcome in outcomes {
@@ -362,11 +362,11 @@ async fn refuses_to_continue_one_series_order_from_another_s_cursor() {
         series_added_at("Sample Series 02", 2),
     ])
     .await;
-    let by_title = library.page(series_titles(SeriesOrder::Title), None, 1);
+    let by_title = library.page(series_titles(A_TO_Z), None, 1);
     let title_cursor = by_title.await.unwrap().next;
 
     let outcome = library
-        .page(series_titles(SeriesOrder::RecentlyAdded), title_cursor, 1)
+        .page(series_titles(NEWEST_FIRST), title_cursor, 1)
         .await;
 
     assert!(matches!(outcome, Err(Error::CursorForAnotherList)));

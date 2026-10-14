@@ -7,6 +7,7 @@ import {
   type LibraryDisplay,
   type LibraryView,
 } from "../../src/lib/ipc/bindings.ts";
+import { pseudoText } from "../../src/lib/language/pseudo-locale.ts";
 import type { ScreenSize } from "../../src/lib/library/library-view.ts";
 import { fakeProtocolRoute } from "./fake-backend.ts";
 import {
@@ -974,7 +975,7 @@ test.describe("view options", () => {
 
     await page
       .getByRole("main")
-      .locator('button[aria-haspopup="dialog"]')
+      .getByRole("button", { name: pseudoText("View options") })
       .click();
     const options = page.getByRole("dialog");
     await expect(options).toBeVisible();

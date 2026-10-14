@@ -9,7 +9,10 @@ mod support;
 use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Connection, Database, Error,
-    catalog::{Cursor, NewSeries, Page, PageRequest, PageSize, SeriesOrder, series_page},
+    catalog::{
+        Cursor, NewSeries, Page, PageRequest, PageSize, SeriesListing, SeriesOrder, SeriesSort,
+        series_page,
+    },
     store::{Changed, Clock, Store},
 };
 use support::{ScratchFolder, library_config};
@@ -89,7 +92,13 @@ impl Library {
         let page = self
             .store
             .database()
-            .read(move |connection| series_page(connection, SeriesOrder::Title, &request))
+            .read(move |connection| {
+                series_page(
+                    connection,
+                    &SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title)),
+                    &request,
+                )
+            })
             .await?;
         Ok(Page {
             items: page.items.into_iter().map(|series| series.title).collect(),
@@ -339,7 +348,13 @@ async fn lists_titles_from_inside_a_write_job() {
     let page = library
         .store
         .database()
-        .write(move |transaction| series_page(transaction, SeriesOrder::Title, &request))
+        .write(move |transaction| {
+            series_page(
+                transaction,
+                &SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title)),
+                &request,
+            )
+        })
         .await
         .unwrap();
 

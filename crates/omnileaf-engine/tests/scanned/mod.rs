@@ -6,7 +6,10 @@
 use std::path::Path;
 
 use omnileaf_db::{
-    catalog::{PageRequest, PageSize, SeriesOrder, SeriesSummary, series_books, series_page},
+    catalog::{
+        PageRequest, PageSize, SeriesListing, SeriesOrder, SeriesSort, SeriesSummary, series_books,
+        series_page,
+    },
     rusqlite::{Connection, OpenFlags},
 };
 use omnileaf_engine::{FolderId, FolderScan, Library, ScanProgress};
@@ -67,9 +70,13 @@ impl Scanned {
     }
 
     fn series_summaries(&self) -> Vec<SeriesSummary> {
-        series_page(&self.connection(), SeriesOrder::Title, &whole_page())
-            .unwrap()
-            .items
+        series_page(
+            &self.connection(),
+            &SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title)),
+            &whole_page(),
+        )
+        .unwrap()
+        .items
     }
 }
 

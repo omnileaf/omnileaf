@@ -75,3 +75,24 @@ test("reports why counting failed", async () => {
 
   expect(onFailure).toHaveBeenCalledWith(FAILURE);
 });
+
+test("holds no number while the next count is pending", async () => {
+  let answer: (result: CountResult) => void = () => undefined;
+  let isFirst = true;
+  const series = new LibrarySeriesCount(() => {
+    if (isFirst) {
+      isFirst = false;
+      return Promise.resolve({ status: "ok", data: 24 });
+    }
+    return new Promise((resolve) => {
+      answer = resolve;
+    });
+  }, ignoreFailure);
+  await series.load();
+
+  const next = series.load();
+
+  expect(series.count).toBeUndefined();
+  answer({ status: "ok", data: 3 });
+  await next;
+});

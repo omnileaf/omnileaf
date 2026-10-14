@@ -1,8 +1,11 @@
 import type { commands, LibrarySeries } from "#lib/ipc/bindings.ts";
 
-export type ListSeries = typeof commands.librarySeries;
+type SeriesCursor = NonNullable<Parameters<typeof commands.librarySeries>[0]>;
 
-type SeriesCursor = NonNullable<Parameters<ListSeries>[0]>;
+/** Reads the page of series after a cursor, or the first page without one, in the order the library is listed in. */
+export type ListSeries = (
+  after: SeriesCursor | null,
+) => ReturnType<typeof commands.librarySeries>;
 
 export type SeriesList =
   | { readonly kind: "loading" }
@@ -28,19 +31,20 @@ export class LibrarySeriesList {
   list: SeriesList = $state({ kind: "loading" });
 
   #latestLoad = 0;
-  #shownLists = 0;
+  #listsBegun = 0;
   #next: SeriesCursor | null = null;
   #isLoadingMore = false;
 
   constructor(private readonly listSeries: ListSeries) {}
 
   async load(): Promise<void> {
-    const load = ++this.#latestLoad;
     const shown = this.list.kind === "loaded" ? this.list.series.length : 0;
-    const read = await this.#readFromStart(load, shown);
-    if (read.kind !== "superseded") {
-      this.#show(read);
-    }
+    await this.#loadAtLeast(shown);
+  }
+
+  async start(): Promise<void> {
+    this.#listsBegun += 1;
+    await this.#loadAtLeast(0);
   }
 
   async loadMore(): Promise<void> {
@@ -48,7 +52,7 @@ export class LibrarySeriesList {
     if (this.list.kind !== "loaded" || after === null || this.#isLoadingMore) {
       return;
     }
-    const shownList = this.#shownLists;
+    const shownList = this.#listsBegun;
     const shown = this.list.series;
     this.#isLoadingMore = true;
     let page: SeriesPageResult;
@@ -57,7 +61,7 @@ export class LibrarySeriesList {
     } finally {
       this.#isLoadingMore = false;
     }
-    if (shownList !== this.#shownLists) {
+    if (shownList !== this.#listsBegun) {
       return;
     }
     this.#show(
@@ -69,6 +73,14 @@ export class LibrarySeriesList {
           }
         : { kind: "failed" },
     );
+  }
+
+  async #loadAtLeast(count: number): Promise<void> {
+    const load = ++this.#latestLoad;
+    const read = await this.#readFromStart(load, count);
+    if (read.kind !== "superseded") {
+      this.#show(read);
+    }
   }
 
   async #readFromStart(load: number, atLeast: number): Promise<Read> {
@@ -89,7 +101,7 @@ export class LibrarySeriesList {
   }
 
   #show(read: Exclude<Read, { kind: "superseded" }>): void {
-    this.#shownLists += 1;
+    this.#listsBegun += 1;
     if (read.kind === "failed") {
       this.list = { kind: "failed" };
       return;

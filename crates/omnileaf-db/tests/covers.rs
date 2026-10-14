@@ -11,8 +11,8 @@ use omnileaf_db::{
     Database,
     catalog::{
         AndroidTree, BookFile, Cover, NewRoot, NewSeries, PageRequest, PageSize, RootId, RootKind,
-        RootLocator, ScannedBook, SeriesOrder, TreeUri, add_root, cover_file, record_scanned_books,
-        remove_book_files, series_page,
+        RootLocator, ScannedBook, SeriesListing, SeriesOrder, SeriesSort, TreeUri, add_root,
+        cover_file, record_scanned_books, remove_book_files, series_page,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
@@ -80,7 +80,13 @@ impl Library {
         };
         let page = self
             .database
-            .read(move |connection| series_page(connection, SeriesOrder::Title, &request))
+            .read(move |connection| {
+                series_page(
+                    connection,
+                    &SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title)),
+                    &request,
+                )
+            })
             .await
             .unwrap();
         page.items.first().unwrap().cover

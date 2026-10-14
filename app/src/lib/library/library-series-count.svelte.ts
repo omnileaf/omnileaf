@@ -1,6 +1,7 @@
 import type { commands, IpcError } from "#lib/ipc/bindings.ts";
 
-export type CountSeries = typeof commands.librarySeriesCount;
+/** Counts the series the library lists through the filter it is listed with. */
+export type CountSeries = () => ReturnType<typeof commands.librarySeriesCount>;
 
 export class LibrarySeriesCount {
   count: number | undefined = $state();
@@ -14,6 +15,7 @@ export class LibrarySeriesCount {
 
   async load(): Promise<void> {
     const load = ++this.#latestLoad;
+    this.count = undefined;
     const result = await this.countSeries();
     if (result.status === "error") {
       this.onFailure(result.error);

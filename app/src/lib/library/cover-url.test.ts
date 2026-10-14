@@ -1,7 +1,7 @@
 import { clearMocks, mockConvertFileSrc, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
 
-import { commands } from "#lib/ipc/bindings.ts";
+import { commands, DEFAULT_LIBRARY_LISTING } from "#lib/ipc/bindings.ts";
 
 import { type CoverPath, coverUrl } from "./cover-url";
 
@@ -24,7 +24,7 @@ async function listedCover(): Promise<CoverPath> {
     ],
     next: null,
   }));
-  const page = await commands.librarySeries(null);
+  const page = await commands.librarySeries(null, DEFAULT_LIBRARY_LISTING);
   const cover = page.status === "ok" ? page.data.series[0]?.cover : undefined;
   if (cover === undefined || cover === null) {
     throw new Error("the backend listed no cover");
