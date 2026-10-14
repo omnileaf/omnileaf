@@ -124,7 +124,7 @@ test.describe("with a folder whose files changed", () => {
     backend: {
       ...FOLDERS_BACKEND,
       rescanLibraryFolder: async (id, onProgress) => {
-        await onProgress.send({ stage: "finding" });
+        await onProgress.send({ stage: "finding", found: 0 });
         await onProgress.send({ stage: "reading", scanned: 2, total: 2 });
         return {
           id,
@@ -179,7 +179,7 @@ test.describe("while a folder is being rescanned", () => {
     const bar = page.getByRole("progressbar", {
       name: "Checking Sample Comics for changes",
     });
-    await expect(bar).toHaveAttribute("value", "3");
+    await expect(bar).toHaveAttribute("aria-valuenow", "3");
     await expect(bar).toHaveAccessibleDescription("3 of 7 books");
     await expect(
       page.getByRole("button", { name: "Rescan Omnileaf" }),

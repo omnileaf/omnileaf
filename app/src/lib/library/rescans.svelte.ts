@@ -55,7 +55,7 @@ export class Rescans {
   }
 
   async rescan(folder: LibraryFolder): Promise<void> {
-    this.status = { kind: "finding", folder };
+    this.status = { kind: "finding", found: 0, folder };
     const result = await this.rescanFolder(
       folder.id,
       followScan(

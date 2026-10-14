@@ -102,7 +102,7 @@ test("shows a series' title, folder and how far it has been read", async ({
   ).toBeVisible();
   await expect(
     main.getByRole("progressbar", { name: "3 of 12 read" }),
-  ).toHaveJSProperty("value", 3);
+  ).toHaveAttribute("aria-valuenow", "3");
 });
 
 test("opens a book in the reader from its row", async ({ page }) => {

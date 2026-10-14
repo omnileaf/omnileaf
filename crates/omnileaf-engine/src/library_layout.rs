@@ -37,12 +37,22 @@ enum Place {
     Nested,
 }
 
-pub(crate) fn find_books(storage: &dyn Storage, root: &Path) -> io::Result<Layout> {
+pub(crate) fn find_books(
+    storage: &dyn Storage,
+    root: &Path,
+    mut on_found: impl FnMut(usize),
+) -> io::Result<Layout> {
     let mut layout = Layout::default();
     let mut pending = vec![(root.to_path_buf(), Place::Root)];
     while let Some((folder, place)) = pending.pop() {
         match storage.entries(&folder) {
-            Ok(entries) => layout.take_in(&folder, place, entries, &mut pending),
+            Ok(entries) => {
+                let found_before = layout.books.len();
+                layout.take_in(&folder, place, entries, &mut pending);
+                if layout.books.len() > found_before {
+                    on_found(layout.books.len());
+                }
+            }
             Err(error) if place == Place::Root => return Err(error),
             Err(_) => layout.unreadable_folders.push(folder),
         }

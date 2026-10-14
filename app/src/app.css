@@ -297,6 +297,8 @@
   --spacing-settings-list-widest: 17rem;
   --spacing-problem-top: calc(10.625rem - var(--spacing-title-gap));
   --spacing-switch-length: 3.125rem;
+  --spacing-progress: 0.5rem;
+  --spacing-progress-compact: 0.375rem;
   --spacing-switch-thickness: 1.875rem;
   --spacing-switch-knob: 1.5rem;
   --spacing-switch-length-compact: 2.75rem;
@@ -383,7 +385,6 @@
   --spacing-series-cover-tablet: 9.5rem;
   --spacing-series-cover-wide: 8.25rem;
   --spacing-series-aside: 21.25rem;
-  --spacing-series-progress: 0.375rem;
   --spacing-book-row: 3.875rem;
   --spacing-book-row-wide: 2.875rem;
   --spacing-series-columns: 2.125rem;
@@ -672,6 +673,7 @@
   --transition-duration-slide: 350ms;
   --transition-duration-move: 300ms;
   --transition-duration-spin: 1s;
+  --transition-duration-band: 1.4s;
 
   --ease-out: ease-out;
   --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
@@ -1107,26 +1109,22 @@
   }
 }
 
-@utility progress-track {
-  appearance: none;
-  display: block;
-  inline-size: 100%;
-  border: none;
-  border-radius: var(--radius-control);
-  overflow: hidden;
-  background-color: var(--color-chip);
-  color: var(--color-accent);
-
-  &::-webkit-progress-bar {
-    background-color: var(--color-chip);
+@keyframes progress-band {
+  from {
+    translate: -100%;
   }
-
-  &::-webkit-progress-value {
-    background-color: var(--color-accent);
+  to {
+    translate: 300%;
   }
+}
 
-  &::-moz-progress-bar {
-    background-color: var(--color-accent);
+@utility progress-band {
+  inline-size: calc(100% / 3);
+  translate: 100%;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: progress-band var(--transition-duration-band) var(--ease-out)
+      infinite;
   }
 }
 
