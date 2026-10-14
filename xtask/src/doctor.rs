@@ -191,7 +191,17 @@ pub(crate) const REQUIREMENTS: &[Requirement] = &[
 pub(crate) enum Finding {
     Present { detail: String },
     Differs { detail: String },
+    Broken { detail: String },
     Missing,
+}
+
+impl Finding {
+    fn is_missing(&self) -> bool {
+        match self {
+            Self::Present { .. } | Self::Differs { .. } => false,
+            Self::Broken { .. } | Self::Missing => true,
+        }
+    }
 }
 
 pub(crate) struct Report {
@@ -230,8 +240,16 @@ pub(crate) fn examine(
         ),
         Probe::AndroidNdk => host
             .android
-            .and_then(|android| android.ndk.as_ref())
-            .map_or(Finding::Missing, |ndk| compare_ndk(ndk, host.pinned_ndk)),
+            .map_or(Finding::Missing, |android| match &android.ndk {
+                android::NdkSearch::Found(ndk) => compare_ndk(ndk, host.pinned_ndk),
+                android::NdkSearch::NdkHomeNotAFolder(path) => Finding::Broken {
+                    detail: format!(
+                        "NDK_HOME points at {}, which isn't a folder: point it at an installed NDK or unset it",
+                        path.display()
+                    ),
+                },
+                android::NdkSearch::NoneInstalled => Finding::Missing,
+            }),
         Probe::Adb => found(
             host.android
                 .and_then(|android| machine.stdout_of(android.adb().as_os_str(), &["--version"]))
@@ -270,8 +288,10 @@ fn compare_ndk(ndk: &android::Ndk, pinned: &str) -> Finding {
         Some(revision) => Finding::Differs {
             detail: format!("{path} is NDK {revision}, CI builds with {pinned}"),
         },
-        None => Finding::Differs {
-            detail: format!("{path} has no version in source.properties, CI builds with {pinned}"),
+        None => Finding::Broken {
+            detail: format!(
+                "{path} has no version in source.properties, so it isn't a usable NDK: point NDK_HOME at an installed NDK or install one from Android Studio's SDK Manager"
+            ),
         },
     }
 }
@@ -300,9 +320,7 @@ pub(crate) fn render(
     let missing_with = |need: Need| {
         findings
             .iter()
-            .filter(|(requirement, finding)| {
-                requirement.need == need && *finding == Finding::Missing
-            })
+            .filter(|(requirement, finding)| requirement.need == need && finding.is_missing())
             .count()
     };
     let missing = missing_with(Need::Always);
@@ -322,6 +340,7 @@ fn line(requirement: &Requirement, finding: Finding) -> String {
     let (status, text) = match finding {
         Finding::Present { detail } => ("ok", detail),
         Finding::Differs { detail } => ("differs", format!("{detail}: {}", requirement.fix)),
+        Finding::Broken { detail } => ("broken", detail),
         Finding::Missing => ("missing", requirement.fix.to_owned()),
     };
     format!(
@@ -374,7 +393,7 @@ mod tests {
     fn sdk_with_ndk_revision(revision: Option<&str>) -> android::Toolchain {
         android::Toolchain {
             sdk: PathBuf::from("/sdk"),
-            ndk: Some(android::Ndk {
+            ndk: android::NdkSearch::Found(android::Ndk {
                 path: PathBuf::from("/sdk/ndk/29.0.13846066"),
                 revision: revision.map(str::to_owned),
             }),
@@ -567,15 +586,15 @@ mod tests {
     }
 
     #[test]
-    fn reports_an_ndk_with_no_readable_version_as_differing() {
+    fn reports_an_ndk_with_no_readable_version_as_broken() {
         let toolchain = sdk_with_ndk_revision(None);
 
         let finding = examine_ndk(&toolchain);
 
         assert_eq!(
             finding,
-            Finding::Differs {
-                detail: "/sdk/ndk/29.0.13846066 has no version in source.properties, CI builds with 29.0.13846066"
+            Finding::Broken {
+                detail: "/sdk/ndk/29.0.13846066 has no version in source.properties, so it isn't a usable NDK: point NDK_HOME at an installed NDK or install one from Android Studio's SDK Manager"
                     .to_owned()
             }
         );
@@ -596,6 +615,44 @@ mod tests {
         assert_eq!((report.missing, report.missing_for_phones), (0, 0));
         assert!(report.lines[0].starts_with("differs"));
         assert!(report.lines[0].ends_with("CI builds with 29.0.13846066: install it"));
+    }
+
+    fn sdk_with_stale_ndk_home() -> android::Toolchain {
+        android::Toolchain {
+            sdk: PathBuf::from("/sdk"),
+            ndk: android::NdkSearch::NdkHomeNotAFolder(PathBuf::from("/sdk/ndk/26.2.11394342")),
+        }
+    }
+
+    #[test]
+    fn reports_an_ndk_home_that_is_not_a_folder_as_broken() {
+        let toolchain = sdk_with_stale_ndk_home();
+
+        let finding = examine_ndk(&toolchain);
+
+        assert_eq!(
+            finding,
+            Finding::Broken {
+                detail: "NDK_HOME points at /sdk/ndk/26.2.11394342, which isn't a folder: point it at an installed NDK or unset it"
+                    .to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn counts_a_broken_ndk_home_as_a_missing_phone_tool() {
+        let toolchain = sdk_with_stale_ndk_home();
+        let host = Host {
+            os: "linux",
+            android: Some(&toolchain),
+            pinned_ndk: PINNED,
+        };
+        let ndk = requirement(Need::ForPhones, Probe::AndroidNdk);
+
+        let report = render(&[ndk], &FakeMachine { installed: &[] }, &host);
+
+        assert_eq!((report.missing, report.missing_for_phones), (0, 1));
+        assert!(report.lines[0].starts_with("broken"));
     }
 
     #[test]

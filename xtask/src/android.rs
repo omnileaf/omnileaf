@@ -73,7 +73,14 @@ pub(crate) enum AdbState {
 #[derive(Debug)]
 pub(crate) struct Toolchain {
     pub(crate) sdk: PathBuf,
-    pub(crate) ndk: Option<Ndk>,
+    pub(crate) ndk: NdkSearch,
+}
+
+#[derive(Debug)]
+pub(crate) enum NdkSearch {
+    Found(Ndk),
+    NdkHomeNotAFolder(PathBuf),
+    NoneInstalled,
 }
 
 #[derive(Debug)]
@@ -85,11 +92,7 @@ pub(crate) struct Ndk {
 impl Toolchain {
     pub(crate) fn locate(env: impl Fn(&str) -> Option<OsString>, os: &str) -> Option<Self> {
         let sdk = sdk_path(&env, os).filter(|sdk| sdk.is_dir())?;
-        let ndk = env(NDK_HOME)
-            .map(PathBuf::from)
-            .or_else(|| newest_ndk(&sdk.join("ndk")))
-            .filter(|ndk| ndk.is_dir())
-            .map(Ndk::at);
+        let ndk = search_ndk(env(NDK_HOME).map(PathBuf::from), &sdk);
         Some(Self { sdk, ndk })
     }
 
@@ -182,6 +185,18 @@ fn default_sdk_path(env: &impl Fn(&str) -> Option<OsString>, os: &str) -> Option
             .iter()
             .fold(PathBuf::from(base), |path, part| path.join(part))
     })
+}
+
+fn search_ndk(ndk_home: Option<PathBuf>, sdk: &Path) -> NdkSearch {
+    match ndk_home {
+        Some(home) if home.is_dir() => NdkSearch::Found(Ndk::at(home)),
+        Some(home) => NdkSearch::NdkHomeNotAFolder(home),
+        None => newest_ndk(&sdk.join("ndk"))
+            .filter(|ndk| ndk.is_dir())
+            .map_or(NdkSearch::NoneInstalled, |path| {
+                NdkSearch::Found(Ndk::at(path))
+            }),
+    }
 }
 
 impl Ndk {
@@ -402,9 +417,46 @@ mod tests {
             Toolchain::locate(|key| (key == ANDROID_HOME).then(|| home.clone()), "linux");
 
         fs::remove_dir_all(&sdk).unwrap();
-        let ndk = toolchain.unwrap().ndk.unwrap();
+        let NdkSearch::Found(ndk) = toolchain.unwrap().ndk else {
+            panic!("found no NDK in the SDK");
+        };
         assert_eq!(ndk.path, sdk.join("ndk").join("30.0.16248370"));
         assert_eq!(ndk.revision.as_deref(), Some("30.0.16248370"));
+    }
+
+    #[test]
+    fn reports_an_ndk_home_that_is_not_a_folder_without_falling_back_to_the_sdk() {
+        let sdk = scratch("sdk-with-stale-ndk-home");
+        install_ndk(&sdk.join("ndk").join("30.0.16248370"), "30.0.16248370");
+        let stale = sdk.join("ndk").join("26.2.11394342");
+        let (home, ndk_home) = (sdk.clone().into_os_string(), stale.clone().into_os_string());
+
+        let toolchain = Toolchain::locate(
+            |key| match key {
+                ANDROID_HOME => Some(home.clone()),
+                NDK_HOME => Some(ndk_home.clone()),
+                _ => None,
+            },
+            "linux",
+        );
+
+        fs::remove_dir_all(&sdk).unwrap();
+        assert!(matches!(
+            toolchain.unwrap().ndk,
+            NdkSearch::NdkHomeNotAFolder(path) if path == stale
+        ));
+    }
+
+    #[test]
+    fn finds_no_ndk_in_an_sdk_without_one() {
+        let sdk = scratch("sdk-without-ndk");
+        let home = sdk.clone().into_os_string();
+
+        let toolchain =
+            Toolchain::locate(|key| (key == ANDROID_HOME).then(|| home.clone()), "linux");
+
+        fs::remove_dir_all(&sdk).unwrap();
+        assert!(matches!(toolchain.unwrap().ndk, NdkSearch::NoneInstalled));
     }
 
     #[test]

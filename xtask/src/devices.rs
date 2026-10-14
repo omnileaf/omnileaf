@@ -371,7 +371,7 @@ mod tests {
     fn toolchain() -> android::Toolchain {
         android::Toolchain {
             sdk: PathBuf::from("/sdk"),
-            ndk: None,
+            ndk: android::NdkSearch::NoneInstalled,
         }
     }
 
