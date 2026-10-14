@@ -18,8 +18,8 @@ interface SizeLooks {
 
 const PHONE_LOOKS: SizeLooks = {
   base: {
-    gap: "max-medium:covers-gap-cover-gap",
-    title: "max-medium:text-cover-title",
+    gap: "max-medium:covers-gap-md max-medium:covers-row-gap-cover-row",
+    title: "max-medium:text-label",
     bookCount: "",
   },
   denser: [
@@ -62,7 +62,7 @@ const TABLET_LOOKS: SizeLooks = {
 
 const DESKTOP_LOOKS: SizeLooks = {
   base: {
-    gap: "large:covers-gap-xl",
+    gap: "large:covers-gap-xl large:covers-row-gap-cover-row-wide",
     title: "large:text-cover-title-wide",
     bookCount: "",
   },

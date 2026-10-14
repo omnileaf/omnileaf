@@ -14,7 +14,7 @@
 
   import ViewChoices from "./ViewChoices.svelte";
 
-  const ICON_SIZE = 22;
+  const ICON_SIZE = 16;
 
   let {
     view,
@@ -73,7 +73,7 @@
       <SlidersHorizontal
         size={ICON_SIZE}
         aria-hidden="true"
-        class="large:block-header-icon-desktop large:inline-header-icon-desktop"
+        class="large:block-lg large:inline-lg"
       />
       <span class="hidden large:inline">{m.library_view()}</span>
     </Button>
