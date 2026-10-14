@@ -336,6 +336,17 @@ export type ReadingWeek = {
 	daysInARow: number,
 };
 
+export type RelatedReason = { kind: "sameWriter" } | { kind: "sameArtist" } | { kind: "sharedTag"; tag: string };
+
+export type RelatedSeries = {
+	id: string & { readonly __brand: "SeriesId" },
+	title: string,
+	cover: string & { readonly __brand: "CoverPath" } | null,
+	bookCount: number,
+	readCount: number,
+	reason: RelatedReason,
+};
+
 export type RescanOutcome = {
 	kind: "rescanned",
 } & FileChanges | { kind: "unreachable" } | { kind: "foundEmpty" };
@@ -400,6 +411,8 @@ export type SeriesOverview = {
 	creators: SeriesCreator[],
 	summary: string | null,
 	tags: string[],
+	/**  Other series in the library that share a creator or a tag with this one. */
+	related: RelatedSeries[],
 };
 
 export type SeriesPage = {

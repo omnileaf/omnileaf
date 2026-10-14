@@ -13,7 +13,7 @@ type WireOverview = Awaited<ReturnType<FakeBackend["seriesOverview"]>>;
 
 export type SeriesDetails = Pick<
   WireOverview,
-  "format" | "creators" | "summary" | "tags"
+  "format" | "creators" | "summary" | "tags" | "related"
 >;
 
 const NO_DETAILS: SeriesDetails = {
@@ -21,6 +21,7 @@ const NO_DETAILS: SeriesDetails = {
   creators: [],
   summary: null,
   tags: [],
+  related: [],
 };
 
 export const SERIES_ID = "0190a3e4-0000-8000-8000-0000000000a4";

@@ -86,6 +86,7 @@ const SEARCHING_BACKEND: FakeBackend = {
       creators: [],
       summary: null,
       tags: [],
+      related: [],
     };
   },
 };
