@@ -26,8 +26,14 @@ const WINDOWS_VERBATIM_SHARE_PREFIX: &str = r"\\?\UNC\";
 const WINDOWS_VERBATIM_PREFIX: &str = r"\\?\";
 const WINDOWS_DEVICE_PREFIX: &str = r"\\.\";
 const WINDOWS_REMOVABLE_DRIVE: u32 = 2;
+const WINDOWS_FIXED_DRIVE: u32 = 3;
 const WINDOWS_REMOTE_DRIVE: u32 = 4;
 const WINDOWS_DISC_DRIVE: u32 = 5;
+const WINDOWS_FIREWIRE_BUS: u32 = 4;
+const WINDOWS_USB_BUS: u32 = 7;
+const WINDOWS_ISCSI_BUS: u32 = 9;
+const WINDOWS_SD_BUS: u32 = 12;
+const WINDOWS_MMC_BUS: u32 = 13;
 
 struct Mount<'a> {
     point: PathBuf,
@@ -75,19 +81,22 @@ pub fn storage_in_mountinfo(mountinfo: &str, folder: &Path) -> Storage {
     }
 }
 
-/// `drive_type_of` answers `GetDriveTypeW` for a drive root such as `D:\`.
+/// `drive_type_of` answers `GetDriveTypeW` for a drive root such as `D:\`, and `bus_type_of` the `STORAGE_BUS_TYPE` of the drive at that root.
 #[must_use]
-pub fn storage_of_windows_path(path: &str, drive_type_of: impl FnOnce(&str) -> u32) -> Storage {
+pub fn storage_of_windows_path(
+    path: &str,
+    drive_type_of: impl FnOnce(&str) -> u32,
+    bus_type_of: impl FnOnce(&str) -> Option<u32>,
+) -> Storage {
     let is_share = path.starts_with(WINDOWS_VERBATIM_SHARE_PREFIX)
         || (path.starts_with(WINDOWS_SHARE_PREFIX)
             && !path.starts_with(WINDOWS_VERBATIM_PREFIX)
             && !path.starts_with(WINDOWS_DEVICE_PREFIX));
     let is_external_drive = || {
-        windows_drive_root(path).is_some_and(|root| {
-            matches!(
-                drive_type_of(&root),
-                WINDOWS_REMOVABLE_DRIVE | WINDOWS_REMOTE_DRIVE | WINDOWS_DISC_DRIVE
-            )
+        windows_drive_root(path).is_some_and(|root| match drive_type_of(&root) {
+            WINDOWS_REMOVABLE_DRIVE | WINDOWS_REMOTE_DRIVE | WINDOWS_DISC_DRIVE => true,
+            WINDOWS_FIXED_DRIVE => bus_type_of(&root).is_some_and(is_outside_the_device),
+            _ => false,
         })
     };
     if is_share || is_external_drive() {
@@ -95,6 +104,17 @@ pub fn storage_of_windows_path(path: &str, drive_type_of: impl FnOnce(&str) -> u
     } else {
         Storage::Local
     }
+}
+
+fn is_outside_the_device(bus_type: u32) -> bool {
+    matches!(
+        bus_type,
+        WINDOWS_FIREWIRE_BUS
+            | WINDOWS_USB_BUS
+            | WINDOWS_ISCSI_BUS
+            | WINDOWS_SD_BUS
+            | WINDOWS_MMC_BUS
+    )
 }
 
 fn windows_drive_root(path: &str) -> Option<String> {
@@ -177,20 +197,30 @@ mod tests {
         );
     }
 
-    const FIXED_DRIVE: u32 = 3;
+    const ATA_BUS: u32 = 3;
+    const RAID_BUS: u32 = 8;
+    const SAS_BUS: u32 = 10;
+    const SATA_BUS: u32 = 11;
+    const VIRTUAL_BUS: u32 = 14;
+    const STORAGE_SPACES_BUS: u32 = 16;
+    const NVME_BUS: u32 = 17;
 
     fn on_windows_drive_of_type(drive_type: u32, path: &str) -> Storage {
-        storage_of_windows_path(path, |_| drive_type)
+        storage_of_windows_path(path, |_| drive_type, |_| None)
+    }
+
+    fn on_fixed_windows_drive_on_bus(bus_type: u32) -> Storage {
+        storage_of_windows_path(r"E:\Comics", |_| WINDOWS_FIXED_DRIVE, |_| Some(bus_type))
     }
 
     #[test]
     fn counts_a_windows_network_share_as_external() {
         assert_eq!(
-            on_windows_drive_of_type(FIXED_DRIVE, r"\\nas\comics\Series"),
+            on_windows_drive_of_type(WINDOWS_FIXED_DRIVE, r"\\nas\comics\Series"),
             Storage::External
         );
         assert_eq!(
-            on_windows_drive_of_type(FIXED_DRIVE, r"\\?\UNC\nas\comics"),
+            on_windows_drive_of_type(WINDOWS_FIXED_DRIVE, r"\\?\UNC\nas\comics"),
             Storage::External
         );
     }
@@ -198,11 +228,11 @@ mod tests {
     #[test]
     fn counts_a_folder_on_a_fixed_windows_drive_as_local() {
         assert_eq!(
-            on_windows_drive_of_type(FIXED_DRIVE, r"C:\Comics"),
+            on_windows_drive_of_type(WINDOWS_FIXED_DRIVE, r"C:\Comics"),
             Storage::Local
         );
         assert_eq!(
-            on_windows_drive_of_type(FIXED_DRIVE, r"\\?\D:\Comics"),
+            on_windows_drive_of_type(WINDOWS_FIXED_DRIVE, r"\\?\D:\Comics"),
             Storage::Local
         );
     }
@@ -232,14 +262,88 @@ mod tests {
     }
 
     #[test]
+    fn counts_a_folder_on_a_usb_or_card_drive_windows_reports_as_fixed_as_external() {
+        for bus_type in [
+            WINDOWS_USB_BUS,
+            WINDOWS_FIREWIRE_BUS,
+            WINDOWS_SD_BUS,
+            WINDOWS_MMC_BUS,
+            WINDOWS_ISCSI_BUS,
+        ] {
+            assert_eq!(
+                on_fixed_windows_drive_on_bus(bus_type),
+                Storage::External,
+                "{bus_type}"
+            );
+        }
+    }
+
+    #[test]
+    fn counts_a_folder_on_a_fixed_drive_inside_the_device_as_local() {
+        for bus_type in [
+            ATA_BUS,
+            RAID_BUS,
+            SAS_BUS,
+            SATA_BUS,
+            VIRTUAL_BUS,
+            STORAGE_SPACES_BUS,
+            NVME_BUS,
+        ] {
+            assert_eq!(
+                on_fixed_windows_drive_on_bus(bus_type),
+                Storage::Local,
+                "{bus_type}"
+            );
+        }
+    }
+
+    #[test]
+    fn asks_for_the_bus_of_the_drive_root_of_a_folder_on_a_fixed_drive() {
+        for path in [r"E:\Comics\Series", r"\\?\E:\Comics\Series"] {
+            let mut asked = None;
+
+            let _ = storage_of_windows_path(
+                path,
+                |_| WINDOWS_FIXED_DRIVE,
+                |root| {
+                    asked = Some(root.to_owned());
+                    None
+                },
+            );
+
+            assert_eq!(asked.as_deref(), Some(r"E:\"), "{path}");
+        }
+    }
+
+    #[test]
+    fn asks_for_no_bus_of_a_drive_whose_type_already_says_external() {
+        let mut asked = false;
+
+        let _ = storage_of_windows_path(
+            r"E:\Comics",
+            |_| WINDOWS_REMOVABLE_DRIVE,
+            |_| {
+                asked = true;
+                None
+            },
+        );
+
+        assert!(!asked);
+    }
+
+    #[test]
     fn asks_for_the_type_of_the_drive_root_of_the_folder() {
         for path in [r"E:\Comics\Series", r"\\?\E:\Comics\Series"] {
             let mut asked = None;
 
-            let _ = storage_of_windows_path(path, |root| {
-                asked = Some(root.to_owned());
-                FIXED_DRIVE
-            });
+            let _ = storage_of_windows_path(
+                path,
+                |root| {
+                    asked = Some(root.to_owned());
+                    WINDOWS_FIXED_DRIVE
+                },
+                |_| None,
+            );
 
             assert_eq!(asked.as_deref(), Some(r"E:\"), "{path}");
         }
