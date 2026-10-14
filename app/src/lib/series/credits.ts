@@ -1,5 +1,7 @@
 import type { CreatorRole, SeriesCreator } from "#lib/ipc/bindings.ts";
 
+type Credited = Pick<SeriesCreator, "name" | "role">;
+
 export type Credits =
   | {
       readonly kind: "by";
@@ -25,9 +27,7 @@ const ROLE_ORDER: readonly (CreatorRole | null)[] = [
   null,
 ];
 
-export function creatorsByRole(
-  creators: readonly SeriesCreator[],
-): RoleCredit[] {
+export function creatorsByRole(creators: readonly Credited[]): RoleCredit[] {
   return ROLE_ORDER.map((role) => ({
     role,
     names: creators
@@ -36,9 +36,7 @@ export function creatorsByRole(
   })).filter((credit) => credit.names.length > 0);
 }
 
-export function creditsOf(
-  creators: readonly SeriesCreator[],
-): Credits | undefined {
+export function creditsOf(creators: readonly Credited[]): Credits | undefined {
   if (creators.length === 0) {
     return undefined;
   }
