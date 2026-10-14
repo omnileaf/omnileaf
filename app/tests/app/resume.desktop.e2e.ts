@@ -8,6 +8,7 @@ import { FINISHED_SCAN_REPORT } from "./app-session.ts";
 import { type DesktopApp, launchDesktopApp } from "./desktop-app.ts";
 import { finishFirstLaunchIfShown } from "./first-launch.ts";
 import { pageShownScript } from "./page-shown.ts";
+import { sampleBookRow } from "./sample-book.ts";
 import { Session, xpath } from "./webdriver.ts";
 
 /** Clear of the port the shared app's WebDriver server listens on, since both apps run at once. */
@@ -24,7 +25,7 @@ const FIRST_SERIES_COVER = xpath(
 );
 const SERIES_HEADING = xpath("//h1[normalize-space()='Sample Series 01']");
 const FIRST_BOOK_LINK = xpath(
-  "//ul[@aria-label='Books']/li[1]//a[starts-with(normalize-space(), 'Sample Series 01 v01')]",
+  `${sampleBookRow(1)}//a[starts-with(normalize-space(), 'Sample Series 01 v01')]`,
 );
 const NEXT_PAGE = xpath("//button[@aria-label='Next page']");
 

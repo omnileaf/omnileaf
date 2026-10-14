@@ -10,6 +10,7 @@ import {
   openSampleBook,
   openSampleSeries,
   sampleBookLink,
+  sampleBookRow,
   shownPageCount,
 } from "./sample-book.ts";
 import { xpath } from "./webdriver.ts";
@@ -71,7 +72,7 @@ test("shows on the series page the page reached once back from the book through 
   await appSession().waitFor(SERIES_HEADING);
   const row = await appSession().waitFor(
     xpath(
-      `//ul[@aria-label='Books']/li[1][contains(normalize-space(), 'Page ${String(reached)}')]`,
+      `${sampleBookRow(1)}[contains(normalize-space(), 'Page ${String(reached)}')]`,
     ),
   );
   const upNext = await appSession().waitFor(
@@ -109,7 +110,7 @@ test("shows on the series page the page reached in a book started before once it
   await appSession().waitFor(SERIES_HEADING);
   const row = await appSession().waitFor(
     xpath(
-      `//ul[@aria-label='Books']/li[1][contains(normalize-space(), 'Page ${String(reached)}')]`,
+      `${sampleBookRow(1)}[contains(normalize-space(), 'Page ${String(reached)}')]`,
     ),
   );
   const upNext = await appSession().waitFor(

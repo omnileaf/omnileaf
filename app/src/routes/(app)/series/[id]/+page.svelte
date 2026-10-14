@@ -210,6 +210,7 @@
               }}
               onLoadAll={() => books.loadAll()}
               onMark={mark}
+              platform={data.appInfo.platform}
             />
           {/key}
         {/if}

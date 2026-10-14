@@ -14,6 +14,10 @@ export class BookSelection<BookId> {
     return this.#picked.has(book);
   }
 
+  hasAll(listed: readonly BookId[]): boolean {
+    return listed.length > 0 && listed.every((book) => this.#picked.has(book));
+  }
+
   begin(book?: BookId): void {
     this.isSelecting = true;
     if (book !== undefined) {

@@ -268,12 +268,18 @@ for (const platform of PLATFORMS) {
             page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
           ).toBeVisible();
           if (isPicking) {
-            await page
-              .getByRole("button", { name: "Select", exact: true })
-              .click();
-            await page
-              .getByRole("checkbox", { name: `Select ${shelf.titleOf(0)}` })
-              .check();
+            const select = page.getByRole("button", {
+              name: "Select",
+              exact: true,
+            });
+            const firstBook = page.getByRole("checkbox", {
+              name: `Select ${shelf.titleOf(0)}`,
+            });
+            await expect(select.or(firstBook)).toBeVisible();
+            if (await select.isVisible()) {
+              await select.click();
+            }
+            await firstBook.check();
           }
 
           await expectNothingSpills(page);
