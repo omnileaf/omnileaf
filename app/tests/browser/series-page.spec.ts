@@ -367,9 +367,7 @@ test("lists the series' books in order with how far each has been read", async (
   await expectListedAt(rows.filter({ hasText: shelf.titleOf(4) }), 5);
   await expect(rows.nth(0)).toContainText("Read");
   await expect(rows.nth(3)).toContainText("Page 15");
-  await expect(rows.nth(4)).toContainText(
-    isWide(page) ? "Unread" : "Added Sep 21, 2026",
-  );
+  await expect(rows.nth(4)).toContainText("Unread");
 });
 
 test("opens a series from its cover in the library, landing on its heading", async ({

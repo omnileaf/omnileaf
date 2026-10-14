@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowDownUp, ChevronDown, Search } from "@lucide/svelte";
+  import { ArrowDownUp, Search } from "@lucide/svelte";
 
   import { tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
@@ -30,6 +30,7 @@
   const SHOWN = [
     { shown: "all", label: m.series_show_all },
     { shown: "unread", label: m.series_show_unread },
+    { shown: "bookmarked", label: m.series_show_bookmarked },
   ] as const satisfies readonly {
     shown: BooksShown;
     label: () => string;
@@ -41,7 +42,7 @@
     direction: SortDirection;
     label: () => string;
   }[];
-  const ICON_SIZE = 15;
+  const ICON_SIZE = 16;
 
   const isWide = new MediaQuery(EXPANDED_QUERY);
   let isSearching = $state(false);
@@ -85,7 +86,7 @@
 <div class="flex flex-wrap items-center gap-sm">
   <InputGroup
     class={[
-      "gap-sm rounded-control border border-field bg-card px-sm text-muted block-pointer-target inline-series-search focus-within:border-accent max-expanded:order-last max-expanded:inline-full",
+      "gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button inline-series-search focus-within:border-accent max-expanded:order-last max-expanded:block-touch-target max-expanded:inline-full",
       !isSearching && "max-expanded:hidden",
     ]}
   >
@@ -96,7 +97,7 @@
       aria-label={m.series_find_book()}
       placeholder={m.series_find_book()}
       value={search}
-      class="text-detail text-foreground"
+      class="text-small text-foreground max-expanded:text-body"
       oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
         onSearch(event.currentTarget.value);
       }}
@@ -118,7 +119,7 @@
       <ToggleGroupItem
         value={shown}
         data-label={label()}
-        class="max-expanded:flex-1"
+        class="max-expanded:grow"
       >
         {label()}
       </ToggleGroupItem>
@@ -138,7 +139,7 @@
         <Button
           {...props}
           look="outline"
-          class="flex shrink-0 items-center justify-center block-pointer-target inline-pointer-target"
+          class="flex shrink-0 items-center justify-center rounded-shadcn-control font-medium shadow-raised block-touch-target inline-touch-target"
         >
           <Search size={ICON_SIZE} aria-hidden="true" />
         </Button>
@@ -154,7 +155,7 @@
               {...props}
               look="outline"
               aria-label={m.series_sort({ order })}
-              class="flex shrink-0 items-center justify-center gap-icon-gap block-pointer-target max-expanded:inline-pointer-target expanded:ms-auto expanded:px-md expanded:text-detail"
+              class="flex shrink-0 items-center justify-center gap-sm rounded-shadcn-control font-medium block-touch-target max-expanded:shadow-raised max-expanded:inline-touch-target expanded:ms-auto expanded:rounded-shadcn-control expanded:border-transparent expanded:bg-transparent expanded:px-md expanded:text-small expanded:font-medium expanded:block-pointer-button expanded:hover:bg-hover"
             >
               <ArrowDownUp size={ICON_SIZE} aria-hidden="true" />
               <span class="grid max-expanded:hidden">
@@ -165,15 +166,10 @@
                       listing.direction !== direction && "invisible",
                     ]}
                   >
-                    {label()}
+                    {m.series_sort({ order: label() })}
                   </span>
                 {/each}
               </span>
-              <ChevronDown
-                size={ICON_SIZE}
-                aria-hidden="true"
-                class="text-muted max-expanded:hidden"
-              />
             </Button>
           {/snippet}
         </DropdownMenuTrigger>
