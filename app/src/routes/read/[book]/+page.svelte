@@ -91,6 +91,8 @@
     </div>
   </main>
 {/if}
-<div class="fixed inset-x-none inset-be-safe-bottom z-notice">
+<div
+  class="fixed inset-x-none inset-be-safe-bottom z-notice max-expanded:inset-be-reader-toast"
+>
   <Toasts {notices} platform={data.appInfo.platform} theme={theme.resolved} />
 </div>
