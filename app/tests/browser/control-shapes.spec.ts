@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { addFolderBesideFolders, addFolderInPageHeading } from "./controls.ts";
+import { addFolderBesideFolders } from "./controls.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   boxOf,
@@ -19,7 +19,8 @@ const BUTTON_CORNER = "10px";
 const ROW_CORNER = "8px";
 const KEY_CORNER = "6px";
 const PAGE_BUTTON_HEIGHT = 36;
-const PHONE_BUTTON_HEIGHT = 52;
+const IOS_BUTTON_HEIGHT = 50;
+const SHADCN_CORNER = "8px";
 const PHONE_SECTION_BUTTON_HEIGHT = 48;
 const IOS_BUTTON_CORNER = "14px";
 const SHEET_CORNER = "24px";
@@ -111,17 +112,17 @@ test.describe("on a desktop with an empty library", () => {
     test.skip(viewportOf(page).width < LARGE_MIN_WIDTH, "a desktop window");
   });
 
-  test("draws the library heading's Add a folder 36px tall with 10px corners", async ({
+  test("draws the empty library's Add a folder 36px tall with 8px corners", async ({
     page,
   }) => {
     await page.goto("/");
-    const addFolder = addFolderInPageHeading(page);
+    const addFolder = emptyStateAddFolder(page);
     await expect(addFolder).toBeVisible();
 
     const box = await boxOf(addFolder);
 
     expect(box.height).toBe(PAGE_BUTTON_HEIGHT);
-    expect(await cornerOf(addFolder)).toBe(BUTTON_CORNER);
+    expect(await cornerOf(addFolder)).toBe(SHADCN_CORNER);
   });
 });
 
@@ -235,17 +236,16 @@ test.describe("on an Android phone", () => {
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
   });
 
-  test("draws the empty library's Add a folder as a 52px pill", async ({
+  test("draws the empty library's Add a folder 48px tall with 8px corners", async ({
     page,
   }) => {
     await page.goto("/");
     const button = emptyStateAddFolder(page);
 
     const box = await boxOf(button);
-    const corner = await cornerOf(button);
 
-    expect(box.height).toBe(PHONE_BUTTON_HEIGHT);
-    expect(parseFloat(corner)).toBeGreaterThanOrEqual(box.height / 2);
+    expect(box.height).toBe(PHONE_SECTION_BUTTON_HEIGHT);
+    expect(await cornerOf(button)).toBe(SHADCN_CORNER);
   });
 
   test("draws the Folders heading's Add a folder as a 48px pill", async ({
@@ -298,7 +298,7 @@ test.describe("on an iPhone", () => {
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
   });
 
-  test("draws the empty library's Add a folder 52px tall with 14px corners", async ({
+  test("draws the empty library's Add a folder 50px tall with 14px corners", async ({
     page,
   }) => {
     await page.goto("/");
@@ -306,7 +306,7 @@ test.describe("on an iPhone", () => {
 
     const box = await boxOf(button);
 
-    expect(box.height).toBe(PHONE_BUTTON_HEIGHT);
+    expect(box.height).toBe(IOS_BUTTON_HEIGHT);
     expect(await cornerOf(button)).toBe(IOS_BUTTON_CORNER);
   });
 
