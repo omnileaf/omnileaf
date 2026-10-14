@@ -16,7 +16,7 @@
   bind:this={ref}
   data-slot="table-row"
   class={cn(
-    "border-be border-border transition-control last:border-be-0 hover:bg-hover",
+    "border-be border-border transition-control last:border-be-0 hover:bg-well",
     className,
   )}
   {...restProps}
