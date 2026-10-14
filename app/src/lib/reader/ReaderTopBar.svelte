@@ -35,6 +35,8 @@
     pageCount,
     quickSettings,
     more,
+    isSettingsOpen,
+    onSettings,
     onFullScreen,
   }: {
     seriesHref: string;
@@ -44,6 +46,8 @@
     pageCount: number;
     quickSettings: Snippet;
     more: Snippet;
+    isSettingsOpen: boolean;
+    onSettings: () => void;
     onFullScreen: () => void;
   } = $props();
 
@@ -136,9 +140,23 @@
   <ComingSoon label={m.reader_bookmark()} class={UPCOMING}>
     <Bookmark size={READER_ICON_SIZE} aria-hidden="true" />
   </ComingSoon>
-  <ComingSoon label={m.reader_settings()} class={UPCOMING}>
-    <SlidersHorizontal size={READER_ICON_SIZE} aria-hidden="true" />
-  </ComingSoon>
+  <Tooltip
+    label={m.reader_settings()}
+    type="button"
+    aria-label={m.reader_settings()}
+    aria-expanded={isSettingsOpen}
+    onclick={onSettings}
+  >
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        look="icon"
+        class={cn(READER_BUTTON, isSettingsOpen && "bg-hover")}
+      >
+        <SlidersHorizontal size={READER_ICON_SIZE} aria-hidden="true" />
+      </Button>
+    {/snippet}
+  </Tooltip>
   <Tooltip
     label={m.reader_full_screen()}
     type="button"

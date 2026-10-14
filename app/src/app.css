@@ -442,6 +442,12 @@
   --spacing-reader-crumb-book: 12.5rem;
   --spacing-slider-track: 0.375rem;
   --spacing-reader-note: 15rem;
+  --spacing-reader-edge: 0.75rem;
+  --spacing-reader-settings: 23rem;
+  --spacing-reader-settings-top: 4.75rem;
+  --spacing-reader-settings-room: 24.5rem;
+  --spacing-reader-sheet: 85dvh;
+  --spacing-reader-light: 17.5rem;
   --spacing-series-columns: 2.5rem;
   --spacing-series-column-added: 6.5rem;
   --spacing-series-column-progress: 7.875rem;
@@ -860,6 +866,10 @@
   --color-reader: var(--reader-ground);
   --color-reader-wide: var(--reader-ground);
   --color-reader-page: var(--reader-page);
+  --color-reader-black: var(--reader-black);
+  --color-reader-grey: var(--reader-grey);
+  --color-reader-white: var(--reader-white);
+  --color-reader-warmth: var(--reader-warmth);
   --color-reader-glass: var(--reader-glass);
   --color-reader-glass-wide: var(--reader-glass-wide);
   --color-reader-glass-edge: var(--reader-glass-edge);
@@ -999,6 +1009,10 @@
     position: absolute;
     inset: calc((var(--spacing-touch-target) - 1lh) / -2) -2px;
   }
+}
+
+@utility grid-cols-setting-row {
+  grid-template-columns: 6.75rem minmax(0, 1fr);
 }
 
 @utility grid-cols-details {

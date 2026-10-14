@@ -36,6 +36,7 @@
   --reader-black: oklch(0 0 0);
   --reader-grey: oklch(0.32 0 0);
   --reader-white: oklch(1 0 0);
+  --reader-warmth: oklch(0.75 0.17 60);
   --ios-grouped-bg: oklch(0.967 0.003 286);
   --ios-grouped-cell: oklch(1 0 0);
   --ios-separator: oklch(0.235 0.004 286 / 22%);

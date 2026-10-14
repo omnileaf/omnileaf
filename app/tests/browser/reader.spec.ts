@@ -895,10 +895,8 @@ test.describe("the controls still to come", () => {
   const COMING_SOON = [
     { name: "Two pages", isDesktopOnly: false },
     { name: "Fit height", isDesktopOnly: true },
-    { name: "Light", isDesktopOnly: false },
     { name: "Keyboard shortcuts", isDesktopOnly: true },
     { name: "Bookmark this page", isDesktopOnly: false },
-    { name: "Reading settings", isDesktopOnly: false },
   ] as const;
 
   function comingSoon(page: Page, name: string): Locator {
