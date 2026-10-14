@@ -20,8 +20,8 @@ const LIBRARY_LINK = mainNavigationLink("Library");
 const SETTINGS_LINK = mainNavigationLink("Settings");
 const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
-const FINISHED_SCAN_REPORT = xpath(
-  "//*[@role='status'][starts-with(normalize-space(), 'Found ')]",
+export const FINISHED_SCAN_REPORT = xpath(
+  "//li[@data-sonner-toast]//p[starts-with(normalize-space(), 'Added ')]",
 );
 const ON_LIBRARY_PAGE = "return location.pathname === '/';";
 

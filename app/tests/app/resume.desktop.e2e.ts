@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import { afterAll, beforeAll, expect, inject, test } from "vitest";
 
+import { FINISHED_SCAN_REPORT } from "./app-session.ts";
 import { type DesktopApp, launchDesktopApp } from "./desktop-app.ts";
 import { finishFirstLaunchIfShown } from "./first-launch.ts";
 import { pageShownScript } from "./page-shown.ts";
@@ -18,9 +19,6 @@ const PAGE_READ_TO = 3;
 
 const LIBRARY_LINK = xpath("//nav//a[normalize-space()='Library']");
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
-const FINISHED_SCAN_REPORT = xpath(
-  "//li[@data-sonner-toast]//p[starts-with(normalize-space(), 'Added ')]",
-);
 const FIRST_SERIES_COVER = xpath(
   "//ul[@aria-label='Series']//a[.//*[normalize-space()='Sample Series 01']]",
 );

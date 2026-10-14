@@ -4,6 +4,7 @@ import type { AddressInfo } from "node:net";
 import { expect, onTestFinished, test } from "vitest";
 
 import {
+  FINISHED_SCAN_REPORT,
   mainNavigationLink,
   openLibraryPage,
   useAppSession,
@@ -13,9 +14,6 @@ import { segmentedOption } from "./segmented-control.ts";
 import { xpath } from "./webdriver.ts";
 
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
-const FINISHED_SCAN_REPORT = xpath(
-  "//li[@data-sonner-toast]//p[starts-with(normalize-space(), 'Added ')]",
-);
 const SETTINGS_LINK = mainNavigationLink("Settings");
 const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
 const LINKED_FOLDER_NAMES = xpath(

@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 import { afterAll, beforeAll, expect, test } from "vitest";
 
 import {
+  FINISHED_SCAN_REPORT,
   mainNavigationLink,
   openLibraryPage,
   useAppSession,
@@ -21,9 +22,6 @@ const SETUP_TIMEOUT_MS = 180_000;
 const SETTINGS_LINK = mainNavigationLink("Settings");
 const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
-const FINISHED_SCAN_REPORT = xpath(
-  "//*[@role='status'][starts-with(normalize-space(), 'Found ')]",
-);
 
 const DEVICE_STORAGE_CRUMB = xpath(
   "(//*[contains(@resource-id, ':id/breadcrumb_text')])[1]",

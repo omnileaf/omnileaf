@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import { afterEach, beforeAll, beforeEach, expect, inject, test } from "vitest";
 
 import {
+  FINISHED_SCAN_REPORT,
   mainNavigationLink,
   openLibraryPage,
   useAppSession,
@@ -26,9 +27,6 @@ const PICKER_TEST_TIMEOUT_MS = 220_000;
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
 const READY_ADD_FOLDER_BUTTON = xpath(
   "//button[normalize-space()='Add a folder'][not(@disabled)]",
-);
-const FINISHED_SCAN_REPORT = xpath(
-  "//li[@data-sonner-toast]//p[starts-with(normalize-space(), 'Added ')]",
 );
 const SETTINGS_LINK = mainNavigationLink("Settings");
 const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
