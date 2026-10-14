@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { type Snippet, untrack } from "svelte";
   import type { Attachment } from "svelte/attachments";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
@@ -8,7 +8,9 @@
   import { omniUrl } from "#lib/omni/omni-url.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { fittedSize } from "#lib/reader/page-fit.ts";
+  import { fittedTo } from "#lib/reader/page-fit.ts";
+  import type { PageFit } from "#lib/reader/reader-settings.svelte.ts";
+  import type { Spread } from "#lib/reader/spreads.ts";
   import { pagesAround } from "#lib/reader/page-window.ts";
 
   /** Pages decoded ahead of the one shown, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
@@ -22,12 +24,22 @@
   let {
     pages,
     shown,
+    spread,
+    fit,
+    isReversed,
+    overlay,
     onShownReady,
   }: {
     pages: readonly BookPage[];
     shown: number;
+    spread: Spread;
+    fit: PageFit;
+    isReversed: boolean;
+    overlay: Snippet;
     onShownReady: () => void;
   } = $props();
+
+  let scroller: HTMLDivElement | undefined = $state();
 
   const decoded = new SvelteSet<number>();
   const failed = new SvelteSet<number>();
@@ -42,8 +54,22 @@
   function sizeOf(page: BookPage) {
     return page.size === null
       ? undefined
-      : fittedSize(page.size, { width: spaceWidth, height: spaceHeight });
+      : fittedTo(
+          page.size,
+          { width: spaceWidth / spread.length, height: spaceHeight },
+          fit,
+        );
   }
+
+  /** Starts each spread at its top, since a page fitted to the width scrolls down. */
+  function startAtTop(page: number): void {
+    scroller?.scrollTo({ top: 0, left: 0 });
+    scroller?.setAttribute("data-shown-page", String(page + 1));
+  }
+
+  $effect(() => {
+    startAtTop(shown);
+  });
 
   /** Forgets how the page's last image fared, so an image mounted afresh shows only once it decodes and a failure clears once it loads. */
   function freshImage(index: number): Attachment<HTMLImageElement> {
@@ -98,62 +124,86 @@
 </script>
 
 <div
+  bind:this={scroller}
   bind:clientWidth={spaceWidth}
   bind:clientHeight={spaceHeight}
-  class="absolute inset-none overflow-hidden"
+  class={[
+    "absolute inset-none grid",
+    fit === "screen" ? "overflow-hidden" : "overflow-auto overscroll-contain",
+  ]}
 >
-  {#each kept as index (index)}
-    {@const page = pages[index]}
-    {#if page !== undefined}
-      {@const size = sizeOf(page)}
-      {@const isShown = index === shown}
-      <div
-        class={[
-          "absolute inset-none m-auto",
-          size === undefined ? "block-full inline-full" : "reader-page-size",
-          isShown ? "bg-reader-page" : "invisible",
-        ]}
-        style:--page-inline={size === undefined
-          ? undefined
-          : `${String(size.width)}px`}
-        style:--page-block={size === undefined
-          ? undefined
-          : `${String(size.height)}px`}
-      >
-        <img
-          {@attach freshImage(index)}
-          src={sourceOf(page, index)}
-          alt={m.reader_page({ page: index + 1 })}
-          aria-hidden={isShown ? undefined : "true"}
-          decoding="async"
-          draggable="false"
-          class={[
-            "object-contain select-none block-full inline-full",
-            !decoded.has(index) && "invisible",
-          ]}
-          onload={(event) => {
-            if (event.currentTarget instanceof HTMLImageElement) {
-              void decode(event.currentTarget, index);
-            }
-          }}
-          onerror={() => {
-            onFailure(index);
-          }}
-        />
-      </div>
-    {/if}
-  {/each}
   <div
-    role="status"
-    class="pointer-events-none absolute inset-none flex items-center justify-center text-reader-muted"
+    class={[
+      "col-start-1 row-start-1 flex items-center justify-center",
+      isReversed && "flex-row-reverse",
+    ]}
+    style:min-width="{spaceWidth}px"
+    style:min-height="{spaceHeight}px"
   >
-    {#if failed.has(shown)}
-      <p class="px-xl text-center text-body">{m.reader_page_failed()}</p>
-    {:else if isSlow}
-      <Spinner
-        size={SPINNER_SIZE}
-        label={m.reader_page_loading({ page: shown + 1 })}
-      />
-    {/if}
+    {#each kept as index (index)}
+      {@const page = pages[index]}
+      {#if page !== undefined}
+        {@const size = sizeOf(page)}
+        {@const isShown = spread.includes(index)}
+        <div
+          class={[
+            isShown
+              ? "relative shrink-0 bg-reader-page"
+              : "invisible absolute inset-none",
+            isShown &&
+              (size === undefined
+                ? "block-full inline-full"
+                : "reader-page-size"),
+          ]}
+          style:--page-inline={size === undefined
+            ? undefined
+            : `${String(size.width)}px`}
+          style:--page-block={size === undefined
+            ? undefined
+            : `${String(size.height)}px`}
+        >
+          <img
+            {@attach freshImage(index)}
+            src={sourceOf(page, index)}
+            alt={m.reader_page({ page: index + 1 })}
+            aria-hidden={isShown ? undefined : "true"}
+            decoding="async"
+            draggable="false"
+            class={[
+              "object-contain select-none block-full inline-full",
+              !decoded.has(index) && "invisible",
+            ]}
+            onload={(event) => {
+              if (event.currentTarget instanceof HTMLImageElement) {
+                void decode(event.currentTarget, index);
+              }
+            }}
+            onerror={() => {
+              onFailure(index);
+            }}
+          />
+        </div>
+      {/if}
+    {/each}
+  </div>
+  <div
+    class="sticky inset-s-none inset-bs-none col-start-1 row-start-1"
+    style:width="{spaceWidth}px"
+    style:height="{spaceHeight}px"
+  >
+    {@render overlay()}
+    <div
+      role="status"
+      class="pointer-events-none absolute inset-none flex items-center justify-center text-reader-muted"
+    >
+      {#if failed.has(shown)}
+        <p class="px-xl text-center text-body">{m.reader_page_failed()}</p>
+      {:else if isSlow}
+        <Spinner
+          size={SPINNER_SIZE}
+          label={m.reader_page_loading({ page: shown + 1 })}
+        />
+      {/if}
+    </div>
   </div>
 </div>

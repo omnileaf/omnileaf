@@ -11,10 +11,12 @@
   import type { ReadingDirection } from "#lib/reader/reading-direction.svelte.ts";
 
   import { READER_GLASS } from "./reader-bar.ts";
+  import { type Spread, spreadPosition } from "./spreads.ts";
 
   let {
     pages,
     shown,
+    spread,
     previous,
     next,
     direction,
@@ -23,6 +25,7 @@
   }: {
     pages: readonly BookPage[];
     shown: number;
+    spread: Spread;
     previous: SeriesNeighbour | null;
     next: SeriesNeighbour | null;
     direction: ReadingDirection;
@@ -55,7 +58,7 @@
     <span
       class="shrink-0 text-center text-small font-medium whitespace-nowrap tabular-nums min-inline-reader-count expanded:min-inline-reader-count-wide"
     >
-      {m.reader_position({ page: shown + 1, count })}
+      {spreadPosition(spread, count)}
     </span>
     <PageSlider
       {shown}
