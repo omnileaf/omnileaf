@@ -7,6 +7,7 @@ import {
   MEDIUM_MIN_WIDTH,
   settle,
   test,
+  tokenColour,
   transitionsOf,
   viewportOf,
   watchTransitions,
@@ -69,7 +70,6 @@ const LIBRARY_BACKEND: FakeBackend = {
   libraryFolderBookCount: () => 342,
 };
 
-const DANGER_SOFT = "rgb(246, 227, 227)";
 const DIALOG_BUTTON_HEIGHT = 40;
 const SHEET_BUTTON_HEIGHT = 52;
 const SHEET_INSET = 20;
@@ -262,7 +262,10 @@ test("marks the removal question with a round danger badge", async ({
   const badge = page
     .getByRole("alertdialog")
     .locator("span:has(> svg.lucide-folder-minus)");
-  await expect(badge).toHaveCSS("background-color", DANGER_SOFT);
+  await expect(badge).toHaveCSS(
+    "background-color",
+    await tokenColour(page, "--color-danger-soft"),
+  );
   const { width, height } = await boxOf(badge);
   const radius = await badge.evaluate((element) =>
     parseFloat(getComputedStyle(element).borderRadius),

@@ -158,6 +158,28 @@ export async function setTextScale(page: Page, scale: number): Promise<void> {
 
 type Box = NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>;
 
+/** The colour a theme token resolves to, as the browser writes computed colours, so a test follows whichever theme the app ships; naming a theme reads that theme's value of a role such as `--background`. */
+export function tokenColour(
+  page: Page,
+  token: string,
+  theme?: "light" | "dark",
+): Promise<string> {
+  return page.evaluate(
+    ([name, themed]) => {
+      const probe = document.createElement("span");
+      probe.style.color = `var(${name})`;
+      if (themed !== undefined) {
+        probe.dataset.theme = themed;
+      }
+      document.body.append(probe);
+      const colour = getComputedStyle(probe).color;
+      probe.remove();
+      return colour;
+    },
+    [token, theme] as const,
+  );
+}
+
 export async function boxOf(locator: Locator): Promise<Box> {
   const box = await locator.boundingBox();
   if (box === null) {
