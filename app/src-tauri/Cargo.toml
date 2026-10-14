@@ -48,6 +48,7 @@ objc2-foundation.workspace = true
 tauri-plugin-dialog.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk.workspace = true
 zbus.workspace = true
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]

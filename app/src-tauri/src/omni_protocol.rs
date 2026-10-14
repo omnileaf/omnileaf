@@ -8,6 +8,8 @@ pub(crate) const SCHEME: &str = "omni";
 const NO_SNIFFING: &str = "nosniff";
 const KEEP_FOR_GOOD: &str = "public, max-age=31536000, immutable";
 const NOT_STORED: &str = "no-store";
+#[cfg(target_os = "linux")]
+const EVERY_OMNI_URL: &str = "omni://localhost/*";
 
 #[expect(
     clippy::needless_pass_by_value,
@@ -38,6 +40,22 @@ pub(crate) fn answer<R: Runtime>(
         };
         answer.with(resource);
     });
+}
+
+/// `WebKitGTK` shows an image from a custom scheme only to a page of that scheme's origin, and `tauri dev` serves the pages from the dev server's.
+#[cfg(target_os = "linux")]
+pub(crate) fn show_to_every_page<R: Runtime>(
+    webview: &tauri::Webview<R>,
+    _: &tauri::webview::PageLoadPayload<'_>,
+) {
+    use webkit2gtk::WebViewExt;
+
+    let opened = webview.with_webview(|platform| {
+        platform.inner().set_cors_allowlist(&[EVERY_OMNI_URL]);
+    });
+    if let Err(error) = opened {
+        tracing::warn!(%error, "show omni images to every page, so a page from another origin shows no covers");
+    }
 }
 
 type Respond = Box<dyn FnOnce(http::Response<Vec<u8>>) + Send>;

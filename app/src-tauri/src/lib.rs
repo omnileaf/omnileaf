@@ -71,6 +71,8 @@ pub fn run() {
         });
     #[cfg(desktop)]
     let app = app.plugin(tauri_plugin_dialog::init());
+    #[cfg(target_os = "linux")]
+    let app = app.on_page_load(omni_protocol::show_to_every_page);
     #[cfg(target_os = "android")]
     let app = app
         .plugin(omnileaf_folder_access::init())
