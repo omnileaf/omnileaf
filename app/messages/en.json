@@ -944,10 +944,7 @@
   "series_role_story_and_art": "Story and art",
   "series_more_creators": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCount = count: number"
-      ],
+      "declarations": ["input count", "local formattedCount = count: number"],
       "match": {
         "*": "+{formattedCount} more"
       }
@@ -955,10 +952,7 @@
   ],
   "series_show_all_creators": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCount = count: number"
-      ],
+      "declarations": ["input count", "local formattedCount = count: number"],
       "match": {
         "*": "Show all {formattedCount} creators in Details"
       }
