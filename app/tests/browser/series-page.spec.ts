@@ -901,14 +901,18 @@ test.describe("in the list on narrower screens", () => {
   }
 });
 
-test.describe("swiping a book on a phone", () => {
+test.describe("swiping a book in the list", () => {
+  const FULL_SWIPE = 0.75;
+  const SHORT_SWIPE = 0.25;
+
   test.beforeEach(({ page }) => {
     test.skip(isWide(page), "books swipe in the list below wide screens");
   });
 
-  async function swipe(page: Page, index: number, across: number) {
+  async function swipe(page: Page, index: number, share: number) {
     const link = books(page).nth(index).getByRole("link");
     const box = await boxOf(link);
+    const across = box.width * share;
     const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
     const at = (moved: number) => ({
       pointerType: "touch",
@@ -929,7 +933,7 @@ test.describe("swiping a book on a phone", () => {
   }) => {
     await openSeries(page);
 
-    await swipe(page, 5, 260);
+    await swipe(page, 5, FULL_SWIPE);
 
     await expect(books(page).nth(5)).toContainText("Read");
     expect(shelf.marked).toEqual([{ books: [shelf.idOf(5)], mark: "read" }]);
@@ -944,7 +948,7 @@ test.describe("swiping a book on a phone", () => {
   test("marks a read book unread with a full swipe right", async ({ page }) => {
     await openSeries(page);
 
-    await swipe(page, 0, 260);
+    await swipe(page, 0, FULL_SWIPE);
 
     expect(shelf.marked).toEqual([{ books: [shelf.idOf(0)], mark: "unread" }]);
   });
@@ -952,7 +956,7 @@ test.describe("swiping a book on a phone", () => {
   test("reveals the action of a short swipe, to tap", async ({ page }) => {
     await openSeries(page);
 
-    await swipe(page, 5, 90);
+    await swipe(page, 5, SHORT_SWIPE);
     expect(shelf.marked).toEqual([]);
     await books(page).nth(5).getByRole("button", { name: "Mark read" }).click();
 
@@ -972,7 +976,7 @@ test.describe("swiping a book on a phone", () => {
       .click();
     await openSeries(page);
 
-    await swipe(page, 5, -260);
+    await swipe(page, 5, -FULL_SWIPE);
 
     expect(markedBefore).toBe(0);
     expect(shelf.marked).toEqual([{ books: [shelf.idOf(5)], mark: "read" }]);
@@ -984,7 +988,7 @@ test.describe("swiping a book on a phone", () => {
       document.documentElement.dir = "rtl";
     });
 
-    await swipe(page, 5, -260);
+    await swipe(page, 5, -FULL_SWIPE);
 
     expect(shelf.marked).toEqual([{ books: [shelf.idOf(5)], mark: "read" }]);
   });
@@ -995,7 +999,7 @@ test.describe("swiping a book on a phone", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await openSeries(page);
 
-    await swipe(page, 5, 90);
+    await swipe(page, 5, SHORT_SWIPE);
 
     await expect(books(page).nth(5).locator("[data-swiped]")).toHaveCSS(
       "transition-duration",
