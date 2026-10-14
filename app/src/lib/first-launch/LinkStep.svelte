@@ -6,7 +6,7 @@
   import type { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import LinkedFolders from "#lib/library/LinkedFolders.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
-  import type { Notices } from "#lib/notices/notices.svelte.ts";
+  import type { Notices } from "#lib/notices/notices.ts";
   import WidthWording from "#lib/page/WidthWording.svelte";
   import { atEveryWidth, type WordingByWidth } from "#lib/page/wording.ts";
   import { m } from "#lib/paraglide/messages.js";

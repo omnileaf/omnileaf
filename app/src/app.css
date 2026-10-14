@@ -464,6 +464,9 @@
     var(--spacing-md),
     calc(var(--spacing-safe-bottom) - var(--spacing-md))
   );
+  --spacing-toast-lift: calc(
+    var(--spacing-floating-clearance) - var(--spacing-md)
+  );
   --spacing-floating-clearance: calc(
     var(--spacing-floating-bar) + var(--spacing-floating-gap) +
       var(--spacing-lg)
@@ -525,13 +528,14 @@
   --radius-ios-button: 0.875rem;
   --radius-list: 0.625rem;
   --radius-panel: 1rem;
-  --radius-notice: 1.25rem;
+  --radius-toast: 1.125rem;
+  --radius-toast-wide: 1rem;
   --radius-crash-screen-button: 0.875rem;
   --radius-dialog: 1rem;
   --radius-dialog-button: 0.625rem;
   --radius-checkbox: 0.3125rem;
 
-  --container-notice: 27.5rem;
+  --container-toast: 25.25rem;
   --container-problem: 32.5rem;
 
   --z-index-series-band: -1;
@@ -556,10 +560,7 @@
     0 12px 32px var(--color-popover-shadow),
     0 2px 6px var(--color-popover-contact);
   --shadow-knob: 0 1px 2px var(--color-knob-shadow);
-  --shadow-notice: 0 12px 34px rgb(0 0 0 / 0.25);
-  --shadow-notice-wide: 0 14px 40px rgb(0 0 0 / 0.2);
-  --shadow-undo: 0 12px 34px rgb(0 0 0 / 0.3);
-  --shadow-undo-wide: 0 14px 40px rgb(0 0 0 / 0.3);
+  --shadow-toast: 0 8px 24px rgb(0 0 0 / 0.12);
   --shadow-back-swipe: -10px 0 28px rgb(0 0 0 / 0.18);
   --shadow-back-swipe-rtl: 10px 0 28px rgb(0 0 0 / 0.18);
   --shadow-series-cover: 0 12px 30px rgb(0 0 0 / 0.3);
@@ -624,16 +625,6 @@
   --color-warning-edge: #ebd6a8;
   --color-warning-strong: #b06f00;
   --color-on-warning: #3b2f1e;
-  --color-toast: #1c1b18;
-  --color-on-toast: #f1ede4;
-  --color-toast-muted: #c9c3b6;
-  --color-toast-key: rgb(255 255 255 / 0.1);
-  --color-toast-action: #7fcb9d;
-  --color-on-toast-action: #0f2418;
-  --color-toast-hover: rgb(241 237 228 / 0.08);
-  --color-toast-pressed: rgb(241 237 228 / 0.12);
-  --color-toast-action-hover: #95d6ae;
-  --color-toast-action-pressed: #6bb98a;
   --color-dialog-shadow: rgb(28 27 24 / 0.22);
   --color-dialog-contact: rgb(28 27 24 / 0.08);
   --color-dialog-edge: transparent;
@@ -696,8 +687,6 @@
   --animate-gear-turn: gear-turn var(--transition-duration-move) var(--ease-out);
   --animate-step-grow: step-grow var(--transition-duration-grow)
     var(--ease-emphasized);
-  --animate-notice-rise: notice-rise var(--transition-duration-grow)
-    var(--ease-emphasized);
   --animate-spin: spin var(--transition-duration-spin) linear infinite;
 
   @keyframes pill-grow {
@@ -751,13 +740,6 @@
   @keyframes spin {
     to {
       rotate: 360deg;
-    }
-  }
-
-  @keyframes notice-rise {
-    from {
-      opacity: 0;
-      translate: 0 var(--spacing-lg);
     }
   }
 }
@@ -873,16 +855,6 @@
   --color-warning-edge: #5a4a2a;
   --color-warning-strong: #e0a83a;
   --color-on-warning: #f1ede4;
-  --color-toast: #f1ede4;
-  --color-on-toast: #1c1b18;
-  --color-toast-muted: #5f5b52;
-  --color-toast-key: rgb(0 0 0 / 0.08);
-  --color-toast-action: #2f6f4f;
-  --color-on-toast-action: #ffffff;
-  --color-toast-hover: rgb(28 27 24 / 0.06);
-  --color-toast-pressed: rgb(28 27 24 / 0.1);
-  --color-toast-action-hover: #285f44;
-  --color-toast-action-pressed: #22513a;
   --color-glass: rgb(36 34 30 / 0.72);
   --color-glass-edge: rgb(255 255 255 / 0.1);
   --color-glass-pill: rgb(255 255 255 / 0.12);

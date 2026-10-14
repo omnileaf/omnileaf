@@ -24,7 +24,7 @@
     languageSettingForDocument,
     setLanguageSetting,
   } from "#lib/language/language.svelte.ts";
-  import { Notices, setNotices } from "#lib/notices/notices.svelte.ts";
+  import { Notices, setNotices } from "#lib/notices/notices.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";

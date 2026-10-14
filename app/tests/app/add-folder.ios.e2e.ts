@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import { afterEach, beforeAll, beforeEach, expect, inject, test } from "vitest";
 
 import {
+  FINISHED_SCAN_REPORT,
   mainNavigationLink,
   openLibraryPage,
   useAppSession,
@@ -26,9 +27,6 @@ const PICKER_TEST_TIMEOUT_MS = 220_000;
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
 const READY_ADD_FOLDER_BUTTON = xpath(
   "//button[normalize-space()='Add a folder'][not(@disabled)]",
-);
-const FINISHED_SCAN_REPORT = xpath(
-  "//*[@role='status'][starts-with(normalize-space(), 'Found ')]",
 );
 const SETTINGS_LINK = mainNavigationLink("Settings");
 const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
@@ -52,7 +50,7 @@ const RECENT_TAB = xpath(
 );
 const CANCEL_BUTTON = xpath("//XCUIElementTypeButton[@name='Cancel']");
 
-const SCAN_REPORT = `Found ${String(SAMPLE_LIBRARY.books)} books in ${String(SAMPLE_LIBRARY.series)} series in ${SAMPLE_LIBRARY.name}.`;
+const SCAN_REPORT = `Added ${String(SAMPLE_LIBRARY.books)} books from ${SAMPLE_LIBRARY.name}`;
 
 const run = promisify(execFile);
 

@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
+import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -28,45 +28,21 @@ interface Card {
   readonly open: (page: Page) => Promise<Locator>;
 }
 
-const FLOATING_NOTICE: Card = {
-  name: "floating notice",
-  backend: {
-    ...DEFAULT_BACKEND,
-    addLibraryFolder: () => {
-      throw new CommandFailure({
-        code: "folderUnreadable",
-        message: "the folder could not be read",
-      });
-    },
-  },
-  icon: "lucide-lock",
-  title: "Couldn't read that folder",
-  body: /^Omnileaf may not be allowed/,
-  open: async (page) => {
-    await page.goto("/");
-    await page
-      .getByRole("region", { name: "Your library is empty" })
-      .getByRole("button", { name: "Add a folder" })
-      .click();
-    return page.getByRole("alert").locator(":scope > *");
-  },
-};
-
 const ADD_FOLDER_REPORT: Card = {
   name: "add-folder report",
   backend: {
     ...DEFAULT_BACKEND,
     addLibraryFolder: () => ({
       name: "Sample Library",
-      series: 3,
-      books: 7,
+      series: 0,
+      books: 0,
       unreadableBooks: 2,
       unsupportedBooks: 0,
       unreadableFolders: 0,
     }),
   },
   icon: "lucide-circle-alert",
-  title: "Found 7 books in 3 series in Sample Library.",
+  title: "Found no books in Sample Library.",
   body: /^Couldn't read 2 books in it\.$/,
   open: async (page) => {
     await page.goto("/settings/library");
@@ -77,7 +53,7 @@ const ADD_FOLDER_REPORT: Card = {
     return page
       .getByRole("main")
       .getByRole("status")
-      .filter({ hasText: "Found" })
+      .filter({ hasText: "Found no books" })
       .locator(":scope > *");
   },
 };
@@ -119,7 +95,7 @@ function contentEdgesOf(
   });
 }
 
-for (const card of [FLOATING_NOTICE, ADD_FOLDER_REPORT]) {
+for (const card of [ADD_FOLDER_REPORT]) {
   test.describe(`the ${card.name}`, () => {
     test.use({ backend: card.backend });
 

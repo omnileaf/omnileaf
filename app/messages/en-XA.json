@@ -179,24 +179,23 @@
       }
     }
   ],
-  "library_folder_scanned": [
+  "library_folder_no_books": "⟦Ƒöûñð ñö ƀööķš íñ {name}.··········⟧",
+  "library_scan_added": [
     {
       "declarations": [
         "input books",
-        "input series",
         "input name",
         "local booksPlural = books: plural",
-        "local formattedBooks = books: number",
-        "local formattedSeries = series: number"
+        "local formattedBooks = books: number"
       ],
       "selectors": ["booksPlural"],
       "match": {
-        "booksPlural=one": "⟦Ƒöûñð {formattedBooks} ƀööķ íñ {formattedSeries} šéŕíéš íñ {name}.···························⟧",
-        "booksPlural=other": "⟦Ƒöûñð {formattedBooks} ƀööķš íñ {formattedSeries} šéŕíéš íñ {name}.···························⟧"
+        "booksPlural=one": "⟦Áððéð {formattedBooks} ƀööķ ƒŕöɱ {name}················⟧",
+        "booksPlural=other": "⟦Áððéð {formattedBooks} ƀööķš ƒŕöɱ {name}················⟧"
       }
     }
   ],
-  "library_folder_no_books": "⟦Ƒöûñð ñö ƀööķš íñ {name}.··········⟧",
+  "library_scan_show": "⟦Šĥöŵ··⟧",
   "library_folder_unreadable_books": [
     {
       "declarations": [
@@ -627,6 +626,7 @@
   "screenshot_mode_preview_label": "⟦Þŕéṽíéŵ öƒ öñé çöṽéŕ ŵíţĥ Šçŕééñšĥöţ ɱöðé öƒƒ áñð öñ·····················⟧",
   "stand_in_folder": "⟦Ƒöļðéŕ {number}······⟧",
   "notice_dismiss": "⟦Ðíšɱíšš···⟧",
+  "notice_region": "⟦Ñöţíƒíçáţíöñš······⟧",
   "settings_sections_label": "⟦Šéţţíñĝš šéçţíöñš·······⟧",
   "undo_action": "⟦Ûñðö··⟧",
   "undo_shortcut_control": "⟦Çţŕļ Ž···⟧",

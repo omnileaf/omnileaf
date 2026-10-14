@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { commands } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import LibraryFolderSettings from "#lib/library/LibraryFolderSettings.svelte";
   import { rescanFolderWithProgress } from "#lib/library/rescan-folder.ts";
-  import { getNotices } from "#lib/notices/notices.svelte.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -27,4 +29,7 @@
   {notices}
   usesStandIns={screenshotMode.isOn}
   platform={data.appInfo.platform}
+  onShowBooks={() => {
+    void goto(resolve("/(app)"));
+  }}
 />

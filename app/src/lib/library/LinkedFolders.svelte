@@ -3,7 +3,7 @@
   import { type Snippet, tick } from "svelte";
 
   import type { LibraryFolder } from "#lib/ipc/bindings.ts";
-  import type { Notices } from "#lib/notices/notices.svelte.ts";
+  import type { Notices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { AddFolder } from "./add-folder";
@@ -27,6 +27,7 @@
     usesStandIns,
     hint,
     addPlacement = "section-heading",
+    onShowBooks,
   }: {
     folders: LibraryFolders;
     addFolder: AddFolder;
@@ -37,6 +38,7 @@
     status?: Snippet;
     usesStandIns: boolean;
     hint?: Snippet | undefined;
+    onShowBooks?: (() => void) | undefined;
     addPlacement?: "section-heading" | "below-list";
   } = $props();
 
@@ -180,7 +182,9 @@
   <div class="mbs-sm">
     <FolderNotice
       {adding}
+      {notices}
       {usesStandIns}
+      onShow={onShowBooks}
       onDismissed={() => {
         addButton?.focus();
       }}

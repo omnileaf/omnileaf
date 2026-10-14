@@ -25,7 +25,7 @@
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
-  import { getNotices } from "#lib/notices/notices.svelte.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
@@ -248,6 +248,7 @@
       />
       <FolderNotice
         {adding}
+        {notices}
         usesStandIns={screenshotMode.isOn}
         onDismissed={returnFocusFromNotice}
       />
@@ -257,6 +258,7 @@
   <div class="mbs-sm">
     <FolderNotice
       {adding}
+      {notices}
       usesStandIns={screenshotMode.isOn}
       onDismissed={returnFocusFromNotice}
     />
