@@ -3,6 +3,7 @@
   import { Dialog, Popover } from "bits-ui";
   import { MediaQuery } from "svelte/reactivity";
 
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { DrawerContent } from "#lib/components/ui/drawer/index.ts";
   import { PopoverContent } from "#lib/components/ui/popover/index.ts";
@@ -56,20 +57,27 @@
   aria-haspopup="dialog"
   aria-expanded={isOpen}
   aria-label={m.library_view_options()}
-  class={[
-    "flex items-center justify-center gap-sm rounded-full transition-control block-touch-target inline-touch-target large:rounded-control large:border large:border-field large:px-header-control-inline large:text-small large:font-medium large:block-pointer-button large:inline-auto",
-    isOpen
-      ? "large:bg-accent-soft"
-      : "hover:tint-hover active:tint-pressed large:bg-card",
-  ]}
   onclick={open}
 >
-  <SlidersHorizontal
-    size={ICON_SIZE}
-    aria-hidden="true"
-    class="large:block-header-icon-desktop large:inline-header-icon-desktop"
-  />
-  <span class="hidden large:inline">{m.library_view()}</span>
+  {#snippet child({ props })}
+    <Button
+      {...props}
+      look="header-control"
+      class={[
+        "block-touch-target inline-touch-target large:px-header-control-inline large:block-pointer-button large:inline-auto",
+        isOpen
+          ? "large:bg-accent-soft"
+          : "hover:tint-hover active:tint-pressed large:bg-card",
+      ]}
+    >
+      <SlidersHorizontal
+        size={ICON_SIZE}
+        aria-hidden="true"
+        class="large:block-header-icon-desktop large:inline-header-icon-desktop"
+      />
+      <span class="hidden large:inline">{m.library_view()}</span>
+    </Button>
+  {/snippet}
 </Tooltip>
 
 {#if isWide.current}
@@ -95,13 +103,14 @@
         <DialogTitle class="flex-1 text-title font-bold">
           {m.library_view()}
         </DialogTitle>
-        <button
+        <Button
           type="button"
-          class="rounded-control px-xs text-body font-semibold text-accent transition-control min-block-touch-target hover:bg-hover active:bg-pressed"
+          look="quiet"
+          class="rounded-control px-xs text-body min-block-touch-target"
           onclick={close}
         >
           {m.library_view_done()}
-        </button>
+        </Button>
       </div>
       <div
         class="flex flex-col gap-sheet-gap overflow-auto px-sheet-inline pbs-sheet-gap pbe-sheet-bottom min-block-none"

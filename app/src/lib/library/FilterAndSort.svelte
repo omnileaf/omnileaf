@@ -8,6 +8,7 @@
     type LibraryListing,
     type LibrarySortBy,
   } from "#lib/ipc/bindings.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
   import { TabsList, TabsTrigger } from "#lib/components/ui/tabs/index.ts";
@@ -103,32 +104,39 @@
   aria-haspopup="dialog"
   aria-expanded={isOpen}
   aria-label={buttonLabel}
-  class={[
-    "relative flex items-center justify-center gap-sm rounded-full transition-control block-touch-target inline-touch-target large:rounded-control large:border large:border-field large:ps-header-control-inline large:pe-md large:text-small large:font-medium large:block-pointer-button large:inline-auto",
-    isOpen
-      ? "large:bg-accent-soft"
-      : "hover:tint-hover active:tint-pressed large:bg-card",
-  ]}
   onclick={open}
 >
-  <ListFilter
-    size={ICON_SIZE}
-    aria-hidden="true"
-    class="large:block-header-icon-desktop large:inline-header-icon-desktop"
-  />
-  <span class="hidden large:inline">{m.library_filter()}</span>
-  {#if filtersCount > 0}
-    <span
-      aria-hidden="true"
-      class="absolute inset-e-sm inset-bs-sm rounded-full border-2 border-background bg-accent block-active-dot inline-active-dot large:hidden"
-    ></span>
-    <span
-      aria-hidden="true"
-      class="hidden rounded-full bg-accent px-icon-gap text-center text-caption font-bold text-on-accent min-inline-filter-badge large:inline"
+  {#snippet child({ props })}
+    <Button
+      {...props}
+      look="header-control"
+      class={[
+        "relative block-touch-target inline-touch-target large:ps-header-control-inline large:pe-md large:block-pointer-button large:inline-auto",
+        isOpen
+          ? "large:bg-accent-soft"
+          : "hover:tint-hover active:tint-pressed large:bg-card",
+      ]}
     >
-      {numbers.format(filtersCount)}
-    </span>
-  {/if}
+      <ListFilter
+        size={ICON_SIZE}
+        aria-hidden="true"
+        class="large:block-header-icon-desktop large:inline-header-icon-desktop"
+      />
+      <span class="hidden large:inline">{m.library_filter()}</span>
+      {#if filtersCount > 0}
+        <span
+          aria-hidden="true"
+          class="absolute inset-e-sm inset-bs-sm rounded-full border-2 border-background bg-accent block-active-dot inline-active-dot large:hidden"
+        ></span>
+        <span
+          aria-hidden="true"
+          class="hidden rounded-full bg-accent px-icon-gap text-center text-caption font-bold text-on-accent min-inline-filter-badge large:inline"
+        >
+          {numbers.format(filtersCount)}
+        </span>
+      {/if}
+    </Button>
+  {/snippet}
 </Tooltip>
 
 <Dialog.Root bind:open={isOpen}>
@@ -148,23 +156,31 @@
           <DialogTitle class="flex-1 text-panel-title font-bold">
             {m.library_filter_and_sort()}
           </DialogTitle>
-          <button
+          <Button
             type="button"
-            class="rounded-badge px-sm text-detail font-semibold text-accent block-panel-button"
+            look="text"
+            class="rounded-badge px-sm text-detail block-panel-button"
             onclick={() => {
               onChoose(DEFAULT_LIBRARY_LISTING);
             }}
           >
             {m.library_reset()}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Tooltip
+            label={m.library_close()}
             aria-label={m.library_close()}
-            class="flex items-center justify-center rounded-badge text-muted block-panel-button inline-panel-button"
             onclick={close}
           >
-            <X size={CLOSE_ICON_SIZE} aria-hidden="true" />
-          </button>
+            {#snippet child({ props })}
+              <Button
+                {...props}
+                look="icon"
+                class="rounded-badge text-muted block-panel-button inline-panel-button"
+              >
+                <X size={CLOSE_ICON_SIZE} aria-hidden="true" />
+              </Button>
+            {/snippet}
+          </Tooltip>
         </div>
         <div
           class="flex flex-1 flex-col gap-filter-panel-gap overflow-y-auto px-filter-panel-inline pbs-xs pbe-md min-block-none"
@@ -198,15 +214,16 @@
               <DialogTitle id={titleId} class="flex-1 text-title font-bold">
                 {m.library_filter_and_sort()}
               </DialogTitle>
-              <button
+              <Button
                 type="button"
-                class="px-xs text-body font-semibold text-accent min-block-touch-target"
+                look="text"
+                class="px-xs text-body min-block-touch-target"
                 onclick={() => {
                   onChoose(DEFAULT_LIBRARY_LISTING);
                 }}
               >
                 {m.library_reset()}
-              </button>
+              </Button>
             </div>
             <TabsList aria-labelledby={titleId}>
               {#each tabs as choice (choice.name)}
@@ -250,15 +267,16 @@
               {m.library_series_match({ count: matching })}
             {/if}
           </p>
-          <button
+          <Button
             type="button"
-            class="rounded-control bg-accent text-body font-semibold text-on-accent inline-full min-block-touch-target"
+            look="filled"
+            class="rounded-control text-body font-semibold inline-full min-block-touch-target"
             onclick={close}
           >
             {matching === undefined
               ? m.library_view_done()
               : m.library_show_series({ count: matching })}
-          </button>
+          </Button>
         </div>
       {/if}
     {/snippet}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowDownUp } from "@lucide/svelte";
 
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Toggle } from "#lib/components/ui/toggle/index.ts";
   import type { BooksShown, SeriesBookListing } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -41,15 +42,16 @@
       </Toggle>
     {/each}
   </div>
-  <button
+  <Button
     type="button"
+    look="chip"
     aria-label={isReversed
       ? m.series_order_last_first_change()
       : m.series_order_first_first_change()}
     title={isReversed
       ? m.series_order_last_first_change()
       : m.series_order_first_first_change()}
-    class="flex shrink-0 items-center gap-icon-gap rounded-full border border-border bg-card px-md text-detail font-semibold block-scope-chip hover:bg-hover"
+    class="flex shrink-0 items-center gap-icon-gap px-md text-detail block-scope-chip"
     onclick={() => {
       onChoose({
         ...listing,
@@ -66,5 +68,5 @@
         {m.series_order_last_first()}
       </span>
     </span>
-  </button>
+  </Button>
 </div>

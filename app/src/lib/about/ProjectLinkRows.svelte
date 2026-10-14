@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ExternalLink } from "@lucide/svelte";
 
+  import { Button } from "#lib/components/ui/button/index.ts";
   import type { ProjectLink } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -44,8 +45,9 @@
 
 {#each externalRows as external (external.link)}
   <li>
-    <button
+    <Button
       type="button"
+      look="row"
       class={ROW_LOOKS[look]}
       onclick={() => {
         void opening.open(external.link);
@@ -63,6 +65,6 @@
         size={ROW_ICON_SIZES[look]}
         class="shrink-0 text-muted"
       />
-    </button>
+    </Button>
   </li>
 {/each}

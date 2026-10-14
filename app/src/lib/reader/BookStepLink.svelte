@@ -7,6 +7,7 @@
   } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { SeriesNeighbour } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -48,14 +49,21 @@
     type="button"
     aria-disabled="true"
     aria-label={shape.unavailable()}
-    class={[look, "opacity-40"]}
   >
-    <shape.icon size={ICON_SIZE} aria-hidden="true" class="expanded:hidden" />
-    <shape.wideIcon
-      size={ICON_SIZE_WIDE}
-      aria-hidden="true"
-      class="hidden expanded:block"
-    />
+    {#snippet child({ props })}
+      <Button {...props} look="icon" class={[look, "opacity-40"]}>
+        <shape.icon
+          size={ICON_SIZE}
+          aria-hidden="true"
+          class="expanded:hidden"
+        />
+        <shape.wideIcon
+          size={ICON_SIZE_WIDE}
+          aria-hidden="true"
+          class="hidden expanded:block"
+        />
+      </Button>
+    {/snippet}
   </Tooltip>
 {:else}
   {@const label = shape.label({ title: neighbour.title })}
