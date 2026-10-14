@@ -15,10 +15,10 @@ const LAYOUT_KEY = "omnileaf.readerSettings.all";
 
 async function openBookWith(page: Page, look: object): Promise<void> {
   await page.addInitScript(
-    ([key, value]) => {
+    ({ key, value }) => {
       localStorage.setItem(key, value);
     },
-    [LAYOUT_KEY, JSON.stringify(look)],
+    { key: LAYOUT_KEY, value: JSON.stringify(look) },
   );
   await servePages(page);
   await page.goto(`/read/${BOOK_ID}`);
