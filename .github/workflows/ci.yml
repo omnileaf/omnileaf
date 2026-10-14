@@ -86,12 +86,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: linux
-            runner: ubuntu-24.04
-          - platform: windows
-            runner: windows-2025
-            budget-slack: 2
+        include: ${{ fromJSON((github.event_name != 'pull_request' || github.base_ref == 'main') && '[{"platform":"linux","runner":"ubuntu-24.04"},{"platform":"windows","runner":"windows-2025","budget-slack":2}]' || '[{"platform":"linux","runner":"ubuntu-24.04"}]') }}
     steps:
       - if: needs.changes.outputs.native != 'false'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -144,7 +139,7 @@ jobs:
   coverage:
     name: coverage
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.native != 'false' }}
+    if: ${{ !cancelled() && needs.changes.outputs.native != 'false' && (github.event_name != 'pull_request' || github.base_ref == 'main') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -185,7 +180,7 @@ jobs:
   fixtures:
     name: fixtures (${{ matrix.platform }})
     needs: changes
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.base_ref == 'main') }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     strategy:
@@ -527,7 +522,7 @@ jobs:
   app:
     name: app (${{ matrix.platform }})
     needs: changes
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.base_ref == 'main') }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 40
     strategy:
