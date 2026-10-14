@@ -89,7 +89,7 @@
     </Button>
   {/if}
   {#if shortcut !== undefined}
-    <Kbd aria-hidden="true" class="hidden text-muted desktop:inline">
+    <Kbd aria-hidden="true" class="hidden desktop:inline">
       {shortcut.label}
     </Kbd>
   {/if}
