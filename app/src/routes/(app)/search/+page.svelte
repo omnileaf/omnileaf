@@ -15,24 +15,18 @@
     type FilterCondition,
     filtersOn,
   } from "#lib/library/library-listing.ts";
-  import { LibrarySeriesList } from "#lib/library/library-series.svelte.ts";
-  import { realLook, standInLook } from "#lib/library/series-look.ts";
+  import { librarySeriesList } from "#lib/library/library-series.svelte.ts";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
-  import { isStandInName } from "#lib/screenshot-mode/stand-ins.ts";
   import ConditionChips from "#lib/search/ConditionChips.svelte";
   import { filterWords } from "#lib/search/condition-labels.ts";
   import KeyHints from "#lib/search/KeyHints.svelte";
   import NothingFound from "#lib/search/NothingFound.svelte";
   import { nothingFoundTitle } from "#lib/search/nothing-found.ts";
-  import {
-    type AskedSearch,
-    searchAskedIn,
-    titleQuery,
-  } from "#lib/search/search-route.ts";
+  import { searchTextIn } from "#lib/search/search-route.ts";
   import SearchField from "#lib/search/SearchField.svelte";
   import { SearchQuery } from "#lib/search/search-query.svelte.ts";
   import SearchResults from "#lib/search/SearchResults.svelte";
@@ -53,7 +47,7 @@
 
   const query = new SearchQuery(filterWords(), getLocale());
 
-  const results = new LibrarySeriesList((after) =>
+  const results = librarySeriesList((after) =>
     commands.librarySearch(after, query.search),
   );
   const found = new LibrarySeriesCount(
@@ -79,7 +73,7 @@
     if (!isAnswered || results.list.kind !== "loaded") {
       return "";
     }
-    if (results.list.series.length === 0) {
+    if (results.list.items.length === 0) {
       return nothingFoundTitle(query.search.text);
     }
     return found.count === undefined
@@ -91,7 +85,7 @@
   let drawnKey: string | undefined = $state();
   let revealResult: Reveal | undefined = $state();
   const shown: readonly LibrarySeries[] = $derived(
-    results.list.kind === "loaded" ? results.list.series : [],
+    results.list.kind === "loaded" ? results.list.items : [],
   );
   const activeIndex = $derived.by(() => {
     const index = shown.findIndex((series) => series.id === activeKey);
@@ -100,7 +94,6 @@
   const activeSeries = $derived(
     activeIndex === undefined ? undefined : shown[activeIndex],
   );
-  const lookOf = $derived(screenshotMode.isOn ? standInLook : realLook);
 
   function hasSomethingToFind(search: LibrarySearch): boolean {
     return search.text !== "" || filtersOn(search.filter) > 0;
@@ -122,9 +115,17 @@
     void goto(resolve(SECTION_ROUTE_IDS.library));
   }
 
-  /** Shows the series as quick open would, by its title, or its stand-in while Screenshot mode is on. */
   function open(series: LibrarySeries): void {
-    void goto(`${resolve("/(app)/search")}${titleQuery(lookOf(series).title)}`);
+    void goto(resolve("/(app)/series/[id]", { id: series.id }));
+  }
+
+  /** Opens a result pressed, as Enter would, once the search it belongs to has answered. */
+  function choose(series: LibrarySeries): void {
+    if (!isAnswered) {
+      return;
+    }
+    activeKey = series.id;
+    open(series);
   }
 
   /** Names the result active to the field only once it is drawn, so the field never points at a result the list has yet to draw. */
@@ -178,20 +179,11 @@
     }
   }
 
-  /** Shows a title asked for while Screenshot mode is on only when it is a stand-in, so an address from before it was on reveals nothing. */
-  function shownWhileScreenshotting(asked: AskedSearch): AskedSearch {
-    const hidesTitle =
-      screenshotMode.isOn &&
-      asked.kind === "title" &&
-      !isStandInName("series", asked.text);
-    return hidesTitle ? { kind: "title", text: "" } : asked;
-  }
-
   /** Reads the whole address rather than its query, so arriving at the same one again still starts over. */
   function startOverOnArrival(): void {
     const arrival = page.url;
     untrack(() => {
-      query.startOver(shownWhileScreenshotting(searchAskedIn(arrival)));
+      query.startOver(searchTextIn(arrival));
     });
   }
 
@@ -260,7 +252,7 @@
     />
     {#if results.list.kind === "failed"}
       <p class="text-body text-muted">{m.search_failed()}</p>
-    {:else if results.list.kind === "loaded" && results.list.series.length === 0}
+    {:else if results.list.kind === "loaded" && results.list.items.length === 0}
       {#if isAnswered}
         <NothingFound text={query.search.text} />
       {/if}
@@ -269,7 +261,7 @@
         onRevealReady={(reveal: Reveal) => {
           revealResult = reveal;
         }}
-        series={results.list.series}
+        series={results.list.items}
         count={found.count}
         isComplete={results.list.isComplete}
         onNearEnd={() => {
@@ -279,6 +271,7 @@
         usesStandIns={screenshotMode.isOn}
         {listId}
         activeKey={activeSeries?.id}
+        onOpen={choose}
       />
     {/if}
   {/if}

@@ -12,13 +12,17 @@ use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Connection, Database, Error,
     catalog::{
-        Cursor, NewSeries, Page, PageRequest, PageSize, SeriesFilter, SeriesListing, SeriesOrder,
-        SeriesSort, series_books, series_count, series_page,
+        BookListing, BookReading, BooksShown, Cursor, NewSeries, Page, PageRequest, PageSize,
+        SeriesFilter, SeriesListing, SeriesOrder, SeriesSort, SortDirection, series_books,
+        series_count, series_page,
     },
 };
 use omnileaf_sync_proto::SeriesId;
 use support::{ScratchFolder, library_config};
 
+/// How often, in steps of SQLite's machine, a read checks in, and which check-in lets the rescan run, well after the read has begun.
+const PROGRESS_STEPS: i32 = 10;
+const RESCAN_AT_CHECK_IN: u32 = 2;
 const A_TO_Z: SeriesListing = SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title));
 const NEWEST_FIRST: SeriesListing =
     SeriesListing::unfiltered(SeriesSort::descending(SeriesOrder::DateAdded));
@@ -100,8 +104,12 @@ fn series_titles(listing: SeriesListing) -> impl List + Clone {
 }
 
 fn book_titles(series: SeriesId) -> impl List + Clone {
+    listed_book_titles(series, BookListing::IN_ORDER)
+}
+
+fn listed_book_titles(series: SeriesId, listing: BookListing) -> impl List + Clone {
     move |connection: &Connection, request: &PageRequest| {
-        let page = series_books(connection, series, request)?;
+        let page = series_books(connection, series, listing, request)?;
         Ok(Page {
             items: page.items.into_iter().map(|book| book.title).collect(),
             next: page.next,
@@ -299,6 +307,253 @@ async fn pages_a_series_books_in_natural_order() {
 }
 
 #[tokio::test]
+async fn pages_a_series_books_in_reverse_natural_order() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &["Volume 10", "Volume 2", "volume 1", "Extra"],
+    )])
+    .await;
+    let reversed = BookListing {
+        direction: SortDirection::Descending,
+        ..BookListing::IN_ORDER
+    };
+
+    let pages = library
+        .walk(
+            listed_book_titles(series_id("Sample Series 01"), reversed),
+            3,
+        )
+        .await;
+
+    assert_eq!(
+        pages,
+        [vec!["Volume 10", "Volume 2", "volume 1"], vec!["Extra"]]
+    );
+}
+
+#[tokio::test]
+async fn pages_only_the_books_of_a_series_not_marked_read_either_way_round() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &[
+            "Volume 01",
+            "Volume 02",
+            "Volume 03",
+            "Volume 04",
+            "Volume 05",
+        ],
+    )])
+    .await;
+    library
+        .database
+        .write(|transaction| {
+            let mut state = transaction.prepare(
+                "INSERT INTO book_state (book_id, is_read) SELECT id, ?2 FROM book WHERE title = ?1",
+            )?;
+            state.execute(("Volume 01", true))?;
+            state.execute(("Volume 03", true))?;
+            state.execute(("Volume 04", false))?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+    let series = series_id("Sample Series 01");
+    let unread = |direction| BookListing {
+        shown: BooksShown::Unread,
+        direction,
+    };
+
+    let pages = [
+        library
+            .walk(
+                listed_book_titles(series, unread(SortDirection::Ascending)),
+                2,
+            )
+            .await,
+        library
+            .walk(
+                listed_book_titles(series, unread(SortDirection::Descending)),
+                2,
+            )
+            .await,
+    ];
+
+    assert_eq!(
+        pages,
+        [
+            vec![vec!["Volume 02", "Volume 04"], vec!["Volume 05"]],
+            vec![vec!["Volume 05", "Volume 04"], vec!["Volume 02"]],
+        ]
+    );
+}
+
+#[tokio::test]
+async fn numbers_each_book_by_its_place_in_the_series_whichever_books_are_listed() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &["Volume 3", "Volume 1", "Volume 4", "Volume 2"],
+    )])
+    .await;
+    library
+        .database
+        .write(|transaction| {
+            transaction.execute(
+                "INSERT INTO book_state (book_id, is_read) SELECT id, 1 FROM book WHERE title = 'Volume 2'",
+                [],
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+    let unread_last_first = BookListing {
+        shown: BooksShown::Unread,
+        direction: SortDirection::Descending,
+    };
+
+    let page = library
+        .database
+        .read(move |connection| {
+            let request = PageRequest {
+                after: None,
+                size: PageSize::try_from(10).unwrap(),
+            };
+            series_books(
+                connection,
+                series_id("Sample Series 01"),
+                unread_last_first,
+                &request,
+            )
+        })
+        .await
+        .unwrap();
+
+    let numbered: Vec<(&str, u32)> = page
+        .items
+        .iter()
+        .map(|book| (book.title.as_str(), book.position))
+        .collect();
+    assert_eq!(
+        numbered,
+        [("Volume 4", 4), ("Volume 3", 3), ("Volume 1", 1)]
+    );
+}
+
+#[tokio::test]
+async fn reads_a_page_of_books_as_the_series_stood_though_a_book_goes_meanwhile() {
+    let folder = ScratchFolder::new("books-read-whole");
+    let config = library_config(&folder);
+    let database = Database::open(&config).unwrap();
+    seed_library(
+        &database,
+        &[series_holding(
+            "Sample Series 01",
+            &["Volume 01", "Volume 02", "Volume 03"],
+        )],
+    )
+    .await;
+    let path = config.path.clone();
+
+    let page = database
+        .read(move |connection| {
+            let rescan = Connection::open(&path)?;
+            load_schema(connection)?;
+            let mut check_ins = 0;
+            connection.progress_handler(
+                PROGRESS_STEPS,
+                Some(move || {
+                    check_ins += 1;
+                    if check_ins == RESCAN_AT_CHECK_IN {
+                        rescan
+                            .execute("DELETE FROM book WHERE title = 'Volume 02'", [])
+                            .unwrap();
+                    }
+                    false
+                }),
+            )?;
+            let request = PageRequest {
+                after: None,
+                size: PageSize::try_from(10).unwrap(),
+            };
+            let page = series_books(
+                connection,
+                series_id("Sample Series 01"),
+                BookListing::IN_ORDER,
+                &request,
+            );
+            connection.progress_handler(0, None::<fn() -> bool>)?;
+            page
+        })
+        .await
+        .unwrap();
+
+    let titles: Vec<&str> = page.items.iter().map(|book| book.title.as_str()).collect();
+    assert_eq!(titles, ["Volume 01", "Volume 02", "Volume 03"]);
+}
+
+#[tokio::test]
+async fn tells_each_book_of_a_series_whether_it_is_read_started_or_not() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &[
+            "Volume 01",
+            "Volume 02",
+            "Volume 03",
+            "Volume 04",
+            "Volume 05",
+        ],
+    )])
+    .await;
+    library
+        .database
+        .write(|transaction| {
+            let mut state = transaction.prepare(
+                "INSERT INTO book_state (book_id, position_page, furthest_page, is_read)
+                SELECT book.id, ?2, ?3, ?4 FROM book WHERE book.title = ?1",
+            )?;
+            state.execute(("Volume 01", 30, 30, true))?;
+            state.execute(("Volume 02", 4, None::<u32>, None::<bool>))?;
+            state.execute(("Volume 03", None::<u32>, 9, false))?;
+            state.execute(("Volume 04", None::<u32>, None::<u32>, false))?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+
+    let page = library
+        .database
+        .read(|connection| {
+            let request = PageRequest {
+                after: None,
+                size: PageSize::try_from(10).unwrap(),
+            };
+            series_books(
+                connection,
+                series_id("Sample Series 01"),
+                BookListing::IN_ORDER,
+                &request,
+            )
+        })
+        .await
+        .unwrap();
+
+    let readings: Vec<BookReading> = page.items.iter().map(|book| book.reading).collect();
+    assert_eq!(
+        readings,
+        [
+            BookReading::Read,
+            BookReading::Started {
+                position_page: Some(4)
+            },
+            BookReading::Started {
+                position_page: None
+            },
+            BookReading::NotStarted,
+            BookReading::NotStarted,
+        ]
+    );
+}
+
+#[tokio::test]
 async fn gives_a_series_missing_from_the_catalog_an_empty_page_of_books() {
     let library = Library::with(&[SeriesSeed::named("Sample Series 01")]).await;
 
@@ -353,6 +608,39 @@ async fn refuses_to_continue_one_series_books_from_another_series_cursor() {
         matches!(outcome, Err(Error::CursorForAnotherList)),
         "{outcome:?}"
     );
+}
+
+#[tokio::test]
+async fn refuses_to_continue_a_series_books_in_another_listing_from_a_cursor() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &["Volume 01", "Volume 02", "Volume 03"],
+    )])
+    .await;
+    let series = series_id("Sample Series 01");
+    let in_order = listed_book_titles(series, BookListing::IN_ORDER);
+    let cursor = library.page(in_order, None, 1).await.unwrap().next;
+    let others = [
+        BookListing {
+            direction: SortDirection::Descending,
+            ..BookListing::IN_ORDER
+        },
+        BookListing {
+            shown: BooksShown::Unread,
+            ..BookListing::IN_ORDER
+        },
+    ];
+
+    for other in others {
+        let outcome = library
+            .page(listed_book_titles(series, other), cursor.clone(), 1)
+            .await;
+
+        assert!(
+            matches!(outcome, Err(Error::CursorForAnotherList)),
+            "{other:?}: {outcome:?}"
+        );
+    }
 }
 
 #[tokio::test]
@@ -417,6 +705,12 @@ fn holds_a_page_to_between_one_and_two_hundred_items() {
     let accepted = sizes.map(|size| PageSize::try_from(size).is_ok());
 
     assert_eq!(accepted, [false, true, true, false]);
+}
+
+/// Reads the schema in, so preparing the page's statements steps SQLite's machine no further.
+fn load_schema(connection: &Connection) -> Result<(), Error> {
+    connection.query_row("SELECT count(*) FROM book", [], |row| row.get::<_, i64>(0))?;
+    Ok(())
 }
 
 fn series_id(folder_name: &str) -> SeriesId {

@@ -9,12 +9,13 @@
 </script>
 
 {#if step.kind === "finding"}
-  <progress aria-labelledby={titleId} class="mbs-sm progress-track"></progress>
+  <progress aria-labelledby={titleId} class="mbs-sm progress-track block-xs"
+  ></progress>
 {:else if step.kind === "reading"}
   <progress
     aria-labelledby={titleId}
     aria-describedby={countId}
-    class="mbs-sm progress-track"
+    class="mbs-sm progress-track block-xs"
     max={step.total}
     value={step.scanned}
   ></progress>

@@ -9,6 +9,7 @@
   interface Listbox {
     readonly id: string;
     readonly activeKey: string | undefined;
+    readonly onChoose: (item: Item) => void;
   }
 
   let {
@@ -213,6 +214,11 @@
         aria-selected={listbox === undefined
           ? undefined
           : key(item) === listbox.activeKey}
+        onclick={listbox === undefined
+          ? undefined
+          : () => {
+              listbox.onChoose(item);
+            }}
         aria-posinset={shown.start + offset + 1}
         aria-setsize={setSize}
         class={itemClass}

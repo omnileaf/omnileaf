@@ -34,16 +34,9 @@ macro_rules! series_at_stage {
             "SELECT series.id AS id, series.title, series.title_key, series.book_count, series.added_at_ms,
                 cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
                 series.book_count - series.read_count AS unread_count
-            FROM series
-            LEFT JOIN book_file AS cover ON cover.id = (
-                SELECT (SELECT min(book_file.id) FROM book_file WHERE book_file.book_id = book.id)
-                FROM book
-                WHERE book.series_local_id = series.local_id
-                    AND EXISTS (SELECT 1 FROM book_file WHERE book_file.book_id = book.id)
-                ORDER BY book.title_sort_key, book.id
-                LIMIT 1
-            )
-            WHERE series.reading_stage = ",
+            FROM series ",
+            $crate::catalog::cover::join_series_cover!(),
+            " WHERE series.reading_stage = ",
             $stage,
             $condition
         )
@@ -144,7 +137,7 @@ pub(crate) fn title_rows(
 }
 
 /// Begins a read transaction unless the caller is in one already, which holds one snapshot by itself.
-fn snapshot(connection: &Connection) -> rusqlite::Result<Option<Transaction<'_>>> {
+pub(crate) fn snapshot(connection: &Connection) -> rusqlite::Result<Option<Transaction<'_>>> {
     if connection.is_autocommit() {
         connection.unchecked_transaction().map(Some)
     } else {

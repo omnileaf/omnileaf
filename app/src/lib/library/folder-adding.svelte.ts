@@ -53,7 +53,9 @@ const FAILURES = {
   noCrashReport: ADDING_FAILED,
   crashReportUnavailable: ADDING_FAILED,
   developmentBuildOnly: ADDING_FAILED,
+  seriesNotFound: ADDING_FAILED,
   searchTooLong: ADDING_FAILED,
+  cursorForAnotherList: ADDING_FAILED,
   internal: ADDING_FAILED,
 } satisfies Record<IpcErrorCode, Failure>;
 

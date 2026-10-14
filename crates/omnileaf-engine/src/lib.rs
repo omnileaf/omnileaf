@@ -14,6 +14,7 @@ mod external_storage;
 mod folder_watch;
 mod ipc_brand;
 mod library;
+mod library_book;
 mod library_changes;
 mod library_folder;
 mod library_layout;
@@ -30,6 +31,7 @@ mod rescan_schedule;
 mod resource;
 mod resource_router;
 mod scan;
+mod series_overview;
 mod version_details;
 
 pub use app_info::{AppInfo, Platform};
@@ -48,6 +50,10 @@ pub use external_storage::{storage_by_device, storage_in_mountinfo, storage_of_w
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub use folder_watch::{AppFiles, FolderWatch, FolderWatchSwitch};
 pub use library::{Library, LibraryError, LibraryFolders, OpenTree};
+pub use library_book::{
+    BookCursor, BookId, BookReading, BooksShown, ReadMark, SeriesBook, SeriesBookListing,
+    SeriesBookPage,
+};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
 pub use library_listing::{
@@ -70,6 +76,7 @@ pub use rescan_conditions::{
 pub use resource::Resource;
 pub use resource_router::{ResourceRouter, ResourceRouterError};
 pub use scan::{FolderScan, ScanProgress};
+pub use series_overview::SeriesOverview;
 pub use version_details::{BuildProfile, VersionDetails};
 
 #[derive(Debug)]

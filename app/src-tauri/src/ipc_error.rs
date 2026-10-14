@@ -29,7 +29,9 @@ pub(crate) enum IpcErrorCode {
         expect(dead_code, reason = "only development builds offer crash tests")
     )]
     DevelopmentBuildOnly,
+    SeriesNotFound,
     SearchTooLong,
+    CursorForAnotherList,
     Internal,
 }
 
@@ -103,9 +105,17 @@ impl From<LibraryError> for IpcError {
                 IpcErrorCode::HomeFolderKept,
                 "the home folder stays in the library",
             ),
+            LibraryError::SeriesNotFound { .. } => (
+                IpcErrorCode::SeriesNotFound,
+                "that series isn't in the library",
+            ),
             LibraryError::SearchTooLong { .. } => (
                 IpcErrorCode::SearchTooLong,
                 "the search is longer than a search reads",
+            ),
+            LibraryError::CursorForAnotherList => (
+                IpcErrorCode::CursorForAnotherList,
+                "that page cursor belongs to another list",
             ),
             LibraryError::CreateFolder { .. }
             | LibraryError::Database(_)
@@ -131,7 +141,7 @@ impl From<CrashReportError> for IpcError {
 mod tests {
     use std::{io, path::PathBuf};
 
-    use omnileaf_engine::FolderId;
+    use omnileaf_engine::{FolderId, SeriesId};
 
     use super::*;
 
@@ -151,10 +161,14 @@ mod tests {
             code_for(unreadable),
             code_for(LibraryError::FolderNotFound { id }),
             code_for(LibraryError::HomeFolderKept { id }),
+            code_for(LibraryError::SeriesNotFound {
+                id: SeriesId::try_from("0190a3e4-0000-8000-8000-000000000001".to_owned()).unwrap(),
+            }),
             code_for(LibraryError::SearchTooLong {
                 chars: 201,
                 max: 200,
             }),
+            code_for(LibraryError::from(omnileaf_db::Error::CursorForAnotherList)),
             code_for(LibraryError::CreateFolder {
                 path: PathBuf::from("/data/Omnileaf"),
                 source: io::Error::from(io::ErrorKind::StorageFull),
@@ -167,7 +181,9 @@ mod tests {
                 IpcErrorCode::FolderUnreadable,
                 IpcErrorCode::FolderNotFound,
                 IpcErrorCode::HomeFolderKept,
+                IpcErrorCode::SeriesNotFound,
                 IpcErrorCode::SearchTooLong,
+                IpcErrorCode::CursorForAnotherList,
                 IpcErrorCode::Internal,
             ]
         );

@@ -23,8 +23,9 @@ pub struct SeriesPage {
     pub next: Option<SeriesCursor>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
-#[serde(into = "String")]
+/// Crosses to the interface as an opaque string, so it can tell one series from another however the list reorders, and hands it back to name the series.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(into = "String", try_from = "String")]
 pub struct SeriesId(pub(crate) omnileaf_sync_proto::SeriesId);
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -61,6 +62,14 @@ impl fmt::Display for SeriesId {
 impl From<SeriesId> for String {
     fn from(id: SeriesId) -> Self {
         id.to_string()
+    }
+}
+
+impl TryFrom<String> for SeriesId {
+    type Error = omnileaf_sync_proto::IdError;
+
+    fn try_from(text: String) -> Result<Self, Self::Error> {
+        text.parse().map(Self)
     }
 }
 

@@ -23,6 +23,9 @@ export const commands = {
 	librarySeriesCount: (filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("library_series_count", { filter })),
 	librarySearch: (after: string & { readonly __brand: "SeriesCursor" } | null, search: LibrarySearch) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_search", { after, search })),
 	librarySearchCount: (search: LibrarySearch) => typedError<number, IpcError>(__TAURI_INVOKE("library_search_count", { search })),
+	seriesOverview: (id: string & { readonly __brand: "SeriesId" }) => typedError<SeriesOverview, IpcError>(__TAURI_INVOKE("series_overview", { id })),
+	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
+	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	libraryListing: () => typedError<LibraryListing, IpcError>(__TAURI_INVOKE("library_listing")),
 	setLibraryListing: (listing: LibraryListing) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_listing", { listing })),
 	libraryView: () => typedError<LibraryView, IpcError>(__TAURI_INVOKE("library_view")),
@@ -74,7 +77,15 @@ export type AppInfo = {
 
 export type BackSwipe = { kind: "moved"; progress: number | null } | { kind: "released"; progress: number | null; velocity: number | null } | { kind: "cancelled" };
 
+export type BookReading = { state: "notStarted" } | 
+/**  The page is where reading goes on from, counting from 1, and absent when only the furthest page read is known. */
+{ state: "started"; page: number | null } | { state: "read" };
+
 export type BooksRemoval = { kind: "removed"; books: number } | { kind: "kept" };
+
+export type BooksShown = "all" | 
+/**  Only the books not marked read. */
+"unread";
 
 export type CoversPerRow = {
 	phone: number,
@@ -134,7 +145,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "searchTooLong" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "internal";
 
 export type LibraryChanged = null;
 
@@ -207,11 +218,49 @@ export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
 export type ProjectLink = "sourceCode" | "newIssue" | "latestRelease";
 
+export type ReadMark = "read" | "unread";
+
 export type RescanOutcome = {
 	kind: "rescanned",
 } & FileChanges | { kind: "unreachable" } | { kind: "foundEmpty" };
 
 export type ScanProgress = { stage: "finding" } | { stage: "reading"; scanned: number; total: number };
+
+export type SeriesBook = {
+	id: string & { readonly __brand: "BookId" },
+	/**  Where the book stands in its series' order, counting from 1, whichever of its books a list holds. */
+	position: number,
+	title: string,
+	/**  When the library first found the book, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly. */
+	addedAtMs: number,
+	reading: BookReading,
+};
+
+/**  Which of a series' books its page lists, and which way round. */
+export type SeriesBookListing = {
+	shown: BooksShown,
+	direction: SortDirection,
+};
+
+export type SeriesBookPage = {
+	books: SeriesBook[],
+	/**  Absent on the last page. */
+	next: string & { readonly __brand: "BookCursor" } | null,
+};
+
+/**  What a series' page shows above its books. */
+export type SeriesOverview = {
+	id: string & { readonly __brand: "SeriesId" },
+	title: string,
+	bookCount: number,
+	readCount: number,
+	/**  The cover the library shows for the series, absent while none of its books has a file. */
+	cover: string & { readonly __brand: "CoverPath" } | null,
+	/**  The name of the library folder holding the cover's book. */
+	folder: string | null,
+	/**  The book reading goes on from, absent once every book is read. */
+	upNext: SeriesBook | null,
+};
 
 export type SeriesPage = {
 	series: LibrarySeries[],

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { isStandInName, standInName, standInNumberFor } from "./stand-ins";
+import { folderStandIn, standInName, standInNumberFor } from "./stand-ins";
 
 test("names a series by its stand-in number, with at least two digits", () => {
   expect(standInName("series", 4)).toBe("Series 04");
@@ -42,13 +42,9 @@ test("pins one id's stand-in number so it holds across releases", () => {
   expect(standInNumberFor(SERIES_ID)).toBe(PINNED_NUMBER);
 });
 
-test("knows a stand-in's name from a real title", () => {
-  const names = ["Series 04", "Series 949", "Sample Series 04", "Series 1000"];
-
-  expect(names.map((name) => isStandInName("series", name))).toEqual([
-    true,
-    true,
-    false,
-    false,
-  ]);
+test("names a folder by a number drawn from its name, so it keeps it on every screen", () => {
+  expect([
+    folderStandIn("Sample Library"),
+    folderStandIn("Sample Library"),
+  ]).toEqual(["Folder 571", "Folder 571"]);
 });

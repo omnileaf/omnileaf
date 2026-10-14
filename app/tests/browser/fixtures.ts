@@ -49,6 +49,14 @@ export const DEFAULT_BACKEND: FakeBackend = {
   librarySeriesCount: () => 0,
   librarySearch: () => ({ series: [], next: null }),
   librarySearchCount: () => 0,
+  seriesOverview: () => {
+    throw new CommandFailure({
+      code: "seriesNotFound",
+      message: "that series isn't in the library",
+    });
+  },
+  seriesBooks: () => ({ books: [], next: null }),
+  markBooks: () => null,
   libraryListing: () => DEFAULT_LIBRARY_LISTING,
   setLibraryListing: () => null,
   libraryView: () => DEFAULT_LIBRARY_VIEW,
@@ -157,6 +165,7 @@ export const APP_PAGES = [
   "/settings/about",
   "/settings/about/licences",
   "/search",
+  "/series/0190a3e4-0000-8000-8000-00000000000f",
 ] as const;
 
 export function sidewaysOverflow(

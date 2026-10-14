@@ -7,8 +7,8 @@ use std::path::Path;
 
 use omnileaf_db::{
     catalog::{
-        PageRequest, PageSize, SeriesListing, SeriesOrder, SeriesSort, SeriesSummary, series_books,
-        series_page,
+        BookListing, PageRequest, PageSize, SeriesListing, SeriesOrder, SeriesSort, SeriesSummary,
+        series_books, series_page,
     },
     rusqlite::{Connection, OpenFlags},
 };
@@ -53,12 +53,17 @@ impl Scanned {
             .into_iter()
             .find(|series| series.title == title)
             .unwrap();
-        series_books(&self.connection(), series.id, &whole_page())
-            .unwrap()
-            .items
-            .into_iter()
-            .map(|book| book.title)
-            .collect()
+        series_books(
+            &self.connection(),
+            series.id,
+            BookListing::IN_ORDER,
+            &whole_page(),
+        )
+        .unwrap()
+        .items
+        .into_iter()
+        .map(|book| book.title)
+        .collect()
     }
 
     pub(crate) fn connection(&self) -> Connection {

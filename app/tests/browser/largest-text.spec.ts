@@ -18,6 +18,7 @@ import {
   testOnlyInItsWebview,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
+import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const PAGES = [
   ...APP_PAGES,
@@ -187,6 +188,44 @@ for (const platform of PLATFORMS) {
         }
       }
     }
+
+    test.describe("on a series' page", () => {
+      const shelf = new FakeShelf([
+        { state: "read" },
+        { state: "started", page: 15 },
+        { state: "notStarted" },
+      ]);
+
+      test.use({
+        backend: {
+          ...onPlatform(platform).backend,
+          seriesOverview: (id) => shelf.backend().seriesOverview(id),
+          seriesBooks: (id, listing, after) =>
+            shelf.backend().seriesBooks(id, listing, after),
+        },
+      });
+
+      for (const isPicking of [false, true]) {
+        test(`fits a series' page without spilling${isPicking ? " while picking books" : ""}`, async ({
+          page,
+        }) => {
+          await page.goto(`/series/${SERIES_ID}`);
+          await expect(
+            page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
+          ).toBeVisible();
+          if (isPicking) {
+            await page
+              .getByRole("button", { name: "Select", exact: true })
+              .click();
+            await page
+              .getByRole("checkbox", { name: `Select ${shelf.titleOf(0)}` })
+              .check();
+          }
+
+          await expectNothingSpills(page);
+        });
+      }
+    });
 
     test.describe("on first launch", () => {
       test.use({

@@ -46,7 +46,9 @@ const SEND_OUTCOMES = {
   clipboardUnavailable: "notSent",
   crashReportUnavailable: "notSent",
   developmentBuildOnly: "notSent",
+  seriesNotFound: "notSent",
   searchTooLong: "notSent",
+  cursorForAnotherList: "notSent",
   internal: "notSent",
 } as const satisfies Record<IpcErrorCode, SendFailure | undefined>;
 

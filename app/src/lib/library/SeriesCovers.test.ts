@@ -104,6 +104,27 @@ test("leaves the cover's place empty for a series with no cover yet", async () =
   expect(second.getByRole("presentation").elements()).toHaveLength(0);
 });
 
+test("opens each series on a page of its own", async () => {
+  const series = await listed();
+
+  const screen = await render(SeriesCovers, {
+    series,
+    isComplete: true,
+    coverUrl: fakeCoverUrl,
+    view: DEFAULT_LIBRARY_VIEW,
+    usesStandIns: false,
+  });
+
+  const links = screen.getByRole("listitem").getByRole("link");
+  await expect
+    .element(links.nth(0))
+    .toHaveAttribute("href", "/series/0190a3e4-0000-8000-8000-0000000000a1");
+  await expect
+    .element(links.nth(1))
+    .toHaveAttribute("href", "/series/0190a3e4-0000-8000-8000-0000000000a2");
+  await expect.element(links.nth(0)).toHaveAccessibleName(/Sample Series 01/);
+});
+
 test("keeps each series' cover with its series when the list reorders", async () => {
   const series = await listed();
   const screen = await render(SeriesCovers, {

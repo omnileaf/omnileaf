@@ -93,7 +93,7 @@ test("reports the books and series the scan found in the picked folder", async (
     .toHaveTextContent("Found 7 books in 3 series in Sample Library.");
 });
 
-test("names the folder with a stand-in while Screenshot mode is on", async () => {
+test("names the folder with the stand-in its name gives it while Screenshot mode is on", async () => {
   const { button, status } = await renderWith(answering(scanned({})), {
     usesStandIns: true,
   });
@@ -102,7 +102,7 @@ test("names the folder with a stand-in while Screenshot mode is on", async () =>
 
   await expect
     .element(status)
-    .toHaveTextContent("Found 7 books in 3 series in Folder 01.");
+    .toHaveTextContent("Found 7 books in 3 series in Folder 571.");
 });
 
 test("counts a single book in a single series in the singular", async () => {

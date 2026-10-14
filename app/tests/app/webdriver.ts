@@ -2,6 +2,7 @@ import { isRecord, listOf } from "./json.ts";
 
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 const STALE_ELEMENT = "stale element reference";
+const UNKNOWN_COMMAND = "unknown command";
 const NATIVE_CONTEXT = "NATIVE_APP";
 const SHOWN_BUTTON =
   /<XCUIElementTypeButton\b[^>]*\bname="([^"]*)"[^>]*\bvisible="true"/g;
@@ -281,8 +282,18 @@ export class Session {
     );
   }
 
+  /** The Android driver hands the newer route on to its own server while native, which knows only the older one. */
   private async switchToContext(name: string): Promise<void> {
-    await send(`${this.endpoint}/appium/context`, "POST", { name });
+    try {
+      await send(`${this.endpoint}/appium/context`, "POST", { name });
+    } catch (error) {
+      if (!(
+        error instanceof WebDriverError && error.code === UNKNOWN_COMMAND
+      )) {
+        throw error;
+      }
+      await send(`${this.endpoint}/context`, "POST", { name });
+    }
   }
 
   private async webviewContextOtherThan(

@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import { resolve } from "$app/paths";
   import type {
     LibraryDisplay,
     LibrarySeries,
@@ -38,7 +39,6 @@
 
   interface DisplayLayout {
     readonly list: ClassValue;
-    readonly item: string;
     readonly cell: Snippet<[LibrarySeries]>;
   }
 
@@ -50,7 +50,6 @@
       {
         grid: {
           list: ["grid-cols-covers-per-row", look.gap],
-          item: "flex flex-col gap-cover-caption min-inline-none medium:gap-sm",
           cell: gridCell,
         },
         compact: {
@@ -59,17 +58,14 @@
             look.gap,
             look.title,
           ],
-          item: "min-inline-none",
           cell: compactCell,
         },
         covers: {
           list: ["grid-cols-covers-per-row", look.gap],
-          item: "min-inline-none",
           cell: coversCell,
         },
         list: {
           list: "grid-cols-1",
-          item: "box-content flex items-center gap-cover-gap border-be border-border py-sm min-block-series-row large:gap-lg large:py-series-row-pad-wide large:min-block-series-row-wide",
           cell: listRow,
         },
       } satisfies Record<LibraryDisplay, DisplayLayout>
@@ -85,79 +81,99 @@
 
 {#snippet gridCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
-  <div
-    class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+  <a
+    href={resolve("/(app)/series/[id]", { id: one.id })}
+    class="flex flex-col gap-cover-caption min-inline-none medium:gap-sm"
   >
-    <CoverImage cover={shown.cover} {coverUrl} />
-    <CoverBadges series={one} onCovers={view.onCovers} />
-  </div>
-  <div class="min-inline-none">
-    <p class={["truncate font-semibold", look.title]}>{shown.title}</p>
-    <p
-      class={[
-        "truncate text-caption text-muted medium:mbs-2xs",
-        look.bookCount,
-      ]}
+    <div
+      class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
     >
-      {m.library_series_books({ count: one.bookCount })}
-    </p>
-  </div>
+      <CoverImage cover={shown.cover} {coverUrl} />
+      <CoverBadges series={one} onCovers={view.onCovers} />
+    </div>
+    <div class="min-inline-none">
+      <p class={["truncate font-semibold", look.title]}>{shown.title}</p>
+      <p
+        class={[
+          "truncate text-caption text-muted medium:mbs-2xs",
+          look.bookCount,
+        ]}
+      >
+        {m.library_series_books({ count: one.bookCount })}
+      </p>
+    </div>
+  </a>
 {/snippet}
 
 {#snippet compactCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
-  <div
-    class="@container relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+  <a
+    href={resolve("/(app)/series/[id]", { id: one.id })}
+    class="block min-inline-none"
   >
-    <CoverImage cover={shown.cover} {coverUrl} />
-    <CoverBadges series={one} onCovers={view.onCovers} />
     <div
-      class="absolute inset-x-none inset-be-none bg-linear-to-t from-band from-55% to-transparent px-band pbs-band-fade pbe-sm medium:px-band-wide medium:pbe-band-wide @max-cover-title:bg-none @max-cover-title-wide:px-band"
+      class="@container relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
     >
-      <p
-        class="line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band @max-cover-title:sr-only"
+      <CoverImage cover={shown.cover} {coverUrl} />
+      <CoverBadges series={one} onCovers={view.onCovers} />
+      <div
+        class="absolute inset-x-none inset-be-none bg-linear-to-t from-band from-55% to-transparent px-band pbs-band-fade pbe-sm medium:px-band-wide medium:pbe-band-wide @max-cover-title:bg-none @max-cover-title-wide:px-band"
       >
-        {shown.title}
-      </p>
+        <p
+          class="line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band @max-cover-title:sr-only"
+        >
+          {shown.title}
+        </p>
+      </div>
     </div>
-  </div>
+  </a>
 {/snippet}
 
 {#snippet coversCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
-  <div
-    title={shown.title}
-    class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+  <a
+    href={resolve("/(app)/series/[id]", { id: one.id })}
+    class="block min-inline-none"
   >
-    <CoverImage cover={shown.cover} {coverUrl} />
-    <CoverBadges series={one} onCovers={view.onCovers} />
-    <p class="sr-only">{shown.title}</p>
-  </div>
+    <div
+      title={shown.title}
+      class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+    >
+      <CoverImage cover={shown.cover} {coverUrl} />
+      <CoverBadges series={one} onCovers={view.onCovers} />
+      <p class="sr-only">{shown.title}</p>
+    </div>
+  </a>
 {/snippet}
 
 {#snippet listRow(one: LibrarySeries)}
   {@const shown = lookOf(one)}
-  <div
-    class="relative box-content aspect-cover shrink-0 overflow-hidden rounded-list-cover border border-cover-edge bg-chip inline-list-cover large:inline-list-cover-wide"
+  <a
+    href={resolve("/(app)/series/[id]", { id: one.id })}
+    class="box-content flex items-center gap-cover-gap border-be border-border py-sm min-block-series-row large:gap-lg large:py-series-row-pad-wide large:min-block-series-row-wide"
   >
-    <CoverImage cover={shown.cover} {coverUrl} />
-  </div>
-  <div
-    class="flex flex-1 flex-col gap-2xs min-inline-none large:flex-row large:items-center large:gap-lg"
-  >
-    <p class="truncate text-lead font-semibold large:flex-1">{shown.title}</p>
-    <p class="text-detail text-muted large:inline-list-detail">
-      {m.library_series_books({ count: one.bookCount })}
-    </p>
-  </div>
-  {#if view.onCovers.showsUnreadCount}
-    <div class="flex shrink-0 justify-end large:inline-list-unread">
-      <UnreadCount
-        count={one.unreadCount}
-        class="rounded-badge px-sm py-2xs text-caption"
-      />
+    <div
+      class="relative box-content aspect-cover shrink-0 overflow-hidden rounded-list-cover border border-cover-edge bg-chip inline-list-cover large:inline-list-cover-wide"
+    >
+      <CoverImage cover={shown.cover} {coverUrl} />
     </div>
-  {/if}
+    <div
+      class="flex flex-1 flex-col gap-2xs min-inline-none large:flex-row large:items-center large:gap-lg"
+    >
+      <p class="truncate text-lead font-semibold large:flex-1">{shown.title}</p>
+      <p class="text-detail text-muted large:inline-list-detail">
+        {m.library_series_books({ count: one.bookCount })}
+      </p>
+    </div>
+    {#if view.onCovers.showsUnreadCount}
+      <div class="flex shrink-0 justify-end large:inline-list-unread">
+        <UnreadCount
+          count={one.unreadCount}
+          class="rounded-badge px-sm py-2xs text-caption"
+        />
+      </div>
+    {/if}
+  </a>
 {/snippet}
 
 <VirtualGrid
@@ -169,6 +185,5 @@
   {...onColumns === undefined ? {} : { onColumns }}
   class={layout.list}
   style={coversPerRow}
-  itemClass={layout.item}
   cell={layout.cell}
 />

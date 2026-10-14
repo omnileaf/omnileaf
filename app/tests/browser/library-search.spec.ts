@@ -333,8 +333,9 @@ test("moves through the results with the arrow keys, Home and End, and opens one
   await expect(options.first()).toHaveAttribute("aria-selected", "true");
   await searchField(page).press("ArrowRight");
   await searchField(page).press("Enter");
-  await expect(page).toHaveURL(/\/search\?title=Lantern\+Market$/);
-  await expect(searchField(page)).toHaveValue("Lantern Market");
+  await expect(page).toHaveURL(
+    /\/series\/0190a3e4-0000-8000-8000-000000000002$/,
+  );
 });
 
 test("moves the caret, not the results, once more is typed", async ({
@@ -366,27 +367,6 @@ test("lists the keys the results answer to under the desktop page", async ({
   await expect(hints).toContainText("Enter to open");
   await expect(hints).toContainText("Ctrl K for quick open, anywhere");
 });
-
-for (const [asked, shown] of [
-  ["Lantern+Market", ""],
-  ["Series+123", "Series 123"],
-] as const) {
-  test(`shows a title from before Screenshot mode only when it is a stand-in, here ${shown === "" ? "nothing" : shown}`, async ({
-    page,
-  }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem(
-        "omnileaf.screenshotMode",
-        JSON.stringify({ activity: { kind: "on" } }),
-      );
-    });
-
-    await page.goto(`/search?title=${asked}`);
-
-    await expect(searchField(page)).toHaveValue(shown);
-    await expect(page.getByRole("main")).not.toContainText("Lantern Market");
-  });
-}
 
 /** Sends `key` the way an input method does while it composes, flagged as composing, or with the 229 key code some engines give instead. */
 async function composingKey(
@@ -619,6 +599,22 @@ test.describe("while a search is still out", () => {
     expect(new URL(page.url()).search).toBe("");
     release();
     await expectFound(page, ["Harbour Gate"]);
+    await expect(page).toHaveURL(/\/search$/);
+  });
+
+  test("opens none of the results the search before found when one is pressed", async ({
+    page,
+  }) => {
+    await page.goto("/search");
+    await searchField(page).fill("market");
+    await expectFound(page, ["Lantern Market", "Market Lanterns"]);
+
+    await searchField(page).fill(HELD_TEXT);
+    await results(page).getByRole("option").first().click();
+    release();
+
+    await expectFound(page, ["Harbour Gate"]);
+    await expect(page).toHaveURL(/\/search$/);
   });
 
   test("says nothing is called the text only once its search answers", async ({

@@ -553,6 +553,7 @@
   "screenshot_mode_shortcut_command": "⇧⌘H",
   "screenshot_mode_nothing_sent": "Nothing about Screenshot mode is sent anywhere. It only changes what’s on screen and in reports.",
   "stand_in_series": "Series {number}",
+  "stand_in_book": "{series} · Book {number}",
   "screenshot_mode_preview_label": "Preview of one cover with Screenshot mode off and on",
   "stand_in_folder": "Folder {number}",
   "notice_dismiss": "Dismiss",
@@ -664,5 +665,144 @@
   "quick_open_places": "Go to",
   "quick_open_anywhere": "{shortcut} from anywhere",
   "quick_open_shortcut": "Ctrl K",
-  "quick_open_shortcut_mac": "⌘ K"
+  "quick_open_shortcut_mac": "⌘ K",
+  "series_back": "Library",
+  "series_back_label": "Back to the library",
+  "series_folder": "Folder",
+  "series_failed": "Couldn't load this series. Try again later.",
+  "series_not_found": "This series isn't in your library",
+  "series_not_found_body": "Its books may have been removed, or the folder holding them taken out of the library.",
+  "series_read_count": [
+    {
+      "declarations": [
+        "input read",
+        "input total",
+        "local formattedRead = read: number",
+        "local formattedTotal = total: number"
+      ],
+      "match": {
+        "*": "{formattedRead} of {formattedTotal} read"
+      }
+    }
+  ],
+  "series_up_next": "Up next",
+  "series_continue_at": [
+    {
+      "declarations": [
+        "input title",
+        "input page",
+        "local formattedPage = page: number"
+      ],
+      "match": {
+        "*": "Continue {title} at page {formattedPage}"
+      }
+    }
+  ],
+  "series_continue": "Continue {title}",
+  "series_start": "Start with {title}",
+  "series_all_read": "You've read every book in this series",
+  "series_books_heading": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} book",
+        "countPlural=other": "{formattedCount} books"
+      }
+    }
+  ],
+  "series_books_list": "Books",
+  "series_books_failed": "Couldn't load the books in this series. Try again later.",
+  "series_show": "Show",
+  "series_show_all": "All",
+  "series_show_unread": "Unread",
+  "series_no_unread": "Every book in this series is read.",
+  "series_order_first_first": "In order",
+  "series_order_last_first": "Last first",
+  "series_order_first_first_change": "Order: in order. Change to last first",
+  "series_order_last_first_change": "Order: last first. Change to in order",
+  "series_column_book": "Book",
+  "series_column_added": "Added",
+  "series_column_progress": "Progress",
+  "series_book_added": "Added {date}",
+  "series_book_unread": "Unread",
+  "series_book_started": "Started",
+  "series_book_page": [
+    {
+      "declarations": ["input page", "local formattedPage = page: number"],
+      "match": {
+        "*": "Page {formattedPage}"
+      }
+    }
+  ],
+  "series_book_read": "Read",
+  "series_select": "Select",
+  "series_select_all": "Select all",
+  "series_select_done": "Done",
+  "series_select_book": "Select {title}",
+  "series_select_range_hint": "Shift-click to select a range",
+  "series_selected_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} selected",
+        "countPlural=other": "{formattedCount} selected"
+      }
+    }
+  ],
+  "series_selected_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} book",
+        "countPlural=other": "{formattedCount} books"
+      }
+    }
+  ],
+  "series_selection_toolbar": "Selected books",
+  "series_mark_read": "Mark read",
+  "series_mark_unread": "Mark unread",
+  "series_mark_failed": "Couldn't mark those books. Try again.",
+  "series_marked_read": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Marked {formattedCount} book read",
+        "countPlural=other": "Marked {formattedCount} books read"
+      }
+    }
+  ],
+  "series_marked_unread": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Marked {formattedCount} book unread",
+        "countPlural=other": "Marked {formattedCount} books unread"
+      }
+    }
+  ]
 }
