@@ -32,15 +32,15 @@ const SUMMARY =
 const TAGS = ["Slice of life", "Seinen", "Sea", "Letters"];
 const ONE_CREATOR: Partial<SeriesDetails> = {
   format: "Manga",
-  creators: [{ name: "Author A", role: "storyAndArt" }],
+  creators: [{ name: "Author A", role: "storyAndArt", seriesCount: 1 }],
   summary: SUMMARY,
   tags: TAGS,
 };
 const FOUR_CREATORS = [
-  { name: "Author A", role: "story" },
-  { name: "Author B", role: "story" },
-  { name: "Author C", role: "art" },
-  { name: "Author D", role: "art" },
+  { name: "Author A", role: "story", seriesCount: 1 },
+  { name: "Author B", role: "story", seriesCount: 1 },
+  { name: "Author C", role: "art", seriesCount: 1 },
+  { name: "Author D", role: "art", seriesCount: 1 },
 ] as const;
 const TITLE_SIZE = "24px";
 const PHONE_BAND = { height: 240 };
@@ -301,7 +301,11 @@ test.describe("a series whose creators have no roles", () => {
   test.use({
     backend: shelfBackend(
       new FakeShelf(EIGHT_BOOKS, {
-        creators: FOUR_CREATORS.map(({ name }) => ({ name, role: null })),
+        creators: FOUR_CREATORS.map(({ name }) => ({
+          name,
+          role: null,
+          seriesCount: 1,
+        })),
       }),
     ),
   });
