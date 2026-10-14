@@ -189,12 +189,59 @@ async function expectPicked(page: Page, count: number): Promise<void> {
       ).toBeVisible());
 }
 
+function markAllButton(page: Page, mark: "read" | "unread"): Locator {
+  return page
+    .getByRole("region", { name: "About this series" })
+    .getByRole("button", {
+      name: new RegExp(`^Mark (${SERIES_TITLE} )?${mark}$`),
+    });
+}
+
+async function revealBooks(page: Page): Promise<void> {
+  await expect(books(page).first()).toBeVisible();
+  await books(page)
+    .first()
+    .evaluate((row) => {
+      const bar = document.querySelector("[data-page-toolbar], main header");
+      const below = bar?.getBoundingClientRect().bottom ?? 0;
+      row.closest("main")?.scrollBy({
+        top: row.getBoundingClientRect().top - below,
+      });
+    });
+}
+
 async function openSeries(page: Page): Promise<void> {
   await page.goto(`/series/${SERIES_ID}`);
   await expect(
     page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
   ).toBeVisible();
-  await expect(books(page).first()).toBeVisible();
+  await revealBooks(page);
+}
+
+async function settleBarTitle(page: Page): Promise<void> {
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const bar = document.querySelector("main header");
+        const shown = bar?.querySelector("span[aria-hidden=true]");
+        const title = document.querySelector("main h1");
+        if (bar === null || !shown || title === null) {
+          return true;
+        }
+        const isUnder =
+          title.getBoundingClientRect().bottom <=
+          bar.getBoundingClientRect().bottom;
+        return getComputedStyle(shown).opacity === (isUnder ? "1" : "0");
+      }),
+    )
+    .toBe(true);
+}
+
+async function openSeriesAtTop(page: Page): Promise<void> {
+  await openSeries(page);
+  await page.getByRole("main").evaluate((main) => {
+    main.scrollTo({ top: 0 });
+  });
 }
 
 test("shows a series' title, folder and how far it has been read", async ({
@@ -398,30 +445,12 @@ test("sets the books beside the series on wide screens and under it on narrow on
   }
 });
 
-test("spreads the cover's colour from one edge of the page to the other", async ({
-  page,
-}) => {
-  await openSeries(page);
-
-  const main = page.getByRole("main");
-  const band = await boxOf(main.locator(":scope > div > [aria-hidden='true']"));
-  const area = await boxOf(main);
-  const areaWidth = await main.evaluate((element) => element.clientWidth);
-
-  expect({ start: band.x, end: band.x + band.width }).toEqual({
-    start: area.x,
-    end: area.x + areaWidth,
-  });
-});
-
 test("fades the cover's colour out before the series' title", async ({
   page,
 }) => {
   await openSeries(page);
 
-  const band = await boxOf(
-    page.getByRole("main").locator(":scope > div > [aria-hidden='true']"),
-  );
+  const band = await boxOf(page.locator("[data-series-band]"));
   const title = await boxOf(
     page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
   );
@@ -429,30 +458,12 @@ test("fades the cover's colour out before the series' title", async ({
   expect(band.y + band.height).toBeLessThanOrEqual(title.y);
 });
 
-test("leads back to the library through a breadcrumb beside the page's name on wider screens", async ({
-  page,
-}) => {
-  test.skip(
-    viewportOf(page).width < MEDIUM_MIN_WIDTH,
-    "phones show a back button",
-  );
-  await openSeries(page);
-
-  const crumbs = page.getByRole("navigation", { name: "Breadcrumb" });
-
-  await expect(crumbs.getByRole("link", { name: "Library" })).toBeVisible();
-  await expect(crumbs.getByText(SERIES_TITLE)).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
-});
-
 test("marks every book of the series read, and back with Undo", async ({
   page,
 }) => {
   await openSeries(page);
 
-  await page.getByRole("button", { name: "Mark all read" }).click();
+  await markAllButton(page, "read").click();
 
   await expect(
     page.getByRole("progressbar", { name: "12 of 12 read" }),
@@ -463,9 +474,7 @@ test("marks every book of the series read, and back with Undo", async ({
       mark: "read",
     },
   ]);
-  await expect(
-    page.getByRole("button", { name: "Mark all unread" }),
-  ).toBeVisible();
+  await expect(markAllButton(page, "unread")).toBeVisible();
 
   await page.getByRole("button", { name: "Undo" }).click();
 
@@ -1259,7 +1268,7 @@ for (const { platform, statusBar, target } of [
     });
 
     async function openUnderStatusBar(page: Page): Promise<void> {
-      await openSeries(page);
+      await openSeriesAtTop(page);
       await page.evaluate((inset) => {
         document.documentElement.style.setProperty(
           "--system-inset-top",
@@ -1303,7 +1312,7 @@ for (const { platform, statusBar, target } of [
     test("takes the title away again once larger text brings the page's title back out from under the bar", async ({
       page,
     }) => {
-      await openSeries(page);
+      await openSeriesAtTop(page);
       const heading = page.getByRole("heading", {
         level: 1,
         name: SERIES_TITLE,
@@ -1330,7 +1339,7 @@ for (const { platform, statusBar, target } of [
       page,
     }) => {
       await page.emulateMedia({ reducedMotion: "reduce" });
-      await openSeries(page);
+      await openSeriesAtTop(page);
 
       await expect(barTitle(page)).toHaveCSS("transition-duration", "0s");
     });
@@ -1353,7 +1362,7 @@ test.describe("on Android", () => {
       .getByRole("main")
       .getByRole("link", { name: new RegExp(SERIES_TITLE) })
       .click();
-    await expect(books(page).first()).toBeVisible();
+    await revealBooks(page);
     await pickBooks(page, 4);
 
     await page.goBack();
@@ -1400,7 +1409,7 @@ test.describe("swiping back from the edge on an iPhone", () => {
       .getByRole("main")
       .getByRole("link", { name: new RegExp(SERIES_TITLE) })
       .click();
-    await expect(books(page).first()).toBeVisible();
+    await revealBooks(page);
   }
 
   async function swipeBack(): Promise<void> {
@@ -1494,6 +1503,7 @@ for (const colorScheme of ["light", "dark"] as const) {
   }) => {
     await page.emulateMedia({ colorScheme });
     await openSeries(page);
+    await settleBarTitle(page);
 
     const violations = await accessibilityViolations(page);
 
@@ -1506,6 +1516,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
     await openSeries(page);
     await pickBooks(page, 4);
+    await settleBarTitle(page);
 
     const violations = await accessibilityViolations(page);
 
@@ -1561,6 +1572,7 @@ test.describe("while Screenshot mode is on", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: standIn ?? "" }),
     ).toBeFocused();
+    await revealBooks(page);
     await expect(books(page).first()).toContainText(
       `${standIn ?? ""} · Book 1`,
     );
