@@ -13,6 +13,7 @@ pub struct SeriesOverview {
     pub title: String,
     pub book_count: u32,
     pub read_count: u32,
+    pub bookmark_count: u32,
     pub cover: Option<CoverPath>,
     pub folder: Option<String>,
     /// The book reading goes on from, absent once every book is read.
@@ -47,6 +48,7 @@ impl SeriesOverview {
             title: overview.title,
             book_count: overview.book_count,
             read_count: overview.read_count,
+            bookmark_count: 0,
             cover: overview.cover.map(CoverPath),
             folder: overview
                 .folder
@@ -64,10 +66,8 @@ impl SeriesOverview {
 mod tests {
     use super::*;
 
-    #[test]
-    fn leaves_a_series_format_creators_summary_and_tags_empty_until_the_library_reads_its_details()
-    {
-        let overview = SeriesOverview::new(
+    fn sample_overview() -> SeriesOverview {
+        SeriesOverview::new(
             catalog::SeriesOverview {
                 id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
                 title: "Sample Series 04".to_owned(),
@@ -77,7 +77,18 @@ mod tests {
                 folder: None,
             },
             None,
-        );
+        )
+    }
+
+    #[test]
+    fn counts_no_bookmarks_while_the_library_keeps_none() {
+        assert_eq!(sample_overview().bookmark_count, 0);
+    }
+
+    #[test]
+    fn leaves_a_series_format_creators_summary_and_tags_empty_until_the_library_reads_its_details()
+    {
+        let overview = sample_overview();
 
         assert_eq!(
             (

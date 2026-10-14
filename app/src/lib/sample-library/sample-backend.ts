@@ -9,6 +9,7 @@ import {
   type Platform,
 } from "#lib/ipc/bindings.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
+import { isShownBy } from "#lib/series/books-shown.ts";
 
 import {
   type SampleBook,
@@ -346,6 +347,7 @@ export function sampleBackend(
         title: series.title,
         bookCount: series.books.length,
         readCount: series.books.filter(isRead).length,
+        bookmarkCount: series.books.filter((book) => book.isBookmarked).length,
         cover: coverOf(series),
         folder: LIBRARY_FOLDER_NAME,
         upNext: upNextOf(series),
@@ -360,9 +362,7 @@ export function sampleBackend(
       const series = seriesWith(id);
       const books = series.books
         .map((_, index) => wireBook(series, index))
-        .filter(
-          (book) => chosen.shown === "all" || book.reading.state !== "read",
-        );
+        .filter((book) => isShownBy(chosen.shown, book));
       const ordered =
         chosen.direction === "ascending" ? books : books.toReversed();
       const page = pageOf(ordered, after);
