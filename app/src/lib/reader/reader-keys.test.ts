@@ -4,6 +4,7 @@ import { shortcut } from "#lib/shortcut.ts";
 
 import { type ReaderAction, readerShortcuts } from "./reader-keys";
 import type { ReadingDirection } from "./reading-direction.svelte";
+import type { Platform } from "#lib/ipc/bindings.ts";
 
 const detachments: (() => void)[] = [];
 
@@ -17,6 +18,7 @@ function actionsFor(
   presses: readonly KeyboardEventInit[],
   target: EventTarget = document.body,
   direction: ReadingDirection = "leftToRight",
+  platform: Platform = "linux",
 ): ReaderAction[] {
   const actions: ReaderAction[] = [];
   detachments.push(
@@ -26,6 +28,7 @@ function actionsFor(
           actions.push(action);
         },
         () => direction,
+        platform,
       ),
     )(window),
   );
@@ -139,4 +142,35 @@ test("takes its keys on a focused slider unless the slider moves on them", () =>
 
   expect(actions).toEqual(["next", "fullScreen", "leave"]);
   slider.remove();
+});
+
+test("zooms in and out with Ctrl and plus or minus, and fits the page with Ctrl 0", () => {
+  const actions = actionsFor([
+    { key: "=", ctrlKey: true },
+    { key: "+", ctrlKey: true, shiftKey: true },
+    { key: "-", ctrlKey: true },
+    { key: "0", ctrlKey: true },
+  ]);
+
+  expect(actions).toEqual(["zoomIn", "zoomIn", "zoomOut", "zoomFit"]);
+});
+
+test("zooms with ⌘ rather than Ctrl on macOS", () => {
+  const actions = actionsFor(
+    [
+      { key: "=", ctrlKey: true },
+      { key: "=", metaKey: true },
+    ],
+    document.body,
+    "leftToRight",
+    "macos",
+  );
+
+  expect(actions).toEqual(["zoomIn"]);
+});
+
+test("opens the keyboard shortcuts with the question mark", () => {
+  const actions = actionsFor([{ key: "?", shiftKey: true }]);
+
+  expect(actions).toEqual(["shortcuts"]);
 });

@@ -26,6 +26,7 @@
     shown,
     spread,
     fit,
+    zoom,
     isReversed,
     overlay,
     onShownReady,
@@ -34,6 +35,7 @@
     shown: number;
     spread: Spread;
     fit: PageFit;
+    zoom: number;
     isReversed: boolean;
     overlay: Snippet;
     onShownReady: () => void;
@@ -54,11 +56,17 @@
   function sizeOf(page: BookPage) {
     return page.size === null
       ? undefined
-      : fittedTo(
-          page.size,
-          { width: spaceWidth / spread.length, height: spaceHeight },
-          fit,
+      : zoomed(
+          fittedTo(
+            page.size,
+            { width: spaceWidth / spread.length, height: spaceHeight },
+            fit,
+          ),
         );
+  }
+
+  function zoomed(size: { width: number; height: number }) {
+    return { width: size.width * zoom, height: size.height * zoom };
   }
 
   /** Starts each spread at its top, since a page fitted to the width scrolls down. */
@@ -129,7 +137,9 @@
   bind:clientHeight={spaceHeight}
   class={[
     "absolute inset-none grid",
-    fit === "screen" ? "overflow-hidden" : "overflow-auto overscroll-contain",
+    fit === "screen" && zoom === 1
+      ? "overflow-hidden"
+      : "overflow-auto overscroll-contain",
   ]}
 >
   <div
