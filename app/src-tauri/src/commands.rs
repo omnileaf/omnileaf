@@ -46,6 +46,7 @@ macro_rules! app_commands {
             series_overview,
             series_books,
             creator_series,
+            bookmark_pages,
             mark_books,
             open_book,
             reading_restored,
@@ -295,6 +296,17 @@ async fn series_books(
 )]
 fn creator_series(library: State<'_, Library>, creator: String) -> Vec<CreatorSeries> {
     library.creator_series(&creator)
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    unused_variables,
+    clippy::needless_pass_by_value,
+    reason = "the library keeps no bookmarks yet, so the pages have nowhere to go"
+)]
+fn bookmark_pages(book: BookId, pages: Vec<u32>, is_bookmarked: bool) -> Result<(), IpcError> {
+    Err(IpcError::bookmarks_not_kept())
 }
 
 #[tauri::command]
