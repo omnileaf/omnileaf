@@ -401,7 +401,7 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
       ).toBeVisible();
 
       const firstFrame = await rowsInFirstFrame(page);
-      await nextFrames(page);
+      await settle(page.getByRole("dialog", { name: english.library_view }));
       const settled = rowsOf(await segmentsOf(displayGroup(page))).length;
 
       expect(settled).toBeGreaterThan(1);
