@@ -5,6 +5,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  onPlatform,
   test,
 } from "./fixtures.ts";
 import {
@@ -121,6 +122,37 @@ for (const { way, turn } of TURNS_AGAIN) {
     await expect(page).toHaveURL(NEXT_BOOK_PAGE);
   });
 }
+
+test("hints the → key on its Read button on a desktop", async ({ page }) => {
+  await openBook(page);
+  await turnPastTheEnd(page);
+
+  const read = page.getByRole("link", { name: `Read ${NEXT_BOOK.title}` });
+
+  await expect(read.locator("kbd")).toHaveText("→");
+  await expect(read.locator("kbd")).toBeVisible();
+  await expect(read).toHaveAccessibleName(`Read ${NEXT_BOOK.title}`);
+});
+
+test.describe("on a phone", () => {
+  test.use({
+    backend: {
+      ...onPlatform("ios").backend,
+      openBook: (id) => ({ ...readerBook(NOT_STARTED), id }),
+      bookReadTime: () => READ_SECONDS,
+    },
+  });
+
+  test("leaves the → key off its Read button", async ({ page }) => {
+    await openBook(page);
+    await turnPastTheEnd(page);
+
+    const read = page.getByRole("link", { name: `Read ${NEXT_BOOK.title}` });
+
+    await expect(read).toBeVisible();
+    await expect(read.locator("kbd")).toBeHidden();
+  });
+});
 
 test("goes back to the last page on turning back from up next", async ({
   page,

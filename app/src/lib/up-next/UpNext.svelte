@@ -2,6 +2,7 @@
   import { Check, Play } from "@lucide/svelte";
   import { onMount } from "svelte";
 
+  import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
   import {
@@ -125,6 +126,12 @@
         >
           <Play size={PLAY_SIZE} aria-hidden="true" class="fill-current" />
           {m.reader_read_next({ title: next.title })}
+          <Kbd
+            aria-hidden="true"
+            class="hidden border-on-reader-accent/20 bg-on-reader-accent/10 desktop:inline"
+          >
+            {m.reader_next_key()}
+          </Kbd>
         </a>
         <a href={seriesHref} class={secondaryLook}
           ><span class="expanded:truncate">{backLabel}</span></a
