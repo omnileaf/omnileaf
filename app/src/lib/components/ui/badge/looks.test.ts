@@ -15,6 +15,7 @@ test("keeps every class of every look through the class merge", () => {
 test.each<[BadgeLook, string[]]>([
   ["count", ["rounded-badge", "bg-accent", "font-bold", "text-on-accent"]],
   ["condition", ["rounded-full", "bg-accent-soft", "text-detail"]],
+  ["outline", ["rounded-shadcn-control", "border", "border-border"]],
   ["header-accent", ["rounded-full", "bg-accent-soft", "text-accent"]],
   ["header-danger", ["rounded-full", "bg-danger-soft", "text-danger"]],
 ])("draws the %s look with its colours and shape", (look, signature) => {
