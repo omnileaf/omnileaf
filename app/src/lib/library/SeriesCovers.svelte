@@ -8,6 +8,7 @@
     LibrarySeries,
     LibraryView,
   } from "#lib/ipc/bindings.ts";
+  import { Progress } from "#lib/components/ui/progress/index.ts";
   import { m } from "#lib/paraglide/messages.js";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
@@ -73,6 +74,17 @@
     )[view.display],
   );
 
+  const PERCENT = 100;
+
+  function readShare(one: LibrarySeries): number | undefined {
+    const read = one.bookCount - one.unreadCount;
+    return view.onCovers.showsReadingProgress &&
+      read > 0 &&
+      read < one.bookCount
+      ? Math.round((read / one.bookCount) * PERCENT)
+      : undefined;
+  }
+
   const coversPerRow = $derived(
     SCREEN_SIZES.map(
       (size) => `--${size}-covers-per-row: ${String(view.coversPerRow[size])}`,
@@ -82,6 +94,7 @@
 
 {#snippet gridCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
+  {@const share = readShare(one)}
   <a
     href={resolve("/(app)/series/[id]", { id: one.id })}
     class="flex flex-col gap-cover-caption min-inline-none medium:gap-sm"
@@ -92,8 +105,20 @@
       <CoverImage cover={shown.cover} {coverUrl} />
       <CoverBadges series={one} onCovers={view.onCovers} />
     </div>
+    {#if share !== undefined}
+      <Progress
+        aria-label={m.library_books_read({
+          read: one.bookCount - one.unreadCount,
+          count: one.bookCount,
+        })}
+        value={share}
+        class="block-xs"
+      />
+    {/if}
     <div class="min-inline-none">
-      <p class={["truncate font-semibold", look.title]}>{shown.title}</p>
+      <p class={["line-clamp-2 font-medium wrap-break-word", look.title]}>
+        {shown.title}
+      </p>
       <p
         class={[
           "truncate text-caption text-muted medium:mbs-2xs",

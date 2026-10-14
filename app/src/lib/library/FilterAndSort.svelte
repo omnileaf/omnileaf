@@ -30,7 +30,7 @@
 
   type Tab = "filter" | "sort";
 
-  const ICON_SIZE = 22;
+  const ICON_SIZE = 16;
   const CLOSE_ICON_SIZE = 18;
 
   let {
@@ -120,7 +120,7 @@
       <ListFilter
         size={ICON_SIZE}
         aria-hidden="true"
-        class="large:block-header-icon-desktop large:inline-header-icon-desktop"
+        class="large:block-lg large:inline-lg"
       />
       <span class="hidden large:inline">{m.library_filter()}</span>
       {#if filtersCount > 0}
