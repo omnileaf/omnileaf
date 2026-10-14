@@ -23,7 +23,7 @@
 <DropdownMenuPrimitive.RadioItem
   bind:ref
   class={cn(
-    "flex cursor-default items-center gap-sm rounded-control px-sm text-small outline-none select-none min-block-pointer-target data-highlighted:bg-hover touch:min-block-touch-target",
+    "flex cursor-default items-center gap-sm rounded-control px-sm text-small outline-none select-none min-block-pointer-target data-highlighted:bg-menu-highlight data-highlighted:text-on-menu-highlight touch:min-block-touch-target",
     className,
   )}
   {...restProps}
