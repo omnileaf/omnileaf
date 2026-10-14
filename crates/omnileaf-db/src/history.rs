@@ -48,6 +48,9 @@ const READING_TIME_BY_DAY: &str = "SELECT local_day, sum(ended_at_ms - started_a
 const READING_TIME_SINCE: &str = "SELECT coalesce(sum(ended_at_ms - started_at_ms), 0)
     FROM reading_session
     WHERE local_day >= ?1";
+const BOOK_READING_TIME: &str = "SELECT coalesce(sum(ended_at_ms - started_at_ms), 0)
+    FROM reading_session
+    WHERE book_id = ?1";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HistoryEntry {
@@ -117,6 +120,13 @@ pub fn reading_time_since(connection: &Connection, first_day: i64) -> Result<i64
     Ok(connection
         .prepare(READING_TIME_SINCE)?
         .query_row([first_day], |row| row.get(0))?)
+}
+
+/// Milliseconds spent reading `book` over all its sessions.
+pub fn book_reading_time(connection: &Connection, book: BookId) -> Result<i64, Error> {
+    Ok(connection
+        .prepare(BOOK_READING_TIME)?
+        .query_row([book.as_bytes()], |row| row.get(0))?)
 }
 
 fn read(
@@ -213,6 +223,18 @@ mod tests {
                 ],
                 ["SEARCH reading_session USING INDEX reading_session_by_day (local_day>?)"],
             ]
+        );
+    }
+
+    #[test]
+    fn adds_up_a_book_s_reading_from_the_book_index_alone() {
+        let scratch = ScratchLibrary::new("book-reading-time-plan");
+
+        let plan = scratch.query_plan(BOOK_READING_TIME);
+
+        assert_eq!(
+            plan,
+            ["SEARCH reading_session USING COVERING INDEX reading_session_by_book (book_id=?)"]
         );
     }
 }

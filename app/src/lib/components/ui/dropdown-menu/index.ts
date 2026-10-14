@@ -1,0 +1,9 @@
+import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+
+export { default as DropdownMenuContent } from "./dropdown-menu-content.svelte";
+export { default as DropdownMenuItem } from "./dropdown-menu-item.svelte";
+export { default as DropdownMenuRadioItem } from "./dropdown-menu-radio-item.svelte";
+
+export const DropdownMenu = DropdownMenuPrimitive.Root;
+export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
+export const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;

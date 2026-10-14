@@ -2,6 +2,7 @@
   import { Bug, Play, Power, TriangleAlert } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -95,11 +96,12 @@
   >
     {#each ROWS as row (row.test)}
       <li>
-        <button
+        <Button
           type="button"
+          look="row"
           aria-labelledby="{id}-{row.test}-title"
           aria-describedby="{id}-{row.test}-body"
-          class="flex items-center gap-md px-list-row py-sm text-start transition-control inline-full min-block-row-compact hover:bg-hover active:bg-pressed touch:min-block-row touch:max-medium:gap-list-row touch:max-medium:py-action-row"
+          class="gap-md px-list-row py-sm inline-full min-block-row-compact touch:min-block-row touch:max-medium:gap-list-row touch:max-medium:py-action-row"
           onclick={RUNS[row.test]}
         >
           <span
@@ -133,7 +135,7 @@
               TONES[row.tone].play,
             ]}
           />
-        </button>
+        </Button>
       </li>
     {/each}
   </ul>

@@ -4,6 +4,7 @@ export class ReaderControls {
   #hiding: ReturnType<typeof setTimeout> | undefined;
   #isPointerOver = false;
   #isFocused = false;
+  #isHeld = false;
 
   constructor(private readonly hideAfterMs: number) {
     this.#hideLater();
@@ -52,6 +53,16 @@ export class ReaderControls {
     this.#hideLater();
   }
 
+  hold(): void {
+    this.#isHeld = true;
+    this.show();
+  }
+
+  release(): void {
+    this.#isHeld = false;
+    this.#hideLater();
+  }
+
   stop(): void {
     clearTimeout(this.#hiding);
     this.#hiding = undefined;
@@ -61,7 +72,7 @@ export class ReaderControls {
     this.stop();
     this.#hiding = setTimeout(() => {
       this.#hiding = undefined;
-      if (!this.#isPointerOver && !this.#isFocused) {
+      if (!this.#isPointerOver && !this.#isFocused && !this.#isHeld) {
         this.hide();
       }
     }, this.hideAfterMs);

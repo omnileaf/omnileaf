@@ -2,6 +2,8 @@
   import { X } from "@lucide/svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import { Badge } from "#lib/components/ui/badge/index.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { FilterCondition } from "#lib/library/library-listing.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -44,27 +46,30 @@
     {@const removeLabel = m.search_remove_condition({
       condition: CONDITION_LABELS[condition](),
     })}
-    <li
-      class={[
-        "inline-flex shrink-0 items-center gap-xs rounded-full bg-accent-soft text-detail font-semibold",
-        LOOKS[look].chip,
-      ]}
-    >
-      {CONDITION_LABELS[condition]()}
-      <Tooltip
-        label={removeLabel}
-        type="button"
-        aria-label={removeLabel}
-        class={[
-          "flex items-center justify-center rounded-full",
-          LOOKS[look].remove,
-        ]}
-        onclick={() => {
-          onRemove(condition);
-        }}
-      >
-        <X size={REMOVE_ICON_SIZE} strokeWidth={2.5} aria-hidden="true" />
-      </Tooltip>
-    </li>
+    <Badge look="condition" class={LOOKS[look].chip}>
+      {#snippet child({ props })}
+        <li {...props}>
+          {CONDITION_LABELS[condition]()}
+          <Tooltip
+            label={removeLabel}
+            type="button"
+            aria-label={removeLabel}
+            onclick={() => {
+              onRemove(condition);
+            }}
+          >
+            {#snippet child({ props: removeProps })}
+              <Button {...removeProps} look="icon" class={LOOKS[look].remove}>
+                <X
+                  size={REMOVE_ICON_SIZE}
+                  strokeWidth={2.5}
+                  aria-hidden="true"
+                />
+              </Button>
+            {/snippet}
+          </Tooltip>
+        </li>
+      {/snippet}
+    </Badge>
   {/each}
 </ul>

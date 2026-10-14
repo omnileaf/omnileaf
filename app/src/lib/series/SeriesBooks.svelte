@@ -1,29 +1,35 @@
 <script lang="ts">
-  import { Eye, EyeOff, ListChecks } from "@lucide/svelte";
+  import { Eye, EyeOff, X } from "@lucide/svelte";
   import { tick } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
 
   import { beforeNavigate } from "$app/navigation";
-  import { resolve } from "$app/paths";
-  import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
-  import { LongPress } from "#lib/components/long-press.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
+  import { Card } from "#lib/components/ui/card/index.ts";
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type {
+    Platform,
     ReadMark,
     SeriesBook,
     SeriesBookListing,
   } from "#lib/ipc/bindings.ts";
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
+  import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
-  import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
+  import { shortcut } from "#lib/shortcut.ts";
 
+  import BookList from "./BookList.svelte";
   import BookListingChoices from "./BookListingChoices.svelte";
-  import BookRowText from "./BookRowText.svelte";
+  import { booksMatching } from "./book-search";
+  import BookTable from "./BookTable.svelte";
   import { BookSelection } from "./book-selection.svelte";
+  import SelectionBar from "./SelectionBar.svelte";
 
   type BookId = SeriesBook["id"];
 
-  const LONG_PRESS_MS = 500;
-  const ICON_SIZE = 16;
+  const ICON_SIZE = 18;
   const ACTION_ICON_SIZE = 20;
   const MARKS = [
     { mark: "read", icon: Eye, label: m.series_mark_read },
@@ -39,6 +45,7 @@
     onNearEnd,
     onLoadAll,
     onMark,
+    platform,
   }: {
     books: readonly SeriesBook[];
     bookCount: number;
@@ -48,6 +55,7 @@
     onNearEnd: () => void;
     onLoadAll: () => Promise<void>;
     onMark: (books: BookId[], mark: ReadMark) => Promise<boolean>;
+    platform: Platform;
   } = $props();
 
   type Outcome =
@@ -61,41 +69,28 @@
     | { readonly kind: "pickedAll"; readonly count: number };
 
   const selection = new BookSelection<BookId>();
-  const longPress = new LongPress(LONG_PRESS_MS);
+  const isWide = new MediaQuery(EXPANDED_QUERY);
+  const notices = getNotices();
   const headingId = $props.id();
   const dates = $derived(
     new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }),
   );
-  const ids = $derived(books.map((book) => book.id));
+  let search = $state("");
+  const shownBooks = $derived(booksMatching(books, search, getLocale()));
+  const ids = $derived(shownBooks.map((book) => book.id));
 
   let outcome: Outcome = $state({ kind: "none" });
   let section: HTMLElement | undefined = $state();
-  let selectButton: HTMLButtonElement | undefined = $state();
-  let selectAllButton: HTMLButtonElement | undefined = $state();
+  let heading: HTMLElement | null = $state(null);
+  let selectAllBox: HTMLElement | null = $state(null);
 
-  function pickRunOnShift(event: MouseEvent, book: SeriesBook): void {
-    if (event.shiftKey) {
-      event.preventDefault();
-      selection.extendTo(book.id, ids);
-    }
-  }
+  const isPicking = $derived(selection.isSelecting || selection.count > 0);
 
-  function startPickingFrom(book: SeriesBook): void {
+  async function startPickingFrom(book: SeriesBook): Promise<void> {
     outcome = { kind: "none" };
     selection.begin(book.id);
-  }
-
-  function releasePress(): void {
-    longPress.released();
-  }
-
-  $effect(() => releasePress);
-
-  async function begin(): Promise<void> {
-    outcome = { kind: "none" };
-    selection.begin();
     await tick();
-    selectAllButton?.focus();
+    heading?.focus();
   }
 
   function isFocusHereOrLost(): boolean {
@@ -112,7 +107,7 @@
     selection.end();
     if (isFocusToKeep) {
       await tick();
-      selectButton?.focus();
+      (isWide.current ? selectAllBox : heading)?.focus();
     }
   }
 
@@ -129,14 +124,36 @@
     outcome = { kind: "pickedAll", count: selection.count };
   }
 
-  async function mark(read: ReadMark): Promise<void> {
-    const picked = selection.picked;
+  async function markBooks(picked: BookId[], read: ReadMark): Promise<boolean> {
     const isMarked = await onMark(picked, read);
-    if (isMarked) {
-      outcome = { kind: "marked", mark: read, count: picked.length };
+    outcome = isMarked
+      ? { kind: "marked", mark: read, count: picked.length }
+      : { kind: "failed" };
+    return isMarked;
+  }
+
+  async function markSwiped(
+    book: SeriesBook,
+    read: ReadMark,
+    how: "swiped" | "tapped",
+  ): Promise<void> {
+    const isMarked = await markBooks([book.id], read);
+    if (isMarked && how === "swiped") {
+      notices.offerUndo({
+        title:
+          read === "read"
+            ? m.series_marked_book_read({ title: book.title })
+            : m.series_marked_book_unread({ title: book.title }),
+        undo: () => {
+          void markBooks([book.id], read === "read" ? "unread" : "read");
+        },
+      });
+    }
+  }
+
+  async function mark(read: ReadMark): Promise<void> {
+    if (await markBooks(selection.picked, read)) {
       await end();
-    } else {
-      outcome = { kind: "failed" };
     }
   }
 
@@ -147,20 +164,15 @@
     );
   }
 
-  function endOnEscape(event: KeyboardEvent): void {
-    if (
-      event.key === "Escape" &&
-      !event.defaultPrevented &&
-      !isFromDialog(event) &&
-      selection.isSelecting
-    ) {
+  function endUnlessFromDialog(event: KeyboardEvent): void {
+    if (!isFromDialog(event)) {
       void end();
     }
   }
 
   $effect(() =>
     takeBackWithinScreen(() => {
-      if (!selection.isSelecting) {
+      if (!isPicking) {
         return false;
       }
       void end();
@@ -169,11 +181,7 @@
   );
 
   beforeNavigate((navigation) => {
-    if (
-      navigation.type === "popstate" &&
-      navigation.delta < 0 &&
-      selection.isSelecting
-    ) {
+    if (navigation.type === "popstate" && navigation.delta < 0 && isPicking) {
       navigation.cancel();
       void end();
     }
@@ -195,169 +203,174 @@
   }
 </script>
 
-{#snippet row(book: SeriesBook)}
-  {@const isPicked = selection.has(book.id)}
-  {#if selection.isSelecting}
-    <label
-      class={[
-        "flex cursor-pointer items-center gap-md min-block-book-row max-medium:ps-page-start max-medium:pe-md medium:px-lg expanded:gap-md expanded:px-md expanded:min-block-book-row-wide",
-        isPicked && "bg-selected-row",
-      ]}
-    >
-      <Checkbox
-        bind:checked={
-          () => isPicked,
-          () => {
-            selection.toggle(book.id);
-          }
-        }
-        aria-label={m.series_select_book({ title: book.title })}
-        class="rounded-series-check border-check-off block-series-check inline-series-check expanded:rounded-series-check-wide expanded:block-series-check-wide expanded:inline-series-check-wide"
-        onclick={(event: MouseEvent) => {
-          pickRunOnShift(event, book);
-        }}
-      />
-      <BookRowText {book} {dates} />
-    </label>
-  {:else}
-    <div
-      role="presentation"
-      class="flex items-center gap-md select-none min-block-book-row max-medium:ps-page-start max-medium:pe-md medium:px-lg expanded:px-md expanded:min-block-book-row-wide"
-      onpointerdown={(event) => {
-        longPress.pressed(event, () => {
-          startPickingFrom(book);
-        });
-      }}
-      onpointerup={releasePress}
-      onpointercancel={releasePress}
-      onpointerleave={releasePress}
-      oncontextmenu={(event) => {
-        event.preventDefault();
-      }}
-    >
-      <a
-        href={resolve("/read/[book]", { book: book.id })}
-        draggable="false"
-        class="flex flex-1 items-center self-stretch min-inline-none"
-      >
-        <BookRowText {book} {dates} />
-      </a>
-    </div>
-  {/if}
-{/snippet}
-
 <svelte:window
-  onpointerdowncapture={() => {
-    longPress.pointerWentDown();
-  }}
-  onclickcapture={(event: MouseEvent) => {
-    longPress.clicked(event);
-  }}
-  onkeydown={endOnEscape}
+  {@attach shortcut(
+    ...(isPicking ? [{ key: "Escape", run: endUnlessFromDialog }] : []),
+    ...(isWide.current
+      ? [
+          {
+            key: "a",
+            command: platform,
+            run: () => {
+              void pickAll();
+            },
+          },
+        ]
+      : []),
+  )}
 />
 
 <section
   bind:this={section}
+  data-picking={selection.isSelecting || undefined}
   aria-labelledby={headingId}
   class="flex flex-col gap-sm"
 >
-  <div class="flex flex-wrap items-center gap-sm min-block-series-back">
-    <h2 id={headingId} class="flex-1 text-series-heading font-bold">
+  <div
+    class={[
+      "flex items-center gap-sm min-block-series-back",
+      selection.isSelecting &&
+        "sticky -inset-bs-page-top z-series-bar -mx-page-start bg-background px-page-start pbs-series-bar-top pbe-xs",
+    ]}
+  >
+    {#if selection.isSelecting}
+      <Tooltip
+        label={m.series_clear_selection()}
+        type="button"
+        aria-label={m.series_clear_selection()}
+        onclick={() => {
+          void end();
+        }}
+      >
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            look="icon"
+            class="shrink-0 border border-border bg-card block-series-back inline-series-back"
+          >
+            <X size={ICON_SIZE} aria-hidden="true" />
+          </Button>
+        {/snippet}
+      </Tooltip>
+    {/if}
+    <h2
+      bind:this={heading}
+      id={headingId}
+      tabindex="-1"
+      class="flex-1 text-series-heading font-bold"
+    >
       {selection.isSelecting
         ? m.series_selected_count({ count: selection.count })
         : m.series_books_heading({ count: bookCount })}
     </h2>
-    {#if selection.isSelecting}
+    {#if isWide.current}
       <span class="text-detail text-muted max-large:hidden">
         {m.series_select_range_hint()}
       </span>
-      <button
-        bind:this={selectAllButton}
+    {:else if selection.isSelecting}
+      <Button
         type="button"
+        look="outline"
         aria-busy={isPickingAll}
-        class="rounded-control border border-border bg-card px-md text-detail font-semibold block-series-back expanded:block-series-crumb"
+        class="rounded-full px-md py-2xs text-detail min-block-series-back"
         onclick={() => {
           void pickAll();
         }}
       >
         {m.series_select_all()}
-      </button>
-      <button
-        type="button"
-        class="rounded-control bg-accent px-md text-detail font-bold text-on-accent block-series-back expanded:block-series-crumb"
-        onclick={() => {
-          void end();
-        }}
-      >
-        {m.series_select_done()}
-      </button>
-    {:else}
-      <button
-        bind:this={selectButton}
-        type="button"
-        class="flex items-center gap-icon-gap rounded-control border border-border bg-card px-md text-detail font-semibold block-series-back expanded:block-series-crumb"
-        onclick={() => {
-          void begin();
-        }}
-      >
-        <ListChecks size={ICON_SIZE} aria-hidden="true" />
-        {m.series_select()}
-      </button>
+      </Button>
     {/if}
   </div>
-  <BookListingChoices {listing} onChoose={onListing} />
-  {#if isComplete && books.length === 0 && listing.shown === "unread"}
-    <p class="text-body text-muted">{m.series_no_unread()}</p>
+  <BookListingChoices
+    {listing}
+    onChoose={onListing}
+    {search}
+    onSearch={(typed: string) => {
+      search = typed;
+      if (!isComplete) {
+        void onLoadAll();
+      }
+    }}
+  />
+  {#if isComplete && shownBooks.length === 0}
+    <p class="text-body text-muted">
+      {search.trim() === ""
+        ? m.series_no_unread()
+        : m.series_no_match({ search: search.trim() })}
+    </p>
   {/if}
-  <div
-    class="max-medium:-ms-page-start max-medium:-me-page-end medium:overflow-hidden medium:rounded-card medium:border medium:border-border medium:bg-card"
-  >
-    <div
-      aria-hidden="true"
-      class="flex items-center gap-md border-be border-border px-md text-caption font-semibold text-muted block-series-columns max-expanded:hidden"
-    >
-      {#if selection.isSelecting}
-        <span class="shrink-0 inline-series-check-wide"></span>
-      {/if}
-      <span class="flex-1">{m.series_column_book()}</span>
-      <span class="inline-series-column-added">{m.series_column_added()}</span>
-      <span class="inline-series-column-progress">
-        {m.series_column_progress()}
-      </span>
-    </div>
-    <VirtualGrid
-      items={books}
-      key={(book: SeriesBook) => book.id}
-      label={m.series_books_list()}
+  {#if isWide.current}
+    <BookTable
+      bind:selectAllBox
+      books={shownBooks}
+      {dates}
       {isComplete}
       {onNearEnd}
-      class="grid-cols-1"
-      itemClass="border-be border-border last:max-medium:border-be-0 medium:last:border-be-0"
-      cell={row}
+      {selection}
+      {isPickingAll}
+      onPickAll={() => {
+        void pickAll();
+      }}
+      onClear={() => {
+        void end();
+      }}
+      onMark={(picked: BookId[], read: ReadMark) => {
+        void markBooks(picked, read);
+      }}
     />
-  </div>
-  {#if selection.isSelecting && selection.count > 0}
-    <div
-      role="group"
-      aria-label={m.series_selection_toolbar()}
-      class="sticky inset-be-lg grid grid-cols-2 gap-2xs rounded-selection-bar bg-selection-bar p-selection-bar-inset text-on-selection-bar shadow-selection-bar expanded:flex expanded:items-center expanded:gap-xs expanded:self-center expanded:rounded-selection-bar-wide expanded:ps-lg ios:max-medium:inset-be-none"
-    >
-      <span class="text-detail font-bold max-expanded:hidden expanded:me-sm">
-        {m.series_selected_books({ count: selection.count })}
-      </span>
-      {#each MARKS as { mark: read, icon: Icon, label } (read)}
-        <button
-          type="button"
-          class="flex flex-col items-center justify-center gap-xs rounded-selection-action text-caption font-semibold min-block-selection-action expanded:flex-row expanded:gap-icon-gap expanded:rounded-selection-action-wide expanded:bg-selection-action expanded:px-md expanded:text-detail expanded:min-block-selection-action-wide"
-          onclick={() => {
-            void mark(read);
-          }}
-        >
-          <Icon size={ACTION_ICON_SIZE} aria-hidden="true" />
-          {label()}
-        </button>
-      {/each}
-    </div>
+    {#if selection.count > 0}
+      <SelectionBar
+        count={selection.count}
+        onMark={(read: ReadMark) => {
+          void mark(read);
+        }}
+        onClear={() => {
+          void end();
+        }}
+      />
+    {/if}
+  {:else}
+    <BookList
+      books={shownBooks}
+      {dates}
+      {isComplete}
+      {onNearEnd}
+      {selection}
+      onStartPicking={(book: SeriesBook) => {
+        void startPickingFrom(book);
+      }}
+      onMark={(picked: BookId[], read: ReadMark) => {
+        void markBooks(picked, read);
+      }}
+      onSwiped={(
+        book: SeriesBook,
+        read: ReadMark,
+        how: "swiped" | "tapped",
+      ) => {
+        void markSwiped(book, read, how);
+      }}
+    />
+    {#if selection.isSelecting && selection.count > 0}
+      <Card
+        role="group"
+        aria-label={m.series_selection_toolbar()}
+        class="sticky inset-be-lg grid grid-cols-2 gap-2xs p-xs shadow-popover ios:max-medium:inset-be-none"
+      >
+        {#each MARKS as { mark: read, icon: Icon, label } (read)}
+          <Button
+            type="button"
+            look="bar-icon"
+            class="flex-col text-caption font-semibold min-block-selection-action"
+            onclick={() => {
+              void mark(read);
+            }}
+          >
+            <Icon size={ACTION_ICON_SIZE} aria-hidden="true" />
+            {label()}
+          </Button>
+        {/each}
+      </Card>
+    {/if}
   {/if}
   <p
     role="status"

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ChevronLeft } from "@lucide/svelte";
   import { onMount, untrack } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
 
   import { invalidate } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -10,12 +11,20 @@
     type SeriesBook,
     type SeriesBookListing,
   } from "#lib/ipc/bindings.ts";
+  import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+  } from "#lib/components/ui/breadcrumb/index.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import {
     listenForLibraryChanges,
     listenForReadingSaved,
   } from "#lib/library/library-changes.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
+  import { MEDIUM_QUERY } from "#lib/page/breakpoints.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import ReadingProgress from "#lib/series/ReadingProgress.svelte";
@@ -31,6 +40,10 @@
   import type { PageProps } from "./$types";
 
   const BACK_ICON_SIZE = 20;
+  const EVERY_BOOK_IN_ORDER: SeriesBookListing = {
+    shown: "all",
+    direction: "ascending",
+  };
 
   let { data }: PageProps = $props();
 
@@ -38,6 +51,8 @@
   const found = $derived(shown.kind === "found" ? shown : undefined);
 
   const screenshotMode = getScreenshotMode();
+  const isWide = new MediaQuery(MEDIUM_QUERY);
+  const notices = getNotices();
   let listing: SeriesBookListing = $state({
     shown: "all",
     direction: "ascending",
@@ -94,6 +109,40 @@
     }
     readAgain();
     return true;
+  }
+
+  function opposite(read: ReadMark): ReadMark {
+    return read === "read" ? "unread" : "read";
+  }
+
+  function markedTitle(read: ReadMark, count: number): string {
+    return read === "read"
+      ? m.series_marked_read({ count })
+      : m.series_marked_unread({ count });
+  }
+
+  async function markAll(read: ReadMark): Promise<void> {
+    if (foundId === undefined) {
+      return;
+    }
+    const all = seriesBookList(foundId, () => EVERY_BOOK_IN_ORDER);
+    await all.start();
+    await all.loadAll();
+    if (all.list.kind !== "loaded") {
+      reportError(new Error(`read the books of series ${foundId} to mark`));
+      return;
+    }
+    const changing = all.list.items
+      .filter((book) => (book.reading.state === "read") !== (read === "read"))
+      .map((book) => book.id);
+    if (changing.length > 0 && (await mark(changing, read))) {
+      notices.offerUndo({
+        title: markedTitle(read, changing.length),
+        undo: () => {
+          void mark(changing, opposite(read));
+        },
+      });
+    }
   }
 
   $effect(() => {
@@ -156,17 +205,42 @@
     class={[
       "flex items-center gap-sm motion-safe:transition-colors motion-safe:duration-fade max-medium:sticky max-medium:-inset-bs-page-top max-medium:z-series-bar max-medium:-ms-page-start max-medium:-me-page-end max-medium:ps-page-start max-medium:pe-page-end max-medium:pbs-series-bar-top max-medium:pbe-xs",
       isTitleUnderBar && "max-medium:bg-background",
+      "max-medium:while-picking:invisible",
     ]}
   >
-    <a
-      href={resolve("/(app)")}
-      data-back-link
-      class="flex shrink-0 items-center justify-center self-start rounded-full bg-series-crumb text-small font-semibold text-on-series-crumb backdrop-blur-glass block-series-back inline-series-back medium:gap-xs medium:rounded-field medium:ps-sm medium:pe-md medium:inline-auto expanded:block-series-crumb android:max-medium:block-touch-target android:max-medium:inline-touch-target"
-    >
-      <ChevronLeft size={BACK_ICON_SIZE} aria-hidden="true" />
-      <span class="sr-only medium:hidden">{m.series_back_label()}</span>
-      <span class="max-medium:hidden">{m.series_back()}</span>
-    </a>
+    {#if isWide.current}
+      <Breadcrumb
+        aria-label={m.series_breadcrumb()}
+        class="flex items-center rounded-control border border-border bg-card px-md text-small text-muted shadow-raised block-series-crumb"
+      >
+        <BreadcrumbItem>
+          <a
+            href={resolve("/(app)")}
+            data-back-link
+            class="font-medium transition-control hover:text-foreground"
+          >
+            {m.series_back()}
+          </a>
+        </BreadcrumbItem>
+        {#if overview !== undefined}
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage class="font-semibold text-foreground">
+              {overview.title}
+            </BreadcrumbPage>
+          </BreadcrumbItem>
+        {/if}
+      </Breadcrumb>
+    {:else}
+      <a
+        href={resolve("/(app)")}
+        data-back-link
+        aria-label={m.series_back_label()}
+        class="flex shrink-0 items-center justify-center self-start rounded-full border border-border bg-card text-foreground shadow-raised block-series-back inline-series-back android:block-touch-target android:inline-touch-target"
+      >
+        <ChevronLeft size={BACK_ICON_SIZE} aria-hidden="true" />
+      </a>
+    {/if}
     {#if overview !== undefined}
       <span
         aria-hidden="true"
@@ -187,7 +261,7 @@
         class="flex flex-col gap-lg medium:gap-xl expanded:shrink-0 expanded:gap-lg expanded:inline-series-aside"
       >
         <SeriesHeader {overview} {cover} {coverUrl} />
-        <ReadingProgress {overview} />
+        <ReadingProgress {overview} onMarkAll={markAll} />
       </div>
       <div class="flex flex-1 flex-col gap-sm min-inline-none">
         {#if books?.list.kind === "failed"}
@@ -210,6 +284,7 @@
               }}
               onLoadAll={() => books.loadAll()}
               onMark={mark}
+              platform={data.appInfo.platform}
             />
           {/key}
         {/if}

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { ExternalLink } from "@lucide/svelte";
 
+  import { Button } from "#lib/components/ui/button/index.ts";
+  import { Item } from "#lib/components/ui/item/index.ts";
   import type { ProjectLink } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -44,25 +46,30 @@
 
 {#each externalRows as external (external.link)}
   <li>
-    <button
-      type="button"
-      class={ROW_LOOKS[look]}
-      onclick={() => {
-        void opening.open(external.link);
-      }}
-    >
-      <RowText
-        label={external.label}
-        hint={external.hint}
-        hintKind={external.hintKind}
-        {look}
-      />
-      <ExternalLink
-        role="img"
-        aria-label={m.about_opens_in_browser()}
-        size={ROW_ICON_SIZES[look]}
-        class="shrink-0 text-muted"
-      />
-    </button>
+    <Item look={ROW_LOOKS[look]}>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          type="button"
+          look="row"
+          onclick={() => {
+            void opening.open(external.link);
+          }}
+        >
+          <RowText
+            label={external.label}
+            hint={external.hint}
+            hintKind={external.hintKind}
+            {look}
+          />
+          <ExternalLink
+            role="img"
+            aria-label={m.about_opens_in_browser()}
+            size={ROW_ICON_SIZES[look]}
+            class="shrink-0 text-muted"
+          />
+        </Button>
+      {/snippet}
+    </Item>
   </li>
 {/each}

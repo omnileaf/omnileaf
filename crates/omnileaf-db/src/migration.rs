@@ -55,6 +55,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0019_index_series_by_reading_stage"),
     migration!("0020_create_book_pages"),
     migration!("0021_create_reading_sessions"),
+    migration!("0022_index_reading_sessions_by_book"),
 ];
 
 pub(crate) fn pending(

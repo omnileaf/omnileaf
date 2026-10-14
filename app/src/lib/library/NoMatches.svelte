@@ -1,16 +1,21 @@
 <script lang="ts">
+  import { Button } from "#lib/components/ui/button/index.ts";
+  import { Empty, EmptyDescription } from "#lib/components/ui/empty/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   let { onClear }: { onClear: () => void } = $props();
 </script>
 
-<div class="mbs-lg flex flex-col items-start gap-sm">
-  <p class="text-body text-muted">{m.library_no_matches()}</p>
-  <button
+<Empty class="mbs-lg items-start gap-sm text-start">
+  <EmptyDescription class="text-body">
+    {m.library_no_matches()}
+  </EmptyDescription>
+  <Button
     type="button"
-    class="text-body font-semibold text-accent min-block-touch-target"
+    look="text"
+    class="text-body min-block-touch-target"
     onclick={onClear}
   >
     {m.library_clear_filters()}
-  </button>
-</div>
+  </Button>
+</Empty>

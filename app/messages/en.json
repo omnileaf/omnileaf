@@ -521,6 +521,15 @@
   "library_folder_unavailable": "Not available",
   "library_folder_found_empty": "No books found",
   "appearance_title": "Appearance",
+  "reading_title": "Reading",
+  "reading_skip_up_next": "Skip Up next",
+  "reading_skip_up_next_help": "Go straight to the next chapter or volume. Handy for webtoons.",
+  "reading_swipes": "Swiping a book",
+  "reading_swipes_help": "In a series' list on a phone. Mark read marks a book that's read unread.",
+  "reading_swipe_right": "Swipe right",
+  "reading_swipe_left": "Swipe left",
+  "reading_swipe_mark_read": "Mark read",
+  "reading_swipe_nothing": "Nothing",
   "appearance_light_or_dark": "Light or dark",
   "appearance_system_hint": "System follows the device's setting and changes with it.",
   "appearance_system_hint_phone": "System follows your phone's setting.",
@@ -738,6 +747,7 @@
   "quick_open_shortcut_mac": "⌘ K",
   "series_back": "Library",
   "series_back_label": "Back to the library",
+  "series_breadcrumb": "Breadcrumb",
   "series_folder": "Folder",
   "series_failed": "Couldn't load this series. Try again later.",
   "series_not_found": "This series isn't in your library",
@@ -755,7 +765,6 @@
       }
     }
   ],
-  "series_up_next": "Up next",
   "series_continue_at": [
     {
       "declarations": [
@@ -791,10 +800,11 @@
   "series_show_all": "All",
   "series_show_unread": "Unread",
   "series_no_unread": "Every book in this series is read.",
+  "series_no_match": "No book in this series matches “{search}”.",
+  "series_find_book": "Find a book",
+  "series_sort": "Sort: {order}",
   "series_order_first_first": "In order",
   "series_order_last_first": "Last first",
-  "series_order_first_first_change": "Order: in order. Change to last first",
-  "series_order_last_first_change": "Order: last first. Change to in order",
   "series_column_book": "Book",
   "series_column_added": "Added",
   "series_column_progress": "Progress",
@@ -812,7 +822,6 @@
   "series_book_read": "Read",
   "series_select": "Select",
   "series_select_all": "Select all",
-  "series_select_done": "Done",
   "series_select_book": "Select {title}",
   "series_select_range_hint": "Shift-click to select a range",
   "series_selected_count": [
@@ -844,8 +853,19 @@
     }
   ],
   "series_selection_toolbar": "Selected books",
+  "series_clear_selection": "Clear the selection",
+  "series_escape_key": "Esc",
+  "series_column_actions": "Actions",
+  "series_book_more": "More for {title}",
+  "series_book_more_short": "More",
+  "series_continue_reading": "Continue reading",
+  "series_start_reading": "Start reading",
   "series_mark_read": "Mark read",
   "series_mark_unread": "Mark unread",
+  "series_mark_all_read": "Mark all read",
+  "series_marked_book_read": "Marked {title} read",
+  "series_marked_book_unread": "Marked {title} unread",
+  "series_mark_all_unread": "Mark all unread",
   "series_mark_failed": "Couldn't mark those books. Try again.",
   "series_marked_read": [
     {
@@ -875,22 +895,9 @@
       }
     }
   ],
-  "reader_back": "Library",
   "reader_back_label": "Back to the library",
-  "reader_book_line": [
-    {
-      "declarations": [
-        "input title",
-        "input page",
-        "input count",
-        "local formattedPage = page: number",
-        "local formattedCount = count: number"
-      ],
-      "match": {
-        "*": "{title} · Page {formattedPage} of {formattedCount}"
-      }
-    }
-  ],
+  "reader_back_to_series": "Back to {series}",
+  "reader_breadcrumb": "Breadcrumb",
   "reader_position": [
     {
       "declarations": [
@@ -923,11 +930,30 @@
   "reader_show_controls": "Show the controls",
   "reader_hide_controls": "Hide the controls",
   "reader_full_screen": "Full screen",
+  "reader_quick_settings": "Quick settings",
+  "reader_finished": "{title} finished",
+  "reader_marked_read": "Marked as read",
+  "reader_marked_read_after": "Marked as read · {time}",
+  "reader_up_next": "Up next",
+  "reader_unread": "Unread",
+  "reader_started": "Started",
+  "reader_read": "Read",
+  "reader_read_next": "Read {title}",
+  "reader_skip_this_screen": "Skip this screen",
+  "reader_skip_this_screen_help": "Go straight on next time. Also in Settings › Reading.",
+  "reader_turn_again": "Turn the page again to start {title}",
+  "reader_press_again": "Press → or Space again to start {title}, Esc to go back to the series.",
+  "reader_now_reading": "Now reading {title}",
+  "reader_direction": "Reading direction",
+  "reader_direction_automatic": "Automatic",
+  "reader_direction_auto": "Auto",
+  "reader_left_to_right": "Left to right",
+  "reader_right_to_left": "Right to left",
   "reader_nearby_pages": "Nearby pages",
-  "reader_previous_book": "Previous book: {title}",
-  "reader_next_book": "Next book: {title}",
-  "reader_no_previous_book": "Previous book",
-  "reader_no_next_book": "Next book",
+  "reader_previous_chapter": "Previous chapter: {title}",
+  "reader_next_chapter": "Next chapter: {title}",
+  "reader_no_previous_chapter": "Previous chapter",
+  "reader_no_next_chapter": "Next chapter",
   "reader_page": [
     {
       "declarations": ["input page", "local formattedPage = page: number"],

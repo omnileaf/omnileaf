@@ -51,3 +51,27 @@ test("goes straight to a page, a whole one within the book", () => {
 
   expect([whole, turner.shown]).toEqual([17, 0]);
 });
+
+test("turns past the last page once, and back onto it", () => {
+  const turner = new PageTurner(PAGES, PAGES - 1);
+
+  turner.turn(1);
+  turner.turn(1);
+  const past = [turner.shown, turner.isPastEnd];
+  turner.turn(-1);
+
+  expect(past).toEqual([PAGES - 1, true]);
+  expect([turner.shown, turner.isPastEnd]).toEqual([PAGES - 1, false]);
+});
+
+test("is past the end only from the last page", () => {
+  const turner = new PageTurner(PAGES, PAGES - 2);
+
+  turner.turn(1);
+  const onLast = turner.isPastEnd;
+  turner.turn(1);
+  const past = turner.isPastEnd;
+  turner.goTo(3);
+
+  expect([onLast, past, turner.isPastEnd]).toEqual([false, true, false]);
+});

@@ -4,6 +4,7 @@ declare global {
   namespace App {
     interface PageState {
       firstLaunchStep?: FirstLaunchStep;
+      readerOpensAtEnd?: boolean;
     }
   }
 }

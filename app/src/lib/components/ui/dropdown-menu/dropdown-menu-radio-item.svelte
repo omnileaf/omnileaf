@@ -1,0 +1,39 @@
+<script lang="ts">
+  import { Check } from "@lucide/svelte";
+  import {
+    DropdownMenu as DropdownMenuPrimitive,
+    type WithoutChildrenOrChild,
+  } from "bits-ui";
+  import type { Snippet } from "svelte";
+
+  import { cn } from "#lib/components/cn.ts";
+
+  const CHECK_SIZE = 16;
+
+  let {
+    ref = $bindable(null),
+    class: className,
+    children: label,
+    ...restProps
+  }: WithoutChildrenOrChild<DropdownMenuPrimitive.RadioItemProps> & {
+    children: Snippet;
+  } = $props();
+</script>
+
+<DropdownMenuPrimitive.RadioItem
+  bind:ref
+  class={cn(
+    "flex cursor-default items-center gap-sm rounded-control px-sm text-small outline-none select-none min-block-pointer-target data-highlighted:bg-hover touch:min-block-touch-target",
+    className,
+  )}
+  {...restProps}
+>
+  {#snippet children({ checked }: { checked: boolean })}
+    <span class="flex-1">{@render label()}</span>
+    <Check
+      size={CHECK_SIZE}
+      aria-hidden="true"
+      class={["shrink-0", !checked && "invisible"]}
+    />
+  {/snippet}
+</DropdownMenuPrimitive.RadioItem>

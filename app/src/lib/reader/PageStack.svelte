@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { LoaderCircle } from "@lucide/svelte";
   import { untrack } from "svelte";
   import type { Attachment } from "svelte/attachments";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
+  import { Spinner } from "#lib/components/ui/spinner/index.ts";
   import type { BookPage } from "#lib/ipc/bindings.ts";
   import { omniUrl } from "#lib/omni/omni-url.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -142,12 +142,10 @@
     {#if failed.has(shown)}
       <p class="px-xl text-center text-body">{m.reader_page_failed()}</p>
     {:else if isSlow}
-      <LoaderCircle
+      <Spinner
         size={SPINNER_SIZE}
-        aria-hidden="true"
-        class="motion-safe:animate-spin"
+        label={m.reader_page_loading({ page: shown + 1 })}
       />
-      <span class="sr-only">{m.reader_page_loading({ page: shown + 1 })}</span>
     {/if}
   </div>
 </div>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowDown, ArrowUp } from "@lucide/svelte";
 
+  import { Button } from "#lib/components/ui/button/index.ts";
   import type { LibrarySort } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -27,9 +28,8 @@
   } satisfies Record<LibrarySort["by"], readonly [Wording, Wording]>;
 
   const LOOKS = {
-    pill: "min-block-sort-direction rounded-full border-accent bg-card px-pill-inline text-detail font-semibold text-accent",
-    field:
-      "block-panel-field rounded-control border-border bg-card px-pill-inline text-detail font-medium",
+    pill: "min-block-sort-direction rounded-full border-accent px-pill-inline text-detail text-accent",
+    field: "block-panel-field px-pill-inline text-detail font-medium",
   } as const;
 
   const ICON_SIZE = 14;
@@ -50,10 +50,11 @@
   );
 </script>
 
-<button
+<Button
   type="button"
+  look="outline"
   aria-label={wording.change()}
-  class={["flex shrink-0 items-center gap-xs border", LOOKS[look]]}
+  class={["flex shrink-0 items-center gap-xs", LOOKS[look]]}
   onclick={onReverse}
 >
   <span>{wording.label()}</span>
@@ -62,4 +63,4 @@
   {:else}
     <ArrowDown size={ICON_SIZE} aria-hidden="true" />
   {/if}
-</button>
+</Button>

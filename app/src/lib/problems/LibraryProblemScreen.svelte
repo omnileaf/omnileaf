@@ -2,6 +2,7 @@
   import { DatabaseZap, type LucideIcon, TriangleAlert } from "@lucide/svelte";
 
   import type { LinkOpening } from "#lib/about/link-opening.svelte.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import type { LibraryProblem, ProjectLink } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -38,15 +39,16 @@
 </script>
 
 {#snippet openProjectPage()}
-  <button
+  <Button
     type="button"
-    class="flex items-center justify-center rounded-full bg-accent px-xl font-bold text-on-accent min-block-touch-target medium:rounded-control"
+    look="filled"
+    class="flex items-center justify-center rounded-full px-xl font-bold min-block-touch-target medium:rounded-control"
     onclick={() => {
       void opening.open(screen.link);
     }}
   >
     {screen.action}
-  </button>
+  </Button>
 {/snippet}
 
 <main class="px-gutter">

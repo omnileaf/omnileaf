@@ -9,17 +9,13 @@
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { MEDIUM_QUERY } from "#lib/page/breakpoints.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { shortcut } from "#lib/shortcut.ts";
 
   import type { Notices } from "./notices";
-  import {
-    isUndoPressed,
-    setUndoShortcut,
-    undoShortcutOn,
-  } from "./undo-shortcut";
+  import { setUndoShortcut, undoShortcutOn } from "./undo-shortcut";
 
   type Side = "left" | "right";
 
-  const TEXT_FIELDS = "input, textarea, select, [contenteditable]";
   const PHONE_OFFSET = { left: 0, right: 0, bottom: "var(--spacing-md)" };
   const CORNER_OFFSET = {
     left: "var(--spacing-notice-end)",
@@ -33,8 +29,7 @@
     theme,
   }: { notices: Notices; platform: Platform; theme: Theme } = $props();
 
-  const shortcut = untrack(() => undoShortcutOn(platform));
-  setUndoShortcut(shortcut);
+  setUndoShortcut(untrack(() => undoShortcutOn(platform)));
 
   const endSide: Side = document.dir === "rtl" ? "left" : "right";
   const position: ToasterProps["position"] = `bottom-${endSide}`;
@@ -113,25 +108,24 @@
     }
   }
 
-  function isInTextField(target: EventTarget | null): boolean {
-    return target instanceof Element && target.closest(TEXT_FIELDS) !== null;
-  }
-
-  function undoOnShortcut(event: KeyboardEvent): void {
-    if (
-      notices.undoOffer === undefined ||
-      isInTextField(event.target) ||
-      !isUndoPressed(shortcut, event)
-    ) {
+  function undoFromKeyboard(): void {
+    if (notices.undoOffer === undefined) {
       return;
     }
-    event.preventDefault();
     returnFocus();
     notices.undo();
   }
 </script>
 
-<svelte:window onkeydown={undoOnShortcut} onpointerdown={forgetTapElsewhere} />
+<svelte:window
+  {@attach shortcut({
+    key: "z",
+    command: platform,
+    shift: false,
+    run: undoFromKeyboard,
+  })}
+  onpointerdown={forgetTapElsewhere}
+/>
 
 <div
   bind:this={region}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Minus } from "@lucide/svelte";
   import {
     Checkbox as CheckboxPrimitive,
     type WithoutChildrenOrChild,
@@ -8,9 +9,13 @@
 
   import CheckMark from "./check-mark.svelte";
 
+  const DASH_SIZE = 14;
+  const DASH_STROKE = 3;
+
   let {
     ref = $bindable(null),
     checked = $bindable(false),
+    indeterminate = $bindable(false),
     class: className,
     ...restProps
   }: WithoutChildrenOrChild<CheckboxPrimitive.RootProps> = $props();
@@ -19,14 +24,18 @@
 <CheckboxPrimitive.Root
   bind:ref
   bind:checked
+  bind:indeterminate
   class={cn(
     "flex shrink-0 items-center justify-center rounded-checkbox border-2 border-control-edge text-on-accent block-checkbox inline-checkbox focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-checked:border-accent aria-checked:bg-accent",
+    indeterminate && "border-accent bg-accent",
     className,
   )}
   {...restProps}
 >
-  {#snippet children({ checked: isChecked })}
-    {#if isChecked}
+  {#snippet children({ checked: isChecked, indeterminate: isSome })}
+    {#if isSome}
+      <Minus size={DASH_SIZE} strokeWidth={DASH_STROKE} aria-hidden="true" />
+    {:else if isChecked}
       <CheckMark />
     {/if}
   {/snippet}

@@ -2,6 +2,13 @@
   import { ChevronRight } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
+  import {
+    Item,
+    ItemContent,
+    ItemDescription,
+    ItemMedia,
+    ItemTitle,
+  } from "#lib/components/ui/item/index.ts";
 
   import {
     type SectionSummary,
@@ -32,38 +39,39 @@
       {#each group as section (section.route)}
         {@const summary = summaries[section.route]}
         <li>
-          <a
-            href={resolve(section.route)}
-            class="flex items-center gap-list-row py-sm ps-list-row pe-md transition-control min-block-4xl hover:bg-hover active:bg-pressed desktop:gap-md desktop:py-none desktop:min-block-settings-row"
-          >
-            <span
-              class={[
-                "flex shrink-0 items-center justify-center rounded-tile block-tile inline-tile desktop:bg-transparent desktop:block-auto desktop:inline-auto",
-                TILE_BACKGROUNDS[section.tone],
-              ]}
-            >
-              <section.icon
-                size={ICON_SIZE}
-                class="desktop:block-settings-icon desktop:inline-settings-icon"
-              />
-            </span>
-            <span
-              class="flex flex-1 flex-col desktop:flex-row desktop:items-center desktop:gap-md"
-            >
-              <span class="font-semibold desktop:flex-1 desktop:text-callout">
-                {section.label()}
-              </span>
-              {#if summary !== undefined}
-                <span lang={summary.lang} class="text-footnote text-muted"
-                  >{summary.text}</span
+          <Item look="settings-section">
+            {#snippet child({ props })}
+              <a href={resolve(section.route)} {...props}>
+                <ItemMedia
+                  class={[
+                    "rounded-tile block-tile inline-tile desktop:bg-transparent desktop:block-auto desktop:inline-auto",
+                    TILE_BACKGROUNDS[section.tone],
+                  ]}
                 >
-              {/if}
-            </span>
-            <ChevronRight
-              size={CHEVRON_SIZE}
-              class="shrink-0 text-muted rtl:-scale-x-100"
-            />
-          </a>
+                  <section.icon
+                    size={ICON_SIZE}
+                    class="desktop:block-settings-icon desktop:inline-settings-icon"
+                  />
+                </ItemMedia>
+                <ItemContent
+                  class="desktop:flex-row desktop:items-center desktop:gap-md"
+                >
+                  <ItemTitle class="desktop:flex-1 desktop:text-callout">
+                    {section.label()}
+                  </ItemTitle>
+                  {#if summary !== undefined}
+                    <ItemDescription lang={summary.lang} class="text-footnote"
+                      >{summary.text}</ItemDescription
+                    >
+                  {/if}
+                </ItemContent>
+                <ChevronRight
+                  size={CHEVRON_SIZE}
+                  class="shrink-0 text-muted rtl:-scale-x-100"
+                />
+              </a>
+            {/snippet}
+          </Item>
         </li>
       {/each}
     </ul>

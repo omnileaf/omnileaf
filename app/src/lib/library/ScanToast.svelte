@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { CircleCheck, LoaderCircle } from "@lucide/svelte";
+  import { CircleCheck } from "@lucide/svelte";
 
   import { Progress } from "#lib/components/ui/progress/index.ts";
+  import { Spinner } from "#lib/components/ui/spinner/index.ts";
   import type { FolderScan } from "#lib/ipc/bindings.ts";
   import { NOTICE_WINDOW_MS, type ToastHandle } from "#lib/notices/notices.ts";
   import ToastCard, { TOAST_ICON_SIZE } from "#lib/notices/ToastCard.svelte";
@@ -65,10 +66,7 @@
 {#if finished === undefined}
   <ToastCard tone="plain" title={findingTitle} onDismiss={toast.dismiss}>
     {#snippet icon()}
-      <LoaderCircle
-        size={TOAST_ICON_SIZE}
-        class="text-accent motion-safe:animate-spin"
-      />
+      <Spinner size={TOAST_ICON_SIZE} class="text-accent" />
     {/snippet}
     <Progress
       aria-labelledby={titleId}

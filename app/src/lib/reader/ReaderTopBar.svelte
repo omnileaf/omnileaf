@@ -1,7 +1,14 @@
 <script lang="ts">
   import { ArrowLeft, ChevronLeft, Maximize } from "@lucide/svelte";
+  import type { Snippet } from "svelte";
 
-  import { resolve } from "$app/paths";
+  import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+  } from "#lib/components/ui/breadcrumb/index.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -10,27 +17,32 @@
   const BAR_ICON_SIZE_WIDE = 19;
 
   let {
+    seriesHref,
     seriesTitle,
-    bookLine,
+    bookTitle,
+    quickSettings,
     onFullScreen,
-    heading = $bindable(),
   }: {
+    seriesHref: string;
     seriesTitle: string;
-    bookLine: string;
+    bookTitle: string;
+    quickSettings: Snippet;
     onFullScreen: () => void;
-    heading?: HTMLHeadingElement | undefined;
   } = $props();
+
+  const backLabel = $derived(m.reader_back_to_series({ series: seriesTitle }));
 </script>
 
 <div
   class="flex items-center gap-2xs rounded-reader-bar border border-reader-glass-edge bg-reader-glass p-xs shadow-reader-bar backdrop-blur-reader backdrop-saturate-140 expanded:gap-xs expanded:rounded-reader-bar-wide expanded:bg-reader-glass-wide expanded:px-reader-bar-inline-wide expanded:py-reader-bar-block-wide expanded:shadow-reader-bar-wide"
 >
-  <Tooltip label={m.reader_back_label()}>
+  <Tooltip label={backLabel}>
     {#snippet child({ props })}
       <a
         {...props}
-        href={resolve("/(app)")}
-        class="relative flex shrink-0 items-center justify-center gap-xs rounded-full transition-control block-reader-control inline-reader-control hover:tint-reader-hover active:tint-reader-pressed expanded:rounded-reader-control-wide expanded:ps-reader-back-start-wide expanded:pe-md expanded:text-small expanded:font-semibold expanded:block-reader-control-wide expanded:inline-auto android:before:absolute android:before:block-touch-target android:before:inline-touch-target"
+        href={seriesHref}
+        aria-label={backLabel}
+        class="relative flex shrink-0 items-center justify-center gap-xs rounded-full bg-reader-hover transition-control block-reader-control inline-reader-control hover:tint-reader-hover active:tint-reader-pressed expanded:rounded-reader-control-wide expanded:ps-reader-back-start-wide expanded:pe-md expanded:text-small expanded:font-semibold expanded:block-reader-control-wide expanded:inline-auto expanded:max-inline-reader-book-step android:before:absolute android:before:block-touch-target android:before:inline-touch-target"
       >
         <ArrowLeft
           size={BACK_ICON_SIZE}
@@ -40,43 +52,67 @@
         <ChevronLeft
           size={BACK_ICON_SIZE}
           aria-hidden="true"
-          class="expanded:hidden android:max-expanded:hidden"
+          class="expanded:hidden rtl:-scale-x-100 android:max-expanded:hidden"
         />
         <ChevronLeft
           size={BACK_ICON_SIZE_WIDE}
           aria-hidden="true"
-          class="hidden expanded:block"
+          class="hidden shrink-0 expanded:block rtl:-scale-x-100"
         />
-        <span class="sr-only expanded:hidden">{m.reader_back_label()}</span>
-        <span class="max-expanded:hidden">{m.reader_back()}</span>
+        <span class="truncate max-expanded:hidden">{seriesTitle}</span>
       </a>
     {/snippet}
   </Tooltip>
+  <a
+    href={seriesHref}
+    class="flex flex-1 flex-col px-xs min-inline-none expanded:hidden"
+  >
+    <span class="truncate text-caption font-semibold text-reader-muted"
+      >{seriesTitle}</span
+    >
+    <span class="truncate text-lead font-semibold">{bookTitle}</span>
+  </a>
+  <Breadcrumb
+    aria-label={m.reader_breadcrumb()}
+    class="hidden flex-1 ps-reader-title-start-wide text-small expanded:block"
+  >
+    <BreadcrumbItem>
+      <a
+        href={seriesHref}
+        class="truncate text-reader-muted transition-control hover:text-on-reader"
+        >{seriesTitle}</a
+      >
+    </BreadcrumbItem>
+    <BreadcrumbSeparator class="text-reader-muted" />
+    <BreadcrumbItem>
+      <BreadcrumbPage class="font-semibold">{bookTitle}</BreadcrumbPage>
+    </BreadcrumbItem>
+  </Breadcrumb>
+  <div
+    role="group"
+    aria-label={m.reader_quick_settings()}
+    class="hidden shrink-0 items-center gap-2xs rounded-reader-control-wide bg-reader-hover p-2xs expanded:flex"
+  >
+    {@render quickSettings()}
+  </div>
   <span
     aria-hidden="true"
-    class="shrink-0 bg-reader-line block-reader-divider inline-px max-expanded:hidden"
+    class="hidden shrink-0 bg-reader-line block-reader-divider inline-px expanded:block ios:hidden android:hidden"
   ></span>
-  <div
-    class="flex flex-1 flex-col min-inline-none expanded:flex-row expanded:items-baseline expanded:gap-reader-dock-gap expanded:ps-reader-title-start-wide"
-  >
-    <h1
-      bind:this={heading}
-      tabindex="-1"
-      class="truncate text-lead font-semibold expanded:shrink-0"
-    >
-      {seriesTitle}
-    </h1>
-    <p class="truncate text-caption text-reader-muted expanded:text-detail">
-      {bookLine}
-    </p>
-  </div>
   <Tooltip
     label={m.reader_full_screen()}
     type="button"
     aria-label={m.reader_full_screen()}
-    class="hidden shrink-0 items-center justify-center rounded-reader-control-wide transition-control block-reader-control-wide inline-reader-control-wide hover:tint-reader-hover active:tint-reader-pressed expanded:flex ios:hidden android:hidden"
     onclick={onFullScreen}
   >
-    <Maximize size={BAR_ICON_SIZE_WIDE} aria-hidden="true" />
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        look="icon"
+        class="hidden shrink-0 rounded-reader-control-wide transition-control block-reader-control-wide inline-reader-control-wide hover:tint-reader-hover active:tint-reader-pressed expanded:flex ios:hidden android:hidden"
+      >
+        <Maximize size={BAR_ICON_SIZE_WIDE} aria-hidden="true" />
+      </Button>
+    {/snippet}
   </Tooltip>
 </div>

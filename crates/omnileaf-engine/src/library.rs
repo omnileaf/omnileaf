@@ -18,7 +18,7 @@ use omnileaf_db::{
         store_page_dimensions, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
-    history::{history_page, reading_time_by_day, reading_time_since},
+    history::{book_reading_time, history_page, reading_time_by_day, reading_time_since},
     library_listing::{library_listing, set_library_listing},
     library_view::{library_view, set_library_view},
     store::{Changed, Clock, Store},
@@ -375,6 +375,17 @@ impl Library {
             .store
             .database()
             .read(move |connection| reading_time_since(connection, first_day))
+            .await?;
+        Ok(whole_seconds(read_ms))
+    }
+
+    /// Seconds spent reading `book` over all its sessions, once any reading not yet saved is.
+    pub async fn book_read_time(&self, book: BookId) -> Result<u32, LibraryError> {
+        self.save_reading_before_reading().await;
+        let read_ms = self
+            .store
+            .database()
+            .read(move |connection| book_reading_time(connection, book.0))
             .await?;
         Ok(whole_seconds(read_ms))
     }

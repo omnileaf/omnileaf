@@ -1,22 +1,29 @@
 <script lang="ts">
-  import { m } from "#lib/paraglide/messages.js";
+  import type { Snippet } from "svelte";
 
   import type { BookPage, SeriesNeighbour } from "#lib/ipc/bindings.ts";
+  import { m } from "#lib/paraglide/messages.js";
+
   import BookStepLink from "#lib/reader/BookStepLink.svelte";
   import NearbyPages from "#lib/reader/NearbyPages.svelte";
   import PageSlider from "#lib/reader/PageSlider.svelte";
+  import type { ReadingDirection } from "#lib/reader/reading-direction.svelte.ts";
 
   let {
     pages,
     shown,
     previous,
     next,
+    direction,
+    quickSettings,
     onSeek,
   }: {
     pages: readonly BookPage[];
     shown: number;
     previous: SeriesNeighbour | null;
     next: SeriesNeighbour | null;
+    direction: ReadingDirection;
+    quickSettings: Snippet;
     onSeek: (index: number) => void;
   } = $props();
 
@@ -31,35 +38,28 @@
     <NearbyPages {pages} {shown} />
   {/if}
   <div
-    class="flex flex-col-reverse gap-reader-panel-gap expanded:flex-row expanded:items-center expanded:gap-reader-dock-gap"
+    role="group"
+    aria-label={m.reader_quick_settings()}
+    class="flex gap-2xs border-be border-reader-line pbe-2xs expanded:hidden"
   >
-    <div
-      dir="ltr"
-      class="flex items-center gap-2xs expanded:flex-1 expanded:gap-reader-dock-gap"
+    {@render quickSettings()}
+  </div>
+  <div dir="ltr" class="flex items-center gap-2xs expanded:gap-reader-dock-gap">
+    <BookStepLink step="previous" neighbour={previous} />
+    <span
+      class="shrink-0 text-center text-caption font-bold whitespace-nowrap tabular-nums min-inline-reader-control expanded:text-detail"
     >
-      <BookStepLink step="previous" neighbour={previous} />
-      <PageSlider
-        {shown}
-        {count}
-        {onSeek}
-        onDrag={(dragged: boolean) => {
-          isDragged = dragged;
-        }}
-      />
-      <BookStepLink step="next" neighbour={next} />
-    </div>
-    <div
-      class="flex items-center justify-end gap-reader-dock-gap px-md expanded:px-none"
-    >
-      <span
-        aria-hidden="true"
-        class="bg-reader-line block-reader-divider inline-px max-expanded:hidden"
-      ></span>
-      <span
-        class="text-caption font-bold whitespace-nowrap expanded:text-detail"
-      >
-        {m.reader_position({ page: shown + 1, count })}
-      </span>
-    </div>
+      {m.reader_position({ page: shown + 1, count })}
+    </span>
+    <PageSlider
+      {shown}
+      {count}
+      {direction}
+      {onSeek}
+      onDrag={(dragged: boolean) => {
+        isDragged = dragged;
+      }}
+    />
+    <BookStepLink step="next" neighbour={next} />
   </div>
 </div>

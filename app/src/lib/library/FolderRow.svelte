@@ -2,6 +2,13 @@
   import { Folder, House } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
+  import {
+    Item,
+    ItemContent,
+    ItemDescription,
+    ItemMedia,
+    ItemTitle,
+  } from "#lib/components/ui/item/index.ts";
   import type { LibraryFolder } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -28,12 +35,10 @@
   });
 </script>
 
-<div
-  class="flex items-center gap-md py-sm ps-md pe-sm min-block-row expanded:min-block-row-compact"
->
-  <span
+<Item look="folder">
+  <ItemMedia
     class={[
-      "flex shrink-0 items-center justify-center rounded-control block-icon-tile inline-icon-tile",
+      "rounded-control block-icon-tile inline-icon-tile",
       folder.kind === "home" ? "bg-accent-soft" : "bg-chip",
     ]}
   >
@@ -42,11 +47,11 @@
     {:else}
       <Folder size={ICON_SIZE} aria-hidden="true" />
     {/if}
-  </span>
-  <div class="flex-1 min-inline-none">
-    <p class="truncate font-semibold">{folderTitle(folder)}</p>
+  </ItemMedia>
+  <ItemContent class="min-inline-none">
+    <ItemTitle class="truncate">{folderTitle(folder)}</ItemTitle>
     {#if status !== undefined}
-      <p
+      <span
         class="mbs-2xs flex items-center gap-xs rounded-badge bg-warning-soft px-xs text-caption font-semibold inline-fit"
       >
         <span
@@ -54,15 +59,15 @@
           class="shrink-0 rounded-full bg-warning-strong block-step-dot inline-step-dot"
         ></span>
         {status}
-      </p>
+      </span>
     {/if}
-    <p class="truncate text-caption text-muted">
+    <ItemDescription class="truncate text-caption">
       {#if location === undefined}
         {folder.location}
       {:else}
         {@render location()}
       {/if}
-    </p>
-  </div>
+    </ItemDescription>
+  </ItemContent>
   {@render action?.()}
-</div>
+</Item>

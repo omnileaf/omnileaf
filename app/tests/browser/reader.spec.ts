@@ -19,6 +19,7 @@ import {
 import {
   BOOK_ID,
   BOOK_POSITION,
+  BOOK_SERIES_ID,
   BOOK_SERIES_TITLE,
   BOOK_TITLE,
   NEXT_BOOK,
@@ -37,14 +38,16 @@ const SWIPE_PX = 120;
 const ANDROID_TOUCH_TARGET_PX = 48;
 const FADE_MS = "0.15s";
 const NO_TIME = "0s";
+const SERIES_PAGE = new RegExp(`/series/${BOOK_SERIES_ID}$`);
+const BACK_TO_SERIES = `Back to ${BOOK_SERIES_TITLE}`;
 
 test.use({ backend: readerBackend(DEFAULT_BACKEND) });
 
 async function openBook(page: Page): Promise<void> {
   await page.goto(`/read/${BOOK_ID}`);
   await expect(
-    page.getByRole("heading", { level: 1, name: BOOK_SERIES_TITLE }),
-  ).toBeVisible();
+    page.getByRole("heading", { level: 1, name: BOOK_TITLE }),
+  ).toBeAttached();
 }
 
 function shownPage(page: Page, number: number): Locator {
@@ -53,11 +56,10 @@ function shownPage(page: Page, number: number): Locator {
 
 async function expectOnPage(page: Page, number: number): Promise<void> {
   await expect(shownPage(page, number)).toBeVisible();
-  await expect(
-    page.getByText(
-      `${BOOK_TITLE} · Page ${String(number)} of ${String(PAGE_COUNT)}`,
-    ),
-  ).toBeVisible();
+  await expect(slider(page)).toHaveAttribute(
+    "aria-valuetext",
+    `Page ${String(number)} of ${String(PAGE_COUNT)}`,
+  );
 }
 
 function zone(page: Page, name: string): Locator {
@@ -69,7 +71,13 @@ function slider(page: Page): Locator {
 }
 
 function controls(page: Page): Locator {
-  return page.getByRole("link", { name: /Library|Back to the library/ });
+  return page.getByRole("link", { name: BACK_TO_SERIES, exact: true });
+}
+
+function pageCounts(page: Page, number: number): Locator {
+  return page
+    .getByRole("main")
+    .getByText(`${String(number)} / ${String(PAGE_COUNT)}`, { exact: true });
 }
 
 /** The bars holding the controls, which stay reachable by keyboard and screen reader while hidden. */
@@ -277,17 +285,14 @@ test("shows small thumbnails of the nearby pages, not the pages themselves", asy
   }
 });
 
-test("stays on the first and last pages when asked to turn past them", async ({
+test("stays on the first page when asked to turn back from it", async ({
   page,
 }) => {
   await openBook(page);
 
   await zone(page, "Previous page").click();
-  await expectOnPage(page, 1);
-  await page.keyboard.press("End");
-  await zone(page, "Next page").click();
 
-  await expectOnPage(page, PAGE_COUNT);
+  await expectOnPage(page, 1);
 });
 
 test("says which page is up to a screen reader as pages turn", async ({
@@ -441,6 +446,26 @@ test("keeps the controls up while the pointer rests on them", async ({
   await expectControlsHidden(page);
 });
 
+test("shows hidden controls when the pointer reaches the top or bottom edge", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, "pointer screens only");
+  await openBookBeforeControlsHide(page);
+  const { width, height } = viewportOf(page);
+  await page.mouse.move(width / 2, height / 2);
+  await page.keyboard.press("ArrowRight");
+  await expectControlsHidden(page);
+
+  await page.mouse.move(width / 2, 1);
+  await expectControlsShown(page);
+  await page.keyboard.press("ArrowRight");
+  await expectControlsHidden(page);
+  await page.mouse.move(width / 2, height - 1);
+
+  await expectControlsShown(page);
+});
+
 test("shows hidden controls for a control reached with the keyboard and keeps them while it has focus", async ({
   page,
 }) => {
@@ -474,17 +499,88 @@ test("fades the controls in and out, unless motion is reduced", async ({
   expect(still).toBe(NO_TIME);
 });
 
-test("goes back to the library with Escape and with the back link", async ({
+test("goes back to the series with the back button", async ({ page }) => {
+  await openBook(page);
+
+  await controls(page).click();
+
+  await expect(page).toHaveURL(SERIES_PAGE);
+});
+
+test("goes back to the series with Escape", async ({ page }) => {
+  await openBook(page);
+
+  await page.keyboard.press("Escape");
+
+  await expect(page).toHaveURL(SERIES_PAGE);
+});
+
+test("goes back to the series from the book's title on a phone", async ({
+  page,
+}) => {
+  test.skip(
+    viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+    "wide screens name the book in a breadcrumb",
+  );
+  await openBook(page);
+
+  await page
+    .getByRole("link", { name: `${BOOK_SERIES_TITLE} ${BOOK_TITLE}` })
+    .click();
+
+  await expect(page).toHaveURL(SERIES_PAGE);
+});
+
+test("goes back to the series from the breadcrumb on a wide screen", async ({
+  page,
+}) => {
+  test.skip(
+    viewportOf(page).width < EXPANDED_MIN_WIDTH,
+    "phones name the book in the title link",
+  );
+  await openBook(page);
+  const breadcrumb = page.getByRole("navigation", { name: "Breadcrumb" });
+  await expect(breadcrumb.getByText(BOOK_TITLE)).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+
+  await breadcrumb.getByRole("link", { name: BOOK_SERIES_TITLE }).click();
+
+  await expect(page).toHaveURL(SERIES_PAGE);
+});
+
+test("keeps a small page count on screen while the controls are hidden", async ({
+  page,
+}) => {
+  await openBook(page);
+  await expect(pageCounts(page, 1)).toHaveCount(1);
+
+  await page.keyboard.press("ArrowRight");
+  await expectControlsHidden(page);
+  await expect(pageCounts(page, 2)).toHaveCount(2);
+  await zone(page, "Show the controls").click();
+
+  await expect(pageCounts(page, 2)).toHaveCount(1);
+});
+
+test("lays the bottom bar out as previous chapter, page count, slider and next chapter", async ({
   page,
 }) => {
   await openBook(page);
 
-  await page.keyboard.press("Escape");
-  await expect(page).toHaveURL(/\/$/);
-  await openBook(page);
-  await controls(page).click();
+  const lefts = await Promise.all(
+    [
+      page.getByRole("link", {
+        name: `Previous chapter: ${PREVIOUS_BOOK.title}`,
+      }),
+      pageCounts(page, 1),
+      slider(page),
+      page.getByRole("link", { name: `Next chapter: ${NEXT_BOOK.title}` }),
+    ].map(async (control) => (await boxOf(control)).x),
+  );
 
-  await expect(page).toHaveURL(/\/$/);
+  expect(lefts).toEqual([...lefts].sort((left, right) => left - right));
 });
 
 test("lays a page out at its own shape before it arrives, fitted whole to the screen", async ({
@@ -588,6 +684,140 @@ test("turns to a page read ahead without waiting for it", async ({ page }) => {
   await expect(
     page.getByRole("main").getByRole("status").filter({ hasText: "Loading" }),
   ).toHaveCount(0);
+});
+
+function directionButton(page: Page): Locator {
+  return page.getByRole("button", { name: /^(Left to right|Right to left)/ });
+}
+
+async function chooseDirection(page: Page, name: string): Promise<void> {
+  await directionButton(page).click();
+  await page.getByRole("menuitemradio", { name }).click();
+  await expect(page.getByRole("menu")).toBeHidden();
+}
+
+test.describe("the reading direction", () => {
+  test("reads left to right until chosen otherwise, saying the app chose it", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await expect(directionButton(page)).toHaveText(
+      /^\s*Left to right\s*auto$/i,
+    );
+  });
+
+  test("turns on with the left tap, the left arrow and a swipe to the right once right to left is chosen", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await chooseDirection(page, "Right to left");
+    await expect(directionButton(page)).toHaveText("Right to left");
+
+    const next = await boxOf(zone(page, "Next page"));
+    const previous = await boxOf(zone(page, "Previous page"));
+    expect(next.x).toBeLessThan(previous.x);
+    await zone(page, "Next page").click();
+    await expectOnPage(page, 2);
+    await page.keyboard.press("ArrowLeft");
+    await expectOnPage(page, 3);
+    await swipe(page, SWIPE_PX);
+
+    await expectOnPage(page, 4);
+  });
+
+  test("fills the slider from the right in a book read right to left", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await chooseDirection(page, "Right to left");
+    await page.keyboard.press("End");
+    await expectOnPage(page, PAGE_COUNT);
+
+    const track = await boxOf(slider(page));
+    const thumb = await boxOf(page.locator(".reader-progress-thumb"));
+
+    expect(thumb.x - track.x).toBeLessThan(track.width / 2);
+  });
+
+  test("keeps the previous chapter on the left and the next on the right in a book read right to left", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await chooseDirection(page, "Right to left");
+
+    const previous = await boxOf(
+      page.getByRole("link", {
+        name: `Previous chapter: ${PREVIOUS_BOOK.title}`,
+      }),
+    );
+    const next = await boxOf(
+      page.getByRole("link", { name: `Next chapter: ${NEXT_BOOK.title}` }),
+    );
+
+    expect(previous.x).toBeLessThan(next.x);
+  });
+
+  test("remembers the direction chosen for the series", async ({ page }) => {
+    await openBook(page);
+    await chooseDirection(page, "Right to left");
+
+    await page.reload();
+
+    await expect(directionButton(page)).toHaveText("Right to left");
+  });
+
+  test("goes back to letting the app choose", async ({ page }) => {
+    await openBook(page);
+    await chooseDirection(page, "Right to left");
+
+    await chooseDirection(page, "Automatic");
+
+    await expect(directionButton(page)).toHaveText(
+      /^\s*Left to right\s*auto$/i,
+    );
+  });
+
+  test("closes the direction menu with Escape and stays in the book", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await directionButton(page).click();
+    await expect(page.getByRole("menu")).toBeVisible();
+
+    await page.keyboard.press("Escape");
+
+    await expect(page.getByRole("menu")).toBeHidden();
+    await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+  });
+
+  test("keeps the controls up while the direction menu is open", async ({
+    page,
+  }) => {
+    await openBookBeforeControlsHide(page);
+    await directionButton(page).click();
+
+    await page.clock.runFor(CONTROLS_HIDE_AFTER_MS * 2);
+
+    await expectControlsShown(page);
+  });
+
+  test("puts the quick settings in the top bar on a wide screen and above the slider on a phone", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    const quickSettings = page.getByRole("group", { name: "Quick settings" });
+    const bar =
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH
+        ? page.locator("main > header")
+        : page.locator("main > div:has(input[type=range])");
+
+    await expect(
+      bar.getByRole("group", { name: "Quick settings" }),
+    ).toBeVisible();
+    await expect(quickSettings).toHaveCount(1);
+  });
 });
 
 test.describe("the screen's orientation", () => {
@@ -761,7 +991,7 @@ test.describe("full screen", () => {
     await page.keyboard.press("f");
     await page.keyboard.press("Escape");
 
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(SERIES_PAGE);
     await expect
       .poll(() => changes)
       .toEqual(["toggle", "toggle", "leave", "leave"]);
@@ -778,7 +1008,7 @@ test.describe("full screen", () => {
     await expect(slider(page)).toBeVisible();
     await page.keyboard.press("Escape");
 
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(SERIES_PAGE);
   });
 
   test("tells the core the book closed only once Escape leaves the book, not full screen", async ({
@@ -793,7 +1023,7 @@ test.describe("full screen", () => {
     const closedInFullScreen = [...closed];
     await page.keyboard.press("Escape");
 
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(SERIES_PAGE);
     expect(closedInFullScreen).toEqual([]);
     await expect.poll(() => closed).toEqual([BOOK_ID]);
   });
@@ -839,11 +1069,14 @@ test.describe("on Android", () => {
 
     const touched = await page.evaluate(
       ({ x, y }) =>
-        document.elementFromPoint(x, y)?.closest("a")?.textContent.trim(),
+        document
+          .elementFromPoint(x, y)
+          ?.closest("a")
+          ?.getAttribute("aria-label"),
       { x: link.x + link.width / 2, y: link.y - reach + 1 },
     );
 
-    expect(touched).toMatch(/Library|Back to the library/);
+    expect(touched).toBe(BACK_TO_SERIES);
     expect(link.height).toBeLessThan(ANDROID_TOUCH_TARGET_PX);
   });
 
@@ -1031,7 +1264,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 }
 
 test.describe("while Screenshot mode is on", () => {
-  const STAND_IN = /^Series \d{2,3}$/;
+  const STAND_IN = /^Back to Series \d{2,3}$/;
 
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
@@ -1046,15 +1279,14 @@ test.describe("while Screenshot mode is on", () => {
     page,
   }) => {
     await page.goto(`/read/${BOOK_ID}`);
-    const heading = page.getByRole("heading", { level: 1 });
-    await expect(heading).toHaveText(STAND_IN);
-    const standIn = (await heading.textContent()) ?? "";
 
     await expect(
-      page.getByText(
-        `${standIn} · Book ${String(BOOK_POSITION)} · Page 1 of ${String(PAGE_COUNT)}`,
-      ),
-    ).toBeVisible();
+      page.getByRole("heading", {
+        level: 1,
+        name: `Book ${String(BOOK_POSITION)}`,
+      }),
+    ).toBeAttached();
+    await expect(page.getByRole("link", { name: STAND_IN })).toHaveCount(1);
     const shown = (await page.getByRole("main").textContent()) ?? "";
     expect(shown).not.toContain(BOOK_SERIES_TITLE);
     expect(shown).not.toContain(BOOK_TITLE);
@@ -1091,27 +1323,14 @@ test.describe("the books either side", () => {
     await openBook(page);
 
     await page
-      .getByRole("link", { name: `Next book: ${NEXT_BOOK.title}` })
+      .getByRole("link", { name: `Next chapter: ${NEXT_BOOK.title}` })
       .click();
     await expect(page).toHaveURL(new RegExp(`/read/${NEXT_BOOK.id}$`));
     await page
-      .getByRole("link", { name: `Previous book: ${PREVIOUS_BOOK.title}` })
+      .getByRole("link", { name: `Previous chapter: ${PREVIOUS_BOOK.title}` })
       .click();
 
     await expect(page).toHaveURL(new RegExp(`/read/${PREVIOUS_BOOK.id}$`));
-  });
-
-  test("names the books either side beside the slider on a wide screen", async ({
-    page,
-  }) => {
-    test.skip(
-      viewportOf(page).width < EXPANDED_MIN_WIDTH,
-      "the boards draw only their arrows on narrow screens",
-    );
-    await openBook(page);
-
-    await expect(page.getByText(PREVIOUS_BOOK.title)).toBeVisible();
-    await expect(page.getByText(NEXT_BOOK.title)).toBeVisible();
   });
 
   test("stays in full screen and keeps the screen turning on the way to the next book", async ({
@@ -1121,7 +1340,7 @@ test.describe("the books either side", () => {
     await page.keyboard.press("f");
 
     await page
-      .getByRole("link", { name: `Next book: ${NEXT_BOOK.title}` })
+      .getByRole("link", { name: `Next chapter: ${NEXT_BOOK.title}` })
       .click();
     await expect(page).toHaveURL(new RegExp(`/read/${NEXT_BOOK.id}$`));
     await expect(slider(page)).toHaveValue("1");
@@ -1143,10 +1362,10 @@ test.describe("the first book of a series", () => {
     await openBook(page);
 
     await expect(
-      page.getByRole("button", { name: "Previous book" }),
+      page.getByRole("button", { name: "Previous chapter" }),
     ).toBeDisabled();
     await expect(
-      page.getByRole("link", { name: `Next book: ${NEXT_BOOK.title}` }),
+      page.getByRole("link", { name: `Next chapter: ${NEXT_BOOK.title}` }),
     ).toBeVisible();
   });
   test("names the missing book before it in a tooltip, as the links have", async ({
@@ -1154,9 +1373,9 @@ test.describe("the first book of a series", () => {
   }) => {
     await openBook(page);
 
-    const previous = page.getByRole("button", { name: "Previous book" });
+    const previous = page.getByRole("button", { name: "Previous chapter" });
     await previous.hover();
-    await expect(previous).toHaveAccessibleDescription("Previous book");
+    await expect(previous).toHaveAccessibleDescription("Previous chapter");
     await expect(previous).not.toHaveAttribute("title");
   });
 });
@@ -1174,13 +1393,12 @@ test.describe("on an iPad in landscape", () => {
   }) => {
     await openBook(page);
 
-    await expect(page.getByText("Library", { exact: true })).toBeVisible();
-    await expect(page.getByText(NEXT_BOOK.title)).toBeVisible();
+    await expect(controls(page)).toHaveText(BOOK_SERIES_TITLE);
     const sizes = await Promise.all(
       [
         controls(page),
         slider(page),
-        page.getByRole("link", { name: `Next book: ${NEXT_BOOK.title}` }),
+        page.getByRole("link", { name: `Next chapter: ${NEXT_BOOK.title}` }),
       ].map(async (control) => (await boxOf(control)).height),
     );
     for (const height of sizes) {
@@ -1209,7 +1427,7 @@ test.describe("with a pointer", () => {
     {
       name: "the next book's link",
       find: (page: Page) =>
-        page.getByRole("link", { name: `Next book: ${NEXT_BOOK.title}` }),
+        page.getByRole("link", { name: `Next chapter: ${NEXT_BOOK.title}` }),
     },
   ];
 
@@ -1333,7 +1551,7 @@ test.describe("zooming", () => {
     await openBook(page);
 
     await page.keyboard.press("Escape");
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(SERIES_PAGE);
 
     expect(await viewportSettings(page)).toMatchObject({
       "maximum-scale": "1",

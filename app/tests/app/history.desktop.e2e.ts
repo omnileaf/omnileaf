@@ -3,14 +3,15 @@ import { afterEach, expect, test } from "vitest";
 import { mainNavigationLink, useAppSession } from "./app-session.ts";
 import { pageShownScript } from "./page-shown.ts";
 import {
-  BACK_TO_THE_LIBRARY,
+  BACK_TO_THE_SERIES,
+  goBackToTheLibrary,
   NEXT_PAGE,
   openSampleBook,
+  shownPageCount,
 } from "./sample-book.ts";
 import { xpath } from "./webdriver.ts";
 
 const PAGE_READ_TO = 3;
-const BACK_FROM_THE_READER = xpath("//main//a[@href='/']");
 const LIBRARY_HEADING = xpath("//h1[normalize-space()='Library']");
 const LATEST_SESSION = xpath(
   `//main//section[1]//li[1][contains(normalize-space(), 'Sample Series 01 v03 · page ${String(PAGE_READ_TO)} of 8')]`,
@@ -24,7 +25,7 @@ return true;`;
 const appSession = useAppSession();
 
 afterEach(async () => {
-  await (await appSession().waitFor(BACK_TO_THE_LIBRARY)).click();
+  await goBackToTheLibrary(appSession());
   await appSession().waitFor(LIBRARY_HEADING);
 });
 
@@ -42,7 +43,7 @@ async function readThirdBookTo(page: number): Promise<void> {
 
 test("continues the book read last from History on the page it was left on", async () => {
   await readThirdBookTo(PAGE_READ_TO);
-  await (await appSession().waitFor(BACK_FROM_THE_READER)).click();
+  await (await appSession().waitFor(BACK_TO_THE_SERIES)).click();
 
   await (await appSession().waitFor(mainNavigationLink("History"))).click();
   await appSession().waitFor(LATEST_SESSION);
@@ -55,10 +56,9 @@ test("continues the book read last from History on the page it was left on", asy
     pageShownScript(PAGE_READ_TO),
     `page ${String(PAGE_READ_TO)} shown again`,
   );
-  const line = await appSession().waitFor(
-    xpath(
-      `//header//p[contains(normalize-space(), 'Page ${String(PAGE_READ_TO)} of 8')]`,
-    ),
+  await appSession().waitFor(
+    xpath("//main//h1[normalize-space()='Sample Series 01 v03']"),
   );
-  expect(await line.text()).toBe("Sample Series 01 v03 · Page 3 of 8");
+  const count = await appSession().waitFor(shownPageCount(PAGE_READ_TO, 8));
+  expect(await count.text()).toBe("3 / 8");
 });
