@@ -287,6 +287,8 @@
   "history_open_series": "Open series",
   "history_more": "More for {book}",
   "history_more_short": "More",
+  "history_series_filter": "Show sessions from",
+  "history_every_series": "All series",
   "history_started_at": "Started at {time}",
   "history_read_for": "Read for {duration}",
   "history_continue": "Continue",

@@ -195,6 +195,7 @@ export const TOKEN_THEME = {
     "history-row",
     "history-row-wide",
     "history-section",
+    "history-series-filter",
     "history-sessions-cover",
     "history-sheet",
     "history-time",
