@@ -359,7 +359,9 @@ test.describe("with books read", () => {
   }) => {
     test.skip(!isDesktop(page), "desktops only");
     await openHistory(page);
-    const header = await boxOf(page.getByRole("main").locator("header"));
+    const header = await boxOf(
+      page.getByRole("main").locator("[data-page-toolbar]"),
+    );
 
     const summed = await boxOf(week(page));
     const columns = await boxOf(
