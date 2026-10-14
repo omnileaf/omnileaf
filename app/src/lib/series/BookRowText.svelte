@@ -17,23 +17,23 @@
     class={[
       "truncate text-lead expanded:flex-1 expanded:text-detail",
       book.reading.state === "read"
-        ? "font-medium text-muted"
+        ? "font-medium text-muted picked:text-foreground"
         : "font-bold text-foreground",
     ]}
   >
     {book.title}
   </span>
-  <span class="text-caption text-muted expanded:hidden">
+  <span class="text-caption text-muted expanded:hidden picked:text-foreground">
     {readingWords(book.reading, () => m.series_book_added({ date: added }))}
   </span>
   <span
-    class="text-detail text-muted inline-series-column-added max-expanded:hidden"
+    class="text-detail text-muted inline-series-column-added max-expanded:hidden picked:text-foreground"
   >
     <span class="sr-only">{m.series_book_added({ date: added })}</span>
     <span aria-hidden="true">{added}</span>
   </span>
   <span
-    class="text-caption text-muted inline-series-column-progress max-expanded:hidden"
+    class="text-caption text-muted inline-series-column-progress max-expanded:hidden picked:text-foreground"
   >
     {readingWords(book.reading, m.series_book_unread)}
   </span>
