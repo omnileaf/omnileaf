@@ -22,6 +22,7 @@ import {
   tokenColour,
   viewportOf,
 } from "./fixtures.ts";
+import { settleBarTitle } from "./series-bar.ts";
 import {
   BOOKS_PER_PAGE,
   FakeShelf,
@@ -282,25 +283,6 @@ async function openSeries(page: Page): Promise<void> {
     page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
   ).toBeVisible();
   await revealBooks(page);
-}
-
-async function settleBarTitle(page: Page): Promise<void> {
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const bar = document.querySelector("main header");
-        const shown = bar?.querySelector("span[aria-hidden=true]");
-        const title = document.querySelector("main h1");
-        if (bar === null || !shown || title === null) {
-          return true;
-        }
-        const isUnder =
-          title.getBoundingClientRect().bottom <=
-          bar.getBoundingClientRect().bottom;
-        return getComputedStyle(shown).opacity === (isUnder ? "1" : "0");
-      }),
-    )
-    .toBe(true);
 }
 
 async function openSeriesAtTop(page: Page): Promise<void> {
