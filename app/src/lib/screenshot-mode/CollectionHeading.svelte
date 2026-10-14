@@ -91,12 +91,14 @@
     bind:this={header}
     data-crowded={fitting !== "roomy" || undefined}
     data-stacked={fitting === "stacked" || undefined}
-    class="grid grid-cols-collection-heading items-center heading-two-rows:flex heading-two-rows:flex-wrap heading-two-rows:gap-x-title-count heading-two-rows:gap-y-2xs in-toolbar:flex in-toolbar:flex-1 in-toolbar:gap-sm"
+    class="grid grid-cols-collection-heading items-center heading-two-rows:flex heading-two-rows:flex-wrap heading-two-rows:gap-x-title-count heading-two-rows:gap-y-2xs in-toolbar:flex in-toolbar:flex-1 in-toolbar:gap-sm in-toolbar:min-inline-none"
   >
     <div
-      class="col-start-1 row-start-1 flex flex-wrap items-baseline gap-x-title-count heading-two-rows:contents"
+      class="col-start-1 row-start-1 flex flex-wrap items-baseline gap-x-title-count heading-two-rows:contents in-toolbar:flex-nowrap in-toolbar:min-inline-none"
     >
-      <div class="heading-two-rows:order-1 heading-stacked:basis-full">
+      <div
+        class="heading-two-rows:order-1 heading-stacked:basis-full in-toolbar:min-inline-none"
+      >
         <PageHeading {title} />
       </div>
       {#if count !== undefined}
@@ -114,7 +116,7 @@
     {#if showsLabel}
       <div
         class={[
-          "flex justify-self-start text-nowrap heading-one-row:col-span-full heading-one-row:row-start-2 heading-one-row:mbs-md heading-two-rows:order-5 heading-label-inline:col-start-2 heading-label-inline:row-start-1 heading-label-inline:ms-title-count heading-label-inline:ps-xs heading-label-below:col-span-full heading-label-below:row-start-2 heading-label-below:mbs-md heading-crowded:col-span-full heading-crowded:col-start-1 heading-crowded:row-start-2 heading-crowded:ms-none heading-crowded:mbs-md heading-crowded:ps-none",
+          "flex justify-self-start text-nowrap heading-one-row:col-span-full heading-one-row:row-start-2 heading-one-row:mbs-md heading-two-rows:order-5 heading-label-inline:col-start-2 heading-label-inline:row-start-1 heading-label-inline:ms-title-count heading-label-inline:ps-xs heading-label-below:col-span-full heading-label-below:row-start-2 heading-label-below:mbs-md heading-crowded:col-span-full heading-crowded:col-start-1 heading-crowded:row-start-2 heading-crowded:ms-none heading-crowded:mbs-md heading-crowded:ps-none in-toolbar:shrink-0",
           count === undefined && "heading-two-rows:touch:ps-xs",
         ]}
       >
@@ -124,7 +126,7 @@
     {#if actions !== undefined}
       <div
         bind:this={buttons}
-        class="col-start-4 row-start-1 ms-title-count flex items-center justify-self-end medium:gap-sm heading-two-rows:order-2 heading-two-rows:ms-auto heading-stacked:order-6 heading-stacked:col-span-full heading-stacked:col-start-1 heading-stacked:row-start-auto heading-stacked:mbs-sm heading-stacked:basis-full heading-stacked:justify-end in-toolbar:ms-auto"
+        class="col-start-4 row-start-1 ms-title-count flex items-center justify-self-end medium:gap-sm heading-two-rows:order-2 heading-two-rows:ms-auto heading-stacked:order-6 heading-stacked:col-span-full heading-stacked:col-start-1 heading-stacked:row-start-auto heading-stacked:mbs-sm heading-stacked:basis-full heading-stacked:justify-end in-toolbar:ms-auto in-toolbar:shrink-0"
       >
         {@render actions()}
       </div>
