@@ -847,6 +847,8 @@
     }
   ],
   "series_selection_toolbar": "Selected books",
+  "series_clear_selection": "Clear the selection",
+  "series_escape_key": "Esc",
   "series_mark_read": "Mark read",
   "series_mark_unread": "Mark unread",
   "series_mark_failed": "Couldn't mark those books. Try again.",

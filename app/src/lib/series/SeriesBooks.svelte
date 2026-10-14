@@ -25,6 +25,7 @@
   import BookRowText from "./BookRowText.svelte";
   import BookTable from "./BookTable.svelte";
   import { BookSelection } from "./book-selection.svelte";
+  import SelectionBar from "./SelectionBar.svelte";
 
   type BookId = SeriesBook["id"];
 
@@ -348,6 +349,17 @@
         void end();
       }}
     />
+    {#if selection.count > 0}
+      <SelectionBar
+        count={selection.count}
+        onMark={(read: ReadMark) => {
+          void mark(read);
+        }}
+        onClear={() => {
+          void end();
+        }}
+      />
+    {/if}
   {:else}
     <div
       class="max-medium:-ms-page-start max-medium:-me-page-end medium:overflow-hidden medium:rounded-card medium:border medium:border-border medium:bg-card"
@@ -363,30 +375,27 @@
         cell={row}
       />
     </div>
-  {/if}
-  {#if isPicking && selection.count > 0}
-    <div
-      role="group"
-      aria-label={m.series_selection_toolbar()}
-      class="sticky inset-be-lg grid grid-cols-2 gap-2xs rounded-selection-bar bg-selection-bar p-selection-bar-inset text-on-selection-bar shadow-selection-bar expanded:flex expanded:items-center expanded:gap-xs expanded:self-center expanded:rounded-selection-bar-wide expanded:ps-lg ios:max-medium:inset-be-none"
-    >
-      <span class="text-detail font-bold max-expanded:hidden expanded:me-sm">
-        {m.series_selected_books({ count: selection.count })}
-      </span>
-      {#each MARKS as { mark: read, icon: Icon, label } (read)}
-        <Button
-          type="button"
-          look="toolbar-action"
-          class="gap-xs text-caption min-block-selection-action expanded:gap-icon-gap expanded:px-md expanded:text-detail expanded:min-block-selection-action-wide"
-          onclick={() => {
-            void mark(read);
-          }}
-        >
-          <Icon size={ACTION_ICON_SIZE} aria-hidden="true" />
-          {label()}
-        </Button>
-      {/each}
-    </div>
+    {#if selection.isSelecting && selection.count > 0}
+      <div
+        role="group"
+        aria-label={m.series_selection_toolbar()}
+        class="sticky inset-be-lg grid grid-cols-2 gap-2xs rounded-selection-bar bg-selection-bar p-selection-bar-inset text-on-selection-bar shadow-selection-bar ios:max-medium:inset-be-none"
+      >
+        {#each MARKS as { mark: read, icon: Icon, label } (read)}
+          <Button
+            type="button"
+            look="toolbar-action"
+            class="gap-xs text-caption min-block-selection-action"
+            onclick={() => {
+              void mark(read);
+            }}
+          >
+            <Icon size={ACTION_ICON_SIZE} aria-hidden="true" />
+            {label()}
+          </Button>
+        {/each}
+      </div>
+    {/if}
   {/if}
   <p
     role="status"

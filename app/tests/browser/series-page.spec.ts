@@ -657,6 +657,48 @@ test.describe("in the table on wide screens", () => {
       await unread.evaluate((link) => getComputedStyle(link).color),
     );
   });
+
+  test("lets go of the books picked from the selection bar", async ({
+    page,
+  }) => {
+    await openSeries(page);
+    await pickBooks(page, 4, 5);
+
+    await selectedBooks(page)
+      .getByRole("button", { name: "Clear the selection" })
+      .click();
+
+    await expect(page.getByRole("checkbox", { checked: true })).toHaveCount(0);
+  });
+
+  test("floats the selection bar inside the table's edges", async ({
+    page,
+  }) => {
+    await openSeries(page);
+    await pickBooks(page, 4);
+
+    const bar = await boxOf(selectedBooks(page));
+    const table = await boxOf(bookTable(page));
+
+    expect(bar.x).toBeGreaterThan(table.x);
+    expect(bar.x + bar.width).toBeLessThan(table.x + table.width);
+    expect(bar.y + bar.height).toBeLessThan(viewportOf(page).height);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`the selection bar has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await openSeries(page);
+      await pickBooks(page, 0, 4);
+      await expect(selectedBooks(page)).toBeVisible();
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
 });
 
 test("starts picking books with a long press on a touch screen", async ({
