@@ -14,6 +14,7 @@
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
+  import { shortcut } from "#lib/shortcut.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import BookListingChoices from "./BookListingChoices.svelte";
@@ -147,13 +148,8 @@
     );
   }
 
-  function endOnEscape(event: KeyboardEvent): void {
-    if (
-      event.key === "Escape" &&
-      !event.defaultPrevented &&
-      !isFromDialog(event) &&
-      selection.isSelecting
-    ) {
+  function endUnlessFromDialog(event: KeyboardEvent): void {
+    if (!isFromDialog(event)) {
       void end();
     }
   }
@@ -253,7 +249,11 @@
   onclickcapture={(event: MouseEvent) => {
     longPress.clicked(event);
   }}
-  onkeydown={endOnEscape}
+  {@attach shortcut(
+    ...(selection.isSelecting
+      ? [{ key: "Escape", run: endUnlessFromDialog }]
+      : []),
+  )}
 />
 
 <section

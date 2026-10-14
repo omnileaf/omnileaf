@@ -1,3 +1,5 @@
+import type { Shortcut } from "#lib/shortcut.ts";
+
 export type ReaderAction =
   | "next"
   | "previous"
@@ -7,61 +9,33 @@ export type ReaderAction =
   | "fullScreen"
   | "leave";
 
-const SPACE = " ";
-const CODE_ACTIONS: Readonly<Record<string, ReaderAction>> = {
-  KeyM: "toggleControls",
-  KeyF: "fullScreen",
+type ReaderKey = Pick<Shortcut, "key" | "shift"> & {
+  readonly action: ReaderAction;
 };
 
-const SLIDER_KEYS: ReadonlySet<string> = new Set([
-  "ArrowLeft",
-  "ArrowRight",
-  "ArrowUp",
-  "ArrowDown",
-  "Home",
-  "End",
-  "PageUp",
-  "PageDown",
-]);
-const ACTIVATING_KEYS: ReadonlySet<string> = new Set([SPACE, "Enter"]);
+const READER_KEYS: readonly ReaderKey[] = [
+  { key: "ArrowRight", shift: false, action: "next" },
+  { key: "PageDown", shift: false, action: "next" },
+  { key: " ", shift: false, action: "next" },
+  { key: "ArrowLeft", shift: false, action: "previous" },
+  { key: "PageUp", shift: false, action: "previous" },
+  { key: " ", shift: true, action: "previous" },
+  { key: "Home", shift: false, action: "first" },
+  { key: "End", shift: false, action: "last" },
+  { key: "Escape", shift: false, action: "leave" },
+  { key: "m", action: "toggleControls" },
+  { key: "f", action: "fullScreen" },
+];
 
-const PLAIN_KEYS: Readonly<Record<string, ReaderAction>> = {
-  ArrowRight: "next",
-  PageDown: "next",
-  ArrowLeft: "previous",
-  PageUp: "previous",
-  Home: "first",
-  End: "last",
-  Escape: "leave",
-};
-
-export function readerActionFor(
-  event: KeyboardEvent,
-): ReaderAction | undefined {
-  if (event.ctrlKey || event.metaKey || event.altKey) {
-    return undefined;
-  }
-  const byCode = CODE_ACTIONS[event.code];
-  if (byCode !== undefined) {
-    return byCode;
-  }
-  if (event.key === SPACE) {
-    return event.shiftKey ? "previous" : "next";
-  }
-  return event.shiftKey ? undefined : PLAIN_KEYS[event.key];
-}
-
-/** Whether the focused control acts on the key itself, as a slider does on arrows and a button on Space, so the reader leaves it alone. */
-export function isKeyForFocusedControl(event: KeyboardEvent): boolean {
-  const { target } = event;
-  if (target instanceof HTMLInputElement) {
-    return SLIDER_KEYS.has(event.key);
-  }
-  if (
-    target instanceof HTMLButtonElement ||
-    target instanceof HTMLAnchorElement
-  ) {
-    return ACTIVATING_KEYS.has(event.key);
-  }
-  return false;
+/** The reader's keys, taken on its slider too since the shortcut leaves a slider its own keys. */
+export function readerShortcuts(
+  act: (action: ReaderAction) => void,
+): Shortcut[] {
+  return READER_KEYS.map(({ action, ...keys }) => ({
+    ...keys,
+    inTextFields: true,
+    run: () => {
+      act(action);
+    },
+  }));
 }

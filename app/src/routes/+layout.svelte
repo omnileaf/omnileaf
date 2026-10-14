@@ -42,10 +42,7 @@
     setScheduledRescansSetting,
   } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
   import ScreenshotModeAnnouncement from "#lib/screenshot-mode/ScreenshotModeAnnouncement.svelte";
-  import {
-    isScreenshotModeShortcut,
-    screenshotModeShortcutOn,
-  } from "#lib/screenshot-mode/shortcut.ts";
+  import { shortcut } from "#lib/shortcut.ts";
 
   import type { LayoutProps } from "./$types";
 
@@ -67,17 +64,6 @@
   );
   setNotices(new Notices());
   const bookPresence = setBookPresence(new BookPresence());
-  const screenshotModeShortcut = $derived(
-    screenshotModeShortcutOn(data.appInfo.platform),
-  );
-
-  function toggleScreenshotModeOnShortcut(event: KeyboardEvent): void {
-    if (!isScreenshotModeShortcut(screenshotModeShortcut, event)) {
-      return;
-    }
-    event.preventDefault();
-    screenshotMode.toggle();
-  }
 
   function settleScreenshotMode(): void {
     screenshotMode.settle();
@@ -146,7 +132,16 @@
 </script>
 
 <svelte:window
-  onkeydown={toggleScreenshotModeOnShortcut}
+  {@attach shortcut({
+    key: "h",
+    command: data.appInfo.platform,
+    shift: true,
+    inTextFields: true,
+    ignoresRepeats: true,
+    run: () => {
+      screenshotMode.toggle();
+    },
+  })}
   onfocus={settleScreenshotMode}
   onpageshow={settleScreenshotMode}
 />
