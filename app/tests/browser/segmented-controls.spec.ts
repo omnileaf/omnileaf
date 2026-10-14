@@ -163,13 +163,15 @@ function segmentsOf(group: Locator): Promise<Segment[]> {
       const x = box.left + box.width / 2;
       let tapped = 0;
       for (let y = Math.floor(box.top) - 32; y < box.bottom + 32; y += 1) {
-        if (document.elementFromPoint(x, y)?.closest("label") === segment) {
+        if (
+          document.elementFromPoint(x, y)?.closest("[role=radio]") === segment
+        ) {
           tapped += 1;
         }
       }
       return tapped;
     };
-    return [...track.querySelectorAll("label")].map((segment) => {
+    return [...track.querySelectorAll("[role=radio]")].map((segment) => {
       const box = segment.getBoundingClientRect();
       const cutOff = [segment, ...segment.querySelectorAll("*")]
         .filter(
@@ -253,8 +255,7 @@ for (const [platform, { project, target }] of Object.entries(PLATFORMS)) {
                 const rows = rowsOf(segments);
                 const widths = segments.map((segment) => segment.width);
                 await group
-                  .locator("label")
-                  .filter({ has: page.getByRole("radio", { checked: false }) })
+                  .getByRole("radio", { checked: false })
                   .first()
                   .click();
                 await nextFrames(page);
@@ -356,7 +357,7 @@ function rowsInFirstFrame(page: Page): Promise<number> {
           ?.click();
         requestAnimationFrame(() => {
           const segments = document.querySelectorAll(
-            "dialog[open] [role=radiogroup] label",
+            "dialog[open] [role=radio]",
           );
           resolve(
             new Set(

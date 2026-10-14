@@ -38,7 +38,7 @@ test("keeps the crash report choice after the app reopens", async ({
 }) => {
   await openPrivacy(page);
 
-  await page.locator("label").filter({ hasText: "Never" }).click();
+  await page.getByRole("radio", { name: "Never" }).click();
   await page.reload();
 
   await expect(
@@ -66,7 +66,7 @@ test.describe("on a touch screen", () => {
     page,
   }) => {
     await openPrivacy(page);
-    await page.locator("label").filter({ hasText: "Always send" }).click();
+    await page.getByRole("radio", { name: "Always send" }).click();
 
     await page.goto("/settings");
     test.skip(

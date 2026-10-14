@@ -55,7 +55,7 @@ test("picks a language and comes back to General", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Language" }),
   ).toBeFocused();
-  await page.locator("label").filter({ has: english }).click();
+  await english.click();
   await expect(english).toBeChecked();
   await page
     .getByRole("link", { name: /^(Back to )?General$/ })
@@ -179,12 +179,7 @@ test.describe("sorting the library", () => {
     await page.goto("/settings/general/language");
     await expect.poll(() => told).toEqual(["en-XA"]);
 
-    await page
-      .locator("label")
-      .filter({
-        has: page.getByRole("radio", { name: "English", exact: true }),
-      })
-      .click();
+    await page.getByRole("radio", { name: "English", exact: true }).click();
 
     await expect.poll(() => told).toEqual(["en-XA", "en"]);
   });

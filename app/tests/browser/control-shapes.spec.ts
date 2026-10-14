@@ -65,9 +65,7 @@ function displayTrack(panel: Locator): Locator {
 }
 
 function displaySegment(panel: Locator, name: string): Locator {
-  return panel
-    .locator("label")
-    .filter({ has: panel.page().getByRole("radio", { name }) });
+  return panel.getByRole("radio", { name });
 }
 
 test.describe("in every segmented control", () => {
@@ -94,18 +92,15 @@ test.describe("in every segmented control", () => {
     page,
   }) => {
     await page.goto("/settings/appearance");
-    const options = page
-      .locator("label")
-      .filter({ has: page.getByRole("radio") });
 
-    await expect(
-      options.filter({ has: page.getByRole("radio", { checked: true }) }),
-    ).toHaveCSS("font-weight", CHOSEN_SEGMENT_WEIGHT);
-    await expect(
-      options
-        .filter({ has: page.getByRole("radio", { checked: false }) })
-        .first(),
-    ).toHaveCSS("font-weight", SEGMENT_WEIGHT);
+    await expect(page.getByRole("radio", { checked: true })).toHaveCSS(
+      "font-weight",
+      CHOSEN_SEGMENT_WEIGHT,
+    );
+    await expect(page.getByRole("radio", { checked: false }).first()).toHaveCSS(
+      "font-weight",
+      SEGMENT_WEIGHT,
+    );
   });
 });
 

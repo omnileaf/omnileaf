@@ -53,7 +53,7 @@ test("reports the theme chosen in Settings › Appearance", async ({ page }) => 
   await page.goto("/settings/appearance");
   await expect.poll(lastReportedTheme).toBe("dark");
 
-  await page.locator("label").filter({ hasText: "Light" }).click();
+  await page.getByRole("radio", { name: "Light" }).click();
 
   await expect.poll(lastReportedTheme).toBe("light");
 });
@@ -64,7 +64,7 @@ test("reports that the theme follows the device until one is chosen", async ({
   await page.goto("/settings/appearance");
   await expect.poll(lastReportedPreference).toBe("system");
 
-  await page.locator("label").filter({ hasText: "Dark" }).click();
+  await page.getByRole("radio", { name: "Dark" }).click();
 
   await expect.poll(lastReportedPreference).toBe("dark");
 });

@@ -483,8 +483,7 @@ test.describe("the heading as a filter changes the count", () => {
       const panel = page.getByRole("dialog", { name: "Filter and sort" });
       await panel
         .getByRole("radiogroup", { name: "Unread" })
-        .locator("label")
-        .filter({ hasText: "Only" })
+        .getByRole("radio", { name: "Only" })
         .click();
       await page.keyboard.press("Escape");
       await expect(panel).toBeHidden();

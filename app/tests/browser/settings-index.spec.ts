@@ -35,7 +35,7 @@ test("follows the light or dark choice in Appearance's summary", async ({
   page,
 }) => {
   await page.goto("/settings/appearance");
-  await page.locator("label").filter({ hasText: "Dark" }).click();
+  await page.getByRole("radio", { name: "Dark" }).click();
 
   await page.goto("/settings");
   test.skip(

@@ -12,7 +12,7 @@ export interface Control {
 export const THEME_OPTION: Control = {
   name: "a theme option",
   path: "/settings/appearance",
-  find: (page) => page.locator("label").filter({ hasText: "Dark" }),
+  find: (page) => page.getByRole("radio", { name: "Dark" }),
 };
 
 export const CONTROLS: readonly Control[] = [
@@ -43,7 +43,7 @@ export const CONTROLS: readonly Control[] = [
   {
     name: "a language option",
     path: "/settings/general/language",
-    find: (page) => page.locator("label").last(),
+    find: (page) => page.getByRole("radio").last(),
   },
   {
     name: "a row in About",

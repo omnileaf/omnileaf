@@ -248,8 +248,7 @@ test.describe("with a pointer", () => {
     for (const [name, find] of [
       [
         "an unchosen display",
-        (options: Locator) =>
-          options.locator("label").filter({ hasText: "List" }),
+        (options: Locator) => options.getByRole("radio", { name: "List" }),
       ],
       [
         "a covers per row step",

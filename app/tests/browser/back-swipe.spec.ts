@@ -271,10 +271,7 @@ test("shows no screen in a language the app has since left", async ({
   await page.locator('main a[href="/settings/general/language"]').click();
   await expect(page).toHaveURL("/settings/general/language");
 
-  await page
-    .locator("label")
-    .filter({ has: page.getByRole("radio", { name: "English", exact: true }) })
-    .click();
+  await page.getByRole("radio", { name: "English", exact: true }).click();
   await expect(heading(page, "Language")).toBeVisible();
   await swipe({ kind: "moved", progress: 0.5 });
 
@@ -308,10 +305,7 @@ test("shows no screen with a choice made since it was left", async ({
     .click();
   await expect(heading(page, PARENT_TITLE)).toBeVisible();
 
-  await page
-    .locator("label")
-    .filter({ has: page.getByRole("radio", { name: "Always send" }) })
-    .click();
+  await page.getByRole("radio", { name: "Always send" }).click();
   await swipe({ kind: "moved", progress: 0.5 });
 
   await expect(page.locator("[data-previous-screen]")).toBeAttached();
