@@ -29,8 +29,8 @@ const LAYOUTS = [
   },
   {
     platform: "linux",
-    titleGap: { phone: 28, tablet: 28, desktop: 28 },
-    titleStart: { phone: 24, tablet: 28, desktop: 32 },
+    titleGap: { phone: 28, tablet: 28, desktop: 15.5 },
+    titleStart: { phone: 24, tablet: 28, desktop: 73 },
   },
 ] as const;
 

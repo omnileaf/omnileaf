@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import SidebarToggle from "#lib/navigation/SidebarToggle.svelte";
   import PageHeading from "#lib/page/PageHeading.svelte";
 
   import ScreenshotModeLabel from "./ScreenshotModeLabel.svelte";
@@ -75,12 +76,22 @@
   });
 </script>
 
-<div class="@container text-body">
+<div
+  data-page-toolbar
+  class="@container text-body in-toolbar:sticky in-toolbar:-inset-bs-title-gap in-toolbar:z-series-bar in-toolbar:-ms-gutter in-toolbar:-me-page-end in-toolbar:-mbs-title-gap in-toolbar:flex in-toolbar:items-center in-toolbar:border-be in-toolbar:border-border in-toolbar:bg-background in-toolbar:px-lg in-toolbar:min-block-toolbar"
+>
+  <div class="hidden items-center gap-sm in-toolbar:me-sm in-toolbar:flex">
+    <SidebarToggle />
+    <span
+      aria-hidden="true"
+      class="me-sm border-s border-border block-toolbar-rule"
+    ></span>
+  </div>
   <header
     bind:this={header}
     data-crowded={fitting !== "roomy" || undefined}
     data-stacked={fitting === "stacked" || undefined}
-    class="grid grid-cols-collection-heading items-center heading-two-rows:flex heading-two-rows:flex-wrap heading-two-rows:gap-x-title-count heading-two-rows:gap-y-2xs"
+    class="grid grid-cols-collection-heading items-center heading-two-rows:flex heading-two-rows:flex-wrap heading-two-rows:gap-x-title-count heading-two-rows:gap-y-2xs in-toolbar:flex in-toolbar:flex-1 in-toolbar:gap-sm"
   >
     <div
       class="col-start-1 row-start-1 flex flex-wrap items-baseline gap-x-title-count heading-two-rows:contents"
@@ -113,7 +124,7 @@
     {#if actions !== undefined}
       <div
         bind:this={buttons}
-        class="col-start-4 row-start-1 ms-title-count flex items-center justify-self-end medium:gap-sm heading-two-rows:order-2 heading-two-rows:ms-auto heading-stacked:order-6 heading-stacked:col-span-full heading-stacked:col-start-1 heading-stacked:row-start-auto heading-stacked:mbs-sm heading-stacked:basis-full heading-stacked:justify-end"
+        class="col-start-4 row-start-1 ms-title-count flex items-center justify-self-end medium:gap-sm heading-two-rows:order-2 heading-two-rows:ms-auto heading-stacked:order-6 heading-stacked:col-span-full heading-stacked:col-start-1 heading-stacked:row-start-auto heading-stacked:mbs-sm heading-stacked:basis-full heading-stacked:justify-end in-toolbar:ms-auto"
       >
         {@render actions()}
       </div>
