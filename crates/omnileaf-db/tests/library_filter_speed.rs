@@ -143,7 +143,6 @@ fn trial_of(measured: &'static str) -> SpeedTrial {
     }
 }
 
-/// Adds ten books to each series, then marks every book of each hundredth series read and the first book of each tenth.
 async fn add_generated_library(database: &Database) {
     add_generated_series(database, &BOOK_TITLES).await;
     database
@@ -165,7 +164,6 @@ async fn add_generated_library(database: &Database) {
         .unwrap();
 }
 
-/// Reads the page after `after`, waiting for a reader included, and returns the cursor to the next one, or none after the last page so the walk starts over.
 async fn read_page(
     database: &Database,
     listing: SeriesListing,

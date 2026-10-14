@@ -1,5 +1,3 @@
-//! Lets the screen turn with the device while a book is read, and keeps phones upright everywhere else.
-
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -9,7 +7,6 @@ pub(crate) use android::{orient, plugin};
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum ScreenOrientation {
-    /// Turns with the device, as the reader wants on every screen.
     FollowDevice,
     /// Upright on phones and turning with the device on tablets, as the rest of the app is laid out.
     PortraitOnPhones,

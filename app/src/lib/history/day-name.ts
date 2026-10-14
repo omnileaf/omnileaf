@@ -2,7 +2,6 @@ import type { HistoryCalendar } from "#lib/history/history-days.ts";
 import { type LocalDay, noonUtcOf } from "#lib/history/local-date.ts";
 import { m } from "#lib/paraglide/messages.js";
 
-/** The ways History writes a day's name, built once for a locale. */
 export interface DayFormats {
   readonly weekday: Intl.DateTimeFormat;
   readonly date: Intl.DateTimeFormat;
@@ -26,7 +25,6 @@ export function dayFormats(locale: string): DayFormats {
   };
 }
 
-/** What History calls a day: today, yesterday, a weekday within this week, or else its date. */
 export function dayName(
   day: LocalDay,
   { today, weekStart }: HistoryCalendar,

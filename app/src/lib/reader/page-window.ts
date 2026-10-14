@@ -1,6 +1,5 @@
 const PAGES_BEHIND = 1;
 
-/** The pages kept ready around the one shown: the one before it and the next `ahead`, within the book. */
 export function pagesAround(
   shown: number,
   count: number,

@@ -2,7 +2,6 @@ import type { ProbedFormat } from "#lib/ipc/bindings.ts";
 
 export type FormatSamples = Readonly<Record<ProbedFormat, string>>;
 
-/** A one-pixel image in each format some webviews can't show and pages can be transcoded from, made by each format's reference encoder. */
 export const FORMAT_SAMPLES = {
   webp: "data:image/webp;base64,UklGRjQAAABXRUJQVlA4ICgAAABwAQCdASoBAAEAAUAmJaACdAFAAAD+8LprXFzZEUf/IMf4Nf5h81wA",
   jxl: "data:image/jxl;base64,/woAEBAJCAABADQASxiLFcJBER5gqN9jAA==",
@@ -22,7 +21,6 @@ export async function undecodableFormats(
   return formats.filter((_, index) => decoded[index] === false);
 }
 
-/** Whether `decode` settles successfully within `timeoutMs`, a decode that never settles counting as a failure. */
 export async function decodesWithin(
   decode: () => Promise<void>,
   timeoutMs: number,
@@ -56,7 +54,6 @@ function decodes(url: string): Promise<boolean> {
 
 let probed: Promise<ProbedFormat[]> | undefined;
 
-/** The formats this webview can't decode, probed once on first use. */
 export function webviewUndecodableFormats(): Promise<ProbedFormat[]> {
   probed ??= undecodableFormats(FORMAT_SAMPLES);
   return probed;

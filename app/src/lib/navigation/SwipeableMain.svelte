@@ -108,7 +108,6 @@
     }
   }
 
-  /** Springs a swipe let go to go back into place instead when the screen goes back within itself. */
   function unlessTakenByScreen(swipe: BackSwipe): BackSwipe {
     return swipe.kind === "released" &&
       isGoingBack(swipe.progress ?? 0, swipe.velocity ?? 0) &&
@@ -117,7 +116,6 @@
       : swipe;
   }
 
-  /** Settles once the screen's transitions end or are cancelled, at once when none run. */
   async function settleOnceMoved(screen: HTMLElement): Promise<void> {
     await Promise.allSettled(
       screen.getAnimations().map((animation) => animation.finished),

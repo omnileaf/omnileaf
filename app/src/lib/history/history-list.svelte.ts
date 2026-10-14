@@ -7,7 +7,6 @@ import { PagedList } from "#lib/paging/paged-list.svelte.ts";
 
 type HistoryCursor = NonNullable<HistoryPage["next"]>;
 
-/** The reading sessions History lists, newest first, read a page at a time. */
 export function historyList(): PagedList<HistoryEntry, HistoryCursor> {
   return new PagedList(async (after) => {
     const page = await commands.readingHistory(after);

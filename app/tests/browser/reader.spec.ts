@@ -318,7 +318,6 @@ async function openBookWithTimeStopped(page: Page): Promise<void> {
   await page.clock.pauseAt(now + PAUSE_AHEAD_MS);
 }
 
-/** Starts noting each change to what the reader's status says, and returns what it noted. */
 async function noteStatus(page: Page): Promise<() => Promise<string[]>> {
   await page.evaluate(() => {
     const status = document.querySelector('main > p[role="status"]');
@@ -525,7 +524,6 @@ test("says so when a page can't be shown", async ({ page }) => {
   await expect(page.getByText("This page couldn't be shown.")).toBeVisible();
 });
 
-/** Fails the first `times` requests for the first page, then serves it. */
 async function failFirstPage(page: Page, times: number): Promise<void> {
   let failures = 0;
   await page.route(fakeProtocolRoute("omni"), async (route) => {

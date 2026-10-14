@@ -3,7 +3,6 @@ use rusqlite::{Connection, OptionalExtension};
 
 use crate::{Error, catalog::stored_id::stored_id};
 
-/// How long reading can stop before going on with the same book counts as a new session.
 const RESUME_GAP_MS: i64 = 120_000;
 
 /// The session written last, which a clock set back can leave starting before an earlier one.
@@ -18,7 +17,6 @@ const START: &str = "INSERT INTO reading_session
     (book_id, started_at_ms, ended_at_ms, utc_offset_minutes, page, page_count)
     VALUES (?1, ?2, ?2, ?3, ?4, ?5)";
 
-/// Where reading stands in a book at one moment, counting pages from 0.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SessionPlace {
     pub book: BookId,
@@ -28,7 +26,6 @@ pub struct SessionPlace {
     pub utc_offset_minutes: i16,
 }
 
-/// Whether reading has gone on without a break since its session was last recorded.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Continuity {
     /// The book has stayed open in an app in use, so the session carries on however long a page was shown.

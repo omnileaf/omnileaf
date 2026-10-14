@@ -13,7 +13,6 @@ export const SERIES_FOLDER = "Sample Library";
 export const ADDED_AT_MS = 1_790_000_000_000;
 export const BOOKS_PER_PAGE = 100;
 
-/** A series' books, as the core holds them, that marking books read changes. */
 export class FakeShelf {
   readonly marked: { readonly books: string[]; readonly mark: string }[] = [];
   readonly #books: WireBook[];
@@ -29,7 +28,6 @@ export class FakeShelf {
     }));
   }
 
-  /** Holds every page after the first until `released` settles, as a slow core would. */
   holdPagesAfterTheFirst(released: Promise<void>): void {
     this.#laterPages = released;
   }
@@ -38,7 +36,6 @@ export class FakeShelf {
     return this.#books;
   }
 
-  /** Reads the book to `page`, as the core saves a page turned in it. */
   readTo(index: number, page: number): void {
     this.#bookAt(index).reading = { state: "started", page };
   }

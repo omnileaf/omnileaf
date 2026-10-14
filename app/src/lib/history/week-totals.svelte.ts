@@ -7,13 +7,11 @@ import type { commands } from "#lib/ipc/bindings.ts";
 
 type Read = ReturnType<typeof commands.readingTimeSince>;
 
-/** Where the core counts the time read over a run of days. */
 export interface WeekReads {
   since(first: LocalDay): Read;
   between(first: LocalDay, last: LocalDay): Read;
 }
 
-/** How long was read this week and last week, as the latest read of them answers. */
 export class WeekTotals {
   thisWeekSeconds: number | undefined = $state();
   lastWeekSeconds: number | undefined = $state();

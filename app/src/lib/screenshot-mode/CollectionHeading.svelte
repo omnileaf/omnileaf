@@ -14,7 +14,6 @@
 
   let { title, showsLabel, count, actions }: Props = $props();
 
-  /** How much the heading gives up to fit its row: nothing, then the count's place beside the title, then the buttons' place on the title's row. */
   const FITS = ["roomy", "crowded", "stacked"] as const;
 
   let header: HTMLElement | undefined = $state();
@@ -25,7 +24,6 @@
 
   const fitting = $derived(FITS[fitIndex]);
 
-  /** Gives up one more thing while the row overflows and takes it back once the heading is as wide as it was when giving it up, starting over whenever the buttons change; true when the fit changed. */
   function refit(heading: HTMLElement): boolean {
     const fitted = fitIndex;
     const buttonCount = buttons?.childElementCount ?? 0;

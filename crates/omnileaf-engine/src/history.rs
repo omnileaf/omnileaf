@@ -14,7 +14,6 @@ use crate::{
 
 const MS_PER_SECOND: i64 = 1_000;
 
-/// One reading session, as History lists it.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct HistoryEntry {
@@ -22,9 +21,8 @@ pub struct HistoryEntry {
     pub book_title: String,
     pub series: SeriesId,
     pub series_title: String,
-    /// Where the book stands in its series' order, counting from 1.
+    /// Counting from 1 in the series' order.
     pub position: u32,
-    /// The book's own cover, absent while it has no file.
     pub cover: Option<CoverPath>,
     /// When the session started, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly.
     #[specta(type = i32)]
@@ -33,12 +31,10 @@ pub struct HistoryEntry {
     pub utc_offset_minutes: UtcOffset,
     pub read_seconds: u32,
     pub read_to: ReadTo,
-    /// How far the book has been read since, which decides whether reading it goes on or starts again.
     pub reading: BookReading,
     pub day: ReadingDay,
 }
 
-/// Where a session left the book.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(
     tag = "state",
@@ -54,7 +50,6 @@ pub enum ReadTo {
     End,
 }
 
-/// A day in the local time sessions started at, and how long was read on it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ReadingDay {
@@ -77,7 +72,6 @@ impl Type for LocalDay {
 #[serde(rename_all = "camelCase")]
 pub struct HistoryPage {
     pub entries: Vec<HistoryEntry>,
-    /// Absent on the last page.
     pub next: Option<HistoryCursor>,
 }
 

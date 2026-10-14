@@ -94,7 +94,6 @@ const READ_ENTRIES = [
   historyEntry(2, { state: "read" }),
 ];
 
-/** How each visible link sits in its box: whether its text spills out, and how tall it is. */
 function linkFits(page: Page): Promise<{ spills: boolean; height: number }[]> {
   return page
     .getByRole("main")

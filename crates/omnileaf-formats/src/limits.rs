@@ -24,7 +24,6 @@ impl Default for Limits {
     }
 }
 
-/// No more than the first `length` bytes `reader` gives.
 pub(crate) fn read_start(reader: impl Read, length: u64) -> io::Result<Vec<u8>> {
     let mut bytes = Vec::new();
     reader.take(length).read_to_end(&mut bytes)?;

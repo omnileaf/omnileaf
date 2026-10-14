@@ -14,7 +14,6 @@ import {
 import { m } from "#lib/paraglide/messages.js";
 import type { SettingsRoute } from "#lib/settings/sections.ts";
 
-/** A page quick open goes to. */
 export interface Place {
   readonly route:
     | "/(app)"
@@ -23,7 +22,6 @@ export interface Place {
     | "/(app)/settings"
     | SettingsRoute;
   readonly label: () => string;
-  /** Where the page sits, for a page inside another. */
   readonly within: (() => string) | undefined;
   readonly icon: typeof Settings;
 }
@@ -91,7 +89,6 @@ export const PLACES: readonly Place[] = [
   },
 ];
 
-/** The places whose name, or the name of the page they sit in, holds the text, ignoring letter case. */
 export function placesMatching(text: string, locale: string): readonly Place[] {
   const wanted = text.trim().toLocaleLowerCase(locale);
   return PLACES.filter((place) =>

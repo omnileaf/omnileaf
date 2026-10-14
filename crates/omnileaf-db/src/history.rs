@@ -1,5 +1,3 @@
-//! The reading sessions this device recorded, newest first, and how long was read on each day.
-
 use std::{collections::BTreeMap, ops::RangeInclusive};
 
 use omnileaf_sync_proto::{BookId, SeriesId};
@@ -51,14 +49,13 @@ const READING_TIME_SINCE: &str = "SELECT coalesce(sum(ended_at_ms - started_at_m
     FROM reading_session
     WHERE local_day >= ?1";
 
-/// One session as History lists it, with the book read and how far it has been read since.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HistoryEntry {
     pub book: BookId,
     pub book_title: String,
     pub series: SeriesId,
     pub series_title: String,
-    /// Where the book stands in its series' title order, counting from 1.
+    /// Counting from 1 in the series' order.
     pub position: u32,
     /// The book's own cover, absent while it has no file.
     pub cover: Option<Cover>,

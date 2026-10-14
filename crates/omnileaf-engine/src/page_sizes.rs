@@ -21,7 +21,6 @@ pub(crate) type PageSizes = Vec<Option<PageDimensions>>;
 const SIZE_PROBE_BYTES: u64 = 32 * 1024;
 const PAGES_KEPT_BEHIND: usize = 1;
 
-/// The pages whose sizes are read before a book opens on `start`: the one before it, it, and the `ahead` pages after it.
 pub(crate) fn opening_window(start: usize, ahead: usize, page_count: usize) -> Range<usize> {
     let end = start
         .saturating_add(ahead)
@@ -30,7 +29,6 @@ pub(crate) fn opening_window(start: usize, ahead: usize, page_count: usize) -> R
     start.saturating_sub(PAGES_KEPT_BEHIND).min(end)..end
 }
 
-/// The sizes of the pages in `window`, every other page's left unknown.
 pub(crate) fn probe_window(book: &mut Book, window: &Range<usize>) -> PageSizes {
     (0..book.pages().len())
         .map(|index| {
@@ -64,7 +62,6 @@ fn probe_size(book: &mut Book, index: usize) -> Option<PageDimensions> {
         .ok()
 }
 
-/// Reads the size from the start of the page, or from the whole page when its header runs further in.
 fn read_size(
     book: &mut Book,
     index: usize,
@@ -80,13 +77,11 @@ fn read_size(
     })
 }
 
-/// The sizes of a book's pages still being read after it opened, until they are stored.
 pub(crate) struct SizeFill {
     pub(crate) file: BookFileId,
     pub(crate) sizes: oneshot::Receiver<PageSizes>,
 }
 
-/// The size fills of the books opened before every page's size was known.
 #[derive(Default)]
 pub(crate) struct SizeFills(Mutex<HashMap<BookFileAt, SizeFill>>);
 
@@ -99,7 +94,6 @@ impl SizeFills {
         self.fills().remove(&book)
     }
 
-    /// The book's sizes once every page's is read, or nothing while they are still being read.
     pub(crate) fn take_finished(&self, book: BookFileAt) -> Option<(BookFileId, PageSizes)> {
         let mut fills = self.fills();
         let fill = fills.get_mut(&book)?;

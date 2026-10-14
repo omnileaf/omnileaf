@@ -28,7 +28,6 @@ const ORDERS: [SeriesOrder; 2] = [SeriesOrder::Title, SeriesOrder::DateAdded];
 const DIRECTIONS: [SortDirection; 2] = [SortDirection::Ascending, SortDirection::Descending];
 const INCLUSIONS: [Inclusion; 3] = [Inclusion::Any, Inclusion::Only, Inclusion::Hide];
 
-/// None until a listing is first set on this device.
 pub fn library_listing(connection: &Connection) -> Result<Option<SeriesListing>, Error> {
     let row = connection
         .prepare(STORED_LISTING)?

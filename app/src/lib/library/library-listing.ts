@@ -31,7 +31,6 @@ const OPPOSITE_DIRECTIONS = {
   descending: "ascending",
 } as const satisfies Record<SortDirection, SortDirection>;
 
-/** Takes the direction a sort reads most naturally in when it is newly chosen, and keeps the direction when it was chosen already. */
 export function sortedBy(
   listing: LibraryListing,
   by: LibrarySortBy,
@@ -59,7 +58,6 @@ export function withoutFilters(listing: LibraryListing): LibraryListing {
   return { ...listing, filter: DEFAULT_LIBRARY_LISTING.filter };
 }
 
-/** How many conditions the filter holds a series to. */
 export function filtersOn(filter: LibraryFilter): number {
   return FILTER_CONDITIONS.filter((condition) => filter[condition] !== "any")
     .length;

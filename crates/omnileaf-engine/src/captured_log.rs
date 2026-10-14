@@ -5,7 +5,6 @@ use std::{
 
 use tracing::Subscriber;
 
-/// A log kept in memory, for a test to read what was logged.
 #[derive(Clone, Default)]
 pub(crate) struct CapturedLog(Arc<Mutex<Vec<u8>>>);
 

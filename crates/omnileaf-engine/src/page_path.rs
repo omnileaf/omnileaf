@@ -15,7 +15,6 @@ const PAGE_VERSION: &str = "v1";
 #[serde(into = "String")]
 pub struct PagePath {
     pub(crate) book: BookId,
-    /// The revision of the book's file the page was read from.
     pub(crate) rev: u32,
     /// Counting from 0, in reading order.
     pub(crate) index: u32,

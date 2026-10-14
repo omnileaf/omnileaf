@@ -4,7 +4,6 @@ use imagesize::ImageError;
 
 use crate::{ImagingError, PageFormat, Size};
 
-/// A page's size from its header alone, failing with [`ImagingError::Truncated`] when the bytes stop before the header gives it.
 pub fn page_size(bytes: &[u8]) -> Result<Size, ImagingError> {
     if PageFormat::sniff(bytes).is_none() {
         return Err(ImagingError::Unsupported);

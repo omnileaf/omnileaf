@@ -25,7 +25,6 @@ const PAGES_PER_BOOK: usize = 30;
 const FOLDER: &str = "Scanned Library";
 const BUDGET: Duration = Duration::from_millis(150);
 
-/// One book in each series, each of typical full-size colour scans, every book's pages its own so each has its own id.
 fn write_scanned_library(root: &Path) {
     for book in 0..BOOKS {
         let series = format!("Sample Series {book:02}");

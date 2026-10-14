@@ -1,6 +1,5 @@
 use rusqlite::ToSql;
 
-/// Which of the library's series a list holds, and in what order.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SeriesListing {
     pub sort: SeriesSort,
@@ -26,7 +25,6 @@ pub enum SortDirection {
     Descending,
 }
 
-/// Each condition on a series' books' reading state, which a series must meet to be listed.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SeriesFilter {
     /// Holds a book not marked read.
@@ -90,7 +88,6 @@ impl Inclusion {
     }
 }
 
-/// How far through its books a listed series has been read, which decides every condition of a filter at once.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ReadingStage {
     Unstarted,
@@ -99,7 +96,6 @@ enum ReadingStage {
 }
 
 impl ReadingStage {
-    /// The value of the series' `reading_stage` column at this stage.
     const fn stored(self) -> i64 {
         match self {
             Self::Unstarted => 0,
@@ -129,7 +125,7 @@ impl SeriesFilter {
     }
 }
 
-/// The stages a filter lets through, bound as `:unstarted`, `:in_progress` and `:finished`: each one's stored value, or null for a stage it hides, which matches no series.
+/// Bound as `:unstarted`, `:in_progress` and `:finished`: each stage's stored value, or null for a stage the filter hides, which matches no series.
 pub(crate) struct StageParams {
     unstarted: Option<i64>,
     in_progress: Option<i64>,

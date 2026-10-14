@@ -34,7 +34,6 @@ export const commands = {
 	readingTimeSince: (firstDay: number) => typedError<number, IpcError>(__TAURI_INVOKE("reading_time_since", { firstDay })),
 	readingTimeBetween: (firstDay: number, lastDay: number) => typedError<number, IpcError>(__TAURI_INVOKE("reading_time_between", { firstDay, lastDay })),
 	orientScreen: (orientation: ScreenOrientation) => typedError<null, IpcError>(__TAURI_INVOKE("orient_screen", { orientation })),
-	/**  Answers whether the window was in full screen before the change. */
 	changeFullScreen: (change: FullScreenChange) => typedError<boolean, IpcError>(__TAURI_INVOKE("change_full_screen", { change })),
 	libraryListing: () => typedError<LibraryListing, IpcError>(__TAURI_INVOKE("library_listing")),
 	setLibraryListing: (listing: LibraryListing) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_listing", { listing })),
@@ -101,9 +100,7 @@ export type BookReading = { state: "notStarted" } |
 
 export type BooksRemoval = { kind: "removed"; books: number } | { kind: "kept" };
 
-export type BooksShown = "all" | 
-/**  Only the books not marked read. */
-"unread";
+export type BooksShown = "all" | "unread";
 
 export type CoversPerRow = {
 	phone: number,
@@ -150,21 +147,15 @@ export type FolderScan = {
 	unreadableFolders: number,
 };
 
-export type FullScreenChange = 
-/**  Goes into full screen from a window, and back out of it. */
-"toggle" | 
-/**  Goes back to a window, as when the reader closes. */
-"leave";
+export type FullScreenChange = "toggle" | "leave";
 
-/**  One reading session, as History lists it. */
 export type HistoryEntry = {
 	book: string & { readonly __brand: "BookId" },
 	bookTitle: string,
 	series: string & { readonly __brand: "SeriesId" },
 	seriesTitle: string,
-	/**  Where the book stands in its series' order, counting from 1. */
+	/**  Counting from 1 in the series' order. */
 	position: number,
-	/**  The book's own cover, absent while it has no file. */
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	/**  When the session started, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly. */
 	startedAtMs: number,
@@ -172,18 +163,15 @@ export type HistoryEntry = {
 	utcOffsetMinutes: number,
 	readSeconds: number,
 	readTo: ReadTo,
-	/**  How far the book has been read since, which decides whether reading it goes on or starts again. */
 	reading: BookReading,
 	day: ReadingDay,
 };
 
 export type HistoryPage = {
 	entries: HistoryEntry[],
-	/**  Absent on the last page. */
 	next: string & { readonly __brand: "HistoryCursor" } | null,
 };
 
-/**  Whether the library lists series meeting a condition alongside the rest, only those, or only the rest. */
 export type Inclusion = "any" | "only" | "hide";
 
 export type InterfaceError = {
@@ -202,7 +190,6 @@ export type LibraryChanged = null;
 
 export type LibraryDisplay = "grid" | "compact" | "covers" | "list";
 
-/**  What a series' books' reading state must be for the library to list it. */
 export type LibraryFilter = {
 	/**  Holds a book not marked read. */
 	unread: Inclusion,
@@ -220,7 +207,6 @@ export type LibraryFolder = {
 	isAvailable: boolean,
 };
 
-/**  Which series the library lists and in what order. */
 export type LibraryListing = {
 	sort: LibrarySort,
 	filter: LibraryFilter,
@@ -228,7 +214,6 @@ export type LibraryListing = {
 
 export type LibraryProblem = "writtenByANewerVersion" | "couldNotOpen";
 
-/**  What someone typed to find series by title, and the filter the series found must also pass. */
 export type LibrarySearch = {
 	/**  Text of nothing but white space finds every series the filter lets through. */
 	text: string,
@@ -265,7 +250,6 @@ export type OnCovers = {
 	showsContinueButton: boolean,
 };
 
-/**  A book as the reader shows it, with every page it can ask the `omni` protocol for. */
 export type OpenedBook = {
 	id: string & { readonly __brand: "BookId" },
 	title: string,
@@ -276,13 +260,13 @@ export type OpenedBook = {
 	/**  The page the reader opens on, counting from 0. */
 	startPage: number,
 	reading: BookReading,
-	/**  Where the book stands in its series' order, counting from 1. */
+	/**  Counting from 1 in the series' order. */
 	position: number,
 	previous: SeriesNeighbour | null,
 	next: SeriesNeighbour | null,
 };
 
-/**  A page's size in pixels. */
+/**  In pixels. */
 export type PageDimensions = {
 	width: number,
 	height: number,
@@ -297,12 +281,10 @@ export type ProjectLink = "sourceCode" | "newIssue" | "latestRelease";
 
 export type ReadMark = "read" | "unread";
 
-/**  Where a session left the book. */
 export type ReadTo = 
 /**  The page counts from 1. */
 { state: "page"; page: number; pageCount: number } | { state: "end" };
 
-/**  A day in the local time sessions started at, and how long was read on it. */
 export type ReadingDay = {
 	day: number,
 	readSeconds: number,
@@ -319,15 +301,13 @@ export type RescanOutcome = {
 
 export type ScanProgress = { stage: "finding" } | { stage: "reading"; scanned: number; total: number };
 
-export type ScreenOrientation = 
-/**  Turns with the device, as the reader wants on every screen. */
-"followDevice" | 
+export type ScreenOrientation = "followDevice" | 
 /**  Upright on phones and turning with the device on tablets, as the rest of the app is laid out. */
 "portraitOnPhones";
 
 export type SeriesBook = {
 	id: string & { readonly __brand: "BookId" },
-	/**  Where the book stands in its series' order, counting from 1, whichever of its books a list holds. */
+	/**  Counting from 1 in the series' order, whichever of its books a list holds. */
 	position: number,
 	title: string,
 	/**  When the library first found the book, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly. */
@@ -335,7 +315,6 @@ export type SeriesBook = {
 	reading: BookReading,
 };
 
-/**  Which of a series' books its page lists, and which way round. */
 export type SeriesBookListing = {
 	shown: BooksShown,
 	direction: SortDirection,
@@ -343,25 +322,20 @@ export type SeriesBookListing = {
 
 export type SeriesBookPage = {
 	books: SeriesBook[],
-	/**  Absent on the last page. */
 	next: string & { readonly __brand: "BookCursor" } | null,
 };
 
-/**  A book beside the opened one in its series' order. */
 export type SeriesNeighbour = {
 	id: string & { readonly __brand: "BookId" },
 	title: string,
 };
 
-/**  What a series' page shows above its books. */
 export type SeriesOverview = {
 	id: string & { readonly __brand: "SeriesId" },
 	title: string,
 	bookCount: number,
 	readCount: number,
-	/**  The cover the library shows for the series, absent while none of its books has a file. */
 	cover: string & { readonly __brand: "CoverPath" } | null,
-	/**  The name of the library folder holding the cover's book. */
 	folder: string | null,
 	/**  The book reading goes on from, absent once every book is read. */
 	upNext: SeriesBook | null,

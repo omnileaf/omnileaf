@@ -23,7 +23,6 @@ const TWO_BOOKS: &[&str] = &["Volume 01", "Volume 02"];
 const WHOLE_LIBRARY: u16 = 50;
 const A_TO_Z: SeriesSort = SeriesSort::ascending(SeriesOrder::Title);
 
-/// Six series of two books, each read up to a different point.
 const READING_STAGES: [SeriesSeed<'static>; 6] = [
     two_books_added_at("Sample Series 01", 10),
     two_books_added_at("Sample Series 02", 20),
@@ -68,7 +67,6 @@ impl Library {
         }
     }
 
-    /// Leaves 01 untouched, opens a book of 02, marks one book of 03 read, both of 04 read, marks 05's books unread, and reads 06 through but leaves a book marked unread.
     async fn at_reading_stages(name: &str) -> Self {
         let library = Self::with(name, &READING_STAGES).await;
         library
@@ -95,7 +93,6 @@ impl Library {
         self.pages(listing, WHOLE_LIBRARY).await.concat()
     }
 
-    /// Passes every cursor through its text form, as one crossing to the interface would.
     async fn pages(&self, listing: SeriesListing, size: u16) -> Vec<Vec<String>> {
         let mut pages = Vec::new();
         let mut after: Option<Cursor> = None;
@@ -395,7 +392,6 @@ async fn keeps_the_counts_once_the_states_are_projected_again_from_their_registe
     assert_eq!(counts, [5, 4, 1]);
 }
 
-/// One reading write to one of a series' books, by the book's number.
 #[derive(Clone, Copy, Debug)]
 enum ReadingWrite {
     Position(usize),
@@ -408,7 +404,6 @@ enum ReadingWrite {
 const BOOKS_PER_SERIES: usize = 3;
 const BOOK_TITLES: [&str; BOOKS_PER_SERIES] = ["Volume 01", "Volume 02", "Volume 03"];
 
-/// What each of a series' books has been through, as a reader of the registers would see it.
 #[derive(Clone, Copy, Debug, Default)]
 struct BookModel {
     has_position: bool,

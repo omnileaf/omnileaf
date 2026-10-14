@@ -5,7 +5,6 @@ interface Point {
   readonly y: number;
 }
 
-/** Tells a horizontal swipe across a page from a tap or a mostly vertical drag, and swallows the click a swipe ends with. */
 export class Swipe {
   #start: Point | undefined;
   #isClickSwallowed = false;
@@ -17,7 +16,6 @@ export class Swipe {
     this.#isClickSwallowed = false;
   }
 
-  /** The turn a book read left to right takes for the swipe that just ended, or nothing for a tap or a drag that isn't one. */
   ended(event: PointerEvent): SwipeTurn | undefined {
     const start = this.#start;
     this.#start = undefined;
@@ -41,7 +39,6 @@ export class Swipe {
     this.#isClickSwallowed = false;
   }
 
-  /** Whether the click about to be handled ends a swipe, which then turns no page of its own. */
   isClickASwipe(): boolean {
     const isSwipe = this.#isClickSwallowed;
     this.#isClickSwallowed = false;

@@ -1,5 +1,3 @@
-//! Puts the app's window in full screen for reading, on the platforms whose windows have one.
-
 #[cfg(any(target_os = "macos", test))]
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -11,9 +9,7 @@ use crate::ipc_error::IpcError;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum FullScreenChange {
-    /// Goes into full screen from a window, and back out of it.
     Toggle,
-    /// Goes back to a window, as when the reader closes.
     Leave,
 }
 

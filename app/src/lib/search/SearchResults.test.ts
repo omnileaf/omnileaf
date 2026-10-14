@@ -18,7 +18,6 @@ afterEach(() => {
   clearMocks();
 });
 
-/** Series as only the backend hands them out, with their ids and covers' paths branded. */
 async function foundSeries(): Promise<readonly LibrarySeries[]> {
   mockIPC(() => ({
     series: [

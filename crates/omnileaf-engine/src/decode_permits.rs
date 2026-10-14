@@ -9,13 +9,11 @@ pub(crate) const DECODES_AT_ONCE: usize = if IS_MOBILE {
     pages::WORKERS.get() + cover_thumbnails::WORKERS.get()
 };
 
-/// Bounds how many decodes run at once across the page and cover lanes, since each may take its whole decode budget.
 pub(crate) struct DecodePermits {
     free: Mutex<usize>,
     released: Condvar,
 }
 
-/// One decode's share of the permits, given back when dropped.
 pub(crate) struct DecodePermit<'permits> {
     permits: &'permits DecodePermits,
 }

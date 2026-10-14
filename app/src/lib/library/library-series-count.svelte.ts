@@ -1,6 +1,5 @@
 import type { commands, IpcError } from "#lib/ipc/bindings.ts";
 
-/** Counts the series the library lists through the filter it is listed with. */
 export type CountSeries = () => ReturnType<typeof commands.librarySeriesCount>;
 
 export class LibrarySeriesCount {
