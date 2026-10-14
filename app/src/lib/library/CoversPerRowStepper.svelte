@@ -2,6 +2,10 @@
   import { Minus, Plus } from "@lucide/svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import {
+    NumberField,
+    NumberFieldStep,
+  } from "#lib/components/ui/number-field/index.ts";
   import { COVERS_PER_ROW } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -51,47 +55,41 @@
         })}
       </p>
     </div>
-    <div
-      role="group"
-      aria-labelledby={labelId}
-      class="flex items-center rounded-field border border-border large:rounded-small-control"
-    >
-      <button
-        type="button"
-        aria-label={m.library_fewer_covers_per_row()}
-        disabled={count <= fewest}
-        class="flex items-center justify-center rounded-s-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-s-small-control large:block-stepper large:inline-stepper"
-        onclick={() => {
-          onCount(count - 1);
-        }}
+    <NumberField bind:value={() => count, onCount} min={fewest} max={most}>
+      <div
+        role="group"
+        aria-labelledby={labelId}
+        class="flex items-center rounded-field border border-border large:rounded-small-control"
       >
-        <Minus
-          size={ICON_SIZE}
-          aria-hidden="true"
-          class="large:block-lg large:inline-lg"
-        />
-      </button>
-      <output
-        class="text-center text-count font-bold min-inline-stepper-value large:text-small large:min-inline-xl"
-      >
-        {numbers.format(count)}
-      </output>
-      <button
-        type="button"
-        aria-label={m.library_more_covers_per_row()}
-        disabled={count >= most}
-        class="flex items-center justify-center rounded-e-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-e-small-control large:block-stepper large:inline-stepper"
-        onclick={() => {
-          onCount(count + 1);
-        }}
-      >
-        <Plus
-          size={ICON_SIZE}
-          aria-hidden="true"
-          class="large:block-lg large:inline-lg"
-        />
-      </button>
-    </div>
+        <NumberFieldStep
+          direction="down"
+          label={m.library_fewer_covers_per_row()}
+          class="flex items-center justify-center rounded-s-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-s-small-control large:block-stepper large:inline-stepper"
+        >
+          <Minus
+            size={ICON_SIZE}
+            aria-hidden="true"
+            class="large:block-lg large:inline-lg"
+          />
+        </NumberFieldStep>
+        <output
+          class="text-center text-count font-bold min-inline-stepper-value large:text-small large:min-inline-xl"
+        >
+          {numbers.format(count)}
+        </output>
+        <NumberFieldStep
+          direction="up"
+          label={m.library_more_covers_per_row()}
+          class="flex items-center justify-center rounded-e-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-e-small-control large:block-stepper large:inline-stepper"
+        >
+          <Plus
+            size={ICON_SIZE}
+            aria-hidden="true"
+            class="large:block-lg large:inline-lg"
+          />
+        </NumberFieldStep>
+      </div>
+    </NumberField>
   </div>
   <div aria-live="polite">
     {#if coversThatFit !== undefined}

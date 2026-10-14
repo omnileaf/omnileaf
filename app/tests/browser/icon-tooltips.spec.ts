@@ -1,5 +1,7 @@
 import type { Locator, Page, TestInfo } from "@playwright/test";
 
+import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
+
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -13,6 +15,8 @@ import {
   readerBackend,
   servePages,
 } from "./reader-book.ts";
+import { pagedSeries, sampleSeries } from "./series-catalog.ts";
+import { openViewOptions } from "./view-options.ts";
 
 const REMOVE_FOLDER = "Remove folder";
 const NEXT_BOOK_LABEL = `Next book: ${NEXT_BOOK.title}`;
@@ -45,6 +49,29 @@ interface IconAction {
   readonly backend: FakeBackend;
   readonly reach: (page: Page) => Promise<Locator>;
   readonly label: string;
+}
+
+const SERIES_COUNT = 3;
+
+const SERIES_BACKEND: FakeBackend = {
+  ...DEFAULT_BACKEND,
+  librarySeries: pagedSeries(() => sampleSeries(SERIES_COUNT)),
+  libraryView: () => DEFAULT_LIBRARY_VIEW,
+  setLibraryView: () => null,
+  librarySeriesCount: () => SERIES_COUNT,
+};
+
+function coversPerRowStep(label: string): IconAction {
+  return {
+    screen: "View options",
+    backend: SERIES_BACKEND,
+    reach: async (page) => {
+      await page.goto("/");
+      const options = await openViewOptions(page);
+      return options.getByRole("button", { name: label });
+    },
+    label,
+  };
 }
 
 const ICON_ACTIONS: readonly IconAction[] = [
@@ -80,6 +107,8 @@ const ICON_ACTIONS: readonly IconAction[] = [
     },
     label: NEXT_BOOK_LABEL,
   },
+  coversPerRowStep("Fewer covers per row"),
+  coversPerRowStep("More covers per row"),
 ];
 
 function tooltipOf(page: Page, label: string): Locator {

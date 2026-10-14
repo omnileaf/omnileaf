@@ -7,6 +7,10 @@
     DialogTitle,
   } from "#lib/components/ui/dialog/index.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
+  import {
+    CopyButton,
+    type CopyLabels,
+  } from "#lib/components/ui/copy-button/index.ts";
 
   import type { CrashOrigin } from "#lib/ipc/bindings.ts";
   import { lastShown } from "#lib/page/last-shown.svelte.ts";
@@ -50,7 +54,6 @@
     reporting.prompt.kind === "asking" ? reporting.prompt : undefined,
   );
   const shown = lastShown(() => asking);
-  const isCopied = $derived(reporting.copying.outcome === "copied");
 
   function startAsking(event: Event): void {
     event.preventDefault();
@@ -58,16 +61,20 @@
     content?.querySelector<HTMLElement>("[data-prompt-title]")?.focus();
   }
 
-  function send(): void {
-    void (alwaysSend ? reporting.sendAlways() : reporting.sendThisTime());
+  function send(): Promise<void> {
+    return alwaysSend ? reporting.sendAlways() : reporting.sendThisTime();
+  }
+
+  function copyLabels(): CopyLabels {
+    return {
+      copy: m.crash_report_copy(),
+      copied: m.crash_report_copied(),
+      copiedStatus: m.crash_report_copied_status(),
+    };
   }
 
   function decline(): void {
     void reporting.decline();
-  }
-
-  function copy(): void {
-    void reporting.copying.copy();
   }
 </script>
 
@@ -137,12 +144,18 @@
             <ReportDetails details={offer.details} />
             <AlwaysSendChoice bind:checked={alwaysSend} {look} />
             <div class="mbs-sm flex flex-col gap-sm self-stretch">
-              <Button type="button" look="crash-phone-primary" onclick={send}>
+              <Button
+                type="button"
+                look="crash-phone-primary"
+                onClickPromise={send}
+              >
                 {m.crash_report_send_phone()}
               </Button>
-              <Button type="button" look="crash-phone-secondary" onclick={copy}>
-                {isCopied ? m.crash_report_copied() : m.crash_report_copy()}
-              </Button>
+              <CopyButton
+                copying={reporting.copying}
+                look="crash-phone-secondary"
+                labels={copyLabels()}
+              />
             </div>
             <ReportFailures {reporting} />
           </div>
@@ -171,14 +184,12 @@
           <ReportDetails details={offer.details} />
           <AlwaysSendChoice bind:checked={alwaysSend} {look} />
           <div class="mbs-xs flex flex-wrap items-center justify-end gap-sm">
-            <Button
-              type="button"
+            <CopyButton
+              copying={reporting.copying}
               look="crash-dialog-copy"
               class="me-auto"
-              onclick={copy}
-            >
-              {isCopied ? m.crash_report_copied() : m.crash_report_copy()}
-            </Button>
+              labels={copyLabels()}
+            />
             <Button
               type="button"
               look="crash-dialog-secondary"
@@ -186,7 +197,11 @@
             >
               {m.crash_report_decline()}
             </Button>
-            <Button type="button" look="crash-dialog-primary" onclick={send}>
+            <Button
+              type="button"
+              look="crash-dialog-primary"
+              onClickPromise={send}
+            >
               {m.crash_report_send()}
             </Button>
           </div>
@@ -194,10 +209,5 @@
         </div>
       {/if}
     {/if}
-    <span role="status" class="sr-only">
-      {#if isCopied}
-        {m.crash_report_copied_status()}
-      {/if}
-    </span>
   </DialogContent>
 </AlertDialog.Root>
