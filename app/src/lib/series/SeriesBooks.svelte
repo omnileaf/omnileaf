@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Eye, EyeOff, X } from "@lucide/svelte";
+  import { Eye, EyeOff, List, X } from "@lucide/svelte";
   import { tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
@@ -25,6 +25,7 @@
   import { booksMatching } from "./book-search";
   import BookTable from "./BookTable.svelte";
   import { BookSelection } from "./book-selection.svelte";
+  import { SERIES_CONTROL } from "./series-control.ts";
   import SelectionBar from "./SelectionBar.svelte";
 
   type BookId = SeriesBook["id"];
@@ -306,11 +307,41 @@
     }}
   />
   {#if isComplete && shownBooks.length === 0}
-    <p class="text-body text-muted">
-      {search.trim() === ""
-        ? m.series_no_unread()
-        : m.series_no_match({ search: search.trim() })}
-    </p>
+    <Card
+      class="flex flex-col items-center gap-md px-lg py-xl text-center shadow-card-rest expanded:p-2xl"
+    >
+      {#if search.trim() !== ""}
+        <p class="text-body">{m.series_no_match({ search: search.trim() })}</p>
+        <Button
+          type="button"
+          look="outline"
+          class={SERIES_CONTROL}
+          onclick={() => {
+            search = "";
+          }}
+        >
+          <X size={ICON_SIZE} aria-hidden="true" />
+          {m.series_clear_search()}
+        </Button>
+      {:else}
+        <p class="text-body">
+          {listing.shown === "bookmarked"
+            ? m.series_no_bookmarked()
+            : m.series_no_unread()}
+        </p>
+        <Button
+          type="button"
+          look="outline"
+          class={SERIES_CONTROL}
+          onclick={() => {
+            onListing({ ...listing, shown: "all" });
+          }}
+        >
+          <List size={ICON_SIZE} aria-hidden="true" />
+          {m.series_show_all_books()}
+        </Button>
+      {/if}
+    </Card>
   {/if}
   {#if isWide.current}
     <BookTable

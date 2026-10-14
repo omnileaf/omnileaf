@@ -99,9 +99,13 @@
         }}
       />
       <p class="text-small text-muted">
-        {overview.format === null
-          ? books
-          : m.series_format_books({ format: overview.format, books })}
+        {#if overview.bookCount === 0}
+          {m.series_no_books_count()}
+        {:else if overview.format === null}
+          {books}
+        {:else}
+          {m.series_format_books({ format: overview.format, books })}
+        {/if}
       </p>
       {#if overview.folder !== null}
         <p
@@ -118,18 +122,20 @@
       {/if}
     </div>
   </div>
-  <SeriesActions {overview} {isWide} {onMarkAll} />
-  {#if overview.summary !== null}
+  {#if overview.bookCount > 0}
+    <SeriesActions {overview} {isWide} {onMarkAll} />
+  {/if}
+  {#if overview.bookCount > 0 && overview.summary !== null}
     <SeriesSummary summary={overview.summary} />
   {/if}
-  {#if overview.tags.length > 0}
+  {#if overview.bookCount > 0 && overview.tags.length > 0}
     <ul aria-label={m.series_tags()} class="flex flex-wrap gap-icon-gap">
       {#each overview.tags as tag (tag)}
         <li><Badge look="outline">{tag}</Badge></li>
       {/each}
     </ul>
   {/if}
-  {#if isWide}
+  {#if overview.bookCount > 0 && isWide}
     <Card
       role="region"
       aria-label={m.series_details()}
@@ -150,7 +156,7 @@
         <SeriesDetailsList {overview} bind:ref={details} />
       </CardContent>
     </Card>
-  {:else}
+  {:else if overview.bookCount > 0}
     <Collapsible bind:open={areDetailsOpen} class="flex flex-col gap-md">
       <CollapsibleTrigger
         class={cn(SERIES_CONTROL, "justify-between text-foreground")}
