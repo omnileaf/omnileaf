@@ -894,8 +894,6 @@ test.describe("the reading direction", () => {
 
 test.describe("the controls still to come", () => {
   const COMING_SOON = [
-    { name: "Two pages", isDesktopOnly: false },
-    { name: "Fit height", isDesktopOnly: true },
     { name: "Keyboard shortcuts", isDesktopOnly: true },
     { name: "Bookmark this page", isDesktopOnly: false },
   ] as const;
