@@ -6,3 +6,4 @@ export { default as DropdownMenuRadioItem } from "./dropdown-menu-radio-item.sve
 
 export const DropdownMenu = DropdownMenuPrimitive.Root;
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
+export const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;

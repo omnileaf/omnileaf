@@ -23,6 +23,7 @@
 
   import BookListingChoices from "./BookListingChoices.svelte";
   import BookRowText from "./BookRowText.svelte";
+  import { booksMatching } from "./book-search";
   import BookTable from "./BookTable.svelte";
   import { BookSelection } from "./book-selection.svelte";
   import SelectionBar from "./SelectionBar.svelte";
@@ -76,7 +77,9 @@
   const dates = $derived(
     new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }),
   );
-  const ids = $derived(books.map((book) => book.id));
+  let search = $state("");
+  const shownBooks = $derived(booksMatching(books, search, getLocale()));
+  const ids = $derived(shownBooks.map((book) => book.id));
 
   let outcome: Outcome = $state({ kind: "none" });
   let section: HTMLElement | undefined = $state();
@@ -329,14 +332,28 @@
       </Button>
     {/if}
   </div>
-  <BookListingChoices {listing} onChoose={onListing} />
-  {#if isComplete && books.length === 0 && listing.shown === "unread"}
-    <p class="text-body text-muted">{m.series_no_unread()}</p>
+  <BookListingChoices
+    {listing}
+    onChoose={onListing}
+    {search}
+    onSearch={(typed: string) => {
+      search = typed;
+      if (!isComplete) {
+        void onLoadAll();
+      }
+    }}
+  />
+  {#if isComplete && shownBooks.length === 0}
+    <p class="text-body text-muted">
+      {search.trim() === ""
+        ? m.series_no_unread()
+        : m.series_no_match({ search: search.trim() })}
+    </p>
   {/if}
   {#if isWide.current}
     <BookTable
       bind:selectAllBox
-      {books}
+      books={shownBooks}
       {dates}
       {isComplete}
       {onNearEnd}
@@ -368,7 +385,7 @@
       class="max-medium:-ms-page-start max-medium:-me-page-end medium:overflow-hidden medium:rounded-card medium:border medium:border-border medium:bg-card"
     >
       <VirtualGrid
-        items={books}
+        items={shownBooks}
         key={(book: SeriesBook) => book.id}
         label={m.series_books_list()}
         {isComplete}
