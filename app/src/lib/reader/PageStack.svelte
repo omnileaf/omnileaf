@@ -19,8 +19,15 @@
   /** Asks again for a page that failed once, as the core may have dropped its request for newer ones. */
   const RETRIES = 1;
 
-  let { pages, shown }: { pages: readonly BookPage[]; shown: number } =
-    $props();
+  let {
+    pages,
+    shown,
+    onShownReady,
+  }: {
+    pages: readonly BookPage[];
+    shown: number;
+    onShownReady: () => void;
+  } = $props();
 
   const decoded = new SvelteSet<number>();
   const failed = new SvelteSet<number>();
@@ -77,6 +84,7 @@
 
   $effect(() => {
     if (isShownReady) {
+      untrack(onShownReady);
       isSlow = false;
       return;
     }

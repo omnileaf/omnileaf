@@ -1,4 +1,4 @@
-/** Whether the reader's controls are up: they go a while after they are drawn, unless the pointer rests on them or a control has keyboard focus. */
+/** Whether the reader's controls are up: once the book's first page is drawn they go a while after they are, unless the pointer rests on them or a control has keyboard focus. */
 export class ReaderControls {
   #isShown = $state(true);
   #drawing: number | undefined;
@@ -7,12 +7,20 @@ export class ReaderControls {
   #isFocused = false;
   #isHeld = false;
 
-  constructor(private readonly hideAfterMs: number) {
-    this.#hideLater();
-  }
+  constructor(private readonly hideAfterMs: number) {}
 
   get isShown(): boolean {
     return this.#isShown;
+  }
+
+  bookOpened(): void {
+    if (!this.#isShown) {
+      return;
+    }
+    this.stop();
+    this.#drawing = requestAnimationFrame(() => {
+      this.#hideLater();
+    });
   }
 
   show(): void {
