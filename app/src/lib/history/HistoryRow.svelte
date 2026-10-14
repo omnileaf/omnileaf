@@ -25,7 +25,13 @@
     entry: listed,
     time,
     usesStandIns,
-  }: { entry: HistoryEntry; time: string; usesStandIns: boolean } = $props();
+    onOpenSessions,
+  }: {
+    entry: HistoryEntry;
+    time: string;
+    usesStandIns: boolean;
+    onOpenSessions: () => void;
+  } = $props();
 
   const entry = $derived(usesStandIns ? standInHistoryEntry(listed) : listed);
 
@@ -54,7 +60,9 @@
   );
 </script>
 
-<li class="desktop:large:flex desktop:large:ps-lg desktop:large:pe-md">
+<li
+  class="desktop:large:relative desktop:large:flex desktop:large:ps-lg desktop:large:pe-md desktop:large:hover:bg-hover"
+>
   <Item look="history-phone">
     {#snippet child({ props })}
       <a {href} {...props}>
@@ -91,13 +99,20 @@
       {coverUrl}
       class="rounded-list-cover inline-history-cover-wide"
     />
-    <ItemContent class="gap-2xs min-inline-none">
-      <ItemTitle class="truncate text-small font-semibold">
-        {entry.seriesTitle}
-      </ItemTitle>
-      <ItemDescription class="truncate text-detail">
-        {entry.bookTitle}
-      </ItemDescription>
+    <ItemContent class="min-inline-none">
+      <button
+        type="button"
+        aria-label={m.history_open_sessions(named)}
+        class="flex flex-col gap-2xs text-start outline-none min-inline-none before:absolute before:inset-none focus-visible:before:outline-2 focus-visible:before:-outline-offset-2 focus-visible:before:outline-accent"
+        onclick={onOpenSessions}
+      >
+        <ItemTitle class="truncate text-small font-semibold inline-full">
+          {entry.seriesTitle}
+        </ItemTitle>
+        <ItemDescription class="truncate text-detail inline-full">
+          {entry.bookTitle}
+        </ItemDescription>
+      </button>
     </ItemContent>
     <span
       class="shrink-0 text-detail whitespace-nowrap text-muted tabular-nums min-inline-history-time"
@@ -122,7 +137,7 @@
         aria-label={action.label}
         class={cn(
           BUTTON_LOOKS.outline,
-          "flex items-center justify-center gap-icon-gap rounded-small-control px-md text-detail whitespace-nowrap shadow-raised min-block-pointer-button min-inline-history-action hover:tint-hover active:tint-pressed",
+          "relative flex items-center justify-center gap-icon-gap rounded-small-control px-md text-detail whitespace-nowrap shadow-raised min-block-pointer-button min-inline-history-action hover:tint-hover active:tint-pressed",
         )}
       >
         <action.icon
