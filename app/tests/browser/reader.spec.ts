@@ -892,23 +892,16 @@ test.describe("the reading direction", () => {
 });
 
 test.describe("the controls still to come", () => {
-  const COMING_SOON = [
-    { name: "Keyboard shortcuts", isDesktopOnly: true },
-    { name: "Bookmark this page", isDesktopOnly: false },
-  ] as const;
+  const COMING_SOON = ["Bookmark this page"] as const;
 
   function comingSoon(page: Page, name: string): Locator {
     return page.getByRole("button", { name, exact: true });
   }
 
-  for (const { name, isDesktopOnly } of COMING_SOON) {
+  for (const name of COMING_SOON) {
     test(`shows ${name} as unavailable yet reachable, saying it's coming soon`, async ({
       page,
     }) => {
-      test.skip(
-        isDesktopOnly && viewportOf(page).width < EXPANDED_MIN_WIDTH,
-        "a desktop control",
-      );
       await openBook(page);
       const control = comingSoon(page, name);
 
@@ -928,10 +921,6 @@ test.describe("the controls still to come", () => {
     test(`does nothing when ${name} is clicked or pressed`, async ({
       page,
     }) => {
-      test.skip(
-        isDesktopOnly && viewportOf(page).width < EXPANDED_MIN_WIDTH,
-        "a desktop control",
-      );
       await openBook(page);
       const control = comingSoon(page, name);
 

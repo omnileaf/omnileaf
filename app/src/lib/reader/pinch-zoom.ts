@@ -25,3 +25,18 @@ export function allowPinchZoom(): () => void {
     }
   };
 }
+
+/** Settles a pinched page back to its fitted size by locking the scale for a frame, as the webview has no call to reset a pinch. */
+export function fitPinch(): void {
+  const viewport = document.querySelector<HTMLMetaElement>(
+    'meta[name="viewport"]',
+  );
+  if (viewport === null) {
+    return;
+  }
+  const allowed = viewport.content;
+  viewport.content = `${allowed}, maximum-scale=1`;
+  requestAnimationFrame(() => {
+    viewport.content = allowed;
+  });
+}

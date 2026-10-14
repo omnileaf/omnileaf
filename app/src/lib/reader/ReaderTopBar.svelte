@@ -36,6 +36,8 @@
     quickSettings,
     more,
     isSettingsOpen,
+    areShortcutsOpen,
+    onShortcuts,
     onSettings,
     onFullScreen,
   }: {
@@ -47,6 +49,8 @@
     quickSettings: Snippet;
     more: Snippet;
     isSettingsOpen: boolean;
+    areShortcutsOpen: boolean;
+    onShortcuts: () => void;
     onSettings: () => void;
     onFullScreen: () => void;
   } = $props();
@@ -131,12 +135,28 @@
     aria-hidden="true"
     class="mx-xs hidden shrink-0 border-s border-border block-lg expanded:block"
   ></span>
-  <ComingSoon
+  <Tooltip
     label={m.reader_keyboard_shortcuts()}
-    class={cn(UPCOMING, "max-expanded:hidden")}
+    type="button"
+    aria-label={m.reader_keyboard_shortcuts()}
+    aria-keyshortcuts="?"
+    aria-expanded={areShortcutsOpen}
+    onclick={onShortcuts}
   >
-    <Keyboard size={READER_ICON_SIZE} aria-hidden="true" />
-  </ComingSoon>
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        look="icon"
+        class={cn(
+          READER_BUTTON,
+          "max-expanded:hidden",
+          areShortcutsOpen && "bg-hover",
+        )}
+      >
+        <Keyboard size={READER_ICON_SIZE} aria-hidden="true" />
+      </Button>
+    {/snippet}
+  </Tooltip>
   <ComingSoon label={m.reader_bookmark()} class={UPCOMING}>
     <Bookmark size={READER_ICON_SIZE} aria-hidden="true" />
   </ComingSoon>
