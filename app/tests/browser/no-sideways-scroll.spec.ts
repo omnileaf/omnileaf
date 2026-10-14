@@ -11,6 +11,7 @@ import {
   test,
   testOnlyInItsWebview,
 } from "./fixtures.ts";
+import { BOOK_ID, readerBackend, servePages } from "./reader-book.ts";
 
 const SIMULATOR_HOME =
   "/Users/reader/Library/Developer/CoreSimulator/Devices/2A6F0C3E-8B1D-4E7A-9C52-1F3B7D9E4A60/data/Containers/Data/Application/5D2E8F1A-3C4B-4A6E-B7D9-0E1F2A3B4C5D/Documents";
@@ -109,6 +110,20 @@ for (const platform of PLATFORMS) {
         await page.addInitScript((chosen) => {
           window.localStorage.setItem("omnileaf.language", chosen);
         }, language);
+      });
+
+      test.describe("with a book open", () => {
+        test.use({ backend: readerBackend(onPlatform(platform).backend) });
+
+        test("fits the reader's controls to the screen", async ({ page }) => {
+          await servePages(page);
+          await page.goto(`/read/${BOOK_ID}`);
+          await expect(page.getByRole("slider")).toBeVisible();
+
+          const overflowing = await sidewaysOverflow(page);
+
+          expect(overflowing).toEqual([]);
+        });
       });
 
       test.describe("once set up", () => {

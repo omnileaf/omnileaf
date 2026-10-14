@@ -40,7 +40,7 @@
   <div
     role="group"
     aria-label={m.reader_quick_settings()}
-    class="flex gap-2xs border-be border-reader-line pbe-2xs expanded:hidden"
+    class="flex flex-wrap gap-2xs border-be border-reader-line pbe-2xs expanded:hidden"
   >
     {@render quickSettings()}
   </div>

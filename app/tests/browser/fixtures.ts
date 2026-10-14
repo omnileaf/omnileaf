@@ -237,13 +237,23 @@ export function sidewaysOverflow(
   within = "main",
 ): Promise<string[]> {
   return page.evaluate((scope) => {
+    const touchTargetBleedOf = (element: Element): number => {
+      const before = getComputedStyle(element, "::before");
+      if (before.position !== "absolute") {
+        return 0;
+      }
+      const bleed =
+        Number.parseFloat(before.width) - element.getBoundingClientRect().width;
+      return Number.isNaN(bleed) ? 0 : bleed;
+    };
     const bleedOf = (element: Element): number =>
       Math.max(
         0,
-        ...[...element.querySelectorAll("*")].map(
-          (descendant) =>
-            -Number.parseFloat(getComputedStyle(descendant).marginInlineEnd),
-        ),
+        touchTargetBleedOf(element),
+        ...[...element.querySelectorAll("*")].flatMap((descendant) => [
+          -Number.parseFloat(getComputedStyle(descendant).marginInlineEnd),
+          touchTargetBleedOf(descendant),
+        ]),
       );
     const overflowing: string[] = [];
     for (const element of document.querySelectorAll(`${scope} *`)) {
