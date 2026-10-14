@@ -133,7 +133,10 @@ export function sampleBackend(
 ): FakeBackend {
   const library: SampleSeries[] =
     scenario.library === "empty" ? [] : sampleLibrary(scenario.sixthVolume);
-  let listing: LibraryListing = DEFAULT_LIBRARY_LISTING;
+  let listing: LibraryListing = {
+    ...DEFAULT_LIBRARY_LISTING,
+    sort: { by: "dateAdded", direction: "descending" },
+  };
   let view: LibraryView = DEFAULT_LIBRARY_VIEW;
   let isFullScreen = false;
 
