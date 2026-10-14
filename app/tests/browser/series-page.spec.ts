@@ -81,6 +81,46 @@ function isWide(page: Page): boolean {
   return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
 }
 
+async function expectListed(page: Page, count: number): Promise<void> {
+  await expect(books(page).first()).toHaveAttribute(
+    "aria-setsize",
+    String(count),
+  );
+}
+
+async function expectListedAt(row: Locator, position: number): Promise<void> {
+  await expect(row).toHaveAttribute("aria-posinset", String(position));
+}
+
+function selectedBooks(page: Page): Locator {
+  return page.getByRole("group", { name: "Selected books" });
+}
+
+function bookCheckbox(page: Page, index: number): Locator {
+  return page.getByRole("checkbox", { name: `Select ${shelf.titleOf(index)}` });
+}
+
+async function startPicking(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Select", exact: true }).click();
+}
+
+async function pickBooks(page: Page, ...indexes: number[]): Promise<void> {
+  await startPicking(page);
+  for (const index of indexes) {
+    await bookCheckbox(page, index).check();
+  }
+}
+
+function selectAllControl(page: Page): Locator {
+  return page.getByRole("button", { name: "Select all" });
+}
+
+async function expectPicked(page: Page, count: number): Promise<void> {
+  await expect(
+    page.getByRole("heading", { level: 2, name: `${String(count)} selected` }),
+  ).toBeVisible();
+}
+
 async function openSeries(page: Page): Promise<void> {
   await page.goto(`/series/${SERIES_ID}`);
   await expect(
@@ -133,18 +173,12 @@ test("picks a book tapped while picking rather than opening it", async ({
 
 test("picks a book with the space key", async ({ page }) => {
   await openSeries(page);
-  await page.getByRole("button", { name: "Select", exact: true }).click();
+  await startPicking(page);
 
-  await page
-    .getByRole("checkbox", { name: `Select ${shelf.titleOf(5)}` })
-    .press("Space");
+  await bookCheckbox(page, 5).press("Space");
 
-  await expect(
-    page.getByRole("checkbox", { name: `Select ${shelf.titleOf(5)}` }),
-  ).toBeChecked();
-  await expect(
-    page.getByRole("heading", { level: 2, name: "1 selected" }),
-  ).toBeVisible();
+  await expect(bookCheckbox(page, 5)).toBeChecked();
+  await expectPicked(page, 1);
 });
 
 test("opens no book with the long press that starts picking", async ({
@@ -210,15 +244,9 @@ test("lists the series' books in order with how far each has been read", async (
   await openSeries(page);
 
   const rows = books(page);
-  await expect(rows.first()).toHaveAttribute("aria-setsize", "12");
-  await expect(rows.filter({ hasText: shelf.titleOf(0) })).toHaveAttribute(
-    "aria-posinset",
-    "1",
-  );
-  await expect(rows.filter({ hasText: shelf.titleOf(4) })).toHaveAttribute(
-    "aria-posinset",
-    "5",
-  );
+  await expectListed(page, 12);
+  await expectListedAt(rows.filter({ hasText: shelf.titleOf(0) }), 1);
+  await expectListedAt(rows.filter({ hasText: shelf.titleOf(4) }), 5);
   await expect(rows.nth(0)).toContainText("Read");
   await expect(rows.nth(3)).toContainText("Page 15");
   await expect(rows.nth(4)).toContainText(
@@ -318,20 +346,9 @@ test("spreads the cover's colour from one edge of the page to the other", async 
 test("marks the books picked read", async ({ page }) => {
   await openSeries(page);
 
-  await page.getByRole("button", { name: "Select", exact: true }).click();
-  await page
-    .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
-    .check();
-  await page
-    .getByRole("checkbox", { name: `Select ${shelf.titleOf(5)}` })
-    .check();
-  await expect(
-    page.getByRole("heading", { level: 2, name: "2 selected" }),
-  ).toBeVisible();
-  await page
-    .getByRole("group", { name: "Selected books" })
-    .getByRole("button", { name: "Mark read" })
-    .click();
+  await pickBooks(page, 4, 5);
+  await expectPicked(page, 2);
+  await selectedBooks(page).getByRole("button", { name: "Mark read" }).click();
 
   await expect(
     page
@@ -346,18 +363,14 @@ test("marks the books picked read", async ({ page }) => {
   await expect(
     page.getByRole("progressbar", { name: "5 of 12 read" }),
   ).toBeVisible();
-  await expect(page.getByRole("checkbox")).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { checked: true })).toHaveCount(0);
 });
 
 test("marks the books picked unread", async ({ page }) => {
   await openSeries(page);
 
-  await page.getByRole("button", { name: "Select", exact: true }).click();
-  await page
-    .getByRole("checkbox", { name: `Select ${shelf.titleOf(0)}` })
-    .check();
-  await page
-    .getByRole("group", { name: "Selected books" })
+  await pickBooks(page, 0);
+  await selectedBooks(page)
     .getByRole("button", { name: "Mark unread" })
     .click();
 
@@ -380,12 +393,10 @@ test("picks every book in the series, past the ones read so far", async ({
     page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Select", exact: true }).click();
-  await page.getByRole("button", { name: "Select all" }).click();
+  await startPicking(page);
+  await selectAllControl(page).click();
 
-  await expect(
-    page.getByRole("heading", { level: 2, name: "105 selected" }),
-  ).toBeVisible();
+  await expectPicked(page, 105);
 });
 
 test("says it is busy picking every book until all are read in, then how many are picked", async ({
@@ -401,8 +412,8 @@ test("says it is busy picking every book until all are read in, then how many ar
   await page.goto(`/series/${SERIES_ID}`);
   await expect(books(page).first()).toBeVisible();
   shelf.holdPagesAfterTheFirst(held);
-  await page.getByRole("button", { name: "Select", exact: true }).click();
-  const selectAll = page.getByRole("button", { name: "Select all" });
+  await startPicking(page);
+  const selectAll = selectAllControl(page);
 
   await selectAll.click();
 
@@ -426,11 +437,9 @@ function pickedLongSeries(): FakeShelf {
 async function pickAllBooks(page: Page): Promise<void> {
   await page.goto(`/series/${SERIES_ID}`);
   await expect(books(page).first()).toBeVisible();
-  await page.getByRole("button", { name: "Select", exact: true }).click();
-  await page.getByRole("button", { name: "Select all" }).click();
-  await expect(
-    page.getByRole("heading", { level: 2, name: "105 selected" }),
-  ).toBeVisible();
+  await startPicking(page);
+  await selectAllControl(page).click();
+  await expectPicked(page, 105);
 }
 
 test("keeps every book listed after marking a long series read", async ({
@@ -439,16 +448,13 @@ test("keeps every book listed after marking a long series read", async ({
   shelf = pickedLongSeries();
   await pickAllBooks(page);
 
-  await page
-    .getByRole("group", { name: "Selected books" })
-    .getByRole("button", { name: "Mark read" })
-    .click();
+  await selectedBooks(page).getByRole("button", { name: "Mark read" }).click();
 
   await expect(
     page.getByRole("progressbar", { name: "105 of 105 read" }),
   ).toBeVisible();
   await expect(books(page).first()).toContainText("Read");
-  await expect(books(page).first()).toHaveAttribute("aria-setsize", "105");
+  await expectListed(page, 105);
 });
 
 test("marks every book picked when the library changes while picking", async ({
@@ -460,10 +466,7 @@ test("marks every book picked when the library changes while picking", async ({
   await emitFakeEvent(page, LIBRARY_CHANGED);
   await expect(books(page).first()).toContainText("Read");
 
-  await page
-    .getByRole("group", { name: "Selected books" })
-    .getByRole("button", { name: "Mark read" })
-    .click();
+  await selectedBooks(page).getByRole("button", { name: "Mark read" }).click();
 
   await expect(
     page.getByRole("status").filter({ hasText: "Marked 105 books read" }),
@@ -500,27 +503,17 @@ test("returns focus to Select once the books picked are marked", async ({
 }) => {
   await openSeries(page);
   const select = page.getByRole("button", { name: "Select", exact: true });
-  await select.click();
-  await page
-    .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
-    .check();
+  await pickBooks(page, 4);
 
-  await page
-    .getByRole("group", { name: "Selected books" })
-    .getByRole("button", { name: "Mark read" })
-    .click();
+  await selectedBooks(page).getByRole("button", { name: "Mark read" }).click();
 
   await expect(select).toBeFocused();
 });
-
 test("keeps the books picked when Escape closes quick open", async ({
   page,
 }) => {
   await openSeries(page);
-  await page.getByRole("button", { name: "Select", exact: true }).click();
-  await page
-    .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
-    .check();
+  await pickBooks(page, 4);
   await page.keyboard.press("Control+k");
   const quickOpen = page.getByRole("dialog", { name: "Quick open" });
   await expect(quickOpen).toBeVisible();
@@ -528,9 +521,7 @@ test("keeps the books picked when Escape closes quick open", async ({
   await page.keyboard.press("Escape");
 
   await expect(quickOpen).toBeHidden();
-  await expect(
-    page.getByRole("heading", { level: 2, name: "1 selected" }),
-  ).toBeVisible();
+  await expectPicked(page, 1);
 });
 
 test("stops picking books with Done or Escape, with nothing left picked", async ({
@@ -562,20 +553,13 @@ test("picks a run of books with a shift-click on wide screens", async ({
     "picking a run with the shift key is for a mouse and keyboard",
   );
   await openSeries(page);
-  await page.getByRole("button", { name: "Select", exact: true }).click();
+  await startPicking(page);
 
-  await page
-    .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
-    .click();
-  await page
-    .getByRole("checkbox", { name: `Select ${shelf.titleOf(7)}` })
-    .click({ modifiers: ["Shift"] });
+  await bookCheckbox(page, 4).click();
+  await bookCheckbox(page, 7).click({ modifiers: ["Shift"] });
 
-  await expect(
-    page.getByRole("heading", { level: 2, name: "4 selected" }),
-  ).toBeVisible();
+  await expectPicked(page, 4);
 });
-
 test("starts picking books with a long press on a touch screen", async ({
   page,
 }) => {
@@ -647,7 +631,7 @@ test("shows only the books not read, and the books the other way round", async (
     "aria-pressed",
     "true",
   );
-  await expect(books(page).first()).toHaveAttribute("aria-setsize", "9");
+  await expectListed(page, 9);
   await expect(books(page).first()).toContainText(shelf.titleOf(3));
 
   await page
@@ -661,7 +645,7 @@ test("shows only the books not read, and the books the other way round", async (
 
   await show.getByRole("button", { name: "All" }).click();
 
-  await expect(books(page).first()).toHaveAttribute("aria-setsize", "12");
+  await expectListed(page, 12);
   await expect(books(page).first()).toContainText(shelf.titleOf(11));
 });
 
@@ -697,13 +681,9 @@ test.describe("when marking books fails", () => {
   test("reports the failure and reads nothing again", async ({ page }) => {
     await openSeries(page);
     const readBefore = overviewsRead;
-    await page.getByRole("button", { name: "Select", exact: true }).click();
-    await page
-      .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
-      .check();
+    await pickBooks(page, 4);
 
-    await page
-      .getByRole("group", { name: "Selected books" })
+    await selectedBooks(page)
       .getByRole("button", { name: "Mark read" })
       .click();
 
@@ -719,24 +699,15 @@ test("marks every book picked, though another listing leaves some of them out", 
   page,
 }) => {
   await openSeries(page);
-  await page.getByRole("button", { name: "Select", exact: true }).click();
-  await page
-    .getByRole("checkbox", { name: `Select ${shelf.titleOf(0)}` })
-    .check();
-  await page
-    .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
-    .check();
+  await pickBooks(page, 0, 4);
 
   await page
     .getByRole("group", { name: "Show" })
     .getByRole("button", { name: "Unread" })
     .click();
-  await expect(books(page).first()).toHaveAttribute("aria-setsize", "9");
-  await expect(
-    page.getByRole("heading", { level: 2, name: "2 selected" }),
-  ).toBeVisible();
-  await page
-    .getByRole("group", { name: "Selected books" })
+  await expectListed(page, 9);
+  await expectPicked(page, 2);
+  await selectedBooks(page)
     .getByRole("button", { name: "Mark unread" })
     .click();
 
@@ -803,10 +774,7 @@ test("fits the series page to the screen, picking books or not", async ({
 }) => {
   await openSeries(page);
   const fitsBefore = await sidewaysOverflow(page);
-  await page.getByRole("button", { name: "Select", exact: true }).click();
-  await page
-    .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
-    .check();
+  await pickBooks(page, 4);
 
   const fitsWhilePicking = await sidewaysOverflow(page);
 
@@ -943,10 +911,7 @@ test.describe("on Android", () => {
       .getByRole("link", { name: new RegExp(SERIES_TITLE) })
       .click();
     await expect(books(page).first()).toBeVisible();
-    await page.getByRole("button", { name: "Select", exact: true }).click();
-    await page
-      .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
-      .check();
+    await pickBooks(page, 4);
 
     await page.goBack();
 
@@ -954,7 +919,7 @@ test.describe("on Android", () => {
     await expect(
       page.getByRole("heading", { level: 2, name: "12 books" }),
     ).toBeVisible();
-    await expect(page.getByRole("checkbox")).toHaveCount(0);
+    await expect(page.getByRole("checkbox", { checked: true })).toHaveCount(0);
 
     await page.goBack();
 
@@ -1036,14 +1001,11 @@ test.describe("swiping back from the edge on an iPhone", () => {
   }) => {
     await openFromTheLibrary(page);
     const start = await boxOf(page.getByRole("main"));
-    await page.getByRole("button", { name: "Select", exact: true }).click();
-    await page
-      .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
-      .check();
+    await pickBooks(page, 4);
 
     await swipeBack();
 
-    await expect(page.getByRole("checkbox")).toHaveCount(0);
+    await expect(page.getByRole("checkbox", { checked: true })).toHaveCount(0);
     await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
     await expect
       .poll(async () => (await boxOf(page.getByRole("main"))).x)
@@ -1070,10 +1032,7 @@ test.describe("on an iPhone", () => {
       "the tab bar floats on phones",
     );
     await openSeries(page);
-    await page.getByRole("button", { name: "Select", exact: true }).click();
-    await page
-      .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
-      .check();
+    await pickBooks(page, 4);
 
     const actions = await boxOf(
       page.getByRole("group", { name: "Selected books" }),
@@ -1103,10 +1062,7 @@ for (const colorScheme of ["light", "dark"] as const) {
   }) => {
     await page.emulateMedia({ colorScheme });
     await openSeries(page);
-    await page.getByRole("button", { name: "Select", exact: true }).click();
-    await page
-      .getByRole("checkbox", { name: `Select ${shelf.titleOf(4)}` })
-      .check();
+    await pickBooks(page, 4);
 
     const violations = await accessibilityViolations(page);
 
