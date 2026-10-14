@@ -1,6 +1,7 @@
-/** Whether the reader's controls are up: they go a while after showing, unless the pointer rests on them or a control has keyboard focus. */
+/** Whether the reader's controls are up: they go a while after they are drawn, unless the pointer rests on them or a control has keyboard focus. */
 export class ReaderControls {
   #isShown = $state(true);
+  #drawing: number | undefined;
   #hiding: ReturnType<typeof setTimeout> | undefined;
   #isPointerOver = false;
   #isFocused = false;
@@ -64,17 +65,24 @@ export class ReaderControls {
   }
 
   stop(): void {
+    if (this.#drawing !== undefined) {
+      cancelAnimationFrame(this.#drawing);
+    }
     clearTimeout(this.#hiding);
+    this.#drawing = undefined;
     this.#hiding = undefined;
   }
 
   #hideLater(): void {
     this.stop();
-    this.#hiding = setTimeout(() => {
-      this.#hiding = undefined;
-      if (!this.#isPointerOver && !this.#isFocused && !this.#isHeld) {
-        this.hide();
-      }
-    }, this.hideAfterMs);
+    this.#drawing = requestAnimationFrame(() => {
+      this.#drawing = undefined;
+      this.#hiding = setTimeout(() => {
+        this.#hiding = undefined;
+        if (!this.#isPointerOver && !this.#isFocused && !this.#isHeld) {
+          this.hide();
+        }
+      }, this.hideAfterMs);
+    });
   }
 }
