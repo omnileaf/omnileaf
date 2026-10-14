@@ -433,6 +433,7 @@
   --spacing-skeleton-card: 12.5rem;
   --spacing-skeleton-card-wide: 9rem;
   --spacing-related-cover: 9rem;
+  --spacing-creator-crumb: 22.5rem;
   --spacing-series-columns: 2.5rem;
   --spacing-series-column-added: 6.5rem;
   --spacing-series-column-progress: 7.875rem;
@@ -750,6 +751,7 @@
   --spacing-sidebar-row: var(--sidebar-row-height);
   --radius-shadcn-control: var(--radius-md);
   --radius-empty-media: var(--radius-lg);
+  --radius-link: var(--radius-sm);
   --radius-tooltip: var(--tooltip-radius);
   --radius-shadcn-card: var(--card-radius);
   --radius-toast: var(--toast-radius);
@@ -1016,6 +1018,16 @@
 
 @utility grid-cols-card-header {
   grid-template-columns: minmax(0, 1fr) fit-content(50%);
+}
+
+@utility touch-target-around {
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: calc((var(--spacing-touch-target) - 1lh) / -2) -2px;
+  }
 }
 
 @utility grid-cols-details {
