@@ -115,7 +115,7 @@ export type BookSessions = {
 
 export type BooksRemoval = { kind: "removed"; books: number } | { kind: "kept" };
 
-export type BooksShown = "all" | "unread";
+export type BooksShown = "all" | "unread" | "bookmarked";
 
 export type CoversPerRow = {
 	phone: number,
@@ -390,6 +390,7 @@ export type SeriesOverview = {
 	title: string,
 	bookCount: number,
 	readCount: number,
+	bookmarkCount: number,
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	folder: string | null,
 	/**  The book reading goes on from, absent once every book is read. */
