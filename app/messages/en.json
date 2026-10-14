@@ -1147,6 +1147,30 @@
   "reader_settings": "Reading settings",
   "reader_settings_close": "Close reading settings",
   "reader_settings_done": "Done",
+  "reader_back_on_page": [
+    {
+      "declarations": [
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "Back on page {formattedPage} of {formattedCount}"
+      }
+    }
+  ],
+  "reader_full_screen_leave": "Press F or Esc to leave.",
+  "reader_reading_right_to_left": "Reading right to left",
+  "reader_found_in_details": "Found in its details",
+  "reader_change": "Change",
+  "reader_guide_tap_title": "Tap to turn pages",
+  "reader_guide_tap_body": "Tap the right edge for the next page and the left edge to go back. Tap the middle to show the controls.",
+  "reader_guide_tap_body_rtl": "Tap the left edge for the next page and the right edge to go back. Tap the middle to show the controls.",
+  "reader_guide_click_title": "Click to turn pages",
+  "reader_guide_click_body": "Click the right third for the next page and the left third to go back. Click the middle to show the controls. → and Space work too.",
+  "reader_guide_click_body_rtl": "Click the left third for the next page and the right third to go back. Click the middle to show the controls. ← and Space work too.",
+  "reader_guide_done": "Got it",
   "reader_position_pair": [
     {
       "declarations": [
