@@ -16,7 +16,7 @@
   bind:this={ref}
   data-slot="table-head"
   class={cn(
-    "px-sm text-start align-middle font-semibold whitespace-nowrap block-series-columns first:ps-md last:pe-md",
+    "px-sm text-start align-middle font-medium whitespace-nowrap block-series-columns first:ps-md last:pe-md",
     className,
   )}
   {...restProps}
