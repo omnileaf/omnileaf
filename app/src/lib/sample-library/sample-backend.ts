@@ -442,6 +442,7 @@ export function sampleBackend(
         previous: neighbour(series, index - 1),
         next: neighbour(series, index + 1),
         readingDirection: series.readingDirection,
+        bookmarkedPages: null,
       };
     },
     readingRestored: () => null,

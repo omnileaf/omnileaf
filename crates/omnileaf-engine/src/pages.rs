@@ -467,6 +467,7 @@ fn opened_book(
         previous: place.previous.map(Into::into),
         next: place.next.map(Into::into),
         reading_direction,
+        bookmarked_pages: None,
     }
 }
 

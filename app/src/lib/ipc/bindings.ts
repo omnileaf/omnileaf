@@ -303,6 +303,8 @@ export type OpenedBook = {
 	next: SeriesNeighbour | null,
 	/**  Absent when the book's details don't say which way it reads. */
 	readingDirection: ReadingDirection | null,
+	/**  Counting from 0; absent while the library keeps no bookmarks. */
+	bookmarkedPages: number[] | null,
 };
 
 /**  In pixels. */
