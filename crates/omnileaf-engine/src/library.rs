@@ -1,6 +1,6 @@
 use std::{
     collections::BTreeMap,
-    fs, io,
+    fs, io, mem,
     path::{Path, PathBuf},
     sync::{self, Arc, PoisonError},
     time::Duration,
@@ -98,7 +98,7 @@ pub struct Library {
     reading: ReadingProgress,
     catalog_change_lock: Mutex<()>,
     schedule: sync::Mutex<RescanSchedule>,
-    is_scheduled: watch::Sender<bool>,
+    schedule_gate: watch::Sender<ScheduleGate>,
     catalog_writes: broadcast::Sender<CatalogWritten>,
     local_storage: Arc<dyn omnileaf_formats::Storage>,
     open_tree: Option<OpenTree>,
@@ -107,6 +107,18 @@ pub struct Library {
 struct RootFiles {
     storage: Arc<dyn omnileaf_formats::Storage>,
     folder: PathBuf,
+}
+
+#[derive(Clone, Copy, Default)]
+struct ScheduleGate {
+    is_on: bool,
+    is_book_open: bool,
+}
+
+impl ScheduleGate {
+    fn is_open(self) -> bool {
+        self.is_on && !self.is_book_open
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -184,7 +196,7 @@ impl Library {
             store,
             catalog_change_lock: Mutex::new(()),
             schedule: sync::Mutex::default(),
-            is_scheduled: watch::Sender::new(false),
+            schedule_gate: watch::Sender::new(ScheduleGate::default()),
             catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
             local_storage: Arc::new(LocalStorage),
             open_tree: None,
@@ -686,8 +698,10 @@ impl Library {
         before_rescanning.await;
         let mut rescans = Vec::new();
         for id in due {
-            if !*self.is_scheduled.borrow() {
-                tracing::debug!("leave the folders whose turn came once scheduled rescans are off");
+            if !self.schedule_gate.borrow().is_open() {
+                tracing::debug!(
+                    "leave the folders whose turn came while scheduled rescans are held"
+                );
                 break;
             }
             let Ok(scanning) = self.catalog_change_lock.try_lock() else {
@@ -712,7 +726,13 @@ impl Library {
     }
 
     pub fn set_scheduled_rescans(&self, is_on: bool) {
-        self.is_scheduled.send_replace(is_on);
+        self.schedule_gate
+            .send_if_modified(|gate| mem::replace(&mut gate.is_on, is_on) != is_on);
+    }
+
+    pub fn set_book_open(&self, is_open: bool) {
+        self.schedule_gate
+            .send_if_modified(|gate| mem::replace(&mut gate.is_book_open, is_open) != is_open);
     }
 
     pub async fn rescan_on_schedule<F: Future<Output = ()>>(
@@ -720,16 +740,16 @@ impl Library {
         conditions: &impl RescanConditions,
         mut before_rescanning: impl FnMut() -> F,
     ) {
-        let mut is_scheduled = self.is_scheduled.subscribe();
+        let mut schedule_gate = self.schedule_gate.subscribe();
         let mut checks = interval(SCHEDULE_CHECK_EVERY);
         checks.set_missed_tick_behavior(MissedTickBehavior::Delay);
         loop {
-            if is_scheduled.wait_for(|is_on| *is_on).await.is_err() {
+            if schedule_gate.wait_for(|gate| gate.is_open()).await.is_err() {
                 return;
             }
             tokio::select! {
                 biased;
-                _ = is_scheduled.changed() => continue,
+                _ = schedule_gate.changed() => continue,
                 _ = checks.tick() => {}
             }
             if let Err(error) = self
