@@ -184,3 +184,28 @@ test("asks for nothing more once the list is complete", async () => {
 
   expect(onNearEnd).not.toHaveBeenCalled();
 });
+
+test("tells its columns before the next frame once its style asks for more covers in a row", async () => {
+  const perRow = (count: number) =>
+    [
+      `--phone-covers-per-row: ${String(count)}`,
+      `--tablet-covers-per-row: ${String(count)}`,
+      `--desktop-covers-per-row: ${String(count)}`,
+    ].join("; ");
+  const onColumns = vi.fn<(columns: number) => void>();
+  const screen = await render(VirtualGrid<Sample>, {
+    items: samples(TEN_THOUSAND),
+    key: (sample: Sample) => sample.id,
+    label: LABEL,
+    isComplete: true,
+    onColumns,
+    cell,
+    class: "grid-cols-covers-per-row",
+    style: perRow(2),
+  });
+  await settled();
+
+  await screen.rerender({ style: perRow(3) });
+
+  expect(onColumns).toHaveBeenLastCalledWith(3);
+});
