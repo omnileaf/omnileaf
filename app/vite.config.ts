@@ -9,6 +9,7 @@ import {
   javascriptLicences,
   type LicencesMode,
 } from "./scripts/javascript-licences.ts";
+import { sampleLibraryArt } from "./scripts/sample-library-art.ts";
 import { TEST_BROWSER_CONTEXT } from "./tests/browser-context.ts";
 
 const DEV_SERVER_PORT = 1420;
@@ -54,6 +55,7 @@ export default defineConfig({
       strategy: ["custom-chosen", "preferredLanguage", "baseLocale"],
     }),
     javascriptLicences(licencesMode),
+    sampleLibraryArt(),
   ],
   test: {
     projects: [
