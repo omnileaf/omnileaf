@@ -413,15 +413,14 @@
   --spacing-key-block: 0.1875rem;
   --spacing-series-back: 2.75rem;
   --spacing-series-crumb: 2.125rem;
-  --spacing-series-band: 7.5rem;
-  --spacing-series-band-tablet: 8.75rem;
-  --spacing-series-band-wide: 8.75rem;
-  --spacing-series-fade: 5rem;
-  --spacing-series-fade-wide: 6.25rem;
-  --spacing-series-cover: 7.375rem;
-  --spacing-series-cover-tablet: 9.5rem;
-  --spacing-series-cover-wide: 8.25rem;
-  --spacing-series-aside: 21.25rem;
+  --spacing-series-band: 15rem;
+  --spacing-series-band-wide: 13.75rem;
+  --spacing-series-band-across: 23.75rem;
+  --spacing-series-card: 1.25rem;
+  --spacing-series-crumb-title: 32.5rem;
+  --spacing-series-cover: 7.5rem;
+  --spacing-series-cover-wide: 11.25rem;
+  --spacing-series-aside: 17.5rem;
   --spacing-book-menu: 12rem;
   --spacing-book-row: 3.875rem;
   --spacing-book-row-wide: 2.875rem;
@@ -500,7 +499,9 @@
   --spacing-safe-end: var(--safe-area-right);
   --spacing-title-gap: 1rem;
   --spacing-page-top: calc(var(--spacing-safe-top) + var(--spacing-title-gap));
-  --spacing-series-bar-top: calc(var(--spacing-safe-top) + var(--spacing-xs));
+  --spacing-series-bar-top: calc(var(--spacing-safe-top) + var(--spacing-sm));
+  --spacing-series-bar-start: calc(var(--spacing-safe-start) + var(--spacing-sm));
+  --spacing-series-bar-end: calc(var(--spacing-safe-end) + var(--spacing-sm));
   --spacing-page-bottom: calc(var(--spacing-safe-bottom) + var(--spacing-xl));
   --spacing-gutter: 1rem;
   --spacing-page-start: calc(var(--spacing-safe-start) + var(--spacing-gutter));
@@ -555,7 +556,7 @@
   --radius-sheet-card: 1rem;
   --radius-result-cover: 0.3125rem;
   --radius-quick-open-cover: 0.1875rem;
-  --radius-series-cover: 0.625rem;
+  --radius-series-cover: var(--radius-sm);
   --radius-series-check: 0.375rem;
 
   --radius-history-cover: 0.3125rem;
@@ -607,7 +608,8 @@
     0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-back-swipe: -10px 0 28px rgb(0 0 0 / 0.18);
   --shadow-back-swipe-rtl: 10px 0 28px rgb(0 0 0 / 0.18);
-  --shadow-series-cover: 0 12px 30px rgb(0 0 0 / 0.3);
+  --shadow-series-cover: var(--shadow-lg);
+  --shadow-card-rest: var(--shadow-sm);
   --shadow-reader-bar: 0 10px 30px rgb(0 0 0 / 0.35);
   --shadow-reader-bar-wide: 0 10px 30px rgb(0 0 0 / 0.3);
   --shadow-reader-thumb: 0 1px 4px rgb(0 0 0 / 0.5);
@@ -964,6 +966,14 @@
 
 @utility grid-cols-card-header {
   grid-template-columns: minmax(0, 1fr) fit-content(50%);
+}
+
+@utility grid-cols-details {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+@utility series-band-fade-across {
+  mask-image: linear-gradient(to right, black 65%, transparent);
 }
 
 @utility grid-cols-alert {
