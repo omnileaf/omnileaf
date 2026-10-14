@@ -1,6 +1,13 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import {
+    Empty,
+    EmptyDescription,
+    EmptyMedia,
+    EmptyTitle,
+  } from "#lib/components/ui/empty/index.ts";
+
   import type { Glyph } from "./glyph";
 
   let {
@@ -20,16 +27,16 @@
   const titleId = $props.id();
 </script>
 
-<section
+<Empty
   aria-labelledby={titleId}
-  class="flex flex-1 flex-col items-center justify-center gap-md px-xl pbe-empty-lift text-center"
+  class="flex-1 justify-center px-xl pbe-empty-lift"
 >
-  <span
-    class="flex items-center justify-center rounded-full bg-accent-soft block-empty-art inline-empty-art medium:text-accent"
-  >
+  <EmptyMedia class="medium:text-accent">
     <Icon size={ICON_SIZE} class="block-empty-icon inline-empty-icon" />
-  </span>
-  <h2 id={titleId} class="mbs-sm text-title font-bold">{title}</h2>
-  <p class="text-callout text-muted max-inline-prose">{body}</p>
+  </EmptyMedia>
+  <EmptyTitle id={titleId}>{title}</EmptyTitle>
+  <EmptyDescription class="text-callout max-inline-prose"
+    >{body}</EmptyDescription
+  >
   {@render children?.()}
-</section>
+</Empty>

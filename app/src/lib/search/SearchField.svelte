@@ -3,6 +3,9 @@
   import { onMount, tick } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Input } from "#lib/components/ui/input/index.ts";
+  import { InputGroup } from "#lib/components/ui/input-group/index.ts";
+  import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
   import type { FilterCondition } from "#lib/library/library-listing.ts";
@@ -36,7 +39,7 @@
     onKey: (event: KeyboardEvent) => boolean;
   } = $props();
 
-  let input: HTMLInputElement | undefined = $state();
+  let input = $state<HTMLInputElement | null>(null);
 
   onMount(() => {
     input?.setSelectionRange(text.length, text.length);
@@ -46,9 +49,13 @@
   async function type(typed: string): Promise<void> {
     onType(typed);
     await tick();
-    if (input !== undefined && input.value !== text) {
+    if (input !== null && input.value !== text) {
       input.value = text;
     }
+  }
+
+  function typeIn(event: Event & { currentTarget: HTMLInputElement }): void {
+    void type(event.currentTarget.value);
   }
 
   function keyDown(event: KeyboardEvent): void {
@@ -72,8 +79,8 @@
   }
 </script>
 
-<div
-  class="flex flex-1 items-center gap-sm rounded-search-field border-2 border-border bg-card px-md block-search-field min-inline-none focus-within:border-accent large:rounded-card large:ps-search-field-inline large:pe-md large:block-search-field-wide"
+<InputGroup
+  class="flex-1 gap-sm rounded-search-field border-2 border-border bg-card px-md block-search-field min-inline-none focus-within:border-accent large:rounded-card large:ps-search-field-inline large:pe-md large:block-search-field-wide"
 >
   <Search size={SEARCH_ICON_SIZE} aria-hidden="true" class="shrink-0" />
   {#if conditions.length > 0}
@@ -84,8 +91,8 @@
       class="hidden shrink-0 flex-nowrap medium:flex"
     />
   {/if}
-  <input
-    bind:this={input}
+  <Input
+    bind:ref={input}
     type="search"
     role="combobox"
     aria-controls={listId}
@@ -97,10 +104,8 @@
     placeholder={m.search_field()}
     maxlength={SEARCH_MAX_CHARS}
     value={text}
-    class="no-search-cancel flex-1 bg-transparent text-body outline-none min-inline-none placeholder:text-muted large:text-search-wide"
-    oninput={(event) => {
-      void type(event.currentTarget.value);
-    }}
+    class="no-search-cancel text-body large:text-search-wide"
+    oninput={typeIn}
     onkeydown={keyDown}
   />
   {#if text !== ""}
@@ -124,10 +129,7 @@
       {/snippet}
     </Tooltip>
   {/if}
-  <kbd
-    aria-hidden="true"
-    class="hidden shrink-0 rounded-badge border border-border bg-chip px-key-inline py-key-block font-ui text-caption font-bold large:inline"
-  >
+  <Kbd aria-hidden="true" class="hidden large:inline">
     {m.search_escape_key()}
-  </kbd>
-</div>
+  </Kbd>
+</InputGroup>

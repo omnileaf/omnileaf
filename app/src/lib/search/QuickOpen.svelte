@@ -6,6 +6,9 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { DialogContent } from "#lib/components/ui/dialog/index.ts";
+  import { Input } from "#lib/components/ui/input/index.ts";
+  import { InputGroup } from "#lib/components/ui/input-group/index.ts";
+  import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import {
     commands,
     DEFAULT_LIBRARY_LISTING,
@@ -223,13 +226,13 @@
       bind:value={selectedKey}
       class="flex flex-col min-block-none"
     >
-      <div
-        class="flex items-center gap-label border-be border-border px-lg block-quick-open-field"
+      <InputGroup
+        class="gap-label border-be border-border px-lg block-quick-open-field"
       >
         <Search size={SEARCH_ICON_SIZE} aria-hidden="true" class="shrink-0" />
         <Command.Input value={text} maxlength={SEARCH_MAX_CHARS} autofocus>
           {#snippet child({ props })}
-            <input
+            <Input
               {...props}
               aria-label={m.quick_open_field()}
               aria-labelledby={undefined}
@@ -241,19 +244,14 @@
                 : undefined}
               maxlength={SEARCH_MAX_CHARS}
               value={text}
-              class="flex-1 bg-transparent text-quick-open outline-none min-inline-none"
+              class="text-quick-open"
               oninput={type}
               onkeydown={keyDownInInput}
             />
           {/snippet}
         </Command.Input>
-        <kbd
-          aria-hidden="true"
-          class="shrink-0 rounded-badge border border-border bg-chip px-key-inline py-key-block font-ui text-caption font-bold"
-        >
-          {m.search_escape_key()}
-        </kbd>
-      </div>
+        <Kbd aria-hidden="true">{m.search_escape_key()}</Kbd>
+      </InputGroup>
       <Command.List
         id={listboxId}
         aria-label={m.quick_open_results()}

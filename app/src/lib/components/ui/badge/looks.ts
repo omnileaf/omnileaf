@@ -1,0 +1,12 @@
+const HEADER =
+  "flex shrink-0 items-center justify-center rounded-full block-header-badge inline-header-badge";
+
+export const BADGE_LOOKS = {
+  count: "rounded-badge bg-accent font-bold text-on-accent",
+  condition:
+    "inline-flex shrink-0 items-center gap-xs rounded-full bg-accent-soft text-detail font-semibold",
+  "header-accent": `${HEADER} bg-accent-soft text-accent`,
+  "header-danger": `${HEADER} bg-danger-soft text-danger`,
+} satisfies Record<string, string>;
+
+export type BadgeLook = keyof typeof BADGE_LOOKS;

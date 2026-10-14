@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ClassValue } from "svelte/elements";
 
+  import { Badge } from "#lib/components/ui/badge/index.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
@@ -11,11 +12,12 @@
 </script>
 
 {#if count > 0}
-  <span
+  <Badge
+    look="count"
     role="img"
     aria-label={m.library_unread_count({ count })}
-    class={["bg-accent font-bold text-on-accent", className]}
+    class={className}
   >
     {numbers.format(count)}
-  </span>
+  </Badge>
 {/if}

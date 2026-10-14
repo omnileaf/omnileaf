@@ -1,4 +1,10 @@
 <script lang="ts">
+  import {
+    ItemContent,
+    ItemDescription,
+    ItemTitle,
+  } from "#lib/components/ui/item/index.ts";
+
   import type { AboutLook, HintKind } from "./look";
 
   const LABELS = {
@@ -21,11 +27,11 @@
   const isAddress = $derived(hintKind === "address");
 </script>
 
-<span class="flex flex-1 flex-col wrap-anywhere">
-  <span class={["font-semibold", LABELS[look]]}>{label}</span>
-  <span
+<ItemContent class="wrap-anywhere">
+  <ItemTitle class={LABELS[look]}>{label}</ItemTitle>
+  <ItemDescription
     dir={isAddress ? "ltr" : undefined}
     translate={isAddress ? "no" : undefined}
-    class="text-footnote text-muted">{hint}</span
+    class="text-footnote">{hint}</ItemDescription
   >
-</span>
+</ItemContent>

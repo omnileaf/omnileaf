@@ -1,5 +1,11 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
+  import {
+    Item,
+    ItemContent,
+    ItemDescription,
+    ItemTitle,
+  } from "#lib/components/ui/item/index.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
   import type { HistoryEntry } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
@@ -48,35 +54,34 @@
 <li
   class="desktop:large:flex desktop:large:items-center desktop:large:border-be desktop:large:border-border desktop:large:min-block-history-row-wide"
 >
-  <a
-    {href}
-    class="flex items-center gap-cover-gap min-block-history-row desktop:large:hidden"
-  >
-    <ListCover
-      {cover}
-      {coverUrl}
-      class="rounded-history-cover inline-list-cover"
-    />
-    <span class="flex flex-1 flex-col gap-2xs min-inline-none">
-      <span class="truncate text-body font-semibold">{entry.seriesTitle}</span>
-      <span class="text-small">{readTo}</span>
-      <span class="text-detail text-muted">
-        {m.history_started_and_read_for({ time, duration: readFor })}
-      </span>
-    </span>
-  </a>
-  <div
-    class="hidden flex-1 items-center gap-lg min-inline-none desktop:large:flex"
-  >
+  <Item look="history-phone">
+    {#snippet child({ props })}
+      <a {href} {...props}>
+        <ListCover
+          {cover}
+          {coverUrl}
+          class="rounded-history-cover inline-list-cover"
+        />
+        <ItemContent class="gap-2xs min-inline-none">
+          <ItemTitle class="truncate text-body">{entry.seriesTitle}</ItemTitle>
+          <span class="text-small">{readTo}</span>
+          <ItemDescription class="text-detail">
+            {m.history_started_and_read_for({ time, duration: readFor })}
+          </ItemDescription>
+        </ItemContent>
+      </a>
+    {/snippet}
+  </Item>
+  <Item look="history-desktop">
     <ListCover
       {cover}
       {coverUrl}
       class="rounded-list-cover inline-history-cover-wide"
     />
-    <span class="flex flex-1 flex-col gap-2xs min-inline-none">
-      <span class="truncate text-lead font-semibold">{entry.seriesTitle}</span>
-      <span class="text-detail text-muted">{readTo}</span>
-    </span>
+    <ItemContent class="gap-2xs min-inline-none">
+      <ItemTitle class="truncate text-lead">{entry.seriesTitle}</ItemTitle>
+      <ItemDescription class="text-detail">{readTo}</ItemDescription>
+    </ItemContent>
     <span
       class="shrink-0 text-detail whitespace-nowrap text-muted min-inline-history-time"
     >
@@ -95,5 +100,5 @@
     >
       {action.text}
     </a>
-  </div>
+  </Item>
 </li>
