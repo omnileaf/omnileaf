@@ -38,6 +38,8 @@
     isSettingsOpen,
     areShortcutsOpen,
     onShortcuts,
+    bookmark,
+    onBookmark,
     onSettings,
     onFullScreen,
   }: {
@@ -51,6 +53,8 @@
     isSettingsOpen: boolean;
     areShortcutsOpen: boolean;
     onShortcuts: () => void;
+    bookmark: { readonly label: string; readonly isPressed: boolean } | null;
+    onBookmark: () => void;
     onSettings: () => void;
     onFullScreen: () => void;
   } = $props();
@@ -157,9 +161,33 @@
       </Button>
     {/snippet}
   </Tooltip>
-  <ComingSoon label={m.reader_bookmark()} class={UPCOMING}>
-    <Bookmark size={READER_ICON_SIZE} aria-hidden="true" />
-  </ComingSoon>
+  {#if bookmark === null}
+    <ComingSoon label={m.reader_bookmark()} class={UPCOMING}>
+      <Bookmark size={READER_ICON_SIZE} aria-hidden="true" />
+    </ComingSoon>
+  {:else}
+    <Tooltip
+      label={bookmark.label}
+      type="button"
+      aria-label={bookmark.label}
+      aria-pressed={bookmark.isPressed}
+      onclick={onBookmark}
+    >
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          look="icon"
+          class={cn(READER_BUTTON, bookmark.isPressed && "bg-hover")}
+        >
+          <Bookmark
+            size={READER_ICON_SIZE}
+            fill={bookmark.isPressed ? "currentColor" : "none"}
+            aria-hidden="true"
+          />
+        </Button>
+      {/snippet}
+    </Tooltip>
+  {/if}
   <Tooltip
     label={m.reader_settings()}
     type="button"
