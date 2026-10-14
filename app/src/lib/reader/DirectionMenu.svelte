@@ -9,12 +9,15 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import {
+    QUICK_SETTING_ICON_SIZE,
+    QUICK_SETTING_LOOK,
+  } from "#lib/reader/quick-setting.ts";
+  import {
     DIRECTION_CHOICES,
     type DirectionChoice,
     type SeriesReadingDirection,
   } from "#lib/reader/reading-direction.svelte.ts";
 
-  const ICON_SIZE = 18;
   const CHOICE_NAMES = {
     automatic: m.reader_direction_automatic,
     leftToRight: m.reader_left_to_right,
@@ -40,13 +43,17 @@
 <DropdownMenu.Root {onOpenChange}>
   <DropdownMenu.Trigger
     class={[
-      "flex items-center justify-center gap-2xs rounded-control px-xs text-caption font-semibold whitespace-nowrap transition-control min-block-reader-quick min-inline-none max-expanded:flex-1 max-expanded:flex-col expanded:gap-xs expanded:rounded-reader-control-wide expanded:min-block-reader-control-wide",
+      QUICK_SETTING_LOOK,
       reading.direction === "rightToLeft"
         ? "bg-reader-lit text-on-reader-lit"
         : "hover:tint-reader-hover active:tint-reader-pressed",
     ]}
   >
-    <ArrowLeftRight size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+    <ArrowLeftRight
+      size={QUICK_SETTING_ICON_SIZE}
+      aria-hidden="true"
+      class="shrink-0"
+    />
     <span class="flex items-center gap-xs">
       {CHOICE_NAMES[reading.direction]()}
       {#if reading.isDetected}
