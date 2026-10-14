@@ -8,7 +8,7 @@ import {
   type LibrarySeries,
 } from "#lib/ipc/bindings.ts";
 
-import QuickOpenOption from "./QuickOpenOption.svelte";
+import QuickOpenOptionHarness from "./QuickOpenOptionHarness.svelte";
 
 const REAL_TITLE = "Hidden Story";
 const STAND_IN = /^Series \d{2,3}$/;
@@ -47,14 +47,12 @@ afterEach(() => {
 
 async function renderSeries(usesStandIns: boolean) {
   const series = await found();
-  return render(QuickOpenOption, {
+  return render(QuickOpenOptionHarness, {
     id: "option",
     choice: { kind: "series", series },
     isActive: false,
     usesStandIns,
-    onActivate: () => undefined,
     onChoose: () => undefined,
-    onKeyDown: () => undefined,
   });
 }
 

@@ -187,6 +187,38 @@ test("moves through the choices with the arrow keys and jumps groups with Tab", 
   );
 });
 
+test("leaves Home and End to the field caret", async ({ page }) => {
+  await openLibrary(page);
+  await pressQuickOpen(page);
+  await field(page).fill("settings");
+  await expect(options(page)).toHaveCount(7);
+  const before = await selected(page).innerText();
+
+  await field(page).evaluate((input) => {
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error("quick open field is not an input");
+    }
+    input.setSelectionRange(4, 4);
+  });
+  await field(page).press("Home");
+  const atStart = await field(page).evaluate((input) => {
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error("quick open field is not an input");
+    }
+    return input.selectionStart;
+  });
+  await field(page).press("End");
+  const atEnd = await field(page).evaluate((input) => {
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error("quick open field is not an input");
+    }
+    return input.selectionStart;
+  });
+
+  expect([atStart, atEnd]).toEqual([0, "settings".length]);
+  await expect(selected(page)).toHaveText(before);
+});
+
 test("goes to the page chosen with Enter", async ({ page }) => {
   await openLibrary(page);
   await pressQuickOpen(page);
@@ -321,6 +353,7 @@ test("tells whoever is in the field when nothing is called what was typed", asyn
   await field(page).fill("zzz");
 
   await expect(field(page)).toHaveAccessibleDescription("Nothing called “zzz”");
+  await expect(field(page)).toHaveAttribute("aria-expanded", "false");
   await expect(quickOpen(page).getByRole("status")).toHaveText(
     "Nothing called “zzz”",
   );

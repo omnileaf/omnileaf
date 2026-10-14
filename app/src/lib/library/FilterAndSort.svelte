@@ -9,7 +9,10 @@
     type LibraryListing,
     type LibrarySortBy,
   } from "#lib/ipc/bindings.ts";
-  import { DialogContent } from "#lib/components/ui/dialog/index.ts";
+  import {
+    DialogContent,
+    DialogTitle,
+  } from "#lib/components/ui/dialog/index.ts";
   import { TabsList, TabsTrigger } from "#lib/components/ui/tabs/index.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -144,9 +147,9 @@
         class="flex items-center gap-md ps-filter-panel-inline pe-lg pbs-filter-panel-top pbe-filter-panel-title-gap"
       >
         <HeaderBadge icon={ListFilter} tone="bg-accent-soft text-accent" />
-        <Dialog.Title class="flex-1 text-panel-title font-bold">
+        <DialogTitle class="flex-1 text-panel-title font-bold">
           {m.library_filter_and_sort()}
-        </Dialog.Title>
+        </DialogTitle>
         <button
           type="button"
           class="rounded-badge px-sm text-detail font-semibold text-accent block-panel-button"
@@ -191,9 +194,9 @@
           ></span>
           <div class="flex items-center gap-md">
             <HeaderBadge icon={ListFilter} tone="bg-accent-soft text-accent" />
-            <Dialog.Title id={titleId} class="flex-1 text-title font-bold">
+            <DialogTitle id={titleId} class="flex-1 text-title font-bold">
               {m.library_filter_and_sort()}
-            </Dialog.Title>
+            </DialogTitle>
             <button
               type="button"
               class="px-xs text-body font-semibold text-accent min-block-touch-target"

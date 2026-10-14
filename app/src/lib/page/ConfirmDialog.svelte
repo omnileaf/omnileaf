@@ -2,13 +2,14 @@
   import { AlertDialog } from "bits-ui";
   import type { Snippet } from "svelte";
 
-  import { DialogContent } from "#lib/components/ui/dialog/index.ts";
+  import {
+    DialogContent,
+    DialogTitle,
+  } from "#lib/components/ui/dialog/index.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
 
   import type { Glyph } from "./glyph";
   import HeaderBadge from "./HeaderBadge.svelte";
-
-  const BUTTON =
-    "rounded-full px-lg text-body font-semibold transition-control min-block-touch-button focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ios:max-medium:rounded-ios-button medium:rounded-button medium:text-label medium:min-block-pointer-target";
 
   let {
     isOpen,
@@ -50,11 +51,11 @@
     ></span>
     <div class="flex items-center gap-md">
       <HeaderBadge {icon} tone="bg-danger-soft text-danger" />
-      <AlertDialog.Title
+      <DialogTitle
         class="text-dialog-title font-bold max-medium:text-sheet-title"
       >
         {title}
-      </AlertDialog.Title>
+      </DialogTitle>
     </div>
     <AlertDialog.Description class="flex flex-col gap-md">
       {@render children()}
@@ -62,26 +63,12 @@
     <div
       class="mbs-xs flex flex-col-reverse gap-sheet-buttons medium:grid medium:grid-cols-2 medium:gap-sm"
     >
-      <button
-        type="button"
-        class={[
-          BUTTON,
-          "bg-chip hover:tint-hover active:tint-pressed medium:border medium:border-border medium:bg-card",
-        ]}
-        onclick={onCancel}
-      >
+      <Button type="button" look="confirm-cancel" onclick={onCancel}>
         {cancelLabel}
-      </button>
-      <button
-        type="button"
-        class={[
-          BUTTON,
-          "bg-danger text-on-danger hover:bg-danger-hover active:bg-danger-pressed",
-        ]}
-        onclick={onConfirm}
-      >
+      </Button>
+      <Button type="button" look="confirm-danger" onclick={onConfirm}>
         {confirmLabel}
-      </button>
+      </Button>
     </div>
   </DialogContent>
 </AlertDialog.Root>

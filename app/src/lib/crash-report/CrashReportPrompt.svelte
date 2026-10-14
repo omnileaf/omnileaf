@@ -2,7 +2,11 @@
   import { ArrowLeft, Bug, ChevronLeft } from "@lucide/svelte";
   import { AlertDialog } from "bits-ui";
 
-  import { DialogContent } from "#lib/components/ui/dialog/index.ts";
+  import {
+    DialogContent,
+    DialogTitle,
+  } from "#lib/components/ui/dialog/index.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
 
   import type { CrashOrigin } from "#lib/ipc/bindings.ts";
   import { lastShown } from "#lib/page/last-shown.svelte.ts";
@@ -118,14 +122,14 @@
               >
                 <Bug size={PHONE_BADGE_ICON_SIZE} />
               </span>
-              <AlertDialog.Title
+              <DialogTitle
                 level={1}
                 tabindex={-1}
                 data-prompt-title
                 class="text-crash-screen-title font-bold tracking-tight"
               >
                 {m.crash_report_title_now()}
-              </AlertDialog.Title>
+              </DialogTitle>
             </div>
             <AlertDialog.Description class="text-crash-screen-body text-muted">
               {PHONE_BODIES[offer.origin]()}
@@ -133,20 +137,12 @@
             <ReportDetails details={offer.details} />
             <AlwaysSendChoice bind:checked={alwaysSend} {look} />
             <div class="mbs-sm flex flex-col gap-sm self-stretch">
-              <button
-                type="button"
-                class="rounded-full bg-accent text-callout font-bold text-on-accent min-block-crash-screen-button ios:rounded-crash-screen-button"
-                onclick={send}
-              >
+              <Button type="button" look="crash-phone-primary" onclick={send}>
                 {m.crash_report_send_phone()}
-              </button>
-              <button
-                type="button"
-                class="rounded-full border border-quiet-edge text-callout font-bold min-block-crash-screen-button ios:rounded-crash-screen-button"
-                onclick={copy}
-              >
+              </Button>
+              <Button type="button" look="crash-phone-secondary" onclick={copy}>
                 {isCopied ? m.crash_report_copied() : m.crash_report_copy()}
-              </button>
+              </Button>
             </div>
             <ReportFailures {reporting} />
           </div>
@@ -161,13 +157,13 @@
             >
               <Bug size={DIALOG_BADGE_ICON_SIZE} />
             </span>
-            <AlertDialog.Title
+            <DialogTitle
               tabindex={-1}
               data-prompt-title
               class="text-dialog-title font-bold"
             >
               {TITLES[offer.origin]()}
-            </AlertDialog.Title>
+            </DialogTitle>
           </div>
           <AlertDialog.Description class="-mbs-xs text-dialog-body text-muted">
             {m.crash_report_body()}
@@ -175,27 +171,24 @@
           <ReportDetails details={offer.details} />
           <AlwaysSendChoice bind:checked={alwaysSend} {look} />
           <div class="mbs-xs flex flex-wrap items-center justify-end gap-sm">
-            <button
+            <Button
               type="button"
-              class="me-auto rounded-dialog-button px-md text-label font-semibold text-accent min-block-dialog-button touch:min-block-touch-target"
+              look="crash-dialog-copy"
+              class="me-auto"
               onclick={copy}
             >
               {isCopied ? m.crash_report_copied() : m.crash_report_copy()}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              class="rounded-dialog-button border border-border px-lg text-label font-semibold min-block-dialog-button touch:min-block-touch-target"
+              look="crash-dialog-secondary"
               onclick={decline}
             >
               {m.crash_report_decline()}
-            </button>
-            <button
-              type="button"
-              class="rounded-dialog-button bg-accent px-lg text-label font-semibold text-on-accent min-block-dialog-button touch:min-block-touch-target"
-              onclick={send}
-            >
+            </Button>
+            <Button type="button" look="crash-dialog-primary" onclick={send}>
               {m.crash_report_send()}
-            </button>
+            </Button>
           </div>
           <ReportFailures {reporting} />
         </div>
