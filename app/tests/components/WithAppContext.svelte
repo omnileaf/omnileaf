@@ -1,6 +1,10 @@
 <script lang="ts" generics="PageProps extends Record<string, unknown>">
   import { type Component, untrack } from "svelte";
 
+  import {
+    setSidebarSetting,
+    SidebarSetting,
+  } from "#lib/navigation/sidebar.svelte.ts";
   import { Notices, setNotices } from "#lib/notices/notices.ts";
   import {
     type ScreenshotMode,
@@ -17,6 +21,7 @@
 
   setScreenshotMode(untrack(() => screenshotMode));
   setNotices(new Notices());
+  setSidebarSetting(new SidebarSetting(undefined));
 
   const Page = $derived(page);
 </script>

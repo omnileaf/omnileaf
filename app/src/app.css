@@ -82,6 +82,24 @@
 }
 @custom-variant heading-crowded (&:where([data-crowded] *));
 @custom-variant picked (&:where([data-picked] *));
+@custom-variant in-toolbar {
+  @variant desktop {
+    @variant expanded {
+      &:where([data-page-toolbar], [data-page-toolbar] *) {
+        @slot;
+      }
+    }
+  }
+}
+@custom-variant sidebar-hidden {
+  @variant desktop {
+    @variant expanded {
+      &:where([data-sidebar-hidden], [data-sidebar-hidden] *) {
+        @slot;
+      }
+    }
+  }
+}
 @custom-variant closed (&[data-state="closed"]);
 @custom-variant while-picking (&:where(main:has([data-picking]) *));
 
@@ -291,7 +309,12 @@
   --spacing-pill: 3.5rem;
   --spacing-tile: 2.25rem;
   --spacing-option: 2.5rem;
-  --spacing-sidebar-icon: 1.25rem;
+  --spacing-sidebar-icon: 1rem;
+  --spacing-sidebar-desktop: 16rem;
+  --spacing-sidebar-hidden: 3.5rem;
+  --spacing-sidebar-row: 2rem;
+  --spacing-toolbar: 3.5rem;
+  --spacing-toolbar-rule: 1rem;
   --spacing-settings-icon: 1.125rem;
   --spacing-settings-row: 2.75rem;
   --spacing-phone-row: 3.5rem;
@@ -697,6 +720,7 @@
   --font-ui: var(--platform-font);
   --shadow-menu: var(--menu-shadow);
   --radius-menu: var(--menu-radius);
+  --radius-sidebar-row: var(--radius-md);
   --radius-tooltip: var(--tooltip-radius);
   --blur-menu: var(--menu-blur);
   --color-menu: var(--menu-surface);
@@ -712,6 +736,10 @@
   --color-foreground: var(--foreground);
   --color-muted: var(--secondary-text);
   --color-sidebar-ink: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-edge: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-on-sidebar-accent: var(--sidebar-accent-foreground);
   --color-faint: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
   --color-border: var(--border);
   --color-field: var(--input);

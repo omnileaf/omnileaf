@@ -255,6 +255,8 @@
   "library_add_folder_failed_body": "Something went wrong inside Omnileaf. Your library hasn't changed.",
   "library_add_folder_try_again": "Try again",
   "navigation_label": "Main",
+  "sidebar_hide": "Hide the sidebar",
+  "sidebar_show": "Show the sidebar",
   "browse_title": "Browse",
   "browse_empty_title": "Nothing to browse yet",
   "browse_empty_body": "Sources you add show up here, so you can read from them without copying files over.",
