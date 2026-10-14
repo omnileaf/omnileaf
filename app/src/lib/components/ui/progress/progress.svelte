@@ -22,7 +22,7 @@
 <ProgressPrimitive.Root
   bind:ref
   class={cn(
-    "flex overflow-hidden rounded-full bg-chip block-progress rtl:-scale-x-100",
+    "flex overflow-hidden rounded-full bg-accent/20 block-progress rtl:-scale-x-100",
     className,
   )}
   {value}
