@@ -59,14 +59,14 @@
         ? lookOf(choice.series).title
         : choice.place.label()}
     </span>
-    <span class="text-caption text-muted">
+    <span class={["text-caption", isActive ? "text-foreground" : "text-muted"]}>
       {choice.kind === "series"
         ? m.library_series_books({ count: choice.series.bookCount })
         : (choice.place.within?.() ?? "")}
     </span>
   </span>
   {#if isActive}
-    <span aria-hidden="true" class="shrink-0 text-caption text-muted">
+    <span aria-hidden="true" class="shrink-0 text-caption text-foreground">
       {m.search_key_open()}
     </span>
   {/if}
