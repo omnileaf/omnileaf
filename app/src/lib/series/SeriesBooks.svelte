@@ -39,6 +39,8 @@
   let {
     books,
     bookCount,
+    readCount,
+    bookmarkCount,
     listing,
     onListing,
     isComplete,
@@ -49,6 +51,8 @@
   }: {
     books: readonly SeriesBook[];
     bookCount: number;
+    readCount: number;
+    bookmarkCount: number;
     listing: SeriesBookListing;
     onListing: (listing: SeriesBookListing) => void;
     isComplete: boolean;
@@ -257,16 +261,25 @@
       bind:this={heading}
       id={headingId}
       tabindex="-1"
-      class="flex-1 text-series-heading font-bold"
+      class={[
+        "text-group-title font-semibold",
+        selection.isSelecting && "flex-1",
+        isWide.current && "sr-only",
+      ]}
     >
       {selection.isSelecting
         ? m.series_selected_count({ count: selection.count })
         : m.series_books_heading({ count: bookCount })}
     </h2>
-    {#if isWide.current}
-      <span class="text-detail text-muted max-large:hidden">
-        {m.series_select_range_hint()}
-      </span>
+    {#if !selection.isSelecting && !isWide.current}
+      <p class="flex-1 text-small text-muted">
+        {bookmarkCount > 0
+          ? m.series_read_and_bookmarked({
+              read: readCount,
+              bookmarked: bookmarkCount,
+            })
+          : m.series_read_only({ read: readCount })}
+      </p>
     {:else if selection.isSelecting}
       <Button
         type="button"
@@ -332,7 +345,6 @@
   {:else}
     <BookList
       books={shownBooks}
-      {dates}
       {isComplete}
       {onNearEnd}
       {selection}

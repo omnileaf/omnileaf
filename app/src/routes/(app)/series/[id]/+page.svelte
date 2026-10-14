@@ -252,6 +252,8 @@
                 ? books.list.items.map(bookStandIns(found.overview))
                 : books.list.items}
               bookCount={found.overview.bookCount}
+              readCount={found.overview.readCount}
+              bookmarkCount={found.overview.bookmarkCount}
               {listing}
               onListing={(chosen: SeriesBookListing) => {
                 listing = chosen;

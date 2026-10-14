@@ -889,10 +889,75 @@
     }
   ],
   "series_book_read": "⟦Ŕéáð··⟧",
+  "series_book_read_pages": [
+    {
+      "declarations": [
+        "input pages",
+        "local pagesPlural = pages: plural",
+        "local formattedPages = pages: number"
+      ],
+      "selectors": ["pagesPlural"],
+      "match": {
+        "pagesPlural=one": "⟦Ŕéáð · {formattedPages} þáĝé············⟧",
+        "pagesPlural=other": "⟦Ŕéáð · {formattedPages} þáĝéš············⟧"
+      }
+    }
+  ],
+  "series_book_unread_pages": [
+    {
+      "declarations": [
+        "input pages",
+        "local pagesPlural = pages: plural",
+        "local formattedPages = pages: number"
+      ],
+      "selectors": ["pagesPlural"],
+      "match": {
+        "pagesPlural=one": "⟦Ûñŕéáð · {formattedPages} þáĝé············⟧",
+        "pagesPlural=other": "⟦Ûñŕéáð · {formattedPages} þáĝéš·············⟧"
+      }
+    }
+  ],
+  "series_book_page_of": [
+    {
+      "declarations": [
+        "input page",
+        "input pages",
+        "local formattedPage = page: number",
+        "local formattedPages = pages: number"
+      ],
+      "match": {
+        "*": "⟦Þáĝé {formattedPage} öƒ {formattedPages}················⟧"
+      }
+    }
+  ],
+  "series_book_bookmarked": "⟦Ɓööķɱáŕķéð····⟧",
+  "series_book_new": "⟦Ñéŵ··⟧",
+  "series_column_pages": "⟦Þáĝéš··⟧",
+  "series_show_bookmarked": "⟦Ɓööķɱáŕķéð····⟧",
+  "series_read_and_bookmarked": [
+    {
+      "declarations": [
+        "input read",
+        "input bookmarked",
+        "local formattedRead = read: number",
+        "local formattedBookmarked = bookmarked: number"
+      ],
+      "match": {
+        "*": "⟦{formattedRead} ŕéáð · {formattedBookmarked} ƀööķɱáŕķéð······················⟧"
+      }
+    }
+  ],
+  "series_read_only": [
+    {
+      "declarations": ["input read", "local formattedRead = read: number"],
+      "match": {
+        "*": "⟦{formattedRead} ŕéáð········⟧"
+      }
+    }
+  ],
   "series_select": "⟦Šéļéçţ···⟧",
   "series_select_all": "⟦Šéļéçţ áļļ····⟧",
   "series_select_book": "⟦Šéļéçţ {title}······⟧",
-  "series_select_range_hint": "⟦Šĥíƒţ-çļíçķ ţö šéļéçţ á ŕáñĝé············⟧",
   "series_selected_count": [
     {
       "declarations": [
