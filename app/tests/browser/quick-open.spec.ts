@@ -81,6 +81,10 @@ const SEARCHING_BACKEND: FakeBackend = {
       cover: null,
       folder: null,
       upNext: null,
+      format: null,
+      creators: [],
+      summary: null,
+      tags: [],
     };
   },
 };

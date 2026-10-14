@@ -17,6 +17,11 @@ pub struct SeriesBook {
     #[specta(type = i32)]
     pub added_at_ms: i64,
     pub reading: BookReading,
+    /// Absent until the library counts a book's pages, which it does once the book is opened.
+    pub page_count: Option<u32>,
+    pub is_bookmarked: bool,
+    /// Whether the library found the book since its series was last looked at.
+    pub is_new: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
@@ -89,6 +94,9 @@ impl From<BookSummary> for SeriesBook {
             title: book.title,
             added_at_ms: book.added_at_ms,
             reading: book.reading.into(),
+            page_count: None,
+            is_bookmarked: false,
+            is_new: false,
         }
     }
 }
@@ -175,6 +183,22 @@ pub(crate) fn sample_book_id(seed: u32) -> BookId {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn leaves_a_books_page_count_bookmark_and_newness_unknown_until_the_library_reads_them() {
+        let book = SeriesBook::from(BookSummary {
+            id: sample_book_id(1).0,
+            position: 1,
+            title: "Volume 1".to_owned(),
+            added_at_ms: 0,
+            reading: catalog::BookReading::NotStarted,
+        });
+
+        assert_eq!(
+            (book.page_count, book.is_bookmarked, book.is_new),
+            (None, false, false)
+        );
+    }
 
     #[test]
     fn counts_the_page_reading_goes_on_from_starting_at_one() {
