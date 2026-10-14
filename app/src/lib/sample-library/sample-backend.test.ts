@@ -144,3 +144,21 @@ test("answers on the platform asked for", async () => {
 
   expect(info.platform).toBe("ios");
 });
+
+test("shows a series with its books gone when asked to", async () => {
+  const { backend } = backendFor("?series=empty");
+  const series = sampleSeriesId(4);
+
+  const overview = await backend.seriesOverview(series);
+  const books = await backend.seriesBooks(
+    series,
+    { shown: "all", direction: "ascending" },
+    null,
+  );
+
+  expect([overview.bookCount, overview.upNext, books.books]).toEqual([
+    0,
+    null,
+    [],
+  ]);
+});
