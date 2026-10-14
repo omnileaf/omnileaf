@@ -1147,6 +1147,21 @@
   "reader_settings": "⟦Ŕéáðíñĝ šéţţíñĝš·······⟧",
   "reader_settings_close": "⟦Çļöšé ŕéáðíñĝ šéţţíñĝš·········⟧",
   "reader_settings_done": "⟦Ðöñé··⟧",
+  "reader_position_pair": [
+    {
+      "declarations": [
+        "input first",
+        "input last",
+        "input count",
+        "local formattedFirst = first: number",
+        "local formattedLast = last: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "⟦{formattedFirst}–{formattedLast} / {formattedCount}·····················⟧"
+      }
+    }
+  ],
   "reader_applies_to_series": "⟦Çĥáñĝéš ĥéŕé áþþļý ţö {series} öñļý.···············⟧",
   "reader_applies_to_all": "⟦Çĥáñĝéš ĥéŕé áþþļý ţö éṽéŕý šéŕíéš.··············⟧",
   "reader_apply_to": "⟦Áþþļý ţö····⟧",
