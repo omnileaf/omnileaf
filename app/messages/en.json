@@ -889,10 +889,75 @@
     }
   ],
   "series_book_read": "Read",
+  "series_book_read_pages": [
+    {
+      "declarations": [
+        "input pages",
+        "local pagesPlural = pages: plural",
+        "local formattedPages = pages: number"
+      ],
+      "selectors": ["pagesPlural"],
+      "match": {
+        "pagesPlural=one": "Read \u00b7 {formattedPages} page",
+        "pagesPlural=other": "Read \u00b7 {formattedPages} pages"
+      }
+    }
+  ],
+  "series_book_unread_pages": [
+    {
+      "declarations": [
+        "input pages",
+        "local pagesPlural = pages: plural",
+        "local formattedPages = pages: number"
+      ],
+      "selectors": ["pagesPlural"],
+      "match": {
+        "pagesPlural=one": "Unread \u00b7 {formattedPages} page",
+        "pagesPlural=other": "Unread \u00b7 {formattedPages} pages"
+      }
+    }
+  ],
+  "series_book_page_of": [
+    {
+      "declarations": [
+        "input page",
+        "input pages",
+        "local formattedPage = page: number",
+        "local formattedPages = pages: number"
+      ],
+      "match": {
+        "*": "Page {formattedPage} of {formattedPages}"
+      }
+    }
+  ],
+  "series_book_bookmarked": "Bookmarked",
+  "series_book_new": "New",
+  "series_column_pages": "Pages",
+  "series_show_bookmarked": "Bookmarked",
+  "series_read_and_bookmarked": [
+    {
+      "declarations": [
+        "input read",
+        "input bookmarked",
+        "local formattedRead = read: number",
+        "local formattedBookmarked = bookmarked: number"
+      ],
+      "match": {
+        "*": "{formattedRead} read · {formattedBookmarked} bookmarked"
+      }
+    }
+  ],
+  "series_read_only": [
+    {
+      "declarations": ["input read", "local formattedRead = read: number"],
+      "match": {
+        "*": "{formattedRead} read"
+      }
+    }
+  ],
   "series_select": "Select",
   "series_select_all": "Select all",
   "series_select_book": "Select {title}",
-  "series_select_range_hint": "Shift-click to select a range",
   "series_selected_count": [
     {
       "declarations": [
