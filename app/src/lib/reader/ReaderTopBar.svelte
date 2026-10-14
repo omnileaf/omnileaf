@@ -63,7 +63,10 @@
         {...props}
         href={seriesHref}
         aria-label={backLabel}
-        class={cn(READER_BUTTON, "gap-2xs ios:ps-xs ios:pe-sm ios:inline-auto")}
+        class={cn(
+          READER_BUTTON,
+          "gap-2xs ios:shrink ios:ps-xs ios:pe-sm ios:inline-auto ios:min-inline-reader-dense",
+        )}
       >
         <ChevronLeft
           size={READER_ICON_SIZE}
