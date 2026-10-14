@@ -4,7 +4,7 @@ import english from "../../messages/en.json" with { type: "json" };
 import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
-import { expect, onPlatform, test } from "./fixtures.ts";
+import { expect, onPlatform, settle, test } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 type Messages = typeof english;
@@ -81,9 +81,11 @@ const CONTROLS: readonly SegmentedControl[] = [
         .getByRole("main")
         .getByRole("button", { name: messages.library_view_options })
         .click();
-      return page
-        .getByRole("dialog", { name: messages.library_view })
-        .getByRole("radiogroup", { name: messages.library_view_display });
+      const options = page.getByRole("dialog", { name: messages.library_view });
+      await settle(options);
+      return options.getByRole("radiogroup", {
+        name: messages.library_view_display,
+      });
     },
   },
   {
@@ -357,7 +359,7 @@ function rowsInFirstFrame(page: Page): Promise<number> {
           ?.click();
         requestAnimationFrame(() => {
           const segments = document.querySelectorAll(
-            "dialog[open] [role=radio]",
+            "[role=dialog][data-state=open] [role=radio]",
           );
           resolve(
             new Set(
@@ -399,7 +401,7 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
       ).toBeVisible();
 
       const firstFrame = await rowsInFirstFrame(page);
-      await nextFrames(page);
+      await settle(page.getByRole("dialog", { name: english.library_view }));
       const settled = rowsOf(await segmentsOf(displayGroup(page))).length;
 
       expect(settled).toBeGreaterThan(1);
@@ -416,7 +418,7 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
         .getByRole("main")
         .getByRole("button", { name: english.library_view_options })
         .click();
-      await nextFrames(page);
+      await settle(page.getByRole("dialog", { name: english.library_view }));
       const rows = rowsOf(await segmentsOf(displayGroup(page)));
       const rowStep = (rows[1]?.[0]?.y ?? 0) - (rows[0]?.[0]?.y ?? 0);
       const wrappedHeight = await page

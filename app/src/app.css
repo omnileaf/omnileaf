@@ -211,6 +211,7 @@
   --spacing-icon-tile: 2.25rem;
   --spacing-icon-badge: 3rem;
   --spacing-dialog: 26.25rem;
+  --spacing-dialog-limit: calc(100% - 6px - 2em);
   --spacing-header-badge: 2.5rem;
   --spacing-header-badge-icon: 1.25rem;
   --spacing-touch-button: 3.25rem;
@@ -531,6 +532,7 @@
   --z-index-series-bar: 1;
   --z-index-tab-bar: 1;
   --z-index-notice: 10;
+  --z-index-dialog: 20;
 
   --blur-glass: 24px;
   --blur-series-band: 40px;
@@ -1048,34 +1050,16 @@
 
 @utility sheet-motion {
   @media (prefers-reduced-motion: no-preference) {
-    translate: 0 100%;
-    transition-property: translate, display, overlay;
+    transition-property: translate;
     transition-duration: var(--transition-duration-slide);
     transition-timing-function: var(--ease-glass);
-    transition-behavior: allow-discrete;
 
-    &[open] {
-      translate: 0 0;
-
-      @starting-style {
-        translate: 0 100%;
-      }
+    @starting-style {
+      translate: 0 100%;
     }
 
-    &::backdrop {
-      opacity: 0;
-      transition-property: opacity, display, overlay;
-      transition-duration: var(--transition-duration-slide);
-      transition-timing-function: var(--ease-glass);
-      transition-behavior: allow-discrete;
-    }
-
-    &[open]::backdrop {
-      opacity: 1;
-
-      @starting-style {
-        opacity: 0;
-      }
+    &[data-state="closed"] {
+      translate: 0 100%;
     }
   }
 }
@@ -1083,22 +1067,36 @@
 @utility side-panel-motion {
   @media (prefers-reduced-motion: no-preference) {
     --panel-from: 100% 0;
-    translate: var(--panel-from);
-    transition-property: translate, display, overlay;
+    transition-property: translate;
     transition-duration: var(--transition-duration-slide);
     transition-timing-function: var(--ease-glass);
-    transition-behavior: allow-discrete;
 
     &:dir(rtl) {
       --panel-from: -100% 0;
     }
 
-    &[open] {
-      translate: 0 0;
+    @starting-style {
+      translate: var(--panel-from);
+    }
 
-      @starting-style {
-        translate: var(--panel-from);
-      }
+    &[data-state="closed"] {
+      translate: var(--panel-from);
+    }
+  }
+}
+
+@utility fade-motion {
+  @media (prefers-reduced-motion: no-preference) {
+    transition-property: opacity;
+    transition-duration: var(--transition-duration-slide);
+    transition-timing-function: var(--ease-glass);
+
+    @starting-style {
+      opacity: 0;
+    }
+
+    &[data-state="closed"] {
+      opacity: 0;
     }
   }
 }

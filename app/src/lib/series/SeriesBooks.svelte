@@ -142,7 +142,8 @@
 
   function isFromDialog(event: Event): boolean {
     return (
-      event.target instanceof Element && event.target.closest("dialog") !== null
+      event.target instanceof Element &&
+      event.target.closest(`[aria-modal="true"]`) !== null
     );
   }
 

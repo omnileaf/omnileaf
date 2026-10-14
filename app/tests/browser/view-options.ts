@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { expect } from "./fixtures.ts";
+import { expect, settle } from "./fixtures.ts";
 
 export function viewOptionsButton(page: Page): Locator {
   return page.getByRole("main").getByRole("button", { name: "View options" });
@@ -13,6 +13,7 @@ export function viewOptions(page: Page): Locator {
 export async function openViewOptions(page: Page): Promise<Locator> {
   await viewOptionsButton(page).click();
   await expect(viewOptions(page)).toBeVisible();
+  await settle(viewOptions(page));
   return viewOptions(page);
 }
 

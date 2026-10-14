@@ -25,7 +25,7 @@ const REMOVE_SAMPLE_LIBRARY = xpath(
   `//button[@aria-label='Remove ${SAMPLE_LIBRARY.name}']`,
 );
 const CONFIRM_REMOVAL = xpath(
-  "//dialog[@open]//button[normalize-space()='Remove folder']",
+  "//*[@aria-modal='true'][@data-state='open']//button[normalize-space()='Remove folder']",
 );
 const FOLDERS_WITHOUT_LINKED_FOLDERS = xpath(
   "//section[.//h2[normalize-space()='Folders']][not(.//li)]",
@@ -42,7 +42,10 @@ const LOADED_HOME_FOLDER = xpath(
 );
 
 const VIEW_OPTIONS_BUTTON = xpath("//button[@aria-label='View options']");
-const LIST_CHOICE = segmentedOption("//dialog[@open]", "List");
+const LIST_CHOICE = segmentedOption(
+  "//*[@aria-modal='true'][@data-state='open']",
+  "List",
+);
 const SERIES_IN_ONE_COLUMN = `const series = document.querySelector("ul[aria-label='Series']");
 return series !== null && series.children.length > 0 && getComputedStyle(series).gridTemplateColumns.split(" ").length === 1;`;
 

@@ -166,6 +166,44 @@ export async function settle(locator: Locator): Promise<void> {
     .toBe(0);
 }
 
+function noteTransitions(): void {
+  document.addEventListener("transitionrun", (event) => {
+    if (event.target instanceof Element) {
+      const root = document.documentElement;
+      const name =
+        event.target.getAttribute("role") ?? event.target.tagName.toLowerCase();
+      root.dataset.transitions = `${root.dataset.transitions ?? ""}${name} ${event.propertyName},`;
+    }
+  });
+}
+
+/** Notes every transition that starts from now on, on this page and the ones loaded after it, as the role or tag of its element and what it moves, such as "dialog translate". */
+export async function watchTransitions(
+  page: Page,
+): Promise<() => Promise<string[]>> {
+  await page.addInitScript(noteTransitions);
+  await page.evaluate(noteTransitions);
+  return () =>
+    page.evaluate(() =>
+      (document.documentElement.dataset.transitions ?? "")
+        .split(",")
+        .filter((transition) => transition !== ""),
+    );
+}
+
+/** Names what each transition running on the element moves, such as translate or opacity. */
+export function transitionsOf(locator: Locator): Promise<string[]> {
+  return locator.evaluate((element) =>
+    element
+      .getAnimations()
+      .flatMap((animation) =>
+        animation instanceof CSSTransition
+          ? [animation.transitionProperty]
+          : [],
+      ),
+  );
+}
+
 export const APP_PAGES = [
   "/",
   "/browse",

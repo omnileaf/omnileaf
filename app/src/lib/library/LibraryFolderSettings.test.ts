@@ -531,7 +531,9 @@ test("keeps the folder when a tap lands outside the removal question", async () 
   const { folders, dialog } = await renderSettings({ removeFolder });
   await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
 
-  await dialog.click({ position: { x: 10, y: -20 } });
+  await userEvent.click(document.documentElement, {
+    position: { x: 10, y: 10 },
+  });
 
   await expect.element(dialog).not.toBeInTheDocument();
   expect(removed).toEqual([]);
