@@ -3,6 +3,9 @@
 
 @custom-variant ios (&:where([data-platform="ios"], [data-platform="ios"] *));
 @custom-variant android (&:where([data-platform="android"], [data-platform="android"] *));
+@custom-variant macos (&:where([data-platform="macos"], [data-platform="macos"] *));
+@custom-variant windows (&:where([data-platform="windows"], [data-platform="windows"] *));
+@custom-variant linux (&:where([data-platform="linux"], [data-platform="linux"] *));
 @custom-variant touch (&:where([data-platform="android"], [data-platform="ios"], [data-platform="android"] *, [data-platform="ios"] *));
 @custom-variant desktop (&:where([data-platform="linux"], [data-platform="macos"], [data-platform="windows"], [data-platform="linux"] *, [data-platform="macos"] *, [data-platform="windows"] *));
 @custom-variant two-pane {
