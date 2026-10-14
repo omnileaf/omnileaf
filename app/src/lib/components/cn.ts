@@ -228,6 +228,7 @@ export const TOKEN_THEME = {
     "label",
     "lg",
     "library-search",
+    "library-search-toolbar",
     "list-cover",
     "list-cover-wide",
     "list-detail",

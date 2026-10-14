@@ -103,7 +103,7 @@
       </div>
       {#if count !== undefined}
         <div
-          class="heading-two-rows:order-4 heading-two-rows:touch:ps-xs heading-crowded:basis-full"
+          class="heading-two-rows:order-4 heading-two-rows:touch:ps-xs heading-crowded:basis-full in-toolbar:min-inline-none"
         >
           {@render count()}
         </div>

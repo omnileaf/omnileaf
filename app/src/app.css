@@ -372,7 +372,8 @@
   --spacing-select-end: 2.125rem;
   --spacing-panel-button: 2rem;
   --spacing-sheet-top: 3.75rem;
-  --spacing-library-search: 16.25rem;
+  --spacing-library-search: 15rem;
+  --spacing-library-search-toolbar: 16.25rem;
   --spacing-search-field: 2.875rem;
   --spacing-search-field-wide: 3.125rem;
   --spacing-search-field-inline: 0.875rem;
