@@ -205,6 +205,7 @@
     class={[
       "flex items-center gap-sm motion-safe:transition-colors motion-safe:duration-fade max-medium:sticky max-medium:-inset-bs-page-top max-medium:z-series-bar max-medium:-ms-page-start max-medium:-me-page-end max-medium:ps-page-start max-medium:pe-page-end max-medium:pbs-series-bar-top max-medium:pbe-xs",
       isTitleUnderBar && "max-medium:bg-background",
+      "max-medium:while-picking:invisible",
     ]}
   >
     {#if isWide.current}
@@ -235,7 +236,7 @@
         href={resolve("/(app)")}
         data-back-link
         aria-label={m.series_back_label()}
-        class="flex shrink-0 items-center justify-center self-start rounded-full bg-series-crumb text-on-series-crumb backdrop-blur-glass block-series-back inline-series-back android:block-touch-target android:inline-touch-target"
+        class="flex shrink-0 items-center justify-center self-start rounded-full border border-border bg-card text-foreground shadow-raised block-series-back inline-series-back android:block-touch-target android:inline-touch-target"
       >
         <ChevronLeft size={BACK_ICON_SIZE} aria-hidden="true" />
       </a>

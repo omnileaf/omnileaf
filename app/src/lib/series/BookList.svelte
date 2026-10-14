@@ -1,13 +1,15 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { LongPress } from "#lib/components/long-press.ts";
+  import { Card } from "#lib/components/ui/card/index.ts";
   import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
-  import type { SeriesBook } from "#lib/ipc/bindings.ts";
+  import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import BookRowText from "./BookRowText.svelte";
   import type { BookSelection } from "./book-selection.svelte";
+  import BookSheet from "./BookSheet.svelte";
 
   type BookId = SeriesBook["id"];
 
@@ -20,6 +22,7 @@
     onNearEnd,
     selection,
     onStartPicking,
+    onMark,
   }: {
     books: readonly SeriesBook[];
     dates: Intl.DateTimeFormat;
@@ -27,6 +30,7 @@
     onNearEnd: () => void;
     selection: BookSelection<BookId>;
     onStartPicking: (book: SeriesBook) => void;
+    onMark: (books: BookId[], mark: ReadMark) => void;
   } = $props();
 
   const longPress = new LongPress(LONG_PRESS_MS);
@@ -51,10 +55,16 @@
   {#if selection.isSelecting}
     <label
       class={[
-        "flex cursor-pointer items-center gap-md min-block-book-row max-medium:ps-page-start max-medium:pe-md medium:px-lg expanded:gap-md expanded:px-md expanded:min-block-book-row-wide",
+        "relative flex cursor-pointer items-center gap-md ps-md pe-md min-block-book-row",
         isPicked && "bg-selected-row",
       ]}
     >
+      {#if isPicked}
+        <span
+          aria-hidden="true"
+          class="absolute inset-s-none inset-bs-none inset-be-none bg-accent inline-selected-edge"
+        ></span>
+      {/if}
       <Checkbox
         bind:checked={
           () => isPicked,
@@ -63,7 +73,7 @@
           }
         }
         aria-label={m.series_select_book({ title: book.title })}
-        class="rounded-series-check border-check-off block-series-check inline-series-check expanded:rounded-series-check-wide expanded:block-series-check-wide expanded:inline-series-check-wide"
+        class="rounded-series-check border-check-off block-series-check inline-series-check"
         onclick={(event: MouseEvent) => {
           pickRunOnShift(event, book);
         }}
@@ -73,7 +83,7 @@
   {:else}
     <div
       role="presentation"
-      class="flex items-center gap-md select-none min-block-book-row max-medium:ps-page-start max-medium:pe-md medium:px-lg expanded:px-md expanded:min-block-book-row-wide"
+      class="flex items-center gap-xs ps-md pe-2xs select-none min-block-book-row"
       onpointerdown={(event) => {
         longPress.pressed(event, () => {
           onStartPicking(book);
@@ -93,6 +103,15 @@
       >
         <BookRowText {book} {dates} />
       </a>
+      <BookSheet
+        {book}
+        onMark={(mark: ReadMark) => {
+          onMark([book.id], mark);
+        }}
+        onSelect={() => {
+          onStartPicking(book);
+        }}
+      />
     </div>
   {/if}
 {/snippet}
@@ -106,9 +125,7 @@
   }}
 />
 
-<div
-  class="max-medium:-ms-page-start max-medium:-me-page-end medium:overflow-hidden medium:rounded-card medium:border medium:border-border medium:bg-card"
->
+<Card class="overflow-hidden">
   <VirtualGrid
     items={books}
     key={(book: SeriesBook) => book.id}
@@ -116,7 +133,7 @@
     {isComplete}
     {onNearEnd}
     class="grid-cols-1"
-    itemClass="border-be border-border last:max-medium:border-be-0 medium:last:border-be-0"
+    itemClass="border-be border-border last:border-be-0"
     cell={row}
   />
-</div>
+</Card>

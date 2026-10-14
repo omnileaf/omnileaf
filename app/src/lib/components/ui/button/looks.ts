@@ -18,8 +18,6 @@ export const BUTTON_LOOKS = {
   "header-control":
     "flex items-center justify-center gap-sm rounded-full transition-control large:rounded-control large:border large:border-field large:text-small large:font-medium",
   chip: "rounded-full border border-border bg-card font-semibold hover:bg-hover",
-  "toolbar-action":
-    "flex flex-col items-center justify-center rounded-selection-action font-semibold expanded:flex-row expanded:rounded-selection-action-wide expanded:bg-selection-action",
   "bar-icon":
     "flex items-center justify-center gap-xs rounded-control text-foreground transition-control enabled:hover:bg-hover enabled:active:bg-pressed",
   row: "flex items-center text-start transition-control hover:bg-hover active:bg-pressed",

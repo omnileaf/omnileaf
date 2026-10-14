@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { Eye, EyeOff, ListChecks } from "@lucide/svelte";
+  import { Eye, EyeOff, X } from "@lucide/svelte";
   import { tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { beforeNavigate } from "$app/navigation";
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Card } from "#lib/components/ui/card/index.ts";
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type {
     Platform,
     ReadMark,
@@ -26,7 +28,7 @@
 
   type BookId = SeriesBook["id"];
 
-  const ICON_SIZE = 16;
+  const ICON_SIZE = 18;
   const ACTION_ICON_SIZE = 20;
   const MARKS = [
     { mark: "read", icon: Eye, label: m.series_mark_read },
@@ -77,22 +79,16 @@
 
   let outcome: Outcome = $state({ kind: "none" });
   let section: HTMLElement | undefined = $state();
-  let selectButton: HTMLElement | null = $state(null);
-  let selectAllButton: HTMLElement | null = $state(null);
+  let heading: HTMLElement | null = $state(null);
   let selectAllBox: HTMLElement | null = $state(null);
 
   const isPicking = $derived(selection.isSelecting || selection.count > 0);
 
-  function startPickingFrom(book: SeriesBook): void {
+  async function startPickingFrom(book: SeriesBook): Promise<void> {
     outcome = { kind: "none" };
     selection.begin(book.id);
-  }
-
-  async function begin(): Promise<void> {
-    outcome = { kind: "none" };
-    selection.begin();
     await tick();
-    selectAllButton?.focus();
+    heading?.focus();
   }
 
   function isFocusHereOrLost(): boolean {
@@ -109,7 +105,7 @@
     selection.end();
     if (isFocusToKeep) {
       await tick();
-      (isWide.current ? selectAllBox : selectButton)?.focus();
+      (isWide.current ? selectAllBox : heading)?.focus();
     }
   }
 
@@ -205,11 +201,43 @@
 
 <section
   bind:this={section}
+  data-picking={selection.isSelecting || undefined}
   aria-labelledby={headingId}
   class="flex flex-col gap-sm"
 >
-  <div class="flex flex-wrap items-center gap-sm min-block-series-back">
-    <h2 id={headingId} class="flex-1 text-series-heading font-bold">
+  <div
+    class={[
+      "flex items-center gap-sm min-block-series-back",
+      selection.isSelecting &&
+        "sticky -inset-bs-page-top z-series-bar -mx-page-start bg-background px-page-start pbs-series-bar-top pbe-xs",
+    ]}
+  >
+    {#if selection.isSelecting}
+      <Tooltip
+        label={m.series_clear_selection()}
+        type="button"
+        aria-label={m.series_clear_selection()}
+        onclick={() => {
+          void end();
+        }}
+      >
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            look="icon"
+            class="shrink-0 border border-border bg-card block-series-back inline-series-back"
+          >
+            <X size={ICON_SIZE} aria-hidden="true" />
+          </Button>
+        {/snippet}
+      </Tooltip>
+    {/if}
+    <h2
+      bind:this={heading}
+      id={headingId}
+      tabindex="-1"
+      class="flex-1 text-series-heading font-bold"
+    >
       {selection.isSelecting
         ? m.series_selected_count({ count: selection.count })
         : m.series_books_heading({ count: bookCount })}
@@ -220,39 +248,15 @@
       </span>
     {:else if selection.isSelecting}
       <Button
-        bind:ref={selectAllButton}
         type="button"
         look="outline"
         aria-busy={isPickingAll}
-        class="px-md text-detail block-series-back"
+        class="rounded-full px-md py-2xs text-detail min-block-series-back"
         onclick={() => {
           void pickAll();
         }}
       >
         {m.series_select_all()}
-      </Button>
-      <Button
-        type="button"
-        look="filled"
-        class="rounded-control px-md text-detail font-bold block-series-back"
-        onclick={() => {
-          void end();
-        }}
-      >
-        {m.series_select_done()}
-      </Button>
-    {:else}
-      <Button
-        bind:ref={selectButton}
-        type="button"
-        look="outline"
-        class="flex items-center gap-icon-gap px-md text-detail block-series-back"
-        onclick={() => {
-          void begin();
-        }}
-      >
-        <ListChecks size={ICON_SIZE} aria-hidden="true" />
-        {m.series_select()}
       </Button>
     {/if}
   </div>
@@ -311,19 +315,24 @@
       {isComplete}
       {onNearEnd}
       {selection}
-      onStartPicking={startPickingFrom}
+      onStartPicking={(book: SeriesBook) => {
+        void startPickingFrom(book);
+      }}
+      onMark={(picked: BookId[], read: ReadMark) => {
+        void markBooks(picked, read);
+      }}
     />
     {#if selection.isSelecting && selection.count > 0}
-      <div
+      <Card
         role="group"
         aria-label={m.series_selection_toolbar()}
-        class="sticky inset-be-lg grid grid-cols-2 gap-2xs rounded-selection-bar bg-selection-bar p-selection-bar-inset text-on-selection-bar shadow-selection-bar ios:max-medium:inset-be-none"
+        class="sticky inset-be-lg grid grid-cols-2 gap-2xs p-xs shadow-popover ios:max-medium:inset-be-none"
       >
         {#each MARKS as { mark: read, icon: Icon, label } (read)}
           <Button
             type="button"
-            look="toolbar-action"
-            class="gap-xs text-caption min-block-selection-action"
+            look="bar-icon"
+            class="flex-col text-caption font-semibold min-block-selection-action"
             onclick={() => {
               void mark(read);
             }}
@@ -332,7 +341,7 @@
             {label()}
           </Button>
         {/each}
-      </div>
+      </Card>
     {/if}
   {/if}
   <p

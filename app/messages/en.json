@@ -816,7 +816,6 @@
   "series_book_read": "Read",
   "series_select": "Select",
   "series_select_all": "Select all",
-  "series_select_done": "Done",
   "series_select_book": "Select {title}",
   "series_select_range_hint": "Shift-click to select a range",
   "series_selected_count": [
