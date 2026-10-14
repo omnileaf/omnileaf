@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+  import {
+    DropdownMenu as DropdownMenuPrimitive,
+    type PortalProps,
+  } from "bits-ui";
 
   import { cn } from "#lib/components/cn.ts";
 
@@ -8,12 +11,13 @@
 
   let {
     ref = $bindable(null),
+    to = "body",
     class: className,
     ...restProps
-  }: DropdownMenuPrimitive.ContentProps = $props();
+  }: DropdownMenuPrimitive.ContentProps & { to?: PortalProps["to"] } = $props();
 </script>
 
-<DropdownMenuPrimitive.Portal>
+<DropdownMenuPrimitive.Portal {to}>
   <DropdownMenuPrimitive.Content
     bind:ref
     sideOffset={OPENER_GAP_PX}
