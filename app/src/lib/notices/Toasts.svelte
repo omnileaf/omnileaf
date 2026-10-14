@@ -16,18 +16,28 @@
 
   type Side = "left" | "right";
 
-  const PHONE_OFFSET = { left: 0, right: 0, bottom: "var(--spacing-md)" };
-  const CORNER_OFFSET = {
-    left: "var(--spacing-notice-end)",
-    right: "var(--spacing-notice-end)",
-    bottom: "var(--spacing-page-bottom)",
-  };
-
   let {
     notices,
     platform,
     theme,
-  }: { notices: Notices; platform: Platform; theme: Theme } = $props();
+    bottom,
+  }: {
+    notices: Notices;
+    platform: Platform;
+    theme: Theme;
+    bottom?: string;
+  } = $props();
+
+  const phoneOffset = $derived({
+    left: 0,
+    right: 0,
+    bottom: bottom ?? "var(--spacing-md)",
+  });
+  const cornerOffset = $derived({
+    left: "var(--spacing-notice-end)",
+    right: "var(--spacing-notice-end)",
+    bottom: bottom ?? "var(--spacing-page-bottom)",
+  });
 
   setUndoShortcut(untrack(() => undoShortcutOn(platform)));
 
@@ -146,8 +156,8 @@
     {position}
     {swipeDirections}
     expand={isSpread}
-    offset={CORNER_OFFSET}
-    mobileOffset={PHONE_OFFSET}
+    offset={cornerOffset}
+    mobileOffset={phoneOffset}
     containerAriaLabel={m.notice_region()}
     class="max-medium:absolute! medium:toast-list-width!"
     toastOptions={{ class: "max-medium:px-md" }}

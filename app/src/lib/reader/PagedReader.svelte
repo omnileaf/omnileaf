@@ -31,6 +31,7 @@
     readerSettings,
   } from "#lib/reader/reader-settings.svelte.ts";
   import ReaderMore from "#lib/reader/ReaderMore.svelte";
+  import { makesToastRoom } from "#lib/reader/toast-room.ts";
   import { spreadAt, spreadPosition, spreadsOf } from "#lib/reader/spreads.ts";
   import LayoutQuickSettings from "#lib/reader/LayoutQuickSettings.svelte";
   import ReaderGuide from "#lib/reader/ReaderGuide.svelte";
@@ -633,6 +634,7 @@
         !controls.isShown && "pointer-events-none opacity-0",
       ]}
       {...controlEvents}
+      {@attach makesToastRoom}
     >
       <ReaderPanel
         pages={book.pages}

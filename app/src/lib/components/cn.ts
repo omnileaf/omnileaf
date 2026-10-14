@@ -324,7 +324,6 @@ export const TOKEN_THEME = {
     "reader-thumbnail",
     "reader-thumbnail-wide",
     "reader-title-start-wide",
-    "reader-toast",
     "reader-top",
     "reader-top-wide",
     "reader-track",
