@@ -857,6 +857,8 @@
   "series_mark_read": "Mark read",
   "series_mark_unread": "Mark unread",
   "series_mark_all_read": "Mark all read",
+  "series_marked_book_read": "Marked {title} read",
+  "series_marked_book_unread": "Marked {title} unread",
   "series_mark_all_unread": "Mark all unread",
   "series_mark_failed": "Couldn't mark those books. Try again.",
   "series_marked_read": [

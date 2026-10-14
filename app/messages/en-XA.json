@@ -857,6 +857,8 @@
   "series_mark_read": "⟦Ṁáŕķ ŕéáð····⟧",
   "series_mark_unread": "⟦Ṁáŕķ ûñŕéáð·····⟧",
   "series_mark_all_read": "⟦Ṁáŕķ áļļ ŕéáð······⟧",
+  "series_marked_book_read": "⟦Ṁáŕķéð {title} ŕéáð········⟧",
+  "series_marked_book_unread": "⟦Ṁáŕķéð {title} ûñŕéáð·········⟧",
   "series_mark_all_unread": "⟦Ṁáŕķ áļļ ûñŕéáð······⟧",
   "series_mark_failed": "⟦Çöûļðñ'ţ ɱáŕķ ţĥöšé ƀööķš. Ţŕý áĝáíñ.···············⟧",
   "series_marked_read": [

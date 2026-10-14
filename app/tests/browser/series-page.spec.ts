@@ -901,6 +901,99 @@ test.describe("in the list on narrower screens", () => {
   }
 });
 
+test.describe("swiping a book on a phone", () => {
+  test.beforeEach(({ page }) => {
+    test.skip(isWide(page), "books swipe in the list below wide screens");
+  });
+
+  async function swipe(page: Page, index: number, across: number) {
+    const link = books(page).nth(index).getByRole("link");
+    const box = await boxOf(link);
+    const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const at = (moved: number) => ({
+      pointerType: "touch",
+      pointerId: 7,
+      isPrimary: true,
+      clientX: start.x + moved,
+      clientY: start.y,
+    });
+    await link.dispatchEvent("pointerdown", at(0));
+    for (const moved of [across / 4, across / 2, across]) {
+      await link.dispatchEvent("pointermove", at(moved));
+    }
+    await link.dispatchEvent("pointerup", at(across));
+  }
+
+  test("marks a book read with a full swipe right, and back with Undo", async ({
+    page,
+  }) => {
+    await openSeries(page);
+
+    await swipe(page, 5, 260);
+
+    await expect(books(page).nth(5)).toContainText("Read");
+    expect(shelf.marked).toEqual([{ books: [shelf.idOf(5)], mark: "read" }]);
+    await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+    await page.getByRole("button", { name: "Undo" }).click();
+    expect(shelf.marked.at(-1)).toEqual({
+      books: [shelf.idOf(5)],
+      mark: "unread",
+    });
+  });
+
+  test("marks a read book unread with a full swipe right", async ({ page }) => {
+    await openSeries(page);
+
+    await swipe(page, 0, 260);
+
+    expect(shelf.marked).toEqual([{ books: [shelf.idOf(0)], mark: "unread" }]);
+  });
+
+  test("reveals the action of a short swipe, to tap", async ({ page }) => {
+    await openSeries(page);
+
+    await swipe(page, 5, 90);
+    expect(shelf.marked).toEqual([]);
+    await books(page).nth(5).getByRole("button", { name: "Mark read" }).click();
+
+    expect(shelf.marked).toEqual([{ books: [shelf.idOf(5)], mark: "read" }]);
+  });
+
+  test("does nothing on a swipe left", async ({ page }) => {
+    await openSeries(page);
+
+    await swipe(page, 5, -260);
+
+    await expect(books(page).nth(5)).toContainText("Added");
+    expect(shelf.marked).toEqual([]);
+  });
+
+  test("mirrors the swipes in right-to-left text", async ({ page }) => {
+    await openSeries(page);
+    await page.evaluate(() => {
+      document.documentElement.dir = "rtl";
+    });
+
+    await swipe(page, 5, -260);
+
+    expect(shelf.marked).toEqual([{ books: [shelf.idOf(5)], mark: "read" }]);
+  });
+
+  test("moves a swiped book without sliding when motion is reduced", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openSeries(page);
+
+    await swipe(page, 5, 90);
+
+    await expect(books(page).nth(5).locator("[data-swiped]")).toHaveCSS(
+      "transition-duration",
+      "0s",
+    );
+  });
+});
+
 test("starts picking books with a long press on a touch screen", async ({
   page,
 }) => {
