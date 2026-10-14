@@ -23,7 +23,13 @@
     readerShortcuts,
   } from "#lib/reader/reader-keys.ts";
   import { ReaderControls } from "#lib/reader/reader-controls.svelte.ts";
+  import LightQuickSetting from "#lib/reader/LightQuickSetting.svelte";
+  import {
+    type ReaderLight,
+    readerSettings,
+  } from "#lib/reader/reader-settings.svelte.ts";
   import ReaderMore from "#lib/reader/ReaderMore.svelte";
+  import ReadingSettings from "#lib/reader/ReadingSettings.svelte";
   import ReaderPanel from "#lib/reader/ReaderPanel.svelte";
   import ReaderTopBar from "#lib/reader/ReaderTopBar.svelte";
   import { isZoomedIn, zoneAction } from "#lib/reader/reader-zoom.ts";
@@ -96,6 +102,17 @@
   const reading = untrack(() =>
     seriesReadingDirection(book.series, book.readingDirection),
   );
+  const settings = untrack(() => readerSettings(book.series));
+  const look = $derived(settings.look);
+  let isSettingsOpen = $state(false);
+  const BACKGROUNDS = {
+    black: "bg-reader-black",
+    grey: "bg-reader-grey",
+    white: "bg-reader-white",
+  } as const;
+  /** How far Light dims a page at its lowest brightness and tints it at its warmest. */
+  const DIMMEST = 0.8;
+  const WARMEST = 0.35;
   const leftTurn = $derived(inReadingOrder("previous", reading.direction));
   const rightTurn = $derived(inReadingOrder("next", reading.direction));
   let heading: HTMLHeadingElement | undefined = $state();
@@ -123,6 +140,11 @@
       return;
     }
     notices.show({ tone: "plain", icon: Eye, title: m.reader_marked_read() });
+  }
+
+  function openSettings(isOpen: boolean): void {
+    isSettingsOpen = isOpen;
+    holdControls(isOpen);
   }
 
   function holdControls(isOpen: boolean): void {
@@ -171,6 +193,10 @@
         void commands.changeFullScreen("toggle");
         return;
       case "leave":
+        if (isSettingsOpen) {
+          openSettings(false);
+          return;
+        }
         void leaveFullScreenOrBook();
         return;
     }
@@ -284,6 +310,41 @@
     report.show(turner.shown);
   });
 
+  /** The webview lets a wake lock go whenever the reader is out of sight, so it asks again on coming back. */
+  function keepScreenOn(): () => void {
+    let lock: WakeLockSentinel | undefined;
+    let isKept = true;
+    const ask = (): void => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+      navigator.wakeLock.request("screen").then(
+        (granted) => {
+          if (isKept) {
+            lock = granted;
+          } else {
+            void granted.release();
+          }
+        },
+        () => undefined,
+      );
+    };
+    ask();
+    document.addEventListener("visibilitychange", ask);
+    return () => {
+      isKept = false;
+      document.removeEventListener("visibilitychange", ask);
+      void lock?.release();
+    };
+  }
+
+  $effect(() => {
+    if (look.keepsScreenOn && "wakeLock" in navigator) {
+      return keepScreenOn();
+    }
+    return undefined;
+  });
+
   onMount(() => {
     heading?.focus();
     return () => {
@@ -316,6 +377,13 @@
     onOpenChange={holdControls}
   />
   <UpcomingQuickSettings />
+  <LightQuickSetting
+    light={look.light}
+    onChange={(light: ReaderLight) => {
+      settings.change("light", light);
+    }}
+    onOpenChange={holdControls}
+  />
 {/snippet}
 
 {#snippet more()}
@@ -333,67 +401,89 @@
 {/snippet}
 
 <main
-  data-theme="dark"
-  class="fixed inset-none overflow-hidden bg-reader text-on-reader expanded:bg-reader-wide"
+  data-theme={look.controls === "dark" ? "dark" : undefined}
+  class={[
+    "fixed inset-none overflow-hidden text-on-reader",
+    BACKGROUNDS[look.background],
+  ]}
   onpointermove={(event) => {
     if (isAtRevealEdge(event)) {
       controls.show();
     }
   }}
 >
-  <PageStack
-    pages={book.pages}
-    shown={turner.shown}
-    onShownReady={() => {
-      if (!hasOpened) {
-        hasOpened = true;
-        controls.bookOpened();
-      }
-    }}
-  />
   <div
-    dir="ltr"
-    role="presentation"
     class={[
-      "absolute inset-none flex",
-      isZoomedIn(viewportScale)
-        ? "touch-manipulation"
-        : "touch-pan-y touch-pinch-zoom",
+      "absolute inset-none",
+      isSettingsOpen && "expanded:inset-e-reader-settings-room",
     ]}
-    onpointerdown={(event) => {
-      swipe.started(event);
-    }}
-    onpointerup={onSwipeEnd}
-    onpointercancel={() => {
-      swipe.cancelled();
-    }}
   >
-    <button
-      type="button"
-      aria-label={TURN_LABELS[leftTurn]()}
-      class="shrink-0 cursor-w-resize inline-3/10 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent expanded:inline-1/3"
-      onclick={(event) => {
-        onZone(event, leftTurn);
+    <PageStack
+      pages={book.pages}
+      shown={turner.shown}
+      onShownReady={() => {
+        if (!hasOpened) {
+          hasOpened = true;
+          controls.bookOpened();
+        }
       }}
-    ></button>
-    <button
-      type="button"
-      aria-label={controls.isShown
-        ? m.reader_hide_controls()
-        : m.reader_show_controls()}
-      class="flex-1 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
-      onclick={(event) => {
-        onZone(event, "toggleControls");
+    />
+    {#if look.light.isOn}
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-none bg-reader-black"
+        style:opacity={((100 - look.light.brightness) / 100) * DIMMEST}
+      ></div>
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-none bg-reader-warmth mix-blend-multiply"
+        style:opacity={(look.light.warmth / 100) * WARMEST}
+      ></div>
+    {/if}
+    <div
+      dir="ltr"
+      role="presentation"
+      class={[
+        "absolute inset-none flex",
+        isZoomedIn(viewportScale)
+          ? "touch-manipulation"
+          : "touch-pan-y touch-pinch-zoom",
+      ]}
+      onpointerdown={(event) => {
+        swipe.started(event);
       }}
-    ></button>
-    <button
-      type="button"
-      aria-label={TURN_LABELS[rightTurn]()}
-      class="shrink-0 cursor-e-resize inline-3/10 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent expanded:inline-1/3"
-      onclick={(event) => {
-        onZone(event, rightTurn);
+      onpointerup={onSwipeEnd}
+      onpointercancel={() => {
+        swipe.cancelled();
       }}
-    ></button>
+    >
+      <button
+        type="button"
+        aria-label={TURN_LABELS[leftTurn]()}
+        class="shrink-0 cursor-w-resize inline-3/10 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent expanded:inline-1/3"
+        onclick={(event) => {
+          onZone(event, leftTurn);
+        }}
+      ></button>
+      <button
+        type="button"
+        aria-label={controls.isShown
+          ? m.reader_hide_controls()
+          : m.reader_show_controls()}
+        class="flex-1 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
+        onclick={(event) => {
+          onZone(event, "toggleControls");
+        }}
+      ></button>
+      <button
+        type="button"
+        aria-label={TURN_LABELS[rightTurn]()}
+        class="shrink-0 cursor-e-resize inline-3/10 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent expanded:inline-1/3"
+        onclick={(event) => {
+          onZone(event, rightTurn);
+        }}
+      ></button>
+    </div>
   </div>
   <h1 bind:this={heading} tabindex="-1" class="sr-only">{named.title}</h1>
   {#if turner.isPastEnd}
@@ -421,6 +511,10 @@
         {pageCount}
         {quickSettings}
         {more}
+        {isSettingsOpen}
+        onSettings={() => {
+          openSettings(!isSettingsOpen);
+        }}
         onFullScreen={() => {
           act("fullScreen");
         }}
@@ -429,6 +523,7 @@
     <div
       class={[
         "absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom transition-all motion-safe:duration-fade motion-safe:ease-out expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock",
+        isSettingsOpen && "expanded:inset-e-reader-settings-room",
         !controls.isShown && "pointer-events-none opacity-0",
       ]}
       {...controlEvents}
@@ -457,5 +552,14 @@
       </div>
     {/if}
   {/if}
+  <ReadingSettings
+    isOpen={isSettingsOpen}
+    {settings}
+    {reading}
+    seriesTitle={named.seriesTitle}
+    onClose={() => {
+      openSettings(false);
+    }}
+  />
   <p role="status" class="sr-only">{announced}</p>
 </main>

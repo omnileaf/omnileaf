@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    Columns2,
-    type LucideProps,
-    MoveVertical,
-    Sun,
-  } from "@lucide/svelte";
+  import { Columns2, type LucideProps, MoveVertical } from "@lucide/svelte";
   import type { Component } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
@@ -25,7 +20,6 @@
   const UPCOMING: readonly UpcomingSetting[] = [
     { label: m.reader_two_pages, icon: Columns2, isDesktopOnly: false },
     { label: m.reader_fit_height, icon: MoveVertical, isDesktopOnly: true },
-    { label: m.reader_light, icon: Sun, isDesktopOnly: false },
   ];
 </script>
 

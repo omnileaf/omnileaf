@@ -179,7 +179,10 @@ const ICON_ACTIONS: readonly IconAction[] = [
     label: NEXT_BOOK_LABEL,
   },
   { ...readerComingSoonStep("Keyboard shortcuts"), isShownOn: isWideScreen },
-  readerComingSoonStep("Reading settings"),
+  {
+    ...readerComingSoonStep("Reading settings"),
+    label: "Reading settings",
+  },
   readerComingSoonStep("Bookmark this page"),
   seriesBarStep("Mark read"),
   seriesBarStep("Mark unread"),
