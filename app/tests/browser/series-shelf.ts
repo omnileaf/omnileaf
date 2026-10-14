@@ -1,3 +1,5 @@
+import { isShownBy } from "../../src/lib/series/books-shown.ts";
+
 import type { FakeBackend } from "./fake-backend.ts";
 import { DEFAULT_BACKEND } from "./fixtures.ts";
 
@@ -59,6 +61,14 @@ export class FakeShelf {
     return this.#books;
   }
 
+  bookmark(index: number): void {
+    this.#bookAt(index).isBookmarked = true;
+  }
+
+  markNew(index: number): void {
+    this.#bookAt(index).isNew = true;
+  }
+
   readTo(index: number, page: number): void {
     this.#bookAt(index).reading = { state: "started", page };
   }
@@ -92,6 +102,7 @@ export class FakeShelf {
           bookCount: this.#books.length,
           readCount: this.#books.filter((book) => book.reading.state === "read")
             .length,
+          bookmarkCount: this.#books.filter((book) => book.isBookmarked).length,
           cover: null,
           folder: SERIES_FOLDER,
           upNext: this.#upNext() ?? null,
@@ -102,10 +113,9 @@ export class FakeShelf {
         if (after !== null) {
           await this.#laterPages;
         }
-        const shown =
-          listing.shown === "unread"
-            ? this.#books.filter((book) => book.reading.state !== "read")
-            : this.#books;
+        const shown = this.#books.filter((book) =>
+          isShownBy(listing.shown, book),
+        );
         const ordered =
           listing.direction === "descending" ? shown.toReversed() : shown;
         const listed = id === SERIES_ID ? ordered : [];
