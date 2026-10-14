@@ -52,6 +52,16 @@ pub enum ReadTo {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
+pub struct ReadingWeek {
+    pub read_seconds: u32,
+    pub books_opened: u32,
+    /// Books a session this week reached the last page of.
+    pub books_finished: u32,
+    pub days_in_a_row: u32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct ReadingDay {
     pub day: LocalDay,
     pub read_seconds: u32,

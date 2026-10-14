@@ -15,6 +15,7 @@ import {
   expect,
   fakeAppInfo,
   LARGE_MIN_WIDTH,
+  NOTHING_READ_THIS_WEEK,
   MEDIUM_MIN_WIDTH,
   test,
   viewportOf,
@@ -150,7 +151,10 @@ function pagedSessions(
 const READ_BACKEND: FakeBackend = {
   ...DEFAULT_BACKEND,
   readingHistory: pagedSessions(SESSIONS),
-  readingTimeSince: () => READ_THIS_WEEK,
+  readingWeek: () => ({
+    ...NOTHING_READ_THIS_WEEK,
+    readSeconds: READ_THIS_WEEK,
+  }),
   readingTimeBetween: (firstDay, lastDay) =>
     firstDay === LAST_WEEK_FIRST && lastDay === LAST_WEEK_LAST
       ? READ_LAST_WEEK
@@ -434,8 +438,10 @@ test.describe("on a device whose region starts its weeks on Monday", () => {
     locale: "en-GB",
     backend: {
       ...READ_BACKEND,
-      readingTimeSince: (firstDay) =>
-        firstDay === MONDAY ? READ_THIS_WEEK : 0,
+      readingWeek: (weekStart) => ({
+        ...NOTHING_READ_THIS_WEEK,
+        readSeconds: weekStart === MONDAY ? READ_THIS_WEEK : 0,
+      }),
     },
   });
 

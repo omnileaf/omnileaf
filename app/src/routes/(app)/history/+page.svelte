@@ -24,7 +24,7 @@
   let today = $state(localDayOf(new Date()));
   const weekTotals = new WeekTotals(
     {
-      since: (first) => commands.readingTimeSince(first),
+      week: (weekStart, day) => commands.readingWeek(weekStart, day),
       between: (first, last) => commands.readingTimeBetween(first, last),
     },
     (error) => {
@@ -57,7 +57,7 @@
 {#snippet readThisWeekTotal()}
   <p class="text-small text-muted large:ms-xs">
     {m.history_read_this_week({
-      duration: readingTime(weekTotals.thisWeekSeconds ?? 0),
+      duration: readingTime(weekTotals.thisWeek?.readSeconds ?? 0),
     })}
   </p>
 {/snippet}
@@ -66,8 +66,8 @@
   title={m.history_title()}
   showsLabel={screenshotMode.showsLabel}
   count={hasEntries &&
-  weekTotals.thisWeekSeconds !== undefined &&
-  weekTotals.thisWeekSeconds > 0
+  weekTotals.thisWeek !== undefined &&
+  weekTotals.thisWeek.readSeconds > 0
     ? readThisWeekTotal
     : undefined}
 />

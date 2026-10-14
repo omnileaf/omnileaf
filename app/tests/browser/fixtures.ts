@@ -40,6 +40,13 @@ export function fakeAppInfo(platform: Platform): AppInfo {
   };
 }
 
+export const NOTHING_READ_THIS_WEEK = {
+  readSeconds: 0,
+  booksOpened: 0,
+  booksFinished: 0,
+  daysInARow: 0,
+} as const;
+
 export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => fakeAppInfo("linux"),
   libraryProblem: () => null,
@@ -69,7 +76,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   pageShown: () => null,
   closeBook: () => null,
   readingHistory: () => ({ entries: [], next: null }),
-  readingTimeSince: () => 0,
+  readingWeek: () => NOTHING_READ_THIS_WEEK,
   readingTimeBetween: () => 0,
   bookReadTime: () => 0,
   libraryListing: () => DEFAULT_LIBRARY_LISTING,
