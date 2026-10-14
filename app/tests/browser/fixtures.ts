@@ -428,9 +428,20 @@ export async function selectedByDoubleClick(
   return page.evaluate(() => getSelection()?.toString() ?? "");
 }
 
-export const test = base.extend<{ backend: FakeBackend }>({
+export const test = base.extend<{
+  backend: FakeBackend;
+  hasSeenReaderGuide: boolean;
+}>({
   backend: [DEFAULT_BACKEND, { option: true }],
-  page: async ({ page, backend }, use) => {
+  hasSeenReaderGuide: [true, { option: true }],
+  page: async ({ page, backend, hasSeenReaderGuide }, use) => {
+    if (hasSeenReaderGuide) {
+      await page.addInitScript(() => {
+        for (const direction of ["leftToRight", "rightToLeft"]) {
+          localStorage.setItem(`omnileaf.readerGuide.${direction}`, "seen");
+        }
+      });
+    }
     await installFakeBackend(page, backend);
     await use(page);
   },
