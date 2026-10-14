@@ -347,6 +347,15 @@ async fn leaves_the_direction_unknown_for_a_book_without_comic_info() {
 }
 
 #[tokio::test]
+async fn leaves_a_books_bookmarks_unkept_while_the_library_keeps_none() {
+    let reader = Reader::with_book("no-bookmarks").await;
+
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(opened.bookmarked_pages, None);
+}
+
+#[tokio::test]
 async fn opens_a_book_whose_comic_info_is_malformed_with_no_direction() {
     let reader = Reader::with_comic_info("bad-comic-info", b"<ComicInfo><Manga>Yes</Title>").await;
 
