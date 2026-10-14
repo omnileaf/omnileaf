@@ -150,8 +150,8 @@
       ? undefined
       : measuredColumns,
   );
-  let emptyAddFolder: HTMLButtonElement | undefined = $state();
-  let headingAddFolder: HTMLButtonElement | undefined = $state();
+  let emptyAddFolder: HTMLElement | null = $state(null);
+  let headingAddFolder: HTMLElement | null = $state(null);
 
   onMount(() => {
     void listing.load();

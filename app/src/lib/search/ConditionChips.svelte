@@ -2,6 +2,7 @@
   import { X } from "@lucide/svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { FilterCondition } from "#lib/library/library-listing.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -40,6 +41,9 @@
   class={["flex flex-wrap gap-xs", className]}
 >
   {#each conditions as condition (condition)}
+    {@const removeLabel = m.search_remove_condition({
+      condition: CONDITION_LABELS[condition](),
+    })}
     <li
       class={[
         "inline-flex shrink-0 items-center gap-xs rounded-full bg-accent-soft text-detail font-semibold",
@@ -47,14 +51,10 @@
       ]}
     >
       {CONDITION_LABELS[condition]()}
-      <button
+      <Tooltip
+        label={removeLabel}
         type="button"
-        aria-label={m.search_remove_condition({
-          condition: CONDITION_LABELS[condition](),
-        })}
-        title={m.search_remove_condition({
-          condition: CONDITION_LABELS[condition](),
-        })}
+        aria-label={removeLabel}
         class={[
           "flex items-center justify-center rounded-full",
           LOOKS[look].remove,
@@ -64,7 +64,7 @@
         }}
       >
         <X size={REMOVE_ICON_SIZE} strokeWidth={2.5} aria-hidden="true" />
-      </button>
+      </Tooltip>
     </li>
   {/each}
 </ul>

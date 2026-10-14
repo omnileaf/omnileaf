@@ -115,7 +115,9 @@ test('shows Remove as an icon with "Remove folder" as the tooltip', async ({
   const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
 
   await expect(remove).toHaveText("");
-  await expect(remove).toHaveAttribute("title", "Remove folder");
+  await remove.hover();
+  await expect(remove).toHaveAccessibleDescription("Remove folder");
+  await expect(remove).not.toHaveAttribute("title");
 });
 
 test("rings Remove when the keyboard reaches it", async ({ page }) => {
