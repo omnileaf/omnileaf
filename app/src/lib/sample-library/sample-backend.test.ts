@@ -181,3 +181,30 @@ test("relates Sample Series 04 to the series the boards draw beside it", async (
     ["Sample Series 01", { kind: "sameWriter" }, 9, 12],
   ]);
 });
+
+test("lists a creator's series with their role on each", async () => {
+  const { backend } = backendFor();
+
+  const found = await backend.creatorSeries("Author A");
+
+  expect(found.slice(0, 3).map(({ title, role }) => [title, role])).toEqual([
+    ["Sample Series 01", "storyAndArt"],
+    ["Sample Series 04", "storyAndArt"],
+    [LONG_TITLE, "story"],
+  ]);
+});
+
+test("counts the series that name each creator", async () => {
+  const { backend } = backendFor();
+
+  const overview = await backend.seriesOverview(sampleSeriesId(19));
+
+  expect(
+    overview.creators.map(({ name, seriesCount }) => [name, seriesCount]),
+  ).toEqual([
+    ["Author A", 5],
+    ["Author B", 1],
+    ["Author C", 1],
+    ["Author D", 1],
+  ]);
+});
