@@ -387,6 +387,8 @@ test("hides and shows the controls with a tap in the middle of the page and the 
 });
 
 const CONTROLS_HIDE_AFTER_MS = 3000;
+/** Playwright's clock draws a frame every 16ms, and the controls count their time from the frame they are drawn in. */
+const FRAME_MS = 16;
 /** Long enough for the book to open, and well short of the time the controls stay up for. */
 const OPENING_MS = 1000;
 
@@ -426,7 +428,7 @@ test("hides the controls shown by a tap again after the same delay", async ({
 
   await page.clock.runFor(CONTROLS_HIDE_AFTER_MS - 1);
   await expectControlsShown(page);
-  await page.clock.runFor(1);
+  await page.clock.runFor(FRAME_MS + 1);
 
   await expectControlsHidden(page);
 });
@@ -441,7 +443,7 @@ test("keeps the controls up while the pointer rests on them", async ({
   await expectControlsShown(page);
   const { width, height } = viewportOf(page);
   await page.mouse.move(width / 2, height / 2);
-  await page.clock.runFor(CONTROLS_HIDE_AFTER_MS);
+  await page.clock.runFor(CONTROLS_HIDE_AFTER_MS + FRAME_MS);
 
   await expectControlsHidden(page);
 });
