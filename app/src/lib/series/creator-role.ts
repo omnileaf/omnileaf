@@ -1,6 +1,5 @@
 import type { CreatorRole } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
-import { getLocale } from "#lib/paraglide/runtime.js";
 
 export function roleName(role: CreatorRole | null): string {
   switch (role) {
@@ -13,11 +12,4 @@ export function roleName(role: CreatorRole | null): string {
     case null:
       return m.series_detail_by();
   }
-}
-
-export function nameList(names: readonly string[]): string {
-  return new Intl.ListFormat(getLocale(), {
-    type: "unit",
-    style: "short",
-  }).format(names);
 }
