@@ -21,7 +21,7 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 import { openViewOptions } from "./view-options.ts";
 
 const REMOVE_FOLDER = "Remove folder";
-const NEXT_BOOK_LABEL = `Next book: ${NEXT_BOOK.title}`;
+const NEXT_BOOK_LABEL = `Next chapter: ${NEXT_BOOK.title}`;
 
 const FOLDERS_BACKEND: FakeBackend = {
   ...DEFAULT_BACKEND,

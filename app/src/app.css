@@ -411,12 +411,12 @@
   --spacing-reader-back-start-wide: 0.375rem;
   --spacing-reader-title-start-wide: 0.625rem;
   --spacing-reader-divider: 1.375rem;
-  --spacing-reader-panel-top: 0.625rem;
+  --spacing-reader-panel-top: 0.375rem;
   --spacing-reader-panel-inline: 0.5rem;
   --spacing-reader-panel-bottom: 0.375rem;
   --spacing-reader-panel-inline-wide: 0.875rem;
   --spacing-reader-panel-bottom-wide: 0.5rem;
-  --spacing-reader-dock: 55rem;
+  --spacing-reader-dock: 40rem;
   --spacing-reader-panel-gap: 0.375rem;
   --spacing-reader-dock-gap: 0.625rem;
   --spacing-reader-slider: 2.75rem;

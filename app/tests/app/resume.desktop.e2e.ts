@@ -122,12 +122,13 @@ test(
       pageShownScript(PAGE_READ_TO),
       `page ${String(PAGE_READ_TO)} shown again`,
     );
-    const line = await current().waitFor(
-      xpath(
-        `//header//p[contains(normalize-space(), 'Page ${String(PAGE_READ_TO)} of 8')]`,
-      ),
+    await current().waitFor(
+      xpath("//main/h1[normalize-space()='Sample Series 01 v01']"),
     );
-    expect(await line.text()).toBe("Sample Series 01 v01 · Page 3 of 8");
+    const count = await current().waitFor(
+      xpath(`//main//span[normalize-space()='${String(PAGE_READ_TO)} / 8']`),
+    );
+    expect(await count.text()).toBe("3 / 8");
   },
   RESUME_TIMEOUT_MS,
 );

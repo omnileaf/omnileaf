@@ -31,6 +31,8 @@
   /** Long enough that turning pages in a run announces only the page they stop on. */
   const ANNOUNCE_DELAY_MS = 300;
   const CONTROLS_HIDE_AFTER_MS = 3000;
+  /** How near the window's top or bottom the pointer brings hidden controls back. */
+  const REVEAL_EDGE_PX = 48;
   const TURN_STEPS = { next: 1, previous: -1 } as const satisfies Record<
     SwipeTurn,
     number
@@ -67,6 +69,9 @@
   const pageCount = $derived(book.pages.length);
   const pageLine = $derived(
     m.reader_slider_value({ page: pageNumber, count: pageCount }),
+  );
+  const seriesHref = $derived(
+    resolve("/(app)/series/[id]", { id: book.series }),
   );
   let announced = $state(untrack(() => pageLine));
 
@@ -141,7 +146,15 @@
     if (left.status === "ok" && left.data) {
       return;
     }
-    await goto(resolve("/(app)"));
+    await goto(seriesHref);
+  }
+
+  function isAtRevealEdge(event: PointerEvent): boolean {
+    return (
+      event.pointerType === "mouse" &&
+      (event.clientY < REVEAL_EDGE_PX ||
+        event.clientY > window.innerHeight - REVEAL_EDGE_PX)
+    );
   }
 
   /** Leaves no tapped zone focused, so Space goes on turning pages rather than pressing the zone tapped last. */
@@ -208,6 +221,11 @@
 
 <main
   class="fixed inset-none overflow-hidden bg-reader text-on-reader expanded:bg-reader-wide"
+  onpointermove={(event) => {
+    if (isAtRevealEdge(event)) {
+      controls.show();
+    }
+  }}
 >
   <PageStack pages={book.pages} shown={turner.shown} />
   <div
@@ -262,12 +280,9 @@
     {...controlEvents}
   >
     <ReaderTopBar
+      {seriesHref}
       seriesTitle={named.seriesTitle}
-      bookLine={m.reader_book_line({
-        title: named.title,
-        page: pageNumber,
-        count: pageCount,
-      })}
+      bookTitle={named.title}
       onFullScreen={() => {
         act("fullScreen");
       }}
@@ -291,5 +306,16 @@
       }}
     />
   </div>
+  {#if !controls.isShown}
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-x-none inset-be-reader-bar-bottom flex justify-center"
+    >
+      <span
+        class="rounded-full bg-reader-glass px-sm py-2xs text-caption font-semibold text-reader-muted tabular-nums"
+        >{m.reader_position({ page: pageNumber, count: pageCount })}</span
+      >
+    </div>
+  {/if}
   <p role="status" class="sr-only">{announced}</p>
 </main>
