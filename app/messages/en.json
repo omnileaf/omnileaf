@@ -19,6 +19,9 @@
     }
   ],
   "library_series_failed": "Couldn't load your library. Try again later.",
+  "library_unchanged": "Nothing in your library has changed.",
+  "library_try_again": "Try again",
+  "library_loading": "Loading your library",
   "library_series_count": [
     {
       "declarations": [
@@ -75,6 +78,7 @@
   "library_on_covers_language": "Language",
   "library_on_covers_reading_progress": "Reading progress",
   "library_on_covers_continue_button": "Continue reading button",
+  "library_books_read": "{read} of {count} books read",
   "library_unread_count": [
     {
       "declarations": [
@@ -714,7 +718,7 @@
   "search_title": "Search",
   "search_open": "Search",
   "search_library_field": "Search the library",
-  "search_library_placeholder": "Search",
+  "search_library_placeholder": "Search the library",
   "search_field": "Search your library",
   "search_clear": "Clear",
   "search_cancel": "Cancel",
