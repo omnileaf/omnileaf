@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   EXPANDED_MIN_WIDTH,
@@ -108,6 +109,30 @@ test.describe("a book opened partway through", () => {
       "aria-valuetext",
       `Page 1 of ${String(PAGE_COUNT)}`,
     );
+  });
+});
+
+test.describe("a toast over the reader", () => {
+  test.use({
+    backend: {
+      ...readerBackend(DEFAULT_BACKEND),
+      openBook: () => readerBook(ON_PAGE_14),
+    },
+  });
+
+  test("sits above the bottom bar", async ({ page }) => {
+    await openBook(page);
+    const status = toast(page, "Back on page 14");
+    await expect(status).toBeVisible();
+
+    const bar = await boxOf(page.locator("main > div:has(input[type=range])"));
+
+    await expect
+      .poll(async () => {
+        const shown = await boxOf(status);
+        return shown.y + shown.height;
+      })
+      .toBeLessThanOrEqual(bar.y);
   });
 });
 
