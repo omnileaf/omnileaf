@@ -54,21 +54,36 @@
   }
 </script>
 
-<div
-  class="flex flex-col gap-history-days large:gap-history-days-wide touch:max-medium:px-xs"
->
+<div class="flex flex-col gap-history-days touch:max-medium:px-xs">
+  <div
+    aria-hidden="true"
+    class="hidden items-center gap-lg ps-lg pe-md text-caption font-semibold text-muted desktop:large:flex"
+  >
+    <span class="flex-1 ps-history-book">{m.history_column_book()}</span>
+    <span class="min-inline-history-time">{m.history_column_started()}</span>
+    <span class="min-inline-history-length">{m.history_column_read_for()}</span>
+    <span class="inline-history-progress">{m.history_column_progress()}</span>
+    <span class="min-inline-history-actions"></span>
+  </div>
   {#each days as day, index (historyDayKey(day.title))}
-    <section aria-labelledby={`${headingId}-${String(index)}`}>
+    <section
+      aria-labelledby={`${headingId}-${String(index)}`}
+      class="flex flex-col gap-xs desktop:large:gap-none desktop:large:overflow-hidden desktop:large:rounded-card desktop:large:border desktop:large:border-border desktop:large:bg-card desktop:large:shadow-raised"
+    >
       <h2
         id={`${headingId}-${String(index)}`}
-        class="mbe-2xs flex items-baseline justify-between gap-sm text-lead font-bold large:justify-start large:text-small"
+        class="flex items-baseline gap-sm px-xs text-lead font-bold desktop:large:items-center desktop:large:border-be desktop:large:border-border desktop:large:bg-well desktop:large:px-lg desktop:large:text-detail desktop:large:block-history-day"
       >
-        <span>{nameOf(day.title)}</span>
-        <span class="text-detail font-regular text-muted large:font-medium">
+        <span class="flex-1">{nameOf(day.title)}</span>
+        <span
+          class="text-detail font-semibold text-muted tabular-nums desktop:large:text-caption"
+        >
           {readingTime(day.readSeconds)}
         </span>
       </h2>
-      <ul>
+      <ul
+        class="divide-y divide-border overflow-hidden rounded-card border border-border bg-card desktop:large:rounded-none desktop:large:border-none"
+      >
         {#each day.entries as entry (`${entry.book}-${String(entry.startedAtMs)}`)}
           <HistoryRow {entry} time={timeOf(day.title, entry)} {usesStandIns} />
         {/each}

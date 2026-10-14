@@ -13,9 +13,9 @@ export const ITEM_LOOKS = {
   "about-version":
     "flex flex-wrap items-center gap-md py-sm ps-list-row pe-sm min-block-4xl",
   "history-phone":
-    "flex items-center gap-cover-gap min-block-history-row desktop:large:hidden",
+    "flex flex-1 items-center gap-md px-md transition-control min-inline-none min-block-history-row hover:bg-hover active:bg-pressed desktop:large:hidden",
   "history-desktop":
-    "hidden flex-1 items-center gap-lg min-inline-none desktop:large:flex",
+    "hidden flex-1 items-center gap-lg min-inline-none min-block-history-row-wide desktop:large:flex",
 } satisfies Record<string, string>;
 
 export type ItemLook = keyof typeof ITEM_LOOKS;

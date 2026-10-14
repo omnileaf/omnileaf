@@ -296,13 +296,21 @@ test.describe("with books read", () => {
     await openHistory(page);
 
     const first = rows(page).first();
-    await expect(first).toContainText(`${bookTitle(4)} · page 14 of 30`);
-    await expect(rows(page).nth(1)).toContainText(`${bookTitle(7)} · finished`);
+    await expect(first).toContainText(bookTitle(4));
+    await expect(
+      first.getByRole("progressbar", { name: "Page 14 of 30" }),
+    ).toBeVisible();
+    await expect(first).toContainText("14 / 30");
+    await expect(rows(page).nth(1)).toContainText(bookTitle(7));
+    await expect(
+      rows(page).nth(1).getByText("Finished").filter({ visible: true }),
+    ).toBeVisible();
+    await expect(rows(page).nth(1).getByRole("progressbar")).toHaveCount(0);
     if (isDesktop(page)) {
-      await expect(first).toContainText(/9:40\sPM/);
+      await expect(first).toContainText(/Started at 9:40\sPM/);
       await expect(first).toContainText("Read for 24 min");
     } else {
-      await expect(first).toContainText(/9:40\sPM · read for 24 min/);
+      await expect(first).toContainText(/9:40\sPM · 24 min/);
     }
   });
 
@@ -354,16 +362,32 @@ test.describe("with books read", () => {
     const header = await boxOf(page.getByRole("main").locator("header"));
 
     const summed = await boxOf(week(page));
-    const firstDay = await boxOf(days(page).first());
+    const columns = await boxOf(
+      page.getByRole("main").getByText("Book", { exact: true }).locator(".."),
+    );
 
     expect(summed.y - (header.y + header.height)).toBeCloseTo(
       DESKTOP_SECTION_GAP,
       0,
     );
-    expect(firstDay.y - (summed.y + summed.height)).toBeCloseTo(
+    expect(columns.y - (summed.y + summed.height)).toBeCloseTo(
       DESKTOP_SECTION_GAP,
       0,
     );
+  });
+
+  test("heads the columns of every day once on a desktop", async ({ page }) => {
+    test.skip(!isDesktop(page), "desktops only");
+    await openHistory(page);
+
+    const headings = ["Book", "Started", "Read for", "Progress"].map((name) =>
+      page.getByRole("main").getByText(name, { exact: true }),
+    );
+
+    for (const heading of headings) {
+      await expect(heading).toHaveCount(1);
+      await expect(heading).toBeVisible();
+    }
   });
 
   test("rounds each row's button the way the desktop board does", async ({
@@ -423,9 +447,9 @@ for (const platform of ["ios", "android"] as const) {
       await openHistory(page);
 
       const firstDay = await boxOf(days(page).first());
-      const firstRow = await boxOf(rows(page).first());
+      const firstCard = await boxOf(days(page).first().getByRole("list"));
 
-      for (const box of [firstDay, firstRow]) {
+      for (const box of [firstDay, firstCard]) {
         expect(box.x).toBeCloseTo(PHONE_LIST_INSET, 0);
         expect(viewportOf(page).width - (box.x + box.width)).toBeCloseTo(
           PHONE_LIST_INSET,
@@ -512,9 +536,7 @@ test.describe("with Screenshot mode on", () => {
     await expect(rows(page)).toHaveCount(SESSIONS.length);
 
     const first = rows(page).first();
-    await expect(first).toContainText(
-      /Series \d{2,3} · Book 4 · page 14 of 30/,
-    );
+    await expect(first).toContainText(/Series \d{2,3}.*Book 4\s*14 \/ 30/);
     await expect(first).toContainText(/9:40\sPM/);
     for (const link of await rows(page).getByRole("link").all()) {
       await expect(link).not.toHaveAccessibleName(/Sample Series/);
@@ -582,7 +604,7 @@ test.describe("with sessions at the widest times and lengths", () => {
       await widthsOf(
         rows(page)
           .getByText(/^Read for /)
-          .filter({ visible: true }),
+          .locator("xpath=.."),
       ),
     ];
 
@@ -603,7 +625,7 @@ test.describe("with sessions at the widest times and lengths", () => {
         .locator("xpath=..");
       const lengths = rows(page)
         .getByText(startOf(messages.history_read_for))
-        .filter({ visible: true });
+        .locator("xpath=..");
       await expect(times).toHaveCount(widest.length);
       await expect(lengths).toHaveCount(widest.length);
       await page.evaluate(() => document.fonts.ready);
@@ -654,6 +676,27 @@ test.describe("with a series and book named past the width of a row", () => {
     );
 
     expect(buttonEnds.every((end) => end <= listEnd + 0.5)).toBe(true);
+    expect(
+      new Set(
+        await buttons.evaluateAll((elements) =>
+          elements.map((element) => element.getBoundingClientRect().width),
+        ),
+      ).size,
+    ).toBe(1);
+  });
+
+  test("keeps a long series and book name to one line each", async ({
+    page,
+  }) => {
+    await openHistory(page);
+
+    const names = rows(page)
+      .first()
+      .getByText(LONG_NAME.trim())
+      .filter({ visible: true });
+
+    await expect(names).toHaveCount(2);
+    expect((await linesOf(names)).map(({ lines }) => lines)).toEqual([1, 1]);
   });
 });
 

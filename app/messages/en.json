@@ -265,22 +265,14 @@
   "history_today": "Today",
   "history_yesterday": "Yesterday",
   "history_last_week": "Last week",
-  "history_read_to_page": [
-    {
-      "declarations": [
-        "input book",
-        "input page",
-        "input count",
-        "local formattedPage = page: number",
-        "local formattedCount = count: number"
-      ],
-      "match": {
-        "*": "{book} · page {formattedPage} of {formattedCount}"
-      }
-    }
-  ],
-  "history_read_to_end": "{book} · finished",
-  "history_started_and_read_for": "{time} · read for {duration}",
+  "history_column_book": "Book",
+  "history_column_started": "Started",
+  "history_column_read_for": "Read for",
+  "history_column_progress": "Progress",
+  "history_page_of": "Page {page} of {count}",
+  "history_pages": "{page} / {count}",
+  "history_finished": "Finished",
+  "history_time_and_length": "{time} · {duration}",
   "history_started_at": "Started at {time}",
   "history_read_for": "Read for {duration}",
   "history_continue": "Continue",
