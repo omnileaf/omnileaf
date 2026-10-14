@@ -1,9 +1,11 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import NavigationIcon from "./NavigationIcon.svelte";
   import { type Section, SECTION_ROUTE_IDS } from "./sections";
+  import { getSidebarSetting } from "./sidebar.svelte.ts";
 
   interface Destination {
     readonly section: Section;
@@ -37,6 +39,8 @@
   ];
 
   let { current }: { current: Section } = $props();
+
+  const sidebar = getSidebarSetting();
 
   const currentIndex = $derived(
     DESTINATIONS.findIndex(({ section }) => section === current),
@@ -76,20 +80,22 @@
 <nav
   bind:this={navigation}
   aria-label={m.navigation_label()}
+  data-sidebar-hidden={sidebar.isHidden || undefined}
   onanimationend={endArrivalOnceStill}
   class={[
     "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom max-medium:pe-safe-end medium:flex medium:flex-col medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:inline-sidebar",
+    "desktop:expanded:border-sidebar-edge desktop:expanded:bg-sidebar desktop:expanded:inline-sidebar-desktop sidebar-hidden:inline-sidebar-hidden",
     "ios:max-medium:fixed ios:max-medium:inset-x-lg ios:max-medium:inset-be-floating-gap ios:max-medium:z-tab-bar ios:max-medium:rounded-full ios:max-medium:border ios:max-medium:border-glass-edge ios:max-medium:bg-glass ios:max-medium:p-xs ios:max-medium:shadow-floating ios:max-medium:backdrop-blur-glass ios:max-medium:backdrop-saturate-160 ios:max-medium:block-floating-bar",
   ]}
 >
   <p
     title={m.app_name()}
-    class="hidden truncate px-xl pbs-xl pbe-xl text-brand font-bold tracking-tight expanded:block"
+    class="hidden truncate px-xl pbs-xl pbe-xl text-brand font-bold tracking-tight expanded:block desktop:expanded:flex desktop:expanded:items-center desktop:expanded:px-lg desktop:expanded:pbs-none desktop:expanded:pbe-none desktop:expanded:text-body desktop:expanded:font-semibold desktop:expanded:tracking-normal desktop:expanded:min-block-toolbar sidebar-hidden:hidden"
   >
     {m.app_name()}
   </p>
   <ul
-    class="flex p-sm medium:flex-1 medium:flex-col medium:gap-md medium:pbs-lg medium:pbe-2xl expanded:gap-xs expanded:px-md expanded:pbs-none expanded:pbe-xl ios:max-medium:relative ios:max-medium:p-none ios:max-medium:block-full"
+    class="flex p-sm medium:flex-1 medium:flex-col medium:gap-md medium:pbs-lg medium:pbe-2xl expanded:gap-xs expanded:px-md expanded:pbs-none expanded:pbe-xl ios:max-medium:relative ios:max-medium:p-none ios:max-medium:block-full desktop:expanded:p-sm sidebar-hidden:pbs-sm"
   >
     <li
       aria-hidden="true"
@@ -106,45 +112,52 @@
           destination.isAtSideEnd && "medium:mbs-auto",
         ]}
       >
-        <a
-          href={resolve(SECTION_ROUTE_IDS[destination.section])}
-          aria-current={isSelected ? "page" : undefined}
-          class={[
-            "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-row expanded:px-md expanded:text-label desktop:expanded:min-block-pointer-target",
-            "ios:max-medium:flex-1 ios:max-medium:justify-center ios:max-medium:gap-2xs ios:max-medium:rounded-full ios:max-medium:py-none ios:max-medium:text-tab ios:max-medium:font-semibold",
-            isSelected
-              ? "font-bold text-accent expanded:bg-accent-soft"
-              : "font-medium text-muted expanded:text-sidebar-ink expanded:hover:tint-hover expanded:active:tint-pressed ios:max-medium:text-foreground",
-          ]}
-        >
-          <span
-            class={[
-              "relative flex items-center justify-center rounded-full block-2xl inline-pill expanded:block-auto expanded:inline-auto ios:max-medium:block-auto ios:max-medium:inline-auto",
-              !isSelected &&
-                "max-expanded:group-hover:tint-hover max-expanded:group-active:tint-pressed",
-            ]}
-          >
-            <span
+        <Tooltip label={sidebar.isHidden ? destination.label() : undefined}>
+          {#snippet child({ props })}
+            <a
+              {...props}
+              href={resolve(SECTION_ROUTE_IDS[destination.section])}
+              aria-current={isSelected ? "page" : undefined}
               class={[
-                "absolute inset-none rounded-full bg-accent-soft transition-opacity motion-safe:duration-fade motion-safe:ease-out expanded:hidden ios:max-medium:hidden",
-                "android:motion-safe:duration-grow android:motion-safe:ease-emphasized",
-                !isSelected && "opacity-0",
-                isArriving && "android:motion-safe:animate-pill-grow",
+                "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-row expanded:px-md expanded:text-label desktop:expanded:gap-sm desktop:expanded:rounded-sidebar-row desktop:expanded:px-sm desktop:expanded:py-none desktop:expanded:block-sidebar-row desktop:expanded:min-block-sidebar-row sidebar-hidden:justify-center sidebar-hidden:px-none",
+                "ios:max-medium:flex-1 ios:max-medium:justify-center ios:max-medium:gap-2xs ios:max-medium:rounded-full ios:max-medium:py-none ios:max-medium:text-tab ios:max-medium:font-semibold",
+                isSelected
+                  ? "font-bold text-accent expanded:bg-accent-soft desktop:expanded:bg-sidebar-accent desktop:expanded:font-medium desktop:expanded:text-on-sidebar-accent"
+                  : "font-medium text-muted expanded:text-sidebar-ink expanded:hover:tint-hover expanded:active:tint-pressed ios:max-medium:text-foreground desktop:expanded:font-regular desktop:expanded:hover:bg-sidebar-accent desktop:expanded:hover:text-on-sidebar-accent",
               ]}
-            ></span>
-            <NavigationIcon
-              section={destination.section}
-              {isSelected}
-              {isArriving}
-              size={ICON_SIZE}
-              class={[
-                "relative ios:max-medium:block-xl ios:max-medium:inline-xl desktop:expanded:block-sidebar-icon desktop:expanded:inline-sidebar-icon",
-                isArriving && "ios:max-medium:motion-safe:animate-nav-pop",
-              ]}
-            />
-          </span>
-          <span class="truncate max-inline-full">{destination.label()}</span>
-        </a>
+            >
+              <span
+                class={[
+                  "relative flex items-center justify-center rounded-full block-2xl inline-pill expanded:block-auto expanded:inline-auto ios:max-medium:block-auto ios:max-medium:inline-auto",
+                  !isSelected &&
+                    "max-expanded:group-hover:tint-hover max-expanded:group-active:tint-pressed",
+                ]}
+              >
+                <span
+                  class={[
+                    "absolute inset-none rounded-full bg-accent-soft transition-opacity motion-safe:duration-fade motion-safe:ease-out expanded:hidden ios:max-medium:hidden",
+                    "android:motion-safe:duration-grow android:motion-safe:ease-emphasized",
+                    !isSelected && "opacity-0",
+                    isArriving && "android:motion-safe:animate-pill-grow",
+                  ]}
+                ></span>
+                <NavigationIcon
+                  section={destination.section}
+                  {isSelected}
+                  {isArriving}
+                  size={ICON_SIZE}
+                  class={[
+                    "relative ios:max-medium:block-xl ios:max-medium:inline-xl desktop:expanded:block-sidebar-icon desktop:expanded:inline-sidebar-icon",
+                    isArriving && "ios:max-medium:motion-safe:animate-nav-pop",
+                  ]}
+                />
+              </span>
+              <span class="truncate max-inline-full sidebar-hidden:sr-only"
+                >{destination.label()}</span
+              >
+            </a>
+          {/snippet}
+        </Tooltip>
       </li>
     {/each}
   </ul>

@@ -7,6 +7,10 @@
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import { focusArrival } from "#lib/navigation/page-heading.ts";
   import { sectionOf } from "#lib/navigation/sections.ts";
+  import {
+    setSidebarSetting,
+    sidebarSettingForDocument,
+  } from "#lib/navigation/sidebar.svelte.ts";
   import SwipeableMain from "#lib/navigation/SwipeableMain.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
   import Toasts from "#lib/notices/Toasts.svelte";
@@ -25,6 +29,7 @@
   const screenshotMode = getScreenshotMode();
   const backGoesUp = setBackGoesUp(makeBackGoUp());
   const quickOpen = new QuickOpenState();
+  const sidebar = setSidebarSetting(sidebarSettingForDocument());
 
   afterNavigate(({ type }) => {
     const isProblem = page.error !== null;
@@ -43,6 +48,15 @@
     inTextFields: true,
     run: () => {
       quickOpen.open();
+    },
+  })}
+  {@attach shortcut({
+    key: "b",
+    command: data.appInfo.platform,
+    shift: false,
+    inTextFields: true,
+    run: () => {
+      sidebar.toggle();
     },
   })}
 />
