@@ -42,6 +42,10 @@
     setScheduledRescansSetting,
   } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
   import {
+    setSwipeActionsSetting,
+    swipeActionsSettingForDocument,
+  } from "#lib/series/swipe-actions.svelte.ts";
+  import {
     setSkipUpNextSetting,
     skipUpNextSettingForDocument,
   } from "#lib/up-next/skip-up-next.svelte.ts";
@@ -67,6 +71,7 @@
     scheduledRescansSettingForDocument(),
   );
   setSkipUpNextSetting(skipUpNextSettingForDocument());
+  setSwipeActionsSetting(swipeActionsSettingForDocument());
   setNotices(new Notices());
   const bookPresence = setBookPresence(new BookPresence());
 

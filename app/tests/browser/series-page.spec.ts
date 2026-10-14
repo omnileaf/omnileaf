@@ -959,13 +959,23 @@ test.describe("swiping a book on a phone", () => {
     expect(shelf.marked).toEqual([{ books: [shelf.idOf(5)], mark: "read" }]);
   });
 
-  test("does nothing on a swipe left", async ({ page }) => {
+  test("does nothing on a swipe left until Settings › Reading asks it to mark read", async ({
+    page,
+  }) => {
+    await openSeries(page);
+    await swipe(page, 5, -260);
+    const markedBefore = shelf.marked.length;
+    await page.goto("/settings/reading");
+    await page
+      .getByRole("radiogroup", { name: "Swipe left" })
+      .getByRole("radio", { name: "Mark read" })
+      .click();
     await openSeries(page);
 
     await swipe(page, 5, -260);
 
-    await expect(books(page).nth(5)).toContainText("Added");
-    expect(shelf.marked).toEqual([]);
+    expect(markedBefore).toBe(0);
+    expect(shelf.marked).toEqual([{ books: [shelf.idOf(5)], mark: "read" }]);
   });
 
   test("mirrors the swipes in right-to-left text", async ({ page }) => {
