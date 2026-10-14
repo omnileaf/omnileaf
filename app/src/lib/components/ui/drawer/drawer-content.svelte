@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     Dialog as DialogPrimitive,
+    type PortalProps,
     type WithoutChildrenOrChild,
   } from "bits-ui";
   import type { Snippet } from "svelte";
@@ -13,10 +14,12 @@
     ref = $bindable(null),
     class: className,
     onDismiss,
+    to = "body",
     children,
     ...restProps
   }: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
     onDismiss: () => void;
+    to?: PortalProps["to"];
     children: Snippet;
   } = $props();
 
@@ -45,7 +48,7 @@
   }
 </script>
 
-<DialogPrimitive.Portal>
+<DialogPrimitive.Portal {to}>
   <DialogPrimitive.Overlay
     class={[
       "fixed inset-none z-dialog bg-scrim",
