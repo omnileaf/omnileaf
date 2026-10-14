@@ -78,6 +78,7 @@ const SEARCHING_BACKEND: FakeBackend = {
       title: series.title,
       bookCount: series.bookCount,
       readCount: 0,
+      bookmarkCount: 0,
       cover: null,
       folder: null,
       upNext: null,

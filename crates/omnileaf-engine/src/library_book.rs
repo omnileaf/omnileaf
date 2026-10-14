@@ -48,17 +48,20 @@ pub enum BooksShown {
     #[default]
     All,
     Unread,
+    Bookmarked,
 }
 
-impl From<SeriesBookListing> for catalog::BookListing {
-    fn from(listing: SeriesBookListing) -> Self {
-        Self {
-            shown: match listing.shown {
-                BooksShown::All => catalog::BooksShown::All,
-                BooksShown::Unread => catalog::BooksShown::Unread,
-            },
-            direction: listing.direction.into(),
-        }
+impl SeriesBookListing {
+    pub(crate) fn in_catalog(self) -> Option<catalog::BookListing> {
+        let shown = match self.shown {
+            BooksShown::All => catalog::BooksShown::All,
+            BooksShown::Unread => catalog::BooksShown::Unread,
+            BooksShown::Bookmarked => return None,
+        };
+        Some(catalog::BookListing {
+            shown,
+            direction: self.direction.into(),
+        })
     }
 }
 
