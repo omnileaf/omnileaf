@@ -43,6 +43,7 @@ const SERIES: readonly WireSeries[] = [
   cover: `thumb/v1/${id}/1/1`,
   language: null,
   hasDownloads: false,
+  isAdult: false,
   continuesFrom: null,
 }));
 

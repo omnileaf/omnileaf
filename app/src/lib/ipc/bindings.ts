@@ -62,6 +62,8 @@ export const commands = {
 	setLibraryListing: (listing: LibraryListing) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_listing", { listing })),
 	libraryView: () => typedError<LibraryView, IpcError>(__TAURI_INVOKE("library_view")),
 	setLibraryView: (view: LibraryView) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_view", { view })),
+	libraryAdultContent: () => typedError<AdultContent, IpcError>(__TAURI_INVOKE("library_adult_content")),
+	setLibraryAdultContent: (content: AdultContent) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_adult_content", { content })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
 	libraryFolderBookCount: (id: string & { readonly __brand: "FolderId" }) => typedError<number, IpcError>(__TAURI_INVOKE("library_folder_book_count", { id })),
 	rescanLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<FolderRescan, IpcError>(__TAURI_INVOKE("rescan_library_folder", { id, onProgress })),
@@ -101,6 +103,18 @@ export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tabl
 export const SEARCH_MAX_CHARS = 200 as const;
 
 /* Types */
+/**  How the library treats series that count as 18+, and whether an adult age rating in their details makes them count. */
+export type AdultContent = {
+	treatment: AdultTreatment,
+	countsAgeRatings: boolean,
+};
+
+export type AdultTreatment = "show" | 
+/**  Blurs their covers until each is shown. */
+"blur" | 
+/**  Leaves them out of the library, its counts and search. */
+"hide";
+
 export type AppInfo = {
 	version: string,
 	platform: Platform,
@@ -339,6 +353,8 @@ export type LibrarySeries = {
 	hasDownloads: boolean,
 	/**  The book Continue opens, absent until the library works it out for its list. */
 	continuesFrom: string & { readonly __brand: "BookId" } | null,
+	/**  Counts as 18+, which a library that reads no age ratings and keeps no marks never does. */
+	isAdult: boolean,
 };
 
 export type LibrarySort = {

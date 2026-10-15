@@ -31,6 +31,7 @@ function seriesTitled(number: number, title: string): WireSeries {
     cover: null,
     language: null,
     hasDownloads: false,
+    isAdult: false,
     continuesFrom: null,
   };
 }
