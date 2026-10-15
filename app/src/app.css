@@ -1229,6 +1229,15 @@
   }
 }
 
+:root {
+  @variant ios {
+    @variant max-medium {
+      --text-page-title: calc(2.125rem * var(--text-scale));
+      --text-page-title--line-height: calc(41 / 34);
+    }
+  }
+}
+
 @layer base {
   :root {
     --text-scale: 1;

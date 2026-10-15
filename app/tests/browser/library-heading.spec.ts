@@ -72,6 +72,14 @@ function headingOf(page: Page): Locator {
     .filter({ has: page.getByRole("heading", { level: 1 }) });
 }
 
+/** The heading, or on iOS phones the title bar above it, whichever holds the heading's buttons. */
+function buttonsOf(page: Page): Locator {
+  return page
+    .getByRole("main")
+    .locator("header:has(h1), [data-title-bar]")
+    .filter({ has: page.getByRole("button") });
+}
+
 function controlsOf(heading: Locator): Locator {
   return heading
     .getByRole("button")
@@ -479,7 +487,7 @@ test.describe("the heading as a filter changes the count", () => {
       await expect(countOf(page)).toBeVisible();
       const before = await settledHeading(page);
 
-      await headingOf(page)
+      await buttonsOf(page)
         .getByRole("button", { name: /^Filter and sort/ })
         .click();
       const panel = page.getByRole("dialog", { name: "Filter and sort" });
@@ -520,7 +528,7 @@ for (const platform of PLATFORMS) {
     }, testInfo) => {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
       await page.goto("/");
-      const heading = headingOf(page);
+      const heading = buttonsOf(page);
       const named = [
         [
           heading.getByRole("button", { name: english.library_view_options }),
@@ -564,7 +572,7 @@ for (const platform of PLATFORMS) {
         await page.goto("/");
         await expect(countOf(page)).toBeVisible();
 
-        const heading = headingOf(page);
+        const heading = buttonsOf(page);
 
         await expect(
           heading.getByRole("button", { name: english.library_view_options }),
