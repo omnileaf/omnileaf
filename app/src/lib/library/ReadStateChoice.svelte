@@ -3,14 +3,8 @@
   import { m } from "#lib/paraglide/messages.js";
   import SettingChoice from "#lib/reader/SettingChoice.svelte";
 
+  import { READ_STATE_LABELS } from "./filter-labels";
   import { READ_STATES, type ReadState, readStateOf } from "./library-listing";
-
-  const LABELS = {
-    any: m.library_read_state_any,
-    unread: m.library_read_state_unread,
-    inProgress: m.library_read_state_in_progress,
-    read: m.library_read_state_read,
-  } satisfies Record<ReadState, () => string>;
 
   let {
     filter,
@@ -23,7 +17,7 @@
   label={m.library_read_state()}
   choices={READ_STATES.map((state) => ({
     value: state,
-    label: LABELS[state](),
+    label: READ_STATE_LABELS[state](),
   }))}
   chosen={readStateOf(filter)}
   {onChoose}
