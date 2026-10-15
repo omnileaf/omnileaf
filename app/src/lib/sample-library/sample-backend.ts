@@ -595,6 +595,39 @@ export function sampleBackend(
       events.emit("library-changed", null);
       return null;
     },
+    libraryTags: async () => {
+      await libraryReady();
+      const counts = new Map<string, number>();
+      for (const series of library) {
+        for (const tag of tagsOf(series)) {
+          counts.set(tag, (counts.get(tag) ?? 0) + 1);
+        }
+      }
+      return [...counts].map(([name, seriesCount]) => ({ name, seriesCount }));
+    },
+    renameLibraryTag: async (tag, to) => {
+      await libraryReady();
+      for (const series of library.filter((one) => tagsOf(one).includes(tag))) {
+        const { added, removed } = tagChangesOf(series.number);
+        removed.add(tag);
+        added.delete(tag);
+        added.add(to);
+        removed.delete(to);
+      }
+      events.emit("library-changed", null);
+      return null;
+    },
+    removeLibraryTag: async (tag) => {
+      await libraryReady();
+      const carrying = library.filter((one) => tagsOf(one).includes(tag));
+      for (const series of carrying) {
+        const { added, removed } = tagChangesOf(series.number);
+        removed.add(tag);
+        added.delete(tag);
+      }
+      events.emit("library-changed", null);
+      return carrying.map((series) => sampleSeriesId(series.number));
+    },
     libraryFilterChoices: async () => {
       await libraryReady();
       return {

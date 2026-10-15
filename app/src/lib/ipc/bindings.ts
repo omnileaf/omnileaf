@@ -25,6 +25,9 @@ export const commands = {
 	libraryFilterChoices: () => typedError<LibraryFilterChoices, IpcError>(__TAURI_INVOKE("library_filter_choices")),
 	seriesLabels: (series: (string & { readonly __brand: "SeriesId" })[]) => typedError<SeriesLabels, IpcError>(__TAURI_INVOKE("series_labels", { series })),
 	labelSeries: (series: (string & { readonly __brand: "SeriesId" })[], changes: LabelChanges) => typedError<null, IpcError>(__TAURI_INVOKE("label_series", { series, changes })),
+	libraryTags: () => typedError<LibraryTag[], IpcError>(__TAURI_INVOKE("library_tags")),
+	renameLibraryTag: (tag: string, to: string) => typedError<null, IpcError>(__TAURI_INVOKE("rename_library_tag", { tag, to })),
+	removeLibraryTag: (tag: string) => typedError<(string & { readonly __brand: "SeriesId" })[], IpcError>(__TAURI_INVOKE("remove_library_tag", { tag })),
 	categorySeries: (category: string & { readonly __brand: "CategoryId" }, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("category_series", { category, after, listing })),
 	categorySeriesCount: (category: string & { readonly __brand: "CategoryId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("category_series_count", { category, filter })),
 	folderSeries: (folder: string & { readonly __brand: "FolderId" }, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("folder_series", { folder, after, listing })),
@@ -365,6 +368,12 @@ export type LibrarySort = {
 };
 
 export type LibrarySortBy = "title" | "dateAdded";
+
+/**  A tag the library keeps, and how many series carry it. */
+export type LibraryTag = {
+	name: string,
+	seriesCount: number,
+};
 
 export type LibraryView = {
 	display: LibraryDisplay,
