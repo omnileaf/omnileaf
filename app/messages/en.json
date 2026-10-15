@@ -1320,6 +1320,8 @@
     }
   ],
   "reader_page_failed": "This page couldn't be shown.",
+  "reader_page_failed_body": "Page {page} may be damaged. The rest of {title} still opens.",
+  "reader_try_again": "Try again",
   "reader_not_found": "This book isn't in your library",
   "reader_not_found_body": "It may have been removed, or the folder holding it taken out of the library.",
   "reader_unreadable": "This book couldn't be opened",
