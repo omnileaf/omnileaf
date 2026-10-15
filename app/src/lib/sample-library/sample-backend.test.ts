@@ -413,3 +413,53 @@ test("puts the series in a category and a new one, tags them, and takes a tag of
     "Holiday reads",
   );
 });
+
+test("marks the series rated 18+ as adult while age ratings count, and none once they don't", async () => {
+  const { backend } = backendFor();
+  const adultTitles = async () =>
+    (await backend.librarySeries(null, NEWEST_FIRST)).series
+      .filter((series) => series.isAdult)
+      .map((series) => series.title);
+
+  const rated = await adultTitles();
+  await backend.setLibraryAdultContent({
+    treatment: "show",
+    countsAgeRatings: false,
+  });
+
+  expect([rated, await adultTitles()]).toEqual([
+    ["Sample Series 13", "Sample Series 17"],
+    [],
+  ]);
+});
+
+test("leaves adult series out of the list, its count and search once they're hidden", async () => {
+  const { backend } = backendFor();
+  await backend.setLibraryAdultContent({
+    treatment: "hide",
+    countsAgeRatings: true,
+  });
+
+  const page = await backend.librarySeries(null, NEWEST_FIRST);
+  const found = await backend.librarySearch(null, {
+    text: "Sample Series 1",
+    filter: NEWEST_FIRST.filter,
+  });
+
+  expect(page.series.map((series) => series.title)).not.toContain(
+    "Sample Series 13",
+  );
+  expect(await backend.librarySeriesCount(NEWEST_FIRST.filter)).toBe(17);
+  expect(found.series.map((series) => series.title)).not.toContain(
+    "Sample Series 17",
+  );
+});
+
+test("remembers the choice for adult content", async () => {
+  const { backend } = backendFor();
+  const blurred = { treatment: "blur", countsAgeRatings: false } as const;
+
+  await backend.setLibraryAdultContent(blurred);
+
+  expect(await backend.libraryAdultContent()).toEqual(blurred);
+});
