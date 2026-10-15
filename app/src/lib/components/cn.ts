@@ -69,6 +69,11 @@ export const TOKEN_THEME = {
   ],
   radius: [
     "alert",
+    "android-lg",
+    "android-md",
+    "android-sm",
+    "android-xl",
+    "android-xs",
     "badge",
     "bottom-sheet",
     "button",
