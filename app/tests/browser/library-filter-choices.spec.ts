@@ -5,6 +5,7 @@ import type {
   LibraryFilterChoices,
   LibraryListing,
   SeriesFormat,
+  SmartFilter,
 } from "../../src/lib/ipc/bindings.ts";
 import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 import type { FakeBackend } from "./fake-backend.ts";
@@ -23,11 +24,22 @@ interface FakeSeries {
   readonly format: SeriesFormat;
   readonly tags: readonly string[];
   readonly isAdult: boolean;
+  readonly smart?: readonly SmartFilter[];
 }
 
 const DETAILS: readonly Omit<FakeSeries, "series">[] = [
-  { format: "manga", tags: ["Seinen", "Sea"], isAdult: false },
-  { format: "comic", tags: ["Slice of life"], isAdult: false },
+  {
+    format: "manga",
+    tags: ["Seinen", "Sea"],
+    isAdult: false,
+    smart: ["quickReads"],
+  },
+  {
+    format: "comic",
+    tags: ["Slice of life"],
+    isAdult: false,
+    smart: ["quickReads", "forgotten"],
+  },
   { format: "book", tags: ["Letters"], isAdult: true },
   { format: "manga", tags: [], isAdult: false },
 ];
@@ -44,7 +56,7 @@ const CHOICES: LibraryFilterChoices = {
   tags: ["Slice of life", "Seinen", "Sea", "Letters"],
   ratesAdult: true,
   keepsBookmarks: true,
-  smart: [],
+  smart: ["quickReads", "forgotten", "duplicates"],
 };
 
 function isOneOf<T>(chosen: readonly T[], value: T | null): boolean {
@@ -53,12 +65,13 @@ function isOneOf<T>(chosen: readonly T[], value: T | null): boolean {
 
 function letThrough(filter: LibraryFilter): WireSeries[] {
   return CATALOG.filter(
-    ({ series, format, tags, isAdult }) =>
+    ({ series, format, tags, isAdult, smart }) =>
       isOneOf(filter.formats, format) &&
       isOneOf(filter.languages, series.language) &&
       (filter.tags.length === 0 ||
         tags.some((tag) => filter.tags.includes(tag))) &&
-      (filter.adult === "any" || (filter.adult === "only") === isAdult),
+      (filter.adult === "any" || (filter.adult === "only") === isAdult) &&
+      filter.smart.every((chosen) => (smart ?? []).includes(chosen)),
   ).map(({ series }) => series);
 }
 
@@ -189,6 +202,37 @@ test("hides the adult series once 18+ is set to Hide, and chips it as No 18+", a
   ).toHaveText(["No 18+"]);
 });
 
+test("lists only the series meeting every smart filter turned on, and chips each one", async ({
+  page,
+}) => {
+  const panel = await openPanel(page);
+
+  await panel.getByRole("switch", { name: "Quick reads" }).click();
+  await expectListed(page, [1, 2]);
+  await panel.getByRole("switch", { name: "Forgotten" }).click();
+
+  await expectListed(page, [2]);
+  await closePanel(page);
+  await expect(
+    page.getByRole("list", { name: "Filters in use" }).getByRole("listitem"),
+  ).toHaveText(["Quick reads", "Forgotten"]);
+});
+
+test("says Ready to clean up waits for downloads while the library has none", async ({
+  page,
+}) => {
+  const panel = await openPanel(page);
+
+  await expect(
+    panel.getByText(
+      "Ready to clean up (downloaded and finished) appears once you have downloads.",
+    ),
+  ).toBeVisible();
+  await expect(
+    panel.getByRole("switch", { name: "Ready to clean up" }),
+  ).toHaveCount(0);
+});
+
 test("counts each format, language and tag chosen on the Filter button", async ({
   page,
 }) => {
@@ -232,6 +276,7 @@ test.describe("while the library knows no formats, languages, tags, ratings or b
     const panel = await openPanel(page);
 
     await expect(row(page, "Read state")).toBeVisible();
+    await expect(panel.getByText("Smart filters")).toHaveCount(0);
     for (const name of ["Format", "Language", "Tags", "18+", "Bookmarked"]) {
       await expect(panel.getByRole("group", { name, exact: true })).toHaveCount(
         0,
