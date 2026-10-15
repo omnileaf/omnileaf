@@ -13,7 +13,16 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 
-const POINTER_ROW_HEIGHT = 44;
+const POINTER_ROW_HEIGHT = 32;
+const SECTIONS_IN_ORDER = [
+  "General",
+  "Appearance",
+  "Library",
+  "Reading",
+  "Privacy and security",
+  "Advanced",
+  "About",
+];
 const NARROW_BACK_LINK_HEIGHT = 32;
 const TOUCH_TARGET = 48;
 const STATUS_BAR_GAP = 8;
@@ -37,13 +46,38 @@ test.describe("on a desktop", () => {
       .getByRole("link", { name: "Settings" })
       .click();
 
-    await expect(page).toHaveURL("/settings/library");
+    await expect(page).toHaveURL("/settings/general");
     await expect(
-      page.getByRole("heading", { level: 1, name: "Library" }),
+      page.getByRole("heading", { level: 1, name: "General" }),
     ).toBeFocused();
     await expect(
-      sectionList(page).getByRole("link", { name: "Library" }),
+      sectionList(page).getByRole("link", { name: "General" }),
     ).toHaveAttribute("aria-current", "page");
+  });
+
+  test("lists the sections in the phone's order", async ({ page }) => {
+    await page.goto("/settings/general");
+    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+
+    await expect(sectionList(page).getByRole("link")).toHaveText(
+      SECTIONS_IN_ORDER,
+    );
+  });
+
+  test("names where a page sits in a breadcrumb bar, with an arrow back from a nested page", async ({
+    page,
+  }) => {
+    await page.goto("/settings/advanced/animations");
+    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    const trail = page.getByRole("navigation", { name: "Breadcrumb" });
+
+    await expect(trail.getByRole("link")).toHaveText(["Settings", "Advanced"]);
+    await expect(trail.locator('[aria-current="page"]')).toHaveText(
+      "Animations",
+    );
+    await page.getByRole("link", { name: "Back to Advanced" }).click();
+
+    await expect(page).toHaveURL("/settings/advanced");
   });
 
   test("focuses the first settings section's heading without a focus ring when opened from the keyboard", async ({
@@ -57,7 +91,7 @@ test.describe("on a desktop", () => {
       .getByRole("link", { name: "Settings" })
       .press("Enter");
 
-    const heading = page.getByRole("heading", { level: 1, name: "Library" });
+    const heading = page.getByRole("heading", { level: 1, name: "General" });
     await expect(heading).toBeFocused();
     await expect(heading).toHaveCSS("outline-style", "none");
   });
@@ -77,7 +111,7 @@ test.describe("on a desktop", () => {
     ).toBeHidden();
   });
 
-  test("marks the open section in the accent on 44px rows", async ({
+  test("marks the open section in the sidebar's accent on 32px rows", async ({
     page,
   }) => {
     await page.goto("/settings/appearance");
@@ -87,10 +121,10 @@ test.describe("on a desktop", () => {
     const row = await boxOf(open);
 
     await expect(open).toHaveCSS(
-      "color",
-      await tokenColour(page, "--color-accent"),
+      "background-color",
+      await tokenColour(page, "--sidebar-accent"),
     );
-    await expect(open).toHaveCSS("font-weight", "700");
+    await expect(open).toHaveCSS("font-weight", "500");
     expect(row.height).toBe(POINTER_ROW_HEIGHT);
   });
 
@@ -230,7 +264,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
     await page.goto("/settings");
     await expect(
-      page.getByRole("heading", { level: 1, name: "Library" }),
+      page.getByRole("heading", { level: 1, name: "General" }),
     ).toBeVisible();
 
     const violations = await accessibilityViolations(page);
