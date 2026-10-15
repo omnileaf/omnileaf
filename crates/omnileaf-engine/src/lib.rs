@@ -21,6 +21,7 @@ mod ipc_brand;
 mod lane;
 mod library;
 mod library_book;
+mod library_category;
 mod library_changes;
 mod library_folder;
 mod library_layout;
@@ -75,6 +76,7 @@ pub use library_book::{
     BookCursor, BookId, BookReading, BooksShown, ReadMark, SeriesBook, SeriesBookListing,
     SeriesBookPage,
 };
+pub use library_category::{CategoryId, LibraryCategory};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
 pub use library_listing::{
