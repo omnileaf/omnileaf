@@ -22,6 +22,8 @@ pub struct SeriesBook {
     pub is_bookmarked: bool,
     /// Whether the library found the book since its series was last looked at.
     pub is_new: bool,
+    /// Whether the book's file was moved or deleted; never, while the library keeps no book without its file.
+    pub is_file_missing: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
@@ -100,6 +102,7 @@ impl From<BookSummary> for SeriesBook {
             page_count: None,
             is_bookmarked: false,
             is_new: false,
+            is_file_missing: false,
         }
     }
 }
@@ -201,6 +204,19 @@ mod tests {
             (book.page_count, book.is_bookmarked, book.is_new),
             (None, false, false)
         );
+    }
+
+    #[test]
+    fn says_no_books_file_is_missing_while_the_library_keeps_none_without_one() {
+        let book = SeriesBook::from(BookSummary {
+            id: sample_book_id(1).0,
+            position: 1,
+            title: "Volume 1".to_owned(),
+            added_at_ms: 0,
+            reading: catalog::BookReading::NotStarted,
+        });
+
+        assert!(!book.is_file_missing);
     }
 
     #[test]
