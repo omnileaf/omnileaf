@@ -9,6 +9,7 @@
     CardTitle,
   } from "#lib/components/ui/card/index.ts";
   import { Progress } from "#lib/components/ui/progress/index.ts";
+  import { readingTime } from "#lib/history/reading-time.ts";
   import type { SeriesBook, SeriesOverview } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -30,6 +31,15 @@
     return book.reading.state === "started"
       ? m.series_card_continue()
       : m.series_card_up_next();
+  }
+
+  function withTimeLeft(place: string): string {
+    return overview.secondsLeft === null
+      ? place
+      : m.series_time_left({
+          where: place,
+          time: readingTime(overview.secondsLeft),
+        });
   }
 
   function where(book: SeriesBook | null): string {
@@ -64,7 +74,9 @@
     <CardTitle id={titleId} class="text-body expanded:text-title">
       {heading(next)}
     </CardTitle>
-    <CardDescription>{where(next)}</CardDescription>
+    <CardDescription>
+      {next === null ? where(next) : withTimeLeft(where(next))}
+    </CardDescription>
     {#if next !== null && isWide}
       <CardAction>
         <ContinueLink book={next} />
