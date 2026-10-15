@@ -3,17 +3,24 @@
   import { onMount } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import {
     commands,
     type LibraryCategory,
     type LibraryTab,
   } from "#lib/ipc/bindings.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
+  import {
+    ALL_SERIES,
+    LibraryOpensOn,
+    OPENS_ON_LAST_TAB,
+  } from "#lib/library/library-tab.svelte.ts";
   import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
   import {
     type ArrangedTab,
     arrangedTabs,
     NEW_LIBRARY_TABS,
+    tabKey,
   } from "#lib/library/library-tabs.ts";
   import LibraryTabsList from "#lib/library/LibraryTabsList.svelte";
   import NewCategoryDialog from "#lib/library/NewCategoryDialog.svelte";
@@ -28,6 +35,19 @@
   let keepsLabels = $state(false);
   let isNaming = $state(false);
   const arranged = $derived(arrangedTabs(keptTabs, categories));
+  const opensOn = new LibraryOpensOn();
+  const opensOnLabelId = $props.id();
+  const openable = $derived(
+    arranged
+      .filter(({ isHidden }) => !isHidden)
+      .map((tab) => ({ key: tabKey(tab.id), name: tab.name })),
+  );
+  const shownOpensOn = $derived(
+    opensOn.choice === OPENS_ON_LAST_TAB ||
+      openable.some(({ key }) => key === opensOn.choice)
+      ? opensOn.choice
+      : ALL_SERIES,
+  );
 
   function detailOf(tab: ArrangedTab): string {
     switch (tab.id.kind) {
@@ -146,6 +166,34 @@
     </div>
   {/if}
 </div>
+<section
+  class="mbs-lg flex flex-col gap-sm rounded-card border border-border bg-card p-md"
+>
+  <div
+    class="flex flex-col gap-sm desktop:grid desktop:grid-cols-setting-grid desktop:items-center desktop:gap-x-md"
+  >
+    <span id={opensOnLabelId} class="text-small font-medium">
+      {m.library_opens_on()}
+    </span>
+    <NativeSelect
+      aria-labelledby={opensOnLabelId}
+      value={shownOpensOn}
+      class="desktop:inline-setting-control"
+      fieldClass="touch:text-body touch:block-touch-target"
+      onchange={({
+        currentTarget: { value },
+      }: Event & { currentTarget: HTMLSelectElement }) => {
+        opensOn.choose(value);
+      }}
+    >
+      <option value={OPENS_ON_LAST_TAB}>{m.library_opens_on_last()}</option>
+      {#each openable as { key, name } (key)}
+        <option value={key}>{name}</option>
+      {/each}
+    </NativeSelect>
+  </div>
+  <p class="text-detail text-muted">{m.library_opens_on_help()}</p>
+</section>
 <NewCategoryDialog
   isOpen={isNaming}
   onAdd={(name: string) => {

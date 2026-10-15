@@ -5,9 +5,14 @@ import {
 } from "#lib/preferences/stored-preference.ts";
 
 export const ALL_SERIES = "all";
+export const NEW_CHAPTERS = "new-chapters";
+export const OPENS_ON_LAST_TAB = "last";
 export const LIBRARY_TAB_KEY = "omnileaf.libraryTab";
+export const LIBRARY_OPENS_ON_KEY = "omnileaf.libraryOpensOn";
 
 const FEWEST_CATEGORIES_FOR_TABS = 2;
+
+let hasOpened = false;
 
 export function showsCategoryTabs(
   categories: readonly LibraryCategory[],
@@ -15,6 +20,37 @@ export function showsCategoryTabs(
   return categories.length >= FEWEST_CATEGORIES_FOR_TABS;
 }
 
+/** The tab the library opens on when the app starts; New chapters opens on All, since a library without sources never has anything new. */
+export function openingTab(
+  opensOn: string | null,
+  usedLast: string | null,
+): string {
+  const tab =
+    opensOn === null || opensOn === OPENS_ON_LAST_TAB
+      ? (usedLast ?? ALL_SERIES)
+      : opensOn;
+  return tab === NEW_CHAPTERS ? ALL_SERIES : tab;
+}
+
+/** The tab the library opens on: the one used last, or one chosen in Library tabs. */
+export class LibraryOpensOn {
+  readonly #stored = new StoredPreference(
+    browserPreferenceStore(),
+    LIBRARY_OPENS_ON_KEY,
+  );
+  choice = $state(OPENS_ON_LAST_TAB);
+
+  constructor() {
+    this.choice = this.#stored.read() ?? OPENS_ON_LAST_TAB;
+  }
+
+  choose(choice: string): void {
+    this.choice = choice;
+    this.#stored.writeIfPossible(choice);
+  }
+}
+
+/** The tab chosen in the library, opening where Library tabs says once each time the app starts and keeping the one used after that. */
 export class LibraryTab {
   readonly #stored = new StoredPreference(
     browserPreferenceStore(),
@@ -23,7 +59,13 @@ export class LibraryTab {
   #chosen = $state(ALL_SERIES);
 
   constructor() {
-    this.#chosen = this.#stored.read() ?? ALL_SERIES;
+    const usedLast = this.#stored.read();
+    if (hasOpened) {
+      this.#chosen = usedLast ?? ALL_SERIES;
+      return;
+    }
+    hasOpened = true;
+    this.choose(openingTab(new LibraryOpensOn().choice, usedLast));
   }
 
   get chosen(): string {
