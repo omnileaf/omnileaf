@@ -233,6 +233,45 @@ test("says Ready to clean up waits for downloads while the library has none", as
   ).toHaveCount(0);
 });
 
+test("names the filters that together leave nothing, says the library hasn't changed, and counts no series", async ({
+  page,
+}) => {
+  storedListing = {
+    ...NEW_LIBRARY_LISTING,
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      formats: ["book"],
+      languages: ["fr"],
+    },
+  };
+  await page.goto("/");
+  const noMatches = page.getByRole("region", {
+    name: "No series match these filters",
+  });
+
+  await expect(noMatches).toContainText(
+    "Books and French together leave nothing. Your library hasn't changed.",
+  );
+  await expect(
+    page.getByRole("main").getByText("No series", { exact: true }),
+  ).toBeVisible();
+  await noMatches.getByRole("button", { name: "Clear all filters" }).click();
+
+  await expectListed(page, [1, 2, 3, 4]);
+});
+
+test("says when one filter alone leaves nothing", async ({ page }) => {
+  storedListing = {
+    ...NEW_LIBRARY_LISTING,
+    filter: { ...NEW_LIBRARY_LISTING.filter, languages: ["de"] },
+  };
+  await page.goto("/");
+
+  await expect(
+    page.getByRole("region", { name: "No series match these filters" }),
+  ).toContainText("German leaves nothing. Your library hasn't changed.");
+});
+
 test("counts each format, language and tag chosen on the Filter button", async ({
   page,
 }) => {
