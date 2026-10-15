@@ -38,6 +38,7 @@ const SENDING: CrashReportPrompt = { kind: "sending" };
 const SEND_OUTCOMES = {
   noCrashReport: undefined,
   browserUnavailable: "browserUnavailable",
+  fileManagerUnavailable: "notSent",
   folderPickerUnavailable: "notSent",
   folderChooserMissing: "notSent",
   folderUnreadable: "notSent",

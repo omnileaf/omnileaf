@@ -23,6 +23,7 @@ pub(crate) enum IpcErrorCode {
     HomeFolderKept,
     ClipboardUnavailable,
     BrowserUnavailable,
+    FileManagerUnavailable,
     NoCrashReport,
     CrashReportUnavailable,
     #[cfg_attr(
@@ -68,6 +69,14 @@ impl IpcError {
         Self {
             code: IpcErrorCode::BrowserUnavailable,
             message: "the browser could not be opened",
+        }
+    }
+
+    pub(crate) fn file_manager_unavailable(error: &dyn Error) -> Self {
+        tracing::warn!(error = %describe_error(error), "show a series' file in its folder");
+        Self {
+            code: IpcErrorCode::FileManagerUnavailable,
+            message: "the file manager could not be opened",
         }
     }
 

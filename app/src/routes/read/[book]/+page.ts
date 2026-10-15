@@ -24,6 +24,7 @@ const SHOWN_ON_FAILURE = {
   homeFolderKept: FAILED,
   clipboardUnavailable: FAILED,
   browserUnavailable: FAILED,
+  fileManagerUnavailable: FAILED,
   noCrashReport: FAILED,
   crashReportUnavailable: FAILED,
   developmentBuildOnly: FAILED,

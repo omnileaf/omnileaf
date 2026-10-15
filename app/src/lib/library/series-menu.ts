@@ -5,4 +5,5 @@ export interface SeriesMenuActions {
   readonly onMarkRead: (series: LibrarySeries) => void;
   readonly onLabel: (series: LibrarySeries) => void;
   readonly onSelect: (series: LibrarySeries) => void;
+  readonly onShowInFolder: (series: LibrarySeries) => void;
 }
