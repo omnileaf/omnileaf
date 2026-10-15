@@ -208,3 +208,37 @@ test("counts the series that name each creator", async () => {
     ["Author D", 1],
   ]);
 });
+
+test("keeps the boards' categories, each listing only its own series", async () => {
+  const { backend } = backendFor();
+
+  const categories = await backend.libraryCategories();
+  const sea = await backend.categorySeries(
+    "sea-stories",
+    null,
+    DEFAULT_LIBRARY_LISTING,
+  );
+
+  expect(categories.map(({ name }) => name)).toEqual([
+    "Reading",
+    "Manga",
+    "Comics",
+    "Plan to read",
+    "Favourites",
+    "Seinen",
+    "Sea stories",
+  ]);
+  expect(sea.series.length).toBeGreaterThan(0);
+  expect(
+    await backend.categorySeriesCount(
+      "sea-stories",
+      DEFAULT_LIBRARY_LISTING.filter,
+    ),
+  ).toBe(sea.series.length);
+});
+
+test("keeps no categories in an empty library", async () => {
+  const { backend } = backendFor("library=empty");
+
+  expect(await backend.libraryCategories()).toEqual([]);
+});
