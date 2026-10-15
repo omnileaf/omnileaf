@@ -234,6 +234,7 @@ export function sampleBackend(
           cover:
             book.file === "missing" ? null : bookCoverOf(series, index + 1),
           reading: wireReading(book.reading),
+          pageCount: book.pageCount,
         };
   }
 
