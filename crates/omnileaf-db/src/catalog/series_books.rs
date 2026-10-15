@@ -150,6 +150,7 @@ pub fn series_books(
             | Position::Title { .. }
             | Position::Added { .. }
             | Position::Root { .. }
+            | Position::LastRead { .. }
             | Position::Session { .. },
         ) => Err(Error::CursorForAnotherList),
     }?;
