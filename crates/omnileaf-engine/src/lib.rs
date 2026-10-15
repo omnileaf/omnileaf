@@ -88,7 +88,7 @@ pub use library_listing::{
     Inclusion, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySort, LibrarySortBy,
     SeriesFormat, SmartFilter, SortDirection,
 };
-pub use library_search::LibrarySearch;
+pub use library_search::{LibrarySearch, SpellingSuggestion};
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
 pub use library_tabs::{LibraryTab, LibraryTabId};
 pub use library_view::{
