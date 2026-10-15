@@ -51,6 +51,7 @@ export class FakeShelf {
       pageCount,
       isBookmarked: false,
       isNew: false,
+      isFileMissing: false,
     }));
   }
 

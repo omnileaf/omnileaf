@@ -222,6 +222,7 @@ export function sampleBackend(
       pageCount: book.pageCount,
       isBookmarked: book.isBookmarked,
       isNew: book.isNew,
+      isFileMissing: book.file === "missing",
     };
   }
 
