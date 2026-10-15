@@ -73,6 +73,8 @@
   /** Long enough that turning pages in a run announces only the page they stop on. */
   const ANNOUNCE_DELAY_MS = 300;
   const CONTROLS_HIDE_AFTER_MS = 3000;
+  /** The button a mouse's back button reports, which browsers otherwise take as going back through history. */
+  const MOUSE_BACK_BUTTON = 3;
   /** How near the window's top or bottom the pointer brings hidden controls back. */
   const REVEAL_EDGE_PX = 48;
   const TURN_STEPS = { next: 1, previous: -1 } as const satisfies Record<
@@ -265,6 +267,9 @@
         return;
       case "zoomFit":
         zoomTo(1);
+        return;
+      case "back":
+        void goto(seriesHref);
         return;
       case "jump":
         openJump(!isJumpOpen);
@@ -615,6 +620,12 @@
 
 <svelte:window
   {@attach shortcut(...readerShortcuts(act, () => reading.direction, platform))}
+  onmouseup={(event: MouseEvent) => {
+    if (event.button === MOUSE_BACK_BUTTON) {
+      event.preventDefault();
+      act("back");
+    }
+  }}
 />
 
 {#snippet quickSettings()}
@@ -782,6 +793,7 @@
     >
       <ReaderTopBar
         {seriesHref}
+        {platform}
         seriesTitle={named.seriesTitle}
         bookTitle={named.title}
         {pageNumber}
