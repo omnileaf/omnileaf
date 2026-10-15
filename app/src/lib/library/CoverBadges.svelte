@@ -5,6 +5,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
+  import { seriesSelection } from "./series-selection";
   import UnreadCount from "./UnreadCount.svelte";
 
   const MARK_ICON_SIZE = 12;
@@ -12,6 +13,8 @@
   let { series, onCovers }: { series: LibrarySeries; onCovers: OnCovers } =
     $props();
 
+  const selection = seriesSelection();
+  const isSelecting = $derived(selection?.isSelecting === true);
   const languageNames = $derived(
     new Intl.DisplayNames([getLocale()], { type: "language" }),
   );
@@ -31,7 +34,7 @@
     class="absolute inset-s-badge-inset inset-bs-badge-inset px-badge-inline py-badge-block text-badge medium:inset-s-badge-inset-wide medium:inset-bs-badge-inset-wide medium:px-badge-inline-wide medium:py-badge-block-wide large:inset-s-sm large:inset-bs-sm"
   />
 {/if}
-{#if language !== undefined || showsDownloads}
+{#if !isSelecting && (language !== undefined || showsDownloads)}
   <span
     class="absolute inset-e-badge-inset inset-bs-badge-inset flex items-center gap-2xs medium:inset-e-badge-inset-wide medium:inset-bs-badge-inset-wide large:inset-e-sm large:inset-bs-sm"
   >
