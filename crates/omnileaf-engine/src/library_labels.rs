@@ -20,6 +20,14 @@ pub struct CategoryHeld {
     pub holding: u32,
 }
 
+/// A tag the library keeps, and how many series carry it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryTag {
+    pub name: String,
+    pub series_count: u32,
+}
+
 /// How many of the series asked about carry the tag.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
