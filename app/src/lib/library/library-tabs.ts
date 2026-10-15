@@ -5,9 +5,7 @@ import type {
 } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
 
-import { ALL_SERIES } from "./library-tab.svelte.ts";
-
-export const NEW_CHAPTERS = "new-chapters";
+import { ALL_SERIES, NEW_CHAPTERS } from "./library-tab.svelte.ts";
 
 const FEWEST_TABS_BESIDE_ALL = 2;
 
