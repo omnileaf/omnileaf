@@ -30,12 +30,12 @@ const LOOKS: readonly PlatformLook[] = [
   },
   {
     platform: "android",
-    menu: "--popover",
-    menuCorner: "8px",
+    menu: "--android-container",
+    menuCorner: "4px",
     tooltip: "--primary",
     switchOn: "--primary",
-    secondaryText: "--muted-foreground",
-    font: /^ui-sans-serif/,
+    secondaryText: "--android-secondary-text",
+    font: /^"Roboto Flex"/,
   },
   {
     platform: "ios",
