@@ -217,7 +217,23 @@ const ICON_ACTIONS: readonly IconAction[] = [
         .getByRole("button", { name: "Close" });
     },
     label: "Close",
-    isShownOn: (page) => !isPhoneScreen(page),
+    isShownOn: (page) => screenSizeOf(page) === "tablet",
+  },
+  {
+    screen: "Sort and filter docked beside the grid",
+    backend: SERIES_BACKEND,
+    reach: async (page) => {
+      await page.goto("/");
+      await page
+        .locator("main header")
+        .getByRole("button", { name: /^Sort and filter/ })
+        .click();
+      return page
+        .getByRole("complementary", { name: "Sort and filter" })
+        .getByRole("button", { name: "Close sort and filter" });
+    },
+    label: "Close sort and filter",
+    isShownOn: (page) => screenSizeOf(page) === "desktop",
   },
   {
     screen: "a notice",

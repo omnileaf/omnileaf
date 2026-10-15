@@ -23,18 +23,22 @@
   let {
     listing,
     matching,
+    docks,
+    panelId,
     isOpen = $bindable(false),
+    button = $bindable(null),
     onChoose,
     onOpen,
   }: {
     listing: LibraryListing;
     matching: number | undefined;
+    docks: boolean;
+    panelId: string;
     isOpen?: boolean;
+    button?: HTMLElement | null;
     onChoose: (listing: LibraryListing) => void;
     onOpen: () => void;
   } = $props();
-
-  let button: HTMLElement | null = $state(null);
 
   const titleId = $props.id();
   const filtersCount = $derived(filtersOn(listing.filter));
@@ -45,7 +49,11 @@
       : m.library_filter_and_sort_filtered({ count: filtersCount }),
   );
 
-  function open(): void {
+  function toggle(): void {
+    if (docks && isOpen) {
+      isOpen = false;
+      return;
+    }
     isOpen = true;
     onOpen();
   }
@@ -64,10 +72,11 @@
   bind:ref={button}
   label={buttonLabel}
   type="button"
-  aria-haspopup="dialog"
+  aria-haspopup={docks ? undefined : "dialog"}
+  aria-controls={docks && isOpen ? panelId : undefined}
   aria-expanded={isOpen}
   aria-label={buttonLabel}
-  onclick={open}
+  onclick={toggle}
 >
   {#snippet child({ props })}
     <Button
@@ -104,105 +113,107 @@
   {/snippet}
 </Tooltip>
 
-<Dialog.Root bind:open={isOpen}>
-  <ModalContent
-    wideLook="sheet"
-    wideClass="inline-filter-panel"
-    phoneClass="inset-bs-sheet-top block-auto"
-    onDismiss={close}
-    onCloseAutoFocus={focusButton}
-  >
-    {#snippet children(view)}
-      {#if view === "wide"}
-        <div
-          class="flex items-center gap-md ps-filter-panel-inline pe-lg pbs-filter-panel-top pbe-filter-panel-title-gap"
-        >
-          <HeaderBadge icon={ListFilter} look="header-accent" />
-          <DialogTitle class="flex-1 text-panel-title font-bold">
-            {m.library_filter_and_sort()}
-          </DialogTitle>
-          <Button
-            type="button"
-            look="text"
-            class="rounded-badge px-sm text-detail block-panel-button"
-            onclick={() => {
-              onChoose(DEFAULT_LIBRARY_LISTING);
-            }}
+{#if !docks}
+  <Dialog.Root bind:open={isOpen}>
+    <ModalContent
+      wideLook="sheet"
+      wideClass="inline-filter-panel"
+      phoneClass="inset-bs-sheet-top block-auto"
+      onDismiss={close}
+      onCloseAutoFocus={focusButton}
+    >
+      {#snippet children(view)}
+        {#if view === "wide"}
+          <div
+            class="flex items-center gap-md ps-filter-panel-inline pe-lg pbs-filter-panel-top pbe-filter-panel-title-gap"
           >
-            {m.library_reset()}
-          </Button>
-          <Tooltip
-            label={m.library_close()}
-            aria-label={m.library_close()}
-            onclick={close}
+            <HeaderBadge icon={ListFilter} look="header-accent" />
+            <DialogTitle class="flex-1 text-panel-title font-bold">
+              {m.library_filter_and_sort()}
+            </DialogTitle>
+            <Button
+              type="button"
+              look="text"
+              class="rounded-badge px-sm text-detail block-panel-button"
+              onclick={() => {
+                onChoose(DEFAULT_LIBRARY_LISTING);
+              }}
+            >
+              {m.library_reset()}
+            </Button>
+            <Tooltip
+              label={m.library_close()}
+              aria-label={m.library_close()}
+              onclick={close}
+            >
+              {#snippet child({ props })}
+                <Button
+                  {...props}
+                  look="icon"
+                  class="rounded-badge text-muted block-panel-button inline-panel-button"
+                >
+                  <X size={CLOSE_ICON_SIZE} aria-hidden="true" />
+                </Button>
+              {/snippet}
+            </Tooltip>
+          </div>
+          <div
+            class="flex flex-1 flex-col gap-filter-panel-gap overflow-y-auto px-filter-panel-inline pbs-xs pbe-md min-block-none"
           >
-            {#snippet child({ props })}
-              <Button
-                {...props}
-                look="icon"
-                class="rounded-badge text-muted block-panel-button inline-panel-button"
-              >
-                <X size={CLOSE_ICON_SIZE} aria-hidden="true" />
-              </Button>
-            {/snippet}
-          </Tooltip>
-        </div>
-        <div
-          class="flex flex-1 flex-col gap-filter-panel-gap overflow-y-auto px-filter-panel-inline pbs-xs pbe-md min-block-none"
-        >
-          <FilterChoices {listing} {onChoose} />
-        </div>
-        <div
-          class="flex items-center border-bs border-border px-filter-panel-inline pbs-md pbe-lg"
-        >
-          <p role="status" class="flex-1 text-detail text-muted">
-            {#if matching !== undefined}
-              {m.library_series_match({ count: matching })}
-            {/if}
-          </p>
-        </div>
-      {:else}
-        <div class="flex items-center gap-md px-sheet-inline pbs-md pbe-xs">
-          <HeaderBadge icon={ListFilter} look="header-accent" />
-          <DialogTitle id={titleId} class="flex-1 text-title font-bold">
-            {m.library_filter_and_sort()}
-          </DialogTitle>
-          <Button
-            type="button"
-            look="text"
-            class="px-xs text-body min-block-touch-target"
-            onclick={() => {
-              onChoose(DEFAULT_LIBRARY_LISTING);
-            }}
+            <FilterChoices {listing} {onChoose} />
+          </div>
+          <div
+            class="flex items-center border-bs border-border px-filter-panel-inline pbs-md pbe-lg"
           >
-            {m.library_reset()}
-          </Button>
-        </div>
-        <div
-          class="flex flex-1 flex-col overflow-y-auto px-sheet-inline pbs-sm pbe-lg min-block-none"
-        >
-          <FilterChoices {listing} {onChoose} />
-        </div>
-        <div
-          class="border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom"
-        >
-          <p role="status" class="sr-only">
-            {#if matching !== undefined}
-              {m.library_series_match({ count: matching })}
-            {/if}
-          </p>
-          <Button
-            type="button"
-            look="filled"
-            class="rounded-control text-body font-semibold inline-full min-block-touch-target"
-            onclick={close}
+            <p role="status" class="flex-1 text-detail text-muted">
+              {#if matching !== undefined}
+                {m.library_series_match({ count: matching })}
+              {/if}
+            </p>
+          </div>
+        {:else}
+          <div class="flex items-center gap-md px-sheet-inline pbs-md pbe-xs">
+            <HeaderBadge icon={ListFilter} look="header-accent" />
+            <DialogTitle id={titleId} class="flex-1 text-title font-bold">
+              {m.library_filter_and_sort()}
+            </DialogTitle>
+            <Button
+              type="button"
+              look="text"
+              class="px-xs text-body min-block-touch-target"
+              onclick={() => {
+                onChoose(DEFAULT_LIBRARY_LISTING);
+              }}
+            >
+              {m.library_reset()}
+            </Button>
+          </div>
+          <div
+            class="flex flex-1 flex-col overflow-y-auto px-sheet-inline pbs-sm pbe-lg min-block-none"
           >
-            {matching === undefined
-              ? m.library_view_done()
-              : m.library_show_series({ count: matching })}
-          </Button>
-        </div>
-      {/if}
-    {/snippet}
-  </ModalContent>
-</Dialog.Root>
+            <FilterChoices {listing} {onChoose} />
+          </div>
+          <div
+            class="border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom"
+          >
+            <p role="status" class="sr-only">
+              {#if matching !== undefined}
+                {m.library_series_match({ count: matching })}
+              {/if}
+            </p>
+            <Button
+              type="button"
+              look="filled"
+              class="rounded-control text-body font-semibold inline-full min-block-touch-target"
+              onclick={close}
+            >
+              {matching === undefined
+                ? m.library_view_done()
+                : m.library_show_series({ count: matching })}
+            </Button>
+          </div>
+        {/if}
+      {/snippet}
+    </ModalContent>
+  </Dialog.Root>
+{/if}
