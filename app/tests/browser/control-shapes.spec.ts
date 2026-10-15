@@ -214,7 +214,10 @@ test.describe("on a desktop", () => {
     await page.goto("/");
 
     const panel = await openViewOptions(page);
-    const stepper = panel.getByRole("group", { name: "Covers per row" });
+    await panel.getByRole("radio", { name: "Choose" }).click();
+    const stepper = panel.getByRole("group", {
+      name: "Covers per row, chosen",
+    });
 
     expect(await cornerOf(stepper)).toBe(DESKTOP_STEPPER_CORNER);
   });
