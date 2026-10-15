@@ -29,7 +29,9 @@
           <a href={resolve(link.route)} {...props}>
             <span class="flex-1">{link.label}</span>
             {#if link.value !== undefined}
-              <ItemDescription>{link.value}</ItemDescription>
+              <ItemDescription class="group-hover:text-foreground">
+                {link.value}
+              </ItemDescription>
             {/if}
             <ChevronRight
               size={CHEVRON_SIZE}
