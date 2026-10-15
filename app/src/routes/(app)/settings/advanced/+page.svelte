@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { FlaskConical } from "@lucide/svelte";
+  import { ChevronRight, FlaskConical } from "@lucide/svelte";
+
+  import { resolve } from "$app/paths";
 
   import { getCrashReporting } from "#lib/crash-report/crash-reporting.svelte.ts";
   import { CrashTests } from "#lib/crash-tests/crash-tests.ts";
@@ -13,6 +15,7 @@
   import type { PageProps } from "./$types";
 
   const NOTE_ICON_SIZE = 19;
+  const CHEVRON_SIZE = 18;
 
   let { data }: PageProps = $props();
 
@@ -25,6 +28,25 @@
 
 <SectionHeading title={m.advanced_title()} />
 <div class="mbs-pane-gap flex flex-col gap-pane-gap">
+  <div class="rounded-list border border-border bg-card">
+    <a
+      href={resolve("/(app)/settings/advanced/animations")}
+      class={[
+        "flex items-center gap-md rounded-list py-xs ps-lg pe-md transition-control min-block-phone-row hover:bg-hover active:bg-pressed",
+        "touch:medium:py-none touch:medium:ps-list-row touch:medium:min-block-touch-target",
+        "desktop:py-none desktop:ps-list-row desktop:min-block-settings-row",
+      ]}
+    >
+      <span class="flex-1 font-semibold desktop:text-callout">
+        {m.animations_title()}
+      </span>
+      <ChevronRight
+        size={CHEVRON_SIZE}
+        aria-hidden="true"
+        class="shrink-0 text-muted rtl:-scale-x-100"
+      />
+    </a>
+  </div>
   <SettingSwitch
     label={m.advanced_scheduled_rescans()}
     description={m.advanced_scheduled_rescans_help()}
