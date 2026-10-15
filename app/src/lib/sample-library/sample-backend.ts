@@ -1,6 +1,7 @@
 import {
   type AdultContent,
   DEFAULT_LIBRARY_VIEW,
+  type FolderProblem,
   type Inclusion,
   type IpcErrorCode,
   type LibraryFilter,
@@ -40,6 +41,7 @@ export interface SampleScenario {
   readonly library: LibraryState;
   readonly series: SeriesState;
   readonly sixthVolume: SampleFile;
+  readonly missing: MissingKind;
 }
 
 export interface SampleEvents {
@@ -50,6 +52,29 @@ const PLATFORMS = ["android", "ios", "macos", "windows", "linux"] as const;
 const LIBRARY_STATES = ["ready", "empty", "loading", "failed"] as const;
 const SERIES_STATES = ["ready", "loading", "failed", "empty"] as const;
 const SIXTH_VOLUME_FILES = ["present", "missing", "damaged"] as const;
+const MISSING_KINDS = ["none", "folder", "drive", "access", "sign-in"] as const;
+
+type MissingKind = (typeof MISSING_KINDS)[number];
+
+const MISSING_FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000002";
+const MISSING_FOLDER_SERIES = new Set([3, 6, 9, 12, 15, 18]);
+const MISSING_FOLDERS = {
+  folder: { name: "Comics", location: "/media/Comics", problem: "missing" },
+  drive: {
+    name: "Comics",
+    location: "/Volumes/Archive/Comics",
+    problem: "driveDisconnected",
+  },
+  access: {
+    name: "Manga",
+    location: "Internal storage › Manga",
+    problem: "lostAccess",
+  },
+  "sign-in": { name: "Manga", location: "nas/manga", problem: "needsSignIn" },
+} as const satisfies Record<
+  Exclude<MissingKind, "none">,
+  { name: string; location: string; problem: FolderProblem }
+>;
 const DAMAGED_PAGES_LOST = 6;
 
 function oneOf<Choice extends string>(
@@ -67,6 +92,7 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
     library: oneOf(LIBRARY_STATES, search.get("library"), "ready"),
     series: oneOf(SERIES_STATES, search.get("series"), "ready"),
     sixthVolume: oneOf(SIXTH_VOLUME_FILES, search.get("volume6"), "missing"),
+    missing: oneOf(MISSING_KINDS, search.get("missing"), "none"),
   };
 }
 
@@ -135,14 +161,16 @@ interface SeriesFacts {
   readonly tagsOf: (series: SampleSeries) => readonly string[];
   readonly isAdult: (series: SampleSeries) => boolean;
   readonly hidesAdult: () => boolean;
+  readonly isOutOfReach: (series: SampleSeries) => boolean;
 }
 
 function passes(
   series: SampleSeries,
   filter: LibraryFilter,
-  { isBookmarked, tagsOf, isAdult, hidesAdult }: SeriesFacts,
+  { isBookmarked, tagsOf, isAdult, hidesAdult, isOutOfReach }: SeriesFacts,
 ): boolean {
   return (
+    !isOutOfReach(series) &&
     !(hidesAdult() && isAdult(series)) &&
     admits(
       filter.unread,
@@ -322,7 +350,36 @@ export function sampleBackend(
   const isAdult = (series: SampleSeries): boolean =>
     adultContent.countsAgeRatings && ADULT_SERIES.has(series.number);
   const hidesAdult = (): boolean => adultContent.treatment === "hide";
-  const facts: SeriesFacts = { isBookmarked, tagsOf, isAdult, hidesAdult };
+  const missingFolder = {
+    isFound: scenario.missing === "none",
+    isShownAnyway: false,
+  };
+  const isOutOfReach = (series: SampleSeries): boolean =>
+    !missingFolder.isFound &&
+    !missingFolder.isShownAnyway &&
+    MISSING_FOLDER_SERIES.has(series.number);
+  const facts: SeriesFacts = {
+    isBookmarked,
+    tagsOf,
+    isAdult,
+    hidesAdult,
+    isOutOfReach,
+  };
+
+  function missingFolderOf(kind: Exclude<MissingKind, "none">) {
+    const { name, location } = MISSING_FOLDERS[kind];
+    return {
+      id: MISSING_FOLDER_ID,
+      kind: "linked" as const,
+      name,
+      location,
+      isAvailable: missingFolder.isFound,
+    };
+  }
+
+  function hiddenSeries(): number {
+    return library.filter(isOutOfReach).length;
+  }
 
   const addedAt = (series: SampleSeries): number =>
     NEWEST_ADDED_MS - library.indexOf(series) * DAY_MS;
@@ -536,9 +593,50 @@ export function sampleBackend(
                 location: LIBRARY_FOLDER_LOCATION,
                 isAvailable: true,
               },
+              ...(scenario.missing === "none"
+                ? []
+                : [missingFolderOf(scenario.missing)]),
             ],
       next: null,
     }),
+    missingLibraryFolders: () =>
+      scenario.missing === "none" || missingFolder.isFound
+        ? []
+        : [
+            {
+              folder: missingFolderOf(scenario.missing),
+              problem: MISSING_FOLDERS[scenario.missing].problem,
+              hiddenSeries: MISSING_FOLDER_SERIES.size,
+              isShownAnyway: missingFolder.isShownAnyway,
+            },
+          ],
+    libraryHiddenSeriesCount: hiddenSeries,
+    showMissingLibraryFolder: (_id, isShown) => {
+      missingFolder.isShownAnyway = isShown;
+      events.emit("library-changed", null);
+      return null;
+    },
+    relocateLibraryFolder: (id) => {
+      missingFolder.isFound = true;
+      events.emit("library-changed", null);
+      return {
+        id,
+        name:
+          scenario.missing === "none"
+            ? ""
+            : MISSING_FOLDERS[scenario.missing].name,
+        outcome: {
+          kind: "rescanned",
+          added: 0,
+          updated: 0,
+          moved: 0,
+          removed: 0,
+          unreadableBooks: 0,
+          unsupportedBooks: 0,
+          unreadableFolders: 0,
+        },
+      };
+    },
     librarySeries: async (after, chosen) => {
       await libraryReady();
       const page = pageOf(sorted(chosen), after);
