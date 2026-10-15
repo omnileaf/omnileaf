@@ -17,14 +17,14 @@ function groupHolding(name: string) {
     .filter({ has: page.getByRole("link", { name: new RegExp(`^${name}`) }) });
 }
 
-test("groups Library, Appearance, Reading, Privacy and security and General together", async () => {
+test("groups Library, Appearance, Reader, Privacy and security and General together", async () => {
   await render(SettingsIndex, PROPS);
 
   const group = groupHolding("Library");
 
   for (const name of [
     "Appearance",
-    "Reading",
+    "Reader",
     "Privacy and security",
     "General",
   ]) {

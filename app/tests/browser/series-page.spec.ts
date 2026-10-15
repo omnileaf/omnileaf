@@ -963,7 +963,7 @@ test.describe("swiping a book in the list", () => {
     expect(shelf.marked).toEqual([{ books: [shelf.idOf(5)], mark: "read" }]);
   });
 
-  test("does nothing on a swipe left until Settings › Reading asks it to mark read", async ({
+  test("does nothing on a swipe left until Settings › Reader asks it to mark read", async ({
     page,
   }) => {
     await openSeries(page);
