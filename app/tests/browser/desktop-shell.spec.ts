@@ -189,3 +189,53 @@ test.describe("on Windows", () => {
     );
   });
 });
+
+for (const width of [800, 520]) {
+  test.describe(`in a ${String(width)}px desktop window`, () => {
+    test.use({ backend: LIBRARY_BACKEND });
+
+    test.beforeEach(async ({ page }) => {
+      test.skip(
+        test.info().project.use.isMobile === true,
+        "a desktop window with a pointer",
+      );
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto("/");
+      await expect(page.getByRole("list", { name: "Series" })).toBeVisible();
+    });
+
+    test("keeps the toolbar and folds the sidebar to its icons", async ({
+      page,
+    }) => {
+      const sidebar = await boxOf(navigation(page));
+      const bar = await boxOf(toolbar(page));
+
+      expect(sidebar.width).toBe(HIDDEN_SIDEBAR_WIDTH);
+      expect(sidebar.x).toBe(0);
+      expect(bar.height).toBe(TOOLBAR_HEIGHT);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Library" }),
+      ).toHaveCSS("font-size", TOOLBAR_TITLE_SIZE);
+      await expect(
+        navigation(page).getByRole("link", { name: "Library" }),
+      ).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--sidebar-accent"),
+      );
+    });
+
+    test("names each icon in a tooltip while the pointer rests on it", async ({
+      page,
+    }) => {
+      const browse = navigation(page).getByRole("link", { name: "Browse" });
+      await browse.hover();
+
+      const tooltip = page.locator("[data-tooltip-content]");
+      await expect(tooltip).toHaveText("Browse");
+      const link = await boxOf(browse);
+      expect((await boxOf(tooltip)).x).toBeGreaterThanOrEqual(
+        link.x + link.width,
+      );
+    });
+  });
+}

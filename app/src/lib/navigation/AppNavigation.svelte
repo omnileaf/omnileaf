@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { MediaQuery } from "svelte/reactivity";
+
   import { resolve } from "$app/paths";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import { NARROW_POINTER_QUERY } from "#lib/page/breakpoints.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import NavigationIcon from "./NavigationIcon.svelte";
@@ -41,6 +44,8 @@
   let { current }: { current: Section } = $props();
 
   const sidebar = getSidebarSetting();
+  const isNarrowPointer = new MediaQuery(NARROW_POINTER_QUERY);
+  const isFolded = $derived(sidebar.isHidden || isNarrowPointer.current);
 
   const currentIndex = $derived(
     DESTINATIONS.findIndex(({ section }) => section === current),
@@ -84,18 +89,18 @@
   onanimationend={endArrivalOnceStill}
   class={[
     "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom max-medium:pe-safe-end medium:flex medium:flex-col medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:inline-sidebar android:max-medium:border-bs-0 android:max-medium:bg-android-container",
-    "desktop:expanded:border-sidebar-edge desktop:expanded:bg-sidebar desktop:expanded:inline-sidebar-desktop sidebar-hidden:inline-sidebar-hidden",
+    "desktop-shell:flex desktop-shell:flex-col desktop-shell:border-e desktop-shell:border-bs-0 desktop-shell:border-sidebar-edge desktop-shell:bg-sidebar desktop-shell:pbs-safe-top desktop-shell:inline-sidebar-desktop sidebar-hidden:inline-sidebar-hidden",
     "ios:max-medium:fixed ios:max-medium:inset-x-lg ios:max-medium:inset-be-floating-gap ios:max-medium:z-tab-bar ios:max-medium:rounded-full ios:max-medium:border ios:max-medium:border-glass-edge ios:max-medium:bg-glass ios:max-medium:p-xs ios:max-medium:shadow-floating ios:max-medium:backdrop-blur-glass ios:max-medium:backdrop-saturate-160 ios:max-medium:block-floating-bar",
   ]}
 >
   <p
     title={m.app_name()}
-    class="hidden truncate px-xl pbs-xl pbe-xl text-brand font-bold tracking-tight expanded:block desktop:expanded:flex desktop:expanded:items-center desktop:expanded:px-lg desktop:expanded:pbs-none desktop:expanded:pbe-none desktop:expanded:text-body desktop:expanded:font-semibold desktop:expanded:tracking-normal desktop:expanded:min-block-toolbar sidebar-hidden:hidden"
+    class="hidden truncate px-xl pbs-xl pbe-xl text-brand font-bold tracking-tight expanded:block desktop-shell:flex desktop-shell:items-center desktop-shell:px-lg desktop-shell:pbs-none desktop-shell:pbe-none desktop-shell:text-body desktop-shell:font-semibold desktop-shell:tracking-normal desktop-shell:min-block-toolbar sidebar-hidden:hidden"
   >
     {m.app_name()}
   </p>
   <ul
-    class="flex p-sm medium:flex-1 medium:flex-col medium:gap-md medium:pbs-lg medium:pbe-2xl expanded:gap-xs expanded:px-md expanded:pbs-none expanded:pbe-xl ios:max-medium:relative ios:max-medium:p-none ios:max-medium:block-full android:max-medium:pbs-md android:max-medium:pbe-lg desktop:expanded:p-sm sidebar-hidden:pbs-sm"
+    class="flex p-sm medium:flex-1 medium:flex-col medium:gap-md medium:pbs-lg medium:pbe-2xl expanded:gap-xs expanded:px-md expanded:pbs-none expanded:pbe-xl ios:max-medium:relative ios:max-medium:p-none ios:max-medium:block-full android:max-medium:pbs-md android:max-medium:pbe-lg desktop-shell:flex-1 desktop-shell:flex-col desktop-shell:gap-xs desktop-shell:p-sm sidebar-hidden:pbs-sm"
   >
     <li
       aria-hidden="true"
@@ -108,27 +113,30 @@
       {@const isArriving = destination.section === arriving}
       <li
         class={[
-          "flex-1 min-inline-none medium:flex-none ios:max-medium:flex",
-          destination.isAtSideEnd && "medium:mbs-auto",
+          "flex-1 min-inline-none medium:flex-none ios:max-medium:flex desktop-shell:flex-none",
+          destination.isAtSideEnd && "medium:mbs-auto desktop-shell:mbs-auto",
         ]}
       >
-        <Tooltip label={sidebar.isHidden ? destination.label() : undefined}>
+        <Tooltip
+          label={isFolded ? destination.label() : undefined}
+          side={document.documentElement.dir === "rtl" ? "left" : "right"}
+        >
           {#snippet child({ props })}
             <a
               {...props}
               href={resolve(SECTION_ROUTE_IDS[destination.section])}
               aria-current={isSelected ? "page" : undefined}
               class={[
-                "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-row expanded:px-md expanded:text-label desktop:expanded:gap-sm desktop:expanded:rounded-sidebar-row desktop:expanded:px-sm desktop:expanded:py-none desktop:expanded:block-sidebar-row desktop:expanded:min-block-sidebar-row sidebar-hidden:justify-center sidebar-hidden:px-none",
+                "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-row expanded:px-md expanded:text-label desktop-shell:flex-row desktop-shell:gap-sm desktop-shell:rounded-sidebar-row desktop-shell:px-sm desktop-shell:py-none desktop-shell:block-sidebar-row desktop-shell:min-block-sidebar-row sidebar-hidden:justify-center sidebar-hidden:px-none",
                 "ios:max-medium:flex-1 ios:max-medium:justify-center ios:max-medium:gap-2xs ios:max-medium:rounded-full ios:max-medium:py-none ios:max-medium:text-tab ios:max-medium:font-semibold",
                 isSelected
-                  ? "font-bold text-accent expanded:bg-accent-soft android:max-medium:font-semibold android:max-medium:text-foreground desktop:expanded:bg-sidebar-selection desktop:expanded:font-medium desktop:expanded:text-on-sidebar-selection"
-                  : "font-medium text-muted expanded:text-sidebar-ink expanded:hover:tint-hover expanded:active:tint-pressed ios:max-medium:text-foreground android:max-medium:text-android-tab-ink desktop:expanded:font-regular desktop:expanded:hover:bg-sidebar-accent desktop:expanded:hover:text-on-sidebar-accent",
+                  ? "font-bold text-accent expanded:bg-accent-soft android:max-medium:font-semibold android:max-medium:text-foreground desktop:expanded:bg-sidebar-selection desktop:expanded:text-on-sidebar-selection desktop-shell:bg-sidebar-accent desktop-shell:font-medium desktop-shell:text-on-sidebar-accent"
+                  : "font-medium text-muted expanded:text-sidebar-ink expanded:hover:tint-hover expanded:active:tint-pressed ios:max-medium:text-foreground android:max-medium:text-android-tab-ink desktop-shell:font-regular desktop-shell:hover:bg-sidebar-accent desktop-shell:hover:text-on-sidebar-accent",
               ]}
             >
               <span
                 class={[
-                  "relative flex items-center justify-center rounded-full block-2xl inline-pill expanded:block-auto expanded:inline-auto ios:max-medium:block-auto ios:max-medium:inline-auto",
+                  "relative flex items-center justify-center rounded-full block-2xl inline-pill expanded:block-auto expanded:inline-auto ios:max-medium:block-auto ios:max-medium:inline-auto desktop-shell:block-auto desktop-shell:inline-auto",
                   !isSelected &&
                     "max-expanded:group-hover:tint-hover max-expanded:group-active:tint-pressed",
                 ]}
@@ -136,7 +144,7 @@
                 <span
                   data-slot="navigation-pill"
                   class={[
-                    "absolute inset-none rounded-full bg-accent-soft transition-opacity expanded:hidden ios:max-medium:hidden android:bg-android-tonal motion-navigation:duration-fade motion-navigation:ease-out",
+                    "absolute inset-none rounded-full bg-accent-soft transition-opacity expanded:hidden ios:max-medium:hidden android:bg-android-tonal desktop-shell:hidden motion-navigation:duration-fade motion-navigation:ease-out",
                     "android:motion-navigation:duration-grow android:motion-navigation:ease-emphasized",
                     !isSelected && "opacity-0",
                     isArriving && "android:motion-navigation:animate-pill-grow",
@@ -148,7 +156,7 @@
                   {isArriving}
                   size={ICON_SIZE}
                   class={[
-                    "relative ios:max-medium:block-xl ios:max-medium:inline-xl desktop:expanded:block-sidebar-icon desktop:expanded:inline-sidebar-icon",
+                    "relative ios:max-medium:block-xl ios:max-medium:inline-xl desktop-shell:block-sidebar-icon desktop-shell:inline-sidebar-icon",
                     isArriving &&
                       "ios:max-medium:motion-navigation:animate-nav-pop",
                   ]}
