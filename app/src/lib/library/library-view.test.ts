@@ -7,6 +7,7 @@ import {
   withCoversPerRow,
   withDisplay,
   withItemCounts,
+  withFitsCoversToWidth,
   withOnCovers,
 } from "./library-view";
 
@@ -18,6 +19,12 @@ const VIEW: LibraryView = {
   showsContinueRow: false,
   onCovers: DEFAULT_LIBRARY_VIEW.onCovers,
 };
+
+test("fits the covers to the width, keeping each size's chosen count for later", () => {
+  const view = withFitsCoversToWidth(VIEW, true);
+
+  expect(view).toEqual({ ...VIEW, fitsCoversToWidth: true });
+});
 
 test("changes the covers per row of one size and leaves the others", () => {
   const view = withCoversPerRow(VIEW, "tablet", 7);
