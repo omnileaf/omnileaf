@@ -1,5 +1,5 @@
 use omnileaf_sync_proto::SeriesId;
-use rusqlite::{Connection, named_params};
+use rusqlite::{Connection, Row, named_params};
 
 use crate::{
     Error,
@@ -8,30 +8,43 @@ use crate::{
         cursor::Position,
         page::{Page, PageRequest},
         series_listing::{SeriesListing, SeriesOrder, SortDirection},
-        staged_rows::{Listing, Read, TitlePlace, listing, title_place, title_rows},
+        staged_rows::{Listing, Read, TitlePlace, title_place, title_rows},
         stored_id::stored_id,
     },
 };
 
-struct Directions<P> {
-    ascending: Listing<P>,
-    descending: Listing<P>,
+pub(crate) struct Directions<P> {
+    pub(crate) ascending: Listing<P>,
+    pub(crate) descending: Listing<P>,
 }
 
-/// Both ways round an order on the series column `key`, with the id breaking ties so every row has one place.
+/// Both ways round an order on the series column `key`, with the id breaking ties so every row has one place, among the series that meet `condition`.
 macro_rules! directions {
     (key: $key:literal, sort_position: $position:expr $(,)?) => {
-        Directions {
-            ascending: listing! {
-                with: "",
-                condition: "",
+        $crate::catalog::series_page::directions! {
+            with: "",
+            condition: "",
+            key: $key,
+            sort_position: $position,
+        }
+    };
+    (
+        with: $with:expr,
+        condition: $condition:expr,
+        key: $key:literal,
+        sort_position: $position:expr $(,)?
+    ) => {
+        $crate::catalog::series_page::Directions {
+            ascending: $crate::catalog::staged_rows::listing! {
+                with: $with,
+                condition: $condition,
                 seek: concat!("(series.", $key, ", series.id) > (:after_key, :after_id)"),
                 order: concat!($key, ", id"),
                 sort_position: $position,
             },
-            descending: listing! {
-                with: "",
-                condition: "",
+            descending: $crate::catalog::staged_rows::listing! {
+                with: $with,
+                condition: $condition,
                 seek: concat!("(series.", $key, ", series.id) < (:after_key, :after_id)"),
                 order: concat!($key, " DESC, id DESC"),
                 sort_position: $position,
@@ -40,6 +53,8 @@ macro_rules! directions {
     };
 }
 
+pub(crate) use directions;
+
 const BY_TITLE: Directions<TitlePlace> = directions! {
     key: "title_key",
     sort_position: title_place,
@@ -47,13 +62,15 @@ const BY_TITLE: Directions<TitlePlace> = directions! {
 
 const BY_DATE_ADDED: Directions<Position> = directions! {
     key: "added_at_ms",
-    sort_position: |row| {
-        Ok(Position::Added {
-            added_at_ms: row.get("added_at_ms")?,
-            id: stored_id(row, "id")?,
-        })
-    },
+    sort_position: added_place,
 };
+
+pub(crate) fn added_place(row: &Row<'_>) -> rusqlite::Result<Position> {
+    Ok(Position::Added {
+        added_at_ms: row.get("added_at_ms")?,
+        id: stored_id(row, "id")?,
+    })
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeriesSummary {
@@ -87,7 +104,7 @@ pub fn series_page(
     Ok(Page::of(rows, request.size))
 }
 
-fn date_added_rows(
+pub(crate) fn date_added_rows(
     read: &Read<'_>,
     listing: &Listing<Position>,
     after: Option<&Position>,
@@ -108,7 +125,7 @@ fn date_added_rows(
 }
 
 impl<P> Directions<P> {
-    const fn toward(&self, direction: SortDirection) -> &Listing<P> {
+    pub(crate) const fn toward(&self, direction: SortDirection) -> &Listing<P> {
         match direction {
             SortDirection::Ascending => &self.ascending,
             SortDirection::Descending => &self.descending,
