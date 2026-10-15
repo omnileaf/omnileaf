@@ -358,9 +358,10 @@ function rowsInFirstFrame(page: Page): Promise<number> {
           )
           ?.click();
         requestAnimationFrame(() => {
-          const segments = document.querySelectorAll(
-            "[role=dialog][data-state=open] [role=radio]",
-          );
+          const segments =
+            document
+              .querySelector("[role=dialog][data-state=open] [role=radiogroup]")
+              ?.querySelectorAll("[role=radio]") ?? [];
           resolve(
             new Set(
               [...segments].map((segment) =>

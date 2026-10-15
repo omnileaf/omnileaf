@@ -24,19 +24,26 @@
     size,
     count,
     drawn,
+    mostThatFit,
     onCount,
     class: className,
   }: {
     size: ScreenSize;
     count: number;
     drawn: number | undefined;
+    mostThatFit: number | undefined;
     onCount: (count: number) => void;
     class?: ClassValue;
   } = $props();
 
-  const { fewest, most } = $derived(COVERS_PER_ROW[size]);
+  const fewest = $derived(COVERS_PER_ROW[size].fewest);
+  const most = $derived(
+    Math.max(
+      fewest,
+      Math.min(COVERS_PER_ROW[size].most, mostThatFit ?? Number.MAX_VALUE),
+    ),
+  );
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
-  const labelId = $props.id();
   const coversThatFit = $derived(
     drawn !== undefined && drawn < count ? drawn : undefined,
   );
@@ -45,10 +52,7 @@
 <div class={["flex-col", className]}>
   <div class="flex items-center gap-md large:gap-label">
     <div class="flex-1">
-      <p id={labelId} class="text-body font-semibold large:text-small">
-        {m.library_covers_per_row()}
-      </p>
-      <p class="text-detail text-muted large:text-caption">
+      <p class="text-small text-muted">
         {RANGE_LABELS[size]({
           fewest: numbers.format(fewest),
           most: numbers.format(most),
@@ -58,7 +62,7 @@
     <NumberField bind:value={() => count, onCount} min={fewest} max={most}>
       <div
         role="group"
-        aria-labelledby={labelId}
+        aria-label={m.library_covers_per_row_chosen()}
         class="flex items-center rounded-field border border-border large:rounded-small-control"
       >
         <NumberFieldStep
