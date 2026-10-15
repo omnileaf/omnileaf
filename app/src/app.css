@@ -386,6 +386,8 @@
   --spacing-pane-app-icon: 3.5rem;
   --spacing-pane: 2.5rem;
   --spacing-pane-gap: 1.5rem;
+  --spacing-radio: 1rem;
+  --spacing-radio-dot: 0.5rem;
   --spacing-settings-list: 17rem;
   --spacing-settings-list-widest: 17rem;
   --spacing-problem-top: calc(10.625rem - var(--spacing-title-gap));
