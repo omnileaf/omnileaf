@@ -39,9 +39,9 @@ use crate::{
     CategoryId, CoversPerRowOutOfRange, CreatorSeries, FolderCursor, FolderId, FolderPage,
     FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries,
     LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
-    LibraryListing, LibrarySearch, LibraryView, LocalDay, ReadMark, ReadingWeek, RescanOutcome,
-    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
-    SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
+    LibraryListing, LibrarySearch, LibraryTag, LibraryView, LocalDay, ReadMark, ReadingWeek,
+    RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
+    SeriesId, SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -324,6 +324,10 @@ impl Library {
     }
 
     pub fn categories(&self) -> Result<Vec<LibraryCategory>, LibraryError> {
+        Ok(Vec::new())
+    }
+
+    pub fn tags(&self) -> Result<Vec<LibraryTag>, LibraryError> {
         Ok(Vec::new())
     }
 
