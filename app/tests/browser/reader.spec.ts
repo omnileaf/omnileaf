@@ -638,15 +638,66 @@ test("shows that a slow page is on its way", async ({ page }) => {
       .getByRole("status")
       .filter({ hasText: "Loading page 1" }),
   ).toBeAttached();
+  await expect(page.getByText("Loading page 1", { exact: true })).toBeVisible();
 });
 
-test("says so when a page can't be shown", async ({ page }) => {
+test("says so when a page can't be shown, and that the rest of the book still opens", async ({
+  page,
+}) => {
   await page.unrouteAll();
   await page.route(fakeProtocolRoute("omni"), (route) => route.abort());
   await openBook(page);
 
   await expect(page.getByText("This page couldn't be shown.")).toBeVisible();
+  await expect(
+    page.getByText(
+      `Page 1 may be damaged. The rest of ${BOOK_TITLE} still opens.`,
+    ),
+  ).toBeVisible();
 });
+
+test("turns on from a page that can't be shown with Next page", async ({
+  page,
+}) => {
+  await failFirstPage(page, Number.POSITIVE_INFINITY);
+  await openBook(page);
+
+  await pageProblem(page).getByRole("button", { name: "Next page" }).click();
+
+  await expectOnPage(page, 2);
+});
+
+test("asks again for a page that couldn't be shown with Try again", async ({
+  page,
+}) => {
+  await failFirstPage(page, 2);
+  await openBook(page);
+  await expect(page.getByText("This page couldn't be shown.")).toBeVisible();
+
+  await pageProblem(page).getByRole("button", { name: "Try again" }).click();
+
+  await expectOnPage(page, 1);
+  await expect(page.getByText("This page couldn't be shown.")).toHaveCount(0);
+});
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`a page that can't be shown has no accessibility violations in the ${colorScheme} theme`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await failFirstPage(page, Number.POSITIVE_INFINITY);
+    await openBook(page);
+    await expect(page.getByText("This page couldn't be shown.")).toBeVisible();
+
+    const violations = await accessibilityViolations(page);
+
+    expect(violations).toEqual([]);
+  });
+}
+
+function pageProblem(page: Page): Locator {
+  return page.getByRole("region", { name: "This page couldn't be shown." });
+}
 
 async function failFirstPage(page: Page, times: number): Promise<void> {
   let failures = 0;
