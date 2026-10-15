@@ -5,5 +5,5 @@
 </script>
 
 <p class="text-small text-muted in-toolbar:truncate">
-  {m.library_series_count({ count })}
+  {count === 0 ? m.library_no_series() : m.library_series_count({ count })}
 </p>
