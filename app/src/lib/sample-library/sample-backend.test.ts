@@ -326,3 +326,26 @@ test("lists the series downloaded and finished as ready to clean up", async () =
     "Sample Series 15",
   ]);
 });
+
+test("marks the series chosen read, and puts every book back as it was once those books are marked unread", async () => {
+  const { backend } = backendFor();
+  const before = await backend.librarySeries(null, NEW_LIBRARY_LISTING);
+  const chosen = before.series
+    .filter((series) => series.unreadCount > 0)
+    .slice(0, 2);
+
+  const marked = await backend.markSeriesRead(chosen.map(({ id }) => id));
+  const read = await backend.librarySeries(null, NEW_LIBRARY_LISTING);
+  await backend.markBooks(marked, "unread");
+  const after = await backend.librarySeries(null, NEW_LIBRARY_LISTING);
+
+  expect(marked).toHaveLength(
+    chosen.reduce((sum, series) => sum + series.unreadCount, 0),
+  );
+  expect(
+    read.series
+      .filter((series) => chosen.some(({ id }) => id === series.id))
+      .map((series) => series.unreadCount),
+  ).toEqual([0, 0]);
+  expect(after.series).toEqual(before.series);
+});
