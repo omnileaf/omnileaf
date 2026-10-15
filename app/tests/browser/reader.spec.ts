@@ -543,17 +543,19 @@ test("goes back to the series with Escape", async ({ page }) => {
   await expect(page).toHaveURL(SERIES_PAGE);
 });
 
-test("goes back to the series from the book's title on a phone", async ({
+test("goes back to the series from the chevron, the book's title opening Jump to a book instead", async ({
   page,
 }) => {
-  test.skip(
-    viewportOf(page).width >= EXPANDED_MIN_WIDTH,
-    "wide screens name the book in a breadcrumb",
-  );
   await openBook(page);
+  await expect(
+    page.locator("main > header").getByRole("button", {
+      name: "Jump to a book",
+    }),
+  ).toBeAttached();
 
   await page
-    .getByRole("link", { name: `${BOOK_SERIES_TITLE} ${BOOK_TITLE}` })
+    .locator("main > header")
+    .getByRole("link", { name: BACK_TO_SERIES, exact: true })
     .click();
 
   await expect(page).toHaveURL(SERIES_PAGE);
@@ -568,9 +570,8 @@ test("goes back to the series from the breadcrumb on a wide screen", async ({
   );
   await openBook(page);
   const breadcrumb = page.getByRole("navigation", { name: "Breadcrumb" });
-  await expect(breadcrumb.getByText(BOOK_TITLE)).toHaveAttribute(
-    "aria-current",
-    "page",
+  await expect(breadcrumb.locator('[aria-current="page"]')).toContainText(
+    BOOK_TITLE,
   );
 
   await breadcrumb.getByRole("link", { name: BOOK_SERIES_TITLE }).click();

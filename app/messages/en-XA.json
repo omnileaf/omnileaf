@@ -1179,6 +1179,28 @@
   "reader_guide_click_body_rtl": "⟦Çļíçķ ţĥé ļéƒţ ţĥíŕð ƒöŕ ţĥé ñéẋţ þáĝé áñð ţĥé ŕíĝĥţ ţĥíŕð ţö ĝö ƀáçķ. Çļíçķ ţĥé ɱíððļé ţö šĥöŵ ţĥé çöñţŕöļš. ← áñð Šþáçé ŵöŕķ ţöö.·····················································⟧",
   "reader_guide_done": "⟦Ĝöţ íţ···⟧",
   "reader_shortcuts_close": "⟦Çļöšé ķéýƀöáŕð šĥöŕţçûţš··········⟧",
+  "reader_jump_to_book": "⟦Ĵûɱþ ţö á ƀööķ······⟧",
+  "reader_jump_close": "⟦Çļöšé Ĵûɱþ ţö á ƀööķ········⟧",
+  "reader_jump_loading": "⟦Ļöáðíñĝ ţĥé šéŕíéš' ƀööķš··········⟧",
+  "reader_jump_subtitle": [
+    {
+      "declarations": [
+        "input series",
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{series} · {formattedCount} ƀööķ·············⟧",
+        "countPlural=other": "⟦{series} · {formattedCount} ƀööķš··············⟧"
+      }
+    }
+  ],
+  "reader_jump_reading": "⟦Ŕéáðíñĝ···⟧",
+  "reader_jump_file_missing": "⟦Ƒíļé ɱíššíñĝ: ɱöṽéð öŕ ðéļéţéð············⟧",
+  "reader_jump_or_close": "⟦Ĵûɱþ ţö á ƀööķ, öŕ çļöšé íţ···········⟧",
+  "reader_shortcuts_typing": "⟦Ŵĥíļé ýöû ţýþé íñ á ƒíéļð, ļéţţéŕ ķéýš šûçĥ áš Ĝ ţýþé; Éšç ţĥéŕé çļéáŕš ţĥé ţéẋţ ƒíŕšţ, ţĥéñ çļöšéš ţĥé þáñéļ.············································⟧",
   "reader_shortcuts_turning": "⟦Ţûŕñíñĝ þáĝéš······⟧",
   "reader_shortcuts_reader": "⟦Ŕéáðéŕ···⟧",
   "reader_shortcuts_zoom": "⟦Žööɱ··⟧",
