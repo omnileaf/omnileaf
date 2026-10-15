@@ -30,7 +30,7 @@
   const LOOKS = {
     pill: "min-block-sort-direction rounded-full border-accent px-pill-inline text-detail text-accent",
     field: "block-panel-field px-pill-inline text-detail font-medium",
-    icon: "justify-center block-panel-field inline-panel-field",
+    icon: "justify-center block-panel-field inline-panel-field touch:block-touch-target touch:inline-touch-target android:rounded-full",
   } as const;
 
   const ICON_SIZE = 14;

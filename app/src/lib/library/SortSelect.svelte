@@ -44,6 +44,7 @@
       aria-labelledby={labelId}
       value={sort.by}
       class="flex-1 min-inline-none"
+      fieldClass="touch:text-body touch:block-touch-target"
       onchange={chooseSort}
     >
       {#each SORTS as by (by)}
