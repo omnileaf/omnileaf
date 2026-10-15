@@ -10,6 +10,8 @@ export interface Shortcut {
   readonly command?: Platform;
   /** Whether Shift must be held or released; left out, either will do. */
   readonly shift?: boolean;
+  /** Holds Alt, which is otherwise left to whatever else wants it. */
+  readonly alt?: boolean;
   readonly inTextFields?: boolean;
   readonly ignoresRepeats?: boolean;
   readonly run: (event: KeyboardEvent) => void;
@@ -41,12 +43,12 @@ function isCommandAsDeclared(
 }
 
 function areModifiersAsDeclared(
-  { command, shift }: Shortcut,
+  { command, shift, alt = false }: Shortcut,
   event: KeyboardEvent,
 ): boolean {
   return (
     isCommandAsDeclared(command, event) &&
-    !event.altKey &&
+    event.altKey === alt &&
     (shift === undefined || shift === event.shiftKey)
   );
 }

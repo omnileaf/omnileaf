@@ -88,6 +88,17 @@ test("leaves a key held with Ctrl, Command or Alt to whatever else wants it", ()
   expect(times()).toBe(0);
 });
 
+test("takes a key held with Alt only when the shortcut asks for Alt", () => {
+  const times = listen({ key: "ArrowLeft", alt: true });
+
+  press({ key: "ArrowLeft" });
+  press({ key: "ArrowLeft", altKey: true, ctrlKey: true });
+  const withoutAltAlone = times();
+  press({ key: "ArrowLeft", altKey: true });
+
+  expect([withoutAltAlone, times()]).toEqual([0, 1]);
+});
+
 test.each([
   ["held", true, 1],
   ["released", false, 1],
