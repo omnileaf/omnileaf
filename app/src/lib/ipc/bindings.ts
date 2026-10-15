@@ -23,6 +23,8 @@ export const commands = {
 	librarySeriesCount: (filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("library_series_count", { filter })),
 	libraryCategories: () => typedError<LibraryCategory[], IpcError>(__TAURI_INVOKE("library_categories")),
 	libraryFilterChoices: () => typedError<LibraryFilterChoices, IpcError>(__TAURI_INVOKE("library_filter_choices")),
+	seriesLabels: (series: (string & { readonly __brand: "SeriesId" })[]) => typedError<SeriesLabels, IpcError>(__TAURI_INVOKE("series_labels", { series })),
+	labelSeries: (series: (string & { readonly __brand: "SeriesId" })[], changes: LabelChanges) => typedError<null, IpcError>(__TAURI_INVOKE("label_series", { series, changes })),
 	categorySeries: (category: string & { readonly __brand: "CategoryId" }, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("category_series", { category, after, listing })),
 	categorySeriesCount: (category: string & { readonly __brand: "CategoryId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("category_series_count", { category, filter })),
 	librarySearch: (after: string & { readonly __brand: "SeriesCursor" } | null, search: LibrarySearch) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_search", { after, search })),
@@ -144,6 +146,12 @@ export type BooksRemoval = { kind: "removed"; books: number } | { kind: "kept" }
 
 export type BooksShown = "all" | "unread" | "bookmarked";
 
+/**  How many of the series asked about are in the category. */
+export type CategoryHeld = {
+	category: LibraryCategory,
+	holding: number,
+};
+
 export type CoversPerRow = {
 	phone: number,
 	tablet: number,
@@ -247,7 +255,15 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "labelsNotKept" | "internal";
+
+export type LabelChanges = {
+	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],
+	categoriesRemoved: (string & { readonly __brand: "CategoryId" })[],
+	categoriesCreated: string[],
+	tagsAdded: string[],
+	tagsRemoved: string[],
+};
 
 export type LibraryCategory = {
 	id: string & { readonly __brand: "CategoryId" },
@@ -473,6 +489,13 @@ export type SeriesCreator = {
 
 export type SeriesFormat = "comic" | "manga" | "book";
 
+export type SeriesLabels = {
+	keepsLabels: boolean,
+	categories: CategoryHeld[],
+	tags: TagHeld[],
+	suggestedTags: string[],
+};
+
 export type SeriesNeighbour = {
 	id: string & { readonly __brand: "BookId" },
 	title: string,
@@ -523,6 +546,12 @@ export type SmartFilter =
 export type SortDirection = "ascending" | "descending";
 
 export type SwipeEdge = "left" | "right";
+
+/**  How many of the series asked about carry the tag. */
+export type TagHeld = {
+	tag: string,
+	holding: number,
+};
 
 export type Theme = "light" | "dark";
 
