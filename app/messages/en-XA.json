@@ -133,6 +133,20 @@
   "library_read_state_read": "⟦Ŕéáð··⟧",
   "library_clear_all": "⟦Çļéáŕ áļļ····⟧",
   "library_filters_in_use": "⟦Ƒíļţéŕš íñ ûšé······⟧",
+  "library_more_filters": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Šĥöŵ {formattedCount} ɱöŕé ƒíļţéŕ··············⟧",
+        "countPlural=other": "⟦Šĥöŵ {formattedCount} ɱöŕé ƒíļţéŕš··············⟧"
+      }
+    }
+  ],
   "library_remove_filter": "⟦Ŕéɱöṽé {filter}······⟧",
   "library_filter_with_count": "⟦Ƒíļţéŕ · {count}·······⟧",
   "library_sort": "⟦Šöŕţ··⟧",
