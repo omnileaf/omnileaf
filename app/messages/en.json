@@ -153,6 +153,7 @@
   "library_sort_by": "Sort by",
   "library_reset": "Reset",
   "library_close": "Close",
+  "library_close_filter_and_sort": "Close sort and filter",
   "library_sort_title": "Title",
   "library_sort_date_added": "Date added",
   "library_sort_a_to_z": "A to Z",
