@@ -244,6 +244,31 @@
   "library_mark_read": "Mark as read",
   "library_marked_read": "{count} series marked as read",
   "library_selection_toolbar": "Selected series",
+  "library_categories": "Categories",
+  "library_tags": "Tags",
+  "library_labels_title": "Categories and tags",
+  "library_labels_for": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "For 1 series. Done applies the changes to it.",
+        "countPlural=other": "For {formattedCount} series. Done applies the changes to all {formattedCount}."
+      }
+    }
+  ],
+  "library_in_some": "{holding} of the {count} are in it",
+  "library_tag_on_some": "{tag} · {holding} of {count}",
+  "library_new_category": "New category",
+  "library_add_tag": "Add a tag",
+  "library_add_named_tag": "Add {tag}",
+  "library_remove_tag": "Remove {tag}",
+  "library_suggested_tags": "Suggested",
+  "library_labels_done": "Done",
   "library_no_series": "No series",
   "app_version": "Version {version}",
   "library_add_folder": "Add a folder",
