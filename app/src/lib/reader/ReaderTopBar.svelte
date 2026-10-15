@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     Bookmark,
+    ChevronDown,
     ChevronLeft,
     Keyboard,
     Maximize,
@@ -40,6 +41,8 @@
     onShortcuts,
     bookmark,
     onBookmark,
+    isJumpOpen,
+    onJump,
     onSettings,
     onFullScreen,
   }: {
@@ -55,12 +58,15 @@
     onShortcuts: () => void;
     bookmark: { readonly label: string; readonly isPressed: boolean } | null;
     onBookmark: () => void;
+    isJumpOpen: boolean;
+    onJump: () => void;
     onSettings: () => void;
     onFullScreen: () => void;
   } = $props();
 
   const backLabel = $derived(m.reader_back_to_series({ series: seriesTitle }));
   const UPCOMING = cn(READER_BUTTON, "text-muted hover:bg-transparent");
+  const JUMP_ICON_SIZE = 12;
 </script>
 
 <div
@@ -93,9 +99,8 @@
       </a>
     {/snippet}
   </Tooltip>
-  <a
-    href={seriesHref}
-    class="flex flex-1 flex-col px-xs min-inline-none expanded:hidden"
+  <div
+    class="relative flex flex-1 flex-col px-xs min-inline-none expanded:hidden"
   >
     <span class="truncate text-small font-semibold ios:hidden">
       {seriesTitle}
@@ -106,8 +111,21 @@
         page: pageNumber,
         count: pageCount,
       })}
+      <ChevronDown
+        size={JUMP_ICON_SIZE}
+        aria-hidden="true"
+        class="inline align-middle"
+      />
     </span>
-  </a>
+    <button
+      type="button"
+      aria-label={m.reader_jump_to_book()}
+      aria-expanded={isJumpOpen}
+      aria-keyshortcuts="G"
+      class="absolute inset-none rounded-shadcn-control transition-control hover:bg-hover active:bg-pressed"
+      onclick={onJump}
+    ></button>
+  </div>
   <Breadcrumb
     aria-label={m.reader_breadcrumb()}
     class="hidden flex-1 text-small min-inline-none expanded:block"
@@ -121,10 +139,35 @@
     </BreadcrumbItem>
     <BreadcrumbSeparator class="text-muted" />
     <BreadcrumbItem class="min-inline-none">
-      <BreadcrumbPage
-        class="block truncate text-foreground max-inline-reader-crumb-book"
-      >
-        {bookTitle}
+      <BreadcrumbPage class="min-inline-none">
+        <Tooltip
+          label={m.reader_jump_to_book()}
+          keys="G"
+          type="button"
+          aria-label={m.reader_jump_to_book()}
+          aria-expanded={isJumpOpen}
+          aria-keyshortcuts="G"
+          onclick={onJump}
+        >
+          {#snippet child({ props })}
+            <button
+              {...props}
+              class={cn(
+                "flex items-center gap-2xs rounded-shadcn-control px-xs text-foreground transition-control min-inline-none hover:bg-hover active:bg-pressed",
+                isJumpOpen && "bg-hover",
+              )}
+            >
+              <span class="truncate max-inline-reader-crumb-book"
+                >{bookTitle}</span
+              >
+              <ChevronDown
+                size={JUMP_ICON_SIZE}
+                aria-hidden="true"
+                class="shrink-0"
+              />
+            </button>
+          {/snippet}
+        </Tooltip>
       </BreadcrumbPage>
     </BreadcrumbItem>
   </Breadcrumb>
