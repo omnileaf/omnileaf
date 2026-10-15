@@ -37,6 +37,8 @@
 
   const selection = seriesSelection();
   const longPress = new LongPress(LONG_PRESS_MS);
+  const FOCUS_RING =
+    "rounded-cover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
   let element: HTMLElement | undefined = $state();
 
   async function startPickingFromKeys(event: KeyboardEvent): Promise<void> {
@@ -78,7 +80,7 @@
     role="checkbox"
     aria-checked={selection.has(id)}
     aria-label={title}
-    class={["text-start", className]}
+    class={["text-start", FOCUS_RING, className]}
     onclick={pick}
   >
     {@render children()}
@@ -89,7 +91,7 @@
     bind:this={element}
     data-series-link
     href={resolve("/(app)/series/[id]", { id })}
-    class={className}
+    class={[FOCUS_RING, className]}
     onpointerdown={(event) => {
       onpointerdown?.(event);
       longPress.pointerWentDown();
