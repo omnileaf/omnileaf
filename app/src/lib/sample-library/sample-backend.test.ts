@@ -646,3 +646,56 @@ test("holds thousands of series once asked, as the fast-scroll boards draw", asy
     12_480,
   );
 });
+
+test("lists each book read once in History, newest first, found by title", async () => {
+  const { backend } = backendFor();
+
+  const all = await backend.readingHistory(null, {
+    kind: "books",
+    matching: "",
+  });
+  const found = await backend.readingHistory(null, {
+    kind: "books",
+    matching: "SERIES 04",
+  });
+
+  const started = all.entries.map((entry) => entry.startedAtMs);
+  expect([
+    new Set(all.entries.map((entry) => entry.book)).size,
+    started.toSorted((one, other) => other - one),
+    found.entries.every((entry) => entry.seriesTitle === "Sample Series 04"),
+    found.entries.length > 0,
+  ]).toEqual([all.entries.length, started, true, true]);
+});
+
+test("removes a book from History and puts it back on Undo", async () => {
+  const { backend } = backendFor();
+  const books = { kind: "books", matching: "" } as const;
+  const [first] = (await backend.readingHistory(null, books)).entries;
+  const book = first?.book ?? "";
+
+  const mark = await backend.removeFromHistory(book);
+  const removed = (await backend.readingHistory(null, books)).entries;
+  await backend.restoreToHistory(book, mark);
+  const restored = (await backend.readingHistory(null, books)).entries;
+
+  expect([
+    removed.some((entry) => entry.book === book),
+    restored.some((entry) => entry.book === book),
+  ]).toEqual([false, true]);
+});
+
+test("clears History and puts it back on Undo", async () => {
+  const { backend } = backendFor();
+  const books = { kind: "books", matching: "" } as const;
+  const before = (await backend.readingHistory(null, books)).entries.length;
+
+  const mark = await backend.clearHistory();
+  const cleared = (await backend.readingHistory(null, books)).entries.length;
+  await backend.restoreHistory(mark);
+
+  expect([
+    cleared,
+    (await backend.readingHistory(null, books)).entries.length,
+  ]).toEqual([0, before]);
+});
