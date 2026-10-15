@@ -20,6 +20,7 @@
     type LibrarySeries,
     type LibraryView,
     type Platform,
+    type SpellingSuggestion,
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
@@ -105,6 +106,28 @@
   let answeredKey: string | undefined = $state();
   let latestLook = 0;
   const isAnswered = $derived(answeredKey === searchKey);
+  let suggestion = $state<{
+    readonly key: string;
+    readonly found: SpellingSuggestion | null;
+  }>();
+  const shownSuggestion = $derived(
+    suggestion?.key === searchKey ? suggestion.found : null,
+  );
+  $effect(() => {
+    const text = query.search.text;
+    if (
+      !isAnswered ||
+      text === "" ||
+      results.list.kind !== "loaded" ||
+      results.list.items.length > 0
+    ) {
+      return;
+    }
+    const key = searchKey;
+    void commands.librarySpellingSuggestion(text).then((likely) => {
+      suggestion = { key, found: likely.status === "ok" ? likely.data : null };
+    });
+  });
   const announcement = $derived.by(() => {
     if (!isLookingFor) {
       return "";
@@ -352,7 +375,13 @@
       <p class="text-body text-muted">{m.search_failed()}</p>
     {:else if results.list.kind === "loaded" && results.list.items.length === 0}
       {#if isAnswered}
-        <NothingFound text={query.search.text} />
+        <NothingFound
+          text={query.search.text}
+          suggestion={shownSuggestion}
+          onSuggest={(text: string) => {
+            query.type(text);
+          }}
+        />
       {/if}
     {:else if results.list.kind === "loaded"}
       <SearchResults
