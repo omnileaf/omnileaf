@@ -9,17 +9,23 @@ export interface StartedAtFormats {
   readonly weekdayTime: Intl.DateTimeFormat;
 }
 
-export function startedAtFormats(locale: string): StartedAtFormats {
+export function startedAtFormats(
+  locale: string,
+  hourCycle?: Intl.LocaleHourCycleKey,
+): StartedAtFormats {
+  const clock = hourCycle === undefined ? {} : { hourCycle };
   return {
     time: new Intl.DateTimeFormat(locale, {
       timeStyle: "short",
       timeZone: "UTC",
+      ...clock,
     }),
     weekdayTime: new Intl.DateTimeFormat(locale, {
       weekday: "short",
       hour: "numeric",
       minute: "2-digit",
       timeZone: "UTC",
+      ...clock,
     }),
   };
 }
