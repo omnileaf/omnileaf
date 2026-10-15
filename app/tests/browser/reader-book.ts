@@ -14,12 +14,14 @@ export const PREVIOUS_BOOK = {
   title: "Sample Series 01 v01",
   cover: null,
   reading: { state: "read" },
+  pageCount: null,
 } as const;
 export const NEXT_BOOK = {
   id: "0190a3e4-0000-8000-8000-0000000000b2",
   title: "Sample Series 01 v03",
   cover: null,
   reading: { state: "notStarted" },
+  pageCount: null,
 } as const;
 export const BOOK_SERIES_TITLE = "Sample Series 01";
 export const PAGE_COUNT = 30;
