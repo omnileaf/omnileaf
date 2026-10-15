@@ -17,6 +17,7 @@ export function sampleSeries(count: number, from = 1): WireSeries[] {
       cover: null,
       language: null,
       hasDownloads: false,
+      isAdult: false,
       continuesFrom: null,
     };
   });
