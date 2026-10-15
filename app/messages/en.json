@@ -40,6 +40,8 @@
   "library_view": "View",
   "library_view_done": "Done",
   "library_view_display": "Display",
+  "library_continue_series": "Continue {series}",
+  "library_downloaded_chapters": "Downloaded chapters",
   "library_categories": "Categories",
   "library_category_all": "All",
   "library_categories_more": "More",
