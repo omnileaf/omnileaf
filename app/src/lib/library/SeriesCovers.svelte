@@ -1,5 +1,10 @@
 <script lang="ts">
+  import { Eye, LibraryBig, Play, SquareCheck, Tags } from "@lucide/svelte";
+  import { ContextMenu } from "bits-ui";
   import type { Snippet } from "svelte";
+
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { MediaQuery, SvelteSet } from "svelte/reactivity";
   import type { ClassValue } from "svelte/elements";
 
@@ -11,6 +16,11 @@
     type LibraryView,
   } from "#lib/ipc/bindings.ts";
   import { Progress } from "#lib/components/ui/progress/index.ts";
+  import {
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuSeparator,
+  } from "#lib/components/ui/context-menu/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { columnsOf } from "#lib/virtual-grid/grid-keys.ts";
@@ -20,6 +30,7 @@
   import ContinueDisc from "./ContinueDisc.svelte";
   import CoverImage from "./CoverImage.svelte";
   import ListCover from "./ListCover.svelte";
+  import type { SeriesMenuActions } from "./series-menu";
   import SelectionMark from "./SelectionMark.svelte";
   import { seriesSelection } from "./series-selection";
   import SeriesLink from "./SeriesLink.svelte";
@@ -38,6 +49,7 @@
     coverUrl,
     view,
     usesStandIns,
+    menu,
   }: {
     series: readonly LibrarySeries[];
     isComplete: boolean;
@@ -47,6 +59,7 @@
     coverUrl: CoverUrl;
     view: LibraryView;
     usesStandIns: boolean;
+    menu?: SeriesMenuActions;
   } = $props();
 
   interface DisplayLayout {
@@ -73,10 +86,26 @@
   const isSelecting = $derived(selection?.isSelecting === true);
   const seriesOrder = () => series.map(({ id }) => id);
 
+  const MENU_ICON_SIZE = 16;
+  let isMenuOpen = $state(false);
+  let menuSeries = $state<LibrarySeries | undefined>();
+
   function pickedRing(one: LibrarySeries): ClassValue {
-    return selection?.has(one.id) === true
-      ? "outline-2 outline-offset-2 outline-foreground"
+    if (selection?.has(one.id) === true) {
+      return "outline-2 outline-offset-2 outline-foreground";
+    }
+    return isMenuOpen && menuSeries?.id === one.id
+      ? "outline-2 outline-offset-2 outline-border"
       : "";
+  }
+
+  function noteMenuSeries(event: MouseEvent): void {
+    const cell =
+      event.target instanceof Element
+        ? event.target.closest("[data-series-id]")
+        : null;
+    const id = cell?.getAttribute("data-series-id");
+    menuSeries = series.find((one) => one.id === id);
   }
   const cutOffTitles = new SvelteSet<string>();
 
@@ -168,7 +197,7 @@
   {@const shown = lookOf(one)}
   {@const share = readShare(one)}
   {@const continues = continuedBook(one)}
-  <div class="@container relative min-inline-none">
+  <div class="@container relative min-inline-none" data-series-id={one.id}>
     <Tooltip
       label={canHover.current && !isSelecting && cutOffTitles.has(one.id)
         ? shown.title
@@ -236,7 +265,7 @@
 {#snippet compactCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
   {@const continues = continuedBook(one)}
-  <div class="@container relative min-inline-none">
+  <div class="@container relative min-inline-none" data-series-id={one.id}>
     <SeriesLink
       id={one.id}
       title={shown.title}
@@ -281,7 +310,7 @@
 {#snippet coversCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
   {@const continues = continuedBook(one)}
-  <div class="@container relative min-inline-none">
+  <div class="@container relative min-inline-none" data-series-id={one.id}>
     <SeriesLink
       id={one.id}
       title={shown.title}
@@ -316,7 +345,10 @@
 {#snippet listRow(one: LibrarySeries)}
   {@const shown = lookOf(one)}
   {@const continues = continuedBook(one)}
-  <div class="flex items-center gap-sm border-be border-border">
+  <div
+    class="flex items-center gap-sm border-be border-border"
+    data-series-id={one.id}
+  >
     <SeriesLink
       id={one.id}
       title={shown.title}
@@ -374,14 +406,73 @@
     {@attach reportsMostThatFit(onMostThatFit)}
   ></div>
 {/if}
-<VirtualGrid
-  items={series}
-  key={(one: LibrarySeries) => one.id}
-  label={m.library_series_list()}
-  {isComplete}
-  {...onNearEnd === undefined ? {} : { onNearEnd }}
-  {...onColumns === undefined ? {} : { onColumns }}
-  class={layout.list}
-  style={coversPerRow}
-  cell={layout.cell}
-/>
+<ContextMenu.Root bind:open={isMenuOpen}>
+  <ContextMenu.Trigger
+    disabled={menu === undefined || isSelecting || !canHover.current}
+    class="contents"
+    oncontextmenu={noteMenuSeries}
+  >
+    <VirtualGrid
+      items={series}
+      key={(one: LibrarySeries) => one.id}
+      label={m.library_series_list()}
+      {isComplete}
+      {...onNearEnd === undefined ? {} : { onNearEnd }}
+      {...onColumns === undefined ? {} : { onColumns }}
+      class={layout.list}
+      style={coversPerRow}
+      cell={layout.cell}
+    />
+  </ContextMenu.Trigger>
+  {#if menu !== undefined && menuSeries !== undefined}
+    {@const target = menuSeries}
+    <ContextMenuContent to="main" class="min-inline-book-menu">
+      {#if target.continuesFrom !== null}
+        {@const book = target.continuesFrom}
+        <ContextMenuItem
+          onSelect={() => {
+            void goto(resolve("/read/[book]", { book }));
+          }}
+        >
+          <Play size={MENU_ICON_SIZE} aria-hidden="true" />
+          {m.library_continue_reading()}
+        </ContextMenuItem>
+      {/if}
+      <ContextMenuItem
+        onSelect={() => {
+          void goto(resolve("/(app)/series/[id]", { id: target.id }));
+        }}
+      >
+        <LibraryBig size={MENU_ICON_SIZE} aria-hidden="true" />
+        {m.library_open_series()}
+      </ContextMenuItem>
+      <ContextMenuItem
+        onSelect={() => {
+          menu.onMarkRead(target);
+        }}
+      >
+        <Eye size={MENU_ICON_SIZE} aria-hidden="true" />
+        {m.library_mark_read()}
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      {#if menu.canLabel}
+        <ContextMenuItem
+          onSelect={() => {
+            menu.onLabel(target);
+          }}
+        >
+          <Tags size={MENU_ICON_SIZE} aria-hidden="true" />
+          {m.library_labels_menu()}
+        </ContextMenuItem>
+      {/if}
+      <ContextMenuItem
+        onSelect={() => {
+          menu.onSelect(target);
+        }}
+      >
+        <SquareCheck size={MENU_ICON_SIZE} aria-hidden="true" />
+        {m.library_select()}
+      </ContextMenuItem>
+    </ContextMenuContent>
+  {/if}
+</ContextMenu.Root>
