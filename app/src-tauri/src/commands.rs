@@ -4,12 +4,12 @@ use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AdultContent, AppInfo, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
     CategoryId, Core, CoversPerRow, CreatorSeries, FolderCursor, FolderId, FolderPage,
-    FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, InterfaceError,
-    LabelChanges, Library, LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices,
-    LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder,
-    OpenedBook, ProbedFormat, ProjectLink, ReadMark, ReadingWeek, ResourceRouter, ScanProgress,
-    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesLabels, SeriesOverview,
-    SeriesPage, SpellingSuggestion, UtcOffset,
+    FolderRescan, FolderScan, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
+    InterfaceError, LabelChanges, Library, LibraryCategory, LibraryError, LibraryFilter,
+    LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView,
+    LocalDay, MissingFolder, OpenedBook, ProbedFormat, ProjectLink, ReadMark, ReadingWeek,
+    ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
+    SeriesLabels, SeriesOverview, SeriesPage, SpellingSuggestion, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -68,6 +68,10 @@ macro_rules! app_commands {
             page_shown,
             close_book,
             reading_history,
+            remove_from_history,
+            restore_to_history,
+            clear_history,
+            restore_history,
             reading_week,
             book_sessions,
             history_series,
@@ -556,6 +560,40 @@ async fn reading_history(
     of: HistoryOf,
 ) -> Result<HistoryPage, IpcError> {
     Ok(library.history(after, of).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn remove_from_history(
+    library: State<'_, Library>,
+    book: BookId,
+) -> Result<Option<HistoryMark>, IpcError> {
+    Ok(library.remove_from_history(book).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn restore_to_history(
+    library: State<'_, Library>,
+    book: BookId,
+    mark: Option<HistoryMark>,
+) -> Result<(), IpcError> {
+    Ok(library.restore_to_history(book, mark).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn clear_history(library: State<'_, Library>) -> Result<Option<HistoryMark>, IpcError> {
+    Ok(library.clear_history().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn restore_history(
+    library: State<'_, Library>,
+    mark: Option<HistoryMark>,
+) -> Result<(), IpcError> {
+    Ok(library.restore_history(mark).await?)
 }
 
 #[tauri::command]
