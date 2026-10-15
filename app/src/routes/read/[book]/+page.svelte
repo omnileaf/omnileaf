@@ -72,6 +72,7 @@
       book={shown.book}
       platform={data.appInfo.platform}
       opensAtEnd={page.state.readerOpensAtEnd === true}
+      hasJumped={page.state.readerJumped === true}
     />
   {/key}
 {:else}

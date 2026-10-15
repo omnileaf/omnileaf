@@ -96,7 +96,13 @@
     book,
     platform,
     opensAtEnd,
-  }: { book: OpenedBook; platform: Platform; opensAtEnd: boolean } = $props();
+    hasJumped,
+  }: {
+    book: OpenedBook;
+    platform: Platform;
+    opensAtEnd: boolean;
+    hasJumped: boolean;
+  } = $props();
 
   const screenshotMode = getScreenshotMode();
   const named = $derived(screenshotMode.isOn ? standInOpenedBook(book) : book);
@@ -432,8 +438,19 @@
     }
   }
 
-  function offerToStartOver(): void {
-    if (opensAtEnd || book.startPage === 0) {
+  function sayWhereItOpened(): void {
+    if (opensAtEnd) {
+      return;
+    }
+    if (book.startPage === 0) {
+      if (hasJumped) {
+        notices.show({
+          tone: "plain",
+          icon: BookOpen,
+          title: m.reader_starting({ title: named.title }),
+          body: m.reader_page_of({ page: 1, count: pageCount }),
+        });
+      }
       return;
     }
     notices.show({
@@ -443,6 +460,7 @@
         page: book.startPage + 1,
         count: pageCount,
       }),
+      ...(hasJumped ? { body: named.title } : {}),
       action: {
         label: m.reader_start_over(),
         run: () => {
@@ -570,7 +588,7 @@
     if (!isGuideSeen) {
       controls.hide();
     }
-    offerToStartOver();
+    sayWhereItOpened();
     sayDirectionFound();
   });
 
