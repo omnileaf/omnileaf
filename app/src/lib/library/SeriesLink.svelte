@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import { type Snippet, tick } from "svelte";
   import type { ClassValue, HTMLAnchorAttributes } from "svelte/elements";
 
   import { resolve } from "$app/paths";
@@ -25,6 +25,7 @@
     onpointercancel,
     onpointerleave,
     onclick,
+    onkeydown,
     ...rest
   }: Omit<HTMLAnchorAttributes, "class" | "href"> & {
     id: SeriesId;
@@ -36,6 +37,17 @@
 
   const selection = seriesSelection();
   const longPress = new LongPress(LONG_PRESS_MS);
+  let element: HTMLElement | undefined = $state();
+
+  async function startPickingFromKeys(event: KeyboardEvent): Promise<void> {
+    if (event.key !== " " || selection === undefined) {
+      return;
+    }
+    event.preventDefault();
+    selection.begin(id);
+    await tick();
+    element?.focus();
+  }
 
   function pick(event: MouseEvent): void {
     if (isReleaseOfHold(id, event)) {
@@ -60,6 +72,8 @@
 
 {#if selection?.isSelecting === true}
   <button
+    bind:this={element}
+    data-series-link
     type="button"
     role="checkbox"
     aria-checked={selection.has(id)}
@@ -72,6 +86,8 @@
 {:else}
   <a
     {...rest}
+    bind:this={element}
+    data-series-link
     href={resolve("/(app)/series/[id]", { id })}
     class={className}
     onpointerdown={(event) => {
@@ -93,6 +109,10 @@
     onpointerleave={(event) => {
       onpointerleave?.(event);
       longPress.released();
+    }}
+    onkeydown={(event) => {
+      onkeydown?.(event);
+      void startPickingFromKeys(event);
     }}
     onclick={(event) => {
       longPress.clicked(event);
