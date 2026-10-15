@@ -10,11 +10,11 @@ use omnileaf_db::{
     Config, Database,
     adult_content::{adult_content, set_adult_content},
     catalog::{
-        AndroidTree, AppleBookmark, BookFileId, BookToRead, Cover, NewRoot, PageDimensions,
-        PageRequest, PageSize, PlaceInSeries, RootId, RootKind, RootLocator, SeriesFilter,
-        SeriesListing, add_root, book_to_read, bookmarked_roots, cover_file, folder_series_count,
-        folder_series_page, hidden_series_count, home_root, library_root, library_roots,
-        mark_root_available, mark_root_unavailable, missing_roots, page_dimensions,
+        AndroidTree, AppleBookmark, BookFileId, BookListing, BookToRead, Cover, NewRoot,
+        PageDimensions, PageRequest, PageSize, PlaceInSeries, RootId, RootKind, RootLocator,
+        SeriesFilter, SeriesListing, add_root, book_to_read, bookmarked_roots, cover_file,
+        folder_series_count, folder_series_page, hidden_series_count, home_root, library_root,
+        library_roots, mark_root_available, mark_root_unavailable, missing_roots, page_dimensions,
         place_in_series, relocate_roots, remove_book_files, remove_books_without_files,
         remove_root, root_book_count, root_files, series_books, series_count, series_overview,
         series_page, show_root_while_missing, store_page_dimensions, unread_books, up_next,
@@ -741,6 +741,30 @@ impl Library {
             .database()
             .read(move |connection| book_to_read(connection, book.0))
             .await?)
+    }
+
+    /// The file of a series' first book, to show in its folder; none for a series without books, or one in a folder only Android's documents provider can read.
+    pub async fn series_file(&self, id: SeriesId) -> Result<Option<PathBuf>, LibraryError> {
+        let first = self
+            .store
+            .database()
+            .read(move |connection| {
+                let request = PageRequest {
+                    after: None,
+                    size: PageSize::try_from(1)?,
+                };
+                let page = series_books(connection, id.0, BookListing::IN_ORDER, &request)?;
+                page.items
+                    .first()
+                    .map_or(Ok(None), |book| book_to_read(connection, book.id))
+            })
+            .await?;
+        Ok(first.and_then(|book| match book.root {
+            RootLocator::AndroidTree(_) => None,
+            RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
+                Some(root_folder(&book.root).join(book.location))
+            }
+        }))
     }
 
     /// None for a book missing from the library.
