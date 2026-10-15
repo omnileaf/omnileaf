@@ -51,6 +51,10 @@ export const commands = {
 	pageShown: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("page_shown", { id, page, utcOffset })),
 	closeBook: (id: string & { readonly __brand: "BookId" }) => typedError<null, IpcError>(__TAURI_INVOKE("close_book", { id })),
 	readingHistory: (after: string & { readonly __brand: "HistoryCursor" } | null, of: HistoryOf) => typedError<HistoryPage, IpcError>(__TAURI_INVOKE("reading_history", { after, of })),
+	removeFromHistory: (book: string & { readonly __brand: "BookId" }) => typedError<number | null, IpcError>(__TAURI_INVOKE("remove_from_history", { book })),
+	restoreToHistory: (book: string & { readonly __brand: "BookId" }, mark: number | null) => typedError<null, IpcError>(__TAURI_INVOKE("restore_to_history", { book, mark })),
+	clearHistory: () => typedError<number | null, IpcError>(__TAURI_INVOKE("clear_history")),
+	restoreHistory: (mark: number | null) => typedError<null, IpcError>(__TAURI_INVOKE("restore_history", { mark })),
 	readingWeek: (weekStart: number, today: number) => typedError<ReadingWeek, IpcError>(__TAURI_INVOKE("reading_week", { weekStart, today })),
 	bookSessions: (id: string & { readonly __brand: "BookId" }) => typedError<{
 	sessions: number,
@@ -273,10 +277,15 @@ export type HistoryEntry = {
 	day: ReadingDay,
 };
 
+/**  What a book, or the whole of History, was hidden behind before a change, so Undo can put it back; it crosses as a plain number of milliseconds. */
+export type HistoryMark = number;
+
 /**  Which reading sessions a page of History lists. */
 export type HistoryOf = { kind: "everything" } | { kind: "series"; series: string & { readonly __brand: "SeriesId" } } | { kind: "book"; book: string & { readonly __brand: "BookId" } } | 
 /**  The latest session of each book started and not finished, for the library's Continue reading row. */
-{ kind: "unfinished" };
+{ kind: "unfinished" } | 
+/**  The latest session of each book read since History was cleared or the book removed from it, whose series or book title holds `matching` when it isn't empty. */
+{ kind: "books"; matching: string };
 
 export type HistoryPage = {
 	entries: HistoryEntry[],

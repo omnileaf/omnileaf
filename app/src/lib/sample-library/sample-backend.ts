@@ -112,6 +112,9 @@ const LIBRARY_FOLDER_NAME = "Sample Comics";
 const LIBRARY_FOLDER_LOCATION = "/media/Sample Comics";
 const NEWEST_ADDED_MS = Date.UTC(2026, 9, 14, 9);
 const DAY_MS = 86_400_000;
+const HOUR_MS = 3_600_000;
+const MINUTE_MS = 60_000;
+const HOURS_AGO_READ = [2, 14, 26, 31, 75, 99];
 const MINUTE = 60;
 const SESSION_SECONDS = 25 * MINUTE;
 const NEVER = new Promise<never>(() => undefined);
@@ -580,6 +583,45 @@ export function sampleBackend(
           : [],
       ),
     );
+  }
+
+  const hiddenFromHistory = new Map<string, number>();
+  let historyClearedAt: number | null = null;
+
+  function hoursAgoRead(rank: number): number {
+    const last = HOURS_AGO_READ.length - 1;
+    return (
+      HOURS_AGO_READ[rank] ?? (HOURS_AGO_READ[last] ?? 0) + (rank - last) * 24
+    );
+  }
+
+  function booksRead(matching: string) {
+    const now = Date.now();
+    const typed = matching.trim().toLocaleLowerCase();
+    return historyEntries()
+      .map((entry, rank) => {
+        const startedAtMs = now - hoursAgoRead(rank) * HOUR_MS;
+        const utcOffsetMinutes = -new Date(startedAtMs).getTimezoneOffset();
+        return {
+          ...entry,
+          startedAtMs,
+          utcOffsetMinutes,
+          day: {
+            day: Math.floor(
+              (startedAtMs + utcOffsetMinutes * MINUTE_MS) / DAY_MS,
+            ),
+            readSeconds: SESSION_SECONDS,
+          },
+        };
+      })
+      .filter(
+        (entry) =>
+          entry.startedAtMs > (historyClearedAt ?? -1) &&
+          entry.startedAtMs > (hiddenFromHistory.get(entry.book) ?? -1) &&
+          (typed === "" ||
+            entry.seriesTitle.toLocaleLowerCase().includes(typed) ||
+            entry.bookTitle.toLocaleLowerCase().includes(typed)),
+      );
   }
 
   async function libraryReady(): Promise<void> {
@@ -1063,9 +1105,34 @@ export function sampleBackend(
       return null;
     },
     closeBook: () => null,
-    readingHistory: (after) => {
-      const page = pageOf(historyEntries(), after);
+    readingHistory: (after, of) => {
+      const page = pageOf(
+        of.kind === "books" ? booksRead(of.matching) : historyEntries(),
+        after,
+      );
       return { entries: page.items, next: page.next };
+    },
+    removeFromHistory: (book) => {
+      const mark = hiddenFromHistory.get(book) ?? null;
+      hiddenFromHistory.set(book, Date.now());
+      return mark;
+    },
+    restoreToHistory: (book, mark) => {
+      if (mark === null) {
+        hiddenFromHistory.delete(book);
+      } else {
+        hiddenFromHistory.set(book, mark);
+      }
+      return null;
+    },
+    clearHistory: () => {
+      const mark = historyClearedAt;
+      historyClearedAt = Date.now();
+      return mark;
+    },
+    restoreHistory: (mark) => {
+      historyClearedAt = mark;
+      return null;
     },
     readingWeek: () => ({
       readSeconds: historyEntries().length * SESSION_SECONDS,
