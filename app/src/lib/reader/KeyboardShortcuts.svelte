@@ -130,7 +130,7 @@
       </Dialog.Description>
       <div class="grid grid-cols-1 expanded:grid-cols-2 expanded:gap-x-2xl">
         {#each columns as column, index (index)}
-          <div class="flex flex-col divide-y divide-border">
+          <div class="flex flex-col divide-y divide-border min-inline-none">
             {#each column as group (group.title)}
               <section class="flex flex-col gap-sm py-lg">
                 <h3 class="text-body font-semibold expanded:text-small">
