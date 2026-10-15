@@ -299,6 +299,8 @@ export const TOKEN_THEME = {
     "quick-open-option",
     "quick-open-results",
     "quick-open-top",
+    "radio",
+    "radio-dot",
     "rail",
     "reader-back-named",
     "reader-back-start-wide",
