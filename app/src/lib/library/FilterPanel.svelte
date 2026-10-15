@@ -3,18 +3,22 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
-  import { type LibraryListing } from "#lib/ipc/bindings.ts";
-  import { NEW_LIBRARY_LISTING } from "./library-listing";
+  import type {
+    LibraryFilterChoices,
+    LibraryListing,
+  } from "#lib/ipc/bindings.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
   import FilterChoices from "./FilterChoices.svelte";
+  import { NEW_LIBRARY_LISTING } from "./library-listing";
 
   const CLOSE_ICON_SIZE = 16;
 
   let {
     id,
     listing,
+    choices,
     matching,
     headHeight,
     onChoose,
@@ -22,6 +26,7 @@
   }: {
     id: string;
     listing: LibraryListing;
+    choices: LibraryFilterChoices;
     matching: number | undefined;
     headHeight: number;
     onChoose: (listing: LibraryListing) => void;
@@ -82,7 +87,7 @@
     </Tooltip>
   </div>
   <div class="flex flex-1 flex-col overflow-y-auto px-lg pbe-lg min-block-none">
-    <FilterChoices {listing} {onChoose} />
+    <FilterChoices {listing} {choices} {onChoose} />
   </div>
   <div
     class="flex items-center gap-sm border-bs border-border ps-lg pe-sm pbs-md pbe-md"

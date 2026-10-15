@@ -9,6 +9,7 @@ import {
   events,
   type LibrarySeries,
 } from "#lib/ipc/bindings.ts";
+import { NO_FILTER_CHOICES } from "#lib/library/library-listing.ts";
 
 import { screenshotModeTurned } from "../../../tests/components/screenshot-mode";
 import WithAppContext from "../../../tests/components/WithAppContext.svelte";
@@ -56,6 +57,9 @@ function listing(catalog: () => readonly WireSeries[]): { asked: number } {
       }
       if (command === "library_categories") {
         return [];
+      }
+      if (command === "library_filter_choices") {
+        return NO_FILTER_CHOICES;
       }
       if (command !== "library_series") {
         throw new Error(`the page called \`${command}\``);
