@@ -87,6 +87,7 @@ const SEARCHING_BACKEND: FakeBackend = {
       summary: null,
       tags: [],
       related: [],
+      secondsLeft: null,
     };
   },
 };
