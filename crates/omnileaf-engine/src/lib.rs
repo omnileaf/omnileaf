@@ -30,6 +30,7 @@ mod library_layout;
 mod library_listing;
 mod library_search;
 mod library_series;
+mod library_tabs;
 mod library_view;
 mod moved_home;
 mod open_books;
@@ -89,6 +90,7 @@ pub use library_listing::{
 };
 pub use library_search::LibrarySearch;
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
+pub use library_tabs::{LibraryTab, LibraryTabId};
 pub use library_view::{
     CoversPerRow, CoversPerRowCount, CoversPerRowOutOfRange, CoversPerRowRange, CoversPerRowRanges,
     DesktopCoversPerRow, LibraryDisplay, LibraryGrouping, LibraryView, OnCovers, PhoneCoversPerRow,
