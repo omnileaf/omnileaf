@@ -12,11 +12,11 @@ use omnileaf_db::{
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookToRead, Cover, NewRoot, PageDimensions,
         PageRequest, PageSize, PlaceInSeries, RootId, RootKind, RootLocator, SeriesFilter,
-        SeriesListing, add_root, book_to_read, bookmarked_roots, cover_file, home_root,
-        library_root, library_roots, mark_root_available, mark_root_unavailable, page_dimensions,
-        place_in_series, remove_book_files, remove_books_without_files, remove_root,
-        root_book_count, root_files, series_books, series_count, series_overview, series_page,
-        store_page_dimensions, unread_books, up_next,
+        SeriesListing, add_root, book_to_read, bookmarked_roots, cover_file, folder_series_count,
+        folder_series_page, home_root, library_root, library_roots, mark_root_available,
+        mark_root_unavailable, page_dimensions, place_in_series, remove_book_files,
+        remove_books_without_files, remove_root, root_book_count, root_files, series_books,
+        series_count, series_overview, series_page, store_page_dimensions, unread_books, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     history::{
@@ -281,6 +281,38 @@ impl Library {
             .read(move |connection| series_page(connection, &listing, &request))
             .await?;
         Ok(SeriesPage::from(page))
+    }
+
+    pub async fn folder_series(
+        &self,
+        folder: FolderId,
+        listing: LibraryListing,
+        after: Option<SeriesCursor>,
+    ) -> Result<SeriesPage, LibraryError> {
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(SERIES_PER_PAGE)?,
+        };
+        let listing = SeriesListing::from(listing);
+        let page = self
+            .store
+            .database()
+            .read(move |connection| folder_series_page(connection, folder.0, &listing, &request))
+            .await?;
+        Ok(SeriesPage::from(page))
+    }
+
+    pub async fn folder_series_count(
+        &self,
+        folder: FolderId,
+        filter: LibraryFilter,
+    ) -> Result<u32, LibraryError> {
+        let filter = SeriesFilter::from(&filter);
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| folder_series_count(connection, folder.0, &filter))
+            .await?)
     }
 
     pub async fn folder_book_count(&self, id: FolderId) -> Result<u32, LibraryError> {
