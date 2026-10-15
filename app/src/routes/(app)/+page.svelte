@@ -11,6 +11,7 @@
     type LibraryView,
   } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
+  import ActiveFilters from "#lib/library/ActiveFilters.svelte";
   import AddFolderButton from "#lib/library/AddFolderButton.svelte";
   import CategoryTabs from "#lib/library/CategoryTabs.svelte";
   import { coverUrl } from "#lib/library/cover-url.ts";
@@ -278,6 +279,9 @@
     chosen={chosenCategory ?? ALL_SERIES}
     onChoose={chooseTab}
   />
+{/if}
+{#if hasBooks && chosenListing !== undefined && filtersOn(chosenListing.filter) > 0}
+  <ActiveFilters listing={chosenListing} onChoose={chooseListing} />
 {/if}
 {#if isEmpty}
   <EmptyState
