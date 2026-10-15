@@ -2,11 +2,14 @@
   import { ListFilter, X } from "@lucide/svelte";
   import { Dialog } from "bits-ui";
 
-  import { type LibraryListing } from "#lib/ipc/bindings.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import type {
+    LibraryFilterChoices,
+    LibraryListing,
+  } from "#lib/ipc/bindings.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -19,6 +22,7 @@
 
   let {
     listing,
+    choices,
     matching,
     docks,
     panelId,
@@ -28,6 +32,7 @@
     onOpen,
   }: {
     listing: LibraryListing;
+    choices: LibraryFilterChoices;
     matching: number | undefined;
     docks: boolean;
     panelId: string;
@@ -157,7 +162,7 @@
           <div
             class="flex flex-1 flex-col gap-filter-panel-gap overflow-y-auto px-filter-panel-inline pbs-xs pbe-md min-block-none"
           >
-            <FilterChoices {listing} {onChoose} />
+            <FilterChoices {listing} {choices} {onChoose} />
           </div>
           <div
             class="flex items-center border-bs border-border px-filter-panel-inline pbs-md pbe-lg"
@@ -188,7 +193,7 @@
           <div
             class="flex flex-1 flex-col overflow-y-auto px-sheet-inline pbs-sm pbe-lg min-block-none"
           >
-            <FilterChoices {listing} {onChoose} />
+            <FilterChoices {listing} {choices} {onChoose} />
           </div>
           <div
             class="border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom"
