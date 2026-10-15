@@ -857,6 +857,15 @@ async fn remembers_the_choice_for_adult_content_when_the_library_reopens() {
 }
 
 #[tokio::test]
+async fn keeps_no_tags_until_the_library_keeps_them() {
+    let home = ScratchFolder::new("library-tags-none");
+
+    let tags = open(home.path()).await.tags().unwrap();
+
+    assert_eq!(tags, Vec::new());
+}
+
+#[tokio::test]
 async fn keeps_no_categories_until_the_library_keeps_them() {
     let home = ScratchFolder::new("library-categories-none");
 
