@@ -6,11 +6,13 @@
     commands,
     DEFAULT_LIBRARY_LISTING,
     DEFAULT_LIBRARY_VIEW,
+    type LibraryCategory,
     type LibraryListing,
     type LibraryView,
   } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import AddFolderButton from "#lib/library/AddFolderButton.svelte";
+  import CategoryTabs from "#lib/library/CategoryTabs.svelte";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import FilterAndSort from "#lib/library/FilterAndSort.svelte";
   import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
@@ -20,6 +22,12 @@
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { filtersOn, withoutFilters } from "#lib/library/library-listing.ts";
   import { librarySeriesList } from "#lib/library/library-series.svelte.ts";
+  import {
+    ALL_SERIES,
+    categoryOf,
+    LibraryTab,
+    showsCategoryTabs,
+  } from "#lib/library/library-tab.svelte.ts";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
   import NoMatches from "#lib/library/NoMatches.svelte";
   import SeriesCount from "#lib/library/SeriesCount.svelte";
@@ -52,11 +60,19 @@
       reportError(error);
     },
   );
+  const tab = new LibraryTab();
+  let categories = $state<readonly LibraryCategory[]>([]);
+  const chosenCategory = $derived(categoryOf(tab.chosen, categories));
   const library = librarySeriesList((after) =>
-    commands.librarySeries(after, listedBy()),
+    chosenCategory === undefined
+      ? commands.librarySeries(after, listedBy())
+      : commands.categorySeries(chosenCategory, after, listedBy()),
   );
   const seriesCount = new LibrarySeriesCount(
-    () => commands.librarySeriesCount(listedBy().filter),
+    () =>
+      chosenCategory === undefined
+        ? commands.librarySeriesCount(listedBy().filter)
+        : commands.categorySeriesCount(chosenCategory, listedBy().filter),
     (error) => {
       reportError(error);
     },
@@ -118,7 +134,8 @@
     if (library.list.kind === "loaded") {
       isListFiltered = untrack(
         () =>
-          chosenListing !== undefined && filtersOn(chosenListing.filter) > 0,
+          chosenCategory !== undefined ||
+          (chosenListing !== undefined && filtersOn(chosenListing.filter) > 0),
       );
     }
   });
@@ -135,8 +152,14 @@
       });
   });
 
+  const listed = $derived(
+    chosenListing === undefined
+      ? undefined
+      : { listing: chosenListing, category: chosenCategory },
+  );
+
   $effect(() => {
-    if (chosenListing === undefined) {
+    if (listed === undefined) {
       return;
     }
     untrack(() => {
@@ -145,7 +168,7 @@
   });
 
   $effect(() => {
-    if (chosenListing !== undefined && countsSeries) {
+    if (listed !== undefined && countsSeries) {
       untrack(() => {
         void seriesCount.load();
       });
@@ -161,10 +184,24 @@
   );
   let emptyAddFolder: HTMLElement | null = $state(null);
 
+  async function loadCategories(): Promise<void> {
+    const kept = await commands.libraryCategories();
+    if (kept.status === "ok") {
+      categories = kept.data;
+    }
+  }
+
+  function chooseTab(chosen: string): void {
+    tab.choose(chosen);
+    document.querySelector("main")?.scrollTo({ top: 0 });
+  }
+
   onMount(() => {
     void listing.load();
     void view.load();
+    void loadCategories();
     return listenForLibraryChanges(() => {
+      void loadCategories();
       if (chosenListing === undefined) {
         return;
       }
@@ -235,6 +272,13 @@
     {/if}
   {/snippet}
 </CollectionHeading>
+{#if hasBooks && showsCategoryTabs(categories)}
+  <CategoryTabs
+    {categories}
+    chosen={chosenCategory ?? ALL_SERIES}
+    onChoose={chooseTab}
+  />
+{/if}
 {#if isEmpty}
   <EmptyState
     icon={FolderOpen}
@@ -294,6 +338,7 @@
   {#if listsNothing && chosenListing !== undefined}
     <NoMatches
       onClear={() => {
+        chooseTab(ALL_SERIES);
         chooseListing(withoutFilters(chosenListing));
       }}
     />

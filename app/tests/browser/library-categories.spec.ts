@@ -1,0 +1,178 @@
+import type { Page } from "@playwright/test";
+
+import type { LibraryCategory } from "../../src/lib/ipc/bindings.ts";
+import type { FakeBackend } from "./fake-backend.ts";
+import {
+  accessibilityViolations,
+  DEFAULT_BACKEND,
+  expect,
+  MEDIUM_MIN_WIDTH,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
+import { pagedSeries, sampleSeries } from "./series-catalog.ts";
+
+const LIBRARY = sampleSeries(12);
+const MANGA = LIBRARY.slice(0, 4);
+const COMICS = LIBRARY.slice(4, 6);
+const CATEGORIES = [
+  { id: "manga", name: "Manga" },
+  { id: "comics", name: "Comics" },
+] as LibraryCategory[];
+const MANY_CATEGORIES = [
+  ...CATEGORIES,
+  ...[
+    "Plan to read",
+    "Favourites",
+    "Seinen",
+    "Sea stories",
+    "Shelved for later",
+    "Borrowed from friends",
+  ].map((name) => ({ id: name, name })),
+] as LibraryCategory[];
+const NARROW_DESKTOP = 900;
+
+function backendWith(categories: readonly LibraryCategory[]): FakeBackend {
+  const inCategory = (category: string) =>
+    ({ manga: MANGA, comics: COMICS })[category] ?? [];
+  return {
+    ...DEFAULT_BACKEND,
+    librarySeries: pagedSeries(() => LIBRARY),
+    librarySeriesCount: () => LIBRARY.length,
+    libraryCategories: () => [...categories],
+    categorySeries: (category, after, listing) =>
+      pagedSeries(() => inCategory(category))(after, listing),
+    categorySeriesCount: (category) => inCategory(category).length,
+  };
+}
+
+function tabs(page: Page) {
+  return page.getByRole("tablist", { name: "Categories" });
+}
+
+function seriesList(page: Page) {
+  return page.getByRole("list", { name: "Series" });
+}
+
+async function openLibrary(page: Page): Promise<void> {
+  await page.goto("/");
+  await expect(seriesList(page)).toContainText(LIBRARY[0]?.title ?? "");
+}
+
+test.describe("with two categories", () => {
+  test.use({ backend: backendWith(CATEGORIES) });
+
+  test("puts a tab for each category after All, and lists only the chosen category's series", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+
+    await expect(tabs(page).getByRole("tab")).toHaveText([
+      "All",
+      "Manga",
+      "Comics",
+    ]);
+    await tabs(page).getByRole("tab", { name: "Comics" }).click();
+
+    await expect(
+      tabs(page).getByRole("tab", { name: "Comics" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(seriesList(page).getByRole("listitem")).toHaveCount(
+      COMICS.length,
+    );
+  });
+
+  test("opens on the tab chosen last time", async ({ page }) => {
+    await openLibrary(page);
+    await tabs(page).getByRole("tab", { name: "Manga" }).click();
+    await expect(seriesList(page).getByRole("listitem")).toHaveCount(
+      MANGA.length,
+    );
+
+    await page.reload();
+
+    await expect(
+      tabs(page).getByRole("tab", { name: "Manga" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(seriesList(page).getByRole("listitem")).toHaveCount(
+      MANGA.length,
+    );
+  });
+
+  test("moves between tabs with the arrow keys", async ({ page }) => {
+    await openLibrary(page);
+    await tabs(page).getByRole("tab", { name: "All" }).focus();
+
+    await page.keyboard.press("ArrowRight");
+
+    const manga = tabs(page).getByRole("tab", { name: "Manga" });
+    await expect(manga).toBeFocused();
+    await expect(manga).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("lists every tab in a sheet from the chevron on phones", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "wider screens tuck the tabs into More",
+    );
+
+    await page.getByRole("button", { name: "Every category" }).click();
+    const sheet = page.getByRole("dialog", { name: "Categories" });
+    await sheet.getByRole("radio", { name: "Comics" }).click();
+
+    await expect(sheet).toBeHidden();
+    await expect(
+      tabs(page).getByRole("tab", { name: "Comics" }),
+    ).toHaveAttribute("aria-selected", "true");
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`the tabs have no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await openLibrary(page);
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
+});
+
+test.describe("with one category", () => {
+  test.use({ backend: backendWith(CATEGORIES.slice(0, 1)) });
+
+  test("shows no tabs", async ({ page }) => {
+    await openLibrary(page);
+
+    await expect(tabs(page)).toHaveCount(0);
+  });
+});
+
+test.describe("with more categories than fit", () => {
+  test.use({ backend: backendWith(MANY_CATEGORIES) });
+
+  test("tucks the tabs that don't fit into More on desktops", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, "phones and tablets scroll their tabs");
+    await page.setViewportSize({ width: NARROW_DESKTOP, height: 800 });
+    await openLibrary(page);
+
+    await page.getByRole("button", { name: "More" }).click();
+
+    const menu = page.getByRole("menu");
+    await expect(menu).toContainText("More categories");
+    await expect(
+      menu.getByRole("menuitemradio", { name: "Borrowed from friends" }),
+    ).toBeVisible();
+    await expect(
+      menu.getByRole("menuitemradio", { name: "Manga" }),
+    ).toHaveCount(0);
+  });
+});
