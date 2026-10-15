@@ -1,7 +1,29 @@
 <script lang="ts">
-  import { Check, Play } from "@lucide/svelte";
+  import {
+    ArrowLeft,
+    ChevronLeft,
+    CircleCheck,
+    Library,
+    Play,
+  } from "@lucide/svelte";
   import { onMount } from "svelte";
 
+  import { resolve } from "$app/paths";
+  import { cn } from "#lib/components/cn.ts";
+  import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+  } from "#lib/components/ui/breadcrumb/index.ts";
+  import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+  } from "#lib/components/ui/card/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
@@ -13,16 +35,27 @@
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { m } from "#lib/paraglide/messages.js";
   import type { BookId } from "#lib/reader/opened-book.ts";
+  import { READER_BUTTON, READER_ICON_SIZE } from "#lib/reader/reader-bar.ts";
+  import type { ReadingDirection } from "#lib/reader/reading-direction.svelte.ts";
 
   import { getSkipUpNextSetting } from "./skip-up-next.svelte.ts";
 
-  const CHECK_SIZE = 24;
-  const PLAY_SIZE = 18;
+  const CHECK_SIZE = 20;
+  const BUTTON_ICON_SIZE = 16;
   const READING_NAMES = {
     notStarted: m.reader_unread,
     started: m.reader_started,
     read: m.reader_read,
   } satisfies Record<BookReading["state"], () => string>;
+  const READING_WORDS = {
+    notStarted: m.reader_unread_word,
+    started: m.reader_started_word,
+    read: m.reader_read_word,
+  } satisfies Record<BookReading["state"], () => string>;
+  const PRIMARY =
+    "flex items-center justify-center gap-sm rounded-shadcn-control bg-accent px-lg text-center text-body font-medium text-on-accent transition-control min-inline-none min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button";
+  const SECONDARY =
+    "flex items-center justify-center gap-sm rounded-shadcn-control border border-border bg-card px-lg text-center text-body font-medium transition-control min-inline-none min-block-touch-target hover:bg-hover active:bg-pressed expanded:text-small expanded:min-block-pointer-button";
 
   let {
     book,
@@ -31,6 +64,7 @@
     seriesHref,
     next,
     nextHref,
+    direction,
   }: {
     book: BookId;
     title: string;
@@ -38,6 +72,7 @@
     seriesHref: string;
     next: SeriesNeighbour | null;
     nextHref: string | undefined;
+    direction: ReadingDirection;
   } = $props();
 
   const skipUpNext = getSkipUpNextSetting();
@@ -45,11 +80,19 @@
   let heading: HTMLHeadingElement | undefined = $state();
   let readSeconds: number | undefined = $state();
 
-  const backLabel = $derived(m.reader_back_to_series({ series: seriesTitle }));
-  const secondaryLook =
-    "flex items-center justify-center rounded-card border text-center border-reader-glass-edge px-lg font-semibold transition-control min-inline-none min-block-touch-button hover:tint-reader-hover active:tint-reader-pressed expanded:text-small expanded:whitespace-nowrap";
-  const primaryLook =
-    "flex items-center justify-center gap-sm rounded-card bg-reader-accent text-center px-lg font-bold text-on-reader-accent min-block-touch-button expanded:text-small expanded:whitespace-nowrap";
+  const nextKey = $derived(direction === "rightToLeft" ? "←" : "→");
+  const time = $derived(
+    readSeconds === undefined ? undefined : readingTime(readSeconds),
+  );
+
+  function nextDetails(next: SeriesNeighbour): string {
+    return next.pageCount === null
+      ? READING_NAMES[next.reading.state]()
+      : m.reader_next_details({
+          count: next.pageCount,
+          reading: READING_WORDS[next.reading.state](),
+        });
+  }
 
   onMount(() => {
     heading?.focus();
@@ -62,113 +105,209 @@
 </script>
 
 <div
-  class="pointer-events-none absolute inset-none flex items-center justify-center bg-reader px-lg"
+  class="pointer-events-none absolute inset-none flex flex-col bg-background text-foreground"
 >
-  <section
-    aria-labelledby="{id}-heading"
-    class="pointer-events-auto flex flex-col gap-lg inline-full max-inline-up-next"
+  <nav
+    aria-label={m.reader_breadcrumb()}
+    class="pointer-events-auto flex items-center gap-xs self-start px-reader-bar-inline pbs-reader-bar-top min-inline-none expanded:px-lg expanded:pbs-md"
   >
-    <div
-      class="flex flex-col items-center gap-xs text-center expanded:flex-row expanded:gap-md expanded:text-start"
+    <a
+      href={seriesHref}
+      aria-label={m.reader_back_to_series({ series: seriesTitle })}
+      class={READER_BUTTON}
     >
-      <span
-        aria-hidden="true"
-        class="flex shrink-0 items-center justify-center rounded-full bg-reader-lit text-reader-accent block-reader-quick inline-reader-quick"
-      >
-        <Check size={CHECK_SIZE} />
-      </span>
-      <div class="flex flex-col gap-2xs">
-        <h2
-          id="{id}-heading"
-          bind:this={heading}
-          tabindex="-1"
-          class="text-title font-bold"
-        >
-          {m.reader_finished({ title })}
-        </h2>
-        <p class="text-small text-reader-muted">
-          {readSeconds === undefined
-            ? m.reader_marked_read()
-            : m.reader_marked_read_after({ time: readingTime(readSeconds) })}
-        </p>
-      </div>
-    </div>
-    {#if next !== null && nextHref !== undefined}
-      <div
-        class="flex items-center gap-md rounded-card border border-reader-glass-edge bg-reader-glass p-md"
-      >
-        <span
-          class="aspect-cover shrink-0 overflow-hidden rounded-cover bg-reader-page inline-up-next-cover"
-        >
-          {#if next.cover !== null}
-            <img
-              src={coverUrl(next.cover)}
-              alt=""
-              class="object-cover block-full inline-full"
-            />
-          {/if}
-        </span>
-        <span class="flex flex-col gap-2xs min-inline-none">
-          <span class="text-caption font-bold text-reader-accent"
-            >{m.reader_up_next()}</span
-          >
-          <span class="truncate text-callout font-bold">{next.title}</span>
-          <span class="text-small text-reader-muted"
-            >{READING_NAMES[next.reading.state]()}</span
-          >
-        </span>
-      </div>
-      <div class="flex flex-col gap-sm expanded:flex-row-reverse">
+      <ChevronLeft size={READER_ICON_SIZE} aria-hidden="true" />
+    </a>
+    <Breadcrumb class="hidden text-small expanded:block">
+      <BreadcrumbItem class="min-inline-none">
         <a
-          href={nextHref}
-          data-sveltekit-replacestate
-          class={[primaryLook, "shrink-0 expanded:ms-auto"]}
+          href={seriesHref}
+          class="block truncate text-muted transition-control max-inline-reader-crumb-series hover:text-foreground"
+          >{seriesTitle}</a
         >
-          <Play size={PLAY_SIZE} aria-hidden="true" class="fill-current" />
-          {m.reader_read_next({ title: next.title })}
-          <Kbd
-            aria-hidden="true"
-            class="hidden border-on-reader-accent/20 bg-on-reader-accent/10 desktop:inline"
-          >
-            {m.reader_next_key()}
-          </Kbd>
-        </a>
-        <a href={seriesHref} class={secondaryLook}
-          ><span class="expanded:truncate">{backLabel}</span></a
-        >
-      </div>
-    {:else}
-      <a href={seriesHref} class={primaryLook}>{backLabel}</a>
-    {/if}
-    <Switch
-      bind:checked={
-        () => skipUpNext.isOn,
-        (isOn: boolean) => {
-          skipUpNext.turn(isOn);
-        }
-      }
-      aria-labelledby="{id}-skip"
-      aria-describedby="{id}-skip-help"
-      class="flex items-center gap-md rounded-card border border-reader-glass-edge bg-reader-glass px-md py-sm text-start hover:tint-reader-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-reader-accent"
+      </BreadcrumbItem>
+      <BreadcrumbSeparator class="text-muted" />
+      <BreadcrumbItem class="min-inline-none">
+        <BreadcrumbPage class="block truncate max-inline-reader-crumb-book">
+          {title}
+        </BreadcrumbPage>
+      </BreadcrumbItem>
+    </Breadcrumb>
+  </nav>
+  <div
+    class="flex flex-1 items-center justify-center overflow-y-auto px-lg py-xl"
+  >
+    <section
+      aria-labelledby="{id}-heading"
+      class="pointer-events-auto flex flex-col gap-lg inline-full max-inline-up-next"
     >
-      <span class="flex flex-1 flex-col gap-2xs">
-        <span id="{id}-skip" class="font-semibold"
-          >{m.reader_skip_this_screen()}</span
+      <div class="flex items-start gap-md">
+        <span
+          aria-hidden="true"
+          class="flex shrink-0 items-center justify-center rounded-full bg-chip block-up-next-check inline-up-next-check"
         >
-        <span id="{id}-skip-help" class="text-detail text-reader-muted"
-          >{m.reader_skip_this_screen_help()}</span
+          <CircleCheck size={CHECK_SIZE} />
+        </span>
+        <div class="flex flex-col gap-2xs min-inline-none">
+          <h2
+            id="{id}-heading"
+            bind:this={heading}
+            tabindex="-1"
+            class="text-title font-semibold text-pretty"
+          >
+            {m.reader_finished({ title })}
+          </h2>
+          <p class="text-small text-muted expanded:hidden">
+            {time === undefined
+              ? m.reader_marked_read_in({ series: seriesTitle })
+              : m.reader_marked_read_in_after({ series: seriesTitle, time })}
+          </p>
+          <p class="hidden text-small text-muted expanded:block">
+            {time === undefined
+              ? m.reader_marked_read()
+              : m.reader_marked_read_after({ time })}
+          </p>
+        </div>
+      </div>
+      <Card class="flex flex-col gap-lg py-lg expanded:gap-xl expanded:py-xl">
+        {#if next !== null && nextHref !== undefined}
+          <CardHeader class="px-lg expanded:px-xl">
+            <CardTitle class="text-body expanded:text-title"
+              >{m.reader_up_next()}</CardTitle
+            >
+          </CardHeader>
+          <CardContent class="flex items-center gap-md px-lg expanded:px-xl">
+            <span
+              class="aspect-cover shrink-0 overflow-hidden rounded-cover bg-chip inline-up-next-cover expanded:inline-up-next-cover-wide"
+            >
+              {#if next.cover !== null}
+                <img
+                  src={coverUrl(next.cover)}
+                  alt=""
+                  class="object-cover block-full inline-full"
+                />
+              {/if}
+            </span>
+            <span class="flex flex-col gap-2xs min-inline-none">
+              <span
+                class="line-clamp-2 text-group-title font-semibold expanded:text-body"
+                >{next.title}</span
+              >
+              <span class="text-small text-muted">{nextDetails(next)}</span>
+            </span>
+          </CardContent>
+          <CardFooter
+            class="flex flex-col gap-sm px-lg expanded:flex-row expanded:px-xl"
+          >
+            <a
+              href={nextHref}
+              data-sveltekit-replacestate
+              class={cn(PRIMARY, "inline-full expanded:flex-1")}
+            >
+              <Play
+                size={BUTTON_ICON_SIZE}
+                aria-hidden="true"
+                class="shrink-0"
+              />
+              <span class="truncate"
+                >{m.reader_read_next({ title: next.title })}</span
+              >
+              <Kbd
+                aria-hidden="true"
+                class="hidden border-transparent bg-on-accent text-accent desktop:inline"
+                >{nextKey}</Kbd
+              >
+            </a>
+            <a
+              href={seriesHref}
+              class={cn(SECONDARY, "inline-full expanded:flex-1")}
+            >
+              <ArrowLeft
+                size={BUTTON_ICON_SIZE}
+                aria-hidden="true"
+                class="shrink-0"
+              />
+              <span class="truncate">{m.reader_back_to_the_series()}</span>
+              <Kbd
+                aria-hidden="true"
+                class="hidden border-transparent bg-transparent px-none font-medium text-muted desktop:inline"
+                >{m.reader_key_esc()}</Kbd
+              >
+            </a>
+          </CardFooter>
+        {:else}
+          <CardHeader class="px-lg expanded:px-xl">
+            <CardTitle class="text-body expanded:text-title"
+              >{m.reader_series_finished()}</CardTitle
+            >
+            <CardDescription class="text-small"
+              >{m.reader_series_finished_body()}</CardDescription
+            >
+          </CardHeader>
+          <CardFooter
+            class="flex flex-col gap-sm px-lg expanded:flex-row expanded:px-xl"
+          >
+            <a
+              href={seriesHref}
+              class={cn(PRIMARY, "inline-full expanded:flex-1")}
+            >
+              <ArrowLeft
+                size={BUTTON_ICON_SIZE}
+                aria-hidden="true"
+                class="shrink-0"
+              />
+              <span class="truncate">{m.reader_back_to_the_series()}</span>
+            </a>
+            <a
+              href={resolve("/(app)")}
+              class={cn(SECONDARY, "inline-full expanded:flex-1")}
+            >
+              <Library
+                size={BUTTON_ICON_SIZE}
+                aria-hidden="true"
+                class="shrink-0"
+              />
+              <span class="truncate">{m.reader_back_label()}</span>
+            </a>
+          </CardFooter>
+        {/if}
+      </Card>
+      {#if next !== null}
+        <Switch
+          bind:checked={
+            () => skipUpNext.isOn,
+            (isOn: boolean) => {
+              skipUpNext.turn(isOn);
+            }
+          }
+          aria-labelledby="{id}-skip"
+          aria-describedby="{id}-skip-help"
+          class="flex items-start gap-md text-start focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
         >
-      </span>
-    </Switch>
-    {#if next !== null}
-      <p class="text-center text-small text-reader-muted expanded:text-start">
+          <span class="flex flex-1 flex-col gap-2xs">
+            <span
+              id="{id}-skip"
+              class="text-body font-medium expanded:text-small"
+              >{m.reader_skip_this_screen()}</span
+            >
+            <span id="{id}-skip-help" class="text-small text-muted"
+              >{m.reader_skip_this_screen_help()}</span
+            >
+          </span>
+        </Switch>
+      {/if}
+      <p class="text-center text-small text-muted">
         <span class="desktop:hidden"
-          >{m.reader_turn_again({ title: next.title })}</span
+          >{next === null
+            ? m.reader_turn_again_to_series()
+            : m.reader_turn_again({ title: next.title })}</span
         >
         <span class="hidden desktop:inline"
-          >{m.reader_press_again({ title: next.title })}</span
+          >{next === null
+            ? m.reader_press_again_to_series({ key: nextKey })
+            : m.reader_press_again({ key: nextKey, title: next.title })}</span
         >
       </p>
-    {/if}
-  </section>
+    </section>
+  </div>
 </div>
