@@ -901,7 +901,8 @@
   "search_everything": "⟦Éṽéŕýţĥíñĝ····⟧",
   "search_remove_condition": "⟦Ŕéɱöṽé ţĥé {condition} ƒíļţéŕ············⟧",
   "search_conditions": "⟦Ƒíļţéŕš···⟧",
-  "search_series_heading": "⟦Šéŕíéš · {count}·······⟧",
+  "search_series_heading": "⟦Šéŕíéš áñð ƀööķš · {count}···········⟧",
+  "search_matched_title": "⟦Ţíţļé··⟧",
   "search_results": "⟦Šéŕíéš ƒöûñð·····⟧",
   "search_found": [
     {
