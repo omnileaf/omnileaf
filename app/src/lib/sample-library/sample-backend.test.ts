@@ -349,3 +349,67 @@ test("marks the series chosen read, and puts every book back as it was once thos
   ).toEqual([0, 0]);
   expect(after.series).toEqual(before.series);
 });
+
+test("names how many of the series asked about are in each category and carry each tag", async () => {
+  const { backend } = backendFor();
+  const series = [sampleSeriesId(4), sampleSeriesId(19)];
+
+  const labels = await backend.seriesLabels(series);
+
+  expect(labels.keepsLabels).toBe(true);
+  expect(
+    labels.categories
+      .filter(({ holding }) => holding > 0)
+      .map(({ category, holding }) => [category.name, holding]),
+  ).toEqual([
+    ["Reading", 2],
+    ["Manga", 1],
+    ["Favourites", 2],
+    ["Seinen", 1],
+    ["Sea stories", 2],
+  ]);
+  expect(labels.tags.map(({ tag, holding }) => [tag, holding])).toEqual([
+    ["Slice of life", 2],
+    ["Seinen", 1],
+    ["Sea", 2],
+    ["Letters", 2],
+  ]);
+});
+
+test("puts the series in a category and a new one, tags them, and takes a tag off", async () => {
+  const { backend } = backendFor();
+  const series = [sampleSeriesId(2), sampleSeriesId(5)];
+
+  await backend.labelSeries(series, {
+    categoriesAdded: ["favourites"],
+    categoriesRemoved: [],
+    categoriesCreated: ["Holiday reads"],
+    tagsAdded: ["Letters"],
+    tagsRemoved: [],
+  });
+  await backend.labelSeries([sampleSeriesId(5)], {
+    categoriesAdded: [],
+    categoriesRemoved: [],
+    categoriesCreated: [],
+    tagsAdded: [],
+    tagsRemoved: ["Letters"],
+  });
+  const labels = await backend.seriesLabels(series);
+
+  expect(
+    labels.categories
+      .filter(({ category }) =>
+        ["Favourites", "Holiday reads"].includes(category.name),
+      )
+      .map(({ category, holding }) => [category.name, holding]),
+  ).toEqual([
+    ["Favourites", 2],
+    ["Holiday reads", 2],
+  ]);
+  expect(labels.tags.map(({ tag, holding }) => [tag, holding])).toEqual([
+    ["Letters", 1],
+  ]);
+  expect((await backend.libraryCategories()).map(({ name }) => name)).toContain(
+    "Holiday reads",
+  );
+});

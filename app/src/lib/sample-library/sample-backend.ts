@@ -121,10 +121,15 @@ function languageOf(series: SampleSeries): string | null {
   return SAMPLE_LANGUAGES[series.number % SAMPLE_LANGUAGES.length] ?? null;
 }
 
+interface SeriesFacts {
+  readonly isBookmarked: (series: SampleSeries) => boolean;
+  readonly tagsOf: (series: SampleSeries) => readonly string[];
+}
+
 function passes(
   series: SampleSeries,
   filter: LibraryFilter,
-  isBookmarked: (series: SampleSeries) => boolean,
+  { isBookmarked, tagsOf }: SeriesFacts,
 ): boolean {
   return (
     admits(
@@ -136,7 +141,7 @@ function passes(
     isOneOf(filter.formats, formatOf(series)) &&
     isOneOf(filter.languages, languageOf(series)) &&
     (filter.tags.length === 0 ||
-      series.tags.some((tag) => filter.tags.includes(tag))) &&
+      tagsOf(series).some((tag) => filter.tags.includes(tag))) &&
     admits(filter.adult, ADULT_SERIES.has(series.number)) &&
     admits(filter.bookmarked, isBookmarked(series)) &&
     filter.smart.every((smart) => SMART_FILTERS[smart](series))
@@ -161,6 +166,7 @@ const SMART_FILTERS: Record<SmartFilter, (series: SampleSeries) => boolean> = {
 };
 const FORMATS: readonly SeriesFormat[] = ["comic", "manga", "book"];
 const COMICS_EVERY = 3;
+const SUGGESTED_TAGS = 3;
 const FAVOURITES_EVERY = 5;
 const FAVOURITE_REMAINDER = 4;
 
@@ -203,12 +209,6 @@ const SAMPLE_CATEGORIES: readonly SampleCategory[] = [
   },
 ];
 
-function categoryHolds(category: string): (series: SampleSeries) => boolean {
-  return (
-    SAMPLE_CATEGORIES.find(({ id }) => id === category)?.holds ?? (() => false)
-  );
-}
-
 function wireReading(reading: SampleReading) {
   return reading.state === "started"
     ? { state: "started" as const, page: reading.page }
@@ -239,18 +239,78 @@ export function sampleBackend(
   const bookmarks = new Map<string, Set<number>>();
   const readingBeforeMarked = new Map<string, SampleReading>();
 
+  const categoriesCreated: { readonly id: string; readonly name: string }[] =
+    [];
+  const categoryChanges = new Map<
+    string,
+    { readonly added: Set<number>; readonly removed: Set<number> }
+  >();
+  const tagChanges = new Map<
+    number,
+    { readonly added: Set<string>; readonly removed: Set<string> }
+  >();
+
+  function categoryChangesOf(category: string) {
+    const changes = categoryChanges.get(category) ?? {
+      added: new Set<number>(),
+      removed: new Set<number>(),
+    };
+    categoryChanges.set(category, changes);
+    return changes;
+  }
+
+  function tagChangesOf(series: number) {
+    const changes = tagChanges.get(series) ?? {
+      added: new Set<string>(),
+      removed: new Set<string>(),
+    };
+    tagChanges.set(series, changes);
+    return changes;
+  }
+
+  const tagsOf = (series: SampleSeries): readonly string[] => {
+    const changes = tagChanges.get(series.number);
+    return [
+      ...series.tags.filter((tag) => changes?.removed.has(tag) !== true),
+      ...[...(changes?.added ?? [])].filter(
+        (tag) => !series.tags.includes(tag),
+      ),
+    ];
+  };
+
+  function everyCategory(): { readonly id: string; readonly name: string }[] {
+    return [
+      ...SAMPLE_CATEGORIES.map(({ id, name }) => ({ id, name })),
+      ...categoriesCreated,
+    ];
+  }
+
+  function categoryHolds(category: string): (series: SampleSeries) => boolean {
+    const rule = SAMPLE_CATEGORIES.find(({ id }) => id === category)?.holds;
+    return (series) => {
+      const changes = categoryChanges.get(category);
+      if (changes?.removed.has(series.number) === true) {
+        return false;
+      }
+      return (
+        changes?.added.has(series.number) === true || rule?.(series) === true
+      );
+    };
+  }
+
   const isBookmarked = (series: SampleSeries): boolean =>
     series.books.some(
       (_, index) =>
         (bookmarks.get(sampleBookId(series.number, index + 1))?.size ?? 0) > 0,
     );
+  const facts: SeriesFacts = { isBookmarked, tagsOf };
 
   const addedAt = (series: SampleSeries): number =>
     NEWEST_ADDED_MS - library.indexOf(series) * DAY_MS;
 
   function sorted(chosen: LibraryListing): SampleSeries[] {
     const ordered = library
-      .filter((series) => passes(series, chosen.filter, isBookmarked))
+      .filter((series) => passes(series, chosen.filter, facts))
       .toSorted((one, other) =>
         chosen.sort.by === "title"
           ? one.title.localeCompare(other.title)
@@ -456,14 +516,74 @@ export function sampleBackend(
     },
     librarySeriesCount: async (filter) => {
       await libraryReady();
-      return library.filter((series) => passes(series, filter, isBookmarked))
-        .length;
+      return library.filter((series) => passes(series, filter, facts)).length;
     },
     libraryCategories: async () => {
       await libraryReady();
-      return library.length === 0
-        ? []
-        : SAMPLE_CATEGORIES.map(({ id, name }) => ({ id, name }));
+      return library.length === 0 ? [] : everyCategory();
+    },
+    seriesLabels: async (series) => {
+      await libraryReady();
+      const chosen = series.map(seriesWith);
+      const holding = (holds: (one: SampleSeries) => boolean) =>
+        chosen.filter(holds).length;
+      const libraryTags = [...new Set(library.flatMap(tagsOf))];
+      const tags = libraryTags
+        .map((tag) => ({
+          tag,
+          holding: holding((one) => tagsOf(one).includes(tag)),
+        }))
+        .filter((held) => held.holding > 0);
+      return {
+        keepsLabels: true,
+        categories: everyCategory().map((category) => ({
+          category,
+          holding: holding(categoryHolds(category.id)),
+        })),
+        tags,
+        suggestedTags: libraryTags
+          .filter((tag) => !tags.some((held) => held.tag === tag))
+          .slice(0, SUGGESTED_TAGS),
+      };
+    },
+    labelSeries: async (series, changes) => {
+      await libraryReady();
+      const numbers = series.map((id) => seriesWith(id).number);
+      const created = changes.categoriesCreated.map((name) => {
+        const category = {
+          id: `created-${String(categoriesCreated.length)}`,
+          name,
+        };
+        categoriesCreated.push(category);
+        return category.id;
+      });
+      for (const category of [...changes.categoriesAdded, ...created]) {
+        const { added, removed } = categoryChangesOf(category);
+        for (const number of numbers) {
+          added.add(number);
+          removed.delete(number);
+        }
+      }
+      for (const category of changes.categoriesRemoved) {
+        const { added, removed } = categoryChangesOf(category);
+        for (const number of numbers) {
+          removed.add(number);
+          added.delete(number);
+        }
+      }
+      for (const number of numbers) {
+        const { added, removed } = tagChangesOf(number);
+        for (const tag of changes.tagsAdded) {
+          added.add(tag);
+          removed.delete(tag);
+        }
+        for (const tag of changes.tagsRemoved) {
+          removed.add(tag);
+          added.delete(tag);
+        }
+      }
+      events.emit("library-changed", null);
+      return null;
     },
     libraryFilterChoices: async () => {
       await libraryReady();
@@ -478,7 +598,7 @@ export function sampleBackend(
               .flatMap((series) => languageOf(series) ?? []),
           ),
         ],
-        tags: [...new Set(library.flatMap((series) => series.tags))],
+        tags: [...new Set(library.flatMap(tagsOf))],
         ratesAdult: library.length > 0,
         keepsBookmarks: library.length > 0,
         smart: library.some((series) =>
@@ -502,7 +622,7 @@ export function sampleBackend(
       await libraryReady();
       const holds = categoryHolds(category);
       return library.filter(
-        (series) => passes(series, filter, isBookmarked) && holds(series),
+        (series) => passes(series, filter, facts) && holds(series),
       ).length;
     },
     librarySearch: async (after, search) => {
@@ -519,7 +639,7 @@ export function sampleBackend(
       const text = search.text.trim().toLocaleLowerCase();
       return library.filter(
         (series) =>
-          passes(series, search.filter, isBookmarked) &&
+          passes(series, search.filter, facts) &&
           series.title.toLocaleLowerCase().includes(text),
       ).length;
     },
@@ -542,7 +662,7 @@ export function sampleBackend(
           seriesCount: seriesBy(creator.name).length,
         })),
         summary: series.summary ?? null,
-        tags: [...series.tags],
+        tags: [...tagsOf(series)],
         secondsLeft: secondsLeftIn(series),
         related: series.related.map(({ number, reason }) => {
           const other = seriesWith(sampleSeriesId(number));
