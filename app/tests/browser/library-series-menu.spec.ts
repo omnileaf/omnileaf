@@ -140,6 +140,17 @@ test("opens the menu from the keyboard on the cover in focus", async ({
   await expect(menuOf(page)).toBeVisible();
 });
 
+test("opens the menu with the Menu key on the cover in focus", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await seriesList(page).getByRole("link").nth(1).focus();
+
+  await page.keyboard.press("ContextMenu");
+
+  await expect(menuOf(page)).toBeVisible();
+});
+
 test("the menu has no accessibility violations", async ({ page }) => {
   await rightClick(page, 0);
 
