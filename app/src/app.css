@@ -101,6 +101,7 @@
   }
 }
 @custom-variant closed (&[data-state="closed"]);
+@custom-variant ios-grouped (&:where([data-platform="ios"] [data-ground="grouped"] *));
 @custom-variant motion-navigation {
   @media (prefers-reduced-motion: no-preference) {
     &:where(:root:not([data-still~="navigation"]) *) {
@@ -639,6 +640,8 @@
   --radius-tile: 0.625rem;
   --radius-button: 0.625rem;
   --radius-ios-button: 0.875rem;
+  --radius-ios-segment: 0.5625rem;
+  --radius-ios-segment-item: 0.4375rem;
   --radius-list: 0.625rem;
   --radius-panel: 1rem;
   --radius-toast: 1.125rem;
@@ -662,7 +665,10 @@
   --blur-glass: 24px;
   --blur-series-band: 40px;
   --blur-reader: 20px;
+  --blur-ios: 24px;
 
+  --shadow-ios-segment:
+    0 3px 8px rgb(0 0 0 / 0.12), 0 3px 1px rgb(0 0 0 / 0.04);
   --shadow-raised: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-floating: 0 8px 28px rgb(0 0 0 / 0.16), 0 1px 3px rgb(0 0 0 / 0.08);
   --shadow-dialog:
@@ -799,6 +805,12 @@
 }
 
 @theme inline {
+  --color-ios-grouped: var(--ios-grouped-bg);
+  --color-ios-cell: var(--ios-grouped-cell);
+  --color-ios-separator: var(--ios-separator);
+  --color-ios-fill: var(--ios-fill);
+  --color-ios-material: var(--ios-material);
+  --radius-ios-cell: var(--radius-ios-cell);
   --font-ui: var(--platform-font);
   --shadow-menu: var(--menu-shadow);
   --radius-menu: var(--menu-radius);
