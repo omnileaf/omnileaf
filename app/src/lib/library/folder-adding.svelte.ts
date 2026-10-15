@@ -47,6 +47,7 @@ const FAILURES = {
     retry: m.library_add_folder_try_again,
   },
   folderNotFound: ADDING_FAILED,
+  folderAlreadyInLibrary: ADDING_FAILED,
   homeFolderKept: ADDING_FAILED,
   clipboardUnavailable: ADDING_FAILED,
   browserUnavailable: ADDING_FAILED,

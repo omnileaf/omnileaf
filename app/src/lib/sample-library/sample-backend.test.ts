@@ -580,3 +580,61 @@ test("suggests nothing for a search close to no title", async () => {
 
   expect(await backend.librarySpellingSuggestion("quixotic")).toBeNull();
 });
+
+test("hides the series of a missing folder, saying how many", async () => {
+  const { backend } = backendFor("?missing=folder");
+  const every = await backendFor().backend.librarySeriesCount(
+    NEW_LIBRARY_LISTING.filter,
+  );
+
+  const [missing] = await backend.missingLibraryFolders();
+
+  expect([
+    missing?.folder.name,
+    missing?.problem,
+    missing?.hiddenSeries,
+    missing?.isShownAnyway,
+    every - (await backend.librarySeriesCount(NEW_LIBRARY_LISTING.filter)),
+    await backend.libraryHiddenSeriesCount(),
+  ]).toEqual(["Comics", "missing", 6, false, 6, 6]);
+});
+
+test("shows the series of a missing folder once asked", async () => {
+  const { backend } = backendFor("?missing=folder");
+  const [missing] = await backend.missingLibraryFolders();
+
+  await backend.showMissingLibraryFolder(missing?.folder.id ?? "", true);
+
+  const [shown] = await backend.missingLibraryFolders();
+  expect([
+    shown?.isShownAnyway,
+    await backend.libraryHiddenSeriesCount(),
+  ]).toEqual([true, 0]);
+});
+
+test("finds a missing folder again where it went", async () => {
+  const { backend } = backendFor("?missing=folder");
+  const [missing] = await backend.missingLibraryFolders();
+
+  await backend.relocateLibraryFolder(missing?.folder.id ?? "", {
+    send: () => Promise.resolve(),
+  });
+
+  expect([
+    await backend.missingLibraryFolders(),
+    await backend.libraryHiddenSeriesCount(),
+  ]).toEqual([[], 0]);
+});
+
+test("tells a disconnected drive, lost access and a sign-in apart", async () => {
+  const problems = await Promise.all(
+    ["drive", "access", "sign-in"].map(async (kind) => {
+      const [missing] = await backendFor(
+        `?missing=${kind}`,
+      ).backend.missingLibraryFolders();
+      return missing?.problem;
+    }),
+  );
+
+  expect(problems).toEqual(["driveDisconnected", "lostAccess", "needsSignIn"]);
+});
