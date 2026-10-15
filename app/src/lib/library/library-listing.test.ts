@@ -10,7 +10,9 @@ import {
   filtersOn,
   reversed,
   sortedBy,
+  readStateOf,
   withoutFilters,
+  withReadState,
 } from "./library-listing";
 
 const NEWEST_UNREAD: LibraryListing = {
@@ -80,4 +82,32 @@ test("counts the conditions a series is held to", () => {
   ];
 
   expect(counts).toEqual([0, 2, 3]);
+});
+
+test("names the read state a filter keeps, and any other mix as any", () => {
+  const filters = [
+    DEFAULT_LIBRARY_LISTING.filter,
+    { unread: "any", started: "hide", finished: "any" },
+    { unread: "any", started: "only", finished: "hide" },
+    { unread: "any", started: "any", finished: "only" },
+    { unread: "hide", started: "any", finished: "any" },
+  ] as const;
+
+  expect(filters.map((filter) => readStateOf(filter))).toEqual([
+    "any",
+    "unread",
+    "inProgress",
+    "read",
+    "any",
+  ]);
+});
+
+test("keeps only the series in the read state chosen, and the sort", () => {
+  const listing = withReadState(DEFAULT_LIBRARY_LISTING, "inProgress");
+
+  expect(listing).toEqual({
+    ...DEFAULT_LIBRARY_LISTING,
+    filter: { unread: "any", started: "only", finished: "hide" },
+  });
+  expect(readStateOf(withReadState(listing, "any").filter)).toBe("any");
 });
