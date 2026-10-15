@@ -23,12 +23,12 @@
   const hasLargeTitle = $derived(
     platform === "ios" && isPhone(platform, width.current),
   );
-  let bar: HTMLElement | undefined = $state();
+  let bar = $state<HTMLElement | null>(null);
   let isTitleUnderBar = $state(false);
 
   $effect(() => {
     const heading = header?.querySelector("h1");
-    if (!hasLargeTitle || bar === undefined || heading == null) {
+    if (!hasLargeTitle || bar === null || heading == null) {
       return;
     }
     const barBottom = bar.getBoundingClientRect().bottom;
@@ -51,7 +51,7 @@
   const FITS = ["roomy", "crowded", "stacked"] as const;
 
   let header: HTMLElement | undefined = $state();
-  let buttons: HTMLElement | undefined = $state();
+  let buttons = $state<HTMLElement | null>(null);
   let fitIndex = $state(0);
   const roomNeeded: number[] = [];
   let fittedButtons = 0;
@@ -97,7 +97,7 @@
     };
     const observer = new ResizeObserver(fitSoon);
     observer.observe(heading);
-    if (buttons !== undefined) {
+    if (buttons !== null) {
       observer.observe(buttons);
     }
     return () => {
