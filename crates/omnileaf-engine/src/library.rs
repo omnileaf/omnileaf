@@ -34,12 +34,13 @@ use tokio::{
 };
 
 use crate::{
-    AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval, CoversPerRowOutOfRange,
-    CreatorSeries, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor,
-    HistoryOf, HistoryPage, HistorySeries, LibraryChanges, LibraryFilter, LibraryFolder,
-    LibraryListing, LibrarySearch, LibraryView, LocalDay, ReadMark, ReadingWeek, RescanOutcome,
-    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
-    SeriesOverview, SeriesPage, UtcOffset,
+    AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval, CategoryId,
+    CoversPerRowOutOfRange, CreatorSeries, FolderCursor, FolderId, FolderPage, FolderRescan,
+    FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, LibraryCategory,
+    LibraryChanges, LibraryFilter, LibraryFolder, LibraryListing, LibrarySearch, LibraryView,
+    LocalDay, ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress,
+    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
+    UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -287,6 +288,30 @@ impl Library {
             .database()
             .read(move |connection| root_book_count(connection, id.0))
             .await?)
+    }
+
+    pub fn categories(&self) -> Result<Vec<LibraryCategory>, LibraryError> {
+        Ok(Vec::new())
+    }
+
+    pub fn category_series(
+        &self,
+        _category: CategoryId,
+        _listing: LibraryListing,
+        _after: Option<SeriesCursor>,
+    ) -> Result<SeriesPage, LibraryError> {
+        Ok(SeriesPage {
+            series: Vec::new(),
+            next: None,
+        })
+    }
+
+    pub fn category_series_count(
+        &self,
+        _category: CategoryId,
+        _filter: LibraryFilter,
+    ) -> Result<u32, LibraryError> {
+        Ok(0)
     }
 
     pub async fn series_count(&self, filter: LibraryFilter) -> Result<u32, LibraryError> {
