@@ -414,7 +414,7 @@
 {/if}
 <div
   bind:offsetHeight={headHeight}
-  class="desktop:expanded:sticky desktop:expanded:inset-bs-under-toolbar desktop:expanded:z-series-bar desktop:expanded:-ms-gutter desktop:expanded:-me-page-end desktop:expanded:bg-background desktop:expanded:ps-gutter desktop:expanded:pe-page-end"
+  class="desktop-shell:sticky desktop-shell:inset-bs-under-toolbar desktop-shell:z-series-bar desktop-shell:-ms-gutter desktop-shell:-me-page-end desktop-shell:bg-background desktop-shell:ps-gutter desktop-shell:pe-page-end"
 >
   {#if hasBooks && tabsShown && !selection.isSelecting}
     <CategoryTabs

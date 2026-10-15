@@ -15,7 +15,9 @@
     className,
   )}
 >
-  <div class="hidden items-center gap-sm in-toolbar:me-sm in-toolbar:flex">
+  <div
+    class="hidden items-center gap-sm desktop:expanded:flex in-toolbar:me-sm"
+  >
     <SidebarToggle />
     <span
       aria-hidden="true"
