@@ -9,6 +9,7 @@
   import Toasts from "#lib/notices/Toasts.svelte";
   import { getBookPresence } from "#lib/reader/book-presence.svelte.ts";
   import BookProblem from "#lib/reader/BookProblem.svelte";
+  import DamagedBook from "#lib/reader/DamagedBook.svelte";
   import PagedReader from "#lib/reader/PagedReader.svelte";
   import { allowPinchZoom } from "#lib/reader/pinch-zoom.ts";
 
@@ -21,6 +22,7 @@
   const bookPresence = getBookPresence();
   const notices = getNotices();
   const theme = getThemeSetting();
+  let damagedBookRead: string | undefined = $state();
 
   $effect(() => {
     bookPresence.isOpen = true;
@@ -39,7 +41,10 @@
   });
 
   $effect(() => {
-    if (shown.kind !== "found") {
+    if (
+      shown.kind !== "found" ||
+      (shown.book.damage !== null && damagedBookRead !== shown.book.id)
+    ) {
       focusPageHeading();
     }
   });
@@ -52,7 +57,16 @@
   });
 </script>
 
-{#if shown.kind === "found"}
+{#if shown.kind === "found" && shown.book.damage !== null && damagedBookRead !== shown.book.id}
+  <DamagedBook
+    book={shown.book}
+    damage={shown.book.damage}
+    platform={data.appInfo.platform}
+    onRead={() => {
+      damagedBookRead = shown.book.id;
+    }}
+  />
+{:else if shown.kind === "found"}
   {#key shown.book.id}
     <PagedReader
       book={shown.book}
