@@ -44,10 +44,7 @@
 </script>
 
 <div>
-  <p
-    id={labelId}
-    class="text-detail font-semibold text-muted large:text-caption"
-  >
+  <p id={labelId} class="text-body font-medium large:text-small">
     {m.library_view_display()}
   </p>
   <SegmentedControl
