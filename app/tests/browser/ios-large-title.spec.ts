@@ -52,3 +52,22 @@ test("keeps the title beside its buttons on a wide iPad", async ({ page }) => {
 
   await expect(page.locator("[data-title-bar]")).toHaveCount(0);
 });
+
+test("raises no error when the window narrows from an iPad's width to an iPhone's and back", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.setViewportSize({ width: EXPANDED_MIN_WIDTH, height: 900 });
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Library" }),
+  ).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expect(page.locator("[data-title-bar]")).toBeVisible();
+  await page.setViewportSize({ width: EXPANDED_MIN_WIDTH, height: 900 });
+  await expect(page.locator("[data-title-bar]")).toHaveCount(0);
+
+  expect(errors).toEqual([]);
+});
