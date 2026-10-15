@@ -238,3 +238,74 @@ test("keeps no categories in an empty library", async () => {
 
   expect(await backend.libraryCategories()).toEqual([]);
 });
+
+function filtered(filter: Partial<LibraryListing["filter"]>): LibraryListing {
+  return {
+    ...NEW_LIBRARY_LISTING,
+    filter: { ...NEW_LIBRARY_LISTING.filter, ...filter },
+  };
+}
+
+async function titlesFor(filter: Partial<LibraryListing["filter"]>) {
+  const { backend } = backendFor();
+  const page = await backend.librarySeries(null, filtered(filter));
+  return page.series.map((series) => series.title);
+}
+
+test("offers the formats, languages and tags the sample library holds, with ratings and bookmarks", async () => {
+  const { backend } = backendFor();
+
+  const choices = await backend.libraryFilterChoices();
+
+  expect(choices).toEqual({
+    formats: ["comic", "manga", "book"],
+    languages: ["ja", "en", "fr", "de"],
+    tags: ["Slice of life", "Seinen", "Sea", "Letters"],
+    ratesAdult: true,
+    keepsBookmarks: true,
+  });
+});
+
+test("lists only the series of a format chosen", async () => {
+  expect(await titlesFor({ formats: ["book"] })).toEqual([LONG_TITLE]);
+});
+
+test("lists only the series in one of the languages chosen", async () => {
+  const titles = await titlesFor({ languages: ["fr", "de"] });
+
+  expect(titles).toEqual([
+    "Sample Series 03",
+    "Sample Series 06",
+    "Sample Series 10",
+    "Sample Series 13",
+    "Sample Series 17",
+  ]);
+});
+
+test("lists only the series carrying one of the tags chosen", async () => {
+  expect(await titlesFor({ tags: ["Seinen"] })).toEqual(["Sample Series 04"]);
+});
+
+test("leaves out the adult series once 18+ is hidden, and lists only them once it is the only one", async () => {
+  const hidden = await titlesFor({ adult: "hide" });
+  const only = await titlesFor({ adult: "only" });
+
+  expect(only).toEqual(["Sample Series 13", "Sample Series 17"]);
+  expect(hidden).not.toContain("Sample Series 13");
+  expect(hidden).toHaveLength(17);
+});
+
+test("lists only the series with a bookmarked page once Bookmarked is the only one", async () => {
+  const { backend } = backendFor();
+  const book = sampleBookId(6, 2);
+  await backend.bookmarkPages(book, [3], true);
+
+  const page = await backend.librarySeries(
+    null,
+    filtered({ bookmarked: "only" }),
+  );
+
+  expect(page.series.map((series) => series.title)).toEqual([
+    "Sample Series 06",
+  ]);
+});
