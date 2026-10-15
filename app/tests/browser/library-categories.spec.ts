@@ -499,3 +499,50 @@ test.describe("with more categories than fit", () => {
     });
   });
 });
+
+test.describe("with the tabs arranged in Settings", () => {
+  test.use({
+    backend: {
+      ...backendWith([
+        ...CATEGORIES,
+        { id: "plan", name: "Plan to read" },
+      ] as LibraryCategory[]),
+      libraryTabs: () => [
+        { id: { kind: "category", id: "comics" }, isHidden: false },
+        { id: { kind: "all" }, isHidden: false },
+        { id: { kind: "newChapters" }, isHidden: false },
+        { id: { kind: "category", id: "manga" }, isHidden: true },
+      ],
+    } satisfies FakeBackend,
+  });
+
+  test("puts the tabs in the order arranged, leaving the hidden ones off and new categories last", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+
+    await expect(tabs(page).getByRole("tab")).toHaveText([
+      "Comics",
+      "All",
+      "New chapters",
+      "Plan to read",
+    ]);
+  });
+
+  test("says no series match under New chapters, and goes back to All on clearing", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+
+    await tabs(page).getByRole("tab", { name: "New chapters" }).click();
+    await expect(
+      page.getByRole("heading", { name: "No series match these filters" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Clear all filters" }).click();
+
+    await expect(tabs(page).getByRole("tab", { name: "All" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+});
