@@ -899,6 +899,8 @@
   "quick_open_anywhere": "{shortcut} from anywhere",
   "quick_open_shortcut": "Ctrl K",
   "quick_open_shortcut_mac": "⌘ K",
+  "search_shortcut": "Ctrl F",
+  "search_shortcut_mac": "⌘ F",
   "series_back": "Library",
   "series_back_label": "Back to the library",
   "series_breadcrumb": "Breadcrumb",
