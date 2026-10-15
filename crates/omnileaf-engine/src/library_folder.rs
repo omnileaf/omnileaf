@@ -152,6 +152,7 @@ mod tests {
             locator: RootLocator::AndroidTree(tree),
             added_at_ms: 0,
             unavailable_since_ms: None,
+            shows_while_missing: false,
         })
     }
 
