@@ -41,6 +41,7 @@
   import SeriesCount from "#lib/library/SeriesCount.svelte";
   import SeriesCovers from "#lib/library/SeriesCovers.svelte";
   import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
+  import { swipesBetweenTabs } from "#lib/library/tab-swipe.ts";
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
@@ -234,6 +235,14 @@
     document.querySelector("main")?.scrollTo({ top: 0 });
   }
 
+  function swipeTab(step: 1 | -1): void {
+    const order = [ALL_SERIES, ...categories.map(({ id }) => id)];
+    const next = order[order.indexOf(chosenCategory ?? ALL_SERIES) + step];
+    if (next !== undefined) {
+      chooseTab(next);
+    }
+  }
+
   onMount(() => {
     void listing.load();
     void view.load();
@@ -421,7 +430,10 @@
             <ContinueRow usesStandIns={screenshotMode.isOn} />
           </div>
         {/if}
-        <div class="mbs-lg medium:mbs-xl">
+        <div
+          {@attach tabsShown && swipesBetweenTabs(swipeTab)}
+          class="mbs-lg touch-pan-y medium:mbs-xl"
+        >
           <SeriesCovers
             series={loaded.series.items}
             isComplete={loaded.series.isComplete}
