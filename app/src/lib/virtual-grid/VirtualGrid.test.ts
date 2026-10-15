@@ -39,6 +39,7 @@ async function renderGrid(
   count: number,
   options: {
     isComplete?: boolean;
+    total?: number;
     onNearEnd?: () => void;
     cell?: typeof cell;
   } = {},
@@ -48,6 +49,7 @@ async function renderGrid(
     key: (sample: Sample) => sample.id,
     label: LABEL,
     isComplete: options.isComplete ?? true,
+    ...(options.total === undefined ? {} : { total: options.total }),
     ...(options.onNearEnd === undefined
       ? {}
       : { onNearEnd: options.onNearEnd }),
@@ -208,4 +210,46 @@ test("tells its columns before the next frame once its style asks for more cover
   await screen.rerender({ style: perRow(3) });
 
   expect(onColumns).toHaveBeenLastCalledWith(3);
+});
+
+test("makes room for every item of the total it was told, though fewer have come", async () => {
+  const { list } = await renderGrid(400, {
+    isComplete: false,
+    total: TEN_THOUSAND,
+  });
+  const item = list.getByRole("listitem").first().element();
+  const rowHeight = item.getBoundingClientRect().height;
+
+  const pageHeight = document.documentElement.scrollHeight;
+
+  expect(pageHeight).toBeGreaterThan((TEN_THOUSAND / COLUMNS) * rowHeight);
+  await expect
+    .element(list.getByRole("listitem").first())
+    .toHaveAttribute("aria-setsize", String(TEN_THOUSAND));
+});
+
+test("asks for more items once the rows scrolled to lie past those that have come", async () => {
+  const onNearEnd = vi.fn();
+  await renderGrid(400, {
+    isComplete: false,
+    total: TEN_THOUSAND,
+    onNearEnd,
+  });
+  await settled();
+  const beforeScrolling = onNearEnd.mock.calls.length;
+
+  window.scrollTo(0, document.documentElement.scrollHeight / 2);
+
+  await expect
+    .poll(() => onNearEnd.mock.calls.length)
+    .toBeGreaterThan(beforeScrolling);
+  expect(beforeScrolling).toBe(0);
+});
+
+test("leaves the size unknown when told a total smaller than the items that have come", async () => {
+  const { list } = await renderGrid(8, { isComplete: false, total: 0 });
+
+  await expect
+    .element(list.getByRole("listitem").first())
+    .toHaveAttribute("aria-setsize", "-1");
 });
