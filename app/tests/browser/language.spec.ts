@@ -58,7 +58,7 @@ test("picks a language and comes back to General", async ({ page }) => {
   await english.click();
   await expect(english).toBeChecked();
   await page
-    .getByRole("link", { name: /^(Back to )?General$/ })
+    .getByRole("link", { name: "Back to General", exact: true })
     .filter({ visible: true })
     .click();
 
