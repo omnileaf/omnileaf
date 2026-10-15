@@ -138,6 +138,8 @@ export const TOKEN_THEME = {
     "band-fade",
     "band-wide",
     "book-menu",
+    "book-problem",
+    "book-problem-wide",
     "book-row",
     "book-row-wide",
     "button",
