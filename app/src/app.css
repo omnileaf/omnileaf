@@ -813,6 +813,17 @@
   --color-ios-fill: var(--ios-fill);
   --color-ios-material: var(--ios-material);
   --radius-ios-cell: var(--radius-ios-cell);
+  --color-android-container-low: var(--android-container-low);
+  --color-android-container: var(--android-container);
+  --color-android-container-high: var(--android-container-high);
+  --color-android-tonal: var(--android-tonal);
+  --color-android-outline: var(--android-outline);
+  --color-android-inverse-primary: var(--android-inverse-primary);
+  --radius-android-xs: var(--radius-android-xs);
+  --radius-android-sm: var(--radius-android-sm);
+  --radius-android-md: var(--radius-android-md);
+  --radius-android-lg: var(--radius-android-lg);
+  --radius-android-xl: var(--radius-android-xl);
   --font-ui: var(--platform-font);
   --shadow-menu: var(--menu-shadow);
   --radius-menu: var(--menu-radius);
@@ -884,8 +895,8 @@
     var(--destructive-fill) 80%,
     transparent
   );
-  --color-hover: var(--accent);
-  --color-pressed: color-mix(in oklab, var(--foreground) 8%, var(--accent));
+  --color-hover: var(--hover-fill);
+  --color-pressed: var(--pressed-fill);
   --color-sheet: var(--background);
   --color-scrim: var(--overlay);
   --color-backdrop: var(--muted);
@@ -1274,6 +1285,13 @@
       --text-page-title: calc(2.125rem * var(--text-scale));
       --text-page-title--line-height: calc(41 / 34);
     }
+  }
+}
+
+:root {
+  @variant android {
+    --text-page-title: calc(2rem * var(--text-scale));
+    --text-page-title--line-height: calc(40 / 32);
   }
 }
 
