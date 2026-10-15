@@ -88,6 +88,17 @@ test("names each series in two lines at most, in 14px medium text", async ({
   expect((await boxOf(title)).height).toBeGreaterThan(lineHeight);
 });
 
+test("gives a cut-off title whole in a tooltip while the pointer rests on it", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.use.hasTouch === true, "no pointer rests here");
+  await page.goto("/");
+
+  await cell(page, LONG_TITLE).getByText(LONG_TITLE).hover();
+
+  await expect(page.locator("[data-tooltip-content]")).toHaveText(LONG_TITLE);
+});
+
 test("shows how far a started series is read under its cover", async ({
   page,
 }) => {
