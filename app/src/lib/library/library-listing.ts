@@ -8,7 +8,17 @@ import {
 } from "#lib/ipc/bindings.ts";
 
 /** The reading-state conditions the library filters by, in the order the filter shows them. */
-export type FilterCondition = keyof LibraryFilter;
+export type FilterCondition = "unread" | "started" | "finished";
+
+export const NEW_LIBRARY_LISTING: LibraryListing = {
+  sort: { ...DEFAULT_LIBRARY_LISTING.sort },
+  filter: {
+    ...DEFAULT_LIBRARY_LISTING.filter,
+    formats: [],
+    languages: [],
+    tags: [],
+  },
+};
 
 export const FILTER_CONDITIONS: readonly FilterCondition[] = [
   "unread",
@@ -55,7 +65,7 @@ export function filteredBy(
 }
 
 export function withoutFilters(listing: LibraryListing): LibraryListing {
-  return { ...listing, filter: DEFAULT_LIBRARY_LISTING.filter };
+  return { ...listing, filter: NEW_LIBRARY_LISTING.filter };
 }
 
 export function filtersOn(filter: LibraryFilter): number {
@@ -80,7 +90,7 @@ const READ_STATE_FILTERS = {
   unread: { unread: "any", started: "hide", finished: "any" },
   inProgress: { unread: "any", started: "only", finished: "hide" },
   read: { unread: "any", started: "any", finished: "only" },
-} as const satisfies Record<ReadState, LibraryFilter>;
+} as const satisfies Record<ReadState, Pick<LibraryFilter, FilterCondition>>;
 
 export function readStateOf(filter: LibraryFilter): ReadState {
   return (
@@ -97,5 +107,8 @@ export function withReadState(
   listing: LibraryListing,
   state: ReadState,
 ): LibraryListing {
-  return { ...listing, filter: { ...READ_STATE_FILTERS[state] } };
+  return {
+    ...listing,
+    filter: { ...listing.filter, ...READ_STATE_FILTERS[state] },
+  };
 }

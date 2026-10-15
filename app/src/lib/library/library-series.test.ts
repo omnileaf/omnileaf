@@ -1,13 +1,10 @@
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
 
-import {
-  commands,
-  DEFAULT_LIBRARY_LISTING,
-  type LibrarySeries,
-} from "#lib/ipc/bindings.ts";
+import { commands, type LibrarySeries } from "#lib/ipc/bindings.ts";
 
 import { librarySeriesList, type ListSeries } from "./library-series.svelte";
+import { NEW_LIBRARY_LISTING } from "./library-listing";
 
 type WireSeries = Omit<LibrarySeries, "id" | "cover"> & {
   readonly id: string;
@@ -43,7 +40,7 @@ const SECOND: WireSeries = {
 };
 
 const listSeries: ListSeries = (after) =>
-  commands.librarySeries(after, DEFAULT_LIBRARY_LISTING);
+  commands.librarySeries(after, NEW_LIBRARY_LISTING);
 
 afterEach(() => {
   clearMocks();

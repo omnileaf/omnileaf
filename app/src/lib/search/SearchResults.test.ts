@@ -2,14 +2,11 @@ import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import {
-  commands,
-  DEFAULT_LIBRARY_LISTING,
-  type LibrarySeries,
-} from "#lib/ipc/bindings.ts";
+import { commands, type LibrarySeries } from "#lib/ipc/bindings.ts";
 import type { CoverPath } from "#lib/library/cover-url.ts";
 
 import SearchResults from "./SearchResults.svelte";
+import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 
 const REAL_TITLE = "Hidden Story";
 const STAND_IN = /^Series \d{2,3}$/;
@@ -33,7 +30,7 @@ async function foundSeries(): Promise<readonly LibrarySeries[]> {
   }));
   const page = await commands.librarySearch(null, {
     text: "hidden",
-    filter: DEFAULT_LIBRARY_LISTING.filter,
+    filter: NEW_LIBRARY_LISTING.filter,
   });
   if (page.status === "error") {
     throw new Error("the backend found no series");

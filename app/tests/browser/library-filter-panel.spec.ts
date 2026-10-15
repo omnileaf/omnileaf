@@ -1,7 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
 import {
-  DEFAULT_LIBRARY_LISTING,
   type LibraryCategory,
   type LibraryListing,
 } from "../../src/lib/ipc/bindings.ts";
@@ -17,6 +16,7 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
+import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 
 const LIBRARY = sampleSeries(60);
 const CATEGORIES = [
@@ -26,7 +26,7 @@ const CATEGORIES = [
 const DOCKED_WIDTH = 340;
 const SCROLLED = 600;
 
-let storedListing: LibraryListing = DEFAULT_LIBRARY_LISTING;
+let storedListing: LibraryListing = NEW_LIBRARY_LISTING;
 
 test.use({
   backend: {
@@ -47,7 +47,7 @@ test.beforeEach(({ page }) => {
     screenSizeOf(page) !== "desktop",
     "the panel docks only beside a desktop's grid",
   );
-  storedListing = DEFAULT_LIBRARY_LISTING;
+  storedListing = NEW_LIBRARY_LISTING;
 });
 
 function filterButton(page: Page): Locator {
@@ -173,8 +173,13 @@ test("hides the filters in use while it is open, since it shows them itself", as
   page,
 }) => {
   storedListing = {
-    ...DEFAULT_LIBRARY_LISTING,
-    filter: { unread: "any", started: "hide", finished: "any" },
+    ...NEW_LIBRARY_LISTING,
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "hide",
+      finished: "any",
+    },
   };
   await openLibrary(page);
   const inUse = page.getByRole("list", { name: "Filters in use" });

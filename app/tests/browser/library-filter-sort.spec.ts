@@ -1,9 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 
-import {
-  DEFAULT_LIBRARY_LISTING,
-  type LibraryFilter,
-  type LibraryListing,
+import type {
+  Inclusion,
+  LibraryFilter,
+  LibraryListing,
 } from "../../src/lib/ipc/bindings.ts";
 import { pseudoText } from "../../src/lib/language/pseudo-locale.ts";
 import type { FakeBackend } from "./fake-backend.ts";
@@ -22,6 +22,7 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 import type { WireSeries } from "./series-catalog.ts";
+import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 
 type Box = Awaited<ReturnType<typeof boxOf>>;
 
@@ -70,10 +71,7 @@ const CATALOG: readonly FakeSeries[] = [
   fakeSeries(6, { addedAt: 4, unread: 0, isStarted: true }),
 ];
 
-function meets(
-  inclusion: LibraryFilter[keyof LibraryFilter],
-  condition: boolean,
-): boolean {
+function meets(inclusion: Inclusion, condition: boolean): boolean {
   switch (inclusion) {
     case "any":
       return true;
@@ -110,7 +108,7 @@ function titles(numbers: readonly number[]): string[] {
   );
 }
 
-let storedListing: LibraryListing = DEFAULT_LIBRARY_LISTING;
+let storedListing: LibraryListing = NEW_LIBRARY_LISTING;
 
 const FILTERING_BACKEND = {
   ...DEFAULT_BACKEND,
@@ -129,7 +127,7 @@ const FILTERING_BACKEND = {
 test.use({ backend: FILTERING_BACKEND });
 
 test.beforeEach(() => {
-  storedListing = DEFAULT_LIBRARY_LISTING;
+  storedListing = NEW_LIBRARY_LISTING;
 });
 
 function seriesList(page: Page): Locator {
@@ -277,7 +275,12 @@ test("lists only the series never opened once Unread is chosen, and stores it", 
   await expectTitles(page, [1, 5]);
   await expect
     .poll(() => storedListing.filter)
-    .toEqual({ unread: "any", started: "hide", finished: "any" });
+    .toEqual({
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "hide",
+      finished: "any",
+    });
 });
 
 test("lists the series opened and not finished once In progress is chosen, and the finished ones once Read is", async ({
@@ -293,7 +296,12 @@ test("lists the series opened and not finished once In progress is chosen, and t
   await expectTitles(page, [4, 6]);
   await expect
     .poll(() => storedListing.filter)
-    .toEqual({ unread: "any", started: "any", finished: "only" });
+    .toEqual({
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "any",
+      finished: "only",
+    });
 });
 
 test("lists the series added last first once date added is chosen, and reverses them on asking", async ({
@@ -372,7 +380,12 @@ test("puts the sort and every filter back as a new library has them on Reset", a
 }) => {
   storedListing = {
     sort: { by: "dateAdded", direction: "ascending" },
-    filter: { unread: "only", started: "any", finished: "any" },
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "only",
+      started: "any",
+      finished: "any",
+    },
   };
   await openLibrary(page);
   const panel = await openFilterAndSort(page);
@@ -380,7 +393,7 @@ test("puts the sort and every filter back as a new library has them on Reset", a
   await panel.getByRole("button", { name: "Reset" }).click();
 
   await expectTitles(page, [1, 2, 3, 4, 5, 6]);
-  await expect.poll(() => storedListing).toEqual(DEFAULT_LIBRARY_LISTING);
+  await expect.poll(() => storedListing).toEqual(NEW_LIBRARY_LISTING);
 });
 
 for (const { platform, weight, colour, isTouch } of [
@@ -424,7 +437,12 @@ test("lists the library by the sort and filter stored on this device", async ({
 }) => {
   storedListing = {
     sort: { by: "dateAdded", direction: "descending" },
-    filter: { unread: "only", started: "any", finished: "any" },
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "only",
+      started: "any",
+      finished: "any",
+    },
   };
 
   await openLibrary(page);
@@ -439,8 +457,13 @@ test("says when no series meet the filter and clears it on asking", async ({
   page,
 }) => {
   storedListing = {
-    sort: DEFAULT_LIBRARY_LISTING.sort,
-    filter: { unread: "only", started: "any", finished: "only" },
+    sort: NEW_LIBRARY_LISTING.sort,
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "only",
+      started: "any",
+      finished: "only",
+    },
   };
   await page.goto("/");
   const noMatches = page.getByText("No series match these filters.");
@@ -450,7 +473,7 @@ test("says when no series meet the filter and clears it on asking", async ({
   await page.getByRole("button", { name: "Clear filters" }).click();
 
   await expectTitles(page, [1, 2, 3, 4, 5, 6]);
-  await expect.poll(() => storedListing).toEqual(DEFAULT_LIBRARY_LISTING);
+  await expect.poll(() => storedListing).toEqual(NEW_LIBRARY_LISTING);
 });
 
 test("closes on Escape and hands focus back to the button that opened it", async ({
@@ -591,8 +614,13 @@ for (const colorScheme of ["light", "dark"] as const) {
   }) => {
     await page.emulateMedia({ colorScheme });
     storedListing = {
-      sort: DEFAULT_LIBRARY_LISTING.sort,
-      filter: { unread: "any", started: "hide", finished: "any" },
+      sort: NEW_LIBRARY_LISTING.sort,
+      filter: {
+        ...NEW_LIBRARY_LISTING.filter,
+        unread: "any",
+        started: "hide",
+        finished: "any",
+      },
     };
     await openLibrary(page);
     await openFilterAndSort(page);
@@ -651,8 +679,8 @@ test.describe("when the library holds no series and a filter is stored", () => {
       librarySeries: () => ({ series: [], next: null }),
       librarySeriesCount: () => 0,
       libraryListing: () => ({
-        ...DEFAULT_LIBRARY_LISTING,
-        filter: { ...DEFAULT_LIBRARY_LISTING.filter, unread: "only" },
+        ...NEW_LIBRARY_LISTING,
+        filter: { ...NEW_LIBRARY_LISTING.filter, unread: "only" },
       }),
     },
   });
@@ -702,8 +730,13 @@ test("lists the filter in use as a chip under the library, and takes it off with
   page,
 }) => {
   storedListing = {
-    ...DEFAULT_LIBRARY_LISTING,
-    filter: { unread: "any", started: "hide", finished: "any" },
+    ...NEW_LIBRARY_LISTING,
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "hide",
+      finished: "any",
+    },
   };
   await openLibrary(page);
   const inUse = page.getByRole("list", { name: "Filters in use" });
@@ -717,8 +750,13 @@ test("lists the filter in use as a chip under the library, and takes it off with
 
 test("clears every filter in use with Clear all", async ({ page }) => {
   storedListing = {
-    ...DEFAULT_LIBRARY_LISTING,
-    filter: { unread: "any", started: "any", finished: "only" },
+    ...NEW_LIBRARY_LISTING,
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "any",
+      finished: "only",
+    },
   };
   await openLibrary(page);
 
@@ -727,7 +765,7 @@ test("clears every filter in use with Clear all", async ({ page }) => {
   await expectTitles(page, [1, 2, 3, 4, 5, 6]);
   await expect
     .poll(() => storedListing.filter)
-    .toEqual(DEFAULT_LIBRARY_LISTING.filter);
+    .toEqual(NEW_LIBRARY_LISTING.filter);
 });
 
 for (const platform of ["android", "ios"] as const) {

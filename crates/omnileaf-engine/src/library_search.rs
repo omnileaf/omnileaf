@@ -29,7 +29,7 @@ pub(crate) enum StoredSearch {
 
 impl StoredSearch {
     pub(crate) fn parse(search: &LibrarySearch) -> Result<Self, omnileaf_db::Error> {
-        let filter = SeriesFilter::from(search.filter);
+        let filter = SeriesFilter::from(&search.filter);
         Ok(match SearchText::parse(&search.text)? {
             Some(text) => Self::Text(SeriesSearch { text, filter }),
             None => Self::Filter(filter),
