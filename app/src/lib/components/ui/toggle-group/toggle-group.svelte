@@ -20,7 +20,7 @@
   type="single"
   data-slot="toggle-group"
   class={cn(
-    "isolate flex flex-wrap items-stretch rounded-shadcn-control shadow-raised",
+    "isolate flex flex-wrap items-stretch rounded-shadcn-control shadow-raised ios:gap-2xs ios:rounded-ios-segment ios:bg-ios-fill ios:p-2xs ios:shadow-none",
     className,
   )}
   {...restProps}

@@ -14,7 +14,7 @@
   bind:ref
   data-slot="toggle-group-item"
   class={cn(
-    "room-for-semibold-label -ms-px flex items-center justify-center border border-border bg-background px-md text-small font-medium whitespace-nowrap text-foreground transition-control min-block-pointer-button first:ms-none first:rounded-s-shadcn-control last:rounded-e-shadcn-control hover:bg-hover aria-checked:bg-hover aria-checked:font-semibold aria-checked:text-on-accent-soft data-disabled:opacity-50 data-disabled:hover:bg-background max-expanded:touch-target-across max-expanded:px-toggle-touch max-expanded:text-body max-expanded:min-block-touch-target ios:aria-checked:text-foreground android:aria-checked:text-foreground",
+    "room-for-semibold-label -ms-px flex items-center justify-center border border-border bg-background px-md text-small font-medium whitespace-nowrap text-foreground transition-control min-block-pointer-button first:ms-none first:rounded-s-shadcn-control last:rounded-e-shadcn-control hover:bg-hover aria-checked:bg-hover aria-checked:font-semibold aria-checked:text-on-accent-soft data-disabled:opacity-50 data-disabled:hover:bg-background max-expanded:touch-target-across max-expanded:px-toggle-touch max-expanded:text-body max-expanded:min-block-touch-target ios:ms-none ios:rounded-ios-segment-item ios:border-transparent ios:bg-transparent ios:hover:bg-transparent ios:aria-checked:bg-ios-cell ios:aria-checked:text-foreground ios:aria-checked:shadow-ios-segment android:aria-checked:text-foreground",
     className,
   )}
   {...restProps}
