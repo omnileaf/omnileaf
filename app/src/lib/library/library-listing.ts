@@ -59,6 +59,43 @@ export function withoutFilters(listing: LibraryListing): LibraryListing {
 }
 
 export function filtersOn(filter: LibraryFilter): number {
+  if (readStateOf(filter) !== "any") {
+    return 1;
+  }
   return FILTER_CONDITIONS.filter((condition) => filter[condition] !== "any")
     .length;
+}
+
+export type ReadState = "any" | "unread" | "inProgress" | "read";
+
+export const READ_STATES: readonly ReadState[] = [
+  "any",
+  "unread",
+  "inProgress",
+  "read",
+];
+
+const READ_STATE_FILTERS = {
+  any: { unread: "any", started: "any", finished: "any" },
+  unread: { unread: "any", started: "hide", finished: "any" },
+  inProgress: { unread: "any", started: "only", finished: "hide" },
+  read: { unread: "any", started: "any", finished: "only" },
+} as const satisfies Record<ReadState, LibraryFilter>;
+
+export function readStateOf(filter: LibraryFilter): ReadState {
+  return (
+    READ_STATES.find((state) =>
+      FILTER_CONDITIONS.every(
+        (condition) =>
+          READ_STATE_FILTERS[state][condition] === filter[condition],
+      ),
+    ) ?? "any"
+  );
+}
+
+export function withReadState(
+  listing: LibraryListing,
+  state: ReadState,
+): LibraryListing {
+  return { ...listing, filter: { ...READ_STATE_FILTERS[state] } };
 }
