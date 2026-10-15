@@ -6,10 +6,15 @@
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
 
+  import type { PageProps } from "./$types";
+
+  let { data }: PageProps = $props();
+
   const screenshotMode = getScreenshotMode();
 </script>
 
 <CollectionHeading
+  platform={data.appInfo.platform}
   title={m.browse_title()}
   showsLabel={screenshotMode.showsLabel}
 />
