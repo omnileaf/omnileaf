@@ -44,6 +44,17 @@ test("opens on the empty library", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("fills the space under the heading with the empty library, to stand it in the middle", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const empty = await boxOf(emptyLibrary(page));
+  const main = await boxOf(page.getByRole("main"));
+
+  expect(empty.height).toBeGreaterThan(main.height / 2);
+});
+
 test("offers Add a folder only in the empty library itself", async ({
   page,
 }) => {
