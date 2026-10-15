@@ -82,12 +82,29 @@
 }
 @custom-variant heading-crowded (&:where([data-crowded] *));
 @custom-variant picked (&:where([data-picked] *));
-@custom-variant in-toolbar {
+@custom-variant narrow-desktop {
   @variant desktop {
-    @variant expanded {
-      &:where([data-page-toolbar], [data-page-toolbar] *) {
+    @variant max-expanded {
+      @media (hover: hover) {
         @slot;
       }
+    }
+  }
+}
+@custom-variant desktop-shell {
+  @variant desktop {
+    @variant expanded {
+      @slot;
+    }
+  }
+  @variant narrow-desktop {
+    @slot;
+  }
+}
+@custom-variant in-toolbar {
+  @variant desktop-shell {
+    &:where([data-page-toolbar], [data-page-toolbar] *) {
+      @slot;
     }
   }
 }
@@ -98,6 +115,9 @@
         @slot;
       }
     }
+  }
+  @variant narrow-desktop {
+    @slot;
   }
 }
 @custom-variant closed (&[data-state="closed"]);
