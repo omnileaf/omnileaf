@@ -38,3 +38,18 @@ test("reports the sort chosen in the platform picker", async () => {
 
   expect(onSortBy).toHaveBeenCalledWith("dateAdded");
 });
+
+test("offers the series read last first, as the boards draw it", async () => {
+  const onSortBy = vi.fn();
+  const screen = await render(SortSelect, {
+    sort: TITLE_ASCENDING,
+    onSortBy,
+    onReverse: vi.fn(),
+  });
+
+  await screen
+    .getByRole("combobox", { name: "Sort by" })
+    .selectOptions("Recently read");
+
+  expect(onSortBy).toHaveBeenCalledWith("lastRead");
+});

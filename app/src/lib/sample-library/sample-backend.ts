@@ -5,6 +5,7 @@ import {
   type IpcErrorCode,
   type LibraryFilter,
   type LibraryListing,
+  type LibrarySortBy,
   type LibraryView,
   type Platform,
   type SeriesFormat,
@@ -317,14 +318,24 @@ export function sampleBackend(
   const addedAt = (series: SampleSeries): number =>
     NEWEST_ADDED_MS - library.indexOf(series) * DAY_MS;
 
+  const lastReadAt = (series: SampleSeries): number =>
+    series.books.some((book) => book.reading.state === "started")
+      ? addedAt(series)
+      : 0;
+
+  const ORDERS = {
+    title: (one, other) => one.title.localeCompare(other.title),
+    dateAdded: (one, other) => addedAt(one) - addedAt(other),
+    lastRead: (one, other) => lastReadAt(one) - lastReadAt(other),
+  } satisfies Record<
+    LibrarySortBy,
+    (one: SampleSeries, other: SampleSeries) => number
+  >;
+
   function sorted(chosen: LibraryListing): SampleSeries[] {
     const ordered = library
       .filter((series) => passes(series, chosen.filter, facts))
-      .toSorted((one, other) =>
-        chosen.sort.by === "title"
-          ? one.title.localeCompare(other.title)
-          : addedAt(one) - addedAt(other),
-      );
+      .toSorted(ORDERS[chosen.sort.by]);
     return chosen.sort.direction === "ascending"
       ? ordered
       : ordered.toReversed();

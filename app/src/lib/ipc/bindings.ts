@@ -367,7 +367,7 @@ export type LibrarySort = {
 	direction: SortDirection,
 };
 
-export type LibrarySortBy = "title" | "dateAdded";
+export type LibrarySortBy = "title" | "dateAdded" | "lastRead";
 
 /**  A tag the library keeps, and how many series carry it. */
 export type LibraryTag = {
@@ -569,7 +569,7 @@ export type SmartFilter =
 /**  Downloaded and finished. */
 "readyToCleanUp";
 
-/**  Ascending lists titles from A to Z and series added earliest first. */
+/**  Ascending lists titles from A to Z, series added earliest first, and series read longest ago first, those never read before them. */
 export type SortDirection = "ascending" | "descending";
 
 export type SwipeEdge = "left" | "right";
