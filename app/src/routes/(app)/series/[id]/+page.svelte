@@ -255,8 +255,9 @@
   </PageToolbar>
 {/if}
 <div
+  data-ground="grouped"
   class={[
-    "@container relative isolate -me-page-end flex flex-1 flex-col pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-gutter medium:ps-gutter",
+    "@container relative isolate -me-page-end flex flex-1 flex-col pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-gutter medium:ps-gutter ios:bg-ios-grouped",
     hasToolbar ? "pbs-xl" : "-mbs-page-top",
   ]}
 >
