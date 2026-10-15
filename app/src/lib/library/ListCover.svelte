@@ -9,7 +9,13 @@
     cover,
     coverUrl,
     class: look,
-  }: { cover: ShownCover; coverUrl: CoverUrl; class: ClassValue } = $props();
+    isBlurred = false,
+  }: {
+    cover: ShownCover;
+    coverUrl: CoverUrl;
+    class: ClassValue;
+    isBlurred?: boolean;
+  } = $props();
 </script>
 
 <span
@@ -18,5 +24,5 @@
     look,
   ]}
 >
-  <CoverImage {cover} {coverUrl} />
+  <CoverImage {cover} {coverUrl} {isBlurred} />
 </span>
