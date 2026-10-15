@@ -6,9 +6,9 @@ use omnileaf_engine::{
     CategoryId, Core, CoversPerRow, CreatorSeries, FolderCursor, FolderId, FolderPage,
     FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, InterfaceError,
     LabelChanges, Library, LibraryCategory, LibraryFilter, LibraryFilterChoices, LibraryListing,
-    LibrarySearch, LibraryTag, LibraryView, LocalDay, OpenedBook, ProbedFormat, ProjectLink,
-    ReadMark, ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage,
-    SeriesCursor, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
+    LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, OpenedBook, ProbedFormat,
+    ProjectLink, ReadMark, ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing,
+    SeriesBookPage, SeriesCursor, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -80,6 +80,8 @@ macro_rules! app_commands {
             set_library_view,
             library_adult_content,
             set_library_adult_content,
+            library_tabs,
+            set_library_tabs,
             remove_library_folder,
             library_folder_book_count,
             rescan_library_folder,
@@ -603,6 +605,21 @@ async fn set_library_adult_content(
     content: AdultContent,
 ) -> Result<(), IpcError> {
     Ok(library.set_adult_content(content).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_tabs(library: State<'_, Library>) -> Result<Vec<LibraryTab>, IpcError> {
+    Ok(library.tabs().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn set_library_tabs(
+    library: State<'_, Library>,
+    tabs: Vec<LibraryTab>,
+) -> Result<(), IpcError> {
+    Ok(library.set_tabs(tabs).await?)
 }
 
 #[tauri::command]
