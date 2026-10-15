@@ -51,6 +51,8 @@ test("shows a stand-in for each title and no cover while Screenshot mode is on",
     listId: "results",
     activeKey: undefined,
     onOpen: () => undefined,
+    words: "",
+    view: undefined,
   });
 
   const found = screen.getByRole("option").nth(0);
@@ -70,6 +72,8 @@ test("shows each real title and cover while Screenshot mode is off", async () =>
     listId: "results",
     activeKey: undefined,
     onOpen: () => undefined,
+    words: "",
+    view: undefined,
   });
 
   const found = screen.getByRole("option").nth(0);
