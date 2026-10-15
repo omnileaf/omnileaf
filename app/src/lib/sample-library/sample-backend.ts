@@ -237,6 +237,7 @@ export function sampleBackend(
   let view: LibraryView = DEFAULT_LIBRARY_VIEW;
   let isFullScreen = false;
   const bookmarks = new Map<string, Set<number>>();
+  const readingBeforeMarked = new Map<string, SampleReading>();
 
   const isBookmarked = (series: SampleSeries): boolean =>
     series.books.some(
@@ -579,11 +580,30 @@ export function sampleBackend(
       for (const id of books) {
         setReading(
           id,
-          mark === "read" ? { state: "read" } : { state: "notStarted" },
+          mark === "read"
+            ? { state: "read" }
+            : (readingBeforeMarked.get(id) ?? { state: "notStarted" }),
         );
+        readingBeforeMarked.delete(id);
       }
       events.emit("library-changed", null);
       return null;
+    },
+    markSeriesRead: (series) => {
+      const marked = series.flatMap((id) => {
+        const chosen = seriesWith(id);
+        return chosen.books.flatMap((book, index) => {
+          if (isRead(book)) {
+            return [];
+          }
+          const bookId = sampleBookId(chosen.number, index + 1);
+          readingBeforeMarked.set(bookId, book.reading);
+          setReading(bookId, { state: "read" });
+          return [bookId];
+        });
+      });
+      events.emit("library-changed", null);
+      return marked;
     },
     orientScreen: () => null,
     changeFullScreen: (change) => {
