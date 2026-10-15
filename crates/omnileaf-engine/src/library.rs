@@ -24,6 +24,7 @@ use omnileaf_db::{
         reading_time_by_day, series_read,
     },
     library_listing::{library_listing, set_library_listing},
+    library_tabs::{TabPlace, library_tabs, set_library_tabs},
     library_view::{library_view, set_library_view},
     store::{Changed, Clock, Store},
 };
@@ -39,9 +40,9 @@ use crate::{
     CategoryId, CoversPerRowOutOfRange, CreatorSeries, FolderCursor, FolderId, FolderPage,
     FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries,
     LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
-    LibraryListing, LibrarySearch, LibraryTag, LibraryView, LocalDay, ReadMark, ReadingWeek,
-    RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
-    SeriesId, SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
+    LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, ReadMark,
+    ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage,
+    SeriesCursor, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -51,6 +52,7 @@ use crate::{
     library_folder::root_folder,
     library_layout::folder_name,
     library_search::StoredSearch,
+    library_tabs::arranged,
     moved_home::move_home,
     reading_progress::{ReadingProgress, ReadingSaved},
     rescan::rescan,
@@ -666,6 +668,21 @@ impl Library {
             .store
             .database()
             .write(move |transaction| set_library_view(transaction, &stored))
+            .await?)
+    }
+
+    pub async fn tabs(&self) -> Result<Vec<LibraryTab>, LibraryError> {
+        let stored = self.store.database().read(library_tabs).await?;
+        Ok(arranged(stored.into_iter().map(LibraryTab::from)))
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn set_tabs(&self, tabs: Vec<LibraryTab>) -> Result<(), LibraryError> {
+        let stored: Vec<TabPlace> = arranged(tabs).into_iter().map(TabPlace::from).collect();
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| set_library_tabs(transaction, &stored))
             .await?)
     }
 
