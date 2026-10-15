@@ -42,6 +42,7 @@ const SEND_OUTCOMES = {
   folderChooserMissing: "notSent",
   folderUnreadable: "notSent",
   folderNotFound: "notSent",
+  folderAlreadyInLibrary: "notSent",
   homeFolderKept: "notSent",
   clipboardUnavailable: "notSent",
   crashReportUnavailable: "notSent",

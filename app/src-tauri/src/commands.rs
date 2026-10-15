@@ -6,10 +6,10 @@ use omnileaf_engine::{
     CategoryId, Core, CoversPerRow, CreatorSeries, FolderCursor, FolderId, FolderPage,
     FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, InterfaceError,
     LabelChanges, Library, LibraryCategory, LibraryFilter, LibraryFilterChoices, LibraryListing,
-    LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, OpenedBook, ProbedFormat,
-    ProjectLink, ReadMark, ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing,
-    SeriesBookPage, SeriesCursor, SeriesId, SeriesLabels, SeriesOverview, SeriesPage,
-    SpellingSuggestion, UtcOffset,
+    LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook,
+    ProbedFormat, ProjectLink, ReadMark, ReadingWeek, ResourceRouter, ScanProgress,
+    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesLabels, SeriesOverview,
+    SeriesPage, SpellingSuggestion, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -84,6 +84,10 @@ macro_rules! app_commands {
             library_tabs,
             set_library_tabs,
             library_spelling_suggestion,
+            missing_library_folders,
+            library_hidden_series_count,
+            show_missing_library_folder,
+            relocate_library_folder,
             remove_library_folder,
             library_folder_book_count,
             rescan_library_folder,
@@ -178,6 +182,49 @@ async fn rescan_library_folder(
     #[cfg(target_os = "ios")]
     crate::folder_access::reopen_picked_folders(&app, &library).await?;
     Ok(library.rescan_folder(id, reporting_to(on_progress)).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn relocate_library_folder(
+    window: Window,
+    library: State<'_, Library>,
+    id: FolderId,
+    on_progress: Channel<ScanProgress>,
+) -> Result<Option<FolderRescan>, IpcError> {
+    let picked = off_the_runtime(move || pick_folder(&window)).await?;
+    let Some(folder) = picked else {
+        return Ok(None);
+    };
+    Ok(Some(
+        library
+            .relocate_folder(id, folder, reporting_to(on_progress))
+            .await?,
+    ))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn missing_library_folders(
+    library: State<'_, Library>,
+) -> Result<Vec<MissingFolder>, IpcError> {
+    Ok(library.missing_folders().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_hidden_series_count(library: State<'_, Library>) -> Result<u32, IpcError> {
+    Ok(library.hidden_series_count().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn show_missing_library_folder(
+    library: State<'_, Library>,
+    id: FolderId,
+    is_shown: bool,
+) -> Result<(), IpcError> {
+    Ok(library.show_missing_folder(id, is_shown).await?)
 }
 
 #[tauri::command]

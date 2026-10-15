@@ -76,6 +76,14 @@ export const commands = {
 	/**  The series holding the chapter, when the text is a chapter title rather than a series'. */
 	chapterOf: string | null,
 } | null, IpcError>(__TAURI_INVOKE("library_spelling_suggestion", { text })),
+	missingLibraryFolders: () => typedError<MissingFolder[], IpcError>(__TAURI_INVOKE("missing_library_folders")),
+	libraryHiddenSeriesCount: () => typedError<number, IpcError>(__TAURI_INVOKE("library_hidden_series_count")),
+	showMissingLibraryFolder: (id: string & { readonly __brand: "FolderId" }, isShown: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("show_missing_library_folder", { id, isShown })),
+	relocateLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<{
+	id: string & { readonly __brand: "FolderId" },
+	name: string,
+	outcome: RescanOutcome,
+} | null, IpcError>(__TAURI_INVOKE("relocate_library_folder", { id, onProgress })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
 	libraryFolderBookCount: (id: string & { readonly __brand: "FolderId" }) => typedError<number, IpcError>(__TAURI_INVOKE("library_folder_book_count", { id })),
 	rescanLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<FolderRescan, IpcError>(__TAURI_INVOKE("rescan_library_folder", { id, onProgress })),
@@ -219,6 +227,16 @@ export type FolderPage = {
 	next: string & { readonly __brand: "FolderCursor" } | null,
 };
 
+export type FolderProblem = 
+/**  The folder isn't there, though the drive it was on is. */
+"missing" | 
+/**  The removable drive the folder was on isn't connected. */
+"driveDisconnected" | 
+/**  Android took away the app's access to the folder. */
+"lostAccess" | 
+/**  A network share wants a sign-in again, which the library can't tell yet. */
+"needsSignIn";
+
 export type FolderRescan = {
 	id: string & { readonly __brand: "FolderId" },
 	name: string,
@@ -281,7 +299,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "labelsNotKept" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "labelsNotKept" | "internal";
 
 export type LabelChanges = {
 	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],
@@ -404,6 +422,15 @@ export type LibraryView = {
 	/**  Shows the books started and not finished in a row above the library. */
 	showsContinueRow: boolean,
 	onCovers: OnCovers,
+};
+
+export type MissingFolder = {
+	folder: LibraryFolder,
+	problem: FolderProblem,
+	/**  The series hidden until it's back, every book of theirs being in it. */
+	hiddenSeries: number,
+	/**  Lists its series though it's missing, as asked, until it comes back. */
+	isShownAnyway: boolean,
 };
 
 export type OnCovers = {

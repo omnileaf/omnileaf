@@ -20,6 +20,7 @@ const SHOWN_ON_FAILURE = {
   folderChooserMissing: FAILED,
   folderUnreadable: FAILED,
   folderNotFound: FAILED,
+  folderAlreadyInLibrary: FAILED,
   homeFolderKept: FAILED,
   clipboardUnavailable: FAILED,
   browserUnavailable: FAILED,
