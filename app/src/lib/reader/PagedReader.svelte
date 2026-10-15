@@ -45,6 +45,7 @@
   import { makesToastRoom } from "#lib/reader/toast-room.ts";
   import { spreadAt, spreadPosition, spreadsOf } from "#lib/reader/spreads.ts";
   import LayoutQuickSettings from "#lib/reader/LayoutQuickSettings.svelte";
+  import JumpToBook from "#lib/reader/JumpToBook.svelte";
   import KeyboardShortcuts from "#lib/reader/KeyboardShortcuts.svelte";
   import { fitPinch } from "#lib/reader/pinch-zoom.ts";
   import ReaderGuide from "#lib/reader/ReaderGuide.svelte";
@@ -129,6 +130,8 @@
   const look = $derived(settings.look);
   let isSettingsOpen = $state(false);
   let areShortcutsOpen = $state(false);
+  let isJumpOpen = $state(false);
+  const isPanelOpen = $derived(isSettingsOpen || isJumpOpen);
   let zoom = $state(1);
   const ZOOM_STEP = 1.25;
   const ZOOM_MOST = 4;
@@ -187,7 +190,18 @@
     notices.show({ tone: "plain", icon: Eye, title: m.reader_marked_read() });
   }
 
+  function openJump(isOpen: boolean): void {
+    if (isOpen) {
+      openSettings(false);
+    }
+    isJumpOpen = isOpen;
+    holdControls(isOpen);
+  }
+
   function openSettings(isOpen: boolean): void {
+    if (isOpen) {
+      isJumpOpen = false;
+    }
     isSettingsOpen = isOpen;
     holdControls(isOpen);
   }
@@ -246,11 +260,18 @@
       case "zoomFit":
         zoomTo(1);
         return;
+      case "jump":
+        openJump(!isJumpOpen);
+        return;
       case "shortcuts":
         areShortcutsOpen = !areShortcutsOpen;
         holdControls(areShortcutsOpen);
         return;
       case "leave":
+        if (isJumpOpen) {
+          openJump(false);
+          return;
+        }
         if (isSettingsOpen) {
           openSettings(false);
           return;
@@ -687,7 +708,7 @@
   <div
     class={[
       "absolute inset-none",
-      isSettingsOpen && "expanded:inset-e-reader-settings-room",
+      isPanelOpen && "expanded:inset-e-reader-settings-room",
     ]}
   >
     <PageStack
@@ -760,6 +781,10 @@
                   : m.reader_bookmark(),
               isPressed: isBookmarked,
             }}
+        {isJumpOpen}
+        onJump={() => {
+          act("jump");
+        }}
         onBookmark={() => {
           void toggleBookmark();
         }}
@@ -777,7 +802,7 @@
     <div
       class={[
         "absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom transition-all motion-safe:duration-fade motion-safe:ease-out expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock",
-        isSettingsOpen && "expanded:inset-e-reader-settings-room",
+        isPanelOpen && "expanded:inset-e-reader-settings-room",
         !controls.isShown && "pointer-events-none opacity-0",
       ]}
       {...controlEvents}
@@ -829,6 +854,15 @@
       </span>
     </div>
   {/if}
+  <JumpToBook
+    isOpen={isJumpOpen}
+    {book}
+    seriesTitle={named.seriesTitle}
+    currentPage={turner.shown + 1}
+    onClose={() => {
+      openJump(false);
+    }}
+  />
   <KeyboardShortcuts
     isOpen={areShortcutsOpen}
     {platform}
