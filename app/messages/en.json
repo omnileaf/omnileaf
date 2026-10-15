@@ -903,7 +903,8 @@
   "search_everything": "Everything",
   "search_remove_condition": "Remove the {condition} filter",
   "search_conditions": "Filters",
-  "search_series_heading": "Series · {count}",
+  "search_series_heading": "Series and books · {count}",
+  "search_matched_title": "Title",
   "search_results": "Series found",
   "search_found": [
     {
