@@ -263,6 +263,7 @@ test("offers the formats, languages and tags the sample library holds, with rati
     tags: ["Slice of life", "Seinen", "Sea", "Letters"],
     ratesAdult: true,
     keepsBookmarks: true,
+    smart: ["quickReads", "forgotten", "duplicates", "readyToCleanUp"],
   });
 });
 
@@ -307,5 +308,21 @@ test("lists only the series with a bookmarked page once Bookmarked is the only o
 
   expect(page.series.map((series) => series.title)).toEqual([
     "Sample Series 06",
+  ]);
+});
+
+test("lists the quick reads, and only the series meeting every smart filter on", async () => {
+  expect(await titlesFor({ smart: ["quickReads"] })).toEqual([
+    "Sample Series 04",
+    "Sample Series 07",
+    "Sample Series 16",
+    "Sample Series 18",
+  ]);
+  expect(await titlesFor({ smart: ["quickReads", "forgotten"] })).toEqual([]);
+});
+
+test("lists the series downloaded and finished as ready to clean up", async () => {
+  expect(await titlesFor({ smart: ["readyToCleanUp"] })).toEqual([
+    "Sample Series 15",
   ]);
 });
