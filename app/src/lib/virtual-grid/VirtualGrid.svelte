@@ -4,6 +4,7 @@
 
   import { columnsOf, optionId, type Reveal } from "./grid-keys";
   import { rowWindow, type Seen } from "./row-window";
+  import { scrollerOf } from "./scroller";
 
   interface Listbox {
     readonly id: string;
@@ -16,6 +17,7 @@
     key,
     label,
     isComplete,
+    total,
     onNearEnd,
     onColumns,
     cell,
@@ -29,6 +31,8 @@
     key: (item: Item) => string;
     label: string;
     isComplete: boolean;
+    /** How many items the whole list holds, when known before they've all come, so the grid keeps room for every one. */
+    total?: number | undefined;
     onNearEnd?: () => void;
     onColumns?: (columns: number) => void;
     cell: Snippet<[Item]>;
@@ -54,6 +58,9 @@
   let measure: Measure | undefined = $state();
   let seen: Seen = $state({ top: 0, bottom: 0 });
 
+  const knownTotal = $derived(
+    total !== undefined && total >= items.length ? total : undefined,
+  );
   const shown = $derived(
     measure === undefined
       ? {
@@ -62,10 +69,16 @@
           start: 0,
           end: Math.min(items.length, ITEMS_BEFORE_MEASURING),
         }
-      : rowWindow({ count: items.length, ...measure }, seen, EXTRA_ROWS),
+      : rowWindow(
+          { count: knownTotal ?? items.length, ...measure },
+          seen,
+          EXTRA_ROWS,
+        ),
   );
 
-  const setSize = $derived(isComplete ? items.length : UNKNOWN_SIZE);
+  const setSize = $derived(
+    isComplete ? items.length : (knownTotal ?? UNKNOWN_SIZE),
+  );
 
   function measured(grid: HTMLUListElement): Measure | undefined {
     const first = grid.firstElementChild;
@@ -100,19 +113,6 @@
       one.columns === other.columns &&
       one.rowStride === other.rowStride
     );
-  }
-
-  function scrollerOf(element: Element): Element {
-    for (
-      let ancestor = element.parentElement;
-      ancestor !== null;
-      ancestor = ancestor.parentElement
-    ) {
-      if (/auto|scroll/u.test(getComputedStyle(ancestor).overflowY)) {
-        return ancestor;
-      }
-    }
-    return document.scrollingElement ?? document.documentElement;
   }
 
   async function revealItem(index: number): Promise<HTMLElement | undefined> {
