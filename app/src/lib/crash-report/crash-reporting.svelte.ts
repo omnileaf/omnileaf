@@ -52,6 +52,7 @@ const SEND_OUTCOMES = {
   bookNotFound: "notSent",
   bookUnreadable: "notSent",
   bookmarksNotKept: "notSent",
+  labelsNotKept: "notSent",
   internal: "notSent",
 } as const satisfies Record<IpcErrorCode, SendFailure | undefined>;
 
