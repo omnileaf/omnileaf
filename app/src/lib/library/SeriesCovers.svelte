@@ -9,6 +9,7 @@
   import type { ClassValue } from "svelte/elements";
 
   import {
+    type AdultTreatment,
     COVERS_PER_ROW,
     DEFAULT_LIBRARY_VIEW,
     type LibraryDisplay,
@@ -32,9 +33,11 @@
 
   import CoverBadges from "./CoverBadges.svelte";
   import ContinueDisc from "./ContinueDisc.svelte";
+  import AdultVeil from "./AdultVeil.svelte";
   import CoverImage from "./CoverImage.svelte";
   import { DragSelect } from "./drag-select.svelte";
   import ListCover from "./ListCover.svelte";
+  import type { SeriesId } from "#lib/series/series-id.ts";
   import type { SeriesMenuActions } from "./series-menu";
   import SelectionMark from "./SelectionMark.svelte";
   import { seriesSelection } from "./series-selection";
@@ -55,6 +58,7 @@
     view,
     usesStandIns,
     menu,
+    adultTreatment = "show",
   }: {
     series: readonly LibrarySeries[];
     isComplete: boolean;
@@ -65,6 +69,7 @@
     view: LibraryView;
     usesStandIns: boolean;
     menu?: SeriesMenuActions;
+    adultTreatment?: AdultTreatment;
   } = $props();
 
   interface DisplayLayout {
@@ -97,6 +102,25 @@
           selection,
           (cell) => series.find(({ id }) => id === cell.dataset.seriesId)?.id,
         );
+
+  const revealed = new SvelteSet<SeriesId>();
+
+  function isVeiled(one: LibrarySeries): boolean {
+    return adultTreatment === "blur" && one.isAdult && !revealed.has(one.id);
+  }
+
+  function revealing(one: LibrarySeries, title: string) {
+    return isVeiled(one)
+      ? {
+          role: "button",
+          "aria-label": m.library_show_adult_cover({ title }),
+          onclick: (event: MouseEvent) => {
+            event.preventDefault();
+            revealed.add(one.id);
+          },
+        }
+      : {};
+  }
 
   const MENU_ICON_SIZE = 16;
   let isMenuOpen = $state(false);
@@ -267,6 +291,7 @@
   {@const shown = lookOf(one)}
   {@const share = readShare(one)}
   {@const continues = continuedBook(one)}
+  {@const veiled = isVeiled(one)}
   <div class="@container relative min-inline-none" data-series-id={one.id}>
     <Tooltip
       label={canHover.current && !isSelecting && cutOffTitles.has(one.id)
@@ -276,6 +301,7 @@
       {#snippet child({ props })}
         <SeriesLink
           {...props}
+          {...revealing(one, shown.title)}
           id={one.id}
           title={shown.title}
           order={seriesOrder}
@@ -287,8 +313,12 @@
               pickedRing(one),
             ]}
           >
-            <CoverImage cover={shown.cover} {coverUrl} />
-            <CoverBadges series={one} onCovers={view.onCovers} />
+            <CoverImage cover={shown.cover} {coverUrl} isBlurred={veiled} />
+            {#if veiled}
+              <AdultVeil onPointer={canHover.current} />
+            {:else}
+              <CoverBadges series={one} onCovers={view.onCovers} />
+            {/if}
             {#if isSelecting}
               <SelectionMark isOn={selection?.has(one.id) === true} />
             {/if}
@@ -322,7 +352,7 @@
         </SeriesLink>
       {/snippet}
     </Tooltip>
-    {#if continues !== undefined && !isSelecting}
+    {#if continues !== undefined && !isSelecting && !veiled}
       <ContinueDisc
         book={continues}
         series={shown.title}
@@ -335,8 +365,10 @@
 {#snippet compactCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
   {@const continues = continuedBook(one)}
+  {@const veiled = isVeiled(one)}
   <div class="@container relative min-inline-none" data-series-id={one.id}>
     <SeriesLink
+      {...revealing(one, shown.title)}
       id={one.id}
       title={shown.title}
       order={seriesOrder}
@@ -348,8 +380,12 @@
           pickedRing(one),
         ]}
       >
-        <CoverImage cover={shown.cover} {coverUrl} />
-        <CoverBadges series={one} onCovers={view.onCovers} />
+        <CoverImage cover={shown.cover} {coverUrl} isBlurred={veiled} />
+        {#if veiled}
+          <AdultVeil onPointer={canHover.current} showsHint={false} />
+        {:else}
+          <CoverBadges series={one} onCovers={view.onCovers} />
+        {/if}
         {#if isSelecting}
           <SelectionMark isOn={selection?.has(one.id) === true} />
         {/if}
@@ -364,7 +400,7 @@
         </div>
       </div>
     </SeriesLink>
-    {#if continues !== undefined && !isSelecting}
+    {#if continues !== undefined && !isSelecting && !veiled}
       <ContinueDisc
         book={continues}
         series={shown.title}
@@ -380,8 +416,10 @@
 {#snippet coversCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
   {@const continues = continuedBook(one)}
+  {@const veiled = isVeiled(one)}
   <div class="@container relative min-inline-none" data-series-id={one.id}>
     <SeriesLink
+      {...revealing(one, shown.title)}
       id={one.id}
       title={shown.title}
       order={seriesOrder}
@@ -394,15 +432,19 @@
           pickedRing(one),
         ]}
       >
-        <CoverImage cover={shown.cover} {coverUrl} />
-        <CoverBadges series={one} onCovers={view.onCovers} />
+        <CoverImage cover={shown.cover} {coverUrl} isBlurred={veiled} />
+        {#if veiled}
+          <AdultVeil onPointer={canHover.current} />
+        {:else}
+          <CoverBadges series={one} onCovers={view.onCovers} />
+        {/if}
         {#if isSelecting}
           <SelectionMark isOn={selection?.has(one.id) === true} />
         {/if}
         <p class="sr-only">{shown.title}</p>
       </div>
     </SeriesLink>
-    {#if continues !== undefined && !isSelecting}
+    {#if continues !== undefined && !isSelecting && !veiled}
       <ContinueDisc
         book={continues}
         series={shown.title}
@@ -415,11 +457,13 @@
 {#snippet listRow(one: LibrarySeries)}
   {@const shown = lookOf(one)}
   {@const continues = continuedBook(one)}
+  {@const veiled = isVeiled(one)}
   <div
     class="flex items-center gap-sm border-be border-border"
     data-series-id={one.id}
   >
     <SeriesLink
+      {...revealing(one, shown.title)}
       id={one.id}
       title={shown.title}
       order={seriesOrder}
@@ -433,6 +477,7 @@
       <ListCover
         cover={shown.cover}
         {coverUrl}
+        isBlurred={veiled}
         class="rounded-list-cover inline-list-cover large:inline-list-cover-wide"
       />
       <div
@@ -454,7 +499,7 @@
         </div>
       {/if}
     </SeriesLink>
-    {#if continues !== undefined && !isSelecting}
+    {#if continues !== undefined && !isSelecting && !veiled}
       <ContinueDisc
         book={continues}
         series={shown.title}
