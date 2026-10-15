@@ -51,6 +51,9 @@ function listing(catalog: () => readonly WireSeries[]): { asked: number } {
       if (command === "library_series_count") {
         return catalog().length;
       }
+      if (command === "library_categories") {
+        return [];
+      }
       if (command !== "library_series") {
         throw new Error(`the page called \`${command}\``);
       }
