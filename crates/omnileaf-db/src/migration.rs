@@ -63,6 +63,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0027_track_when_each_series_was_last_read"),
     migration!("0028_create_library_tabs"),
     migration!("0029_hide_the_series_of_missing_folders"),
+    migration!("0030_hide_books_from_history"),
 ];
 
 pub(crate) fn pending(
