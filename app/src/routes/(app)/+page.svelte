@@ -42,6 +42,11 @@
   import SeriesCovers from "#lib/library/SeriesCovers.svelte";
   import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
   import { swipesBetweenTabs } from "#lib/library/tab-swipe.ts";
+  import LibrarySelectionActions from "#lib/library/LibrarySelectionActions.svelte";
+  import LibrarySelectionHeader from "#lib/library/LibrarySelectionHeader.svelte";
+  import { setSeriesSelection } from "#lib/library/series-selection.ts";
+  import { Selection } from "#lib/page/selection.svelte.ts";
+  import type { SeriesId } from "#lib/series/series-id.ts";
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
@@ -107,6 +112,8 @@
     },
   );
   const notices = getNotices();
+  const selection = new Selection<SeriesId>();
+  setSeriesSelection(selection);
   const adding = new FolderAdding(addFolderWithProgress, () => notices);
 
   let isCountWanted = $state(false);
@@ -235,6 +242,42 @@
     document.querySelector("main")?.scrollTo({ top: 0 });
   }
 
+  function selectEverySeries(): void {
+    if (loaded !== undefined) {
+      selection.pickAll(loaded.series.items.map(({ id }) => id));
+    }
+  }
+
+  async function markSelectedRead(): Promise<void> {
+    const picked = selection.picked;
+    const marked = await commands.markSeriesRead(picked);
+    if (marked.status !== "ok") {
+      reportError(marked.error);
+      return;
+    }
+    selection.end();
+    notices.offerUndo({
+      title: m.library_marked_read({ count: picked.length }),
+      undo: () => {
+        void commands.markBooks(marked.data, "unread");
+      },
+    });
+  }
+
+  function keyWhileSelecting(event: KeyboardEvent): void {
+    if (!selection.isSelecting || event.defaultPrevented) {
+      return;
+    }
+    if (event.key === "Escape") {
+      selection.end();
+      return;
+    }
+    if (event.key.toLowerCase() === "a" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      selectEverySeries();
+    }
+  }
+
   function swipeTab(step: 1 | -1): void {
     const order = [ALL_SERIES, ...categories.map(({ id }) => id)];
     const next = order[order.indexOf(chosenCategory ?? ALL_SERIES) + step];
@@ -291,54 +334,67 @@
   {/if}
 {/snippet}
 
-<CollectionHeading
-  platform={data.appInfo.platform}
-  title={m.library_title()}
-  showsLabel={screenshotMode.showsLabel}
-  count={showsItemCounts && seriesCount.count !== undefined
-    ? shownCount
-    : undefined}
->
-  {#snippet actions()}
-    {#if hasBooks && loaded !== undefined && chosenListing !== undefined}
-      <LibrarySearchEntry platform={data.appInfo.platform} />
-      <FilterAndSort
-        bind:isOpen={isFilterOpen}
-        bind:button={filterButton}
-        docks={docksFilter}
-        panelId={FILTER_PANEL_ID}
-        choices={filterChoices}
-        listing={chosenListing}
-        matching={seriesCount.count}
-        onChoose={chooseListing}
-        onOpen={() => {
-          isCountWanted = true;
-        }}
-      />
-      <ViewOptions
-        view={loaded.view}
-        {coversDrawn}
-        {mostThatFit}
-        hasCategories={showsCategoryTabs(categories)}
-        onChoose={(chosen: LibraryView) => {
-          view.choose(chosen);
-        }}
-      />
-    {/if}
-  {/snippet}
-</CollectionHeading>
+<svelte:window onkeydown={keyWhileSelecting} />
+
+{#if selection.isSelecting}
+  <LibrarySelectionHeader
+    platform={data.appInfo.platform}
+    count={selection.count}
+    onSelectAll={selectEverySeries}
+    onCancel={() => {
+      selection.end();
+    }}
+  />
+{:else}
+  <CollectionHeading
+    platform={data.appInfo.platform}
+    title={m.library_title()}
+    showsLabel={screenshotMode.showsLabel}
+    count={showsItemCounts && seriesCount.count !== undefined
+      ? shownCount
+      : undefined}
+  >
+    {#snippet actions()}
+      {#if hasBooks && loaded !== undefined && chosenListing !== undefined}
+        <LibrarySearchEntry platform={data.appInfo.platform} />
+        <FilterAndSort
+          bind:isOpen={isFilterOpen}
+          bind:button={filterButton}
+          docks={docksFilter}
+          panelId={FILTER_PANEL_ID}
+          choices={filterChoices}
+          listing={chosenListing}
+          matching={seriesCount.count}
+          onChoose={chooseListing}
+          onOpen={() => {
+            isCountWanted = true;
+          }}
+        />
+        <ViewOptions
+          view={loaded.view}
+          {coversDrawn}
+          {mostThatFit}
+          hasCategories={showsCategoryTabs(categories)}
+          onChoose={(chosen: LibraryView) => {
+            view.choose(chosen);
+          }}
+        />
+      {/if}
+    {/snippet}
+  </CollectionHeading>
+{/if}
 <div
   bind:offsetHeight={headHeight}
   class="desktop:expanded:sticky desktop:expanded:inset-bs-under-toolbar desktop:expanded:z-series-bar desktop:expanded:-ms-gutter desktop:expanded:-me-page-end desktop:expanded:bg-background desktop:expanded:ps-gutter desktop:expanded:pe-page-end"
 >
-  {#if hasBooks && tabsShown}
+  {#if hasBooks && tabsShown && !selection.isSelecting}
     <CategoryTabs
       {categories}
       chosen={chosenCategory ?? ALL_SERIES}
       onChoose={chooseTab}
     />
   {/if}
-  {#if hasBooks && chosenListing !== undefined && filtersOn(chosenListing.filter) > 0 && !isDocked}
+  {#if hasBooks && chosenListing !== undefined && filtersOn(chosenListing.filter) > 0 && !isDocked && !selection.isSelecting}
     <ActiveFilters
       listing={chosenListing}
       onChoose={chooseListing}
@@ -451,6 +507,18 @@
             usesStandIns={screenshotMode.isOn}
           />
         </div>
+        {#if selection.isSelecting && selection.count > 0}
+          <LibrarySelectionActions
+            count={selection.count}
+            isPill={docksFilter}
+            onMarkRead={() => {
+              void markSelectedRead();
+            }}
+            onCancel={() => {
+              selection.end();
+            }}
+          />
+        {/if}
       {/if}
     {/if}
   </div>
