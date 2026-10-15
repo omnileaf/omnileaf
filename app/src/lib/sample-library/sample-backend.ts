@@ -121,6 +121,8 @@ interface SampleCategory {
   readonly holds: (series: SampleSeries) => boolean;
 }
 
+const SAMPLE_LANGUAGES = ["ja", "ja", "en", "fr", "ja", "en", "de"] as const;
+const SERIES_WITH_DOWNLOADS = new Set([1, 4, 6]);
 const COMICS_EVERY = 3;
 const FAVOURITES_EVERY = 5;
 const FAVOURITE_REMAINDER = 4;
@@ -215,6 +217,13 @@ export function sampleBackend(
       : ordered.toReversed();
   }
 
+  function continuesFrom(series: SampleSeries): string | null {
+    const index = series.books.findIndex((book) => !isRead(book));
+    return index === -1 || !series.books.some(isStarted)
+      ? null
+      : sampleBookId(series.number, index + 1);
+  }
+
   function wireSeries(series: SampleSeries) {
     return {
       id: sampleSeriesId(series.number),
@@ -222,6 +231,10 @@ export function sampleBackend(
       bookCount: series.books.length,
       unreadCount: series.books.filter((book) => !isRead(book)).length,
       cover: coverOf(series),
+      language:
+        SAMPLE_LANGUAGES[series.number % SAMPLE_LANGUAGES.length] ?? null,
+      hasDownloads: SERIES_WITH_DOWNLOADS.has(series.number),
+      continuesFrom: continuesFrom(series),
     };
   }
 
