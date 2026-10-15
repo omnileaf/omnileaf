@@ -466,6 +466,7 @@ export const TOKEN_THEME = {
     "up-next-check",
     "up-next-cover",
     "up-next-cover-wide",
+    "veil-disc",
     "view-panel",
     "xl",
     "xs",
