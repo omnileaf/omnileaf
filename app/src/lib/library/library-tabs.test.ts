@@ -2,7 +2,12 @@ import { expect, test } from "vitest";
 
 import type { LibraryCategory, LibraryTab } from "#lib/ipc/bindings.ts";
 
-import { arrangedTabs, NEW_LIBRARY_TABS, tabKey } from "./library-tabs.ts";
+import {
+  arrangedTabs,
+  NEW_LIBRARY_TABS,
+  showsTabs,
+  tabKey,
+} from "./library-tabs.ts";
 
 function category(id: string, name: string): LibraryCategory {
   return { id: id as LibraryCategory["id"], name };
@@ -62,4 +67,16 @@ test("keys each tab as the library remembers the one chosen", () => {
   );
 
   expect(keys).toEqual(["all", "new-chapters", "reading"]);
+});
+
+test("shows the tabs once two sit beside All", () => {
+  const shown = (categories: readonly LibraryCategory[]) =>
+    arrangedTabs(NEW_LIBRARY_TABS, categories).filter(
+      ({ isHidden }) => !isHidden,
+    );
+
+  expect([
+    showsTabs(shown([READING])),
+    showsTabs(shown([READING, MANGA])),
+  ]).toEqual([false, true]);
 });

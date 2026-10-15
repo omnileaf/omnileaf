@@ -9,6 +9,8 @@ import { ALL_SERIES } from "./library-tab.svelte.ts";
 
 export const NEW_CHAPTERS = "new-chapters";
 
+const FEWEST_TABS_BESIDE_ALL = 2;
+
 export const NEW_LIBRARY_TABS: readonly LibraryTab[] = [
   { id: { kind: "all" }, isHidden: false },
   { id: { kind: "newChapters" }, isHidden: true },
@@ -43,6 +45,12 @@ function nameOf(
     case "category":
       return names.get(id.id);
   }
+}
+
+export function showsTabs(shown: readonly ArrangedTab[]): boolean {
+  return (
+    shown.filter(({ id }) => id.kind !== "all").length >= FEWEST_TABS_BESIDE_ALL
+  );
 }
 
 /** The tabs in the order kept, without those whose category has gone, then each category not placed yet. */
