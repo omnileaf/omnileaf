@@ -9,6 +9,8 @@ use specta::{Type, Types, datatype::DataType};
 pub struct LibraryView {
     pub display: LibraryDisplay,
     pub covers_per_row: CoversPerRow,
+    /// Draws as many covers a row as the width allows, rather than `covers_per_row`.
+    pub fits_covers_to_width: bool,
     pub shows_item_counts: bool,
     /// Shows the books started and not finished in a row above the library.
     pub shows_continue_row: bool,
@@ -131,6 +133,7 @@ impl Default for LibraryView {
                 tablet: CoversPerRowCount(5),
                 desktop: CoversPerRowCount(6),
             },
+            fits_covers_to_width: true,
             shows_item_counts: true,
             shows_continue_row: false,
             on_covers: OnCovers {
@@ -180,6 +183,7 @@ impl From<LibraryView> for StoredLibraryView {
             phone_covers_per_row: view.covers_per_row.phone.get(),
             tablet_covers_per_row: view.covers_per_row.tablet.get(),
             desktop_covers_per_row: view.covers_per_row.desktop.get(),
+            fits_covers_to_width: view.fits_covers_to_width,
             shows_item_counts: view.shows_item_counts,
             shows_continue_row: view.shows_continue_row,
             on_covers: view.on_covers.into(),
@@ -203,6 +207,7 @@ impl TryFrom<StoredLibraryView> for LibraryView {
                 tablet: stored.tablet_covers_per_row.try_into()?,
                 desktop: stored.desktop_covers_per_row.try_into()?,
             },
+            fits_covers_to_width: stored.fits_covers_to_width,
             shows_item_counts: stored.shows_item_counts,
             shows_continue_row: stored.shows_continue_row,
             on_covers: stored.on_covers.into(),
@@ -246,6 +251,13 @@ mod tests {
     }
 
     #[test]
+    fn fits_a_new_library_s_covers_to_the_width() {
+        let view = LibraryView::default();
+
+        assert!(view.fits_covers_to_width);
+    }
+
+    #[test]
     fn leaves_a_new_library_without_the_continue_reading_row() {
         let view = LibraryView::default();
 
@@ -263,6 +275,7 @@ mod tests {
             serde_json::json!({
                 "display": "grid",
                 "coversPerRow": { "phone": 3, "tablet": 5, "desktop": 6 },
+                "fitsCoversToWidth": true,
                 "showsItemCounts": true,
                 "showsContinueRow": false,
                 "onCovers": {
@@ -281,6 +294,7 @@ mod tests {
         let outcome = serde_json::from_value::<LibraryView>(serde_json::json!({
             "display": "list",
             "coversPerRow": { "phone": 6, "tablet": 5, "desktop": 6 },
+            "fitsCoversToWidth": false,
             "showsItemCounts": false,
                 "showsContinueRow": false,
             "onCovers": {
@@ -347,6 +361,7 @@ mod tests {
                 tablet: TabletCoversPerRow::try_from(8).unwrap(),
                 desktop: DesktopCoversPerRow::try_from(12).unwrap(),
             },
+            fits_covers_to_width: false,
             shows_item_counts: true,
             shows_continue_row: true,
             on_covers: OnCovers {
