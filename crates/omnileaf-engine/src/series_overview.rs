@@ -25,6 +25,8 @@ pub struct SeriesOverview {
     pub tags: Vec<String>,
     /// Other series in the library that share a creator or a tag with this one.
     pub related: Vec<RelatedSeries>,
+    /// About how long the books left take to read, absent until the library times reading.
+    pub seconds_left: Option<u32>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -91,6 +93,7 @@ impl SeriesOverview {
             summary: None,
             tags: Vec::new(),
             related: Vec::new(),
+            seconds_left: None,
         }
     }
 }
@@ -116,6 +119,11 @@ mod tests {
     #[test]
     fn finds_no_related_series_until_the_library_reads_creators_and_tags() {
         assert_eq!(sample_overview().related, Vec::new());
+    }
+
+    #[test]
+    fn knows_no_time_left_until_the_library_times_reading() {
+        assert_eq!(sample_overview().seconds_left, None);
     }
 
     #[test]
