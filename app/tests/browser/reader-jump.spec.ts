@@ -13,7 +13,9 @@ import {
   BOOK_ID,
   BOOK_SERIES_TITLE,
   BOOK_TITLE,
+  NOT_STARTED,
   readerBackend,
+  readerBook,
   servePages,
 } from "./reader-book.ts";
 import type { WireBook } from "./series-shelf.ts";
@@ -45,13 +47,14 @@ function shelfOf(books: readonly WireBook[]): FakeBackend {
 
 const PICKED = bookAt(3);
 const MISSING = bookAt(4, { isFileMissing: true });
+const UNREAD = bookAt(5);
 const EIGHT_BOOKS = [
   bookAt(0),
   bookAt(1, { reading: { state: "started", page: 1 } }),
   bookAt(2, { isBookmarked: true }),
   PICKED,
   MISSING,
-  bookAt(5),
+  UNREAD,
   bookAt(6),
   bookAt(7),
 ];
@@ -182,6 +185,59 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test.describe("after picking a book", () => {
+  test.use({
+    backend: {
+      ...shelfOf(EIGHT_BOOKS),
+      openBook: (id) => {
+        const picked = EIGHT_BOOKS.find((book) => book.id === id);
+        const opened = readerBook(
+          id === PICKED.id
+            ? { reading: { state: "started", page: 14 }, startPage: 13 }
+            : NOT_STARTED,
+        );
+        return { ...opened, id, title: picked?.title ?? BOOK_TITLE };
+      },
+    },
+  });
+
+  function toast(page: Page, opening: string): Locator {
+    return page
+      .getByRole("region", { name: "Notifications F6" })
+      .getByRole("listitem")
+      .filter({ hasText: opening });
+  }
+
+  test("says it's back on the book's saved page, naming the book, with Start over", async ({
+    page,
+  }) => {
+    await openBook(page);
+    const list = await openJumpList(page);
+
+    await list.getByRole("link", { name: PICKED.title }).click();
+
+    const shown = toast(page, `Back on page 14 of ${String(PAGES)}`);
+    await expect(shown).toContainText(PICKED.title);
+    await expect(
+      shown.getByRole("button", { name: "Start over" }),
+    ).toBeVisible();
+  });
+
+  test("says it's starting a book never opened, with nothing to start over", async ({
+    page,
+  }) => {
+    await openBook(page);
+    const list = await openJumpList(page);
+    await list.getByRole("link", { name: UNREAD.title }).click();
+
+    const shown = toast(page, `Starting ${UNREAD.title}`);
+    await expect(shown).toContainText(`Page 1 of ${String(PAGES)}`);
+    await expect(shown.getByRole("button", { name: "Start over" })).toHaveCount(
+      0,
+    );
+  });
+});
 
 test.describe("a long series", () => {
   const books = Array.from({ length: 24 }, (_, index) =>

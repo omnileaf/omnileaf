@@ -2,6 +2,7 @@
   import { ArrowDownUp, Bookmark, Check, FileX, Search } from "@lucide/svelte";
   import { tick } from "svelte";
 
+  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
   import { Badge } from "#lib/components/ui/badge/index.ts";
@@ -188,8 +189,14 @@
         {:else}
           <a
             href={resolve("/read/[book]", { book: book.id })}
-            data-sveltekit-replacestate
             aria-current={isCurrent ? "true" : undefined}
+            onclick={(event) => {
+              event.preventDefault();
+              void goto(resolve("/read/[book]", { book: book.id }), {
+                replaceState: true,
+                state: { readerJumped: true },
+              });
+            }}
             class={cn(
               "flex flex-col gap-2xs border-s-2 px-md py-sm transition-control hover:bg-hover active:bg-pressed expanded:rounded-shadcn-control",
               isCurrent ? "border-accent bg-hover" : "border-transparent",

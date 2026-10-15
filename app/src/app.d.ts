@@ -9,6 +9,7 @@ declare global {
     interface PageState {
       firstLaunchStep?: FirstLaunchStep;
       readerOpensAtEnd?: boolean;
+      readerJumped?: boolean;
     }
   }
 }
