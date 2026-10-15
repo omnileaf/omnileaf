@@ -42,6 +42,8 @@ pub struct SeriesNeighbour {
     /// The book's own cover, absent while it has no file.
     pub cover: Option<CoverPath>,
     pub reading: BookReading,
+    /// Absent until the library keeps how many pages each book has.
+    pub page_count: Option<u32>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -98,6 +100,7 @@ impl From<catalog::SeriesNeighbour> for SeriesNeighbour {
             title: neighbour.title,
             cover: neighbour.cover.map(CoverPath),
             reading: neighbour.reading.into(),
+            page_count: None,
         }
     }
 }
