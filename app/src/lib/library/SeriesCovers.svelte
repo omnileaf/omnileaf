@@ -3,13 +3,16 @@
   import type { ClassValue } from "svelte/elements";
 
   import { resolve } from "$app/paths";
-  import type {
-    LibraryDisplay,
-    LibrarySeries,
-    LibraryView,
+  import {
+    COVERS_PER_ROW,
+    DEFAULT_LIBRARY_VIEW,
+    type LibraryDisplay,
+    type LibrarySeries,
+    type LibraryView,
   } from "#lib/ipc/bindings.ts";
   import { Progress } from "#lib/components/ui/progress/index.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { columnsOf } from "#lib/virtual-grid/grid-keys.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import CoverBadges from "./CoverBadges.svelte";
@@ -26,6 +29,7 @@
     isComplete,
     onNearEnd,
     onColumns,
+    onMostThatFit,
     coverUrl,
     view,
     usesStandIns,
@@ -34,6 +38,7 @@
     isComplete: boolean;
     onNearEnd?: () => void;
     onColumns?: (columns: number) => void;
+    onMostThatFit?: (most: number) => void;
     coverUrl: CoverUrl;
     view: LibraryView;
     usesStandIns: boolean;
@@ -44,26 +49,34 @@
     readonly cell: Snippet<[LibrarySeries]>;
   }
 
-  const look = $derived(coverLook(view.coversPerRow));
+  const fitsToWidth = $derived(view.fitsCoversToWidth);
+  const look = $derived(
+    coverLook(
+      fitsToWidth ? DEFAULT_LIBRARY_VIEW.coversPerRow : view.coversPerRow,
+    ),
+  );
+  const baseLook = coverLook(DEFAULT_LIBRARY_VIEW.coversPerRow);
+  const coversTrack = $derived(
+    fitsToWidth ? "grid-cols-covers-fit" : "grid-cols-covers-per-row",
+  );
+  const mostCoversPerRow = SCREEN_SIZES.map(
+    (size) => `--${size}-covers-per-row: ${String(COVERS_PER_ROW[size].most)}`,
+  ).join("; ");
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
 
   const layout = $derived(
     (
       {
         grid: {
-          list: ["grid-cols-covers-per-row", look.gap],
+          list: [coversTrack, look.gap],
           cell: gridCell,
         },
         compact: {
-          list: [
-            "grid-cols-covers-per-row covers-fit-titles",
-            look.gap,
-            look.title,
-          ],
+          list: [coversTrack, "covers-fit-titles", look.gap, look.title],
           cell: compactCell,
         },
         covers: {
-          list: ["grid-cols-covers-per-row", look.gap],
+          list: [coversTrack, look.gap],
           cell: coversCell,
         },
         list: {
@@ -75,6 +88,23 @@
   );
 
   const PERCENT = 100;
+
+  function reportsMostThatFit(report: (most: number) => void) {
+    return (probe: HTMLElement) => {
+      let reported: number | undefined;
+      const watching = new ResizeObserver(() => {
+        const most = columnsOf(probe);
+        if (most !== reported) {
+          reported = most;
+          report(most);
+        }
+      });
+      watching.observe(probe);
+      return () => {
+        watching.disconnect();
+      };
+    };
+  }
 
   function readShare(one: LibrarySeries): number | undefined {
     const read = one.bookCount - one.unreadCount;
@@ -202,6 +232,18 @@
   </a>
 {/snippet}
 
+{#if onMostThatFit !== undefined && view.display !== "list"}
+  <div
+    aria-hidden="true"
+    style={mostCoversPerRow}
+    class={[
+      "invisible grid grid-cols-covers-per-row overflow-hidden block-none",
+      view.display === "compact" && ["covers-fit-titles", baseLook.title],
+      baseLook.gap,
+    ]}
+    {@attach reportsMostThatFit(onMostThatFit)}
+  ></div>
+{/if}
 <VirtualGrid
   items={series}
   key={(one: LibrarySeries) => one.id}

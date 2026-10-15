@@ -163,6 +163,7 @@ export const TOKEN_THEME = {
     "continue-card-wide",
     "continue-cover",
     "cover-caption",
+    "cover-fit",
     "cover-gap",
     "cover-gap-loose",
     "cover-gap-tight",
