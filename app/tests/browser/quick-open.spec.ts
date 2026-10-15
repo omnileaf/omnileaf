@@ -391,7 +391,7 @@ test("closes with Escape and gives focus back to where it was", async ({
   await openLibrary(page);
   const filter = page
     .locator("main header")
-    .getByRole("button", { name: /^Filter and sort/ });
+    .getByRole("button", { name: /^Sort and filter/ });
   await filter.focus();
   await pressQuickOpen(page);
 

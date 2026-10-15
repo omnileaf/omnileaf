@@ -478,7 +478,7 @@ test.describe("the heading as a filter changes the count", () => {
     backend: {
       ...backendFor("ios", "filled"),
       librarySeriesCount: (filter) =>
-        filter.unread === "only" ? FILTERED_COUNT : SERIES_COUNT,
+        filter.started === "hide" ? FILTERED_COUNT : SERIES_COUNT,
     },
   });
 
@@ -492,13 +492,13 @@ test.describe("the heading as a filter changes the count", () => {
       const before = await settledHeading(page);
 
       await buttonsOf(page)
-        .getByRole("button", { name: /^Filter and sort/ })
+        .getByRole("button", { name: /^Sort and filter/ })
         .click();
-      const panel = page.getByRole("dialog", { name: "Filter and sort" });
+      const panel = page.getByRole("dialog", { name: "Sort and filter" });
       await settle(panel);
       await panel
-        .getByRole("radiogroup", { name: "Unread" })
-        .getByRole("radio", { name: "Only" })
+        .getByRole("group", { name: "Read state" })
+        .getByRole("radio", { name: "Unread", exact: true })
         .click();
       await page.keyboard.press("Escape");
       await expect(panel).toBeHidden();

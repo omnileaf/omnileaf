@@ -110,7 +110,7 @@
       }
     }
   ],
-  "library_filter_and_sort": "⟦Ƒíļţéŕ áñð šöŕţ······⟧",
+  "library_filter_and_sort": "⟦Šöŕţ áñð ƒíļţéŕ······⟧",
   "library_filter_and_sort_filtered": [
     {
       "declarations": [
@@ -120,12 +120,20 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "⟦Ƒíļţéŕ áñð šöŕţ, {formattedCount} ƒíļţéŕ öñ··················⟧",
-        "countPlural=other": "⟦Ƒíļţéŕ áñð šöŕţ, {formattedCount} ƒíļţéŕš öñ··················⟧"
+        "countPlural=one": "⟦Šöŕţ áñð ƒíļţéŕ, {formattedCount} ƒíļţéŕ öñ··················⟧",
+        "countPlural=other": "⟦Šöŕţ áñð ƒíļţéŕ, {formattedCount} ƒíļţéŕš öñ··················⟧"
       }
     }
   ],
   "library_filter": "⟦Ƒíļţéŕ···⟧",
+  "library_read_state": "⟦Ŕéáð šţáţé····⟧",
+  "library_read_state_any": "⟦Áñý··⟧",
+  "library_read_state_unread": "⟦Ûñŕéáð···⟧",
+  "library_read_state_in_progress": "⟦Íñ þŕöĝŕéšš·····⟧",
+  "library_read_state_read": "⟦Ŕéáð··⟧",
+  "library_clear_all": "⟦Çļéáŕ áļļ····⟧",
+  "library_filters_in_use": "⟦Ƒíļţéŕš íñ ûšé······⟧",
+  "library_remove_filter": "⟦Ŕéɱöṽé {filter}······⟧",
   "library_filter_with_count": "⟦Ƒíļţéŕ · {count}·······⟧",
   "library_sort": "⟦Šöŕţ··⟧",
   "library_sort_by": "⟦Šöŕţ ƀý···⟧",

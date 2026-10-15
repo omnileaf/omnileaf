@@ -110,7 +110,7 @@
       }
     }
   ],
-  "library_filter_and_sort": "Filter and sort",
+  "library_filter_and_sort": "Sort and filter",
   "library_filter_and_sort_filtered": [
     {
       "declarations": [
@@ -120,12 +120,20 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "Filter and sort, {formattedCount} filter on",
-        "countPlural=other": "Filter and sort, {formattedCount} filters on"
+        "countPlural=one": "Sort and filter, {formattedCount} filter on",
+        "countPlural=other": "Sort and filter, {formattedCount} filters on"
       }
     }
   ],
   "library_filter": "Filter",
+  "library_read_state": "Read state",
+  "library_read_state_any": "Any",
+  "library_read_state_unread": "Unread",
+  "library_read_state_in_progress": "In progress",
+  "library_read_state_read": "Read",
+  "library_clear_all": "Clear all",
+  "library_filters_in_use": "Filters in use",
+  "library_remove_filter": "Remove {filter}",
   "library_filter_with_count": "Filter · {count}",
   "library_sort": "Sort",
   "library_sort_by": "Sort by",
