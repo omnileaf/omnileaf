@@ -121,6 +121,20 @@ async function openSearch(page: Page): Promise<void> {
   await expect(searchField(page)).toBeFocused();
 }
 
+async function columnsOf(list: Locator): Promise<number> {
+  return list.evaluate(
+    (element) =>
+      getComputedStyle(element)
+        .gridTemplateColumns.split(" ")
+        .filter((track) => track !== "").length,
+  );
+}
+
+/** Where Arrow Down moves from `index` in a grid of `columns`, staying put past the last result. */
+function below(index: number, columns: number, count: number): number {
+  return index + columns < count ? index + columns : index;
+}
+
 async function expectFound(page: Page, titles: readonly string[]) {
   await expect(results(page).getByRole("option")).toHaveText(
     titles.map((title) => new RegExp(title)),
@@ -199,10 +213,46 @@ test("finds the series whose titles hold every word typed, and counts them", asy
   await searchField(page).fill("market lantern");
 
   await expectFound(page, ["Lantern Market", "Market Lanterns"]);
-  await expect(page.getByRole("heading", { name: "Series · 2" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Series and books · 2" }),
+  ).toBeVisible();
   await expect(page.getByRole("main").getByRole("status")).toHaveText(
     "2 series found",
   );
+});
+
+test("marks the words typed in each title found and says the title matched", async ({
+  page,
+}) => {
+  await openSearch(page);
+
+  await searchField(page).fill("lantern");
+
+  const first = results(page).getByRole("option").first();
+  await expect(first.locator("mark")).toHaveText(["Lantern"]);
+  await expect(first).toContainText("Title");
+});
+
+test("draws the series found as covers, as many to a row as the library draws", async ({
+  page,
+}) => {
+  test.skip(!isDesktop(page), "desktop only");
+  await page.goto("/");
+  const columnsIn = (list: Locator) =>
+    list.evaluate(
+      (element) =>
+        getComputedStyle(element)
+          .gridTemplateColumns.split(" ")
+          .filter((track) => track !== "").length,
+    );
+  const libraryColumns = await columnsIn(
+    page.getByRole("list", { name: "Series" }),
+  );
+
+  await page.goto("/search?q=a");
+  await expect(results(page).getByRole("option").first()).toBeVisible();
+
+  expect(await columnsIn(results(page))).toBe(libraryColumns);
 });
 
 test("carries on the search typed into the library's header on desktop", async ({
@@ -337,12 +387,14 @@ test("moves through the results with the arrow keys, Home and End, and opens one
   test.skip(!isDesktop(page), "desktop only");
   await page.goto("/search");
   await searchField(page).fill("a");
-  await expectFound(page, [
+  const titles = [
     "Harbour Gate",
     "Lantern Market",
     "Market Lanterns",
     "Sample Series 04",
-  ]);
+  ];
+  await expectFound(page, titles);
+  const columns = await columnsOf(results(page));
   const options = results(page).getByRole("option");
   const active = async () => {
     const id = await searchField(page).getAttribute("aria-activedescendant");
@@ -365,15 +417,12 @@ test("moves through the results with the arrow keys, Home and End, and opens one
     visited.push(await active());
   }
 
-  expect(visited.map((text) => text?.match(/^\s*(\D+)/)?.[1]?.trim())).toEqual([
-    "Harbour Gate",
-    "Lantern Market",
-    "Harbour Gate",
-    "Sample Series",
-    "Harbour Gate",
-    "Sample Series",
-    "Harbour Gate",
-  ]);
+  const down = below(0, columns, titles.length);
+  expect(
+    visited.map((text) => titles.find((title) => text?.includes(title))),
+  ).toEqual(
+    [0, 1, 0, down, 0, titles.length - 1, 0].map((index) => titles[index]),
+  );
   await expect(options.first()).toHaveAttribute("aria-selected", "true");
   await searchField(page).press("ArrowRight");
   await searchField(page).press("Enter");
@@ -769,11 +818,14 @@ test.describe("a long list of results", () => {
     await expect(await activeOption(page)).toContainText(
       LONG_LIST[0]?.title ?? "",
     );
+    const columns = await columnsOf(results(page));
+    let reached = 0;
     for (let row = 0; row < 20; row += 1) {
       await searchField(page).press("ArrowDown");
+      reached = below(reached, columns, LONG_LIST.length);
     }
     await expect(await activeOption(page)).toContainText(
-      LONG_LIST[60]?.title ?? "",
+      LONG_LIST[reached]?.title ?? "",
     );
   });
 });
