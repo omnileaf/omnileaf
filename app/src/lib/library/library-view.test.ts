@@ -15,6 +15,8 @@ const VIEW: LibraryView = {
   display: "grid",
   coversPerRow: { phone: 3, tablet: 5, desktop: 6 },
   fitsCoversToWidth: false,
+  groupBy: "none",
+  showsCategoryTabs: true,
   showsItemCounts: false,
   showsContinueRow: false,
   onCovers: DEFAULT_LIBRARY_VIEW.onCovers,
