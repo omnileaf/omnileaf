@@ -20,7 +20,7 @@
     ...restProps
   }: TooltipPrimitive.TriggerProps & {
     label: string | undefined;
-    keys?: string;
+    keys?: readonly string[];
   } = $props();
 
   const longPress = new LongPress(LONG_PRESS_MS);
@@ -68,10 +68,10 @@
         collisionPadding={SCREEN_EDGE_GAP_PX}
         class="z-tooltip flex items-center gap-sm rounded-tooltip border border-tooltip-edge bg-tooltip px-md py-xs text-detail font-medium text-on-tooltip fade-motion shadow-popover"
       >
-        {label}
-        {#if keys !== undefined}
-          <Kbd>{keys}</Kbd>
-        {/if}
+        <span>{label}</span>
+        {#each keys ?? [] as key (key)}
+          <Kbd>{key}</Kbd>
+        {/each}
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   </TooltipPrimitive.Root>
