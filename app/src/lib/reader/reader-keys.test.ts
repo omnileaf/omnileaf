@@ -118,7 +118,7 @@ test("leaves full screen, or else the book, with Escape", () => {
 test("leaves shortcuts held with another modifier and keys it has no use for alone", () => {
   const actions = actionsFor([
     { key: "ArrowRight", ctrlKey: true },
-    { key: "ArrowLeft", altKey: true },
+    { key: "ArrowRight", altKey: true },
     { key: "m", code: "KeyM", metaKey: true },
     { key: "f", code: "KeyF", ctrlKey: true },
     { key: "ArrowRight", shiftKey: true },
@@ -193,4 +193,28 @@ test("leaves its keys to a field being typed in", () => {
   field.remove();
 
   expect(actions).toEqual([]);
+});
+
+test("goes back to the series with Alt and the left arrow, whichever way the book reads", () => {
+  const actions = actionsFor(
+    [{ key: "ArrowLeft", altKey: true }],
+    document.body,
+    "rightToLeft",
+  );
+
+  expect(actions).toEqual(["back"]);
+});
+
+test("goes back to the series with ⌘ [ on macOS, and not with Alt there", () => {
+  const actions = actionsFor(
+    [
+      { key: "[", metaKey: true },
+      { key: "ArrowLeft", altKey: true },
+    ],
+    document.body,
+    "leftToRight",
+    "macos",
+  );
+
+  expect(actions).toEqual(["back"]);
 });
