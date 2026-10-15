@@ -879,16 +879,8 @@
     var(--destructive) 10%,
     var(--background)
   );
-  --color-danger-hover: color-mix(
-    in oklab,
-    var(--destructive-fill) 90%,
-    transparent
-  );
-  --color-danger-pressed: color-mix(
-    in oklab,
-    var(--destructive-fill) 80%,
-    transparent
-  );
+  --color-danger-hover: var(--destructive-fill-hover);
+  --color-danger-pressed: var(--destructive-fill-pressed);
   --color-hover: var(--hover-fill);
   --color-pressed: var(--pressed-fill);
   --color-sheet: var(--background);
