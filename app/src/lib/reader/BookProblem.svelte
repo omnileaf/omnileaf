@@ -16,7 +16,7 @@
     EmptyMedia,
   } from "#lib/components/ui/empty/index.ts";
   import type { BookPlace, Platform } from "#lib/ipc/bindings.ts";
-  import { isPointer } from "#lib/page/platform.ts";
+  import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import BookBackNav from "./BookBackNav.svelte";
@@ -26,9 +26,9 @@
   const PROBLEM_ICON_SIZE = 20;
   const BUTTON_ICON_SIZE = 16;
   const BUTTON =
-    "flex shrink-0 items-center justify-center gap-sm rounded-shadcn-control px-lg text-body font-medium whitespace-nowrap transition-control min-block-touch-target expanded:text-small expanded:min-block-pointer-button";
+    "flex shrink-0 items-center justify-center gap-sm rounded-shadcn-control px-lg text-body font-medium whitespace-nowrap transition-control min-block-touch-target expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control";
   const PRIMARY = `${BUTTON} bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed`;
-  const OUTLINE = `${BUTTON} border border-border bg-card disabled:opacity-60`;
+  const OUTLINE = `${BUTTON} border border-border bg-card disabled:opacity-60 ios:border-transparent ios:bg-ios-fill`;
   const SAYINGS = {
     missing: {
       icon: FolderSearch,
@@ -62,14 +62,13 @@
       ? undefined
       : resolve("/(app)/series/[id]", { id: place.series }),
   );
-  const showFile = $derived(
-    isPointer(platform) ? m.reader_show_in_folder() : m.reader_show_file(),
-  );
+  const showFile = $derived(showFileLabel(platform));
 </script>
 
 <main
   data-theme={settings.look.controls === "dark" ? "dark" : undefined}
-  class="flex flex-col bg-background text-foreground min-block-dvh"
+  data-ground="grouped"
+  class="flex flex-col bg-background text-foreground min-block-dvh ios:bg-ios-grouped"
 >
   <BookBackNav {place} />
   <div class="flex flex-1 items-center justify-center px-xl pbe-xl">
