@@ -2,7 +2,6 @@
   import { ChevronRight } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
-  import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import {
     getOpensOnSetting,
     OPENING_PLACES,
@@ -32,8 +31,6 @@
 
   const id = $props.id();
   const hintId = `${id}-hint`;
-  const datesId = `${id}-dates`;
-  const timeFormatId = `${id}-time-format`;
 
   const opensOn = getOpensOnSetting();
   const timeFormat = getTimeFormatSetting();
@@ -55,17 +52,6 @@
     twelveHour: m.general_time_12(),
     twentyFourHour: m.general_time_24(),
   } satisfies Record<TimeFormat, string>;
-
-  function chooseTimeFormat(
-    event: Event & { currentTarget: HTMLSelectElement },
-  ): void {
-    const chosen = TIME_FORMATS.find(
-      (format) => format === event.currentTarget.value,
-    );
-    if (chosen !== undefined) {
-      timeFormat.choose(chosen);
-    }
-  }
 </script>
 
 <SectionHeading title={m.general_title()} />
@@ -112,26 +98,13 @@
       </p>
     {/if}
   </div>
-  <section
-    aria-labelledby={datesId}
-    class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
-  >
-    <h2 id={datesId} class="font-semibold">{m.general_dates_numbers()}</h2>
-    <div class="flex flex-wrap items-center justify-between gap-sm">
-      <label for={timeFormatId} class="font-medium">
-        {m.general_time_format()}
-      </label>
-      <NativeSelect
-        id={timeFormatId}
-        value={timeFormat.choice}
-        onchange={chooseTimeFormat}
-        class="max-inline-full min-inline-none"
-        fieldClass="min-inline-none inline-full"
-      >
-        {#each TIME_FORMATS as format (format)}
-          <option value={format}>{TIME_FORMAT_LABELS[format]}</option>
-        {/each}
-      </NativeSelect>
-    </div>
-  </section>
+  <SettingRadios
+    title={m.general_time_format()}
+    options={TIME_FORMATS}
+    labels={TIME_FORMAT_LABELS}
+    chosen={timeFormat.choice}
+    onChoose={(format: TimeFormat) => {
+      timeFormat.choose(format);
+    }}
+  />
 </div>

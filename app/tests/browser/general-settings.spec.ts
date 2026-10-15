@@ -7,7 +7,7 @@ function opensOn(page: Page): Locator {
 }
 
 function timeFormat(page: Page): Locator {
-  return page.getByRole("combobox", { name: "Time format" });
+  return page.getByRole("radiogroup", { name: "Time format" });
 }
 
 test("opens on the library until another place is chosen, and keeps the place chosen", async ({
@@ -37,15 +37,20 @@ test("follows the system's clock until a time format is chosen, and keeps it", a
   page,
 }) => {
   await page.goto("/settings/general");
-  await expect(timeFormat(page)).toHaveValue("system");
   await expect(
-    timeFormat(page).getByRole("option", { selected: true }),
-  ).toHaveText(/^Follow the system \((12|24)-hour\)$/);
+    timeFormat(page).getByRole("radio", {
+      name: /^Follow the system \((12|24)-hour\)$/,
+    }),
+  ).toBeChecked();
 
-  await timeFormat(page).selectOption("twelveHour");
+  await timeFormat(page)
+    .getByRole("radio", { name: "12-hour", exact: true })
+    .click();
   await page.reload();
 
-  await expect(timeFormat(page)).toHaveValue("twelveHour");
+  await expect(
+    timeFormat(page).getByRole("radio", { name: "12-hour", exact: true }),
+  ).toBeChecked();
 });
 
 test("has no accessibility violations", async ({ page }) => {
