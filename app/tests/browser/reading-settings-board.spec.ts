@@ -19,6 +19,8 @@ import {
 } from "./reader-book.ts";
 
 const PANEL_WIDTH = 368;
+const CONTROL_WIDTH = { wide: 208, narrow: 228 } as const;
+const ROW_GRID_GROUPS = ["Page layout", "Fit", "Background", "Controls"];
 
 test.use({ backend: readerBackend(DEFAULT_BACKEND) });
 
@@ -74,6 +76,62 @@ test("opens Reading settings beside the page on desktops and in a drawer on phon
   await expect(
     panel.getByRole("group", { name: "Apply to" }).getByRole("radio"),
   ).toHaveText(["This series", "All series"]);
+});
+
+function centreOf(box: { y: number; height: number }): number {
+  return box.y + box.height / 2;
+}
+
+test("lays the settings on one row grid, a hairline between rows and every control on one right edge", async ({
+  page,
+}) => {
+  await openBook(page);
+  const panel = await openSettings(page);
+  await settle(page.locator("body"));
+  const mode = await boxOf(
+    panel.getByRole("combobox", { name: "Reading mode" }),
+  );
+  const modeLabel = await boxOf(
+    panel.getByText("Reading mode", { exact: true }),
+  );
+
+  expect(centreOf(modeLabel)).toBeCloseTo(centreOf(mode), 0);
+  expect(Math.round(mode.width)).toBe(
+    isWide(page) ? CONTROL_WIDTH.wide : CONTROL_WIDTH.narrow,
+  );
+  await expect(panel.locator('[data-slot="setting-row"]').nth(1)).toHaveCSS(
+    "border-bottom-width",
+    "1px",
+  );
+  if (!isWide(page)) {
+    return;
+  }
+  const rightEdge = Math.round(mode.x + mode.width);
+  for (const name of ROW_GRID_GROUPS) {
+    const group = await boxOf(panel.getByRole("group", { name }));
+    expect(Math.round(group.x + group.width), name).toBe(rightEdge);
+    expect(Math.round(group.width), name).toBe(CONTROL_WIDTH.wide);
+  }
+  const brightness = await boxOf(
+    panel.getByRole("slider", { name: "Brightness" }).locator(".."),
+  );
+  expect(Math.round(brightness.x + brightness.width)).toBe(rightEdge);
+});
+
+test("names the layouts in full and says how to zoom, on phones", async ({
+  page,
+}) => {
+  await openBook(page);
+  test.skip(isWide(page), "desktops name them One and Two beside the label");
+
+  const panel = await openSettings(page);
+
+  const layout = panel.getByRole("group", { name: "Page layout" });
+  await expect(layout.getByRole("radio", { name: "One page" })).toBeVisible();
+  await expect(layout.getByRole("radio", { name: "Two pages" })).toBeVisible();
+  await expect(
+    panel.getByText("Pinch or double-tap a page to zoom."),
+  ).toBeVisible();
 });
 
 test("paints the page's ground in the background chosen", async ({ page }) => {
