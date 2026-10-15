@@ -727,6 +727,7 @@
       {seriesHref}
       next={named.next}
       {nextHref}
+      direction={reading.direction}
     />
   {:else}
     <header
