@@ -101,6 +101,34 @@
   }
 }
 @custom-variant closed (&[data-state="closed"]);
+@custom-variant motion-navigation {
+  @media (prefers-reduced-motion: no-preference) {
+    &:where(:root:not([data-still~="navigation"]) *) {
+      @slot;
+    }
+  }
+}
+@custom-variant motion-sheets {
+  @media (prefers-reduced-motion: no-preference) {
+    &:where(:root:not([data-still~="sheets"]) *) {
+      @slot;
+    }
+  }
+}
+@custom-variant motion-reader {
+  @media (prefers-reduced-motion: no-preference) {
+    &:where(:root:not([data-still~="reader"]) *) {
+      @slot;
+    }
+  }
+}
+@custom-variant motion-loading {
+  @media (prefers-reduced-motion: no-preference) {
+    &:where(:root:not([data-still~="loading"]) *) {
+      @slot;
+    }
+  }
+}
 @custom-variant with-card-action (&:has(> [data-slot="card-action"]));
 @custom-variant while-picking (&:where(main:has([data-picking]) *));
 
@@ -658,6 +686,7 @@
   --transition-duration-slide: 350ms;
   --transition-duration-move: 300ms;
   --transition-duration-spin: 1s;
+  --transition-duration-spin-slow: 2s;
   --transition-duration-band: 1.4s;
 
   --ease-out: ease-out;
@@ -1142,16 +1171,18 @@
 
 @utility fade-motion {
   @media (prefers-reduced-motion: no-preference) {
-    transition-property: opacity;
-    transition-duration: var(--transition-duration-slide);
-    transition-timing-function: var(--ease-glass);
+    &:where(:root:not([data-still~="sheets"]) *) {
+      transition-property: opacity;
+      transition-duration: var(--transition-duration-slide);
+      transition-timing-function: var(--ease-glass);
 
-    @starting-style {
-      opacity: 0;
-    }
+      @starting-style {
+        opacity: 0;
+      }
 
-    &[data-state="closed"] {
-      opacity: 0;
+      &[data-state="closed"] {
+        opacity: 0;
+      }
     }
   }
 }
@@ -1176,8 +1207,10 @@
   translate: 100%;
 
   @media (prefers-reduced-motion: no-preference) {
-    animation: progress-band var(--transition-duration-band) var(--ease-out)
-      infinite;
+    &:where(:root:not([data-still~="loading"]) *) {
+      animation: progress-band var(--transition-duration-band) var(--ease-out)
+        infinite;
+    }
   }
 }
 
@@ -1192,6 +1225,10 @@
 
   :root[data-pinch-zoom] {
     touch-action: manipulation;
+  }
+
+  :root[data-still~="loading"] {
+    --transition-duration-spin: var(--transition-duration-spin-slow);
   }
 
   a,
@@ -1227,4 +1264,8 @@
       cursor: pointer;
     }
   }
+}
+
+:root[data-still~="sheets"] [data-sonner-toaster] [data-sonner-toast] {
+  transition: none;
 }

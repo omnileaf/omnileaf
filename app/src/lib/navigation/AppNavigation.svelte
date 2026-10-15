@@ -101,7 +101,7 @@
       aria-hidden="true"
       style:--tab-index={currentIndex}
       style:--tab-count={DESTINATIONS.length}
-      class="pointer-events-none absolute inset-s-none inset-bs-none inset-be-none hidden translate-to-tab rounded-full bg-glass-pill transition-transform inline-tab motion-safe:duration-slide motion-safe:ease-glass ios:max-medium:block"
+      class="pointer-events-none absolute inset-s-none inset-bs-none inset-be-none hidden translate-to-tab rounded-full bg-glass-pill transition-transform inline-tab ios:max-medium:block motion-navigation:duration-slide motion-navigation:ease-glass"
     ></li>
     {#each DESTINATIONS as destination (destination.section)}
       {@const isSelected = destination.section === current}
@@ -135,10 +135,10 @@
               >
                 <span
                   class={[
-                    "absolute inset-none rounded-full bg-accent-soft transition-opacity motion-safe:duration-fade motion-safe:ease-out expanded:hidden ios:max-medium:hidden",
-                    "android:motion-safe:duration-grow android:motion-safe:ease-emphasized",
+                    "absolute inset-none rounded-full bg-accent-soft transition-opacity expanded:hidden ios:max-medium:hidden motion-navigation:duration-fade motion-navigation:ease-out",
+                    "android:motion-navigation:duration-grow android:motion-navigation:ease-emphasized",
                     !isSelected && "opacity-0",
-                    isArriving && "android:motion-safe:animate-pill-grow",
+                    isArriving && "android:motion-navigation:animate-pill-grow",
                   ]}
                 ></span>
                 <NavigationIcon
@@ -148,7 +148,8 @@
                   size={ICON_SIZE}
                   class={[
                     "relative ios:max-medium:block-xl ios:max-medium:inline-xl desktop:expanded:block-sidebar-icon desktop:expanded:inline-sidebar-icon",
-                    isArriving && "ios:max-medium:motion-safe:animate-nav-pop",
+                    isArriving &&
+                      "ios:max-medium:motion-navigation:animate-nav-pop",
                   ]}
                 />
               </span>
