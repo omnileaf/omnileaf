@@ -7,6 +7,7 @@ import {
   expect,
   EXPANDED_MIN_WIDTH,
   fakeAppInfo,
+  settle,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -70,6 +71,7 @@ test("sets the keys in two columns, zoom beside turning pages, in a 720px sheet 
   );
 
   await page.keyboard.press("Shift+?");
+  await settle(sheet(page));
 
   const turning = await boxOf(
     sheet(page).getByRole("heading", { level: 3, name: "Turning pages" }),
