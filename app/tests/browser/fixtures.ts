@@ -215,40 +215,59 @@ export async function boxOf(locator: Locator): Promise<Box> {
   return box;
 }
 
-/** Waits two frames before each look, since headless WebKit can stop advancing its animations while nothing asks for a frame, and counts a part bits-ui still holds in its starting style, which no animation reports. */
-export async function settle(locator: Locator): Promise<void> {
-  await expect
-    .poll(() =>
-      locator.evaluate(async (element) => {
-        await new Promise<void>((resolve) => {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              resolve();
-            });
-          });
+const SETTLE_GRACE_MS = 2000;
+const FRAME_WAIT_MS = 50;
+
+/** Lists a part bits-ui still holds in its starting style as well, since no animation reports it until the frame its transition begins. */
+function animationsWithin(locator: Locator): Promise<string[]> {
+  return locator.evaluate(async (element, frameWaitMs) => {
+    const nextFrame = new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resolve();
         });
-        return [
-          ...element.getAnimations({ subtree: true }).map((animation) => {
-            const target =
-              animation.effect instanceof KeyframeEffect
-                ? animation.effect.target
-                : null;
-            const name =
-              animation instanceof CSSTransition
-                ? animation.transitionProperty
-                : animation instanceof CSSAnimation
-                  ? animation.animationName
-                  : animation.id;
-            return `${name} on ${target?.tagName.toLowerCase() ?? "?"} ${target?.getAttribute("class") ?? ""}`;
-          }),
-          ...(element.closest("[data-starting-style]") === null &&
-          element.querySelector("[data-starting-style]") === null
-            ? []
-            : ["a part still held in its starting style"]),
-        ];
+      });
+    });
+    const timer = new Promise<void>((resolve) => {
+      setTimeout(resolve, frameWaitMs);
+    });
+    await Promise.race([nextFrame, timer]);
+    return [
+      ...element.getAnimations({ subtree: true }).map((animation) => {
+        const target =
+          animation.effect instanceof KeyframeEffect
+            ? animation.effect.target
+            : null;
+        const name =
+          animation instanceof CSSTransition
+            ? animation.transitionProperty
+            : animation instanceof CSSAnimation
+              ? animation.animationName
+              : animation.id;
+        return `${name} on ${target?.tagName.toLowerCase() ?? "?"} ${target?.getAttribute("class") ?? ""}`;
       }),
-    )
-    .toEqual([]);
+      ...(element.closest("[data-starting-style]") === null &&
+      element.querySelector("[data-starting-style]") === null
+        ? []
+        : ["a part still held in its starting style"]),
+    ];
+  }, FRAME_WAIT_MS);
+}
+
+/** Finishes whatever still moves after a grace period, since headless WebKit can stop advancing its animations, and even its frames, while nothing asks for one. */
+export async function settle(locator: Locator): Promise<void> {
+  try {
+    await expect
+      .poll(() => animationsWithin(locator), { timeout: SETTLE_GRACE_MS })
+      .toEqual([]);
+  } catch {
+    await locator.evaluate((element) => {
+      for (const animation of element.getAnimations({ subtree: true })) {
+        animation.finish();
+      }
+    });
+    await expect.poll(() => animationsWithin(locator)).toEqual([]);
+  }
 }
 
 function noteTransitions(): void {
