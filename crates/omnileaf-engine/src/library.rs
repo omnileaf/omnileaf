@@ -13,10 +13,11 @@ use omnileaf_db::{
         AndroidTree, AppleBookmark, BookFileId, BookToRead, Cover, NewRoot, PageDimensions,
         PageRequest, PageSize, PlaceInSeries, RootId, RootKind, RootLocator, SeriesFilter,
         SeriesListing, add_root, book_to_read, bookmarked_roots, cover_file, folder_series_count,
-        folder_series_page, home_root, library_root, library_roots, mark_root_available,
-        mark_root_unavailable, page_dimensions, place_in_series, remove_book_files,
-        remove_books_without_files, remove_root, root_book_count, root_files, series_books,
-        series_count, series_overview, series_page, store_page_dimensions, unread_books, up_next,
+        folder_series_page, hidden_series_count, home_root, library_root, library_roots,
+        mark_root_available, mark_root_unavailable, missing_roots, page_dimensions,
+        place_in_series, relocate_roots, remove_book_files, remove_books_without_files,
+        remove_root, root_book_count, root_files, series_books, series_count, series_overview,
+        series_page, show_root_while_missing, store_page_dimensions, unread_books, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     history::{
@@ -40,9 +41,9 @@ use crate::{
     CategoryId, CoversPerRowOutOfRange, CreatorSeries, FolderCursor, FolderId, FolderPage,
     FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries,
     LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
-    LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, ReadMark,
-    ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage,
-    SeriesCursor, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
+    LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder,
+    ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing,
+    SeriesBookPage, SeriesCursor, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -53,6 +54,7 @@ use crate::{
     library_layout::folder_name,
     library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
+    missing_folder::problem_of,
     moved_home::move_home,
     reading_progress::{ReadingProgress, ReadingSaved},
     rescan::rescan,
@@ -143,6 +145,8 @@ pub enum LibraryError {
     FolderNotFound { id: FolderId },
     #[error("series {id} isn't in the library")]
     SeriesNotFound { id: SeriesId },
+    #[error("move library folder {id} to a folder the library already reads")]
+    FolderAlreadyInLibrary { id: FolderId },
     #[error("remove library folder {id}, the home folder the library always keeps")]
     HomeFolderKept { id: FolderId },
     #[error("search for {chars} characters, more than the {max} a search reads")]
@@ -803,6 +807,71 @@ impl Library {
             .await?)
     }
 
+    pub async fn missing_folders(&self) -> Result<Vec<MissingFolder>, LibraryError> {
+        let roots = self
+            .store
+            .database()
+            .read(|connection| {
+                missing_roots(connection)?
+                    .into_iter()
+                    .map(|root| {
+                        let hidden = hidden_series_count(connection, Some(root.id))?;
+                        Ok((root, hidden))
+                    })
+                    .collect::<Result<Vec<_>, omnileaf_db::Error>>()
+            })
+            .await?;
+        let mut missing = Vec::with_capacity(roots.len());
+        for (root, hidden) in roots {
+            let problem = problem_of(&root.locator).await;
+            missing.push(MissingFolder::of(root, problem, hidden));
+        }
+        Ok(missing)
+    }
+
+    pub async fn hidden_series_count(&self) -> Result<u32, LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .read(|connection| hidden_series_count(connection, None))
+            .await?)
+    }
+
+    #[tracing::instrument(skip_all, fields(folder = %id, is_shown))]
+    pub async fn show_missing_folder(
+        &self,
+        id: FolderId,
+        is_shown: bool,
+    ) -> Result<(), LibraryError> {
+        self.store
+            .database()
+            .write(move |transaction| show_root_while_missing(transaction, id.0, is_shown))
+            .await?;
+        self.note_catalog_written();
+        Ok(())
+    }
+
+    /// Points a missing folder at the place it moved to, then reads it there.
+    #[tracing::instrument(skip_all, fields(folder = %id))]
+    pub async fn relocate_folder(
+        &self,
+        id: FolderId,
+        folder: impl Into<RootLocator>,
+        on_progress: impl FnMut(ScanProgress) + Send,
+    ) -> Result<FolderRescan, LibraryError> {
+        let locator = self.folder_to_read(folder.into()).await?;
+        let scanning = self.catalog_change_lock.lock().await;
+        let staying = self
+            .store
+            .database()
+            .write(move |transaction| relocate_roots(transaction, &[(id.0, locator)]))
+            .await?;
+        if !staying.is_empty() {
+            return Err(LibraryError::FolderAlreadyInLibrary { id });
+        }
+        self.rescan_while_scanning(id, scanning, on_progress).await
+    }
+
     #[tracing::instrument(skip_all, fields(folder = %id))]
     pub async fn remove_folder(&self, id: FolderId) -> Result<(), LibraryError> {
         let _scanning = self.catalog_change_lock.lock().await;
@@ -985,13 +1054,19 @@ impl Library {
         let Some(files) = self.files_of(&root.locator) else {
             return Ok(BooksRemoval::Kept);
         };
-        let is_emptied = root.kind == RootKind::Linked
-            && matches!(
-                walk(files.storage, files.folder, |_| {}).await?,
-                Ok(layout) if layout.is_empty()
-            );
-        if !is_emptied {
+        if root.kind != RootKind::Linked {
             return Ok(BooksRemoval::Kept);
+        }
+        match walk(files.storage, files.folder, |_| {}).await? {
+            Ok(layout) if layout.is_empty() => {}
+            Ok(_) => {
+                database
+                    .write(move |transaction| mark_root_available(transaction, root.id))
+                    .await?;
+                self.note_catalog_written();
+                return Ok(BooksRemoval::Kept);
+            }
+            Err(_) => return Ok(BooksRemoval::Kept),
         }
         let removed = database
             .write(move |transaction| {
