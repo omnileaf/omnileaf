@@ -15,6 +15,9 @@ export function sampleSeries(count: number, from = 1): WireSeries[] {
       bookCount: 1,
       unreadCount: 1,
       cover: null,
+      language: null,
+      hasDownloads: false,
+      continuesFrom: null,
     };
   });
 }

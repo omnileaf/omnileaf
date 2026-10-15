@@ -27,6 +27,9 @@ const FIRST: WireSeries = {
   bookCount: 3,
   unreadCount: 3,
   cover: "thumb/v1/0190a3e4-0000-8000-8000-000000000001/1/1",
+  language: null,
+  hasDownloads: false,
+  continuesFrom: null,
 };
 const SECOND: WireSeries = {
   id: "0190a3e4-0000-8000-8000-0000000000a2",
@@ -34,6 +37,9 @@ const SECOND: WireSeries = {
   bookCount: 1,
   unreadCount: 1,
   cover: null,
+  language: null,
+  hasDownloads: false,
+  continuesFrom: null,
 };
 
 const listSeries: ListSeries = (after) =>
@@ -50,6 +56,9 @@ function sampleSeries(count: number): WireSeries[] {
     bookCount: 1,
     unreadCount: 1,
     cover: null,
+    language: null,
+    hasDownloads: false,
+    continuesFrom: null,
   }));
 }
 

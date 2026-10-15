@@ -41,6 +41,9 @@ const SERIES: readonly WireSeries[] = [
   bookCount: index + 2,
   unreadCount: index + 1,
   cover: `thumb/v1/${id}/1/1`,
+  language: null,
+  hasDownloads: false,
+  continuesFrom: null,
 }));
 
 let catalog: readonly WireSeries[] = SERIES;
