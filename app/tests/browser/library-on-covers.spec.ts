@@ -209,17 +209,40 @@ test.describe("unread count", () => {
     });
   }
 
-  test("ends each list row with its series' unread count", async ({ page }) => {
+  test("lists each row's books, language and unread under its title", async ({
+    page,
+  }) => {
+    await openWith(page, {
+      display: "list",
+      onCovers: { ...DEFAULT_LIBRARY_VIEW.onCovers, showsLanguage: true },
+    });
+    const first = seriesNamed(page, FIRST_TITLE);
+    const title = await boxOf(first.getByText(FIRST_TITLE));
+
+    for (const detail of [
+      first.getByText("4 books", { exact: true }),
+      first.getByRole("img", { name: "Japanese" }),
+      unreadBadge(first, FIRST_UNREAD),
+    ]) {
+      expect((await boxOf(detail)).y).toBeGreaterThanOrEqual(
+        title.y + title.height,
+      );
+    }
+    await expect(unreadBadge(first, FIRST_UNREAD)).toHaveText(
+      `${String(FIRST_UNREAD)} unread`,
+    );
+  });
+
+  test("marks a list row's cover with its downloads and shows how far it's read", async ({
+    page,
+  }) => {
     await openWith(page, { display: "list" });
     const first = seriesNamed(page, FIRST_TITLE);
 
-    const badge = await boxOf(unreadBadge(first, FIRST_UNREAD));
-    const title = await boxOf(first.getByText(FIRST_TITLE));
-
-    expect(badge.x).toBeGreaterThan(title.x + title.width);
-    await expect(unreadBadge(first, FIRST_UNREAD)).toHaveText(
-      String(FIRST_UNREAD),
-    );
+    await expect(
+      first.getByRole("img", { name: "Downloaded chapters" }),
+    ).toBeVisible();
+    await expect(first.getByRole("progressbar")).toBeVisible();
   });
 
   test("starts the unread count at the cover's right in a right-to-left layout", async ({
