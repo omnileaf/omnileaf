@@ -56,6 +56,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   librarySeries: () => ({ series: [], next: null }),
   librarySeriesCount: () => 0,
   librarySearch: () => ({ series: [], next: null }),
+  folderSeries: () => ({ series: [], next: null }),
+  folderSeriesCount: () => 0,
   librarySearchCount: () => 0,
   seriesOverview: () => {
     throw new CommandFailure({
