@@ -42,9 +42,13 @@
   import SeriesCovers from "#lib/library/SeriesCovers.svelte";
   import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
   import { swipesBetweenTabs } from "#lib/library/tab-swipe.ts";
+  import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
   import LibrarySelectionActions from "#lib/library/LibrarySelectionActions.svelte";
   import LibrarySelectionHeader from "#lib/library/LibrarySelectionHeader.svelte";
-  import { setSeriesSelection } from "#lib/library/series-selection.ts";
+  import {
+    type LabelsFrom,
+    setSeriesSelection,
+  } from "#lib/library/series-selection.ts";
   import { Selection } from "#lib/page/selection.svelte.ts";
   import type { SeriesId } from "#lib/series/series-id.ts";
   import ViewOptions from "#lib/library/ViewOptions.svelte";
@@ -114,6 +118,9 @@
   const notices = getNotices();
   const selection = new Selection<SeriesId>();
   setSeriesSelection(selection);
+  let keepsLabels = $state(false);
+  let isLabelling = $state(false);
+  let labelsFrom = $state<LabelsFrom>("categories");
   const adding = new FolderAdding(addFolderWithProgress, () => notices);
 
   let isCountWanted = $state(false);
@@ -230,6 +237,13 @@
     }
   }
 
+  async function loadLabelSupport(): Promise<void> {
+    const labels = await commands.seriesLabels([]);
+    if (labels.status === "ok") {
+      keepsLabels = labels.data.keepsLabels;
+    }
+  }
+
   async function loadFilterChoices(): Promise<void> {
     const offered = await commands.libraryFilterChoices();
     if (offered.status === "ok") {
@@ -291,6 +305,7 @@
     void view.load();
     void loadCategories();
     void loadFilterChoices();
+    void loadLabelSupport();
     return listenForLibraryChanges(() => {
       void loadCategories();
       void loadFilterChoices();
@@ -335,6 +350,13 @@
 {/snippet}
 
 <svelte:window onkeydown={keyWhileSelecting} />
+
+<LabelSeriesDialog
+  bind:isOpen={isLabelling}
+  series={selection.picked}
+  startsAtTags={labelsFrom === "tags"}
+  onError={reportError}
+/>
 
 {#if selection.isSelecting}
   <LibrarySelectionHeader
@@ -511,6 +533,11 @@
           <LibrarySelectionActions
             count={selection.count}
             isPill={docksFilter}
+            {keepsLabels}
+            onLabels={(from: LabelsFrom) => {
+              labelsFrom = from;
+              isLabelling = true;
+            }}
             onMarkRead={() => {
               void markSelectedRead();
             }}
