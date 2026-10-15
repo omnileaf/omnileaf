@@ -90,7 +90,9 @@ for (const look of LOOKS) {
     );
     const tooltip = page.getByText("Rescan", { exact: true });
     await expect.element(tooltip).toBeVisible();
-    const tooltipFill = getComputedStyle(tooltip.element()).backgroundColor;
+    const tooltipCard = tooltip.element().closest("[data-tooltip-content]");
+    const tooltipFill =
+      tooltipCard && getComputedStyle(tooltipCard).backgroundColor;
     await page.getByRole("button", { name: "More" }).click();
     const menu = page.getByRole("menu");
     await expect.element(menu).toBeVisible();
