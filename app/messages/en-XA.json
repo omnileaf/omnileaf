@@ -63,6 +63,62 @@
   "library_downloaded_chapters": "⟦Ðöŵñļöáðéð çĥáþţéŕš········⟧",
   "library_categories": "⟦Çáţéĝöŕíéš····⟧",
   "library_category_all": "⟦Áļļ··⟧",
+  "missing_folder_title": "⟦{name} íšñ’ţ ţĥéŕé········⟧",
+  "library_series_and_hidden": "⟦{series} · {hidden}········⟧",
+  "missing_folder_body": [
+    {
+      "declarations": [
+        "input name",
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Íţš ƒöļðéŕ öŕ ðŕíṽé ɱáý ƀé ðíšçöññéçţéð. {formattedCount} šéŕíéš íš ĥíððéñ ûñţíļ íţ’š ƀáçķ. Ýöûŕ ŕéáðíñĝ þŕöĝŕéšš íš šáƒé.·················································⟧",
+        "countPlural=other": "⟦Íţš ƒöļðéŕ öŕ ðŕíṽé ɱáý ƀé ðíšçöññéçţéð. {formattedCount} šéŕíéš áŕé ĥíððéñ ûñţíļ íţ’š ƀáçķ. Ýöûŕ ŕéáðíñĝ þŕöĝŕéšš íš šáƒé.··················································⟧"
+      }
+    }
+  ],
+  "missing_drive_title": "⟦Ţĥé ðŕíṽé ŵíţĥ {name} íšñ’ţ çöññéçţéð···············⟧",
+  "missing_drive_body": [
+    {
+      "declarations": [
+        "input name",
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Çöññéçţ íţ ţö šéé íţš {formattedCount} šéŕíéš áĝáíñ. Ýöûŕ ŕéáðíñĝ þŕöĝŕéšš íš šáƒé.··································⟧",
+        "countPlural=other": "⟦Çöññéçţ íţ ţö šéé íţš {formattedCount} šéŕíéš áĝáíñ. Ýöûŕ ŕéáðíñĝ þŕöĝŕéšš íš šáƒé.··································⟧"
+      }
+    }
+  ],
+  "missing_access_title": "⟦Öɱñíļéáƒ çáñ’ţ öþéñ {name}···········⟧",
+  "missing_access_body": "⟦Áñðŕöíð ţööķ áŵáý áççéšš ţö ţĥíš ƒöļðéŕ. Ýöûŕ ŕéáðíñĝ þŕöĝŕéšš íš šáƒé.·····························⟧",
+  "missing_sign_in_title": "⟦Šíĝñ íñ ţö šéé {name}·········⟧",
+  "missing_sign_in_body": "⟦Ţĥé ñéţŵöŕķ šĥáŕé {location} ŵáñţš ýöû ţö šíĝñ íñ áĝáíñ. Ýöûŕ ŕéáðíñĝ þŕöĝŕéšš íš šáƒé.···································⟧",
+  "missing_show_anyway": "⟦Šĥöŵ ţĥéɱ áñýŵáý·······⟧",
+  "missing_find_folder": "⟦Ƒíñð ţĥé ƒöļðéŕ······⟧",
+  "missing_choose_again": "⟦Çĥööšé íţ áĝáíñ······⟧",
+  "missing_unlink": "⟦Ûñļíñķ íţ····⟧",
+  "missing_sign_in": "⟦Šíĝñ íñ···⟧",
+  "library_hidden_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ĥíððéñ··········⟧",
+        "countPlural=other": "⟦{formattedCount} ĥíððéñ··········⟧"
+      }
+    }
+  ],
   "library_tab_new_chapters": "⟦Ñéŵ çĥáþţéŕš·····⟧",
   "library_tabs_title": "⟦Ļíƀŕáŕý ţáƀš·····⟧",
   "library_opens_on": "⟦Ţĥé ļíƀŕáŕý öþéñš öñ········⟧",

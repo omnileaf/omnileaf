@@ -63,6 +63,62 @@
   "library_downloaded_chapters": "Downloaded chapters",
   "library_categories": "Categories",
   "library_category_all": "All",
+  "missing_folder_title": "{name} isn’t there",
+  "library_series_and_hidden": "{series} · {hidden}",
+  "missing_folder_body": [
+    {
+      "declarations": [
+        "input name",
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Its folder or drive may be disconnected. {formattedCount} series is hidden until it’s back. Your reading progress is safe.",
+        "countPlural=other": "Its folder or drive may be disconnected. {formattedCount} series are hidden until it’s back. Your reading progress is safe."
+      }
+    }
+  ],
+  "missing_drive_title": "The drive with {name} isn’t connected",
+  "missing_drive_body": [
+    {
+      "declarations": [
+        "input name",
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Connect it to see its {formattedCount} series again. Your reading progress is safe.",
+        "countPlural=other": "Connect it to see its {formattedCount} series again. Your reading progress is safe."
+      }
+    }
+  ],
+  "missing_access_title": "Omnileaf can’t open {name}",
+  "missing_access_body": "Android took away access to this folder. Your reading progress is safe.",
+  "missing_sign_in_title": "Sign in to see {name}",
+  "missing_sign_in_body": "The network share {location} wants you to sign in again. Your reading progress is safe.",
+  "missing_show_anyway": "Show them anyway",
+  "missing_find_folder": "Find the folder",
+  "missing_choose_again": "Choose it again",
+  "missing_unlink": "Unlink it",
+  "missing_sign_in": "Sign in",
+  "library_hidden_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} hidden",
+        "countPlural=other": "{formattedCount} hidden"
+      }
+    }
+  ],
   "library_tab_new_chapters": "New chapters",
   "library_tabs_title": "Library tabs",
   "library_opens_on": "The library opens on",
