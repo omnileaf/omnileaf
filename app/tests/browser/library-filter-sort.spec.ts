@@ -12,6 +12,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  fakeAppInfo,
   screenSizeOf,
   settle,
   test,
@@ -30,6 +31,7 @@ interface FakeSeries {
 const PANEL_WIDTH = 380;
 const BADGE_ON_PHONES = 40;
 const BADGE_ON_WIDER_SCREENS = 36;
+const TOUCH_TARGET = 48;
 
 function fakeSeries(
   number: number,
@@ -133,7 +135,7 @@ function seriesList(page: Page): Locator {
 
 function filterButton(page: Page): Locator {
   return page
-    .locator("main header")
+    .getByRole("main")
     .getByRole("button", { name: /^Sort and filter/ });
 }
 
@@ -676,3 +678,32 @@ test("clears every filter in use with Clear all", async ({ page }) => {
     .poll(() => storedListing.filter)
     .toEqual(DEFAULT_LIBRARY_LISTING.filter);
 });
+
+for (const platform of ["android", "ios"] as const) {
+  test.describe(`on ${platform}`, () => {
+    test.use({
+      backend: {
+        ...FILTERING_BACKEND,
+        appInfo: () => fakeAppInfo(platform),
+      },
+    });
+
+    test("sizes Sort by and its direction for a finger", async ({ page }) => {
+      await openLibrary(page);
+      const panel = await openFilterAndSort(page);
+
+      const select = await boxOf(
+        panel.getByRole("combobox", { name: "Sort by" }),
+      );
+      const direction = await boxOf(
+        directionButton(page, "Order: A to Z. Change to Z to A"),
+      );
+
+      expect(select.height).toBeGreaterThanOrEqual(TOUCH_TARGET);
+      expect([direction.width, direction.height]).toEqual([
+        TOUCH_TARGET,
+        TOUCH_TARGET,
+      ]);
+    });
+  });
+}
