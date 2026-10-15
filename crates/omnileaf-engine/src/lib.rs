@@ -1,3 +1,4 @@
+mod adult_content;
 mod app_info;
 mod app_language;
 mod background_lane;
@@ -52,6 +53,7 @@ mod series_overview;
 mod utc_offset;
 mod version_details;
 
+pub use adult_content::{AdultContent, AdultTreatment};
 pub use app_info::{AppInfo, Platform};
 pub use app_language::AppLanguage;
 pub use bookmark_access::ResolvedBookmark;
