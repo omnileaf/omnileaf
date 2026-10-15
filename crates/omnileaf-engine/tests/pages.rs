@@ -318,6 +318,7 @@ async fn shows_the_next_book_by_its_own_cover_and_how_far_it_was_read() {
             .starts_with(&format!("thumb/v1/{}/", ids[1]))
     }));
     assert_eq!(next.reading, BookReading::Read);
+    assert_eq!(next.page_count, None);
 }
 
 #[tokio::test]
