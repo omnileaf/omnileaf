@@ -64,6 +64,39 @@
   "library_categories": "⟦Çáţéĝöŕíéš····⟧",
   "library_category_all": "⟦Áļļ··⟧",
   "library_tab_new_chapters": "⟦Ñéŵ çĥáþţéŕš·····⟧",
+  "library_tabs_title": "⟦Ļíƀŕáŕý ţáƀš·····⟧",
+  "library_tabs_intro": "⟦Ðŕáĝ ţö ŕéöŕðéŕ. Ĥíðíñĝ á ţáƀ ñéṽéŕ ŕéɱöṽéš á šéŕíéš.······················⟧",
+  "library_tabs_intro_keys": "⟦Ðŕáĝ ţö ŕéöŕðéŕ, öŕ ûšé Áļţ ↑ áñð Áļţ ↓. Ĥíðíñĝ á ţáƀ ñéṽéŕ ŕéɱöṽéš á šéŕíéš.·······························⟧",
+  "library_tabs_all_detail": "⟦Áļŵáýš šĥöŵñ; çáñ’ţ ƀé ĥíððéñ············⟧",
+  "library_tabs_built_in": "⟦Ɓûíļţ íñ····⟧",
+  "library_tabs_built_in_hidden": "⟦Ɓûíļţ íñ · ĥíððéñ·······⟧",
+  "library_tabs_category": "⟦Çáţéĝöŕý····⟧",
+  "library_tabs_hidden": "⟦Ĥíððéñ···⟧",
+  "library_tabs_more": "⟦Ṁöŕé ƒöŕ {tab}······⟧",
+  "library_tabs_move": "⟦Ṁöṽé {tab}····⟧",
+  "library_tabs_move_up": "⟦Ṁöṽé ûþ···⟧",
+  "library_tabs_move_down": "⟦Ṁöṽé ðöŵñ····⟧",
+  "library_tabs_show": "⟦Šĥöŵ ţĥíš ţáƀ······⟧",
+  "library_tabs_hide": "⟦Ĥíðé ţĥíš ţáƀ······⟧",
+  "library_tabs_moved_up": "⟦{tab} ɱöṽéð ûþ, ţö þöšíţíöñ {position} öƒ {count}····················⟧",
+  "library_tabs_moved_down": "⟦{tab} ɱöṽéð ðöŵñ, ţö þöšíţíöñ {position} öƒ {count}·····················⟧",
+  "library_tabs_new_category": "⟦Ñéŵ çáţéĝöŕý·····⟧",
+  "library_tabs_category_name": "⟦Ñáɱé··⟧",
+  "library_tabs_add": "⟦Áðð··⟧",
+  "library_tabs_category_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Çáţéĝöŕý · {formattedCount} šéŕíéš··············⟧",
+        "countPlural=other": "⟦Çáţéĝöŕý · {formattedCount} šéŕíéš··············⟧"
+      }
+    }
+  ],
   "library_categories_more": "⟦Ṁöŕé··⟧",
   "library_more_categories": "⟦Ṁöŕé çáţéĝöŕíéš······⟧",
   "library_categories_edit": "⟦Éðíţ çáţéĝöŕíéš······⟧",
