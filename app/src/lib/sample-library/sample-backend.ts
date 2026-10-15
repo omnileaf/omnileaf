@@ -15,6 +15,11 @@ import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
 import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 import { NEW_LIBRARY_TABS } from "#lib/library/library-tabs.ts";
+import {
+  closestWords,
+  isTooShortToSuggest,
+  slipsAllowed,
+} from "./closest-words.ts";
 import { isShownBy } from "#lib/series/books-shown.ts";
 
 import {
@@ -710,6 +715,40 @@ export function sampleBackend(
       );
       const page = pageOf(found, after);
       return { series: page.items.map(wireSeries), next: page.next };
+    },
+    librarySpellingSuggestion: async (text) => {
+      await libraryReady();
+      const typed = text.trim().toLocaleLowerCase().split(/\s+/u).join(" ");
+      if (isTooShortToSuggest(typed)) {
+        return null;
+      }
+      const allowed = slipsAllowed(Array.from(typed).length);
+      const titles = library.flatMap((series) => [
+        { title: series.title, chapterOf: null },
+        ...series.books.map((book) => ({
+          title: book.title,
+          chapterOf: series.title,
+        })),
+      ]);
+      let best: {
+        slips: number;
+        text: string;
+        chapterOf: string | null;
+      } | null = null;
+      for (const { title, chapterOf } of titles) {
+        const closest = closestWords(typed, title.toLocaleLowerCase());
+        if (
+          closest !== undefined &&
+          closest.slips > 0 &&
+          closest.slips <= allowed &&
+          (best === null || closest.slips < best.slips)
+        ) {
+          best = { slips: closest.slips, text: closest.words, chapterOf };
+        }
+      }
+      return best === null
+        ? null
+        : { text: best.text, chapterOf: best.chapterOf };
     },
     librarySearchCount: async (search) => {
       await libraryReady();

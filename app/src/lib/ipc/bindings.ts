@@ -71,6 +71,11 @@ export const commands = {
 	setLibraryAdultContent: (content: AdultContent) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_adult_content", { content })),
 	libraryTabs: () => typedError<LibraryTab[], IpcError>(__TAURI_INVOKE("library_tabs")),
 	setLibraryTabs: (tabs: LibraryTab[]) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_tabs", { tabs })),
+	librarySpellingSuggestion: (text: string) => typedError<{
+	text: string,
+	/**  The series holding the chapter, when the text is a chapter title rather than a series'. */
+	chapterOf: string | null,
+} | null, IpcError>(__TAURI_INVOKE("library_spelling_suggestion", { text })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
 	libraryFolderBookCount: (id: string & { readonly __brand: "FolderId" }) => typedError<number, IpcError>(__TAURI_INVOKE("library_folder_book_count", { id })),
 	rescanLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<FolderRescan, IpcError>(__TAURI_INVOKE("rescan_library_folder", { id, onProgress })),
@@ -583,6 +588,13 @@ export type SmartFilter =
 
 /**  Ascending lists titles from A to Z, series added earliest first, and series read longest ago first, those never read before them. */
 export type SortDirection = "ascending" | "descending";
+
+/**  What a search that found nothing was likely meant to be. */
+export type SpellingSuggestion = {
+	text: string,
+	/**  The series holding the chapter, when the text is a chapter title rather than a series'. */
+	chapterOf: string | null,
+};
 
 export type SwipeEdge = "left" | "right";
 
