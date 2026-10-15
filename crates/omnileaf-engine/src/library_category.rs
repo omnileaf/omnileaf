@@ -20,6 +20,12 @@ impl From<String> for CategoryId {
     }
 }
 
+impl From<CategoryId> for String {
+    fn from(id: CategoryId) -> Self {
+        id.0
+    }
+}
+
 impl Type for CategoryId {
     fn definition(types: &mut Types) -> DataType {
         branded_string("CategoryId", types)
