@@ -33,7 +33,7 @@ import {
   sampleSeriesId,
 } from "./sample-library.ts";
 
-type LibraryState = "ready" | "empty" | "loading" | "failed";
+type LibraryState = (typeof LIBRARY_STATES)[number];
 type SeriesState = "ready" | "loading" | "failed" | "empty";
 
 export interface SampleScenario {
@@ -49,7 +49,14 @@ export interface SampleEvents {
 }
 
 const PLATFORMS = ["android", "ios", "macos", "windows", "linux"] as const;
-const LIBRARY_STATES = ["ready", "empty", "loading", "failed"] as const;
+const LIBRARY_STATES = [
+  "ready",
+  "empty",
+  "loading",
+  "failed",
+  "thousands",
+] as const;
+const THOUSANDS_OF_SERIES = 12_480;
 const SERIES_STATES = ["ready", "loading", "failed", "empty"] as const;
 const SIXTH_VOLUME_FILES = ["present", "missing", "damaged"] as const;
 const MISSING_KINDS = ["none", "folder", "drive", "access", "sign-in"] as const;
@@ -108,6 +115,35 @@ const DAY_MS = 86_400_000;
 const MINUTE = 60;
 const SESSION_SECONDS = 25 * MINUTE;
 const NEVER = new Promise<never>(() => undefined);
+
+function libraryFor(scenario: SampleScenario): SampleSeries[] {
+  if (scenario.library === "empty") {
+    return [];
+  }
+  const shelf = sampleLibrary(scenario.sixthVolume);
+  if (scenario.library !== "thousands") {
+    return shelf;
+  }
+  const more = Array.from(
+    { length: THOUSANDS_OF_SERIES - shelf.length },
+    (_, index) => shelf.length + index + 1,
+  );
+  return [
+    ...shelf,
+    ...more.flatMap((number) => {
+      const base = shelf[(number - 1) % shelf.length];
+      return base === undefined
+        ? []
+        : [
+            {
+              ...base,
+              number,
+              title: `Sample Series ${String(number).padStart(5, "0")}`,
+            },
+          ];
+    }),
+  ];
+}
 
 function failure(code: IpcErrorCode, message: string): CommandFailure {
   return new CommandFailure({ code, message });
@@ -268,8 +304,7 @@ export function sampleBackend(
   scenario: SampleScenario,
   events: SampleEvents,
 ): FakeBackend {
-  const library: SampleSeries[] =
-    scenario.library === "empty" ? [] : sampleLibrary(scenario.sixthVolume);
+  const library: SampleSeries[] = libraryFor(scenario);
   let listing: LibraryListing = {
     ...NEW_LIBRARY_LISTING,
     sort: { by: "dateAdded", direction: "descending" },
