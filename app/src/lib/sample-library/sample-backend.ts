@@ -6,9 +6,10 @@ import {
   type LibraryListing,
   type LibraryView,
   type Platform,
+  type SeriesFormat,
 } from "#lib/ipc/bindings.ts";
-import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
+import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 import { isShownBy } from "#lib/series/books-shown.ts";
 
 import {
@@ -104,14 +105,39 @@ function admits(inclusion: Inclusion, holds: boolean): boolean {
   return inclusion === "any" || (inclusion === "only") === holds;
 }
 
-function passes(series: SampleSeries, filter: LibraryFilter): boolean {
+function isOneOf<T>(chosen: readonly T[], value: T | null): boolean {
+  return chosen.length === 0 || (value !== null && chosen.includes(value));
+}
+
+function formatOf(series: SampleSeries): SeriesFormat {
+  if (series.number % COMICS_EVERY === 0) {
+    return "comic";
+  }
+  return series.format === "Manga" ? "manga" : "book";
+}
+
+function languageOf(series: SampleSeries): string | null {
+  return SAMPLE_LANGUAGES[series.number % SAMPLE_LANGUAGES.length] ?? null;
+}
+
+function passes(
+  series: SampleSeries,
+  filter: LibraryFilter,
+  isBookmarked: (series: SampleSeries) => boolean,
+): boolean {
   return (
     admits(
       filter.unread,
       series.books.some((book) => !isRead(book)),
     ) &&
     admits(filter.started, series.books.some(isStarted)) &&
-    admits(filter.finished, series.books.every(isRead))
+    admits(filter.finished, series.books.every(isRead)) &&
+    isOneOf(filter.formats, formatOf(series)) &&
+    isOneOf(filter.languages, languageOf(series)) &&
+    (filter.tags.length === 0 ||
+      series.tags.some((tag) => filter.tags.includes(tag))) &&
+    admits(filter.adult, ADULT_SERIES.has(series.number)) &&
+    admits(filter.bookmarked, isBookmarked(series))
   );
 }
 
@@ -123,6 +149,8 @@ interface SampleCategory {
 
 const SAMPLE_LANGUAGES = ["ja", "ja", "en", "fr", "ja", "en", "de"] as const;
 const SERIES_WITH_DOWNLOADS = new Set([1, 4, 6]);
+const ADULT_SERIES = new Set([13, 17]);
+const FORMATS: readonly SeriesFormat[] = ["comic", "manga", "book"];
 const COMICS_EVERY = 3;
 const FAVOURITES_EVERY = 5;
 const FAVOURITE_REMAINDER = 4;
@@ -201,12 +229,18 @@ export function sampleBackend(
   let isFullScreen = false;
   const bookmarks = new Map<string, Set<number>>();
 
+  const isBookmarked = (series: SampleSeries): boolean =>
+    series.books.some(
+      (_, index) =>
+        (bookmarks.get(sampleBookId(series.number, index + 1))?.size ?? 0) > 0,
+    );
+
   const addedAt = (series: SampleSeries): number =>
     NEWEST_ADDED_MS - library.indexOf(series) * DAY_MS;
 
   function sorted(chosen: LibraryListing): SampleSeries[] {
     const ordered = library
-      .filter((series) => passes(series, chosen.filter))
+      .filter((series) => passes(series, chosen.filter, isBookmarked))
       .toSorted((one, other) =>
         chosen.sort.by === "title"
           ? one.title.localeCompare(other.title)
@@ -231,8 +265,7 @@ export function sampleBackend(
       bookCount: series.books.length,
       unreadCount: series.books.filter((book) => !isRead(book)).length,
       cover: coverOf(series),
-      language:
-        SAMPLE_LANGUAGES[series.number % SAMPLE_LANGUAGES.length] ?? null,
+      language: languageOf(series),
       hasDownloads: SERIES_WITH_DOWNLOADS.has(series.number),
       continuesFrom: continuesFrom(series),
     };
@@ -413,7 +446,8 @@ export function sampleBackend(
     },
     librarySeriesCount: async (filter) => {
       await libraryReady();
-      return library.filter((series) => passes(series, filter)).length;
+      return library.filter((series) => passes(series, filter, isBookmarked))
+        .length;
     },
     libraryCategories: async () => {
       await libraryReady();
@@ -421,13 +455,24 @@ export function sampleBackend(
         ? []
         : SAMPLE_CATEGORIES.map(({ id, name }) => ({ id, name }));
     },
-    libraryFilterChoices: () => ({
-      formats: [],
-      languages: [],
-      tags: [],
-      ratesAdult: false,
-      keepsBookmarks: false,
-    }),
+    libraryFilterChoices: async () => {
+      await libraryReady();
+      return {
+        formats: FORMATS.filter((format) =>
+          library.some((series) => formatOf(series) === format),
+        ),
+        languages: [
+          ...new Set(
+            library
+              .toSorted((one, other) => one.number - other.number)
+              .flatMap((series) => languageOf(series) ?? []),
+          ),
+        ],
+        tags: [...new Set(library.flatMap((series) => series.tags))],
+        ratesAdult: library.length > 0,
+        keepsBookmarks: library.length > 0,
+      };
+    },
     categorySeries: async (category, after, chosen) => {
       await libraryReady();
       const page = pageOf(
@@ -439,8 +484,9 @@ export function sampleBackend(
     categorySeriesCount: async (category, filter) => {
       await libraryReady();
       const holds = categoryHolds(category);
-      return library.filter((series) => passes(series, filter) && holds(series))
-        .length;
+      return library.filter(
+        (series) => passes(series, filter, isBookmarked) && holds(series),
+      ).length;
     },
     librarySearch: async (after, search) => {
       await libraryReady();
@@ -456,7 +502,7 @@ export function sampleBackend(
       const text = search.text.trim().toLocaleLowerCase();
       return library.filter(
         (series) =>
-          passes(series, search.filter) &&
+          passes(series, search.filter, isBookmarked) &&
           series.title.toLocaleLowerCase().includes(text),
       ).length;
     },
