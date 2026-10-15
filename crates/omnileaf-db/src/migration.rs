@@ -60,6 +60,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0024_add_fits_covers_to_width_to_library_view"),
     migration!("0025_add_category_tabs_and_grouping_to_library_view"),
     migration!("0026_create_adult_content"),
+    migration!("0027_track_when_each_series_was_last_read"),
 ];
 
 pub(crate) fn pending(
@@ -218,7 +219,7 @@ mod tests {
         Database, Language, connection,
         first_launch::first_launch_finished,
         scratch::ScratchLibrary,
-        store::{Clock, Store},
+        store::{Clock, Continuity, SessionPlace, Store},
         title_key::TitleCollation,
     };
 
@@ -630,6 +631,59 @@ mod tests {
             })
             .unwrap();
         assert_eq!(counts, (1, 2));
+    }
+
+    struct ClockAt(u64);
+
+    impl Clock for ClockAt {
+        fn now_unix_ms(&self) -> u64 {
+            self.0
+        }
+    }
+
+    #[test]
+    fn knows_when_each_series_kept_from_before_was_last_read() {
+        let scratch = ScratchLibrary::new("last-read-upgrade");
+        let store = Store::new(
+            Database::open_with(&scratch.config, &MIGRATIONS[..26]).unwrap(),
+            ClockAt(9_000),
+        );
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        let place = SessionPlace {
+            book: book(1),
+            page: 0,
+            page_count: 1,
+            utc_offset_minutes: 0,
+        };
+        let written =
+            store.write(move |writer| writer.record_reading(&place, Continuity::AfterBreak));
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(written)
+            .unwrap();
+        drop(store);
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let last_read_at_ms: i64 = connection
+            .query_row("SELECT last_read_at_ms FROM series", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(last_read_at_ms, 9_000);
     }
 
     fn schema_of(path: &Path) -> Schema {

@@ -50,6 +50,7 @@ pub fn library_roots(
             Position::Title { .. }
             | Position::Added { .. }
             | Position::Book { .. }
+            | Position::LastRead { .. }
             | Position::Session { .. },
         ) => {
             return Err(Error::CursorForAnotherList);
