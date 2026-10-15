@@ -32,6 +32,10 @@
   import type { BookId } from "#lib/reader/opened-book.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
 
+  import type { PageProps } from "./$types";
+
+  let { data }: PageProps = $props();
+
   const CLOSE_ICON_SIZE = 17;
 
   const screenshotMode = getScreenshotMode();
@@ -101,6 +105,7 @@
 {/snippet}
 
 <CollectionHeading
+  platform={data.appInfo.platform}
   title={m.history_title()}
   showsLabel={screenshotMode.showsLabel}
   actions={seriesFilter}
