@@ -65,6 +65,7 @@ const LISTED_SERIES = {
   cover: null,
   language: null,
   hasDownloads: false,
+  isAdult: false,
   continuesFrom: null,
 };
 

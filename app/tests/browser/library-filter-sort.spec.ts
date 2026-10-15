@@ -55,6 +55,7 @@ function fakeSeries(
       cover: null,
       language: null,
       hasDownloads: false,
+      isAdult: false,
       continuesFrom: null,
     },
     addedAt,

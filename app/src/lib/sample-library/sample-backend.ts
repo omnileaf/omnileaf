@@ -1,4 +1,5 @@
 import {
+  type AdultContent,
   DEFAULT_LIBRARY_VIEW,
   type Inclusion,
   type IpcErrorCode,
@@ -10,6 +11,7 @@ import {
   type SmartFilter,
 } from "#lib/ipc/bindings.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
+import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 import { isShownBy } from "#lib/series/books-shown.ts";
 
@@ -124,14 +126,17 @@ function languageOf(series: SampleSeries): string | null {
 interface SeriesFacts {
   readonly isBookmarked: (series: SampleSeries) => boolean;
   readonly tagsOf: (series: SampleSeries) => readonly string[];
+  readonly isAdult: (series: SampleSeries) => boolean;
+  readonly hidesAdult: () => boolean;
 }
 
 function passes(
   series: SampleSeries,
   filter: LibraryFilter,
-  { isBookmarked, tagsOf }: SeriesFacts,
+  { isBookmarked, tagsOf, isAdult, hidesAdult }: SeriesFacts,
 ): boolean {
   return (
+    !(hidesAdult() && isAdult(series)) &&
     admits(
       filter.unread,
       series.books.some((book) => !isRead(book)),
@@ -142,7 +147,7 @@ function passes(
     isOneOf(filter.languages, languageOf(series)) &&
     (filter.tags.length === 0 ||
       tagsOf(series).some((tag) => filter.tags.includes(tag))) &&
-    admits(filter.adult, ADULT_SERIES.has(series.number)) &&
+    admits(filter.adult, isAdult(series)) &&
     admits(filter.bookmarked, isBookmarked(series)) &&
     filter.smart.every((smart) => SMART_FILTERS[smart](series))
   );
@@ -303,7 +308,11 @@ export function sampleBackend(
       (_, index) =>
         (bookmarks.get(sampleBookId(series.number, index + 1))?.size ?? 0) > 0,
     );
-  const facts: SeriesFacts = { isBookmarked, tagsOf };
+  let adultContent: AdultContent = NEW_ADULT_CONTENT;
+  const isAdult = (series: SampleSeries): boolean =>
+    adultContent.countsAgeRatings && ADULT_SERIES.has(series.number);
+  const hidesAdult = (): boolean => adultContent.treatment === "hide";
+  const facts: SeriesFacts = { isBookmarked, tagsOf, isAdult, hidesAdult };
 
   const addedAt = (series: SampleSeries): number =>
     NEWEST_ADDED_MS - library.indexOf(series) * DAY_MS;
@@ -338,6 +347,7 @@ export function sampleBackend(
       language: languageOf(series),
       hasDownloads: SERIES_WITH_DOWNLOADS.has(series.number),
       continuesFrom: continuesFrom(series),
+      isAdult: isAdult(series),
     };
   }
 
@@ -841,6 +851,11 @@ export function sampleBackend(
     libraryListing: () => listing,
     setLibraryListing: (chosen) => {
       listing = chosen;
+      return null;
+    },
+    libraryAdultContent: () => adultContent,
+    setLibraryAdultContent: (chosen) => {
+      adultContent = chosen;
       return null;
     },
     libraryView: () => view,
