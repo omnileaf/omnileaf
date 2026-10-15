@@ -466,11 +466,13 @@ test("says when no series meet the filter and clears it on asking", async ({
     },
   };
   await page.goto("/");
-  const noMatches = page.getByText("No series match these filters.");
-  await expect(noMatches).toBeVisible();
+  const noMatches = page.getByRole("region", {
+    name: "No series match these filters",
+  });
+  await expect(noMatches).toContainText("Your library hasn't changed.");
   await expect(filterButton(page)).toBeVisible();
 
-  await page.getByRole("button", { name: "Clear filters" }).click();
+  await noMatches.getByRole("button", { name: "Clear all filters" }).click();
 
   await expectTitles(page, [1, 2, 3, 4, 5, 6]);
   await expect.poll(() => storedListing).toEqual(NEW_LIBRARY_LISTING);
@@ -662,7 +664,7 @@ test.describe("when a filter leaves no series", () => {
     await openFilterAndSort(page);
     await chooseReadState(page, "In progress");
     await expect(
-      page.getByText("No series match these filters."),
+      page.getByRole("region", { name: "No series match these filters" }),
     ).toBeVisible();
 
     await chooseReadState(page, "Any");
@@ -691,7 +693,9 @@ test.describe("when the library holds no series and a filter is stored", () => {
     await page.goto("/");
 
     await expect(page.getByText("Your library is empty")).toBeVisible();
-    await expect(page.getByText("No series match these filters.")).toBeHidden();
+    await expect(
+      page.getByRole("region", { name: "No series match these filters" }),
+    ).toBeHidden();
   });
 });
 

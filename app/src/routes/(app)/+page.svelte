@@ -402,6 +402,7 @@
       </div>
       {#if listsNothing && chosenListing !== undefined}
         <NoMatches
+          filter={chosenListing.filter}
           onClear={() => {
             chooseTab(ALL_SERIES);
             chooseListing(withoutFilters(chosenListing));
