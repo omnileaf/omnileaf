@@ -23,17 +23,18 @@
   let {
     listing,
     matching,
+    isOpen = $bindable(false),
     onChoose,
     onOpen,
   }: {
     listing: LibraryListing;
     matching: number | undefined;
+    isOpen?: boolean;
     onChoose: (listing: LibraryListing) => void;
     onOpen: () => void;
   } = $props();
 
   let button: HTMLElement | null = $state(null);
-  let isOpen = $state(false);
 
   const titleId = $props.id();
   const filtersCount = $derived(filtersOn(listing.filter));

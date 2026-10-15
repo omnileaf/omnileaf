@@ -133,6 +133,20 @@
   "library_read_state_read": "Read",
   "library_clear_all": "Clear all",
   "library_filters_in_use": "Filters in use",
+  "library_more_filters": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Show {formattedCount} more filter",
+        "countPlural=other": "Show {formattedCount} more filters"
+      }
+    }
+  ],
   "library_remove_filter": "Remove {filter}",
   "library_filter_with_count": "Filter · {count}",
   "library_sort": "Sort",
