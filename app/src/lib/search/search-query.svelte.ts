@@ -1,4 +1,8 @@
-import type { LibraryFilter, LibrarySearch } from "#lib/ipc/bindings.ts";
+import type {
+  LibraryFilter,
+  LibrarySearch,
+  SeriesFormat,
+} from "#lib/ipc/bindings.ts";
 import {
   type FilterCondition,
   NEW_LIBRARY_LISTING,
@@ -6,9 +10,18 @@ import {
 
 import { type FilterWords, takeFilterWords } from "./typed-filters";
 
+export const SEARCH_SCOPES = [
+  "everything",
+  "manga",
+  "book",
+] as const satisfies readonly (SeriesFormat | "everything")[];
+
+export type SearchScope = (typeof SEARCH_SCOPES)[number];
+
 export class SearchQuery {
   text = $state("");
   conditions: readonly FilterCondition[] = $state([]);
+  scope: SearchScope = $state("everything");
 
   constructor(
     private readonly words: FilterWords,
@@ -45,8 +58,8 @@ export class SearchQuery {
       : [...this.conditions, condition];
   }
 
-  clearConditions(): void {
-    this.conditions = [];
+  narrowTo(scope: SearchScope): void {
+    this.scope = scope;
   }
 
   #filter(): LibraryFilter {
@@ -57,6 +70,7 @@ export class SearchQuery {
       unread: inclusion("unread"),
       started: inclusion("started"),
       finished: inclusion("finished"),
+      formats: this.scope === "everything" ? [] : [this.scope],
     };
   }
 }

@@ -2,6 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 
 import {
   type LibrarySearch,
+  type SeriesFormat,
   SEARCH_MAX_CHARS,
 } from "../../src/lib/ipc/bindings.ts";
 import {
@@ -16,7 +17,6 @@ import {
   expect,
   fakeAppInfo,
   LARGE_MIN_WIDTH,
-  MEDIUM_MIN_WIDTH,
   targetOf,
   test,
   testOnlyInItsWebview,
@@ -27,12 +27,17 @@ import { sampleSeries, type WireSeries } from "./series-catalog.ts";
 interface FakeSeries {
   readonly series: WireSeries;
   readonly isStarted: boolean;
+  readonly format: SeriesFormat;
 }
 
 function fakeSeries(
   number: number,
   title: string,
-  { unread, isStarted }: { unread: number; isStarted: boolean },
+  {
+    unread,
+    isStarted,
+    format = "manga",
+  }: { unread: number; isStarted: boolean; format?: SeriesFormat },
 ): FakeSeries {
   return {
     series: {
@@ -47,14 +52,23 @@ function fakeSeries(
       continuesFrom: null,
     },
     isStarted,
+    format,
   };
 }
 
 const CATALOG: readonly FakeSeries[] = [
   fakeSeries(1, "Harbour Gate", { unread: 2, isStarted: false }),
-  fakeSeries(2, "Lantern Market", { unread: 1, isStarted: true }),
+  fakeSeries(2, "Lantern Market", {
+    unread: 1,
+    isStarted: true,
+    format: "comic",
+  }),
   fakeSeries(3, "Market Lanterns", { unread: 2, isStarted: false }),
-  fakeSeries(4, "Sample Series 04", { unread: 0, isStarted: true }),
+  fakeSeries(4, "Sample Series 04", {
+    unread: 0,
+    isStarted: true,
+    format: "book",
+  }),
 ];
 
 function found(
@@ -66,8 +80,10 @@ function found(
     inclusion === "any" || holds === (inclusion === "only");
   return catalog
     .filter(
-      ({ series, isStarted }) =>
+      ({ series, isStarted, format }) =>
         words.every((word) => series.title.toLowerCase().includes(word)) &&
+        (search.filter.formats.length === 0 ||
+          search.filter.formats.includes(format)) &&
         meets(search.filter.unread, series.unreadCount > 0) &&
         meets(search.filter.started, isStarted) &&
         meets(search.filter.finished, series.unreadCount === 0),
@@ -90,10 +106,6 @@ test.use({ backend: SEARCHING_BACKEND });
 
 function isDesktop(page: Page): boolean {
   return viewportOf(page).width >= LARGE_MIN_WIDTH;
-}
-
-function isPhone(page: Page): boolean {
-  return viewportOf(page).width < MEDIUM_MIN_WIDTH;
 }
 
 function searchField(page: Page): Locator {
@@ -332,47 +344,25 @@ test("drops a filter with its remove button, or with backspace in an empty field
   ).toBeVisible();
 });
 
-test("shows only the series meeting the condition chosen", async ({ page }) => {
-  await page.goto("/search");
-  await searchField(page).fill("market");
-  const show = page.getByRole("group", { name: "Show" });
-
-  await show.getByRole("button", { name: "Started" }).click();
-
-  await expect(
-    page.getByRole("button", { name: "Remove the Started filter" }),
-  ).toBeVisible();
-  await expectFound(page, ["Lantern Market"]);
-});
-
-test("keeps the boxes of the Show choices still as they are pressed", async ({
+test("narrows the search to the scope chosen, and back to everything", async ({
   page,
 }) => {
-  test.skip(
-    isPhone(page),
-    "phones swap the choices for the chosen filters once one is pressed",
-  );
   await page.goto("/search");
   await searchField(page).fill("market");
-  await expectFound(page, ["Lantern Market", "Market Lanterns"]);
-  const choices = page.getByRole("group", { name: "Show" }).getByRole("button");
-  const boxesOf = async () => {
-    const boxes = [];
-    for (const choice of await choices.all()) {
-      boxes.push(await boxOf(choice));
-    }
-    return boxes;
-  };
-  const before = await boxesOf();
+  const scope = page.getByRole("group", { name: "Search in" });
+  await expect(
+    scope.getByRole("button", { name: "Everything" }),
+  ).toHaveAttribute("aria-pressed", "true");
 
-  for (const name of ["Unread", "Started", "Everything"]) {
-    await choices.filter({ hasText: name }).click();
-    await expect(choices.filter({ hasText: name })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    expect(await boxesOf()).toEqual(before);
-  }
+  await scope.getByRole("button", { name: "Manga" }).click();
+  await expectFound(page, ["Market Lanterns"]);
+  await expect(scope.getByRole("button", { name: "Manga" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await scope.getByRole("button", { name: "Everything" }).click();
+
+  await expectFound(page, ["Lantern Market", "Market Lanterns"]);
 });
 
 test("names the field's clear button and each filter's remove button in a tooltip", async ({
@@ -820,6 +810,17 @@ test.describe("a long list of results", () => {
     await expect(option).toBeInViewport();
     return option;
   }
+
+  test("keeps the scope chips their full height above a long list of results", async ({
+    page,
+  }) => {
+    await page.goto("/search?q=sample");
+    await expect(results(page).getByRole("option").first()).toBeVisible();
+
+    const scope = await boxOf(page.getByRole("group", { name: "Search in" }));
+
+    expect(scope.height).toBeGreaterThan(0);
+  });
 
   test("reveals the result End, Home and the arrows move to beyond the rows drawn", async ({
     page,
