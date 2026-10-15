@@ -17,6 +17,7 @@ export const NO_FILTER_CHOICES: LibraryFilterChoices = {
   tags: [],
   ratesAdult: false,
   keepsBookmarks: false,
+  smart: [],
 };
 
 export const NEW_LIBRARY_LISTING: LibraryListing = {
@@ -26,6 +27,7 @@ export const NEW_LIBRARY_LISTING: LibraryListing = {
     formats: [],
     languages: [],
     tags: [],
+    smart: [],
   },
 };
 
@@ -77,7 +79,7 @@ export function withoutFilters(listing: LibraryListing): LibraryListing {
   return { ...listing, filter: NEW_LIBRARY_LISTING.filter };
 }
 
-export type ChosenFrom = "formats" | "languages" | "tags";
+export type ChosenFrom = "formats" | "languages" | "tags" | "smart";
 
 export type IncludedBy = "adult" | "bookmarked";
 
@@ -118,6 +120,7 @@ export function filtersOn(filter: LibraryFilter): number {
     filter.formats.length +
     filter.languages.length +
     filter.tags.length +
+    filter.smart.length +
     included
   );
 }
