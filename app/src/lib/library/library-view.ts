@@ -50,6 +50,13 @@ export function withContinueRow(
   return { ...view, showsContinueRow };
 }
 
+export function withCategoryTabs(
+  view: LibraryView,
+  showsCategoryTabs: boolean,
+): LibraryView {
+  return { ...view, showsCategoryTabs };
+}
+
 export function withItemCounts(
   view: LibraryView,
   showsItemCounts: boolean,

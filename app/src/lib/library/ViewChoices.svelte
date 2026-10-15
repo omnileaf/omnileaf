@@ -13,6 +13,7 @@
   import {
     type ScreenSize,
     withContinueRow,
+    withCategoryTabs,
     withCoversPerRow,
     withDisplay,
     withFitsCoversToWidth,
@@ -24,11 +25,13 @@
     view,
     coversDrawn,
     mostThatFit,
+    hasCategories,
     onChoose,
   }: {
     view: LibraryView;
     coversDrawn: number | undefined;
     mostThatFit: number | undefined;
+    hasCategories: boolean;
     onChoose: (view: LibraryView) => void;
   } = $props();
 
@@ -66,6 +69,16 @@
           }}
         />
       </div>
+    {/if}
+    {#if hasCategories}
+      <ViewSwitchRow
+        label={m.library_category_tabs()}
+        description={m.library_category_tabs_hint()}
+        isOn={view.showsCategoryTabs}
+        onToggle={(isShown: boolean) => {
+          onChoose(withCategoryTabs(view, isShown));
+        }}
+      />
     {/if}
   </div>
 </section>

@@ -52,6 +52,8 @@
   "library_categories_every": "Every category",
   "library_categories_every_description": "Every tab in your library.",
   "library_view_layout": "Layout",
+  "library_category_tabs": "Category tabs",
+  "library_category_tabs_hint": "Your categories as tabs above the library.",
   "library_view_kept_phone": "Kept on this phone.",
   "library_display_grid": "Grid",
   "library_display_compact": "Compact",
