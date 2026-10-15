@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
     ArrowLeft,
-    ChevronLeft,
     FileX,
     FolderOpen,
     FolderSearch,
@@ -12,12 +11,6 @@
 
   import { resolve } from "$app/paths";
   import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-  } from "#lib/components/ui/breadcrumb/index.ts";
-  import {
     Empty,
     EmptyDescription,
     EmptyMedia,
@@ -26,8 +19,8 @@
   import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import BookBackNav from "./BookBackNav.svelte";
   import type { BookProblem } from "./opened-book.ts";
-  import { READER_BUTTON, READER_ICON_SIZE } from "./reader-bar.ts";
   import { readerSettings } from "./reader-settings.svelte.ts";
 
   const PROBLEM_ICON_SIZE = 20;
@@ -78,44 +71,7 @@
   data-theme={settings.look.controls === "dark" ? "dark" : undefined}
   class="flex flex-col bg-background text-foreground min-block-dvh"
 >
-  <nav
-    aria-label={m.reader_breadcrumb()}
-    class="flex items-center gap-xs self-start px-reader-bar-inline pbs-reader-bar-top min-inline-none expanded:px-lg expanded:pbs-md"
-  >
-    <a
-      href={seriesHref ?? libraryHref}
-      aria-label={place === null
-        ? m.reader_back_label()
-        : m.reader_back_to_series({ series: place.seriesTitle })}
-      class={READER_BUTTON}
-    >
-      <ChevronLeft size={READER_ICON_SIZE} aria-hidden="true" />
-    </a>
-    {#if place !== null && seriesHref !== undefined}
-      <a
-        href={seriesHref}
-        aria-hidden="true"
-        tabindex="-1"
-        class="truncate text-small text-muted expanded:hidden"
-        >{place.seriesTitle}</a
-      >
-      <Breadcrumb class="hidden text-small expanded:block">
-        <BreadcrumbItem class="min-inline-none">
-          <a
-            href={seriesHref}
-            class="block truncate text-muted transition-control max-inline-reader-crumb-series hover:text-foreground"
-            >{place.seriesTitle}</a
-          >
-        </BreadcrumbItem>
-        <BreadcrumbSeparator class="text-muted" />
-        <BreadcrumbItem class="min-inline-none">
-          <BreadcrumbPage class="block truncate max-inline-reader-crumb-book">
-            {place.title}
-          </BreadcrumbPage>
-        </BreadcrumbItem>
-      </Breadcrumb>
-    {/if}
-  </nav>
+  <BookBackNav {place} />
   <div class="flex flex-1 items-center justify-center px-xl pbe-xl">
     <Empty
       class="gap-lg max-inline-book-problem expanded:max-inline-book-problem-wide"
