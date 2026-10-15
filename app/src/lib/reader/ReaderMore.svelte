@@ -22,6 +22,7 @@
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
+  import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import ComingSoon from "./ComingSoon.svelte";
@@ -30,7 +31,6 @@
   const ITEM_ICON_SIZE = 16;
   const SHEET_ACTION =
     "flex items-center gap-md rounded-control px-md text-body font-medium min-block-touch-target hover:bg-hover";
-  const TOUCH: readonly Platform[] = ["android", "ios"];
 
   let {
     title,
@@ -48,9 +48,7 @@
 
   const isWide = new MediaQuery(EXPANDED_QUERY);
   let isSheetOpen = $state(false);
-  const showFile = $derived(
-    TOUCH.includes(platform) ? m.reader_show_file() : m.reader_show_in_folder(),
-  );
+  const showFile = $derived(showFileLabel(platform));
 
   function closeSheet(): void {
     isSheetOpen = false;
