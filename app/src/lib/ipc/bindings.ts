@@ -454,6 +454,8 @@ export type SeriesOverview = {
 	tags: string[],
 	/**  Other series in the library that share a creator or a tag with this one. */
 	related: RelatedSeries[],
+	/**  About how long the books left take to read, absent until the library times reading. */
+	secondsLeft: number | null,
 };
 
 export type SeriesPage = {
