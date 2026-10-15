@@ -23,7 +23,11 @@
   } from "#lib/components/ui/context-menu/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
-  import { columnsOf } from "#lib/virtual-grid/grid-keys.ts";
+  import {
+    columnsOf,
+    movedTo,
+    type Reveal,
+  } from "#lib/virtual-grid/grid-keys.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import CoverBadges from "./CoverBadges.svelte";
@@ -116,6 +120,45 @@
         clientY: box.top + box.height / 2,
       }),
     );
+  }
+
+  let reveal: Reveal | undefined;
+
+  async function moveAmongCovers(event: KeyboardEvent): Promise<void> {
+    const link =
+      event.target instanceof HTMLElement
+        ? event.target.closest("[data-series-link]")
+        : null;
+    const item = link?.closest("[aria-posinset]");
+    const list = item?.parentElement;
+    if (
+      item == null ||
+      list == null ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey
+    ) {
+      return;
+    }
+    const index = Number(item.getAttribute("aria-posinset")) - 1;
+    const next = movedTo(event.key, index, {
+      count: series.length,
+      columns: columnsOf(list),
+    });
+    if (next === undefined) {
+      return;
+    }
+    event.preventDefault();
+    if (next === index) {
+      return;
+    }
+    const shown = await reveal?.(next);
+    shown?.querySelector<HTMLElement>("[data-series-link]")?.focus();
+  }
+
+  function onCoverKeys(event: KeyboardEvent): void {
+    openMenuFromKeys(event);
+    void moveAmongCovers(event);
   }
 
   function noteMenuSeries(event: MouseEvent): void {
@@ -430,7 +473,7 @@
     disabled={menu === undefined || isSelecting || !canHover.current}
     class="contents"
     oncontextmenu={noteMenuSeries}
-    onkeydown={openMenuFromKeys}
+    onkeydown={onCoverKeys}
   >
     <VirtualGrid
       items={series}
@@ -442,6 +485,9 @@
       class={layout.list}
       style={coversPerRow}
       cell={layout.cell}
+      onRevealReady={(ready: Reveal) => {
+        reveal = ready;
+      }}
     />
   </ContextMenu.Trigger>
   {#if menu !== undefined && menuSeries !== undefined}
