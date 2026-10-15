@@ -20,12 +20,12 @@
   const id = $props.id();
 </script>
 
-<div class="flex flex-col gap-md">
+<div class={["flex flex-col", isInRows ? "divide-y divide-border" : "gap-md"]}>
   <div
     class={[
       "flex flex-col gap-sm",
       isInRows &&
-        "expanded:grid expanded:grid-cols-setting-row expanded:items-center expanded:gap-md",
+        "py-setting-grid-pad expanded:grid expanded:grid-cols-setting-grid expanded:items-center expanded:gap-x-md expanded:min-block-setting-grid-row",
     ]}
   >
     <p id="{id}-brightness" class="text-small font-medium">
@@ -33,6 +33,7 @@
     </p>
     <Slider
       aria-labelledby="{id}-brightness"
+      class={isInRows ? "expanded:inline-setting-control" : undefined}
       min={0}
       max={HIGHEST}
       step={STEP}
@@ -48,12 +49,13 @@
     class={[
       "flex flex-col gap-sm",
       isInRows &&
-        "expanded:grid expanded:grid-cols-setting-row expanded:items-center expanded:gap-md",
+        "py-setting-grid-pad expanded:grid expanded:grid-cols-setting-grid expanded:items-center expanded:gap-x-md expanded:min-block-setting-grid-row",
     ]}
   >
     <p id="{id}-warmth" class="text-small font-medium">{m.reader_warmth()}</p>
     <Slider
       aria-labelledby="{id}-warmth"
+      class={isInRows ? "expanded:inline-setting-control" : undefined}
       min={0}
       max={HIGHEST}
       step={STEP}

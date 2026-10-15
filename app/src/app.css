@@ -350,6 +350,9 @@
   --spacing-toolbar-rule: 1rem;
   --spacing-settings-icon: 1.125rem;
   --spacing-settings-row: 2.75rem;
+  --spacing-setting-grid-row: 3.5rem;
+  --spacing-setting-grid-pad: 0.625rem;
+  --spacing-setting-control: 14.25rem;
   --spacing-phone-row: 3.5rem;
   --spacing-package-row: 3.75rem;
   --spacing-list-row: 0.875rem;
@@ -791,6 +794,8 @@
   @variant expanded {
     --spacing-gutter: 2rem;
     --text-page-title: calc(1.75rem * var(--text-scale));
+    --spacing-setting-grid-row: 3rem;
+    --spacing-setting-control: 13rem;
   }
 }
 
@@ -1077,6 +1082,10 @@
 
 @utility grid-cols-setting-row {
   grid-template-columns: 6.75rem minmax(0, 1fr);
+}
+
+@utility grid-cols-setting-grid {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 @utility grid-cols-details {
