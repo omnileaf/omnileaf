@@ -6,9 +6,9 @@ use omnileaf_engine::{
     CategoryId, Core, CoversPerRow, CreatorSeries, FolderCursor, FolderId, FolderPage,
     FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, InterfaceError,
     LabelChanges, Library, LibraryCategory, LibraryFilter, LibraryFilterChoices, LibraryListing,
-    LibrarySearch, LibraryView, LocalDay, OpenedBook, ProbedFormat, ProjectLink, ReadMark,
-    ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
-    SeriesId, SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
+    LibrarySearch, LibraryTag, LibraryView, LocalDay, OpenedBook, ProbedFormat, ProjectLink,
+    ReadMark, ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage,
+    SeriesCursor, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -46,6 +46,9 @@ macro_rules! app_commands {
             library_filter_choices,
             series_labels,
             label_series,
+            library_tags,
+            rename_library_tag,
+            remove_library_tag,
             category_series,
             category_series_count,
             folder_series,
@@ -285,6 +288,34 @@ async fn series_labels(
     reason = "the library keeps no categories or tags yet, so the changes have nowhere to go"
 )]
 fn label_series(series: Vec<SeriesId>, changes: LabelChanges) -> Result<(), IpcError> {
+    Err(IpcError::labels_not_kept())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_tags(library: State<'_, Library>) -> Result<Vec<LibraryTag>, IpcError> {
+    Ok(library.tags()?)
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    unused_variables,
+    clippy::needless_pass_by_value,
+    reason = "the library keeps no tags yet, so there's none to rename"
+)]
+fn rename_library_tag(tag: String, to: String) -> Result<(), IpcError> {
+    Err(IpcError::labels_not_kept())
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    unused_variables,
+    clippy::needless_pass_by_value,
+    reason = "the library keeps no tags yet, so there's none to remove"
+)]
+fn remove_library_tag(tag: String) -> Result<Vec<SeriesId>, IpcError> {
     Err(IpcError::labels_not_kept())
 }
 
