@@ -185,6 +185,16 @@ test("leaves keys typed in editable content to it", () => {
   expect(times()).toBe(0);
 });
 
+test("takes keys pressed on a slider, which types nothing", () => {
+  const times = listen({ key: "m" });
+  const slider = place("input");
+  slider.type = "range";
+
+  press({ key: "m" }, slider);
+
+  expect(times()).toBe(1);
+});
+
 test("takes keys typed in a text field when the shortcut asks for them", () => {
   const times = listen({ key: "k", command: "linux", inTextFields: true });
 
