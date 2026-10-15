@@ -641,6 +641,7 @@
   --radius-alert: 0.875rem;
   --radius-sheet: 1.25rem;
   --radius-cover: 0.375rem;
+  --radius-drag-box: 0.375rem;
   --radius-list-cover: 0.25rem;
   --radius-field: 0.625rem;
   --radius-bottom-sheet: 1.5rem;
@@ -690,6 +691,7 @@
   --z-index-series-band: -1;
   --z-index-series-bar: 1;
   --z-index-tab-bar: 1;
+  --z-index-drag-box: 5;
   --z-index-notice: 10;
   --z-index-dialog: 20;
   --z-index-tooltip: 30;
@@ -897,6 +899,7 @@
   --color-accent-soft: var(--accent);
   --color-accent-hover: color-mix(in oklab, var(--primary) 90%, transparent);
   --color-accent-pressed: color-mix(in oklab, var(--primary) 80%, transparent);
+  --color-drag-box: color-mix(in oklab, var(--primary) 10%, transparent);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-warning-edge: var(--warning);

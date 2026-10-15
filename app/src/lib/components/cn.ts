@@ -85,6 +85,7 @@ export const TOKEN_THEME = {
     "crash-screen-button",
     "dialog",
     "dialog-button",
+    "drag-box",
     "empty-media",
     "field",
     "history-cover",
