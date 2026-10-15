@@ -52,6 +52,7 @@ const ASIDE_WIDTH = 280;
 const CHIP_SIZE = 48;
 const LONG_TITLE =
   "The Lighthouse Keeper’s Apprentice Spends Every Winter Writing Letters to a Sister Across the Northern Sea";
+const TWO_HOURS_FORTY = 9600;
 
 function shelfBackend(shelf: FakeShelf): FakeBackend {
   return shelf.backend();
@@ -77,6 +78,43 @@ async function openSeries(page: Page): Promise<void> {
   await page.goto(`/series/${SERIES_ID}`);
   await expect(title(page)).toBeVisible();
 }
+
+test.describe("a series whose reading the library has timed", () => {
+  test.use({
+    backend: shelfBackend(
+      new FakeShelf(
+        EIGHT_BOOKS,
+        { ...ONE_CREATOR, secondsLeft: TWO_HOURS_FORTY },
+        PAGE_COUNT,
+      ),
+    ),
+  });
+
+  test("says about how long the series has left to read on the card", async ({
+    page,
+  }) => {
+    await openSeries(page);
+
+    await expect(continueCard(page)).toContainText(
+      "Sample Series 04 v03, page 14 of 192 · about 2 h 40 min left in the series",
+    );
+  });
+});
+
+test.describe("a series whose reading isn't timed yet", () => {
+  test.use({
+    backend: shelfBackend(new FakeShelf(EIGHT_BOOKS, ONE_CREATOR, PAGE_COUNT)),
+  });
+
+  test("leaves the time left off the card", async ({ page }) => {
+    await openSeries(page);
+
+    await expect(continueCard(page)).toContainText(
+      "Sample Series 04 v03, page 14 of 192",
+    );
+    await expect(continueCard(page)).not.toContainText("left in the series");
+  });
+});
 
 test.describe("a series with one creator, a summary and tags", () => {
   test.use({
