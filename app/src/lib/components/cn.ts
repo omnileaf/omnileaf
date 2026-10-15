@@ -331,6 +331,7 @@ export const TOKEN_THEME = {
     "reader-settings-top",
     "reader-sheet",
     "reader-shortcuts",
+    "reader-shortcuts-wide",
     "reader-slider",
     "reader-slider-wide",
     "reader-spinner",
