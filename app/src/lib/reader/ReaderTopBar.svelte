@@ -142,7 +142,7 @@
       <BreadcrumbPage class="min-inline-none">
         <Tooltip
           label={m.reader_jump_to_book()}
-          keys="G"
+          keys={["G"]}
           type="button"
           aria-label={m.reader_jump_to_book()}
           aria-expanded={isJumpOpen}
