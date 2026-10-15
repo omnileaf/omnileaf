@@ -8,7 +8,8 @@ use omnileaf_engine::{
     LabelChanges, Library, LibraryCategory, LibraryFilter, LibraryFilterChoices, LibraryListing,
     LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, OpenedBook, ProbedFormat,
     ProjectLink, ReadMark, ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing,
-    SeriesBookPage, SeriesCursor, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
+    SeriesBookPage, SeriesCursor, SeriesId, SeriesLabels, SeriesOverview, SeriesPage,
+    SpellingSuggestion, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -82,6 +83,7 @@ macro_rules! app_commands {
             set_library_adult_content,
             library_tabs,
             set_library_tabs,
+            library_spelling_suggestion,
             remove_library_folder,
             library_folder_book_count,
             rescan_library_folder,
@@ -605,6 +607,15 @@ async fn set_library_adult_content(
     content: AdultContent,
 ) -> Result<(), IpcError> {
     Ok(library.set_adult_content(content).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_spelling_suggestion(
+    library: State<'_, Library>,
+    text: String,
+) -> Result<Option<SpellingSuggestion>, IpcError> {
+    Ok(library.spelling_suggestion(text).await?)
 }
 
 #[tauri::command]
