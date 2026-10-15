@@ -1,6 +1,7 @@
 <script lang="ts">
   import { CircleAlert, FolderOpen, RefreshCw } from "@lucide/svelte";
   import { onMount, untrack } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
 
   import {
     commands,
@@ -16,6 +17,7 @@
   import CategoryTabs from "#lib/library/CategoryTabs.svelte";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import FilterAndSort from "#lib/library/FilterAndSort.svelte";
+  import FilterPanel from "#lib/library/FilterPanel.svelte";
   import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
   import FolderNotice from "#lib/library/FolderNotice.svelte";
   import ContinueRow from "#lib/library/ContinueRow.svelte";
@@ -38,6 +40,8 @@
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { deviceKindOf } from "#lib/first-launch/device.ts";
+  import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
@@ -49,6 +53,7 @@
   let { data }: PageProps = $props();
 
   const TRY_AGAIN_ICON_SIZE = 16;
+  const FILTER_PANEL_ID = "library-filter";
 
   const screenshotMode = getScreenshotMode();
   const listing = new StoredChoice<LibraryListing>(
@@ -92,7 +97,19 @@
   const adding = new FolderAdding(addFolderWithProgress, () => notices);
 
   let isCountWanted = $state(false);
+  const isExpanded = new MediaQuery(EXPANDED_QUERY);
+  const docksFilter = $derived(
+    isExpanded.current && deviceKindOf(data.appInfo.platform) === "desktop",
+  );
   let isFilterOpen = $state(false);
+  let filterButton: HTMLElement | null = $state(null);
+  let headHeight = $state(0);
+  const isDocked = $derived(docksFilter && isFilterOpen);
+
+  function closeFilterPanel(): void {
+    isFilterOpen = false;
+    filterButton?.focus();
+  }
 
   const chosenListing = $derived(
     listing.reading.kind === "read" ? listing.reading.value : undefined,
@@ -257,6 +274,9 @@
       <LibrarySearchEntry platform={data.appInfo.platform} />
       <FilterAndSort
         bind:isOpen={isFilterOpen}
+        bind:button={filterButton}
+        docks={docksFilter}
+        panelId={FILTER_PANEL_ID}
         listing={chosenListing}
         matching={seriesCount.count}
         onChoose={chooseListing}
@@ -275,109 +295,132 @@
     {/if}
   {/snippet}
 </CollectionHeading>
-{#if hasBooks && showsCategoryTabs(categories)}
-  <CategoryTabs
-    {categories}
-    chosen={chosenCategory ?? ALL_SERIES}
-    onChoose={chooseTab}
-  />
-{/if}
-{#if hasBooks && chosenListing !== undefined && filtersOn(chosenListing.filter) > 0}
-  <ActiveFilters
-    listing={chosenListing}
-    onChoose={chooseListing}
-    onMore={() => {
-      isCountWanted = true;
-      isFilterOpen = true;
-    }}
-  />
-{/if}
-{#if isEmpty}
-  <EmptyState
-    icon={FolderOpen}
-    title={m.library_empty()}
-    body={m.library_empty_body()}
-  >
-    <div class="mbs-lg flex flex-col items-center gap-md max-inline-prose">
-      <AddFolderButton
-        bind:element={emptyAddFolder}
-        {adding}
-        placement="empty-state"
-      />
-      <FolderNotice
-        {adding}
-        {notices}
-        usesStandIns={screenshotMode.isOn}
-        onDismissed={returnFocusFromNotice}
-      />
-    </div>
-  </EmptyState>
-{:else if library.list.kind === "loading"}
-  <div class="mbs-lg medium:mbs-xl">
-    <CoverSkeletons
-      {...view.reading.kind === "read"
-        ? { coversPerRow: view.reading.value.coversPerRow }
-        : {}}
+<div
+  bind:offsetHeight={headHeight}
+  class="desktop:expanded:sticky desktop:expanded:inset-bs-under-toolbar desktop:expanded:z-series-bar desktop:expanded:-ms-gutter desktop:expanded:-me-page-end desktop:expanded:bg-background desktop:expanded:ps-gutter desktop:expanded:pe-page-end"
+>
+  {#if hasBooks && showsCategoryTabs(categories)}
+    <CategoryTabs
+      {categories}
+      chosen={chosenCategory ?? ALL_SERIES}
+      onChoose={chooseTab}
     />
-  </div>
-{:else if library.list.kind === "failed"}
-  <EmptyState
-    icon={CircleAlert}
-    title={m.library_series_failed()}
-    body={m.library_unchanged()}
-    role="alert"
-  >
-    <Button
-      type="button"
-      look="outline"
-      class="mbs-lg flex items-center gap-sm rounded-shadcn-control px-lg font-medium min-block-touch-target desktop:text-label desktop:min-block-pointer-button"
-      onclick={() => {
-        void library.load();
-      }}
-    >
-      <RefreshCw size={TRY_AGAIN_ICON_SIZE} aria-hidden="true" />
-      {m.library_try_again()}
-    </Button>
-  </EmptyState>
-{:else}
-  <div class="mbs-sm">
-    <FolderNotice
-      {adding}
-      {notices}
-      usesStandIns={screenshotMode.isOn}
-      onDismissed={returnFocusFromNotice}
-    />
-  </div>
-  {#if listsNothing && chosenListing !== undefined}
-    <NoMatches
-      onClear={() => {
-        chooseTab(ALL_SERIES);
-        chooseListing(withoutFilters(chosenListing));
-      }}
-    />
-  {:else if loaded !== undefined}
-    {#if loaded.view.showsContinueRow}
-      <div class="mbs-lg medium:mbs-xl">
-        <ContinueRow usesStandIns={screenshotMode.isOn} />
-      </div>
-    {/if}
-    <div class="mbs-lg medium:mbs-xl">
-      <SeriesCovers
-        series={loaded.series.items}
-        isComplete={loaded.series.isComplete}
-        onNearEnd={() => {
-          void library.loadMore();
-        }}
-        onColumns={(columns: number) => {
-          measuredColumns = columns;
-        }}
-        onMostThatFit={(most: number) => {
-          mostThatFit = most;
-        }}
-        {coverUrl}
-        view={loaded.view}
-        usesStandIns={screenshotMode.isOn}
-      />
-    </div>
   {/if}
-{/if}
+  {#if hasBooks && chosenListing !== undefined && filtersOn(chosenListing.filter) > 0 && !isDocked}
+    <ActiveFilters
+      listing={chosenListing}
+      onChoose={chooseListing}
+      onMore={() => {
+        isCountWanted = true;
+        isFilterOpen = true;
+      }}
+    />
+  {/if}
+</div>
+<div
+  class={[
+    isDocked && "-me-page-end -mbe-page-bottom grid grid-cols-docked-panel",
+  ]}
+>
+  <div class={[isDocked && "pe-page-end pbe-page-bottom min-inline-none"]}>
+    {#if isEmpty}
+      <EmptyState
+        icon={FolderOpen}
+        title={m.library_empty()}
+        body={m.library_empty_body()}
+      >
+        <div class="mbs-lg flex flex-col items-center gap-md max-inline-prose">
+          <AddFolderButton
+            bind:element={emptyAddFolder}
+            {adding}
+            placement="empty-state"
+          />
+          <FolderNotice
+            {adding}
+            {notices}
+            usesStandIns={screenshotMode.isOn}
+            onDismissed={returnFocusFromNotice}
+          />
+        </div>
+      </EmptyState>
+    {:else if library.list.kind === "loading"}
+      <div class="mbs-lg medium:mbs-xl">
+        <CoverSkeletons
+          {...view.reading.kind === "read"
+            ? { coversPerRow: view.reading.value.coversPerRow }
+            : {}}
+        />
+      </div>
+    {:else if library.list.kind === "failed"}
+      <EmptyState
+        icon={CircleAlert}
+        title={m.library_series_failed()}
+        body={m.library_unchanged()}
+        role="alert"
+      >
+        <Button
+          type="button"
+          look="outline"
+          class="mbs-lg flex items-center gap-sm rounded-shadcn-control px-lg font-medium min-block-touch-target desktop:text-label desktop:min-block-pointer-button"
+          onclick={() => {
+            void library.load();
+          }}
+        >
+          <RefreshCw size={TRY_AGAIN_ICON_SIZE} aria-hidden="true" />
+          {m.library_try_again()}
+        </Button>
+      </EmptyState>
+    {:else}
+      <div class="mbs-sm">
+        <FolderNotice
+          {adding}
+          {notices}
+          usesStandIns={screenshotMode.isOn}
+          onDismissed={returnFocusFromNotice}
+        />
+      </div>
+      {#if listsNothing && chosenListing !== undefined}
+        <NoMatches
+          onClear={() => {
+            chooseTab(ALL_SERIES);
+            chooseListing(withoutFilters(chosenListing));
+          }}
+        />
+      {:else if loaded !== undefined}
+        {#if loaded.view.showsContinueRow}
+          <div class="mbs-lg medium:mbs-xl">
+            <ContinueRow usesStandIns={screenshotMode.isOn} />
+          </div>
+        {/if}
+        <div class="mbs-lg medium:mbs-xl">
+          <SeriesCovers
+            series={loaded.series.items}
+            isComplete={loaded.series.isComplete}
+            onNearEnd={() => {
+              void library.loadMore();
+            }}
+            onColumns={(columns: number) => {
+              measuredColumns = columns;
+            }}
+            onMostThatFit={(most: number) => {
+              mostThatFit = most;
+            }}
+            {coverUrl}
+            view={loaded.view}
+            usesStandIns={screenshotMode.isOn}
+          />
+        </div>
+      {/if}
+    {/if}
+  </div>
+  {#if isDocked && chosenListing !== undefined}
+    <FilterPanel
+      id={FILTER_PANEL_ID}
+      listing={chosenListing}
+      matching={seriesCount.count}
+      {headHeight}
+      onChoose={chooseListing}
+      onClose={closeFilterPanel}
+    />
+  {/if}
+</div>
