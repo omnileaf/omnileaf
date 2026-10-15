@@ -103,3 +103,31 @@ test("leaves More out of the desktop toolbar", async ({ page }, testInfo) => {
 
   await expect(moreButton(page)).toBeHidden();
 });
+
+test.describe("in a library that keeps labels", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      librarySeries: pagedSeries(() => LIBRARY),
+      librarySeriesCount: () => LIBRARY.length,
+      seriesLabels: () => ({
+        keepsLabels: true,
+        categories: [],
+        tags: [],
+        suggestedTags: [],
+      }),
+    } satisfies FakeBackend,
+  });
+
+  test("offers Manage tags under More", async ({ page }) => {
+    test.skip(
+      test.info().project.use.hasTouch !== true,
+      "desktops reach it from Settings",
+    );
+    const menu = await openMore(page);
+
+    await menu.getByRole("menuitem", { name: "Manage tags" }).click();
+
+    await expect(page).toHaveURL(/\/settings\/library\/tags$/);
+  });
+});
