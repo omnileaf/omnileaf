@@ -4,7 +4,7 @@ use omnileaf_db::catalog::{Cursor, Page, SeriesSummary};
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
-use crate::{CoverPath, ipc_brand::branded_string};
+use crate::{BookId, CoverPath, ipc_brand::branded_string};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -14,6 +14,12 @@ pub struct LibrarySeries {
     pub book_count: u32,
     pub unread_count: u32,
     pub cover: Option<CoverPath>,
+    /// The language the books' details name, absent until the library reads them.
+    pub language: Option<String>,
+    /// Holds chapters downloaded from a source, which a local library never does.
+    pub has_downloads: bool,
+    /// The book Continue opens, absent until the library works it out for its list.
+    pub continues_from: Option<BookId>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -40,6 +46,9 @@ impl From<SeriesSummary> for LibrarySeries {
             book_count: series.book_count,
             unread_count: series.unread_count,
             cover: series.cover.map(CoverPath),
+            language: None,
+            has_downloads: false,
+            continues_from: None,
         }
     }
 }
@@ -96,5 +105,27 @@ impl TryFrom<String> for SeriesCursor {
 impl Type for SeriesCursor {
     fn definition(types: &mut Types) -> DataType {
         branded_string("SeriesCursor", types)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn carries_no_language_downloads_or_book_to_continue_until_the_library_reads_them() {
+        let series = LibrarySeries::from(SeriesSummary {
+            id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
+            title: "Sample Series 04".to_owned(),
+            book_count: 8,
+            unread_count: 6,
+            added_at_ms: 0,
+            cover: None,
+        });
+
+        assert_eq!(
+            (series.language, series.has_downloads, series.continues_from),
+            (None, false, None)
+        );
     }
 }
