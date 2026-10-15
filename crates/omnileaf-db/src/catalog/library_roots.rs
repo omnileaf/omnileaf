@@ -14,16 +14,22 @@ use crate::{
 
 const IN_ADDED_ORDER: &str = "SELECT
         id, kind, locator_kind, location, bookmark, tree_name, tree_place, added_at_ms,
-        unavailable_since_ms
+        unavailable_since_ms, shows_while_missing
     FROM library_root
     WHERE id > ?1
     ORDER BY id
     LIMIT ?2";
 const ONE_ROOT: &str = "SELECT
         id, kind, locator_kind, location, bookmark, tree_name, tree_place, added_at_ms,
-        unavailable_since_ms
+        unavailable_since_ms, shows_while_missing
     FROM library_root
     WHERE id = ?1";
+const MISSING: &str = "SELECT
+        id, kind, locator_kind, location, bookmark, tree_name, tree_place, added_at_ms,
+        unavailable_since_ms, shows_while_missing
+    FROM library_root
+    WHERE unavailable_since_ms IS NOT NULL
+    ORDER BY id";
 const BOOKMARKED: &str = "SELECT id, location, bookmark, unavailable_since_ms
     FROM library_root
     WHERE kind = ?1 AND locator_kind = ?2
@@ -80,6 +86,14 @@ pub fn bookmarked_roots(connection: &Connection) -> Result<Vec<BookmarkedRoot>, 
         })?
         .collect::<Result<_, _>>()?;
     Ok(roots)
+}
+
+/// The folders found missing on their last rescan, in the order they were added.
+pub fn missing_roots(connection: &Connection) -> Result<Vec<LibraryRoot>, Error> {
+    Ok(connection
+        .prepare(MISSING)?
+        .query_map([], stored_root)?
+        .collect::<Result<_, _>>()?)
 }
 
 pub fn library_root(connection: &Connection, id: RootId) -> Result<LibraryRoot, Error> {
