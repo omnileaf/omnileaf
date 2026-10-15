@@ -38,6 +38,7 @@ export const commands = {
 	seriesTitle: string,
 } | null, IpcError>(__TAURI_INVOKE("book_place", { book })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
+	markSeriesRead: (series: (string & { readonly __brand: "SeriesId" })[]) => typedError<(string & { readonly __brand: "BookId" })[], IpcError>(__TAURI_INVOKE("mark_series_read", { series })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
 	readingRestored: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("reading_restored", { id, page, utcOffset })),
 	pageShown: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("page_shown", { id, page, utcOffset })),
