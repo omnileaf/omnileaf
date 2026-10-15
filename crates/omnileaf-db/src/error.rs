@@ -61,6 +61,8 @@ pub enum Error {
     MalformedTreeName { name: String },
     #[error("read the library listing stored with {name:?}, which this build can't list by")]
     UnsupportedLibraryListing { name: String },
+    #[error("read a library tab stored as {name:?}, which this build doesn't know")]
+    UnsupportedLibraryTab { name: String },
     #[error("read a library folder id that isn't one the library gave out")]
     MalformedRootId,
     #[error("read a book file id that isn't one the library gave out")]
