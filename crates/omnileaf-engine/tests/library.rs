@@ -159,6 +159,44 @@ async fn adds_a_folder_and_scans_the_books_in_it() {
 }
 
 #[tokio::test]
+async fn lists_and_counts_the_series_held_in_one_folder() {
+    let home = ScratchFolder::new("library-folder-series-home");
+    let comics = ScratchFolder::new("library-folder-series-comics");
+    write_sample_library(comics.path()).unwrap();
+    let library = open(home.path()).await;
+    library
+        .add_folder(comics.path().join(SAMPLE_LIBRARY_NAME), |_| {})
+        .await
+        .unwrap();
+    let folders = all_folders(&library).await;
+    let [home_folder, linked] = [FolderKind::Home, FolderKind::Linked].map(|kind| {
+        folders
+            .iter()
+            .find(|folder| folder.kind == kind)
+            .unwrap()
+            .id
+    });
+
+    let in_linked = library
+        .folder_series(linked, LibraryListing::default(), None)
+        .await
+        .unwrap();
+    let in_home = library
+        .folder_series(home_folder, LibraryListing::default(), None)
+        .await
+        .unwrap();
+    let counted = library
+        .folder_series_count(linked, LibraryListing::default().filter)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (in_linked.series.len(), in_home.series.len(), counted),
+        (3, 0, 3)
+    );
+}
+
+#[tokio::test]
 async fn adds_a_bookmarked_folder_and_scans_the_books_in_it() {
     let home = ScratchFolder::new("library-bookmarked-home");
     let comics = ScratchFolder::new("library-bookmarked-comics");
