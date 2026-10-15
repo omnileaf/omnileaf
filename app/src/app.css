@@ -1251,8 +1251,11 @@
 
 :root {
   @variant android {
-    --text-page-title: calc(2rem * var(--text-scale));
     --text-page-title--line-height: calc(40 / 32);
+
+    @variant max-medium {
+      --text-page-title: calc(2rem * var(--text-scale));
+    }
   }
 }
 
