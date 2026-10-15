@@ -103,6 +103,12 @@ export type AppInfo = {
 
 export type BackSwipe = { kind: "moved"; progress: number | null } | { kind: "released"; progress: number | null; velocity: number | null } | { kind: "cancelled" };
 
+/**  What's wrong with a book that opens with fewer pages than its file promises, the pages past the last one in `pages` being the ones lost. */
+export type BookDamage = {
+	promisedPages: number,
+	cause: DamageCause,
+};
+
 export type BookPage = {
 	path: string & { readonly __brand: "PagePath" },
 	thumbnail: string & { readonly __brand: "PageThumbnailPath" },
@@ -154,6 +160,8 @@ export type CreatorSeries = {
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	role: CreatorRole | null,
 };
+
+export type DamageCause = "archiveEndsEarly";
 
 export type FileChanges = {
 	added: number,
@@ -320,6 +328,8 @@ export type OpenedBook = {
 	readingDirection: ReadingDirection | null,
 	/**  Counting from 0; absent while the library keeps no bookmarks. */
 	bookmarkedPages: number[] | null,
+	/**  Absent while the library doesn't check a book's pages against what its file promises. */
+	damage: BookDamage | null,
 };
 
 /**  In pixels. */
