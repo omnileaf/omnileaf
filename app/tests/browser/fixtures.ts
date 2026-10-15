@@ -115,6 +115,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   libraryListing: () => NEW_LIBRARY_LISTING,
   setLibraryListing: () => null,
   libraryTabs: () => [...NEW_LIBRARY_TABS],
+  librarySpellingSuggestion: () => null,
   setLibraryTabs: () => null,
   libraryTags: () => [],
   renameLibraryTag: () => null,
