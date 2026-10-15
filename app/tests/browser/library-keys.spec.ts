@@ -1,7 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import type { FakeBackend } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import { DEFAULT_BACKEND, expect, test, tokenColour } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(40);
@@ -53,6 +53,22 @@ test("moves between covers with the arrow keys", async ({ page }) => {
   await page.keyboard.press("ArrowUp");
 
   await expect(coverOf(page, 0)).toBeFocused();
+});
+
+test("rings the cover in focus in the accent colour, round the whole tile", async ({
+  page,
+}) => {
+  await focusFirst(page);
+
+  await page.keyboard.press("ArrowRight");
+
+  const cover = coverOf(page, 1);
+  await expect(cover).toHaveCSS("outline-style", "solid");
+  await expect(cover).toHaveCSS(
+    "outline-color",
+    await tokenColour(page, "--color-accent"),
+  );
+  await expect(cover).not.toHaveCSS("border-radius", "0px");
 });
 
 test("jumps to the last cover listed with End, and back with Home", async ({
