@@ -69,6 +69,18 @@ export const DEFAULT_BACKEND: FakeBackend = {
   bookmarkPages: () => null,
   bookPlace: () => null,
   libraryCategories: () => [],
+  seriesLabels: () => ({
+    keepsLabels: false,
+    categories: [],
+    tags: [],
+    suggestedTags: [],
+  }),
+  labelSeries: () => {
+    throw new CommandFailure({
+      code: "labelsNotKept",
+      message: "the library keeps no categories or tags yet",
+    });
+  },
   libraryFilterChoices: () => ({
     formats: [],
     languages: [],
