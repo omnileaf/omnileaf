@@ -2,6 +2,7 @@ import {
   DEFAULT_LIBRARY_LISTING,
   type Inclusion,
   type LibraryFilter,
+  type LibraryFilterChoices,
   type LibraryListing,
   type LibrarySortBy,
   type SortDirection,
@@ -9,6 +10,14 @@ import {
 
 /** The reading-state conditions the library filters by, in the order the filter shows them. */
 export type FilterCondition = "unread" | "started" | "finished";
+
+export const NO_FILTER_CHOICES: LibraryFilterChoices = {
+  formats: [],
+  languages: [],
+  tags: [],
+  ratesAdult: false,
+  keepsBookmarks: false,
+};
 
 export const NEW_LIBRARY_LISTING: LibraryListing = {
   sort: { ...DEFAULT_LIBRARY_LISTING.sort },
@@ -68,12 +77,49 @@ export function withoutFilters(listing: LibraryListing): LibraryListing {
   return { ...listing, filter: NEW_LIBRARY_LISTING.filter };
 }
 
-export function filtersOn(filter: LibraryFilter): number {
+export type ChosenFrom = "formats" | "languages" | "tags";
+
+export type IncludedBy = "adult" | "bookmarked";
+
+export function toggledIn<Key extends ChosenFrom>(
+  listing: LibraryListing,
+  key: Key,
+  value: LibraryFilter[Key][number],
+): LibraryListing {
+  const chosen: readonly string[] = listing.filter[key];
+  const toggled = chosen.includes(value)
+    ? chosen.filter((each) => each !== value)
+    : [...chosen, value];
+  return { ...listing, filter: { ...listing.filter, [key]: toggled } };
+}
+
+export function withInclusion(
+  listing: LibraryListing,
+  key: IncludedBy,
+  inclusion: Inclusion,
+): LibraryListing {
+  return { ...listing, filter: { ...listing.filter, [key]: inclusion } };
+}
+
+function readFiltersOn(filter: LibraryFilter): number {
   if (readStateOf(filter) !== "any") {
     return 1;
   }
   return FILTER_CONDITIONS.filter((condition) => filter[condition] !== "any")
     .length;
+}
+
+export function filtersOn(filter: LibraryFilter): number {
+  const included = [filter.adult, filter.bookmarked].filter(
+    (inclusion) => inclusion !== "any",
+  ).length;
+  return (
+    readFiltersOn(filter) +
+    filter.formats.length +
+    filter.languages.length +
+    filter.tags.length +
+    included
+  );
 }
 
 export type ReadState = "any" | "unread" | "inProgress" | "read";

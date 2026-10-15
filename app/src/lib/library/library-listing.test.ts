@@ -8,6 +8,8 @@ import {
   reversed,
   sortedBy,
   readStateOf,
+  toggledIn,
+  withInclusion,
   withoutFilters,
   withReadState,
   NEW_LIBRARY_LISTING,
@@ -186,4 +188,41 @@ test("clears every filter, formats, languages and tags included, and keeps the s
     sort: narrowed.sort,
     filter: NEW_LIBRARY_LISTING.filter,
   });
+});
+
+test("adds a format, language or tag on choosing it, and takes it off on choosing it again", () => {
+  const manga = toggledIn(NEW_LIBRARY_LISTING, "formats", "manga");
+  const mangaAndBooks = toggledIn(manga, "formats", "book");
+
+  expect(mangaAndBooks.filter.formats).toEqual(["manga", "book"]);
+  expect(toggledIn(mangaAndBooks, "formats", "manga").filter.formats).toEqual([
+    "book",
+  ]);
+  expect(toggledIn(NEW_LIBRARY_LISTING, "tags", "Sea").filter.tags).toEqual([
+    "Sea",
+  ]);
+});
+
+test("sets 18+ and Bookmarked to any, only or hide", () => {
+  const hidden = withInclusion(NEW_LIBRARY_LISTING, "adult", "hide");
+
+  expect(withInclusion(hidden, "bookmarked", "only").filter).toEqual({
+    ...NEW_LIBRARY_LISTING.filter,
+    adult: "hide",
+    bookmarked: "only",
+  });
+});
+
+test("counts the read state, each format, language and tag, 18+ and Bookmarked as a filter each", () => {
+  expect(
+    filtersOn({
+      ...NEW_LIBRARY_LISTING.filter,
+      started: "hide",
+      formats: ["manga"],
+      languages: ["ja", "fr"],
+      tags: ["Sea"],
+      adult: "hide",
+      bookmarked: "only",
+    }),
+  ).toBe(7);
 });
