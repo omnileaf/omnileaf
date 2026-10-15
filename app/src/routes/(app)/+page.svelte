@@ -246,6 +246,10 @@
     hiddenSeries = hidden.status === "ok" ? hidden.data : 0;
   }
 
+  function showInFolder(series: LibrarySeries): void {
+    void commands.showSeriesInFolder(series.id).then(reportingErrors);
+  }
+
   async function unlink(folder: LibraryFolder): Promise<void> {
     unlinking = undefined;
     const removed = await commands.removeLibraryFolder(folder.id);
@@ -732,6 +736,7 @@
                 onSelect: (one: LibrarySeries) => {
                   selection.begin(one.id);
                 },
+                onShowInFolder: showInFolder,
               },
             }}
             <div class="flex flex-col gap-xl">
@@ -775,6 +780,7 @@
                 onSelect: (one: LibrarySeries) => {
                   selection.begin(one.id);
                 },
+                onShowInFolder: showInFolder,
               }}
             />
           {/if}
