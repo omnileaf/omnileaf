@@ -324,6 +324,10 @@
   --spacing-switch-row: 3.25rem;
   --spacing-checkbox-row: 1.875rem;
   --spacing-badge-inset: 0.3125rem;
+  --spacing-continue-disc: 2.5rem;
+  --spacing-continue-disc-small: 2rem;
+  --spacing-downloaded-mark: 1.375rem;
+  --spacing-compact-continue-lift: 3.25rem;
   --spacing-badge-inset-wide: 0.4375rem;
   --spacing-badge-block: 0.25rem;
   --spacing-badge-block-wide: 0.3125rem;
@@ -604,6 +608,8 @@
   --container-crash-report: 26.25rem;
   --container-preview-sides: 18em;
   --container-cover-title: calc(2.125em + 0.6875rem);
+  --container-cover-continue: 4.5rem;
+  --container-cover-disc: 6rem;
   --container-cover-title-wide: calc(2.125em + 1.25rem);
   --container-series-split: 52rem;
 
@@ -1193,6 +1199,22 @@
     var(--spacing-compact-cover-min),
     var(--spacing-compact-cover-readable) * var(--covers-readable-share)
   );
+}
+
+@utility continue-disc {
+  --continue-disc: var(--spacing-continue-disc);
+  block-size: var(--continue-disc);
+  inline-size: var(--continue-disc);
+}
+
+@utility continue-disc-small {
+  --continue-disc: var(--spacing-continue-disc-small);
+  block-size: var(--continue-disc);
+  inline-size: var(--continue-disc);
+}
+
+@utility inset-bs-cover-end {
+  inset-block-start: calc(150cqi - var(--continue-disc) - var(--spacing-sm));
 }
 
 @utility grid-cols-covers-fit {
