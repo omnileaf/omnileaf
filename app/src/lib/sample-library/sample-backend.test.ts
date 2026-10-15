@@ -523,3 +523,17 @@ test("removes a tag from every series, naming them so it can go back", async () 
     (await backend.libraryTags()).some((tag) => tag.name === "Seinen"),
   ]).toEqual([[sampleSeriesId(4)], true]);
 });
+
+test("lists the series read last first, then those never read", async () => {
+  const { backend } = backendFor();
+  const history = await backend.readingHistory(null, { kind: "everything" });
+  const readTitles = new Set(history.entries.map((entry) => entry.seriesTitle));
+
+  const page = await backend.librarySeries(null, {
+    ...NEW_LIBRARY_LISTING,
+    sort: { by: "lastRead", direction: "descending" },
+  });
+
+  const titles = page.series.map((series) => series.title);
+  expect(new Set(titles.slice(0, readTitles.size))).toEqual(readTitles);
+});

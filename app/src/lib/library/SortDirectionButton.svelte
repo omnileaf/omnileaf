@@ -10,21 +10,24 @@
     readonly change: () => string;
   }
 
+  const BY_TIME = [
+    {
+      label: m.library_sort_oldest_first,
+      change: m.library_sort_oldest_first_change,
+    },
+    {
+      label: m.library_sort_newest_first,
+      change: m.library_sort_newest_first_change,
+    },
+  ] as const satisfies readonly [Wording, Wording];
+
   const WORDING = {
     title: [
       { label: m.library_sort_a_to_z, change: m.library_sort_a_to_z_change },
       { label: m.library_sort_z_to_a, change: m.library_sort_z_to_a_change },
     ],
-    dateAdded: [
-      {
-        label: m.library_sort_oldest_first,
-        change: m.library_sort_oldest_first_change,
-      },
-      {
-        label: m.library_sort_newest_first,
-        change: m.library_sort_newest_first_change,
-      },
-    ],
+    dateAdded: BY_TIME,
+    lastRead: BY_TIME,
   } satisfies Record<LibrarySort["by"], readonly [Wording, Wording]>;
 
   const LOOKS = {
