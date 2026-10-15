@@ -13,6 +13,7 @@ import {
   type Platform,
 } from "../../src/lib/ipc/bindings.ts";
 import { NEW_ADULT_CONTENT } from "../../src/lib/library/adult-content.ts";
+import { NEW_LIBRARY_TABS } from "../../src/lib/library/library-tabs.ts";
 import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 import type { ScreenSize } from "../../src/lib/library/library-view.ts";
 import {
@@ -113,6 +114,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   historySeries: () => [],
   libraryListing: () => NEW_LIBRARY_LISTING,
   setLibraryListing: () => null,
+  libraryTabs: () => [...NEW_LIBRARY_TABS],
+  setLibraryTabs: () => null,
   libraryTags: () => [],
   renameLibraryTag: () => null,
   removeLibraryTag: () => [],

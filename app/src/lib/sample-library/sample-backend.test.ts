@@ -6,6 +6,7 @@ import { CommandFailure } from "#lib/ipc/fake-backend.ts";
 import { sampleBackend, scenarioFrom } from "./sample-backend.ts";
 import { LONG_TITLE, sampleBookId, sampleSeriesId } from "./sample-library.ts";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
+import { NEW_LIBRARY_TABS } from "#lib/library/library-tabs.ts";
 
 const NEWEST_FIRST: LibraryListing = {
   ...NEW_LIBRARY_LISTING,
@@ -536,4 +537,22 @@ test("lists the series read last first, then those never read", async () => {
 
   const titles = page.series.map((series) => series.title);
   expect(new Set(titles.slice(0, readTitles.size))).toEqual(readTitles);
+});
+
+test("starts the library's tabs with All shown and New chapters hidden", async () => {
+  const { backend } = backendFor();
+
+  expect(await backend.libraryTabs()).toEqual(NEW_LIBRARY_TABS);
+});
+
+test("remembers the library's tabs as they were set", async () => {
+  const { backend } = backendFor();
+  const tabs = NEW_LIBRARY_TABS.toReversed().map((tab) => ({
+    ...tab,
+    isHidden: false,
+  }));
+
+  await backend.setLibraryTabs(tabs);
+
+  expect(await backend.libraryTabs()).toEqual(tabs);
 });

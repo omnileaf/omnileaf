@@ -69,6 +69,8 @@ export const commands = {
 	setLibraryView: (view: LibraryView) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_view", { view })),
 	libraryAdultContent: () => typedError<AdultContent, IpcError>(__TAURI_INVOKE("library_adult_content")),
 	setLibraryAdultContent: (content: AdultContent) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_adult_content", { content })),
+	libraryTabs: () => typedError<LibraryTab[], IpcError>(__TAURI_INVOKE("library_tabs")),
+	setLibraryTabs: (tabs: LibraryTab[]) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_tabs", { tabs })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
 	libraryFolderBookCount: (id: string & { readonly __brand: "FolderId" }) => typedError<number, IpcError>(__TAURI_INVOKE("library_folder_book_count", { id })),
 	rescanLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<FolderRescan, IpcError>(__TAURI_INVOKE("rescan_library_folder", { id, onProgress })),
@@ -368,6 +370,16 @@ export type LibrarySort = {
 };
 
 export type LibrarySortBy = "title" | "dateAdded" | "lastRead";
+
+export type LibraryTab = {
+	id: LibraryTabId,
+	/**  Hiding a tab never removes a series. */
+	isHidden: boolean,
+};
+
+export type LibraryTabId = { kind: "all" } | 
+/**  Lists the series with chapters from a source not read yet, which a local library never has. */
+{ kind: "newChapters" } | { kind: "category"; id: string & { readonly __brand: "CategoryId" } };
 
 /**  A tag the library keeps, and how many series carry it. */
 export type LibraryTag = {
