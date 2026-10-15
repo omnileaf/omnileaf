@@ -8,6 +8,7 @@ mod support;
 use std::{
     collections::BTreeSet,
     fs,
+    path::Path,
     sync::atomic::{AtomicU64, Ordering},
 };
 
@@ -402,4 +403,38 @@ async fn leaves_the_series_as_before_once_the_books_it_marked_read_are_marked_un
         .await
         .unwrap();
     assert_eq!(after.series, before.series);
+}
+
+#[tokio::test]
+async fn finds_the_file_of_a_series_first_book_to_show_in_its_folder() {
+    let comics = ScratchFolder::new("series-file-comics");
+    write_sample_library(comics.path()).unwrap();
+    let home = ScratchFolder::new("series-file-home");
+    let library = Library::open(home.path().to_path_buf(), FixedClock)
+        .await
+        .unwrap();
+    library
+        .add_folder(comics.path().join(SAMPLE_LIBRARY_NAME), |_| {})
+        .await
+        .unwrap();
+    let page = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap();
+    let first = page.series.first().unwrap();
+
+    let file = library.series_file(first.id).await.unwrap().unwrap();
+
+    assert_eq!(
+        (file.parent().map(Path::to_path_buf), file.is_file()),
+        (
+            Some(
+                comics
+                    .path()
+                    .join(SAMPLE_LIBRARY_NAME)
+                    .join("Sample Series 01")
+            ),
+            true
+        )
+    );
 }
