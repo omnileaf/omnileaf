@@ -11,7 +11,12 @@
   import { m } from "#lib/paraglide/messages.js";
   import SettingChoice from "#lib/reader/SettingChoice.svelte";
 
-  import { FORMAT_LABELS, languageName } from "./filter-labels";
+  import {
+    FORMAT_LABELS,
+    languageName,
+    SMART_HINTS,
+    SMART_LABELS,
+  } from "./filter-labels";
   import FilterToggles from "./FilterToggles.svelte";
   import {
     type ChosenFrom,
@@ -25,6 +30,7 @@
   } from "./library-listing";
   import ReadStateChoice from "./ReadStateChoice.svelte";
   import SortSelect from "./SortSelect.svelte";
+  import ViewSwitchRow from "./ViewSwitchRow.svelte";
 
   const TAGS_AT_FIRST = 3;
   const PLUS_SIZE = 14;
@@ -163,6 +169,35 @@
           include("bookmarked", inclusion);
         }}
       />
+    {/if}
+    {#if choices.smart.length > 0}
+      <div class="flex flex-col">
+        <div class="flex flex-col gap-2xs pbs-setting-grid-pad">
+          <p class="text-small font-semibold">{m.library_smart_filters()}</p>
+          <p class="text-detail text-muted">
+            {m.library_smart_filters_hint()}
+          </p>
+        </div>
+        <div class="flex flex-col divide-y divide-border">
+          {#each choices.smart as smart (smart)}
+            <ViewSwitchRow
+              label={SMART_LABELS[smart]()}
+              description={SMART_HINTS[smart]()}
+              isOn={listing.filter.smart.includes(smart)}
+              onToggle={() => {
+                toggle("smart", smart);
+              }}
+            />
+          {/each}
+        </div>
+        {#if !choices.smart.includes("readyToCleanUp")}
+          <p
+            class="border-bs border-border py-setting-grid-pad text-detail text-muted"
+          >
+            {m.library_smart_clean_up_waits()}
+          </p>
+        {/if}
+      </div>
     {/if}
   </div>
 </section>
