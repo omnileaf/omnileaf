@@ -133,10 +133,11 @@ test("opens the search page from the library's header with its field ready to ty
   await openSearch(page);
 
   await expect(page).toHaveURL(/\/search/);
-  await expect(page.getByRole("link", { name: "Library" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
+  await expect(
+    page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Library" }),
+  ).toHaveAttribute("aria-current", "page");
 });
 
 test("shows what can be searched before anything is typed", async ({
@@ -145,13 +146,49 @@ test("shows what can be searched before anything is typed", async ({
   await page.goto("/search");
 
   await expect(
-    page.getByRole("heading", { level: 2, name: "Search by" }),
+    page.getByRole("heading", { level: 2, name: "You can search for" }),
   ).toBeVisible();
   await expect(page.getByText("Title or series")).toBeVisible();
   await expect(
-    page.getByRole("heading", { level: 2, name: "Type to filter" }),
+    page.getByRole("heading", { level: 2, name: "Type a filter to narrow" }),
   ).toBeVisible();
-  await expect(page.getByText("→ only unread")).toBeVisible();
+  await expect(page.getByText("unread", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Recent searches" }),
+  ).toHaveCount(0);
+});
+
+test("lists the searches made last, newest first, and runs one again", async ({
+  page,
+}) => {
+  await openSearch(page);
+  await searchField(page).fill("Harbour");
+  await expectFound(page, ["Harbour Gate"]);
+  await results(page).getByRole("option").first().click();
+  await page.goto("/search");
+
+  const recent = page.getByRole("region", { name: "Recent searches" });
+  await expect(recent.getByRole("button", { name: /^Harbour/ })).toBeVisible();
+  await recent.getByRole("button", { name: /^Harbour/ }).click();
+
+  await expect(searchField(page)).toHaveValue("Harbour");
+  await expectFound(page, ["Harbour Gate"]);
+});
+
+test("forgets the searches made once Clear is pressed", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "omnileaf.recentSearches",
+      JSON.stringify([{ text: "harbour gate", atMs: Date.now() }]),
+    );
+  });
+  await page.goto("/search");
+  const recent = page.getByRole("region", { name: "Recent searches" });
+  await expect(recent).toContainText("harbour gate");
+
+  await recent.getByRole("button", { name: "Clear" }).click();
+
+  await expect(recent).toHaveCount(0);
 });
 
 test("finds the series whose titles hold every word typed, and counts them", async ({
@@ -220,7 +257,9 @@ test("drops a filter with its remove button, or with backspace in an empty field
   await expect(page.getByRole("button", { name: /^Remove the/ })).toHaveCount(
     0,
   );
-  await expect(page.getByRole("heading", { name: "Search by" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "You can search for" }),
+  ).toBeVisible();
 });
 
 test("shows only the series meeting the condition chosen", async ({ page }) => {
@@ -282,15 +321,14 @@ test("names the field's clear button and each filter's remove button in a toolti
   }
 });
 
-test("draws Close beside the field at the 40px height the desktop board gives it", async ({
-  page,
-}) => {
+test("names Library › Search in the desktop toolbar", async ({ page }) => {
   test.skip(!isDesktop(page), "desktop only");
   await page.goto("/search");
 
-  const close = await boxOf(page.getByRole("link", { name: "Close" }));
+  const crumbs = page.getByRole("navigation", { name: "Breadcrumb" });
 
-  expect(close.height).toBe(40);
+  await expect(crumbs.getByRole("link", { name: "Library" })).toBeVisible();
+  await expect(crumbs).toContainText("Search");
 });
 
 test("moves through the results with the arrow keys, Home and End, and opens one with Enter", async ({
@@ -464,9 +502,7 @@ test("goes back to the library from the search page", async ({ page }) => {
   if (isDesktop(page)) {
     await searchField(page).press("Escape");
   } else {
-    await page
-      .getByRole("link", { name: isPhone(page) ? "Cancel" : "Close" })
-      .click();
+    await page.getByRole("link", { name: "Back to the library" }).click();
   }
 
   await expect(page).toHaveURL(/\/$/);

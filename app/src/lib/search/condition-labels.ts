@@ -9,12 +9,6 @@ export const CONDITION_LABELS = {
   finished: m.library_filter_finished,
 } as const satisfies Record<FilterCondition, () => string>;
 
-export const CONDITION_HINTS = {
-  unread: m.search_word_becomes_unread,
-  started: m.search_word_becomes_started,
-  finished: m.search_word_becomes_finished,
-} as const satisfies Record<FilterCondition, () => string>;
-
 export function filterWords(): FilterWords {
   return {
     unread: m.search_word_unread(),
