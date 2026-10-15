@@ -2,13 +2,10 @@ import { clearMocks, mockConvertFileSrc, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import {
-  commands,
-  DEFAULT_LIBRARY_LISTING,
-  type LibrarySeries,
-} from "#lib/ipc/bindings.ts";
+import { commands, type LibrarySeries } from "#lib/ipc/bindings.ts";
 
 import QuickOpenOptionHarness from "./QuickOpenOptionHarness.svelte";
+import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 
 const REAL_TITLE = "Hidden Story";
 const STAND_IN = /^Series \d{2,3}$/;
@@ -28,7 +25,7 @@ async function found(): Promise<LibrarySeries> {
   }));
   const page = await commands.librarySearch(null, {
     text: "hidden",
-    filter: DEFAULT_LIBRARY_LISTING.filter,
+    filter: NEW_LIBRARY_LISTING.filter,
   });
   const [series] = page.status === "ok" ? page.data.series : [];
   if (series === undefined) {

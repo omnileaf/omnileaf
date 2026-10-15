@@ -22,6 +22,7 @@ export const commands = {
 	librarySeries: (after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_series", { after, listing })),
 	librarySeriesCount: (filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("library_series_count", { filter })),
 	libraryCategories: () => typedError<LibraryCategory[], IpcError>(__TAURI_INVOKE("library_categories")),
+	libraryFilterChoices: () => typedError<LibraryFilterChoices, IpcError>(__TAURI_INVOKE("library_filter_choices")),
 	categorySeries: (category: string & { readonly __brand: "CategoryId" }, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("category_series", { category, after, listing })),
 	categorySeriesCount: (category: string & { readonly __brand: "CategoryId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("category_series_count", { category, filter })),
 	librarySearch: (after: string & { readonly __brand: "SeriesCursor" } | null, search: LibrarySearch) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_search", { after, search })),
@@ -90,7 +91,7 @@ export const events = {
 /* Constants */
 export const COVERS_PER_ROW = {"desktop":{"fewest":4,"most":12},"phone":{"fewest":2,"most":5},"tablet":{"fewest":3,"most":8}} as const;
 
-export const DEFAULT_LIBRARY_LISTING = {"filter":{"finished":"any","started":"any","unread":"any"},"sort":{"by":"title","direction":"ascending"}} as const;
+export const DEFAULT_LIBRARY_LISTING = {"filter":{"adult":"any","bookmarked":"any","finished":"any","formats":[],"languages":[],"started":"any","tags":[],"unread":"any"},"sort":{"by":"title","direction":"ascending"}} as const;
 
 export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","fitsCoversToWidth":true,"onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsContinueRow":false,"showsItemCounts":true} as const;
 
@@ -263,6 +264,24 @@ export type LibraryFilter = {
 	started: Inclusion,
 	/**  Has every book marked read. */
 	finished: Inclusion,
+	/**  Is one of these formats, or any format when empty. */
+	formats: SeriesFormat[],
+	/**  Is in one of these languages, or any language when empty. */
+	languages: string[],
+	/**  Carries one of these tags, or any tag when empty. */
+	tags: string[],
+	/**  Has an adult age rating, or is marked adult by hand. */
+	adult: Inclusion,
+	/**  Has a bookmarked page. */
+	bookmarked: Inclusion,
+};
+
+export type LibraryFilterChoices = {
+	formats: SeriesFormat[],
+	languages: string[],
+	tags: string[],
+	ratesAdult: boolean,
+	keepsBookmarks: boolean,
 };
 
 export type LibraryFolder = {
@@ -442,6 +461,8 @@ export type SeriesCreator = {
 	/**  How many series in the library name this creator, this one included. */
 	seriesCount: number,
 };
+
+export type SeriesFormat = "comic" | "manga" | "book";
 
 export type SeriesNeighbour = {
 	id: string & { readonly __brand: "BookId" },

@@ -5,7 +5,6 @@
 
   import {
     commands,
-    DEFAULT_LIBRARY_LISTING,
     DEFAULT_LIBRARY_VIEW,
     type LibraryCategory,
     type LibraryListing,
@@ -23,7 +22,11 @@
   import ContinueRow from "#lib/library/ContinueRow.svelte";
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
-  import { filtersOn, withoutFilters } from "#lib/library/library-listing.ts";
+  import {
+    filtersOn,
+    withoutFilters,
+    NEW_LIBRARY_LISTING,
+  } from "#lib/library/library-listing.ts";
   import { librarySeriesList } from "#lib/library/library-series.svelte.ts";
   import {
     ALL_SERIES,
@@ -60,7 +63,7 @@
     {
       read: () => commands.libraryListing(),
       store: (chosen: LibraryListing) => commands.setLibraryListing(chosen),
-      fallback: DEFAULT_LIBRARY_LISTING,
+      fallback: NEW_LIBRARY_LISTING,
     },
     (error) => {
       reportError(error);
@@ -165,7 +168,7 @@
       return;
     }
     void commands
-      .librarySeriesCount(DEFAULT_LIBRARY_LISTING.filter)
+      .librarySeriesCount(NEW_LIBRARY_LISTING.filter)
       .then((result) => {
         holdsNoSeries = result.status === "ok" && result.data === 0;
       });
