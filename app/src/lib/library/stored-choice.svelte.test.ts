@@ -17,6 +17,8 @@ const STORED: LibraryView = {
   display: "list",
   coversPerRow: { phone: 4, tablet: 6, desktop: 9 },
   fitsCoversToWidth: false,
+  groupBy: "none",
+  showsCategoryTabs: true,
   showsItemCounts: true,
   showsContinueRow: true,
   onCovers: { ...DEFAULT_LIBRARY_VIEW.onCovers, showsLanguage: true },

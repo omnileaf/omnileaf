@@ -13,8 +13,8 @@ use std::{
 use omnileaf_engine::{
     AppleBookmark, CategoryId, Changed, CoversPerRow, DesktopCoversPerRow, FolderId, FolderKind,
     Inclusion, Library, LibraryDisplay, LibraryError, LibraryFilter, LibraryFilterChoices,
-    LibraryFolder, LibraryListing, LibrarySort, LibrarySortBy, LibraryView, OnCovers,
-    PhoneCoversPerRow, ResolvedBookmark, RootLocator, ScanProgress, SortDirection,
+    LibraryFolder, LibraryGrouping, LibraryListing, LibrarySort, LibrarySortBy, LibraryView,
+    OnCovers, PhoneCoversPerRow, ResolvedBookmark, RootLocator, ScanProgress, SortDirection,
     TabletCoversPerRow,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
@@ -766,6 +766,8 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
             desktop: DesktopCoversPerRow::try_from(9).unwrap(),
         },
         fits_covers_to_width: false,
+        group_by: LibraryGrouping::Category,
+        shows_category_tabs: false,
         shows_item_counts: true,
         shows_continue_row: true,
         on_covers: OnCovers {
