@@ -287,6 +287,17 @@ test.describe("the last book of a series", () => {
     await expect(page).toHaveURL(SERIES_PAGE);
   });
 
+  test("goes back to the series on turning the page again", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await turnPastTheEnd(page);
+
+    await page.keyboard.press("ArrowRight");
+
+    await expect(page).toHaveURL(SERIES_PAGE);
+  });
+
   test("shows up next even with Skip Up next on, as there's no book to go on to", async ({
     page,
   }) => {

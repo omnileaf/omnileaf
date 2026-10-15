@@ -282,9 +282,7 @@
   }
 
   function startNextBook(): void {
-    if (nextHref !== undefined) {
-      void goto(nextHref, { replaceState: true });
-    }
+    void goto(nextHref ?? seriesHref, { replaceState: nextHref !== undefined });
   }
 
   function goStraightOn(): void {
