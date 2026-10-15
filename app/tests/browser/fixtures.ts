@@ -215,11 +215,19 @@ export async function boxOf(locator: Locator): Promise<Box> {
   return box;
 }
 
+/** Waits two frames before each look, since headless WebKit can stop advancing its animations while nothing asks for a frame. */
 export async function settle(locator: Locator): Promise<void> {
   await expect
     .poll(() =>
-      locator.evaluate((element) =>
-        element.getAnimations({ subtree: true }).map((animation) => {
+      locator.evaluate(async (element) => {
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              resolve();
+            });
+          });
+        });
+        return element.getAnimations({ subtree: true }).map((animation) => {
           const target =
             animation.effect instanceof KeyframeEffect
               ? animation.effect.target
@@ -231,8 +239,8 @@ export async function settle(locator: Locator): Promise<void> {
                 ? animation.animationName
                 : animation.id;
           return `${name} on ${target?.tagName.toLowerCase() ?? "?"} ${target?.getAttribute("class") ?? ""}`;
-        }),
-      ),
+        });
+      }),
     )
     .toEqual([]);
 }
