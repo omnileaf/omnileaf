@@ -1,6 +1,7 @@
 <script lang="ts">
   import type {
     LibraryDisplay,
+    LibraryGrouping,
     LibraryView,
     OnCovers,
   } from "#lib/ipc/bindings.ts";
@@ -8,6 +9,7 @@
 
   import CoversPerRowChoice from "./CoversPerRowChoice.svelte";
   import DisplayChoice from "./DisplayChoice.svelte";
+  import GroupByChoice from "./GroupByChoice.svelte";
   import OnCoversChoice from "./OnCoversChoice.svelte";
   import ViewSwitchRow from "./ViewSwitchRow.svelte";
   import {
@@ -17,6 +19,7 @@
     withCoversPerRow,
     withDisplay,
     withFitsCoversToWidth,
+    withGroupBy,
     withItemCounts,
     withOnCovers,
   } from "./library-view";
@@ -70,6 +73,14 @@
         />
       </div>
     {/if}
+    <div class="py-setting-grid-pad">
+      <GroupByChoice
+        chosen={view.groupBy}
+        onChoose={(grouping: LibraryGrouping) => {
+          onChoose(withGroupBy(view, grouping));
+        }}
+      />
+    </div>
     {#if hasCategories}
       <ViewSwitchRow
         label={m.library_category_tabs()}

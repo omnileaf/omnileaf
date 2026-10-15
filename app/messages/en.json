@@ -37,6 +37,10 @@
     }
   ],
   "library_view_options": "View options",
+  "library_group_by": "Group by",
+  "library_group_none": "None",
+  "library_group_category": "Category",
+  "library_group_folder": "Folder",
   "library_view": "View",
   "library_view_done": "Done",
   "library_view_display": "Display",
