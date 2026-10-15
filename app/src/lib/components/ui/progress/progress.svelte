@@ -33,7 +33,7 @@
     <div class="progress-band rounded-full bg-accent"></div>
   {:else}
     <div
-      class="flex-1 bg-accent motion-safe:transition-transform motion-safe:duration-slide motion-safe:ease-emphasized"
+      class="flex-1 bg-accent motion-loading:transition-transform motion-loading:duration-slide motion-loading:ease-emphasized"
       style:translate="-{unfilledShare}%"
     ></div>
   {/if}
