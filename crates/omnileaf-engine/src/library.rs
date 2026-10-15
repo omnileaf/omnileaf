@@ -51,7 +51,7 @@ use crate::{
     library_changes::CatalogWritten,
     library_folder::root_folder,
     library_layout::folder_name,
-    library_search::StoredSearch,
+    library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
     moved_home::move_home,
     reading_progress::{ReadingProgress, ReadingSaved},
@@ -386,6 +386,17 @@ impl Library {
             .read(move |connection| search.page(connection, &request))
             .await?;
         Ok(SeriesPage::from(page))
+    }
+
+    pub async fn spelling_suggestion(
+        &self,
+        text: String,
+    ) -> Result<Option<SpellingSuggestion>, LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| spelling_suggestion(connection, &text))
+            .await?)
     }
 
     pub async fn search_count(&self, search: LibrarySearch) -> Result<u32, LibraryError> {
