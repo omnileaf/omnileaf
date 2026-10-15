@@ -54,6 +54,7 @@ macro_rules! app_commands {
             bookmark_pages,
             book_place,
             mark_books,
+            mark_series_read,
             open_book,
             reading_restored,
             page_shown,
@@ -367,6 +368,15 @@ async fn mark_books(
     mark: ReadMark,
 ) -> Result<(), IpcError> {
     Ok(library.mark_books(books, mark).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn mark_series_read(
+    library: State<'_, Library>,
+    series: Vec<SeriesId>,
+) -> Result<Vec<BookId>, IpcError> {
+    Ok(library.mark_series_read(series).await?)
 }
 
 #[tauri::command]

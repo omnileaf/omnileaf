@@ -65,6 +65,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   seriesBooks: () => ({ books: [], next: null }),
   creatorSeries: () => [],
   markBooks: () => null,
+  markSeriesRead: () => [],
   bookmarkPages: () => null,
   bookPlace: () => null,
   libraryCategories: () => [],
