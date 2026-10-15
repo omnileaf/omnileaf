@@ -5,6 +5,7 @@ import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(40);
+const SEARCH_FIELD = "Search your library";
 
 test.use({
   backend: {
@@ -83,4 +84,25 @@ test("starts selecting with the cover in focus on Space", async ({ page }) => {
   await expect(
     seriesList(page).getByRole("checkbox", { name: LIBRARY[1]?.title ?? "" }),
   ).toBeChecked();
+});
+
+test("opens search with Ctrl F, its field in focus", async ({ page }) => {
+  await page.goto("/");
+  await expect(coverOf(page, 0)).toBeVisible();
+
+  await page.keyboard.press("Control+f");
+
+  await expect(page).toHaveURL(/\/search$/);
+  await expect(
+    page.getByRole("combobox", { name: SEARCH_FIELD }),
+  ).toBeFocused();
+});
+
+test("names Ctrl F in the library's search field", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/");
+
+  await expect(
+    page.locator("main header").getByText("Ctrl F", { exact: true }),
+  ).toBeVisible();
 });
