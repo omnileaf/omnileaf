@@ -17,6 +17,8 @@ import {
   servePages,
 } from "./reader-book.ts";
 
+const SHEET_WIDTH = 720;
+
 test.use({ backend: readerBackend(DEFAULT_BACKEND) });
 
 async function openBook(page: Page): Promise<void> {
@@ -56,6 +58,28 @@ test("lists the reader's keys in a sheet opened with the question mark", async (
   await page.keyboard.press("Escape");
   await expect(sheet(page)).toBeHidden();
   await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+});
+
+test("sets the keys in two columns, zoom beside turning pages, in a 720px sheet on desktops", async ({
+  page,
+}) => {
+  await openBook(page);
+  test.skip(
+    viewportOf(page).width < EXPANDED_MIN_WIDTH,
+    "narrower windows keep one column",
+  );
+
+  await page.keyboard.press("Shift+?");
+
+  const turning = await boxOf(
+    sheet(page).getByRole("heading", { level: 3, name: "Turning pages" }),
+  );
+  const zoom = await boxOf(
+    sheet(page).getByRole("heading", { level: 3, name: "Zoom" }),
+  );
+  expect(zoom.x).toBeGreaterThan(turning.x + turning.width);
+  expect(zoom.y).toBeCloseTo(turning.y, 0);
+  expect((await boxOf(sheet(page))).width).toBe(SHEET_WIDTH);
 });
 
 test("dims the page behind the sheet", async ({ page }) => {
