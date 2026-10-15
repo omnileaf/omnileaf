@@ -9,14 +9,19 @@
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { type Platform, SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { shortcut } from "#lib/shortcut.ts";
 
-  import { quickOpenShortcutLabel } from "./quick-open-shortcut.ts";
+  import { searchShortcutLabel } from "./quick-open-shortcut.ts";
   import { searchQuery } from "./search-route";
 
   const ICON_SIZE = 16;
   const FIELD_ICON_SIZE = 16;
 
   let { platform }: { platform: Platform } = $props();
+
+  function searchTheLibrary(): void {
+    void goto(resolve("/(app)/search"));
+  }
 
   function openSearch(
     event: Event & { currentTarget: HTMLInputElement },
@@ -26,6 +31,16 @@
     );
   }
 </script>
+
+<svelte:window
+  {@attach shortcut({
+    key: "f",
+    command: platform,
+    shift: false,
+    inTextFields: true,
+    run: searchTheLibrary,
+  })}
+/>
 
 <Tooltip label={m.search_open()}>
   {#snippet child({ props })}
@@ -51,5 +66,5 @@
     class="no-search-cancel text-small text-foreground"
     oninput={openSearch}
   />
-  <Kbd aria-hidden="true">{quickOpenShortcutLabel(platform)}</Kbd>
+  <Kbd aria-hidden="true">{searchShortcutLabel(platform)}</Kbd>
 </InputGroup>
