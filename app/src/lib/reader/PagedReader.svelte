@@ -698,6 +698,10 @@
       {zoom}
       isReversed={reading.direction === "rightToLeft"}
       overlay={turnZones}
+      bookTitle={named.title}
+      onNextPage={() => {
+        act("next");
+      }}
       onShownReady={() => {
         if (!hasOpened) {
           hasOpened = true;
