@@ -41,6 +41,7 @@
     action,
     shortcut,
     children,
+    actions,
     onDismiss,
   }: {
     tone: NoticeTone;
@@ -50,13 +51,15 @@
     action?: NoticeAction | undefined;
     shortcut?: { readonly label: string; readonly keys: string } | undefined;
     children?: Snippet;
+    actions?: Snippet;
     onDismiss: () => void;
   } = $props();
 </script>
 
 <div
   class={[
-    "flex items-center gap-md border py-md ps-lg pe-sm font-ui wrap-anywhere shadow-toast group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent android:rounded-android-xs",
+    "flex gap-md border py-md ps-lg pe-sm font-ui wrap-anywhere shadow-toast group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent android:rounded-android-xs",
+    actions === undefined ? "items-center" : "flex-wrap items-start",
     TONES[tone],
   ]}
 >
@@ -118,4 +121,9 @@
       </Button>
     {/snippet}
   </Tooltip>
+  {#if actions !== undefined}
+    <div class="flex basis-full flex-wrap justify-end gap-sm pe-sm">
+      {@render actions()}
+    </div>
+  {/if}
 </div>
