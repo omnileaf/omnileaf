@@ -85,12 +85,10 @@ test("puts the 80px navigation bar on the surface container, with the tonal pill
 
 test("lays a state layer in the control's own colour under the pointer, instead of a grey fill", async ({
   page,
+  isMobile,
 }) => {
+  test.skip(isMobile, "touch screens have no pointer to hover with");
   await openLibrary(page);
-  test.skip(
-    viewportOf(page).width < MEDIUM_MIN_WIDTH,
-    "phones have no pointer to hover with",
-  );
   const filter = page.getByRole("button", { name: /^Filter and sort/ });
 
   await filter.hover();
