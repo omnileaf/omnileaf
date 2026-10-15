@@ -55,7 +55,11 @@
       <SquareCheck size={ITEM_ICON_SIZE} aria-hidden="true" />
       {m.library_select_series()}
     </DropdownMenuItem>
-    <DropdownMenuItem onSelect={openLibrarySettings}>
+    <DropdownMenuItem
+      onSelect={() => {
+        void goto(resolve("/(app)/settings/library/tabs"));
+      }}
+    >
       <Pencil size={ITEM_ICON_SIZE} aria-hidden="true" />
       {m.library_edit_categories()}
     </DropdownMenuItem>

@@ -79,13 +79,16 @@ test.describe("on a phone or tablet", () => {
     await expect(page.getByText("0 selected").first()).toBeVisible();
   });
 
-  for (const item of ["Edit categories", "Library settings"]) {
-    test(`opens Settings › Library from ${item}`, async ({ page }) => {
+  for (const [item, destination] of [
+    ["Edit categories", /\/settings\/library\/tabs$/],
+    ["Library settings", /\/settings\/library$/],
+  ] as const) {
+    test(`opens its settings from ${item}`, async ({ page }) => {
       const menu = await openMore(page);
 
       await menu.getByRole("menuitem", { name: item }).click();
 
-      await expect(page).toHaveURL(/\/settings\/library$/);
+      await expect(page).toHaveURL(destination);
     });
   }
 
