@@ -15,12 +15,14 @@
   let {
     label,
     keys,
+    side = "top",
     ref = $bindable(null),
     onclick,
     ...restProps
   }: TooltipPrimitive.TriggerProps & {
     label: string | undefined;
     keys?: readonly string[];
+    side?: "top" | "right" | "bottom" | "left";
   } = $props();
 
   const longPress = new LongPress(LONG_PRESS_MS);
@@ -64,6 +66,7 @@
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
         aria-hidden="true"
+        {side}
         sideOffset={TRIGGER_GAP_PX}
         collisionPadding={SCREEN_EDGE_GAP_PX}
         class="z-tooltip flex items-center gap-sm rounded-tooltip border border-tooltip-edge bg-tooltip px-md py-xs text-detail font-medium text-on-tooltip fade-motion shadow-popover"
