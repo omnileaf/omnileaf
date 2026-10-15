@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { Ellipsis, Eye, EyeOff, ListChecks, Play } from "@lucide/svelte";
+  import {
+    BookOpen,
+    Ellipsis,
+    Eye,
+    EyeOff,
+    ListChecks,
+    Play,
+  } from "@lucide/svelte";
   import { Dialog } from "bits-ui";
 
   import { resolve } from "$app/paths";
@@ -15,7 +22,7 @@
 
   const ICON_SIZE = 18;
   const ACTION =
-    "gap-md rounded-control px-sm text-body font-medium min-block-touch-target";
+    "gap-md rounded-control px-sm text-body font-medium min-block-touch-target ios:flex-row-reverse ios:justify-between ios:rounded-none ios:px-lg";
 
   let {
     book,
@@ -57,14 +64,27 @@
 </Tooltip>
 
 <Dialog.Root bind:open={isOpen}>
-  <DrawerContent onDismiss={close}>
-    <div class="flex flex-col gap-2xs px-sheet-inline pbs-sheet-gap">
-      <DialogTitle class="text-title font-bold">{book.title}</DialogTitle>
-      <p class="text-detail text-muted">
-        {readingWords(book.reading, m.series_book_unread)}
-      </p>
+  <DrawerContent onDismiss={close} class="ios:bg-ios-grouped">
+    <div class="flex items-center gap-md px-sheet-inline pbs-sheet-gap">
+      <span
+        aria-hidden="true"
+        class="hidden shrink-0 items-center justify-center rounded-shadcn-control bg-ios-fill block-reader-dense inline-reader-dense ios:flex"
+      >
+        <BookOpen size={ICON_SIZE} />
+      </span>
+      <div class="flex flex-col gap-2xs">
+        <DialogTitle
+          class="text-title font-bold ios:text-body ios:font-semibold"
+          >{book.title}</DialogTitle
+        >
+        <p class="text-detail text-muted">
+          {readingWords(book.reading, m.series_book_unread)}
+        </p>
+      </div>
     </div>
-    <div class="flex flex-col px-sm pbs-sm pbe-sheet-bottom">
+    <div
+      class="flex flex-col px-sm pbs-sm pbe-sheet-bottom ios:mx-sheet-inline ios:mbs-md ios:mbe-sheet-bottom ios:divide-y ios:divide-ios-separator ios:overflow-hidden ios:rounded-ios-cell ios:bg-ios-cell ios:p-none"
+    >
       <a
         href={resolve("/read/[book]", { book: book.id })}
         class={["flex items-center hover:bg-hover", ACTION]}
