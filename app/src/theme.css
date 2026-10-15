@@ -70,6 +70,16 @@
   --raised: var(--background);
   --destructive-fill: var(--destructive);
   --destructive-fill-foreground: var(--primary-foreground);
+  --destructive-fill-hover: color-mix(
+    in oklab,
+    var(--destructive-fill) 90%,
+    var(--foreground)
+  );
+  --destructive-fill-pressed: color-mix(
+    in oklab,
+    var(--destructive-fill) 80%,
+    var(--foreground)
+  );
   --switch-thumb: var(--background);
   --switch-thumb-on: var(--background);
   --glass: oklch(0.985 0 0 / 78%);
@@ -146,6 +156,16 @@
     var(--background)
   );
   --destructive-fill-foreground: var(--foreground);
+  --destructive-fill-hover: color-mix(
+    in oklab,
+    var(--destructive-fill) 90%,
+    var(--background)
+  );
+  --destructive-fill-pressed: color-mix(
+    in oklab,
+    var(--destructive-fill) 80%,
+    var(--background)
+  );
   --switch-thumb: var(--foreground);
   --switch-thumb-on: var(--primary-foreground);
   --glass: oklch(0.2 0 0 / 72%);
