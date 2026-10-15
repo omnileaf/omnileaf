@@ -3,6 +3,7 @@ import {
   type ReadingDirection,
 } from "#lib/reader/reading-direction.svelte.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { usesCommandKey } from "#lib/page/platform.ts";
 import type { Shortcut } from "#lib/shortcut.ts";
 
 export type ReaderAction =
@@ -17,11 +18,12 @@ export type ReaderAction =
   | "zoomOut"
   | "zoomFit"
   | "shortcuts"
-  | "jump";
+  | "jump"
+  | "back";
 
 const ARROWS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowRight"]);
 
-type ReaderKey = Pick<Shortcut, "key" | "shift"> & {
+type ReaderKey = Pick<Shortcut, "key" | "shift" | "alt"> & {
   readonly action: ReaderAction;
   readonly isCommand?: boolean;
 };
@@ -51,20 +53,29 @@ function isPageTurn(action: ReaderAction): action is "next" | "previous" {
 }
 
 /** The reader's keys, with the arrows turning the way the book reads. */
+/** Back to the series the way the platform's own apps go back: ⌘ [ on Apple's, Alt ← elsewhere. */
+function backKey(platform: Platform): ReaderKey {
+  return usesCommandKey(platform)
+    ? { key: "[", isCommand: true, action: "back" }
+    : { key: "ArrowLeft", alt: true, action: "back" };
+}
+
 export function readerShortcuts(
   act: (action: ReaderAction) => void,
   direction: () => ReadingDirection,
   platform: Platform,
 ): Shortcut[] {
-  return READER_KEYS.map(({ action, isCommand = false, ...keys }) => ({
-    ...keys,
-    ...(isCommand ? { command: platform } : {}),
-    run: () => {
-      act(
-        ARROWS.has(keys.key) && isPageTurn(action)
-          ? inReadingOrder(action, direction())
-          : action,
-      );
-    },
-  }));
+  return [...READER_KEYS, backKey(platform)].map(
+    ({ action, isCommand = false, ...keys }) => ({
+      ...keys,
+      ...(isCommand ? { command: platform } : {}),
+      run: () => {
+        act(
+          ARROWS.has(keys.key) && isPageTurn(action)
+            ? inReadingOrder(action, direction())
+            : action,
+        );
+      },
+    }),
+  );
 }
