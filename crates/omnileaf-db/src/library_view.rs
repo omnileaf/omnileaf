@@ -8,7 +8,7 @@ const STORED_VIEW: &str = "SELECT display,
         phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row,
         shows_item_counts, shows_unread_count, shows_downloaded, shows_language,
         shows_reading_progress, shows_continue_button, shows_continue_row,
-        fits_covers_to_width
+        fits_covers_to_width, shows_category_tabs, group_by
     FROM library_view
     WHERE id = ?1";
 
@@ -17,9 +17,9 @@ const SET_VIEW: &str = "INSERT INTO library_view (
         phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row,
         shows_item_counts, shows_unread_count, shows_downloaded, shows_language,
         shows_reading_progress, shows_continue_button, shows_continue_row,
-        fits_covers_to_width
+        fits_covers_to_width, shows_category_tabs, group_by
     )
-    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)
     ON CONFLICT (id) DO UPDATE SET
         display = excluded.display,
         phone_covers_per_row = excluded.phone_covers_per_row,
@@ -32,7 +32,9 @@ const SET_VIEW: &str = "INSERT INTO library_view (
         shows_reading_progress = excluded.shows_reading_progress,
         shows_continue_button = excluded.shows_continue_button,
         shows_continue_row = excluded.shows_continue_row,
-        fits_covers_to_width = excluded.fits_covers_to_width";
+        fits_covers_to_width = excluded.fits_covers_to_width,
+        shows_category_tabs = excluded.shows_category_tabs,
+        group_by = excluded.group_by";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LibraryDisplay {
@@ -43,8 +45,21 @@ pub enum LibraryDisplay {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LibraryGrouping {
+    None,
+    Category,
+    Folder,
+}
+
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "each is a switch of its own in the view options"
+)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct StoredLibraryView {
     pub display: LibraryDisplay,
+    pub group_by: LibraryGrouping,
+    pub shows_category_tabs: bool,
     pub phone_covers_per_row: u8,
     pub tablet_covers_per_row: u8,
     pub desktop_covers_per_row: u8,
@@ -93,12 +108,20 @@ pub fn set_library_view(
         view.on_covers.shows_continue_button,
         view.shows_continue_row,
         view.fits_covers_to_width,
+        view.shows_category_tabs,
+        view.group_by.as_stored(),
     ))?;
     Ok(())
 }
 
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "each is a switch of its own in the view options"
+)]
 struct ViewRow {
     display: String,
+    group_by: String,
+    shows_category_tabs: bool,
     phone_covers_per_row: u8,
     tablet_covers_per_row: u8,
     desktop_covers_per_row: u8,
@@ -112,6 +135,8 @@ impl ViewRow {
     fn read(row: &Row<'_>) -> rusqlite::Result<Self> {
         Ok(Self {
             display: row.get(0)?,
+            group_by: row.get(13)?,
+            shows_category_tabs: row.get(12)?,
             phone_covers_per_row: row.get(1)?,
             tablet_covers_per_row: row.get(2)?,
             desktop_covers_per_row: row.get(3)?,
@@ -135,6 +160,8 @@ impl TryFrom<ViewRow> for StoredLibraryView {
     fn try_from(row: ViewRow) -> Result<Self, Self::Error> {
         Ok(Self {
             display: LibraryDisplay::stored(row.display)?,
+            group_by: LibraryGrouping::stored(row.group_by)?,
+            shows_category_tabs: row.shows_category_tabs,
             phone_covers_per_row: row.phone_covers_per_row,
             tablet_covers_per_row: row.tablet_covers_per_row,
             desktop_covers_per_row: row.desktop_covers_per_row,
@@ -161,6 +188,23 @@ impl LibraryDisplay {
             .into_iter()
             .find(|display| display.as_stored() == name)
             .ok_or(Error::UnsupportedLibraryDisplay { name })
+    }
+}
+
+impl LibraryGrouping {
+    const fn as_stored(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Category => "category",
+            Self::Folder => "folder",
+        }
+    }
+
+    fn stored(name: String) -> Result<Self, Error> {
+        [Self::None, Self::Category, Self::Folder]
+            .into_iter()
+            .find(|grouping| grouping.as_stored() == name)
+            .ok_or(Error::UnsupportedLibraryGrouping { name })
     }
 }
 
