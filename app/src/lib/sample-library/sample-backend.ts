@@ -616,6 +616,7 @@ export function sampleBackend(
       events.emit("library-changed", null);
       return null;
     },
+    showSeriesInFolder: () => null,
     relocateLibraryFolder: (id) => {
       missingFolder.isFound = true;
       events.emit("library-changed", null);

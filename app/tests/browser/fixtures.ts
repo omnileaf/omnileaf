@@ -120,6 +120,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   libraryHiddenSeriesCount: () => 0,
   showMissingLibraryFolder: () => null,
   relocateLibraryFolder: () => null,
+  showSeriesInFolder: () => null,
   setLibraryTabs: () => null,
   libraryTags: () => [],
   renameLibraryTag: () => null,
