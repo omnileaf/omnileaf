@@ -37,10 +37,10 @@ use crate::{
     AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval, CategoryId,
     CoversPerRowOutOfRange, CreatorSeries, FolderCursor, FolderId, FolderPage, FolderRescan,
     FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, LibraryCategory,
-    LibraryChanges, LibraryFilter, LibraryFolder, LibraryListing, LibrarySearch, LibraryView,
-    LocalDay, ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress,
-    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
-    UtcOffset,
+    LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryListing,
+    LibrarySearch, LibraryView, LocalDay, ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark,
+    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview,
+    SeriesPage, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -294,6 +294,10 @@ impl Library {
         Ok(Vec::new())
     }
 
+    pub fn filter_choices(&self) -> Result<LibraryFilterChoices, LibraryError> {
+        Ok(LibraryFilterChoices::default())
+    }
+
     pub fn category_series(
         &self,
         _category: CategoryId,
@@ -315,7 +319,7 @@ impl Library {
     }
 
     pub async fn series_count(&self, filter: LibraryFilter) -> Result<u32, LibraryError> {
-        let filter = SeriesFilter::from(filter);
+        let filter = SeriesFilter::from(&filter);
         Ok(self
             .store
             .database()

@@ -1,5 +1,4 @@
 import {
-  DEFAULT_LIBRARY_LISTING,
   DEFAULT_LIBRARY_VIEW,
   type Inclusion,
   type IpcErrorCode,
@@ -8,6 +7,7 @@ import {
   type LibraryView,
   type Platform,
 } from "#lib/ipc/bindings.ts";
+import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
 import { isShownBy } from "#lib/series/books-shown.ts";
 
@@ -194,7 +194,7 @@ export function sampleBackend(
   const library: SampleSeries[] =
     scenario.library === "empty" ? [] : sampleLibrary(scenario.sixthVolume);
   let listing: LibraryListing = {
-    ...DEFAULT_LIBRARY_LISTING,
+    ...NEW_LIBRARY_LISTING,
     sort: { by: "dateAdded", direction: "descending" },
   };
   let view: LibraryView = DEFAULT_LIBRARY_VIEW;
@@ -421,6 +421,13 @@ export function sampleBackend(
         ? []
         : SAMPLE_CATEGORIES.map(({ id, name }) => ({ id, name }));
     },
+    libraryFilterChoices: () => ({
+      formats: [],
+      languages: [],
+      tags: [],
+      ratesAdult: false,
+      keepsBookmarks: false,
+    }),
     categorySeries: async (category, after, chosen) => {
       await libraryReady();
       const page = pageOf(

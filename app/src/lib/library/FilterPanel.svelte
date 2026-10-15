@@ -3,10 +3,8 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
-  import {
-    DEFAULT_LIBRARY_LISTING,
-    type LibraryListing,
-  } from "#lib/ipc/bindings.ts";
+  import { type LibraryListing } from "#lib/ipc/bindings.ts";
+  import { NEW_LIBRARY_LISTING } from "./library-listing";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -99,7 +97,7 @@
       look="text"
       class="rounded-badge px-sm text-small block-panel-button"
       onclick={() => {
-        onChoose(DEFAULT_LIBRARY_LISTING);
+        onChoose(NEW_LIBRARY_LISTING);
       }}
     >
       {m.library_reset()}

@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
 
+import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
+
 import { SearchQuery } from "./search-query.svelte";
 
 const ENGLISH = { unread: "unread", started: "started", finished: "finished" };
@@ -15,7 +17,12 @@ test("searches every series by the text typed when no condition is chosen", () =
 
   expect(query.search).toEqual({
     text: "lantern",
-    filter: { unread: "any", started: "any", finished: "any" },
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "any",
+      finished: "any",
+    },
   });
 });
 
@@ -26,7 +33,12 @@ test("searches only the series meeting each condition a filter word named", () =
 
   expect(query.search).toEqual({
     text: "lantern",
-    filter: { unread: "only", started: "any", finished: "any" },
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "only",
+      started: "any",
+      finished: "any",
+    },
   });
 });
 
@@ -76,6 +88,11 @@ test("starts over from typed text, reading its filter words", () => {
 
   expect(query.search).toEqual({
     text: "lantern",
-    filter: { unread: "any", started: "any", finished: "only" },
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "any",
+      finished: "only",
+    },
   });
 });
