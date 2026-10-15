@@ -40,6 +40,8 @@
   "library_view": "View",
   "library_view_done": "Done",
   "library_view_display": "Display",
+  "library_view_layout": "Layout",
+  "library_view_kept_phone": "Kept on this phone.",
   "library_display_grid": "Grid",
   "library_display_compact": "Compact",
   "library_display_covers": "Covers",

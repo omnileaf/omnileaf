@@ -184,7 +184,7 @@ test.describe("on a desktop", () => {
     await page.goto("/");
 
     const panel = await openViewOptions(page);
-    const title = panel.getByRole("heading", { name: "View" });
+    const title = panel.getByRole("heading", { name: "View options" });
 
     const lineHeight = await title.evaluate(
       (element) => getComputedStyle(element).lineHeight,
