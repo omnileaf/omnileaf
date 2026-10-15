@@ -11,7 +11,7 @@ use omnileaf_db::{
     Database,
     catalog::{
         Cursor, Inclusion, PageRequest, PageSize, SearchText, SeriesFilter, SeriesSearch,
-        search_count, search_page,
+        closest_title_words, search_count, search_page,
     },
     store::{Clock, Store},
 };
@@ -269,4 +269,48 @@ async fn counts_what_a_search_finds_through_its_filter() {
     ];
 
     assert_eq!(counts, [2, 1, 3, 1]);
+}
+
+async fn closest(library: &Library, text: &str) -> Option<String> {
+    let text = text.to_owned();
+    library
+        .store
+        .database()
+        .read(move |connection| closest_title_words(connection, &text))
+        .await
+        .unwrap()
+}
+
+#[tokio::test]
+async fn suggests_the_word_of_a_title_closest_to_a_misspelt_one() {
+    let library = Library::with("closest-title-word", &SHELF).await;
+
+    assert_eq!(
+        closest(&library, "harbuor").await.as_deref(),
+        Some("harbour")
+    );
+}
+
+#[tokio::test]
+async fn suggests_the_words_of_a_title_closest_to_a_few_misspelt_ones_in_their_order() {
+    let library = Library::with("closest-title-words", &SHELF).await;
+
+    assert_eq!(
+        closest(&library, "lantren markt").await.as_deref(),
+        Some("lantern market")
+    );
+}
+
+#[tokio::test]
+async fn suggests_nothing_for_a_search_close_to_no_title() {
+    let library = Library::with("closest-title-none", &SHELF).await;
+
+    assert_eq!(closest(&library, "quixotic").await, None);
+}
+
+#[tokio::test]
+async fn suggests_no_series_without_books() {
+    let library = Library::with("closest-title-bookless", &SHELF).await;
+
+    assert_eq!(closest(&library, "lantren market anex").await, None);
 }
