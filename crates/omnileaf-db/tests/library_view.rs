@@ -17,6 +17,7 @@ const LIST_OF_FOUR: StoredLibraryView = StoredLibraryView {
     phone_covers_per_row: 4,
     tablet_covers_per_row: 7,
     desktop_covers_per_row: 10,
+    fits_covers_to_width: false,
     shows_item_counts: true,
     shows_continue_row: true,
     on_covers: OnCovers {
@@ -33,6 +34,7 @@ const COMPACT_OF_TWO: StoredLibraryView = StoredLibraryView {
     phone_covers_per_row: 2,
     tablet_covers_per_row: 3,
     desktop_covers_per_row: 4,
+    fits_covers_to_width: true,
     shows_item_counts: false,
     shows_continue_row: false,
     on_covers: OnCovers {
@@ -156,6 +158,7 @@ fn any_view() -> impl Strategy<Value = StoredLibraryView> {
         4_u8..=12,
         any::<bool>(),
         any::<bool>(),
+        any::<bool>(),
         any_on_covers(),
     )
         .prop_map(
@@ -164,6 +167,7 @@ fn any_view() -> impl Strategy<Value = StoredLibraryView> {
                 phone_covers_per_row,
                 tablet_covers_per_row,
                 desktop_covers_per_row,
+                fits_covers_to_width,
                 shows_item_counts,
                 shows_continue_row,
                 on_covers,
@@ -173,6 +177,7 @@ fn any_view() -> impl Strategy<Value = StoredLibraryView> {
                     phone_covers_per_row,
                     tablet_covers_per_row,
                     desktop_covers_per_row,
+                    fits_covers_to_width,
                     shows_item_counts,
                     shows_continue_row,
                     on_covers,

@@ -89,7 +89,7 @@ export const COVERS_PER_ROW = {"desktop":{"fewest":4,"most":12},"phone":{"fewest
 
 export const DEFAULT_LIBRARY_LISTING = {"filter":{"finished":"any","started":"any","unread":"any"},"sort":{"by":"title","direction":"ascending"}} as const;
 
-export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsContinueRow":false,"showsItemCounts":true} as const;
+export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","fitsCoversToWidth":true,"onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsContinueRow":false,"showsItemCounts":true} as const;
 
 export const SEARCH_MAX_CHARS = 200 as const;
 
@@ -296,6 +296,8 @@ export type LibrarySortBy = "title" | "dateAdded";
 export type LibraryView = {
 	display: LibraryDisplay,
 	coversPerRow: CoversPerRow,
+	/**  Draws as many covers a row as the width allows, rather than `covers_per_row`. */
+	fitsCoversToWidth: boolean,
 	showsItemCounts: boolean,
 	/**  Shows the books started and not finished in a row above the library. */
 	showsContinueRow: boolean,

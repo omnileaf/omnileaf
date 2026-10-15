@@ -764,6 +764,7 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
             tablet: TabletCoversPerRow::try_from(4).unwrap(),
             desktop: DesktopCoversPerRow::try_from(9).unwrap(),
         },
+        fits_covers_to_width: false,
         shows_item_counts: true,
         shows_continue_row: true,
         on_covers: OnCovers {
