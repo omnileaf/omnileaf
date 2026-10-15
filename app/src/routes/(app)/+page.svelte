@@ -475,6 +475,7 @@
           }}
         />
         <LibraryMore
+          {keepsLabels}
           onSelect={() => {
             selection.begin();
           }}
