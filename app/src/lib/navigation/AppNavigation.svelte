@@ -83,7 +83,7 @@
   data-sidebar-hidden={sidebar.isHidden || undefined}
   onanimationend={endArrivalOnceStill}
   class={[
-    "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom max-medium:pe-safe-end medium:flex medium:flex-col medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:inline-sidebar",
+    "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom max-medium:pe-safe-end medium:flex medium:flex-col medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:inline-sidebar android:max-medium:border-bs-0 android:max-medium:bg-android-container",
     "desktop:expanded:border-sidebar-edge desktop:expanded:bg-sidebar desktop:expanded:inline-sidebar-desktop sidebar-hidden:inline-sidebar-hidden",
     "ios:max-medium:fixed ios:max-medium:inset-x-lg ios:max-medium:inset-be-floating-gap ios:max-medium:z-tab-bar ios:max-medium:rounded-full ios:max-medium:border ios:max-medium:border-glass-edge ios:max-medium:bg-glass ios:max-medium:p-xs ios:max-medium:shadow-floating ios:max-medium:backdrop-blur-glass ios:max-medium:backdrop-saturate-160 ios:max-medium:block-floating-bar",
   ]}
@@ -95,7 +95,7 @@
     {m.app_name()}
   </p>
   <ul
-    class="flex p-sm medium:flex-1 medium:flex-col medium:gap-md medium:pbs-lg medium:pbe-2xl expanded:gap-xs expanded:px-md expanded:pbs-none expanded:pbe-xl ios:max-medium:relative ios:max-medium:p-none ios:max-medium:block-full desktop:expanded:p-sm sidebar-hidden:pbs-sm"
+    class="flex p-sm medium:flex-1 medium:flex-col medium:gap-md medium:pbs-lg medium:pbe-2xl expanded:gap-xs expanded:px-md expanded:pbs-none expanded:pbe-xl ios:max-medium:relative ios:max-medium:p-none ios:max-medium:block-full android:max-medium:pbs-md android:max-medium:pbe-lg desktop:expanded:p-sm sidebar-hidden:pbs-sm"
   >
     <li
       aria-hidden="true"
@@ -134,8 +134,9 @@
                 ]}
               >
                 <span
+                  data-slot="navigation-pill"
                   class={[
-                    "absolute inset-none rounded-full bg-accent-soft transition-opacity expanded:hidden ios:max-medium:hidden motion-navigation:duration-fade motion-navigation:ease-out",
+                    "absolute inset-none rounded-full bg-accent-soft transition-opacity expanded:hidden ios:max-medium:hidden android:bg-android-tonal motion-navigation:duration-fade motion-navigation:ease-out",
                     "android:motion-navigation:duration-grow android:motion-navigation:ease-emphasized",
                     !isSelected && "opacity-0",
                     isArriving && "android:motion-navigation:animate-pill-grow",
