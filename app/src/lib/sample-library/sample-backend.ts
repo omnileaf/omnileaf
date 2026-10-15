@@ -7,6 +7,7 @@ import {
   type LibraryView,
   type Platform,
   type SeriesFormat,
+  type SmartFilter,
 } from "#lib/ipc/bindings.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
@@ -137,7 +138,8 @@ function passes(
     (filter.tags.length === 0 ||
       series.tags.some((tag) => filter.tags.includes(tag))) &&
     admits(filter.adult, ADULT_SERIES.has(series.number)) &&
-    admits(filter.bookmarked, isBookmarked(series))
+    admits(filter.bookmarked, isBookmarked(series)) &&
+    filter.smart.every((smart) => SMART_FILTERS[smart](series))
   );
 }
 
@@ -148,8 +150,15 @@ interface SampleCategory {
 }
 
 const SAMPLE_LANGUAGES = ["ja", "ja", "en", "fr", "ja", "en", "de"] as const;
-const SERIES_WITH_DOWNLOADS = new Set([1, 4, 6]);
+const SERIES_WITH_DOWNLOADS = new Set([1, 4, 6, 15]);
 const ADULT_SERIES = new Set([13, 17]);
+const SMART_FILTERS: Record<SmartFilter, (series: SampleSeries) => boolean> = {
+  quickReads: (series) => [4, 7, 16, 18].includes(series.number),
+  forgotten: (series) => [9, 12, 17].includes(series.number),
+  duplicates: (series) => [5, 14].includes(series.number),
+  readyToCleanUp: (series) =>
+    SERIES_WITH_DOWNLOADS.has(series.number) && series.books.every(isRead),
+};
 const FORMATS: readonly SeriesFormat[] = ["comic", "manga", "book"];
 const COMICS_EVERY = 3;
 const FAVOURITES_EVERY = 5;
@@ -471,6 +480,13 @@ export function sampleBackend(
         tags: [...new Set(library.flatMap((series) => series.tags))],
         ratesAdult: library.length > 0,
         keepsBookmarks: library.length > 0,
+        smart: library.some((series) =>
+          SERIES_WITH_DOWNLOADS.has(series.number),
+        )
+          ? ["quickReads", "forgotten", "duplicates", "readyToCleanUp"]
+          : library.length > 0
+            ? ["quickReads", "forgotten", "duplicates"]
+            : [],
       };
     },
     categorySeries: async (category, after, chosen) => {

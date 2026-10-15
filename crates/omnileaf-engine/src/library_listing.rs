@@ -54,6 +54,21 @@ pub struct LibraryFilter {
     pub adult: Inclusion,
     /// Has a bookmarked page.
     pub bookmarked: Inclusion,
+    /// Meets every one of these smart filters.
+    pub smart: Vec<SmartFilter>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum SmartFilter {
+    /// Under 30 minutes left, at the reader's own reading speed.
+    QuickReads,
+    /// Not opened in three months.
+    Forgotten,
+    /// Holds the same book as another folder, even renamed.
+    Duplicates,
+    /// Downloaded and finished.
+    ReadyToCleanUp,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Type)]
@@ -72,6 +87,7 @@ pub struct LibraryFilterChoices {
     pub tags: Vec<String>,
     pub rates_adult: bool,
     pub keeps_bookmarks: bool,
+    pub smart: Vec<SmartFilter>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -98,6 +114,7 @@ impl Default for LibraryListing {
                 tags: Vec::new(),
                 adult: Inclusion::Any,
                 bookmarked: Inclusion::Any,
+                smart: Vec::new(),
             },
         }
     }
@@ -216,6 +233,7 @@ mod tests {
                 tags: vec!["Seinen".to_owned()],
                 adult: Inclusion::Hide,
                 bookmarked: Inclusion::Only,
+                smart: vec![SmartFilter::QuickReads, SmartFilter::ReadyToCleanUp],
             },
         };
 
@@ -234,6 +252,7 @@ mod tests {
                     "tags": ["Seinen"],
                     "adult": "hide",
                     "bookmarked": "only",
+                    "smart": ["quickReads", "readyToCleanUp"],
                 },
             })
         );
@@ -259,6 +278,11 @@ mod tests {
                 Inclusion::Any
             )
         );
+    }
+
+    #[test]
+    fn starts_a_new_library_with_no_smart_filter_on() {
+        assert_eq!(LibraryListing::default().filter.smart, Vec::new());
     }
 
     #[test]
