@@ -1,3 +1,5 @@
+import type { Locator, Page } from "@playwright/test";
+
 import {
   DEFAULT_LIBRARY_VIEW,
   type LibraryCategory,
@@ -64,6 +66,19 @@ test.beforeEach(() => {
   categories = CATEGORIES;
 });
 
+function group(page: Page, name: string): Locator {
+  return page.getByRole("region", { name, exact: true });
+}
+
+function coversIn(section: Locator): Locator {
+  return section.getByRole("list", { name: "Series" }).getByRole("listitem");
+}
+
+async function openGroupedBy(page: Page, groupBy: LibraryView["groupBy"]) {
+  storedView = { ...DEFAULT_LIBRARY_VIEW, groupBy };
+  await page.goto("/");
+}
+
 test("groups by nothing in a new library, and keeps the grouping chosen", async ({
   page,
 }) => {
@@ -75,4 +90,38 @@ test("groups by nothing in a new library, and keeps the grouping chosen", async 
   await choose(groupBy, "Folder");
 
   await expect.poll(() => storedView.groupBy).toBe("folder");
+});
+
+test("draws a section for each folder holding series, saying how many, without the tabs", async ({
+  page,
+}) => {
+  await openGroupedBy(page, "folder");
+
+  await expect(coversIn(group(page, "Comics"))).toHaveCount(7);
+  await expect(coversIn(group(page, "Manga"))).toHaveCount(5);
+  await expect(group(page, "Comics")).toContainText("7 series");
+  await expect(group(page, "Books")).toHaveCount(0);
+  await expect(page.getByRole("tablist", { name: "Categories" })).toHaveCount(
+    0,
+  );
+});
+
+test("draws a section for each category holding series", async ({ page }) => {
+  await openGroupedBy(page, "category");
+
+  await expect(coversIn(group(page, "Manga"))).toHaveCount(4);
+  await expect(coversIn(group(page, "Comics"))).toHaveCount(2);
+  await expect(group(page, "Shelved")).toHaveCount(0);
+});
+
+test("lists the whole library when grouped by category with none kept", async ({
+  page,
+}) => {
+  categories = [];
+  await openGroupedBy(page, "category");
+
+  await expect(
+    page.getByRole("list", { name: "Series" }).getByRole("listitem"),
+  ).toHaveCount(LIBRARY.length);
+  await expect(page.getByRole("region", { name: "Manga" })).toHaveCount(0);
 });
