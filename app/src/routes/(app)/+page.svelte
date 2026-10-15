@@ -92,6 +92,7 @@
   const adding = new FolderAdding(addFolderWithProgress, () => notices);
 
   let isCountWanted = $state(false);
+  let isFilterOpen = $state(false);
 
   const chosenListing = $derived(
     listing.reading.kind === "read" ? listing.reading.value : undefined,
@@ -255,6 +256,7 @@
     {#if hasBooks && loaded !== undefined && chosenListing !== undefined}
       <LibrarySearchEntry platform={data.appInfo.platform} />
       <FilterAndSort
+        bind:isOpen={isFilterOpen}
         listing={chosenListing}
         matching={seriesCount.count}
         onChoose={chooseListing}
@@ -281,7 +283,14 @@
   />
 {/if}
 {#if hasBooks && chosenListing !== undefined && filtersOn(chosenListing.filter) > 0}
-  <ActiveFilters listing={chosenListing} onChoose={chooseListing} />
+  <ActiveFilters
+    listing={chosenListing}
+    onChoose={chooseListing}
+    onMore={() => {
+      isCountWanted = true;
+      isFilterOpen = true;
+    }}
+  />
 {/if}
 {#if isEmpty}
   <EmptyState
