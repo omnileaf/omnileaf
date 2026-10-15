@@ -38,3 +38,14 @@ test("gives the weekday with the time for a session of a day History doesn't nam
 
   expect(times).toEqual(["Tue 12:13 AM", "Tue 00:13"]);
 });
+
+test("writes the time on the clock chosen, whatever the locale's own", () => {
+  const entry = { startedAtMs: STARTED_AT_MS, utcOffsetMinutes: 0 };
+
+  const times = [
+    startedAtTime(entry, startedAtFormats("en-GB", "h12")),
+    startedAtWeekdayTime(entry, startedAtFormats("en-US", "h23")),
+  ];
+
+  expect(times).toEqual(["02:13 pm", "Mon 14:13"]);
+});

@@ -50,6 +50,10 @@
     skipUpNextSettingForDocument,
   } from "#lib/up-next/skip-up-next.svelte.ts";
   import {
+    setTimeFormatSetting,
+    timeFormatSettingForDocument,
+  } from "#lib/general/time-format.svelte.ts";
+  import {
     ANIMATIONS_PREFERENCE_KEY,
     animationsSettingForDocument,
     setAnimationsSetting,
@@ -76,6 +80,7 @@
     scheduledRescansSettingForDocument(),
   );
   setSkipUpNextSetting(skipUpNextSettingForDocument());
+  setTimeFormatSetting(timeFormatSettingForDocument());
   const animations = setAnimationsSetting(animationsSettingForDocument());
   setSwipeActionsSetting(swipeActionsSettingForDocument());
   setNotices(new Notices());
