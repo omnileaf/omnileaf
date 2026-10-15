@@ -26,4 +26,6 @@
   const Page = $derived(page);
 </script>
 
-<Page {...pageProps} />
+<main>
+  <Page {...pageProps} />
+</main>
