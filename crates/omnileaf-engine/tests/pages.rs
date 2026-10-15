@@ -377,6 +377,15 @@ async fn knows_no_place_for_a_book_missing_from_the_library() {
 }
 
 #[tokio::test]
+async fn leaves_a_books_damage_unchecked_while_the_library_checks_none() {
+    let reader = Reader::with_book("no-damage-check").await;
+
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(opened.damage, None);
+}
+
+#[tokio::test]
 async fn leaves_a_books_bookmarks_unkept_while_the_library_keeps_none() {
     let reader = Reader::with_book("no-bookmarks").await;
 

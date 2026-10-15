@@ -25,6 +25,22 @@ pub struct OpenedBook {
     pub reading_direction: Option<ReadingDirection>,
     /// Counting from 0; absent while the library keeps no bookmarks.
     pub bookmarked_pages: Option<Vec<u32>>,
+    /// Absent while the library doesn't check a book's pages against what its file promises.
+    pub damage: Option<BookDamage>,
+}
+
+/// What's wrong with a book that opens with fewer pages than its file promises, the pages past the last one in `pages` being the ones lost.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct BookDamage {
+    pub promised_pages: u32,
+    pub cause: DamageCause,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum DamageCause {
+    ArchiveEndsEarly,
 }
 
 /// Where a book sits, found without opening its file, so a book that won't open still names its way back.
