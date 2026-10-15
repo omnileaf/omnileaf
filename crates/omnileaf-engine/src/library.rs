@@ -21,8 +21,9 @@ use omnileaf_db::{
     },
     first_launch::{finish_first_launch, first_launch_finished},
     history::{
-        book_reading_time, book_sessions, days_in_a_row, history_page, reading_since,
-        reading_time_by_day, series_read,
+        book_reading_time, book_sessions, clear_history, days_in_a_row, hide_book_from_history,
+        history_page, reading_since, reading_time_by_day, restore_book_to_history, restore_history,
+        series_read,
     },
     library_listing::{library_listing, set_library_listing},
     library_tabs::{TabPlace, library_tabs, set_library_tabs},
@@ -39,7 +40,7 @@ use tokio::{
 use crate::{
     AdultContent, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
     CategoryId, CoversPerRowOutOfRange, CreatorSeries, FolderCursor, FolderId, FolderPage,
-    FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries,
+    FolderRescan, FolderScan, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
     LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
     LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder,
     ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing,
@@ -475,7 +476,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let page = history_page(connection, of.into(), &request)?;
+                let page = history_page(connection, &of.into(), &request)?;
                 let days = page.items.iter().map(|entry| entry.local_day);
                 let read_ms_by_day = match (days.clone().min(), days.max()) {
                     (Some(first), Some(last)) => reading_time_by_day(connection, first..=last)?,
@@ -485,6 +486,55 @@ impl Library {
             })
             .await?;
         Ok(HistoryPage::new(page, &read_ms_by_day))
+    }
+
+    /// Takes a book off History until it's read again, returning what Undo puts back.
+    #[tracing::instrument(skip_all, fields(%book))]
+    pub async fn remove_from_history(
+        &self,
+        book: BookId,
+    ) -> Result<Option<HistoryMark>, LibraryError> {
+        let at_ms = self.now_ms();
+        let before = self
+            .store
+            .database()
+            .write(move |transaction| hide_book_from_history(transaction, book.0, at_ms))
+            .await?;
+        Ok(before.map(HistoryMark))
+    }
+
+    pub async fn restore_to_history(
+        &self,
+        book: BookId,
+        mark: Option<HistoryMark>,
+    ) -> Result<(), LibraryError> {
+        let mark = mark.map(|HistoryMark(at_ms)| at_ms);
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| restore_book_to_history(transaction, book.0, mark))
+            .await?)
+    }
+
+    /// Takes everything read so far off History, keeping every session for the reading times, and returns what Undo puts back.
+    #[tracing::instrument(skip_all)]
+    pub async fn clear_history(&self) -> Result<Option<HistoryMark>, LibraryError> {
+        let at_ms = self.now_ms();
+        let before = self
+            .store
+            .database()
+            .write(move |transaction| clear_history(transaction, at_ms))
+            .await?;
+        Ok(before.map(HistoryMark))
+    }
+
+    pub async fn restore_history(&self, mark: Option<HistoryMark>) -> Result<(), LibraryError> {
+        let mark = mark.map(|HistoryMark(at_ms)| at_ms);
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| restore_history(transaction, mark))
+            .await?)
     }
 
     /// What was read from the start of `week_start` on, and the days read in a row up to `today`, in the local time each session started at.
