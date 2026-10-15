@@ -6,33 +6,29 @@
   } from "#lib/ipc/bindings.ts";
 
   import ContinueRowChoice from "./ContinueRowChoice.svelte";
-  import CoversPerRowStepper from "./CoversPerRowStepper.svelte";
+  import CoversPerRowChoice from "./CoversPerRowChoice.svelte";
   import DisplayChoice from "./DisplayChoice.svelte";
   import ItemCountsChoice from "./ItemCountsChoice.svelte";
   import OnCoversChoice from "./OnCoversChoice.svelte";
   import {
-    SCREEN_SIZES,
     type ScreenSize,
     withContinueRow,
     withCoversPerRow,
     withDisplay,
+    withFitsCoversToWidth,
     withItemCounts,
     withOnCovers,
   } from "./library-view";
 
-  const STEPPERS = {
-    phone: "flex medium:hidden",
-    tablet: "hidden medium:flex large:hidden",
-    desktop: "hidden large:flex",
-  } satisfies Record<ScreenSize, string>;
-
   let {
     view,
     coversDrawn,
+    mostThatFit,
     onChoose,
   }: {
     view: LibraryView;
     coversDrawn: number | undefined;
+    mostThatFit: number | undefined;
     onChoose: (view: LibraryView) => void;
   } = $props();
 
@@ -47,17 +43,19 @@
     onChoose(withDisplay(view, display));
   }}
 />
-{#each SCREEN_SIZES as size (size)}
-  <CoversPerRowStepper
-    {size}
-    count={view.coversPerRow[size]}
+{#if view.display !== "list"}
+  <CoversPerRowChoice
+    {view}
     drawn={coversInARow}
-    class={STEPPERS[size]}
-    onCount={(count: number) => {
+    {mostThatFit}
+    onFit={(fitsToWidth: boolean) => {
+      onChoose(withFitsCoversToWidth(view, fitsToWidth));
+    }}
+    onCount={(size: ScreenSize, count: number) => {
       onChoose(withCoversPerRow(view, size, count));
     }}
   />
-{/each}
+{/if}
 <ItemCountsChoice
   isShown={view.showsItemCounts}
   onChoose={(isShown: boolean) => {
