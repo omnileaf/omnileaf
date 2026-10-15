@@ -15,7 +15,7 @@ use omnileaf_db::{
         library_root, library_roots, mark_root_available, mark_root_unavailable, page_dimensions,
         place_in_series, remove_book_files, remove_books_without_files, remove_root,
         root_book_count, root_files, series_books, series_count, series_overview, series_page,
-        store_page_dimensions, up_next,
+        store_page_dimensions, unread_books, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     history::{
@@ -520,6 +520,25 @@ impl Library {
                     .try_for_each(|book| writer.set_read(book.0, is_read))
             })
             .await?)
+    }
+
+    pub async fn mark_series_read(
+        &self,
+        series: Vec<SeriesId>,
+    ) -> Result<Vec<BookId>, LibraryError> {
+        let unread = self
+            .store
+            .database()
+            .read(move |connection| {
+                series
+                    .iter()
+                    .map(|one| unread_books(connection, one.0))
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .await?;
+        let books: Vec<BookId> = unread.into_iter().flatten().map(BookId).collect();
+        self.mark_books(books.clone(), ReadMark::Read).await?;
+        Ok(books)
     }
 
     /// Saves the page reached in the book read before, then the pages the reader shows in this one after the page it opened on.
