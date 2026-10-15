@@ -170,6 +170,7 @@ export const TOKEN_THEME = {
     "crash-screen-top",
     "creator-crumb",
     "crumb",
+    "damaged-book",
     "dialog",
     "dialog-badge",
     "dialog-button",
