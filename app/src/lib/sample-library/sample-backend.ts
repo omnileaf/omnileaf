@@ -635,6 +635,20 @@ export function sampleBackend(
         (series) => passes(series, filter, facts) && holds(series),
       ).length;
     },
+    folderSeries: async (folder, after, chosen) => {
+      await libraryReady();
+      const page = pageOf(
+        folder === LIBRARY_FOLDER_ID ? sorted(chosen) : [],
+        after,
+      );
+      return { series: page.items.map(wireSeries), next: page.next };
+    },
+    folderSeriesCount: async (folder, filter) => {
+      await libraryReady();
+      return folder === LIBRARY_FOLDER_ID
+        ? library.filter((series) => passes(series, filter, facts)).length
+        : 0;
+    },
     librarySearch: async (after, search) => {
       await libraryReady();
       const text = search.text.trim().toLocaleLowerCase();
