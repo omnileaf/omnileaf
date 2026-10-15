@@ -247,17 +247,20 @@ test.describe("with a pointer", () => {
     for (const [name, find] of [
       [
         "an unchosen display",
-        (options: Locator) => options.getByRole("radio", { name: "List" }),
+        (options: Locator) =>
+          Promise.resolve(options.getByRole("radio", { name: "List" })),
       ],
       [
         "a covers per row step",
-        (options: Locator) =>
-          options.getByRole("button", { name: "More covers per row" }),
+        async (options: Locator) => {
+          await options.getByRole("radio", { name: "Choose" }).click();
+          return options.getByRole("button", { name: "More covers per row" });
+        },
       ],
     ] as const) {
       test(`tints ${name} under the pointer`, async ({ page }) => {
         await page.goto("/");
-        const control = find(await openViewOptions(page));
+        const control = await find(await openViewOptions(page));
         await page.mouse.move(0, 0);
         const resting = await paintOf(control);
 

@@ -123,6 +123,7 @@ function coversPerRowStep(label: string): IconAction {
     reach: async (page) => {
       await page.goto("/");
       const options = await openViewOptions(page);
+      await options.getByRole("radio", { name: "Choose" }).click();
       return options.getByRole("button", { name: label });
     },
     label,
