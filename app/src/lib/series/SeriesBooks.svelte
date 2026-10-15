@@ -24,7 +24,7 @@
   import BookListingChoices from "./BookListingChoices.svelte";
   import { booksMatching } from "./book-search";
   import BookTable from "./BookTable.svelte";
-  import { BookSelection } from "./book-selection.svelte";
+  import { Selection } from "#lib/page/selection.svelte.ts";
   import { SERIES_CONTROL } from "./series-control.ts";
   import SelectionBar from "./SelectionBar.svelte";
 
@@ -73,7 +73,7 @@
     | { readonly kind: "failed" }
     | { readonly kind: "pickedAll"; readonly count: number };
 
-  const selection = new BookSelection<BookId>();
+  const selection = new Selection<BookId>();
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const notices = getNotices();
   const headingId = $props.id();

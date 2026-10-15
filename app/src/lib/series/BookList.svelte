@@ -12,7 +12,7 @@
 
   import { bookActions } from "./book-actions";
   import BookRowText from "./BookRowText.svelte";
-  import type { BookSelection } from "./book-selection.svelte";
+  import type { Selection } from "#lib/page/selection.svelte.ts";
   import BookSheet from "./BookSheet.svelte";
   import { RowSwipe } from "./row-swipe.svelte";
   import type { SwipeOutcome } from "./swipe";
@@ -35,7 +35,7 @@
     books: readonly SeriesBook[];
     isComplete: boolean;
     onNearEnd: () => void;
-    selection: BookSelection<BookId>;
+    selection: Selection<BookId>;
     onStartPicking: (book: SeriesBook) => void;
     onMark: (books: BookId[], mark: ReadMark) => void;
     onSwiped: (
