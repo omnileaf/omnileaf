@@ -58,6 +58,9 @@ const LISTED_SERIES = {
   bookCount: 12,
   unreadCount: 9,
   cover: null,
+  language: null,
+  hasDownloads: false,
+  continuesFrom: null,
 };
 
 const SHELF_BACKEND: FakeBackend = {

@@ -38,6 +38,9 @@ function fakeSeries(
       bookCount: 2,
       unreadCount: unread,
       cover: null,
+      language: null,
+      hasDownloads: false,
+      continuesFrom: null,
     },
     isStarted,
   };
