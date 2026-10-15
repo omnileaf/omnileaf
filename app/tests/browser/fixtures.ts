@@ -66,6 +66,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   creatorSeries: () => [],
   markBooks: () => null,
   bookmarkPages: () => null,
+  bookPlace: () => null,
   orientScreen: () => null,
   changeFullScreen: () => false,
   openBook: () => {

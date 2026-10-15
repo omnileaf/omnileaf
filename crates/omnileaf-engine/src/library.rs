@@ -34,7 +34,7 @@ use tokio::{
 };
 
 use crate::{
-    AppLanguage, BookCursor, BookId, BookSessions, BooksRemoval, CoversPerRowOutOfRange,
+    AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval, CoversPerRowOutOfRange,
     CreatorSeries, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor,
     HistoryOf, HistoryPage, HistorySeries, LibraryChanges, LibraryFilter, LibraryFolder,
     LibraryListing, LibrarySearch, LibraryView, LocalDay, ReadMark, ReadingWeek, RescanOutcome,
@@ -605,6 +605,16 @@ impl Library {
             .database()
             .read(move |connection| book_to_read(connection, book.0))
             .await?)
+    }
+
+    /// None for a book missing from the library.
+    pub async fn book_place(&self, book: BookId) -> Result<Option<BookPlace>, LibraryError> {
+        Ok(self.book_to_read(book).await?.map(|found| BookPlace {
+            id: BookId(found.id),
+            title: found.title,
+            series: SeriesId(found.series),
+            series_title: found.series_title,
+        }))
     }
 
     pub(crate) async fn book_to_open(
