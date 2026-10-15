@@ -638,3 +638,11 @@ test("tells a disconnected drive, lost access and a sign-in apart", async () => 
 
   expect(problems).toEqual(["driveDisconnected", "lostAccess", "needsSignIn"]);
 });
+
+test("holds thousands of series once asked, as the fast-scroll boards draw", async () => {
+  const { backend } = backendFor("?library=thousands");
+
+  expect(await backend.librarySeriesCount(NEW_LIBRARY_LISTING.filter)).toBe(
+    12_480,
+  );
+});
