@@ -29,7 +29,7 @@
 
   const ICON_SIZE = 16;
   const SHEET_ICON_SIZE = 18;
-  const SETTINGS_ROUTE = "/(app)/settings/library";
+  const SETTINGS_ROUTE = "/(app)/settings/library/tabs";
 
   let {
     arranged,
