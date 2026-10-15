@@ -2,12 +2,12 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 #[cfg(debug_assertions)]
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
-    AppInfo, AppLanguage, BookCursor, BookId, BookSessions, BooksRemoval, Core, CoversPerRow,
-    CreatorSeries, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor,
-    HistoryOf, HistoryPage, HistorySeries, InterfaceError, Library, LibraryFilter, LibraryListing,
-    LibrarySearch, LibraryView, LocalDay, OpenedBook, ProbedFormat, ProjectLink, ReadMark,
-    ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
-    SeriesId, SeriesOverview, SeriesPage, UtcOffset,
+    AppInfo, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval, Core,
+    CoversPerRow, CreatorSeries, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan,
+    HistoryCursor, HistoryOf, HistoryPage, HistorySeries, InterfaceError, Library, LibraryFilter,
+    LibraryListing, LibrarySearch, LibraryView, LocalDay, OpenedBook, ProbedFormat, ProjectLink,
+    ReadMark, ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage,
+    SeriesCursor, SeriesId, SeriesOverview, SeriesPage, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -47,6 +47,7 @@ macro_rules! app_commands {
             series_books,
             creator_series,
             bookmark_pages,
+            book_place,
             mark_books,
             open_book,
             reading_restored,
@@ -307,6 +308,15 @@ fn creator_series(library: State<'_, Library>, creator: String) -> Vec<CreatorSe
 )]
 fn bookmark_pages(book: BookId, pages: Vec<u32>, is_bookmarked: bool) -> Result<(), IpcError> {
     Err(IpcError::bookmarks_not_kept())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn book_place(
+    library: State<'_, Library>,
+    book: BookId,
+) -> Result<Option<BookPlace>, IpcError> {
+    Ok(library.book_place(book).await?)
 }
 
 #[tauri::command]

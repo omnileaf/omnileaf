@@ -449,6 +449,23 @@ export function sampleBackend(
         ),
       };
     },
+    bookPlace: (id) => {
+      for (const series of library) {
+        const index = series.books.findIndex(
+          (_, at) => sampleBookId(series.number, at + 1) === id,
+        );
+        const book = series.books[index];
+        if (book !== undefined) {
+          return {
+            id,
+            title: book.title,
+            series: sampleSeriesId(series.number),
+            seriesTitle: series.title,
+          };
+        }
+      }
+      return null;
+    },
     bookmarkPages: (id, pages, isBookmarked) => {
       const kept = bookmarks.get(id) ?? new Set<number>();
       for (const page of pages) {

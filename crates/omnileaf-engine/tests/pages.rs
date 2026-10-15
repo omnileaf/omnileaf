@@ -15,9 +15,9 @@ use std::{
 };
 
 use omnileaf_engine::{
-    BookId, BookReading, Library, LibraryListing, OpenBookError, OpenedBook, PageDimensions,
-    ProbedFormat, ReadMark, ReadingDirection, Resource, ResourceRouter, SeriesBookListing,
-    SeriesId,
+    BookId, BookPlace, BookReading, Library, LibraryListing, OpenBookError, OpenedBook,
+    PageDimensions, ProbedFormat, ReadMark, ReadingDirection, Resource, ResourceRouter,
+    SeriesBookListing, SeriesId,
 };
 use omnileaf_imaging::{Size, page_size};
 use omnileaf_testkit::{
@@ -345,6 +345,35 @@ async fn leaves_the_direction_unknown_for_a_book_without_comic_info() {
     let opened = reader.open(NOTHING_UNDECODABLE).await;
 
     assert_eq!(opened.reading_direction, None);
+}
+
+#[tokio::test]
+async fn names_a_books_place_for_the_way_back_without_opening_it() {
+    let reader = Reader::with_book("place-named").await;
+    let book = reader.book().await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let place = reader.library.book_place(book).await.unwrap();
+
+    assert_eq!(
+        place,
+        Some(BookPlace {
+            id: book,
+            title: opened.title,
+            series: opened.series,
+            series_title: opened.series_title,
+        })
+    );
+}
+
+#[tokio::test]
+async fn knows_no_place_for_a_book_missing_from_the_library() {
+    let reader = Reader::with_book("place-missing").await;
+    let missing = BookId::try_from("0190a3e4-0000-8000-8000-00000000ffff".to_owned()).unwrap();
+
+    let place = reader.library.book_place(missing).await.unwrap();
+
+    assert_eq!(place, None);
 }
 
 #[tokio::test]
