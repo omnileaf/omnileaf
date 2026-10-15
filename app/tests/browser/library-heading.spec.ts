@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
 
-import type { Locator, Page } from "@playwright/test";
+import type { Locator, Page, TestInfo } from "@playwright/test";
 
 import english from "../../messages/en.json" with { type: "json" };
 import pseudo from "../../messages/en-XA.json" with { type: "json" };
@@ -73,6 +73,15 @@ function headingOf(page: Page): Locator {
 }
 
 /** The heading, or on iOS phones the title bar above it, whichever holds the heading's buttons. */
+const PHONE_CONTROLS = 4;
+const DESKTOP_CONTROLS = 3;
+
+function controlsShownOn(testInfo: TestInfo): number {
+  return testInfo.project.name.endsWith("desktop")
+    ? DESKTOP_CONTROLS
+    : PHONE_CONTROLS;
+}
+
 function buttonsOf(page: Page): Locator {
   return page
     .getByRole("main")
@@ -262,7 +271,7 @@ for (const platform of PLATFORMS) {
             );
             await page.goto("/");
             await expect(controlsOf(buttonsOf(page))).toHaveCount(
-              library === "empty" ? 0 : 3,
+              library === "empty" ? 0 : controlsShownOn(testInfo),
             );
             if (library === "filled") {
               await expect(countOf(page)).toBeVisible();
@@ -330,7 +339,7 @@ for (const platform of PLATFORMS) {
             );
             await openAt(page, width, screenshotMode);
             await expect(controlsOf(buttonsOf(page))).toHaveCount(
-              library === "empty" ? 0 : 3,
+              library === "empty" ? 0 : PHONE_CONTROLS,
             );
 
             const parts = await settledHeading(page);
@@ -422,7 +431,7 @@ test.describe("the heading at the largest text size on an ios phone", () => {
       const parts = await settledHeading(page);
 
       expect(await linesOf(title)).toBe(1);
-      expect(parts.controls).toHaveLength(3);
+      expect(parts.controls).toHaveLength(PHONE_CONTROLS);
       for (const [, button] of parts.controls) {
         expect(button.y + button.height).toBeLessThanOrEqual(parts.title.y);
       }
@@ -548,6 +557,10 @@ for (const platform of PLATFORMS) {
         [
           heading.getByRole("link", { name: english.search_open }),
           english.search_open,
+        ],
+        [
+          heading.getByRole("button", { name: english.library_more }),
+          english.library_more,
         ],
       ] as const;
       await expect(controlsOf(heading)).toHaveCount(named.length);
