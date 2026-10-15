@@ -71,6 +71,10 @@
 <SettingsLinks
   links={[
     {
+      route: "/(app)/settings/library/tabs",
+      label: m.library_tabs_title(),
+    },
+    {
       route: "/(app)/settings/library/tags",
       label: m.manage_tags_title(),
       ...(tagCount === undefined
