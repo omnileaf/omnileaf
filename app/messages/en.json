@@ -297,6 +297,43 @@
   "library_edit_categories": "Edit categories",
   "library_settings": "Library settings",
   "adult_content_title": "18+ content",
+  "manage_tags_title": "Manage tags",
+  "manage_tags_find": "Find a tag",
+  "manage_tags_list": "Tags",
+  "manage_tags_intro": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} tag. Deleting a tag takes it off its series; the series stay.",
+        "countPlural=other": "{formattedCount} tags. Deleting a tag takes it off its series; the series stay."
+      }
+    }
+  ],
+  "manage_tags_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} tag",
+        "countPlural=other": "{formattedCount} tags"
+      }
+    }
+  ],
+  "manage_tags_none": "No tags yet. Add them to series from Categories and tags.",
+  "manage_tags_rename": "Rename {tag}",
+  "manage_tags_delete": "Delete {tag}",
+  "manage_tags_deleted": "{tag} deleted",
+  "manage_tags_tag": "Tag",
+  "manage_tags_rename_action": "Rename",
   "library_adult_mark": "18+",
   "library_tap_to_show": "Tap to show",
   "library_click_to_show": "Click to show",

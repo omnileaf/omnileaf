@@ -295,6 +295,43 @@
   "library_edit_categories": "⟦Éðíţ çáţéĝöŕíéš······⟧",
   "library_settings": "⟦Ļíƀŕáŕý šéţţíñĝš·······⟧",
   "adult_content_title": "⟦18+ çöñţéñţ·····⟧",
+  "manage_tags_title": "⟦Ṁáñáĝé ţáĝš·····⟧",
+  "manage_tags_find": "⟦Ƒíñð á ţáĝ····⟧",
+  "manage_tags_list": "⟦Ţáĝš··⟧",
+  "manage_tags_intro": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ţáĝ. Ðéļéţíñĝ á ţáĝ ţáķéš íţ öƒƒ íţš šéŕíéš; ţĥé šéŕíéš šţáý.································⟧",
+        "countPlural=other": "⟦{formattedCount} ţáĝš. Ðéļéţíñĝ á ţáĝ ţáķéš íţ öƒƒ íţš šéŕíéš; ţĥé šéŕíéš šţáý.································⟧"
+      }
+    }
+  ],
+  "manage_tags_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ţáĝ········⟧",
+        "countPlural=other": "⟦{formattedCount} ţáĝš·········⟧"
+      }
+    }
+  ],
+  "manage_tags_none": "⟦Ñö ţáĝš ýéţ. Áðð ţĥéɱ ţö šéŕíéš ƒŕöɱ Çáţéĝöŕíéš áñð ţáĝš.·······················⟧",
+  "manage_tags_rename": "⟦Ŕéñáɱé {tag}·····⟧",
+  "manage_tags_delete": "⟦Ðéļéţé {tag}·····⟧",
+  "manage_tags_deleted": "⟦{tag} ðéļéţéð······⟧",
+  "manage_tags_tag": "⟦Ţáĝ··⟧",
+  "manage_tags_rename_action": "⟦Ŕéñáɱé···⟧",
   "library_adult_mark": "⟦18+··⟧",
   "library_tap_to_show": "⟦Ţáþ ţö šĥöŵ·····⟧",
   "library_click_to_show": "⟦Çļíçķ ţö šĥöŵ······⟧",
