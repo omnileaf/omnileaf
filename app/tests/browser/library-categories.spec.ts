@@ -49,6 +49,8 @@ const MORE_LABEL_INSET = 12;
 const MORE_CHEVRON_GAP = 8;
 const ANDROID_TOUCH_TARGET_PX = 48;
 const LAYOUT_ROUNDING_PX = 0.25;
+const SWIPE_PX = 200;
+const SWIPE_STEPS = 6;
 
 function backendWith(categories: readonly LibraryCategory[]): FakeBackend {
   const inCategory = (category: string) =>
@@ -127,6 +129,37 @@ async function openViewOptions(page: Page): Promise<void> {
     .click();
 }
 
+async function swipeCovers(
+  page: Page,
+  by: { x: number; y: number },
+): Promise<void> {
+  const list = seriesList(page);
+  const box = await list.boundingBox();
+  if (box === null) {
+    throw new Error("the series list is not on screen");
+  }
+  const start = { x: box.x + box.width / 2, y: box.y + box.height / 3 };
+  const touch = { pointerType: "touch", pointerId: 7, isPrimary: true };
+  await list.dispatchEvent("pointerdown", {
+    ...touch,
+    clientX: start.x,
+    clientY: start.y,
+  });
+  for (let step = 1; step <= SWIPE_STEPS; step += 1) {
+    const share = step / SWIPE_STEPS;
+    await list.dispatchEvent("pointermove", {
+      ...touch,
+      clientX: start.x + by.x * share,
+      clientY: start.y + by.y * share,
+    });
+  }
+  await list.dispatchEvent("pointerup", {
+    ...touch,
+    clientX: start.x + by.x,
+    clientY: start.y + by.y,
+  });
+}
+
 async function openLibrary(page: Page): Promise<void> {
   await page.goto("/");
   await expect(seriesList(page)).toContainText(LIBRARY[0]?.title ?? "");
@@ -134,6 +167,39 @@ async function openLibrary(page: Page): Promise<void> {
 
 test.describe("with two categories", () => {
   test.use({ backend: backendWith(CATEGORIES) });
+
+  test("swipes the covers to the next category's tab, and back", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.use.hasTouch !== true, "a finger swipes");
+    await openLibrary(page);
+
+    await swipeCovers(page, { x: -SWIPE_PX, y: 0 });
+    await expect(
+      tabs(page).getByRole("tab", { name: "Manga" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(seriesList(page).getByRole("listitem")).toHaveCount(
+      MANGA.length,
+    );
+    await swipeCovers(page, { x: SWIPE_PX, y: 0 });
+
+    await expect(tabs(page).getByRole("tab", { name: "All" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  test("keeps the tab on a drag up the covers", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.use.hasTouch !== true, "a finger swipes");
+    await openLibrary(page);
+
+    await swipeCovers(page, { x: -SWIPE_PX / 2, y: -SWIPE_PX });
+
+    await expect(tabs(page).getByRole("tab", { name: "All" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
 
   test("puts a tab for each category after All, and lists only the chosen category's series", async ({
     page,
