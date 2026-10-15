@@ -16,7 +16,8 @@ export type ReaderAction =
   | "zoomIn"
   | "zoomOut"
   | "zoomFit"
-  | "shortcuts";
+  | "shortcuts"
+  | "jump";
 
 const ARROWS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowRight"]);
 
@@ -38,6 +39,7 @@ const READER_KEYS: readonly ReaderKey[] = [
   { key: "m", action: "toggleControls" },
   { key: "f", action: "fullScreen" },
   { key: "?", action: "shortcuts" },
+  { key: "g", action: "jump" },
   { key: "=", isCommand: true, action: "zoomIn" },
   { key: "+", isCommand: true, action: "zoomIn" },
   { key: "-", isCommand: true, action: "zoomOut" },
@@ -48,7 +50,7 @@ function isPageTurn(action: ReaderAction): action is "next" | "previous" {
   return action === "next" || action === "previous";
 }
 
-/** The reader's keys, taken on its slider too since the shortcut leaves a slider its own keys, with the arrows turning the way the book reads. */
+/** The reader's keys, with the arrows turning the way the book reads. */
 export function readerShortcuts(
   act: (action: ReaderAction) => void,
   direction: () => ReadingDirection,
@@ -57,7 +59,6 @@ export function readerShortcuts(
   return READER_KEYS.map(({ action, isCommand = false, ...keys }) => ({
     ...keys,
     ...(isCommand ? { command: platform } : {}),
-    inTextFields: true,
     run: () => {
       act(
         ARROWS.has(keys.key) && isPageTurn(action)
