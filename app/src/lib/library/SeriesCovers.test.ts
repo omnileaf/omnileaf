@@ -4,13 +4,13 @@ import { render } from "vitest-browser-svelte";
 
 import {
   commands,
-  DEFAULT_LIBRARY_LISTING,
   DEFAULT_LIBRARY_VIEW,
   type LibrarySeries,
 } from "#lib/ipc/bindings.ts";
 
 import type { CoverPath } from "./cover-url";
 import SeriesCovers from "./SeriesCovers.svelte";
+import { NEW_LIBRARY_LISTING } from "./library-listing";
 
 const COVER = "thumb/v1/0190a3e4-0000-8000-8000-000000000001/1/1";
 
@@ -38,7 +38,7 @@ async function listed(): Promise<readonly LibrarySeries[]> {
     ],
     next: null,
   }));
-  const page = await commands.librarySeries(null, DEFAULT_LIBRARY_LISTING);
+  const page = await commands.librarySeries(null, NEW_LIBRARY_LISTING);
   if (page.status === "error") {
     throw new Error("the backend listed no series");
   }

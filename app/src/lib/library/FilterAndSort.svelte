@@ -2,10 +2,7 @@
   import { ListFilter, X } from "@lucide/svelte";
   import { Dialog } from "bits-ui";
 
-  import {
-    DEFAULT_LIBRARY_LISTING,
-    type LibraryListing,
-  } from "#lib/ipc/bindings.ts";
+  import { type LibraryListing } from "#lib/ipc/bindings.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
@@ -15,7 +12,7 @@
   import { getLocale } from "#lib/paraglide/runtime.js";
 
   import FilterChoices from "./FilterChoices.svelte";
-  import { filtersOn } from "./library-listing";
+  import { filtersOn, NEW_LIBRARY_LISTING } from "./library-listing";
 
   const ICON_SIZE = 16;
   const CLOSE_ICON_SIZE = 18;
@@ -136,7 +133,7 @@
               look="text"
               class="rounded-badge px-sm text-detail block-panel-button"
               onclick={() => {
-                onChoose(DEFAULT_LIBRARY_LISTING);
+                onChoose(NEW_LIBRARY_LISTING);
               }}
             >
               {m.library_reset()}
@@ -182,7 +179,7 @@
               look="text"
               class="px-xs text-body min-block-touch-target"
               onclick={() => {
-                onChoose(DEFAULT_LIBRARY_LISTING);
+                onChoose(NEW_LIBRARY_LISTING);
               }}
             >
               {m.library_reset()}

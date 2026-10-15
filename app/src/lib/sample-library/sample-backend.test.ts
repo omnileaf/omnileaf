@@ -1,16 +1,14 @@
 import { expect, test } from "vitest";
 
-import {
-  DEFAULT_LIBRARY_LISTING,
-  type LibraryListing,
-} from "#lib/ipc/bindings.ts";
+import { type LibraryListing } from "#lib/ipc/bindings.ts";
 import { CommandFailure } from "#lib/ipc/fake-backend.ts";
 
 import { sampleBackend, scenarioFrom } from "./sample-backend.ts";
 import { LONG_TITLE, sampleBookId, sampleSeriesId } from "./sample-library.ts";
+import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 
 const NEWEST_FIRST: LibraryListing = {
-  ...DEFAULT_LIBRARY_LISTING,
+  ...NEW_LIBRARY_LISTING,
   sort: { by: "dateAdded", direction: "descending" },
 };
 
@@ -53,23 +51,21 @@ test("pages through every series with a cursor", async () => {
 
   let next: string | null = null;
   do {
-    const page = await backend.librarySeries(next, DEFAULT_LIBRARY_LISTING);
+    const page = await backend.librarySeries(next, NEW_LIBRARY_LISTING);
     titles.push(...page.series.map((series) => series.title));
     next = page.next;
   } while (next !== null);
 
   expect(titles).toHaveLength(19);
-  expect(await backend.librarySeriesCount(DEFAULT_LIBRARY_LISTING.filter)).toBe(
-    19,
-  );
+  expect(await backend.librarySeriesCount(NEW_LIBRARY_LISTING.filter)).toBe(19);
 });
 
 test("lists only series with every book read when asked for finished ones", async () => {
   const { backend } = backendFor();
 
   const page = await backend.librarySeries(null, {
-    ...DEFAULT_LIBRARY_LISTING,
-    filter: { ...DEFAULT_LIBRARY_LISTING.filter, finished: "only" },
+    ...NEW_LIBRARY_LISTING,
+    filter: { ...NEW_LIBRARY_LISTING.filter, finished: "only" },
   });
 
   expect(page.series.map((series) => series.title)).toEqual([
@@ -116,7 +112,7 @@ test("marks books read and says the library changed", async () => {
 test("shows an empty library when asked for one", async () => {
   const { backend } = backendFor("library=empty");
 
-  const page = await backend.librarySeries(null, DEFAULT_LIBRARY_LISTING);
+  const page = await backend.librarySeries(null, NEW_LIBRARY_LISTING);
 
   expect(page.series).toEqual([]);
 });
@@ -124,7 +120,7 @@ test("shows an empty library when asked for one", async () => {
 test("fails to load the library when asked to", async () => {
   const { backend } = backendFor("library=failed");
 
-  const listing = backend.librarySeries(null, DEFAULT_LIBRARY_LISTING);
+  const listing = backend.librarySeries(null, NEW_LIBRARY_LISTING);
 
   await expect(listing).rejects.toBeInstanceOf(CommandFailure);
 });
@@ -216,7 +212,7 @@ test("keeps the boards' categories, each listing only its own series", async () 
   const sea = await backend.categorySeries(
     "sea-stories",
     null,
-    DEFAULT_LIBRARY_LISTING,
+    NEW_LIBRARY_LISTING,
   );
 
   expect(categories.map(({ name }) => name)).toEqual([
@@ -232,7 +228,7 @@ test("keeps the boards' categories, each listing only its own series", async () 
   expect(
     await backend.categorySeriesCount(
       "sea-stories",
-      DEFAULT_LIBRARY_LISTING.filter,
+      NEW_LIBRARY_LISTING.filter,
     ),
   ).toBe(sea.series.length);
 });
