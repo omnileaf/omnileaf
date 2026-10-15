@@ -32,7 +32,7 @@ test("sets the library's large title under its buttons on an iPhone, folding it 
   const barTitle = bar.getByText("Library", { exact: true });
 
   const buttons = await boxOf(
-    bar.getByRole("button", { name: "Filter and sort" }),
+    bar.getByRole("button", { name: "Sort and filter" }),
   );
   expect((await boxOf(title)).y).toBeGreaterThan(buttons.y + buttons.height);
   await expect(barTitle).toHaveCSS("opacity", "0");
