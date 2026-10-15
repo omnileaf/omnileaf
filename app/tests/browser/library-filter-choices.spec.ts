@@ -44,6 +44,7 @@ const CHOICES: LibraryFilterChoices = {
   tags: ["Slice of life", "Seinen", "Sea", "Letters"],
   ratesAdult: true,
   keepsBookmarks: true,
+  smart: [],
 };
 
 function isOneOf<T>(chosen: readonly T[], value: T | null): boolean {

@@ -74,6 +74,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
     tags: [],
     ratesAdult: false,
     keepsBookmarks: false,
+    smart: [],
   }),
   categorySeries: () => ({ series: [], next: null }),
   categorySeriesCount: () => 0,

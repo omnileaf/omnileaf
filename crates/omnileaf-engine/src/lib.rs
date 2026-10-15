@@ -81,7 +81,7 @@ pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryC
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
 pub use library_listing::{
     Inclusion, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySort, LibrarySortBy,
-    SeriesFormat, SortDirection,
+    SeriesFormat, SmartFilter, SortDirection,
 };
 pub use library_search::LibrarySearch;
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
