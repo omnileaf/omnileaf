@@ -16,12 +16,11 @@
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
-  import type { LibraryCategory } from "#lib/ipc/bindings.ts";
   import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
   import { MEDIUM_QUERY } from "#lib/page/breakpoints.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { ALL_SERIES } from "./library-tab.svelte.ts";
+  import { type ArrangedTab, tabKey } from "./library-tabs.ts";
 
   interface Tab {
     readonly id: string;
@@ -33,20 +32,19 @@
   const SETTINGS_ROUTE = "/(app)/settings/library";
 
   let {
-    categories,
+    arranged,
     chosen,
     onChoose,
   }: {
-    categories: readonly LibraryCategory[];
+    arranged: readonly ArrangedTab[];
     chosen: string;
     onChoose: (tab: string) => void;
   } = $props();
 
   const isWide = new MediaQuery(MEDIUM_QUERY);
-  const tabs = $derived<readonly Tab[]>([
-    { id: ALL_SERIES, name: m.library_category_all() },
-    ...categories,
-  ]);
+  const tabs = $derived<readonly Tab[]>(
+    arranged.map(({ id, name }) => ({ id: tabKey(id), name })),
+  );
 
   let strip = $state<HTMLElement | null>(null);
   const hidden = new SvelteSet<string>();
