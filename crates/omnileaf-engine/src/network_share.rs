@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use omnileaf_db::catalog::AndroidTree;
 use serde::Serialize;
 use specta::Type;
 
@@ -8,6 +9,12 @@ const SCHEME_END: &str = "://";
 const USER_END: char = '@';
 const HOST_END: char = ':';
 const SOURCE_SEPARATORS: [char; 2] = ['/', '\\'];
+const CONTENT_SCHEME: &str = "content://";
+const ANDROID_DEVICE_PROVIDERS: [&str; 3] = [
+    "com.android.externalstorage.documents",
+    "com.android.providers.downloads.documents",
+    "com.android.providers.media.documents",
+];
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -30,6 +37,13 @@ pub enum ShareSignIn {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ShareAddress(String);
+
+pub trait ShareLookup: Send + Sync {
+    fn unreachable_share(
+        &self,
+        folder: &Path,
+    ) -> impl Future<Output = Option<UnreachableShare>> + Send;
+}
 
 impl ShareAddress {
     pub(crate) fn new(address: String) -> Self {
@@ -90,6 +104,25 @@ impl NetworkShare {
             name: point.display().to_string(),
         }
     }
+}
+
+pub(crate) fn share_of_tree(tree: &AndroidTree) -> Option<NetworkShare> {
+    let authority = tree
+        .uri()
+        .as_str()
+        .strip_prefix(CONTENT_SCHEME)?
+        .split(SHARE_SEPARATOR)
+        .next()?;
+    if ANDROID_DEVICE_PROVIDERS.contains(&authority) {
+        return None;
+    }
+    Some(match tree.place() {
+        "" => NetworkShare {
+            server: tree.name().to_owned(),
+            name: tree.name().to_owned(),
+        },
+        place => NetworkShare::on(place, tree.name()),
+    })
 }
 
 fn without_port(rest: &str) -> &str {
