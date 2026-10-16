@@ -950,6 +950,13 @@ async fn open_problem_report_issue(app: AppHandle) -> Result<(), IpcError> {
     clippy::needless_pass_by_value,
     reason = "Tauri hands command arguments over by value"
 )]
+#[cfg_attr(
+    mobile,
+    expect(
+        clippy::unnecessary_wraps,
+        reason = "only the desktop's tray can fail to show"
+    )
+)]
 fn show_tray_menu(
     #[cfg_attr(
         mobile,
