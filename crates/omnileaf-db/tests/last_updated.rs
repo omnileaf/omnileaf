@@ -52,6 +52,7 @@ impl Shelf {
             series: SeriesId::local(series).unwrap(),
             title: NEW_VOLUME.to_owned(),
             added_at_ms,
+            page_count: None,
         };
         self.database
             .write(move |transaction| add_book(transaction, &book))
