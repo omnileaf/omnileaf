@@ -434,7 +434,7 @@ export type LibrarySort = {
 	direction: SortDirection,
 };
 
-export type LibrarySortBy = "title" | "dateAdded" | "lastRead" | "lastUpdated" | "unreadCount";
+export type LibrarySortBy = "title" | "dateAdded" | "lastRead" | "lastUpdated" | "unreadCount" | "timeLeft";
 
 export type LibraryTab = {
 	id: LibraryTabId,
@@ -650,7 +650,7 @@ export type SeriesOverview = {
 	tags: string[],
 	/**  Other series in the library that share a creator or a tag with this one. */
 	related: RelatedSeries[],
-	/**  About how long the books left take to read, absent until the library times reading. */
+	/**  About how long the books left take to read at the reading speed learned on this device, absent until the library times reading or while a book left has no page count. */
 	secondsLeft: number | null,
 };
 
@@ -674,7 +674,7 @@ export type SmartFilter =
 /**  Downloaded and finished. */
 "readyToCleanUp";
 
-/**  Ascending lists titles from A to Z, series added, updated or read longest ago first with those never read before them, and series with the fewest unread books first. */
+/**  Ascending lists titles from A to Z, series added, updated or read longest ago first with those never read before them, the fewest unread books first, and the fewest pages left first with those whose pages aren't all counted last. */
 export type SortDirection = "ascending" | "descending";
 
 /**  What a search that found nothing was likely meant to be. */
