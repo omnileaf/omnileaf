@@ -16,6 +16,16 @@ test("keeps every class of every look through the class merge", () => {
   expect(merged).toEqual(looks);
 });
 
+test("rings every look but the full-width row with the platform's focus ring", () => {
+  const looks = Object.keys(BUTTON_LOOKS) as ButtonLook[];
+
+  const ringless = looks.filter(
+    (look) => !classesOf(look).includes("focus-visible:focus-ring"),
+  );
+
+  expect(ringless).toEqual(["row"]);
+});
+
 test.each<[ButtonLook, string[]]>([
   [
     "text",
