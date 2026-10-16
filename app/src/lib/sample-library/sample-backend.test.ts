@@ -644,7 +644,7 @@ test("hides the series of a missing folder, saying how many", async () => {
 
   expect([
     missing?.folder.name,
-    missing?.problem,
+    missing?.problem.kind,
     missing?.hiddenSeries,
     missing?.isShownAnyway,
     every - (await backend.librarySeriesCount(NEW_LIBRARY_LISTING.filter)),
@@ -679,17 +679,23 @@ test("finds a missing folder again where it went", async () => {
   ]).toEqual([[], 0]);
 });
 
-test("tells a disconnected drive, lost access and a sign-in apart", async () => {
+test("tells a disconnected drive, lost access and each share apart", async () => {
   const problems = await Promise.all(
-    ["drive", "access", "sign-in"].map(async (kind) => {
+    ["drive", "access", "sign-in", "mount", "share"].map(async (kind) => {
       const [missing] = await backendFor(
         `?missing=${kind}`,
       ).backend.missingLibraryFolders();
-      return missing?.problem;
+      return missing?.problem.kind;
     }),
   );
 
-  expect(problems).toEqual(["driveDisconnected", "lostAccess", "needsSignIn"]);
+  expect(problems).toEqual([
+    "driveDisconnected",
+    "lostAccess",
+    "needsSignIn",
+    "needsMounting",
+    "shareUnreachable",
+  ]);
 });
 
 test("holds thousands of series once asked, as the fast-scroll boards draw", async () => {
