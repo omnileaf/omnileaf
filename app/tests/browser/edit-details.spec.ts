@@ -235,6 +235,28 @@ test("puts the title back to the file's, with Undo", async ({ page }) => {
   await expect(discardConfirm(page)).toHaveCount(0);
 });
 
+test("lets an emptied title fall back to the file's, greyed in the field", async ({
+  page,
+}) => {
+  details = {
+    ...FROM_FILES,
+    title: { fromFile: FILE_TITLE, edited: TYPED_TITLE },
+  };
+  const shown = await openEditor(page);
+  const title = shown.getByRole("textbox", { name: "Title" });
+
+  await title.fill("");
+
+  await expect(title).toHaveAttribute("placeholder", FILE_TITLE);
+  await expect(title).toHaveAccessibleDescription(
+    `Left empty, so the file’s title shows: “${FILE_TITLE}”. Type to set your own.`,
+  );
+  await expect(shown.getByText("Edited")).toHaveCount(0);
+  await save(shown);
+
+  await expect.poll(() => sent.map(({ title: kept }) => kept)).toEqual([null]);
+});
+
 test("takes a tag off, adds one, and saves the tags over the file's", async ({
   page,
 }) => {

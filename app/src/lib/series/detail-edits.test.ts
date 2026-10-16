@@ -52,6 +52,15 @@ describe("a draft of a series' details", () => {
     ).toEqual(["title", "tags"]);
   });
 
+  it("lets an emptied field fall back to the file's value", () => {
+    const draft = { ...draftOf(EDITED), title: " ", summary: "" };
+
+    expect([
+      isEdited("title", EDITED, draft),
+      isEdited("summary", EDITED, draft),
+    ]).toEqual([false, false]);
+  });
+
   it("puts one value back to the file's and leaves the rest", () => {
     const draft = withFileValue("title", EDITED, draftOf(EDITED));
 
