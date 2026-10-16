@@ -6,6 +6,8 @@ import "../../../../app.css";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
 
+import { resolvedColour } from "../../../../../tests/components/resolved-colour";
+
 import Checkbox from "./checkbox.svelte";
 
 interface CheckboxLook {
@@ -58,15 +60,6 @@ function fillOf(element: Element): string {
   return getComputedStyle(element).backgroundColor;
 }
 
-function colourOf(token: string): string {
-  const probe = document.createElement("span");
-  probe.style.color = `var(${token})`;
-  document.body.append(probe);
-  const colour = getComputedStyle(probe).color;
-  probe.remove();
-  return colour;
-}
-
 afterEach(() => {
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
@@ -96,7 +89,7 @@ for (const look of LOOKS) {
     expect(box.getBoundingClientRect().width).toBeCloseTo(look.size, 0);
     expect(style.borderTopLeftRadius).toBe(look.corner);
     expect(style.borderTopWidth).toBe(look.edgeWidth);
-    expect(style.borderTopColor).toBe(colourOf(look.edge));
+    expect(style.borderTopColor).toBe(resolvedColour(look.edge, "color"));
   });
 }
 
