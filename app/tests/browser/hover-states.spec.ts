@@ -114,14 +114,16 @@ test.describe("with a pointer", () => {
     });
   }
 
-  test("keeps an outlined button's card under its tint", async ({ page }) => {
-    await page.goto("/settings/about");
-    const button = page.getByRole("button", { name: "Copy version details" });
-    const card = await backgroundColorOf(button);
+  test("keeps an outlined control's card under its tint", async ({ page }) => {
+    await page.goto("/settings/advanced");
+    const control = page.getByRole("switch", {
+      name: "Check folders for new books while Omnileaf is open",
+    });
+    const card = await backgroundColorOf(control);
 
-    await button.hover();
+    await control.hover();
 
-    expect(await backgroundColorOf(button)).toBe(card);
+    expect(await backgroundColorOf(control)).toBe(card);
   });
 
   test("keeps the selected destination's look under the pointer", async ({
