@@ -199,7 +199,7 @@ async function chooseReadState(
 
 async function sortBy(
   page: Page,
-  sort: "Title" | "Recently read" | "Date added",
+  sort: "Title" | "Recently read" | "Recently added",
 ) {
   await filterAndSort(page)
     .getByRole("combobox", { name: "Sort by" })
@@ -308,13 +308,13 @@ test("lists the series opened and not finished once In progress is chosen, and t
     });
 });
 
-test("lists the series added last first once date added is chosen, and reverses them on asking", async ({
+test("lists the series added last first once recently added is chosen, and reverses them on asking", async ({
   page,
 }) => {
   await openLibrary(page);
   await openFilterAndSort(page);
 
-  await sortBy(page, "Date added");
+  await sortBy(page, "Recently added");
 
   await expectTitles(page, [2, 4, 6, 1, 5, 3]);
   await directionButton(
