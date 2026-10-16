@@ -24,12 +24,13 @@ const SET_LISTING: &str = "INSERT INTO library_listing (
         started = excluded.started,
         finished = excluded.finished";
 
-const ORDERS: [SeriesOrder; 5] = [
+const ORDERS: [SeriesOrder; 6] = [
     SeriesOrder::Title,
     SeriesOrder::DateAdded,
     SeriesOrder::LastRead,
     SeriesOrder::LastUpdated,
     SeriesOrder::UnreadCount,
+    SeriesOrder::TimeLeft,
 ];
 const DIRECTIONS: [SortDirection; 2] = [SortDirection::Ascending, SortDirection::Descending];
 const INCLUSIONS: [Inclusion; 3] = [Inclusion::Any, Inclusion::Only, Inclusion::Hide];
@@ -116,6 +117,7 @@ const fn order_name(order: SeriesOrder) -> &'static str {
         SeriesOrder::LastRead => "last_read",
         SeriesOrder::LastUpdated => "last_updated",
         SeriesOrder::UnreadCount => "unread_count",
+        SeriesOrder::TimeLeft => "time_left",
     }
 }
 
