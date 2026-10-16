@@ -727,6 +727,12 @@
   "report_log_hide": "Hide",
   "report_failed": "Couldn't put the report together.",
   "report_try_again": "Try again",
+  "report_ways_to_send": "Ways to send it",
+  "report_open_on_github": "Open on GitHub",
+  "report_copy": "Copy report",
+  "report_copied": "Report copied",
+  "report_kept": "Code {code} · kept in Your reports",
+  "report_copy_failed": "Couldn't copy the report. Try again.",
   "about_licences": "Open-source licences",
   "about_licences_hint": "The packages Omnileaf is built with",
   "licences_intro": [
