@@ -29,6 +29,7 @@
   import NeedsAttentionSheet from "#lib/problems/NeedsAttentionSheet.svelte";
   import NeedsAttentionSidebarItem from "#lib/problems/NeedsAttentionSidebarItem.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import ScreenshotModeNotice from "#lib/screenshot-mode/ScreenshotModeNotice.svelte";
   import QuickOpen from "#lib/search/QuickOpen.svelte";
   import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
   import { shownBackLink } from "#lib/navigation/back-link.ts";
@@ -175,6 +176,7 @@
     onFix={fix}
   />
 {/key}
+<ScreenshotModeNotice platform={data.appInfo.platform} />
 <AppKeyboardShortcuts
   isOpen={isShowingShortcuts}
   platform={data.appInfo.platform}
