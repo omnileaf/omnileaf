@@ -68,6 +68,33 @@ fn names_days_across_leap_years_and_before_1970() {
 }
 
 #[test]
+fn skips_the_leap_day_in_a_century_not_divisible_by_400() {
+    let folder = ScratchFolder::new("saved-report-century");
+
+    let names: Vec<String> = [
+        LocalDay(-25_509),
+        LocalDay(-25_508),
+        LocalDay(47_540),
+        LocalDay(47_541),
+        LocalDay(-135_081),
+    ]
+    .into_iter()
+    .map(|day| file_name(&report().save_in(folder.path(), day).unwrap()).to_owned())
+    .collect();
+
+    assert_eq!(
+        names,
+        [
+            "omnileaf-report-1900-02-28.txt",
+            "omnileaf-report-1900-03-01.txt",
+            "omnileaf-report-2100-02-28.txt",
+            "omnileaf-report-2100-03-01.txt",
+            "omnileaf-report-1600-02-29.txt",
+        ]
+    );
+}
+
+#[test]
 fn never_writes_over_a_file_already_there() {
     let folder = ScratchFolder::new("saved-report-again");
     let earlier = folder.path().join("omnileaf-report-2026-10-16.txt");
