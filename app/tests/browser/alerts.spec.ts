@@ -13,9 +13,9 @@ import {
   testOnlyInItsWebview,
 } from "./fixtures.ts";
 
-const ICON_SIZE = 20;
-const CORNER_RADIUS = 14;
-const BLOCK_PADDING = 14;
+const ICON_SIZE = 16;
+const CORNER_RADIUS = 10;
+const BLOCK_PADDING = 12;
 const INLINE_PADDING = 16;
 const TOUCH_TARGET = 48;
 
