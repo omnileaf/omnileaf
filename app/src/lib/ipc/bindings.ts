@@ -125,6 +125,9 @@ export const commands = {
 	sendCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("send_crash_report")),
 	copyCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_crash_report")),
 	declineCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("decline_crash_report")),
+	checkStorage: () => typedError<StorageUse, IpcError>(__TAURI_INVOKE("check_storage")),
+	clearCachedPages: () => typedError<null, IpcError>(__TAURI_INVOKE("clear_cached_pages")),
+	clearCovers: () => typedError<null, IpcError>(__TAURI_INVOKE("clear_covers")),
 	panicInCore: () => typedError<null, IpcError>(__TAURI_INVOKE("panic_in_core")),
 	crashAndQuit: () => typedError<null, IpcError>(__TAURI_INVOKE("crash_and_quit")),
 };
@@ -720,6 +723,16 @@ export type SpellingSuggestion = {
 	text: string,
 	/**  The series holding the chapter, when the text is a chapter title rather than a series'. */
 	chapterOf: string | null,
+};
+
+/**  Byte counts cross as plain numbers, which hold the size of any disk exactly. */
+export type StorageUse = {
+	omnileafBytes: number,
+	cachedPagesBytes: number,
+	coversBytes: number,
+	freeBytes: number,
+	totalBytes: number,
+	isLow: boolean,
 };
 
 export type SwipeEdge = "left" | "right";
