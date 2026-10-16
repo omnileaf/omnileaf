@@ -20,7 +20,7 @@ const SCAN_TIMEOUT_MS = 60_000;
 const SETUP_TIMEOUT_MS = 180_000;
 
 const SETTINGS_LINK = mainNavigationLink("Settings");
-const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
+const LIBRARY_SETTINGS_LINK = xpath("//main//a[@href='/settings/library']");
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
 
 const DEVICE_STORAGE_CRUMB = xpath(

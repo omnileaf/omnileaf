@@ -29,7 +29,7 @@ const READY_ADD_FOLDER_BUTTON = xpath(
   "//button[normalize-space()='Add a folder'][not(@disabled)]",
 );
 const SETTINGS_LINK = mainNavigationLink("Settings");
-const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
+const LIBRARY_SETTINGS_LINK = xpath("//main//a[@href='/settings/library']");
 const RESCAN_SAMPLE_LIBRARY = xpath(
   `//button[@aria-label='Rescan ${SAMPLE_LIBRARY.name}']`,
 );
