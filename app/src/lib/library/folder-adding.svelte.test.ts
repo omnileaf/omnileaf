@@ -61,3 +61,34 @@ test("stays enabled while it asks before picking", async () => {
 
   expect([whileAsking, adding.outcome.kind]).toEqual([false, "scanned"]);
 });
+
+test("names the folder being added until its scan ends", async () => {
+  const notices = new Notices();
+  let endScan: () => void = () => {};
+  const adding = new FolderAdding(
+    async (onProgress) => {
+      onProgress({
+        stage: "adding",
+        name: "Manga",
+        location: "/media/usb/Manga",
+      });
+      onProgress({ stage: "finding", found: 38 });
+      await new Promise<void>((resolve) => {
+        endScan = resolve;
+      });
+      return { status: "ok", data: SCAN };
+    },
+    () => notices,
+  );
+
+  const added = adding.add();
+  await Promise.resolve();
+  const whileScanning = adding.beingAdded;
+  endScan();
+  await added;
+
+  expect([whileScanning, adding.beingAdded]).toEqual([
+    { name: "Manga", location: "/media/usb/Manga" },
+    undefined,
+  ]);
+});

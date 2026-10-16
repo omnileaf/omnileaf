@@ -1298,6 +1298,11 @@ test.describe("while a folder is still being scanned", () => {
     backend: {
       ...FIRST_LAUNCH_BACKEND,
       addLibraryFolder: async (onProgress) => {
+        await onProgress.send({
+          stage: "adding",
+          name: MANGA.name,
+          location: MANGA.location,
+        });
         await onProgress.send({ stage: "finding", found: 38 });
         await new Promise<void>((resolve) => {
           endScan = resolve;
@@ -1347,6 +1352,33 @@ test.describe("while a folder is still being scanned", () => {
         toastBox.x >= buttonBox.x + buttonBox.width ||
         toastBox.x + toastBox.width <= buttonBox.x,
     ).toBe(true);
+  });
+
+  function scannedRow(page: Page): Locator {
+    return page
+      .getByRole("region", { name: "Folders" })
+      .getByRole("listitem")
+      .filter({ hasText: MANGA.name });
+  }
+
+  test("names the folder in its own row and counts what it finds", async ({
+    page,
+  }) => {
+    await startScanning(page);
+
+    await expect(scannedRow(page)).toContainText(MANGA.location);
+    await expect(scannedRow(page)).toContainText("Counting… 38 so far");
+    await expect(
+      scannedRow(page).getByRole("button", { name: /Remove/ }),
+    ).toHaveCount(0);
+  });
+
+  test("keeps counting in the folder's row on You're all set", async ({
+    page,
+  }) => {
+    await goOnWhileScanning(page);
+
+    await expect(scannedRow(page)).toContainText("Counting… 38 so far");
   });
 
   test("offers Continue on Link folders while the folder is scanned", async ({
