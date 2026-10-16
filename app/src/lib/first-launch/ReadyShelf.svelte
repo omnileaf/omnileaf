@@ -16,11 +16,16 @@
   aria-hidden="true"
   class="flex items-end justify-center gap-sm border-be-3 border-border px-sm block-shelf"
 >
-  {#each series as shown (shown.id)}
-    <ListCover
-      cover={lookOf(shown).cover}
-      {coverUrl}
-      class="rounded-cover inline-shelf-cover"
-    />
+  {#each series as shown, order (shown.id)}
+    <span
+      class="flex motion-safe:animate-ready-settle"
+      style:--shelf-order={order}
+    >
+      <ListCover
+        cover={lookOf(shown).cover}
+        {coverUrl}
+        class="rounded-cover inline-shelf-cover"
+      />
+    </span>
   {/each}
 </div>
