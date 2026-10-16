@@ -22,6 +22,8 @@
   } from "#lib/settings/sections.ts";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import SettingsIndex from "#lib/settings/SettingsIndex.svelte";
+  import { formatBytes } from "#lib/storage/bytes.ts";
+  import { getStorageCheck } from "#lib/storage/storage-check.svelte.ts";
   import { showsSectionsBeside } from "#lib/settings/panes.ts";
 
   import type { PageProps } from "./$types";
@@ -45,6 +47,7 @@
   const opensOn = getOpensOnSetting();
   const screenshotMode = getScreenshotMode();
   const needsAttention = getNeedsAttention();
+  const storage = getStorageCheck();
   let librarySummary = $state<string | undefined>();
 
   onMount(() => {
@@ -90,6 +93,13 @@
     },
     ...(librarySummary !== undefined && {
       "/(app)/settings/library": { text: librarySummary },
+    }),
+    ...(storage.use !== undefined && {
+      "/(app)/settings/storage": {
+        text: m.settings_summary_storage({
+          size: formatBytes(storage.use.omnileafBytes),
+        }),
+      },
     }),
     "/(app)/settings/advanced": { text: m.settings_summary_advanced() },
     "/(app)/settings/about": {

@@ -20,6 +20,7 @@ const SECTIONS_IN_ORDER = [
   "Library",
   "Reader",
   "Privacy and security",
+  "Storage",
   "Advanced",
   "About",
 ];

@@ -49,7 +49,11 @@ test("keeps About in a group of its own, after Advanced's", () => {
   );
 
   expect(routes.slice(-2)).toEqual([
-    ["/(app)/settings/privacy", "/(app)/settings/advanced"],
+    [
+      "/(app)/settings/privacy",
+      "/(app)/settings/storage",
+      "/(app)/settings/advanced",
+    ],
     ["/(app)/settings/about"],
   ]);
 });
@@ -61,6 +65,7 @@ test("lists every section in the order the Settings nav draws them", () => {
     "/(app)/settings/library",
     "/(app)/settings/reading",
     "/(app)/settings/privacy",
+    "/(app)/settings/storage",
     "/(app)/settings/advanced",
     "/(app)/settings/about",
   ]);
