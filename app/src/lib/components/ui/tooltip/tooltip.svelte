@@ -86,12 +86,13 @@
         {side}
         sideOffset={TRIGGER_GAP_PX}
         collisionPadding={SCREEN_EDGE_GAP_PX}
-        class="z-tooltip flex items-center gap-sm rounded-tooltip border border-tooltip-edge bg-tooltip px-md py-xs text-detail font-medium text-on-tooltip fade-motion shadow-popover"
+        class="z-tooltip flex items-center gap-sm rounded-tooltip border border-tooltip-edge bg-tooltip px-tooltip-inline py-tooltip-block text-caption text-on-tooltip fade-motion shadow-tooltip"
       >
         <span>{label}</span>
         {#each keys ?? [] as key (key)}
-          <Kbd>{key}</Kbd>
+          <Kbd class="bg-tooltip-key text-on-tooltip-key">{key}</Kbd>
         {/each}
+        <TooltipPrimitive.Arrow class="text-tooltip macos:hidden windows:hidden" />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   </TooltipPrimitive.Root>
