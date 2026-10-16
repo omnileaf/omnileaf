@@ -94,7 +94,10 @@
   });
 </script>
 
-<div class="two-pane:hidden">
+<div
+  data-ground="grouped"
+  class="ios:relative ios:isolate ios:-me-page-end ios:-mbs-page-top ios:flex ios:flex-1 ios:flex-col ios:bg-ios-grouped ios:pe-page-end ios:pbs-page-top ios:max-medium:-ms-page-start ios:max-medium:-mbe-floating-clearance ios:max-medium:ps-page-start ios:max-medium:pbe-floating-clearance ios:medium:-ms-gutter ios:medium:-mbe-page-bottom ios:medium:ps-gutter ios:medium:pbe-page-bottom two-pane:hidden"
+>
   <div
     aria-hidden="true"
     class="hidden items-center border-be border-border text-small desktop:-mx-gutter desktop:-mbs-page-top desktop:mbe-xl desktop:flex desktop:px-gutter desktop:min-block-toolbar"

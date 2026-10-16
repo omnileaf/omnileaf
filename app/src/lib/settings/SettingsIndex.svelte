@@ -49,11 +49,13 @@
         aria-labelledby={group.heading === undefined
           ? undefined
           : `${headingId}-${String(index)}`}
-        class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card ios:divide-ios-separator ios:border-transparent ios:bg-ios-cell android:rounded-android-md android:border-transparent android:bg-android-container-low"
+        class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card ios:divide-y-0 ios:border-transparent ios:bg-ios-cell android:rounded-android-md android:border-transparent android:bg-android-container-low"
       >
         {#each group.sections as section (section.route)}
           {@const summary = summaries[section.route]}
-          <li>
+          <li
+            class="relative ios:not-last:after:absolute ios:not-last:after:inset-s-ios-separator ios:not-last:after:inset-e-none ios:not-last:after:inset-be-none ios:not-last:after:border-be ios:not-last:after:border-ios-separator"
+          >
             <Item look="settings-section">
               {#snippet child({ props })}
                 <a href={resolve(section.route)} {...props}>
