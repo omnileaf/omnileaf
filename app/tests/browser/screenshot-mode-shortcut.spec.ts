@@ -75,6 +75,20 @@ test("refuses keys the app already uses and says what they do", async ({
   await expect(save(page)).toBeDisabled();
 });
 
+test("a refused shortcut leaves the field looking as it did", async ({
+  page,
+}) => {
+  await startChanging(page);
+  const borderColor = () =>
+    newShortcut(page).evaluate((field) => getComputedStyle(field).borderColor);
+  const before = await borderColor();
+
+  await page.keyboard.press("Control+F");
+  await expect(dialog(page).getByRole("alert")).toBeVisible();
+
+  expect(await borderColor()).toBe(before);
+});
+
 test("asks for Ctrl with a letter when a letter is pressed alone", async ({
   page,
 }) => {

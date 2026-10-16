@@ -136,12 +136,7 @@
         aria-label={m.screenshot_mode_shortcut_dialog_field()}
         aria-invalid={refusal !== undefined}
         aria-describedby={refusal === undefined ? undefined : refusalId}
-        class={[
-          "flex items-center justify-center gap-2xs rounded-control border-2 bg-background px-md block-shortcut-field focus-visible:outline-2 focus-visible:outline-offset-2",
-          refusal === undefined
-            ? "border-foreground focus-visible:outline-accent"
-            : "border-danger focus-visible:outline-danger",
-        ]}
+        class="flex items-center justify-center gap-2xs rounded-control border-2 border-foreground bg-background px-md block-shortcut-field focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         onkeydown={record}
       >
         {#if shown !== undefined}
