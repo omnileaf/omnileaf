@@ -34,7 +34,7 @@ test("reports the sort chosen in the platform picker", async () => {
 
   await screen
     .getByRole("combobox", { name: "Sort by" })
-    .selectOptions("Date added");
+    .selectOptions("Recently added");
 
   expect(onSortBy).toHaveBeenCalledWith("dateAdded");
 });
@@ -52,4 +52,20 @@ test("offers the series read last first, as the boards draw it", async () => {
     .selectOptions("Recently read");
 
   expect(onSortBy).toHaveBeenCalledWith("lastRead");
+});
+
+test("lists the sorts in the order board 6.4 draws them", async () => {
+  const screen = await render(SortSelect, {
+    sort: TITLE_ASCENDING,
+    onSortBy: vi.fn(),
+    onReverse: vi.fn(),
+  });
+
+  const options = screen
+    .getByRole("combobox", { name: "Sort by" })
+    .getByRole("option")
+    .elements()
+    .map((option) => option.textContent.trim());
+
+  expect(options).toEqual(["Title", "Recently read", "Recently added"]);
 });
