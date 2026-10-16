@@ -1,7 +1,8 @@
 use std::{io, path::Path, sync::Arc};
 
 use crate::{
-    BookId, CoverPath, Library, OpenedBook, PagePath, PageThumbnailPath, ProbedFormat, Resource,
+    BookId, CacheSizes, CoverPath, Library, OpenedBook, PagePath, PageThumbnailPath, ProbedFormat,
+    Resource,
     cover_path::THUMBNAIL_VERSION,
     cover_thumbnails::{CoverThumbnails, ThumbnailError},
     decode_permits::{DECODES_AT_ONCE, DecodePermits},
@@ -40,6 +41,32 @@ impl ResourceRouter {
         )
         .map_err(ResourceRouterError::PageWorkers)?;
         Ok(Self { thumbnails, pages })
+    }
+
+    pub async fn cache_sizes(&self) -> CacheSizes {
+        let (cached_pages_bytes, covers_bytes) =
+            tokio::join!(self.pages.cached_bytes(), self.thumbnails.cached_bytes());
+        CacheSizes {
+            cached_pages_bytes,
+            covers_bytes,
+        }
+    }
+
+    pub async fn clear_cached_pages(&self) -> u64 {
+        self.pages.clear_cached().await
+    }
+
+    pub async fn clear_covers(&self) -> u64 {
+        self.thumbnails.clear_cached().await
+    }
+
+    pub async fn make_room(&self, bytes: u64) -> u64 {
+        let from_pages = self.pages.trim_cached(bytes).await;
+        let still_wanted = bytes.saturating_sub(from_pages);
+        if still_wanted == 0 {
+            return from_pages;
+        }
+        from_pages.saturating_add(self.thumbnails.trim_cached(still_wanted).await)
     }
 
     #[tracing::instrument(skip_all, fields(%book))]
@@ -99,5 +126,110 @@ fn thumbnail_resource(made: Result<Option<Vec<u8>>, ThumbnailError>) -> Resource
             tracing::warn!(error = %describe_error(&error), "serve a thumbnail");
             Resource::Failed
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use omnileaf_testkit::ScratchFolder;
+
+    use super::*;
+
+    const ENTRY: [u8; 100] = [7; 100];
+
+    fn cached(folder: &Path, names: &[&str]) {
+        fs::create_dir_all(folder).unwrap();
+        for name in names {
+            fs::write(folder.join(name), ENTRY).unwrap();
+        }
+    }
+
+    fn router_with(pages: &[&str], covers: &[&str]) -> (ScratchFolder, ResourceRouter) {
+        let folder = ScratchFolder::new("resource-router-caches");
+        cached(
+            &folder.path().join(PAGE_FOLDER).join(PAGE_CACHE_VERSION),
+            pages,
+        );
+        cached(
+            &folder.path().join(THUMBNAIL_FOLDER).join(THUMBNAIL_VERSION),
+            covers,
+        );
+        let router = ResourceRouter::open(folder.path()).unwrap();
+        (folder, router)
+    }
+
+    #[tokio::test]
+    async fn sizes_the_cached_pages_and_the_covers_apart() {
+        let (_folder, router) = router_with(&["page-a", "page-b"], &["cover-a"]);
+
+        let sizes = router.cache_sizes().await;
+
+        assert_eq!(
+            sizes,
+            CacheSizes {
+                cached_pages_bytes: 200,
+                covers_bytes: 100,
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn clears_the_cached_pages_and_leaves_the_covers() {
+        let (_folder, router) = router_with(&["page-a", "page-b"], &["cover-a"]);
+
+        let freed = router.clear_cached_pages().await;
+
+        assert_eq!(freed, 200);
+        assert_eq!(
+            router.cache_sizes().await,
+            CacheSizes {
+                cached_pages_bytes: 0,
+                covers_bytes: 100,
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn clears_the_covers_and_leaves_the_cached_pages() {
+        let (_folder, router) = router_with(&["page-a"], &["cover-a", "cover-b"]);
+
+        let freed = router.clear_covers().await;
+
+        assert_eq!(freed, 200);
+        assert_eq!(router.cache_sizes().await.cached_pages_bytes, 100);
+    }
+
+    #[tokio::test]
+    async fn makes_room_from_the_cached_pages_before_the_covers() {
+        let (_folder, router) = router_with(&["page-a", "page-b"], &["cover-a", "cover-b"]);
+
+        let freed = router.make_room(250).await;
+
+        assert_eq!(freed, 300);
+        assert_eq!(
+            router.cache_sizes().await,
+            CacheSizes {
+                cached_pages_bytes: 0,
+                covers_bytes: 100,
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn leaves_the_covers_alone_when_the_cached_pages_make_room_enough() {
+        let (_folder, router) = router_with(&["page-a", "page-b"], &["cover-a"]);
+
+        let freed = router.make_room(100).await;
+
+        assert_eq!(freed, 100);
+        assert_eq!(
+            router.cache_sizes().await,
+            CacheSizes {
+                cached_pages_bytes: 100,
+                covers_bytes: 100,
+            }
+        );
     }
 }

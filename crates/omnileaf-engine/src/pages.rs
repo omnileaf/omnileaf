@@ -120,6 +120,29 @@ impl Pages {
         })
     }
 
+    pub(crate) async fn cached_bytes(&self) -> u64 {
+        self.with_transcodes(DiskCache::stored_bytes).await
+    }
+
+    pub(crate) async fn clear_cached(&self) -> u64 {
+        self.with_transcodes(DiskCache::clear).await
+    }
+
+    pub(crate) async fn trim_cached(&self, bytes: u64) -> u64 {
+        self.with_transcodes(move |cache| cache.trim_oldest(bytes))
+            .await
+    }
+
+    async fn with_transcodes(&self, work: impl FnOnce(&DiskCache) -> u64 + Send + 'static) -> u64 {
+        let shared = Arc::clone(&self.shared);
+        tokio::task::spawn_blocking(move || shared.transcodes().map_or(0, work))
+            .await
+            .unwrap_or_else(|error| {
+                tracing::warn!(%error, "reach the transcoded page cache, counted as empty");
+                0
+            })
+    }
+
     /// Opens the book's file and starts reading ahead from where reading goes on, the first time reading the sizes of the pages around there and the rest after it opens.
     pub(crate) async fn open_book(
         &self,
