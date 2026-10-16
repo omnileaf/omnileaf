@@ -24,9 +24,10 @@ use crate::{
 
 pub(crate) const BOOKS_PER_BATCH: usize = 32;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(tag = "stage", rename_all = "camelCase")]
 pub enum ScanProgress {
+    Adding { name: String, location: String },
     Finding { found: u32 },
     Reading { scanned: u32, total: u32 },
 }
