@@ -1,10 +1,14 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import { afterNavigate, goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
   import AppKeyboardShortcuts from "#lib/keyboard/AppKeyboardShortcuts.svelte";
+  import { commands } from "#lib/ipc/bindings.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
+  import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import AppNavigation from "#lib/navigation/AppNavigation.svelte";
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import { focusArrival } from "#lib/navigation/page-heading.ts";
@@ -16,6 +20,13 @@
   import SwipeableMain from "#lib/navigation/SwipeableMain.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
   import Toasts from "#lib/notices/Toasts.svelte";
+  import { fixProblem } from "#lib/problems/fix-problem.ts";
+  import {
+    NeedsAttention,
+    type Problem,
+    setNeedsAttention,
+  } from "#lib/problems/needs-attention.svelte.ts";
+  import NeedsAttentionSidebarItem from "#lib/problems/NeedsAttentionSidebarItem.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import QuickOpen from "#lib/search/QuickOpen.svelte";
   import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
@@ -36,6 +47,12 @@
   const backGoesUp = setBackGoesUp(makeBackGoUp());
   const quickOpen = new QuickOpenState();
   const sidebar = setSidebarSetting(sidebarSettingForDocument());
+  const needsAttention = setNeedsAttention(
+    new NeedsAttention(
+      { missingFolders: () => commands.missingLibraryFolders() },
+      reportError,
+    ),
+  );
   let isShowingShortcuts = $state(false);
 
   function goBack(): void {
@@ -64,6 +81,17 @@
         ]
       : [],
   );
+
+  function fix(problem: Problem): void {
+    void fixProblem(problem).then(() => needsAttention.gather());
+  }
+
+  onMount(() => {
+    void needsAttention.gather();
+    return listenForLibraryChanges(() => {
+      void needsAttention.gather();
+    }, reportError);
+  });
 
   afterNavigate(({ type }) => {
     const isProblem = page.error !== null;
@@ -96,12 +124,27 @@
   })}
 />
 
+{#snippet attention({ isFolded }: { isFolded: boolean })}
+  <NeedsAttentionSidebarItem
+    problems={needsAttention.problems}
+    usesStandIns={screenshotMode.isOn}
+    {isFolded}
+    onFix={fix}
+  />
+{/snippet}
+
 <div
   class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row desktop-shell:flex-row windows:desktop-shell:bg-sidebar"
 >
   {#if page.route.id !== EDIT_DETAILS_ROUTE}
     {#key language.resolved}
-      <AppNavigation current={sectionOf(page.url.pathname)} />
+      <AppNavigation
+        current={sectionOf(page.url.pathname)}
+        attention={isPointer(data.appInfo.platform) &&
+        needsAttention.problems.length > 0
+          ? attention
+          : undefined}
+      />
     {/key}
   {/if}
   <SwipeableMain
