@@ -65,31 +65,33 @@
 </script>
 
 <SectionHeading title={m.reading_title()} />
-<p class="mbs-pane-gap text-detail text-muted">{m.reading_defaults_intro()}</p>
-<div class="mbs-pane-gap flex flex-col gap-pane-gap">
-  <section
-    class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row expanded:grid expanded:grid-cols-setting-grid expanded:items-center expanded:gap-x-md"
-  >
-    <label for={modeId} class="font-semibold">
-      {m.reading_mode_new_series()}
-    </label>
-    <NativeSelect
-      class="expanded:inline-setting-control"
-      id={modeId}
-      aria-describedby="{modeId}-help"
-      value={newSeries.choice}
-      onchange={(event: Event & { currentTarget: HTMLSelectElement }) => {
-        chooseNewSeriesMode(event.currentTarget.value);
-      }}
+<div class="mbs-pane-gap flex flex-col gap-xl">
+  <div class="flex flex-col gap-sm">
+    <p class="text-detail text-muted">{m.reading_defaults_intro()}</p>
+    <section
+      class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row expanded:grid expanded:grid-cols-setting-grid expanded:items-center expanded:gap-x-md"
     >
-      {#each READING_MODE_CHOICES as choice (choice)}
-        <option value={choice}>{MODE_NAMES[choice]()}</option>
-      {/each}
-    </NativeSelect>
-    <p id="{modeId}-help" class="col-span-full text-footnote text-muted">
-      {m.reading_mode_new_series_help()}
-    </p>
-  </section>
+      <label for={modeId} class="font-semibold">
+        {m.reading_mode_new_series()}
+      </label>
+      <NativeSelect
+        class="expanded:inline-setting-control"
+        id={modeId}
+        aria-describedby="{modeId}-help"
+        value={newSeries.choice}
+        onchange={(event: Event & { currentTarget: HTMLSelectElement }) => {
+          chooseNewSeriesMode(event.currentTarget.value);
+        }}
+      >
+        {#each READING_MODE_CHOICES as choice (choice)}
+          <option value={choice}>{MODE_NAMES[choice]()}</option>
+        {/each}
+      </NativeSelect>
+      <p id="{modeId}-help" class="col-span-full text-footnote text-muted">
+        {m.reading_mode_new_series_help()}
+      </p>
+    </section>
+  </div>
   <section
     aria-labelledby={tapZonesId}
     class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
@@ -100,6 +102,7 @@
       labels={TAP_ZONE_LABELS}
       chosen={defaults.look.tapZones}
       labelledBy={tapZonesId}
+      isFullWidth
       onChoose={(zones: TapZones) => {
         defaults.change("tapZones", zones);
       }}
@@ -131,6 +134,7 @@
   </section>
   <SmartFeaturesSection
     heading="h2"
+    size="regular"
     class="rounded-card border border-border bg-card p-list-row"
   />
   <section
