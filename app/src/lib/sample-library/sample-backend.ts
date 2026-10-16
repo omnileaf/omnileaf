@@ -80,6 +80,20 @@ const SIGN_IN_OUTCOMES = [
   "cancelled",
   "failed",
 ] as const satisfies readonly SignInOutcome[];
+const SAMPLE_SYSTEMS = {
+  android: "Android 16",
+  ios: "iOS 26",
+  macos: "macOS 26",
+  windows: "Windows 11",
+  linux: "Fedora 43",
+} as const satisfies Record<Platform, string>;
+const SAMPLE_LOG = [
+  "INFO omnileaf_app: open the library",
+  "INFO omnileaf_engine::scan: found 24 books in Folder 731",
+  "WARN omnileaf_engine::scan: skip a book it couldn't read path=<path>",
+  "WARN omnileaf_engine::pages: keep a transcoded page for next time error=disk full",
+  "INFO omnileaf_engine::rescan: Series 68 gained a book",
+];
 
 const MISSING_FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000002";
 const MISSING_FOLDER_SERIES = new Set([3, 6, 9, 12, 15, 18]);
@@ -1352,6 +1366,11 @@ export function sampleBackend(
     setScheduledRescans: () => undefined,
     copyVersionDetails: () => null,
     openProjectLink: () => null,
+    problemReport: () => ({
+      version: "0.1.0",
+      system: SAMPLE_SYSTEMS[scenario.platform],
+      log: SAMPLE_LOG,
+    }),
     offerSavedCrashReport: () => null,
     offerInterfaceErrorReport: (error) => ({
       details: error.message,
