@@ -4,9 +4,11 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import LightSliders from "./LightSliders.svelte";
+  import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
+
   import {
-    DIRECTION_CHOICES,
-    type DirectionChoice,
+    READING_MODE_CHOICES,
+    type ReadingModeChoice,
     type SeriesReadingDirection,
   } from "./reading-direction.svelte.ts";
   import type {
@@ -23,9 +25,10 @@
   import SettingChoice from "./SettingChoice.svelte";
   import SmartFeaturesSection from "./SmartFeaturesSection.svelte";
 
-  const DIRECTION_NAMES = {
+  const CHOSEN_NAMES = {
     leftToRight: m.reader_left_to_right,
     rightToLeft: m.reader_right_to_left,
+    longStrip: m.reader_long_strip,
   } as const;
   const AUTOMATIC_NAMES = {
     leftToRight: m.reader_direction_automatic_left_to_right,
@@ -46,15 +49,22 @@
 
   const id = $props.id();
   const look = $derived(settings.look);
+  const skipUpNext = getSkipUpNextSetting();
 
-  function choiceName(choice: DirectionChoice): string {
-    return choice === "automatic"
-      ? AUTOMATIC_NAMES[reading.direction]()
-      : DIRECTION_NAMES[choice]();
+  function automaticName(): string {
+    return reading.mode === "longStrip"
+      ? m.reader_direction_automatic_long_strip()
+      : AUTOMATIC_NAMES[reading.direction]();
+  }
+
+  function choiceName(choice: ReadingModeChoice): string {
+    return choice === "automatic" ? automaticName() : CHOSEN_NAMES[choice]();
   }
 
   function chooseDirection(value: string): void {
-    const choice = DIRECTION_CHOICES.find((candidate) => candidate === value);
+    const choice = READING_MODE_CHOICES.find(
+      (candidate) => candidate === value,
+    );
     if (choice !== undefined) {
       reading.choose(choice);
     }
@@ -95,7 +105,7 @@
         chooseDirection(event.currentTarget.value);
       }}
     >
-      {#each DIRECTION_CHOICES as choice (choice)}
+      {#each READING_MODE_CHOICES as choice (choice)}
         <option value={choice}>{choiceName(choice)}</option>
       {/each}
     </NativeSelect>
@@ -246,6 +256,35 @@
         </span>
       </Switch>
     </div>
+  </section>
+  <section
+    data-slot="setting-row"
+    aria-labelledby="{id}-end"
+    class="flex flex-col border-be-0 pbs-xl"
+  >
+    <h3 id="{id}-end" class="text-small font-semibold">
+      {m.reader_end_of_book()}
+    </h3>
+    <Switch
+      bind:checked={
+        () => skipUpNext.isOn,
+        (isOn: boolean) => {
+          skipUpNext.turn(isOn);
+        }
+      }
+      aria-labelledby="{id}-skip"
+      aria-describedby="{id}-skip-description"
+      class="flex items-center gap-md py-setting-grid-pad text-start min-block-setting-grid-row focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    >
+      <span class="flex flex-1 flex-col gap-2xs">
+        <span id="{id}-skip" class="text-small font-medium">
+          {m.reading_skip_up_next()}
+        </span>
+        <span id="{id}-skip-description" class="text-caption text-muted">
+          {m.reading_skip_up_next_help()}
+        </span>
+      </span>
+    </Switch>
   </section>
   <SmartFeaturesSection heading="h3" class="pbs-xl" />
 </div>
