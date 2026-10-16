@@ -69,7 +69,9 @@
   class="mx-sm mbe-sm"
 >
   <AlertTitle id={titleId} level={3}>{look.title({ name })}</AlertTitle>
-  <AlertDescription>{look.body({ name })}</AlertDescription>
+  <AlertDescription class="text-body text-foreground opacity-100"
+    >{look.body({ name })}</AlertDescription
+  >
   <AlertActions>
     <AlertButton
       emphasis="strong"
