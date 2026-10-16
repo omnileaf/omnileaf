@@ -24,6 +24,7 @@ pub(crate) enum IpcErrorCode {
     ClipboardUnavailable,
     BrowserUnavailable,
     FileManagerUnavailable,
+    SystemSettingsUnavailable,
     NoCrashReport,
     CrashReportUnavailable,
     #[cfg_attr(
@@ -87,6 +88,14 @@ impl IpcError {
         Self {
             code: IpcErrorCode::ReportNotSaved,
             message: "the problem report could not be saved",
+        }
+    }
+
+    pub(crate) fn system_settings_unavailable(error: &dyn Error) -> Self {
+        tracing::warn!(error = %describe_error(error), "open the system's settings");
+        Self {
+            code: IpcErrorCode::SystemSettingsUnavailable,
+            message: "the system's settings could not be opened",
         }
     }
 

@@ -207,6 +207,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   clearCachedPages: () => null,
   clearCovers: () => null,
   showTrayMenu: () => null,
+  openSystemSettings: () => null,
   panicInCore: () => null,
   crashAndQuit: () => null,
 };
