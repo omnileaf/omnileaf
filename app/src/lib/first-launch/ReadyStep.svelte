@@ -137,6 +137,7 @@
   {/if}
   {#if linked.length > 0}
     <LinkedFolders
+      {platform}
       {folders}
       {addFolder}
       {notices}
