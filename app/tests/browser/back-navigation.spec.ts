@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import { expect, MEDIUM_MIN_WIDTH, test, viewportOf } from "./fixtures.ts";
+import { EXPANDED_MIN_WIDTH, expect, test, viewportOf } from "./fixtures.ts";
 
 const OUTSIDE_THE_APP = "about:blank";
 const LIBRARY_URL = "/";
@@ -8,7 +8,7 @@ const SETTINGS_OPENING_SECTION_URL = "/settings/general";
 const GENERAL_URL = "/settings/general";
 
 function showsSettingsSectionsBeside(page: Page): boolean {
-  return viewportOf(page).width >= MEDIUM_MIN_WIDTH;
+  return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
 }
 
 async function openSection(page: Page, label: string): Promise<void> {

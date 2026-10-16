@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import {
   accessibilityViolations,
   boxOf,
+  EXPANDED_MIN_WIDTH,
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
@@ -275,11 +276,11 @@ test.describe("on a desktop", () => {
     await expect(page.getByText(FOOTNOTE)).toBeHidden();
   });
 
-  test("keeps General selected beside the page from 600px", async ({
+  test("keeps General selected beside the page from 840px", async ({
     page,
   }) => {
     await page.goto(LANGUAGE_PAGE);
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
 
     await expect(
       page
@@ -289,9 +290,9 @@ test.describe("on a desktop", () => {
     await expect(page.locator("a[data-back-link]")).toBeHidden();
   });
 
-  test("leads back to General through a link under 600px", async ({ page }) => {
+  test("leads back to General through a link under 840px", async ({ page }) => {
     await page.goto(LANGUAGE_PAGE);
-    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "one pane only");
+    test.skip(viewportOf(page).width >= EXPANDED_MIN_WIDTH, "one pane only");
 
     await expect(
       page.getByRole("link", { name: "Back to General" }),

@@ -64,7 +64,7 @@
   const width = new WindowWidth();
 
   $effect(() => {
-    if (showsSectionsBeside(data.appInfo.platform, width.current)) {
+    if (showsSectionsBeside(width.current)) {
       void backGoesUp.replaceWith(resolve(OPENING_SECTION));
     }
   });
@@ -95,6 +95,12 @@
 </script>
 
 <div class="two-pane:hidden">
+  <div
+    aria-hidden="true"
+    class="hidden items-center border-be border-border text-small desktop:-mx-gutter desktop:-mbs-page-top desktop:mbe-xl desktop:flex desktop:px-gutter desktop:min-block-toolbar"
+  >
+    {m.settings_title()}
+  </div>
   <PageHeading title={m.settings_title()} />
   <div class="mbs-lg">
     <SettingsIndex {summaries} />
