@@ -94,6 +94,7 @@
       {/snippet}
     </StepHeader>
     <LinkedFolders
+      {platform}
       {folders}
       {addFolder}
       mayPick={explainPickerFirst}
