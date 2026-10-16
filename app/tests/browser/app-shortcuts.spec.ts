@@ -18,8 +18,11 @@ const SHORTCUTS = [
   "Settings",
   "Keyboard shortcuts",
   "Close a dialog or panel",
+  "Move between covers",
   "Open the series",
+  "Select",
   "Select all",
+  "Move a tab",
 ];
 
 function sheet(page: Page) {
@@ -59,8 +62,11 @@ test.describe("on a desktop", () => {
       "Ctrl ,",
       "?",
       "Esc",
+      "←→↑↓",
       "Enter",
+      "Space",
       "Ctrl A",
+      "Alt ↑Alt ↓",
     ]);
   });
 
