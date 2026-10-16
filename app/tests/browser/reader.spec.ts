@@ -585,6 +585,27 @@ test("shows hidden controls when the pointer reaches the top or bottom edge", as
   await expectControlsShown(page);
 });
 
+test("keeps hidden controls down when the page moves under a pointer resting at the edge", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, "pointer screens only");
+  await openBookBeforeControlsHide(page);
+  const { width, height } = viewportOf(page);
+  await page.mouse.move(width / 2, height - 1);
+  await expectControlsShown(page);
+  await page.keyboard.press("ArrowRight");
+  await expectControlsHidden(page);
+
+  await page.locator("main").dispatchEvent("pointermove", {
+    pointerType: "mouse",
+    clientX: width / 2,
+    clientY: height - 1,
+  });
+
+  await expectControlsHidden(page);
+});
+
 test("shows hidden controls for a control reached with the keyboard and keeps them while it has focus", async ({
   page,
 }) => {
