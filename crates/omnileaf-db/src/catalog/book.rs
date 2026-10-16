@@ -26,6 +26,8 @@ const ADD_OR_REFILE_BOOK: &str = insert_book!(
 const SERIES_OF_BOOK: &str = "SELECT series.id AS series_id FROM book
     JOIN series ON series.local_id = book.series_local_id WHERE book.id = ?1";
 const SERIES_EXISTS: &str = "SELECT EXISTS (SELECT 1 FROM series WHERE id = ?1)";
+const RECORD_PAGE_COUNT: &str =
+    "UPDATE book SET page_count = ?2 WHERE id = ?1 AND page_count IS NOT ?2";
 const REMOVE_BOOK_WITHOUT_FILES: &str = "DELETE FROM book
     WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM book_file WHERE book_id = ?1)";
 
@@ -70,6 +72,18 @@ pub(crate) fn add_or_refile_book(
     if insert(transaction, book, ADD_OR_REFILE_BOOK)? == 0 {
         return Err(Error::UnknownSeries { id: book.series });
     }
+    Ok(())
+}
+
+#[tracing::instrument(skip_all, fields(%book, page_count))]
+pub fn record_page_count(
+    transaction: &Transaction<'_>,
+    book: BookId,
+    page_count: u32,
+) -> Result<(), Error> {
+    transaction
+        .prepare(RECORD_PAGE_COUNT)?
+        .execute((book.as_bytes(), page_count))?;
     Ok(())
 }
 
@@ -146,6 +160,15 @@ mod tests {
         let outcome = add_book_unless_present(&transaction, &book);
 
         assert!(matches!(outcome, Err(Error::UnknownSeries { id }) if id == book.series));
+    }
+
+    #[test]
+    fn records_a_book_s_page_count_through_its_key() {
+        let scratch = ScratchLibrary::new("record-page-count-plan");
+
+        let plan = scratch.query_plan(RECORD_PAGE_COUNT);
+
+        assert_eq!(plan, ["SEARCH book USING PRIMARY KEY (id=?)"]);
     }
 
     #[test]
