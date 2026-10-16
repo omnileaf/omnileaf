@@ -178,11 +178,23 @@ test("shows the home folder apart from the linked folders", async () => {
 
   const { home, folders } = await renderSettings();
 
-  await expect.element(home.getByText("Omnileaf")).toBeVisible();
+  await expect
+    .element(home.getByRole("heading", { name: "Home folder" }))
+    .toBeVisible();
   await expect.element(home.getByText("/data/Omnileaf")).toBeVisible();
   await expect
     .element(folders.getByRole("listitem"))
     .toHaveTextContent("Sample Comics /media/Sample Comics");
+});
+
+test("shows the home folder's path in monospace", async () => {
+  serveFolders([HOME, COMICS]);
+
+  const { home } = await renderSettings();
+
+  const path = home.getByText("/data/Omnileaf");
+  await expect.element(path).toBeVisible();
+  expect(path.element().tagName).toBe("CODE");
 });
 
 test("reads every page of folders", async () => {
@@ -263,7 +275,7 @@ test("says when the folders couldn't be loaded", async () => {
     .toBeVisible();
 });
 
-test("names the home folder after the app rather than its folder on disk", async () => {
+test("titles the home folder's row Home folder rather than its folder on disk", async () => {
   serveFolders([
     {
       id: "1",
@@ -277,11 +289,14 @@ test("names the home folder after the app rather than its folder on disk", async
   const { home } = await renderSettings();
 
   await expect
-    .element(home.getByText("Omnileaf", { exact: true }))
+    .element(home.getByRole("heading", { name: "Home folder" }))
     .toBeVisible();
   await expect
     .element(home.getByText("/data/user/0/app.omnileaf"))
     .toBeVisible();
+  await expect
+    .element(home.getByText("app.omnileaf", { exact: true }))
+    .not.toBeInTheDocument();
 });
 
 test("offers Remove on linked folders only", async () => {
@@ -1277,7 +1292,7 @@ test("marks a folder that isn't available", async () => {
 
   await expect
     .element(folders.getByRole("listitem"))
-    .toHaveTextContent("Sample Comics Not available /media/Sample Comics");
+    .toHaveTextContent("Sample Comics Not available · /media/Sample Comics");
 });
 
 test("shows a folder as available once a rescan reaches it again", async () => {
