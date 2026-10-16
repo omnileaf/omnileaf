@@ -3,11 +3,13 @@ use std::path::Path;
 use omnileaf_db::catalog::AndroidTree;
 use serde::Serialize;
 use specta::Type;
+use tokio::task::spawn_blocking;
 
 const SHARE_SEPARATOR: char = '/';
 const SCHEME_END: &str = "://";
 const USER_END: char = '@';
 const HOST_END: char = ':';
+const LOCAL_SERVICE_START: &str = "._";
 const SOURCE_SEPARATORS: [char; 2] = ['/', '\\'];
 const CONTENT_SCHEME: &str = "content://";
 const ANDROID_DEVICE_PROVIDERS: [&str; 3] = [
@@ -59,6 +61,9 @@ impl ShareAddress {
 
 impl NetworkShare {
     pub(crate) fn on(server: &str, path: &str) -> Self {
+        let server = server
+            .split_once(LOCAL_SERVICE_START)
+            .map_or(server, |(name, _)| name);
         let folders: Vec<&str> = path
             .split(SOURCE_SEPARATORS)
             .filter(|folder| !folder.is_empty())
@@ -105,6 +110,25 @@ impl NetworkShare {
             name: point.display().to_string(),
         }
     }
+}
+
+pub(crate) async fn unreachable_share_of(
+    folder: &Path,
+    remembered: Option<ShareAddress>,
+    shares: &impl ShareLookup,
+) -> Option<UnreachableShare> {
+    if let Some(unreachable) = shares.unreachable_share(folder).await {
+        return Some(unreachable);
+    }
+    let address = remembered?;
+    let folder = folder.to_path_buf();
+    let is_reachable = spawn_blocking(move || folder.try_exists().unwrap_or(false))
+        .await
+        .unwrap_or(false);
+    (!is_reachable).then(|| UnreachableShare {
+        share: NetworkShare::from_mount_source(address.as_str()),
+        sign_in: ShareSignIn::System(address),
+    })
 }
 
 pub(crate) fn share_of_tree(tree: &AndroidTree) -> Option<NetworkShare> {
@@ -165,6 +189,14 @@ mod tests {
         assert_eq!(
             named("https://dav.example.test:8443/manga/"),
             pair("dav.example.test", "dav.example.test/manga")
+        );
+    }
+
+    #[test]
+    fn names_a_server_found_on_the_local_network_without_its_service() {
+        assert_eq!(
+            named("smb://kai@nas._smb._tcp.test/manga"),
+            pair("nas", "nas/manga")
         );
     }
 
