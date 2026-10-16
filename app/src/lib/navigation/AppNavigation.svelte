@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { resolve } from "$app/paths";
@@ -41,7 +42,13 @@
     },
   ];
 
-  let { current }: { current: Section } = $props();
+  let {
+    current,
+    attention,
+  }: {
+    current: Section;
+    attention?: Snippet<[{ isFolded: boolean }]> | undefined;
+  } = $props();
 
   const sidebar = getSidebarSetting();
   const isNarrowPointer = new MediaQuery(NARROW_POINTER_QUERY);
@@ -111,10 +118,18 @@
     {#each DESTINATIONS as destination (destination.section)}
       {@const isSelected = destination.section === current}
       {@const isArriving = destination.section === arriving}
+      {#if destination.isAtSideEnd && attention !== undefined}
+        <li class="hidden desktop-shell:mbs-auto desktop-shell:flex">
+          {@render attention({ isFolded })}
+        </li>
+      {/if}
       <li
         class={[
           "flex-1 min-inline-none medium:flex-none ios:max-medium:flex desktop-shell:flex-none",
-          destination.isAtSideEnd && "medium:mbs-auto desktop-shell:mbs-auto",
+          destination.isAtSideEnd &&
+            (attention === undefined
+              ? "medium:mbs-auto desktop-shell:mbs-auto"
+              : "medium:mbs-auto desktop-shell:mbs-none"),
         ]}
       >
         <Tooltip
