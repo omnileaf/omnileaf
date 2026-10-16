@@ -6,4 +6,5 @@ export const SORT_LABELS = {
   dateAdded: m.library_sort_date_added,
   lastRead: m.library_sort_last_read,
   lastUpdated: m.library_sort_last_updated,
+  unreadCount: m.library_sort_unread_count,
 } satisfies Record<LibrarySortBy, () => string>;
