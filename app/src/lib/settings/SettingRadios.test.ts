@@ -104,11 +104,7 @@ for (const look of LOOKS) {
     expect(chosen.getBoundingClientRect().width).toBeCloseTo(look.size, 0);
     expect(dot?.getBoundingClientRect().width).toBeCloseTo(look.dot, 0);
     expect(getComputedStyle(chosen).borderTopWidth).toBe(look.edgeWidth);
-    expect(getComputedStyle(chosen).borderTopColor).toBe(
-      colourOf(look.edgeOn),
-    );
-    expect(getComputedStyle(other).borderTopColor).toBe(
-      colourOf(look.edgeOff),
-    );
+    expect(getComputedStyle(chosen).borderTopColor).toBe(colourOf(look.edgeOn));
+    expect(getComputedStyle(other).borderTopColor).toBe(colourOf(look.edgeOff));
   });
 }
