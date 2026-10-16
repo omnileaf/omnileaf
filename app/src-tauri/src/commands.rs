@@ -28,8 +28,9 @@ use crate::{
     library_events::{LibraryChanged, ReadingSaved},
     library_problem::{LibraryAtLaunch, LibraryProblem},
     screen_orientation::{self, ScreenOrientation},
+    share_sign_in::{self, SignInOutcome},
     system_bars::{self, Theme, ThemePreference},
-    version_details,
+    system_sign_in, version_details,
 };
 
 macro_rules! app_commands {
@@ -96,6 +97,7 @@ macro_rules! app_commands {
             library_hidden_series_count,
             show_missing_library_folder,
             relocate_library_folder,
+            sign_in_to_library_folder,
             show_series_in_folder,
             remove_library_folder,
             library_folder_book_count,
@@ -210,6 +212,22 @@ async fn relocate_library_folder(
             .relocate_folder(id, folder, reporting_to(on_progress))
             .await?,
     ))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn sign_in_to_library_folder(
+    window: WebviewWindow,
+    library: State<'_, Library>,
+    id: FolderId,
+) -> Result<SignInOutcome, IpcError> {
+    let share = library.unreachable_share(id, &SystemShares).await?;
+    Ok(share_sign_in::sign_in(
+        share,
+        async |address| system_sign_in::ask(&window, address).await,
+        async || !matches!(library.unreachable_share(id, &SystemShares).await, Ok(None)),
+    )
+    .await)
 }
 
 #[tauri::command]
