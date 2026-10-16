@@ -153,6 +153,7 @@
 
   <LinkedFolders
     bind:this={linkedFolders}
+    {platform}
     {folders}
     {addFolder}
     {notices}

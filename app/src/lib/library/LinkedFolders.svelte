@@ -3,7 +3,7 @@
   import type { Snippet } from "svelte";
   import { SvelteSet } from "svelte/reactivity";
 
-  import type { LibraryFolder } from "#lib/ipc/bindings.ts";
+  import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
   import type { Notices, UndoOffer } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -11,6 +11,7 @@
   import type { AddFolder } from "./add-folder";
   import AddFolderButton from "./AddFolderButton.svelte";
   import { FolderAdding, type MayPick } from "./folder-adding.svelte";
+  import { folderLocation } from "./folder-location";
   import { folderTitle } from "./folder-title";
   import FolderNotice from "./FolderNotice.svelte";
   import FolderRow from "./FolderRow.svelte";
@@ -19,6 +20,7 @@
   import RowActionButton from "./RowActionButton.svelte";
 
   let {
+    platform,
     folders,
     addFolder,
     notices,
@@ -33,6 +35,7 @@
     mayPick,
     onShowBooks,
   }: {
+    platform: Platform;
     folders: LibraryFolders;
     addFolder: AddFolder;
     notices: Notices;
@@ -185,6 +188,9 @@
               isFoundEmpty={isFoundEmpty?.(folder) ?? false}
               detail={rowDetail}
             >
+              {#snippet location()}
+                {folderLocation(folder, platform)}
+              {/snippet}
               {#snippet action()}
                 {@render rowAction?.(folder)}
                 <RowActionButton
