@@ -46,6 +46,7 @@ export interface SampleScenario {
   readonly sixthVolume: SampleFile;
   readonly missing: MissingKind;
   readonly signIn: SignInOutcome;
+  readonly launch: LaunchKind;
 }
 
 export interface SampleEvents {
@@ -103,6 +104,10 @@ const SAMPLE_DOWNLOADS = {
   windows: "Downloads",
   linux: "~/Downloads",
 } as const satisfies Record<Platform, string>;
+const LAUNCH_KINDS = ["returning", "first"] as const;
+
+type LaunchKind = (typeof LAUNCH_KINDS)[number];
+
 const MISSING_FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000002";
 const MISSING_FOLDER_SERIES = new Set([3, 6, 9, 12, 15, 18]);
 const NAS_MANGA = { server: "nas", name: "nas/manga" };
@@ -160,6 +165,7 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
     sixthVolume: oneOf(SIXTH_VOLUME_FILES, search.get("volume6"), "missing"),
     missing: oneOf(MISSING_KINDS, search.get("missing"), "none"),
     signIn: oneOf(SIGN_IN_OUTCOMES, search.get("signin"), "signedIn"),
+    launch: oneOf(LAUNCH_KINDS, search.get("launch"), "returning"),
   };
 }
 
@@ -378,6 +384,7 @@ export function sampleBackend(
   };
   let view: LibraryView = DEFAULT_LIBRARY_VIEW;
   let isFullScreen = false;
+  let hasFinishedFirstLaunch = scenario.launch === "returning";
   const bookmarks = new Map<string, Set<number>>();
   const readingBeforeMarked = new Map<string, SampleReading>();
 
@@ -1368,8 +1375,11 @@ export function sampleBackend(
     }),
     rescanLibraryFolders: () => [],
     removeBooksOfEmptiedFolder: () => ({ kind: "kept" }),
-    firstLaunchFinished: () => true,
-    finishFirstLaunch: () => null,
+    firstLaunchFinished: () => hasFinishedFirstLaunch,
+    finishFirstLaunch: () => {
+      hasFinishedFirstLaunch = true;
+      return null;
+    },
     setAppLanguage: () => null,
     setScheduledRescans: () => undefined,
     copyVersionDetails: () => null,

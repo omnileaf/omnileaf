@@ -940,3 +940,19 @@ test("says the files rate a series 18+", async () => {
     true,
   );
 });
+
+test("opens on the first launch when asked, until it is finished", async () => {
+  const { backend } = backendFor("?launch=first");
+
+  const before = await backend.firstLaunchFinished();
+  await backend.finishFirstLaunch();
+  const after = await backend.firstLaunchFinished();
+
+  expect([before, after]).toEqual([false, true]);
+});
+
+test("starts with the first launch finished", async () => {
+  const { backend } = backendFor();
+
+  expect(await backend.firstLaunchFinished()).toBe(true);
+});
