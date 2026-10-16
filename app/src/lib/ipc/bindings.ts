@@ -111,6 +111,7 @@ export const commands = {
 	setScheduledRescans: (isOn: boolean) => __TAURI_INVOKE<void>("set_scheduled_rescans", { isOn }),
 	copyVersionDetails: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_version_details")),
 	openProjectLink: (link: ProjectLink) => typedError<null, IpcError>(__TAURI_INVOKE("open_project_link", { link })),
+	problemReport: () => typedError<ProblemReportPreview, IpcError>(__TAURI_INVOKE("problem_report")),
 	offerSavedCrashReport: () => typedError<{
 	details: string,
 	origin: CrashOrigin,
@@ -520,6 +521,12 @@ export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
 /**  A format the webview may be unable to show, which it tries before asking for pages, limited to the formats pages can be transcoded from. */
 export type ProbedFormat = "webp" | "jxl";
+
+export type ProblemReportPreview = {
+	version: string,
+	system: string | null,
+	log: string[],
+};
 
 export type ProjectLink = "sourceCode" | "newIssue" | "latestRelease";
 
