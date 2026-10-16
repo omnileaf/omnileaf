@@ -28,6 +28,7 @@
     ],
     dateAdded: BY_TIME,
     lastRead: BY_TIME,
+    lastUpdated: BY_TIME,
   } satisfies Record<LibrarySort["by"], readonly [Wording, Wording]>;
 
   const LOOKS = {

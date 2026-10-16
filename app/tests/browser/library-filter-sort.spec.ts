@@ -199,7 +199,7 @@ async function chooseReadState(
 
 async function sortBy(
   page: Page,
-  sort: "Title" | "Recently read" | "Recently added",
+  sort: "Title" | "Recently read" | "Recently added" | "Last updated",
 ) {
   await filterAndSort(page)
     .getByRole("combobox", { name: "Sort by" })
@@ -341,6 +341,22 @@ test("asks for the series read last first once recently read is chosen", async (
   await expect
     .poll(() => storedListing.sort)
     .toEqual({ by: "lastRead", direction: "descending" });
+});
+
+test("asks for the series updated last first once last updated is chosen", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await openFilterAndSort(page);
+
+  await sortBy(page, "Last updated");
+
+  await expect(
+    directionButton(page, "Order: newest first. Change to oldest first"),
+  ).toBeVisible();
+  await expect
+    .poll(() => storedListing.sort)
+    .toEqual({ by: "lastUpdated", direction: "descending" });
 });
 
 test("lists the titles from Z to A on asking", async ({ page }) => {
