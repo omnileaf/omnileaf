@@ -11,6 +11,7 @@
     type DetailDraft,
     type EditableField,
     isEdited,
+    isLeftEmpty,
     withFileValue,
   } from "./detail-edits.ts";
   import {
@@ -67,16 +68,23 @@
   }
 
   const fromFile = $derived({
-    title: edited.title
-      ? m.edit_details_from_file_quoted({ value: details.title.fromFile })
-      : m.edit_details_file_title(),
+    title: isLeftEmpty("title", draft)
+      ? m.edit_details_title_left_empty({ value: details.title.fromFile })
+      : edited.title
+        ? m.edit_details_from_file_quoted({ value: details.title.fromFile })
+        : m.edit_details_file_title(),
     people: listedFromFile("people", details.people.fromFile.map(personLabel)),
     tags: listedFromFile("tags", details.tags.fromFile),
-    summary: !edited.summary
-      ? m.edit_details_from_file()
-      : details.summary.fromFile === null
-        ? undefined
-        : m.edit_details_from_file_quoted({ value: details.summary.fromFile }),
+    summary:
+      isLeftEmpty("summary", draft) && details.summary.fromFile !== null
+        ? m.edit_details_summary_left_empty()
+        : !edited.summary
+          ? m.edit_details_from_file()
+          : details.summary.fromFile === null
+            ? undefined
+            : m.edit_details_from_file_quoted({
+                value: details.summary.fromFile,
+              }),
   });
 
   function useFile(field: EditableField): void {
@@ -236,6 +244,7 @@
       id="{id}-summary"
       rows={3}
       value={draft.summary}
+      placeholder={details.summary.fromFile ?? undefined}
       oninput={(event: Event & { currentTarget: HTMLTextAreaElement }) => {
         onDraft({ ...draft, summary: event.currentTarget.value });
       }}

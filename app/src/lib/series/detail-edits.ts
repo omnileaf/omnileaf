@@ -89,7 +89,15 @@ export function isEdited(
   details: SeriesDetails,
   draft: DetailDraft,
 ): boolean {
-  return !isSame(field, draft, fileDraftOf(details));
+  return (
+    !isLeftEmpty(field, draft) && !isSame(field, draft, fileDraftOf(details))
+  );
+}
+
+export function isLeftEmpty(field: EditableField, draft: DetailDraft): boolean {
+  return (
+    (field === "title" || field === "summary") && draft[field].trim() === ""
+  );
 }
 
 export function withFileValue(
