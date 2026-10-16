@@ -10,7 +10,10 @@ import Kbd from "./kbd.svelte";
 const KEY_HEIGHT = 20;
 const KEY_MIN_WIDTH = 20;
 
-function resolved(token: string, property: "color" | "backgroundColor"): string {
+function resolved(
+  token: string,
+  property: "color" | "backgroundColor",
+): string {
   const probe = document.createElement("span");
   probe.style[property] = `var(${token})`;
   document.body.append(probe);

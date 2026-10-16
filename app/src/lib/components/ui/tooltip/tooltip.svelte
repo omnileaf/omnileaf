@@ -92,7 +92,9 @@
         {#each keys ?? [] as key (key)}
           <Kbd class="bg-tooltip-key text-on-tooltip-key">{key}</Kbd>
         {/each}
-        <TooltipPrimitive.Arrow class="text-tooltip macos:hidden windows:hidden" />
+        <TooltipPrimitive.Arrow
+          class="text-tooltip macos:hidden windows:hidden"
+        />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   </TooltipPrimitive.Root>
