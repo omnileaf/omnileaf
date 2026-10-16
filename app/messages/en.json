@@ -1145,7 +1145,8 @@
     }
   ],
   "series_continue": "Continue {title}",
-  "series_start": "Start with {title}",
+  "series_start": "Start {title}",
+  "series_continue_short": "Continue",
   "series_all_read": "You’ve read every book in this series",
   "series_all_read_body": "New books in its folder show up here.",
   "series_card_continue": "Continue",

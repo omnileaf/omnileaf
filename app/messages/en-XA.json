@@ -1143,7 +1143,8 @@
     }
   ],
   "series_continue": "⟦Çöñţíñûé {title}·······⟧",
-  "series_start": "⟦Šţáŕţ ŵíţĥ {title}········⟧",
+  "series_start": "⟦Šţáŕţ {title}······⟧",
+  "series_continue_short": "⟦Çöñţíñûé····⟧",
   "series_all_read": "⟦Ýöû’ṽé ŕéáð éṽéŕý ƀööķ íñ ţĥíš šéŕíéš···············⟧",
   "series_all_read_body": "⟦Ñéŵ ƀööķš íñ íţš ƒöļðéŕ šĥöŵ ûþ ĥéŕé.···············⟧",
   "series_card_continue": "⟦Çöñţíñûé····⟧",
