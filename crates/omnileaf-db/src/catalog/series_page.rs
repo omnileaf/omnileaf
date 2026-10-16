@@ -70,6 +70,18 @@ const BY_LAST_READ: Directions<Position> = directions! {
     sort_position: last_read_place,
 };
 
+const BY_LAST_UPDATED: Directions<Position> = directions! {
+    key: "updated_at_ms",
+    sort_position: last_updated_place,
+};
+
+pub(crate) fn last_updated_place(row: &Row<'_>) -> rusqlite::Result<Position> {
+    Ok(Position::LastUpdated {
+        updated_at_ms: row.get("updated_at_ms")?,
+        id: stored_id(row, "id")?,
+    })
+}
+
 pub(crate) fn last_read_place(row: &Row<'_>) -> rusqlite::Result<Position> {
     Ok(Position::LastRead {
         last_read_at_ms: row.get("last_read_at_ms")?,
@@ -113,8 +125,33 @@ pub fn series_page(
         SeriesOrder::Title => title_rows(&read, BY_TITLE.toward(direction), after),
         SeriesOrder::DateAdded => date_added_rows(&read, BY_DATE_ADDED.toward(direction), after),
         SeriesOrder::LastRead => last_read_rows(&read, BY_LAST_READ.toward(direction), after),
+        SeriesOrder::LastUpdated => {
+            last_updated_rows(&read, BY_LAST_UPDATED.toward(direction), after)
+        }
     }?;
     Ok(Page::of(rows, request.size))
+}
+
+pub(crate) fn last_updated_rows(
+    read: &Read<'_>,
+    listing: &Listing<Position>,
+    after: Option<&Position>,
+) -> Result<Vec<(SeriesSummary, Position)>, Error> {
+    match after {
+        None => listing.first_rows(read),
+        Some(Position::LastUpdated { updated_at_ms, id }) => listing.rows_after(
+            read,
+            named_params! { ":after_key": updated_at_ms, ":after_id": id.as_bytes() },
+        ),
+        Some(
+            Position::Title { .. }
+            | Position::Added { .. }
+            | Position::Book { .. }
+            | Position::Root { .. }
+            | Position::LastRead { .. }
+            | Position::Session { .. },
+        ) => Err(Error::CursorForAnotherList),
+    }
 }
 
 pub(crate) fn last_read_rows(
@@ -136,7 +173,8 @@ pub(crate) fn last_read_rows(
             | Position::Added { .. }
             | Position::Book { .. }
             | Position::Root { .. }
-            | Position::Session { .. },
+            | Position::Session { .. }
+            | Position::LastUpdated { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
@@ -157,7 +195,8 @@ pub(crate) fn date_added_rows(
             | Position::Book { .. }
             | Position::Root { .. }
             | Position::LastRead { .. }
-            | Position::Session { .. },
+            | Position::Session { .. }
+            | Position::LastUpdated { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
@@ -237,6 +276,46 @@ mod tests {
                 ),
                 merging_each_stage(
                     "SEARCH series USING INDEX series_by_stage_and_last_read (reading_stage=? AND (last_read_at_ms,id)<(?,?))"
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn starts_each_stage_at_either_end_of_its_stretch_of_the_last_updated_index_without_sorting() {
+        let scratch = ScratchLibrary::new("first-last-updated-plan");
+
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.first_page_query,
+            &BY_LAST_UPDATED,
+        );
+
+        let from_the_head = merging_each_stage(
+            "SEARCH series USING INDEX series_by_stage_and_updated (reading_stage=?)",
+        );
+        assert_eq!(plans, [from_the_head.clone(), from_the_head]);
+    }
+
+    #[test]
+    fn seeks_each_stage_of_the_last_updated_index_either_way_on_both_sort_columns_without_sorting()
+    {
+        let scratch = ScratchLibrary::new("last-updated-plan");
+
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.next_page_query,
+            &BY_LAST_UPDATED,
+        );
+
+        assert_eq!(
+            plans,
+            [
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_updated (reading_stage=? AND (updated_at_ms,id)>(?,?))"
+                ),
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_updated (reading_stage=? AND (updated_at_ms,id)<(?,?))"
                 ),
             ]
         );
