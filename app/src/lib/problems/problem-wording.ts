@@ -19,14 +19,21 @@ const FOLDER_TITLES = {
   driveDisconnected: m.attention_drive_title,
   lostAccess: m.missing_access_title,
   needsSignIn: m.missing_sign_in_title,
-} satisfies Record<FolderProblem, (inputs: { name: string }) => string>;
+  needsMounting: m.missing_mount_title,
+  shareUnreachable: m.missing_access_title,
+} satisfies Record<
+  FolderProblem["kind"],
+  (inputs: { name: string }) => string
+>;
 
 const FOLDER_FIXES = {
   missing: m.attention_find,
   driveDisconnected: m.attention_find,
   lostAccess: m.missing_choose_again,
   needsSignIn: m.missing_sign_in,
-} satisfies Record<FolderProblem, () => string>;
+  needsMounting: m.missing_try_again,
+  shareUnreachable: m.missing_choose_again,
+} satisfies Record<FolderProblem["kind"], () => string>;
 
 function missingFolderWording(
   { folder, problem, hiddenSeries, isShownAnyway }: MissingFolder,
@@ -35,11 +42,11 @@ function missingFolderWording(
   const name = usesStandIns ? folderStandIn(folder.name) : folder.name;
   return {
     icon: Unplug,
-    title: FOLDER_TITLES[problem]({ name }),
+    title: FOLDER_TITLES[problem.kind]({ name }),
     detail: isShownAnyway
       ? m.attention_shown_series({ count: hiddenSeries })
       : m.attention_hidden_series({ count: hiddenSeries }),
-    fix: FOLDER_FIXES[problem](),
+    fix: FOLDER_FIXES[problem.kind](),
   };
 }
 
