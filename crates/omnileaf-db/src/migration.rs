@@ -781,7 +781,10 @@ mod tests {
     #[test]
     fn counts_the_unread_books_of_each_series_kept_from_before_the_count_was_indexed() {
         let scratch = ScratchLibrary::new("unread-count-upgrade");
-        drop(Database::open_with(&scratch.config, &MIGRATIONS[..31]).unwrap());
+        let store = Store::new(
+            Database::open_with(&scratch.config, &MIGRATIONS[..31]).unwrap(),
+            StoppedClock,
+        );
         let connection = Connection::open(&scratch.config.path).unwrap();
         connection
             .execute(
@@ -799,12 +802,13 @@ mod tests {
                 )
                 .unwrap();
         }
-        connection
-            .execute(
-                "INSERT INTO book_state (book_id, is_read) VALUES (?1, 1)",
-                [book(2).as_bytes()],
-            )
+        let written = store.write(|writer| writer.set_read(book(2), true));
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(written)
             .unwrap();
+        drop(store);
 
         drop(Database::open(&scratch.config).unwrap());
 
