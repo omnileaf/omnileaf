@@ -772,6 +772,8 @@
   "library_remove_folder_confirm": "Remove folder",
   "library_remove_folder_cancel": "Cancel",
   "library_remove_folder_failed": "Couldn't remove {name}. Try again.",
+  "library_folder_removed": "{name} removed",
+  "library_folder_removed_files_stay": "Its files stay where they are.",
   "library_rescan_folder": "Rescan",
   "library_rescan_folder_label": "Rescan {name}",
   "library_rescan_checking": "Checking {name} for changes",
