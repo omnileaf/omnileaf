@@ -15,7 +15,7 @@ import { xpath } from "./webdriver.ts";
 
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
 const SETTINGS_LINK = mainNavigationLink("Settings");
-const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
+const LIBRARY_SETTINGS_LINK = xpath("//main//a[@href='/settings/library']");
 const LINKED_FOLDER_NAMES = xpath(
   "//section[.//h2[normalize-space()='Folders']]//li//*[@data-slot='item-title']",
 );

@@ -28,7 +28,7 @@ const SETTINGS_LINK = mainNavigationLink("Settings");
 const APPEARANCE_LINK = xpath(
   "//main//a[starts-with(normalize-space(), 'Appearance')]",
 );
-const LIBRARY_SETTINGS_LINK = xpath("//main//a[normalize-space()='Library']");
+const LIBRARY_SETTINGS_LINK = xpath("//main//a[@href='/settings/library']");
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
 const RECENT_TAB = xpath(
   "//XCUIElementTypeButton[@name='Recent' or @name='Recents']",
