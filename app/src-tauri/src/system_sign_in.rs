@@ -14,8 +14,11 @@ pub(crate) async fn ask(window: &WebviewWindow, address: &ShareAddress) -> Syste
 }
 
 #[cfg(not(any(target_os = "linux", windows)))]
-pub(crate) async fn ask(_window: &WebviewWindow, _address: &ShareAddress) -> SystemSignIn {
-    SystemSignIn::Failed
+pub(crate) fn ask(
+    _window: &WebviewWindow,
+    _address: &ShareAddress,
+) -> impl Future<Output = SystemSignIn> + Send {
+    std::future::ready(SystemSignIn::Failed)
 }
 
 #[cfg(target_os = "linux")]
