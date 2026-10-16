@@ -119,6 +119,7 @@ export const TOKEN_THEME = {
     "search-kind-wide",
     "search-tile",
     "segment",
+    "segment-outer",
     "series-check",
     "series-cover",
     "settings-chip-ios",
