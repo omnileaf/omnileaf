@@ -13,6 +13,8 @@ import {
 
 const LOOK_KEY = "omnileaf.readerSettings.all";
 const HALF_A_MINUTE_MS = 30_000;
+const SIX_SECONDS_MS = 6000;
+const FEW_SECONDS_MS = 2000;
 const CLOSE_PX = 8;
 
 function tallPages(secondsPerPage: number | null): FakeBackend {
@@ -75,7 +77,7 @@ async function pageHeightOf(page: Page): Promise<number> {
 test.describe("at a set speed", () => {
   test.use({ backend: tallPages(null) });
 
-  test("scrolls a page every half a minute at 2 pages a minute", async ({
+  test("scrolls a fifth of a page in six seconds at 2 pages a minute", async ({
     page,
   }) => {
     await openStrip(page);
@@ -84,11 +86,11 @@ test.describe("at a set speed", () => {
     await expect(bar(page)).toContainText("2 pages a minute");
     const start = await scrollTopOf(page);
 
-    await page.clock.runFor(HALF_A_MINUTE_MS);
+    await page.clock.runFor(SIX_SECONDS_MS);
 
-    expect(Math.abs((await scrollTopOf(page)) - start - height)).toBeLessThan(
-      CLOSE_PX,
-    );
+    expect(
+      Math.abs((await scrollTopOf(page)) - start - height / 5),
+    ).toBeLessThan(CLOSE_PX);
   });
 
   test("pauses on a touch of the page, until Play", async ({ page }) => {
@@ -99,10 +101,10 @@ test.describe("at a set speed", () => {
 
     await expect(bar(page)).toContainText("Paused");
     const paused = await scrollTopOf(page);
-    await page.clock.runFor(HALF_A_MINUTE_MS);
+    await page.clock.runFor(FEW_SECONDS_MS);
     expect(await scrollTopOf(page)).toBe(paused);
     await bar(page).getByRole("button", { name: "Play" }).click();
-    await page.clock.runFor(HALF_A_MINUTE_MS);
+    await page.clock.runFor(FEW_SECONDS_MS);
     expect(await scrollTopOf(page)).toBeGreaterThan(paused);
   });
 
@@ -145,7 +147,7 @@ test.describe("at a set speed", () => {
     await startAutoScroll(page);
     const start = await scrollTopOf(page);
 
-    await page.clock.runFor(HALF_A_MINUTE_MS);
+    await page.clock.runFor(FEW_SECONDS_MS);
 
     expect(await scrollTopOf(page)).toBeGreaterThan(start);
   });
