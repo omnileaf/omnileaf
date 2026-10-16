@@ -27,7 +27,10 @@
   setNotices(new Notices());
   setNeedsAttention(
     new NeedsAttention(
-      { missingFolders: () => Promise.resolve({ status: "ok", data: [] }) },
+      {
+        missingFolders: () => Promise.resolve({ status: "ok", data: [] }),
+        storageUse: () => undefined,
+      },
       () => undefined,
     ),
   );
