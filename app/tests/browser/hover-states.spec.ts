@@ -216,25 +216,6 @@ test.describe("with a pointer", () => {
       expect(await isIconOnTop(dismiss)).toBe(true);
     });
 
-    for (const name of ["Remove folder", "Cancel"]) {
-      test(`tints the dialog's ${name} button under the pointer`, async ({
-        page,
-      }) => {
-        await page.goto("/settings/library");
-        await page
-          .getByRole("button", { name: "Remove Sample Comics" })
-          .click();
-        const button = page
-          .getByRole("alertdialog")
-          .getByRole("button", { name });
-        const resting = await paintOf(button);
-
-        await button.hover();
-
-        expect(await paintOf(button)).not.toBe(resting);
-      });
-    }
-
     test("draws a 40px circle behind an icon button under the pointer", async ({
       page,
     }) => {

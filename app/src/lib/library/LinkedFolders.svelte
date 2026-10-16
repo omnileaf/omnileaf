@@ -1,6 +1,7 @@
 <script lang="ts">
   import { FolderMinus } from "@lucide/svelte";
-  import { type Snippet, tick } from "svelte";
+  import type { Snippet } from "svelte";
+  import { SvelteSet } from "svelte/reactivity";
 
   import type { LibraryFolder } from "#lib/ipc/bindings.ts";
   import type { Notices } from "#lib/notices/notices.ts";
@@ -9,11 +10,11 @@
   import type { AddFolder } from "./add-folder";
   import AddFolderButton from "./AddFolderButton.svelte";
   import { FolderAdding } from "./folder-adding.svelte";
+  import { folderTitle } from "./folder-title";
   import FolderNotice from "./FolderNotice.svelte";
   import FolderRow from "./FolderRow.svelte";
   import { ACTION_ICON_SIZE } from "./icon-size";
   import type { LibraryFolders } from "./library-folders.svelte";
-  import RemoveFolderDialog from "./RemoveFolderDialog.svelte";
   import RowActionButton from "./RowActionButton.svelte";
 
   let {
@@ -51,8 +52,6 @@
   );
 
   let addButton: HTMLElement | null = $state(null);
-  let confirming: LibraryFolder | undefined = $state();
-  let confirmingBooks: number | undefined = $state();
   let notRemoved: LibraryFolder | undefined = $state();
   let foldersHeading: HTMLHeadingElement | undefined = $state();
   const headingId = $props.id();
@@ -60,41 +59,39 @@
 
   const rows: Record<LibraryFolder["id"], HTMLLIElement> = {};
 
-  let latestRemovalAsked = 0;
-  let removalAsker: HTMLButtonElement | undefined;
+  const pendingRemovals = new SvelteSet<LibraryFolder["id"]>();
+  const shownFolders = $derived(
+    folders.list.kind === "loaded"
+      ? folders.list.linked.filter((folder) => !pendingRemovals.has(folder.id))
+      : [],
+  );
 
   export function focusRow(folder: LibraryFolder): void {
     rows[folder.id]?.focus();
   }
 
-  /** Apple platforms don't focus a button when it's clicked or tapped, so the closing dialog can't hand focus back to it by itself. */
-  async function returnFocusToAsker(): Promise<void> {
-    await tick();
-    if (removalAsker?.isConnected === true) {
-      removalAsker.focus();
-    } else {
-      foldersHeading?.focus();
-    }
+  function removeWithUndo(folder: LibraryFolder): void {
+    pendingRemovals.add(folder.id);
+    foldersHeading?.focus();
+    notices.offerUndo({
+      title: m.library_folder_removed({ name: folderTitle(folder) }),
+      body: m.library_folder_removed_files_stay(),
+      undo: () => {
+        pendingRemovals.delete(folder.id);
+      },
+      commit: () => {
+        void commitRemoval(folder);
+      },
+    });
   }
 
-  async function confirmRemoval(folder: LibraryFolder): Promise<void> {
-    const asked = ++latestRemovalAsked;
-    confirming = folder;
-    confirmingBooks = undefined;
-    const books = await folders.countBooks(folder);
-    if (asked === latestRemovalAsked) {
-      confirmingBooks = books;
-    }
-  }
-
-  async function remove(folder: LibraryFolder): Promise<void> {
-    confirming = undefined;
+  async function commitRemoval(folder: LibraryFolder): Promise<void> {
     const outcome = await folders.remove(folder);
+    pendingRemovals.delete(folder.id);
     notRemoved = outcome === "failed" ? folder : undefined;
     if (outcome === "removed") {
       adding.dismiss();
     }
-    foldersHeading?.focus();
   }
 </script>
 
@@ -117,14 +114,14 @@
     >
       {m.library_settings_folders()}
     </h2>
-    {#if folders.list.kind === "loaded" && folders.list.linked.length > 0}
+    {#if shownFolders.length > 0}
       <ul
         class={[
           "divide-y divide-border",
           isBelowList && "rounded-card border border-border bg-card",
         ]}
       >
-        {#each folders.list.linked as folder (folder.id)}
+        {#each shownFolders as folder (folder.id)}
           <li
             bind:this={rows[folder.id]}
             tabindex="-1"
@@ -136,11 +133,8 @@
                 <RowActionButton
                   label={m.library_remove_folder_label({ name: folder.name })}
                   tooltip={m.library_remove_folder()}
-                  onclick={(
-                    event: MouseEvent & { currentTarget: HTMLButtonElement },
-                  ) => {
-                    removalAsker = event.currentTarget;
-                    void confirmRemoval(folder);
+                  onclick={() => {
+                    removeWithUndo(folder);
                   }}
                 >
                   <FolderMinus size={ACTION_ICON_SIZE} aria-hidden="true" />
@@ -189,15 +183,3 @@
     />
   </div>
 </section>
-
-<RemoveFolderDialog
-  folder={confirming}
-  books={confirmingBooks}
-  onConfirm={(folder: LibraryFolder) => {
-    void remove(folder);
-  }}
-  onCancel={() => {
-    confirming = undefined;
-    void returnFocusToAsker();
-  }}
-/>

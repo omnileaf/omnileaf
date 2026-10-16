@@ -266,3 +266,70 @@ test("lets the offer lapse with focus on it once holding is turned off", async (
 
   await expect.element(offer).toHaveAttribute("data-removed", "true");
 });
+
+async function offerUndoThatCommits(rules: UndoRules = NEW_UNDO_RULES) {
+  const notices = new Notices(() => rules);
+  await render(Toasts, { notices, platform: "linux", theme: "light" });
+  const counts = { undone: 0, committed: 0 };
+  notices.offerUndo({
+    title: REMOVED,
+    undo: () => {
+      counts.undone += 1;
+    },
+    commit: () => {
+      counts.committed += 1;
+    },
+  });
+  return { notices, counts };
+}
+
+test("commits the change once its offer lapses", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const { counts } = await offerUndoThatCommits();
+  expect(counts.committed).toBe(0);
+
+  vi.advanceTimersByTime(UNDO_WINDOW_MS);
+  await Promise.resolve();
+
+  expect(counts.committed).toBe(1);
+});
+
+test("never commits a change that was undone", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const { notices, counts } = await offerUndoThatCommits();
+
+  notices.undo();
+  vi.advanceTimersByTime(UNDO_WINDOW_MS);
+
+  expect(counts).toEqual({ undone: 1, committed: 0 });
+});
+
+test("commits an earlier change once a newer offer takes its place", async () => {
+  const { notices, counts } = await offerUndoThatCommits();
+
+  notices.offerUndo({
+    title: "Removed Sample Series 08",
+    undo: () => undefined,
+  });
+
+  await Promise.resolve();
+
+  expect(counts.committed).toBe(1);
+});
+
+test("commits the change at once while Undo is turned off", async () => {
+  const { counts } = await offerUndoThatCommits({
+    ...NEW_UNDO_RULES,
+    isOffered: false,
+  });
+
+  expect(counts.committed).toBe(1);
+});
+
+test("never commits a change undone from its Undo button", async () => {
+  const { counts } = await offerUndoThatCommits();
+
+  await page.getByRole("button", { name: "Undo" }).click();
+
+  expect(counts).toEqual({ undone: 1, committed: 0 });
+});

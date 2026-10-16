@@ -30,6 +30,8 @@ export interface UndoOffer {
   readonly title: string;
   readonly body?: string;
   readonly undo: () => void;
+  /** Makes the change for good once it can no longer be undone. */
+  readonly commit?: () => void;
 }
 
 export interface ToastHandle {
@@ -59,6 +61,7 @@ export class Notices {
   readonly #lapses = new Map<string, Lapse>();
   readonly #noticesShown = new Map<Notice, Shown>();
   #undoShown: (Shown & { readonly offer: UndoOffer }) | undefined;
+  #undoSettling: (Shown & { readonly offer: UndoOffer }) | undefined;
 
   constructor(undoRules: () => UndoRules = () => NEW_UNDO_RULES) {
     this.#undoRules = undoRules;
@@ -89,12 +92,21 @@ export class Notices {
         title: offer.title,
         ...(offer.body === undefined ? {} : { body: offer.body }),
       });
+      offer.commit?.();
       return;
     }
     this.#undoShown?.toast.dismiss();
     const shown = this.#present(
       UndoToast,
-      (toast) => ({ offer, toast }),
+      (toast) => ({
+        offer: {
+          ...offer,
+          undo: () => {
+            this.undo();
+          },
+        },
+        toast,
+      }),
       "polite",
     );
     this.#undoShown = { ...shown, offer };
@@ -102,10 +114,12 @@ export class Notices {
   }
 
   undo(): void {
-    const shown = this.#undoShown;
+    const shown = this.#undoShown ?? this.#undoSettling;
     if (shown === undefined) {
       return;
     }
+    this.#undoShown = undefined;
+    this.#undoSettling = undefined;
     shown.toast.dismiss();
     shown.offer.undo();
   }
@@ -193,8 +207,16 @@ export class Notices {
         this.#noticesShown.delete(notice);
       }
     }
-    if (this.#undoShown?.id === id) {
+    const undoShown = this.#undoShown;
+    if (undoShown?.id === id) {
       this.#undoShown = undefined;
+      this.#undoSettling = undoShown;
+      queueMicrotask(() => {
+        if (this.#undoSettling === undoShown) {
+          this.#undoSettling = undefined;
+          undoShown.offer.commit?.();
+        }
+      });
     }
   }
 }
