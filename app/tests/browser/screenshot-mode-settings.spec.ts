@@ -160,9 +160,9 @@ test("the keyboard shortcut is listed on a computer", async ({ page }) => {
 });
 
 const SHORTCUT_HINTS = [
-  { platform: "macos", keys: "⇧⌘H" },
-  { platform: "linux", keys: "Ctrl Shift H" },
-  { platform: "windows", keys: "Ctrl Shift H" },
+  { platform: "macos", keys: ["⌘", "Shift", "H"] },
+  { platform: "linux", keys: ["Ctrl", "Shift", "H"] },
+  { platform: "windows", keys: ["Ctrl", "Shift", "H"] },
 ] as const;
 
 for (const { platform, keys } of SHORTCUT_HINTS) {
@@ -170,13 +170,26 @@ for (const { platform, keys } of SHORTCUT_HINTS) {
     testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
-    test(`the shortcut is shown as ${keys}`, async ({ page }) => {
+    test(`the shortcut is shown as ${keys.join(" ")}`, async ({ page }) => {
       await openScreenshotMode(page);
 
-      await expect(page.getByRole("main").locator("kbd")).toHaveText([keys]);
+      await expect(page.getByRole("main").locator("kbd")).toHaveText(keys);
     });
   });
 }
+
+test("a shortcut chosen earlier is the one shown", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "omnileaf.screenshotModeShortcut",
+      JSON.stringify({ letter: "J", shift: false }),
+    );
+  });
+
+  await openScreenshotMode(page);
+
+  await expect(page.getByRole("main").locator("kbd")).toHaveText(["Ctrl", "J"]);
+});
 
 test("the label is said to show at the top of the window on a computer", async ({
   page,

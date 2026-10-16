@@ -10,7 +10,8 @@
   import { undoShortcutOn } from "#lib/notices/undo-shortcut.ts";
   import { usesCommandKey } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
-  import { screenshotModeShortcutLabel } from "#lib/screenshot-mode/shortcut.ts";
+  import { keyNames } from "#lib/screenshot-mode/key-combination.ts";
+  import { getScreenshotModeShortcut } from "#lib/screenshot-mode/shortcut-setting.svelte.ts";
   import {
     quickOpenShortcutLabel,
     searchShortcutLabel,
@@ -38,6 +39,8 @@
     onClose: () => void;
   } = $props();
 
+  const screenshotModeShortcut = getScreenshotModeShortcut();
+
   function withCommand(key: string): string {
     return usesCommandKey(platform)
       ? m.reader_key_command_mac({ key })
@@ -60,7 +63,9 @@
           { label: m.undo_action(), keys: [undoShortcutOn(platform).label()] },
           {
             label: m.screenshot_mode_title(),
-            keys: [screenshotModeShortcutLabel(platform)],
+            keys: [
+              keyNames(screenshotModeShortcut.combination, platform).join(" "),
+            ],
           },
           { label: m.settings_title(), keys: [withCommand(",")] },
           { label: m.app_shortcuts_title(), keys: ["?"] },
