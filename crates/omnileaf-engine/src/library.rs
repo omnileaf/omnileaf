@@ -427,11 +427,16 @@ impl Library {
                 let Some(overview) = series_overview(connection, series)? else {
                     return Ok(None);
                 };
-                Ok(Some((overview, up_next(connection, series)?)))
+                Ok(Some((
+                    overview,
+                    up_next(connection, series)?,
+                    seconds_per_page(connection)?,
+                )))
             })
             .await?;
-        let (overview, up_next) = found.ok_or(LibraryError::SeriesNotFound { id })?;
-        Ok(SeriesOverview::new(overview, up_next))
+        let (overview, up_next, seconds_per_page) =
+            found.ok_or(LibraryError::SeriesNotFound { id })?;
+        Ok(SeriesOverview::new(overview, up_next, seconds_per_page))
     }
 
     /// Whether the library keeps edits over the files' details yet, which the interface offers Edit details by.

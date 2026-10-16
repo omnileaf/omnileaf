@@ -25,7 +25,7 @@ pub struct SeriesOverview {
     pub tags: Vec<String>,
     /// Other series in the library that share a creator or a tag with this one.
     pub related: Vec<RelatedSeries>,
-    /// About how long the books left take to read, absent until the library times reading.
+    /// About how long the books left take to read at the reading speed learned on this device, absent until the library times reading or while a book left has no page count.
     pub seconds_left: Option<u32>,
 }
 
@@ -76,7 +76,15 @@ pub enum CreatorRole {
 }
 
 impl SeriesOverview {
-    pub(crate) fn new(overview: catalog::SeriesOverview, up_next: Option<BookSummary>) -> Self {
+    pub(crate) fn new(
+        overview: catalog::SeriesOverview,
+        up_next: Option<BookSummary>,
+        seconds_per_page: Option<u32>,
+    ) -> Self {
+        let seconds_left = overview
+            .pages_left
+            .zip(seconds_per_page)
+            .map(|(pages, seconds)| pages.saturating_mul(seconds));
         Self {
             id: SeriesId(overview.id),
             title: overview.title,
@@ -93,7 +101,7 @@ impl SeriesOverview {
             summary: None,
             tags: Vec::new(),
             related: Vec::new(),
-            seconds_left: None,
+            seconds_left,
         }
     }
 }
@@ -102,7 +110,10 @@ impl SeriesOverview {
 mod tests {
     use super::*;
 
-    fn sample_overview() -> SeriesOverview {
+    const PAGES_LEFT: u32 = 900;
+    const SECONDS_PER_PAGE: u32 = 12;
+
+    fn overview_with(pages_left: Option<u32>, seconds_per_page: Option<u32>) -> SeriesOverview {
         SeriesOverview::new(
             catalog::SeriesOverview {
                 id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
@@ -111,9 +122,15 @@ mod tests {
                 read_count: 2,
                 cover: None,
                 folder: None,
+                pages_left,
             },
             None,
+            seconds_per_page,
         )
+    }
+
+    fn sample_overview() -> SeriesOverview {
+        overview_with(Some(PAGES_LEFT), None)
     }
 
     #[test]
@@ -124,6 +141,20 @@ mod tests {
     #[test]
     fn knows_no_time_left_until_the_library_times_reading() {
         assert_eq!(sample_overview().seconds_left, None);
+    }
+
+    #[test]
+    fn knows_no_time_left_while_a_book_left_has_no_page_count() {
+        let overview = overview_with(None, Some(SECONDS_PER_PAGE));
+
+        assert_eq!(overview.seconds_left, None);
+    }
+
+    #[test]
+    fn times_the_pages_left_at_the_reading_speed() {
+        let overview = overview_with(Some(PAGES_LEFT), Some(SECONDS_PER_PAGE));
+
+        assert_eq!(overview.seconds_left, Some(PAGES_LEFT * SECONDS_PER_PAGE));
     }
 
     #[test]

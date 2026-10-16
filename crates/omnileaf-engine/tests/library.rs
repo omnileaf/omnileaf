@@ -1013,6 +1013,27 @@ async fn remembers_listing_the_series_with_the_most_unread_books_first_when_the_
 }
 
 #[tokio::test]
+async fn remembers_listing_the_series_quickest_to_finish_first_when_the_library_reopens() {
+    let home = ScratchFolder::new("library-listing-time-left");
+    let shortest_first = LibraryListing {
+        sort: LibrarySort {
+            by: LibrarySortBy::TimeLeft,
+            direction: SortDirection::Ascending,
+        },
+        ..LibraryListing::default()
+    };
+    open(home.path())
+        .await
+        .set_listing(shortest_first.clone())
+        .await
+        .unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.listing().await.unwrap(), shortest_first);
+}
+
+#[tokio::test]
 async fn stores_the_fewest_and_the_most_covers_per_row_each_size_offers() {
     let home = ScratchFolder::new("library-view-ranges");
     let library = open(home.path()).await;
