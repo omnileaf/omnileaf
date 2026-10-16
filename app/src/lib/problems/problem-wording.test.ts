@@ -9,13 +9,11 @@ import { problemWording } from "./problem-wording";
 const NAS = { server: "nas", name: "comics" };
 
 function problemOf(kind: FolderProblem["kind"]): FolderProblem {
-  return (
-    kind === "needsSignIn" ||
+  return kind === "needsSignIn" ||
     kind === "needsMounting" ||
     kind === "shareUnreachable"
-      ? { kind, share: NAS }
-      : { kind }
-  ) as FolderProblem;
+    ? { kind, share: NAS }
+    : { kind };
 }
 
 function missingFolder(
