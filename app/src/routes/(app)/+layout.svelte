@@ -21,6 +21,8 @@
 
   import type { LayoutProps } from "./$types";
 
+  const EDIT_DETAILS_ROUTE = "/(app)/series/[id]/edit";
+
   let { children, data }: LayoutProps = $props();
 
   const language = getLanguageSetting();
@@ -64,10 +66,15 @@
 <div
   class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row desktop-shell:flex-row"
 >
-  {#key language.resolved}
-    <AppNavigation current={sectionOf(page.url.pathname)} />
-  {/key}
-  <SwipeableMain isIos={data.appInfo.platform === "ios"}>
+  {#if page.route.id !== EDIT_DETAILS_ROUTE}
+    {#key language.resolved}
+      <AppNavigation current={sectionOf(page.url.pathname)} />
+    {/key}
+  {/if}
+  <SwipeableMain
+    isIos={data.appInfo.platform === "ios"}
+    isFullScreen={page.route.id === EDIT_DETAILS_ROUTE}
+  >
     {#key language.resolved}
       {@render children()}
     {/key}
