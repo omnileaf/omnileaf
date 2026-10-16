@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Clock } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
@@ -13,6 +14,9 @@
   import { READER_GLASS } from "./reader-bar.ts";
   import { type Spread, spreadPosition } from "./spreads.ts";
 
+  const TIME_ICON_SIZE = 14;
+  const SECONDS_IN_A_MINUTE = 60;
+
   let {
     pages,
     shown,
@@ -21,6 +25,7 @@
     next,
     direction,
     quickSettings,
+    secondsLeft,
     onSeek,
   }: {
     pages: readonly BookPage[];
@@ -30,6 +35,7 @@
     next: SeriesNeighbour | null;
     direction: ReadingDirection;
     quickSettings: Snippet;
+    secondsLeft: number | undefined;
     onSeek: (index: number) => void;
   } = $props();
 
@@ -71,4 +77,16 @@
     />
     <BookStepLink step="next" neighbour={next} />
   </div>
+  {#if secondsLeft !== undefined}
+    <p
+      class="flex items-center justify-center gap-xs text-caption text-reader-muted"
+    >
+      <Clock size={TIME_ICON_SIZE} aria-hidden="true" />
+      {secondsLeft < SECONDS_IN_A_MINUTE
+        ? m.reader_time_left_short()
+        : m.reader_time_left({
+            minutes: Math.round(secondsLeft / SECONDS_IN_A_MINUTE),
+          })}
+    </p>
+  {/if}
 </div>

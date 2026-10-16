@@ -1016,6 +1016,7 @@ export function sampleBackend(
         bookmarkedPages: [...(bookmarks.get(id) ?? [])].toSorted(
           (one, other) => one - other,
         ),
+        secondsPerPage: Math.round(SAMPLE_SECONDS_PER_PAGE),
       };
     },
     bookPlace: (id) => {

@@ -1491,6 +1491,21 @@
   "reader_guide_off_title": "Tap zones off",
   "reader_guide_off_body": "Swipe to turn pages; a tap anywhere shows the controls.",
   "reader_guide_off_zone": "Swipe to turn pages. A tap shows the controls.",
+  "reader_time_left": [
+    {
+      "declarations": [
+        "input minutes",
+        "local minutesPlural = minutes: plural",
+        "local formattedMinutes = minutes: number"
+      ],
+      "selectors": ["minutesPlural"],
+      "match": {
+        "minutesPlural=one": "About {formattedMinutes} min left in this chapter",
+        "minutesPlural=other": "About {formattedMinutes} min left in this chapter"
+      }
+    }
+  ],
+  "reader_time_left_short": "Less than a minute left in this chapter",
   "reader_tap_zones": "Tap zones",
   "reader_tap_zones_edges": "Edges",
   "reader_tap_zones_l": "L shape",

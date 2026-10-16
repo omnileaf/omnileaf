@@ -462,6 +462,8 @@ export type OpenedBook = {
 	bookmarkedPages: number[] | null,
 	/**  Absent while the library doesn't check a book's pages against what its file promises. */
 	damage: BookDamage | null,
+	/**  About how long a page takes to read, absent until the library times reading. */
+	secondsPerPage: number | null,
 };
 
 /**  In pixels. */
