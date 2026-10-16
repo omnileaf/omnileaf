@@ -8,6 +8,9 @@ import {
   EXPANDED_MIN_WIDTH,
   expect,
   fakeAppInfo,
+  LARGEST_TEXT_SCALE,
+  setTextScale,
+  sidewaysOverflow,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -227,6 +230,23 @@ test.describe("on a phone", () => {
 
     await expect(sheet(page)).toHaveCount(0);
     await expect(dot(page)).toBeFocused();
+  });
+
+  test("leaves a row's words room beside a long fix at the largest text", async ({
+    page,
+  }) => {
+    missing = [{ ...COMICS, problem: "lostAccess" }];
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await openLibraryOnAPhone(page);
+    await dot(page).click();
+
+    const row = sheet(page).getByRole("listitem");
+    const rowBox = await row.boundingBox();
+    const fixBox = await row
+      .getByRole("button", { name: "Choose it again" })
+      .boundingBox();
+    expect(fixBox?.width).toBeLessThanOrEqual((rowBox?.width ?? 0) / 2);
+    expect(await sidewaysOverflow(page, "body")).toEqual([]);
   });
 
   test("shows no dot when nothing needs attention", async ({ page }) => {
