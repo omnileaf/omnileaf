@@ -143,6 +143,7 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
 
 const PAGE_SIZE = 50;
 const SAMPLE_SECONDS_PER_PAGE = 8.5;
+const SAMPLE_SUMMARY_SECONDS_PER_PAGE = 22.5;
 const PAGE_WIDTH = 1000;
 const PAGE_HEIGHT = 1500;
 const STRIP_WIDTH = 800;
@@ -1284,6 +1285,20 @@ export function sampleBackend(
     }),
     readingTimeBetween: () => historyEntries().length * SESSION_SECONDS,
     bookReadTime: () => SESSION_SECONDS,
+    readingSummary: (id) => {
+      const { series, index } = bookWith(id);
+      const book = series.books[index];
+      if (book === undefined || book.reading.state === "notStarted") {
+        return null;
+      }
+      return {
+        readSeconds: Math.round(
+          book.pageCount * SAMPLE_SUMMARY_SECONDS_PER_PAGE,
+        ),
+        pageCount: book.pageCount,
+        secondsPerPage: Math.ceil(SAMPLE_SUMMARY_SECONDS_PER_PAGE),
+      };
+    },
     bookSessions: () => ({
       sessions: 1,
       readSeconds: SESSION_SECONDS,
