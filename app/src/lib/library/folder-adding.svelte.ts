@@ -62,6 +62,7 @@ const FAILURES = {
   bookUnreadable: ADDING_FAILED,
   bookmarksNotKept: ADDING_FAILED,
   labelsNotKept: ADDING_FAILED,
+  detailsNotKept: ADDING_FAILED,
   internal: ADDING_FAILED,
 } satisfies Record<IpcErrorCode, Failure>;
 
