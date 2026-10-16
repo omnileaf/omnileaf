@@ -29,12 +29,17 @@ async function openBook(
   page: Page,
   stored: Record<string, string> = {},
 ): Promise<void> {
-  await page.addInitScript((entries) => {
-    localStorage.setItem("omnileaf.readerGuide.leftToRight", "seen");
-    for (const [key, value] of Object.entries(entries)) {
-      localStorage.setItem(key, value);
-    }
-  }, stored);
+  await page.addInitScript(
+    (entries) => {
+      localStorage.setItem("omnileaf.readerGuide.leftToRight", "seen");
+      localStorage.setItem("omnileaf.readerGuide.strip", "seen");
+      localStorage.setItem(`omnileaf.stripFound.${entries.series}`, "seen");
+      for (const [key, value] of Object.entries(entries.stored)) {
+        localStorage.setItem(key, value);
+      }
+    },
+    { stored, series: BOOK_SERIES_ID },
+  );
   await servePages(page);
   await page.goto(`/read/${BOOK_ID}`);
   await expect(page.getByRole("heading", { level: 1 })).toBeAttached();
