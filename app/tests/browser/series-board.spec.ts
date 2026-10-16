@@ -549,9 +549,7 @@ test.describe("a series with details while Screenshot mode is on", () => {
       expect(shown).not.toContain(own);
     }
     expect(shown).not.toContain(SUMMARY);
-    await expect(about(page)).toContainText(
-      "Story: Creator 1 · Art: Creator 3",
-    );
+    await expect(about(page)).toContainText("Story: Writer 1 · Art: Artist 3");
     await expect(
       about(page).getByRole("list", { name: "Tags" }).getByRole("listitem"),
     ).toHaveText(["Tag 1", "Tag 2", "Tag 3", "Tag 4"]);

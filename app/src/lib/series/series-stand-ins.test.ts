@@ -1,13 +1,20 @@
 import { expect, test } from "vitest";
 
-import type { HistoryEntry, OpenedBook } from "#lib/ipc/bindings.ts";
+import type {
+  HistoryEntry,
+  OpenedBook,
+  SeriesBook,
+  SeriesOverview,
+} from "#lib/ipc/bindings.ts";
 import type { CoverPath } from "#lib/library/cover-url.ts";
 import { standInLook } from "#lib/library/series-look.ts";
 import { bookIdIn } from "#lib/reader/opened-book.ts";
 import type { SeriesId } from "#lib/series/series-id.ts";
 import {
+  standInBook,
   standInHistoryEntry,
   standInOpenedBook,
+  standInOverview,
 } from "#lib/series/series-stand-ins.ts";
 
 const SERIES = "0190a3e4-0000-8000-8000-0000000000a1" as SeriesId;
@@ -32,6 +39,81 @@ function readEntry(): HistoryEntry {
     day: { day: 20_717, readSeconds: 600 },
   };
 }
+
+function seriesBook(position: number): SeriesBook {
+  const id = bookIdIn(`0190a3e4-0000-8000-8000-0000000000c${String(position)}`);
+  if (id === undefined) {
+    throw new Error("a sample book needs an id's shape");
+  }
+  return {
+    id,
+    position,
+    title: `Hidden Story v0${String(position)}`,
+    addedAtMs: 1_790_000_000_000,
+    reading: { state: "started", page: 14 },
+    pageCount: 192,
+    isBookmarked: false,
+    isNew: false,
+    isFileMissing: false,
+  };
+}
+
+function overview(): SeriesOverview {
+  return {
+    id: SERIES,
+    title: "Hidden Story",
+    bookCount: 8,
+    readCount: 2,
+    bookmarkCount: 0,
+    cover: null,
+    folder: null,
+    upNext: seriesBook(3),
+    format: "Manga",
+    creators: [
+      { name: "Author A", role: "storyAndArt", seriesCount: 1 },
+      { name: "Author B", role: "story", seriesCount: 1 },
+      { name: "Author C", role: "art", seriesCount: 1 },
+      { name: "Author D", role: null, seriesCount: 1 },
+    ],
+    summary: "A lighthouse keeper writes letters home.",
+    tags: ["Sea"],
+    related: [],
+    secondsLeft: null,
+  };
+}
+
+test("names a series page's book by its place in the series alone, since the page names the series", () => {
+  const book = seriesBook(4);
+
+  const standIn = standInBook(book);
+
+  expect(standIn).toEqual({ ...book, title: "Book 4" });
+});
+
+test("names the book to go on with as the book list does", () => {
+  const standIn = standInOverview(overview());
+
+  expect(standIn.upNext?.title).toBe("Book 3");
+});
+
+test("names a series' creators as writers and artists by what they did", () => {
+  const standIn = standInOverview(overview());
+
+  expect(standIn.creators.map(({ name }) => name)).toEqual([
+    "Writer 1",
+    "Writer 2",
+    "Artist 3",
+    "Writer 4",
+  ]);
+});
+
+test("shows a stand-in summary that names nothing of the series", () => {
+  const standIn = standInOverview(overview());
+
+  expect(standIn.summary).toBe(
+    "A stand-in summary shows here while Screenshot mode is on.",
+  );
+});
 
 test("names a history entry's series as the library does and its book by its place in the series", () => {
   const entry = readEntry();
