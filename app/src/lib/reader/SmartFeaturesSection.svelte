@@ -38,6 +38,13 @@
       isDisabled: !features.learnsReadingSpeed,
     },
     {
+      feature: "showsBookSummary",
+      label: m.reader_book_summary(),
+      description: m.reader_book_summary_help(),
+      isOn: features.showsBookSummary,
+      isDisabled: false,
+    },
+    {
       feature: "showsPagePreviews",
       label: m.reader_page_previews(),
       description: undefined,

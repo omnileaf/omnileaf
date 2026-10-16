@@ -21,8 +21,9 @@ test("starts with every smart feature on", () => {
   expect([
     features.learnsReadingSpeed,
     features.showsTimeLeft,
+    features.showsBookSummary,
     features.showsPagePreviews,
-  ]).toEqual([true, true, true]);
+  ]).toEqual([true, true, true, true]);
 });
 
 test("shows no time left while it doesn't learn the reading speed, keeping the choice for later", () => {
@@ -43,8 +44,9 @@ test("turns every smart feature off at once", () => {
   expect([
     features.learnsReadingSpeed,
     features.showsTimeLeft,
+    features.showsBookSummary,
     features.showsPagePreviews,
-  ]).toEqual([false, false, false]);
+  ]).toEqual([false, false, false, false]);
 });
 
 test("keeps what was turned off for the next time", () => {
@@ -67,4 +69,12 @@ test("reads what it can't make sense of as every feature on", () => {
     true,
     true,
   ]);
+});
+
+test("keeps the book summary while it doesn't learn the reading speed, since it times the book itself", () => {
+  const features = new SmartFeatures(memoryStore());
+
+  features.turn("learnsReadingSpeed", false);
+
+  expect(features.showsBookSummary).toBe(true);
 });
