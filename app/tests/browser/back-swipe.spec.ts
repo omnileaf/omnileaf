@@ -301,17 +301,15 @@ test("shows no screen with a choice made since it was left", async ({
   await page.goto("/settings");
   await page
     .getByRole("main")
-    .getByRole("link", { name: `${PARENT_TITLE} Ask` })
+    .getByRole("link", { name: /^Appearance/ })
     .click();
-  await expect(heading(page, PARENT_TITLE)).toBeVisible();
+  await expect(heading(page, "Appearance")).toBeVisible();
 
-  await page.getByRole("radio", { name: "Always send" }).click();
+  await page.getByRole("radio", { name: "Dark" }).click();
   await swipe({ kind: "moved", progress: 0.5 });
 
   await expect(page.locator("[data-previous-screen]")).toBeAttached();
-  await expect(previousScreen(page)).not.toContainText(
-    "Ask before sending crash reports",
-  );
+  await expect(previousScreen(page)).not.toContainText("Follows the system");
 });
 
 test("still finishes the swipe when the screen stops moving part way", async ({

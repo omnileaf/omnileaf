@@ -107,11 +107,8 @@ function lookOf(page: Page, platform: Platform): Look {
   return viewportOf(page).width < MEDIUM_MIN_WIDTH ? "phone" : "touchPane";
 }
 
-function sectionsHoldingAbout(page: Page): Locator {
-  return page
-    .getByRole("list")
-    .filter({ has: page.getByRole("link", { name: /^About/ }) })
-    .filter({ visible: true });
+function sectionLinks(page: Page): Locator {
+  return page.locator('a[href^="/settings/"]').filter({ visible: true });
 }
 
 function showsSummaries(page: Page, platform: Platform): boolean {
@@ -160,16 +157,19 @@ for (const platform of ["android", "ios", "linux"] as const) {
 
     test("lists Advanced just above About", async ({ page }) => {
       await page.goto("/settings");
+      await expect(
+        sectionLinks(page).filter({ hasText: "About" }).first(),
+      ).toBeVisible();
 
-      const group = sectionsHoldingAbout(page);
-
-      await expect(group.getByRole("link").first()).toHaveAccessibleName(
-        /^Advanced/,
+      const names = (await sectionLinks(page).allInnerTexts()).map((name) =>
+        name.trim(),
       );
-      await expect(group.getByRole("link")).toHaveCount(2);
+      const advanced = names.findIndex((name) => name.startsWith("Advanced"));
+
+      expect(names[advanced + 1]).toMatch(/^About/);
     });
 
-    test("summarises Advanced as a development build", async ({ page }) => {
+    test("summarises Advanced by what it holds", async ({ page }) => {
       await page.goto("/settings");
       test.skip(
         !showsSummaries(page, platform),
@@ -178,7 +178,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
 
       const advanced = advancedSummaryRow(page);
 
-      await expect(advanced).toContainText("Development build");
+      await expect(advanced).toContainText("Animations");
     });
 
     test("heads the page Advanced, under a note that it never ships", async ({
@@ -406,16 +406,19 @@ for (const platform of ["android", "ios", "linux"] as const) {
 
     test("lists Advanced just above About", async ({ page }) => {
       await page.goto("/settings");
+      await expect(
+        sectionLinks(page).filter({ hasText: "About" }).first(),
+      ).toBeVisible();
 
-      const group = sectionsHoldingAbout(page);
-
-      await expect(group.getByRole("link").first()).toHaveAccessibleName(
-        /^Advanced/,
+      const names = (await sectionLinks(page).allInnerTexts()).map((name) =>
+        name.trim(),
       );
-      await expect(group.getByRole("link")).toHaveCount(2);
+      const advanced = names.findIndex((name) => name.startsWith("Advanced"));
+
+      expect(names[advanced + 1]).toMatch(/^About/);
     });
 
-    test("gives Advanced no summary", async ({ page }) => {
+    test("summarises Advanced by what it holds", async ({ page }) => {
       await page.goto("/settings");
       test.skip(
         !showsSummaries(page, platform),
@@ -424,7 +427,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
 
       const advanced = advancedSummaryRow(page);
 
-      await expect(advanced).toHaveAccessibleName("Advanced");
+      await expect(advanced).toContainText("Animations");
     });
 
     test("opens Advanced without the development build note or the crash tests", async ({
