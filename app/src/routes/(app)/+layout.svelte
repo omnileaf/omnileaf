@@ -31,6 +31,10 @@
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import ScreenshotModeNotice from "#lib/screenshot-mode/ScreenshotModeNotice.svelte";
   import QuickOpen from "#lib/search/QuickOpen.svelte";
+  import {
+    setStorageCheck,
+    StorageCheck,
+  } from "#lib/storage/storage-check.svelte.ts";
   import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
   import { shownBackLink } from "#lib/navigation/back-link.ts";
   import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
@@ -49,6 +53,7 @@
   const backGoesUp = setBackGoesUp(makeBackGoUp());
   const quickOpen = new QuickOpenState();
   const sidebar = setSidebarSetting(sidebarSettingForDocument());
+  const storage = setStorageCheck(new StorageCheck(commands, reportError));
   const needsAttention = setNeedsAttention(
     new NeedsAttention(
       { missingFolders: () => commands.missingLibraryFolders() },
@@ -89,6 +94,7 @@
   }
 
   onMount(() => {
+    void storage.check();
     void needsAttention.gather();
     return listenForLibraryChanges(() => {
       void needsAttention.gather();
