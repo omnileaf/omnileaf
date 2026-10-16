@@ -7,7 +7,10 @@ use windows_sys::Win32::Foundation::{
     CloseHandle, ERROR_CONNECTION_UNAVAIL, ERROR_MORE_DATA, INVALID_HANDLE_VALUE, MAX_PATH,
     NO_ERROR,
 };
-use windows_sys::Win32::NetworkManagement::WNet::WNetGetConnectionW;
+use windows_sys::Win32::NetworkManagement::WNet::{
+    CONNECT_INTERACTIVE, CONNECT_PROMPT, NETRESOURCEW, RESOURCETYPE_DISK, WNetAddConnection3W,
+    WNetGetConnectionW,
+};
 use windows_sys::Win32::Storage::FileSystem::{
     CreateFileW, FILE_SHARE_READ, FILE_SHARE_WRITE, GetDriveTypeW, OPEN_EXISTING,
 };
@@ -128,6 +131,31 @@ pub fn remote_name(drive: &str) -> Option<String> {
             ERROR_MORE_DATA if length > capacity => capacity = length,
             _ => return None,
         }
+    }
+}
+
+/// Asks `WNetAddConnection3W` to connect to a share such as `\\nas\manga`, prompting through Windows Security for its credentials, and answers its error code.
+#[must_use]
+#[expect(
+    unsafe_code,
+    reason = "WNetAddConnection3W is only reachable through FFI"
+)]
+pub fn connect_share(owner: usize, share: &str) -> u32 {
+    let mut remote: Vec<u16> = share.encode_utf16().chain([0]).collect();
+    let resource = NETRESOURCEW {
+        dwType: RESOURCETYPE_DISK,
+        lpRemoteName: remote.as_mut_ptr(),
+        ..NETRESOURCEW::default()
+    };
+    // SAFETY: `resource` and the NUL-terminated `remote` it points to outlive the call, the null password and user name have Windows ask for them, and `owner` is a window handle or null.
+    unsafe {
+        WNetAddConnection3W(
+            ptr::with_exposed_provenance_mut(owner),
+            &raw const resource,
+            ptr::null(),
+            ptr::null(),
+            CONNECT_INTERACTIVE | CONNECT_PROMPT,
+        )
     }
 }
 
