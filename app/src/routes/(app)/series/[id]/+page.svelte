@@ -52,7 +52,7 @@
   import SeriesBand from "#lib/series/SeriesBand.svelte";
   import SeriesBar from "#lib/series/SeriesBar.svelte";
   import {
-    bookStandIns,
+    standInBook,
     standInOverview,
   } from "#lib/series/series-stand-ins.ts";
 
@@ -373,7 +373,7 @@
             {#key foundId}
               <SeriesBooks
                 books={screenshotMode.isOn
-                  ? books.list.items.map(bookStandIns(found.overview))
+                  ? books.list.items.map(standInBook)
                   : books.list.items}
                 bookCount={found.overview.bookCount}
                 readCount={found.overview.readCount}
