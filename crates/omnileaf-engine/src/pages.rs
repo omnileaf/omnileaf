@@ -189,9 +189,19 @@ impl Pages {
         if let Err(error) = library.start_reading(id, opened.page_count).await {
             tracing::debug!(error = %describe_error(&error), "save the page reached in the book read before this one");
         }
+        let seconds_per_page = library.seconds_per_page().await.unwrap_or_else(|error| {
+            tracing::debug!(error = %describe_error(&error), "learn how long a page takes to read");
+            None
+        });
         let start = start_page(found.reading, opened.page_count);
         self.read_ahead(&opened, start_index(found.reading, opened.page_count));
-        Ok(opened_book(to_open, &sizes, start, direction))
+        Ok(opened_book(
+            to_open,
+            &sizes,
+            start,
+            direction,
+            seconds_per_page,
+        ))
     }
 
     fn fill_sizes_later(
@@ -439,6 +449,7 @@ fn opened_book(
     sizes: &[Option<omnileaf_db::catalog::PageDimensions>],
     start_page: u32,
     reading_direction: Option<ReadingDirection>,
+    seconds_per_page: Option<u32>,
 ) -> OpenedBook {
     let pages = (0_u32..)
         .zip(sizes)
@@ -469,7 +480,7 @@ fn opened_book(
         reading_direction,
         bookmarked_pages: None,
         damage: None,
-        seconds_per_page: None,
+        seconds_per_page,
     }
 }
 

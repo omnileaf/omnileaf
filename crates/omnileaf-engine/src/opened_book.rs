@@ -27,7 +27,7 @@ pub struct OpenedBook {
     pub bookmarked_pages: Option<Vec<u32>>,
     /// Absent while the library doesn't check a book's pages against what its file promises.
     pub damage: Option<BookDamage>,
-    /// About how long a page takes to read, absent until the library times reading.
+    /// About how long a page takes to read, absent until the library has timed enough reading.
     pub seconds_per_page: Option<u32>,
 }
 
