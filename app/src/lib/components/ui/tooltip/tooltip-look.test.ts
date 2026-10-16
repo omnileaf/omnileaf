@@ -12,6 +12,7 @@ interface TooltipLook {
   readonly platform: Platform;
   readonly padding: string;
   readonly hasArrow: boolean;
+  readonly edge: string;
   readonly keyFill: string;
 }
 
@@ -20,30 +21,35 @@ const LOOKS: readonly TooltipLook[] = [
     platform: "linux",
     padding: "6px 12px",
     hasArrow: true,
+    edge: "0px",
     keyFill: "color-mix(in oklch, var(--background) 20%, transparent)",
   },
   {
     platform: "android",
     padding: "6px 12px",
     hasArrow: true,
+    edge: "0px",
     keyFill: "color-mix(in oklch, var(--background) 20%, transparent)",
   },
   {
     platform: "ios",
     padding: "6px 12px",
     hasArrow: true,
+    edge: "0px",
     keyFill: "color-mix(in oklch, var(--background) 20%, transparent)",
   },
   {
     platform: "macos",
     padding: "3px 7px",
     hasArrow: false,
+    edge: "1px",
     keyFill: "var(--muted)",
   },
   {
     platform: "windows",
     padding: "5px 8px",
     hasArrow: false,
+    edge: "1px",
     keyFill: "var(--muted)",
   },
 ];
@@ -63,7 +69,7 @@ afterEach(() => {
 });
 
 for (const look of LOOKS) {
-  test(`draws the ${look.platform} tooltip with its own padding, arrow and key chip`, async () => {
+  test(`draws the ${look.platform} tooltip with its own padding, edge, arrow and key chip`, async () => {
     document.documentElement.dataset.platform = look.platform;
     document.documentElement.dataset.theme = "light";
     const screen = await render(TooltipHarness, {
@@ -82,6 +88,7 @@ for (const look of LOOKS) {
     const chip = card?.querySelector("kbd");
 
     expect(card && getComputedStyle(card).padding).toBe(look.padding);
+    expect(card && getComputedStyle(card).borderTopWidth).toBe(look.edge);
     expect(
       arrow instanceof Element && arrow.getBoundingClientRect().width > 0,
     ).toBe(look.hasArrow);
