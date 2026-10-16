@@ -23,7 +23,7 @@ const SAVED_PANIC: CrashReportOffer = {
 const DIALOG_LOOK = {
   badge: 36,
   button: 40,
-  corner: "16px",
+  corner: "10px",
   inset: "20px",
   title: "17px",
   body: "14px",
