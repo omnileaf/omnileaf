@@ -597,6 +597,7 @@ export type SavedProblemReport = {
 };
 
 export type ScanProgress = { stage: "finding"; found: number } | { stage: "reading"; scanned: number; total: number };
+export type ScanProgress = { stage: "adding"; name: string; location: string } | { stage: "finding"; found: number } | { stage: "reading"; scanned: number; total: number };
 
 export type ScreenOrientation = "followDevice" | 
 /**  Upright on phones and turning with the device on tablets, as the rest of the app is laid out. */
