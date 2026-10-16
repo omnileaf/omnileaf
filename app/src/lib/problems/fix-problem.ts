@@ -1,5 +1,7 @@
 import { Channel } from "@tauri-apps/api/core";
 
+import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
 import {
   commands,
   type IpcError,
@@ -10,6 +12,10 @@ import { rescanFolderWithProgress } from "#lib/library/rescan-folder.ts";
 import type { Problem } from "./needs-attention.svelte";
 
 export async function fixProblem(problem: Problem): Promise<void> {
+  if (problem.kind === "lowSpace") {
+    await goto(resolve("/(app)/settings/storage"));
+    return;
+  }
   const fixed = await fixFolder(problem.missing);
   if (fixed.status === "error") {
     reportError(fixed.error);

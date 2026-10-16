@@ -1,9 +1,11 @@
-import { Unplug } from "@lucide/svelte";
+import { HardDrive, Unplug } from "@lucide/svelte";
 
 import type { FolderProblem, MissingFolder } from "#lib/ipc/bindings.ts";
 import type { Glyph } from "#lib/page/glyph.ts";
 import { m } from "#lib/paraglide/messages.js";
 import { folderStandIn } from "#lib/screenshot-mode/stand-ins.ts";
+import { formatBytes } from "#lib/storage/bytes.ts";
+import type { DeviceWord } from "#lib/storage/device.ts";
 
 import type { Problem } from "./needs-attention.svelte";
 
@@ -47,9 +49,34 @@ function missingFolderWording(
   };
 }
 
+const SPACE_LEFT = {
+  phone: m.attention_space_left_phone,
+  tablet: m.attention_space_left_tablet,
+  computer: m.attention_space_left,
+} satisfies Record<DeviceWord, (inputs: { size: string }) => string>;
+
+function lowSpaceWording(
+  freeBytes: number,
+  device: DeviceWord,
+): ProblemWording {
+  return {
+    icon: HardDrive,
+    title: m.attention_low_space_title(),
+    detail: SPACE_LEFT[device]({ size: formatBytes(freeBytes) }),
+    fix: m.attention_free_up_space(),
+  };
+}
+
+export interface WordingContext {
+  readonly usesStandIns: boolean;
+  readonly device: DeviceWord;
+}
+
 export function problemWording(
   problem: Problem,
-  usesStandIns: boolean,
+  { usesStandIns, device }: WordingContext,
 ): ProblemWording {
-  return missingFolderWording(problem.missing, usesStandIns);
+  return problem.kind === "lowSpace"
+    ? lowSpaceWording(problem.freeBytes, device)
+    : missingFolderWording(problem.missing, usesStandIns);
 }
