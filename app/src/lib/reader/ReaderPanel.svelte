@@ -26,6 +26,7 @@
     direction,
     quickSettings,
     secondsLeft,
+    isBlank,
     onSeek,
   }: {
     pages: readonly BookPage[];
@@ -36,6 +37,7 @@
     direction: ReadingDirection;
     quickSettings: Snippet;
     secondsLeft: number | undefined;
+    isBlank: boolean;
     onSeek: (index: number) => void;
   } = $props();
 
@@ -50,7 +52,7 @@
   )}
 >
   {#if isDragged}
-    <NearbyPages {pages} {shown} />
+    <NearbyPages {pages} {shown} {isBlank} />
   {/if}
   <div
     role="group"

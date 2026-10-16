@@ -1545,6 +1545,7 @@
     }
   ],
   "reader_time_left_short": "Less than a minute left in this chapter",
+  "reader_blank_page": "Page {page} of {count}",
   "reader_tap_zones": "Tap zones",
   "reader_tap_zones_edges": "Edges",
   "reader_tap_zones_l": "L shape",
