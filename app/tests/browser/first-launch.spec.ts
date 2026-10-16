@@ -469,8 +469,56 @@ for (const platform of ["android", "linux"] as const) {
 
       await expect(page.getByText(HOME_FOLDER.location)).toBeVisible();
     });
+
+    test("keeps the home folder in one card, its path in a code block over what it keeps", async ({
+      page,
+    }) => {
+      await goTo(page, HOME_HEADING, platform);
+      const card = page.getByRole("region", { name: "Home folder" });
+
+      await expect(card.locator("code")).toHaveText(HOME_FOLDER.location);
+      expect(await factsOf(card)).toEqual(HOME_FACTS);
+    });
   });
 }
+
+const HOME_FACTS = [
+  ["Keeps", "Progress, categories and backups"],
+  ["Also holds", "Books you download or import"],
+  ["Your comics", "Stay where they are"],
+];
+const IOS_HOME_FACTS = [
+  ["Keeps", "Backups, and books you add"],
+  ["In the app", "Progress and categories, kept safe"],
+  ["Your comics", "Stay where they are"],
+];
+const LONG_HOME_LOCATION =
+  "/mnt/nas/shared/reading/comics-and-books/Omnileaf library";
+
+function factsOf(card: Locator): Promise<string[][]> {
+  return card
+    .locator("dl > div")
+    .evaluateAll((rows) =>
+      rows.map((row) =>
+        [...row.children].map((cell) => cell.textContent.trim()),
+      ),
+    );
+}
+
+test("wraps a long home folder path inside its code block", async ({
+  page,
+}) => {
+  device.folders = [{ ...HOME_FOLDER, location: LONG_HOME_LOCATION }];
+  await goTo(page, HOME_HEADING);
+  const card = page.getByRole("region", { name: "Home folder" });
+
+  const cardBox = await boxOf(card);
+  const code = await boxOf(card.locator("code"));
+
+  expect(code.x + code.width).toBeLessThanOrEqual(cardBox.x + cardBox.width);
+  await expect(card.locator("code")).toHaveCSS("white-space", "pre-wrap");
+  await expect(card.locator("code")).toHaveCSS("overflow-wrap", "anywhere");
+});
 
 test.describe("the home folder on ios", () => {
   testOnlyInItsWebview("ios");
@@ -488,15 +536,16 @@ test.describe("the home folder on ios", () => {
     const location = "On My iPhone › Omnileaf";
 
     await goTo(page, IOS_HOME_HEADING, "ios");
+    const card = page.getByRole("region", { name: "In Files" });
 
-    await expect(page.getByText(location, { exact: true })).toBeVisible();
+    await expect(card.locator("code")).toHaveText(location);
     await expect(page.getByText(HOME_FOLDER.location)).toHaveCount(0);
     await expect(
       page.getByText(
-        "Omnileaf keeps your backups, and books you add, in its own folder in the Files app, so they're easy to copy or move. Your progress and categories stay safely inside the app.",
+        "Omnileaf keeps its own folder in the Files app, so your backups and books are easy to copy or move.",
       ),
     ).toBeVisible();
-    await expect(page.getByText(/daily backups/)).toHaveCount(0);
+    expect(await factsOf(card)).toEqual(IOS_HOME_FACTS);
   });
 
   test("leaves out the home folder's heading, as the board draws it", async ({
@@ -526,15 +575,16 @@ test.describe("the home folder on an iPad", () => {
     const location = "On My iPad › Omnileaf";
 
     await goTo(page, IOS_HOME_HEADING, "ios");
+    const card = page.getByRole("region", { name: "In Files" });
 
-    await expect(page.getByText(location, { exact: true })).toBeVisible();
+    await expect(card.locator("code")).toHaveText(location);
     await expect(page.getByText(HOME_FOLDER.location)).toHaveCount(0);
     await expect(
       page.getByText(
-        "Omnileaf keeps your backups, and books you add, in its own folder in the Files app, so they're easy to copy or move. Your progress and categories stay safely inside the app.",
+        "Omnileaf keeps its own folder in the Files app, so your backups and books are easy to copy or move.",
       ),
     ).toBeVisible();
-    await expect(page.getByText(/daily backups/)).toHaveCount(0);
+    expect(await factsOf(card)).toEqual(IOS_HOME_FACTS);
   });
 });
 
