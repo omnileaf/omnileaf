@@ -413,6 +413,57 @@ test("offers Edit details… in the series page's ⋯ menu, after Categories and
   ).toBeVisible();
 });
 
+test.describe("a file rated 18+", () => {
+  test.beforeEach(() => {
+    details = { ...FROM_FILES, isRatedAdult: true };
+  });
+
+  test("keeps the 18+ mark on and locked, and links to Settings › Library", async ({
+    page,
+  }) => {
+    const shown = await openEditor(page);
+    const mark = shown.getByRole("switch", { name: "Mark as 18+" });
+
+    await expect(mark).toBeChecked();
+    await expect(mark).toBeDisabled();
+    await expect(mark).toHaveAccessibleDescription(
+      "Rated 18+ in the file. To change that, turn off Use age ratings from book details in Settings › Library.",
+    );
+    await expect(
+      shown.getByRole("link", { name: "Settings › Library" }),
+    ).toHaveAttribute("href", "/settings/library/adult-content");
+  });
+
+  test.describe("while age ratings are off", () => {
+    test.use({
+      backend: {
+        ...EDITING_BACKEND,
+        libraryAdultContent: () => ({
+          treatment: "show",
+          countsAgeRatings: false,
+        }),
+      },
+    });
+
+    test("lets the 18+ mark alone decide", async ({ page }) => {
+      const shown = await openEditor(page);
+      const mark = shown.getByRole("switch", { name: "Mark as 18+" });
+
+      await expect(mark).not.toBeChecked();
+      await expect(mark).toBeEnabled();
+      await expect(mark).toHaveAccessibleDescription(
+        "The file rates it Adults Only 18+, but Use age ratings from book details is off in Settings › Library, so only this switch counts.",
+      );
+      await mark.click();
+      await save(shown);
+
+      await expect
+        .poll(() => sent.map(({ isMarkedAdult }) => isMarkedAdult))
+        .toEqual([true]);
+    });
+  });
+});
+
 test.describe("on Android", () => {
   test.use({
     backend: {
