@@ -7,13 +7,15 @@
 
   import type { FolderAdding } from "./folder-adding.svelte";
 
-  type Placement = "page-heading" | "empty-state" | "card-foot" | "below-list";
+  type Placement =
+    "page-heading" | "empty-state" | "card-foot" | "below-list" | "drop-area";
 
   const LOOKS = {
     "page-heading": "tinted",
     "empty-state": "primary",
     "card-foot": "outline",
     "below-list": "tinted",
+    "drop-area": "outline",
   } satisfies Record<Placement, ButtonLook>;
 
   const PLACEMENTS = {
@@ -25,6 +27,8 @@
       "gap-sm rounded-full border-foreground px-lg transition-control inline-full block-folders-button enabled:hover:tint-hover enabled:active:tint-pressed desktop:text-label",
     "below-list":
       "gap-sm rounded-full border border-accent px-lg text-accent inline-full min-block-touch-button touch:font-bold ios:rounded-ios-button desktop:rounded-control desktop:text-label desktop:min-block-pointer-button",
+    "drop-area":
+      "gap-sm rounded-control border-accent px-lg text-label transition-control min-block-pointer-target enabled:hover:tint-hover enabled:active:tint-pressed",
   } satisfies Record<Placement, string>;
 
   const ICON_SIZE = 16;
