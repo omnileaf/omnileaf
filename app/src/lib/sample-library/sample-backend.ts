@@ -96,6 +96,13 @@ const SAMPLE_LOG = [
 ];
 
 const SAMPLE_REPORT_CODE = "R-8M4T";
+const SAMPLE_DOWNLOADS = {
+  android: "Downloads",
+  ios: "Downloads",
+  macos: "Downloads",
+  windows: "Downloads",
+  linux: "~/Downloads",
+} as const satisfies Record<Platform, string>;
 const MISSING_FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000002";
 const MISSING_FOLDER_SERIES = new Set([3, 6, 9, 12, 15, 18]);
 const NAS_MANGA = { server: "nas", name: "nas/manga" };
@@ -1375,6 +1382,14 @@ export function sampleBackend(
     }),
     copyProblemReport: () => null,
     openProblemReportIssue: () => null,
+    saveProblemReport: () => ({
+      place:
+        scenario.platform === "ios"
+          ? { kind: "appFiles" }
+          : { kind: "folder", folder: SAMPLE_DOWNLOADS[scenario.platform] },
+      file: "omnileaf-report-2026-10-16.txt",
+    }),
+    showSavedProblemReport: () => null,
     offerSavedCrashReport: () => null,
     offerInterfaceErrorReport: (error) => ({
       details: error.message,

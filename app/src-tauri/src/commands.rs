@@ -8,9 +8,9 @@ use omnileaf_engine::{
     InterfaceError, LabelChanges, Library, LibraryCategory, LibraryError, LibraryFilter,
     LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView,
     LocalDay, MissingFolder, OpenedBook, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark,
-    ReadingSummary, ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage,
-    SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage,
-    SpellingSuggestion, UtcOffset,
+    ReadingSummary, ReadingWeek, ResourceRouter, SavedProblemReport, ScanProgress,
+    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
+    SeriesOverview, SeriesPage, SpellingSuggestion, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -116,6 +116,8 @@ macro_rules! app_commands {
             problem_report,
             copy_problem_report,
             open_problem_report_issue,
+            save_problem_report,
+            show_saved_problem_report,
             offer_saved_crash_report,
             offer_interface_error_report,
             send_crash_report,
@@ -886,6 +888,25 @@ async fn copy_problem_report(app: AppHandle) -> Result<(), IpcError> {
             .map_err(|error| IpcError::clipboard_unavailable(&error))
     })
     .await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn save_problem_report(
+    app: AppHandle,
+    today: LocalDay,
+) -> Result<SavedProblemReport, IpcError> {
+    let report = problem_reporting::shown_or_gathered(&app).await?;
+    off_the_runtime(move || problem_reporting::save(&app, &report, today)).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn show_saved_problem_report(app: AppHandle) -> Result<(), IpcError> {
+    let saved = app.state::<ShownProblemReport>().last_saved()?;
+    app.opener()
+        .reveal_item_in_dir(saved)
+        .map_err(|error| IpcError::file_manager_unavailable(&error))
 }
 
 #[tauri::command]
