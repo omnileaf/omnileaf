@@ -195,9 +195,7 @@
   />
 {/key}
 <ScreenshotModeNotice platform={data.appInfo.platform} />
-{#key language.resolved}
-  <LowSpaceNotice {storage} device={wordingContext.device} />
-{/key}
+<LowSpaceNotice {storage} device={wordingContext.device} />
 <AppKeyboardShortcuts
   isOpen={isShowingShortcuts}
   platform={data.appInfo.platform}

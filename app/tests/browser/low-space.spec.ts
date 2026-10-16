@@ -80,6 +80,25 @@ test("goes once clearing makes room again", async ({ page }) => {
   await expect(notice(page)).toHaveCount(0);
 });
 
+test("warns only once while the language changes", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (window.sessionStorage.getItem("seeded") === null) {
+      window.sessionStorage.setItem("seeded", "yes");
+      window.localStorage.setItem("omnileaf.language", "en-XA");
+    }
+  });
+  await page.goto("/settings/general/language");
+  const toasts = page.locator("[data-sonner-toast]");
+  await expect(toasts).toHaveCount(1);
+
+  await page.getByRole("radio", { name: "English", exact: true }).click();
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Language", exact: true }),
+  ).toBeVisible();
+  await expect(toasts).toHaveCount(1);
+});
+
 test("stays quiet while there's room", async ({ page }) => {
   used = { ...used, freeBytes: 41 * GIGABYTE, isLow: false };
   await page.goto("/");
