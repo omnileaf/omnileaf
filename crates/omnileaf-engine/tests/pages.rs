@@ -48,7 +48,7 @@ struct Reader {
     router: ResourceRouter,
     comics: ScratchFolder,
     cache: ScratchFolder,
-    _home: ScratchFolder,
+    home: ScratchFolder,
 }
 
 impl Reader {
@@ -112,7 +112,7 @@ impl Reader {
             router,
             comics,
             cache,
-            _home: home,
+            home,
         }
     }
 
@@ -139,6 +139,22 @@ impl Reader {
             .await
             .unwrap();
         listed.series.first().unwrap().id
+    }
+
+    async fn page_counts(&self) -> Vec<Option<u32>> {
+        let books = self
+            .library
+            .series_books(self.series().await, SeriesBookListing::default(), None)
+            .await
+            .unwrap();
+        books.books.iter().map(|book| book.page_count).collect()
+    }
+
+    fn forget_page_counts(&self) {
+        omnileaf_db::rusqlite::Connection::open(self.home.path().join("library.sqlite"))
+            .unwrap()
+            .execute("UPDATE book SET page_count = NULL", [])
+            .unwrap();
     }
 
     async fn book(&self) -> BookId {
@@ -222,6 +238,25 @@ fn gif_header(width: u16, height: u16) -> Vec<u8> {
 
 fn served(content_type: &'static str, body: Vec<u8>) -> Resource {
     Resource::Immutable { content_type, body }
+}
+
+#[tokio::test]
+async fn counts_a_book_s_pages_as_the_scan_reads_it() {
+    let reader = Reader::with_book("page-count-scanned").await;
+
+    let page_counts = reader.page_counts().await;
+
+    assert_eq!(page_counts, [Some(PAGES)]);
+}
+
+#[tokio::test]
+async fn counts_the_pages_of_a_book_found_before_page_counts_once_it_opens() {
+    let reader = Reader::with_book("page-count-opened").await;
+    reader.forget_page_counts();
+
+    reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(reader.page_counts().await, [Some(PAGES)]);
 }
 
 #[tokio::test]
