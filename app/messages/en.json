@@ -733,6 +733,13 @@
   "report_copied": "Report copied",
   "report_kept": "Code {code} · kept in Your reports",
   "report_copy_failed": "Couldn't copy the report. Try again.",
+  "report_save": "Save as a file",
+  "report_saved": "Report saved",
+  "report_saved_in": "In {folder}: {file}",
+  "report_saved_in_files_phone": "In Files › On My iPhone › Omnileaf › Reports",
+  "report_saved_in_files_tablet": "In Files › On My iPad › Omnileaf › Reports",
+  "report_save_failed": "Couldn't save the report. Try again.",
+  "report_folder_unavailable": "Couldn't open the folder. Try again.",
   "about_licences": "Open-source licences",
   "about_licences_hint": "The packages Omnileaf is built with",
   "licences_intro": [

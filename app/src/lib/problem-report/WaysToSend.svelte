@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CircleAlert, Copy, ExternalLink, Globe } from "@lucide/svelte";
+  import { CircleAlert, Copy, ExternalLink, Globe, Save } from "@lucide/svelte";
 
   import { Alert, AlertTitle } from "#lib/components/ui/alert/index.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
@@ -17,7 +17,7 @@
     readonly opensBrowser: boolean;
   }
 
-  const WAYS: readonly Way[] = [
+  const SHARING: readonly Way[] = [
     {
       way: "github",
       icon: Globe,
@@ -26,13 +26,23 @@
     },
     { way: "copy", icon: Copy, label: m.report_copy, opensBrowser: false },
   ];
+  const SAVING: Way = {
+    way: "save",
+    icon: Save,
+    label: m.report_save,
+    opensBrowser: false,
+  };
 
   const FAILURES = {
     github: m.about_browser_unavailable,
     copy: m.report_copy_failed,
+    save: m.report_save_failed,
   } satisfies Record<ShareWay, () => string>;
 
-  let { sharing }: { sharing: ReportSharing } = $props();
+  let { sharing, canSave }: { sharing: ReportSharing; canSave: boolean } =
+    $props();
+
+  const ways = $derived(canSave ? [...SHARING, SAVING] : SHARING);
 
   const headingId = $props.id();
 </script>
@@ -44,7 +54,7 @@
   <ul
     class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
   >
-    {#each WAYS as { way, icon: Icon, label, opensBrowser } (way)}
+    {#each ways as { way, icon: Icon, label, opensBrowser } (way)}
       <li>
         <Button
           type="button"
