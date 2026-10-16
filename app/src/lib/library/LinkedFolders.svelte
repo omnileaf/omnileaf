@@ -26,7 +26,7 @@
     status,
     usesStandIns,
     hint,
-    addPlacement = "section-heading",
+    addPlacement = "card",
     onShowBooks,
   }: {
     folders: LibraryFolders;
@@ -39,7 +39,7 @@
     usesStandIns: boolean;
     hint?: Snippet | undefined;
     onShowBooks?: (() => void) | undefined;
-    addPlacement?: "section-heading" | "below-list";
+    addPlacement?: "card" | "below-list";
   } = $props();
 
   const adding = new FolderAdding(
@@ -105,7 +105,7 @@
   <div
     class={isBelowList
       ? "contents"
-      : "flex flex-wrap items-center justify-between gap-md"}
+      : "flex flex-col overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"}
   >
     <h2
       id={headingId}
@@ -113,58 +113,56 @@
       bind:this={foldersHeading}
       class={isBelowList
         ? "sr-only"
-        : "text-footnote font-semibold text-muted touch:max-medium:ps-xs touch:max-medium:text-group-title touch:max-medium:font-bold touch:max-medium:text-foreground touch:medium:text-label"}
+        : "px-lg pbs-md pbe-xs text-small font-semibold"}
     >
       {m.library_settings_folders()}
     </h2>
+    {#if folders.list.kind === "loaded" && folders.list.linked.length > 0}
+      <ul
+        class={[
+          "divide-y divide-border",
+          isBelowList && "rounded-card border border-border bg-card",
+        ]}
+      >
+        {#each folders.list.linked as folder (folder.id)}
+          <li
+            bind:this={rows[folder.id]}
+            tabindex="-1"
+            class="focus-visible:rounded-card focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent"
+          >
+            <FolderRow {folder} isFoundEmpty={isFoundEmpty?.(folder) ?? false}>
+              {#snippet action()}
+                {@render rowAction?.(folder)}
+                <RowActionButton
+                  label={m.library_remove_folder_label({ name: folder.name })}
+                  tooltip={m.library_remove_folder()}
+                  onclick={(
+                    event: MouseEvent & { currentTarget: HTMLButtonElement },
+                  ) => {
+                    removalAsker = event.currentTarget;
+                    void confirmRemoval(folder);
+                  }}
+                >
+                  <FolderMinus size={ACTION_ICON_SIZE} aria-hidden="true" />
+                </RowActionButton>
+              {/snippet}
+            </FolderRow>
+            {@render rowNotice?.(folder)}
+          </li>
+        {/each}
+      </ul>
+    {/if}
     {#if !isBelowList}
-      <AddFolderButton
-        bind:element={addButton}
-        {adding}
-        placement="section-heading"
-      />
+      <div class="px-lg pbs-sm pbe-md">
+        <AddFolderButton
+          bind:element={addButton}
+          {adding}
+          placement="card-foot"
+        />
+      </div>
     {/if}
   </div>
-  {#if hint !== undefined && !isBelowList}
-    <p class="mbs-sm text-footnote text-muted touch:max-medium:px-xs">
-      {@render hint()}
-    </p>
-  {/if}
-  {#if folders.list.kind === "loaded" && folders.list.linked.length > 0}
-    <ul
-      class={[
-        "divide-y divide-border rounded-card border border-border bg-card",
-        !isBelowList && "mbs-sm",
-      ]}
-    >
-      {#each folders.list.linked as folder (folder.id)}
-        <li
-          bind:this={rows[folder.id]}
-          tabindex="-1"
-          class="focus-visible:rounded-card focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent"
-        >
-          <FolderRow {folder} isFoundEmpty={isFoundEmpty?.(folder) ?? false}>
-            {#snippet action()}
-              {@render rowAction?.(folder)}
-              <RowActionButton
-                label={m.library_remove_folder_label({ name: folder.name })}
-                tooltip={m.library_remove_folder()}
-                onclick={(
-                  event: MouseEvent & { currentTarget: HTMLButtonElement },
-                ) => {
-                  removalAsker = event.currentTarget;
-                  void confirmRemoval(folder);
-                }}
-              >
-                <FolderMinus size={ACTION_ICON_SIZE} aria-hidden="true" />
-              </RowActionButton>
-            {/snippet}
-          </FolderRow>
-          {@render rowNotice?.(folder)}
-        </li>
-      {/each}
-    </ul>
-  {:else if folders.list.kind === "failed"}
+  {#if folders.list.kind === "failed"}
     <p class="mbs-sm px-xs">{m.library_folders_failed()}</p>
   {/if}
   {@render status?.()}
