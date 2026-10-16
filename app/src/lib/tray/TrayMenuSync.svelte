@@ -65,11 +65,7 @@
       listenForLibraryChanges(() => void checkForBookToContinue(), reportError),
       listenFor(
         (handler) => events.readingSaved.listen(handler),
-        () => {
-          if (!hasBookToContinue) {
-            void checkForBookToContinue();
-          }
-        },
+        () => void checkForBookToContinue(),
         reportError,
       ),
     ];
