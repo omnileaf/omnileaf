@@ -6,6 +6,8 @@ import "../../../../app.css";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
 
+import { resolvedColour } from "../../../../../tests/components/resolved-colour";
+
 import TooltipHarness from "./TooltipHarness.svelte";
 
 interface TooltipLook {
@@ -54,15 +56,6 @@ const LOOKS: readonly TooltipLook[] = [
   },
 ];
 
-function fillOf(value: string): string {
-  const probe = document.createElement("span");
-  probe.style.backgroundColor = value;
-  document.body.append(probe);
-  const colour = getComputedStyle(probe).backgroundColor;
-  probe.remove();
-  return colour;
-}
-
 afterEach(() => {
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
@@ -93,7 +86,7 @@ for (const look of LOOKS) {
       arrow instanceof Element && arrow.getBoundingClientRect().width > 0,
     ).toBe(look.hasArrow);
     expect(chip && getComputedStyle(chip).backgroundColor).toBe(
-      fillOf(look.keyFill),
+      resolvedColour(look.keyFill, "backgroundColor"),
     );
   });
 }
