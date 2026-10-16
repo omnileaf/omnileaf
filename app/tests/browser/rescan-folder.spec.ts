@@ -5,7 +5,6 @@ import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
-  boxOf,
   DEFAULT_BACKEND,
   expect,
   sidewaysOverflow,
@@ -30,7 +29,6 @@ const SAMPLE_COMICS: WireFolder = {
   location: "/media/Sample Comics",
   isAvailable: true,
 };
-const MIN_GRAPHIC_CONTRAST = 3;
 const NO_CHANGES = {
   added: 0,
   updated: 0,
@@ -256,7 +254,7 @@ test.describe("with a folder that isn't available", () => {
 
     await expect(
       page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
-    ).toHaveText(["Sample Comics Not available /media/Sample Comics"]);
+    ).toHaveText(["Sample Comics Not available · /media/Sample Comics"]);
     await expect(rescanReport(page)).toHaveText(
       "Sample Comics isn't available. Its books stay in your library until it's back.",
     );
@@ -313,72 +311,15 @@ test.describe("with a folder found empty", () => {
     await expect(removeItsBooks(page)).toBeVisible();
   });
 
-  for (const colorScheme of ["light", "dark"] as const) {
-    test(`marks the folder's status with a dot that stands out in the ${colorScheme} theme`, async ({
-      page,
-    }) => {
-      await page.emulateMedia({ colorScheme });
-      await rescanSampleComics(page);
+  test("reads the folder's status before its place, on one line", async ({
+    page,
+  }) => {
+    await rescanSampleComics(page);
 
-      const status = sampleComicsRow(page).getByText("No books found");
-      await expect(status).toBeVisible();
-      const dot = status.locator("[aria-hidden='true']");
-      const box = await boxOf(dot);
-      const contrast = await dot.evaluate((element) => {
-        const canvas = document.createElement("canvas").getContext("2d", {
-          willReadFrequently: true,
-        });
-        const channels = (colour: string): number[] => {
-          if (canvas === null) {
-            throw new Error("the page can't draw on a canvas");
-          }
-          canvas.clearRect(0, 0, 1, 1);
-          canvas.fillStyle = colour;
-          canvas.fillRect(0, 0, 1, 1);
-          return [...canvas.getImageData(0, 0, 1, 1).data];
-        };
-        const isPainted = (colour: string): boolean =>
-          (channels(colour)[3] ?? 0) > 0;
-        const luminance = (colour: string): number => {
-          const [red = 0, green = 0, blue = 0] = channels(colour)
-            .slice(0, 3)
-            .map((channel) => {
-              const value = channel / 255;
-              return value <= 0.03928
-                ? value / 12.92
-                : ((value + 0.055) / 1.055) ** 2.4;
-            });
-          return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-        };
-        const ratio = (one: string, other: string): number => {
-          const [lighter, darker] = [luminance(one), luminance(other)].sort(
-            (a, b) => b - a,
-          );
-          return ((lighter ?? 0) + 0.05) / ((darker ?? 0) + 0.05);
-        };
-        const backgroundOf = (from: Element | null): string => {
-          for (let at = from; at !== null; at = at.parentElement) {
-            const colour = getComputedStyle(at).backgroundColor;
-            if (isPainted(colour)) {
-              return colour;
-            }
-          }
-          return "rgb(255, 255, 255)";
-        };
-        const pill = element.parentElement;
-        const dotColour = getComputedStyle(element).backgroundColor;
-        return {
-          pill: ratio(dotColour, backgroundOf(pill)),
-          surface: ratio(dotColour, backgroundOf(pill?.parentElement ?? null)),
-        };
-      });
-
-      expect(box.width).toBeGreaterThan(0);
-      expect(box.width).toBe(box.height);
-      expect(contrast.pill).toBeGreaterThanOrEqual(MIN_GRAPHIC_CONTRAST);
-      expect(contrast.surface).toBeGreaterThanOrEqual(MIN_GRAPHIC_CONTRAST);
-    });
-  }
+    await expect(
+      sampleComicsRow(page).getByText("No books found · /media/Sample Comics"),
+    ).toBeVisible();
+  });
 
   test("asks first, then removes the books, says how many went and moves to the folder's row", async ({
     page,
