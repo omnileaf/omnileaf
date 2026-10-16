@@ -214,7 +214,7 @@ test.describe("a series with one creator, a summary and tags", () => {
       card.getByRole("link", {
         name: "Continue Sample Series 04 v03 at page 14",
       }),
-    ).toBeVisible();
+    ).toHaveText("Continue");
     await expect(
       card.getByRole("progressbar", { name: "2 of 8 read" }),
     ).toHaveAttribute("aria-valuenow", "2");
@@ -430,8 +430,8 @@ test.describe("a series not started", () => {
       "Sample Series 04 v01 · 192 pages · unread",
     );
     await expect(
-      card.getByRole("link", { name: "Start with Sample Series 04 v01" }),
-    ).toBeVisible();
+      card.getByRole("link", { name: "Start Sample Series 04 v01" }),
+    ).toHaveText("Start Sample Series 04 v01");
   });
 });
 

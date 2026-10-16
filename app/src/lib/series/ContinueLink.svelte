@@ -20,15 +20,22 @@
       ? m.series_continue({ title })
       : m.series_continue_at({ title, page: reading.page });
   }
+
+  function shortLabel(book: SeriesBook): string {
+    return book.reading.state === "started"
+      ? m.series_continue_short()
+      : m.series_start({ title: book.title });
+  }
 </script>
 
 <a
   href={resolve("/read/[book]", { book: book.id })}
+  aria-label={goOn(book)}
   class={cn(
     "flex items-center justify-center gap-sm rounded-shadcn-control bg-accent px-lg text-center text-body font-medium text-on-accent transition-control max-inline-full min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control",
     className,
   )}
 >
   <Play size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
-  <span class="truncate">{goOn(book)}</span>
+  <span class="truncate">{shortLabel(book)}</span>
 </a>
