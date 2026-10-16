@@ -24,12 +24,14 @@
     settings,
     reading,
     seriesTitle,
+    canUseMyPace,
     onClose,
   }: {
     isOpen: boolean;
     settings: ReaderSettings;
     reading: SeriesReadingDirection;
     seriesTitle: string;
+    canUseMyPace: boolean;
     onClose: () => void;
   } = $props();
 
@@ -64,7 +66,12 @@
         </Button>
       </div>
       <div class="flex-1 overflow-y-auto p-lg">
-        <ReadingSettingsContent {settings} {reading} {seriesTitle} />
+        <ReadingSettingsContent
+          {settings}
+          {reading}
+          {seriesTitle}
+          {canUseMyPace}
+        />
       </div>
     </aside>
   {/if}
@@ -97,7 +104,12 @@
         </Button>
       </div>
       <div class="overflow-y-auto px-sheet-inline pbs-md pbe-sheet-bottom">
-        <ReadingSettingsContent {settings} {reading} {seriesTitle} />
+        <ReadingSettingsContent
+          {settings}
+          {reading}
+          {seriesTitle}
+          {canUseMyPace}
+        />
       </div>
     </DrawerContent>
   </Dialog.Root>
