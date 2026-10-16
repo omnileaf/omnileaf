@@ -18,8 +18,14 @@
     stepAfter,
   } from "#lib/first-launch/steps.ts";
   import WelcomeStep from "#lib/first-launch/WelcomeStep.svelte";
-  import { type AdultTreatment, commands } from "#lib/ipc/bindings.ts";
+  import {
+    type AdultTreatment,
+    commands,
+    type LibraryFolder,
+    type LibrarySeries,
+  } from "#lib/ipc/bindings.ts";
   import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
+  import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
@@ -65,6 +71,27 @@
     if (after !== undefined) {
       await goto("", { shallow: true, state: { firstLaunchStep: after } });
     }
+  }
+
+  const SHELF_SIZE = 5;
+
+  async function countSeriesIn(
+    folder: LibraryFolder,
+  ): Promise<number | undefined> {
+    const result = await commands.folderSeriesCount(
+      folder.id,
+      NEW_LIBRARY_LISTING.filter,
+    );
+    return result.status === "ok" ? result.data : undefined;
+  }
+
+  async function shelfSeries(): Promise<readonly LibrarySeries[]> {
+    const page = await commands.librarySeries(null, NEW_LIBRARY_LISTING);
+    return page.status === "ok"
+      ? page.data.series
+          .filter((series) => series.cover !== null && !series.isAdult)
+          .slice(0, SHELF_SIZE)
+      : [];
   }
 
   async function keepAdultTreatment(): Promise<void> {
@@ -160,7 +187,15 @@
           }}
         />
       {:else}
-        <ReadyStep onFinish={finish} />
+        <ReadyStep
+          platform={data.appInfo.platform}
+          {folders}
+          addFolder={addFolderWithProgress}
+          {notices}
+          {countSeriesIn}
+          {shelfSeries}
+          onFinish={finish}
+        />
       {/if}
     </main>
   </div>
