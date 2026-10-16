@@ -5,10 +5,10 @@ use specta::Type;
 
 use crate::library::DATABASE_FILE;
 
-const GIB: u64 = 1024 * 1024 * 1024;
+const GIGABYTE: u64 = 1_000_000_000;
 const DATABASE_SUFFIXES: [&str; 3] = ["", "-wal", "-shm"];
 
-pub const LOW_SPACE_BYTES: u64 = 2 * GIB;
+pub const LOW_SPACE_BYTES: u64 = 2 * GIGABYTE;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct VolumeSpace {
@@ -98,16 +98,18 @@ mod tests {
     fn volume(free_bytes: u64) -> VolumeSpace {
         VolumeSpace {
             free_bytes,
-            total_bytes: 128 * GIB,
+            total_bytes: 128 * GIGABYTE,
         }
     }
 
     #[test]
-    fn runs_low_below_two_gigabytes_free() {
+    fn runs_low_below_two_gigabytes_free_as_the_app_writes_them() {
+        let two_gigabytes = 2_000_000_000;
+
         assert_eq!(
             [
-                volume(LOW_SPACE_BYTES - 1).is_low(),
-                volume(LOW_SPACE_BYTES).is_low()
+                volume(two_gigabytes - 1).is_low(),
+                volume(two_gigabytes).is_low()
             ],
             [true, false]
         );
@@ -131,7 +133,7 @@ mod tests {
             covers_bytes: 210 * MIB,
         };
 
-        let used = StorageUse::new(caches, 30 * MIB, volume(GIB));
+        let used = StorageUse::new(caches, 30 * MIB, volume(GIGABYTE));
 
         assert_eq!(
             used,
@@ -139,8 +141,8 @@ mod tests {
                 omnileaf_bytes: 1440 * MIB,
                 cached_pages_bytes: 1200 * MIB,
                 covers_bytes: 210 * MIB,
-                free_bytes: GIB,
-                total_bytes: 128 * GIB,
+                free_bytes: GIGABYTE,
+                total_bytes: 128 * GIGABYTE,
                 is_low: true,
             }
         );
