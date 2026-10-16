@@ -24,6 +24,7 @@ mod runtime_config;
 mod scheduled_rescans;
 mod screen_orientation;
 mod share_sign_in;
+mod storage;
 mod system_bars;
 mod system_sign_in;
 #[cfg(target_os = "android")]
@@ -48,6 +49,7 @@ use crate::{
     library_problem::{LibraryAtLaunch, LibraryProblem},
     runtime_config::RuntimeConfig,
     scheduled_rescans::ScheduledRescans,
+    storage::StoragePlaces,
 };
 
 const CACHE_FOLDER: &str = "cache";
@@ -120,6 +122,9 @@ pub fn run() {
 fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>> {
     let data_dir = config.data_dir.as_deref();
     let folders = library_folders(app, data_dir)?;
+    app.manage(StoragePlaces {
+        database_folder: folders.database.clone(),
+    });
     let library = tauri::async_runtime::block_on(Library::open(folders, SystemClock))?;
     #[cfg(target_os = "android")]
     let library = tree_storage::read_trees(app, library, data_dir);
