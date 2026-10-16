@@ -13,11 +13,11 @@
   import {
     changesBetween,
     type DetailDraft,
-    editsOf,
   } from "#lib/series/detail-edits.ts";
   import {
     type DetailsBeingEdited,
     detailsToEdit,
+    saveDetails,
   } from "#lib/series/details-to-edit.ts";
   import DiscardDetailsDialog from "#lib/series/DiscardDetailsDialog.svelte";
   import EditDetailsFields from "#lib/series/EditDetailsFields.svelte";
@@ -108,12 +108,7 @@
     if (series === undefined || editing === undefined) {
       return;
     }
-    const saved = await commands.editSeriesDetails(
-      series.id,
-      editsOf(editing.details, editing.draft),
-    );
-    if (saved.status !== "ok") {
-      reportError(saved.error);
+    if (!(await saveDetails(series.id, editing, notices))) {
       return;
     }
     isLeavingForGood = true;
