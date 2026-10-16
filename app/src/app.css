@@ -304,6 +304,9 @@
   --spacing-step-dialog-block: 1.75rem;
   --spacing-promise-tile: 2.5rem;
   --spacing-promise-gap: 0.875rem;
+  --spacing-home-card: 0.875rem;
+  --spacing-home-path: 0.625rem;
+  --spacing-home-term: 5.5rem;
   --spacing-long-button: 3.5rem;
   --spacing-folders-button: 2.75rem;
   --spacing-first-launch-card: 37.5rem;
@@ -1154,6 +1157,13 @@
 
 @utility grid-cols-setting-grid {
   grid-template-columns: minmax(0, 1fr) auto;
+}
+
+@utility grid-cols-home-fact {
+  grid-template-columns: minmax(var(--spacing-home-term), max-content) minmax(
+      0,
+      1fr
+    );
 }
 
 @utility grid-cols-details {
