@@ -264,7 +264,7 @@ export type FolderPage = {
 	next: string & { readonly __brand: "FolderCursor" } | null,
 };
 
-export type FolderProblem = "missing" | "driveDisconnected" | "lostAccess" | "needsSignIn";
+export type FolderProblem = { kind: "missing" } | { kind: "driveDisconnected" } | { kind: "lostAccess" } | { kind: "needsSignIn"; share: NetworkShare } | { kind: "needsMounting"; share: NetworkShare } | { kind: "shareUnreachable"; share: NetworkShare };
 
 export type FolderRescan = {
 	id: string & { readonly __brand: "FolderId" },
@@ -463,6 +463,11 @@ export type MissingFolder = {
 	problem: FolderProblem,
 	hiddenSeries: number,
 	isShownAnyway: boolean,
+};
+
+export type NetworkShare = {
+	server: string,
+	name: string,
 };
 
 export type OnCovers = {
