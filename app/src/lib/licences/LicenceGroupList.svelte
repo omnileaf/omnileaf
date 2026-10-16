@@ -11,18 +11,8 @@
 
   const PREVIEW_SIZE = 3;
 
-  const HEADS = {
-    phone: "justify-between px-xs",
-    pane: "gap-sm touch:text-label",
-  } satisfies Record<AboutLook, string>;
-
-  const NAMES = {
-    phone: "text-muted",
-    pane: "text-foreground",
-  } satisfies Record<AboutLook, string>;
-
   const ROWS = {
-    phone: "gap-sm ps-lg pe-md min-block-package-row",
+    phone: "gap-sm ps-lg pe-md min-block-touch-target",
     pane: "gap-md ps-list-row pe-md text-label min-block-touch-target desktop:min-block-settings-row",
   } satisfies Record<AboutLook, string>;
 
@@ -45,16 +35,18 @@
   }
 </script>
 
-<section aria-labelledby={headingId} class="flex flex-col gap-sm">
-  <div class={["flex items-baseline text-footnote text-muted", HEADS[look]]}>
-    <h2 id={headingId} translate="no" class={["font-semibold", NAMES[look]]}>
-      {group.name}
-    </h2>
-    <span>{m.licences_package_count({ count: group.packages.length })}</span>
-  </div>
-  <ul
-    class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card"
+<section
+  aria-labelledby={headingId}
+  class="flex flex-col overflow-hidden rounded-list border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
+>
+  <h2
+    id={headingId}
+    translate="no"
+    class="px-lg pbs-md pbe-xs text-small font-semibold"
   >
+    {group.name}
+  </h2>
+  <ul class="divide-y divide-border">
     {#each shown as licensed, index (licensed.key)}
       <li>
         <a
@@ -69,9 +61,6 @@
         >
           <span class="flex-1 truncate font-medium">
             <bdi translate="no">{licensed.name}</bdi>
-          </span>
-          <span class="text-footnote text-muted tabular-nums">
-            {licensed.version}
           </span>
           <ChevronRight
             size={ROW_ICON_SIZES[look]}
