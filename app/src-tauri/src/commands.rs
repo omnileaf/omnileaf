@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 #[cfg(debug_assertions)]
 use omnileaf_engine::BuildProfile;
@@ -41,6 +43,7 @@ macro_rules! app_commands {
             app_info,
             library_problem,
             add_library_folder,
+            link_library_folder,
             match_system_bars,
             watch_back_swipes,
             allow_back_swipe,
@@ -185,6 +188,18 @@ async fn add_library_folder(
     #[cfg(target_os = "macos")]
     crate::folder_share::remember_shares(&library).await;
     Ok(Some(added))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn link_library_folder(
+    library: State<'_, Library>,
+    folder: PathBuf,
+    on_progress: Channel<ScanProgress>,
+) -> Result<FolderScan, IpcError> {
+    Ok(library
+        .add_folder(folder, reporting_to(on_progress))
+        .await?)
 }
 
 #[tauri::command]
