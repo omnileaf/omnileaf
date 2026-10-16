@@ -123,6 +123,21 @@ impl DiskCache {
         }
     }
 
+    pub fn trim_oldest(&self, bytes: u64) -> u64 {
+        let (evicted, freed) = {
+            let mut recency = self.recency();
+            let before = recency.stored_bytes();
+            let evicted = recency.evict_beyond(before.saturating_sub(bytes));
+            (evicted, before.saturating_sub(recency.stored_bytes()))
+        };
+        self.remove_files(&evicted);
+        freed
+    }
+
+    pub fn clear(&self) -> u64 {
+        self.trim_oldest(u64::MAX)
+    }
+
     #[must_use]
     pub fn stored_bytes(&self) -> u64 {
         self.recency().stored_bytes()
