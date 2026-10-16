@@ -29,6 +29,16 @@
     dateAdded: BY_TIME,
     lastRead: BY_TIME,
     lastUpdated: BY_TIME,
+    unreadCount: [
+      {
+        label: m.library_sort_fewest_unread_first,
+        change: m.library_sort_fewest_unread_first_change,
+      },
+      {
+        label: m.library_sort_most_unread_first,
+        change: m.library_sort_most_unread_first_change,
+      },
+    ],
   } satisfies Record<LibrarySort["by"], readonly [Wording, Wording]>;
 
   const LOOKS = {
