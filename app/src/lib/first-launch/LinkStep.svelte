@@ -12,6 +12,7 @@
   import { atEveryWidth, type WordingByWidth } from "#lib/page/wording.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import PickFolderSheet from "./PickFolderSheet.svelte";
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
   import StepBadge from "./StepBadge.svelte";
@@ -42,6 +43,27 @@
   $effect(() => {
     void counts.load(linked);
   });
+
+  let isExplainingPicker = $state(false);
+  let hasExplainedPicker = false;
+  let answerPickerSheet: ((goesOn: boolean) => void) | undefined;
+
+  function explainPickerFirst(): Promise<boolean> {
+    if (platform !== "android" || hasExplainedPicker) {
+      return Promise.resolve(true);
+    }
+    isExplainingPicker = true;
+    return new Promise((resolve) => {
+      answerPickerSheet = resolve;
+    });
+  }
+
+  function closePickerSheet(goesOn: boolean): void {
+    isExplainingPicker = false;
+    hasExplainedPicker ||= goesOn;
+    answerPickerSheet?.(goesOn);
+    answerPickerSheet = undefined;
+  }
 
   const HINT = {
     android: {
@@ -74,6 +96,7 @@
     <LinkedFolders
       {folders}
       {addFolder}
+      mayPick={explainPickerFirst}
       {notices}
       usesStandIns={screenshotMode.isOn}
       addPlacement="below-list"
@@ -89,6 +112,15 @@
       {/snippet}
     </LinkedFolders>
   </div>
+  <PickFolderSheet
+    isOpen={isExplainingPicker}
+    onContinue={() => {
+      closePickerSheet(true);
+    }}
+    onNotNow={() => {
+      closePickerSheet(false);
+    }}
+  />
   {#snippet actions()}
     {#if linked.length > 0}
       <StepButton kind="primary" onclick={onNext}>
