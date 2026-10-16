@@ -21,10 +21,7 @@ const FOLDER_TITLES = {
   needsSignIn: m.missing_sign_in_title,
   needsMounting: m.missing_mount_title,
   shareUnreachable: m.missing_access_title,
-} satisfies Record<
-  FolderProblem["kind"],
-  (inputs: { name: string }) => string
->;
+} satisfies Record<FolderProblem["kind"], (inputs: { name: string }) => string>;
 
 const FOLDER_FIXES = {
   missing: m.attention_find,
