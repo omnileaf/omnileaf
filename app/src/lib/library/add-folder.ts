@@ -8,3 +8,8 @@ export type AddFolder = (
 
 export const addFolderWithProgress: AddFolder = (onProgress) =>
   commands.addLibraryFolder(new Channel(onProgress));
+
+export function linkFolderWithProgress(folder: string): AddFolder {
+  return (onProgress) =>
+    commands.linkLibraryFolder(folder, new Channel(onProgress));
+}

@@ -15,6 +15,7 @@ export const commands = {
 	unsupportedBooks: number,
 	unreadableFolders: number,
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder", { onProgress })),
+	linkLibraryFolder: (folder: string, onProgress: Channel<ScanProgress>) => typedError<FolderScan, IpcError>(__TAURI_INVOKE("link_library_folder", { folder, onProgress })),
 	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
 	watchBackSwipes: (onSwipe: Channel<BackSwipe>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_back_swipes", { onSwipe })),
 	allowBackSwipe: (edge: "left" | "right" | null) => typedError<null, IpcError>(__TAURI_INVOKE("allow_back_swipe", { edge })),

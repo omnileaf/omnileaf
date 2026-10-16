@@ -785,6 +785,12 @@ export function sampleBackend(
     }),
     libraryProblem: () => null,
     addLibraryFolder: () => null,
+    linkLibraryFolder: () => {
+      throw failure(
+        "folderUnreadable",
+        "the sample library links no folders of its own",
+      );
+    },
     matchSystemBars: () => null,
     watchBackSwipes: () => null,
     allowBackSwipe: () => null,
