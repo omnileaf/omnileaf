@@ -46,7 +46,8 @@ pub trait ShareLookup: Send + Sync {
 }
 
 impl ShareAddress {
-    pub(crate) fn new(address: String) -> Self {
+    #[must_use]
+    pub fn new(address: String) -> Self {
         Self(address)
     }
 

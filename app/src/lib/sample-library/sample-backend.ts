@@ -777,6 +777,11 @@ export function sampleBackend(
       return null;
     },
     showSeriesInFolder: () => null,
+    signInToLibraryFolder: () => {
+      missingFolder.isFound = true;
+      events.emit("library-changed", null);
+      return "signedIn";
+    },
     relocateLibraryFolder: (id) => {
       missingFolder.isFound = true;
       events.emit("library-changed", null);

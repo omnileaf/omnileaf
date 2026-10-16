@@ -22,7 +22,9 @@ mod put_away;
 mod runtime_config;
 mod scheduled_rescans;
 mod screen_orientation;
+mod share_sign_in;
 mod system_bars;
+mod system_sign_in;
 #[cfg(target_os = "android")]
 mod tree_storage;
 mod version_details;
