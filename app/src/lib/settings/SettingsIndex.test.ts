@@ -25,7 +25,7 @@ test("groups the pages under App, Reading and Data and privacy, as the Settings 
   expect([named("App"), named("Reading"), named("Data and privacy")]).toEqual([
     ["General", "Appearance"],
     ["Library", "Reader"],
-    ["Privacy and security", "Advanced"],
+    ["Privacy and security", "Storage", "Advanced"],
   ]);
 });
 

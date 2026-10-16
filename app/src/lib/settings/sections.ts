@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  HardDrive,
   Info,
   Settings,
   ShieldCheck,
@@ -17,6 +18,7 @@ export type SettingsRoute =
   | "/(app)/settings/appearance"
   | "/(app)/settings/reading"
   | "/(app)/settings/privacy"
+  | "/(app)/settings/storage"
   | "/(app)/settings/general"
   | "/(app)/settings/advanced"
   | "/(app)/settings/about";
@@ -113,6 +115,13 @@ const PRIVACY: SettingsSection = {
   chip: "blue",
 };
 
+const STORAGE: SettingsSection = {
+  route: "/(app)/settings/storage",
+  label: m.storage_title,
+  icon: HardDrive,
+  chip: "grey",
+};
+
 const ADVANCED: SettingsSection = {
   route: "/(app)/settings/advanced",
   label: m.advanced_title,
@@ -130,7 +139,7 @@ const ABOUT: SettingsSection = {
 export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
   { heading: m.settings_group_app, sections: [GENERAL, APPEARANCE] },
   { heading: m.settings_group_reading, sections: [LIBRARY, READING] },
-  { heading: m.settings_group_data, sections: [PRIVACY, ADVANCED] },
+  { heading: m.settings_group_data, sections: [PRIVACY, STORAGE, ADVANCED] },
   { sections: [ABOUT] },
 ];
 
