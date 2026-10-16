@@ -71,7 +71,7 @@
               add();
             }
           }}
-          class="rounded-shadcn-control border border-field bg-input-fill px-md text-body shadow-raised block-pointer-button touch:block-touch-target"
+          class="flex-none rounded-shadcn-control border border-field bg-input-fill px-md text-label shadow-raised block-pointer-button touch:text-body touch:block-touch-target"
         />
         <div class="flex gap-sm">
           <Button
