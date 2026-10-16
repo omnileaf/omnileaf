@@ -33,7 +33,7 @@ macro_rules! series_at_stage {
             "SELECT series.id AS id, series.title, series.title_key, series.book_count, series.added_at_ms,
                 series.last_read_at_ms, series.updated_at_ms,
                 cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
-                series.book_count - series.read_count AS unread_count
+                series.unread_count
             FROM series ",
             $crate::catalog::cover::join_series_cover!(),
             " WHERE series.reading_stage = ",
@@ -169,7 +169,8 @@ fn place_after(
         | Position::Root { .. }
         | Position::LastRead { .. }
         | Position::Session { .. }
-        | Position::LastUpdated { .. } => Err(Error::CursorForAnotherList),
+        | Position::LastUpdated { .. }
+        | Position::UnreadCount { .. } => Err(Error::CursorForAnotherList),
     }
 }
 
