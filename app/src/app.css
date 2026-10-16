@@ -722,7 +722,6 @@
   --radius-ios-segment: 0.5625rem;
   --radius-ios-segment-item: 0.4375rem;
   --radius-list: 0.625rem;
-  --radius-panel: 1rem;
   --radius-toast-action: 0.25rem;
   --radius-crash-screen-button: 0.875rem;
   --radius-dialog: 1rem;
@@ -751,8 +750,6 @@
     0 3px 8px rgb(0 0 0 / 0.12), 0 3px 1px rgb(0 0 0 / 0.04);
   --shadow-raised: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-floating: 0 8px 28px rgb(0 0 0 / 0.16), 0 1px 3px rgb(0 0 0 / 0.08);
-  --shadow-dialog:
-    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-card: 0 24px 60px rgb(0 0 0 / 0.12);
   --shadow-popover:
     0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -997,6 +994,7 @@
   --color-windows-control: var(--windows-control);
   --color-windows-stroke: var(--windows-stroke);
   --color-windows-stroke-strong: var(--windows-stroke-strong);
+  --color-windows-mica: var(--windows-mica);
   --color-select: var(--select-fill);
   --color-select-edge: var(--select-edge);
   --color-ios-material: var(--ios-material);
@@ -1028,6 +1026,8 @@
   --radius-menu: var(--menu-radius);
   --radius-popover: var(--popover-radius);
   --radius-select: var(--select-radius);
+  --radius-panel: var(--dialog-radius);
+  --shadow-dialog: var(--dialog-shadow);
   --radius-sidebar-row: var(--sidebar-row-radius);
   --spacing-sidebar-row: var(--sidebar-row-height);
   --radius-shadcn-control: var(--radius-md);
@@ -1125,7 +1125,8 @@
   --color-sample-cover: var(--sample-cover);
   --color-sample-cover-art: var(--sample-cover-art);
   --color-sample-cover-ink: var(--sample-cover-ink);
-  --color-dialog-edge: var(--border);
+  --color-dialog: var(--dialog-surface);
+  --color-dialog-edge: var(--dialog-edge);
   --color-control-edge: var(--control-edge);
   --color-radio-edge-on: var(--radio-edge-on);
   --color-checkbox-off: var(--checkbox-off);

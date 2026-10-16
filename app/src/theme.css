@@ -312,6 +312,10 @@
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
   --focus-ring-color: var(--primary);
+  --dialog-surface: var(--background);
+  --dialog-edge: var(--border);
+  --dialog-radius: var(--radius-lg);
+  --dialog-shadow: var(--shadow-lg);
   --android-container-low: color-mix(
     in oklch,
     var(--foreground) 4%,
@@ -376,6 +380,9 @@
   --checkbox-off: transparent;
   --focus-ring-width: 3px;
   --focus-ring-color: var(--foreground);
+  --dialog-surface: var(--android-container-high);
+  --dialog-edge: transparent;
+  --dialog-radius: var(--radius-android-xl);
   --hover-fill: color-mix(
     in oklab,
     currentColor var(--state-hover),
@@ -446,6 +453,8 @@
   --focus-ring-width: 3px;
   --focus-ring-offset: 0px;
   --focus-ring-color: color-mix(in oklch, var(--primary) 50%, transparent);
+  --dialog-radius: var(--radius-macos-panel);
+  --dialog-shadow: var(--shadow-macos-menu);
 }
 
 [data-platform="windows"],
@@ -485,4 +494,7 @@
   --switch-thumb-on: var(--primary-foreground);
   --focus-ring-offset: 1px;
   --focus-ring-color: var(--foreground);
+  --dialog-edge: var(--windows-stroke);
+  --dialog-radius: var(--radius-windows-overlay);
+  --dialog-shadow: var(--shadow-windows-flyout);
 }
