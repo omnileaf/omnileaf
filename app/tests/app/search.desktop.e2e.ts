@@ -5,7 +5,7 @@ import { xpath } from "./webdriver.ts";
 
 const SERIES_FOUND = xpath("//ul[@aria-label='Series found']/li");
 const QUICK_OPEN_SERIES = xpath(
-  "//*[@aria-modal='true'][@data-state='open']//*[@role='group'][@aria-labelledby=//*[normalize-space()='Series']/@id]//*[@role='option']",
+  "//*[@aria-modal='true'][@data-state='open']//*[@role='group'][@aria-labelledby=//*[normalize-space()='Series and books']/@id]//*[@role='option']",
 );
 
 /** Types into the library header's search field the way a keystroke would, since the driver has no keyboard. */
