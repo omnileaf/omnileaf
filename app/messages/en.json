@@ -1676,6 +1676,8 @@
   "reader_jump_file_missing": "File missing: moved or deleted",
   "reader_jump_or_close": "Jump to a book, or close it",
   "reader_shortcuts_typing": "While you type in a field, letter keys such as G type; Esc there clears the text first, then closes the panel.",
+  "reader_shortcuts_pause_auto_scroll": "Pause or resume auto scroll",
+  "reader_shortcuts_auto_scroll": "While auto scroll runs, Space pauses and resumes it instead of turning the page.",
   "reader_shortcuts_turning": "Turning pages",
   "reader_shortcuts_reader": "Reader",
   "reader_shortcuts_zoom": "Zoom",
