@@ -95,6 +95,7 @@ const SAMPLE_LOG = [
   "INFO omnileaf_engine::rescan: Series 68 gained a book",
 ];
 
+const SAMPLE_REPORT_CODE = "R-8M4T";
 const MISSING_FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000002";
 const MISSING_FOLDER_SERIES = new Set([3, 6, 9, 12, 15, 18]);
 const NAS_MANGA = { server: "nas", name: "nas/manga" };
@@ -1367,10 +1368,13 @@ export function sampleBackend(
     copyVersionDetails: () => null,
     openProjectLink: () => null,
     problemReport: () => ({
+      code: SAMPLE_REPORT_CODE,
       version: "0.1.0",
       system: SAMPLE_SYSTEMS[scenario.platform],
       log: SAMPLE_LOG,
     }),
+    copyProblemReport: () => null,
+    openProblemReportIssue: () => null,
     offerSavedCrashReport: () => null,
     offerInterfaceErrorReport: (error) => ({
       details: error.message,

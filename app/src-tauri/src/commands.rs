@@ -28,6 +28,7 @@ use crate::{
     ipc_error::IpcError,
     library_events::{LibraryChanged, ReadingSaved},
     library_problem::{LibraryAtLaunch, LibraryProblem},
+    problem_reporting::{self, ShownProblemReport},
     screen_orientation::{self, ScreenOrientation},
     share_sign_in::{self, SignInOutcome},
     system_bars::{self, Theme, ThemePreference},
@@ -113,6 +114,8 @@ macro_rules! app_commands {
             copy_version_details,
             open_project_link,
             problem_report,
+            copy_problem_report,
+            open_problem_report_issue,
             offer_saved_crash_report,
             offer_interface_error_report,
             send_crash_report,
@@ -869,16 +872,29 @@ async fn open_project_link(app: AppHandle, link: ProjectLink) -> Result<(), IpcE
 #[tauri::command]
 #[specta::specta]
 async fn problem_report(app: AppHandle) -> Result<ProblemReportPreview, IpcError> {
-    let stand_ins = match app.try_state::<Library>() {
-        Some(library) => library.log_stand_ins().await?,
-        None => LogStandIns::default(),
-    };
+    let report = problem_reporting::gather(&app).await?;
+    Ok(app.state::<ShownProblemReport>().show(report))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn copy_problem_report(app: AppHandle) -> Result<(), IpcError> {
+    let report = problem_reporting::shown_or_gathered(&app).await?;
     off_the_runtime(move || {
-        let details = version_details::current(app.state::<Core>().app_info().clone());
-        let logged = app.state::<RecentLog>().lines();
-        Ok(ProblemReport::new(details, &logged, &stand_ins).preview())
+        app.clipboard()
+            .write_text(report.to_string())
+            .map_err(|error| IpcError::clipboard_unavailable(&error))
     })
     .await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn open_problem_report_issue(app: AppHandle) -> Result<(), IpcError> {
+    let report = problem_reporting::shown_or_gathered(&app).await?;
+    app.opener()
+        .open_url(report.new_issue_url(), None::<&str>)
+        .map_err(|error| IpcError::browser_unavailable(&error))
 }
 
 #[tauri::command]
