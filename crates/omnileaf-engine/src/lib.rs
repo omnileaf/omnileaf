@@ -51,6 +51,7 @@ mod rescan_schedule;
 mod resource;
 mod resource_router;
 mod scan;
+mod series_details;
 mod series_overview;
 mod utc_offset;
 mod version_details;
@@ -117,6 +118,9 @@ pub use rescan_conditions::{
 pub use resource::Resource;
 pub use resource_router::{ResourceRouter, ResourceRouterError};
 pub use scan::{FolderScan, ScanProgress};
+pub use series_details::{
+    DetailEdits, EditedPeople, EditedSummary, EditedTags, EditedTitle, SeriesDetails, SeriesPerson,
+};
 pub use series_overview::{
     CreatorRole, CreatorSeries, RelatedReason, RelatedSeries, SeriesCreator, SeriesOverview,
 };
