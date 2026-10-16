@@ -8,7 +8,10 @@ use serde::Serialize;
 use specta::Type;
 use tokio::task::spawn_blocking;
 
-use crate::LibraryFolder;
+use crate::{
+    LibraryFolder, NetworkShare, ShareLookup, ShareSignIn, UnreachableShare,
+    network_share::share_of_tree,
+};
 
 /// Where removable drives are mounted, with how many names under it lead to one drive.
 const DRIVE_MOUNTS: [(&[&str], usize); 4] = [
@@ -27,13 +30,25 @@ pub struct MissingFolder {
     pub is_shown_anyway: bool,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(tag = "kind", rename_all = "camelCase")]
 pub enum FolderProblem {
     Missing,
     DriveDisconnected,
     LostAccess,
-    NeedsSignIn,
+    NeedsSignIn { share: NetworkShare },
+    NeedsMounting { share: NetworkShare },
+    ShareUnreachable { share: NetworkShare },
+}
+
+impl From<UnreachableShare> for FolderProblem {
+    fn from(unreachable: UnreachableShare) -> Self {
+        let share = unreachable.share;
+        match unreachable.sign_in {
+            ShareSignIn::System(_) => Self::NeedsSignIn { share },
+            ShareSignIn::MountedBySystem => Self::NeedsMounting { share },
+        }
+    }
 }
 
 impl MissingFolder {
@@ -48,10 +63,16 @@ impl MissingFolder {
     }
 }
 
-pub(crate) async fn problem_of(locator: &RootLocator) -> FolderProblem {
+pub(crate) async fn problem_of(locator: &RootLocator, shares: &impl ShareLookup) -> FolderProblem {
     match locator {
-        RootLocator::AndroidTree(_) => FolderProblem::LostAccess,
+        RootLocator::AndroidTree(tree) => share_of_tree(tree)
+            .map_or(FolderProblem::LostAccess, |share| {
+                FolderProblem::ShareUnreachable { share }
+            }),
         RootLocator::Path(path) | RootLocator::AppleBookmark { path, .. } => {
+            if let Some(unreachable) = shares.unreachable_share(path).await {
+                return FolderProblem::from(unreachable);
+            }
             let Some(drive) = drive_of(path) else {
                 return FolderProblem::Missing;
             };
@@ -107,7 +128,127 @@ pub(crate) fn drive_of(folder: &Path) -> Option<PathBuf> {
 mod tests {
     use std::path::{Path, PathBuf};
 
+    use omnileaf_db::catalog::{AndroidTree, TreeUri};
+
+    use crate::ShareAddress;
+
     use super::*;
+
+    struct NoShares;
+
+    impl ShareLookup for NoShares {
+        fn unreachable_share(
+            &self,
+            _folder: &Path,
+        ) -> impl Future<Output = Option<UnreachableShare>> + Send {
+            std::future::ready(None)
+        }
+    }
+
+    struct UnreachableAt(ShareSignIn);
+
+    impl ShareLookup for UnreachableAt {
+        fn unreachable_share(
+            &self,
+            _folder: &Path,
+        ) -> impl Future<Output = Option<UnreachableShare>> + Send {
+            std::future::ready(Some(UnreachableShare {
+                share: nas_manga(),
+                sign_in: self.0.clone(),
+            }))
+        }
+    }
+
+    fn nas_manga() -> NetworkShare {
+        NetworkShare {
+            server: "nas".to_owned(),
+            name: "nas/manga".to_owned(),
+        }
+    }
+
+    fn tree(authority: &str, place: &str) -> RootLocator {
+        RootLocator::AndroidTree(
+            AndroidTree::new(
+                TreeUri::parse(format!("content://{authority}/tree/manga")).unwrap(),
+                "manga".to_owned(),
+                place.to_owned(),
+            )
+            .unwrap(),
+        )
+    }
+
+    fn folder() -> RootLocator {
+        RootLocator::Path(PathBuf::from("/home/reader/Manga"))
+    }
+
+    #[tokio::test]
+    async fn asks_to_sign_in_to_an_unreachable_share_the_system_signs_in_to() {
+        let address = ShareAddress::new("smb://nas.test/manga".to_owned());
+
+        let problem = problem_of(&folder(), &UnreachableAt(ShareSignIn::System(address))).await;
+
+        assert_eq!(problem, FolderProblem::NeedsSignIn { share: nas_manga() });
+    }
+
+    #[tokio::test]
+    async fn asks_to_mount_again_an_unreachable_share_the_system_mounts() {
+        let problem = problem_of(&folder(), &UnreachableAt(ShareSignIn::MountedBySystem)).await;
+
+        assert_eq!(problem, FolderProblem::NeedsMounting { share: nas_manga() });
+    }
+
+    #[tokio::test]
+    async fn calls_a_folder_on_no_share_and_no_drive_missing() {
+        let problem = problem_of(&folder(), &NoShares).await;
+
+        assert_eq!(problem, FolderProblem::Missing);
+    }
+
+    #[tokio::test]
+    async fn names_the_share_an_android_folder_from_another_provider_is_on() {
+        let problem = problem_of(&tree("documents.test", "nas"), &NoShares).await;
+
+        assert_eq!(
+            problem,
+            FolderProblem::ShareUnreachable { share: nas_manga() }
+        );
+    }
+
+    #[tokio::test]
+    async fn names_an_android_share_by_its_folder_when_its_provider_has_no_name() {
+        let problem = problem_of(&tree("documents.test", ""), &NoShares).await;
+
+        assert_eq!(
+            problem,
+            FolderProblem::ShareUnreachable {
+                share: NetworkShare {
+                    server: "manga".to_owned(),
+                    name: "manga".to_owned(),
+                }
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn says_android_took_away_a_folder_on_the_device() {
+        let problems = [
+            problem_of(
+                &tree("com.android.externalstorage.documents", ""),
+                &NoShares,
+            )
+            .await,
+            problem_of(
+                &tree("com.android.providers.downloads.documents", ""),
+                &NoShares,
+            )
+            .await,
+        ];
+
+        assert_eq!(
+            problems,
+            [FolderProblem::LostAccess, FolderProblem::LostAccess]
+        );
+    }
 
     fn drive(path: &str) -> Option<PathBuf> {
         drive_of(Path::new(path))
