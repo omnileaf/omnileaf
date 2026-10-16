@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import { page } from "$app/state";
+
   import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
   import { systemBarsTheme } from "#lib/appearance/theme.ts";
   import {
@@ -76,6 +78,8 @@
   import type { LayoutProps } from "./$types";
 
   import "../app.css";
+
+  const APP_ROUTES = "/(app)";
 
   let { data, children }: LayoutProps = $props();
 
@@ -209,6 +213,8 @@
   <LibraryProblemScreen problem={data.libraryProblem} {opening} />
 {/if}
 {#key language.resolved}
-  <ScreenshotModeAnnouncement />
+  <ScreenshotModeAnnouncement
+    announcesTurningOn={page.route.id?.startsWith(APP_ROUTES) !== true}
+  />
 {/key}
 <CrashReportPrompt reporting={crashReporting} look={promptLook} />
