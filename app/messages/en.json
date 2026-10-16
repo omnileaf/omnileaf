@@ -1238,6 +1238,7 @@
   "creator_back_to": "Back to {title}",
   "series_related_writer": "Same writer",
   "series_related_artist": "Same artist",
+  "series_related_tag": "Same tag",
   "series_related_not_started": "Not started",
   "series_related_progress": "{percent} read",
   "series_no_books_body": "Its folder is empty, or its books have moved. Rescan to look again. Nothing else in your library has changed.",

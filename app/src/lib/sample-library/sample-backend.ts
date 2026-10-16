@@ -1102,6 +1102,7 @@ export function sampleBackend(
             bookCount: other.books.length,
             readCount: other.books.filter(isRead).length,
             reason,
+            isAdult: isAdult(other),
           };
         }),
       };
