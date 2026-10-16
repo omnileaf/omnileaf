@@ -198,7 +198,8 @@ pub fn history_page(
             | Position::Added { .. }
             | Position::Book { .. }
             | Position::Root { .. }
-            | Position::LastRead { .. },
+            | Position::LastRead { .. }
+            | Position::LastUpdated { .. },
         ) => return Err(Error::CursorForAnotherList),
     };
     let matching;
@@ -486,7 +487,7 @@ mod tests {
             plan_of(
                 &[
                     "SEARCH series USING INDEX sqlite_autoindex_series_1 (id=?)",
-                    "SEARCH book USING INDEX book_by_series (series_local_id=?)",
+                    "SEARCH book USING INDEX book_by_series_and_added (series_local_id=?)",
                     sessions,
                 ],
                 &["USE TEMP B-TREE FOR ORDER BY"],
@@ -653,7 +654,7 @@ mod tests {
             [
                 "SCAN series",
                 "CORRELATED SCALAR SUBQUERY 1",
-                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)",
+                "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
                 "SEARCH reading_session USING COVERING INDEX reading_session_by_book (book_id=?)",
                 "USE TEMP B-TREE FOR ORDER BY",
             ]
