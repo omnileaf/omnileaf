@@ -357,16 +357,48 @@ test.describe("with a network share the system mounts", () => {
   });
 });
 
+function relocatedTo(
+  folder: MissingFolder,
+  outcome: "rescanned" | "unreachable",
+): FakeBackend["relocateLibraryFolder"] {
+  return (id) => {
+    asked.push(`relocate ${id}`);
+    if (outcome === "rescanned") {
+      missing = [];
+    }
+    return {
+      id,
+      name: folder.folder.name,
+      outcome:
+        outcome === "rescanned"
+          ? {
+              kind: "rescanned",
+              added: 0,
+              updated: 0,
+              moved: 0,
+              removed: 0,
+              unreadableBooks: 0,
+              unsupportedBooks: 0,
+              unreadableFolders: 0,
+            }
+          : { kind: "unreachable" },
+    };
+  };
+}
+
 test.describe("with an Android folder on a network share", () => {
   const folder = missingFolder(
     { kind: "shareUnreachable", share: NAS_MANGA },
     "Manga",
     "nas › Manga",
   );
+  let relocated: "rescanned" | "unreachable" = "rescanned";
   test.use({
     backend: {
       ...backendMissing(folder),
       appInfo: () => fakeAppInfo("android"),
+      relocateLibraryFolder: (id, onProgress) =>
+        relocatedTo(folder, relocated)(id, onProgress),
     },
   });
   test.beforeEach(() => {
@@ -374,18 +406,94 @@ test.describe("with an Android folder on a network share", () => {
     asked = [];
   });
 
-  test("says it's on the share, and offers to choose it again", async ({
+  test("says it's on the share", async ({ page }) => {
+    await page.goto("/");
+
+    await expect(notice(page, "Omnileaf can’t open Manga")).toContainText(
+      "It’s on the network share nas, which may want you to sign in again. Your reading progress is safe.",
+    );
+  });
+
+  test("says what comes next before Android's folder picker opens", async ({
     page,
   }) => {
     await page.goto("/");
-    const share = notice(page, "Omnileaf can’t open Manga");
-    await expect(share).toContainText(
-      "It’s on the network share nas, which may want you to sign in again. Your reading progress is safe.",
+
+    await notice(page, "Omnileaf can’t open Manga")
+      .getByRole("button", { name: "Choose it again" })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "Choose Manga again" });
+
+    await expect(sheet).toContainText("Android’s folder picker opens next.");
+    await expect(sheet.getByRole("listitem")).toHaveText([
+      "1 If your network app asks, sign in to nas there.",
+      "2 Open nas, then the manga folder.",
+      "3 Tap Use this folder.",
+    ]);
+    expect(asked).toEqual([]);
+  });
+
+  test("says the folder is back once chosen again", async ({ page }) => {
+    relocated = "rescanned";
+    await page.goto("/");
+    await notice(page, "Omnileaf can’t open Manga")
+      .getByRole("button", { name: "Choose it again" })
+      .click();
+
+    await page
+      .getByRole("dialog", { name: "Choose Manga again" })
+      .getByRole("button", { name: "Continue" })
+      .click();
+
+    await expect(notice(page, "Manga is back")).toContainText(
+      "nas/manga is reachable again. Checking it for changes…",
     );
+    await expect(notice(page, "Omnileaf can’t open Manga")).toHaveCount(0);
+    expect(asked).toEqual([`relocate ${FOLDER_ID}`]);
+  });
 
-    await share.getByRole("button", { name: "Choose it again" }).click();
+  test("says it still can't open the folder when the share stays unreachable", async ({
+    page,
+  }) => {
+    relocated = "unreachable";
+    await page.goto("/");
+    await notice(page, "Omnileaf can’t open Manga")
+      .getByRole("button", { name: "Choose it again" })
+      .click();
 
-    await expect.poll(() => asked).toEqual([`relocate ${FOLDER_ID}`]);
+    await page
+      .getByRole("dialog", { name: "Choose Manga again" })
+      .getByRole("button", { name: "Continue" })
+      .click();
+
+    const failing = notice(page, "Omnileaf still can’t open Manga");
+    await expect(failing).toContainText(
+      "nas/manga isn’t reachable. Check that you’re signed in to nas, and that it’s on. Your reading progress is safe.",
+    );
+    await expect(
+      failing.getByRole("button", { name: "Choose it again" }),
+    ).toBeVisible();
+    await expect(
+      failing.getByRole("button", { name: "Unlink it" }),
+    ).toBeVisible();
+  });
+
+  test("leaves the folder as it is on Not now", async ({ page }) => {
+    await page.goto("/");
+    await notice(page, "Omnileaf can’t open Manga")
+      .getByRole("button", { name: "Choose it again" })
+      .click();
+
+    await page
+      .getByRole("dialog", { name: "Choose Manga again" })
+      .getByRole("button", { name: "Not now" })
+      .click();
+
+    await expect(
+      page.getByRole("dialog", { name: "Choose Manga again" }),
+    ).toHaveCount(0);
+    await expect(notice(page, "Omnileaf can’t open Manga")).toBeVisible();
+    expect(asked).toEqual([]);
   });
 
   test("unlinks it once confirmed", async ({ page }) => {
@@ -413,5 +521,56 @@ test.describe("with an Android folder on a network share", () => {
 
       expect(await accessibilityViolations(page)).toEqual([]);
     });
+
+    test(`has no accessibility violations before the picker in the ${theme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto("/");
+      await notice(page, "Omnileaf can’t open Manga")
+        .getByRole("button", { name: "Choose it again" })
+        .click();
+      await expect(
+        page.getByRole("dialog", { name: "Choose Manga again" }),
+      ).toBeVisible();
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
   }
+});
+
+test.describe("with an iOS folder on a network share", () => {
+  const folder = missingFolder(
+    { kind: "shareUnreachable", share: NAS_MANGA },
+    "Manga",
+    "nas › Manga",
+  );
+  test.use({
+    backend: {
+      ...backendMissing(folder),
+      appInfo: () => fakeAppInfo("ios"),
+    },
+  });
+  test.beforeEach(() => {
+    missing = [folder];
+    asked = [];
+  });
+
+  test("says the Files picker opens next, where the server signs in", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await notice(page, "Omnileaf can’t open Manga")
+      .getByRole("button", { name: "Choose it again" })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "Choose Manga again" });
+
+    await expect(sheet).toContainText("The Files picker opens next.");
+    await expect(sheet.getByRole("listitem")).toHaveText([
+      "1 If Files asks, sign in to nas there.",
+      "2 Open nas, then the manga folder.",
+      "3 Tap Open.",
+    ]);
+  });
 });
