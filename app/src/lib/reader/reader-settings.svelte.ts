@@ -9,6 +9,7 @@ export type PageFit = "screen" | "width" | "height";
 export type ReaderBackground = "black" | "grey" | "white";
 export type ReaderControlsLook = "dark" | "matchApp";
 export type SettingsScope = "series" | "all";
+export type TapZones = "edges" | "lShape" | "off";
 
 export interface ReaderLight {
   readonly isOn: boolean;
@@ -24,6 +25,7 @@ export interface ReaderLook {
   readonly light: ReaderLight;
   readonly keepsScreenOn: boolean;
   readonly cropsBorders: boolean;
+  readonly tapZones: TapZones;
 }
 
 export const PAGE_LAYOUTS: readonly PageLayout[] = ["automatic", "one", "two"];
@@ -33,6 +35,7 @@ export const READER_BACKGROUNDS: readonly ReaderBackground[] = [
   "grey",
   "white",
 ];
+export const TAP_ZONES: readonly TapZones[] = ["edges", "lShape", "off"];
 export const CONTROLS_LOOKS: readonly ReaderControlsLook[] = [
   "dark",
   "matchApp",
@@ -46,6 +49,7 @@ export const DEFAULT_LOOK: ReaderLook = {
   light: { isOn: false, brightness: 80, warmth: 20 },
   keepsScreenOn: true,
   cropsBorders: false,
+  tapZones: "edges",
 };
 
 const ALL_KEY = "omnileaf.readerSettings.all";
@@ -102,6 +106,7 @@ function lookIn(text: string | null): Partial<ReaderLook> {
     light: lightIn(stored.light),
     keepsScreenOn: flag(stored.keepsScreenOn),
     cropsBorders: flag(stored.cropsBorders),
+    tapZones: oneOf(TAP_ZONES, stored.tapZones),
   };
   return Object.fromEntries(
     Object.entries(read).filter(([, value]) => value !== undefined),
@@ -153,6 +158,30 @@ export class ReaderSettings {
     this.scope = scope;
     this.#scopeStored.writeIfPossible(scope);
   }
+}
+
+/** The look every series starts with until it's given its own, as Settings › Reader sets it. */
+export class ReaderDefaults {
+  #look: ReaderLook = $state(DEFAULT_LOOK);
+  readonly #stored: StoredPreference;
+
+  constructor(store: PreferenceStore | undefined) {
+    this.#stored = new StoredPreference(store, ALL_KEY);
+    this.#look = { ...DEFAULT_LOOK, ...lookIn(this.#stored.read()) };
+  }
+
+  get look(): ReaderLook {
+    return this.#look;
+  }
+
+  change<Key extends keyof ReaderLook>(key: Key, value: ReaderLook[Key]): void {
+    this.#look = { ...this.#look, [key]: value };
+    this.#stored.writeIfPossible(JSON.stringify(this.#look));
+  }
+}
+
+export function readerDefaults(): ReaderDefaults {
+  return new ReaderDefaults(browserPreferenceStore());
 }
 
 export function readerSettings(series: string): ReaderSettings {

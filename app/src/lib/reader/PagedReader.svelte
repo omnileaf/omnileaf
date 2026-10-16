@@ -51,6 +51,7 @@
   import ReaderGuide from "#lib/reader/ReaderGuide.svelte";
   import ReadingSettings from "#lib/reader/ReadingSettings.svelte";
   import { seenOnce } from "#lib/reader/seen-once.ts";
+  import { tapZonesFor } from "#lib/reader/tap-zones.ts";
   import ReaderPanel from "#lib/reader/ReaderPanel.svelte";
   import ReaderTopBar from "#lib/reader/ReaderTopBar.svelte";
   import { isZoomedIn, zoneAction } from "#lib/reader/reader-zoom.ts";
@@ -131,10 +132,15 @@
     seriesReadingDirection(book.series, book.readingDirection),
   );
   const settings = untrack(() => readerSettings(book.series));
-  const guide = untrack(() =>
-    seenOnce(`omnileaf.readerGuide.${reading.direction}`),
+  const guidesSeenNow = new SvelteSet<string>();
+  const guideKey = $derived(
+    settings.look.tapZones === "edges"
+      ? `omnileaf.readerGuide.${reading.direction}`
+      : `omnileaf.readerGuide.zones.${settings.look.tapZones}`,
   );
-  let isGuideSeen = $state(untrack(() => guide.isSeen));
+  const isGuideSeen = $derived(
+    guidesSeenNow.has(guideKey) || seenOnce(guideKey).isSeen,
+  );
   const look = $derived(settings.look);
   let isSettingsOpen = $state(false);
   let areShortcutsOpen = $state(false);
@@ -155,6 +161,7 @@
   const WARMEST = 0.35;
   const leftTurn = $derived(inReadingOrder("previous", reading.direction));
   const rightTurn = $derived(inReadingOrder("next", reading.direction));
+  const zoneLayout = $derived(tapZonesFor(look.tapZones, leftTurn, rightTurn));
   let heading: HTMLHeadingElement | undefined = $state();
   let viewportScale = $state(RESTING_SCALE);
 
@@ -671,8 +678,10 @@
   <div
     dir="ltr"
     role="presentation"
+    data-tap-zones
     class={[
-      "absolute inset-none flex",
+      "absolute inset-none",
+      look.tapZones === "lShape" ? "grid grid-l-zones" : "flex",
       isZoomedIn(viewportScale)
         ? "touch-manipulation"
         : "touch-pan-y touch-pinch-zoom",
@@ -685,39 +694,39 @@
       swipe.cancelled();
     }}
   >
-    <button
-      type="button"
-      aria-label={TURN_LABELS[leftTurn]()}
-      class="shrink-0 cursor-w-resize inline-3/10 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent expanded:inline-1/3"
-      onclick={(event) => {
-        onZone(event, leftTurn);
-      }}
-    ></button>
-    <button
-      type="button"
-      aria-label={controls.isShown
-        ? m.reader_hide_controls()
-        : m.reader_show_controls()}
-      class="flex-1 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
-      onclick={(event) => {
-        onZone(event, "toggleControls");
-      }}
-      ondblclick={() => {
-        if (isZoomedIn(viewportScale)) {
-          fitPinch();
-        } else {
-          zoomTo(zoom > 1 ? 1 : ZOOM_DOUBLE);
-        }
-      }}
-    ></button>
-    <button
-      type="button"
-      aria-label={TURN_LABELS[rightTurn]()}
-      class="shrink-0 cursor-e-resize inline-3/10 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent expanded:inline-1/3"
-      onclick={(event) => {
-        onZone(event, rightTurn);
-      }}
-    ></button>
+    {#each zoneLayout as zone, index (index)}
+      {#if zone.kind === "turn"}
+        <button
+          type="button"
+          aria-label={TURN_LABELS[zone.turn]()}
+          class={[
+            "focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent",
+            zone.shape,
+          ]}
+          onclick={(event) => {
+            onZone(event, zone.turn);
+          }}
+        ></button>
+      {:else}
+        <button
+          type="button"
+          aria-label={controls.isShown
+            ? m.reader_hide_controls()
+            : m.reader_show_controls()}
+          class="flex-1 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
+          onclick={(event) => {
+            onZone(event, "toggleControls");
+          }}
+          ondblclick={() => {
+            if (isZoomedIn(viewportScale)) {
+              fitPinch();
+            } else {
+              zoomTo(zoom > 1 ? 1 : ZOOM_DOUBLE);
+            }
+          }}
+        ></button>
+      {/if}
+    {/each}
   </div>
 {/snippet}
 
@@ -904,10 +913,11 @@
   {#if !isGuideSeen && !turner.isPastEnd}
     <ReaderGuide
       direction={reading.direction}
+      zones={look.tapZones}
       isTouch={!isPointer(platform)}
       onDone={() => {
-        guide.see();
-        isGuideSeen = true;
+        seenOnce(guideKey).see();
+        guidesSeenNow.add(guideKey);
       }}
     />
   {/if}
