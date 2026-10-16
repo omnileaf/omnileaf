@@ -61,13 +61,13 @@
         {title}
       </DialogTitle>
     </div>
-    <div class="flex flex-col gap-lg overflow-auto min-block-none">
+    <div class="-m-sm flex flex-col gap-lg overflow-auto p-sm min-block-none">
       <AlertDialog.Description class="flex flex-col gap-md">
         {@render children()}
       </AlertDialog.Description>
       <div
         class={[
-          "mbs-xs",
+          "mbs-xs windows:medium:rounded-ee-panel windows:medium:rounded-es-panel windows:medium:border-bs windows:medium:border-windows-stroke windows:medium:bg-windows-mica",
           phoneLook === "dialog"
             ? "grid grid-cols-2 gap-sm"
             : "flex flex-col-reverse gap-sheet-buttons medium:grid medium:grid-cols-2 medium:gap-sm",
