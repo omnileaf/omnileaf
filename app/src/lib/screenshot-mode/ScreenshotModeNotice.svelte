@@ -6,11 +6,13 @@
   import { getNotices, type Notice } from "#lib/notices/notices.ts";
 
   import { getScreenshotMode } from "./screenshot-mode.svelte";
+  import { getScreenshotModeShortcut } from "./shortcut-setting.svelte";
   import { turnedOnNotice } from "./turned-on-notice";
 
   let { platform }: { platform: Platform } = $props();
 
   const screenshotMode = getScreenshotMode();
+  const shortcut = getScreenshotModeShortcut();
   const notices = getNotices();
   const timeFormat = getTimeFormatSetting();
 
@@ -32,6 +34,7 @@
         shown = turnedOnNotice(
           screenshotMode.activity,
           platform,
+          shortcut.combination,
           timeFormat.hourCycle,
           () => {
             screenshotMode.toggle();
