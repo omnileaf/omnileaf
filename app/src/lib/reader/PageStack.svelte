@@ -39,6 +39,8 @@
     overlay,
     bookTitle,
     isBlank,
+    slide,
+    isSettling,
     onNextPage,
     onShownReady,
   }: {
@@ -51,6 +53,8 @@
     overlay: Snippet;
     bookTitle: string;
     isBlank: boolean;
+    slide: number;
+    isSettling: boolean;
     onNextPage: () => void;
     onShownReady: () => void;
   } = $props();
@@ -169,7 +173,12 @@
     class={[
       "col-start-1 row-start-1 flex items-center justify-center",
       isReversed && "flex-row-reverse",
+      isSettling &&
+        "motion-reader:transition-transform motion-reader:duration-slide motion-reader:ease-emphasized",
     ]}
+    style:translate={slide !== 0 || isSettling
+      ? `${String(slide)}px 0`
+      : undefined}
     style:min-width="{spaceWidth}px"
     style:min-height="{spaceHeight}px"
   >
