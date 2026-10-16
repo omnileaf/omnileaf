@@ -28,6 +28,7 @@ use omnileaf_db::{
     library_listing::{library_listing, set_library_listing},
     library_tabs::{TabPlace, library_tabs, set_library_tabs},
     library_view::{library_view, set_library_view},
+    reading_speed::seconds_per_page,
     store::{Changed, Clock, Store},
 };
 use omnileaf_formats::LocalStorage;
@@ -701,6 +702,10 @@ impl Library {
     }
 
     /// Saves the page reached in the book read now, and keeps `book`'s length for when the reader restores it.
+    pub(crate) async fn seconds_per_page(&self) -> Result<Option<u32>, LibraryError> {
+        Ok(self.store.database().read(seconds_per_page).await?)
+    }
+
     pub(crate) async fn start_reading(
         &self,
         book: BookId,
