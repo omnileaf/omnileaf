@@ -91,3 +91,12 @@ test("chooses each series' reading mode until told not to", () => {
     false,
   ]);
 });
+
+test("auto scrolls at my pace only while it learns the reading speed", () => {
+  const features = new SmartFeatures(memoryStore());
+  const first = features.autoScrollsAtMyPace;
+
+  features.turn("learnsReadingSpeed", false);
+
+  expect([first, features.autoScrollsAtMyPace]).toEqual([true, false]);
+});
