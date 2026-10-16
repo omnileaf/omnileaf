@@ -18,8 +18,8 @@ use std::sync::{
 use books::write_book;
 use omnileaf_engine::{
     BookId, BookReading, BookSessions, Clock, FolderKind, HistoryEntry, HistoryOf, HistorySeries,
-    Library, LibraryListing, LocalDay, OpenedBook, ProbedFormat, ReadMark, ReadTo, ReadingWeek,
-    ResourceRouter, SeriesBookListing, UtcOffset,
+    Library, LibraryListing, LocalDay, OpenedBook, ProbedFormat, ReadMark, ReadTo, ReadingSummary,
+    ReadingWeek, ResourceRouter, SeriesBookListing, UtcOffset,
 };
 use support::{FixedClock, NOW_UNIX_MS, ScratchFolder};
 
@@ -336,6 +336,32 @@ async fn counts_the_time_spent_reading_a_book_with_the_reading_not_yet_saved() {
     ];
 
     assert_eq!(spent, [120, 0]);
+}
+
+#[tokio::test]
+async fn sums_up_a_finished_book_with_the_reading_not_yet_saved() {
+    let shelf = Shelf::with_two_books("history-reading-summary").await;
+    let opened = shelf.restore(0).await;
+    shelf.clock.advance(2 * MINUTE_MS);
+    shelf.show(&opened, PAGE_COUNT - 1).await;
+    let other = shelf.book(1).await;
+
+    let summaries = [
+        shelf.library.reading_summary(opened.id).await.unwrap(),
+        shelf.library.reading_summary(other).await.unwrap(),
+    ];
+
+    assert_eq!(
+        summaries,
+        [
+            Some(ReadingSummary {
+                read_seconds: 120,
+                page_count: PAGE_COUNT,
+                seconds_per_page: Some(60),
+            }),
+            None
+        ]
+    );
 }
 
 #[tokio::test]
