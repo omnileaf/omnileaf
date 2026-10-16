@@ -651,7 +651,29 @@
   "settings_summary_opens_on": "⟦öþéñš ţö {place}·······⟧",
   "settings_summary_screenshot_off": "⟦Šçŕééñšĥöţ ɱöðé öƒƒ········⟧",
   "settings_summary_screenshot_on": "⟦Šçŕééñšĥöţ ɱöðé öñ········⟧",
-  "settings_summary_advanced": "⟦Áñíɱáţíöñš····⟧",
+  "settings_summary_advanced": "⟦Áñíɱáţíöñš · Ûñðö·······⟧",
+  "advanced_undo": "⟦Ûñðö··⟧",
+  "animations_summary_all_on": "⟦Áļļ öñ···⟧",
+  "animations_summary_all_off": "⟦Áļļ öƒƒ···⟧",
+  "animations_summary_some": "⟦{on} öƒ {total} öñ········⟧",
+  "advanced_offer_undo": "⟦Öƒƒéŕ Ûñðö····⟧",
+  "advanced_offer_undo_help": "⟦Öƒƒ: ñöţíçéš šĥöŵ ŵíţĥöûţ Ûñðö; ðéļéţíñĝ ðöŵñļöáðš, ûñþáíŕíñĝ á ðéṽíçé áñð ðéļéţíñĝ á þŕöƒíļé šţíļļ ášķ ƒíŕšţ.············································⟧",
+  "advanced_keep_undo": "⟦Ķééþ Ûñðö ƒöŕ······⟧",
+  "advanced_hold_undo": "⟦Ĥöļð íţ ŵĥíļé ĥöṽéŕéð öŕ ƒöçûšéð·············⟧",
+  "advanced_undo_seconds": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šéçöñð··········⟧",
+        "countPlural=other": "⟦{formattedCount} šéçöñðš··········⟧"
+      }
+    }
+  ],
   "settings_folder_count": [
     {
       "declarations": [

@@ -25,6 +25,10 @@
     setLanguageSetting,
   } from "#lib/language/language.svelte.ts";
   import { Notices, setNotices } from "#lib/notices/notices.ts";
+  import {
+    setUndoSetting,
+    undoSettingForDocument,
+  } from "#lib/notices/undo-setting.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -93,7 +97,8 @@
   setTimeFormatSetting(timeFormatSettingForDocument());
   const animations = setAnimationsSetting(animationsSettingForDocument());
   setSwipeActionsSetting(swipeActionsSettingForDocument());
-  setNotices(new Notices());
+  const undo = setUndoSetting(undoSettingForDocument());
+  setNotices(new Notices(() => undo.rules));
   const bookPresence = setBookPresence(new BookPresence());
 
   function settleScreenshotMode(): void {
