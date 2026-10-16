@@ -16,6 +16,7 @@ export type PageTurn = "next" | "previous";
 const KEY_PREFIX = "omnileaf.readingDirection.";
 const DETECTED_KEY_PREFIX = "omnileaf.detectedReadingDirection.";
 const STRIP_KEY_PREFIX = "omnileaf.detectedStrip.";
+const NEW_SERIES_KEY = "omnileaf.readingMode.newSeries";
 const STORED_STRIP = "strip";
 const STORED_PAGED = "paged";
 const DEFAULT_DIRECTION: ReadingDirection = "leftToRight";
@@ -86,7 +87,9 @@ export class SeriesReadingDirection {
     seenAsStrip: boolean | null,
   ) {
     this.#stored = new StoredPreference(store, `${KEY_PREFIX}${series}`);
-    this.choice = parseChoice(this.#stored.read());
+    this.choice = parseChoice(
+      this.#stored.read() ?? new StoredPreference(store, NEW_SERIES_KEY).read(),
+    );
     this.#detected = detectDirection(
       new StoredPreference(store, `${DETECTED_KEY_PREFIX}${series}`),
       written,
@@ -123,6 +126,27 @@ export class SeriesReadingDirection {
     this.choice = choice;
     this.#stored.writeIfPossible(choice);
   }
+}
+
+/** The reading mode a series starts in until one is chosen for it. */
+export class NewSeriesReadingMode {
+  choice: ReadingModeChoice = $state("automatic");
+
+  readonly #stored: StoredPreference;
+
+  constructor(store: PreferenceStore | undefined) {
+    this.#stored = new StoredPreference(store, NEW_SERIES_KEY);
+    this.choice = parseChoice(this.#stored.read());
+  }
+
+  choose(choice: ReadingModeChoice): void {
+    this.choice = choice;
+    this.#stored.writeIfPossible(choice);
+  }
+}
+
+export function newSeriesReadingMode(): NewSeriesReadingMode {
+  return new NewSeriesReadingMode(browserPreferenceStore());
 }
 
 export function seriesReadingDirection(
