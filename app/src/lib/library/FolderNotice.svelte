@@ -115,7 +115,7 @@
   }
 </script>
 
-<div role="status">
+<div role="status" class="empty:absolute">
   {#if notice !== undefined}
     <Alert tone={notice.tone} icon={notice.icon}>
       <AlertTitle>{notice.title}</AlertTitle>

@@ -222,7 +222,7 @@
       <p class="text-footnote text-muted">{@render hint()}</p>
     {/if}
   {/if}
-  <div class="mbs-sm">
+  <div class={isBelowList ? "contents" : "mbs-sm"}>
     <FolderNotice
       {adding}
       {notices}
