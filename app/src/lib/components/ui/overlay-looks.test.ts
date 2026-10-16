@@ -6,6 +6,8 @@ import "../../../app.css";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
 
+import { resolvedColour } from "../../../../tests/components/resolved-colour";
+
 import DrawerHarness from "./drawer/DrawerHarness.svelte";
 import PlatformSurfacesHarness from "./PlatformSurfacesHarness.svelte";
 import PopoverHarness from "./popover/PopoverHarness.svelte";
@@ -66,15 +68,6 @@ const SHEETS: readonly SheetLook[] = [
     handle: [36, 5],
   },
 ];
-
-function fillOf(token: string): string {
-  const probe = document.createElement("span");
-  probe.style.backgroundColor = `var(${token})`;
-  document.body.append(probe);
-  const colour = getComputedStyle(probe).backgroundColor;
-  probe.remove();
-  return colour;
-}
 
 function usePlatform(platform: Platform): void {
   document.documentElement.dataset.platform = platform;
@@ -140,7 +133,9 @@ test("lays an Android popover on the high container with 12px corners", async ()
 
   const style = getComputedStyle(popover.element());
 
-  expect(style.backgroundColor).toBe(fillOf("--android-container-high"));
+  expect(style.backgroundColor).toBe(
+    resolvedColour("--android-container-high", "backgroundColor"),
+  );
   expect(style.borderTopLeftRadius).toBe("12px");
 });
 
@@ -159,7 +154,9 @@ for (const look of SHEETS) {
       ?.getBoundingClientRect();
 
     expect(style.borderTopLeftRadius).toBe(look.corner);
-    expect(style.backgroundColor).toBe(fillOf(look.fill));
+    expect(style.backgroundColor).toBe(
+      resolvedColour(look.fill, "backgroundColor"),
+    );
     expect([handle?.width, handle?.height]).toEqual(look.handle);
   });
 }
