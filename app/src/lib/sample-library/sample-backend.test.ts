@@ -975,3 +975,40 @@ test("keeps the home folder in an empty library", async () => {
 
   expect(page.folders.map((folder) => folder.kind)).toEqual(["home"]);
 });
+
+test("uses its storage as the Storage board draws it, with room to spare", async () => {
+  const { backend } = backendFor();
+
+  const used = await backend.checkStorage();
+
+  expect(used).toMatchObject({
+    omnileafBytes: 1_440_000_000,
+    cachedPagesBytes: 1_200_000_000,
+    coversBytes: 210_000_000,
+    isLow: false,
+  });
+});
+
+test("runs low with 1.1 GB free when asked to", async () => {
+  const { backend } = backendFor("?space=low");
+
+  const used = await backend.checkStorage();
+
+  expect([used.freeBytes, used.isLow]).toEqual([1_100_000_000, true]);
+});
+
+test("frees what it clears and stops running low once there's room", async () => {
+  const { backend } = backendFor("?space=low");
+
+  await backend.clearCachedPages();
+  await backend.clearCovers();
+  const used = await backend.checkStorage();
+
+  expect(used).toMatchObject({
+    omnileafBytes: 30_000_000,
+    cachedPagesBytes: 0,
+    coversBytes: 0,
+    freeBytes: 2_510_000_000,
+    isLow: false,
+  });
+});
