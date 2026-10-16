@@ -1,5 +1,6 @@
 use omnileaf_engine::RecentLog;
-use tracing_subscriber::layer::SubscriberExt;
+use tracing::Subscriber as _;
+use tracing_subscriber::{Layer as _, filter::LevelFilter, layer::SubscriberExt};
 
 fn listening(log: &RecentLog) -> tracing::subscriber::DefaultGuard {
     tracing::subscriber::set_default(tracing_subscriber::registry().with(log.clone()))
@@ -35,6 +36,15 @@ fn leaves_out_lines_finer_than_info() {
         log.lines(),
         ["WARN recent_log: keep a transcoded page for next time"]
     );
+}
+
+#[test]
+fn asks_the_app_for_nothing_finer_than_info() {
+    let subscriber = tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer().with_filter(LevelFilter::INFO))
+        .with(RecentLog::default());
+
+    assert_eq!(subscriber.max_level_hint(), Some(LevelFilter::INFO));
 }
 
 #[test]

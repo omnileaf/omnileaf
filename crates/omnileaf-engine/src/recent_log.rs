@@ -8,7 +8,7 @@ use tracing::{
     Event, Level, Subscriber,
     field::{Field, Visit},
 };
-use tracing_subscriber::{Layer, layer::Context};
+use tracing_subscriber::{Layer, filter::LevelFilter, layer::Context};
 
 const LINE_LIMIT: usize = 200;
 const LINE_BYTE_LIMIT: usize = 1_000;
@@ -39,6 +39,10 @@ impl RecentLog {
 }
 
 impl<S: Subscriber> Layer<S> for RecentLog {
+    fn max_level_hint(&self) -> Option<LevelFilter> {
+        Some(LevelFilter::from_level(FINEST_KEPT))
+    }
+
     fn on_event(&self, event: &Event<'_>, _context: Context<'_, S>) {
         let metadata = event.metadata();
         if *metadata.level() > FINEST_KEPT {
