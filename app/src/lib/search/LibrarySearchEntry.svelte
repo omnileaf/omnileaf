@@ -55,7 +55,7 @@
   {/snippet}
 </Tooltip>
 <InputGroup
-  class="hidden gap-sm rounded-control border border-field bg-card px-md text-muted block-pointer-button inline-library-search focus-within:border-accent large:flex in-toolbar:inline-library-search-toolbar"
+  class="hidden gap-sm rounded-input-group border border-input-group-edge bg-input-group px-md text-muted block-shadcn-control inline-library-search focus-within:border-accent large:flex macos:shadow-raised windows:border-be-windows-stroke-strong linux:shadow-raised in-toolbar:inline-library-search-toolbar"
 >
   <Search size={FIELD_ICON_SIZE} aria-hidden="true" class="shrink-0" />
   <Input
