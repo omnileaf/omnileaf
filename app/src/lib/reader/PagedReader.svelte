@@ -758,6 +758,7 @@
       isReversed={reading.direction === "rightToLeft"}
       overlay={turnZones}
       bookTitle={named.title}
+      isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
       onNextPage={() => {
         act("next");
       }}
@@ -855,6 +856,7 @@
         next={named.next}
         direction={reading.direction}
         {quickSettings}
+        isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
         secondsLeft={book.secondsPerPage === null
           ? undefined
           : (pageCount - turner.shown) * book.secondsPerPage}

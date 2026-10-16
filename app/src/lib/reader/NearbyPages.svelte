@@ -7,8 +7,11 @@
   const PHONE_REACH = 2;
   const PORTRAIT_RATIO = "2 / 3";
 
-  let { pages, shown }: { pages: readonly BookPage[]; shown: number } =
-    $props();
+  let {
+    pages,
+    shown,
+    isBlank,
+  }: { pages: readonly BookPage[]; shown: number; isBlank: boolean } = $props();
 
   const near = $derived(
     Array.from({ length: REACH * 2 + 1 }, (_, offset) => shown - REACH + offset)
@@ -38,7 +41,18 @@
         Math.abs(index - shown) > PHONE_REACH && "max-expanded:hidden",
       ]}
     >
-      {#if page !== undefined}
+      {#if page !== undefined && isBlank}
+        <span
+          aria-hidden="true"
+          style:aspect-ratio={ratioOf(page)}
+          class={[
+            "rounded-reader-thumbnail bg-reader-grey inline-reader-thumbnail expanded:inline-reader-thumbnail-wide",
+            isShown
+              ? "outline-2 outline-offset-2 outline-reader-accent"
+              : "opacity-70",
+          ]}
+        ></span>
+      {:else if page !== undefined}
         <img
           src={omniUrl(page.thumbnail)}
           alt={m.reader_page({ page: index + 1 })}

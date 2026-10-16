@@ -38,6 +38,7 @@
     isReversed,
     overlay,
     bookTitle,
+    isBlank,
     onNextPage,
     onShownReady,
   }: {
@@ -49,6 +50,7 @@
     isReversed: boolean;
     overlay: Snippet;
     bookTitle: string;
+    isBlank: boolean;
     onNextPage: () => void;
     onShownReady: () => void;
   } = $props();
@@ -63,7 +65,9 @@
   let isSlow = $state(false);
 
   const kept = $derived(pagesAround(shown, pages.length, PAGES_AHEAD));
-  const isShownReady = $derived(decoded.has(shown) || failed.has(shown));
+  const isShownReady = $derived(
+    isBlank || decoded.has(shown) || failed.has(shown),
+  );
   const isShownFailed = $derived(failed.has(shown));
   const id = $props.id();
 
@@ -190,26 +194,39 @@
             ? undefined
             : `${String(size.height)}px`}
         >
-          <img
-            {@attach freshImage(index)}
-            src={sourceOf(page, index)}
-            alt={m.reader_page({ page: index + 1 })}
-            aria-hidden={isShown ? undefined : "true"}
-            decoding="async"
-            draggable="false"
-            class={[
-              "object-contain select-none block-full inline-full",
-              !decoded.has(index) && "invisible",
-            ]}
-            onload={(event) => {
-              if (event.currentTarget instanceof HTMLImageElement) {
-                void decode(event.currentTarget, index);
-              }
-            }}
-            onerror={() => {
-              onFailure(index);
-            }}
-          />
+          {#if isBlank}
+            <div
+              role="img"
+              aria-label={m.reader_page({ page: index + 1 })}
+              aria-hidden={isShown ? undefined : "true"}
+              class="flex items-center justify-center bg-reader-grey text-body font-semibold text-on-reader block-full inline-full"
+            >
+              <span aria-hidden="true">
+                {m.reader_blank_page({ page: index + 1, count: pages.length })}
+              </span>
+            </div>
+          {:else}
+            <img
+              {@attach freshImage(index)}
+              src={sourceOf(page, index)}
+              alt={m.reader_page({ page: index + 1 })}
+              aria-hidden={isShown ? undefined : "true"}
+              decoding="async"
+              draggable="false"
+              class={[
+                "object-contain select-none block-full inline-full",
+                !decoded.has(index) && "invisible",
+              ]}
+              onload={(event) => {
+                if (event.currentTarget instanceof HTMLImageElement) {
+                  void decode(event.currentTarget, index);
+                }
+              }}
+              onerror={() => {
+                onFailure(index);
+              }}
+            />
+          {/if}
         </div>
       {/if}
     {/each}
