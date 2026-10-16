@@ -146,6 +146,14 @@ const DAYS_READ_UP_TO: &str = "SELECT DISTINCT local_day
 const BOOK_READING_TIME: &str = "SELECT coalesce(sum(ended_at_ms - started_at_ms), 0)
     FROM reading_session
     WHERE book_id = ?1";
+const READING_SUMMARY: &str = "SELECT coalesce(sum(ended_at_ms - started_at_ms), 0) AS read_ms,
+        max(page) + 1 AS pages_reached,
+        (SELECT latest.page_count FROM reading_session AS latest
+            WHERE latest.book_id = ?1
+            ORDER BY latest.started_at_ms DESC, latest.ended_at_ms DESC
+            LIMIT 1) AS page_count
+    FROM reading_session
+    WHERE book_id = ?1";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HistoryEntry {
@@ -349,6 +357,35 @@ pub fn book_reading_time(connection: &Connection, book: BookId) -> Result<i64, E
     Ok(connection
         .prepare(BOOK_READING_TIME)?
         .query_row([book.as_bytes()], |row| row.get(0))?)
+}
+
+/// A book's reading added up for the summary at its end: the time spent, how many pages it was read to and its length when last read.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ReadingSummary {
+    pub read_ms: i64,
+    pub pages_reached: u32,
+    pub page_count: u32,
+}
+
+/// Adds up `book`'s reading for the summary at its end, giving none for a book never read.
+pub fn reading_summary(
+    connection: &Connection,
+    book: BookId,
+) -> Result<Option<ReadingSummary>, Error> {
+    Ok(connection
+        .prepare(READING_SUMMARY)?
+        .query_row([book.as_bytes()], |row| {
+            let pages_reached: Option<u32> = row.get("pages_reached")?;
+            let page_count: Option<u32> = row.get("page_count")?;
+            let read_ms = row.get("read_ms")?;
+            Ok(pages_reached
+                .zip(page_count)
+                .map(|(pages_reached, page_count)| ReadingSummary {
+                    read_ms,
+                    pages_reached,
+                    page_count,
+                }))
+        })?)
 }
 
 /// A book's reading sessions added up, its first and last days counted from 1970-01-01 in the local time each began at.
@@ -659,6 +696,22 @@ mod tests {
                 "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
                 "SEARCH reading_session USING COVERING INDEX reading_session_by_book (book_id=?)",
                 "USE TEMP B-TREE FOR ORDER BY",
+            ]
+        );
+    }
+
+    #[test]
+    fn sums_up_a_book_s_reading_from_the_book_index_alone() {
+        let scratch = ScratchLibrary::new("reading-summary-plan");
+
+        let plan = scratch.query_plan(READING_SUMMARY);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH reading_session USING INDEX reading_session_by_book (book_id=?)",
+                "SCALAR SUBQUERY 1",
+                "SEARCH latest USING INDEX reading_session_by_book (book_id=?)",
             ]
         );
     }
