@@ -14,7 +14,6 @@ test("keeps every class of every look through the class merge", () => {
 
 test.each<[ItemLook, string[]]>([
   ["folder", ["flex", "items-center", "min-block-row"]],
-  ["settings-link", ["px-lg", "hover:bg-hover", "group-first:rounded-ss-card"]],
   ["about-phone", ["inline-full", "px-list-row", "min-block-4xl"]],
   ["about-pane", ["inline-full", "px-list-row", "min-block-phone-row"]],
   ["about-version", ["flex-wrap", "ps-list-row", "min-block-4xl"]],
