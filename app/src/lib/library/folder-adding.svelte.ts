@@ -63,6 +63,7 @@ const FAILURES = {
   bookmarksNotKept: ADDING_FAILED,
   labelsNotKept: ADDING_FAILED,
   detailsNotKept: ADDING_FAILED,
+  reportNotSaved: ADDING_FAILED,
   internal: ADDING_FAILED,
 } satisfies Record<IpcErrorCode, Failure>;
 

@@ -39,6 +39,7 @@ pub(crate) enum IpcErrorCode {
     BookmarksNotKept,
     LabelsNotKept,
     DetailsNotKept,
+    ReportNotSaved,
     Internal,
 }
 
@@ -78,6 +79,14 @@ impl IpcError {
         Self {
             code: IpcErrorCode::FileManagerUnavailable,
             message: "the file manager could not be opened",
+        }
+    }
+
+    pub(crate) fn report_not_saved(error: &dyn Error) -> Self {
+        tracing::warn!(error = %describe_error(error), "save a problem report");
+        Self {
+            code: IpcErrorCode::ReportNotSaved,
+            message: "the problem report could not be saved",
         }
     }
 
