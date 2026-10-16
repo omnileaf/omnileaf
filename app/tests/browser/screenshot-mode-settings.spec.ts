@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 
 import {
   accessibilityViolations,
+  boxOf,
   expect,
   onPlatform,
   test,
@@ -9,6 +10,7 @@ import {
 } from "./fixtures.ts";
 
 const TURNED_ON_AT = new Date("2026-10-03T21:14:00Z");
+const INTRO_GAP = 8;
 
 const OPTIONS = [
   "Blank the pages in the reader",
@@ -99,6 +101,17 @@ test("Space turns it on from the keyboard", async ({ page }) => {
   await page.keyboard.press("Space");
 
   await expect(mainSwitch(page)).toBeChecked();
+});
+
+test("sets the intro 8px above its card", async ({ page }) => {
+  await openScreenshotMode(page);
+
+  const intro = await boxOf(page.getByText(/^Swaps names and covers/));
+  const card = await boxOf(
+    page.locator("div:has(> [role=switch])").filter({ has: mainSwitch(page) }),
+  );
+
+  expect(card.y - (intro.y + intro.height)).toBe(INTRO_GAP);
 });
 
 test("says what it changes before the switch", async ({ page }) => {

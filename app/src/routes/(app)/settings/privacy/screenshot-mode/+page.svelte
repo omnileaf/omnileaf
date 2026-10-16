@@ -55,46 +55,50 @@
   parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
 />
 <div class="mbs-pane-gap flex flex-col gap-xl">
-  <p class="text-detail text-muted">{m.screenshot_mode_intro()}</p>
-  <div class={[CARD, "divide-y divide-border"]}>
-    <SettingSwitch
-      label={m.screenshot_mode_title()}
-      description={screenshotModeSummary(
-        screenshotMode.activity,
-        timeFormat.hourCycle,
-      )}
-      isOn={screenshotMode.isOn}
-      onToggle={() => {
-        screenshotMode.toggle();
-      }}
-    />
-    <SettingSelect
-      label={m.screenshot_mode_turn_off_after()}
-      options={[
-        { value: AFTER_AN_HOUR, label: m.screenshot_mode_turn_off_hour() },
-        { value: NEVER, label: m.screenshot_mode_turn_off_never() },
-      ]}
-      value={screenshotMode.options.turnOffAfterAnHour ? AFTER_AN_HOUR : NEVER}
-      onChoose={(value) => {
-        screenshotMode.choose({
-          option: "turnOffAfterAnHour",
-          isChosen: value === AFTER_AN_HOUR,
-        });
-      }}
-    />
-    {#each SWITCHED_OPTIONS as option (option)}
+  <div class="flex flex-col gap-sm">
+    <p class="text-detail text-muted">{m.screenshot_mode_intro()}</p>
+    <div class={[CARD, "divide-y divide-border"]}>
       <SettingSwitch
-        label={OPTION_TEXT[option].label()}
-        description={OPTION_TEXT[option].help()}
-        isOn={screenshotMode.options[option]}
+        label={m.screenshot_mode_title()}
+        description={screenshotModeSummary(
+          screenshotMode.activity,
+          timeFormat.hourCycle,
+        )}
+        isOn={screenshotMode.isOn}
         onToggle={() => {
+          screenshotMode.toggle();
+        }}
+      />
+      <SettingSelect
+        label={m.screenshot_mode_turn_off_after()}
+        options={[
+          { value: AFTER_AN_HOUR, label: m.screenshot_mode_turn_off_hour() },
+          { value: NEVER, label: m.screenshot_mode_turn_off_never() },
+        ]}
+        value={screenshotMode.options.turnOffAfterAnHour
+          ? AFTER_AN_HOUR
+          : NEVER}
+        onChoose={(value) => {
           screenshotMode.choose({
-            option,
-            isChosen: !screenshotMode.options[option],
+            option: "turnOffAfterAnHour",
+            isChosen: value === AFTER_AN_HOUR,
           });
         }}
       />
-    {/each}
+      {#each SWITCHED_OPTIONS as option (option)}
+        <SettingSwitch
+          label={OPTION_TEXT[option].label()}
+          description={OPTION_TEXT[option].help()}
+          isOn={screenshotMode.options[option]}
+          onToggle={() => {
+            screenshotMode.choose({
+              option,
+              isChosen: !screenshotMode.options[option],
+            });
+          }}
+        />
+      {/each}
+    </div>
   </div>
 
   {#if hasKeyboard}
