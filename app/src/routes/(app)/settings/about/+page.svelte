@@ -6,13 +6,13 @@
   import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
   import ProjectLinkRows from "#lib/about/ProjectLinkRows.svelte";
   import RowText from "#lib/about/RowText.svelte";
-  import { FileText, Info } from "@lucide/svelte";
+  import { Bug, FileText, Info } from "@lucide/svelte";
 
   import { Item } from "#lib/components/ui/item/index.ts";
   import { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { isPhone } from "#lib/page/platform.ts";
+  import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
@@ -26,6 +26,13 @@
   const width = new WindowWidth();
   const look = $derived(
     isPhone(data.appInfo.platform, width.current) ? "phone" : "pane",
+  );
+  const reportHint = $derived(
+    isPointer(data.appInfo.platform)
+      ? m.about_report_problem_hint_computer()
+      : look === "phone"
+        ? m.about_report_problem_hint_phone()
+        : m.about_report_problem_hint_tablet(),
   );
 </script>
 
@@ -55,6 +62,13 @@
     <ul
       class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
     >
+      <AboutPageRow
+        route="/(app)/settings/about/report"
+        icon={Bug}
+        label={m.about_report_problem()}
+        hint={reportHint}
+        {look}
+      />
       <ProjectLinkRows {opening} sourceCode={data.appInfo.sourceCode} {look} />
       <AboutPageRow
         route="/(app)/settings/about/licences"
