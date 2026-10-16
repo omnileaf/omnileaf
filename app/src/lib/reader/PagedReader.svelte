@@ -649,6 +649,16 @@
     );
   }
 
+  let lastPointer = { x: Number.NaN, y: Number.NaN };
+
+  /** WebKit sends a pointermove whenever the page scrolls under a pointer that hasn't moved, so only a change of position counts. */
+  function hasPointerMoved(event: PointerEvent): boolean {
+    const moved =
+      event.clientX !== lastPointer.x || event.clientY !== lastPointer.y;
+    lastPointer = { x: event.clientX, y: event.clientY };
+    return moved;
+  }
+
   /** Leaves no tapped zone focused, so Space goes on turning pages rather than pressing the zone tapped last. */
   function onZone(event: MouseEvent, zone: ReaderAction): void {
     if (isPointerClick(event) && event.currentTarget instanceof HTMLElement) {
@@ -945,7 +955,7 @@
     BACKGROUNDS[look.background],
   ]}
   onpointermove={(event) => {
-    if (isAtRevealEdge(event)) {
+    if (hasPointerMoved(event) && isAtRevealEdge(event)) {
       controls.show();
     }
   }}
