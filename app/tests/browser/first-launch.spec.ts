@@ -190,6 +190,27 @@ for (const step of STEPS) {
   });
 }
 
+const TITLE_TRACKING = -0.01;
+
+for (const step of [STEPS[0], STEPS[1]]) {
+  test(`tightens the letters of "${step.heading}" as drawn`, async ({
+    page,
+  }) => {
+    await goTo(page, step.heading);
+    const title = heading(page, step.heading);
+
+    const { size, tracking } = await title.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        size: Number.parseFloat(style.fontSize),
+        tracking: style.letterSpacing,
+      };
+    });
+
+    expect(tracking).toBe(`${String(TITLE_TRACKING * size)}px`);
+  });
+}
+
 interface ButtonShape {
   height: number;
   radius: number;
