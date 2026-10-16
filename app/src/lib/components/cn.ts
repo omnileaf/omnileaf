@@ -394,6 +394,7 @@ export const TOKEN_THEME = {
     "series-bar-start",
     "series-bar-top",
     "series-card",
+    "series-card-progress",
     "series-check",
     "series-column-added",
     "series-column-pages",
