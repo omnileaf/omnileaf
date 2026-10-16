@@ -426,6 +426,7 @@ export const TOKEN_THEME = {
     "settings-list",
     "settings-list-widest",
     "settings-row",
+    "settings-value",
     "sheet-bottom",
     "sheet-buttons",
     "sheet-gap",

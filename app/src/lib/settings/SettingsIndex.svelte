@@ -69,17 +69,17 @@
                     />
                   </ItemMedia>
                   <ItemContent
-                    class="ios:flex-row ios:items-center ios:justify-between ios:gap-sm desktop:flex-row desktop:items-center desktop:gap-md"
+                    class="ios:flex-row ios:flex-wrap ios:items-center ios:gap-x-sm ios:min-inline-none desktop:flex-row desktop:items-center desktop:gap-md"
                   >
                     <ItemTitle
-                      class="text-body ios:shrink-0 ios:font-regular desktop:flex-1 desktop:text-callout"
+                      class="text-body ios:font-regular ios:min-inline-none desktop:flex-1 desktop:text-callout"
                     >
                       {section.label()}
                     </ItemTitle>
                     {#if summary !== undefined}
                       <ItemDescription
                         lang={summary.lang}
-                        class="text-footnote ios:truncate ios:text-end ios:text-body ios:min-inline-none"
+                        class="text-footnote ios:flex-1 ios:truncate ios:text-end ios:text-body ios:min-inline-settings-value"
                         >{summary.text}</ItemDescription
                       >
                     {/if}
