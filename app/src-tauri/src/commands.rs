@@ -171,11 +171,12 @@ async fn add_library_folder(
     let Some(folder) = picked else {
         return Ok(None);
     };
-    Ok(Some(
-        library
-            .add_folder(folder, reporting_to(on_progress))
-            .await?,
-    ))
+    let added = library
+        .add_folder(folder, reporting_to(on_progress))
+        .await?;
+    #[cfg(target_os = "macos")]
+    crate::folder_share::remember_shares(&library).await;
+    Ok(Some(added))
 }
 
 #[tauri::command]
@@ -207,11 +208,12 @@ async fn relocate_library_folder(
     let Some(folder) = picked else {
         return Ok(None);
     };
-    Ok(Some(
-        library
-            .relocate_folder(id, folder, reporting_to(on_progress))
-            .await?,
-    ))
+    let relocated = library
+        .relocate_folder(id, folder, reporting_to(on_progress))
+        .await?;
+    #[cfg(target_os = "macos")]
+    crate::folder_share::remember_shares(&library).await;
+    Ok(Some(relocated))
 }
 
 #[tauri::command]
