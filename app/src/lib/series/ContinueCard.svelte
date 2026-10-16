@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardFooter,
@@ -79,20 +78,15 @@
     <CardDescription>
       {next === null ? where(next) : withTimeLeft(where(next))}
     </CardDescription>
-    {#if next !== null && isWide}
-      <CardAction>
-        <ContinueLink book={next} />
-      </CardAction>
-    {/if}
   </CardHeader>
   <CardContent
-    class="flex flex-col gap-sm px-series-card expanded:flex-row expanded:items-center expanded:gap-md expanded:px-xl"
+    class="flex flex-col gap-sm px-series-card expanded:flex-row expanded:flex-wrap expanded:items-center expanded:gap-md expanded:px-xl"
   >
     <Progress
       aria-labelledby={countId}
       max={overview.bookCount}
       value={overview.readCount}
-      class="expanded:flex-1"
+      class="expanded:flex-1 expanded:basis-series-card-progress expanded:min-inline-series-card-progress"
     />
     <p id={countId} class="text-small text-nowrap text-muted tabular-nums">
       {m.series_read_count({
@@ -100,6 +94,9 @@
         total: overview.bookCount,
       })}
     </p>
+    {#if next !== null && isWide}
+      <ContinueLink book={next} />
+    {/if}
   </CardContent>
   {#if next !== null && !isWide}
     <CardFooter class="px-series-card">
