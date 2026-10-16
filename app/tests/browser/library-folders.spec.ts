@@ -152,6 +152,25 @@ test("brings the folder back with Undo", async ({ page }) => {
   expect(library.folders).toContain(SAMPLE_COMICS);
 });
 
+test("shares one bar and one Undo between removals in quick succession", async ({
+  page,
+}) => {
+  library.folders = [HOME, SAMPLE_COMICS, SAMPLE_LIBRARY];
+  await page.goto("/settings/library");
+  const folders = page.getByRole("region", { name: "Folders" });
+
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+  await folders.getByRole("button", { name: "Remove Sample Library" }).click();
+  const bar = page.getByRole("listitem").filter({ hasText: "2 removed" });
+  await expect(bar).toContainText(
+    "Sample Comics and Sample Library. Their files stay where they are.",
+  );
+  await bar.getByRole("button", { name: "Undo" }).click();
+
+  await expect(folders.getByRole("listitem")).toHaveCount(2);
+  expect(library.folders).toHaveLength(3);
+});
+
 test("removes the folder for good once Undo lapses", async ({ page }) => {
   await page.clock.install();
   await page.goto("/settings/library");

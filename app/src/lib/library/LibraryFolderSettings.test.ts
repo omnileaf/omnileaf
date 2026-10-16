@@ -376,6 +376,76 @@ test("brings the folder back when its removal is undone", async () => {
   expect(removed).toEqual([]);
 });
 
+async function removeComicsThenManga(folders: Locator): Promise<void> {
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+  await expect
+    .element(folders.getByText("Sample Comics", { exact: true }))
+    .not.toBeInTheDocument();
+  await folders.getByRole("button", { name: "Remove Sample Manga" }).click();
+}
+
+test("says no folders are linked once the last one is removed", async () => {
+  const library = [HOME, COMICS];
+  serveFolders(library);
+  const { folders } = await renderSettings();
+
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+
+  await expect
+    .element(
+      folders.getByText("No folders linked. Add one to fill your library."),
+    )
+    .toBeVisible();
+});
+
+test("shares one bar and one Undo between removals in quick succession", async () => {
+  const library = [HOME, COMICS, MANGA];
+  serveFolders(library);
+  const { removeFolder, removed } = removingFrom(library);
+  const { folders, toasts } = await renderSettings({ removeFolder });
+
+  await removeComicsThenManga(folders);
+
+  await expect.element(folders.getByRole("listitem")).not.toBeInTheDocument();
+  await expect
+    .element(toasts.getByRole("listitem"))
+    .toHaveTextContent(
+      "2 removed Sample Comics and Sample Manga. Their files stay where they are. Undo Ctrl Z",
+    );
+  expect(removed).toEqual([]);
+});
+
+test("brings every folder of a shared removal back with one Undo", async () => {
+  const library = [HOME, COMICS, MANGA];
+  serveFolders(library);
+  const { removeFolder, removed } = removingFrom(library);
+  const { folders, toasts, notices } = await renderSettings({ removeFolder });
+  await removeComicsThenManga(folders);
+
+  const shared = toasts.getByRole("listitem").filter({ hasText: "2 removed" });
+  await expect.element(shared).toBeVisible();
+
+  await shared.getByRole("button", { name: "Undo" }).click();
+  notices.offerUndo({ title: "A later change", undo: () => undefined });
+
+  await expect
+    .element(folders.getByRole("listitem").nth(1))
+    .toHaveTextContent("Sample Manga /media/Sample Manga");
+  expect(removed).toEqual([]);
+});
+
+test("removes every folder of a shared removal for good once its Undo is gone", async () => {
+  const library = [HOME, COMICS, MANGA];
+  serveFolders(library);
+  const { removeFolder, removed } = removingFrom(library);
+  const { folders, notices } = await renderSettings({ removeFolder });
+  await removeComicsThenManga(folders);
+
+  notices.offerUndo({ title: "A later change", undo: () => undefined });
+
+  await expect.poll(() => removed).toEqual([COMICS.id, MANGA.id]);
+});
+
 test("removes the folder for good once its Undo is gone", async () => {
   const library = [HOME, COMICS, MANGA];
   serveFolders(library);
