@@ -12,6 +12,7 @@ interface SegmentLook {
   readonly platform: Platform;
   readonly height: number;
   readonly innerCorner: string;
+  readonly outerCorner: string;
   readonly chosenFill: string;
   readonly otherFill: string;
 }
@@ -23,6 +24,7 @@ const LOOKS: readonly SegmentLook[] = [
     platform: "linux",
     height: 36,
     innerCorner: "0px",
+    outerCorner: "8px",
     chosenFill: "--accent",
     otherFill: "--background",
   },
@@ -30,6 +32,7 @@ const LOOKS: readonly SegmentLook[] = [
     platform: "macos",
     height: 28,
     innerCorner: "6px",
+    outerCorner: "6px",
     chosenFill: "--accent",
     otherFill: "--background",
   },
@@ -37,6 +40,7 @@ const LOOKS: readonly SegmentLook[] = [
     platform: "windows",
     height: 32,
     innerCorner: "4px",
+    outerCorner: "4px",
     chosenFill: "--primary",
     otherFill: "--windows-control",
   },
@@ -84,6 +88,23 @@ for (const look of LOOKS) {
     );
     expect(getComputedStyle(middle).backgroundColor).toBe(
       colourOf(look.otherFill),
+    );
+  });
+}
+
+for (const look of LOOKS) {
+  test(`rounds the outer corners of the ${look.platform} segments to ${look.outerCorner}`, async () => {
+    await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+    document.documentElement.dataset.platform = look.platform;
+    document.documentElement.dataset.theme = "light";
+    await render(ToggleGroupHarness);
+
+    const first = page.getByRole("radio", { name: "Grid" }).element();
+    const last = page.getByRole("radio", { name: "List" }).element();
+
+    expect(getComputedStyle(first).borderTopLeftRadius).toBe(look.outerCorner);
+    expect(getComputedStyle(last).borderBottomRightRadius).toBe(
+      look.outerCorner,
     );
   });
 }
