@@ -90,3 +90,44 @@ for (const look of LOOKS) {
     expect(style.boxShadow).toContain(shadowOf(look.shadow));
   });
 }
+
+test("sets the Windows buttons on a band under a stroke", async () => {
+  await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+  document.documentElement.dataset.platform = "windows";
+  document.documentElement.dataset.theme = "light";
+  await render(ConfirmDialogHarness);
+
+  const footer = page
+    .getByRole("button", { name: "Cancel" })
+    .element().parentElement;
+  if (footer === null) {
+    throw new Error("the Cancel button has no footer around it");
+  }
+  const style = getComputedStyle(footer);
+
+  expect(style.backgroundColor).toBe(
+    resolvedColour("--windows-mica", "backgroundColor"),
+  );
+  expect(style.borderTopWidth).toBe("1px");
+  expect(style.borderTopColor).toBe(
+    resolvedColour("--windows-stroke", "color"),
+  );
+});
+
+test("leaves room for the focus ring around the buttons", async () => {
+  await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+  document.documentElement.dataset.platform = "linux";
+  await render(ConfirmDialogHarness);
+
+  const cancel = page.getByRole("button", { name: "Cancel" }).element();
+  const scroller = cancel.closest(".overflow-auto");
+  if (scroller === null) {
+    throw new Error("the buttons sit in no scrolling area");
+  }
+  const button = cancel.getBoundingClientRect();
+  const area = scroller.getBoundingClientRect();
+  const ringReach = 4;
+
+  expect(button.left - area.left).toBeGreaterThanOrEqual(ringReach);
+  expect(area.bottom - button.bottom).toBeGreaterThanOrEqual(ringReach);
+});
