@@ -11,15 +11,14 @@
   import StepBadge from "./StepBadge.svelte";
   import StepFrame from "./StepFrame.svelte";
   import StepHeader from "./StepHeader.svelte";
-  import type { FirstLaunchStep } from "./steps";
 
   let {
     device,
-    onBackTo,
+    onBack,
     onNext,
   }: {
     device: DeviceKind;
-    onBackTo: (step: FirstLaunchStep) => void;
+    onBack: () => void;
     onNext: () => void;
   } = $props();
 
@@ -40,15 +39,17 @@
   {/if}
 {/snippet}
 
-<StepFrame step="choices" {onBackTo}>
+<StepFrame step="choices" {onBack}>
   <div class="flex flex-col gap-lg">
-    <StepHeader scale="headline">
+    <StepHeader>
       {#snippet badge()}
         <StepBadge icon={SlidersHorizontal} />
       {/snippet}
       {m.first_launch_choices_title()}
+      {#snippet lead()}
+        {m.first_launch_choices_body()}
+      {/snippet}
     </StepHeader>
-    <p class="text-step-body text-muted">{m.first_launch_choices_body()}</p>
     <ThemeChoice
       title={m.first_launch_choices_appearance()}
       placement="first-launch"

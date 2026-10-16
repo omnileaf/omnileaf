@@ -15,36 +15,37 @@
   import StepFrame from "./StepFrame.svelte";
   import StepBadge from "./StepBadge.svelte";
   import StepHeader from "./StepHeader.svelte";
-  import type { FirstLaunchStep } from "./steps";
 
   let {
     platform,
     folders,
-    onBackTo,
+    onBack,
     onNext,
   }: {
     platform: Platform;
     folders: FolderList;
-    onBackTo: (step: FirstLaunchStep) => void;
+    onBack: () => void;
     onNext: () => void;
   } = $props();
 
   const isInFiles = $derived(platform === "ios");
 </script>
 
-<StepFrame step="home" {onBackTo}>
+<StepFrame step="home" {onBack}>
   <div class="flex flex-col gap-lg">
-    <StepHeader scale="headline">
+    <StepHeader>
       {#snippet badge()}
         <StepBadge icon={House} />
       {/snippet}
       {isInFiles
         ? m.first_launch_home_title_ios()
         : m.first_launch_home_title()}
+      {#snippet lead()}
+        {isInFiles
+          ? m.first_launch_home_body_ios()
+          : m.first_launch_home_body()}
+      {/snippet}
     </StepHeader>
-    <p class="text-step-body wrap-break-word text-muted">
-      {isInFiles ? m.first_launch_home_body_ios() : m.first_launch_home_body()}
-    </p>
     {#if isInFiles}
       {#if folders.kind === "loaded" && folders.home !== undefined}
         {@const home = folders.home}

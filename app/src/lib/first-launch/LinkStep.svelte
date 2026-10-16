@@ -15,21 +15,20 @@
   import StepFrame from "./StepFrame.svelte";
   import StepBadge from "./StepBadge.svelte";
   import StepHeader from "./StepHeader.svelte";
-  import type { FirstLaunchStep } from "./steps";
 
   let {
     platform,
     folders,
     addFolder,
     notices,
-    onBackTo,
+    onBack,
     onNext,
   }: {
     platform: Platform;
     folders: LibraryFolders;
     addFolder: AddFolder;
     notices: Notices;
-    onBackTo: (step: FirstLaunchStep) => void;
+    onBack: () => void;
     onNext: () => void;
   } = $props();
 
@@ -52,15 +51,17 @@
   } satisfies WordingByWidth;
 </script>
 
-<StepFrame step="link" {onBackTo}>
+<StepFrame step="link" {onBack}>
   <div class="flex flex-col gap-lg">
-    <StepHeader scale="headline">
+    <StepHeader>
       {#snippet badge()}
         <StepBadge icon={Link2} />
       {/snippet}
       {m.first_launch_link_title()}
+      {#snippet lead()}
+        {m.first_launch_link_body()}
+      {/snippet}
     </StepHeader>
-    <p class="text-step-body text-muted">{m.first_launch_link_body()}</p>
     <LinkedFolders
       {folders}
       {addFolder}
