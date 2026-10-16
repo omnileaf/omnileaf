@@ -16,11 +16,20 @@
     isTitleUnderBar,
     height = $bindable(0),
     onMarkAll,
+    onLabel,
+    onEditDetails,
+    showFolder,
   }: {
     title: string | undefined;
     isTitleUnderBar: boolean;
     height?: number;
     onMarkAll: ((mark: ReadMark) => Promise<void>) | undefined;
+    onLabel: (() => void) | undefined;
+    onEditDetails: (() => void) | undefined;
+    showFolder: {
+      readonly label: string;
+      readonly onShow: (() => void) | undefined;
+    };
   } = $props();
 </script>
 
@@ -55,6 +64,6 @@
     {title}
   </span>
   {#if title !== undefined && onMarkAll !== undefined}
-    <SeriesMenu {title} {onMarkAll} />
+    <SeriesMenu {title} {onMarkAll} {onLabel} {onEditDetails} {showFolder} />
   {/if}
 </header>
