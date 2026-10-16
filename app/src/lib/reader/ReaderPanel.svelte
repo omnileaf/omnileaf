@@ -27,6 +27,7 @@
     quickSettings,
     secondsLeft,
     isBlank,
+    showsPreviews,
     onSeek,
   }: {
     pages: readonly BookPage[];
@@ -38,6 +39,7 @@
     quickSettings: Snippet;
     secondsLeft: number | undefined;
     isBlank: boolean;
+    showsPreviews: boolean;
     onSeek: (index: number) => void;
   } = $props();
 
@@ -51,7 +53,7 @@
     "flex flex-col gap-sm p-sm expanded:justify-center expanded:min-block-reader-top-wide large:py-none",
   )}
 >
-  {#if isDragged}
+  {#if isDragged && showsPreviews}
     <NearbyPages {pages} {shown} {isBlank} />
   {/if}
   <div
