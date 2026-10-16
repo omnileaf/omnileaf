@@ -23,6 +23,21 @@ function included(page: Page) {
   return page.getByRole("region", { name: "What's included" });
 }
 
+function waysOut(page: Page) {
+  return page.getByRole("region", { name: "Ways to send it" });
+}
+
+async function keptCodes(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const kept: unknown = JSON.parse(
+      window.localStorage.getItem("omnileaf.yourReports") ?? "[]",
+    );
+    return Array.isArray(kept)
+      ? kept.map((report: { code: string }) => report.code)
+      : [];
+  });
+}
+
 async function openReport(page: Page): Promise<void> {
   await page.goto(REPORT_PAGE);
   await expect(
@@ -83,6 +98,110 @@ test.describe("with a few lines logged", () => {
     await included(page).getByRole("button", { name: "Hide" }).click();
     await expect(lines).toBeHidden();
     await expect(show).toHaveAttribute("aria-expanded", "false");
+  });
+});
+
+test.describe("sending it another way", () => {
+  const shared: string[] = [];
+
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      copyProblemReport: () => {
+        shared.push("copied");
+        return null;
+      },
+      openProblemReportIssue: () => {
+        shared.push("opened");
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    shared.length = 0;
+  });
+
+  test("copies the report and keeps its code in Your reports", async ({
+    page,
+  }) => {
+    await openReport(page);
+
+    await waysOut(page).getByRole("button", { name: "Copy report" }).click();
+
+    await expect(
+      page.getByRole("listitem").filter({ hasText: "Report copied" }),
+    ).toContainText(`Code ${FAKE_REPORT_CODE} · kept in Your reports`);
+    expect(shared).toEqual(["copied"]);
+    expect(await keptCodes(page)).toEqual([FAKE_REPORT_CODE]);
+  });
+
+  test("opens the report as a new issue on GitHub", async ({ page }) => {
+    await openReport(page);
+
+    await waysOut(page)
+      .getByRole("button", { name: /^Open on GitHub/ })
+      .click();
+
+    await expect.poll(() => shared).toEqual(["opened"]);
+    expect(await keptCodes(page)).toEqual([FAKE_REPORT_CODE]);
+  });
+
+  test("keeps one code however many ways it goes", async ({ page }) => {
+    await openReport(page);
+
+    await waysOut(page).getByRole("button", { name: "Copy report" }).click();
+    await waysOut(page)
+      .getByRole("button", { name: /^Open on GitHub/ })
+      .click();
+
+    await expect.poll(() => shared).toEqual(["copied", "opened"]);
+    expect(await keptCodes(page)).toEqual([FAKE_REPORT_CODE]);
+  });
+});
+
+test.describe("when the device turns the report down", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      copyProblemReport: () => {
+        throw new CommandFailure({
+          code: "clipboardUnavailable",
+          message: "the clipboard could not be written",
+        });
+      },
+      openProblemReportIssue: () => {
+        throw new CommandFailure({
+          code: "browserUnavailable",
+          message: "the browser could not be opened",
+        });
+      },
+    },
+  });
+
+  test("says the report couldn't be copied and keeps no code", async ({
+    page,
+  }) => {
+    await openReport(page);
+
+    await waysOut(page).getByRole("button", { name: "Copy report" }).click();
+
+    await expect(page.getByRole("main").getByRole("alert")).toHaveText(
+      "Couldn't copy the report. Try again.",
+    );
+    expect(await keptCodes(page)).toEqual([]);
+  });
+
+  test("says the browser couldn't be opened", async ({ page }) => {
+    await openReport(page);
+
+    await waysOut(page)
+      .getByRole("button", { name: /^Open on GitHub/ })
+      .click();
+
+    await expect(page.getByRole("main").getByRole("alert")).toHaveText(
+      "Couldn't open your browser. Try again.",
+    );
   });
 });
 
