@@ -73,6 +73,10 @@
     setAnimationsSetting,
   } from "#lib/appearance/animations.svelte.ts";
   import ScreenshotModeAnnouncement from "#lib/screenshot-mode/ScreenshotModeAnnouncement.svelte";
+  import {
+    screenshotModeShortcutForDocument,
+    setScreenshotModeShortcut,
+  } from "#lib/screenshot-mode/shortcut-setting.svelte.ts";
   import { shortcut } from "#lib/shortcut.ts";
 
   import type { LayoutProps } from "./$types";
@@ -86,6 +90,9 @@
   const themeSetting = setThemeSetting(themeSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
   const screenshotMode = setScreenshotMode(screenshotModeForDocument());
+  const screenshotModeShortcut = setScreenshotModeShortcut(
+    screenshotModeShortcutForDocument(),
+  );
   const crashReportSetting = setCrashReportSetting(
     crashReportSettingForDocument(),
   );
@@ -181,16 +188,11 @@
 </script>
 
 <svelte:window
-  {@attach shortcut({
-    key: "h",
-    command: data.appInfo.platform,
-    shift: true,
-    inTextFields: true,
-    ignoresRepeats: true,
-    run: () => {
+  {@attach shortcut(
+    screenshotModeShortcut.shortcut(data.appInfo.platform, () => {
       screenshotMode.toggle();
-    },
-  })}
+    }),
+  )}
   onfocus={settleScreenshotMode}
   onpageshow={settleScreenshotMode}
   onstorage={(event: StorageEvent) => {
