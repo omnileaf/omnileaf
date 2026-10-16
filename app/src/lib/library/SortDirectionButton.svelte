@@ -39,6 +39,16 @@
         change: m.library_sort_most_unread_first_change,
       },
     ],
+    timeLeft: [
+      {
+        label: m.library_sort_shortest_first,
+        change: m.library_sort_shortest_first_change,
+      },
+      {
+        label: m.library_sort_longest_first,
+        change: m.library_sort_longest_first_change,
+      },
+    ],
   } satisfies Record<LibrarySort["by"], readonly [Wording, Wording]>;
 
   const LOOKS = {
