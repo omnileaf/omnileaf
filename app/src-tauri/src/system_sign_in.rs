@@ -190,7 +190,7 @@ mod macos {
         "end run",
     ];
 
-    /// AppleScript's `mount volume` shows macOS's own sign-in for the server, with its keychain choice, and waits for it, so the password goes to macOS without passing through Omnileaf.
+    /// The `mount volume` scripting command shows macOS's own sign-in for the server, with its keychain choice, and waits for it, so the password goes to macOS without passing through Omnileaf.
     pub(super) async fn ask(address: &ShareAddress) -> SystemSignIn {
         let address = address.as_str().to_owned();
         let answer = tauri::async_runtime::spawn_blocking(move || {
