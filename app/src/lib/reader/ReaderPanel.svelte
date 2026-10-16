@@ -54,7 +54,12 @@
   )}
 >
   {#if isDragged && showsPreviews}
-    <NearbyPages {pages} {shown} {isBlank} />
+    <NearbyPages
+      {pages}
+      {shown}
+      {isBlank}
+      isReversed={direction === "rightToLeft"}
+    />
   {/if}
   <div
     role="group"
