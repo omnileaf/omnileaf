@@ -166,6 +166,7 @@
       {notices}
       usesStandIns={screenshotMode.isOn}
       addPlacement="none"
+      countingLook="words-and-bar"
     >
       {#snippet rowDetail(folder: LibraryFolder)}
         {summaryOf(folder)}

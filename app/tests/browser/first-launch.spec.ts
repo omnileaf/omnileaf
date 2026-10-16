@@ -1354,6 +1354,8 @@ test.describe("while a folder is still being scanned", () => {
     ).toBe(true);
   });
 
+  const BAR = "[role=progressbar]";
+
   function scannedRow(page: Page): Locator {
     return page
       .getByRole("region", { name: "Folders" })
@@ -1371,14 +1373,16 @@ test.describe("while a folder is still being scanned", () => {
     await expect(
       scannedRow(page).getByRole("button", { name: /Remove/ }),
     ).toHaveCount(0);
+    await expect(scannedRow(page).locator(BAR)).toHaveCount(0);
   });
 
-  test("keeps counting in the folder's row on You're all set", async ({
+  test("keeps counting in the folder's row on You're all set, over a bar", async ({
     page,
   }) => {
     await goOnWhileScanning(page);
 
     await expect(scannedRow(page)).toContainText("Counting… 38 so far");
+    await expect(scannedRow(page).locator(BAR)).toHaveCount(1);
   });
 
   test("offers Continue on Link folders while the folder is scanned", async ({
