@@ -40,13 +40,15 @@
     >{location}</code
   >
   <dl
-    class="grid grid-cols-home-fact divide-y divide-border border-bs border-border"
+    class="grid grid-cols-details divide-y divide-border border-bs border-border"
   >
     {#each facts as fact (fact.term)}
       <div
         class="col-span-2 grid grid-cols-subgrid gap-x-lg px-home-card py-home-path"
       >
-        <dt class="text-footnote text-muted">{fact.term}</dt>
+        <dt class="text-footnote text-muted min-inline-home-term">
+          {fact.term}
+        </dt>
         <dd class="text-small">{fact.detail}</dd>
       </div>
     {/each}
