@@ -19,7 +19,9 @@ test("says it's on and when it turns off on a phone", () => {
     UNTIL,
     "android",
     DEFAULT_SCREENSHOT_SHORTCUT,
-    "h23", () => undefined);
+    "h23",
+    () => undefined,
+  );
 
   expect(wordsOf(notice)).toEqual({
     title: "Screenshot mode is on",
@@ -33,7 +35,9 @@ test("adds the shortcut that turns it off on a desktop", () => {
     UNTIL,
     "windows",
     DEFAULT_SCREENSHOT_SHORTCUT,
-    "h23", () => undefined);
+    "h23",
+    () => undefined,
+  );
 
   expect(notice.body).toBe("Turns off at 22:14 · Ctrl Shift H");
 });
@@ -43,7 +47,9 @@ test("names the Mac's shortcut on a Mac", () => {
     UNTIL,
     "macos",
     DEFAULT_SCREENSHOT_SHORTCUT,
-    "h23", () => undefined);
+    "h23",
+    () => undefined,
+  );
 
   expect(notice.body).toBe("Turns off at 22:14 · ⌘ Shift H");
 });
@@ -53,7 +59,9 @@ test("says nothing of turning off on a phone when it stays on", () => {
     { kind: "on" },
     "ios",
     DEFAULT_SCREENSHOT_SHORTCUT,
-    "h23", () => undefined);
+    "h23",
+    () => undefined,
+  );
 
   expect(notice.body).toBeUndefined();
 });
@@ -76,9 +84,11 @@ test("turns it off from its button", () => {
     UNTIL,
     "android",
     DEFAULT_SCREENSHOT_SHORTCUT,
-    "h23", () => {
-    turnedOff += 1;
-  });
+    "h23",
+    () => {
+      turnedOff += 1;
+    },
+  );
 
   notice.action?.run();
 
