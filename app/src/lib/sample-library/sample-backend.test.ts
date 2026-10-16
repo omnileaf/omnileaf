@@ -556,6 +556,21 @@ test("lists the series that gained a book last first, then the rest newest first
   ]);
 });
 
+test("lists the series with the most unread books first", async () => {
+  const { backend } = backendFor();
+
+  const page = await backend.librarySeries(null, {
+    ...NEW_LIBRARY_LISTING,
+    sort: { by: "unreadCount", direction: "descending" },
+  });
+
+  const unreadCounts = page.series.map((series) => series.unreadCount);
+  expect(unreadCounts).toEqual(
+    unreadCounts.toSorted((one, other) => other - one),
+  );
+  expect(unreadCounts[0]).toBeGreaterThan(unreadCounts.at(-1) ?? 0);
+});
+
 test("starts the library's tabs with All shown and New chapters hidden", async () => {
   const { backend } = backendFor();
 
