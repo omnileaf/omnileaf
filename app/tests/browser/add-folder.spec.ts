@@ -403,8 +403,8 @@ test("opens Settings › Library from Settings", async ({ page }) => {
 });
 
 for (const { platform, buttonHeight } of [
-  { platform: "linux", buttonHeight: 36 },
-  { platform: "android", buttonHeight: 48 },
+  { platform: "linux", buttonHeight: 44 },
+  { platform: "android", buttonHeight: 44 },
 ] as const) {
   test.describe(`on ${platform}`, () => {
     testOnlyInItsWebview(platform);
