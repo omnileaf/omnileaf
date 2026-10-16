@@ -57,6 +57,7 @@ mod series_details;
 mod series_overview;
 mod utc_offset;
 mod version_details;
+mod windows_share;
 
 pub use adult_content::{AdultContent, AdultTreatment};
 pub use app_info::{AppInfo, Platform};
@@ -130,6 +131,7 @@ pub use series_overview::{
 };
 pub use utc_offset::{UtcOffset, UtcOffsetOutOfRange};
 pub use version_details::{BuildProfile, VersionDetails};
+pub use windows_share::unreachable_windows_share;
 
 #[derive(Debug)]
 pub struct Core {

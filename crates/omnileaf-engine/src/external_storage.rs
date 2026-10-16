@@ -21,10 +21,10 @@ pub(crate) const NETWORK_FILE_SYSTEMS: &[&str] = &[
     "sshfs",
 ];
 const REMOVABLE_MEDIA_FOLDERS: &[&str] = &["/media", "/run/media"];
-const WINDOWS_SHARE_PREFIX: &str = r"\\";
-const WINDOWS_VERBATIM_SHARE_PREFIX: &str = r"\\?\UNC\";
-const WINDOWS_VERBATIM_PREFIX: &str = r"\\?\";
-const WINDOWS_DEVICE_PREFIX: &str = r"\\.\";
+pub(crate) const WINDOWS_SHARE_PREFIX: &str = r"\\";
+pub(crate) const WINDOWS_VERBATIM_SHARE_PREFIX: &str = r"\\?\UNC\";
+pub(crate) const WINDOWS_VERBATIM_PREFIX: &str = r"\\?\";
+pub(crate) const WINDOWS_DEVICE_PREFIX: &str = r"\\.\";
 const WINDOWS_REMOVABLE_DRIVE: u32 = 2;
 const WINDOWS_FIXED_DRIVE: u32 = 3;
 const WINDOWS_REMOTE_DRIVE: u32 = 4;
@@ -121,7 +121,7 @@ fn is_outside_the_device(bus_type: u32) -> bool {
     )
 }
 
-fn windows_drive_root(path: &str) -> Option<String> {
+pub(crate) fn windows_drive_root(path: &str) -> Option<String> {
     let mut letters = path
         .strip_prefix(WINDOWS_VERBATIM_PREFIX)
         .unwrap_or(path)
