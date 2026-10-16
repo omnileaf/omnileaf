@@ -25,6 +25,7 @@ const SHOWN_ON_FAILURE = {
   clipboardUnavailable: FAILED,
   browserUnavailable: FAILED,
   fileManagerUnavailable: FAILED,
+  systemSettingsUnavailable: FAILED,
   noCrashReport: FAILED,
   crashReportUnavailable: FAILED,
   developmentBuildOnly: FAILED,
