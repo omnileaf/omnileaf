@@ -1160,13 +1160,6 @@
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
-@utility grid-cols-home-fact {
-  grid-template-columns: minmax(var(--spacing-home-term), max-content) minmax(
-      0,
-      1fr
-    );
-}
-
 @utility grid-cols-details {
   grid-template-columns: auto minmax(0, 1fr);
 }
