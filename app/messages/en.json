@@ -99,12 +99,16 @@
   "missing_access_title": "Omnileaf can’t open {name}",
   "missing_access_body": "Android took away access to this folder. Your reading progress is safe.",
   "missing_sign_in_title": "Sign in to see {name}",
-  "missing_sign_in_body": "The network share {location} wants you to sign in again. Your reading progress is safe.",
+  "missing_sign_in_body": "The network share {share} wants you to sign in again. Your reading progress is safe.",
+  "missing_mount_title": "Mount {name}’s share again",
+  "missing_mount_body": "{share} is mounted by your system, so there’s no sign-in for Omnileaf to open. Mount it again, then choose Try again. Your reading progress is safe.",
+  "missing_share_body": "It’s on the network share {server}, which may want you to sign in again. Your reading progress is safe.",
   "missing_show_anyway": "Show them anyway",
   "missing_find_folder": "Find the folder",
   "missing_choose_again": "Choose it again",
   "missing_unlink": "Unlink it",
   "missing_sign_in": "Sign in",
+  "missing_try_again": "Try again",
   "library_hidden_count": [
     {
       "declarations": [
