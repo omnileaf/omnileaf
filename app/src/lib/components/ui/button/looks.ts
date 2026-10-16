@@ -17,7 +17,7 @@ export const BUTTON_LOOKS = {
   outline: `rounded-control border border-border bg-card font-semibold ${FOCUS_RING}`,
   tinted: `transition-control enabled:hover:tint-hover enabled:active:tint-pressed ${FOCUS_RING}`,
   icon: `flex items-center justify-center rounded-full ${FOCUS_RING}`,
-  "header-control": `flex items-center justify-center gap-sm rounded-full transition-control large:rounded-control large:border large:border-field large:text-small large:font-medium ${FOCUS_RING}`,
+  "header-control": `flex items-center justify-center gap-sm rounded-full transition-control large:rounded-shadcn-button large:border large:border-button-outline-edge large:bg-button-outline large:text-small large:font-medium large:block-shadcn-control windows:large:border-be-windows-stroke-strong linux:large:shadow-raised macos:large:shadow-raised ${FOCUS_RING}`,
   chip: `rounded-full border border-border bg-card font-semibold hover:bg-hover ${FOCUS_RING}`,
   "bar-icon": `flex items-center justify-center gap-xs rounded-control text-foreground transition-control enabled:hover:bg-hover enabled:active:bg-pressed ${FOCUS_RING}`,
   row: "flex items-center text-start transition-control hover:bg-hover active:bg-pressed",

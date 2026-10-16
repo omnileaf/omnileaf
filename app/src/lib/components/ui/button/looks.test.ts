@@ -37,7 +37,10 @@ test.each<[ButtonLook, string[]]>([
   ["outline", ["rounded-control", "border", "border-border", "bg-card"]],
   ["tinted", ["enabled:hover:tint-hover", "enabled:active:tint-pressed"]],
   ["icon", ["flex", "items-center", "justify-center", "rounded-full"]],
-  ["header-control", ["rounded-full", "large:rounded-control", "large:border"]],
+  [
+    "header-control",
+    ["rounded-full", "large:rounded-shadcn-button", "large:border"],
+  ],
   [
     "row-action",
     [
