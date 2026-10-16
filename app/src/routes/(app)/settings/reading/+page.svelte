@@ -1,5 +1,11 @@
 <script lang="ts">
+  import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
+  import {
+    newSeriesReadingMode,
+    READING_MODE_CHOICES,
+    type ReadingModeChoice,
+  } from "#lib/reader/reading-direction.svelte.ts";
   import {
     readerDefaults,
     TAP_ZONES,
@@ -38,11 +44,52 @@
   const swipeActions = getSwipeActionsSetting();
   const swipesId = $props.id();
   const tapZonesId = `${swipesId}-zones`;
+  const modeId = `${swipesId}-mode`;
+  const endId = `${swipesId}-end`;
+  const MODE_NAMES = {
+    automatic: m.reader_direction_automatic,
+    leftToRight: m.reader_left_to_right,
+    rightToLeft: m.reader_right_to_left,
+    longStrip: m.reader_long_strip,
+  } satisfies Record<ReadingModeChoice, () => string>;
+  const newSeries = newSeriesReadingMode();
+
+  function chooseNewSeriesMode(value: string): void {
+    const choice = READING_MODE_CHOICES.find(
+      (candidate) => candidate === value,
+    );
+    if (choice !== undefined) {
+      newSeries.choose(choice);
+    }
+  }
 </script>
 
 <SectionHeading title={m.reading_title()} />
 <p class="mbs-pane-gap text-detail text-muted">{m.reading_defaults_intro()}</p>
 <div class="mbs-pane-gap flex flex-col gap-pane-gap">
+  <section
+    class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row expanded:grid expanded:grid-cols-setting-grid expanded:items-center expanded:gap-x-md"
+  >
+    <label for={modeId} class="font-semibold">
+      {m.reading_mode_new_series()}
+    </label>
+    <NativeSelect
+      class="expanded:inline-setting-control"
+      id={modeId}
+      aria-describedby="{modeId}-help"
+      value={newSeries.choice}
+      onchange={(event: Event & { currentTarget: HTMLSelectElement }) => {
+        chooseNewSeriesMode(event.currentTarget.value);
+      }}
+    >
+      {#each READING_MODE_CHOICES as choice (choice)}
+        <option value={choice}>{MODE_NAMES[choice]()}</option>
+      {/each}
+    </NativeSelect>
+    <p id="{modeId}-help" class="col-span-full text-footnote text-muted">
+      {m.reading_mode_new_series_help()}
+    </p>
+  </section>
   <section
     aria-labelledby={tapZonesId}
     class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
@@ -67,15 +114,21 @@
       class="-mx-list-row inline-auto"
     />
   </section>
-  <SettingSwitch
-    label={m.reading_skip_up_next()}
-    description={m.reading_skip_up_next_help()}
-    isOn={skipUpNext.isOn}
-    onToggle={() => {
-      skipUpNext.turn(!skipUpNext.isOn);
-    }}
-    class="rounded-card border border-border bg-card"
-  />
+  <section
+    aria-labelledby={endId}
+    class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
+  >
+    <h2 id={endId} class="font-semibold">{m.reader_end_of_book()}</h2>
+    <SettingSwitch
+      label={m.reading_skip_up_next()}
+      description={m.reading_skip_up_next_help()}
+      isOn={skipUpNext.isOn}
+      onToggle={() => {
+        skipUpNext.turn(!skipUpNext.isOn);
+      }}
+      class="-mx-list-row inline-auto"
+    />
+  </section>
   <SmartFeaturesSection
     heading="h2"
     class="rounded-card border border-border bg-card p-list-row"
