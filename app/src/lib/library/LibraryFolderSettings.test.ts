@@ -647,9 +647,12 @@ test("reaches Rescan from the keyboard", async () => {
   const { folders } = await renderSettings();
   const rescan = folders.getByRole("button", { name: "Rescan Sample Comics" });
   await expect.element(rescan).toBeVisible();
-  folders.getByRole("button", { name: "Add a folder" }).element().focus();
+  folders
+    .getByRole("button", { name: "Remove Sample Comics" })
+    .element()
+    .focus();
 
-  await userEvent.tab();
+  await userEvent.tab({ shift: true });
 
   await expect.element(rescan).toHaveFocus();
 });

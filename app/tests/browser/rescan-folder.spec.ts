@@ -114,9 +114,9 @@ test("rings Rescan when the keyboard reaches it", async ({ page }) => {
   const folders = page.getByRole("region", { name: "Folders" });
   const rescan = folders.getByRole("button", { name: "Rescan Sample Comics" });
   await expect(rescan).toBeVisible();
-  await folders.getByRole("button", { name: "Add a folder" }).focus();
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).focus();
 
-  await page.keyboard.press("Tab");
+  await page.keyboard.press("Shift+Tab");
 
   await expect(rescan).toBeFocused();
   await expect(rescan).toHaveCSS("outline-style", "solid");
