@@ -7,7 +7,10 @@ import {
 } from "#lib/preferences/stored-preference.ts";
 
 export type SmartFeature =
-  "learnsReadingSpeed" | "showsTimeLeft" | "showsPagePreviews";
+  | "learnsReadingSpeed"
+  | "showsTimeLeft"
+  | "showsBookSummary"
+  | "showsPagePreviews";
 
 type Choices = Record<SmartFeature, boolean>;
 
@@ -15,11 +18,13 @@ const PREFERENCE_KEY = "omnileaf.smartFeatures";
 const ALL_ON: Choices = {
   learnsReadingSpeed: true,
   showsTimeLeft: true,
+  showsBookSummary: true,
   showsPagePreviews: true,
 };
 const ALL_OFF: Choices = {
   learnsReadingSpeed: false,
   showsTimeLeft: false,
+  showsBookSummary: false,
   showsPagePreviews: false,
 };
 
@@ -37,6 +42,7 @@ function storedChoices(stored: string | null): Choices {
     return {
       learnsReadingSpeed: choice("learnsReadingSpeed"),
       showsTimeLeft: choice("showsTimeLeft"),
+      showsBookSummary: choice("showsBookSummary"),
       showsPagePreviews: choice("showsPagePreviews"),
     };
   } catch {
@@ -61,6 +67,10 @@ export class SmartFeatures {
 
   get showsTimeLeft(): boolean {
     return this.#choices.learnsReadingSpeed && this.#choices.showsTimeLeft;
+  }
+
+  get showsBookSummary(): boolean {
+    return this.#choices.showsBookSummary;
   }
 
   get showsPagePreviews(): boolean {
