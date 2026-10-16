@@ -87,6 +87,7 @@
   --switch-off: var(--input);
   --checkbox-off: transparent;
   --select-fill: transparent;
+  --button-outline-fill: var(--background);
   --switch-thumb: var(--background);
   --switch-thumb-on: var(--background);
   --glass: oklch(0.985 0 0 / 78%);
@@ -180,6 +181,7 @@
   --switch-off: color-mix(in oklch, var(--input) 80%, transparent);
   --checkbox-off: color-mix(in oklch, var(--input) 30%, transparent);
   --select-fill: color-mix(in oklch, var(--input) 30%, transparent);
+  --button-outline-fill: color-mix(in oklch, var(--input) 30%, transparent);
   --switch-thumb: var(--foreground);
   --switch-thumb-on: var(--primary-foreground);
   --glass: oklch(0.2 0 0 / 72%);
@@ -307,6 +309,7 @@
   --dialog-edge: var(--border);
   --dialog-radius: var(--radius-lg);
   --dialog-shadow: var(--shadow-lg);
+  --button-outline-edge: var(--input);
   --android-container-low: color-mix(
     in oklch,
     var(--foreground) 4%,
@@ -368,6 +371,8 @@
   --dialog-surface: var(--android-container-high);
   --dialog-edge: transparent;
   --dialog-radius: var(--radius-android-xl);
+  --button-outline-fill: transparent;
+  --button-outline-edge: var(--android-outline);
   --hover-fill: color-mix(
     in oklab,
     currentColor var(--state-hover),
@@ -401,6 +406,8 @@
   --focus-ring-width: 3px;
   --focus-ring-offset: 0px;
   --focus-ring-color: color-mix(in oklch, var(--primary) 45%, transparent);
+  --button-outline-fill: var(--ios-fill);
+  --button-outline-edge: transparent;
 }
 
 [data-platform="macos"],
@@ -465,4 +472,6 @@
   --dialog-edge: var(--windows-stroke);
   --dialog-radius: var(--radius-windows-overlay);
   --dialog-shadow: var(--shadow-windows-flyout);
+  --button-outline-fill: var(--windows-control);
+  --button-outline-edge: var(--windows-stroke);
 }
