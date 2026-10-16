@@ -595,10 +595,43 @@ export function sampleBackend(
     );
   }
 
+  function lastFinished(series: SampleSeries) {
+    const index = series.books.findLastIndex((book) => isRead(book));
+    const book = series.books[index];
+    if (book === undefined) {
+      return [];
+    }
+    return [
+      {
+        book: sampleBookId(series.number, index + 1),
+        bookTitle: book.title,
+        series: sampleSeriesId(series.number),
+        seriesTitle: series.title,
+        position: index + 1,
+        cover: bookCoverOf(series, index + 1),
+        startedAtMs: addedAt(series),
+        utcOffsetMinutes: 0,
+        readSeconds: SESSION_SECONDS,
+        readTo: { state: "end" as const },
+        reading: wireReading(book.reading),
+        day: {
+          day: Math.floor(addedAt(series) / DAY_MS),
+          readSeconds: SESSION_SECONDS,
+        },
+      },
+    ];
+  }
+
   function booksRead(matching: string) {
     const now = Date.now();
     const typed = matching.trim().toLocaleLowerCase();
-    return historyEntries()
+    const started = new Set(historyEntries().map(({ series }) => series));
+    return [
+      ...historyEntries(),
+      ...library
+        .filter((series) => !started.has(sampleSeriesId(series.number)))
+        .flatMap(lastFinished),
+    ]
       .map((entry, rank) => {
         const startedAtMs = now - hoursAgoRead(rank) * HOUR_MS;
         const utcOffsetMinutes = -new Date(startedAtMs).getTimezoneOffset();
@@ -1105,7 +1138,8 @@ export function sampleBackend(
       return null;
     },
     closeBook: () => null,
-    readingHistory: (after, of) => {
+    readingHistory: async (after, of) => {
+      await libraryReady();
       const page = pageOf(
         of.kind === "books" ? booksRead(of.matching) : historyEntries(),
         after,
