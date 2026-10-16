@@ -14,6 +14,7 @@
     PageLayout,
     ReaderBackground,
     ReaderControlsLook,
+    TapZones,
     ReaderLight,
     ReaderSettings,
     SettingsScope,
@@ -154,6 +155,18 @@
     chosen={look.controls}
     onChoose={(controls: ReaderControlsLook) => {
       settings.change("controls", controls);
+    }}
+  />
+  <SettingChoice
+    label={m.reader_tap_zones()}
+    choices={[
+      { value: "edges", label: m.reader_tap_zones_edges() },
+      { value: "lShape", label: m.reader_tap_zones_l() },
+      { value: "off", label: m.reader_tap_zones_off() },
+    ]}
+    chosen={look.tapZones}
+    onChoose={(zones: TapZones) => {
+      settings.change("tapZones", zones);
     }}
   />
   <fieldset data-slot="setting-row" class="flex flex-col pbs-xl">

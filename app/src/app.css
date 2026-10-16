@@ -1119,6 +1119,11 @@
   grid-template-columns: 6.75rem minmax(0, 1fr);
 }
 
+@utility grid-l-zones {
+  grid-template-columns: 3fr 4fr 3fr;
+  grid-template-rows: 3fr 4fr 3fr;
+}
+
 @utility grid-cols-docked-panel {
   grid-template-columns: minmax(0, 1fr) var(--spacing-docked-panel);
 }
