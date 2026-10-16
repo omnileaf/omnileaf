@@ -4,6 +4,7 @@
   import { onMount, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
+  import { assertNever } from "#lib/assert-never.ts";
   import {
     type AdultContent,
     commands,
@@ -224,9 +225,32 @@
         unlinkingBooks = books.status === "ok" ? books.data : undefined;
       });
     },
-    signIn: readAgain,
+    signIn: (missing) => {
+      void signInTo(missing);
+    },
     tryAgain: readAgain,
   });
+
+  async function signInTo(missing: MissingFolder): Promise<void> {
+    const signedIn = await commands.signInToLibraryFolder(missing.folder.id);
+    if (signedIn.status === "error") {
+      reportError(signedIn.error);
+      return;
+    }
+    switch (signedIn.data) {
+      case "signedIn":
+        folderNotices.back(missing);
+        readAgain(missing);
+        return;
+      case "cancelled":
+        return;
+      case "failed":
+        folderNotices.stillFailing(missing);
+        return;
+      default:
+        assertNever(signedIn.data);
+    }
+  }
 
   function readAgain({ folder }: MissingFolder): void {
     void rescanFolderWithProgress(folder.id, () => undefined)
