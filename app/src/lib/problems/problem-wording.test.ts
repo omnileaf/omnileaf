@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 
 import type { FolderProblem, MissingFolder } from "#lib/ipc/bindings.ts";
 import { folderStandIn } from "#lib/screenshot-mode/stand-ins.ts";
+import type { DeviceWord } from "#lib/storage/device.ts";
 
 import type { Problem } from "./needs-attention.svelte";
 import { problemWording } from "./problem-wording";
@@ -37,8 +38,15 @@ function missingFolder(
   };
 }
 
-function wordsOf(problem: Problem, usesStandIns = false) {
-  const { title, detail, fix } = problemWording(problem, usesStandIns);
+function wordsOf(
+  problem: Problem,
+  usesStandIns = false,
+  device: DeviceWord = "phone",
+) {
+  const { title, detail, fix } = problemWording(problem, {
+    usesStandIns,
+    device,
+  });
   return { title, detail, fix };
 }
 
@@ -96,4 +104,24 @@ test("names the folder by its stand-in in Screenshot mode", () => {
   expect(wordsOf(missingFolder("missing"), true).title).toBe(
     `${folderStandIn("Comics")} isn’t there`,
   );
+});
+
+const LOW_SPACE: Problem = { kind: "lowSpace", freeBytes: 1_100_000_000 };
+
+test("says a phone is almost out of space, how much is left and offers to free some up", () => {
+  expect(wordsOf(LOW_SPACE)).toEqual({
+    title: "Almost out of space",
+    detail: "1.1 GB left on this phone",
+    fix: "Free up space",
+  });
+});
+
+test("says how much is left on a tablet", () => {
+  expect(wordsOf(LOW_SPACE, false, "tablet").detail).toBe(
+    "1.1 GB left on this tablet",
+  );
+});
+
+test("says only how much is left on a computer", () => {
+  expect(wordsOf(LOW_SPACE, false, "computer").detail).toBe("1.1 GB left");
 });

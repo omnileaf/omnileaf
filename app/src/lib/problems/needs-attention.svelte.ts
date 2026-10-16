@@ -1,11 +1,10 @@
 import { createContext } from "svelte";
 
-import type { IpcError, MissingFolder } from "#lib/ipc/bindings.ts";
+import type { IpcError, MissingFolder, StorageUse } from "#lib/ipc/bindings.ts";
 
-export type Problem = {
-  readonly kind: "missingFolder";
-  readonly missing: MissingFolder;
-};
+export type Problem =
+  | { readonly kind: "missingFolder"; readonly missing: MissingFolder }
+  | { readonly kind: "lowSpace"; readonly freeBytes: number };
 
 type Answer<Value> =
   | { readonly status: "ok"; readonly data: Value }
@@ -13,10 +12,11 @@ type Answer<Value> =
 
 export interface ProblemSources {
   readonly missingFolders: () => Promise<Answer<MissingFolder[]>>;
+  readonly storageUse: () => StorageUse | undefined;
 }
 
 export class NeedsAttention {
-  #problems: readonly Problem[] = $state.raw([]);
+  #folderProblems: readonly Problem[] = $state.raw([]);
   #isShown = $state(false);
 
   constructor(
@@ -25,7 +25,13 @@ export class NeedsAttention {
   ) {}
 
   get problems(): readonly Problem[] {
-    return this.#problems;
+    const used = this.sources.storageUse();
+    return used?.isLow === true
+      ? [
+          ...this.#folderProblems,
+          { kind: "lowSpace", freeBytes: used.freeBytes },
+        ]
+      : this.#folderProblems;
   }
 
   get isShown(): boolean {
@@ -46,7 +52,7 @@ export class NeedsAttention {
       this.onError(missing.error);
       return;
     }
-    this.#problems = missing.data.map((folder) => ({
+    this.#folderProblems = missing.data.map((folder) => ({
       kind: "missingFolder",
       missing: folder,
     }));

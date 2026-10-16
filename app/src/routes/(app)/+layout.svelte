@@ -37,7 +37,9 @@
   } from "#lib/storage/storage-check.svelte.ts";
   import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
   import { shownBackLink } from "#lib/navigation/back-link.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
+  import { deviceWordOf } from "#lib/storage/device.ts";
   import { type Shortcut, shortcut } from "#lib/shortcut.ts";
 
   import type { LayoutProps } from "./$types";
@@ -56,7 +58,10 @@
   const storage = setStorageCheck(new StorageCheck(commands, reportError));
   const needsAttention = setNeedsAttention(
     new NeedsAttention(
-      { missingFolders: () => commands.missingLibraryFolders() },
+      {
+        missingFolders: () => commands.missingLibraryFolders(),
+        storageUse: () => storage.use,
+      },
       reportError,
     ),
   );
@@ -88,6 +93,12 @@
         ]
       : [],
   );
+
+  const width = new WindowWidth();
+  const wordingContext = $derived({
+    usesStandIns: screenshotMode.isOn,
+    device: deviceWordOf(data.appInfo.platform, width.current),
+  });
 
   function fix(problem: Problem): void {
     void fixProblem(problem).then(() => needsAttention.gather());
@@ -135,7 +146,7 @@
 {#snippet attention({ isFolded }: { isFolded: boolean })}
   <NeedsAttentionSidebarItem
     problems={needsAttention.problems}
-    usesStandIns={screenshotMode.isOn}
+    context={wordingContext}
     {isFolded}
     onFix={fix}
   />
@@ -178,7 +189,7 @@
 {#key language.resolved}
   <NeedsAttentionSheet
     attention={needsAttention}
-    usesStandIns={screenshotMode.isOn}
+    context={wordingContext}
     onFix={fix}
   />
 {/key}
