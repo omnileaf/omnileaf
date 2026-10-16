@@ -32,3 +32,14 @@ export function screenshotModeSummary(
       return assertNever(activity);
   }
 }
+
+export function screenshotModeTrayState(
+  activity: ScreenshotModeActivity,
+  hourCycle?: Intl.LocaleHourCycleKey,
+): string {
+  return activity.kind === "onUntil"
+    ? m.tray_screenshot_mode_on_until({
+        time: timeOfDay(activity.turnsOffAt, hourCycle),
+      })
+    : screenshotModeSummary(activity);
+}
