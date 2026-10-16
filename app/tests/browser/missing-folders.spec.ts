@@ -13,6 +13,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   settle,
+  fakeAppInfo,
   test,
   testOnlyInItsWebview,
   viewportOf,
@@ -24,6 +25,8 @@ const FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000002";
 const POINTER_ACTION_HEIGHT = 24;
 const TOUCH_ACTION_HEIGHT = 48;
 const ACTION_EDGE_SHARE = 45;
+const NAS_MANGA = { server: "nas", name: "nas/manga" };
+const GVFS_MANGA = "/run/user/1000/gvfs/smb-share:server=nas,share=manga";
 
 let missing: MissingFolder[] = [];
 let asked: string[] = [];
@@ -107,7 +110,7 @@ function actionEdgeColour(page: Page): Promise<string> {
 }
 
 test.describe("with a folder that isn't there", () => {
-  const folder = missingFolder("missing", "Comics", "/media/Comics");
+  const folder = missingFolder({ kind: "missing" }, "Comics", "/media/Comics");
   test.use({ backend: backendMissing(folder) });
   test.beforeEach(() => {
     missing = [folder];
@@ -255,7 +258,7 @@ test.describe("with a folder that isn't there", () => {
 
 test.describe("with a drive that isn't connected", () => {
   const folder = missingFolder(
-    "driveDisconnected",
+    { kind: "driveDisconnected" },
     "Comics",
     "/Volumes/Archive/Comics",
   );
@@ -278,7 +281,7 @@ test.describe("with a drive that isn't connected", () => {
 
 test.describe("with an Android folder Omnileaf lost access to", () => {
   const folder = missingFolder(
-    "lostAccess",
+    { kind: "lostAccess" },
     "Manga",
     "Internal storage › Manga",
   );
@@ -316,14 +319,20 @@ test.describe("with an Android folder Omnileaf lost access to", () => {
 });
 
 test.describe("with a network share that wants a sign-in", () => {
-  const folder = missingFolder("needsSignIn", "Manga", "nas/manga");
+  const folder = missingFolder(
+    { kind: "needsSignIn", share: NAS_MANGA },
+    "Manga",
+    GVFS_MANGA,
+  );
   test.use({ backend: backendMissing(folder) });
   test.beforeEach(() => {
     missing = [folder];
     asked = [];
   });
 
-  test("asks to sign in, and reads the share again", async ({ page }) => {
+  test("asks to sign in to the share it names, and reads the share again", async ({
+    page,
+  }) => {
     await page.goto("/");
     const share = notice(page, "Sign in to see Manga");
     await expect(share).toContainText(
@@ -334,4 +343,100 @@ test.describe("with a network share that wants a sign-in", () => {
 
     await expect.poll(() => asked).toEqual([`rescan ${FOLDER_ID}`]);
   });
+});
+
+test.describe("with a network share the system mounts", () => {
+  const folder = missingFolder(
+    { kind: "needsMounting", share: NAS_MANGA },
+    "Manga",
+    "/mnt/manga",
+  );
+  test.use({ backend: backendMissing(folder) });
+  test.beforeEach(() => {
+    missing = [folder];
+    asked = [];
+  });
+
+  test("says to mount it again, then reads it again on Try again", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const share = notice(page, "Mount Manga’s share again");
+    await expect(share).toContainText(
+      "nas/manga is mounted by your system, so there’s no sign-in for Omnileaf to open. Mount it again, then choose Try again. Your reading progress is safe.",
+    );
+
+    await share.getByRole("button", { name: "Try again" }).click();
+
+    await expect.poll(() => asked).toEqual([`rescan ${FOLDER_ID}`]);
+  });
+
+  test("offers no sign-in", async ({ page }) => {
+    await page.goto("/");
+
+    await expect(
+      notice(page, "Mount Manga’s share again").getByRole("button", {
+        name: "Sign in",
+      }),
+    ).toHaveCount(0);
+  });
+});
+
+test.describe("with an Android folder on a network share", () => {
+  const folder = missingFolder(
+    { kind: "shareUnreachable", share: NAS_MANGA },
+    "Manga",
+    "nas › Manga",
+  );
+  test.use({
+    backend: {
+      ...backendMissing(folder),
+      appInfo: () => fakeAppInfo("android"),
+    },
+  });
+  test.beforeEach(() => {
+    missing = [folder];
+    asked = [];
+  });
+
+  test("says it's on the share, and offers to choose it again", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const share = notice(page, "Omnileaf can’t open Manga");
+    await expect(share).toContainText(
+      "It’s on the network share nas, which may want you to sign in again. Your reading progress is safe.",
+    );
+
+    await share.getByRole("button", { name: "Choose it again" }).click();
+
+    await expect.poll(() => asked).toEqual([`relocate ${FOLDER_ID}`]);
+  });
+
+  test("unlinks it once confirmed", async ({ page }) => {
+    await page.goto("/");
+
+    await notice(page, "Omnileaf can’t open Manga")
+      .getByRole("button", { name: "Unlink it" })
+      .click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Remove folder" })
+      .click();
+
+    await expect(notice(page, "Omnileaf can’t open Manga")).toHaveCount(0);
+    expect(asked).toEqual([`remove ${FOLDER_ID}`]);
+  });
+
+  for (const theme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the ${theme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto("/");
+      await expect(notice(page, "Omnileaf can’t open Manga")).toBeVisible();
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
 });
