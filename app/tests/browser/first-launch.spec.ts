@@ -10,10 +10,12 @@ import {
   IPAD_USER_AGENT,
   IPHONE_USER_AGENT,
   expect,
+  LARGEST_TEXT_SCALE,
   MEDIUM_MIN_WIDTH,
   onPlatform,
   setTextScale,
   settle,
+  sidewaysOverflow,
   test,
   testOnlyInItsWebview,
   viewportOf,
@@ -583,6 +585,15 @@ test.describe("the home folder on ios", () => {
     await expect(
       page.getByRole("heading", { name: "Home folder" }),
     ).toHaveCount(0);
+  });
+
+  test("wraps what the folder keeps inside its card at the largest text", async ({
+    page,
+  }) => {
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await goTo(page, IOS_HOME_HEADING, "ios");
+
+    expect(await sidewaysOverflow(page)).toEqual([]);
   });
 });
 

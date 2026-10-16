@@ -51,7 +51,7 @@
         <dt class="text-footnote text-muted min-inline-home-term">
           {fact.term}
         </dt>
-        <dd class="text-small">{fact.detail}</dd>
+        <dd class="text-small wrap-break-word">{fact.detail}</dd>
       </div>
     {/each}
   </dl>
