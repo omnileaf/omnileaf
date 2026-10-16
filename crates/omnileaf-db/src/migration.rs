@@ -822,7 +822,7 @@ mod tests {
     #[test]
     fn counts_the_pages_of_each_book_kept_from_before_from_the_page_sizes_it_stored() {
         let scratch = ScratchLibrary::new("page-count-upgrade");
-        drop(Database::open_with(&scratch.config, &MIGRATIONS[..32]).unwrap());
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..33]).unwrap());
         let connection = Connection::open(&scratch.config.path).unwrap();
         connection
             .execute_batch(
