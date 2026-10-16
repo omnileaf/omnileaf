@@ -41,7 +41,7 @@
   }
 >
   <ModalContent
-    wideClass="inset-none m-auto flex flex-col gap-md overflow-hidden rounded-panel border border-dialog-edge bg-card p-lg text-foreground fade-motion shadow-dialog block-fit inline-dialog max-block-dialog-limit max-inline-dialog-limit"
+    wideClass="inset-none m-auto flex flex-col gap-md overflow-hidden rounded-panel border border-dialog-edge bg-dialog p-lg text-foreground fade-motion shadow-dialog block-fit inline-dialog max-block-dialog-limit max-inline-dialog-limit"
     phoneClass="inset-bs-sheet-top block-auto"
     onDismiss={onClose}
   >
