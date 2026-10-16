@@ -282,9 +282,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: ${{ fromJSON(github.event_name == 'pull_request' && '[1, 2, 3]' || '[1, 2, 3, 4, 5, 6]') }}
     env:
       PLAYWRIGHT_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+      PROJECTS: ${{ github.event_name == 'pull_request' && 'chromium-*' || '*' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -341,11 +342,11 @@ jobs:
       - name: Run the app's browser tests
         id: app-browser-tests
         if: needs.changes.outputs.app != 'false'
-        run: pnpm --dir app test:e2e
+        run: pnpm --dir app test:e2e --project "$PROJECTS"
 
       - name: Run the website's browser tests
         if: ${{ !cancelled() && needs.changes.outputs.site != 'false' && (success() || steps.app-browser-tests.outcome == 'failure') }}
-        run: pnpm --dir site test:e2e
+        run: pnpm --dir site test:e2e --project "$PROJECTS"
 
       - name: Time the interface on its own
         if: matrix.shard == 1 && needs.changes.outputs.app != 'false'
