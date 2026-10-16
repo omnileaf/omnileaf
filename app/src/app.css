@@ -996,6 +996,9 @@
   --color-ios-fill: var(--ios-fill);
   --color-windows-control: var(--windows-control);
   --color-windows-stroke: var(--windows-stroke);
+  --color-windows-stroke-strong: var(--windows-stroke-strong);
+  --color-select: var(--select-fill);
+  --color-select-edge: var(--select-edge);
   --color-ios-material: var(--ios-material);
   --radius-ios-cell: var(--radius-ios-cell);
   --color-android-container-low: var(--android-container-low);
@@ -1024,6 +1027,7 @@
   --shadow-tooltip: var(--tooltip-shadow);
   --radius-menu: var(--menu-radius);
   --radius-popover: var(--popover-radius);
+  --radius-select: var(--select-radius);
   --radius-sidebar-row: var(--sidebar-row-radius);
   --spacing-sidebar-row: var(--sidebar-row-height);
   --radius-shadcn-control: var(--radius-md);

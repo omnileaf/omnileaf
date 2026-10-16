@@ -86,6 +86,7 @@
   );
   --switch-off: var(--input);
   --checkbox-off: transparent;
+  --select-fill: transparent;
   --switch-thumb: var(--background);
   --switch-thumb-on: var(--background);
   --glass: oklch(0.985 0 0 / 78%);
@@ -179,6 +180,7 @@
   );
   --switch-off: color-mix(in oklch, var(--input) 80%, transparent);
   --checkbox-off: color-mix(in oklch, var(--input) 30%, transparent);
+  --select-fill: color-mix(in oklch, var(--input) 30%, transparent);
   --switch-thumb: var(--foreground);
   --switch-thumb-on: var(--primary-foreground);
   --glass: oklch(0.2 0 0 / 72%);
@@ -300,6 +302,8 @@
   --switch-edge-on: transparent;
   --control-edge: var(--input);
   --radio-edge-on: var(--input);
+  --select-edge: var(--input);
+  --select-radius: var(--radius-md);
   --hover-fill: var(--accent);
   --pressed-fill: color-mix(in oklab, var(--foreground) 8%, var(--accent));
   --android-container-low: color-mix(
@@ -358,6 +362,8 @@
   --switch-thumb: var(--android-outline);
   --switch-thumb-on: var(--primary-foreground);
   --control-edge: var(--android-outline);
+  --select-edge: var(--android-outline);
+  --select-radius: var(--radius-android-xs);
   --radio-edge-on: var(--primary);
   --checkbox-off: transparent;
   --hover-fill: color-mix(
@@ -383,6 +389,9 @@
   --warning-toast-radius: var(--radius-ios-sheet);
   --menu-radius: var(--radius-ios-sheet);
   --sheet-handle: color-mix(in oklch, var(--secondary-text) 50%, transparent);
+  --select-fill: var(--ios-fill);
+  --select-edge: transparent;
+  --select-radius: var(--radius-ios-cell);
   --menu-shadow: var(--shadow-ios-glass);
   --menu-blur: 24px;
   --switch-off: var(--ios-fill);
@@ -419,6 +428,7 @@
   --sidebar-selection-foreground: var(--sidebar-foreground);
   --sidebar-row-height: var(--control-macos);
   --sidebar-row-radius: var(--radius-macos-control);
+  --select-radius: var(--radius-macos-control);
 }
 
 [data-platform="windows"],
@@ -448,6 +458,9 @@
   --tooltip-key-fill: var(--muted);
   --tooltip-key-ink: var(--secondary-text);
   --key-ink: var(--secondary-text);
+  --select-fill: var(--windows-control);
+  --select-edge: var(--windows-stroke);
+  --select-radius: var(--radius-windows-control);
   --switch-off: transparent;
   --switch-edge: var(--windows-secondary-text);
   --switch-edge-on: var(--primary);
