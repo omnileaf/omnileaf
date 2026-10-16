@@ -1,7 +1,13 @@
 const FOCUS_RING = "focus-visible:focus-ring";
 
 const CONFIRM =
-  "rounded-full px-lg text-body font-semibold transition-control min-block-touch-button ios:max-medium:rounded-ios-button medium:rounded-button medium:text-label medium:min-block-pointer-target";
+  "rounded-full px-lg text-body font-semibold transition-control min-block-touch-button ios:max-medium:rounded-ios-button medium:rounded-dialog-button medium:text-label medium:font-medium medium:min-block-dialog-button linux:medium:shadow-raised macos:shadow-raised";
+
+const DIALOG_BUTTON =
+  "rounded-dialog-button px-lg font-medium transition-control min-block-dialog-button ios:max-medium:rounded-ios-button ios:max-medium:font-semibold medium:text-label linux:shadow-raised macos:shadow-raised";
+
+const OUTLINED =
+  "border border-button-outline-edge bg-button-outline windows:border-be-windows-stroke-strong";
 
 export const BUTTON_LOOKS = {
   text: `font-medium text-foreground android:text-accent ios:font-semibold ${FOCUS_RING}`,
@@ -19,13 +25,13 @@ export const BUTTON_LOOKS = {
   dismiss: `isolate flex items-center justify-center rounded-full opacity-70 transition-control before:absolute before:z-behind before:rounded-full before:transition-control hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed ${FOCUS_RING}`,
   "row-action": `isolate flex items-center justify-center rounded-full text-foreground transition-control before:absolute before:z-behind before:rounded-full before:transition-control enabled:hover:before:bg-hover enabled:active:before:bg-pressed disabled:opacity-60 ${FOCUS_RING}`,
   "about-copy": `flex shrink-0 items-center justify-center rounded-full text-muted transition-control block-touch-target inline-touch-target hover:bg-hover hover:text-foreground active:bg-pressed desktop:rounded-control desktop:block-pointer-button desktop:inline-pointer-button ${FOCUS_RING}`,
-  "confirm-cancel": `${CONFIRM} bg-chip hover:tint-hover active:tint-pressed medium:border medium:border-border medium:bg-card ${FOCUS_RING}`,
+  "confirm-cancel": `${CONFIRM} bg-chip hover:tint-hover active:tint-pressed medium:border medium:border-button-outline-edge medium:bg-button-outline windows:medium:border-be-windows-stroke-strong ${FOCUS_RING}`,
   "confirm-danger": `${CONFIRM} bg-danger-fill text-on-danger hover:bg-danger-hover active:bg-danger-pressed ${FOCUS_RING}`,
   "crash-phone-primary": `rounded-full bg-accent text-callout font-bold text-on-accent min-block-crash-screen-button ios:rounded-crash-screen-button ${FOCUS_RING}`,
   "crash-phone-secondary": `rounded-full border border-quiet-edge text-callout font-bold min-block-crash-screen-button ios:rounded-crash-screen-button ${FOCUS_RING}`,
+  "dialog-secondary": `${DIALOG_BUTTON} ${OUTLINED} enabled:hover:tint-hover enabled:active:tint-pressed ${FOCUS_RING}`,
+  "dialog-primary": `${DIALOG_BUTTON} bg-accent text-on-accent enabled:hover:bg-accent-hover enabled:active:bg-accent-pressed ${FOCUS_RING}`,
   "crash-dialog-copy": `rounded-dialog-button px-md text-label font-semibold text-accent min-block-dialog-button touch:min-block-touch-target ${FOCUS_RING}`,
-  "crash-dialog-secondary": `rounded-dialog-button border border-border px-lg text-label font-semibold min-block-dialog-button touch:min-block-touch-target ${FOCUS_RING}`,
-  "crash-dialog-primary": `rounded-dialog-button bg-accent px-lg text-label font-semibold text-on-accent min-block-dialog-button touch:min-block-touch-target ${FOCUS_RING}`,
 } satisfies Record<string, string>;
 
 export type ButtonLook = keyof typeof BUTTON_LOOKS;
