@@ -67,5 +67,10 @@ test("lists the sorts in the order board 6.4 draws them", async () => {
     .elements()
     .map((option) => option.textContent.trim());
 
-  expect(options).toEqual(["Title", "Recently read", "Recently added"]);
+  expect(options).toEqual([
+    "Title",
+    "Recently read",
+    "Recently added",
+    "Last updated",
+  ]);
 });
