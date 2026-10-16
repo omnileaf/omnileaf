@@ -506,6 +506,7 @@ function factsOf(card: Locator): Promise<string[][]> {
 }
 
 const HOME_TERM_WIDTH = 88;
+const HOME_NAME_TEXT = 16;
 
 test("sets what the home folder keeps beside an 88px column of names", async ({
   page,
@@ -518,6 +519,17 @@ test("sets what the home folder keeps beside an 88px column of names", async ({
   );
 
   expect(widths).toEqual(HOME_FACTS.map(() => HOME_TERM_WIDTH));
+});
+
+test("grows the home folder's name with the text size", async ({ page }) => {
+  await setTextScale(page, LARGE_TEXT_SCALE);
+  await goTo(page, HOME_HEADING);
+
+  const name = page
+    .getByRole("region", { name: "Home folder" })
+    .getByRole("heading", { name: "Home folder" });
+
+  expect(await fontSizeOf(name)).toBe(HOME_NAME_TEXT * LARGE_TEXT_SCALE);
 });
 
 test("wraps a long home folder path inside its code block", async ({
