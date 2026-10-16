@@ -22,7 +22,7 @@
   <select
     bind:this={ref}
     class={cn(
-      "flex-1 appearance-none rounded-control border border-border bg-card ps-md pe-select-end text-detail font-medium block-panel-field",
+      "flex-1 appearance-none rounded-control border border-border bg-card ps-md pe-select-end text-detail font-medium text-ellipsis block-panel-field",
       fieldClass,
     )}
     {...restProps}
