@@ -4,8 +4,9 @@
   import { SvelteSet } from "svelte/reactivity";
 
   import type { LibraryFolder } from "#lib/ipc/bindings.ts";
-  import type { Notices } from "#lib/notices/notices.ts";
+  import type { Notices, UndoOffer } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
 
   import type { AddFolder } from "./add-folder";
   import AddFolderButton from "./AddFolderButton.svelte";
@@ -70,19 +71,66 @@
     rows[folder.id]?.focus();
   }
 
+  interface Removal {
+    readonly folders: readonly LibraryFolder[];
+    readonly offer: UndoOffer;
+    isTakenOver: boolean;
+  }
+
+  let latestRemoval: Removal | undefined;
+
+  function offerFor(
+    removed: readonly LibraryFolder[],
+  ): Pick<UndoOffer, "title" | "body"> {
+    const [only] = removed;
+    if (removed.length === 1 && only !== undefined) {
+      return {
+        title: m.library_folder_removed({ name: folderTitle(only) }),
+        body: m.library_folder_removed_files_stay(),
+      };
+    }
+    const names = new Intl.ListFormat(getLocale(), {
+      type: "conjunction",
+    }).format(removed.map(folderTitle));
+    return {
+      title: m.library_folders_removed({ count: removed.length }),
+      body: m.library_folders_removed_files_stay({ names }),
+    };
+  }
+
   function removeWithUndo(folder: LibraryFolder): void {
     pendingRemovals.add(folder.id);
     foldersHeading?.focus();
-    notices.offerUndo({
-      title: m.library_folder_removed({ name: folderTitle(folder) }),
-      body: m.library_folder_removed_files_stay(),
-      undo: () => {
-        pendingRemovals.delete(folder.id);
+    const earlier =
+      latestRemoval !== undefined && notices.undoOffer === latestRemoval.offer
+        ? latestRemoval
+        : undefined;
+    if (earlier !== undefined) {
+      earlier.isTakenOver = true;
+    }
+    const removed = [...(earlier?.folders ?? []), folder];
+    const removal: Removal = {
+      folders: removed,
+      isTakenOver: false,
+      offer: {
+        ...offerFor(removed),
+        undo: () => {
+          for (const each of removed) {
+            pendingRemovals.delete(each.id);
+          }
+        },
+        commit: () => {
+          if (removal.isTakenOver) {
+            return;
+          }
+          for (const each of removed) {
+            void commitRemoval(each);
+          }
+        },
       },
-      commit: () => {
-        void commitRemoval(folder);
-      },
-    });
+    };
+    latestRemoval = removal;
+    notices.offerUndo(removal.offer);
   }
 
   async function commitRemoval(folder: LibraryFolder): Promise<void> {
@@ -145,6 +193,9 @@
           </li>
         {/each}
       </ul>
+    {/if}
+    {#if !isBelowList && folders.list.kind === "loaded" && shownFolders.length === 0}
+      <p class="px-lg pbe-xs text-body">{m.library_folders_none()}</p>
     {/if}
     {#if !isBelowList}
       <div class="px-lg pbs-sm pbe-md">
