@@ -377,11 +377,17 @@ test("brings the folder back when its removal is undone", async () => {
 });
 
 async function removeComicsThenManga(folders: Locator): Promise<void> {
-  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
+  const removeManga = folders.getByRole("button", {
+    name: "Remove Sample Manga",
+  });
+  await expect.element(removeManga).toBeVisible();
+  await folders
+    .getByRole("button", { name: "Remove Sample Comics" })
+    .click({ force: true });
   await expect
     .element(folders.getByText("Sample Comics", { exact: true }))
     .not.toBeInTheDocument();
-  await folders.getByRole("button", { name: "Remove Sample Manga" }).click();
+  await removeManga.click({ force: true });
 }
 
 test("says no folders are linked once the last one is removed", async () => {
