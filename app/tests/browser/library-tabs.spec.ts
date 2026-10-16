@@ -254,6 +254,14 @@ test.describe("in a narrow desktop window", () => {
   });
 });
 
+test("says what Library tabs holds in Settings › Library", async ({ page }) => {
+  await page.goto("/settings/library");
+
+  await expect(page.getByRole("link", { name: /^Library tabs/ })).toContainText(
+    "Order, hidden tabs, where the library opens",
+  );
+});
+
 test("opens Library tabs from Settings › Library", async ({ page }) => {
   await page.goto("/settings/library");
 

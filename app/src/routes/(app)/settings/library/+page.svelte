@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { EyeOff, LayoutGrid, Tags } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   import { goto } from "$app/navigation";
@@ -16,7 +17,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
-  import SettingsLinks from "#lib/settings/SettingsLinks.svelte";
+  import SettingsEntries from "#lib/settings/SettingsEntries.svelte";
   import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
 
   import type { PageProps } from "./$types";
@@ -68,25 +69,33 @@
     void goto(resolve("/(app)"));
   }}
 />
-<SettingsLinks
-  links={[
-    {
-      route: "/(app)/settings/library/tabs",
-      label: m.library_tabs_title(),
-    },
-    {
-      route: "/(app)/settings/library/tags",
-      label: m.manage_tags_title(),
-      ...(tagCount === undefined
-        ? {}
-        : { value: m.manage_tags_count({ count: tagCount }) }),
-    },
-    {
-      route: "/(app)/settings/library/adult-content",
-      label: m.adult_content_title(),
-      ...(adultContent.reading.kind === "read"
-        ? { value: TREATMENT_LABELS[adultContent.reading.value.treatment]() }
-        : {}),
-    },
-  ]}
-/>
+<div class="mbs-xl">
+  <SettingsEntries
+    entries={[
+      {
+        route: "/(app)/settings/library/tabs",
+        icon: LayoutGrid,
+        label: m.library_tabs_title(),
+        summary: m.library_tabs_summary(),
+      },
+      {
+        route: "/(app)/settings/library/tags",
+        icon: Tags,
+        label: m.manage_tags_title(),
+        ...(tagCount === undefined
+          ? {}
+          : { summary: m.manage_tags_count({ count: tagCount }) }),
+      },
+      {
+        route: "/(app)/settings/library/adult-content",
+        icon: EyeOff,
+        label: m.adult_content_title(),
+        ...(adultContent.reading.kind === "read"
+          ? {
+              summary: TREATMENT_LABELS[adultContent.reading.value.treatment](),
+            }
+          : {}),
+      },
+    ]}
+  />
+</div>
