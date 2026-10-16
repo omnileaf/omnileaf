@@ -78,3 +78,16 @@ test("keeps the book summary while it doesn't learn the reading speed, since it 
 
   expect(features.showsBookSummary).toBe(true);
 });
+
+test("chooses each series' reading mode until told not to", () => {
+  const store = memoryStore();
+  const features = new SmartFeatures(store);
+  const first = features.choosesReadingMode;
+
+  features.turn("choosesReadingMode", false);
+
+  expect([first, new SmartFeatures(store).choosesReadingMode]).toEqual([
+    true,
+    false,
+  ]);
+});

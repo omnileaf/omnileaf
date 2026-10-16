@@ -7,6 +7,7 @@ import {
 } from "#lib/preferences/stored-preference.ts";
 
 export type SmartFeature =
+  | "choosesReadingMode"
   | "learnsReadingSpeed"
   | "showsTimeLeft"
   | "showsBookSummary"
@@ -16,12 +17,14 @@ type Choices = Record<SmartFeature, boolean>;
 
 const PREFERENCE_KEY = "omnileaf.smartFeatures";
 const ALL_ON: Choices = {
+  choosesReadingMode: true,
   learnsReadingSpeed: true,
   showsTimeLeft: true,
   showsBookSummary: true,
   showsPagePreviews: true,
 };
 const ALL_OFF: Choices = {
+  choosesReadingMode: false,
   learnsReadingSpeed: false,
   showsTimeLeft: false,
   showsBookSummary: false,
@@ -40,6 +43,7 @@ function storedChoices(stored: string | null): Choices {
       return typeof value === "boolean" ? value : ALL_ON[feature];
     };
     return {
+      choosesReadingMode: choice("choosesReadingMode"),
       learnsReadingSpeed: choice("learnsReadingSpeed"),
       showsTimeLeft: choice("showsTimeLeft"),
       showsBookSummary: choice("showsBookSummary"),
@@ -59,6 +63,10 @@ export class SmartFeatures {
   constructor(store: PreferenceStore | undefined) {
     this.#stored = new StoredPreference(store, PREFERENCE_KEY);
     this.#choices = storedChoices(this.#stored.read());
+  }
+
+  get choosesReadingMode(): boolean {
+    return this.#choices.choosesReadingMode;
   }
 
   get learnsReadingSpeed(): boolean {
