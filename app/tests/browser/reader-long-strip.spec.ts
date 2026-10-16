@@ -57,6 +57,11 @@ function stripPage(page: Page, number: number): Locator {
 async function openStrip(page: Page, stored: Record<string, string> = {}) {
   await page.addInitScript((entries) => {
     localStorage.setItem("omnileaf.readerGuide.leftToRight", "seen");
+    localStorage.setItem("omnileaf.readerGuide.strip", "seen");
+    localStorage.setItem(
+      "omnileaf.stripFound.0190a3e4-0000-8000-8000-0000000000a1",
+      "seen",
+    );
     for (const [key, value] of Object.entries(entries)) {
       localStorage.setItem(key, value);
     }
