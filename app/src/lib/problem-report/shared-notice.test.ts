@@ -1,16 +1,20 @@
 import { expect, test } from "vitest";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
+import type { AppleDevice } from "#lib/library/folder-location.ts";
 
 import { type NoticeContext, sharedNotice } from "./shared-notice";
 
 const FILE = "omnileaf-report-2026-10-16.txt";
 
-function context(platform: Platform, isPhone = false): NoticeContext {
+function context(
+  platform: Platform,
+  appleDevice: AppleDevice = "ipad",
+): NoticeContext {
   return {
     code: "R-8M4T",
     platform,
-    isPhone,
+    appleDevice,
     showFolder: { label: "Show in folder", run: () => undefined },
   };
 }
@@ -49,7 +53,7 @@ test("says which folder a saved report went to and offers to show it", () => {
 test("says an iPhone's saved report is in Files, with nothing to show it", () => {
   const notice = sharedNotice(
     { way: "save", saved: { place: { kind: "appFiles" }, file: FILE } },
-    context("ios", true),
+    context("ios", "iphone"),
   );
 
   expect([notice?.body, notice?.action]).toEqual([
@@ -61,7 +65,7 @@ test("says an iPhone's saved report is in Files, with nothing to show it", () =>
 test("names an iPad's Files folder for the iPad", () => {
   const notice = sharedNotice(
     { way: "save", saved: { place: { kind: "appFiles" }, file: FILE } },
-    context("ios"),
+    context("ios", "ipad"),
   );
 
   expect(notice?.body).toBe("In Files › On My iPad › Omnileaf › Reports");
