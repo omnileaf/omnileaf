@@ -12,7 +12,8 @@ use windows_sys::Win32::NetworkManagement::WNet::{
     WNetGetConnectionW,
 };
 use windows_sys::Win32::Storage::FileSystem::{
-    CreateFileW, FILE_SHARE_READ, FILE_SHARE_WRITE, GetDriveTypeW, OPEN_EXISTING,
+    CreateFileW, FILE_SHARE_READ, FILE_SHARE_WRITE, GetDiskFreeSpaceExW, GetDriveTypeW,
+    OPEN_EXISTING,
 };
 use windows_sys::Win32::System::IO::DeviceIoControl;
 use windows_sys::Win32::System::Ioctl::{
@@ -25,6 +26,37 @@ const QUERY_ONLY: u32 = 0;
 const NO_FLAGS: u32 = 0;
 const BUS_TYPE_END: usize =
     mem::offset_of!(STORAGE_DEVICE_DESCRIPTOR, BusType) + mem::size_of::<i32>();
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DiskSpace {
+    pub free_bytes: u64,
+    pub total_bytes: u64,
+}
+
+/// Asks `GetDiskFreeSpaceExW` for the space free to this user and the size of the volume holding `path`, or `None` when it won't say.
+#[must_use]
+#[expect(
+    unsafe_code,
+    reason = "GetDiskFreeSpaceExW is only reachable through FFI"
+)]
+pub fn disk_space(path: &str) -> Option<DiskSpace> {
+    let path: Vec<u16> = path.encode_utf16().chain([0]).collect();
+    let mut free_bytes = 0;
+    let mut total_bytes = 0;
+    // SAFETY: `path` is a NUL-terminated UTF-16 string that outlives the call, the two out pointers are live `u64`s the call only writes, and the last may be null.
+    let succeeded = unsafe {
+        GetDiskFreeSpaceExW(
+            path.as_ptr(),
+            &raw mut free_bytes,
+            &raw mut total_bytes,
+            ptr::null_mut(),
+        )
+    };
+    (succeeded != 0).then_some(DiskSpace {
+        free_bytes,
+        total_bytes,
+    })
+}
 
 /// Asks `GetDriveTypeW` for the type of the drive whose root is `root`, such as `D:\`.
 #[must_use]
@@ -181,6 +213,20 @@ mod tests {
         let bus_type = bus_type(&format!("{system_drive}\\"));
 
         assert!(bus_type.is_some());
+    }
+
+    #[test]
+    fn reads_the_space_on_the_system_drive() {
+        let system_drive = std::env::var("SystemDrive").unwrap_or_else(|_| "C:".to_owned());
+
+        let space = disk_space(&format!("{system_drive}\\"));
+
+        assert!(space.is_some_and(|space| space.free_bytes <= space.total_bytes && space.total_bytes > 0));
+    }
+
+    #[test]
+    fn reads_no_space_on_a_drive_that_is_not_there() {
+        assert_eq!(disk_space(r"?:\"), None);
     }
 
     #[test]
