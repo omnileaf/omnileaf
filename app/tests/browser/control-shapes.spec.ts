@@ -24,7 +24,7 @@ const SHADCN_CORNER = "8px";
 const PHONE_SECTION_BUTTON_HEIGHT = 48;
 const FOLDERS_BUTTON_HEIGHT = 44;
 const IOS_BUTTON_CORNER = "14px";
-const SHEET_CORNER = "24px";
+const SHEET_CORNER = "28px";
 const PANEL_TITLE_SIZE = "17px";
 const PANEL_TITLE_LINE_HEIGHT = 22.1;
 const CHOSEN_SEGMENT_WEIGHT = "600";
@@ -262,7 +262,7 @@ test.describe("on an Android phone", () => {
   test.describe("with series", () => {
     test.use({ backend: withSeries("android") });
 
-    test("rounds the View sheet's top corners to 24px", async ({ page }) => {
+    test("rounds the View sheet's top corners to 28px", async ({ page }) => {
       await page.goto("/");
 
       const panel = await openViewOptions(page);
