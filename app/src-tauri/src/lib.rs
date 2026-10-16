@@ -121,6 +121,8 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     app.manage(folder_watch::FolderWatching::start(app, data_dir)?);
     #[cfg(target_os = "ios")]
     folder_access::reopen_picked_folders_in_background(app.handle().clone());
+    #[cfg(target_os = "macos")]
+    folder_share::remember_shares_in_background(app.handle().clone());
     match open_resources(app, data_dir) {
         Ok(covers) => {
             app.manage(covers);
