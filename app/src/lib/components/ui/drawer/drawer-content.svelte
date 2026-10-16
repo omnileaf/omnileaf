@@ -61,7 +61,7 @@
   <DialogPrimitive.Content
     bind:ref
     class={cn(
-      "fixed inset-none z-dialog mbs-auto flex touch-none flex-col overflow-hidden rounded-ss-bottom-sheet rounded-se-bottom-sheet bg-card text-foreground block-fit inline-full max-block-full motion-sheets:starting:translate-y-full motion-sheets:closed:translate-y-full",
+      "fixed inset-none z-dialog mbs-auto flex touch-none flex-col overflow-hidden rounded-ss-bottom-sheet rounded-se-bottom-sheet bg-bottom-sheet text-foreground block-fit inline-full max-block-full desktop:border-bs desktop:border-border motion-sheets:starting:translate-y-full motion-sheets:closed:translate-y-full",
       !drag.isDragging &&
         "motion-sheets:transition-transform motion-sheets:duration-slide motion-sheets:ease-glass",
       className,
@@ -81,7 +81,7 @@
   >
     <span
       aria-hidden="true"
-      class="mbs-sm shrink-0 self-center rounded-full bg-step-off block-sheet-handle-block inline-sheet-handle"
+      class="mbs-sheet-handle-gap shrink-0 self-center rounded-full bg-sheet-handle block-sheet-handle-block inline-sheet-handle"
     ></span>
     {@render children()}
   </DialogPrimitive.Content>
