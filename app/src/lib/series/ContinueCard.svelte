@@ -12,12 +12,14 @@
   import { readingTime } from "#lib/history/reading-time.ts";
   import type { SeriesBook, SeriesOverview } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
 
   import ContinueLink from "./ContinueLink.svelte";
 
   let { overview, isWide }: { overview: SeriesOverview; isWide: boolean } =
     $props();
 
+  const smartFeatures = getSmartFeatures();
   const titleId = $props.id();
   const countId = `${titleId}-count`;
   const next = $derived(
@@ -34,7 +36,7 @@
   }
 
   function withTimeLeft(place: string): string {
-    return overview.secondsLeft === null
+    return overview.secondsLeft === null || !smartFeatures.showsTimeLeft
       ? place
       : m.series_time_left({
           where: place,
