@@ -55,6 +55,12 @@ export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => fakeAppInfo("linux"),
   libraryProblem: () => null,
   addLibraryFolder: () => null,
+  linkLibraryFolder: () => {
+    throw new CommandFailure({
+      code: "folderUnreadable",
+      message: "the default backend links no folders",
+    });
+  },
   libraryFolders: () => ({ folders: [], next: null }),
   librarySeries: () => ({ series: [], next: null }),
   librarySeriesCount: () => 0,
