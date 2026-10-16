@@ -40,6 +40,7 @@
         <a
           {...props}
           href={resolve(parent.route)}
+          data-crumb-back
           aria-label={backLabel}
           class="flex shrink-0 items-center justify-center rounded-shadcn-control text-foreground transition-control block-reader-dense inline-reader-dense hover:bg-hover active:bg-pressed"
         >
