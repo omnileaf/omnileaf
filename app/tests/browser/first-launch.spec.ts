@@ -858,6 +858,82 @@ for (const platform of ["ios", "android"] as const) {
   });
 }
 
+test.describe("picking a folder on android", () => {
+  testOnlyInItsWebview("android");
+  test.use({
+    backend: {
+      ...FIRST_LAUNCH_BACKEND,
+      appInfo: onPlatform("android").backend.appInfo,
+    },
+  });
+
+  test("says what Android's folder picker will ask before it opens", async ({
+    page,
+  }) => {
+    await goTo(page, "Already have comics or books?", "android");
+
+    await page.getByRole("button", { name: "Add a folder" }).click();
+    const sheet = page.getByRole("alertdialog", { name: "Pick a folder" });
+
+    await expect(sheet).toHaveAccessibleDescription(
+      "Android shows its folder picker next. Choose a folder of comics or books, tap Use this folder, then Allow. Omnileaf reads it there and changes nothing.",
+    );
+    expect(device.folders).toEqual([HOME_FOLDER]);
+  });
+
+  test("opens the picker once the sheet goes on", async ({ page }) => {
+    await goTo(page, "Already have comics or books?", "android");
+    await page.getByRole("button", { name: "Add a folder" }).click();
+
+    await page
+      .getByRole("alertdialog", { name: "Pick a folder" })
+      .getByRole("button", { name: "Continue" })
+      .click();
+
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+    await expect(
+      page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
+    ).toHaveCount(1);
+  });
+
+  test("leaves the picker closed with Not now", async ({ page }) => {
+    await goTo(page, "Already have comics or books?", "android");
+    await page.getByRole("button", { name: "Add a folder" }).click();
+
+    await page.getByRole("button", { name: "Not now" }).click();
+
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+    expect(device.folders).toEqual([HOME_FOLDER]);
+    await expect(
+      page.getByRole("button", { name: "Add a folder" }),
+    ).toBeFocused();
+  });
+
+  test("goes straight to the picker once the sheet has gone on", async ({
+    page,
+  }) => {
+    await goTo(page, "Already have comics or books?", "android");
+    await page.getByRole("button", { name: "Add a folder" }).click();
+    await page.getByRole("button", { name: "Continue" }).click();
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+    device.folders = [HOME_FOLDER];
+
+    await page.getByRole("button", { name: "Add a folder" }).click();
+
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+    expect(device.folders).toEqual([HOME_FOLDER, SAMPLE_COMICS]);
+  });
+});
+
+test("opens the picker at once on a desktop", async ({ page }) => {
+  await goTo(page, "Already have comics or books?");
+
+  await page.getByRole("button", { name: "Add a folder" }).click();
+
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  expect(device.folders).toEqual([HOME_FOLDER, SAMPLE_COMICS]);
+});
+
 test("skips linking folders for now", async ({ page }) => {
   await goTo(page, "Already have comics or books?");
 
