@@ -436,10 +436,16 @@ export function sampleBackend(
       ? addedAt(series)
       : 0;
 
+  const updatedAt = (series: SampleSeries): number =>
+    series.books.some((book) => book.isNew)
+      ? NEWEST_ADDED_MS + DAY_MS
+      : addedAt(series);
+
   const ORDERS = {
     title: (one, other) => one.title.localeCompare(titleOf(other)),
     dateAdded: (one, other) => addedAt(one) - addedAt(other),
     lastRead: (one, other) => lastReadAt(one) - lastReadAt(other),
+    lastUpdated: (one, other) => updatedAt(one) - updatedAt(other),
   } satisfies Record<
     LibrarySortBy,
     (one: SampleSeries, other: SampleSeries) => number
