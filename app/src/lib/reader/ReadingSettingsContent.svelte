@@ -12,6 +12,7 @@
   import type {
     PageFit,
     PageLayout,
+    PageTurnStyle,
     ReaderBackground,
     ReaderControlsLook,
     TapZones,
@@ -157,18 +158,44 @@
       settings.change("controls", controls);
     }}
   />
-  <SettingChoice
-    label={m.reader_tap_zones()}
-    choices={[
-      { value: "edges", label: m.reader_tap_zones_edges() },
-      { value: "lShape", label: m.reader_tap_zones_l() },
-      { value: "off", label: m.reader_tap_zones_off() },
-    ]}
-    chosen={look.tapZones}
-    onChoose={(zones: TapZones) => {
-      settings.change("tapZones", zones);
-    }}
-  />
+  <section
+    data-slot="setting-row"
+    aria-labelledby="{id}-pages"
+    class="flex flex-col pbs-xl"
+  >
+    <h3 id="{id}-pages" class="text-small font-semibold">
+      {m.reader_pages_title()}
+    </h3>
+    <div class="flex flex-col divide-y divide-border">
+      <SettingChoice
+        label={m.reader_tap_zones()}
+        choices={[
+          { value: "edges", label: m.reader_tap_zones_edges() },
+          { value: "lShape", label: m.reader_tap_zones_l() },
+          { value: "off", label: m.reader_tap_zones_off() },
+        ]}
+        chosen={look.tapZones}
+        onChoose={(zones: TapZones) => {
+          settings.change("tapZones", zones);
+        }}
+      />
+      <SettingChoice
+        label={m.reader_page_turn()}
+        choices={[
+          { value: "instant", label: m.reader_page_turn_instant() },
+          { value: "slide", label: m.reader_page_turn_slide() },
+        ]}
+        chosen={look.pageTurn}
+        onChoose={(turn: PageTurnStyle) => {
+          settings.change("pageTurn", turn);
+        }}
+      >
+        <p class="text-caption text-muted expanded:col-span-full">
+          {m.reader_page_turn_help()}
+        </p>
+      </SettingChoice>
+    </div>
+  </section>
   <fieldset data-slot="setting-row" class="flex flex-col pbs-xl">
     <legend class="contents">
       <span class="text-small font-semibold">{m.reader_light_title()}</span>
@@ -181,31 +208,40 @@
       }}
     />
   </fieldset>
-  <Switch
+  <section
     data-slot="setting-row"
-    bind:checked={
-      () => look.keepsScreenOn,
-      (isOn: boolean) => {
-        settings.change("keepsScreenOn", isOn);
-      }
-    }
-    class={SWITCH_ROW}
+    aria-labelledby="{id}-screen"
+    class="flex flex-col pbs-xl"
   >
-    <span class="flex-1">{m.reader_keep_screen_on()}</span>
-  </Switch>
-  <Switch
-    data-slot="setting-row"
-    disabled
-    bind:checked={
-      () => look.cropsBorders,
-      (isOn: boolean) => {
-        settings.change("cropsBorders", isOn);
-      }
-    }
-    class={[SWITCH_ROW, "text-muted"]}
-  >
-    <span class="flex-1">
-      {m.reader_coming_soon({ feature: m.reader_crop_borders() })}
-    </span>
-  </Switch>
+    <h3 id="{id}-screen" class="text-small font-semibold">
+      {m.reader_screen_title()}
+    </h3>
+    <div class="flex flex-col divide-y divide-border">
+      <Switch
+        bind:checked={
+          () => look.keepsScreenOn,
+          (isOn: boolean) => {
+            settings.change("keepsScreenOn", isOn);
+          }
+        }
+        class={SWITCH_ROW}
+      >
+        <span class="flex-1">{m.reader_keep_screen_on()}</span>
+      </Switch>
+      <Switch
+        disabled
+        bind:checked={
+          () => look.cropsBorders,
+          (isOn: boolean) => {
+            settings.change("cropsBorders", isOn);
+          }
+        }
+        class={[SWITCH_ROW, "text-muted"]}
+      >
+        <span class="flex-1">
+          {m.reader_coming_soon({ feature: m.reader_crop_borders() })}
+        </span>
+      </Switch>
+    </div>
+  </section>
 </div>
