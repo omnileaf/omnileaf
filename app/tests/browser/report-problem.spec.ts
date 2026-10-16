@@ -9,9 +9,11 @@ import {
   FAKE_APP_VERSION,
   FAKE_REPORT_CODE,
   FAKE_SYSTEM,
+  MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
   testOnlyInItsWebview,
+  viewportOf,
 } from "./fixtures.ts";
 
 const REPORT_PAGE = "/settings/about/report";
@@ -183,6 +185,102 @@ test.describe("sending it another way", () => {
   });
 });
 
+test.describe("saving it as a file", () => {
+  const saved: number[] = [];
+  const shown: string[] = [];
+
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      saveProblemReport: (today) => {
+        saved.push(today);
+        return {
+          place: { kind: "folder", folder: "~/Downloads" },
+          file: "omnileaf-report-2026-10-16.txt",
+        };
+      },
+      showSavedProblemReport: () => {
+        shown.push("shown");
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    saved.length = 0;
+    shown.length = 0;
+  });
+
+  test("saves it for today, says where and shows it in its folder", async ({
+    page,
+  }) => {
+    await openReport(page);
+    const today = await page.evaluate(() => {
+      const now = new Date();
+      return (
+        Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86_400_000
+      );
+    });
+
+    await waysOut(page).getByRole("button", { name: "Save as a file" }).click();
+
+    const notice = page
+      .getByRole("listitem")
+      .filter({ hasText: "Report saved" });
+    await expect(notice).toContainText(
+      "In ~/Downloads: omnileaf-report-2026-10-16.txt",
+    );
+    expect(saved).toEqual([today]);
+    expect(await keptCodes(page)).toEqual([FAKE_REPORT_CODE]);
+    await notice.getByRole("button", { name: "Show in folder" }).click();
+    await expect.poll(() => shown).toEqual(["shown"]);
+  });
+});
+
+test.describe("saving on an iPhone", () => {
+  testOnlyInItsWebview("ios");
+  test.use({
+    backend: {
+      ...onPlatform("ios").backend,
+      saveProblemReport: () => ({
+        place: { kind: "appFiles" },
+        file: "omnileaf-report-2026-10-16.txt",
+      }),
+    },
+  });
+
+  test("says the report is in Files, inside Omnileaf", async ({ page }) => {
+    await openReport(page);
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+
+    await waysOut(page).getByRole("button", { name: "Save as a file" }).click();
+
+    const notice = page
+      .getByRole("listitem")
+      .filter({ hasText: "Report saved" });
+    await expect(notice).toContainText(
+      "In Files › On My iPhone › Omnileaf › Reports",
+    );
+    await expect(notice.getByRole("button", { name: /^Show/ })).toHaveCount(0);
+  });
+});
+
+test.describe("on Android", () => {
+  testOnlyInItsWebview("android");
+  test.use(onPlatform("android"));
+
+  test("offers no Save as a file", async ({ page }) => {
+    await openReport(page);
+
+    await expect(
+      waysOut(page).getByRole("button", { name: "Copy report" }),
+    ).toBeVisible();
+    await expect(
+      waysOut(page).getByRole("button", { name: "Save as a file" }),
+    ).toHaveCount(0);
+  });
+});
+
 test.describe("when the device turns the report down", () => {
   test.use({
     backend: {
@@ -199,7 +297,23 @@ test.describe("when the device turns the report down", () => {
           message: "the browser could not be opened",
         });
       },
+      saveProblemReport: () => {
+        throw new CommandFailure({
+          code: "reportNotSaved",
+          message: "the problem report could not be saved",
+        });
+      },
     },
+  });
+
+  test("says the report couldn't be saved", async ({ page }) => {
+    await openReport(page);
+
+    await waysOut(page).getByRole("button", { name: "Save as a file" }).click();
+
+    await expect(page.getByRole("main").getByRole("alert")).toHaveText(
+      "Couldn't save the report. Try again.",
+    );
   });
 
   test("says the report couldn't be copied and keeps no code", async ({
