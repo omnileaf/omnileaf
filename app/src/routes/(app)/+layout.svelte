@@ -40,6 +40,7 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
   import { deviceWordOf } from "#lib/storage/device.ts";
+  import LowSpaceNotice from "#lib/storage/LowSpaceNotice.svelte";
   import { type Shortcut, shortcut } from "#lib/shortcut.ts";
 
   import type { LayoutProps } from "./$types";
@@ -194,6 +195,9 @@
   />
 {/key}
 <ScreenshotModeNotice platform={data.appInfo.platform} />
+{#key language.resolved}
+  <LowSpaceNotice {storage} device={wordingContext.device} />
+{/key}
 <AppKeyboardShortcuts
   isOpen={isShowingShortcuts}
   platform={data.appInfo.platform}
