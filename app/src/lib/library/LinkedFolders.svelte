@@ -10,8 +10,9 @@
 
   import AddFolderButton from "./AddFolderButton.svelte";
   import type { FolderAdding } from "./folder-adding.svelte";
+  import FolderCounting from "./FolderCounting.svelte";
   import { folderLocation } from "./folder-location";
-  import { folderTitle } from "./folder-title";
+  import { folderTitle, type ShownFolder } from "./folder-title";
   import FolderNotice from "./FolderNotice.svelte";
   import FolderRow from "./FolderRow.svelte";
   import { ACTION_ICON_SIZE } from "./icon-size";
@@ -62,6 +63,17 @@
       ? folders.list.linked.filter((folder) => !pendingRemovals.has(folder.id))
       : [],
   );
+
+  const beingAdded = $derived.by((): ShownFolder | undefined => {
+    const folder = adding.beingAdded;
+    if (
+      folder === undefined ||
+      shownFolders.some((shown) => shown.location === folder.location)
+    ) {
+      return undefined;
+    }
+    return { kind: "linked", ...folder, isAvailable: true };
+  });
 
   export function focusRow(folder: LibraryFolder): void {
     rows[folder.id]?.focus();
@@ -158,7 +170,7 @@
     >
       {m.library_settings_folders()}
     </h2>
-    {#if shownFolders.length > 0}
+    {#if shownFolders.length > 0 || beingAdded !== undefined}
       <ul
         class={[
           "divide-y divide-border ios:divide-y-0",
@@ -195,6 +207,18 @@
             {@render rowNotice?.(folder)}
           </li>
         {/each}
+        {#if beingAdded !== undefined}
+          <li>
+            <FolderRow folder={beingAdded}>
+              {#snippet location()}
+                {folderLocation(beingAdded, platform)}
+              {/snippet}
+              {#snippet detail()}
+                <FolderCounting outcome={adding.outcome} />
+              {/snippet}
+            </FolderRow>
+          </li>
+        {/if}
       </ul>
     {/if}
     {#if isInCard && folders.list.kind === "loaded" && shownFolders.length === 0}
