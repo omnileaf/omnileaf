@@ -15,9 +15,10 @@ use omnileaf_db::{
         SeriesFilter, SeriesListing, add_root, book_to_read, bookmarked_roots, cover_file,
         folder_series_count, folder_series_page, hidden_series_count, home_root, library_root,
         library_roots, mark_root_available, mark_root_unavailable, missing_roots, page_dimensions,
-        place_in_series, relocate_roots, remove_book_files, remove_books_without_files,
-        remove_root, root_book_count, root_files, series_books, series_count, series_overview,
-        series_page, show_root_while_missing, store_page_dimensions, unread_books, up_next,
+        place_in_series, record_page_count, relocate_roots, remove_book_files,
+        remove_books_without_files, remove_root, root_book_count, root_files, series_books,
+        series_count, series_overview, series_page, show_root_while_missing, store_page_dimensions,
+        unread_books, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     history::{
@@ -888,6 +889,19 @@ impl Library {
             .store
             .database()
             .read(move |connection| page_dimensions(connection, file, rev))
+            .await?)
+    }
+
+    pub(crate) async fn record_page_count(
+        &self,
+        book: BookId,
+        page_count: usize,
+    ) -> Result<(), LibraryError> {
+        let page_count = saturating_u32(page_count);
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| record_page_count(transaction, book.0, page_count))
             .await?)
     }
 
