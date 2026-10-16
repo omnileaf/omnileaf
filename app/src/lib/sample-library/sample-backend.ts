@@ -794,14 +794,22 @@ export function sampleBackend(
       return scenario.signIn;
     },
     relocateLibraryFolder: (id) => {
+      const name =
+        scenario.missing === "none"
+          ? ""
+          : MISSING_FOLDERS[scenario.missing].name;
+      const isShareChosenAgain = scenario.missing === "share";
+      if (isShareChosenAgain && scenario.signIn === "cancelled") {
+        return null;
+      }
+      if (isShareChosenAgain && scenario.signIn === "failed") {
+        return { id, name, outcome: { kind: "unreachable" } };
+      }
       missingFolder.isFound = true;
       events.emit("library-changed", null);
       return {
         id,
-        name:
-          scenario.missing === "none"
-            ? ""
-            : MISSING_FOLDERS[scenario.missing].name,
+        name,
         outcome: {
           kind: "rescanned",
           added: 0,
