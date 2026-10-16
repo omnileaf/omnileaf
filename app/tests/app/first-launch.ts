@@ -15,12 +15,23 @@ const STEPS = [
   },
   { headings: ["Already have comics or books?"], leaveWith: "Skip" },
   { headings: ["A few choices"], leaveWith: "Continue" },
-  { headings: ["You're all set"], leaveWith: "Open my library" },
+  {
+    headings: [
+      "You're all set",
+      "Your library is empty for now",
+      "Found *",
+    ],
+    leaveWith: "Open my library",
+  },
 ] as const;
 
 function headingNamed(names: readonly string[]): Locator {
   const anyName = names
-    .map((name) => `normalize-space()="${name}"`)
+    .map((name) =>
+      name.endsWith("*")
+        ? `starts-with(normalize-space(), "${name.slice(0, -1)}")`
+        : `normalize-space()="${name}"`,
+    )
     .join(" or ");
   return xpath(`//h1[${anyName}]`);
 }
