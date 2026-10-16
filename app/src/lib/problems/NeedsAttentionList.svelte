@@ -2,19 +2,25 @@
   import { Button } from "#lib/components/ui/button/index.ts";
 
   import type { Problem } from "./needs-attention.svelte";
-  import { problemWording } from "./problem-wording";
+  import { problemWording, type WordingContext } from "./problem-wording";
 
   const ICON_SIZE = 16;
 
   let {
     problems,
-    usesStandIns,
+    context,
     onFix,
   }: {
     problems: readonly Problem[];
-    usesStandIns: boolean;
+    context: WordingContext;
     onFix: (problem: Problem) => void;
   } = $props();
+
+  function keyOf(problem: Problem): string {
+    return problem.kind === "lowSpace"
+      ? "low-space"
+      : problem.missing.folder.id;
+  }
 
   const listId = $props.id();
 </script>
@@ -22,8 +28,8 @@
 <ul
   class="divide-y divide-border overflow-hidden rounded-list border border-border"
 >
-  {#each problems as problem, index (problem.missing.folder.id)}
-    {@const wording = problemWording(problem, usesStandIns)}
+  {#each problems as problem, index (keyOf(problem))}
+    {@const wording = problemWording(problem, context)}
     {@const titleId = `${listId}-${String(index)}`}
     <li class="flex items-center gap-md py-sm ps-md pe-md">
       <span aria-hidden="true" class="flex shrink-0 text-warning-strong">

@@ -10,17 +10,18 @@
 
   import type { Problem } from "./needs-attention.svelte";
   import NeedsAttentionList from "./NeedsAttentionList.svelte";
+  import type { WordingContext } from "./problem-wording";
 
   const ICON_SIZE = 22;
 
   let {
     problems,
-    usesStandIns,
+    context,
     isFolded,
     onFix,
   }: {
     problems: readonly Problem[];
-    usesStandIns: boolean;
+    context: WordingContext;
     isFolded: boolean;
     onFix: (problem: Problem) => void;
   } = $props();
@@ -96,7 +97,7 @@
     </h2>
     <NeedsAttentionList
       {problems}
-      {usesStandIns}
+      {context}
       onFix={(problem: Problem) => {
         isOpen = false;
         onFix(problem);

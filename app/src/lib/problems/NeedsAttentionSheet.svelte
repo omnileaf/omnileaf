@@ -8,16 +8,17 @@
 
   import type { NeedsAttention, Problem } from "./needs-attention.svelte";
   import NeedsAttentionList from "./NeedsAttentionList.svelte";
+  import type { WordingContext } from "./problem-wording";
 
   const ICON_SIZE = 18;
 
   let {
     attention,
-    usesStandIns,
+    context,
     onFix,
   }: {
     attention: NeedsAttention;
-    usesStandIns: boolean;
+    context: WordingContext;
     onFix: (problem: Problem) => void;
   } = $props();
 
@@ -55,7 +56,7 @@
     <div class="overflow-auto min-block-none">
       <NeedsAttentionList
         problems={attention.problems}
-        {usesStandIns}
+        {context}
         onFix={(problem: Problem) => {
           close();
           onFix(problem);
