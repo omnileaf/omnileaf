@@ -7,6 +7,7 @@
   import { lastUnfinishedBookPage } from "#lib/history/last-book.ts";
   import { commands, events, type TrayItemChosen } from "#lib/ipc/bindings.ts";
   import { listenFor } from "#lib/ipc/listen-for.ts";
+  import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import { getScreenshotModeShortcut } from "#lib/screenshot-mode/shortcut-setting.svelte.ts";
 
@@ -61,11 +62,7 @@
         choose,
         reportError,
       ),
-      listenFor(
-        (handler) => events.libraryChanged.listen(handler),
-        () => void checkForBookToContinue(),
-        reportError,
-      ),
+      listenForLibraryChanges(() => void checkForBookToContinue(), reportError),
       listenFor(
         (handler) => events.readingSaved.listen(handler),
         () => {
