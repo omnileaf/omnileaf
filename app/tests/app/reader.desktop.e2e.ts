@@ -78,12 +78,12 @@ test("shows on the series page the page reached once back from the book through 
     ),
   );
   const upNext = await appSession().waitFor(
-    xpath("//main//a[starts-with(normalize-space(), 'Continue ')]"),
+    xpath(
+      `//main//a[@aria-label='Continue Sample Series 01 v01 at page ${String(reached)}']`,
+    ),
   );
   expect(await row.text()).toContain(`Page ${String(reached)}`);
-  expect(await upNext.text()).toBe(
-    `Continue Sample Series 01 v01 at page ${String(reached)}`,
-  );
+  expect(await upNext.text()).toBe("Continue");
 });
 
 async function turnAPage(): Promise<number> {
@@ -119,11 +119,9 @@ test("shows on the series page the page reached in a book started before once it
   );
   const upNext = await appSession().waitFor(
     xpath(
-      `//main//a[normalize-space()='Continue Sample Series 01 v01 at page ${String(reached)}']`,
+      `//main//a[@aria-label='Continue Sample Series 01 v01 at page ${String(reached)}']`,
     ),
   );
   expect(await row.text()).toContain(`Page ${String(reached)}`);
-  expect(await upNext.text()).toBe(
-    `Continue Sample Series 01 v01 at page ${String(reached)}`,
-  );
+  expect(await upNext.text()).toBe("Continue");
 });
