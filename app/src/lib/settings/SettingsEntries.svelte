@@ -23,7 +23,7 @@
 </script>
 
 <ul
-  class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
+  class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low ios-grouped:rounded-ios-cell ios-grouped:border-transparent ios-grouped:bg-ios-cell"
 >
   {#each entries as entry (entry.route)}
     <li>

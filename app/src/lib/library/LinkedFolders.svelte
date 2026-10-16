@@ -150,7 +150,7 @@
   <div
     class={isBelowList
       ? "contents"
-      : "flex flex-col overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"}
+      : "flex flex-col overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low ios-grouped:rounded-ios-cell ios-grouped:border-transparent ios-grouped:bg-ios-cell"}
   >
     <h2
       id={headingId}
@@ -165,7 +165,7 @@
     {#if shownFolders.length > 0}
       <ul
         class={[
-          "divide-y divide-border",
+          "divide-y divide-border ios:divide-y-0",
           isBelowList && "rounded-card border border-border bg-card",
         ]}
       >
@@ -173,7 +173,7 @@
           <li
             bind:this={rows[folder.id]}
             tabindex="-1"
-            class="focus-visible:rounded-card focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent"
+            class="relative focus-visible:rounded-card focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent ios:not-last:after:absolute ios:not-last:after:inset-s-ios-folder-separator ios:not-last:after:inset-e-none ios:not-last:after:inset-be-none ios:not-last:after:border-be ios:not-last:after:border-ios-separator"
           >
             <FolderRow {folder} isFoundEmpty={isFoundEmpty?.(folder) ?? false}>
               {#snippet action()}

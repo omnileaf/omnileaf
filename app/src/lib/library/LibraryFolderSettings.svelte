@@ -8,6 +8,7 @@
 
   import type { AddFolder } from "./add-folder";
   import EmptiedFolderCard from "./EmptiedFolderCard.svelte";
+  import { folderLocation } from "./folder-location";
   import { folderTitle } from "./folder-title";
   import HomeFolder from "./HomeFolder.svelte";
   import {
@@ -142,7 +143,11 @@
   <HomeFolder folders={folders.list} {platform} rowAction={rescanButton}>
     <RescanStatus status={rescans.status} kind="home" />
     <p class="mbs-sm px-xs text-caption text-muted">
-      {m.library_settings_home_folder_hint()}
+      {platform === "ios"
+        ? m.library_settings_home_folder_hint_ios({
+            place: folderLocation({ kind: "home", location: "" }, platform),
+          })
+        : m.library_settings_home_folder_hint()}
     </p>
   </HomeFolder>
 
