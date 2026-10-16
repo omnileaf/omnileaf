@@ -17,7 +17,7 @@ test("renders the confirm dialog cancel look on a native button", async () => {
 
   await expect.element(button).toBeVisible();
   await expect.element(button).toHaveClass(/rounded-full/);
-  await expect.element(button).toHaveClass(/medium:rounded-dialog-button/);
+  await expect.element(button).toHaveClass(/medium:rounded-shadcn-button/);
 });
 
 test("shows it is busy until the work it waits on settles", async () => {
