@@ -2101,5 +2101,8 @@
         "countPlural=other": "⟦{formattedCount} ţĥíñĝš ţö ƒíẋ············⟧"
       }
     }
-  ]
+  ],
+  "screenshot_mode_turns_off_at": "⟦Ţûŕñš öƒƒ áţ {time}········⟧",
+  "screenshot_mode_notice_keys": "⟦{when} · {keys}······⟧",
+  "screenshot_mode_turn_off": "⟦Ţûŕñ öƒƒ····⟧"
 }
