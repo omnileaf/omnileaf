@@ -291,13 +291,64 @@ test("shows the pages near the one dragged to while the slider is dragged", asyn
     String(shownNumber),
   );
   await expect(
-    nearbyPages(page).getByRole("img", {
+    nearbyPages(page).getByRole("button", {
       name: `Page ${String(shownNumber + 1)}`,
     }),
   ).toBeVisible();
+});
 
+test("keeps the previews up once the slider is let go, until the controls hide", async ({
+  page,
+}) => {
+  await openBook(page);
+
+  await dragSliderTo(page, 0.5);
   await page.mouse.up();
 
+  await expect(nearbyPages(page)).toBeVisible();
+  await zone(page, "Hide the controls").click();
+  await expect(nearbyPages(page)).toBeHidden();
+  await zone(page, "Show the controls").click();
+  await expect(nearbyPages(page)).toBeHidden();
+});
+
+test("opens a page tapped in the previews", async ({ page }) => {
+  await openBook(page);
+  await dragSliderTo(page, 0.5);
+  await page.mouse.up();
+  const shownNumber = Number(await slider(page).inputValue());
+
+  await nearbyPages(page)
+    .getByRole("button", { name: `Page ${String(shownNumber + 2)}` })
+    .click();
+
+  await expectOnPage(page, shownNumber + 2);
+});
+
+test("shows the previews while the slider has keyboard focus, following the arrow keys", async ({
+  page,
+}) => {
+  await openBook(page);
+  await slider(page).focus();
+
+  await page.keyboard.press("ArrowRight");
+
+  await expect(nearbyPages(page)).toBeVisible();
+  await expect(
+    nearbyPages(page).locator('[aria-current="page"]'),
+  ).toContainText("2");
+});
+
+test("shows the previews while a mouse rests on the controls bar", async ({
+  page,
+}) => {
+  await openBook(page);
+  const track = await boxOf(slider(page));
+
+  await page.mouse.move(track.x + track.width / 2, track.y + track.height / 2);
+
+  await expect(nearbyPages(page)).toBeVisible();
+  await page.mouse.move(track.x + track.width / 2, track.y - 300);
   await expect(nearbyPages(page)).toBeHidden();
 });
 
@@ -313,7 +364,7 @@ test("shows small thumbnails of the nearby pages, not the pages themselves", asy
   await page.mouse.move(track.x + track.width / 2, y, { steps: 4 });
 
   const sources = await nearbyPages(page)
-    .getByRole("img")
+    .locator("img")
     .evaluateAll((images) =>
       images.map((image) =>
         image instanceof HTMLImageElement ? image.src : "",
