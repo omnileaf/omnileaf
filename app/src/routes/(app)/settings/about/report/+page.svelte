@@ -14,8 +14,7 @@
   import IncludedRows from "#lib/problem-report/IncludedRows.svelte";
   import { PROBLEM_REPORT } from "#lib/problem-report/problem-report.ts";
   import { localDayOf } from "#lib/history/local-date.ts";
-  import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { isPhone } from "#lib/page/platform.ts";
+  import { appleDeviceOf } from "#lib/library/folder-location.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import {
     ReportSharing,
@@ -32,7 +31,6 @@
 
   const notices = getNotices();
   const yourReports = yourReportsForDocument();
-  const width = new WindowWidth();
   const platform = $derived(data.appInfo.platform);
 
   async function showSaved(): Promise<void> {
@@ -58,7 +56,7 @@
       const notice = sharedNotice(shared, {
         code,
         platform,
-        isPhone: isPhone(platform, width.current),
+        appleDevice: appleDeviceOf(navigator.userAgent),
         showFolder: {
           label: showFileLabel(platform),
           run: () => {
