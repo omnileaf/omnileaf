@@ -18,7 +18,7 @@
 
   interface KeyRow {
     readonly label: string;
-    readonly keys: string;
+    readonly keys: readonly string[];
   }
 
   interface KeyGroup {
@@ -51,32 +51,46 @@
         rows: [
           {
             label: m.quick_open_title(),
-            keys: quickOpenShortcutLabel(platform),
+            keys: [quickOpenShortcutLabel(platform)],
           },
           {
             label: m.app_shortcuts_search(),
-            keys: searchShortcutLabel(platform),
+            keys: [searchShortcutLabel(platform)],
           },
-          { label: m.undo_action(), keys: undoShortcutOn(platform).label() },
+          { label: m.undo_action(), keys: [undoShortcutOn(platform).label()] },
           {
             label: m.screenshot_mode_title(),
-            keys: screenshotModeShortcutLabel(platform),
+            keys: [screenshotModeShortcutLabel(platform)],
           },
-          { label: m.settings_title(), keys: withCommand(",") },
-          { label: m.app_shortcuts_title(), keys: "?" },
+          { label: m.settings_title(), keys: [withCommand(",")] },
+          { label: m.app_shortcuts_title(), keys: ["?"] },
         ],
       },
       {
         title: m.app_shortcuts_going_back(),
-        rows: [{ label: m.app_shortcuts_close(), keys: m.reader_key_esc() }],
+        rows: [{ label: m.app_shortcuts_close(), keys: [m.reader_key_esc()] }],
       },
     ],
     [
       {
         title: m.library_title(),
         rows: [
-          { label: m.app_shortcuts_open_series(), keys: m.app_key_enter() },
-          { label: m.app_shortcuts_select_all(), keys: withCommand("A") },
+          {
+            label: m.app_shortcuts_move_covers(),
+            keys: ["←", "→", "↑", "↓"],
+          },
+          { label: m.app_shortcuts_open_series(), keys: [m.app_key_enter()] },
+          { label: m.app_shortcuts_select(), keys: [m.reader_key_space()] },
+          { label: m.app_shortcuts_select_all(), keys: [withCommand("A")] },
+        ],
+      },
+      {
+        title: m.settings_title(),
+        rows: [
+          {
+            label: m.app_shortcuts_move_tab(),
+            keys: [m.app_key_alt_up(), m.app_key_alt_down()],
+          },
         ],
       },
     ],
@@ -128,7 +142,11 @@
                   {#each group.rows as row (row.label)}
                     <div class="flex items-center justify-between gap-md">
                       <dt>{row.label}</dt>
-                      <dd><Kbd>{row.keys}</Kbd></dd>
+                      <dd class="flex flex-wrap justify-end gap-xs">
+                        {#each row.keys as key (key)}
+                          <Kbd>{key}</Kbd>
+                        {/each}
+                      </dd>
                     </div>
                   {/each}
                 </dl>
