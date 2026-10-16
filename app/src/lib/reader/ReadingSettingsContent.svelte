@@ -1,16 +1,13 @@
 <script lang="ts">
-  import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import ApplyToChoice from "./ApplyToChoice.svelte";
+  import CropBordersSwitch from "./CropBordersSwitch.svelte";
+  import KeepScreenOnSwitch from "./KeepScreenOnSwitch.svelte";
   import LightSliders from "./LightSliders.svelte";
-  import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
-
-  import {
-    READING_MODE_CHOICES,
-    type ReadingModeChoice,
-    type SeriesReadingDirection,
-  } from "./reading-direction.svelte.ts";
+  import type { SeriesReadingDirection } from "./reading-direction.svelte.ts";
+  import ReadingModeSelect from "./ReadingModeSelect.svelte";
   import type {
     PageFit,
     PageLayout,
@@ -18,24 +15,14 @@
     ReaderBackground,
     ReaderControlsLook,
     TapZones,
+    TapToScroll,
     ReaderLight,
     ReaderSettings,
-    SettingsScope,
   } from "./reader-settings.svelte.ts";
   import SettingChoice from "./SettingChoice.svelte";
+  import SkipUpNextSwitch from "./SkipUpNextSwitch.svelte";
+  import { getSmartFeatures } from "./smart-features.svelte.ts";
   import SmartFeaturesSection from "./SmartFeaturesSection.svelte";
-
-  const CHOSEN_NAMES = {
-    leftToRight: m.reader_left_to_right,
-    rightToLeft: m.reader_right_to_left,
-    longStrip: m.reader_long_strip,
-  } as const;
-  const AUTOMATIC_NAMES = {
-    leftToRight: m.reader_direction_automatic_left_to_right,
-    rightToLeft: m.reader_direction_automatic_right_to_left,
-  } as const;
-  const SWITCH_ROW =
-    "flex items-center gap-md py-setting-grid-pad text-start text-small font-medium min-block-setting-grid-row focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
   let {
     settings,
@@ -47,244 +34,235 @@
     seriesTitle: string;
   } = $props();
 
+  const isStrip = $derived(reading.mode === "longStrip");
+  const features = getSmartFeatures();
   const id = $props.id();
   const look = $derived(settings.look);
-  const skipUpNext = getSkipUpNextSetting();
-
-  function automaticName(): string {
-    return reading.mode === "longStrip"
-      ? m.reader_direction_automatic_long_strip()
-      : AUTOMATIC_NAMES[reading.direction]();
-  }
-
-  function choiceName(choice: ReadingModeChoice): string {
-    return choice === "automatic" ? automaticName() : CHOSEN_NAMES[choice]();
-  }
-
-  function chooseDirection(value: string): void {
-    const choice = READING_MODE_CHOICES.find(
-      (candidate) => candidate === value,
-    );
-    if (choice !== undefined) {
-      reading.choose(choice);
-    }
-  }
 </script>
 
-<div class="flex flex-col divide-y divide-border">
-  <SettingChoice
-    isStacked
-    label={m.reader_apply_to()}
-    choices={[
-      { value: "series", label: m.reader_this_series() },
-      { value: "all", label: m.reader_all_series() },
-    ]}
-    chosen={settings.scope}
-    onChoose={(scope: SettingsScope) => {
-      settings.applyTo(scope);
-    }}
-  >
-    <p class="text-caption text-muted expanded:hidden">
-      {settings.scope === "series"
-        ? m.reader_applies_to_series({ series: seriesTitle })
-        : m.reader_applies_to_all()}
-    </p>
-  </SettingChoice>
-  <div
-    data-slot="setting-row"
-    class="grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row"
-  >
-    <label for="{id}-mode" class="text-small font-medium">
-      {m.reader_mode()}
-    </label>
-    <NativeSelect
-      id="{id}-mode"
-      class="inline-setting-control"
-      value={reading.choice}
-      onchange={(event: Event & { currentTarget: HTMLSelectElement }) => {
-        chooseDirection(event.currentTarget.value);
-      }}
+{#if isStrip}
+  <div class="flex flex-col divide-y divide-border">
+    <section
+      data-slot="setting-row"
+      aria-labelledby="{id}-reading"
+      class="flex flex-col border-be-0"
     >
-      {#each READING_MODE_CHOICES as choice (choice)}
-        <option value={choice}>{choiceName(choice)}</option>
-      {/each}
-    </NativeSelect>
+      <h3 id="{id}-reading" class="text-small font-semibold">
+        {m.reader_reading_title()}
+      </h3>
+      <div class="flex flex-col divide-y divide-border">
+        <ApplyToChoice {settings} {seriesTitle} />
+        <ReadingModeSelect {reading} />
+        <SettingChoice
+          isInline
+          label={m.reader_tap_to_scroll()}
+          choices={[
+            { value: "topAndBottom", label: m.reader_tap_to_scroll_both() },
+            { value: "off", label: m.reader_tap_zones_off() },
+          ]}
+          chosen={look.tapToScroll}
+          onChoose={(tapToScroll: TapToScroll) => {
+            settings.change("tapToScroll", tapToScroll);
+          }}
+        >
+          <p class="col-span-full text-caption text-muted">
+            {m.reader_tap_to_scroll_help()}
+          </p>
+        </SettingChoice>
+      </div>
+    </section>
+    <section
+      data-slot="setting-row"
+      aria-labelledby="{id}-strip-screen"
+      class="flex flex-col border-be-0 pbs-xl"
+    >
+      <h3 id="{id}-strip-screen" class="text-small font-semibold">
+        {m.reader_screen_title()}
+      </h3>
+      <div class="flex flex-col divide-y divide-border">
+        <CropBordersSwitch {settings} />
+        <KeepScreenOnSwitch {settings} />
+        <LightSliders
+          isInRows
+          showsWarmth={false}
+          light={look.light}
+          onChange={(light: ReaderLight) => {
+            settings.change("light", light);
+          }}
+        />
+      </div>
+    </section>
+    <section
+      data-slot="setting-row"
+      aria-labelledby="{id}-strip-end"
+      class="flex flex-col border-be-0 pbs-xl"
+    >
+      <h3 id="{id}-strip-end" class="text-small font-semibold">
+        {m.reader_end_of_book()}
+      </h3>
+      <div class="flex flex-col divide-y divide-border">
+        <Switch
+          bind:checked={
+            () => features.showsBookSummary,
+            (isOn: boolean) => {
+              features.turn("showsBookSummary", isOn);
+            }
+          }
+          aria-labelledby="{id}-summary"
+          aria-describedby="{id}-summary-description"
+          class="flex items-center gap-md py-setting-grid-pad text-start min-block-setting-grid-row focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <span class="flex flex-1 flex-col gap-2xs">
+            <span id="{id}-summary" class="text-small font-medium">
+              {m.reader_book_summary()}
+            </span>
+            <span id="{id}-summary-description" class="text-caption text-muted">
+              {m.reader_book_summary_help()}
+            </span>
+          </span>
+        </Switch>
+        <SkipUpNextSwitch />
+      </div>
+    </section>
   </div>
-  <SettingChoice
-    label={m.reader_layout()}
-    choices={[
-      { value: "automatic", label: m.reader_layout_automatic() },
-      {
-        value: "one",
-        label: m.reader_layout_one(),
-        phoneLabel: m.reader_layout_one_page(),
-      },
-      {
-        value: "two",
-        label: m.reader_layout_two(),
-        phoneLabel: m.reader_layout_two_pages(),
-      },
-    ]}
-    chosen={look.layout}
-    onChoose={(layout: PageLayout) => {
-      settings.change("layout", layout);
-    }}
-  />
-  <SettingChoice
-    label={m.reader_fit()}
-    choices={[
-      { value: "screen", label: m.reader_fit_screen() },
-      { value: "width", label: m.reader_fit_width() },
-      { value: "height", label: m.reader_fit_height_choice() },
-    ]}
-    chosen={look.fit}
-    onChoose={(fit: PageFit) => {
-      settings.change("fit", fit);
-    }}
-  >
-    <p class="text-caption text-muted expanded:hidden">
-      {m.reader_fit_zoom_hint()}
-    </p>
-  </SettingChoice>
-  <SettingChoice
-    label={m.reader_background()}
-    choices={[
-      { value: "black", label: m.reader_background_black() },
-      { value: "grey", label: m.reader_background_grey() },
-      { value: "white", label: m.reader_background_white() },
-    ]}
-    chosen={look.background}
-    onChoose={(background: ReaderBackground) => {
-      settings.change("background", background);
-    }}
-  />
-  <SettingChoice
-    label={m.reader_controls()}
-    choices={[
-      { value: "dark", label: m.reader_controls_dark() },
-      { value: "matchApp", label: m.reader_controls_match() },
-    ]}
-    chosen={look.controls}
-    onChoose={(controls: ReaderControlsLook) => {
-      settings.change("controls", controls);
-    }}
-  />
-  <section
-    data-slot="setting-row"
-    aria-labelledby="{id}-pages"
-    class="flex flex-col border-be-0 pbs-xl"
-  >
-    <h3 id="{id}-pages" class="text-small font-semibold">
-      {m.reader_pages_title()}
-    </h3>
-    <div class="flex flex-col divide-y divide-border">
-      <SettingChoice
-        isInline
-        label={m.reader_tap_zones()}
-        choices={[
-          { value: "edges", label: m.reader_tap_zones_edges() },
-          { value: "lShape", label: m.reader_tap_zones_l() },
-          { value: "off", label: m.reader_tap_zones_off() },
-        ]}
-        chosen={look.tapZones}
-        onChoose={(zones: TapZones) => {
-          settings.change("tapZones", zones);
-        }}
-      />
-      <SettingChoice
-        isInline
-        label={m.reader_page_turn()}
-        choices={[
-          { value: "instant", label: m.reader_page_turn_instant() },
-          { value: "slide", label: m.reader_page_turn_slide() },
-        ]}
-        chosen={look.pageTurn}
-        onChoose={(turn: PageTurnStyle) => {
-          settings.change("pageTurn", turn);
-        }}
-      >
-        <p class="col-span-full text-caption text-muted">
-          {m.reader_page_turn_help()}
-        </p>
-      </SettingChoice>
-    </div>
-  </section>
-  <fieldset data-slot="setting-row" class="flex flex-col border-be-0 pbs-xl">
-    <legend class="contents">
-      <span class="text-small font-semibold">{m.reader_light_title()}</span>
-    </legend>
-    <LightSliders
-      isInRows
-      light={look.light}
-      onChange={(light: ReaderLight) => {
-        settings.change("light", light);
+{:else}
+  <div class="flex flex-col divide-y divide-border">
+    <ApplyToChoice {settings} {seriesTitle} />
+    <ReadingModeSelect {reading} />
+    <SettingChoice
+      label={m.reader_layout()}
+      choices={[
+        { value: "automatic", label: m.reader_layout_automatic() },
+        {
+          value: "one",
+          label: m.reader_layout_one(),
+          phoneLabel: m.reader_layout_one_page(),
+        },
+        {
+          value: "two",
+          label: m.reader_layout_two(),
+          phoneLabel: m.reader_layout_two_pages(),
+        },
+      ]}
+      chosen={look.layout}
+      onChoose={(layout: PageLayout) => {
+        settings.change("layout", layout);
       }}
     />
-  </fieldset>
-  <section
-    data-slot="setting-row"
-    aria-labelledby="{id}-screen"
-    class="flex flex-col border-be-0 pbs-xl"
-  >
-    <h3 id="{id}-screen" class="text-small font-semibold">
-      {m.reader_screen_title()}
-    </h3>
-    <div class="flex flex-col divide-y divide-border">
-      <Switch
-        bind:checked={
-          () => look.keepsScreenOn,
-          (isOn: boolean) => {
-            settings.change("keepsScreenOn", isOn);
-          }
-        }
-        class={SWITCH_ROW}
-      >
-        <span class="flex-1">{m.reader_keep_screen_on()}</span>
-      </Switch>
-      <Switch
-        disabled
-        bind:checked={
-          () => look.cropsBorders,
-          (isOn: boolean) => {
-            settings.change("cropsBorders", isOn);
-          }
-        }
-        class={[SWITCH_ROW, "text-muted"]}
-      >
-        <span class="flex-1">
-          {m.reader_coming_soon({ feature: m.reader_crop_borders() })}
-        </span>
-      </Switch>
-    </div>
-  </section>
-  <section
-    data-slot="setting-row"
-    aria-labelledby="{id}-end"
-    class="flex flex-col border-be-0 pbs-xl"
-  >
-    <h3 id="{id}-end" class="text-small font-semibold">
-      {m.reader_end_of_book()}
-    </h3>
-    <Switch
-      bind:checked={
-        () => skipUpNext.isOn,
-        (isOn: boolean) => {
-          skipUpNext.turn(isOn);
-        }
-      }
-      aria-labelledby="{id}-skip"
-      aria-describedby="{id}-skip-description"
-      class="flex items-center gap-md py-setting-grid-pad text-start min-block-setting-grid-row focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    <SettingChoice
+      label={m.reader_fit()}
+      choices={[
+        { value: "screen", label: m.reader_fit_screen() },
+        { value: "width", label: m.reader_fit_width() },
+        { value: "height", label: m.reader_fit_height_choice() },
+      ]}
+      chosen={look.fit}
+      onChoose={(fit: PageFit) => {
+        settings.change("fit", fit);
+      }}
     >
-      <span class="flex flex-1 flex-col gap-2xs">
-        <span id="{id}-skip" class="text-small font-medium">
-          {m.reading_skip_up_next()}
-        </span>
-        <span id="{id}-skip-description" class="text-caption text-muted">
-          {m.reading_skip_up_next_help()}
-        </span>
-      </span>
-    </Switch>
-  </section>
-  <SmartFeaturesSection heading="h3" class="pbs-xl" />
-</div>
+      <p class="text-caption text-muted expanded:hidden">
+        {m.reader_fit_zoom_hint()}
+      </p>
+    </SettingChoice>
+    <SettingChoice
+      label={m.reader_background()}
+      choices={[
+        { value: "black", label: m.reader_background_black() },
+        { value: "grey", label: m.reader_background_grey() },
+        { value: "white", label: m.reader_background_white() },
+      ]}
+      chosen={look.background}
+      onChoose={(background: ReaderBackground) => {
+        settings.change("background", background);
+      }}
+    />
+    <SettingChoice
+      label={m.reader_controls()}
+      choices={[
+        { value: "dark", label: m.reader_controls_dark() },
+        { value: "matchApp", label: m.reader_controls_match() },
+      ]}
+      chosen={look.controls}
+      onChoose={(controls: ReaderControlsLook) => {
+        settings.change("controls", controls);
+      }}
+    />
+    <section
+      data-slot="setting-row"
+      aria-labelledby="{id}-pages"
+      class="flex flex-col border-be-0 pbs-xl"
+    >
+      <h3 id="{id}-pages" class="text-small font-semibold">
+        {m.reader_pages_title()}
+      </h3>
+      <div class="flex flex-col divide-y divide-border">
+        <SettingChoice
+          isInline
+          label={m.reader_tap_zones()}
+          choices={[
+            { value: "edges", label: m.reader_tap_zones_edges() },
+            { value: "lShape", label: m.reader_tap_zones_l() },
+            { value: "off", label: m.reader_tap_zones_off() },
+          ]}
+          chosen={look.tapZones}
+          onChoose={(zones: TapZones) => {
+            settings.change("tapZones", zones);
+          }}
+        />
+        <SettingChoice
+          isInline
+          label={m.reader_page_turn()}
+          choices={[
+            { value: "instant", label: m.reader_page_turn_instant() },
+            { value: "slide", label: m.reader_page_turn_slide() },
+          ]}
+          chosen={look.pageTurn}
+          onChoose={(turn: PageTurnStyle) => {
+            settings.change("pageTurn", turn);
+          }}
+        >
+          <p class="col-span-full text-caption text-muted">
+            {m.reader_page_turn_help()}
+          </p>
+        </SettingChoice>
+      </div>
+    </section>
+    <fieldset data-slot="setting-row" class="flex flex-col border-be-0 pbs-xl">
+      <legend class="contents">
+        <span class="text-small font-semibold">{m.reader_light_title()}</span>
+      </legend>
+      <LightSliders
+        isInRows
+        light={look.light}
+        onChange={(light: ReaderLight) => {
+          settings.change("light", light);
+        }}
+      />
+    </fieldset>
+    <section
+      data-slot="setting-row"
+      aria-labelledby="{id}-screen"
+      class="flex flex-col border-be-0 pbs-xl"
+    >
+      <h3 id="{id}-screen" class="text-small font-semibold">
+        {m.reader_screen_title()}
+      </h3>
+      <div class="flex flex-col divide-y divide-border">
+        <KeepScreenOnSwitch {settings} />
+        <CropBordersSwitch {settings} />
+      </div>
+    </section>
+    <section
+      data-slot="setting-row"
+      aria-labelledby="{id}-end"
+      class="flex flex-col border-be-0 pbs-xl"
+    >
+      <h3 id="{id}-end" class="text-small font-semibold">
+        {m.reader_end_of_book()}
+      </h3>
+      <SkipUpNextSwitch />
+    </section>
+    <SmartFeaturesSection heading="h3" class="pbs-xl" />
+  </div>
+{/if}
