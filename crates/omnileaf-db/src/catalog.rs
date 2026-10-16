@@ -15,6 +15,7 @@ mod relocated_roots;
 mod root;
 mod root_availability;
 mod root_files;
+mod root_share;
 mod scanned_book;
 mod search_text;
 mod series;
@@ -49,6 +50,7 @@ pub use root::{
 };
 pub use root_availability::{mark_root_available, mark_root_unavailable, show_root_while_missing};
 pub use root_files::{StoredFile, remove_book_files, root_book_count, root_files};
+pub use root_share::{remember_root_share, root_share, root_shares};
 pub use scanned_book::{BookFile, ScannedBook, record_moved_books, record_scanned_books};
 pub use search_text::SearchText;
 pub use series::{NewSeries, add_series};
