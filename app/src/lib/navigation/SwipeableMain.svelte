@@ -248,6 +248,7 @@
     "order-2 flex flex-1 flex-col overflow-y-auto",
     !isFullScreen &&
       "px-gutter py-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance",
+    "windows:desktop-shell:rounded-ss-windows-layer windows:desktop-shell:border-s windows:desktop-shell:border-bs windows:desktop-shell:border-windows-stroke windows:desktop-shell:bg-background",
     swiping !== undefined &&
       "bg-background shadow-back-swipe rtl:shadow-back-swipe-rtl",
     screens.isSettling && ["transition-transform", SETTLING],

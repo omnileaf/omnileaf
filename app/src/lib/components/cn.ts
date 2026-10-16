@@ -129,6 +129,7 @@ export const TOKEN_THEME = {
     "toast",
     "toast-wide",
     "tooltip",
+    "windows-layer",
   ],
   spacing: [
     "2xl",
@@ -480,6 +481,7 @@ export const TOKEN_THEME = {
     "up-next-cover-wide",
     "veil-disc",
     "view-panel",
+    "windows-indicator",
     "xl",
     "xs",
   ],
