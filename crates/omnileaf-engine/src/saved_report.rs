@@ -13,8 +13,19 @@ const FILE_PREFIX: &str = "omnileaf-report-";
 const FILE_EXTENSION: &str = "txt";
 const MOST_FILES_A_DAY: u32 = 100;
 const HOME_MARK: &str = "~";
-const DAYS_BEFORE_1970_IN_ERA: i64 = 719_468;
+const DAYS_FROM_ERA_START_TO_1970: i64 = 719_468;
+const DAYS_PER_YEAR: i64 = 365;
+const DAYS_PER_FOUR_YEARS: i64 = 1_461;
+const DAYS_PER_CENTURY: i64 = 36_524;
 const DAYS_PER_ERA: i64 = 146_097;
+const YEARS_PER_LEAP_YEAR: i64 = 4;
+const YEARS_PER_CENTURY: i64 = 100;
+const YEARS_PER_ERA: i64 = 400;
+const MONTHS_PER_YEAR: i64 = 12;
+const MARCH: i64 = 3;
+const MONTHS_IN_A_RUN: i64 = 5;
+const DAYS_IN_A_RUN_FROM_MARCH: i64 = 153;
+const RUN_ROUNDING: i64 = 2;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -89,27 +100,39 @@ struct CalendarDate {
 }
 
 impl CalendarDate {
-    /// Howard Hinnant's `civil_from_days`, which counts in 400-year eras starting on 1 March.
     fn of(day: LocalDay) -> Self {
-        let from_era_start = day.0 + DAYS_BEFORE_1970_IN_ERA;
+        let from_era_start = day.0 + DAYS_FROM_ERA_START_TO_1970;
         let era = from_era_start.div_euclid(DAYS_PER_ERA);
         let day_of_era = from_era_start.rem_euclid(DAYS_PER_ERA);
-        let year_of_era =
-            (day_of_era - day_of_era / 1460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
-        let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
-        let month_from_march = (5 * day_of_year + 2) / 153;
-        let month = if month_from_march < 10 {
-            month_from_march + 3
-        } else {
-            month_from_march - 9
-        };
-        let year = year_of_era + era * 400 + i64::from(month <= 2);
+        let year_of_era = year_of_era(day_of_era);
+        let day_of_year = day_of_era - days_before_year_of_era(year_of_era);
+        let month_from_march = month_from_march(day_of_year);
+        let month = (month_from_march + MARCH - 1).rem_euclid(MONTHS_PER_YEAR) + 1;
         Self {
-            year,
+            year: year_of_era + era * YEARS_PER_ERA + i64::from(month < MARCH),
             month,
-            day: day_of_year - (153 * month_from_march + 2) / 5 + 1,
+            day: day_of_year - days_before_month_from_march(month_from_march) + 1,
         }
     }
+}
+
+fn year_of_era(day_of_era: i64) -> i64 {
+    let leap_days = day_of_era / (DAYS_PER_FOUR_YEARS - 1) - day_of_era / DAYS_PER_CENTURY
+        + day_of_era / (DAYS_PER_ERA - 1);
+    (day_of_era - leap_days) / DAYS_PER_YEAR
+}
+
+fn days_before_year_of_era(year_of_era: i64) -> i64 {
+    DAYS_PER_YEAR * year_of_era + year_of_era / YEARS_PER_LEAP_YEAR
+        - year_of_era / YEARS_PER_CENTURY
+}
+
+fn month_from_march(day_of_year: i64) -> i64 {
+    (MONTHS_IN_A_RUN * day_of_year + RUN_ROUNDING) / DAYS_IN_A_RUN_FROM_MARCH
+}
+
+fn days_before_month_from_march(month_from_march: i64) -> i64 {
+    (DAYS_IN_A_RUN_FROM_MARCH * month_from_march + RUN_ROUNDING) / MONTHS_IN_A_RUN
 }
 
 impl std::fmt::Display for CalendarDate {
