@@ -12,15 +12,53 @@ mod books;
 mod scanned;
 mod support;
 
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use books::write_book;
-use omnileaf_engine::{FolderProblem, LibraryListing, RescanOutcome};
+use omnileaf_engine::{
+    FolderProblem, LibraryListing, NetworkShare, RescanOutcome, ShareLookup, ShareSignIn,
+    UnreachableShare,
+};
 use scanned::Scanned;
 use support::ScratchFolder;
 
 const SERIES_01: &str = "Sample Series 01";
 const SERIES_02: &str = "Sample Series 02";
+
+struct NoShares;
+
+impl ShareLookup for NoShares {
+    fn unreachable_share(
+        &self,
+        _folder: &Path,
+    ) -> impl Future<Output = Option<UnreachableShare>> + Send {
+        std::future::ready(None)
+    }
+}
+
+struct MountedShares;
+
+impl ShareLookup for MountedShares {
+    fn unreachable_share(
+        &self,
+        _folder: &Path,
+    ) -> impl Future<Output = Option<UnreachableShare>> + Send {
+        std::future::ready(Some(UnreachableShare {
+            share: nas_manga(),
+            sign_in: ShareSignIn::MountedBySystem,
+        }))
+    }
+}
+
+fn nas_manga() -> NetworkShare {
+    NetworkShare {
+        server: "nas".to_owned(),
+        name: "nas/manga".to_owned(),
+    }
+}
 
 struct Shelf {
     scanned: Scanned,
@@ -70,13 +108,13 @@ async fn lists_a_folder_gone_missing_with_the_series_it_hides() {
     shelf.move_away().await;
 
     let library = &shelf.scanned.library;
-    let missing = library.missing_folders().await.unwrap();
+    let missing = library.missing_folders(&NoShares).await.unwrap();
     assert_eq!(
         missing
             .iter()
             .map(|folder| (
                 folder.folder.id,
-                folder.problem,
+                folder.problem.clone(),
                 folder.hidden_series,
                 folder.is_shown_anyway
             ))
@@ -93,6 +131,27 @@ async fn lists_a_folder_gone_missing_with_the_series_it_hides() {
 }
 
 #[tokio::test]
+async fn lists_a_folder_on_an_unreachable_share_with_that_share() {
+    let shelf = Shelf::new("missing-share").await;
+
+    shelf.move_away().await;
+
+    let missing = shelf
+        .scanned
+        .library
+        .missing_folders(&MountedShares)
+        .await
+        .unwrap();
+    assert_eq!(
+        missing
+            .into_iter()
+            .map(|folder| folder.problem)
+            .collect::<Vec<_>>(),
+        [FolderProblem::NeedsMounting { share: nas_manga() }]
+    );
+}
+
+#[tokio::test]
 async fn shows_the_series_of_a_missing_folder_once_asked() {
     let shelf = Shelf::new("missing-shown").await;
     shelf.move_away().await;
@@ -104,7 +163,12 @@ async fn shows_the_series_of_a_missing_folder_once_asked() {
         .await
         .unwrap();
 
-    let missing = shelf.scanned.library.missing_folders().await.unwrap();
+    let missing = shelf
+        .scanned
+        .library
+        .missing_folders(&NoShares)
+        .await
+        .unwrap();
     assert_eq!(
         (
             shelf.titles().await,
@@ -132,7 +196,13 @@ async fn finds_a_moved_folder_where_it_went() {
     assert_eq!(
         (
             matches!(rescan.outcome, RescanOutcome::Rescanned(_)),
-            shelf.scanned.library.missing_folders().await.unwrap().len(),
+            shelf
+                .scanned
+                .library
+                .missing_folders(&NoShares)
+                .await
+                .unwrap()
+                .len(),
             shelf.titles().await
         ),
         (true, 0, vec![SERIES_01.to_owned(), SERIES_02.to_owned()])
