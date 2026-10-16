@@ -1,7 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
+import { TauriEvent } from "@tauri-apps/api/event";
 
 import type { AdultContent, Platform } from "../../src/lib/ipc/bindings.ts";
-import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
+import {
+  CommandFailure,
+  emitFakeEvent,
+  type FakeBackend,
+} from "./fake-backend.ts";
 import { sampleSeries, type WireSeries } from "./series-catalog.ts";
 import {
   accessibilityViolations,
@@ -1431,6 +1436,127 @@ test.describe("while a folder is still being scanned", () => {
     });
   }
 });
+
+const DROPPED = "/media/usb/Comics 2";
+const DROP_HINT =
+  "Folders on this computer, external drives and network shares all work.";
+
+test.describe("dropping folders on a desktop", () => {
+  const linked: string[] = [];
+
+  test.use({
+    backend: {
+      ...FIRST_LAUNCH_BACKEND,
+      linkLibraryFolder: (folder) => {
+        linked.push(folder);
+        device.folders.push({
+          id: "7",
+          kind: "linked",
+          name: "Comics 2",
+          location: folder,
+          isAvailable: true,
+        });
+        return {
+          name: "Comics 2",
+          series: 2,
+          books: 12,
+          unreadableBooks: 0,
+          unsupportedBooks: 0,
+          unreadableFolders: 0,
+        };
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    linked.length = 0;
+  });
+
+  function dropArea(page: Page): Locator {
+    return page.getByRole("group", { name: "Drop folders here" });
+  }
+
+  test("holds Add a folder and where folders can come from in a drop area", async ({
+    page,
+  }) => {
+    await goTo(page, "Already have comics or books?");
+
+    await expect(dropArea(page)).toContainText(DROP_HINT);
+    await expect(
+      dropArea(page).getByRole("button", { name: "Add a folder" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Add a folder" }),
+    ).toHaveCount(1);
+  });
+
+  test("names the folder being dragged over the window", async ({ page }) => {
+    await goTo(page, "Already have comics or books?");
+
+    await emitFakeEvent(page, TauriEvent.DRAG_ENTER, {
+      paths: [DROPPED],
+      position: { x: 10, y: 10 },
+    });
+    await expect(dropArea(page)).toContainText("Drop to link Comics 2");
+    await emitFakeEvent(page, TauriEvent.DRAG_LEAVE, null);
+
+    await expect(dropArea(page)).toContainText("Drop folders here");
+  });
+
+  test("links a folder dropped on the window, as Add a folder does", async ({
+    page,
+  }) => {
+    await goTo(page, "Already have comics or books?");
+
+    await emitFakeEvent(page, TauriEvent.DRAG_DROP, {
+      paths: [DROPPED],
+      position: { x: 10, y: 10 },
+    });
+
+    await expect(
+      page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
+    ).toContainText(["Comics 2"]);
+    expect(linked).toEqual([DROPPED]);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations while a folder is dragged over, in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await goTo(page, "Already have comics or books?");
+      await emitFakeEvent(page, TauriEvent.DRAG_ENTER, {
+        paths: [DROPPED],
+        position: { x: 10, y: 10 },
+      });
+      await expect(dropArea(page)).toContainText("Drop to link Comics 2");
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
+});
+
+for (const platform of ["android", "ios"] as const) {
+  test.describe(`Link folders on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
+    test.use({
+      backend: {
+        ...FIRST_LAUNCH_BACKEND,
+        appInfo: onPlatform(platform).backend.appInfo,
+      },
+    });
+
+    test("offers no drop area, since folders can't be dropped there", async ({
+      page,
+    }) => {
+      await goTo(page, "Already have comics or books?", platform);
+
+      await expect(
+        page.getByRole("group", { name: "Drop folders here" }),
+      ).toHaveCount(0);
+    });
+  });
+}
 
 test("goes back a step with the browser's back", async ({ page }) => {
   await goTo(page, "Where your library lives");

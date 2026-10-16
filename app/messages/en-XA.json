@@ -1001,6 +1001,16 @@
   "library_files_icloud_drive": "⟦íÇļöûð Ðŕíṽé·····⟧",
   "library_files_on_my_iphone": "⟦Öñ Ṁý íÞĥöñé·····⟧",
   "library_files_on_my_ipad": "⟦Öñ Ṁý íÞáð····⟧",
+  "first_launch_drop_title": "⟦Ðŕöþ ƒöļðéŕš ĥéŕé·······⟧",
+  "first_launch_drop_to_link": "⟦Ðŕöþ ţö ļíñķ {name}········⟧",
+  "first_launch_drop_to_link_many": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "⟦Ðŕöþ ţö ļíñķ {formattedCount} ƒöļðéŕš···············⟧"
+      }
+    }
+  ],
   "first_launch_ready_title": "⟦Ýöû'ŕé áļļ šéţ······⟧",
   "first_launch_ready_body": "⟦Ýöûŕ ļíƀŕáŕý íš ŕéáðý. Áðð öŕ ŕéɱöṽé ƒöļðéŕš áñý ţíɱé íñ Šéţţíñĝš › Ļíƀŕáŕý.·······························⟧",
   "first_launch_ready_finding_body": "⟦Öɱñíļéáƒ íš šţíļļ ƒíñðíñĝ ƀööķš. Ýöû çáñ öþéñ ýöûŕ ļíƀŕáŕý ñöŵ; šçáññíñĝ çáŕŕíéš öñ.··································⟧",
