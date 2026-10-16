@@ -18,7 +18,8 @@
     stepAfter,
   } from "#lib/first-launch/steps.ts";
   import WelcomeStep from "#lib/first-launch/WelcomeStep.svelte";
-  import { commands } from "#lib/ipc/bindings.ts";
+  import { type AdultTreatment, commands } from "#lib/ipc/bindings.ts";
+  import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
@@ -44,6 +45,7 @@
     commands.libraryFolderBookCount,
   );
 
+  let adultTreatment: AdultTreatment = $state("blur");
   let card: HTMLElement | undefined = $state();
   let shownStep: FirstLaunchStep | undefined;
 
@@ -63,6 +65,22 @@
     if (after !== undefined) {
       await goto("", { shallow: true, state: { firstLaunchStep: after } });
     }
+  }
+
+  async function keepAdultTreatment(): Promise<void> {
+    const current = await commands.libraryAdultContent();
+    const kept = await commands.setLibraryAdultContent({
+      ...(current.status === "ok" ? current.data : NEW_ADULT_CONTENT),
+      treatment: adultTreatment,
+    });
+    if (kept.status === "error") {
+      reportError(kept.error);
+    }
+  }
+
+  async function leaveChoices(): Promise<void> {
+    await keepAdultTreatment();
+    await next();
   }
 
   function back(): void {
@@ -130,7 +148,17 @@
           onNext={next}
         />
       {:else if step === "choices"}
-        <ChoicesStep {device} onBack={back} onNext={next} />
+        <ChoicesStep
+          {device}
+          {adultTreatment}
+          onChooseAdult={(treatment: AdultTreatment) => {
+            adultTreatment = treatment;
+          }}
+          onBack={back}
+          onNext={() => {
+            void leaveChoices();
+          }}
+        />
       {:else}
         <ReadyStep onFinish={finish} />
       {/if}

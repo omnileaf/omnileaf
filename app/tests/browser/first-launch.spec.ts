@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { Platform } from "../../src/lib/ipc/bindings.ts";
+import type { AdultContent, Platform } from "../../src/lib/ipc/bindings.ts";
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -45,12 +45,14 @@ class Device {
   failsToFinish = false;
   folders: WireFolder[] = [];
   books = new Map<string, number>();
+  adultContent: AdultContent = { treatment: "show", countsAgeRatings: false };
 
   reset(): void {
     this.finishes = 0;
     this.failsToFinish = false;
     this.folders = [HOME_FOLDER];
     this.books = new Map();
+    this.adultContent = { treatment: "show", countsAgeRatings: false };
   }
 }
 
@@ -71,6 +73,11 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
   },
   libraryFolders: () => ({ folders: [...device.folders], next: null }),
   libraryFolderBookCount: (id) => device.books.get(id) ?? 0,
+  libraryAdultContent: () => device.adultContent,
+  setLibraryAdultContent: (content) => {
+    device.adultContent = content;
+    return null;
+  },
   addLibraryFolder: () => {
     device.folders.push(SAMPLE_COMICS);
     device.books.set(SAMPLE_COMICS.id, 7);
@@ -836,9 +843,7 @@ for (const platform of ["ios", "android"] as const) {
       const choice = page.getByRole("region", { name: "Appearance" });
       const name = choice.getByRole("heading", { name: "Appearance" });
       const control = choice.getByRole("radiogroup", { name: "Appearance" });
-      const help = choice.getByText(
-        "Paper light or dark, or follow your phone.",
-      );
+      const help = choice.getByText("Light or dark, or follow your phone.");
 
       const nameBox = await boxOf(name);
       const controlBox = await boxOf(control);
@@ -1001,8 +1006,8 @@ test.describe("on android", () => {
   }) => {
     const help =
       viewportOf(page).width < MEDIUM_MIN_WIDTH
-        ? "Paper light or dark, or follow your phone."
-        : "Paper light or dark, or follow this device.";
+        ? "Light or dark, or follow your phone."
+        : "Light or dark, or follow this device.";
 
     await goTo(page, "A few choices");
 
@@ -1010,6 +1015,43 @@ test.describe("on android", () => {
       page.getByRole("radiogroup", { name: "Appearance" }),
     ).toHaveAccessibleDescription(help);
   });
+});
+
+test("starts 18+ covers on Blur and keeps it as the library's choice", async ({
+  page,
+}) => {
+  await goTo(page, "A few choices");
+  const covers = page.getByRole("radiogroup", { name: "18+ covers" });
+
+  await expect(covers.getByRole("radio", { name: "Blur" })).toBeChecked();
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await expect(heading(page, "You're all set")).toBeVisible();
+  expect(device.adultContent).toEqual({
+    treatment: "blur",
+    countsAgeRatings: false,
+  });
+});
+
+test("keeps the 18+ covers choice made on the step", async ({ page }) => {
+  await goTo(page, "A few choices");
+
+  await page
+    .getByRole("radiogroup", { name: "18+ covers" })
+    .getByRole("radio", { name: "Hide" })
+    .click();
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await expect(heading(page, "You're all set")).toBeVisible();
+  expect(device.adultContent.treatment).toBe("hide");
+});
+
+test("explains the appearance choice on a desktop", async ({ page }) => {
+  await goTo(page, "A few choices");
+
+  await expect(
+    page.getByRole("radiogroup", { name: "Appearance" }),
+  ).toHaveAccessibleDescription("Light or dark, or follow your computer.");
 });
 
 test("turns the app dark from the choices", async ({ page }) => {
