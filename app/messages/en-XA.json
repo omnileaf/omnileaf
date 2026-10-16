@@ -2042,5 +2042,50 @@
   "reader_unreadable": "⟦Ţĥíš ƀööķ çöûļðñ'ţ ƀé öþéñéð············⟧",
   "reader_unreadable_body": "⟦Íţš ƒíļé ɱáý ĥáṽé ɱöṽéð, öŕ ƀé ðáɱáĝéð.················⟧",
   "reader_failed_title": "⟦Šöɱéţĥíñĝ ŵéñţ ŵŕöñĝ········⟧",
-  "reader_failed": "⟦Çöûļðñ'ţ öþéñ ţĥíš ƀööķ. Ţŕý áĝáíñ ļáţéŕ.·················⟧"
+  "reader_failed": "⟦Çöûļðñ'ţ öþéñ ţĥíš ƀööķ. Ţŕý áĝáíñ ļáţéŕ.·················⟧",
+  "attention_title": "⟦Ñééðš áţţéñţíöñ······⟧",
+  "attention_drive_title": "⟦{name} íšñ’ţ çöññéçţéð·········⟧",
+  "attention_hidden_series": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šéŕíéš ĥíððéñ ûñţíļ íţ’š ƀáçķ···················⟧",
+        "countPlural=other": "⟦{formattedCount} šéŕíéš ĥíððéñ ûñţíļ íţ’š ƀáçķ···················⟧"
+      }
+    }
+  ],
+  "attention_shown_series": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šéŕíéš çáñ’ţ ƀé öþéñéð ûñţíļ íţ’š ƀáçķ······················⟧",
+        "countPlural=other": "⟦{formattedCount} šéŕíéš çáñ’ţ ƀé öþéñéð ûñţíļ íţ’š ƀáçķ······················⟧"
+      }
+    }
+  ],
+  "attention_find": "⟦Ƒíñð íţ···⟧",
+  "attention_count_label": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ñééðš áţţéñţíöñ: {formattedCount} ţĥíñĝ················⟧",
+        "countPlural=other": "⟦Ñééðš áţţéñţíöñ: {formattedCount} ţĥíñĝš················⟧"
+      }
+    }
+  ]
 }

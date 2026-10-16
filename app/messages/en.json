@@ -2042,5 +2042,50 @@
   "reader_unreadable": "This book couldn't be opened",
   "reader_unreadable_body": "Its file may have moved, or be damaged.",
   "reader_failed_title": "Something went wrong",
-  "reader_failed": "Couldn't open this book. Try again later."
+  "reader_failed": "Couldn't open this book. Try again later.",
+  "attention_title": "Needs attention",
+  "attention_drive_title": "{name} isn’t connected",
+  "attention_hidden_series": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} series hidden until it’s back",
+        "countPlural=other": "{formattedCount} series hidden until it’s back"
+      }
+    }
+  ],
+  "attention_shown_series": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} series can’t be opened until it’s back",
+        "countPlural=other": "{formattedCount} series can’t be opened until it’s back"
+      }
+    }
+  ],
+  "attention_find": "Find it",
+  "attention_count_label": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Needs attention: {formattedCount} thing",
+        "countPlural=other": "Needs attention: {formattedCount} things"
+      }
+    }
+  ]
 }
