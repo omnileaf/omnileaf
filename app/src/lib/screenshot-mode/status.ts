@@ -4,7 +4,7 @@ import { getLocale } from "#lib/paraglide/runtime.js";
 
 import type { ScreenshotModeActivity } from "./screenshot-mode";
 
-function timeOfDay(
+export function timeOfDay(
   instant: number,
   hourCycle: Intl.LocaleHourCycleKey | undefined,
 ): string {

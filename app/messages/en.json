@@ -2101,5 +2101,8 @@
         "countPlural=other": "{formattedCount} things to fix"
       }
     }
-  ]
+  ],
+  "screenshot_mode_turns_off_at": "Turns off at {time}",
+  "screenshot_mode_notice_keys": "{when} · {keys}",
+  "screenshot_mode_turn_off": "Turn off"
 }
