@@ -1,11 +1,14 @@
 <script lang="ts">
   import { Keyboard } from "@lucide/svelte";
 
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
   import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import type { KeyCombination } from "#lib/screenshot-mode/key-combination.ts";
   import { getScreenshotModeShortcut } from "#lib/screenshot-mode/shortcut-setting.svelte.ts";
+  import ShortcutDialog from "#lib/screenshot-mode/ShortcutDialog.svelte";
   import ShortcutKeys from "#lib/screenshot-mode/ShortcutKeys.svelte";
   import { screenshotModeSummary } from "#lib/screenshot-mode/status.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -33,6 +36,8 @@
   const timeFormat = getTimeFormatSetting();
   const hasKeyboard = $derived(isPointer(data.appInfo.platform));
   const quicklyId = $props.id();
+
+  let isChangingShortcut = $state(false);
 
   const OPTION_TEXT = {
     blankReaderPages: {
@@ -127,7 +132,31 @@
           combination={shortcut.combination}
           platform={data.appInfo.platform}
         />
+        <Button
+          type="button"
+          look="outline"
+          aria-label={m.screenshot_mode_shortcut_change_label()}
+          class="shrink-0 px-md text-small min-block-pointer-button"
+          onclick={() => {
+            isChangingShortcut = true;
+          }}
+        >
+          {m.screenshot_mode_shortcut_change()}
+        </Button>
       </div>
     </section>
   {/if}
 </div>
+
+{#if isChangingShortcut}
+  <ShortcutDialog
+    platform={data.appInfo.platform}
+    current={shortcut.combination}
+    onSave={(combination: KeyCombination) => {
+      shortcut.choose(combination);
+    }}
+    onClose={() => {
+      isChangingShortcut = false;
+    }}
+  />
+{/if}
