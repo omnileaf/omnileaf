@@ -12,6 +12,7 @@ import {
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  setTextScale,
   settle,
   test,
   testOnlyInItsWebview,
@@ -246,6 +247,8 @@ function shapeOf(button: Locator): Promise<ButtonShape> {
 
 const DESKTOP_BUTTON = { height: 40, radius: 10, fontSize: 14 };
 const TOUCH_PRIMARY_HEIGHT = 52;
+const TOUCH_BUTTON_TEXT = 16;
+const LARGE_TEXT_SCALE = 1.3;
 
 test.describe("buttons on a desktop", () => {
   test.use({
@@ -286,6 +289,23 @@ test.describe("buttons on android", () => {
 
     expect(shape.height).toBe(TOUCH_PRIMARY_HEIGHT);
     expect(shape.radius).toBeGreaterThanOrEqual(TOUCH_PRIMARY_HEIGHT / 2);
+  });
+
+  test("grows the step buttons' words with the text size", async ({ page }) => {
+    await setTextScale(page, LARGE_TEXT_SCALE);
+    await goTo(page, "Already have comics or books?");
+
+    const shapes = await Promise.all(
+      [
+        page.getByRole("button", { name: "Continue" }),
+        page.getByRole("button", { name: /^Skip/ }),
+      ].map(shapeOf),
+    );
+
+    expect(shapes.map(({ fontSize }) => fontSize)).toEqual([
+      TOUCH_BUTTON_TEXT * LARGE_TEXT_SCALE,
+      TOUCH_BUTTON_TEXT * LARGE_TEXT_SCALE,
+    ]);
   });
 });
 
