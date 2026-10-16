@@ -329,3 +329,51 @@ proptest! {
         }
     }
 }
+
+#[test]
+fn trims_the_entries_used_longest_ago_until_it_has_freed_what_was_asked() {
+    let folder = ScratchFolder::new("trims-oldest");
+    let cache = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();
+    for name in ["a", "b", "c"] {
+        cache.put(&key(name), &entry(1)).unwrap();
+    }
+    let _ = cache.get(&key("a"));
+
+    let freed = cache.trim_oldest(150);
+
+    let kept: Vec<bool> = ["a", "b", "c"]
+        .iter()
+        .map(|name| cache.get(&key(name)).is_some())
+        .collect();
+    assert_eq!(freed, 200);
+    assert_eq!(kept, [true, false, false]);
+    assert_eq!(bytes_on_disk(folder.path()), 100);
+}
+
+#[test]
+fn trims_nothing_when_asked_to_free_nothing() {
+    let folder = ScratchFolder::new("trims-nothing");
+    let cache = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();
+    cache.put(&key("a"), &entry(1)).unwrap();
+
+    let freed = cache.trim_oldest(0);
+
+    assert_eq!(freed, 0);
+    assert_eq!(cache.stored_bytes(), 100);
+}
+
+#[test]
+fn clears_every_entry_and_says_how_much_it_freed() {
+    let folder = ScratchFolder::new("clears");
+    let cache = DiskCache::open(folder.path().to_owned(), BUDGET_BYTES).unwrap();
+    for name in ["a", "b"] {
+        cache.put(&key(name), &entry(1)).unwrap();
+    }
+
+    let freed = cache.clear();
+
+    assert_eq!(freed, 200);
+    assert_eq!(cache.get(&key("a")), None);
+    assert_eq!(cache.stored_bytes(), 0);
+    assert_eq!(bytes_on_disk(folder.path()), 0);
+}
