@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 
 import { dayFormats, dayName } from "#lib/history/day-name.ts";
-import type { HistoryCalendar } from "#lib/history/history-days.ts";
+import type { HistoryCalendar } from "#lib/history/history-groups.ts";
 
 const MONDAY = 20_731;
 const FORMATS = dayFormats("en-US");
