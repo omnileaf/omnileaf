@@ -97,9 +97,12 @@ export class FolderAdding {
   }
 
   async add(): Promise<void> {
-    if (!(await this.mayPick())) {
-      return;
+    if (await this.mayPick()) {
+      await this.addWith(this.addFolder);
     }
+  }
+
+  async addWith(addFolder: AddFolder): Promise<void> {
     this.outcome = { kind: "adding" };
     const follow = followScan(
       () => this.isAdding,
@@ -107,7 +110,7 @@ export class FolderAdding {
         this.outcome = step;
       },
     );
-    const result = await this.addFolder((progress) => {
+    const result = await addFolder((progress) => {
       if (progress.stage === "adding" && this.isAdding) {
         this.beingAdded = { name: progress.name, location: progress.location };
       }
