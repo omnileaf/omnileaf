@@ -114,7 +114,7 @@ type SpaceKind = (typeof SPACE_KINDS)[number];
 
 const GIGABYTE = 1_000_000_000;
 const MEGABYTE = 1_000_000;
-const LOW_SPACE_BYTES = 2 * 1024 * 1024 * 1024;
+const LOW_SPACE_BYTES = 2 * GIGABYTE;
 const SAMPLE_STORAGE = {
   cachedPagesBytes: 1.2 * GIGABYTE,
   coversBytes: 210 * MEGABYTE,
