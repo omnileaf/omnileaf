@@ -71,3 +71,14 @@ test("reads settings it can't make sense of as the defaults", () => {
 
   expect(settings.look).toEqual(DEFAULT_LOOK);
 });
+
+test("turns pages at once until slide is chosen, and keeps the choice", () => {
+  const store = memoryStore();
+  const settings = new ReaderSettings(store, SERIES);
+  const first = settings.look.pageTurn;
+  settings.change("pageTurn", "slide");
+
+  const again = new ReaderSettings(store, OTHER_SERIES);
+
+  expect([first, again.look.pageTurn]).toEqual(["instant", "slide"]);
+});
