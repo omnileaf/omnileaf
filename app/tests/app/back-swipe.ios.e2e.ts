@@ -11,7 +11,7 @@ const FINGER_POINTS_PER_SECOND = 600;
 
 const SETTINGS_LINK = mainNavigationLink("Settings");
 const LIBRARY_SETTINGS_LINK = xpath(
-  "//main//a[starts-with(normalize-space(), 'Library')]",
+  "//main//a[@href='/settings/library']",
 );
 
 function pageHeading(title: string) {
