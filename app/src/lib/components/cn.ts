@@ -247,6 +247,7 @@ export const TOKEN_THEME = {
     "inclusion-option-wide",
     "inclusion-wide",
     "ios-control",
+    "ios-folder-separator",
     "ios-separator",
     "key-block",
     "key-hints",
