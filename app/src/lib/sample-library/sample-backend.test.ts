@@ -57,8 +57,8 @@ test("pages through every series with a cursor", async () => {
     next = page.next;
   } while (next !== null);
 
-  expect(titles).toHaveLength(19);
-  expect(await backend.librarySeriesCount(NEW_LIBRARY_LISTING.filter)).toBe(19);
+  expect(titles).toHaveLength(20);
+  expect(await backend.librarySeriesCount(NEW_LIBRARY_LISTING.filter)).toBe(20);
 });
 
 test("lists only series with every book read when asked for finished ones", async () => {
@@ -281,6 +281,7 @@ test("lists only the series in one of the languages chosen", async () => {
     "Sample Series 10",
     "Sample Series 13",
     "Sample Series 17",
+    "Sample Series 20",
   ]);
 });
 
@@ -294,7 +295,7 @@ test("leaves out the adult series once 18+ is hidden, and lists only them once i
 
   expect(only).toEqual(["Sample Series 13", "Sample Series 17"]);
   expect(hidden).not.toContain("Sample Series 13");
-  expect(hidden).toHaveLength(17);
+  expect(hidden).toHaveLength(18);
 });
 
 test("lists only the series with a bookmarked page once Bookmarked is the only one", async () => {
@@ -450,7 +451,7 @@ test("leaves adult series out of the list, its count and search once they're hid
   expect(page.series.map((series) => series.title)).not.toContain(
     "Sample Series 13",
   );
-  expect(await backend.librarySeriesCount(NEWEST_FIRST.filter)).toBe(17);
+  expect(await backend.librarySeriesCount(NEWEST_FIRST.filter)).toBe(18);
   expect(found.series.map((series) => series.title)).not.toContain(
     "Sample Series 17",
   );
@@ -481,7 +482,7 @@ test("lists every series in the sample's folder, and none in another", async () 
     NEWEST_FIRST,
   );
 
-  expect([page.series.length, count, elsewhere.series]).toEqual([19, 19, []]);
+  expect([page.series.length, count, elsewhere.series]).toEqual([20, 20, []]);
 });
 
 test("lists every tag the sample's series carry, with how many carry each", async () => {
