@@ -21,11 +21,13 @@
     folder,
     isFoundEmpty = false,
     location,
+    detail,
     action,
   }: {
     folder: LibraryFolder;
     isFoundEmpty?: boolean;
     location?: Snippet;
+    detail?: Snippet<[LibraryFolder]> | undefined;
     action?: Snippet;
   } = $props();
 
@@ -62,6 +64,9 @@
         {@render location()}
       {/if}
     </ItemDescription>
+    {#if detail !== undefined}
+      <span class="text-footnote text-muted">{@render detail(folder)}</span>
+    {/if}
   </ItemContent>
   {@render action?.()}
 </Item>
