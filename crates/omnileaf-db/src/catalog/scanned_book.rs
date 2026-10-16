@@ -7,7 +7,7 @@ use crate::{
     Error,
     catalog::{
         NewBook, NewSeries, RootId,
-        book::{add_book_unless_present, add_or_refile_book},
+        book::{add_book_unless_present, add_or_refile_book, record_page_count},
         native_path,
         series::add_series_unless_present,
         stored_id::stored_id,
@@ -37,6 +37,7 @@ pub struct ScannedBook {
     pub fingerprint: Fingerprint,
     pub title: String,
     pub added_at_ms: i64,
+    pub page_count: u32,
     pub file: BookFile,
 }
 
@@ -99,6 +100,7 @@ fn record_scanned_book(
         Filing::WhereFirstFound => add_book_unless_present(transaction, &book)?,
         Filing::WhereFoundNow => add_or_refile_book(transaction, &book)?,
     }
+    record_page_count(transaction, book.id(), scanned.page_count)?;
     let file = &scanned.file;
     transaction.prepare(RECORD_FILE)?.execute((
         book.id().as_bytes(),
