@@ -138,7 +138,7 @@
     seriesReadingDirection(
       book.series,
       book.readingDirection,
-      pagesLookLikeStrip(book.pages),
+      smartFeatures.choosesReadingMode ? pagesLookLikeStrip(book.pages) : false,
     ),
   );
   const settings = untrack(() => readerSettings(book.series));

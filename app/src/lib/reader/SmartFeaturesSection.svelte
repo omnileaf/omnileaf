@@ -22,6 +22,13 @@
 
   const rows = $derived([
     {
+      feature: "choosesReadingMode",
+      label: m.reader_choose_mode(),
+      description: m.reader_choose_mode_help(),
+      isOn: features.choosesReadingMode,
+      isDisabled: false,
+    },
+    {
       feature: "learnsReadingSpeed",
       label: m.reader_learn_speed(),
       description: m.reader_learn_speed_help(),
