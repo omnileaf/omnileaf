@@ -580,6 +580,11 @@
   --spacing-reader-thumbnail-wide: 3.25rem;
   --spacing-reader-strip: 45rem;
   --spacing-reader-auto-bar: 30rem;
+  --spacing-strip-rail-inset: 5.5rem;
+  --spacing-strip-rail-track: 0.375rem;
+  --spacing-strip-rail-thumb: 3rem;
+  --spacing-strip-rail-tick: 0.875rem;
+  --spacing-strip-rail-width: 1rem;
   --spacing-reader-filmstrip-gap: 0.625rem;
   --spacing-reader-filmstrip-gap-wide: 0.75rem;
   --spacing-history-row: 4.875rem;

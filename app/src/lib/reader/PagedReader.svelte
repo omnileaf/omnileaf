@@ -972,6 +972,7 @@
         pages={book.pages}
         shown={turner.shown}
         isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
+        marks={bookmarks === null ? [] : [...bookmarks]}
         overlay={stripZones}
         onShown={(index: number) => {
           turner.goTo(index);
