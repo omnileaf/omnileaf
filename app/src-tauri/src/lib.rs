@@ -26,8 +26,8 @@ mod screen_orientation;
 mod share_sign_in;
 mod storage;
 mod system_bars;
-mod system_sign_in;
 mod system_settings;
+mod system_sign_in;
 mod tray;
 #[cfg(target_os = "android")]
 mod tree_storage;
