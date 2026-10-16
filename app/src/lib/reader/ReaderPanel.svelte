@@ -39,7 +39,7 @@
     previous: SeriesNeighbour | null;
     next: SeriesNeighbour | null;
     direction: ReadingDirection;
-    quickSettings: Snippet;
+    quickSettings: Snippet | undefined;
     secondsLeft: number | undefined;
     isBlank: boolean;
     showsPreviews: boolean;
@@ -93,13 +93,15 @@
       onPick={onSeek}
     />
   {/if}
-  <div
-    role="group"
-    aria-label={m.reader_quick_settings()}
-    class="flex flex-wrap items-stretch rounded-shadcn-control shadow-raised large:hidden"
-  >
-    {@render quickSettings()}
-  </div>
+  {#if quickSettings !== undefined}
+    <div
+      role="group"
+      aria-label={m.reader_quick_settings()}
+      class="flex flex-wrap items-stretch rounded-shadcn-control shadow-raised large:hidden"
+    >
+      {@render quickSettings()}
+    </div>
+  {/if}
   <div dir="ltr" class="flex items-center gap-xs expanded:gap-sm">
     <BookStepLink step="previous" neighbour={previous} />
     <span
