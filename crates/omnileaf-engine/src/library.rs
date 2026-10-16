@@ -47,7 +47,7 @@ use crate::{
     LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder,
     ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing,
     SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview,
-    SeriesPage, UtcOffset,
+    SeriesPage, ShareLookup, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -923,7 +923,10 @@ impl Library {
             .await?)
     }
 
-    pub async fn missing_folders(&self) -> Result<Vec<MissingFolder>, LibraryError> {
+    pub async fn missing_folders(
+        &self,
+        shares: &impl ShareLookup,
+    ) -> Result<Vec<MissingFolder>, LibraryError> {
         let roots = self
             .store
             .database()
@@ -939,7 +942,7 @@ impl Library {
             .await?;
         let mut missing = Vec::with_capacity(roots.len());
         for (root, hidden) in roots {
-            let problem = problem_of(&root.locator).await;
+            let problem = problem_of(&root.locator, shares).await;
             missing.push(MissingFolder::of(root, problem, hidden));
         }
         Ok(missing)
