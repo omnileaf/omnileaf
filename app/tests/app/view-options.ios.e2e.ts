@@ -8,7 +8,7 @@ const OPEN_SHEET = xpath(
   "//*[@aria-modal='true'][@data-state='open']//h2[normalize-space()='View options']",
 );
 const CHOOSE_COVERS = xpath(
-  "//*[@aria-modal='true'][@data-state='open']//*[@role='radio'][normalize-space()='Choose']",
+  "//*[@aria-modal='true'][@data-state='open']//*[@role='radio'][.//span[normalize-space()='Choose']]",
 );
 const DONE = xpath(
   "//*[@aria-modal='true'][@data-state='open']//button[normalize-space()='Done']",
