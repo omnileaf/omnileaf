@@ -64,6 +64,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0028_create_library_tabs"),
     migration!("0029_hide_the_series_of_missing_folders"),
     migration!("0030_hide_books_from_history"),
+    migration!("0031_remember_the_page_each_reading_session_started_on"),
 ];
 
 pub(crate) fn pending(
@@ -644,6 +645,11 @@ mod tests {
         }
     }
 
+    const SESSIONS_AS_THE_STORE_WRITES_THEM: &str =
+        "ALTER TABLE reading_session ADD COLUMN first_page INTEGER";
+    const SESSIONS_AS_SCHEMA_26_KEPT_THEM: &str =
+        "ALTER TABLE reading_session DROP COLUMN first_page";
+
     #[test]
     fn knows_when_each_series_kept_from_before_was_last_read() {
         let scratch = ScratchLibrary::new("last-read-upgrade");
@@ -652,6 +658,9 @@ mod tests {
             ClockAt(9_000),
         );
         let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(SESSIONS_AS_THE_STORE_WRITES_THEM)
+            .unwrap();
         connection
             .execute(
                 "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
@@ -680,6 +689,9 @@ mod tests {
             .block_on(written)
             .unwrap();
         drop(store);
+        connection
+            .execute_batch(SESSIONS_AS_SCHEMA_26_KEPT_THEM)
+            .unwrap();
 
         drop(Database::open(&scratch.config).unwrap());
 
