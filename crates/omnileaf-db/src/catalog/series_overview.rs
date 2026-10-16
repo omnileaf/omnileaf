@@ -12,6 +12,7 @@ const OVERVIEW_OF_SERIES: &str = concat!(
     "SELECT library_root.locator_kind, library_root.location, library_root.bookmark,
         library_root.tree_name, library_root.tree_place,
         series.id AS id, series.title, series.book_count, series.read_count,
+        series.pages_left, series.uncounted_books,
         cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev
     FROM series ",
     crate::catalog::cover::join_series_cover!(),
@@ -29,6 +30,8 @@ pub struct SeriesOverview {
     /// The cover the library shows for the series, absent while none of its books has a file.
     pub cover: Option<Cover>,
     pub folder: Option<RootLocator>,
+    /// Absent while a book not marked read has no page count.
+    pub pages_left: Option<u32>,
 }
 
 /// None for a series missing from the catalog or holding no books, which the library doesn't show.
@@ -55,7 +58,16 @@ fn overview(row: &Row<'_>) -> rusqlite::Result<SeriesOverview> {
         read_count: row.get("read_count")?,
         cover,
         folder,
+        pages_left: counted_pages_left(row)?,
     })
+}
+
+fn counted_pages_left(row: &Row<'_>) -> rusqlite::Result<Option<u32>> {
+    let uncounted_books: u32 = row.get("uncounted_books")?;
+    if uncounted_books > 0 {
+        return Ok(None);
+    }
+    row.get("pages_left").map(Some)
 }
 
 #[cfg(test)]
