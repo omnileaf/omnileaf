@@ -22,7 +22,7 @@ const SAVED_PANIC: CrashReportOffer = {
 
 const DIALOG_LOOK = {
   badge: 36,
-  button: 40,
+  button: 36,
   corner: "10px",
   inset: "20px",
   title: "17px",
@@ -189,7 +189,7 @@ test.describe("on desktop, the crash report dialog", () => {
     ).toBe(DIALOG_LOOK.body);
   });
 
-  test("sizes its buttons 40px tall, the report last on the end side", async ({
+  test("sizes its buttons 36px tall, the report last on the end side", async ({
     page,
   }) => {
     await page.goto("/");
