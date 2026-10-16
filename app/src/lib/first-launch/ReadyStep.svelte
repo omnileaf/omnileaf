@@ -15,7 +15,7 @@
     LibrarySeries,
     Platform,
   } from "#lib/ipc/bindings.ts";
-  import type { AddFolder } from "#lib/library/add-folder.ts";
+  import type { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
   import type { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import LinkedFolders from "#lib/library/LinkedFolders.svelte";
   import type { Notices } from "#lib/notices/notices.ts";
@@ -37,10 +37,20 @@
     linux: m.first_launch_ready_fix_linux,
   } satisfies Record<Platform, () => string>;
 
+  type Shown = "empty" | "finding" | "unreadable" | "counting" | "found";
+
+  const LEADS = {
+    empty: m.first_launch_ready_empty_body,
+    finding: m.first_launch_ready_finding_body,
+    unreadable: m.first_launch_ready_unreadable_body,
+    counting: m.first_launch_ready_body,
+    found: m.first_launch_ready_body,
+  } satisfies Record<Shown, () => string>;
+
   let {
     platform,
     folders,
-    addFolder,
+    adding,
     notices,
     countSeriesIn,
     shelfSeries,
@@ -48,7 +58,7 @@
   }: {
     platform: Platform;
     folders: LibraryFolders;
-    addFolder: AddFolder;
+    adding: FolderAdding;
     notices: Notices;
     countSeriesIn: CountIn;
     shelfSeries: () => Promise<readonly LibrarySeries[]>;
@@ -70,7 +80,18 @@
   const readable = $derived(linked.filter((folder) => folder.isAvailable));
   const unreadable = $derived(linked.find((folder) => !folder.isAvailable));
   const total = $derived(summaries.total(readable));
-  const hasCounted = $derived(summaries.hasCounted(readable));
+  const shown = $derived.by((): Shown => {
+    if (adding.isAdding) {
+      return "finding";
+    }
+    if (linked.length === 0) {
+      return "empty";
+    }
+    if (unreadable !== undefined) {
+      return "unreadable";
+    }
+    return summaries.hasCounted(readable) ? "found" : "counting";
+  });
 
   $effect(() => {
     void summaries.load(readable);
@@ -83,6 +104,25 @@
       });
     }
   });
+
+  function title(): string {
+    switch (shown) {
+      case "empty":
+        return m.first_launch_ready_empty_title();
+      case "unreadable":
+        return m.first_launch_ready_unreadable_title({
+          name: unreadable?.name ?? "",
+        });
+      case "found":
+        return m.first_launch_ready_found_title({
+          series: m.library_series_count({ count: total.series }),
+          books: m.first_launch_folder_books({ count: total.books }),
+        });
+      case "finding":
+      case "counting":
+        return m.first_launch_ready_title();
+    }
+  }
 
   function summaryOf(folder: LibraryFolder): string | undefined {
     const summary = summaries.of(folder);
@@ -103,28 +143,11 @@
 <StepFrame step="ready">
   <StepHeader>
     {#snippet badge()}
-      <ReadyMark isEmpty={linked.length === 0} />
+      <ReadyMark isEmpty={shown === "empty"} />
     {/snippet}
-    {#if linked.length === 0}
-      {m.first_launch_ready_empty_title()}
-    {:else if unreadable !== undefined}
-      {m.first_launch_ready_unreadable_title({ name: unreadable.name })}
-    {:else if !hasCounted}
-      {m.first_launch_ready_title()}
-    {:else}
-      {m.first_launch_ready_found_title({
-        series: m.library_series_count({ count: total.series }),
-        books: m.first_launch_folder_books({ count: total.books }),
-      })}
-    {/if}
+    {title()}
     {#snippet lead()}
-      {#if linked.length === 0}
-        {m.first_launch_ready_empty_body()}
-      {:else if unreadable !== undefined}
-        {m.first_launch_ready_unreadable_body()}
-      {:else}
-        {m.first_launch_ready_body()}
-      {/if}
+      {LEADS[shown]()}
     {/snippet}
   </StepHeader>
   {#if unreadable !== undefined}
@@ -132,14 +155,14 @@
       <AlertTitle>{m.first_launch_ready_fix_title()}</AlertTitle>
       <AlertDescription>{FIXES[platform]()}</AlertDescription>
     </Alert>
-  {:else if shelf.length > 0}
+  {:else if shown === "found" && shelf.length > 0}
     <ReadyShelf series={shelf} usesStandIns={screenshotMode.isOn} />
   {/if}
   {#if linked.length > 0}
     <LinkedFolders
       {platform}
       {folders}
-      {addFolder}
+      {adding}
       {notices}
       usesStandIns={screenshotMode.isOn}
       addPlacement="none"

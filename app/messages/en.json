@@ -994,6 +994,7 @@
   "library_files_on_my_ipad": "On My iPad",
   "first_launch_ready_title": "You're all set",
   "first_launch_ready_body": "Your library is ready. Add or remove folders any time in Settings › Library.",
+  "first_launch_ready_finding_body": "Omnileaf is still finding books. You can open your library now; scanning carries on.",
   "first_launch_ready_found_title": "Found {series} and {books}",
   "first_launch_ready_folder": "{series} · {books}",
   "first_launch_ready_empty_title": "Your library is empty for now",
