@@ -68,6 +68,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0032_track_when_each_series_last_gained_a_book"),
     migration!("0033_index_series_by_unread_count"),
     migration!("0034_keep_how_many_pages_each_book_holds"),
+    migration!("0035_track_how_many_pages_each_series_has_left"),
 ];
 
 pub(crate) fn pending(
@@ -233,6 +234,11 @@ mod tests {
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
 
     const BOOK_GAINED_LAST: &str = "SELECT max(added_at_ms) FROM book WHERE series_local_id = ?1";
+    const PAGES_LEFT_OF_BOOK_ADDED: &str = "UPDATE series SET
+            pages_left = series.pages_left + book_left.pages_left,
+            uncounted_books = series.uncounted_books + book_left.is_uncounted
+        FROM book_left_to_read AS book_left
+        WHERE book_left.book_id = ?1 AND series.local_id = book_left.series_local_id";
 
     #[test]
     fn brings_a_new_database_to_the_latest_schema_version() {
@@ -873,6 +879,71 @@ mod tests {
             .collect::<Result<_, _>>()
             .unwrap();
         assert_eq!(page_counts, [Some(3), None]);
+    }
+
+    #[test]
+    fn counts_the_pages_left_in_each_series_kept_from_before_they_were_counted() {
+        let scratch = ScratchLibrary::new("pages-left-upgrade");
+        let store = Store::new(
+            Database::open_with(&scratch.config, &MIGRATIONS[..33]).unwrap(),
+            StoppedClock,
+        );
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for (number, page_count) in [(1, 50), (2, 30)] {
+            connection
+                .execute(
+                    "INSERT INTO book
+                        (id, series_local_id, title, title_sort_key, added_at_ms, page_count)
+                     VALUES (?1, 1, ?2, x'', 0, ?3)",
+                    (
+                        book(number).as_bytes(),
+                        format!("Volume {number:02}"),
+                        page_count,
+                    ),
+                )
+                .unwrap();
+        }
+        let written = store.write(|writer| writer.set_position(book(1), 20));
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(written)
+            .unwrap();
+        drop(store);
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let pages_left: (u32, u32) = connection
+            .query_row(
+                "SELECT pages_left, uncounted_books FROM series",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(pages_left, (60, 0));
+    }
+
+    #[test]
+    fn moves_a_book_s_pages_left_onto_its_series_through_their_keys() {
+        let scratch = ScratchLibrary::new("pages-left-of-book-plan");
+
+        let plan = scratch.query_plan(PAGES_LEFT_OF_BOOK_ADDED);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH book USING PRIMARY KEY (id=?)",
+                "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
+                "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN",
+            ]
+        );
     }
 
     #[test]

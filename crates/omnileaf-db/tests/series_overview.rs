@@ -179,6 +179,7 @@ async fn sums_up_a_series_by_its_title_books_and_books_read() {
             read_count: 2,
             cover: None,
             folder: None,
+            pages_left: None,
         }
     );
 }
