@@ -301,6 +301,7 @@ export const TOKEN_THEME = {
     "radio-dot",
     "rail",
     "reader-back-named",
+    "reader-auto-bar",
     "reader-back-start-wide",
     "reader-bar-block-wide",
     "reader-bar-bottom",

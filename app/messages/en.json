@@ -1593,6 +1593,54 @@
   "reader_guide_strip_tap_body": "Tap the top to scroll up and the bottom to scroll down. Tap the middle for the controls.",
   "reader_guide_strip_click_title": "Click to scroll",
   "reader_guide_strip_click_body": "Click the top to scroll up and the bottom to scroll down. Click the middle for the controls. The arrow keys and the wheel scroll too.",
+  "reader_auto_scroll": "Auto scroll",
+  "reader_start_auto_scroll": "Start auto scroll",
+  "reader_auto_scroll_your_pace": "Your pace",
+  "reader_auto_scroll_paused": "Paused",
+  "reader_tap_play": "Tap Play to resume",
+  "reader_space_pauses": "Space pauses",
+  "reader_space_resumes": "Space resumes",
+  "reader_auto_scroll_play": "Play",
+  "reader_auto_scroll_pause": "Pause",
+  "reader_auto_scroll_slower": "Slower",
+  "reader_auto_scroll_faster": "Faster",
+  "reader_auto_scroll_speed": "Speed",
+  "reader_auto_scroll_my_pace": "My pace",
+  "reader_auto_scroll_set_speed": "Set speed",
+  "reader_auto_scroll_help": "Keeps scrolling with reduced motion on, since you started it.",
+  "reader_auto_scroll_rate": "Pages a minute",
+  "reader_auto_scroll_rate_value": "Pages a minute: {count}",
+  "reader_pause_at_end": "Pause auto scroll at the end of a book",
+  "reader_auto_scroll_pace": "Auto scroll at my pace",
+  "reader_auto_scroll_pace_help": "Starts auto scroll at your own speed.",
+  "reader_pages_a_minute": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} page a minute",
+        "countPlural=other": "{formattedCount} pages a minute"
+      }
+    }
+  ],
+  "reader_about_pages_a_minute": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "About {formattedCount} page a minute",
+        "countPlural=other": "About {formattedCount} pages a minute"
+      }
+    }
+  ],
   "reader_scroll_up": "Scroll up",
   "reader_scroll_down": "Scroll down",
   "reader_tap_zones": "Tap zones",
