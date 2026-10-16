@@ -575,7 +575,7 @@ export type SeriesBook = {
 	/**  When the library first found the book, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly. */
 	addedAtMs: number,
 	reading: BookReading,
-	/**  Absent until the library counts a book's pages, which it does once the book is opened. */
+	/**  Absent for a book found before the library counted pages as it scans, until the book is scanned again or opened. */
 	pageCount: number | null,
 	isBookmarked: boolean,
 	/**  Whether the library found the book since its series was last looked at. */
