@@ -8,6 +8,7 @@ mod folder_access;
 #[cfg(any(target_os = "linux", test))]
 mod folder_chooser;
 mod folder_picker;
+mod folder_share;
 mod folder_storage;
 #[cfg(desktop)]
 mod folder_watch;
