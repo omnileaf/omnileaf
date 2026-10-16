@@ -12,7 +12,7 @@ use omnileaf_engine::{
     LocalDay, MissingFolder, OpenedBook, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark,
     ReadingSummary, ReadingWeek, ResourceRouter, SavedProblemReport, ScanProgress,
     SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
-    SeriesOverview, SeriesPage, SpellingSuggestion, UtcOffset,
+    SeriesOverview, SeriesPage, SpellingSuggestion, StorageUse, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -33,6 +33,7 @@ use crate::{
     problem_reporting::{self, ShownProblemReport},
     screen_orientation::{self, ScreenOrientation},
     share_sign_in::{self, SignInOutcome},
+    storage::StoragePlaces,
     system_bars::{self, Theme, ThemePreference},
     system_sign_in, version_details,
 };
@@ -126,6 +127,9 @@ macro_rules! app_commands {
             send_crash_report,
             copy_crash_report,
             decline_crash_report,
+            check_storage,
+            clear_cached_pages,
+            clear_covers,
             $($development_only),*
         ]
     };
@@ -1011,6 +1015,32 @@ async fn crash_and_quit() -> Result<(), IpcError> {
         developer_crashes::crash_and_quit(BuildProfile::CURRENT).map(|quit| match quit {})
     })
     .await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn check_storage(
+    resources: State<'_, ResourceRouter>,
+    places: State<'_, StoragePlaces>,
+) -> Result<StorageUse, IpcError> {
+    places
+        .use_after_making_room(&resources)
+        .await
+        .map_err(|error| IpcError::internal(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn clear_cached_pages(resources: State<'_, ResourceRouter>) -> Result<(), IpcError> {
+    resources.clear_cached_pages().await;
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn clear_covers(resources: State<'_, ResourceRouter>) -> Result<(), IpcError> {
+    resources.clear_covers().await;
+    Ok(())
 }
 
 async fn off_the_runtime<T: Send + 'static>(

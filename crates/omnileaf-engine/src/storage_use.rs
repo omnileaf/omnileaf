@@ -38,15 +38,15 @@ pub struct CacheSizes {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct StorageUse {
-    #[specta(type = f64)]
+    #[specta(type = u32)]
     pub omnileaf_bytes: u64,
-    #[specta(type = f64)]
+    #[specta(type = u32)]
     pub cached_pages_bytes: u64,
-    #[specta(type = f64)]
+    #[specta(type = u32)]
     pub covers_bytes: u64,
-    #[specta(type = f64)]
+    #[specta(type = u32)]
     pub free_bytes: u64,
-    #[specta(type = f64)]
+    #[specta(type = u32)]
     pub total_bytes: u64,
     pub is_low: bool,
 }
