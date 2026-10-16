@@ -450,6 +450,7 @@ export function sampleBackend(
     lastRead: (one, other) => lastReadAt(one) - lastReadAt(other),
     lastUpdated: (one, other) => updatedAt(one) - updatedAt(other),
     unreadCount: (one, other) => unreadCountOf(one) - unreadCountOf(other),
+    timeLeft: (one, other) => secondsLeftIn(one) - secondsLeftIn(other),
   } satisfies Record<
     LibrarySortBy,
     (one: SampleSeries, other: SampleSeries) => number
