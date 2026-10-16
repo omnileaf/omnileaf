@@ -17,6 +17,7 @@ export interface ProblemSources {
 
 export class NeedsAttention {
   #problems: readonly Problem[] = $state.raw([]);
+  #isShown = $state(false);
 
   constructor(
     private readonly sources: ProblemSources,
@@ -25,6 +26,18 @@ export class NeedsAttention {
 
   get problems(): readonly Problem[] {
     return this.#problems;
+  }
+
+  get isShown(): boolean {
+    return this.#isShown;
+  }
+
+  show(): void {
+    this.#isShown = true;
+  }
+
+  hide(): void {
+    this.#isShown = false;
   }
 
   async gather(): Promise<void> {
