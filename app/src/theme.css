@@ -209,16 +209,6 @@
   --reader-hover: oklch(0.269 0 0);
   --reader-pressed: oklch(0.32 0 0);
 
-  --illustration-panel: oklch(0.32 0.05 160);
-  --illustration-panel-glow: oklch(0.47 0.08 160);
-  --illustration-ink: oklch(0.95 0.01 85);
-  --illustration-mint: oklch(0.92 0.03 155);
-  --illustration-green: oklch(0.79 0.1 155);
-  --illustration-gold: oklch(0.72 0.11 85);
-  --illustration-blue: oklch(0.81 0.05 255);
-  --illustration-sand: oklch(0.85 0.08 80);
-  --illustration-teal: oklch(0.86 0.07 180);
-  --illustration-rose: oklch(0.84 0.06 0);
   --sample-cover: oklch(0.43 0.11 25);
   --sample-cover-art: oklch(0.5 0.12 25);
   --sample-cover-ink: oklch(0.94 0.02 70);

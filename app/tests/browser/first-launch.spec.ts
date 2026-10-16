@@ -121,47 +121,47 @@ async function goTo(
   }
 }
 
-const BADGE_BEFORE_TITLE =
-  "xpath=preceding-sibling::*[1]/descendant-or-self::*[self::img or local-name()='svg'][1]";
+const BADGE_OF_TITLE =
+  "xpath=preceding-sibling::*[1]/descendant-or-self::*[self::img or self::span][1]";
+const BODY_OF_TITLE = "xpath=following-sibling::p[1]";
 
-function firstLineOf(title: Locator): Promise<{ top: number; bottom: number }> {
-  return title.evaluate((element) => {
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    const [line] = range.getClientRects();
-    if (line === undefined) {
-      throw new Error("the heading has no text");
-    }
-    return { top: line.top, bottom: line.bottom };
-  });
+const MIDDLE_STEPS = STEPS.slice(1, -1);
+const OPEN_STEPS = [STEPS[0], STEPS[4]];
+
+function centreOf(box: { x: number; width: number }): number {
+  return box.x + box.width / 2;
 }
 
 for (const step of STEPS) {
-  test(`sets the badge on the line of "${step.heading}", before it`, async ({
+  test(`centres the badge above "${step.heading}" and its words under it`, async ({
     page,
   }) => {
     await goTo(page, step.heading);
     await settle(page.getByRole("main"));
     const title = heading(page, step.heading);
 
-    const badge = await boxOf(title.locator(BADGE_BEFORE_TITLE));
+    const badge = await boxOf(title.locator(BADGE_OF_TITLE));
     const titleBox = await boxOf(title);
-    const firstLine = await firstLineOf(title);
+    const body = await boxOf(title.locator(BODY_OF_TITLE));
 
-    const badgeMiddle = badge.y + badge.height / 2;
-    expect(badgeMiddle).toBeGreaterThanOrEqual(firstLine.top);
-    expect(badgeMiddle).toBeLessThanOrEqual(firstLine.bottom);
-    expect(badge.x + badge.width).toBeLessThanOrEqual(titleBox.x);
+    expect(badge.y + badge.height).toBeLessThanOrEqual(titleBox.y);
+    expect(body.y).toBeGreaterThanOrEqual(titleBox.y + titleBox.height);
+    expect(Math.abs(centreOf(badge) - centreOf(titleBox))).toBeLessThan(1);
+    await expect(title).toHaveCSS("text-align", "center");
+    await expect(title.locator(BODY_OF_TITLE)).toHaveCSS(
+      "text-align",
+      "center",
+    );
   });
 }
 
-const BADGE_OF_TITLE = "xpath=preceding-sibling::*[1]/*[1]";
-const BODY_OF_TITLE = "xpath=../following-sibling::p[1]";
-
 const HEADER_SIZES = {
-  onPhones: { badge: 40, title: 24, welcomeTitle: 28, body: 15 },
-  fromMedium: { badge: 36, title: 24, welcomeTitle: 30, body: 14 },
-} as const;
+  badge: 56,
+  appIcon: 72,
+  title: 24,
+  welcomeTitle: 28,
+  body: 16,
+};
 
 function fontSizeOf(locator: Locator): Promise<number> {
   return locator.evaluate((element) =>
@@ -170,24 +170,23 @@ function fontSizeOf(locator: Locator): Promise<number> {
 }
 
 for (const step of STEPS) {
-  test(`sizes the badge, title and body of "${step.heading}" for the screen`, async ({
+  test(`sizes the badge, title and body of "${step.heading}" as drawn`, async ({
     page,
   }) => {
-    const sizes =
-      viewportOf(page).width < MEDIUM_MIN_WIDTH
-        ? HEADER_SIZES.onPhones
-        : HEADER_SIZES.fromMedium;
     const isWelcome = step.heading === STEPS[0].heading;
     await goTo(page, step.heading);
     const title = heading(page, step.heading);
 
     const badge = await boxOf(title.locator(BADGE_OF_TITLE));
 
-    expect([badge.width, badge.height]).toEqual([sizes.badge, sizes.badge]);
+    const side = isWelcome ? HEADER_SIZES.appIcon : HEADER_SIZES.badge;
+    expect([badge.width, badge.height]).toEqual([side, side]);
     expect(await fontSizeOf(title)).toBe(
-      isWelcome ? sizes.welcomeTitle : sizes.title,
+      isWelcome ? HEADER_SIZES.welcomeTitle : HEADER_SIZES.title,
     );
-    expect(await fontSizeOf(title.locator(BODY_OF_TITLE))).toBe(sizes.body);
+    expect(await fontSizeOf(title.locator(BODY_OF_TITLE))).toBe(
+      HEADER_SIZES.body,
+    );
   });
 }
 
@@ -379,16 +378,21 @@ for (const { platform, wording } of [
   });
 }
 
-test("sets the steps beside a shelf from 840px", async ({ page }) => {
+test("sets the steps in a 600px dialog over the window from 840px", async ({
+  page,
+}) => {
   const isExpanded = viewportOf(page).width >= EXPANDED_MIN_WIDTH;
 
-  await page.goto("/first-launch");
+  await goTo(page, HOME_HEADING);
+  const dialog = page.getByRole("main").locator("xpath=..");
+  const box = await boxOf(dialog);
 
-  await expect(
-    page.getByText("Comics, manga, webtoons and books in one reader.", {
-      exact: true,
-    }),
-  ).toBeVisible({ visible: isExpanded });
+  expect(box.width).toBe(Math.min(viewportOf(page).width, 600));
+  expect(centreOf(box)).toBe(viewportOf(page).width / 2);
+  await expect(dialog).toHaveCSS(
+    "border-top-width",
+    isExpanded ? "1px" : "0px",
+  );
 });
 
 for (const platform of ["android", "linux"] as const) {
@@ -477,23 +481,69 @@ test.describe("the home folder on an iPad", () => {
   });
 });
 
-test("counts the steps between the welcome and the end", async ({ page }) => {
-  await goTo(page, "Where your library lives");
+for (const [index, step] of MIDDLE_STEPS.entries()) {
+  test(`says "${step.heading}" is step ${String(index + 1)} of 3 with three dots`, async ({
+    page,
+  }) => {
+    await goTo(page, step.heading);
+    const progress = page.getByRole("progressbar", { name: "Setting up" });
 
-  const steps = page.getByRole("list", { name: "Setting up" });
+    await expect(progress).toHaveAttribute("aria-valuenow", String(index + 1));
+    await expect(progress).toHaveAttribute("aria-valuemax", "3");
+    await expect(progress).toHaveAttribute(
+      "aria-valuetext",
+      `${String(index + 1)} of 3`,
+    );
+    await expect(progress).toContainText(`${String(index + 1)} of 3`);
+    expect(await dotWidths(progress)).toEqual(
+      [6, 6, 6].map((width, dot) => (dot === index ? 22 : width)),
+    );
+  });
+}
 
-  for (const name of [
-    "Home folder, step 1 of 3",
-    "Your folders, step 2 of 3",
-    "Choices, step 3 of 3",
-  ]) {
-    await expect(
-      steps.getByRole("button", { name, exact: true }),
-    ).toBeVisible();
+function dotWidths(progress: Locator): Promise<number[]> {
+  return progress
+    .locator("xpath=*[1]/*")
+    .evaluateAll((dots) =>
+      dots.map((dot) => dot.getBoundingClientRect().width),
+    );
+}
+
+for (const step of OPEN_STEPS) {
+  test(`leaves "${step.heading}" without Back or the dots`, async ({
+    page,
+  }) => {
+    await goTo(page, step.heading);
+
+    await expect(page.getByRole("progressbar")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Back" })).toHaveCount(0);
+  });
+}
+
+test("goes back a step with Back", async ({ page }) => {
+  await goTo(page, "A few choices");
+
+  await page.getByRole("button", { name: "Back" }).click();
+
+  await expect(heading(page, "Already have comics or books?")).toBeFocused();
+});
+
+test("puts Back above the title on a phone and at the foot of the dialog from 840px", async ({
+  page,
+}) => {
+  const isExpanded = viewportOf(page).width >= EXPANDED_MIN_WIDTH;
+  await goTo(page, "Already have comics or books?");
+
+  const back = await boxOf(page.getByRole("button", { name: "Back" }));
+  const title = await boxOf(heading(page, "Already have comics or books?"));
+  const next = await boxOf(page.getByRole("button", { name: "Continue" }));
+
+  if (isExpanded) {
+    expect(back.y + back.height / 2).toBe(next.y + next.height / 2);
+    expect(back.x + back.width).toBeLessThan(next.x);
+  } else {
+    expect(back.y + back.height).toBeLessThanOrEqual(title.y);
   }
-  await expect(steps.locator('[aria-current="step"]')).toHaveAccessibleName(
-    "Home folder, step 1 of 3",
-  );
 });
 
 test("links a folder that already holds comics and lists it", async ({
@@ -708,40 +758,6 @@ test("turns the app dark from the choices", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
-function stepNamed(page: Page, name: string): Locator {
-  return page
-    .getByRole("list", { name: "Setting up" })
-    .getByRole("button", { name });
-}
-
-test("goes back to a finished step when it is tapped", async ({ page }) => {
-  await goTo(page, "A few choices");
-
-  await stepNamed(page, "Home folder, step 1 of 3").click();
-
-  await expect(heading(page, HOME_HEADING)).toBeFocused();
-});
-
-test("goes back from a tapped step the way it came", async ({ page }) => {
-  await goTo(page, "A few choices");
-  await stepNamed(page, "Home folder, step 1 of 3").click();
-  await expect(heading(page, HOME_HEADING)).toBeVisible();
-
-  await page.goBack();
-
-  await expect(heading(page, "Welcome to Omnileaf")).toBeVisible();
-});
-
-test("keeps the steps ahead from being chosen yet", async ({ page }) => {
-  await goTo(page, "Where your library lives");
-  const ahead = stepNamed(page, "Choices, step 3 of 3");
-
-  await ahead.click({ force: true });
-
-  await expect(ahead).toHaveAttribute("aria-disabled", "true");
-  await expect(heading(page, HOME_HEADING)).toBeVisible();
-});
-
 test("goes back a step with the browser's back", async ({ page }) => {
   await goTo(page, "Where your library lives");
 
@@ -764,34 +780,6 @@ test("stays on the last step and says so when finishing fails", async ({
   await expect(page).toHaveURL("/first-launch");
 });
 
-test("heads the step with the steps and leaves out a Back button", async ({
-  page,
-}) => {
-  await goTo(page, "Already have comics or books?");
-
-  const steps = await boxOf(page.getByRole("list", { name: "Setting up" }));
-  const title = await boxOf(heading(page, "Already have comics or books?"));
-
-  expect(steps.y + steps.height).toBeLessThanOrEqual(title.y);
-  await expect(page.getByRole("button", { name: "Back" })).toHaveCount(0);
-});
-
-function circleOf(step: Locator): Locator {
-  return step.locator("xpath=*[1]");
-}
-
-function lineAfter(step: Locator): Locator {
-  return step.locator("xpath=following-sibling::*[last()]");
-}
-
-function lineBefore(step: Locator): Locator {
-  return step.locator("xpath=following-sibling::*[1]");
-}
-
-function lineColor(line: Locator): Promise<string> {
-  return line.evaluate((element) => getComputedStyle(element).backgroundColor);
-}
-
 function colorOf(page: Page, token: string): Promise<string> {
   return page.evaluate((name) => {
     const probe = document.createElement("span");
@@ -801,134 +789,6 @@ function colorOf(page: Page, token: string): Promise<string> {
     probe.remove();
     return color;
   }, token);
-}
-
-interface StepLook {
-  size: number;
-  fill: string;
-  ring: string;
-  hasCheck: boolean;
-  number: string;
-  nameWeight: string;
-}
-
-async function lookOfStep(step: Locator): Promise<StepLook> {
-  await settle(step);
-  return step.evaluate((button) => {
-    const [circle, name] = [...button.children];
-    if (circle === undefined || name === undefined) {
-      throw new Error("the step has no circle and name");
-    }
-    const circleStyle = getComputedStyle(circle);
-    return {
-      size: circle.getBoundingClientRect().width,
-      fill: circleStyle.backgroundColor,
-      ring: circleStyle.boxShadow,
-      hasCheck: circle.querySelector("svg") !== null,
-      number: circle.textContent.trim(),
-      nameWeight: getComputedStyle(name).fontWeight,
-    };
-  });
-}
-
-test("checks the finished steps and fills the line after each with the accent", async ({
-  page,
-}) => {
-  await goTo(page, "A few choices");
-  const accent = await colorOf(page, "--color-accent");
-  const home = stepNamed(page, "Home folder, step 1 of 3");
-  const folders = stepNamed(page, "Your folders, step 2 of 3");
-  const choices = stepNamed(page, "Choices, step 3 of 3");
-
-  const looks = await Promise.all([home, folders].map(lookOfStep));
-  const lines = await Promise.all(
-    [
-      lineAfter(home),
-      lineBefore(folders),
-      lineAfter(folders),
-      lineBefore(choices),
-    ].map(lineColor),
-  );
-
-  expect(looks.map((look) => [look.hasCheck, look.fill])).toEqual([
-    [true, accent],
-    [true, accent],
-  ]);
-  expect(lines).toEqual([accent, accent, accent, accent]);
-});
-
-test("fills the current step with the accent, rings it softly and names it in bold", async ({
-  page,
-}) => {
-  await goTo(page, "Already have comics or books?");
-  const current = stepNamed(page, "Your folders, step 2 of 3");
-  const accent = await colorOf(page, "--color-accent");
-  const softAccent = await colorOf(page, "--color-accent-soft");
-
-  const look = await lookOfStep(current);
-
-  await expect(current).toHaveAttribute("aria-current", "step");
-  expect(look).toMatchObject({
-    size: 28,
-    fill: accent,
-    hasCheck: false,
-    number: "2",
-    nameWeight: "700",
-  });
-  expect(look.ring).toContain(softAccent);
-});
-
-test("greys the steps ahead and the line before them", async ({ page }) => {
-  await goTo(page, "Already have comics or books?");
-  const current = stepNamed(page, "Your folders, step 2 of 3");
-  const ahead = stepNamed(page, "Choices, step 3 of 3");
-  const grey = await colorOf(page, "--color-step-off");
-
-  const look = await lookOfStep(ahead);
-  const lines = await Promise.all(
-    [lineAfter(current), lineBefore(ahead)].map((line) =>
-      line.evaluate((element) => ({
-        color: getComputedStyle(element).backgroundColor,
-        thickness: element.getBoundingClientRect().height,
-      })),
-    ),
-  );
-
-  expect([look.size, look.fill, look.number]).toEqual([28, grey, "3"]);
-  expect(lines).toEqual([
-    { color: grey, thickness: 4 },
-    { color: grey, thickness: 4 },
-  ]);
-});
-
-test("names each step under its circle", async ({ page }) => {
-  await goTo(page, "Already have comics or books?");
-  const current = stepNamed(page, "Your folders, step 2 of 3");
-
-  const circle = await boxOf(circleOf(current));
-  const name = await boxOf(current.getByText("Your folders"));
-
-  expect(name.y).toBeGreaterThanOrEqual(circle.y + circle.height);
-  expect(
-    Math.abs(name.x + name.width / 2 - (circle.x + circle.width / 2)),
-  ).toBeLessThan(1);
-});
-
-for (const reducedMotion of ["no-preference", "reduce"] as const) {
-  test(`grows the current step's circle in only without reduce motion (${reducedMotion})`, async ({
-    page,
-  }) => {
-    await page.emulateMedia({ reducedMotion });
-    await goTo(page, "Where your library lives");
-
-    const animation = await circleOf(
-      stepNamed(page, "Home folder, step 1 of 3"),
-    ).evaluate((circle) => getComputedStyle(circle).animationName);
-
-    expect(animation).toBe(
-      reducedMotion === "no-preference" ? "step-grow" : "none",
-    );
-  });
 }
 
 for (const colorScheme of ["light", "dark"] as const) {

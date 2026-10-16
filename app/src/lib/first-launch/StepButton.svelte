@@ -3,7 +3,7 @@
 
   import { Button, type ButtonLook } from "#lib/components/ui/button/index.ts";
 
-  type Kind = Extract<ButtonLook, "primary" | "quiet">;
+  type Kind = Extract<ButtonLook, "primary" | "quiet" | "outline">;
 
   let {
     kind,
@@ -23,8 +23,9 @@
   look={kind}
   {disabled}
   class={[
-    "flex items-center justify-center gap-sm px-xl min-block-touch-target disabled:opacity-60 ios:rounded-ios-button android:rounded-full desktop:rounded-button desktop:text-label desktop:min-block-pointer-target",
-    kind === "primary" && "font-bold touch:min-block-touch-button",
+    "flex items-center justify-center gap-sm px-xl min-block-touch-target disabled:opacity-60 ios:rounded-ios-button android:rounded-full touch:min-block-touch-button desktop:rounded-button desktop:px-lg desktop:text-label desktop:min-block-pointer-target",
+    kind === "primary" && "font-bold",
+    kind === "outline" && "enabled:hover:bg-hover enabled:active:bg-pressed",
   ]}
   {onclick}
 >
