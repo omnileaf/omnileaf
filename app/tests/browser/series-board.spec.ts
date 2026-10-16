@@ -100,6 +100,23 @@ test.describe("a series whose reading the library has timed", () => {
       "Sample Series 04 v03, page 14 of 192 · about 2 h 40 min left in the series",
     );
   });
+
+  test("leaves the time left off the card once Show time left is turned off", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "omnileaf.smartFeatures",
+        JSON.stringify({ showsTimeLeft: false }),
+      );
+    });
+    await openSeries(page);
+
+    await expect(continueCard(page)).toContainText(
+      "Sample Series 04 v03, page 14 of 192",
+    );
+    await expect(continueCard(page)).not.toContainText("left in the series");
+  });
 });
 
 test.describe("a series whose reading isn't timed yet", () => {
