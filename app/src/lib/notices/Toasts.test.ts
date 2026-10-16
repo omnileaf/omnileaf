@@ -196,6 +196,42 @@ test("runs a notice's action and puts the toast away", async () => {
   await expect.element(toastSaying(UNAVAILABLE.title)).not.toBeInTheDocument();
 });
 
+test("puts a warning's action on its own row under its words", async () => {
+  const notices = await renderToasts();
+  notices.show({
+    ...UNAVAILABLE,
+    action: { label: "Free up space", run: () => undefined },
+  });
+
+  const action = page.getByRole("button", { name: "Free up space" });
+  await expect.element(action).toBeVisible();
+
+  const words = toastSaying(UNAVAILABLE.title).getByText(
+    "Your progress is safe.",
+  );
+  expect(action.element().getBoundingClientRect().top).toBeGreaterThanOrEqual(
+    words.element().getBoundingClientRect().bottom,
+  );
+});
+
+test("keeps a plain notice's action beside its words", async () => {
+  const notices = await renderToasts();
+  notices.show({
+    ...READY,
+    action: { label: "Turn off", run: () => undefined },
+  });
+
+  const action = page.getByRole("button", { name: "Turn off" });
+  await expect.element(action).toBeVisible();
+
+  const words = toastSaying(READY.title).getByText(
+    "Every comic in it can be read now.",
+  );
+  expect(action.element().getBoundingClientRect().top).toBeLessThan(
+    words.element().getBoundingClientRect().bottom,
+  );
+});
+
 test("returns focus to where it came from once dismissed", async () => {
   const origin = placeOnPage("button");
   const notices = await renderToasts();
