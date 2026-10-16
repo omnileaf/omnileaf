@@ -50,6 +50,10 @@
     skipUpNextSettingForDocument,
   } from "#lib/up-next/skip-up-next.svelte.ts";
   import {
+    setSmartFeatures,
+    smartFeaturesForDocument,
+  } from "#lib/reader/smart-features.svelte.ts";
+  import {
     opensOnSettingForDocument,
     setOpensOnSetting,
   } from "#lib/general/opens-on.svelte.ts";
@@ -84,6 +88,7 @@
     scheduledRescansSettingForDocument(),
   );
   setSkipUpNextSetting(skipUpNextSettingForDocument());
+  setSmartFeatures(smartFeaturesForDocument());
   setOpensOnSetting(opensOnSettingForDocument());
   setTimeFormatSetting(timeFormatSettingForDocument());
   const animations = setAnimationsSetting(animationsSettingForDocument());
