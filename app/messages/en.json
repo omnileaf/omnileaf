@@ -1006,6 +1006,20 @@
   "first_launch_link_hint_desktop": "Folders on this computer, external drives and network shares all work.",
   "first_launch_skip_phone": "Skip, I'll add them later",
   "first_launch_skip_desktop": "Skip for now",
+  "first_launch_folder_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} book",
+        "countPlural=other": "{formattedCount} books"
+      }
+    }
+  ],
   "language_phone_hint": "Omnileaf uses your phone's language unless you pick one.",
   "language_use_system": "Use the system language",
   "language_intro": "Each language is shown in its own name. It changes straight away.",
