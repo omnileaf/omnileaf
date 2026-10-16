@@ -644,6 +644,28 @@
     }
   ],
   "settings_title": "⟦Šéţţíñĝš····⟧",
+  "settings_group_app": "⟦Áþþ··⟧",
+  "settings_group_reading": "⟦Ŕéáðíñĝ···⟧",
+  "settings_group_data": "⟦Ðáţá áñð þŕíṽáçý·······⟧",
+  "settings_summary_pair": "⟦{first} · {second}········⟧",
+  "settings_summary_opens_on": "⟦öþéñš ţö {place}·······⟧",
+  "settings_summary_screenshot_off": "⟦Šçŕééñšĥöţ ɱöðé öƒƒ········⟧",
+  "settings_summary_screenshot_on": "⟦Šçŕééñšĥöţ ɱöðé öñ········⟧",
+  "settings_summary_advanced": "⟦Áñíɱáţíöñš····⟧",
+  "settings_folder_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƒöļðéŕ··········⟧",
+        "countPlural=other": "⟦{formattedCount} ƒöļðéŕš··········⟧"
+      }
+    }
+  ],
   "about_title": "⟦Áƀöûţ··⟧",
   "about_licence": "⟦Öɱñíļéáƒ íš ƒŕéé šöƒţŵáŕé. Ýöû çáñ šĥáŕé áñð çĥáñĝé íţ ûñðéŕ ţĥé ĜÑÛ Ĝéñéŕáļ Þûƀļíç Ļíçéñšé, ṽéŕšíöñ 3.··········································⟧",
   "about_version": "⟦Ṽéŕšíöñ···⟧",
