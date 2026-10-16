@@ -45,15 +45,17 @@ export const SORTS: readonly LibrarySortBy[] = [
   "dateAdded",
   "lastUpdated",
   "unreadCount",
+  "timeLeft",
 ];
 
-/** Titles read from A to Z, and the series added, read or updated last, or with the most left unread, are the ones looked for first. */
+/** Titles read from A to Z, the series added, read or updated last, or with the most left unread, are the ones looked for first, and so are the series quickest to finish. */
 const NATURAL_DIRECTIONS = {
   title: "ascending",
   dateAdded: "descending",
   lastRead: "descending",
   lastUpdated: "descending",
   unreadCount: "descending",
+  timeLeft: "ascending",
 } as const satisfies Record<LibrarySortBy, SortDirection>;
 
 const OPPOSITE_DIRECTIONS = {

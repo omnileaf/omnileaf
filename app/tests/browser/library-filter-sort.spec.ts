@@ -201,7 +201,8 @@ async function sortBy(
     | "Recently read"
     | "Recently added"
     | "Last updated"
-    | "Unread count",
+    | "Unread count"
+    | "Time left to finish",
 ) {
   await filterAndSort(page)
     .getByRole("combobox", { name: "Sort by" })
@@ -382,6 +383,25 @@ test("asks for the series with the most unread books first once unread count is 
   await expect
     .poll(() => storedListing.sort)
     .toEqual({ by: "unreadCount", direction: "ascending" });
+});
+
+test("asks for the series quickest to finish first once time left is chosen, noting it uses the reading speed", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await openFilterAndSort(page);
+
+  await sortBy(page, "Time left to finish");
+
+  await expect(
+    directionButton(page, "Order: shortest first. Change to longest first"),
+  ).toBeVisible();
+  await expect(
+    filterAndSort(page).getByRole("combobox", { name: "Sort by" }),
+  ).toHaveAccessibleDescription("Time left uses your reading speed.");
+  await expect
+    .poll(() => storedListing.sort)
+    .toEqual({ by: "timeLeft", direction: "ascending" });
 });
 
 test("lists the titles from Z to A on asking", async ({ page }) => {
