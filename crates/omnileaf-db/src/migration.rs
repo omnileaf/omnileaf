@@ -750,7 +750,7 @@ mod tests {
     #[test]
     fn knows_when_each_series_kept_from_before_last_gained_a_book() {
         let scratch = ScratchLibrary::new("last-updated-upgrade");
-        drop(Database::open_with(&scratch.config, &MIGRATIONS[..30]).unwrap());
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..31]).unwrap());
         let connection = Connection::open(&scratch.config.path).unwrap();
         connection
             .execute(
