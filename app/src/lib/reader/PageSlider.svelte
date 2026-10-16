@@ -16,12 +16,14 @@
     direction,
     onSeek,
     onDrag,
+    onFocusChange,
   }: {
     shown: number;
     count: number;
     direction: ReadingDirection;
     onSeek: (index: number) => void;
     onDrag: (isDragged: boolean) => void;
+    onFocusChange: (isFocused: boolean) => void;
   } = $props();
 
   function letGo(): void {
@@ -90,6 +92,12 @@
           class="absolute inset-none mx-none my-auto cursor-pointer opacity-0 block-full inline-full android:block-touch-target desktop:expanded:block-pointer-minimum"
           oninput={(event) => {
             seekTo(Number(event.currentTarget.value));
+          }}
+          onfocus={() => {
+            onFocusChange(true);
+          }}
+          onblur={() => {
+            onFocusChange(false);
           }}
         />
       {/snippet}
