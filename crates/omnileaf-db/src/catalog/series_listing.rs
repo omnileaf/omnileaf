@@ -18,9 +18,10 @@ pub enum SeriesOrder {
     DateAdded,
     LastRead,
     LastUpdated,
+    UnreadCount,
 }
 
-/// Ascending lists titles from A to Z, and series added, updated or read longest ago first, those never read before them.
+/// Ascending lists titles from A to Z, series added, updated or read longest ago first with those never read before them, and series with the fewest unread books first.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SortDirection {
     Ascending,
