@@ -2,11 +2,19 @@
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
 
-  import { screenshotModeShortcutLabel } from "./shortcut";
+  import { type KeyCombination, keyNames } from "./key-combination";
 
-  let { platform }: { readonly platform: Platform } = $props();
+  let {
+    combination,
+    platform,
+  }: {
+    readonly combination: KeyCombination;
+    readonly platform: Platform;
+  } = $props();
 </script>
 
-<Kbd class="px-sm py-2xs whitespace-nowrap">
-  {screenshotModeShortcutLabel(platform)}
-</Kbd>
+<span class="flex shrink-0 items-center gap-2xs">
+  {#each keyNames(combination, platform) as name (name)}
+    <Kbd class="px-sm py-2xs whitespace-nowrap">{name}</Kbd>
+  {/each}
+</span>

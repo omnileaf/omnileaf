@@ -69,6 +69,24 @@ test("Ctrl Shift H turns Screenshot mode on and off from any screen", async ({
   await expect(page.getByText("Screenshot mode is off")).toBeAttached();
 });
 
+test("a shortcut chosen before a restart turns it on instead of Ctrl Shift H", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "omnileaf.screenshotModeShortcut",
+      JSON.stringify({ letter: "J", shift: false }),
+    );
+  });
+  await open(page, "/");
+
+  await page.keyboard.press(SHORTCUT);
+  await page.keyboard.press("Control+J");
+
+  await expect(page.getByText("Screenshot mode is on")).toBeAttached();
+  await expect(page.getByText("Screenshot mode is off")).toHaveCount(0);
+});
+
 test("Command Shift H does nothing off a Mac", async ({ page }) => {
   await open(page, "/");
 

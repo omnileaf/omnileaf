@@ -72,6 +72,24 @@ test.describe("on a desktop", () => {
     ]);
   });
 
+  test("lists the Screenshot mode shortcut chosen in settings", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        "omnileaf.screenshotModeShortcut",
+        JSON.stringify({ letter: "J", shift: false }),
+      );
+    });
+    await openLibrary(page);
+
+    await page.keyboard.press("Shift+Slash");
+
+    await expect(
+      sheet(page).getByRole("definition").filter({ hasText: "Ctrl J" }),
+    ).toHaveCount(1);
+  });
+
   test("closes with Esc", async ({ page }) => {
     await openLibrary(page);
     await page.keyboard.press("Shift+Slash");
