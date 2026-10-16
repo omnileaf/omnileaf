@@ -38,6 +38,7 @@ pub(crate) enum IpcErrorCode {
     BookUnreadable,
     BookmarksNotKept,
     LabelsNotKept,
+    DetailsNotKept,
     Internal,
 }
 
@@ -106,6 +107,13 @@ impl IpcError {
         Self {
             code: IpcErrorCode::LabelsNotKept,
             message: "the library keeps no categories or tags yet",
+        }
+    }
+
+    pub(crate) fn details_not_kept() -> Self {
+        Self {
+            code: IpcErrorCode::DetailsNotKept,
+            message: "the library keeps no edits to series details yet",
         }
     }
 
@@ -246,6 +254,14 @@ mod tests {
         assert_eq!(
             IpcError::bookmarks_not_kept().code,
             IpcErrorCode::BookmarksNotKept
+        );
+    }
+
+    #[test]
+    fn tells_the_interface_the_library_keeps_no_edits_to_details_yet() {
+        assert_eq!(
+            IpcError::details_not_kept().code,
+            IpcErrorCode::DetailsNotKept
         );
     }
 
