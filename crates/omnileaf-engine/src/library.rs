@@ -17,7 +17,7 @@ use omnileaf_db::{
         library_roots, mark_root_available, mark_root_unavailable, missing_roots, page_dimensions,
         place_in_series, record_page_count, relocate_roots, remember_root_share, remove_book_files,
         remove_books_without_files, remove_root, root_book_count, root_files, root_share,
-        root_shares, series_books, series_count, series_overview, series_page,
+        root_shares, series_books, series_count, series_overview, series_page, series_titles,
         show_root_while_missing, store_page_dimensions, unread_books, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
@@ -44,10 +44,11 @@ use crate::{
     CategoryId, CoversPerRowOutOfRange, CreatorSeries, FolderCursor, FolderId, FolderPage,
     FolderRescan, FolderScan, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
     LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
-    LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder,
-    ReadMark, ReadingSummary, ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress,
-    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
-    SeriesOverview, SeriesPage, ShareAddress, ShareLookup, UnreachableShare, UtcOffset,
+    LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, LogStandIns,
+    MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RescanOutcome, ResolvedBookmark,
+    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId,
+    SeriesLabels, SeriesOverview, SeriesPage, ShareAddress, ShareLookup, UnreachableShare,
+    UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -275,6 +276,26 @@ impl Library {
             folders: page.items.into_iter().map(LibraryFolder::from).collect(),
             next: page.next.map(FolderCursor),
         })
+    }
+
+    pub async fn log_stand_ins(&self) -> Result<LogStandIns, LibraryError> {
+        let titles = self.store.database().read(series_titles).await?;
+        let mut folders = Vec::new();
+        let mut after = None;
+        loop {
+            let page = self.folders(after).await?;
+            folders.extend(page.folders.into_iter().map(|folder| folder.name));
+            match page.next {
+                Some(next) => after = Some(next),
+                None => break,
+            }
+        }
+        Ok(LogStandIns::new(
+            titles
+                .into_iter()
+                .map(|series| (SeriesId(series.id), series.title)),
+            folders,
+        ))
     }
 
     pub async fn series(
