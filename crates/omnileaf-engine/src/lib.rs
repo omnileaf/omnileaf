@@ -45,6 +45,7 @@ mod page_path;
 mod page_sizes;
 mod page_thumbnail_path;
 mod pages;
+mod problem_report;
 mod project_link;
 mod reading_progress;
 mod reading_session;
@@ -117,6 +118,7 @@ pub use opened_book::{
 pub use page_path::{MalformedPagePath, PagePath};
 pub use page_thumbnail_path::{MalformedPageThumbnailPath, PageThumbnailPath};
 pub use pages::OpenBookError;
+pub use problem_report::{ProblemReport, ProblemReportPreview};
 pub use project_link::ProjectLink;
 pub use reading_progress::ReadingSaved;
 pub use reading_session::READING_SAVE_DELAY;
