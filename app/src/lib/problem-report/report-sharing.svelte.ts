@@ -1,35 +1,70 @@
-import type { commands, IpcError } from "#lib/ipc/bindings.ts";
+import type {
+  commands,
+  IpcError,
+  SavedProblemReport,
+} from "#lib/ipc/bindings.ts";
+import type { LocalDay } from "#lib/history/local-date.ts";
 
 export type ShareBackend = Pick<
   typeof commands,
-  "copyProblemReport" | "openProblemReportIssue"
+  "copyProblemReport" | "openProblemReportIssue" | "saveProblemReport"
 >;
 
-export type ShareWay = "github" | "copy";
+export type ShareWay = "github" | "copy" | "save";
 
-type Shared =
-  { status: "ok"; data: null } | { status: "error"; error: IpcError };
+export type Shared =
+  | { readonly way: "github" }
+  | { readonly way: "copy" }
+  | { readonly way: "save"; readonly saved: SavedProblemReport };
+
+type Outcome =
+  { status: "ok"; data: Shared } | { status: "error"; error: IpcError };
+
+type Answer<Data> =
+  { status: "ok"; data: Data } | { status: "error"; error: IpcError };
+
+function sharedAs<Data>(
+  answer: Answer<Data>,
+  shared: (data: Data) => Shared,
+): Outcome {
+  return answer.status === "ok"
+    ? { status: "ok", data: shared(answer.data) }
+    : answer;
+}
 
 const WAYS = {
-  github: (backend) => backend.openProblemReportIssue(),
-  copy: (backend) => backend.copyProblemReport(),
-} satisfies Record<ShareWay, (backend: ShareBackend) => Promise<Shared>>;
+  github: async (backend) =>
+    sharedAs(await backend.openProblemReportIssue(), () => ({
+      way: "github",
+    })),
+  copy: async (backend) =>
+    sharedAs(await backend.copyProblemReport(), () => ({ way: "copy" })),
+  save: async (backend, today) =>
+    sharedAs(await backend.saveProblemReport(today), (saved) => ({
+      way: "save",
+      saved,
+    })),
+} satisfies Record<
+  ShareWay,
+  (backend: ShareBackend, today: LocalDay) => Promise<Outcome>
+>;
 
 export class ReportSharing {
   failure: ShareWay | undefined = $state();
 
   constructor(
     private readonly backend: ShareBackend,
-    private readonly onShared: (way: ShareWay) => void,
+    private readonly today: () => LocalDay,
+    private readonly onShared: (shared: Shared) => void,
   ) {}
 
   async share(way: ShareWay): Promise<void> {
     this.failure = undefined;
-    const shared = await WAYS[way](this.backend);
-    if (shared.status === "error") {
+    const outcome = await WAYS[way](this.backend, this.today());
+    if (outcome.status === "error") {
       this.failure = way;
       return;
     }
-    this.onShared(way);
+    this.onShared(outcome.data);
   }
 }
