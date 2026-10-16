@@ -68,10 +68,10 @@
       {...props}
       look="header-control"
       class={[
-        "block-touch-target inline-touch-target large:px-header-control-inline large:block-pointer-button large:inline-auto",
+        "block-touch-target inline-touch-target large:px-header-control-inline large:inline-auto",
         isOpen
           ? "large:bg-accent-soft"
-          : "hover:tint-hover active:tint-pressed large:bg-card",
+          : "hover:tint-hover active:tint-pressed",
       ]}
     >
       <SlidersHorizontal
