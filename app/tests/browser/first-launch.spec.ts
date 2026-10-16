@@ -2,6 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 
 import type { AdultContent, Platform } from "../../src/lib/ipc/bindings.ts";
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
+import { sampleSeries, type WireSeries } from "./series-catalog.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -54,6 +55,7 @@ class Device {
   folders: WireFolder[] = [];
   books = new Map<string, number>();
   series = new Map<string, number>();
+  shelf: WireSeries[] = [];
   adultContent: AdultContent = { treatment: "show", countsAgeRatings: false };
 
   reset(): void {
@@ -62,6 +64,7 @@ class Device {
     this.folders = [HOME_FOLDER];
     this.books = new Map();
     this.series = new Map();
+    this.shelf = [];
     this.adultContent = { treatment: "show", countsAgeRatings: false };
   }
 }
@@ -84,6 +87,7 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
   libraryFolders: () => ({ folders: [...device.folders], next: null }),
   libraryFolderBookCount: (id) => device.books.get(id) ?? 0,
   folderSeriesCount: (id) => device.series.get(id) ?? 0,
+  librarySeries: () => ({ series: device.shelf, next: null }),
   libraryAdultContent: () => device.adultContent,
   setLibraryAdultContent: (content) => {
     device.adultContent = content;
@@ -1092,6 +1096,23 @@ test("says the library is empty for now when no folder was linked", async ({
   await expect(page.getByText(/is ready/)).toHaveCount(0);
 });
 
+function storyboardOf(page: Page): Promise<string[]> {
+  return page.getByRole("main").evaluate((main) =>
+    [...main.querySelectorAll("*")]
+      .map((element) => getComputedStyle(element))
+      .filter(
+        (style) =>
+          style.animationName !== "none" &&
+          style.animationTimingFunction === "cubic-bezier(0.2, 0, 0, 1)" &&
+          style.animationIterationCount === "1",
+      )
+      .map(
+        (style) =>
+          `${style.animationName} after ${style.animationDelay} for ${style.animationDuration}`,
+      ),
+  );
+}
+
 test.describe("once folders are linked", () => {
   test.beforeEach(() => {
     device.folders = [HOME_FOLDER, SAMPLE_COMICS, MANGA];
@@ -1148,6 +1169,45 @@ test.describe("once folders are linked", () => {
     await expect(page.getByRole("alert")).toContainText(
       "Check that you can open it in your file manager, then Rescan.",
     );
+  });
+
+  test.describe("with covers to put on the shelf", () => {
+    const COVERED = sampleSeries(7).map((series, index) => ({
+      ...series,
+      cover: index === 1 ? null : `covers/${series.id}.webp`,
+      isAdult: index === 2,
+    }));
+
+    test.beforeEach(() => {
+      device.shelf = COVERED;
+    });
+
+    test("plays the finishing animation once, over 900 ms", async ({
+      page,
+    }) => {
+      await goTo(page, FOUND_HEADING);
+
+      expect(await storyboardOf(page)).toEqual([
+        "ready-grow after 0s for 0.2s",
+        "ready-draw after 0.3s for 0.3s",
+        "ready-leaf after 0.6s for 0.3s",
+        "ready-settle after 0.3s for 0.3s",
+        "ready-settle after 0.36s for 0.3s",
+        "ready-settle after 0.42s for 0.3s",
+        "ready-settle after 0.48s for 0.3s",
+        "ready-settle after 0.54s for 0.3s",
+      ]);
+    });
+
+    test("shows the last frame at once when motion is reduced", async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+
+      await goTo(page, FOUND_HEADING);
+
+      expect(await storyboardOf(page)).toEqual([]);
+    });
   });
 
   for (const colorScheme of ["light", "dark"] as const) {

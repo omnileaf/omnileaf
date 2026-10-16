@@ -16,7 +16,7 @@
 {:else}
   <span aria-hidden="true" class="relative inline-flex pe-ready-leaf-reach">
     <span
-      class="flex items-center justify-center rounded-full bg-accent text-on-accent block-app-icon inline-app-icon"
+      class="flex items-center justify-center rounded-full bg-accent text-on-accent block-app-icon inline-app-icon motion-safe:animate-ready-grow"
     >
       <svg
         viewBox="0 0 24 24"
@@ -24,6 +24,9 @@
       >
         <path
           d="M5 12.5l4.5 4.5L19 7.5"
+          pathLength="1"
+          stroke-dasharray="1"
+          class="motion-safe:animate-ready-draw"
           stroke-width={CHECK_STROKE}
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -31,7 +34,7 @@
       </svg>
     </span>
     <Leaf
-      class="absolute inset-e-none -inset-bs-ready-leaf-lift text-accent block-ready-leaf inline-ready-leaf"
+      class="absolute inset-e-none -inset-bs-ready-leaf-lift origin-bottom-left text-accent block-ready-leaf inline-ready-leaf motion-safe:animate-ready-leaf rtl:origin-bottom-right"
     />
   </span>
 {/if}
