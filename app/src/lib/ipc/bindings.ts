@@ -25,6 +25,9 @@ export const commands = {
 	libraryFilterChoices: () => typedError<LibraryFilterChoices, IpcError>(__TAURI_INVOKE("library_filter_choices")),
 	seriesLabels: (series: (string & { readonly __brand: "SeriesId" })[]) => typedError<SeriesLabels, IpcError>(__TAURI_INVOKE("series_labels", { series })),
 	labelSeries: (series: (string & { readonly __brand: "SeriesId" })[], changes: LabelChanges) => typedError<null, IpcError>(__TAURI_INVOKE("label_series", { series, changes })),
+	keepsDetailEdits: () => __TAURI_INVOKE<boolean>("keeps_detail_edits"),
+	seriesDetails: (series: string & { readonly __brand: "SeriesId" }) => typedError<SeriesDetails, IpcError>(__TAURI_INVOKE("series_details", { series })),
+	editSeriesDetails: (series: string & { readonly __brand: "SeriesId" }, edits: DetailEdits) => typedError<null, IpcError>(__TAURI_INVOKE("edit_series_details", { series, edits })),
 	libraryTags: () => typedError<LibraryTag[], IpcError>(__TAURI_INVOKE("library_tags")),
 	renameLibraryTag: (tag: string, to: string) => typedError<null, IpcError>(__TAURI_INVOKE("rename_library_tag", { tag, to })),
 	removeLibraryTag: (tag: string) => typedError<(string & { readonly __brand: "SeriesId" })[], IpcError>(__TAURI_INVOKE("remove_library_tag", { tag })),
@@ -215,6 +218,35 @@ export type CreatorSeries = {
 
 export type DamageCause = "archiveEndsEarly";
 
+/**  The details to keep over a series' files; an absent field goes back to the file's. */
+export type DetailEdits = {
+	title: string | null,
+	people: SeriesPerson[] | null,
+	tags: string[] | null,
+	summary: string | null,
+	isMarkedAdult: boolean,
+};
+
+export type EditedPeople = {
+	fromFile: SeriesPerson[],
+	edited: SeriesPerson[] | null,
+};
+
+export type EditedSummary = {
+	fromFile: string | null,
+	edited: string | null,
+};
+
+export type EditedTags = {
+	fromFile: string[],
+	edited: string[] | null,
+};
+
+export type EditedTitle = {
+	fromFile: string,
+	edited: string | null,
+};
+
 export type FileChanges = {
 	added: number,
 	updated: number,
@@ -309,7 +341,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "labelsNotKept" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "internal";
 
 export type LabelChanges = {
 	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],
@@ -570,6 +602,18 @@ export type SeriesCreator = {
 	seriesCount: number,
 };
 
+/**  A series' details as its files give them, each with the edit kept over it, which is never written into the files. */
+export type SeriesDetails = {
+	title: EditedTitle,
+	people: EditedPeople,
+	tags: EditedTags,
+	summary: EditedSummary,
+	/**  Marked 18+ by hand, for a series whose files carry no age rating. */
+	isMarkedAdult: boolean,
+	/**  The files rate the series 18+, so the mark has nothing to add. */
+	isRatedAdult: boolean,
+};
+
 export type SeriesFormat = "comic" | "manga" | "book";
 
 export type SeriesLabels = {
@@ -613,6 +657,11 @@ export type SeriesOverview = {
 export type SeriesPage = {
 	series: LibrarySeries[],
 	next: string & { readonly __brand: "SeriesCursor" } | null,
+};
+
+export type SeriesPerson = {
+	name: string,
+	role: CreatorRole | null,
 };
 
 export type SmartFilter = 
