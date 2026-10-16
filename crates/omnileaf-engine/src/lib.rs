@@ -107,7 +107,6 @@ pub use library_view::{
     TabletCoversPerRow,
 };
 pub use linux_share::{MountTables, unreachable_linux_share};
-pub use log_stand_ins::LogStandIns;
 pub use log_stand_ins::{CleanedLog, LogStandIns};
 pub use missing_folder::{FolderProblem, MissingFolder};
 pub use network_share::{NetworkShare, ShareAddress, ShareLookup, ShareSignIn, UnreachableShare};
