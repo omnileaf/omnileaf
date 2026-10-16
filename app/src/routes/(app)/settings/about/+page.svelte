@@ -6,7 +6,7 @@
   import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
   import ProjectLinkRows from "#lib/about/ProjectLinkRows.svelte";
   import RowText from "#lib/about/RowText.svelte";
-  import { Bug, FileText, Info } from "@lucide/svelte";
+  import { Bug, FileText, Info, Send } from "@lucide/svelte";
 
   import { Item } from "#lib/components/ui/item/index.ts";
   import { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
@@ -14,6 +14,7 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { yourReportsForDocument } from "#lib/problem-report/your-reports.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   import type { PageProps } from "./$types";
@@ -23,6 +24,7 @@
   const copying = new DetailsCopying(commands.copyVersionDetails);
   const opening = new LinkOpening(commands.openProjectLink);
 
+  const yourReports = yourReportsForDocument();
   const width = new WindowWidth();
   const look = $derived(
     isPhone(data.appInfo.platform, width.current) ? "phone" : "pane",
@@ -69,6 +71,15 @@
         hint={reportHint}
         {look}
       />
+      {#if yourReports.reports.length > 0}
+        <AboutPageRow
+          route="/(app)/settings/about/reports"
+          icon={Send}
+          label={m.your_reports_title()}
+          hint={m.your_reports_sent({ count: yourReports.reports.length })}
+          {look}
+        />
+      {/if}
       <ProjectLinkRows {opening} sourceCode={data.appInfo.sourceCode} {look} />
       <AboutPageRow
         route="/(app)/settings/about/licences"
