@@ -153,6 +153,30 @@ impl CoverThumbnails {
             .unwrap_or_else(PoisonError::into_inner)
     }
 
+    pub(crate) async fn cached_bytes(&self) -> u64 {
+        self.with_cache(DiskCache::stored_bytes).await
+    }
+
+    pub(crate) async fn clear_cached(&self) -> u64 {
+        self.with_cache(DiskCache::clear).await
+    }
+
+    pub(crate) async fn trim_cached(&self, bytes: u64) -> u64 {
+        self.with_cache(move |cache| cache.trim_oldest(bytes)).await
+    }
+
+    async fn with_cache(&self, work: impl FnOnce(&DiskCache) -> u64 + Send + 'static) -> u64 {
+        let Some(cache) = self.cache().await else {
+            return 0;
+        };
+        spawn_blocking(move || work(&cache))
+            .await
+            .unwrap_or_else(|error| {
+                tracing::warn!(%error, "reach the cover cache, counted as empty");
+                0
+            })
+    }
+
     async fn cache(&self) -> Option<Arc<DiskCache>> {
         self.cache
             .get_or_init(|| open_cache(self.folder.clone()))
