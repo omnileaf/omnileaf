@@ -6,6 +6,8 @@ import "../../app.css";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
 
+import { resolvedColour } from "../../../tests/components/resolved-colour";
+
 import SettingRadios from "./SettingRadios.svelte";
 
 interface RadioLook {
@@ -60,15 +62,6 @@ const LOOKS: readonly RadioLook[] = [
   },
 ];
 
-function colourOf(token: string): string {
-  const probe = document.createElement("span");
-  probe.style.color = `var(${token})`;
-  document.body.append(probe);
-  const colour = getComputedStyle(probe).color;
-  probe.remove();
-  return colour;
-}
-
 function ringOf(name: string): HTMLElement {
   const ring = page
     .getByRole("radio", { name })
@@ -104,7 +97,11 @@ for (const look of LOOKS) {
     expect(chosen.getBoundingClientRect().width).toBeCloseTo(look.size, 0);
     expect(dot?.getBoundingClientRect().width).toBeCloseTo(look.dot, 0);
     expect(getComputedStyle(chosen).borderTopWidth).toBe(look.edgeWidth);
-    expect(getComputedStyle(chosen).borderTopColor).toBe(colourOf(look.edgeOn));
-    expect(getComputedStyle(other).borderTopColor).toBe(colourOf(look.edgeOff));
+    expect(getComputedStyle(chosen).borderTopColor).toBe(
+      resolvedColour(look.edgeOn, "color"),
+    );
+    expect(getComputedStyle(other).borderTopColor).toBe(
+      resolvedColour(look.edgeOff, "color"),
+    );
   });
 }
