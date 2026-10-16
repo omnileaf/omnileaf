@@ -3,7 +3,10 @@ import {
   accessibilityViolations,
   DEFAULT_BACKEND,
   expect,
+  onPlatform,
   test,
+  testOnlyInItsWebview,
+  tokenColour,
 } from "./fixtures.ts";
 
 type WireFolder = Awaited<
@@ -214,3 +217,25 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test.describe("on iOS", () => {
+  testOnlyInItsWebview("ios");
+  test.use({ backend: { ...LIBRARY_BACKEND, ...onPlatform("ios").backend } });
+
+  test("sets Settings › Library on the grouped ground with its cards as cells", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library");
+    const folders = page.getByRole("region", { name: "Folders" });
+    await expect(folders).toBeVisible();
+
+    await expect(page.locator("[data-ground=grouped]")).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--ios-grouped-bg"),
+    );
+    await expect(folders.locator("> div").first()).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--ios-grouped-cell"),
+    );
+  });
+});
