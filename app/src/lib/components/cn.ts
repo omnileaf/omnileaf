@@ -144,6 +144,7 @@ export const TOKEN_THEME = {
     "alert-block",
     "app-icon",
     "app-shortcuts",
+    "attention-dot",
     "attention-popover",
     "badge-block",
     "badge-block-wide",
