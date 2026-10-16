@@ -48,14 +48,15 @@ const SECTIONS = [
 ] as const;
 
 const OPENS_FIRST_SECTION =
-  "settings opens its first section in a desktop window from 600px";
+  "settings opens its first section in a desktop window from 840px";
 
 for (const { label, path, startFrom, opensFirstSectionOnDesktop } of SECTIONS) {
   test(`opens ${label} from the navigation and focuses its heading`, async ({
     page,
   }) => {
     test.skip(
-      opensFirstSectionOnDesktop && viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      opensFirstSectionOnDesktop &&
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
       OPENS_FIRST_SECTION,
     );
     await page.goto(startFrom);
@@ -79,7 +80,8 @@ for (const { label, path, startFrom, opensFirstSectionOnDesktop } of SECTIONS) {
     page,
   }) => {
     test.skip(
-      opensFirstSectionOnDesktop && viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      opensFirstSectionOnDesktop &&
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
       OPENS_FIRST_SECTION,
     );
     await page.goto(startFrom);
