@@ -6,7 +6,22 @@ import { folderStandIn } from "#lib/screenshot-mode/stand-ins.ts";
 import type { Problem } from "./needs-attention.svelte";
 import { problemWording } from "./problem-wording";
 
-function missingFolder(problem: FolderProblem, isShownAnyway = false): Problem {
+const NAS = { server: "nas", name: "comics" };
+
+function problemOf(kind: FolderProblem["kind"]): FolderProblem {
+  return (
+    kind === "needsSignIn" ||
+    kind === "needsMounting" ||
+    kind === "shareUnreachable"
+      ? { kind, share: NAS }
+      : { kind }
+  ) as FolderProblem;
+}
+
+function missingFolder(
+  kind: FolderProblem["kind"],
+  isShownAnyway = false,
+): Problem {
   return {
     kind: "missingFolder",
     missing: {
@@ -17,7 +32,7 @@ function missingFolder(problem: FolderProblem, isShownAnyway = false): Problem {
         location: "nas/comics",
         isAvailable: false,
       },
-      problem,
+      problem: problemOf(kind),
       hiddenSeries: 41,
       isShownAnyway,
     } as MissingFolder,
@@ -56,6 +71,20 @@ test("offers to sign in to a network share that asks for it", () => {
   expect(wordsOf(missingFolder("needsSignIn"))).toMatchObject({
     title: "Sign in to see Comics",
     fix: "Sign in",
+  });
+});
+
+test("offers to try again once a share mounted outside Omnileaf is back", () => {
+  expect(wordsOf(missingFolder("needsMounting"))).toMatchObject({
+    title: "Mount Comics’s share again",
+    fix: "Try again",
+  });
+});
+
+test("offers to choose a folder on a share that can't be reached again", () => {
+  expect(wordsOf(missingFolder("shareUnreachable"))).toMatchObject({
+    title: "Omnileaf can’t open Comics",
+    fix: "Choose it again",
   });
 });
 
