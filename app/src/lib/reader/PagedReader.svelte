@@ -855,6 +855,9 @@
         next={named.next}
         direction={reading.direction}
         {quickSettings}
+        secondsLeft={book.secondsPerPage === null
+          ? undefined
+          : (pageCount - turner.shown) * book.secondsPerPage}
         onSeek={(index: number) => {
           turner.goTo(index);
         }}
