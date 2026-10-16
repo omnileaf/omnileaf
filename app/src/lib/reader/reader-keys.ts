@@ -20,7 +20,8 @@ export type ReaderAction =
   | "zoomFit"
   | "shortcuts"
   | "jump"
-  | "back";
+  | "back"
+  | "toggleAutoScroll";
 
 const ARROWS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowRight"]);
 
@@ -71,6 +72,7 @@ export function readerShortcuts(
   direction: () => ReadingDirection,
   platform: Platform,
   mode: ReadingMode,
+  isAutoScrolling: boolean,
 ): Shortcut[] {
   const isStrip = mode === "longStrip";
   return [
@@ -81,6 +83,10 @@ export function readerShortcuts(
     ...keys,
     ...(isCommand ? { command: platform } : {}),
     run: () => {
+      if (isAutoScrolling && keys.key === " " && keys.shift === false) {
+        act("toggleAutoScroll");
+        return;
+      }
       act(
         !isStrip && ARROWS.has(keys.key) && isPageTurn(action)
           ? inReadingOrder(action, direction())
