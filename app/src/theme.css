@@ -84,6 +84,7 @@
     var(--destructive-fill) 80%,
     var(--foreground)
   );
+  --switch-off: var(--input);
   --switch-thumb: var(--background);
   --switch-thumb-on: var(--background);
   --glass: oklch(0.985 0 0 / 78%);
@@ -174,6 +175,7 @@
     var(--destructive-fill) 80%,
     var(--background)
   );
+  --switch-off: color-mix(in oklch, var(--input) 80%, transparent);
   --switch-thumb: var(--foreground);
   --switch-thumb-on: var(--primary-foreground);
   --glass: oklch(0.2 0 0 / 72%);
@@ -193,7 +195,6 @@
   --band: oklch(0 0 0 / 74%);
   --on-band: oklch(1 0 0);
   --cover-highlight: oklch(1 0 0 / 20%);
-  --knob-shadow: oklch(0 0 0 / 20%);
 
   --reader-ground: var(--reader-black);
   --reader-page: oklch(0.269 0 0);
@@ -277,6 +278,8 @@
   --tooltip-edge: transparent;
   --tooltip-radius: var(--radius-md);
   --switch-on: var(--primary);
+  --switch-edge: transparent;
+  --switch-edge-on: transparent;
   --hover-fill: var(--accent);
   --pressed-fill: color-mix(in oklab, var(--foreground) 8%, var(--accent));
   --android-container-low: color-mix(
@@ -319,6 +322,11 @@
   --menu-surface: var(--android-container);
   --menu-edge: transparent;
   --menu-radius: var(--radius-android-xs);
+  --switch-off: var(--android-container-high);
+  --switch-edge: var(--android-outline);
+  --switch-edge-on: var(--primary);
+  --switch-thumb: var(--android-outline);
+  --switch-thumb-on: var(--primary-foreground);
   --hover-fill: color-mix(
     in oklab,
     currentColor var(--state-hover),
@@ -340,7 +348,9 @@
   --menu-radius: var(--radius-ios-sheet);
   --menu-shadow: var(--shadow-ios-glass);
   --menu-blur: 24px;
+  --switch-off: var(--ios-fill);
   --switch-on: var(--ios-switch-on);
+  --switch-thumb: var(--ios-switch-thumb);
   --switch-thumb-on: var(--ios-switch-thumb);
 }
 
@@ -360,6 +370,7 @@
   --tooltip-edge: var(--macos-menu-edge);
   --tooltip-radius: 5px;
   --switch-on: var(--macos-switch-on);
+  --switch-thumb: var(--ios-switch-thumb);
   --switch-thumb-on: var(--ios-switch-thumb);
 }
 
@@ -380,4 +391,9 @@
   --tooltip-foreground: var(--popover-foreground);
   --tooltip-edge: var(--windows-stroke);
   --tooltip-radius: var(--radius-windows-control);
+  --switch-off: transparent;
+  --switch-edge: var(--windows-secondary-text);
+  --switch-edge-on: var(--primary);
+  --switch-thumb: var(--windows-secondary-text);
+  --switch-thumb-on: var(--primary-foreground);
 }
