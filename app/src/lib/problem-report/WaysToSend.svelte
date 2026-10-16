@@ -37,7 +37,7 @@
   const headingId = $props.id();
 </script>
 
-<section aria-labelledby={headingId} class="mbs-md flex flex-col gap-sm">
+<section aria-labelledby={headingId} class="mbs-lg flex flex-col gap-sm">
   <h2 id={headingId} class="text-small font-semibold">
     {m.report_ways_to_send()}
   </h2>
