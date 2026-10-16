@@ -782,7 +782,7 @@ mod tests {
     fn counts_the_unread_books_of_each_series_kept_from_before_the_count_was_indexed() {
         let scratch = ScratchLibrary::new("unread-count-upgrade");
         let store = Store::new(
-            Database::open_with(&scratch.config, &MIGRATIONS[..31]).unwrap(),
+            Database::open_with(&scratch.config, &MIGRATIONS[..32]).unwrap(),
             StoppedClock,
         );
         let connection = Connection::open(&scratch.config.path).unwrap();
