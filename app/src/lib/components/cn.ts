@@ -270,7 +270,6 @@ export const TOKEN_THEME = {
     "option",
     "option-icon",
     "option-inline",
-    "package-row",
     "page-bottom",
     "page-end",
     "page-problem",
