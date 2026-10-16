@@ -659,6 +659,7 @@ export type SeriesPerson = {
 	name: string,
 	role: CreatorRole | null,
 };
+
 export type SignInOutcome = "signedIn" | "cancelled" | "failed";
 
 export type SmartFilter = 
