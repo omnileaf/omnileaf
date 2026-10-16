@@ -1,8 +1,9 @@
 <script lang="ts">
   import { Link2 } from "@lucide/svelte";
 
-  import type { Platform } from "#lib/ipc/bindings.ts";
+  import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
   import type { AddFolder } from "#lib/library/add-folder.ts";
+  import { FolderBookCounts } from "#lib/library/folder-book-counts.svelte.ts";
   import type { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import LinkedFolders from "#lib/library/LinkedFolders.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
@@ -33,6 +34,14 @@
   } = $props();
 
   const screenshotMode = getScreenshotMode();
+  const counts = new FolderBookCounts((folder) => folders.countBooks(folder));
+  const linked = $derived(
+    folders.list.kind === "loaded" ? folders.list.linked : [],
+  );
+
+  $effect(() => {
+    void counts.load(linked);
+  });
 
   const HINT = {
     android: {
@@ -69,15 +78,23 @@
       usesStandIns={screenshotMode.isOn}
       addPlacement="below-list"
     >
+      {#snippet rowDetail(folder: LibraryFolder)}
+        {@const books = counts.of(folder)}
+        {#if books !== undefined}
+          {m.first_launch_folder_books({ count: books })}
+        {/if}
+      {/snippet}
       {#snippet hint()}
         <WidthWording wording={HINT[platform]} />
       {/snippet}
     </LinkedFolders>
   </div>
   {#snippet actions()}
-    <StepButton kind="primary" onclick={onNext}>
-      {m.first_launch_continue()}
-    </StepButton>
+    {#if linked.length > 0}
+      <StepButton kind="primary" onclick={onNext}>
+        {m.first_launch_continue()}
+      </StepButton>
+    {/if}
     <StepButton kind="quiet" onclick={onNext}>
       <WidthWording wording={SKIP} />
     </StepButton>
