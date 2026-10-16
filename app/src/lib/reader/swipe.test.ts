@@ -70,3 +70,27 @@ test("forgets a swipe the browser took over before it ended", () => {
   expect(taken.ended(pointer("pointerup", [100, 400]))).toBeUndefined();
   expect(taken.isClickASwipe()).toBe(false);
 });
+
+test("follows a drag across while it lasts, and nothing mostly vertical", () => {
+  const across = startedAt([300, 400]);
+  const down = startedAt([300, 400]);
+
+  const moves = [
+    across.moved(pointer("pointermove", [260, 405])),
+    across.moved(pointer("pointermove", [350, 395])),
+    down.moved(pointer("pointermove", [290, 480])),
+  ];
+
+  expect(moves).toEqual([-40, 50, undefined]);
+});
+
+test("follows no drag before it starts or once it ends", () => {
+  const swiped = new Swipe(MIN_DISTANCE_PX);
+  const before = swiped.moved(pointer("pointermove", [200, 400]));
+  swiped.started(pointer("pointerdown", [300, 400]));
+  swiped.ended(pointer("pointerup", [100, 400]));
+
+  const after = swiped.moved(pointer("pointermove", [80, 400]));
+
+  expect([before, after]).toEqual([undefined, undefined]);
+});
