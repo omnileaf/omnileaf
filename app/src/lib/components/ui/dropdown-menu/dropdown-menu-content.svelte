@@ -23,7 +23,7 @@
     sideOffset={OPENER_GAP_PX}
     collisionPadding={SCREEN_EDGE_GAP_PX}
     class={cn(
-      "z-dialog flex flex-col rounded-menu border border-menu-edge bg-menu p-xs text-foreground fade-motion shadow-menu backdrop-blur-menu",
+      "z-dialog flex flex-col rounded-menu border border-menu-edge bg-menu p-menu-pad text-foreground fade-motion shadow-menu backdrop-blur-menu android:px-none android:py-sm",
       className,
     )}
     {...restProps}
