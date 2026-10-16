@@ -31,6 +31,7 @@ function actionsFor(
         () => direction,
         platform,
         mode,
+        false,
       ),
     )(window),
   );
@@ -249,4 +250,32 @@ test("leaves the up and down arrows to the page while pages turn", () => {
   const actions = actionsFor([{ key: "ArrowDown" }, { key: "ArrowUp" }]);
 
   expect(actions).toEqual([]);
+});
+
+test("pauses or goes on with auto scroll on Space while it's on", () => {
+  const actions: ReaderAction[] = [];
+  detachments.push(
+    shortcut(
+      ...readerShortcuts(
+        (action) => {
+          actions.push(action);
+        },
+        () => "leftToRight",
+        "linux",
+        "longStrip",
+        true,
+      ),
+    )(window),
+  );
+
+  document.body.dispatchEvent(
+    new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      key: " ",
+      code: "Space",
+    }),
+  );
+
+  expect(actions).toEqual(["toggleAutoScroll"]);
 });
