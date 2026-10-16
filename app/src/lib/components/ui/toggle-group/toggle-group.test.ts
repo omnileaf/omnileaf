@@ -42,7 +42,10 @@ const LOOKS: readonly SegmentLook[] = [
   },
 ];
 
-function resolved(token: string, property: "color" | "backgroundColor"): string {
+function resolved(
+  token: string,
+  property: "color" | "backgroundColor",
+): string {
   const probe = document.createElement("span");
   probe.style[property] = `var(${token})`;
   document.body.append(probe);
@@ -75,9 +78,7 @@ for (const look of LOOKS) {
     const middle = page.getByRole("radio", { name: "Compact" }).element();
 
     expect(middle.getBoundingClientRect().height).toBeCloseTo(look.height, 0);
-    expect(getComputedStyle(middle).borderTopLeftRadius).toBe(
-      look.innerCorner,
-    );
+    expect(getComputedStyle(middle).borderTopLeftRadius).toBe(look.innerCorner);
     expect(getComputedStyle(chosen).backgroundColor).toBe(
       colourOf(look.chosenFill),
     );
