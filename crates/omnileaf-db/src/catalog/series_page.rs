@@ -80,6 +80,18 @@ const BY_UNREAD_COUNT: Directions<Position> = directions! {
     sort_position: unread_count_place,
 };
 
+const BY_TIME_LEFT: Directions<Position> = directions! {
+    key: "time_left_key",
+    sort_position: time_left_place,
+};
+
+pub(crate) fn time_left_place(row: &Row<'_>) -> rusqlite::Result<Position> {
+    Ok(Position::TimeLeft {
+        time_left_key: row.get("time_left_key")?,
+        id: stored_id(row, "id")?,
+    })
+}
+
 pub(crate) fn unread_count_place(row: &Row<'_>) -> rusqlite::Result<Position> {
     Ok(Position::UnreadCount {
         unread_count: row.get("unread_count")?,
@@ -143,8 +155,33 @@ pub fn series_page(
         SeriesOrder::UnreadCount => {
             unread_count_rows(&read, BY_UNREAD_COUNT.toward(direction), after)
         }
+        SeriesOrder::TimeLeft => time_left_rows(&read, BY_TIME_LEFT.toward(direction), after),
     }?;
     Ok(Page::of(rows, request.size))
+}
+
+pub(crate) fn time_left_rows(
+    read: &Read<'_>,
+    listing: &Listing<Position>,
+    after: Option<&Position>,
+) -> Result<Vec<(SeriesSummary, Position)>, Error> {
+    match after {
+        None => listing.first_rows(read),
+        Some(Position::TimeLeft { time_left_key, id }) => listing.rows_after(
+            read,
+            named_params! { ":after_key": time_left_key, ":after_id": id.as_bytes() },
+        ),
+        Some(
+            Position::Title { .. }
+            | Position::Added { .. }
+            | Position::Book { .. }
+            | Position::Root { .. }
+            | Position::LastRead { .. }
+            | Position::Session { .. }
+            | Position::LastUpdated { .. }
+            | Position::UnreadCount { .. },
+        ) => Err(Error::CursorForAnotherList),
+    }
 }
 
 pub(crate) fn unread_count_rows(
@@ -165,7 +202,8 @@ pub(crate) fn unread_count_rows(
             | Position::Root { .. }
             | Position::LastRead { .. }
             | Position::Session { .. }
-            | Position::LastUpdated { .. },
+            | Position::LastUpdated { .. }
+            | Position::TimeLeft { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
@@ -188,7 +226,8 @@ pub(crate) fn last_updated_rows(
             | Position::Root { .. }
             | Position::LastRead { .. }
             | Position::Session { .. }
-            | Position::UnreadCount { .. },
+            | Position::UnreadCount { .. }
+            | Position::TimeLeft { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
@@ -214,7 +253,8 @@ pub(crate) fn last_read_rows(
             | Position::Root { .. }
             | Position::Session { .. }
             | Position::LastUpdated { .. }
-            | Position::UnreadCount { .. },
+            | Position::UnreadCount { .. }
+            | Position::TimeLeft { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
@@ -237,7 +277,8 @@ pub(crate) fn date_added_rows(
             | Position::LastRead { .. }
             | Position::Session { .. }
             | Position::LastUpdated { .. }
-            | Position::UnreadCount { .. },
+            | Position::UnreadCount { .. }
+            | Position::TimeLeft { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
@@ -397,6 +438,37 @@ mod tests {
                 ),
                 merging_each_stage(
                     "SEARCH series USING INDEX series_by_stage_and_unread (reading_stage=? AND (unread_count,id)<(?,?))"
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn starts_each_stage_at_either_end_of_its_stretch_of_the_time_left_index_without_sorting() {
+        let scratch = ScratchLibrary::new("first-time-left-plan");
+
+        let plans = plans_of(&scratch, |listing| listing.first_page_query, &BY_TIME_LEFT);
+
+        let from_the_head = merging_each_stage(
+            "SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=?)",
+        );
+        assert_eq!(plans, [from_the_head.clone(), from_the_head]);
+    }
+
+    #[test]
+    fn seeks_each_stage_of_the_time_left_index_either_way_on_both_sort_columns_without_sorting() {
+        let scratch = ScratchLibrary::new("time-left-plan");
+
+        let plans = plans_of(&scratch, |listing| listing.next_page_query, &BY_TIME_LEFT);
+
+        assert_eq!(
+            plans,
+            [
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=? AND (time_left_key,id)>(?,?))"
+                ),
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=? AND (time_left_key,id)<(?,?))"
                 ),
             ]
         );

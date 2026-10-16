@@ -85,6 +85,7 @@ fn any_listing() -> impl Strategy<Value = SeriesListing> {
             Just(SeriesOrder::LastRead),
             Just(SeriesOrder::LastUpdated),
             Just(SeriesOrder::UnreadCount),
+            Just(SeriesOrder::TimeLeft),
         ],
         prop_oneof![
             Just(SortDirection::Ascending),

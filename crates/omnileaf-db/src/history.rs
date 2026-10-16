@@ -200,7 +200,8 @@ pub fn history_page(
             | Position::Root { .. }
             | Position::LastRead { .. }
             | Position::LastUpdated { .. }
-            | Position::UnreadCount { .. },
+            | Position::UnreadCount { .. }
+            | Position::TimeLeft { .. },
         ) => return Err(Error::CursorForAnotherList),
     };
     let matching;
