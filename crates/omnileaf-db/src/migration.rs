@@ -885,7 +885,7 @@ mod tests {
     fn counts_the_pages_left_in_each_series_kept_from_before_they_were_counted() {
         let scratch = ScratchLibrary::new("pages-left-upgrade");
         let store = Store::new(
-            Database::open_with(&scratch.config, &MIGRATIONS[..33]).unwrap(),
+            Database::open_with(&scratch.config, &MIGRATIONS[..34]).unwrap(),
             StoppedClock,
         );
         let connection = Connection::open(&scratch.config.path).unwrap();
