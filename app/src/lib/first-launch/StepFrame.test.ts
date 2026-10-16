@@ -8,78 +8,40 @@ import StepFrame from "./StepFrame.svelte";
 const nothing = createRawSnippet(() => ({ render: () => "<span></span>" }));
 
 async function renderFrameOn(step: FirstLaunchStep) {
-  const wentBackTo: FirstLaunchStep[] = [];
+  let backs = 0;
   const screen = await render(StepFrame, {
     step,
-    onBackTo: (earlier: FirstLaunchStep) => {
-      wentBackTo.push(earlier);
+    onBack: () => {
+      backs += 1;
     },
     children: nothing,
     actions: nothing,
   });
-  return { screen, wentBackTo };
+  return { screen, backs: () => backs };
 }
 
-test("names the current step with its place among the steps", async () => {
+test("says where the step is among the numbered steps", async () => {
   const { screen } = await renderFrameOn("link");
 
-  const current = screen.getByRole("button", {
-    name: "Your folders, step 2 of 3",
-  });
+  const progress = screen.getByRole("progressbar", { name: "Setting up" });
 
-  await expect.element(current).toHaveAttribute("aria-current", "step");
+  await expect.element(progress).toHaveAttribute("aria-valuenow", "2");
+  await expect.element(progress).toHaveAttribute("aria-valuetext", "2 of 3");
+  await expect.element(progress).toHaveTextContent("2 of 3");
 });
 
-test("lists the numbered steps under the setting up label", async () => {
-  const { screen } = await renderFrameOn("link");
+test("goes back once when Back is pressed", async () => {
+  const { screen, backs } = await renderFrameOn("choices");
 
-  const steps = screen.getByRole("list", { name: "Setting up" });
+  await screen.getByRole("button", { name: "Back" }).first().click();
 
-  expect(steps.getByRole("listitem").elements()).toHaveLength(3);
+  expect(backs()).toBe(1);
 });
 
-test("keeps the steps ahead from being chosen yet", async () => {
-  const { screen, wentBackTo } = await renderFrameOn("link");
-  const ahead = screen.getByRole("button", { name: "Choices, step 3 of 3" });
-
-  await ahead.click({ force: true });
-
-  await expect.element(ahead).toHaveAttribute("aria-disabled", "true");
-  expect(wentBackTo).toEqual([]);
-});
-
-test("goes back to a finished step when it is tapped", async () => {
-  const { screen, wentBackTo } = await renderFrameOn("choices");
-
-  await screen
-    .getByRole("button", { name: "Home folder, step 1 of 3" })
-    .click();
-
-  expect(wentBackTo).toEqual(["home"]);
-});
-
-test("stays put when the current step is tapped", async () => {
-  const { screen, wentBackTo } = await renderFrameOn("link");
-
-  await screen
-    .getByRole("button", { name: "Your folders, step 2 of 3" })
-    .click();
-
-  expect(wentBackTo).toEqual([]);
-});
-
-test("leaves the way back to the finished steps, with no Back button", async () => {
-  const { screen } = await renderFrameOn("choices");
-
-  const back = screen.getByRole("button", { name: "Back" });
-
-  expect(back.elements()).toHaveLength(0);
-});
-
-test("shows no steps on the steps around the numbered ones", async () => {
+test("shows no progress on the steps around the numbered ones", async () => {
   const { screen } = await renderFrameOn("ready");
 
-  const steps = screen.getByRole("list", { name: "Setting up" });
+  const progress = screen.getByRole("progressbar");
 
-  expect(steps.elements()).toHaveLength(0);
+  expect(progress.elements()).toHaveLength(0);
 });

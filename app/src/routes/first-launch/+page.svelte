@@ -7,7 +7,6 @@
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
   import ChoicesStep from "#lib/first-launch/ChoicesStep.svelte";
   import { deviceKindOf } from "#lib/first-launch/device.ts";
-  import FirstLaunchPanel from "#lib/first-launch/FirstLaunchPanel.svelte";
   import HomeStep from "#lib/first-launch/HomeStep.svelte";
   import LinkStep from "#lib/first-launch/LinkStep.svelte";
   import ReadyStep, {
@@ -66,10 +65,8 @@
     }
   }
 
-  function backTo(earlier: FirstLaunchStep): void {
-    window.history.go(
-      FIRST_LAUNCH_STEPS.indexOf(earlier) - FIRST_LAUNCH_STEPS.indexOf(step),
-    );
+  function back(): void {
+    window.history.back();
   }
 
   function dropStepEntries(): Promise<void> {
@@ -105,15 +102,14 @@
 </script>
 
 <div
-  class="flex bg-background min-block-dvh medium:items-center medium:justify-center medium:bg-backdrop medium:p-xl"
+  class="flex justify-center bg-background min-block-dvh expanded:items-start expanded:bg-backdrop expanded:p-2xl"
 >
   <div
     bind:this={card}
-    class="flex flex-1 min-inline-none medium:flex-none medium:overflow-hidden medium:rounded-sheet medium:border medium:border-border medium:bg-background medium:shadow-card medium:inline-full medium:max-inline-first-launch-card medium:min-block-first-launch-card-tall"
+    class="flex flex-1 max-inline-first-launch-card min-inline-none expanded:flex-none expanded:rounded-sheet expanded:border expanded:border-border expanded:bg-background expanded:shadow-card expanded:inline-first-launch-card"
   >
-    <FirstLaunchPanel />
     <main
-      class="flex flex-1 flex-col ps-page-start pe-page-end pbs-safe-top pbe-page-bottom min-inline-none medium:p-2xl"
+      class="flex flex-1 flex-col pbs-safe-top min-inline-none expanded:pbs-none"
     >
       {#if step === "welcome"}
         <WelcomeStep {device} onNext={next} />
@@ -121,7 +117,7 @@
         <HomeStep
           platform={data.appInfo.platform}
           folders={folders.list}
-          onBackTo={backTo}
+          onBack={back}
           onNext={next}
         />
       {:else if step === "link"}
@@ -130,11 +126,11 @@
           {folders}
           addFolder={addFolderWithProgress}
           {notices}
-          onBackTo={backTo}
+          onBack={back}
           onNext={next}
         />
       {:else if step === "choices"}
-        <ChoicesStep {device} onBackTo={backTo} onNext={next} />
+        <ChoicesStep {device} onBack={back} onNext={next} />
       {:else}
         <ReadyStep onFinish={finish} />
       {/if}
