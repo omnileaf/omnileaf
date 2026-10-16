@@ -68,7 +68,17 @@
       },
       {
         title: m.app_shortcuts_going_back(),
-        rows: [{ label: m.app_shortcuts_close(), keys: [m.reader_key_esc()] }],
+        rows: [
+          {
+            label: m.app_shortcuts_back(),
+            keys: [
+              usesCommandKey(platform)
+                ? m.reader_key_back_mac()
+                : m.reader_key_back(),
+            ],
+          },
+          { label: m.app_shortcuts_close(), keys: [m.reader_key_esc()] },
+        ],
       },
     ],
     [
