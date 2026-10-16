@@ -27,6 +27,8 @@ pub struct OpenedBook {
     pub bookmarked_pages: Option<Vec<u32>>,
     /// Absent while the library doesn't check a book's pages against what its file promises.
     pub damage: Option<BookDamage>,
+    /// About how long a page takes to read, absent until the library times reading.
+    pub seconds_per_page: Option<u32>,
 }
 
 /// What's wrong with a book that opens with fewer pages than its file promises, the pages past the last one in `pages` being the ones lost.
