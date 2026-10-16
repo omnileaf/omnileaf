@@ -168,15 +168,13 @@
     {/key}
   </div>
 </div>
-{#if !isPointer(data.appInfo.platform)}
-  {#key language.resolved}
-    <NeedsAttentionSheet
-      attention={needsAttention}
-      usesStandIns={screenshotMode.isOn}
-      onFix={fix}
-    />
-  {/key}
-{/if}
+{#key language.resolved}
+  <NeedsAttentionSheet
+    attention={needsAttention}
+    usesStandIns={screenshotMode.isOn}
+    onFix={fix}
+  />
+{/key}
 <AppKeyboardShortcuts
   isOpen={isShowingShortcuts}
   platform={data.appInfo.platform}
