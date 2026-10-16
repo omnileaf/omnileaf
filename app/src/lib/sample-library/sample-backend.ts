@@ -436,6 +436,9 @@ export function sampleBackend(
       ? addedAt(series)
       : 0;
 
+  const unreadCountOf = (series: SampleSeries): number =>
+    series.books.filter((book) => !isRead(book)).length;
+
   const updatedAt = (series: SampleSeries): number =>
     series.books.some((book) => book.isNew)
       ? NEWEST_ADDED_MS + DAY_MS
@@ -446,6 +449,7 @@ export function sampleBackend(
     dateAdded: (one, other) => addedAt(one) - addedAt(other),
     lastRead: (one, other) => lastReadAt(one) - lastReadAt(other),
     lastUpdated: (one, other) => updatedAt(one) - updatedAt(other),
+    unreadCount: (one, other) => unreadCountOf(one) - unreadCountOf(other),
   } satisfies Record<
     LibrarySortBy,
     (one: SampleSeries, other: SampleSeries) => number
@@ -472,7 +476,7 @@ export function sampleBackend(
       id: sampleSeriesId(series.number),
       title: titleOf(series),
       bookCount: series.books.length,
-      unreadCount: series.books.filter((book) => !isRead(book)).length,
+      unreadCount: unreadCountOf(series),
       cover: coverOf(series),
       language: languageOf(series),
       hasDownloads: SERIES_WITH_DOWNLOADS.has(series.number),
