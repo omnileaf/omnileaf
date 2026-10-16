@@ -282,6 +282,9 @@
   --tooltip-foreground: var(--primary-foreground);
   --tooltip-edge: transparent;
   --tooltip-radius: var(--radius-md);
+  --tooltip-shadow: none;
+  --tooltip-key-fill: color-mix(in oklch, var(--background) 20%, transparent);
+  --tooltip-key-ink: var(--primary-foreground);
   --switch-on: var(--primary);
   --sidebar-selection: var(--sidebar-accent);
   --sidebar-selection-foreground: var(--sidebar-accent-foreground);
@@ -394,6 +397,9 @@
   --tooltip-foreground: var(--popover-foreground);
   --tooltip-edge: var(--macos-menu-edge);
   --tooltip-radius: 5px;
+  --tooltip-shadow: var(--shadow-md);
+  --tooltip-key-fill: var(--muted);
+  --tooltip-key-ink: var(--secondary-text);
   --switch-on: var(--macos-switch-on);
   --switch-thumb: var(--ios-switch-thumb);
   --switch-thumb-on: var(--ios-switch-thumb);
@@ -426,6 +432,9 @@
   --sidebar-selection-foreground: var(--sidebar-foreground);
   --sidebar-row-height: 2.25rem;
   --sidebar-row-radius: var(--radius-windows-control);
+  --tooltip-shadow: var(--shadow-windows-flyout);
+  --tooltip-key-fill: var(--muted);
+  --tooltip-key-ink: var(--secondary-text);
   --switch-off: transparent;
   --switch-edge: var(--windows-secondary-text);
   --switch-edge-on: var(--primary);
