@@ -31,7 +31,7 @@ export function startedAtFormats(
 }
 
 /** The moment on the device's clock as it was then, read as UTC so it shows the same wherever the device is now. */
-function onThatClock(entry: StartedAt): number {
+export function onThatClock(entry: StartedAt): number {
   return entry.startedAtMs + entry.utcOffsetMinutes * MS_PER_MINUTE;
 }
 
