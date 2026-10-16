@@ -160,6 +160,20 @@ test.describe("in Settings › Reader", () => {
     });
   });
 
+  test("turns the book summary off for every series", async ({ page }) => {
+    await page.goto("/settings/reading");
+    const summary = featureSwitch(page, "Book summary");
+    await expect(summary).toHaveAccessibleDescription(
+      "Time, pages and time per page on Up next and at the end of the series.",
+    );
+
+    await summary.click();
+
+    expect(await storedFeatures(page)).toMatchObject({
+      showsBookSummary: false,
+    });
+  });
+
   test("keeps the screen on for every series until told otherwise", async ({
     page,
   }) => {

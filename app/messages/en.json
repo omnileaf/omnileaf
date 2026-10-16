@@ -1572,6 +1572,8 @@
   "reader_show_time_left": "Show time left",
   "reader_show_time_left_help": "In the reader and on the series page.",
   "reader_needs_learn_speed": "Needs Learn my reading speed.",
+  "reader_book_summary": "Book summary",
+  "reader_book_summary_help": "Time, pages and time per page on Up next and at the end of the series.",
   "reader_page_previews": "Page previews while dragging the slider",
   "reader_turn_all_off": "Turn all off",
   "reader_tap_zones": "Tap zones",
