@@ -100,6 +100,7 @@ export const TOKEN_THEME = {
     "link",
     "list",
     "list-cover",
+    "macos-control",
     "menu",
     "panel",
     "phone-button",
@@ -130,6 +131,7 @@ export const TOKEN_THEME = {
     "toast",
     "toast-wide",
     "tooltip",
+    "windows-control",
     "windows-layer",
   ],
   spacing: [
@@ -398,6 +400,7 @@ export const TOKEN_THEME = {
     "segment",
     "segment-compact",
     "segment-icon-desktop",
+    "segment-item",
     "segment-track",
     "select-end",
     "selected-edge",
