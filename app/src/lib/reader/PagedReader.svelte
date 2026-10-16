@@ -894,6 +894,7 @@
         {quickSettings}
         isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
         showsPreviews={smartFeatures.showsPagePreviews}
+        isShown={controls.isShown}
         secondsLeft={book.secondsPerPage === null ||
         !smartFeatures.showsTimeLeft
           ? undefined
