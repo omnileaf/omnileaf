@@ -90,8 +90,9 @@ class PendingRescan {
 }
 
 afterEach(async () => {
-  clearMocks();
   await clearToasts();
+  await new Promise((resolve) => setTimeout(resolve));
+  clearMocks();
 });
 
 function serveFolders(folders: readonly WireFolder[]): void {
