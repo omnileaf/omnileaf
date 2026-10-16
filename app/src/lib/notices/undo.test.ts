@@ -8,6 +8,7 @@ import { clearToasts } from "../../../tests/components/clear-toasts";
 import "../../app.css";
 
 import { Notices, UNDO_WINDOW_MS } from "./notices";
+import { NEW_UNDO_RULES, type UndoRules } from "./undo-setting.svelte";
 import Toasts from "./Toasts.svelte";
 
 const REMOVED = "Removed Sample Series 07";
@@ -35,8 +36,11 @@ function pressKey(init: KeyboardEventInit): void {
   );
 }
 
-async function offerUndo(platform: Platform = "linux") {
-  const notices = new Notices();
+async function offerUndo(
+  platform: Platform = "linux",
+  rules: UndoRules = NEW_UNDO_RULES,
+) {
+  const notices = new Notices(() => rules);
   await render(Toasts, { notices, platform, theme: "light" });
   let timesUndone = 0;
   notices.offerUndo({
@@ -214,4 +218,51 @@ test("replaces an earlier offer with a newer one", async () => {
 
   expect(newerUndone).toBe(1);
   expect(timesUndone()).toBe(0);
+});
+
+test("shows the notice without Undo once Undo is turned off", async () => {
+  const notices = new Notices(() => ({ ...NEW_UNDO_RULES, isOffered: false }));
+  await render(Toasts, { notices, platform: "linux", theme: "light" });
+
+  notices.offerUndo({
+    title: REMOVED,
+    body: FILES_KEPT,
+    undo: () => undefined,
+  });
+
+  await expect
+    .element(page.getByRole("listitem").filter({ hasText: REMOVED }))
+    .toBeVisible();
+  await expect
+    .element(page.getByRole("button", { name: "Undo" }))
+    .not.toBeInTheDocument();
+  expect(notices.undoOffer).toBeUndefined();
+});
+
+test("keeps the offer for as long as chosen", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const { offer } = await offerUndo("linux", {
+    ...NEW_UNDO_RULES,
+    windowSeconds: 30,
+  });
+
+  vi.advanceTimersByTime(UNDO_WINDOW_MS);
+  await expect.element(offer).toHaveAttribute("data-removed", "false");
+  vi.advanceTimersByTime(20_000);
+
+  await expect.element(offer).toHaveAttribute("data-removed", "true");
+});
+
+test("lets the offer lapse with focus on it once holding is turned off", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const { offer, undoButton } = await offerUndo("linux", {
+    ...NEW_UNDO_RULES,
+    holdsWhileHoveredOrFocused: false,
+  });
+  undoButton.element().focus();
+  await expect.element(offer).toHaveAttribute("data-expanded", "true");
+
+  vi.advanceTimersByTime(UNDO_WINDOW_MS);
+
+  await expect.element(offer).toHaveAttribute("data-removed", "true");
 });

@@ -13,7 +13,7 @@ const SUMMARIES = [
   { section: "Privacy", summary: "Screenshot mode off" },
   { section: "General", summary: "English · opens to Library" },
   { section: "Library", summary: "2 folders · 128 series" },
-  { section: "Advanced", summary: "Animations" },
+  { section: "Advanced", summary: "Animations · Undo" },
   { section: "About", summary: `Version ${FAKE_APP_VERSION}` },
 ] as const;
 
