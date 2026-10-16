@@ -388,7 +388,10 @@ test.describe("from finding books to the result", () => {
 test("opens Settings › Library from Settings", async ({ page }) => {
   await page.goto("/settings");
 
-  await page.getByRole("main").getByRole("link", { name: "Library" }).click();
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: /^Library/ })
+    .click();
 
   await expect(
     page.getByRole("heading", { level: 1, name: "Library" }),

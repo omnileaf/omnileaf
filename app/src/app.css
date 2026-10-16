@@ -384,6 +384,9 @@
   --spacing-toolbar-rule: 1rem;
   --spacing-settings-icon: 1.125rem;
   --spacing-settings-row: 2.75rem;
+  --spacing-settings-entry: 4.5rem;
+  --spacing-settings-chip: 2.5rem;
+  --spacing-settings-chip-ios: 1.8125rem;
   --spacing-setting-grid-row: 3.5rem;
   --spacing-setting-grid-pad: 0.625rem;
   --spacing-setting-control: 14.25rem;
@@ -684,6 +687,7 @@
 
   --aspect-cover: 2 / 3;
   --radius-tile: 0.625rem;
+  --radius-settings-chip-ios: 0.4375rem;
   --radius-button: 0.625rem;
   --radius-ios-button: 0.875rem;
   --radius-ios-segment: 0.5625rem;
@@ -978,6 +982,10 @@
   --color-reader-black: var(--reader-black);
   --color-reader-grey: var(--reader-grey);
   --color-reader-white: var(--reader-white);
+  --color-ios-chip-grey: var(--ios-chip-grey);
+  --color-ios-chip-blue: var(--ios-chip-blue);
+  --color-ios-chip-green: var(--ios-chip-green);
+  --color-ios-chip-orange: var(--ios-chip-orange);
   --color-reader-warmth: var(--reader-warmth);
   --color-reader-glass: var(--reader-glass);
   --color-reader-glass-wide: var(--reader-glass-wide);

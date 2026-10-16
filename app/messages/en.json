@@ -646,6 +646,28 @@
     }
   ],
   "settings_title": "Settings",
+  "settings_group_app": "App",
+  "settings_group_reading": "Reading",
+  "settings_group_data": "Data and privacy",
+  "settings_summary_pair": "{first} · {second}",
+  "settings_summary_opens_on": "opens to {place}",
+  "settings_summary_screenshot_off": "Screenshot mode off",
+  "settings_summary_screenshot_on": "Screenshot mode on",
+  "settings_summary_advanced": "Animations",
+  "settings_folder_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} folder",
+        "countPlural=other": "{formattedCount} folders"
+      }
+    }
+  ],
   "about_title": "About",
   "about_licence": "Omnileaf is free software. You can share and change it under the GNU General Public License, version 3.",
   "about_version": "Version",
