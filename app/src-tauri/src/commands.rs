@@ -7,9 +7,10 @@ use omnileaf_engine::{
     FolderRescan, FolderScan, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
     InterfaceError, LabelChanges, Library, LibraryCategory, LibraryError, LibraryFilter,
     LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView,
-    LocalDay, MissingFolder, OpenedBook, ProbedFormat, ProjectLink, ReadMark, ReadingWeek,
-    ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
-    SeriesId, SeriesLabels, SeriesOverview, SeriesPage, SpellingSuggestion, UtcOffset,
+    LocalDay, MissingFolder, OpenedBook, ProbedFormat, ProjectLink, ReadMark, ReadingSummary,
+    ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
+    SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, SpellingSuggestion,
+    UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -82,6 +83,7 @@ macro_rules! app_commands {
             history_series,
             reading_time_between,
             book_read_time,
+            reading_summary,
             orient_screen,
             change_full_screen,
             library_listing,
@@ -689,6 +691,15 @@ async fn history_series(library: State<'_, Library>) -> Result<Vec<HistorySeries
 #[specta::specta]
 async fn book_read_time(library: State<'_, Library>, id: BookId) -> Result<u32, IpcError> {
     Ok(library.book_read_time(id).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn reading_summary(
+    library: State<'_, Library>,
+    id: BookId,
+) -> Result<Option<ReadingSummary>, IpcError> {
+    Ok(library.reading_summary(id).await?)
 }
 
 #[tauri::command]
