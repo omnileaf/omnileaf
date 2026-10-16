@@ -14,7 +14,7 @@
     <FolderOpen class="block-ready-icon inline-ready-icon" />
   </span>
 {:else}
-  <span aria-hidden="true" class="relative me-ready-leaf-reach inline-flex">
+  <span aria-hidden="true" class="relative inline-flex pe-ready-leaf-reach">
     <span
       class="flex items-center justify-center rounded-full bg-accent text-on-accent block-app-icon inline-app-icon"
     >
@@ -31,7 +31,7 @@
       </svg>
     </span>
     <Leaf
-      class="absolute -inset-e-ready-leaf-reach -inset-bs-ready-leaf-lift text-accent block-ready-leaf inline-ready-leaf"
+      class="absolute inset-e-none -inset-bs-ready-leaf-lift text-accent block-ready-leaf inline-ready-leaf"
     />
   </span>
 {/if}

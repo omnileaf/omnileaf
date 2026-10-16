@@ -1099,6 +1099,14 @@ test.describe("once folders are linked", () => {
     device.series.set(SAMPLE_COMICS.id, 3).set(MANGA.id, 32);
   });
 
+  test("sets the leaf beside the check badge without running past it", async ({
+    page,
+  }) => {
+    await goTo(page, FOUND_HEADING);
+
+    expect(await sidewaysOverflow(page)).toEqual([]);
+  });
+
   test("says how many series and books it found, and in which folder", async ({
     page,
   }) => {
