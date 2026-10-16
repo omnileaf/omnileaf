@@ -228,7 +228,6 @@ export const TOKEN_THEME = {
     "history-cover",
     "history-row",
     "history-row-wide",
-    "history-sessions-cover",
     "icon-badge",
     "icon-gap",
     "icon-tile",

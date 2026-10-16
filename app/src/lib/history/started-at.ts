@@ -26,10 +26,3 @@ export function startedAtFormats(
 export function onThatClock(entry: StartedAt): number {
   return entry.startedAtMs + entry.utcOffsetMinutes * MS_PER_MINUTE;
 }
-
-export function startedAtTime(
-  entry: StartedAt,
-  formats: StartedAtFormats,
-): string {
-  return formats.time.format(onThatClock(entry));
-}
