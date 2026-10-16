@@ -12,9 +12,9 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getScheduledRescansSetting } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import SettingSelect from "#lib/settings/SettingSelect.svelte";
   import SettingsEntries from "#lib/settings/SettingsEntries.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
-  import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import {
     getUndoSetting,
     UNDO_WINDOWS_SECONDS,
@@ -45,7 +45,6 @@
         });
   });
   const undoHeadingId = $props.id();
-  const keepLabelId = `${undoHeadingId}-keep`;
   const isCheckingFolders = $derived(
     scheduledRescans.isOnFor(data.appInfo.platform),
   );
@@ -78,33 +77,22 @@
         undo.choose({ isOffered: !undo.rules.isOffered });
       }}
     />
-    <div
-      class="flex flex-col gap-sm px-lg py-md desktop:grid desktop:grid-cols-setting-grid desktop:items-center desktop:gap-x-md desktop:py-setting-grid-pad desktop:min-block-setting-grid-row"
-    >
-      <span id={keepLabelId} class="font-medium">{m.advanced_keep_undo()}</span>
-      <NativeSelect
-        aria-labelledby={keepLabelId}
-        value={String(undo.rules.windowSeconds)}
-        class="desktop:inline-setting-control"
-        fieldClass="touch:text-body touch:block-touch-target"
-        onchange={({
-          currentTarget: { value },
-        }: Event & { currentTarget: HTMLSelectElement }) => {
-          const chosen = UNDO_WINDOWS_SECONDS.find(
-            (seconds) => String(seconds) === value,
-          );
-          if (chosen !== undefined) {
-            undo.choose({ windowSeconds: chosen });
-          }
-        }}
-      >
-        {#each UNDO_WINDOWS_SECONDS as seconds (seconds)}
-          <option value={String(seconds)}
-            >{m.advanced_undo_seconds({ count: seconds })}</option
-          >
-        {/each}
-      </NativeSelect>
-    </div>
+    <SettingSelect
+      label={m.advanced_keep_undo()}
+      options={UNDO_WINDOWS_SECONDS.map((seconds) => ({
+        value: String(seconds),
+        label: m.advanced_undo_seconds({ count: seconds }),
+      }))}
+      value={String(undo.rules.windowSeconds)}
+      onChoose={(value) => {
+        const chosen = UNDO_WINDOWS_SECONDS.find(
+          (seconds) => String(seconds) === value,
+        );
+        if (chosen !== undefined) {
+          undo.choose({ windowSeconds: chosen });
+        }
+      }}
+    />
     <SettingSwitch
       label={m.advanced_hold_undo()}
       isOn={undo.rules.holdsWhileHoveredOrFocused}

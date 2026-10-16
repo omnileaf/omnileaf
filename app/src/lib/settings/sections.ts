@@ -134,10 +134,3 @@ export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
 
 export const SETTINGS_SECTIONS: readonly SettingsSection[] =
   SETTINGS_GROUPS.flatMap(({ sections }) => sections);
-
-export function isListedBeside(route: SettingsPage): boolean {
-  return (
-    route === "/(app)/settings" ||
-    SETTINGS_SECTIONS.some((section) => section.route === route)
-  );
-}
