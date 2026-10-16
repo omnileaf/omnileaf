@@ -5,7 +5,7 @@ import { xpath } from "./webdriver.ts";
 
 const VIEW_OPTIONS_BUTTON = xpath("//button[@aria-label='View options']");
 const OPEN_SHEET = xpath(
-  "//*[@aria-modal='true'][@data-state='open']//h2[normalize-space()='View']",
+  "//*[@aria-modal='true'][@data-state='open']//h2[normalize-space()='View options']",
 );
 const DONE = xpath(
   "//*[@aria-modal='true'][@data-state='open']//button[normalize-space()='Done']",
