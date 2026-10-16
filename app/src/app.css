@@ -574,6 +574,7 @@
   --spacing-reader-track-inset-wide: 0.625rem;
   --spacing-reader-thumb: 1.375rem;
   --spacing-reader-thumb-wide: 1.25rem;
+  --spacing-reader-thumb-touch: 1.5rem;
   --spacing-reader-spinner: 2.5rem;
   --spacing-reader-book-step: 12rem;
   --spacing-reader-thumbnail: 2.875rem;
@@ -1342,7 +1343,15 @@
 }
 
 @utility reader-progress-thumb {
-  inset-inline-start: calc(var(--progress) * (100% - var(--spacing-lg)));
+  --reader-thumb: var(--spacing-lg);
+  inset-inline-start: calc(var(--progress) * (100% - var(--reader-thumb)));
+  block-size: var(--reader-thumb);
+  inline-size: var(--reader-thumb);
+  @variant ios {
+    @variant expanded {
+      --reader-thumb: var(--spacing-reader-thumb-touch);
+    }
+  }
 }
 
 @utility side-panel-shadow {
