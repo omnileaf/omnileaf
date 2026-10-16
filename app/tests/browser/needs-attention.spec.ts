@@ -235,7 +235,7 @@ test.describe("on a phone", () => {
   test("leaves a row's words room beside a long fix at the largest text", async ({
     page,
   }) => {
-    missing = [{ ...COMICS, problem: "lostAccess" }];
+    missing = [{ ...COMICS, problem: { kind: "lostAccess" } }];
     await setTextScale(page, LARGEST_TEXT_SCALE);
     await openLibraryOnAPhone(page);
     await dot(page).click();
