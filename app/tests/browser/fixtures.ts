@@ -127,6 +127,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   readingWeek: () => NOTHING_READ_THIS_WEEK,
   readingTimeBetween: () => 0,
   bookReadTime: () => 0,
+  readingSummary: () => null,
   bookSessions: () => null,
   historySeries: () => [],
   libraryListing: () => NEW_LIBRARY_LISTING,
