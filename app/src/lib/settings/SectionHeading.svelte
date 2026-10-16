@@ -12,7 +12,7 @@
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { isListedBeside, type ParentPage } from "./sections";
+  import type { ParentPage } from "./sections";
 
   let {
     title,
@@ -79,7 +79,7 @@
         aria-label={backLabel}
         class={[
           "flex shrink-0 items-center gap-2xs transition-control hover:bg-hover active:bg-pressed",
-          isListedBeside(parent.route) && "two-pane:hidden",
+          !isNested && "two-pane:hidden",
           "desktop:two-pane:hidden",
           "desktop:-ms-xs desktop:rounded-row desktop:ps-2xs desktop:pe-sm desktop:text-label desktop:font-semibold desktop:text-accent desktop:block-2xl",
           "ios:max-medium:-ms-xs ios:max-medium:rounded-row ios:max-medium:px-sm ios:max-medium:text-back-link ios:max-medium:font-medium ios:max-medium:text-accent ios:max-medium:min-block-touch-target",
