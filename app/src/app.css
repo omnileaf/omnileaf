@@ -578,6 +578,7 @@
   --spacing-reader-book-step: 12rem;
   --spacing-reader-thumbnail: 2.875rem;
   --spacing-reader-thumbnail-wide: 3.25rem;
+  --spacing-reader-strip: 45rem;
   --spacing-reader-filmstrip-gap: 0.625rem;
   --spacing-reader-filmstrip-gap-wide: 0.75rem;
   --spacing-history-row: 4.875rem;
@@ -1163,6 +1164,10 @@
 
 @utility grid-cols-setting-row {
   grid-template-columns: 6.75rem minmax(0, 1fr);
+}
+
+@utility grid-strip-zones {
+  grid-template-rows: 3fr 4fr 3fr;
 }
 
 @utility grid-l-zones {
