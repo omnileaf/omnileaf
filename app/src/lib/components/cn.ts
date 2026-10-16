@@ -340,6 +340,7 @@ export const TOKEN_THEME = {
     "reader-spinner",
     "reader-strip",
     "reader-thumb",
+    "reader-thumb-touch",
     "reader-thumb-wide",
     "reader-thumbnail",
     "reader-thumbnail-wide",
