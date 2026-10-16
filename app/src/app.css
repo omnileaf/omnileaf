@@ -379,6 +379,7 @@
   --spacing-sidebar-icon: 1rem;
   --spacing-sidebar-desktop: 16rem;
   --spacing-sidebar-hidden: 3.5rem;
+  --spacing-windows-indicator: 0.1875rem;
   --spacing-toolbar: 3.5rem;
   --spacing-toolbar-rule: 1rem;
   --spacing-settings-icon: 1.125rem;
@@ -883,6 +884,8 @@
   --radius-android-md: var(--radius-android-md);
   --radius-android-lg: var(--radius-android-lg);
   --radius-android-xl: var(--radius-android-xl);
+  --color-windows-stroke: var(--windows-stroke);
+  --radius-windows-layer: var(--radius-windows-overlay);
   --font-ui: var(--platform-font);
   --shadow-menu: var(--menu-shadow);
   --radius-menu: var(--menu-radius);
