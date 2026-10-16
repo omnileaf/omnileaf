@@ -1,4 +1,4 @@
-import type { HistoryCalendar } from "#lib/history/history-days.ts";
+import type { HistoryCalendar } from "#lib/history/history-groups.ts";
 import { type LocalDay, noonUtcOf } from "#lib/history/local-date.ts";
 import { m } from "#lib/paraglide/messages.js";
 
