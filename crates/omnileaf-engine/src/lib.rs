@@ -33,6 +33,7 @@ mod library_series;
 mod library_tabs;
 mod library_view;
 mod linux_share;
+mod macos_share;
 mod missing_folder;
 mod moved_home;
 mod network_share;

@@ -19,8 +19,8 @@ use std::{
 
 use books::write_book;
 use omnileaf_engine::{
-    FolderProblem, LibraryListing, NetworkShare, RescanOutcome, ShareLookup, ShareSignIn,
-    UnreachableShare,
+    FolderProblem, LibraryListing, NetworkShare, RescanOutcome, ShareAddress, ShareLookup,
+    ShareSignIn, UnreachableShare,
 };
 use scanned::Scanned;
 use support::ScratchFolder;
@@ -170,6 +170,92 @@ async fn finds_the_unreachable_share_of_a_folder_to_sign_in_to() {
             sign_in: ShareSignIn::MountedBySystem,
         })
     );
+}
+
+fn on_a_samba_share(folder: &Path) -> String {
+    format!(
+        "//kai@nas.test/manga on {} (smbfs, nodev, nosuid, mounted by kai)\n",
+        folder.display()
+    )
+}
+
+#[tokio::test]
+async fn signs_in_to_the_share_a_folder_was_on_once_it_goes_missing() {
+    let shelf = Shelf::new("missing-remembered-share").await;
+    let library = &shelf.scanned.library;
+    library
+        .remember_shares_in(on_a_samba_share(&shelf.shelf.path().join("Comics")))
+        .await
+        .unwrap();
+
+    shelf.move_away().await;
+
+    let missing = library.missing_folders(&NoShares).await.unwrap();
+    let share = library
+        .unreachable_share(shelf.scanned.id, &NoShares)
+        .await
+        .unwrap();
+    assert_eq!(
+        (
+            missing
+                .into_iter()
+                .map(|folder| folder.problem)
+                .collect::<Vec<_>>(),
+            share.map(|share| share.sign_in)
+        ),
+        (
+            vec![FolderProblem::NeedsSignIn {
+                share: NetworkShare {
+                    server: "nas.test".to_owned(),
+                    name: "nas.test/manga".to_owned(),
+                }
+            }],
+            Some(ShareSignIn::System(ShareAddress::new(
+                "smb://kai@nas.test/manga".to_owned()
+            )))
+        )
+    );
+}
+
+#[tokio::test]
+async fn forgets_the_share_of_a_folder_no_longer_mounted_from_one() {
+    let shelf = Shelf::new("missing-forgotten-share").await;
+    let library = &shelf.scanned.library;
+    library
+        .remember_shares_in(on_a_samba_share(&shelf.shelf.path().join("Comics")))
+        .await
+        .unwrap();
+    library.remember_shares_in(String::new()).await.unwrap();
+
+    shelf.move_away().await;
+
+    let missing = library.missing_folders(&NoShares).await.unwrap();
+    assert_eq!(
+        missing
+            .into_iter()
+            .map(|folder| folder.problem)
+            .collect::<Vec<_>>(),
+        [FolderProblem::Missing]
+    );
+}
+
+#[tokio::test]
+async fn keeps_the_share_of_a_folder_out_of_reach_while_remembering() {
+    let shelf = Shelf::new("missing-kept-share").await;
+    let library = &shelf.scanned.library;
+    library
+        .remember_shares_in(on_a_samba_share(&shelf.shelf.path().join("Comics")))
+        .await
+        .unwrap();
+    shelf.move_away().await;
+
+    library.remember_shares_in(String::new()).await.unwrap();
+
+    let share = library
+        .unreachable_share(shelf.scanned.id, &NoShares)
+        .await
+        .unwrap();
+    assert!(share.is_some());
 }
 
 #[tokio::test]
