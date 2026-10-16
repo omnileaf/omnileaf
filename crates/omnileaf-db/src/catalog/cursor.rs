@@ -16,6 +16,7 @@ const DESCENDING_BIT: u8 = 0b01;
 const UNREAD_BIT: u8 = 0b10;
 const SESSION_TAG: u8 = 5;
 const LAST_READ_TAG: u8 = 6;
+const LAST_UPDATED_TAG: u8 = 7;
 const ID_LENGTH: usize = 16;
 const MILLIS_LENGTH: usize = size_of::<i64>();
 const HEX_RADIX: u32 = 16;
@@ -51,6 +52,10 @@ pub(crate) enum Position {
     Session {
         started_at_ms: i64,
         id: i64,
+    },
+    LastUpdated {
+        updated_at_ms: i64,
+        id: SeriesId,
     },
 }
 
@@ -91,6 +96,12 @@ impl Position {
                 &[SESSION_TAG][..],
                 &started_at_ms.to_be_bytes(),
                 &id.to_be_bytes(),
+            ]
+            .concat(),
+            Self::LastUpdated { updated_at_ms, id } => [
+                &[LAST_UPDATED_TAG][..],
+                &updated_at_ms.to_be_bytes(),
+                id.as_bytes(),
             ]
             .concat(),
         }
@@ -141,6 +152,13 @@ impl Position {
                 Some(Self::Session {
                     started_at_ms: i64::from_be_bytes(*started_at_ms),
                     id: i64::from_be_bytes(id.try_into().ok()?),
+                })
+            }
+            LAST_UPDATED_TAG => {
+                let (updated_at_ms, id) = rest.split_first_chunk::<MILLIS_LENGTH>()?;
+                Some(Self::LastUpdated {
+                    updated_at_ms: i64::from_be_bytes(*updated_at_ms),
+                    id: SeriesId::try_from(id).ok()?,
                 })
             }
             _ => None,
