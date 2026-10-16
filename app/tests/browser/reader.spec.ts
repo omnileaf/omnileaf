@@ -233,6 +233,41 @@ function nearbyPages(page: Page): Locator {
   return page.getByRole("list", { name: "Nearby pages" });
 }
 
+const PHONE_PREVIEWS = { before: 1, after: 4 };
+const WIDE_PREVIEWS = { before: 3, after: 7 };
+
+function pagesAround(
+  number: number,
+  { before, after }: { before: number; after: number },
+): string[] {
+  return Array.from({ length: before + after + 1 }, (_, offset) =>
+    String(number - before + offset),
+  );
+}
+
+async function dragSliderTo(page: Page, across: number): Promise<void> {
+  const track = await boxOf(slider(page));
+  const y = track.y + track.height / 2;
+  await page.mouse.move(track.x + track.width / 2, y);
+  await page.mouse.down();
+  await page.mouse.move(track.x + track.width * across, y, { steps: 4 });
+}
+
+test("fills the previews from the first page while the slider is dragged to the start", async ({
+  page,
+}) => {
+  await openBook(page);
+  const isWide = viewportOf(page).width >= EXPANDED_MIN_WIDTH;
+
+  await dragSliderTo(page, 0);
+
+  const { before, after } = isWide ? WIDE_PREVIEWS : PHONE_PREVIEWS;
+  await expect(
+    nearbyPages(page).getByRole("listitem").filter({ visible: true }),
+  ).toHaveText(pagesAround(1 + before, { before, after }));
+  await page.mouse.up();
+});
+
 test("shows the pages near the one dragged to while the slider is dragged", async ({
   page,
 }) => {
@@ -246,8 +281,12 @@ test("shows the pages near the one dragged to while the slider is dragged", asyn
   await page.mouse.move(track.x + track.width / 2, y, { steps: 4 });
 
   const shownNumber = Number(await slider(page).inputValue());
-  const near = nearbyPages(page).getByRole("listitem");
-  await expect(near).toHaveCount(isWide ? 7 : 5);
+  const near = nearbyPages(page)
+    .getByRole("listitem")
+    .filter({ visible: true });
+  await expect(near).toHaveText(
+    pagesAround(shownNumber, isWide ? WIDE_PREVIEWS : PHONE_PREVIEWS),
+  );
   await expect(near.and(page.locator('[aria-current="page"]'))).toContainText(
     String(shownNumber),
   );
@@ -810,6 +849,25 @@ test.describe("the reading direction", () => {
     await swipe(page, SWIPE_PX);
 
     await expectOnPage(page, 4);
+  });
+
+  test("shows the pages ahead to the left of the one dragged to in a book read right to left", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await chooseDirection(page, "Right to left");
+
+    await dragSliderTo(page, 0.5);
+
+    const shownNumber = Number(await slider(page).inputValue());
+    const shown = await boxOf(
+      nearbyPages(page).getByText(String(shownNumber), { exact: true }),
+    );
+    const ahead = await boxOf(
+      nearbyPages(page).getByText(String(shownNumber + 1), { exact: true }),
+    );
+    expect(ahead.x).toBeLessThan(shown.x);
+    await page.mouse.up();
   });
 
   test("fills the slider from the right in a book read right to left", async ({

@@ -3,20 +3,31 @@
   import { omniUrl } from "#lib/omni/omni-url.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  const REACH = 3;
-  const PHONE_REACH = 2;
+  import { previewWindow } from "./preview-window.ts";
+
+  const WIDE_REACH = { before: 3, after: 7 };
+  const PHONE_REACH = { before: 1, after: 4 };
   const PORTRAIT_RATIO = "2 / 3";
 
   let {
     pages,
     shown,
     isBlank,
-  }: { pages: readonly BookPage[]; shown: number; isBlank: boolean } = $props();
+    isReversed,
+  }: {
+    pages: readonly BookPage[];
+    shown: number;
+    isBlank: boolean;
+    isReversed: boolean;
+  } = $props();
 
+  const wide = $derived(previewWindow(shown, pages.length, WIDE_REACH));
+  const phone = $derived(previewWindow(shown, pages.length, PHONE_REACH));
   const near = $derived(
-    Array.from({ length: REACH * 2 + 1 }, (_, offset) => shown - REACH + offset)
-      .filter((index) => index >= 0 && index < pages.length)
-      .map((index) => ({ index, page: pages[index] })),
+    Array.from(
+      { length: wide.last - wide.first + 1 },
+      (_, offset) => wide.first + offset,
+    ).map((index) => ({ index, page: pages[index] })),
   );
 
   function ratioOf(page: BookPage | undefined): string {
@@ -27,7 +38,7 @@
 </script>
 
 <ol
-  dir="ltr"
+  dir={isReversed ? "rtl" : "ltr"}
   aria-label={m.reader_nearby_pages()}
   class="flex items-end justify-center gap-reader-filmstrip-gap pbs-xs pbe-sm expanded:gap-reader-filmstrip-gap-wide"
 >
@@ -36,9 +47,9 @@
     <li
       aria-current={isShown ? "page" : undefined}
       class={[
-        "flex flex-col items-center gap-xs text-reader-thumbnail",
+        "flex flex-1 flex-col items-center gap-xs text-reader-thumbnail max-inline-reader-thumbnail-wide min-inline-none",
         isShown ? "font-bold text-on-reader" : "font-medium text-reader-muted",
-        Math.abs(index - shown) > PHONE_REACH && "max-expanded:hidden",
+        (index < phone.first || index > phone.last) && "max-expanded:hidden",
       ]}
     >
       {#if page !== undefined && isBlank}
@@ -46,7 +57,7 @@
           aria-hidden="true"
           style:aspect-ratio={ratioOf(page)}
           class={[
-            "rounded-reader-thumbnail bg-reader-grey inline-reader-thumbnail expanded:inline-reader-thumbnail-wide",
+            "rounded-reader-thumbnail bg-reader-grey inline-full",
             isShown
               ? "outline-2 outline-offset-2 outline-reader-accent"
               : "opacity-70",
@@ -60,7 +71,7 @@
           draggable="false"
           style:aspect-ratio={ratioOf(page)}
           class={[
-            "rounded-reader-thumbnail bg-reader-page object-cover inline-reader-thumbnail expanded:inline-reader-thumbnail-wide",
+            "rounded-reader-thumbnail bg-reader-page object-cover inline-full",
             isShown
               ? "outline-2 outline-offset-2 outline-reader-accent"
               : "opacity-70",
