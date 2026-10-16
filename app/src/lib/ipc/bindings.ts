@@ -551,6 +551,8 @@ export type RelatedSeries = {
 	bookCount: number,
 	readCount: number,
 	reason: RelatedReason,
+	/**  Counts as 18+, which a library that reads no age ratings and keeps no marks never does. */
+	isAdult: boolean,
 };
 
 export type RescanOutcome = {

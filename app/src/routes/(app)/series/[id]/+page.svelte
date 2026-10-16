@@ -6,6 +6,7 @@
   import { goto, invalidate } from "$app/navigation";
   import { resolve } from "$app/paths";
   import {
+    type AdultTreatment,
     commands,
     type Platform,
     type ReadMark,
@@ -100,6 +101,7 @@
   let isLabelling = $state(false);
   const isDesktop = $derived(DESKTOPS.includes(data.appInfo.platform));
   let editedSeries = $state<EditedSeries | undefined>();
+  let adultTreatment: AdultTreatment | undefined = $state();
   let barHeight = $state(0);
   let isTitleUnderBar = $state(false);
 
@@ -215,7 +217,17 @@
     return undefined;
   });
 
+  async function readAdultTreatment(): Promise<void> {
+    const read = await commands.libraryAdultContent();
+    if (read.status === "error") {
+      reportError(read.error);
+      return;
+    }
+    adultTreatment = read.data.treatment;
+  }
+
   onMount(() => {
+    void readAdultTreatment();
     void loadDetailEditSupport();
     void loadLabelSupport();
     return listenForLibraryChanges(() => {
@@ -382,10 +394,13 @@
             {/key}
           {/if}
         {/if}
-        <RelatedSeries
-          related={found.overview.related}
-          usesStandIns={screenshotMode.isOn}
-        />
+        {#if adultTreatment !== undefined}
+          <RelatedSeries
+            related={found.overview.related}
+            usesStandIns={screenshotMode.isOn}
+            {adultTreatment}
+          />
+        {/if}
       </div>
     </div>
   {:else if shown === undefined}
