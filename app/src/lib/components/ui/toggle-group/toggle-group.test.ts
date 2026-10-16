@@ -4,6 +4,8 @@ import { render } from "vitest-browser-svelte";
 
 import "../../../../app.css";
 
+import { resolvedColour } from "../../../../../tests/components/resolved-colour";
+
 import type { Platform } from "#lib/ipc/bindings.ts";
 
 import ToggleGroupHarness from "./ToggleGroupHarness.svelte";
@@ -48,24 +50,12 @@ const LOOKS: readonly SegmentLook[] = [
   },
 ];
 
-function resolved(
-  token: string,
-  property: "color" | "backgroundColor",
-): string {
-  const probe = document.createElement("span");
-  probe.style[property] = `var(${token})`;
-  document.body.append(probe);
-  const colour = getComputedStyle(probe)[property];
-  probe.remove();
-  return colour;
-}
-
 function colourOf(token: string): string {
-  return resolved(token, "backgroundColor");
+  return resolvedColour(token, "backgroundColor");
 }
 
 function inkOf(token: string): string {
-  return resolved(token, "color");
+  return resolvedColour(token, "color");
 }
 
 afterEach(() => {
