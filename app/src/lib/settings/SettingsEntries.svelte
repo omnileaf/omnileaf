@@ -7,7 +7,7 @@
     readonly route: SettingsPage;
     readonly icon: Glyph;
     readonly label: string;
-    readonly summary: string;
+    readonly summary?: string;
   }
 </script>
 
@@ -30,9 +30,9 @@
       <a
         href={resolve(entry.route)}
         class={[
-          "flex items-center gap-md py-xs ps-lg pe-md transition-control min-block-phone-row hover:bg-hover active:bg-pressed",
+          "group flex items-center gap-md py-xs ps-lg pe-md transition-control min-block-phone-row hover:bg-hover active:bg-pressed",
           "touch:medium:py-none touch:medium:ps-list-row touch:medium:min-block-touch-target",
-          "desktop:py-none desktop:ps-list-row desktop:min-block-settings-row",
+          "desktop:py-md desktop:ps-list-row desktop:min-block-settings-row",
         ]}
       >
         <span
@@ -41,9 +41,18 @@
         >
           <entry.icon size={ICON_SIZE} />
         </span>
-        <span class="flex flex-1 flex-col gap-2xs min-inline-none">
-          <span class="font-semibold desktop:text-callout">{entry.label}</span>
-          <span class="text-detail text-muted">{entry.summary}</span>
+        <span
+          class="flex flex-1 flex-col gap-2xs min-inline-none desktop:gap-xs"
+        >
+          <span class="font-semibold desktop:text-label desktop:font-medium"
+            >{entry.label}</span
+          >
+          {#if entry.summary !== undefined}
+            <span
+              class="text-detail text-muted group-hover:text-foreground desktop:text-label"
+              >{entry.summary}</span
+            >
+          {/if}
         </span>
         <ChevronRight
           size={CHEVRON_SIZE}
