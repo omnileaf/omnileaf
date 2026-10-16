@@ -8,9 +8,8 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
-  import type { AddFolder } from "./add-folder";
   import AddFolderButton from "./AddFolderButton.svelte";
-  import { FolderAdding, type MayPick } from "./folder-adding.svelte";
+  import type { FolderAdding } from "./folder-adding.svelte";
   import { folderLocation } from "./folder-location";
   import { folderTitle } from "./folder-title";
   import FolderNotice from "./FolderNotice.svelte";
@@ -22,7 +21,7 @@
   let {
     platform,
     folders,
-    addFolder,
+    adding,
     notices,
     rowAction,
     rowDetail,
@@ -32,12 +31,11 @@
     usesStandIns,
     hint,
     addPlacement = "card",
-    mayPick,
     onShowBooks,
   }: {
     platform: Platform;
     folders: LibraryFolders;
-    addFolder: AddFolder;
+    adding: FolderAdding;
     notices: Notices;
     rowAction?: Snippet<[LibraryFolder]>;
     rowDetail?: Snippet<[LibraryFolder]>;
@@ -48,17 +46,7 @@
     hint?: Snippet | undefined;
     onShowBooks?: (() => void) | undefined;
     addPlacement?: "card" | "below-list" | "none";
-    mayPick?: MayPick;
   } = $props();
-
-  const adding = new FolderAdding(
-    (onProgress) => addFolder(onProgress),
-    () => notices,
-    () => {
-      void folders.load();
-    },
-    () => mayPick?.() ?? Promise.resolve(true),
-  );
 
   let addButton: HTMLElement | null = $state(null);
   let notRemoved: LibraryFolder | undefined = $state();

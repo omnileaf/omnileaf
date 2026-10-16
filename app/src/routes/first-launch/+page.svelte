@@ -9,6 +9,8 @@
   import { deviceKindOf } from "#lib/first-launch/device.ts";
   import HomeStep from "#lib/first-launch/HomeStep.svelte";
   import LinkStep from "#lib/first-launch/LinkStep.svelte";
+  import { PickerQuestion } from "#lib/first-launch/picker-question.svelte.ts";
+  import { STEP_TOAST_ROOM } from "#lib/first-launch/StepFrame.svelte";
   import ReadyStep, {
     type FinishOutcome,
   } from "#lib/first-launch/ReadyStep.svelte";
@@ -27,6 +29,7 @@
   import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
   import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
+  import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
   import { getNotices } from "#lib/notices/notices.ts";
@@ -49,6 +52,18 @@
     commands.libraryFolders,
     commands.removeLibraryFolder,
     commands.libraryFolderBookCount,
+  );
+
+  const pickerQuestion = new PickerQuestion(
+    () => data.appInfo.platform === "android",
+  );
+  const adding = new FolderAdding(
+    addFolderWithProgress,
+    () => notices,
+    () => {
+      void folders.load();
+    },
+    () => pickerQuestion.ask(),
   );
 
   let adultTreatment: AdultTreatment = $state("blur");
@@ -169,7 +184,8 @@
         <LinkStep
           platform={data.appInfo.platform}
           {folders}
-          addFolder={addFolderWithProgress}
+          {adding}
+          {pickerQuestion}
           {notices}
           onBack={back}
           onNext={next}
@@ -190,7 +206,7 @@
         <ReadyStep
           platform={data.appInfo.platform}
           {folders}
-          addFolder={addFolderWithProgress}
+          {adding}
           {notices}
           {countSeriesIn}
           {shelfSeries}
@@ -200,6 +216,11 @@
     </main>
   </div>
 </div>
-<div class="fixed inset-x-none inset-be-safe-bottom z-notice">
-  <Toasts {notices} platform={data.appInfo.platform} theme={theme.resolved} />
+<div class="fixed inset-x-none inset-be-none z-notice">
+  <Toasts
+    {notices}
+    platform={data.appInfo.platform}
+    theme={theme.resolved}
+    bottom="calc(var({STEP_TOAST_ROOM}, var(--spacing-safe-bottom)) + var(--spacing-md))"
+  />
 </div>

@@ -9,6 +9,7 @@
   import type { AddFolder } from "./add-folder";
   import EmptiedFolderCard from "./EmptiedFolderCard.svelte";
   import { folderLocation } from "./folder-location";
+  import { FolderAdding } from "./folder-adding.svelte";
   import { folderTitle } from "./folder-title";
   import HomeFolder from "./HomeFolder.svelte";
   import {
@@ -52,6 +53,13 @@
     (after) => listFolders(after),
     (id) => removeFolder(id),
     (id) => countFolderBooks(id),
+  );
+  const adding = new FolderAdding(
+    (onProgress) => addFolder(onProgress),
+    () => notices,
+    () => {
+      void folders.load();
+    },
   );
   const rescans = new Rescans(
     (id, onProgress) => rescanFolder(id, onProgress),
@@ -155,7 +163,7 @@
     bind:this={linkedFolders}
     {platform}
     {folders}
-    {addFolder}
+    {adding}
     {notices}
     {usesStandIns}
     {onShowBooks}
