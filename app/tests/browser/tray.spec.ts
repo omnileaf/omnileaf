@@ -20,6 +20,7 @@ import {
 const TURNED_ON_AT = new Date("2026-10-03T21:14:00Z");
 const STARTED_AT_MS = 1_790_000_000_000;
 const TRAY_ITEM_CHOSEN = "tray-item-chosen";
+const READING_SAVED = "reading-saved";
 
 const LAST_BOOK = {
   book: BOOK_ID,
@@ -156,6 +157,32 @@ test.describe("with nothing left unfinished", () => {
 
   test("greys Continue reading out", async ({ page }) => {
     await openLibrary(page);
+
+    await expect.poll(lastShownMenu).toMatchObject({
+      hasBookToContinue: false,
+    });
+  });
+});
+
+test.describe("when the last unfinished book is finished", () => {
+  const unfinished: HistoryEntry[] = [];
+  test.use({ backend: backendOn("linux", unfinished) });
+
+  test.beforeEach(() => {
+    unfinished.splice(0, unfinished.length, LAST_BOOK);
+  });
+
+  test("greys Continue reading out", async ({ page }) => {
+    await openLibrary(page);
+    await expect.poll(lastShownMenu).toMatchObject({
+      hasBookToContinue: true,
+    });
+
+    unfinished.length = 0;
+    await emitFakeEvent(page, READING_SAVED, {
+      book: LAST_BOOK.book,
+      series: LAST_BOOK.series,
+    });
 
     await expect.poll(lastShownMenu).toMatchObject({
       hasBookToContinue: false,
