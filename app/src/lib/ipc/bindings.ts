@@ -596,7 +596,6 @@ export type SavedProblemReport = {
 	file: string,
 };
 
-export type ScanProgress = { stage: "finding"; found: number } | { stage: "reading"; scanned: number; total: number };
 export type ScanProgress = { stage: "adding"; name: string; location: string } | { stage: "finding"; found: number } | { stage: "reading"; scanned: number; total: number };
 
 export type ScreenOrientation = "followDevice" | 
