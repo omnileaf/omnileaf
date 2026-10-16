@@ -80,7 +80,7 @@
     {#each PROMISES[device] as promise (promise.title)}
       <li class="flex items-center gap-promise-gap">
         <span
-          class="flex shrink-0 items-center justify-center rounded-control bg-accent-soft text-accent block-promise-tile inline-promise-tile"
+          class="flex shrink-0 items-center justify-center rounded-control bg-step-tint text-accent block-promise-tile inline-promise-tile"
         >
           <promise.icon size={PROMISE_ICON_SIZE} aria-hidden="true" />
         </span>

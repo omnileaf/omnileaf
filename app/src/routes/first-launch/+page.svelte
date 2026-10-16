@@ -102,7 +102,7 @@
 </script>
 
 <div
-  class="flex justify-center bg-background min-block-dvh expanded:items-start expanded:bg-backdrop expanded:p-2xl"
+  class="flex justify-center bg-background min-block-dvh expanded:items-start expanded:bg-backdrop expanded:p-2xl ios:bg-ios-grouped"
 >
   <div
     bind:this={card}
