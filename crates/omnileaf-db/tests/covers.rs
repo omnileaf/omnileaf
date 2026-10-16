@@ -60,6 +60,7 @@ impl Library {
             fingerprint: fingerprint(page_crc),
             title: title.to_owned(),
             added_at_ms: ADDED_AT_MS,
+            page_count: 1,
             file: BookFile {
                 root: self.root,
                 location: location_of(title),
