@@ -12,6 +12,7 @@ export type SettingsScope = "series" | "all";
 export type TapZones = "edges" | "lShape" | "off";
 export type PageTurnStyle = "instant" | "slide";
 export type TapToScroll = "topAndBottom" | "off";
+export type AutoScrollChoice = "myPace" | "set";
 
 export interface ReaderLight {
   readonly isOn: boolean;
@@ -30,6 +31,9 @@ export interface ReaderLook {
   readonly tapZones: TapZones;
   readonly pageTurn: PageTurnStyle;
   readonly tapToScroll: TapToScroll;
+  readonly autoScrollSpeed: AutoScrollChoice;
+  readonly pagesPerMinute: number;
+  readonly pausesAtEnd: boolean;
 }
 
 export const PAGE_LAYOUTS: readonly PageLayout[] = ["automatic", "one", "two"];
@@ -42,6 +46,11 @@ export const READER_BACKGROUNDS: readonly ReaderBackground[] = [
 export const TAP_ZONES: readonly TapZones[] = ["edges", "lShape", "off"];
 export const PAGE_TURN_STYLES: readonly PageTurnStyle[] = ["instant", "slide"];
 export const TAP_TO_SCROLL: readonly TapToScroll[] = ["topAndBottom", "off"];
+export const AUTO_SCROLL_CHOICES: readonly AutoScrollChoice[] = [
+  "myPace",
+  "set",
+];
+const PAGES_PER_MINUTE = { lowest: 0.5, highest: 10 };
 export const CONTROLS_LOOKS: readonly ReaderControlsLook[] = [
   "dark",
   "matchApp",
@@ -58,6 +67,9 @@ export const DEFAULT_LOOK: ReaderLook = {
   tapZones: "edges",
   pageTurn: "instant",
   tapToScroll: "topAndBottom",
+  autoScrollSpeed: "myPace",
+  pagesPerMinute: 2,
+  pausesAtEnd: true,
 };
 
 const ALL_KEY = "omnileaf.readerSettings.all";
@@ -90,6 +102,14 @@ function lightIn(value: unknown): ReaderLight | undefined {
     : undefined;
 }
 
+function pagesPerMinute(value: unknown): number | undefined {
+  return typeof value === "number" &&
+    value >= PAGES_PER_MINUTE.lowest &&
+    value <= PAGES_PER_MINUTE.highest
+    ? value
+    : undefined;
+}
+
 function flag(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
@@ -117,6 +137,9 @@ function lookIn(text: string | null): Partial<ReaderLook> {
     tapZones: oneOf(TAP_ZONES, stored.tapZones),
     pageTurn: oneOf(PAGE_TURN_STYLES, stored.pageTurn),
     tapToScroll: oneOf(TAP_TO_SCROLL, stored.tapToScroll),
+    autoScrollSpeed: oneOf(AUTO_SCROLL_CHOICES, stored.autoScrollSpeed),
+    pagesPerMinute: pagesPerMinute(stored.pagesPerMinute),
+    pausesAtEnd: flag(stored.pausesAtEnd),
   };
   return Object.fromEntries(
     Object.entries(read).filter(([, value]) => value !== undefined),
