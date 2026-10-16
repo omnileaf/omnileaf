@@ -33,7 +33,9 @@
     >
       <Folder size={ICON_SIZE} aria-hidden="true" />
     </span>
-    <h2 id={titleId} class="flex-1 font-semibold min-inline-none">{title}</h2>
+    <h2 id={titleId} class="flex-1 text-body font-semibold min-inline-none">
+      {title}
+    </h2>
   </div>
   <code
     class="mx-home-card mbe-home-card rounded-control border border-border bg-chip px-md py-home-path font-mono text-footnote wrap-anywhere whitespace-pre-wrap"
