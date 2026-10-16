@@ -1234,6 +1234,11 @@
   }
 }
 
+@utility focus-ring {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
 @utility tint-* {
   --tint: --value(--color-*);
   background-image: linear-gradient(var(--tint), var(--tint));

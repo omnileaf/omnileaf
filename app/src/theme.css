@@ -309,6 +309,9 @@
   --select-radius: var(--radius-md);
   --hover-fill: var(--accent);
   --pressed-fill: color-mix(in oklab, var(--foreground) 8%, var(--accent));
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--primary);
   --android-container-low: color-mix(
     in oklch,
     var(--foreground) 4%,
@@ -371,6 +374,8 @@
   --select-radius: var(--radius-android-xs);
   --radio-edge-on: var(--primary);
   --checkbox-off: transparent;
+  --focus-ring-width: 3px;
+  --focus-ring-color: var(--foreground);
   --hover-fill: color-mix(
     in oklab,
     currentColor var(--state-hover),
@@ -404,6 +409,9 @@
   --switch-on: var(--ios-switch-on);
   --switch-thumb: var(--ios-switch-thumb);
   --switch-thumb-on: var(--ios-switch-thumb);
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 0px;
+  --focus-ring-color: color-mix(in oklch, var(--primary) 45%, transparent);
 }
 
 [data-platform="macos"],
@@ -435,6 +443,9 @@
   --sidebar-row-height: var(--control-macos);
   --sidebar-row-radius: var(--radius-macos-control);
   --select-radius: var(--radius-macos-control);
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 0px;
+  --focus-ring-color: color-mix(in oklch, var(--primary) 50%, transparent);
 }
 
 [data-platform="windows"],
@@ -472,4 +483,6 @@
   --switch-edge-on: var(--primary);
   --switch-thumb: var(--windows-secondary-text);
   --switch-thumb-on: var(--primary-foreground);
+  --focus-ring-offset: 1px;
+  --focus-ring-color: var(--foreground);
 }
