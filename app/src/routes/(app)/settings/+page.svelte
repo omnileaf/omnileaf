@@ -2,10 +2,12 @@
   import { resolve } from "$app/paths";
   import type { ThemePreference } from "#lib/appearance/theme.ts";
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
-  import {
-    type CrashReportChoice,
-    getCrashReportSetting,
-  } from "#lib/crash-report/choice.svelte.ts";
+  import { onMount } from "svelte";
+
+  import { getOpensOnSetting } from "#lib/general/opens-on.svelte.ts";
+  import { commands } from "#lib/ipc/bindings.ts";
+  import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
+  import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import { languageName } from "#lib/language/language.ts";
   import { getBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -27,17 +29,38 @@
     light: m.theme_light,
     dark: m.theme_dark,
   } satisfies Record<ThemePreference, () => string>;
-  const PRIVACY_SUMMARIES = {
-    ask: m.privacy_summary_ask,
-    always: m.privacy_summary_always,
-    never: m.privacy_summary_never,
-  } satisfies Record<CrashReportChoice, () => string>;
+  const PLACE_NAMES = {
+    library: m.general_opens_library,
+    history: m.general_opens_history,
+    lastBook: m.general_opens_last_book,
+  } as const;
 
   let { data }: PageProps = $props();
 
   const backGoesUp = getBackGoesUp();
   const theme = getThemeSetting();
-  const crashReports = getCrashReportSetting();
+  const opensOn = getOpensOnSetting();
+  const screenshotMode = getScreenshotMode();
+  let librarySummary = $state<string | undefined>();
+
+  onMount(() => {
+    void Promise.all([
+      commands.libraryFolders(null),
+      commands.librarySeriesCount(NEW_LIBRARY_LISTING.filter),
+    ]).then(([folders, series]) => {
+      if (
+        folders.status !== "ok" ||
+        series.status !== "ok" ||
+        folders.data.folders.length === 0
+      ) {
+        return;
+      }
+      librarySummary = m.settings_summary_pair({
+        first: m.settings_folder_count({ count: folders.data.folders.length }),
+        second: m.library_series_count({ count: series.data }),
+      });
+    });
+  });
   const width = new WindowWidth();
 
   $effect(() => {
@@ -49,15 +72,22 @@
   const summaries: Partial<Record<SettingsRoute, SectionSummary>> = $derived({
     "/(app)/settings/appearance": { text: THEME_SUMMARIES[theme.preference]() },
     "/(app)/settings/privacy": {
-      text: PRIVACY_SUMMARIES[crashReports.choice](),
+      text: screenshotMode.isOn
+        ? m.settings_summary_screenshot_on()
+        : m.settings_summary_screenshot_off(),
     },
     "/(app)/settings/general": {
-      text: languageName(getLocale()),
-      lang: getLocale(),
+      text: m.settings_summary_pair({
+        first: languageName(getLocale()),
+        second: m.settings_summary_opens_on({
+          place: PLACE_NAMES[opensOn.choice](),
+        }),
+      }),
     },
-    ...(data.appInfo.isDevelopmentBuild && {
-      "/(app)/settings/advanced": { text: m.advanced_summary() },
+    ...(librarySummary !== undefined && {
+      "/(app)/settings/library": { text: librarySummary },
     }),
+    "/(app)/settings/advanced": { text: m.settings_summary_advanced() },
     "/(app)/settings/about": {
       text: m.app_version({ version: data.appInfo.version }),
     },
