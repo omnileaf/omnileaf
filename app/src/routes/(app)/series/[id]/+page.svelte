@@ -44,6 +44,8 @@
   } from "#lib/series/series-overview.ts";
   import SeriesBooks from "#lib/series/SeriesBooks.svelte";
   import SeriesAbout from "#lib/series/SeriesAbout.svelte";
+  import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
+  import type { EditedSeries } from "#lib/series/edited-series.ts";
   import SeriesBand from "#lib/series/SeriesBand.svelte";
   import SeriesBar from "#lib/series/SeriesBar.svelte";
   import {
@@ -91,6 +93,8 @@
     foundId === undefined ? undefined : seriesBookList(foundId, () => listing),
   );
 
+  let keepsDetailEdits = $state(false);
+  let editedSeries = $state<EditedSeries | undefined>();
   let barHeight = $state(0);
   let isTitleUnderBar = $state(false);
 
@@ -206,11 +210,16 @@
     return undefined;
   });
 
-  onMount(() =>
-    listenForLibraryChanges(() => {
+  onMount(() => {
+    void loadDetailEditSupport();
+    return listenForLibraryChanges(() => {
       readAgain();
-    }, reportError),
-  );
+    }, reportError);
+  });
+
+  async function loadDetailEditSupport(): Promise<void> {
+    keepsDetailEdits = await commands.keepsDetailEdits();
+  }
 
   $effect(() => {
     if (foundId === undefined) {
@@ -282,6 +291,11 @@
         {coverUrl}
         isWide={isWide.current}
         onMarkAll={markAll}
+        onEditDetails={keepsDetailEdits
+          ? () => {
+              editedSeries = { id: overview.id, title: overview.title, cover };
+            }
+          : undefined}
       />
       <div class="flex flex-1 flex-col gap-lg min-inline-none">
         {#if overview.bookCount === 0}
@@ -355,3 +369,16 @@
     </div>
   {/if}
 </div>
+
+<EditDetailsDialog
+  series={editedSeries}
+  {coverUrl}
+  onClose={() => {
+    editedSeries = undefined;
+  }}
+  onSaved={() => {
+    editedSeries = undefined;
+    readAgain();
+  }}
+  onError={reportError}
+/>

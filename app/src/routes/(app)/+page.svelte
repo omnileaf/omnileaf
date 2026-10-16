@@ -24,6 +24,7 @@
   import AddFolderButton from "#lib/library/AddFolderButton.svelte";
   import CategoryTabs from "#lib/library/CategoryTabs.svelte";
   import { coverUrl } from "#lib/library/cover-url.ts";
+  import { realLook, standInLook } from "#lib/library/series-look.ts";
   import FilterAndSort from "#lib/library/FilterAndSort.svelte";
   import LibraryMore from "#lib/library/LibraryMore.svelte";
   import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
@@ -66,6 +67,8 @@
   import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
   import { swipesBetweenTabs } from "#lib/library/tab-swipe.ts";
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
+  import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
+  import type { EditedSeries } from "#lib/series/edited-series.ts";
   import LibrarySelectionActions from "#lib/library/LibrarySelectionActions.svelte";
   import LibrarySelectionHeader from "#lib/library/LibrarySelectionHeader.svelte";
   import {
@@ -260,6 +263,15 @@
   const selection = new Selection<SeriesId>();
   setSeriesSelection(selection);
   let keepsLabels = $state(false);
+  let keepsDetailEdits = $state(false);
+  let editedSeries = $state<EditedSeries | undefined>();
+
+  function editDetails(series: LibrarySeries): void {
+    editedSeries = {
+      id: series.id,
+      ...(screenshotMode.isOn ? standInLook : realLook)(series),
+    };
+  }
   let isLabelling = $state(false);
   let labelsFrom = $state<LabelsFrom>("categories");
   let labelled = $state<SeriesId[]>([]);
@@ -431,6 +443,10 @@
     }
   }
 
+  async function loadDetailEditSupport(): Promise<void> {
+    keepsDetailEdits = await commands.keepsDetailEdits();
+  }
+
   async function loadFilterChoices(): Promise<void> {
     const offered = await commands.libraryFilterChoices();
     if (offered.status === "ok") {
@@ -494,6 +510,7 @@
     void loadTabs();
     void loadFilterChoices();
     void loadLabelSupport();
+    void loadDetailEditSupport();
     void loadMissingFolders();
     const stopListening = listenForLibraryChanges(() => {
       void loadMissingFolders();
@@ -560,6 +577,18 @@
   bind:isOpen={isLabelling}
   series={labelled}
   startsAtTags={labelsFrom === "tags"}
+  onError={reportError}
+/>
+
+<EditDetailsDialog
+  series={editedSeries}
+  {coverUrl}
+  onClose={() => {
+    editedSeries = undefined;
+  }}
+  onSaved={() => {
+    editedSeries = undefined;
+  }}
   onError={reportError}
 />
 
@@ -740,6 +769,8 @@
                   : "show",
               menu: {
                 canLabel: keepsLabels,
+                canEditDetails: keepsDetailEdits,
+                onEditDetails: editDetails,
                 onMarkRead: (one: LibrarySeries) => {
                   void markRead([one.id]);
                 },
@@ -786,6 +817,8 @@
                 : "show"}
               menu={{
                 canLabel: keepsLabels,
+                canEditDetails: keepsDetailEdits,
+                onEditDetails: editDetails,
                 onMarkRead: (one: LibrarySeries) => {
                   void markRead([one.id]);
                 },
