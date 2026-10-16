@@ -32,6 +32,7 @@
   const pageElements: HTMLElement[] = [];
   let reported = -1;
   let isScrollPending = false;
+  let unscrolled = 0;
 
   function ratioOf(page: BookPage): string {
     return page.size === null
@@ -91,6 +92,24 @@
       behavior: isSmooth ? "smooth" : "instant",
     });
     return true;
+  }
+
+  /** Scrolls down by `pixels`, carrying the fraction a frame can't move over to the next, false at the end of the strip. */
+  export function scrollByPixels(pixels: number): boolean {
+    if (scroller === undefined || isAtEnd(1, scroller)) {
+      return false;
+    }
+    unscrolled += pixels;
+    const whole = Math.trunc(unscrolled);
+    if (whole > 0) {
+      scroller.scrollTop += whole;
+      unscrolled -= whole;
+    }
+    return true;
+  }
+
+  export function shownPageHeight(): number {
+    return pageElements[reported]?.offsetHeight ?? 0;
   }
 
   $effect(() => {
