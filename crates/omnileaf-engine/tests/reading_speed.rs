@@ -20,7 +20,7 @@ use std::{
 
 use omnileaf_engine::{
     Clock, Library, LibraryListing, OpenedBook, ProbedFormat, ResourceRouter, SeriesBookListing,
-    UtcOffset,
+    SeriesId, UtcOffset,
 };
 use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg};
 use support::{NOW_UNIX_MS, ScratchFolder};
@@ -86,13 +86,26 @@ impl Shelf {
         }
     }
 
-    async fn open(&self) -> OpenedBook {
+    async fn series(&self) -> SeriesId {
         let listed = self
             .library
             .series(LibraryListing::default(), None)
             .await
             .unwrap();
-        let series = listed.series.first().unwrap().id;
+        listed.series.first().unwrap().id
+    }
+
+    async fn seconds_left(&self) -> Option<u32> {
+        let series = self.series().await;
+        self.library
+            .series_overview(series)
+            .await
+            .unwrap()
+            .seconds_left
+    }
+
+    async fn open(&self) -> OpenedBook {
+        let series = self.series().await;
         let books = self
             .library
             .series_books(series, SeriesBookListing::default(), None)
@@ -153,4 +166,23 @@ async fn opens_a_book_with_the_time_a_page_took_in_the_reading_before() {
     let opened = shelf.open().await;
 
     assert_eq!(opened.seconds_per_page, Some(12));
+}
+
+#[tokio::test]
+async fn knows_no_time_left_in_a_series_before_reading_was_timed() {
+    let shelf = Shelf::with_a_book("time-left-untimed").await;
+
+    assert_eq!(shelf.seconds_left().await, None);
+}
+
+#[tokio::test]
+async fn times_the_pages_left_in_a_series_at_the_speed_learned() {
+    let shelf = Shelf::with_a_book("time-left-learned").await;
+    shelf.read_on(5, 10).await;
+    shelf.read_on(5, 20).await;
+    shelf.read_on(5, 12).await;
+
+    let seconds_left = shelf.seconds_left().await;
+
+    assert_eq!(seconds_left, Some((PAGES - 15) * 12));
 }
