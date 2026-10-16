@@ -1774,7 +1774,7 @@ test.describe("on an iPad in landscape", () => {
   }) => {
     await openBook(page);
 
-    await expect(controls(page)).toHaveText(BOOK_SERIES_TITLE);
+    await expect(controls(page)).toBeVisible();
     const sizes = await Promise.all(
       [
         controls(page),
@@ -1794,6 +1794,17 @@ test.describe("on an iPad in landscape", () => {
 
     expect(thumb.width).toBe(IOS_SLIDER_THUMB_PX);
     expect(thumb.height).toBe(IOS_SLIDER_THUMB_PX);
+  });
+
+  test("names the series once, in the breadcrumb beside a bare back arrow", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await expect(controls(page)).toHaveText("", { useInnerText: true });
+    await expect(
+      page.getByRole("navigation", { name: "Breadcrumb" }),
+    ).toContainText(BOOK_SERIES_TITLE);
   });
 });
 
