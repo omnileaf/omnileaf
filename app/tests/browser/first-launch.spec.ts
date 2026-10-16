@@ -79,6 +79,8 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
 };
 
 const HOME_HEADING = "Where your library lives";
+const LINK_HINT_ON_A_COMPUTER =
+  "Folders on this computer, external drives and network shares all work.";
 const IOS_HOME_HEADING = "Your backups and books are in Files";
 
 const STEPS = [
@@ -210,6 +212,20 @@ for (const step of [STEPS[0], STEPS[1]]) {
     expect(tracking).toBe(`${String(TITLE_TRACKING * size)}px`);
   });
 }
+
+test("ends the folders with their hint, leaving no room for a notice that isn't there", async ({
+  page,
+}) => {
+  await goTo(page, "Already have comics or books?");
+  const folders = page.getByRole("region", { name: "Folders" });
+
+  const [area, hint] = await Promise.all([
+    boxOf(folders),
+    boxOf(folders.getByText(LINK_HINT_ON_A_COMPUTER)),
+  ]);
+
+  expect(area.y + area.height).toBeCloseTo(hint.y + hint.height, 0);
+});
 
 interface ButtonShape {
   height: number;
