@@ -2118,6 +2118,7 @@
   "storage_cached_pages_size": "{size} · rebuilt when you read again",
   "storage_covers": "Covers",
   "storage_clear": "Clear",
+  "storage_clear_label": "Clear {name}",
   "storage_runs_low": "When space runs low, the oldest cached pages and covers go first. Your books and progress are never touched.",
   "settings_summary_storage": "{size} used"
 }

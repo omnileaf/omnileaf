@@ -26,7 +26,7 @@
   <Button
     type="button"
     look="outline"
-    aria-label="{m.storage_clear()} {title}"
+    aria-label={m.storage_clear_label({ name: title })}
     disabled={isClearing}
     class="shrink-0 rounded-full px-lg text-body font-medium min-block-touch-target disabled:opacity-60 desktop:rounded-shadcn-control desktop:px-md desktop:text-label desktop:min-block-pointer-button"
     onclick={onClear}
