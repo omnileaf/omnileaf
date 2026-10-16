@@ -27,7 +27,11 @@
   const SETTLING =
     "duration-slide ease-glass motion-reduce:duration-grow motion-reduce:ease-out";
 
-  let { isIos, children }: { isIos: boolean; children: Snippet } = $props();
+  let {
+    isIos,
+    isFullScreen = false,
+    children,
+  }: { isIos: boolean; isFullScreen?: boolean; children: Snippet } = $props();
 
   const language = getLanguageSetting();
   const width = new WindowWidth();
@@ -246,7 +250,9 @@
     ? undefined
     : `translateX(${String(swiping.current * swiping.towardsBack)}%)`}
   class={[
-    "order-2 flex flex-1 flex-col overflow-y-auto px-gutter py-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance",
+    "order-2 flex flex-1 flex-col overflow-y-auto",
+    !isFullScreen &&
+      "px-gutter py-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance",
     swiping !== undefined &&
       "bg-background shadow-back-swipe rtl:shadow-back-swipe-rtl",
     screens.isSettling && ["transition-transform", SETTLING],
