@@ -1,6 +1,7 @@
 import {
   type AdultContent,
   DEFAULT_LIBRARY_VIEW,
+  type DetailEdits,
   type FolderProblem,
   type Inclusion,
   type IpcErrorCode,
@@ -25,6 +26,7 @@ import { isShownBy } from "#lib/series/books-shown.ts";
 
 import {
   type SampleBook,
+  type SampleCreator,
   type SampleFile,
   type SampleReading,
   type SampleSeries,
@@ -327,6 +329,11 @@ export function sampleBackend(
     number,
     { readonly added: Set<string>; readonly removed: Set<string> }
   >();
+  const detailEdits = new Map<number, DetailEdits>();
+  const titleOf = (series: SampleSeries): string =>
+    detailEdits.get(series.number)?.title ?? series.title;
+  const peopleOf = (series: SampleSeries): readonly SampleCreator[] =>
+    detailEdits.get(series.number)?.people ?? series.creators;
 
   function categoryChangesOf(category: string) {
     const changes = categoryChanges.get(category) ?? {
@@ -348,10 +355,11 @@ export function sampleBackend(
 
   const tagsOf = (series: SampleSeries): readonly string[] => {
     const changes = tagChanges.get(series.number);
+    const fromDetails = detailEdits.get(series.number)?.tags ?? series.tags;
     return [
-      ...series.tags.filter((tag) => changes?.removed.has(tag) !== true),
+      ...fromDetails.filter((tag) => changes?.removed.has(tag) !== true),
       ...[...(changes?.added ?? [])].filter(
-        (tag) => !series.tags.includes(tag),
+        (tag) => !fromDetails.includes(tag),
       ),
     ];
   };
@@ -386,7 +394,8 @@ export function sampleBackend(
     ...NEW_LIBRARY_TABS,
   ];
   const isAdult = (series: SampleSeries): boolean =>
-    adultContent.countsAgeRatings && ADULT_SERIES.has(series.number);
+    (adultContent.countsAgeRatings && ADULT_SERIES.has(series.number)) ||
+    detailEdits.get(series.number)?.isMarkedAdult === true;
   const hidesAdult = (): boolean => adultContent.treatment === "hide";
   const missingFolder = {
     isFound: scenario.missing === "none",
@@ -428,7 +437,7 @@ export function sampleBackend(
       : 0;
 
   const ORDERS = {
-    title: (one, other) => one.title.localeCompare(other.title),
+    title: (one, other) => one.title.localeCompare(titleOf(other)),
     dateAdded: (one, other) => addedAt(one) - addedAt(other),
     lastRead: (one, other) => lastReadAt(one) - lastReadAt(other),
   } satisfies Record<
@@ -455,7 +464,7 @@ export function sampleBackend(
   function wireSeries(series: SampleSeries) {
     return {
       id: sampleSeriesId(series.number),
-      title: series.title,
+      title: titleOf(series),
       bookCount: series.books.length,
       unreadCount: series.books.filter((book) => !isRead(book)).length,
       cover: coverOf(series),
@@ -468,7 +477,7 @@ export function sampleBackend(
 
   function seriesBy(creator: string): SampleSeries[] {
     return library.filter((series) =>
-      series.creators.some(({ name }) => name === creator),
+      peopleOf(series).some(({ name }) => name === creator),
     );
   }
 
@@ -562,7 +571,7 @@ export function sampleBackend(
                 book: sampleBookId(series.number, index + 1),
                 bookTitle: book.title,
                 series: sampleSeriesId(series.number),
-                seriesTitle: series.title,
+                seriesTitle: titleOf(series),
                 position: index + 1,
                 cover: bookCoverOf(series, index + 1),
                 startedAtMs: addedAt(series),
@@ -785,6 +794,35 @@ export function sampleBackend(
           .slice(0, SUGGESTED_TAGS),
       };
     },
+    keepsDetailEdits: async () => {
+      await libraryReady();
+      return true;
+    },
+    seriesDetails: async (id) => {
+      await seriesReady();
+      const series = seriesWith(id);
+      const edits = detailEdits.get(series.number);
+      return {
+        title: { fromFile: series.title, edited: edits?.title ?? null },
+        people: {
+          fromFile: [...series.creators],
+          edited: edits?.people ?? null,
+        },
+        tags: { fromFile: [...series.tags], edited: edits?.tags ?? null },
+        summary: {
+          fromFile: series.summary ?? null,
+          edited: edits?.summary ?? null,
+        },
+        isMarkedAdult: edits?.isMarkedAdult ?? false,
+        isRatedAdult: ADULT_SERIES.has(series.number),
+      };
+    },
+    editSeriesDetails: async (id, edits) => {
+      await seriesReady();
+      detailEdits.set(seriesWith(id).number, edits);
+      events.emit("library-changed", null);
+      return null;
+    },
     labelSeries: async (series, changes) => {
       await libraryReady();
       const numbers = series.map((id) => seriesWith(id).number);
@@ -920,7 +958,7 @@ export function sampleBackend(
       await libraryReady();
       const text = search.text.trim().toLocaleLowerCase();
       const found = sorted({ ...listing, filter: search.filter }).filter(
-        (series) => series.title.toLocaleLowerCase().includes(text),
+        (series) => titleOf(series).toLocaleLowerCase().includes(text),
       );
       const page = pageOf(found, after);
       return { series: page.items.map(wireSeries), next: page.next };
@@ -933,10 +971,10 @@ export function sampleBackend(
       }
       const allowed = slipsAllowed(Array.from(typed).length);
       const titles = library.flatMap((series) => [
-        { title: series.title, chapterOf: null },
+        { title: titleOf(series), chapterOf: null },
         ...series.books.map((book) => ({
           title: book.title,
-          chapterOf: series.title,
+          chapterOf: titleOf(series),
         })),
       ]);
       let best: {
@@ -965,7 +1003,7 @@ export function sampleBackend(
       return library.filter(
         (series) =>
           passes(series, search.filter, facts) &&
-          series.title.toLocaleLowerCase().includes(text),
+          titleOf(series).toLocaleLowerCase().includes(text),
       ).length;
     },
     seriesOverview: async (id) => {
@@ -973,7 +1011,7 @@ export function sampleBackend(
       const series = seriesWith(id);
       return {
         id,
-        title: series.title,
+        title: titleOf(series),
         bookCount: booksOf(series).length,
         readCount: booksOf(series).filter(isRead).length,
         bookmarkCount: booksOf(series).filter((book) => book.isBookmarked)
@@ -982,18 +1020,19 @@ export function sampleBackend(
         folder: LIBRARY_FOLDER_NAME,
         upNext: booksOf(series).length === 0 ? null : upNextOf(series),
         format: series.format,
-        creators: series.creators.map((creator) => ({
+        creators: peopleOf(series).map((creator) => ({
           ...creator,
           seriesCount: seriesBy(creator.name).length,
         })),
-        summary: series.summary ?? null,
+        summary:
+          detailEdits.get(series.number)?.summary ?? series.summary ?? null,
         tags: [...tagsOf(series)],
         secondsLeft: secondsLeftIn(series),
         related: series.related.map(({ number, reason }) => {
           const other = seriesWith(sampleSeriesId(number));
           return {
             id: sampleSeriesId(number),
-            title: other.title,
+            title: titleOf(other),
             cover: coverOf(other),
             bookCount: other.books.length,
             readCount: other.books.filter(isRead).length,
@@ -1016,10 +1055,10 @@ export function sampleBackend(
     creatorSeries: (creator) =>
       seriesBy(creator).map((series) => ({
         id: sampleSeriesId(series.number),
-        title: series.title,
+        title: titleOf(series),
         cover: coverOf(series),
         role:
-          series.creators.find(({ name }) => name === creator)?.role ?? null,
+          peopleOf(series).find(({ name }) => name === creator)?.role ?? null,
       })),
     markBooks: (books, mark) => {
       for (const id of books) {
@@ -1070,7 +1109,7 @@ export function sampleBackend(
         id,
         title: book.title,
         series: sampleSeriesId(series.number),
-        seriesTitle: series.title,
+        seriesTitle: titleOf(series),
         pages: Array.from({ length: readablePages }, (_, page) => {
           const path = `pages/${String(series.number)}-${String(series.art)}-${String(number)}-${String(page + 1)}`;
           return {
@@ -1105,7 +1144,7 @@ export function sampleBackend(
             id,
             title: book.title,
             series: sampleSeriesId(series.number),
-            seriesTitle: series.title,
+            seriesTitle: titleOf(series),
           };
         }
       }
@@ -1188,7 +1227,7 @@ export function sampleBackend(
         .filter((series) => series.books.some(isStarted))
         .map((series) => ({
           id: sampleSeriesId(series.number),
-          title: series.title,
+          title: titleOf(series),
         })),
     libraryListing: () => listing,
     setLibraryListing: (chosen) => {
