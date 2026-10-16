@@ -17,6 +17,7 @@ const UNREAD_BIT: u8 = 0b10;
 const SESSION_TAG: u8 = 5;
 const LAST_READ_TAG: u8 = 6;
 const LAST_UPDATED_TAG: u8 = 7;
+const UNREAD_COUNT_TAG: u8 = 8;
 const ID_LENGTH: usize = 16;
 const MILLIS_LENGTH: usize = size_of::<i64>();
 const HEX_RADIX: u32 = 16;
@@ -55,6 +56,10 @@ pub(crate) enum Position {
     },
     LastUpdated {
         updated_at_ms: i64,
+        id: SeriesId,
+    },
+    UnreadCount {
+        unread_count: i64,
         id: SeriesId,
     },
 }
@@ -101,6 +106,12 @@ impl Position {
             Self::LastUpdated { updated_at_ms, id } => [
                 &[LAST_UPDATED_TAG][..],
                 &updated_at_ms.to_be_bytes(),
+                id.as_bytes(),
+            ]
+            .concat(),
+            Self::UnreadCount { unread_count, id } => [
+                &[UNREAD_COUNT_TAG][..],
+                &unread_count.to_be_bytes(),
                 id.as_bytes(),
             ]
             .concat(),
@@ -158,6 +169,13 @@ impl Position {
                 let (updated_at_ms, id) = rest.split_first_chunk::<MILLIS_LENGTH>()?;
                 Some(Self::LastUpdated {
                     updated_at_ms: i64::from_be_bytes(*updated_at_ms),
+                    id: SeriesId::try_from(id).ok()?,
+                })
+            }
+            UNREAD_COUNT_TAG => {
+                let (unread_count, id) = rest.split_first_chunk::<MILLIS_LENGTH>()?;
+                Some(Self::UnreadCount {
+                    unread_count: i64::from_be_bytes(*unread_count),
                     id: SeriesId::try_from(id).ok()?,
                 })
             }
