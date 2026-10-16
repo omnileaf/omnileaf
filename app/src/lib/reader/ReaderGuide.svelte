@@ -19,11 +19,13 @@
   let {
     direction,
     zones = "edges",
+    isStrip = false,
     isTouch,
     onDone,
   }: {
     direction: ReadingDirection;
     zones?: TapZones;
+    isStrip?: boolean;
     isTouch: boolean;
     onDone: () => void;
   } = $props();
@@ -44,7 +46,18 @@
     m.reader_show_controls(),
     isReversed ? m.reader_previous_page() : m.reader_next_page(),
   ]);
-  const wording = $derived(
+  const stripWording = $derived(
+    isTouch
+      ? {
+          title: m.reader_guide_strip_tap_title(),
+          body: m.reader_guide_strip_tap_body(),
+        }
+      : {
+          title: m.reader_guide_strip_click_title(),
+          body: m.reader_guide_strip_click_body(),
+        },
+  );
+  const zoneWording = $derived(
     {
       edges: {
         title: isTouch
@@ -62,11 +75,21 @@
       },
     }[zones],
   );
+  const wording = $derived(isStrip ? stripWording : zoneWording);
   const ZONE_LABEL =
     "flex items-start justify-center border border-dashed border-foreground/60 px-sm pbs-reader-guide-labels text-center text-body font-medium text-foreground expanded:text-group-title";
 </script>
 
-{#if zones === "edges"}
+{#if isStrip}
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-none grid grid-strip-zones bg-reader-black/40"
+  >
+    {#each [m.reader_scroll_up(), m.reader_show_controls(), m.reader_scroll_down()] as zone, index (index)}
+      <div class={[ZONE_LABEL, "items-center"]}>{zone}</div>
+    {/each}
+  </div>
+{:else if zones === "edges"}
   <div
     aria-hidden="true"
     class="pointer-events-none absolute inset-none flex bg-reader-black/40"
