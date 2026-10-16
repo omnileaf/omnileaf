@@ -9,11 +9,11 @@ import {
   FAKE_APP_VERSION,
   FAKE_REPORT_CODE,
   FAKE_SYSTEM,
-  MEDIUM_MIN_WIDTH,
+  IPAD_USER_AGENT,
+  IPHONE_USER_AGENT,
   onPlatform,
   test,
   testOnlyInItsWebview,
-  viewportOf,
 } from "./fixtures.ts";
 
 const REPORT_PAGE = "/settings/about/report";
@@ -237,33 +237,43 @@ test.describe("saving it as a file", () => {
   });
 });
 
-test.describe("saving on an iPhone", () => {
-  testOnlyInItsWebview("ios");
-  test.use({
-    backend: {
-      ...onPlatform("ios").backend,
-      saveProblemReport: () => ({
-        place: { kind: "appFiles" },
-        file: "omnileaf-report-2026-10-16.txt",
-      }),
-    },
+for (const [device, userAgent, place] of [
+  ["an iPhone", IPHONE_USER_AGENT, "On My iPhone"],
+  ["an iPad", IPAD_USER_AGENT, "On My iPad"],
+] as const) {
+  test.describe(`saving on ${device}`, () => {
+    test.use({
+      userAgent,
+      backend: {
+        ...onPlatform("ios").backend,
+        saveProblemReport: () => ({
+          place: { kind: "appFiles" },
+          file: "omnileaf-report-2026-10-16.txt",
+        }),
+      },
+    });
+
+    test("says the report is in Files, inside Omnileaf, on the device at any window width", async ({
+      page,
+    }) => {
+      await openReport(page);
+
+      await waysOut(page)
+        .getByRole("button", { name: "Save as a file" })
+        .click();
+
+      const notice = page
+        .getByRole("listitem")
+        .filter({ hasText: "Report saved" });
+      await expect(notice).toContainText(
+        `In Files › ${place} › Omnileaf › Reports`,
+      );
+      await expect(notice.getByRole("button", { name: /^Show/ })).toHaveCount(
+        0,
+      );
+    });
   });
-
-  test("says the report is in Files, inside Omnileaf", async ({ page }) => {
-    await openReport(page);
-    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
-
-    await waysOut(page).getByRole("button", { name: "Save as a file" }).click();
-
-    const notice = page
-      .getByRole("listitem")
-      .filter({ hasText: "Report saved" });
-    await expect(notice).toContainText(
-      "In Files › On My iPhone › Omnileaf › Reports",
-    );
-    await expect(notice.getByRole("button", { name: /^Show/ })).toHaveCount(0);
-  });
-});
+}
 
 test.describe("on Android", () => {
   testOnlyInItsWebview("android");
