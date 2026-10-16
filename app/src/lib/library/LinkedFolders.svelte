@@ -44,7 +44,7 @@
     usesStandIns: boolean;
     hint?: Snippet | undefined;
     onShowBooks?: (() => void) | undefined;
-    addPlacement?: "card" | "below-list";
+    addPlacement?: "card" | "below-list" | "none";
     mayPick?: MayPick;
   } = $props();
 
@@ -61,7 +61,7 @@
   let notRemoved: LibraryFolder | undefined = $state();
   let foldersHeading: HTMLHeadingElement | undefined = $state();
   const headingId = $props.id();
-  const isBelowList = $derived(addPlacement === "below-list");
+  const isInCard = $derived(addPlacement === "card");
 
   const rows: Record<LibraryFolder["id"], HTMLLIElement> = {};
 
@@ -150,20 +150,20 @@
 
 <section
   aria-labelledby={headingId}
-  class={[isBelowList && "flex flex-col gap-lg"]}
+  class={[!isInCard && "flex flex-col gap-lg"]}
 >
   <div
-    class={isBelowList
-      ? "contents"
-      : "flex flex-col overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low ios-grouped:rounded-ios-cell ios-grouped:border-transparent ios-grouped:bg-ios-cell"}
+    class={isInCard
+      ? "flex flex-col overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low ios-grouped:rounded-ios-cell ios-grouped:border-transparent ios-grouped:bg-ios-cell"
+      : "contents"}
   >
     <h2
       id={headingId}
       tabindex="-1"
       bind:this={foldersHeading}
-      class={isBelowList
-        ? "sr-only"
-        : "px-lg pbs-md pbe-xs text-small font-semibold"}
+      class={isInCard
+        ? "px-lg pbs-md pbe-xs text-small font-semibold"
+        : "sr-only"}
     >
       {m.library_settings_folders()}
     </h2>
@@ -171,7 +171,7 @@
       <ul
         class={[
           "divide-y divide-border ios:divide-y-0",
-          isBelowList && "rounded-card border border-border bg-card",
+          !isInCard && "rounded-card border border-border bg-card",
         ]}
       >
         {#each shownFolders as folder (folder.id)}
@@ -203,10 +203,10 @@
         {/each}
       </ul>
     {/if}
-    {#if !isBelowList && folders.list.kind === "loaded" && shownFolders.length === 0}
+    {#if isInCard && folders.list.kind === "loaded" && shownFolders.length === 0}
       <p class="px-lg pbe-xs text-body">{m.library_folders_none()}</p>
     {/if}
-    {#if !isBelowList}
+    {#if isInCard}
       <div class="px-lg pbs-sm pbe-md">
         <AddFolderButton
           bind:element={addButton}
@@ -225,13 +225,13 @@
       {m.library_remove_folder_failed({ name: notRemoved.name })}
     </p>
   {/if}
-  {#if isBelowList}
+  {#if addPlacement === "below-list"}
     <AddFolderButton bind:element={addButton} {adding} placement="below-list" />
     {#if hint !== undefined}
       <p class="text-footnote text-muted">{@render hint()}</p>
     {/if}
   {/if}
-  <div class={isBelowList ? "contents" : "mbs-sm"}>
+  <div class={isInCard ? "mbs-sm" : "contents"}>
     <FolderNotice
       {adding}
       {notices}
