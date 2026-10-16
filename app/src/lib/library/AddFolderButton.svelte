@@ -7,13 +7,12 @@
 
   import type { FolderAdding } from "./folder-adding.svelte";
 
-  type Placement =
-    "page-heading" | "empty-state" | "section-heading" | "below-list";
+  type Placement = "page-heading" | "empty-state" | "card-foot" | "below-list";
 
   const LOOKS = {
     "page-heading": "tinted",
     "empty-state": "primary",
-    "section-heading": "primary",
+    "card-foot": "outline",
     "below-list": "tinted",
   } satisfies Record<Placement, ButtonLook>;
 
@@ -22,8 +21,8 @@
       "-my-sm gap-sm min-block-touch-target max-medium:rounded-full max-medium:text-accent max-medium:inline-touch-target medium:rounded-control medium:border medium:border-field medium:bg-card medium:ps-md medium:pe-lg medium:text-foreground desktop:text-label desktop:medium:-my-xs desktop:medium:min-block-pointer-button touch:max-medium:-me-sm",
     "empty-state":
       "gap-sm rounded-shadcn-control px-lg font-medium min-block-touch-target ios:max-medium:rounded-phone-button ios:max-medium:min-block-ios-control desktop:text-label desktop:min-block-pointer-button",
-    "section-heading":
-      "gap-xs rounded-control ps-md pe-lg text-callout min-block-touch-target android:max-medium:rounded-full ios:max-medium:rounded-phone-button desktop:text-label desktop:min-block-pointer-button",
+    "card-foot":
+      "gap-sm rounded-full border-field px-lg transition-control inline-full min-block-touch-target enabled:hover:tint-hover enabled:active:tint-pressed desktop:text-label desktop:min-block-pointer-button",
     "below-list":
       "gap-sm rounded-control border border-dashed border-accent bg-accent-soft px-lg text-accent inline-full min-block-long-button touch:max-medium:font-bold android:max-medium:rounded-full ios:max-medium:rounded-phone-button desktop:text-label",
   } satisfies Record<Placement, string>;

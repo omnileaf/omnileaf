@@ -15,6 +15,7 @@ import { emitFakeEvent } from "./fake-backend.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const EMPTY_LIBRARY = "Your library is empty";
+const HALF = 0.5;
 const LIBRARY_CHANGED = "library-changed";
 const SAMPLE_LIBRARY_SCANNED = {
   ...DEFAULT_BACKEND,
@@ -409,7 +410,7 @@ for (const { platform, buttonHeight } of [
     testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
-    test(`puts a ${String(buttonHeight)}px Add a folder at the end of the Folders heading`, async ({
+    test(`puts a ${String(buttonHeight)}px Add a folder across the foot of the Folders card`, async ({
       page,
     }) => {
       await page.goto("/settings/library");
@@ -424,9 +425,9 @@ for (const { platform, buttonHeight } of [
       );
 
       expect(button.height).toBe(buttonHeight);
-      expect(button.x + button.width).toBe(region.x + region.width);
-      expect(button.y).toBeLessThan(heading.y + heading.height);
-      expect(button.y + button.height).toBeGreaterThan(heading.y);
+      expect(button.y).toBeGreaterThan(heading.y + heading.height);
+      expect(button.y + button.height).toBeLessThan(region.y + region.height);
+      expect(button.width).toBeGreaterThan(region.width * HALF);
     });
   });
 }

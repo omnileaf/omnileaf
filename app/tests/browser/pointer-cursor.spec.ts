@@ -1,7 +1,7 @@
 import type { Locator } from "@playwright/test";
 
 import {
-  addFolderBesideFolders,
+  addFolderInFolders,
   CONTROLS,
   DESKTOP,
   WITH_THE_PICKER_OPEN,
@@ -33,7 +33,7 @@ test.describe("while the folder picker is open", () => {
     page,
   }) => {
     await page.goto("/settings/library");
-    const button = addFolderBesideFolders(page);
+    const button = addFolderInFolders(page);
 
     await button.click();
     await expect(button).toBeDisabled();

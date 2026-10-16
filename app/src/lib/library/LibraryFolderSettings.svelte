@@ -180,9 +180,6 @@
     {#snippet status()}
       <RescanStatus status={rescans.status} kind="linked" />
     {/snippet}
-    {#snippet hint()}
-      {m.library_settings_folders_hint()}
-    {/snippet}
   </LinkedFolders>
 </div>
 

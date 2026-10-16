@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { addFolderBesideFolders } from "./controls.ts";
+import { addFolderInFolders } from "./controls.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   boxOf,
@@ -139,18 +139,12 @@ test.describe("on a desktop", () => {
     await expect(viewTrigger).toBeVisible();
 
     const viewCorner = await cornerOf(viewTrigger);
-    await page.goto("/settings/library");
-    const foldersCorner = await cornerOf(addFolderBesideFolders(page));
     await page.goto("/settings/about");
     const copyCorner = await cornerOf(
       page.getByRole("button", { name: "Copy version details" }),
     );
 
-    expect([viewCorner, foldersCorner, copyCorner]).toEqual([
-      BUTTON_CORNER,
-      BUTTON_CORNER,
-      BUTTON_CORNER,
-    ]);
+    expect([viewCorner, copyCorner]).toEqual([BUTTON_CORNER, BUTTON_CORNER]);
   });
 
   test("keeps navigation rows at 8px", async ({ page }) => {
@@ -251,11 +245,11 @@ test.describe("on an Android phone", () => {
     expect(await cornerOf(button)).toBe(SHADCN_CORNER);
   });
 
-  test("draws the Folders heading's Add a folder as a 48px pill", async ({
+  test("draws the Folders card's Add a folder as a 48px pill", async ({
     page,
   }) => {
     await page.goto("/settings/library");
-    const button = addFolderBesideFolders(page);
+    const button = addFolderInFolders(page);
 
     const box = await boxOf(button);
     const corner = await cornerOf(button);
@@ -313,12 +307,13 @@ test.describe("on an iPhone", () => {
     expect(await cornerOf(button)).toBe(IOS_BUTTON_CORNER);
   });
 
-  test("rounds the Folders heading's Add a folder to 14px", async ({
-    page,
-  }) => {
+  test("draws the Folders card's Add a folder as a pill", async ({ page }) => {
     await page.goto("/settings/library");
-    const button = addFolderBesideFolders(page);
+    const button = addFolderInFolders(page);
 
-    expect(await cornerOf(button)).toBe(IOS_BUTTON_CORNER);
+    const box = await boxOf(button);
+    const corner = await cornerOf(button);
+
+    expect(parseFloat(corner)).toBeGreaterThanOrEqual(box.height / 2);
   });
 });
