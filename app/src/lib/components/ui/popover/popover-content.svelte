@@ -31,7 +31,7 @@
     sideOffset={OPENER_GAP_PX}
     collisionPadding={SCREEN_EDGE_GAP_PX}
     class={cn(
-      "z-dialog rounded-menu border border-menu-edge bg-menu text-foreground fade-motion shadow-menu backdrop-blur-menu",
+      "z-dialog rounded-popover border border-menu-edge bg-popover-surface text-foreground fade-motion shadow-menu backdrop-blur-menu",
       className,
     )}
     {...restProps}
