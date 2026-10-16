@@ -16,11 +16,7 @@ const STEPS = [
   { headings: ["Already have comics or books?"], leaveWith: "Skip" },
   { headings: ["A few choices"], leaveWith: "Continue" },
   {
-    headings: [
-      "You're all set",
-      "Your library is empty for now",
-      "Found *",
-    ],
+    headings: ["You're all set", "Your library is empty for now", "Found *"],
     leaveWith: "Open my library",
   },
 ] as const;
