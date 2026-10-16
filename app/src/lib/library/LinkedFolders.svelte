@@ -32,6 +32,7 @@
     status,
     usesStandIns,
     hint,
+    addArea,
     addPlacement = "card",
     countingLook = "words",
     onShowBooks,
@@ -47,6 +48,7 @@
     status?: Snippet;
     usesStandIns: boolean;
     hint?: Snippet | undefined;
+    addArea?: Snippet | undefined;
     onShowBooks?: (() => void) | undefined;
     addPlacement?: "card" | "below-list" | "none";
     countingLook?: CountingLook;
@@ -246,7 +248,9 @@
       {m.library_remove_folder_failed({ name: notRemoved.name })}
     </p>
   {/if}
-  {#if addPlacement === "below-list"}
+  {#if addArea !== undefined}
+    {@render addArea()}
+  {:else if addPlacement === "below-list"}
     <AddFolderButton bind:element={addButton} {adding} placement="below-list" />
     {#if hint !== undefined}
       <p class="text-footnote text-muted">{@render hint()}</p>
