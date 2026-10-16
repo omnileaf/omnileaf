@@ -23,8 +23,8 @@ use omnileaf_db::{
     first_launch::{finish_first_launch, first_launch_finished},
     history::{
         book_reading_time, book_sessions, clear_history, days_in_a_row, hide_book_from_history,
-        history_page, reading_since, reading_time_by_day, restore_book_to_history, restore_history,
-        series_read,
+        history_page, reading_since, reading_summary, reading_time_by_day, restore_book_to_history,
+        restore_history, series_read,
     },
     library_listing::{library_listing, set_library_listing},
     library_tabs::{TabPlace, library_tabs, set_library_tabs},
@@ -45,9 +45,9 @@ use crate::{
     FolderRescan, FolderScan, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
     LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
     LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder,
-    ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing,
-    SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview,
-    SeriesPage, ShareAddress, ShareLookup, UnreachableShare, UtcOffset,
+    ReadMark, ReadingSummary, ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress,
+    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
+    SeriesOverview, SeriesPage, ShareAddress, ShareLookup, UnreachableShare, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -619,6 +619,20 @@ impl Library {
             .read(move |connection| book_reading_time(connection, book.0))
             .await?;
         Ok(whole_seconds(read_ms))
+    }
+
+    /// Sums up `book`'s reading for the summary at its end, once any reading not yet saved is, giving none for a book never read.
+    pub async fn reading_summary(
+        &self,
+        book: BookId,
+    ) -> Result<Option<ReadingSummary>, LibraryError> {
+        self.save_reading_before_reading().await;
+        let summed = self
+            .store
+            .database()
+            .read(move |connection| reading_summary(connection, book.0))
+            .await?;
+        Ok(summed.map(ReadingSummary::from))
     }
 
     /// Seconds read from the start of `first_day` to the end of `last_day`, in the local time each session started at.
