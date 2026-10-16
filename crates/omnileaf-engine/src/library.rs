@@ -44,7 +44,8 @@ use crate::{
     LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
     LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder,
     ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing,
-    SeriesBookPage, SeriesCursor, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
+    SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview,
+    SeriesPage, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -429,6 +430,23 @@ impl Library {
             .await?;
         let (overview, up_next) = found.ok_or(LibraryError::SeriesNotFound { id })?;
         Ok(SeriesOverview::new(overview, up_next))
+    }
+
+    /// Whether the library keeps edits over the files' details yet, which the interface offers Edit details by.
+    pub fn keeps_detail_edits(&self) -> bool {
+        let _ = &self.store;
+        false
+    }
+
+    pub async fn series_details(&self, id: SeriesId) -> Result<SeriesDetails, LibraryError> {
+        let series = id.0;
+        let overview = self
+            .store
+            .database()
+            .read(move |connection| series_overview(connection, series))
+            .await?
+            .ok_or(LibraryError::SeriesNotFound { id })?;
+        Ok(SeriesDetails::from_files(overview.title))
     }
 
     /// Lists the series in the library that name `creator`, with what they did on each.
