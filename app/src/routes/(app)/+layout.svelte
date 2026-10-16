@@ -97,7 +97,7 @@
 />
 
 <div
-  class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row desktop-shell:flex-row"
+  class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row desktop-shell:flex-row windows:desktop-shell:bg-sidebar"
 >
   {#if page.route.id !== EDIT_DETAILS_ROUTE}
     {#key language.resolved}
