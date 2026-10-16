@@ -30,6 +30,7 @@
   import {
     type BookReading,
     commands,
+    type ReadingSummary,
     type SeriesNeighbour,
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
@@ -37,7 +38,9 @@
   import type { BookId } from "#lib/reader/opened-book.ts";
   import { READER_BUTTON, READER_ICON_SIZE } from "#lib/reader/reader-bar.ts";
   import type { ReadingDirection } from "#lib/reader/reading-direction.svelte.ts";
+  import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
 
+  import ReadingStats from "./ReadingStats.svelte";
   import { getSkipUpNextSetting } from "./skip-up-next.svelte.ts";
 
   const CHECK_SIZE = 20;
@@ -76,13 +79,23 @@
   } = $props();
 
   const skipUpNext = getSkipUpNextSetting();
+  const smartFeatures = getSmartFeatures();
   const id = $props.id();
   let heading: HTMLHeadingElement | undefined = $state();
-  let readSeconds: number | undefined = $state();
+  let summary = $state<ReadingSummary | null>(null);
 
   const nextKey = $derived(direction === "rightToLeft" ? "←" : "→");
+  const stats = $derived(
+    summary === null ||
+      summary.secondsPerPage === null ||
+      !smartFeatures.showsBookSummary
+      ? undefined
+      : { ...summary, secondsPerPage: summary.secondsPerPage },
+  );
   const time = $derived(
-    readSeconds === undefined ? undefined : readingTime(readSeconds),
+    summary === null || stats !== undefined
+      ? undefined
+      : readingTime(summary.readSeconds),
   );
 
   function nextDetails(next: SeriesNeighbour): string {
@@ -96,9 +109,9 @@
 
   onMount(() => {
     heading?.focus();
-    void commands.bookReadTime(book).then((read) => {
+    void commands.readingSummary(book).then((read) => {
       if (read.status === "ok") {
-        readSeconds = read.data;
+        summary = read.data;
       }
     });
   });
@@ -170,6 +183,9 @@
           </p>
         </div>
       </div>
+      {#if stats !== undefined}
+        <ReadingStats {title} {...stats} />
+      {/if}
       <Card class="flex flex-col gap-lg py-lg expanded:gap-xl expanded:py-xl">
         {#if next !== null && nextHref !== undefined}
           <CardHeader class="px-lg expanded:px-xl">

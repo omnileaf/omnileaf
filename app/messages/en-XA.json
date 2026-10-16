@@ -1813,6 +1813,30 @@
   "reader_marked_read_in": "⟦{series} · ɱáŕķéð áš ŕéáð··········⟧",
   "reader_marked_read_in_after": "⟦{series} · ɱáŕķéð áš ŕéáð · {time}··············⟧",
   "reader_next_details": "⟦{count} þáĝéš · {reading}··········⟧",
+  "reader_stats_label": "⟦Ŕéáðíñĝ šţáţš ƒöŕ {title}··········⟧",
+  "reader_stat_reading": "⟦ŕéáðíñĝ···⟧",
+  "reader_stat_pages": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦þáĝé··⟧",
+        "countPlural=other": "⟦þáĝéš··⟧"
+      }
+    }
+  ],
+  "reader_stat_a_page": "⟦á þáĝé···⟧",
+  "reader_stat_seconds": [
+    {
+      "declarations": [
+        "input seconds",
+        "local formattedSeconds = seconds: number"
+      ],
+      "match": {
+        "*": "⟦{formattedSeconds} š········⟧"
+      }
+    }
+  ],
   "reader_unread_word": "⟦ûñŕéáð···⟧",
   "reader_started_word": "⟦šţáŕţéð···⟧",
   "reader_read_word": "⟦ŕéáð··⟧",
