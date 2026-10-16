@@ -13,11 +13,13 @@
     readonly title: string;
     readonly showsLabel: boolean;
     readonly count?: Snippet | undefined;
+    readonly attention?: Snippet | undefined;
     readonly actions?: Snippet;
     readonly platform: Platform;
   }
 
-  let { title, showsLabel, count, actions, platform }: Props = $props();
+  let { title, showsLabel, count, attention, actions, platform }: Props =
+    $props();
 
   const width = new WindowWidth();
   const hasLargeTitle = $derived(
@@ -144,9 +146,13 @@
       class="col-start-1 row-start-1 flex flex-wrap items-baseline gap-x-title-count heading-two-rows:contents in-toolbar:flex-nowrap in-toolbar:min-inline-none"
     >
       <div
-        class="heading-two-rows:order-1 heading-stacked:basis-full in-toolbar:min-inline-none"
+        class={[
+          "heading-two-rows:order-1 heading-stacked:basis-full in-toolbar:min-inline-none",
+          attention !== undefined && "flex items-center",
+        ]}
       >
         <PageHeading {title} />
+        {@render attention?.()}
       </div>
       {#if count !== undefined}
         <div
