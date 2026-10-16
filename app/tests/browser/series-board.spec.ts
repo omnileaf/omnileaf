@@ -6,8 +6,10 @@ import {
   boxOf,
   expect,
   EXPANDED_MIN_WIDTH,
+  LARGEST_TEXT_SCALE,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  setTextScale,
   test,
   testOnlyInItsWebview,
   viewportOf,
@@ -54,6 +56,7 @@ const LONG_TITLE =
   "The Lighthouse Keeper’s Apprentice Spends Every Winter Writing Letters to a Sister Across the Northern Sea";
 const TWO_HOURS_FORTY = 9600;
 const NARROW_DESKTOP_WINDOW = { width: 360, height: 800 };
+const NARROW_DESKTOP = { width: 1024, height: 800 };
 
 function shelfBackend(shelf: FakeShelf): FakeBackend {
   return shelf.backend();
@@ -73,6 +76,18 @@ function about(page: Page): Locator {
 
 function continueCard(page: Page): Locator {
   return page.getByRole("region", { name: /^(Continue|Up next|You’ve read)/ });
+}
+
+function middleOf(box: { y: number; height: number }): number {
+  return box.y + box.height / 2;
+}
+
+async function onDesktopWindow(
+  page: Page,
+  size: { width: number; height: number },
+): Promise<void> {
+  test.skip(!hasToolbar(page), "the desktop's card");
+  await page.setViewportSize(size);
 }
 
 async function openSeries(page: Page): Promise<void> {
@@ -223,6 +238,35 @@ test.describe("a series with one creator, a summary and tags", () => {
     await expect(
       card.getByRole("progressbar", { name: "2 of 8 read" }),
     ).toHaveAttribute("aria-valuenow", "2");
+  });
+
+  test("ends the card's progress row with its button on desktops", async ({
+    page,
+  }) => {
+    await openSeries(page);
+    test.skip(!hasToolbar(page), "the desktop's card");
+    const card = continueCard(page);
+
+    const bar = await boxOf(card.getByRole("progressbar"));
+    const button = await boxOf(card.getByRole("link"));
+    const count = await boxOf(card.getByText("2 of 8 read"));
+
+    expect(middleOf(button)).toBeCloseTo(middleOf(bar), 0);
+    expect(count.x).toBeGreaterThan(bar.x + bar.width);
+    expect(button.x).toBeGreaterThan(count.x + count.width);
+  });
+
+  test("keeps Continue on the progress row in a 1024px window", async ({
+    page,
+  }) => {
+    await onDesktopWindow(page, NARROW_DESKTOP);
+    await openSeries(page);
+    const card = continueCard(page);
+
+    const bar = await boxOf(card.getByRole("progressbar"));
+    const button = await boxOf(card.getByRole("link"));
+
+    expect(middleOf(button)).toBeCloseTo(middleOf(bar), 0);
   });
 
   test("marks every book read from the button beside the details", async ({
@@ -491,6 +535,23 @@ test.describe("a series not started", () => {
     await expect(
       card.getByRole("link", { name: "Start Sample Series 04 v01" }),
     ).toHaveText("Start Sample Series 04 v01");
+  });
+
+  test("moves the Start button under the bar once the largest text leaves it no room", async ({
+    page,
+  }) => {
+    await onDesktopWindow(page, NARROW_DESKTOP);
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await openSeries(page);
+    const card = continueCard(page);
+
+    const bar = await boxOf(card.getByRole("progressbar"));
+    const button = await boxOf(card.getByRole("link"));
+    const count = await boxOf(card.getByText("0 of 3 read"));
+
+    expect(button.y).toBeGreaterThan(bar.y + bar.height);
+    expect(button.x).toBeCloseTo(bar.x, 0);
+    expect(middleOf(count)).toBeCloseTo(middleOf(bar), 0);
   });
 });
 
