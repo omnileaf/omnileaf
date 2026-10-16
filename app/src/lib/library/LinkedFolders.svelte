@@ -9,6 +9,7 @@
   import { getLocale } from "#lib/paraglide/runtime.js";
 
   import AddFolderButton from "./AddFolderButton.svelte";
+  import type { CountingLook } from "./counting-look";
   import type { FolderAdding } from "./folder-adding.svelte";
   import FolderCounting from "./FolderCounting.svelte";
   import { folderLocation } from "./folder-location";
@@ -32,6 +33,7 @@
     usesStandIns,
     hint,
     addPlacement = "card",
+    countingLook = "words",
     onShowBooks,
   }: {
     platform: Platform;
@@ -47,6 +49,7 @@
     hint?: Snippet | undefined;
     onShowBooks?: (() => void) | undefined;
     addPlacement?: "card" | "below-list" | "none";
+    countingLook?: CountingLook;
   } = $props();
 
   let addButton: HTMLElement | null = $state(null);
@@ -214,7 +217,7 @@
                 {folderLocation(beingAdded, platform)}
               {/snippet}
               {#snippet detail()}
-                <FolderCounting outcome={adding.outcome} />
+                <FolderCounting outcome={adding.outcome} look={countingLook} />
               {/snippet}
             </FolderRow>
           </li>
