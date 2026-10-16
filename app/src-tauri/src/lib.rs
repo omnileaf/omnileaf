@@ -34,8 +34,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use omnileaf_engine::{Core, Library, LibraryFolders, ResourceRouter, SystemClock, describe_error};
+use omnileaf_engine::{
+    Core, Library, LibraryFolders, RecentLog, ResourceRouter, SystemClock, describe_error,
+};
 use tauri::{App, Manager};
+use tracing_subscriber::{
+    Layer, filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt,
+};
 
 use crate::{
     library_events::LibraryChangesForwarding,
@@ -52,11 +57,16 @@ const CACHE_FOLDER: &str = "cache";
     reason = "without its runtime the app has nothing to fall back to"
 )]
 pub fn run() {
-    tracing_subscriber::fmt::init();
+    let recent_log = RecentLog::default();
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer().with_filter(LevelFilter::INFO))
+        .with(recent_log.clone())
+        .init();
     let config = RuntimeConfig::from_environment();
     let commands = commands::builder();
     let app = tauri::Builder::default()
         .manage(Core::new())
+        .manage(recent_log)
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(
             tauri_plugin_opener::Builder::new()
