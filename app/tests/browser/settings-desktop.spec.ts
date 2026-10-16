@@ -37,11 +37,11 @@ function sectionList(page: Page) {
 test.describe("on a desktop", () => {
   test.use(onPlatform("linux"));
 
-  test("opens the first settings section beside the list from 600px", async ({
+  test("opens the first settings section beside the list from 840px", async ({
     page,
   }) => {
     await page.goto("/");
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
 
     await page
       .getByRole("navigation", { name: "Main" })
@@ -57,9 +57,28 @@ test.describe("on a desktop", () => {
     ).toHaveAttribute("aria-current", "page");
   });
 
+  test("opens Settings on its list of pages under 840px", async ({ page }) => {
+    await page.goto("/");
+    test.skip(viewportOf(page).width >= EXPANDED_MIN_WIDTH, "one pane only");
+
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Settings" })
+      .click();
+
+    await expect(page).toHaveURL("/settings");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Settings" }),
+    ).toBeFocused();
+    await expect(sectionList(page)).toBeHidden();
+    await expect(
+      page.getByRole("main").getByRole("link", { name: /^General/ }),
+    ).toBeVisible();
+  });
+
   test("lists the sections in the phone's order", async ({ page }) => {
     await page.goto("/settings/general");
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
 
     await expect(sectionList(page).getByRole("link")).toHaveText(
       SECTIONS_IN_ORDER,
@@ -70,7 +89,7 @@ test.describe("on a desktop", () => {
     page,
   }) => {
     await page.goto("/settings/advanced/animations");
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
     const trail = page.getByRole("navigation", { name: "Breadcrumb" });
 
     await expect(trail.getByRole("link")).toHaveText(["Settings", "Advanced"]);
@@ -114,7 +133,7 @@ test.describe("on a desktop", () => {
     page,
   }) => {
     await page.goto("/");
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
 
     await page
       .getByRole("navigation", { name: "Main" })
@@ -128,7 +147,7 @@ test.describe("on a desktop", () => {
 
   test("switches settings sections from the list", async ({ page }) => {
     await page.goto("/settings/library");
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
 
     await sectionList(page).getByRole("link", { name: "About" }).click();
 
@@ -145,7 +164,7 @@ test.describe("on a desktop", () => {
     page,
   }) => {
     await page.goto("/settings/appearance");
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
     const open = sectionList(page).getByRole("link", { name: "Appearance" });
 
     const row = await boxOf(open);
@@ -158,11 +177,11 @@ test.describe("on a desktop", () => {
     expect(row.height).toBe(POINTER_ROW_HEIGHT);
   });
 
-  test("leads a section back to settings through a link under 600px", async ({
+  test("leads a section back to settings through a link under 840px", async ({
     page,
   }) => {
     await page.goto("/settings/about");
-    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "one pane only");
+    test.skip(viewportOf(page).width >= EXPANDED_MIN_WIDTH, "one pane only");
 
     const back = page.getByRole("link", { name: "Back to Settings" });
 
@@ -290,7 +309,7 @@ for (const colorScheme of ["light", "dark"] as const) {
   test(`settings on desktop has no accessibility violations in the ${colorScheme} theme`, async ({
     page,
   }) => {
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
     await page.emulateMedia({ colorScheme });
     await page.goto("/settings");
     await expect(
