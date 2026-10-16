@@ -19,6 +19,7 @@
     chosen,
     disabled = false,
     isStacked = false,
+    isInline = false,
     onChoose,
     children,
   }: {
@@ -28,6 +29,7 @@
     chosen: Choice;
     disabled?: boolean;
     isStacked?: boolean;
+    isInline?: boolean;
     onChoose: (choice: Choice) => void;
     children?: Snippet;
   } = $props();
@@ -39,7 +41,7 @@
   data-slot="setting-row"
   class={[
     "flex flex-col gap-sm py-setting-grid-pad",
-    hint !== undefined &&
+    (hint !== undefined || isInline) &&
       "grid grid-cols-setting-grid items-center gap-x-md min-block-setting-grid-row",
     !isStacked &&
       "expanded:grid expanded:grid-cols-setting-grid expanded:items-center expanded:gap-x-md expanded:min-block-setting-grid-row",
@@ -57,7 +59,8 @@
     aria-labelledby={id}
     {disabled}
     class={[
-      hint === undefined && "inline-full",
+      hint === undefined && !isInline && "inline-full",
+      isInline && "inline-setting-control",
       !isStacked && "expanded:inline-setting-control",
     ]}
     bind:value={
