@@ -32,3 +32,21 @@ export function screenshotModeStatus(
       return assertNever(activity);
   }
 }
+
+export function screenshotModeSummary(
+  activity: ScreenshotModeActivity,
+  hourCycle?: Intl.LocaleHourCycleKey,
+): string {
+  switch (activity.kind) {
+    case "off":
+      return m.switch_off();
+    case "on":
+      return m.switch_on();
+    case "onUntil":
+      return m.screenshot_mode_summary_on_until({
+        time: timeOfDay(activity.turnsOffAt, hourCycle),
+      });
+    default:
+      return assertNever(activity);
+  }
+}

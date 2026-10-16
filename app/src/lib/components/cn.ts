@@ -202,6 +202,7 @@ export const TOKEN_THEME = {
     "empty-art",
     "empty-icon",
     "empty-lift",
+    "entry-tile",
     "fast-scroll-hit",
     "fast-scroll-letter",
     "fast-scroll-thumb",
