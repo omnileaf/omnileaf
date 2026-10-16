@@ -739,14 +739,18 @@
     data-tap-zones
     class="absolute inset-none grid touch-pan-y touch-pinch-zoom grid-strip-zones"
   >
-    <button
-      type="button"
-      aria-label={m.reader_scroll_up()}
-      class="focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
-      onclick={(event) => {
-        onZone(event, "previous");
-      }}
-    ></button>
+    {#if look.tapToScroll === "topAndBottom"}
+      <button
+        type="button"
+        aria-label={m.reader_scroll_up()}
+        class="focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
+        onclick={(event) => {
+          onZone(event, "previous");
+        }}
+      ></button>
+    {:else}
+      <span></span>
+    {/if}
     <button
       type="button"
       aria-label={controls.isShown
@@ -757,14 +761,16 @@
         onZone(event, "toggleControls");
       }}
     ></button>
-    <button
-      type="button"
-      aria-label={m.reader_scroll_down()}
-      class="focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
-      onclick={(event) => {
-        onZone(event, "next");
-      }}
-    ></button>
+    {#if look.tapToScroll === "topAndBottom"}
+      <button
+        type="button"
+        aria-label={m.reader_scroll_down()}
+        class="focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
+        onclick={(event) => {
+          onZone(event, "next");
+        }}
+      ></button>
+    {/if}
   </div>
 {/snippet}
 
