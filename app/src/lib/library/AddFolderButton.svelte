@@ -22,7 +22,7 @@
     "empty-state":
       "gap-sm rounded-shadcn-control px-lg font-medium min-block-touch-target ios:max-medium:rounded-phone-button ios:max-medium:min-block-ios-control desktop:text-label desktop:min-block-pointer-button",
     "card-foot":
-      "gap-sm rounded-full border-field px-lg transition-control inline-full min-block-touch-target enabled:hover:tint-hover enabled:active:tint-pressed desktop:text-label desktop:min-block-pointer-button",
+      "gap-sm rounded-full border-field px-lg transition-control inline-full block-folders-button enabled:hover:tint-hover enabled:active:tint-pressed desktop:text-label",
     "below-list":
       "gap-sm rounded-control border border-dashed border-accent bg-accent-soft px-lg text-accent inline-full min-block-long-button touch:max-medium:font-bold android:max-medium:rounded-full ios:max-medium:rounded-phone-button desktop:text-label",
   } satisfies Record<Placement, string>;
