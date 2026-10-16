@@ -67,6 +67,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0031_remember_the_page_each_reading_session_started_on"),
     migration!("0032_track_when_each_series_last_gained_a_book"),
     migration!("0033_index_series_by_unread_count"),
+    migration!("0034_keep_how_many_pages_each_book_holds"),
 ];
 
 pub(crate) fn pending(
@@ -816,6 +817,62 @@ mod tests {
             .query_row("SELECT unread_count FROM series", [], |row| row.get(0))
             .unwrap();
         assert_eq!(unread_count, 2);
+    }
+
+    #[test]
+    fn counts_the_pages_of_each_book_kept_from_before_from_the_page_sizes_it_stored() {
+        let scratch = ScratchLibrary::new("page-count-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..32]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO library_root (kind, locator_kind, location, added_at_ms)
+                 VALUES ('linked', 'path', x'2f6d65646961', 0);",
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for number in 1..=2 {
+            connection
+                .execute(
+                    "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                     VALUES (?1, 1, ?2, x'', 0)",
+                    (book(number).as_bytes(), format!("Volume {number:02}")),
+                )
+                .unwrap();
+            connection
+                .execute(
+                    "INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
+                     VALUES (?1, 1, ?2, 1, 0)",
+                    (
+                        book(number).as_bytes(),
+                        format!("Volume {number:02}.cbz").into_bytes(),
+                    ),
+                )
+                .unwrap();
+        }
+        connection
+            .execute(
+                "INSERT INTO book_pages (file_id, rev, manifest) VALUES (1, 1, zeroblob(24))",
+                [],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let page_counts: Vec<Option<u32>> = connection
+            .prepare("SELECT page_count FROM book ORDER BY title")
+            .unwrap()
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(page_counts, [Some(3), None]);
     }
 
     #[test]
