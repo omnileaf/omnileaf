@@ -26,7 +26,7 @@ const LOST: MissingFolder = {
     location: "/media/Sample Comics",
     isAvailable: false,
   },
-  problem: "lostAccess",
+  problem: { kind: "lostAccess" },
   hiddenSeries: 41,
   isShownAnyway: false,
 } as MissingFolder;
