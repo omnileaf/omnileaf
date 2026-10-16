@@ -21,7 +21,10 @@
 
 <div class="flex flex-col gap-step-intro text-center">
   <div class="flex justify-center">{@render badge()}</div>
-  <h1 tabindex="-1" class={["font-bold wrap-break-word", SCALES[scale]]}>
+  <h1
+    tabindex="-1"
+    class={["font-bold tracking-tight wrap-break-word", SCALES[scale]]}
+  >
     {@render children()}
   </h1>
   <p class="text-step-body wrap-break-word text-muted">{@render lead()}</p>
