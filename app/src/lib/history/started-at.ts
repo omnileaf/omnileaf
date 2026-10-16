@@ -6,7 +6,6 @@ type StartedAt = Pick<HistoryEntry, "startedAtMs" | "utcOffsetMinutes">;
 
 export interface StartedAtFormats {
   readonly time: Intl.DateTimeFormat;
-  readonly weekdayTime: Intl.DateTimeFormat;
 }
 
 export function startedAtFormats(
@@ -17,13 +16,6 @@ export function startedAtFormats(
   return {
     time: new Intl.DateTimeFormat(locale, {
       timeStyle: "short",
-      timeZone: "UTC",
-      ...clock,
-    }),
-    weekdayTime: new Intl.DateTimeFormat(locale, {
-      weekday: "short",
-      hour: "numeric",
-      minute: "2-digit",
       timeZone: "UTC",
       ...clock,
     }),
@@ -40,11 +32,4 @@ export function startedAtTime(
   formats: StartedAtFormats,
 ): string {
   return formats.time.format(onThatClock(entry));
-}
-
-export function startedAtWeekdayTime(
-  entry: StartedAt,
-  formats: StartedAtFormats,
-): string {
-  return formats.weekdayTime.format(onThatClock(entry));
 }
