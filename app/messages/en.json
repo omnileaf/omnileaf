@@ -1006,6 +1006,9 @@
   "first_launch_link_hint_desktop": "Folders on this computer, external drives and network shares all work.",
   "first_launch_skip_phone": "Skip, I'll add them later",
   "first_launch_skip_desktop": "Skip for now",
+  "first_launch_pick_folder_title": "Pick a folder",
+  "first_launch_pick_folder_body": "Android shows its folder picker next. Choose a folder of comics or books, tap Use this folder, then Allow. Omnileaf reads it there and changes nothing.",
+  "first_launch_not_now": "Not now",
   "first_launch_folder_books": [
     {
       "declarations": [
