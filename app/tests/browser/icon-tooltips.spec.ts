@@ -392,7 +392,9 @@ test.describe("an icon action's tooltip", () => {
 
     await remove.tap();
 
-    await expect(page.getByRole("alertdialog")).toBeVisible();
-    await expect(remove).toHaveAccessibleDescription("");
+    await expect(
+      page.getByRole("listitem").filter({ hasText: "Sample Comics removed" }),
+    ).toBeVisible();
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
   });
 });
