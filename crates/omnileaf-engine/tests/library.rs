@@ -992,6 +992,27 @@ async fn remembers_listing_the_series_updated_last_first_when_the_library_reopen
 }
 
 #[tokio::test]
+async fn remembers_listing_the_series_with_the_most_unread_books_first_when_the_library_reopens() {
+    let home = ScratchFolder::new("library-listing-unread-count");
+    let most_unread_first = LibraryListing {
+        sort: LibrarySort {
+            by: LibrarySortBy::UnreadCount,
+            direction: SortDirection::Descending,
+        },
+        ..LibraryListing::default()
+    };
+    open(home.path())
+        .await
+        .set_listing(most_unread_first.clone())
+        .await
+        .unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.listing().await.unwrap(), most_unread_first);
+}
+
+#[tokio::test]
 async fn stores_the_fewest_and_the_most_covers_per_row_each_size_offers() {
     let home = ScratchFolder::new("library-view-ranges");
     let library = open(home.path()).await;
