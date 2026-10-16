@@ -23,22 +23,16 @@ const DRIVE_MOUNTS: [(&[&str], usize); 4] = [
 pub struct MissingFolder {
     pub folder: LibraryFolder,
     pub problem: FolderProblem,
-    /// The series hidden until it's back, every book of theirs being in it.
     pub hidden_series: u32,
-    /// Lists its series though it's missing, as asked, until it comes back.
     pub is_shown_anyway: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum FolderProblem {
-    /// The folder isn't there, though the drive it was on is.
     Missing,
-    /// The removable drive the folder was on isn't connected.
     DriveDisconnected,
-    /// Android took away the app's access to the folder.
     LostAccess,
-    /// A network share wants a sign-in again, which the library can't tell yet.
     NeedsSignIn,
 }
 
@@ -73,7 +67,6 @@ pub(crate) async fn problem_of(locator: &RootLocator) -> FolderProblem {
     }
 }
 
-/// The drive a folder sits on when it's on a lettered drive or mounted where removable drives go.
 pub(crate) fn drive_of(folder: &Path) -> Option<PathBuf> {
     let mut components = folder.components();
     match components.next()? {
