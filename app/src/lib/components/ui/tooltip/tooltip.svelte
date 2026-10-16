@@ -86,7 +86,7 @@
         {side}
         sideOffset={TRIGGER_GAP_PX}
         collisionPadding={SCREEN_EDGE_GAP_PX}
-        class="z-tooltip flex items-center gap-sm rounded-tooltip border border-tooltip-edge bg-tooltip px-tooltip-inline py-tooltip-block text-caption text-on-tooltip fade-motion shadow-tooltip"
+        class="z-tooltip flex items-center gap-sm rounded-tooltip border-tooltip-edge bg-tooltip px-tooltip-inline py-tooltip-block text-caption text-on-tooltip fade-motion shadow-tooltip macos:border windows:border"
       >
         <span>{label}</span>
         {#each keys ?? [] as key (key)}
