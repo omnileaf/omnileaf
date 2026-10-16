@@ -2120,5 +2120,13 @@
   "storage_clear": "Clear",
   "storage_clear_label": "Clear {name}",
   "storage_runs_low": "When space runs low, the oldest cached pages and covers go first. Your books and progress are never touched.",
-  "settings_summary_storage": "{size} used"
+  "settings_summary_storage": "{size} used",
+  "attention_low_space_title": "Almost out of space",
+  "attention_space_left_phone": "{size} left on this phone",
+  "attention_space_left_tablet": "{size} left on this tablet",
+  "attention_space_left": "{size} left",
+  "attention_free_up_space": "Free up space",
+  "low_space_notice_phone": "{size} left on this phone. Omnileaf clears the oldest cached pages and covers first.",
+  "low_space_notice_tablet": "{size} left on this tablet. Omnileaf clears the oldest cached pages and covers first.",
+  "low_space_notice_computer": "{size} left on this computer. Omnileaf clears the oldest cached pages and covers first."
 }

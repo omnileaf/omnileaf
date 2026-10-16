@@ -325,3 +325,39 @@ test.describe("in the Settings list on a phone", () => {
     });
   }
 });
+
+test.describe("on a desktop almost out of space", () => {
+  test.use({
+    backend: {
+      ...BACKEND,
+      checkStorage: () => ({
+        omnileafBytes: 1_440_000_000,
+        cachedPagesBytes: 1_200_000_000,
+        coversBytes: 210_000_000,
+        freeBytes: 1_100_000_000,
+        totalBytes: 128_000_000_000,
+        isLow: true,
+      }),
+    },
+  });
+
+  test("lists running low after the missing folder, and leads to Storage to free some up", async ({
+    page,
+  }) => {
+    await openLibraryOnADesktop(page);
+    await expect(sidebarItem(page)).toHaveAccessibleName(
+      "Needs attention: 2 things",
+    );
+    await sidebarItem(page).click();
+    const rows = popover(page).getByRole("listitem");
+    await expect(rows.nth(1)).toContainText(
+      /Almost out of space\s*1\.1 GB left\s/,
+    );
+
+    await rows.nth(1).getByRole("button", { name: "Free up space" }).click();
+
+    await expect(
+      page.getByRole("heading", { name: "Storage", level: 1 }),
+    ).toBeVisible();
+  });
+});
