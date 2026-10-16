@@ -16,7 +16,7 @@
   data-slot="skeleton"
   aria-hidden="true"
   class={cn(
-    "rounded-shadcn-control bg-hover motion-loading:animate-pulse",
+    "rounded-shadcn-control bg-chip motion-loading:animate-pulse",
     className,
   )}
   {...restProps}
