@@ -142,6 +142,7 @@
   ],
   "library_tab_new_chapters": "New chapters",
   "library_tabs_title": "Library tabs",
+  "library_tabs_summary": "Order, hidden tabs, where the library opens",
   "library_opens_on": "The library opens on",
   "library_opens_on_last": "The tab used last",
   "library_opens_on_help": "Or All, or a tab you choose. If it would open on New chapters and nothing is new, it opens on All.",
