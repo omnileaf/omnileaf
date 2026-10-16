@@ -1,9 +1,6 @@
 const CONFIRM =
   "rounded-full px-lg text-body font-semibold transition-control min-block-touch-button focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ios:max-medium:rounded-ios-button medium:rounded-button medium:text-label medium:min-block-pointer-target";
 
-const ABOUT_COPY =
-  "inline-flex items-center gap-sm text-start text-callout font-semibold min-block-touch-target min-inline-none";
-
 export const BUTTON_LOOKS = {
   text: "font-semibold text-accent",
   quiet:
@@ -27,8 +24,8 @@ export const BUTTON_LOOKS = {
     "isolate flex items-center justify-center rounded-full opacity-70 transition-control before:absolute before:z-behind before:rounded-full before:transition-control hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed",
   "row-action":
     "isolate flex items-center justify-center rounded-full text-muted transition-control before:absolute before:z-behind before:rounded-full before:transition-control focus-visible:outline-2 focus-visible:outline-accent enabled:hover:text-foreground enabled:hover:before:bg-hover enabled:active:text-foreground enabled:active:before:bg-pressed disabled:opacity-60",
-  "about-copy-phone": `${ABOUT_COPY} rounded-tile px-md text-accent transition-control hover:bg-hover active:bg-pressed`,
-  "about-copy-pane": `${ABOUT_COPY} rounded-control border border-border bg-card ps-md pe-list-row hover:tint-hover active:tint-pressed desktop:text-label desktop:min-block-pointer-button`,
+  "about-copy":
+    "flex shrink-0 items-center justify-center rounded-full text-muted transition-control block-touch-target inline-touch-target hover:bg-hover hover:text-foreground active:bg-pressed desktop:rounded-control desktop:block-pointer-button desktop:inline-pointer-button",
   "confirm-cancel": `${CONFIRM} bg-chip hover:tint-hover active:tint-pressed medium:border medium:border-border medium:bg-card`,
   "confirm-danger": `${CONFIRM} bg-danger-fill text-on-danger hover:bg-danger-hover active:bg-danger-pressed`,
   "crash-phone-primary":

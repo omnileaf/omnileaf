@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { ExternalLink } from "@lucide/svelte";
+  import { Bug, Code, ExternalLink } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Item } from "#lib/components/ui/item/index.ts";
   import type { ProjectLink } from "#lib/ipc/bindings.ts";
+  import type { Glyph } from "#lib/page/glyph.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { LinkOpening } from "./link-opening.svelte";
@@ -17,6 +18,7 @@
 
   interface ExternalRow {
     readonly link: ProjectLink;
+    readonly icon: Glyph;
     readonly label: string;
     readonly hint: string;
     readonly hintKind: HintKind;
@@ -30,16 +32,18 @@
 
   const externalRows: readonly ExternalRow[] = $derived([
     {
-      link: "sourceCode",
-      label: m.about_source_code(),
-      hint: sourceCode,
-      hintKind: "address",
-    },
-    {
       link: "newIssue",
+      icon: Bug,
       label: m.about_report_problem(),
       hint: m.about_report_problem_hint(),
       hintKind: "prose",
+    },
+    {
+      link: "sourceCode",
+      icon: Code,
+      label: m.about_source_code(),
+      hint: sourceCode,
+      hintKind: "address",
     },
   ]);
 </script>
@@ -57,6 +61,7 @@
           }}
         >
           <RowText
+            icon={external.icon}
             label={external.label}
             hint={external.hint}
             hintKind={external.hintKind}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronRight } from "@lucide/svelte";
+  import { ChevronRight, FileText } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
   import { Item } from "#lib/components/ui/item/index.ts";
@@ -16,6 +16,7 @@
     {#snippet child({ props })}
       <a href={resolve("/(app)/settings/about/licences")} {...props}>
         <RowText
+          icon={FileText}
           label={m.about_licences()}
           hint={m.about_licences_hint()}
           {look}
