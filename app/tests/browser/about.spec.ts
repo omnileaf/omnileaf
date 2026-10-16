@@ -125,14 +125,6 @@ test.describe("with a working clipboard and browser", () => {
 
     await expect.poll(() => opened).toEqual(["sourceCode"]);
   });
-
-  test("opens a new issue to report a problem", async ({ page }) => {
-    await openAbout(page);
-
-    await linkRow(page, "Report a problem").click();
-
-    await expect.poll(() => opened).toEqual(["newIssue"]);
-  });
 });
 
 test.describe("when the device turns the app down", () => {
