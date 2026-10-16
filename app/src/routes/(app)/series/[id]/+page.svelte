@@ -218,7 +218,7 @@
   });
 
   async function loadDetailEditSupport(): Promise<void> {
-    keepsDetailEdits = await commands.keepsDetailEdits();
+    keepsDetailEdits = await commands.keepsDetailEdits().catch(() => false);
   }
 
   $effect(() => {

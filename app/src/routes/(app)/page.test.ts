@@ -84,6 +84,9 @@ function listing(catalog: () => readonly WireSeries[]): { asked: number } {
           suggestedTags: [],
         };
       }
+      if (command === "keeps_detail_edits") {
+        return false;
+      }
       if (command !== "library_series") {
         throw new Error(`the page called \`${command}\``);
       }
