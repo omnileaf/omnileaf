@@ -189,6 +189,9 @@ impl Pages {
         if let Err(error) = library.start_reading(id, opened.page_count).await {
             tracing::debug!(error = %describe_error(&error), "save the page reached in the book read before this one");
         }
+        if let Err(error) = library.record_page_count(id, opened.page_count).await {
+            tracing::warn!(error = %describe_error(&error), "keep how many pages the book holds");
+        }
         let seconds_per_page = library.seconds_per_page().await.unwrap_or_else(|error| {
             tracing::debug!(error = %describe_error(&error), "learn how long a page takes to read");
             None
