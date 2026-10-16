@@ -162,13 +162,14 @@
   <section
     data-slot="setting-row"
     aria-labelledby="{id}-pages"
-    class="flex flex-col pbs-xl"
+    class="flex flex-col border-be-0 pbs-xl"
   >
     <h3 id="{id}-pages" class="text-small font-semibold">
       {m.reader_pages_title()}
     </h3>
     <div class="flex flex-col divide-y divide-border">
       <SettingChoice
+        isInline
         label={m.reader_tap_zones()}
         choices={[
           { value: "edges", label: m.reader_tap_zones_edges() },
@@ -181,6 +182,7 @@
         }}
       />
       <SettingChoice
+        isInline
         label={m.reader_page_turn()}
         choices={[
           { value: "instant", label: m.reader_page_turn_instant() },
@@ -191,13 +193,13 @@
           settings.change("pageTurn", turn);
         }}
       >
-        <p class="text-caption text-muted expanded:col-span-full">
+        <p class="col-span-full text-caption text-muted">
           {m.reader_page_turn_help()}
         </p>
       </SettingChoice>
     </div>
   </section>
-  <fieldset data-slot="setting-row" class="flex flex-col pbs-xl">
+  <fieldset data-slot="setting-row" class="flex flex-col border-be-0 pbs-xl">
     <legend class="contents">
       <span class="text-small font-semibold">{m.reader_light_title()}</span>
     </legend>
@@ -212,7 +214,7 @@
   <section
     data-slot="setting-row"
     aria-labelledby="{id}-screen"
-    class="flex flex-col pbs-xl"
+    class="flex flex-col border-be-0 pbs-xl"
   >
     <h3 id="{id}-screen" class="text-small font-semibold">
       {m.reader_screen_title()}
