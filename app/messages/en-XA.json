@@ -2087,5 +2087,19 @@
         "countPlural=other": "⟦Ñééðš áţţéñţíöñ: {formattedCount} ţĥíñĝš················⟧"
       }
     }
+  ],
+  "attention_things_to_fix": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ţĥíñĝ ţö ƒíẋ············⟧",
+        "countPlural=other": "⟦{formattedCount} ţĥíñĝš ţö ƒíẋ············⟧"
+      }
+    }
   ]
 }
