@@ -69,6 +69,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0033_index_series_by_unread_count"),
     migration!("0034_keep_how_many_pages_each_book_holds"),
     migration!("0035_track_how_many_pages_each_series_has_left"),
+    migration!("0036_remember_the_share_of_each_library_root"),
 ];
 
 pub(crate) fn pending(
