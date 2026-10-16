@@ -47,7 +47,7 @@ use crate::{
     LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder,
     ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing,
     SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview,
-    SeriesPage, ShareLookup, UtcOffset,
+    SeriesPage, ShareLookup, UnreachableShare, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -946,6 +946,22 @@ impl Library {
             missing.push(MissingFolder::of(root, problem, hidden));
         }
         Ok(missing)
+    }
+
+    pub async fn unreachable_share(
+        &self,
+        id: FolderId,
+        shares: &impl ShareLookup,
+    ) -> Result<Option<UnreachableShare>, LibraryError> {
+        let root = self
+            .store
+            .database()
+            .read(move |connection| library_root(connection, id.0))
+            .await?;
+        Ok(match root.locator.local_path() {
+            Some(folder) => shares.unreachable_share(folder).await,
+            None => None,
+        })
     }
 
     pub async fn hidden_series_count(&self) -> Result<u32, LibraryError> {
