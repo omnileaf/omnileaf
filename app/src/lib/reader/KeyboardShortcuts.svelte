@@ -100,9 +100,11 @@
   <SheetContent
     to="main"
     dimsBehind
-    class="bg-background inline-reader-shortcuts expanded:inline-reader-shortcuts-wide"
+    class="overflow-y-auto bg-background inline-reader-shortcuts expanded:inline-reader-shortcuts-wide"
   >
-    <div class="flex items-center gap-md px-lg pbs-lg">
+    <div
+      class="sticky inset-bs-none flex items-center gap-md bg-background px-lg pbs-lg"
+    >
       <span
         class="flex shrink-0 items-center justify-center rounded-shadcn-control bg-chip block-reader-dense inline-reader-dense"
       >
@@ -124,7 +126,7 @@
         {/snippet}
       </Dialog.Close>
     </div>
-    <div class="flex flex-1 flex-col overflow-y-auto px-lg pbe-lg">
+    <div class="flex flex-col px-lg pbe-lg">
       <Dialog.Description class="text-body text-muted expanded:text-small">
         {m.reader_shortcuts_reversed()}
       </Dialog.Description>
