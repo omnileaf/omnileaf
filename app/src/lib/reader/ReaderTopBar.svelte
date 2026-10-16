@@ -97,7 +97,7 @@
         aria-label={backLabel}
         class={cn(
           READER_BUTTON,
-          "gap-2xs ios:shrink ios:ps-xs ios:pe-sm ios:inline-auto ios:max-inline-reader-back-named ios:min-inline-reader-dense",
+          "gap-2xs ios:max-inline-reader-back-named ios:max-expanded:shrink ios:max-expanded:ps-xs ios:max-expanded:pe-sm ios:max-expanded:inline-auto ios:max-expanded:min-inline-reader-dense",
         )}
       >
         <ChevronLeft
@@ -106,7 +106,7 @@
           class="shrink-0 rtl:-scale-x-100"
         />
         <span
-          class="hidden truncate text-small text-accent max-inline-reader-crumb-book ios:inline"
+          class="hidden truncate text-small text-accent max-inline-reader-crumb-book ios:max-expanded:inline"
         >
           {seriesTitle}
         </span>
