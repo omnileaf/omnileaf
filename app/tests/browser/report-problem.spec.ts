@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import { CommandFailure } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   FAKE_APP_VERSION,
@@ -14,6 +15,8 @@ import {
 } from "./fixtures.ts";
 
 const REPORT_PAGE = "/settings/about/report";
+const GROUP_GAP = 24;
+const HEADING_GAP = 8;
 const LOGGED = [
   "INFO omnileaf_app: open the library",
   "WARN omnileaf_engine::scan: skip a book path=<path>",
@@ -145,6 +148,26 @@ test.describe("sending it another way", () => {
 
     await expect.poll(() => shared).toEqual(["opened"]);
     expect(await keptCodes(page)).toEqual([FAKE_REPORT_CODE]);
+  });
+
+  test("sets the ways to send it a group's 24px below what's included, 8px under their heading", async ({
+    page,
+  }) => {
+    await openReport(page);
+    const includedBox = await boxOf(included(page));
+    const headingBox = await boxOf(
+      waysOut(page).getByRole("heading", { name: "Ways to send it" }),
+    );
+    const listBox = await boxOf(waysOut(page).getByRole("list"));
+
+    expect(headingBox.y - (includedBox.y + includedBox.height)).toBeCloseTo(
+      GROUP_GAP,
+      0,
+    );
+    expect(listBox.y - (headingBox.y + headingBox.height)).toBeCloseTo(
+      HEADING_GAP,
+      0,
+    );
   });
 
   test("keeps one code however many ways it goes", async ({ page }) => {
