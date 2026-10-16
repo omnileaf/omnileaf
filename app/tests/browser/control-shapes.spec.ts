@@ -22,6 +22,7 @@ const PAGE_BUTTON_HEIGHT = 36;
 const IOS_BUTTON_HEIGHT = 50;
 const SHADCN_CORNER = "8px";
 const PHONE_SECTION_BUTTON_HEIGHT = 48;
+const FOLDERS_BUTTON_HEIGHT = 44;
 const IOS_BUTTON_CORNER = "14px";
 const SHEET_CORNER = "24px";
 const PANEL_TITLE_SIZE = "17px";
@@ -245,7 +246,7 @@ test.describe("on an Android phone", () => {
     expect(await cornerOf(button)).toBe(SHADCN_CORNER);
   });
 
-  test("draws the Folders card's Add a folder as a 48px pill", async ({
+  test("draws the Folders card's Add a folder as a slim 44px pill", async ({
     page,
   }) => {
     await page.goto("/settings/library");
@@ -254,7 +255,7 @@ test.describe("on an Android phone", () => {
     const box = await boxOf(button);
     const corner = await cornerOf(button);
 
-    expect(box.height).toBe(PHONE_SECTION_BUTTON_HEIGHT);
+    expect(box.height).toBe(FOLDERS_BUTTON_HEIGHT);
     expect(parseFloat(corner)).toBeGreaterThanOrEqual(box.height / 2);
   });
 
