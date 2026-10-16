@@ -13,7 +13,7 @@ const STEPS = [
     ],
     leaveWith: "Continue",
   },
-  { headings: ["Already have comics or books?"], leaveWith: "Continue" },
+  { headings: ["Already have comics or books?"], leaveWith: "Skip" },
   { headings: ["A few choices"], leaveWith: "Continue" },
   { headings: ["You're all set"], leaveWith: "Open my library" },
 ] as const;
@@ -36,7 +36,7 @@ export async function finishFirstLaunchIfShown(
   for (const step of STEPS) {
     await session.waitFor(headingNamed(step.headings));
     const leave = xpath(
-      `//main//button[normalize-space()="${step.leaveWith}"]`,
+      `//main//button[starts-with(normalize-space(), "${step.leaveWith}")]`,
     );
     await (await session.waitFor(leave)).click();
   }
