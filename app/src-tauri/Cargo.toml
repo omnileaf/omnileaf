@@ -52,6 +52,7 @@ dispatch2.workspace = true
 tauri-plugin-dialog.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
+gtk.workspace = true
 webkit2gtk.workspace = true
 zbus.workspace = true
 
