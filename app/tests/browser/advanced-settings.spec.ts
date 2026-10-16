@@ -465,3 +465,49 @@ test.describe("the Advanced page of a release build", () => {
     });
   }
 });
+
+test.describe("Undo", () => {
+  test.use({
+    backend: {
+      ...onPlatform("android").backend,
+      libraryTags: () => [{ name: "Sea", seriesCount: 1 }],
+      removeLibraryTag: () => [],
+    },
+  });
+
+  test("remembers how Undo is offered", async ({ page }) => {
+    await page.goto("/settings/advanced");
+
+    await page.getByRole("switch", { name: "Offer Undo" }).click();
+    await page
+      .getByRole("combobox", { name: "Keep Undo for" })
+      .selectOption({ label: "30 seconds" });
+    await page
+      .getByRole("switch", { name: "Hold it while hovered or focused" })
+      .click();
+    await page.reload();
+
+    await expect(
+      page.getByRole("switch", { name: "Offer Undo" }),
+    ).not.toBeChecked();
+    await expect(
+      page.getByRole("combobox", { name: "Keep Undo for" }),
+    ).toHaveValue("30");
+    await expect(
+      page.getByRole("switch", { name: "Hold it while hovered or focused" }),
+    ).not.toBeChecked();
+  });
+
+  test("tells of a deletion without Undo once Undo is turned off", async ({
+    page,
+  }) => {
+    await page.goto("/settings/advanced");
+    await page.getByRole("switch", { name: "Offer Undo" }).click();
+
+    await page.goto("/settings/library/tags");
+    await page.getByRole("button", { name: "Delete Sea" }).click();
+
+    await expect(page.getByText("Sea deleted")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Undo" })).toHaveCount(0);
+  });
+});
