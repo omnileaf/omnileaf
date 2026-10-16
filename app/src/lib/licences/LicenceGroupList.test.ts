@@ -21,20 +21,20 @@ async function renderGroup(count: number) {
   });
 }
 
-test("names the licence and counts its packages", async () => {
+test("names the licence without counting its packages", async () => {
   const screen = await renderGroup(5);
 
   await expect
     .element(screen.getByRole("heading", { level: 2, name: "MIT" }))
     .toBeVisible();
-  await expect.element(screen.getByText("5 packages")).toBeVisible();
+  await expect.element(screen.getByText("5 packages")).not.toBeInTheDocument();
 });
 
 test("links each package to its licence", async () => {
   const screen = await renderGroup(1);
 
   await expect
-    .element(screen.getByRole("link", { name: "sample-0 1.0.0" }))
+    .element(screen.getByRole("link", { name: "sample-0", exact: true }))
     .toHaveAttribute("href", "/settings/about/licences/rust/sample-0@1.0.0");
 });
 
@@ -54,7 +54,7 @@ test("lists every package once asked, focusing the first it revealed", async () 
   await screen.getByRole("button", { name: "Show all 5" }).click();
 
   await expect
-    .element(screen.getByRole("link", { name: "sample-3 1.0.3" }))
+    .element(screen.getByRole("link", { name: "sample-3", exact: true }))
     .toHaveFocus();
   expect(screen.getByRole("link").elements()).toHaveLength(5);
   expect(screen.getByRole("button").elements()).toHaveLength(0);
