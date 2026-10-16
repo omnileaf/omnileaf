@@ -55,7 +55,7 @@
     bookTitle: string;
     pageNumber: number;
     pageCount: number;
-    quickSettings: Snippet;
+    quickSettings: Snippet | undefined;
     more: Snippet;
     isSettingsOpen: boolean;
     areShortcutsOpen: boolean;
@@ -187,13 +187,15 @@
       </BreadcrumbPage>
     </BreadcrumbItem>
   </Breadcrumb>
-  <div
-    role="group"
-    aria-label={m.reader_quick_settings()}
-    class="hidden shrink-0 items-stretch rounded-shadcn-control shadow-raised large:flex"
-  >
-    {@render quickSettings()}
-  </div>
+  {#if quickSettings !== undefined}
+    <div
+      role="group"
+      aria-label={m.reader_quick_settings()}
+      class="hidden shrink-0 items-stretch rounded-shadcn-control shadow-raised large:flex"
+    >
+      {@render quickSettings()}
+    </div>
+  {/if}
   <span
     aria-hidden="true"
     class="mx-xs hidden shrink-0 border-s border-border block-lg large:block"
