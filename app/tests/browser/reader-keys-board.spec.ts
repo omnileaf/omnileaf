@@ -88,6 +88,7 @@ test("lists the reader's keys in a sheet opened with the question mark", async (
   await expect(sheet(page).getByRole("heading", { level: 3 })).toHaveText([
     "Turning pages",
     "Reader",
+    "Auto scroll",
     "Zoom",
   ]);
   await expect(sheet(page)).toContainText("Back to the series");
@@ -100,7 +101,7 @@ test("lists the reader's keys in a sheet opened with the question mark", async (
   await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
 });
 
-test("sets the keys in two columns, zoom beside turning pages, in a 720px sheet on desktops", async ({
+test("sets the keys in two columns, auto scroll and zoom beside turning pages, in a 720px sheet on desktops", async ({
   page,
 }) => {
   await openBook(page);
@@ -115,12 +116,33 @@ test("sets the keys in two columns, zoom beside turning pages, in a 720px sheet 
   const turning = await boxOf(
     sheet(page).getByRole("heading", { level: 3, name: "Turning pages" }),
   );
+  const autoScroll = await boxOf(
+    sheet(page).getByRole("heading", { level: 3, name: "Auto scroll" }),
+  );
   const zoom = await boxOf(
     sheet(page).getByRole("heading", { level: 3, name: "Zoom" }),
   );
-  expect(zoom.x).toBeGreaterThan(turning.x + turning.width);
-  expect(zoom.y).toBeCloseTo(turning.y, 0);
+  expect(autoScroll.x).toBeGreaterThan(turning.x + turning.width);
+  expect(autoScroll.y).toBeCloseTo(turning.y, 0);
+  expect(zoom.x).toBeCloseTo(autoScroll.x, 0);
+  expect(zoom.y).toBeGreaterThan(autoScroll.y);
   expect((await boxOf(sheet(page))).width).toBe(SHEET_WIDTH);
+});
+
+test("says Space pauses and resumes auto scroll instead of turning the page while it runs", async ({
+  page,
+}) => {
+  await openBook(page);
+
+  await page.keyboard.press("Shift+?");
+
+  const row = sheet(page)
+    .getByRole("term")
+    .filter({ hasText: "Pause or resume auto scroll" });
+  await expect(row.locator("xpath=following-sibling::dd")).toHaveText("Space");
+  await expect(sheet(page)).toContainText(
+    "While auto scroll runs, Space pauses and resumes it instead of turning the page.",
+  );
 });
 
 test("dims the page behind the sheet", async ({ page }) => {

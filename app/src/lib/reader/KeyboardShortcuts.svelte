@@ -74,6 +74,16 @@
     ],
   });
 
+  const autoScroll = $derived<KeyGroup>({
+    title: m.reader_auto_scroll(),
+    rows: [
+      {
+        label: m.reader_shortcuts_pause_auto_scroll(),
+        keys: [m.reader_key_space()],
+      },
+    ],
+  });
+
   const zoom = $derived<KeyGroup>({
     title: m.reader_shortcuts_zoom(),
     rows: [
@@ -85,7 +95,7 @@
 
   const columns = $derived<readonly (readonly KeyGroup[])[]>([
     [turning, reader],
-    [zoom],
+    [autoScroll, zoom],
   ]);
 </script>
 
@@ -158,6 +168,9 @@
       <p class="text-caption text-muted">{m.reader_shortcuts_escape()}</p>
       <p class="pbs-sm text-caption text-muted">
         {m.reader_shortcuts_typing()}
+      </p>
+      <p class="pbs-sm text-caption text-muted">
+        {m.reader_shortcuts_auto_scroll()}
       </p>
     </div>
   </SheetContent>
