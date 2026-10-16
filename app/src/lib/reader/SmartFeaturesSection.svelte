@@ -52,6 +52,15 @@
       isDisabled: false,
     },
     {
+      feature: "autoScrollsAtMyPace",
+      label: m.reader_auto_scroll_pace(),
+      description: features.learnsReadingSpeed
+        ? m.reader_auto_scroll_pace_help()
+        : m.reader_needs_learn_speed(),
+      isOn: features.autoScrollsAtMyPace,
+      isDisabled: !features.learnsReadingSpeed,
+    },
+    {
       feature: "showsPagePreviews",
       label: m.reader_page_previews(),
       description: undefined,

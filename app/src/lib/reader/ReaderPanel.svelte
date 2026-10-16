@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Attachment } from "svelte/attachments";
   import { on } from "svelte/events";
-  import { Clock } from "@lucide/svelte";
+  import { Clock, Play } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
@@ -13,7 +13,11 @@
   import PageSlider from "#lib/reader/PageSlider.svelte";
   import type { ReadingDirection } from "#lib/reader/reading-direction.svelte.ts";
 
-  import { READER_GLASS } from "./reader-bar.ts";
+  import {
+    READER_BUTTON,
+    READER_GLASS,
+    READER_ICON_SIZE,
+  } from "./reader-bar.ts";
   import { type Spread, spreadPosition } from "./spreads.ts";
 
   const TIME_ICON_SIZE = 14;
@@ -31,6 +35,7 @@
     isBlank,
     showsPreviews,
     isShown,
+    onPlay,
     onSeek,
   }: {
     pages: readonly BookPage[];
@@ -44,6 +49,7 @@
     isBlank: boolean;
     showsPreviews: boolean;
     isShown: boolean;
+    onPlay: (() => void) | undefined;
     onSeek: (index: number) => void;
   } = $props();
 
@@ -104,6 +110,16 @@
   {/if}
   <div dir="ltr" class="flex items-center gap-xs expanded:gap-sm">
     <BookStepLink step="previous" neighbour={previous} />
+    {#if onPlay !== undefined}
+      <button
+        type="button"
+        aria-label={m.reader_start_auto_scroll()}
+        class={READER_BUTTON}
+        onclick={onPlay}
+      >
+        <Play size={READER_ICON_SIZE} aria-hidden="true" />
+      </button>
+    {/if}
     <span
       class="shrink-0 text-center text-small font-medium whitespace-nowrap tabular-nums min-inline-reader-count expanded:min-inline-reader-count-wide"
     >
