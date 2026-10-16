@@ -1488,6 +1488,59 @@ test.describe("while Screenshot mode is on", () => {
     expect(shown).not.toContain(BOOK_SERIES_TITLE);
     expect(shown).not.toContain(BOOK_TITLE);
   });
+
+  test("blanks each page to a grey panel saying which page it is, without reading it", async ({
+    page,
+  }) => {
+    const asked = await servePages(page);
+    await page.goto(`/read/${BOOK_ID}`);
+
+    await expect(shownPage(page, 1)).toBeVisible();
+    await expect(
+      shownPage(page, 1).getByText(`Page 1 of ${String(PAGE_COUNT)}`),
+    ).toBeVisible();
+    await page.keyboard.press("ArrowRight");
+    await expect(shownPage(page, 2)).toBeVisible();
+
+    expect(asked).toEqual([]);
+  });
+
+  test("shows the pages themselves once blank pages are turned off", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "omnileaf.screenshotMode",
+        JSON.stringify({
+          activity: { kind: "on" },
+          options: {
+            blankReaderPages: false,
+            showLabel: true,
+            turnOffAfterAnHour: false,
+          },
+        }),
+      );
+    });
+    await page.goto(`/read/${BOOK_ID}`);
+
+    await expect(page.locator('img[alt="Page 1"]')).toBeVisible();
+  });
+
+  test("blanks the nearby pages' thumbnails while the slider is dragged, keeping their numbers", async ({
+    page,
+  }) => {
+    await page.goto(`/read/${BOOK_ID}`);
+    const track = await boxOf(slider(page));
+    const y = track.y + track.height / 2;
+
+    await page.mouse.move(track.x + 2, y);
+    await page.mouse.down();
+    await page.mouse.move(track.x + track.width / 2, y, { steps: 4 });
+
+    await expect(nearbyPages(page).getByRole("listitem").first()).toBeVisible();
+    await expect(nearbyPages(page).locator("img")).toHaveCount(0);
+    await page.mouse.up();
+  });
 });
 
 test.describe("the books either side", () => {
