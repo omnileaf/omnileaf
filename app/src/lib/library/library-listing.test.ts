@@ -43,6 +43,12 @@ test("lists the series updated last first once last updated is chosen", () => {
   expect(listing.sort).toEqual({ by: "lastUpdated", direction: "descending" });
 });
 
+test("lists the series with the most unread books first once unread count is chosen", () => {
+  const listing = sortedBy(NEW_LIBRARY_LISTING, "unreadCount");
+
+  expect(listing.sort).toEqual({ by: "unreadCount", direction: "descending" });
+});
+
 test("lists titles from A to Z once title is chosen", () => {
   const listing = sortedBy(NEWEST_UNREAD, "title");
 
