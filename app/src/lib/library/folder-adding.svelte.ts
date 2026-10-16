@@ -52,6 +52,7 @@ const FAILURES = {
   clipboardUnavailable: ADDING_FAILED,
   browserUnavailable: ADDING_FAILED,
   fileManagerUnavailable: ADDING_FAILED,
+  systemSettingsUnavailable: ADDING_FAILED,
   noCrashReport: ADDING_FAILED,
   crashReportUnavailable: ADDING_FAILED,
   developmentBuildOnly: ADDING_FAILED,
