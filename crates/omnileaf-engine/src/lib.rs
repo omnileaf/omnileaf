@@ -50,6 +50,7 @@ mod project_link;
 mod reading_progress;
 mod reading_session;
 mod recent_log;
+mod report_code;
 mod rescan;
 mod rescan_conditions;
 mod rescan_plan;
@@ -107,6 +108,7 @@ pub use library_view::{
 };
 pub use linux_share::{MountTables, unreachable_linux_share};
 pub use log_stand_ins::LogStandIns;
+pub use log_stand_ins::{CleanedLog, LogStandIns};
 pub use missing_folder::{FolderProblem, MissingFolder};
 pub use network_share::{NetworkShare, ShareAddress, ShareLookup, ShareSignIn, UnreachableShare};
 pub use omnileaf_db::catalog::{AndroidTree, AppleBookmark, RootLocator, TreeUri};
@@ -123,6 +125,7 @@ pub use project_link::ProjectLink;
 pub use reading_progress::ReadingSaved;
 pub use reading_session::READING_SAVE_DELAY;
 pub use recent_log::RecentLog;
+pub use report_code::ReportCode;
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
 pub use rescan_conditions::{
     EXTERNAL_RESCAN_EVERY, PowerMode, RESCAN_EVERY, RescanConditions, Storage,
