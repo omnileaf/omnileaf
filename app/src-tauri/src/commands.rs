@@ -22,6 +22,7 @@ use crate::{
     back_swipe,
     crash_reporting::{CrashReportOffer, CrashReporting},
     folder_picker::pick_folder,
+    folder_share::SystemShares,
     full_screen::{self, FullScreenChange},
     ipc_error::IpcError,
     library_events::{LibraryChanged, ReadingSaved},
@@ -216,7 +217,7 @@ async fn relocate_library_folder(
 async fn missing_library_folders(
     library: State<'_, Library>,
 ) -> Result<Vec<MissingFolder>, IpcError> {
-    Ok(library.missing_folders().await?)
+    Ok(library.missing_folders(&SystemShares).await?)
 }
 
 #[tauri::command]
