@@ -200,6 +200,7 @@ export const TOKEN_THEME = {
     "dismiss",
     "docked-panel",
     "downloaded-mark",
+    "drop-area",
     "edit-dialog",
     "edit-dialog-height",
     "empty-art",

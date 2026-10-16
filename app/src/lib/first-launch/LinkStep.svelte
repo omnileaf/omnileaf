@@ -2,6 +2,7 @@
   import { Link2 } from "@lucide/svelte";
 
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
+  import { linkFolderWithProgress } from "#lib/library/add-folder.ts";
   import type { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
   import { FolderBookCounts } from "#lib/library/folder-book-counts.svelte.ts";
   import type { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
@@ -12,6 +13,9 @@
   import { atEveryWidth, type WordingByWidth } from "#lib/page/wording.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { deviceKindOf } from "./device";
+  import { FolderDrops } from "./folder-drops.svelte";
+  import FolderDropArea from "./FolderDropArea.svelte";
   import PickFolderSheet from "./PickFolderSheet.svelte";
   import type { PickerQuestion } from "./picker-question.svelte";
   import StepButton from "./StepButton.svelte";
@@ -48,6 +52,12 @@
   });
 
   const goesOn = $derived(linked.length > 0 || adding.isAdding);
+  const takesDrops = $derived(deviceKindOf(platform) === "desktop");
+  const drops = new FolderDrops((folder) =>
+    adding.addWith(linkFolderWithProgress(folder)),
+  );
+
+  $effect(() => (takesDrops ? drops.watch() : undefined));
 
   const HINT = {
     android: {
@@ -65,6 +75,14 @@
     fromMedium: m.first_launch_skip_desktop,
   } satisfies WordingByWidth;
 </script>
+
+{#snippet dropArea()}
+  <FolderDropArea {adding} dragged={drops.dragged}>
+    {#snippet hint()}
+      <WidthWording wording={HINT[platform]} />
+    {/snippet}
+  </FolderDropArea>
+{/snippet}
 
 <StepFrame step="link" {onBack}>
   <div class="flex flex-col gap-lg">
@@ -84,6 +102,7 @@
       {notices}
       usesStandIns={screenshotMode.isOn}
       addPlacement="below-list"
+      addArea={takesDrops ? dropArea : undefined}
     >
       {#snippet rowDetail(folder: LibraryFolder)}
         {@const books = counts.of(folder)}
