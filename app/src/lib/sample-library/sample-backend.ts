@@ -109,6 +109,8 @@ const PAGE_SIZE = 50;
 const SAMPLE_SECONDS_PER_PAGE = 8.5;
 const PAGE_WIDTH = 1000;
 const PAGE_HEIGHT = 1500;
+const STRIP_WIDTH = 800;
+const STRIP_HEIGHT = 2400;
 const LIBRARY_FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000001";
 const LIBRARY_FOLDER_NAME = "Sample Comics";
 const LIBRARY_FOLDER_LOCATION = "/media/Sample Comics";
@@ -190,7 +192,7 @@ function formatOf(series: SampleSeries): SeriesFormat {
   if (series.number % COMICS_EVERY === 0) {
     return "comic";
   }
-  return series.format === "Manga" ? "manga" : "book";
+  return MANGA_FORMATS.has(series.format) ? "manga" : "book";
 }
 
 function languageOf(series: SampleSeries): string | null {
@@ -247,6 +249,7 @@ const SMART_FILTERS: Record<SmartFilter, (series: SampleSeries) => boolean> = {
 };
 const FORMATS: readonly SeriesFormat[] = ["comic", "manga", "book"];
 const COMICS_EVERY = 3;
+const MANGA_FORMATS: ReadonlySet<string> = new Set(["Manga", "Webtoon"]);
 const SUGGESTED_TAGS = 3;
 const FAVOURITES_EVERY = 5;
 const FAVOURITE_REMAINDER = 4;
@@ -1122,11 +1125,13 @@ export function sampleBackend(
         series: sampleSeriesId(series.number),
         seriesTitle: titleOf(series),
         pages: Array.from({ length: readablePages }, (_, page) => {
-          const path = `pages/${String(series.number)}-${String(series.art)}-${String(number)}-${String(page + 1)}`;
+          const path = `${series.isStrip ? "strips" : "pages"}/${String(series.number)}-${String(series.art)}-${String(number)}-${String(page + 1)}`;
           return {
             path,
             thumbnail: `thumbnails/${path}`,
-            size: { width: PAGE_WIDTH, height: PAGE_HEIGHT },
+            size: series.isStrip
+              ? { width: STRIP_WIDTH, height: STRIP_HEIGHT }
+              : { width: PAGE_WIDTH, height: PAGE_HEIGHT },
           };
         }),
         startPage: book.reading.state === "started" ? book.reading.page - 1 : 0,
