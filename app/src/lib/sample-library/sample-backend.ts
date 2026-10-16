@@ -61,25 +61,52 @@ const LIBRARY_STATES = [
 const THOUSANDS_OF_SERIES = 12_480;
 const SERIES_STATES = ["ready", "loading", "failed", "empty"] as const;
 const SIXTH_VOLUME_FILES = ["present", "missing", "damaged"] as const;
-const MISSING_KINDS = ["none", "folder", "drive", "access", "sign-in"] as const;
+const MISSING_KINDS = [
+  "none",
+  "folder",
+  "drive",
+  "access",
+  "sign-in",
+  "mount",
+  "share",
+] as const;
 
 type MissingKind = (typeof MISSING_KINDS)[number];
 
 const MISSING_FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000002";
 const MISSING_FOLDER_SERIES = new Set([3, 6, 9, 12, 15, 18]);
+const NAS_MANGA = { server: "nas", name: "nas/manga" };
 const MISSING_FOLDERS = {
-  folder: { name: "Comics", location: "/media/Comics", problem: "missing" },
+  folder: {
+    name: "Comics",
+    location: "/media/Comics",
+    problem: { kind: "missing" },
+  },
   drive: {
     name: "Comics",
     location: "/Volumes/Archive/Comics",
-    problem: "driveDisconnected",
+    problem: { kind: "driveDisconnected" },
   },
   access: {
     name: "Manga",
     location: "Internal storage › Manga",
-    problem: "lostAccess",
+    problem: { kind: "lostAccess" },
   },
-  "sign-in": { name: "Manga", location: "nas/manga", problem: "needsSignIn" },
+  "sign-in": {
+    name: "Manga",
+    location: "/run/user/1000/gvfs/smb-share:server=nas,share=manga",
+    problem: { kind: "needsSignIn", share: NAS_MANGA },
+  },
+  mount: {
+    name: "Manga",
+    location: "/mnt/manga",
+    problem: { kind: "needsMounting", share: NAS_MANGA },
+  },
+  share: {
+    name: "Manga",
+    location: "nas › Manga",
+    problem: { kind: "shareUnreachable", share: NAS_MANGA },
+  },
 } as const satisfies Record<
   Exclude<MissingKind, "none">,
   { name: string; location: string; problem: FolderProblem }

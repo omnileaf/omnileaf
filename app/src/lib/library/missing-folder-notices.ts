@@ -8,6 +8,7 @@ export interface MissingFolderActions {
   readonly find: (missing: MissingFolder) => void;
   readonly unlink: (missing: MissingFolder) => void;
   readonly signIn: (missing: MissingFolder) => void;
+  readonly tryAgain: (missing: MissingFolder) => void;
 }
 
 const dismissedThisVisit = new Set<string>();

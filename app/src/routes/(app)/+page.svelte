@@ -16,6 +16,7 @@
     type LibrarySeries,
     type LibraryTab as KeptTab,
     type LibraryView,
+    type MissingFolder,
     type SeriesPage,
     type IpcError,
   } from "#lib/ipc/bindings.ts";
@@ -223,12 +224,15 @@
         unlinkingBooks = books.status === "ok" ? books.data : undefined;
       });
     },
-    signIn: ({ folder }) => {
-      void rescanFolderWithProgress(folder.id, () => undefined)
-        .then(reportingErrors)
-        .then(loadMissingFolders);
-    },
+    signIn: readAgain,
+    tryAgain: readAgain,
   });
+
+  function readAgain({ folder }: MissingFolder): void {
+    void rescanFolderWithProgress(folder.id, () => undefined)
+      .then(reportingErrors)
+      .then(loadMissingFolders);
+  }
 
   function reportingErrors(result: {
     readonly status: "ok" | "error";
