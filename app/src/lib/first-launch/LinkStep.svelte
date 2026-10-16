@@ -2,7 +2,7 @@
   import { Link2 } from "@lucide/svelte";
 
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
-  import type { AddFolder } from "#lib/library/add-folder.ts";
+  import type { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
   import { FolderBookCounts } from "#lib/library/folder-book-counts.svelte.ts";
   import type { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import LinkedFolders from "#lib/library/LinkedFolders.svelte";
@@ -13,6 +13,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import PickFolderSheet from "./PickFolderSheet.svelte";
+  import type { PickerQuestion } from "./picker-question.svelte";
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
   import StepBadge from "./StepBadge.svelte";
@@ -21,14 +22,16 @@
   let {
     platform,
     folders,
-    addFolder,
+    adding,
+    pickerQuestion,
     notices,
     onBack,
     onNext,
   }: {
     platform: Platform;
     folders: LibraryFolders;
-    addFolder: AddFolder;
+    adding: FolderAdding;
+    pickerQuestion: PickerQuestion;
     notices: Notices;
     onBack: () => void;
     onNext: () => void;
@@ -44,26 +47,7 @@
     void counts.load(linked);
   });
 
-  let isExplainingPicker = $state(false);
-  let hasExplainedPicker = false;
-  let answerPickerSheet: ((goesOn: boolean) => void) | undefined;
-
-  function explainPickerFirst(): Promise<boolean> {
-    if (platform !== "android" || hasExplainedPicker) {
-      return Promise.resolve(true);
-    }
-    isExplainingPicker = true;
-    return new Promise((resolve) => {
-      answerPickerSheet = resolve;
-    });
-  }
-
-  function closePickerSheet(goesOn: boolean): void {
-    isExplainingPicker = false;
-    hasExplainedPicker ||= goesOn;
-    answerPickerSheet?.(goesOn);
-    answerPickerSheet = undefined;
-  }
+  const goesOn = $derived(linked.length > 0 || adding.isAdding);
 
   const HINT = {
     android: {
@@ -96,8 +80,7 @@
     <LinkedFolders
       {platform}
       {folders}
-      {addFolder}
-      mayPick={explainPickerFirst}
+      {adding}
       {notices}
       usesStandIns={screenshotMode.isOn}
       addPlacement="below-list"
@@ -114,16 +97,16 @@
     </LinkedFolders>
   </div>
   <PickFolderSheet
-    isOpen={isExplainingPicker}
+    isOpen={pickerQuestion.isAsking}
     onContinue={() => {
-      closePickerSheet(true);
+      pickerQuestion.answer(true);
     }}
     onNotNow={() => {
-      closePickerSheet(false);
+      pickerQuestion.answer(false);
     }}
   />
   {#snippet actions()}
-    {#if linked.length > 0}
+    {#if goesOn}
       <StepButton kind="primary" onclick={onNext}>
         {m.first_launch_continue()}
       </StepButton>

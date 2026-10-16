@@ -1291,6 +1291,111 @@ test.describe("once folders are linked", () => {
   }
 });
 
+let endScan: () => void = () => undefined;
+
+test.describe("while a folder is still being scanned", () => {
+  test.use({
+    backend: {
+      ...FIRST_LAUNCH_BACKEND,
+      addLibraryFolder: async (onProgress) => {
+        await onProgress.send({ stage: "finding", found: 38 });
+        await new Promise<void>((resolve) => {
+          endScan = resolve;
+        });
+        device.folders.push(MANGA);
+        device.books.set(MANGA.id, 38);
+        device.series.set(MANGA.id, 32);
+        return {
+          name: MANGA.name,
+          series: 32,
+          books: 38,
+          unreadableBooks: 0,
+          unsupportedBooks: 0,
+          unreadableFolders: 0,
+        };
+      },
+    },
+  });
+
+  async function startScanning(page: Page): Promise<void> {
+    await goTo(page, "Already have comics or books?");
+    await page.getByRole("button", { name: "Add a folder" }).click();
+    await expect(page.getByText("38 so far")).toBeVisible();
+  }
+
+  async function goOnWhileScanning(page: Page): Promise<void> {
+    await startScanning(page);
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+  }
+
+  test("keeps the step's buttons clear of the scan's toast", async ({
+    page,
+  }) => {
+    await startScanning(page);
+    const toast = page.getByText("38 so far");
+    const lowest = page.getByRole("button", { name: /^Skip/ });
+
+    const [toastBox, buttonBox] = await Promise.all([
+      boxOf(toast),
+      boxOf(lowest),
+    ]);
+
+    expect(
+      toastBox.y + toastBox.height <= buttonBox.y ||
+        toastBox.y >= buttonBox.y + buttonBox.height ||
+        toastBox.x >= buttonBox.x + buttonBox.width ||
+        toastBox.x + toastBox.width <= buttonBox.x,
+    ).toBe(true);
+  });
+
+  test("offers Continue on Link folders while the folder is scanned", async ({
+    page,
+  }) => {
+    await startScanning(page);
+
+    await expect(
+      page.getByRole("button", { name: "Continue", exact: true }),
+    ).toBeVisible();
+  });
+
+  test("says it is still finding books, and opens the library straight away", async ({
+    page,
+  }) => {
+    await goOnWhileScanning(page);
+
+    await expect(heading(page, "You're all set")).toBeVisible();
+    await expect(
+      page.getByText(
+        "Omnileaf is still finding books. You can open your library now; scanning carries on.",
+      ),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Open my library" }).click();
+    await expect(heading(page, "Library")).toBeVisible();
+  });
+
+  test("says what it found once the scan ends", async ({ page }) => {
+    await goOnWhileScanning(page);
+    await expect(heading(page, "You're all set")).toBeVisible();
+
+    endScan();
+
+    await expect(heading(page, "Found 32 series and 38 books")).toBeVisible();
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations while still finding, in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await goOnWhileScanning(page);
+      await expect(heading(page, "You're all set")).toBeVisible();
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
+});
+
 test("goes back a step with the browser's back", async ({ page }) => {
   await goTo(page, "Where your library lives");
 
