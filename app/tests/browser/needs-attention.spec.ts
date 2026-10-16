@@ -22,7 +22,7 @@ const COMICS = {
     location: "/media/Comics",
     isAvailable: false,
   },
-  problem: "missing",
+  problem: { kind: "missing" },
   hiddenSeries: 41,
   isShownAnyway: false,
 } as MissingFolder;
