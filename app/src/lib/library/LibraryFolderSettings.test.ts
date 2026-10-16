@@ -6,6 +6,7 @@ import { render } from "vitest-browser-svelte";
 import {
   commands,
   type FileChanges,
+  type Platform,
   type LibraryFolder,
   type RescanOutcome,
   type ScanProgress,
@@ -144,12 +145,14 @@ async function renderSettings({
   rescanFolder = NOTHING_CHANGED,
   countFolderBooks = COUNTED,
   removeFolderBooks = BOOKS_REMOVED,
+  platform = "linux",
 }: {
   addFolder?: AddFolder;
   removeFolder?: RemoveFolder;
   rescanFolder?: RescanFolder;
   countFolderBooks?: CountFolderBooks;
   removeFolderBooks?: RemoveFolderBooks;
+  platform?: Platform;
 } = {}) {
   const notices = new Notices();
   const screen = await render(LibraryFolderSettings, {
@@ -161,7 +164,7 @@ async function renderSettings({
     removeFolderBooks,
     notices,
     usesStandIns: false,
-    platform: "linux",
+    platform,
   });
   await render(Toasts, { notices, platform: "linux", theme: "light" });
   return {
@@ -185,6 +188,20 @@ test("shows the home folder apart from the linked folders", async () => {
   await expect
     .element(folders.getByRole("listitem"))
     .toHaveTextContent("Sample Comics /media/Sample Comics");
+});
+
+test("says on iOS that the library stays inside the app, and where Files shows it", async () => {
+  serveFolders([HOME, COMICS]);
+
+  const { home } = await renderSettings({ platform: "ios" });
+
+  await expect
+    .element(
+      home.getByText(
+        "The library stays inside the app. Backups and books you add are in Files › On My iPad › Omnileaf.",
+      ),
+    )
+    .toBeVisible();
 });
 
 test("shows the home folder's path in monospace", async () => {
