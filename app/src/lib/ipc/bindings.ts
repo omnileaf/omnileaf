@@ -112,6 +112,8 @@ export const commands = {
 	copyVersionDetails: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_version_details")),
 	openProjectLink: (link: ProjectLink) => typedError<null, IpcError>(__TAURI_INVOKE("open_project_link", { link })),
 	problemReport: () => typedError<ProblemReportPreview, IpcError>(__TAURI_INVOKE("problem_report")),
+	copyProblemReport: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_problem_report")),
+	openProblemReportIssue: () => typedError<null, IpcError>(__TAURI_INVOKE("open_problem_report_issue")),
 	offerSavedCrashReport: () => typedError<{
 	details: string,
 	origin: CrashOrigin,
@@ -523,6 +525,7 @@ export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 export type ProbedFormat = "webp" | "jxl";
 
 export type ProblemReportPreview = {
+	code: ReportCode,
 	version: string,
 	system: string | null,
 	log: string[],
@@ -577,6 +580,8 @@ export type RelatedSeries = {
 	/**  Counts as 18+, which a library that reads no age ratings and keeps no marks never does. */
 	isAdult: boolean,
 };
+
+export type ReportCode = string;
 
 export type RescanOutcome = {
 	kind: "rescanned",
