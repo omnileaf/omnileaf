@@ -30,6 +30,7 @@
   import DirectionMenu from "#lib/reader/DirectionMenu.svelte";
   import { PageTurner } from "#lib/reader/page-turner.svelte.ts";
   import PageStack from "#lib/reader/PageStack.svelte";
+  import StripStack from "#lib/reader/StripStack.svelte";
   import {
     type ReaderAction,
     readerShortcuts,
@@ -151,6 +152,9 @@
     guidesSeenNow.has(guideKey) || seenOnce(guideKey).isSeen,
   );
   const look = $derived(settings.look);
+  const isStrip = $derived(reading.mode === "longStrip");
+  let strip: { scrollByScreen: (step: number) => boolean } | undefined =
+    $state();
   let isSettingsOpen = $state(false);
   let areShortcutsOpen = $state(false);
   let isJumpOpen = $state(false);
@@ -177,7 +181,7 @@
   const spreads = $derived(
     spreadsOf(
       book.pages.map((page) => page.size),
-      look.layout === "two",
+      !isStrip && look.layout === "two",
     ),
   );
   const spreadIndex = $derived(spreadAt(spreads, turner.shown));
@@ -309,6 +313,10 @@
   }
 
   function turnBy(step: number): void {
+    if (isStrip && !turner.isPastEnd) {
+      scrollBy(step);
+      return;
+    }
     if (step > 0 && turner.isPastEnd) {
       startNextBook();
       return;
@@ -325,6 +333,18 @@
     zoom = 1;
     controls.hide();
     if (turner.isPastEnd && skipUpNext.isOn) {
+      goStraightOn();
+    }
+  }
+
+  function scrollBy(step: number): void {
+    controls.hide();
+    if (strip?.scrollByScreen(step) !== false || step < 0) {
+      return;
+    }
+    turner.goTo(pageCount - 1);
+    turner.turn(1);
+    if (skipUpNext.isOn) {
       goStraightOn();
     }
   }
@@ -663,7 +683,9 @@
 </script>
 
 <svelte:window
-  {@attach shortcut(...readerShortcuts(act, () => reading.direction, platform))}
+  {@attach shortcut(
+    ...readerShortcuts(act, () => reading.direction, platform, reading.mode),
+  )}
   onmouseup={(event: MouseEvent) => {
     if (event.button === MOUSE_BACK_BUTTON) {
       event.preventDefault();
@@ -709,6 +731,41 @@
     }}
     onOpenChange={holdControls}
   />
+{/snippet}
+
+{#snippet stripZones()}
+  <div
+    role="presentation"
+    data-tap-zones
+    class="absolute inset-none grid touch-pan-y touch-pinch-zoom grid-strip-zones"
+  >
+    <button
+      type="button"
+      aria-label={m.reader_scroll_up()}
+      class="focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
+      onclick={(event) => {
+        onZone(event, "previous");
+      }}
+    ></button>
+    <button
+      type="button"
+      aria-label={controls.isShown
+        ? m.reader_hide_controls()
+        : m.reader_show_controls()}
+      class="focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
+      onclick={(event) => {
+        onZone(event, "toggleControls");
+      }}
+    ></button>
+    <button
+      type="button"
+      aria-label={m.reader_scroll_down()}
+      class="focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
+      onclick={(event) => {
+        onZone(event, "next");
+      }}
+    ></button>
+  </div>
 {/snippet}
 
 {#snippet turnZones()}
@@ -788,28 +845,47 @@
       isPanelOpen && "expanded:inset-e-reader-settings-room",
     ]}
   >
-    <PageStack
-      pages={book.pages}
-      shown={turner.shown}
-      {spread}
-      fit={look.fit}
-      {zoom}
-      isReversed={reading.direction === "rightToLeft"}
-      overlay={turnZones}
-      bookTitle={named.title}
-      isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
-      {slide}
-      {isSettling}
-      onNextPage={() => {
-        act("next");
-      }}
-      onShownReady={() => {
-        if (!hasOpened) {
-          hasOpened = true;
-          controls.bookOpened();
-        }
-      }}
-    />
+    {#if isStrip}
+      <StripStack
+        bind:this={strip}
+        pages={book.pages}
+        shown={turner.shown}
+        isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
+        overlay={stripZones}
+        onShown={(index: number) => {
+          turner.goTo(index);
+        }}
+        onShownReady={() => {
+          if (!hasOpened) {
+            hasOpened = true;
+            controls.bookOpened();
+          }
+        }}
+      />
+    {:else}
+      <PageStack
+        pages={book.pages}
+        shown={turner.shown}
+        {spread}
+        fit={look.fit}
+        {zoom}
+        isReversed={reading.direction === "rightToLeft"}
+        overlay={turnZones}
+        bookTitle={named.title}
+        isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
+        {slide}
+        {isSettling}
+        onNextPage={() => {
+          act("next");
+        }}
+        onShownReady={() => {
+          if (!hasOpened) {
+            hasOpened = true;
+            controls.bookOpened();
+          }
+        }}
+      />
+    {/if}
     {#if look.light.isOn}
       <div
         aria-hidden="true"
@@ -849,7 +925,7 @@
         bookTitle={named.title}
         {pageNumber}
         {pageCount}
-        {quickSettings}
+        quickSettings={isStrip ? undefined : quickSettings}
         {more}
         {isSettingsOpen}
         {areShortcutsOpen}
@@ -896,7 +972,7 @@
         previous={named.previous}
         next={named.next}
         direction={reading.direction}
-        {quickSettings}
+        quickSettings={isStrip ? undefined : quickSettings}
         isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
         showsPreviews={smartFeatures.showsPagePreviews}
         isShown={controls.isShown}
@@ -959,7 +1035,7 @@
       holdControls(false);
     }}
   />
-  {#if !isGuideSeen && !turner.isPastEnd}
+  {#if !isGuideSeen && !isStrip && !turner.isPastEnd}
     <ReaderGuide
       direction={reading.direction}
       zones={look.tapZones}
