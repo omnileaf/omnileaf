@@ -13,6 +13,18 @@ import NewCategoryDialog from "./NewCategoryDialog.svelte";
 const DESKTOP_WINDOW = { width: 1280, height: 800 } as const;
 const PLATFORMS: readonly Platform[] = ["linux", "ios", "windows"];
 
+interface FieldSize {
+  readonly platform: Platform;
+  readonly height: number;
+  readonly text: string;
+}
+
+const FIELD_SIZES: readonly FieldSize[] = [
+  { platform: "linux", height: 36, text: "14px" },
+  { platform: "ios", height: 48, text: "16px" },
+  { platform: "windows", height: 36, text: "14px" },
+];
+
 afterEach(() => {
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
@@ -40,5 +52,25 @@ for (const platform of PLATFORMS) {
       resolvedColour("transparent", "backgroundColor"),
     );
     expect(style.boxShadow).toContain("0px 1px 2px 0px");
+  });
+}
+
+for (const size of FIELD_SIZES) {
+  test(`sizes the name field ${String(size.height)}px tall with ${size.text} text on ${size.platform}`, async () => {
+    await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+    document.documentElement.dataset.platform = size.platform;
+    document.documentElement.dataset.theme = "light";
+    await render(NewCategoryDialog, {
+      isOpen: true,
+      onAdd: () => {},
+      onClose: () => {},
+    });
+
+    const field = page
+      .getByRole("textbox", { name: m.library_tabs_category_name() })
+      .element();
+
+    expect(field.getBoundingClientRect().height).toBe(size.height);
+    expect(getComputedStyle(field).fontSize).toBe(size.text);
   });
 }
