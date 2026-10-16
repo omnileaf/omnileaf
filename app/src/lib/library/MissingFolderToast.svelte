@@ -33,10 +33,12 @@
 
   let {
     missing,
+    isStillFailing,
     toast,
     handlers,
   }: {
     missing: MissingFolder;
+    isStillFailing: boolean;
     toast: ToastHandle;
     handlers: MissingFolderActions;
   } = $props();
@@ -63,10 +65,17 @@
           body: m.missing_access_body(),
         };
       case "needsSignIn":
-        return {
-          title: m.missing_sign_in_title({ name }),
-          body: m.missing_sign_in_body({ share: problem.share.name }),
-        };
+        return isStillFailing
+          ? {
+              title: m.missing_sign_in_failed_title({ name }),
+              body: m.missing_sign_in_failed_body({
+                share: problem.share.name,
+              }),
+            }
+          : {
+              title: m.missing_sign_in_title({ name }),
+              body: m.missing_sign_in_body({ share: problem.share.name }),
+            };
       case "needsMounting":
         return {
           title: m.missing_mount_title({ name }),
@@ -123,7 +132,7 @@
           handlers.signIn(missing);
         }}
       >
-        {m.missing_sign_in()}
+        {isStillFailing ? m.missing_sign_in_again() : m.missing_sign_in()}
       </Button>
     {:else if remedy === "tryAgain"}
       <Button
