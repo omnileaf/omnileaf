@@ -469,6 +469,7 @@ fn opened_book(
         reading_direction,
         bookmarked_pages: None,
         damage: None,
+        seconds_per_page: None,
     }
 }
 
