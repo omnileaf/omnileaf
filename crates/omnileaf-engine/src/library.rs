@@ -55,7 +55,7 @@ use crate::{
     file_in_storage::FileInStorage,
     history::whole_seconds,
     library_changes::CatalogWritten,
-    library_folder::root_folder,
+    library_folder::{folder_location, root_folder},
     library_layout::folder_name,
     library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
@@ -243,6 +243,10 @@ impl Library {
                 source: io::ErrorKind::Unsupported.into(),
             });
         };
+        on_progress(ScanProgress::Adding {
+            name: folder_name(&folder),
+            location: folder_location(&locator),
+        });
         let _scanning = self.catalog_change_lock.lock().await;
         on_progress(ScanProgress::Finding { found: 0 });
         let layout = find_books_in(
