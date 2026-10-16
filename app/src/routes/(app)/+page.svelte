@@ -25,6 +25,7 @@
   import ActiveFilters from "#lib/library/ActiveFilters.svelte";
   import AddFolderButton from "#lib/library/AddFolderButton.svelte";
   import CategoryTabs from "#lib/library/CategoryTabs.svelte";
+  import ChooseShareAgainSheet from "#lib/library/ChooseShareAgainSheet.svelte";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import FilterAndSort from "#lib/library/FilterAndSort.svelte";
@@ -204,6 +205,7 @@
   const notices = getNotices();
   let hiddenSeries = $state(0);
   let unlinking = $state<LibraryFolder | undefined>();
+  let choosingAgain = $state<MissingFolder | undefined>();
   let unlinkingBooks = $state<number | undefined>();
   const folderNotices = new MissingFolderNotices(notices, {
     showAnyway: ({ folder }) => {
@@ -212,11 +214,12 @@
         .then(reportingErrors)
         .then(loadMissingFolders);
     },
-    find: ({ folder }) => {
-      void commands
-        .relocateLibraryFolder(folder.id, new Channel())
-        .then(reportingErrors)
-        .then(loadMissingFolders);
+    find: (missing) => {
+      if (missing.problem.kind === "shareUnreachable") {
+        choosingAgain = missing;
+        return;
+      }
+      void relocate(missing);
     },
     unlink: ({ folder }) => {
       unlinking = folder;
@@ -230,6 +233,26 @@
     },
     tryAgain: readAgain,
   });
+
+  async function relocate(missing: MissingFolder): Promise<void> {
+    const relocated = await commands.relocateLibraryFolder(
+      missing.folder.id,
+      new Channel(),
+    );
+    if (relocated.status === "error") {
+      reportError(relocated.error);
+    } else if (
+      relocated.data !== null &&
+      missing.problem.kind === "shareUnreachable"
+    ) {
+      if (relocated.data.outcome.kind === "unreachable") {
+        folderNotices.stillFailing(missing);
+      } else {
+        folderNotices.back(missing);
+      }
+    }
+    await loadMissingFolders();
+  }
 
   async function signInTo(missing: MissingFolder): Promise<void> {
     const signedIn = await commands.signInToLibraryFolder(missing.folder.id);
@@ -598,6 +621,23 @@
   }}
   onCancel={() => {
     unlinking = undefined;
+  }}
+/>
+
+<ChooseShareAgainSheet
+  choosing={choosingAgain?.problem.kind === "shareUnreachable"
+    ? { name: choosingAgain.folder.name, share: choosingAgain.problem.share }
+    : undefined}
+  platform={data.appInfo.platform}
+  onContinue={() => {
+    const chosen = choosingAgain;
+    choosingAgain = undefined;
+    if (chosen !== undefined) {
+      void relocate(chosen);
+    }
+  }}
+  onClose={() => {
+    choosingAgain = undefined;
   }}
 />
 
