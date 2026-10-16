@@ -445,6 +445,7 @@
   --spacing-dialog-inset: 1.25rem;
   --spacing-dialog-gap: 1rem;
   --spacing-dialog-button: 2.25rem;
+  --spacing-shadcn-control: 2.25rem;
   --spacing-checkbox: 1rem;
   --spacing-active-dot: 0.625rem;
   --spacing-attention-dot: 0.75rem;
@@ -958,6 +959,7 @@
     --spacing-switch-inset-on: 0.125rem;
     --radius-dialog-button: 0.375rem;
     --spacing-dialog-button: 1.75rem;
+    --spacing-shadcn-control: 1.75rem;
   }
 
   @variant windows {
@@ -976,6 +978,7 @@
     --spacing-switch-inset-on: 0.1875rem;
     --radius-dialog-button: 0.25rem;
     --spacing-dialog-button: 2rem;
+    --spacing-shadcn-control: 2rem;
   }
 }
 
@@ -1004,6 +1007,10 @@
   --color-windows-mica: var(--windows-mica);
   --color-button-outline: var(--button-outline-fill);
   --color-button-outline-edge: var(--button-outline-edge);
+  --color-input-fill: var(--input-fill);
+  --color-input-group: var(--input-group-fill);
+  --color-input-group-edge: var(--input-group-edge);
+  --radius-input-group: var(--input-group-radius);
   --color-select: var(--select-fill);
   --color-select-edge: var(--select-edge);
   --color-ios-material: var(--ios-material);

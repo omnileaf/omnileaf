@@ -88,6 +88,7 @@
   --checkbox-off: transparent;
   --select-fill: transparent;
   --button-outline-fill: var(--background);
+  --input-fill: transparent;
   --switch-thumb: var(--background);
   --switch-thumb-on: var(--background);
   --glass: oklch(0.985 0 0 / 78%);
@@ -183,6 +184,7 @@
   --checkbox-off: color-mix(in oklch, var(--input) 30%, transparent);
   --select-fill: color-mix(in oklch, var(--input) 30%, transparent);
   --button-outline-fill: color-mix(in oklch, var(--input) 30%, transparent);
+  --input-fill: color-mix(in oklch, var(--input) 30%, transparent);
   --switch-thumb: var(--foreground);
   --switch-thumb-on: var(--primary-foreground);
   --glass: oklch(0.2 0 0 / 72%);
@@ -319,6 +321,9 @@
   --dialog-radius: var(--radius-lg);
   --dialog-shadow: var(--shadow-lg);
   --button-outline-edge: var(--input);
+  --input-group-fill: var(--input-fill);
+  --input-group-edge: var(--input);
+  --input-group-radius: var(--radius-md);
   --android-container-low: color-mix(
     in oklch,
     var(--foreground) 4%,
@@ -388,6 +393,9 @@
   --dialog-radius: var(--radius-android-xl);
   --button-outline-fill: transparent;
   --button-outline-edge: var(--android-outline);
+  --input-group-fill: var(--android-container-high);
+  --input-group-edge: transparent;
+  --input-group-radius: 9999px;
   --hover-fill: color-mix(
     in oklab,
     currentColor var(--state-hover),
@@ -426,6 +434,9 @@
   --focus-ring-color: color-mix(in oklch, var(--primary) 45%, transparent);
   --button-outline-fill: var(--ios-fill);
   --button-outline-edge: transparent;
+  --input-group-fill: var(--ios-fill);
+  --input-group-edge: transparent;
+  --input-group-radius: var(--radius-ios-cell);
 }
 
 [data-platform="macos"],
@@ -462,6 +473,7 @@
   --focus-ring-color: color-mix(in oklch, var(--primary) 50%, transparent);
   --dialog-radius: var(--radius-macos-panel);
   --dialog-shadow: var(--shadow-macos-menu);
+  --input-group-radius: var(--radius-macos-control);
 }
 
 [data-platform="windows"],
@@ -506,4 +518,7 @@
   --dialog-shadow: var(--shadow-windows-flyout);
   --button-outline-fill: var(--windows-control);
   --button-outline-edge: var(--windows-stroke);
+  --input-group-fill: var(--windows-control);
+  --input-group-edge: var(--windows-stroke);
+  --input-group-radius: var(--radius-windows-control);
 }
