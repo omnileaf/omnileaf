@@ -539,6 +539,23 @@ test("lists the series read last first, then those never read", async () => {
   expect(new Set(titles.slice(0, readTitles.size))).toEqual(readTitles);
 });
 
+test("lists the series that gained a book last first, then the rest newest first", async () => {
+  const { backend } = backendFor();
+
+  const page = await backend.librarySeries(null, {
+    ...NEW_LIBRARY_LISTING,
+    sort: { by: "lastUpdated", direction: "descending" },
+  });
+
+  expect(page.series.slice(0, 5).map((series) => series.title)).toEqual([
+    "Sample Series 04",
+    "Sample Series 01",
+    "Sample Series 02",
+    LONG_TITLE,
+    "Sample Series 03",
+  ]);
+});
+
 test("starts the library's tabs with All shown and New chapters hidden", async () => {
   const { backend } = backendFor();
 
