@@ -699,3 +699,22 @@ test("clears History and puts it back on Undo", async () => {
     (await backend.readingHistory(null, books)).entries.length,
   ]).toEqual([0, before]);
 });
+
+test("lists the last book of a series read to the end as finished", async () => {
+  const { backend } = backendFor();
+
+  const { entries } = await backend.readingHistory(null, {
+    kind: "books",
+    matching: "",
+  });
+
+  expect(entries.some((entry) => entry.readTo.state === "end")).toBe(true);
+});
+
+test("fails to read History when the library can't be read", async () => {
+  const { backend } = backendFor("?library=failed");
+
+  await expect(
+    backend.readingHistory(null, { kind: "books", matching: "" }),
+  ).rejects.toThrow();
+});
