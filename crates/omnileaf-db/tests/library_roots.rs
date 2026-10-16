@@ -177,6 +177,7 @@ impl Library {
             series,
             title: format!("Volume {index:02}"),
             added_at_ms: ADDED_AT_MS,
+            page_count: None,
         };
         let id = book.id();
         let roots: Vec<i64> = roots.iter().map(|root| row_key(*root)).collect();

@@ -7,9 +7,10 @@ macro_rules! insert_book {
     ($on_conflict:literal) => {
         concat!(
             "INSERT INTO book (
-                id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind
+                id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind,
+                page_count
             )
-            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7 FROM series WHERE id = ?2",
+            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7, ?8 FROM series WHERE id = ?2",
             $on_conflict
         )
     };
@@ -37,6 +38,7 @@ pub struct NewBook {
     pub series: SeriesId,
     pub title: String,
     pub added_at_ms: i64,
+    pub page_count: Option<u32>,
 }
 
 impl NewBook {
@@ -125,6 +127,7 @@ fn insert(transaction: &Transaction<'_>, book: &NewBook, sql: &str) -> Result<us
         book.added_at_ms,
         book.fingerprint.as_bytes(),
         kind_name(book.fingerprint.kind()),
+        book.page_count,
     ))?)
 }
 
@@ -155,6 +158,7 @@ mod tests {
             series: SeriesId::local("Sample Series 01").unwrap(),
             title: "Volume 01".to_owned(),
             added_at_ms: 0,
+            page_count: None,
         };
 
         let outcome = add_book_unless_present(&transaction, &book);
