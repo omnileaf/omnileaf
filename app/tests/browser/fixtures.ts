@@ -166,6 +166,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   },
   rescanLibraryFolders: () => [],
   removeBooksOfEmptiedFolder: () => ({ kind: "kept" }),
+  foundLibrary: () => null,
   firstLaunchFinished: () => true,
   finishFirstLaunch: () => null,
   setAppLanguage: () => null,
