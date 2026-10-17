@@ -61,7 +61,9 @@
   })}
 />
 
-<div class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row">
+<div
+  class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row desktop-shell:flex-row"
+>
   {#key language.resolved}
     <AppNavigation current={sectionOf(page.url.pathname)} />
   {/key}
