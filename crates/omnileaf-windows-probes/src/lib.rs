@@ -1,9 +1,13 @@
-//! The raw Win32 reads behind scheduled folder rescans, which the app maps to its decisions.
+//! The raw Win32 reads behind scheduled folder rescans and missing folders, which the app maps to its decisions.
 #![cfg(windows)]
 
 use std::{mem, ptr};
 
-use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+use windows_sys::Win32::Foundation::{
+    CloseHandle, ERROR_CONNECTION_UNAVAIL, ERROR_MORE_DATA, INVALID_HANDLE_VALUE, MAX_PATH,
+    NO_ERROR,
+};
+use windows_sys::Win32::NetworkManagement::WNet::WNetGetConnectionW;
 use windows_sys::Win32::Storage::FileSystem::{
     CreateFileW, FILE_SHARE_READ, FILE_SHARE_WRITE, GetDriveTypeW, OPEN_EXISTING,
 };
@@ -98,6 +102,35 @@ pub fn system_status_flag() -> Option<u8> {
     succeeded.then_some(status.SystemStatusFlag)
 }
 
+/// Asks `WNetGetConnectionW` for the share a drive such as `Z:` is mapped to, which it names even while the share is disconnected.
+#[must_use]
+#[expect(
+    unsafe_code,
+    reason = "WNetGetConnectionW is only reachable through FFI"
+)]
+pub fn remote_name(drive: &str) -> Option<String> {
+    let drive: Vec<u16> = drive.encode_utf16().chain([0]).collect();
+    let mut capacity = MAX_PATH;
+    loop {
+        let mut remote = vec![0_u16; usize::try_from(capacity).ok()?];
+        let mut length = capacity;
+        // SAFETY: `drive` is NUL-terminated and `remote` holds `length` UTF-16 units, and both outlive the call.
+        let answer =
+            unsafe { WNetGetConnectionW(drive.as_ptr(), remote.as_mut_ptr(), &raw mut length) };
+        match answer {
+            NO_ERROR | ERROR_CONNECTION_UNAVAIL => {
+                let end = remote
+                    .iter()
+                    .position(|&unit| unit == 0)
+                    .unwrap_or(remote.len());
+                return Some(String::from_utf16_lossy(remote.get(..end)?));
+            }
+            ERROR_MORE_DATA if length > capacity => capacity = length,
+            _ => return None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -125,6 +158,13 @@ mod tests {
     #[test]
     fn reads_no_bus_of_a_drive_that_is_not_there() {
         assert_eq!(bus_type(r"?:\"), None);
+    }
+
+    #[test]
+    fn reads_no_share_for_a_drive_that_is_not_mapped() {
+        let system_drive = std::env::var("SystemDrive").unwrap_or_else(|_| "C:".to_owned());
+
+        assert_eq!(remote_name(&system_drive), None);
     }
 
     #[test]
