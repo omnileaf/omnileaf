@@ -285,6 +285,7 @@ export const TOKEN_THEME = {
     "panel-button",
     "panel-field",
     "panel-inline",
+    "permission-reason",
     "phone-button",
     "phone-row",
     "pill",

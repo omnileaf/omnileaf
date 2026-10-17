@@ -11,6 +11,7 @@
   import { atEveryWidth, type WordingByWidth } from "#lib/page/wording.ts";
   import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { permissionsSummary } from "#lib/permissions/permissions.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
@@ -57,6 +58,12 @@
           screenshotMode.activity,
           timeFormat.hourCycle,
         ),
+      },
+      {
+        route: "/(app)/settings/privacy/permissions",
+        icon: ShieldCheck,
+        label: m.permissions_title(),
+        summary: permissionsSummary(data.linkedFolders),
       },
     ]}
   />
