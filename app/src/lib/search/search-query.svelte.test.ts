@@ -61,15 +61,6 @@ test("chooses a condition, and drops it when it is chosen again", () => {
   expect([chosen, query.conditions]).toEqual([["finished"], []]);
 });
 
-test("drops every condition at once", () => {
-  const query = englishQuery();
-  query.type("unread finished ");
-
-  query.clearConditions();
-
-  expect(query.conditions).toEqual([]);
-});
-
 test("has nothing to search for until text or a condition is in it", () => {
   const query = englishQuery();
   query.type("   ");
@@ -95,4 +86,15 @@ test("starts over from typed text, reading its filter words", () => {
       finished: "only",
     },
   });
+});
+
+test("narrows the search to one format, and back to everything", () => {
+  const query = englishQuery();
+  query.type("lantern");
+
+  query.narrowTo("manga");
+  const narrowed = query.search.filter.formats;
+  query.narrowTo("everything");
+
+  expect([narrowed, query.search.filter.formats]).toEqual([["manga"], []]);
 });

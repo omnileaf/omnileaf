@@ -47,11 +47,14 @@
   import { nothingFoundTitle } from "#lib/search/nothing-found.ts";
   import { searchTextIn } from "#lib/search/search-route.ts";
   import SearchField from "#lib/search/SearchField.svelte";
-  import { SearchQuery } from "#lib/search/search-query.svelte.ts";
+  import {
+    SearchQuery,
+    type SearchScope,
+  } from "#lib/search/search-query.svelte.ts";
   import { RecentSearches } from "#lib/search/recent-searches.svelte.ts";
   import SearchResults from "#lib/search/SearchResults.svelte";
   import SearchStart from "#lib/search/SearchStart.svelte";
-  import ShowChoices from "#lib/search/ShowChoices.svelte";
+  import ScopeChips from "#lib/search/ScopeChips.svelte";
   import {
     columnsOf,
     movedTo,
@@ -144,10 +147,6 @@
 
   function toggle(condition: FilterCondition): void {
     query.toggle(condition);
-  }
-
-  function showEverything(): void {
-    query.clearConditions();
   }
 
   function close(): void {
@@ -343,11 +342,11 @@
         class="medium:hidden"
       />
     {/if}
-    <ShowChoices
-      conditions={query.conditions}
-      onToggle={toggle}
-      onEverything={showEverything}
-      class={[query.conditions.length > 0 && "max-medium:hidden"]}
+    <ScopeChips
+      scope={query.scope}
+      onNarrow={(scope: SearchScope) => {
+        query.narrowTo(scope);
+      }}
     />
     {#if results.list.kind === "failed"}
       <p class="text-body text-muted">{m.search_failed()}</p>
