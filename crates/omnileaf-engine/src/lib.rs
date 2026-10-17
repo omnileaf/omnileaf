@@ -87,7 +87,7 @@ pub use library_search::LibrarySearch;
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
 pub use library_view::{
     CoversPerRow, CoversPerRowCount, CoversPerRowOutOfRange, CoversPerRowRange, CoversPerRowRanges,
-    DesktopCoversPerRow, LibraryDisplay, LibraryView, OnCovers, PhoneCoversPerRow,
+    DesktopCoversPerRow, LibraryDisplay, LibraryGrouping, LibraryView, OnCovers, PhoneCoversPerRow,
     TabletCoversPerRow,
 };
 pub use omnileaf_db::catalog::{AndroidTree, AppleBookmark, RootLocator, TreeUri};

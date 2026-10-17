@@ -71,10 +71,26 @@
       reportError(error);
     },
   );
+  const view = new StoredChoice<LibraryView>(
+    {
+      read: () => commands.libraryView(),
+      store: (chosen: LibraryView) => commands.setLibraryView(chosen),
+      fallback: DEFAULT_LIBRARY_VIEW,
+    },
+    (error) => {
+      reportError(error);
+    },
+  );
   const tab = new LibraryTab();
   let categories = $state<readonly LibraryCategory[]>([]);
   let filterChoices = $state<LibraryFilterChoices>(NO_FILTER_CHOICES);
-  const chosenCategory = $derived(categoryOf(tab.chosen, categories));
+  const tabsShown = $derived(
+    showsCategoryTabs(categories) &&
+      (view.reading.kind !== "read" || view.reading.value.showsCategoryTabs),
+  );
+  const chosenCategory = $derived(
+    categoryOf(tab.chosen, tabsShown ? categories : []),
+  );
   const library = librarySeriesList((after) =>
     chosenCategory === undefined
       ? commands.librarySeries(after, listedBy())
@@ -85,16 +101,6 @@
       chosenCategory === undefined
         ? commands.librarySeriesCount(listedBy().filter)
         : commands.categorySeriesCount(chosenCategory, listedBy().filter),
-    (error) => {
-      reportError(error);
-    },
-  );
-  const view = new StoredChoice<LibraryView>(
-    {
-      read: () => commands.libraryView(),
-      store: (chosen: LibraryView) => commands.setLibraryView(chosen),
-      fallback: DEFAULT_LIBRARY_VIEW,
-    },
     (error) => {
       reportError(error);
     },
@@ -304,6 +310,7 @@
         view={loaded.view}
         {coversDrawn}
         {mostThatFit}
+        hasCategories={showsCategoryTabs(categories)}
         onChoose={(chosen: LibraryView) => {
           view.choose(chosen);
         }}
@@ -315,7 +322,7 @@
   bind:offsetHeight={headHeight}
   class="desktop:expanded:sticky desktop:expanded:inset-bs-under-toolbar desktop:expanded:z-series-bar desktop:expanded:-ms-gutter desktop:expanded:-me-page-end desktop:expanded:bg-background desktop:expanded:ps-gutter desktop:expanded:pe-page-end"
 >
-  {#if hasBooks && showsCategoryTabs(categories)}
+  {#if hasBooks && tabsShown}
     <CategoryTabs
       {categories}
       chosen={chosenCategory ?? ALL_SERIES}

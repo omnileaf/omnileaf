@@ -20,11 +20,13 @@
     view,
     coversDrawn,
     mostThatFit,
+    hasCategories,
     onChoose,
   }: {
     view: LibraryView;
     coversDrawn: number | undefined;
     mostThatFit: number | undefined;
+    hasCategories: boolean;
     onChoose: (view: LibraryView) => void;
   } = $props();
 
@@ -95,7 +97,13 @@
       <h2 id={titleId} class="text-panel-title font-bold">
         {m.library_view_options()}
       </h2>
-      <ViewChoices {view} {coversDrawn} {mostThatFit} {onChoose} />
+      <ViewChoices
+        {view}
+        {coversDrawn}
+        {mostThatFit}
+        {hasCategories}
+        {onChoose}
+      />
     </PopoverContent>
   </Popover.Root>
 {:else}
@@ -128,7 +136,13 @@
       <div
         class="flex flex-col overflow-auto px-sheet-inline pbs-sheet-gap pbe-sheet-bottom min-block-none"
       >
-        <ViewChoices {view} {coversDrawn} {mostThatFit} {onChoose} />
+        <ViewChoices
+          {view}
+          {coversDrawn}
+          {mostThatFit}
+          {hasCategories}
+          {onChoose}
+        />
       </div>
     </DrawerContent>
   </Dialog.Root>

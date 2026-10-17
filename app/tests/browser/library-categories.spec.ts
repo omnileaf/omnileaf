@@ -1,6 +1,10 @@
 import type { Page } from "@playwright/test";
 
-import type { LibraryCategory } from "../../src/lib/ipc/bindings.ts";
+import {
+  DEFAULT_LIBRARY_VIEW,
+  type LibraryCategory,
+  type LibraryView,
+} from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -52,6 +56,17 @@ function tabs(page: Page) {
 
 function seriesList(page: Page) {
   return page.getByRole("list", { name: "Series" });
+}
+
+function viewOptionsSwitch(page: Page, name: string) {
+  return page.getByRole("switch", { name });
+}
+
+async function openViewOptions(page: Page): Promise<void> {
+  await page
+    .getByRole("main")
+    .getByRole("button", { name: "View options" })
+    .click();
 }
 
 async function openLibrary(page: Page): Promise<void> {
@@ -143,6 +158,44 @@ test.describe("with two categories", () => {
   }
 });
 
+test.describe("with Category tabs turned off in View options", () => {
+  let storedView: LibraryView = DEFAULT_LIBRARY_VIEW;
+
+  test.use({
+    backend: {
+      ...backendWith(CATEGORIES),
+      libraryView: () => storedView,
+      setLibraryView: (view) => {
+        storedView = view;
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    storedView = DEFAULT_LIBRARY_VIEW;
+  });
+
+  test("hides the tabs and lists every series, and remembers it", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await tabs(page).getByRole("tab", { name: "Comics" }).click();
+    await expect(seriesList(page).getByRole("listitem")).toHaveCount(
+      COMICS.length,
+    );
+
+    await openViewOptions(page);
+    await viewOptionsSwitch(page, "Category tabs").click();
+
+    await expect(tabs(page)).toHaveCount(0);
+    await expect(seriesList(page).getByRole("listitem")).toHaveCount(
+      LIBRARY.length,
+    );
+    await expect.poll(() => storedView.showsCategoryTabs).toBe(false);
+  });
+});
+
 test.describe("with one category", () => {
   test.use({ backend: backendWith(CATEGORIES.slice(0, 1)) });
 
@@ -150,6 +203,14 @@ test.describe("with one category", () => {
     await openLibrary(page);
 
     await expect(tabs(page)).toHaveCount(0);
+  });
+
+  test("offers no Category tabs switch in View options", async ({ page }) => {
+    await openLibrary(page);
+    await openViewOptions(page);
+    await expect(viewOptionsSwitch(page, "Item counts")).toBeVisible();
+
+    await expect(viewOptionsSwitch(page, "Category tabs")).toHaveCount(0);
   });
 });
 
