@@ -60,6 +60,7 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
 }
 
 const PAGE_SIZE = 50;
+const SAMPLE_SECONDS_PER_PAGE = 8.5;
 const PAGE_WIDTH = 1000;
 const PAGE_HEIGHT = 1500;
 const LIBRARY_FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000001";
@@ -240,6 +241,17 @@ export function sampleBackend(
         };
   }
 
+  function secondsLeftIn(series: SampleSeries): number {
+    const pagesLeft = series.books.reduce((pages, book) => {
+      if (isRead(book)) {
+        return pages;
+      }
+      const readUpTo = book.reading.state === "started" ? book.reading.page : 0;
+      return pages + book.pageCount - readUpTo;
+    }, 0);
+    return Math.round(pagesLeft * SAMPLE_SECONDS_PER_PAGE);
+  }
+
   function upNextOf(series: SampleSeries) {
     const index = series.books.findIndex((book) => !isRead(book));
     return index === -1 ? null : wireBook(series, index);
@@ -373,6 +385,7 @@ export function sampleBackend(
         })),
         summary: series.summary ?? null,
         tags: [...series.tags],
+        secondsLeft: secondsLeftIn(series),
         related: series.related.map(({ number, reason }) => {
           const other = seriesWith(sampleSeriesId(number));
           return {
