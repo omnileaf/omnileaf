@@ -11,6 +11,7 @@
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
 
+  import { shownBackLink } from "./back-link";
   import { backSwipeEdge, isGoingBack, type TextDirection } from "./back-swipe";
   import { isBackTakenByScreen } from "./back-within-screen";
   import { BackSwipeScreens } from "./back-swipe-screens.svelte";
@@ -22,7 +23,6 @@
     readonly direction: TextDirection;
   }
 
-  const BACK_LINK = "a[data-back-link]";
   const SWITCH = '[role="switch"]';
   const SETTLING =
     "duration-slide ease-glass motion-reduce:duration-grow motion-reduce:ease-out";
@@ -58,24 +58,19 @@
         },
   );
 
-  function shownBackLinkIn(screen: HTMLElement): HTMLAnchorElement | null {
-    const link = screen.querySelector<HTMLAnchorElement>(BACK_LINK);
-    return link !== null && link.getClientRects().length > 0 ? link : null;
-  }
-
   function directionOf(screen: HTMLElement): TextDirection {
     return getComputedStyle(screen).direction === "rtl" ? "rtl" : "ltr";
   }
 
   function goBack(): boolean {
-    const link = main === undefined ? null : shownBackLinkIn(main);
+    const link = main === undefined ? undefined : shownBackLink(main);
     link?.click();
-    return link !== null;
+    return link !== undefined;
   }
 
   function startOf(screen: HTMLElement): SwipeStart | undefined {
-    const link = shownBackLinkIn(screen);
-    if (link === null) {
+    const link = shownBackLink(screen);
+    if (link === undefined) {
       return undefined;
     }
     return {
@@ -196,7 +191,7 @@
     }
     allowedFor = screenShown;
     void commands.allowBackSwipe(
-      backSwipeEdge(shownBackLinkIn(main) !== null, directionOf(main)),
+      backSwipeEdge(shownBackLink(main) !== undefined, directionOf(main)),
     );
   });
 

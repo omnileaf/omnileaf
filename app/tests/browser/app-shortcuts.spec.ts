@@ -17,6 +17,7 @@ const SHORTCUTS = [
   "Screenshot mode",
   "Settings",
   "Keyboard shortcuts",
+  "Back",
   "Close a dialog or panel",
   "Move between covers",
   "Open the series",
@@ -61,6 +62,7 @@ test.describe("on a desktop", () => {
       "Ctrl Shift H",
       "Ctrl ,",
       "?",
+      "Alt ←",
       "Esc",
       "←→↑↓",
       "Enter",
@@ -92,6 +94,29 @@ test.describe("on a desktop", () => {
     await expect(sheet(page)).toHaveCount(0);
   });
 
+  test("goes back up from a page under General with Alt ←", async ({
+    page,
+  }) => {
+    await page.goto("/settings/general/language");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Language" }),
+    ).toBeVisible();
+
+    await page.keyboard.press("Alt+ArrowLeft");
+
+    await expect(page).toHaveURL("/settings/general");
+  });
+
+  test("stays put with Alt ← where there's nowhere back to go", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+
+    await page.keyboard.press("Alt+ArrowLeft");
+
+    await expect(page).toHaveURL("/");
+  });
+
   test("opens Settings with Ctrl ,", async ({ page }) => {
     await openLibrary(page);
 
@@ -121,6 +146,17 @@ test.describe("on a desktop", () => {
 test.describe("on macOS", () => {
   testOnlyInItsWebview("macos");
   test.use(onPlatform("macos"));
+
+  test("goes back up with ⌘ [", async ({ page }) => {
+    await page.goto("/settings/general/language");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Language" }),
+    ).toBeVisible();
+
+    await page.keyboard.press("Meta+BracketLeft");
+
+    await expect(page).toHaveURL("/settings/general");
+  });
 
   test("names the keys with ⌘", async ({ page }) => {
     await openLibrary(page);

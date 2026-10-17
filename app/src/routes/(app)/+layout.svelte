@@ -19,7 +19,8 @@
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import QuickOpen from "#lib/search/QuickOpen.svelte";
   import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
-  import { isPointer } from "#lib/page/platform.ts";
+  import { shownBackLink } from "#lib/navigation/back-link.ts";
+  import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
   import { type Shortcut, shortcut } from "#lib/shortcut.ts";
 
   import type { LayoutProps } from "./$types";
@@ -36,6 +37,10 @@
   const quickOpen = new QuickOpenState();
   const sidebar = setSidebarSetting(sidebarSettingForDocument());
   let isShowingShortcuts = $state(false);
+
+  function goBack(): void {
+    shownBackLink(document)?.click();
+  }
   const keyboardOnlyShortcuts = $derived<readonly Shortcut[]>(
     isPointer(data.appInfo.platform)
       ? [
@@ -45,6 +50,9 @@
               isShowingShortcuts = true;
             },
           },
+          usesCommandKey(data.appInfo.platform)
+            ? { key: "[", command: data.appInfo.platform, run: goBack }
+            : { key: "ArrowLeft", alt: true, run: goBack },
           {
             key: ",",
             command: data.appInfo.platform,
