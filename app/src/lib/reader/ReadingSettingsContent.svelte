@@ -95,7 +95,6 @@
   </div>
   <SettingChoice
     label={m.reader_layout()}
-    disabled
     choices={[
       { value: "automatic", label: m.reader_layout_automatic() },
       { value: "one", label: m.reader_layout_one() },
@@ -108,7 +107,6 @@
   />
   <SettingChoice
     label={m.reader_fit()}
-    disabled
     choices={[
       { value: "screen", label: m.reader_fit_screen() },
       { value: "width", label: m.reader_fit_width() },
@@ -119,7 +117,6 @@
       settings.change("fit", fit);
     }}
   />
-  <p class="-mbs-sm text-caption text-muted">{m.reader_coming_with_layout()}</p>
   <SettingChoice
     label={m.reader_background()}
     choices={[

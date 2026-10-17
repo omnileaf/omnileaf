@@ -25,10 +25,14 @@
   import { ReaderControls } from "#lib/reader/reader-controls.svelte.ts";
   import LightQuickSetting from "#lib/reader/LightQuickSetting.svelte";
   import {
+    type PageFit,
+    type PageLayout,
     type ReaderLight,
     readerSettings,
   } from "#lib/reader/reader-settings.svelte.ts";
   import ReaderMore from "#lib/reader/ReaderMore.svelte";
+  import { spreadAt, spreadPosition, spreadsOf } from "#lib/reader/spreads.ts";
+  import LayoutQuickSettings from "#lib/reader/LayoutQuickSettings.svelte";
   import ReadingSettings from "#lib/reader/ReadingSettings.svelte";
   import ReaderPanel from "#lib/reader/ReaderPanel.svelte";
   import ReaderTopBar from "#lib/reader/ReaderTopBar.svelte";
@@ -43,7 +47,6 @@
     seriesReadingDirection,
   } from "#lib/reader/reading-direction.svelte.ts";
   import { Swipe } from "#lib/reader/swipe.ts";
-  import UpcomingQuickSettings from "#lib/reader/UpcomingQuickSettings.svelte";
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
   import UpNext from "#lib/up-next/UpNext.svelte";
@@ -118,6 +121,14 @@
   let heading: HTMLHeadingElement | undefined = $state();
   let viewportScale = $state(RESTING_SCALE);
 
+  const spreads = $derived(
+    spreadsOf(
+      book.pages.map((page) => page.size),
+      look.layout === "two",
+    ),
+  );
+  const spreadIndex = $derived(spreadAt(spreads, turner.shown));
+  const spread = $derived(spreads[spreadIndex] ?? [turner.shown]);
   const pageNumber = $derived(turner.shown + 1);
   const pageCount = $derived(book.pages.length);
   const pageLine = $derived(
@@ -207,7 +218,15 @@
       startNextBook();
       return;
     }
-    turner.turn(step);
+    const target = spreads[spreadIndex + step];
+    if (turner.isPastEnd) {
+      turner.turn(step);
+    } else if (target !== undefined) {
+      turner.goTo(target[0] ?? turner.shown);
+    } else if (step > 0) {
+      turner.goTo(pageCount - 1);
+      turner.turn(1);
+    }
     controls.hide();
     if (turner.isPastEnd && skipUpNext.isOn) {
       goStraightOn();
@@ -376,7 +395,16 @@
     seriesTitle={named.seriesTitle}
     onOpenChange={holdControls}
   />
-  <UpcomingQuickSettings />
+  <LayoutQuickSettings
+    layout={look.layout}
+    fit={look.fit}
+    onLayout={(layout: PageLayout) => {
+      settings.change("layout", layout);
+    }}
+    onFit={(fit: PageFit) => {
+      settings.change("fit", fit);
+    }}
+  />
   <LightQuickSetting
     light={look.light}
     onChange={(light: ReaderLight) => {
@@ -400,6 +428,53 @@
   />
 {/snippet}
 
+{#snippet turnZones()}
+  <div
+    dir="ltr"
+    role="presentation"
+    class={[
+      "absolute inset-none flex",
+      isZoomedIn(viewportScale)
+        ? "touch-manipulation"
+        : "touch-pan-y touch-pinch-zoom",
+    ]}
+    onpointerdown={(event) => {
+      swipe.started(event);
+    }}
+    onpointerup={onSwipeEnd}
+    onpointercancel={() => {
+      swipe.cancelled();
+    }}
+  >
+    <button
+      type="button"
+      aria-label={TURN_LABELS[leftTurn]()}
+      class="shrink-0 cursor-w-resize inline-3/10 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent expanded:inline-1/3"
+      onclick={(event) => {
+        onZone(event, leftTurn);
+      }}
+    ></button>
+    <button
+      type="button"
+      aria-label={controls.isShown
+        ? m.reader_hide_controls()
+        : m.reader_show_controls()}
+      class="flex-1 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
+      onclick={(event) => {
+        onZone(event, "toggleControls");
+      }}
+    ></button>
+    <button
+      type="button"
+      aria-label={TURN_LABELS[rightTurn]()}
+      class="shrink-0 cursor-e-resize inline-3/10 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent expanded:inline-1/3"
+      onclick={(event) => {
+        onZone(event, rightTurn);
+      }}
+    ></button>
+  </div>
+{/snippet}
+
 <main
   data-theme={look.controls === "dark" ? "dark" : undefined}
   class={[
@@ -421,6 +496,10 @@
     <PageStack
       pages={book.pages}
       shown={turner.shown}
+      {spread}
+      fit={look.fit}
+      isReversed={reading.direction === "rightToLeft"}
+      overlay={turnZones}
       onShownReady={() => {
         if (!hasOpened) {
           hasOpened = true;
@@ -440,50 +519,6 @@
         style:opacity={(look.light.warmth / 100) * WARMEST}
       ></div>
     {/if}
-    <div
-      dir="ltr"
-      role="presentation"
-      class={[
-        "absolute inset-none flex",
-        isZoomedIn(viewportScale)
-          ? "touch-manipulation"
-          : "touch-pan-y touch-pinch-zoom",
-      ]}
-      onpointerdown={(event) => {
-        swipe.started(event);
-      }}
-      onpointerup={onSwipeEnd}
-      onpointercancel={() => {
-        swipe.cancelled();
-      }}
-    >
-      <button
-        type="button"
-        aria-label={TURN_LABELS[leftTurn]()}
-        class="shrink-0 cursor-w-resize inline-3/10 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent expanded:inline-1/3"
-        onclick={(event) => {
-          onZone(event, leftTurn);
-        }}
-      ></button>
-      <button
-        type="button"
-        aria-label={controls.isShown
-          ? m.reader_hide_controls()
-          : m.reader_show_controls()}
-        class="flex-1 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
-        onclick={(event) => {
-          onZone(event, "toggleControls");
-        }}
-      ></button>
-      <button
-        type="button"
-        aria-label={TURN_LABELS[rightTurn]()}
-        class="shrink-0 cursor-e-resize inline-3/10 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent expanded:inline-1/3"
-        onclick={(event) => {
-          onZone(event, rightTurn);
-        }}
-      ></button>
-    </div>
   </div>
   <h1 bind:this={heading} tabindex="-1" class="sr-only">{named.title}</h1>
   {#if turner.isPastEnd}
@@ -531,6 +566,7 @@
       <ReaderPanel
         pages={book.pages}
         shown={turner.shown}
+        {spread}
         previous={named.previous}
         next={named.next}
         direction={reading.direction}
@@ -547,7 +583,7 @@
       >
         <span
           class="rounded-full bg-reader-glass px-sm py-2xs text-caption font-semibold text-reader-muted tabular-nums"
-          >{m.reader_position({ page: pageNumber, count: pageCount })}</span
+          >{spreadPosition(spread, pageCount)}</span
         >
       </div>
     {/if}
