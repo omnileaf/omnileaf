@@ -18,7 +18,7 @@ const SECTIONS_IN_ORDER = [
   "General",
   "Appearance",
   "Library",
-  "Reading",
+  "Reader",
   "Privacy and security",
   "Advanced",
   "About",
