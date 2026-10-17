@@ -177,6 +177,11 @@ export const DEFAULT_BACKEND: FakeBackend = {
   }),
   copyProblemReport: () => null,
   openProblemReportIssue: () => null,
+  saveProblemReport: () => ({
+    place: { kind: "folder", folder: "~/Downloads" },
+    file: "omnileaf-report-2026-10-16.txt",
+  }),
+  showSavedProblemReport: () => null,
   offerSavedCrashReport: () => null,
   offerInterfaceErrorReport: (error) => ({
     details: error.message,

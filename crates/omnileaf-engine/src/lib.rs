@@ -57,6 +57,7 @@ mod rescan_plan;
 mod rescan_schedule;
 mod resource;
 mod resource_router;
+mod saved_report;
 mod scan;
 mod series_details;
 mod series_overview;
@@ -131,6 +132,7 @@ pub use rescan_conditions::{
 };
 pub use resource::Resource;
 pub use resource_router::{ResourceRouter, ResourceRouterError};
+pub use saved_report::{SavedPlace, SavedProblemReport, folder_shown};
 pub use scan::{FolderScan, ScanProgress};
 pub use series_details::{
     DetailEdits, EditedPeople, EditedSummary, EditedTags, EditedTitle, SeriesDetails, SeriesPerson,

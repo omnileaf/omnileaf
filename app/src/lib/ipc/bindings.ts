@@ -114,6 +114,8 @@ export const commands = {
 	problemReport: () => typedError<ProblemReportPreview, IpcError>(__TAURI_INVOKE("problem_report")),
 	copyProblemReport: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_problem_report")),
 	openProblemReportIssue: () => typedError<null, IpcError>(__TAURI_INVOKE("open_problem_report_issue")),
+	saveProblemReport: (today: number) => typedError<SavedProblemReport, IpcError>(__TAURI_INVOKE("save_problem_report", { today })),
+	showSavedProblemReport: () => typedError<null, IpcError>(__TAURI_INVOKE("show_saved_problem_report")),
 	offerSavedCrashReport: () => typedError<{
 	details: string,
 	origin: CrashOrigin,
@@ -344,7 +346,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "internal";
 
 export type LabelChanges = {
 	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],
@@ -586,6 +588,13 @@ export type ReportCode = string;
 export type RescanOutcome = {
 	kind: "rescanned",
 } & FileChanges | { kind: "unreachable" } | { kind: "foundEmpty" };
+
+export type SavedPlace = { kind: "folder"; folder: string } | { kind: "appFiles" };
+
+export type SavedProblemReport = {
+	place: SavedPlace,
+	file: string,
+};
 
 export type ScanProgress = { stage: "finding"; found: number } | { stage: "reading"; scanned: number; total: number };
 
