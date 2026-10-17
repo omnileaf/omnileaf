@@ -149,7 +149,7 @@
     offset={CORNER_OFFSET}
     mobileOffset={PHONE_OFFSET}
     containerAriaLabel={m.notice_region()}
-    class="max-medium:absolute!"
+    class="max-medium:absolute! medium:toast-list-width!"
     toastOptions={{ class: "max-medium:px-md" }}
   />
 </div>
