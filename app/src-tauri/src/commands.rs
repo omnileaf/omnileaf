@@ -6,13 +6,14 @@ use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AdultContent, AppInfo, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
     CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits, FolderCursor, FolderId, FolderPage,
-    FolderRescan, FolderScan, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
-    InterfaceError, LabelChanges, Library, LibraryCategory, LibraryError, LibraryFilter,
-    LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView,
-    LocalDay, MissingFolder, OpenedBook, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark,
-    ReadingSummary, ReadingWeek, ReportCode, ResourceRouter, SavedProblemReport, ScanProgress,
-    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
-    SeriesOverview, SeriesPage, SpellingSuggestion, StorageUse, UtcOffset,
+    FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage,
+    HistorySeries, InterfaceError, LabelChanges, Library, LibraryCategory, LibraryError,
+    LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab, LibraryTag,
+    LibraryView, LocalDay, MissingFolder, OpenedBook, ProbedFormat, ProblemReportPreview,
+    ProjectLink, ReadMark, ReadingSummary, ReadingWeek, ReportCode, ResourceRouter,
+    SavedProblemReport, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
+    SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, SpellingSuggestion,
+    StorageUse, UtcOffset,
 };
 use omnileaf_icon_actions::IconAction;
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
@@ -115,6 +116,7 @@ macro_rules! app_commands {
             rescan_library_folder,
             rescan_library_folders,
             remove_books_of_emptied_folder,
+            found_library,
             first_launch_finished,
             finish_first_launch,
             set_app_language,
@@ -836,6 +838,16 @@ async fn library_folder_book_count(
     id: FolderId,
 ) -> Result<u32, IpcError> {
     Ok(library.folder_book_count(id).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+fn found_library(library: State<'_, Library>) -> Option<FoundLibrary> {
+    library.found_library()
 }
 
 #[tauri::command]
