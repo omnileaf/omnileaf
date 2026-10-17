@@ -47,21 +47,26 @@
     TONES[tone],
   ]}
 >
-  <span aria-hidden="true" class="flex shrink-0 self-start">
-    {@render icon()}
-  </span>
-  <div class="flex flex-1 flex-col gap-2xs min-inline-none">
-    <p class="text-label font-bold touch:max-medium:text-callout">
-      {#if typeof title === "string"}
-        {title}
-      {:else}
-        {@render title()}
+  <div class="flex flex-1 items-start gap-md min-inline-none">
+    <span
+      aria-hidden="true"
+      class="flex shrink-0 items-center text-label block-lh touch:max-medium:text-callout"
+    >
+      {@render icon()}
+    </span>
+    <div class="flex flex-1 flex-col gap-2xs min-inline-none">
+      <p class="text-label font-bold touch:max-medium:text-callout">
+        {#if typeof title === "string"}
+          {title}
+        {:else}
+          {@render title()}
+        {/if}
+      </p>
+      {#if body !== undefined}
+        <p class="text-footnote opacity-85">{body}</p>
       {/if}
-    </p>
-    {#if body !== undefined}
-      <p class="text-footnote opacity-85">{body}</p>
-    {/if}
-    {@render children?.()}
+      {@render children?.()}
+    </div>
   </div>
   {#if action !== undefined}
     <Button
