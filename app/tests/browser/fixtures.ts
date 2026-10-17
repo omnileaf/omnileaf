@@ -369,8 +369,8 @@ export function sidewaysOverflow(
 type Violations = Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"];
 
 function runningAnimations(page: Page): Promise<string[]> {
-  return page.evaluate(() =>
-    document
+  return page.evaluate(() => [
+    ...document
       .getAnimations()
       .filter(
         (animation) =>
@@ -394,12 +394,15 @@ function runningAnimations(page: Page): Promise<string[]> {
             : [target.tagName.toLowerCase(), ...target.classList].join(".");
         return `${name} on ${targetName}`;
       }),
-  );
+    ...(document.querySelector("[data-starting-style]") === null
+      ? []
+      : ["a part still held in its starting style"]),
+  ]);
 }
 
 const PAGE_ZOOM_RULE_LEFT_TO_THE_SYSTEM = "meta-viewport";
 
-/** Waits out animations that end first, since axe reads colours mid-fade as they are. */
+/** Waits out animations that end first, and a part bits-ui still holds in its starting style before its fade begins, since axe reads colours mid-fade as they are. */
 export async function accessibilityViolations(page: Page): Promise<Violations> {
   await expect
     .poll(() => runningAnimations(page), {
