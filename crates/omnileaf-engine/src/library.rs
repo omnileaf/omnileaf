@@ -42,13 +42,13 @@ use tokio::{
 use crate::{
     AdultContent, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
     CategoryId, CoversPerRowOutOfRange, CreatorSeries, FolderCursor, FolderId, FolderPage,
-    FolderRescan, FolderScan, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
-    LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
-    LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, LogStandIns,
-    MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RescanOutcome, ResolvedBookmark,
-    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId,
-    SeriesLabels, SeriesOverview, SeriesPage, ShareAddress, ShareLookup, UnreachableShare,
-    UtcOffset,
+    FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage,
+    HistorySeries, LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices,
+    LibraryFolder, LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay,
+    LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RescanOutcome,
+    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
+    SeriesId, SeriesLabels, SeriesOverview, SeriesPage, ShareAddress, ShareLookup,
+    UnreachableShare, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -1438,6 +1438,11 @@ impl Library {
             catalog: self.catalog_writes.subscribe(),
             synced: self.store.subscribe(),
         }
+    }
+
+    pub fn found_library(&self) -> Option<FoundLibrary> {
+        let _ = &self.store;
+        None
     }
 
     pub async fn first_launch_finished(&self) -> Result<bool, LibraryError> {
