@@ -7,6 +7,7 @@
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
   import ChoicesStep from "#lib/first-launch/ChoicesStep.svelte";
   import { deviceKindOf } from "#lib/first-launch/device.ts";
+  import FoundLibraryStep from "#lib/first-launch/FoundLibraryStep.svelte";
   import HomeStep from "#lib/first-launch/HomeStep.svelte";
   import LinkStep from "#lib/first-launch/LinkStep.svelte";
   import { PickerQuestion } from "#lib/first-launch/picker-question.svelte.ts";
@@ -173,6 +174,14 @@
     >
       {#if step === "welcome"}
         <WelcomeStep {device} onNext={next} />
+      {:else if step === "home" && data.foundLibrary !== null}
+        <FoundLibraryStep
+          platform={data.appInfo.platform}
+          folders={folders.list}
+          found={data.foundLibrary}
+          onBack={back}
+          onStartNew={next}
+        />
       {:else if step === "home"}
         <HomeStep
           platform={data.appInfo.platform}
