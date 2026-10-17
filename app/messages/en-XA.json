@@ -1480,6 +1480,21 @@
   "reader_guide_off_title": "⟦Ţáþ žöñéš öƒƒ······⟧",
   "reader_guide_off_body": "⟦Šŵíþé ţö ţûŕñ þáĝéš; á ţáþ áñýŵĥéŕé šĥöŵš ţĥé çöñţŕöļš.······················⟧",
   "reader_guide_off_zone": "⟦Šŵíþé ţö ţûŕñ þáĝéš. Á ţáþ šĥöŵš ţĥé çöñţŕöļš.···················⟧",
+  "reader_time_left": [
+    {
+      "declarations": [
+        "input minutes",
+        "local minutesPlural = minutes: plural",
+        "local formattedMinutes = minutes: number"
+      ],
+      "selectors": ["minutesPlural"],
+      "match": {
+        "minutesPlural=one": "⟦Áƀöûţ {formattedMinutes} ɱíñ ļéƒţ íñ ţĥíš çĥáþţéŕ····················⟧",
+        "minutesPlural=other": "⟦Áƀöûţ {formattedMinutes} ɱíñ ļéƒţ íñ ţĥíš çĥáþţéŕ····················⟧"
+      }
+    }
+  ],
+  "reader_time_left_short": "⟦Ļéšš ţĥáñ á ɱíñûţé ļéƒţ íñ ţĥíš çĥáþţéŕ················⟧",
   "reader_tap_zones": "⟦Ţáþ žöñéš····⟧",
   "reader_tap_zones_edges": "⟦Éðĝéš··⟧",
   "reader_tap_zones_l": "⟦Ļ šĥáþé···⟧",
