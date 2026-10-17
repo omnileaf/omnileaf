@@ -18,6 +18,7 @@
   let {
     ref = $bindable(null),
     wideLook = "dialog",
+    phoneLook = "drawer",
     wideClass,
     phoneClass,
     onDismiss,
@@ -25,6 +26,7 @@
     ...restProps
   }: Omit<WithoutChildrenOrChild<DialogPrimitive.ContentProps>, "class"> & {
     wideLook?: "dialog" | "sheet";
+    phoneLook?: "drawer" | "dialog";
     wideClass?: string;
     phoneClass?: string;
     onDismiss: () => void;
@@ -34,7 +36,11 @@
   const isWide = new MediaQuery(MEDIUM_QUERY);
 </script>
 
-{#if !isWide.current}
+{#if !isWide.current && phoneLook === "dialog"}
+  <DialogContent bind:ref class={phoneClass} {...restProps}>
+    {@render children("phone")}
+  </DialogContent>
+{:else if !isWide.current}
   <DrawerContent bind:ref class={phoneClass} {onDismiss} {...restProps}>
     {@render children("phone")}
   </DrawerContent>

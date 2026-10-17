@@ -285,6 +285,13 @@
   --spacing-icon-badge: 3rem;
   --spacing-dialog: 26.25rem;
   --spacing-dialog-limit: calc(100% - 6px - 2em);
+  --spacing-edit-dialog: 37.5rem;
+  --spacing-edit-dialog-height: min(45rem, calc(100% - 6px - 2em));
+  --spacing-textarea: 4rem;
+  --spacing-title-field: 2.75rem;
+  --spacing-field-head: 1.75rem;
+  --spacing-detail-chip: 2rem;
+  --spacing-confirm-cover: 2rem;
   --spacing-header-badge: 2.5rem;
   --spacing-header-badge-icon: 1.25rem;
   --spacing-touch-button: 3.25rem;

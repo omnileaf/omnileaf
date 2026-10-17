@@ -29,6 +29,8 @@
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+
   import ComingSoonControl from "./ComingSoonControl.svelte";
   import SeriesActions from "./SeriesActions.svelte";
   import { SERIES_CONTROL } from "./series-control.ts";
@@ -45,12 +47,14 @@
     coverUrl,
     isWide,
     onMarkAll,
+    onEditDetails,
   }: {
     overview: SeriesOverview;
     cover: ShownCover;
     coverUrl: CoverUrl;
     isWide: boolean;
     onMarkAll: (mark: ReadMark) => Promise<void>;
+    onEditDetails: (() => void) | undefined;
   } = $props();
 
   let areDetailsOpen = $state(false);
@@ -145,12 +149,24 @@
       <CardHeader class="px-lg">
         <CardTitle class="text-title">{m.series_details()}</CardTitle>
         <CardAction>
-          <ComingSoonControl
-            label={m.series_edit_details()}
-            class="flex items-center justify-center rounded-shadcn-control block-pointer-target inline-pointer-target"
-          >
-            <Pencil size={ICON_SIZE} aria-hidden="true" />
-          </ComingSoonControl>
+          {#if onEditDetails === undefined}
+            <ComingSoonControl
+              label={m.series_edit_details()}
+              class="flex items-center justify-center rounded-shadcn-control block-pointer-target inline-pointer-target"
+            >
+              <Pencil size={ICON_SIZE} aria-hidden="true" />
+            </ComingSoonControl>
+          {:else}
+            <Tooltip
+              label={m.series_edit_details()}
+              type="button"
+              aria-label={m.series_edit_details()}
+              class="flex items-center justify-center rounded-shadcn-control text-foreground transition-control block-pointer-target inline-pointer-target hover:bg-hover focus-visible:outline-2 focus-visible:outline-accent active:bg-pressed"
+              onclick={onEditDetails}
+            >
+              <Pencil size={ICON_SIZE} aria-hidden="true" />
+            </Tooltip>
+          {/if}
         </CardAction>
       </CardHeader>
       <CardContent class="px-lg">
