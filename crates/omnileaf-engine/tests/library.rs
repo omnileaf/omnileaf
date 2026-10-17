@@ -14,8 +14,8 @@ use omnileaf_engine::{
     AdultContent, AdultTreatment, AppleBookmark, CategoryId, Changed, CoversPerRow,
     DesktopCoversPerRow, FolderId, FolderKind, Inclusion, Library, LibraryDisplay, LibraryError,
     LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryGrouping, LibraryListing,
-    LibrarySort, LibrarySortBy, LibraryView, OnCovers, PhoneCoversPerRow, ResolvedBookmark,
-    RootLocator, ScanProgress, SeriesLabels, SortDirection, TabletCoversPerRow,
+    LibrarySort, LibrarySortBy, LibraryTab, LibraryTabId, LibraryView, OnCovers, PhoneCoversPerRow,
+    ResolvedBookmark, RootLocator, ScanProgress, SeriesLabels, SortDirection, TabletCoversPerRow,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -1044,4 +1044,98 @@ fn does_not_take_another_failure_for_a_newer_library() {
     };
 
     assert!(!error.was_written_by_a_newer_version());
+}
+
+fn shown(id: LibraryTabId) -> LibraryTab {
+    LibraryTab {
+        id,
+        is_hidden: false,
+    }
+}
+
+fn hidden(id: LibraryTabId) -> LibraryTab {
+    LibraryTab {
+        id,
+        is_hidden: true,
+    }
+}
+
+fn category_tab(id: &str) -> LibraryTabId {
+    LibraryTabId::Category {
+        id: CategoryId::from(id.to_owned()),
+    }
+}
+
+#[tokio::test]
+async fn starts_with_all_shown_and_new_chapters_hidden() {
+    let home = ScratchFolder::new("library-tabs-new");
+
+    let tabs = open(home.path()).await.tabs().await.unwrap();
+
+    assert_eq!(
+        tabs,
+        [shown(LibraryTabId::All), hidden(LibraryTabId::NewChapters)]
+    );
+}
+
+#[tokio::test]
+async fn remembers_the_tabs_moved_and_hidden_when_the_library_reopens() {
+    let home = ScratchFolder::new("library-tabs-set");
+    let tabs = vec![
+        shown(category_tab("reading")),
+        shown(LibraryTabId::NewChapters),
+        shown(LibraryTabId::All),
+        hidden(category_tab("manga")),
+    ];
+    open(home.path())
+        .await
+        .set_tabs(tabs.clone())
+        .await
+        .unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.tabs().await.unwrap(), tabs);
+}
+
+#[tokio::test]
+async fn keeps_all_shown_though_asked_to_hide_it() {
+    let home = ScratchFolder::new("library-tabs-all-shown");
+    let library = open(home.path()).await;
+
+    library
+        .set_tabs(vec![
+            hidden(LibraryTabId::All),
+            hidden(LibraryTabId::NewChapters),
+        ])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        library.tabs().await.unwrap(),
+        [shown(LibraryTabId::All), hidden(LibraryTabId::NewChapters)]
+    );
+}
+
+#[tokio::test]
+async fn puts_back_each_built_in_tab_left_out_after_the_rest_and_keeps_each_tab_once() {
+    let home = ScratchFolder::new("library-tabs-left-out");
+    let library = open(home.path()).await;
+
+    library
+        .set_tabs(vec![
+            shown(category_tab("reading")),
+            shown(category_tab("reading")),
+        ])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        library.tabs().await.unwrap(),
+        [
+            shown(category_tab("reading")),
+            shown(LibraryTabId::All),
+            hidden(LibraryTabId::NewChapters),
+        ]
+    );
 }

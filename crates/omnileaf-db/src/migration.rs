@@ -61,6 +61,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0025_add_category_tabs_and_grouping_to_library_view"),
     migration!("0026_create_adult_content"),
     migration!("0027_track_when_each_series_was_last_read"),
+    migration!("0028_create_library_tabs"),
 ];
 
 pub(crate) fn pending(

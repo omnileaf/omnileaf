@@ -14,6 +14,7 @@ import {
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
 import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
+import { NEW_LIBRARY_TABS } from "#lib/library/library-tabs.ts";
 import { isShownBy } from "#lib/series/books-shown.ts";
 
 import {
@@ -310,6 +311,9 @@ export function sampleBackend(
         (bookmarks.get(sampleBookId(series.number, index + 1))?.size ?? 0) > 0,
     );
   let adultContent: AdultContent = NEW_ADULT_CONTENT;
+  let libraryTabs: Parameters<FakeBackend["setLibraryTabs"]>[0] = [
+    ...NEW_LIBRARY_TABS,
+  ];
   const isAdult = (series: SampleSeries): boolean =>
     adultContent.countsAgeRatings && ADULT_SERIES.has(series.number);
   const hidesAdult = (): boolean => adultContent.treatment === "hide";
@@ -604,6 +608,11 @@ export function sampleBackend(
         }
       }
       events.emit("library-changed", null);
+      return null;
+    },
+    libraryTabs: () => [...libraryTabs],
+    setLibraryTabs: (tabs) => {
+      libraryTabs = tabs;
       return null;
     },
     libraryTags: async () => {
