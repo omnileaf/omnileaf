@@ -7,6 +7,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   EXPANDED_MIN_WIDTH,
+  onPlatform,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -55,28 +56,28 @@ let shelf = new FakeShelf([
   { state: "notStarted" },
 ]);
 
-test.use({
-  backend: {
-    ...DEFAULT_BACKEND,
-    librarySeries: () => ({ series: [LISTED_SERIES], next: null }),
-    librarySeriesCount: () => 1,
-    seriesLabels: () => ({
-      keepsLabels: true,
-      categories: [],
-      tags: [],
-      suggestedTags: [],
-    }),
-    seriesOverview: (id) => shelf.backend().seriesOverview(id),
-    seriesBooks: (id, listing, after) =>
-      shelf.backend().seriesBooks(id, listing, after),
-    keepsDetailEdits: () => true,
-    seriesDetails: () => details,
-    editSeriesDetails: (_, edits) => {
-      sent = [...sent, edits];
-      return null;
-    },
-  } satisfies FakeBackend,
-});
+const EDITING_BACKEND: FakeBackend = {
+  ...DEFAULT_BACKEND,
+  librarySeries: () => ({ series: [LISTED_SERIES], next: null }),
+  librarySeriesCount: () => 1,
+  seriesLabels: () => ({
+    keepsLabels: true,
+    categories: [],
+    tags: [],
+    suggestedTags: [],
+  }),
+  seriesOverview: (id) => shelf.backend().seriesOverview(id),
+  seriesBooks: (id, listing, after) =>
+    shelf.backend().seriesBooks(id, listing, after),
+  keepsDetailEdits: () => true,
+  seriesDetails: () => details,
+  editSeriesDetails: (_, edits) => {
+    sent = [...sent, edits];
+    return null;
+  },
+};
+
+test.use({ backend: EDITING_BACKEND });
 
 test.beforeEach(() => {
   details = FROM_FILES;
@@ -102,15 +103,11 @@ function discardConfirm(page: Page): Locator {
   return page.getByRole("alertdialog", { name: "Discard your changes?" });
 }
 
-/** The phone's way in, the series page's ⋯ menu (4.10j), waits for the owner, so the test follows a link of its own. */
-async function followLinkTo(page: Page, path: string): Promise<void> {
-  await page.evaluate((href) => {
-    const link = document.createElement("a");
-    link.href = href;
-    document.body.append(link);
-    link.click();
-    link.remove();
-  }, path);
+function seriesMenuButton(page: Page): Locator {
+  return page.getByRole("button", {
+    name: `More for ${SERIES_TITLE}`,
+    exact: true,
+  });
 }
 
 async function openEditor(page: Page): Promise<Locator> {
@@ -122,10 +119,8 @@ async function openEditor(page: Page): Promise<Locator> {
       .click();
   } else {
     await page.goto(`/series/${SERIES_ID}`);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      SERIES_TITLE,
-    );
-    await followLinkTo(page, `/series/${SERIES_ID}/edit`);
+    await seriesMenuButton(page).click();
+    await page.getByRole("menuitem", { name: "Edit details…" }).click();
   }
   const shown = editor(page);
   await expect(shown.getByRole("textbox", { name: "Title" })).toBeVisible();
@@ -193,6 +188,34 @@ test("says an edited title is edited and saves it over the file's", async ({
       isMarkedAdult: false,
     },
   ]);
+});
+
+test("says the details are saved, and Undo puts back what they were", async ({
+  page,
+}) => {
+  details = {
+    ...FROM_FILES,
+    tags: { fromFile: FROM_FILES.tags.fromFile, edited: ["Seinen"] },
+  };
+  const shown = await openEditor(page);
+  await shown.getByRole("textbox", { name: "Title" }).fill(TYPED_TITLE);
+  await save(shown);
+
+  await expect(page.getByText("Details saved")).toBeVisible();
+  await expect(
+    page.getByText("Your changes show only in Omnileaf", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Undo" }).click();
+
+  await expect
+    .poll(() => sent.at(-1))
+    .toEqual({
+      title: null,
+      people: null,
+      tags: ["Seinen"],
+      summary: null,
+      isMarkedAdult: false,
+    });
 });
 
 test("puts the title back to the file's, with Undo", async ({ page }) => {
@@ -345,6 +368,46 @@ test("offers Edit details… in the cover menu after Categories and tags…", as
       .getByRole("dialog", { name: "Edit details" })
       .getByRole("textbox", { name: "Title" }),
   ).toHaveValue(FILE_TITLE);
+});
+
+test("offers Edit details… in the series page's ⋯ menu, after Categories and tags…", async ({
+  page,
+}) => {
+  test.skip(isWide(page), "a wide desktop page has no series bar");
+  await page.goto(`/series/${SERIES_ID}`);
+  await seriesMenuButton(page).click();
+
+  await expect(page.getByRole("menu").getByRole("menuitem")).toHaveText([
+    /Mark every book read/u,
+    /Mark every book unread/u,
+    /Categories and tags…/u,
+    /Edit details…/u,
+    /Show in folder/u,
+  ]);
+  await page.getByRole("menuitem", { name: "Categories and tags…" }).click();
+
+  await expect(
+    page.getByRole("dialog", { name: "Categories and tags" }),
+  ).toBeVisible();
+});
+
+test.describe("on Android", () => {
+  test.use({
+    backend: {
+      ...EDITING_BACKEND,
+      appInfo: onPlatform("android").backend.appInfo,
+    },
+  });
+
+  test("names Show the folder in the ⋯ menu, coming soon", async ({ page }) => {
+    test.skip(isWide(page), "a wide page has no series bar");
+    await page.goto(`/series/${SERIES_ID}`);
+    await seriesMenuButton(page).click();
+
+    await expect(
+      page.getByRole("menuitem", { name: "Show the folder · coming soon" }),
+    ).toBeDisabled();
+  });
 });
 
 test("has no accessibility violations", async ({ page }) => {
