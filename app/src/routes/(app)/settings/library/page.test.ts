@@ -29,7 +29,7 @@ afterEach(() => {
   clearMocks();
 });
 
-test("explains that folders stay where they are", async () => {
+test("offers to add a folder", async () => {
   const screen = await render(PageWithAppContext, {
     screenshotMode: screenshotModeTurned("off"),
     page: Page,
@@ -50,13 +50,6 @@ test("explains that folders stay where they are", async () => {
 
   const folders = screen.getByRole("region", { name: "Folders" });
 
-  await expect
-    .element(
-      folders.getByText(
-        "Folders of comics, manga or books. Omnileaf reads them where they are.",
-      ),
-    )
-    .toBeVisible();
   await expect
     .element(folders.getByRole("button", { name: "Add a folder" }))
     .toBeVisible();

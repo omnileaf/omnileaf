@@ -86,7 +86,7 @@ test("shows the home folder and the linked folders in Settings › Library", asy
   await page.goto("/settings/library");
 
   await expect(page.getByRole("region", { name: "Home folder" })).toContainText(
-    "Omnileaf /data/Omnileaf",
+    "Home folder /data/Omnileaf",
   );
   await expect(
     page.getByRole("region", { name: "Folders" }).getByRole("listitem"),

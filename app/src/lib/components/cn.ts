@@ -219,6 +219,7 @@ export const TOKEN_THEME = {
     "floating-bar",
     "floating-clearance",
     "floating-gap",
+    "folders-button",
     "group-label-top",
     "gutter",
     "header-badge",

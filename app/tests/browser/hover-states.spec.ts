@@ -1,7 +1,7 @@
 import type { Locator } from "@playwright/test";
 
 import {
-  addFolderBesideFolders,
+  addFolderInFolders,
   CONTROLS,
   DESKTOP,
   destination,
@@ -199,7 +199,7 @@ test.describe("with a pointer", () => {
       page,
     }) => {
       await page.goto("/settings/library");
-      await addFolderBesideFolders(page).click();
+      await addFolderInFolders(page).click();
       const toast = page.locator("[data-sonner-toast]");
       await expect(toast).toBeVisible();
       await settle(toast);
@@ -233,7 +233,7 @@ test.describe("with a pointer", () => {
       page,
     }) => {
       await page.goto("/settings/library");
-      await addFolderBesideFolders(page).click();
+      await addFolderInFolders(page).click();
       const toast = page.locator("[data-sonner-toast]");
       await expect(toast).toBeVisible();
       await settle(toast);
@@ -262,7 +262,7 @@ test.describe("with a pointer", () => {
       page,
     }) => {
       await page.goto("/settings/library");
-      await addFolderBesideFolders(page).click();
+      await addFolderInFolders(page).click();
       const toast = page.locator("[data-sonner-toast]");
       await expect(toast).toBeVisible();
       await settle(toast);
@@ -377,7 +377,7 @@ test.describe("with a pointer", () => {
       page,
     }) => {
       await page.goto("/settings/library");
-      const button = addFolderBesideFolders(page);
+      const button = addFolderInFolders(page);
       const resting = await paintOf(button);
 
       await button.click();
@@ -394,7 +394,7 @@ test.describe("on a touch screen", () => {
 
   test("leaves no hover tint on a button", async ({ page }) => {
     await page.goto("/settings/library");
-    const button = addFolderBesideFolders(page);
+    const button = addFolderInFolders(page);
     const resting = await paintOf(button);
 
     await button.hover();

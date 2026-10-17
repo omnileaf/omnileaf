@@ -36,7 +36,7 @@ const UP_TO_DATE_REPORT = xpath(
   `//*[@role='status']/p[normalize-space()='${SAMPLE_LIBRARY.name} is up to date.']`,
 );
 const LOADED_HOME_FOLDER = xpath(
-  "//section[.//h2[normalize-space()='Home folder']]//*[@data-slot='item-title'][normalize-space()='Omnileaf']",
+  "//section[.//h2[normalize-space()='Home folder']]//button[@aria-label='Rescan Omnileaf']",
 );
 
 const VIEW_OPTIONS_BUTTON = xpath("//button[@aria-label='View options']");
