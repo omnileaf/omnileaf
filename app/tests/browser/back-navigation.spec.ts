@@ -20,10 +20,15 @@ async function openSection(page: Page, label: string): Promise<void> {
 }
 
 async function openSettings(page: Page): Promise<void> {
+  const navigated = page.waitForEvent(
+    "framenavigated",
+    (frame) => frame === page.mainFrame(),
+  );
   await page
     .getByRole("navigation", { name: "Main" })
     .getByRole("link", { name: "Settings" })
     .click();
+  await navigated;
   if (showsSettingsSectionsBeside(page)) {
     await expect(page).toHaveURL(SETTINGS_OPENING_SECTION_URL);
     await expectPage(page, "General");
