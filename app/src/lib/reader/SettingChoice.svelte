@@ -10,6 +10,7 @@
     readonly value: Value;
     readonly label: string;
     readonly phoneLabel?: string;
+    readonly disabled?: boolean;
   }
 
   let {
@@ -74,7 +75,11 @@
     }
   >
     {#each choices as choice (choice.value)}
-      <ToggleGroupItem value={choice.value} class="grow">
+      <ToggleGroupItem
+        value={choice.value}
+        disabled={choice.disabled}
+        class="grow"
+      >
         {#if choice.phoneLabel === undefined}
           {choice.label}
         {:else}

@@ -11,6 +11,7 @@ export type SmartFeature =
   | "learnsReadingSpeed"
   | "showsTimeLeft"
   | "showsBookSummary"
+  | "autoScrollsAtMyPace"
   | "showsPagePreviews";
 
 type Choices = Record<SmartFeature, boolean>;
@@ -21,6 +22,7 @@ const ALL_ON: Choices = {
   learnsReadingSpeed: true,
   showsTimeLeft: true,
   showsBookSummary: true,
+  autoScrollsAtMyPace: true,
   showsPagePreviews: true,
 };
 const ALL_OFF: Choices = {
@@ -28,6 +30,7 @@ const ALL_OFF: Choices = {
   learnsReadingSpeed: false,
   showsTimeLeft: false,
   showsBookSummary: false,
+  autoScrollsAtMyPace: false,
   showsPagePreviews: false,
 };
 
@@ -47,6 +50,7 @@ function storedChoices(stored: string | null): Choices {
       learnsReadingSpeed: choice("learnsReadingSpeed"),
       showsTimeLeft: choice("showsTimeLeft"),
       showsBookSummary: choice("showsBookSummary"),
+      autoScrollsAtMyPace: choice("autoScrollsAtMyPace"),
       showsPagePreviews: choice("showsPagePreviews"),
     };
   } catch {
@@ -79,6 +83,12 @@ export class SmartFeatures {
 
   get showsBookSummary(): boolean {
     return this.#choices.showsBookSummary;
+  }
+
+  get autoScrollsAtMyPace(): boolean {
+    return (
+      this.#choices.learnsReadingSpeed && this.#choices.autoScrollsAtMyPace
+    );
   }
 
   get showsPagePreviews(): boolean {

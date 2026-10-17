@@ -30,6 +30,13 @@
   import DirectionMenu from "#lib/reader/DirectionMenu.svelte";
   import { PageTurner } from "#lib/reader/page-turner.svelte.ts";
   import PageStack from "#lib/reader/PageStack.svelte";
+  import AutoScrollBar from "#lib/reader/AutoScrollBar.svelte";
+  import {
+    autoScrollSpeed,
+    fasterSpeed,
+    pixelsScrolled,
+    slowerSpeed,
+  } from "#lib/reader/auto-scroll.ts";
   import StripFoundCard from "#lib/reader/StripFoundCard.svelte";
   import StripStack from "#lib/reader/StripStack.svelte";
   import {
@@ -166,8 +173,25 @@
     stripFound.see();
     isStripFoundSeen = true;
   }
-  let strip: { scrollByScreen: (step: number) => boolean } | undefined =
-    $state();
+  let strip:
+    | {
+        scrollByScreen: (step: number) => boolean;
+        scrollByPixels: (pixels: number) => boolean;
+        shownPageHeight: () => number;
+      }
+    | undefined = $state();
+  let autoScroll: "off" | "running" | "paused" = $state("off");
+  let isTouchPausing = false;
+  const canUseMyPace = $derived(
+    smartFeatures.autoScrollsAtMyPace && book.secondsPerPage !== null,
+  );
+  const scrollSpeed = $derived(
+    autoScrollSpeed({
+      choice: canUseMyPace ? look.autoScrollSpeed : "set",
+      pagesPerMinute: look.pagesPerMinute,
+      secondsPerPage: book.secondsPerPage,
+    }),
+  );
   let isSettingsOpen = $state(false);
   let areShortcutsOpen = $state(false);
   let isJumpOpen = $state(false);
@@ -272,8 +296,69 @@
     };
   });
 
+  function startAutoScroll(): void {
+    autoScroll = "running";
+    controls.hide();
+    heading?.focus();
+  }
+
+  function toggleAutoScroll(): void {
+    autoScroll = autoScroll === "running" ? "paused" : "running";
+  }
+
+  function reachStripEnd(): void {
+    if (look.pausesAtEnd) {
+      autoScroll = "paused";
+      return;
+    }
+    autoScroll = "off";
+    act("next");
+  }
+
+  function pauseOnTouch(): void {
+    if (autoScroll === "running") {
+      autoScroll = "paused";
+      isTouchPausing = true;
+    }
+  }
+
+  function onStripZone(event: MouseEvent, zone: ReaderAction): void {
+    if (isTouchPausing) {
+      isTouchPausing = false;
+      return;
+    }
+    onZone(event, zone);
+  }
+
+  $effect(() => {
+    if (autoScroll !== "running") {
+      return;
+    }
+    let last = performance.now();
+    let frame = requestAnimationFrame(function step(now: number) {
+      const elapsed = now - last;
+      last = now;
+      const pixels = pixelsScrolled(
+        elapsed,
+        scrollSpeed.pagesPerMinute,
+        strip?.shownPageHeight() ?? 0,
+      );
+      if (strip?.scrollByPixels(pixels) === false) {
+        reachStripEnd();
+        return;
+      }
+      frame = requestAnimationFrame(step);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  });
+
   function act(action: ReaderAction): void {
     switch (action) {
+      case "toggleAutoScroll":
+        toggleAutoScroll();
+        return;
       case "next":
         turnBy(1);
         return;
@@ -564,6 +649,16 @@
     );
   }
 
+  let lastPointer = { x: Number.NaN, y: Number.NaN };
+
+  /** WebKit sends a pointermove whenever the page scrolls under a pointer that hasn't moved, so only a change of position counts. */
+  function hasPointerMoved(event: PointerEvent): boolean {
+    const moved =
+      event.clientX !== lastPointer.x || event.clientY !== lastPointer.y;
+    lastPointer = { x: event.clientX, y: event.clientY };
+    return moved;
+  }
+
   /** Leaves no tapped zone focused, so Space goes on turning pages rather than pressing the zone tapped last. */
   function onZone(event: MouseEvent, zone: ReaderAction): void {
     if (isPointerClick(event) && event.currentTarget instanceof HTMLElement) {
@@ -697,7 +792,13 @@
 
 <svelte:window
   {@attach shortcut(
-    ...readerShortcuts(act, () => reading.direction, platform, reading.mode),
+    ...readerShortcuts(
+      act,
+      () => reading.direction,
+      platform,
+      reading.mode,
+      autoScroll !== "off",
+    ),
   )}
   onmouseup={(event: MouseEvent) => {
     if (event.button === MOUSE_BACK_BUTTON) {
@@ -751,6 +852,7 @@
     role="presentation"
     data-tap-zones
     class="absolute inset-none grid touch-pan-y touch-pinch-zoom grid-strip-zones"
+    onpointerdown={pauseOnTouch}
   >
     {#if look.tapToScroll === "topAndBottom"}
       <button
@@ -758,7 +860,7 @@
         aria-label={m.reader_scroll_up()}
         class="focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
         onclick={(event) => {
-          onZone(event, "previous");
+          onStripZone(event, "previous");
         }}
       ></button>
     {:else}
@@ -771,7 +873,7 @@
         : m.reader_show_controls()}
       class="focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
       onclick={(event) => {
-        onZone(event, "toggleControls");
+        onStripZone(event, "toggleControls");
       }}
     ></button>
     {#if look.tapToScroll === "topAndBottom"}
@@ -780,7 +882,7 @@
         aria-label={m.reader_scroll_down()}
         class="focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
         onclick={(event) => {
-          onZone(event, "next");
+          onStripZone(event, "next");
         }}
       ></button>
     {/if}
@@ -853,7 +955,7 @@
     BACKGROUNDS[look.background],
   ]}
   onpointermove={(event) => {
-    if (isAtRevealEdge(event)) {
+    if (hasPointerMoved(event) && isAtRevealEdge(event)) {
       controls.show();
     }
   }}
@@ -975,6 +1077,24 @@
         }}
       />
     </header>
+    {#if autoScroll !== "off" && !controls.isShown}
+      <div
+        class="absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-auto-bar"
+      >
+        <AutoScrollBar
+          speed={scrollSpeed}
+          isPaused={autoScroll === "paused"}
+          isTouch={!isPointer(platform)}
+          onToggle={toggleAutoScroll}
+          onSlower={() => {
+            settings.change("pagesPerMinute", slowerSpeed(look.pagesPerMinute));
+          }}
+          onFaster={() => {
+            settings.change("pagesPerMinute", fasterSpeed(look.pagesPerMinute));
+          }}
+        />
+      </div>
+    {/if}
     <div
       class={[
         "absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom transition-all expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock motion-reader:duration-fade motion-reader:ease-out",
@@ -995,6 +1115,7 @@
         isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
         showsPreviews={smartFeatures.showsPagePreviews}
         isShown={controls.isShown}
+        onPlay={isStrip ? startAutoScroll : undefined}
         secondsLeft={book.secondsPerPage === null ||
         !smartFeatures.showsTimeLeft
           ? undefined
@@ -1004,7 +1125,7 @@
         }}
       />
     </div>
-    {#if !controls.isShown}
+    {#if !controls.isShown && autoScroll === "off"}
       <div
         aria-hidden="true"
         class="pointer-events-none absolute inset-x-none inset-be-reader-bar-bottom flex justify-center"
@@ -1084,6 +1205,7 @@
     {settings}
     {reading}
     seriesTitle={named.seriesTitle}
+    {canUseMyPace}
     onClose={() => {
       openSettings(false);
     }}
