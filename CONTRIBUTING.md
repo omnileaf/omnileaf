@@ -55,6 +55,8 @@ The app icon is drawn in `branding/icon.svg`. `icon-macos.svg` draws the same ti
 
 After changing any of them, run `cargo xtask icons`. It runs Tauri's icon generator, which rewrites the desktop icons in `app/src-tauri/icons` and the ones in the committed Android and Xcode projects. It then builds the macOS icon from `icon-macos.svg` and removes the alpha channel from the iOS icons, because the App Store rejects icons that have one. Tests fail if the macOS icon loses its margin or a committed iOS icon has an alpha channel.
 
+The tray on Linux and Windows shows `branding/tray.svg`, the green square with only the leaf, since the books vanish at tray size. The macOS menu bar shows `branding/tray-macos.svg`, a one-colour leaf that macOS tints like other menu bar items. `cargo xtask icons` draws them into `app/src-tauri/icons/tray.png` and `tray-macos.png`.
+
 ## Checking your work
 
 `cargo xtask check` runs the same checks as CI, in groups. `--only <group>` runs one of them: `rust`, `portable`, `interface`, `browser`, `app`, `android` or `ios`. A plain `cargo xtask check` runs every group except `android` and `ios`, which need an emulator or a Simulator. `cargo xtask doctor` lists the tools the groups need and shows how to install any that are missing. Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.

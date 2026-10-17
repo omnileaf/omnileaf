@@ -35,7 +35,9 @@ use crate::{
     share_sign_in::{self, SignInOutcome},
     storage::StoragePlaces,
     system_bars::{self, Theme, ThemePreference},
-    system_sign_in, version_details,
+    system_sign_in,
+    tray::{TrayItemChosen, TrayMenu},
+    version_details,
 };
 
 macro_rules! app_commands {
@@ -130,6 +132,7 @@ macro_rules! app_commands {
             check_storage,
             clear_cached_pages,
             clear_covers,
+            show_tray_menu,
             $($development_only),*
         ]
     };
@@ -138,7 +141,11 @@ macro_rules! app_commands {
 pub(crate) fn builder() -> Builder<Wry> {
     Builder::new()
         .commands(registered_commands())
-        .events(collect_events![LibraryChanged, ReadingSaved])
+        .events(collect_events![
+            LibraryChanged,
+            ReadingSaved,
+            TrayItemChosen
+        ])
         .constant("COVERS_PER_ROW", CoversPerRow::RANGES)
         .constant("DEFAULT_LIBRARY_VIEW", LibraryView::default())
         .constant("DEFAULT_LIBRARY_LISTING", LibraryListing::default())
@@ -935,6 +942,39 @@ async fn open_problem_report_issue(app: AppHandle) -> Result<(), IpcError> {
     app.opener()
         .open_url(report.new_issue_url(), None::<&str>)
         .map_err(|error| IpcError::browser_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+#[cfg_attr(
+    mobile,
+    expect(
+        clippy::unnecessary_wraps,
+        reason = "only the desktop's tray can fail to show"
+    )
+)]
+fn show_tray_menu(
+    #[cfg_attr(
+        mobile,
+        expect(unused_variables, reason = "only the desktop has a tray")
+    )]
+    app: AppHandle,
+    #[cfg_attr(
+        mobile,
+        expect(unused_variables, reason = "only the desktop has a tray")
+    )]
+    menu: TrayMenu,
+) -> Result<(), IpcError> {
+    #[cfg(desktop)]
+    crate::tray::show(&app, &menu).map_err(|error| {
+        tracing::warn!(%error, "show the tray menu");
+        IpcError::internal(&error)
+    })?;
+    Ok(())
 }
 
 #[tauri::command]
