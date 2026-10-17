@@ -390,7 +390,6 @@
   "library_mark_read": "Mark as read",
   "library_marked_read": "{count} series marked as read",
   "library_selection_toolbar": "Selected series",
-  "library_categories": "Categories",
   "library_tags": "Tags",
   "library_labels_title": "Categories and tags",
   "library_labels_for": [
@@ -415,7 +414,6 @@
   "library_remove_tag": "Remove {tag}",
   "library_suggested_tags": "Suggested",
   "library_labels_done": "Done",
-  "library_continue_reading": "Continue reading",
   "library_open_series": "Open series",
   "library_labels_menu": "Categories and tags…",
   "library_select": "Select",
@@ -970,44 +968,23 @@
   "screenshot_mode_now_off": "Screenshot mode is off",
   "privacy_title": "Privacy and security",
   "screenshot_mode_title": "Screenshot mode",
-  "screenshot_mode_off_status": "Swap names and covers for stand-ins before you share a screenshot or a report.",
-  "screenshot_mode_on_status": "On until you turn it off",
   "screenshot_mode_summary_on_until": "On until {time}",
-  "screenshot_mode_on_until": "On · turns off at {time}",
   "switch_on": "On",
   "switch_off": "Off",
-  "screenshot_mode_preview": "Preview",
-  "screenshot_mode_sample_title": "Sample Series 04",
-  "screenshot_mode_sample_format": "Manga",
-  "screenshot_mode_sample_chapters": [
-    {
-      "declarations": [
-        "input count",
-        "local countPlural = count: plural",
-        "local formattedCount = count: number"
-      ],
-      "selectors": ["countPlural"],
-      "match": {
-        "countPlural=one": "{formattedCount} chapter",
-        "countPlural=other": "{formattedCount} chapters"
-      }
-    }
-  ],
-  "screenshot_mode_what_changes": "Titles, writers, covers, chapter titles, summaries, tags, and the names of folders, servers and your own categories, shelves and profiles become stand-ins. 18+ is hidden and not counted. Counts, dates, progress and settings otherwise stay real, so a bug still shows.",
-  "screenshot_mode_while_on": "While it’s on",
   "screenshot_mode_blank_pages": "Blank the pages in the reader",
-  "screenshot_mode_blank_pages_help": "Plain grey panels with the page number. Turn off to show a page display problem.",
+  "screenshot_mode_blank_pages_help": "Off shows real pages, for reporting a page that looks wrong.",
+  "screenshot_mode_intro": "Swaps names and covers for stand-ins, hides 18+ and leaves it out of counts, so screenshots show nothing private. Progress, dates and settings stay real.",
+  "screenshot_mode_turn_off_after": "Turn off after",
+  "screenshot_mode_turn_off_hour": "1 hour",
+  "screenshot_mode_turn_off_never": "Never",
   "screenshot_mode_show_label": "Show the Screenshot mode label",
   "screenshot_mode_show_label_help": "At the top of the screen, so you know it’s on.",
   "screenshot_mode_show_label_help_desktop": "At the top of the window, so you know it’s on.",
-  "screenshot_mode_auto_off": "Turn off after 1 hour",
-  "screenshot_mode_auto_off_help": "In case you forget it’s on.",
   "screenshot_mode_quickly": "Turn it on quickly",
   "screenshot_mode_shortcut": "Keyboard shortcut",
   "screenshot_mode_shortcut_help": "Anywhere in Omnileaf",
   "screenshot_mode_shortcut_control": "Ctrl Shift H",
   "screenshot_mode_shortcut_command": "⇧⌘H",
-  "screenshot_mode_nothing_sent": "Nothing about Screenshot mode is sent anywhere. It only changes what’s on screen and in reports.",
   "stand_in_series": "Series {number}",
   "stand_in_book": "{series} · Book {number}",
   "stand_in_series_book": "Book {number}",
@@ -1015,7 +992,6 @@
   "stand_in_artist": "Artist {number}",
   "stand_in_tag": "Tag {number}",
   "stand_in_summary": "A stand-in summary shows here while Screenshot mode is on.",
-  "screenshot_mode_preview_label": "Preview of one cover with Screenshot mode off and on",
   "stand_in_folder": "Folder {number}",
   "notice_dismiss": "Dismiss",
   "notice_region": "Notifications",
@@ -1324,8 +1300,8 @@
       ],
       "selectors": ["pagesPlural"],
       "match": {
-        "pagesPlural=one": "Read \u00b7 {formattedPages} page",
-        "pagesPlural=other": "Read \u00b7 {formattedPages} pages"
+        "pagesPlural=one": "Read · {formattedPages} page",
+        "pagesPlural=other": "Read · {formattedPages} pages"
       }
     }
   ],
@@ -1338,8 +1314,8 @@
       ],
       "selectors": ["pagesPlural"],
       "match": {
-        "pagesPlural=one": "Unread \u00b7 {formattedPages} page",
-        "pagesPlural=other": "Unread \u00b7 {formattedPages} pages"
+        "pagesPlural=one": "Unread · {formattedPages} page",
+        "pagesPlural=other": "Unread · {formattedPages} pages"
       }
     }
   ],

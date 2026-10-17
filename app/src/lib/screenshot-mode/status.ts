@@ -15,24 +15,6 @@ function timeOfDay(
   }).format(instant);
 }
 
-export function screenshotModeStatus(
-  activity: ScreenshotModeActivity,
-  hourCycle?: Intl.LocaleHourCycleKey,
-): string {
-  switch (activity.kind) {
-    case "off":
-      return m.screenshot_mode_off_status();
-    case "on":
-      return m.screenshot_mode_on_status();
-    case "onUntil":
-      return m.screenshot_mode_on_until({
-        time: timeOfDay(activity.turnsOffAt, hourCycle),
-      });
-    default:
-      return assertNever(activity);
-  }
-}
-
 export function screenshotModeSummary(
   activity: ScreenshotModeActivity,
   hourCycle?: Intl.LocaleHourCycleKey,
