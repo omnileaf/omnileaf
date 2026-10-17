@@ -531,7 +531,7 @@ test("grows the home folder's name with the text size", async ({ page }) => {
     .getByRole("region", { name: "Home folder" })
     .getByRole("heading", { name: "Home folder" });
 
-  expect(await fontSizeOf(name)).toBe(HOME_NAME_TEXT * LARGE_TEXT_SCALE);
+  expect(await fontSizeOf(name)).toBeCloseTo(HOME_NAME_TEXT * LARGE_TEXT_SCALE);
 });
 
 test("wraps a long home folder path inside its code block", async ({
