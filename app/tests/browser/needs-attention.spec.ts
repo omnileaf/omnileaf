@@ -269,3 +269,59 @@ test.describe("on a phone", () => {
     });
   }
 });
+
+test.describe("in the Settings list on a phone", () => {
+  test.use({
+    backend: { ...BACKEND, appInfo: () => fakeAppInfo("android") },
+  });
+
+  test.beforeEach(() => {
+    test.skip(
+      test.info().project.use.isMobile !== true,
+      "the Settings list of a phone or tablet",
+    );
+  });
+
+  function card(page: Page): Locator {
+    return page.getByRole("button", { name: "Needs attention 1 thing to fix" });
+  }
+
+  test("sits on top, above the App group, with how many things to fix", async ({
+    page,
+  }) => {
+    await page.goto("/settings");
+
+    await expect(card(page)).toBeVisible();
+    const top = await card(page).boundingBox();
+    const app = await page.getByRole("heading", { name: "App" }).boundingBox();
+    expect(app?.y).toBeGreaterThan(top?.y ?? Number.POSITIVE_INFINITY);
+  });
+
+  test("opens the sheet of what needs attention", async ({ page }) => {
+    await page.goto("/settings");
+
+    await card(page).click();
+
+    await expect(sheet(page)).toContainText("Comics isn’t there");
+  });
+
+  test("goes once nothing needs attention", async ({ page }) => {
+    missing = [];
+    await page.goto("/settings");
+
+    await expect(page.getByRole("heading", { name: "App" })).toBeVisible();
+    await expect(card(page)).toHaveCount(0);
+  });
+
+  for (const theme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the ${theme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto("/settings");
+      await expect(card(page)).toBeVisible();
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
+});
