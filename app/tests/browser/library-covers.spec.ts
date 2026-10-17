@@ -24,6 +24,7 @@ const SERIES: readonly WireSeries[] = Array.from({ length: 7 }, (_, index) => ({
   cover: index === 6 ? null : `thumb/v1/${BOOK}/${String(index + 1)}/1`,
   language: null,
   hasDownloads: false,
+  isAdult: false,
   continuesFrom: null,
 }));
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;

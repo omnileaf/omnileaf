@@ -1,3 +1,4 @@
+pub mod adult_content;
 mod backup;
 mod book_order;
 pub mod catalog;
