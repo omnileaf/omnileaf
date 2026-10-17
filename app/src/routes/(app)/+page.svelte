@@ -13,7 +13,9 @@
     type LibraryGrouping,
     type LibraryListing,
     type LibrarySeries,
+    type LibraryTab as KeptTab,
     type LibraryView,
+    type SeriesPage,
   } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import ActiveFilters from "#lib/library/ActiveFilters.svelte";
@@ -41,10 +43,15 @@
   } from "#lib/library/library-series.svelte.ts";
   import {
     ALL_SERIES,
-    categoryOf,
     LibraryTab,
     showsCategoryTabs,
   } from "#lib/library/library-tab.svelte.ts";
+  import {
+    arrangedTabs,
+    NEW_LIBRARY_TABS,
+    showsTabs,
+    tabKey,
+  } from "#lib/library/library-tabs.ts";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
   import NoMatches from "#lib/library/NoMatches.svelte";
   import SeriesCount from "#lib/library/SeriesCount.svelte";
@@ -79,6 +86,11 @@
 
   const TRY_AGAIN_ICON_SIZE = 16;
   const FILTER_PANEL_ID = "library-filter";
+  const NOTHING_NEW: { status: "ok"; data: SeriesPage } = {
+    status: "ok",
+    data: { series: [], next: null },
+  };
+  const NONE_NEW = { status: "ok", data: 0 } as const;
 
   const screenshotMode = getScreenshotMode();
   const listing = new StoredChoice<LibraryListing>(
@@ -113,6 +125,10 @@
   );
   const tab = new LibraryTab();
   let categories = $state<readonly LibraryCategory[]>([]);
+  let keptTabs = $state<readonly KeptTab[]>(NEW_LIBRARY_TABS);
+  const shownTabs = $derived(
+    arrangedTabs(keptTabs, categories).filter(({ isHidden }) => !isHidden),
+  );
   let filterChoices = $state<LibraryFilterChoices>(NO_FILTER_CHOICES);
   let folders = $state<readonly LibraryFolder[]>([]);
   const groupBy = $derived<LibraryGrouping>(
@@ -141,22 +157,35 @@
   );
   const tabsShown = $derived(
     groupBy === "none" &&
-      showsCategoryTabs(categories) &&
+      showsTabs(shownTabs) &&
       (view.reading.kind !== "read" || view.reading.value.showsCategoryTabs),
   );
+  const chosenTab = $derived(
+    tabsShown
+      ? shownTabs.find(({ id }) => tabKey(id) === tab.chosen)?.id
+      : undefined,
+  );
   const chosenCategory = $derived(
-    categoryOf(tab.chosen, tabsShown ? categories : []),
+    chosenTab?.kind === "category" ? chosenTab.id : undefined,
+  );
+  const isOnNewChapters = $derived(chosenTab?.kind === "newChapters");
+  const chosenTabKey = $derived(
+    chosenTab === undefined ? ALL_SERIES : tabKey(chosenTab),
   );
   const library = librarySeriesList((after) =>
-    chosenCategory === undefined
-      ? commands.librarySeries(after, listedBy())
-      : commands.categorySeries(chosenCategory, after, listedBy()),
+    isOnNewChapters
+      ? Promise.resolve(NOTHING_NEW)
+      : chosenCategory === undefined
+        ? commands.librarySeries(after, listedBy())
+        : commands.categorySeries(chosenCategory, after, listedBy()),
   );
   const seriesCount = new LibrarySeriesCount(
     () =>
-      chosenCategory === undefined
-        ? commands.librarySeriesCount(listedBy().filter)
-        : commands.categorySeriesCount(chosenCategory, listedBy().filter),
+      isOnNewChapters
+        ? Promise.resolve(NONE_NEW)
+        : chosenCategory === undefined
+          ? commands.librarySeriesCount(listedBy().filter)
+          : commands.categorySeriesCount(chosenCategory, listedBy().filter),
     (error) => {
       reportError(error);
     },
@@ -233,7 +262,7 @@
     if (library.list.kind === "loaded") {
       isListFiltered = untrack(
         () =>
-          chosenCategory !== undefined ||
+          (chosenTab !== undefined && chosenTab.kind !== "all") ||
           (chosenListing !== undefined && filtersOn(chosenListing.filter) > 0),
       );
     }
@@ -254,7 +283,7 @@
   const listed = $derived(
     chosenListing === undefined
       ? undefined
-      : { listing: chosenListing, category: chosenCategory },
+      : { listing: chosenListing, tab: chosenTab },
   );
 
   $effect(() => {
@@ -307,6 +336,13 @@
     const kept = await commands.libraryCategories();
     if (kept.status === "ok") {
       categories = kept.data;
+    }
+  }
+
+  async function loadTabs(): Promise<void> {
+    const kept = await commands.libraryTabs();
+    if (kept.status === "ok") {
+      keptTabs = kept.data;
     }
   }
 
@@ -365,8 +401,8 @@
   }
 
   function swipeTab(step: 1 | -1): void {
-    const order = [ALL_SERIES, ...categories.map(({ id }) => id)];
-    const next = order[order.indexOf(chosenCategory ?? ALL_SERIES) + step];
+    const order = shownTabs.map(({ id }) => tabKey(id));
+    const next = order[order.indexOf(chosenTabKey) + step];
     if (next !== undefined) {
       chooseTab(next);
     }
@@ -377,6 +413,7 @@
     void view.load();
     void adultContent.load();
     void loadCategories();
+    void loadTabs();
     void loadFilterChoices();
     void loadLabelSupport();
     return listenForLibraryChanges(() => {
@@ -490,8 +527,8 @@
 >
   {#if hasBooks && tabsShown && !selection.isSelecting}
     <CategoryTabs
-      {categories}
-      chosen={chosenCategory ?? ALL_SERIES}
+      arranged={shownTabs}
+      chosen={chosenTabKey}
       onChoose={chooseTab}
     />
   {/if}
