@@ -6,6 +6,9 @@ yanked = "deny"
 ignore = [
     { id = "RUSTSEC-2024-0370", reason = "proc-macro-error is unmaintained but compile-time only, pulled in by Tauri 2's GTK3 bindings on Linux; drop this once Tauri uses GTK4" },
     { id = "RUSTSEC-2024-0436", reason = "paste is unmaintained but compile-time only, pulled in by specta's macros for the typed command bindings; drop this once specta no longer uses it" },
+    { id = "RUSTSEC-2026-0370", reason = "zvariant now lives inside zbus 6, but zbus 5 still pulls it in through tauri-plugin-dialog's file picker, tauri-plugin-opener and our own D-Bus calls; drop this once those move to zbus 6" },
+    { id = "RUSTSEC-2026-0371", reason = "zbus_names now lives inside zbus 6, but zbus 5 still pulls it in through tauri-plugin-dialog's file picker, tauri-plugin-opener and our own D-Bus calls; drop this once those move to zbus 6" },
+    { id = "RUSTSEC-2026-0372", reason = "zvariant_derive now lives inside zbus 6, but zbus 5 still pulls it in through tauri-plugin-dialog's file picker, tauri-plugin-opener and our own D-Bus calls; drop this once those move to zbus 6" },
 ]
 
 [licenses]
