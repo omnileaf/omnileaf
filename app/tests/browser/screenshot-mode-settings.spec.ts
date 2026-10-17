@@ -247,6 +247,46 @@ test.describe("on a phone", () => {
 
     await expect(page.getByText("Keyboard shortcut")).toHaveCount(0);
   });
+
+  test("Turn it on quickly says to long-press the app's icon", async ({
+    page,
+  }) => {
+    await openScreenshotMode(page);
+
+    await expect(
+      page.getByRole("region", { name: "Turn it on quickly" }),
+    ).toHaveText(
+      /^Turn it on quickly\s*Long-press the Omnileaf icon\s*Screenshot mode, Continue reading and Search the library, from your home screen\.$/,
+    );
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in ${colorScheme}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await openScreenshotMode(page);
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
+});
+
+test.describe("on an iPhone", () => {
+  testOnlyInItsWebview("ios");
+  test.use(onPlatform("ios"));
+
+  test("Turn it on quickly says to long-press the app's icon", async ({
+    page,
+  }) => {
+    await openScreenshotMode(page);
+
+    await expect(
+      page.getByRole("region", { name: "Turn it on quickly" }),
+    ).toContainText("Long-press the Omnileaf icon");
+  });
 });
 
 for (const colorScheme of ["light", "dark"] as const) {
