@@ -152,6 +152,27 @@ async fn lists_a_folder_on_an_unreachable_share_with_that_share() {
 }
 
 #[tokio::test]
+async fn finds_the_unreachable_share_of_a_folder_to_sign_in_to() {
+    let shelf = Shelf::new("missing-share-sign-in").await;
+    shelf.move_away().await;
+
+    let share = shelf
+        .scanned
+        .library
+        .unreachable_share(shelf.scanned.id, &MountedShares)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        share,
+        Some(UnreachableShare {
+            share: nas_manga(),
+            sign_in: ShareSignIn::MountedBySystem,
+        })
+    );
+}
+
+#[tokio::test]
 async fn shows_the_series_of_a_missing_folder_once_asked() {
     let shelf = Shelf::new("missing-shown").await;
     shelf.move_away().await;
