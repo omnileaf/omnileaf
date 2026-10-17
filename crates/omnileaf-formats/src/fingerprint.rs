@@ -51,7 +51,8 @@ pub(crate) fn archive_fingerprint<R: Read + Seek>(
         let entry = archive
             .by_index_raw(index)
             .map_err(|source| corrupt(path, source))?;
-        if !entry.is_dir() && is_fingerprinted_image(entry.name()) {
+        let name = entry.name().map_err(|source| corrupt(path, source))?;
+        if !entry.is_dir() && is_fingerprinted_image(&name) {
             images.push(ImageEntry {
                 crc32: entry.crc32(),
                 size: entry.size(),

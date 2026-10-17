@@ -219,7 +219,7 @@ fn keeps_archive_entries_in_the_order_given_with_their_bytes() {
         let mut file = archive.by_index(index).unwrap();
         let mut bytes = Vec::new();
         file.read_to_end(&mut bytes).unwrap();
-        assert_eq!(file.name(), entry.name);
+        assert_eq!(file.name().unwrap(), entry.name);
         assert_eq!(bytes, entry.bytes);
     }
 }
