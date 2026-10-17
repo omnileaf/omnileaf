@@ -481,6 +481,7 @@ export const TOKEN_THEME = {
     "sm",
     "sort-direction",
     "sort-row",
+    "step-actions",
     "step-badge",
     "step-badge-icon",
     "step-count",
