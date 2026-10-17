@@ -239,7 +239,7 @@ test("shows a series' title, folder and how far it has been read", async ({
   await expect(main.getByText("12 books", { exact: true })).toHaveCount(2);
   await expect(main.getByText(SERIES_FOLDER)).toBeVisible();
   await expect(
-    main.getByText(`Continue ${shelf.titleOf(3)} at page 15`),
+    main.getByRole("link", { name: `Continue ${shelf.titleOf(3)} at page 15` }),
   ).toBeVisible();
   await expect(
     main.getByRole("progressbar", { name: "3 of 12 read" }),
@@ -335,7 +335,9 @@ test("shows how far a book is read once a page turned in it is saved", async ({
   });
 
   await expect(
-    page.getByRole("main").getByText(`Continue ${shelf.titleOf(3)} at page 22`),
+    page
+      .getByRole("main")
+      .getByRole("link", { name: `Continue ${shelf.titleOf(3)} at page 22` }),
   ).toBeVisible();
   await expect(books(page).nth(3)).toContainText("Page 22");
 });
@@ -1561,9 +1563,11 @@ test.describe("while Screenshot mode is on", () => {
       `${standIn ?? ""} · Book 1`,
     );
     await expect(books(page).nth(3)).toContainText(`${standIn ?? ""} · Book 4`);
-    await expect(page.getByRole("main")).toContainText(
-      `Continue ${standIn ?? ""} · Book 4 at page 15`,
-    );
+    await expect(
+      page.getByRole("main").getByRole("link", {
+        name: `Continue ${standIn ?? ""} · Book 4 at page 15`,
+      }),
+    ).toBeVisible();
     await expect(page.getByRole("main")).toContainText("Folder 571");
     const shown = (await page.getByRole("main").textContent()) ?? "";
     expect(shown).not.toContain(SERIES_TITLE);
