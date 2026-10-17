@@ -47,16 +47,6 @@ class Watching {
 @TauriPlugin
 class IconActionsPlugin(activity: Activity) : Plugin(activity) {
   private val context: Context = activity.applicationContext
-  private var channel: Channel? = null
-  private var pending: IconAction? = null
-
-  init {
-    take(activity.intent)
-  }
-
-  override fun onNewIntent(intent: Intent) {
-    take(intent)
-  }
 
   @Command
   fun show(invoke: Invoke) {
@@ -70,29 +60,13 @@ class IconActionsPlugin(activity: Activity) : Plugin(activity) {
 
   @Command
   fun watch(invoke: Invoke) {
-    watchWith(invoke.parseArgs(Watching::class.java).channel)
+    ChosenIconActions.watch(invoke.parseArgs(Watching::class.java).channel)
     invoke.resolve()
   }
-
-  @Synchronized
-  private fun watchWith(watching: Channel) {
-    channel = watching
-    pending?.let { watching.sendObject(it.id) }
-    pending = null
-  }
-
-  @Synchronized
-  private fun take(intent: Intent?) {
-    if (intent?.action != OPEN_ICON_ACTION) return
-    val chosen = IconAction.withId(intent.getStringExtra(CHOSEN_ACTION)) ?: return
-    val watching = channel
-    if (watching == null) {
-      pending = chosen
-    } else {
-      watching.sendObject(chosen.id)
-    }
-  }
 }
+
+internal fun Intent.chosenIconAction(): IconAction? =
+  if (action == OPEN_ICON_ACTION) IconAction.withId(getStringExtra(CHOSEN_ACTION)) else null
 
 private fun IconShortcut.info(context: Context, rank: Int): ShortcutInfoCompat? {
   val chosen = IconAction.withId(action) ?: return null
