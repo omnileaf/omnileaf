@@ -75,6 +75,18 @@ const BY_LAST_UPDATED: Directions<Position> = directions! {
     sort_position: last_updated_place,
 };
 
+const BY_UNREAD_COUNT: Directions<Position> = directions! {
+    key: "unread_count",
+    sort_position: unread_count_place,
+};
+
+pub(crate) fn unread_count_place(row: &Row<'_>) -> rusqlite::Result<Position> {
+    Ok(Position::UnreadCount {
+        unread_count: row.get("unread_count")?,
+        id: stored_id(row, "id")?,
+    })
+}
+
 pub(crate) fn last_updated_place(row: &Row<'_>) -> rusqlite::Result<Position> {
     Ok(Position::LastUpdated {
         updated_at_ms: row.get("updated_at_ms")?,
@@ -128,8 +140,34 @@ pub fn series_page(
         SeriesOrder::LastUpdated => {
             last_updated_rows(&read, BY_LAST_UPDATED.toward(direction), after)
         }
+        SeriesOrder::UnreadCount => {
+            unread_count_rows(&read, BY_UNREAD_COUNT.toward(direction), after)
+        }
     }?;
     Ok(Page::of(rows, request.size))
+}
+
+pub(crate) fn unread_count_rows(
+    read: &Read<'_>,
+    listing: &Listing<Position>,
+    after: Option<&Position>,
+) -> Result<Vec<(SeriesSummary, Position)>, Error> {
+    match after {
+        None => listing.first_rows(read),
+        Some(Position::UnreadCount { unread_count, id }) => listing.rows_after(
+            read,
+            named_params! { ":after_key": unread_count, ":after_id": id.as_bytes() },
+        ),
+        Some(
+            Position::Title { .. }
+            | Position::Added { .. }
+            | Position::Book { .. }
+            | Position::Root { .. }
+            | Position::LastRead { .. }
+            | Position::Session { .. }
+            | Position::LastUpdated { .. },
+        ) => Err(Error::CursorForAnotherList),
+    }
 }
 
 pub(crate) fn last_updated_rows(
@@ -149,7 +187,8 @@ pub(crate) fn last_updated_rows(
             | Position::Book { .. }
             | Position::Root { .. }
             | Position::LastRead { .. }
-            | Position::Session { .. },
+            | Position::Session { .. }
+            | Position::UnreadCount { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
@@ -174,7 +213,8 @@ pub(crate) fn last_read_rows(
             | Position::Book { .. }
             | Position::Root { .. }
             | Position::Session { .. }
-            | Position::LastUpdated { .. },
+            | Position::LastUpdated { .. }
+            | Position::UnreadCount { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
@@ -196,7 +236,8 @@ pub(crate) fn date_added_rows(
             | Position::Root { .. }
             | Position::LastRead { .. }
             | Position::Session { .. }
-            | Position::LastUpdated { .. },
+            | Position::LastUpdated { .. }
+            | Position::UnreadCount { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
@@ -316,6 +357,46 @@ mod tests {
                 ),
                 merging_each_stage(
                     "SEARCH series USING INDEX series_by_stage_and_updated (reading_stage=? AND (updated_at_ms,id)<(?,?))"
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn starts_each_stage_at_either_end_of_its_stretch_of_the_unread_count_index_without_sorting() {
+        let scratch = ScratchLibrary::new("first-unread-count-plan");
+
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.first_page_query,
+            &BY_UNREAD_COUNT,
+        );
+
+        let from_the_head = merging_each_stage(
+            "SEARCH series USING INDEX series_by_stage_and_unread (reading_stage=?)",
+        );
+        assert_eq!(plans, [from_the_head.clone(), from_the_head]);
+    }
+
+    #[test]
+    fn seeks_each_stage_of_the_unread_count_index_either_way_on_both_sort_columns_without_sorting()
+    {
+        let scratch = ScratchLibrary::new("unread-count-plan");
+
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.next_page_query,
+            &BY_UNREAD_COUNT,
+        );
+
+        assert_eq!(
+            plans,
+            [
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_unread (reading_stage=? AND (unread_count,id)>(?,?))"
+                ),
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_unread (reading_stage=? AND (unread_count,id)<(?,?))"
                 ),
             ]
         );
