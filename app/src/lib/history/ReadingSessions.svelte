@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
   import { Play, RotateCcw } from "@lucide/svelte";
   import { onMount, untrack } from "svelte";
 
@@ -44,7 +45,8 @@
   const headingId = $props.id();
   const locale = getLocale();
   const dayNames = dayFormats(locale);
-  const startTimes = startedAtFormats(locale);
+  const timeFormat = getTimeFormatSetting();
+  const startTimes = $derived(startedAtFormats(locale, timeFormat.hourCycle));
   const counts = new Intl.NumberFormat(locale);
   const today = localDayOf(new Date());
   const calendar = {

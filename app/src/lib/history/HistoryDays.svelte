@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
   import { dayFormats, dayName } from "#lib/history/day-name.ts";
   import {
     type HistoryCalendar,
@@ -38,7 +39,8 @@
 
   const locale = getLocale();
   const dayNames = dayFormats(locale);
-  const startTimes = startedAtFormats(locale);
+  const timeFormat = getTimeFormatSetting();
+  const startTimes = $derived(startedAtFormats(locale, timeFormat.hourCycle));
   const headingId = $props.id();
   const days = $derived(historyDays(entries, calendar, lastWeekReadSeconds));
 
