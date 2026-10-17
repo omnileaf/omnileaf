@@ -76,6 +76,7 @@ export default defineConfig({
   shard,
   webServer: {
     command: `pnpm build && pnpm preview --port ${String(PREVIEW_PORT)} --strictPort`,
+    env: { VITE_SAMPLE_LIBRARY: "on" },
     url: PREVIEW_URL,
     reuseExistingServer: false,
   },
