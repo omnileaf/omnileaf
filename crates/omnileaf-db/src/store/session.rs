@@ -14,8 +14,8 @@ const CARRY_ON: &str = "UPDATE reading_session
     WHERE id = ?1";
 const STOP: &str = "UPDATE reading_session SET ended_at_ms = max(ended_at_ms, ?2) WHERE id = ?1";
 const START: &str = "INSERT INTO reading_session
-    (book_id, started_at_ms, ended_at_ms, utc_offset_minutes, page, page_count)
-    VALUES (?1, ?2, ?2, ?3, ?4, ?5)";
+    (book_id, started_at_ms, ended_at_ms, utc_offset_minutes, page, page_count, first_page)
+    VALUES (?1, ?2, ?2, ?3, ?4, ?5, ?4)";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SessionPlace {
