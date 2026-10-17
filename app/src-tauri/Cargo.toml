@@ -19,6 +19,7 @@ tauri-build.workspace = true
 [dependencies]
 omnileaf-edge-swipe.workspace = true
 omnileaf-engine.workspace = true
+omnileaf-icon-actions.workspace = true
 os_info.workspace = true
 serde.workspace = true
 specta.workspace = true

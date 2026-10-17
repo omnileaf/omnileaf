@@ -129,6 +129,8 @@ export const commands = {
 	clearCachedPages: () => typedError<null, IpcError>(__TAURI_INVOKE("clear_cached_pages")),
 	clearCovers: () => typedError<null, IpcError>(__TAURI_INVOKE("clear_covers")),
 	showTrayMenu: (menu: TrayMenu) => typedError<null, IpcError>(__TAURI_INVOKE("show_tray_menu", { menu })),
+	showIconActions: (menu: IconActionsMenu) => typedError<null, IpcError>(__TAURI_INVOKE("show_icon_actions", { menu })),
+	watchIconActions: (onChosen: Channel<IconAction>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_icon_actions", { onChosen })),
 	openSystemSettings: () => typedError<null, IpcError>(__TAURI_INVOKE("open_system_settings")),
 	panicInCore: () => typedError<null, IpcError>(__TAURI_INVOKE("panic_in_core")),
 	crashAndQuit: () => typedError<null, IpcError>(__TAURI_INVOKE("crash_and_quit")),
@@ -339,6 +341,16 @@ export type HistoryPage = {
 export type HistorySeries = {
 	id: string & { readonly __brand: "SeriesId" },
 	title: string,
+};
+
+export type IconAction = "screenshotMode" | "continueReading" | "searchLibrary";
+
+export type IconActionsMenu = {
+	screenshotMode: string,
+	screenshotModeState: string,
+	screenshotModeWithState: string,
+	continueReading: string,
+	searchLibrary: string,
 };
 
 export type Inclusion = "any" | "only" | "hide";
