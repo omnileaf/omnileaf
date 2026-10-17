@@ -1,13 +1,26 @@
 <script lang="ts">
+  import { ArrowLeft } from "@lucide/svelte";
   import { onMount, untrack } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+  } from "#lib/components/ui/breadcrumb/index.ts";
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import {
     commands,
     type LibrarySearch,
+    DEFAULT_LIBRARY_VIEW,
     type LibrarySeries,
+    type LibraryView,
+    type Platform,
+    type SpellingSuggestion,
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
@@ -17,7 +30,14 @@
   } from "#lib/library/library-listing.ts";
   import { librarySeriesList } from "#lib/library/library-series.svelte.ts";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
+  import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
+  import {
+    EXPANDED_QUERY,
+    NARROW_POINTER_QUERY,
+  } from "#lib/page/breakpoints.ts";
+  import PageToolbar from "#lib/page/PageToolbar.svelte";
+  import { browserPreferenceStore } from "#lib/preferences/stored-preference.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
@@ -28,10 +48,14 @@
   import { nothingFoundTitle } from "#lib/search/nothing-found.ts";
   import { searchTextIn } from "#lib/search/search-route.ts";
   import SearchField from "#lib/search/SearchField.svelte";
-  import { SearchQuery } from "#lib/search/search-query.svelte.ts";
+  import {
+    SearchQuery,
+    type SearchScope,
+  } from "#lib/search/search-query.svelte.ts";
+  import { RecentSearches } from "#lib/search/recent-searches.svelte.ts";
   import SearchResults from "#lib/search/SearchResults.svelte";
   import SearchStart from "#lib/search/SearchStart.svelte";
-  import ShowChoices from "#lib/search/ShowChoices.svelte";
+  import ScopeChips from "#lib/search/ScopeChips.svelte";
   import {
     columnsOf,
     movedTo,
@@ -44,6 +68,25 @@
   let { data }: PageProps = $props();
 
   const screenshotMode = getScreenshotMode();
+  const recent = new RecentSearches(browserPreferenceStore());
+  const libraryView = new StoredChoice<LibraryView>(
+    {
+      read: () => commands.libraryView(),
+      store: (chosen: LibraryView) => commands.setLibraryView(chosen),
+      fallback: DEFAULT_LIBRARY_VIEW,
+    },
+    (error) => {
+      reportError(error);
+    },
+  );
+  const BACK_ICON_SIZE = 22;
+  const DESKTOPS: readonly Platform[] = ["linux", "macos", "windows"];
+  const isWide = new MediaQuery(EXPANDED_QUERY);
+  const isNarrowPointer = new MediaQuery(NARROW_POINTER_QUERY);
+  const hasToolbar = $derived(
+    DESKTOPS.includes(data.appInfo.platform) &&
+      (isWide.current || isNarrowPointer.current),
+  );
 
   const query = new SearchQuery(filterWords(), getLocale());
 
@@ -63,6 +106,28 @@
   let answeredKey: string | undefined = $state();
   let latestLook = 0;
   const isAnswered = $derived(answeredKey === searchKey);
+  let suggestion = $state<{
+    readonly key: string;
+    readonly found: SpellingSuggestion | null;
+  }>();
+  const shownSuggestion = $derived(
+    suggestion?.key === searchKey ? suggestion.found : null,
+  );
+  $effect(() => {
+    const text = query.search.text;
+    if (
+      !isAnswered ||
+      text === "" ||
+      results.list.kind !== "loaded" ||
+      results.list.items.length > 0
+    ) {
+      return;
+    }
+    const key = searchKey;
+    void commands.librarySpellingSuggestion(text).then((likely) => {
+      suggestion = { key, found: likely.status === "ok" ? likely.data : null };
+    });
+  });
   const announcement = $derived.by(() => {
     if (!isLookingFor) {
       return "";
@@ -107,15 +172,22 @@
     query.toggle(condition);
   }
 
-  function showEverything(): void {
-    query.clearConditions();
-  }
-
   function close(): void {
     void goto(resolve(SECTION_ROUTE_IDS.library));
   }
 
+  function rememberSearch(): void {
+    const words = filterWords();
+    recent.remember(
+      [...query.conditions.map((condition) => words[condition]), query.text]
+        .join(" ")
+        .trim(),
+      Date.now(),
+    );
+  }
+
   function open(series: LibrarySeries): void {
+    rememberSearch();
     void goto(resolve("/(app)/series/[id]", { id: series.id }));
   }
 
@@ -195,6 +267,10 @@
     }
   });
 
+  onMount(() => {
+    void libraryView.load();
+  });
+
   onMount(() =>
     listenForLibraryChanges(() => {
       if (isLookingFor) {
@@ -205,10 +281,58 @@
   );
 </script>
 
-<div class="flex flex-col gap-search-gap min-block-full">
+{#if hasToolbar}
+  <PageToolbar>
+    <Breadcrumb
+      aria-label={m.series_breadcrumb()}
+      class="flex items-center text-small text-muted min-inline-none"
+    >
+      <BreadcrumbItem>
+        <a
+          href={resolve(SECTION_ROUTE_IDS.library)}
+          data-back-link
+          class="transition-control hover:text-foreground"
+        >
+          {m.library_title()}
+        </a>
+      </BreadcrumbItem>
+      <BreadcrumbSeparator />
+      <BreadcrumbItem>
+        <BreadcrumbPage class="text-foreground">
+          {m.search_title()}
+        </BreadcrumbPage>
+      </BreadcrumbItem>
+    </Breadcrumb>
+  </PageToolbar>
+{/if}
+<div
+  class={[
+    "flex flex-col gap-search-gap min-block-full",
+    hasToolbar && "pbs-xl",
+  ]}
+>
   <h1 class="sr-only">{m.search_title()}</h1>
   <p role="status" class="sr-only">{announcement}</p>
   <div class="flex items-center gap-sm large:gap-md">
+    {#if !hasToolbar}
+      <Tooltip label={m.search_back()}>
+        {#snippet child({ props })}
+          <a
+            {...props}
+            href={resolve(SECTION_ROUTE_IDS.library)}
+            aria-label={m.search_back()}
+            data-back-link
+            class="flex shrink-0 items-center justify-center rounded-full transition-control block-touch-target inline-touch-target hover:tint-hover active:tint-pressed"
+          >
+            <ArrowLeft
+              size={BACK_ICON_SIZE}
+              aria-hidden="true"
+              class="rtl:-scale-x-100"
+            />
+          </a>
+        {/snippet}
+      </Tooltip>
+    {/if}
     <SearchField
       text={query.text}
       conditions={query.conditions}
@@ -222,16 +346,16 @@
       hasChoices={shown.length > 0}
       onKey={navigate}
     />
-    <a
-      href={resolve(SECTION_ROUTE_IDS.library)}
-      class="flex shrink-0 items-center px-search-cancel-inline text-body font-semibold text-accent block-search-cancel medium:rounded-field medium:px-md medium:text-small medium:block-pointer-target"
-    >
-      <span class="medium:hidden">{m.search_cancel()}</span>
-      <span class="hidden medium:inline">{m.search_close()}</span>
-    </a>
   </div>
   {#if !isLookingFor}
-    <SearchStart />
+    <SearchStart
+      recent={recent.entries}
+      nowMs={Date.now()}
+      onRun={type}
+      onClear={() => {
+        recent.clear();
+      }}
+    />
   {:else}
     {#if query.conditions.length > 0}
       <ConditionChips
@@ -241,17 +365,23 @@
         class="medium:hidden"
       />
     {/if}
-    <ShowChoices
-      conditions={query.conditions}
-      onToggle={toggle}
-      onEverything={showEverything}
-      class={[query.conditions.length > 0 && "max-medium:hidden"]}
+    <ScopeChips
+      scope={query.scope}
+      onNarrow={(scope: SearchScope) => {
+        query.narrowTo(scope);
+      }}
     />
     {#if results.list.kind === "failed"}
       <p class="text-body text-muted">{m.search_failed()}</p>
     {:else if results.list.kind === "loaded" && results.list.items.length === 0}
       {#if isAnswered}
-        <NothingFound text={query.search.text} />
+        <NothingFound
+          text={query.search.text}
+          suggestion={shownSuggestion}
+          onSuggest={(text: string) => {
+            query.type(text);
+          }}
+        />
       {/if}
     {:else if results.list.kind === "loaded"}
       <SearchResults
@@ -269,6 +399,10 @@
         {listId}
         activeKey={activeSeries?.id}
         onOpen={choose}
+        words={query.search.text}
+        view={libraryView.reading.kind === "read"
+          ? libraryView.reading.value
+          : undefined}
       />
     {/if}
   {/if}

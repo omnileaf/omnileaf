@@ -1,5 +1,4 @@
 import { expect, test } from "vitest";
-import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import SettingsIndex from "./SettingsIndex.svelte";
@@ -11,28 +10,23 @@ const PROPS = {
   },
 };
 
-function groupHolding(name: string) {
-  return page
-    .getByRole("list")
-    .filter({ has: page.getByRole("link", { name: new RegExp(`^${name}`) }) });
-}
+test("groups the pages under App, Reading and Data and privacy, as the Settings list draws them", async () => {
+  const screen = await render(SettingsIndex, PROPS);
 
-test("groups Library, Appearance, Reader, Privacy and security and General together", async () => {
-  await render(SettingsIndex, PROPS);
+  const named = (group: string) =>
+    screen
+      .getByRole("list", { name: group })
+      .getByRole("link")
+      .elements()
+      .map((link) =>
+        link.querySelector("[data-slot=item-title]")?.textContent.trim(),
+      );
 
-  const group = groupHolding("Library");
-
-  for (const name of [
-    "Appearance",
-    "Reader",
-    "Privacy and security",
-    "General",
-  ]) {
-    await expect
-      .element(group.getByRole("link", { name: new RegExp(`^${name}`) }))
-      .toBeVisible();
-  }
-  expect(group.getByRole("listitem").elements()).toHaveLength(5);
+  expect([named("App"), named("Reading"), named("Data and privacy")]).toEqual([
+    ["General", "Appearance"],
+    ["Library", "Reader"],
+    ["Privacy and security", "Storage", "Advanced"],
+  ]);
 });
 
 test("shows a section's summary under its name", async () => {
@@ -60,13 +54,12 @@ test("names a section without a summary by its title alone", async () => {
     .toBeVisible();
 });
 
-test("lists Advanced above About", async () => {
-  await render(SettingsIndex, PROPS);
+test("lists About on its own, last", async () => {
+  const screen = await render(SettingsIndex, PROPS);
 
-  const group = groupHolding("About");
-  const links = group.getByRole("link");
+  const lists = screen.getByRole("list").elements();
+  const last = lists.at(-1);
 
-  await expect.element(links.nth(0)).toHaveAccessibleName("Advanced");
-  await expect.element(links.nth(1)).toHaveAccessibleName(/^About/);
-  expect(links.elements()).toHaveLength(2);
+  expect(last?.querySelectorAll("a")).toHaveLength(1);
+  expect(last?.textContent).toContain("About");
 });

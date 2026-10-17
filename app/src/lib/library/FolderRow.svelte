@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang="ts" generics="Shown extends ShownFolder">
   import { Folder, House } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
@@ -9,21 +9,24 @@
     ItemMedia,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
-  import type { LibraryFolder } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { folderTitle } from "./folder-title";
+  import { folderTitle, type ShownFolder } from "./folder-title";
   import { ICON_SIZE } from "./icon-size";
+
+  const SEPARATOR = " · ";
 
   let {
     folder,
     isFoundEmpty = false,
     location,
+    detail,
     action,
   }: {
-    folder: LibraryFolder;
+    folder: Shown;
     isFoundEmpty?: boolean;
     location?: Snippet;
+    detail?: Snippet<[Shown]> | undefined;
     action?: Snippet;
   } = $props();
 
@@ -49,25 +52,20 @@
     {/if}
   </ItemMedia>
   <ItemContent class="min-inline-none">
-    <ItemTitle class="truncate">{folderTitle(folder)}</ItemTitle>
-    {#if status !== undefined}
-      <span
-        class="mbs-2xs flex items-center gap-xs rounded-badge bg-warning-soft px-xs text-caption font-semibold inline-fit"
-      >
-        <span
-          aria-hidden="true"
-          class="shrink-0 rounded-full bg-warning-strong block-step-dot inline-step-dot"
-        ></span>
-        {status}
-      </span>
-    {/if}
-    <ItemDescription class="truncate text-caption">
+    <ItemTitle class="truncate text-body font-medium"
+      >{folderTitle(folder)}</ItemTitle
+    >
+    <ItemDescription class="truncate text-detail">
+      {#if status !== undefined}<span>{status}</span>{SEPARATOR}{/if}
       {#if location === undefined}
         {folder.location}
       {:else}
         {@render location()}
       {/if}
     </ItemDescription>
+    {#if detail !== undefined}
+      <div class="text-footnote text-muted">{@render detail(folder)}</div>
+    {/if}
   </ItemContent>
   {@render action?.()}
 </Item>

@@ -9,6 +9,9 @@ import {
   events,
   type LibrarySeries,
 } from "#lib/ipc/bindings.ts";
+import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
+import { NEW_LIBRARY_TABS } from "#lib/library/library-tabs.ts";
+import { NO_FILTER_CHOICES } from "#lib/library/library-listing.ts";
 
 import { screenshotModeTurned } from "../../../tests/components/screenshot-mode";
 import WithAppContext from "../../../tests/components/WithAppContext.svelte";
@@ -30,6 +33,10 @@ const SAMPLE_SERIES: WireSeries = {
   bookCount: 3,
   unreadCount: 3,
   cover: COVER,
+  language: null,
+  hasDownloads: false,
+  isAdult: false,
+  continuesFrom: null,
 };
 
 function settled(): Promise<void> {
@@ -47,6 +54,38 @@ function listing(catalog: () => readonly WireSeries[]): { asked: number } {
       }
       if (command === "library_listing") {
         return DEFAULT_LIBRARY_LISTING;
+      }
+      if (command === "library_series_count") {
+        return catalog().length;
+      }
+      if (command === "library_categories") {
+        return [];
+      }
+      if (command === "library_filter_choices") {
+        return NO_FILTER_CHOICES;
+      }
+      if (command === "library_adult_content") {
+        return NEW_ADULT_CONTENT;
+      }
+      if (command === "library_tabs") {
+        return NEW_LIBRARY_TABS;
+      }
+      if (command === "missing_library_folders") {
+        return [];
+      }
+      if (command === "library_hidden_series_count") {
+        return 0;
+      }
+      if (command === "series_labels") {
+        return {
+          keepsLabels: false,
+          categories: [],
+          tags: [],
+          suggestedTags: [],
+        };
+      }
+      if (command === "keeps_detail_edits") {
+        return false;
       }
       if (command !== "library_series") {
         throw new Error(`the page called \`${command}\``);
@@ -69,11 +108,22 @@ afterEach(async () => {
   clearMocks();
 });
 
+const LAYOUT_DATA = {
+  appInfo: {
+    version: "1.2.3",
+    platform: "linux",
+    sourceCode: "repo.example.org/omnileaf",
+    isDevelopmentBuild: false,
+  },
+  libraryProblem: null,
+  isFirstLaunch: false,
+} as const;
+
 function renderPage(screenshotMode: "on" | "off") {
   return render(PageWithAppContext, {
     screenshotMode: screenshotModeTurned(screenshotMode),
     page: Page,
-    pageProps: {},
+    pageProps: { data: LAYOUT_DATA, params: {} },
   });
 }
 
@@ -136,6 +186,18 @@ test("says when the library's series can't be listed", async () => {
       }
       if (command === "library_listing") {
         return DEFAULT_LIBRARY_LISTING;
+      }
+      if (command === "library_adult_content") {
+        return NEW_ADULT_CONTENT;
+      }
+      if (command === "library_tabs") {
+        return NEW_LIBRARY_TABS;
+      }
+      if (command === "missing_library_folders") {
+        return [];
+      }
+      if (command === "library_hidden_series_count") {
+        return 0;
       }
       // eslint-disable-next-line @typescript-eslint/only-throw-error -- a failed command rejects with its plain error object, which is what the bindings read
       throw {

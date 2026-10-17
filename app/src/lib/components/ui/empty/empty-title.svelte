@@ -15,7 +15,7 @@
 <h2
   bind:this={ref}
   data-slot="empty-title"
-  class={cn("mbs-sm text-title font-bold", className)}
+  class={cn("mbs-sm text-group-title font-medium tracking-tight", className)}
   {...restProps}
 >
   {@render children?.()}

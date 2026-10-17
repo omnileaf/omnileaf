@@ -41,6 +41,10 @@ const SERIES: readonly WireSeries[] = [
   bookCount: index + 2,
   unreadCount: index + 1,
   cover: `thumb/v1/${id}/1/1`,
+  language: null,
+  hasDownloads: false,
+  isAdult: false,
+  continuesFrom: null,
 }));
 
 let catalog: readonly WireSeries[] = SERIES;
@@ -160,7 +164,9 @@ test("the series count stays real while it's on", async ({ page }) => {
   await openLibrary(page, "grid");
 
   await expect(
-    page.getByRole("main").getByText(String(SERIES_COUNT), { exact: true }),
+    page
+      .getByRole("main")
+      .getByText(`${String(SERIES_COUNT)} series`, { exact: true }),
   ).toBeVisible();
 });
 
@@ -172,7 +178,7 @@ test.describe("the label", () => {
   function count(page: Page): Locator {
     return page
       .getByRole("main")
-      .getByText(String(SERIES_COUNT), { exact: true });
+      .getByText(`${String(SERIES_COUNT)} series`, { exact: true });
   }
 
   test("follows the title and the count on one row on a wide screen", async ({

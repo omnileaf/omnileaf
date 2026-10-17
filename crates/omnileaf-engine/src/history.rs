@@ -50,8 +50,13 @@ pub enum ReadTo {
     End,
 }
 
+/// What a book, or the whole of History, was hidden behind before a change, so Undo can put it back; it crosses as a plain number of milliseconds.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(transparent)]
+pub struct HistoryMark(#[specta(type = i32)] pub(crate) i64);
+
 /// Which reading sessions a page of History lists.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Type)]
 #[serde(
     tag = "kind",
     rename_all = "camelCase",
@@ -67,6 +72,10 @@ pub enum HistoryOf {
     },
     /// The latest session of each book started and not finished, for the library's Continue reading row.
     Unfinished,
+    /// The latest session of each book read since History was cleared or the book removed from it, whose series or book title holds `matching` when it isn't empty.
+    Books {
+        matching: String,
+    },
 }
 
 impl From<HistoryOf> for history::HistoryOf {
@@ -76,6 +85,7 @@ impl From<HistoryOf> for history::HistoryOf {
             HistoryOf::Series { series } => Self::Series(series.0),
             HistoryOf::Book { book } => Self::Book(book.0),
             HistoryOf::Unfinished => Self::Unfinished,
+            HistoryOf::Books { matching } => Self::Books { matching },
         }
     }
 }
@@ -98,6 +108,36 @@ impl From<history::BookSessions> for BookSessions {
             last_day: LocalDay(summed.last_day),
         }
     }
+}
+
+/// A book's reading added up for the summary at its end.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ReadingSummary {
+    pub read_seconds: u32,
+    /// The book's length when it was last read.
+    pub page_count: u32,
+    /// The time spent spread over the pages read to, absent while no time is.
+    pub seconds_per_page: Option<u32>,
+}
+
+impl From<history::ReadingSummary> for ReadingSummary {
+    fn from(summed: history::ReadingSummary) -> Self {
+        Self {
+            read_seconds: whole_seconds(summed.read_ms),
+            page_count: summed.page_count,
+            seconds_per_page: seconds_per_page(summed.read_ms, summed.pages_reached),
+        }
+    }
+}
+
+fn seconds_per_page(read_ms: i64, pages: u32) -> Option<u32> {
+    let read_ms = u64::try_from(read_ms).ok().filter(|&ms| ms > 0)?;
+    let page_ms = u64::from(pages) * MS_PER_SECOND.unsigned_abs();
+    if page_ms == 0 {
+        return None;
+    }
+    u32::try_from(read_ms.div_ceil(page_ms)).ok()
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -279,6 +319,37 @@ mod tests {
 
     fn day_read() -> BTreeMap<i64, i64> {
         BTreeMap::from([(DAY, 600_000)])
+    }
+
+    #[test]
+    fn spreads_the_time_spent_over_the_pages_read_to_rounding_up_to_a_second() {
+        let summed = history::ReadingSummary {
+            read_ms: 72 * 60 * MS_PER_SECOND,
+            pages_reached: 192,
+            page_count: 192,
+        };
+
+        let summary = ReadingSummary::from(summed);
+
+        assert_eq!(
+            summary,
+            ReadingSummary {
+                read_seconds: 4_320,
+                page_count: 192,
+                seconds_per_page: Some(23),
+            }
+        );
+    }
+
+    #[test]
+    fn gives_no_time_a_page_while_no_time_is_spent() {
+        let summed = history::ReadingSummary {
+            read_ms: 0,
+            pages_reached: 3,
+            page_count: 24,
+        };
+
+        assert_eq!(ReadingSummary::from(summed).seconds_per_page, None);
     }
 
     #[test]

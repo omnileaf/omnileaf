@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, ops::RangeInclusive};
 
 use omnileaf_sync_proto::{BookId, SeriesId};
-use rusqlite::{Connection, Row, Statement, ToSql};
+use rusqlite::{Connection, OptionalExtension, Row, Statement, ToSql, Transaction};
 
 use crate::{
     Error,
@@ -9,6 +9,7 @@ use crate::{
         BookReading, Cover, Page, PageRequest, cover::stored_cover, cursor::Position,
         series_books::stored_reading, stored_id::stored_id,
     },
+    letter_case::fold_case,
 };
 
 macro_rules! sessions_newest_first {
@@ -84,6 +85,39 @@ const UNFINISHED_BEFORE: &str = from_sessions!(
                 AND later.started_at_ms > reading_session.started_at_ms)
         AND (reading_session.started_at_ms, reading_session.id) < (:after_started_at_ms, :after_id)"
 );
+const FIRST_BOOKS: &str = from_sessions!(
+    "WHERE NOT EXISTS (SELECT 1 FROM reading_session AS later
+            WHERE later.book_id = reading_session.book_id
+                AND later.started_at_ms > reading_session.started_at_ms)
+        AND reading_session.started_at_ms
+            > coalesce((SELECT cleared_at_ms FROM history_cleared WHERE id = 1), -1)
+        AND reading_session.started_at_ms > coalesce((SELECT hidden_at_ms FROM history_hidden
+            WHERE history_hidden.book_id = reading_session.book_id), -1)
+        AND (:matching = ''
+            OR instr(fold_case(series.title), :matching) > 0
+            OR instr(fold_case(book.title), :matching) > 0)"
+);
+const BOOKS_BEFORE: &str = from_sessions!(
+    "WHERE NOT EXISTS (SELECT 1 FROM reading_session AS later
+            WHERE later.book_id = reading_session.book_id
+                AND later.started_at_ms > reading_session.started_at_ms)
+        AND reading_session.started_at_ms
+            > coalesce((SELECT cleared_at_ms FROM history_cleared WHERE id = 1), -1)
+        AND reading_session.started_at_ms > coalesce((SELECT hidden_at_ms FROM history_hidden
+            WHERE history_hidden.book_id = reading_session.book_id), -1)
+        AND (:matching = ''
+            OR instr(fold_case(series.title), :matching) > 0
+            OR instr(fold_case(book.title), :matching) > 0)
+        AND (reading_session.started_at_ms, reading_session.id) < (:after_started_at_ms, :after_id)"
+);
+const HIDDEN_AT: &str = "SELECT hidden_at_ms FROM history_hidden WHERE book_id = ?1";
+const HIDE: &str = "INSERT INTO history_hidden (book_id, hidden_at_ms) VALUES (?1, ?2)
+    ON CONFLICT (book_id) DO UPDATE SET hidden_at_ms = excluded.hidden_at_ms";
+const SHOW: &str = "DELETE FROM history_hidden WHERE book_id = ?1";
+const CLEARED_AT: &str = "SELECT cleared_at_ms FROM history_cleared WHERE id = 1";
+const CLEAR: &str = "INSERT INTO history_cleared (id, cleared_at_ms) VALUES (1, ?1)
+    ON CONFLICT (id) DO UPDATE SET cleared_at_ms = excluded.cleared_at_ms";
+const UNCLEAR: &str = "DELETE FROM history_cleared WHERE id = 1";
 const READING_TIME_BY_DAY: &str = "SELECT local_day, sum(ended_at_ms - started_at_ms) AS read_ms
     FROM reading_session
     WHERE local_day BETWEEN ?1 AND ?2
@@ -112,6 +146,14 @@ const DAYS_READ_UP_TO: &str = "SELECT DISTINCT local_day
 const BOOK_READING_TIME: &str = "SELECT coalesce(sum(ended_at_ms - started_at_ms), 0)
     FROM reading_session
     WHERE book_id = ?1";
+const READING_SUMMARY: &str = "SELECT coalesce(sum(ended_at_ms - started_at_ms), 0) AS read_ms,
+        max(page) + 1 AS pages_reached,
+        (SELECT latest.page_count FROM reading_session AS latest
+            WHERE latest.book_id = ?1
+            ORDER BY latest.started_at_ms DESC, latest.ended_at_ms DESC
+            LIMIT 1) AS page_count
+    FROM reading_session
+    WHERE book_id = ?1";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HistoryEntry {
@@ -135,20 +177,24 @@ pub struct HistoryEntry {
 }
 
 /// Which sessions a page of history lists.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum HistoryOf {
     Everything,
     Series(SeriesId),
     Book(BookId),
     /// The latest session of each book started and not marked read.
     Unfinished,
+    /// The latest session of each book read since History was cleared or the book removed from it, whose series or book title holds `matching` when it isn't empty.
+    Books {
+        matching: String,
+    },
 }
 
 /// Lists the sessions of books still in the library, the latest started first.
 #[tracing::instrument(skip_all, fields(?of, size = ?request.size))]
 pub fn history_page(
     connection: &Connection,
-    of: HistoryOf,
+    of: &HistoryOf,
     request: &PageRequest,
 ) -> Result<Page<HistoryEntry>, Error> {
     let limit = request.size.rows_to_fetch();
@@ -159,26 +205,39 @@ pub fn history_page(
             Position::Title { .. }
             | Position::Added { .. }
             | Position::Book { .. }
-            | Position::Root { .. },
+            | Position::Root { .. }
+            | Position::LastRead { .. }
+            | Position::LastUpdated { .. }
+            | Position::UnreadCount { .. }
+            | Position::TimeLeft { .. },
         ) => return Err(Error::CursorForAnotherList),
     };
-    let (first, before, filter) = match &of {
+    let matching;
+    let (first, before, filter) = match of {
         HistoryOf::Everything => (FIRST_SESSIONS, SESSIONS_BEFORE, None),
+        HistoryOf::Books { matching: text } => {
+            matching = fold_case(text);
+            (
+                FIRST_BOOKS,
+                BOOKS_BEFORE,
+                Some((":matching", &matching as &dyn ToSql)),
+            )
+        }
         HistoryOf::Unfinished => (FIRST_UNFINISHED, UNFINISHED_BEFORE, None),
         HistoryOf::Series(series) => (
             FIRST_SESSIONS_OF_SERIES,
             SESSIONS_OF_SERIES_BEFORE,
-            Some((":series", series.as_bytes())),
+            Some((":series", series.as_bytes() as &dyn ToSql)),
         ),
         HistoryOf::Book(book) => (
             FIRST_SESSIONS_OF_BOOK,
             SESSIONS_OF_BOOK_BEFORE,
-            Some((":book", book.as_bytes())),
+            Some((":book", book.as_bytes() as &dyn ToSql)),
         ),
     };
     let mut params: Vec<(&str, &dyn ToSql)> = vec![(":limit", &limit)];
-    if let Some((name, id)) = &filter {
-        params.push((name, id));
+    if let Some((name, value)) = filter {
+        params.push((name, value));
     }
     let sql = match &after {
         None => first,
@@ -192,6 +251,54 @@ pub fn history_page(
     };
     let rows = read(connection.prepare(sql)?, &params)?;
     Ok(Page::of(rows, request.size))
+}
+
+/// Hides a book's sessions so far from History, returning the mark it was hidden behind before, for Undo.
+pub fn hide_book_from_history(
+    transaction: &Transaction<'_>,
+    book: BookId,
+    at_ms: i64,
+) -> Result<Option<i64>, Error> {
+    let before = transaction
+        .prepare(HIDDEN_AT)?
+        .query_row([book.as_bytes()], |row| row.get(0))
+        .optional()?;
+    transaction
+        .prepare(HIDE)?
+        .execute((book.as_bytes(), at_ms))?;
+    Ok(before)
+}
+
+pub fn restore_book_to_history(
+    transaction: &Transaction<'_>,
+    book: BookId,
+    mark: Option<i64>,
+) -> Result<(), Error> {
+    match mark {
+        Some(at_ms) => transaction
+            .prepare(HIDE)?
+            .execute((book.as_bytes(), at_ms))?,
+        None => transaction.prepare(SHOW)?.execute([book.as_bytes()])?,
+    };
+    Ok(())
+}
+
+/// Hides every session so far from History, returning the mark it was cleared at before, for Undo.
+pub fn clear_history(transaction: &Transaction<'_>, at_ms: i64) -> Result<Option<i64>, Error> {
+    let before = transaction
+        .prepare(CLEARED_AT)?
+        .query_row([], |row| row.get(0))
+        .optional()?;
+    transaction.prepare(CLEAR)?.execute([at_ms])?;
+    Ok(before)
+}
+
+pub fn restore_history(transaction: &Transaction<'_>, mark: Option<i64>) -> Result<(), Error> {
+    match mark {
+        Some(at_ms) => transaction.prepare(CLEAR)?.execute([at_ms])?,
+        None => transaction.prepare(UNCLEAR)?.execute([])?,
+    };
+    Ok(())
 }
 
 /// Milliseconds read on each local day in `days` that has any reading, whether or not its books are still in the library.
@@ -250,6 +357,35 @@ pub fn book_reading_time(connection: &Connection, book: BookId) -> Result<i64, E
     Ok(connection
         .prepare(BOOK_READING_TIME)?
         .query_row([book.as_bytes()], |row| row.get(0))?)
+}
+
+/// A book's reading added up for the summary at its end: the time spent, how many pages it was read to and its length when last read.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ReadingSummary {
+    pub read_ms: i64,
+    pub pages_reached: u32,
+    pub page_count: u32,
+}
+
+/// Adds up `book`'s reading for the summary at its end, giving none for a book never read.
+pub fn reading_summary(
+    connection: &Connection,
+    book: BookId,
+) -> Result<Option<ReadingSummary>, Error> {
+    Ok(connection
+        .prepare(READING_SUMMARY)?
+        .query_row([book.as_bytes()], |row| {
+            let pages_reached: Option<u32> = row.get("pages_reached")?;
+            let page_count: Option<u32> = row.get("page_count")?;
+            let read_ms = row.get("read_ms")?;
+            Ok(pages_reached
+                .zip(page_count)
+                .map(|(pages_reached, page_count)| ReadingSummary {
+                    read_ms,
+                    pages_reached,
+                    page_count,
+                }))
+        })?)
 }
 
 /// A book's reading sessions added up, its first and last days counted from 1970-01-01 in the local time each began at.
@@ -390,7 +526,7 @@ mod tests {
             plan_of(
                 &[
                     "SEARCH series USING INDEX sqlite_autoindex_series_1 (id=?)",
-                    "SEARCH book USING INDEX book_by_series (series_local_id=?)",
+                    "SEARCH book USING INDEX book_by_series_and_added (series_local_id=?)",
                     sessions,
                 ],
                 &["USE TEMP B-TREE FOR ORDER BY"],
@@ -404,6 +540,34 @@ mod tests {
                     "SEARCH reading_session USING INDEX reading_session_by_book (book_id=? AND started_at_ms<?)"
                 ),
             ]
+        );
+    }
+
+    #[test]
+    fn walks_back_through_the_start_index_since_history_was_cleared_without_sorting() {
+        let scratch = ScratchLibrary::new("books-read-plan");
+
+        let plans = [FIRST_BOOKS, BOOKS_BEFORE].map(|sql| scratch.query_plan(sql));
+
+        let walks = plans.each_ref().map(|plan| plan.first().cloned());
+        let sorts = plans
+            .each_ref()
+            .map(|plan| plan.iter().any(|step| step.starts_with("USE TEMP B-TREE")));
+        assert_eq!(
+            (walks, sorts),
+            (
+                [
+                    Some(
+                        "SEARCH reading_session USING INDEX reading_session_by_start (started_at_ms>?)"
+                            .to_owned()
+                    ),
+                    Some(
+                        "SEARCH reading_session USING INDEX reading_session_by_start (started_at_ms>? AND started_at_ms<?)"
+                            .to_owned()
+                    ),
+                ],
+                [false, false]
+            )
         );
     }
 
@@ -529,9 +693,25 @@ mod tests {
             [
                 "SCAN series",
                 "CORRELATED SCALAR SUBQUERY 1",
-                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)",
+                "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
                 "SEARCH reading_session USING COVERING INDEX reading_session_by_book (book_id=?)",
                 "USE TEMP B-TREE FOR ORDER BY",
+            ]
+        );
+    }
+
+    #[test]
+    fn sums_up_a_book_s_reading_from_the_book_index_alone() {
+        let scratch = ScratchLibrary::new("reading-summary-plan");
+
+        let plan = scratch.query_plan(READING_SUMMARY);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH reading_session USING INDEX reading_session_by_book (book_id=?)",
+                "SCALAR SUBQUERY 1",
+                "SEARCH latest USING INDEX reading_session_by_book (book_id=?)",
             ]
         );
     }

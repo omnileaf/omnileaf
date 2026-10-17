@@ -1,3 +1,4 @@
+pub mod adult_content;
 mod backup;
 mod book_order;
 pub mod catalog;
@@ -13,8 +14,10 @@ pub mod history;
 mod icu_versions;
 mod letter_case;
 pub mod library_listing;
+pub mod library_tabs;
 pub mod library_view;
 mod migration;
+pub mod reading_speed;
 #[cfg(test)]
 mod scratch;
 pub mod store;

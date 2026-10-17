@@ -10,6 +10,7 @@ import {
   selectedByDoubleClick,
   test,
   testOnlyInItsWebview,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -17,9 +18,6 @@ const MISSING_ADDRESS = "/sample/missing-page";
 const DESKTOP_PROBLEM_TOP = 170;
 const TITLE_SIZE = "24px";
 const TITLE_LINE_HEIGHT = 30;
-const WELL = "rgb(243, 240, 233)";
-const MUTED = "rgb(95, 91, 82)";
-const ACCENT_SOFT = "rgb(221, 235, 226)";
 const DETAIL_CORNER = "12px";
 const BODY_LINE_HEIGHT_RATIO = 1.5;
 
@@ -142,7 +140,10 @@ test("sets the problem's title at 24px beside a round badge", async ({
     titleBox.y + titleBox.height / 2,
     0,
   );
-  await expect(badge).toHaveCSS("background-color", ACCENT_SOFT);
+  await expect(badge).toHaveCSS(
+    "background-color",
+    await tokenColour(page, "--color-accent-soft"),
+  );
 });
 
 test("explains the problem in muted ink with its details on the well", async ({
@@ -155,12 +156,18 @@ test("explains the problem in muted ink with its details on the well", async ({
   });
   const detail = page.getByText(MISSING_ADDRESS);
 
-  await expect(body).toHaveCSS("color", MUTED);
+  await expect(body).toHaveCSS(
+    "color",
+    await tokenColour(page, "--color-muted"),
+  );
   await expect(body).toHaveCSS("opacity", "1");
   expect(
     (await pixels(body, "lineHeight")) / (await pixels(body, "fontSize")),
   ).toBeCloseTo(BODY_LINE_HEIGHT_RATIO, 1);
-  await expect(detail).toHaveCSS("background-color", WELL);
+  await expect(detail).toHaveCSS(
+    "background-color",
+    await tokenColour(page, "--color-well"),
+  );
   await expect(detail).toHaveCSS("border-top-left-radius", DETAIL_CORNER);
 });
 

@@ -8,12 +8,13 @@ mod support;
 use std::{
     collections::BTreeSet,
     fs,
+    path::Path,
     sync::atomic::{AtomicU64, Ordering},
 };
 
 use omnileaf_engine::{
-    Clock, Inclusion, Library, LibraryFilter, LibraryListing, LibrarySort, LibrarySortBy,
-    SortDirection,
+    Clock, Inclusion, Library, LibraryFilter, LibraryListing, LibrarySort, LibrarySortBy, ReadMark,
+    SeriesId, SortDirection,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, NOW_UNIX_MS, ScratchFolder};
@@ -197,13 +198,13 @@ async fn library_adding_one_series_at_a_time(
     (library, comics, home)
 }
 
-const fn by_date_added(direction: SortDirection) -> LibraryListing {
+fn by_date_added(direction: SortDirection) -> LibraryListing {
     LibraryListing {
         sort: LibrarySort {
             by: LibrarySortBy::DateAdded,
             direction,
         },
-        filter: EVERY_SERIES,
+        filter: every_series(),
     }
 }
 
@@ -212,7 +213,7 @@ async fn titles(library: &Library, listing: LibraryListing) -> Vec<String> {
     page.series.into_iter().map(|series| series.title).collect()
 }
 
-const fn filtered(filter: LibraryFilter) -> LibraryListing {
+fn filtered(filter: LibraryFilter) -> LibraryListing {
     LibraryListing {
         sort: LibrarySort {
             by: LibrarySortBy::Title,
@@ -222,11 +223,9 @@ const fn filtered(filter: LibraryFilter) -> LibraryListing {
     }
 }
 
-const EVERY_SERIES: LibraryFilter = LibraryFilter {
-    unread: Inclusion::Any,
-    started: Inclusion::Any,
-    finished: Inclusion::Any,
-};
+fn every_series() -> LibraryFilter {
+    LibraryListing::default().filter
+}
 
 #[tokio::test]
 async fn lists_the_series_found_by_title_from_z_to_a() {
@@ -239,7 +238,7 @@ async fn lists_the_series_found_by_title_from_z_to_a() {
                 by: LibrarySortBy::Title,
                 direction: SortDirection::Descending,
             },
-            filter: EVERY_SERIES,
+            filter: every_series(),
         },
     )
     .await;
@@ -278,7 +277,7 @@ async fn lists_none_of_the_series_the_filter_hides() {
             &library,
             filtered(LibraryFilter {
                 unread: Inclusion::Hide,
-                ..EVERY_SERIES
+                ..every_series()
             }),
         )
         .await,
@@ -286,7 +285,7 @@ async fn lists_none_of_the_series_the_filter_hides() {
             &library,
             filtered(LibraryFilter {
                 finished: Inclusion::Hide,
-                ..EVERY_SERIES
+                ..every_series()
             }),
         )
         .await,
@@ -310,7 +309,7 @@ async fn lists_only_the_series_the_filter_lets_through() {
             &library,
             filtered(LibraryFilter {
                 unread: Inclusion::Only,
-                ..EVERY_SERIES
+                ..every_series()
             }),
         )
         .await,
@@ -318,7 +317,7 @@ async fn lists_only_the_series_the_filter_lets_through() {
             &library,
             filtered(LibraryFilter {
                 finished: Inclusion::Only,
-                ..EVERY_SERIES
+                ..every_series()
             }),
         )
         .await,
@@ -341,18 +340,101 @@ async fn counts_only_the_series_the_filter_lets_through() {
         library
             .series_count(LibraryFilter {
                 started: Inclusion::Hide,
-                ..EVERY_SERIES
+                ..every_series()
             })
             .await
             .unwrap(),
         library
             .series_count(LibraryFilter {
                 started: Inclusion::Only,
-                ..EVERY_SERIES
+                ..every_series()
             })
             .await
             .unwrap(),
     ];
 
     assert_eq!(counts, [3, 0]);
+}
+
+#[tokio::test]
+async fn marks_every_book_of_the_series_chosen_read_and_names_the_ones_it_marked() {
+    let (library, _comics, _home) = library_with_the_sample_series("series-marked-read").await;
+    let listed = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap();
+    let chosen: Vec<SeriesId> = listed.series.iter().take(2).map(|one| one.id).collect();
+    let unread_before: u32 = listed
+        .series
+        .iter()
+        .take(2)
+        .map(|one| one.unread_count)
+        .sum();
+
+    let marked = library.mark_series_read(chosen.clone()).await.unwrap();
+
+    let after = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap();
+    let unread_after: u32 = after
+        .series
+        .iter()
+        .filter(|one| chosen.contains(&one.id))
+        .map(|one| one.unread_count)
+        .sum();
+    assert_eq!((marked.len(), unread_after), (unread_before as usize, 0));
+}
+
+#[tokio::test]
+async fn leaves_the_series_as_before_once_the_books_it_marked_read_are_marked_unread() {
+    let (library, _comics, _home) = library_with_the_sample_series("series-marked-back").await;
+    let before = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap();
+    let chosen: Vec<SeriesId> = before.series.iter().take(2).map(|one| one.id).collect();
+
+    let marked = library.mark_series_read(chosen).await.unwrap();
+    library.mark_books(marked, ReadMark::Unread).await.unwrap();
+
+    let after = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap();
+    assert_eq!(after.series, before.series);
+}
+
+#[tokio::test]
+async fn finds_the_file_of_a_series_first_book_to_show_in_its_folder() {
+    let comics = ScratchFolder::new("series-file-comics");
+    write_sample_library(comics.path()).unwrap();
+    let home = ScratchFolder::new("series-file-home");
+    let library = Library::open(home.path().to_path_buf(), FixedClock)
+        .await
+        .unwrap();
+    library
+        .add_folder(comics.path().join(SAMPLE_LIBRARY_NAME), |_| {})
+        .await
+        .unwrap();
+    let page = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap();
+    let first = page.series.first().unwrap();
+
+    let file = library.series_file(first.id).await.unwrap().unwrap();
+
+    assert_eq!(
+        (file.parent().map(Path::to_path_buf), file.is_file()),
+        (
+            Some(
+                comics
+                    .path()
+                    .join(SAMPLE_LIBRARY_NAME)
+                    .join("Sample Series 01")
+            ),
+            true
+        )
+    );
 }

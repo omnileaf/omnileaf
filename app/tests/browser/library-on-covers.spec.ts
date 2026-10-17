@@ -29,9 +29,9 @@ const SWITCHES = {
 const SWITCH_NAMES = Object.keys(SWITCHES) as (keyof OnCovers)[];
 
 const SWITCH_ROW_HEIGHT = {
-  phone: 48,
-  tablet: 48,
-  desktop: 30,
+  phone: 56,
+  tablet: 56,
+  desktop: 48,
 } as const satisfies Record<ScreenSize, number>;
 
 const BADGE_INSET = {
@@ -43,6 +43,7 @@ const BADGE_INSET = {
 const FIRST_TITLE = "Sample Series 0001";
 const SECOND_TITLE = "Sample Series 0002";
 const FIRST_UNREAD = 3;
+const FIRST_BOOK = "0190a3e4-0000-8000-8001-000000000001";
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;
 
 let storedView: LibraryView = DEFAULT_LIBRARY_VIEW;
@@ -56,6 +57,9 @@ test.use({
         bookCount: 4,
         unreadCount: index === 0 ? FIRST_UNREAD : index === 1 ? 0 : 4,
         cover: `thumb/v1/0190a3e4-0000-8000-8000-000000000001/${String(index + 1)}/1`,
+        language: index === 0 ? "ja" : null,
+        hasDownloads: index === 0,
+        continuesFrom: index === 0 ? FIRST_BOOK : null,
       })),
     ),
     libraryView: () => storedView,
@@ -102,7 +106,7 @@ test.describe("show on covers", () => {
       options.getByRole("group", { name: "Show on covers" }),
     ).toBeVisible();
     for (const name of SWITCH_NAMES) {
-      const toggle = options.getByRole("checkbox", { name: SWITCHES[name] });
+      const toggle = options.getByRole("switch", { name: SWITCHES[name] });
       await expect(toggle).toBeChecked({
         checked: DEFAULT_LIBRARY_VIEW.onCovers[name],
       });
@@ -117,7 +121,7 @@ test.describe("show on covers", () => {
     const options = await openViewOptions(page);
 
     for (const name of SWITCH_NAMES) {
-      const row = options.locator("label").filter({ hasText: SWITCHES[name] });
+      const row = options.getByRole("switch", { name: SWITCHES[name] });
 
       expect((await boxOf(row)).height).toBe(height);
     }
@@ -159,17 +163,40 @@ test.describe("unread count", () => {
     });
   }
 
-  test("ends each list row with its series' unread count", async ({ page }) => {
+  test("lists each row's books, language and unread under its title", async ({
+    page,
+  }) => {
+    await openWith(page, {
+      display: "list",
+      onCovers: { ...DEFAULT_LIBRARY_VIEW.onCovers, showsLanguage: true },
+    });
+    const first = seriesNamed(page, FIRST_TITLE);
+    const title = await boxOf(first.getByText(FIRST_TITLE));
+
+    for (const detail of [
+      first.getByText("4 books", { exact: true }),
+      first.getByRole("img", { name: "Japanese" }),
+      unreadBadge(first, FIRST_UNREAD),
+    ]) {
+      expect((await boxOf(detail)).y).toBeGreaterThanOrEqual(
+        title.y + title.height,
+      );
+    }
+    await expect(unreadBadge(first, FIRST_UNREAD)).toHaveText(
+      `${String(FIRST_UNREAD)} unread`,
+    );
+  });
+
+  test("marks a list row's cover with its downloads and shows how far it's read", async ({
+    page,
+  }) => {
     await openWith(page, { display: "list" });
     const first = seriesNamed(page, FIRST_TITLE);
 
-    const badge = await boxOf(unreadBadge(first, FIRST_UNREAD));
-    const title = await boxOf(first.getByText(FIRST_TITLE));
-
-    expect(badge.x).toBeGreaterThan(title.x + title.width);
-    await expect(unreadBadge(first, FIRST_UNREAD)).toHaveText(
-      String(FIRST_UNREAD),
-    );
+    await expect(
+      first.getByRole("img", { name: "Downloaded chapters" }),
+    ).toBeVisible();
+    await expect(first.getByRole("progressbar")).toBeVisible();
   });
 
   test("starts the unread count at the cover's right in a right-to-left layout", async ({
@@ -189,6 +216,75 @@ test.describe("unread count", () => {
       inset,
       0,
     );
+  });
+
+  test("marks the language, then the downloaded chapters, in the cover's top end corner once shown", async ({
+    page,
+  }) => {
+    await openWith(page, {
+      onCovers: {
+        ...DEFAULT_LIBRARY_VIEW.onCovers,
+        showsLanguage: true,
+        showsDownloaded: true,
+      },
+    });
+    const first = seriesNamed(page, FIRST_TITLE);
+
+    await expect(first.getByRole("img", { name: "Japanese" })).toBeVisible();
+    await expect(
+      first.getByRole("img", { name: "Downloaded chapters" }),
+    ).toBeVisible();
+    await expect(
+      seriesNamed(page, SECOND_TITLE).getByRole("img", {
+        name: "Downloaded chapters",
+      }),
+    ).toHaveCount(0);
+  });
+
+  test("offers Continue on a cover once shown, opening the book reading goes on from", async ({
+    page,
+  }) => {
+    await openWith(page, {
+      onCovers: {
+        ...DEFAULT_LIBRARY_VIEW.onCovers,
+        showsContinueButton: true,
+      },
+    });
+
+    await expect(
+      seriesNamed(page, FIRST_TITLE).getByRole("link", {
+        name: `Continue ${FIRST_TITLE}`,
+      }),
+    ).toHaveAttribute("href", `/read/${FIRST_BOOK}`);
+    await expect(
+      seriesNamed(page, SECOND_TITLE).getByRole("link", { name: /^Continue/ }),
+    ).toHaveCount(0);
+  });
+
+  test("keeps Continue off the covers until it's turned on", async ({
+    page,
+  }) => {
+    await openWith(page, {});
+
+    await expect(
+      seriesNamed(page, FIRST_TITLE).getByRole("link", { name: /^Continue/ }),
+    ).toHaveCount(0);
+  });
+
+  test("ends a list row with Continue once shown", async ({ page }) => {
+    await openWith(page, {
+      display: "list",
+      onCovers: {
+        ...DEFAULT_LIBRARY_VIEW.onCovers,
+        showsContinueButton: true,
+      },
+    });
+
+    await expect(
+      seriesNamed(page, FIRST_TITLE).getByRole("link", {
+        name: `Continue ${FIRST_TITLE}`,
+      }),
+    ).toBeVisible();
   });
 
   test("draws no unread count on a series with every book read", async ({

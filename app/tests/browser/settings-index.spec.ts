@@ -1,4 +1,6 @@
+import type { FakeBackend } from "./fake-backend.ts";
 import {
+  accessibilityViolations,
   EXPANDED_MIN_WIDTH,
   expect,
   FAKE_APP_VERSION,
@@ -9,12 +11,33 @@ import {
 
 const SUMMARIES = [
   { section: "Appearance", summary: "Follows the system" },
-  { section: "Privacy", summary: "Ask before sending crash reports" },
-  { section: "General", summary: "English" },
+  { section: "Privacy", summary: "Screenshot mode off" },
+  { section: "General", summary: "English · opens to Library" },
+  { section: "Library", summary: "2 folders · 128 series" },
+  { section: "Storage", summary: "1.4 GB used" },
+  { section: "Advanced", summary: "Animations · Undo" },
   { section: "About", summary: `Version ${FAKE_APP_VERSION}` },
 ] as const;
 
-test.use(onPlatform("android"));
+const FOLDER = {
+  kind: "linked",
+  location: "/media/Comics",
+  isAvailable: true,
+} as const;
+
+test.use({
+  backend: {
+    ...onPlatform("android").backend,
+    libraryFolders: () => ({
+      folders: [
+        { ...FOLDER, id: "comics", name: "Comics" },
+        { ...FOLDER, id: "manga", name: "Manga" },
+      ],
+      next: null,
+    }),
+    librarySeriesCount: () => 128,
+  } satisfies FakeBackend,
+});
 
 test("summarises each section from what the app stores", async ({ page }) => {
   await page.goto("/settings");
@@ -68,3 +91,21 @@ test("points each section's chevron toward the end of the line in a right-to-lef
 
   await expect(chevron).toHaveCSS("scale", "-1 1");
 });
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`the Settings list has no accessibility violations in the ${colorScheme} theme`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto("/settings");
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "settings opens its first section beside the list",
+    );
+    await expect(
+      page.getByRole("main").getByRole("link", { name: /^About/ }),
+    ).toBeVisible();
+
+    expect(await accessibilityViolations(page)).toEqual([]);
+  });
+}

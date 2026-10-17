@@ -23,6 +23,36 @@ pub struct OpenedBook {
     pub next: Option<SeriesNeighbour>,
     /// Absent when the book's details don't say which way it reads.
     pub reading_direction: Option<ReadingDirection>,
+    /// Counting from 0; absent while the library keeps no bookmarks.
+    pub bookmarked_pages: Option<Vec<u32>>,
+    /// Absent while the library doesn't check a book's pages against what its file promises.
+    pub damage: Option<BookDamage>,
+    /// About how long a page takes to read, absent until the library has timed enough reading.
+    pub seconds_per_page: Option<u32>,
+}
+
+/// What's wrong with a book that opens with fewer pages than its file promises, the pages past the last one in `pages` being the ones lost.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct BookDamage {
+    pub promised_pages: u32,
+    pub cause: DamageCause,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum DamageCause {
+    ArchiveEndsEarly,
+}
+
+/// Where a book sits, found without opening its file, so a book that won't open still names its way back.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct BookPlace {
+    pub id: BookId,
+    pub title: String,
+    pub series: SeriesId,
+    pub series_title: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
@@ -40,6 +70,8 @@ pub struct SeriesNeighbour {
     /// The book's own cover, absent while it has no file.
     pub cover: Option<CoverPath>,
     pub reading: BookReading,
+    /// Absent until the library keeps how many pages each book has.
+    pub page_count: Option<u32>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -96,6 +128,7 @@ impl From<catalog::SeriesNeighbour> for SeriesNeighbour {
             title: neighbour.title,
             cover: neighbour.cover.map(CoverPath),
             reading: neighbour.reading.into(),
+            page_count: None,
         }
     }
 }

@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 
 import {
   accessibilityViolations,
+  boxOf,
   expect,
   onPlatform,
   test,
@@ -9,11 +10,11 @@ import {
 } from "./fixtures.ts";
 
 const TURNED_ON_AT = new Date("2026-10-03T21:14:00Z");
+const INTRO_GAP = 8;
 
 const OPTIONS = [
   "Blank the pages in the reader",
   "Show the Screenshot mode label",
-  "Turn off after 1 hour",
 ];
 
 async function openScreenshotMode(page: Page): Promise<void> {
@@ -43,8 +44,21 @@ test("turning it on says when it turns off again", async ({ page }) => {
 
   await expect(mainSwitch(page)).toBeChecked();
   await expect(mainSwitch(page)).toHaveAccessibleDescription(
-    "On · turns off at 10:14 PM",
+    "On until 10:14 PM",
   );
+});
+
+test("turns off after an hour until told never to", async ({ page }) => {
+  await openScreenshotMode(page);
+  const turnOffAfter = page.getByRole("combobox", { name: "Turn off after" });
+  await expect(turnOffAfter).toHaveValue("hour");
+
+  await turnOffAfter.selectOption({ label: "Never" });
+  await page.reload();
+  await mainSwitch(page).click();
+
+  await expect(turnOffAfter).toHaveValue("never");
+  await expect(mainSwitch(page)).toHaveAccessibleDescription("On");
 });
 
 test("it stays on after a restart and Privacy and security says so", async ({
@@ -89,29 +103,39 @@ test("Space turns it on from the keyboard", async ({ page }) => {
   await expect(mainSwitch(page)).toBeChecked();
 });
 
-test("the preview shows a sample title before and a stand-in after", async ({
-  page,
-}) => {
+test("sets the intro 8px above its card", async ({ page }) => {
   await openScreenshotMode(page);
 
-  const preview = page.getByRole("figure", { name: "Preview" });
+  const intro = await boxOf(page.getByText(/^Swaps names and covers/));
+  const card = await boxOf(
+    page.locator("div:has(> [role=switch])").filter({ has: mainSwitch(page) }),
+  );
+
+  expect(card.y - (intro.y + intro.height)).toBe(INTRO_GAP);
+});
+
+test("says what it changes before the switch", async ({ page }) => {
+  await openScreenshotMode(page);
 
   await expect(
-    preview.getByText("Sample Series 04", { exact: true }),
-  ).toHaveCount(1);
-  await expect(preview.getByText("Series 04", { exact: true })).toHaveCount(1);
+    page.getByText(
+      "Swaps names and covers for stand-ins, hides 18+ and leaves it out of counts, so screenshots show nothing private. Progress, dates and settings stay real.",
+    ),
+  ).toBeVisible();
 });
 
 test("the keyboard shortcut is listed on a computer", async ({ page }) => {
   await openScreenshotMode(page);
 
-  await expect(page.getByText("Keyboard shortcut")).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Turn it on quickly" }),
+  ).toContainText("Keyboard shortcut");
 });
 
 const SHORTCUT_HINTS = [
-  { platform: "macos", keys: "⇧⌘H" },
-  { platform: "linux", keys: "Ctrl Shift H" },
-  { platform: "windows", keys: "Ctrl Shift H" },
+  { platform: "macos", keys: ["⌘", "Shift", "H"] },
+  { platform: "linux", keys: ["Ctrl", "Shift", "H"] },
+  { platform: "windows", keys: ["Ctrl", "Shift", "H"] },
 ] as const;
 
 for (const { platform, keys } of SHORTCUT_HINTS) {
@@ -119,16 +143,26 @@ for (const { platform, keys } of SHORTCUT_HINTS) {
     testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
-    test(`the shortcut is shown as ${keys}`, async ({ page }) => {
+    test(`the shortcut is shown as ${keys.join(" ")}`, async ({ page }) => {
       await openScreenshotMode(page);
 
-      await expect(page.getByRole("main").locator("kbd")).toHaveText([
-        keys,
-        keys,
-      ]);
+      await expect(page.getByRole("main").locator("kbd")).toHaveText(keys);
     });
   });
 }
+
+test("a shortcut chosen earlier is the one shown", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "omnileaf.screenshotModeShortcut",
+      JSON.stringify({ letter: "J", shift: false }),
+    );
+  });
+
+  await openScreenshotMode(page);
+
+  await expect(page.getByRole("main").locator("kbd")).toHaveText(["Ctrl", "J"]);
+});
 
 test("the label is said to show at the top of the window on a computer", async ({
   page,
@@ -157,6 +191,46 @@ test.describe("on a phone", () => {
     await openScreenshotMode(page);
 
     await expect(page.getByText("Keyboard shortcut")).toHaveCount(0);
+  });
+
+  test("Turn it on quickly says to long-press the app's icon", async ({
+    page,
+  }) => {
+    await openScreenshotMode(page);
+
+    await expect(
+      page.getByRole("region", { name: "Turn it on quickly" }),
+    ).toHaveText(
+      /^Turn it on quickly\s*Long-press the Omnileaf icon\s*Screenshot mode, Continue reading and Search the library, from your home screen\.$/,
+    );
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in ${colorScheme}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await openScreenshotMode(page);
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
+});
+
+test.describe("on an iPhone", () => {
+  testOnlyInItsWebview("ios");
+  test.use(onPlatform("ios"));
+
+  test("Turn it on quickly says to long-press the app's icon", async ({
+    page,
+  }) => {
+    await openScreenshotMode(page);
+
+    await expect(
+      page.getByRole("region", { name: "Turn it on quickly" }),
+    ).toContainText("Long-press the Omnileaf icon");
   });
 });
 

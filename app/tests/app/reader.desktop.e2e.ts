@@ -11,6 +11,7 @@ import {
   openSampleSeries,
   sampleBookLink,
   sampleBookRow,
+  showTheBooks,
   shownPageCount,
 } from "./sample-book.ts";
 import { xpath } from "./webdriver.ts";
@@ -70,18 +71,19 @@ test("shows on the series page the page reached once back from the book through 
   await (await appSession().waitFor(FIRST_SERIES_COVER)).click();
 
   await appSession().waitFor(SERIES_HEADING);
+  await showTheBooks(appSession());
   const row = await appSession().waitFor(
     xpath(
       `${sampleBookRow(1)}[contains(normalize-space(), 'Page ${String(reached)}')]`,
     ),
   );
   const upNext = await appSession().waitFor(
-    xpath("//main//a[starts-with(normalize-space(), 'Continue ')]"),
+    xpath(
+      `//main//a[@aria-label='Continue Sample Series 01 v01 at page ${String(reached)}']`,
+    ),
   );
   expect(await row.text()).toContain(`Page ${String(reached)}`);
-  expect(await upNext.text()).toBe(
-    `Continue Sample Series 01 v01 at page ${String(reached)}`,
-  );
+  expect(await upNext.text()).toBe("Continue");
 });
 
 async function turnAPage(): Promise<number> {
@@ -102,12 +104,14 @@ test("shows on the series page the page reached in a book started before once it
   await (await appSession().waitFor(FIRST_BOOK_LINK)).click();
   await turnAPage();
   await (await appSession().waitFor(BACK_TO_THE_SERIES)).click();
+  await showTheBooks(appSession());
   await (await appSession().waitFor(FIRST_BOOK_LINK)).click();
   const reached = await turnAPage();
 
   await (await appSession().waitFor(BACK_TO_THE_SERIES)).click();
 
   await appSession().waitFor(SERIES_HEADING);
+  await showTheBooks(appSession());
   const row = await appSession().waitFor(
     xpath(
       `${sampleBookRow(1)}[contains(normalize-space(), 'Page ${String(reached)}')]`,
@@ -115,11 +119,9 @@ test("shows on the series page the page reached in a book started before once it
   );
   const upNext = await appSession().waitFor(
     xpath(
-      `//main//a[normalize-space()='Continue Sample Series 01 v01 at page ${String(reached)}']`,
+      `//main//a[@aria-label='Continue Sample Series 01 v01 at page ${String(reached)}']`,
     ),
   );
   expect(await row.text()).toContain(`Page ${String(reached)}`);
-  expect(await upNext.text()).toBe(
-    `Continue Sample Series 01 v01 at page ${String(reached)}`,
-  );
+  expect(await upNext.text()).toBe("Continue");
 });

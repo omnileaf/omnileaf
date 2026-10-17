@@ -1,8 +1,8 @@
 mod containment;
 mod file;
-mod issue;
+pub(crate) mod issue;
 mod offers;
-mod scrub;
+pub(crate) mod scrub;
 mod trace;
 
 use std::fmt;

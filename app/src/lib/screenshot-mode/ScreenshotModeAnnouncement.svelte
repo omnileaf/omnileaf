@@ -3,6 +3,8 @@
 
   import { getScreenshotMode } from "./screenshot-mode.svelte";
 
+  let { announcesTurningOn }: { announcesTurningOn: boolean } = $props();
+
   const screenshotMode = getScreenshotMode();
 
   let announcedIsOn = screenshotMode.isOn;
@@ -14,9 +16,13 @@
       return;
     }
     announcedIsOn = isOn;
-    announcement = isOn
-      ? m.screenshot_mode_now_on()
-      : m.screenshot_mode_now_off();
+    if (!isOn) {
+      announcement = m.screenshot_mode_now_off();
+    } else if (announcesTurningOn) {
+      announcement = m.screenshot_mode_now_on();
+    } else {
+      announcement = "";
+    }
   });
 </script>
 

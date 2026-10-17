@@ -10,13 +10,16 @@ export interface Shortcut {
   readonly command?: Platform;
   /** Whether Shift must be held or released; left out, either will do. */
   readonly shift?: boolean;
+  /** Holds Alt, which is otherwise left to whatever else wants it. */
+  readonly alt?: boolean;
   readonly inTextFields?: boolean;
   readonly ignoresRepeats?: boolean;
   readonly run: (event: KeyboardEvent) => void;
 }
 
 const LATIN_LETTER = /^[a-z]$/i;
-const TEXT_FIELDS = "input, textarea, select, [contenteditable]";
+const TEXT_FIELDS =
+  'input:not([type="range"]), textarea, select, [contenteditable]';
 const SLIDER_KEYS: ReadonlySet<string> = new Set([
   "ArrowLeft",
   "ArrowRight",
@@ -40,12 +43,12 @@ function isCommandAsDeclared(
 }
 
 function areModifiersAsDeclared(
-  { command, shift }: Shortcut,
+  { command, shift, alt = false }: Shortcut,
   event: KeyboardEvent,
 ): boolean {
   return (
     isCommandAsDeclared(command, event) &&
-    !event.altKey &&
+    event.altKey === alt &&
     (shift === undefined || shift === event.shiftKey)
   );
 }

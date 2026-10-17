@@ -1,5 +1,5 @@
 use omnileaf_sync_proto::SeriesId;
-use rusqlite::{Connection, named_params};
+use rusqlite::{Connection, Row, named_params};
 
 use crate::{
     Error,
@@ -8,30 +8,43 @@ use crate::{
         cursor::Position,
         page::{Page, PageRequest},
         series_listing::{SeriesListing, SeriesOrder, SortDirection},
-        staged_rows::{Listing, Read, TitlePlace, listing, title_place, title_rows},
+        staged_rows::{Listing, Read, TitlePlace, title_place, title_rows},
         stored_id::stored_id,
     },
 };
 
-struct Directions<P> {
-    ascending: Listing<P>,
-    descending: Listing<P>,
+pub(crate) struct Directions<P> {
+    pub(crate) ascending: Listing<P>,
+    pub(crate) descending: Listing<P>,
 }
 
-/// Both ways round an order on the series column `key`, with the id breaking ties so every row has one place.
+/// Both ways round an order on the series column `key`, with the id breaking ties so every row has one place, among the series that meet `condition`.
 macro_rules! directions {
     (key: $key:literal, sort_position: $position:expr $(,)?) => {
-        Directions {
-            ascending: listing! {
-                with: "",
-                condition: "",
+        $crate::catalog::series_page::directions! {
+            with: "",
+            condition: "",
+            key: $key,
+            sort_position: $position,
+        }
+    };
+    (
+        with: $with:expr,
+        condition: $condition:expr,
+        key: $key:literal,
+        sort_position: $position:expr $(,)?
+    ) => {
+        $crate::catalog::series_page::Directions {
+            ascending: $crate::catalog::staged_rows::listing! {
+                with: $with,
+                condition: $condition,
                 seek: concat!("(series.", $key, ", series.id) > (:after_key, :after_id)"),
                 order: concat!($key, ", id"),
                 sort_position: $position,
             },
-            descending: listing! {
-                with: "",
-                condition: "",
+            descending: $crate::catalog::staged_rows::listing! {
+                with: $with,
+                condition: $condition,
                 seek: concat!("(series.", $key, ", series.id) < (:after_key, :after_id)"),
                 order: concat!($key, " DESC, id DESC"),
                 sort_position: $position,
@@ -40,6 +53,8 @@ macro_rules! directions {
     };
 }
 
+pub(crate) use directions;
+
 const BY_TITLE: Directions<TitlePlace> = directions! {
     key: "title_key",
     sort_position: title_place,
@@ -47,13 +62,63 @@ const BY_TITLE: Directions<TitlePlace> = directions! {
 
 const BY_DATE_ADDED: Directions<Position> = directions! {
     key: "added_at_ms",
-    sort_position: |row| {
-        Ok(Position::Added {
-            added_at_ms: row.get("added_at_ms")?,
-            id: stored_id(row, "id")?,
-        })
-    },
+    sort_position: added_place,
 };
+
+const BY_LAST_READ: Directions<Position> = directions! {
+    key: "last_read_at_ms",
+    sort_position: last_read_place,
+};
+
+const BY_LAST_UPDATED: Directions<Position> = directions! {
+    key: "updated_at_ms",
+    sort_position: last_updated_place,
+};
+
+const BY_UNREAD_COUNT: Directions<Position> = directions! {
+    key: "unread_count",
+    sort_position: unread_count_place,
+};
+
+const BY_TIME_LEFT: Directions<Position> = directions! {
+    key: "time_left_key",
+    sort_position: time_left_place,
+};
+
+pub(crate) fn time_left_place(row: &Row<'_>) -> rusqlite::Result<Position> {
+    Ok(Position::TimeLeft {
+        time_left_key: row.get("time_left_key")?,
+        id: stored_id(row, "id")?,
+    })
+}
+
+pub(crate) fn unread_count_place(row: &Row<'_>) -> rusqlite::Result<Position> {
+    Ok(Position::UnreadCount {
+        unread_count: row.get("unread_count")?,
+        id: stored_id(row, "id")?,
+    })
+}
+
+pub(crate) fn last_updated_place(row: &Row<'_>) -> rusqlite::Result<Position> {
+    Ok(Position::LastUpdated {
+        updated_at_ms: row.get("updated_at_ms")?,
+        id: stored_id(row, "id")?,
+    })
+}
+
+pub(crate) fn last_read_place(row: &Row<'_>) -> rusqlite::Result<Position> {
+    Ok(Position::LastRead {
+        last_read_at_ms: row.get("last_read_at_ms")?,
+        id: stored_id(row, "id")?,
+    })
+}
+
+pub(crate) fn added_place(row: &Row<'_>) -> rusqlite::Result<Position> {
+    Ok(Position::Added {
+        added_at_ms: row.get("added_at_ms")?,
+        id: stored_id(row, "id")?,
+    })
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeriesSummary {
@@ -83,11 +148,118 @@ pub fn series_page(
     let rows = match listing.sort.order {
         SeriesOrder::Title => title_rows(&read, BY_TITLE.toward(direction), after),
         SeriesOrder::DateAdded => date_added_rows(&read, BY_DATE_ADDED.toward(direction), after),
+        SeriesOrder::LastRead => last_read_rows(&read, BY_LAST_READ.toward(direction), after),
+        SeriesOrder::LastUpdated => {
+            last_updated_rows(&read, BY_LAST_UPDATED.toward(direction), after)
+        }
+        SeriesOrder::UnreadCount => {
+            unread_count_rows(&read, BY_UNREAD_COUNT.toward(direction), after)
+        }
+        SeriesOrder::TimeLeft => time_left_rows(&read, BY_TIME_LEFT.toward(direction), after),
     }?;
     Ok(Page::of(rows, request.size))
 }
 
-fn date_added_rows(
+pub(crate) fn time_left_rows(
+    read: &Read<'_>,
+    listing: &Listing<Position>,
+    after: Option<&Position>,
+) -> Result<Vec<(SeriesSummary, Position)>, Error> {
+    match after {
+        None => listing.first_rows(read),
+        Some(Position::TimeLeft { time_left_key, id }) => listing.rows_after(
+            read,
+            named_params! { ":after_key": time_left_key, ":after_id": id.as_bytes() },
+        ),
+        Some(
+            Position::Title { .. }
+            | Position::Added { .. }
+            | Position::Book { .. }
+            | Position::Root { .. }
+            | Position::LastRead { .. }
+            | Position::Session { .. }
+            | Position::LastUpdated { .. }
+            | Position::UnreadCount { .. },
+        ) => Err(Error::CursorForAnotherList),
+    }
+}
+
+pub(crate) fn unread_count_rows(
+    read: &Read<'_>,
+    listing: &Listing<Position>,
+    after: Option<&Position>,
+) -> Result<Vec<(SeriesSummary, Position)>, Error> {
+    match after {
+        None => listing.first_rows(read),
+        Some(Position::UnreadCount { unread_count, id }) => listing.rows_after(
+            read,
+            named_params! { ":after_key": unread_count, ":after_id": id.as_bytes() },
+        ),
+        Some(
+            Position::Title { .. }
+            | Position::Added { .. }
+            | Position::Book { .. }
+            | Position::Root { .. }
+            | Position::LastRead { .. }
+            | Position::Session { .. }
+            | Position::LastUpdated { .. }
+            | Position::TimeLeft { .. },
+        ) => Err(Error::CursorForAnotherList),
+    }
+}
+
+pub(crate) fn last_updated_rows(
+    read: &Read<'_>,
+    listing: &Listing<Position>,
+    after: Option<&Position>,
+) -> Result<Vec<(SeriesSummary, Position)>, Error> {
+    match after {
+        None => listing.first_rows(read),
+        Some(Position::LastUpdated { updated_at_ms, id }) => listing.rows_after(
+            read,
+            named_params! { ":after_key": updated_at_ms, ":after_id": id.as_bytes() },
+        ),
+        Some(
+            Position::Title { .. }
+            | Position::Added { .. }
+            | Position::Book { .. }
+            | Position::Root { .. }
+            | Position::LastRead { .. }
+            | Position::Session { .. }
+            | Position::UnreadCount { .. }
+            | Position::TimeLeft { .. },
+        ) => Err(Error::CursorForAnotherList),
+    }
+}
+
+pub(crate) fn last_read_rows(
+    read: &Read<'_>,
+    listing: &Listing<Position>,
+    after: Option<&Position>,
+) -> Result<Vec<(SeriesSummary, Position)>, Error> {
+    match after {
+        None => listing.first_rows(read),
+        Some(Position::LastRead {
+            last_read_at_ms,
+            id,
+        }) => listing.rows_after(
+            read,
+            named_params! { ":after_key": last_read_at_ms, ":after_id": id.as_bytes() },
+        ),
+        Some(
+            Position::Title { .. }
+            | Position::Added { .. }
+            | Position::Book { .. }
+            | Position::Root { .. }
+            | Position::Session { .. }
+            | Position::LastUpdated { .. }
+            | Position::UnreadCount { .. }
+            | Position::TimeLeft { .. },
+        ) => Err(Error::CursorForAnotherList),
+    }
+}
+
+pub(crate) fn date_added_rows(
     read: &Read<'_>,
     listing: &Listing<Position>,
     after: Option<&Position>,
@@ -102,13 +274,17 @@ fn date_added_rows(
             Position::Title { .. }
             | Position::Book { .. }
             | Position::Root { .. }
-            | Position::Session { .. },
+            | Position::LastRead { .. }
+            | Position::Session { .. }
+            | Position::LastUpdated { .. }
+            | Position::UnreadCount { .. }
+            | Position::TimeLeft { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
 
 impl<P> Directions<P> {
-    const fn toward(&self, direction: SortDirection) -> &Listing<P> {
+    pub(crate) const fn toward(&self, direction: SortDirection) -> &Listing<P> {
         match direction {
             SortDirection::Ascending => &self.ascending,
             SortDirection::Descending => &self.descending,
@@ -154,6 +330,148 @@ mod tests {
             "SEARCH series USING INDEX series_by_stage_and_added (reading_stage=?)",
         );
         assert_eq!(plans, [from_the_head.clone(), from_the_head]);
+    }
+
+    #[test]
+    fn starts_each_stage_at_either_end_of_its_stretch_of_the_last_read_index_without_sorting() {
+        let scratch = ScratchLibrary::new("first-last-read-plan");
+
+        let plans = plans_of(&scratch, |listing| listing.first_page_query, &BY_LAST_READ);
+
+        let from_the_head = merging_each_stage(
+            "SEARCH series USING INDEX series_by_stage_and_last_read (reading_stage=?)",
+        );
+        assert_eq!(plans, [from_the_head.clone(), from_the_head]);
+    }
+
+    #[test]
+    fn seeks_each_stage_of_the_last_read_index_either_way_on_both_sort_columns_without_sorting() {
+        let scratch = ScratchLibrary::new("last-read-plan");
+
+        let plans = plans_of(&scratch, |listing| listing.next_page_query, &BY_LAST_READ);
+
+        assert_eq!(
+            plans,
+            [
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_last_read (reading_stage=? AND (last_read_at_ms,id)>(?,?))"
+                ),
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_last_read (reading_stage=? AND (last_read_at_ms,id)<(?,?))"
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn starts_each_stage_at_either_end_of_its_stretch_of_the_last_updated_index_without_sorting() {
+        let scratch = ScratchLibrary::new("first-last-updated-plan");
+
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.first_page_query,
+            &BY_LAST_UPDATED,
+        );
+
+        let from_the_head = merging_each_stage(
+            "SEARCH series USING INDEX series_by_stage_and_updated (reading_stage=?)",
+        );
+        assert_eq!(plans, [from_the_head.clone(), from_the_head]);
+    }
+
+    #[test]
+    fn seeks_each_stage_of_the_last_updated_index_either_way_on_both_sort_columns_without_sorting()
+    {
+        let scratch = ScratchLibrary::new("last-updated-plan");
+
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.next_page_query,
+            &BY_LAST_UPDATED,
+        );
+
+        assert_eq!(
+            plans,
+            [
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_updated (reading_stage=? AND (updated_at_ms,id)>(?,?))"
+                ),
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_updated (reading_stage=? AND (updated_at_ms,id)<(?,?))"
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn starts_each_stage_at_either_end_of_its_stretch_of_the_unread_count_index_without_sorting() {
+        let scratch = ScratchLibrary::new("first-unread-count-plan");
+
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.first_page_query,
+            &BY_UNREAD_COUNT,
+        );
+
+        let from_the_head = merging_each_stage(
+            "SEARCH series USING INDEX series_by_stage_and_unread (reading_stage=?)",
+        );
+        assert_eq!(plans, [from_the_head.clone(), from_the_head]);
+    }
+
+    #[test]
+    fn seeks_each_stage_of_the_unread_count_index_either_way_on_both_sort_columns_without_sorting()
+    {
+        let scratch = ScratchLibrary::new("unread-count-plan");
+
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.next_page_query,
+            &BY_UNREAD_COUNT,
+        );
+
+        assert_eq!(
+            plans,
+            [
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_unread (reading_stage=? AND (unread_count,id)>(?,?))"
+                ),
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_unread (reading_stage=? AND (unread_count,id)<(?,?))"
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn starts_each_stage_at_either_end_of_its_stretch_of_the_time_left_index_without_sorting() {
+        let scratch = ScratchLibrary::new("first-time-left-plan");
+
+        let plans = plans_of(&scratch, |listing| listing.first_page_query, &BY_TIME_LEFT);
+
+        let from_the_head = merging_each_stage(
+            "SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=?)",
+        );
+        assert_eq!(plans, [from_the_head.clone(), from_the_head]);
+    }
+
+    #[test]
+    fn seeks_each_stage_of_the_time_left_index_either_way_on_both_sort_columns_without_sorting() {
+        let scratch = ScratchLibrary::new("time-left-plan");
+
+        let plans = plans_of(&scratch, |listing| listing.next_page_query, &BY_TIME_LEFT);
+
+        assert_eq!(
+            plans,
+            [
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=? AND (time_left_key,id)>(?,?))"
+                ),
+                merging_each_stage(
+                    "SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=? AND (time_left_key,id)<(?,?))"
+                ),
+            ]
+        );
     }
 
     #[test]

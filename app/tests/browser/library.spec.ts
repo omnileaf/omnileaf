@@ -6,9 +6,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
-  MEDIUM_MIN_WIDTH,
   test,
-  viewportOf,
 } from "./fixtures.ts";
 import {
   pagedSeries,
@@ -17,7 +15,7 @@ import {
   type WireSeries,
 } from "./series-catalog.ts";
 
-const EMPTY_ICON_SIZE = { phone: 28, wider: 36 } as const;
+const EMPTY_ICON_SIZE = 24;
 const LIBRARY_CHANGED = "library-changed";
 const ROW_LIMIT_FOR_A_SCREEN = 120;
 const PAGES_A_SCREEN_NEEDS = 1;
@@ -46,37 +44,37 @@ test("opens on the empty library", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("offers Add a folder beside the empty library's title", async ({
+test("fills the space under the heading with the empty library, to stand it in the middle", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const empty = await boxOf(emptyLibrary(page));
+  const main = await boxOf(page.getByRole("main"));
+
+  expect(empty.height).toBeGreaterThan(main.height / 2);
+});
+
+test("offers Add a folder only in the empty library itself", async ({
   page,
 }) => {
   await page.goto("/");
   const addFolder = page.getByRole("button", { name: "Add a folder" });
 
-  const title = await boxOf(
-    page.getByRole("heading", { level: 1, name: "Library" }),
-  );
-  const headerButton = await boxOf(addFolder.first());
-
-  await expect(addFolder).toHaveCount(2);
+  await expect(addFolder).toHaveCount(1);
   await expect(
     emptyLibrary(page).getByRole("button", { name: "Add a folder" }),
   ).toBeVisible();
-  expect(headerButton.x).toBeGreaterThan(title.x);
-  expect(headerButton.y).toBeLessThan(title.y + title.height);
-  expect(headerButton.y + headerButton.height).toBeGreaterThan(title.y);
 });
 
 test("draws the empty library's art at the size the boards draw it", async ({
   page,
 }) => {
   await page.goto("/");
-  const isPhone = viewportOf(page).width < MEDIUM_MIN_WIDTH;
 
   const icon = await boxOf(emptyLibrary(page).locator("svg").first());
 
-  expect(icon.width).toBe(
-    isPhone ? EMPTY_ICON_SIZE.phone : EMPTY_ICON_SIZE.wider,
-  );
+  expect(icon.width).toBe(EMPTY_ICON_SIZE);
 });
 
 for (const colorScheme of ["light", "dark"] as const) {

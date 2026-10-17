@@ -42,12 +42,7 @@ pub struct FolderCursor(pub(crate) Cursor);
 
 impl From<LibraryRoot> for LibraryFolder {
     fn from(root: LibraryRoot) -> Self {
-        let location = match &root.locator {
-            RootLocator::Path(path) | RootLocator::AppleBookmark { path, .. } => {
-                path.display().to_string()
-            }
-            RootLocator::AndroidTree(tree) => tree_location(tree),
-        };
+        let location = folder_location(&root.locator);
         Self {
             id: FolderId(root.id),
             kind: match root.kind {
@@ -58,6 +53,15 @@ impl From<LibraryRoot> for LibraryFolder {
             location,
             is_available: root.unavailable_since_ms.is_none(),
         }
+    }
+}
+
+pub(crate) fn folder_location(locator: &RootLocator) -> String {
+    match locator {
+        RootLocator::Path(path) | RootLocator::AppleBookmark { path, .. } => {
+            path.display().to_string()
+        }
+        RootLocator::AndroidTree(tree) => tree_location(tree),
     }
 }
 
@@ -152,6 +156,7 @@ mod tests {
             locator: RootLocator::AndroidTree(tree),
             added_at_ms: 0,
             unavailable_since_ms: None,
+            shows_while_missing: false,
         })
     }
 

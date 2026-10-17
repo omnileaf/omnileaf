@@ -14,7 +14,7 @@
   bind:ref
   data-slot="toggle-group-item"
   class={cn(
-    "room-for-bold-label items-center justify-center rounded-small-control px-md text-detail font-medium whitespace-nowrap text-muted transition-control min-block-segment aria-checked:bg-card aria-checked:font-bold aria-checked:text-foreground aria-checked:shadow-raised",
+    "-ms-px flex items-center justify-center border border-border bg-background px-md text-small font-medium whitespace-nowrap text-foreground transition-control min-block-segment-item first:ms-none first:rounded-s-segment-outer last:rounded-e-segment-outer hover:bg-hover aria-checked:bg-hover data-disabled:opacity-50 data-disabled:hover:bg-background max-expanded:px-toggle-touch max-expanded:text-body max-expanded:min-block-touch-target ios:ms-none ios:rounded-ios-segment-item ios:border-transparent ios:bg-transparent ios:hover:bg-transparent ios:aria-checked:bg-ios-cell ios:aria-checked:shadow-ios-segment macos:rounded-macos-control windows:rounded-windows-control windows:border-windows-stroke windows:bg-windows-control windows:aria-checked:border-accent windows:aria-checked:bg-accent windows:aria-checked:text-on-accent",
     className,
   )}
   {...restProps}

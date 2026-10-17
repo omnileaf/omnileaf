@@ -2,6 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 
 import {
   type LibrarySearch,
+  type SeriesFormat,
   SEARCH_MAX_CHARS,
 } from "../../src/lib/ipc/bindings.ts";
 import {
@@ -15,7 +16,6 @@ import {
   DEFAULT_BACKEND,
   expect,
   LARGE_MIN_WIDTH,
-  MEDIUM_MIN_WIDTH,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -24,12 +24,17 @@ import { sampleSeries, type WireSeries } from "./series-catalog.ts";
 interface FakeSeries {
   readonly series: WireSeries;
   readonly isStarted: boolean;
+  readonly format: SeriesFormat;
 }
 
 function fakeSeries(
   number: number,
   title: string,
-  { unread, isStarted }: { unread: number; isStarted: boolean },
+  {
+    unread,
+    isStarted,
+    format = "manga",
+  }: { unread: number; isStarted: boolean; format?: SeriesFormat },
 ): FakeSeries {
   return {
     series: {
@@ -38,16 +43,29 @@ function fakeSeries(
       bookCount: 2,
       unreadCount: unread,
       cover: null,
+      language: null,
+      hasDownloads: false,
+      isAdult: false,
+      continuesFrom: null,
     },
     isStarted,
+    format,
   };
 }
 
 const CATALOG: readonly FakeSeries[] = [
   fakeSeries(1, "Harbour Gate", { unread: 2, isStarted: false }),
-  fakeSeries(2, "Lantern Market", { unread: 1, isStarted: true }),
+  fakeSeries(2, "Lantern Market", {
+    unread: 1,
+    isStarted: true,
+    format: "comic",
+  }),
   fakeSeries(3, "Market Lanterns", { unread: 2, isStarted: false }),
-  fakeSeries(4, "Sample Series 04", { unread: 0, isStarted: true }),
+  fakeSeries(4, "Sample Series 04", {
+    unread: 0,
+    isStarted: true,
+    format: "book",
+  }),
 ];
 
 function found(
@@ -59,8 +77,10 @@ function found(
     inclusion === "any" || holds === (inclusion === "only");
   return catalog
     .filter(
-      ({ series, isStarted }) =>
+      ({ series, isStarted, format }) =>
         words.every((word) => series.title.toLowerCase().includes(word)) &&
+        (search.filter.formats.length === 0 ||
+          search.filter.formats.includes(format)) &&
         meets(search.filter.unread, series.unreadCount > 0) &&
         meets(search.filter.started, isStarted) &&
         meets(search.filter.finished, series.unreadCount === 0),
@@ -83,10 +103,6 @@ test.use({ backend: SEARCHING_BACKEND });
 
 function isDesktop(page: Page): boolean {
   return viewportOf(page).width >= LARGE_MIN_WIDTH;
-}
-
-function isPhone(page: Page): boolean {
-  return viewportOf(page).width < MEDIUM_MIN_WIDTH;
 }
 
 function searchField(page: Page): Locator {
@@ -114,6 +130,20 @@ async function openSearch(page: Page): Promise<void> {
   await expect(searchField(page)).toBeFocused();
 }
 
+async function columnsOf(list: Locator): Promise<number> {
+  return list.evaluate(
+    (element) =>
+      getComputedStyle(element)
+        .gridTemplateColumns.split(" ")
+        .filter((track) => track !== "").length,
+  );
+}
+
+/** Where Arrow Down moves from `index` in a grid of `columns`, staying put past the last result. */
+function below(index: number, columns: number, count: number): number {
+  return index + columns < count ? index + columns : index;
+}
+
 async function expectFound(page: Page, titles: readonly string[]) {
   await expect(results(page).getByRole("option")).toHaveText(
     titles.map((title) => new RegExp(title)),
@@ -126,10 +156,11 @@ test("opens the search page from the library's header with its field ready to ty
   await openSearch(page);
 
   await expect(page).toHaveURL(/\/search/);
-  await expect(page.getByRole("link", { name: "Library" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
+  await expect(
+    page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Library" }),
+  ).toHaveAttribute("aria-current", "page");
 });
 
 test("shows what can be searched before anything is typed", async ({
@@ -138,13 +169,49 @@ test("shows what can be searched before anything is typed", async ({
   await page.goto("/search");
 
   await expect(
-    page.getByRole("heading", { level: 2, name: "Search by" }),
+    page.getByRole("heading", { level: 2, name: "You can search for" }),
   ).toBeVisible();
   await expect(page.getByText("Title or series")).toBeVisible();
   await expect(
-    page.getByRole("heading", { level: 2, name: "Type to filter" }),
+    page.getByRole("heading", { level: 2, name: "Type a filter to narrow" }),
   ).toBeVisible();
-  await expect(page.getByText("→ only unread")).toBeVisible();
+  await expect(page.getByText("unread", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Recent searches" }),
+  ).toHaveCount(0);
+});
+
+test("lists the searches made last, newest first, and runs one again", async ({
+  page,
+}) => {
+  await openSearch(page);
+  await searchField(page).fill("Harbour");
+  await expectFound(page, ["Harbour Gate"]);
+  await results(page).getByRole("option").first().click();
+  await page.goto("/search");
+
+  const recent = page.getByRole("region", { name: "Recent searches" });
+  await expect(recent.getByRole("button", { name: /^Harbour/ })).toBeVisible();
+  await recent.getByRole("button", { name: /^Harbour/ }).click();
+
+  await expect(searchField(page)).toHaveValue("Harbour");
+  await expectFound(page, ["Harbour Gate"]);
+});
+
+test("forgets the searches made once Clear is pressed", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "omnileaf.recentSearches",
+      JSON.stringify([{ text: "harbour gate", atMs: Date.now() }]),
+    );
+  });
+  await page.goto("/search");
+  const recent = page.getByRole("region", { name: "Recent searches" });
+  await expect(recent).toContainText("harbour gate");
+
+  await recent.getByRole("button", { name: "Clear" }).click();
+
+  await expect(recent).toHaveCount(0);
 });
 
 test("finds the series whose titles hold every word typed, and counts them", async ({
@@ -155,10 +222,46 @@ test("finds the series whose titles hold every word typed, and counts them", asy
   await searchField(page).fill("market lantern");
 
   await expectFound(page, ["Lantern Market", "Market Lanterns"]);
-  await expect(page.getByRole("heading", { name: "Series · 2" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Series and books · 2" }),
+  ).toBeVisible();
   await expect(page.getByRole("main").getByRole("status")).toHaveText(
     "2 series found",
   );
+});
+
+test("marks the words typed in each title found and says the title matched", async ({
+  page,
+}) => {
+  await openSearch(page);
+
+  await searchField(page).fill("lantern");
+
+  const first = results(page).getByRole("option").first();
+  await expect(first.locator("mark")).toHaveText(["Lantern"]);
+  await expect(first).toContainText("Title");
+});
+
+test("draws the series found as covers, as many to a row as the library draws", async ({
+  page,
+}) => {
+  test.skip(!isDesktop(page), "desktop only");
+  await page.goto("/");
+  const columnsIn = (list: Locator) =>
+    list.evaluate(
+      (element) =>
+        getComputedStyle(element)
+          .gridTemplateColumns.split(" ")
+          .filter((track) => track !== "").length,
+    );
+  const libraryColumns = await columnsIn(
+    page.getByRole("list", { name: "Series" }),
+  );
+
+  await page.goto("/search?q=a");
+  await expect(results(page).getByRole("option").first()).toBeVisible();
+
+  expect(await columnsIn(results(page))).toBe(libraryColumns);
 });
 
 test("carries on the search typed into the library's header on desktop", async ({
@@ -213,50 +316,30 @@ test("drops a filter with its remove button, or with backspace in an empty field
   await expect(page.getByRole("button", { name: /^Remove the/ })).toHaveCount(
     0,
   );
-  await expect(page.getByRole("heading", { name: "Search by" })).toBeVisible();
-});
-
-test("shows only the series meeting the condition chosen", async ({ page }) => {
-  await page.goto("/search");
-  await searchField(page).fill("market");
-  const show = page.getByRole("group", { name: "Show" });
-
-  await show.getByRole("button", { name: "Started" }).click();
-
   await expect(
-    page.getByRole("button", { name: "Remove the Started filter" }),
+    page.getByRole("heading", { name: "You can search for" }),
   ).toBeVisible();
-  await expectFound(page, ["Lantern Market"]);
 });
 
-test("keeps the boxes of the Show choices still as they are pressed", async ({
+test("narrows the search to the scope chosen, and back to everything", async ({
   page,
 }) => {
-  test.skip(
-    isPhone(page),
-    "phones swap the choices for the chosen filters once one is pressed",
-  );
   await page.goto("/search");
   await searchField(page).fill("market");
-  await expectFound(page, ["Lantern Market", "Market Lanterns"]);
-  const choices = page.getByRole("group", { name: "Show" }).getByRole("button");
-  const boxesOf = async () => {
-    const boxes = [];
-    for (const choice of await choices.all()) {
-      boxes.push(await boxOf(choice));
-    }
-    return boxes;
-  };
-  const before = await boxesOf();
+  const scope = page.getByRole("group", { name: "Search in" });
+  await expect(
+    scope.getByRole("button", { name: "Everything" }),
+  ).toHaveAttribute("aria-pressed", "true");
 
-  for (const name of ["Unread", "Started", "Everything"]) {
-    await choices.filter({ hasText: name }).click();
-    await expect(choices.filter({ hasText: name })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    expect(await boxesOf()).toEqual(before);
-  }
+  await scope.getByRole("button", { name: "Manga" }).click();
+  await expectFound(page, ["Market Lanterns"]);
+  await expect(scope.getByRole("button", { name: "Manga" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await scope.getByRole("button", { name: "Everything" }).click();
+
+  await expectFound(page, ["Lantern Market", "Market Lanterns"]);
 });
 
 test("names the field's clear button and each filter's remove button in a tooltip", async ({
@@ -275,15 +358,14 @@ test("names the field's clear button and each filter's remove button in a toolti
   }
 });
 
-test("draws Close beside the field at the 40px height the desktop board gives it", async ({
-  page,
-}) => {
+test("names Library › Search in the desktop toolbar", async ({ page }) => {
   test.skip(!isDesktop(page), "desktop only");
   await page.goto("/search");
 
-  const close = await boxOf(page.getByRole("link", { name: "Close" }));
+  const crumbs = page.getByRole("navigation", { name: "Breadcrumb" });
 
-  expect(close.height).toBe(40);
+  await expect(crumbs.getByRole("link", { name: "Library" })).toBeVisible();
+  await expect(crumbs).toContainText("Search");
 });
 
 test("moves through the results with the arrow keys, Home and End, and opens one with Enter", async ({
@@ -292,12 +374,14 @@ test("moves through the results with the arrow keys, Home and End, and opens one
   test.skip(!isDesktop(page), "desktop only");
   await page.goto("/search");
   await searchField(page).fill("a");
-  await expectFound(page, [
+  const titles = [
     "Harbour Gate",
     "Lantern Market",
     "Market Lanterns",
     "Sample Series 04",
-  ]);
+  ];
+  await expectFound(page, titles);
+  const columns = await columnsOf(results(page));
   const options = results(page).getByRole("option");
   const active = async () => {
     const id = await searchField(page).getAttribute("aria-activedescendant");
@@ -320,15 +404,12 @@ test("moves through the results with the arrow keys, Home and End, and opens one
     visited.push(await active());
   }
 
-  expect(visited.map((text) => text?.match(/^\s*(\D+)/)?.[1]?.trim())).toEqual([
-    "Harbour Gate",
-    "Lantern Market",
-    "Harbour Gate",
-    "Sample Series",
-    "Harbour Gate",
-    "Sample Series",
-    "Harbour Gate",
-  ]);
+  const down = below(0, columns, titles.length);
+  expect(
+    visited.map((text) => titles.find((title) => text?.includes(title))),
+  ).toEqual(
+    [0, 1, 0, down, 0, titles.length - 1, 0].map((index) => titles[index]),
+  );
   await expect(options.first()).toHaveAttribute("aria-selected", "true");
   await searchField(page).press("ArrowRight");
   await searchField(page).press("Enter");
@@ -440,13 +521,13 @@ test("leaves Shift, Control, Alt and Meta with the arrow keys and Home to the fi
   );
 });
 
-test("says when nothing is called what was typed", async ({ page }) => {
+test("says when nothing matches what was typed", async ({ page }) => {
   await page.goto("/search");
 
   await searchField(page).fill("harbor gait");
 
   await expect(
-    page.getByRole("heading", { name: "Nothing called “harbor gait”" }),
+    page.getByRole("heading", { name: "Nothing matches “harbor gait”" }),
   ).toBeVisible();
   await expect(results(page)).toHaveCount(0);
 });
@@ -457,9 +538,7 @@ test("goes back to the library from the search page", async ({ page }) => {
   if (isDesktop(page)) {
     await searchField(page).press("Escape");
   } else {
-    await page
-      .getByRole("link", { name: isPhone(page) ? "Cancel" : "Close" })
-      .click();
+    await page.getByRole("link", { name: "Back to the library" }).click();
   }
 
   await expect(page).toHaveURL(/\/$/);
@@ -616,19 +695,19 @@ test.describe("while a search is still out", () => {
     await expect(page).toHaveURL(/\/search$/);
   });
 
-  test("says nothing is called the text only once its search answers", async ({
+  test("says nothing matches the text only once its search answers", async ({
     page,
   }) => {
     await page.goto("/search");
     await searchField(page).fill("zzz");
     await expect(
-      page.getByRole("heading", { name: "Nothing called “zzz”" }),
+      page.getByRole("heading", { name: "Nothing matches “zzz”" }),
     ).toBeVisible();
 
     await searchField(page).fill(HELD_TEXT);
 
     await expect(page.getByRole("main")).not.toContainText(
-      `Nothing called “${HELD_TEXT}”`,
+      `Nothing matches “${HELD_TEXT}”`,
     );
     release();
     await expectFound(page, ["Harbour Gate"]);
@@ -681,7 +760,7 @@ test.describe("the search page's one status", () => {
     await searchField(page).fill("market");
     await expect(status).toHaveText("2 series found");
     await searchField(page).fill("zzz");
-    await expect(status).toHaveText("Nothing called “zzz”");
+    await expect(status).toHaveText("Nothing matches “zzz”");
     await searchField(page).fill(FAILING_TEXT);
     await expect(status).toHaveText("Couldn't search your library. Try again.");
 
@@ -709,6 +788,17 @@ test.describe("a long list of results", () => {
     return option;
   }
 
+  test("keeps the scope chips their full height above a long list of results", async ({
+    page,
+  }) => {
+    await page.goto("/search?q=sample");
+    await expect(results(page).getByRole("option").first()).toBeVisible();
+
+    const scope = await boxOf(page.getByRole("group", { name: "Search in" }));
+
+    expect(scope.height).toBeGreaterThan(0);
+  });
+
   test("reveals the result End, Home and the arrows move to beyond the rows drawn", async ({
     page,
   }) => {
@@ -726,11 +816,72 @@ test.describe("a long list of results", () => {
     await expect(await activeOption(page)).toContainText(
       LONG_LIST[0]?.title ?? "",
     );
+    const columns = await columnsOf(results(page));
+    let reached = 0;
     for (let row = 0; row < 20; row += 1) {
       await searchField(page).press("ArrowDown");
+      reached = below(reached, columns, LONG_LIST.length);
     }
     await expect(await activeOption(page)).toContainText(
-      LONG_LIST[60]?.title ?? "",
+      LONG_LIST[reached]?.title ?? "",
     );
+  });
+});
+
+test.describe("with a likely spelling for a search that finds nothing", () => {
+  test.use({
+    backend: {
+      ...SEARCHING_BACKEND,
+      librarySpellingSuggestion: (text) =>
+        text === "harbor gat"
+          ? { text: "harbour gate", chapterOf: "Sample Series 04" }
+          : text === "harbuor"
+            ? { text: "harbour", chapterOf: null }
+            : null,
+    } satisfies FakeBackend,
+  });
+
+  test("offers the chapter title likely meant, naming its series", async ({
+    page,
+  }) => {
+    await page.goto("/search");
+
+    await searchField(page).fill("harbor gat");
+
+    await expect(page.getByText("Did you mean harbour gate?")).toBeVisible();
+    await expect(
+      page.getByText("It’s a chapter title in Sample Series 04."),
+    ).toBeVisible();
+  });
+
+  test("searches for the words likely meant on asking", async ({ page }) => {
+    await page.goto("/search");
+    await searchField(page).fill("harbuor");
+
+    await page.getByRole("button", { name: "harbour", exact: true }).click();
+
+    await expect(searchField(page)).toHaveValue("harbour");
+    await expectFound(page, ["Harbour Gate"]);
+  });
+
+  test("says the sources can be searched once Browse comes", async ({
+    page,
+  }) => {
+    await page.goto("/search");
+
+    await searchField(page).fill("harbuor");
+
+    await expect(
+      page.getByRole("button", { name: "Search your sources" }),
+    ).toBeDisabled();
+    await expect(page.getByText("Coming with Browse.")).toBeVisible();
+  });
+
+  test("has no accessibility violations", async ({ page }) => {
+    await page.goto("/search");
+    await searchField(page).fill("harbor gat");
+    await expect(page.getByText("Did you mean harbour gate?")).toBeVisible();
+
+    expect(await accessibilityViolations(page)).toEqual([]);
   });
 });

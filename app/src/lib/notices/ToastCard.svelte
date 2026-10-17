@@ -1,5 +1,7 @@
 <script lang="ts" module>
   export const TOAST_ICON_SIZE = 20;
+  export const WARNING_ACTION =
+    "bg-on-warning px-lg text-detail text-warning-soft min-block-touch-target desktop:px-md desktop:min-block-compact-button";
 </script>
 
 <script lang="ts">
@@ -28,6 +30,7 @@
     action,
     shortcut,
     children,
+    actions,
     onDismiss,
   }: {
     tone: NoticeTone;
@@ -37,31 +40,38 @@
     action?: NoticeAction | undefined;
     shortcut?: { readonly label: string; readonly keys: string } | undefined;
     children?: Snippet;
+    actions?: Snippet | undefined;
     onDismiss: () => void;
   } = $props();
 </script>
 
 <div
   class={[
-    "flex items-center gap-md rounded-toast border py-md ps-lg pe-sm font-ui wrap-anywhere shadow-toast group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent medium:rounded-toast-wide",
+    "flex gap-md rounded-toast border py-md ps-lg pe-sm font-ui wrap-anywhere shadow-toast group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent medium:rounded-toast-wide",
+    actions === undefined ? "items-center" : "flex-wrap items-start",
     TONES[tone],
   ]}
 >
-  <span aria-hidden="true" class="flex shrink-0 self-start">
-    {@render icon()}
-  </span>
-  <div class="flex flex-1 flex-col gap-2xs min-inline-none">
-    <p class="text-label font-bold touch:max-medium:text-callout">
-      {#if typeof title === "string"}
-        {title}
-      {:else}
-        {@render title()}
+  <div class="flex flex-1 items-start gap-md min-inline-none">
+    <span
+      aria-hidden="true"
+      class="flex shrink-0 items-center text-label block-lh touch:max-medium:text-callout"
+    >
+      {@render icon()}
+    </span>
+    <div class="flex flex-1 flex-col gap-2xs min-inline-none">
+      <p class="text-label font-bold touch:max-medium:text-callout">
+        {#if typeof title === "string"}
+          {title}
+        {:else}
+          {@render title()}
+        {/if}
+      </p>
+      {#if body !== undefined}
+        <p class="text-footnote opacity-85">{body}</p>
       {/if}
-    </p>
-    {#if body !== undefined}
-      <p class="text-footnote opacity-85">{body}</p>
-    {/if}
-    {@render children?.()}
+      {@render children?.()}
+    </div>
   </div>
   {#if action !== undefined}
     <Button
@@ -78,7 +88,7 @@
     </Button>
   {/if}
   {#if shortcut !== undefined}
-    <Kbd aria-hidden="true" class="hidden text-muted desktop:inline">
+    <Kbd aria-hidden="true" class="hidden desktop:inline">
       {shortcut.label}
     </Kbd>
   {/if}
@@ -97,4 +107,9 @@
       </Button>
     {/snippet}
   </Tooltip>
+  {#if actions !== undefined}
+    <div class="flex basis-full flex-wrap justify-end gap-sm pe-sm">
+      {@render actions()}
+    </div>
+  {/if}
 </div>

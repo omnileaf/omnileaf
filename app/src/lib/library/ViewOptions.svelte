@@ -14,15 +14,19 @@
 
   import ViewChoices from "./ViewChoices.svelte";
 
-  const ICON_SIZE = 22;
+  const ICON_SIZE = 16;
 
   let {
     view,
     coversDrawn,
+    mostThatFit,
+    hasCategories,
     onChoose,
   }: {
     view: LibraryView;
     coversDrawn: number | undefined;
+    mostThatFit: number | undefined;
+    hasCategories: boolean;
     onChoose: (view: LibraryView) => void;
   } = $props();
 
@@ -64,16 +68,16 @@
       {...props}
       look="header-control"
       class={[
-        "block-touch-target inline-touch-target large:px-header-control-inline large:block-pointer-button large:inline-auto",
+        "block-touch-target inline-touch-target large:px-header-control-inline large:inline-auto",
         isOpen
           ? "large:bg-accent-soft"
-          : "hover:tint-hover active:tint-pressed large:bg-card",
+          : "hover:tint-hover active:tint-pressed",
       ]}
     >
       <SlidersHorizontal
         size={ICON_SIZE}
         aria-hidden="true"
-        class="large:block-header-icon-desktop large:inline-header-icon-desktop"
+        class="large:block-lg large:inline-lg"
       />
       <span class="hidden large:inline">{m.library_view()}</span>
     </Button>
@@ -87,22 +91,39 @@
       dir={direction}
       align="end"
       aria-labelledby={titleId}
-      class="flex flex-col gap-lg overflow-auto px-panel-inline pbs-lg pbe-panel-inline inline-view-panel max-block-full"
+      class="flex flex-col gap-md overflow-auto px-panel-inline pbs-lg pbe-panel-inline inline-view-panel max-block-full"
       onCloseAutoFocus={focusButton}
     >
       <h2 id={titleId} class="text-panel-title font-bold">
-        {m.library_view()}
+        {m.library_view_options()}
       </h2>
-      <ViewChoices {view} {coversDrawn} {onChoose} />
+      <ViewChoices
+        {view}
+        {coversDrawn}
+        {mostThatFit}
+        {hasCategories}
+        {onChoose}
+      />
     </PopoverContent>
   </Popover.Root>
 {:else}
   <Dialog.Root bind:open={isOpen}>
     <DrawerContent onDismiss={close} onCloseAutoFocus={focusButton}>
-      <div class="flex items-center px-sheet-inline pbs-sheet-gap">
-        <DialogTitle class="flex-1 text-title font-bold">
-          {m.library_view()}
-        </DialogTitle>
+      <div class="flex items-center gap-md px-sheet-inline pbs-sheet-gap">
+        <span
+          aria-hidden="true"
+          class="flex shrink-0 items-center justify-center rounded-full bg-chip block-reader-dense inline-reader-dense"
+        >
+          <SlidersHorizontal size={ICON_SIZE} />
+        </span>
+        <div class="flex flex-1 flex-col">
+          <DialogTitle class="text-title font-bold">
+            {m.library_view_options()}
+          </DialogTitle>
+          <Dialog.Description class="text-small text-muted">
+            {m.library_view_kept_phone()}
+          </Dialog.Description>
+        </div>
         <Button
           type="button"
           look="quiet"
@@ -113,9 +134,15 @@
         </Button>
       </div>
       <div
-        class="flex flex-col gap-sheet-gap overflow-auto px-sheet-inline pbs-sheet-gap pbe-sheet-bottom min-block-none"
+        class="flex flex-col overflow-auto px-sheet-inline pbs-sheet-gap pbe-sheet-bottom min-block-none"
       >
-        <ViewChoices {view} {coversDrawn} {onChoose} />
+        <ViewChoices
+          {view}
+          {coversDrawn}
+          {mostThatFit}
+          {hasCategories}
+          {onChoose}
+        />
       </div>
     </DrawerContent>
   </Dialog.Root>

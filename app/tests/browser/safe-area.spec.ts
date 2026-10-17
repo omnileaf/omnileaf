@@ -115,7 +115,13 @@ test.describe("in landscape", () => {
     expect(firstLink.x).toBeGreaterThanOrEqual(SIDE_CUTOUT);
   });
 
-  test("widens the rail by a cutout at the start", async ({ page }) => {
+  test("widens the rail by a cutout at the start", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.use.isMobile !== true,
+      "a desktop window with a pointer folds its sidebar to icons instead",
+    );
     await page.setViewportSize(RAIL_LANDSCAPE_PHONE);
     await page.goto("/");
     const usualLink = await boxOf(navigationLinks(page).first());

@@ -1,6 +1,10 @@
 <script lang="ts">
+  import type { Attachment } from "svelte/attachments";
+  import { on } from "svelte/events";
+  import { Clock, Play } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
+  import { cn } from "#lib/components/cn.ts";
   import type { BookPage, SeriesNeighbour } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -9,47 +13,117 @@
   import PageSlider from "#lib/reader/PageSlider.svelte";
   import type { ReadingDirection } from "#lib/reader/reading-direction.svelte.ts";
 
+  import {
+    READER_BUTTON,
+    READER_GLASS,
+    READER_ICON_SIZE,
+  } from "./reader-bar.ts";
+  import { type Spread, spreadPosition } from "./spreads.ts";
+
+  const TIME_ICON_SIZE = 14;
+  const SECONDS_IN_A_MINUTE = 60;
+
   let {
     pages,
     shown,
+    spread,
     previous,
     next,
     direction,
     quickSettings,
+    secondsLeft,
+    isBlank,
+    showsPreviews,
+    isShown,
+    onPlay,
     onSeek,
   }: {
     pages: readonly BookPage[];
     shown: number;
+    spread: Spread;
     previous: SeriesNeighbour | null;
     next: SeriesNeighbour | null;
     direction: ReadingDirection;
-    quickSettings: Snippet;
+    quickSettings: Snippet | undefined;
+    secondsLeft: number | undefined;
+    isBlank: boolean;
+    showsPreviews: boolean;
+    isShown: boolean;
+    onPlay: (() => void) | undefined;
     onSeek: (index: number) => void;
   } = $props();
 
   const count = $derived(pages.length);
   let isDragged = $state(false);
+  let isSliderFocused = $state(false);
+  let isHovered = $state(false);
+  let staysUp = $state(false);
+  const isPreviewing = $derived(
+    showsPreviews && (isDragged || isSliderFocused || isHovered || staysUp),
+  );
+
+  const tracksMouse: Attachment<HTMLElement> = (element) => {
+    const stopEntering = on(element, "pointerenter", (event) => {
+      isHovered = event.pointerType === "mouse";
+    });
+    const stopLeaving = on(element, "pointerleave", () => {
+      isHovered = false;
+    });
+    return () => {
+      stopEntering();
+      stopLeaving();
+    };
+  };
+
+  $effect(() => {
+    if (!isShown) {
+      staysUp = false;
+      isHovered = false;
+    }
+  });
 </script>
 
 <div
-  class="flex flex-col gap-reader-panel-gap rounded-reader-panel border border-reader-glass-edge bg-reader-glass px-reader-panel-inline pbs-reader-panel-top pbe-reader-panel-bottom shadow-reader-bar backdrop-blur-reader backdrop-saturate-140 expanded:rounded-reader-panel-wide expanded:bg-reader-glass-wide expanded:px-reader-panel-inline-wide expanded:pbe-reader-panel-bottom-wide expanded:shadow-reader-bar-wide"
+  class={cn(
+    READER_GLASS,
+    "flex flex-col gap-sm p-sm expanded:justify-center expanded:min-block-reader-top-wide large:py-none",
+  )}
+  {@attach tracksMouse}
 >
-  {#if isDragged}
-    <NearbyPages {pages} {shown} />
+  {#if isPreviewing}
+    <NearbyPages
+      {pages}
+      {shown}
+      {isBlank}
+      isReversed={direction === "rightToLeft"}
+      onPick={onSeek}
+    />
   {/if}
-  <div
-    role="group"
-    aria-label={m.reader_quick_settings()}
-    class="flex flex-wrap gap-2xs border-be border-reader-line pbe-2xs expanded:hidden"
-  >
-    {@render quickSettings()}
-  </div>
-  <div dir="ltr" class="flex items-center gap-2xs expanded:gap-reader-dock-gap">
-    <BookStepLink step="previous" neighbour={previous} />
-    <span
-      class="shrink-0 text-center text-caption font-bold whitespace-nowrap tabular-nums min-inline-reader-control expanded:text-detail"
+  {#if quickSettings !== undefined}
+    <div
+      role="group"
+      aria-label={m.reader_quick_settings()}
+      class="flex flex-wrap items-stretch rounded-shadcn-control shadow-raised large:hidden"
     >
-      {m.reader_position({ page: shown + 1, count })}
+      {@render quickSettings()}
+    </div>
+  {/if}
+  <div dir="ltr" class="flex items-center gap-xs expanded:gap-sm">
+    <BookStepLink step="previous" neighbour={previous} />
+    {#if onPlay !== undefined}
+      <button
+        type="button"
+        aria-label={m.reader_start_auto_scroll()}
+        class={READER_BUTTON}
+        onclick={onPlay}
+      >
+        <Play size={READER_ICON_SIZE} aria-hidden="true" />
+      </button>
+    {/if}
+    <span
+      class="shrink-0 text-center text-small font-medium whitespace-nowrap tabular-nums min-inline-reader-count expanded:min-inline-reader-count-wide"
+    >
+      {spreadPosition(spread, count)}
     </span>
     <PageSlider
       {shown}
@@ -58,8 +132,24 @@
       {onSeek}
       onDrag={(dragged: boolean) => {
         isDragged = dragged;
+        staysUp ||= dragged;
+      }}
+      onFocusChange={(isFocused: boolean) => {
+        isSliderFocused = isFocused;
       }}
     />
     <BookStepLink step="next" neighbour={next} />
   </div>
+  {#if secondsLeft !== undefined}
+    <p
+      class="flex items-center justify-center gap-xs text-caption text-reader-muted"
+    >
+      <Clock size={TIME_ICON_SIZE} aria-hidden="true" />
+      {secondsLeft < SECONDS_IN_A_MINUTE
+        ? m.reader_time_left_short()
+        : m.reader_time_left({
+            minutes: Math.round(secondsLeft / SECONDS_IN_A_MINUTE),
+          })}
+    </p>
+  {/if}
 </div>

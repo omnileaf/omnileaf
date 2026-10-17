@@ -45,7 +45,13 @@ const PREVIOUS_IN_SERIES: &str = books_in_series!(
 const FIRST_UNREAD_IN_SERIES: &str = books_in_series!("ASC", not_read!());
 const FIRST_STARTED_UNREAD: &str =
     books_in_series!("ASC", "book_state.is_started IS 1", not_read!());
-const BOOK_DETAILS: &str = "SELECT title, added_at_ms FROM book WHERE id = ?1";
+const BOOK_DETAILS: &str = "SELECT title, added_at_ms, page_count FROM book WHERE id = ?1";
+const UNREAD_IN_SERIES: &str = concat!(
+    "SELECT book.id FROM book
+    LEFT JOIN book_state ON book_state.book_id = book.id
+    WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = ?1) AND ",
+    not_read!()
+);
 const BOOKS_BEFORE: &str = "SELECT count(*) FROM book
     WHERE series_local_id = (SELECT local_id FROM series WHERE id = :series)
         AND (title_sort_key, id) < (:key, :id)";
@@ -58,6 +64,8 @@ pub struct BookSummary {
     pub title: String,
     pub added_at_ms: i64,
     pub reading: BookReading,
+    /// Absent for a book found before the library kept page counts, until it is scanned again or opened.
+    pub page_count: Option<u32>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -144,7 +152,11 @@ pub fn series_books(
             | Position::Title { .. }
             | Position::Added { .. }
             | Position::Root { .. }
-            | Position::Session { .. },
+            | Position::LastRead { .. }
+            | Position::Session { .. }
+            | Position::LastUpdated { .. }
+            | Position::UnreadCount { .. }
+            | Position::TimeLeft { .. },
         ) => Err(Error::CursorForAnotherList),
     }?;
     Ok(Page::of(rows, request.size))
@@ -231,10 +243,18 @@ pub fn up_next(connection: &Connection, series: SeriesId) -> Result<Option<BookS
     Ok(None)
 }
 
+pub fn unread_books(connection: &Connection, series: SeriesId) -> Result<Vec<BookId>, Error> {
+    let mut statement = connection.prepare(UNREAD_IN_SERIES)?;
+    let books = statement
+        .query_map([series.as_bytes()], |row| stored_id(row, "id"))?
+        .collect::<rusqlite::Result<Vec<BookId>>>()?;
+    Ok(books)
+}
+
 fn fill_details(connection: &Connection, book: &mut BookSummary) -> Result<(), Error> {
-    (book.title, book.added_at_ms) =
+    (book.title, book.added_at_ms, book.page_count) =
         connection.query_row(BOOK_DETAILS, [book.id.as_bytes()], |row| {
-            Ok((row.get(0)?, row.get(1)?))
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?))
         })?;
     Ok(())
 }
@@ -253,6 +273,7 @@ fn stored_book(
         title: String::new(),
         added_at_ms: 0,
         reading,
+        page_count: None,
     };
     let position = Position::Book {
         series,

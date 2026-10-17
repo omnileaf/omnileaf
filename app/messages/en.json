@@ -19,6 +19,9 @@
     }
   ],
   "library_series_failed": "Couldn't load your library. Try again later.",
+  "library_unchanged": "Nothing in your library has changed.",
+  "library_try_again": "Try again",
+  "library_loading": "Loading your library",
   "library_series_count": [
     {
       "declarations": [
@@ -34,14 +37,167 @@
     }
   ],
   "library_view_options": "View options",
+  "search_recent": "Recent searches",
+  "search_recent_clear": "Clear",
+  "search_recent_today": "Today",
+  "search_recent_yesterday": "Yesterday",
+  "search_recent_last_week": "Last week",
+  "general_opens_on": "Omnileaf opens on",
+  "general_opens_library": "Library",
+  "general_opens_history": "History",
+  "general_opens_last_book": "Last book",
+  "general_opens_last_book_hint": "The reader, where you left it; the library when there's none.",
+  "general_time_format": "Time format",
+  "general_time_system_12": "Follow the system (12-hour)",
+  "general_time_system_24": "Follow the system (24-hour)",
+  "general_time_12": "12-hour",
+  "general_time_24": "24-hour",
+  "library_group_by": "Group by",
+  "library_group_none": "None",
+  "library_group_category": "Category",
+  "library_group_folder": "Folder",
   "library_view": "View",
   "library_view_done": "Done",
   "library_view_display": "Display",
+  "library_continue_series": "Continue {series}",
+  "library_downloaded_chapters": "Downloaded chapters",
+  "library_categories": "Categories",
+  "library_category_all": "All",
+  "missing_folder_title": "{name} isn’t there",
+  "library_series_and_hidden": "{series} · {hidden}",
+  "missing_folder_body": [
+    {
+      "declarations": [
+        "input name",
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Its folder or drive may be disconnected. {formattedCount} series is hidden until it’s back. Your reading progress is safe.",
+        "countPlural=other": "Its folder or drive may be disconnected. {formattedCount} series are hidden until it’s back. Your reading progress is safe."
+      }
+    }
+  ],
+  "missing_drive_title": "The drive with {name} isn’t connected",
+  "missing_drive_body": [
+    {
+      "declarations": [
+        "input name",
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Connect it to see its {formattedCount} series again. Your reading progress is safe.",
+        "countPlural=other": "Connect it to see its {formattedCount} series again. Your reading progress is safe."
+      }
+    }
+  ],
+  "missing_access_title": "Omnileaf can’t open {name}",
+  "missing_access_body": "Android took away access to this folder. Your reading progress is safe.",
+  "missing_sign_in_title": "Sign in to see {name}",
+  "missing_sign_in_body": "The network share {share} wants you to sign in again. Your reading progress is safe.",
+  "missing_mount_title": "Mount {name}’s share again",
+  "missing_mount_body": "{share} is mounted by your system, so there’s no sign-in for Omnileaf to open. Mount it again, then choose Try again. Your reading progress is safe.",
+  "missing_share_body": "It’s on the network share {server}, which may want you to sign in again. Your reading progress is safe.",
+  "missing_show_anyway": "Show them anyway",
+  "missing_find_folder": "Find the folder",
+  "missing_choose_again": "Choose it again",
+  "missing_unlink": "Unlink it",
+  "missing_sign_in": "Sign in",
+  "missing_try_again": "Try again",
+  "missing_sign_in_again": "Sign in again",
+  "missing_sign_in_failed_title": "Couldn’t sign in to {name}",
+  "missing_sign_in_failed_body": "{share} still won’t let Omnileaf in. Check the name and password in the system’s sign-in, or that the server is on. Your reading progress is safe.",
+  "missing_share_failed_title": "Omnileaf still can’t open {name}",
+  "missing_share_failed_body": "{share} isn’t reachable. Check that you’re signed in to {server}, and that it’s on. Your reading progress is safe.",
+  "missing_choose_again_title": "Choose {name} again",
+  "missing_choose_again_android_lead": "Android’s folder picker opens next.",
+  "missing_choose_again_ios_lead": "The Files picker opens next.",
+  "missing_choose_again_android_sign_in": "If your network app asks, sign in to {server} there.",
+  "missing_choose_again_ios_sign_in": "If Files asks, sign in to {server} there.",
+  "missing_choose_again_open": "Open {server}, then the {folder} folder.",
+  "missing_choose_again_android_choose": "Tap Use this folder.",
+  "missing_choose_again_ios_choose": "Tap Open.",
+  "missing_continue": "Continue",
+  "missing_not_now": "Not now",
+  "missing_back_title": "{name} is back",
+  "missing_back_body": "{share} is reachable again. Checking it for changes…",
+  "library_hidden_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} hidden",
+        "countPlural=other": "{formattedCount} hidden"
+      }
+    }
+  ],
+  "library_tab_new_chapters": "New chapters",
+  "library_tabs_title": "Library tabs",
+  "library_tabs_summary": "Order, hidden tabs, where the library opens",
+  "library_opens_on": "The library opens on",
+  "library_opens_on_last": "The tab used last",
+  "library_opens_on_help": "Or All, or a tab you choose. If it would open on New chapters and nothing is new, it opens on All.",
+  "library_tabs_intro": "Drag to reorder. Hiding a tab never removes a series.",
+  "library_tabs_intro_keys": "Drag to reorder, or use Alt ↑ and Alt ↓. Hiding a tab never removes a series.",
+  "library_tabs_all_detail": "Always shown; can’t be hidden",
+  "library_tabs_built_in": "Built in",
+  "library_tabs_built_in_hidden": "Built in · hidden",
+  "library_tabs_category": "Category",
+  "library_tabs_hidden": "Hidden",
+  "library_tabs_more": "More for {tab}",
+  "library_tabs_move": "Move {tab}",
+  "library_tabs_move_up": "Move up",
+  "library_tabs_move_down": "Move down",
+  "library_tabs_show": "Show this tab",
+  "library_tabs_hide": "Hide this tab",
+  "library_tabs_moved_up": "{tab} moved up, to position {position} of {count}",
+  "library_tabs_moved_down": "{tab} moved down, to position {position} of {count}",
+  "library_tabs_new_category": "New category",
+  "library_tabs_category_name": "Name",
+  "library_tabs_add": "Add",
+  "library_tabs_category_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Category · {formattedCount} series",
+        "countPlural=other": "Category · {formattedCount} series"
+      }
+    }
+  ],
+  "library_categories_more": "More",
+  "library_more_categories": "More categories",
+  "library_categories_edit": "Edit categories",
+  "library_categories_edit_short": "Edit",
+  "library_category_new": "New category",
+  "library_categories_every": "Every category",
+  "library_categories_every_description": "Every tab in your library.",
+  "library_view_layout": "Layout",
+  "library_category_tabs": "Category tabs",
+  "library_category_tabs_hint": "Your categories as tabs above the library.",
+  "library_view_kept_phone": "Kept on this phone.",
   "library_display_grid": "Grid",
   "library_display_compact": "Compact",
   "library_display_covers": "Covers",
   "library_display_list": "List",
   "library_covers_per_row": "Covers per row",
+  "library_covers_per_row_auto": "Auto",
+  "library_covers_per_row_choose": "Choose",
+  "library_covers_per_row_chosen": "Covers per row, chosen",
+  "library_covers_fit_width": "Fits as many as the width allows (now {count})",
   "library_covers_per_row_range": "{fewest} to {most}",
   "library_covers_per_row_range_phone": "{fewest} to {most} on this phone",
   "library_covers_per_row_range_tablet": "{fewest} to {most} on this tablet",
@@ -75,6 +231,7 @@
   "library_on_covers_language": "Language",
   "library_on_covers_reading_progress": "Reading progress",
   "library_on_covers_continue_button": "Continue reading button",
+  "library_books_read": "{read} of {count} books read",
   "library_unread_count": [
     {
       "declarations": [
@@ -89,7 +246,7 @@
       }
     }
   ],
-  "library_filter_and_sort": "Filter and sort",
+  "library_filter_and_sort": "Sort and filter",
   "library_filter_and_sort_filtered": [
     {
       "declarations": [
@@ -99,19 +256,73 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "Filter and sort, {formattedCount} filter on",
-        "countPlural=other": "Filter and sort, {formattedCount} filters on"
+        "countPlural=one": "Sort and filter, {formattedCount} filter on",
+        "countPlural=other": "Sort and filter, {formattedCount} filters on"
       }
     }
   ],
   "library_filter": "Filter",
+  "library_read_state": "Read state",
+  "library_filter_format": "Format",
+  "library_format_comics": "Comics",
+  "library_format_manga": "Manga",
+  "library_format_books": "Books",
+  "library_filter_language": "Language",
+  "library_filter_tags": "Tags",
+  "library_more_tags": "More tags",
+  "library_filter_adult": "18+",
+  "library_filter_adult_hint": "Adult age rating, or marked by hand.",
+  "library_filter_bookmarked": "Bookmarked",
+  "library_filter_bookmarked_hint": "Series with a bookmarked page.",
+  "library_chip_adult_only": "18+ only",
+  "library_chip_adult_hidden": "No 18+",
+  "library_chip_bookmarked": "Bookmarked",
+  "library_chip_not_bookmarked": "Not bookmarked",
+  "library_smart_filters": "Smart filters",
+  "library_smart_filters_hint": "They combine with the filters above.",
+  "library_smart_quick_reads": "Quick reads",
+  "library_smart_quick_reads_hint": "Under 30 minutes left, at your reading speed.",
+  "library_smart_forgotten": "Forgotten",
+  "library_smart_forgotten_hint": "Not opened in 3 months.",
+  "library_smart_duplicates": "Duplicates",
+  "library_smart_duplicates_hint": "The same book in more than one folder, even renamed.",
+  "library_smart_ready_to_clean_up": "Ready to clean up",
+  "library_smart_ready_to_clean_up_hint": "Downloaded and finished.",
+  "library_smart_clean_up_waits": "Ready to clean up (downloaded and finished) appears once you have downloads.",
+  "library_read_state_any": "Any",
+  "library_read_state_unread": "Unread",
+  "library_read_state_in_progress": "In progress",
+  "library_read_state_read": "Read",
+  "library_clear_all": "Clear all",
+  "library_filters_in_use": "Filters in use",
+  "library_more_filters": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Show {formattedCount} more filter",
+        "countPlural=other": "Show {formattedCount} more filters"
+      }
+    }
+  ],
+  "library_remove_filter": "Remove {filter}",
   "library_filter_with_count": "Filter · {count}",
   "library_sort": "Sort",
   "library_sort_by": "Sort by",
   "library_reset": "Reset",
   "library_close": "Close",
+  "library_close_filter_and_sort": "Close sort and filter",
   "library_sort_title": "Title",
-  "library_sort_date_added": "Date added",
+  "library_sort_date_added": "Recently added",
+  "library_sort_last_read": "Recently read",
+  "library_sort_last_updated": "Last updated",
+  "library_sort_unread_count": "Unread count",
+  "library_sort_time_left": "Time left to finish",
+  "library_sort_time_left_footnote": "Time left uses your reading speed.",
   "library_sort_a_to_z": "A to Z",
   "library_sort_z_to_a": "Z to A",
   "library_sort_newest_first": "Newest first",
@@ -120,6 +331,14 @@
   "library_sort_z_to_a_change": "Order: Z to A. Change to A to Z",
   "library_sort_newest_first_change": "Order: newest first. Change to oldest first",
   "library_sort_oldest_first_change": "Order: oldest first. Change to newest first",
+  "library_sort_most_unread_first": "Most unread first",
+  "library_sort_fewest_unread_first": "Fewest unread first",
+  "library_sort_most_unread_first_change": "Order: most unread first. Change to fewest unread first",
+  "library_sort_fewest_unread_first_change": "Order: fewest unread first. Change to most unread first",
+  "library_sort_shortest_first": "Shortest first",
+  "library_sort_longest_first": "Longest first",
+  "library_sort_shortest_first_change": "Order: shortest first. Change to longest first",
+  "library_sort_longest_first_change": "Order: longest first. Change to shortest first",
   "library_filter_unread": "Unread",
   "library_filter_unread_hint": "Has books you haven't read",
   "library_filter_started": "Started",
@@ -158,6 +377,104 @@
   ],
   "library_no_matches": "No series match these filters.",
   "library_clear_filters": "Clear filters",
+  "library_no_matches_title": "No series match these filters",
+  "library_no_matches_one": "{filter} leaves nothing. Your library hasn't changed.",
+  "library_no_matches_many": "{filters} together leave nothing. Your library hasn't changed.",
+  "library_no_matches_unchanged": "Your library hasn't changed.",
+  "library_clear_all_filters": "Clear all filters",
+  "library_selected_series": "{count} selected",
+  "library_select_all": "Select all",
+  "library_select_all_control": "Ctrl A",
+  "library_select_all_command": "⌘ A",
+  "library_cancel_selecting": "Cancel selecting",
+  "library_cancel": "Cancel",
+  "library_mark_read": "Mark as read",
+  "library_marked_read": "{count} series marked as read",
+  "library_selection_toolbar": "Selected series",
+  "library_tags": "Tags",
+  "library_labels_title": "Categories and tags",
+  "library_labels_for": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "For 1 series. Done applies the changes to it.",
+        "countPlural=other": "For {formattedCount} series. Done applies the changes to all {formattedCount}."
+      }
+    }
+  ],
+  "library_in_some": "{holding} of the {count} are in it",
+  "library_tag_on_some": "{tag} · {holding} of {count}",
+  "library_new_category": "New category",
+  "library_add_tag": "Add a tag",
+  "library_add_named_tag": "Add {tag}",
+  "library_remove_tag": "Remove {tag}",
+  "library_suggested_tags": "Suggested",
+  "library_labels_done": "Done",
+  "library_open_series": "Open series",
+  "library_labels_menu": "Categories and tags…",
+  "library_select": "Select",
+  "library_more": "More for the library",
+  "library_select_series": "Select series",
+  "library_edit_categories": "Edit categories",
+  "library_settings": "Library settings",
+  "adult_content_title": "18+ content",
+  "manage_tags_title": "Manage tags",
+  "manage_tags_find": "Find a tag",
+  "manage_tags_list": "Tags",
+  "manage_tags_intro": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} tag. Deleting a tag takes it off its series; the series stay.",
+        "countPlural=other": "{formattedCount} tags. Deleting a tag takes it off its series; the series stay."
+      }
+    }
+  ],
+  "manage_tags_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} tag",
+        "countPlural=other": "{formattedCount} tags"
+      }
+    }
+  ],
+  "manage_tags_none": "No tags yet. Add them to series from Categories and tags.",
+  "manage_tags_rename": "Rename {tag}",
+  "manage_tags_delete": "Delete {tag}",
+  "manage_tags_deleted": "{tag} deleted",
+  "manage_tags_tag": "Tag",
+  "manage_tags_rename_action": "Rename",
+  "library_adult_mark": "18+",
+  "library_tap_to_show": "Tap to show",
+  "library_click_to_show": "Click to show",
+  "library_show_adult_cover": "Show the cover of {title}",
+  "adult_content_intro": "A series counts as 18+ when its details carry an adult age rating, or when you mark it 18+ in Edit details.",
+  "adult_content_show": "Show",
+  "adult_content_show_help": "Treat it like everything else.",
+  "adult_content_blur": "Blur covers",
+  "adult_content_blur_help": "Covers stay blurred until tapped.",
+  "adult_content_blur_help_desktop": "Covers stay blurred until clicked.",
+  "adult_content_hide": "Hide",
+  "adult_content_hide_help": "Left out of the library, its counts and search.",
+  "adult_content_age_ratings": "Use age ratings from book details",
+  "adult_content_age_ratings_help": "Off: only series you mark 18+ by hand count.",
+  "library_no_series": "No series",
   "app_version": "Version {version}",
   "library_add_folder": "Add a folder",
   "library_scan_finding": "Finding books",
@@ -186,6 +503,15 @@
     }
   ],
   "library_folder_no_books": "Found no books in {name}.",
+  "library_folder_counting": "Counting…",
+  "library_folder_counting_so_far": [
+    {
+      "declarations": ["input found", "local formattedFound = found: number"],
+      "match": {
+        "*": "Counting… {formattedFound} so far"
+      }
+    }
+  ],
   "library_scan_added": [
     {
       "declarations": [
@@ -255,52 +581,45 @@
   "library_add_folder_failed_body": "Something went wrong inside Omnileaf. Your library hasn't changed.",
   "library_add_folder_try_again": "Try again",
   "navigation_label": "Main",
+  "sidebar_hide": "Hide the sidebar",
+  "sidebar_show": "Show the sidebar",
   "browse_title": "Browse",
   "browse_empty_title": "Nothing to browse yet",
   "browse_empty_body": "Sources you add show up here, so you can read from them without copying files over.",
   "browse_empty_later": "Adding sources comes in a later version.",
   "history_title": "History",
   "history_empty_title": "Nothing read yet",
-  "history_empty_body": "Books you open show up here, newest first, so you can pick up where you left off.",
+  "history_empty_body": "Books you open show up here, newest first.",
+  "history_cleared_title": "History is empty",
+  "history_cleared_body": "Books you open from now on show up here.",
+  "history_go_to_library": "Go to the library",
+  "history_earlier": "Earlier",
+  "history_entry_line": "{book} · {where} · {when}",
+  "history_entry_place": "{book} · {where}",
+  "history_entry_page": "page {page} of {count}",
+  "history_entry_finished": "finished",
+  "history_search": "Search History",
+  "history_clear": "Clear History",
+  "history_cleared": "History cleared",
+  "history_remove": "Remove from History",
+  "history_remove_shortcut": "Del",
+  "history_removed": "Removed from History",
+  "history_open_the_series": "Open the series",
+  "history_continue_reading": "Continue reading",
+  "history_no_match": "Nothing in History matches “{text}”",
+  "history_no_match_body": "History searches series and book titles.",
+  "history_loading": "Loading History",
   "history_failed": "Couldn't load your history. Try again later.",
   "history_this_week": "This week",
-  "history_week_read": "Read this week",
-  "history_week_books_opened": "Books opened",
-  "history_week_finished": "Finished",
-  "history_week_days_in_a_row": "Days in a row",
   "history_today": "Today",
   "history_yesterday": "Yesterday",
-  "history_last_week": "Last week",
-  "history_column_book": "Book",
-  "history_column_started": "Started",
-  "history_column_read_for": "Read for",
-  "history_column_progress": "Progress",
   "history_page_of": "Page {page} of {count}",
   "history_pages": "{page} / {count}",
   "history_finished": "Finished",
-  "history_time_and_length": "{time} · {duration}",
-  "history_reading_sessions": "Reading sessions",
-  "history_open_sessions": "Reading sessions of {series}, {book}",
   "history_back": "Back to History",
-  "history_close": "Close",
-  "history_time_read": "Time read",
-  "history_session_count": "Sessions",
-  "history_first_opened": "First opened",
-  "history_last_read": "Last read",
-  "history_sessions": "Sessions",
-  "history_reached_page": "to page {page}",
-  "history_reached_end": "to the end",
-  "history_open_series": "Open series",
   "history_more": "More for {book}",
   "history_more_short": "More",
-  "history_series_filter": "Show sessions from",
-  "history_every_series": "All series",
-  "history_started_at": "Started at {time}",
-  "history_read_for": "Read for {duration}",
-  "history_continue": "Continue",
   "history_continue_label": "Continue {series}, {book}",
-  "history_read_again": "Read again",
-  "history_read_again_label": "Read again {series}, {book}",
   "history_under_a_minute": "under 1 min",
   "history_minutes": [
     {
@@ -335,7 +654,52 @@
     }
   ],
   "settings_title": "Settings",
+  "settings_group_app": "App",
+  "settings_group_reading": "Reading",
+  "settings_group_data": "Data and privacy",
+  "settings_summary_pair": "{first} · {second}",
+  "settings_summary_opens_on": "opens to {place}",
+  "settings_summary_screenshot_off": "Screenshot mode off",
+  "settings_summary_screenshot_on": "Screenshot mode on",
+  "settings_summary_advanced": "Animations · Undo",
+  "advanced_undo": "Undo",
+  "animations_summary_all_on": "All on",
+  "animations_summary_all_off": "All off",
+  "animations_summary_some": "{on} of {total} on",
+  "advanced_offer_undo": "Offer Undo",
+  "advanced_offer_undo_help": "Off: notices show without Undo; deleting downloads, unpairing a device and deleting a profile still ask first.",
+  "advanced_keep_undo": "Keep Undo for",
+  "advanced_hold_undo": "Hold it while hovered or focused",
+  "advanced_undo_seconds": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} second",
+        "countPlural=other": "{formattedCount} seconds"
+      }
+    }
+  ],
+  "settings_folder_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} folder",
+        "countPlural=other": "{formattedCount} folders"
+      }
+    }
+  ],
   "about_title": "About",
+  "about_version_details": "Version details",
   "about_licence": "Omnileaf is free software. You can share and change it under the GNU General Public License, version 3.",
   "about_version": "Version",
   "about_copy_version_details": "Copy version details",
@@ -344,39 +708,80 @@
   "about_copy_failed": "Couldn't copy the version details. Try again.",
   "about_source_code": "Source code",
   "about_report_problem": "Report a problem",
-  "about_report_problem_hint": "Opens GitHub. You'll need a GitHub account.",
+  "about_report_problem_hint_phone": "Builds a report on this phone; you choose where it goes",
+  "about_report_problem_hint_tablet": "Builds a report on this tablet; you choose where it goes",
+  "about_report_problem_hint_computer": "Builds a report on this computer; you choose where it goes",
   "about_opens_in_browser": "Opens in your browser",
   "about_browser_unavailable": "Couldn't open your browser. Try again.",
+  "report_intro": "Nothing is sent until you choose. Names become stand-ins and anything 18+ is left out.",
+  "report_included": "What's included",
+  "report_version_and_device": "Version and device",
+  "report_version_on_system": "{version} · {system}",
+  "report_log": "Log",
+  "report_log_hint": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "The last line, names replaced",
+        "countPlural=other": "The last {formattedCount} lines, names replaced"
+      }
+    }
+  ],
+  "report_log_empty": "Nothing logged yet",
+  "report_log_show": "Show",
+  "report_log_hide": "Hide",
+  "report_failed": "Couldn't put the report together.",
+  "report_try_again": "Try again",
+  "report_reply_email": "Email for a reply (optional)",
+  "report_reply_email_placeholder": "you@example.com",
+  "report_reply_email_hint": "Used only to answer you; never shown in an issue.",
+  "report_send": "Send to Omnileaf",
+  "report_send_note": "No account needed; the maintainers see it first.",
+  "report_send_failed": "Couldn't send the report. Try again.",
+  "report_sent": "Report sent",
+  "report_copy_code": "Copy code",
+  "report_code_copy_failed": "Couldn't copy the code. Try again.",
+  "report_other_ways_to_send": "Other ways to send it",
+  "report_open_on_github": "Open on GitHub",
+  "report_copy": "Copy report",
+  "report_copied": "Report copied",
+  "report_kept": "Code {code} · kept in Your reports",
+  "report_copy_failed": "Couldn't copy the report. Try again.",
+  "report_save": "Save as a file",
+  "report_saved": "Report saved",
+  "report_saved_in": "In {folder}: {file}",
+  "report_saved_in_files_phone": "In Files › On My iPhone › Omnileaf › Reports",
+  "report_saved_in_files_tablet": "In Files › On My iPad › Omnileaf › Reports",
+  "report_save_failed": "Couldn't save the report. Try again.",
+  "report_folder_unavailable": "Couldn't open the folder. Try again.",
+  "your_reports_title": "Your reports",
+  "your_reports_intro_phone": "Each report has a random code kept on this phone; nothing else identifies you.",
+  "your_reports_intro_tablet": "Each report has a random code kept on this tablet; nothing else identifies you.",
+  "your_reports_intro_computer": "Each report has a random code kept on this computer; nothing else identifies you.",
+  "your_reports_sent": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} sent",
+        "countPlural=other": "{formattedCount} sent"
+      }
+    }
+  ],
+  "your_reports_code": "Code {code}",
+  "your_reports_none": "No reports yet.",
   "about_licences": "Open-source licences",
   "about_licences_hint": "The packages Omnileaf is built with",
-  "licences_intro": [
-    {
-      "declarations": [
-        "input count",
-        "local countPlural = count: plural",
-        "local formattedCount = count: number"
-      ],
-      "selectors": ["countPlural"],
-      "match": {
-        "countPlural=one": "Omnileaf is built with {formattedCount} open-source package. Open it to read its licence.",
-        "countPlural=other": "Omnileaf is built with {formattedCount} open-source packages, grouped by licence. Open one to read its licence."
-      }
-    }
-  ],
-  "licences_package_count": [
-    {
-      "declarations": [
-        "input count",
-        "local countPlural = count: plural",
-        "local formattedCount = count: number"
-      ],
-      "selectors": ["countPlural"],
-      "match": {
-        "countPlural=one": "{formattedCount} package",
-        "countPlural=other": "{formattedCount} packages"
-      }
-    }
-  ],
+  "licences_intro": "Made from the packages this build of Omnileaf uses. Each opens its licence text.",
   "licences_show_all": [
     {
       "declarations": [
@@ -393,9 +798,9 @@
   ],
   "licence_summary": "Version {version} · {licence}",
   "library_settings_folders": "Folders",
-  "library_settings_folders_hint": "Folders of comics, manga or books. Omnileaf reads them where they are.",
   "library_settings_home_folder": "Home folder",
   "library_settings_home_folder_hint": "Your library, reading progress and backups are kept here.",
+  "library_settings_home_folder_hint_ios": "The library stays inside the app. Backups and books you add are in Files › {place}.",
   "library_folders_failed": "Couldn't load your folders. Try again later.",
   "library_remove_folder": "Remove folder",
   "library_remove_folder_label": "Remove {name}",
@@ -419,6 +824,11 @@
   "library_remove_folder_confirm": "Remove folder",
   "library_remove_folder_cancel": "Cancel",
   "library_remove_folder_failed": "Couldn't remove {name}. Try again.",
+  "library_folder_removed": "{name} removed",
+  "library_folder_removed_files_stay": "Its files stay where they are.",
+  "library_folders_removed": "{count} removed",
+  "library_folders_none": "No folders linked. Add one to fill your library.",
+  "library_folders_removed_files_stay": "{names}. Their files stay where they are.",
   "library_rescan_folder": "Rescan",
   "library_rescan_folder_label": "Rescan {name}",
   "library_rescan_checking": "Checking {name} for changes",
@@ -539,9 +949,13 @@
   "library_folder_unavailable": "Not available",
   "library_folder_found_empty": "No books found",
   "appearance_title": "Appearance",
+  "reading_defaults_intro": "Defaults for every series without its own. A series’ own settings, chosen in the reader, win.",
+  "reading_keep_screen_on_help": "While a book is open.",
   "reading_title": "Reader",
   "reading_skip_up_next": "Skip Up next",
-  "reading_skip_up_next_help": "Go straight to the next chapter or volume. Handy for webtoons.",
+  "reading_skip_up_next_help": "Go straight to the next book; Up next doesn’t show. Also on Up next.",
+  "reading_mode_new_series": "Reading mode for new series",
+  "reading_mode_new_series_help": "Automatic picks paged or long strip from the details and the pages.",
   "reading_swipes": "Swiping a book",
   "reading_swipes_help": "In a series' list on a phone. Mark read marks a book that's read unread.",
   "reading_swipe_right": "Swipe right",
@@ -558,10 +972,8 @@
   "general_title": "General",
   "language_label": "Language",
   "first_launch_progress_label": "Setting up",
-  "first_launch_step_home": "Home folder",
-  "first_launch_step_link": "Your folders",
-  "first_launch_step_choices": "Choices",
-  "first_launch_step_position": "{name}, step {number} of {count}",
+  "first_launch_step_count": "{number} of {count}",
+  "first_launch_back": "Back",
   "first_launch_continue": "Continue",
   "first_launch_welcome_title": "Welcome to Omnileaf",
   "first_launch_welcome_body_phone": "Comics, manga, webtoons and books in one reader. Your library stays on your phone.",
@@ -580,21 +992,67 @@
   "first_launch_promise_private_desktop": "Open source, and yours",
   "first_launch_promise_private_detail_desktop": "No account. Your books and history stay here unless you sync.",
   "first_launch_home_title": "Where your library lives",
-  "first_launch_home_body": "Omnileaf keeps your progress, categories and backups in this folder. Books you download or import go here too. The comics you already have stay where they are.",
+  "first_launch_home_body": "Omnileaf keeps its own data in one home folder.",
   "first_launch_home_title_ios": "Your backups and books are in Files",
-  "first_launch_home_body_ios": "Omnileaf keeps your backups, and books you add, in its own folder in the Files app, so they're easy to copy or move. Your progress and categories stay safely inside the app.",
+  "first_launch_home_body_ios": "Omnileaf keeps its own folder in the Files app, so your backups and books are easy to copy or move.",
+  "first_launch_home_in_files": "In Files",
+  "first_launch_home_keeps": "Keeps",
+  "first_launch_home_keeps_detail": "Progress, categories and backups",
+  "first_launch_home_keeps_detail_ios": "Backups, and books you add",
+  "first_launch_home_also_holds": "Also holds",
+  "first_launch_home_also_holds_detail": "Books you download or import",
+  "first_launch_home_in_the_app": "In the app",
+  "first_launch_home_in_the_app_detail": "Progress and categories, kept safe",
+  "first_launch_home_your_comics": "Your comics",
+  "first_launch_home_your_comics_detail": "Stay where they are",
+  "first_launch_home_change": "Change",
+  "first_launch_found_title": "A library is already here",
+  "first_launch_found_body": "Use it to bring back your progress, categories and settings, as they were.",
+  "first_launch_found_series": "Series",
+  "first_launch_found_books": "Books",
+  "first_launch_found_last_backup": "Last backup",
+  "first_launch_use_library": "Use this library",
+  "first_launch_start_new_library": "Start a new library instead",
   "library_home_location_iphone": "On My iPhone › Omnileaf",
   "library_home_location_ipad": "On My iPad › Omnileaf",
+  "library_files_icloud_drive": "iCloud Drive",
+  "library_files_on_my_iphone": "On My iPhone",
+  "library_files_on_my_ipad": "On My iPad",
+  "first_launch_drop_title": "Drop folders here",
+  "first_launch_drop_to_link": "Drop to link {name}",
+  "first_launch_drop_to_link_many": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "Drop to link {formattedCount} folders"
+      }
+    }
+  ],
   "first_launch_ready_title": "You're all set",
   "first_launch_ready_body": "Your library is ready. Add or remove folders any time in Settings › Library.",
+  "first_launch_ready_finding_body": "Omnileaf is still finding books. You can open your library now; scanning carries on.",
+  "first_launch_ready_found_title": "Found {series} and {books}",
+  "first_launch_ready_folder": "{series} · {books}",
+  "first_launch_ready_empty_title": "Your library is empty for now",
+  "first_launch_ready_empty_body": "Add folders from the empty library or Settings › Library.",
+  "first_launch_ready_unreadable_title": "{name} couldn't be read",
+  "first_launch_ready_unreadable_body": "Nothing in it changed. The rest of your library is ready.",
+  "first_launch_ready_fix_title": "How to fix it",
+  "first_launch_ready_fix_android": "Pick it again in Settings › Library, so Android allows access.",
+  "first_launch_ready_fix_ios": "Link it again from Files in Settings › Library.",
+  "first_launch_ready_fix_macos": "Allow Omnileaf in System Settings › Privacy & Security › Files and Folders, then Rescan.",
+  "first_launch_ready_fix_windows": "Check that its drive is connected and you can open it in File Explorer, then Rescan.",
+  "first_launch_ready_fix_linux": "Check that you can open it in your file manager, then Rescan.",
   "first_launch_open_library": "Open my library",
   "first_launch_finish_failed": "Couldn't finish setting up. Try again.",
-  "first_launch_tagline": "Comics, manga, webtoons and books in one reader.",
   "first_launch_choices_title": "A few choices",
   "first_launch_choices_body": "Change any of these later in Settings.",
   "first_launch_choices_appearance": "Appearance",
-  "first_launch_choices_appearance_help_phone": "Paper light or dark, or follow your phone.",
-  "first_launch_choices_appearance_help_tablet": "Paper light or dark, or follow this device.",
+  "first_launch_choices_appearance_help_phone": "Light or dark, or follow your phone.",
+  "first_launch_choices_appearance_help_tablet": "Light or dark, or follow this device.",
+  "first_launch_choices_appearance_help_desktop": "Light or dark, or follow your computer.",
+  "first_launch_choices_adult": "18+ covers",
+  "first_launch_choices_blur": "Blur",
   "first_launch_link_title": "Already have comics or books?",
   "first_launch_link_body": "Link the folders they're in. Omnileaf reads them where they are and never moves or changes them.",
   "first_launch_link_hint_android_phone": "Folders on your phone, an SD card or a USB drive all work.",
@@ -603,23 +1061,10 @@
   "first_launch_link_hint_desktop": "Folders on this computer, external drives and network shares all work.",
   "first_launch_skip_phone": "Skip, I'll add them later",
   "first_launch_skip_desktop": "Skip for now",
-  "language_phone_hint": "Omnileaf uses your phone's language unless you pick one.",
-  "language_system": "Use the system language ({language})",
-  "language_more_coming": "More languages arrive as people translate Omnileaf.",
-  "back_to": "Back to {page}",
-  "screenshot_mode_now_on": "Screenshot mode is on",
-  "screenshot_mode_now_off": "Screenshot mode is off",
-  "privacy_title": "Privacy and security",
-  "screenshot_mode_title": "Screenshot mode",
-  "screenshot_mode_off_status": "Swap names and covers for stand-ins before you share a screenshot or a report.",
-  "screenshot_mode_on_status": "On until you turn it off",
-  "screenshot_mode_on_until": "On · turns off at {time}",
-  "switch_on": "On",
-  "switch_off": "Off",
-  "screenshot_mode_preview": "Preview",
-  "screenshot_mode_sample_title": "Sample Series 04",
-  "screenshot_mode_sample_format": "Manga",
-  "screenshot_mode_sample_chapters": [
+  "first_launch_pick_folder_title": "Pick a folder",
+  "first_launch_pick_folder_body": "Android shows its folder picker next. Choose a folder of comics or books, tap Use this folder, then Allow. Omnileaf reads it there and changes nothing.",
+  "first_launch_not_now": "Not now",
+  "first_launch_folder_books": [
     {
       "declarations": [
         "input count",
@@ -628,29 +1073,94 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "{formattedCount} chapter",
-        "countPlural=other": "{formattedCount} chapters"
+        "countPlural=one": "{formattedCount} book",
+        "countPlural=other": "{formattedCount} books"
       }
     }
   ],
-  "screenshot_mode_what_changes": "Titles, writers, covers, chapter titles, summaries, tags, and the names of folders, servers and your own categories, shelves and profiles become stand-ins. 18+ is hidden and not counted. Counts, dates, progress and settings otherwise stay real, so a bug still shows.",
-  "screenshot_mode_while_on": "While it’s on",
+  "language_phone_hint": "Omnileaf uses your phone's language unless you pick one.",
+  "language_use_system": "Use the system language",
+  "language_intro": "Each language is shown in its own name. It changes straight away.",
+  "language_more_coming": "More languages arrive as people translate Omnileaf.",
+  "back_to": "Back to {page}",
+  "screenshot_mode_now_on": "Screenshot mode is on",
+  "screenshot_mode_now_off": "Screenshot mode is off",
+  "privacy_title": "Privacy and security",
+  "screenshot_mode_title": "Screenshot mode",
+  "screenshot_mode_summary_on_until": "On until {time}",
+  "switch_on": "On",
+  "switch_off": "Off",
   "screenshot_mode_blank_pages": "Blank the pages in the reader",
-  "screenshot_mode_blank_pages_help": "Plain grey panels with the page number. Turn off to show a page display problem.",
+  "screenshot_mode_blank_pages_help": "Off shows real pages, for reporting a page that looks wrong.",
+  "screenshot_mode_intro": "Swaps names and covers for stand-ins, hides 18+ and leaves it out of counts, so screenshots show nothing private. Progress, dates and settings stay real.",
+  "screenshot_mode_turn_off_after": "Turn off after",
+  "screenshot_mode_turn_off_hour": "1 hour",
+  "screenshot_mode_turn_off_never": "Never",
   "screenshot_mode_show_label": "Show the Screenshot mode label",
   "screenshot_mode_show_label_help": "At the top of the screen, so you know it’s on.",
   "screenshot_mode_show_label_help_desktop": "At the top of the window, so you know it’s on.",
-  "screenshot_mode_auto_off": "Turn off after 1 hour",
-  "screenshot_mode_auto_off_help": "In case you forget it’s on.",
   "screenshot_mode_quickly": "Turn it on quickly",
   "screenshot_mode_shortcut": "Keyboard shortcut",
   "screenshot_mode_shortcut_help": "Anywhere in Omnileaf",
-  "screenshot_mode_shortcut_control": "Ctrl Shift H",
-  "screenshot_mode_shortcut_command": "⇧⌘H",
-  "screenshot_mode_nothing_sent": "Nothing about Screenshot mode is sent anywhere. It only changes what’s on screen and in reports.",
+  "screenshot_mode_shortcut_change": "Change",
+  "screenshot_mode_shortcut_change_label": "Change the keyboard shortcut",
+  "screenshot_mode_shortcut_dialog_title": "Screenshot mode shortcut",
+  "screenshot_mode_shortcut_dialog_description": "Press the new keys.",
+  "screenshot_mode_shortcut_dialog_field": "New shortcut",
+  "screenshot_mode_shortcut_dialog_default": "Use the default",
+  "screenshot_mode_shortcut_dialog_cancel": "Cancel",
+  "screenshot_mode_shortcut_dialog_save": "Save",
+  "screenshot_mode_shortcut_unusable": "Hold {command} and press a letter, with Shift if you like.",
+  "screenshot_mode_shortcut_taken_quick_open": "{keys} already opens Quick open. Try another.",
+  "screenshot_mode_shortcut_taken_search": "{keys} already searches the library. Try another.",
+  "screenshot_mode_shortcut_taken_undo": "{keys} already undoes the last change. Try another.",
+  "screenshot_mode_shortcut_taken_select_all": "{keys} already selects everything. Try another.",
+  "screenshot_mode_shortcut_taken_sidebar": "{keys} already shows or hides the sidebar. Try another.",
+  "screenshot_mode_shortcut_taken_editing": "{keys} is for editing text. Try another.",
+  "screenshot_mode_shortcut_taken_macos": "macOS already uses {keys}. Try another.",
+  "screenshot_mode_tray": "Tray",
+  "screenshot_mode_menu_bar": "Menu bar",
+  "screenshot_mode_tray_help": "The Omnileaf icon there has Screenshot mode, with its state.",
+  "screenshot_mode_long_press": "Long-press the Omnileaf icon",
+  "screenshot_mode_long_press_help": "Screenshot mode, Continue reading and Search the library, from your home screen.",
+  "tray_open": "Open Omnileaf",
+  "tray_screenshot_mode_on_until": "On · turns off at {time}",
+  "tray_continue_reading": "Continue reading",
+  "tray_quit": "Quit Omnileaf",
+  "icon_action_screenshot_mode_with_state": "Screenshot mode · {state}",
+  "icon_action_continue_reading": "Continue reading",
+  "icon_action_search_library": "Search the library",
+  "permissions_title": "Permissions",
+  "permissions_summary_folders_allowed": "Folders allowed; nothing else asked yet",
+  "permissions_summary_nothing_asked": "Nothing asked yet",
+  "permissions_intro": "Omnileaf asks for each one only when a feature needs it, and says why first. Saying no leaves everything else working.",
+  "permissions_folders": "Folders",
+  "permissions_folders_picked_android": "{folders}, picked with Android’s folder picker.",
+  "permissions_folders_picked": "Picked with the system’s folder picker.",
+  "permissions_notifications": "Notifications",
+  "permissions_notifications_help": "For finished downloads. Asked when downloads arrive.",
+  "permissions_local_network": "Local network",
+  "permissions_local_network_help": "To find your own server. Asked when you add one.",
+  "permissions_camera": "Camera",
+  "permissions_camera_help": "To scan a pairing code. Asked when you pair a device.",
+  "permissions_allowed": "Allowed",
+  "permissions_not_asked": "Not asked yet",
+  "permissions_open_android": "Open Android settings",
+  "permissions_open_ios": "Open iOS Settings",
+  "permissions_open_macos": "Open System Settings",
+  "permissions_open_windows": "Open Windows Settings",
+  "permissions_open_help": "Change any of these there.",
+  "permissions_open_failed": "The system’s settings didn’t open",
+  "shortcut_key_control": "Ctrl",
+  "shortcut_key_command": "⌘",
+  "shortcut_key_shift": "Shift",
   "stand_in_series": "Series {number}",
   "stand_in_book": "{series} · Book {number}",
-  "screenshot_mode_preview_label": "Preview of one cover with Screenshot mode off and on",
+  "stand_in_series_book": "Book {number}",
+  "stand_in_writer": "Writer {number}",
+  "stand_in_artist": "Artist {number}",
+  "stand_in_tag": "Tag {number}",
+  "stand_in_summary": "A stand-in summary shows here while Screenshot mode is on.",
   "stand_in_folder": "Folder {number}",
   "notice_dismiss": "Dismiss",
   "notice_region": "Notifications",
@@ -669,6 +1179,9 @@
   "problem_library_failed_title": "Your library couldn't be opened",
   "problem_library_failed_body": "Something went wrong inside Omnileaf while opening your library. Nothing in it has changed. Quit and open Omnileaf again, and report the problem if it keeps happening.",
   "privacy_crash_reports": "Crash reports",
+  "privacy_nothing_leaves_phone": "Nothing leaves this phone unless you send a report or connect a tracker.",
+  "privacy_nothing_leaves_tablet": "Nothing leaves this tablet unless you send a report or connect a tracker.",
+  "privacy_nothing_leaves_computer": "Nothing leaves this computer unless you send a report or connect a tracker.",
   "privacy_crash_reports_hint": "You see a report before it's sent.",
   "crash_reports_ask": "Ask each time",
   "crash_reports_always": "Always send",
@@ -691,6 +1204,21 @@
   "crash_report_browser_unavailable": "Couldn't open your browser. Try again.",
   "crash_report_not_sent": "Couldn't send the report. Try again.",
   "advanced_title": "Advanced",
+  "animations_title": "Animations",
+  "animations_intro": "All four are on until you turn them off. Each switch works at once; with one off, those things appear and go without moving.",
+  "animations_navigation": "Navigation",
+  "animations_navigation_help": "Screens slide in and out, and the tab bar's highlight moves.",
+  "animations_navigation_help_desktop": "Pages change with a short fade, and the sidebar's highlight moves.",
+  "animations_sheets": "Sheets and menus",
+  "animations_sheets_help": "Sheets, menus, dialogs and toasts slide or grow into place.",
+  "animations_reader": "Reader controls",
+  "animations_reader_help": "The reader's bars and its sheets slide and fade.",
+  "animations_reader_help_desktop": "The reader's bars, Reading settings and Jump to a book slide and fade.",
+  "animations_loading": "Loading and progress",
+  "animations_loading_help": "Placeholders pulse and progress bars fill smoothly. Spinners always turn, at half speed with this off.",
+  "animations_reduce_motion": "Reduce motion in your phone's settings already turns slides and springs into fades or nothing everywhere, whatever you choose here.",
+  "animations_reduce_motion_desktop": "Reduce motion in your computer's settings already turns slides and springs into fades or nothing everywhere, whatever you choose here.",
+  "animations_page_turns": "Page turns are set in Reading settings.",
   "advanced_summary": "Development build",
   "advanced_note_title": "Development build",
   "advanced_note_body": "These tools are only in development builds and never ship.",
@@ -712,27 +1240,27 @@
   "search_title": "Search",
   "search_open": "Search",
   "search_library_field": "Search the library",
-  "search_library_placeholder": "Search",
+  "search_library_placeholder": "Search the library",
   "search_field": "Search your library",
   "search_clear": "Clear",
-  "search_cancel": "Cancel",
-  "search_close": "Close",
+  "search_back": "Back to the library",
   "search_escape_key": "Esc",
-  "search_by": "Search by",
+  "search_by": "You can search for",
   "search_by_title": "Title or series",
-  "search_by_title_example": "Any part of a series' name",
-  "search_type_to_filter": "Type to filter",
+  "search_by_title_example": "harbour",
+  "search_type_to_filter": "Type a filter to narrow",
+  "search_filter_example": "For example, “{unread} harbour” finds unread series with harbour in the title.",
   "search_word_unread": "unread",
   "search_word_started": "started",
   "search_word_finished": "finished",
-  "search_word_becomes_unread": "→ only unread",
-  "search_word_becomes_started": "→ only started",
-  "search_word_becomes_finished": "→ only finished",
-  "search_show": "Show",
   "search_everything": "Everything",
   "search_remove_condition": "Remove the {condition} filter",
   "search_conditions": "Filters",
-  "search_series_heading": "Series · {count}",
+  "search_series_heading": "Series and books · {count}",
+  "search_scope": "Search in",
+  "search_scope_manga": "Manga",
+  "search_scope_books": "Books",
+  "search_matched_title": "Title",
   "search_results": "Series found",
   "search_found": [
     {
@@ -750,19 +1278,51 @@
   ],
   "search_nothing_called": "Nothing called “{text}”",
   "search_nothing_hint": "Check the spelling, or search for part of a title.",
+  "search_nothing_matches": "Nothing matches “{text}”",
+  "search_did_you_mean": "Did you mean {suggestion}?",
+  "search_chapter_title_in": "It’s a chapter title in {series}.",
+  "search_your_sources": "Search your sources",
+  "search_sources_coming": "Coming with Browse.",
   "search_failed": "Couldn't search your library. Try again.",
   "search_key_move": "↑ ↓ to move",
   "search_key_open": "Enter to open",
   "search_key_next_group": "Tab for the next group",
   "search_key_quick_open": "{shortcut} for quick open, anywhere",
   "quick_open_title": "Quick open",
+  "app_shortcuts_title": "Keyboard shortcuts",
+  "app_shortcuts_reader_note": "The reader has its own; press ? there to see them.",
+  "app_shortcuts_everywhere": "Everywhere",
+  "app_shortcuts_search": "Search the library",
+  "app_shortcuts_going_back": "Going back",
+  "app_shortcuts_back": "Back",
+  "app_shortcuts_close": "Close a dialog or panel",
+  "app_shortcuts_open_series": "Open the series",
+  "app_shortcuts_select_all": "Select all",
+  "app_shortcuts_dismiss": "Close keyboard shortcuts",
+  "app_key_enter": "Enter",
+  "app_shortcuts_move_covers": "Move between covers",
+  "app_shortcuts_select": "Select",
+  "app_shortcuts_move_tab": "Move a tab",
+  "app_key_alt_up": "Alt ↑",
+  "app_key_alt_down": "Alt ↓",
   "quick_open_field": "Search or go to a page",
   "quick_open_results": "Results",
-  "quick_open_series": "Series",
-  "quick_open_places": "Go to",
+  "quick_open_series": "Series and books",
+  "quick_open_continue": "Continue reading",
+  "quick_open_recent": "Recent",
+  "quick_open_actions": "Actions",
+  "quick_open_resume": "{book}, page {page}",
+  "quick_open_enter_continues": "Enter continues",
+  "quick_open_show_unread": "Show unread",
+  "quick_open_library_filter": "Library filter",
+  "quick_open_search_for": "Search the library for “{text}”",
+  "quick_open_search_page": "Search page",
+  "quick_open_recent_search": "Search",
   "quick_open_anywhere": "{shortcut} from anywhere",
   "quick_open_shortcut": "Ctrl K",
   "quick_open_shortcut_mac": "⌘ K",
+  "search_shortcut": "Ctrl F",
+  "search_shortcut_mac": "⌘ F",
   "series_back": "Library",
   "series_back_label": "Back to the library",
   "series_breadcrumb": "Breadcrumb",
@@ -796,8 +1356,52 @@
     }
   ],
   "series_continue": "Continue {title}",
-  "series_start": "Start with {title}",
-  "series_all_read": "You've read every book in this series",
+  "series_start": "Start {title}",
+  "series_continue_short": "Continue",
+  "series_all_read": "You’ve read every book in this series",
+  "series_all_read_body": "New books in its folder show up here.",
+  "series_card_continue": "Continue",
+  "series_card_up_next": "Up next",
+  "series_continue_where": [
+    {
+      "declarations": [
+        "input title",
+        "input page",
+        "input pages",
+        "local formattedPage = page: number",
+        "local formattedPages = pages: number"
+      ],
+      "match": {
+        "*": "{title}, page {formattedPage} of {formattedPages}"
+      }
+    }
+  ],
+  "series_time_left": "{where} · about {time} left in the series",
+  "series_continue_where_unknown": [
+    {
+      "declarations": [
+        "input title",
+        "input page",
+        "local formattedPage = page: number"
+      ],
+      "match": {
+        "*": "{title}, page {formattedPage}"
+      }
+    }
+  ],
+  "series_up_next_where": [
+    {
+      "declarations": [
+        "input title",
+        "input pages",
+        "local formattedPages = pages: number"
+      ],
+      "match": {
+        "*": "{title} · {formattedPages} pages · unread"
+      }
+    }
+  ],
+  "series_up_next_where_unknown": "{title} · unread",
   "series_books_heading": [
     {
       "declarations": [
@@ -818,6 +1422,40 @@
   "series_show_all": "All",
   "series_show_unread": "Unread",
   "series_no_unread": "Every book in this series is read.",
+  "series_no_bookmarked": "No book in this series has a bookmark.",
+  "series_show_all_books": "Show all books",
+  "series_clear_search": "Clear the search",
+  "series_loading": "Loading the series",
+  "series_no_books": "No books in this series",
+  "series_no_books_count": "No books",
+  "series_related": "Also in your library",
+  "creator_series_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} series in your library",
+        "countPlural=other": "{formattedCount} series in your library"
+      }
+    }
+  ],
+  "creator_series_list": "Series by {name}",
+  "creator_empty": "No series by {name} in your library",
+  "creator_empty_body": "Their files may have moved or been removed. Nothing else in your library has changed.",
+  "creator_back_to": "Back to {title}",
+  "series_related_writer": "Same writer",
+  "series_related_artist": "Same artist",
+  "series_related_tag": "Same tag",
+  "series_related_not_started": "Not started",
+  "series_related_progress": "{percent} read",
+  "series_no_books_body": "Its folder is empty, or its books have moved. Rescan to look again. Nothing else in your library has changed.",
+  "series_rescan": "Rescan the folder",
+  "series_show_folder": "Show the folder",
+  "series_show_in_folder": "Show in folder",
   "series_no_match": "No book in this series matches “{search}”.",
   "series_find_book": "Find a book",
   "series_sort": "Sort: {order}",
@@ -838,10 +1476,75 @@
     }
   ],
   "series_book_read": "Read",
+  "series_book_read_pages": [
+    {
+      "declarations": [
+        "input pages",
+        "local pagesPlural = pages: plural",
+        "local formattedPages = pages: number"
+      ],
+      "selectors": ["pagesPlural"],
+      "match": {
+        "pagesPlural=one": "Read · {formattedPages} page",
+        "pagesPlural=other": "Read · {formattedPages} pages"
+      }
+    }
+  ],
+  "series_book_unread_pages": [
+    {
+      "declarations": [
+        "input pages",
+        "local pagesPlural = pages: plural",
+        "local formattedPages = pages: number"
+      ],
+      "selectors": ["pagesPlural"],
+      "match": {
+        "pagesPlural=one": "Unread · {formattedPages} page",
+        "pagesPlural=other": "Unread · {formattedPages} pages"
+      }
+    }
+  ],
+  "series_book_page_of": [
+    {
+      "declarations": [
+        "input page",
+        "input pages",
+        "local formattedPage = page: number",
+        "local formattedPages = pages: number"
+      ],
+      "match": {
+        "*": "Page {formattedPage} of {formattedPages}"
+      }
+    }
+  ],
+  "series_book_bookmarked": "Bookmarked",
+  "series_book_new": "New",
+  "series_column_pages": "Pages",
+  "series_show_bookmarked": "Bookmarked",
+  "series_read_and_bookmarked": [
+    {
+      "declarations": [
+        "input read",
+        "input bookmarked",
+        "local formattedRead = read: number",
+        "local formattedBookmarked = bookmarked: number"
+      ],
+      "match": {
+        "*": "{formattedRead} read · {formattedBookmarked} bookmarked"
+      }
+    }
+  ],
+  "series_read_only": [
+    {
+      "declarations": ["input read", "local formattedRead = read: number"],
+      "match": {
+        "*": "{formattedRead} read"
+      }
+    }
+  ],
   "series_select": "Select",
   "series_select_all": "Select all",
   "series_select_book": "Select {title}",
-  "series_select_range_hint": "Shift-click to select a range",
   "series_selected_count": [
     {
       "declarations": [
@@ -884,6 +1587,95 @@
   "series_marked_book_read": "Marked {title} read",
   "series_marked_book_unread": "Marked {title} unread",
   "series_mark_all_unread": "Mark all unread",
+  "series_about": "About this series",
+  "series_cover": "Cover of {title}",
+  "series_by": "By {names}",
+  "series_credit": "{role}: {name}",
+  "series_role_story": "Story",
+  "series_role_art": "Art",
+  "series_role_story_and_art": "Story and art",
+  "series_more_creators": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "+{formattedCount} more"
+      }
+    }
+  ],
+  "series_show_all_creators": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "Show all {formattedCount} creators in Details"
+      }
+    }
+  ],
+  "series_format_books": "{format} · {books}",
+  "series_summary_more": "More",
+  "series_summary_less": "Less",
+  "series_tags": "Tags",
+  "series_details": "Details",
+  "series_detail_title": "Title",
+  "series_detail_by": "By",
+  "series_detail_format": "Format",
+  "series_edit_details": "Edit details",
+  "edit_details_menu": "Edit details…",
+  "edit_details_intro": "Your changes show only in Omnileaf; the files stay as they are.",
+  "edit_details_for": "{series} · your changes show only in Omnileaf",
+  "edit_details_save": "Save",
+  "edit_details_close": "Close",
+  "edit_details_title": "Title",
+  "edit_details_people": "People",
+  "edit_details_tags": "Tags",
+  "edit_details_summary": "Summary",
+  "edit_details_edited": "Edited",
+  "edit_details_use_file_title": "Use the file’s title",
+  "edit_details_use_file_people": "Use the file’s people",
+  "edit_details_use_file_tags": "Use the file’s tags",
+  "edit_details_use_file_summary": "Use the file’s summary",
+  "edit_details_from_file": "From the file",
+  "edit_details_from_file_quoted": "From the file: “{value}”",
+  "edit_details_from_file_listed": "From the file: {values}",
+  "edit_details_file_title": "The file’s title",
+  "edit_details_title_left_empty": "Left empty, so the file’s title shows: “{value}”. Type to set your own.",
+  "edit_details_summary_left_empty": "Left empty, so the file’s summary shows. Type to set your own.",
+  "edit_details_person": "{role} · {name}",
+  "edit_details_remove_person": "Remove {name} as {role}",
+  "edit_details_remove_named": "Remove {name}",
+  "edit_details_show_all": "Show all {count}",
+  "edit_details_add_person": "Add a person",
+  "edit_details_add_tag": "Add a tag",
+  "edit_details_mark_adult": "Mark as 18+",
+  "edit_details_mark_adult_note": "The file has no age rating. Marked series follow Settings › Library › 18+ content.",
+  "edit_details_mark_adult_rated": "Rated 18+ in the file. To change that, turn off Use age ratings from book details in {link}.",
+  "edit_details_settings_library": "Settings › Library",
+  "edit_details_mark_adult_ratings_off": "The file rates it Adults Only 18+, but Use age ratings from book details is off in Settings › Library, so only this switch counts.",
+  "edit_details_title_back": "Title back to the file’s",
+  "edit_details_people_back": "People back to the file’s",
+  "edit_details_tags_back": "Tags back to the file’s",
+  "edit_details_summary_back": "Summary back to the file’s",
+  "edit_details_discard_title": "Discard your changes?",
+  "edit_details_discard_note": "The details stay as they were before you opened Edit details.",
+  "edit_details_keep_editing": "Keep editing",
+  "edit_details_discard": "Discard",
+  "edit_details_changed": "{fields} changed",
+  "edit_details_changed_title": "title",
+  "edit_details_changed_people": "people",
+  "edit_details_changed_tags": "tags",
+  "edit_details_changed_summary": "summary",
+  "edit_details_changed_adult_mark": "the 18+ mark",
+  "edit_details_saved": "Details saved",
+  "edit_details_saved_note": "Your changes show only in Omnileaf",
+  "series_show_the_folder": "Show the folder",
+  "series_reading_state": "Reading state: {state}",
+  "series_state_unread": "Unread",
+  "series_state_reading": "Reading",
+  "series_state_read": "Read",
+  "series_tags_for": "Tags for {title}",
+  "series_mark_series_read": "Mark {title} read",
+  "series_mark_series_unread": "Mark {title} unread",
+  "series_mark_every_read": "Mark every book read",
+  "series_mark_every_unread": "Mark every book unread",
   "series_mark_failed": "Couldn't mark those books. Try again.",
   "series_marked_read": [
     {
@@ -916,6 +1708,7 @@
   "reader_back_label": "Back to the library",
   "reader_back_to_series": "Back to {series}",
   "reader_breadcrumb": "Breadcrumb",
+  "settings_breadcrumb": "Breadcrumb",
   "reader_position": [
     {
       "declarations": [
@@ -954,8 +1747,264 @@
   "reader_light": "Light",
   "reader_keyboard_shortcuts": "Keyboard shortcuts",
   "reader_bookmark": "Bookmark this page",
+  "reader_bookmark_pages": "Bookmark these pages",
+  "reader_page_bookmarked": "Page {page} bookmarked",
+  "reader_pages_bookmarked": "Pages {first}–{last} bookmarked",
+  "reader_page_bookmark_removed": "Bookmark on page {page} removed",
+  "reader_pages_bookmark_removed": "Bookmarks on pages {first}–{last} removed",
+  "reader_bookmark_failed": "Couldn't keep the bookmark",
+  "reader_bookmark_failed_body": "Try again in a moment.",
+  "reader_settings": "Reading settings",
+  "reader_settings_close": "Close reading settings",
+  "reader_settings_done": "Done",
+  "reader_back_on_page": [
+    {
+      "declarations": [
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "Back on page {formattedPage} of {formattedCount}"
+      }
+    }
+  ],
+  "reader_full_screen_leave": "Press F or Esc to leave.",
+  "reader_reading_right_to_left": "Reading right to left",
+  "reader_found_in_details": "Found in its details",
+  "reader_change": "Change",
+  "reader_guide_tap_title": "Tap to turn pages",
+  "reader_guide_l_title": "Tap zones: L shape",
+  "reader_guide_l_body": "Left and top go back; right and bottom go forward. The middle shows the controls.",
+  "reader_guide_off_title": "Tap zones off",
+  "reader_guide_off_body": "Swipe to turn pages; a tap anywhere shows the controls.",
+  "reader_guide_off_zone": "Swipe to turn pages. A tap shows the controls.",
+  "reader_time_left": [
+    {
+      "declarations": [
+        "input minutes",
+        "local minutesPlural = minutes: plural",
+        "local formattedMinutes = minutes: number"
+      ],
+      "selectors": ["minutesPlural"],
+      "match": {
+        "minutesPlural=one": "About {formattedMinutes} min left in this chapter",
+        "minutesPlural=other": "About {formattedMinutes} min left in this chapter"
+      }
+    }
+  ],
+  "reader_time_left_short": "Less than a minute left in this chapter",
+  "reader_blank_page": "Page {page} of {count}",
+  "reader_pages_title": "Pages",
+  "reader_page_turn": "Page turn",
+  "reader_page_turn_instant": "Instant",
+  "reader_page_turn_slide": "Slide",
+  "reader_page_turn_help": "Slide follows your finger. With reduced motion a drag still follows it, then settles at once.",
+  "reader_screen_title": "Screen",
+  "reader_smart_features": "Smart features",
+  "reader_learn_speed": "Learn my reading speed",
+  "reader_learn_speed_help": "From your reading on this device; never leaves it.",
+  "reader_show_time_left": "Show time left",
+  "reader_show_time_left_help": "In the reader and on the series page.",
+  "reader_needs_learn_speed": "Needs Learn my reading speed.",
+  "reader_end_of_book": "End of a book",
+  "reader_reading_title": "Reading",
+  "reader_tap_to_scroll": "Tap to scroll",
+  "reader_tap_to_scroll_both": "Top and bottom",
+  "reader_tap_to_scroll_help": "The middle always shows the controls.",
+  "reader_long_strip": "Long strip",
+  "reader_direction_automatic_long_strip": "Automatic (long strip)",
+  "reader_choose_mode": "Choose the reading mode for each series",
+  "reader_choose_mode_help": "Reads a series’ details and its pages to pick paged or long strip.",
+  "reader_book_summary": "Book summary",
+  "reader_book_summary_help": "Time, pages and time per page on Up next and at the end of the series.",
+  "reader_page_previews": "Page previews while dragging the slider",
+  "reader_turn_all_off": "Turn all off",
+  "reader_strip_found_title": "Opened as a long strip",
+  "reader_strip_found_body": "Its pages are tall and never form spreads, so it reads best scrolling down. You can change it for this series.",
+  "reader_guide_strip_tap_title": "Tap to scroll",
+  "reader_guide_strip_tap_body": "Tap the top to scroll up and the bottom to scroll down. Tap the middle for the controls.",
+  "reader_guide_strip_click_title": "Click to scroll",
+  "reader_guide_strip_click_body": "Click the top to scroll up and the bottom to scroll down. Click the middle for the controls. The arrow keys and the wheel scroll too.",
+  "reader_auto_scroll": "Auto scroll",
+  "reader_start_auto_scroll": "Start auto scroll",
+  "reader_auto_scroll_your_pace": "Your pace",
+  "reader_auto_scroll_paused": "Paused",
+  "reader_tap_play": "Tap Play to resume",
+  "reader_space_pauses": "Space pauses",
+  "reader_space_resumes": "Space resumes",
+  "reader_auto_scroll_play": "Play",
+  "reader_auto_scroll_pause": "Pause",
+  "reader_auto_scroll_slower": "Slower",
+  "reader_auto_scroll_faster": "Faster",
+  "reader_auto_scroll_speed": "Speed",
+  "reader_auto_scroll_my_pace": "My pace",
+  "reader_auto_scroll_set_speed": "Set speed",
+  "reader_auto_scroll_help": "Keeps scrolling with reduced motion on, since you started it.",
+  "reader_auto_scroll_rate": "Pages a minute",
+  "reader_auto_scroll_rate_value": "Pages a minute: {count}",
+  "reader_pause_at_end": "Pause auto scroll at the end of a book",
+  "reader_auto_scroll_pace": "Auto scroll at my pace",
+  "reader_auto_scroll_pace_help": "Starts auto scroll at your own speed.",
+  "reader_pages_a_minute": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} page a minute",
+        "countPlural=other": "{formattedCount} pages a minute"
+      }
+    }
+  ],
+  "reader_about_pages_a_minute": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "About {formattedCount} page a minute",
+        "countPlural=other": "About {formattedCount} pages a minute"
+      }
+    }
+  ],
+  "reader_scroll_up": "Scroll up",
+  "reader_scroll_down": "Scroll down",
+  "reader_tap_zones": "Tap zones",
+  "reader_tap_zones_edges": "Edges",
+  "reader_tap_zones_l": "L shape",
+  "reader_tap_zones_off": "Off",
+  "reader_guide_tap_body": "Tap the right edge for the next page and the left edge to go back. Tap the middle to show the controls.",
+  "reader_guide_tap_body_rtl": "Tap the left edge for the next page and the right edge to go back. Tap the middle to show the controls.",
+  "reader_guide_click_title": "Click to turn pages",
+  "reader_guide_click_body": "Click the right third for the next page and the left third to go back. Click the middle to show the controls. → and Space work too.",
+  "reader_guide_click_body_rtl": "Click the left third for the next page and the right third to go back. Click the middle to show the controls. ← and Space work too.",
+  "reader_guide_done": "Got it",
+  "reader_shortcuts_close": "Close keyboard shortcuts",
+  "reader_jump_to_book": "Jump to a book",
+  "reader_jump_close": "Close Jump to a book",
+  "reader_jump_loading": "Loading the series' books",
+  "reader_jump_subtitle": [
+    {
+      "declarations": [
+        "input series",
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{series} · {formattedCount} book",
+        "countPlural=other": "{series} · {formattedCount} books"
+      }
+    }
+  ],
+  "reader_jump_reading": "Reading",
+  "reader_jump_file_missing": "File missing: moved or deleted",
+  "reader_jump_or_close": "Jump to a book, or close it",
+  "reader_shortcuts_typing": "While you type in a field, letter keys such as G type; Esc there clears the text first, then closes the panel.",
+  "reader_shortcuts_pause_auto_scroll": "Pause or resume auto scroll",
+  "reader_shortcuts_auto_scroll": "While auto scroll runs, Space pauses and resumes it instead of turning the page.",
+  "reader_shortcuts_turning": "Turning pages",
+  "reader_shortcuts_reader": "Reader",
+  "reader_shortcuts_zoom": "Zoom",
+  "reader_first_page": "First page",
+  "reader_last_page": "Last page",
+  "reader_toggle_controls": "Show or hide the controls",
+  "reader_leave_full_screen": "Leave full screen",
+  "reader_back_to_the_series": "Back to the series",
+  "reader_zoom_in": "Zoom in",
+  "reader_zoom_out": "Zoom out",
+  "reader_zoom_fit": "Fit the page",
+  "reader_shortcuts_escape": "Esc closes an open panel first, then leaves full screen, then goes back. The mouse's back button goes back too.",
+  "reader_shortcuts_reversed": "In right to left, ← turns to the next page and → goes back.",
+  "reader_key_space": "Space",
+  "reader_key_shift_space": "Shift Space",
+  "reader_key_page_down": "Page Down",
+  "reader_key_page_up": "Page Up",
+  "reader_key_home": "Home",
+  "reader_key_end": "End",
+  "reader_key_esc": "Esc",
+  "reader_key_back": "Alt ←",
+  "reader_key_back_mac": "⌘ [",
+  "reader_key_command": "Ctrl {key}",
+  "reader_key_command_mac": "⌘ {key}",
+  "reader_zoom_key_to_fit": "{percent} · {key} to fit",
+  "reader_zoom_tap_to_fit": "{percent} · Double-tap to fit",
+  "reader_position_pair": [
+    {
+      "declarations": [
+        "input first",
+        "input last",
+        "input count",
+        "local formattedFirst = first: number",
+        "local formattedLast = last: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "{formattedFirst}–{formattedLast} / {formattedCount}"
+      }
+    }
+  ],
+  "reader_applies_to_series": "Changes here apply to {series} only.",
+  "reader_applies_to_all": "Changes here apply to every series.",
+  "reader_apply_to": "Apply to",
+  "reader_this_series": "This series",
+  "reader_all_series": "All series",
+  "reader_mode": "Reading mode",
+  "reader_layout": "Page layout",
+  "reader_layout_automatic": "Automatic",
+  "reader_layout_one": "One",
+  "reader_layout_two": "Two",
+  "reader_layout_one_page": "One page",
+  "reader_layout_two_pages": "Two pages",
+  "reader_fit": "Fit",
+  "reader_fit_screen": "Screen",
+  "reader_fit_width": "Width",
+  "reader_fit_height_choice": "Height",
+  "reader_fit_zoom_hint": "Pinch or double-tap a page to zoom.",
+  "reader_background": "Background",
+  "reader_background_black": "Black",
+  "reader_background_grey": "Grey",
+  "reader_background_white": "White",
+  "reader_controls": "Controls",
+  "reader_controls_dark": "Dark",
+  "reader_controls_match": "Match the app",
+  "reader_light_title": "Light, for this reader only",
+  "reader_brightness": "Brightness",
+  "reader_warmth": "Warmth",
+  "reader_keep_screen_on": "Keep the screen on",
+  "reader_crop_borders": "Crop white borders",
+  "reader_more": "More",
+  "reader_mark_read": "Mark read",
+  "reader_start_over": "Start over",
+  "reader_show_file": "Show the file",
+  "reader_show_in_folder": "Show in folder",
+  "show_in_files": "Show in Files",
+  "show_in_finder": "Show in Finder",
+  "show_in_file_explorer": "Show in File Explorer",
+  "reader_book_at_page": [
+    {
+      "declarations": [
+        "input title",
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "{title} · Page {formattedPage} of {formattedCount}"
+      }
+    }
+  ],
   "reader_coming_soon": "{feature} · coming soon",
-  "reader_next_key": "→",
   "reader_finished": "{title} finished",
   "reader_marked_read": "Marked as read",
   "reader_marked_read_after": "Marked as read · {time}",
@@ -967,11 +2016,49 @@
   "reader_skip_this_screen": "Skip this screen",
   "reader_skip_this_screen_help": "Go straight on next time. Also in Settings › Reader.",
   "reader_turn_again": "Turn the page again to start {title}",
-  "reader_press_again": "Press → or Space again to start {title}, Esc to go back to the series.",
+  "reader_press_again": "Press {key} or Space again to start {title}, Esc to go back to the series.",
+  "reader_press_again_to_series": "Press {key} or Esc to go back to the series.",
+  "reader_turn_again_to_series": "Turn the page again to go back to the series",
+  "reader_series_finished": "You've read every book in this series",
+  "reader_series_finished_body": "When a new book lands in its folder, it shows up here.",
+  "reader_marked_read_in": "{series} · marked as read",
+  "reader_marked_read_in_after": "{series} · marked as read · {time}",
+  "reader_next_details": "{count} pages · {reading}",
+  "reader_stats_label": "Reading stats for {title}",
+  "reader_stat_reading": "reading",
+  "reader_stat_pages": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "page",
+        "countPlural=other": "pages"
+      }
+    }
+  ],
+  "reader_stat_a_page": "a page",
+  "reader_stat_seconds": [
+    {
+      "declarations": [
+        "input seconds",
+        "local formattedSeconds = seconds: number"
+      ],
+      "match": {
+        "*": "{formattedSeconds} s"
+      }
+    }
+  ],
+  "reader_unread_word": "unread",
+  "reader_started_word": "started",
+  "reader_read_word": "read",
   "reader_now_reading": "Now reading {title}",
   "reader_direction": "Reading direction",
   "reader_direction_automatic": "Automatic",
-  "reader_direction_auto": "Auto",
+  "reader_direction_auto": "AUTO",
+  "reader_direction_automatic_left_to_right": "Automatic (left to right)",
+  "reader_direction_automatic_right_to_left": "Automatic (right to left)",
+  "reader_direction_found": "Found in its details. Remembered for {series}.",
+  "reader_direction_remembered": "Remembered for {series}.",
   "reader_left_to_right": "Left to right",
   "reader_right_to_left": "Right to left",
   "reader_nearby_pages": "Nearby pages",
@@ -996,10 +2083,117 @@
     }
   ],
   "reader_page_failed": "This page couldn't be shown.",
+  "reader_damaged_title": "Part of {title} is damaged",
+  "reader_damaged_count": "{readable} of its {promised} pages can be read.",
+  "reader_damaged_ends_early": "Pages {first}–{last}: the archive ends early",
+  "reader_damaged_ends_early_body": "The file may not have finished copying. Copy it again to get every page. Nothing else in your library has changed.",
+  "reader_read_pages_that_work": "Read the {count} pages that work",
+  "reader_page_failed_body": "Page {page} may be damaged. The rest of {title} still opens.",
+  "reader_try_again": "Try again",
+  "reader_starting": "Starting {title}",
+  "reader_page_of": [
+    {
+      "declarations": [
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "Page {formattedPage} of {formattedCount}"
+      }
+    }
+  ],
   "reader_not_found": "This book isn't in your library",
   "reader_not_found_body": "It may have been removed, or the folder holding it taken out of the library.",
   "reader_unreadable": "This book couldn't be opened",
   "reader_unreadable_body": "Its file may have moved, or be damaged.",
   "reader_failed_title": "Something went wrong",
-  "reader_failed": "Couldn't open this book. Try again later."
+  "reader_failed": "Couldn't open this book. Try again later.",
+  "attention_title": "Needs attention",
+  "attention_drive_title": "{name} isn’t connected",
+  "attention_hidden_series": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} series hidden until it’s back",
+        "countPlural=other": "{formattedCount} series hidden until it’s back"
+      }
+    }
+  ],
+  "attention_shown_series": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} series can’t be opened until it’s back",
+        "countPlural=other": "{formattedCount} series can’t be opened until it’s back"
+      }
+    }
+  ],
+  "attention_find": "Find it",
+  "attention_count_label": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Needs attention: {formattedCount} thing",
+        "countPlural=other": "Needs attention: {formattedCount} things"
+      }
+    }
+  ],
+  "attention_things_to_fix": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} thing to fix",
+        "countPlural=other": "{formattedCount} things to fix"
+      }
+    }
+  ],
+  "screenshot_mode_turns_off_at": "Turns off at {time}",
+  "screenshot_mode_notice_keys": "{when} · {keys}",
+  "screenshot_mode_turn_off": "Turn off",
+  "storage_title": "Storage",
+  "storage_on_this_phone": "On this phone",
+  "storage_on_this_tablet": "On this tablet",
+  "storage_on_this_computer": "On this computer",
+  "storage_omnileaf": "Omnileaf {size}",
+  "storage_everything_else": "Everything else",
+  "storage_free": "{size} free",
+  "storage_space_used": "Space used",
+  "storage_free_of_total": "{free} free of {total}",
+  "storage_cached_pages": "Cached pages",
+  "storage_cached_pages_size": "{size} · rebuilt when you read again",
+  "storage_covers": "Covers",
+  "storage_clear": "Clear",
+  "storage_clear_label": "Clear {name}",
+  "storage_runs_low": "When space runs low, the oldest cached pages and covers go first. Your books and progress are never touched.",
+  "settings_summary_storage": "{size} used",
+  "attention_low_space_title": "Almost out of space",
+  "attention_space_left_phone": "{size} left on this phone",
+  "attention_space_left_tablet": "{size} left on this tablet",
+  "attention_space_left": "{size} left",
+  "attention_free_up_space": "Free up space",
+  "low_space_notice_phone": "{size} left on this phone. Omnileaf clears the oldest cached pages and covers first.",
+  "low_space_notice_tablet": "{size} left on this tablet. Omnileaf clears the oldest cached pages and covers first.",
+  "low_space_notice_computer": "{size} left on this computer. Omnileaf clears the oldest cached pages and covers first."
 }

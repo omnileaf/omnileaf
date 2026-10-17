@@ -13,14 +13,21 @@ const STEPS = [
     ],
     leaveWith: "Continue",
   },
-  { headings: ["Already have comics or books?"], leaveWith: "Continue" },
+  { headings: ["Already have comics or books?"], leaveWith: "Skip" },
   { headings: ["A few choices"], leaveWith: "Continue" },
-  { headings: ["You're all set"], leaveWith: "Open my library" },
+  {
+    headings: ["You're all set", "Your library is empty for now", "Found *"],
+    leaveWith: "Open my library",
+  },
 ] as const;
 
 function headingNamed(names: readonly string[]): Locator {
   const anyName = names
-    .map((name) => `normalize-space()="${name}"`)
+    .map((name) =>
+      name.endsWith("*")
+        ? `starts-with(normalize-space(), "${name.slice(0, -1)}")`
+        : `normalize-space()="${name}"`,
+    )
     .join(" or ");
   return xpath(`//h1[${anyName}]`);
 }
@@ -36,7 +43,7 @@ export async function finishFirstLaunchIfShown(
   for (const step of STEPS) {
     await session.waitFor(headingNamed(step.headings));
     const leave = xpath(
-      `//main//button[normalize-space()="${step.leaveWith}"]`,
+      `//main//button[starts-with(normalize-space(), "${step.leaveWith}")]`,
     );
     await (await session.waitFor(leave)).click();
   }

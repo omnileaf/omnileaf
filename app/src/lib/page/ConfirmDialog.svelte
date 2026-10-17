@@ -9,6 +9,9 @@
   import type { Glyph } from "./glyph";
   import HeaderBadge from "./HeaderBadge.svelte";
 
+  const DIALOG =
+    "inset-none m-auto flex flex-col gap-lg overflow-hidden rounded-panel border border-dialog-edge bg-dialog px-sheet-inline py-sheet-inline text-foreground fade-motion shadow-dialog block-fit inline-dialog max-block-dialog-limit max-inline-dialog-limit";
+
   let {
     isOpen,
     icon,
@@ -17,6 +20,7 @@
     cancelLabel,
     onConfirm,
     onCancel,
+    phoneLook = "sheet",
     children,
   }: {
     isOpen: boolean;
@@ -26,6 +30,7 @@
     cancelLabel: string;
     onConfirm: () => void;
     onCancel: () => void;
+    phoneLook?: "sheet" | "dialog";
     children: Snippet;
   } = $props();
 </script>
@@ -41,8 +46,11 @@
   }
 >
   <ModalContent
-    wideClass="inset-none m-auto flex flex-col gap-lg overflow-hidden rounded-panel border border-dialog-edge bg-card px-sheet-inline py-sheet-inline text-foreground fade-motion shadow-dialog block-fit inline-dialog max-block-dialog-limit max-inline-dialog-limit"
-    phoneClass="gap-lg rounded-ss-confirm-sheet rounded-se-confirm-sheet px-sheet-inline pbe-page-bottom max-block-dialog-limit"
+    wideClass={DIALOG}
+    phoneLook={phoneLook === "dialog" ? "dialog" : "drawer"}
+    phoneClass={phoneLook === "dialog"
+      ? DIALOG
+      : "gap-lg rounded-ss-confirm-sheet rounded-se-confirm-sheet px-sheet-inline pbe-page-bottom max-block-dialog-limit"}
     onDismiss={onCancel}
   >
     <div class="flex items-center gap-md">
@@ -53,12 +61,17 @@
         {title}
       </DialogTitle>
     </div>
-    <div class="flex flex-col gap-lg overflow-auto min-block-none">
+    <div class="-m-sm flex flex-col gap-lg overflow-auto p-sm min-block-none">
       <AlertDialog.Description class="flex flex-col gap-md">
         {@render children()}
       </AlertDialog.Description>
       <div
-        class="mbs-xs flex flex-col-reverse gap-sheet-buttons medium:grid medium:grid-cols-2 medium:gap-sm"
+        class={[
+          "mbs-xs windows:medium:rounded-ee-panel windows:medium:rounded-es-panel windows:medium:border-bs windows:medium:border-windows-stroke windows:medium:bg-windows-mica",
+          phoneLook === "dialog"
+            ? "grid grid-cols-2 gap-sm"
+            : "flex flex-col-reverse gap-sheet-buttons medium:grid medium:grid-cols-2 medium:gap-sm",
+        ]}
       >
         <Button type="button" look="confirm-cancel" onclick={onCancel}>
           {cancelLabel}

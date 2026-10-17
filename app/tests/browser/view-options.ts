@@ -7,7 +7,7 @@ export function viewOptionsButton(page: Page): Locator {
 }
 
 export function viewOptions(page: Page): Locator {
-  return page.getByRole("dialog", { name: "View" });
+  return page.getByRole("dialog", { name: "View options" });
 }
 
 export async function openViewOptions(page: Page): Promise<Locator> {
@@ -21,6 +21,7 @@ export async function choose(options: Locator, label: string): Promise<void> {
   await options
     .locator("label")
     .or(options.getByRole("radio"))
+    .or(options.getByRole("switch"))
     .filter({ hasText: label })
     .click();
 }

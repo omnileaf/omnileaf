@@ -24,7 +24,7 @@ const SECTIONS = [
   {
     label: "Library",
     path: "/",
-    startFrom: "/settings",
+    startFrom: "/browse",
     opensFirstSectionOnDesktop: false,
   },
   {
@@ -48,14 +48,15 @@ const SECTIONS = [
 ] as const;
 
 const OPENS_FIRST_SECTION =
-  "settings opens its first section in a desktop window from 600px";
+  "settings opens its first section in a desktop window from 840px";
 
 for (const { label, path, startFrom, opensFirstSectionOnDesktop } of SECTIONS) {
   test(`opens ${label} from the navigation and focuses its heading`, async ({
     page,
   }) => {
     test.skip(
-      opensFirstSectionOnDesktop && viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      opensFirstSectionOnDesktop &&
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
       OPENS_FIRST_SECTION,
     );
     await page.goto(startFrom);
@@ -79,7 +80,8 @@ for (const { label, path, startFrom, opensFirstSectionOnDesktop } of SECTIONS) {
     page,
   }) => {
     test.skip(
-      opensFirstSectionOnDesktop && viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      opensFirstSectionOnDesktop &&
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
       OPENS_FIRST_SECTION,
     );
     await page.goto(startFrom);
@@ -193,7 +195,7 @@ test("keeps Settings at the far end of the rail and the sidebar", async ({
 });
 
 for (const { platform, rowHeight, iconSize } of [
-  { platform: "linux", rowHeight: 40, iconSize: 20 },
+  { platform: "linux", rowHeight: 32, iconSize: 16 },
   { platform: "android", rowHeight: 48, iconSize: 22 },
 ] as const) {
   test.describe(`on ${platform}`, () => {

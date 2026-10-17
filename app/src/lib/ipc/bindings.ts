@@ -15,22 +15,50 @@ export const commands = {
 	unsupportedBooks: number,
 	unreadableFolders: number,
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder", { onProgress })),
+	linkLibraryFolder: (folder: string, onProgress: Channel<ScanProgress>) => typedError<FolderScan, IpcError>(__TAURI_INVOKE("link_library_folder", { folder, onProgress })),
 	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
 	watchBackSwipes: (onSwipe: Channel<BackSwipe>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_back_swipes", { onSwipe })),
 	allowBackSwipe: (edge: "left" | "right" | null) => typedError<null, IpcError>(__TAURI_INVOKE("allow_back_swipe", { edge })),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
 	librarySeries: (after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_series", { after, listing })),
 	librarySeriesCount: (filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("library_series_count", { filter })),
+	libraryCategories: () => typedError<LibraryCategory[], IpcError>(__TAURI_INVOKE("library_categories")),
+	libraryFilterChoices: () => typedError<LibraryFilterChoices, IpcError>(__TAURI_INVOKE("library_filter_choices")),
+	seriesLabels: (series: (string & { readonly __brand: "SeriesId" })[]) => typedError<SeriesLabels, IpcError>(__TAURI_INVOKE("series_labels", { series })),
+	labelSeries: (series: (string & { readonly __brand: "SeriesId" })[], changes: LabelChanges) => typedError<null, IpcError>(__TAURI_INVOKE("label_series", { series, changes })),
+	keepsDetailEdits: () => __TAURI_INVOKE<boolean>("keeps_detail_edits"),
+	seriesDetails: (series: string & { readonly __brand: "SeriesId" }) => typedError<SeriesDetails, IpcError>(__TAURI_INVOKE("series_details", { series })),
+	editSeriesDetails: (series: string & { readonly __brand: "SeriesId" }, edits: DetailEdits) => typedError<null, IpcError>(__TAURI_INVOKE("edit_series_details", { series, edits })),
+	libraryTags: () => typedError<LibraryTag[], IpcError>(__TAURI_INVOKE("library_tags")),
+	renameLibraryTag: (tag: string, to: string) => typedError<null, IpcError>(__TAURI_INVOKE("rename_library_tag", { tag, to })),
+	removeLibraryTag: (tag: string) => typedError<(string & { readonly __brand: "SeriesId" })[], IpcError>(__TAURI_INVOKE("remove_library_tag", { tag })),
+	categorySeries: (category: string & { readonly __brand: "CategoryId" }, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("category_series", { category, after, listing })),
+	categorySeriesCount: (category: string & { readonly __brand: "CategoryId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("category_series_count", { category, filter })),
+	folderSeries: (folder: string & { readonly __brand: "FolderId" }, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("folder_series", { folder, after, listing })),
+	folderSeriesCount: (folder: string & { readonly __brand: "FolderId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("folder_series_count", { folder, filter })),
 	librarySearch: (after: string & { readonly __brand: "SeriesCursor" } | null, search: LibrarySearch) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_search", { after, search })),
 	librarySearchCount: (search: LibrarySearch) => typedError<number, IpcError>(__TAURI_INVOKE("library_search_count", { search })),
 	seriesOverview: (id: string & { readonly __brand: "SeriesId" }) => typedError<SeriesOverview, IpcError>(__TAURI_INVOKE("series_overview", { id })),
 	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
+	creatorSeries: (creator: string) => __TAURI_INVOKE<CreatorSeries[]>("creator_series", { creator }),
+	bookmarkPages: (book: string & { readonly __brand: "BookId" }, pages: number[], isBookmarked: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("bookmark_pages", { book, pages, isBookmarked })),
+	bookPlace: (book: string & { readonly __brand: "BookId" }) => typedError<{
+	id: string & { readonly __brand: "BookId" },
+	title: string,
+	series: string & { readonly __brand: "SeriesId" },
+	seriesTitle: string,
+} | null, IpcError>(__TAURI_INVOKE("book_place", { book })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
+	markSeriesRead: (series: (string & { readonly __brand: "SeriesId" })[]) => typedError<(string & { readonly __brand: "BookId" })[], IpcError>(__TAURI_INVOKE("mark_series_read", { series })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
 	readingRestored: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("reading_restored", { id, page, utcOffset })),
 	pageShown: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("page_shown", { id, page, utcOffset })),
 	closeBook: (id: string & { readonly __brand: "BookId" }) => typedError<null, IpcError>(__TAURI_INVOKE("close_book", { id })),
 	readingHistory: (after: string & { readonly __brand: "HistoryCursor" } | null, of: HistoryOf) => typedError<HistoryPage, IpcError>(__TAURI_INVOKE("reading_history", { after, of })),
+	removeFromHistory: (book: string & { readonly __brand: "BookId" }) => typedError<number | null, IpcError>(__TAURI_INVOKE("remove_from_history", { book })),
+	restoreToHistory: (book: string & { readonly __brand: "BookId" }, mark: number | null) => typedError<null, IpcError>(__TAURI_INVOKE("restore_to_history", { book, mark })),
+	clearHistory: () => typedError<number | null, IpcError>(__TAURI_INVOKE("clear_history")),
+	restoreHistory: (mark: number | null) => typedError<null, IpcError>(__TAURI_INVOKE("restore_history", { mark })),
 	readingWeek: (weekStart: number, today: number) => typedError<ReadingWeek, IpcError>(__TAURI_INVOKE("reading_week", { weekStart, today })),
 	bookSessions: (id: string & { readonly __brand: "BookId" }) => typedError<{
 	sessions: number,
@@ -41,23 +69,62 @@ export const commands = {
 	historySeries: () => typedError<HistorySeries[], IpcError>(__TAURI_INVOKE("history_series")),
 	readingTimeBetween: (firstDay: number, lastDay: number) => typedError<number, IpcError>(__TAURI_INVOKE("reading_time_between", { firstDay, lastDay })),
 	bookReadTime: (id: string & { readonly __brand: "BookId" }) => typedError<number, IpcError>(__TAURI_INVOKE("book_read_time", { id })),
+	readingSummary: (id: string & { readonly __brand: "BookId" }) => typedError<{
+	readSeconds: number,
+	/**  The book's length when it was last read. */
+	pageCount: number,
+	/**  The time spent spread over the pages read to, absent while no time is. */
+	secondsPerPage: number | null,
+} | null, IpcError>(__TAURI_INVOKE("reading_summary", { id })),
 	orientScreen: (orientation: ScreenOrientation) => typedError<null, IpcError>(__TAURI_INVOKE("orient_screen", { orientation })),
 	changeFullScreen: (change: FullScreenChange) => typedError<boolean, IpcError>(__TAURI_INVOKE("change_full_screen", { change })),
 	libraryListing: () => typedError<LibraryListing, IpcError>(__TAURI_INVOKE("library_listing")),
 	setLibraryListing: (listing: LibraryListing) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_listing", { listing })),
 	libraryView: () => typedError<LibraryView, IpcError>(__TAURI_INVOKE("library_view")),
 	setLibraryView: (view: LibraryView) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_view", { view })),
+	libraryAdultContent: () => typedError<AdultContent, IpcError>(__TAURI_INVOKE("library_adult_content")),
+	setLibraryAdultContent: (content: AdultContent) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_adult_content", { content })),
+	libraryTabs: () => typedError<LibraryTab[], IpcError>(__TAURI_INVOKE("library_tabs")),
+	setLibraryTabs: (tabs: LibraryTab[]) => typedError<null, IpcError>(__TAURI_INVOKE("set_library_tabs", { tabs })),
+	librarySpellingSuggestion: (text: string) => typedError<{
+	text: string,
+	/**  The series holding the chapter, when the text is a chapter title rather than a series'. */
+	chapterOf: string | null,
+} | null, IpcError>(__TAURI_INVOKE("library_spelling_suggestion", { text })),
+	missingLibraryFolders: () => typedError<MissingFolder[], IpcError>(__TAURI_INVOKE("missing_library_folders")),
+	libraryHiddenSeriesCount: () => typedError<number, IpcError>(__TAURI_INVOKE("library_hidden_series_count")),
+	showMissingLibraryFolder: (id: string & { readonly __brand: "FolderId" }, isShown: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("show_missing_library_folder", { id, isShown })),
+	relocateLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<{
+	id: string & { readonly __brand: "FolderId" },
+	name: string,
+	outcome: RescanOutcome,
+} | null, IpcError>(__TAURI_INVOKE("relocate_library_folder", { id, onProgress })),
+	signInToLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<SignInOutcome, IpcError>(__TAURI_INVOKE("sign_in_to_library_folder", { id })),
+	showSeriesInFolder: (series: string & { readonly __brand: "SeriesId" }) => typedError<null, IpcError>(__TAURI_INVOKE("show_series_in_folder", { series })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
 	libraryFolderBookCount: (id: string & { readonly __brand: "FolderId" }) => typedError<number, IpcError>(__TAURI_INVOKE("library_folder_book_count", { id })),
 	rescanLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<FolderRescan, IpcError>(__TAURI_INVOKE("rescan_library_folder", { id, onProgress })),
 	rescanLibraryFolders: () => typedError<FolderRescan[], IpcError>(__TAURI_INVOKE("rescan_library_folders")),
 	removeBooksOfEmptiedFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<BooksRemoval, IpcError>(__TAURI_INVOKE("remove_books_of_emptied_folder", { id })),
+	foundLibrary: () => __TAURI_INVOKE<{
+	series: number,
+	books: number,
+	/**  Crosses as a plain number, which holds every such date exactly. */
+	lastBackupAtMs: number,
+} | null>("found_library"),
 	firstLaunchFinished: () => typedError<boolean, IpcError>(__TAURI_INVOKE("first_launch_finished")),
 	finishFirstLaunch: () => typedError<null, IpcError>(__TAURI_INVOKE("finish_first_launch")),
 	setAppLanguage: (language: string) => typedError<null, IpcError>(__TAURI_INVOKE("set_app_language", { language })),
 	setScheduledRescans: (isOn: boolean) => __TAURI_INVOKE<void>("set_scheduled_rescans", { isOn }),
 	copyVersionDetails: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_version_details")),
 	openProjectLink: (link: ProjectLink) => typedError<null, IpcError>(__TAURI_INVOKE("open_project_link", { link })),
+	problemReport: () => typedError<ProblemReportPreview, IpcError>(__TAURI_INVOKE("problem_report")),
+	copyProblemReport: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_problem_report")),
+	sendProblemReport: (replyTo: string | null) => typedError<null, IpcError>(__TAURI_INVOKE("send_problem_report", { replyTo })),
+	copyProblemReportCode: (code: ReportCode) => typedError<null, IpcError>(__TAURI_INVOKE("copy_problem_report_code", { code })),
+	openProblemReportIssue: () => typedError<null, IpcError>(__TAURI_INVOKE("open_problem_report_issue")),
+	saveProblemReport: (today: number) => typedError<SavedProblemReport, IpcError>(__TAURI_INVOKE("save_problem_report", { today })),
+	showSavedProblemReport: () => typedError<null, IpcError>(__TAURI_INVOKE("show_saved_problem_report")),
 	offerSavedCrashReport: () => typedError<{
 	details: string,
 	origin: CrashOrigin,
@@ -66,6 +133,13 @@ export const commands = {
 	sendCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("send_crash_report")),
 	copyCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_crash_report")),
 	declineCrashReport: () => typedError<null, IpcError>(__TAURI_INVOKE("decline_crash_report")),
+	checkStorage: () => typedError<StorageUse, IpcError>(__TAURI_INVOKE("check_storage")),
+	clearCachedPages: () => typedError<null, IpcError>(__TAURI_INVOKE("clear_cached_pages")),
+	clearCovers: () => typedError<null, IpcError>(__TAURI_INVOKE("clear_covers")),
+	showTrayMenu: (menu: TrayMenu) => typedError<null, IpcError>(__TAURI_INVOKE("show_tray_menu", { menu })),
+	showIconActions: (menu: IconActionsMenu) => typedError<null, IpcError>(__TAURI_INVOKE("show_icon_actions", { menu })),
+	watchIconActions: (onChosen: Channel<IconAction>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_icon_actions", { onChosen })),
+	openSystemSettings: () => typedError<null, IpcError>(__TAURI_INVOKE("open_system_settings")),
 	panicInCore: () => typedError<null, IpcError>(__TAURI_INVOKE("panic_in_core")),
 	crashAndQuit: () => typedError<null, IpcError>(__TAURI_INVOKE("crash_and_quit")),
 };
@@ -74,18 +148,31 @@ export const commands = {
 export const events = {
 	libraryChanged: makeEvent<LibraryChanged>("library-changed"),
 	readingSaved: makeEvent<ReadingSaved>("reading-saved"),
+	trayItemChosen: makeEvent<TrayItemChosen>("tray-item-chosen"),
 };
 
 /* Constants */
 export const COVERS_PER_ROW = {"desktop":{"fewest":4,"most":12},"phone":{"fewest":2,"most":5},"tablet":{"fewest":3,"most":8}} as const;
 
-export const DEFAULT_LIBRARY_LISTING = {"filter":{"finished":"any","started":"any","unread":"any"},"sort":{"by":"title","direction":"ascending"}} as const;
+export const DEFAULT_LIBRARY_LISTING = {"filter":{"adult":"any","bookmarked":"any","finished":"any","formats":[],"languages":[],"smart":[],"started":"any","tags":[],"unread":"any"},"sort":{"by":"title","direction":"ascending"}} as const;
 
-export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsContinueRow":false,"showsItemCounts":false} as const;
+export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","fitsCoversToWidth":true,"groupBy":"none","onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsCategoryTabs":true,"showsContinueRow":false,"showsItemCounts":true} as const;
 
 export const SEARCH_MAX_CHARS = 200 as const;
 
 /* Types */
+/**  How the library treats series that count as 18+, and whether an adult age rating in their details makes them count. */
+export type AdultContent = {
+	treatment: AdultTreatment,
+	countsAgeRatings: boolean,
+};
+
+export type AdultTreatment = "show" | 
+/**  Blurs their covers until each is shown. */
+"blur" | 
+/**  Leaves them out of the library, its counts and search. */
+"hide";
+
 export type AppInfo = {
 	version: string,
 	platform: Platform,
@@ -95,11 +182,25 @@ export type AppInfo = {
 
 export type BackSwipe = { kind: "moved"; progress: number | null } | { kind: "released"; progress: number | null; velocity: number | null } | { kind: "cancelled" };
 
+/**  What's wrong with a book that opens with fewer pages than its file promises, the pages past the last one in `pages` being the ones lost. */
+export type BookDamage = {
+	promisedPages: number,
+	cause: DamageCause,
+};
+
 export type BookPage = {
 	path: string & { readonly __brand: "PagePath" },
 	thumbnail: string & { readonly __brand: "PageThumbnailPath" },
 	/**  Absent when the page's image header couldn't be read, or wasn't yet for a page far from where the book opened the first time. */
 	size: PageDimensions | null,
+};
+
+/**  Where a book sits, found without opening its file, so a book that won't open still names its way back. */
+export type BookPlace = {
+	id: string & { readonly __brand: "BookId" },
+	title: string,
+	series: string & { readonly __brand: "SeriesId" },
+	seriesTitle: string,
 };
 
 export type BookReading = { state: "notStarted" } | 
@@ -115,7 +216,13 @@ export type BookSessions = {
 
 export type BooksRemoval = { kind: "removed"; books: number } | { kind: "kept" };
 
-export type BooksShown = "all" | "unread";
+export type BooksShown = "all" | "unread" | "bookmarked";
+
+/**  How many of the series asked about are in the category. */
+export type CategoryHeld = {
+	category: LibraryCategory,
+	holding: number,
+};
 
 export type CoversPerRow = {
 	phone: number,
@@ -128,6 +235,46 @@ export type CrashOrigin = "panic" | "interface";
 export type CrashReportOffer = {
 	details: string,
 	origin: CrashOrigin,
+};
+
+export type CreatorRole = "story" | "art" | "storyAndArt";
+
+export type CreatorSeries = {
+	id: string & { readonly __brand: "SeriesId" },
+	title: string,
+	cover: string & { readonly __brand: "CoverPath" } | null,
+	role: CreatorRole | null,
+};
+
+export type DamageCause = "archiveEndsEarly";
+
+/**  The details to keep over a series' files; an absent field goes back to the file's. */
+export type DetailEdits = {
+	title: string | null,
+	people: SeriesPerson[] | null,
+	tags: string[] | null,
+	summary: string | null,
+	isMarkedAdult: boolean,
+};
+
+export type EditedPeople = {
+	fromFile: SeriesPerson[],
+	edited: SeriesPerson[] | null,
+};
+
+export type EditedSummary = {
+	fromFile: string | null,
+	edited: string | null,
+};
+
+export type EditedTags = {
+	fromFile: string[],
+	edited: string[] | null,
+};
+
+export type EditedTitle = {
+	fromFile: string,
+	edited: string | null,
 };
 
 export type FileChanges = {
@@ -147,6 +294,8 @@ export type FolderPage = {
 	next: string & { readonly __brand: "FolderCursor" } | null,
 };
 
+export type FolderProblem = { kind: "missing" } | { kind: "driveDisconnected" } | { kind: "lostAccess" } | { kind: "needsSignIn"; share: NetworkShare } | { kind: "needsMounting"; share: NetworkShare } | { kind: "shareUnreachable"; share: NetworkShare };
+
 export type FolderRescan = {
 	id: string & { readonly __brand: "FolderId" },
 	name: string,
@@ -160,6 +309,13 @@ export type FolderScan = {
 	unreadableBooks: number,
 	unsupportedBooks: number,
 	unreadableFolders: number,
+};
+
+export type FoundLibrary = {
+	series: number,
+	books: number,
+	/**  Crosses as a plain number, which holds every such date exactly. */
+	lastBackupAtMs: number,
 };
 
 export type FullScreenChange = "toggle" | "leave";
@@ -182,10 +338,15 @@ export type HistoryEntry = {
 	day: ReadingDay,
 };
 
+/**  What a book, or the whole of History, was hidden behind before a change, so Undo can put it back; it crosses as a plain number of milliseconds. */
+export type HistoryMark = number;
+
 /**  Which reading sessions a page of History lists. */
 export type HistoryOf = { kind: "everything" } | { kind: "series"; series: string & { readonly __brand: "SeriesId" } } | { kind: "book"; book: string & { readonly __brand: "BookId" } } | 
 /**  The latest session of each book started and not finished, for the library's Continue reading row. */
-{ kind: "unfinished" };
+{ kind: "unfinished" } | 
+/**  The latest session of each book read since History was cleared or the book removed from it, whose series or book title holds `matching` when it isn't empty. */
+{ kind: "books"; matching: string };
 
 export type HistoryPage = {
 	entries: HistoryEntry[],
@@ -195,6 +356,16 @@ export type HistoryPage = {
 export type HistorySeries = {
 	id: string & { readonly __brand: "SeriesId" },
 	title: string,
+};
+
+export type IconAction = "screenshotMode" | "continueReading" | "searchLibrary";
+
+export type IconActionsMenu = {
+	screenshotMode: string,
+	screenshotModeState: string,
+	screenshotModeWithState: string,
+	continueReading: string,
+	searchLibrary: string,
 };
 
 export type Inclusion = "any" | "only" | "hide";
@@ -209,7 +380,20 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "reportsNotSent" | "internal";
+
+export type LabelChanges = {
+	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],
+	categoriesRemoved: (string & { readonly __brand: "CategoryId" })[],
+	categoriesCreated: string[],
+	tagsAdded: string[],
+	tagsRemoved: string[],
+};
+
+export type LibraryCategory = {
+	id: string & { readonly __brand: "CategoryId" },
+	name: string,
+};
 
 export type LibraryChanged = null;
 
@@ -222,6 +406,27 @@ export type LibraryFilter = {
 	started: Inclusion,
 	/**  Has every book marked read. */
 	finished: Inclusion,
+	/**  Is one of these formats, or any format when empty. */
+	formats: SeriesFormat[],
+	/**  Is in one of these languages, or any language when empty. */
+	languages: string[],
+	/**  Carries one of these tags, or any tag when empty. */
+	tags: string[],
+	/**  Has an adult age rating, or is marked adult by hand. */
+	adult: Inclusion,
+	/**  Has a bookmarked page. */
+	bookmarked: Inclusion,
+	/**  Meets every one of these smart filters. */
+	smart: SmartFilter[],
+};
+
+export type LibraryFilterChoices = {
+	formats: SeriesFormat[],
+	languages: string[],
+	tags: string[],
+	ratesAdult: boolean,
+	keepsBookmarks: boolean,
+	smart: SmartFilter[],
 };
 
 export type LibraryFolder = {
@@ -231,6 +436,8 @@ export type LibraryFolder = {
 	location: string,
 	isAvailable: boolean,
 };
+
+export type LibraryGrouping = "none" | "category" | "folder";
 
 export type LibraryListing = {
 	sort: LibrarySort,
@@ -251,6 +458,14 @@ export type LibrarySeries = {
 	bookCount: number,
 	unreadCount: number,
 	cover: string & { readonly __brand: "CoverPath" } | null,
+	/**  The language the books' details name, absent until the library reads them. */
+	language: string | null,
+	/**  Holds chapters downloaded from a source, which a local library never does. */
+	hasDownloads: boolean,
+	/**  The book Continue opens, absent until the library works it out for its list. */
+	continuesFrom: string & { readonly __brand: "BookId" } | null,
+	/**  Counts as 18+, which a library that reads no age ratings and keeps no marks never does. */
+	isAdult: boolean,
 };
 
 export type LibrarySort = {
@@ -258,15 +473,48 @@ export type LibrarySort = {
 	direction: SortDirection,
 };
 
-export type LibrarySortBy = "title" | "dateAdded";
+export type LibrarySortBy = "title" | "dateAdded" | "lastRead" | "lastUpdated" | "unreadCount" | "timeLeft";
+
+export type LibraryTab = {
+	id: LibraryTabId,
+	/**  Hiding a tab never removes a series. */
+	isHidden: boolean,
+};
+
+export type LibraryTabId = { kind: "all" } | 
+/**  Lists the series with chapters from a source not read yet, which a local library never has. */
+{ kind: "newChapters" } | { kind: "category"; id: string & { readonly __brand: "CategoryId" } };
+
+/**  A tag the library keeps, and how many series carry it. */
+export type LibraryTag = {
+	name: string,
+	seriesCount: number,
+};
 
 export type LibraryView = {
 	display: LibraryDisplay,
 	coversPerRow: CoversPerRow,
+	/**  Draws as many covers a row as the width allows, rather than `covers_per_row`. */
+	fitsCoversToWidth: boolean,
+	groupBy: LibraryGrouping,
+	/**  Shows the library's categories as tabs above it, once it has two or more. */
+	showsCategoryTabs: boolean,
 	showsItemCounts: boolean,
 	/**  Shows the books started and not finished in a row above the library. */
 	showsContinueRow: boolean,
 	onCovers: OnCovers,
+};
+
+export type MissingFolder = {
+	folder: LibraryFolder,
+	problem: FolderProblem,
+	hiddenSeries: number,
+	isShownAnyway: boolean,
+};
+
+export type NetworkShare = {
+	server: string,
+	name: string,
 };
 
 export type OnCovers = {
@@ -293,6 +541,12 @@ export type OpenedBook = {
 	next: SeriesNeighbour | null,
 	/**  Absent when the book's details don't say which way it reads. */
 	readingDirection: ReadingDirection | null,
+	/**  Counting from 0; absent while the library keeps no bookmarks. */
+	bookmarkedPages: number[] | null,
+	/**  Absent while the library doesn't check a book's pages against what its file promises. */
+	damage: BookDamage | null,
+	/**  About how long a page takes to read, absent until the library has timed enough reading. */
+	secondsPerPage: number | null,
 };
 
 /**  In pixels. */
@@ -305,6 +559,13 @@ export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
 /**  A format the webview may be unable to show, which it tries before asking for pages, limited to the formats pages can be transcoded from. */
 export type ProbedFormat = "webp" | "jxl";
+
+export type ProblemReportPreview = {
+	code: ReportCode,
+	version: string,
+	system: string | null,
+	log: string[],
+};
 
 export type ProjectLink = "sourceCode" | "newIssue" | "latestRelease";
 
@@ -326,6 +587,15 @@ export type ReadingSaved = {
 	series: string & { readonly __brand: "SeriesId" },
 };
 
+/**  A book's reading added up for the summary at its end. */
+export type ReadingSummary = {
+	readSeconds: number,
+	/**  The book's length when it was last read. */
+	pageCount: number,
+	/**  The time spent spread over the pages read to, absent while no time is. */
+	secondsPerPage: number | null,
+};
+
 export type ReadingWeek = {
 	readSeconds: number,
 	booksOpened: number,
@@ -334,11 +604,33 @@ export type ReadingWeek = {
 	daysInARow: number,
 };
 
+export type RelatedReason = { kind: "sameWriter" } | { kind: "sameArtist" } | { kind: "sharedTag"; tag: string };
+
+export type RelatedSeries = {
+	id: string & { readonly __brand: "SeriesId" },
+	title: string,
+	cover: string & { readonly __brand: "CoverPath" } | null,
+	bookCount: number,
+	readCount: number,
+	reason: RelatedReason,
+	/**  Counts as 18+, which a library that reads no age ratings and keeps no marks never does. */
+	isAdult: boolean,
+};
+
+export type ReportCode = string;
+
 export type RescanOutcome = {
 	kind: "rescanned",
 } & FileChanges | { kind: "unreachable" } | { kind: "foundEmpty" };
 
-export type ScanProgress = { stage: "finding"; found: number } | { stage: "reading"; scanned: number; total: number };
+export type SavedPlace = { kind: "folder"; folder: string } | { kind: "appFiles" };
+
+export type SavedProblemReport = {
+	place: SavedPlace,
+	file: string,
+};
+
+export type ScanProgress = { stage: "adding"; name: string; location: string } | { stage: "finding"; found: number } | { stage: "reading"; scanned: number; total: number };
 
 export type ScreenOrientation = "followDevice" | 
 /**  Upright on phones and turning with the device on tablets, as the rest of the app is laid out. */
@@ -352,6 +644,13 @@ export type SeriesBook = {
 	/**  When the library first found the book, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly. */
 	addedAtMs: number,
 	reading: BookReading,
+	/**  Absent for a book found before the library counted pages as it scans, until the book is scanned again or opened. */
+	pageCount: number | null,
+	isBookmarked: boolean,
+	/**  Whether the library found the book since its series was last looked at. */
+	isNew: boolean,
+	/**  Whether the book's file was moved or deleted; never, while the library keeps no book without its file. */
+	isFileMissing: boolean,
 };
 
 export type SeriesBookListing = {
@@ -364,12 +663,43 @@ export type SeriesBookPage = {
 	next: string & { readonly __brand: "BookCursor" } | null,
 };
 
+export type SeriesCreator = {
+	name: string,
+	/**  Absent when the books' details name the creator without saying what they did. */
+	role: CreatorRole | null,
+	/**  How many series in the library name this creator, this one included. */
+	seriesCount: number,
+};
+
+/**  A series' details as its files give them, each with the edit kept over it, which is never written into the files. */
+export type SeriesDetails = {
+	title: EditedTitle,
+	people: EditedPeople,
+	tags: EditedTags,
+	summary: EditedSummary,
+	/**  Marked 18+ by hand, for a series whose files carry no age rating. */
+	isMarkedAdult: boolean,
+	/**  The files rate the series 18+, so the mark has nothing to add. */
+	isRatedAdult: boolean,
+};
+
+export type SeriesFormat = "comic" | "manga" | "book";
+
+export type SeriesLabels = {
+	keepsLabels: boolean,
+	categories: CategoryHeld[],
+	tags: TagHeld[],
+	suggestedTags: string[],
+};
+
 export type SeriesNeighbour = {
 	id: string & { readonly __brand: "BookId" },
 	title: string,
 	/**  The book's own cover, absent while it has no file. */
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	reading: BookReading,
+	/**  Absent until the library keeps how many pages each book has. */
+	pageCount: number | null,
 };
 
 export type SeriesOverview = {
@@ -377,10 +707,20 @@ export type SeriesOverview = {
 	title: string,
 	bookCount: number,
 	readCount: number,
+	bookmarkCount: number,
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	folder: string | null,
 	/**  The book reading goes on from, absent once every book is read. */
 	upNext: SeriesBook | null,
+	/**  The kind of book, such as manga or a light novel, absent until the library reads the books' details. */
+	format: string | null,
+	creators: SeriesCreator[],
+	summary: string | null,
+	tags: string[],
+	/**  Other series in the library that share a creator or a tag with this one. */
+	related: RelatedSeries[],
+	/**  About how long the books left take to read at the reading speed learned on this device, absent until the library times reading or while a book left has no page count. */
+	secondsLeft: number | null,
 };
 
 export type SeriesPage = {
@@ -388,14 +728,72 @@ export type SeriesPage = {
 	next: string & { readonly __brand: "SeriesCursor" } | null,
 };
 
-/**  Ascending lists titles from A to Z and series added earliest first. */
+export type SeriesPerson = {
+	name: string,
+	role: CreatorRole | null,
+};
+
+export type SignInOutcome = "signedIn" | "cancelled" | "failed";
+
+export type SmartFilter = 
+/**  Under 30 minutes left, at the reader's own reading speed. */
+"quickReads" | 
+/**  Not opened in three months. */
+"forgotten" | 
+/**  Holds the same book as another folder, even renamed. */
+"duplicates" | 
+/**  Downloaded and finished. */
+"readyToCleanUp";
+
+/**  Ascending lists titles from A to Z, series added, updated or read longest ago first with those never read before them, the fewest unread books first, and the fewest pages left first with those whose pages aren't all counted last. */
 export type SortDirection = "ascending" | "descending";
 
+/**  What a search that found nothing was likely meant to be. */
+export type SpellingSuggestion = {
+	text: string,
+	/**  The series holding the chapter, when the text is a chapter title rather than a series'. */
+	chapterOf: string | null,
+};
+
+/**  Byte counts cross as plain numbers, which hold the size of any disk exactly. */
+export type StorageUse = {
+	omnileafBytes: number,
+	cachedPagesBytes: number,
+	coversBytes: number,
+	freeBytes: number,
+	totalBytes: number,
+	isLow: boolean,
+};
+
 export type SwipeEdge = "left" | "right";
+
+/**  How many of the series asked about carry the tag. */
+export type TagHeld = {
+	tag: string,
+	holding: number,
+};
 
 export type Theme = "light" | "dark";
 
 export type ThemePreference = "system" | "light" | "dark";
+
+export type TrayItemChosen = "screenshotMode" | "continueReading";
+
+export type TrayMenu = {
+	open: string,
+	screenshotMode: string,
+	screenshotModeState: string,
+	isScreenshotModeOn: boolean,
+	screenshotModeShortcut: TrayShortcut,
+	continueReading: string,
+	hasBookToContinue: boolean,
+	quit: string,
+};
+
+export type TrayShortcut = {
+	letter: string,
+	shift: boolean,
+};
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

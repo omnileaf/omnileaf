@@ -38,10 +38,13 @@ const SENDING: CrashReportPrompt = { kind: "sending" };
 const SEND_OUTCOMES = {
   noCrashReport: undefined,
   browserUnavailable: "browserUnavailable",
+  fileManagerUnavailable: "notSent",
+  systemSettingsUnavailable: "notSent",
   folderPickerUnavailable: "notSent",
   folderChooserMissing: "notSent",
   folderUnreadable: "notSent",
   folderNotFound: "notSent",
+  folderAlreadyInLibrary: "notSent",
   homeFolderKept: "notSent",
   clipboardUnavailable: "notSent",
   crashReportUnavailable: "notSent",
@@ -51,6 +54,11 @@ const SEND_OUTCOMES = {
   cursorForAnotherList: "notSent",
   bookNotFound: "notSent",
   bookUnreadable: "notSent",
+  bookmarksNotKept: "notSent",
+  labelsNotKept: "notSent",
+  detailsNotKept: "notSent",
+  reportNotSaved: "notSent",
+  reportsNotSent: "notSent",
   internal: "notSent",
 } as const satisfies Record<IpcErrorCode, SendFailure | undefined>;
 

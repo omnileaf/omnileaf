@@ -3,7 +3,8 @@ import { afterEach, expect, test } from "vitest";
 import { shortcut } from "#lib/shortcut.ts";
 
 import { type ReaderAction, readerShortcuts } from "./reader-keys";
-import type { ReadingDirection } from "./reading-direction.svelte";
+import type { ReadingDirection, ReadingMode } from "./reading-direction.svelte";
+import type { Platform } from "#lib/ipc/bindings.ts";
 
 const detachments: (() => void)[] = [];
 
@@ -17,6 +18,8 @@ function actionsFor(
   presses: readonly KeyboardEventInit[],
   target: EventTarget = document.body,
   direction: ReadingDirection = "leftToRight",
+  platform: Platform = "linux",
+  mode: ReadingMode = "paged",
 ): ReaderAction[] {
   const actions: ReaderAction[] = [];
   detachments.push(
@@ -26,6 +29,9 @@ function actionsFor(
           actions.push(action);
         },
         () => direction,
+        platform,
+        mode,
+        false,
       ),
     )(window),
   );
@@ -115,7 +121,7 @@ test("leaves full screen, or else the book, with Escape", () => {
 test("leaves shortcuts held with another modifier and keys it has no use for alone", () => {
   const actions = actionsFor([
     { key: "ArrowRight", ctrlKey: true },
-    { key: "ArrowLeft", altKey: true },
+    { key: "ArrowRight", altKey: true },
     { key: "m", code: "KeyM", metaKey: true },
     { key: "f", code: "KeyF", ctrlKey: true },
     { key: "ArrowRight", shiftKey: true },
@@ -139,4 +145,137 @@ test("takes its keys on a focused slider unless the slider moves on them", () =>
 
   expect(actions).toEqual(["next", "fullScreen", "leave"]);
   slider.remove();
+});
+
+test("zooms in and out with Ctrl and plus or minus, and fits the page with Ctrl 0", () => {
+  const actions = actionsFor([
+    { key: "=", ctrlKey: true },
+    { key: "+", ctrlKey: true, shiftKey: true },
+    { key: "-", ctrlKey: true },
+    { key: "0", ctrlKey: true },
+  ]);
+
+  expect(actions).toEqual(["zoomIn", "zoomIn", "zoomOut", "zoomFit"]);
+});
+
+test("zooms with ⌘ rather than Ctrl on macOS", () => {
+  const actions = actionsFor(
+    [
+      { key: "=", ctrlKey: true },
+      { key: "=", metaKey: true },
+    ],
+    document.body,
+    "leftToRight",
+    "macos",
+  );
+
+  expect(actions).toEqual(["zoomIn"]);
+});
+
+test("opens the keyboard shortcuts with the question mark", () => {
+  const actions = actionsFor([{ key: "?", shiftKey: true }]);
+
+  expect(actions).toEqual(["shortcuts"]);
+});
+
+test("opens and closes Jump to a book with G", () => {
+  const actions = actionsFor([{ key: "g", code: "KeyG" }]);
+
+  expect(actions).toEqual(["jump"]);
+});
+
+test("leaves its keys to a field being typed in", () => {
+  const field = document.createElement("input");
+  field.type = "search";
+  document.body.append(field);
+
+  const actions = actionsFor(
+    [{ key: "g", code: "KeyG" }, { key: " ", code: "Space" }, { key: "m" }],
+    field,
+  );
+  field.remove();
+
+  expect(actions).toEqual([]);
+});
+
+test("goes back to the series with Alt and the left arrow, whichever way the book reads", () => {
+  const actions = actionsFor(
+    [{ key: "ArrowLeft", altKey: true }],
+    document.body,
+    "rightToLeft",
+  );
+
+  expect(actions).toEqual(["back"]);
+});
+
+test("goes back to the series with ⌘ [ on macOS, and not with Alt there", () => {
+  const actions = actionsFor(
+    [
+      { key: "[", metaKey: true },
+      { key: "ArrowLeft", altKey: true },
+    ],
+    document.body,
+    "leftToRight",
+    "macos",
+  );
+
+  expect(actions).toEqual(["back"]);
+});
+
+test("scrolls a long strip down with the down arrow and up with the up arrow", () => {
+  const actions = actionsFor(
+    [{ key: "ArrowDown" }, { key: "ArrowUp" }],
+    document.body,
+    "leftToRight",
+    "linux",
+    "longStrip",
+  );
+
+  expect(actions).toEqual(["next", "previous"]);
+});
+
+test("scrolls a long strip on with the right arrow whatever way its series reads", () => {
+  const actions = actionsFor(
+    [{ key: "ArrowRight" }, { key: "ArrowLeft" }],
+    document.body,
+    "rightToLeft",
+    "linux",
+    "longStrip",
+  );
+
+  expect(actions).toEqual(["next", "previous"]);
+});
+
+test("leaves the up and down arrows to the page while pages turn", () => {
+  const actions = actionsFor([{ key: "ArrowDown" }, { key: "ArrowUp" }]);
+
+  expect(actions).toEqual([]);
+});
+
+test("pauses or goes on with auto scroll on Space while it's on", () => {
+  const actions: ReaderAction[] = [];
+  detachments.push(
+    shortcut(
+      ...readerShortcuts(
+        (action) => {
+          actions.push(action);
+        },
+        () => "leftToRight",
+        "linux",
+        "longStrip",
+        true,
+      ),
+    )(window),
+  );
+
+  document.body.dispatchEvent(
+    new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      key: " ",
+      code: "Space",
+    }),
+  );
+
+  expect(actions).toEqual(["toggleAutoScroll"]);
 });

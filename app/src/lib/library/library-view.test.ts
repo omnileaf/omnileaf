@@ -7,16 +7,26 @@ import {
   withCoversPerRow,
   withDisplay,
   withItemCounts,
+  withFitsCoversToWidth,
   withOnCovers,
 } from "./library-view";
 
 const VIEW: LibraryView = {
   display: "grid",
   coversPerRow: { phone: 3, tablet: 5, desktop: 6 },
+  fitsCoversToWidth: false,
+  groupBy: "none",
+  showsCategoryTabs: true,
   showsItemCounts: false,
   showsContinueRow: false,
   onCovers: DEFAULT_LIBRARY_VIEW.onCovers,
 };
+
+test("fits the covers to the width, keeping each size's chosen count for later", () => {
+  const view = withFitsCoversToWidth(VIEW, true);
+
+  expect(view).toEqual({ ...VIEW, fitsCoversToWidth: true });
+});
 
 test("changes the covers per row of one size and leaves the others", () => {
   const view = withCoversPerRow(VIEW, "tablet", 7);
@@ -47,10 +57,10 @@ test("changes how the library is drawn and keeps the covers per row", () => {
 });
 
 test("turns the item counts on and off", () => {
-  const shown = withItemCounts(DEFAULT_LIBRARY_VIEW, true);
+  const shown = withItemCounts(VIEW, true);
 
   expect(shown.showsItemCounts).toBe(true);
-  expect(withItemCounts(shown, false)).toEqual(DEFAULT_LIBRARY_VIEW);
+  expect(withItemCounts(shown, false)).toEqual(VIEW);
 });
 
 test("turns the Continue reading row on and off", () => {

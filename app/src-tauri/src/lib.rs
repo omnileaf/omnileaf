@@ -8,20 +8,28 @@ mod folder_access;
 #[cfg(any(target_os = "linux", test))]
 mod folder_chooser;
 mod folder_picker;
+mod folder_share;
 mod folder_storage;
 #[cfg(desktop)]
 mod folder_watch;
 mod full_screen;
+mod icon_actions;
 mod ipc_error;
 mod library_events;
 mod library_problem;
 mod omni_protocol;
 mod power_mode;
+mod problem_reporting;
 mod put_away;
 mod runtime_config;
 mod scheduled_rescans;
 mod screen_orientation;
+mod share_sign_in;
+mod storage;
 mod system_bars;
+mod system_settings;
+mod system_sign_in;
+mod tray;
 #[cfg(target_os = "android")]
 mod tree_storage;
 mod version_details;
@@ -31,14 +39,20 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use omnileaf_engine::{Core, Library, LibraryFolders, ResourceRouter, SystemClock, describe_error};
+use omnileaf_engine::{
+    Core, Library, LibraryFolders, RecentLog, ResourceRouter, SystemClock, describe_error,
+};
 use tauri::{App, Manager};
+use tracing_subscriber::{
+    Layer, filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt,
+};
 
 use crate::{
     library_events::LibraryChangesForwarding,
     library_problem::{LibraryAtLaunch, LibraryProblem},
     runtime_config::RuntimeConfig,
     scheduled_rescans::ScheduledRescans,
+    storage::StoragePlaces,
 };
 
 const CACHE_FOLDER: &str = "cache";
@@ -49,11 +63,17 @@ const CACHE_FOLDER: &str = "cache";
     reason = "without its runtime the app has nothing to fall back to"
 )]
 pub fn run() {
-    tracing_subscriber::fmt::init();
+    let recent_log = RecentLog::default();
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer().with_filter(LevelFilter::INFO))
+        .with(recent_log.clone())
+        .init();
     let config = RuntimeConfig::from_environment();
     let commands = commands::builder();
     let app = tauri::Builder::default()
         .manage(Core::new())
+        .manage(recent_log)
+        .manage(problem_reporting::ShownProblemReport::default())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(
             tauri_plugin_opener::Builder::new()
@@ -85,12 +105,15 @@ pub fn run() {
         .plugin(omnileaf_folder_access::init())
         .plugin(system_bars::plugin())
         .plugin(power_mode::plugin())
-        .plugin(screen_orientation::plugin());
+        .plugin(screen_orientation::plugin())
+        .plugin(system_settings::plugin())
+        .plugin(icon_actions::plugin());
     #[cfg(target_os = "ios")]
     let app = app
         .plugin(omnileaf_folder_access::init())
         .plugin(omnileaf_system_bars::init())
-        .plugin(omnileaf_edge_swipe::init());
+        .plugin(omnileaf_edge_swipe::init())
+        .plugin(omnileaf_icon_actions::init());
     #[cfg(all(desktop, feature = "e2e"))]
     let app = app
         .manage(e2e::PickedFolder::from_environment())
@@ -105,6 +128,9 @@ pub fn run() {
 fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>> {
     let data_dir = config.data_dir.as_deref();
     let folders = library_folders(app, data_dir)?;
+    app.manage(StoragePlaces {
+        database_folder: folders.database.clone(),
+    });
     let library = tauri::async_runtime::block_on(Library::open(folders, SystemClock))?;
     #[cfg(target_os = "android")]
     let library = tree_storage::read_trees(app, library, data_dir);
@@ -118,6 +144,8 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     app.manage(folder_watch::FolderWatching::start(app, data_dir)?);
     #[cfg(target_os = "ios")]
     folder_access::reopen_picked_folders_in_background(app.handle().clone());
+    #[cfg(target_os = "macos")]
+    folder_share::remember_shares_in_background(app.handle().clone());
     match open_resources(app, data_dir) {
         Ok(covers) => {
             app.manage(covers);

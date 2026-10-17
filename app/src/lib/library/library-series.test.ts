@@ -1,13 +1,10 @@
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
 
-import {
-  commands,
-  DEFAULT_LIBRARY_LISTING,
-  type LibrarySeries,
-} from "#lib/ipc/bindings.ts";
+import { commands, type LibrarySeries } from "#lib/ipc/bindings.ts";
 
 import { librarySeriesList, type ListSeries } from "./library-series.svelte";
+import { NEW_LIBRARY_LISTING } from "./library-listing";
 
 type WireSeries = Omit<LibrarySeries, "id" | "cover"> & {
   readonly id: string;
@@ -27,6 +24,10 @@ const FIRST: WireSeries = {
   bookCount: 3,
   unreadCount: 3,
   cover: "thumb/v1/0190a3e4-0000-8000-8000-000000000001/1/1",
+  language: null,
+  hasDownloads: false,
+  isAdult: false,
+  continuesFrom: null,
 };
 const SECOND: WireSeries = {
   id: "0190a3e4-0000-8000-8000-0000000000a2",
@@ -34,10 +35,14 @@ const SECOND: WireSeries = {
   bookCount: 1,
   unreadCount: 1,
   cover: null,
+  language: null,
+  hasDownloads: false,
+  isAdult: false,
+  continuesFrom: null,
 };
 
 const listSeries: ListSeries = (after) =>
-  commands.librarySeries(after, DEFAULT_LIBRARY_LISTING);
+  commands.librarySeries(after, NEW_LIBRARY_LISTING);
 
 afterEach(() => {
   clearMocks();
@@ -50,6 +55,10 @@ function sampleSeries(count: number): WireSeries[] {
     bookCount: 1,
     unreadCount: 1,
     cover: null,
+    language: null,
+    hasDownloads: false,
+    isAdult: false,
+    continuesFrom: null,
   }));
 }
 

@@ -38,7 +38,6 @@ async function renderWith(...results: (OpenResult | Promise<OpenResult>)[]) {
   return {
     opened,
     sourceCode: page.getByRole("button", { name: /^Source code/ }),
-    report: page.getByRole("button", { name: /^Report a problem/ }),
     alert: page.getByRole("alert"),
   };
 }
@@ -51,17 +50,12 @@ test("shows where the source code lives", async () => {
     .toBeVisible();
 });
 
-test("says each project page opens in the browser", async () => {
-  const { sourceCode, report } = await renderWith();
+test("says the source code opens in the browser", async () => {
+  const { sourceCode } = await renderWith();
 
   await expect
     .element(sourceCode)
     .toHaveAccessibleName(`Source code ${SOURCE_CODE} Opens in your browser`);
-  await expect
-    .element(report)
-    .toHaveAccessibleName(
-      "Report a problem Opens GitHub. You'll need a GitHub account. Opens in your browser",
-    );
 });
 
 test("opens the source code through the backend", async () => {
@@ -72,18 +66,10 @@ test("opens the source code through the backend", async () => {
   await expect.poll(() => opened).toEqual(["sourceCode"]);
 });
 
-test("opens a new issue through the backend", async () => {
-  const { report, opened } = await renderWith(OPENED);
-
-  await report.click();
-
-  await expect.poll(() => opened).toEqual(["newIssue"]);
-});
-
 test("says the browser could not be opened", async () => {
-  const { report, alert } = await renderWith(NO_BROWSER);
+  const { sourceCode, alert } = await renderWith(NO_BROWSER);
 
-  await report.click();
+  await sourceCode.click();
 
   await expect
     .element(alert)
@@ -91,8 +77,8 @@ test("says the browser could not be opened", async () => {
 });
 
 test("clears the failure once a later link opens", async () => {
-  const { report, sourceCode, alert } = await renderWith(NO_BROWSER, OPENED);
-  await report.click();
+  const { sourceCode, alert } = await renderWith(NO_BROWSER, OPENED);
+  await sourceCode.click();
   await expect
     .element(alert)
     .toHaveTextContent("Couldn't open your browser. Try again.");
@@ -104,13 +90,13 @@ test("clears the failure once a later link opens", async () => {
 
 test("takes the failure down while it tries again, so a repeat is announced", async () => {
   const retry = Promise.withResolvers<OpenResult>();
-  const { report, alert } = await renderWith(NO_BROWSER, retry.promise);
-  await report.click();
+  const { sourceCode, alert } = await renderWith(NO_BROWSER, retry.promise);
+  await sourceCode.click();
   await expect
     .element(alert)
     .toHaveTextContent("Couldn't open your browser. Try again.");
 
-  await report.click();
+  await sourceCode.click();
 
   await expect.poll(() => alert.element().textContent.trim()).toBe("");
 });

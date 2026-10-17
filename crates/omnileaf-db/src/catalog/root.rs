@@ -24,6 +24,7 @@ const KIND_COLUMN: usize = 1;
 const LOCATOR_KIND_COLUMN: usize = 2;
 const ADDED_AT_COLUMN: usize = 7;
 const UNAVAILABLE_SINCE_COLUMN: usize = 8;
+const SHOWS_WHILE_MISSING_COLUMN: usize = 9;
 const BOOKS_FOUND_ONLY_IN_ROOT: &str = "DELETE FROM book
     WHERE id IN (SELECT book_id FROM book_file WHERE root_id = ?1)
         AND NOT EXISTS (
@@ -155,6 +156,8 @@ pub struct LibraryRoot {
     pub locator: RootLocator,
     pub added_at_ms: i64,
     pub unavailable_since_ms: Option<i64>,
+    /// Lists its series though it's missing, as asked, until it comes back.
+    pub shows_while_missing: bool,
 }
 
 #[tracing::instrument(skip_all, fields(kind = ?root.kind))]
@@ -256,6 +259,7 @@ pub(crate) fn stored_root(row: &Row<'_>) -> rusqlite::Result<LibraryRoot> {
         locator: stored_locator(row, LOCATOR_KIND_COLUMN)?,
         added_at_ms: row.get(ADDED_AT_COLUMN)?,
         unavailable_since_ms: row.get(UNAVAILABLE_SINCE_COLUMN)?,
+        shows_while_missing: row.get(SHOWS_WHILE_MISSING_COLUMN)?,
     })
 }
 

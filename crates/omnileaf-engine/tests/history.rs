@@ -18,8 +18,8 @@ use std::sync::{
 use books::write_book;
 use omnileaf_engine::{
     BookId, BookReading, BookSessions, Clock, FolderKind, HistoryEntry, HistoryOf, HistorySeries,
-    Library, LibraryListing, LocalDay, OpenedBook, ProbedFormat, ReadMark, ReadTo, ReadingWeek,
-    ResourceRouter, SeriesBookListing, UtcOffset,
+    Library, LibraryListing, LocalDay, OpenedBook, ProbedFormat, ReadMark, ReadTo, ReadingSummary,
+    ReadingWeek, ResourceRouter, SeriesBookListing, UtcOffset,
 };
 use support::{FixedClock, NOW_UNIX_MS, ScratchFolder};
 
@@ -339,6 +339,32 @@ async fn counts_the_time_spent_reading_a_book_with_the_reading_not_yet_saved() {
 }
 
 #[tokio::test]
+async fn sums_up_a_finished_book_with_the_reading_not_yet_saved() {
+    let shelf = Shelf::with_two_books("history-reading-summary").await;
+    let opened = shelf.restore(0).await;
+    shelf.clock.advance(2 * MINUTE_MS);
+    shelf.show(&opened, PAGE_COUNT - 1).await;
+    let other = shelf.book(1).await;
+
+    let summaries = [
+        shelf.library.reading_summary(opened.id).await.unwrap(),
+        shelf.library.reading_summary(other).await.unwrap(),
+    ];
+
+    assert_eq!(
+        summaries,
+        [
+            Some(ReadingSummary {
+                read_seconds: 120,
+                page_count: PAGE_COUNT,
+                seconds_per_page: Some(60),
+            }),
+            None
+        ]
+    );
+}
+
+#[tokio::test]
 async fn counts_the_time_read_between_two_days_in_books_no_longer_in_the_library_too() {
     let shelf = Shelf::with_two_books("history-between").await;
     let opened = shelf.restore(0).await;
@@ -578,4 +604,59 @@ async fn lists_the_books_started_and_not_finished_for_continuing() {
 
     let books: Vec<BookId> = page.entries.iter().map(|entry| entry.book).collect();
     assert_eq!(books, [started.id]);
+}
+
+async fn books_read(shelf: &Shelf) -> Vec<BookId> {
+    let of = HistoryOf::Books {
+        matching: String::new(),
+    };
+    shelf
+        .library
+        .history(None, of)
+        .await
+        .unwrap()
+        .entries
+        .iter()
+        .map(|entry| entry.book)
+        .collect()
+}
+
+async fn read_both_books(shelf: &Shelf) -> (BookId, BookId) {
+    let first = shelf.restore(0).await;
+    shelf.close(&first).await;
+    shelf.clock.advance(MINUTE_MS);
+    let second = shelf.restore(1).await;
+    shelf.close(&second).await;
+    shelf.clock.advance(MINUTE_MS);
+    (shelf.book(0).await, shelf.book(1).await)
+}
+
+#[tokio::test]
+async fn removes_a_book_from_history_and_puts_it_back_on_undo() {
+    let shelf = Shelf::with_two_books("history-remove").await;
+    let (first, second) = read_both_books(&shelf).await;
+
+    let mark = shelf.library.remove_from_history(first).await.unwrap();
+    let removed = books_read(&shelf).await;
+    shelf.library.restore_to_history(first, mark).await.unwrap();
+
+    assert_eq!(
+        (removed, books_read(&shelf).await),
+        (vec![second], vec![second, first])
+    );
+}
+
+#[tokio::test]
+async fn clears_history_and_puts_it_back_on_undo() {
+    let shelf = Shelf::with_two_books("history-clear").await;
+    let (first, second) = read_both_books(&shelf).await;
+
+    let mark = shelf.library.clear_history().await.unwrap();
+    let cleared = books_read(&shelf).await;
+    shelf.library.restore_history(mark).await.unwrap();
+
+    assert_eq!(
+        (cleared, books_read(&shelf).await),
+        (Vec::new(), vec![second, first])
+    );
 }

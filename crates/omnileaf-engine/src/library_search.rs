@@ -2,7 +2,8 @@ use omnileaf_db::{
     Connection,
     catalog::{
         Page, PageRequest, SearchText, SeriesFilter, SeriesListing, SeriesOrder, SeriesSearch,
-        SeriesSort, SeriesSummary, search_count, search_page, series_count, series_page,
+        SeriesSort, SeriesSummary, closest_title_words, search_count, search_page, series_count,
+        series_page,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -22,6 +23,30 @@ impl LibrarySearch {
     pub const MAX_CHARS: u16 = SearchText::MAX_CHARS;
 }
 
+/// What a search that found nothing was likely meant to be.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SpellingSuggestion {
+    pub text: String,
+    /// The series holding the chapter, when the text is a chapter title rather than a series'.
+    pub chapter_of: Option<String>,
+}
+
+pub(crate) fn spelling_suggestion(
+    connection: &Connection,
+    text: &str,
+) -> Result<Option<SpellingSuggestion>, omnileaf_db::Error> {
+    if text.chars().count() > usize::from(LibrarySearch::MAX_CHARS) {
+        return Ok(None);
+    }
+    Ok(
+        closest_title_words(connection, text)?.map(|text| SpellingSuggestion {
+            text,
+            chapter_of: None,
+        }),
+    )
+}
+
 pub(crate) enum StoredSearch {
     Text(SeriesSearch),
     Filter(SeriesFilter),
@@ -29,7 +54,7 @@ pub(crate) enum StoredSearch {
 
 impl StoredSearch {
     pub(crate) fn parse(search: &LibrarySearch) -> Result<Self, omnileaf_db::Error> {
-        let filter = SeriesFilter::from(search.filter);
+        let filter = SeriesFilter::from(&search.filter);
         Ok(match SearchText::parse(&search.text)? {
             Some(text) => Self::Text(SeriesSearch { text, filter }),
             None => Self::Filter(filter),

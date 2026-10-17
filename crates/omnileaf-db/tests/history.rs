@@ -24,8 +24,10 @@ use omnileaf_db::{
         remove_books_without_files,
     },
     history::{
-        BookSessions, HistoryEntry, HistoryOf, ReadingSince, book_reading_time, book_sessions,
-        days_in_a_row, history_page, reading_since, reading_time_by_day, series_read,
+        BookSessions, HistoryEntry, HistoryOf, ReadingSince, ReadingSummary, book_reading_time,
+        book_sessions, clear_history, days_in_a_row, hide_book_from_history, history_page,
+        reading_since, reading_summary, reading_time_by_day, restore_book_to_history,
+        restore_history, series_read,
     },
     store::{Continuity, SessionPlace, Store},
 };
@@ -102,6 +104,7 @@ impl History {
             .unwrap(),
             title: title_of(series, number),
             added_at_ms: ADDED_AT_MS,
+            page_count: 1,
             file: BookFile {
                 root: self.root,
                 location: location_of(series, number),
@@ -167,7 +170,7 @@ impl History {
         };
         self.store
             .database()
-            .read(move |connection| history_page(connection, of, &request))
+            .read(move |connection| history_page(connection, &of, &request))
             .await
     }
 
@@ -211,6 +214,51 @@ impl History {
             .read(move |connection| days_in_a_row(connection, today()))
             .await
             .unwrap()
+    }
+
+    async fn books_read(&self, matching: &str) -> Vec<BookId> {
+        let of = HistoryOf::Books {
+            matching: matching.to_owned(),
+        };
+        self.page_of(of, 50, None)
+            .await
+            .unwrap()
+            .items
+            .iter()
+            .map(|entry| entry.book)
+            .collect()
+    }
+
+    async fn hide(&self, book: BookId, at_ms: u64) -> Option<i64> {
+        self.store
+            .database()
+            .write(move |transaction| hide_book_from_history(transaction, book, ms(at_ms)))
+            .await
+            .unwrap()
+    }
+
+    async fn restore(&self, book: BookId, mark: Option<i64>) {
+        self.store
+            .database()
+            .write(move |transaction| restore_book_to_history(transaction, book, mark))
+            .await
+            .unwrap();
+    }
+
+    async fn clear(&self, at_ms: u64) -> Option<i64> {
+        self.store
+            .database()
+            .write(move |transaction| clear_history(transaction, ms(at_ms)))
+            .await
+            .unwrap()
+    }
+
+    async fn restore_cleared(&self, mark: Option<i64>) {
+        self.store
+            .database()
+            .write(move |transaction| restore_history(transaction, mark))
+            .await
+            .unwrap();
     }
 
     async fn read_days_ago(&self, number: u32, days_ago: u64) {
@@ -643,7 +691,10 @@ async fn pages_through_the_sessions_of_one_series_the_latest_first() {
     }
     let first_series = HistoryOf::Series(SeriesId::local(FIRST_SERIES).unwrap());
 
-    let first = history.page_of(first_series, 2, None).await.unwrap();
+    let first = history
+        .page_of(first_series.clone(), 2, None)
+        .await
+        .unwrap();
     let second = history
         .page_of(first_series, 2, first.next.clone())
         .await
@@ -724,6 +775,42 @@ async fn adds_up_a_book_s_sessions_with_the_days_it_was_first_and_last_read() {
 }
 
 #[tokio::test]
+async fn sums_up_a_book_s_reading_with_how_far_it_was_read_and_its_length() {
+    let history = History::open("history-reading-summary").await;
+    history
+        .read(book(2), NOW_UNIX_MS, NOW_UNIX_MS + 20 * MINUTE_MS, 7)
+        .await;
+    history
+        .read(
+            book(2),
+            NOW_UNIX_MS + HOUR_MS,
+            NOW_UNIX_MS + HOUR_MS + 5 * MINUTE_MS,
+            LAST_PAGE,
+        )
+        .await;
+
+    let summaries = [book(2), book(1)].map(|read| {
+        history
+            .store
+            .database()
+            .read(move |connection| reading_summary(connection, read))
+    });
+    let [read, unread] = summaries;
+
+    assert_eq!(
+        (read.await.unwrap(), unread.await.unwrap()),
+        (
+            Some(ReadingSummary {
+                read_ms: ms(25 * MINUTE_MS),
+                pages_reached: PAGE_COUNT,
+                page_count: PAGE_COUNT,
+            }),
+            None
+        )
+    );
+}
+
+#[tokio::test]
 async fn names_the_series_read_in_title_order() {
     let history = History::open("history-series-read").await;
     history.shelve("Sample Series 00", 5).await;
@@ -777,4 +864,145 @@ async fn pages_through_the_latest_session_of_each_book_started_and_not_finished(
         Some(ms(NOW_UNIX_MS - 3 * HOUR_MS))
     );
     assert_eq!(second.next, None);
+}
+
+#[tokio::test]
+async fn lists_each_book_read_once_at_its_latest_session_newest_first() {
+    let history = History::open("history-books").await;
+    history
+        .read(
+            book(1),
+            NOW_UNIX_MS - 3 * HOUR_MS,
+            NOW_UNIX_MS - 3 * HOUR_MS,
+            0,
+        )
+        .await;
+    history
+        .read(
+            book(4),
+            NOW_UNIX_MS - 2 * HOUR_MS,
+            NOW_UNIX_MS - 2 * HOUR_MS,
+            0,
+        )
+        .await;
+    history
+        .read(book(1), NOW_UNIX_MS - HOUR_MS, NOW_UNIX_MS - HOUR_MS, 4)
+        .await;
+
+    assert_eq!(history.books_read("").await, [book(1), book(4)]);
+}
+
+#[tokio::test]
+async fn leaves_out_a_book_removed_from_history_until_it_is_read_again() {
+    let history = History::open("history-books-removed").await;
+    history
+        .read(
+            book(1),
+            NOW_UNIX_MS - 2 * HOUR_MS,
+            NOW_UNIX_MS - 2 * HOUR_MS,
+            0,
+        )
+        .await;
+    history
+        .read(book(4), NOW_UNIX_MS - HOUR_MS, NOW_UNIX_MS - HOUR_MS, 0)
+        .await;
+
+    history.hide(book(1), NOW_UNIX_MS).await;
+    let removed = history.books_read("").await;
+    history
+        .read(book(1), NOW_UNIX_MS + MINUTE_MS, NOW_UNIX_MS + MINUTE_MS, 0)
+        .await;
+
+    assert_eq!(
+        (removed, history.books_read("").await),
+        (vec![book(4)], vec![book(1), book(4)])
+    );
+}
+
+#[tokio::test]
+async fn puts_a_book_removed_from_history_back_on_undo() {
+    let history = History::open("history-books-undo").await;
+    history
+        .read(
+            book(1),
+            NOW_UNIX_MS - 2 * HOUR_MS,
+            NOW_UNIX_MS - 2 * HOUR_MS,
+            0,
+        )
+        .await;
+    history
+        .read(book(4), NOW_UNIX_MS - HOUR_MS, NOW_UNIX_MS - HOUR_MS, 0)
+        .await;
+
+    let mark = history.hide(book(1), NOW_UNIX_MS).await;
+    history.restore(book(1), mark).await;
+
+    assert_eq!(history.books_read("").await, [book(4), book(1)]);
+}
+
+#[tokio::test]
+async fn leaves_out_all_read_before_history_was_cleared_and_puts_it_back_on_undo() {
+    let history = History::open("history-books-cleared").await;
+    history
+        .read(
+            book(1),
+            NOW_UNIX_MS - 2 * HOUR_MS,
+            NOW_UNIX_MS - 2 * HOUR_MS,
+            0,
+        )
+        .await;
+    history
+        .read(book(4), NOW_UNIX_MS - HOUR_MS, NOW_UNIX_MS - HOUR_MS, 0)
+        .await;
+
+    let mark = history.clear(NOW_UNIX_MS).await;
+    let cleared = history.books_read("").await;
+    history
+        .read(book(2), NOW_UNIX_MS + MINUTE_MS, NOW_UNIX_MS + MINUTE_MS, 0)
+        .await;
+    let after_clearing = history.books_read("").await;
+    history.restore_cleared(mark).await;
+
+    assert_eq!(
+        (cleared, after_clearing, history.books_read("").await),
+        (Vec::new(), vec![book(2)], vec![book(2), book(4), book(1)])
+    );
+}
+
+#[tokio::test]
+async fn finds_the_books_read_by_series_or_book_title() {
+    let history = History::open("history-books-found").await;
+    history
+        .read(
+            book(1),
+            NOW_UNIX_MS - 2 * HOUR_MS,
+            NOW_UNIX_MS - 2 * HOUR_MS,
+            0,
+        )
+        .await;
+    history
+        .read(book(4), NOW_UNIX_MS - HOUR_MS, NOW_UNIX_MS - HOUR_MS, 0)
+        .await;
+
+    assert_eq!(
+        [
+            history.books_read("series 02").await,
+            history.books_read("V01").await,
+            history.books_read("sample").await,
+        ],
+        [vec![book(4)], vec![book(1)], vec![book(4), book(1)]]
+    );
+}
+
+#[tokio::test]
+async fn keeps_every_session_in_the_other_lists_though_a_book_is_removed_from_history() {
+    let history = History::open("history-books-sessions-kept").await;
+    history
+        .read(book(1), NOW_UNIX_MS - HOUR_MS, NOW_UNIX_MS - HOUR_MS, 0)
+        .await;
+
+    history.hide(book(1), NOW_UNIX_MS).await;
+    history.clear(NOW_UNIX_MS).await;
+
+    assert_eq!(history.listed_books().await, [book(1)]);
 }

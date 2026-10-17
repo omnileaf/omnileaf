@@ -16,6 +16,16 @@ test("keeps every class of every look through the class merge", () => {
   expect(merged).toEqual(looks);
 });
 
+test("rings every look but the full-width row with the platform's focus ring", () => {
+  const looks = Object.keys(BUTTON_LOOKS) as ButtonLook[];
+
+  const ringless = looks.filter(
+    (look) => !classesOf(look).includes("focus-visible:focus-ring"),
+  );
+
+  expect(ringless).toEqual(["row"]);
+});
+
 test.each<[ButtonLook, string[]]>([
   ["text", ["font-semibold", "text-accent"]],
   [
@@ -27,15 +37,33 @@ test.each<[ButtonLook, string[]]>([
   ["outline", ["rounded-control", "border", "border-border", "bg-card"]],
   ["tinted", ["enabled:hover:tint-hover", "enabled:active:tint-pressed"]],
   ["icon", ["flex", "items-center", "justify-center", "rounded-full"]],
-  ["header-control", ["rounded-full", "large:rounded-control", "large:border"]],
+  [
+    "header-control",
+    ["rounded-full", "large:rounded-shadcn-button", "large:border"],
+  ],
   [
     "row-action",
-    ["rounded-full", "text-muted", "enabled:hover:before:bg-hover"],
+    [
+      "isolate",
+      "rounded-full",
+      "text-muted",
+      "before:z-behind",
+      "enabled:hover:before:bg-hover",
+    ],
   ],
   ["chip", ["rounded-full", "border-border", "hover:bg-hover"]],
   ["row", ["flex", "text-start", "hover:bg-hover", "active:bg-pressed"]],
   ["inverse", ["rounded-full", "bg-foreground", "text-card"]],
-  ["dismiss", ["rounded-full", "opacity-70", "hover:before:bg-hover"]],
+  [
+    "dismiss",
+    [
+      "isolate",
+      "rounded-full",
+      "opacity-70",
+      "before:z-behind",
+      "hover:before:bg-hover",
+    ],
+  ],
   [
     "bar-icon",
     ["rounded-control", "text-foreground", "enabled:hover:bg-hover"],

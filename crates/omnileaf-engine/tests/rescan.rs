@@ -135,6 +135,18 @@ fn rescanned(changes: FileChanges) -> RescanOutcome {
     RescanOutcome::Rescanned(changes)
 }
 
+/// Every series the library keeps with a book, listed or hidden while its folder is missing.
+fn kept_series(scanned: &Scanned) -> Vec<(String, u32)> {
+    scanned
+        .connection()
+        .prepare("SELECT title, book_count FROM series WHERE book_count > 0 ORDER BY title")
+        .unwrap()
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap()
+}
+
 #[tokio::test]
 async fn finds_nothing_changed_when_no_file_did() {
     let folder = Rescanned::new("rescan-unchanged").await;
@@ -447,7 +459,7 @@ async fn counts_a_new_book_it_cannot_open_yet_apart_from_damaged_ones() {
 }
 
 #[tokio::test]
-async fn keeps_every_book_of_a_folder_it_cannot_reach_and_marks_it_unavailable() {
+async fn keeps_every_book_of_a_folder_it_cannot_reach_hidden_and_marks_it_unavailable() {
     let folder = Rescanned::new("rescan-unreachable").await;
     let unplugged = folder.comics.path().with_extension("unplugged");
     fs::rename(folder.comics.path(), &unplugged).unwrap();
@@ -457,14 +469,14 @@ async fn keeps_every_book_of_a_folder_it_cannot_reach_and_marks_it_unavailable()
     fs::rename(&unplugged, folder.comics.path()).unwrap();
     assert_eq!(outcome, RescanOutcome::Unreachable);
     assert_eq!(
-        folder.scanned.series(),
-        owned(&[(SERIES_01, 2), (SERIES_02, 1)])
+        (kept_series(&folder.scanned), folder.scanned.series()),
+        (owned(&[(SERIES_01, 2), (SERIES_02, 1)]), Vec::new())
     );
     assert!(!folder.folder().await.is_available);
 }
 
 #[tokio::test]
-async fn keeps_every_book_of_a_folder_found_empty_and_marks_it_unavailable() {
+async fn keeps_every_book_of_a_folder_found_empty_hidden_and_marks_it_unavailable() {
     let folder = Rescanned::new("rescan-found-empty").await;
     for series in [SERIES_01, SERIES_02] {
         fs::remove_dir_all(folder.path(series)).unwrap();
@@ -474,8 +486,8 @@ async fn keeps_every_book_of_a_folder_found_empty_and_marks_it_unavailable() {
 
     assert_eq!(outcome, RescanOutcome::FoundEmpty);
     assert_eq!(
-        folder.scanned.series(),
-        owned(&[(SERIES_01, 2), (SERIES_02, 1)])
+        (kept_series(&folder.scanned), folder.scanned.series()),
+        (owned(&[(SERIES_01, 2), (SERIES_02, 1)]), Vec::new())
     );
     assert!(!folder.folder().await.is_available);
 }

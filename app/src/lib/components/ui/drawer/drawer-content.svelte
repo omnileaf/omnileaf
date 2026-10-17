@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     Dialog as DialogPrimitive,
+    type PortalProps,
     type WithoutChildrenOrChild,
   } from "bits-ui";
   import type { Snippet } from "svelte";
@@ -13,10 +14,12 @@
     ref = $bindable(null),
     class: className,
     onDismiss,
+    to = "body",
     children,
     ...restProps
   }: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
     onDismiss: () => void;
+    to?: PortalProps["to"];
     children: Snippet;
   } = $props();
 
@@ -45,7 +48,7 @@
   }
 </script>
 
-<DialogPrimitive.Portal>
+<DialogPrimitive.Portal {to}>
   <DialogPrimitive.Overlay
     class={[
       "fixed inset-none z-dialog bg-scrim",
@@ -58,9 +61,9 @@
   <DialogPrimitive.Content
     bind:ref
     class={cn(
-      "fixed inset-none z-dialog mbs-auto flex touch-none flex-col overflow-hidden rounded-ss-bottom-sheet rounded-se-bottom-sheet bg-card text-foreground block-fit inline-full max-block-full motion-safe:starting:translate-y-full motion-safe:closed:translate-y-full",
+      "fixed inset-none z-dialog mbs-auto flex touch-none flex-col overflow-hidden rounded-ss-bottom-sheet rounded-se-bottom-sheet bg-bottom-sheet text-foreground block-fit inline-full max-block-full desktop:border-bs desktop:border-border motion-sheets:starting:translate-y-full motion-sheets:closed:translate-y-full",
       !drag.isDragging &&
-        "motion-safe:transition-transform motion-safe:duration-slide motion-safe:ease-glass",
+        "motion-sheets:transition-transform motion-sheets:duration-slide motion-sheets:ease-glass",
       className,
     )}
     style={drag.isDragging
@@ -78,7 +81,7 @@
   >
     <span
       aria-hidden="true"
-      class="mbs-sm shrink-0 self-center rounded-full bg-step-off block-sheet-handle-block inline-sheet-handle"
+      class="mbs-sheet-handle-gap shrink-0 self-center rounded-full bg-sheet-handle block-sheet-handle-block inline-sheet-handle"
     ></span>
     {@render children()}
   </DialogPrimitive.Content>

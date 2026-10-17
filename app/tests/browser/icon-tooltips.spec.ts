@@ -123,6 +123,7 @@ function coversPerRowStep(label: string): IconAction {
     reach: async (page) => {
       await page.goto("/");
       const options = await openViewOptions(page);
+      await options.getByRole("radio", { name: "Choose" }).click();
       return options.getByRole("button", { name: label });
     },
     label,
@@ -177,7 +178,15 @@ const ICON_ACTIONS: readonly IconAction[] = [
     },
     label: NEXT_BOOK_LABEL,
   },
-  readerComingSoonStep("Keyboard shortcuts"),
+  {
+    ...readerComingSoonStep("Keyboard shortcuts"),
+    label: "Keyboard shortcuts",
+    isShownOn: isWideScreen,
+  },
+  {
+    ...readerComingSoonStep("Reading settings"),
+    label: "Reading settings",
+  },
   readerComingSoonStep("Bookmark this page"),
   seriesBarStep("Mark read"),
   seriesBarStep("Mark unread"),
@@ -195,20 +204,36 @@ const ICON_ACTIONS: readonly IconAction[] = [
   coversPerRowStep("Fewer covers per row"),
   coversPerRowStep("More covers per row"),
   {
-    screen: "Filter and sort",
+    screen: "Sort and filter",
     backend: SERIES_BACKEND,
     reach: async (page) => {
       await page.goto("/");
       await page
         .locator("main header")
-        .getByRole("button", { name: /^Filter and sort/ })
+        .getByRole("button", { name: /^Sort and filter/ })
         .click();
       return page
-        .getByRole("dialog", { name: "Filter and sort" })
+        .getByRole("dialog", { name: "Sort and filter" })
         .getByRole("button", { name: "Close" });
     },
     label: "Close",
-    isShownOn: (page) => !isPhoneScreen(page),
+    isShownOn: (page) => screenSizeOf(page) === "tablet",
+  },
+  {
+    screen: "Sort and filter docked beside the grid",
+    backend: SERIES_BACKEND,
+    reach: async (page) => {
+      await page.goto("/");
+      await page
+        .locator("main header")
+        .getByRole("button", { name: /^Sort and filter/ })
+        .click();
+      return page
+        .getByRole("complementary", { name: "Sort and filter" })
+        .getByRole("button", { name: "Close sort and filter" });
+    },
+    label: "Close sort and filter",
+    isShownOn: (page) => screenSizeOf(page) === "desktop",
   },
   {
     screen: "a notice",
@@ -367,7 +392,9 @@ test.describe("an icon action's tooltip", () => {
 
     await remove.tap();
 
-    await expect(page.getByRole("alertdialog")).toBeVisible();
-    await expect(remove).toHaveAccessibleDescription("");
+    await expect(
+      page.getByRole("listitem").filter({ hasText: "Sample Comics removed" }),
+    ).toBeVisible();
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
   });
 });

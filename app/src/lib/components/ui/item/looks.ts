@@ -4,10 +4,8 @@ const ABOUT_ROW =
 export const ITEM_LOOKS = {
   folder:
     "flex items-center gap-md py-sm ps-md pe-sm min-block-row expanded:min-block-row-compact",
-  "settings-link":
-    "flex items-center gap-sm px-lg transition-control min-block-touch-target group-first:rounded-ss-card group-first:rounded-se-card group-last:rounded-ee-card group-last:rounded-es-card hover:bg-hover active:bg-pressed",
   "settings-section":
-    "flex items-center gap-list-row py-sm ps-list-row pe-md transition-control min-block-4xl hover:bg-hover active:bg-pressed desktop:gap-md desktop:py-none desktop:min-block-settings-row",
+    "flex items-center gap-list-row py-sm ps-list-row pe-md transition-control min-block-4xl hover:bg-hover active:bg-pressed android:gap-lg android:px-lg android:min-block-settings-entry ios:gap-md ios:py-xs ios:ps-lg ios:pe-md ios:min-block-settings-row desktop:gap-md",
   "about-phone": `${ABOUT_ROW} gap-list-row py-sm min-block-4xl`,
   "about-pane": `${ABOUT_ROW} gap-md py-xs min-block-phone-row`,
   "about-version":

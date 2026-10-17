@@ -47,9 +47,12 @@ const FAILURES = {
     retry: m.library_add_folder_try_again,
   },
   folderNotFound: ADDING_FAILED,
+  folderAlreadyInLibrary: ADDING_FAILED,
   homeFolderKept: ADDING_FAILED,
   clipboardUnavailable: ADDING_FAILED,
   browserUnavailable: ADDING_FAILED,
+  fileManagerUnavailable: ADDING_FAILED,
+  systemSettingsUnavailable: ADDING_FAILED,
   noCrashReport: ADDING_FAILED,
   crashReportUnavailable: ADDING_FAILED,
   developmentBuildOnly: ADDING_FAILED,
@@ -58,17 +61,33 @@ const FAILURES = {
   cursorForAnotherList: ADDING_FAILED,
   bookNotFound: ADDING_FAILED,
   bookUnreadable: ADDING_FAILED,
+  bookmarksNotKept: ADDING_FAILED,
+  labelsNotKept: ADDING_FAILED,
+  detailsNotKept: ADDING_FAILED,
+  reportNotSaved: ADDING_FAILED,
+  reportsNotSent: ADDING_FAILED,
   internal: ADDING_FAILED,
 } satisfies Record<IpcErrorCode, Failure>;
 
+export interface FolderBeingAdded {
+  readonly name: string;
+  readonly location: string;
+}
+
+export type MayPick = () => Promise<boolean>;
+
+const ALWAYS_PICK: MayPick = () => Promise.resolve(true);
+
 export class FolderAdding {
   outcome: FolderOutcome = $state({ kind: "idle" });
+  beingAdded: FolderBeingAdded | undefined = $state();
   #failure: Notice | undefined;
 
   constructor(
     private readonly addFolder: AddFolder,
     private readonly notices: () => Notices,
     private readonly onFinished: () => void = () => {},
+    private readonly mayPick: MayPick = ALWAYS_PICK,
   ) {}
 
   get isAdding(): boolean {
@@ -80,15 +99,26 @@ export class FolderAdding {
   }
 
   async add(): Promise<void> {
+    if (await this.mayPick()) {
+      await this.addWith(this.addFolder);
+    }
+  }
+
+  async addWith(addFolder: AddFolder): Promise<void> {
     this.outcome = { kind: "adding" };
-    const result = await this.addFolder(
-      followScan(
-        () => this.isAdding,
-        (step) => {
-          this.outcome = step;
-        },
-      ),
+    const follow = followScan(
+      () => this.isAdding,
+      (step) => {
+        this.outcome = step;
+      },
     );
+    const result = await addFolder((progress) => {
+      if (progress.stage === "adding" && this.isAdding) {
+        this.beingAdded = { name: progress.name, location: progress.location };
+      }
+      follow(progress);
+    });
+    this.beingAdded = undefined;
     if (result.status === "error") {
       this.outcome = { kind: "idle" };
       this.#failure = this.#failureNotice(result.error.code);

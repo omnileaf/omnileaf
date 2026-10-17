@@ -4,6 +4,7 @@ import {
   accessibilityViolations,
   EXPANDED_MIN_WIDTH,
   expect,
+  MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
   viewportOf,
@@ -59,14 +60,66 @@ test("changes the choice from the keyboard", async ({ page }) => {
   ).toBeChecked();
 });
 
+test("lists Screenshot mode with how it stands", async ({ page }) => {
+  await openPrivacy(page);
+  const screenshotMode = page
+    .getByRole("main")
+    .getByRole("link", { name: /^Screenshot mode/ });
+
+  await expect(screenshotMode).toContainText("Off");
+  await screenshotMode.click();
+  await page
+    .getByRole("switch", { name: "Screenshot mode", exact: true })
+    .click();
+  await openPrivacy(page);
+
+  await expect(screenshotMode).toContainText("On");
+});
+
+test("says nothing leaves the computer unless a report is sent", async ({
+  page,
+}) => {
+  await openPrivacy(page);
+
+  await expect(
+    page.getByText(
+      "Nothing leaves this computer unless you send a report or connect a tracker.",
+    ),
+  ).toBeVisible();
+});
+
+test("drops that promise while crash reports are sent on their own", async ({
+  page,
+}) => {
+  await openPrivacy(page);
+
+  await page.getByRole("radio", { name: "Always send" }).click();
+
+  await expect(page.getByText(/^Nothing leaves this/)).toHaveCount(0);
+});
+
 test.describe("on a touch screen", () => {
   test.use(onPlatform("android"));
 
-  test("summarises the crash report choice in the settings list", async ({
+  test("says nothing leaves the phone or tablet unless a report is sent", async ({
     page,
   }) => {
     await openPrivacy(page);
-    await page.getByRole("radio", { name: "Always send" }).click();
+    const device =
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH ? "tablet" : "phone";
+
+    await expect(
+      page.getByText(
+        `Nothing leaves this ${device} unless you send a report or connect a tracker.`,
+      ),
+    ).toBeVisible();
+  });
+
+  test("summarises Screenshot mode in the settings list", async ({ page }) => {
+    await page.goto("/settings/privacy/screenshot-mode");
+    await page
+      .getByRole("switch", { name: "Screenshot mode", exact: true })
+      .click();
 
     await page.goto("/settings");
     test.skip(
@@ -76,7 +129,7 @@ test.describe("on a touch screen", () => {
 
     await expect(
       page.getByRole("main").getByRole("link", { name: /^Privacy/ }),
-    ).toContainText("Always send crash reports");
+    ).toContainText("Screenshot mode on");
   });
 });
 

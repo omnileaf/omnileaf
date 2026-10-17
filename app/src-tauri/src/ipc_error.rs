@@ -19,9 +19,12 @@ pub(crate) enum IpcErrorCode {
     FolderChooserMissing,
     FolderUnreadable,
     FolderNotFound,
+    FolderAlreadyInLibrary,
     HomeFolderKept,
     ClipboardUnavailable,
     BrowserUnavailable,
+    FileManagerUnavailable,
+    SystemSettingsUnavailable,
     NoCrashReport,
     CrashReportUnavailable,
     #[cfg_attr(
@@ -34,6 +37,11 @@ pub(crate) enum IpcErrorCode {
     CursorForAnotherList,
     BookNotFound,
     BookUnreadable,
+    BookmarksNotKept,
+    LabelsNotKept,
+    DetailsNotKept,
+    ReportNotSaved,
+    ReportsNotSent,
     Internal,
 }
 
@@ -68,6 +76,30 @@ impl IpcError {
         }
     }
 
+    pub(crate) fn file_manager_unavailable(error: &dyn Error) -> Self {
+        tracing::warn!(error = %describe_error(error), "show a series' file in its folder");
+        Self {
+            code: IpcErrorCode::FileManagerUnavailable,
+            message: "the file manager could not be opened",
+        }
+    }
+
+    pub(crate) fn report_not_saved(error: &dyn Error) -> Self {
+        tracing::warn!(error = %describe_error(error), "save a problem report");
+        Self {
+            code: IpcErrorCode::ReportNotSaved,
+            message: "the problem report could not be saved",
+        }
+    }
+
+    pub(crate) fn system_settings_unavailable(error: &dyn Error) -> Self {
+        tracing::warn!(error = %describe_error(error), "open the system's settings");
+        Self {
+            code: IpcErrorCode::SystemSettingsUnavailable,
+            message: "the system's settings could not be opened",
+        }
+    }
+
     pub(crate) fn no_crash_report() -> Self {
         Self {
             code: IpcErrorCode::NoCrashReport,
@@ -80,6 +112,34 @@ impl IpcError {
         Self {
             code: IpcErrorCode::DevelopmentBuildOnly,
             message: "only development builds can crash on purpose",
+        }
+    }
+
+    pub(crate) fn bookmarks_not_kept() -> Self {
+        Self {
+            code: IpcErrorCode::BookmarksNotKept,
+            message: "the library keeps no bookmarks yet",
+        }
+    }
+
+    pub(crate) fn labels_not_kept() -> Self {
+        Self {
+            code: IpcErrorCode::LabelsNotKept,
+            message: "the library keeps no categories or tags yet",
+        }
+    }
+
+    pub(crate) fn details_not_kept() -> Self {
+        Self {
+            code: IpcErrorCode::DetailsNotKept,
+            message: "the library keeps no edits to series details yet",
+        }
+    }
+
+    pub(crate) fn reports_not_sent() -> Self {
+        Self {
+            code: IpcErrorCode::ReportsNotSent,
+            message: "problem reports have nowhere to be sent yet",
         }
     }
 
@@ -102,6 +162,10 @@ impl From<LibraryError> for IpcError {
             LibraryError::FolderNotFound { .. } => (
                 IpcErrorCode::FolderNotFound,
                 "that folder isn't in the library",
+            ),
+            LibraryError::FolderAlreadyInLibrary { .. } => (
+                IpcErrorCode::FolderAlreadyInLibrary,
+                "the library already reads that folder",
             ),
             LibraryError::HomeFolderKept { .. } => (
                 IpcErrorCode::HomeFolderKept,
@@ -208,6 +272,38 @@ mod tests {
                 IpcErrorCode::CursorForAnotherList,
                 IpcErrorCode::Internal,
             ]
+        );
+    }
+
+    #[test]
+    fn tells_the_interface_the_library_keeps_no_bookmarks_yet() {
+        assert_eq!(
+            IpcError::bookmarks_not_kept().code,
+            IpcErrorCode::BookmarksNotKept
+        );
+    }
+
+    #[test]
+    fn tells_the_interface_the_library_keeps_no_edits_to_details_yet() {
+        assert_eq!(
+            IpcError::details_not_kept().code,
+            IpcErrorCode::DetailsNotKept
+        );
+    }
+
+    #[test]
+    fn tells_the_interface_the_library_keeps_no_categories_or_tags_yet() {
+        assert_eq!(
+            IpcError::labels_not_kept().code,
+            IpcErrorCode::LabelsNotKept
+        );
+    }
+
+    #[test]
+    fn tells_the_interface_problem_reports_have_nowhere_to_be_sent_yet() {
+        assert_eq!(
+            IpcError::reports_not_sent().code,
+            IpcErrorCode::ReportsNotSent
         );
     }
 

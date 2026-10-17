@@ -22,7 +22,7 @@
 <ProgressPrimitive.Root
   bind:ref
   class={cn(
-    "flex overflow-hidden rounded-full bg-chip block-progress rtl:-scale-x-100",
+    "flex overflow-hidden rounded-full bg-accent/20 block-progress rtl:-scale-x-100",
     className,
   )}
   {value}
@@ -33,7 +33,7 @@
     <div class="progress-band rounded-full bg-accent"></div>
   {:else}
     <div
-      class="flex-1 bg-accent motion-safe:transition-transform motion-safe:duration-slide motion-safe:ease-emphasized"
+      class="flex-1 bg-accent motion-loading:transition-transform motion-loading:duration-slide motion-loading:ease-emphasized"
       style:translate="-{unfilledShare}%"
     ></div>
   {/if}

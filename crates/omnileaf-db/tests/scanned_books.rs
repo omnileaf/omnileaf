@@ -10,8 +10,9 @@ use std::path::PathBuf;
 use omnileaf_db::{
     Database, Error,
     catalog::{
-        BookFile, NewRoot, NewSeries, RootId, RootKind, RootLocator, ScannedBook, add_root,
-        record_moved_books, record_scanned_books,
+        BookFile, BookListing, NewBook, NewRoot, NewSeries, PageRequest, PageSize, RootId,
+        RootKind, RootLocator, ScannedBook, add_book, add_root, record_moved_books,
+        record_page_count, record_scanned_books, series_books,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId, SourceId};
@@ -19,6 +20,8 @@ use support::{ScratchFolder, library_config};
 
 const ADDED_AT_MS: i64 = 1_790_000_000_000;
 const MODIFIED_AT_MS: i64 = 1_780_000_000_000;
+const PAGE_COUNT: u32 = 24;
+const PAGE_COUNT_AFTER_EDIT: u32 = 26;
 
 struct Library {
     database: Database,
@@ -61,6 +64,7 @@ impl Library {
             fingerprint: fingerprint(page_crc),
             title: format!("Volume {page_crc:02}"),
             added_at_ms: ADDED_AT_MS,
+            page_count: PAGE_COUNT,
             file: BookFile {
                 root: self.root,
                 location: location.into(),
@@ -106,6 +110,21 @@ impl Library {
             },
         )
         .await
+    }
+
+    async fn page_counts(&self, series: SeriesId) -> Vec<Option<u32>> {
+        let request = PageRequest {
+            after: None,
+            size: PageSize::try_from(10).unwrap(),
+        };
+        let page = self
+            .database
+            .read(move |connection| {
+                series_books(connection, series, BookListing::IN_ORDER, &request)
+            })
+            .await
+            .unwrap();
+        page.items.into_iter().map(|book| book.page_count).collect()
     }
 
     async fn rows<T: Send + 'static>(
@@ -364,4 +383,74 @@ async fn refuses_a_book_whose_series_name_is_held_by_another_series_id() {
 
     assert!(matches!(outcome, Err(Error::UnknownSeries { id }) if id == series));
     assert!(library.files().await.is_empty());
+}
+
+#[tokio::test]
+async fn keeps_how_many_pages_each_book_a_scan_found_holds() {
+    let library = Library::open("scanned-page-count").await;
+
+    let series = library
+        .record(library.found("Sample Series 01", "Sample Series 01/Volume 01.cbz", 1))
+        .await;
+
+    assert_eq!(library.page_counts(series).await, [Some(PAGE_COUNT)]);
+}
+
+#[tokio::test]
+async fn counts_a_moved_book_s_pages_as_its_new_place_holds_them() {
+    let library = Library::open("moved-page-count").await;
+    let series = library
+        .record(library.found("Sample Series 01", "Sample Series 01/Volume 01.cbz", 1))
+        .await;
+    let moved = ScannedBook {
+        page_count: PAGE_COUNT_AFTER_EDIT,
+        ..library.found("Sample Series 01", "Sample Series 01/Volume 1.cbz", 1)
+    };
+
+    library
+        .database
+        .write(move |transaction| record_moved_books(transaction, &[moved]))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        library.page_counts(series).await,
+        [Some(PAGE_COUNT_AFTER_EDIT)]
+    );
+}
+
+#[tokio::test]
+async fn knows_no_page_count_for_a_book_added_without_one_until_it_is_recorded() {
+    let library = Library::open("recorded-page-count").await;
+    let series = NewSeries::local("Sample Series 01", ADDED_AT_MS).unwrap();
+    let book = NewBook {
+        fingerprint: fingerprint(1),
+        series: series.id(),
+        title: "Volume 01".to_owned(),
+        added_at_ms: ADDED_AT_MS,
+        page_count: None,
+    };
+    let id = book.id();
+    library
+        .database
+        .write(move |transaction| {
+            omnileaf_db::catalog::add_series(transaction, &series)?;
+            add_book(transaction, &book)
+        })
+        .await
+        .unwrap();
+    let before = library
+        .page_counts(SeriesId::local("Sample Series 01").unwrap())
+        .await;
+
+    library
+        .database
+        .write(move |transaction| record_page_count(transaction, id, PAGE_COUNT))
+        .await
+        .unwrap();
+
+    let after = library
+        .page_counts(SeriesId::local("Sample Series 01").unwrap())
+        .await;
+    assert_eq!((before, after), (vec![None], vec![Some(PAGE_COUNT)]));
 }

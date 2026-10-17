@@ -9,11 +9,21 @@ import {
   onPlatform,
   test,
   testOnlyInItsWebview,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 
-const ACCENT = "rgb(47, 111, 79)";
-const POINTER_ROW_HEIGHT = 44;
+const POINTER_ROW_HEIGHT = 32;
+const SECTIONS_IN_ORDER = [
+  "General",
+  "Appearance",
+  "Library",
+  "Reader",
+  "Privacy and security",
+  "Storage",
+  "Advanced",
+  "About",
+];
 const NARROW_BACK_LINK_HEIGHT = 32;
 const TOUCH_TARGET = 48;
 const STATUS_BAR_GAP = 8;
@@ -26,45 +36,89 @@ function sectionList(page: Page) {
 test.describe("on a desktop", () => {
   test.use(onPlatform("linux"));
 
-  test("opens the first settings section beside the list from 600px", async ({
+  test("opens the first settings section beside the list from 840px", async ({
     page,
   }) => {
     await page.goto("/");
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
 
     await page
       .getByRole("navigation", { name: "Main" })
       .getByRole("link", { name: "Settings" })
       .click();
 
-    await expect(page).toHaveURL("/settings/library");
+    await expect(page).toHaveURL("/settings/general");
     await expect(
-      page.getByRole("heading", { level: 1, name: "Library" }),
+      page.getByRole("heading", { level: 1, name: "General" }),
     ).toBeFocused();
     await expect(
-      sectionList(page).getByRole("link", { name: "Library" }),
+      sectionList(page).getByRole("link", { name: "General" }),
     ).toHaveAttribute("aria-current", "page");
+  });
+
+  test("opens Settings on its list of pages under 840px", async ({ page }) => {
+    await page.goto("/");
+    test.skip(viewportOf(page).width >= EXPANDED_MIN_WIDTH, "one pane only");
+
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Settings" })
+      .click();
+
+    await expect(page).toHaveURL("/settings");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Settings" }),
+    ).toBeFocused();
+    await expect(sectionList(page)).toBeHidden();
+    await expect(
+      page.getByRole("main").getByRole("link", { name: /^General/ }),
+    ).toBeVisible();
+  });
+
+  test("lists the sections in the phone's order", async ({ page }) => {
+    await page.goto("/settings/general");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
+
+    await expect(sectionList(page).getByRole("link")).toHaveText(
+      SECTIONS_IN_ORDER,
+    );
+  });
+
+  test("names where a page sits in a breadcrumb bar, with an arrow back from a nested page", async ({
+    page,
+  }) => {
+    await page.goto("/settings/advanced/animations");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
+    const trail = page.getByRole("navigation", { name: "Breadcrumb" });
+
+    await expect(trail.getByRole("link")).toHaveText(["Settings", "Advanced"]);
+    await expect(trail.locator('[aria-current="page"]')).toHaveText(
+      "Animations",
+    );
+    await page.getByRole("link", { name: "Back to Advanced" }).click();
+
+    await expect(page).toHaveURL("/settings/advanced");
   });
 
   test("focuses the first settings section's heading without a focus ring when opened from the keyboard", async ({
     page,
   }) => {
     await page.goto("/");
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
 
     await page
       .getByRole("navigation", { name: "Main" })
       .getByRole("link", { name: "Settings" })
       .press("Enter");
 
-    const heading = page.getByRole("heading", { level: 1, name: "Library" });
+    const heading = page.getByRole("heading", { level: 1, name: "General" });
     await expect(heading).toBeFocused();
     await expect(heading).toHaveCSS("outline-style", "none");
   });
 
   test("switches settings sections from the list", async ({ page }) => {
     await page.goto("/settings/library");
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
 
     await sectionList(page).getByRole("link", { name: "About" }).click();
 
@@ -77,25 +131,28 @@ test.describe("on a desktop", () => {
     ).toBeHidden();
   });
 
-  test("marks the open section in the accent on 44px rows", async ({
+  test("marks the open section in the sidebar's accent on 32px rows", async ({
     page,
   }) => {
     await page.goto("/settings/appearance");
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
     const open = sectionList(page).getByRole("link", { name: "Appearance" });
 
     const row = await boxOf(open);
 
-    await expect(open).toHaveCSS("color", ACCENT);
-    await expect(open).toHaveCSS("font-weight", "700");
+    await expect(open).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--sidebar-accent"),
+    );
+    await expect(open).toHaveCSS("font-weight", "500");
     expect(row.height).toBe(POINTER_ROW_HEIGHT);
   });
 
-  test("leads a section back to settings through a link under 600px", async ({
+  test("leads a section back to settings through a link under 840px", async ({
     page,
   }) => {
     await page.goto("/settings/about");
-    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "one pane only");
+    test.skip(viewportOf(page).width >= EXPANDED_MIN_WIDTH, "one pane only");
 
     const back = page.getByRole("link", { name: "Back to Settings" });
 
@@ -223,11 +280,11 @@ for (const colorScheme of ["light", "dark"] as const) {
   test(`settings on desktop has no accessibility violations in the ${colorScheme} theme`, async ({
     page,
   }) => {
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
     await page.emulateMedia({ colorScheme });
     await page.goto("/settings");
     await expect(
-      page.getByRole("heading", { level: 1, name: "Library" }),
+      page.getByRole("heading", { level: 1, name: "General" }),
     ).toBeVisible();
 
     const violations = await accessibilityViolations(page);

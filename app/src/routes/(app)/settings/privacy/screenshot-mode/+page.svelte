@@ -1,22 +1,48 @@
 <script lang="ts">
-  import { ChevronLeft, ChevronRight, Keyboard } from "@lucide/svelte";
+  import { AppWindow, Keyboard, Smartphone } from "@lucide/svelte";
 
-  import { resolve } from "$app/paths";
-  import type { Platform } from "#lib/ipc/bindings.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
+  import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
+  import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
-  import {
-    SCREENSHOT_MODE_OPTIONS,
-    type ScreenshotModeOption,
-  } from "#lib/screenshot-mode/screenshot-mode.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
-  import ScreenshotModePreview from "#lib/screenshot-mode/ScreenshotModePreview.svelte";
+  import type { KeyCombination } from "#lib/screenshot-mode/key-combination.ts";
+  import { getScreenshotModeShortcut } from "#lib/screenshot-mode/shortcut-setting.svelte.ts";
+  import ShortcutDialog from "#lib/screenshot-mode/ShortcutDialog.svelte";
   import ShortcutKeys from "#lib/screenshot-mode/ShortcutKeys.svelte";
-  import { screenshotModeStatus } from "#lib/screenshot-mode/status.ts";
+  import { screenshotModeSummary } from "#lib/screenshot-mode/status.ts";
+  import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import SettingSelect from "#lib/settings/SettingSelect.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
   import type { PageProps } from "./$types";
 
+  type SwitchedOption = "blankReaderPages" | "showLabel";
+
+  const SWITCHED_OPTIONS: readonly SwitchedOption[] = [
+    "blankReaderPages",
+    "showLabel",
+  ];
+  const AFTER_AN_HOUR = "hour";
+  const NEVER = "never";
+  const ROW_ICON_SIZE = 18;
+  const CARD =
+    "flex flex-col overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low";
+
   let { data }: PageProps = $props();
+
+  const screenshotMode = getScreenshotMode();
+  const shortcut = getScreenshotModeShortcut();
+  const timeFormat = getTimeFormatSetting();
+  const hasKeyboard = $derived(isPointer(data.appInfo.platform));
+  const trayName = $derived(
+    data.appInfo.platform === "macos"
+      ? m.screenshot_mode_menu_bar()
+      : m.screenshot_mode_tray(),
+  );
+  const quicklyId = $props.id();
+
+  let isChangingShortcut = $state(false);
 
   const OPTION_TEXT = {
     blankReaderPages: {
@@ -30,150 +56,141 @@
           ? m.screenshot_mode_show_label_help_desktop()
           : m.screenshot_mode_show_label_help(),
     },
-    turnOffAfterAnHour: {
-      label: m.screenshot_mode_auto_off,
-      help: m.screenshot_mode_auto_off_help,
-    },
   } satisfies Record<
-    ScreenshotModeOption,
+    SwitchedOption,
     { label: () => string; help: () => string }
   >;
-
-  const KEYBOARD_PLATFORMS: ReadonlySet<Platform> = new Set([
-    "linux",
-    "macos",
-    "windows",
-  ]);
-
-  const CHEVRON_SIZE = 18;
-  const KEYBOARD_ICON_SIZE = 18;
-
-  const screenshotMode = getScreenshotMode();
-  const hasKeyboard = $derived(KEYBOARD_PLATFORMS.has(data.appInfo.platform));
-  const id = $props.id();
 </script>
 
-<a
-  href={resolve("/(app)/settings/privacy")}
-  data-back-link
-  class="inline-flex items-center gap-2xs font-medium text-accent min-block-touch-target hover:underline expanded:text-detail expanded:font-semibold"
->
-  <ChevronLeft size={CHEVRON_SIZE} class="expanded:hidden rtl:-scale-x-100" />
-  {m.privacy_title()}
-  <ChevronRight
-    size={CHEVRON_SIZE}
-    class="max-expanded:hidden rtl:-scale-x-100"
-  />
-</a>
-<h1 tabindex="-1" class="text-headline font-bold">
-  {m.screenshot_mode_title()}
-</h1>
-
-<div
-  class="mbs-xl flex flex-col expanded:grid expanded:grid-with-preview expanded:items-start expanded:gap-xl"
->
-  <SettingSwitch
-    label={m.screenshot_mode_title()}
-    description={screenshotModeStatus(screenshotMode.activity)}
-    isOn={screenshotMode.isOn}
-    onToggle={() => {
-      screenshotMode.toggle();
-    }}
-    prominence="main"
-    class="rounded-card border border-border bg-card max-expanded:rounded-ee-none max-expanded:rounded-es-none expanded:col-start-1"
-  >
-    {#snippet trailing()}
-      {#if hasKeyboard}
-        <ShortcutKeys platform={data.appInfo.platform} />
-      {/if}
-    {/snippet}
-  </SettingSwitch>
-
-  <div
-    class="max-expanded:contents expanded:col-start-2 expanded:row-span-full expanded:flex expanded:flex-col expanded:gap-md expanded:rounded-card expanded:border expanded:border-border expanded:bg-card expanded:p-lg"
-  >
-    <figure
-      aria-labelledby="{id}-preview"
-      class="flex flex-col gap-md max-expanded:rounded-ee-card max-expanded:rounded-es-card max-expanded:border max-expanded:border-bs-0 max-expanded:border-border max-expanded:bg-card max-expanded:p-lg"
-    >
-      <figcaption
-        id="{id}-preview"
-        class="text-detail font-semibold text-muted max-expanded:sr-only"
-      >
-        {m.screenshot_mode_preview()}
-      </figcaption>
-      <ScreenshotModePreview isOn={screenshotMode.isOn} />
-    </figure>
-    <p
-      class="text-detail text-muted max-expanded:mbs-sm max-expanded:px-xs expanded:border-bs expanded:border-border expanded:pbs-md"
-    >
-      {m.screenshot_mode_what_changes()}
-    </p>
+<SectionHeading
+  title={m.screenshot_mode_title()}
+  parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
+/>
+<div class="mbs-pane-gap flex flex-col gap-xl">
+  <div class="flex flex-col gap-sm">
+    <p class="text-detail text-muted">{m.screenshot_mode_intro()}</p>
+    <div class={[CARD, "divide-y divide-border"]}>
+      <SettingSwitch
+        label={m.screenshot_mode_title()}
+        description={screenshotModeSummary(
+          screenshotMode.activity,
+          timeFormat.hourCycle,
+        )}
+        isOn={screenshotMode.isOn}
+        onToggle={() => {
+          screenshotMode.toggle();
+        }}
+      />
+      <SettingSelect
+        label={m.screenshot_mode_turn_off_after()}
+        options={[
+          { value: AFTER_AN_HOUR, label: m.screenshot_mode_turn_off_hour() },
+          { value: NEVER, label: m.screenshot_mode_turn_off_never() },
+        ]}
+        value={screenshotMode.options.turnOffAfterAnHour
+          ? AFTER_AN_HOUR
+          : NEVER}
+        onChoose={(value) => {
+          screenshotMode.choose({
+            option: "turnOffAfterAnHour",
+            isChosen: value === AFTER_AN_HOUR,
+          });
+        }}
+      />
+      {#each SWITCHED_OPTIONS as option (option)}
+        <SettingSwitch
+          label={OPTION_TEXT[option].label()}
+          description={OPTION_TEXT[option].help()}
+          isOn={screenshotMode.options[option]}
+          onToggle={() => {
+            screenshotMode.choose({
+              option,
+              isChosen: !screenshotMode.options[option],
+            });
+          }}
+        />
+      {/each}
+    </div>
   </div>
 
-  <div
-    class="max-expanded:contents expanded:col-start-1 expanded:flex expanded:flex-col expanded:gap-xl"
-  >
-    <section
-      aria-labelledby="{id}-while-on"
-      class="flex flex-col gap-sm max-expanded:mbs-xl"
-    >
-      <h2 id="{id}-while-on" class="px-xs text-detail font-semibold text-muted">
-        {m.screenshot_mode_while_on()}
-      </h2>
-      <div
-        class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card"
-      >
-        {#each SCREENSHOT_MODE_OPTIONS as option (option)}
-          <SettingSwitch
-            label={OPTION_TEXT[option].label()}
-            description={OPTION_TEXT[option].help()}
-            isOn={screenshotMode.options[option]}
-            onToggle={() => {
-              screenshotMode.choose({
-                option,
-                isChosen: !screenshotMode.options[option],
-              });
-            }}
-          />
-        {/each}
-      </div>
-    </section>
-
+  <section aria-labelledby={quicklyId} class={CARD}>
+    <h2 id={quicklyId} class="px-lg pbs-md pbe-xs text-small font-semibold">
+      {m.screenshot_mode_quickly()}
+    </h2>
     {#if hasKeyboard}
-      <section
-        aria-labelledby="{id}-quickly"
-        class="flex flex-col gap-sm max-expanded:mbs-xl"
-      >
-        <h2
-          id="{id}-quickly"
-          class="px-xs text-detail font-semibold text-muted"
+      <div class="flex items-center gap-md px-lg pbs-xs pbe-md">
+        <span
+          aria-hidden="true"
+          class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile"
         >
-          {m.screenshot_mode_quickly()}
-        </h2>
-        <div
-          class="flex items-center gap-md rounded-card border border-border bg-card px-lg py-md min-block-touch-target"
+          <Keyboard size={ROW_ICON_SIZE} />
+        </span>
+        <span class="flex flex-1 flex-col gap-2xs">
+          <span class="font-semibold desktop:text-callout">
+            {m.screenshot_mode_shortcut()}
+          </span>
+          <span class="text-detail text-muted">
+            {m.screenshot_mode_shortcut_help()}
+          </span>
+        </span>
+        <ShortcutKeys
+          combination={shortcut.combination}
+          platform={data.appInfo.platform}
+        />
+        <Button
+          type="button"
+          look="outline"
+          aria-label={m.screenshot_mode_shortcut_change_label()}
+          class="shrink-0 px-md text-small min-block-pointer-button"
+          onclick={() => {
+            isChangingShortcut = true;
+          }}
         >
-          <span
-            class="flex shrink-0 items-center justify-center rounded-control bg-chip p-xs"
-          >
-            <Keyboard size={KEYBOARD_ICON_SIZE} />
+          {m.screenshot_mode_shortcut_change()}
+        </Button>
+      </div>
+      <div class="flex items-center gap-md border-bs border-border px-lg py-md">
+        <span
+          aria-hidden="true"
+          class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile"
+        >
+          <AppWindow size={ROW_ICON_SIZE} />
+        </span>
+        <span class="flex flex-1 flex-col gap-2xs">
+          <span class="font-semibold desktop:text-callout">{trayName}</span>
+          <span class="text-detail text-muted">
+            {m.screenshot_mode_tray_help()}
           </span>
-          <span class="flex flex-1 flex-col gap-2xs">
-            <span class="font-medium expanded:font-semibold">
-              {m.screenshot_mode_shortcut()}
-            </span>
-            <span class="text-detail text-muted">
-              {m.screenshot_mode_shortcut_help()}
-            </span>
+        </span>
+      </div>
+    {:else}
+      <div class="flex items-center gap-md px-lg pbs-xs pbe-md">
+        <span
+          aria-hidden="true"
+          class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile"
+        >
+          <Smartphone size={ROW_ICON_SIZE} />
+        </span>
+        <span class="flex flex-1 flex-col gap-2xs">
+          <span class="font-semibold">{m.screenshot_mode_long_press()}</span>
+          <span class="text-detail text-muted">
+            {m.screenshot_mode_long_press_help()}
           </span>
-          <ShortcutKeys platform={data.appInfo.platform} />
-        </div>
-      </section>
+        </span>
+      </div>
     {/if}
-
-    <p class="px-xs text-detail text-muted max-expanded:mbs-sm">
-      {m.screenshot_mode_nothing_sent()}
-    </p>
-  </div>
+  </section>
 </div>
+
+{#if isChangingShortcut}
+  <ShortcutDialog
+    platform={data.appInfo.platform}
+    current={shortcut.combination}
+    onSave={(combination: KeyCombination) => {
+      shortcut.choose(combination);
+    }}
+    onClose={() => {
+      isChangingShortcut = false;
+    }}
+  />
+{/if}

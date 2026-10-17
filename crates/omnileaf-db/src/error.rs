@@ -51,12 +51,18 @@ pub enum Error {
     UnsupportedLocator { kind: String },
     #[error("read the library view drawn as {name:?}, which this build can't draw")]
     UnsupportedLibraryDisplay { name: String },
+    #[error("read the library view grouped by {name:?}, which this build can't group by")]
+    UnsupportedLibraryGrouping { name: String },
+    #[error("read adult content as {name:?}, which this build can't treat it as")]
+    UnsupportedAdultTreatment { name: String },
     #[error("read {uri:?} as an Android folder's address, which isn't a document tree")]
     MalformedTreeUri { uri: String },
     #[error("read {name:?} as an Android folder's name, which isn't one folder name")]
     MalformedTreeName { name: String },
     #[error("read the library listing stored with {name:?}, which this build can't list by")]
     UnsupportedLibraryListing { name: String },
+    #[error("read a library tab stored as {name:?}, which this build doesn't know")]
+    UnsupportedLibraryTab { name: String },
     #[error("read a library folder id that isn't one the library gave out")]
     MalformedRootId,
     #[error("read a book file id that isn't one the library gave out")]

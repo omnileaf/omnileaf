@@ -1,7 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 
 import {
+  type HistoryEntry,
   type LibraryFilter,
+  type LibraryListing,
   type LibrarySearch,
   SEARCH_MAX_CHARS,
 } from "../../src/lib/ipc/bindings.ts";
@@ -29,6 +31,10 @@ function seriesTitled(number: number, title: string): WireSeries {
     bookCount: 1,
     unreadCount: 1,
     cover: null,
+    language: null,
+    hasDownloads: false,
+    isAdult: false,
+    continuesFrom: null,
   };
 }
 
@@ -39,6 +45,9 @@ const CATALOG: readonly WireSeries[] = [
 ];
 const SERIES_SHOWN = 6;
 const PLACES_HOLDING_SE = 8;
+const SEARCH_ACTION = 1;
+
+let storedListing: LibraryListing | undefined;
 
 /** Every series here is unread and unstarted, so only a filter letting those through finds any. */
 function letsThrough(filter: LibraryFilter): boolean {
@@ -68,6 +77,10 @@ const SEARCHING_BACKEND: FakeBackend = {
   librarySeries: () => ({ series: [...CATALOG], next: null }),
   librarySearch: (_after, search) => ({ series: found(search), next: null }),
   librarySearchCount: (search) => found(search).length,
+  setLibraryListing: (listing) => {
+    storedListing = listing;
+    return null;
+  },
   seriesOverview: (id) => {
     const series = CATALOG.find((one) => one.id === id);
     if (series === undefined) {
@@ -78,9 +91,16 @@ const SEARCHING_BACKEND: FakeBackend = {
       title: series.title,
       bookCount: series.bookCount,
       readCount: 0,
+      bookmarkCount: 0,
       cover: null,
       folder: null,
       upNext: null,
+      format: null,
+      creators: [],
+      summary: null,
+      tags: [],
+      related: [],
+      secondsLeft: null,
     };
   },
 };
@@ -121,7 +141,7 @@ async function pressQuickOpen(page: Page): Promise<void> {
   await expect(field(page)).toBeFocused();
 }
 
-test("opens with Control K from anywhere, offering every page", async ({
+test("opens with Control K from anywhere, offering its actions before anything is typed", async ({
   page,
 }) => {
   await page.goto("/settings/appearance");
@@ -130,9 +150,48 @@ test("opens with Control K from anywhere, offering every page", async ({
   await pressQuickOpen(page);
 
   await expect(
-    quickOpen(page).getByRole("group", { name: "Go to" }).getByRole("option"),
-  ).toHaveCount(10);
-  await expect(selected(page)).toContainText("Library");
+    quickOpen(page).getByRole("group", { name: "Actions" }).getByRole("option"),
+  ).toHaveText([/Show unread/, /Settings/]);
+  await expect(selected(page)).toContainText("Show unread");
+});
+
+test("shows only the unread series from Show unread", async ({ page }) => {
+  await page.goto("/settings/appearance");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await pressQuickOpen(page);
+
+  await options(page).filter({ hasText: "Show unread" }).click();
+
+  await expect(page).toHaveURL(/\/$/);
+  expect(storedListing?.filter.unread).toBe("only");
+});
+
+test("offers the searches made last and runs one again", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "omnileaf.recentSearches",
+      JSON.stringify([{ text: "harbour gate", atMs: Date.now() }]),
+    );
+  });
+  await openLibrary(page);
+  await pressQuickOpen(page);
+
+  await quickOpen(page)
+    .getByRole("group", { name: "Recent" })
+    .getByRole("option", { name: /harbour gate/ })
+    .click();
+
+  await expect(page).toHaveURL(/\/search\?q=harbour\+gate$/);
+});
+
+test("searches the library for what was typed", async ({ page }) => {
+  await openLibrary(page);
+  await pressQuickOpen(page);
+
+  await field(page).fill("zzz");
+  await options(page).filter({ hasText: "Search the library for" }).click();
+
+  await expect(page).toHaveURL(/\/search\?q=zzz$/);
 });
 
 test("finds series and pages by what is typed", async ({ page }) => {
@@ -141,13 +200,15 @@ test("finds series and pages by what is typed", async ({ page }) => {
 
   await field(page).fill("se");
 
-  const series = quickOpen(page).getByRole("group", { name: "Series" });
+  const series = quickOpen(page).getByRole("group", {
+    name: "Series and books",
+  });
   await expect(series.getByRole("option")).toHaveCount(SERIES_SHOWN);
   await expect(series.getByRole("option").first()).toContainText(
     "Sample Series 0001",
   );
   await expect(
-    quickOpen(page).getByRole("group", { name: "Go to" }).getByRole("option"),
+    quickOpen(page).getByRole("group", { name: "Actions" }).getByRole("option"),
   ).toHaveText([
     /Browse/,
     /^\s*Settings\s*$/,
@@ -157,6 +218,7 @@ test("finds series and pages by what is typed", async ({ page }) => {
     /General/,
     /Advanced/,
     /About/,
+    /Search the library for/,
   ]);
 });
 
@@ -166,7 +228,9 @@ test("moves through the choices with the arrow keys and jumps groups with Tab", 
   await openLibrary(page);
   await pressQuickOpen(page);
   await field(page).fill("se");
-  await expect(options(page)).toHaveCount(SERIES_SHOWN + PLACES_HOLDING_SE);
+  await expect(options(page)).toHaveCount(
+    SERIES_SHOWN + PLACES_HOLDING_SE + SEARCH_ACTION,
+  );
 
   await field(page).press("ArrowDown");
   const second = await selected(page).innerText();
@@ -191,7 +255,7 @@ test("leaves Home and End to the field caret", async ({ page }) => {
   await openLibrary(page);
   await pressQuickOpen(page);
   await field(page).fill("settings");
-  await expect(options(page)).toHaveCount(7);
+  await expect(options(page)).toHaveCount(7 + SEARCH_ACTION);
   const before = await selected(page).innerText();
 
   await field(page).evaluate((input) => {
@@ -240,7 +304,9 @@ for (const flag of ["isComposing", "keyCode 229"] as const) {
     await openLibrary(page);
     await pressQuickOpen(page);
     await field(page).fill("se");
-    await expect(options(page)).toHaveCount(SERIES_SHOWN + PLACES_HOLDING_SE);
+    await expect(options(page)).toHaveCount(
+      SERIES_SHOWN + PLACES_HOLDING_SE + SEARCH_ACTION,
+    );
     const before = await selected(page).textContent();
 
     const kept = await field(page).evaluate((element, marker) => {
@@ -353,10 +419,10 @@ test("tells whoever is in the field when nothing is called what was typed", asyn
   await field(page).fill("zzz");
 
   await expect(field(page)).toHaveAccessibleDescription("Nothing called “zzz”");
-  await expect(field(page)).toHaveAttribute("aria-expanded", "false");
   await expect(quickOpen(page).getByRole("status")).toHaveText(
     "Nothing called “zzz”",
   );
+  await expect(options(page)).toHaveText([/Search the library for “zzz”/]);
 });
 
 test("fades in, which reduced motion turns into appearing at once", async ({
@@ -381,7 +447,7 @@ test("closes with Escape and gives focus back to where it was", async ({
   await openLibrary(page);
   const filter = page
     .locator("main header")
-    .getByRole("button", { name: /^Filter and sort/ });
+    .getByRole("button", { name: /^Sort and filter/ });
   await filter.focus();
   await pressQuickOpen(page);
 
@@ -429,7 +495,9 @@ for (const colorScheme of ["light", "dark"] as const) {
     await openLibrary(page);
     await pressQuickOpen(page);
     await field(page).fill("se");
-    await expect(options(page)).toHaveCount(SERIES_SHOWN + PLACES_HOLDING_SE);
+    await expect(options(page)).toHaveCount(
+      SERIES_SHOWN + PLACES_HOLDING_SE + SEARCH_ACTION,
+    );
 
     const violations = await accessibilityViolations(page);
 
@@ -474,7 +542,7 @@ test.describe("while a search is still out", () => {
     await expect(quickOpen(page)).toBeVisible();
     expect(new URL(page.url()).pathname).toBe("/");
     release();
-    await expect(options(page)).toHaveCount(SERIES_SHOWN);
+    await expect(options(page)).toHaveCount(SERIES_SHOWN + SEARCH_ACTION);
   });
 
   test("starts again from the first choice once the search answers", async ({
@@ -483,7 +551,9 @@ test.describe("while a search is still out", () => {
     await openLibrary(page);
     await pressQuickOpen(page);
     await field(page).fill("se");
-    await expect(options(page)).toHaveCount(SERIES_SHOWN + PLACES_HOLDING_SE);
+    await expect(options(page)).toHaveCount(
+      SERIES_SHOWN + PLACES_HOLDING_SE + SEARCH_ACTION,
+    );
 
     await field(page).fill(HELD_TEXT);
     for (let step = 0; step < 3; step += 1) {
@@ -511,6 +581,51 @@ test.describe("while a search is still out", () => {
 
     await expect(quickOpen(page).getByRole("status")).toHaveText("");
     release();
-    await expect(options(page)).toHaveCount(SERIES_SHOWN);
+    await expect(options(page)).toHaveCount(SERIES_SHOWN + SEARCH_ACTION);
+  });
+});
+
+test.describe("with a book left unfinished", () => {
+  const STARTED_AT_MS = 1_790_000_000_000;
+  const UNFINISHED = {
+    book: "0190a3e4-0000-8000-8000-0000000000b1",
+    bookTitle: "Volume 3",
+    series: "0190a3e4-0000-8000-8000-000000000004",
+    seriesTitle: "Sample Series 0004",
+    position: 3,
+    cover: null,
+    startedAtMs: STARTED_AT_MS,
+    utcOffsetMinutes: 0,
+    readSeconds: 600,
+    readTo: { state: "page", page: 14, pageCount: 30 },
+    reading: { state: "started", page: 14 },
+    day: { day: Math.floor(STARTED_AT_MS / 86_400_000), readSeconds: 600 },
+  } as HistoryEntry;
+
+  test.use({
+    backend: {
+      ...SEARCHING_BACKEND,
+      readingHistory: (_after, of) => ({
+        entries: of.kind === "unfinished" ? [UNFINISHED] : [],
+        next: null,
+      }),
+    },
+  });
+
+  test("offers it first and continues it in the reader with Enter", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await pressQuickOpen(page);
+
+    await expect(
+      quickOpen(page).getByRole("group", { name: "Continue reading" }),
+    ).toContainText("Volume 3, page 14");
+    await expect(selected(page)).toContainText("Sample Series 0004");
+    await field(page).press("Enter");
+
+    await expect(page).toHaveURL(
+      /\/read\/0190a3e4-0000-8000-8000-0000000000b1$/,
+    );
   });
 });

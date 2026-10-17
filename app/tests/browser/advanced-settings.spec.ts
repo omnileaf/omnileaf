@@ -18,6 +18,7 @@ import {
   settle,
   test,
   testOnlyInItsWebview,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -55,7 +56,7 @@ const LOOKS = {
 
 const TILE = 36;
 const DIALOG_WIDTH = 420;
-const DIALOG_BUTTON_HEIGHT = 40;
+const DIALOG_BUTTON_HEIGHT = 36;
 const SHEET_BUTTON_HEIGHT = 52;
 const SHEET_INSET = 20;
 
@@ -106,11 +107,8 @@ function lookOf(page: Page, platform: Platform): Look {
   return viewportOf(page).width < MEDIUM_MIN_WIDTH ? "phone" : "touchPane";
 }
 
-function sectionsHoldingAbout(page: Page): Locator {
-  return page
-    .getByRole("list")
-    .filter({ has: page.getByRole("link", { name: /^About/ }) })
-    .filter({ visible: true });
+function sectionLinks(page: Page): Locator {
+  return page.locator('a[href^="/settings/"]').filter({ visible: true });
 }
 
 function showsSummaries(page: Page, platform: Platform): boolean {
@@ -159,16 +157,19 @@ for (const platform of ["android", "ios", "linux"] as const) {
 
     test("lists Advanced just above About", async ({ page }) => {
       await page.goto("/settings");
+      await expect(
+        sectionLinks(page).filter({ hasText: "About" }).first(),
+      ).toBeVisible();
 
-      const group = sectionsHoldingAbout(page);
-
-      await expect(group.getByRole("link").first()).toHaveAccessibleName(
-        /^Advanced/,
+      const names = (await sectionLinks(page).allInnerTexts()).map((name) =>
+        name.trim(),
       );
-      await expect(group.getByRole("link")).toHaveCount(2);
+      const advanced = names.findIndex((name) => name.startsWith("Advanced"));
+
+      expect(names[advanced + 1]).toMatch(/^About/);
     });
 
-    test("summarises Advanced as a development build", async ({ page }) => {
+    test("summarises Advanced by what it holds", async ({ page }) => {
       await page.goto("/settings");
       test.skip(
         !showsSummaries(page, platform),
@@ -177,7 +178,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
 
       const advanced = advancedSummaryRow(page);
 
-      await expect(advanced).toContainText("Development build");
+      await expect(advanced).toContainText("Animations");
     });
 
     test("heads the page Advanced, under a note that it never ships", async ({
@@ -248,13 +249,13 @@ for (const platform of ["android", "ios", "linux"] as const) {
       const panicTile = panic.locator("span[aria-hidden]").first();
 
       expect(await styleOf(crashTile, "background-color")).toBe(
-        "rgb(246, 227, 227)",
+        await tokenColour(page, "--color-danger-soft"),
       );
       expect(await styleOf(crash.locator("svg").last(), "color")).toBe(
-        "rgb(155, 44, 44)",
+        await tokenColour(page, "--color-danger"),
       );
       expect(await styleOf(panicTile, "background-color")).toBe(
-        "rgb(238, 234, 225)",
+        await tokenColour(page, "--color-chip"),
       );
     });
 
@@ -405,16 +406,19 @@ for (const platform of ["android", "ios", "linux"] as const) {
 
     test("lists Advanced just above About", async ({ page }) => {
       await page.goto("/settings");
+      await expect(
+        sectionLinks(page).filter({ hasText: "About" }).first(),
+      ).toBeVisible();
 
-      const group = sectionsHoldingAbout(page);
-
-      await expect(group.getByRole("link").first()).toHaveAccessibleName(
-        /^Advanced/,
+      const names = (await sectionLinks(page).allInnerTexts()).map((name) =>
+        name.trim(),
       );
-      await expect(group.getByRole("link")).toHaveCount(2);
+      const advanced = names.findIndex((name) => name.startsWith("Advanced"));
+
+      expect(names[advanced + 1]).toMatch(/^About/);
     });
 
-    test("gives Advanced no summary", async ({ page }) => {
+    test("summarises Advanced by what it holds", async ({ page }) => {
       await page.goto("/settings");
       test.skip(
         !showsSummaries(page, platform),
@@ -423,7 +427,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
 
       const advanced = advancedSummaryRow(page);
 
-      await expect(advanced).toHaveAccessibleName("Advanced");
+      await expect(advanced).toContainText("Animations");
     });
 
     test("opens Advanced without the development build note or the crash tests", async ({
@@ -460,4 +464,50 @@ test.describe("the Advanced page of a release build", () => {
       expect(violations).toEqual([]);
     });
   }
+});
+
+test.describe("Undo", () => {
+  test.use({
+    backend: {
+      ...onPlatform("android").backend,
+      libraryTags: () => [{ name: "Sea", seriesCount: 1 }],
+      removeLibraryTag: () => [],
+    },
+  });
+
+  test("remembers how Undo is offered", async ({ page }) => {
+    await page.goto("/settings/advanced");
+
+    await page.getByRole("switch", { name: "Offer Undo" }).click();
+    await page
+      .getByRole("combobox", { name: "Keep Undo for" })
+      .selectOption({ label: "30 seconds" });
+    await page
+      .getByRole("switch", { name: "Hold it while hovered or focused" })
+      .click();
+    await page.reload();
+
+    await expect(
+      page.getByRole("switch", { name: "Offer Undo" }),
+    ).not.toBeChecked();
+    await expect(
+      page.getByRole("combobox", { name: "Keep Undo for" }),
+    ).toHaveValue("30");
+    await expect(
+      page.getByRole("switch", { name: "Hold it while hovered or focused" }),
+    ).not.toBeChecked();
+  });
+
+  test("tells of a deletion without Undo once Undo is turned off", async ({
+    page,
+  }) => {
+    await page.goto("/settings/advanced");
+    await page.getByRole("switch", { name: "Offer Undo" }).click();
+
+    await page.goto("/settings/library/tags");
+    await page.getByRole("button", { name: "Delete Sea" }).click();
+
+    await expect(page.getByText("Sea deleted")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Undo" })).toHaveCount(0);
+  });
 });

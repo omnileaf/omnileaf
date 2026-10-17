@@ -9,10 +9,12 @@ import {
 
 import {
   type AppInfo,
-  DEFAULT_LIBRARY_LISTING,
   DEFAULT_LIBRARY_VIEW,
   type Platform,
 } from "../../src/lib/ipc/bindings.ts";
+import { NEW_ADULT_CONTENT } from "../../src/lib/library/adult-content.ts";
+import { NEW_LIBRARY_TABS } from "../../src/lib/library/library-tabs.ts";
+import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 import type { ScreenSize } from "../../src/lib/library/library-view.ts";
 import {
   CommandFailure,
@@ -22,6 +24,8 @@ import {
 
 export const FAKE_APP_VERSION = "1.2.3";
 export const FAKE_SOURCE_CODE = "repo.example.org/omnileaf";
+export const FAKE_SYSTEM = "Fedora 43";
+export const FAKE_REPORT_CODE = "R-8M4T";
 export const IPHONE_USER_AGENT =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148";
 export const IPAD_USER_AGENT =
@@ -51,10 +55,18 @@ export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => fakeAppInfo("linux"),
   libraryProblem: () => null,
   addLibraryFolder: () => null,
+  linkLibraryFolder: () => {
+    throw new CommandFailure({
+      code: "folderUnreadable",
+      message: "the default backend links no folders",
+    });
+  },
   libraryFolders: () => ({ folders: [], next: null }),
   librarySeries: () => ({ series: [], next: null }),
   librarySeriesCount: () => 0,
   librarySearch: () => ({ series: [], next: null }),
+  folderSeries: () => ({ series: [], next: null }),
+  folderSeriesCount: () => 0,
   librarySearchCount: () => 0,
   seriesOverview: () => {
     throw new CommandFailure({
@@ -63,7 +75,47 @@ export const DEFAULT_BACKEND: FakeBackend = {
     });
   },
   seriesBooks: () => ({ books: [], next: null }),
+  creatorSeries: () => [],
   markBooks: () => null,
+  markSeriesRead: () => [],
+  bookmarkPages: () => null,
+  bookPlace: () => null,
+  libraryCategories: () => [],
+  seriesLabels: () => ({
+    keepsLabels: false,
+    categories: [],
+    tags: [],
+    suggestedTags: [],
+  }),
+  labelSeries: () => {
+    throw new CommandFailure({
+      code: "labelsNotKept",
+      message: "the library keeps no categories or tags yet",
+    });
+  },
+  keepsDetailEdits: () => false,
+  seriesDetails: () => {
+    throw new CommandFailure({
+      code: "seriesNotFound",
+      message: "that series isn't in the library",
+    });
+  },
+  editSeriesDetails: () => {
+    throw new CommandFailure({
+      code: "detailsNotKept",
+      message: "the library keeps no edits to series details yet",
+    });
+  },
+  libraryFilterChoices: () => ({
+    formats: [],
+    languages: [],
+    tags: [],
+    ratesAdult: false,
+    keepsBookmarks: false,
+    smart: [],
+  }),
+  categorySeries: () => ({ series: [], next: null }),
+  categorySeriesCount: () => 0,
   orientScreen: () => null,
   changeFullScreen: () => false,
   openBook: () => {
@@ -76,13 +128,32 @@ export const DEFAULT_BACKEND: FakeBackend = {
   pageShown: () => null,
   closeBook: () => null,
   readingHistory: () => ({ entries: [], next: null }),
+  removeFromHistory: () => null,
+  restoreToHistory: () => null,
+  clearHistory: () => null,
+  restoreHistory: () => null,
   readingWeek: () => NOTHING_READ_THIS_WEEK,
   readingTimeBetween: () => 0,
   bookReadTime: () => 0,
+  readingSummary: () => null,
   bookSessions: () => null,
   historySeries: () => [],
-  libraryListing: () => DEFAULT_LIBRARY_LISTING,
+  libraryListing: () => NEW_LIBRARY_LISTING,
   setLibraryListing: () => null,
+  libraryTabs: () => [...NEW_LIBRARY_TABS],
+  librarySpellingSuggestion: () => null,
+  missingLibraryFolders: () => [],
+  libraryHiddenSeriesCount: () => 0,
+  showMissingLibraryFolder: () => null,
+  relocateLibraryFolder: () => null,
+  signInToLibraryFolder: () => "cancelled",
+  showSeriesInFolder: () => null,
+  setLibraryTabs: () => null,
+  libraryTags: () => [],
+  renameLibraryTag: () => null,
+  removeLibraryTag: () => [],
+  libraryAdultContent: () => NEW_ADULT_CONTENT,
+  setLibraryAdultContent: () => null,
   libraryView: () => DEFAULT_LIBRARY_VIEW,
   setLibraryView: () => null,
   removeLibraryFolder: () => null,
@@ -95,6 +166,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   },
   rescanLibraryFolders: () => [],
   removeBooksOfEmptiedFolder: () => ({ kind: "kept" }),
+  foundLibrary: () => null,
   firstLaunchFinished: () => true,
   finishFirstLaunch: () => null,
   setAppLanguage: () => null,
@@ -104,6 +176,21 @@ export const DEFAULT_BACKEND: FakeBackend = {
   allowBackSwipe: () => null,
   copyVersionDetails: () => null,
   openProjectLink: () => null,
+  problemReport: () => ({
+    code: FAKE_REPORT_CODE,
+    version: FAKE_APP_VERSION,
+    system: FAKE_SYSTEM,
+    log: [],
+  }),
+  copyProblemReport: () => null,
+  sendProblemReport: () => null,
+  copyProblemReportCode: () => null,
+  openProblemReportIssue: () => null,
+  saveProblemReport: () => ({
+    place: { kind: "folder", folder: "~/Downloads" },
+    file: "omnileaf-report-2026-10-16.txt",
+  }),
+  showSavedProblemReport: () => null,
   offerSavedCrashReport: () => null,
   offerInterfaceErrorReport: (error) => ({
     details: error.message,
@@ -112,6 +199,20 @@ export const DEFAULT_BACKEND: FakeBackend = {
   sendCrashReport: () => null,
   copyCrashReport: () => null,
   declineCrashReport: () => null,
+  checkStorage: () => ({
+    omnileafBytes: 1_440_000_000,
+    cachedPagesBytes: 1_200_000_000,
+    coversBytes: 210_000_000,
+    freeBytes: 41_000_000_000,
+    totalBytes: 128_000_000_000,
+    isLow: false,
+  }),
+  clearCachedPages: () => null,
+  clearCovers: () => null,
+  showTrayMenu: () => null,
+  showIconActions: () => null,
+  watchIconActions: () => null,
+  openSystemSettings: () => null,
   panicInCore: () => null,
   crashAndQuit: () => null,
 };
@@ -158,6 +259,28 @@ export async function setTextScale(page: Page, scale: number): Promise<void> {
 
 type Box = NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>;
 
+/** The colour a theme token resolves to, as the browser writes computed colours, so a test follows whichever theme the app ships; naming a theme reads that theme's value of a role such as `--background`. */
+export function tokenColour(
+  page: Page,
+  token: string,
+  theme?: "light" | "dark",
+): Promise<string> {
+  return page.evaluate(
+    ([name, themed]) => {
+      const probe = document.createElement("span");
+      probe.style.color = `var(${name})`;
+      if (themed !== undefined) {
+        probe.dataset.theme = themed;
+      }
+      document.body.append(probe);
+      const colour = getComputedStyle(probe).color;
+      probe.remove();
+      return colour;
+    },
+    [token, theme] as const,
+  );
+}
+
 export async function boxOf(locator: Locator): Promise<Box> {
   const box = await locator.boundingBox();
   if (box === null) {
@@ -166,14 +289,59 @@ export async function boxOf(locator: Locator): Promise<Box> {
   return box;
 }
 
+const SETTLE_GRACE_MS = 2000;
+const FRAME_WAIT_MS = 50;
+
+/** Lists a part bits-ui still holds in its starting style as well, since no animation reports it until the frame its transition begins. */
+function animationsWithin(locator: Locator): Promise<string[]> {
+  return locator.evaluate(async (element, frameWaitMs) => {
+    const nextFrame = new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    });
+    const timer = new Promise<void>((resolve) => {
+      setTimeout(resolve, frameWaitMs);
+    });
+    await Promise.race([nextFrame, timer]);
+    return [
+      ...element.getAnimations({ subtree: true }).map((animation) => {
+        const target =
+          animation.effect instanceof KeyframeEffect
+            ? animation.effect.target
+            : null;
+        const name =
+          animation instanceof CSSTransition
+            ? animation.transitionProperty
+            : animation instanceof CSSAnimation
+              ? animation.animationName
+              : animation.id;
+        return `${name} on ${target?.tagName.toLowerCase() ?? "?"} ${target?.getAttribute("class") ?? ""}`;
+      }),
+      ...(element.closest("[data-starting-style]") === null &&
+      element.querySelector("[data-starting-style]") === null
+        ? []
+        : ["a part still held in its starting style"]),
+    ];
+  }, FRAME_WAIT_MS);
+}
+
+/** Finishes whatever still moves after a grace period, since headless WebKit can stop advancing its animations, and even its frames, while nothing asks for one. */
 export async function settle(locator: Locator): Promise<void> {
-  await expect
-    .poll(() =>
-      locator.evaluate(
-        (element) => element.getAnimations({ subtree: true }).length,
-      ),
-    )
-    .toBe(0);
+  try {
+    await expect
+      .poll(() => animationsWithin(locator), { timeout: SETTLE_GRACE_MS })
+      .toEqual([]);
+  } catch {
+    await locator.evaluate((element) => {
+      for (const animation of element.getAnimations({ subtree: true })) {
+        animation.finish();
+      }
+    });
+    await expect.poll(() => animationsWithin(locator)).toEqual([]);
+  }
 }
 
 function noteTransitions(): void {
@@ -227,6 +395,9 @@ export const APP_PAGES = [
   "/settings/advanced",
   "/settings/about",
   "/settings/about/licences",
+  "/settings/about/report",
+  "/settings/about/reports",
+  "/settings/privacy/permissions",
   "/search",
   "/series/0190a3e4-0000-8000-8000-00000000000f",
   "/read/0190a3e4-0000-8000-8000-00000000000f",
@@ -351,9 +522,20 @@ export async function selectedByDoubleClick(
   return page.evaluate(() => getSelection()?.toString() ?? "");
 }
 
-export const test = base.extend<{ backend: FakeBackend }>({
+export const test = base.extend<{
+  backend: FakeBackend;
+  hasSeenReaderGuide: boolean;
+}>({
   backend: [DEFAULT_BACKEND, { option: true }],
-  page: async ({ page, backend }, use) => {
+  hasSeenReaderGuide: [true, { option: true }],
+  page: async ({ page, backend, hasSeenReaderGuide }, use) => {
+    if (hasSeenReaderGuide) {
+      await page.addInitScript(() => {
+        for (const direction of ["leftToRight", "rightToLeft"]) {
+          localStorage.setItem(`omnileaf.readerGuide.${direction}`, "seen");
+        }
+      });
+    }
     await installFakeBackend(page, backend);
     await use(page);
   },

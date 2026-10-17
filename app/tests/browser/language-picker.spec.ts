@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import {
   accessibilityViolations,
   boxOf,
+  EXPANDED_MIN_WIDTH,
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
@@ -13,9 +14,11 @@ import {
 
 const LANGUAGE_PAGE = "/settings/general/language";
 const LANGUAGE_KEY = "omnileaf.language";
-const SYSTEM_OPTION = "Use the system language (English)";
+const SYSTEM_OPTION = "Use the system language";
+const INTRO =
+  "Each language is shown in its own name. It changes straight away.";
+const INTRO_GAP = 8;
 const FOOTNOTE = "More languages arrive as people translate Omnileaf.";
-const GROUP_GAP = 16;
 const PHONE_ROW_HEIGHT = 56;
 const TOUCH_ROW_HEIGHT = 48;
 const POINTER_ROW_HEIGHT = 44;
@@ -187,9 +190,18 @@ test("names the system's own language while another is chosen", async ({
     .first()
     .locator("[lang]");
 
-  await expect(system).toHaveAccessibleName(/\(English\)/);
+  await expect(system).toHaveAccessibleDescription("English");
   await expect(systemName).toHaveText("English");
   await expect(systemName).toHaveAttribute("lang", "en");
+});
+
+test("explains the list in one line 8px above it", async ({ page }) => {
+  await page.goto(LANGUAGE_PAGE);
+
+  const intro = await boxOf(page.getByText(INTRO));
+  const list = await boxOf(page.getByRole("radiogroup"));
+
+  expect(list.y - (intro.y + intro.height)).toBe(INTRO_GAP);
 });
 
 test.describe("on an Android phone", () => {
@@ -227,7 +239,7 @@ test.describe("on an Android tablet", () => {
   testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
-  test("sets the system language apart on 48px rows with a 20px check", async ({
+  test("lists every option in one card of 48px rows with a 20px check", async ({
     page,
   }) => {
     await page.goto(LANGUAGE_PAGE);
@@ -237,11 +249,9 @@ test.describe("on an Android tablet", () => {
     const english = await boxOf(option(page, "English"));
     const check = await boxOf(option(page, SYSTEM_OPTION).locator("svg"));
 
-    expect(system.height).toBe(TOUCH_ROW_HEIGHT);
+    expect(english.height).toBe(TOUCH_ROW_HEIGHT);
     expect(check.width).toBe(CHECK_SIZE);
-    expect(english.y - (system.y + system.height)).toBeGreaterThanOrEqual(
-      GROUP_GAP,
-    );
+    expect(english.y).toBe(system.y + system.height);
     await expect(page.getByText(FOOTNOTE)).toBeHidden();
   });
 });
@@ -249,7 +259,7 @@ test.describe("on an Android tablet", () => {
 test.describe("on a desktop", () => {
   test.use(onPlatform("linux"));
 
-  test("sets the system language apart on 44px rows with a 20px check", async ({
+  test("lists every option in one card of 44px rows with a 20px check", async ({
     page,
   }) => {
     await page.goto(LANGUAGE_PAGE);
@@ -258,33 +268,29 @@ test.describe("on a desktop", () => {
     const english = await boxOf(option(page, "English"));
     const check = await boxOf(option(page, SYSTEM_OPTION).locator("svg"));
 
-    expect(system.height).toBe(POINTER_ROW_HEIGHT);
-    expect(english.y - (system.y + system.height)).toBeGreaterThanOrEqual(
-      GROUP_GAP,
-    );
+    expect(english.height).toBe(POINTER_ROW_HEIGHT);
+    expect(english.y).toBe(system.y + system.height);
     expect(check.width).toBe(CHECK_SIZE);
     await expect(page.getByText(FOOTNOTE)).toBeHidden();
   });
 
-  test("keeps General selected beside the page from 600px", async ({
+  test("keeps General selected beside the page from 840px", async ({
     page,
   }) => {
     await page.goto(LANGUAGE_PAGE);
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
 
     await expect(
       page
         .getByRole("navigation", { name: "Settings sections" })
         .getByRole("link", { name: "General" }),
     ).toHaveAttribute("aria-current", "true");
-    await expect(
-      page.getByRole("link", { name: "Back to General" }),
-    ).toBeHidden();
+    await expect(page.locator("a[data-back-link]")).toBeHidden();
   });
 
-  test("leads back to General through a link under 600px", async ({ page }) => {
+  test("leads back to General through a link under 840px", async ({ page }) => {
     await page.goto(LANGUAGE_PAGE);
-    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "one pane only");
+    test.skip(viewportOf(page).width >= EXPANDED_MIN_WIDTH, "one pane only");
 
     await expect(
       page.getByRole("link", { name: "Back to General" }),

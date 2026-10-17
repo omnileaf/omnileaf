@@ -1,10 +1,10 @@
 import { expect, test } from "vitest";
 
 import {
-  isListedBeside,
   isWithinSection,
   sectionCurrent,
   SETTINGS_GROUPS,
+  SETTINGS_SECTIONS,
 } from "./sections";
 
 test("counts a section's own page as within it", () => {
@@ -43,26 +43,30 @@ test("leaves another section unmarked", () => {
   ).toBeUndefined();
 });
 
-test("lists settings and its sections beside the open page", () => {
-  const listed = [
-    "/(app)/settings",
+test("keeps About in a group of its own, after Advanced's", () => {
+  const routes = SETTINGS_GROUPS.map(({ sections }) =>
+    sections.map((section) => section.route),
+  );
+
+  expect(routes.slice(-2)).toEqual([
+    [
+      "/(app)/settings/privacy",
+      "/(app)/settings/storage",
+      "/(app)/settings/advanced",
+    ],
+    ["/(app)/settings/about"],
+  ]);
+});
+
+test("lists every section in the order the Settings nav draws them", () => {
+  expect(SETTINGS_SECTIONS.map(({ route }) => route)).toEqual([
     "/(app)/settings/general",
+    "/(app)/settings/appearance",
+    "/(app)/settings/library",
+    "/(app)/settings/reading",
+    "/(app)/settings/privacy",
+    "/(app)/settings/storage",
+    "/(app)/settings/advanced",
     "/(app)/settings/about",
-  ] as const;
-
-  expect(listed.map(isListedBeside)).toEqual([true, true, true]);
-});
-
-test("leaves a page under a section out of the list beside it", () => {
-  expect(isListedBeside("/(app)/settings/about/licences")).toBe(false);
-});
-
-test("lists Advanced just above About", () => {
-  const routes = SETTINGS_GROUPS.at(-1)?.map((section) => section.route);
-
-  expect(routes).toEqual(["/(app)/settings/advanced", "/(app)/settings/about"]);
-});
-
-test("lists Advanced beside the open page", () => {
-  expect(isListedBeside("/(app)/settings/advanced")).toBe(true);
+  ]);
 });

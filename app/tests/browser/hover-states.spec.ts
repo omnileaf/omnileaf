@@ -1,8 +1,7 @@
 import type { Locator } from "@playwright/test";
 
 import {
-  addFolderBesideFolders,
-  addFolderInPageHeading,
+  addFolderInFolders,
   CONTROLS,
   DESKTOP,
   destination,
@@ -67,6 +66,18 @@ async function inkOf(locator: Locator): Promise<string> {
   });
 }
 
+async function isIconOnTop(button: Locator): Promise<boolean> {
+  await settle(button);
+  return button.locator("svg").evaluate((icon) => {
+    const box = icon.getBoundingClientRect();
+    const hit = document.elementFromPoint(
+      box.x + box.width / 2,
+      box.y + box.height / 2,
+    );
+    return hit?.closest("svg") === icon;
+  });
+}
+
 test.describe("with a pointer", () => {
   test.use({ backend: DESKTOP });
   test.skip(({ isMobile }) => isMobile, "pointer screens only");
@@ -96,14 +107,16 @@ test.describe("with a pointer", () => {
     });
   }
 
-  test("keeps an outlined button's card under its tint", async ({ page }) => {
-    await page.goto("/");
-    const button = addFolderInPageHeading(page);
-    const card = await backgroundColorOf(button);
+  test("keeps an outlined control's card under its tint", async ({ page }) => {
+    await page.goto("/settings/advanced");
+    const control = page.getByRole("switch", {
+      name: "Check folders for new books while Omnileaf is open",
+    });
+    const card = await backgroundColorOf(control);
 
-    await button.hover();
+    await control.hover();
 
-    expect(await backgroundColorOf(button)).toBe(card);
+    expect(await backgroundColorOf(control)).toBe(card);
   });
 
   test("keeps the selected destination's look under the pointer", async ({
@@ -157,30 +170,51 @@ test.describe("with a pointer", () => {
       expect(circle).toEqual({ width: POINTER_TARGET, height: POINTER_TARGET });
     });
 
-    for (const name of ["Remove folder", "Cancel"]) {
-      test(`tints the dialog's ${name} button under the pointer`, async ({
+    for (const name of ["Remove Sample Comics", "Rescan Sample Comics"]) {
+      test(`keeps ${name}'s icon over its circle under the pointer`, async ({
         page,
       }) => {
         await page.goto("/settings/library");
-        await page
-          .getByRole("button", { name: "Remove Sample Comics" })
-          .click();
-        const button = page
-          .getByRole("alertdialog")
-          .getByRole("button", { name });
-        const resting = await paintOf(button);
+        const action = page.getByRole("button", { name, exact: true });
 
-        await button.hover();
+        await action.hover();
 
-        expect(await paintOf(button)).not.toBe(resting);
+        expect(await isIconOnTop(action)).toBe(true);
+      });
+
+      test(`keeps ${name}'s icon over its circle while pressed`, async ({
+        page,
+      }) => {
+        await page.goto("/settings/library");
+        const action = page.getByRole("button", { name, exact: true });
+        await action.hover();
+
+        await page.mouse.down();
+
+        expect(await isIconOnTop(action)).toBe(true);
       });
     }
+
+    test("keeps a toast's dismiss icon over its circle under the pointer", async ({
+      page,
+    }) => {
+      await page.goto("/settings/library");
+      await addFolderInFolders(page).click();
+      const toast = page.locator("[data-sonner-toast]");
+      await expect(toast).toBeVisible();
+      await settle(toast);
+      const dismiss = toast.getByRole("button", { name: "Dismiss" });
+
+      await dismiss.hover();
+
+      expect(await isIconOnTop(dismiss)).toBe(true);
+    });
 
     test("draws a 40px circle behind an icon button under the pointer", async ({
       page,
     }) => {
       await page.goto("/settings/library");
-      await addFolderBesideFolders(page).click();
+      await addFolderInFolders(page).click();
       const toast = page.locator("[data-sonner-toast]");
       await expect(toast).toBeVisible();
       await settle(toast);
@@ -209,7 +243,7 @@ test.describe("with a pointer", () => {
       page,
     }) => {
       await page.goto("/settings/library");
-      await addFolderBesideFolders(page).click();
+      await addFolderInFolders(page).click();
       const toast = page.locator("[data-sonner-toast]");
       await expect(toast).toBeVisible();
       await settle(toast);
@@ -248,17 +282,20 @@ test.describe("with a pointer", () => {
     for (const [name, find] of [
       [
         "an unchosen display",
-        (options: Locator) => options.getByRole("radio", { name: "List" }),
+        (options: Locator) =>
+          Promise.resolve(options.getByRole("radio", { name: "List" })),
       ],
       [
         "a covers per row step",
-        (options: Locator) =>
-          options.getByRole("button", { name: "More covers per row" }),
+        async (options: Locator) => {
+          await options.getByRole("radio", { name: "Choose" }).click();
+          return options.getByRole("button", { name: "More covers per row" });
+        },
       ],
     ] as const) {
       test(`tints ${name} under the pointer`, async ({ page }) => {
         await page.goto("/");
-        const control = find(await openViewOptions(page));
+        const control = await find(await openViewOptions(page));
         await page.mouse.move(0, 0);
         const resting = await paintOf(control);
 
@@ -282,22 +319,16 @@ test.describe("with a pointer", () => {
       expect(await paintOf(start)).not.toBe(resting);
     });
 
-    test("tints a finished step's circle under the pointer", async ({
-      page,
-    }) => {
+    test("tints Back under the pointer", async ({ page }) => {
       await page.goto("/first-launch");
       await page.getByRole("button", { name: "Get started" }).click();
-      await page.getByRole("button", { name: "Continue" }).click();
       await page.mouse.move(0, 0);
-      const finished = page.getByRole("button", {
-        name: "Home folder, step 1 of 3",
-      });
-      const circle = finished.locator("xpath=*[1]");
-      const resting = await paintOf(circle);
+      const back = page.getByRole("button", { name: "Back" });
+      const resting = await paintOf(back);
 
-      await finished.hover();
+      await back.hover();
 
-      expect(await paintOf(circle)).not.toBe(resting);
+      expect(await paintOf(back)).not.toBe(resting);
     });
 
     test("tints a quiet step button under the pointer", async ({ page }) => {
@@ -321,7 +352,7 @@ test.describe("with a pointer", () => {
       page,
     }) => {
       await page.goto("/settings/library");
-      const button = addFolderBesideFolders(page);
+      const button = addFolderInFolders(page);
       const resting = await paintOf(button);
 
       await button.click();
@@ -338,7 +369,7 @@ test.describe("on a touch screen", () => {
 
   test("leaves no hover tint on a button", async ({ page }) => {
     await page.goto("/settings/library");
-    const button = addFolderBesideFolders(page);
+    const button = addFolderInFolders(page);
     const resting = await paintOf(button);
 
     await button.hover();

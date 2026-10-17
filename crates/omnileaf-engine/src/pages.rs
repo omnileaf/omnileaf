@@ -120,6 +120,29 @@ impl Pages {
         })
     }
 
+    pub(crate) async fn cached_bytes(&self) -> u64 {
+        self.with_transcodes(DiskCache::stored_bytes).await
+    }
+
+    pub(crate) async fn clear_cached(&self) -> u64 {
+        self.with_transcodes(DiskCache::clear).await
+    }
+
+    pub(crate) async fn trim_cached(&self, bytes: u64) -> u64 {
+        self.with_transcodes(move |cache| cache.trim_oldest(bytes))
+            .await
+    }
+
+    async fn with_transcodes(&self, work: impl FnOnce(&DiskCache) -> u64 + Send + 'static) -> u64 {
+        let shared = Arc::clone(&self.shared);
+        tokio::task::spawn_blocking(move || shared.transcodes().map_or(0, work))
+            .await
+            .unwrap_or_else(|error| {
+                tracing::warn!(%error, "reach the transcoded page cache, counted as empty");
+                0
+            })
+    }
+
     /// Opens the book's file and starts reading ahead from where reading goes on, the first time reading the sizes of the pages around there and the rest after it opens.
     pub(crate) async fn open_book(
         &self,
@@ -189,9 +212,22 @@ impl Pages {
         if let Err(error) = library.start_reading(id, opened.page_count).await {
             tracing::debug!(error = %describe_error(&error), "save the page reached in the book read before this one");
         }
+        if let Err(error) = library.record_page_count(id, opened.page_count).await {
+            tracing::warn!(error = %describe_error(&error), "keep how many pages the book holds");
+        }
+        let seconds_per_page = library.seconds_per_page().await.unwrap_or_else(|error| {
+            tracing::debug!(error = %describe_error(&error), "learn how long a page takes to read");
+            None
+        });
         let start = start_page(found.reading, opened.page_count);
         self.read_ahead(&opened, start_index(found.reading, opened.page_count));
-        Ok(opened_book(to_open, &sizes, start, direction))
+        Ok(opened_book(
+            to_open,
+            &sizes,
+            start,
+            direction,
+            seconds_per_page,
+        ))
     }
 
     fn fill_sizes_later(
@@ -439,6 +475,7 @@ fn opened_book(
     sizes: &[Option<omnileaf_db::catalog::PageDimensions>],
     start_page: u32,
     reading_direction: Option<ReadingDirection>,
+    seconds_per_page: Option<u32>,
 ) -> OpenedBook {
     let pages = (0_u32..)
         .zip(sizes)
@@ -467,6 +504,9 @@ fn opened_book(
         previous: place.previous.map(Into::into),
         next: place.next.map(Into::into),
         reading_direction,
+        bookmarked_pages: None,
+        damage: None,
+        seconds_per_page,
     }
 }
 

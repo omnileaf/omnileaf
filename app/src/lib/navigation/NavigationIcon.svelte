@@ -63,7 +63,7 @@
 
   const HOLE = "stroke-icon-hole";
   const FILL_FADE =
-    "transition-paint motion-safe:duration-fade motion-safe:ease-out";
+    "transition-paint motion-navigation:duration-fade motion-navigation:ease-out";
   const MOVES_ABOUT_CENTRE = "origin-center";
 
   const SHAPES: Record<Section, Snippet<[boolean]>> = {
@@ -80,7 +80,7 @@
   <g
     class={[
       MOVES_ABOUT_CENTRE,
-      isArriving && "icon-moves:motion-safe:animate-book-open",
+      isArriving && "icon-moves:motion-navigation:animate-book-open",
     ]}
   >
     <path
@@ -116,7 +116,7 @@
       FILL_FADE,
       MOVES_ABOUT_CENTRE,
       filled && [HOLE, "fill-icon-hole"],
-      isArriving && "icon-moves:motion-safe:animate-needle-swing",
+      isArriving && "icon-moves:motion-navigation:animate-needle-swing",
     ]}
   />
 {/snippet}
@@ -138,7 +138,7 @@
       FILL_FADE,
       MOVES_ABOUT_CENTRE,
       filled && HOLE,
-      isArriving && "icon-moves:motion-safe:animate-hands-sweep",
+      isArriving && "icon-moves:motion-navigation:animate-hands-sweep",
     ]}
   />
 {/snippet}
@@ -147,7 +147,7 @@
   <g
     class={[
       MOVES_ABOUT_CENTRE,
-      isArriving && "icon-moves:motion-safe:animate-gear-turn",
+      isArriving && "icon-moves:motion-navigation:animate-gear-turn",
     ]}
   >
     <path

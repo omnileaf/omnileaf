@@ -85,6 +85,7 @@ async fn refuses_a_book_for_a_series_missing_from_the_catalog() {
         series: missing,
         title: "Volume 01".to_owned(),
         added_at_ms: ADDED_AT_MS,
+        page_count: None,
     };
 
     let outcome = database

@@ -1,13 +1,18 @@
 <script lang="ts">
   import { m } from "#lib/paraglide/messages.js";
-  import { getLocale } from "#lib/paraglide/runtime.js";
 
-  let { count }: { count: number } = $props();
+  let { count, hidden = 0 }: { count: number; hidden?: number } = $props();
 
-  const number = $derived(new Intl.NumberFormat(getLocale()).format(count));
+  const series = $derived(
+    count === 0 ? m.library_no_series() : m.library_series_count({ count }),
+  );
 </script>
 
-<p class="text-count font-semibold text-muted large:text-body">
-  <span aria-hidden="true">{number}</span>
-  <span class="sr-only">{m.library_series_count({ count })}</span>
+<p class="text-small text-muted in-toolbar:truncate">
+  {hidden === 0
+    ? series
+    : m.library_series_and_hidden({
+        series,
+        hidden: m.library_hidden_count({ count: hidden }),
+      })}
 </p>

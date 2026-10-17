@@ -151,7 +151,6 @@ test("reaches the warning from the keyboard after the page", async ({
   await page.keyboard.press("Tab");
   await expect(warning).toBeFocused();
   await page.keyboard.press("Tab");
-  await page.keyboard.press("Tab");
   await expect(warning.getByRole("button", { name: "Dismiss" })).toBeFocused();
   await page.keyboard.press("Enter");
 
@@ -255,9 +254,12 @@ test("draws the warning's action as a 32px pill on a desktop", async ({
   expect(box.height).toBe(POINTER_ACTION_HEIGHT);
   await expect(action).toHaveCSS(
     "background-color",
-    await colourOf(page, "--color-foreground"),
+    await colourOf(page, "--color-on-warning"),
   );
-  await expect(action).toHaveCSS("color", await colourOf(page, "--color-card"));
+  await expect(action).toHaveCSS(
+    "color",
+    await colourOf(page, "--color-warning-soft"),
+  );
   const radius = await action.evaluate((element) =>
     Number.parseFloat(getComputedStyle(element).borderTopLeftRadius),
   );

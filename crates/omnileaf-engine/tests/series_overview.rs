@@ -157,6 +157,33 @@ async fn lists_only_a_series_books_not_read_the_other_way_round_numbered_by_plac
 }
 
 #[tokio::test]
+async fn lists_no_book_as_bookmarked_while_the_library_keeps_no_bookmarks() {
+    let sample = SampleLibrary::open("bookmarked-books").await;
+    let series = sample.series_named(FIRST_SERIES).await;
+    let bookmarked = SeriesBookListing {
+        shown: BooksShown::Bookmarked,
+        direction: SortDirection::Ascending,
+    };
+
+    let page = sample
+        .library
+        .series_books(series, bookmarked, None)
+        .await
+        .unwrap();
+
+    assert_eq!((page.books.len(), page.next), (0, None));
+}
+
+#[tokio::test]
+async fn finds_no_series_by_a_creator_until_the_library_reads_creators() {
+    let sample = SampleLibrary::open("creator-series").await;
+
+    let found = sample.library.creator_series("Author A");
+
+    assert_eq!(found, Vec::new());
+}
+
+#[tokio::test]
 async fn refuses_an_overview_of_a_series_the_library_does_not_hold() {
     let elsewhere = SampleLibrary::open("overview-of-missing-series").await;
     let series = elsewhere.series_named(FIRST_SERIES).await;

@@ -56,8 +56,20 @@ function withSeries(platform: Platform): FakeBackend {
   };
 }
 
+const LINKED_FOLDER = {
+  id: "2",
+  kind: "linked",
+  name: "Sample Comics",
+  location: "/media/Sample Comics",
+  isAvailable: true,
+} as const;
+
 function onFirstLaunch(platform: Platform): FakeBackend {
-  return { ...onPlatform(platform).backend, firstLaunchFinished: () => false };
+  return {
+    ...onPlatform(platform).backend,
+    firstLaunchFinished: () => false,
+    libraryFolders: () => ({ folders: [LINKED_FOLDER], next: null }),
+  };
 }
 
 async function settingsGroup(
@@ -81,7 +93,9 @@ const CONTROLS: readonly SegmentedControl[] = [
         .getByRole("main")
         .getByRole("button", { name: messages.library_view_options })
         .click();
-      const options = page.getByRole("dialog", { name: messages.library_view });
+      const options = page.getByRole("dialog", {
+        name: messages.library_view_options,
+      });
       await settle(options);
       return options.getByRole("radiogroup", {
         name: messages.library_view_display,
@@ -344,7 +358,7 @@ async function listenForErrors(page: Page): Promise<() => Promise<string[]>> {
 
 function displayGroup(page: Page): Locator {
   return page
-    .getByRole("dialog", { name: english.library_view })
+    .getByRole("dialog", { name: english.library_view_options })
     .getByRole("radiogroup", { name: english.library_view_display });
 }
 
@@ -358,9 +372,10 @@ function rowsInFirstFrame(page: Page): Promise<number> {
           )
           ?.click();
         requestAnimationFrame(() => {
-          const segments = document.querySelectorAll(
-            "[role=dialog][data-state=open] [role=radio]",
-          );
+          const segments =
+            document
+              .querySelector("[role=dialog][data-state=open] [role=radiogroup]")
+              ?.querySelectorAll("[role=radio]") ?? [];
           resolve(
             new Set(
               [...segments].map((segment) =>
@@ -402,7 +417,9 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
       ).toBeVisible();
 
       const firstFrame = await rowsInFirstFrame(page);
-      await settle(page.getByRole("dialog", { name: english.library_view }));
+      await settle(
+        page.getByRole("dialog", { name: english.library_view_options }),
+      );
       const settled = rowsOf(await segmentsOf(displayGroup(page))).length;
 
       expect(settled).toBeGreaterThan(1);
@@ -419,11 +436,13 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
         .getByRole("main")
         .getByRole("button", { name: english.library_view_options })
         .click();
-      await settle(page.getByRole("dialog", { name: english.library_view }));
+      await settle(
+        page.getByRole("dialog", { name: english.library_view_options }),
+      );
       const rows = rowsOf(await segmentsOf(displayGroup(page)));
       const rowStep = (rows[1]?.[0]?.y ?? 0) - (rows[0]?.[0]?.y ?? 0);
       const wrappedHeight = await page
-        .getByRole("dialog", { name: english.library_view })
+        .getByRole("dialog", { name: english.library_view_options })
         .evaluate((dialog) => dialog.scrollHeight);
       await page.keyboard.press("Escape");
       const { width } = page.viewportSize() ?? { width: 0 };

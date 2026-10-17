@@ -1,0 +1,492 @@
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+  --overlay: oklch(0 0 0 / 50%);
+  --reader-black: oklch(0 0 0);
+  --reader-grey: oklch(0.32 0 0);
+  --reader-white: oklch(1 0 0);
+  --reader-warmth: oklch(0.75 0.17 60);
+  --ios-grouped-bg: oklch(0.967 0.003 286);
+  --ios-chip-grey: oklch(0.55 0.012 286);
+  --ios-chip-blue: oklch(0.56 0.2 258);
+  --ios-chip-green: oklch(0.55 0.15 150);
+  --ios-chip-orange: oklch(0.6 0.16 50);
+  --ios-grouped-cell: oklch(1 0 0);
+  --ios-separator: oklch(0.235 0.004 286 / 22%);
+  --ios-fill: oklch(0.235 0.004 286 / 8%);
+  --ios-material: oklch(0.985 0 0 / 78%);
+  --ios-glass-edge: oklch(1 0 0 / 70%);
+  --ios-glass-pill: oklch(0.145 0 0 / 8%);
+  --ios-switch-thumb: oklch(1 0 0);
+  --ios-secondary-label: oklch(0.5 0.01 286);
+  --ios-switch-on: oklch(0.6 0.17 149);
+  --macos-sidebar-material: oklch(0.94 0.004 286 / 82%);
+  --macos-selection: oklch(0.145 0 0 / 9%);
+  --macos-menu-material: oklch(0.98 0 0 / 86%);
+  --macos-menu-edge: oklch(0 0 0 / 12%);
+  --macos-secondary-label: oklch(0.5 0.005 286);
+  --macos-switch-on: oklch(0.6 0.2 255);
+  --traffic-close: oklch(0.68 0.2 25);
+  --traffic-minimise: oklch(0.83 0.16 80);
+  --traffic-zoom: oklch(0.75 0.2 145);
+  --windows-mica: oklch(0.962 0.004 250);
+  --windows-layer: oklch(0.99 0 0 / 70%);
+  --windows-layer-solid: oklch(0.985 0.001 250);
+  --windows-control: oklch(1 0 0 / 70%);
+  --windows-stroke: oklch(0 0 0 / 7%);
+  --windows-stroke-strong: oklch(0 0 0 / 22%);
+  --windows-subtle: oklch(0 0 0 / 4%);
+  --windows-flyout: oklch(0.985 0 0 / 96%);
+  --windows-close: oklch(0.55 0.2 27);
+  --windows-secondary-text: oklch(0.48 0 0);
+
+  --raised: var(--background);
+  --destructive-fill: var(--destructive);
+  --destructive-fill-foreground: var(--primary-foreground);
+  --destructive-fill-hover: color-mix(
+    in oklab,
+    var(--destructive-fill) 90%,
+    var(--foreground)
+  );
+  --destructive-fill-pressed: color-mix(
+    in oklab,
+    var(--destructive-fill) 80%,
+    var(--foreground)
+  );
+  --switch-off: var(--input);
+  --checkbox-off: transparent;
+  --select-fill: transparent;
+  --button-outline-fill: var(--background);
+  --input-fill: transparent;
+  --switch-thumb: var(--background);
+  --switch-thumb-on: var(--background);
+  --glass: oklch(0.985 0 0 / 78%);
+  --glass-edge: oklch(1 0 0 / 70%);
+  --glass-pill: oklch(0.145 0 0 / 8%);
+  --warning: oklch(0.77 0.16 70);
+  --warning-soft: oklch(0.97 0.04 85);
+  --warning-strong: oklch(0.58 0.13 70);
+  --warning-foreground: oklch(0.33 0.08 60);
+  --shadow-color: oklch(0 0 0 / 10%);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+  --ios-grouped-bg: oklch(0 0 0);
+  --ios-chip-grey: oklch(0.58 0.012 286);
+  --ios-chip-blue: oklch(0.6 0.19 258);
+  --ios-chip-green: oklch(0.58 0.15 150);
+  --ios-chip-orange: oklch(0.62 0.16 50);
+  --ios-grouped-cell: oklch(0.218 0.004 286);
+  --ios-separator: oklch(0.6 0.01 286 / 36%);
+  --ios-fill: oklch(0.6 0.01 286 / 24%);
+  --ios-material: oklch(0.2 0 0 / 72%);
+  --ios-glass-edge: oklch(1 0 0 / 10%);
+  --ios-glass-pill: oklch(1 0 0 / 12%);
+  --ios-secondary-label: oklch(0.74 0.01 286);
+  --macos-sidebar-material: oklch(0.24 0 0 / 82%);
+  --macos-selection: oklch(1 0 0 / 11%);
+  --macos-menu-material: oklch(0.23 0 0 / 86%);
+  --macos-menu-edge: oklch(1 0 0 / 14%);
+  --macos-secondary-label: oklch(0.74 0.005 286);
+  --macos-switch-on: oklch(0.63 0.19 255);
+  --windows-mica: oklch(0.235 0.003 250);
+  --windows-layer: oklch(1 0 0 / 5%);
+  --windows-layer-solid: oklch(0.27 0.002 250);
+  --windows-control: oklch(1 0 0 / 6%);
+  --windows-stroke: oklch(1 0 0 / 8%);
+  --windows-stroke-strong: oklch(1 0 0 / 14%);
+  --windows-subtle: oklch(1 0 0 / 6%);
+  --windows-flyout: oklch(0.17 0 0 / 96%);
+  --windows-secondary-text: oklch(0.78 0 0);
+
+  --raised: color-mix(in oklab, var(--foreground) 6%, var(--muted));
+  --destructive-fill: color-mix(
+    in oklab,
+    var(--destructive) 60%,
+    var(--background)
+  );
+  --destructive-fill-foreground: var(--foreground);
+  --destructive-fill-hover: color-mix(
+    in oklab,
+    var(--destructive-fill) 90%,
+    var(--background)
+  );
+  --destructive-fill-pressed: color-mix(
+    in oklab,
+    var(--destructive-fill) 80%,
+    var(--background)
+  );
+  --switch-off: color-mix(in oklch, var(--input) 80%, transparent);
+  --checkbox-off: color-mix(in oklch, var(--input) 30%, transparent);
+  --select-fill: color-mix(in oklch, var(--input) 30%, transparent);
+  --button-outline-fill: color-mix(in oklch, var(--input) 30%, transparent);
+  --input-fill: color-mix(in oklch, var(--input) 30%, transparent);
+  --switch-thumb: var(--foreground);
+  --switch-thumb-on: var(--primary-foreground);
+  --glass: oklch(0.2 0 0 / 72%);
+  --glass-edge: oklch(1 0 0 / 10%);
+  --glass-pill: oklch(1 0 0 / 12%);
+  --warning: oklch(0.8 0.15 75);
+  --warning-soft: oklch(0.27 0.05 70);
+  --warning-strong: oklch(0.78 0.13 75);
+  --warning-foreground: oklch(0.93 0.06 85);
+  --shadow-color: oklch(0 0 0 / 50%);
+}
+
+:root {
+  --text-scale-large: 1.3;
+
+  --icon-hole: var(--accent);
+  --band: oklch(0 0 0 / 74%);
+  --on-band: oklch(1 0 0);
+  --cover-highlight: oklch(1 0 0 / 20%);
+
+  --reader-ground: var(--reader-black);
+  --reader-page: oklch(0.269 0 0);
+  --reader-glass: oklch(0.205 0 0 / 82%);
+  --reader-glass-wide: oklch(0.205 0 0 / 84%);
+  --reader-glass-edge: oklch(1 0 0 / 10%);
+  --reader-foreground: oklch(0.985 0 0);
+  --reader-muted-foreground: oklch(0.708 0 0);
+  --reader-primary: oklch(0.922 0 0);
+  --reader-primary-foreground: oklch(0.205 0 0);
+  --reader-line: oklch(1 0 0 / 10%);
+  --reader-track: oklch(1 0 0 / 15%);
+  --reader-hover: oklch(0.269 0 0);
+  --reader-pressed: oklch(0.32 0 0);
+
+  --sample-cover: oklch(0.43 0.11 25);
+  --sample-cover-art: oklch(0.5 0.12 25);
+  --sample-cover-ink: oklch(0.94 0.02 70);
+}
+
+:root {
+  --font-sans:
+    ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+  --font-ios: -apple-system, "SF Pro Text", "SF Pro", system-ui, sans-serif;
+  --font-macos:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-windows:
+    "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui,
+    sans-serif;
+  --font-android: "Roboto Flex", Roboto, "Noto Sans", system-ui, sans-serif;
+  --text-scale-ios: 1.0625;
+  --text-scale-macos: 0.93;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+  --radius-ios-control: 14px;
+  --radius-ios-cell: 10px;
+  --radius-ios-sheet: 14px;
+  --radius-macos-control: 6px;
+  --radius-macos-panel: 10px;
+  --radius-windows-control: 4px;
+  --radius-windows-overlay: 8px;
+  --radius-android-xs: 4px;
+  --radius-android-sm: 8px;
+  --radius-android-md: 12px;
+  --radius-android-lg: 16px;
+  --radius-android-xl: 28px;
+  --state-hover: 8%;
+  --state-pressed: 10%;
+  --control-ios: 50px;
+  --control-macos: 28px;
+  --control-windows: 32px;
+  --titlebar-macos: 52px;
+  --titlebar-windows: 32px;
+  --titlebar-windows-tall: 48px;
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-macos-menu:
+    0 10px 30px rgb(0 0 0 / 0.22), 0 0 0 0.5px rgb(0 0 0 / 0.12);
+  --shadow-windows-flyout: 0 8px 16px rgb(0 0 0 / 0.14);
+  --shadow-ios-glass: 0 8px 28px rgb(0 0 0 / 0.16), 0 1px 3px rgb(0 0 0 / 0.08);
+}
+
+:root,
+[data-theme] {
+  --platform-font: var(--font-sans);
+  --secondary-text: var(--muted-foreground);
+  --menu-surface: var(--popover);
+  --menu-edge: var(--border);
+  --menu-radius: var(--radius-md);
+  --menu-shadow: var(--shadow-md);
+  --menu-blur: 0px;
+  --menu-highlight: var(--accent);
+  --menu-highlight-foreground: var(--accent-foreground);
+  --popover-surface: var(--menu-surface);
+  --popover-radius: var(--menu-radius);
+  --label-badge-radius: var(--radius-md);
+  --empty-art-radius: var(--radius-lg);
+  --empty-art-fill: var(--muted);
+  --bottom-sheet-surface: var(--card);
+  --sheet-handle: var(--muted);
+  --tooltip-surface: var(--primary);
+  --tooltip-foreground: var(--primary-foreground);
+  --tooltip-edge: transparent;
+  --tooltip-radius: var(--radius-md);
+  --tooltip-shadow: none;
+  --tooltip-key-fill: color-mix(in oklch, var(--background) 20%, transparent);
+  --tooltip-key-ink: var(--primary-foreground);
+  --switch-on: var(--primary);
+  --switch-edge: transparent;
+  --switch-edge-on: transparent;
+  --control-edge: var(--input);
+  --radio-edge-on: var(--input);
+  --select-edge: var(--input);
+  --select-radius: var(--radius-md);
+  --hover-fill: var(--accent);
+  --pressed-fill: color-mix(in oklab, var(--foreground) 8%, var(--accent));
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--primary);
+  --dialog-surface: var(--background);
+  --dialog-edge: var(--border);
+  --dialog-radius: var(--radius-lg);
+  --dialog-shadow: var(--shadow-lg);
+  --button-outline-edge: var(--input);
+  --input-group-fill: var(--input-fill);
+  --input-group-edge: var(--input);
+  --input-group-radius: var(--radius-md);
+  --android-container-low: color-mix(
+    in oklch,
+    var(--foreground) 4%,
+    var(--background)
+  );
+  --android-container: color-mix(
+    in oklch,
+    var(--foreground) 6%,
+    var(--background)
+  );
+  --android-container-high: color-mix(
+    in oklch,
+    var(--foreground) 9%,
+    var(--background)
+  );
+  --android-tonal: color-mix(in oklch, var(--primary) 14%, var(--background));
+  --android-outline: color-mix(
+    in oklch,
+    var(--foreground) 45%,
+    var(--background)
+  );
+  --android-secondary-text: color-mix(
+    in oklch,
+    var(--foreground) 60%,
+    var(--background)
+  );
+  --android-inverse-primary: color-mix(
+    in oklch,
+    var(--primary) 30%,
+    var(--background)
+  );
+}
+
+[data-platform="android"],
+[data-platform="android"] [data-theme] {
+  --platform-font: var(--font-android);
+  --secondary-text: var(--android-secondary-text);
+  --menu-surface: var(--android-container);
+  --menu-edge: transparent;
+  --menu-radius: var(--radius-android-xs);
+  --popover-surface: var(--android-container-high);
+  --popover-radius: var(--radius-android-md);
+  --empty-art-radius: 9999px;
+  --empty-art-fill: var(--android-tonal);
+  --bottom-sheet-surface: var(--android-container-low);
+  --sheet-handle: var(--android-outline);
+  --switch-off: var(--android-container-high);
+  --switch-edge: var(--android-outline);
+  --switch-edge-on: var(--primary);
+  --switch-thumb: var(--android-outline);
+  --switch-thumb-on: var(--primary-foreground);
+  --control-edge: var(--android-outline);
+  --select-edge: var(--android-outline);
+  --select-radius: var(--radius-android-xs);
+  --radio-edge-on: var(--primary);
+  --checkbox-off: transparent;
+  --focus-ring-width: 3px;
+  --focus-ring-color: var(--foreground);
+  --dialog-surface: var(--android-container-high);
+  --dialog-edge: transparent;
+  --dialog-radius: var(--radius-android-xl);
+  --button-outline-fill: transparent;
+  --button-outline-edge: var(--android-outline);
+  --input-group-fill: var(--android-container-high);
+  --input-group-edge: transparent;
+  --input-group-radius: 9999px;
+  --hover-fill: color-mix(
+    in oklab,
+    currentColor var(--state-hover),
+    transparent
+  );
+  --pressed-fill: color-mix(
+    in oklab,
+    currentColor var(--state-pressed),
+    transparent
+  );
+}
+
+[data-platform="ios"],
+[data-platform="ios"] [data-theme] {
+  --platform-font: var(--font-ios);
+  --secondary-text: var(--ios-secondary-label);
+  --menu-surface: var(--ios-material);
+  --menu-edge: transparent;
+  --menu-radius: var(--radius-ios-sheet);
+  --sheet-handle: color-mix(in oklch, var(--secondary-text) 50%, transparent);
+  --select-fill: var(--ios-fill);
+  --label-badge-radius: 9999px;
+  --select-edge: transparent;
+  --select-radius: var(--radius-ios-cell);
+  --menu-shadow: var(--shadow-ios-glass);
+  --menu-blur: 24px;
+  --switch-off: var(--ios-fill);
+  --switch-on: var(--ios-switch-on);
+  --switch-thumb: var(--ios-switch-thumb);
+  --switch-thumb-on: var(--ios-switch-thumb);
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 0px;
+  --focus-ring-color: color-mix(in oklch, var(--primary) 45%, transparent);
+  --button-outline-fill: var(--ios-fill);
+  --button-outline-edge: transparent;
+  --input-group-fill: var(--ios-fill);
+  --input-group-edge: transparent;
+  --input-group-radius: var(--radius-ios-cell);
+}
+
+[data-platform="macos"],
+[data-platform="macos"] [data-theme] {
+  --platform-font: var(--font-macos);
+  --secondary-text: var(--macos-secondary-label);
+  --menu-surface: var(--macos-menu-material);
+  --menu-edge: var(--macos-menu-edge);
+  --menu-radius: var(--radius-macos-panel);
+  --menu-shadow: var(--shadow-macos-menu);
+  --menu-blur: 30px;
+  --menu-highlight: var(--primary);
+  --menu-highlight-foreground: var(--primary-foreground);
+  --tooltip-surface: var(--macos-menu-material);
+  --tooltip-foreground: var(--popover-foreground);
+  --tooltip-edge: var(--macos-menu-edge);
+  --tooltip-radius: 5px;
+  --tooltip-shadow: var(--shadow-md);
+  --tooltip-key-fill: var(--muted);
+  --tooltip-key-ink: var(--secondary-text);
+  --switch-on: var(--macos-switch-on);
+  --switch-thumb: var(--ios-switch-thumb);
+  --switch-thumb-on: var(--ios-switch-thumb);
+  --select-radius: var(--radius-macos-control);
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 0px;
+  --focus-ring-color: color-mix(in oklch, var(--primary) 50%, transparent);
+  --dialog-radius: var(--radius-macos-panel);
+  --dialog-shadow: var(--shadow-macos-menu);
+  --input-group-radius: var(--radius-macos-control);
+}
+
+[data-platform="windows"],
+[data-platform="windows"] [data-theme] {
+  --platform-font: var(--font-windows);
+  --background: var(--windows-layer-solid);
+  --sidebar: var(--windows-mica);
+  --sidebar-border: transparent;
+  --secondary-text: var(--windows-secondary-text);
+  --menu-surface: var(--windows-flyout);
+  --menu-edge: var(--windows-stroke);
+  --menu-radius: var(--radius-windows-overlay);
+  --menu-shadow: var(--shadow-windows-flyout);
+  --menu-highlight: var(--windows-subtle);
+  --menu-highlight-foreground: var(--popover-foreground);
+  --tooltip-surface: var(--windows-flyout);
+  --tooltip-foreground: var(--popover-foreground);
+  --tooltip-edge: var(--windows-stroke);
+  --tooltip-radius: var(--radius-windows-control);
+  --tooltip-shadow: var(--shadow-windows-flyout);
+  --tooltip-key-fill: var(--muted);
+  --tooltip-key-ink: var(--secondary-text);
+  --select-fill: var(--windows-control);
+  --select-edge: var(--windows-stroke);
+  --select-radius: var(--radius-windows-control);
+  --switch-off: transparent;
+  --switch-edge: var(--windows-secondary-text);
+  --switch-edge-on: var(--primary);
+  --switch-thumb: var(--windows-secondary-text);
+  --switch-thumb-on: var(--primary-foreground);
+  --focus-ring-offset: 1px;
+  --focus-ring-color: var(--foreground);
+  --dialog-edge: var(--windows-stroke);
+  --dialog-radius: var(--radius-windows-overlay);
+  --dialog-shadow: var(--shadow-windows-flyout);
+  --button-outline-fill: var(--windows-control);
+  --button-outline-edge: var(--windows-stroke);
+  --input-group-fill: var(--windows-control);
+  --input-group-edge: var(--windows-stroke);
+  --input-group-radius: var(--radius-windows-control);
+}

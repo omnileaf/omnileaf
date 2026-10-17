@@ -7,9 +7,11 @@
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
   import ChoicesStep from "#lib/first-launch/ChoicesStep.svelte";
   import { deviceKindOf } from "#lib/first-launch/device.ts";
-  import FirstLaunchPanel from "#lib/first-launch/FirstLaunchPanel.svelte";
+  import FoundLibraryStep from "#lib/first-launch/FoundLibraryStep.svelte";
   import HomeStep from "#lib/first-launch/HomeStep.svelte";
   import LinkStep from "#lib/first-launch/LinkStep.svelte";
+  import { PickerQuestion } from "#lib/first-launch/picker-question.svelte.ts";
+  import { STEP_TOAST_ROOM } from "#lib/first-launch/StepFrame.svelte";
   import ReadyStep, {
     type FinishOutcome,
   } from "#lib/first-launch/ReadyStep.svelte";
@@ -19,8 +21,16 @@
     stepAfter,
   } from "#lib/first-launch/steps.ts";
   import WelcomeStep from "#lib/first-launch/WelcomeStep.svelte";
-  import { commands } from "#lib/ipc/bindings.ts";
+  import {
+    type AdultTreatment,
+    commands,
+    type LibraryFolder,
+    type LibrarySeries,
+  } from "#lib/ipc/bindings.ts";
+  import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
+  import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
+  import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
   import { getNotices } from "#lib/notices/notices.ts";
@@ -45,6 +55,19 @@
     commands.libraryFolderBookCount,
   );
 
+  const pickerQuestion = new PickerQuestion(
+    () => data.appInfo.platform === "android",
+  );
+  const adding = new FolderAdding(
+    addFolderWithProgress,
+    () => notices,
+    () => {
+      void folders.load();
+    },
+    () => pickerQuestion.ask(),
+  );
+
+  let adultTreatment: AdultTreatment = $state("blur");
   let card: HTMLElement | undefined = $state();
   let shownStep: FirstLaunchStep | undefined;
 
@@ -66,10 +89,45 @@
     }
   }
 
-  function backTo(earlier: FirstLaunchStep): void {
-    window.history.go(
-      FIRST_LAUNCH_STEPS.indexOf(earlier) - FIRST_LAUNCH_STEPS.indexOf(step),
+  const SHELF_SIZE = 5;
+
+  async function countSeriesIn(
+    folder: LibraryFolder,
+  ): Promise<number | undefined> {
+    const result = await commands.folderSeriesCount(
+      folder.id,
+      NEW_LIBRARY_LISTING.filter,
     );
+    return result.status === "ok" ? result.data : undefined;
+  }
+
+  async function shelfSeries(): Promise<readonly LibrarySeries[]> {
+    const page = await commands.librarySeries(null, NEW_LIBRARY_LISTING);
+    return page.status === "ok"
+      ? page.data.series
+          .filter((series) => series.cover !== null && !series.isAdult)
+          .slice(0, SHELF_SIZE)
+      : [];
+  }
+
+  async function keepAdultTreatment(): Promise<void> {
+    const current = await commands.libraryAdultContent();
+    const kept = await commands.setLibraryAdultContent({
+      ...(current.status === "ok" ? current.data : NEW_ADULT_CONTENT),
+      treatment: adultTreatment,
+    });
+    if (kept.status === "error") {
+      reportError(kept.error);
+    }
+  }
+
+  async function leaveChoices(): Promise<void> {
+    await keepAdultTreatment();
+    await next();
+  }
+
+  function back(): void {
+    window.history.back();
   }
 
   function dropStepEntries(): Promise<void> {
@@ -105,42 +163,73 @@
 </script>
 
 <div
-  class="flex bg-background min-block-dvh medium:items-center medium:justify-center medium:bg-backdrop medium:p-xl"
+  class="flex justify-center bg-background min-block-dvh expanded:items-start expanded:bg-backdrop expanded:p-2xl ios:bg-ios-grouped"
 >
   <div
     bind:this={card}
-    class="flex flex-1 min-inline-none medium:flex-none medium:overflow-hidden medium:rounded-sheet medium:border medium:border-border medium:bg-background medium:shadow-card medium:inline-full medium:max-inline-first-launch-card medium:min-block-first-launch-card-tall"
+    class="flex flex-1 max-inline-first-launch-card min-inline-none expanded:flex-none expanded:rounded-sheet expanded:border expanded:border-border expanded:bg-background expanded:shadow-card expanded:inline-first-launch-card"
   >
-    <FirstLaunchPanel />
     <main
-      class="flex flex-1 flex-col ps-page-start pe-page-end pbs-safe-top pbe-page-bottom min-inline-none medium:p-2xl"
+      class="flex flex-1 flex-col pbs-safe-top min-inline-none expanded:pbs-none"
     >
       {#if step === "welcome"}
         <WelcomeStep {device} onNext={next} />
+      {:else if step === "home" && data.foundLibrary !== null}
+        <FoundLibraryStep
+          platform={data.appInfo.platform}
+          folders={folders.list}
+          found={data.foundLibrary}
+          onBack={back}
+          onStartNew={next}
+        />
       {:else if step === "home"}
         <HomeStep
           platform={data.appInfo.platform}
           folders={folders.list}
-          onBackTo={backTo}
+          onBack={back}
           onNext={next}
         />
       {:else if step === "link"}
         <LinkStep
           platform={data.appInfo.platform}
           {folders}
-          addFolder={addFolderWithProgress}
+          {adding}
+          {pickerQuestion}
           {notices}
-          onBackTo={backTo}
+          onBack={back}
           onNext={next}
         />
       {:else if step === "choices"}
-        <ChoicesStep {device} onBackTo={backTo} onNext={next} />
+        <ChoicesStep
+          {device}
+          {adultTreatment}
+          onChooseAdult={(treatment: AdultTreatment) => {
+            adultTreatment = treatment;
+          }}
+          onBack={back}
+          onNext={() => {
+            void leaveChoices();
+          }}
+        />
       {:else}
-        <ReadyStep onFinish={finish} />
+        <ReadyStep
+          platform={data.appInfo.platform}
+          {folders}
+          {adding}
+          {notices}
+          {countSeriesIn}
+          {shelfSeries}
+          onFinish={finish}
+        />
       {/if}
     </main>
   </div>
 </div>
-<div class="fixed inset-x-none inset-be-safe-bottom z-notice">
-  <Toasts {notices} platform={data.appInfo.platform} theme={theme.resolved} />
+<div class="fixed inset-x-none inset-be-none z-notice">
+  <Toasts
+    {notices}
+    platform={data.appInfo.platform}
+    theme={theme.resolved}
+    bottom="calc(var({STEP_TOAST_ROOM}, var(--spacing-safe-bottom)) + var(--spacing-md))"
+  />
 </div>

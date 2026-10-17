@@ -1,7 +1,15 @@
 <script lang="ts" generics="PageProps extends Record<string, unknown>">
   import { type Component, untrack } from "svelte";
 
+  import {
+    setSidebarSetting,
+    SidebarSetting,
+  } from "#lib/navigation/sidebar.svelte.ts";
   import { Notices, setNotices } from "#lib/notices/notices.ts";
+  import {
+    NeedsAttention,
+    setNeedsAttention,
+  } from "#lib/problems/needs-attention.svelte.ts";
   import {
     type ScreenshotMode,
     setScreenshotMode,
@@ -17,8 +25,20 @@
 
   setScreenshotMode(untrack(() => screenshotMode));
   setNotices(new Notices());
+  setNeedsAttention(
+    new NeedsAttention(
+      {
+        missingFolders: () => Promise.resolve({ status: "ok", data: [] }),
+        storageUse: () => undefined,
+      },
+      () => undefined,
+    ),
+  );
+  setSidebarSetting(new SidebarSetting(undefined));
 
   const Page = $derived(page);
 </script>
 
-<Page {...pageProps} />
+<main>
+  <Page {...pageProps} />
+</main>

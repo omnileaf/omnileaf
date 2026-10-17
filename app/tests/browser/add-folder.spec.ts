@@ -11,10 +11,11 @@ import {
   testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
-import { CommandFailure, emitFakeEvent } from "./fake-backend.ts";
+import { emitFakeEvent } from "./fake-backend.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const EMPTY_LIBRARY = "Your library is empty";
+const HALF = 0.5;
 const LIBRARY_CHANGED = "library-changed";
 const SAMPLE_LIBRARY_SCANNED = {
   ...DEFAULT_BACKEND,
@@ -162,21 +163,18 @@ test.describe("once a folder brings the library its first books", () => {
     added.hasBooks = false;
   });
 
-  test("moves focus to the library's title once the books arrive, since the heading's Add a folder goes with the empty library", async ({
+  test("moves focus to the library's title once the books arrive, since Add a folder goes with the empty library", async ({
     page,
   }) => {
     await page.goto("/");
-    const headingAddFolder = page
-      .getByRole("main")
-      .locator("header")
-      .getByRole("button", { name: "Add a folder" });
-    await headingAddFolder.focus();
+    const emptyAddFolder = addFolderIn(page, EMPTY_LIBRARY);
+    await emptyAddFolder.focus();
     await page.keyboard.press("Enter");
     await expect(scanToast(page, "Added")).toBeVisible();
 
     await emitFakeEvent(page, LIBRARY_CHANGED);
 
-    await expect(headingAddFolder).toHaveCount(0);
+    await expect(emptyAddFolder).toHaveCount(0);
     await expect(
       page.getByRole("heading", { level: 1, name: "Library" }),
     ).toBeFocused();
@@ -199,71 +197,6 @@ test.describe("once a folder brings the library its first books", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Library" }),
     ).toBeFocused();
-  });
-});
-
-test.describe("once a folder brings books to a library that couldn't be read", () => {
-  const added = { hasBooks: false };
-  test.use({
-    backend: {
-      ...SAMPLE_LIBRARY_SCANNED,
-      addLibraryFolder: () => {
-        added.hasBooks = true;
-        return SAMPLE_LIBRARY_SCANNED.addLibraryFolder();
-      },
-      librarySeries: pagedSeries(() => {
-        if (!added.hasBooks) {
-          throw new CommandFailure({
-            code: "internal",
-            message: "the library could not be read",
-          });
-        }
-        return sampleSeries(3);
-      }),
-      librarySeriesCount: () => 3,
-    },
-  });
-
-  test.beforeEach(() => {
-    added.hasBooks = false;
-  });
-
-  test("moves focus to the library's title once the books arrive", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    const headingAddFolder = page
-      .getByRole("main")
-      .locator("header")
-      .getByRole("button", { name: "Add a folder" });
-    await headingAddFolder.focus();
-    await page.keyboard.press("Enter");
-    await expect(scanToast(page, "Added")).toBeVisible();
-
-    await emitFakeEvent(page, LIBRARY_CHANGED);
-
-    await expect(headingAddFolder).toHaveCount(0);
-    await expect(
-      page.getByRole("heading", { level: 1, name: "Library" }),
-    ).toBeFocused();
-  });
-
-  test("returns focus to the heading's Add a folder when the result is dismissed before the library reloads", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    const headingAddFolder = page
-      .getByRole("main")
-      .locator("header")
-      .getByRole("button", { name: "Add a folder" });
-    await headingAddFolder.focus();
-    await page.keyboard.press("Enter");
-    await expect(scanToast(page, "Added")).toBeVisible();
-    await headingAddFolder.focus();
-
-    await dismissFromTheKeyboard(page);
-
-    await expect(headingAddFolder).toBeFocused();
   });
 });
 
@@ -456,7 +389,10 @@ test.describe("from finding books to the result", () => {
 test("opens Settings › Library from Settings", async ({ page }) => {
   await page.goto("/settings");
 
-  await page.getByRole("main").getByRole("link", { name: "Library" }).click();
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: /^Library/ })
+    .click();
 
   await expect(
     page.getByRole("heading", { level: 1, name: "Library" }),
@@ -467,14 +403,14 @@ test("opens Settings › Library from Settings", async ({ page }) => {
 });
 
 for (const { platform, buttonHeight } of [
-  { platform: "linux", buttonHeight: 36 },
-  { platform: "android", buttonHeight: 48 },
+  { platform: "linux", buttonHeight: 44 },
+  { platform: "android", buttonHeight: 44 },
 ] as const) {
   test.describe(`on ${platform}`, () => {
     testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
-    test(`puts a ${String(buttonHeight)}px Add a folder at the end of the Folders heading`, async ({
+    test(`puts a ${String(buttonHeight)}px Add a folder across the foot of the Folders card`, async ({
       page,
     }) => {
       await page.goto("/settings/library");
@@ -489,9 +425,9 @@ for (const { platform, buttonHeight } of [
       );
 
       expect(button.height).toBe(buttonHeight);
-      expect(button.x + button.width).toBe(region.x + region.width);
-      expect(button.y).toBeLessThan(heading.y + heading.height);
-      expect(button.y + button.height).toBeGreaterThan(heading.y);
+      expect(button.y).toBeGreaterThan(heading.y + heading.height);
+      expect(button.y + button.height).toBeLessThan(region.y + region.height);
+      expect(button.width).toBeGreaterThan(region.width * HALF);
     });
   });
 }

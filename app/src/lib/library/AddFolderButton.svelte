@@ -8,27 +8,30 @@
   import type { FolderAdding } from "./folder-adding.svelte";
 
   type Placement =
-    "page-heading" | "empty-state" | "section-heading" | "below-list";
+    "page-heading" | "empty-state" | "card-foot" | "below-list" | "drop-area";
 
   const LOOKS = {
     "page-heading": "tinted",
     "empty-state": "primary",
-    "section-heading": "primary",
+    "card-foot": "outline",
     "below-list": "tinted",
+    "drop-area": "outline",
   } satisfies Record<Placement, ButtonLook>;
 
   const PLACEMENTS = {
     "page-heading":
       "-my-sm gap-sm min-block-touch-target max-medium:rounded-full max-medium:text-accent max-medium:inline-touch-target medium:rounded-control medium:border medium:border-field medium:bg-card medium:ps-md medium:pe-lg medium:text-foreground desktop:text-label desktop:medium:-my-xs desktop:medium:min-block-pointer-button touch:max-medium:-me-sm",
     "empty-state":
-      "gap-sm rounded-control ps-lg pe-button min-block-touch-target touch:max-medium:min-block-phone-button android:max-medium:rounded-full ios:max-medium:rounded-phone-button desktop:text-label desktop:min-block-pointer-target",
-    "section-heading":
-      "gap-xs rounded-control ps-md pe-lg text-callout min-block-touch-target android:max-medium:rounded-full ios:max-medium:rounded-phone-button desktop:text-label desktop:min-block-pointer-button",
+      "gap-sm rounded-shadcn-control px-lg font-medium min-block-touch-target ios:max-medium:rounded-phone-button ios:max-medium:min-block-ios-control desktop:text-label desktop:min-block-pointer-button",
+    "card-foot":
+      "gap-sm rounded-full border-foreground px-lg transition-control inline-full block-folders-button enabled:hover:tint-hover enabled:active:tint-pressed desktop:text-label",
     "below-list":
-      "gap-sm rounded-control border border-dashed border-accent bg-accent-soft px-lg text-accent inline-full min-block-long-button touch:max-medium:font-bold android:max-medium:rounded-full ios:max-medium:rounded-phone-button desktop:text-label",
+      "gap-sm rounded-full border border-accent px-lg text-accent inline-full min-block-touch-button touch:font-bold ios:rounded-ios-button desktop:rounded-control desktop:text-label desktop:min-block-pointer-button",
+    "drop-area":
+      "gap-sm rounded-control border-accent px-lg text-label transition-control min-block-pointer-target enabled:hover:tint-hover enabled:active:tint-pressed",
   } satisfies Record<Placement, string>;
 
-  const ICON_SIZE = 20;
+  const ICON_SIZE = 16;
 
   let {
     adding,

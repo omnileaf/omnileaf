@@ -7,16 +7,22 @@ mod support;
 
 use omnileaf_db::{
     Database, Error,
-    library_view::{LibraryDisplay, OnCovers, StoredLibraryView, library_view, set_library_view},
+    library_view::{
+        LibraryDisplay, LibraryGrouping, OnCovers, StoredLibraryView, library_view,
+        set_library_view,
+    },
 };
 use proptest::prelude::*;
 use support::{ScratchFolder, library_config};
 
 const LIST_OF_FOUR: StoredLibraryView = StoredLibraryView {
     display: LibraryDisplay::List,
+    group_by: LibraryGrouping::Folder,
+    shows_category_tabs: false,
     phone_covers_per_row: 4,
     tablet_covers_per_row: 7,
     desktop_covers_per_row: 10,
+    fits_covers_to_width: false,
     shows_item_counts: true,
     shows_continue_row: true,
     on_covers: OnCovers {
@@ -30,9 +36,12 @@ const LIST_OF_FOUR: StoredLibraryView = StoredLibraryView {
 
 const COMPACT_OF_TWO: StoredLibraryView = StoredLibraryView {
     display: LibraryDisplay::Compact,
+    group_by: LibraryGrouping::Category,
+    shows_category_tabs: true,
     phone_covers_per_row: 2,
     tablet_covers_per_row: 3,
     desktop_covers_per_row: 4,
+    fits_covers_to_width: true,
     shows_item_counts: false,
     shows_continue_row: false,
     on_covers: OnCovers {
@@ -148,12 +157,23 @@ fn any_on_covers() -> impl Strategy<Value = OnCovers> {
     )
 }
 
+fn any_grouping() -> impl Strategy<Value = LibraryGrouping> {
+    prop_oneof![
+        Just(LibraryGrouping::None),
+        Just(LibraryGrouping::Category),
+        Just(LibraryGrouping::Folder),
+    ]
+}
+
 fn any_view() -> impl Strategy<Value = StoredLibraryView> {
     (
         any_display(),
+        any_grouping(),
+        any::<bool>(),
         2_u8..=5,
         3_u8..=8,
         4_u8..=12,
+        any::<bool>(),
         any::<bool>(),
         any::<bool>(),
         any_on_covers(),
@@ -161,18 +181,24 @@ fn any_view() -> impl Strategy<Value = StoredLibraryView> {
         .prop_map(
             |(
                 display,
+                group_by,
+                shows_category_tabs,
                 phone_covers_per_row,
                 tablet_covers_per_row,
                 desktop_covers_per_row,
+                fits_covers_to_width,
                 shows_item_counts,
                 shows_continue_row,
                 on_covers,
             )| {
                 StoredLibraryView {
                     display,
+                    group_by,
+                    shows_category_tabs,
                     phone_covers_per_row,
                     tablet_covers_per_row,
                     desktop_covers_per_row,
+                    fits_covers_to_width,
                     shows_item_counts,
                     shows_continue_row,
                     on_covers,

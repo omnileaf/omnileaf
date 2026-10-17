@@ -1,10 +1,11 @@
 import {
   BookOpen,
+  HardDrive,
   Info,
-  Palette,
-  Settings2,
-  Shield,
-  SquareTerminal,
+  Settings,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sun,
 } from "@lucide/svelte";
 
 import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
@@ -17,13 +18,21 @@ export type SettingsRoute =
   | "/(app)/settings/appearance"
   | "/(app)/settings/reading"
   | "/(app)/settings/privacy"
+  | "/(app)/settings/storage"
   | "/(app)/settings/general"
   | "/(app)/settings/advanced"
   | "/(app)/settings/about";
 
 export type SettingsSubPage =
   | "/(app)/settings/about/licences"
+  | "/(app)/settings/about/report"
+  | "/(app)/settings/about/reports"
+  | "/(app)/settings/advanced/animations"
   | "/(app)/settings/general/language"
+  | "/(app)/settings/library/adult-content"
+  | "/(app)/settings/library/tags"
+  | "/(app)/settings/library/tabs"
+  | "/(app)/settings/privacy/permissions"
   | "/(app)/settings/privacy/screenshot-mode";
 
 export type SettingsPage = "/(app)/settings" | SettingsRoute | SettingsSubPage;
@@ -38,11 +47,19 @@ export interface SectionSummary {
   readonly lang?: Locale;
 }
 
+export type SectionChip = "grey" | "blue" | "green" | "orange";
+
 export interface SettingsSection {
   readonly route: SettingsRoute;
   readonly label: () => string;
   readonly icon: Glyph;
-  readonly tone: "accent" | "neutral";
+  /** The colour of the section's tile in the iOS Settings list. */
+  readonly chip: SectionChip;
+}
+
+export interface SettingsGroup {
+  readonly heading?: () => string;
+  readonly sections: readonly SettingsSection[];
 }
 
 export function isWithinSection(
@@ -64,61 +81,68 @@ export function sectionCurrent(
   return isWithinSection(pathname, sectionPath) ? "true" : undefined;
 }
 
-const PREFERENCES: readonly SettingsSection[] = [
-  {
-    route: "/(app)/settings/library",
-    label: m.library_title,
-    icon: LibraryGlyph,
-    tone: "accent",
-  },
-  {
-    route: "/(app)/settings/appearance",
-    label: m.appearance_title,
-    icon: Palette,
-    tone: "accent",
-  },
-  {
-    route: "/(app)/settings/reading",
-    label: m.reading_title,
-    icon: BookOpen,
-    tone: "accent",
-  },
-  {
-    route: "/(app)/settings/privacy",
-    label: m.privacy_title,
-    icon: Shield,
-    tone: "accent",
-  },
-  {
-    route: "/(app)/settings/general",
-    label: m.general_title,
-    icon: Settings2,
-    tone: "accent",
-  },
-];
+const GENERAL: SettingsSection = {
+  route: "/(app)/settings/general",
+  label: m.general_title,
+  icon: Settings,
+  chip: "grey",
+};
+
+const APPEARANCE: SettingsSection = {
+  route: "/(app)/settings/appearance",
+  label: m.appearance_title,
+  icon: Sun,
+  chip: "blue",
+};
+
+const LIBRARY: SettingsSection = {
+  route: "/(app)/settings/library",
+  label: m.library_title,
+  icon: LibraryGlyph,
+  chip: "green",
+};
+
+const READING: SettingsSection = {
+  route: "/(app)/settings/reading",
+  label: m.reading_title,
+  icon: BookOpen,
+  chip: "orange",
+};
+
+const PRIVACY: SettingsSection = {
+  route: "/(app)/settings/privacy",
+  label: m.privacy_title,
+  icon: ShieldCheck,
+  chip: "blue",
+};
+
+const STORAGE: SettingsSection = {
+  route: "/(app)/settings/storage",
+  label: m.storage_title,
+  icon: HardDrive,
+  chip: "grey",
+};
 
 const ADVANCED: SettingsSection = {
   route: "/(app)/settings/advanced",
   label: m.advanced_title,
-  icon: SquareTerminal,
-  tone: "neutral",
+  icon: SlidersHorizontal,
+  chip: "grey",
 };
 
 const ABOUT: SettingsSection = {
   route: "/(app)/settings/about",
   label: m.about_title,
   icon: Info,
-  tone: "neutral",
+  chip: "grey",
 };
 
-export const SETTINGS_GROUPS: readonly (readonly SettingsSection[])[] = [
-  PREFERENCES,
-  [ADVANCED, ABOUT],
+export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
+  { heading: m.settings_group_app, sections: [GENERAL, APPEARANCE] },
+  { heading: m.settings_group_reading, sections: [LIBRARY, READING] },
+  { heading: m.settings_group_data, sections: [PRIVACY, STORAGE, ADVANCED] },
+  { sections: [ABOUT] },
 ];
 
-export function isListedBeside(route: SettingsPage): boolean {
-  return (
-    route === "/(app)/settings" ||
-    SETTINGS_GROUPS.flat().some((section) => section.route === route)
-  );
-}
+export const SETTINGS_SECTIONS: readonly SettingsSection[] =
+  SETTINGS_GROUPS.flatMap(({ sections }) => sections);

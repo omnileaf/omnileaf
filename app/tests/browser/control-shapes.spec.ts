@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { addFolderBesideFolders, addFolderInPageHeading } from "./controls.ts";
+import { addFolderInFolders } from "./controls.ts";
+import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   boxOf,
@@ -19,10 +20,12 @@ const BUTTON_CORNER = "10px";
 const ROW_CORNER = "8px";
 const KEY_CORNER = "6px";
 const PAGE_BUTTON_HEIGHT = 36;
-const PHONE_BUTTON_HEIGHT = 52;
+const IOS_BUTTON_HEIGHT = 50;
+const SHADCN_CORNER = "8px";
 const PHONE_SECTION_BUTTON_HEIGHT = 48;
+const FOLDERS_BUTTON_HEIGHT = 44;
 const IOS_BUTTON_CORNER = "14px";
-const SHEET_CORNER = "24px";
+const SHEET_CORNER = "28px";
 const PANEL_TITLE_SIZE = "17px";
 const PANEL_TITLE_LINE_HEIGHT = 22.1;
 const CHOSEN_SEGMENT_WEIGHT = "600";
@@ -38,8 +41,17 @@ const PHONE_SEGMENT_TRACK_CORNER = "10px";
 const PHONE_SEGMENT_CORNER = "8px";
 const PHONE_SEGMENT_TEXT = "13px";
 const DESKTOP_STEPPER_CORNER = "8px";
+const TOOLBAR_LOOKS = [
+  { platform: "linux", height: 36, corner: "8px" },
+  { platform: "macos", height: 28, corner: "6px" },
+  { platform: "windows", height: 32, corner: "4px" },
+] as const satisfies readonly {
+  platform: Platform;
+  height: number;
+  corner: string;
+}[];
 
-function withSeries(platform: "linux" | "android" | "ios"): FakeBackend {
+function withSeries(platform: Platform): FakeBackend {
   const series = sampleSeries(12);
   return {
     ...onPlatform(platform).backend,
@@ -111,19 +123,55 @@ test.describe("on a desktop with an empty library", () => {
     test.skip(viewportOf(page).width < LARGE_MIN_WIDTH, "a desktop window");
   });
 
-  test("draws the library heading's Add a folder 36px tall with 10px corners", async ({
+  test("draws the empty library's Add a folder 36px tall with 8px corners", async ({
     page,
   }) => {
     await page.goto("/");
-    const addFolder = addFolderInPageHeading(page);
+    const addFolder = emptyStateAddFolder(page);
     await expect(addFolder).toBeVisible();
 
     const box = await boxOf(addFolder);
 
     expect(box.height).toBe(PAGE_BUTTON_HEIGHT);
-    expect(await cornerOf(addFolder)).toBe(BUTTON_CORNER);
+    expect(await cornerOf(addFolder)).toBe(SHADCN_CORNER);
   });
 });
+
+for (const look of TOOLBAR_LOOKS) {
+  test.describe(`in the ${look.platform} library toolbar`, () => {
+    test.use({ backend: withSeries(look.platform) });
+
+    test.beforeEach(({ page }) => {
+      test.skip(viewportOf(page).width < LARGE_MIN_WIDTH, "a desktop window");
+    });
+
+    test("sizes Filter and View with the search field and rounds them the platform's way", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      const search = page.getByRole("searchbox", {
+        name: "Search the library",
+      });
+      await expect(search).toBeVisible();
+      const filter = page
+        .getByRole("main")
+        .getByRole("button", { name: /^Sort and filter/ });
+      const view = viewOptionsButton(page);
+
+      const heights = await Promise.all(
+        [search.locator(".."), filter, view].map(
+          async (control) => (await boxOf(control)).height,
+        ),
+      );
+
+      expect(heights).toEqual([look.height, look.height, look.height]);
+      expect([await cornerOf(filter), await cornerOf(view)]).toEqual([
+        look.corner,
+        look.corner,
+      ]);
+    });
+  });
+}
 
 test.describe("on a desktop", () => {
   test.use({ backend: withSeries("linux") });
@@ -132,24 +180,14 @@ test.describe("on a desktop", () => {
     test.skip(viewportOf(page).width < LARGE_MIN_WIDTH, "a desktop window");
   });
 
-  test("rounds buttons to 10px", async ({ page }) => {
-    await page.goto("/");
-    const viewTrigger = viewOptionsButton(page);
-    await expect(viewTrigger).toBeVisible();
-
-    const viewCorner = await cornerOf(viewTrigger);
-    await page.goto("/settings/library");
-    const foldersCorner = await cornerOf(addFolderBesideFolders(page));
+  test("rounds About's Copy button to 10px", async ({ page }) => {
     await page.goto("/settings/about");
+
     const copyCorner = await cornerOf(
       page.getByRole("button", { name: "Copy version details" }),
     );
 
-    expect([viewCorner, foldersCorner, copyCorner]).toEqual([
-      BUTTON_CORNER,
-      BUTTON_CORNER,
-      BUTTON_CORNER,
-    ]);
+    expect(copyCorner).toBe(BUTTON_CORNER);
   });
 
   test("keeps navigation rows at 8px", async ({ page }) => {
@@ -183,7 +221,7 @@ test.describe("on a desktop", () => {
     await page.goto("/");
 
     const panel = await openViewOptions(page);
-    const title = panel.getByRole("heading", { name: "View" });
+    const title = panel.getByRole("heading", { name: "View options" });
 
     const lineHeight = await title.evaluate(
       (element) => getComputedStyle(element).lineHeight,
@@ -213,7 +251,10 @@ test.describe("on a desktop", () => {
     await page.goto("/");
 
     const panel = await openViewOptions(page);
-    const stepper = panel.getByRole("group", { name: "Covers per row" });
+    await panel.getByRole("radio", { name: "Choose" }).click();
+    const stepper = panel.getByRole("group", {
+      name: "Covers per row, chosen",
+    });
 
     expect(await cornerOf(stepper)).toBe(DESKTOP_STEPPER_CORNER);
   });
@@ -235,36 +276,35 @@ test.describe("on an Android phone", () => {
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
   });
 
-  test("draws the empty library's Add a folder as a 52px pill", async ({
+  test("draws the empty library's Add a folder 48px tall with 8px corners", async ({
     page,
   }) => {
     await page.goto("/");
     const button = emptyStateAddFolder(page);
 
     const box = await boxOf(button);
-    const corner = await cornerOf(button);
 
-    expect(box.height).toBe(PHONE_BUTTON_HEIGHT);
-    expect(parseFloat(corner)).toBeGreaterThanOrEqual(box.height / 2);
+    expect(box.height).toBe(PHONE_SECTION_BUTTON_HEIGHT);
+    expect(await cornerOf(button)).toBe(SHADCN_CORNER);
   });
 
-  test("draws the Folders heading's Add a folder as a 48px pill", async ({
+  test("draws the Folders card's Add a folder as a slim 44px pill", async ({
     page,
   }) => {
     await page.goto("/settings/library");
-    const button = addFolderBesideFolders(page);
+    const button = addFolderInFolders(page);
 
     const box = await boxOf(button);
     const corner = await cornerOf(button);
 
-    expect(box.height).toBe(PHONE_SECTION_BUTTON_HEIGHT);
+    expect(box.height).toBe(FOLDERS_BUTTON_HEIGHT);
     expect(parseFloat(corner)).toBeGreaterThanOrEqual(box.height / 2);
   });
 
   test.describe("with series", () => {
     test.use({ backend: withSeries("android") });
 
-    test("rounds the View sheet's top corners to 24px", async ({ page }) => {
+    test("rounds the View sheet's top corners to 28px", async ({ page }) => {
       await page.goto("/");
 
       const panel = await openViewOptions(page);
@@ -298,7 +338,7 @@ test.describe("on an iPhone", () => {
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
   });
 
-  test("draws the empty library's Add a folder 52px tall with 14px corners", async ({
+  test("draws the empty library's Add a folder 50px tall with 14px corners", async ({
     page,
   }) => {
     await page.goto("/");
@@ -306,16 +346,17 @@ test.describe("on an iPhone", () => {
 
     const box = await boxOf(button);
 
-    expect(box.height).toBe(PHONE_BUTTON_HEIGHT);
+    expect(box.height).toBe(IOS_BUTTON_HEIGHT);
     expect(await cornerOf(button)).toBe(IOS_BUTTON_CORNER);
   });
 
-  test("rounds the Folders heading's Add a folder to 14px", async ({
-    page,
-  }) => {
+  test("draws the Folders card's Add a folder as a pill", async ({ page }) => {
     await page.goto("/settings/library");
-    const button = addFolderBesideFolders(page);
+    const button = addFolderInFolders(page);
 
-    expect(await cornerOf(button)).toBe(IOS_BUTTON_CORNER);
+    const box = await boxOf(button);
+    const corner = await cornerOf(button);
+
+    expect(parseFloat(corner)).toBeGreaterThanOrEqual(box.height / 2);
   });
 });

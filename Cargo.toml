@@ -21,6 +21,7 @@ dispatch2 = { version = "0.3.1", default-features = false, features = ["std"] }
 objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSProcessInfo"] }
 fast_image_resize = { version = "6.1.0", default-features = false, features = ["std"] }
 flate2 = { version = "1.1.10", default-features = false, features = ["rust_backend"] }
+gtk = "0.18.2"
 icu_casemap = "=2.3.0"
 icu_collator = "=2.3.1"
 icu_locale_core = { version = "=2.3.0", features = ["alloc"] }
@@ -36,6 +37,7 @@ omnileaf-edge-swipe = { path = "crates/omnileaf-edge-swipe" }
 omnileaf-engine = { path = "crates/omnileaf-engine" }
 omnileaf-folder-access = { path = "crates/omnileaf-folder-access" }
 omnileaf-formats = { path = "crates/omnileaf-formats" }
+omnileaf-icon-actions = { path = "crates/omnileaf-icon-actions" }
 omnileaf-imaging = { path = "crates/omnileaf-imaging" }
 omnileaf-sync-proto = { path = "crates/omnileaf-sync-proto" }
 omnileaf-system-bars = { path = "crates/omnileaf-system-bars" }
@@ -46,6 +48,7 @@ png = "0.18.1"
 proptest = "1.11.0"
 quick-xml = "0.42.0"
 rusqlite = { version = "0.40.2", default-features = false, features = ["bundled", "fallible_uint", "functions", "hooks"] }
+rustix = { version = "1.1.5", features = ["fs"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sevenz-rust2 = { version = "0.23.0", default-features = false }
@@ -66,7 +69,7 @@ tracing-subscriber = "0.3.23"
 unicode-normalization = "0.1.25"
 uuid = { version = "1.26.1", default-features = false, features = ["v8"] }
 webkit2gtk = { version = "2.0.2", features = ["v2_34"] }
-windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Ioctl", "Win32_System_Power"] }
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_NetworkManagement_WNet", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Ioctl", "Win32_System_Power"] }
 zbus = { version = "5.19.0", default-features = false, features = ["tokio"] }
 zip = { version = "9.0.4", default-features = false, features = ["deflate-flate2"] }
 

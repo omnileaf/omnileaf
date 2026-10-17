@@ -1,8 +1,10 @@
 <script lang="ts">
   import { Link2 } from "@lucide/svelte";
 
-  import type { Platform } from "#lib/ipc/bindings.ts";
-  import type { AddFolder } from "#lib/library/add-folder.ts";
+  import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
+  import { linkFolderWithProgress } from "#lib/library/add-folder.ts";
+  import type { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
+  import { FolderBookCounts } from "#lib/library/folder-book-counts.svelte.ts";
   import type { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import LinkedFolders from "#lib/library/LinkedFolders.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
@@ -11,29 +13,51 @@
   import { atEveryWidth, type WordingByWidth } from "#lib/page/wording.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { deviceKindOf } from "./device";
+  import { FolderDrops } from "./folder-drops.svelte";
+  import FolderDropArea from "./FolderDropArea.svelte";
+  import PickFolderSheet from "./PickFolderSheet.svelte";
+  import type { PickerQuestion } from "./picker-question.svelte";
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
   import StepBadge from "./StepBadge.svelte";
   import StepHeader from "./StepHeader.svelte";
-  import type { FirstLaunchStep } from "./steps";
 
   let {
     platform,
     folders,
-    addFolder,
+    adding,
+    pickerQuestion,
     notices,
-    onBackTo,
+    onBack,
     onNext,
   }: {
     platform: Platform;
     folders: LibraryFolders;
-    addFolder: AddFolder;
+    adding: FolderAdding;
+    pickerQuestion: PickerQuestion;
     notices: Notices;
-    onBackTo: (step: FirstLaunchStep) => void;
+    onBack: () => void;
     onNext: () => void;
   } = $props();
 
   const screenshotMode = getScreenshotMode();
+  const counts = new FolderBookCounts((folder) => folders.countBooks(folder));
+  const linked = $derived(
+    folders.list.kind === "loaded" ? folders.list.linked : [],
+  );
+
+  $effect(() => {
+    void counts.load(linked);
+  });
+
+  const goesOn = $derived(linked.length > 0 || adding.isAdding);
+  const takesDrops = $derived(deviceKindOf(platform) === "desktop");
+  const drops = new FolderDrops((folder) =>
+    adding.addWith(linkFolderWithProgress(folder)),
+  );
+
+  $effect(() => (takesDrops ? drops.watch() : undefined));
 
   const HINT = {
     android: {
@@ -52,31 +76,60 @@
   } satisfies WordingByWidth;
 </script>
 
-<StepFrame step="link" {onBackTo}>
+{#snippet dropArea()}
+  <FolderDropArea {adding} dragged={drops.dragged}>
+    {#snippet hint()}
+      <WidthWording wording={HINT[platform]} />
+    {/snippet}
+  </FolderDropArea>
+{/snippet}
+
+<StepFrame step="link" {onBack}>
   <div class="flex flex-col gap-lg">
-    <StepHeader scale="headline">
+    <StepHeader>
       {#snippet badge()}
         <StepBadge icon={Link2} />
       {/snippet}
       {m.first_launch_link_title()}
+      {#snippet lead()}
+        {m.first_launch_link_body()}
+      {/snippet}
     </StepHeader>
-    <p class="text-step-body text-muted">{m.first_launch_link_body()}</p>
     <LinkedFolders
+      {platform}
       {folders}
-      {addFolder}
+      {adding}
       {notices}
       usesStandIns={screenshotMode.isOn}
       addPlacement="below-list"
+      addArea={takesDrops ? dropArea : undefined}
     >
+      {#snippet rowDetail(folder: LibraryFolder)}
+        {@const books = counts.of(folder)}
+        {#if books !== undefined}
+          {m.first_launch_folder_books({ count: books })}
+        {/if}
+      {/snippet}
       {#snippet hint()}
         <WidthWording wording={HINT[platform]} />
       {/snippet}
     </LinkedFolders>
   </div>
+  <PickFolderSheet
+    isOpen={pickerQuestion.isAsking}
+    onContinue={() => {
+      pickerQuestion.answer(true);
+    }}
+    onNotNow={() => {
+      pickerQuestion.answer(false);
+    }}
+  />
   {#snippet actions()}
-    <StepButton kind="primary" onclick={onNext}>
-      {m.first_launch_continue()}
-    </StepButton>
+    {#if goesOn}
+      <StepButton kind="primary" onclick={onNext}>
+        {m.first_launch_continue()}
+      </StepButton>
+    {/if}
     <StepButton kind="quiet" onclick={onNext}>
       <WidthWording wording={SKIP} />
     </StepButton>

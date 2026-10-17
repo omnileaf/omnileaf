@@ -10,15 +10,21 @@
   let {
     ref = $bindable(null),
     class: className,
+    fieldClass,
     children,
     ...restProps
-  }: WithElementRef<HTMLSelectAttributes, HTMLSelectElement> = $props();
+  }: WithElementRef<HTMLSelectAttributes, HTMLSelectElement> & {
+    fieldClass?: string;
+  } = $props();
 </script>
 
 <div class={cn("relative flex items-center", className)}>
   <select
     bind:this={ref}
-    class="flex-1 appearance-none rounded-control border border-border bg-card ps-md pe-select-end text-detail font-medium block-panel-field"
+    class={cn(
+      "flex-1 appearance-none rounded-select border border-select-edge bg-select ps-md pe-select-end text-label text-ellipsis block-panel-field min-inline-none macos:shadow-raised windows:border-be-windows-stroke-strong linux:shadow-raised",
+      fieldClass,
+    )}
     {...restProps}
   >
     {@render children?.()}

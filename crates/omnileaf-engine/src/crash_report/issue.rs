@@ -1,4 +1,4 @@
-pub(super) fn prefilled(form: &str, fields: &[(&str, &str)]) -> String {
+pub(crate) fn prefilled(form: &str, fields: &[(&str, &str)]) -> String {
     fields
         .iter()
         .fold(form.to_owned(), |mut url, (name, value)| {

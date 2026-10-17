@@ -2,6 +2,7 @@ import type {
   HistoryEntry,
   OpenedBook,
   SeriesBook,
+  SeriesCreator,
   SeriesNeighbour,
   SeriesOverview,
 } from "#lib/ipc/bindings.ts";
@@ -24,11 +25,31 @@ function standInBookTitles(series: NamedSeries): (position: number) => string {
     m.stand_in_book({ series: seriesName, number: places.format(position) });
 }
 
-export function bookStandIns(
-  series: NamedSeries,
-): (book: SeriesBook) => SeriesBook {
-  const titled = standInBookTitles(series);
-  return (book) => ({ ...book, title: titled(book.position) });
+export function standInBook(book: SeriesBook): SeriesBook {
+  const places = new Intl.NumberFormat(getLocale());
+  return {
+    ...book,
+    title: m.stand_in_series_book({ number: places.format(book.position) }),
+  };
+}
+
+function counted(
+  name: (inputs: { number: string }) => string,
+): (_: unknown, index: number) => string {
+  const places = new Intl.NumberFormat(getLocale());
+  return (_, index) => name({ number: places.format(index + 1) });
+}
+
+function creatorStandIns(): (
+  creator: SeriesCreator,
+  index: number,
+) => SeriesCreator {
+  const writer = counted(m.stand_in_writer);
+  const artist = counted(m.stand_in_artist);
+  return (creator, index) => ({
+    ...creator,
+    name: (creator.role === "art" ? artist : writer)(creator, index),
+  });
 }
 
 /** Leaves the cover's path behind, so no picture of it is ever asked for. */
@@ -36,10 +57,12 @@ export function standInOverview(overview: SeriesOverview): SeriesOverview {
   return {
     ...overview,
     title: standInLook(overview).title,
+    creators: overview.creators.map(creatorStandIns()),
+    summary: overview.summary === null ? null : m.stand_in_summary(),
+    tags: overview.tags.map(counted(m.stand_in_tag)),
     cover: null,
     folder: overview.folder === null ? null : folderStandIn(overview.folder),
-    upNext:
-      overview.upNext === null ? null : bookStandIns(overview)(overview.upNext),
+    upNext: overview.upNext === null ? null : standInBook(overview.upNext),
   };
 }
 

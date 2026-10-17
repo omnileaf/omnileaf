@@ -4,16 +4,23 @@
   import { on } from "svelte/events";
   import { prefersReducedMotion } from "svelte/motion";
 
-  import { afterNavigate, beforeNavigate } from "$app/navigation";
+  import {
+    afterNavigate,
+    beforeNavigate,
+    type NavigationType,
+  } from "$app/navigation";
   import { page } from "$app/state";
   import { assertNever } from "#lib/assert-never.ts";
   import { type BackSwipe, commands } from "#lib/ipc/bindings.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
 
+  import { getBackGoesUp } from "./back-goes-up";
+  import { shownBackLink } from "./back-link";
   import { backSwipeEdge, isGoingBack, type TextDirection } from "./back-swipe";
   import { isBackTakenByScreen } from "./back-within-screen";
   import { BackSwipeScreens } from "./back-swipe-screens.svelte";
+  import { focusArrival } from "./page-heading";
   import { PreviousScreens, type ScreenCopy } from "./previous-screens";
 
   interface SwipeStart {
@@ -22,14 +29,18 @@
     readonly direction: TextDirection;
   }
 
-  const BACK_LINK = "a[data-back-link]";
   const SWITCH = '[role="switch"]';
   const SETTLING =
     "duration-slide ease-glass motion-reduce:duration-grow motion-reduce:ease-out";
 
-  let { isIos, children }: { isIos: boolean; children: Snippet } = $props();
+  let {
+    isIos,
+    isFullScreen = false,
+    children,
+  }: { isIos: boolean; isFullScreen?: boolean; children: Snippet } = $props();
 
   const language = getLanguageSetting();
+  const backGoesUp = getBackGoesUp();
   const width = new WindowWidth();
   const previousScreens = new PreviousScreens();
   const screens = new BackSwipeScreens(
@@ -54,24 +65,19 @@
         },
   );
 
-  function shownBackLinkIn(screen: HTMLElement): HTMLAnchorElement | null {
-    const link = screen.querySelector<HTMLAnchorElement>(BACK_LINK);
-    return link !== null && link.getClientRects().length > 0 ? link : null;
-  }
-
   function directionOf(screen: HTMLElement): TextDirection {
     return getComputedStyle(screen).direction === "rtl" ? "rtl" : "ltr";
   }
 
   function goBack(): boolean {
-    const link = main === undefined ? null : shownBackLinkIn(main);
+    const link = main === undefined ? undefined : shownBackLink(main);
     link?.click();
-    return link !== null;
+    return link !== undefined;
   }
 
   function startOf(screen: HTMLElement): SwipeStart | undefined {
-    const link = shownBackLinkIn(screen);
-    if (link === null) {
+    const link = shownBackLink(screen);
+    if (link === undefined) {
       return undefined;
     }
     return {
@@ -161,20 +167,20 @@
     }
   });
 
-  function restoreScrollAfterHeadingFocus(copy: ScreenCopy): void {
-    requestAnimationFrame(() => {
-      if (main !== undefined) {
-        main.scrollTop = copy.scrollTop;
-      }
-    });
+  function isArrival(type: NavigationType): boolean {
+    const isProblem = page.error !== null;
+    return (type !== "enter" && !backGoesUp.isPassingThrough) || isProblem;
   }
 
-  afterNavigate(() => {
+  afterNavigate(({ type }) => {
     const landedOn = screens.isSettling
       ? swipeStart?.previousScreen
       : undefined;
-    if (landedOn !== undefined) {
-      restoreScrollAfterHeadingFocus(landedOn);
+    if (isArrival(type)) {
+      focusArrival({ preventScroll: landedOn !== undefined });
+    }
+    if (landedOn !== undefined && main !== undefined) {
+      main.scrollTop = landedOn.scrollTop;
     }
     screens.arrived();
     previousScreens.forgetAllButAbove(page.url.pathname);
@@ -192,7 +198,7 @@
     }
     allowedFor = screenShown;
     void commands.allowBackSwipe(
-      backSwipeEdge(shownBackLinkIn(main) !== null, directionOf(main)),
+      backSwipeEdge(shownBackLink(main) !== undefined, directionOf(main)),
     );
   });
 
@@ -246,7 +252,10 @@
     ? undefined
     : `translateX(${String(swiping.current * swiping.towardsBack)}%)`}
   class={[
-    "order-2 flex flex-1 flex-col overflow-y-auto px-gutter py-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance",
+    "order-2 flex flex-1 flex-col overflow-y-auto",
+    !isFullScreen &&
+      "px-gutter py-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance",
+    "windows:desktop-shell:rounded-ss-windows-layer windows:desktop-shell:border-s windows:desktop-shell:border-bs windows:desktop-shell:border-windows-stroke windows:desktop-shell:bg-background",
     swiping !== undefined &&
       "bg-background shadow-back-swipe rtl:shadow-back-swipe-rtl",
     screens.isSettling && ["transition-transform", SETTLING],

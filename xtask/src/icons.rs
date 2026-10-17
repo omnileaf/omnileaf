@@ -18,9 +18,29 @@ const IOS_ICON_SET: &str = "app/src-tauri/gen/apple/Assets.xcassets/AppIcon.appi
 const MACOS_ICON: &str = "app/src-tauri/icons/icon.icns";
 const RGBA_SAMPLES: usize = 4;
 
+struct TrayIcon {
+    source_from_app: &'static str,
+    size: u32,
+    destination: &'static str,
+}
+
+const TRAY_ICONS: [TrayIcon; 2] = [
+    TrayIcon {
+        source_from_app: "../branding/tray.svg",
+        size: 32,
+        destination: "app/src-tauri/icons/tray.png",
+    },
+    TrayIcon {
+        source_from_app: "../branding/tray-macos.svg",
+        size: 36,
+        destination: "app/src-tauri/icons/tray-macos.png",
+    },
+];
+
 pub(crate) fn regenerate(root: &Path) -> anyhow::Result<()> {
     run_icon_generator(root, &[OsStr::new(ICON_MANIFEST_FROM_APP)])?;
     replace_macos_icon(root)?;
+    replace_tray_icons(root)?;
     remove_ios_alpha_channels(root)
 }
 
@@ -36,24 +56,52 @@ fn run_icon_generator(root: &Path, args: &[&OsStr]) -> anyhow::Result<()> {
 }
 
 fn replace_macos_icon(root: &Path) -> anyhow::Result<()> {
-    let scratch = env::temp_dir().join(format!("omnileaf-macos-icon-{}", std::process::id()));
+    generate_one_icon(
+        root,
+        &[OsStr::new(MACOS_ICON_SOURCE_FROM_APP)],
+        GENERATED_MACOS_ICON,
+        MACOS_ICON,
+    )
+}
+
+fn replace_tray_icons(root: &Path) -> anyhow::Result<()> {
+    for tray in TRAY_ICONS {
+        let size = tray.size.to_string();
+        generate_one_icon(
+            root,
+            &[
+                OsStr::new(tray.source_from_app),
+                OsStr::new("--png"),
+                OsStr::new(&size),
+            ],
+            &format!("{size}x{size}.png"),
+            tray.destination,
+        )?;
+    }
+    Ok(())
+}
+
+fn generate_one_icon(
+    root: &Path,
+    source_args: &[&OsStr],
+    generated: &str,
+    destination: &str,
+) -> anyhow::Result<()> {
+    let scratch = env::temp_dir().join(format!("omnileaf-one-icon-{}", std::process::id()));
     let output = scratch.join("icons");
     fs::create_dir_all(&output).with_context(|| format!("create {}", output.display()))?;
-    let generated = run_icon_generator(
-        root,
-        &[
-            OsStr::new(MACOS_ICON_SOURCE_FROM_APP),
-            OsStr::new("--output"),
-            output.as_os_str(),
-        ],
-    )
-    .and_then(|()| {
-        fs::copy(output.join(GENERATED_MACOS_ICON), root.join(MACOS_ICON))
-            .context("copy the macOS icon")
+    let args: Vec<&OsStr> = source_args
+        .iter()
+        .copied()
+        .chain([OsStr::new("--output"), output.as_os_str()])
+        .collect();
+    let copied = run_icon_generator(root, &args).and_then(|()| {
+        fs::copy(output.join(generated), root.join(destination))
+            .with_context(|| format!("copy {destination}"))
     });
     let removed =
         fs::remove_dir_all(&scratch).with_context(|| format!("remove {}", scratch.display()));
-    generated.and(removed)
+    copied.and(removed).map(drop)
 }
 
 /// The App Store rejects iOS app icons that carry an alpha channel.
@@ -235,6 +283,24 @@ mod tests {
             "run `cargo xtask icons` to rebuild {MACOS_ICON}"
         );
         assert_eq!(alpha_at(&rgba, width, (width / 2, width / 2)), u8::MAX);
+    }
+
+    #[test]
+    fn committed_tray_icons_are_drawn_at_their_size() {
+        for tray in TRAY_ICONS {
+            let png = fs::read(workspace::root().join(tray.destination)).unwrap_or_default();
+
+            let size = decode_rgba8(&png)
+                .map(|(frame, _)| (frame.width, frame.height))
+                .ok();
+
+            assert_eq!(
+                size,
+                Some((tray.size, tray.size)),
+                "run `cargo xtask icons` to rebuild {}",
+                tray.destination
+            );
+        }
     }
 
     #[test]

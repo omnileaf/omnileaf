@@ -19,7 +19,6 @@ import {
 
 const ABOUT_PAGE = "/settings/about";
 const PHONE_ROW_HEIGHT = 64;
-const ROW_DIVIDER_WIDTH = 1;
 const PANE_ROW_HEIGHT = 56;
 const TOUCH_BUTTON_HEIGHT = 48;
 const POINTER_BUTTON_HEIGHT = 36;
@@ -32,6 +31,14 @@ function copyButton(page: Page) {
   return page.getByRole("button", { name: "Copy version details" });
 }
 
+function versionRowButton(page: Page) {
+  return page
+    .getByRole("main")
+    .getByRole("listitem")
+    .last()
+    .getByRole("button");
+}
+
 function linkRow(page: Page, name: string) {
   return page.getByRole("button", { name: new RegExp(`^${name}`) });
 }
@@ -42,9 +49,7 @@ function appIcon(page: Page) {
 
 async function expectCopyButtonInsideCard(page: Page): Promise<void> {
   const card = await boxOf(page.getByRole("main").getByRole("list").first());
-  const button = await boxOf(
-    page.getByRole("main").getByRole("listitem").first().getByRole("button"),
-  );
+  const button = await boxOf(versionRowButton(page));
   const content = await page.getByRole("main").evaluate((main) => ({
     width: main.clientWidth,
     scrolls: main.scrollWidth,
@@ -120,14 +125,6 @@ test.describe("with a working clipboard and browser", () => {
 
     await expect.poll(() => opened).toEqual(["sourceCode"]);
   });
-
-  test("opens a new issue to report a problem", async ({ page }) => {
-    await openAbout(page);
-
-    await linkRow(page, "Report a problem").click();
-
-    await expect.poll(() => opened).toEqual(["newIssue"]);
-  });
 });
 
 test.describe("when the device turns the app down", () => {
@@ -181,23 +178,25 @@ for (const platform of ["android", "ios"] as const) {
     testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
-    test("puts the version in the list beside Copy version details, on 64px rows", async ({
+    test("lists the version details with a copy button, on 64px rows", async ({
       page,
     }) => {
       await openAbout(page);
       test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
 
-      const version = page.getByRole("listitem").filter({ hasText: "Version" });
+      const version = page
+        .getByRole("listitem")
+        .filter({ hasText: "Version details" });
       const button = await boxOf(copyButton(page));
       const versionRow = await boxOf(version);
       const sourceRow = await boxOf(linkRow(page, "Source code"));
       const icon = await boxOf(appIcon(page));
 
       await expect(version).toContainText(FAKE_APP_VERSION);
-      await expect(version.getByRole("button")).toHaveText(
-        "Copy version details",
-      );
-      expect(versionRow.height).toBe(PHONE_ROW_HEIGHT + ROW_DIVIDER_WIDTH);
+      await expect(
+        version.getByRole("button", { name: "Copy version details" }),
+      ).toBeVisible();
+      expect(versionRow.height).toBe(PHONE_ROW_HEIGHT);
       expect(sourceRow.height).toBe(PHONE_ROW_HEIGHT);
       expect(button.height).toBe(TOUCH_BUTTON_HEIGHT);
       expect(icon.width).toBe(PHONE_ICON_SIZE);
@@ -246,7 +245,7 @@ for (const { platform, buttonHeight } of PANE_SIZES) {
     testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
-    test(`heads the pane with the version and a ${String(buttonHeight)}px copy button over 56px rows`, async ({
+    test(`heads the pane with the version over 56px rows, with a ${String(buttonHeight)}px copy button`, async ({
       page,
     }) => {
       await openAbout(page);
@@ -263,23 +262,20 @@ for (const { platform, buttonHeight } of PANE_SIZES) {
         page.getByText(`Version ${FAKE_APP_VERSION}`, { exact: true }),
       ).toBeVisible();
       expect(button.height).toBe(buttonHeight);
-      expect(sourceRow.y).toBeGreaterThan(button.y + button.height);
       expect(sourceRow.height).toBe(PANE_ROW_HEIGHT);
       expect(icon.width).toBe(PANE_ICON_SIZE);
     });
 
-    test("puts the copy button beside the name from 600px", async ({
-      page,
-    }) => {
+    test("centres the icon over the name and the version", async ({ page }) => {
       await openAbout(page);
-      test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "600px and wider");
 
-      const button = await boxOf(copyButton(page));
+      const icon = await boxOf(appIcon(page));
       const title = await boxOf(
         page.getByRole("heading", { level: 2, name: "Omnileaf" }),
       );
 
-      expect(button.x).toBeGreaterThan(title.x + title.width);
+      expect(icon.x + icon.width / 2).toBeCloseTo(title.x + title.width / 2, 0);
+      expect(title.y).toBeGreaterThan(icon.y + icon.height);
     });
   });
 }
@@ -298,15 +294,9 @@ test.describe("in a desktop window under 600px", () => {
     const { width } = viewportOf(page);
     test.skip(width >= MEDIUM_MIN_WIDTH, "under 600px only");
 
-    const button = await boxOf(
-      page.getByRole("main").getByRole("button").first(),
-    );
-    const sourceRow = await boxOf(
-      page.getByRole("main").getByRole("listitem").first(),
-    );
+    const button = await boxOf(versionRowButton(page));
 
     expect(button.x + button.width).toBeLessThanOrEqual(width);
-    expect(sourceRow.y).toBeGreaterThan(button.y + button.height);
   });
 });
 

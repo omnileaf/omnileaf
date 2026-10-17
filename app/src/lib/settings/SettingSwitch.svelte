@@ -1,18 +1,13 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
   import { Switch } from "#lib/components/ui/switch/index.ts";
 
-  type Prominence = "main" | "option";
-
   interface Props {
     readonly label: string;
-    readonly description: string;
+    readonly description?: string;
     readonly isOn: boolean;
     readonly onToggle: () => void;
-    readonly prominence?: Prominence;
-    readonly trailing?: Snippet;
     readonly class?: ClassValue;
   }
 
@@ -21,38 +16,29 @@
     description,
     isOn,
     onToggle,
-    prominence = "option",
-    trailing,
     class: className,
   }: Props = $props();
 
-  const LABEL_WEIGHT = {
-    main: "font-semibold expanded:font-bold",
-    option: "font-medium expanded:font-semibold",
-  } satisfies Record<Prominence, string>;
-
-  const isDescriptionHighlighted = $derived(prominence === "main" && isOn);
   const id = $props.id();
 </script>
 
 <Switch
   bind:checked={() => isOn, onToggle}
   aria-labelledby="{id}-label"
-  aria-describedby="{id}-description"
+  aria-describedby={description === undefined ? undefined : `${id}-description`}
   class={[
     "flex items-center gap-md px-lg py-md text-start inline-full min-block-touch-target hover:tint-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent active:tint-pressed",
     className,
   ]}
 >
   <span class="flex flex-1 flex-col gap-2xs">
-    <span id="{id}-label" class={LABEL_WEIGHT[prominence]}>{label}</span>
-    <span
-      id="{id}-description"
-      class={[
-        "text-detail",
-        isDescriptionHighlighted ? "font-semibold text-accent" : "text-muted",
-      ]}>{description}</span
+    <span id="{id}-label" class="font-medium expanded:font-semibold"
+      >{label}</span
     >
+    {#if description !== undefined}
+      <span id="{id}-description" class="text-detail text-muted"
+        >{description}</span
+      >
+    {/if}
   </span>
-  {@render trailing?.()}
 </Switch>

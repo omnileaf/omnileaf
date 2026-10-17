@@ -1,9 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 
-import {
-  DEFAULT_LIBRARY_LISTING,
-  type LibraryFilter,
-  type LibraryListing,
+import type {
+  Inclusion,
+  LibraryFilter,
+  LibraryListing,
 } from "../../src/lib/ipc/bindings.ts";
 import { pseudoText } from "../../src/lib/language/pseudo-locale.ts";
 import type { FakeBackend } from "./fake-backend.ts";
@@ -12,12 +12,14 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  fakeAppInfo,
   screenSizeOf,
   settle,
   test,
   viewportOf,
 } from "./fixtures.ts";
 import type { WireSeries } from "./series-catalog.ts";
+import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 
 type Box = Awaited<ReturnType<typeof boxOf>>;
 
@@ -30,6 +32,7 @@ interface FakeSeries {
 const PANEL_WIDTH = 380;
 const BADGE_ON_PHONES = 40;
 const BADGE_ON_WIDER_SCREENS = 36;
+const TOUCH_TARGET = 48;
 
 function fakeSeries(
   number: number,
@@ -47,6 +50,10 @@ function fakeSeries(
       bookCount: 2,
       unreadCount: unread,
       cover: null,
+      language: null,
+      hasDownloads: false,
+      isAdult: false,
+      continuesFrom: null,
     },
     addedAt,
     isStarted,
@@ -62,10 +69,7 @@ const CATALOG: readonly FakeSeries[] = [
   fakeSeries(6, { addedAt: 4, unread: 0, isStarted: true }),
 ];
 
-function meets(
-  inclusion: LibraryFilter[keyof LibraryFilter],
-  condition: boolean,
-): boolean {
+function meets(inclusion: Inclusion, condition: boolean): boolean {
   switch (inclusion) {
     case "any":
       return true;
@@ -102,7 +106,7 @@ function titles(numbers: readonly number[]): string[] {
   );
 }
 
-let storedListing: LibraryListing = DEFAULT_LIBRARY_LISTING;
+let storedListing: LibraryListing = NEW_LIBRARY_LISTING;
 
 const FILTERING_BACKEND = {
   ...DEFAULT_BACKEND,
@@ -121,7 +125,7 @@ const FILTERING_BACKEND = {
 test.use({ backend: FILTERING_BACKEND });
 
 test.beforeEach(() => {
-  storedListing = DEFAULT_LIBRARY_LISTING;
+  storedListing = NEW_LIBRARY_LISTING;
 });
 
 function seriesList(page: Page): Locator {
@@ -130,12 +134,20 @@ function seriesList(page: Page): Locator {
 
 function filterButton(page: Page): Locator {
   return page
-    .locator("main header")
-    .getByRole("button", { name: /^Filter and sort/ });
+    .getByRole("main")
+    .getByRole("button", { name: /^Sort and filter/ });
+}
+
+function isDocked(page: Page): boolean {
+  return screenSizeOf(page) === "desktop";
+}
+
+function panelRole(page: Page): "complementary" | "dialog" {
+  return isDocked(page) ? "complementary" : "dialog";
 }
 
 function filterAndSort(page: Page): Locator {
-  return page.getByRole("dialog", { name: "Filter and sort" });
+  return page.getByRole(panelRole(page), { name: "Sort and filter" });
 }
 
 function isBesideTitle(box: Box, title: Box): boolean {
@@ -169,39 +181,32 @@ async function openFilterAndSort(page: Page): Promise<Locator> {
   return filterAndSort(page);
 }
 
-async function showFilters(panel: Locator, page: Page): Promise<void> {
-  if (isPhone(page)) {
-    await panel.getByRole("tab", { name: /^Filter/ }).click();
-  }
+function readStates(page: Page): Locator {
+  return filterAndSort(page).getByRole("group", { name: "Read state" });
 }
 
-async function showSorts(panel: Locator, page: Page): Promise<void> {
-  if (isPhone(page)) {
-    await panel.getByRole("tab", { name: "Sort" }).click();
-  }
-}
-
-async function filterBy(
+async function chooseReadState(
   page: Page,
-  condition: "Unread" | "Started" | "Finished",
-  inclusion: "Any" | "Only" | "Hide",
+  state: "Any" | "Unread" | "In progress" | "Read",
 ): Promise<void> {
-  const panel = filterAndSort(page);
-  await showFilters(panel, page);
-  await panel
-    .getByRole("radiogroup", { name: condition })
-    .getByRole("radio", { name: inclusion })
+  await readStates(page)
+    .getByRole("radio", { name: state, exact: true })
     .click();
 }
 
-async function sortBy(page: Page, sort: "Title" | "Date added") {
-  const panel = filterAndSort(page);
-  await showSorts(panel, page);
-  if (isPhone(page)) {
-    await panel.getByRole("radio", { name: sort }).click();
-  } else {
-    await panel.getByRole("combobox", { name: "Sort by" }).selectOption(sort);
-  }
+async function sortBy(
+  page: Page,
+  sort:
+    | "Title"
+    | "Recently read"
+    | "Recently added"
+    | "Last updated"
+    | "Unread count"
+    | "Time left to finish",
+) {
+  await filterAndSort(page)
+    .getByRole("combobox", { name: "Sort by" })
+    .selectOption(sort);
 }
 
 function directionButton(page: Page, name: string): Locator {
@@ -214,18 +219,14 @@ test("opens filter and sort from the library's header", async ({ page }) => {
   const panel = await openFilterAndSort(page);
 
   await expect(
-    panel.getByRole("heading", { name: "Filter and sort" }),
+    panel.getByRole("heading", { name: "Sort and filter" }),
   ).toBeVisible();
-  if (isPhone(page)) {
-    await expect(panel.getByRole("tab", { name: "Filter" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-  } else {
-    await expect(panel.getByRole("combobox", { name: "Sort by" })).toHaveValue(
-      "title",
-    );
-  }
+  await expect(panel.getByRole("combobox", { name: "Sort by" })).toHaveValue(
+    "title",
+  );
+  await expect(
+    readStates(page).getByRole("radio", { name: "Any" }),
+  ).toBeChecked();
 });
 
 test("heads filter and sort with a round accent badge beside its title, with Reset on the same line", async ({
@@ -233,7 +234,7 @@ test("heads filter and sort with a round accent badge beside its title, with Res
 }) => {
   await openLibrary(page);
   const panel = await openFilterAndSort(page);
-  const title = panel.getByRole("heading", { name: "Filter and sort" });
+  const title = panel.getByRole("heading", { name: "Sort and filter" });
   const badge = title.locator("xpath=preceding-sibling::*[1]");
   const size = isPhone(page) ? BADGE_ON_PHONES : BADGE_ON_WIDER_SCREENS;
 
@@ -259,8 +260,10 @@ test("heads filter and sort with a round accent badge beside its title, with Res
       ];
     }),
   ).toEqual([true, true]);
-  const onTheTitleLine = [panel.getByRole("button", { name: "Reset" })];
-  if (!isPhone(page)) {
+  const onTheTitleLine = isDocked(page)
+    ? [panel.getByRole("button", { name: "Close sort and filter" })]
+    : [panel.getByRole("button", { name: "Reset" })];
+  if (screenSizeOf(page) === "tablet") {
     onTheTitleLine.push(panel.getByRole("button", { name: "Close" }));
   }
   for (const button of onTheTitleLine) {
@@ -268,40 +271,53 @@ test("heads filter and sort with a round accent badge beside its title, with Res
   }
 });
 
-test("lists only the series with a book not marked read once Unread is set to Only, and stores it", async ({
+test("lists only the series never opened once Unread is chosen, and stores it", async ({
   page,
 }) => {
   await openLibrary(page);
   await openFilterAndSort(page);
 
-  await filterBy(page, "Unread", "Only");
+  await chooseReadState(page, "Unread");
 
-  await expectTitles(page, [1, 2, 3, 5]);
-  await expect.poll(() => storedListing.filter.unread).toBe("only");
-});
-
-test("leaves out the finished series once Finished is set to Hide, and those never opened once Started is set to Only", async ({
-  page,
-}) => {
-  await openLibrary(page);
-  await openFilterAndSort(page);
-
-  await filterBy(page, "Finished", "Hide");
-  await filterBy(page, "Started", "Only");
-
-  await expectTitles(page, [2, 3]);
+  await expectTitles(page, [1, 5]);
   await expect
     .poll(() => storedListing.filter)
-    .toEqual({ unread: "any", started: "only", finished: "hide" });
+    .toEqual({
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "hide",
+      finished: "any",
+    });
 });
 
-test("lists the series added last first once date added is chosen, and reverses them on asking", async ({
+test("lists the series opened and not finished once In progress is chosen, and the finished ones once Read is", async ({
   page,
 }) => {
   await openLibrary(page);
   await openFilterAndSort(page);
 
-  await sortBy(page, "Date added");
+  await chooseReadState(page, "In progress");
+  await expectTitles(page, [2, 3]);
+  await chooseReadState(page, "Read");
+
+  await expectTitles(page, [4, 6]);
+  await expect
+    .poll(() => storedListing.filter)
+    .toEqual({
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "any",
+      finished: "only",
+    });
+});
+
+test("lists the series added last first once recently added is chosen, and reverses them on asking", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await openFilterAndSort(page);
+
+  await sortBy(page, "Recently added");
 
   await expectTitles(page, [2, 4, 6, 1, 5, 3]);
   await directionButton(
@@ -314,10 +330,83 @@ test("lists the series added last first once date added is chosen, and reverses 
     .toEqual({ by: "dateAdded", direction: "ascending" });
 });
 
+test("asks for the series read last first once recently read is chosen", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await openFilterAndSort(page);
+
+  await sortBy(page, "Recently read");
+
+  await expect(
+    directionButton(page, "Order: newest first. Change to oldest first"),
+  ).toBeVisible();
+  await expect
+    .poll(() => storedListing.sort)
+    .toEqual({ by: "lastRead", direction: "descending" });
+});
+
+test("asks for the series updated last first once last updated is chosen", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await openFilterAndSort(page);
+
+  await sortBy(page, "Last updated");
+
+  await expect(
+    directionButton(page, "Order: newest first. Change to oldest first"),
+  ).toBeVisible();
+  await expect
+    .poll(() => storedListing.sort)
+    .toEqual({ by: "lastUpdated", direction: "descending" });
+});
+
+test("asks for the series with the most unread books first once unread count is chosen, and the fewest on asking", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await openFilterAndSort(page);
+
+  await sortBy(page, "Unread count");
+  await directionButton(
+    page,
+    "Order: most unread first. Change to fewest unread first",
+  ).click();
+
+  await expect(
+    directionButton(
+      page,
+      "Order: fewest unread first. Change to most unread first",
+    ),
+  ).toBeVisible();
+  await expect
+    .poll(() => storedListing.sort)
+    .toEqual({ by: "unreadCount", direction: "ascending" });
+});
+
+test("asks for the series quickest to finish first once time left is chosen, noting it uses the reading speed", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await openFilterAndSort(page);
+
+  await sortBy(page, "Time left to finish");
+
+  await expect(
+    directionButton(page, "Order: shortest first. Change to longest first"),
+  ).toBeVisible();
+  await expect(
+    filterAndSort(page).getByRole("combobox", { name: "Sort by" }),
+  ).toHaveAccessibleDescription("Time left uses your reading speed.");
+  await expect
+    .poll(() => storedListing.sort)
+    .toEqual({ by: "timeLeft", direction: "ascending" });
+});
+
 test("lists the titles from Z to A on asking", async ({ page }) => {
   await openLibrary(page);
   await openFilterAndSort(page);
-  await showSorts(filterAndSort(page), page);
 
   await directionButton(page, "Order: A to Z. Change to Z to A").click();
 
@@ -331,7 +420,7 @@ test("says how many series the filter lets through", async ({ page }) => {
   await openLibrary(page);
   const panel = await openFilterAndSort(page);
 
-  await filterBy(page, "Unread", "Hide");
+  await chooseReadState(page, "Read");
 
   if (isPhone(page)) {
     await panel.getByRole("button", { name: "Show 2 series" }).click();
@@ -347,7 +436,7 @@ test("tells screen readers how many series match as the filter changes", async (
   await openLibrary(page);
   const panel = await openFilterAndSort(page);
 
-  await filterBy(page, "Unread", "Hide");
+  await chooseReadState(page, "Read");
 
   await expect(panel.getByRole("status")).toHaveText("2 series match");
 });
@@ -357,17 +446,14 @@ test("marks the filter button with how many filters are on", async ({
 }) => {
   await openLibrary(page);
   await openFilterAndSort(page);
-  await filterBy(page, "Unread", "Only");
-  await filterBy(page, "Finished", "Hide");
+  await chooseReadState(page, "In progress");
 
   await page.keyboard.press("Escape");
 
   await expect(filterButton(page)).toHaveAccessibleName(
-    "Filter and sort, 2 filters on",
+    "Sort and filter, 1 filter on",
   );
-  if (viewportOf(page).width >= 1200) {
-    await expect(filterButton(page)).toContainText("2");
-  }
+  await expect(filterButton(page)).toContainText("1");
 });
 
 test("puts the sort and every filter back as a new library has them on Reset", async ({
@@ -375,7 +461,12 @@ test("puts the sort and every filter back as a new library has them on Reset", a
 }) => {
   storedListing = {
     sort: { by: "dateAdded", direction: "ascending" },
-    filter: { unread: "only", started: "any", finished: "any" },
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "only",
+      started: "any",
+      finished: "any",
+    },
   };
   await openLibrary(page);
   const panel = await openFilterAndSort(page);
@@ -383,7 +474,7 @@ test("puts the sort and every filter back as a new library has them on Reset", a
   await panel.getByRole("button", { name: "Reset" }).click();
 
   await expectTitles(page, [1, 2, 3, 4, 5, 6]);
-  await expect.poll(() => storedListing).toEqual(DEFAULT_LIBRARY_LISTING);
+  await expect.poll(() => storedListing).toEqual(NEW_LIBRARY_LISTING);
 });
 
 test("lists the library by the sort and filter stored on this device", async ({
@@ -391,14 +482,19 @@ test("lists the library by the sort and filter stored on this device", async ({
 }) => {
   storedListing = {
     sort: { by: "dateAdded", direction: "descending" },
-    filter: { unread: "only", started: "any", finished: "any" },
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "only",
+      started: "any",
+      finished: "any",
+    },
   };
 
   await openLibrary(page);
 
   await expectTitles(page, [2, 1, 5, 3]);
   await expect(filterButton(page)).toHaveAccessibleName(
-    "Filter and sort, 1 filter on",
+    "Sort and filter, 1 filter on",
   );
 });
 
@@ -406,18 +502,25 @@ test("says when no series meet the filter and clears it on asking", async ({
   page,
 }) => {
   storedListing = {
-    sort: DEFAULT_LIBRARY_LISTING.sort,
-    filter: { unread: "only", started: "any", finished: "only" },
+    sort: NEW_LIBRARY_LISTING.sort,
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "only",
+      started: "any",
+      finished: "only",
+    },
   };
   await page.goto("/");
-  const noMatches = page.getByText("No series match these filters.");
-  await expect(noMatches).toBeVisible();
+  const noMatches = page.getByRole("region", {
+    name: "No series match these filters",
+  });
+  await expect(noMatches).toContainText("Your library hasn't changed.");
   await expect(filterButton(page)).toBeVisible();
 
-  await page.getByRole("button", { name: "Clear filters" }).click();
+  await noMatches.getByRole("button", { name: "Clear all filters" }).click();
 
   await expectTitles(page, [1, 2, 3, 4, 5, 6]);
-  await expect.poll(() => storedListing).toEqual(DEFAULT_LIBRARY_LISTING);
+  await expect.poll(() => storedListing).toEqual(NEW_LIBRARY_LISTING);
 });
 
 test("closes on Escape and hands focus back to the button that opened it", async ({
@@ -434,42 +537,26 @@ test("closes on Escape and hands focus back to the button that opened it", async
   await expect(filterButton(page)).toBeFocused();
 });
 
-test("moves between Any, Only and Hide with the arrow keys", async ({
+test("moves between the read states with the arrow keys and picks one with Space", async ({
   page,
 }) => {
   await openLibrary(page);
-  const panel = await openFilterAndSort(page);
-  const unread = panel.getByRole("radiogroup", { name: "Unread" });
-  await unread.getByRole("radio", { name: "Any" }).focus();
+  await openFilterAndSort(page);
+  await readStates(page).getByRole("radio", { name: "Any" }).focus();
 
   await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Space");
 
-  await expect(unread.getByRole("radio", { name: "Only" })).toBeChecked();
-  await expectTitles(page, [1, 2, 3, 5]);
-});
-
-test("moves between the filter and the sort with the arrow keys on a phone", async ({
-  page,
-}) => {
-  test.skip(
-    !isPhone(page),
-    "wider screens show the filter and the sort together",
-  );
-  await openLibrary(page);
-  const panel = await openFilterAndSort(page);
-  await panel.getByRole("tab", { name: "Filter" }).focus();
-
-  await page.keyboard.press("ArrowRight");
-
-  const sort = panel.getByRole("tab", { name: "Sort" });
-  await expect(sort).toBeFocused();
-  await expect(sort).toHaveAttribute("aria-selected", "true");
-  await expect(panel.getByRole("radio", { name: "Date added" })).toBeAttached();
+  await expect(
+    readStates(page).getByRole("radio", { name: "Unread" }),
+  ).toBeChecked();
+  await expectTitles(page, [1, 5]);
 });
 
 test("slides up from the foot of a phone, and stands against the end of wider screens", async ({
   page,
 }) => {
+  test.skip(isDocked(page), "a desktop docks the panel beside the grid");
   await openLibrary(page);
   const panel = await openFilterAndSort(page);
 
@@ -513,10 +600,10 @@ test("keeps filter and sort inside the screen in a longer language", async ({
   ).toBeVisible();
   await page
     .locator("main header")
-    .getByRole("button", { name: pseudoText("Filter and sort") })
+    .getByRole("button", { name: pseudoText("Sort and filter") })
     .click();
 
-  const panel = page.getByRole("dialog");
+  const panel = page.getByRole(panelRole(page));
   await expect(panel).toBeVisible();
   const overflows = await panel.evaluate(
     (element) => element.scrollWidth > element.clientWidth,
@@ -529,7 +616,7 @@ for (const language of ["en", "en-XA"] as const) {
   const text = (english: string) =>
     language === "en" ? english : pseudoText(english);
 
-  test(`keeps the boxes of the tabs and of the Any, Only and Hide segments still as the choice changes in ${language}`, async ({
+  test(`keeps the read states' boxes still as the choice changes in ${language}`, async ({
     page,
   }) => {
     await page.addInitScript((language) => {
@@ -541,15 +628,14 @@ for (const language of ["en", "en-XA"] as const) {
     ).toBeVisible();
     await page
       .locator("main header")
-      .getByRole("button", { name: text("Filter and sort") })
+      .getByRole("button", { name: text("Sort and filter") })
       .click();
-    const panel = page.getByRole("dialog");
+    const panel = page.getByRole(panelRole(page));
     await expect(panel).toBeVisible();
     await settle(panel);
     const segments = panel
-      .getByRole("radiogroup", { name: text("Unread") })
+      .getByRole("group", { name: text("Read state") })
       .getByRole("radio");
-    const tabs = panel.getByRole("tab");
     const boxesOf = async (choices: Locator) => {
       const boxes = [];
       for (const choice of await choices.all()) {
@@ -557,43 +643,17 @@ for (const language of ["en", "en-XA"] as const) {
       }
       return boxes;
     };
-    const tabsBefore = await boxesOf(tabs);
 
-    if (isPhone(page)) {
-      for (const tab of [text("Sort"), text("Filter")]) {
-        await tabs.filter({ hasText: tab }).click();
-        await expect(tabs.filter({ hasText: tab })).toHaveAttribute(
-          "aria-selected",
-          "true",
-        );
-        expect(await boxesOf(tabs)).toEqual(tabsBefore);
-      }
-    }
     const segmentsBefore = await boxesOf(segments);
-    for (const choice of [text("Hide"), text("Only")]) {
-      await segments.filter({ hasText: choice }).click();
-      await expect(segments.filter({ hasText: choice })).toBeChecked();
+    for (const choice of [text("Read"), text("Unread")]) {
+      await segments.filter({ hasText: new RegExp(`^${choice}$`) }).click();
+      await expect(
+        segments.filter({ hasText: new RegExp(`^${choice}$`) }),
+      ).toBeChecked();
       expect(await boxesOf(segments)).toEqual(segmentsBefore);
     }
   });
 }
-
-test("explains the unread and finished conditions on phones, where the sheet has room", async ({
-  page,
-}) => {
-  await openLibrary(page);
-  const panel = await openFilterAndSort(page);
-  await showFilters(panel, page);
-
-  const hints = [
-    panel.getByText("Has books you haven't read"),
-    panel.getByText("You've read every book"),
-  ];
-
-  for (const hint of hints) {
-    await expect(hint).toBeVisible({ visible: isPhone(page) });
-  }
-});
 
 for (const colorScheme of ["light", "dark"] as const) {
   test(`filter and sort have no accessibility violations in the ${colorScheme} theme`, async ({
@@ -601,13 +661,18 @@ for (const colorScheme of ["light", "dark"] as const) {
   }) => {
     await page.emulateMedia({ colorScheme });
     storedListing = {
-      sort: DEFAULT_LIBRARY_LISTING.sort,
-      filter: { unread: "only", started: "any", finished: "any" },
+      sort: NEW_LIBRARY_LISTING.sort,
+      filter: {
+        ...NEW_LIBRARY_LISTING.filter,
+        unread: "any",
+        started: "hide",
+        finished: "any",
+      },
     };
     await openLibrary(page);
-    const panel = await openFilterAndSort(page);
+    await openFilterAndSort(page);
     await expect(
-      panel.getByRole("radio", { name: "Only" }).first(),
+      readStates(page).getByRole("radio", { name: "Unread" }),
     ).toBeChecked();
 
     const violations = await accessibilityViolations(page);
@@ -618,8 +683,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
 test("the sort list has no accessibility violations", async ({ page }) => {
   await openLibrary(page);
-  const panel = await openFilterAndSort(page);
-  await showSorts(panel, page);
+  await openFilterAndSort(page);
 
   const violations = await accessibilityViolations(page);
 
@@ -643,12 +707,12 @@ test.describe("when a filter leaves no series", () => {
   }) => {
     await openLibrary(page);
     await openFilterAndSort(page);
-    await filterBy(page, "Started", "Only");
+    await chooseReadState(page, "In progress");
     await expect(
-      page.getByText("No series match these filters."),
+      page.getByRole("region", { name: "No series match these filters" }),
     ).toBeVisible();
 
-    await filterBy(page, "Started", "Any");
+    await chooseReadState(page, "Any");
 
     await expectTitles(page, [1, 2, 3, 4, 5, 6]);
     await expect(filterAndSort(page)).toBeVisible();
@@ -662,8 +726,8 @@ test.describe("when the library holds no series and a filter is stored", () => {
       librarySeries: () => ({ series: [], next: null }),
       librarySeriesCount: () => 0,
       libraryListing: () => ({
-        ...DEFAULT_LIBRARY_LISTING,
-        filter: { ...DEFAULT_LIBRARY_LISTING.filter, unread: "only" },
+        ...NEW_LIBRARY_LISTING,
+        filter: { ...NEW_LIBRARY_LISTING.filter, unread: "only" },
       }),
     },
   });
@@ -674,13 +738,16 @@ test.describe("when the library holds no series and a filter is stored", () => {
     await page.goto("/");
 
     await expect(page.getByText("Your library is empty")).toBeVisible();
-    await expect(page.getByText("No series match these filters.")).toBeHidden();
+    await expect(
+      page.getByRole("region", { name: "No series match these filters" }),
+    ).toBeHidden();
   });
 });
 
 test("slides in as it opens, which reduced motion turns into appearing at once", async ({
   page,
 }) => {
+  test.skip(isDocked(page), "a desktop docks the panel at once");
   await openLibrary(page);
   await filterButton(page).click();
   await expect(filterAndSort(page)).toBeVisible();
@@ -707,3 +774,76 @@ test("slides in as it opens, which reduced motion turns into appearing at once",
     ),
   ).toBe(0);
 });
+
+test("lists the filter in use as a chip under the library, and takes it off with its cross", async ({
+  page,
+}) => {
+  storedListing = {
+    ...NEW_LIBRARY_LISTING,
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "hide",
+      finished: "any",
+    },
+  };
+  await openLibrary(page);
+  const inUse = page.getByRole("list", { name: "Filters in use" });
+
+  await expect(inUse.getByRole("listitem")).toHaveText(["Unread"]);
+  await inUse.getByRole("button", { name: "Remove Unread" }).click();
+
+  await expectTitles(page, [1, 2, 3, 4, 5, 6]);
+  await expect(inUse).toHaveCount(0);
+});
+
+test("clears every filter in use with Clear all", async ({ page }) => {
+  storedListing = {
+    ...NEW_LIBRARY_LISTING,
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "any",
+      finished: "only",
+    },
+  };
+  await openLibrary(page);
+
+  await page.getByRole("button", { name: "Clear all" }).click();
+
+  await expectTitles(page, [1, 2, 3, 4, 5, 6]);
+  await expect
+    .poll(() => storedListing.filter)
+    .toEqual(NEW_LIBRARY_LISTING.filter);
+});
+
+for (const platform of ["android", "ios"] as const) {
+  test.describe(`on ${platform}`, () => {
+    test.use({
+      backend: {
+        ...FILTERING_BACKEND,
+        appInfo: () => fakeAppInfo(platform),
+      },
+    });
+
+    test("sizes Sort by and its direction for a finger", async ({ page }) => {
+      await openLibrary(page);
+      await filterButton(page).click();
+      const panel = page.getByRole("dialog", { name: "Sort and filter" });
+      await settle(panel);
+
+      const select = await boxOf(
+        panel.getByRole("combobox", { name: "Sort by" }),
+      );
+      const direction = await boxOf(
+        panel.getByRole("button", { name: "Order: A to Z. Change to Z to A" }),
+      );
+
+      expect(select.height).toBeGreaterThanOrEqual(TOUCH_TARGET);
+      expect([direction.width, direction.height]).toEqual([
+        TOUCH_TARGET,
+        TOUCH_TARGET,
+      ]);
+    });
+  });
+}

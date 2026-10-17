@@ -11,10 +11,11 @@ use std::{
 };
 
 use omnileaf_engine::{
-    AppleBookmark, Changed, CoversPerRow, DesktopCoversPerRow, FolderId, FolderKind, Inclusion,
-    Library, LibraryDisplay, LibraryError, LibraryFilter, LibraryFolder, LibraryListing,
-    LibrarySort, LibrarySortBy, LibraryView, OnCovers, PhoneCoversPerRow, ResolvedBookmark,
-    RootLocator, ScanProgress, SortDirection, TabletCoversPerRow,
+    AdultContent, AdultTreatment, AppleBookmark, CategoryId, Changed, CoversPerRow,
+    DesktopCoversPerRow, FolderId, FolderKind, Inclusion, Library, LibraryDisplay, LibraryError,
+    LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryGrouping, LibraryListing,
+    LibrarySort, LibrarySortBy, LibraryTab, LibraryTabId, LibraryView, OnCovers, PhoneCoversPerRow,
+    ResolvedBookmark, RootLocator, ScanProgress, SeriesLabels, SortDirection, TabletCoversPerRow,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -154,6 +155,44 @@ async fn adds_a_folder_and_scans_the_books_in_it() {
             (FolderKind::Home, "library-add-home"),
             (FolderKind::Linked, SAMPLE_LIBRARY_NAME)
         ]
+    );
+}
+
+#[tokio::test]
+async fn lists_and_counts_the_series_held_in_one_folder() {
+    let home = ScratchFolder::new("library-folder-series-home");
+    let comics = ScratchFolder::new("library-folder-series-comics");
+    write_sample_library(comics.path()).unwrap();
+    let library = open(home.path()).await;
+    library
+        .add_folder(comics.path().join(SAMPLE_LIBRARY_NAME), |_| {})
+        .await
+        .unwrap();
+    let folders = all_folders(&library).await;
+    let [home_folder, linked] = [FolderKind::Home, FolderKind::Linked].map(|kind| {
+        folders
+            .iter()
+            .find(|folder| folder.kind == kind)
+            .unwrap()
+            .id
+    });
+
+    let in_linked = library
+        .folder_series(linked, LibraryListing::default(), None)
+        .await
+        .unwrap();
+    let in_home = library
+        .folder_series(home_folder, LibraryListing::default(), None)
+        .await
+        .unwrap();
+    let counted = library
+        .folder_series_count(linked, LibraryListing::default().filter)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (in_linked.series.len(), in_home.series.len(), counted),
+        (3, 0, 3)
     );
 }
 
@@ -376,7 +415,7 @@ async fn reads_a_bookmarked_folder_as_available_once_its_bookmark_opens_again() 
 }
 
 #[tokio::test]
-async fn keeps_a_bookmarked_folder_and_its_books_when_its_bookmark_wont_open() {
+async fn keeps_a_bookmarked_folder_and_its_books_hidden_when_its_bookmark_wont_open() {
     let home = ScratchFolder::new("library-restore-failed-home");
     let comics = ScratchFolder::new("library-restore-failed-comics");
     write_sample_library(comics.path()).unwrap();
@@ -404,11 +443,14 @@ async fn keeps_a_bookmarked_folder_and_its_books_when_its_bookmark_wont_open() {
         }
     );
     assert_eq!(
-        library
-            .series_count(LibraryListing::default().filter)
-            .await
-            .unwrap(),
-        3
+        (
+            library
+                .series_count(LibraryListing::default().filter)
+                .await
+                .unwrap(),
+            library.hidden_series_count().await.unwrap()
+        ),
+        (0, 3)
     );
 }
 
@@ -736,6 +778,15 @@ async fn opens_a_new_library_before_its_first_launch_is_finished() {
 }
 
 #[tokio::test]
+async fn finds_no_library_already_in_the_home_folder_yet() {
+    let home = ScratchFolder::new("library-found-none");
+
+    let found = open(home.path()).await.found_library();
+
+    assert_eq!(found, None);
+}
+
+#[tokio::test]
 async fn remembers_the_finished_first_launch_when_the_library_reopens() {
     let home = ScratchFolder::new("library-first-launch-finished");
     open(home.path()).await.finish_first_launch().await.unwrap();
@@ -764,6 +815,9 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
             tablet: TabletCoversPerRow::try_from(4).unwrap(),
             desktop: DesktopCoversPerRow::try_from(9).unwrap(),
         },
+        fits_covers_to_width: false,
+        group_by: LibraryGrouping::Category,
+        shows_category_tabs: false,
         shows_item_counts: true,
         shows_continue_row: true,
         on_covers: OnCovers {
@@ -779,6 +833,94 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
     let reopened = open(home.path()).await;
 
     assert_eq!(reopened.view().await.unwrap(), list);
+}
+
+#[tokio::test]
+async fn shows_adult_content_counted_by_age_rating_in_a_new_library() {
+    let home = ScratchFolder::new("library-adult-new");
+
+    let content = open(home.path()).await.adult_content().await.unwrap();
+
+    assert_eq!(
+        content,
+        AdultContent {
+            treatment: AdultTreatment::Show,
+            counts_age_ratings: true,
+        }
+    );
+}
+
+#[tokio::test]
+async fn remembers_the_choice_for_adult_content_when_the_library_reopens() {
+    let home = ScratchFolder::new("library-adult-set");
+    let blurred = AdultContent {
+        treatment: AdultTreatment::Blur,
+        counts_age_ratings: false,
+    };
+    open(home.path())
+        .await
+        .set_adult_content(blurred)
+        .await
+        .unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.adult_content().await.unwrap(), blurred);
+}
+
+#[tokio::test]
+async fn keeps_no_tags_until_the_library_keeps_them() {
+    let home = ScratchFolder::new("library-tags-none");
+
+    let tags = open(home.path()).await.tags().unwrap();
+
+    assert_eq!(tags, Vec::new());
+}
+
+#[tokio::test]
+async fn keeps_no_categories_until_the_library_keeps_them() {
+    let home = ScratchFolder::new("library-categories-none");
+
+    let categories = open(home.path()).await.categories().unwrap();
+
+    assert_eq!(categories, Vec::new());
+}
+
+#[tokio::test]
+async fn offers_nothing_to_filter_by_until_the_library_reads_its_series_details() {
+    let home = ScratchFolder::new("library-filter-choices");
+
+    let choices = open(home.path()).await.filter_choices().unwrap();
+
+    assert_eq!(choices, LibraryFilterChoices::default());
+}
+
+#[tokio::test]
+async fn labels_no_series_until_the_library_keeps_categories_and_tags() {
+    let home = ScratchFolder::new("library-series-labels");
+
+    let labels = open(home.path()).await.series_labels(Vec::new()).unwrap();
+
+    assert_eq!(labels, SeriesLabels::default());
+}
+
+#[tokio::test]
+async fn finds_no_series_in_a_category_the_library_does_not_keep() {
+    let home = ScratchFolder::new("library-category-series");
+    let library = open(home.path()).await;
+    let category = CategoryId::from("Manga".to_owned());
+
+    let page = library
+        .category_series(category.clone(), LibraryListing::default(), None)
+        .unwrap();
+    let count = library
+        .category_series_count(category, LibraryListing::default().filter)
+        .unwrap();
+
+    assert_eq!(
+        (page.series.len(), page.next.is_none(), count),
+        (0, true, 0)
+    );
 }
 
 #[tokio::test]
@@ -802,17 +944,102 @@ async fn remembers_the_listing_set_on_this_device_when_the_library_reopens() {
             unread: Inclusion::Only,
             started: Inclusion::Hide,
             finished: Inclusion::Any,
+            ..LibraryListing::default().filter
         },
     };
     open(home.path())
         .await
-        .set_listing(unread_newest_first)
+        .set_listing(unread_newest_first.clone())
         .await
         .unwrap();
 
     let reopened = open(home.path()).await;
 
     assert_eq!(reopened.listing().await.unwrap(), unread_newest_first);
+}
+
+#[tokio::test]
+async fn remembers_listing_the_series_read_last_first_when_the_library_reopens() {
+    let home = ScratchFolder::new("library-listing-last-read");
+    let read_last_first = LibraryListing {
+        sort: LibrarySort {
+            by: LibrarySortBy::LastRead,
+            direction: SortDirection::Descending,
+        },
+        ..LibraryListing::default()
+    };
+    open(home.path())
+        .await
+        .set_listing(read_last_first.clone())
+        .await
+        .unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.listing().await.unwrap(), read_last_first);
+}
+
+#[tokio::test]
+async fn remembers_listing_the_series_updated_last_first_when_the_library_reopens() {
+    let home = ScratchFolder::new("library-listing-last-updated");
+    let updated_last_first = LibraryListing {
+        sort: LibrarySort {
+            by: LibrarySortBy::LastUpdated,
+            direction: SortDirection::Descending,
+        },
+        ..LibraryListing::default()
+    };
+    open(home.path())
+        .await
+        .set_listing(updated_last_first.clone())
+        .await
+        .unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.listing().await.unwrap(), updated_last_first);
+}
+
+#[tokio::test]
+async fn remembers_listing_the_series_with_the_most_unread_books_first_when_the_library_reopens() {
+    let home = ScratchFolder::new("library-listing-unread-count");
+    let most_unread_first = LibraryListing {
+        sort: LibrarySort {
+            by: LibrarySortBy::UnreadCount,
+            direction: SortDirection::Descending,
+        },
+        ..LibraryListing::default()
+    };
+    open(home.path())
+        .await
+        .set_listing(most_unread_first.clone())
+        .await
+        .unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.listing().await.unwrap(), most_unread_first);
+}
+
+#[tokio::test]
+async fn remembers_listing_the_series_quickest_to_finish_first_when_the_library_reopens() {
+    let home = ScratchFolder::new("library-listing-time-left");
+    let shortest_first = LibraryListing {
+        sort: LibrarySort {
+            by: LibrarySortBy::TimeLeft,
+            direction: SortDirection::Ascending,
+        },
+        ..LibraryListing::default()
+    };
+    open(home.path())
+        .await
+        .set_listing(shortest_first.clone())
+        .await
+        .unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.listing().await.unwrap(), shortest_first);
 }
 
 #[tokio::test]
@@ -892,4 +1119,98 @@ fn does_not_take_another_failure_for_a_newer_library() {
     };
 
     assert!(!error.was_written_by_a_newer_version());
+}
+
+fn shown(id: LibraryTabId) -> LibraryTab {
+    LibraryTab {
+        id,
+        is_hidden: false,
+    }
+}
+
+fn hidden(id: LibraryTabId) -> LibraryTab {
+    LibraryTab {
+        id,
+        is_hidden: true,
+    }
+}
+
+fn category_tab(id: &str) -> LibraryTabId {
+    LibraryTabId::Category {
+        id: CategoryId::from(id.to_owned()),
+    }
+}
+
+#[tokio::test]
+async fn starts_with_all_shown_and_new_chapters_hidden() {
+    let home = ScratchFolder::new("library-tabs-new");
+
+    let tabs = open(home.path()).await.tabs().await.unwrap();
+
+    assert_eq!(
+        tabs,
+        [shown(LibraryTabId::All), hidden(LibraryTabId::NewChapters)]
+    );
+}
+
+#[tokio::test]
+async fn remembers_the_tabs_moved_and_hidden_when_the_library_reopens() {
+    let home = ScratchFolder::new("library-tabs-set");
+    let tabs = vec![
+        shown(category_tab("reading")),
+        shown(LibraryTabId::NewChapters),
+        shown(LibraryTabId::All),
+        hidden(category_tab("manga")),
+    ];
+    open(home.path())
+        .await
+        .set_tabs(tabs.clone())
+        .await
+        .unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.tabs().await.unwrap(), tabs);
+}
+
+#[tokio::test]
+async fn keeps_all_shown_though_asked_to_hide_it() {
+    let home = ScratchFolder::new("library-tabs-all-shown");
+    let library = open(home.path()).await;
+
+    library
+        .set_tabs(vec![
+            hidden(LibraryTabId::All),
+            hidden(LibraryTabId::NewChapters),
+        ])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        library.tabs().await.unwrap(),
+        [shown(LibraryTabId::All), hidden(LibraryTabId::NewChapters)]
+    );
+}
+
+#[tokio::test]
+async fn puts_back_each_built_in_tab_left_out_after_the_rest_and_keeps_each_tab_once() {
+    let home = ScratchFolder::new("library-tabs-left-out");
+    let library = open(home.path()).await;
+
+    library
+        .set_tabs(vec![
+            shown(category_tab("reading")),
+            shown(category_tab("reading")),
+        ])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        library.tabs().await.unwrap(),
+        [
+            shown(category_tab("reading")),
+            shown(LibraryTabId::All),
+            hidden(LibraryTabId::NewChapters),
+        ]
+    );
 }

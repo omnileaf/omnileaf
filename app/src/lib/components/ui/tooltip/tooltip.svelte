@@ -2,6 +2,7 @@
   import { Tooltip as TooltipPrimitive } from "bits-ui";
 
   import { LongPress } from "#lib/components/long-press.ts";
+  import { Kbd } from "#lib/components/ui/kbd/index.ts";
 
   const LONG_PRESS_MS = 500;
   const TRIGGER_GAP_PX = 4;
@@ -10,18 +11,32 @@
   type ClickEvent = Parameters<
     NonNullable<TooltipPrimitive.TriggerProps["onclick"]>
   >[0];
+  type PointerEvent = Parameters<
+    NonNullable<TooltipPrimitive.TriggerProps["onpointerdown"]>
+  >[0];
 
   let {
     label,
+    keys,
+    side = "top",
     ref = $bindable(null),
     onclick,
+    onpointerdown,
+    onpointerup,
+    onpointercancel,
+    onpointerleave,
     ...restProps
-  }: TooltipPrimitive.TriggerProps & { label: string | undefined } = $props();
+  }: TooltipPrimitive.TriggerProps & {
+    label: string | undefined;
+    keys?: readonly string[];
+    side?: "top" | "right" | "bottom" | "left";
+  } = $props();
 
   const longPress = new LongPress(LONG_PRESS_MS);
   let open = $state(false);
 
   function press(event: PointerEvent): void {
+    onpointerdown?.(event);
     longPress.pointerWentDown();
     if (label === undefined) {
       return;
@@ -51,19 +66,35 @@
       bind:ref
       {...restProps}
       onpointerdown={press}
-      onpointerup={release}
-      onpointercancel={release}
-      onpointerleave={release}
+      onpointerup={(event) => {
+        onpointerup?.(event);
+        release();
+      }}
+      onpointercancel={(event) => {
+        onpointercancel?.(event);
+        release();
+      }}
+      onpointerleave={(event) => {
+        onpointerleave?.(event);
+        release();
+      }}
       onclick={click}
     />
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
         aria-hidden="true"
+        {side}
         sideOffset={TRIGGER_GAP_PX}
         collisionPadding={SCREEN_EDGE_GAP_PX}
-        class="z-tooltip rounded-card border border-border bg-card px-md py-xs text-detail font-medium text-foreground fade-motion shadow-popover"
+        class="z-tooltip flex items-center gap-sm rounded-tooltip border-tooltip-edge bg-tooltip px-tooltip-inline py-tooltip-block text-caption text-on-tooltip fade-motion shadow-tooltip macos:border windows:border"
       >
-        {label}
+        <span>{label}</span>
+        {#each keys ?? [] as key (key)}
+          <Kbd class="bg-tooltip-key text-on-tooltip-key">{key}</Kbd>
+        {/each}
+        <TooltipPrimitive.Arrow
+          class="text-tooltip macos:hidden windows:hidden"
+        />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   </TooltipPrimitive.Root>

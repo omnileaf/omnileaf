@@ -3481,15 +3481,18 @@ name = "omnileaf-app"
 version = "0.0.0"
 dependencies = [
  "dispatch2",
+ "gtk",
  "objc2-foundation",
  "omnileaf-db",
  "omnileaf-edge-swipe",
  "omnileaf-engine",
  "omnileaf-folder-access",
  "omnileaf-formats",
+ "omnileaf-icon-actions",
  "omnileaf-system-bars",
  "omnileaf-windows-probes",
  "os_info",
+ "rustix",
  "serde",
  "serde_json",
  "specta",
@@ -3600,6 +3603,16 @@ dependencies = [
  "tokio",
  "unicode-normalization",
  "zip",
+]
+
+[[package]]
+name = "omnileaf-icon-actions"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "specta",
+ "tauri",
+ "tauri-plugin",
 ]
 
 [[package]]
@@ -5048,6 +5061,7 @@ dependencies = [
  "gtk",
  "heck 0.5.0",
  "http",
+ "image",
  "jni",
  "libc",
  "log",

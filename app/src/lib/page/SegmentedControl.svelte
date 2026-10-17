@@ -21,6 +21,7 @@
     readonly labelledBy: string;
     readonly describedBy?: string | undefined;
     readonly size?: Size;
+    readonly isFullWidth?: boolean;
     readonly onChoose: (option: Option) => void;
     readonly class?: ClassValue;
   }
@@ -29,14 +30,16 @@
     small: {
       track:
         "gap-xs rounded-field p-xs large:rounded-small-control large:p-segment-track",
+      capped: "",
       segment: "rounded-small-control min-block-segment large:rounded-segment",
       onRow: "flex-auto desktop:large:min-block-segment-compact",
       face: "gap-icon-gap px-sm text-detail large:text-caption",
       icon: "large:block-segment-icon-desktop large:inline-segment-icon-desktop",
     },
     regular: {
-      track:
-        "gap-2xs rounded-card p-2xs touch:medium:max-inline-segmented-touch desktop:max-inline-segmented",
+      track: "gap-2xs rounded-card p-2xs",
+      capped:
+        "touch:medium:max-inline-segmented-touch desktop:max-inline-segmented",
       segment: "rounded-tile min-block-option",
       onRow: "flex-1",
       face: "text-callout",
@@ -44,7 +47,7 @@
     },
   } satisfies Record<
     Size,
-    Record<"track" | "segment" | "onRow" | "face" | "icon", string>
+    Record<"track" | "capped" | "segment" | "onRow" | "face" | "icon", string>
   >;
 
   let {
@@ -55,6 +58,7 @@
     labelledBy,
     describedBy,
     size = "regular",
+    isFullWidth = false,
     onChoose,
     class: className,
   }: Props = $props();
@@ -92,6 +96,7 @@
     "relative bg-chip",
     isOneRow ? "flex" : "grid",
     look.track,
+    !isFullWidth && look.capped,
     className,
   ]}
 >
@@ -107,7 +112,7 @@
           : "min-inline-none touch:min-block-touch-target",
         chosen === option
           ? "bg-raised font-semibold text-foreground shadow-raised"
-          : "font-medium text-muted hover:bg-hover",
+          : "font-medium text-foreground hover:bg-hover",
       ]}
     >
       <SegmentFace

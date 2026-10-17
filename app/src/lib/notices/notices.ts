@@ -1,9 +1,12 @@
 import { type Component, createContext } from "svelte";
 import { toast } from "svelte-sonner";
 
+import { CircleCheck } from "@lucide/svelte";
+
 import type { Glyph } from "#lib/page/glyph.ts";
 
 import NoticeToast from "./NoticeToast.svelte";
+import { NEW_UNDO_RULES, type UndoRules } from "./undo-setting.svelte";
 import UndoToast from "./UndoToast.svelte";
 
 export type NoticeTone = "plain" | "warning";
@@ -27,6 +30,8 @@ export interface UndoOffer {
   readonly title: string;
   readonly body?: string;
   readonly undo: () => void;
+  /** Makes the change for good once it can no longer be undone. */
+  readonly commit?: () => void;
 }
 
 export interface ToastHandle {
@@ -35,6 +40,7 @@ export interface ToastHandle {
 }
 
 export const UNDO_WINDOW_MS = 10_000;
+const MS_PER_SECOND = 1000;
 export const NOTICE_WINDOW_MS = 5_000;
 
 interface Lapse {
@@ -51,9 +57,15 @@ let toastsMade = 0;
 
 export class Notices {
   #isHeld = false;
+  readonly #undoRules: () => UndoRules;
   readonly #lapses = new Map<string, Lapse>();
   readonly #noticesShown = new Map<Notice, Shown>();
   #undoShown: (Shown & { readonly offer: UndoOffer }) | undefined;
+  #undoSettling: (Shown & { readonly offer: UndoOffer }) | undefined;
+
+  constructor(undoRules: () => UndoRules = () => NEW_UNDO_RULES) {
+    this.#undoRules = undoRules;
+  }
 
   get undoOffer(): UndoOffer | undefined {
     return this.#undoShown?.offer;
@@ -72,21 +84,42 @@ export class Notices {
   }
 
   offerUndo(offer: UndoOffer): void {
+    const rules = this.#undoRules();
+    if (!rules.isOffered) {
+      this.show({
+        tone: "plain",
+        icon: CircleCheck,
+        title: offer.title,
+        ...(offer.body === undefined ? {} : { body: offer.body }),
+      });
+      offer.commit?.();
+      return;
+    }
     this.#undoShown?.toast.dismiss();
     const shown = this.#present(
       UndoToast,
-      (toast) => ({ offer, toast }),
+      (toast) => ({
+        offer: {
+          ...offer,
+          undo: () => {
+            this.undo();
+          },
+        },
+        toast,
+      }),
       "polite",
     );
     this.#undoShown = { ...shown, offer };
-    shown.toast.lapse(UNDO_WINDOW_MS);
+    shown.toast.lapse(rules.windowSeconds * MS_PER_SECOND);
   }
 
   undo(): void {
-    const shown = this.#undoShown;
+    const shown = this.#undoShown ?? this.#undoSettling;
     if (shown === undefined) {
       return;
     }
+    this.#undoShown = undefined;
+    this.#undoSettling = undefined;
     shown.toast.dismiss();
     shown.offer.undo();
   }
@@ -96,6 +129,9 @@ export class Notices {
   }
 
   hold(): void {
+    if (!this.#undoRules().holdsWhileHoveredOrFocused) {
+      return;
+    }
     this.#isHeld = true;
     for (const lapse of this.#lapses.values()) {
       clearTimeout(lapse.timer);
@@ -171,8 +207,16 @@ export class Notices {
         this.#noticesShown.delete(notice);
       }
     }
-    if (this.#undoShown?.id === id) {
+    const undoShown = this.#undoShown;
+    if (undoShown?.id === id) {
       this.#undoShown = undefined;
+      this.#undoSettling = undoShown;
+      queueMicrotask(() => {
+        if (this.#undoSettling === undoShown) {
+          this.#undoSettling = undefined;
+          undoShown.offer.commit?.();
+        }
+      });
     }
   }
 }

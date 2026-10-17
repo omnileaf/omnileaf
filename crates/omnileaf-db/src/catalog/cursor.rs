@@ -15,6 +15,10 @@ const ROOT_TAG: u8 = 4;
 const DESCENDING_BIT: u8 = 0b01;
 const UNREAD_BIT: u8 = 0b10;
 const SESSION_TAG: u8 = 5;
+const LAST_READ_TAG: u8 = 6;
+const LAST_UPDATED_TAG: u8 = 7;
+const UNREAD_COUNT_TAG: u8 = 8;
+const TIME_LEFT_TAG: u8 = 9;
 const ID_LENGTH: usize = 16;
 const MILLIS_LENGTH: usize = size_of::<i64>();
 const HEX_RADIX: u32 = 16;
@@ -43,9 +47,25 @@ pub(crate) enum Position {
     Root {
         id: i64,
     },
+    LastRead {
+        last_read_at_ms: i64,
+        id: SeriesId,
+    },
     Session {
         started_at_ms: i64,
         id: i64,
+    },
+    LastUpdated {
+        updated_at_ms: i64,
+        id: SeriesId,
+    },
+    UnreadCount {
+        unread_count: i64,
+        id: SeriesId,
+    },
+    TimeLeft {
+        time_left_key: i64,
+        id: SeriesId,
     },
 }
 
@@ -73,10 +93,37 @@ impl Position {
             ]
             .concat(),
             Self::Root { id } => [&[ROOT_TAG][..], &id.to_be_bytes()].concat(),
+            Self::LastRead {
+                last_read_at_ms,
+                id,
+            } => [
+                &[LAST_READ_TAG][..],
+                &last_read_at_ms.to_be_bytes(),
+                id.as_bytes(),
+            ]
+            .concat(),
             Self::Session { started_at_ms, id } => [
                 &[SESSION_TAG][..],
                 &started_at_ms.to_be_bytes(),
                 &id.to_be_bytes(),
+            ]
+            .concat(),
+            Self::LastUpdated { updated_at_ms, id } => [
+                &[LAST_UPDATED_TAG][..],
+                &updated_at_ms.to_be_bytes(),
+                id.as_bytes(),
+            ]
+            .concat(),
+            Self::UnreadCount { unread_count, id } => [
+                &[UNREAD_COUNT_TAG][..],
+                &unread_count.to_be_bytes(),
+                id.as_bytes(),
+            ]
+            .concat(),
+            Self::TimeLeft { time_left_key, id } => [
+                &[TIME_LEFT_TAG][..],
+                &time_left_key.to_be_bytes(),
+                id.as_bytes(),
             ]
             .concat(),
         }
@@ -112,6 +159,13 @@ impl Position {
                     id: BookId::try_from(id.as_slice()).ok()?,
                 })
             }
+            LAST_READ_TAG => {
+                let (last_read_at_ms, id) = rest.split_first_chunk::<MILLIS_LENGTH>()?;
+                Some(Self::LastRead {
+                    last_read_at_ms: i64::from_be_bytes(*last_read_at_ms),
+                    id: SeriesId::try_from(id).ok()?,
+                })
+            }
             ROOT_TAG => Some(Self::Root {
                 id: i64::from_be_bytes(rest.try_into().ok()?),
             }),
@@ -120,6 +174,27 @@ impl Position {
                 Some(Self::Session {
                     started_at_ms: i64::from_be_bytes(*started_at_ms),
                     id: i64::from_be_bytes(id.try_into().ok()?),
+                })
+            }
+            LAST_UPDATED_TAG => {
+                let (updated_at_ms, id) = rest.split_first_chunk::<MILLIS_LENGTH>()?;
+                Some(Self::LastUpdated {
+                    updated_at_ms: i64::from_be_bytes(*updated_at_ms),
+                    id: SeriesId::try_from(id).ok()?,
+                })
+            }
+            UNREAD_COUNT_TAG => {
+                let (unread_count, id) = rest.split_first_chunk::<MILLIS_LENGTH>()?;
+                Some(Self::UnreadCount {
+                    unread_count: i64::from_be_bytes(*unread_count),
+                    id: SeriesId::try_from(id).ok()?,
+                })
+            }
+            TIME_LEFT_TAG => {
+                let (time_left_key, id) = rest.split_first_chunk::<MILLIS_LENGTH>()?;
+                Some(Self::TimeLeft {
+                    time_left_key: i64::from_be_bytes(*time_left_key),
+                    id: SeriesId::try_from(id).ok()?,
                 })
             }
             _ => None,

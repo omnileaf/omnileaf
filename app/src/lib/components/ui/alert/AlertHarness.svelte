@@ -5,6 +5,7 @@
     Alert,
     AlertActions,
     AlertButton,
+    AlertDescription,
     AlertDismiss,
     AlertTitle,
     type AlertTone,
@@ -17,6 +18,7 @@
 <Alert {tone} icon={CircleAlert}>
   <AlertTitle>Sample Comics looks empty</AlertTitle>
   <AlertDismiss label="Dismiss" {onDismiss} />
+  <AlertDescription>Nothing in your library changed.</AlertDescription>
   <AlertActions>
     <AlertButton emphasis="strong">Remove its books</AlertButton>
   </AlertActions>

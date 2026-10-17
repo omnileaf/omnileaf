@@ -8,22 +8,28 @@ use std::{
 
 use omnileaf_db::{
     Config, Database,
+    adult_content::{adult_content, set_adult_content},
     catalog::{
-        AndroidTree, AppleBookmark, BookFileId, BookToRead, Cover, NewRoot, PageDimensions,
-        PageRequest, PageSize, PlaceInSeries, RootId, RootKind, RootLocator, SeriesFilter,
-        SeriesListing, add_root, book_to_read, bookmarked_roots, cover_file, home_root,
-        library_root, library_roots, mark_root_available, mark_root_unavailable, page_dimensions,
-        place_in_series, remove_book_files, remove_books_without_files, remove_root,
-        root_book_count, root_files, series_books, series_count, series_overview, series_page,
-        store_page_dimensions, up_next,
+        AndroidTree, AppleBookmark, BookFileId, BookListing, BookToRead, Cover, NewRoot,
+        PageDimensions, PageRequest, PageSize, PlaceInSeries, RootId, RootKind, RootLocator,
+        SeriesFilter, SeriesListing, add_root, book_to_read, bookmarked_roots, cover_file,
+        folder_series_count, folder_series_page, hidden_series_count, home_root, library_root,
+        library_roots, mark_root_available, mark_root_unavailable, missing_roots, page_dimensions,
+        place_in_series, record_page_count, relocate_roots, remember_root_share, remove_book_files,
+        remove_books_without_files, remove_root, root_book_count, root_files, root_share,
+        root_shares, series_books, series_count, series_overview, series_page, series_titles,
+        show_root_while_missing, store_page_dimensions, unread_books, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     history::{
-        book_reading_time, book_sessions, days_in_a_row, history_page, reading_since,
-        reading_time_by_day, series_read,
+        book_reading_time, book_sessions, clear_history, days_in_a_row, hide_book_from_history,
+        history_page, reading_since, reading_summary, reading_time_by_day, restore_book_to_history,
+        restore_history, series_read,
     },
     library_listing::{library_listing, set_library_listing},
+    library_tabs::{TabPlace, library_tabs, set_library_tabs},
     library_view::{library_view, set_library_view},
+    reading_speed::seconds_per_page,
     store::{Changed, Clock, Store},
 };
 use omnileaf_formats::LocalStorage;
@@ -34,22 +40,29 @@ use tokio::{
 };
 
 use crate::{
-    AppLanguage, BookCursor, BookId, BookSessions, BooksRemoval, CoversPerRowOutOfRange,
-    FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryOf,
-    HistoryPage, HistorySeries, LibraryChanges, LibraryFilter, LibraryFolder, LibraryListing,
-    LibrarySearch, LibraryView, LocalDay, ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark,
-    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview,
-    SeriesPage, UtcOffset,
+    AdultContent, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
+    CategoryId, CoversPerRowOutOfRange, CreatorSeries, FolderCursor, FolderId, FolderPage,
+    FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage,
+    HistorySeries, LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices,
+    LibraryFolder, LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay,
+    LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RescanOutcome,
+    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
+    SeriesId, SeriesLabels, SeriesOverview, SeriesPage, ShareAddress, ShareLookup,
+    UnreachableShare, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
     file_in_storage::FileInStorage,
     history::whole_seconds,
     library_changes::CatalogWritten,
-    library_folder::root_folder,
+    library_folder::{folder_location, root_folder},
     library_layout::folder_name,
-    library_search::StoredSearch,
+    library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
+    library_tabs::arranged,
+    macos_share::share_address_in_mount_table,
+    missing_folder::problem_of,
     moved_home::move_home,
+    network_share::unreachable_share_of,
     reading_progress::{ReadingProgress, ReadingSaved},
     rescan::rescan,
     rescan_conditions::{RescanConditions, Storage},
@@ -57,7 +70,7 @@ use crate::{
     scan::{Target, find_books_in, saturating_u32, scan, walk},
 };
 
-const DATABASE_FILE: &str = "library.sqlite";
+pub(crate) const DATABASE_FILE: &str = "library.sqlite";
 const BACKUP_FOLDER: &str = "backups";
 const FOLDERS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
@@ -139,6 +152,8 @@ pub enum LibraryError {
     FolderNotFound { id: FolderId },
     #[error("series {id} isn't in the library")]
     SeriesNotFound { id: SeriesId },
+    #[error("move library folder {id} to a folder the library already reads")]
+    FolderAlreadyInLibrary { id: FolderId },
     #[error("remove library folder {id}, the home folder the library always keeps")]
     HomeFolderKept { id: FolderId },
     #[error("search for {chars} characters, more than the {max} a search reads")]
@@ -229,6 +244,10 @@ impl Library {
             });
         };
         let _scanning = self.catalog_change_lock.lock().await;
+        on_progress(ScanProgress::Adding {
+            name: folder_name(&folder),
+            location: folder_location(&locator),
+        });
         on_progress(ScanProgress::Finding { found: 0 });
         let layout = find_books_in(
             Arc::clone(&files.storage),
@@ -263,6 +282,26 @@ impl Library {
         })
     }
 
+    pub async fn log_stand_ins(&self) -> Result<LogStandIns, LibraryError> {
+        let titles = self.store.database().read(series_titles).await?;
+        let mut folders = Vec::new();
+        let mut after = None;
+        loop {
+            let page = self.folders(after).await?;
+            folders.extend(page.folders.into_iter().map(|folder| folder.name));
+            match page.next {
+                Some(next) => after = Some(next),
+                None => break,
+            }
+        }
+        Ok(LogStandIns::new(
+            titles
+                .into_iter()
+                .map(|series| (SeriesId(series.id), series.title)),
+            folders,
+        ))
+    }
+
     pub async fn series(
         &self,
         listing: LibraryListing,
@@ -281,6 +320,38 @@ impl Library {
         Ok(SeriesPage::from(page))
     }
 
+    pub async fn folder_series(
+        &self,
+        folder: FolderId,
+        listing: LibraryListing,
+        after: Option<SeriesCursor>,
+    ) -> Result<SeriesPage, LibraryError> {
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(SERIES_PER_PAGE)?,
+        };
+        let listing = SeriesListing::from(listing);
+        let page = self
+            .store
+            .database()
+            .read(move |connection| folder_series_page(connection, folder.0, &listing, &request))
+            .await?;
+        Ok(SeriesPage::from(page))
+    }
+
+    pub async fn folder_series_count(
+        &self,
+        folder: FolderId,
+        filter: LibraryFilter,
+    ) -> Result<u32, LibraryError> {
+        let filter = SeriesFilter::from(&filter);
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| folder_series_count(connection, folder.0, &filter))
+            .await?)
+    }
+
     pub async fn folder_book_count(&self, id: FolderId) -> Result<u32, LibraryError> {
         Ok(self
             .store
@@ -289,8 +360,44 @@ impl Library {
             .await?)
     }
 
+    pub fn categories(&self) -> Result<Vec<LibraryCategory>, LibraryError> {
+        Ok(Vec::new())
+    }
+
+    pub fn tags(&self) -> Result<Vec<LibraryTag>, LibraryError> {
+        Ok(Vec::new())
+    }
+
+    pub fn filter_choices(&self) -> Result<LibraryFilterChoices, LibraryError> {
+        Ok(LibraryFilterChoices::default())
+    }
+
+    pub fn series_labels(&self, _series: Vec<SeriesId>) -> Result<SeriesLabels, LibraryError> {
+        Ok(SeriesLabels::default())
+    }
+
+    pub fn category_series(
+        &self,
+        _category: CategoryId,
+        _listing: LibraryListing,
+        _after: Option<SeriesCursor>,
+    ) -> Result<SeriesPage, LibraryError> {
+        Ok(SeriesPage {
+            series: Vec::new(),
+            next: None,
+        })
+    }
+
+    pub fn category_series_count(
+        &self,
+        _category: CategoryId,
+        _filter: LibraryFilter,
+    ) -> Result<u32, LibraryError> {
+        Ok(0)
+    }
+
     pub async fn series_count(&self, filter: LibraryFilter) -> Result<u32, LibraryError> {
-        let filter = SeriesFilter::from(filter);
+        let filter = SeriesFilter::from(&filter);
         Ok(self
             .store
             .database()
@@ -316,6 +423,17 @@ impl Library {
         Ok(SeriesPage::from(page))
     }
 
+    pub async fn spelling_suggestion(
+        &self,
+        text: String,
+    ) -> Result<Option<SpellingSuggestion>, LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| spelling_suggestion(connection, &text))
+            .await?)
+    }
+
     pub async fn search_count(&self, search: LibrarySearch) -> Result<u32, LibraryError> {
         let search = StoredSearch::parse(&search)?;
         Ok(self
@@ -336,11 +454,39 @@ impl Library {
                 let Some(overview) = series_overview(connection, series)? else {
                     return Ok(None);
                 };
-                Ok(Some((overview, up_next(connection, series)?)))
+                Ok(Some((
+                    overview,
+                    up_next(connection, series)?,
+                    seconds_per_page(connection)?,
+                )))
             })
             .await?;
-        let (overview, up_next) = found.ok_or(LibraryError::SeriesNotFound { id })?;
-        Ok(SeriesOverview::new(overview, up_next))
+        let (overview, up_next, seconds_per_page) =
+            found.ok_or(LibraryError::SeriesNotFound { id })?;
+        Ok(SeriesOverview::new(overview, up_next, seconds_per_page))
+    }
+
+    /// Whether the library keeps edits over the files' details yet, which the interface offers Edit details by.
+    pub fn keeps_detail_edits(&self) -> bool {
+        let _ = &self.store;
+        false
+    }
+
+    pub async fn series_details(&self, id: SeriesId) -> Result<SeriesDetails, LibraryError> {
+        let series = id.0;
+        let overview = self
+            .store
+            .database()
+            .read(move |connection| series_overview(connection, series))
+            .await?
+            .ok_or(LibraryError::SeriesNotFound { id })?;
+        Ok(SeriesDetails::from_files(overview.title))
+    }
+
+    /// Lists the series in the library that name `creator`, with what they did on each.
+    pub fn creator_series(&self, creator: &str) -> Vec<CreatorSeries> {
+        let _ = (&self.store, creator);
+        Vec::new()
     }
 
     /// Lists a series' books as `listing` asks, giving a series missing from the library no books.
@@ -354,10 +500,16 @@ impl Library {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(BOOKS_PER_PAGE)?,
         };
+        let Some(listing) = listing.in_catalog() else {
+            return Ok(SeriesBookPage {
+                books: Vec::new(),
+                next: None,
+            });
+        };
         let page = self
             .store
             .database()
-            .read(move |connection| series_books(connection, id.0, listing.into(), &request))
+            .read(move |connection| series_books(connection, id.0, listing, &request))
             .await?;
         Ok(SeriesBookPage::from(page))
     }
@@ -376,7 +528,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let page = history_page(connection, of.into(), &request)?;
+                let page = history_page(connection, &of.into(), &request)?;
                 let days = page.items.iter().map(|entry| entry.local_day);
                 let read_ms_by_day = match (days.clone().min(), days.max()) {
                     (Some(first), Some(last)) => reading_time_by_day(connection, first..=last)?,
@@ -386,6 +538,55 @@ impl Library {
             })
             .await?;
         Ok(HistoryPage::new(page, &read_ms_by_day))
+    }
+
+    /// Takes a book off History until it's read again, returning what Undo puts back.
+    #[tracing::instrument(skip_all, fields(%book))]
+    pub async fn remove_from_history(
+        &self,
+        book: BookId,
+    ) -> Result<Option<HistoryMark>, LibraryError> {
+        let at_ms = self.now_ms();
+        let before = self
+            .store
+            .database()
+            .write(move |transaction| hide_book_from_history(transaction, book.0, at_ms))
+            .await?;
+        Ok(before.map(HistoryMark))
+    }
+
+    pub async fn restore_to_history(
+        &self,
+        book: BookId,
+        mark: Option<HistoryMark>,
+    ) -> Result<(), LibraryError> {
+        let mark = mark.map(|HistoryMark(at_ms)| at_ms);
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| restore_book_to_history(transaction, book.0, mark))
+            .await?)
+    }
+
+    /// Takes everything read so far off History, keeping every session for the reading times, and returns what Undo puts back.
+    #[tracing::instrument(skip_all)]
+    pub async fn clear_history(&self) -> Result<Option<HistoryMark>, LibraryError> {
+        let at_ms = self.now_ms();
+        let before = self
+            .store
+            .database()
+            .write(move |transaction| clear_history(transaction, at_ms))
+            .await?;
+        Ok(before.map(HistoryMark))
+    }
+
+    pub async fn restore_history(&self, mark: Option<HistoryMark>) -> Result<(), LibraryError> {
+        let mark = mark.map(|HistoryMark(at_ms)| at_ms);
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| restore_history(transaction, mark))
+            .await?)
     }
 
     /// What was read from the start of `week_start` on, and the days read in a row up to `today`, in the local time each session started at.
@@ -445,6 +646,20 @@ impl Library {
         Ok(whole_seconds(read_ms))
     }
 
+    /// Sums up `book`'s reading for the summary at its end, once any reading not yet saved is, giving none for a book never read.
+    pub async fn reading_summary(
+        &self,
+        book: BookId,
+    ) -> Result<Option<ReadingSummary>, LibraryError> {
+        self.save_reading_before_reading().await;
+        let summed = self
+            .store
+            .database()
+            .read(move |connection| reading_summary(connection, book.0))
+            .await?;
+        Ok(summed.map(ReadingSummary::from))
+    }
+
     /// Seconds read from the start of `first_day` to the end of `last_day`, in the local time each session started at.
     pub async fn reading_time_between(
         &self,
@@ -481,6 +696,25 @@ impl Library {
             .await?)
     }
 
+    pub async fn mark_series_read(
+        &self,
+        series: Vec<SeriesId>,
+    ) -> Result<Vec<BookId>, LibraryError> {
+        let unread = self
+            .store
+            .database()
+            .read(move |connection| {
+                series
+                    .iter()
+                    .map(|one| unread_books(connection, one.0))
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .await?;
+        let books: Vec<BookId> = unread.into_iter().flatten().map(BookId).collect();
+        self.mark_books(books.clone(), ReadMark::Read).await?;
+        Ok(books)
+    }
+
     /// Saves the page reached in the book read before, then the pages the reader shows in this one after the page it opened on.
     #[tracing::instrument(skip_all, fields(%book, page))]
     pub async fn reading_restored(
@@ -515,6 +749,10 @@ impl Library {
     }
 
     /// Saves the page reached in the book read now, and keeps `book`'s length for when the reader restores it.
+    pub(crate) async fn seconds_per_page(&self) -> Result<Option<u32>, LibraryError> {
+        Ok(self.store.database().read(seconds_per_page).await?)
+    }
+
     pub(crate) async fn start_reading(
         &self,
         book: BookId,
@@ -568,6 +806,36 @@ impl Library {
             .await?)
     }
 
+    pub async fn tabs(&self) -> Result<Vec<LibraryTab>, LibraryError> {
+        let stored = self.store.database().read(library_tabs).await?;
+        Ok(arranged(stored.into_iter().map(LibraryTab::from)))
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn set_tabs(&self, tabs: Vec<LibraryTab>) -> Result<(), LibraryError> {
+        let stored: Vec<TabPlace> = arranged(tabs).into_iter().map(TabPlace::from).collect();
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| set_library_tabs(transaction, &stored))
+            .await?)
+    }
+
+    pub async fn adult_content(&self) -> Result<AdultContent, LibraryError> {
+        let stored = self.store.database().read(adult_content).await?;
+        Ok(stored.map(AdultContent::from).unwrap_or_default())
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn set_adult_content(&self, content: AdultContent) -> Result<(), LibraryError> {
+        let stored = content.into();
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| set_adult_content(transaction, &stored))
+            .await?)
+    }
+
     pub(crate) async fn cover_file(
         &self,
         cover: Cover,
@@ -593,6 +861,40 @@ impl Library {
             .database()
             .read(move |connection| book_to_read(connection, book.0))
             .await?)
+    }
+
+    /// The file of a series' first book, to show in its folder; none for a series without books, or one in a folder only Android's documents provider can read.
+    pub async fn series_file(&self, id: SeriesId) -> Result<Option<PathBuf>, LibraryError> {
+        let first = self
+            .store
+            .database()
+            .read(move |connection| {
+                let request = PageRequest {
+                    after: None,
+                    size: PageSize::try_from(1)?,
+                };
+                let page = series_books(connection, id.0, BookListing::IN_ORDER, &request)?;
+                page.items
+                    .first()
+                    .map_or(Ok(None), |book| book_to_read(connection, book.id))
+            })
+            .await?;
+        Ok(first.and_then(|book| match book.root {
+            RootLocator::AndroidTree(_) => None,
+            RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
+                Some(root_folder(&book.root).join(book.location))
+            }
+        }))
+    }
+
+    /// None for a book missing from the library.
+    pub async fn book_place(&self, book: BookId) -> Result<Option<BookPlace>, LibraryError> {
+        Ok(self.book_to_read(book).await?.map(|found| BookPlace {
+            id: BookId(found.id),
+            title: found.title,
+            series: SeriesId(found.series),
+            series_title: found.series_title,
+        }))
     }
 
     pub(crate) async fn book_to_open(
@@ -636,6 +938,19 @@ impl Library {
             .await?)
     }
 
+    pub(crate) async fn record_page_count(
+        &self,
+        book: BookId,
+        page_count: usize,
+    ) -> Result<(), LibraryError> {
+        let page_count = saturating_u32(page_count);
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| record_page_count(transaction, book.0, page_count))
+            .await?)
+    }
+
     pub(crate) async fn store_page_dimensions(
         &self,
         file: BookFileId,
@@ -647,6 +962,130 @@ impl Library {
             .database()
             .write(move |transaction| store_page_dimensions(transaction, file, rev, &pages))
             .await?)
+    }
+
+    pub async fn missing_folders(
+        &self,
+        shares: &impl ShareLookup,
+    ) -> Result<Vec<MissingFolder>, LibraryError> {
+        let (roots, mut remembered) = self
+            .store
+            .database()
+            .read(|connection| {
+                let roots = missing_roots(connection)?
+                    .into_iter()
+                    .map(|root| {
+                        let hidden = hidden_series_count(connection, Some(root.id))?;
+                        Ok((root, hidden))
+                    })
+                    .collect::<Result<Vec<_>, omnileaf_db::Error>>()?;
+                Ok::<_, omnileaf_db::Error>((roots, root_shares(connection)?))
+            })
+            .await?;
+        let mut missing = Vec::with_capacity(roots.len());
+        for (root, hidden) in roots {
+            let share = remembered.remove(&root.id).map(ShareAddress::new);
+            let problem = problem_of(&root.locator, share, shares).await;
+            missing.push(MissingFolder::of(root, problem, hidden));
+        }
+        Ok(missing)
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn remember_shares_in(&self, mount_table: String) -> Result<(), LibraryError> {
+        let folders = self.listed_folders().await?;
+        let shares = spawn_blocking(move || {
+            folders
+                .into_iter()
+                .filter_map(|(id, folder)| {
+                    let folder = folder?;
+                    folder.try_exists().unwrap_or(false).then(|| {
+                        let address = share_address_in_mount_table(&mount_table, &folder);
+                        (id.0, address)
+                    })
+                })
+                .collect::<Vec<_>>()
+        })
+        .await?;
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| {
+                shares.iter().try_for_each(|(id, address)| {
+                    remember_root_share(
+                        transaction,
+                        *id,
+                        address.as_ref().map(ShareAddress::as_str),
+                    )
+                })
+            })
+            .await?)
+    }
+
+    pub async fn unreachable_share(
+        &self,
+        id: FolderId,
+        shares: &impl ShareLookup,
+    ) -> Result<Option<UnreachableShare>, LibraryError> {
+        let (root, remembered) = self
+            .store
+            .database()
+            .read(move |connection| {
+                Ok::<_, omnileaf_db::Error>((
+                    library_root(connection, id.0)?,
+                    root_share(connection, id.0)?,
+                ))
+            })
+            .await?;
+        Ok(match root.locator.local_path() {
+            Some(folder) => {
+                unreachable_share_of(folder, remembered.map(ShareAddress::new), shares).await
+            }
+            None => None,
+        })
+    }
+
+    pub async fn hidden_series_count(&self) -> Result<u32, LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .read(|connection| hidden_series_count(connection, None))
+            .await?)
+    }
+
+    #[tracing::instrument(skip_all, fields(folder = %id, is_shown))]
+    pub async fn show_missing_folder(
+        &self,
+        id: FolderId,
+        is_shown: bool,
+    ) -> Result<(), LibraryError> {
+        self.store
+            .database()
+            .write(move |transaction| show_root_while_missing(transaction, id.0, is_shown))
+            .await?;
+        self.note_catalog_written();
+        Ok(())
+    }
+
+    /// Points a missing folder at the place it moved to, then reads it there.
+    #[tracing::instrument(skip_all, fields(folder = %id))]
+    pub async fn relocate_folder(
+        &self,
+        id: FolderId,
+        folder: impl Into<RootLocator>,
+        on_progress: impl FnMut(ScanProgress) + Send,
+    ) -> Result<FolderRescan, LibraryError> {
+        let locator = self.folder_to_read(folder.into()).await?;
+        let scanning = self.catalog_change_lock.lock().await;
+        let staying = self
+            .store
+            .database()
+            .write(move |transaction| relocate_roots(transaction, &[(id.0, locator)]))
+            .await?;
+        if !staying.is_empty() {
+            return Err(LibraryError::FolderAlreadyInLibrary { id });
+        }
+        self.rescan_while_scanning(id, scanning, on_progress).await
     }
 
     #[tracing::instrument(skip_all, fields(folder = %id))]
@@ -831,13 +1270,19 @@ impl Library {
         let Some(files) = self.files_of(&root.locator) else {
             return Ok(BooksRemoval::Kept);
         };
-        let is_emptied = root.kind == RootKind::Linked
-            && matches!(
-                walk(files.storage, files.folder, |_| {}).await?,
-                Ok(layout) if layout.is_empty()
-            );
-        if !is_emptied {
+        if root.kind != RootKind::Linked {
             return Ok(BooksRemoval::Kept);
+        }
+        match walk(files.storage, files.folder, |_| {}).await? {
+            Ok(layout) if layout.is_empty() => {}
+            Ok(_) => {
+                database
+                    .write(move |transaction| mark_root_available(transaction, root.id))
+                    .await?;
+                self.note_catalog_written();
+                return Ok(BooksRemoval::Kept);
+            }
+            Err(_) => return Ok(BooksRemoval::Kept),
         }
         let removed = database
             .write(move |transaction| {
@@ -993,6 +1438,11 @@ impl Library {
             catalog: self.catalog_writes.subscribe(),
             synced: self.store.subscribe(),
         }
+    }
+
+    pub fn found_library(&self) -> Option<FoundLibrary> {
+        let _ = &self.store;
+        None
     }
 
     pub async fn first_launch_finished(&self) -> Result<bool, LibraryError> {

@@ -17,6 +17,13 @@ pub struct SeriesBook {
     #[specta(type = i32)]
     pub added_at_ms: i64,
     pub reading: BookReading,
+    /// Absent for a book found before the library counted pages as it scans, until the book is scanned again or opened.
+    pub page_count: Option<u32>,
+    pub is_bookmarked: bool,
+    /// Whether the library found the book since its series was last looked at.
+    pub is_new: bool,
+    /// Whether the book's file was moved or deleted; never, while the library keeps no book without its file.
+    pub is_file_missing: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
@@ -43,17 +50,20 @@ pub enum BooksShown {
     #[default]
     All,
     Unread,
+    Bookmarked,
 }
 
-impl From<SeriesBookListing> for catalog::BookListing {
-    fn from(listing: SeriesBookListing) -> Self {
-        Self {
-            shown: match listing.shown {
-                BooksShown::All => catalog::BooksShown::All,
-                BooksShown::Unread => catalog::BooksShown::Unread,
-            },
-            direction: listing.direction.into(),
-        }
+impl SeriesBookListing {
+    pub(crate) fn in_catalog(self) -> Option<catalog::BookListing> {
+        let shown = match self.shown {
+            BooksShown::All => catalog::BooksShown::All,
+            BooksShown::Unread => catalog::BooksShown::Unread,
+            BooksShown::Bookmarked => return None,
+        };
+        Some(catalog::BookListing {
+            shown,
+            direction: self.direction.into(),
+        })
     }
 }
 
@@ -89,6 +99,10 @@ impl From<BookSummary> for SeriesBook {
             title: book.title,
             added_at_ms: book.added_at_ms,
             reading: book.reading.into(),
+            page_count: book.page_count,
+            is_bookmarked: false,
+            is_new: false,
+            is_file_missing: false,
         }
     }
 }
@@ -175,6 +189,40 @@ pub(crate) fn sample_book_id(seed: u32) -> BookId {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const PAGE_COUNT: u32 = 176;
+
+    fn sample_summary() -> BookSummary {
+        BookSummary {
+            id: sample_book_id(1).0,
+            position: 1,
+            title: "Volume 1".to_owned(),
+            added_at_ms: 0,
+            reading: catalog::BookReading::NotStarted,
+            page_count: Some(PAGE_COUNT),
+        }
+    }
+
+    #[test]
+    fn crosses_with_the_page_count_the_library_keeps() {
+        let book = SeriesBook::from(sample_summary());
+
+        assert_eq!(book.page_count, Some(PAGE_COUNT));
+    }
+
+    #[test]
+    fn leaves_a_books_bookmark_and_newness_unknown_until_the_library_reads_them() {
+        let book = SeriesBook::from(sample_summary());
+
+        assert_eq!((book.is_bookmarked, book.is_new), (false, false));
+    }
+
+    #[test]
+    fn says_no_books_file_is_missing_while_the_library_keeps_none_without_one() {
+        let book = SeriesBook::from(sample_summary());
+
+        assert!(!book.is_file_missing);
+    }
 
     #[test]
     fn counts_the_page_reading_goes_on_from_starting_at_one() {

@@ -1,21 +1,50 @@
 <script lang="ts">
-  import { afterNavigate } from "$app/navigation";
+  import { onMount } from "svelte";
+
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
+  import AppKeyboardShortcuts from "#lib/keyboard/AppKeyboardShortcuts.svelte";
+  import { commands } from "#lib/ipc/bindings.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
+  import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import AppNavigation from "#lib/navigation/AppNavigation.svelte";
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
-  import { focusArrival } from "#lib/navigation/page-heading.ts";
   import { sectionOf } from "#lib/navigation/sections.ts";
+  import {
+    setSidebarSetting,
+    sidebarSettingForDocument,
+  } from "#lib/navigation/sidebar.svelte.ts";
   import SwipeableMain from "#lib/navigation/SwipeableMain.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
   import Toasts from "#lib/notices/Toasts.svelte";
+  import { fixProblem } from "#lib/problems/fix-problem.ts";
+  import {
+    NeedsAttention,
+    type Problem,
+    setNeedsAttention,
+  } from "#lib/problems/needs-attention.svelte.ts";
+  import NeedsAttentionSheet from "#lib/problems/NeedsAttentionSheet.svelte";
+  import NeedsAttentionSidebarItem from "#lib/problems/NeedsAttentionSidebarItem.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import ScreenshotModeNotice from "#lib/screenshot-mode/ScreenshotModeNotice.svelte";
   import QuickOpen from "#lib/search/QuickOpen.svelte";
+  import {
+    setStorageCheck,
+    StorageCheck,
+  } from "#lib/storage/storage-check.svelte.ts";
   import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
-  import { shortcut } from "#lib/shortcut.ts";
+  import { shownBackLink } from "#lib/navigation/back-link.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
+  import { deviceWordOf } from "#lib/storage/device.ts";
+  import LowSpaceNotice from "#lib/storage/LowSpaceNotice.svelte";
+  import { type Shortcut, shortcut } from "#lib/shortcut.ts";
 
   import type { LayoutProps } from "./$types";
+
+  const EDIT_DETAILS_ROUTE = "/(app)/series/[id]/edit";
 
   let { children, data }: LayoutProps = $props();
 
@@ -23,15 +52,64 @@
   const notices = getNotices();
   const theme = getThemeSetting();
   const screenshotMode = getScreenshotMode();
-  const backGoesUp = setBackGoesUp(makeBackGoUp());
+  setBackGoesUp(makeBackGoUp());
   const quickOpen = new QuickOpenState();
+  const sidebar = setSidebarSetting(sidebarSettingForDocument());
+  const storage = setStorageCheck(new StorageCheck(commands, reportError));
+  const needsAttention = setNeedsAttention(
+    new NeedsAttention(
+      {
+        missingFolders: () => commands.missingLibraryFolders(),
+        storageUse: () => storage.use,
+      },
+      reportError,
+    ),
+  );
+  let isShowingShortcuts = $state(false);
 
-  afterNavigate(({ type }) => {
-    const isProblem = page.error !== null;
-    const isArrival = type !== "enter" && !backGoesUp.isPassingThrough;
-    if (isArrival || isProblem) {
-      focusArrival();
-    }
+  function goBack(): void {
+    shownBackLink(document)?.click();
+  }
+  const keyboardOnlyShortcuts = $derived<readonly Shortcut[]>(
+    isPointer(data.appInfo.platform)
+      ? [
+          {
+            key: "?",
+            run: () => {
+              isShowingShortcuts = true;
+            },
+          },
+          usesCommandKey(data.appInfo.platform)
+            ? { key: "[", command: data.appInfo.platform, run: goBack }
+            : { key: "ArrowLeft", alt: true, run: goBack },
+          {
+            key: ",",
+            command: data.appInfo.platform,
+            shift: false,
+            run: () => {
+              void goto(resolve("/(app)/settings"));
+            },
+          },
+        ]
+      : [],
+  );
+
+  const width = new WindowWidth();
+  const wordingContext = $derived({
+    usesStandIns: screenshotMode.isOn,
+    device: deviceWordOf(data.appInfo.platform, width.current),
+  });
+
+  function fix(problem: Problem): void {
+    void fixProblem(problem).then(() => needsAttention.gather());
+  }
+
+  onMount(() => {
+    void storage.check();
+    void needsAttention.gather();
+    return listenForLibraryChanges(() => {
+      void needsAttention.gather();
+    }, reportError);
   });
 </script>
 
@@ -45,13 +123,45 @@
       quickOpen.open();
     },
   })}
+  {@attach shortcut(...keyboardOnlyShortcuts)}
+  {@attach shortcut({
+    key: "b",
+    command: data.appInfo.platform,
+    shift: false,
+    inTextFields: true,
+    run: () => {
+      sidebar.toggle();
+    },
+  })}
 />
 
-<div class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row">
-  {#key language.resolved}
-    <AppNavigation current={sectionOf(page.url.pathname)} />
-  {/key}
-  <SwipeableMain isIos={data.appInfo.platform === "ios"}>
+{#snippet attention({ isFolded }: { isFolded: boolean })}
+  <NeedsAttentionSidebarItem
+    problems={needsAttention.problems}
+    context={wordingContext}
+    {isFolded}
+    onFix={fix}
+  />
+{/snippet}
+
+<div
+  class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row desktop-shell:flex-row windows:desktop-shell:bg-sidebar"
+>
+  {#if page.route.id !== EDIT_DETAILS_ROUTE}
+    {#key language.resolved}
+      <AppNavigation
+        current={sectionOf(page.url.pathname)}
+        attention={isPointer(data.appInfo.platform) &&
+        needsAttention.problems.length > 0
+          ? attention
+          : undefined}
+      />
+    {/key}
+  {/if}
+  <SwipeableMain
+    isIos={data.appInfo.platform === "ios"}
+    isFullScreen={page.route.id === EDIT_DETAILS_ROUTE}
+  >
     {#key language.resolved}
       {@render children()}
     {/key}
@@ -68,6 +178,22 @@
     {/key}
   </div>
 </div>
+{#key language.resolved}
+  <NeedsAttentionSheet
+    attention={needsAttention}
+    context={wordingContext}
+    onFix={fix}
+  />
+{/key}
+<ScreenshotModeNotice platform={data.appInfo.platform} />
+<LowSpaceNotice {storage} device={wordingContext.device} />
+<AppKeyboardShortcuts
+  isOpen={isShowingShortcuts}
+  platform={data.appInfo.platform}
+  onClose={() => {
+    isShowingShortcuts = false;
+  }}
+/>
 {#key language.resolved}
   <QuickOpen
     platform={data.appInfo.platform}

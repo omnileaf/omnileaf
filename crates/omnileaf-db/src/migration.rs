@@ -57,6 +57,19 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0021_create_reading_sessions"),
     migration!("0022_index_reading_sessions_by_book"),
     migration!("0023_add_continue_row_to_library_view"),
+    migration!("0024_add_fits_covers_to_width_to_library_view"),
+    migration!("0025_add_category_tabs_and_grouping_to_library_view"),
+    migration!("0026_create_adult_content"),
+    migration!("0027_track_when_each_series_was_last_read"),
+    migration!("0028_create_library_tabs"),
+    migration!("0029_hide_the_series_of_missing_folders"),
+    migration!("0030_hide_books_from_history"),
+    migration!("0031_remember_the_page_each_reading_session_started_on"),
+    migration!("0032_track_when_each_series_last_gained_a_book"),
+    migration!("0033_index_series_by_unread_count"),
+    migration!("0034_keep_how_many_pages_each_book_holds"),
+    migration!("0035_track_how_many_pages_each_series_has_left"),
+    migration!("0036_remember_the_share_of_each_library_root"),
 ];
 
 pub(crate) fn pending(
@@ -215,11 +228,18 @@ mod tests {
         Database, Language, connection,
         first_launch::first_launch_finished,
         scratch::ScratchLibrary,
-        store::{Clock, Store},
+        store::{Clock, Continuity, SessionPlace, Store},
         title_key::TitleCollation,
     };
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
+
+    const BOOK_GAINED_LAST: &str = "SELECT max(added_at_ms) FROM book WHERE series_local_id = ?1";
+    const PAGES_LEFT_OF_BOOK_ADDED: &str = "UPDATE series SET
+            pages_left = series.pages_left + book_left.pages_left,
+            uncounted_books = series.uncounted_books + book_left.is_uncounted
+        FROM book_left_to_read AS book_left
+        WHERE book_left.book_id = ?1 AND series.local_id = book_left.series_local_id";
 
     #[test]
     fn brings_a_new_database_to_the_latest_schema_version() {
@@ -627,6 +647,316 @@ mod tests {
             })
             .unwrap();
         assert_eq!(counts, (1, 2));
+    }
+
+    struct ClockAt(u64);
+
+    impl Clock for ClockAt {
+        fn now_unix_ms(&self) -> u64 {
+            self.0
+        }
+    }
+
+    const SESSIONS_AS_THE_STORE_WRITES_THEM: &str =
+        "ALTER TABLE reading_session ADD COLUMN first_page INTEGER";
+    const SESSIONS_AS_SCHEMA_26_KEPT_THEM: &str =
+        "ALTER TABLE reading_session DROP COLUMN first_page";
+
+    #[test]
+    fn knows_when_each_series_kept_from_before_was_last_read() {
+        let scratch = ScratchLibrary::new("last-read-upgrade");
+        let store = Store::new(
+            Database::open_with(&scratch.config, &MIGRATIONS[..26]).unwrap(),
+            ClockAt(9_000),
+        );
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(SESSIONS_AS_THE_STORE_WRITES_THEM)
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        let place = SessionPlace {
+            book: book(1),
+            page: 0,
+            page_count: 1,
+            utc_offset_minutes: 0,
+        };
+        let written =
+            store.write(move |writer| writer.record_reading(&place, Continuity::AfterBreak));
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(written)
+            .unwrap();
+        drop(store);
+        connection
+            .execute_batch(SESSIONS_AS_SCHEMA_26_KEPT_THEM)
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let last_read_at_ms: i64 = connection
+            .query_row("SELECT last_read_at_ms FROM series", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(last_read_at_ms, 9_000);
+    }
+
+    #[test]
+    fn hides_the_series_of_a_folder_missing_before_series_were_hidden() {
+        let scratch = ScratchLibrary::new("missing-folder-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..28]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO library_root
+                    (kind, locator_kind, location, added_at_ms, unavailable_since_ms)
+                 VALUES ('linked', 'path', x'2f6d65646961', 0, 1)",
+                [],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
+                 VALUES (?1, 1, x'566f6c756d652030312e63627a', 1, 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let stage: Option<i64> = connection
+            .query_row("SELECT reading_stage FROM series", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(stage, None);
+    }
+
+    #[test]
+    fn knows_when_each_series_kept_from_before_last_gained_a_book() {
+        let scratch = ScratchLibrary::new("last-updated-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..31]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for (number, added_at_ms) in [(1, 7_000), (2, 9_000), (3, 8_000)] {
+            connection
+                .execute(
+                    "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                     VALUES (?1, 1, 'Volume', x'', ?2)",
+                    (book(number).as_bytes(), added_at_ms),
+                )
+                .unwrap();
+        }
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let updated_at_ms: i64 = connection
+            .query_row("SELECT updated_at_ms FROM series", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(updated_at_ms, 9_000);
+    }
+
+    #[test]
+    fn counts_the_unread_books_of_each_series_kept_from_before_the_count_was_indexed() {
+        let scratch = ScratchLibrary::new("unread-count-upgrade");
+        let store = Store::new(
+            Database::open_with(&scratch.config, &MIGRATIONS[..32]).unwrap(),
+            StoppedClock,
+        );
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for number in 1..=3 {
+            connection
+                .execute(
+                    "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                     VALUES (?1, 1, 'Volume', x'', 0)",
+                    [book(number).as_bytes()],
+                )
+                .unwrap();
+        }
+        let written = store.write(|writer| writer.set_read(book(2), true));
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(written)
+            .unwrap();
+        drop(store);
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let unread_count: i64 = connection
+            .query_row("SELECT unread_count FROM series", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(unread_count, 2);
+    }
+
+    #[test]
+    fn counts_the_pages_of_each_book_kept_from_before_from_the_page_sizes_it_stored() {
+        let scratch = ScratchLibrary::new("page-count-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..33]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO library_root (kind, locator_kind, location, added_at_ms)
+                 VALUES ('linked', 'path', x'2f6d65646961', 0);",
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for number in 1..=2 {
+            connection
+                .execute(
+                    "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                     VALUES (?1, 1, ?2, x'', 0)",
+                    (book(number).as_bytes(), format!("Volume {number:02}")),
+                )
+                .unwrap();
+            connection
+                .execute(
+                    "INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
+                     VALUES (?1, 1, ?2, 1, 0)",
+                    (
+                        book(number).as_bytes(),
+                        format!("Volume {number:02}.cbz").into_bytes(),
+                    ),
+                )
+                .unwrap();
+        }
+        connection
+            .execute(
+                "INSERT INTO book_pages (file_id, rev, manifest) VALUES (1, 1, zeroblob(24))",
+                [],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let page_counts: Vec<Option<u32>> = connection
+            .prepare("SELECT page_count FROM book ORDER BY title")
+            .unwrap()
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(page_counts, [Some(3), None]);
+    }
+
+    #[test]
+    fn counts_the_pages_left_in_each_series_kept_from_before_they_were_counted() {
+        let scratch = ScratchLibrary::new("pages-left-upgrade");
+        let store = Store::new(
+            Database::open_with(&scratch.config, &MIGRATIONS[..34]).unwrap(),
+            StoppedClock,
+        );
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for (number, page_count) in [(1, 50), (2, 30)] {
+            connection
+                .execute(
+                    "INSERT INTO book
+                        (id, series_local_id, title, title_sort_key, added_at_ms, page_count)
+                     VALUES (?1, 1, ?2, x'', 0, ?3)",
+                    (
+                        book(number).as_bytes(),
+                        format!("Volume {number:02}"),
+                        page_count,
+                    ),
+                )
+                .unwrap();
+        }
+        let written = store.write(|writer| writer.set_position(book(1), 20));
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(written)
+            .unwrap();
+        drop(store);
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let pages_left: (u32, u32) = connection
+            .query_row(
+                "SELECT pages_left, uncounted_books FROM series",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(pages_left, (60, 0));
+    }
+
+    #[test]
+    fn moves_a_book_s_pages_left_onto_its_series_through_their_keys() {
+        let scratch = ScratchLibrary::new("pages-left-of-book-plan");
+
+        let plan = scratch.query_plan(PAGES_LEFT_OF_BOOK_ADDED);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH book USING PRIMARY KEY (id=?)",
+                "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
+                "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN",
+            ]
+        );
+    }
+
+    #[test]
+    fn finds_the_book_a_series_gained_last_from_an_index_when_one_leaves_it() {
+        let scratch = ScratchLibrary::new("book-gained-last-plan");
+
+        let plan = scratch.query_plan(BOOK_GAINED_LAST);
+
+        assert_eq!(
+            plan,
+            ["SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)"]
+        );
     }
 
     fn schema_of(path: &Path) -> Schema {

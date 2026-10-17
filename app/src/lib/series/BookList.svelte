@@ -12,7 +12,7 @@
 
   import { bookActions } from "./book-actions";
   import BookRowText from "./BookRowText.svelte";
-  import type { BookSelection } from "./book-selection.svelte";
+  import type { Selection } from "#lib/page/selection.svelte.ts";
   import BookSheet from "./BookSheet.svelte";
   import { RowSwipe } from "./row-swipe.svelte";
   import type { SwipeOutcome } from "./swipe";
@@ -25,7 +25,6 @@
 
   let {
     books,
-    dates,
     isComplete,
     onNearEnd,
     selection,
@@ -34,10 +33,9 @@
     onSwiped,
   }: {
     books: readonly SeriesBook[];
-    dates: Intl.DateTimeFormat;
     isComplete: boolean;
     onNearEnd: () => void;
-    selection: BookSelection<BookId>;
+    selection: Selection<BookId>;
     onStartPicking: (book: SeriesBook) => void;
     onMark: (books: BookId[], mark: ReadMark) => void;
     onSwiped: (
@@ -81,8 +79,9 @@
   {@const isPicked = selection.has(book.id)}
   {#if selection.isSelecting}
     <label
+      data-picked={isPicked || undefined}
       class={[
-        "relative flex cursor-pointer items-center gap-md ps-md pe-md min-block-book-row",
+        "relative flex cursor-pointer items-center gap-md py-sm ps-md pe-md min-block-book-row",
         isPicked && "bg-selected-row",
       ]}
     >
@@ -105,7 +104,7 @@
           pickRunOnShift(event, book);
         }}
       />
-      <BookRowText {book} {dates} />
+      <BookRowText {book} />
     </label>
   {:else}
     {@const side = swipe.sideOf(book.id)}
@@ -145,7 +144,7 @@
         role="presentation"
         data-swiped
         class={[
-          "relative flex touch-pan-y items-center gap-xs bg-card ps-md pe-2xs select-none min-block-book-row",
+          "relative flex touch-pan-y items-center gap-xs bg-card py-sm ps-md pe-2xs select-none min-block-book-row",
           !swipe.isDragging &&
             "motion-safe:transition-transform motion-safe:duration-slide",
         ]}
@@ -184,7 +183,7 @@
           draggable="false"
           class="flex flex-1 items-center self-stretch min-inline-none"
         >
-          <BookRowText {book} {dates} />
+          <BookRowText {book} />
         </a>
         <BookSheet
           {book}
@@ -209,7 +208,7 @@
   }}
 />
 
-<Card class="overflow-hidden">
+<Card class="overflow-hidden shadow-card-rest">
   <VirtualGrid
     items={books}
     key={(book: SeriesBook) => book.id}
@@ -217,7 +216,7 @@
     {isComplete}
     {onNearEnd}
     class="grid-cols-1"
-    itemClass="border-be border-border last:border-be-0"
+    itemClass="border-be border-border last:border-be-0 ios-grouped:border-ios-separator"
     cell={row}
   />
 </Card>

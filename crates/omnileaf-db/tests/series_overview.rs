@@ -73,6 +73,7 @@ impl Library {
                 fingerprint: fingerprint(SERIES, title),
                 title: title.to_owned(),
                 added_at_ms: ADDED_AT_MS,
+                page_count: 1,
                 file: BookFile {
                     root,
                     location: PathBuf::from(SERIES).join(format!("{title}.cbz")),
@@ -178,6 +179,7 @@ async fn sums_up_a_series_by_its_title_books_and_books_read() {
             read_count: 2,
             cover: None,
             folder: None,
+            pages_left: None,
         }
     );
 }

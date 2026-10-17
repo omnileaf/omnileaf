@@ -28,11 +28,12 @@ pub(crate) struct TitlePlace {
 
 /// The listed series at the stage bound as `$stage` that meet `$condition`, which hold at least one book.
 macro_rules! series_at_stage {
-    ($stage:literal, $condition:literal) => {
+    ($stage:literal, $condition:expr) => {
         concat!(
             "SELECT series.id AS id, series.title, series.title_key, series.book_count, series.added_at_ms,
+                series.last_read_at_ms, series.updated_at_ms, series.time_left_key,
                 cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
-                series.book_count - series.read_count AS unread_count
+                series.unread_count
             FROM series ",
             $crate::catalog::cover::join_series_cover!(),
             " WHERE series.reading_stage = ",
@@ -45,8 +46,8 @@ macro_rules! series_at_stage {
 /// Merges each stage the filter lets through, read in order from its own stretch of the index, so a filter matching few series reads only those.
 macro_rules! listing {
     (
-        with: $with:literal,
-        condition: $condition:literal,
+        with: $with:expr,
+        condition: $condition:expr,
         seek: $seek:expr,
         order: $order:expr,
         sort_position: $position:expr $(,)?
@@ -166,7 +167,11 @@ fn place_after(
         Position::Added { .. }
         | Position::Book { .. }
         | Position::Root { .. }
-        | Position::Session { .. } => Err(Error::CursorForAnotherList),
+        | Position::LastRead { .. }
+        | Position::Session { .. }
+        | Position::LastUpdated { .. }
+        | Position::UnreadCount { .. }
+        | Position::TimeLeft { .. } => Err(Error::CursorForAnotherList),
     }
 }
 

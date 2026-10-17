@@ -1,12 +1,14 @@
 <script lang="ts">
-  import { ChevronLeft } from "@lucide/svelte";
-  import { onMount, untrack } from "svelte";
+  import { CircleAlert, RefreshCw } from "@lucide/svelte";
+  import { onMount, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
-  import { invalidate } from "$app/navigation";
+  import { goto, invalidate } from "$app/navigation";
   import { resolve } from "$app/paths";
   import {
+    type AdultTreatment,
     commands,
+    type Platform,
     type ReadMark,
     type SeriesBook,
     type SeriesBookListing,
@@ -23,23 +25,41 @@
     listenForReadingSaved,
   } from "#lib/library/library-changes.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
-  import { MEDIUM_QUERY } from "#lib/page/breakpoints.ts";
+  import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
+  import EmptyState from "#lib/page/EmptyState.svelte";
+  import PageToolbar from "#lib/page/PageToolbar.svelte";
+  import { Button } from "#lib/components/ui/button/index.ts";
+  import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
+  import RelatedSeries from "#lib/series/RelatedSeries.svelte";
+  import SeriesSkeleton from "#lib/series/SeriesSkeleton.svelte";
+  import SeriesWithoutBooks from "#lib/series/SeriesWithoutBooks.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
-  import ReadingProgress from "#lib/series/ReadingProgress.svelte";
+  import ContinueCard from "#lib/series/ContinueCard.svelte";
   import { seriesBookList } from "#lib/series/series-books.svelte.ts";
-  import { SERIES_OVERVIEW } from "#lib/series/series-overview.ts";
-  import SeriesBooks from "#lib/series/SeriesBooks.svelte";
-  import SeriesHeader from "#lib/series/SeriesHeader.svelte";
+  import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import {
-    bookStandIns,
+    SERIES_OVERVIEW,
+    type SeriesShown,
+  } from "#lib/series/series-overview.ts";
+  import SeriesBooks from "#lib/series/SeriesBooks.svelte";
+  import SeriesAbout from "#lib/series/SeriesAbout.svelte";
+  import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
+  import { showFolderLabel } from "#lib/page/show-file.ts";
+  import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
+  import type { EditedSeries } from "#lib/series/edited-series.ts";
+  import SeriesBand from "#lib/series/SeriesBand.svelte";
+  import SeriesBar from "#lib/series/SeriesBar.svelte";
+  import {
+    standInBook,
     standInOverview,
   } from "#lib/series/series-stand-ins.ts";
 
   import type { PageProps } from "./$types";
 
-  const BACK_ICON_SIZE = 20;
+  const DESKTOPS: readonly Platform[] = ["linux", "macos", "windows"];
+  const TRY_AGAIN_ICON_SIZE = 16;
   const EVERY_BOOK_IN_ORDER: SeriesBookListing = {
     shown: "all",
     direction: "ascending",
@@ -47,11 +67,15 @@
 
   let { data }: PageProps = $props();
 
-  const shown = $derived(data.shown);
-  const found = $derived(shown.kind === "found" ? shown : undefined);
+  let settled: { id: string; shown: SeriesShown } | undefined = $state();
+  const shown = $derived(settled?.id === data.id ? settled.shown : undefined);
+  const found = $derived(shown?.kind === "found" ? shown : undefined);
 
   const screenshotMode = getScreenshotMode();
-  const isWide = new MediaQuery(MEDIUM_QUERY);
+  const isWide = new MediaQuery(EXPANDED_QUERY);
+  const hasToolbar = $derived(
+    DESKTOPS.includes(data.appInfo.platform) && isWide.current,
+  );
   const notices = getNotices();
   let listing: SeriesBookListing = $state({
     shown: "all",
@@ -72,6 +96,12 @@
     foundId === undefined ? undefined : seriesBookList(foundId, () => listing),
   );
 
+  let keepsDetailEdits = $state(false);
+  let keepsLabels = $state(false);
+  let isLabelling = $state(false);
+  const isDesktop = $derived(DESKTOPS.includes(data.appInfo.platform));
+  let editedSeries = $state<EditedSeries | undefined>();
+  let adultTreatment: AdultTreatment | undefined = $state();
   let barHeight = $state(0);
   let isTitleUnderBar = $state(false);
 
@@ -94,6 +124,11 @@
     return () => {
       watching.disconnect();
     };
+  }
+
+  async function rescan(): Promise<void> {
+    await rescanEveryFolder();
+    readAgain();
   }
 
   function readAgain(): void {
@@ -146,6 +181,29 @@
   }
 
   $effect(() => {
+    const { id, shown: coming } = data;
+    if (!(coming instanceof Promise)) {
+      settled = { id, shown: coming };
+      return undefined;
+    }
+    let isAwaited = true;
+    void coming.then(async (read) => {
+      if (!isAwaited) {
+        return;
+      }
+      const isFirst = settled?.id !== id;
+      settled = { id, shown: read };
+      await tick();
+      if (isFirst && document.activeElement === document.body) {
+        focusPageHeading();
+      }
+    });
+    return () => {
+      isAwaited = false;
+    };
+  });
+
+  $effect(() => {
     const listed = books;
     untrack(() => {
       void listed?.start();
@@ -153,17 +211,69 @@
   });
 
   $effect(() => {
-    if (overview !== undefined && barHeight > 0) {
+    if (overview !== undefined && barHeight > 0 && !hasToolbar) {
       return watchTitleUnderBar(barHeight);
     }
     return undefined;
   });
 
-  onMount(() =>
-    listenForLibraryChanges(() => {
+  async function readAdultTreatment(): Promise<void> {
+    const read = await commands.libraryAdultContent();
+    if (read.status === "error") {
+      reportError(read.error);
+      return;
+    }
+    adultTreatment = read.data.treatment;
+  }
+
+  onMount(() => {
+    void readAdultTreatment();
+    void loadDetailEditSupport();
+    void loadLabelSupport();
+    return listenForLibraryChanges(() => {
       readAgain();
-    }, reportError),
-  );
+    }, reportError);
+  });
+
+  async function loadDetailEditSupport(): Promise<void> {
+    keepsDetailEdits = await commands.keepsDetailEdits().catch(() => false);
+  }
+
+  async function loadLabelSupport(): Promise<void> {
+    const labels = await commands.seriesLabels([]);
+    if (labels.status === "ok") {
+      keepsLabels = labels.data.keepsLabels;
+    }
+  }
+
+  function editDetails(): void {
+    if (found !== undefined && cover !== undefined) {
+      editedSeries = {
+        id: found.overview.id,
+        title: overview?.title ?? found.overview.title,
+        cover,
+      };
+    }
+  }
+
+  function editDetailsFromMenu(): void {
+    if (isWide.current) {
+      editDetails();
+    } else {
+      void goto(resolve("/(app)/series/[id]/edit", { id: data.id }));
+    }
+  }
+
+  function showInFolder(): void {
+    if (foundId === undefined) {
+      return;
+    }
+    void commands.showSeriesInFolder(foundId).then((shown) => {
+      if (shown.status === "error") {
+        reportError(shown.error);
+      }
+    });
+  }
 
   $effect(() => {
     if (foundId === undefined) {
@@ -179,117 +289,122 @@
   });
 </script>
 
-<div
-  class="relative isolate -me-page-end -mbs-page-top flex flex-col gap-lg pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-gutter medium:ps-gutter medium:pbs-page-top"
->
-  {#if found !== undefined}
-    <div
-      aria-hidden="true"
-      class="absolute inset-x-none inset-bs-none z-series-band overflow-hidden bg-chip block-series-band medium:block-series-band-tablet expanded:block-series-band-wide"
+{#if hasToolbar}
+  <PageToolbar>
+    <Breadcrumb
+      aria-label={m.series_breadcrumb()}
+      class="flex items-center text-small text-muted min-inline-none"
     >
-      {#if cover?.kind === "picture"}
-        <img
-          src={coverUrl(cover.path)}
-          alt=""
-          decoding="async"
-          class="scale-125 object-cover blur-series-band block-full inline-full"
-        />
-      {/if}
-      <div
-        class="absolute inset-x-none inset-be-none bg-linear-to-b from-transparent to-background block-series-fade expanded:block-series-fade-wide"
-      ></div>
-    </div>
-  {/if}
-  <header
-    bind:clientHeight={barHeight}
-    class={[
-      "flex items-center gap-sm motion-safe:transition-colors motion-safe:duration-fade max-medium:sticky max-medium:-inset-bs-page-top max-medium:z-series-bar max-medium:-ms-page-start max-medium:-me-page-end max-medium:ps-page-start max-medium:pe-page-end max-medium:pbs-series-bar-top max-medium:pbe-xs",
-      isTitleUnderBar && "max-medium:bg-background",
-      "max-medium:while-picking:invisible",
-    ]}
-  >
-    {#if isWide.current}
-      <Breadcrumb
-        aria-label={m.series_breadcrumb()}
-        class="flex items-center rounded-control border border-border bg-card px-md text-small text-muted shadow-raised block-series-crumb"
-      >
-        <BreadcrumbItem>
-          <a
-            href={resolve("/(app)")}
-            data-back-link
-            class="font-medium transition-control hover:text-foreground"
+      <BreadcrumbItem>
+        <a
+          href={resolve("/(app)")}
+          data-back-link
+          class="transition-control hover:text-foreground"
+        >
+          {m.series_back()}
+        </a>
+      </BreadcrumbItem>
+      {#if overview !== undefined}
+        <BreadcrumbSeparator />
+        <BreadcrumbItem class="min-inline-none">
+          <BreadcrumbPage
+            class="block truncate text-foreground max-inline-series-crumb-title"
           >
-            {m.series_back()}
-          </a>
+            {overview.title}
+          </BreadcrumbPage>
         </BreadcrumbItem>
-        {#if overview !== undefined}
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage class="font-semibold text-foreground">
-              {overview.title}
-            </BreadcrumbPage>
-          </BreadcrumbItem>
-        {/if}
-      </Breadcrumb>
-    {:else}
-      <a
-        href={resolve("/(app)")}
-        data-back-link
-        aria-label={m.series_back_label()}
-        class="flex shrink-0 items-center justify-center self-start rounded-full border border-border bg-card text-foreground shadow-raised block-series-back inline-series-back android:block-touch-target android:inline-touch-target"
-      >
-        <ChevronLeft size={BACK_ICON_SIZE} aria-hidden="true" />
-      </a>
-    {/if}
-    {#if overview !== undefined}
-      <span
-        aria-hidden="true"
-        class={[
-          "truncate text-lead font-bold motion-safe:transition-opacity motion-safe:duration-fade medium:hidden",
-          isTitleUnderBar ? "opacity-100" : "opacity-0",
-        ]}
-      >
-        {overview.title}
-      </span>
-    {/if}
-  </header>
+      {/if}
+    </Breadcrumb>
+  </PageToolbar>
+{/if}
+<div
+  data-ground="grouped"
+  class={[
+    "@container relative isolate -me-page-end flex flex-1 flex-col pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-gutter medium:ps-gutter ios:bg-ios-grouped",
+    hasToolbar ? "pbs-xl" : "-mbs-page-top",
+  ]}
+>
+  {#if cover !== undefined}
+    <SeriesBand {cover} />
+  {/if}
+  {#if !hasToolbar}
+    <SeriesBar
+      title={overview?.title}
+      {isTitleUnderBar}
+      bind:height={barHeight}
+      onMarkAll={found === undefined ? undefined : markAll}
+      onLabel={keepsLabels && found !== undefined
+        ? () => {
+            isLabelling = true;
+          }
+        : undefined}
+      onEditDetails={keepsDetailEdits && found !== undefined
+        ? editDetailsFromMenu
+        : undefined}
+      showFolder={{
+        label: showFolderLabel(data.appInfo.platform),
+        onShow: isDesktop ? showInFolder : undefined,
+      }}
+    />
+  {/if}
   {#if found !== undefined && overview !== undefined && cover !== undefined}
     <div
-      class="flex flex-col gap-xl expanded:flex-row expanded:items-start expanded:gap-2xl"
+      class="flex flex-col gap-xl max-expanded:mbs-sm @series-split:flex-row @series-split:items-start @series-split:gap-2xl"
     >
-      <div
-        class="flex flex-col gap-lg medium:gap-xl expanded:shrink-0 expanded:gap-lg expanded:inline-series-aside"
-      >
-        <SeriesHeader {overview} {cover} {coverUrl} />
-        <ReadingProgress {overview} onMarkAll={markAll} />
-      </div>
-      <div class="flex flex-1 flex-col gap-sm min-inline-none">
-        {#if books?.list.kind === "failed"}
-          <p class="text-body text-muted">{m.series_books_failed()}</p>
-        {:else if books?.list.kind === "loaded"}
-          {#key foundId}
-            <SeriesBooks
-              books={screenshotMode.isOn
-                ? books.list.items.map(bookStandIns(found.overview))
-                : books.list.items}
-              bookCount={found.overview.bookCount}
-              {listing}
-              onListing={(chosen: SeriesBookListing) => {
-                listing = chosen;
-                void books.start();
-              }}
-              isComplete={books.list.isComplete}
-              onNearEnd={() => {
-                void books.loadMore();
-              }}
-              onLoadAll={() => books.loadAll()}
-              onMark={mark}
-              platform={data.appInfo.platform}
-            />
-          {/key}
+      <SeriesAbout
+        {overview}
+        {cover}
+        {coverUrl}
+        isWide={isWide.current}
+        onMarkAll={markAll}
+        onEditDetails={keepsDetailEdits ? editDetails : undefined}
+      />
+      <div class="flex flex-1 flex-col gap-lg min-inline-none">
+        {#if overview.bookCount === 0}
+          <SeriesWithoutBooks
+            platform={data.appInfo.platform}
+            onRescan={rescan}
+          />
+        {:else}
+          <ContinueCard {overview} isWide={isWide.current} />
+          {#if books?.list.kind === "failed"}
+            <p class="text-body text-muted">{m.series_books_failed()}</p>
+          {:else if books?.list.kind === "loaded"}
+            {#key foundId}
+              <SeriesBooks
+                books={screenshotMode.isOn
+                  ? books.list.items.map(standInBook)
+                  : books.list.items}
+                bookCount={found.overview.bookCount}
+                readCount={found.overview.readCount}
+                bookmarkCount={found.overview.bookmarkCount}
+                {listing}
+                onListing={(chosen: SeriesBookListing) => {
+                  listing = chosen;
+                  void books.start();
+                }}
+                isComplete={books.list.isComplete}
+                onNearEnd={() => {
+                  void books.loadMore();
+                }}
+                onLoadAll={() => books.loadAll()}
+                onMark={mark}
+                platform={data.appInfo.platform}
+              />
+            {/key}
+          {/if}
+        {/if}
+        {#if adultTreatment !== undefined}
+          <RelatedSeries
+            related={found.overview.related}
+            usesStandIns={screenshotMode.isOn}
+            {adultTreatment}
+          />
         {/if}
       </div>
     </div>
+  {:else if shown === undefined}
+    <SeriesSkeleton />
   {:else if shown.kind === "missing"}
     <div class="flex flex-col gap-sm">
       <h1 tabindex="-1" class="text-headline font-bold">
@@ -298,11 +413,46 @@
       <p class="text-body text-muted">{m.series_not_found_body()}</p>
     </div>
   {:else}
-    <div class="flex flex-col gap-sm">
-      <h1 tabindex="-1" class="text-headline font-bold">
-        {m.library_title()}
-      </h1>
-      <p class="text-body text-muted">{m.series_failed()}</p>
+    <h1 tabindex="-1" class="sr-only">{m.library_title()}</h1>
+    <div class="flex flex-1 flex-col">
+      <EmptyState
+        icon={CircleAlert}
+        role="alert"
+        title={m.series_failed()}
+        body={m.library_unchanged()}
+      >
+        <Button
+          type="button"
+          look="outline"
+          class="mbs-lg flex items-center gap-sm rounded-shadcn-control px-lg font-medium min-block-touch-target expanded:text-small expanded:min-block-pointer-button"
+          onclick={readAgain}
+        >
+          <RefreshCw size={TRY_AGAIN_ICON_SIZE} aria-hidden="true" />
+          {m.library_try_again()}
+        </Button>
+      </EmptyState>
     </div>
   {/if}
 </div>
+
+<EditDetailsDialog
+  series={editedSeries}
+  {coverUrl}
+  onClose={() => {
+    editedSeries = undefined;
+  }}
+  onSaved={() => {
+    editedSeries = undefined;
+    readAgain();
+  }}
+  onError={reportError}
+/>
+
+{#if foundId !== undefined}
+  <LabelSeriesDialog
+    bind:isOpen={isLabelling}
+    series={[foundId]}
+    startsAtTags={false}
+    onError={reportError}
+  />
+{/if}

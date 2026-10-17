@@ -1,3 +1,5 @@
+import { isShownBy } from "../../src/lib/series/books-shown.ts";
+
 import type { FakeBackend } from "./fake-backend.ts";
 import { DEFAULT_BACKEND } from "./fixtures.ts";
 
@@ -6,6 +8,22 @@ export type WireBook = Awaited<
 >["books"][number];
 
 type WireReading = WireBook["reading"];
+
+type WireOverview = Awaited<ReturnType<FakeBackend["seriesOverview"]>>;
+
+export type SeriesDetails = Pick<
+  WireOverview,
+  "format" | "creators" | "summary" | "tags" | "related" | "secondsLeft"
+>;
+
+const NO_DETAILS: SeriesDetails = {
+  format: null,
+  creators: [],
+  summary: null,
+  tags: [],
+  related: [],
+  secondsLeft: null,
+};
 
 export const SERIES_ID = "0190a3e4-0000-8000-8000-0000000000a4";
 export const SERIES_TITLE = "Sample Series 04";
@@ -16,15 +34,25 @@ export const BOOKS_PER_PAGE = 100;
 export class FakeShelf {
   readonly marked: { readonly books: string[]; readonly mark: string }[] = [];
   readonly #books: WireBook[];
+  readonly #details: SeriesDetails;
   #laterPages: Promise<void> = Promise.resolve();
 
-  constructor(readings: readonly WireReading[]) {
+  constructor(
+    readings: readonly WireReading[],
+    details: Partial<SeriesDetails> = {},
+    pageCount: number | null = null,
+  ) {
+    this.#details = { ...NO_DETAILS, ...details };
     this.#books = readings.map((reading, index) => ({
       id: `0190a3e4-0000-8000-8000-${String(index + 1).padStart(12, "0")}`,
       position: index + 1,
       title: `${SERIES_TITLE} v${String(index + 1).padStart(2, "0")}`,
       addedAtMs: ADDED_AT_MS,
       reading,
+      pageCount,
+      isBookmarked: false,
+      isNew: false,
+      isFileMissing: false,
     }));
   }
 
@@ -34,6 +62,14 @@ export class FakeShelf {
 
   get books(): readonly WireBook[] {
     return this.#books;
+  }
+
+  bookmark(index: number): void {
+    this.#bookAt(index).isBookmarked = true;
+  }
+
+  markNew(index: number): void {
+    this.#bookAt(index).isNew = true;
   }
 
   readTo(index: number, page: number): void {
@@ -69,19 +105,20 @@ export class FakeShelf {
           bookCount: this.#books.length,
           readCount: this.#books.filter((book) => book.reading.state === "read")
             .length,
+          bookmarkCount: this.#books.filter((book) => book.isBookmarked).length,
           cover: null,
           folder: SERIES_FOLDER,
           upNext: this.#upNext() ?? null,
+          ...this.#details,
         };
       },
       seriesBooks: async (id, listing, after) => {
         if (after !== null) {
           await this.#laterPages;
         }
-        const shown =
-          listing.shown === "unread"
-            ? this.#books.filter((book) => book.reading.state !== "read")
-            : this.#books;
+        const shown = this.#books.filter((book) =>
+          isShownBy(listing.shown, book),
+        );
         const ordered =
           listing.direction === "descending" ? shown.toReversed() : shown;
         const listed = id === SERIES_ID ? ordered : [];

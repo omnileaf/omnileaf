@@ -1,0 +1,124 @@
+import type { Locator, Page } from "@playwright/test";
+
+import type { FakeBackend } from "./fake-backend.ts";
+import { DEFAULT_BACKEND, expect, test, tokenColour } from "./fixtures.ts";
+import { pagedSeries, sampleSeries } from "./series-catalog.ts";
+
+const LIBRARY = sampleSeries(40);
+const SEARCH_FIELD = "Search your library";
+
+test.use({
+  backend: {
+    ...DEFAULT_BACKEND,
+    librarySeries: pagedSeries(() => LIBRARY),
+    librarySeriesCount: () => LIBRARY.length,
+  } satisfies FakeBackend,
+});
+
+function seriesList(page: Page): Locator {
+  return page.getByRole("list", { name: "Series" });
+}
+
+function coverOf(page: Page, index: number): Locator {
+  return seriesList(page).getByRole("link", {
+    name: new RegExp(LIBRARY[index]?.title ?? ""),
+  });
+}
+
+async function columnsOf(page: Page): Promise<number> {
+  return seriesList(page).evaluate(
+    (list) =>
+      getComputedStyle(list)
+        .gridTemplateColumns.split(" ")
+        .filter((track) => track !== "").length,
+  );
+}
+
+async function focusFirst(page: Page): Promise<void> {
+  await page.goto("/");
+  await expect(coverOf(page, 0)).toBeVisible();
+  await coverOf(page, 0).focus();
+}
+
+test("moves between covers with the arrow keys", async ({ page }) => {
+  await focusFirst(page);
+  const columns = await columnsOf(page);
+
+  await page.keyboard.press("ArrowRight");
+  await expect(coverOf(page, 1)).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(coverOf(page, 1 + columns)).toBeFocused();
+  await page.keyboard.press("ArrowLeft");
+  await expect(coverOf(page, columns)).toBeFocused();
+  await page.keyboard.press("ArrowUp");
+
+  await expect(coverOf(page, 0)).toBeFocused();
+});
+
+test("rings the cover in focus in the accent colour, round the whole tile", async ({
+  page,
+}) => {
+  await focusFirst(page);
+
+  await page.keyboard.press("ArrowRight");
+
+  const cover = coverOf(page, 1);
+  await expect(cover).toHaveCSS("outline-style", "solid");
+  await expect(cover).toHaveCSS(
+    "outline-color",
+    await tokenColour(page, "--color-accent"),
+  );
+  await expect(cover).not.toHaveCSS("border-radius", "0px");
+});
+
+test("jumps to the last cover listed with End, and back with Home", async ({
+  page,
+}) => {
+  await focusFirst(page);
+
+  await page.keyboard.press("End");
+  await expect(coverOf(page, LIBRARY.length - 1)).toBeFocused();
+  await page.keyboard.press("Home");
+
+  await expect(coverOf(page, 0)).toBeFocused();
+});
+
+test("opens the series in focus with Enter", async ({ page }) => {
+  await focusFirst(page);
+
+  await page.keyboard.press("Enter");
+
+  await expect(page).toHaveURL(new RegExp(`/series/${LIBRARY[0]?.id ?? ""}$`));
+});
+
+test("starts selecting with the cover in focus on Space", async ({ page }) => {
+  await focusFirst(page);
+  await page.keyboard.press("ArrowRight");
+
+  await page.keyboard.press("Space");
+
+  await expect(
+    seriesList(page).getByRole("checkbox", { name: LIBRARY[1]?.title ?? "" }),
+  ).toBeChecked();
+});
+
+test("opens search with Ctrl F, its field in focus", async ({ page }) => {
+  await page.goto("/");
+  await expect(coverOf(page, 0)).toBeVisible();
+
+  await page.keyboard.press("Control+f");
+
+  await expect(page).toHaveURL(/\/search$/);
+  await expect(
+    page.getByRole("combobox", { name: SEARCH_FIELD }),
+  ).toBeFocused();
+});
+
+test("names Ctrl F in the library's search field", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/");
+
+  await expect(
+    page.locator("main header").getByText("Ctrl F", { exact: true }),
+  ).toBeVisible();
+});

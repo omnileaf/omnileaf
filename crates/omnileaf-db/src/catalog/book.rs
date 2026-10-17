@@ -7,9 +7,10 @@ macro_rules! insert_book {
     ($on_conflict:literal) => {
         concat!(
             "INSERT INTO book (
-                id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind
+                id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind,
+                page_count
             )
-            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7 FROM series WHERE id = ?2",
+            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7, ?8 FROM series WHERE id = ?2",
             $on_conflict
         )
     };
@@ -26,6 +27,8 @@ const ADD_OR_REFILE_BOOK: &str = insert_book!(
 const SERIES_OF_BOOK: &str = "SELECT series.id AS series_id FROM book
     JOIN series ON series.local_id = book.series_local_id WHERE book.id = ?1";
 const SERIES_EXISTS: &str = "SELECT EXISTS (SELECT 1 FROM series WHERE id = ?1)";
+const RECORD_PAGE_COUNT: &str =
+    "UPDATE book SET page_count = ?2 WHERE id = ?1 AND page_count IS NOT ?2";
 const REMOVE_BOOK_WITHOUT_FILES: &str = "DELETE FROM book
     WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM book_file WHERE book_id = ?1)";
 
@@ -35,6 +38,7 @@ pub struct NewBook {
     pub series: SeriesId,
     pub title: String,
     pub added_at_ms: i64,
+    pub page_count: Option<u32>,
 }
 
 impl NewBook {
@@ -70,6 +74,18 @@ pub(crate) fn add_or_refile_book(
     if insert(transaction, book, ADD_OR_REFILE_BOOK)? == 0 {
         return Err(Error::UnknownSeries { id: book.series });
     }
+    Ok(())
+}
+
+#[tracing::instrument(skip_all, fields(%book, page_count))]
+pub fn record_page_count(
+    transaction: &Transaction<'_>,
+    book: BookId,
+    page_count: u32,
+) -> Result<(), Error> {
+    transaction
+        .prepare(RECORD_PAGE_COUNT)?
+        .execute((book.as_bytes(), page_count))?;
     Ok(())
 }
 
@@ -111,6 +127,7 @@ fn insert(transaction: &Transaction<'_>, book: &NewBook, sql: &str) -> Result<us
         book.added_at_ms,
         book.fingerprint.as_bytes(),
         kind_name(book.fingerprint.kind()),
+        book.page_count,
     ))?)
 }
 
@@ -141,11 +158,21 @@ mod tests {
             series: SeriesId::local("Sample Series 01").unwrap(),
             title: "Volume 01".to_owned(),
             added_at_ms: 0,
+            page_count: None,
         };
 
         let outcome = add_book_unless_present(&transaction, &book);
 
         assert!(matches!(outcome, Err(Error::UnknownSeries { id }) if id == book.series));
+    }
+
+    #[test]
+    fn records_a_book_s_page_count_through_its_key() {
+        let scratch = ScratchLibrary::new("record-page-count-plan");
+
+        let plan = scratch.query_plan(RECORD_PAGE_COUNT);
+
+        assert_eq!(plan, ["SEARCH book USING PRIMARY KEY (id=?)"]);
     }
 
     #[test]

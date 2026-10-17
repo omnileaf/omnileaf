@@ -48,7 +48,7 @@ interface ListLook {
 
 const PANEL_WIDTH = 360;
 const NARROWING = 100;
-const NARROWEST_COVER = 40;
+const NARROWEST_COVER = 64;
 const NARROWEST_SCREENS = [320, 600, 840, 1200];
 const TABLET_NARROWEST = 600;
 const EXPANDED_TABLET = 840;
@@ -66,6 +66,16 @@ const MOST_COVERS_PER_ROW = {
   tablet: COVERS_PER_ROW.tablet.most,
   desktop: COVERS_PER_ROW.desktop.most,
 } as const satisfies CoversPerRow;
+const MOST_THAT_FIT = {
+  phone: 4,
+  tablet: 8,
+  desktop: 11,
+} as const satisfies CoversPerRow;
+const FITTED_COVERS = {
+  phone: 3,
+  tablet: 5,
+  desktop: 6,
+} as const satisfies CoversPerRow;
 const MOST_COVERS_PER_ROW_WITH_BOOK_COUNTS = {
   phone: 3,
   tablet: 8,
@@ -73,10 +83,16 @@ const MOST_COVERS_PER_ROW_WITH_BOOK_COUNTS = {
 } as const satisfies CoversPerRow;
 
 const RANGE_LABELS = {
-  phone: "2 to 5 on this phone",
+  phone: "2 to 4 on this phone",
   tablet: "3 to 8 on this tablet",
-  desktop: "4 to 12",
+  desktop: "4 to 11",
 } as const satisfies Record<ScreenSize, string>;
+const CHOSEN_VIEW: LibraryView = {
+  ...DEFAULT_LIBRARY_VIEW,
+  fitsCoversToWidth: false,
+  groupBy: "none",
+  showsCategoryTabs: true,
+};
 const SERIES_IN_CATALOG = 200;
 const LAST_TITLE = `Sample Series ${String(SERIES_IN_CATALOG).padStart(4, "0")}`;
 const FIRST_TITLE = "Sample Series 0001";
@@ -87,9 +103,8 @@ const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height=
 
 const GRID_LOOKS = {
   phone: [
-    { columns: 3, gap: 14, titleSize: 13, showsBookCount: true },
+    { columns: 3, gap: 12, titleSize: 14, showsBookCount: true },
     { columns: 4, gap: 10, titleSize: 12, showsBookCount: false },
-    { columns: 5, gap: 8, titleSize: 11, showsBookCount: false },
   ],
   tablet: [
     { columns: 5, gap: 20, titleSize: 14, showsBookCount: true },
@@ -102,11 +117,11 @@ const GRID_LOOKS = {
   ],
 } as const satisfies Record<ScreenSize, readonly GridLook[]>;
 
-const LIST_LOOKS = {
-  phone: { rowHeight: 105, coverWidth: 48, coverHeight: 72 },
-  tablet: { rowHeight: 105, coverWidth: 48, coverHeight: 72 },
-  desktop: { rowHeight: 89, coverWidth: 42, coverHeight: 63 },
-} as const satisfies Record<ScreenSize, ListLook>;
+const LIST_LOOK = {
+  rowHeight: 101,
+  coverWidth: 52,
+  coverHeight: 78,
+} as const satisfies ListLook;
 
 const BAND_PADDING = {
   phone: { top: 20, inline: 6, bottom: 8 },
@@ -114,7 +129,7 @@ const BAND_PADDING = {
   desktop: { top: 20, inline: 10, bottom: 10 },
 } as const satisfies Record<ScreenSize, Record<string, number>>;
 
-let storedView: LibraryView = DEFAULT_LIBRARY_VIEW;
+let storedView: LibraryView = CHOSEN_VIEW;
 let storedViews: LibraryView[] = [];
 let seriesInCatalog = SERIES_IN_CATALOG;
 let firstTitle = FIRST_TITLE;
@@ -140,7 +155,7 @@ test.use({
 });
 
 test.beforeEach(async ({ page }) => {
-  storedView = DEFAULT_LIBRARY_VIEW;
+  storedView = CHOSEN_VIEW;
   storedViews = [];
   seriesInCatalog = SERIES_IN_CATALOG;
   firstTitle = FIRST_TITLE;
@@ -164,11 +179,11 @@ function viewWith(
 ): LibraryView {
   const size = screenSizeOf(page);
   return {
-    ...DEFAULT_LIBRARY_VIEW,
+    ...CHOSEN_VIEW,
     display,
     coversPerRow: {
-      ...DEFAULT_LIBRARY_VIEW.coversPerRow,
-      [size]: columns ?? DEFAULT_LIBRARY_VIEW.coversPerRow[size],
+      ...CHOSEN_VIEW.coversPerRow,
+      [size]: columns ?? CHOSEN_VIEW.coversPerRow[size],
     },
   };
 }
@@ -246,19 +261,24 @@ test.describe("at every text size", () => {
   );
 
   for (const display of DRAWN_DISPLAYS) {
-    test(`draws each size's most covers per row as ${display} down to its narrowest screen at the default text size`, async ({
+    test(`keeps every ${display} cover at least 64px wide at each size's most covers per row, down to its narrowest screen`, async ({
       page,
     }) => {
       for (const width of NARROWEST_SCREENS) {
         await page.setViewportSize({ width, height: SCREEN_HEIGHT });
         await openWith(page, {
-          ...DEFAULT_LIBRARY_VIEW,
+          ...CHOSEN_VIEW,
           display,
           coversPerRow: MOST_COVERS_PER_ROW,
         });
 
-        expect(await columnsOf(seriesList(page)), `at ${String(width)}px`).toBe(
-          MOST_COVERS_PER_ROW[screenSizeOf(page)],
+        const widths = await columnWidthsOf(seriesList(page));
+        expect(
+          Math.min(...widths),
+          `at ${String(width)}px`,
+        ).toBeGreaterThanOrEqual(NARROWEST_COVER);
+        expect(widths.length, `at ${String(width)}px`).toBeGreaterThanOrEqual(
+          COVERS_PER_ROW[screenSizeOf(page)].fewest,
         );
       }
     });
@@ -274,7 +294,7 @@ test.describe("at every text size", () => {
     });
 
     await openWith(page, {
-      ...DEFAULT_LIBRARY_VIEW,
+      ...CHOSEN_VIEW,
       coversPerRow: MOST_COVERS_PER_ROW,
     });
 
@@ -292,7 +312,7 @@ test.describe("at every text size", () => {
       firstTitle = LONG_TITLE;
       await setTextScale(page, scale);
       await openWith(page, {
-        ...DEFAULT_LIBRARY_VIEW,
+        ...CHOSEN_VIEW,
         display: "compact",
         coversPerRow: MOST_COVERS_PER_ROW,
       });
@@ -317,7 +337,7 @@ test.describe("at every text size", () => {
     }) => {
       await setTextScale(page, scale);
       await openWith(page, {
-        ...DEFAULT_LIBRARY_VIEW,
+        ...CHOSEN_VIEW,
         display: "compact",
         coversPerRow: MOST_COVERS_PER_ROW,
       });
@@ -347,13 +367,12 @@ test.describe("at every text size", () => {
     });
 
     await openWith(page, {
-      ...DEFAULT_LIBRARY_VIEW,
+      ...CHOSEN_VIEW,
       display: "compact",
       coversPerRow: MOST_COVERS_PER_ROW,
     });
 
     const title = await boxOf(firstSeries(page).getByText(FIRST_TITLE));
-    expect(await columnsOf(seriesList(page))).toBe(MOST_COVERS_PER_ROW.tablet);
     expect(title.width * title.height).toBeGreaterThan(1);
     expect(await sidewaysOverflow(page)).toEqual([]);
   });
@@ -367,7 +386,7 @@ test.describe("at every text size", () => {
       height: SCREEN_HEIGHT,
     });
     await openWith(page, {
-      ...DEFAULT_LIBRARY_VIEW,
+      ...CHOSEN_VIEW,
       coversPerRow: MOST_COVERS_PER_ROW,
     });
     const columns = await columnsOf(seriesList(page));
@@ -404,7 +423,7 @@ test.describe("at every text size", () => {
       localStorage.setItem("omnileaf.language", "en-XA");
     });
     storedView = {
-      ...DEFAULT_LIBRARY_VIEW,
+      ...CHOSEN_VIEW,
       coversPerRow: MOST_COVERS_PER_ROW_WITH_BOOK_COUNTS,
     };
     await page.goto("/");
@@ -488,7 +507,7 @@ test("draws only the covers, naming each one without printing its title", async 
   const titleBox = await boxOf(title);
 
   expect(await columnsOf(seriesList(page))).toBe(
-    DEFAULT_LIBRARY_VIEW.coversPerRow[screenSizeOf(page)],
+    CHOSEN_VIEW.coversPerRow[screenSizeOf(page)],
   );
   expect(titleBox.width * titleBox.height).toBeLessThanOrEqual(1);
   await expect(cover).toHaveAttribute("title", FIRST_TITLE);
@@ -498,7 +517,6 @@ test("draws only the covers, naming each one without printing its title", async 
 test("draws a list with a small cover beside each title and its book count", async ({
   page,
 }) => {
-  const look = LIST_LOOKS[screenSizeOf(page)];
   await openWith(page, viewWith(page, "list"));
   const cover = await boxOf(firstSeries(page).getByRole("presentation"));
   const title = await boxOf(firstSeries(page).getByText(FIRST_TITLE));
@@ -506,9 +524,9 @@ test("draws a list with a small cover beside each title and its book count", asy
   const row = await boxOf(firstSeries(page));
 
   expect(await columnsOf(seriesList(page))).toBe(1);
-  expect(row.height).toBe(look.rowHeight);
-  expect(cover.width).toBe(look.coverWidth);
-  expect(cover.height).toBe(look.coverHeight);
+  expect(row.height).toBe(LIST_LOOK.rowHeight);
+  expect(cover.width).toBe(LIST_LOOK.coverWidth);
+  expect(cover.height).toBe(LIST_LOOK.coverHeight);
   expect(title.x).toBeGreaterThan(cover.x + cover.width);
   await expect(firstSeries(page).getByText("1 book")).toBeVisible();
 });
@@ -597,7 +615,7 @@ test.describe("view options", () => {
   test("draws the display chosen in the view options at once and stores it on this device", async ({
     page,
   }) => {
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    await openWith(page, CHOSEN_VIEW);
     const options = await openViewOptions(page);
 
     await choose(options, "List");
@@ -607,22 +625,47 @@ test.describe("view options", () => {
     await expect(options.getByRole("radio", { name: "List" })).toBeChecked();
   });
 
+  test("fits as many covers in a row as the width allows by default, saying how many", async ({
+    page,
+  }) => {
+    const size = screenSizeOf(page);
+    await openWith(page, DEFAULT_LIBRARY_VIEW);
+
+    expect(await columnsOf(seriesList(page))).toBe(FITTED_COVERS[size]);
+    const options = await openViewOptions(page);
+    await expect(options.getByRole("radio", { name: "Auto" })).toBeChecked();
+    await expect(options).toContainText(
+      `Fits as many as the width allows (now ${String(FITTED_COVERS[size])})`,
+    );
+  });
+
+  test("chooses covers per row from as many as fit, none narrower than 64px", async ({
+    page,
+  }) => {
+    const size = screenSizeOf(page);
+    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    const options = await openViewOptions(page);
+
+    await choose(options, "Choose");
+
+    await expect(
+      options.getByText(RANGE_LABELS[size], { exact: true }),
+    ).toBeVisible();
+    await expect.poll(() => storedView.fitsCoversToWidth).toBe(false);
+  });
+
   test("offers this size's range of covers per row and stores each step", async ({
     page,
   }) => {
     const size = screenSizeOf(page);
-    const { most } = COVERS_PER_ROW[size];
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    const most = MOST_THAT_FIT[size];
+    await openWith(page, CHOSEN_VIEW);
     const options = await openViewOptions(page);
     await expect(
       options.getByText(RANGE_LABELS[size], { exact: true }),
     ).toBeVisible();
 
-    for (
-      let count = DEFAULT_LIBRARY_VIEW.coversPerRow[size];
-      count < most;
-      count += 1
-    ) {
+    for (let count = CHOSEN_VIEW.coversPerRow[size]; count < most; count += 1) {
       await stepButton(options, "More").click();
     }
 
@@ -633,7 +676,7 @@ test.describe("view options", () => {
     expect(await columnsOf(seriesList(page))).toBe(most);
     await expect.poll(() => storedView.coversPerRow[size]).toBe(most);
     expect(storedView.coversPerRow).toEqual({
-      ...DEFAULT_LIBRARY_VIEW.coversPerRow,
+      ...CHOSEN_VIEW.coversPerRow,
       [size]: most,
     });
   });
@@ -642,8 +685,8 @@ test.describe("view options", () => {
     page,
   }) => {
     const size = screenSizeOf(page);
-    const { most } = COVERS_PER_ROW[size];
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    const most = MOST_THAT_FIT[size];
+    await openWith(page, CHOSEN_VIEW);
     const options = await openViewOptions(page);
     await page.evaluate(() => {
       const seen: string[] = [];
@@ -658,11 +701,7 @@ test.describe("view options", () => {
       requestAnimationFrame(sample);
     });
 
-    for (
-      let count = DEFAULT_LIBRARY_VIEW.coversPerRow[size];
-      count < most;
-      count += 1
-    ) {
+    for (let count = CHOSEN_VIEW.coversPerRow[size]; count < most; count += 1) {
       await stepButton(options, "More").click();
       await expect.poll(() => columnsOf(seriesList(page))).toBe(count + 1);
     }
@@ -677,8 +716,8 @@ test.describe("view options", () => {
   test("lays the rows out again to fill the screen once a row holds the most covers", async ({
     page,
   }) => {
-    const { most } = COVERS_PER_ROW[screenSizeOf(page)];
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    const most = MOST_THAT_FIT[screenSizeOf(page)];
+    await openWith(page, CHOSEN_VIEW);
     const options = await openViewOptions(page);
     await expectRowsToFillTheScreen(page);
 
@@ -693,7 +732,7 @@ test.describe("view options", () => {
   test("lays the rows out again to fill the screen once the grid turns compact", async ({
     page,
   }) => {
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    await openWith(page, CHOSEN_VIEW);
     const options = await openViewOptions(page);
     await expectRowsToFillTheScreen(page);
 
@@ -706,7 +745,7 @@ test.describe("view options", () => {
   test("says how many covers fit once the largest text leaves room for fewer than asked", async ({
     page,
   }) => {
-    const { most } = COVERS_PER_ROW[screenSizeOf(page)];
+    const most = MOST_THAT_FIT[screenSizeOf(page)];
     await setTextScale(page, LARGEST_TEXT_SCALE);
     await openWith(page, viewWith(page, "grid", most));
     const fit = await columnsOf(seriesList(page));
@@ -726,7 +765,7 @@ test.describe("view options", () => {
   test("stops saying how many covers fit once no more are asked for than fit", async ({
     page,
   }) => {
-    const { most } = COVERS_PER_ROW[screenSizeOf(page)];
+    const most = MOST_THAT_FIT[screenSizeOf(page)];
     await setTextScale(page, LARGEST_TEXT_SCALE);
     await openWith(page, viewWith(page, "grid", most));
     const fit = await columnsOf(seriesList(page));
@@ -747,7 +786,7 @@ test.describe("view options", () => {
   test("says nothing of how many covers fit at the default text size", async ({
     page,
   }) => {
-    const { most } = COVERS_PER_ROW[screenSizeOf(page)];
+    const most = MOST_THAT_FIT[screenSizeOf(page)];
     await openWith(page, viewWith(page, "grid", most));
 
     const options = await openViewOptions(page);
@@ -775,7 +814,7 @@ test.describe("view options", () => {
   test("shows how many series the library holds beside its title once item counts are on, or under it on a phone", async ({
     page,
   }) => {
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    await openWith(page, { ...CHOSEN_VIEW, showsItemCounts: false });
     const count = page
       .getByRole("main")
       .getByText(`${String(SERIES_IN_CATALOG)} series`, { exact: true });
@@ -881,7 +920,7 @@ test.describe("view options", () => {
   test("draws the view chosen before when the library opens again", async ({
     page,
   }) => {
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    await openWith(page, CHOSEN_VIEW);
     const options = await openViewOptions(page);
     await choose(options, "Compact");
     await expect.poll(() => storedViews.length).toBe(1);
@@ -898,7 +937,7 @@ test.describe("view options", () => {
   test("slides up on a phone and fades in on wider screens, which reduced motion turns into appearing at once", async ({
     page,
   }) => {
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    await openWith(page, CHOSEN_VIEW);
     const transitions = await watchTransitions(page);
 
     await viewOptionsButton(page).click();
@@ -918,7 +957,7 @@ test.describe("view options", () => {
   test("closes on Escape and hands focus back to the button that opened it", async ({
     page,
   }) => {
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    await openWith(page, CHOSEN_VIEW);
     await viewOptionsButton(page).focus();
     await page.keyboard.press("Enter");
     await expect(viewOptions(page)).toBeVisible();
@@ -930,7 +969,7 @@ test.describe("view options", () => {
   });
 
   test("moves between the displays with the arrow keys", async ({ page }) => {
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    await openWith(page, CHOSEN_VIEW);
     const options = await openViewOptions(page);
     await options.getByRole("radio", { name: "Grid" }).focus();
 
@@ -943,7 +982,7 @@ test.describe("view options", () => {
   test("slides up from the foot of a phone, and drops below the button on wider screens", async ({
     page,
   }) => {
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    await openWith(page, CHOSEN_VIEW);
     const options = await openViewOptions(page);
 
     const panel = await boxOf(options);
@@ -967,7 +1006,7 @@ test.describe("view options", () => {
   test("lines the panel up with the button's end in a right-to-left layout, or spans a phone", async ({
     page,
   }) => {
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    await openWith(page, CHOSEN_VIEW);
     await page.evaluate(() => {
       document.documentElement.dir = "rtl";
     });
@@ -988,7 +1027,7 @@ test.describe("view options", () => {
     page,
   }) => {
     test.skip(screenSizeOf(page) === "phone", "wider screens only");
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    await openWith(page, CHOSEN_VIEW);
     const options = await openViewOptions(page);
     const { width, height } = viewportOf(page);
 
@@ -1012,7 +1051,7 @@ test.describe("view options", () => {
     await page.addInitScript(() => {
       window.localStorage.setItem("omnileaf.language", "en-XA");
     });
-    storedView = DEFAULT_LIBRARY_VIEW;
+    storedView = CHOSEN_VIEW;
     await page.goto("/");
     await expect(
       page.getByRole("main").getByRole("listitem").first(),
@@ -1039,7 +1078,7 @@ test.describe("view options", () => {
       page,
     }) => {
       await page.emulateMedia({ colorScheme });
-      await openWith(page, DEFAULT_LIBRARY_VIEW);
+      await openWith(page, CHOSEN_VIEW);
       await openViewOptions(page);
 
       expect(await accessibilityViolations(page)).toEqual([]);

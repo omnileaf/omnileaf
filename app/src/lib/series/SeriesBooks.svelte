@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Eye, EyeOff, X } from "@lucide/svelte";
+  import { Eye, EyeOff, List, X } from "@lucide/svelte";
   import { tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
@@ -24,7 +24,8 @@
   import BookListingChoices from "./BookListingChoices.svelte";
   import { booksMatching } from "./book-search";
   import BookTable from "./BookTable.svelte";
-  import { BookSelection } from "./book-selection.svelte";
+  import { Selection } from "#lib/page/selection.svelte.ts";
+  import { SERIES_CONTROL } from "./series-control.ts";
   import SelectionBar from "./SelectionBar.svelte";
 
   type BookId = SeriesBook["id"];
@@ -39,6 +40,8 @@
   let {
     books,
     bookCount,
+    readCount,
+    bookmarkCount,
     listing,
     onListing,
     isComplete,
@@ -49,6 +52,8 @@
   }: {
     books: readonly SeriesBook[];
     bookCount: number;
+    readCount: number;
+    bookmarkCount: number;
     listing: SeriesBookListing;
     onListing: (listing: SeriesBookListing) => void;
     isComplete: boolean;
@@ -68,7 +73,7 @@
     | { readonly kind: "failed" }
     | { readonly kind: "pickedAll"; readonly count: number };
 
-  const selection = new BookSelection<BookId>();
+  const selection = new Selection<BookId>();
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const notices = getNotices();
   const headingId = $props.id();
@@ -257,16 +262,25 @@
       bind:this={heading}
       id={headingId}
       tabindex="-1"
-      class="flex-1 text-series-heading font-bold"
+      class={[
+        "text-group-title font-semibold",
+        selection.isSelecting && "flex-1",
+        isWide.current && "sr-only",
+      ]}
     >
       {selection.isSelecting
         ? m.series_selected_count({ count: selection.count })
         : m.series_books_heading({ count: bookCount })}
     </h2>
-    {#if isWide.current}
-      <span class="text-detail text-muted max-large:hidden">
-        {m.series_select_range_hint()}
-      </span>
+    {#if !selection.isSelecting && !isWide.current}
+      <p class="flex-1 text-small text-muted">
+        {bookmarkCount > 0
+          ? m.series_read_and_bookmarked({
+              read: readCount,
+              bookmarked: bookmarkCount,
+            })
+          : m.series_read_only({ read: readCount })}
+      </p>
     {:else if selection.isSelecting}
       <Button
         type="button"
@@ -293,11 +307,41 @@
     }}
   />
   {#if isComplete && shownBooks.length === 0}
-    <p class="text-body text-muted">
-      {search.trim() === ""
-        ? m.series_no_unread()
-        : m.series_no_match({ search: search.trim() })}
-    </p>
+    <Card
+      class="flex flex-col items-center gap-md px-lg py-xl text-center shadow-card-rest expanded:p-2xl"
+    >
+      {#if search.trim() !== ""}
+        <p class="text-body">{m.series_no_match({ search: search.trim() })}</p>
+        <Button
+          type="button"
+          look="outline"
+          class={SERIES_CONTROL}
+          onclick={() => {
+            search = "";
+          }}
+        >
+          <X size={ICON_SIZE} aria-hidden="true" />
+          {m.series_clear_search()}
+        </Button>
+      {:else}
+        <p class="text-body">
+          {listing.shown === "bookmarked"
+            ? m.series_no_bookmarked()
+            : m.series_no_unread()}
+        </p>
+        <Button
+          type="button"
+          look="outline"
+          class={SERIES_CONTROL}
+          onclick={() => {
+            onListing({ ...listing, shown: "all" });
+          }}
+        >
+          <List size={ICON_SIZE} aria-hidden="true" />
+          {m.series_show_all_books()}
+        </Button>
+      {/if}
+    </Card>
   {/if}
   {#if isWide.current}
     <BookTable
@@ -332,7 +376,6 @@
   {:else}
     <BookList
       books={shownBooks}
-      {dates}
       {isComplete}
       {onNearEnd}
       {selection}

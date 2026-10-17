@@ -15,9 +15,9 @@ use std::{
 };
 
 use omnileaf_engine::{
-    BookId, BookReading, Library, LibraryListing, OpenBookError, OpenedBook, PageDimensions,
-    ProbedFormat, ReadMark, ReadingDirection, Resource, ResourceRouter, SeriesBookListing,
-    SeriesId,
+    BookId, BookPlace, BookReading, Library, LibraryListing, OpenBookError, OpenedBook,
+    PageDimensions, ProbedFormat, ReadMark, ReadingDirection, Resource, ResourceRouter,
+    SeriesBookListing, SeriesId,
 };
 use omnileaf_imaging::{Size, page_size};
 use omnileaf_testkit::{
@@ -48,7 +48,7 @@ struct Reader {
     router: ResourceRouter,
     comics: ScratchFolder,
     cache: ScratchFolder,
-    _home: ScratchFolder,
+    home: ScratchFolder,
 }
 
 impl Reader {
@@ -112,7 +112,7 @@ impl Reader {
             router,
             comics,
             cache,
-            _home: home,
+            home,
         }
     }
 
@@ -139,6 +139,22 @@ impl Reader {
             .await
             .unwrap();
         listed.series.first().unwrap().id
+    }
+
+    async fn page_counts(&self) -> Vec<Option<u32>> {
+        let books = self
+            .library
+            .series_books(self.series().await, SeriesBookListing::default(), None)
+            .await
+            .unwrap();
+        books.books.iter().map(|book| book.page_count).collect()
+    }
+
+    fn forget_page_counts(&self) {
+        omnileaf_db::rusqlite::Connection::open(self.home.path().join("library.sqlite"))
+            .unwrap()
+            .execute("UPDATE book SET page_count = NULL", [])
+            .unwrap();
     }
 
     async fn book(&self) -> BookId {
@@ -222,6 +238,25 @@ fn gif_header(width: u16, height: u16) -> Vec<u8> {
 
 fn served(content_type: &'static str, body: Vec<u8>) -> Resource {
     Resource::Immutable { content_type, body }
+}
+
+#[tokio::test]
+async fn counts_a_book_s_pages_as_the_scan_reads_it() {
+    let reader = Reader::with_book("page-count-scanned").await;
+
+    let page_counts = reader.page_counts().await;
+
+    assert_eq!(page_counts, [Some(PAGES)]);
+}
+
+#[tokio::test]
+async fn counts_the_pages_of_a_book_found_before_page_counts_once_it_opens() {
+    let reader = Reader::with_book("page-count-opened").await;
+    reader.forget_page_counts();
+
+    reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(reader.page_counts().await, [Some(PAGES)]);
 }
 
 #[tokio::test]
@@ -318,6 +353,7 @@ async fn shows_the_next_book_by_its_own_cover_and_how_far_it_was_read() {
             .starts_with(&format!("thumb/v1/{}/", ids[1]))
     }));
     assert_eq!(next.reading, BookReading::Read);
+    assert_eq!(next.page_count, None);
 }
 
 #[tokio::test]
@@ -344,6 +380,53 @@ async fn leaves_the_direction_unknown_for_a_book_without_comic_info() {
     let opened = reader.open(NOTHING_UNDECODABLE).await;
 
     assert_eq!(opened.reading_direction, None);
+}
+
+#[tokio::test]
+async fn names_a_books_place_for_the_way_back_without_opening_it() {
+    let reader = Reader::with_book("place-named").await;
+    let book = reader.book().await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let place = reader.library.book_place(book).await.unwrap();
+
+    assert_eq!(
+        place,
+        Some(BookPlace {
+            id: book,
+            title: opened.title,
+            series: opened.series,
+            series_title: opened.series_title,
+        })
+    );
+}
+
+#[tokio::test]
+async fn knows_no_place_for_a_book_missing_from_the_library() {
+    let reader = Reader::with_book("place-missing").await;
+    let missing = BookId::try_from("0190a3e4-0000-8000-8000-00000000ffff".to_owned()).unwrap();
+
+    let place = reader.library.book_place(missing).await.unwrap();
+
+    assert_eq!(place, None);
+}
+
+#[tokio::test]
+async fn leaves_a_books_damage_unchecked_while_the_library_checks_none() {
+    let reader = Reader::with_book("no-damage-check").await;
+
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(opened.damage, None);
+}
+
+#[tokio::test]
+async fn leaves_a_books_bookmarks_unkept_while_the_library_keeps_none() {
+    let reader = Reader::with_book("no-bookmarks").await;
+
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(opened.bookmarked_pages, None);
 }
 
 #[tokio::test]

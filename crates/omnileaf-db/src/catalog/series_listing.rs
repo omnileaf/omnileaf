@@ -16,9 +16,13 @@ pub struct SeriesSort {
 pub enum SeriesOrder {
     Title,
     DateAdded,
+    LastRead,
+    LastUpdated,
+    UnreadCount,
+    TimeLeft,
 }
 
-/// Ascending lists titles from A to Z and series added earliest first.
+/// Ascending lists titles from A to Z, series added, updated or read longest ago first with those never read before them, the fewest unread books first, and the fewest pages left first with those whose pages aren't all counted last.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SortDirection {
     Ascending,

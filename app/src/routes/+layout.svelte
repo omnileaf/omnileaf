@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import { page } from "$app/state";
+
   import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
   import { systemBarsTheme } from "#lib/appearance/theme.ts";
   import {
@@ -18,6 +20,7 @@
   import CrashReportPrompt from "#lib/crash-report/CrashReportPrompt.svelte";
   import { appInterfaceErrors } from "#lib/crash-report/interface-error-relay.ts";
   import type { PromptLook } from "#lib/crash-report/look.ts";
+  import IconActionsSync from "#lib/icon-actions/IconActionsSync.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import {
@@ -25,6 +28,10 @@
     setLanguageSetting,
   } from "#lib/language/language.svelte.ts";
   import { Notices, setNotices } from "#lib/notices/notices.ts";
+  import {
+    setUndoSetting,
+    undoSettingForDocument,
+  } from "#lib/notices/undo-setting.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -49,18 +56,45 @@
     setSkipUpNextSetting,
     skipUpNextSettingForDocument,
   } from "#lib/up-next/skip-up-next.svelte.ts";
+  import {
+    setSmartFeatures,
+    smartFeaturesForDocument,
+  } from "#lib/reader/smart-features.svelte.ts";
+  import {
+    opensOnSettingForDocument,
+    setOpensOnSetting,
+  } from "#lib/general/opens-on.svelte.ts";
+  import {
+    setTimeFormatSetting,
+    timeFormatSettingForDocument,
+  } from "#lib/general/time-format.svelte.ts";
+  import {
+    ANIMATIONS_PREFERENCE_KEY,
+    animationsSettingForDocument,
+    setAnimationsSetting,
+  } from "#lib/appearance/animations.svelte.ts";
   import ScreenshotModeAnnouncement from "#lib/screenshot-mode/ScreenshotModeAnnouncement.svelte";
+  import {
+    screenshotModeShortcutForDocument,
+    setScreenshotModeShortcut,
+  } from "#lib/screenshot-mode/shortcut-setting.svelte.ts";
   import { shortcut } from "#lib/shortcut.ts";
+  import TrayMenuSync from "#lib/tray/TrayMenuSync.svelte";
 
   import type { LayoutProps } from "./$types";
 
   import "../app.css";
+
+  const APP_ROUTES = "/(app)";
 
   let { data, children }: LayoutProps = $props();
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
   const screenshotMode = setScreenshotMode(screenshotModeForDocument());
+  const screenshotModeShortcut = setScreenshotModeShortcut(
+    screenshotModeShortcutForDocument(),
+  );
   const crashReportSetting = setCrashReportSetting(
     crashReportSettingForDocument(),
   );
@@ -71,8 +105,13 @@
     scheduledRescansSettingForDocument(),
   );
   setSkipUpNextSetting(skipUpNextSettingForDocument());
+  setSmartFeatures(smartFeaturesForDocument());
+  setOpensOnSetting(opensOnSettingForDocument());
+  setTimeFormatSetting(timeFormatSettingForDocument());
+  const animations = setAnimationsSetting(animationsSettingForDocument());
   setSwipeActionsSetting(swipeActionsSettingForDocument());
-  setNotices(new Notices());
+  const undo = setUndoSetting(undoSettingForDocument());
+  setNotices(new Notices(() => undo.rules));
   const bookPresence = setBookPresence(new BookPresence());
 
   function settleScreenshotMode(): void {
@@ -116,6 +155,15 @@
   });
 
   $effect(() => {
+    const root = document.documentElement;
+    if (animations.stillGroups === "") {
+      delete root.dataset.still;
+    } else {
+      root.dataset.still = animations.stillGroups;
+    }
+  });
+
+  $effect(() => {
     if (data.libraryProblem === null) {
       void commands.setScheduledRescans(
         scheduledRescans.isOnFor(data.appInfo.platform),
@@ -142,18 +190,18 @@
 </script>
 
 <svelte:window
-  {@attach shortcut({
-    key: "h",
-    command: data.appInfo.platform,
-    shift: true,
-    inTextFields: true,
-    ignoresRepeats: true,
-    run: () => {
+  {@attach shortcut(
+    screenshotModeShortcut.shortcut(data.appInfo.platform, () => {
       screenshotMode.toggle();
-    },
-  })}
+    }),
+  )}
   onfocus={settleScreenshotMode}
   onpageshow={settleScreenshotMode}
+  onstorage={(event: StorageEvent) => {
+    if (event.key === ANIMATIONS_PREFERENCE_KEY) {
+      animations.reread();
+    }
+  }}
 />
 <svelte:document onvisibilitychange={followVisibility} />
 
@@ -169,6 +217,14 @@
   <LibraryProblemScreen problem={data.libraryProblem} {opening} />
 {/if}
 {#key language.resolved}
-  <ScreenshotModeAnnouncement />
+  <ScreenshotModeAnnouncement
+    announcesTurningOn={page.route.id?.startsWith(APP_ROUTES) !== true}
+  />
+  {#if data.libraryProblem === null && isPointer(data.appInfo.platform)}
+    <TrayMenuSync />
+  {/if}
+  {#if data.libraryProblem === null && !data.isFirstLaunch && !isPointer(data.appInfo.platform)}
+    <IconActionsSync />
+  {/if}
 {/key}
 <CrashReportPrompt reporting={crashReporting} look={promptLook} />

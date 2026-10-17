@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 
 import { addSampleLibrary, useAppSession } from "./app-session.ts";
-import { sampleBookRow } from "./sample-book.ts";
+import { sampleBookRow, showTheBooks } from "./sample-book.ts";
 import { xpath } from "./webdriver.ts";
 
 const FIRST_SERIES_COVER = xpath(
@@ -23,6 +23,7 @@ async function openFirstSeries(): Promise<void> {
   await addSampleLibrary(appSession());
   await (await appSession().waitFor(FIRST_SERIES_COVER)).click();
   await appSession().waitFor(SERIES_HEADING);
+  await showTheBooks(appSession());
 }
 
 test("opens a series of the folder added on its own page, with its books in order", async () => {

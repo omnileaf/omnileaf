@@ -13,12 +13,14 @@
   import VirtualTable from "#lib/virtual-grid/VirtualTable.svelte";
 
   import BookMenu from "./BookMenu.svelte";
-  import { readingWords } from "./book-reading";
-  import type { BookSelection } from "./book-selection.svelte";
+  import { progressWords } from "./book-reading";
+  import BookMarks from "./BookMarks.svelte";
+  import BookProgress from "./BookProgress.svelte";
+  import type { Selection } from "#lib/page/selection.svelte.ts";
 
   type BookId = SeriesBook["id"];
 
-  const COLUMNS = 5;
+  const COLUMNS = 6;
 
   let {
     books,
@@ -36,7 +38,7 @@
     dates: Intl.DateTimeFormat;
     isComplete: boolean;
     onNearEnd: () => void;
-    selection: BookSelection<BookId>;
+    selection: Selection<BookId>;
     isPickingAll: boolean;
     onPickAll: () => void;
     onClear: () => void;
@@ -61,7 +63,7 @@
   }
 </script>
 
-<Card class="overflow-hidden">
+<Card class="relative overflow-hidden px-sm shadow-card-rest">
   <VirtualTable
     items={books}
     key={(book: SeriesBook) => book.id}
@@ -93,6 +95,9 @@
           <TableHead>{m.series_column_book()}</TableHead>
           <TableHead class="inline-series-column-added">
             {m.series_column_added()}
+          </TableHead>
+          <TableHead class="inline-series-column-pages">
+            {m.series_column_pages()}
           </TableHead>
           <TableHead class="inline-series-column-progress">
             {m.series_column_progress()}
@@ -133,19 +138,22 @@
             }}
           />
         </TableCell>
-        <TableCell class="truncate">
-          <a
-            href={resolve("/read/[book]", { book: book.id })}
-            draggable="false"
-            class={[
-              book.reading.state === "read" ? "font-medium" : "font-bold",
-              book.reading.state === "read" && !isPicked
-                ? "text-muted"
-                : "text-foreground",
-            ]}
-          >
-            {book.title}
-          </a>
+        <TableCell>
+          <span class="flex items-center gap-icon-gap min-inline-none">
+            <a
+              href={resolve("/read/[book]", { book: book.id })}
+              draggable="false"
+              class={[
+                "truncate",
+                book.reading.state === "read" && !isPicked
+                  ? "text-muted"
+                  : "text-foreground",
+              ]}
+            >
+              {book.title}
+            </a>
+            <BookMarks {book} />
+          </span>
         </TableCell>
         <TableCell
           class={[
@@ -157,9 +165,25 @@
           <span aria-hidden="true">{added}</span>
         </TableCell>
         <TableCell
-          class={["text-caption", isPicked ? "text-foreground" : "text-muted"]}
+          class={["tabular-nums", isPicked ? "text-foreground" : "text-muted"]}
         >
-          {readingWords(book.reading, m.series_book_unread)}
+          {book.pageCount ?? ""}
+        </TableCell>
+        <TableCell
+          class={isPicked || book.reading.state === "started"
+            ? "text-foreground"
+            : "text-muted"}
+        >
+          <span class="flex flex-col gap-xs">
+            <span
+              class={book.reading.state === "started"
+                ? "text-caption"
+                : "text-small"}
+            >
+              {progressWords(book)}
+            </span>
+            <BookProgress {book} class="inline-full" />
+          </span>
         </TableCell>
         <TableCell>
           <BookMenu

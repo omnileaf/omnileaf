@@ -24,9 +24,10 @@ use crate::{
 
 pub(crate) const BOOKS_PER_BATCH: usize = 32;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(tag = "stage", rename_all = "camelCase")]
 pub enum ScanProgress {
+    Adding { name: String, location: String },
     Finding { found: u32 },
     Reading { scanned: u32, total: u32 },
 }
@@ -205,6 +206,7 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
     let location = found.path.strip_prefix(&target.folder)?.to_path_buf();
     let mut book = open_book_in(Arc::clone(&target.storage), &found.path, &Limits::default())?;
     let fingerprint = book.fingerprint()?;
+    let page_count = saturating_u32(book.pages().len());
     let details = target.storage.details(&found.path)?;
     let stamp = FileStamp::of(details, || Ok(book))?;
     Ok(ScannedBook {
@@ -212,6 +214,7 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
         fingerprint,
         title: found.title.clone(),
         added_at_ms: target.added_at_ms,
+        page_count,
         file: BookFile {
             root: target.root,
             location,

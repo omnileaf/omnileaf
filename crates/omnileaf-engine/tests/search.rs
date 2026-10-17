@@ -9,20 +9,23 @@
 )]
 mod support;
 
-use omnileaf_engine::{Inclusion, Library, LibraryError, LibraryFilter, LibrarySearch};
+use omnileaf_engine::{
+    Inclusion, Library, LibraryError, LibraryFilter, LibraryListing, LibrarySearch,
+    SpellingSuggestion,
+};
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
 
-const EVERY_SERIES: LibraryFilter = LibraryFilter {
-    unread: Inclusion::Any,
-    started: Inclusion::Any,
-    finished: Inclusion::Any,
-};
+fn every_series() -> LibraryFilter {
+    LibraryListing::default().filter
+}
 
-const ONLY_STARTED: LibraryFilter = LibraryFilter {
-    started: Inclusion::Only,
-    ..EVERY_SERIES
-};
+fn only_started() -> LibraryFilter {
+    LibraryFilter {
+        started: Inclusion::Only,
+        ..every_series()
+    }
+}
 
 async fn library_with_the_sample_series(name: &str) -> (Library, ScratchFolder, ScratchFolder) {
     let comics = ScratchFolder::new(&format!("{name}-comics"));
@@ -55,8 +58,8 @@ async fn finds_the_series_whose_titles_hold_the_text() {
     let (library, _comics, _home) = library_with_the_sample_series("search-text").await;
 
     let titles = [
-        found(&library, "series 02", EVERY_SERIES).await,
-        found(&library, "3", EVERY_SERIES).await,
+        found(&library, "series 02", every_series()).await,
+        found(&library, "3", every_series()).await,
     ];
 
     assert_eq!(titles, [["Sample Series 02"], ["Sample Series 03"]]);
@@ -66,7 +69,7 @@ async fn finds_the_series_whose_titles_hold_the_text() {
 async fn finds_only_the_series_the_filter_lets_through() {
     let (library, _comics, _home) = library_with_the_sample_series("search-filter").await;
 
-    let titles = found(&library, "sample", ONLY_STARTED).await;
+    let titles = found(&library, "sample", only_started()).await;
 
     assert!(titles.is_empty());
 }
@@ -76,8 +79,8 @@ async fn lists_every_series_the_filter_lets_through_when_the_text_is_blank() {
     let (library, _comics, _home) = library_with_the_sample_series("search-blank").await;
 
     let titles = [
-        found(&library, " ", EVERY_SERIES).await,
-        found(&library, "", ONLY_STARTED).await,
+        found(&library, " ", every_series()).await,
+        found(&library, "", only_started()).await,
     ];
 
     assert_eq!(
@@ -95,19 +98,19 @@ async fn counts_what_a_search_finds() {
 
     let counts = [
         library
-            .search_count(search("sample", EVERY_SERIES))
+            .search_count(search("sample", every_series()))
             .await
             .unwrap(),
         library
-            .search_count(search("01", EVERY_SERIES))
+            .search_count(search("01", every_series()))
             .await
             .unwrap(),
         library
-            .search_count(search("", EVERY_SERIES))
+            .search_count(search("", every_series()))
             .await
             .unwrap(),
         library
-            .search_count(search("sample", ONLY_STARTED))
+            .search_count(search("sample", only_started()))
             .await
             .unwrap(),
     ];
@@ -122,11 +125,11 @@ async fn refuses_text_longer_than_a_search_reads_as_a_search_too_long() {
 
     let refusals = [
         library
-            .search(search(&too_long, EVERY_SERIES), None)
+            .search(search(&too_long, every_series()), None)
             .await
             .err(),
         library
-            .search_count(search(&too_long, EVERY_SERIES))
+            .search_count(search(&too_long, every_series()))
             .await
             .err(),
     ];
@@ -137,4 +140,30 @@ async fn refuses_text_longer_than_a_search_reads_as_a_search_too_long() {
             .all(|refusal| matches!(refusal, Some(LibraryError::SearchTooLong { .. }))),
         "{refusals:?}"
     );
+}
+
+#[tokio::test]
+async fn suggests_the_closest_words_of_a_title_for_a_search_with_a_few_slips() {
+    let (library, _comics, _home) = library_with_the_sample_series("search-spelling").await;
+
+    let suggestion = library
+        .spelling_suggestion("smaple sereis 02".to_owned())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        suggestion,
+        Some(SpellingSuggestion {
+            text: "sample series 02".to_owned(),
+            chapter_of: None,
+        })
+    );
+}
+
+#[tokio::test]
+async fn suggests_nothing_for_text_longer_than_a_search_holds() {
+    let (library, _comics, _home) = library_with_the_sample_series("search-spelling-long").await;
+    let text = "a".repeat(usize::from(LibrarySearch::MAX_CHARS) + 1);
+
+    assert_eq!(library.spelling_suggestion(text).await.unwrap(), None);
 }

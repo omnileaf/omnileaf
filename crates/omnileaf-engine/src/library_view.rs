@@ -1,18 +1,37 @@
 use omnileaf_db::library_view::{
-    LibraryDisplay as StoredDisplay, OnCovers as StoredOnCovers, StoredLibraryView,
+    LibraryDisplay as StoredDisplay, LibraryGrouping as StoredGrouping, OnCovers as StoredOnCovers,
+    StoredLibraryView,
 };
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "each is a switch of its own in the view options"
+)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LibraryView {
     pub display: LibraryDisplay,
     pub covers_per_row: CoversPerRow,
+    /// Draws as many covers a row as the width allows, rather than `covers_per_row`.
+    pub fits_covers_to_width: bool,
+    pub group_by: LibraryGrouping,
+    /// Shows the library's categories as tabs above it, once it has two or more.
+    pub shows_category_tabs: bool,
     pub shows_item_counts: bool,
     /// Shows the books started and not finished in a row above the library.
     pub shows_continue_row: bool,
     pub on_covers: OnCovers,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum LibraryGrouping {
+    #[default]
+    None,
+    Category,
+    Folder,
 }
 
 #[expect(
@@ -131,7 +150,10 @@ impl Default for LibraryView {
                 tablet: CoversPerRowCount(5),
                 desktop: CoversPerRowCount(6),
             },
-            shows_item_counts: false,
+            fits_covers_to_width: true,
+            group_by: LibraryGrouping::None,
+            shows_category_tabs: true,
+            shows_item_counts: true,
             shows_continue_row: false,
             on_covers: OnCovers {
                 shows_unread_count: true,
@@ -180,6 +202,13 @@ impl From<LibraryView> for StoredLibraryView {
             phone_covers_per_row: view.covers_per_row.phone.get(),
             tablet_covers_per_row: view.covers_per_row.tablet.get(),
             desktop_covers_per_row: view.covers_per_row.desktop.get(),
+            fits_covers_to_width: view.fits_covers_to_width,
+            group_by: match view.group_by {
+                LibraryGrouping::None => StoredGrouping::None,
+                LibraryGrouping::Category => StoredGrouping::Category,
+                LibraryGrouping::Folder => StoredGrouping::Folder,
+            },
+            shows_category_tabs: view.shows_category_tabs,
             shows_item_counts: view.shows_item_counts,
             shows_continue_row: view.shows_continue_row,
             on_covers: view.on_covers.into(),
@@ -203,6 +232,13 @@ impl TryFrom<StoredLibraryView> for LibraryView {
                 tablet: stored.tablet_covers_per_row.try_into()?,
                 desktop: stored.desktop_covers_per_row.try_into()?,
             },
+            fits_covers_to_width: stored.fits_covers_to_width,
+            group_by: match stored.group_by {
+                StoredGrouping::None => LibraryGrouping::None,
+                StoredGrouping::Category => LibraryGrouping::Category,
+                StoredGrouping::Folder => LibraryGrouping::Folder,
+            },
+            shows_category_tabs: stored.shows_category_tabs,
             shows_item_counts: stored.shows_item_counts,
             shows_continue_row: stored.shows_continue_row,
             on_covers: stored.on_covers.into(),
@@ -215,7 +251,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn draws_a_new_library_as_a_grid_of_three_five_and_six_covers_per_row_without_item_counts() {
+    fn draws_a_new_library_as_a_grid_of_three_five_and_six_covers_per_row_with_its_item_count() {
         let view = LibraryView::default();
 
         let widths = (
@@ -225,7 +261,7 @@ mod tests {
         );
         assert_eq!(view.display, LibraryDisplay::Grid);
         assert_eq!(widths, (3, 5, 6));
-        assert!(!view.shows_item_counts);
+        assert!(view.shows_item_counts);
     }
 
     #[test]
@@ -246,6 +282,23 @@ mod tests {
     }
 
     #[test]
+    fn shows_a_new_library_s_category_tabs_ungrouped() {
+        let view = LibraryView::default();
+
+        assert_eq!(
+            (view.shows_category_tabs, view.group_by),
+            (true, LibraryGrouping::None)
+        );
+    }
+
+    #[test]
+    fn fits_a_new_library_s_covers_to_the_width() {
+        let view = LibraryView::default();
+
+        assert!(view.fits_covers_to_width);
+    }
+
+    #[test]
     fn leaves_a_new_library_without_the_continue_reading_row() {
         let view = LibraryView::default();
 
@@ -263,7 +316,10 @@ mod tests {
             serde_json::json!({
                 "display": "grid",
                 "coversPerRow": { "phone": 3, "tablet": 5, "desktop": 6 },
-                "showsItemCounts": false,
+                "fitsCoversToWidth": true,
+                "groupBy": "none",
+                "showsCategoryTabs": true,
+                "showsItemCounts": true,
                 "showsContinueRow": false,
                 "onCovers": {
                     "showsUnreadCount": true,
@@ -281,6 +337,7 @@ mod tests {
         let outcome = serde_json::from_value::<LibraryView>(serde_json::json!({
             "display": "list",
             "coversPerRow": { "phone": 6, "tablet": 5, "desktop": 6 },
+            "fitsCoversToWidth": false,
             "showsItemCounts": false,
                 "showsContinueRow": false,
             "onCovers": {
@@ -347,6 +404,9 @@ mod tests {
                 tablet: TabletCoversPerRow::try_from(8).unwrap(),
                 desktop: DesktopCoversPerRow::try_from(12).unwrap(),
             },
+            fits_covers_to_width: false,
+            group_by: LibraryGrouping::Folder,
+            shows_category_tabs: false,
             shows_item_counts: true,
             shows_continue_row: true,
             on_covers: OnCovers {

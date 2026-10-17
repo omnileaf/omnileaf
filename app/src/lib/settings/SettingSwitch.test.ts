@@ -1,4 +1,3 @@
-import { createRawSnippet } from "svelte";
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
@@ -35,20 +34,6 @@ test("asks to be toggled when pressed", async () => {
   await screen.getByRole("switch", { name: LABEL }).click();
 
   expect(toggles).toBe(1);
-});
-
-test("shows what follows the label inside the switch", async () => {
-  const screen = await render(SettingSwitch, {
-    label: LABEL,
-    description: DESCRIPTION,
-    isOn: false,
-    onToggle: () => undefined,
-    trailing: createRawSnippet(() => ({ render: () => "<kbd>Ctrl H</kbd>" })),
-  });
-
-  await expect
-    .element(screen.getByRole("switch", { name: LABEL }).getByText("Ctrl H"))
-    .toBeVisible();
 });
 
 test("stays as its owner says when pressed", async () => {

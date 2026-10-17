@@ -290,6 +290,9 @@ for (const platform of PLATFORMS) {
             const more = page.getByRole("button", {
               name: `More for ${shelf.titleOf(0)}`,
             });
+            await page
+              .getByRole("heading", { level: 2, name: "3 books" })
+              .scrollIntoViewIfNeeded();
             await expect(firstBook.or(more).first()).toBeVisible();
             if (await firstBook.isVisible()) {
               await firstBook.check();
@@ -364,7 +367,9 @@ for (const platform of PLATFORMS) {
           for (let left = 0; left < index; left += 1) {
             await page
               .getByRole("main")
-              .getByRole("button", { name: /^(Get started|Continue)$/ })
+              .getByRole("button", {
+                name: /^(Get started|Continue|Skip, I'll add them later|Skip for now)$/,
+              })
               .click();
             await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
           }

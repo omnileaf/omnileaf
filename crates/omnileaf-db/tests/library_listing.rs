@@ -79,7 +79,14 @@ fn any_inclusion() -> impl Strategy<Value = Inclusion> {
 
 fn any_listing() -> impl Strategy<Value = SeriesListing> {
     (
-        prop_oneof![Just(SeriesOrder::Title), Just(SeriesOrder::DateAdded)],
+        prop_oneof![
+            Just(SeriesOrder::Title),
+            Just(SeriesOrder::DateAdded),
+            Just(SeriesOrder::LastRead),
+            Just(SeriesOrder::LastUpdated),
+            Just(SeriesOrder::UnreadCount),
+            Just(SeriesOrder::TimeLeft),
+        ],
         prop_oneof![
             Just(SortDirection::Ascending),
             Just(SortDirection::Descending)

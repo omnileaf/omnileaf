@@ -1,14 +1,14 @@
 import type { Page } from "@playwright/test";
 
-import { expect, MEDIUM_MIN_WIDTH, test, viewportOf } from "./fixtures.ts";
+import { EXPANDED_MIN_WIDTH, expect, test, viewportOf } from "./fixtures.ts";
 
 const OUTSIDE_THE_APP = "about:blank";
 const LIBRARY_URL = "/";
-const SETTINGS_OPENING_SECTION_URL = "/settings/library";
+const SETTINGS_OPENING_SECTION_URL = "/settings/general";
 const GENERAL_URL = "/settings/general";
 
 function showsSettingsSectionsBeside(page: Page): boolean {
-  return viewportOf(page).width >= MEDIUM_MIN_WIDTH;
+  return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
 }
 
 async function openSection(page: Page, label: string): Promise<void> {
@@ -20,13 +20,18 @@ async function openSection(page: Page, label: string): Promise<void> {
 }
 
 async function openSettings(page: Page): Promise<void> {
+  const navigated = page.waitForEvent(
+    "framenavigated",
+    (frame) => frame === page.mainFrame(),
+  );
   await page
     .getByRole("navigation", { name: "Main" })
     .getByRole("link", { name: "Settings" })
     .click();
+  await navigated;
   if (showsSettingsSectionsBeside(page)) {
     await expect(page).toHaveURL(SETTINGS_OPENING_SECTION_URL);
-    await expectPage(page, "Library");
+    await expectPage(page, "General");
   } else {
     await expectPage(page, "Settings");
   }
