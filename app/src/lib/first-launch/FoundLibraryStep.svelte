@@ -8,6 +8,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
+  import ChangeHomeButton from "./ChangeHomeButton.svelte";
   import ChangeHomeRow from "./ChangeHomeRow.svelte";
   import ComingSoonStepButton from "./ComingSoonStepButton.svelte";
   import HomeCard, { type HomeFact } from "./HomeCard.svelte";
@@ -68,10 +69,7 @@
     >
       {#snippet change()}
         {#if isPointer(platform)}
-          <ComingSoonStepButton
-            kind="outline"
-            label={m.first_launch_home_change()}
-          />
+          <ChangeHomeButton />
         {:else if platform !== "ios"}
           <ChangeHomeRow />
         {/if}
