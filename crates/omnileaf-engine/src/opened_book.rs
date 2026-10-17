@@ -27,6 +27,16 @@ pub struct OpenedBook {
     pub bookmarked_pages: Option<Vec<u32>>,
 }
 
+/// Where a book sits, found without opening its file, so a book that won't open still names its way back.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct BookPlace {
+    pub id: BookId,
+    pub title: String,
+    pub series: SeriesId,
+    pub series_title: String,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum ReadingDirection {

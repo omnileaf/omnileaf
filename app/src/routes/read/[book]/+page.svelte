@@ -1,15 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import Toasts from "#lib/notices/Toasts.svelte";
-  import { m } from "#lib/paraglide/messages.js";
   import { getBookPresence } from "#lib/reader/book-presence.svelte.ts";
+  import BookProblem from "#lib/reader/BookProblem.svelte";
   import PagedReader from "#lib/reader/PagedReader.svelte";
   import { allowPinchZoom } from "#lib/reader/pinch-zoom.ts";
 
@@ -24,7 +23,7 @@
   const theme = getThemeSetting();
 
   $effect(() => {
-    bookPresence.isOpen = isFound;
+    bookPresence.isOpen = true;
   });
 
   $effect(() => {
@@ -62,34 +61,11 @@
     />
   {/key}
 {:else}
-  <main
-    class="flex flex-col gap-lg p-xl ps-page-start pe-page-end pbs-page-top"
-  >
-    <a
-      href={resolve("/(app)")}
-      class="self-start text-small font-semibold text-accent"
-    >
-      {m.reader_back_label()}
-    </a>
-    <div class="flex flex-col gap-sm">
-      {#if shown.kind === "missing"}
-        <h1 tabindex="-1" class="text-headline font-bold">
-          {m.reader_not_found()}
-        </h1>
-        <p class="text-body text-muted">{m.reader_not_found_body()}</p>
-      {:else if shown.kind === "unreadable"}
-        <h1 tabindex="-1" class="text-headline font-bold">
-          {m.reader_unreadable()}
-        </h1>
-        <p class="text-body text-muted">{m.reader_unreadable_body()}</p>
-      {:else}
-        <h1 tabindex="-1" class="text-headline font-bold">
-          {m.reader_failed_title()}
-        </h1>
-        <p class="text-body text-muted">{m.reader_failed()}</p>
-      {/if}
-    </div>
-  </main>
+  <BookProblem
+    kind={shown.kind}
+    place={shown.place}
+    platform={data.appInfo.platform}
+  />
 {/if}
 <div class="fixed inset-x-none inset-be-none z-notice">
   <Toasts

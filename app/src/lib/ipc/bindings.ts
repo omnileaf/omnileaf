@@ -27,6 +27,12 @@ export const commands = {
 	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
 	creatorSeries: (creator: string) => __TAURI_INVOKE<CreatorSeries[]>("creator_series", { creator }),
 	bookmarkPages: (book: string & { readonly __brand: "BookId" }, pages: number[], isBookmarked: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("bookmark_pages", { book, pages, isBookmarked })),
+	bookPlace: (book: string & { readonly __brand: "BookId" }) => typedError<{
+	id: string & { readonly __brand: "BookId" },
+	title: string,
+	series: string & { readonly __brand: "SeriesId" },
+	seriesTitle: string,
+} | null, IpcError>(__TAURI_INVOKE("book_place", { book })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
 	readingRestored: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("reading_restored", { id, page, utcOffset })),
@@ -102,6 +108,14 @@ export type BookPage = {
 	thumbnail: string & { readonly __brand: "PageThumbnailPath" },
 	/**  Absent when the page's image header couldn't be read, or wasn't yet for a page far from where the book opened the first time. */
 	size: PageDimensions | null,
+};
+
+/**  Where a book sits, found without opening its file, so a book that won't open still names its way back. */
+export type BookPlace = {
+	id: string & { readonly __brand: "BookId" },
+	title: string,
+	series: string & { readonly __brand: "SeriesId" },
+	seriesTitle: string,
 };
 
 export type BookReading = { state: "notStarted" } | 

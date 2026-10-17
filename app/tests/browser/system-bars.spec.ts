@@ -85,7 +85,7 @@ test("asks for light bar icons over the dark reader while a book is open, whatev
   expect(lastReportedPreference()).toBe("system");
 });
 
-test("draws the bars for the app's own theme over a book that couldn't be opened", async ({
+test("draws the bars dark over a book that couldn't be opened, as the reader's own screen", async ({
   page,
 }) => {
   await page.emulateMedia({ colorScheme: "light" });
@@ -93,5 +93,5 @@ test("draws the bars for the app's own theme over a book that couldn't be opened
   await page.goto("/read/not-a-book");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
-  expect(lastReportedTheme()).toBe("light");
+  await expect.poll(lastReportedTheme).toBe("dark");
 });
