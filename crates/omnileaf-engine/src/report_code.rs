@@ -1,6 +1,6 @@
 use std::fmt;
 
-use serde::Serialize;
+use serde::{Deserialize, Deserializer, Serialize};
 use specta::Type;
 
 const PREFIX: &str = "R-";
@@ -12,6 +12,12 @@ const SYMBOL_MASK: u32 = (1 << BITS_PER_SYMBOL) - 1;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(transparent)]
 pub struct ReportCode(String);
+
+#[derive(Debug, thiserror::Error)]
+#[error("{text:?} isn't a problem report's code")]
+pub struct NotAReportCode {
+    text: String,
+}
 
 impl ReportCode {
     #[must_use]
@@ -28,5 +34,30 @@ impl ReportCode {
 impl fmt::Display for ReportCode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
+    }
+}
+
+fn is_report_code(text: &str) -> bool {
+    text.strip_prefix(PREFIX).is_some_and(|symbols| {
+        symbols.len() == SYMBOLS as usize
+            && symbols.bytes().all(|symbol| ALPHABET.contains(&symbol))
+    })
+}
+
+impl TryFrom<String> for ReportCode {
+    type Error = NotAReportCode;
+
+    fn try_from(text: String) -> Result<Self, Self::Error> {
+        if is_report_code(&text) {
+            Ok(Self(text))
+        } else {
+            Err(NotAReportCode { text })
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for ReportCode {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Self::try_from(String::deserialize(deserializer)?).map_err(serde::de::Error::custom)
     }
 }

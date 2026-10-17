@@ -1463,6 +1463,8 @@ export function sampleBackend(
       log: SAMPLE_LOG,
     }),
     copyProblemReport: () => null,
+    sendProblemReport: () => null,
+    copyProblemReportCode: () => null,
     openProblemReportIssue: () => null,
     saveProblemReport: () => ({
       place:

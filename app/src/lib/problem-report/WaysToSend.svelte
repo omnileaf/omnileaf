@@ -7,6 +7,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import type { ReportSharing, ShareWay } from "./report-sharing.svelte";
+  import { failureMessage } from "./share-failure";
 
   const ICON_SIZE = 16;
 
@@ -33,23 +34,20 @@
     opensBrowser: false,
   };
 
-  const FAILURES = {
-    github: m.about_browser_unavailable,
-    copy: m.report_copy_failed,
-    save: m.report_save_failed,
-  } satisfies Record<ShareWay, () => string>;
-
   let { sharing, canSave }: { sharing: ReportSharing; canSave: boolean } =
     $props();
 
   const ways = $derived(canSave ? [...SHARING, SAVING] : SHARING);
+  const failure = $derived(
+    sharing.failure?.way === "send" ? undefined : sharing.failure,
+  );
 
   const headingId = $props.id();
 </script>
 
-<section aria-labelledby={headingId} class="mbs-lg flex flex-col gap-sm">
-  <h2 id={headingId} class="text-small font-semibold">
-    {m.report_ways_to_send()}
+<section aria-labelledby={headingId} class="mbs-lg flex flex-col">
+  <h2 id={headingId} class="mbe-ways-heading-gap text-small font-semibold">
+    {m.report_other_ways_to_send()}
   </h2>
   <ul
     class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
@@ -86,9 +84,9 @@
     {/each}
   </ul>
   <div role="alert">
-    {#if sharing.failure !== undefined}
-      <Alert tone="warning" icon={CircleAlert}>
-        <AlertTitle>{FAILURES[sharing.failure]()}</AlertTitle>
+    {#if failure !== undefined}
+      <Alert tone="warning" icon={CircleAlert} class="mbs-sm">
+        <AlertTitle>{failureMessage(failure)}</AlertTitle>
       </Alert>
     {/if}
   </div>

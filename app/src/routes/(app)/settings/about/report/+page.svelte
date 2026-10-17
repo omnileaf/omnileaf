@@ -20,6 +20,7 @@
     ReportSharing,
     type Shared,
   } from "#lib/problem-report/report-sharing.svelte.ts";
+  import SendToOmnileaf from "#lib/problem-report/SendToOmnileaf.svelte";
   import { sharedNotice } from "#lib/problem-report/shared-notice.ts";
   import WaysToSend from "#lib/problem-report/WaysToSend.svelte";
   import { yourReportsForDocument } from "#lib/problem-report/your-reports.svelte.ts";
@@ -44,6 +45,17 @@
     }
   }
 
+  async function copyCode(code: string): Promise<void> {
+    const copied = await commands.copyProblemReportCode(code);
+    if (copied.status === "error") {
+      notices.show({
+        tone: "warning",
+        icon: CircleAlert,
+        title: m.report_code_copy_failed(),
+      });
+    }
+  }
+
   const sharing = new ReportSharing(
     commands,
     () => localDayOf(new Date()),
@@ -63,6 +75,12 @@
             void showSaved();
           },
         },
+        copyCode: {
+          label: m.report_copy_code(),
+          run: () => {
+            void copyCode(code);
+          },
+        },
       });
       if (notice !== undefined) {
         notices.show(notice);
@@ -79,6 +97,7 @@
   <p class="text-detail text-muted">{m.report_intro()}</p>
   {#if data.report.status === "ok"}
     <IncludedRows report={data.report.data} />
+    <SendToOmnileaf {sharing} />
     <WaysToSend {sharing} canSave={platform !== "android"} />
   {:else}
     <Alert tone="warning" icon={CircleAlert} role="alert">

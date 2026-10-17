@@ -10,7 +10,7 @@ use omnileaf_engine::{
     InterfaceError, LabelChanges, Library, LibraryCategory, LibraryError, LibraryFilter,
     LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView,
     LocalDay, MissingFolder, OpenedBook, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark,
-    ReadingSummary, ReadingWeek, ResourceRouter, SavedProblemReport, ScanProgress,
+    ReadingSummary, ReadingWeek, ReportCode, ResourceRouter, SavedProblemReport, ScanProgress,
     SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
     SeriesOverview, SeriesPage, SpellingSuggestion, StorageUse, UtcOffset,
 };
@@ -123,6 +123,8 @@ macro_rules! app_commands {
             open_project_link,
             problem_report,
             copy_problem_report,
+            send_problem_report,
+            copy_problem_report_code,
             open_problem_report_issue,
             save_problem_report,
             show_saved_problem_report,
@@ -916,6 +918,28 @@ async fn copy_problem_report(app: AppHandle) -> Result<(), IpcError> {
     off_the_runtime(move || {
         app.clipboard()
             .write_text(report.to_string())
+            .map_err(|error| IpcError::clipboard_unavailable(&error))
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    unused_variables,
+    clippy::needless_pass_by_value,
+    reason = "problem reports have nowhere to be sent yet, so the address for a reply has nowhere to go"
+)]
+fn send_problem_report(reply_to: Option<String>) -> Result<(), IpcError> {
+    Err(IpcError::reports_not_sent())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn copy_problem_report_code(app: AppHandle, code: ReportCode) -> Result<(), IpcError> {
+    off_the_runtime(move || {
+        app.clipboard()
+            .write_text(code.to_string())
             .map_err(|error| IpcError::clipboard_unavailable(&error))
     })
     .await
