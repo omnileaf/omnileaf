@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CircleAlert } from "@lucide/svelte";
+  import { CircleAlert, CircleCheck } from "@lucide/svelte";
 
   import { invalidate } from "$app/navigation";
   import {
@@ -8,14 +8,40 @@
     AlertButton,
     AlertTitle,
   } from "#lib/components/ui/alert/index.ts";
+  import { commands } from "#lib/ipc/bindings.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import IncludedRows from "#lib/problem-report/IncludedRows.svelte";
   import { PROBLEM_REPORT } from "#lib/problem-report/problem-report.ts";
+  import {
+    ReportSharing,
+    type ShareWay,
+  } from "#lib/problem-report/report-sharing.svelte.ts";
+  import WaysToSend from "#lib/problem-report/WaysToSend.svelte";
+  import { yourReportsForDocument } from "#lib/problem-report/your-reports.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
+
+  const notices = getNotices();
+  const yourReports = yourReportsForDocument();
+  const sharing = new ReportSharing(commands, (way: ShareWay) => {
+    if (data.report.status !== "ok") {
+      return;
+    }
+    const { code } = data.report.data;
+    yourReports.keep({ code, madeAtMs: Date.now() });
+    if (way === "copy") {
+      notices.show({
+        tone: "plain",
+        icon: CircleCheck,
+        title: m.report_copied(),
+        body: m.report_kept({ code }),
+      });
+    }
+  });
 </script>
 
 <SectionHeading
@@ -26,6 +52,7 @@
   <p class="text-detail text-muted">{m.report_intro()}</p>
   {#if data.report.status === "ok"}
     <IncludedRows report={data.report.data} />
+    <WaysToSend {sharing} />
   {:else}
     <Alert tone="warning" icon={CircleAlert} role="alert">
       <AlertTitle>{m.report_failed()}</AlertTitle>
