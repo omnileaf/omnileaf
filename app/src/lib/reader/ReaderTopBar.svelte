@@ -18,6 +18,8 @@
   } from "#lib/components/ui/breadcrumb/index.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import type { Platform } from "#lib/ipc/bindings.ts";
+  import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import ComingSoon from "#lib/reader/ComingSoon.svelte";
@@ -30,6 +32,7 @@
 
   let {
     seriesHref,
+    platform,
     seriesTitle,
     bookTitle,
     pageNumber,
@@ -47,6 +50,7 @@
     onFullScreen,
   }: {
     seriesHref: string;
+    platform: Platform;
     seriesTitle: string;
     bookTitle: string;
     pageNumber: number;
@@ -75,7 +79,17 @@
     "flex items-center gap-2xs p-icon-gap min-block-reader-top expanded:gap-xs expanded:px-sm expanded:py-none expanded:min-block-reader-top-wide",
   )}
 >
-  <Tooltip label={backLabel}>
+  <Tooltip
+    label={backLabel}
+    keys={isPointer(platform)
+      ? [
+          m.reader_key_esc(),
+          usesCommandKey(platform)
+            ? m.reader_key_back_mac()
+            : m.reader_key_back(),
+        ]
+      : []}
+  >
     {#snippet child({ props })}
       <a
         {...props}
@@ -144,7 +158,7 @@
       <BreadcrumbPage class="min-inline-none">
         <Tooltip
           label={m.reader_jump_to_book()}
-          keys="G"
+          keys={["G"]}
           type="button"
           aria-label={m.reader_jump_to_book()}
           aria-expanded={isJumpOpen}
