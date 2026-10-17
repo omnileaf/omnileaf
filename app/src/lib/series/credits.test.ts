@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import type { SeriesCreator } from "#lib/ipc/bindings.ts";
 
+type Credited = Pick<SeriesCreator, "name" | "role">;
+
 import { creditsOf, creatorsByRole } from "./credits.ts";
 
-const A: SeriesCreator = { name: "Author A", role: "story" };
-const B: SeriesCreator = { name: "Author B", role: "story" };
-const C: SeriesCreator = { name: "Author C", role: "art" };
-const D: SeriesCreator = { name: "Author D", role: "art" };
+const A: Credited = { name: "Author A", role: "story" };
+const B: Credited = { name: "Author B", role: "story" };
+const C: Credited = { name: "Author C", role: "art" };
+const D: Credited = { name: "Author D", role: "art" };
 
 describe("creditsOf", () => {
   it("credits no one when the books name no creator", () => {
