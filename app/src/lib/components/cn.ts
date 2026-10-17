@@ -218,6 +218,7 @@ export const TOKEN_THEME = {
     "fast-scroll-letter",
     "fast-scroll-thumb",
     "fast-scroll-thumb-length",
+    "field-card-block",
     "field-head",
     "filter-badge",
     "filter-panel",
