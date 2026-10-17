@@ -20,6 +20,7 @@
     ReportSharing,
     type Shared,
   } from "#lib/problem-report/report-sharing.svelte.ts";
+  import SendToOmnileaf from "#lib/problem-report/SendToOmnileaf.svelte";
   import { sharedNotice } from "#lib/problem-report/shared-notice.ts";
   import WaysToSend from "#lib/problem-report/WaysToSend.svelte";
   import { yourReportsForDocument } from "#lib/problem-report/your-reports.svelte.ts";
@@ -79,6 +80,7 @@
   <p class="text-detail text-muted">{m.report_intro()}</p>
   {#if data.report.status === "ok"}
     <IncludedRows report={data.report.data} />
+    <SendToOmnileaf {sharing} />
     <WaysToSend {sharing} canSave={platform !== "android"} />
   {:else}
     <Alert tone="warning" icon={CircleAlert} role="alert">
