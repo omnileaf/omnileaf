@@ -60,8 +60,25 @@ for (const [device, userAgent, location] of [
   });
 }
 
-test.describe("linked folders in Settings › Library on ios", () => {
-  test.use(withFolders("ios"));
+for (const userAgent of [IPHONE_USER_AGENT, IPAD_USER_AGENT]) {
+  test.describe(`linked folders in Settings › Library on ios, as ${userAgent.includes("iPhone") ? "an iPhone" : "an iPad"}`, () => {
+    test.use({ ...withFolders("ios"), userAgent });
+
+    test("names a linked folder by where the Files app shows it, without its path", async ({
+      page,
+    }) => {
+      await page.goto("/settings/library");
+
+      await expect(
+        page.getByText(`iCloud Drive › ${LINKED.name}`, { exact: true }),
+      ).toBeVisible();
+      await expect(page.getByText(LINKED.location)).toHaveCount(0);
+    });
+  });
+}
+
+test.describe("linked folders in Settings › Library on linux", () => {
+  test.use(withFolders("linux"));
 
   test("keeps the path of a linked folder", async ({ page }) => {
     await page.goto("/settings/library");
