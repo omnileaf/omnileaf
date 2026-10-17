@@ -446,6 +446,7 @@ export const TOKEN_THEME = {
     "sheet-top",
     "shelf",
     "shelf-cover",
+    "shortcut-field",
     "sidebar",
     "sidebar-desktop",
     "sidebar-hidden",
