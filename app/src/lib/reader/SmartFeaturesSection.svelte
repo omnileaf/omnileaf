@@ -11,11 +11,28 @@
   } from "./smart-features.svelte.ts";
 
   type HeadingLevel = "h2" | "h3";
+  type Size = "small" | "regular";
 
   let {
     heading,
+    size = "small",
     class: className,
-  }: { heading: HeadingLevel; class?: ClassValue } = $props();
+  }: { heading: HeadingLevel; size?: Size; class?: ClassValue } = $props();
+
+  const LOOKS = {
+    small: {
+      heading: "text-small font-semibold",
+      label: "text-small font-medium",
+      description: "text-caption text-muted",
+    },
+    regular: {
+      heading: "font-semibold",
+      label: "font-medium expanded:font-semibold",
+      description: "text-detail text-muted",
+    },
+  } satisfies Record<Size, Record<"heading" | "label" | "description", string>>;
+
+  const look = $derived(LOOKS[size]);
 
   const features = getSmartFeatures();
   const id = $props.id();
@@ -80,11 +97,7 @@
   aria-labelledby="{id}-title"
   class={["flex flex-col gap-sm", className]}
 >
-  <svelte:element
-    this={heading}
-    id="{id}-title"
-    class="text-small font-semibold"
-  >
+  <svelte:element this={heading} id="{id}-title" class={look.heading}>
     {m.reader_smart_features()}
   </svelte:element>
   <div class="flex flex-col divide-y divide-border">
@@ -107,12 +120,10 @@
         ]}
       >
         <span class="flex flex-1 flex-col gap-2xs">
-          <span id="{id}-{feature}" class="text-small font-medium">{label}</span
-          >
+          <span id="{id}-{feature}" class={look.label}>{label}</span>
           {#if description !== undefined}
-            <span
-              id="{id}-{feature}-description"
-              class="text-caption text-muted">{description}</span
+            <span id="{id}-{feature}-description" class={look.description}
+              >{description}</span
             >
           {/if}
         </span>
