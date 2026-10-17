@@ -5,6 +5,7 @@ import {
   accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
+  EXPANDED_MIN_WIDTH,
   expect,
   FAKE_APP_VERSION,
   FAKE_REPORT_CODE,
@@ -14,11 +15,15 @@ import {
   onPlatform,
   test,
   testOnlyInItsWebview,
+  viewportOf,
 } from "./fixtures.ts";
 
 const REPORT_PAGE = "/settings/about/report";
 const GROUP_GAP = 24;
+const NOTE_GAP = 20;
+const OTHER_WAYS_GAP = 28;
 const HEADING_GAP = 8;
+const REPLY_ADDRESS = "reader@example.org";
 const LOGGED = [
   "INFO omnileaf_app: open the library",
   "WARN omnileaf_engine::scan: skip a book path=<path>",
@@ -29,7 +34,23 @@ function included(page: Page) {
 }
 
 function waysOut(page: Page) {
-  return page.getByRole("region", { name: "Ways to send it" });
+  return page.getByRole("region", { name: "Other ways to send it" });
+}
+
+function replyField(page: Page) {
+  return page.getByRole("textbox", { name: "Email for a reply (optional)" });
+}
+
+function sendButton(page: Page) {
+  return page.getByRole("button", { name: "Send to Omnileaf" });
+}
+
+function shownAlert(page: Page) {
+  return page.getByRole("main").getByRole("alert").filter({ hasText: /\S/ });
+}
+
+function sendNote(page: Page) {
+  return page.getByText("No account needed; the maintainers see it first.");
 }
 
 async function keptCodes(page: Page): Promise<string[]> {
@@ -106,6 +127,135 @@ test.describe("with a few lines logged", () => {
   });
 });
 
+test.describe("sending it to Omnileaf", () => {
+  const sentTo: (string | null)[] = [];
+
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      sendProblemReport: (replyTo) => {
+        sentTo.push(replyTo);
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    sentTo.length = 0;
+  });
+
+  test("asks for an email only for a reply and needs no account", async ({
+    page,
+  }) => {
+    await openReport(page);
+
+    await expect(replyField(page)).toHaveAttribute(
+      "placeholder",
+      "you@example.com",
+    );
+    await expect(replyField(page)).toHaveAccessibleDescription(
+      "Used only to answer you; never shown in an issue.",
+    );
+    await expect(sendNote(page)).toBeVisible();
+  });
+
+  test("sends it with the email for a reply, says it was sent and keeps its code", async ({
+    page,
+  }) => {
+    await openReport(page);
+    await replyField(page).fill(REPLY_ADDRESS);
+
+    await sendButton(page).click();
+
+    await expect(
+      page.getByRole("listitem").filter({ hasText: "Report sent" }),
+    ).toContainText(`Code ${FAKE_REPORT_CODE} · kept in Your reports`);
+    expect(sentTo).toEqual([REPLY_ADDRESS]);
+    expect(await keptCodes(page)).toEqual([FAKE_REPORT_CODE]);
+  });
+
+  test("sends it with no email when none is given", async ({ page }) => {
+    await openReport(page);
+
+    await sendButton(page).click();
+
+    await expect(
+      page.getByRole("listitem").filter({ hasText: "Report sent" }),
+    ).toBeVisible();
+    expect(sentTo).toEqual([null]);
+  });
+
+  test("sets the email a group below what's included, Send to Omnileaf a group below it and its note 20px under", async ({
+    page,
+  }) => {
+    await openReport(page);
+    const includedBox = await boxOf(included(page));
+    const fieldBox = await boxOf(replyField(page).locator(".."));
+    const sendBox = await boxOf(sendButton(page));
+    const noteBox = await boxOf(sendNote(page));
+
+    expect(fieldBox.y - (includedBox.y + includedBox.height)).toBeCloseTo(
+      GROUP_GAP,
+      0,
+    );
+    expect(sendBox.y - (fieldBox.y + fieldBox.height)).toBeCloseTo(
+      GROUP_GAP,
+      0,
+    );
+    expect(noteBox.y - (sendBox.y + sendBox.height)).toBeCloseTo(NOTE_GAP, 0);
+  });
+
+  test("stretches Send to Omnileaf across a phone or tablet", async ({
+    page,
+  }) => {
+    test.skip(viewportOf(page).width >= EXPANDED_MIN_WIDTH, "under 840px only");
+    await openReport(page);
+
+    const fieldBox = await boxOf(replyField(page).locator(".."));
+    const sendBox = await boxOf(sendButton(page));
+
+    expect(sendBox.width).toBeCloseTo(fieldBox.width, 0);
+  });
+
+  test("leaves Send to Omnileaf its own width beside Settings", async ({
+    page,
+  }) => {
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "840px and up");
+    await openReport(page);
+
+    const fieldBox = await boxOf(replyField(page).locator(".."));
+    const sendBox = await boxOf(sendButton(page));
+
+    expect(sendBox.x).toBeCloseTo(fieldBox.x, 0);
+    expect(sendBox.width).toBeLessThan(fieldBox.width / 2);
+  });
+});
+
+test.describe("when there's nowhere to send it", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      sendProblemReport: () => {
+        throw new CommandFailure({
+          code: "reportsNotSent",
+          message: "problem reports have nowhere to be sent yet",
+        });
+      },
+    },
+  });
+
+  test("says Send to Omnileaf is coming soon and keeps no code", async ({
+    page,
+  }) => {
+    await openReport(page);
+
+    await sendButton(page).click();
+
+    await expect(shownAlert(page)).toHaveText("Send to Omnileaf · coming soon");
+    expect(await keptCodes(page)).toEqual([]);
+  });
+});
+
 test.describe("sending it another way", () => {
   const shared: string[] = [];
 
@@ -152,18 +302,18 @@ test.describe("sending it another way", () => {
     expect(await keptCodes(page)).toEqual([FAKE_REPORT_CODE]);
   });
 
-  test("sets the ways to send it a group's 24px below what's included, 8px under their heading", async ({
+  test("sets the other ways 28px below Send to Omnileaf's note, 8px under their heading", async ({
     page,
   }) => {
     await openReport(page);
-    const includedBox = await boxOf(included(page));
+    const noteBox = await boxOf(sendNote(page));
     const headingBox = await boxOf(
-      waysOut(page).getByRole("heading", { name: "Ways to send it" }),
+      waysOut(page).getByRole("heading", { name: "Other ways to send it" }),
     );
     const listBox = await boxOf(waysOut(page).getByRole("list"));
 
-    expect(headingBox.y - (includedBox.y + includedBox.height)).toBeCloseTo(
-      GROUP_GAP,
+    expect(headingBox.y - (noteBox.y + noteBox.height)).toBeCloseTo(
+      OTHER_WAYS_GAP,
       0,
     );
     expect(listBox.y - (headingBox.y + headingBox.height)).toBeCloseTo(
@@ -313,7 +463,23 @@ test.describe("when the device turns the report down", () => {
           message: "the problem report could not be saved",
         });
       },
+      sendProblemReport: () => {
+        throw new CommandFailure({
+          code: "internal",
+          message: "the report could not be sent",
+        });
+      },
     },
+  });
+
+  test("says the report couldn't be sent", async ({ page }) => {
+    await openReport(page);
+
+    await sendButton(page).click();
+
+    await expect(shownAlert(page)).toHaveText(
+      "Couldn't send the report. Try again.",
+    );
   });
 
   test("says the report couldn't be saved", async ({ page }) => {
@@ -321,7 +487,7 @@ test.describe("when the device turns the report down", () => {
 
     await waysOut(page).getByRole("button", { name: "Save as a file" }).click();
 
-    await expect(page.getByRole("main").getByRole("alert")).toHaveText(
+    await expect(shownAlert(page)).toHaveText(
       "Couldn't save the report. Try again.",
     );
   });
@@ -333,7 +499,7 @@ test.describe("when the device turns the report down", () => {
 
     await waysOut(page).getByRole("button", { name: "Copy report" }).click();
 
-    await expect(page.getByRole("main").getByRole("alert")).toHaveText(
+    await expect(shownAlert(page)).toHaveText(
       "Couldn't copy the report. Try again.",
     );
     expect(await keptCodes(page)).toEqual([]);
@@ -346,7 +512,7 @@ test.describe("when the device turns the report down", () => {
       .getByRole("button", { name: /^Open on GitHub/ })
       .click();
 
-    await expect(page.getByRole("main").getByRole("alert")).toHaveText(
+    await expect(shownAlert(page)).toHaveText(
       "Couldn't open your browser. Try again.",
     );
   });
