@@ -48,6 +48,8 @@ const DESKTOP_BAND = { width: 380, height: 220 };
 const TOOLBAR_HEIGHT = 56;
 const ASIDE_WIDTH = 280;
 const CHIP_SIZE = 48;
+const LONG_TITLE =
+  "The Lighthouse Keeper’s Apprentice Spends Every Winter Writing Letters to a Sister Across the Northern Sea";
 
 function shelfBackend(shelf: FakeShelf): FakeBackend {
   return shelf.backend();
@@ -260,6 +262,38 @@ test.describe("a series with one creator, a summary and tags", () => {
       expect(violations).toEqual([]);
     });
   }
+});
+
+test.describe("a series with a long title", () => {
+  const backend = shelfBackend(new FakeShelf(EIGHT_BOOKS));
+  test.use({
+    viewport: { width: EXPANDED_MIN_WIDTH, height: 800 },
+    backend: {
+      ...backend,
+      seriesOverview: async (id) => ({
+        ...(await backend.seriesOverview(id)),
+        title: LONG_TITLE,
+      }),
+    },
+  });
+  test.skip(({ isMobile }) => isMobile, "the desktop's toolbar");
+
+  test("keeps Library whole in the toolbar, truncating the title instead", async ({
+    page,
+  }) => {
+    await openSeries(page);
+    const crumbs = page
+      .locator("[data-page-toolbar]")
+      .getByRole("navigation", { name: "Breadcrumb" });
+    const library = page.getByRole("link", { name: "Library" });
+
+    const link = await boxOf(crumbs.getByRole("link", { name: "Library" }));
+    const crumb = await boxOf(
+      crumbs.getByRole("listitem").filter({ has: library }),
+    );
+
+    expect(link.x + link.width).toBeLessThanOrEqual(crumb.x + crumb.width);
+  });
 });
 
 test.describe("a series with creators in two roles", () => {
