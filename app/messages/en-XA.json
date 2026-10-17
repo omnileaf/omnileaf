@@ -2104,5 +2104,21 @@
   ],
   "screenshot_mode_turns_off_at": "⟦Ţûŕñš öƒƒ áţ {time}········⟧",
   "screenshot_mode_notice_keys": "⟦{when} · {keys}······⟧",
-  "screenshot_mode_turn_off": "⟦Ţûŕñ öƒƒ····⟧"
+  "screenshot_mode_turn_off": "⟦Ţûŕñ öƒƒ····⟧",
+  "storage_title": "⟦Šţöŕáĝé···⟧",
+  "storage_on_this_phone": "⟦Öñ ţĥíš þĥöñé······⟧",
+  "storage_on_this_tablet": "⟦Öñ ţĥíš ţáƀļéţ······⟧",
+  "storage_on_this_computer": "⟦Öñ ţĥíš çöɱþûţéŕ·······⟧",
+  "storage_omnileaf": "⟦Öɱñíļéáƒ {size}······⟧",
+  "storage_everything_else": "⟦Éṽéŕýţĥíñĝ éļšé······⟧",
+  "storage_free": "⟦{size} ƒŕéé·····⟧",
+  "storage_space_used": "⟦Šþáçé ûšéð····⟧",
+  "storage_free_of_total": "⟦{free} ƒŕéé öƒ {total}·········⟧",
+  "storage_cached_pages": "⟦Çáçĥéð þáĝéš·····⟧",
+  "storage_cached_pages_size": "⟦{size} · ŕéƀûíļţ ŵĥéñ ýöû ŕéáð áĝáíñ···············⟧",
+  "storage_covers": "⟦Çöṽéŕš···⟧",
+  "storage_clear": "⟦Çļéáŕ··⟧",
+  "storage_clear_label": "⟦Çļéáŕ {name}·····⟧",
+  "storage_runs_low": "⟦Ŵĥéñ šþáçé ŕûñš ļöŵ, ţĥé öļðéšţ çáçĥéð þáĝéš áñð çöṽéŕš ĝö ƒíŕšţ. Ýöûŕ ƀööķš áñð þŕöĝŕéšš áŕé ñéṽéŕ ţöûçĥéð.············································⟧",
+  "settings_summary_storage": "⟦{size} ûšéð·····⟧"
 }
