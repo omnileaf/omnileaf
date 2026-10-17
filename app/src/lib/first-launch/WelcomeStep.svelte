@@ -65,37 +65,34 @@
 </script>
 
 <StepFrame step="welcome">
-  <div class="flex flex-1 flex-col justify-center gap-lg">
-    <StepHeader scale="display">
-      {#snippet badge()}
-        <AppIcon class="rounded-full block-header-badge inline-header-badge" />
-      {/snippet}
-      {m.first_launch_welcome_title()}
-    </StepHeader>
-    <p class="text-step-body text-muted">
+  <StepHeader scale="welcome">
+    {#snippet badge()}
+      <div class="flex pbs-xl pbe-sm">
+        <AppIcon class="block-app-icon inline-app-icon" />
+      </div>
+    {/snippet}
+    {m.first_launch_welcome_title()}
+    {#snippet lead()}
       <WidthWording wording={BODY[device]} />
-    </p>
-    <ul class="mbs-sm flex flex-col gap-md">
-      {#each PROMISES[device] as promise (promise.title)}
-        <li class="flex items-center gap-md">
-          <span
-            class="flex shrink-0 items-center justify-center rounded-control bg-accent-soft block-icon-tile inline-icon-tile medium:hidden"
-          >
-            <promise.icon size={PROMISE_ICON_SIZE} aria-hidden="true" />
+    {/snippet}
+  </StepHeader>
+  <ul class="mbs-sm flex flex-col gap-promise-gap">
+    {#each PROMISES[device] as promise (promise.title)}
+      <li class="flex items-center gap-promise-gap">
+        <span
+          class="flex shrink-0 items-center justify-center rounded-control bg-accent-soft text-accent block-promise-tile inline-promise-tile"
+        >
+          <promise.icon size={PROMISE_ICON_SIZE} aria-hidden="true" />
+        </span>
+        <span class="flex flex-col">
+          <span class="font-semibold">{promise.title()}</span>
+          <span class="text-footnote text-muted">
+            <WidthWording wording={promise.detail} />
           </span>
-          <span
-            class="hidden shrink-0 rounded-full bg-accent block-step-dot inline-step-dot medium:block"
-          ></span>
-          <span class="flex flex-col">
-            <span class="font-semibold">{promise.title()}</span>
-            <span class="text-caption text-muted">
-              <WidthWording wording={promise.detail} />
-            </span>
-          </span>
-        </li>
-      {/each}
-    </ul>
-  </div>
+        </span>
+      </li>
+    {/each}
+  </ul>
   {#snippet actions()}
     <StepButton kind="primary" onclick={onNext}>
       {m.first_launch_get_started()}

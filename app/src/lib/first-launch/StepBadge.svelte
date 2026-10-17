@@ -6,7 +6,7 @@
 
 <span
   aria-hidden="true"
-  class="flex items-center justify-center rounded-full bg-accent-soft text-accent block-header-badge inline-header-badge"
+  class="flex items-center justify-center rounded-full bg-accent-soft text-accent block-step-badge inline-step-badge"
 >
-  <Icon class="block-header-badge-icon inline-header-badge-icon" />
+  <Icon class="block-step-badge-icon inline-step-badge-icon" />
 </span>
