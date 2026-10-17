@@ -778,6 +778,15 @@ async fn opens_a_new_library_before_its_first_launch_is_finished() {
 }
 
 #[tokio::test]
+async fn finds_no_library_already_in_the_home_folder_yet() {
+    let home = ScratchFolder::new("library-found-none");
+
+    let found = open(home.path()).await.found_library();
+
+    assert_eq!(found, None);
+}
+
+#[tokio::test]
 async fn remembers_the_finished_first_launch_when_the_library_reopens() {
     let home = ScratchFolder::new("library-first-launch-finished");
     open(home.path()).await.finish_first_launch().await.unwrap();
