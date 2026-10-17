@@ -376,6 +376,9 @@
 [data-platform="windows"],
 [data-platform="windows"] [data-theme] {
   --platform-font: var(--font-windows);
+  --background: var(--windows-layer-solid);
+  --sidebar: var(--windows-mica);
+  --sidebar-border: transparent;
   --secondary-text: var(--windows-secondary-text);
   --menu-surface: var(--windows-flyout);
   --menu-edge: var(--windows-stroke);
