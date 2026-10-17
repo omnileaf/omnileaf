@@ -20,10 +20,12 @@
     title: string;
     location: string;
     facts: readonly HomeFact[];
-    change?: Snippet;
+    change?: Snippet<[titleId: string, pathId: string]>;
   } = $props();
 
-  const titleId = $props.id();
+  const cardId = $props.id();
+  const titleId = `${cardId}-title`;
+  const pathId = `${cardId}-path`;
 </script>
 
 <section
@@ -39,9 +41,10 @@
     <h2 id={titleId} class="flex-1 text-body font-semibold min-inline-none">
       {title}
     </h2>
-    {@render change?.()}
+    {@render change?.(titleId, pathId)}
   </div>
   <code
+    id={pathId}
     class="mx-home-card mbe-home-card rounded-control border border-border bg-chip px-md py-home-path font-mono text-footnote wrap-anywhere whitespace-pre-wrap"
     >{location}</code
   >

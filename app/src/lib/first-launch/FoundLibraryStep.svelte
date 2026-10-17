@@ -67,11 +67,11 @@
       location={folderLocation(folders.home, platform)}
       {facts}
     >
-      {#snippet change()}
+      {#snippet change(titleId, pathId)}
         {#if isPointer(platform)}
           <ChangeHomeButton />
         {:else if platform !== "ios"}
-          <ChangeHomeRow />
+          <ChangeHomeRow {titleId} {pathId} />
         {/if}
       {/snippet}
     </HomeCard>
