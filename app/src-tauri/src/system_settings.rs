@@ -86,11 +86,10 @@ mod android {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 mod tests {
     use super::*;
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn has_no_settings_app_to_open_on_linux() {
         let app = tauri::test::mock_app();
