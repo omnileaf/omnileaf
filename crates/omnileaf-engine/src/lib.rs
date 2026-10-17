@@ -17,6 +17,7 @@ mod external_storage;
 mod file_in_storage;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 mod folder_watch;
+mod found_library;
 mod history;
 mod ipc_brand;
 mod lane;
@@ -82,6 +83,7 @@ pub use error_chain::describe_error;
 pub use external_storage::{storage_by_device, storage_in_mountinfo, storage_of_windows_path};
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub use folder_watch::{AppFiles, FolderWatch, FolderWatchSwitch};
+pub use found_library::FoundLibrary;
 pub use history::{
     BookSessions, HistoryCursor, HistoryEntry, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
     LocalDay, ReadTo, ReadingDay, ReadingSummary, ReadingWeek,
