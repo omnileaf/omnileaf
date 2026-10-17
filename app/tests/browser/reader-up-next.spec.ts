@@ -6,7 +6,9 @@ import {
   DEFAULT_BACKEND,
   expect,
   EXPANDED_MIN_WIDTH,
+  LARGEST_TEXT_SCALE,
   onPlatform,
+  setTextScale,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -23,6 +25,12 @@ import {
 } from "./reader-book.ts";
 
 const READ_SECONDS = 72 * 60;
+const SECONDS_A_PAGE = 23;
+const SUMMARY = {
+  readSeconds: READ_SECONDS,
+  pageCount: PAGE_COUNT,
+  secondsPerPage: SECONDS_A_PAGE,
+};
 const SWIPE_PX = 120;
 const SERIES_PAGE = new RegExp(`/series/${BOOK_SERIES_ID}$`);
 const NEXT_BOOK_PAGE = new RegExp(`/read/${NEXT_BOOK.id}$`);
@@ -32,7 +40,7 @@ test.use({
   backend: {
     ...DEFAULT_BACKEND,
     openBook: (id) => ({ ...readerBook(NOT_STARTED), id }),
-    bookReadTime: () => READ_SECONDS,
+    readingSummary: () => SUMMARY,
   },
 });
 
@@ -64,6 +72,25 @@ async function turnPastTheEnd(page: Page): Promise<void> {
   await expect(upNext(page)).toBeVisible();
 }
 
+function stats(page: Page): Locator {
+  return page.getByRole("group", { name: `Reading stats for ${BOOK_TITLE}` });
+}
+
+async function turnBookSummaryOff(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "omnileaf.smartFeatures",
+      JSON.stringify({ showsBookSummary: false }),
+    );
+  });
+}
+
+function markedRead(page: Page): string {
+  return isWide(page)
+    ? "Marked as read"
+    : `${BOOK_SERIES_TITLE} · marked as read`;
+}
+
 function skipSwitch(page: Page): Locator {
   return page.getByRole("switch", { name: "Skip this screen" });
 }
@@ -81,24 +108,96 @@ async function swipeAcross(page: Page, across: number): Promise<void> {
   await surface.dispatchEvent("pointerup", { ...pointer, clientX: x + across });
 }
 
-test("shows up next on turning past the last page, the book marked read with the time spent on it", async ({
+test("shows up next on turning past the last page, the book marked read with the time spent on it while Book summary is off", async ({
+  page,
+}) => {
+  await turnBookSummaryOff(page);
+  await openBook(page);
+
+  await turnPastTheEnd(page);
+
+  await expect(
+    page.getByText(`${markedRead(page)} · 1 h 12 min`, { exact: true }),
+  ).toBeVisible();
+  await expect(stats(page)).toHaveCount(0);
+  await expect(page.getByText(NEXT_BOOK.title, { exact: true })).toBeVisible();
+  await expect(page.getByText("Unread", { exact: true })).toBeVisible();
+  await expect(skipSwitch(page)).not.toBeChecked();
+});
+
+test("sums up the book just finished in its time, pages and time a page while Book summary is on", async ({
   page,
 }) => {
   await openBook(page);
 
   await turnPastTheEnd(page);
 
-  await expect(
-    page.getByText(
-      isWide(page)
-        ? "Marked as read · 1 h 12 min"
-        : `${BOOK_SERIES_TITLE} · marked as read · 1 h 12 min`,
-      { exact: true },
+  await expect(stats(page)).toHaveText(
+    `1 h 12 min reading ${String(PAGE_COUNT)} pages ${String(SECONDS_A_PAGE)} s a page`,
+    { useInnerText: true },
+  );
+  await expect(page.getByText(markedRead(page), { exact: true })).toBeVisible();
+});
+
+test("puts the stats between the title and the Up next card", async ({
+  page,
+}) => {
+  await openBook(page);
+  await turnPastTheEnd(page);
+
+  const title = await boxOf(upNext(page));
+  const row = await boxOf(stats(page));
+  const card = await boxOf(page.getByText("Up next", { exact: true }));
+
+  expect(row.y).toBeGreaterThan(title.y + title.height);
+  expect(card.y).toBeGreaterThan(row.y + row.height);
+});
+
+test("keeps the stats in three columns at the largest text, wrapping inside them", async ({
+  page,
+}) => {
+  await setTextScale(page, LARGEST_TEXT_SCALE);
+  await openBook(page);
+  await turnPastTheEnd(page);
+  const row = await boxOf(stats(page));
+
+  const labels = await Promise.all(
+    ["reading", "pages", "a page"].map((label) =>
+      boxOf(stats(page).getByText(label, { exact: true })),
     ),
-  ).toBeVisible();
-  await expect(page.getByText(NEXT_BOOK.title, { exact: true })).toBeVisible();
-  await expect(page.getByText("Unread", { exact: true })).toBeVisible();
-  await expect(skipSwitch(page)).not.toBeChecked();
+  );
+
+  const starts = labels.map(({ x }) => x);
+  expect(starts).toEqual(starts.toSorted((one, other) => one - other));
+  for (const label of labels) {
+    expect(label.x + label.width).toBeLessThanOrEqual(row.x + row.width);
+  }
+  expect(
+    await stats(page).evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true);
+});
+
+test.describe("a book whose reading isn't timed", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      openBook: (id) => ({ ...readerBook(NOT_STARTED), id }),
+      readingSummary: () => null,
+    },
+  });
+
+  test("leaves the stats and the time out", async ({ page }) => {
+    await openBook(page);
+
+    await turnPastTheEnd(page);
+
+    await expect(
+      page.getByText(markedRead(page), { exact: true }),
+    ).toBeVisible();
+    await expect(stats(page)).toHaveCount(0);
+  });
 });
 
 const TURNS_AGAIN = [
@@ -177,7 +276,7 @@ test.describe("on a phone", () => {
     backend: {
       ...onPlatform("ios").backend,
       openBook: (id) => ({ ...readerBook(NOT_STARTED), id }),
-      bookReadTime: () => READ_SECONDS,
+      readingSummary: () => SUMMARY,
     },
   });
 
@@ -201,7 +300,7 @@ test.describe("a next book whose pages are counted", () => {
         id,
         next: { ...NEXT_BOOK, pageCount: 184 },
       }),
-      bookReadTime: () => READ_SECONDS,
+      readingSummary: () => SUMMARY,
     },
   });
 
@@ -225,7 +324,7 @@ test.describe("a book read right to left", () => {
         id,
         readingDirection: "rightToLeft",
       }),
-      bookReadTime: () => READ_SECONDS,
+      readingSummary: () => SUMMARY,
     },
   });
 
@@ -364,7 +463,7 @@ test.describe("the last book of a series", () => {
     backend: {
       ...DEFAULT_BACKEND,
       openBook: () => ({ ...readerBook(NOT_STARTED), next: null }),
-      bookReadTime: () => READ_SECONDS,
+      readingSummary: () => SUMMARY,
     },
   });
 
@@ -387,6 +486,20 @@ test.describe("the last book of a series", () => {
       .click();
 
     await expect(page).toHaveURL(SERIES_PAGE);
+  });
+
+  test("puts the stats above the card saying every book is read", async ({
+    page,
+  }) => {
+    await openBook(page);
+    await turnPastTheEnd(page);
+
+    const row = await boxOf(stats(page));
+    const card = await boxOf(
+      page.getByText("You've read every book in this series"),
+    );
+
+    expect(card.y).toBeGreaterThan(row.y + row.height);
   });
 
   test("goes back to the series on turning the page again", async ({

@@ -1815,6 +1815,30 @@
   "reader_marked_read_in": "{series} · marked as read",
   "reader_marked_read_in_after": "{series} · marked as read · {time}",
   "reader_next_details": "{count} pages · {reading}",
+  "reader_stats_label": "Reading stats for {title}",
+  "reader_stat_reading": "reading",
+  "reader_stat_pages": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "page",
+        "countPlural=other": "pages"
+      }
+    }
+  ],
+  "reader_stat_a_page": "a page",
+  "reader_stat_seconds": [
+    {
+      "declarations": [
+        "input seconds",
+        "local formattedSeconds = seconds: number"
+      ],
+      "match": {
+        "*": "{formattedSeconds} s"
+      }
+    }
+  ],
   "reader_unread_word": "unread",
   "reader_started_word": "started",
   "reader_read_word": "read",

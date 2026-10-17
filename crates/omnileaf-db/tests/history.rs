@@ -24,9 +24,10 @@ use omnileaf_db::{
         remove_books_without_files,
     },
     history::{
-        BookSessions, HistoryEntry, HistoryOf, ReadingSince, book_reading_time, book_sessions,
-        clear_history, days_in_a_row, hide_book_from_history, history_page, reading_since,
-        reading_time_by_day, restore_book_to_history, restore_history, series_read,
+        BookSessions, HistoryEntry, HistoryOf, ReadingSince, ReadingSummary, book_reading_time,
+        book_sessions, clear_history, days_in_a_row, hide_book_from_history, history_page,
+        reading_since, reading_summary, reading_time_by_day, restore_book_to_history,
+        restore_history, series_read,
     },
     store::{Continuity, SessionPlace, Store},
 };
@@ -767,6 +768,42 @@ async fn adds_up_a_book_s_sessions_with_the_days_it_was_first_and_last_read() {
                 read_ms: ms(25 * MINUTE_MS),
                 first_day: today() - 3,
                 last_day: today(),
+            }),
+            None
+        )
+    );
+}
+
+#[tokio::test]
+async fn sums_up_a_book_s_reading_with_how_far_it_was_read_and_its_length() {
+    let history = History::open("history-reading-summary").await;
+    history
+        .read(book(2), NOW_UNIX_MS, NOW_UNIX_MS + 20 * MINUTE_MS, 7)
+        .await;
+    history
+        .read(
+            book(2),
+            NOW_UNIX_MS + HOUR_MS,
+            NOW_UNIX_MS + HOUR_MS + 5 * MINUTE_MS,
+            LAST_PAGE,
+        )
+        .await;
+
+    let summaries = [book(2), book(1)].map(|read| {
+        history
+            .store
+            .database()
+            .read(move |connection| reading_summary(connection, read))
+    });
+    let [read, unread] = summaries;
+
+    assert_eq!(
+        (read.await.unwrap(), unread.await.unwrap()),
+        (
+            Some(ReadingSummary {
+                read_ms: ms(25 * MINUTE_MS),
+                pages_reached: PAGE_COUNT,
+                page_count: PAGE_COUNT,
             }),
             None
         )
