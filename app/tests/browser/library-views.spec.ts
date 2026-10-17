@@ -117,11 +117,11 @@ const GRID_LOOKS = {
   ],
 } as const satisfies Record<ScreenSize, readonly GridLook[]>;
 
-const LIST_LOOKS = {
-  phone: { rowHeight: 105, coverWidth: 48, coverHeight: 72 },
-  tablet: { rowHeight: 105, coverWidth: 48, coverHeight: 72 },
-  desktop: { rowHeight: 89, coverWidth: 42, coverHeight: 63 },
-} as const satisfies Record<ScreenSize, ListLook>;
+const LIST_LOOK = {
+  rowHeight: 101,
+  coverWidth: 52,
+  coverHeight: 78,
+} as const satisfies ListLook;
 
 const BAND_PADDING = {
   phone: { top: 20, inline: 6, bottom: 8 },
@@ -517,7 +517,6 @@ test("draws only the covers, naming each one without printing its title", async 
 test("draws a list with a small cover beside each title and its book count", async ({
   page,
 }) => {
-  const look = LIST_LOOKS[screenSizeOf(page)];
   await openWith(page, viewWith(page, "list"));
   const cover = await boxOf(firstSeries(page).getByRole("presentation"));
   const title = await boxOf(firstSeries(page).getByText(FIRST_TITLE));
@@ -525,9 +524,9 @@ test("draws a list with a small cover beside each title and its book count", asy
   const row = await boxOf(firstSeries(page));
 
   expect(await columnsOf(seriesList(page))).toBe(1);
-  expect(row.height).toBe(look.rowHeight);
-  expect(cover.width).toBe(look.coverWidth);
-  expect(cover.height).toBe(look.coverHeight);
+  expect(row.height).toBe(LIST_LOOK.rowHeight);
+  expect(cover.width).toBe(LIST_LOOK.coverWidth);
+  expect(cover.height).toBe(LIST_LOOK.coverHeight);
   expect(title.x).toBeGreaterThan(cover.x + cover.width);
   await expect(firstSeries(page).getByText("1 book")).toBeVisible();
 });
