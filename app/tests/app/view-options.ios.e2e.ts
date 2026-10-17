@@ -5,7 +5,10 @@ import { xpath } from "./webdriver.ts";
 
 const VIEW_OPTIONS_BUTTON = xpath("//button[@aria-label='View options']");
 const OPEN_SHEET = xpath(
-  "//*[@aria-modal='true'][@data-state='open']//h2[normalize-space()='View']",
+  "//*[@aria-modal='true'][@data-state='open']//h2[normalize-space()='View options']",
+);
+const CHOOSE_COVERS = xpath(
+  "//*[@aria-modal='true'][@data-state='open']//*[@role='radio'][.//span[normalize-space()='Choose']]",
 );
 const DONE = xpath(
   "//*[@aria-modal='true'][@data-state='open']//button[normalize-space()='Done']",
@@ -35,6 +38,11 @@ async function stepCoversPerRow(label: string): Promise<void> {
 test("opens View options at the height it keeps once something in it changes", async () => {
   await (await appSession().waitFor(VIEW_OPTIONS_BUTTON)).click();
   await appSession().waitFor(OPEN_SHEET);
+  await (await appSession().waitFor(CHOOSE_COVERS)).click();
+  await appSession().waitUntil(
+    `return document.querySelector("[aria-modal=true][data-state=open] button[aria-label='${FEWER}']") !== null;`,
+    "the covers per row steppers",
+  );
   const opened = await appSession().run(SHEET_CONTENT_HEIGHT);
   const [away, back] =
     (await appSession().run(CAN_SHOW_FEWER)) === true
