@@ -82,7 +82,7 @@ pub use library_book::{
 pub use library_category::{CategoryId, LibraryCategory};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
 pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
-pub use library_labels::{CategoryHeld, LabelChanges, SeriesLabels, TagHeld};
+pub use library_labels::{CategoryHeld, LabelChanges, LibraryTag, SeriesLabels, TagHeld};
 pub use library_listing::{
     Inclusion, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySort, LibrarySortBy,
     SeriesFormat, SmartFilter, SortDirection,

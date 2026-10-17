@@ -482,3 +482,44 @@ test("lists every series in the sample's folder, and none in another", async () 
 
   expect([page.series.length, count, elsewhere.series]).toEqual([19, 19, []]);
 });
+
+test("lists every tag the sample's series carry, with how many carry each", async () => {
+  const { backend } = backendFor();
+
+  const tags = await backend.libraryTags();
+
+  expect(tags.find((tag) => tag.name === "Seinen")).toEqual({
+    name: "Seinen",
+    seriesCount: 1,
+  });
+});
+
+test("renames a tag on every series carrying it", async () => {
+  const { backend } = backendFor();
+
+  await backend.renameLibraryTag("Seinen", "Grown-up");
+  const names = (await backend.libraryTags()).map((tag) => tag.name);
+
+  expect([names.includes("Seinen"), names.includes("Grown-up")]).toEqual([
+    false,
+    true,
+  ]);
+});
+
+test("removes a tag from every series, naming them so it can go back", async () => {
+  const { backend } = backendFor();
+
+  const held = await backend.removeLibraryTag("Seinen");
+  await backend.labelSeries(held, {
+    categoriesAdded: [],
+    categoriesRemoved: [],
+    categoriesCreated: [],
+    tagsAdded: ["Seinen"],
+    tagsRemoved: [],
+  });
+
+  expect([
+    held,
+    (await backend.libraryTags()).some((tag) => tag.name === "Seinen"),
+  ]).toEqual([[sampleSeriesId(4)], true]);
+});
