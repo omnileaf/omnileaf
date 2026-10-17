@@ -129,6 +129,7 @@ test.describe("with a few lines logged", () => {
 
 test.describe("sending it to Omnileaf", () => {
   const sentTo: (string | null)[] = [];
+  const copiedCodes: string[] = [];
 
   test.use({
     backend: {
@@ -137,11 +138,16 @@ test.describe("sending it to Omnileaf", () => {
         sentTo.push(replyTo);
         return null;
       },
+      copyProblemReportCode: (code) => {
+        copiedCodes.push(code);
+        return null;
+      },
     },
   });
 
   test.beforeEach(() => {
     sentTo.length = 0;
+    copiedCodes.length = 0;
   });
 
   test("asks for an email only for a reply and needs no account", async ({
@@ -172,6 +178,19 @@ test.describe("sending it to Omnileaf", () => {
     ).toContainText(`Code ${FAKE_REPORT_CODE} · kept in Your reports`);
     expect(sentTo).toEqual([REPLY_ADDRESS]);
     expect(await keptCodes(page)).toEqual([FAKE_REPORT_CODE]);
+  });
+
+  test("copies the sent report's code from its notice", async ({ page }) => {
+    await openReport(page);
+    await sendButton(page).click();
+
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Report sent" })
+      .getByRole("button", { name: "Copy code" })
+      .click();
+
+    await expect.poll(() => copiedCodes).toEqual([FAKE_REPORT_CODE]);
   });
 
   test("sends it with no email when none is given", async ({ page }) => {
@@ -253,6 +272,37 @@ test.describe("when there's nowhere to send it", () => {
 
     await expect(shownAlert(page)).toHaveText("Send to Omnileaf · coming soon");
     expect(await keptCodes(page)).toEqual([]);
+  });
+});
+
+test.describe("when the code can't be copied", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      copyProblemReportCode: () => {
+        throw new CommandFailure({
+          code: "clipboardUnavailable",
+          message: "the clipboard could not be written",
+        });
+      },
+    },
+  });
+
+  test("says the code couldn't be copied", async ({ page }) => {
+    await openReport(page);
+    await sendButton(page).click();
+
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Report sent" })
+      .getByRole("button", { name: "Copy code" })
+      .click();
+
+    await expect(
+      page
+        .getByRole("listitem")
+        .filter({ hasText: "Couldn't copy the code. Try again." }),
+    ).toBeVisible();
   });
 });
 

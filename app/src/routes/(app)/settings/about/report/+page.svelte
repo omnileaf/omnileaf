@@ -45,6 +45,17 @@
     }
   }
 
+  async function copyCode(code: string): Promise<void> {
+    const copied = await commands.copyProblemReportCode(code);
+    if (copied.status === "error") {
+      notices.show({
+        tone: "warning",
+        icon: CircleAlert,
+        title: m.report_code_copy_failed(),
+      });
+    }
+  }
+
   const sharing = new ReportSharing(
     commands,
     () => localDayOf(new Date()),
@@ -62,6 +73,12 @@
           label: showFileLabel(platform),
           run: () => {
             void showSaved();
+          },
+        },
+        copyCode: {
+          label: m.report_copy_code(),
+          run: () => {
+            void copyCode(code);
           },
         },
       });
