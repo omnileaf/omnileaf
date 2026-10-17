@@ -264,15 +264,7 @@ export type FolderPage = {
 	next: string & { readonly __brand: "FolderCursor" } | null,
 };
 
-export type FolderProblem = 
-/**  The folder isn't there, though the drive it was on is. */
-"missing" | 
-/**  The removable drive the folder was on isn't connected. */
-"driveDisconnected" | 
-/**  Android took away the app's access to the folder. */
-"lostAccess" | 
-/**  A network share wants a sign-in again, which the library can't tell yet. */
-"needsSignIn";
+export type FolderProblem = { kind: "missing" } | { kind: "driveDisconnected" } | { kind: "lostAccess" } | { kind: "needsSignIn"; share: NetworkShare } | { kind: "needsMounting"; share: NetworkShare } | { kind: "shareUnreachable"; share: NetworkShare };
 
 export type FolderRescan = {
 	id: string & { readonly __brand: "FolderId" },
@@ -469,10 +461,13 @@ export type LibraryView = {
 export type MissingFolder = {
 	folder: LibraryFolder,
 	problem: FolderProblem,
-	/**  The series hidden until it's back, every book of theirs being in it. */
 	hiddenSeries: number,
-	/**  Lists its series though it's missing, as asked, until it comes back. */
 	isShownAnyway: boolean,
+};
+
+export type NetworkShare = {
+	server: string,
+	name: string,
 };
 
 export type OnCovers = {
