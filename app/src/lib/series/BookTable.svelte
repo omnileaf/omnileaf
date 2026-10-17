@@ -63,7 +63,7 @@
   }
 </script>
 
-<Card class="overflow-hidden px-sm shadow-card-rest">
+<Card class="relative overflow-hidden px-sm shadow-card-rest">
   <VirtualTable
     items={books}
     key={(book: SeriesBook) => book.id}

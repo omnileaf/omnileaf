@@ -68,7 +68,7 @@
 
 <section
   aria-label={m.series_about()}
-  class="flex flex-col gap-xl expanded:shrink-0 expanded:gap-lg expanded:inline-series-aside"
+  class="flex flex-col gap-xl expanded:gap-lg @series-split:shrink-0 @series-split:inline-series-aside"
 >
   <div
     class="flex flex-col items-center gap-lg text-center expanded:items-start expanded:text-start"

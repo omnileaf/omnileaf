@@ -215,7 +215,7 @@
 {/if}
 <div
   class={[
-    "relative isolate -me-page-end flex flex-col pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-gutter medium:ps-gutter",
+    "@container relative isolate -me-page-end flex flex-col pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-gutter medium:ps-gutter",
     hasToolbar ? "pbs-xl" : "-mbs-page-top",
   ]}
 >
@@ -232,7 +232,7 @@
   {/if}
   {#if found !== undefined && overview !== undefined && cover !== undefined}
     <div
-      class="flex flex-col gap-xl max-expanded:mbs-sm expanded:flex-row expanded:items-start expanded:gap-2xl"
+      class="flex flex-col gap-xl max-expanded:mbs-sm @series-split:flex-row @series-split:items-start @series-split:gap-2xl"
     >
       <SeriesAbout
         {overview}

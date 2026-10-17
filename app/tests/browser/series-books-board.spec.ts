@@ -16,6 +16,9 @@ const ON_PAGE_14 = { state: "started", page: 14 } as const;
 const PAGE_COUNT = 192;
 const SEARCH_WIDTH = 220;
 const ROW_HEIGHT = { phone: 77, desktop: 52 };
+const DESKTOP_WINDOW_WIDTHS = [840, 1024, 1200, 1280];
+const BOARD_WIDTH = 1280;
+const WINDOW_HEIGHT = 800;
 
 function eightBooks(): FakeShelf {
   const shelf = new FakeShelf(
@@ -50,12 +53,54 @@ function titleOf(row: Locator, index: number): Locator {
   return row.getByText(shelf.titleOf(index), { exact: true });
 }
 
-async function openBooks(page: Page): Promise<void> {
+async function openSeries(page: Page): Promise<void> {
   await page.goto(`/series/${SERIES_ID}`);
   await expect(
     page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
   ).toBeVisible();
+}
+
+async function openBooks(page: Page): Promise<void> {
+  await openSeries(page);
   await rows(page).first().scrollIntoViewIfNeeded();
+}
+
+function booksTable(page: Page): Locator {
+  return page.getByRole("table", { name: "Books" });
+}
+
+async function openBooksInWindow(page: Page, width: number): Promise<void> {
+  await page.setViewportSize({ width, height: WINDOW_HEIGHT });
+  await openSeries(page);
+  await booksTable(page).scrollIntoViewIfNeeded();
+  await expect(rows(page).first()).toBeVisible();
+}
+
+function booksCard(page: Page): Locator {
+  return page.locator("[data-slot='card']").filter({ has: booksTable(page) });
+}
+
+function headersOutsideCard(
+  table: Locator,
+): Promise<{ tableWidth: number; cardWidth: number; outside: string[] }> {
+  return table.evaluate((element) => {
+    const card = element.closest("[data-slot='card']");
+    if (card === null) {
+      throw new Error("the books table sits in no card");
+    }
+    const start = card.getBoundingClientRect().left + card.clientLeft;
+    const end = start + card.clientWidth;
+    return {
+      tableWidth: element.scrollWidth,
+      cardWidth: card.clientWidth,
+      outside: [...element.querySelectorAll("th")]
+        .filter((head) => {
+          const { left, right } = head.getBoundingClientRect();
+          return left < start || right > end;
+        })
+        .map((head) => head.textContent.trim()),
+    };
+  });
 }
 
 test("counts the books read and bookmarked beside the books' heading", async ({
@@ -159,4 +204,49 @@ test("finds a book from a field beside the show choices on desktops", async ({
       .getByRole("button", { name: "Sort: In order" })
       .getByText("Sort: In order"),
   ).toBeVisible();
+});
+
+test.describe("in a desktop window with the sidebar showing", () => {
+  test.skip(({ isMobile }) => isMobile, "the desktop's sidebar and table");
+
+  for (const width of DESKTOP_WINDOW_WIDTHS) {
+    test(`keeps the page from scrolling sideways ${String(width)}px wide`, async ({
+      page,
+    }) => {
+      await openBooksInWindow(page, width);
+
+      const main = page.getByRole("main");
+      const scroll = await main.evaluate((element) => ({
+        content: element.scrollWidth,
+        shown: element.clientWidth,
+      }));
+
+      expect(scroll.content).toBeLessThanOrEqual(scroll.shown);
+    });
+
+    test(`fits every column of the books table in its card ${String(width)}px wide`, async ({
+      page,
+    }) => {
+      await openBooksInWindow(page, width);
+
+      const fit = await headersOutsideCard(booksTable(page));
+
+      expect(fit.tableWidth).toBeLessThanOrEqual(fit.cardWidth);
+      expect(fit.outside).toEqual([]);
+    });
+  }
+
+  test(`lays the series' details beside the books ${String(BOARD_WIDTH)}px wide, as the boards do`, async ({
+    page,
+  }) => {
+    await openBooksInWindow(page, BOARD_WIDTH);
+
+    const about = await boxOf(
+      page.getByRole("region", { name: "About this series" }),
+    );
+    const books = await boxOf(booksCard(page));
+
+    expect(about.x + about.width).toBeLessThanOrEqual(books.x);
+    expect(about.y).toBeLessThan(books.y + books.height);
+  });
 });

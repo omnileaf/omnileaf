@@ -537,6 +537,7 @@
   --container-preview-sides: 18em;
   --container-cover-title: calc(2.125em + 0.6875rem);
   --container-cover-title-wide: calc(2.125em + 1.25rem);
+  --container-series-split: 52rem;
 
   --radius-control: 0.625rem;
   --radius-row: 0.5rem;
