@@ -77,7 +77,8 @@
       ></div>
     </div>
     <div
-      class="absolute inset-y-none reader-progress-thumb my-auto rounded-full border border-accent bg-background shadow-card-rest block-lg inline-lg"
+      data-progress-thumb
+      class="absolute inset-y-none reader-progress-thumb my-auto rounded-full border border-accent bg-background shadow-card-rest"
     ></div>
     <Slider.Thumb index={0}>
       {#snippet child({ props })}
