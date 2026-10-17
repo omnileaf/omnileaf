@@ -521,13 +521,13 @@ test("leaves Shift, Control, Alt and Meta with the arrow keys and Home to the fi
   );
 });
 
-test("says when nothing is called what was typed", async ({ page }) => {
+test("says when nothing matches what was typed", async ({ page }) => {
   await page.goto("/search");
 
   await searchField(page).fill("harbor gait");
 
   await expect(
-    page.getByRole("heading", { name: "Nothing called “harbor gait”" }),
+    page.getByRole("heading", { name: "Nothing matches “harbor gait”" }),
   ).toBeVisible();
   await expect(results(page)).toHaveCount(0);
 });
@@ -695,19 +695,19 @@ test.describe("while a search is still out", () => {
     await expect(page).toHaveURL(/\/search$/);
   });
 
-  test("says nothing is called the text only once its search answers", async ({
+  test("says nothing matches the text only once its search answers", async ({
     page,
   }) => {
     await page.goto("/search");
     await searchField(page).fill("zzz");
     await expect(
-      page.getByRole("heading", { name: "Nothing called “zzz”" }),
+      page.getByRole("heading", { name: "Nothing matches “zzz”" }),
     ).toBeVisible();
 
     await searchField(page).fill(HELD_TEXT);
 
     await expect(page.getByRole("main")).not.toContainText(
-      `Nothing called “${HELD_TEXT}”`,
+      `Nothing matches “${HELD_TEXT}”`,
     );
     release();
     await expectFound(page, ["Harbour Gate"]);
@@ -760,7 +760,7 @@ test.describe("the search page's one status", () => {
     await searchField(page).fill("market");
     await expect(status).toHaveText("2 series found");
     await searchField(page).fill("zzz");
-    await expect(status).toHaveText("Nothing called “zzz”");
+    await expect(status).toHaveText("Nothing matches “zzz”");
     await searchField(page).fill(FAILING_TEXT);
     await expect(status).toHaveText("Couldn't search your library. Try again.");
 
@@ -825,5 +825,63 @@ test.describe("a long list of results", () => {
     await expect(await activeOption(page)).toContainText(
       LONG_LIST[reached]?.title ?? "",
     );
+  });
+});
+
+test.describe("with a likely spelling for a search that finds nothing", () => {
+  test.use({
+    backend: {
+      ...SEARCHING_BACKEND,
+      librarySpellingSuggestion: (text) =>
+        text === "harbor gat"
+          ? { text: "harbour gate", chapterOf: "Sample Series 04" }
+          : text === "harbuor"
+            ? { text: "harbour", chapterOf: null }
+            : null,
+    } satisfies FakeBackend,
+  });
+
+  test("offers the chapter title likely meant, naming its series", async ({
+    page,
+  }) => {
+    await page.goto("/search");
+
+    await searchField(page).fill("harbor gat");
+
+    await expect(page.getByText("Did you mean harbour gate?")).toBeVisible();
+    await expect(
+      page.getByText("It’s a chapter title in Sample Series 04."),
+    ).toBeVisible();
+  });
+
+  test("searches for the words likely meant on asking", async ({ page }) => {
+    await page.goto("/search");
+    await searchField(page).fill("harbuor");
+
+    await page.getByRole("button", { name: "harbour", exact: true }).click();
+
+    await expect(searchField(page)).toHaveValue("harbour");
+    await expectFound(page, ["Harbour Gate"]);
+  });
+
+  test("says the sources can be searched once Browse comes", async ({
+    page,
+  }) => {
+    await page.goto("/search");
+
+    await searchField(page).fill("harbuor");
+
+    await expect(
+      page.getByRole("button", { name: "Search your sources" }),
+    ).toBeDisabled();
+    await expect(page.getByText("Coming with Browse.")).toBeVisible();
+  });
+
+  test("has no accessibility violations", async ({ page }) => {
+    await page.goto("/search");
+    await searchField(page).fill("harbor gat");
+    await expect(page.getByText("Did you mean harbour gate?")).toBeVisible();
+
+    expect(await accessibilityViolations(page)).toEqual([]);
   });
 });
