@@ -82,10 +82,18 @@
           body: m.missing_mount_body({ share: problem.share.name }),
         };
       case "shareUnreachable":
-        return {
-          title: m.missing_access_title({ name }),
-          body: m.missing_share_body({ server: problem.share.server }),
-        };
+        return isStillFailing
+          ? {
+              title: m.missing_share_failed_title({ name }),
+              body: m.missing_share_failed_body({
+                share: problem.share.name,
+                server: problem.share.server,
+              }),
+            }
+          : {
+              title: m.missing_access_title({ name }),
+              body: m.missing_share_body({ server: problem.share.server }),
+            };
       default:
         return assertNever(problem);
     }
