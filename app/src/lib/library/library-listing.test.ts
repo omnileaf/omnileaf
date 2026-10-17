@@ -226,3 +226,11 @@ test("counts the read state, each format, language and tag, 18+ and Bookmarked a
     }),
   ).toBe(7);
 });
+
+test("turns a smart filter on and off, counting each one on as a filter", () => {
+  const quickReads = toggledIn(NEW_LIBRARY_LISTING, "smart", "quickReads");
+
+  expect(quickReads.filter.smart).toEqual(["quickReads"]);
+  expect(filtersOn(quickReads.filter)).toBe(1);
+  expect(toggledIn(quickReads, "smart", "quickReads").filter.smart).toEqual([]);
+});
