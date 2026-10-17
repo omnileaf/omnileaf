@@ -19,6 +19,15 @@ function context(
   };
 }
 
+test("says a sent report's code is kept in Your reports", () => {
+  const notice = sharedNotice({ way: "send" }, context("android"));
+
+  expect([notice?.title, notice?.body]).toEqual([
+    "Report sent",
+    "Code R-8M4T · kept in Your reports",
+  ]);
+});
+
 test("says a copied report's code is kept in Your reports", () => {
   const notice = sharedNotice({ way: "copy" }, context("linux"));
 
