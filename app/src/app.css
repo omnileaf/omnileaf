@@ -1184,6 +1184,7 @@
       opacity: 0;
     }
 
+    &[data-starting-style],
     &[data-state="closed"] {
       opacity: 0;
     }
