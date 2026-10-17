@@ -29,6 +29,7 @@
   import PageToolbar from "#lib/page/PageToolbar.svelte";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
+  import RelatedSeries from "#lib/series/RelatedSeries.svelte";
   import SeriesSkeleton from "#lib/series/SeriesSkeleton.svelte";
   import SeriesWithoutBooks from "#lib/series/SeriesWithoutBooks.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
@@ -316,6 +317,10 @@
             {/key}
           {/if}
         {/if}
+        <RelatedSeries
+          related={found.overview.related}
+          usesStandIns={screenshotMode.isOn}
+        />
       </div>
     </div>
   {:else if shown === undefined}

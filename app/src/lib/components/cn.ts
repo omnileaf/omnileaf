@@ -304,6 +304,7 @@ export const TOKEN_THEME = {
     "reader-track",
     "reader-track-inset",
     "reader-track-inset-wide",
+    "related-cover",
     "result-card",
     "result-cover",
     "result-cover-wide",
