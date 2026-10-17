@@ -35,7 +35,9 @@ test("shows up next at the end of a book until Skip Up next is turned on, and re
   ).toBeChecked();
 });
 
-test("lists Reader among the settings sections", async ({ page }) => {
+test("lists Reader among the settings sections and titles its page Reader", async ({
+  page,
+}) => {
   await page.goto("/settings");
 
   await page
@@ -44,6 +46,9 @@ test("lists Reader among the settings sections", async ({ page }) => {
     .click();
 
   await expect(page).toHaveURL(/\/settings\/reading$/);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Reader" }),
+  ).toBeVisible();
 });
 
 test("sets its cards 24px apart, the first 8px under the intro", async ({
