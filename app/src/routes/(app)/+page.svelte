@@ -9,6 +9,8 @@
     DEFAULT_LIBRARY_VIEW,
     type LibraryCategory,
     type LibraryFilterChoices,
+    type LibraryFolder,
+    type LibraryGrouping,
     type LibraryListing,
     type LibrarySeries,
     type LibraryView,
@@ -33,7 +35,10 @@
     NEW_LIBRARY_LISTING,
     NO_FILTER_CHOICES,
   } from "#lib/library/library-listing.ts";
-  import { librarySeriesList } from "#lib/library/library-series.svelte.ts";
+  import {
+    librarySeriesList,
+    type ListSeries,
+  } from "#lib/library/library-series.svelte.ts";
   import {
     ALL_SERIES,
     categoryOf,
@@ -44,6 +49,7 @@
   import NoMatches from "#lib/library/NoMatches.svelte";
   import SeriesCount from "#lib/library/SeriesCount.svelte";
   import SeriesCovers from "#lib/library/SeriesCovers.svelte";
+  import SeriesGroup from "#lib/library/SeriesGroup.svelte";
   import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
   import { swipesBetweenTabs } from "#lib/library/tab-swipe.ts";
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
@@ -108,8 +114,34 @@
   const tab = new LibraryTab();
   let categories = $state<readonly LibraryCategory[]>([]);
   let filterChoices = $state<LibraryFilterChoices>(NO_FILTER_CHOICES);
+  let folders = $state<readonly LibraryFolder[]>([]);
+  const groupBy = $derived<LibraryGrouping>(
+    view.reading.kind === "read" ? view.reading.value.groupBy : "none",
+  );
+  const groups = $derived(
+    groupBy === "folder"
+      ? folders.map((folder) => ({
+          key: folder.id,
+          name: folder.name,
+          listSeries: (after: Parameters<ListSeries>[0]) =>
+            commands.folderSeries(folder.id, after, listedBy()),
+          countSeries: () =>
+            commands.folderSeriesCount(folder.id, listedBy().filter),
+        }))
+      : groupBy === "category"
+        ? categories.map((category) => ({
+            key: category.id,
+            name: category.name,
+            listSeries: (after: Parameters<ListSeries>[0]) =>
+              commands.categorySeries(category.id, after, listedBy()),
+            countSeries: () =>
+              commands.categorySeriesCount(category.id, listedBy().filter),
+          }))
+        : [],
+  );
   const tabsShown = $derived(
-    showsCategoryTabs(categories) &&
+    groupBy === "none" &&
+      showsCategoryTabs(categories) &&
       (view.reading.kind !== "read" || view.reading.value.showsCategoryTabs),
   );
   const chosenCategory = $derived(
@@ -250,6 +282,26 @@
       : measuredColumns,
   );
   let emptyAddFolder: HTMLElement | null = $state(null);
+
+  async function loadFolders(): Promise<void> {
+    const found: LibraryFolder[] = [];
+    let after: Parameters<typeof commands.libraryFolders>[0] = null;
+    do {
+      const page = await commands.libraryFolders(after);
+      if (page.status === "error") {
+        return;
+      }
+      found.push(...page.data.folders);
+      after = page.data.next;
+    } while (after !== null);
+    folders = found;
+  }
+
+  $effect(() => {
+    if (groupBy === "folder") {
+      void untrack(loadFolders);
+    }
+  });
 
   async function loadCategories(): Promise<void> {
     const kept = await commands.libraryCategories();
@@ -538,37 +590,78 @@
           {@attach tabsShown && swipesBetweenTabs(swipeTab)}
           class="mbs-lg touch-pan-y medium:mbs-xl"
         >
-          <SeriesCovers
-            series={loaded.series.items}
-            isComplete={loaded.series.isComplete}
-            onNearEnd={() => {
-              void library.loadMore();
-            }}
-            onColumns={(columns: number) => {
-              measuredColumns = columns;
-            }}
-            onMostThatFit={(most: number) => {
-              mostThatFit = most;
-            }}
-            {coverUrl}
-            view={loaded.view}
-            usesStandIns={screenshotMode.isOn}
-            adultTreatment={adultContent.reading.kind === "read"
-              ? adultContent.reading.value.treatment
-              : "show"}
-            menu={{
-              canLabel: keepsLabels,
-              onMarkRead: (one: LibrarySeries) => {
-                void markRead([one.id]);
+          {#if groups.length > 0}
+            {@const covers = {
+              onColumns: (columns: number) => {
+                measuredColumns = columns;
               },
-              onLabel: (one: LibrarySeries) => {
-                label([one.id], "categories");
+              onMostThatFit: (most: number) => {
+                mostThatFit = most;
               },
-              onSelect: (one: LibrarySeries) => {
-                selection.begin(one.id);
+              coverUrl,
+              view: loaded.view,
+              usesStandIns: screenshotMode.isOn,
+              adultTreatment:
+                adultContent.reading.kind === "read"
+                  ? adultContent.reading.value.treatment
+                  : "show",
+              menu: {
+                canLabel: keepsLabels,
+                onMarkRead: (one: LibrarySeries) => {
+                  void markRead([one.id]);
+                },
+                onLabel: (one: LibrarySeries) => {
+                  label([one.id], "categories");
+                },
+                onSelect: (one: LibrarySeries) => {
+                  selection.begin(one.id);
+                },
               },
             }}
-          />
+            <div class="flex flex-col gap-xl">
+              {#each groups as group (group.key)}
+                <SeriesGroup
+                  name={group.name}
+                  listSeries={group.listSeries}
+                  countSeries={group.countSeries}
+                  {listed}
+                  {covers}
+                />
+              {/each}
+            </div>
+          {:else}
+            <SeriesCovers
+              series={loaded.series.items}
+              isComplete={loaded.series.isComplete}
+              onNearEnd={() => {
+                void library.loadMore();
+              }}
+              onColumns={(columns: number) => {
+                measuredColumns = columns;
+              }}
+              onMostThatFit={(most: number) => {
+                mostThatFit = most;
+              }}
+              {coverUrl}
+              view={loaded.view}
+              usesStandIns={screenshotMode.isOn}
+              adultTreatment={adultContent.reading.kind === "read"
+                ? adultContent.reading.value.treatment
+                : "show"}
+              menu={{
+                canLabel: keepsLabels,
+                onMarkRead: (one: LibrarySeries) => {
+                  void markRead([one.id]);
+                },
+                onLabel: (one: LibrarySeries) => {
+                  label([one.id], "categories");
+                },
+                onSelect: (one: LibrarySeries) => {
+                  selection.begin(one.id);
+                },
+              }}
+            />
+          {/if}
         </div>
         {#if selection.isSelecting && selection.count > 0}
           <LibrarySelectionActions
