@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   expect,
   EXPANDED_MIN_WIDTH,
   test,
@@ -185,5 +186,27 @@ test.describe("a creator with a long name and a series with an unbroken title", 
       .evaluate((title) => title.scrollWidth - title.clientWidth);
 
     expect(hidden).toBe(0);
+  });
+
+  test.describe("on the desktop's toolbar", () => {
+    test.use({ viewport: { width: EXPANDED_MIN_WIDTH, height: 800 } });
+    test.skip(({ isMobile }) => isMobile, "the desktop's toolbar");
+
+    test("keeps Library whole in the toolbar beside a long name", async ({
+      page,
+    }) => {
+      await openLongNamedCreator(page);
+      const crumbs = page
+        .locator("[data-page-toolbar]")
+        .getByRole("navigation", { name: "Breadcrumb" });
+      const library = page.getByRole("link", { name: "Library" });
+
+      const link = await boxOf(crumbs.getByRole("link", { name: "Library" }));
+      const crumb = await boxOf(
+        crumbs.getByRole("listitem").filter({ has: library }),
+      );
+
+      expect(link.x + link.width).toBeLessThanOrEqual(crumb.x + crumb.width);
+    });
   });
 });
