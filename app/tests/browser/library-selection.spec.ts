@@ -1,5 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 
+import {
+  DEFAULT_LIBRARY_VIEW,
+  type LibraryDisplay,
+} from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -20,6 +24,7 @@ const LIBRARY = sampleSeries(6).map((series, index) => ({
 
 let catalog: WireSeries[] = [...LIBRARY];
 let markedBack: string[] = [];
+let display: LibraryDisplay = DEFAULT_LIBRARY_VIEW.display;
 
 function booksOf(series: string): string[] {
   return [`${series}-a`, `${series}-b`];
@@ -30,6 +35,7 @@ test.use({
     ...DEFAULT_BACKEND,
     librarySeries: () => ({ series: catalog, next: null }),
     librarySeriesCount: () => catalog.length,
+    libraryView: () => ({ ...DEFAULT_LIBRARY_VIEW, display }),
     markSeriesRead: (series) => {
       catalog = catalog.map((one) =>
         series.includes(one.id) ? { ...one, unreadCount: 0 } : one,
@@ -47,6 +53,7 @@ test.use({
 test.beforeEach(() => {
   catalog = [...LIBRARY];
   markedBack = [];
+  display = DEFAULT_LIBRARY_VIEW.display;
 });
 
 function seriesList(page: Page): Locator {
@@ -197,6 +204,39 @@ test.describe("with a pointer and keyboard", () => {
     await expect(seriesList(page).getByRole("checkbox")).toHaveCount(0);
   });
 });
+
+function coverSizes(page: Page): Promise<string[]> {
+  return seriesList(page)
+    .getByRole("listitem")
+    .evaluateAll((items) =>
+      items.map((item) => {
+        const box = item
+          .querySelector(":is(a, button) > div")
+          ?.getBoundingClientRect();
+        return box === undefined
+          ? "no cover"
+          : `${String(Math.round(box.width))}x${String(Math.round(box.height))}`;
+      }),
+    );
+}
+
+for (const shown of ["grid", "compact", "covers"] as const) {
+  test(`keeps every cover its size once selecting starts, in the ${shown} display`, async ({
+    page,
+  }) => {
+    display = shown;
+    catalog = LIBRARY.map((series, index) =>
+      index === 0 ? { ...series, title: "Ao" } : series,
+    );
+    await openLibrary(page);
+    const sizes = await coverSizes(page);
+
+    await startSelecting(page, 1);
+
+    await expect(choice(page, titleOf(1))).toBeChecked();
+    expect(await coverSizes(page)).toEqual(sizes);
+  });
+}
 
 test("selecting has no accessibility violations", async ({ page }) => {
   await openLibrary(page);
