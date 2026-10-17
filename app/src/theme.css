@@ -279,6 +279,9 @@
   --menu-highlight-foreground: var(--accent-foreground);
   --popover-surface: var(--menu-surface);
   --popover-radius: var(--menu-radius);
+  --label-badge-radius: var(--radius-md);
+  --empty-art-radius: var(--radius-lg);
+  --empty-art-fill: var(--muted);
   --bottom-sheet-surface: var(--card);
   --sheet-handle: var(--muted);
   --tooltip-surface: var(--primary);
@@ -339,6 +342,8 @@
   --menu-radius: var(--radius-android-xs);
   --popover-surface: var(--android-container-high);
   --popover-radius: var(--radius-android-md);
+  --empty-art-radius: 9999px;
+  --empty-art-fill: var(--android-tonal);
   --bottom-sheet-surface: var(--android-container-low);
   --sheet-handle: var(--android-outline);
   --switch-off: var(--android-container-high);
@@ -372,6 +377,7 @@
   --menu-radius: var(--radius-ios-sheet);
   --sheet-handle: color-mix(in oklch, var(--secondary-text) 50%, transparent);
   --select-fill: var(--ios-fill);
+  --label-badge-radius: 9999px;
   --select-edge: transparent;
   --select-radius: var(--radius-ios-cell);
   --menu-shadow: var(--shadow-ios-glass);
