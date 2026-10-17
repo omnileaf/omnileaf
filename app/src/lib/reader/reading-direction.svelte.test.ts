@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 
 import {
   inReadingOrder,
+  NewSeriesReadingMode,
   SeriesReadingDirection,
 } from "./reading-direction.svelte";
 
@@ -209,4 +210,26 @@ test("remembers a series looked like a long strip for a book whose pages can't t
   );
 
   expect([later.mode, other.mode]).toEqual(["longStrip", "paged"]);
+});
+
+test("starts a series with no choice of its own in the reading mode chosen for new series", () => {
+  const store = memoryStore();
+  new NewSeriesReadingMode(store).choose("longStrip");
+
+  const fresh = new SeriesReadingDirection(store, SERIES, NOT_WRITTEN, false);
+  new SeriesReadingDirection(store, OTHER_SERIES, NOT_WRITTEN, false).choose(
+    "leftToRight",
+  );
+  const chosen = new SeriesReadingDirection(
+    store,
+    OTHER_SERIES,
+    NOT_WRITTEN,
+    false,
+  );
+
+  expect([fresh.mode, chosen.mode]).toEqual(["longStrip", "paged"]);
+});
+
+test("leaves new series to the app until a reading mode is chosen for them", () => {
+  expect(new NewSeriesReadingMode(memoryStore()).choice).toBe("automatic");
 });
