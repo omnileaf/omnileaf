@@ -653,7 +653,29 @@
   "settings_summary_opens_on": "opens to {place}",
   "settings_summary_screenshot_off": "Screenshot mode off",
   "settings_summary_screenshot_on": "Screenshot mode on",
-  "settings_summary_advanced": "Animations",
+  "settings_summary_advanced": "Animations · Undo",
+  "advanced_undo": "Undo",
+  "animations_summary_all_on": "All on",
+  "animations_summary_all_off": "All off",
+  "animations_summary_some": "{on} of {total} on",
+  "advanced_offer_undo": "Offer Undo",
+  "advanced_offer_undo_help": "Off: notices show without Undo; deleting downloads, unpairing a device and deleting a profile still ask first.",
+  "advanced_keep_undo": "Keep Undo for",
+  "advanced_hold_undo": "Hold it while hovered or focused",
+  "advanced_undo_seconds": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} second",
+        "countPlural=other": "{formattedCount} seconds"
+      }
+    }
+  ],
   "settings_folder_count": [
     {
       "declarations": [
