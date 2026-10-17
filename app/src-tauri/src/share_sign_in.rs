@@ -12,10 +12,10 @@ pub(crate) enum SignInOutcome {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(
-    not(any(target_os = "linux", windows, test)),
+    not(any(target_os = "linux", target_os = "macos", windows, test)),
     expect(
         dead_code,
-        reason = "only Linux and Windows hand a share's sign-in over to the system so far"
+        reason = "phones choose a share's folder again rather than sign in to it"
     )
 )]
 pub(crate) enum SystemSignIn {

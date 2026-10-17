@@ -9,8 +9,8 @@ use specta::Type;
 use tokio::task::spawn_blocking;
 
 use crate::{
-    LibraryFolder, NetworkShare, ShareLookup, ShareSignIn, UnreachableShare,
-    network_share::share_of_tree,
+    LibraryFolder, NetworkShare, ShareAddress, ShareLookup, ShareSignIn, UnreachableShare,
+    network_share::{share_of_tree, unreachable_share_of},
 };
 
 /// Where removable drives are mounted, with how many names under it lead to one drive.
@@ -63,14 +63,18 @@ impl MissingFolder {
     }
 }
 
-pub(crate) async fn problem_of(locator: &RootLocator, shares: &impl ShareLookup) -> FolderProblem {
+pub(crate) async fn problem_of(
+    locator: &RootLocator,
+    remembered: Option<ShareAddress>,
+    shares: &impl ShareLookup,
+) -> FolderProblem {
     match locator {
         RootLocator::AndroidTree(tree) => share_of_tree(tree)
             .map_or(FolderProblem::LostAccess, |share| {
                 FolderProblem::ShareUnreachable { share }
             }),
         RootLocator::Path(path) | RootLocator::AppleBookmark { path, .. } => {
-            if let Some(unreachable) = shares.unreachable_share(path).await {
+            if let Some(unreachable) = unreachable_share_of(path, remembered, shares).await {
                 return FolderProblem::from(unreachable);
             }
             let Some(drive) = drive_of(path) else {
@@ -130,8 +134,6 @@ mod tests {
 
     use omnileaf_db::catalog::{AndroidTree, TreeUri};
 
-    use crate::ShareAddress;
-
     use super::*;
 
     struct NoShares;
@@ -185,28 +187,38 @@ mod tests {
     async fn asks_to_sign_in_to_an_unreachable_share_the_system_signs_in_to() {
         let address = ShareAddress::new("smb://nas.test/manga".to_owned());
 
-        let problem = problem_of(&folder(), &UnreachableAt(ShareSignIn::System(address))).await;
+        let problem = problem_of(
+            &folder(),
+            None,
+            &UnreachableAt(ShareSignIn::System(address)),
+        )
+        .await;
 
         assert_eq!(problem, FolderProblem::NeedsSignIn { share: nas_manga() });
     }
 
     #[tokio::test]
     async fn asks_to_mount_again_an_unreachable_share_the_system_mounts() {
-        let problem = problem_of(&folder(), &UnreachableAt(ShareSignIn::MountedBySystem)).await;
+        let problem = problem_of(
+            &folder(),
+            None,
+            &UnreachableAt(ShareSignIn::MountedBySystem),
+        )
+        .await;
 
         assert_eq!(problem, FolderProblem::NeedsMounting { share: nas_manga() });
     }
 
     #[tokio::test]
     async fn calls_a_folder_on_no_share_and_no_drive_missing() {
-        let problem = problem_of(&folder(), &NoShares).await;
+        let problem = problem_of(&folder(), None, &NoShares).await;
 
         assert_eq!(problem, FolderProblem::Missing);
     }
 
     #[tokio::test]
     async fn names_the_share_an_android_folder_from_another_provider_is_on() {
-        let problem = problem_of(&tree("documents.test", "nas"), &NoShares).await;
+        let problem = problem_of(&tree("documents.test", "nas"), None, &NoShares).await;
 
         assert_eq!(
             problem,
@@ -216,7 +228,7 @@ mod tests {
 
     #[tokio::test]
     async fn names_an_android_share_by_its_folder_when_its_provider_has_no_name() {
-        let problem = problem_of(&tree("documents.test", ""), &NoShares).await;
+        let problem = problem_of(&tree("documents.test", ""), None, &NoShares).await;
 
         assert_eq!(
             problem,
@@ -234,11 +246,13 @@ mod tests {
         let problems = [
             problem_of(
                 &tree("com.android.externalstorage.documents", ""),
+                None,
                 &NoShares,
             )
             .await,
             problem_of(
                 &tree("com.android.providers.downloads.documents", ""),
+                None,
                 &NoShares,
             )
             .await,
