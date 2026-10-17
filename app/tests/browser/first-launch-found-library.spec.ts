@@ -17,6 +17,7 @@ const HOME_LOCATION = "/data/Omnileaf";
 const FOUND_HEADING = "A library is already here";
 const USE_LIBRARY = "Use this library";
 const START_NEW_LIBRARY = "Start a new library instead";
+const STACKED_BUTTON_GAP = 6;
 const FOUND_FACTS = [
   ["Series", "212"],
   ["Books", "38"],
@@ -219,7 +220,7 @@ test.describe("a library already in the home folder on an android phone", () => 
     );
   });
 
-  test("stacks Use this library over Start a new library instead", async ({
+  test("stacks Use this library 6px over Start a new library instead", async ({
     page,
   }) => {
     test.skip(
@@ -233,7 +234,7 @@ test.describe("a library already in the home folder on an android phone", () => 
       boxOf(button(page, START_NEW_LIBRARY)),
     ]);
 
-    expect(use.y + use.height).toBeLessThan(start.y);
+    expect(start.y - (use.y + use.height)).toBe(STACKED_BUTTON_GAP);
     expect([start.x, start.width]).toEqual([use.x, use.width]);
   });
 });

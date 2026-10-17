@@ -80,7 +80,7 @@
     </span>
   {/if}
   <div
-    class="flex flex-col gap-xs expanded:ms-auto expanded:flex-row-reverse expanded:items-center expanded:gap-sm"
+    class="flex flex-col gap-step-actions expanded:ms-auto expanded:flex-row-reverse expanded:items-center expanded:gap-sm"
   >
     {@render actions()}
   </div>
