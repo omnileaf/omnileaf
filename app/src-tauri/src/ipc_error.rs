@@ -41,6 +41,7 @@ pub(crate) enum IpcErrorCode {
     LabelsNotKept,
     DetailsNotKept,
     ReportNotSaved,
+    ReportsNotSent,
     Internal,
 }
 
@@ -132,6 +133,13 @@ impl IpcError {
         Self {
             code: IpcErrorCode::DetailsNotKept,
             message: "the library keeps no edits to series details yet",
+        }
+    }
+
+    pub(crate) fn reports_not_sent() -> Self {
+        Self {
+            code: IpcErrorCode::ReportsNotSent,
+            message: "problem reports have nowhere to be sent yet",
         }
     }
 
@@ -288,6 +296,14 @@ mod tests {
         assert_eq!(
             IpcError::labels_not_kept().code,
             IpcErrorCode::LabelsNotKept
+        );
+    }
+
+    #[test]
+    fn tells_the_interface_problem_reports_have_nowhere_to_be_sent_yet() {
+        assert_eq!(
+            IpcError::reports_not_sent().code,
+            IpcErrorCode::ReportsNotSent
         );
     }
 

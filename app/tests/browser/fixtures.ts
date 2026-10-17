@@ -182,6 +182,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
     log: [],
   }),
   copyProblemReport: () => null,
+  sendProblemReport: () => null,
+  copyProblemReportCode: () => null,
   openProblemReportIssue: () => null,
   saveProblemReport: () => ({
     place: { kind: "folder", folder: "~/Downloads" },
