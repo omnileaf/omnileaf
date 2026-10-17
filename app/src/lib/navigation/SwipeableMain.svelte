@@ -4,17 +4,23 @@
   import { on } from "svelte/events";
   import { prefersReducedMotion } from "svelte/motion";
 
-  import { afterNavigate, beforeNavigate } from "$app/navigation";
+  import {
+    afterNavigate,
+    beforeNavigate,
+    type NavigationType,
+  } from "$app/navigation";
   import { page } from "$app/state";
   import { assertNever } from "#lib/assert-never.ts";
   import { type BackSwipe, commands } from "#lib/ipc/bindings.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
 
+  import { getBackGoesUp } from "./back-goes-up";
   import { shownBackLink } from "./back-link";
   import { backSwipeEdge, isGoingBack, type TextDirection } from "./back-swipe";
   import { isBackTakenByScreen } from "./back-within-screen";
   import { BackSwipeScreens } from "./back-swipe-screens.svelte";
+  import { focusArrival } from "./page-heading";
   import { PreviousScreens, type ScreenCopy } from "./previous-screens";
 
   interface SwipeStart {
@@ -34,6 +40,7 @@
   }: { isIos: boolean; isFullScreen?: boolean; children: Snippet } = $props();
 
   const language = getLanguageSetting();
+  const backGoesUp = getBackGoesUp();
   const width = new WindowWidth();
   const previousScreens = new PreviousScreens();
   const screens = new BackSwipeScreens(
@@ -160,20 +167,20 @@
     }
   });
 
-  function restoreScrollAfterHeadingFocus(copy: ScreenCopy): void {
-    requestAnimationFrame(() => {
-      if (main !== undefined) {
-        main.scrollTop = copy.scrollTop;
-      }
-    });
+  function isArrival(type: NavigationType): boolean {
+    const isProblem = page.error !== null;
+    return (type !== "enter" && !backGoesUp.isPassingThrough) || isProblem;
   }
 
-  afterNavigate(() => {
+  afterNavigate(({ type }) => {
     const landedOn = screens.isSettling
       ? swipeStart?.previousScreen
       : undefined;
-    if (landedOn !== undefined) {
-      restoreScrollAfterHeadingFocus(landedOn);
+    if (isArrival(type)) {
+      focusArrival({ preventScroll: landedOn !== undefined });
+    }
+    if (landedOn !== undefined && main !== undefined) {
+      main.scrollTop = landedOn.scrollTop;
     }
     screens.arrived();
     previousScreens.forgetAllButAbove(page.url.pathname);
