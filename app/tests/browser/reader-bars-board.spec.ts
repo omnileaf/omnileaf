@@ -6,6 +6,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   EXPANDED_MIN_WIDTH,
+  LARGE_MIN_WIDTH,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -13,13 +14,18 @@ import {
   BOOK_ID,
   BOOK_SERIES_TITLE,
   BOOK_TITLE,
+  NOT_STARTED,
   PAGE_COUNT,
   readerBackend,
+  readerBook,
   servePages,
 } from "./reader-book.ts";
 
 const DENSE_BUTTON = 44;
 const DESKTOP_BUTTON = 36;
+const SERIES_CRUMB_CAP = 220;
+const BELOW_LARGE = { width: 1000, height: 800 };
+const LONG_SERIES_TITLE = "A Series Whose Title Runs Well Past Its Crumb";
 
 const marked: { books: readonly string[]; mark: string }[] = [];
 
@@ -132,6 +138,46 @@ test("joins the quick settings into one group of outlined buttons", async ({
   const first = await boxOf(buttons.nth(0));
   const second = await boxOf(buttons.nth(1));
   expect(Math.round(second.x - (first.x + first.width))).toBe(-1);
+});
+
+test.describe("in a window narrower than a large screen", () => {
+  test.use({
+    backend: {
+      ...readerBackend(DEFAULT_BACKEND),
+      openBook: () => ({
+        ...readerBook(NOT_STARTED),
+        seriesTitle: LONG_SERIES_TITLE,
+      }),
+    },
+  });
+
+  test("keeps the quick settings above the slider, leaving the crumbs their room", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width < LARGE_MIN_WIDTH,
+      "a desktop window narrowed below a large screen",
+    );
+    await page.setViewportSize(BELOW_LARGE);
+    await openBook(page);
+    const crumbs = page.getByRole("navigation", { name: "Breadcrumb" });
+
+    await expect(
+      page.locator("main > header").getByRole("group", {
+        name: "Quick settings",
+      }),
+    ).toBeHidden();
+    await expect(
+      page
+        .locator("main > div:has(input[type=range])")
+        .getByRole("group", { name: "Quick settings" })
+        .getByRole("button"),
+    ).toHaveText([/^\s*Left to right/, "Two pages", "Fit height", "Light"]);
+    const seriesCrumb = await boxOf(
+      crumbs.getByRole("link", { name: LONG_SERIES_TITLE, exact: true }),
+    );
+    expect(seriesCrumb.width).toBe(SERIES_CRUMB_CAP);
+  });
 });
 
 test("starts the book over from More", async ({ page }) => {

@@ -37,7 +37,7 @@
 <div
   class={cn(
     READER_GLASS,
-    "flex flex-col gap-sm p-sm expanded:justify-center expanded:py-none expanded:min-block-reader-top-wide",
+    "flex flex-col gap-sm p-sm expanded:justify-center expanded:min-block-reader-top-wide large:py-none",
   )}
 >
   {#if isDragged}
@@ -46,7 +46,7 @@
   <div
     role="group"
     aria-label={m.reader_quick_settings()}
-    class="flex flex-wrap items-stretch rounded-shadcn-control shadow-raised expanded:hidden"
+    class="flex flex-wrap items-stretch rounded-shadcn-control shadow-raised large:hidden"
   >
     {@render quickSettings()}
   </div>

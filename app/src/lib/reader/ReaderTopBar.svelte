@@ -119,13 +119,13 @@
   <div
     role="group"
     aria-label={m.reader_quick_settings()}
-    class="hidden shrink-0 items-stretch rounded-shadcn-control shadow-raised expanded:flex"
+    class="hidden shrink-0 items-stretch rounded-shadcn-control shadow-raised large:flex"
   >
     {@render quickSettings()}
   </div>
   <span
     aria-hidden="true"
-    class="mx-xs hidden shrink-0 border-s border-border block-lg expanded:block"
+    class="mx-xs hidden shrink-0 border-s border-border block-lg large:block"
   ></span>
   <ComingSoon
     label={m.reader_keyboard_shortcuts()}
