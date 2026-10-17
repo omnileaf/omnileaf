@@ -11,6 +11,7 @@ import {
   type LibraryView,
   type Platform,
   type SeriesFormat,
+  type SignInOutcome,
   type SmartFilter,
 } from "#lib/ipc/bindings.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
@@ -44,6 +45,7 @@ export interface SampleScenario {
   readonly series: SeriesState;
   readonly sixthVolume: SampleFile;
   readonly missing: MissingKind;
+  readonly signIn: SignInOutcome;
 }
 
 export interface SampleEvents {
@@ -72,6 +74,12 @@ const MISSING_KINDS = [
 ] as const;
 
 type MissingKind = (typeof MISSING_KINDS)[number];
+
+const SIGN_IN_OUTCOMES = [
+  "signedIn",
+  "cancelled",
+  "failed",
+] as const satisfies readonly SignInOutcome[];
 
 const MISSING_FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000002";
 const MISSING_FOLDER_SERIES = new Set([3, 6, 9, 12, 15, 18]);
@@ -129,6 +137,7 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
     series: oneOf(SERIES_STATES, search.get("series"), "ready"),
     sixthVolume: oneOf(SIXTH_VOLUME_FILES, search.get("volume6"), "missing"),
     missing: oneOf(MISSING_KINDS, search.get("missing"), "none"),
+    signIn: oneOf(SIGN_IN_OUTCOMES, search.get("signin"), "signedIn"),
   };
 }
 
@@ -778,9 +787,11 @@ export function sampleBackend(
     },
     showSeriesInFolder: () => null,
     signInToLibraryFolder: () => {
-      missingFolder.isFound = true;
-      events.emit("library-changed", null);
-      return "signedIn";
+      if (scenario.signIn === "signedIn") {
+        missingFolder.isFound = true;
+        events.emit("library-changed", null);
+      }
+      return scenario.signIn;
     },
     relocateLibraryFolder: (id) => {
       missingFolder.isFound = true;
