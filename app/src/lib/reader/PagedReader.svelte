@@ -22,6 +22,7 @@
   import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
+  import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import { standInOpenedBook } from "#lib/series/series-stand-ins.ts";
   import { shortcut } from "#lib/shortcut.ts";
@@ -108,6 +109,7 @@
   } = $props();
 
   const screenshotMode = getScreenshotMode();
+  const smartFeatures = getSmartFeatures();
   const named = $derived(screenshotMode.isOn ? standInOpenedBook(book) : book);
 
   const turner = untrack(
@@ -891,7 +893,9 @@
         direction={reading.direction}
         {quickSettings}
         isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
-        secondsLeft={book.secondsPerPage === null
+        showsPreviews={smartFeatures.showsPagePreviews}
+        secondsLeft={book.secondsPerPage === null ||
+        !smartFeatures.showsTimeLeft
           ? undefined
           : (pageCount - turner.shown) * book.secondsPerPage}
         onSeek={(index: number) => {

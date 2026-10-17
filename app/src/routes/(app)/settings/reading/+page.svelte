@@ -12,6 +12,7 @@
     SWIPE_ACTIONS,
     type SwipeAction,
   } from "#lib/series/swipe-actions.svelte.ts";
+  import SmartFeaturesSection from "#lib/reader/SmartFeaturesSection.svelte";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
@@ -40,6 +41,7 @@
 </script>
 
 <SectionHeading title={m.reading_title()} />
+<p class="mbs-pane-gap text-detail text-muted">{m.reading_defaults_intro()}</p>
 <div class="mbs-pane-gap flex flex-col gap-pane-gap">
   <section
     aria-labelledby={tapZonesId}
@@ -55,6 +57,15 @@
         defaults.change("tapZones", zones);
       }}
     />
+    <SettingSwitch
+      label={m.reader_keep_screen_on()}
+      description={m.reading_keep_screen_on_help()}
+      isOn={defaults.look.keepsScreenOn}
+      onToggle={() => {
+        defaults.change("keepsScreenOn", !defaults.look.keepsScreenOn);
+      }}
+      class="-mx-list-row inline-auto"
+    />
   </section>
   <SettingSwitch
     label={m.reading_skip_up_next()}
@@ -64,6 +75,10 @@
       skipUpNext.turn(!skipUpNext.isOn);
     }}
     class="rounded-card border border-border bg-card"
+  />
+  <SmartFeaturesSection
+    heading="h2"
+    class="rounded-card border border-border bg-card p-list-row"
   />
   <section
     aria-labelledby={swipesId}
