@@ -64,7 +64,7 @@
     role="checkbox"
     aria-checked={selection.has(id)}
     aria-label={title}
-    class={["text-start", className]}
+    class={["text-start inline-full", className]}
     onclick={pick}
   >
     {@render children()}
