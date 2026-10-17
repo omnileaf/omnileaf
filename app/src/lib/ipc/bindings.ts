@@ -114,6 +114,8 @@ export const commands = {
 	openProjectLink: (link: ProjectLink) => typedError<null, IpcError>(__TAURI_INVOKE("open_project_link", { link })),
 	problemReport: () => typedError<ProblemReportPreview, IpcError>(__TAURI_INVOKE("problem_report")),
 	copyProblemReport: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_problem_report")),
+	sendProblemReport: (replyTo: string | null) => typedError<null, IpcError>(__TAURI_INVOKE("send_problem_report", { replyTo })),
+	copyProblemReportCode: (code: ReportCode) => typedError<null, IpcError>(__TAURI_INVOKE("copy_problem_report_code", { code })),
 	openProblemReportIssue: () => typedError<null, IpcError>(__TAURI_INVOKE("open_problem_report_issue")),
 	saveProblemReport: (today: number) => typedError<SavedProblemReport, IpcError>(__TAURI_INVOKE("save_problem_report", { today })),
 	showSavedProblemReport: () => typedError<null, IpcError>(__TAURI_INVOKE("show_saved_problem_report")),
@@ -365,7 +367,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "reportsNotSent" | "internal";
 
 export type LabelChanges = {
 	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],
