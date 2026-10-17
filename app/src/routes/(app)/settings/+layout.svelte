@@ -2,7 +2,7 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { m } from "#lib/paraglide/messages.js";
-  import { SETTINGS_GROUPS, sectionCurrent } from "#lib/settings/sections.ts";
+  import { SETTINGS_SECTIONS, sectionCurrent } from "#lib/settings/sections.ts";
 
   import type { LayoutProps } from "./$types";
 
@@ -26,38 +26,36 @@
       aria-label={m.settings_sections_label()}
       class="flex flex-col gap-lg desktop:-mbs-md desktop:gap-2xs"
     >
-      {#each SETTINGS_GROUPS as group, index (index)}
-        <ul class="flex flex-col gap-2xs">
-          {#each group as section (section.route)}
-            {@const current = sectionCurrent(
-              page.url.pathname,
-              resolve(section.route),
-            )}
-            <li>
-              <a
-                href={resolve(section.route)}
-                aria-current={current}
-                class={[
-                  "flex items-center gap-md rounded-row px-md text-label transition-control min-block-touch-target desktop:gap-sm desktop:rounded-sidebar-row desktop:px-sm desktop:text-small desktop:min-block-sidebar-row",
-                  current !== undefined
-                    ? "bg-accent-soft font-bold text-accent desktop:bg-sidebar-accent desktop:font-medium desktop:text-on-sidebar-accent"
-                    : "font-medium text-sidebar-ink hover:bg-hover active:bg-pressed desktop:font-regular",
-                ]}
+      <ul class="flex flex-col gap-2xs">
+        {#each SETTINGS_SECTIONS as section (section.route)}
+          {@const current = sectionCurrent(
+            page.url.pathname,
+            resolve(section.route),
+          )}
+          <li>
+            <a
+              href={resolve(section.route)}
+              aria-current={current}
+              class={[
+                "flex items-center gap-md rounded-row px-md text-label transition-control min-block-touch-target desktop:gap-sm desktop:rounded-sidebar-row desktop:px-sm desktop:text-small desktop:min-block-sidebar-row",
+                current !== undefined
+                  ? "bg-accent-soft font-bold text-accent desktop:bg-sidebar-accent desktop:font-medium desktop:text-on-sidebar-accent"
+                  : "font-medium text-sidebar-ink hover:bg-hover active:bg-pressed desktop:font-regular",
+              ]}
+            >
+              <section.icon
+                size={ICON_SIZE}
+                class="shrink-0 desktop:block-sidebar-icon desktop:inline-sidebar-icon"
+              />
+              <span
+                data-label={section.label()}
+                class="room-for-bold-label wrap-break-word min-inline-none"
+                >{section.label()}</span
               >
-                <section.icon
-                  size={ICON_SIZE}
-                  class="shrink-0 desktop:block-sidebar-icon desktop:inline-sidebar-icon"
-                />
-                <span
-                  data-label={section.label()}
-                  class="room-for-bold-label wrap-break-word min-inline-none"
-                  >{section.label()}</span
-                >
-              </a>
-            </li>
-          {/each}
-        </ul>
-      {/each}
+            </a>
+          </li>
+        {/each}
+      </ul>
     </nav>
   </div>
   <div
