@@ -58,6 +58,7 @@ const SEND_OUTCOMES = {
   labelsNotKept: "notSent",
   detailsNotKept: "notSent",
   reportNotSaved: "notSent",
+  reportsNotSent: "notSent",
   internal: "notSent",
 } as const satisfies Record<IpcErrorCode, SendFailure | undefined>;
 
