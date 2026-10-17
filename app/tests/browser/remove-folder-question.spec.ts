@@ -30,7 +30,7 @@ const LOST: MissingFolder = {
   hiddenSeries: 41,
   isShownAnyway: false,
 } as MissingFolder;
-const DIALOG_BUTTON_HEIGHT = 40;
+const DIALOG_BUTTON_HEIGHT = 36;
 const SHEET_BUTTON_HEIGHT = 52;
 const SHEET_INSET = 20;
 

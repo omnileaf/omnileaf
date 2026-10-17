@@ -318,8 +318,8 @@
         {#if view === "wide"}
           <Button
             type="button"
-            look="outline"
-            class="flex-1 rounded-control font-medium min-block-pointer-button"
+            look="dialog-secondary"
+            class="flex-1"
             onclick={() => {
               isOpen = false;
             }}
@@ -329,8 +329,8 @@
         {/if}
         <Button
           type="button"
-          look="filled"
-          class="flex-1 rounded-control font-semibold min-block-pointer-button touch:min-block-touch-target"
+          look="dialog-primary"
+          class="flex-1"
           onclick={() => {
             void apply();
           }}

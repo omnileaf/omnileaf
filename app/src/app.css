@@ -442,7 +442,7 @@
   --spacing-dialog-badge: 2.25rem;
   --spacing-dialog-inset: 1.25rem;
   --spacing-dialog-gap: 1rem;
-  --spacing-dialog-button: 2.5rem;
+  --spacing-dialog-button: 2.25rem;
   --spacing-checkbox: 1rem;
   --spacing-active-dot: 0.625rem;
   --spacing-attention-dot: 0.75rem;
@@ -723,7 +723,7 @@
   --radius-toast-wide: 1rem;
   --radius-crash-screen-button: 0.875rem;
   --radius-dialog: 1rem;
-  --radius-dialog-button: 0.625rem;
+  --radius-dialog-button: 0.5rem;
   --radius-checkbox: 0.25rem;
 
   --container-toast: 25.25rem;
@@ -917,6 +917,8 @@
     --spacing-switch-knob-on: 1.5rem;
     --spacing-switch-inset: 0.375rem;
     --spacing-switch-inset-on: 0.125rem;
+    --radius-dialog-button: 9999px;
+    --spacing-dialog-button: var(--spacing-touch-target);
   }
 
   @variant ios {
@@ -932,6 +934,7 @@
     --spacing-switch-knob-on: 1.6875rem;
     --spacing-switch-inset: 0.125rem;
     --spacing-switch-inset-on: 0.125rem;
+    --spacing-dialog-button: var(--spacing-touch-target);
   }
 
   @variant macos {
@@ -949,6 +952,8 @@
     --spacing-switch-knob-on: 1.125rem;
     --spacing-switch-inset: 0.125rem;
     --spacing-switch-inset-on: 0.125rem;
+    --radius-dialog-button: 0.375rem;
+    --spacing-dialog-button: 1.75rem;
   }
 
   @variant windows {
@@ -965,6 +970,8 @@
     --spacing-switch-knob-on: 0.875rem;
     --spacing-switch-inset: 0.1875rem;
     --spacing-switch-inset-on: 0.1875rem;
+    --radius-dialog-button: 0.25rem;
+    --spacing-dialog-button: 2rem;
   }
 }
 
@@ -991,6 +998,8 @@
   --color-windows-stroke: var(--windows-stroke);
   --color-windows-stroke-strong: var(--windows-stroke-strong);
   --color-windows-mica: var(--windows-mica);
+  --color-button-outline: var(--button-outline-fill);
+  --color-button-outline-edge: var(--button-outline-edge);
   --color-select: var(--select-fill);
   --color-select-edge: var(--select-edge);
   --color-ios-material: var(--ios-material);
