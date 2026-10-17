@@ -131,7 +131,7 @@ impl Default for LibraryView {
                 tablet: CoversPerRowCount(5),
                 desktop: CoversPerRowCount(6),
             },
-            shows_item_counts: false,
+            shows_item_counts: true,
             shows_continue_row: false,
             on_covers: OnCovers {
                 shows_unread_count: true,
@@ -215,7 +215,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn draws_a_new_library_as_a_grid_of_three_five_and_six_covers_per_row_without_item_counts() {
+    fn draws_a_new_library_as_a_grid_of_three_five_and_six_covers_per_row_with_its_item_count() {
         let view = LibraryView::default();
 
         let widths = (
@@ -225,7 +225,7 @@ mod tests {
         );
         assert_eq!(view.display, LibraryDisplay::Grid);
         assert_eq!(widths, (3, 5, 6));
-        assert!(!view.shows_item_counts);
+        assert!(view.shows_item_counts);
     }
 
     #[test]
@@ -263,7 +263,7 @@ mod tests {
             serde_json::json!({
                 "display": "grid",
                 "coversPerRow": { "phone": 3, "tablet": 5, "desktop": 6 },
-                "showsItemCounts": false,
+                "showsItemCounts": true,
                 "showsContinueRow": false,
                 "onCovers": {
                     "showsUnreadCount": true,

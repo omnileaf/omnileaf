@@ -15,7 +15,10 @@
 <section
   bind:this={ref}
   data-slot="empty"
-  class={cn("flex flex-col items-center gap-md text-center", className)}
+  class={cn(
+    "flex flex-col items-center gap-sm text-center text-balance",
+    className,
+  )}
   {...restProps}
 >
   {@render children?.()}

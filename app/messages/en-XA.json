@@ -19,6 +19,9 @@
     }
   ],
   "library_series_failed": "⟦Çöûļðñ'ţ ļöáð ýöûŕ ļíƀŕáŕý. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
+  "library_unchanged": "⟦Ñöţĥíñĝ íñ ýöûŕ ļíƀŕáŕý ĥáš çĥáñĝéð.···············⟧",
+  "library_try_again": "⟦Ţŕý áĝáíñ····⟧",
+  "library_loading": "⟦Ļöáðíñĝ ýöûŕ ļíƀŕáŕý········⟧",
   "library_series_count": [
     {
       "declarations": [
@@ -75,6 +78,7 @@
   "library_on_covers_language": "⟦Ļáñĝûáĝé····⟧",
   "library_on_covers_reading_progress": "⟦Ŕéáðíñĝ þŕöĝŕéšš·······⟧",
   "library_on_covers_continue_button": "⟦Çöñţíñûé ŕéáðíñĝ ƀûţţöñ··········⟧",
+  "library_books_read": "⟦{read} öƒ {count} ƀööķš ŕéáð············⟧",
   "library_unread_count": [
     {
       "declarations": [
@@ -714,7 +718,7 @@
   "search_title": "⟦Šéáŕçĥ···⟧",
   "search_open": "⟦Šéáŕçĥ···⟧",
   "search_library_field": "⟦Šéáŕçĥ ţĥé ļíƀŕáŕý········⟧",
-  "search_library_placeholder": "⟦Šéáŕçĥ···⟧",
+  "search_library_placeholder": "⟦Šéáŕçĥ ţĥé ļíƀŕáŕý········⟧",
   "search_field": "⟦Šéáŕçĥ ýöûŕ ļíƀŕáŕý········⟧",
   "search_clear": "⟦Çļéáŕ··⟧",
   "search_cancel": "⟦Çáñçéļ···⟧",
