@@ -14,8 +14,8 @@ use omnileaf_engine::{
     AppleBookmark, CategoryId, Changed, CoversPerRow, DesktopCoversPerRow, FolderId, FolderKind,
     Inclusion, Library, LibraryDisplay, LibraryError, LibraryFilter, LibraryFilterChoices,
     LibraryFolder, LibraryGrouping, LibraryListing, LibrarySort, LibrarySortBy, LibraryView,
-    OnCovers, PhoneCoversPerRow, ResolvedBookmark, RootLocator, ScanProgress, SortDirection,
-    TabletCoversPerRow,
+    OnCovers, PhoneCoversPerRow, ResolvedBookmark, RootLocator, ScanProgress, SeriesLabels,
+    SortDirection, TabletCoversPerRow,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -801,6 +801,15 @@ async fn offers_nothing_to_filter_by_until_the_library_reads_its_series_details(
     let choices = open(home.path()).await.filter_choices().unwrap();
 
     assert_eq!(choices, LibraryFilterChoices::default());
+}
+
+#[tokio::test]
+async fn labels_no_series_until_the_library_keeps_categories_and_tags() {
+    let home = ScratchFolder::new("library-series-labels");
+
+    let labels = open(home.path()).await.series_labels(Vec::new()).unwrap();
+
+    assert_eq!(labels, SeriesLabels::default());
 }
 
 #[tokio::test]

@@ -39,8 +39,8 @@ use crate::{
     FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, LibraryCategory,
     LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryListing,
     LibrarySearch, LibraryView, LocalDay, ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark,
-    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview,
-    SeriesPage, UtcOffset,
+    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesLabels,
+    SeriesOverview, SeriesPage, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -296,6 +296,10 @@ impl Library {
 
     pub fn filter_choices(&self) -> Result<LibraryFilterChoices, LibraryError> {
         Ok(LibraryFilterChoices::default())
+    }
+
+    pub fn series_labels(&self, _series: Vec<SeriesId>) -> Result<SeriesLabels, LibraryError> {
+        Ok(SeriesLabels::default())
     }
 
     pub fn category_series(

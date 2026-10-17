@@ -244,6 +244,30 @@
   "library_mark_read": "⟦Ṁáŕķ áš ŕéáð·····⟧",
   "library_marked_read": "⟦{count} šéŕíéš ɱáŕķéð áš ŕéáð············⟧",
   "library_selection_toolbar": "⟦Šéļéçţéð šéŕíéš······⟧",
+  "library_tags": "⟦Ţáĝš··⟧",
+  "library_labels_title": "⟦Çáţéĝöŕíéš áñð ţáĝš········⟧",
+  "library_labels_for": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ƒöŕ 1 šéŕíéš. Ðöñé áþþļíéš ţĥé çĥáñĝéš ţö íţ.··················⟧",
+        "countPlural=other": "⟦Ƒöŕ {formattedCount} šéŕíéš. Ðöñé áþþļíéš ţĥé çĥáñĝéš ţö áļļ {formattedCount}.································⟧"
+      }
+    }
+  ],
+  "library_in_some": "⟦{holding} öƒ ţĥé {count} áŕé íñ íţ··············⟧",
+  "library_tag_on_some": "⟦{tag} · {holding} öƒ {count}············⟧",
+  "library_new_category": "⟦Ñéŵ çáţéĝöŕý·····⟧",
+  "library_add_tag": "⟦Áðð á ţáĝ····⟧",
+  "library_add_named_tag": "⟦Áðð {tag}····⟧",
+  "library_remove_tag": "⟦Ŕéɱöṽé {tag}·····⟧",
+  "library_suggested_tags": "⟦Šûĝĝéšţéð····⟧",
+  "library_labels_done": "⟦Ðöñé··⟧",
   "library_no_series": "⟦Ñö šéŕíéš····⟧",
   "app_version": "⟦Ṽéŕšíöñ {version}·······⟧",
   "library_add_folder": "⟦Áðð á ƒöļðéŕ·····⟧",
