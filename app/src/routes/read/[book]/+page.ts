@@ -33,6 +33,7 @@ const SHOWN_ON_FAILURE = {
   cursorForAnotherList: FAILED,
   bookmarksNotKept: FAILED,
   labelsNotKept: FAILED,
+  detailsNotKept: FAILED,
   internal: FAILED,
 } satisfies Record<IpcErrorCode, BookProblem>;
 

@@ -85,6 +85,19 @@ export const DEFAULT_BACKEND: FakeBackend = {
       message: "the library keeps no categories or tags yet",
     });
   },
+  keepsDetailEdits: () => false,
+  seriesDetails: () => {
+    throw new CommandFailure({
+      code: "seriesNotFound",
+      message: "that series isn't in the library",
+    });
+  },
+  editSeriesDetails: () => {
+    throw new CommandFailure({
+      code: "detailsNotKept",
+      message: "the library keeps no edits to series details yet",
+    });
+  },
   libraryFilterChoices: () => ({
     formats: [],
     languages: [],
