@@ -45,8 +45,8 @@
   const headingId = $props.id();
 </script>
 
-<section aria-labelledby={headingId} class="mbs-lg flex flex-col gap-sm">
-  <h2 id={headingId} class="text-small font-semibold">
+<section aria-labelledby={headingId} class="mbs-lg flex flex-col">
+  <h2 id={headingId} class="mbe-ways-heading-gap text-small font-semibold">
     {m.report_other_ways_to_send()}
   </h2>
   <ul
@@ -85,7 +85,7 @@
   </ul>
   <div role="alert">
     {#if failure !== undefined}
-      <Alert tone="warning" icon={CircleAlert}>
+      <Alert tone="warning" icon={CircleAlert} class="mbs-sm">
         <AlertTitle>{failureMessage(failure)}</AlertTitle>
       </Alert>
     {/if}
