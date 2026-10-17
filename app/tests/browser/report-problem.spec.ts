@@ -23,7 +23,7 @@ const REPORT_PAGE = "/settings/about/report";
 const GROUP_GAP = 24;
 const NOTE_GAP = 20;
 const OTHER_WAYS_GAP = 28;
-const HEADING_GAP = 8;
+const HEADING_GAP = 26;
 const REPLY_ADDRESS = "reader@example.org";
 const LOGGED = [
   "INFO omnileaf_app: open the library",
@@ -366,7 +366,7 @@ test.describe("sending it another way", () => {
     expect(await keptCodes(page)).toEqual([FAKE_REPORT_CODE]);
   });
 
-  test("sets the other ways 28px below Send to Omnileaf's note, 8px under their heading", async ({
+  test("sets the other ways 28px below Send to Omnileaf's note, 26px under their heading", async ({
     page,
   }) => {
     await openReport(page);

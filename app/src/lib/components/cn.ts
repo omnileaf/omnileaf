@@ -523,6 +523,7 @@ export const TOKEN_THEME = {
     "up-next-cover-wide",
     "veil-disc",
     "view-panel",
+    "ways-heading-gap",
     "windows-indicator",
     "windows-indicator-length",
     "xl",
