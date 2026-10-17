@@ -85,10 +85,10 @@
       {...props}
       look="header-control"
       class={[
-        "relative block-touch-target inline-touch-target large:ps-header-control-inline large:pe-md large:block-pointer-button large:inline-auto",
+        "relative block-touch-target inline-touch-target large:ps-header-control-inline large:pe-md large:inline-auto",
         isOpen
           ? "large:bg-accent-soft"
-          : "hover:tint-hover active:tint-pressed large:bg-card",
+          : "hover:tint-hover active:tint-pressed",
       ]}
     >
       <ListFilter

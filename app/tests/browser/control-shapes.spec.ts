@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { addFolderInFolders } from "./controls.ts";
+import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   boxOf,
@@ -40,8 +41,17 @@ const PHONE_SEGMENT_TRACK_CORNER = "10px";
 const PHONE_SEGMENT_CORNER = "8px";
 const PHONE_SEGMENT_TEXT = "13px";
 const DESKTOP_STEPPER_CORNER = "8px";
+const TOOLBAR_LOOKS = [
+  { platform: "linux", height: 36, corner: "8px" },
+  { platform: "macos", height: 28, corner: "6px" },
+  { platform: "windows", height: 32, corner: "4px" },
+] as const satisfies readonly {
+  platform: Platform;
+  height: number;
+  corner: string;
+}[];
 
-function withSeries(platform: "linux" | "android" | "ios"): FakeBackend {
+function withSeries(platform: Platform): FakeBackend {
   const series = sampleSeries(12);
   return {
     ...onPlatform(platform).backend,
@@ -127,6 +137,42 @@ test.describe("on a desktop with an empty library", () => {
   });
 });
 
+for (const look of TOOLBAR_LOOKS) {
+  test.describe(`in the ${look.platform} library toolbar`, () => {
+    test.use({ backend: withSeries(look.platform) });
+
+    test.beforeEach(({ page }) => {
+      test.skip(viewportOf(page).width < LARGE_MIN_WIDTH, "a desktop window");
+    });
+
+    test("sizes Filter and View with the search field and rounds them the platform's way", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      const search = page.getByRole("searchbox", {
+        name: "Search the library",
+      });
+      await expect(search).toBeVisible();
+      const filter = page
+        .getByRole("main")
+        .getByRole("button", { name: /^Sort and filter/ });
+      const view = viewOptionsButton(page);
+
+      const heights = await Promise.all(
+        [search.locator(".."), filter, view].map(
+          async (control) => (await boxOf(control)).height,
+        ),
+      );
+
+      expect(heights).toEqual([look.height, look.height, look.height]);
+      expect([await cornerOf(filter), await cornerOf(view)]).toEqual([
+        look.corner,
+        look.corner,
+      ]);
+    });
+  });
+}
+
 test.describe("on a desktop", () => {
   test.use({ backend: withSeries("linux") });
 
@@ -134,18 +180,14 @@ test.describe("on a desktop", () => {
     test.skip(viewportOf(page).width < LARGE_MIN_WIDTH, "a desktop window");
   });
 
-  test("rounds buttons to 10px", async ({ page }) => {
-    await page.goto("/");
-    const viewTrigger = viewOptionsButton(page);
-    await expect(viewTrigger).toBeVisible();
-
-    const viewCorner = await cornerOf(viewTrigger);
+  test("rounds About's Copy button to 10px", async ({ page }) => {
     await page.goto("/settings/about");
+
     const copyCorner = await cornerOf(
       page.getByRole("button", { name: "Copy version details" }),
     );
 
-    expect([viewCorner, copyCorner]).toEqual([BUTTON_CORNER, BUTTON_CORNER]);
+    expect(copyCorner).toBe(BUTTON_CORNER);
   });
 
   test("keeps navigation rows at 8px", async ({ page }) => {
