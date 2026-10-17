@@ -7,6 +7,7 @@ import {
   APP_PAGES,
   expect,
   onPlatform,
+  settle,
   sidewaysOverflow,
   test,
   testOnlyInItsWebview,
@@ -252,6 +253,7 @@ for (const platform of PLATFORMS) {
         for (const [index, step] of FIRST_LAUNCH_STEPS.entries()) {
           test(`fits the ${step} step to the screen`, async ({ page }) => {
             await goToStep(page, messages, index);
+            await settle(page.getByRole("main"));
 
             const overflowing = await sidewaysOverflow(page);
 
