@@ -26,6 +26,7 @@ mod screen_orientation;
 mod share_sign_in;
 mod storage;
 mod system_bars;
+mod system_settings;
 mod system_sign_in;
 mod tray;
 #[cfg(target_os = "android")]
@@ -103,7 +104,8 @@ pub fn run() {
         .plugin(omnileaf_folder_access::init())
         .plugin(system_bars::plugin())
         .plugin(power_mode::plugin())
-        .plugin(screen_orientation::plugin());
+        .plugin(screen_orientation::plugin())
+        .plugin(system_settings::plugin());
     #[cfg(target_os = "ios")]
     let app = app
         .plugin(omnileaf_folder_access::init())

@@ -1481,6 +1481,7 @@ export function sampleBackend(
     copyCrashReport: () => null,
     declineCrashReport: () => null,
     showTrayMenu: () => null,
+    openSystemSettings: () => null,
     panicInCore: () => null,
     crashAndQuit: () => null,
   };
