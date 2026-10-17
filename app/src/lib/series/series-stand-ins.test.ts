@@ -83,6 +83,7 @@ test("shows no cover for the books either side of a book opened in Screenshot mo
     },
     readingDirection: null,
     bookmarkedPages: null,
+    damage: null,
   };
 
   const standIn = standInOpenedBook(book);
