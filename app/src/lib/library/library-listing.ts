@@ -39,12 +39,17 @@ export const FILTER_CONDITIONS: readonly FilterCondition[] = [
 
 export const INCLUSIONS: readonly Inclusion[] = ["any", "only", "hide"];
 
-export const SORTS: readonly LibrarySortBy[] = ["title", "dateAdded"];
+export const SORTS: readonly LibrarySortBy[] = [
+  "title",
+  "lastRead",
+  "dateAdded",
+];
 
-/** Titles read from A to Z, and the series added last are the ones looked for first. */
+/** Titles read from A to Z, and the series added or read last are the ones looked for first. */
 const NATURAL_DIRECTIONS = {
   title: "ascending",
   dateAdded: "descending",
+  lastRead: "descending",
 } as const satisfies Record<LibrarySortBy, SortDirection>;
 
 const OPPOSITE_DIRECTIONS = {

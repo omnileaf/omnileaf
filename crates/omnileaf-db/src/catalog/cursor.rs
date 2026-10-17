@@ -15,6 +15,7 @@ const ROOT_TAG: u8 = 4;
 const DESCENDING_BIT: u8 = 0b01;
 const UNREAD_BIT: u8 = 0b10;
 const SESSION_TAG: u8 = 5;
+const LAST_READ_TAG: u8 = 6;
 const ID_LENGTH: usize = 16;
 const MILLIS_LENGTH: usize = size_of::<i64>();
 const HEX_RADIX: u32 = 16;
@@ -42,6 +43,10 @@ pub(crate) enum Position {
     },
     Root {
         id: i64,
+    },
+    LastRead {
+        last_read_at_ms: i64,
+        id: SeriesId,
     },
     Session {
         started_at_ms: i64,
@@ -73,6 +78,15 @@ impl Position {
             ]
             .concat(),
             Self::Root { id } => [&[ROOT_TAG][..], &id.to_be_bytes()].concat(),
+            Self::LastRead {
+                last_read_at_ms,
+                id,
+            } => [
+                &[LAST_READ_TAG][..],
+                &last_read_at_ms.to_be_bytes(),
+                id.as_bytes(),
+            ]
+            .concat(),
             Self::Session { started_at_ms, id } => [
                 &[SESSION_TAG][..],
                 &started_at_ms.to_be_bytes(),
@@ -110,6 +124,13 @@ impl Position {
                     listing: listing_from_byte(listing)?,
                     sort_key: sort_key.to_vec(),
                     id: BookId::try_from(id.as_slice()).ok()?,
+                })
+            }
+            LAST_READ_TAG => {
+                let (last_read_at_ms, id) = rest.split_first_chunk::<MILLIS_LENGTH>()?;
+                Some(Self::LastRead {
+                    last_read_at_ms: i64::from_be_bytes(*last_read_at_ms),
+                    id: SeriesId::try_from(id).ok()?,
                 })
             }
             ROOT_TAG => Some(Self::Root {

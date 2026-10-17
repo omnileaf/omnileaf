@@ -31,6 +31,12 @@ test("lists the newest series first once date added is chosen", () => {
   expect(listing.sort).toEqual({ by: "dateAdded", direction: "descending" });
 });
 
+test("lists the series read last first once recently read is chosen", () => {
+  const listing = sortedBy(NEW_LIBRARY_LISTING, "lastRead");
+
+  expect(listing.sort).toEqual({ by: "lastRead", direction: "descending" });
+});
+
 test("lists titles from A to Z once title is chosen", () => {
   const listing = sortedBy(NEWEST_UNREAD, "title");
 

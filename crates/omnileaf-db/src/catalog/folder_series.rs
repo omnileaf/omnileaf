@@ -7,7 +7,10 @@ use crate::{
         cursor::Position,
         page::{Page, PageRequest},
         series_listing::{SeriesFilter, SeriesListing, SeriesOrder, StageParams},
-        series_page::{Directions, SeriesSummary, added_place, date_added_rows, directions},
+        series_page::{
+            Directions, SeriesSummary, added_place, date_added_rows, directions, last_read_place,
+            last_read_rows,
+        },
         staged_rows::{Read, TitlePlace, title_place, title_rows},
     },
 };
@@ -34,6 +37,13 @@ const BY_DATE_ADDED: Directions<Position> = directions! {
     condition: " AND series.local_id IN in_folder",
     key: "added_at_ms",
     sort_position: added_place,
+};
+
+const BY_LAST_READ: Directions<Position> = directions! {
+    with: concat!("WITH in_folder AS MATERIALIZED (", series_in_folder!(), ") "),
+    condition: " AND series.local_id IN in_folder",
+    key: "last_read_at_ms",
+    sort_position: last_read_place,
 };
 
 const SERIES_IN_FOLDER: &str = concat!(
@@ -63,6 +73,7 @@ pub fn folder_series_page(
     let rows = match listing.sort.order {
         SeriesOrder::Title => title_rows(&read, BY_TITLE.toward(direction), after),
         SeriesOrder::DateAdded => date_added_rows(&read, BY_DATE_ADDED.toward(direction), after),
+        SeriesOrder::LastRead => last_read_rows(&read, BY_LAST_READ.toward(direction), after),
     }?;
     Ok(Page::of(rows, request.size))
 }
