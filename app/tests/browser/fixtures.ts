@@ -9,10 +9,10 @@ import {
 
 import {
   type AppInfo,
-  DEFAULT_LIBRARY_LISTING,
   DEFAULT_LIBRARY_VIEW,
   type Platform,
 } from "../../src/lib/ipc/bindings.ts";
+import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 import type { ScreenSize } from "../../src/lib/library/library-view.ts";
 import {
   CommandFailure,
@@ -68,6 +68,13 @@ export const DEFAULT_BACKEND: FakeBackend = {
   bookmarkPages: () => null,
   bookPlace: () => null,
   libraryCategories: () => [],
+  libraryFilterChoices: () => ({
+    formats: [],
+    languages: [],
+    tags: [],
+    ratesAdult: false,
+    keepsBookmarks: false,
+  }),
   categorySeries: () => ({ series: [], next: null }),
   categorySeriesCount: () => 0,
   orientScreen: () => null,
@@ -87,7 +94,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   bookReadTime: () => 0,
   bookSessions: () => null,
   historySeries: () => [],
-  libraryListing: () => DEFAULT_LIBRARY_LISTING,
+  libraryListing: () => NEW_LIBRARY_LISTING,
   setLibraryListing: () => null,
   libraryView: () => DEFAULT_LIBRARY_VIEW,
   setLibraryView: () => null,

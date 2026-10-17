@@ -14,6 +14,7 @@
 
   let {
     label,
+    hint,
     choices,
     chosen,
     disabled = false,
@@ -22,6 +23,7 @@
     children,
   }: {
     label: string;
+    hint?: string;
     choices: readonly ChoiceOption<Choice>[];
     chosen: Choice;
     disabled?: boolean;
@@ -37,15 +39,27 @@
   data-slot="setting-row"
   class={[
     "flex flex-col gap-sm py-setting-grid-pad",
+    hint !== undefined &&
+      "grid grid-cols-setting-grid items-center gap-x-md min-block-setting-grid-row",
     !isStacked &&
       "expanded:grid expanded:grid-cols-setting-grid expanded:items-center expanded:gap-x-md expanded:min-block-setting-grid-row",
   ]}
 >
-  <p {id} class="text-small font-medium">{label}</p>
+  {#if hint === undefined}
+    <p {id} class="text-small font-medium">{label}</p>
+  {:else}
+    <div class="flex flex-col gap-2xs">
+      <p {id} class="text-small font-medium">{label}</p>
+      <p class="text-detail text-muted">{hint}</p>
+    </div>
+  {/if}
   <ToggleGroup
     aria-labelledby={id}
     {disabled}
-    class={["inline-full", !isStacked && "expanded:inline-setting-control"]}
+    class={[
+      hint === undefined && "inline-full",
+      !isStacked && "expanded:inline-setting-control",
+    ]}
     bind:value={
       () => chosen,
       (value: string) => {

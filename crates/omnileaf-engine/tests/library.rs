@@ -12,9 +12,10 @@ use std::{
 
 use omnileaf_engine::{
     AppleBookmark, CategoryId, Changed, CoversPerRow, DesktopCoversPerRow, FolderId, FolderKind,
-    Inclusion, Library, LibraryDisplay, LibraryError, LibraryFilter, LibraryFolder, LibraryListing,
-    LibrarySort, LibrarySortBy, LibraryView, OnCovers, PhoneCoversPerRow, ResolvedBookmark,
-    RootLocator, ScanProgress, SortDirection, TabletCoversPerRow,
+    Inclusion, Library, LibraryDisplay, LibraryError, LibraryFilter, LibraryFilterChoices,
+    LibraryFolder, LibraryListing, LibrarySort, LibrarySortBy, LibraryView, OnCovers,
+    PhoneCoversPerRow, ResolvedBookmark, RootLocator, ScanProgress, SortDirection,
+    TabletCoversPerRow,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -792,6 +793,15 @@ async fn keeps_no_categories_until_the_library_keeps_them() {
 }
 
 #[tokio::test]
+async fn offers_nothing_to_filter_by_until_the_library_reads_its_series_details() {
+    let home = ScratchFolder::new("library-filter-choices");
+
+    let choices = open(home.path()).await.filter_choices().unwrap();
+
+    assert_eq!(choices, LibraryFilterChoices::default());
+}
+
+#[tokio::test]
 async fn finds_no_series_in_a_category_the_library_does_not_keep() {
     let home = ScratchFolder::new("library-category-series");
     let library = open(home.path()).await;
@@ -831,11 +841,12 @@ async fn remembers_the_listing_set_on_this_device_when_the_library_reopens() {
             unread: Inclusion::Only,
             started: Inclusion::Hide,
             finished: Inclusion::Any,
+            ..LibraryListing::default().filter
         },
     };
     open(home.path())
         .await
-        .set_listing(unread_newest_first)
+        .set_listing(unread_newest_first.clone())
         .await
         .unwrap();
 
