@@ -407,6 +407,8 @@ export type SeriesNeighbour = {
 	/**  The book's own cover, absent while it has no file. */
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	reading: BookReading,
+	/**  Absent until the library keeps how many pages each book has. */
+	pageCount: number | null,
 };
 
 export type SeriesOverview = {

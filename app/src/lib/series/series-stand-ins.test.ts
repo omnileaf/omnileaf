@@ -79,6 +79,7 @@ test("shows no cover for the books either side of a book opened in Screenshot mo
       title: "Hidden Story v05",
       cover,
       reading: { state: "notStarted" },
+      pageCount: null,
     },
     readingDirection: null,
     bookmarkedPages: null,
