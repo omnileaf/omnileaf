@@ -24,13 +24,11 @@
   title={m.about_licences()}
   parent={{ route: "/(app)/settings/about", title: m.about_title() }}
 />
-<div
-  class="mbs-pane-gap flex flex-col gap-pane-gap two-pane:max-inline-section"
->
-  <p class="text-label text-muted touch:max-medium:px-xs">
-    {m.licences_intro({ count: data.packages.length })}
-  </p>
-  {#each groups as group (group.name)}
-    <LicenceGroupList {group} {look} />
-  {/each}
+<div class="mbs-pane-gap flex flex-col gap-sm two-pane:max-inline-section">
+  <p class="text-detail text-muted">{m.licences_intro()}</p>
+  <div class="flex flex-col gap-xl">
+    {#each groups as group (group.name)}
+      <LicenceGroupList {group} {look} />
+    {/each}
+  </div>
 </div>
