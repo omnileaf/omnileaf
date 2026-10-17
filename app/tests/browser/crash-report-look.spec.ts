@@ -8,6 +8,7 @@ import {
   onPlatform,
   test,
   testOnlyInItsWebview,
+  tokenColour,
   transitionsOf,
   viewportOf,
   watchTransitions,
@@ -26,10 +27,6 @@ const DIALOG_LOOK = {
   title: "17px",
   body: "14px",
   width: 420,
-  well: "rgb(243, 240, 233)",
-  accent: "rgb(47, 111, 79)",
-  accentSoft: "rgb(221, 235, 226)",
-  muted: "rgb(95, 91, 82)",
 };
 
 const PHONE_LOOK = {
@@ -113,7 +110,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
         Number.parseFloat(await styleOf(badgeOf(page), "border-radius")),
       ).toBeGreaterThanOrEqual(size / 2);
       expect(await styleOf(badgeOf(page), "background-color")).toBe(
-        DIALOG_LOOK.accentSoft,
+        await tokenColour(page, "--color-accent-soft"),
       );
       await expect(badgeOf(page)).toHaveAttribute("aria-hidden", "true");
     });
@@ -177,7 +174,7 @@ test.describe("on desktop, the crash report dialog", () => {
         prompt(page).getByText("Panic: index out of bounds"),
         "background-color",
       ),
-    ).toBe(DIALOG_LOOK.well);
+    ).toBe(await tokenColour(page, "--color-well"));
   });
 
   test("sets the title and body at the dialog sizes", async ({ page }) => {
@@ -242,7 +239,9 @@ test.describe("on desktop, the crash report dialog", () => {
 
     expect((await boxOf(copy)).x).toBe(Math.min(...starts));
     expect(await styleOf(copy, "border-top-width")).toBe("0px");
-    expect(await styleOf(copy, "color")).toBe(DIALOG_LOOK.accent);
+    expect(await styleOf(copy, "color")).toBe(
+      await tokenColour(page, "--color-accent"),
+    );
   });
 });
 
@@ -268,7 +267,9 @@ for (const platform of ["android", "ios"] as const) {
 
       expect(await styleOf(titleOf(page), "font-size")).toBe(PHONE_LOOK.title);
       expect(await styleOf(titleOf(page), "font-weight")).toBe("700");
-      expect(await styleOf(body, "color")).toBe(DIALOG_LOOK.muted);
+      expect(await styleOf(body, "color")).toBe(
+        await tokenColour(page, "--color-muted"),
+      );
     });
 
     test("sets the details on the well colour", async ({ page }) => {
@@ -277,7 +278,7 @@ for (const platform of ["android", "ios"] as const) {
           prompt(page).getByText("Panic: index out of bounds"),
           "background-color",
         ),
-      ).toBe(DIALOG_LOOK.well);
+      ).toBe(await tokenColour(page, "--color-well"));
     });
 
     test("stacks full-width 52px buttons, the report on top", async ({

@@ -67,6 +67,18 @@ async function inkOf(locator: Locator): Promise<string> {
   });
 }
 
+async function isIconOnTop(button: Locator): Promise<boolean> {
+  await settle(button);
+  return button.locator("svg").evaluate((icon) => {
+    const box = icon.getBoundingClientRect();
+    const hit = document.elementFromPoint(
+      box.x + box.width / 2,
+      box.y + box.height / 2,
+    );
+    return hit?.closest("svg") === icon;
+  });
+}
+
 test.describe("with a pointer", () => {
   test.use({ backend: DESKTOP });
   test.skip(({ isMobile }) => isMobile, "pointer screens only");
@@ -155,6 +167,46 @@ test.describe("with a pointer", () => {
       });
       expect(await paintOf(remove, "::before")).not.toBe(resting);
       expect(circle).toEqual({ width: POINTER_TARGET, height: POINTER_TARGET });
+    });
+
+    for (const name of ["Remove Sample Comics", "Rescan Sample Comics"]) {
+      test(`keeps ${name}'s icon over its circle under the pointer`, async ({
+        page,
+      }) => {
+        await page.goto("/settings/library");
+        const action = page.getByRole("button", { name, exact: true });
+
+        await action.hover();
+
+        expect(await isIconOnTop(action)).toBe(true);
+      });
+
+      test(`keeps ${name}'s icon over its circle while pressed`, async ({
+        page,
+      }) => {
+        await page.goto("/settings/library");
+        const action = page.getByRole("button", { name, exact: true });
+        await action.hover();
+
+        await page.mouse.down();
+
+        expect(await isIconOnTop(action)).toBe(true);
+      });
+    }
+
+    test("keeps a toast's dismiss icon over its circle under the pointer", async ({
+      page,
+    }) => {
+      await page.goto("/settings/library");
+      await addFolderBesideFolders(page).click();
+      const toast = page.locator("[data-sonner-toast]");
+      await expect(toast).toBeVisible();
+      await settle(toast);
+      const dismiss = toast.getByRole("button", { name: "Dismiss" });
+
+      await dismiss.hover();
+
+      expect(await isIconOnTop(dismiss)).toBe(true);
     });
 
     for (const name of ["Remove folder", "Cancel"]) {

@@ -18,6 +18,7 @@ import {
   settle,
   test,
   testOnlyInItsWebview,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -248,13 +249,13 @@ for (const platform of ["android", "ios", "linux"] as const) {
       const panicTile = panic.locator("span[aria-hidden]").first();
 
       expect(await styleOf(crashTile, "background-color")).toBe(
-        "rgb(246, 227, 227)",
+        await tokenColour(page, "--color-danger-soft"),
       );
       expect(await styleOf(crash.locator("svg").last(), "color")).toBe(
-        "rgb(155, 44, 44)",
+        await tokenColour(page, "--color-danger"),
       );
       expect(await styleOf(panicTile, "background-color")).toBe(
-        "rgb(238, 234, 225)",
+        await tokenColour(page, "--color-chip"),
       );
     });
 

@@ -325,10 +325,20 @@ test.describe("with a folder found empty", () => {
       const dot = status.locator("[aria-hidden='true']");
       const box = await boxOf(dot);
       const contrast = await dot.evaluate((element) => {
-        const channels = (colour: string): number[] =>
-          (colour.match(/[\d.]+/g) ?? []).map(Number);
+        const canvas = document.createElement("canvas").getContext("2d", {
+          willReadFrequently: true,
+        });
+        const channels = (colour: string): number[] => {
+          if (canvas === null) {
+            throw new Error("the page can't draw on a canvas");
+          }
+          canvas.clearRect(0, 0, 1, 1);
+          canvas.fillStyle = colour;
+          canvas.fillRect(0, 0, 1, 1);
+          return [...canvas.getImageData(0, 0, 1, 1).data];
+        };
         const isPainted = (colour: string): boolean =>
-          (channels(colour)[3] ?? 1) > 0;
+          (channels(colour)[3] ?? 0) > 0;
         const luminance = (colour: string): number => {
           const [red = 0, green = 0, blue = 0] = channels(colour)
             .slice(0, 3)

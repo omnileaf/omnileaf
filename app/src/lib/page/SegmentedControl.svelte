@@ -107,7 +107,7 @@
           : "min-inline-none touch:min-block-touch-target",
         chosen === option
           ? "bg-raised font-semibold text-foreground shadow-raised"
-          : "font-medium text-muted hover:bg-hover",
+          : "font-medium text-foreground hover:bg-hover",
       ]}
     >
       <SegmentFace
