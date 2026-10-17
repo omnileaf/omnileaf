@@ -176,7 +176,7 @@ mod tests {
             scratch.query_plan(CONTAINING_COUNT),
         ];
 
-        let by_stage = "SEARCH series USING INDEX series_by_stage_and_unread (reading_stage=?)";
+        let by_stage = "SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=?)";
         assert_eq!(
             plans,
             [

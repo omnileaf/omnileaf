@@ -9,8 +9,8 @@ use crate::{
         series_listing::{SeriesFilter, SeriesListing, SeriesOrder, StageParams},
         series_page::{
             Directions, SeriesSummary, added_place, date_added_rows, directions, last_read_place,
-            last_read_rows, last_updated_place, last_updated_rows, unread_count_place,
-            unread_count_rows,
+            last_read_rows, last_updated_place, last_updated_rows, time_left_place, time_left_rows,
+            unread_count_place, unread_count_rows,
         },
         staged_rows::{Read, TitlePlace, title_place, title_rows},
     },
@@ -61,6 +61,13 @@ const BY_UNREAD_COUNT: Directions<Position> = directions! {
     sort_position: unread_count_place,
 };
 
+const BY_TIME_LEFT: Directions<Position> = directions! {
+    with: concat!("WITH in_folder AS MATERIALIZED (", series_in_folder!(), ") "),
+    condition: " AND series.local_id IN in_folder",
+    key: "time_left_key",
+    sort_position: time_left_place,
+};
+
 const SERIES_IN_FOLDER: &str = concat!(
     "SELECT count(*) FROM series
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
@@ -95,6 +102,7 @@ pub fn folder_series_page(
         SeriesOrder::UnreadCount => {
             unread_count_rows(&read, BY_UNREAD_COUNT.toward(direction), after)
         }
+        SeriesOrder::TimeLeft => time_left_rows(&read, BY_TIME_LEFT.toward(direction), after),
     }?;
     Ok(Page::of(rows, request.size))
 }
@@ -134,6 +142,8 @@ mod tests {
             BY_LAST_UPDATED.descending.next_page_query,
             BY_UNREAD_COUNT.ascending.first_page_query,
             BY_UNREAD_COUNT.descending.next_page_query,
+            BY_TIME_LEFT.ascending.first_page_query,
+            BY_TIME_LEFT.descending.next_page_query,
         ]
         .map(|query| scratch.query_plan(query));
 

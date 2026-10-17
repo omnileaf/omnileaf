@@ -19,6 +19,8 @@
   } = $props();
 
   const labelId = $props.id();
+  const footnoteId = `${labelId}-footnote`;
+  const isTimedSort = $derived(sort.by === "timeLeft");
 
   function isSort(value: string): value is LibrarySortBy {
     return SORTS.some((by) => by === value);
@@ -42,6 +44,7 @@
   <ButtonGroup aria-labelledby={labelId} class="inline-setting-control">
     <NativeSelect
       aria-labelledby={labelId}
+      aria-describedby={isTimedSort ? footnoteId : undefined}
       value={sort.by}
       class="flex-1 min-inline-none"
       fieldClass="touch:text-body touch:block-touch-target"
@@ -54,3 +57,8 @@
     <SortDirectionButton {sort} look="icon" {onReverse} />
   </ButtonGroup>
 </div>
+{#if isTimedSort}
+  <p id={footnoteId} class="pbe-setting-grid-pad text-detail text-muted">
+    {m.library_sort_time_left_footnote()}
+  </p>
+{/if}

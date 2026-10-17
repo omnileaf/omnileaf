@@ -18,6 +18,7 @@ const SESSION_TAG: u8 = 5;
 const LAST_READ_TAG: u8 = 6;
 const LAST_UPDATED_TAG: u8 = 7;
 const UNREAD_COUNT_TAG: u8 = 8;
+const TIME_LEFT_TAG: u8 = 9;
 const ID_LENGTH: usize = 16;
 const MILLIS_LENGTH: usize = size_of::<i64>();
 const HEX_RADIX: u32 = 16;
@@ -60,6 +61,10 @@ pub(crate) enum Position {
     },
     UnreadCount {
         unread_count: i64,
+        id: SeriesId,
+    },
+    TimeLeft {
+        time_left_key: i64,
         id: SeriesId,
     },
 }
@@ -112,6 +117,12 @@ impl Position {
             Self::UnreadCount { unread_count, id } => [
                 &[UNREAD_COUNT_TAG][..],
                 &unread_count.to_be_bytes(),
+                id.as_bytes(),
+            ]
+            .concat(),
+            Self::TimeLeft { time_left_key, id } => [
+                &[TIME_LEFT_TAG][..],
+                &time_left_key.to_be_bytes(),
                 id.as_bytes(),
             ]
             .concat(),
@@ -176,6 +187,13 @@ impl Position {
                 let (unread_count, id) = rest.split_first_chunk::<MILLIS_LENGTH>()?;
                 Some(Self::UnreadCount {
                     unread_count: i64::from_be_bytes(*unread_count),
+                    id: SeriesId::try_from(id).ok()?,
+                })
+            }
+            TIME_LEFT_TAG => {
+                let (time_left_key, id) = rest.split_first_chunk::<MILLIS_LENGTH>()?;
+                Some(Self::TimeLeft {
+                    time_left_key: i64::from_be_bytes(*time_left_key),
                     id: SeriesId::try_from(id).ok()?,
                 })
             }

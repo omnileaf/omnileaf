@@ -571,6 +571,26 @@ test("lists the series with the most unread books first", async () => {
   expect(unreadCounts[0]).toBeGreaterThan(unreadCounts.at(-1) ?? 0);
 });
 
+test("lists the series quickest to finish first", async () => {
+  const { backend } = backendFor();
+
+  const page = await backend.librarySeries(null, {
+    ...NEW_LIBRARY_LISTING,
+    sort: { by: "timeLeft", direction: "ascending" },
+  });
+
+  const secondsLeft = await Promise.all(
+    page.series.map(
+      async (series) =>
+        (await backend.seriesOverview(series.id)).secondsLeft ?? 0,
+    ),
+  );
+  expect(secondsLeft).toEqual(
+    secondsLeft.toSorted((one, other) => one - other),
+  );
+  expect(secondsLeft.at(-1)).toBeGreaterThan(secondsLeft[0] ?? 0);
+});
+
 test("starts the library's tabs with All shown and New chapters hidden", async () => {
   const { backend } = backendFor();
 
