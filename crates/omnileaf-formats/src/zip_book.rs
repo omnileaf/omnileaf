@@ -38,11 +38,12 @@ impl ZipBook {
             let entry = archive
                 .by_index_raw(index)
                 .map_err(|source| corrupt(path, source))?;
-            if entry.is_dir() || is_ignored(entry.name()) || !is_page_image(entry.name()) {
+            let name = entry.name().map_err(|source| corrupt(path, source))?;
+            if entry.is_dir() || is_ignored(&name) || !is_page_image(&name) {
                 continue;
             }
             let page = Page {
-                name: entry.name().to_owned(),
+                name: name.into_owned(),
                 size: entry.size(),
             };
             check_page(path, &page, entry.compressed_size(), limits)?;
@@ -84,12 +85,15 @@ impl ZipBook {
     }
 
     pub(crate) fn read_comic_info(&mut self) -> Result<Option<Vec<u8>>, FormatError> {
-        let Some(name) = self
-            .archive
-            .file_names()
-            .find(|name| name.eq_ignore_ascii_case(COMIC_INFO_NAME))
-            .map(ToOwned::to_owned)
-        else {
+        let mut comic_info = None;
+        for name in self.archive.file_names() {
+            let name = name.map_err(|source| corrupt(&self.path, source))?;
+            if name.eq_ignore_ascii_case(COMIC_INFO_NAME) {
+                comic_info = Some(name.into_owned());
+                break;
+            }
+        }
+        let Some(name) = comic_info else {
             return Ok(None);
         };
         let entry = self
