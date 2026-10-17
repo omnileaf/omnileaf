@@ -190,16 +190,22 @@ test("goes back to the series from up next's link", async ({ page }) => {
   await expect(page).toHaveURL(SERIES_PAGE);
 });
 
-test("turns Skip Up next on in Settings › Reading from up next's switch", async ({
+test("turns Skip Up next on in Settings › Reader from up next's switch", async ({
   page,
 }) => {
   await openBook(page);
   await turnPastTheEnd(page);
 
+  await expect(skipSwitch(page)).toHaveAccessibleDescription(
+    "Go straight on next time. Also in Settings › Reader.",
+  );
   await skipSwitch(page).click();
   await expect(skipSwitch(page)).toBeChecked();
   await page.goto("/settings/reading");
 
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Reader" }),
+  ).toBeVisible();
   await expect(
     page.getByRole("switch", { name: "Skip Up next" }),
   ).toBeChecked();

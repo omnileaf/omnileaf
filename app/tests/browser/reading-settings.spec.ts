@@ -15,11 +15,11 @@ test("shows up next at the end of a book until Skip Up next is turned on, and re
   ).toBeChecked();
 });
 
-test("lists Reading among the settings sections", async ({ page }) => {
+test("lists Reader among the settings sections", async ({ page }) => {
   await page.goto("/settings");
 
   await page
-    .getByRole("link", { name: /^Reading/ })
+    .getByRole("link", { name: /^Reader/ })
     .first()
     .click();
 
