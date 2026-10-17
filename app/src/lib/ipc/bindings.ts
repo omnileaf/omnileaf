@@ -434,7 +434,7 @@ export type LibrarySort = {
 	direction: SortDirection,
 };
 
-export type LibrarySortBy = "title" | "dateAdded" | "lastRead";
+export type LibrarySortBy = "title" | "dateAdded" | "lastRead" | "lastUpdated";
 
 export type LibraryTab = {
 	id: LibraryTabId,
@@ -674,7 +674,7 @@ export type SmartFilter =
 /**  Downloaded and finished. */
 "readyToCleanUp";
 
-/**  Ascending lists titles from A to Z, series added earliest first, and series read longest ago first, those never read before them. */
+/**  Ascending lists titles from A to Z, and series added, updated or read longest ago first, those never read before them. */
 export type SortDirection = "ascending" | "descending";
 
 /**  What a search that found nothing was likely meant to be. */
