@@ -39,7 +39,7 @@
       oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
         sharing.replyTo = event.currentTarget.value;
       }}
-      class="flex-none rounded-shadcn-control border border-field bg-input-fill px-md text-label shadow-raised block-pointer-button touch:text-body touch:block-touch-target"
+      class="flex-none rounded-shadcn-control border border-field bg-input-fill px-md text-label shadow-raised block-pointer-button focus:border-accent touch:text-body touch:block-touch-target"
     />
     <p id={hintId} class="text-small text-muted">
       {m.report_reply_email_hint()}
