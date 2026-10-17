@@ -64,6 +64,7 @@
             isMac ? m.reader_key_back_mac() : m.reader_key_back(),
           ],
         },
+        { label: m.reader_jump_or_close(), keys: ["G"] },
         { label: m.reader_keyboard_shortcuts(), keys: ["?"] },
       ],
     },
@@ -137,6 +138,9 @@
         {/each}
       </div>
       <p class="text-caption text-muted">{m.reader_shortcuts_escape()}</p>
+      <p class="pbs-sm text-caption text-muted">
+        {m.reader_shortcuts_typing()}
+      </p>
     </div>
   </SheetContent>
 </Dialog.Root>

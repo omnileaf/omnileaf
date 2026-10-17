@@ -174,3 +174,23 @@ test("opens the keyboard shortcuts with the question mark", () => {
 
   expect(actions).toEqual(["shortcuts"]);
 });
+
+test("opens and closes Jump to a book with G", () => {
+  const actions = actionsFor([{ key: "g", code: "KeyG" }]);
+
+  expect(actions).toEqual(["jump"]);
+});
+
+test("leaves its keys to a field being typed in", () => {
+  const field = document.createElement("input");
+  field.type = "search";
+  document.body.append(field);
+
+  const actions = actionsFor(
+    [{ key: "g", code: "KeyG" }, { key: " ", code: "Space" }, { key: "m" }],
+    field,
+  );
+  field.remove();
+
+  expect(actions).toEqual([]);
+});

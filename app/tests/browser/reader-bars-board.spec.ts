@@ -21,6 +21,8 @@ import {
   servePages,
 } from "./reader-book.ts";
 
+type Box = Awaited<ReturnType<typeof boxOf>>;
+
 const DENSE_BUTTON = 44;
 const DESKTOP_BUTTON = 36;
 const SERIES_CRUMB_CAP = 220;
@@ -248,4 +250,135 @@ test("lays the page slider's track along the slider", async ({ page }) => {
   const drawn = await boxOf(track);
 
   expect([drawn.x, drawn.width]).toEqual([along.x, along.width]);
+});
+
+test.describe("long series and book names", () => {
+  const LONG_SERIES_TITLE =
+    "The Lighthouse Keeper's Apprentice Spends Every Winter Alone";
+  const LONG_BOOK_TITLE = "Volume 3 · Letters from Across the Northern Sea";
+  const NARROW_DESKTOP = { width: 1200, height: 800 };
+
+  test.use({
+    backend: {
+      ...readerBackend(DEFAULT_BACKEND),
+      openBook: () => ({
+        ...readerBook(NOT_STARTED),
+        title: LONG_BOOK_TITLE,
+        seriesTitle: LONG_SERIES_TITLE,
+      }),
+    },
+  });
+
+  test.beforeEach(({ page }) => {
+    test.skip(viewportOf(page).width < LARGE_MIN_WIDTH, "a desktop window");
+  });
+
+  async function openLongBook(page: Page): Promise<void> {
+    await servePages(page);
+    await page.goto(`/read/${BOOK_ID}`);
+    await expect(
+      page.getByRole("heading", { level: 1, name: LONG_BOOK_TITLE }),
+    ).toBeAttached();
+  }
+
+  test("keeps the book's crumb to one line, ending its title in an ellipsis before the chevron", async ({
+    page,
+  }) => {
+    await page.setViewportSize(NARROW_DESKTOP);
+    await openLongBook(page);
+    const crumb = page.locator("main header [aria-current=page]");
+    const jump = crumb.getByRole("button", { name: "Jump to a book" });
+
+    const within = await boxOf(crumb);
+    const button = await boxOf(jump);
+    const chevron = await boxOf(jump.locator("svg"));
+
+    expect(button.x + button.width).toBeLessThanOrEqual(
+      within.x + within.width,
+    );
+    expect(chevron.x + chevron.width).toBeLessThanOrEqual(
+      within.x + within.width,
+    );
+    await expect(jump.getByText(LONG_BOOK_TITLE)).toHaveCSS(
+      "text-overflow",
+      "ellipsis",
+    );
+  });
+});
+
+test.describe("a desktop window too narrow for the breadcrumb", () => {
+  const NARROW_WINDOW = { width: 800, height: 700 };
+
+  test.beforeEach(async ({ page }) => {
+    test.skip(viewportOf(page).width < LARGE_MIN_WIDTH, "a desktop window");
+    await page.setViewportSize(NARROW_WINDOW);
+  });
+
+  function seriesName(page: Page): Locator {
+    return page
+      .locator("main header")
+      .getByText(BOOK_SERIES_TITLE, { exact: true })
+      .filter({ visible: true });
+  }
+
+  function middleOfText(locator: Locator): Promise<Box> {
+    return locator.evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const text = range.getBoundingClientRect();
+      return {
+        x: text.x + text.width / 4,
+        y: text.y + text.height / 4,
+        width: text.width / 2,
+        height: text.height / 2,
+      };
+    });
+  }
+
+  async function coloursIn(page: Page, clip: Box): Promise<number> {
+    const png = await page.screenshot({ clip, animations: "disabled" });
+    return page.evaluate(async (base64) => {
+      const bytes = Uint8Array.from(atob(base64), (character) =>
+        character.charCodeAt(0),
+      );
+      const image = await createImageBitmap(
+        new Blob([bytes], { type: "image/png" }),
+      );
+      const canvas = new OffscreenCanvas(image.width, image.height);
+      const context = canvas.getContext("2d");
+      if (context === null) {
+        throw new Error("the page can't draw on a canvas");
+      }
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, image.width, image.height);
+      return new Set(new Uint32Array(pixels.data.buffer)).size;
+    }, png.toString("base64"));
+  }
+
+  test("keeps the series name showing over Jump to a book while it is hovered", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await page
+      .locator("main header")
+      .getByRole("button", { name: "Jump to a book" })
+      .hover();
+
+    const colours = await coloursIn(page, await middleOfText(seriesName(page)));
+    expect(colours).toBeGreaterThan(1);
+  });
+
+  test("opens Jump to a book from a click on the series name", async ({
+    page,
+  }) => {
+    await openBook(page);
+    const name = await middleOfText(seriesName(page));
+
+    await page.mouse.click(name.x + name.width / 2, name.y + name.height / 2);
+
+    await expect(
+      page.getByRole("dialog", { name: "Jump to a book" }),
+    ).toBeVisible();
+  });
 });

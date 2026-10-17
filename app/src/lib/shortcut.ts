@@ -16,7 +16,8 @@ export interface Shortcut {
 }
 
 const LATIN_LETTER = /^[a-z]$/i;
-const TEXT_FIELDS = "input, textarea, select, [contenteditable]";
+const TEXT_FIELDS =
+  'input:not([type="range"]), textarea, select, [contenteditable]';
 const SLIDER_KEYS: ReadonlySet<string> = new Set([
   "ArrowLeft",
   "ArrowRight",
