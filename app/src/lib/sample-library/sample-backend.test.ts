@@ -478,9 +478,9 @@ test("remembers the choice for adult content", async () => {
 test("lists every series in the sample's folder, and none in another", async () => {
   const { backend } = backendFor();
   const { folders } = await backend.libraryFolders(null);
-  const folder = folders[0]?.id;
+  const folder = folders.find(({ kind }) => kind === "linked")?.id;
   if (folder === undefined) {
-    throw new Error("the sample library lists no folder");
+    throw new Error("the sample library links no folder");
   }
 
   const page = await backend.folderSeries(folder, null, NEWEST_FIRST);
@@ -955,4 +955,23 @@ test("starts with the first launch finished", async () => {
   const { backend } = backendFor();
 
   expect(await backend.firstLaunchFinished()).toBe(true);
+});
+
+test("lists the home folder the app keeps its data in before the linked one", async () => {
+  const { backend } = backendFor("?platform=linux");
+
+  const page = await backend.libraryFolders(null);
+
+  expect(page.folders.map((folder) => [folder.kind, folder.location])).toEqual([
+    ["home", "~/.local/share/app.omnileaf"],
+    ["linked", "/media/Sample Comics"],
+  ]);
+});
+
+test("keeps the home folder in an empty library", async () => {
+  const { backend } = backendFor("?library=empty");
+
+  const page = await backend.libraryFolders(null);
+
+  expect(page.folders.map((folder) => folder.kind)).toEqual(["home"]);
 });

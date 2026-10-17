@@ -177,6 +177,14 @@ const PAGE_HEIGHT = 1500;
 const STRIP_WIDTH = 800;
 const STRIP_HEIGHT = 2400;
 const LIBRARY_FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000001";
+const HOME_FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000000";
+const HOME_FOLDER_LOCATIONS = {
+  android: "/data/user/0/app.omnileaf",
+  ios: "/var/mobile/Containers/Data/Application/Omnileaf/Documents",
+  macos: "~/Library/Application Support/app.omnileaf",
+  windows: "C:\\Users\\Reader\\AppData\\Roaming\\app.omnileaf",
+  linux: "~/.local/share/app.omnileaf",
+} as const satisfies Record<Platform, string>;
 const LIBRARY_FOLDER_NAME = "Sample Comics";
 const LIBRARY_FOLDER_LOCATION = "/media/Sample Comics";
 const NEWEST_ADDED_MS = Date.UTC(2026, 9, 14, 9);
@@ -781,13 +789,20 @@ export function sampleBackend(
     watchBackSwipes: () => null,
     allowBackSwipe: () => null,
     libraryFolders: () => ({
-      folders:
-        library.length === 0
+      folders: [
+        {
+          id: HOME_FOLDER_ID,
+          kind: "home",
+          name: "Omnileaf",
+          location: HOME_FOLDER_LOCATIONS[scenario.platform],
+          isAvailable: true,
+        },
+        ...(library.length === 0
           ? []
           : [
               {
                 id: LIBRARY_FOLDER_ID,
-                kind: "linked",
+                kind: "linked" as const,
                 name: LIBRARY_FOLDER_NAME,
                 location: LIBRARY_FOLDER_LOCATION,
                 isAvailable: true,
@@ -795,7 +810,8 @@ export function sampleBackend(
               ...(scenario.missing === "none"
                 ? []
                 : [missingFolderOf(scenario.missing)]),
-            ],
+            ]),
+      ],
       next: null,
     }),
     missingLibraryFolders: () =>
