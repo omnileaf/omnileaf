@@ -555,6 +555,7 @@
   --container-toast: 25.25rem;
   --container-problem: 32.5rem;
 
+  --z-index-behind: -1;
   --z-index-series-band: -1;
   --z-index-series-bar: 1;
   --z-index-tab-bar: 1;
