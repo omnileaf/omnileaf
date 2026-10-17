@@ -47,6 +47,7 @@ export interface SampleScenario {
   readonly missing: MissingKind;
   readonly signIn: SignInOutcome;
   readonly launch: LaunchKind;
+  readonly home: HomeKind;
   readonly space: SpaceKind;
 }
 
@@ -108,6 +109,10 @@ const SAMPLE_DOWNLOADS = {
 const LAUNCH_KINDS = ["returning", "first"] as const;
 
 type LaunchKind = (typeof LAUNCH_KINDS)[number];
+const HOME_KINDS = ["empty", "library"] as const;
+
+type HomeKind = (typeof HOME_KINDS)[number];
+const LAST_BACKUP_MS = Date.UTC(2026, 9, 12, 9);
 const SPACE_KINDS = ["plenty", "low"] as const;
 
 type SpaceKind = (typeof SPACE_KINDS)[number];
@@ -184,6 +189,7 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
     missing: oneOf(MISSING_KINDS, search.get("missing"), "none"),
     signIn: oneOf(SIGN_IN_OUTCOMES, search.get("signin"), "signedIn"),
     launch: oneOf(LAUNCH_KINDS, search.get("launch"), "returning"),
+    home: oneOf(HOME_KINDS, search.get("home"), "empty"),
     space: oneOf(SPACE_KINDS, search.get("space"), "plenty"),
   };
 }
@@ -389,6 +395,10 @@ function wireReading(reading: SampleReading) {
   return reading.state === "started"
     ? { state: "started" as const, page: reading.page }
     : reading;
+}
+
+function bookCount(library: readonly SampleSeries[]): number {
+  return library.reduce((count, series) => count + series.books.length, 0);
 }
 
 function coverOf(series: SampleSeries): string {
@@ -1429,8 +1439,7 @@ export function sampleBackend(
       return null;
     },
     removeLibraryFolder: () => null,
-    libraryFolderBookCount: () =>
-      library.reduce((count, series) => count + series.books.length, 0),
+    libraryFolderBookCount: () => bookCount(library),
     rescanLibraryFolder: () => ({
       id: LIBRARY_FOLDER_ID,
       name: LIBRARY_FOLDER_NAME,
@@ -1447,7 +1456,14 @@ export function sampleBackend(
     }),
     rescanLibraryFolders: () => [],
     removeBooksOfEmptiedFolder: () => ({ kind: "kept" }),
-    foundLibrary: () => null,
+    foundLibrary: () =>
+      scenario.home === "library"
+        ? {
+            series: library.length,
+            books: bookCount(library),
+            lastBackupAtMs: LAST_BACKUP_MS,
+          }
+        : null,
     firstLaunchFinished: () => hasFinishedFirstLaunch,
     finishFirstLaunch: () => {
       hasFinishedFirstLaunch = true;
