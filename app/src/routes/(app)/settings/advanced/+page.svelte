@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { ChevronRight, FlaskConical, MoveVertical } from "@lucide/svelte";
-
-  import { resolve } from "$app/paths";
+  import { FlaskConical, MoveVertical } from "@lucide/svelte";
 
   import {
     ANIMATION_GROUPS,
@@ -14,6 +12,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getScheduledRescansSetting } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import SettingsEntries from "#lib/settings/SettingsEntries.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import {
@@ -24,8 +23,6 @@
   import type { PageProps } from "./$types";
 
   const NOTE_ICON_SIZE = 19;
-  const CHEVRON_SIZE = 18;
-  const ICON_SIZE = 18;
 
   let { data }: PageProps = $props();
 
@@ -56,32 +53,19 @@
 
 <SectionHeading title={m.advanced_title()} />
 <div class="mbs-pane-gap flex flex-col gap-pane-gap">
-  <div class="rounded-list border border-border bg-card">
-    <a
-      href={resolve("/(app)/settings/advanced/animations")}
-      class={[
-        "flex items-center gap-md rounded-list py-xs ps-lg pe-md transition-control min-block-phone-row hover:bg-hover active:bg-pressed",
-        "touch:medium:py-none touch:medium:ps-list-row touch:medium:min-block-touch-target",
-        "desktop:py-none desktop:ps-list-row desktop:min-block-settings-row",
-      ]}
-    >
-      <MoveVertical size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
-      <span class="flex flex-1 flex-col gap-2xs">
-        <span class="font-semibold desktop:text-callout">
-          {m.animations_title()}
-        </span>
-        <span class="text-detail text-muted">{animationsSummary}</span>
-      </span>
-      <ChevronRight
-        size={CHEVRON_SIZE}
-        aria-hidden="true"
-        class="shrink-0 text-muted rtl:-scale-x-100"
-      />
-    </a>
-  </div>
+  <SettingsEntries
+    entries={[
+      {
+        route: "/(app)/settings/advanced/animations",
+        icon: MoveVertical,
+        label: m.animations_title(),
+        summary: animationsSummary,
+      },
+    ]}
+  />
   <section
     aria-labelledby={undoHeadingId}
-    class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card"
+    class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
   >
     <h2 id={undoHeadingId} class="px-lg pbs-md pbe-xs text-small font-semibold">
       {m.advanced_undo()}
