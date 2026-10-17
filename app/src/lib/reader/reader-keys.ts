@@ -1,6 +1,7 @@
 import {
   inReadingOrder,
   type ReadingDirection,
+  type ReadingMode,
 } from "#lib/reader/reading-direction.svelte.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { usesCommandKey } from "#lib/page/platform.ts";
@@ -48,6 +49,11 @@ const READER_KEYS: readonly ReaderKey[] = [
   { key: "0", isCommand: true, action: "zoomFit" },
 ];
 
+const STRIP_KEYS: readonly ReaderKey[] = [
+  { key: "ArrowDown", shift: false, action: "next" },
+  { key: "ArrowUp", shift: false, action: "previous" },
+];
+
 function isPageTurn(action: ReaderAction): action is "next" | "previous" {
   return action === "next" || action === "previous";
 }
@@ -64,18 +70,22 @@ export function readerShortcuts(
   act: (action: ReaderAction) => void,
   direction: () => ReadingDirection,
   platform: Platform,
+  mode: ReadingMode,
 ): Shortcut[] {
-  return [...READER_KEYS, backKey(platform)].map(
-    ({ action, isCommand = false, ...keys }) => ({
-      ...keys,
-      ...(isCommand ? { command: platform } : {}),
-      run: () => {
-        act(
-          ARROWS.has(keys.key) && isPageTurn(action)
-            ? inReadingOrder(action, direction())
-            : action,
-        );
-      },
-    }),
-  );
+  const isStrip = mode === "longStrip";
+  return [
+    ...READER_KEYS,
+    ...(isStrip ? STRIP_KEYS : []),
+    backKey(platform),
+  ].map(({ action, isCommand = false, ...keys }) => ({
+    ...keys,
+    ...(isCommand ? { command: platform } : {}),
+    run: () => {
+      act(
+        !isStrip && ARROWS.has(keys.key) && isPageTurn(action)
+          ? inReadingOrder(action, direction())
+          : action,
+      );
+    },
+  }));
 }
