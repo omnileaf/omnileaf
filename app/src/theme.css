@@ -275,6 +275,10 @@
   --menu-blur: 0px;
   --menu-highlight: var(--accent);
   --menu-highlight-foreground: var(--accent-foreground);
+  --popover-surface: var(--menu-surface);
+  --popover-radius: var(--menu-radius);
+  --bottom-sheet-surface: var(--card);
+  --sheet-handle: var(--muted);
   --tooltip-surface: var(--primary);
   --tooltip-foreground: var(--primary-foreground);
   --tooltip-edge: transparent;
@@ -329,6 +333,10 @@
   --menu-surface: var(--android-container);
   --menu-edge: transparent;
   --menu-radius: var(--radius-android-xs);
+  --popover-surface: var(--android-container-high);
+  --popover-radius: var(--radius-android-md);
+  --bottom-sheet-surface: var(--android-container-low);
+  --sheet-handle: var(--android-outline);
   --switch-off: var(--android-container-high);
   --switch-edge: var(--android-outline);
   --switch-edge-on: var(--primary);
@@ -356,6 +364,7 @@
   --menu-surface: var(--ios-material);
   --menu-edge: transparent;
   --menu-radius: var(--radius-ios-sheet);
+  --sheet-handle: color-mix(in oklch, var(--secondary-text) 50%, transparent);
   --menu-shadow: var(--shadow-ios-glass);
   --menu-blur: 24px;
   --switch-off: var(--ios-fill);
