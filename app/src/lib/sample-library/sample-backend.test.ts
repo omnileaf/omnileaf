@@ -142,6 +142,15 @@ test("answers on the platform asked for", async () => {
   expect(info.platform).toBe("ios");
 });
 
+test("reports a problem with the platform's system and a log in stand-ins", async () => {
+  const { backend } = backendFor("platform=ios");
+
+  const report = await backend.problemReport();
+
+  expect(report.system).toBe("iOS 26");
+  expect(report.log.join("\n")).not.toContain("Sample Series");
+});
+
 test("shows a series with its books gone when asked to", async () => {
   const { backend } = backendFor("?series=empty");
   const series = sampleSeriesId(4);
