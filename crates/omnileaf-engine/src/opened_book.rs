@@ -23,6 +23,8 @@ pub struct OpenedBook {
     pub next: Option<SeriesNeighbour>,
     /// Absent when the book's details don't say which way it reads.
     pub reading_direction: Option<ReadingDirection>,
+    /// Counting from 0; absent while the library keeps no bookmarks.
+    pub bookmarked_pages: Option<Vec<u32>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]

@@ -140,6 +140,7 @@ export function sampleBackend(
   };
   let view: LibraryView = DEFAULT_LIBRARY_VIEW;
   let isFullScreen = false;
+  const bookmarks = new Map<string, Set<number>>();
 
   const addedAt = (series: SampleSeries): number =>
     NEWEST_ADDED_MS - library.indexOf(series) * DAY_MS;
@@ -442,7 +443,22 @@ export function sampleBackend(
         previous: neighbour(series, index - 1),
         next: neighbour(series, index + 1),
         readingDirection: series.readingDirection,
+        bookmarkedPages: [...(bookmarks.get(id) ?? [])].toSorted(
+          (one, other) => one - other,
+        ),
       };
+    },
+    bookmarkPages: (id, pages, isBookmarked) => {
+      const kept = bookmarks.get(id) ?? new Set<number>();
+      for (const page of pages) {
+        if (isBookmarked) {
+          kept.add(page);
+        } else {
+          kept.delete(page);
+        }
+      }
+      bookmarks.set(id, kept);
+      return null;
     },
     readingRestored: () => null,
     pageShown: (id, page) => {

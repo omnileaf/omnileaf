@@ -51,6 +51,7 @@ const SEND_OUTCOMES = {
   cursorForAnotherList: "notSent",
   bookNotFound: "notSent",
   bookUnreadable: "notSent",
+  bookmarksNotKept: "notSent",
   internal: "notSent",
 } as const satisfies Record<IpcErrorCode, SendFailure | undefined>;
 
