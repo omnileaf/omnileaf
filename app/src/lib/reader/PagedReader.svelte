@@ -6,7 +6,7 @@
     Maximize,
     Languages,
   } from "@lucide/svelte";
-  import { onMount, untrack } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
   import type { Attachment } from "svelte/attachments";
   import { on } from "svelte/events";
   import { SvelteSet } from "svelte/reactivity";
@@ -30,6 +30,7 @@
   import DirectionMenu from "#lib/reader/DirectionMenu.svelte";
   import { PageTurner } from "#lib/reader/page-turner.svelte.ts";
   import PageStack from "#lib/reader/PageStack.svelte";
+  import StripFoundCard from "#lib/reader/StripFoundCard.svelte";
   import StripStack from "#lib/reader/StripStack.svelte";
   import {
     type ReaderAction,
@@ -73,6 +74,7 @@
   import UpNext from "#lib/up-next/UpNext.svelte";
 
   const SWIPE_MIN_PX = 48;
+  const STRIP_GUIDE_KEY = "omnileaf.readerGuide.strip";
   const RESTING_SCALE = 1;
   /** Long enough that turning pages in a run announces only the page they stop on. */
   const ANNOUNCE_DELAY_MS = 300;
@@ -144,15 +146,26 @@
   const settings = untrack(() => readerSettings(book.series));
   const guidesSeenNow = new SvelteSet<string>();
   const guideKey = $derived(
-    settings.look.tapZones === "edges"
-      ? `omnileaf.readerGuide.${reading.direction}`
-      : `omnileaf.readerGuide.zones.${settings.look.tapZones}`,
+    reading.mode === "longStrip"
+      ? STRIP_GUIDE_KEY
+      : settings.look.tapZones === "edges"
+        ? `omnileaf.readerGuide.${reading.direction}`
+        : `omnileaf.readerGuide.zones.${settings.look.tapZones}`,
   );
   const isGuideSeen = $derived(
     guidesSeenNow.has(guideKey) || seenOnce(guideKey).isSeen,
   );
   const look = $derived(settings.look);
   const isStrip = $derived(reading.mode === "longStrip");
+  const stripFound = untrack(() =>
+    seenOnce(`omnileaf.stripFound.${book.series}`),
+  );
+  let isStripFoundSeen = $state(stripFound.isSeen);
+
+  function seeStripFound(): void {
+    stripFound.see();
+    isStripFoundSeen = true;
+  }
   let strip: { scrollByScreen: (step: number) => boolean } | undefined =
     $state();
   let isSettingsOpen = $state(false);
@@ -1041,8 +1054,22 @@
       holdControls(false);
     }}
   />
-  {#if !isGuideSeen && !isStrip && !turner.isPastEnd}
+  {#if reading.isStripDetected && !isStripFoundSeen && !turner.isPastEnd}
+    <StripFoundCard
+      onChange={() => {
+        seeStripFound();
+        openSettings(true);
+        void tick().then(() => {
+          document
+            .querySelector<HTMLSelectElement>("select[data-reading-mode]")
+            ?.focus();
+        });
+      }}
+      onDone={seeStripFound}
+    />
+  {:else if !isGuideSeen && !turner.isPastEnd}
     <ReaderGuide
+      {isStrip}
       direction={reading.direction}
       zones={look.tapZones}
       isTouch={!isPointer(platform)}

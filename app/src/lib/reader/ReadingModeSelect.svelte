@@ -50,6 +50,7 @@
     {m.reader_mode()}
   </label>
   <NativeSelect
+    data-reading-mode
     id="{id}-mode"
     class="inline-setting-control"
     value={reading.choice}
