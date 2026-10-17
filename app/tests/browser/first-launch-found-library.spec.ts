@@ -20,6 +20,10 @@ const USE_LIBRARY = "Use this library";
 const START_NEW_LIBRARY = "Start a new library instead";
 const STACKED_BUTTON_GAP = 6;
 const DESKTOP_CHANGE_HEIGHT = 38;
+const CHANGE_CONTROL_NAMES = {
+  android: "Home folder",
+  linux: "Change",
+} as const satisfies Partial<Record<Platform, string>>;
 const DESKTOP_HOME_HEADER_HEIGHT = 62;
 const FOUND_FACTS = [
   ["Series", "212"],
@@ -140,7 +144,10 @@ for (const platform of ["android", "linux"] as const) {
 
       await expectComingSoon(
         page,
-        homeCard(page).getByRole("button", { name: "Change", exact: true }),
+        homeCard(page).getByRole("button", {
+          name: CHANGE_CONTROL_NAMES[platform],
+          exact: true,
+        }),
         "Change",
       );
     });
@@ -232,7 +239,10 @@ test.describe("a library already in the home folder on an android phone", () => 
     );
 
     const change = await boxOf(
-      homeCard(page).getByRole("button", { name: "Change", exact: true }),
+      homeCard(page).getByRole("button", {
+        name: CHANGE_CONTROL_NAMES.android,
+        exact: true,
+      }),
     );
 
     expect([change.x, change.width]).toEqual([card.x + 1, card.width - 2]);
@@ -240,6 +250,17 @@ test.describe("a library already in the home folder on an android phone", () => 
     expect(change.y + change.height).toBeGreaterThan(
       heading.y + heading.height,
     );
+  });
+
+  test("names the Home folder row by its title, described by the path", async ({
+    page,
+  }) => {
+    await goToTheHomeFolder(page);
+
+    const row = homeCard(page).getByRole("button");
+
+    await expect(row).toHaveAccessibleName(CHANGE_CONTROL_NAMES.android);
+    await expect(row).toHaveAccessibleDescription(HOME_LOCATION);
   });
 
   test("stacks Use this library 6px over Start a new library instead", async ({

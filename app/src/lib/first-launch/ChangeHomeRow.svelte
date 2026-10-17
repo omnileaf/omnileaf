@@ -4,6 +4,8 @@
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  let { titleId, pathId }: { titleId: string; pathId: string } = $props();
+
   const CHEVRON_SIZE = 16;
 </script>
 
@@ -11,9 +13,10 @@
   label={m.reader_coming_soon({ feature: m.first_launch_home_change() })}
   type="button"
   aria-disabled="true"
+  aria-labelledby={titleId}
+  aria-describedby={pathId}
   class="absolute inset-none flex items-center justify-end pe-md focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
 >
-  <span class="sr-only">{m.first_launch_home_change()}</span>
   <ChevronRight
     size={CHEVRON_SIZE}
     aria-hidden="true"
