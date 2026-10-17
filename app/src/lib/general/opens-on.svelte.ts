@@ -2,7 +2,7 @@ import { createContext } from "svelte";
 
 import { resolve } from "$app/paths";
 import { assertNever } from "#lib/assert-never.ts";
-import { commands } from "#lib/ipc/bindings.ts";
+import { lastUnfinishedBookPage } from "#lib/history/last-book.ts";
 import {
   browserPreferenceStore,
   type PreferenceStore,
@@ -59,16 +59,8 @@ export async function openingPage(
       return undefined;
     case "history":
       return resolve("/(app)/history");
-    case "lastBook": {
-      const unfinished = await commands.readingHistory(null, {
-        kind: "unfinished",
-      });
-      const book =
-        unfinished.status === "ok"
-          ? unfinished.data.entries[0]?.book
-          : undefined;
-      return book === undefined ? undefined : resolve("/read/[book]", { book });
-    }
+    case "lastBook":
+      return lastUnfinishedBookPage();
     default:
       return assertNever(place);
   }

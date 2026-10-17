@@ -9,6 +9,7 @@ import {
   accessibilityViolations,
   DEFAULT_BACKEND,
   expect,
+  fakeAppInfo,
   LARGE_MIN_WIDTH,
   test,
   viewportOf,
@@ -67,24 +68,24 @@ let storedView: LibraryView = DEFAULT_LIBRARY_VIEW;
 let entries: readonly WireEntry[] = ENTRIES;
 const askedFor: string[] = [];
 
-test.use({
-  backend: {
-    ...DEFAULT_BACKEND,
-    librarySeries: pagedSeries(() => sampleSeries(12)),
-    libraryView: () => storedView,
-    setLibraryView: (view) => {
-      storedView = view;
-      return null;
-    },
-    readingHistory: (_after, of) => {
-      askedFor.push(of.kind);
-      return {
-        entries: of.kind === "unfinished" ? [...entries] : [],
-        next: null,
-      };
-    },
+const BACKEND = {
+  ...DEFAULT_BACKEND,
+  librarySeries: pagedSeries(() => sampleSeries(12)),
+  libraryView: () => storedView,
+  setLibraryView: (view) => {
+    storedView = view;
+    return null;
   },
-});
+  readingHistory: (_after, of) => {
+    askedFor.push(of.kind);
+    return {
+      entries: of.kind === "unfinished" ? [...entries] : [],
+      next: null,
+    };
+  },
+} satisfies FakeBackend;
+
+test.use({ backend: BACKEND });
 
 test.beforeEach(() => {
   storedView = DEFAULT_LIBRARY_VIEW;
@@ -114,7 +115,6 @@ test("keeps the Continue reading row off until it's turned on in View options", 
     page.getByRole("heading", { level: 1, name: "Library" }),
   ).toBeVisible();
   await expect(continueRow(page)).toHaveCount(0);
-  expect(askedFor).not.toContain("unfinished");
   const options = await openViewOptions(page);
   const onThePage = options.getByRole("group", {
     name: "On the library page",
@@ -127,6 +127,27 @@ test("keeps the Continue reading row off until it's turned on in View options", 
   await expect.poll(() => storedView.showsContinueRow).toBe(true);
   await page.keyboard.press("Escape");
   await expect(cards(page)).toHaveCount(STARTED);
+});
+
+test.describe("on Android, where no tray asks for the book to continue", () => {
+  test.use({
+    backend: {
+      ...BACKEND,
+      appInfo: () => fakeAppInfo("android"),
+    } satisfies FakeBackend,
+  });
+
+  test("asks for no unfinished books while the Continue reading row is off", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Library" }),
+    ).toBeVisible();
+
+    await expect(continueRow(page)).toHaveCount(0);
+    expect(askedFor).not.toContain("unfinished");
+  });
 });
 
 test("shows each book started and not finished, last read first, with its progress and a play button", async ({

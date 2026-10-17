@@ -78,6 +78,7 @@
     setScreenshotModeShortcut,
   } from "#lib/screenshot-mode/shortcut-setting.svelte.ts";
   import { shortcut } from "#lib/shortcut.ts";
+  import TrayMenuSync from "#lib/tray/TrayMenuSync.svelte";
 
   import type { LayoutProps } from "./$types";
 
@@ -218,5 +219,8 @@
   <ScreenshotModeAnnouncement
     announcesTurningOn={page.route.id?.startsWith(APP_ROUTES) !== true}
   />
+  {#if data.libraryProblem === null && isPointer(data.appInfo.platform)}
+    <TrayMenuSync />
+  {/if}
 {/key}
 <CrashReportPrompt reporting={crashReporting} look={promptLook} />
