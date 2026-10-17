@@ -16,6 +16,7 @@ const HALF_A_MINUTE_MS = 30_000;
 const SIX_SECONDS_MS = 6000;
 const FEW_SECONDS_MS = 2000;
 const CLOSE_PX = 8;
+const PAUSE_AHEAD_MS = 500;
 
 function tallPages(secondsPerPage: number | null): FakeBackend {
   return {
@@ -63,6 +64,12 @@ async function startAutoScroll(page: Page): Promise<void> {
   await expect(bar(page)).toBeVisible();
 }
 
+/** Holds the page's clock still, so only the time the test runs on moves the strip. */
+async function holdTime(page: Page): Promise<void> {
+  const now = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(now + PAUSE_AHEAD_MS);
+}
+
 async function scrollTopOf(page: Page): Promise<number> {
   return page.locator("[data-strip]").evaluate((element) => element.scrollTop);
 }
@@ -84,6 +91,7 @@ test.describe("at a set speed", () => {
     const height = await pageHeightOf(page);
     await startAutoScroll(page);
     await expect(bar(page)).toContainText("2 pages a minute");
+    await holdTime(page);
     const start = await scrollTopOf(page);
 
     await page.clock.runFor(SIX_SECONDS_MS);
