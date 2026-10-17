@@ -438,7 +438,7 @@
   --spacing-dialog-inset: 1.25rem;
   --spacing-dialog-gap: 1rem;
   --spacing-dialog-button: 2.5rem;
-  --spacing-checkbox: 1.125rem;
+  --spacing-checkbox: 1rem;
   --spacing-active-dot: 0.625rem;
   --spacing-attention-dot: 0.75rem;
   --spacing-filter-badge: 1.25rem;
@@ -717,7 +717,7 @@
   --radius-crash-screen-button: 0.875rem;
   --radius-dialog: 1rem;
   --radius-dialog-button: 0.625rem;
-  --radius-checkbox: 0.3125rem;
+  --radius-checkbox: 0.25rem;
 
   --container-toast: 25.25rem;
   --container-problem: 32.5rem;
@@ -897,6 +897,10 @@
 
 :root {
   @variant android {
+    --spacing-checkbox: 1.125rem;
+    --radius-checkbox: 0.125rem;
+    --spacing-radio: 1.25rem;
+    --spacing-radio-dot: 0.625rem;
     --spacing-switch-length: 3.25rem;
     --spacing-switch-thickness: 2rem;
     --spacing-switch-knob-on: 1.5rem;
@@ -905,6 +909,8 @@
   }
 
   @variant ios {
+    --spacing-checkbox: 1.375rem;
+    --radius-checkbox: 9999px;
     --spacing-switch-length: 3.1875rem;
     --spacing-switch-thickness: 1.9375rem;
     --spacing-switch-knob: 1.6875rem;
@@ -923,6 +929,7 @@
   }
 
   @variant windows {
+    --spacing-checkbox: 1.25rem;
     --spacing-switch-length: 2.5rem;
     --spacing-switch-thickness: 1.25rem;
     --spacing-switch-knob: 0.75rem;
@@ -934,8 +941,6 @@
 
 :root {
   @variant touch {
-    --spacing-checkbox: 1.25rem;
-    --radius-checkbox: 0.375rem;
     --spacing-reader-control-wide: var(--spacing-reader-control);
     --spacing-reader-slider-wide: var(--spacing-reader-slider);
   }
@@ -1048,7 +1053,9 @@
   --color-sample-cover-art: var(--sample-cover-art);
   --color-sample-cover-ink: var(--sample-cover-ink);
   --color-dialog-edge: var(--border);
-  --color-control-edge: var(--input);
+  --color-control-edge: var(--control-edge);
+  --color-radio-edge-on: var(--radio-edge-on);
+  --color-checkbox-off: var(--checkbox-off);
   --color-quiet-edge: var(--border);
   --color-icon-hole: var(--icon-hole);
   --color-glass: var(--glass);

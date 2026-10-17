@@ -85,6 +85,7 @@
     var(--foreground)
   );
   --switch-off: var(--input);
+  --checkbox-off: transparent;
   --switch-thumb: var(--background);
   --switch-thumb-on: var(--background);
   --glass: oklch(0.985 0 0 / 78%);
@@ -176,6 +177,7 @@
     var(--background)
   );
   --switch-off: color-mix(in oklch, var(--input) 80%, transparent);
+  --checkbox-off: color-mix(in oklch, var(--input) 30%, transparent);
   --switch-thumb: var(--foreground);
   --switch-thumb-on: var(--primary-foreground);
   --glass: oklch(0.2 0 0 / 72%);
@@ -280,6 +282,8 @@
   --switch-on: var(--primary);
   --switch-edge: transparent;
   --switch-edge-on: transparent;
+  --control-edge: var(--input);
+  --radio-edge-on: var(--input);
   --hover-fill: var(--accent);
   --pressed-fill: color-mix(in oklab, var(--foreground) 8%, var(--accent));
   --android-container-low: color-mix(
@@ -327,6 +331,9 @@
   --switch-edge-on: var(--primary);
   --switch-thumb: var(--android-outline);
   --switch-thumb-on: var(--primary-foreground);
+  --control-edge: var(--android-outline);
+  --radio-edge-on: var(--primary);
+  --checkbox-off: transparent;
   --hover-fill: color-mix(
     in oklab,
     currentColor var(--state-hover),

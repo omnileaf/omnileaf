@@ -47,8 +47,8 @@
         <span
           aria-hidden="true"
           class={[
-            "mbs-2xs flex shrink-0 items-center justify-center rounded-full border-2 block-radio inline-radio",
-            isChosen ? "border-accent" : "border-muted",
+            "mbs-2xs flex shrink-0 items-center justify-center rounded-full border block-radio inline-radio android:border-2",
+            isChosen ? "border-radio-edge-on" : "border-control-edge",
           ]}
         >
           {#if isChosen}
