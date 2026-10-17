@@ -976,6 +976,24 @@ test("keeps the home folder in an empty library", async () => {
   expect(page.folders.map((folder) => folder.kind)).toEqual(["home"]);
 });
 
+test("finds no library already in the home folder", async () => {
+  const { backend } = backendFor();
+
+  expect(await backend.foundLibrary()).toBeNull();
+});
+
+test("finds its own series and books already in the home folder when asked, last backed up on 12 October", async () => {
+  const { backend } = backendFor("?home=library");
+
+  const found = await backend.foundLibrary();
+
+  expect(found).toEqual({
+    series: 20,
+    books: 326,
+    lastBackupAtMs: Date.UTC(2026, 9, 12, 9),
+  });
+});
+
 test("uses its storage as the Storage board draws it, with room to spare", async () => {
   const { backend } = backendFor();
 
