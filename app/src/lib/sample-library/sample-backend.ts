@@ -22,7 +22,7 @@ import {
 } from "./sample-library.ts";
 
 type LibraryState = "ready" | "empty" | "loading" | "failed";
-type SeriesState = "ready" | "loading" | "failed";
+type SeriesState = "ready" | "loading" | "failed" | "empty";
 
 export interface SampleScenario {
   readonly platform: Platform;
@@ -37,7 +37,7 @@ export interface SampleEvents {
 
 const PLATFORMS = ["android", "ios", "macos", "windows", "linux"] as const;
 const LIBRARY_STATES = ["ready", "empty", "loading", "failed"] as const;
-const SERIES_STATES = ["ready", "loading", "failed"] as const;
+const SERIES_STATES = ["ready", "loading", "failed", "empty"] as const;
 const SIXTH_VOLUME_FILES = ["present", "missing", "damaged"] as const;
 
 function oneOf<Choice extends string>(
@@ -276,6 +276,10 @@ export function sampleBackend(
     }
   }
 
+  function booksOf(series: SampleSeries): readonly SampleBook[] {
+    return scenario.series === "empty" ? [] : series.books;
+  }
+
   async function seriesReady(): Promise<void> {
     if (scenario.series === "loading") {
       await NEVER;
@@ -345,12 +349,13 @@ export function sampleBackend(
       return {
         id,
         title: series.title,
-        bookCount: series.books.length,
-        readCount: series.books.filter(isRead).length,
-        bookmarkCount: series.books.filter((book) => book.isBookmarked).length,
+        bookCount: booksOf(series).length,
+        readCount: booksOf(series).filter(isRead).length,
+        bookmarkCount: booksOf(series).filter((book) => book.isBookmarked)
+          .length,
         cover: coverOf(series),
         folder: LIBRARY_FOLDER_NAME,
-        upNext: upNextOf(series),
+        upNext: booksOf(series).length === 0 ? null : upNextOf(series),
         format: series.format,
         creators: series.creators.map((creator) => ({ ...creator })),
         summary: series.summary ?? null,
@@ -360,7 +365,7 @@ export function sampleBackend(
     seriesBooks: async (id, chosen, after) => {
       await seriesReady();
       const series = seriesWith(id);
-      const books = series.books
+      const books = booksOf(series)
         .map((_, index) => wireBook(series, index))
         .filter((book) => isShownBy(chosen.shown, book));
       const ordered =
