@@ -29,7 +29,7 @@
     rightToLeft: m.reader_direction_automatic_right_to_left,
   } as const;
   const SWITCH_ROW =
-    "flex items-center gap-md rounded-control py-sm text-start text-small font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+    "flex items-center gap-md py-setting-grid-pad text-start text-small font-medium min-block-setting-grid-row focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
   let {
     settings,
@@ -58,8 +58,9 @@
   }
 </script>
 
-<div class="flex flex-col gap-lg">
+<div class="flex flex-col divide-y divide-border">
   <SettingChoice
+    isStacked
     label={m.reader_apply_to()}
     choices={[
       { value: "series", label: m.reader_this_series() },
@@ -69,20 +70,23 @@
     onChoose={(scope: SettingsScope) => {
       settings.applyTo(scope);
     }}
-  />
-  <p class="-mbs-sm text-caption text-muted">
-    {settings.scope === "series"
-      ? m.reader_applies_to_series({ series: seriesTitle })
-      : m.reader_applies_to_all()}
-  </p>
+  >
+    <p class="text-caption text-muted expanded:hidden">
+      {settings.scope === "series"
+        ? m.reader_applies_to_series({ series: seriesTitle })
+        : m.reader_applies_to_all()}
+    </p>
+  </SettingChoice>
   <div
-    class="flex flex-col gap-sm expanded:grid expanded:grid-cols-setting-row expanded:items-center expanded:gap-md"
+    data-slot="setting-row"
+    class="grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row"
   >
     <label for="{id}-mode" class="text-small font-medium">
       {m.reader_mode()}
     </label>
     <NativeSelect
       id="{id}-mode"
+      class="inline-setting-control"
       value={reading.choice}
       onchange={(event: Event & { currentTarget: HTMLSelectElement }) => {
         chooseDirection(event.currentTarget.value);
@@ -97,8 +101,16 @@
     label={m.reader_layout()}
     choices={[
       { value: "automatic", label: m.reader_layout_automatic() },
-      { value: "one", label: m.reader_layout_one() },
-      { value: "two", label: m.reader_layout_two() },
+      {
+        value: "one",
+        label: m.reader_layout_one(),
+        phoneLabel: m.reader_layout_one_page(),
+      },
+      {
+        value: "two",
+        label: m.reader_layout_two(),
+        phoneLabel: m.reader_layout_two_pages(),
+      },
     ]}
     chosen={look.layout}
     onChoose={(layout: PageLayout) => {
@@ -116,7 +128,11 @@
     onChoose={(fit: PageFit) => {
       settings.change("fit", fit);
     }}
-  />
+  >
+    <p class="text-caption text-muted expanded:hidden">
+      {m.reader_fit_zoom_hint()}
+    </p>
+  </SettingChoice>
   <SettingChoice
     label={m.reader_background()}
     choices={[
@@ -140,10 +156,9 @@
       settings.change("controls", controls);
     }}
   />
-  <hr class="border-border" />
-  <fieldset class="flex flex-col gap-md">
-    <legend class="mbe-md text-small font-semibold">
-      {m.reader_light_title()}
+  <fieldset data-slot="setting-row" class="flex flex-col pbs-xl">
+    <legend class="contents">
+      <span class="text-small font-semibold">{m.reader_light_title()}</span>
     </legend>
     <LightSliders
       isInRows
@@ -153,8 +168,8 @@
       }}
     />
   </fieldset>
-  <hr class="border-border" />
   <Switch
+    data-slot="setting-row"
     bind:checked={
       () => look.keepsScreenOn,
       (isOn: boolean) => {
@@ -166,6 +181,7 @@
     <span class="flex-1">{m.reader_keep_screen_on()}</span>
   </Switch>
   <Switch
+    data-slot="setting-row"
     disabled
     bind:checked={
       () => look.cropsBorders,
