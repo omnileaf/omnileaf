@@ -282,6 +282,7 @@ function shapeOf(button: Locator): Promise<ButtonShape> {
 const DESKTOP_BUTTON = { height: 40, radius: 10, fontSize: 14 };
 const TOUCH_PRIMARY_HEIGHT = 52;
 const TOUCH_BUTTON_TEXT = 16;
+const STACKED_BUTTON_GAP = 6;
 const LARGE_TEXT_SCALE = 1.3;
 
 test.describe("buttons on a desktop", () => {
@@ -325,6 +326,22 @@ test.describe("buttons on android", () => {
 
     expect(shape.height).toBe(TOUCH_PRIMARY_HEIGHT);
     expect(shape.radius).toBeGreaterThanOrEqual(TOUCH_PRIMARY_HEIGHT / 2);
+  });
+
+  test("stacks Continue 6px over Skip on a phone", async ({ page }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "the full-screen step's stack of buttons",
+    );
+    device.folders = [HOME_FOLDER, SAMPLE_COMICS];
+    await goTo(page, "Already have comics or books?");
+
+    const [next, skip] = await Promise.all([
+      boxOf(page.getByRole("button", { name: "Continue" })),
+      boxOf(page.getByRole("button", { name: /^Skip/ })),
+    ]);
+
+    expect(skip.y - (next.y + next.height)).toBe(STACKED_BUTTON_GAP);
   });
 
   test("grows the step buttons' words with the text size", async ({ page }) => {
