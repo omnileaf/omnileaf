@@ -18,6 +18,7 @@ export interface NoticeContext {
   readonly platform: Platform;
   readonly appleDevice: AppleDevice;
   readonly showFolder: NoticeAction;
+  readonly copyCode: NoticeAction;
 }
 
 function placeOf(
@@ -44,6 +45,7 @@ export function sharedNotice(
         icon: CircleCheck,
         title: m.report_sent(),
         body: m.report_kept({ code: context.code }),
+        action: context.copyCode,
       };
     case "github":
       return undefined;

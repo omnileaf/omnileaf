@@ -16,6 +16,7 @@ function context(
     platform,
     appleDevice,
     showFolder: { label: "Show in folder", run: () => undefined },
+    copyCode: { label: "Copy code", run: () => undefined },
   };
 }
 
@@ -26,6 +27,12 @@ test("says a sent report's code is kept in Your reports", () => {
     "Report sent",
     "Code R-8M4T · kept in Your reports",
   ]);
+});
+
+test("offers to copy a sent report's code", () => {
+  const notice = sharedNotice({ way: "send" }, context("linux"));
+
+  expect(notice?.action?.label).toBe("Copy code");
 });
 
 test("says a copied report's code is kept in Your reports", () => {
