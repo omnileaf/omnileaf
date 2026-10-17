@@ -300,6 +300,7 @@ test.describe("buttons on android", () => {
   });
 
   test("grows the step buttons' words with the text size", async ({ page }) => {
+    device.folders = [HOME_FOLDER, SAMPLE_COMICS];
     await setTextScale(page, LARGE_TEXT_SCALE);
     await goTo(page, "Already have comics or books?");
 
