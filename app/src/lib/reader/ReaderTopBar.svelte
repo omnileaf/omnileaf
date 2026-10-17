@@ -100,12 +100,14 @@
     {/snippet}
   </Tooltip>
   <div
-    class="relative flex flex-1 flex-col px-xs min-inline-none expanded:hidden"
+    class="relative isolate flex flex-1 flex-col px-xs min-inline-none expanded:hidden"
   >
-    <span class="truncate text-small font-semibold ios:hidden">
+    <span
+      class="pointer-events-none truncate text-small font-semibold ios:hidden"
+    >
       {seriesTitle}
     </span>
-    <span class="truncate text-caption text-muted">
+    <span class="pointer-events-none truncate text-caption text-muted">
       {m.reader_book_at_page({
         title: bookTitle,
         page: pageNumber,
@@ -122,7 +124,7 @@
       aria-label={m.reader_jump_to_book()}
       aria-expanded={isJumpOpen}
       aria-keyshortcuts="G"
-      class="absolute inset-none rounded-shadcn-control transition-control hover:bg-hover active:bg-pressed"
+      class="absolute inset-none z-behind rounded-shadcn-control transition-control hover:bg-hover active:bg-pressed"
       onclick={onJump}
     ></button>
   </div>
