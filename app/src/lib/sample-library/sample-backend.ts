@@ -47,6 +47,7 @@ export interface SampleScenario {
   readonly missing: MissingKind;
   readonly signIn: SignInOutcome;
   readonly launch: LaunchKind;
+  readonly space: SpaceKind;
 }
 
 export interface SampleEvents {
@@ -107,6 +108,23 @@ const SAMPLE_DOWNLOADS = {
 const LAUNCH_KINDS = ["returning", "first"] as const;
 
 type LaunchKind = (typeof LAUNCH_KINDS)[number];
+const SPACE_KINDS = ["plenty", "low"] as const;
+
+type SpaceKind = (typeof SPACE_KINDS)[number];
+
+const GIGABYTE = 1_000_000_000;
+const MEGABYTE = 1_000_000;
+const LOW_SPACE_BYTES = 2 * GIGABYTE;
+const SAMPLE_STORAGE = {
+  cachedPagesBytes: 1.2 * GIGABYTE,
+  coversBytes: 210 * MEGABYTE,
+  databaseBytes: 30 * MEGABYTE,
+  totalBytes: 128 * GIGABYTE,
+  freeBytes: { plenty: 41 * GIGABYTE, low: 1.1 * GIGABYTE },
+} as const satisfies { freeBytes: Record<SpaceKind, number> } & Record<
+  string,
+  unknown
+>;
 
 const MISSING_FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000002";
 const MISSING_FOLDER_SERIES = new Set([3, 6, 9, 12, 15, 18]);
@@ -166,6 +184,7 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
     missing: oneOf(MISSING_KINDS, search.get("missing"), "none"),
     signIn: oneOf(SIGN_IN_OUTCOMES, search.get("signin"), "signedIn"),
     launch: oneOf(LAUNCH_KINDS, search.get("launch"), "returning"),
+    space: oneOf(SPACE_KINDS, search.get("space"), "plenty"),
   };
 }
 
@@ -474,6 +493,10 @@ export function sampleBackend(
     (adultContent.countsAgeRatings && ADULT_SERIES.has(series.number)) ||
     detailEdits.get(series.number)?.isMarkedAdult === true;
   const hidesAdult = (): boolean => adultContent.treatment === "hide";
+  const storage = {
+    cachedPagesBytes: SAMPLE_STORAGE.cachedPagesBytes,
+    coversBytes: SAMPLE_STORAGE.coversBytes,
+  };
   const missingFolder = {
     isFound: scenario.missing === "none",
     isShownAnyway: false,
@@ -820,6 +843,33 @@ export function sampleBackend(
       ],
       next: null,
     }),
+    checkStorage: () => {
+      const freeBytes =
+        SAMPLE_STORAGE.freeBytes[scenario.space] +
+        SAMPLE_STORAGE.cachedPagesBytes -
+        storage.cachedPagesBytes +
+        SAMPLE_STORAGE.coversBytes -
+        storage.coversBytes;
+      return {
+        omnileafBytes:
+          storage.cachedPagesBytes +
+          storage.coversBytes +
+          SAMPLE_STORAGE.databaseBytes,
+        cachedPagesBytes: storage.cachedPagesBytes,
+        coversBytes: storage.coversBytes,
+        freeBytes,
+        totalBytes: SAMPLE_STORAGE.totalBytes,
+        isLow: freeBytes < LOW_SPACE_BYTES,
+      };
+    },
+    clearCachedPages: () => {
+      storage.cachedPagesBytes = 0;
+      return null;
+    },
+    clearCovers: () => {
+      storage.coversBytes = 0;
+      return null;
+    },
     missingLibraryFolders: () =>
       scenario.missing === "none" || missingFolder.isFound
         ? []
