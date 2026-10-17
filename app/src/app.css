@@ -878,6 +878,10 @@
   inline-size: calc((100% - 2 * var(--spacing-md)) / 3);
 }
 
+@utility toast-list-width {
+  --width: var(--container-toast);
+}
+
 @utility scrollbar-none {
   scrollbar-width: none;
 }
