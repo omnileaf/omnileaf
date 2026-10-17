@@ -15,6 +15,9 @@ beforeEach(() => {
     if (command === "library_adult_content") {
       return NEW_ADULT_CONTENT;
     }
+    if (command === "library_tags") {
+      return [];
+    }
     if (command !== "library_folders") {
       throw new Error(`the test serves no command \`${command}\``);
     }

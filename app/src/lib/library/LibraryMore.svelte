@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { Ellipsis, Pencil, Settings, SquareCheck } from "@lucide/svelte";
+  import {
+    Ellipsis,
+    Pencil,
+    Settings,
+    SquareCheck,
+    Tags,
+  } from "@lucide/svelte";
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -17,7 +23,10 @@
   const ICON_SIZE = 20;
   const ITEM_ICON_SIZE = 16;
 
-  let { onSelect }: { onSelect: () => void } = $props();
+  let {
+    keepsLabels,
+    onSelect,
+  }: { keepsLabels: boolean; onSelect: () => void } = $props();
 
   function openLibrarySettings(): void {
     void goto(resolve("/(app)/settings/library"));
@@ -50,6 +59,16 @@
       <Pencil size={ITEM_ICON_SIZE} aria-hidden="true" />
       {m.library_edit_categories()}
     </DropdownMenuItem>
+    {#if keepsLabels}
+      <DropdownMenuItem
+        onSelect={() => {
+          void goto(resolve("/(app)/settings/library/tags"));
+        }}
+      >
+        <Tags size={ITEM_ICON_SIZE} aria-hidden="true" />
+        {m.manage_tags_title()}
+      </DropdownMenuItem>
+    {/if}
     <DropdownMenuSeparator />
     <DropdownMenuItem onSelect={openLibrarySettings}>
       <Settings size={ITEM_ICON_SIZE} aria-hidden="true" />

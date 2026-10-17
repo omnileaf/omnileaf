@@ -43,8 +43,13 @@
     },
   );
 
+  let tagCount = $state<number | undefined>();
+
   onMount(() => {
     void adultContent.load();
+    void commands.libraryTags().then((kept) => {
+      tagCount = kept.status === "ok" ? kept.data.length : undefined;
+    });
   });
 </script>
 
@@ -65,6 +70,13 @@
 />
 <SettingsLinks
   links={[
+    {
+      route: "/(app)/settings/library/tags",
+      label: m.manage_tags_title(),
+      ...(tagCount === undefined
+        ? {}
+        : { value: m.manage_tags_count({ count: tagCount }) }),
+    },
     {
       route: "/(app)/settings/library/adult-content",
       label: m.adult_content_title(),
