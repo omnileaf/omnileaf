@@ -208,6 +208,7 @@ export function targetOf(
 const SETTLE_GRACE_MS = 2000;
 const FRAME_WAIT_MS = 50;
 
+/** Lists a part bits-ui still holds in its starting style as well, since no animation reports it until the frame its transition begins. */
 function animationsWithin(locator: Locator): Promise<string[]> {
   return locator.evaluate(async (element, frameWaitMs) => {
     const nextFrame = new Promise<void>((resolve) => {
@@ -221,19 +222,25 @@ function animationsWithin(locator: Locator): Promise<string[]> {
       setTimeout(resolve, frameWaitMs);
     });
     await Promise.race([nextFrame, timer]);
-    return element.getAnimations({ subtree: true }).map((animation) => {
-      const target =
-        animation.effect instanceof KeyframeEffect
-          ? animation.effect.target
-          : null;
-      const name =
-        animation instanceof CSSTransition
-          ? animation.transitionProperty
-          : animation instanceof CSSAnimation
-            ? animation.animationName
-            : animation.id;
-      return `${name} on ${target?.tagName.toLowerCase() ?? "?"} ${target?.getAttribute("class") ?? ""}`;
-    });
+    return [
+      ...element.getAnimations({ subtree: true }).map((animation) => {
+        const target =
+          animation.effect instanceof KeyframeEffect
+            ? animation.effect.target
+            : null;
+        const name =
+          animation instanceof CSSTransition
+            ? animation.transitionProperty
+            : animation instanceof CSSAnimation
+              ? animation.animationName
+              : animation.id;
+        return `${name} on ${target?.tagName.toLowerCase() ?? "?"} ${target?.getAttribute("class") ?? ""}`;
+      }),
+      ...(element.closest("[data-starting-style]") === null &&
+      element.querySelector("[data-starting-style]") === null
+        ? []
+        : ["a part still held in its starting style"]),
+    ];
   }, FRAME_WAIT_MS);
 }
 

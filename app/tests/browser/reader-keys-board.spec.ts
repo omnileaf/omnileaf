@@ -7,7 +7,9 @@ import {
   expect,
   EXPANDED_MIN_WIDTH,
   fakeAppInfo,
+  settle,
   test,
+  transitionsOf,
   viewportOf,
 } from "./fixtures.ts";
 import {
@@ -33,6 +35,43 @@ function sheet(page: Page): Locator {
 
 function firstPage(page: Page): Locator {
   return page.getByRole("img", { name: "Page 1", exact: true });
+}
+
+function scrim(page: Page): Locator {
+  return page.locator("[data-dialog-overlay]");
+}
+
+/** Takes every @starting-style rule out of the page's styles, as WebKit can skip them for an element inserted after the page loads. */
+function dropStartingStyles(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    function dropFrom(parent: CSSStyleSheet | CSSGroupingRule): number {
+      let dropped = 0;
+      for (let index = parent.cssRules.length - 1; index >= 0; index--) {
+        const rule = parent.cssRules.item(index);
+        if (rule?.cssText.startsWith("@starting-style")) {
+          parent.deleteRule(index);
+          dropped++;
+        } else if (rule instanceof CSSGroupingRule) {
+          dropped += dropFrom(rule);
+        }
+      }
+      return dropped;
+    }
+
+    return [...document.styleSheets].reduce(
+      (dropped, sheet) => dropped + dropFrom(sheet),
+      0,
+    );
+  });
+}
+
+async function sheetAndScrimTransitions(
+  page: Page,
+): Promise<{ sheet: string[]; scrim: string[] }> {
+  return {
+    sheet: await transitionsOf(sheet(page)),
+    scrim: await transitionsOf(scrim(page)),
+  };
 }
 
 test("lists the reader's keys in a sheet opened with the question mark", async ({
@@ -67,6 +106,31 @@ test("dims the page behind the sheet", async ({ page }) => {
     "background-color",
     "rgba(0, 0, 0, 0)",
   );
+});
+
+test("slides the sheet in and fades the page behind it without @starting-style, and shows them at once when motion is reduced", async ({
+  page,
+}) => {
+  await openBook(page);
+  expect(await dropStartingStyles(page)).toBeGreaterThan(0);
+
+  await page.keyboard.press("Shift+?");
+
+  await expect
+    .poll(() => sheetAndScrimTransitions(page))
+    .toEqual({ sheet: ["translate"], scrim: ["opacity"] });
+  await settle(sheet(page));
+  const box = await boxOf(sheet(page));
+  expect(box.x + box.width).toBeCloseTo(viewportOf(page).width, 0);
+  await page.keyboard.press("Escape");
+  await expect(sheet(page)).toBeHidden();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.keyboard.press("Shift+?");
+  await expect(sheet(page)).toBeVisible();
+  expect(await sheetAndScrimTransitions(page)).toEqual({
+    sheet: [],
+    scrim: [],
+  });
 });
 
 test("opens the sheet from the keyboard button on desktops", async ({
