@@ -22,6 +22,8 @@ import {
   installFakeBackend,
 } from "./fake-backend.ts";
 
+export { sidewaysOverflow } from "./sideways-overflow.ts";
+
 export const FAKE_APP_VERSION = "1.2.3";
 export const FAKE_SOURCE_CODE = "repo.example.org/omnileaf";
 export const FAKE_SYSTEM = "Fedora 43";
@@ -418,56 +420,6 @@ export const APP_PAGES = [
   "/series/0190a3e4-0000-8000-8000-00000000000f",
   "/read/0190a3e4-0000-8000-8000-00000000000f",
 ] as const;
-
-export function sidewaysOverflow(
-  page: Page,
-  within = "main",
-): Promise<string[]> {
-  return page.evaluate((scope) => {
-    const touchTargetBleedOf = (element: Element): number => {
-      const before = getComputedStyle(element, "::before");
-      if (before.position !== "absolute") {
-        return 0;
-      }
-      const bleed =
-        Number.parseFloat(before.width) - element.getBoundingClientRect().width;
-      return Number.isNaN(bleed) ? 0 : bleed;
-    };
-    const bleedOf = (element: Element): number =>
-      Math.max(
-        0,
-        touchTargetBleedOf(element),
-        ...[...element.querySelectorAll("*")].flatMap((descendant) => [
-          -Number.parseFloat(getComputedStyle(descendant).marginInlineEnd),
-          touchTargetBleedOf(descendant),
-        ]),
-      );
-    const overflowing: string[] = [];
-    for (const element of document.querySelectorAll(`${scope} *`)) {
-      const style = getComputedStyle(element);
-      const isClippedArt =
-        ["hidden", "clip"].includes(style.overflowX) &&
-        element.matches("[aria-hidden=true]");
-      const isCutOnPurpose =
-        style.textOverflow === "ellipsis" ||
-        style.clipPath !== "none" ||
-        isClippedArt;
-      const overflow = element.scrollWidth - element.clientWidth;
-      if (
-        !isCutOnPurpose &&
-        element.clientWidth > 0 &&
-        overflow > 0 &&
-        overflow > bleedOf(element)
-      ) {
-        overflowing.push(element.outerHTML.slice(0, 120));
-      }
-    }
-    if (document.documentElement.scrollWidth > window.innerWidth) {
-      overflowing.push("the page");
-    }
-    return overflowing;
-  }, within);
-}
 
 type Violations = Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"];
 
