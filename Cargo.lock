@@ -3605,6 +3605,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "omnileaf-icon-actions"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "specta",
+ "tauri",
+ "tauri-plugin",
+]
+
+[[package]]
 name = "omnileaf-imaging"
 version = "0.0.0"
 dependencies = [
