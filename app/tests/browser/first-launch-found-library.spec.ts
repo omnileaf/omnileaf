@@ -19,6 +19,8 @@ const FOUND_HEADING = "A library is already here";
 const USE_LIBRARY = "Use this library";
 const START_NEW_LIBRARY = "Start a new library instead";
 const STACKED_BUTTON_GAP = 6;
+const DESKTOP_CHANGE_HEIGHT = 38;
+const DESKTOP_HOME_HEADER_HEIGHT = 62;
 const FOUND_FACTS = [
   ["Series", "212"],
   ["Books", "38"],
@@ -175,6 +177,25 @@ test.describe("a library already in the home folder on a desktop", () => {
     await expect(
       homeCard(page).getByRole("button", { name: "Change", exact: true }),
     ).toHaveText("Change");
+  });
+
+  test("draws Change at the outlined button's height, keeping the header as drawn", async ({
+    page,
+  }) => {
+    await goToTheHomeFolder(page);
+    const heading = homeCard(page).getByRole("heading", {
+      name: "Home folder",
+    });
+
+    const [change, header] = await Promise.all([
+      boxOf(
+        homeCard(page).getByRole("button", { name: "Change", exact: true }),
+      ),
+      boxOf(heading.locator("..")),
+    ]);
+
+    expect(change.height).toBe(DESKTOP_CHANGE_HEIGHT);
+    expect(header.height).toBe(DESKTOP_HOME_HEADER_HEIGHT);
   });
 
   test("sets Back apart, then Start a new library instead and Use this library last", async ({
