@@ -14,11 +14,13 @@
     shown,
     isBlank,
     isReversed,
+    onPick,
   }: {
     pages: readonly BookPage[];
     shown: number;
     isBlank: boolean;
     isReversed: boolean;
+    onPick: (index: number) => void;
   } = $props();
 
   const wide = $derived(previewWindow(shown, pages.length, WIDE_REACH));
@@ -47,38 +49,47 @@
     <li
       aria-current={isShown ? "page" : undefined}
       class={[
-        "flex flex-1 flex-col items-center gap-xs text-reader-thumbnail max-inline-reader-thumbnail-wide min-inline-none",
+        "flex flex-1 text-reader-thumbnail max-inline-reader-thumbnail-wide min-inline-none",
         isShown ? "font-bold text-on-reader" : "font-medium text-reader-muted",
         (index < phone.first || index > phone.last) && "max-expanded:hidden",
       ]}
     >
-      {#if page !== undefined && isBlank}
-        <span
-          aria-hidden="true"
-          style:aspect-ratio={ratioOf(page)}
-          class={[
-            "rounded-reader-thumbnail bg-reader-grey inline-full",
-            isShown
-              ? "outline-2 outline-offset-2 outline-reader-accent"
-              : "opacity-70",
-          ]}
-        ></span>
-      {:else if page !== undefined}
-        <img
-          src={omniUrl(page.thumbnail)}
-          alt={m.reader_page({ page: index + 1 })}
-          decoding="async"
-          draggable="false"
-          style:aspect-ratio={ratioOf(page)}
-          class={[
-            "rounded-reader-thumbnail bg-reader-page object-cover inline-full",
-            isShown
-              ? "outline-2 outline-offset-2 outline-reader-accent"
-              : "opacity-70",
-          ]}
-        />
-      {/if}
-      <span aria-hidden="true">{index + 1}</span>
+      <button
+        type="button"
+        aria-label={m.reader_page({ page: index + 1 })}
+        class="flex flex-col items-center gap-xs inline-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        onclick={() => {
+          onPick(index);
+        }}
+      >
+        {#if page !== undefined && isBlank}
+          <span
+            aria-hidden="true"
+            style:aspect-ratio={ratioOf(page)}
+            class={[
+              "rounded-reader-thumbnail bg-reader-grey inline-full",
+              isShown
+                ? "outline-2 outline-offset-2 outline-reader-accent"
+                : "opacity-70",
+            ]}
+          ></span>
+        {:else if page !== undefined}
+          <img
+            src={omniUrl(page.thumbnail)}
+            alt=""
+            decoding="async"
+            draggable="false"
+            style:aspect-ratio={ratioOf(page)}
+            class={[
+              "rounded-reader-thumbnail bg-reader-page object-cover inline-full",
+              isShown
+                ? "outline-2 outline-offset-2 outline-reader-accent"
+                : "opacity-70",
+            ]}
+          />
+        {/if}
+        <span aria-hidden="true">{index + 1}</span>
+      </button>
     </li>
   {/each}
 </ol>
