@@ -5,9 +5,9 @@ use omnileaf_engine::{
     AdultContent, AppInfo, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
     CategoryId, Core, CoversPerRow, CreatorSeries, FolderCursor, FolderId, FolderPage,
     FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, InterfaceError,
-    LabelChanges, Library, LibraryCategory, LibraryFilter, LibraryFilterChoices, LibraryListing,
-    LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook,
-    ProbedFormat, ProjectLink, ReadMark, ReadingWeek, ResourceRouter, ScanProgress,
+    LabelChanges, Library, LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices,
+    LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder,
+    OpenedBook, ProbedFormat, ProjectLink, ReadMark, ReadingWeek, ResourceRouter, ScanProgress,
     SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesLabels, SeriesOverview,
     SeriesPage, SpellingSuggestion, UtcOffset,
 };
@@ -88,6 +88,7 @@ macro_rules! app_commands {
             library_hidden_series_count,
             show_missing_library_folder,
             relocate_library_folder,
+            show_series_in_folder,
             remove_library_folder,
             library_folder_book_count,
             rescan_library_folder,
@@ -759,6 +760,21 @@ async fn open_project_link(app: AppHandle, link: ProjectLink) -> Result<(), IpcE
     app.opener()
         .open_url(link.url(), None::<&str>)
         .map_err(|error| IpcError::browser_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn show_series_in_folder(
+    app: AppHandle,
+    library: State<'_, Library>,
+    series: SeriesId,
+) -> Result<(), IpcError> {
+    let Some(file) = library.series_file(series).await? else {
+        return Err(LibraryError::SeriesNotFound { id: series }.into());
+    };
+    app.opener()
+        .reveal_item_in_dir(file)
+        .map_err(|error| IpcError::file_manager_unavailable(&error))
 }
 
 #[tauri::command]

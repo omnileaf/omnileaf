@@ -84,6 +84,7 @@ export const commands = {
 	name: string,
 	outcome: RescanOutcome,
 } | null, IpcError>(__TAURI_INVOKE("relocate_library_folder", { id, onProgress })),
+	showSeriesInFolder: (series: string & { readonly __brand: "SeriesId" }) => typedError<null, IpcError>(__TAURI_INVOKE("show_series_in_folder", { series })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
 	libraryFolderBookCount: (id: string & { readonly __brand: "FolderId" }) => typedError<number, IpcError>(__TAURI_INVOKE("library_folder_book_count", { id })),
 	rescanLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<FolderRescan, IpcError>(__TAURI_INVOKE("rescan_library_folder", { id, onProgress })),
@@ -299,7 +300,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "labelsNotKept" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "labelsNotKept" | "internal";
 
 export type LabelChanges = {
 	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],

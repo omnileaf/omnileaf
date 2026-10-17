@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { Eye, LibraryBig, Play, SquareCheck, Tags } from "@lucide/svelte";
+  import {
+    Eye,
+    FolderOpen,
+    LibraryBig,
+    Play,
+    SquareCheck,
+    Tags,
+  } from "@lucide/svelte";
   import { ContextMenu } from "bits-ui";
   import type { Snippet } from "svelte";
 
@@ -625,6 +632,16 @@
       >
         <SquareCheck size={MENU_ICON_SIZE} aria-hidden="true" />
         {m.library_select()}
+      </ContextMenuItem>
+      <ContextMenuSeparator class="touch:hidden" />
+      <ContextMenuItem
+        class="touch:hidden"
+        onSelect={() => {
+          menu.onShowInFolder(target);
+        }}
+      >
+        <FolderOpen size={MENU_ICON_SIZE} aria-hidden="true" />
+        {m.series_show_in_folder()}
       </ContextMenuItem>
     </ContextMenuContent>
   {/if}
