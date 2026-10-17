@@ -70,6 +70,12 @@ function listing(catalog: () => readonly WireSeries[]): { asked: number } {
       if (command === "library_tabs") {
         return NEW_LIBRARY_TABS;
       }
+      if (command === "missing_library_folders") {
+        return [];
+      }
+      if (command === "library_hidden_series_count") {
+        return 0;
+      }
       if (command === "series_labels") {
         return {
           keepsLabels: false,
@@ -183,6 +189,12 @@ test("says when the library's series can't be listed", async () => {
       }
       if (command === "library_tabs") {
         return NEW_LIBRARY_TABS;
+      }
+      if (command === "missing_library_folders") {
+        return [];
+      }
+      if (command === "library_hidden_series_count") {
+        return 0;
       }
       // eslint-disable-next-line @typescript-eslint/only-throw-error -- a failed command rejects with its plain error object, which is what the bindings read
       throw {
