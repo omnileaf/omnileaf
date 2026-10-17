@@ -21,7 +21,7 @@
 
   import type { PageProps } from "./$types";
 
-  const OPENING_SECTION: SettingsRoute = "/(app)/settings/library";
+  const OPENING_SECTION: SettingsRoute = "/(app)/settings/general";
   const THEME_SUMMARIES = {
     system: m.theme_follows_system,
     light: m.theme_light,

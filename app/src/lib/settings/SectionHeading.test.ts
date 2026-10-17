@@ -1,6 +1,8 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
+import "../../app.css";
+
 import SectionHeading from "./SectionHeading.svelte";
 
 const PROPS = { title: "About" };

@@ -1122,6 +1122,7 @@
   "reader_back_label": "Back to the library",
   "reader_back_to_series": "Back to {series}",
   "reader_breadcrumb": "Breadcrumb",
+  "settings_breadcrumb": "Breadcrumb",
   "reader_position": [
     {
       "declarations": [
