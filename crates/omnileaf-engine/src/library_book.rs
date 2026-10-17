@@ -17,7 +17,7 @@ pub struct SeriesBook {
     #[specta(type = i32)]
     pub added_at_ms: i64,
     pub reading: BookReading,
-    /// Absent until the library counts a book's pages, which it does once the book is opened.
+    /// Absent for a book found before the library counted pages as it scans, until the book is scanned again or opened.
     pub page_count: Option<u32>,
     pub is_bookmarked: bool,
     /// Whether the library found the book since its series was last looked at.
@@ -99,7 +99,7 @@ impl From<BookSummary> for SeriesBook {
             title: book.title,
             added_at_ms: book.added_at_ms,
             reading: book.reading.into(),
-            page_count: None,
+            page_count: book.page_count,
             is_bookmarked: false,
             is_new: false,
             is_file_missing: false,
@@ -190,31 +190,36 @@ pub(crate) fn sample_book_id(seed: u32) -> BookId {
 mod tests {
     use super::*;
 
-    #[test]
-    fn leaves_a_books_page_count_bookmark_and_newness_unknown_until_the_library_reads_them() {
-        let book = SeriesBook::from(BookSummary {
+    const PAGE_COUNT: u32 = 176;
+
+    fn sample_summary() -> BookSummary {
+        BookSummary {
             id: sample_book_id(1).0,
             position: 1,
             title: "Volume 1".to_owned(),
             added_at_ms: 0,
             reading: catalog::BookReading::NotStarted,
-        });
+            page_count: Some(PAGE_COUNT),
+        }
+    }
 
-        assert_eq!(
-            (book.page_count, book.is_bookmarked, book.is_new),
-            (None, false, false)
-        );
+    #[test]
+    fn crosses_with_the_page_count_the_library_keeps() {
+        let book = SeriesBook::from(sample_summary());
+
+        assert_eq!(book.page_count, Some(PAGE_COUNT));
+    }
+
+    #[test]
+    fn leaves_a_books_bookmark_and_newness_unknown_until_the_library_reads_them() {
+        let book = SeriesBook::from(sample_summary());
+
+        assert_eq!((book.is_bookmarked, book.is_new), (false, false));
     }
 
     #[test]
     fn says_no_books_file_is_missing_while_the_library_keeps_none_without_one() {
-        let book = SeriesBook::from(BookSummary {
-            id: sample_book_id(1).0,
-            position: 1,
-            title: "Volume 1".to_owned(),
-            added_at_ms: 0,
-            reading: catalog::BookReading::NotStarted,
-        });
+        let book = SeriesBook::from(sample_summary());
 
         assert!(!book.is_file_missing);
     }

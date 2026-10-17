@@ -59,6 +59,7 @@ impl Library {
             fingerprint,
             title: format!("Volume {page_crc:02}"),
             added_at_ms: ADDED_AT_MS,
+            page_count: 1,
             file: BookFile {
                 root,
                 location: PathBuf::from(location),

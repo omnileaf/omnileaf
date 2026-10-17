@@ -103,6 +103,7 @@ impl History {
             .unwrap(),
             title: title_of(series, number),
             added_at_ms: ADDED_AT_MS,
+            page_count: 1,
             file: BookFile {
                 root: self.root,
                 location: location_of(series, number),
