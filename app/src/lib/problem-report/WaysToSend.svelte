@@ -47,7 +47,7 @@
 
 <section aria-labelledby={headingId} class="mbs-lg flex flex-col gap-sm">
   <h2 id={headingId} class="text-small font-semibold">
-    {m.report_ways_to_send()}
+    {m.report_other_ways_to_send()}
   </h2>
   <ul
     class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
