@@ -1447,6 +1447,7 @@ export function sampleBackend(
     }),
     rescanLibraryFolders: () => [],
     removeBooksOfEmptiedFolder: () => ({ kind: "kept" }),
+    foundLibrary: () => null,
     firstLaunchFinished: () => hasFinishedFirstLaunch,
     finishFirstLaunch: () => {
       hasFinishedFirstLaunch = true;
