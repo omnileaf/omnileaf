@@ -777,6 +777,17 @@
   --animate-gear-turn: gear-turn var(--transition-duration-move) var(--ease-out);
   --animate-spin: spin var(--transition-duration-spin) linear infinite;
   --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-ready-grow: ready-grow var(--transition-duration-grow)
+    var(--ease-emphasized) backwards;
+  --animate-ready-draw: ready-draw var(--transition-duration-move)
+    var(--ease-emphasized) var(--delay-ready-check) backwards;
+  --animate-ready-leaf: ready-leaf var(--transition-duration-move)
+    var(--ease-emphasized) var(--delay-ready-leaf) backwards;
+
+  --delay-ready-check: 300ms;
+  --delay-ready-leaf: 600ms;
+  --delay-ready-shelf: 300ms;
+  --delay-ready-shelf-step: 60ms;
 
   @keyframes pill-grow {
     from {
@@ -831,6 +842,32 @@
       opacity: 0.5;
     }
   }
+
+  @keyframes ready-grow {
+    from {
+      scale: 0;
+    }
+  }
+
+  @keyframes ready-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+  }
+
+  @keyframes ready-leaf {
+    from {
+      rotate: 40deg;
+      opacity: 0;
+    }
+  }
+
+  @keyframes ready-settle {
+    from {
+      translate: 0 -1.5rem;
+      opacity: 0;
+    }
+  }
 }
 
 :root {
@@ -864,6 +901,13 @@
 }
 
 @theme inline {
+  --animate-ready-settle: ready-settle var(--transition-duration-move)
+    var(--ease-emphasized)
+    calc(
+      var(--delay-ready-shelf) + var(--shelf-order, 0) *
+        var(--delay-ready-shelf-step)
+    )
+    backwards;
   --color-ios-grouped: var(--ios-grouped-bg);
   --color-ios-cell: var(--ios-grouped-cell);
   --color-ios-separator: var(--ios-separator);
