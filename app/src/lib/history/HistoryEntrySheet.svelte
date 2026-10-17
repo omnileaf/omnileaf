@@ -1,14 +1,7 @@
 <script lang="ts">
-  import {
-    BookOpen,
-    Ellipsis,
-    ListOrdered,
-    Play,
-    RotateCcw,
-  } from "@lucide/svelte";
+  import { Ellipsis, LibraryBig, Play, X } from "@lucide/svelte";
   import { Dialog } from "bits-ui";
 
-  import { resolve } from "$app/paths";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { DrawerContent } from "#lib/components/ui/drawer/index.ts";
@@ -19,13 +12,29 @@
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import type { HistoryEntryActions } from "./history-entry-actions.ts";
+  import { whereLeft } from "./history-line.ts";
+
   const ICON_SIZE = 18;
   const ACTION =
     "flex items-center gap-md rounded-control px-sm text-body font-medium transition-control min-block-touch-target hover:bg-hover active:bg-pressed";
 
-  let { entry, cover }: { entry: HistoryEntry; cover: ShownCover } = $props();
+  let {
+    entry,
+    cover,
+    actions,
+  }: {
+    entry: HistoryEntry;
+    cover: ShownCover;
+    actions: HistoryEntryActions;
+  } = $props();
 
   let isOpen = $state(false);
+
+  function act(action: (one: HistoryEntry) => void): void {
+    isOpen = false;
+    action(entry);
+  }
 </script>
 
 <Tooltip
@@ -42,7 +51,7 @@
     <Button
       {...props}
       look="row-action"
-      class="me-2xs shrink-0 block-touch-target inline-touch-target before:block-pointer-target before:inline-pointer-target desktop:large:hidden"
+      class="me-2xs shrink-0 block-touch-target inline-touch-target before:block-pointer-target before:inline-pointer-target large:hidden"
     >
       <Ellipsis size={ICON_SIZE} aria-hidden="true" />
     </Button>
@@ -65,33 +74,45 @@
         <DialogTitle class="truncate text-title font-bold">
           {entry.seriesTitle}
         </DialogTitle>
-        <p class="truncate text-detail text-muted">{entry.bookTitle}</p>
+        <p class="truncate text-detail text-muted">
+          {m.history_entry_place({
+            book: entry.bookTitle,
+            where: whereLeft(entry),
+          })}
+        </p>
       </div>
     </div>
     <div class="flex flex-col px-sm pbs-sm pbe-sheet-bottom">
-      <a href={resolve("/read/[book]", { book: entry.book })} class={ACTION}>
-        {#if entry.reading.state === "read"}
-          <RotateCcw size={ICON_SIZE} aria-hidden="true" />
-          {m.history_read_again()}
-        {:else}
-          <Play size={ICON_SIZE} aria-hidden="true" />
-          {m.history_continue()}
-        {/if}
-      </a>
-      <a
-        href={resolve("/(app)/history/[book]", { book: entry.book })}
+      <button
+        type="button"
         class={ACTION}
+        onclick={() => {
+          act(actions.continueReading);
+        }}
       >
-        <ListOrdered size={ICON_SIZE} aria-hidden="true" />
-        {m.history_reading_sessions()}
-      </a>
-      <a
-        href={resolve("/(app)/series/[id]", { id: entry.series })}
+        <Play size={ICON_SIZE} aria-hidden="true" />
+        {m.history_continue_reading()}
+      </button>
+      <button
+        type="button"
         class={ACTION}
+        onclick={() => {
+          act(actions.openSeries);
+        }}
       >
-        <BookOpen size={ICON_SIZE} aria-hidden="true" />
-        {m.history_open_series()}
-      </a>
+        <LibraryBig size={ICON_SIZE} aria-hidden="true" />
+        {m.history_open_the_series()}
+      </button>
+      <button
+        type="button"
+        class={ACTION}
+        onclick={() => {
+          act(actions.remove);
+        }}
+      >
+        <X size={ICON_SIZE} aria-hidden="true" />
+        {m.history_remove()}
+      </button>
     </div>
   </DrawerContent>
 </Dialog.Root>

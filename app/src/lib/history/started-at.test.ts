@@ -1,10 +1,6 @@
 import { expect, test } from "vitest";
 
-import {
-  startedAtFormats,
-  startedAtTime,
-  startedAtWeekdayTime,
-} from "#lib/history/started-at.ts";
+import { startedAtFormats, startedAtTime } from "#lib/history/started-at.ts";
 
 const STARTED_AT_MS = 1_790_000_000_000;
 
@@ -28,24 +24,13 @@ test("writes the time the way the locale does", () => {
   expect(time).toBe("00:13");
 });
 
-test("gives the weekday with the time for a session of a day History doesn't name on its own", () => {
-  const times = ["en-US", "en-GB"].map((locale) =>
-    startedAtWeekdayTime(
-      { startedAtMs: STARTED_AT_MS, utcOffsetMinutes: 600 },
-      startedAtFormats(locale),
-    ),
-  );
-
-  expect(times).toEqual(["Tue 12:13 AM", "Tue 00:13"]);
-});
-
 test("writes the time on the clock chosen, whatever the locale's own", () => {
   const entry = { startedAtMs: STARTED_AT_MS, utcOffsetMinutes: 0 };
 
   const times = [
     startedAtTime(entry, startedAtFormats("en-GB", "h12")),
-    startedAtWeekdayTime(entry, startedAtFormats("en-US", "h23")),
+    startedAtTime(entry, startedAtFormats("en-US", "h23")),
   ];
 
-  expect(times).toEqual(["02:13 pm", "Mon 14:13"]);
+  expect(times).toEqual(["02:13 pm", "14:13"]);
 });
