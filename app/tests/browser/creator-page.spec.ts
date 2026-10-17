@@ -32,6 +32,10 @@ const THEIR_SERIES = [
     role: null,
   },
 ] as const;
+const LONG_NAME =
+  "Sample_Creator_Whose_Pen_Name_Runs_On_Without_A_Single_Space_Between";
+const UNBROKEN_TITLE =
+  "Sample_Series_Scanned_From_The_Collectors_Edition_Box_Set_Volumes_01_To_24";
 
 function backendWith(found: typeof THEIR_SERIES | readonly []): FakeBackend {
   return {
@@ -48,6 +52,15 @@ function backendWith(found: typeof THEIR_SERIES | readonly []): FakeBackend {
 
 function isWide(page: Page): boolean {
   return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
+}
+
+async function openLongNamedCreator(page: Page): Promise<void> {
+  await page.goto(
+    `/creator/${encodeURIComponent(LONG_NAME)}?from=${SERIES_ID}`,
+  );
+  await expect(
+    page.getByRole("heading", { level: 1, name: LONG_NAME }),
+  ).toBeVisible();
 }
 
 async function openCreatorFromSeries(page: Page): Promise<void> {
@@ -141,5 +154,36 @@ test.describe("a creator whose series have gone", () => {
       .click();
 
     await expect(page).toHaveURL(/\/$/);
+  });
+});
+
+test.describe("a creator with a long name and a series with an unbroken title", () => {
+  test.use({
+    backend: {
+      ...new FakeShelf([READ], {
+        creators: [{ name: LONG_NAME, role: "storyAndArt", seriesCount: 2 }],
+      }).backend(),
+      creatorSeries: () => [
+        {
+          id: "0190a3e4-0000-8000-8000-0000000000b1",
+          title: UNBROKEN_TITLE,
+          cover: null,
+          role: "story",
+        },
+      ],
+    },
+  });
+
+  test("wraps an unbroken series title inside its cover's column", async ({
+    page,
+  }) => {
+    await openLongNamedCreator(page);
+
+    const hidden = await page
+      .getByRole("list", { name: `Series by ${LONG_NAME}` })
+      .getByText(UNBROKEN_TITLE)
+      .evaluate((title) => title.scrollWidth - title.clientWidth);
+
+    expect(hidden).toBe(0);
   });
 });
