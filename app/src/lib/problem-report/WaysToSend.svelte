@@ -7,6 +7,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import type { ReportSharing, ShareWay } from "./report-sharing.svelte";
+  import { failureMessage } from "./share-failure";
 
   const ICON_SIZE = 16;
 
@@ -33,16 +34,13 @@
     opensBrowser: false,
   };
 
-  const FAILURES = {
-    github: m.about_browser_unavailable,
-    copy: m.report_copy_failed,
-    save: m.report_save_failed,
-  } satisfies Record<ShareWay, () => string>;
-
   let { sharing, canSave }: { sharing: ReportSharing; canSave: boolean } =
     $props();
 
   const ways = $derived(canSave ? [...SHARING, SAVING] : SHARING);
+  const failure = $derived(
+    sharing.failure?.way === "send" ? undefined : sharing.failure,
+  );
 
   const headingId = $props.id();
 </script>
@@ -86,9 +84,9 @@
     {/each}
   </ul>
   <div role="alert">
-    {#if sharing.failure !== undefined}
+    {#if failure !== undefined}
       <Alert tone="warning" icon={CircleAlert}>
-        <AlertTitle>{FAILURES[sharing.failure]()}</AlertTitle>
+        <AlertTitle>{failureMessage(failure)}</AlertTitle>
       </Alert>
     {/if}
   </div>
