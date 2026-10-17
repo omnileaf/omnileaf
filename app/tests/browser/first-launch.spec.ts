@@ -44,11 +44,13 @@ class Device {
   finishes = 0;
   failsToFinish = false;
   folders: WireFolder[] = [];
+  books = new Map<string, number>();
 
   reset(): void {
     this.finishes = 0;
     this.failsToFinish = false;
     this.folders = [HOME_FOLDER];
+    this.books = new Map();
   }
 }
 
@@ -68,8 +70,10 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
     return null;
   },
   libraryFolders: () => ({ folders: [...device.folders], next: null }),
+  libraryFolderBookCount: (id) => device.books.get(id) ?? 0,
   addLibraryFolder: () => {
     device.folders.push(SAMPLE_COMICS);
+    device.books.set(SAMPLE_COMICS.id, 7);
     return {
       name: SAMPLE_COMICS.name,
       series: 3,
@@ -89,7 +93,7 @@ const IOS_HOME_HEADING = "Your backups and books are in Files";
 const STEPS = [
   { heading: "Welcome to Omnileaf", leaveWith: "Get started" },
   { heading: HOME_HEADING, leaveWith: "Continue" },
-  { heading: "Already have comics or books?", leaveWith: "Continue" },
+  { heading: "Already have comics or books?", leaveWith: /^Skip/ },
   { heading: "A few choices", leaveWith: "Continue" },
   { heading: "You're all set", leaveWith: "Open my library" },
 ] as const;
@@ -263,6 +267,7 @@ test.describe("buttons on a desktop", () => {
   test("makes every step button 40px tall with 10px corners and 14px text", async ({
     page,
   }) => {
+    device.folders = [HOME_FOLDER, SAMPLE_COMICS];
     await goTo(page, "Already have comics or books?");
     const buttons = [
       page.getByRole("button", { name: "Continue" }),
@@ -285,6 +290,7 @@ test.describe("buttons on android", () => {
   });
 
   test("makes the main step button a 52px pill", async ({ page }) => {
+    device.folders = [HOME_FOLDER, SAMPLE_COMICS];
     await goTo(page, "Already have comics or books?");
 
     const shape = await shapeOf(page.getByRole("button", { name: "Continue" }));
@@ -294,6 +300,7 @@ test.describe("buttons on android", () => {
   });
 
   test("grows the step buttons' words with the text size", async ({ page }) => {
+    device.folders = [HOME_FOLDER, SAMPLE_COMICS];
     await setTextScale(page, LARGE_TEXT_SCALE);
     await goTo(page, "Already have comics or books?");
 
@@ -323,6 +330,7 @@ test.describe("buttons on ios", () => {
   test("makes the main step button 52px tall with 14px corners", async ({
     page,
   }) => {
+    device.folders = [HOME_FOLDER, SAMPLE_COMICS];
     await goTo(page, "Already have comics or books?", "ios");
 
     const shape = await shapeOf(page.getByRole("button", { name: "Continue" }));
@@ -681,7 +689,7 @@ test("puts Back above the title on a phone and at the foot of the dialog from 84
 
   const back = await boxOf(page.getByRole("button", { name: "Back" }));
   const title = await boxOf(heading(page, "Already have comics or books?"));
-  const next = await boxOf(page.getByRole("button", { name: "Continue" }));
+  const next = await boxOf(page.getByRole("button", { name: /^Skip/ }));
 
   if (isExpanded) {
     expect(back.y + back.height / 2).toBe(next.y + next.height / 2);
@@ -700,7 +708,34 @@ test("links a folder that already holds comics and lists it", async ({
 
   await expect(
     page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
-  ).toHaveText(["Sample Comics /media/Sample Comics"]);
+  ).toHaveText(["Sample Comics /media/Sample Comics 7 books"]);
+});
+
+test("says how many books each linked folder holds, under its place", async ({
+  page,
+}) => {
+  device.folders = [HOME_FOLDER, SAMPLE_COMICS];
+  device.books.set(SAMPLE_COMICS.id, 214);
+  await goTo(page, "Already have comics or books?");
+  const row = page
+    .getByRole("region", { name: "Folders" })
+    .getByRole("listitem");
+
+  const place = await boxOf(row.getByText(SAMPLE_COMICS.location));
+  const count = await boxOf(row.getByText("214 books"));
+
+  expect(count.y).toBeGreaterThanOrEqual(place.y + place.height);
+});
+
+test("offers only Skip until a folder is linked", async ({ page }) => {
+  await goTo(page, "Already have comics or books?");
+
+  await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Skip/ })).toBeVisible();
+
+  await page.getByRole("button", { name: "Add a folder" }).click();
+
+  await expect(page.getByRole("button", { name: "Continue" })).toBeVisible();
 });
 
 interface ControlLook {
@@ -725,28 +760,39 @@ function lookOf(control: Locator): Promise<ControlLook> {
 }
 
 const TRANSPARENT = "rgba(0, 0, 0, 0)";
-const LONG_ADD_FOLDER_HEIGHT = 56;
+const LONG_ADD_FOLDER_HEIGHT = 52;
 const HAS_PHONE_CORNERS = {
   ios: (radius: number) => radius === 14,
   android: (radius: number) => radius >= LONG_ADD_FOLDER_HEIGHT / 2,
 } as const;
 
-test("draws Add a folder as one long dashed accent button with a plus", async ({
-  page,
-}) => {
-  await goTo(page, "Already have comics or books?");
-  const add = page
-    .getByRole("region", { name: "Folders" })
-    .getByRole("button", { name: "Add a folder" });
+test.describe("Add a folder on android", () => {
+  testOnlyInItsWebview("android");
+  test.use({
+    backend: {
+      ...FIRST_LAUNCH_BACKEND,
+      appInfo: onPlatform("android").backend.appInfo,
+    },
+  });
 
-  const look = await lookOf(add);
+  test("draws Add a folder as one long outlined accent button with a plus", async ({
+    page,
+  }) => {
+    await goTo(page, "Already have comics or books?");
+    const add = page
+      .getByRole("region", { name: "Folders" })
+      .getByRole("button", { name: "Add a folder" });
 
-  expect(look.height).toBe(LONG_ADD_FOLDER_HEIGHT);
-  expect(look.border).toBe(
-    `1px dashed ${await colorOf(page, "--color-accent")}`,
-  );
-  expect(look.background).toBe(await colorOf(page, "--color-accent-soft"));
-  await expect(add.locator("svg")).toHaveCount(1);
+    const look = await lookOf(add);
+
+    expect(look.height).toBe(LONG_ADD_FOLDER_HEIGHT);
+    expect(look.border).toBe(
+      `1px solid ${await colorOf(page, "--color-accent")}`,
+    );
+    expect(look.background).toBe(TRANSPARENT);
+    await expect(add).toHaveCSS("color", await colorOf(page, "--color-accent"));
+    await expect(add.locator("svg")).toHaveCount(1);
+  });
 });
 
 for (const platform of ["ios", "android"] as const) {

@@ -1006,6 +1006,20 @@
   "first_launch_link_hint_desktop": "⟦Ƒöļðéŕš öñ ţĥíš çöɱþûţéŕ, éẋţéŕñáļ ðŕíṽéš áñð ñéţŵöŕķ šĥáŕéš áļļ ŵöŕķ.····························⟧",
   "first_launch_skip_phone": "⟦Šķíþ, Í'ļļ áðð ţĥéɱ ļáţéŕ··········⟧",
   "first_launch_skip_desktop": "⟦Šķíþ ƒöŕ ñöŵ·····⟧",
+  "first_launch_folder_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ·········⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš·········⟧"
+      }
+    }
+  ],
   "language_phone_hint": "⟦Öɱñíļéáƒ ûšéš ýöûŕ þĥöñé'š ļáñĝûáĝé ûñļéšš ýöû þíçķ öñé.·······················⟧",
   "language_use_system": "⟦Ûšé ţĥé šýšţéɱ ļáñĝûáĝé··········⟧",
   "language_intro": "⟦Éáçĥ ļáñĝûáĝé íš šĥöŵñ íñ íţš öŵñ ñáɱé. Íţ çĥáñĝéš šţŕáíĝĥţ áŵáý.··························⟧",

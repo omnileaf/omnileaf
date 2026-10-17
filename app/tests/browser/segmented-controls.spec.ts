@@ -56,8 +56,20 @@ function withSeries(platform: Platform): FakeBackend {
   };
 }
 
+const LINKED_FOLDER = {
+  id: "2",
+  kind: "linked",
+  name: "Sample Comics",
+  location: "/media/Sample Comics",
+  isAvailable: true,
+} as const;
+
 function onFirstLaunch(platform: Platform): FakeBackend {
-  return { ...onPlatform(platform).backend, firstLaunchFinished: () => false };
+  return {
+    ...onPlatform(platform).backend,
+    firstLaunchFinished: () => false,
+    libraryFolders: () => ({ folders: [LINKED_FOLDER], next: null }),
+  };
 }
 
 async function settingsGroup(
