@@ -19,6 +19,7 @@ pub(crate) enum IpcErrorCode {
     FolderChooserMissing,
     FolderUnreadable,
     FolderNotFound,
+    FolderAlreadyInLibrary,
     HomeFolderKept,
     ClipboardUnavailable,
     BrowserUnavailable,
@@ -118,6 +119,10 @@ impl From<LibraryError> for IpcError {
             LibraryError::FolderNotFound { .. } => (
                 IpcErrorCode::FolderNotFound,
                 "that folder isn't in the library",
+            ),
+            LibraryError::FolderAlreadyInLibrary { .. } => (
+                IpcErrorCode::FolderAlreadyInLibrary,
+                "the library already reads that folder",
             ),
             LibraryError::HomeFolderKept { .. } => (
                 IpcErrorCode::HomeFolderKept,

@@ -4,6 +4,7 @@ mod closest_title_words;
 pub(crate) mod cover;
 pub(crate) mod cursor;
 mod folder_series;
+mod hidden_series;
 mod home_root;
 mod library_roots;
 mod native_path;
@@ -33,8 +34,11 @@ pub use closest_title_words::closest_title_words;
 pub use cover::{BookFileId, Cover, cover_file};
 pub use cursor::Cursor;
 pub use folder_series::{folder_series_count, folder_series_page};
+pub use hidden_series::hidden_series_count;
 pub use home_root::{home_root, keep_home_root_as_linked, set_home_root};
-pub use library_roots::{BookmarkedRoot, bookmarked_roots, library_root, library_roots};
+pub use library_roots::{
+    BookmarkedRoot, bookmarked_roots, library_root, library_roots, missing_roots,
+};
 pub use page::{Page, PageRequest, PageSize};
 pub use page_dimensions::{PageDimensions, page_dimensions, store_page_dimensions};
 pub use place_in_series::{PlaceInSeries, SeriesNeighbour, place_in_series};
@@ -43,7 +47,7 @@ pub use root::{
     AndroidTree, AppleBookmark, LibraryRoot, NewRoot, RootId, RootKind, RootLocator, TreeUri,
     add_root, relocate_root, remove_root,
 };
-pub use root_availability::{mark_root_available, mark_root_unavailable};
+pub use root_availability::{mark_root_available, mark_root_unavailable, show_root_while_missing};
 pub use root_files::{StoredFile, remove_book_files, root_book_count, root_files};
 pub use scanned_book::{BookFile, ScannedBook, record_moved_books, record_scanned_books};
 pub use search_text::SearchText;

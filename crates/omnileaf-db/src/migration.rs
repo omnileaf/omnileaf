@@ -62,6 +62,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0026_create_adult_content"),
     migration!("0027_track_when_each_series_was_last_read"),
     migration!("0028_create_library_tabs"),
+    migration!("0029_hide_the_series_of_missing_folders"),
 ];
 
 pub(crate) fn pending(
@@ -685,6 +686,49 @@ mod tests {
             .query_row("SELECT last_read_at_ms FROM series", [], |row| row.get(0))
             .unwrap();
         assert_eq!(last_read_at_ms, 9_000);
+    }
+
+    #[test]
+    fn hides_the_series_of_a_folder_missing_before_series_were_hidden() {
+        let scratch = ScratchLibrary::new("missing-folder-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..28]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO library_root
+                    (kind, locator_kind, location, added_at_ms, unavailable_since_ms)
+                 VALUES ('linked', 'path', x'2f6d65646961', 0, 1)",
+                [],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
+                 VALUES (?1, 1, x'566f6c756d652030312e63627a', 1, 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let stage: Option<i64> = connection
+            .query_row("SELECT reading_stage FROM series", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(stage, None);
     }
 
     fn schema_of(path: &Path) -> Schema {
