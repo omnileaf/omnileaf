@@ -65,6 +65,7 @@
     type PageTurn,
     seriesReadingDirection,
   } from "#lib/reader/reading-direction.svelte.ts";
+  import { pagesLookLikeStrip } from "#lib/reader/strip-pages.ts";
   import { Swipe } from "#lib/reader/swipe.ts";
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
@@ -133,7 +134,11 @@
   const skipUpNext = getSkipUpNextSetting();
   const notices = getNotices();
   const reading = untrack(() =>
-    seriesReadingDirection(book.series, book.readingDirection),
+    seriesReadingDirection(
+      book.series,
+      book.readingDirection,
+      pagesLookLikeStrip(book.pages),
+    ),
   );
   const settings = untrack(() => readerSettings(book.series));
   const guidesSeenNow = new SvelteSet<string>();
