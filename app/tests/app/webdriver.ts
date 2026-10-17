@@ -7,6 +7,7 @@ const NATIVE_CONTEXT = "NATIVE_APP";
 const SHOWN_BUTTON =
   /<XCUIElementTypeButton\b[^>]*\bname="([^"]*)"[^>]*\bvisible="true"/g;
 const WEBVIEW_CONTEXT = "WEBVIEW";
+/** A loaded iOS simulator can take longer than one request's timeout to stop or start an app. */
 const RELAUNCH_TIMEOUT_MS = 60_000;
 const ELEMENT_TIMEOUT_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -242,11 +243,17 @@ export class Session {
     }
   }
 
-  async runMobileCommand(name: string, options: object): Promise<unknown> {
-    return send(`${this.endpoint}/execute/sync`, "POST", {
-      script: `mobile: ${name}`,
-      args: [options],
-    });
+  async runMobileCommand(
+    name: string,
+    options: object,
+    timeoutMs = REQUEST_TIMEOUT_MS,
+  ): Promise<unknown> {
+    return send(
+      `${this.endpoint}/execute/sync`,
+      "POST",
+      { script: `mobile: ${name}`, args: [options] },
+      timeoutMs,
+    );
   }
 
   async inNativeContext<T>(steps: () => Promise<T>): Promise<T> {
@@ -265,8 +272,16 @@ export class Session {
 
   async relaunchApp(bundleId: string): Promise<void> {
     const before = await this.currentContext();
-    await this.runMobileCommand("terminateApp", { bundleId });
-    await this.runMobileCommand("activateApp", { bundleId });
+    await this.runMobileCommand(
+      "terminateApp",
+      { bundleId },
+      RELAUNCH_TIMEOUT_MS,
+    );
+    await this.runMobileCommand(
+      "activateApp",
+      { bundleId },
+      RELAUNCH_TIMEOUT_MS,
+    );
     const webview = await pollUntil(
       () => this.webviewContextOtherThan(before),
       RELAUNCH_TIMEOUT_MS,
