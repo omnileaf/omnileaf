@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { afterNavigate, goto } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
@@ -11,7 +11,6 @@
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import AppNavigation from "#lib/navigation/AppNavigation.svelte";
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
-  import { focusArrival } from "#lib/navigation/page-heading.ts";
   import { sectionOf } from "#lib/navigation/sections.ts";
   import {
     setSidebarSetting,
@@ -53,7 +52,7 @@
   const notices = getNotices();
   const theme = getThemeSetting();
   const screenshotMode = getScreenshotMode();
-  const backGoesUp = setBackGoesUp(makeBackGoUp());
+  setBackGoesUp(makeBackGoUp());
   const quickOpen = new QuickOpenState();
   const sidebar = setSidebarSetting(sidebarSettingForDocument());
   const storage = setStorageCheck(new StorageCheck(commands, reportError));
@@ -111,14 +110,6 @@
     return listenForLibraryChanges(() => {
       void needsAttention.gather();
     }, reportError);
-  });
-
-  afterNavigate(({ type }) => {
-    const isProblem = page.error !== null;
-    const isArrival = type !== "enter" && !backGoesUp.isPassingThrough;
-    if (isArrival || isProblem) {
-      focusArrival();
-    }
   });
 </script>
 
