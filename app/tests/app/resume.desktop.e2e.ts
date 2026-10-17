@@ -8,7 +8,7 @@ import { FINISHED_SCAN_REPORT } from "./app-session.ts";
 import { type DesktopApp, launchDesktopApp } from "./desktop-app.ts";
 import { finishFirstLaunchIfShown } from "./first-launch.ts";
 import { pageShownScript } from "./page-shown.ts";
-import { sampleBookRow } from "./sample-book.ts";
+import { sampleBookRow, showTheBooks } from "./sample-book.ts";
 import { Session, xpath } from "./webdriver.ts";
 
 /** Clear of the port the shared app's WebDriver server listens on, since both apps run at once. */
@@ -63,6 +63,7 @@ async function launch(): Promise<void> {
 async function openFirstSeries(): Promise<string> {
   await (await current().waitFor(FIRST_SERIES_COVER)).click();
   await current().waitFor(SERIES_HEADING);
+  await showTheBooks(current());
   const series = new URL(await current().url()).pathname.split("/").at(-1);
   if (series === undefined || series === "") {
     throw new Error("the series page's address names no series");

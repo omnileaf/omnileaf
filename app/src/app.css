@@ -422,11 +422,15 @@
   --spacing-series-cover-wide: 11.25rem;
   --spacing-series-aside: 17.5rem;
   --spacing-book-menu: 12rem;
-  --spacing-book-row: 3.875rem;
-  --spacing-book-row-wide: 2.875rem;
-  --spacing-series-columns: 2.125rem;
+  --spacing-book-row: 4rem;
+  --spacing-book-row-wide: 3.25rem;
+  --spacing-row-progress: 10rem;
+  --spacing-progress-thin: 0.25rem;
+  --spacing-toggle-touch: 0.625rem;
+  --spacing-series-columns: 2.5rem;
   --spacing-series-column-added: 6.5rem;
   --spacing-series-column-progress: 7.875rem;
+  --spacing-series-column-pages: 4rem;
   --spacing-series-check: 1.375rem;
   --spacing-series-row-check: 2.75rem;
   --spacing-series-search: 13.75rem;
@@ -533,6 +537,7 @@
   --container-preview-sides: 18em;
   --container-cover-title: calc(2.125em + 0.6875rem);
   --container-cover-title-wide: calc(2.125em + 1.25rem);
+  --container-series-split: 52rem;
 
   --radius-control: 0.625rem;
   --radius-row: 0.5rem;

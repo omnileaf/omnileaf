@@ -42,7 +42,7 @@
   });
 </script>
 
-<div class="flex gap-sm expanded:flex-col">
+<div class="flex gap-sm @series-split:flex-col">
   <ComingSoonControl
     label={m.series_reading_state({ state })}
     class={cn(SERIES_CONTROL, "flex-1 justify-between text-foreground")}
@@ -60,7 +60,7 @@
         : m.series_tags_for({ title: overview.title })}
       class={cn(
         SERIES_CONTROL,
-        "inline-touch-target max-expanded:px-none expanded:flex-1 expanded:inline-auto",
+        "inline-touch-target max-expanded:px-none expanded:inline-auto @series-split:flex-1",
       )}
     >
       <Tag size={ICON_SIZE} aria-hidden="true" />
@@ -74,7 +74,7 @@
       aria-label={markLabel}
       class={cn(
         SERIES_CONTROL,
-        "inline-touch-target max-expanded:px-none expanded:flex-1 expanded:inline-auto",
+        "inline-touch-target max-expanded:px-none expanded:inline-auto @series-split:flex-1",
       )}
       onClickPromise={() => onMarkAll(isAllRead ? "unread" : "read")}
     >
