@@ -1,17 +1,7 @@
 import { expect, test } from "vitest";
 
-import type { Platform } from "#lib/ipc/bindings.ts";
-
 import theme from "../../app.css?raw";
 import { showsSectionsBeside } from "./panes";
-
-const EVERY_PLATFORM: readonly Platform[] = [
-  "android",
-  "ios",
-  "linux",
-  "macos",
-  "windows",
-];
 
 function variantRule(name: string): string {
   const rule = new RegExp(
@@ -23,54 +13,18 @@ function variantRule(name: string): string {
   return rule.replace(/\s+/g, " ");
 }
 
-function platformsOf(variant: string): ReadonlySet<string> {
-  const names = variantRule(variant).matchAll(/data-platform="(\w+)"/g);
-  return new Set(
-    Array.from(names).flatMap(([, name]) => (name === undefined ? [] : [name])),
-  );
-}
-
-const DESKTOPS = EVERY_PLATFORM.filter((platform) =>
-  platformsOf("desktop").has(platform),
-);
-const TOUCH = EVERY_PLATFORM.filter((platform) =>
-  platformsOf("touch").has(platform),
-);
-
-test("shows two panes from the expanded width, or the medium width on a desktop, as the stylesheet does", () => {
-  expect(variantRule("two-pane")).toBe(
-    "{ @variant expanded { @slot; } @variant desktop { @variant medium { @slot; } } }",
-  );
+test("shows two panes from the expanded width only, as the stylesheet does", () => {
+  expect(variantRule("two-pane")).toBe("{ @variant expanded { @slot; } }");
 });
 
-test("sorts every platform into desktop or touch exactly once", () => {
-  expect([...DESKTOPS, ...TOUCH].toSorted()).toEqual(EVERY_PLATFORM);
+test("shows the sections beside the open one from the expanded width", () => {
+  expect(showsSectionsBeside("expanded")).toBe(true);
 });
 
-test.each(EVERY_PLATFORM)(
-  "shows the sections beside the open one on %s from the expanded width",
-  (platform) => {
-    expect(showsSectionsBeside(platform, "expanded")).toBe(true);
-  },
-);
+test("folds the sections away at the medium width, where Settings opens on its list", () => {
+  expect(showsSectionsBeside("medium")).toBe(false);
+});
 
-test.each(DESKTOPS)(
-  "shows the sections beside the open one on %s from the medium width",
-  (platform) => {
-    expect(showsSectionsBeside(platform, "medium")).toBe(true);
-  },
-);
-
-test.each(TOUCH)(
-  "keeps the sections to their own page on a %s tablet at rail width",
-  (platform) => {
-    expect(showsSectionsBeside(platform, "medium")).toBe(false);
-  },
-);
-
-test.each(EVERY_PLATFORM)(
-  "keeps the sections to their own page on %s at the compact width",
-  (platform) => {
-    expect(showsSectionsBeside(platform, "compact")).toBe(false);
-  },
-);
+test("keeps the sections to their own page at the compact width", () => {
+  expect(showsSectionsBeside("compact")).toBe(false);
+});

@@ -59,20 +59,17 @@
                 <a href={resolve(section.route)} {...props}>
                   <ItemMedia
                     class={[
-                      "rounded-tile bg-accent-soft text-accent block-tile inline-tile ios:rounded-settings-chip-ios ios:text-reader-white ios:block-settings-chip-ios ios:inline-settings-chip-ios android:rounded-full android:bg-android-tonal android:text-foreground android:block-settings-chip android:inline-settings-chip desktop:bg-transparent desktop:text-foreground desktop:block-auto desktop:inline-auto",
+                      "rounded-tile bg-accent-soft text-accent block-tile inline-tile ios:rounded-settings-chip-ios ios:text-reader-white ios:block-settings-chip-ios ios:inline-settings-chip-ios android:rounded-full android:bg-android-tonal android:text-foreground android:block-settings-chip android:inline-settings-chip desktop:text-foreground",
                       IOS_CHIPS[section.chip],
                     ]}
                   >
-                    <section.icon
-                      size={ICON_SIZE}
-                      class="desktop:block-settings-icon desktop:inline-settings-icon"
-                    />
+                    <section.icon size={ICON_SIZE} />
                   </ItemMedia>
                   <ItemContent
-                    class="ios:flex-row ios:flex-wrap ios:items-center ios:gap-x-sm ios:min-inline-none desktop:flex-row desktop:items-center desktop:gap-md"
+                    class="ios:flex-row ios:flex-wrap ios:items-center ios:gap-x-sm ios:min-inline-none"
                   >
                     <ItemTitle
-                      class="text-body ios:font-regular ios:min-inline-none desktop:flex-1 desktop:text-callout"
+                      class="text-body ios:font-regular ios:min-inline-none desktop:text-callout desktop:font-medium"
                     >
                       {section.label()}
                     </ItemTitle>

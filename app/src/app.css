@@ -12,11 +12,6 @@
   @variant expanded {
     @slot;
   }
-  @variant desktop {
-    @variant medium {
-      @slot;
-    }
-  }
 }
 @custom-variant icon-moves {
   @variant android {
