@@ -67,6 +67,10 @@ const FAILURES = {
   internal: ADDING_FAILED,
 } satisfies Record<IpcErrorCode, Failure>;
 
+export type MayPick = () => Promise<boolean>;
+
+const ALWAYS_PICK: MayPick = () => Promise.resolve(true);
+
 export class FolderAdding {
   outcome: FolderOutcome = $state({ kind: "idle" });
   #failure: Notice | undefined;
@@ -75,6 +79,7 @@ export class FolderAdding {
     private readonly addFolder: AddFolder,
     private readonly notices: () => Notices,
     private readonly onFinished: () => void = () => {},
+    private readonly mayPick: MayPick = ALWAYS_PICK,
   ) {}
 
   get isAdding(): boolean {
@@ -86,6 +91,9 @@ export class FolderAdding {
   }
 
   async add(): Promise<void> {
+    if (!(await this.mayPick())) {
+      return;
+    }
     this.outcome = { kind: "adding" };
     const result = await this.addFolder(
       followScan(
