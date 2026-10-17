@@ -54,6 +54,7 @@ export const TOKEN_THEME = {
     "card-rest",
     "dialog",
     "floating",
+    "ios-segment",
     "knob",
     "menu",
     "popover",
@@ -86,6 +87,9 @@ export const TOKEN_THEME = {
     "inclusion-option",
     "inclusion-option-wide",
     "ios-button",
+    "ios-cell",
+    "ios-segment",
+    "ios-segment-item",
     "link",
     "list",
     "list-cover",
@@ -457,7 +461,7 @@ export const TOKEN_THEME = {
     "spin",
     "step-grow",
   ],
-  blur: ["glass", "menu", "reader", "series-band"],
+  blur: ["glass", "ios", "menu", "reader", "series-band"],
 } as const;
 
 /** Merges class lists so a later class wins over an earlier one of the same kind, knowing our token names. */
