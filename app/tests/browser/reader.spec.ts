@@ -11,6 +11,7 @@ import {
   DEFAULT_BACKEND,
   EXPANDED_MIN_WIDTH,
   expect,
+  LARGE_MIN_WIDTH,
   onPlatform,
   settle,
   test,
@@ -868,14 +869,14 @@ test.describe("the reading direction", () => {
     await expectControlsShown(page);
   });
 
-  test("puts the quick settings in the top bar on a wide screen and above the slider on a phone", async ({
+  test("puts the quick settings in the top bar on a large screen and above the slider on a smaller one", async ({
     page,
   }) => {
     await openBook(page);
 
     const quickSettings = page.getByRole("group", { name: "Quick settings" });
     const bar =
-      viewportOf(page).width >= EXPANDED_MIN_WIDTH
+      viewportOf(page).width >= LARGE_MIN_WIDTH
         ? page.locator("main > header")
         : page.locator("main > div:has(input[type=range])");
 
