@@ -15,6 +15,7 @@ import {
   onPlatform,
   test,
   testOnlyInItsWebview,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -163,6 +164,19 @@ test.describe("sending it to Omnileaf", () => {
       "Used only to answer you; never shown in an issue.",
     );
     await expect(sendNote(page)).toBeVisible();
+  });
+
+  test("edges the email field in the accent colour while it has focus", async ({
+    page,
+  }) => {
+    await openReport(page);
+
+    await replyField(page).focus();
+
+    await expect(replyField(page)).toHaveCSS(
+      "border-top-color",
+      await tokenColour(page, "--color-accent"),
+    );
   });
 
   test("sends it with the email for a reply, says it was sent and keeps its code", async ({
