@@ -81,7 +81,7 @@ fn write_new(mut file: fs::File, path: &Path, text: &str) -> io::Result<()> {
 pub fn folder_shown(folder: &Path, home: Option<&Path>, platform: Platform) -> String {
     match platform {
         Platform::Linux => match home.and_then(|home| folder.strip_prefix(home).ok()) {
-            Some(within_home) => Path::new(HOME_MARK).join(within_home).display().to_string(),
+            Some(within_home) => format!("{HOME_MARK}/{}", within_home.display()),
             None => folder.display().to_string(),
         },
         Platform::Android | Platform::Ios | Platform::Macos | Platform::Windows => {
