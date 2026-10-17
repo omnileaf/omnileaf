@@ -17,6 +17,7 @@ function following(lastBook: string | undefined): Followed {
     targets: {
       toggleScreenshotMode: () => {
         toggled += 1;
+        return Promise.resolve();
       },
       lastUnfinishedBookPage: () => Promise.resolve(lastBook),
       open: (page) => {
