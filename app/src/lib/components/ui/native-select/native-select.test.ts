@@ -4,6 +4,8 @@ import { render } from "vitest-browser-svelte";
 
 import "../../../../app.css";
 
+import { resolvedColour } from "../../../../../tests/components/resolved-colour";
+
 import type { Platform } from "#lib/ipc/bindings.ts";
 
 import NativeSelectHarness from "./NativeSelectHarness.svelte";
@@ -33,18 +35,6 @@ const LOOKS: readonly SelectLook[] = [
   },
 ];
 
-function resolved(
-  value: string,
-  property: "color" | "backgroundColor",
-): string {
-  const probe = document.createElement("span");
-  probe.style[property] = value.startsWith("--") ? `var(${value})` : value;
-  document.body.append(probe);
-  const colour = getComputedStyle(probe)[property];
-  probe.remove();
-  return colour;
-}
-
 afterEach(() => {
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
@@ -60,8 +50,10 @@ for (const look of LOOKS) {
     const style = getComputedStyle(field.element());
 
     expect(style.borderTopLeftRadius).toBe(look.corner);
-    expect(style.borderTopColor).toBe(resolved(look.edge, "color"));
-    expect(style.backgroundColor).toBe(resolved(look.fill, "backgroundColor"));
+    expect(style.borderTopColor).toBe(resolvedColour(look.edge, "color"));
+    expect(style.backgroundColor).toBe(
+      resolvedColour(look.fill, "backgroundColor"),
+    );
   });
 }
 

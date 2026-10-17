@@ -26,7 +26,7 @@
   bind:checked
   bind:indeterminate
   class={cn(
-    "flex shrink-0 items-center justify-center rounded-checkbox border border-control-edge bg-checkbox-off text-on-accent block-checkbox inline-checkbox focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-checked:border-accent aria-checked:bg-accent android:border-2 desktop:shadow-raised",
+    "flex shrink-0 items-center justify-center rounded-checkbox border border-control-edge bg-checkbox-off text-on-accent block-checkbox inline-checkbox focus-visible:focus-ring aria-checked:border-accent aria-checked:bg-accent android:border-2 desktop:shadow-raised",
     indeterminate && "border-accent bg-accent",
     className,
   )}

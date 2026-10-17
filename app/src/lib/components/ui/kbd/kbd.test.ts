@@ -5,22 +5,12 @@ import { createRawSnippet } from "svelte";
 
 import "../../../../app.css";
 
+import { resolvedColour } from "../../../../../tests/components/resolved-colour";
+
 import Kbd from "./kbd.svelte";
 
 const KEY_HEIGHT = 20;
 const KEY_MIN_WIDTH = 20;
-
-function resolved(
-  token: string,
-  property: "color" | "backgroundColor",
-): string {
-  const probe = document.createElement("span");
-  probe.style[property] = `var(${token})`;
-  document.body.append(probe);
-  const colour = getComputedStyle(probe)[property];
-  probe.remove();
-  return colour;
-}
 
 function key(label: string) {
   return createRawSnippet(() => ({ render: () => `<span>${label}</span>` }));
@@ -40,8 +30,10 @@ test("sets a key on the muted chip in the foreground colour, without an edge", a
   const style = chip && getComputedStyle(chip);
 
   expect(style?.borderTopWidth).toBe("0px");
-  expect(style?.backgroundColor).toBe(resolved("--muted", "backgroundColor"));
-  expect(style?.color).toBe(resolved("--foreground", "color"));
+  expect(style?.backgroundColor).toBe(
+    resolvedColour("--muted", "backgroundColor"),
+  );
+  expect(style?.color).toBe(resolvedColour("--foreground", "color"));
   expect(style?.fontWeight).toBe("500");
 });
 

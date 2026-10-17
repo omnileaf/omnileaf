@@ -4,24 +4,14 @@ import { render } from "vitest-browser-svelte";
 
 import "../../../../app.css";
 
+import { resolvedColour } from "../../../../../tests/components/resolved-colour";
+
 import type { Platform } from "#lib/ipc/bindings.ts";
 
 import AlertHarness from "./AlertHarness.svelte";
 import type { AlertTone } from "./tones.ts";
 
 const ICON_SIZE = 16;
-
-function resolved(
-  token: string,
-  property: "color" | "backgroundColor",
-): string {
-  const probe = document.createElement("span");
-  probe.style[property] = token.startsWith("--") ? `var(${token})` : token;
-  document.body.append(probe);
-  const colour = getComputedStyle(probe)[property];
-  probe.remove();
-  return colour;
-}
 
 async function showAlert(platform: Platform, tone: AlertTone) {
   document.documentElement.dataset.platform = platform;
@@ -62,7 +52,7 @@ test("sets a 16px icon, a medium title and a muted description", async () => {
   expect([box?.width, box?.height]).toEqual([ICON_SIZE, ICON_SIZE]);
   expect(getComputedStyle(title).fontWeight).toBe("500");
   expect(getComputedStyle(description).color).toBe(
-    resolved("--secondary-text", "color"),
+    resolvedColour("--secondary-text", "color"),
   );
   expect(getComputedStyle(description).fontSize).toBe("14px");
 });
@@ -82,7 +72,7 @@ for (const tone of ["plain", "warning"] as const) {
     const style = getComputedStyle(alert);
 
     expect(style.backgroundColor).toBe(
-      resolved("--android-container", "backgroundColor"),
+      resolvedColour("--android-container", "backgroundColor"),
     );
     expect(style.borderTopColor).toBe("rgba(0, 0, 0, 0)");
     expect(style.borderTopLeftRadius).toBe("12px");

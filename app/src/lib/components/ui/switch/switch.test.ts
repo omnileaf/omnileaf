@@ -6,6 +6,8 @@ import "../../../../app.css";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
 
+import { resolvedColour } from "../../../../../tests/components/resolved-colour";
+
 import Switch from "./switch.svelte";
 
 interface SwitchLook {
@@ -72,15 +74,6 @@ const LOOKS: readonly SwitchLook[] = [
   },
 ];
 
-function colourOf(token: string): string {
-  const probe = document.createElement("span");
-  probe.style.color = token.startsWith("--") ? `var(${token})` : token;
-  document.body.append(probe);
-  const colour = getComputedStyle(probe).color;
-  probe.remove();
-  return colour;
-}
-
 function trackOf(name: string): HTMLElement {
   const track = page
     .getByRole("switch", { name })
@@ -140,11 +133,15 @@ for (const look of LOOKS) {
     const off = getComputedStyle(trackOf("Off"));
     const on = getComputedStyle(trackOf("On"));
 
-    expect(off.backgroundColor).toBe(colourOf(look.trackOff));
-    expect(on.backgroundColor).toBe(colourOf(look.trackOn));
-    expect(off.borderTopColor).toBe(colourOf(look.edgeOff));
+    expect(off.backgroundColor).toBe(
+      resolvedColour(look.trackOff, "backgroundColor"),
+    );
+    expect(on.backgroundColor).toBe(
+      resolvedColour(look.trackOn, "backgroundColor"),
+    );
+    expect(off.borderTopColor).toBe(resolvedColour(look.edgeOff, "color"));
     expect(getComputedStyle(knobOf("Off")).backgroundColor).toBe(
-      colourOf(look.knobOffFill),
+      resolvedColour(look.knobOffFill, "backgroundColor"),
     );
   });
 }
