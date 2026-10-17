@@ -364,3 +364,71 @@ test.describe("with the tabs arranged in Settings", () => {
     );
   });
 });
+
+test.describe("opening on a chosen tab", () => {
+  test.use({
+    backend: {
+      ...backendWith(CATEGORIES),
+      libraryTabs: () => [
+        { id: { kind: "all" }, isHidden: false },
+        { id: { kind: "newChapters" }, isHidden: false },
+        { id: { kind: "category", id: "manga" }, isHidden: false },
+        { id: { kind: "category", id: "comics" }, isHidden: false },
+      ],
+    } satisfies FakeBackend,
+  });
+
+  function chosenTab(page: Page, name: string) {
+    return expect(tabs(page).getByRole("tab", { name })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  }
+
+  test("opens on the tab chosen in Library tabs, whichever was used last", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library/tabs");
+    await page
+      .getByRole("combobox", { name: "The library opens on" })
+      .selectOption({ label: "Manga" });
+
+    await openLibrary(page);
+    await chosenTab(page, "Manga");
+    await tabs(page).getByRole("tab", { name: "Comics" }).click();
+    await page.reload();
+
+    await chosenTab(page, "Manga");
+  });
+
+  test("keeps the tab used while the app stays open", async ({ page }) => {
+    await page.goto("/settings/library/tabs");
+    await page
+      .getByRole("combobox", { name: "The library opens on" })
+      .selectOption({ label: "All" });
+    await openLibrary(page);
+    await tabs(page).getByRole("tab", { name: "Comics" }).click();
+
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "History" })
+      .click();
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Library" })
+      .click();
+
+    await chosenTab(page, "Comics");
+  });
+
+  test("opens on All rather than New chapters, where nothing is new", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await tabs(page).getByRole("tab", { name: "New chapters" }).click();
+
+    await page.reload();
+
+    await chosenTab(page, "All");
+  });
+});
