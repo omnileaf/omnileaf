@@ -33,6 +33,7 @@
   import CoverBadges from "./CoverBadges.svelte";
   import ContinueDisc from "./ContinueDisc.svelte";
   import CoverImage from "./CoverImage.svelte";
+  import { DragSelect } from "./drag-select.svelte";
   import ListCover from "./ListCover.svelte";
   import type { SeriesMenuActions } from "./series-menu";
   import SelectionMark from "./SelectionMark.svelte";
@@ -89,6 +90,13 @@
   const selection = seriesSelection();
   const isSelecting = $derived(selection?.isSelecting === true);
   const seriesOrder = () => series.map(({ id }) => id);
+  const dragSelect =
+    selection === undefined
+      ? undefined
+      : new DragSelect(
+          selection,
+          (cell) => series.find(({ id }) => id === cell.dataset.seriesId)?.id,
+        );
 
   const MENU_ICON_SIZE = 16;
   let isMenuOpen = $state(false);
@@ -475,20 +483,34 @@
     oncontextmenu={noteMenuSeries}
     onkeydown={onCoverKeys}
   >
-    <VirtualGrid
-      items={series}
-      key={(one: LibrarySeries) => one.id}
-      label={m.library_series_list()}
-      {isComplete}
-      {...onNearEnd === undefined ? {} : { onNearEnd }}
-      {...onColumns === undefined ? {} : { onColumns }}
-      class={layout.list}
-      style={coversPerRow}
-      cell={layout.cell}
-      onRevealReady={(ready: Reveal) => {
-        reveal = ready;
-      }}
-    />
+    <div class="relative" {@attach dragSelect?.attach}>
+      <VirtualGrid
+        items={series}
+        key={(one: LibrarySeries) => one.id}
+        label={m.library_series_list()}
+        {isComplete}
+        {...onNearEnd === undefined ? {} : { onNearEnd }}
+        {...onColumns === undefined ? {} : { onColumns }}
+        class={layout.list}
+        style={coversPerRow}
+        cell={layout.cell}
+        onRevealReady={(ready: Reveal) => {
+          reveal = ready;
+        }}
+      />
+      {#if dragSelect?.box !== undefined}
+        {@const box = dragSelect.box}
+        <div
+          data-drag-box
+          aria-hidden="true"
+          class="pointer-events-none absolute z-drag-box rounded-drag-box border border-accent bg-drag-box"
+          style:left="{box.left}px"
+          style:top="{box.top}px"
+          style:width="{box.width}px"
+          style:height="{box.height}px"
+        ></div>
+      {/if}
+    </div>
   </ContextMenu.Trigger>
   {#if menu !== undefined && menuSeries !== undefined}
     {@const target = menuSeries}
