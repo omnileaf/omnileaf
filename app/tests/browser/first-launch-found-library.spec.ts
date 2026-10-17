@@ -110,6 +110,21 @@ for (const platform of ["android", "linux"] as const) {
       expect(await factsOf(homeCard(page))).toEqual(FOUND_FACTS);
     });
 
+    test("focuses its heading on the way in and goes back to the welcome", async ({
+      page,
+    }) => {
+      await goToTheHomeFolder(page);
+      await expect(
+        page.getByRole("heading", { level: 1, name: FOUND_HEADING }),
+      ).toBeFocused();
+
+      await button(page, "Back").click();
+
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Welcome to Omnileaf" }),
+      ).toBeVisible();
+    });
+
     test("starts a new library instead, going on to link folders", async ({
       page,
     }) => {
