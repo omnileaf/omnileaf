@@ -1124,6 +1124,7 @@ test.describe("once folders are linked", () => {
     page,
   }) => {
     await goTo(page, FOUND_HEADING);
+    await settle(page.getByRole("main"));
 
     expect(await sidewaysOverflow(page)).toEqual([]);
   });
