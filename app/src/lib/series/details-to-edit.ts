@@ -3,6 +3,7 @@ import {
   type DetailEdits,
   type SeriesDetails,
 } from "#lib/ipc/bindings.ts";
+import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
 import type { Notices } from "#lib/notices/notices.ts";
 import { m } from "#lib/paraglide/messages.js";
 
@@ -11,6 +12,7 @@ import type { SeriesId } from "./series-id.ts";
 
 export interface DetailsBeingEdited {
   readonly details: SeriesDetails;
+  readonly countsAgeRatings: boolean;
   readonly opened: DetailDraft;
   draft: DetailDraft;
 }
@@ -20,14 +22,25 @@ export type DetailsRead =
   | { readonly kind: "failed"; readonly error: unknown };
 
 export async function detailsToEdit(id: SeriesId): Promise<DetailsRead> {
-  const read = await commands.seriesDetails(id);
+  const [read, adultContent] = await Promise.all([
+    commands.seriesDetails(id),
+    commands.libraryAdultContent(),
+  ]);
   if (read.status !== "ok") {
     return { kind: "failed", error: read.error };
   }
   const opened = draftOf(read.data);
   return {
     kind: "read",
-    editing: { details: read.data, opened, draft: opened },
+    editing: {
+      details: read.data,
+      countsAgeRatings: (adultContent.status === "ok"
+        ? adultContent.data
+        : NEW_ADULT_CONTENT
+      ).countsAgeRatings,
+      opened,
+      draft: opened,
+    },
   };
 }
 

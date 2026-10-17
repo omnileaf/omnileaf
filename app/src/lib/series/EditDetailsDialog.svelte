@@ -131,6 +131,7 @@
         {#if editing !== undefined}
           <EditDetailsFields
             details={editing.details}
+            countsAgeRatings={editing.countsAgeRatings}
             draft={editing.draft}
             onDraft={(draft: DetailDraft) => {
               if (editing !== undefined) {
