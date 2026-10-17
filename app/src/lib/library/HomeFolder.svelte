@@ -32,11 +32,11 @@
   {#if folders.kind === "loaded" && folders.home !== undefined}
     {@const home = folders.home}
     <div
-      class="flex items-center gap-md rounded-card border border-border bg-card px-lg py-md android:rounded-android-md android:border-transparent android:bg-android-container-low"
+      class="flex items-center gap-md rounded-card border border-border bg-card px-lg py-md android:rounded-android-md android:border-transparent android:bg-android-container-low ios-grouped:rounded-ios-cell ios-grouped:border-transparent ios-grouped:bg-ios-cell"
     >
       <span
         aria-hidden="true"
-        class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile android:rounded-full android:border-transparent android:bg-android-tonal android:block-settings-chip android:inline-settings-chip"
+        class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile ios:rounded-settings-chip-ios ios:border-transparent ios:bg-ios-chip-grey ios:text-reader-white ios:block-settings-chip-ios ios:inline-settings-chip-ios android:rounded-full android:border-transparent android:bg-android-tonal android:block-settings-chip android:inline-settings-chip"
       >
         <HardDrive size={ICON_SIZE} />
       </span>
