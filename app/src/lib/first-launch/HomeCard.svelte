@@ -7,6 +7,7 @@
 
 <script lang="ts">
   import { Folder } from "@lucide/svelte";
+  import type { Snippet } from "svelte";
 
   import { ICON_SIZE } from "#lib/library/icon-size.ts";
 
@@ -14,10 +15,12 @@
     title,
     location,
     facts,
+    change,
   }: {
     title: string;
     location: string;
     facts: readonly HomeFact[];
+    change?: Snippet;
   } = $props();
 
   const titleId = $props.id();
@@ -27,7 +30,7 @@
   aria-labelledby={titleId}
   class="flex flex-col overflow-hidden rounded-card border border-border bg-card ios:bg-ios-cell"
 >
-  <div class="flex items-center gap-md p-md ps-home-card">
+  <div class="relative flex items-center gap-md p-md ps-home-card">
     <span
       class="flex shrink-0 items-center justify-center rounded-control bg-chip block-icon-tile inline-icon-tile"
     >
@@ -36,6 +39,7 @@
     <h2 id={titleId} class="flex-1 text-body font-semibold min-inline-none">
       {title}
     </h2>
+    {@render change?.()}
   </div>
   <code
     class="mx-home-card mbe-home-card rounded-control border border-border bg-chip px-md py-home-path font-mono text-footnote wrap-anywhere whitespace-pre-wrap"
