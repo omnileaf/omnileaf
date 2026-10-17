@@ -1,8 +1,8 @@
-import { CircleCheck, TriangleAlert } from "@lucide/svelte";
+import { BookOpen, CircleCheck, TriangleAlert } from "@lucide/svelte";
 import { flushSync } from "svelte";
 import { toast } from "svelte-sonner";
 import { afterEach, expect, test, vi } from "vitest";
-import { page, userEvent } from "vitest/browser";
+import { type Locator, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
@@ -10,7 +10,12 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import { clearToasts } from "../../../tests/components/clear-toasts";
 import "../../app.css";
 
-import { type Notice, NOTICE_WINDOW_MS, Notices } from "./notices";
+import {
+  type Notice,
+  type NoticeAction,
+  NOTICE_WINDOW_MS,
+  Notices,
+} from "./notices";
 import SelfDismissingToastHarness from "./SelfDismissingToastHarness.svelte";
 import Toasts from "./Toasts.svelte";
 
@@ -28,12 +33,24 @@ const UNAVAILABLE: Notice = {
   body: "Your progress is safe.",
 };
 
+const BACK_ON_PAGE: Notice = {
+  tone: "plain",
+  icon: BookOpen,
+  title: "Back on page 12",
+};
+
+const START_OVER: NoticeAction = {
+  label: "Start over",
+  run: () => undefined,
+};
+
 const placed: HTMLElement[] = [];
 
 afterEach(async () => {
   for (const element of placed.splice(0)) {
     element.remove();
   }
+  delete document.documentElement.dataset.platform;
   await clearToasts();
 });
 
@@ -65,6 +82,24 @@ async function renderToasts(platform: Platform = "linux") {
   const notices = new Notices();
   await render(Toasts, { notices, platform, theme: "light" });
   return notices;
+}
+
+async function renderToastsOn(platform: Platform) {
+  document.documentElement.dataset.platform = platform;
+  return renderToasts(platform);
+}
+
+function middleOf(element: Element): number {
+  const box = element.getBoundingClientRect();
+  return box.top + box.height / 2;
+}
+
+function iconOf(toast: Locator): SVGSVGElement {
+  const icon = toast.element().querySelector("svg");
+  if (icon === null) {
+    throw new Error("the toast has no icon");
+  }
+  return icon;
 }
 
 test("shows a notice in the notifications region", async () => {
@@ -305,4 +340,56 @@ test("starts the wait again once focus leaves the stack", async () => {
   await expect
     .element(toastSaying(READY.title))
     .toHaveAttribute("data-removed", "true");
+});
+
+test.each<Platform>(["linux", "android"])(
+  "lines a one-line toast's icon up with its title, action and dismiss on %s",
+  async (platform) => {
+    const notices = await renderToastsOn(platform);
+    notices.show({ ...BACK_ON_PAGE, action: START_OVER });
+    const toast = toastSaying(BACK_ON_PAGE.title);
+    await expect.element(toast).toBeVisible();
+
+    const icon = middleOf(iconOf(toast));
+
+    const title = toast.getByText(BACK_ON_PAGE.title, { exact: true });
+    const action = toast.getByRole("button", { name: START_OVER.label });
+    const dismiss = toast.getByRole("button", { name: "Dismiss" });
+    expect(icon).toBeCloseTo(middleOf(title.element()), 0);
+    expect(icon).toBeCloseTo(middleOf(action.element()), 0);
+    expect(icon).toBeCloseTo(middleOf(dismiss.element()), 0);
+  },
+);
+
+test("lines a one-line toast's icon up with its title and dismiss when it has no action", async () => {
+  const notices = await renderToastsOn("linux");
+  notices.show(BACK_ON_PAGE);
+  const toast = toastSaying(BACK_ON_PAGE.title);
+  await expect.element(toast).toBeVisible();
+
+  const icon = middleOf(iconOf(toast));
+
+  const title = toast.getByText(BACK_ON_PAGE.title, { exact: true });
+  const dismiss = toast.getByRole("button", { name: "Dismiss" });
+  expect(icon).toBeCloseTo(middleOf(title.element()), 0);
+  expect(icon).toBeCloseTo(middleOf(dismiss.element()), 0);
+});
+
+test("keeps a two-line toast's icon on its title and centres the action on its words", async () => {
+  const notices = await renderToastsOn("linux");
+  notices.show({ ...BACK_ON_PAGE, body: "Volume 5", action: START_OVER });
+  const toast = toastSaying(BACK_ON_PAGE.title);
+  await expect.element(toast).toBeVisible();
+
+  const title = toast.getByText(BACK_ON_PAGE.title, { exact: true }).element();
+  const body = toast.getByText("Volume 5", { exact: true }).element();
+  const action = toast.getByRole("button", { name: START_OVER.label });
+
+  const wordsTop = title.getBoundingClientRect().top;
+  const wordsBottom = body.getBoundingClientRect().bottom;
+  expect(middleOf(iconOf(toast))).toBeCloseTo(middleOf(title), 0);
+  expect(middleOf(action.element())).toBeCloseTo(
+    (wordsTop + wordsBottom) / 2,
+    0,
+  );
 });
