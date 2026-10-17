@@ -32,8 +32,10 @@ mod library_search;
 mod library_series;
 mod library_tabs;
 mod library_view;
+mod linux_share;
 mod missing_folder;
 mod moved_home;
+mod network_share;
 mod open_books;
 mod opened_book;
 mod page_lane;
@@ -98,7 +100,9 @@ pub use library_view::{
     DesktopCoversPerRow, LibraryDisplay, LibraryGrouping, LibraryView, OnCovers, PhoneCoversPerRow,
     TabletCoversPerRow,
 };
+pub use linux_share::{MountTables, unreachable_linux_share};
 pub use missing_folder::{FolderProblem, MissingFolder};
+pub use network_share::{NetworkShare, ShareAddress, ShareSignIn, UnreachableShare};
 pub use omnileaf_db::catalog::{AndroidTree, AppleBookmark, RootLocator, TreeUri};
 pub use omnileaf_db::store::{Changed, Clock};
 pub use opened_book::{
