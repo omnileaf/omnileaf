@@ -123,9 +123,9 @@ test("closes filter and sort when dragged down by its header", async ({
 }) => {
   await page
     .locator("main header")
-    .getByRole("button", { name: /^Filter and sort/ })
+    .getByRole("button", { name: /^Sort and filter/ })
     .click();
-  const sheet = page.getByRole("dialog", { name: "Filter and sort" });
+  const sheet = page.getByRole("dialog", { name: "Sort and filter" });
   await expect(sheet).toBeVisible();
   await settle(sheet);
 

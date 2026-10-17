@@ -204,16 +204,16 @@ const ICON_ACTIONS: readonly IconAction[] = [
   coversPerRowStep("Fewer covers per row"),
   coversPerRowStep("More covers per row"),
   {
-    screen: "Filter and sort",
+    screen: "Sort and filter",
     backend: SERIES_BACKEND,
     reach: async (page) => {
       await page.goto("/");
       await page
         .locator("main header")
-        .getByRole("button", { name: /^Filter and sort/ })
+        .getByRole("button", { name: /^Sort and filter/ })
         .click();
       return page
-        .getByRole("dialog", { name: "Filter and sort" })
+        .getByRole("dialog", { name: "Sort and filter" })
         .getByRole("button", { name: "Close" });
     },
     label: "Close",

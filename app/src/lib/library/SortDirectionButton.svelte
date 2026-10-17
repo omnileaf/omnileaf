@@ -30,6 +30,7 @@
   const LOOKS = {
     pill: "min-block-sort-direction rounded-full border-accent px-pill-inline text-detail text-accent",
     field: "block-panel-field px-pill-inline text-detail font-medium",
+    icon: "justify-center block-panel-field inline-panel-field touch:block-touch-target touch:inline-touch-target android:rounded-full",
   } as const;
 
   const ICON_SIZE = 14;
@@ -57,7 +58,7 @@
   class={["flex shrink-0 items-center gap-xs", LOOKS[look]]}
   onclick={onReverse}
 >
-  <span>{wording.label()}</span>
+  <span class={look === "icon" ? "sr-only" : undefined}>{wording.label()}</span>
   {#if sort.direction === "ascending"}
     <ArrowUp size={ICON_SIZE} aria-hidden="true" />
   {:else}
