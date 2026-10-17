@@ -15,7 +15,7 @@ import { SCREENS, type Screen, visit } from "./screens.ts";
 
 type Theme = "light" | "dark";
 
-interface ScreenCheck {
+export interface ScreenCheck {
   readonly name: string;
   readonly problemsOn: (page: Page) => Promise<readonly string[]>;
 }
@@ -36,7 +36,11 @@ function appleUserAgentAt(viewport: ViewportSize | null): string {
 async function checkScreen(
   browser: Browser,
   screen: Screen,
-  { platform, theme }: { platform: Platform; theme: Theme },
+  {
+    platform,
+    theme,
+    checks,
+  }: { platform: Platform; theme: Theme; checks: readonly ScreenCheck[] },
 ): Promise<void> {
   const context = await browser.newContext();
   try {
@@ -44,7 +48,7 @@ async function checkScreen(
     await visit(page, screen);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
 
-    for (const check of CHECKS) {
+    for (const check of checks) {
       expect
         .soft(await check.problemsOn(page), `${check.name} on ${platform}`)
         .toEqual([]);
@@ -54,7 +58,13 @@ async function checkScreen(
   }
 }
 
-export function checkEveryScreenIn(theme: Theme): void {
+export function checkEveryScreenIn(
+  theme: Theme,
+  { checks, passes }: { checks: readonly ScreenCheck[]; passes: string } = {
+    checks: CHECKS,
+    passes: "passes the screen checks",
+  },
+): void {
   test.use({
     colorScheme: theme,
     userAgent: async ({ browserName, hasTouch, userAgent, viewport }, use) => {
@@ -66,14 +76,14 @@ export function checkEveryScreenIn(theme: Theme): void {
   });
 
   for (const screen of SCREENS) {
-    test(`${screen.name} passes the screen checks`, async ({
+    test(`${screen.name} ${passes}`, async ({
       browser,
       browserName,
       hasTouch,
     }) => {
       for (const platform of platformsShownBy({ browserName, hasTouch })) {
         await test.step(`on ${platform}`, () =>
-          checkScreen(browser, screen, { platform, theme }));
+          checkScreen(browser, screen, { platform, theme, checks }));
       }
     });
   }
