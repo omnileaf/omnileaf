@@ -206,16 +206,27 @@ export async function boxOf(locator: Locator): Promise<Box> {
 export async function settle(locator: Locator): Promise<void> {
   await expect
     .poll(() =>
-      locator.evaluate(
-        (element) =>
-          element.getAnimations({ subtree: true }).length +
-          (element.closest("[data-starting-style]") === null &&
-          element.querySelector("[data-starting-style]") === null
-            ? 0
-            : 1),
-      ),
+      locator.evaluate((element) => [
+        ...element.getAnimations({ subtree: true }).map((animation) => {
+          const target =
+            animation.effect instanceof KeyframeEffect
+              ? animation.effect.target
+              : null;
+          const name =
+            animation instanceof CSSTransition
+              ? animation.transitionProperty
+              : animation instanceof CSSAnimation
+                ? animation.animationName
+                : animation.id;
+          return `${name} on ${target?.tagName.toLowerCase() ?? "?"} ${target?.getAttribute("class") ?? ""}`;
+        }),
+        ...(element.closest("[data-starting-style]") === null &&
+        element.querySelector("[data-starting-style]") === null
+          ? []
+          : ["a part still held in its starting style"]),
+      ]),
     )
-    .toBe(0);
+    .toEqual([]);
 }
 
 function noteTransitions(): void {
