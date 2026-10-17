@@ -6,6 +6,9 @@ const CONFIRM =
 const DIALOG_BUTTON =
   "rounded-shadcn-button px-lg font-medium transition-control min-block-shadcn-button ios:max-medium:rounded-ios-button ios:max-medium:font-semibold medium:text-label linux:shadow-raised macos:shadow-raised";
 
+const SHADCN_BUTTON =
+  "rounded-shadcn-button px-lg py-sm text-label font-medium transition-control min-block-shadcn-button macos:py-none windows:py-none linux:shadow-raised macos:shadow-raised";
+
 const OUTLINED =
   "border border-button-outline-edge bg-button-outline windows:border-be-windows-stroke-strong";
 
@@ -31,6 +34,7 @@ export const BUTTON_LOOKS = {
   "crash-phone-secondary": `rounded-full border border-quiet-edge text-callout font-bold min-block-crash-screen-button ios:rounded-crash-screen-button ${FOCUS_RING}`,
   "dialog-secondary": `${DIALOG_BUTTON} ${OUTLINED} enabled:hover:tint-hover enabled:active:tint-pressed ${FOCUS_RING}`,
   "dialog-primary": `${DIALOG_BUTTON} bg-accent text-on-accent enabled:hover:bg-accent-hover enabled:active:bg-accent-pressed ${FOCUS_RING}`,
+  "card-outline": `${SHADCN_BUTTON} ${OUTLINED} enabled:hover:tint-hover enabled:active:tint-pressed ${FOCUS_RING}`,
   "crash-dialog-copy": `rounded-shadcn-button px-md text-label font-semibold text-accent min-block-shadcn-button touch:min-block-touch-target ${FOCUS_RING}`,
 } satisfies Record<string, string>;
 
