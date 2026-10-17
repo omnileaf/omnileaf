@@ -191,7 +191,7 @@
       aria-label={m.series_breadcrumb()}
       class="flex items-center text-small text-muted min-inline-none"
     >
-      <BreadcrumbItem>
+      <BreadcrumbItem class="shrink-0">
         <a
           href={resolve("/(app)")}
           data-back-link
