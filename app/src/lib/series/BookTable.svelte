@@ -16,7 +16,7 @@
   import { progressWords } from "./book-reading";
   import BookMarks from "./BookMarks.svelte";
   import BookProgress from "./BookProgress.svelte";
-  import type { BookSelection } from "./book-selection.svelte";
+  import type { Selection } from "#lib/page/selection.svelte.ts";
 
   type BookId = SeriesBook["id"];
 
@@ -38,7 +38,7 @@
     dates: Intl.DateTimeFormat;
     isComplete: boolean;
     onNearEnd: () => void;
-    selection: BookSelection<BookId>;
+    selection: Selection<BookId>;
     isPickingAll: boolean;
     onPickAll: () => void;
     onClear: () => void;

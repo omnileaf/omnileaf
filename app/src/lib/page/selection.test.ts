@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { BookSelection } from "./book-selection.svelte";
+import { Selection } from "./selection.svelte";
 
 const BOOKS = Array.from(
   { length: 6 },
@@ -17,7 +17,7 @@ function at(index: number): string {
 }
 
 test("starts picking from the book held down, with that book picked", () => {
-  const selection = new BookSelection<string>();
+  const selection = new Selection<string>();
 
   selection.begin(at(2));
 
@@ -25,7 +25,7 @@ test("starts picking from the book held down, with that book picked", () => {
 });
 
 test("starts picking from the select button with nothing picked", () => {
-  const selection = new BookSelection<string>();
+  const selection = new Selection<string>();
 
   selection.begin();
 
@@ -33,7 +33,7 @@ test("starts picking from the select button with nothing picked", () => {
 });
 
 test("picks a book and leaves it again", () => {
-  const selection = new BookSelection<string>();
+  const selection = new Selection<string>();
   selection.begin();
 
   selection.toggle(at(1));
@@ -44,7 +44,7 @@ test("picks a book and leaves it again", () => {
 });
 
 test("picks the books between the one last toggled and the one shift-clicked, either way", () => {
-  const selection = new BookSelection<string>();
+  const selection = new Selection<string>();
   selection.begin();
   selection.toggle(at(4));
 
@@ -54,7 +54,7 @@ test("picks the books between the one last toggled and the one shift-clicked, ei
 });
 
 test("picks only the book shift-clicked when none was toggled before", () => {
-  const selection = new BookSelection<string>();
+  const selection = new Selection<string>();
   selection.begin();
 
   selection.extendTo(at(3), BOOKS);
@@ -63,7 +63,7 @@ test("picks only the book shift-clicked when none was toggled before", () => {
 });
 
 test("keeps picking from the last book toggled after shift-clicking a book no longer listed", () => {
-  const selection = new BookSelection<string>();
+  const selection = new Selection<string>();
   selection.begin(at(4));
   selection.extendTo(at(0), BOOKS.slice(1));
 
@@ -73,7 +73,7 @@ test("keeps picking from the last book toggled after shift-clicking a book no lo
 });
 
 test("picks every book listed", () => {
-  const selection = new BookSelection<string>();
+  const selection = new Selection<string>();
   selection.begin(at(0));
 
   selection.pickAll(BOOKS);
@@ -82,7 +82,7 @@ test("picks every book listed", () => {
 });
 
 test("keeps a picked book a list no longer shows", () => {
-  const selection = new BookSelection<string>();
+  const selection = new Selection<string>();
   selection.begin(at(0));
   selection.toggle(at(5));
 
@@ -90,7 +90,7 @@ test("keeps a picked book a list no longer shows", () => {
 });
 
 test("stops picking with nothing picked", () => {
-  const selection = new BookSelection<string>();
+  const selection = new Selection<string>();
   selection.begin(at(0));
 
   selection.end();
@@ -99,7 +99,7 @@ test("stops picking with nothing picked", () => {
 });
 
 test("has every book listed only once each of them is picked", () => {
-  const selection = new BookSelection<string>();
+  const selection = new Selection<string>();
   selection.toggle(at(0));
   const withOne = selection.hasAll(BOOKS);
 
@@ -109,7 +109,7 @@ test("has every book listed only once each of them is picked", () => {
 });
 
 test("has not every book of an empty list", () => {
-  const selection = new BookSelection<string>();
+  const selection = new Selection<string>();
 
   expect(selection.hasAll([])).toBe(false);
 });
