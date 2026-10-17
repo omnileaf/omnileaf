@@ -41,7 +41,7 @@
         type="button"
         look="outline"
         aria-describedby={titleId}
-        class="shrink-0 rounded-full px-lg text-body font-medium min-block-touch-target desktop:rounded-shadcn-control desktop:px-md desktop:text-label desktop:min-block-compact-button"
+        class="rounded-full px-lg text-body font-medium max-inline-1/2 min-block-touch-target desktop:rounded-shadcn-control desktop:px-md desktop:text-label desktop:min-block-compact-button"
         onclick={() => {
           onFix(problem);
         }}

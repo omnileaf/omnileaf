@@ -26,6 +26,7 @@
     type Problem,
     setNeedsAttention,
   } from "#lib/problems/needs-attention.svelte.ts";
+  import NeedsAttentionSheet from "#lib/problems/NeedsAttentionSheet.svelte";
   import NeedsAttentionSidebarItem from "#lib/problems/NeedsAttentionSidebarItem.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import QuickOpen from "#lib/search/QuickOpen.svelte";
@@ -167,6 +168,15 @@
     {/key}
   </div>
 </div>
+{#if !isPointer(data.appInfo.platform)}
+  {#key language.resolved}
+    <NeedsAttentionSheet
+      attention={needsAttention}
+      usesStandIns={screenshotMode.isOn}
+      onFix={fix}
+    />
+  {/key}
+{/if}
 <AppKeyboardShortcuts
   isOpen={isShowingShortcuts}
   platform={data.appInfo.platform}
