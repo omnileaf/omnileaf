@@ -126,7 +126,7 @@ pub use project_link::ProjectLink;
 pub use reading_progress::ReadingSaved;
 pub use reading_session::READING_SAVE_DELAY;
 pub use recent_log::RecentLog;
-pub use report_code::ReportCode;
+pub use report_code::{NotAReportCode, ReportCode};
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
 pub use rescan_conditions::{
     EXTERNAL_RESCAN_EVERY, PowerMode, RESCAN_EVERY, RescanConditions, Storage,

@@ -134,6 +134,28 @@ fn names_a_report_by_four_letters_or_digits_easy_to_read_aloud() {
     assert_eq!(codes, ["R-0000", "R-ZZZZ", "R-Y6FN"]);
 }
 
+proptest! {
+    #[test]
+    fn reads_back_every_code_it_hands_out(random in any::<u32>()) {
+        let code = ReportCode::from_random(random);
+
+        let read: ReportCode = serde_json::from_value(serde_json::json!(code.to_string())).unwrap();
+
+        prop_assert_eq!(read, code);
+    }
+}
+
+#[test]
+fn refuses_text_that_is_not_a_report_code() {
+    let texts = [
+        "", "R-", "R-123", "R-12345", "X-1234", "r-1234", "R-12O4", "R-12 4",
+    ];
+
+    let read = texts.map(|text| serde_json::from_value::<ReportCode>(serde_json::json!(text)).ok());
+
+    assert_eq!(read, texts.map(|_| None));
+}
+
 #[test]
 fn carries_nothing_that_tells_one_device_from_another_but_its_code() {
     let first = report_of(1, &logged()).to_string();
