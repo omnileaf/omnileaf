@@ -786,7 +786,7 @@
   {:else}
     <header
       class={[
-        "absolute inset-x-reader-bar-inline inset-bs-reader-bar-top transition-all motion-safe:duration-fade motion-safe:ease-out expanded:inset-x-lg expanded:inset-bs-md",
+        "absolute inset-x-reader-bar-inline inset-bs-reader-bar-top transition-all expanded:inset-x-lg expanded:inset-bs-md motion-reader:duration-fade motion-reader:ease-out",
         !controls.isShown && "pointer-events-none opacity-0",
       ]}
       {...controlEvents}
@@ -831,7 +831,7 @@
     </header>
     <div
       class={[
-        "absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom transition-all motion-safe:duration-fade motion-safe:ease-out expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock",
+        "absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom transition-all expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock motion-reader:duration-fade motion-reader:ease-out",
         isPanelOpen && "expanded:inset-e-reader-settings-room",
         !controls.isShown && "pointer-events-none opacity-0",
       ]}

@@ -23,6 +23,7 @@ export type SettingsRoute =
 
 export type SettingsSubPage =
   | "/(app)/settings/about/licences"
+  | "/(app)/settings/advanced/animations"
   | "/(app)/settings/general/language"
   | "/(app)/settings/privacy/screenshot-mode";
 
