@@ -60,6 +60,7 @@
   let {
     series,
     isComplete,
+    total,
     onNearEnd,
     onColumns,
     onMostThatFit,
@@ -71,6 +72,7 @@
   }: {
     series: readonly LibrarySeries[];
     isComplete: boolean;
+    total?: number | undefined;
     onNearEnd?: () => void;
     onColumns?: (columns: number) => void;
     onMostThatFit?: (most: number) => void;
@@ -561,6 +563,7 @@
         key={(one: LibrarySeries) => one.id}
         label={m.library_series_list()}
         {isComplete}
+        {total}
         {...onNearEnd === undefined ? {} : { onNearEnd }}
         {...onColumns === undefined ? {} : { onColumns }}
         class={layout.list}

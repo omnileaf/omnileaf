@@ -58,6 +58,7 @@
     tabKey,
   } from "#lib/library/library-tabs.ts";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
+  import FastScroll from "#lib/library/FastScroll.svelte";
   import NoMatches from "#lib/library/NoMatches.svelte";
   import SeriesCount from "#lib/library/SeriesCount.svelte";
   import SeriesCovers from "#lib/library/SeriesCovers.svelte";
@@ -307,7 +308,19 @@
   const showsItemCounts = $derived(
     hasBooks && loaded?.view.showsItemCounts === true,
   );
-  const countsSeries = $derived(showsItemCounts || isCountWanted);
+  const isListLong = $derived(
+    loaded !== undefined && !loaded.series.isComplete,
+  );
+  const countsSeries = $derived(showsItemCounts || isCountWanted || isListLong);
+
+  function letterAt(fraction: number): string | undefined {
+    const total = seriesCount.count;
+    if (loaded === undefined || total === undefined || total === 0) {
+      return undefined;
+    }
+    const at = Math.min(total - 1, Math.floor(fraction * total));
+    return loaded.series.items[at]?.title.trim().charAt(0).toLocaleUpperCase();
+  }
 
   function listedBy(): LibraryListing {
     if (chosenListing === undefined) {
@@ -751,9 +764,11 @@
               {/each}
             </div>
           {:else}
+            <FastScroll total={seriesCount.count} {letterAt} />
             <SeriesCovers
               series={loaded.series.items}
               isComplete={loaded.series.isComplete}
+              total={seriesCount.count}
               onNearEnd={() => {
                 void library.loadMore();
               }}
