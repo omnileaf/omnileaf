@@ -24,7 +24,7 @@ const SECTIONS = [
   {
     label: "Library",
     path: "/",
-    startFrom: "/settings",
+    startFrom: "/browse",
     opensFirstSectionOnDesktop: false,
   },
   {
