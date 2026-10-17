@@ -113,11 +113,11 @@
     </div>
   </div>
 
-  {#if hasKeyboard}
-    <section aria-labelledby={quicklyId} class={CARD}>
-      <h2 id={quicklyId} class="px-lg pbs-md pbe-xs text-small font-semibold">
-        {m.screenshot_mode_quickly()}
-      </h2>
+  <section aria-labelledby={quicklyId} class={CARD}>
+    <h2 id={quicklyId} class="px-lg pbs-md pbe-xs text-small font-semibold">
+      {m.screenshot_mode_quickly()}
+    </h2>
+    {#if hasKeyboard}
       <div class="flex items-center gap-md px-lg pbs-xs pbe-md">
         <span
           aria-hidden="true"
@@ -163,12 +163,7 @@
           </span>
         </span>
       </div>
-    </section>
-  {:else}
-    <section aria-labelledby={quicklyId} class={CARD}>
-      <h2 id={quicklyId} class="px-lg pbs-md pbe-xs text-small font-semibold">
-        {m.screenshot_mode_quickly()}
-      </h2>
+    {:else}
       <div class="flex items-center gap-md px-lg pbs-xs pbe-md">
         <span
           aria-hidden="true"
@@ -183,8 +178,8 @@
           </span>
         </span>
       </div>
-    </section>
-  {/if}
+    {/if}
+  </section>
 </div>
 
 {#if isChangingShortcut}
