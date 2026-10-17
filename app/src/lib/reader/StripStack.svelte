@@ -14,6 +14,7 @@
     pages,
     shown,
     isBlank,
+    marks,
     overlay,
     onShown,
     onShownReady,
@@ -21,6 +22,7 @@
     pages: readonly BookPage[];
     shown: number;
     isBlank: boolean;
+    marks: readonly number[];
     overlay: Snippet;
     onShown: (index: number) => void;
     onShownReady: () => void;
@@ -33,6 +35,36 @@
   let reported = -1;
   let isScrollPending = false;
   let unscrolled = 0;
+  let progress = $state(0);
+  let scrollRange = $state(0);
+  let track: HTMLDivElement | undefined = $state();
+  let isDragging = false;
+
+  function measure(): void {
+    if (scroller === undefined) {
+      return;
+    }
+    scrollRange = scroller.scrollHeight - scroller.clientHeight;
+    progress = scrollRange > 0 ? scroller.scrollTop / scrollRange : 0;
+  }
+
+  function markAt(index: number): number {
+    const top = pageElements[index]?.offsetTop ?? 0;
+    return scrollRange > 0 ? Math.min(1, top / scrollRange) : 0;
+  }
+
+  function dragTo(event: PointerEvent): void {
+    if (scroller === undefined || track === undefined) {
+      return;
+    }
+    const box = track.getBoundingClientRect();
+    const along = Math.min(
+      1,
+      Math.max(0, (event.clientY - box.top) / box.height),
+    );
+    scroller.scrollTop =
+      along * (scroller.scrollHeight - scroller.clientHeight);
+  }
 
   function ratioOf(page: BookPage): string {
     return page.size === null
@@ -68,6 +100,7 @@
   }
 
   function onScroll(): void {
+    measure();
     if (!isScrollPending) {
       isScrollPending = true;
       requestAnimationFrame(reportShown);
@@ -126,13 +159,19 @@
   $effect(() => {
     untrack(onShownReady);
   });
+
+  $effect(() => {
+    if (spaceHeight > 0) {
+      untrack(measure);
+    }
+  });
 </script>
 
 <div
   bind:this={scroller}
   bind:clientHeight={spaceHeight}
   data-strip
-  class="absolute inset-none grid overflow-y-auto overscroll-contain"
+  class="absolute inset-none grid overflow-y-auto overscroll-contain desktop:scrollbar-none"
   onscroll={onScroll}
 >
   <div
@@ -172,4 +211,39 @@
   >
     {@render overlay()}
   </div>
+</div>
+<div
+  bind:this={track}
+  data-strip-rail
+  aria-hidden="true"
+  class="absolute inset-e-md inset-bs-strip-rail-inset inset-be-strip-rail-inset hidden cursor-pointer inline-strip-rail-width desktop:block"
+  onpointerdown={(event) => {
+    isDragging = true;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragTo(event);
+  }}
+  onpointermove={(event) => {
+    if (isDragging) {
+      dragTo(event);
+    }
+  }}
+  onpointerup={() => {
+    isDragging = false;
+  }}
+>
+  <div
+    class="absolute inset-none mx-auto rounded-full bg-reader-grey inline-strip-rail-track"
+  ></div>
+  {#each marks as index (index)}
+    <span
+      data-rail-tick
+      class="absolute inset-x-none mx-auto bg-reader-muted block-px inline-strip-rail-tick"
+      style:top="{markAt(index) * 100}%"
+    ></span>
+  {/each}
+  <span
+    data-rail-thumb
+    class="absolute inset-x-none rounded-full bg-on-reader block-strip-rail-thumb"
+    style:top="calc({progress} * (100% - var(--spacing-strip-rail-thumb)))"
+  ></span>
 </div>
