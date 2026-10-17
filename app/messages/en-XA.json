@@ -698,9 +698,35 @@
   "about_copy_failed": "⟦Çöûļðñ'ţ çöþý ţĥé ṽéŕšíöñ ðéţáíļš. Ţŕý áĝáíñ.··················⟧",
   "about_source_code": "⟦Šöûŕçé çöðé·····⟧",
   "about_report_problem": "⟦Ŕéþöŕţ á þŕöƀļéɱ·······⟧",
-  "about_report_problem_hint": "⟦Öþéñš ĜíţĤûƀ. Ýöû'ļļ ñééð á ĜíţĤûƀ áççöûñţ.··················⟧",
+  "about_report_problem_hint_phone": "⟦Ɓûíļðš á ŕéþöŕţ öñ ţĥíš þĥöñé; ýöû çĥööšé ŵĥéŕé íţ ĝöéš······················⟧",
+  "about_report_problem_hint_tablet": "⟦Ɓûíļðš á ŕéþöŕţ öñ ţĥíš ţáƀļéţ; ýöû çĥööšé ŵĥéŕé íţ ĝöéš·······················⟧",
+  "about_report_problem_hint_computer": "⟦Ɓûíļðš á ŕéþöŕţ öñ ţĥíš çöɱþûţéŕ; ýöû çĥööšé ŵĥéŕé íţ ĝöéš························⟧",
   "about_opens_in_browser": "⟦Öþéñš íñ ýöûŕ ƀŕöŵšéŕ·········⟧",
   "about_browser_unavailable": "⟦Çöûļðñ'ţ öþéñ ýöûŕ ƀŕöŵšéŕ. Ţŕý áĝáíñ.················⟧",
+  "report_intro": "⟦Ñöţĥíñĝ íš šéñţ ûñţíļ ýöû çĥööšé. Ñáɱéš ƀéçöɱé šţáñð-íñš áñð áñýţĥíñĝ 18+ íš ļéƒţ öûţ.···································⟧",
+  "report_included": "⟦Ŵĥáţ'š íñçļûðéð······⟧",
+  "report_version_and_device": "⟦Ṽéŕšíöñ áñð ðéṽíçé········⟧",
+  "report_version_on_system": "⟦{version} · {system}········⟧",
+  "report_log": "⟦Ļöĝ··⟧",
+  "report_log_hint": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ţĥé ļášţ ļíñé, ñáɱéš ŕéþļáçéð············⟧",
+        "countPlural=other": "⟦Ţĥé ļášţ {formattedCount} ļíñéš, ñáɱéš ŕéþļáçéð···················⟧"
+      }
+    }
+  ],
+  "report_log_empty": "⟦Ñöţĥíñĝ ļöĝĝéð ýéţ········⟧",
+  "report_log_show": "⟦Šĥöŵ··⟧",
+  "report_log_hide": "⟦Ĥíðé··⟧",
+  "report_failed": "⟦Çöûļðñ'ţ þûţ ţĥé ŕéþöŕţ ţöĝéţĥéŕ.··············⟧",
+  "report_try_again": "⟦Ţŕý áĝáíñ····⟧",
   "about_licences": "⟦Öþéñ-šöûŕçé ļíçéñçéš········⟧",
   "about_licences_hint": "⟦Ţĥé þáçķáĝéš Öɱñíļéáƒ íš ƀûíļţ ŵíţĥ··············⟧",
   "licences_intro": [

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Bug, Code, ExternalLink } from "@lucide/svelte";
+  import { Code, ExternalLink } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Item } from "#lib/components/ui/item/index.ts";
@@ -31,13 +31,6 @@
   }: { opening: LinkOpening; sourceCode: string; look: AboutLook } = $props();
 
   const externalRows: readonly ExternalRow[] = $derived([
-    {
-      link: "newIssue",
-      icon: Bug,
-      label: m.about_report_problem(),
-      hint: m.about_report_problem_hint(),
-      hintKind: "prose",
-    },
     {
       link: "sourceCode",
       icon: Code,
