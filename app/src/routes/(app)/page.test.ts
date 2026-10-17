@@ -9,6 +9,7 @@ import {
   events,
   type LibrarySeries,
 } from "#lib/ipc/bindings.ts";
+import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
 import { NO_FILTER_CHOICES } from "#lib/library/library-listing.ts";
 
 import { screenshotModeTurned } from "../../../tests/components/screenshot-mode";
@@ -61,6 +62,9 @@ function listing(catalog: () => readonly WireSeries[]): { asked: number } {
       }
       if (command === "library_filter_choices") {
         return NO_FILTER_CHOICES;
+      }
+      if (command === "library_adult_content") {
+        return NEW_ADULT_CONTENT;
       }
       if (command === "series_labels") {
         return {
@@ -169,6 +173,9 @@ test("says when the library's series can't be listed", async () => {
       }
       if (command === "library_listing") {
         return DEFAULT_LIBRARY_LISTING;
+      }
+      if (command === "library_adult_content") {
+        return NEW_ADULT_CONTENT;
       }
       // eslint-disable-next-line @typescript-eslint/only-throw-error -- a failed command rejects with its plain error object, which is what the bindings read
       throw {

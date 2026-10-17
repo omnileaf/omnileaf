@@ -387,6 +387,7 @@
   --spacing-pane: 2.5rem;
   --spacing-pane-gap: 1.5rem;
   --spacing-radio: 1rem;
+  --spacing-veil-disc: 2.5rem;
   --spacing-radio-dot: 0.5rem;
   --spacing-settings-list: 17rem;
   --spacing-settings-list-widest: 17rem;
@@ -631,6 +632,7 @@
   --container-cover-title: calc(2.125em + 0.6875rem);
   --container-cover-continue: 4.5rem;
   --container-cover-disc: 6rem;
+  --container-cover-show: 6.5em;
   --container-cover-title-wide: calc(2.125em + 1.25rem);
   --container-series-split: 52rem;
 
@@ -902,6 +904,7 @@
   --color-accent-hover: color-mix(in oklab, var(--primary) 90%, transparent);
   --color-accent-pressed: color-mix(in oklab, var(--primary) 80%, transparent);
   --color-drag-box: color-mix(in oklab, var(--primary) 10%, transparent);
+  --color-veil: color-mix(in oklab, var(--background) 45%, transparent);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-warning-edge: var(--warning);
