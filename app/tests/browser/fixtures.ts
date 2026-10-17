@@ -189,11 +189,17 @@ export async function boxOf(locator: Locator): Promise<Box> {
   return box;
 }
 
+/** bits-ui holds an opening part in its starting style, which no animation reports, until the frame its transition begins. */
 export async function settle(locator: Locator): Promise<void> {
   await expect
     .poll(() =>
       locator.evaluate(
-        (element) => element.getAnimations({ subtree: true }).length,
+        (element) =>
+          element.getAnimations({ subtree: true }).length +
+          (element.closest("[data-starting-style]") === null &&
+          element.querySelector("[data-starting-style]") === null
+            ? 0
+            : 1),
       ),
     )
     .toBe(0);
