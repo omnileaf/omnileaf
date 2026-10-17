@@ -153,7 +153,7 @@
             <button
               {...props}
               class={cn(
-                "flex items-center gap-2xs rounded-shadcn-control px-xs text-foreground transition-control min-inline-none hover:bg-hover active:bg-pressed",
+                "flex items-center gap-2xs rounded-shadcn-control px-xs text-foreground transition-control max-inline-full min-inline-none hover:bg-hover active:bg-pressed",
                 isJumpOpen && "bg-hover",
               )}
             >
