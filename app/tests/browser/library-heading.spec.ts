@@ -72,6 +72,14 @@ function headingOf(page: Page): Locator {
     .filter({ has: page.getByRole("heading", { level: 1 }) });
 }
 
+/** The heading, or on iOS phones the title bar above it, whichever holds the heading's buttons. */
+function buttonsOf(page: Page): Locator {
+  return page
+    .getByRole("main")
+    .locator("header:has(h1), [data-title-bar]")
+    .filter({ has: page.getByRole("button") });
+}
+
 function controlsOf(heading: Locator): Locator {
   return heading
     .getByRole("button")
@@ -126,7 +134,7 @@ async function measureHeading(
     .getByRole("heading", { level: 1 })
     .or(countOf(page))
     .or(heading.getByText(messages.screenshot_mode_title, { exact: true }))
-    .or(controlsOf(heading));
+    .or(controlsOf(buttonsOf(page)));
   const measured = await parts.evaluateAll(async (elements) => {
     const found = elements.map((element) => {
       const { x, y, width, height } = element.getBoundingClientRect();
@@ -253,7 +261,7 @@ for (const platform of PLATFORMS) {
               { language, screenshotMode },
             );
             await page.goto("/");
-            await expect(controlsOf(headingOf(page))).toHaveCount(
+            await expect(controlsOf(buttonsOf(page))).toHaveCount(
               library === "empty" ? 0 : 3,
             );
             if (library === "filled") {
@@ -313,7 +321,7 @@ for (const platform of PLATFORMS) {
         test.use({ backend: backendFor(platform, library) });
 
         for (const width of PHONE_WIDTHS) {
-          test(`keeps the buttons on the title's row and moves the count and label under it at ${String(width)}px`, async ({
+          test(`keeps the buttons on the title's row, or above an iPhone's large title, and moves the count and label under it at ${String(width)}px`, async ({
             page,
           }, testInfo) => {
             test.skip(
@@ -321,7 +329,7 @@ for (const platform of PLATFORMS) {
               "phone widths only",
             );
             await openAt(page, width, screenshotMode);
-            await expect(controlsOf(headingOf(page))).toHaveCount(
+            await expect(controlsOf(buttonsOf(page))).toHaveCount(
               library === "empty" ? 0 : 3,
             );
 
@@ -338,7 +346,12 @@ for (const platform of PLATFORMS) {
             );
             const isNarrowDesktopWindow =
               platform === "linux" && isStackedUnder(buttons, title, count);
-            expect(isOnTitleRow || isNarrowDesktopWindow).toBe(true);
+            const isAboveLargeTitle =
+              platform === "ios" &&
+              buttons.every((button) => button.y + button.height <= title.y);
+            expect(
+              isOnTitleRow || isNarrowDesktopWindow || isAboveLargeTitle,
+            ).toBe(true);
             const underTitle = title.y + title.height;
             if (count !== undefined) {
               expect(count.y).toBeGreaterThanOrEqual(underTitle);
@@ -398,7 +411,7 @@ test.describe("the heading at the largest text size on an ios phone", () => {
   });
 
   for (const width of LARGEST_TEXT_WIDTHS) {
-    test(`keeps the title whole and sets the buttons on a row under the title and count at ${String(width)}px`, async ({
+    test(`keeps the large title whole under the buttons at ${String(width)}px`, async ({
       page,
     }, testInfo) => {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
@@ -409,10 +422,9 @@ test.describe("the heading at the largest text size on an ios phone", () => {
       const parts = await settledHeading(page);
 
       expect(await linesOf(title)).toBe(1);
-      const underCount =
-        parts.count === undefined ? 0 : parts.count.y + parts.count.height;
+      expect(parts.controls).toHaveLength(3);
       for (const [, button] of parts.controls) {
-        expect(button.y).toBeGreaterThanOrEqual(underCount);
+        expect(button.y + button.height).toBeLessThanOrEqual(parts.title.y);
       }
       expect(crowdedParts(parts)).toEqual([]);
       expect(await sidewaysOverflow(page)).toEqual([]);
@@ -479,7 +491,7 @@ test.describe("the heading as a filter changes the count", () => {
       await expect(countOf(page)).toBeVisible();
       const before = await settledHeading(page);
 
-      await headingOf(page)
+      await buttonsOf(page)
         .getByRole("button", { name: /^Filter and sort/ })
         .click();
       const panel = page.getByRole("dialog", { name: "Filter and sort" });
@@ -520,7 +532,7 @@ for (const platform of PLATFORMS) {
     }, testInfo) => {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
       await page.goto("/");
-      const heading = headingOf(page);
+      const heading = buttonsOf(page);
       const named = [
         [
           heading.getByRole("button", { name: english.library_view_options }),
@@ -564,7 +576,7 @@ for (const platform of PLATFORMS) {
         await page.goto("/");
         await expect(countOf(page)).toBeVisible();
 
-        const heading = headingOf(page);
+        const heading = buttonsOf(page);
 
         await expect(
           heading.getByRole("button", { name: english.library_view_options }),
