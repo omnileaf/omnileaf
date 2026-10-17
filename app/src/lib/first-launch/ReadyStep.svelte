@@ -158,7 +158,7 @@
   {:else if shown === "found" && shelf.length > 0}
     <ReadyShelf series={shelf} usesStandIns={screenshotMode.isOn} />
   {/if}
-  {#if linked.length > 0}
+  {#if linked.length > 0 || adding.isAdding}
     <LinkedFolders
       {platform}
       {folders}
@@ -166,6 +166,7 @@
       {notices}
       usesStandIns={screenshotMode.isOn}
       addPlacement="none"
+      countingLook="words-and-bar"
     >
       {#snippet rowDetail(folder: LibraryFolder)}
         {summaryOf(folder)}

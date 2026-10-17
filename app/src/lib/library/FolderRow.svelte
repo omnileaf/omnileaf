@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang="ts" generics="Shown extends ShownFolder">
   import { Folder, House } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
@@ -9,10 +9,9 @@
     ItemMedia,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
-  import type { LibraryFolder } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { folderTitle } from "./folder-title";
+  import { folderTitle, type ShownFolder } from "./folder-title";
   import { ICON_SIZE } from "./icon-size";
 
   const SEPARATOR = " · ";
@@ -24,10 +23,10 @@
     detail,
     action,
   }: {
-    folder: LibraryFolder;
+    folder: Shown;
     isFoundEmpty?: boolean;
     location?: Snippet;
-    detail?: Snippet<[LibraryFolder]> | undefined;
+    detail?: Snippet<[Shown]> | undefined;
     action?: Snippet;
   } = $props();
 
@@ -65,7 +64,7 @@
       {/if}
     </ItemDescription>
     {#if detail !== undefined}
-      <span class="text-footnote text-muted">{@render detail(folder)}</span>
+      <div class="text-footnote text-muted">{@render detail(folder)}</div>
     {/if}
   </ItemContent>
   {@render action?.()}

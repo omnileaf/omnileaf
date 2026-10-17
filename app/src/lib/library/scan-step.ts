@@ -14,7 +14,7 @@ export function followScan(
   show: (step: ScanStep) => void,
 ): (progress: ScanProgress) => void {
   return (progress) => {
-    if (!isScanning()) {
+    if (!isScanning() || progress.stage === "adding") {
       return;
     }
     show(
