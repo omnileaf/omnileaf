@@ -14,7 +14,7 @@
   bind:ref
   data-slot="toggle-group-item"
   class={cn(
-    "-ms-px flex items-center justify-center border border-border bg-background px-md text-small font-medium whitespace-nowrap text-foreground transition-control min-block-pointer-button first:ms-none first:rounded-s-shadcn-control last:rounded-e-shadcn-control hover:bg-hover aria-checked:bg-hover max-expanded:px-toggle-touch max-expanded:text-body max-expanded:min-block-touch-target",
+    "-ms-px flex items-center justify-center border border-border bg-background px-md text-small font-medium whitespace-nowrap text-foreground transition-control min-block-pointer-button first:ms-none first:rounded-s-shadcn-control last:rounded-e-shadcn-control hover:bg-hover aria-checked:bg-hover data-disabled:opacity-50 data-disabled:hover:bg-background max-expanded:px-toggle-touch max-expanded:text-body max-expanded:min-block-touch-target",
     className,
   )}
   {...restProps}

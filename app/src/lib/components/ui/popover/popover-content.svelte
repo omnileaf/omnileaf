@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     Popover as PopoverPrimitive,
+    type PortalProps,
     type WithoutChildrenOrChild,
   } from "bits-ui";
   import type { Snippet } from "svelte";
@@ -13,14 +14,16 @@
   let {
     ref = $bindable(null),
     class: className,
+    to = "body",
     children,
     ...restProps
   }: WithoutChildrenOrChild<PopoverPrimitive.ContentProps> & {
+    to?: PortalProps["to"];
     children: Snippet;
   } = $props();
 </script>
 
-<PopoverPrimitive.Portal>
+<PopoverPrimitive.Portal {to}>
   <PopoverPrimitive.Overlay class="fixed inset-none z-dialog" />
   <PopoverPrimitive.Content
     bind:ref
