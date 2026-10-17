@@ -7,7 +7,8 @@ const THE_VIEW: i64 = 1;
 const STORED_VIEW: &str = "SELECT display,
         phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row,
         shows_item_counts, shows_unread_count, shows_downloaded, shows_language,
-        shows_reading_progress, shows_continue_button, shows_continue_row
+        shows_reading_progress, shows_continue_button, shows_continue_row,
+        fits_covers_to_width
     FROM library_view
     WHERE id = ?1";
 
@@ -15,9 +16,10 @@ const SET_VIEW: &str = "INSERT INTO library_view (
         id, display,
         phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row,
         shows_item_counts, shows_unread_count, shows_downloaded, shows_language,
-        shows_reading_progress, shows_continue_button, shows_continue_row
+        shows_reading_progress, shows_continue_button, shows_continue_row,
+        fits_covers_to_width
     )
-    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
     ON CONFLICT (id) DO UPDATE SET
         display = excluded.display,
         phone_covers_per_row = excluded.phone_covers_per_row,
@@ -29,7 +31,8 @@ const SET_VIEW: &str = "INSERT INTO library_view (
         shows_language = excluded.shows_language,
         shows_reading_progress = excluded.shows_reading_progress,
         shows_continue_button = excluded.shows_continue_button,
-        shows_continue_row = excluded.shows_continue_row";
+        shows_continue_row = excluded.shows_continue_row,
+        fits_covers_to_width = excluded.fits_covers_to_width";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LibraryDisplay {
@@ -45,6 +48,7 @@ pub struct StoredLibraryView {
     pub phone_covers_per_row: u8,
     pub tablet_covers_per_row: u8,
     pub desktop_covers_per_row: u8,
+    pub fits_covers_to_width: bool,
     pub shows_item_counts: bool,
     pub shows_continue_row: bool,
     pub on_covers: OnCovers,
@@ -88,6 +92,7 @@ pub fn set_library_view(
         view.on_covers.shows_reading_progress,
         view.on_covers.shows_continue_button,
         view.shows_continue_row,
+        view.fits_covers_to_width,
     ))?;
     Ok(())
 }
@@ -97,6 +102,7 @@ struct ViewRow {
     phone_covers_per_row: u8,
     tablet_covers_per_row: u8,
     desktop_covers_per_row: u8,
+    fits_covers_to_width: bool,
     shows_item_counts: bool,
     shows_continue_row: bool,
     on_covers: OnCovers,
@@ -111,6 +117,7 @@ impl ViewRow {
             desktop_covers_per_row: row.get(3)?,
             shows_item_counts: row.get(4)?,
             shows_continue_row: row.get(10)?,
+            fits_covers_to_width: row.get(11)?,
             on_covers: OnCovers {
                 shows_unread_count: row.get(5)?,
                 shows_downloaded: row.get(6)?,
@@ -131,6 +138,7 @@ impl TryFrom<ViewRow> for StoredLibraryView {
             phone_covers_per_row: row.phone_covers_per_row,
             tablet_covers_per_row: row.tablet_covers_per_row,
             desktop_covers_per_row: row.desktop_covers_per_row,
+            fits_covers_to_width: row.fits_covers_to_width,
             shows_item_counts: row.shows_item_counts,
             shows_continue_row: row.shows_continue_row,
             on_covers: row.on_covers,

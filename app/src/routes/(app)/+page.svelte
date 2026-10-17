@@ -153,6 +153,7 @@
   });
 
   let measuredColumns: number | undefined = $state();
+  let mostThatFit: number | undefined = $state();
   const coversDrawn = $derived(
     library.list.kind === "failed" || loaded?.series.items.length === 0
       ? undefined
@@ -226,6 +227,7 @@
       <ViewOptions
         view={loaded.view}
         {coversDrawn}
+        {mostThatFit}
         onChoose={(chosen: LibraryView) => {
           view.choose(chosen);
         }}
@@ -310,6 +312,9 @@
         }}
         onColumns={(columns: number) => {
           measuredColumns = columns;
+        }}
+        onMostThatFit={(most: number) => {
+          mostThatFit = most;
         }}
         {coverUrl}
         view={loaded.view}

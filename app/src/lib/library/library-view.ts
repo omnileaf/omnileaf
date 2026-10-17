@@ -21,6 +21,13 @@ export function withDisplay(
   return { ...view, display };
 }
 
+export function withFitsCoversToWidth(
+  view: LibraryView,
+  fitsCoversToWidth: boolean,
+): LibraryView {
+  return { ...view, fitsCoversToWidth };
+}
+
 export function withCoversPerRow(
   view: LibraryView,
   size: ScreenSize,
