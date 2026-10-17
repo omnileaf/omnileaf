@@ -34,6 +34,9 @@ function series(
     bookCount,
     unreadCount,
     cover: null,
+    language: null,
+    hasDownloads: false,
+    continuesFrom: null,
   };
 }
 
