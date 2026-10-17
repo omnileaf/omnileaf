@@ -7,6 +7,20 @@ export type WireBook = Awaited<
 
 type WireReading = WireBook["reading"];
 
+type WireOverview = Awaited<ReturnType<FakeBackend["seriesOverview"]>>;
+
+export type SeriesDetails = Pick<
+  WireOverview,
+  "format" | "creators" | "summary" | "tags"
+>;
+
+const NO_DETAILS: SeriesDetails = {
+  format: null,
+  creators: [],
+  summary: null,
+  tags: [],
+};
+
 export const SERIES_ID = "0190a3e4-0000-8000-8000-0000000000a4";
 export const SERIES_TITLE = "Sample Series 04";
 export const SERIES_FOLDER = "Sample Library";
@@ -16,15 +30,24 @@ export const BOOKS_PER_PAGE = 100;
 export class FakeShelf {
   readonly marked: { readonly books: string[]; readonly mark: string }[] = [];
   readonly #books: WireBook[];
+  readonly #details: SeriesDetails;
   #laterPages: Promise<void> = Promise.resolve();
 
-  constructor(readings: readonly WireReading[]) {
+  constructor(
+    readings: readonly WireReading[],
+    details: Partial<SeriesDetails> = {},
+    pageCount: number | null = null,
+  ) {
+    this.#details = { ...NO_DETAILS, ...details };
     this.#books = readings.map((reading, index) => ({
       id: `0190a3e4-0000-8000-8000-${String(index + 1).padStart(12, "0")}`,
       position: index + 1,
       title: `${SERIES_TITLE} v${String(index + 1).padStart(2, "0")}`,
       addedAtMs: ADDED_AT_MS,
       reading,
+      pageCount,
+      isBookmarked: false,
+      isNew: false,
     }));
   }
 
@@ -72,6 +95,7 @@ export class FakeShelf {
           cover: null,
           folder: SERIES_FOLDER,
           upNext: this.#upNext() ?? null,
+          ...this.#details,
         };
       },
       seriesBooks: async (id, listing, after) => {
