@@ -25,6 +25,7 @@ import {
 export const FAKE_APP_VERSION = "1.2.3";
 export const FAKE_SOURCE_CODE = "repo.example.org/omnileaf";
 export const FAKE_SYSTEM = "Fedora 43";
+export const FAKE_REPORT_CODE = "R-8M4T";
 export const IPHONE_USER_AGENT =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148";
 export const IPAD_USER_AGENT =
@@ -169,10 +170,13 @@ export const DEFAULT_BACKEND: FakeBackend = {
   copyVersionDetails: () => null,
   openProjectLink: () => null,
   problemReport: () => ({
+    code: FAKE_REPORT_CODE,
     version: FAKE_APP_VERSION,
     system: FAKE_SYSTEM,
     log: [],
   }),
+  copyProblemReport: () => null,
+  openProblemReportIssue: () => null,
   offerSavedCrashReport: () => null,
   offerInterfaceErrorReport: (error) => ({
     details: error.message,

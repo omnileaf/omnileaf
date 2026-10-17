@@ -12,6 +12,16 @@ pub struct LogStandIns {
     by_first_word: HashMap<String, Vec<NameStandIn>>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CleanedLog(Vec<String>);
+
+impl CleanedLog {
+    #[must_use]
+    pub fn lines(&self) -> &[String] {
+        &self.0
+    }
+}
+
 #[derive(Clone, Debug)]
 struct NameStandIn {
     name: String,
@@ -57,6 +67,11 @@ impl LogStandIns {
     #[must_use]
     pub fn clean(&self, line: &str) -> String {
         scrub::clean(&self.replace_names(line), LINE_BYTE_LIMIT)
+    }
+
+    #[must_use]
+    pub fn clean_log(&self, lines: &[String]) -> CleanedLog {
+        CleanedLog(lines.iter().map(|line| self.clean(line)).collect())
     }
 
     fn replace_names(&self, line: &str) -> String {
