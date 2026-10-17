@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AppWindow, Keyboard } from "@lucide/svelte";
+  import { AppWindow, Keyboard, Smartphone } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
@@ -160,6 +160,26 @@
           <span class="font-semibold desktop:text-callout">{trayName}</span>
           <span class="text-detail text-muted">
             {m.screenshot_mode_tray_help()}
+          </span>
+        </span>
+      </div>
+    </section>
+  {:else}
+    <section aria-labelledby={quicklyId} class={CARD}>
+      <h2 id={quicklyId} class="px-lg pbs-md pbe-xs text-small font-semibold">
+        {m.screenshot_mode_quickly()}
+      </h2>
+      <div class="flex items-center gap-md px-lg pbs-xs pbe-md">
+        <span
+          aria-hidden="true"
+          class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile"
+        >
+          <Smartphone size={ROW_ICON_SIZE} />
+        </span>
+        <span class="flex flex-1 flex-col gap-2xs">
+          <span class="font-semibold">{m.screenshot_mode_long_press()}</span>
+          <span class="text-detail text-muted">
+            {m.screenshot_mode_long_press_help()}
           </span>
         </span>
       </div>
