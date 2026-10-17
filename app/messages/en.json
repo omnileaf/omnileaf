@@ -64,6 +64,39 @@
   "library_categories": "Categories",
   "library_category_all": "All",
   "library_tab_new_chapters": "New chapters",
+  "library_tabs_title": "Library tabs",
+  "library_tabs_intro": "Drag to reorder. Hiding a tab never removes a series.",
+  "library_tabs_intro_keys": "Drag to reorder, or use Alt ↑ and Alt ↓. Hiding a tab never removes a series.",
+  "library_tabs_all_detail": "Always shown; can’t be hidden",
+  "library_tabs_built_in": "Built in",
+  "library_tabs_built_in_hidden": "Built in · hidden",
+  "library_tabs_category": "Category",
+  "library_tabs_hidden": "Hidden",
+  "library_tabs_more": "More for {tab}",
+  "library_tabs_move": "Move {tab}",
+  "library_tabs_move_up": "Move up",
+  "library_tabs_move_down": "Move down",
+  "library_tabs_show": "Show this tab",
+  "library_tabs_hide": "Hide this tab",
+  "library_tabs_moved_up": "{tab} moved up, to position {position} of {count}",
+  "library_tabs_moved_down": "{tab} moved down, to position {position} of {count}",
+  "library_tabs_new_category": "New category",
+  "library_tabs_category_name": "Name",
+  "library_tabs_add": "Add",
+  "library_tabs_category_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Category · {formattedCount} series",
+        "countPlural=other": "Category · {formattedCount} series"
+      }
+    }
+  ],
   "library_categories_more": "More",
   "library_more_categories": "More categories",
   "library_categories_edit": "Edit categories",

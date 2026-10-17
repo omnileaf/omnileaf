@@ -302,6 +302,20 @@ test.describe("with more categories than fit", () => {
       menu.getByRole("menuitemradio", { name: "Manga" }),
     ).toHaveCount(0);
   });
+
+  test("opens Library tabs from Edit categories under More", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, "phones and tablets edit from the tab sheet");
+    await page.setViewportSize({ width: NARROW_DESKTOP, height: 800 });
+    await openLibrary(page);
+
+    await page.getByRole("button", { name: "More" }).click();
+    await page.getByRole("menuitem", { name: "Edit categories" }).click();
+
+    await expect(page).toHaveURL(/\/settings\/library\/tabs$/);
+  });
 });
 
 test.describe("with the tabs arranged in Settings", () => {
