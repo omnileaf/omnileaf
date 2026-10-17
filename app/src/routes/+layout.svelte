@@ -20,6 +20,7 @@
   import CrashReportPrompt from "#lib/crash-report/CrashReportPrompt.svelte";
   import { appInterfaceErrors } from "#lib/crash-report/interface-error-relay.ts";
   import type { PromptLook } from "#lib/crash-report/look.ts";
+  import IconActionsSync from "#lib/icon-actions/IconActionsSync.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import {
@@ -221,6 +222,9 @@
   />
   {#if data.libraryProblem === null && isPointer(data.appInfo.platform)}
     <TrayMenuSync />
+  {/if}
+  {#if data.libraryProblem === null && !data.isFirstLaunch && !isPointer(data.appInfo.platform)}
+    <IconActionsSync />
   {/if}
 {/key}
 <CrashReportPrompt reporting={crashReporting} look={promptLook} />
