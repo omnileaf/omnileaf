@@ -7,6 +7,7 @@ import {
   boxOf,
   EXPANDED_MIN_WIDTH,
   expect,
+  IPHONE_USER_AGENT,
   onPlatform,
   test,
   testOnlyInItsWebview,
@@ -236,5 +237,18 @@ test.describe("a library already in the home folder on an android phone", () => 
 
     expect(start.y - (use.y + use.height)).toBe(STACKED_BUTTON_GAP);
     expect([start.x, start.width]).toEqual([use.x, use.width]);
+  });
+});
+
+test.describe("a library already in the home folder on an iPhone", () => {
+  testOnlyInItsWebview("ios");
+  test.use({ backend: foundOn("ios"), userAgent: IPHONE_USER_AGENT });
+
+  test("offers no Change, since the library stays inside the app", async ({
+    page,
+  }) => {
+    await goToTheHomeFolder(page);
+
+    await expect(homeCard(page).getByRole("button")).toHaveCount(0);
   });
 });
