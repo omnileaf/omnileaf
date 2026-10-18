@@ -409,6 +409,7 @@ export const TOKEN_THEME = {
     "xs",
   ],
   leading: ["band"],
+  "font-weight": ["bold", "extrabold", "medium", "regular", "semibold"],
   tracking: ["heading-caps", "normal", "overline", "stand-in", "tight"],
   ease: ["emphasized", "glass", "out"],
   animate: [
