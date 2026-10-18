@@ -5,7 +5,9 @@ import {
   DEFAULT_BACKEND,
   expect,
   EXPANDED_MIN_WIDTH,
+  fakeAppInfo,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 import type { FakeBackend } from "./fake-backend.ts";
@@ -180,6 +182,33 @@ for (const colorScheme of ["light", "dark"] as const) {
     const violations = await accessibilityViolations(page);
 
     expect(violations).toEqual([]);
+  });
+}
+
+for (const platform of ["android", "linux"] as const) {
+  test.describe(`on ${platform}`, () => {
+    test.use({
+      backend: {
+        ...shelfOf(EIGHT_BOOKS),
+        appInfo: () => fakeAppInfo(platform),
+      },
+    });
+    testOnlyInItsWebview(platform);
+
+    test("sets every book's title in medium type, as the boards do", async ({
+      page,
+    }) => {
+      await openBook(page);
+
+      const list = await openJumpList(page);
+
+      for (const book of EIGHT_BOOKS) {
+        await expect(list.getByText(book.title, { exact: true })).toHaveCSS(
+          "font-weight",
+          "500",
+        );
+      }
+    });
   });
 }
 
