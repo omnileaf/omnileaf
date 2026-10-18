@@ -29,7 +29,7 @@
 <div
   role="group"
   aria-label={m.search_scope()}
-  class={["flex shrink-0 gap-icon-gap overflow-x-auto", className]}
+  class={["flex shrink-0 flex-wrap gap-x-icon-gap gap-y-lg", className]}
 >
   {#each SEARCH_SCOPES as choice (choice)}
     {@const isChosen = scope === choice}
