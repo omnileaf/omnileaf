@@ -170,7 +170,7 @@
   class="mbs-lg flex flex-col gap-sm rounded-card border border-border bg-card p-md"
 >
   <div
-    class="flex flex-col gap-sm desktop:grid desktop:grid-cols-setting-grid desktop:items-center desktop:gap-x-md"
+    class="flex flex-col gap-sm desktop:medium:grid desktop:medium:grid-cols-setting-grid desktop:medium:items-center desktop:medium:gap-x-md"
   >
     <span id={opensOnLabelId} class="text-small font-medium">
       {m.library_opens_on()}
@@ -178,7 +178,7 @@
     <NativeSelect
       aria-labelledby={opensOnLabelId}
       value={shownOpensOn}
-      class="desktop:inline-setting-control"
+      class="desktop:medium:inline-setting-control"
       fieldClass="touch:text-body touch:block-touch-target"
       onchange={({
         currentTarget: { value },

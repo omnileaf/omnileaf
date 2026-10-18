@@ -7,6 +7,7 @@ import type {
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   test,
@@ -226,6 +227,30 @@ test.describe("in a library that keeps no labels", () => {
     await expect(
       page.getByRole("button", { name: "New category" }),
     ).toHaveCount(0);
+  });
+});
+
+test.describe("in a narrow desktop window", () => {
+  test.use({
+    backend: backendKeepingLabels(true),
+    viewport: { width: 360, height: 800 },
+  });
+  test.skip(({ isMobile }) => isMobile, "only a desktop window narrows");
+
+  test("puts where the library opens above its choice", async ({ page }) => {
+    await page.goto("/settings/library/tabs");
+    const label = page.getByText("The library opens on", { exact: true });
+    const choice = page.getByRole("combobox", {
+      name: "The library opens on",
+    });
+
+    const labelBox = await boxOf(label);
+    const choiceBox = await boxOf(choice);
+
+    expect(choiceBox.y).toBeGreaterThanOrEqual(labelBox.y + labelBox.height);
+    expect(
+      await label.evaluate((shown) => shown.scrollWidth - shown.clientWidth),
+    ).toBe(0);
   });
 });
 
