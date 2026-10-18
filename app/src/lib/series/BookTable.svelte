@@ -144,7 +144,7 @@
               href={resolve("/read/[book]", { book: book.id })}
               draggable="false"
               class={[
-                "truncate",
+                "truncate font-medium",
                 book.reading.state === "read" && !isPicked
                   ? "text-muted"
                   : "text-foreground",
