@@ -8,6 +8,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  settle,
   sidewaysOverflow,
   test,
 } from "./fixtures.ts";
@@ -398,6 +399,7 @@ test.describe("with a folder found empty", () => {
       ),
     ).toBeVisible();
 
+    await settle(question);
     await question.getByRole("button", { name: "Remove 3 books" }).click();
 
     await expect(
@@ -478,10 +480,9 @@ test.describe("with a folder found empty", () => {
       await page.emulateMedia({ colorScheme });
       await rescanSampleComics(page);
       await removeItsBooks(page).click();
-      await page
-        .getByRole("alertdialog")
-        .getByRole("button", { name: "Remove 3 books" })
-        .click();
+      const question = page.getByRole("alertdialog");
+      await settle(question);
+      await question.getByRole("button", { name: "Remove 3 books" }).click();
       await expect(
         page.getByText("Removed 3 books of Sample Comics"),
       ).toBeVisible();
@@ -539,10 +540,9 @@ test.describe("with a folder whose books couldn't be removed", () => {
   async function failToRemoveBooks(page: Page): Promise<void> {
     await rescanSampleComics(page);
     await removeItsBooks(page).click();
-    await page
-      .getByRole("alertdialog")
-      .getByRole("button", { name: "Remove 3 books" })
-      .click();
+    const question = page.getByRole("alertdialog");
+    await settle(question);
+    await question.getByRole("button", { name: "Remove 3 books" }).click();
   }
 
   test("turns the warning into an alert offering to try again", async ({
