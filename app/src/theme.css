@@ -313,6 +313,7 @@
   --menu-surface: var(--android-container);
   --menu-edge: transparent;
   --menu-radius: var(--radius-android-xs);
+  --card-radius: var(--radius-android-md);
   --hover-fill: color-mix(
     in oklab,
     currentColor var(--state-hover),
