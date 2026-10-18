@@ -463,10 +463,7 @@ test("fades the cover's colour out before the series' title", async ({
 test("sets the breadcrumb's chevron 10px from the Library link and from the series' name", async ({
   page,
 }) => {
-  test.skip(
-    viewportOf(page).width < MEDIUM_MIN_WIDTH,
-    "phones show a back button",
-  );
+  test.skip(!isWide(page), "narrower windows show a back button");
   await openSeries(page);
   const crumbs = page.getByRole("navigation", { name: "Breadcrumb" });
 
