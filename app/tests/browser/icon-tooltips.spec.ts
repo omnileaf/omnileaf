@@ -10,6 +10,7 @@ import {
   EXPANDED_MIN_WIDTH,
   onPlatform,
   screenSizeOf,
+  settle,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -203,9 +204,9 @@ const ICON_ACTIONS: readonly IconAction[] = [
         .locator("main header")
         .getByRole("button", { name: /^Filter and sort/ })
         .click();
-      return page
-        .getByRole("dialog", { name: "Filter and sort" })
-        .getByRole("button", { name: "Close" });
+      const panel = page.getByRole("dialog", { name: "Filter and sort" });
+      await settle(panel);
+      return panel.getByRole("button", { name: "Close" });
     },
     label: "Close",
     isShownOn: (page) => !isPhoneScreen(page),
