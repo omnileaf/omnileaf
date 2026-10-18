@@ -2,6 +2,7 @@ import type { Browser, Page, ViewportSize } from "@playwright/test";
 
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import {
+  accessibilityViolations,
   expect,
   IPAD_USER_AGENT,
   IPHONE_USER_AGENT,
@@ -24,6 +25,15 @@ const CHECKS: readonly ScreenCheck[] = [
   {
     name: "scrolls nothing sideways",
     problemsOn: (page) => sidewaysOverflow(page, "body"),
+  },
+  {
+    name: "has no accessibility violations",
+    problemsOn: async (page) =>
+      (await accessibilityViolations(page)).flatMap((violation) =>
+        violation.nodes.map(
+          (node) => `${violation.id} on ${node.target.join(" ")}`,
+        ),
+      ),
   },
 ];
 
