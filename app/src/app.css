@@ -904,6 +904,7 @@
   @variant android {
     --spacing-checkbox: 1.125rem;
     --radius-checkbox: 0.125rem;
+    --radius-segment-outer: 9999px;
     --spacing-radio: 1.25rem;
     --spacing-radio-dot: 0.625rem;
     --spacing-switch-length: 3.25rem;

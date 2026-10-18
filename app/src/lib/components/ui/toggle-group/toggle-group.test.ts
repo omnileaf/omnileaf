@@ -18,6 +18,8 @@ interface SegmentLook {
 }
 
 const DESKTOP_WINDOW = { width: 1280, height: 800 } as const;
+const PHONE_WINDOW = { width: 390, height: 844 } as const;
+const PILL_CORNER = "9999px";
 
 const LOOKS: readonly SegmentLook[] = [
   {
@@ -108,6 +110,19 @@ for (const look of LOOKS) {
     );
   });
 }
+
+test("rounds the ends of the Android segments into a pill", async () => {
+  await page.viewport(PHONE_WINDOW.width, PHONE_WINDOW.height);
+  document.documentElement.dataset.platform = "android";
+  document.documentElement.dataset.theme = "light";
+  await render(ToggleGroupHarness);
+
+  const first = page.getByRole("radio", { name: "Grid" }).element();
+  const last = page.getByRole("radio", { name: "List" }).element();
+
+  expect(getComputedStyle(first).borderTopLeftRadius).toBe(PILL_CORNER);
+  expect(getComputedStyle(last).borderBottomRightRadius).toBe(PILL_CORNER);
+});
 
 test("writes the chosen Windows segment in the colour on the accent", async () => {
   await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
