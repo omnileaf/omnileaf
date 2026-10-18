@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import { accessibilityViolations, expect, test } from "./fixtures.ts";
 
@@ -19,6 +19,30 @@ async function openAnimations(page: Page): Promise<void> {
 
 function stillGroups(page: Page): Promise<string | undefined> {
   return page.evaluate(() => document.documentElement.dataset.still);
+}
+
+function iconOffsetFromFirstGlyph(note: Locator): Promise<number> {
+  return note.evaluate((paragraph) => {
+    const icon = paragraph.querySelector("svg");
+    if (icon === null) {
+      throw new Error("the note has no icon");
+    }
+    const middle = (box: DOMRect) => box.top + box.height / 2;
+    const texts = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
+    for (let node = texts.nextNode(); node !== null; node = texts.nextNode()) {
+      const start = node.textContent?.search(/\S/) ?? -1;
+      if (start >= 0) {
+        const glyph = document.createRange();
+        glyph.setStart(node, start);
+        glyph.setEnd(node, start + 1);
+        return (
+          middle(icon.getBoundingClientRect()) -
+          middle(glyph.getBoundingClientRect())
+        );
+      }
+    }
+    throw new Error("the note shows no text");
+  });
 }
 
 test("plays every group of movement until one is switched off", async ({
@@ -81,6 +105,17 @@ test("opens sheets and menus without moving with Sheets and menus off", async ({
 
   expect(moving).not.toBe("0s");
   await expect.poll(fadeDuration).toBe("0s");
+});
+
+test("centres the Reduce motion note's icon on its first line", async ({
+  page,
+}) => {
+  await openAnimations(page);
+  const note = page.locator("main p", { has: page.locator("svg") });
+
+  const offset = await iconOffsetFromFirstGlyph(note);
+
+  expect(Math.abs(offset)).toBeLessThanOrEqual(1);
 });
 
 for (const colorScheme of ["light", "dark"] as const) {

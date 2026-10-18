@@ -73,7 +73,9 @@
     {/each}
   </div>
   <p class="flex items-start gap-sm text-footnote text-muted">
-    <Info size={NOTE_ICON_SIZE} aria-hidden="true" class="mbs-2xs shrink-0" />
+    <span aria-hidden="true" class="flex shrink-0 items-center block-lh">
+      <Info size={NOTE_ICON_SIZE} />
+    </span>
     {onPointer
       ? m.animations_reduce_motion_desktop()
       : m.animations_reduce_motion()}
