@@ -595,6 +595,7 @@
   --z-index-series-band: -1;
   --z-index-series-bar: 1;
   --z-index-tab-bar: 1;
+  --z-index-touch-target: 1;
   --z-index-notice: 10;
   --z-index-dialog: 20;
   --z-index-tooltip: 30;
@@ -984,6 +985,18 @@
 
   &::after {
     font-weight: var(--font-weight-semibold);
+  }
+}
+
+@utility touch-target-across {
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    z-index: var(--z-index-touch-target);
+    inset-block: 0;
+    inset-inline: calc((100% - var(--spacing-touch-target)) / 2);
   }
 }
 
