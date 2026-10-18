@@ -59,14 +59,24 @@
     {#each choices as choice (choice.value)}
       <ToggleGroupItem
         value={choice.value}
-        data-label={choice.label}
+        data-label={choice.phoneLabel === undefined ? choice.label : undefined}
         class="grow"
       >
         {#if choice.phoneLabel === undefined}
           {choice.label}
         {:else}
-          <span class="expanded:hidden">{choice.phoneLabel}</span>
-          <span class="hidden expanded:inline">{choice.label}</span>
+          <span
+            data-label={choice.phoneLabel}
+            class="room-for-semibold-label items-center expanded:hidden"
+          >
+            {choice.phoneLabel}
+          </span>
+          <span
+            data-label={choice.label}
+            class="hidden items-center expanded:room-for-semibold-label"
+          >
+            {choice.label}
+          </span>
         {/if}
       </ToggleGroupItem>
     {/each}
