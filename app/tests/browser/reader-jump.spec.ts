@@ -7,7 +7,6 @@ import {
   expect,
   EXPANDED_MIN_WIDTH,
   fakeAppInfo,
-  fakeAppInfo,
   MEDIUM_MIN_WIDTH,
   test,
   testOnlyInItsWebview,
