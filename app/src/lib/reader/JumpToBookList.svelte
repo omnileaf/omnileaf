@@ -175,7 +175,8 @@
           <div
             class="flex flex-col gap-2xs border-s-2 border-transparent px-md py-sm text-muted"
           >
-            <span class="truncate text-body line-through expanded:text-small"
+            <span
+              class="truncate text-body font-medium line-through expanded:text-small"
               >{book.title}</span
             >
             <span
@@ -198,7 +199,7 @@
             <span class="flex items-center gap-sm min-inline-none">
               <span
                 class={cn(
-                  "truncate text-body expanded:text-small",
+                  "truncate text-body font-medium expanded:text-small",
                   book.reading.state === "read" && "text-muted",
                 )}>{book.title}</span
               >
