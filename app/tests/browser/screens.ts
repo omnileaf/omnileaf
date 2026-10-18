@@ -21,6 +21,7 @@ import {
 } from "../../src/lib/sample-library/sample-library.ts";
 import { searchQuery } from "../../src/lib/search/search-route.ts";
 import {
+  CommandFailure,
   commandsAsked,
   type FakeBackend,
   fakeProtocolPath,
@@ -78,6 +79,10 @@ const READ_AT_MS = Date.UTC(2026, 9, 14, 21, 30);
 const DAY_MS = 86_400_000;
 const SESSION_SECONDS = 1_500;
 const PAGES_READ = 14;
+const ON_PAGE_14 = {
+  reading: { state: "started", page: 14 },
+  startPage: 13,
+} as const;
 const PAGE_COUNT = 192;
 
 const PACKAGES = licensedPackages({ rust, javascript });
@@ -120,6 +125,18 @@ function troubledLibraryOn(
     ...onPlatform(platform).backend,
     libraryProblem: () => problem,
   });
+}
+
+function unreadableFolderOn(platform: Platform): FakeBackend {
+  return {
+    ...onPlatform(platform).backend,
+    addLibraryFolder: () => {
+      throw new CommandFailure({
+        code: "folderUnreadable",
+        message: "the folder could not be read",
+      });
+    },
+  };
 }
 
 function crashReportOn(platform: Platform): FakeBackend {
@@ -286,6 +303,16 @@ function firstResult(page: Page): Locator {
   return page.getByRole("option").first();
 }
 
+function backOnPageToast(page: Page): Locator {
+  return page.getByRole("listitem").filter({ hasText: "Back on page 14" });
+}
+
+function warningToast(page: Page): Locator {
+  return page
+    .getByRole("listitem")
+    .filter({ hasText: english.library_folder_unreadable_title });
+}
+
 function crashPrompt(page: Page): Locator {
   return page
     .getByRole("alertdialog")
@@ -392,6 +419,14 @@ export const SCREENS: readonly Screen[] = [
     (platform) => readerBackend(onPlatform(platform).backend),
     readerBook(NOT_STARTED).title,
   ),
+  {
+    ...readerScreen(
+      "reader back on a saved page",
+      (platform) => readerBackend(onPlatform(platform).backend, ON_PAGE_14),
+      readerBook(ON_PAGE_14).title,
+    ),
+    shows: [pageSlider, backOnPageToast],
+  },
   readerScreen(
     "reader with a long series and book title",
     longTitledBookOn,
@@ -499,6 +534,18 @@ export const SCREENS: readonly Screen[] = [
     troubledLibraryOn("couldNotOpen"),
     [heading(english.problem_library_failed_title)],
   ),
+  {
+    name: "warning toast",
+    backend: unreadableFolderOn,
+    open: async (page) => {
+      await page.goto("/");
+      await page
+        .getByRole("main")
+        .getByRole("button", { name: english.library_add_folder })
+        .click();
+    },
+    shows: [warningToast],
+  },
   {
     ...sampleScreen("crash report prompt", "/", [crashPrompt]),
     backend: crashReportOn,
