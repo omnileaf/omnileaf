@@ -47,7 +47,7 @@
     label={m.series_reading_state({ state })}
     class={cn(
       SERIES_CONTROL,
-      "flex-1 justify-between font-regular text-foreground min-inline-none",
+      "flex-1 justify-between rounded-shadcn-control font-regular text-foreground min-inline-none",
     )}
   >
     <span class="flex items-center gap-sm min-inline-none">

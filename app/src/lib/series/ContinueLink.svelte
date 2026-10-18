@@ -32,7 +32,7 @@
   href={resolve("/read/[book]", { book: book.id })}
   aria-label={goOn(book)}
   class={cn(
-    "flex items-center justify-center gap-sm rounded-shadcn-control bg-accent px-lg text-center text-body font-medium text-on-accent transition-control max-inline-full min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control",
+    "flex items-center justify-center gap-sm rounded-shadcn-button bg-accent px-lg text-center text-body font-medium text-on-accent transition-control max-inline-full min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control",
     className,
   )}
 >

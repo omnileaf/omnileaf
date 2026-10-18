@@ -424,7 +424,7 @@
         <Button
           type="button"
           look="outline"
-          class="mbs-lg flex items-center gap-sm rounded-shadcn-control px-lg font-medium min-block-touch-target expanded:text-small expanded:min-block-pointer-button"
+          class="mbs-lg flex items-center gap-sm rounded-shadcn-button px-lg font-medium min-block-touch-target expanded:text-small expanded:min-block-pointer-button"
           onclick={readAgain}
         >
           <RefreshCw size={TRY_AGAIN_ICON_SIZE} aria-hidden="true" />

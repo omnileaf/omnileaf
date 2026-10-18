@@ -155,7 +155,7 @@
     <Button
       type="button"
       look="primary"
-      class="flex-1 rounded-shadcn-control px-lg font-medium min-block-touch-target expanded:flex-none expanded:text-small expanded:min-block-pointer-button"
+      class="flex-1 rounded-shadcn-button px-lg font-medium min-block-touch-target expanded:flex-none expanded:text-small expanded:min-block-pointer-button"
       onclick={onDone}
     >
       {m.reader_guide_done()}
