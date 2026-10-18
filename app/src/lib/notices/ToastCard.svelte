@@ -16,14 +16,21 @@
   const DISMISS_ICON_SIZE = 16;
 
   const TONES = {
-    plain: "rounded-toast border-border bg-card text-foreground",
+    plain:
+      "rounded-toast border-border bg-card text-foreground android:border-transparent android:bg-foreground android:text-background",
     warning:
       "rounded-warning-toast border-warning-edge bg-warning-soft text-on-warning",
   } satisfies Record<NoticeTone, string>;
 
   const BODY_TONES = {
-    plain: "text-muted",
+    plain: "text-muted android:text-snackbar-muted",
     warning: "text-on-warning",
+  } satisfies Record<NoticeTone, string>;
+
+  const ACTION_TONES = {
+    plain:
+      "android:bg-transparent android:font-semibold android:text-android-inverse-primary",
+    warning: "",
   } satisfies Record<NoticeTone, string>;
 
   let {
@@ -49,7 +56,7 @@
 
 <div
   class={[
-    "flex items-center gap-md border py-md ps-lg pe-sm font-ui wrap-anywhere shadow-toast group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent",
+    "flex items-center gap-md border py-md ps-lg pe-sm font-ui wrap-anywhere shadow-toast group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent android:rounded-android-xs",
     TONES[tone],
   ]}
 >
@@ -79,7 +86,10 @@
       type="button"
       look="inverse"
       aria-keyshortcuts={shortcut?.keys}
-      class="px-lg text-label max-inline-3/5 min-block-touch-target desktop:rounded-toast-action desktop:px-sm desktop:text-caption desktop:min-block-xl"
+      class={[
+        "px-lg text-label max-inline-3/5 min-block-touch-target desktop:rounded-toast-action desktop:px-sm desktop:text-caption desktop:min-block-xl",
+        ACTION_TONES[tone],
+      ]}
       onclick={() => {
         onDismiss();
         action.run();
