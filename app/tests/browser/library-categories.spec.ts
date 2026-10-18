@@ -8,9 +8,12 @@ import {
   DEFAULT_BACKEND,
   EXPANDED_MIN_WIDTH,
   expect,
+  fakeAppInfo,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  targetOf,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
@@ -39,6 +42,8 @@ const TAB_TEXT_SIZE = "14px";
 const STRIP_INSET = 24;
 const MORE_LABEL_INSET = 12;
 const MORE_CHEVRON_GAP = 8;
+const ANDROID_TOUCH_TARGET_PX = 48;
+const LAYOUT_ROUNDING_PX = 0.25;
 
 function backendWith(categories: readonly LibraryCategory[]): FakeBackend {
   const inCategory = (category: string) =>
@@ -224,6 +229,37 @@ test.describe("with two categories", () => {
       expect(violations).toEqual([]);
     });
   }
+
+  test.describe("on Android", () => {
+    test.use({
+      backend: {
+        ...backendWith(CATEGORIES),
+        appInfo: () => fakeAppInfo("android"),
+      },
+    });
+    testOnlyInItsWebview("android");
+
+    test("gives the All tab a 48 dp target while drawing it as narrow as its name", async ({
+      page,
+    }) => {
+      test.skip(
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+        "expanded screens draw the tabs for the pointer",
+      );
+      await openLibrary(page);
+      const all = tabs(page).getByRole("tab", { name: "All" });
+
+      const target = await targetOf(all);
+
+      expect(target.width).toBeGreaterThanOrEqual(
+        ANDROID_TOUCH_TARGET_PX - LAYOUT_ROUNDING_PX,
+      );
+      expect(target.height).toBeGreaterThanOrEqual(
+        ANDROID_TOUCH_TARGET_PX - LAYOUT_ROUNDING_PX,
+      );
+      expect((await boxOf(all)).width).toBeLessThan(ANDROID_TOUCH_TARGET_PX);
+    });
+  });
 });
 
 test.describe("on Android", () => {
