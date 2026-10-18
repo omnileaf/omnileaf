@@ -105,7 +105,7 @@ test.describe("on a desktop", () => {
     page,
   }) => {
     await page.goto("/settings/advanced/animations");
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
 
     await expect(
       page.getByRole("link", { name: "Back to Advanced" }),
@@ -116,7 +116,7 @@ test.describe("on a desktop", () => {
     page,
   }) => {
     await page.goto("/settings/general");
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
     const title = sectionList(page)
       .locator("..")
       .getByText("Settings", { exact: true });
