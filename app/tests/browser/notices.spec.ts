@@ -28,6 +28,8 @@ const POINTER_ACTION_HEIGHT = 24;
 const POINTER_ACTION_RADIUS = 4;
 const TOUCH_ACTION_HEIGHT = 48;
 const LONG_WAIT_MS = 60_000;
+const NARROW_WINDOW = { width: 360, height: 800 };
+const DESKTOP_PLATFORMS = ["linux", "macos", "windows"] as const;
 
 const FAILS_TO_READ_THE_FOLDER: FakeBackend = {
   ...DEFAULT_BACKEND,
@@ -141,6 +143,43 @@ test("shows the warning in the bottom corner on tablets and desktops", async ({
   expect(viewport.width - (box.x + box.width)).toBe(CORNER_INSET);
   expect(viewport.height - (box.y + box.height)).toBe(CORNER_INSET);
 });
+
+for (const platform of DESKTOP_PLATFORMS) {
+  test.describe(`in a narrow desktop window on ${platform}`, () => {
+    test.use({
+      viewport: NARROW_WINDOW,
+      backend: {
+        ...FAILS_TO_READ_THE_FOLDER,
+        appInfo: onPlatform(platform).backend.appInfo,
+      },
+    });
+    test.skip(({ isMobile }) => isMobile, "only a desktop window narrows");
+
+    test("fits the warning across the window with its words, action and dismiss inside", async ({
+      page,
+    }) => {
+      const { card } = await failToAddAFolder(page);
+
+      const box = await boxOf(card);
+      const parts = [
+        card.getByText(UNREADABLE_TITLE, { exact: true }),
+        card.getByText(/^Omnileaf may not be allowed/),
+        card.getByRole("button", { name: "Choose another folder" }),
+        card.getByRole("button", { name: "Dismiss" }),
+      ];
+
+      expect(box.x).toBe(PHONE_INSET);
+      expect(NARROW_WINDOW.width - (box.x + box.width)).toBe(PHONE_INSET);
+      for (const part of parts) {
+        const partBox = await boxOf(part);
+        expect(partBox.x).toBeGreaterThanOrEqual(box.x);
+        expect(partBox.x + partBox.width).toBeLessThanOrEqual(
+          box.x + box.width,
+        );
+      }
+    });
+  });
+}
 
 test("reaches the warning from the keyboard after the page", async ({
   page,
