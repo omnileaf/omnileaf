@@ -6,14 +6,16 @@ import {
   type OnCovers,
 } from "../../src/lib/ipc/bindings.ts";
 import type { ScreenSize } from "../../src/lib/library/library-view.ts";
-import { fakeProtocolRoute } from "./fake-backend.ts";
+import { type FakeBackend, fakeProtocolRoute } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  onPlatform,
   screenSizeOf,
   test,
+  testOnlyInItsWebview,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 import { choose, openViewOptions } from "./view-options.ts";
@@ -40,6 +42,8 @@ const BADGE_INSET = {
   desktop: 8,
 } as const satisfies Record<ScreenSize, number>;
 
+const UNREAD_BADGE_SIZE = 24;
+
 const FIRST_TITLE = "Sample Series 0001";
 const SECOND_TITLE = "Sample Series 0002";
 const FIRST_UNREAD = 3;
@@ -47,24 +51,24 @@ const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height=
 
 let storedView: LibraryView = DEFAULT_LIBRARY_VIEW;
 
-test.use({
-  backend: {
-    ...DEFAULT_BACKEND,
-    librarySeries: pagedSeries(() =>
-      sampleSeries(60).map((series, index) => ({
-        ...series,
-        bookCount: 4,
-        unreadCount: index === 0 ? FIRST_UNREAD : index === 1 ? 0 : 4,
-        cover: `thumb/v1/0190a3e4-0000-8000-8000-000000000001/${String(index + 1)}/1`,
-      })),
-    ),
-    libraryView: () => storedView,
-    setLibraryView: (view) => {
-      storedView = view;
-      return null;
-    },
+const COVERS_BACKEND: FakeBackend = {
+  ...DEFAULT_BACKEND,
+  librarySeries: pagedSeries(() =>
+    sampleSeries(60).map((series, index) => ({
+      ...series,
+      bookCount: 4,
+      unreadCount: index === 0 ? FIRST_UNREAD : index === 1 ? 0 : 4,
+      cover: `thumb/v1/0190a3e4-0000-8000-8000-000000000001/${String(index + 1)}/1`,
+    })),
+  ),
+  libraryView: () => storedView,
+  setLibraryView: (view) => {
+    storedView = view;
+    return null;
   },
-});
+};
+
+test.use({ backend: COVERS_BACKEND });
 
 test.beforeEach(async ({ page }) => {
   storedView = DEFAULT_LIBRARY_VIEW;
@@ -156,6 +160,48 @@ test.describe("unread count", () => {
       await expect(unreadBadge(first, FIRST_UNREAD)).toHaveText(
         String(FIRST_UNREAD),
       );
+    });
+  }
+
+  for (const platform of ["android", "linux"] as const) {
+    test.describe(`on ${platform}`, () => {
+      testOnlyInItsWebview(platform);
+      test.use({
+        backend: {
+          ...COVERS_BACKEND,
+          appInfo: onPlatform(platform).backend.appInfo,
+        },
+      });
+
+      test("draws a cover's unread count as a 24px badge in 12px medium type", async ({
+        page,
+      }) => {
+        await openWith(page, {});
+        const badge = unreadBadge(seriesNamed(page, FIRST_TITLE), FIRST_UNREAD);
+
+        const box = await boxOf(badge);
+        const look = await badge.evaluate((element) => {
+          const style = getComputedStyle(element);
+          return {
+            fontSize: style.fontSize,
+            fontWeight: style.fontWeight,
+            padding: [
+              style.paddingTop,
+              style.paddingRight,
+              style.paddingBottom,
+              style.paddingLeft,
+            ],
+          };
+        });
+
+        expect({ height: box.height, ...look }).toEqual({
+          height: UNREAD_BADGE_SIZE,
+          fontSize: "12px",
+          fontWeight: "500",
+          padding: ["0px", "6px", "0px", "6px"],
+        });
+        expect(box.width).toBeGreaterThanOrEqual(UNREAD_BADGE_SIZE);
+      });
     });
   }
 
