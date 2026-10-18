@@ -40,7 +40,7 @@ test.each<[ButtonLook, string[]]>([
   ],
   ["chip", ["rounded-full", "border-border", "hover:bg-hover"]],
   ["row", ["flex", "text-start", "hover:bg-hover", "active:bg-pressed"]],
-  ["inverse", ["rounded-full", "bg-foreground", "text-card"]],
+  ["inverse", ["rounded-full", "bg-accent", "text-on-accent"]],
   [
     "dismiss",
     [

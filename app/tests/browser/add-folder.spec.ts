@@ -514,7 +514,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
 for (const { platform, titleSize } of [
   { platform: "linux", titleSize: "14px" },
-  { platform: "android", titleSize: "15px" },
+  { platform: "android", titleSize: "14px" },
 ] as const) {
   test.describe(`on ${platform}`, () => {
     testOnlyInItsWebview(platform);

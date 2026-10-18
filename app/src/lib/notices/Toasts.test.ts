@@ -94,6 +94,15 @@ function middleOf(element: Element): number {
   return box.top + box.height / 2;
 }
 
+function tokenColour(token: string): string {
+  const probe = document.createElement("span");
+  probe.style.color = `var(${token})`;
+  document.body.append(probe);
+  const colour = getComputedStyle(probe).color;
+  probe.remove();
+  return colour;
+}
+
 function iconOf(toast: Locator): SVGSVGElement {
   const icon = toast.element().querySelector("svg");
   if (icon === null) {
@@ -392,4 +401,62 @@ test("keeps a two-line toast's icon on its title and centres the action on its w
     (wordsTop + wordsBottom) / 2,
     0,
   );
+});
+
+test("sets a plain toast in 14px type with its body muted and a 24px action on a desktop", async () => {
+  const notices = await renderToastsOn("linux");
+  notices.show({ ...BACK_ON_PAGE, body: "Volume 5", action: START_OVER });
+  const toast = toastSaying(BACK_ON_PAGE.title);
+  await expect.element(toast).toBeVisible();
+
+  const title = toast.getByText(BACK_ON_PAGE.title, { exact: true }).element();
+  const body = toast.getByText("Volume 5", { exact: true }).element();
+  const action = toast
+    .getByRole("button", { name: START_OVER.label })
+    .element();
+  const titleStyle = getComputedStyle(title);
+  const bodyStyle = getComputedStyle(body);
+  const actionStyle = getComputedStyle(action);
+
+  expect({
+    title: [titleStyle.fontSize, titleStyle.fontWeight],
+    body: [bodyStyle.fontSize, bodyStyle.color],
+    action: [
+      action.getBoundingClientRect().height,
+      actionStyle.borderTopLeftRadius,
+      actionStyle.fontSize,
+      actionStyle.fontWeight,
+      actionStyle.backgroundColor,
+    ],
+  }).toEqual({
+    title: ["14px", "500"],
+    body: ["14px", tokenColour("--muted-foreground")],
+    action: [24, "4px", "12px", "500", tokenColour("--primary")],
+  });
+});
+
+test("sets a plain toast in 14px type with a 48px semibold action on Android", async () => {
+  const notices = await renderToastsOn("android");
+  notices.show({ ...BACK_ON_PAGE, action: START_OVER });
+  const toast = toastSaying(BACK_ON_PAGE.title);
+  await expect.element(toast).toBeVisible();
+
+  const title = toast.getByText(BACK_ON_PAGE.title, { exact: true }).element();
+  const action = toast
+    .getByRole("button", { name: START_OVER.label })
+    .element();
+  const titleStyle = getComputedStyle(title);
+  const actionStyle = getComputedStyle(action);
+
+  expect({
+    title: [titleStyle.fontSize, titleStyle.fontWeight],
+    action: [
+      action.getBoundingClientRect().height,
+      actionStyle.fontSize,
+      actionStyle.fontWeight,
+    ],
+  }).toEqual({
+    title: ["14px", "500"],
+    action: [48, "14px", "600"],
+  });
 });
