@@ -24,6 +24,9 @@ import {
 const DENSE_BUTTON = 44;
 const DESKTOP_BUTTON = 36;
 const SERIES_CRUMB_CAP = 220;
+const POINTER_MINIMUM = 24;
+const DRAWN_THUMB = 16;
+const DRAWN_CRUMB_LINE = 20;
 const BELOW_LARGE = { width: 1000, height: 800 };
 const LONG_SERIES_TITLE = "A Series Whose Title Runs Well Past Its Crumb";
 
@@ -45,6 +48,16 @@ test.beforeEach(() => {
 
 function isWide(page: Page): boolean {
   return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
+}
+
+function isHitToItsEdges(target: Locator): Promise<boolean> {
+  return target.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const middle = box.left + box.width / 2;
+    return [box.top + 1, box.bottom - 1].every((edge) =>
+      element.contains(document.elementFromPoint(middle, edge)),
+    );
+  });
 }
 
 function quickSettings(page: Page): Locator {
@@ -248,4 +261,35 @@ test("lays the page slider's track along the slider", async ({ page }) => {
   const drawn = await boxOf(track);
 
   expect([drawn.x, drawn.width]).toEqual([along.x, along.width]);
+});
+
+test("reaches the page slider and the series crumb with a 24px pointer target though the boards draw them 16 and 20px", async ({
+  page,
+}) => {
+  test.skip(
+    !isWide(page),
+    "below an expanded window the slider is drawn at a touch size and the crumbs are hidden",
+  );
+  await openBook(page);
+  const slider = page.getByRole("slider", { name: "Page" });
+  const seriesCrumb = page
+    .getByRole("navigation", { name: "Breadcrumb" })
+    .getByRole("link");
+
+  const sliderTarget = await boxOf(slider);
+  const thumb = await boxOf(page.locator(".reader-progress-thumb"));
+  const crumbTarget = await boxOf(seriesCrumb);
+  const crumbLine = await seriesCrumb.evaluate((link) => {
+    const text = document.createRange();
+    text.selectNodeContents(link);
+    return text.getClientRects()[0]?.height ?? 0;
+  });
+
+  expect(sliderTarget.height).toBeGreaterThanOrEqual(POINTER_MINIMUM);
+  expect(thumb.height).toBe(DRAWN_THUMB);
+  expect(crumbTarget.height).toBeGreaterThanOrEqual(POINTER_MINIMUM);
+  expect(crumbLine).toBeGreaterThan(0);
+  expect(crumbLine).toBeLessThanOrEqual(DRAWN_CRUMB_LINE);
+  expect(await isHitToItsEdges(slider)).toBe(true);
+  expect(await isHitToItsEdges(seriesCrumb)).toBe(true);
 });
