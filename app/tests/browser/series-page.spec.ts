@@ -19,6 +19,7 @@ import {
   onPlatform,
   sidewaysOverflow,
   test,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 import {
@@ -464,6 +465,19 @@ test("sets the breadcrumb's chevron 10px from the Library link and from the seri
 
   expect(chevron.x - (library.x + library.width)).toBeCloseTo(CRUMB_GAP, 0);
   expect(name.x - (chevron.x + chevron.width)).toBeCloseTo(CRUMB_GAP, 0);
+});
+
+test("draws a book's More button in the foreground colour", async ({
+  page,
+}) => {
+  await openSeries(page);
+
+  const more = bookMore(page, 0);
+
+  await expect(more).toHaveCSS(
+    "color",
+    await tokenColour(page, "--color-foreground"),
+  );
 });
 
 test("marks every book of the series read, and back with Undo", async ({
