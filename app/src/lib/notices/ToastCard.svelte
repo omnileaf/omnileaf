@@ -1,7 +1,7 @@
 <script lang="ts" module>
   export const TOAST_ICON_SIZE = 20;
   export const WARNING_ACTION =
-    "bg-on-warning px-lg text-detail text-warning-soft min-block-touch-target desktop:px-md desktop:min-block-compact-button";
+    "bg-on-warning px-lg text-label font-medium text-warning-soft min-block-touch-target android:font-semibold desktop:rounded-toast-action desktop:px-sm desktop:text-caption desktop:min-block-xl";
 </script>
 
 <script lang="ts">
