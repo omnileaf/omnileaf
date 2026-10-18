@@ -12,6 +12,7 @@ import {
   sidewaysOverflow,
   test,
 } from "./fixtures.ts";
+import { iconsOffTheirLine } from "./icon-lines.ts";
 import { SCREENS, type Screen, visit } from "./screens.ts";
 
 type Theme = "light" | "dark";
@@ -25,6 +26,10 @@ const CHECKS: readonly ScreenCheck[] = [
   {
     name: "scrolls nothing sideways",
     problemsOn: (page) => sidewaysOverflow(page, "body"),
+  },
+  {
+    name: "centres each leading icon on its first line",
+    problemsOn: iconsOffTheirLine,
   },
   {
     name: "has no accessibility violations",
