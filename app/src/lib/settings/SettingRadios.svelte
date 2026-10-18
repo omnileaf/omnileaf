@@ -42,7 +42,7 @@
         value={option}
         aria-labelledby="{id}-{option}-label"
         aria-describedby={hint === undefined ? undefined : `${id}-${option}`}
-        class="flex items-start gap-md rounded-control py-sm text-start transition-control inline-full hover:tint-hover focus-visible:outline-offset-2 active:tint-pressed"
+        class="flex items-start gap-md rounded-control py-sm text-start transition-control inline-full hover:tint-hover focus-visible:outline-offset-2 active:tint-pressed touch:min-block-touch-target"
       >
         <span
           aria-hidden="true"

@@ -1,6 +1,15 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { accessibilityViolations, expect, test } from "./fixtures.ts";
+import {
+  accessibilityViolations,
+  boxOf,
+  expect,
+  onPlatform,
+  test,
+  testOnlyInItsWebview,
+} from "./fixtures.ts";
+
+const TOUCH_TARGET_PX = 48;
 
 function opensOn(page: Page): Locator {
   return page.getByRole("radiogroup", { name: "Omnileaf opens on" });
@@ -59,3 +68,30 @@ test("has no accessibility violations", async ({ page }) => {
 
   expect(await accessibilityViolations(page)).toEqual([]);
 });
+
+for (const platform of ["android", "ios"] as const) {
+  test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
+    test.use(onPlatform(platform));
+
+    test("draws each choice at least 48px tall as the phone board does", async ({
+      page,
+    }) => {
+      await page.goto("/settings/general");
+      await expect(opensOn(page)).toBeVisible();
+
+      const choices = [
+        ...(await opensOn(page).getByRole("radio").all()),
+        ...(await timeFormat(page).getByRole("radio").all()),
+      ];
+
+      for (const choice of choices) {
+        const { height } = await boxOf(choice);
+
+        expect(height, await choice.innerText()).toBeGreaterThanOrEqual(
+          TOUCH_TARGET_PX,
+        );
+      }
+    });
+  });
+}
