@@ -13,7 +13,10 @@ test("keeps every class of every look through the class merge", () => {
 });
 
 test.each<[BadgeLook, string[]]>([
-  ["count", ["rounded-badge", "bg-accent", "font-medium", "text-on-accent"]],
+  [
+    "count",
+    ["rounded-label-badge", "bg-accent", "font-medium", "text-on-accent"],
+  ],
   ["condition", ["rounded-full", "bg-accent-soft", "text-detail"]],
   ["outline", ["rounded-label-badge", "border", "border-border"]],
   ["secondary", ["rounded-label-badge", "bg-chip", "text-on-chip"]],

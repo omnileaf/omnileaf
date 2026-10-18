@@ -4,3 +4,4 @@
 
 <Badge look="secondary">New</Badge>
 <Badge look="outline">Harbour</Badge>
+<Badge look="count">3</Badge>

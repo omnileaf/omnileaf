@@ -21,15 +21,15 @@ afterEach(() => {
 });
 
 for (const [platform, corner] of CORNERS) {
-  test(`rounds ${platform}'s label badges to ${corner}`, async () => {
+  test(`rounds ${platform}'s label and count badges to ${corner}`, async () => {
     document.documentElement.dataset.platform = platform;
     await render(BadgeHarness);
 
-    const corners = ["New", "Harbour"].map(
+    const corners = ["New", "Harbour", "3"].map(
       (label) =>
         getComputedStyle(page.getByText(label).element()).borderTopLeftRadius,
     );
 
-    expect(corners).toEqual([corner, corner]);
+    expect(corners).toEqual([corner, corner, corner]);
   });
 }
