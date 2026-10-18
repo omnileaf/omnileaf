@@ -245,10 +245,7 @@ test("names a read book in muted type and the rest in the foreground", async ({
     "color",
     await tokenColour(page, "--foreground"),
   );
-  await expect(titleOf(rows(page).nth(3), 3)).toHaveCSS(
-    "font-weight",
-    isWide(page) ? "400" : "500",
-  );
+  await expect(titleOf(rows(page).nth(3), 3)).toHaveCSS("font-weight", "500");
 });
 
 test("sizes the rows as the boards do", async ({ page }) => {
