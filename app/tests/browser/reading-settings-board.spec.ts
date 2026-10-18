@@ -6,6 +6,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   EXPANDED_MIN_WIDTH,
+  settle,
   test,
   tokenColour,
   viewportOf,
@@ -43,8 +44,10 @@ async function openSettings(page: Page): Promise<Locator> {
   await page
     .getByRole("button", { name: "Reading settings", exact: true })
     .click();
-  await expect(settingsPanel(page)).toBeVisible();
-  return settingsPanel(page);
+  const panel = settingsPanel(page);
+  await expect(panel).toBeVisible();
+  await settle(panel);
+  return panel;
 }
 
 async function choose(panel: Locator, group: string, choice: string) {
