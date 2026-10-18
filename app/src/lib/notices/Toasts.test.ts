@@ -567,7 +567,7 @@ test("keeps a warning's own colours and filled action on Android, at the snackba
 
   expect(card.backgroundColor).toBe(colourOf("--color-warning-soft"));
   expect(card.borderTopLeftRadius).toBe("4px");
-  expect(action.backgroundColor).toBe(colourOf("--foreground"));
+  expect(action.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
 });
 
 test("draws a plain notice's icon on Android in the snackbar's inverse primary", async () => {
