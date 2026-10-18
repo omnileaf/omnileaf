@@ -117,10 +117,9 @@ const PLACES: readonly Place[] = [
     show: async (page) => {
       await rescanSampleComics(page);
       await page.getByRole("button", { name: "Remove its books" }).click();
-      await page
-        .getByRole("alertdialog")
-        .getByRole("button", { name: "Remove 3 books" })
-        .click();
+      const question = page.getByRole("alertdialog");
+      await settle(question);
+      await question.getByRole("button", { name: "Remove 3 books" }).click();
       return alertIn(page.getByRole("main"), "Couldn't remove the books");
     },
   },
