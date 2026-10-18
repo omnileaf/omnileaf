@@ -21,11 +21,11 @@ const UNREADABLE =
 const CORNER_INSET = 24;
 const PHONE_INSET = 12;
 const TOAST_WIDTH = 404;
-const POINTER_TITLE_SIZE = "14px";
-const TOUCH_TITLE_SIZE = "15px";
-const BODY_SIZE = "13px";
+const TITLE_SIZE = "14px";
+const BODY_SIZE = "14px";
 const ICON_SIZE = 20;
-const POINTER_ACTION_HEIGHT = 32;
+const POINTER_ACTION_HEIGHT = 24;
+const POINTER_ACTION_RADIUS = 4;
 const TOUCH_ACTION_HEIGHT = 48;
 const LONG_WAIT_MS = 60_000;
 
@@ -229,7 +229,7 @@ for (const colorScheme of ["light", "dark"] as const) {
   });
 }
 
-test("sets a 20px icon beside a 14px title over a 13px body on a desktop", async ({
+test("sets a 20px icon beside a 14px title over a 14px body on a desktop", async ({
   page,
 }) => {
   const { card } = await failToAddAFolder(page);
@@ -240,11 +240,11 @@ test("sets a 20px icon beside a 14px title over a 13px body on a desktop", async
 
   expect([icon.width, icon.height]).toEqual([ICON_SIZE, ICON_SIZE]);
   expect(icon.x + icon.width).toBeLessThan((await boxOf(title)).x);
-  await expect(title).toHaveCSS("font-size", POINTER_TITLE_SIZE);
+  await expect(title).toHaveCSS("font-size", TITLE_SIZE);
   await expect(body).toHaveCSS("font-size", BODY_SIZE);
 });
 
-test("draws the warning's action as a 32px pill on a desktop", async ({
+test("draws the warning's action 24px tall with 4px corners on a desktop", async ({
   page,
 }) => {
   const { card } = await failToAddAFolder(page);
@@ -255,13 +255,16 @@ test("draws the warning's action as a 32px pill on a desktop", async ({
   expect(box.height).toBe(POINTER_ACTION_HEIGHT);
   await expect(action).toHaveCSS(
     "background-color",
-    await colourOf(page, "--color-foreground"),
+    await colourOf(page, "--color-accent"),
   );
-  await expect(action).toHaveCSS("color", await colourOf(page, "--color-card"));
+  await expect(action).toHaveCSS(
+    "color",
+    await colourOf(page, "--color-on-accent"),
+  );
   const radius = await action.evaluate((element) =>
     Number.parseFloat(getComputedStyle(element).borderTopLeftRadius),
   );
-  expect(radius).toBeGreaterThanOrEqual(box.height / 2);
+  expect(radius).toBe(POINTER_ACTION_RADIUS);
 });
 
 test.describe("on Android", () => {
@@ -273,13 +276,13 @@ test.describe("on Android", () => {
     },
   });
 
-  test("sets the warning's title at 15px on a phone", async ({ page }) => {
+  test("sets the warning's title at 14px on a phone", async ({ page }) => {
     const { card } = await failToAddAFolder(page);
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
 
     const title = card.getByText(UNREADABLE_TITLE, { exact: true });
 
-    await expect(title).toHaveCSS("font-size", TOUCH_TITLE_SIZE);
+    await expect(title).toHaveCSS("font-size", TITLE_SIZE);
   });
 
   test("keeps the warning's action on one 48px line on a phone", async ({

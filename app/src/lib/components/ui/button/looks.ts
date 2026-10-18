@@ -22,7 +22,7 @@ export const BUTTON_LOOKS = {
     "flex items-center justify-center gap-xs rounded-control text-foreground transition-control enabled:hover:bg-hover enabled:active:bg-pressed",
   row: "flex items-center text-start transition-control hover:bg-hover active:bg-pressed",
   inverse:
-    "rounded-full bg-foreground font-bold text-card transition-control hover:opacity-85 active:opacity-70",
+    "rounded-full bg-accent font-medium text-on-accent transition-control hover:opacity-85 active:opacity-70 android:font-semibold",
   dismiss:
     "isolate flex items-center justify-center rounded-full opacity-70 transition-control before:absolute before:z-behind before:rounded-full before:transition-control hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed",
   "row-action":
