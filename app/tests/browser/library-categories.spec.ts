@@ -31,6 +31,7 @@ const MANY_CATEGORIES = [
   ].map((name) => ({ id: name, name })),
 ] as LibraryCategory[];
 const NARROW_DESKTOP = 900;
+const EDGE_TOLERANCE = 0.5;
 
 function backendWith(categories: readonly LibraryCategory[]): FakeBackend {
   const inCategory = (category: string) =>
@@ -48,6 +49,22 @@ function backendWith(categories: readonly LibraryCategory[]): FakeBackend {
 
 function tabs(page: Page) {
   return page.getByRole("tablist", { name: "Categories" });
+}
+
+function cutTabs(page: Page): Promise<string[]> {
+  return tabs(page).evaluate((strip, tolerance) => {
+    const bounds = strip.getBoundingClientRect();
+    return [...strip.querySelectorAll<HTMLElement>("[role=tab]")]
+      .filter((tab) => {
+        const { left, right } = tab.getBoundingClientRect();
+        const isDrawn = getComputedStyle(tab).visibility === "visible";
+        const touchesStrip = right > bounds.left && left < bounds.right;
+        const isWhole =
+          left >= bounds.left - tolerance && right <= bounds.right + tolerance;
+        return isDrawn && touchesStrip && !isWhole;
+      })
+      .map((tab) => tab.innerText);
+  }, EDGE_TOLERANCE);
 }
 
 function seriesList(page: Page) {
@@ -174,5 +191,61 @@ test.describe("with more categories than fit", () => {
     await expect(
       menu.getByRole("menuitemradio", { name: "Manga" }),
     ).toHaveCount(0);
+  });
+
+  test.describe("on screens wide enough for More", () => {
+    test.beforeEach(async ({ page }) => {
+      test.skip(
+        viewportOf(page).width < MEDIUM_MIN_WIDTH,
+        "phones scroll their tabs",
+      );
+      await page.setViewportSize({ width: NARROW_DESKTOP, height: 800 });
+      await openLibrary(page);
+    });
+
+    test("draws only whole tabs, leaving the rest to More", async ({
+      page,
+    }) => {
+      await page.getByRole("button", { name: "More" }).click();
+      await expect(
+        page
+          .getByRole("menu")
+          .getByRole("menuitemradio", { name: "Sea stories" }),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
+
+      await expect.poll(() => cutTabs(page)).toEqual([]);
+    });
+
+    test("draws a tab chosen from More whole in the strip", async ({
+      page,
+    }) => {
+      await page.getByRole("button", { name: "More" }).click();
+
+      await page
+        .getByRole("menu")
+        .getByRole("menuitemradio", { name: "Borrowed from friends" })
+        .click();
+
+      await expect(
+        tabs(page).getByRole("tab", { name: "Borrowed from friends" }),
+      ).toHaveAttribute("aria-selected", "true");
+      await expect.poll(() => cutTabs(page)).toEqual([]);
+    });
+
+    test("arrows onto a tab tucked into More, drawing it whole", async ({
+      page,
+    }) => {
+      const seinen = tabs(page).getByRole("tab", { name: "Seinen" });
+      await seinen.click();
+      await seinen.focus();
+
+      await page.keyboard.press("ArrowRight");
+
+      const seaStories = tabs(page).getByRole("tab", { name: "Sea stories" });
+      await expect(seaStories).toBeFocused();
+      await expect(seaStories).toHaveAttribute("aria-selected", "true");
+      await expect.poll(() => cutTabs(page)).toEqual([]);
+    });
   });
 });
