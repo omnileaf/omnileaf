@@ -6,7 +6,7 @@ export const BADGE_LOOKS = {
   condition:
     "inline-flex shrink-0 items-center gap-xs rounded-full bg-accent-soft text-detail font-semibold",
   secondary:
-    "inline-flex items-center rounded-shadcn-control bg-chip px-sm py-2xs text-caption font-medium text-foreground",
+    "inline-flex items-center rounded-shadcn-control bg-chip px-sm py-2xs text-caption font-medium text-on-chip",
   outline:
     "inline-flex items-center rounded-shadcn-control border border-border px-sm py-2xs text-caption font-medium",
   "header-accent": `${HEADER} bg-accent-soft text-accent`,

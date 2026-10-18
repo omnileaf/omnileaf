@@ -773,6 +773,7 @@
   --color-field: var(--input);
   --color-card: var(--card);
   --color-chip: var(--muted);
+  --color-on-chip: var(--secondary-foreground);
   --color-well: color-mix(in oklab, var(--muted) 50%, transparent);
   --color-raised: var(--raised);
   --color-bar: var(--background);
