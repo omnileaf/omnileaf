@@ -31,7 +31,7 @@ afterEach(() => {
   delete document.documentElement.dataset.theme;
 });
 
-test("sets a key on the muted chip in the foreground colour, without an edge", async () => {
+test("sets a key on the muted chip in the secondary text colour, without an edge", async () => {
   document.documentElement.dataset.platform = "windows";
   document.documentElement.dataset.theme = "light";
   await render(Kbd, { children: key("Esc") });
@@ -41,8 +41,38 @@ test("sets a key on the muted chip in the foreground colour, without an edge", a
 
   expect(style?.borderTopWidth).toBe("0px");
   expect(style?.backgroundColor).toBe(resolved("--muted", "backgroundColor"));
-  expect(style?.color).toBe(resolved("--foreground", "color"));
+  expect(style?.color).toBe(resolved("--windows-secondary-text", "color"));
   expect(style?.fontWeight).toBe("500");
+});
+
+test.each([
+  { platform: "macos", theme: "light", ink: "--macos-secondary-label" },
+  { platform: "macos", theme: "dark", ink: "--macos-secondary-label" },
+  { platform: "windows", theme: "dark", ink: "--windows-secondary-text" },
+  { platform: "linux", theme: "dark", ink: "--muted-foreground" },
+])(
+  "sets a key in the secondary text colour on $platform in the $theme theme",
+  async ({ platform, theme, ink }) => {
+    document.documentElement.dataset.platform = platform;
+    document.documentElement.dataset.theme = theme;
+    await render(Kbd, { children: key("Esc") });
+
+    const chip = page.getByText("Esc").element().closest("kbd");
+
+    expect(chip && getComputedStyle(chip).color).toBe(resolved(ink, "color"));
+  },
+);
+
+test("keeps a key in the foreground colour on Linux in the light theme, where the secondary text falls short of 4.5:1 on the chip", async () => {
+  document.documentElement.dataset.platform = "linux";
+  document.documentElement.dataset.theme = "light";
+  await render(Kbd, { children: key("Esc") });
+
+  const chip = page.getByText("Esc").element().closest("kbd");
+
+  expect(chip && getComputedStyle(chip).color).toBe(
+    resolved("--foreground", "color"),
+  );
 });
 
 test("draws a single key as a 20px square at least", async () => {
