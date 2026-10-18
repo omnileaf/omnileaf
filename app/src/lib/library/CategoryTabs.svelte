@@ -127,7 +127,7 @@
     tabindex="-1"
     aria-label={m.library_categories()}
     onkeydown={moveWithArrows}
-    class="flex flex-1 scrollbar-none overflow-x-auto min-inline-none medium:overflow-x-hidden"
+    class="isolate flex flex-1 scrollbar-none overflow-x-auto min-inline-none medium:overflow-x-hidden"
   >
     {#each tabs as tab (tab.id)}
       {@const isChosen = tab.id === chosen}
@@ -141,7 +141,7 @@
           choose(tab.id);
         }}
         class={[
-          "relative shrink-0 px-md text-small whitespace-nowrap transition-control min-block-touch-target after:absolute after:inset-x-sm after:inset-be-none after:rounded-full after:block-2xs focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent expanded:min-block-pointer-button",
+          "relative shrink-0 px-md text-small whitespace-nowrap transition-control min-block-touch-target after:absolute after:inset-x-sm after:inset-be-none after:rounded-full after:block-2xs focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent expanded:min-block-pointer-button touch:touch-target-across",
           isChosen
             ? "font-semibold text-foreground after:bg-foreground"
             : "font-medium text-muted hover:text-foreground",
