@@ -1,3 +1,4 @@
+import { controlsLostOnInteraction } from "./control-ink.ts";
 import { test } from "./fixtures.ts";
 import { shiftsOnHover, shiftsOnOpening } from "./layout-shifts.ts";
 import { checkEveryScreenIn } from "./screen-checks.ts";
@@ -10,6 +11,10 @@ checkEveryScreenIn("light", {
   checks: [
     { name: "holds still on hover", problemsOn: shiftsOnHover },
     { name: "holds still behind what opens", problemsOn: shiftsOnOpening },
+    {
+      name: "keeps each control in sight on hover, focus and press",
+      problemsOn: controlsLostOnInteraction,
+    },
   ],
-  passes: "holds still while each control is hovered or opened",
+  passes: "holds still and stays in sight while each control is used",
 });
