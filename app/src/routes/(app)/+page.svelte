@@ -806,7 +806,7 @@
         <Button
           type="button"
           look="outline"
-          class="mbs-lg flex items-center gap-sm rounded-shadcn-control px-lg font-medium min-block-touch-target desktop:text-label desktop:min-block-pointer-button"
+          class="mbs-lg flex items-center gap-sm rounded-shadcn-button px-lg font-medium min-block-touch-target desktop:text-label desktop:min-block-pointer-button"
           onclick={() => {
             void library.load();
           }}

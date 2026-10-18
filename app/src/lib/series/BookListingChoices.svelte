@@ -139,7 +139,7 @@
         <Button
           {...props}
           look="outline"
-          class="flex shrink-0 items-center justify-center rounded-shadcn-control font-medium shadow-raised block-touch-target inline-touch-target"
+          class="flex shrink-0 items-center justify-center rounded-shadcn-button font-medium shadow-raised block-touch-target inline-touch-target"
         >
           <Search size={ICON_SIZE} aria-hidden="true" />
         </Button>
@@ -155,7 +155,7 @@
               {...props}
               look="outline"
               aria-label={m.series_sort({ order })}
-              class="flex shrink-0 items-center justify-center gap-sm rounded-shadcn-control font-medium block-touch-target max-expanded:shadow-raised max-expanded:inline-touch-target expanded:ms-auto expanded:rounded-shadcn-control expanded:border-transparent expanded:bg-transparent expanded:px-md expanded:text-small expanded:font-medium expanded:block-pointer-button expanded:hover:bg-hover"
+              class="flex shrink-0 items-center justify-center gap-sm rounded-shadcn-button font-medium block-touch-target max-expanded:shadow-raised max-expanded:inline-touch-target expanded:ms-auto expanded:rounded-shadcn-button expanded:border-transparent expanded:bg-transparent expanded:px-md expanded:text-small expanded:font-medium expanded:block-pointer-button expanded:hover:bg-hover"
             >
               <ArrowDownUp size={ICON_SIZE} aria-hidden="true" />
               <span class="grid max-expanded:hidden">
