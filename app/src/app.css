@@ -981,9 +981,14 @@
 }
 
 @utility room-for-semibold-label {
-  @apply room-for-bold-label;
+  display: flex;
+  flex-direction: column;
 
-  &::after {
+  &[data-label]::after {
+    content: attr(data-label) / "";
+    block-size: 0;
+    overflow: hidden;
+    visibility: hidden;
     font-weight: var(--font-weight-semibold);
   }
 }
