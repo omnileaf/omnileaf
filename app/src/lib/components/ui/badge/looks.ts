@@ -2,7 +2,7 @@ const HEADER =
   "flex shrink-0 items-center justify-center rounded-full block-header-badge inline-header-badge";
 
 export const BADGE_LOOKS = {
-  count: "rounded-badge bg-accent font-bold text-on-accent",
+  count: "rounded-badge bg-accent font-medium text-on-accent",
   condition:
     "inline-flex shrink-0 items-center gap-xs rounded-full bg-accent-soft text-detail font-semibold",
   "header-accent": `${HEADER} bg-accent-soft text-accent`,
