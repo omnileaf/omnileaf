@@ -819,6 +819,7 @@
   --color-android-tonal: var(--android-tonal);
   --color-android-outline: var(--android-outline);
   --color-android-inverse-primary: var(--android-inverse-primary);
+  --color-android-tab-ink: var(--android-tab-ink);
   --radius-android-xs: var(--radius-android-xs);
   --radius-android-sm: var(--radius-android-sm);
   --radius-android-md: var(--radius-android-md);
