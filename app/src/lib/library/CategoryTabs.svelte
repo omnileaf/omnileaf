@@ -141,7 +141,7 @@
           choose(tab.id);
         }}
         class={[
-          "relative shrink-0 px-md text-callout whitespace-nowrap transition-control min-block-touch-target after:absolute after:inset-x-sm after:inset-be-none after:rounded-full after:block-2xs focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent expanded:text-small expanded:min-block-pointer-button",
+          "relative shrink-0 px-md text-small whitespace-nowrap transition-control min-block-touch-target after:absolute after:inset-x-sm after:inset-be-none after:rounded-full after:block-2xs focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent expanded:min-block-pointer-button",
           isChosen
             ? "font-semibold text-foreground after:bg-foreground"
             : "font-medium text-muted hover:text-foreground",
