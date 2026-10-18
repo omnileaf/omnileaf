@@ -41,7 +41,7 @@
           {...props}
           href={resolve(parent.route)}
           aria-label={backLabel}
-          class="flex shrink-0 items-center justify-center rounded-shadcn-control text-muted transition-control block-reader-dense inline-reader-dense hover:bg-hover hover:text-foreground active:bg-pressed"
+          class="flex shrink-0 items-center justify-center rounded-shadcn-control text-foreground transition-control block-reader-dense inline-reader-dense hover:bg-hover active:bg-pressed"
         >
           <ArrowLeft size={POINTER_CHEVRON_SIZE} class="rtl:-scale-x-100" />
         </a>

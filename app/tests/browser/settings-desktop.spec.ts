@@ -82,6 +82,17 @@ test.describe("on a desktop", () => {
     await expect(page).toHaveURL("/settings/advanced");
   });
 
+  test("draws the arrow back from a nested page in the foreground colour", async ({
+    page,
+  }) => {
+    await page.goto("/settings/advanced/animations");
+    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+
+    await expect(
+      page.getByRole("link", { name: "Back to Advanced" }),
+    ).toHaveCSS("color", await tokenColour(page, "--foreground"));
+  });
+
   test("titles the sections list in small semibold muted text", async ({
     page,
   }) => {
