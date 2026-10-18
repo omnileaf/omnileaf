@@ -4,6 +4,7 @@ import type { LibraryCategory } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   EXPANDED_MIN_WIDTH,
   expect,
@@ -35,6 +36,7 @@ const MANY_CATEGORIES = [
 const NARROW_DESKTOP = 900;
 const EDGE_TOLERANCE = 0.5;
 const TAB_TEXT_SIZE = "14px";
+const STRIP_INSET = 24;
 const MORE_LABEL_INSET = 12;
 const MORE_CHEVRON_GAP = 8;
 
@@ -186,6 +188,15 @@ test.describe("with two categories", () => {
         viewportOf(page).width < EXPANDED_MIN_WIDTH,
         "the desktop sidebar opens from 840px",
       );
+    });
+
+    test("starts the tab strip 24px after the sidebar", async ({ page }) => {
+      const sidebar = await boxOf(
+        page.getByRole("navigation", { name: "Main" }),
+      );
+      const strip = await boxOf(tabs(page));
+
+      expect(strip.x - (sidebar.x + sidebar.width)).toBe(STRIP_INSET);
     });
 
     test("sets More's label 12px inside the button", async ({ page }) => {
