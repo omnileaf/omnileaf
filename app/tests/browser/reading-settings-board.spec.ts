@@ -218,6 +218,24 @@ test("keeps the backgrounds' boxes still as the choice changes", async ({
   }
 });
 
+test("keeps the page layouts' boxes still as the choice changes", async ({
+  page,
+}) => {
+  await openBook(page);
+  const panel = await openSettings(page);
+  const layouts = panel
+    .getByRole("group", { name: "Page layout" })
+    .getByRole("radio");
+  const boxesOf = async () => Promise.all((await layouts.all()).map(boxOf));
+
+  const layoutsBefore = await boxesOf();
+  for (const layout of [layouts.nth(2), layouts.nth(1)]) {
+    await layout.click();
+    await expect(layout).toBeChecked();
+    expect(await boxesOf()).toEqual(layoutsBefore);
+  }
+});
+
 test("closes the panel with Escape before leaving the book", async ({
   page,
 }) => {
