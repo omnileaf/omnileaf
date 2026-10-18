@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Check, ChevronDown, Pencil, Plus } from "@lucide/svelte";
   import { Dialog } from "bits-ui";
+  import { flushSync } from "svelte";
   import { MediaQuery, SvelteSet } from "svelte/reactivity";
 
   import { goto } from "$app/navigation";
@@ -86,6 +87,7 @@
 
   function choose(tab: string): void {
     onChoose(tab);
+    flushSync();
     strip
       ?.querySelector(`[data-tab="${CSS.escape(tab)}"]`)
       ?.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -143,6 +145,7 @@
           isChosen
             ? "font-semibold text-foreground after:bg-foreground"
             : "font-medium text-muted hover:text-foreground",
+          hidden.has(tab.id) && !isChosen && "medium:invisible",
         ]}
       >
         {tab.name}
