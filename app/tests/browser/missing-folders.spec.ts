@@ -419,10 +419,9 @@ test.describe("with an Android folder on a network share", () => {
     await notice(page, "Omnileaf can’t open Manga")
       .getByRole("button", { name: "Unlink it" })
       .click();
-    await page
-      .getByRole("alertdialog")
-      .getByRole("button", { name: "Remove folder" })
-      .click();
+    const question = page.getByRole("alertdialog");
+    await settle(question);
+    await question.getByRole("button", { name: "Remove folder" }).click();
 
     await expect(notice(page, "Omnileaf can’t open Manga")).toHaveCount(0);
     expect(asked).toEqual([`remove ${FOLDER_ID}`]);
