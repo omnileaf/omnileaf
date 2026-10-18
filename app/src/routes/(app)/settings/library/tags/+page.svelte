@@ -15,6 +15,8 @@
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   const ICON_SIZE = 16;
+  const ROW_BUTTON =
+    "transition-control block-touch-target inline-touch-target hover:bg-hover active:bg-pressed ios:rounded-ios-button desktop:rounded-shadcn-control desktop:block-compact-button desktop:inline-compact-button";
 
   const notices = getNotices();
   const locale = getLocale();
@@ -124,6 +126,7 @@
               <Button
                 {...props}
                 look="icon"
+                class={ROW_BUTTON}
                 aria-label={m.manage_tags_rename({ tag: tag.name })}
                 onclick={() => {
                   renaming = tag.name;
@@ -138,6 +141,7 @@
               <Button
                 {...props}
                 look="icon"
+                class={ROW_BUTTON}
                 aria-label={m.manage_tags_delete({ tag: tag.name })}
                 onclick={() => {
                   void remove(tag.name);
