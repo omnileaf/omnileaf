@@ -14,6 +14,7 @@ import {
 } from "./fixtures.ts";
 import { iconsOffTheirLine } from "./icon-lines.ts";
 import { SCREENS, type Screen, visit } from "./screens.ts";
+import { targetsTooSmall } from "./target-sizes.ts";
 
 type Theme = "light" | "dark";
 
@@ -30,6 +31,10 @@ const CHECKS: readonly ScreenCheck[] = [
   {
     name: "centres each leading icon on its first line",
     problemsOn: iconsOffTheirLine,
+  },
+  {
+    name: "offers targets its platform can reach",
+    problemsOn: targetsTooSmall,
   },
   {
     name: "has no accessibility violations",
