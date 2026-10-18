@@ -104,6 +104,7 @@ export const TOKEN_THEME = {
     "segment",
     "series-check",
     "series-cover",
+    "shadcn-card",
     "sheet",
     "sheet-card",
     "small-control",
