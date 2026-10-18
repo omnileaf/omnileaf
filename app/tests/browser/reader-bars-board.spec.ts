@@ -8,7 +8,9 @@ import {
   EXPANDED_MIN_WIDTH,
   LARGE_MIN_WIDTH,
   settle,
+  onPlatform,
   test,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 import {
@@ -286,6 +288,26 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test.describe("on Android", () => {
+  test.use({ backend: readerBackend(onPlatform("android").backend) });
+
+  test("lays the bars on the surface container with no edge or blur, as Material 3 does", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openBook(page);
+
+    const bar = page.locator("main header > div");
+
+    await expect(bar).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
+    await expect(bar).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--android-container"),
+    );
+    await expect(bar).toHaveCSS("backdrop-filter", "none");
+  });
+});
 
 test("lays the page slider's track along the slider", async ({ page }) => {
   await openBook(page);
