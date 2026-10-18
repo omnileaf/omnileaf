@@ -438,6 +438,26 @@ test("leaves a touch target that bleeds past its bordered button alone", async (
   expect(overflowing).toEqual([]);
 });
 
+test("leaves a touch target that a clipping row cuts at its start alone", async ({
+  page,
+}) => {
+  await show(
+    page,
+    `<style>
+      #all::before { content: ""; position: absolute; inset-block: 0; inset-inline: -3px; }
+    </style>
+    <main style="padding-inline: 16px">
+      <div style="display: flex; overflow-x: hidden; width: 300px">
+        <button id="all" style="position: relative; flex: none">All</button>
+      </div>
+    </main>`,
+  );
+
+  const overflowing = await sidewaysOverflow(page);
+
+  expect(overflowing).toEqual([]);
+});
+
 test("names moved and end-anchored touch targets that reach past a scrolling box", async ({
   page,
 }) => {

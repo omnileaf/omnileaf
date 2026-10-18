@@ -231,6 +231,26 @@ export function sidewaysOverflow(
           },
         ];
       };
+      const paintsNothing = (piece: Piece): boolean => {
+        if (piece.part !== "::before" && piece.part !== "::after") {
+          return false;
+        }
+        const style = getComputedStyle(piece.element, piece.part);
+        const edges = [
+          style.borderTopWidth,
+          style.borderRightWidth,
+          style.borderBottomWidth,
+          style.borderLeftWidth,
+          style.outlineStyle === "none" ? "0" : style.outlineWidth,
+        ];
+        return (
+          style.content === '""' &&
+          style.backgroundImage === "none" &&
+          style.backgroundColor === "rgba(0, 0, 0, 0)" &&
+          style.boxShadow === "none" &&
+          edges.every((edge) => Number.parseFloat(edge) === 0)
+        );
+      };
       const pseudoPiecesOf = (element: Element): Piece[] =>
         PSEUDOS.flatMap((pseudo) => {
           const style = getComputedStyle(element, pseudo);
@@ -482,7 +502,11 @@ export function sidewaysOverflow(
         const culprits = piecesIn(bySide.flat());
         const scrollable = box.scrollWidth - box.clientWidth;
         const outOfView = bySide.reduce(
-          (sum, sideCulprits) => sum + farthestOf(sideCulprits),
+          (sum, sideCulprits) =>
+            sum +
+            farthestOf(
+              sideCulprits.filter((reach) => !paintsNothing(reach.piece)),
+            ),
           0,
         );
         const unreachable = outOfView - Math.max(0, scrollable);
@@ -516,7 +540,9 @@ export function sidewaysOverflow(
         const spills = overflowX === "visible";
         const verb = CUT_VERBS.get(overflowX) ?? "overflows";
         return SIDES.flatMap((side) => {
-          const culprits = culpritsOf(reaches, side, spills);
+          const culprits = culpritsOf(reaches, side, spills).filter(
+            (reach) => spills || !paintsNothing(reach.piece),
+          );
           if (culprits.length === 0) {
             return [];
           }
