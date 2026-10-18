@@ -252,6 +252,10 @@
   --tooltip-edge: transparent;
   --tooltip-radius: var(--radius-md);
   --switch-on: var(--primary);
+  --sidebar-selection: var(--sidebar-accent);
+  --sidebar-selection-foreground: var(--sidebar-accent-foreground);
+  --sidebar-row-height: 2rem;
+  --sidebar-row-radius: var(--radius-md);
 }
 
 [data-platform="ios"],
@@ -289,6 +293,10 @@
   --tooltip-radius: 5px;
   --switch-on: var(--macos-switch-on);
   --switch-thumb-on: var(--ios-switch-thumb);
+  --sidebar-selection: var(--macos-selection);
+  --sidebar-selection-foreground: var(--sidebar-foreground);
+  --sidebar-row-height: var(--control-macos);
+  --sidebar-row-radius: var(--radius-macos-control);
 }
 
 [data-platform="windows"],
@@ -307,4 +315,8 @@
   --tooltip-foreground: var(--popover-foreground);
   --tooltip-edge: var(--windows-stroke);
   --tooltip-radius: var(--radius-windows-control);
+  --sidebar-selection: var(--windows-subtle);
+  --sidebar-selection-foreground: var(--sidebar-foreground);
+  --sidebar-row-height: 2.25rem;
+  --sidebar-row-radius: var(--radius-windows-control);
 }
