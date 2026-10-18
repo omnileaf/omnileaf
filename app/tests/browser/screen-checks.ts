@@ -15,6 +15,7 @@ import {
 import { iconsOffTheirLine } from "./icon-lines.ts";
 import { SCREENS, type Screen, visit } from "./screens.ts";
 import { targetsTooSmall } from "./target-sizes.ts";
+import { overlaps, textClippedUnmarked } from "./text-fit.ts";
 
 type Theme = "light" | "dark";
 
@@ -27,6 +28,14 @@ const CHECKS: readonly ScreenCheck[] = [
   {
     name: "scrolls nothing sideways",
     problemsOn: (page) => sidewaysOverflow(page, "body"),
+  },
+  {
+    name: "cuts no text off without an ellipsis or a line clamp",
+    problemsOn: textClippedUnmarked,
+  },
+  {
+    name: "overlaps no text or controls",
+    problemsOn: overlaps,
   },
   {
     name: "centres each leading icon on its first line",
