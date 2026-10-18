@@ -41,7 +41,7 @@ const PHONE_SEGMENT_TRACK_CORNER = "10px";
 const PHONE_SEGMENT_CORNER = "8px";
 const PHONE_SEGMENT_TEXT = "13px";
 const DESKTOP_STEPPER_CORNER = "8px";
-const TOOLBAR_LOOKS = [
+const DESKTOP_BUTTON_LOOKS = [
   { platform: "linux", height: 36, corner: "8px" },
   { platform: "macos", height: 28, corner: "6px" },
   { platform: "windows", height: 32, corner: "4px" },
@@ -137,7 +137,7 @@ test.describe("on a desktop with an empty library", () => {
   });
 });
 
-for (const look of TOOLBAR_LOOKS) {
+for (const look of DESKTOP_BUTTON_LOOKS) {
   test.describe(`in the ${look.platform} library toolbar`, () => {
     test.use({ backend: withSeries(look.platform) });
 
