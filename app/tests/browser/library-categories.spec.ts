@@ -5,6 +5,7 @@ import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   DEFAULT_BACKEND,
+  EXPANDED_MIN_WIDTH,
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
@@ -34,6 +35,8 @@ const MANY_CATEGORIES = [
 const NARROW_DESKTOP = 900;
 const EDGE_TOLERANCE = 0.5;
 const TAB_TEXT_SIZE = "14px";
+const MORE_LABEL_INSET = 12;
+const MORE_CHEVRON_GAP = 8;
 
 function backendWith(categories: readonly LibraryCategory[]): FakeBackend {
   const inCategory = (category: string) =>
@@ -67,6 +70,34 @@ function cutTabs(page: Page): Promise<string[]> {
       })
       .map((tab) => tab.innerText);
   }, EDGE_TOLERANCE);
+}
+
+interface MoreSpacing {
+  readonly labelInset: number;
+  readonly chevronGap: number;
+}
+
+function moreSpacing(page: Page): Promise<MoreSpacing> {
+  return page.getByRole("button", { name: "More" }).evaluate((button) => {
+    const text = [...button.childNodes].find(
+      (node): node is Text =>
+        node instanceof Text && node.data.trim().length > 0,
+    );
+    const chevron = button.querySelector("svg");
+    if (text === undefined || chevron === null) {
+      throw new Error("More has no label or no chevron");
+    }
+    const words = text.data.trim();
+    const start = text.data.indexOf(words);
+    const label = document.createRange();
+    label.setStart(text, start);
+    label.setEnd(text, start + words.length);
+    const labelBox = label.getBoundingClientRect();
+    return {
+      labelInset: labelBox.left - button.getBoundingClientRect().left,
+      chevronGap: chevron.getBoundingClientRect().left - labelBox.right,
+    };
+  });
 }
 
 function seriesList(page: Page) {
@@ -146,6 +177,28 @@ test.describe("with two categories", () => {
     await expect(
       tabs(page).getByRole("tab", { name: "Comics" }),
     ).toHaveAttribute("aria-selected", "true");
+  });
+
+  test.describe("beside the desktop sidebar", () => {
+    test.beforeEach(async ({ page }) => {
+      await openLibrary(page);
+      test.skip(
+        viewportOf(page).width < EXPANDED_MIN_WIDTH,
+        "the desktop sidebar opens from 840px",
+      );
+    });
+
+    test("sets More's label 12px inside the button", async ({ page }) => {
+      const { labelInset } = await moreSpacing(page);
+
+      expect(labelInset).toBeCloseTo(MORE_LABEL_INSET, 0);
+    });
+
+    test("puts More's chevron 8px after its label", async ({ page }) => {
+      const { chevronGap } = await moreSpacing(page);
+
+      expect(chevronGap).toBeCloseTo(MORE_CHEVRON_GAP, 0);
+    });
   });
 
   for (const colorScheme of ["light", "dark"] as const) {

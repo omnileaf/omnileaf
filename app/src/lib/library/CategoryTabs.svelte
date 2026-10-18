@@ -159,7 +159,7 @@
           <Button
             {...props}
             look="bar-icon"
-            class="shrink-0 gap-xs px-sm text-small font-medium min-block-pointer-button"
+            class="shrink-0 gap-sm px-md text-small font-medium min-block-pointer-button"
           >
             {m.library_categories_more()}
             <ChevronDown size={ICON_SIZE} aria-hidden="true" />
