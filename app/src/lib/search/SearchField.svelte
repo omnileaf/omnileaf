@@ -122,7 +122,7 @@
         <Button
           {...props}
           look="icon"
-          class="shrink-0 bg-chip text-muted block-search-clear inline-search-clear large:hidden"
+          class="relative shrink-0 bg-chip text-muted block-search-clear inline-search-clear large:hidden touch:before:absolute touch:before:block-touch-target touch:before:inline-touch-target"
         >
           <X size={CLEAR_ICON_SIZE} strokeWidth={2.5} aria-hidden="true" />
         </Button>

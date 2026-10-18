@@ -14,9 +14,12 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  fakeAppInfo,
   LARGE_MIN_WIDTH,
   MEDIUM_MIN_WIDTH,
+  targetOf,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 import { sampleSeries, type WireSeries } from "./series-catalog.ts";
@@ -732,5 +735,43 @@ test.describe("a long list of results", () => {
     await expect(await activeOption(page)).toContainText(
       LONG_LIST[60]?.title ?? "",
     );
+  });
+});
+
+test.describe("on Android", () => {
+  const TOUCH_TARGET_PX = 48;
+  const DRAWN_CLEAR_PX = 28;
+
+  testOnlyInItsWebview("android");
+  test.use({
+    backend: { ...SEARCHING_BACKEND, appInfo: () => fakeAppInfo("android") },
+  });
+
+  test("answers a touch 48 dp around the field's Clear while drawing it 28px", async ({
+    page,
+  }) => {
+    test.skip(isDesktop(page), "the clear button shows on phones and tablets");
+    await page.goto("/search");
+    await searchField(page).fill("market");
+    const clear = page.getByRole("button", { name: "Clear", exact: true });
+    const drawn = await boxOf(clear);
+
+    const target = await targetOf(clear);
+    const touched = await page.evaluate(
+      ({ x, y }) =>
+        document
+          .elementFromPoint(x, y)
+          ?.closest("button")
+          ?.getAttribute("aria-label"),
+      {
+        x: drawn.x + drawn.width / 2 - (TOUCH_TARGET_PX / 2 - 1),
+        y: drawn.y + drawn.height / 2,
+      },
+    );
+
+    expect(target.width).toBeGreaterThanOrEqual(TOUCH_TARGET_PX);
+    expect(target.height).toBeGreaterThanOrEqual(TOUCH_TARGET_PX);
+    expect(touched).toBe("Clear");
+    expect(drawn.width).toBe(DRAWN_CLEAR_PX);
   });
 });

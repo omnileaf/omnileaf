@@ -188,6 +188,22 @@ export async function boxOf(locator: Locator): Promise<Box> {
   return box;
 }
 
+export function targetOf(
+  locator: Locator,
+): Promise<{ width: number; height: number }> {
+  return locator.evaluate((element) => {
+    const drawn = element.getBoundingClientRect();
+    const bleed = getComputedStyle(element, "::before");
+    const hasBleed = bleed.content !== "none" && bleed.position === "absolute";
+    const bleedSize = (size: string) =>
+      hasBleed ? Number.parseFloat(size) || 0 : 0;
+    return {
+      width: Math.max(drawn.width, bleedSize(bleed.width)),
+      height: Math.max(drawn.height, bleedSize(bleed.height)),
+    };
+  });
+}
+
 const SETTLE_GRACE_MS = 2000;
 const FRAME_WAIT_MS = 50;
 
