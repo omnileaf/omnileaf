@@ -39,7 +39,7 @@
               class={[
                 "relative flex items-center gap-md rounded-row px-md text-label transition-control min-block-touch-target desktop:gap-sm desktop:rounded-sidebar-row desktop:px-sm desktop:text-small desktop:min-block-sidebar-row",
                 current !== undefined
-                  ? "bg-accent-soft font-bold text-accent windows:before:absolute windows:before:inset-s-none windows:before:inset-bs-sm windows:before:inset-be-sm windows:before:rounded-full windows:before:bg-accent windows:before:inline-windows-indicator desktop:bg-sidebar-accent desktop:font-medium desktop:text-on-sidebar-accent"
+                  ? "bg-accent-soft font-bold text-accent windows:before:absolute windows:before:inset-y-none windows:before:inset-s-none windows:before:my-auto windows:before:rounded-full windows:before:bg-accent windows:before:block-windows-indicator-length windows:before:inline-windows-indicator desktop:bg-sidebar-accent desktop:font-medium desktop:text-on-sidebar-accent"
                   : "font-medium text-sidebar-ink hover:bg-hover active:bg-pressed desktop:font-regular",
               ]}
             >

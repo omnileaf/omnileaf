@@ -487,6 +487,7 @@ export const TOKEN_THEME = {
     "veil-disc",
     "view-panel",
     "windows-indicator",
+    "windows-indicator-length",
     "xl",
     "xs",
   ],
