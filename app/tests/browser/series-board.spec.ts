@@ -53,6 +53,7 @@ const CHIP_SIZE = 48;
 const LONG_TITLE =
   "The Lighthouse Keeper’s Apprentice Spends Every Winter Writing Letters to a Sister Across the Northern Sea";
 const TWO_HOURS_FORTY = 9600;
+const NARROW_DESKTOP_WINDOW = { width: 360, height: 800 };
 
 function shelfBackend(shelf: FakeShelf): FakeBackend {
   return shelf.backend();
@@ -333,6 +334,28 @@ test.describe("a series with a long title", () => {
     );
 
     expect(link.x + link.width).toBeLessThanOrEqual(crumb.x + crumb.width);
+  });
+});
+
+test.describe("in a narrow desktop window", () => {
+  test.use({
+    backend: shelfBackend(new FakeShelf(EIGHT_BOOKS, ONE_CREATOR, PAGE_COUNT)),
+    viewport: NARROW_DESKTOP_WINDOW,
+  });
+
+  test("keeps the series' actions inside the page", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, "desktop windows");
+    await openSeries(page);
+    const column = await boxOf(about(page));
+
+    const mark = await boxOf(
+      about(page).getByRole("button", { name: /^Mark/ }),
+    );
+
+    expect(mark.x + mark.width).toBeLessThanOrEqual(column.x + column.width);
   });
 });
 
