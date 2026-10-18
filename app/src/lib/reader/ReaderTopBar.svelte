@@ -103,7 +103,7 @@
     <BreadcrumbItem class="min-inline-none">
       <a
         href={seriesHref}
-        class="block truncate text-muted transition-control max-inline-reader-crumb-series hover:text-foreground"
+        class="-my-xs block truncate py-xs text-muted transition-control max-inline-reader-crumb-series hover:text-foreground"
         >{seriesTitle}</a
       >
     </BreadcrumbItem>
