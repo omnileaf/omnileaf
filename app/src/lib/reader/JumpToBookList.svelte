@@ -135,7 +135,11 @@
       }
     >
       {#each SHOWN as choice (choice.shown)}
-        <ToggleGroupItem value={choice.shown} class="grow">
+        <ToggleGroupItem
+          value={choice.shown}
+          data-label={choice.label()}
+          class="grow"
+        >
           {choice.label()}
         </ToggleGroupItem>
       {/each}

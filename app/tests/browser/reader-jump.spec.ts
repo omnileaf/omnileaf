@@ -186,6 +186,26 @@ test("shows only the unread or bookmarked books when asked", async ({
   await expect(list.getByRole("listitem")).toHaveCount(7);
 });
 
+test("keeps the shown books' segments as wide as they were as the choice changes", async ({
+  page,
+}) => {
+  await openBook(page);
+  const list = await openJumpList(page);
+  const segments = list.getByRole("radio");
+  const spansOf = async () =>
+    (await Promise.all((await segments.all()).map(boxOf))).map(
+      ({ x, width }) => ({ x, width }),
+    );
+
+  const segmentsBefore = await spansOf();
+  for (const name of ["Bookmarked", "Unread", "All"]) {
+    const segment = list.getByRole("radio", { name });
+    await segment.click();
+    await expect(segment).toBeChecked();
+    expect(await spansOf()).toEqual(segmentsBefore);
+  }
+});
+
 test("closes the list with Escape before leaving the book", async ({
   page,
 }) => {
