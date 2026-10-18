@@ -17,7 +17,7 @@
   const PRIMARY =
     "bg-on-warning px-lg text-detail text-warning-soft min-block-touch-target desktop:px-md desktop:min-block-compact-button";
   const SECONDARY =
-    "rounded-full border border-warning-strong px-lg text-detail font-semibold min-block-touch-target desktop:px-md desktop:min-block-compact-button";
+    "rounded-full border border-warning-action-edge px-lg text-detail font-semibold min-block-touch-target desktop:px-md desktop:min-block-compact-button";
 
   let {
     missing,
