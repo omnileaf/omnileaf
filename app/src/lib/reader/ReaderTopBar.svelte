@@ -83,7 +83,7 @@
         aria-label={backLabel}
         class={cn(
           READER_BUTTON,
-          "gap-2xs ios:shrink ios:ps-xs ios:pe-sm ios:inline-auto ios:min-inline-reader-dense",
+          "gap-2xs ios:shrink ios:ps-xs ios:pe-sm ios:inline-auto ios:max-inline-reader-back-named ios:min-inline-reader-dense",
         )}
       >
         <ChevronLeft
@@ -100,7 +100,7 @@
     {/snippet}
   </Tooltip>
   <div
-    class="relative isolate flex flex-1 flex-col px-xs min-inline-none expanded:hidden"
+    class="relative isolate flex flex-1 flex-col justify-center px-xs min-block-touch-target min-inline-none expanded:hidden"
   >
     <span
       class="pointer-events-none truncate text-small font-semibold ios:hidden"
@@ -155,7 +155,7 @@
             <button
               {...props}
               class={cn(
-                "flex items-center gap-2xs rounded-shadcn-control px-xs text-foreground transition-control max-inline-full min-inline-none hover:bg-hover active:bg-pressed",
+                "flex items-center gap-2xs rounded-shadcn-control px-xs text-foreground transition-control max-inline-full min-block-compact-button min-inline-none hover:bg-hover active:bg-pressed",
                 isJumpOpen && "bg-hover",
               )}
             >

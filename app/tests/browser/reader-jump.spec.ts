@@ -2,10 +2,13 @@ import type { Locator, Page } from "@playwright/test";
 
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   EXPANDED_MIN_WIDTH,
   fakeAppInfo,
+  fakeAppInfo,
+  MEDIUM_MIN_WIDTH,
   test,
   testOnlyInItsWebview,
   viewportOf,
@@ -15,12 +18,18 @@ import {
   BOOK_ID,
   BOOK_SERIES_TITLE,
   BOOK_TITLE,
+  NOT_STARTED,
   readerBackend,
+  readerBook,
   servePages,
 } from "./reader-book.ts";
 import type { WireBook } from "./series-shelf.ts";
 
 const PAGES = 30;
+const PHONE_TITLE_TRIGGER_PX = 48;
+const DESKTOP_CRUMB_TRIGGER_PX = 32;
+const IOS_TOUCH_TARGET_PX = 44;
+const IOS_NAMED_BACK_MAX_PX = 168;
 
 function bookAt(index: number, change: Partial<WireBook> = {}): WireBook {
   const id = `0190a3e4-0000-8000-8000-0000000000${(0xb0 + index).toString(16)}`;
@@ -72,6 +81,12 @@ async function openBook(page: Page): Promise<void> {
   ).toBeAttached();
 }
 
+function jumpTrigger(page: Page): Locator {
+  return page
+    .locator("main > header")
+    .getByRole("button", { name: "Jump to a book" });
+}
+
 function jumpList(page: Page): Locator {
   return isWide(page)
     ? page.getByRole("complementary", { name: "Jump to a book" })
@@ -79,10 +94,7 @@ function jumpList(page: Page): Locator {
 }
 
 async function openJumpList(page: Page): Promise<Locator> {
-  await page
-    .locator("main > header")
-    .getByRole("button", { name: "Jump to a book" })
-    .click();
+  await jumpTrigger(page).click();
   await expect(jumpList(page)).toBeVisible();
   return jumpList(page);
 }
@@ -100,6 +112,30 @@ test("opens Jump to a book from the book's name, the book being read marked in t
   await expect(current).toHaveAttribute("aria-current", "true");
   await expect(current).toContainText("Reading");
   await expect(current).toBeInViewport();
+});
+
+test("opens Jump to a book from a title 48px tall", async ({ page }) => {
+  test.skip(isWide(page), "wide screens open it from the breadcrumb");
+  await openBook(page);
+
+  const title = await boxOf(jumpTrigger(page));
+
+  expect(title.height).toBeGreaterThanOrEqual(PHONE_TITLE_TRIGGER_PX);
+});
+
+test("draws the breadcrumb's book name 32px tall as the desktop board does", async ({
+  page,
+}) => {
+  test.skip(!isWide(page), "narrow screens open it from the title");
+  await openBook(page);
+
+  const crumb = await boxOf(
+    page
+      .getByRole("navigation", { name: "Breadcrumb" })
+      .getByRole("button", { name: "Jump to a book" }),
+  );
+
+  expect(crumb.height).toBe(DESKTOP_CRUMB_TRIGGER_PX);
 });
 
 test("opens and closes the list with G", async ({ page }) => {
@@ -249,5 +285,42 @@ test.describe("a long series", () => {
     await expect(jumpList(page)).toBeVisible();
     await find.press("Escape");
     await expect(jumpList(page)).toBeHidden();
+  });
+});
+
+test.describe("on an iPhone with a long series name", () => {
+  const LONG_SERIES_TITLE =
+    "Sample_Series_Scanned_From_The_Collectors_Edition_Box_Set_Volumes_01_To_24";
+
+  test.use({
+    backend: {
+      ...shelfOf(EIGHT_BOOKS),
+      appInfo: () => fakeAppInfo("ios"),
+      openBook: () => ({
+        ...readerBook(NOT_STARTED),
+        seriesTitle: LONG_SERIES_TITLE,
+      }),
+    },
+  });
+  testOnlyInItsWebview("ios");
+
+  test("leaves the title room to tap beside a back link capped as the board caps it", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "phones squeeze the title",
+    );
+    await openBook(page);
+    const header = page.locator("main > header");
+
+    const title = await boxOf(jumpTrigger(page));
+    const back = await boxOf(
+      header.getByRole("link", { name: `Back to ${LONG_SERIES_TITLE}` }),
+    );
+
+    expect(title.width).toBeGreaterThanOrEqual(IOS_TOUCH_TARGET_PX);
+    expect(title.height).toBeGreaterThanOrEqual(IOS_TOUCH_TARGET_PX);
+    expect(back.width).toBeLessThanOrEqual(IOS_NAMED_BACK_MAX_PX);
   });
 });
