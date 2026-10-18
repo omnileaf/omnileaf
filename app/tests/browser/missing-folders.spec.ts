@@ -16,6 +16,7 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(12);
 const FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000002";
+const ACTION_EDGE_SHARE = 45;
 
 let missing: MissingFolder[] = [];
 let asked: string[] = [];
@@ -80,6 +81,24 @@ function notice(page: Page, title: string): Locator {
     .filter({ has: page.getByText(title, { exact: true }) });
 }
 
+async function findTheFolder(page: Page): Promise<Locator> {
+  await page.goto("/");
+  const missingNotice = notice(page, "Comics isn’t there");
+  await settle(missingNotice);
+  return missingNotice.getByRole("button", { name: "Find the folder" });
+}
+
+function actionEdgeColour(page: Page): Promise<string> {
+  return page.evaluate((share) => {
+    const probe = document.createElement("span");
+    probe.style.color = `color-mix(in oklab, var(--warning-foreground) ${String(share)}%, transparent)`;
+    document.body.append(probe);
+    const colour = getComputedStyle(probe).color;
+    probe.remove();
+    return colour;
+  }, ACTION_EDGE_SHARE);
+}
+
 test.describe("with a folder that isn't there", () => {
   const folder = missingFolder("missing", "Comics", "/media/Comics");
   test.use({ backend: backendMissing(folder) });
@@ -122,6 +141,19 @@ test.describe("with a folder that isn't there", () => {
     await expect(notice(page, "Comics isn’t there")).toHaveCount(0);
     expect(asked).toEqual([`relocate ${FOLDER_ID}`]);
   });
+
+  for (const theme of ["light", "dark"] as const) {
+    test(`edges Find the folder in the warning ink at 45% in the ${theme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: theme });
+      const find = await findTheFolder(page);
+
+      const edge = await actionEdgeColour(page);
+
+      await expect(find).toHaveCSS("border-top-color", edge);
+    });
+  }
 
   test("stays dismissed while the app stays open", async ({ page }) => {
     await page.goto("/");
