@@ -34,7 +34,7 @@
       <Button
         type="button"
         look="primary"
-        class="flex items-center gap-sm rounded-shadcn-control px-lg font-medium min-block-touch-target expanded:text-small expanded:min-block-pointer-button"
+        class="flex items-center gap-sm rounded-shadcn-button px-lg font-medium min-block-touch-target expanded:text-small expanded:min-block-pointer-button"
         onClickPromise={onRescan}
       >
         <RefreshCw size={ICON_SIZE} aria-hidden="true" />

@@ -156,7 +156,7 @@
       {#snippet child({ props })}
         <button
           {...props}
-          class="flex shrink-0 items-center justify-center rounded-shadcn-control border border-border bg-card transition-control block-touch-target inline-touch-target hover:bg-hover expanded:block-pointer-button expanded:inline-pointer-button"
+          class="flex shrink-0 items-center justify-center rounded-shadcn-button border border-border bg-card transition-control block-touch-target inline-touch-target hover:bg-hover expanded:block-pointer-button expanded:inline-pointer-button"
         >
           <ArrowDownUp size={ICON_SIZE} aria-hidden="true" />
         </button>

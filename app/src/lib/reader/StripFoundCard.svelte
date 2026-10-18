@@ -13,7 +13,7 @@
 
   const ICON_SIZE = 20;
   const FOOTER_BUTTON =
-    "flex-1 rounded-shadcn-control px-lg font-medium min-block-touch-target expanded:flex-none expanded:text-small expanded:min-block-pointer-button";
+    "flex-1 rounded-shadcn-button px-lg font-medium min-block-touch-target expanded:flex-none expanded:text-small expanded:min-block-pointer-button";
 
   let { onChange, onDone }: { onChange: () => void; onDone: () => void } =
     $props();

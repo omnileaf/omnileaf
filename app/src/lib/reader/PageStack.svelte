@@ -281,7 +281,7 @@
         <div class="pointer-events-auto flex flex-wrap justify-center gap-sm">
           <button
             type="button"
-            class="flex items-center gap-sm rounded-shadcn-control border border-border bg-card px-lg text-body font-medium transition-control min-block-touch-target hover:bg-hover active:bg-pressed expanded:text-small expanded:min-block-pointer-button"
+            class="flex items-center gap-sm rounded-shadcn-button border border-border bg-card px-lg text-body font-medium transition-control min-block-touch-target hover:bg-hover active:bg-pressed expanded:text-small expanded:min-block-pointer-button"
             onclick={() => {
               tryAgain(shown);
             }}
@@ -291,7 +291,7 @@
           </button>
           <button
             type="button"
-            class="flex items-center gap-sm rounded-shadcn-control bg-accent px-lg text-body font-medium text-on-accent transition-control min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button"
+            class="flex items-center gap-sm rounded-shadcn-button bg-accent px-lg text-body font-medium text-on-accent transition-control min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button"
             onclick={onNextPage}
           >
             {m.reader_next_page()}
