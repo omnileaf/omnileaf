@@ -1103,18 +1103,6 @@
   }
 }
 
-@utility touch-target-across {
-  position: relative;
-
-  &::before {
-    content: "";
-    position: absolute;
-    z-index: var(--z-index-touch-target);
-    inset-block: 0;
-    inset-inline: calc((100% - var(--spacing-touch-target)) / 2);
-  }
-}
-
 @utility grid-cols-collection-heading {
   grid-template-columns: auto auto minmax(0, 1fr) max-content;
 }
