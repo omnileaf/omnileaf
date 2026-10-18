@@ -65,7 +65,7 @@
   <ListCover
     cover={shown.cover}
     {coverUrl}
-    class="rounded-result-cover inline-result-cover large:rounded-cover large:inline-full"
+    class="rounded-result-cover inline-result-cover large:box-border large:rounded-cover large:inline-full"
   />
   <div class="flex flex-col gap-2xs min-inline-none">
     <p class="truncate text-lead font-semibold large:text-small">

@@ -256,6 +256,26 @@ test("draws the series found as covers, as many to a row as the library draws", 
   expect(await columnsIn(results(page))).toBe(libraryColumns);
 });
 
+test("fits each result's cover inside its result on desktop", async ({
+  page,
+}) => {
+  test.skip(!isDesktop(page), "desktop only");
+  await page.goto("/search?q=a");
+  await expect(results(page).getByRole("option").first()).toBeVisible();
+
+  const pastEachResult = await results(page)
+    .getByRole("option")
+    .evaluateAll((options) =>
+      options.map(
+        (option) =>
+          (option.firstElementChild?.getBoundingClientRect().right ??
+            Number.POSITIVE_INFINITY) - option.getBoundingClientRect().right,
+      ),
+    );
+
+  expect(pastEachResult.filter((past) => past > 0)).toEqual([]);
+});
+
 test("carries on the search typed into the library's header on desktop", async ({
   page,
 }) => {
