@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import {
   accessibilityViolations,
@@ -29,6 +29,10 @@ async function openScreenshotMode(page: Page): Promise<void> {
 
 function mainSwitch(page: Page) {
   return page.getByRole("switch", { name: "Screenshot mode", exact: true });
+}
+
+function cardHolding(page: Page, part: Locator) {
+  return page.locator("div:has(> [role=switch])").filter({ has: part });
 }
 
 function labelSwitch(page: Page) {
@@ -107,11 +111,34 @@ test("sets the intro 8px above its card", async ({ page }) => {
   await openScreenshotMode(page);
 
   const intro = await boxOf(page.getByText(/^Swaps names and covers/));
-  const card = await boxOf(
-    page.locator("div:has(> [role=switch])").filter({ has: mainSwitch(page) }),
-  );
+  const card = await boxOf(cardHolding(page, mainSwitch(page)));
 
   expect(card.y - (intro.y + intro.height)).toBe(INTRO_GAP);
+});
+
+test.describe("in a narrow desktop window", () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+  test.skip(({ isMobile }) => isMobile, "desktop windows");
+
+  test("puts Turn off after above its choice, inside the card", async ({
+    page,
+  }) => {
+    await page.goto("/settings/privacy/screenshot-mode");
+    const label = page.getByText("Turn off after", { exact: true });
+    const choice = page.getByRole("combobox", { name: "Turn off after" });
+
+    const labelBox = await boxOf(label);
+    const choiceBox = await boxOf(choice);
+    const cardBox = await boxOf(cardHolding(page, choice));
+
+    expect(
+      await label.evaluate((shown) => shown.scrollWidth - shown.clientWidth),
+    ).toBe(0);
+    expect(choiceBox.y).toBeGreaterThanOrEqual(labelBox.y + labelBox.height);
+    expect(choiceBox.x + choiceBox.width).toBeLessThanOrEqual(
+      cardBox.x + cardBox.width,
+    );
+  });
 });
 
 test("says what it changes before the switch", async ({ page }) => {

@@ -20,13 +20,13 @@
 </script>
 
 <div
-  class="flex flex-col gap-sm px-lg py-md desktop:grid desktop:grid-cols-setting-grid desktop:items-center desktop:gap-x-md desktop:py-setting-grid-pad desktop:min-block-setting-grid-row"
+  class="flex flex-col gap-sm px-lg py-md desktop:medium:grid desktop:medium:grid-cols-setting-grid desktop:medium:items-center desktop:medium:gap-x-md desktop:medium:py-setting-grid-pad desktop:medium:min-block-setting-grid-row"
 >
   <span id={labelId} class="font-medium">{label}</span>
   <NativeSelect
     aria-labelledby={labelId}
     {value}
-    class="desktop:inline-setting-control"
+    class="desktop:medium:inline-setting-control"
     fieldClass="touch:text-body touch:block-touch-target"
     onchange={({
       currentTarget,
