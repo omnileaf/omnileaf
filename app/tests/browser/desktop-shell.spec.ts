@@ -16,6 +16,10 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 const SIDEBAR_WIDTH = 256;
 const HIDDEN_SIDEBAR_WIDTH = 56;
 const ITEM_HEIGHT = 32;
+const MACOS_ITEM_HEIGHT = 28;
+const MACOS_ITEM_CORNER = "6px";
+const WINDOWS_ITEM_HEIGHT = 36;
+const WINDOWS_ITEM_CORNER = "4px";
 const TOOLBAR_HEIGHT = 56;
 const TOOLBAR_TITLE_SIZE = "16px";
 const SERIES = sampleSeries(60);
@@ -137,5 +141,51 @@ test.describe("on macOS", () => {
     await page.keyboard.press("Meta+b");
 
     expect((await boxOf(navigation(page))).width).toBe(HIDDEN_SIDEBAR_WIDTH);
+  });
+
+  test("marks the current section with the macOS selection in a 28px row with 6px corners", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    const library = navigation(page).getByRole("link", { name: "Library" });
+
+    const row = await boxOf(library);
+
+    expect(row.height).toBe(MACOS_ITEM_HEIGHT);
+    await expect(library).toHaveCSS("border-radius", MACOS_ITEM_CORNER);
+    await expect(library).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--macos-selection"),
+    );
+    await expect(library).toHaveCSS(
+      "color",
+      await tokenColour(page, "--sidebar-foreground"),
+    );
+  });
+});
+
+test.describe("on Windows", () => {
+  test.use({
+    backend: { ...LIBRARY_BACKEND, appInfo: () => fakeAppInfo("windows") },
+  });
+
+  test("marks the current section with the Windows subtle fill in a 36px row with 4px corners", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    const library = navigation(page).getByRole("link", { name: "Library" });
+
+    const row = await boxOf(library);
+
+    expect(row.height).toBe(WINDOWS_ITEM_HEIGHT);
+    await expect(library).toHaveCSS("border-radius", WINDOWS_ITEM_CORNER);
+    await expect(library).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--windows-subtle"),
+    );
+    await expect(library).toHaveCSS(
+      "color",
+      await tokenColour(page, "--sidebar-foreground"),
+    );
   });
 });

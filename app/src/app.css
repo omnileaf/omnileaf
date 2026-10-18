@@ -314,7 +314,6 @@
   --spacing-sidebar-icon: 1rem;
   --spacing-sidebar-desktop: 16rem;
   --spacing-sidebar-hidden: 3.5rem;
-  --spacing-sidebar-row: 2rem;
   --spacing-toolbar: 3.5rem;
   --spacing-toolbar-rule: 1rem;
   --spacing-settings-icon: 1.125rem;
@@ -722,7 +721,8 @@
   --font-ui: var(--platform-font);
   --shadow-menu: var(--menu-shadow);
   --radius-menu: var(--menu-radius);
-  --radius-sidebar-row: var(--radius-md);
+  --radius-sidebar-row: var(--sidebar-row-radius);
+  --spacing-sidebar-row: var(--sidebar-row-height);
   --radius-tooltip: var(--tooltip-radius);
   --radius-shadcn-card: var(--card-radius);
   --radius-toast: var(--toast-radius);
@@ -745,6 +745,8 @@
   --color-sidebar-edge: var(--sidebar-border);
   --color-sidebar-accent: var(--sidebar-accent);
   --color-on-sidebar-accent: var(--sidebar-accent-foreground);
+  --color-sidebar-selection: var(--sidebar-selection);
+  --color-on-sidebar-selection: var(--sidebar-selection-foreground);
   --color-faint: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
   --color-border: var(--border);
   --color-field: var(--input);
