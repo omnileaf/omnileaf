@@ -250,6 +250,7 @@ export const TOKEN_THEME = {
     "pill",
     "pill-inline",
     "pointer-button",
+    "pointer-minimum",
     "pointer-target",
     "preview",
     "problem-top",
