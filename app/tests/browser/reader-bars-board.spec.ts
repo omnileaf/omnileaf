@@ -24,6 +24,8 @@ import {
 
 const DENSE_BUTTON = 44;
 const DESKTOP_BUTTON = 36;
+const SETTING_WEIGHT = "500";
+const ON_SETTING_WEIGHT = "600";
 const SERIES_CRUMB_CAP = 220;
 const POINTER_MINIMUM = 24;
 const DRAWN_THUMB = 16;
@@ -154,6 +156,34 @@ test("joins the quick settings into one group of outlined buttons", async ({
   const first = await boxOf(buttons.nth(0));
   const second = await boxOf(buttons.nth(1));
   expect(Math.round(second.x - (first.x + first.width))).toBe(-1);
+});
+
+test("sets a quick setting's label in semibold while it is on", async ({
+  page,
+}) => {
+  await openBook(page);
+  const light = quickSettings(page).getByRole("button", { name: "Light" });
+
+  await light.click();
+
+  await expect(light).toHaveAttribute("aria-pressed", "true");
+  await expect(light).toHaveCSS("font-weight", ON_SETTING_WEIGHT);
+  await expect(direction(page)).toHaveCSS("font-weight", SETTING_WEIGHT);
+});
+
+test("keeps the direction's label medium while it reads right to left", async ({
+  page,
+}) => {
+  await openBook(page);
+
+  await direction(page).click();
+  await page
+    .getByRole("menuitemradio", { name: "Right to left", exact: true })
+    .click();
+
+  await expect(
+    quickSettings(page).getByRole("button", { name: /^Right to left/ }),
+  ).toHaveCSS("font-weight", SETTING_WEIGHT);
 });
 
 test.describe("in a window narrower than a large screen", () => {
