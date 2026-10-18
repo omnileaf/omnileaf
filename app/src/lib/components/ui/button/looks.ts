@@ -5,7 +5,7 @@ const ABOUT_COPY =
   "inline-flex items-center gap-sm text-start text-callout font-semibold min-block-touch-target min-inline-none";
 
 export const BUTTON_LOOKS = {
-  text: "font-semibold text-accent",
+  text: "font-medium text-foreground android:text-accent ios:font-semibold",
   quiet:
     "font-semibold text-accent transition-control enabled:hover:bg-hover enabled:active:bg-pressed",
   primary:

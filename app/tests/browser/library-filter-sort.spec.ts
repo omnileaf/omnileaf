@@ -12,9 +12,12 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  onPlatform,
   screenSizeOf,
   settle,
   test,
+  testOnlyInItsWebview,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 import type { WireSeries } from "./series-catalog.ts";
@@ -385,6 +388,37 @@ test("puts the sort and every filter back as a new library has them on Reset", a
   await expectTitles(page, [1, 2, 3, 4, 5, 6]);
   await expect.poll(() => storedListing).toEqual(DEFAULT_LIBRARY_LISTING);
 });
+
+for (const { platform, weight, colour } of [
+  { platform: "linux", weight: "500", colour: "foreground" },
+  { platform: "android", weight: "500", colour: "accent" },
+  { platform: "ios", weight: "600", colour: "foreground" },
+] as const) {
+  test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
+    test.use({
+      backend: {
+        ...FILTERING_BACKEND,
+        appInfo: onPlatform(platform).backend.appInfo,
+      },
+    });
+
+    test(`sets Reset at weight ${weight} in the ${colour} colour`, async ({
+      page,
+    }) => {
+      await openLibrary(page);
+      const panel = await openFilterAndSort(page);
+
+      const reset = panel.getByRole("button", { name: "Reset" });
+
+      await expect(reset).toHaveCSS("font-weight", weight);
+      await expect(reset).toHaveCSS(
+        "color",
+        await tokenColour(page, `--color-${colour}`),
+      );
+    });
+  });
+}
 
 test("lists the library by the sort and filter stored on this device", async ({
   page,
