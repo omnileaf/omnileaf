@@ -96,6 +96,7 @@
   --warning-strong: oklch(0.58 0.13 70);
   --warning-foreground: oklch(0.3 0.03 70);
   --shadow-color: oklch(0 0 0 / 10%);
+  --key-ink: var(--foreground);
 }
 
 [data-theme="dark"] {
@@ -188,6 +189,7 @@
   --warning-strong: oklch(0.78 0.13 75);
   --warning-foreground: oklch(0.96 0.01 80);
   --shadow-color: oklch(0 0 0 / 50%);
+  --key-ink: var(--secondary-text);
 }
 
 :root {
@@ -400,6 +402,7 @@
   --tooltip-shadow: var(--shadow-md);
   --tooltip-key-fill: var(--muted);
   --tooltip-key-ink: var(--secondary-text);
+  --key-ink: var(--secondary-text);
   --switch-on: var(--macos-switch-on);
   --switch-thumb: var(--ios-switch-thumb);
   --switch-thumb-on: var(--ios-switch-thumb);
@@ -435,6 +438,7 @@
   --tooltip-shadow: var(--shadow-windows-flyout);
   --tooltip-key-fill: var(--muted);
   --tooltip-key-ink: var(--secondary-text);
+  --key-ink: var(--secondary-text);
   --switch-off: transparent;
   --switch-edge: var(--windows-secondary-text);
   --switch-edge-on: var(--primary);

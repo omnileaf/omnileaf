@@ -16,7 +16,7 @@
   bind:this={ref}
   data-slot="kbd"
   class={cn(
-    "inline-block shrink-0 rounded-badge bg-chip px-xs py-2xs text-center font-ui text-caption font-medium text-foreground min-inline-key",
+    "inline-block shrink-0 rounded-badge bg-chip px-xs py-2xs text-center font-ui text-caption font-medium text-on-key min-inline-key",
     className,
   )}
   {...restProps}
