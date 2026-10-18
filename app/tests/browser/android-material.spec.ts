@@ -61,6 +61,18 @@ test("sets a page's headline at regular weight, as Material 3 does", async ({
   await expect(libraryHeading(page)).toHaveCSS("font-weight", "400");
 });
 
+test("sets a phone's page headline at 30px on a 36px line, as the boards do", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+
+  const heading = libraryHeading(page);
+
+  await expect(heading).toHaveCSS("font-size", "30px");
+  await expect(heading).toHaveCSS("line-height", "36px");
+});
+
 test("puts the 80px navigation bar on the surface container, with the tonal pill behind the current section", async ({
   page,
 }) => {
