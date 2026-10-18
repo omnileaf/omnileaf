@@ -17,7 +17,7 @@
 <Tooltip
   {label}
   aria-label={label}
-  class="flex shrink-0 items-center justify-center rounded-sidebar-row text-foreground transition-control block-sidebar-row inline-sidebar-row hover:bg-hover active:bg-pressed"
+  class="flex shrink-0 items-center justify-center rounded-small-control text-foreground transition-control block-compact-button inline-compact-button hover:bg-hover active:bg-pressed"
   onclick={() => {
     sidebar.toggle();
   }}
