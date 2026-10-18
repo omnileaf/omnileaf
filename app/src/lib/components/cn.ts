@@ -111,8 +111,8 @@ export const TOKEN_THEME = {
     "tile",
     "toast",
     "toast-action",
-    "toast-wide",
     "tooltip",
+    "warning-toast",
   ],
   spacing: [
     "2xl",
