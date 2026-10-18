@@ -7,6 +7,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   MEDIUM_MIN_WIDTH,
+  onPlatform,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -32,6 +33,7 @@ const MANY_CATEGORIES = [
 ] as LibraryCategory[];
 const NARROW_DESKTOP = 900;
 const EDGE_TOLERANCE = 0.5;
+const TAB_TEXT_SIZE = "14px";
 
 function backendWith(categories: readonly LibraryCategory[]): FakeBackend {
   const inCategory = (category: string) =>
@@ -158,6 +160,24 @@ test.describe("with two categories", () => {
       expect(violations).toEqual([]);
     });
   }
+});
+
+test.describe("on Android", () => {
+  test.use({
+    backend: {
+      ...backendWith(CATEGORIES),
+      appInfo: onPlatform("android").backend.appInfo,
+    },
+  });
+
+  test("sets the tab labels at 14px", async ({ page }) => {
+    await openLibrary(page);
+
+    await expect(tabs(page).getByRole("tab", { name: "Manga" })).toHaveCSS(
+      "font-size",
+      TAB_TEXT_SIZE,
+    );
+  });
 });
 
 test.describe("with one category", () => {
