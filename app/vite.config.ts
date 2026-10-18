@@ -63,7 +63,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: "components",
-          include: ["src/**/*.test.ts"],
+          include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
           expect: { requireAssertions: true },
           browser: {
             enabled: true,
