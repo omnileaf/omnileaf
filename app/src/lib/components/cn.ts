@@ -284,6 +284,7 @@ export const TOKEN_THEME = {
     "quick-open-results",
     "quick-open-top",
     "rail",
+    "reader-back-named",
     "reader-back-start-wide",
     "reader-bar-block-wide",
     "reader-bar-bottom",
