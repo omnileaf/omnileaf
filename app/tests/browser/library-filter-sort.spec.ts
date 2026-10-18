@@ -383,10 +383,10 @@ test("puts the sort and every filter back as a new library has them on Reset", a
   await expect.poll(() => storedListing).toEqual(DEFAULT_LIBRARY_LISTING);
 });
 
-for (const { platform, weight, colour } of [
-  { platform: "linux", weight: "500", colour: "foreground" },
-  { platform: "android", weight: "500", colour: "accent" },
-  { platform: "ios", weight: "600", colour: "foreground" },
+for (const { platform, weight, colour, isTouch } of [
+  { platform: "linux", weight: "500", colour: "foreground", isTouch: false },
+  { platform: "android", weight: "500", colour: "accent", isTouch: true },
+  { platform: "ios", weight: "600", colour: "foreground", isTouch: true },
 ] as const) {
   test.describe(`on ${platform}`, () => {
     testOnlyInItsWebview(platform);
@@ -401,7 +401,12 @@ for (const { platform, weight, colour } of [
       page,
     }) => {
       await openLibrary(page);
-      const panel = await openFilterAndSort(page);
+      await filterButton(page).click();
+      const panel = isTouch
+        ? page.getByRole("dialog", { name: "Sort and filter" })
+        : filterAndSort(page);
+      await expect(panel).toBeVisible();
+      await settle(panel);
 
       const reset = panel.getByRole("button", { name: "Reset" });
 
