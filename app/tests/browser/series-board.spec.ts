@@ -7,7 +7,9 @@ import {
   expect,
   EXPANDED_MIN_WIDTH,
   MEDIUM_MIN_WIDTH,
+  onPlatform,
   test,
+  testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
 import {
@@ -471,3 +473,25 @@ test.describe("a series with details while Screenshot mode is on", () => {
     ).toHaveText(["Tag 1", "Tag 2", "Tag 3", "Tag 4"]);
   });
 });
+
+for (const platform of ["linux", "android"] as const) {
+  test.describe(`a series being read on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
+    test.use({
+      backend: {
+        ...shelfBackend(new FakeShelf(EIGHT_BOOKS)),
+        appInfo: onPlatform(platform).backend.appInfo,
+      },
+    });
+
+    test("names its reading state in regular type", async ({ page }) => {
+      await openSeries(page);
+
+      await expect(
+        about(page)
+          .getByRole("button", { name: "Reading state: Reading" })
+          .getByText("Reading", { exact: true }),
+      ).toHaveCSS("font-weight", "400");
+    });
+  });
+}
