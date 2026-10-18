@@ -11,7 +11,14 @@ import {
 } from "./controls.ts";
 import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
-import { boxOf, expect, onPlatform, settle, test } from "./fixtures.ts";
+import {
+  boxOf,
+  expect,
+  onPlatform,
+  settle,
+  test,
+  tokenColour,
+} from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 import { openViewOptions, viewOptionsButton } from "./view-options.ts";
 
@@ -133,18 +140,17 @@ test.describe("with a pointer", () => {
   test.describe("with a linked folder", () => {
     test.use({ backend: WITH_A_LINKED_FOLDER });
 
-    test("brings a row action's ink up to the foreground under the pointer", async ({
-      page,
-    }) => {
+    test("draws a row action's ink in the foreground", async ({ page }) => {
       await page.goto("/settings/library");
+
       const remove = page.getByRole("button", {
         name: "Remove Sample Comics",
       });
-      const resting = await inkOf(remove);
 
-      await remove.hover();
-
-      expect(await inkOf(remove)).not.toBe(resting);
+      await expect(remove).toHaveCSS(
+        "color",
+        await tokenColour(page, "--color-foreground"),
+      );
     });
 
     test("draws a 40px circle behind a row action under the pointer", async ({

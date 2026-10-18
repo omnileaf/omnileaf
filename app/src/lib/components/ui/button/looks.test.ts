@@ -33,7 +33,7 @@ test.each<[ButtonLook, string[]]>([
     [
       "isolate",
       "rounded-full",
-      "text-muted",
+      "text-foreground",
       "before:z-behind",
       "enabled:hover:before:bg-hover",
     ],
