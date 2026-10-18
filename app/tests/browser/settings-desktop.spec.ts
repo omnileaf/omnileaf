@@ -27,6 +27,8 @@ const NARROW_BACK_LINK_HEIGHT = 32;
 const TOUCH_TARGET = 48;
 const STATUS_BAR_GAP = 8;
 const IOS_BACK_LINK_TEXT = "17px";
+const SECTIONS_TITLE_TEXT = "12px";
+const SEMIBOLD = "600";
 
 function sectionList(page: Page) {
   return page.getByRole("navigation", { name: "Settings sections" });
@@ -78,6 +80,23 @@ test.describe("on a desktop", () => {
     await page.getByRole("link", { name: "Back to Advanced" }).click();
 
     await expect(page).toHaveURL("/settings/advanced");
+  });
+
+  test("titles the sections list in small semibold muted text", async ({
+    page,
+  }) => {
+    await page.goto("/settings/general");
+    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "two panes only");
+    const title = sectionList(page)
+      .locator("..")
+      .getByText("Settings", { exact: true });
+
+    await expect(title).toHaveCSS("font-size", SECTIONS_TITLE_TEXT);
+    await expect(title).toHaveCSS("font-weight", SEMIBOLD);
+    await expect(title).toHaveCSS(
+      "color",
+      await tokenColour(page, "--muted-foreground"),
+    );
   });
 
   test("focuses the first settings section's heading without a focus ring when opened from the keyboard", async ({
