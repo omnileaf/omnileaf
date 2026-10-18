@@ -168,6 +168,22 @@ test("shows only the bookmarked books", async ({ page }) => {
   await expect(rows(page).nth(1)).toContainText(shelf.titleOf(4));
 });
 
+test("marks a new book in the secondary badge's ink", async ({ page }) => {
+  await openBooks(page);
+  await page.getByRole("main").evaluate((main) => {
+    main.scrollTo({ top: main.scrollHeight });
+  });
+
+  const badge = rows(page)
+    .filter({ hasText: shelf.titleOf(7) })
+    .getByText("New", { exact: true });
+
+  await expect(badge).toHaveCSS(
+    "color",
+    await tokenColour(page, "--secondary-foreground"),
+  );
+});
+
 test("sets the chosen show choice semibold in the accent's ink and the rest medium in the foreground", async ({
   page,
 }) => {
