@@ -25,6 +25,8 @@ import {
 } from "./fixtures.ts";
 import { sampleSeries, type WireSeries } from "./series-catalog.ts";
 
+const NARROW_DESKTOP_WINDOW = { width: 360, height: 800 };
+
 interface FakeSeries {
   readonly series: WireSeries;
   readonly isStarted: boolean;
@@ -614,6 +616,24 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test.describe("in a narrow desktop window", () => {
+  test.use({ viewport: NARROW_DESKTOP_WINDOW });
+
+  test("wraps the scope chips rather than scrolling them", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, "desktop windows");
+    await page.goto("/search?q=a");
+
+    const overflow = await page
+      .getByRole("group", { name: "Search in" })
+      .evaluate((group) => group.scrollWidth - group.clientWidth);
+
+    expect(overflow).toBe(0);
+  });
+});
 
 test.describe("as the library changes under a search", () => {
   let shelf: readonly FakeSeries[] = CATALOG;
