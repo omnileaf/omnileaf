@@ -142,6 +142,24 @@ test("keeps a series' own settings once they apply to this series", async ({
   ).toBeChecked();
 });
 
+test("keeps the backgrounds' boxes still as the choice changes", async ({
+  page,
+}) => {
+  await openBook(page);
+  const panel = await openSettings(page);
+  const backgrounds = panel
+    .getByRole("group", { name: "Background" })
+    .getByRole("radio");
+  const boxesOf = async () => Promise.all((await backgrounds.all()).map(boxOf));
+
+  const backgroundsBefore = await boxesOf();
+  for (const background of await backgrounds.all()) {
+    await background.click();
+    await expect(background).toBeChecked();
+    expect(await boxesOf()).toEqual(backgroundsBefore);
+  }
+});
+
 test("closes the panel with Escape before leaving the book", async ({
   page,
 }) => {
