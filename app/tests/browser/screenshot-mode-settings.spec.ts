@@ -159,6 +159,25 @@ test("the keyboard shortcut is listed on a computer", async ({ page }) => {
   ).toContainText("Keyboard shortcut");
 });
 
+test.describe("in a narrow desktop window", () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+  test.skip(({ isMobile }) => isMobile, "desktop windows");
+
+  test("keeps the keyboard shortcut's keys inside their card", async ({
+    page,
+  }) => {
+    await page.goto("/settings/privacy/screenshot-mode");
+    const card = page.getByRole("region", { name: "Turn it on quickly" });
+
+    const lastKey = await boxOf(card.locator("kbd").last());
+    const cardBox = await boxOf(card);
+
+    expect(lastKey.x + lastKey.width).toBeLessThanOrEqual(
+      cardBox.x + cardBox.width,
+    );
+  });
+});
+
 const SHORTCUT_HINTS = [
   { platform: "macos", keys: ["⌘", "Shift", "H"] },
   { platform: "linux", keys: ["Ctrl", "Shift", "H"] },

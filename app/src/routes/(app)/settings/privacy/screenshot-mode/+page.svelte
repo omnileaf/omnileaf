@@ -108,7 +108,7 @@
       <h2 id={quicklyId} class="px-lg pbs-md pbe-xs text-small font-semibold">
         {m.screenshot_mode_quickly()}
       </h2>
-      <div class="flex items-center gap-md px-lg pbs-xs pbe-md">
+      <div class="flex flex-wrap items-center gap-md px-lg pbs-xs pbe-md">
         <span
           aria-hidden="true"
           class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile"
