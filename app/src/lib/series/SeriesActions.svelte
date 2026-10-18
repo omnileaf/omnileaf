@@ -45,7 +45,10 @@
 <div class="flex gap-sm expanded:flex-col">
   <ComingSoonControl
     label={m.series_reading_state({ state })}
-    class={cn(SERIES_CONTROL, "flex-1 justify-between text-foreground")}
+    class={cn(
+      SERIES_CONTROL,
+      "flex-1 justify-between font-regular text-foreground",
+    )}
   >
     <span class="flex items-center gap-sm">
       <BookOpen size={ICON_SIZE} aria-hidden="true" />
