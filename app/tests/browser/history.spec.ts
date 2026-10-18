@@ -24,6 +24,8 @@ const DAY_MS = 86_400_000;
 const ENTRIES_PER_PAGE = 50;
 const REMOVED_MARK = 1_790_000_000_000;
 const CLEARED_MARK = 1_780_000_000_000;
+const UNBROKEN_TITLE =
+  "Sample_Series_Scanned_From_The_Collectors_Edition_Box_Set_Volumes_01_To_24";
 
 function bookId(number: number): string {
   return `0190a3e4-0000-8000-8000-${String(number).padStart(12, "0")}`;
@@ -403,6 +405,40 @@ test.describe("with a long history", () => {
       await rows(page).last().scrollIntoViewIfNeeded();
       await expect(rows(page)).toHaveCount(shown);
     }
+  });
+});
+
+test.describe("with a series whose title runs unbroken", () => {
+  test.use({
+    backend: booksBackend([
+      {
+        ...entry(1, "2026-10-08T21:40:00.000Z", {
+          state: "page",
+          page: 3,
+          pageCount: 24,
+        }),
+        seriesTitle: UNBROKEN_TITLE,
+        bookTitle: `${UNBROKEN_TITLE} Volume 1`,
+      },
+    ]),
+  });
+
+  test("wraps an unbroken series title and its book's line inside the row", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    const row = rows(page).filter({ hasText: UNBROKEN_TITLE });
+
+    const hidden = await Promise.all(
+      [
+        row.getByText(UNBROKEN_TITLE, { exact: true }),
+        row.getByText(`${UNBROKEN_TITLE} Volume 1`),
+      ].map((line) =>
+        line.evaluate((span) => span.scrollWidth - span.clientWidth),
+      ),
+    );
+
+    expect(hidden).toEqual([0, 0]);
   });
 });
 
