@@ -116,6 +116,8 @@ test("sets the intro 8px above its card", async ({ page }) => {
   expect(card.y - (intro.y + intro.height)).toBe(INTRO_GAP);
 });
 
+const NARROW_DESKTOP_WIDTHS = [360, 390, 840] as const;
+
 test.describe("in a narrow desktop window", () => {
   test.use({ viewport: { width: 360, height: 800 } });
   test.skip(({ isMobile }) => isMobile, "desktop windows");
@@ -139,30 +141,6 @@ test.describe("in a narrow desktop window", () => {
       cardBox.x + cardBox.width,
     );
   });
-});
-
-test("says what it changes before the switch", async ({ page }) => {
-  await openScreenshotMode(page);
-
-  await expect(
-    page.getByText(
-      "Swaps names and covers for stand-ins, hides 18+ and leaves it out of counts, so screenshots show nothing private. Progress, dates and settings stay real.",
-    ),
-  ).toBeVisible();
-});
-
-test("the keyboard shortcut is listed on a computer", async ({ page }) => {
-  await openScreenshotMode(page);
-
-  await expect(
-    page.getByRole("region", { name: "Turn it on quickly" }),
-  ).toContainText("Keyboard shortcut");
-});
-
-const NARROW_DESKTOP_WIDTHS = [360, 390, 840] as const;
-
-test.describe("in a narrow desktop window", () => {
-  test.skip(({ isMobile }) => isMobile, "desktop windows");
 
   for (const width of NARROW_DESKTOP_WIDTHS) {
     test.describe(`${String(width)}px wide`, () => {
@@ -189,6 +167,24 @@ test.describe("in a narrow desktop window", () => {
       });
     });
   }
+});
+
+test("says what it changes before the switch", async ({ page }) => {
+  await openScreenshotMode(page);
+
+  await expect(
+    page.getByText(
+      "Swaps names and covers for stand-ins, hides 18+ and leaves it out of counts, so screenshots show nothing private. Progress, dates and settings stay real.",
+    ),
+  ).toBeVisible();
+});
+
+test("the keyboard shortcut is listed on a computer", async ({ page }) => {
+  await openScreenshotMode(page);
+
+  await expect(
+    page.getByRole("region", { name: "Turn it on quickly" }),
+  ).toContainText("Keyboard shortcut");
 });
 
 const SHORTCUT_HINTS = [
