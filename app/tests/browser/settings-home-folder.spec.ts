@@ -1,3 +1,4 @@
+import english from "../../messages/en.json" with { type: "json" };
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   expect,
@@ -29,6 +30,11 @@ const LINKED: WireFolder = {
     "/private/var/mobile/Library/Mobile Documents/com~apple~CloudDocs/Sample Comics From A Drive With A Long Name",
   isAvailable: true,
 };
+const IPAD_WINDOWS = [
+  { width: 840, height: 1180 },
+  { width: 1024, height: 1366 },
+  { width: 1180, height: 820 },
+];
 
 function withFolders(platform: "ios" | "android" | "linux"): {
   backend: FakeBackend;
@@ -68,6 +74,38 @@ test.describe("linked folders in Settings › Library on ios", () => {
 
     await expect(page.getByText(LINKED.location)).toBeVisible();
   });
+});
+
+test.describe("Settings › Library's grouped ground on an iPad", () => {
+  testOnlyInItsWebview("ios");
+  test.use({ ...onPlatform("ios"), userAgent: IPAD_USER_AGENT });
+
+  for (const window of IPAD_WINDOWS) {
+    test(`stays inside the section's pane without scrolling the page sideways in a ${String(window.width)}px window`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(window);
+      await page.goto("/settings/library");
+      const ground = page.locator("[data-ground=grouped]");
+      const sectionsColumn = page
+        .getByRole("navigation", { name: english.settings_sections_label })
+        .locator("..");
+      await expect(ground).toBeVisible();
+
+      const sidewaysScroll = await page
+        .getByRole("main")
+        .evaluate((main) => main.scrollWidth - main.clientWidth);
+      const groundStart = await ground.evaluate(
+        (element) => element.getBoundingClientRect().left,
+      );
+      const sectionsColumnEnd = await sectionsColumn.evaluate(
+        (element) => element.getBoundingClientRect().right,
+      );
+
+      expect(sidewaysScroll).toBe(0);
+      expect(groundStart).toBeGreaterThanOrEqual(sectionsColumnEnd);
+    });
+  }
 });
 
 for (const platform of ["android", "linux"] as const) {
