@@ -17,7 +17,15 @@ test("keeps every class of every look through the class merge", () => {
 });
 
 test.each<[ButtonLook, string[]]>([
-  ["text", ["font-semibold", "text-accent"]],
+  [
+    "text",
+    [
+      "font-medium",
+      "text-foreground",
+      "android:text-accent",
+      "ios:font-semibold",
+    ],
+  ],
   [
     "quiet",
     ["text-accent", "enabled:hover:bg-hover", "enabled:active:bg-pressed"],
