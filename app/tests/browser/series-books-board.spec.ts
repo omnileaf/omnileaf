@@ -4,6 +4,7 @@ import {
   boxOf,
   expect,
   EXPANDED_MIN_WIDTH,
+  fakeAppInfo,
   test,
   tokenColour,
   viewportOf,
@@ -63,6 +64,10 @@ async function openSeries(page: Page): Promise<void> {
 async function openBooks(page: Page): Promise<void> {
   await openSeries(page);
   await rows(page).first().scrollIntoViewIfNeeded();
+}
+
+function showChoice(page: Page, name: string): Locator {
+  return page.getByRole("group", { name: "Show" }).getByRole("radio", { name });
 }
 
 function booksTable(page: Page): Locator {
@@ -162,6 +167,54 @@ test("shows only the bookmarked books", async ({ page }) => {
   await expect(rows(page).nth(0)).toContainText(shelf.titleOf(1));
   await expect(rows(page).nth(1)).toContainText(shelf.titleOf(4));
 });
+
+test("sets the chosen show choice semibold in the accent's ink and the rest medium in the foreground", async ({
+  page,
+}) => {
+  await openBooks(page);
+
+  await expect(showChoice(page, "All")).toHaveCSS("font-weight", "600");
+  await expect(showChoice(page, "All")).toHaveCSS(
+    "color",
+    await tokenColour(page, "--accent-foreground"),
+  );
+  await expect(showChoice(page, "Unread")).toHaveCSS("font-weight", "500");
+  await expect(showChoice(page, "Unread")).toHaveCSS(
+    "color",
+    await tokenColour(page, "--foreground"),
+  );
+});
+
+test("keeps a show choice as wide once it is chosen", async ({ page }) => {
+  await openBooks(page);
+  const unread = showChoice(page, "Unread");
+  const before = await boxOf(unread);
+
+  await unread.click();
+
+  await expect(unread).toHaveAttribute("aria-checked", "true");
+  expect((await boxOf(unread)).width).toBe(before.width);
+});
+
+for (const platform of ["android", "ios"] as const) {
+  test.describe(`on ${platform}`, () => {
+    test.use({
+      backend: { ...shelf.backend(), appInfo: () => fakeAppInfo(platform) },
+    });
+
+    test("sets the chosen show choice semibold in the foreground", async ({
+      page,
+    }) => {
+      await openBooks(page);
+
+      await expect(showChoice(page, "All")).toHaveCSS("font-weight", "600");
+      await expect(showChoice(page, "All")).toHaveCSS(
+        "color",
+        await tokenColour(page, "--foreground"),
+      );
+    });
+  });
+}
 
 test("names a read book in muted type and the rest in the foreground", async ({
   page,

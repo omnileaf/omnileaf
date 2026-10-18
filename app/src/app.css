@@ -779,6 +779,7 @@
   --color-accent: var(--primary);
   --color-on-accent: var(--primary-foreground);
   --color-accent-soft: var(--accent);
+  --color-on-accent-soft: var(--accent-foreground);
   --color-accent-hover: color-mix(in oklab, var(--primary) 90%, transparent);
   --color-accent-pressed: color-mix(in oklab, var(--primary) 80%, transparent);
   --color-warning: var(--warning);
@@ -974,6 +975,14 @@
     overflow: hidden;
     visibility: hidden;
     font-weight: var(--font-weight-bold);
+  }
+}
+
+@utility room-for-semibold-label {
+  @apply room-for-bold-label;
+
+  &::after {
+    font-weight: var(--font-weight-semibold);
   }
 }
 
