@@ -16,7 +16,7 @@
   bind:this={ref}
   data-slot="card"
   class={cn(
-    "rounded-card border border-border bg-card text-foreground",
+    "rounded-shadcn-card border border-border bg-card text-foreground",
     className,
   )}
   {...restProps}

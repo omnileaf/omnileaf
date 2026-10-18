@@ -702,6 +702,7 @@
   --shadow-menu: var(--menu-shadow);
   --radius-menu: var(--menu-radius);
   --radius-tooltip: var(--tooltip-radius);
+  --radius-shadcn-card: var(--card-radius);
   --blur-menu: var(--menu-blur);
   --color-menu: var(--menu-surface);
   --color-menu-edge: var(--menu-edge);
