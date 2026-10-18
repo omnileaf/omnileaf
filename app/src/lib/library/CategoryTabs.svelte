@@ -119,7 +119,7 @@
 </script>
 
 <div
-  class="-ms-gutter -me-page-end flex items-center gap-xs border-be border-border ps-gutter pe-page-end max-medium:-ms-page-start max-medium:ps-page-start in-toolbar:ps-lg"
+  class="-ms-gutter -me-page-end flex items-center gap-xs border-be border-border ps-gutter pe-page-end max-medium:-ms-page-start max-medium:ps-page-start desktop:expanded:ps-xl in-toolbar:ps-lg"
 >
   <div
     bind:this={strip}
