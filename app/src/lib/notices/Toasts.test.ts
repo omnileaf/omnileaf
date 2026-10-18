@@ -39,6 +39,8 @@ const BACK_ON_PAGE: Notice = {
   title: "Back on page 12",
 };
 
+const IOS_SHEET_CORNER = 14;
+
 const START_OVER: NoticeAction = {
   label: "Start over",
   run: () => undefined,
@@ -459,4 +461,58 @@ test("sets a plain toast in 14px type with a 48px semibold action on Android", a
     title: ["14px", "500"],
     action: [48, "14px", "600"],
   });
+});
+
+function cardOf(toast: Locator): Element {
+  const card = toast.element().firstElementChild;
+  if (card === null) {
+    throw new Error("the toast has no card");
+  }
+  return card;
+}
+
+function cornerOf(element: Element): number {
+  return Number.parseFloat(getComputedStyle(element).borderTopLeftRadius);
+}
+
+test.each<{ platform: Platform; corner: number }>([
+  { platform: "linux", corner: 8 },
+  { platform: "macos", corner: 10 },
+  { platform: "windows", corner: 8 },
+])(
+  "rounds a toast's corners by $corner px on $platform",
+  async ({ platform, corner }) => {
+    const notices = await renderToastsOn(platform);
+    notices.show(READY);
+    const toast = toastSaying(READY.title);
+    await expect.element(toast).toBeVisible();
+
+    const card = cardOf(toast);
+
+    expect(cornerOf(card)).toBe(corner);
+  },
+);
+
+test("draws a toast on ios as a pill", async () => {
+  const notices = await renderToastsOn("ios");
+  notices.show(BACK_ON_PAGE);
+  const toast = toastSaying(BACK_ON_PAGE.title);
+  await expect.element(toast).toBeVisible();
+
+  const card = cardOf(toast);
+
+  expect(cornerOf(card)).toBeGreaterThanOrEqual(
+    card.getBoundingClientRect().height / 2,
+  );
+});
+
+test("rounds a warning toast on ios like a sheet rather than a pill", async () => {
+  const notices = await renderToastsOn("ios");
+  notices.show(UNAVAILABLE);
+  const toast = toastSaying(UNAVAILABLE.title);
+  await expect.element(toast).toBeVisible();
+
+  const card = cardOf(toast);
+
+  expect(cornerOf(card)).toBe(IOS_SHEET_CORNER);
 });

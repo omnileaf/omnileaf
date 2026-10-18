@@ -16,8 +16,9 @@
   const DISMISS_ICON_SIZE = 16;
 
   const TONES = {
-    plain: "border-border bg-card text-foreground",
-    warning: "border-warning-edge bg-warning-soft text-on-warning",
+    plain: "rounded-toast border-border bg-card text-foreground",
+    warning:
+      "rounded-warning-toast border-warning-edge bg-warning-soft text-on-warning",
   } satisfies Record<NoticeTone, string>;
 
   const BODY_TONES = {
@@ -48,7 +49,7 @@
 
 <div
   class={[
-    "flex items-center gap-md rounded-toast border py-md ps-lg pe-sm font-ui wrap-anywhere shadow-toast group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent medium:rounded-toast-wide",
+    "flex items-center gap-md border py-md ps-lg pe-sm font-ui wrap-anywhere shadow-toast group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent",
     TONES[tone],
   ]}
 >

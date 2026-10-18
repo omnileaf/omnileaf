@@ -547,8 +547,6 @@
   --radius-ios-button: 0.875rem;
   --radius-list: 0.625rem;
   --radius-panel: 1rem;
-  --radius-toast: 1.125rem;
-  --radius-toast-wide: 1rem;
   --radius-toast-action: 0.25rem;
   --radius-crash-screen-button: 0.875rem;
   --radius-dialog: 1rem;
@@ -703,6 +701,8 @@
   --radius-menu: var(--menu-radius);
   --radius-tooltip: var(--tooltip-radius);
   --radius-shadcn-card: var(--card-radius);
+  --radius-toast: var(--toast-radius);
+  --radius-warning-toast: var(--warning-toast-radius);
   --blur-menu: var(--menu-blur);
   --color-menu: var(--menu-surface);
   --color-menu-edge: var(--menu-edge);

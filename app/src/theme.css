@@ -240,6 +240,8 @@
   --menu-surface: var(--popover);
   --menu-edge: var(--border);
   --card-radius: var(--radius-xl);
+  --toast-radius: var(--radius-md);
+  --warning-toast-radius: var(--toast-radius);
   --menu-radius: var(--radius-md);
   --menu-shadow: var(--shadow-md);
   --menu-blur: 0px;
@@ -259,6 +261,8 @@
   --menu-surface: var(--ios-material);
   --menu-edge: transparent;
   --card-radius: var(--radius-ios-cell);
+  --toast-radius: 9999px;
+  --warning-toast-radius: var(--radius-ios-sheet);
   --menu-radius: var(--radius-ios-sheet);
   --menu-shadow: var(--shadow-ios-glass);
   --menu-blur: 24px;
@@ -273,6 +277,7 @@
   --menu-surface: var(--macos-menu-material);
   --menu-edge: var(--macos-menu-edge);
   --card-radius: var(--radius-macos-panel);
+  --toast-radius: var(--radius-macos-panel);
   --menu-radius: var(--radius-macos-panel);
   --menu-shadow: var(--shadow-macos-menu);
   --menu-blur: 30px;
@@ -293,6 +298,7 @@
   --menu-surface: var(--windows-flyout);
   --menu-edge: var(--windows-stroke);
   --card-radius: var(--radius-windows-overlay);
+  --toast-radius: var(--radius-windows-overlay);
   --menu-radius: var(--radius-windows-overlay);
   --menu-shadow: var(--shadow-windows-flyout);
   --menu-highlight: var(--windows-subtle);
