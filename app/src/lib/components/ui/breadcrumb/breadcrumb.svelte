@@ -11,7 +11,7 @@
 </script>
 
 <nav class={cn("min-inline-none", className)} {...restProps}>
-  <ol class="flex items-center gap-xs whitespace-nowrap min-inline-none">
+  <ol class="flex items-center gap-crumb whitespace-nowrap min-inline-none">
     {@render children?.()}
   </ol>
 </nav>
