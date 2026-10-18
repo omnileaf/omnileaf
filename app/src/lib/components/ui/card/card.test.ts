@@ -16,6 +16,7 @@ test.each<{ platform: Platform; corner: string }>([
   { platform: "ios", corner: "10px" },
   { platform: "macos", corner: "10px" },
   { platform: "windows", corner: "8px" },
+  { platform: "android", corner: "12px" },
 ])(
   "rounds a card's corners by $corner on $platform",
   async ({ platform, corner }) => {
