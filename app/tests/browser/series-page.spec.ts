@@ -1482,6 +1482,20 @@ test.describe("on Android", () => {
     expect(touched).toBe("Selected books");
   });
 
+  test("lays its cards on the low surface container with no edge, as Material 3 does", async ({
+    page,
+  }) => {
+    await openSeries(page);
+
+    const card = page.getByRole("region", { name: "Continue", exact: true });
+
+    await expect(card).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
+    await expect(card).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--android-container-low"),
+    );
+  });
+
   test("ends picking books with back, staying on the series, and leaves with back after", async ({
     page,
   }) => {
