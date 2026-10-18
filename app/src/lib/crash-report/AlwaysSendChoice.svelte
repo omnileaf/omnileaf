@@ -21,6 +21,9 @@
     LOOKS[look],
   ]}
 >
-  <Checkbox bind:checked class="cursor-pointer" />
+  <Checkbox
+    bind:checked
+    class="relative cursor-pointer before:absolute before:block-pointer-minimum before:inline-pointer-minimum"
+  />
   {m.crash_report_always()}
 </label>

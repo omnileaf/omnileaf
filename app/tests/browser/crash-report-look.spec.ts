@@ -6,6 +6,7 @@ import {
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  targetOf,
   test,
   testOnlyInItsWebview,
   tokenColour,
@@ -27,6 +28,7 @@ const DIALOG_LOOK = {
   title: "17px",
   body: "14px",
   width: 420,
+  pointerTarget: 24,
 };
 
 const PHONE_LOOK = {
@@ -242,6 +244,17 @@ test.describe("on desktop, the crash report dialog", () => {
     expect(await styleOf(copy, "color")).toBe(
       await tokenColour(page, "--color-accent"),
     );
+  });
+
+  test("gives Always send's checkbox a 24px pointer target", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const target = await targetOf(prompt(page).getByRole("checkbox"));
+
+    expect(target.width).toBeGreaterThanOrEqual(DIALOG_LOOK.pointerTarget);
+    expect(target.height).toBeGreaterThanOrEqual(DIALOG_LOOK.pointerTarget);
   });
 });
 
