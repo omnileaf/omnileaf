@@ -21,6 +21,9 @@
   onDismiss={toast.dismiss}
 >
   {#snippet icon()}
-    <Undo2 size={TOAST_ICON_SIZE} class="text-muted" />
+    <Undo2
+      size={TOAST_ICON_SIZE}
+      class="text-muted android:text-snackbar-muted"
+    />
   {/snippet}
 </ToastCard>

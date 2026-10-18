@@ -3,7 +3,7 @@
   import ToastCard, { TOAST_ICON_SIZE } from "./ToastCard.svelte";
 
   const ICON_TONES = {
-    plain: "text-accent",
+    plain: "text-accent android:text-android-inverse-primary",
     warning: "text-warning-strong",
   } satisfies Record<NoticeTone, string>;
 

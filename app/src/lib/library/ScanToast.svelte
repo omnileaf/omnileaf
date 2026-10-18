@@ -66,7 +66,10 @@
 {#if finished === undefined}
   <ToastCard tone="plain" title={findingTitle} onDismiss={toast.dismiss}>
     {#snippet icon()}
-      <Spinner size={TOAST_ICON_SIZE} class="text-accent" />
+      <Spinner
+        size={TOAST_ICON_SIZE}
+        class="text-accent android:text-android-inverse-primary"
+      />
     {/snippet}
     <Progress
       aria-labelledby={titleId}
@@ -89,7 +92,10 @@
     onDismiss={toast.dismiss}
   >
     {#snippet icon()}
-      <CircleCheck size={TOAST_ICON_SIZE} class="text-accent" />
+      <CircleCheck
+        size={TOAST_ICON_SIZE}
+        class="text-accent android:text-android-inverse-primary"
+      />
     {/snippet}
   </ToastCard>
 {/if}

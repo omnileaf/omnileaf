@@ -577,3 +577,25 @@ test("keeps a warning's own colours and filled action on Android, at the snackba
   expect(card.borderTopLeftRadius).toBe("4px");
   expect(action.backgroundColor).toBe(colourOf("--foreground"));
 });
+
+test("draws a plain notice's icon on Android in the snackbar's inverse primary", async () => {
+  const notices = await renderToastsOn("android");
+  notices.show(READY);
+  const toast = toastSaying(READY.title);
+  await expect.element(toast).toBeVisible();
+
+  const icon = getComputedStyle(iconOf(toast));
+
+  expect(icon.color).toBe(colourOf("--android-inverse-primary"));
+});
+
+test("draws the undo icon on Android in the snackbar's muted ink", async () => {
+  const notices = await renderToastsOn("android");
+  notices.offerUndo({ title: "Letters deleted", undo: () => undefined });
+  const toast = toastSaying("Letters deleted");
+  await expect.element(toast).toBeVisible();
+
+  const icon = getComputedStyle(iconOf(toast));
+
+  expect(icon.color).toBe(colourOf("--color-snackbar-muted"));
+});
