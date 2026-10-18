@@ -11,15 +11,19 @@ import {
 } from "./fixtures.ts";
 
 const LAYER_CORNER = "8px";
-const INDICATOR = { width: 3, height: 16 };
+const INDICATOR = { width: 3, height: 16, offsetFromRowCentre: 0 };
 
 function indicatorOf(link: Locator) {
   return link.evaluate((element) => {
     const style = getComputedStyle(element, "::before");
+    const height = parseFloat(style.blockSize);
+    const top =
+      parseFloat(style.insetBlockStart) + parseFloat(style.marginBlockStart);
     return {
       width: parseFloat(style.inlineSize),
-      height: parseFloat(style.blockSize),
+      height,
       colour: style.backgroundColor,
+      offsetFromRowCentre: top + height / 2 - element.clientHeight / 2,
     };
   });
 }
