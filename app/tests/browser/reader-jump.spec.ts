@@ -8,6 +8,7 @@ import {
   EXPANDED_MIN_WIDTH,
   fakeAppInfo,
   MEDIUM_MIN_WIDTH,
+  settle,
   test,
   testOnlyInItsWebview,
   viewportOf,
@@ -94,8 +95,10 @@ function jumpList(page: Page): Locator {
 
 async function openJumpList(page: Page): Promise<Locator> {
   await jumpTrigger(page).click();
-  await expect(jumpList(page)).toBeVisible();
-  return jumpList(page);
+  const list = jumpList(page);
+  await expect(list).toBeVisible();
+  await settle(list);
+  return list;
 }
 
 test("opens Jump to a book from the book's name, the book being read marked in the list", async ({
