@@ -4,9 +4,12 @@ import type { LibraryTag } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
+  onPlatform,
   test,
+  testOnlyInItsWebview,
 } from "./fixtures.ts";
 
 const SEINEN_SERIES = ["0190a3e4-0000-8000-8000-000000000004"];
@@ -15,28 +18,30 @@ const FIRST_TAGS: readonly LibraryTag[] = [
   { name: "Seinen", seriesCount: 1 },
   { name: "Sea", seriesCount: 3 },
 ];
+const TOUCH_BUTTON = { width: 48, height: 48 };
+const COMPACT_BUTTON = { width: 32, height: 32 };
 
 let tags: LibraryTag[] = [...FIRST_TAGS];
 let tagsPutBack: readonly string[] | undefined;
 
-test.use({
-  backend: {
-    ...DEFAULT_BACKEND,
-    libraryTags: () => tags,
-    renameLibraryTag: (tag, to) => {
-      tags = tags.map((one) => (one.name === tag ? { ...one, name: to } : one));
-      return null;
-    },
-    removeLibraryTag: (tag) => {
-      tags = tags.filter((one) => one.name !== tag);
-      return tag === "Seinen" ? SEINEN_SERIES : [];
-    },
-    labelSeries: (_series, changes) => {
-      tagsPutBack = changes.tagsAdded;
-      return null;
-    },
-  } satisfies FakeBackend,
-});
+const TAGS_BACKEND = {
+  ...DEFAULT_BACKEND,
+  libraryTags: () => tags,
+  renameLibraryTag: (tag, to) => {
+    tags = tags.map((one) => (one.name === tag ? { ...one, name: to } : one));
+    return null;
+  },
+  removeLibraryTag: (tag) => {
+    tags = tags.filter((one) => one.name !== tag);
+    return tag === "Seinen" ? SEINEN_SERIES : [];
+  },
+  labelSeries: (_series, changes) => {
+    tagsPutBack = changes.tagsAdded;
+    return null;
+  },
+} satisfies FakeBackend;
+
+test.use({ backend: TAGS_BACKEND });
 
 test.beforeEach(() => {
   tags = [...FIRST_TAGS];
@@ -49,6 +54,19 @@ function tagList(page: Page): Locator {
 
 function rowOf(page: Page, tag: string): Locator {
   return tagList(page).getByRole("listitem").filter({ hasText: tag });
+}
+
+async function sizesOfRowButtons(
+  page: Page,
+  tag: string,
+): Promise<readonly { width: number; height: number }[]> {
+  const row = rowOf(page, tag);
+  return Promise.all(
+    [`Rename ${tag}`, `Delete ${tag}`].map(async (name) => {
+      const { width, height } = await boxOf(row.getByRole("button", { name }));
+      return { width, height };
+    }),
+  );
 }
 
 test("lists every tag with how many series carry it", async ({ page }) => {
@@ -120,4 +138,36 @@ test("has no accessibility violations", async ({ page }) => {
   await expect(tagList(page)).toBeVisible();
 
   expect(await accessibilityViolations(page)).toEqual([]);
+});
+
+for (const platform of ["android", "ios"] as const) {
+  test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
+    test.use({
+      backend: {
+        ...TAGS_BACKEND,
+        appInfo: onPlatform(platform).backend.appInfo,
+      },
+    });
+
+    test("sizes Rename and Delete as the boards do", async ({ page }) => {
+      await page.goto("/settings/library/tags");
+
+      expect(await sizesOfRowButtons(page, "Slice of life")).toEqual([
+        TOUCH_BUTTON,
+        TOUCH_BUTTON,
+      ]);
+    });
+  });
+}
+
+test.describe("on a Linux desktop", () => {
+  test("sizes Rename and Delete as the boards do", async ({ page }) => {
+    await page.goto("/settings/library/tags");
+
+    expect(await sizesOfRowButtons(page, "Slice of life")).toEqual([
+      COMPACT_BUTTON,
+      COMPACT_BUTTON,
+    ]);
+  });
 });
