@@ -480,14 +480,6 @@ test("sets a plain toast in 14px type with a 48px semibold action on Android", a
   });
 });
 
-function cardOf(toast: Locator): Element {
-  const card = toast.element().firstElementChild;
-  if (card === null) {
-    throw new Error("the toast has no card");
-  }
-  return card;
-}
-
 function cornerOf(element: Element): number {
   return Number.parseFloat(getComputedStyle(element).borderTopLeftRadius);
 }
