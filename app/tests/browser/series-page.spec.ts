@@ -36,6 +36,7 @@ const SWIPED_PAST_HALFWAY = 0.7;
 const READ = { state: "read" } as const;
 const NOT_STARTED = { state: "notStarted" } as const;
 const ON_PAGE_15 = { state: "started", page: 15 } as const;
+const CRUMB_GAP = 10;
 
 const TWELVE_BOOKS = [
   READ,
@@ -445,6 +446,24 @@ test("leads back to the library through a breadcrumb beside the page's name on w
     "aria-current",
     "page",
   );
+});
+
+test("sets the breadcrumb's chevron 10px from the Library link and from the series' name", async ({
+  page,
+}) => {
+  test.skip(
+    viewportOf(page).width < MEDIUM_MIN_WIDTH,
+    "phones show a back button",
+  );
+  await openSeries(page);
+  const crumbs = page.getByRole("navigation", { name: "Breadcrumb" });
+
+  const library = await boxOf(crumbs.getByRole("link", { name: "Library" }));
+  const chevron = await boxOf(crumbs.locator("svg"));
+  const name = await boxOf(crumbs.getByText(SERIES_TITLE));
+
+  expect(chevron.x - (library.x + library.width)).toBeCloseTo(CRUMB_GAP, 0);
+  expect(name.x - (chevron.x + chevron.width)).toBeCloseTo(CRUMB_GAP, 0);
 });
 
 test("marks every book of the series read, and back with Undo", async ({
