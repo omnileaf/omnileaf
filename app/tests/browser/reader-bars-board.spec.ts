@@ -7,6 +7,7 @@ import {
   expect,
   EXPANDED_MIN_WIDTH,
   LARGE_MIN_WIDTH,
+  settle,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -78,7 +79,9 @@ async function openBook(page: Page): Promise<void> {
 
 async function openMore(page: Page): Promise<Locator> {
   await page.getByRole("button", { name: "More", exact: true }).click();
-  return isWide(page) ? page.getByRole("menu") : page.getByRole("dialog");
+  const more = isWide(page) ? page.getByRole("menu") : page.getByRole("dialog");
+  await settle(more);
+  return more;
 }
 
 test("shows AUTO on the direction button while the direction is left to the app", async ({
