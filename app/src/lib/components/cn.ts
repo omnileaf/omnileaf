@@ -128,6 +128,7 @@ export const TOKEN_THEME = {
     "tile",
     "toast",
     "toast-action",
+    "toast-wide",
     "tooltip",
     "warning-toast",
   ],

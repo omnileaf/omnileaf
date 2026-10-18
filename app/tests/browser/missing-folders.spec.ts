@@ -7,15 +7,22 @@ import type {
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
+  MEDIUM_MIN_WIDTH,
+  onPlatform,
   settle,
   test,
+  testOnlyInItsWebview,
+  viewportOf,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(12);
 const FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000002";
+const POINTER_ACTION_HEIGHT = 24;
+const TOUCH_ACTION_HEIGHT = 48;
 const ACTION_EDGE_SHARE = 45;
 
 let missing: MissingFolder[] = [];
@@ -142,6 +149,19 @@ test.describe("with a folder that isn't there", () => {
     expect(asked).toEqual([`relocate ${FOLDER_ID}`]);
   });
 
+  test("draws Find the folder 24px tall with 4px corners in 12px medium type on a desktop", async ({
+    page,
+  }) => {
+    const find = await findTheFolder(page);
+
+    const height = (await boxOf(find)).height;
+
+    expect(height).toBe(POINTER_ACTION_HEIGHT);
+    await expect(find).toHaveCSS("border-top-left-radius", "4px");
+    await expect(find).toHaveCSS("font-size", "12px");
+    await expect(find).toHaveCSS("font-weight", "500");
+  });
+
   for (const theme of ["light", "dark"] as const) {
     test(`edges Find the folder in the warning ink at 45% in the ${theme} theme`, async ({
       page,
@@ -154,6 +174,52 @@ test.describe("with a folder that isn't there", () => {
       await expect(find).toHaveCSS("border-top-color", edge);
     });
   }
+
+  test.describe("on an Android phone", () => {
+    testOnlyInItsWebview("android");
+    test.use({
+      backend: {
+        ...backendMissing(folder),
+        appInfo: onPlatform("android").backend.appInfo,
+      },
+    });
+
+    test("draws Find the folder 48px tall in 14px semibold type", async ({
+      page,
+    }) => {
+      test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+      const find = await findTheFolder(page);
+
+      const height = (await boxOf(find)).height;
+
+      expect(height).toBe(TOUCH_ACTION_HEIGHT);
+      await expect(find).toHaveCSS("font-size", "14px");
+      await expect(find).toHaveCSS("font-weight", "600");
+    });
+  });
+
+  test.describe("on an iPhone", () => {
+    testOnlyInItsWebview("ios");
+    test.use({
+      backend: {
+        ...backendMissing(folder),
+        appInfo: onPlatform("ios").backend.appInfo,
+      },
+    });
+
+    test("draws Find the folder 48px tall in 14px medium type", async ({
+      page,
+    }) => {
+      test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+      const find = await findTheFolder(page);
+
+      const height = (await boxOf(find)).height;
+
+      expect(height).toBe(TOUCH_ACTION_HEIGHT);
+      await expect(find).toHaveCSS("font-size", "14px");
+      await expect(find).toHaveCSS("font-weight", "500");
+    });
+  });
 
   test("stays dismissed while the app stays open", async ({ page }) => {
     await page.goto("/");
