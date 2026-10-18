@@ -83,6 +83,31 @@ test("puts the 80px navigation bar on the surface container, with the tonal pill
   ).toHaveCSS("background-color", await tokenColour(page, "--android-tonal"));
 });
 
+test("labels the current section at 600 in the foreground and the others at 500 in the bar's ink", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  test.skip(
+    viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+    "wider screens list the sections in a rail or a drawer",
+  );
+  const navigation = page.getByRole("navigation", { name: "Main" });
+
+  const current = navigation.getByRole("link", { name: "Library" });
+  const other = navigation.getByRole("link", { name: "Browse" });
+
+  await expect(current).toHaveCSS("font-weight", "600");
+  await expect(current).toHaveCSS(
+    "color",
+    await tokenColour(page, "--foreground"),
+  );
+  await expect(other).toHaveCSS("font-weight", "500");
+  await expect(other).toHaveCSS(
+    "color",
+    await tokenColour(page, "--android-tab-ink"),
+  );
+});
+
 test("lays a state layer in the control's own colour under the pointer, instead of a grey fill", async ({
   page,
   isMobile,

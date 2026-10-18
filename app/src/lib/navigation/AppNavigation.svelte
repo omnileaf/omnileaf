@@ -122,8 +122,8 @@
                 "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-row expanded:px-md expanded:text-label desktop:expanded:gap-sm desktop:expanded:rounded-sidebar-row desktop:expanded:px-sm desktop:expanded:py-none desktop:expanded:block-sidebar-row desktop:expanded:min-block-sidebar-row sidebar-hidden:justify-center sidebar-hidden:px-none",
                 "ios:max-medium:flex-1 ios:max-medium:justify-center ios:max-medium:gap-2xs ios:max-medium:rounded-full ios:max-medium:py-none ios:max-medium:text-tab ios:max-medium:font-semibold",
                 isSelected
-                  ? "font-bold text-accent expanded:bg-accent-soft desktop:expanded:bg-sidebar-selection desktop:expanded:font-medium desktop:expanded:text-on-sidebar-selection"
-                  : "font-medium text-muted expanded:text-sidebar-ink expanded:hover:tint-hover expanded:active:tint-pressed ios:max-medium:text-foreground desktop:expanded:font-regular desktop:expanded:hover:bg-sidebar-accent desktop:expanded:hover:text-on-sidebar-accent",
+                  ? "font-bold text-accent expanded:bg-accent-soft android:max-medium:font-semibold android:max-medium:text-foreground desktop:expanded:bg-sidebar-selection desktop:expanded:font-medium desktop:expanded:text-on-sidebar-selection"
+                  : "font-medium text-muted expanded:text-sidebar-ink expanded:hover:tint-hover expanded:active:tint-pressed ios:max-medium:text-foreground android:max-medium:text-android-tab-ink desktop:expanded:font-regular desktop:expanded:hover:bg-sidebar-accent desktop:expanded:hover:text-on-sidebar-accent",
               ]}
             >
               <span
