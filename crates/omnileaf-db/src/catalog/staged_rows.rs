@@ -31,7 +31,7 @@ macro_rules! series_at_stage {
     ($stage:literal, $condition:expr) => {
         concat!(
             "SELECT series.id AS id, series.title, series.title_key, series.book_count, series.added_at_ms,
-                series.last_read_at_ms, series.updated_at_ms,
+                series.last_read_at_ms, series.updated_at_ms, series.time_left_key,
                 cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
                 series.unread_count
             FROM series ",
@@ -170,7 +170,8 @@ fn place_after(
         | Position::LastRead { .. }
         | Position::Session { .. }
         | Position::LastUpdated { .. }
-        | Position::UnreadCount { .. } => Err(Error::CursorForAnotherList),
+        | Position::UnreadCount { .. }
+        | Position::TimeLeft { .. } => Err(Error::CursorForAnotherList),
     }
 }
 

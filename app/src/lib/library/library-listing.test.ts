@@ -49,6 +49,12 @@ test("lists the series with the most unread books first once unread count is cho
   expect(listing.sort).toEqual({ by: "unreadCount", direction: "descending" });
 });
 
+test("lists the series quickest to finish first once time left is chosen", () => {
+  const listing = sortedBy(NEW_LIBRARY_LISTING, "timeLeft");
+
+  expect(listing.sort).toEqual({ by: "timeLeft", direction: "ascending" });
+});
+
 test("lists titles from A to Z once title is chosen", () => {
   const listing = sortedBy(NEWEST_UNREAD, "title");
 

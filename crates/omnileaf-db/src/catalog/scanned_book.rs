@@ -95,6 +95,7 @@ fn record_scanned_book(
         series: scanned.series.id(),
         title: scanned.title.clone(),
         added_at_ms: scanned.added_at_ms,
+        page_count: Some(scanned.page_count),
     };
     match filing {
         Filing::WhereFirstFound => add_book_unless_present(transaction, &book)?,

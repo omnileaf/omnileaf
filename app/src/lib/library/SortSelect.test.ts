@@ -73,5 +73,30 @@ test("lists the sorts in the order board 6.4 draws them", async () => {
     "Recently added",
     "Last updated",
     "Unread count",
+    "Time left to finish",
   ]);
+});
+
+test("notes under the sort that time left uses the reading speed once it is chosen", async () => {
+  const screen = await render(SortSelect, {
+    sort: { by: "timeLeft", direction: "ascending" },
+    onSortBy: vi.fn(),
+    onReverse: vi.fn(),
+  });
+
+  await expect
+    .element(screen.getByRole("combobox", { name: "Sort by" }))
+    .toHaveAccessibleDescription("Time left uses your reading speed.");
+});
+
+test("leaves the time left note out while another sort is chosen", async () => {
+  const screen = await render(SortSelect, {
+    sort: TITLE_ASCENDING,
+    onSortBy: vi.fn(),
+    onReverse: vi.fn(),
+  });
+
+  await expect
+    .element(screen.getByText("Time left uses your reading speed."))
+    .not.toBeInTheDocument();
 });
