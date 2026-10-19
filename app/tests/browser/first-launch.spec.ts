@@ -659,6 +659,74 @@ test.describe("the home folder on an iPad", () => {
   });
 });
 
+const PICKED_IN_FILES: WireFolder[] = [
+  {
+    id: "4",
+    kind: "linked",
+    name: "Comics",
+    location:
+      "/private/var/mobile/Library/Mobile Documents/com~apple~CloudDocs/Comics",
+    isAvailable: true,
+  },
+  {
+    id: "5",
+    kind: "linked",
+    name: "Manga",
+    location:
+      "/private/var/mobile/Library/LiveFiles/com.apple.filesystems.userfsd/USB drive/Manga",
+    isAvailable: true,
+  },
+  {
+    id: "6",
+    kind: "linked",
+    name: "Old comics",
+    location:
+      "/private/var/mobile/Containers/Shared/AppGroup/0A1B2C3D-4E5F-6071-8293-A4B5C6D7E8F9/File Provider Storage/Old comics",
+    isAvailable: true,
+  },
+];
+
+for (const [appleDevice, userAgent] of [
+  ["iPhone", IPHONE_USER_AGENT],
+  ["iPad", IPAD_USER_AGENT],
+] as const) {
+  test.describe(`folders picked in Files on an ${appleDevice}`, () => {
+    testOnlyInItsWebview("ios");
+    test.use({
+      backend: {
+        ...FIRST_LAUNCH_BACKEND,
+        appInfo: onPlatform("ios").backend.appInfo,
+      },
+      userAgent,
+    });
+
+    test.beforeEach(() => {
+      device.folders = [HOME_FOLDER, ...PICKED_IN_FILES];
+    });
+
+    test("names each folder by where the Files app shows it, never its path", async ({
+      page,
+    }) => {
+      await goTo(page, "Already have comics or books?", "ios");
+      const rows = page
+        .getByRole("region", { name: "Folders" })
+        .getByRole("listitem");
+
+      await expect(rows).toHaveCount(PICKED_IN_FILES.length);
+      for (const [index, place] of [
+        "iCloud Drive › Comics",
+        "USB drive › Manga",
+        `On My ${appleDevice} › Old comics`,
+      ].entries()) {
+        await expect(rows.nth(index)).toContainText(place);
+      }
+      for (const folder of PICKED_IN_FILES) {
+        await expect(page.getByText(folder.location)).toHaveCount(0);
+      }
+    });
+  });
+}
+
 for (const [index, step] of MIDDLE_STEPS.entries()) {
   test(`says "${step.heading}" is step ${String(index + 1)} of 3 with three dots`, async ({
     page,
