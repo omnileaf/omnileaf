@@ -1641,7 +1641,6 @@
   "edit_details_title_left_empty": "⟦Ļéƒţ éɱþţý, šö ţĥé ƒíļé’š ţíţļé šĥöŵš: “{value}”. Ţýþé ţö šéţ ýöûŕ öŵñ.·····························⟧",
   "edit_details_summary_left_empty": "⟦Ļéƒţ éɱþţý, šö ţĥé ƒíļé’š šûɱɱáŕý šĥöŵš. Ţýþé ţö šéţ ýöûŕ öŵñ.·························⟧",
   "edit_details_person": "⟦{role} · {name}······⟧",
-  "edit_details_remove_person": "⟦Ŕéɱöṽé {name} áš {role}··········⟧",
   "edit_details_remove_named": "⟦Ŕéɱöṽé {name}······⟧",
   "edit_details_show_all": "⟦Šĥöŵ áļļ {count}·······⟧",
   "edit_details_add_person": "⟦Áðð á þéŕšöñ·····⟧",

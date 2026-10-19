@@ -1641,7 +1641,6 @@
   "edit_details_title_left_empty": "Left empty, so the file’s title shows: “{value}”. Type to set your own.",
   "edit_details_summary_left_empty": "Left empty, so the file’s summary shows. Type to set your own.",
   "edit_details_person": "{role} · {name}",
-  "edit_details_remove_person": "Remove {name} as {role}",
   "edit_details_remove_named": "Remove {name}",
   "edit_details_show_all": "Show all {count}",
   "edit_details_add_person": "Add a person",
