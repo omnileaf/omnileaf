@@ -65,6 +65,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0029_hide_the_series_of_missing_folders"),
     migration!("0030_hide_books_from_history"),
     migration!("0031_remember_the_page_each_reading_session_started_on"),
+    migration!("0032_track_when_each_series_last_gained_a_book"),
 ];
 
 pub(crate) fn pending(
@@ -228,6 +229,8 @@ mod tests {
     };
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
+
+    const BOOK_GAINED_LAST: &str = "SELECT max(added_at_ms) FROM book WHERE series_local_id = ?1";
 
     #[test]
     fn brings_a_new_database_to_the_latest_schema_version() {
@@ -742,6 +745,48 @@ mod tests {
             .query_row("SELECT reading_stage FROM series", [], |row| row.get(0))
             .unwrap();
         assert_eq!(stage, None);
+    }
+
+    #[test]
+    fn knows_when_each_series_kept_from_before_last_gained_a_book() {
+        let scratch = ScratchLibrary::new("last-updated-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..31]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for (number, added_at_ms) in [(1, 7_000), (2, 9_000), (3, 8_000)] {
+            connection
+                .execute(
+                    "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                     VALUES (?1, 1, 'Volume', x'', ?2)",
+                    (book(number).as_bytes(), added_at_ms),
+                )
+                .unwrap();
+        }
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let updated_at_ms: i64 = connection
+            .query_row("SELECT updated_at_ms FROM series", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(updated_at_ms, 9_000);
+    }
+
+    #[test]
+    fn finds_the_book_a_series_gained_last_from_an_index_when_one_leaves_it() {
+        let scratch = ScratchLibrary::new("book-gained-last-plan");
+
+        let plan = scratch.query_plan(BOOK_GAINED_LAST);
+
+        assert_eq!(
+            plan,
+            ["SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)"]
+        );
     }
 
     fn schema_of(path: &Path) -> Schema {

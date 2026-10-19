@@ -25,9 +25,10 @@ pub enum LibrarySortBy {
     Title,
     DateAdded,
     LastRead,
+    LastUpdated,
 }
 
-/// Ascending lists titles from A to Z, series added earliest first, and series read longest ago first, those never read before them.
+/// Ascending lists titles from A to Z, and series added, updated or read longest ago first, those never read before them.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum SortDirection {
@@ -129,6 +130,7 @@ impl From<LibraryListing> for SeriesListing {
                     LibrarySortBy::Title => SeriesOrder::Title,
                     LibrarySortBy::DateAdded => SeriesOrder::DateAdded,
                     LibrarySortBy::LastRead => SeriesOrder::LastRead,
+                    LibrarySortBy::LastUpdated => SeriesOrder::LastUpdated,
                 },
                 direction: listing.sort.direction.into(),
             },
@@ -154,6 +156,7 @@ impl From<SeriesListing> for LibraryListing {
                     SeriesOrder::Title => LibrarySortBy::Title,
                     SeriesOrder::DateAdded => LibrarySortBy::DateAdded,
                     SeriesOrder::LastRead => LibrarySortBy::LastRead,
+                    SeriesOrder::LastUpdated => LibrarySortBy::LastUpdated,
                 },
                 direction: match listing.sort.direction {
                     StoredDirection::Ascending => SortDirection::Ascending,

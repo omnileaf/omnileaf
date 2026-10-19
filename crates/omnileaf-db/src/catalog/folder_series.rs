@@ -9,7 +9,7 @@ use crate::{
         series_listing::{SeriesFilter, SeriesListing, SeriesOrder, StageParams},
         series_page::{
             Directions, SeriesSummary, added_place, date_added_rows, directions, last_read_place,
-            last_read_rows,
+            last_read_rows, last_updated_place, last_updated_rows,
         },
         staged_rows::{Read, TitlePlace, title_place, title_rows},
     },
@@ -46,6 +46,13 @@ const BY_LAST_READ: Directions<Position> = directions! {
     sort_position: last_read_place,
 };
 
+const BY_LAST_UPDATED: Directions<Position> = directions! {
+    with: concat!("WITH in_folder AS MATERIALIZED (", series_in_folder!(), ") "),
+    condition: " AND series.local_id IN in_folder",
+    key: "updated_at_ms",
+    sort_position: last_updated_place,
+};
+
 const SERIES_IN_FOLDER: &str = concat!(
     "SELECT count(*) FROM series
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
@@ -74,6 +81,9 @@ pub fn folder_series_page(
         SeriesOrder::Title => title_rows(&read, BY_TITLE.toward(direction), after),
         SeriesOrder::DateAdded => date_added_rows(&read, BY_DATE_ADDED.toward(direction), after),
         SeriesOrder::LastRead => last_read_rows(&read, BY_LAST_READ.toward(direction), after),
+        SeriesOrder::LastUpdated => {
+            last_updated_rows(&read, BY_LAST_UPDATED.toward(direction), after)
+        }
     }?;
     Ok(Page::of(rows, request.size))
 }
@@ -109,6 +119,8 @@ mod tests {
             BY_TITLE.descending.next_page_query,
             BY_DATE_ADDED.ascending.first_page_query,
             BY_DATE_ADDED.descending.next_page_query,
+            BY_LAST_UPDATED.ascending.first_page_query,
+            BY_LAST_UPDATED.descending.next_page_query,
         ]
         .map(|query| scratch.query_plan(query));
 
