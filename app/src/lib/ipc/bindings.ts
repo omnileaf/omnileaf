@@ -21,6 +21,9 @@ export const commands = {
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
 	librarySeries: (after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_series", { after, listing })),
 	librarySeriesCount: (filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("library_series_count", { filter })),
+	libraryCategories: () => typedError<LibraryCategory[], IpcError>(__TAURI_INVOKE("library_categories")),
+	categorySeries: (category: string & { readonly __brand: "CategoryId" }, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("category_series", { category, after, listing })),
+	categorySeriesCount: (category: string & { readonly __brand: "CategoryId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("category_series_count", { category, filter })),
 	librarySearch: (after: string & { readonly __brand: "SeriesCursor" } | null, search: LibrarySearch) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_search", { after, search })),
 	librarySearchCount: (search: LibrarySearch) => typedError<number, IpcError>(__TAURI_INVOKE("library_search_count", { search })),
 	seriesOverview: (id: string & { readonly __brand: "SeriesId" }) => typedError<SeriesOverview, IpcError>(__TAURI_INVOKE("series_overview", { id })),
@@ -243,6 +246,11 @@ export type IpcError = {
 };
 
 export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookmarksNotKept" | "internal";
+
+export type LibraryCategory = {
+	id: string & { readonly __brand: "CategoryId" },
+	name: string,
+};
 
 export type LibraryChanged = null;
 

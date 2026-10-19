@@ -11,8 +11,8 @@ use std::{
 };
 
 use omnileaf_engine::{
-    AppleBookmark, Changed, CoversPerRow, DesktopCoversPerRow, FolderId, FolderKind, Inclusion,
-    Library, LibraryDisplay, LibraryError, LibraryFilter, LibraryFolder, LibraryListing,
+    AppleBookmark, CategoryId, Changed, CoversPerRow, DesktopCoversPerRow, FolderId, FolderKind,
+    Inclusion, Library, LibraryDisplay, LibraryError, LibraryFilter, LibraryFolder, LibraryListing,
     LibrarySort, LibrarySortBy, LibraryView, OnCovers, PhoneCoversPerRow, ResolvedBookmark,
     RootLocator, ScanProgress, SortDirection, TabletCoversPerRow,
 };
@@ -780,6 +780,34 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
     let reopened = open(home.path()).await;
 
     assert_eq!(reopened.view().await.unwrap(), list);
+}
+
+#[tokio::test]
+async fn keeps_no_categories_until_the_library_keeps_them() {
+    let home = ScratchFolder::new("library-categories-none");
+
+    let categories = open(home.path()).await.categories().unwrap();
+
+    assert_eq!(categories, Vec::new());
+}
+
+#[tokio::test]
+async fn finds_no_series_in_a_category_the_library_does_not_keep() {
+    let home = ScratchFolder::new("library-category-series");
+    let library = open(home.path()).await;
+    let category = CategoryId::from("Manga".to_owned());
+
+    let page = library
+        .category_series(category.clone(), LibraryListing::default(), None)
+        .unwrap();
+    let count = library
+        .category_series_count(category, LibraryListing::default().filter)
+        .unwrap();
+
+    assert_eq!(
+        (page.series.len(), page.next.is_none(), count),
+        (0, true, 0)
+    );
 }
 
 #[tokio::test]

@@ -115,6 +115,61 @@ function passes(series: SampleSeries, filter: LibraryFilter): boolean {
   );
 }
 
+interface SampleCategory {
+  readonly id: string;
+  readonly name: string;
+  readonly holds: (series: SampleSeries) => boolean;
+}
+
+const COMICS_EVERY = 3;
+const FAVOURITES_EVERY = 5;
+const FAVOURITE_REMAINDER = 4;
+
+const SAMPLE_CATEGORIES: readonly SampleCategory[] = [
+  {
+    id: "reading",
+    name: "Reading",
+    holds: (series) =>
+      series.books.some(isStarted) && !series.books.every(isRead),
+  },
+  {
+    id: "manga",
+    name: "Manga",
+    holds: (series) => series.format === "Manga",
+  },
+  {
+    id: "comics",
+    name: "Comics",
+    holds: (series) => series.number % COMICS_EVERY === 0,
+  },
+  {
+    id: "plan-to-read",
+    name: "Plan to read",
+    holds: (series) => !series.books.some(isStarted),
+  },
+  {
+    id: "favourites",
+    name: "Favourites",
+    holds: (series) => series.number % FAVOURITES_EVERY === FAVOURITE_REMAINDER,
+  },
+  {
+    id: "seinen",
+    name: "Seinen",
+    holds: (series) => series.tags.includes("Seinen"),
+  },
+  {
+    id: "sea-stories",
+    name: "Sea stories",
+    holds: (series) => series.tags.includes("Sea"),
+  },
+];
+
+function categoryHolds(category: string): (series: SampleSeries) => boolean {
+  return (
+    SAMPLE_CATEGORIES.find(({ id }) => id === category)?.holds ?? (() => false)
+  );
+}
+
 function wireReading(reading: SampleReading) {
   return reading.state === "started"
     ? { state: "started" as const, page: reading.page }
@@ -346,6 +401,26 @@ export function sampleBackend(
     librarySeriesCount: async (filter) => {
       await libraryReady();
       return library.filter((series) => passes(series, filter)).length;
+    },
+    libraryCategories: async () => {
+      await libraryReady();
+      return library.length === 0
+        ? []
+        : SAMPLE_CATEGORIES.map(({ id, name }) => ({ id, name }));
+    },
+    categorySeries: async (category, after, chosen) => {
+      await libraryReady();
+      const page = pageOf(
+        sorted(chosen).filter(categoryHolds(category)),
+        after,
+      );
+      return { series: page.items.map(wireSeries), next: page.next };
+    },
+    categorySeriesCount: async (category, filter) => {
+      await libraryReady();
+      const holds = categoryHolds(category);
+      return library.filter((series) => passes(series, filter) && holds(series))
+        .length;
     },
     librarySearch: async (after, search) => {
       await libraryReady();

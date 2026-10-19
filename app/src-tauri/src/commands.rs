@@ -2,12 +2,13 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 #[cfg(debug_assertions)]
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
-    AppInfo, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval, Core,
-    CoversPerRow, CreatorSeries, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan,
-    HistoryCursor, HistoryOf, HistoryPage, HistorySeries, InterfaceError, Library, LibraryFilter,
-    LibraryListing, LibrarySearch, LibraryView, LocalDay, OpenedBook, ProbedFormat, ProjectLink,
-    ReadMark, ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage,
-    SeriesCursor, SeriesId, SeriesOverview, SeriesPage, UtcOffset,
+    AppInfo, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval, CategoryId,
+    Core, CoversPerRow, CreatorSeries, FolderCursor, FolderId, FolderPage, FolderRescan,
+    FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, InterfaceError, Library,
+    LibraryCategory, LibraryFilter, LibraryListing, LibrarySearch, LibraryView, LocalDay,
+    OpenedBook, ProbedFormat, ProjectLink, ReadMark, ReadingWeek, ResourceRouter, ScanProgress,
+    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesOverview, SeriesPage,
+    UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -41,6 +42,9 @@ macro_rules! app_commands {
             library_folders,
             library_series,
             library_series_count,
+            library_categories,
+            category_series,
+            category_series_count,
             library_search,
             library_search_count,
             series_overview,
@@ -248,6 +252,33 @@ async fn library_series_count(
     filter: LibraryFilter,
 ) -> Result<u32, IpcError> {
     Ok(library.series_count(filter).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_categories(library: State<'_, Library>) -> Result<Vec<LibraryCategory>, IpcError> {
+    Ok(library.categories()?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn category_series(
+    library: State<'_, Library>,
+    category: CategoryId,
+    after: Option<SeriesCursor>,
+    listing: LibraryListing,
+) -> Result<SeriesPage, IpcError> {
+    Ok(library.category_series(category, listing, after)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn category_series_count(
+    library: State<'_, Library>,
+    category: CategoryId,
+    filter: LibraryFilter,
+) -> Result<u32, IpcError> {
+    Ok(library.category_series_count(category, filter)?)
 }
 
 #[tauri::command]
