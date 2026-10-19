@@ -118,6 +118,35 @@ test("lays the settings on one row grid, a hairline between rows and every contr
   expect(Math.round(brightness.x + brightness.width)).toBe(rightEdge);
 });
 
+test("puts each label of Pages and Light beside its control, on phones as on desktops", async ({
+  page,
+}) => {
+  await openBook(page);
+  const panel = await openSettings(page);
+  await settle(page.locator("body"));
+  const mode = await boxOf(
+    panel.getByRole("combobox", { name: "Reading mode" }),
+  );
+  const rightEdge = Math.round(mode.x + mode.width);
+
+  for (const name of ["Tap zones", "Page turn"]) {
+    const group = panel.getByRole("group", { name });
+    await group.scrollIntoViewIfNeeded();
+    const control = await boxOf(group);
+    const label = await boxOf(panel.getByText(name, { exact: true }));
+    expect(centreOf(label), name).toBeCloseTo(centreOf(control), 0);
+    expect(Math.round(control.x + control.width), name).toBe(rightEdge);
+  }
+  for (const name of ["Brightness", "Warmth"]) {
+    const slider = panel.getByRole("slider", { name });
+    await slider.scrollIntoViewIfNeeded();
+    const control = await boxOf(slider.locator(".."));
+    const label = await boxOf(panel.getByText(name, { exact: true }));
+    expect(centreOf(label), name).toBeCloseTo(centreOf(control), 0);
+    expect(Math.round(control.x + control.width), name).toBe(rightEdge);
+  }
+});
+
 test("names the layouts in full and says how to zoom, on phones", async ({
   page,
 }) => {
