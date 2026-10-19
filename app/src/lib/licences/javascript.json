@@ -26,7 +26,7 @@
     },
     {
       "name": "@inlang/paraglide-js",
-      "version": "2.26.0",
+      "version": "2.29.0",
       "licence": "MIT",
       "texts": [
         1
@@ -34,7 +34,7 @@
     },
     {
       "name": "@lucide/svelte",
-      "version": "1.53.0",
+      "version": "1.58.0",
       "licence": "ISC",
       "texts": [
         2
@@ -42,7 +42,7 @@
     },
     {
       "name": "@sveltejs/kit",
-      "version": "3.0.1",
+      "version": "3.1.0",
       "licence": "MIT",
       "texts": [
         3
@@ -50,7 +50,7 @@
     },
     {
       "name": "@tauri-apps/api",
-      "version": "2.12.1",
+      "version": "2.12.4",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         4,
