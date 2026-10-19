@@ -5,7 +5,7 @@ use omnileaf_db::catalog::{
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LibraryListing {
     pub sort: LibrarySort,
@@ -35,7 +35,7 @@ pub enum SortDirection {
     Descending,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LibraryFilter {
     /// Holds a book not marked read.
@@ -44,6 +44,34 @@ pub struct LibraryFilter {
     pub started: Inclusion,
     /// Has every book marked read.
     pub finished: Inclusion,
+    /// Is one of these formats, or any format when empty.
+    pub formats: Vec<SeriesFormat>,
+    /// Is in one of these languages, or any language when empty.
+    pub languages: Vec<String>,
+    /// Carries one of these tags, or any tag when empty.
+    pub tags: Vec<String>,
+    /// Has an adult age rating, or is marked adult by hand.
+    pub adult: Inclusion,
+    /// Has a bookmarked page.
+    pub bookmarked: Inclusion,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum SeriesFormat {
+    Comic,
+    Manga,
+    Book,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryFilterChoices {
+    pub formats: Vec<SeriesFormat>,
+    pub languages: Vec<String>,
+    pub tags: Vec<String>,
+    pub rates_adult: bool,
+    pub keeps_bookmarks: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -65,6 +93,11 @@ impl Default for LibraryListing {
                 unread: Inclusion::Any,
                 started: Inclusion::Any,
                 finished: Inclusion::Any,
+                formats: Vec::new(),
+                languages: Vec::new(),
+                tags: Vec::new(),
+                adult: Inclusion::Any,
+                bookmarked: Inclusion::Any,
             },
         }
     }
@@ -80,7 +113,7 @@ impl From<LibraryListing> for SeriesListing {
                 },
                 direction: listing.sort.direction.into(),
             },
-            filter: listing.filter.into(),
+            filter: (&listing.filter).into(),
         }
     }
 }
@@ -112,8 +145,8 @@ impl From<SeriesListing> for LibraryListing {
     }
 }
 
-impl From<LibraryFilter> for SeriesFilter {
-    fn from(filter: LibraryFilter) -> Self {
+impl From<&LibraryFilter> for SeriesFilter {
+    fn from(filter: &LibraryFilter) -> Self {
         Self {
             unread: filter.unread.into(),
             started: filter.started.into(),
@@ -128,6 +161,7 @@ impl From<SeriesFilter> for LibraryFilter {
             unread: filter.unread.into(),
             started: filter.started.into(),
             finished: filter.finished.into(),
+            ..LibraryListing::default().filter
         }
     }
 }
@@ -177,6 +211,11 @@ mod tests {
                 unread: Inclusion::Only,
                 started: Inclusion::Any,
                 finished: Inclusion::Hide,
+                formats: vec![SeriesFormat::Manga],
+                languages: vec!["ja".to_owned()],
+                tags: vec!["Seinen".to_owned()],
+                adult: Inclusion::Hide,
+                bookmarked: Inclusion::Only,
             },
         };
 
@@ -186,8 +225,39 @@ mod tests {
             json,
             serde_json::json!({
                 "sort": { "by": "dateAdded", "direction": "descending" },
-                "filter": { "unread": "only", "started": "any", "finished": "hide" },
+                "filter": {
+                    "unread": "only",
+                    "started": "any",
+                    "finished": "hide",
+                    "formats": ["manga"],
+                    "languages": ["ja"],
+                    "tags": ["Seinen"],
+                    "adult": "hide",
+                    "bookmarked": "only",
+                },
             })
+        );
+    }
+
+    #[test]
+    fn starts_a_new_library_narrowed_by_no_format_language_tag_rating_or_bookmark() {
+        let filter = LibraryListing::default().filter;
+
+        assert_eq!(
+            (
+                filter.formats,
+                filter.languages,
+                filter.tags,
+                filter.adult,
+                filter.bookmarked,
+            ),
+            (
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Inclusion::Any,
+                Inclusion::Any
+            )
         );
     }
 
@@ -202,10 +272,11 @@ mod tests {
                 unread: Inclusion::Hide,
                 started: Inclusion::Only,
                 finished: Inclusion::Any,
+                ..LibraryListing::default().filter
             },
         };
 
-        let read = LibraryListing::from(SeriesListing::from(listing));
+        let read = LibraryListing::from(SeriesListing::from(listing.clone()));
 
         assert_eq!(read, listing);
     }

@@ -5,9 +5,9 @@
 
   import {
     commands,
-    DEFAULT_LIBRARY_LISTING,
     DEFAULT_LIBRARY_VIEW,
     type LibraryCategory,
+    type LibraryFilterChoices,
     type LibraryListing,
     type LibraryView,
   } from "#lib/ipc/bindings.ts";
@@ -23,7 +23,12 @@
   import ContinueRow from "#lib/library/ContinueRow.svelte";
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
-  import { filtersOn, withoutFilters } from "#lib/library/library-listing.ts";
+  import {
+    filtersOn,
+    withoutFilters,
+    NEW_LIBRARY_LISTING,
+    NO_FILTER_CHOICES,
+  } from "#lib/library/library-listing.ts";
   import { librarySeriesList } from "#lib/library/library-series.svelte.ts";
   import {
     ALL_SERIES,
@@ -60,7 +65,7 @@
     {
       read: () => commands.libraryListing(),
       store: (chosen: LibraryListing) => commands.setLibraryListing(chosen),
-      fallback: DEFAULT_LIBRARY_LISTING,
+      fallback: NEW_LIBRARY_LISTING,
     },
     (error) => {
       reportError(error);
@@ -68,6 +73,7 @@
   );
   const tab = new LibraryTab();
   let categories = $state<readonly LibraryCategory[]>([]);
+  let filterChoices = $state<LibraryFilterChoices>(NO_FILTER_CHOICES);
   const chosenCategory = $derived(categoryOf(tab.chosen, categories));
   const library = librarySeriesList((after) =>
     chosenCategory === undefined
@@ -165,7 +171,7 @@
       return;
     }
     void commands
-      .librarySeriesCount(DEFAULT_LIBRARY_LISTING.filter)
+      .librarySeriesCount(NEW_LIBRARY_LISTING.filter)
       .then((result) => {
         holdsNoSeries = result.status === "ok" && result.data === 0;
       });
@@ -210,6 +216,13 @@
     }
   }
 
+  async function loadFilterChoices(): Promise<void> {
+    const offered = await commands.libraryFilterChoices();
+    if (offered.status === "ok") {
+      filterChoices = offered.data;
+    }
+  }
+
   function chooseTab(chosen: string): void {
     tab.choose(chosen);
     document.querySelector("main")?.scrollTo({ top: 0 });
@@ -219,8 +232,10 @@
     void listing.load();
     void view.load();
     void loadCategories();
+    void loadFilterChoices();
     return listenForLibraryChanges(() => {
       void loadCategories();
+      void loadFilterChoices();
       if (chosenListing === undefined) {
         return;
       }
@@ -277,6 +292,7 @@
         bind:button={filterButton}
         docks={docksFilter}
         panelId={FILTER_PANEL_ID}
+        choices={filterChoices}
         listing={chosenListing}
         matching={seriesCount.count}
         onChoose={chooseListing}
@@ -421,6 +437,7 @@
   {#if isDocked && chosenListing !== undefined}
     <FilterPanel
       id={FILTER_PANEL_ID}
+      choices={filterChoices}
       listing={chosenListing}
       matching={seriesCount.count}
       {headHeight}

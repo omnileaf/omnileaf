@@ -11,11 +11,11 @@
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import {
     commands,
-    DEFAULT_LIBRARY_LISTING,
     type LibrarySeries,
     type Platform,
     SEARCH_MAX_CHARS,
   } from "#lib/ipc/bindings.ts";
+  import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
@@ -114,7 +114,7 @@
     }
     const page = await commands.librarySearch(null, {
       text: typed,
-      filter: DEFAULT_LIBRARY_LISTING.filter,
+      filter: NEW_LIBRARY_LISTING.filter,
     });
     if (search !== latestSearch) {
       return;

@@ -1,5 +1,8 @@
 import type { LibraryFilter, LibrarySearch } from "#lib/ipc/bindings.ts";
-import type { FilterCondition } from "#lib/library/library-listing.ts";
+import {
+  type FilterCondition,
+  NEW_LIBRARY_LISTING,
+} from "#lib/library/library-listing.ts";
 
 import { type FilterWords, takeFilterWords } from "./typed-filters";
 
@@ -50,6 +53,7 @@ export class SearchQuery {
     const inclusion = (condition: FilterCondition) =>
       this.conditions.includes(condition) ? "only" : "any";
     return {
+      ...NEW_LIBRARY_LISTING.filter,
       unread: inclusion("unread"),
       started: inclusion("started"),
       finished: inclusion("finished"),

@@ -1,9 +1,6 @@
 import { expect, test } from "vitest";
 
-import {
-  DEFAULT_LIBRARY_LISTING,
-  type LibraryListing,
-} from "#lib/ipc/bindings.ts";
+import { type LibraryListing } from "#lib/ipc/bindings.ts";
 
 import {
   filteredBy,
@@ -11,17 +8,25 @@ import {
   reversed,
   sortedBy,
   readStateOf,
+  toggledIn,
+  withInclusion,
   withoutFilters,
   withReadState,
+  NEW_LIBRARY_LISTING,
 } from "./library-listing";
 
 const NEWEST_UNREAD: LibraryListing = {
   sort: { by: "dateAdded", direction: "descending" },
-  filter: { unread: "only", started: "any", finished: "hide" },
+  filter: {
+    ...NEW_LIBRARY_LISTING.filter,
+    unread: "only",
+    started: "any",
+    finished: "hide",
+  },
 };
 
 test("lists the newest series first once date added is chosen", () => {
-  const listing = sortedBy(DEFAULT_LIBRARY_LISTING, "dateAdded");
+  const listing = sortedBy(NEW_LIBRARY_LISTING, "dateAdded");
 
   expect(listing.sort).toEqual({ by: "dateAdded", direction: "descending" });
 });
@@ -47,7 +52,7 @@ test("keeps the filter when the sort changes", () => {
 });
 
 test("reverses the direction of the sort either way", () => {
-  const once = reversed(DEFAULT_LIBRARY_LISTING);
+  const once = reversed(NEW_LIBRARY_LISTING);
   const twice = reversed(once);
 
   expect([once.sort.direction, twice.sort.direction]).toEqual([
@@ -61,7 +66,12 @@ test("filters by one condition and leaves the others as they were", () => {
 
   expect(listing).toEqual({
     sort: NEWEST_UNREAD.sort,
-    filter: { unread: "only", started: "only", finished: "hide" },
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "only",
+      started: "only",
+      finished: "hide",
+    },
   });
 });
 
@@ -70,15 +80,20 @@ test("clears every condition of the filter and keeps the sort", () => {
 
   expect(listing).toEqual({
     sort: NEWEST_UNREAD.sort,
-    filter: DEFAULT_LIBRARY_LISTING.filter,
+    filter: NEW_LIBRARY_LISTING.filter,
   });
 });
 
 test("counts the conditions a series is held to", () => {
   const counts = [
-    filtersOn(DEFAULT_LIBRARY_LISTING.filter),
+    filtersOn(NEW_LIBRARY_LISTING.filter),
     filtersOn(NEWEST_UNREAD.filter),
-    filtersOn({ unread: "hide", started: "only", finished: "only" }),
+    filtersOn({
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "hide",
+      started: "only",
+      finished: "only",
+    }),
   ];
 
   expect(counts).toEqual([0, 2, 3]);
@@ -86,11 +101,31 @@ test("counts the conditions a series is held to", () => {
 
 test("names the read state a filter keeps, and any other mix as any", () => {
   const filters = [
-    DEFAULT_LIBRARY_LISTING.filter,
-    { unread: "any", started: "hide", finished: "any" },
-    { unread: "any", started: "only", finished: "hide" },
-    { unread: "any", started: "any", finished: "only" },
-    { unread: "hide", started: "any", finished: "any" },
+    NEW_LIBRARY_LISTING.filter,
+    {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "hide",
+      finished: "any",
+    },
+    {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "only",
+      finished: "hide",
+    },
+    {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "any",
+      finished: "only",
+    },
+    {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "hide",
+      started: "any",
+      finished: "any",
+    },
   ] as const;
 
   expect(filters.map((filter) => readStateOf(filter))).toEqual([
@@ -103,11 +138,91 @@ test("names the read state a filter keeps, and any other mix as any", () => {
 });
 
 test("keeps only the series in the read state chosen, and the sort", () => {
-  const listing = withReadState(DEFAULT_LIBRARY_LISTING, "inProgress");
+  const listing = withReadState(NEW_LIBRARY_LISTING, "inProgress");
 
   expect(listing).toEqual({
-    ...DEFAULT_LIBRARY_LISTING,
-    filter: { unread: "any", started: "only", finished: "hide" },
+    ...NEW_LIBRARY_LISTING,
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      unread: "any",
+      started: "only",
+      finished: "hide",
+    },
   });
   expect(readStateOf(withReadState(listing, "any").filter)).toBe("any");
+});
+
+test("changes only the read state, keeping the formats, languages and tags chosen", () => {
+  const japaneseManga: LibraryListing = {
+    ...NEW_LIBRARY_LISTING,
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      formats: ["manga"],
+      languages: ["ja"],
+    },
+  };
+
+  const unread = withReadState(japaneseManga, "unread");
+
+  expect(unread.filter).toEqual({
+    ...japaneseManga.filter,
+    started: "hide",
+  });
+});
+
+test("clears every filter, formats, languages and tags included, and keeps the sort", () => {
+  const narrowed: LibraryListing = {
+    sort: { by: "dateAdded", direction: "descending" },
+    filter: {
+      ...NEW_LIBRARY_LISTING.filter,
+      started: "hide",
+      formats: ["comic"],
+      languages: ["fr"],
+      tags: ["Sea"],
+      adult: "hide",
+      bookmarked: "only",
+    },
+  };
+
+  expect(withoutFilters(narrowed)).toEqual({
+    sort: narrowed.sort,
+    filter: NEW_LIBRARY_LISTING.filter,
+  });
+});
+
+test("adds a format, language or tag on choosing it, and takes it off on choosing it again", () => {
+  const manga = toggledIn(NEW_LIBRARY_LISTING, "formats", "manga");
+  const mangaAndBooks = toggledIn(manga, "formats", "book");
+
+  expect(mangaAndBooks.filter.formats).toEqual(["manga", "book"]);
+  expect(toggledIn(mangaAndBooks, "formats", "manga").filter.formats).toEqual([
+    "book",
+  ]);
+  expect(toggledIn(NEW_LIBRARY_LISTING, "tags", "Sea").filter.tags).toEqual([
+    "Sea",
+  ]);
+});
+
+test("sets 18+ and Bookmarked to any, only or hide", () => {
+  const hidden = withInclusion(NEW_LIBRARY_LISTING, "adult", "hide");
+
+  expect(withInclusion(hidden, "bookmarked", "only").filter).toEqual({
+    ...NEW_LIBRARY_LISTING.filter,
+    adult: "hide",
+    bookmarked: "only",
+  });
+});
+
+test("counts the read state, each format, language and tag, 18+ and Bookmarked as a filter each", () => {
+  expect(
+    filtersOn({
+      ...NEW_LIBRARY_LISTING.filter,
+      started: "hide",
+      formats: ["manga"],
+      languages: ["ja", "fr"],
+      tags: ["Sea"],
+      adult: "hide",
+      bookmarked: "only",
+    }),
+  ).toBe(7);
 });

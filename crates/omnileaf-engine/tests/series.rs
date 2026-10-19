@@ -197,13 +197,13 @@ async fn library_adding_one_series_at_a_time(
     (library, comics, home)
 }
 
-const fn by_date_added(direction: SortDirection) -> LibraryListing {
+fn by_date_added(direction: SortDirection) -> LibraryListing {
     LibraryListing {
         sort: LibrarySort {
             by: LibrarySortBy::DateAdded,
             direction,
         },
-        filter: EVERY_SERIES,
+        filter: every_series(),
     }
 }
 
@@ -212,7 +212,7 @@ async fn titles(library: &Library, listing: LibraryListing) -> Vec<String> {
     page.series.into_iter().map(|series| series.title).collect()
 }
 
-const fn filtered(filter: LibraryFilter) -> LibraryListing {
+fn filtered(filter: LibraryFilter) -> LibraryListing {
     LibraryListing {
         sort: LibrarySort {
             by: LibrarySortBy::Title,
@@ -222,11 +222,9 @@ const fn filtered(filter: LibraryFilter) -> LibraryListing {
     }
 }
 
-const EVERY_SERIES: LibraryFilter = LibraryFilter {
-    unread: Inclusion::Any,
-    started: Inclusion::Any,
-    finished: Inclusion::Any,
-};
+fn every_series() -> LibraryFilter {
+    LibraryListing::default().filter
+}
 
 #[tokio::test]
 async fn lists_the_series_found_by_title_from_z_to_a() {
@@ -239,7 +237,7 @@ async fn lists_the_series_found_by_title_from_z_to_a() {
                 by: LibrarySortBy::Title,
                 direction: SortDirection::Descending,
             },
-            filter: EVERY_SERIES,
+            filter: every_series(),
         },
     )
     .await;
@@ -278,7 +276,7 @@ async fn lists_none_of_the_series_the_filter_hides() {
             &library,
             filtered(LibraryFilter {
                 unread: Inclusion::Hide,
-                ..EVERY_SERIES
+                ..every_series()
             }),
         )
         .await,
@@ -286,7 +284,7 @@ async fn lists_none_of_the_series_the_filter_hides() {
             &library,
             filtered(LibraryFilter {
                 finished: Inclusion::Hide,
-                ..EVERY_SERIES
+                ..every_series()
             }),
         )
         .await,
@@ -310,7 +308,7 @@ async fn lists_only_the_series_the_filter_lets_through() {
             &library,
             filtered(LibraryFilter {
                 unread: Inclusion::Only,
-                ..EVERY_SERIES
+                ..every_series()
             }),
         )
         .await,
@@ -318,7 +316,7 @@ async fn lists_only_the_series_the_filter_lets_through() {
             &library,
             filtered(LibraryFilter {
                 finished: Inclusion::Only,
-                ..EVERY_SERIES
+                ..every_series()
             }),
         )
         .await,
@@ -341,14 +339,14 @@ async fn counts_only_the_series_the_filter_lets_through() {
         library
             .series_count(LibraryFilter {
                 started: Inclusion::Hide,
-                ..EVERY_SERIES
+                ..every_series()
             })
             .await
             .unwrap(),
         library
             .series_count(LibraryFilter {
                 started: Inclusion::Only,
-                ..EVERY_SERIES
+                ..every_series()
             })
             .await
             .unwrap(),
