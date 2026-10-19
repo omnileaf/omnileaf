@@ -36,6 +36,35 @@
   --reader-black: oklch(0 0 0);
   --reader-grey: oklch(0.32 0 0);
   --reader-white: oklch(1 0 0);
+  --ios-grouped-bg: oklch(0.967 0.003 286);
+  --ios-grouped-cell: oklch(1 0 0);
+  --ios-separator: oklch(0.235 0.004 286 / 22%);
+  --ios-fill: oklch(0.235 0.004 286 / 8%);
+  --ios-material: oklch(0.985 0 0 / 78%);
+  --ios-glass-edge: oklch(1 0 0 / 70%);
+  --ios-glass-pill: oklch(0.145 0 0 / 8%);
+  --ios-switch-thumb: oklch(1 0 0);
+  --ios-secondary-label: oklch(0.5 0.01 286);
+  --ios-switch-on: oklch(0.6 0.17 149);
+  --macos-sidebar-material: oklch(0.94 0.004 286 / 82%);
+  --macos-selection: oklch(0.145 0 0 / 9%);
+  --macos-menu-material: oklch(0.98 0 0 / 86%);
+  --macos-menu-edge: oklch(0 0 0 / 12%);
+  --macos-secondary-label: oklch(0.5 0.005 286);
+  --macos-switch-on: oklch(0.6 0.2 255);
+  --traffic-close: oklch(0.68 0.2 25);
+  --traffic-minimise: oklch(0.83 0.16 80);
+  --traffic-zoom: oklch(0.75 0.2 145);
+  --windows-mica: oklch(0.962 0.004 250);
+  --windows-layer: oklch(0.99 0 0 / 70%);
+  --windows-layer-solid: oklch(0.985 0.001 250);
+  --windows-control: oklch(1 0 0 / 70%);
+  --windows-stroke: oklch(0 0 0 / 7%);
+  --windows-stroke-strong: oklch(0 0 0 / 22%);
+  --windows-subtle: oklch(0 0 0 / 4%);
+  --windows-flyout: oklch(0.985 0 0 / 96%);
+  --windows-close: oklch(0.55 0.2 27);
+  --windows-secondary-text: oklch(0.48 0 0);
 
   --raised: var(--background);
   --destructive-fill: var(--destructive);
@@ -85,6 +114,29 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --ios-grouped-bg: oklch(0 0 0);
+  --ios-grouped-cell: oklch(0.218 0.004 286);
+  --ios-separator: oklch(0.6 0.01 286 / 36%);
+  --ios-fill: oklch(0.6 0.01 286 / 24%);
+  --ios-material: oklch(0.2 0 0 / 72%);
+  --ios-glass-edge: oklch(1 0 0 / 10%);
+  --ios-glass-pill: oklch(1 0 0 / 12%);
+  --ios-secondary-label: oklch(0.74 0.01 286);
+  --macos-sidebar-material: oklch(0.24 0 0 / 82%);
+  --macos-selection: oklch(1 0 0 / 11%);
+  --macos-menu-material: oklch(0.23 0 0 / 86%);
+  --macos-menu-edge: oklch(1 0 0 / 14%);
+  --macos-secondary-label: oklch(0.74 0.005 286);
+  --macos-switch-on: oklch(0.63 0.19 255);
+  --windows-mica: oklch(0.235 0.003 250);
+  --windows-layer: oklch(1 0 0 / 5%);
+  --windows-layer-solid: oklch(0.27 0.002 250);
+  --windows-control: oklch(1 0 0 / 6%);
+  --windows-stroke: oklch(1 0 0 / 8%);
+  --windows-stroke-strong: oklch(1 0 0 / 14%);
+  --windows-subtle: oklch(1 0 0 / 6%);
+  --windows-flyout: oklch(0.17 0 0 / 96%);
+  --windows-secondary-text: oklch(0.78 0 0);
 
   --raised: color-mix(in oklab, var(--foreground) 6%, var(--muted));
   --destructive-fill: color-mix(
@@ -141,4 +193,118 @@
   --sample-cover: oklch(0.43 0.11 25);
   --sample-cover-art: oklch(0.5 0.12 25);
   --sample-cover-ink: oklch(0.94 0.02 70);
+}
+
+:root {
+  --font-sans:
+    ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+  --font-ios: -apple-system, "SF Pro Text", "SF Pro", system-ui, sans-serif;
+  --font-macos:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-windows:
+    "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui,
+    sans-serif;
+  --text-scale-ios: 1.0625;
+  --text-scale-macos: 0.93;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+  --radius-ios-control: 14px;
+  --radius-ios-cell: 10px;
+  --radius-ios-sheet: 14px;
+  --radius-macos-control: 6px;
+  --radius-macos-panel: 10px;
+  --radius-windows-control: 4px;
+  --radius-windows-overlay: 8px;
+  --control-ios: 50px;
+  --control-macos: 28px;
+  --control-windows: 32px;
+  --titlebar-macos: 52px;
+  --titlebar-windows: 32px;
+  --titlebar-windows-tall: 48px;
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-macos-menu:
+    0 10px 30px rgb(0 0 0 / 0.22), 0 0 0 0.5px rgb(0 0 0 / 0.12);
+  --shadow-windows-flyout: 0 8px 16px rgb(0 0 0 / 0.14);
+  --shadow-ios-glass: 0 8px 28px rgb(0 0 0 / 0.16), 0 1px 3px rgb(0 0 0 / 0.08);
+}
+
+:root,
+[data-theme] {
+  --platform-font: var(--font-sans);
+  --secondary-text: var(--muted-foreground);
+  --menu-surface: var(--popover);
+  --menu-edge: var(--border);
+  --card-radius: var(--radius-xl);
+  --toast-radius: var(--radius-md);
+  --warning-toast-radius: var(--toast-radius);
+  --menu-radius: var(--radius-md);
+  --menu-shadow: var(--shadow-md);
+  --menu-blur: 0px;
+  --menu-highlight: var(--accent);
+  --menu-highlight-foreground: var(--accent-foreground);
+  --tooltip-surface: var(--primary);
+  --tooltip-foreground: var(--primary-foreground);
+  --tooltip-edge: transparent;
+  --tooltip-radius: var(--radius-md);
+  --switch-on: var(--primary);
+}
+
+[data-platform="ios"],
+[data-platform="ios"] [data-theme] {
+  --platform-font: var(--font-ios);
+  --secondary-text: var(--ios-secondary-label);
+  --menu-surface: var(--ios-material);
+  --menu-edge: transparent;
+  --card-radius: var(--radius-ios-cell);
+  --toast-radius: 9999px;
+  --warning-toast-radius: var(--radius-ios-sheet);
+  --menu-radius: var(--radius-ios-sheet);
+  --menu-shadow: var(--shadow-ios-glass);
+  --menu-blur: 24px;
+  --switch-on: var(--ios-switch-on);
+  --switch-thumb-on: var(--ios-switch-thumb);
+}
+
+[data-platform="macos"],
+[data-platform="macos"] [data-theme] {
+  --platform-font: var(--font-macos);
+  --secondary-text: var(--macos-secondary-label);
+  --menu-surface: var(--macos-menu-material);
+  --menu-edge: var(--macos-menu-edge);
+  --card-radius: var(--radius-macos-panel);
+  --toast-radius: var(--radius-macos-panel);
+  --menu-radius: var(--radius-macos-panel);
+  --menu-shadow: var(--shadow-macos-menu);
+  --menu-blur: 30px;
+  --menu-highlight: var(--primary);
+  --menu-highlight-foreground: var(--primary-foreground);
+  --tooltip-surface: var(--macos-menu-material);
+  --tooltip-foreground: var(--popover-foreground);
+  --tooltip-edge: var(--macos-menu-edge);
+  --tooltip-radius: 5px;
+  --switch-on: var(--macos-switch-on);
+  --switch-thumb-on: var(--ios-switch-thumb);
+}
+
+[data-platform="windows"],
+[data-platform="windows"] [data-theme] {
+  --platform-font: var(--font-windows);
+  --secondary-text: var(--windows-secondary-text);
+  --menu-surface: var(--windows-flyout);
+  --menu-edge: var(--windows-stroke);
+  --card-radius: var(--radius-windows-overlay);
+  --toast-radius: var(--radius-windows-overlay);
+  --menu-radius: var(--radius-windows-overlay);
+  --menu-shadow: var(--shadow-windows-flyout);
+  --menu-highlight: var(--windows-subtle);
+  --menu-highlight-foreground: var(--popover-foreground);
+  --tooltip-surface: var(--windows-flyout);
+  --tooltip-foreground: var(--popover-foreground);
+  --tooltip-edge: var(--windows-stroke);
+  --tooltip-radius: var(--radius-windows-control);
 }

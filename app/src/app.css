@@ -3,6 +3,9 @@
 
 @custom-variant ios (&:where([data-platform="ios"], [data-platform="ios"] *));
 @custom-variant android (&:where([data-platform="android"], [data-platform="android"] *));
+@custom-variant macos (&:where([data-platform="macos"], [data-platform="macos"] *));
+@custom-variant windows (&:where([data-platform="windows"], [data-platform="windows"] *));
+@custom-variant linux (&:where([data-platform="linux"], [data-platform="linux"] *));
 @custom-variant touch (&:where([data-platform="android"], [data-platform="ios"], [data-platform="android"] *, [data-platform="ios"] *));
 @custom-variant desktop (&:where([data-platform="linux"], [data-platform="macos"], [data-platform="windows"], [data-platform="linux"] *, [data-platform="macos"] *, [data-platform="windows"] *));
 @custom-variant two-pane {
@@ -89,9 +92,6 @@
   --breakpoint-expanded: 840px;
   --breakpoint-large: 1200px;
 
-  --font-ui:
-    system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto,
-    sans-serif;
   --font-display: Georgia, serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
@@ -547,8 +547,6 @@
   --radius-ios-button: 0.875rem;
   --radius-list: 0.625rem;
   --radius-panel: 1rem;
-  --radius-toast: 1.125rem;
-  --radius-toast-wide: 1rem;
   --radius-toast-action: 0.25rem;
   --radius-crash-screen-button: 0.875rem;
   --radius-dialog: 1rem;
@@ -698,10 +696,26 @@
 }
 
 @theme inline {
+  --font-ui: var(--platform-font);
+  --shadow-menu: var(--menu-shadow);
+  --radius-menu: var(--menu-radius);
+  --radius-tooltip: var(--tooltip-radius);
+  --radius-shadcn-card: var(--card-radius);
+  --radius-toast: var(--toast-radius);
+  --radius-warning-toast: var(--warning-toast-radius);
+  --blur-menu: var(--menu-blur);
+  --color-menu: var(--menu-surface);
+  --color-menu-edge: var(--menu-edge);
+  --color-menu-highlight: var(--menu-highlight);
+  --color-on-menu-highlight: var(--menu-highlight-foreground);
+  --color-tooltip: var(--tooltip-surface);
+  --color-on-tooltip: var(--tooltip-foreground);
+  --color-tooltip-edge: var(--tooltip-edge);
+  --color-switch-on: var(--switch-on);
   --color-background: var(--background);
   --color-back-swipe-dim: oklch(0 0 0);
   --color-foreground: var(--foreground);
-  --color-muted: var(--muted-foreground);
+  --color-muted: var(--secondary-text);
   --color-sidebar-ink: var(--sidebar-foreground);
   --color-faint: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
   --color-border: var(--border);
