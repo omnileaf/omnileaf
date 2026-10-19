@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { SECURITY_EMAIL, SECURITY_TXT_PATH } from "./links.ts";
+  import { asset } from "$app/paths";
+
+  import { SECURITY_EMAIL, SECURITY_TXT_ASSET } from "./links.ts";
 
   const mailto = `mailto:${SECURITY_EMAIL}`;
+  const securityTxtUrl = asset(SECURITY_TXT_ASSET);
 </script>
 
 <section id="security" aria-labelledby="security-heading">
@@ -68,9 +71,9 @@
         >
       </div>
       <a
-        href={SECURITY_TXT_PATH}
+        href={securityTxtUrl}
         class="inline-flex items-center justify-center rounded-control border border-border font-mono text-small font-medium text-foreground no-underline min-block-11"
-        >{SECURITY_TXT_PATH}</a
+        >{securityTxtUrl}</a
       >
     </aside>
   </div>

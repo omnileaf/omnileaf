@@ -1,3 +1,7 @@
+<script lang="ts">
+  import { resolve } from "$app/paths";
+</script>
+
 <svelte:head>
   <title>Page not found · Omnileaf</title>
   <meta name="robots" content="noindex" />
@@ -9,7 +13,7 @@
   <h1 class="m-0 font-display text-heading font-bold">Page not found</h1>
   <p class="m-0 text-lead text-muted">There is nothing at this address.</p>
   <a
-    href="/"
+    href={resolve("/")}
     class="inline-flex items-center rounded-control bg-accent px-5.5 font-semibold text-on-accent no-underline min-block-12"
     >Go to the home page</a
   >
