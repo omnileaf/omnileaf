@@ -1,6 +1,7 @@
 <script lang="ts">
   import { TriangleAlert } from "@lucide/svelte";
 
+  import { assertNever } from "#lib/assert-never.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import type { FolderProblem, MissingFolder } from "#lib/ipc/bindings.ts";
   import type { ToastHandle } from "#lib/notices/notices.ts";
@@ -13,6 +14,17 @@
     readonly title: string;
     readonly body: string;
   }
+
+  type Remedy = "showOrFind" | "chooseAgain" | "signIn" | "tryAgain";
+
+  const REMEDIES = {
+    missing: "showOrFind",
+    driveDisconnected: "showOrFind",
+    lostAccess: "chooseAgain",
+    needsSignIn: "signIn",
+    needsMounting: "tryAgain",
+    shareUnreachable: "chooseAgain",
+  } as const satisfies Record<FolderProblem["kind"], Remedy>;
 
   const PRIMARY =
     "bg-on-warning px-lg text-detail text-warning-soft min-block-touch-target desktop:px-md desktop:min-block-compact-button";
@@ -29,39 +41,59 @@
     handlers: MissingFolderActions;
   } = $props();
 
-  const { name, location } = $derived(missing.folder);
+  const { name } = $derived(missing.folder);
   const count = $derived(missing.hiddenSeries);
-  const wording = $derived<Record<FolderProblem, Wording>>({
-    missing: {
-      title: m.missing_folder_title({ name }),
-      body: m.missing_folder_body({ name, count }),
-    },
-    driveDisconnected: {
-      title: m.missing_drive_title({ name }),
-      body: m.missing_drive_body({ name, count }),
-    },
-    lostAccess: {
-      title: m.missing_access_title({ name }),
-      body: m.missing_access_body(),
-    },
-    needsSignIn: {
-      title: m.missing_sign_in_title({ name }),
-      body: m.missing_sign_in_body({ location }),
-    },
+  const remedy = $derived<Remedy>(REMEDIES[missing.problem.kind]);
+  const wording = $derived.by<Wording>(() => {
+    const { problem } = missing;
+    switch (problem.kind) {
+      case "missing":
+        return {
+          title: m.missing_folder_title({ name }),
+          body: m.missing_folder_body({ name, count }),
+        };
+      case "driveDisconnected":
+        return {
+          title: m.missing_drive_title({ name }),
+          body: m.missing_drive_body({ name, count }),
+        };
+      case "lostAccess":
+        return {
+          title: m.missing_access_title({ name }),
+          body: m.missing_access_body(),
+        };
+      case "needsSignIn":
+        return {
+          title: m.missing_sign_in_title({ name }),
+          body: m.missing_sign_in_body({ share: problem.share.name }),
+        };
+      case "needsMounting":
+        return {
+          title: m.missing_mount_title({ name }),
+          body: m.missing_mount_body({ share: problem.share.name }),
+        };
+      case "shareUnreachable":
+        return {
+          title: m.missing_access_title({ name }),
+          body: m.missing_share_body({ server: problem.share.server }),
+        };
+      default:
+        return assertNever(problem);
+    }
   });
 </script>
 
 <ToastCard
   tone="warning"
-  title={wording[missing.problem].title}
-  body={wording[missing.problem].body}
+  title={wording.title}
+  body={wording.body}
   onDismiss={toast.dismiss}
 >
   {#snippet icon()}
     <TriangleAlert size={TOAST_ICON_SIZE} class="text-warning-strong" />
   {/snippet}
   {#snippet actions()}
-    {#if missing.problem === "lostAccess"}
+    {#if remedy === "chooseAgain"}
       <Button
         type="button"
         look="inverse"
@@ -82,7 +114,7 @@
       >
         {m.missing_unlink()}
       </Button>
-    {:else if missing.problem === "needsSignIn"}
+    {:else if remedy === "signIn"}
       <Button
         type="button"
         look="inverse"
@@ -92,6 +124,17 @@
         }}
       >
         {m.missing_sign_in()}
+      </Button>
+    {:else if remedy === "tryAgain"}
+      <Button
+        type="button"
+        look="inverse"
+        class={PRIMARY}
+        onclick={() => {
+          handlers.tryAgain(missing);
+        }}
+      >
+        {m.missing_try_again()}
       </Button>
     {:else}
       <Button

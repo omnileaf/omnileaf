@@ -3,7 +3,7 @@ use std::path::Path;
 use omnileaf_engine::Storage;
 
 #[cfg(target_os = "linux")]
-const MOUNT_TABLE: &str = "/proc/self/mountinfo";
+pub(crate) const MOUNT_TABLE: &str = "/proc/self/mountinfo";
 
 #[cfg(target_os = "macos")]
 const STARTUP_VOLUMES: [&str; 2] = ["/", "/System/Volumes/Data"];
