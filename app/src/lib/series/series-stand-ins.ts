@@ -31,11 +31,27 @@ export function bookStandIns(
   return (book) => ({ ...book, title: titled(book.position) });
 }
 
+function counted(
+  name: (inputs: { number: string }) => string,
+): (_: unknown, index: number) => string {
+  const places = new Intl.NumberFormat(getLocale());
+  return (_, index) => name({ number: places.format(index + 1) });
+}
+
 /** Leaves the cover's path behind, so no picture of it is ever asked for. */
 export function standInOverview(overview: SeriesOverview): SeriesOverview {
+  const title = standInLook(overview).title;
+  const creatorName = counted(m.stand_in_creator);
   return {
     ...overview,
-    title: standInLook(overview).title,
+    title,
+    creators: overview.creators.map((creator, index) => ({
+      ...creator,
+      name: creatorName(creator, index),
+    })),
+    summary:
+      overview.summary === null ? null : m.stand_in_summary({ series: title }),
+    tags: overview.tags.map(counted(m.stand_in_tag)),
     cover: null,
     folder: overview.folder === null ? null : folderStandIn(overview.folder),
     upNext:

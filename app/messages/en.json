@@ -656,6 +656,9 @@
   "screenshot_mode_nothing_sent": "Nothing about Screenshot mode is sent anywhere. It only changes what’s on screen and in reports.",
   "stand_in_series": "Series {number}",
   "stand_in_book": "{series} · Book {number}",
+  "stand_in_creator": "Creator {number}",
+  "stand_in_tag": "Tag {number}",
+  "stand_in_summary": "What {series} is about stays hidden while Screenshot mode is on.",
   "screenshot_mode_preview_label": "Preview of one cover with Screenshot mode off and on",
   "stand_in_folder": "Folder {number}",
   "notice_dismiss": "Dismiss",
@@ -803,7 +806,49 @@
   ],
   "series_continue": "Continue {title}",
   "series_start": "Start with {title}",
-  "series_all_read": "You've read every book in this series",
+  "series_all_read": "You’ve read every book in this series",
+  "series_all_read_body": "New books in its folder show up here.",
+  "series_card_continue": "Continue",
+  "series_card_up_next": "Up next",
+  "series_continue_where": [
+    {
+      "declarations": [
+        "input title",
+        "input page",
+        "input pages",
+        "local formattedPage = page: number",
+        "local formattedPages = pages: number"
+      ],
+      "match": {
+        "*": "{title}, page {formattedPage} of {formattedPages}"
+      }
+    }
+  ],
+  "series_continue_where_unknown": [
+    {
+      "declarations": [
+        "input title",
+        "input page",
+        "local formattedPage = page: number"
+      ],
+      "match": {
+        "*": "{title}, page {formattedPage}"
+      }
+    }
+  ],
+  "series_up_next_where": [
+    {
+      "declarations": [
+        "input title",
+        "input pages",
+        "local formattedPages = pages: number"
+      ],
+      "match": {
+        "*": "{title} · {formattedPages} pages · unread"
+      }
+    }
+  ],
+  "series_up_next_where_unknown": "{title} · unread",
   "series_books_heading": [
     {
       "declarations": [
@@ -890,6 +935,47 @@
   "series_marked_book_read": "Marked {title} read",
   "series_marked_book_unread": "Marked {title} unread",
   "series_mark_all_unread": "Mark all unread",
+  "series_about": "About this series",
+  "series_cover": "Cover of {title}",
+  "series_by": "By {names}",
+  "series_credit": "{role}: {name}",
+  "series_role_story": "Story",
+  "series_role_art": "Art",
+  "series_role_story_and_art": "Story and art",
+  "series_more_creators": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "+{formattedCount} more"
+      }
+    }
+  ],
+  "series_show_all_creators": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "Show all {formattedCount} creators in Details"
+      }
+    }
+  ],
+  "series_format_books": "{format} · {books}",
+  "series_summary_more": "More",
+  "series_summary_less": "Less",
+  "series_tags": "Tags",
+  "series_details": "Details",
+  "series_detail_title": "Title",
+  "series_detail_by": "By",
+  "series_detail_format": "Format",
+  "series_edit_details": "Edit details",
+  "series_reading_state": "Reading state: {state}",
+  "series_state_unread": "Unread",
+  "series_state_reading": "Reading",
+  "series_state_read": "Read",
+  "series_tags_for": "Tags for {title}",
+  "series_mark_series_read": "Mark {title} read",
+  "series_mark_series_unread": "Mark {title} unread",
+  "series_mark_every_read": "Mark every book read",
+  "series_mark_every_unread": "Mark every book unread",
   "series_mark_failed": "Couldn't mark those books. Try again.",
   "series_marked_read": [
     {

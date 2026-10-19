@@ -31,6 +31,12 @@ test("lets a later text size win over an earlier one", () => {
   );
 });
 
+test("lets a later font weight win over an earlier one", () => {
+  expect(cn("font-medium text-body", "font-regular")).toBe(
+    "text-body font-regular",
+  );
+});
+
 test("knows every token app.css defines", () => {
   for (const [namespace, names] of Object.entries(TOKEN_THEME)) {
     expect([...names], namespace).toEqual(tokenNames(namespace));

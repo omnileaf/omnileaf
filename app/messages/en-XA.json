@@ -656,6 +656,9 @@
   "screenshot_mode_nothing_sent": "⟦Ñöţĥíñĝ áƀöûţ Šçŕééñšĥöţ ɱöðé íš šéñţ áñýŵĥéŕé. Íţ öñļý çĥáñĝéš ŵĥáţ’š öñ šçŕééñ áñð íñ ŕéþöŕţš.·······································⟧",
   "stand_in_series": "⟦Šéŕíéš {number}······⟧",
   "stand_in_book": "⟦{series} · Ɓööķ {number}··········⟧",
+  "stand_in_creator": "⟦Çŕéáţöŕ {number}·······⟧",
+  "stand_in_tag": "⟦Ţáĝ {number}·····⟧",
+  "stand_in_summary": "⟦Ŵĥáţ {series} íš áƀöûţ šţáýš ĥíððéñ ŵĥíļé Šçŕééñšĥöţ ɱöðé íš öñ.··························⟧",
   "screenshot_mode_preview_label": "⟦Þŕéṽíéŵ öƒ öñé çöṽéŕ ŵíţĥ Šçŕééñšĥöţ ɱöðé öƒƒ áñð öñ·····················⟧",
   "stand_in_folder": "⟦Ƒöļðéŕ {number}······⟧",
   "notice_dismiss": "⟦Ðíšɱíšš···⟧",
@@ -803,7 +806,49 @@
   ],
   "series_continue": "⟦Çöñţíñûé {title}·······⟧",
   "series_start": "⟦Šţáŕţ ŵíţĥ {title}········⟧",
-  "series_all_read": "⟦Ýöû'ṽé ŕéáð éṽéŕý ƀööķ íñ ţĥíš šéŕíéš···············⟧",
+  "series_all_read": "⟦Ýöû’ṽé ŕéáð éṽéŕý ƀööķ íñ ţĥíš šéŕíéš···············⟧",
+  "series_all_read_body": "⟦Ñéŵ ƀööķš íñ íţš ƒöļðéŕ šĥöŵ ûþ ĥéŕé.···············⟧",
+  "series_card_continue": "⟦Çöñţíñûé····⟧",
+  "series_card_up_next": "⟦Ûþ ñéẋţ···⟧",
+  "series_continue_where": [
+    {
+      "declarations": [
+        "input title",
+        "input page",
+        "input pages",
+        "local formattedPage = page: number",
+        "local formattedPages = pages: number"
+      ],
+      "match": {
+        "*": "⟦{title}, þáĝé {formattedPage} öƒ {formattedPages}····················⟧"
+      }
+    }
+  ],
+  "series_continue_where_unknown": [
+    {
+      "declarations": [
+        "input title",
+        "input page",
+        "local formattedPage = page: number"
+      ],
+      "match": {
+        "*": "⟦{title}, þáĝé {formattedPage}············⟧"
+      }
+    }
+  ],
+  "series_up_next_where": [
+    {
+      "declarations": [
+        "input title",
+        "input pages",
+        "local formattedPages = pages: number"
+      ],
+      "match": {
+        "*": "⟦{title} · {formattedPages} þáĝéš · ûñŕéáð·················⟧"
+      }
+    }
+  ],
+  "series_up_next_where_unknown": "⟦{title} · ûñŕéáð·······⟧",
   "series_books_heading": [
     {
       "declarations": [
@@ -890,6 +935,47 @@
   "series_marked_book_read": "⟦Ṁáŕķéð {title} ŕéáð········⟧",
   "series_marked_book_unread": "⟦Ṁáŕķéð {title} ûñŕéáð·········⟧",
   "series_mark_all_unread": "⟦Ṁáŕķ áļļ ûñŕéáð······⟧",
+  "series_about": "⟦Áƀöûţ ţĥíš šéŕíéš·······⟧",
+  "series_cover": "⟦Çöṽéŕ öƒ {title}·······⟧",
+  "series_by": "⟦Ɓý {names}····⟧",
+  "series_credit": "⟦{role}: {name}······⟧",
+  "series_role_story": "⟦Šţöŕý··⟧",
+  "series_role_art": "⟦Áŕţ··⟧",
+  "series_role_story_and_art": "⟦Šţöŕý áñð áŕţ······⟧",
+  "series_more_creators": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "⟦+{formattedCount} ɱöŕé·········⟧"
+      }
+    }
+  ],
+  "series_show_all_creators": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "⟦Šĥöŵ áļļ {formattedCount} çŕéáţöŕš íñ Ðéţáíļš··················⟧"
+      }
+    }
+  ],
+  "series_format_books": "⟦{format} · {books}········⟧",
+  "series_summary_more": "⟦Ṁöŕé··⟧",
+  "series_summary_less": "⟦Ļéšš··⟧",
+  "series_tags": "⟦Ţáĝš··⟧",
+  "series_details": "⟦Ðéţáíļš···⟧",
+  "series_detail_title": "⟦Ţíţļé··⟧",
+  "series_detail_by": "⟦Ɓý·⟧",
+  "series_detail_format": "⟦Ƒöŕɱáţ···⟧",
+  "series_edit_details": "⟦Éðíţ ðéţáíļš·····⟧",
+  "series_reading_state": "⟦Ŕéáðíñĝ šţáţé: {state}·········⟧",
+  "series_state_unread": "⟦Ûñŕéáð···⟧",
+  "series_state_reading": "⟦Ŕéáðíñĝ···⟧",
+  "series_state_read": "⟦Ŕéáð··⟧",
+  "series_tags_for": "⟦Ţáĝš ƒöŕ {title}·······⟧",
+  "series_mark_series_read": "⟦Ṁáŕķ {title} ŕéáð·······⟧",
+  "series_mark_series_unread": "⟦Ṁáŕķ {title} ûñŕéáð········⟧",
+  "series_mark_every_read": "⟦Ṁáŕķ éṽéŕý ƀööķ ŕéáð········⟧",
+  "series_mark_every_unread": "⟦Ṁáŕķ éṽéŕý ƀööķ ûñŕéáð·········⟧",
   "series_mark_failed": "⟦Çöûļðñ'ţ ɱáŕķ ţĥöšé ƀööķš. Ţŕý áĝáíñ.···············⟧",
   "series_marked_read": [
     {

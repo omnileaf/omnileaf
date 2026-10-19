@@ -130,6 +130,8 @@ export type CrashReportOffer = {
 	origin: CrashOrigin,
 };
 
+export type CreatorRole = "story" | "art" | "storyAndArt";
+
 export type FileChanges = {
 	added: number,
 	updated: number,
@@ -352,6 +354,11 @@ export type SeriesBook = {
 	/**  When the library first found the book, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly. */
 	addedAtMs: number,
 	reading: BookReading,
+	/**  Absent until the library counts a book's pages, which it does once the book is opened. */
+	pageCount: number | null,
+	isBookmarked: boolean,
+	/**  Whether the library found the book since its series was last looked at. */
+	isNew: boolean,
 };
 
 export type SeriesBookListing = {
@@ -362,6 +369,12 @@ export type SeriesBookListing = {
 export type SeriesBookPage = {
 	books: SeriesBook[],
 	next: string & { readonly __brand: "BookCursor" } | null,
+};
+
+export type SeriesCreator = {
+	name: string,
+	/**  Absent when the books' details name the creator without saying what they did. */
+	role: CreatorRole | null,
 };
 
 export type SeriesNeighbour = {
@@ -381,6 +394,11 @@ export type SeriesOverview = {
 	folder: string | null,
 	/**  The book reading goes on from, absent once every book is read. */
 	upNext: SeriesBook | null,
+	/**  The kind of book, such as manga or a light novel, absent until the library reads the books' details. */
+	format: string | null,
+	creators: SeriesCreator[],
+	summary: string | null,
+	tags: string[],
 };
 
 export type SeriesPage = {
