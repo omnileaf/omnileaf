@@ -59,6 +59,7 @@ impl Shelf {
             .unwrap(),
             title: format!("Volume {number:02}"),
             added_at_ms: ADDED_AT_MS,
+            page_count: 1,
             file: BookFile {
                 root,
                 location: format!("{series}/Volume {number:02}.cbz").into(),

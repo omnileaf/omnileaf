@@ -73,6 +73,7 @@ impl Library {
                 fingerprint: fingerprint(SERIES, title),
                 title: title.to_owned(),
                 added_at_ms: ADDED_AT_MS,
+                page_count: 1,
                 file: BookFile {
                     root,
                     location: PathBuf::from(SERIES).join(format!("{title}.cbz")),

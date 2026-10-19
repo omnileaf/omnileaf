@@ -60,6 +60,7 @@ impl Library {
             fingerprint: fingerprint(crc),
             title: format!("Volume {crc:02}"),
             added_at_ms,
+            page_count: 1,
             file: BookFile {
                 root,
                 location: PathBuf::from(format!("{series}/Volume {crc:02}.cbz")),

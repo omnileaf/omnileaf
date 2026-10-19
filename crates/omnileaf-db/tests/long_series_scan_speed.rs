@@ -41,6 +41,7 @@ async fn records_and_removes_a_series_of_5_000_books_within_3_s() {
             .unwrap(),
             title: format!("Chapter {number}"),
             added_at_ms: ADDED_AT_MS,
+            page_count: 1,
             file: BookFile {
                 root,
                 location: format!("Long/Chapter {number}.cbz").into(),
