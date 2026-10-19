@@ -17,13 +17,13 @@ test("renders the confirm dialog cancel look on a native button", async () => {
 
   await expect.element(button).toBeVisible();
   await expect.element(button).toHaveClass(/rounded-full/);
-  await expect.element(button).toHaveClass(/medium:rounded-button/);
+  await expect.element(button).toHaveClass(/medium:rounded-dialog-button/);
 });
 
 test("shows it is busy until the work it waits on settles", async () => {
   const work = Promise.withResolvers<undefined>();
   const screen = await render(Button, {
-    look: "crash-dialog-primary",
+    look: "dialog-primary",
     type: "button",
     children: label,
     onClickPromise: () => work.promise,
@@ -43,7 +43,7 @@ test("starts the work only once while it is busy", async () => {
   const work = Promise.withResolvers<undefined>();
   const starts = { count: 0 };
   const screen = await render(Button, {
-    look: "crash-dialog-primary",
+    look: "dialog-primary",
     type: "button",
     children: label,
     onClickPromise: () => {

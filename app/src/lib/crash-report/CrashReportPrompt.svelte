@@ -198,18 +198,10 @@
               class="me-auto"
               labels={copyLabels()}
             />
-            <Button
-              type="button"
-              look="crash-dialog-secondary"
-              onclick={decline}
-            >
+            <Button type="button" look="dialog-secondary" onclick={decline}>
               {m.crash_report_decline()}
             </Button>
-            <Button
-              type="button"
-              look="crash-dialog-primary"
-              onClickPromise={send}
-            >
+            <Button type="button" look="dialog-primary" onClickPromise={send}>
               {m.crash_report_send()}
             </Button>
           </div>

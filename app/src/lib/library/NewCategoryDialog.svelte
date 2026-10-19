@@ -76,16 +76,16 @@
         <div class="flex gap-sm">
           <Button
             type="button"
-            look="outline"
-            class="flex-1 rounded-control font-medium min-block-pointer-button touch:min-block-touch-target"
+            look="dialog-secondary"
+            class="flex-1"
             onclick={onClose}
           >
             {m.library_cancel()}
           </Button>
           <Button
             type="button"
-            look="filled"
-            class="flex-1 rounded-control font-semibold min-block-pointer-button touch:min-block-touch-target"
+            look="dialog-primary"
+            class="flex-1"
             onclick={add}
           >
             {m.library_tabs_add()}
