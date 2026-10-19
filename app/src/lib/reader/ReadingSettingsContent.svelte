@@ -21,6 +21,7 @@
     SettingsScope,
   } from "./reader-settings.svelte.ts";
   import SettingChoice from "./SettingChoice.svelte";
+  import SmartFeaturesSection from "./SmartFeaturesSection.svelte";
 
   const DIRECTION_NAMES = {
     leftToRight: m.reader_left_to_right,
@@ -244,4 +245,5 @@
       </Switch>
     </div>
   </section>
+  <SmartFeaturesSection heading="h3" class="pbs-xl" />
 </div>
