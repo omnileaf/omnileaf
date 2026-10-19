@@ -36,6 +36,7 @@ const SHOWN_ON_FAILURE = {
   labelsNotKept: FAILED,
   detailsNotKept: FAILED,
   reportNotSaved: FAILED,
+  reportsNotSent: FAILED,
   internal: FAILED,
 } satisfies Record<IpcErrorCode, BookProblem>;
 
