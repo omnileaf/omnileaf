@@ -926,6 +926,11 @@
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-warning-edge: var(--warning);
+  --color-warning-action-edge: color-mix(
+    in oklab,
+    var(--warning-foreground) 45%,
+    transparent
+  );
   --color-warning-strong: var(--warning-strong);
   --color-on-warning: var(--warning-foreground);
   --color-danger: var(--destructive);

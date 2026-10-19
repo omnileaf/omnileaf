@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Channel } from "@tauri-apps/api/core";
   import { CircleAlert, FolderOpen, RefreshCw } from "@lucide/svelte";
   import { onMount, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
@@ -16,6 +17,7 @@
     type LibraryTab as KeptTab,
     type LibraryView,
     type SeriesPage,
+    type IpcError,
   } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import ActiveFilters from "#lib/library/ActiveFilters.svelte";
@@ -31,6 +33,9 @@
   import ContinueRow from "#lib/library/ContinueRow.svelte";
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
+  import { MissingFolderNotices } from "#lib/library/missing-folder-notices.ts";
+  import RemoveFolderDialog from "#lib/library/RemoveFolderDialog.svelte";
+  import { rescanFolderWithProgress } from "#lib/library/rescan-folder.ts";
   import {
     filtersOn,
     withoutFilters,
@@ -191,6 +196,62 @@
     },
   );
   const notices = getNotices();
+  let hiddenSeries = $state(0);
+  let unlinking = $state<LibraryFolder | undefined>();
+  let unlinkingBooks = $state<number | undefined>();
+  const folderNotices = new MissingFolderNotices(notices, {
+    showAnyway: ({ folder }) => {
+      void commands
+        .showMissingLibraryFolder(folder.id, true)
+        .then(reportingErrors)
+        .then(loadMissingFolders);
+    },
+    find: ({ folder }) => {
+      void commands
+        .relocateLibraryFolder(folder.id, new Channel())
+        .then(reportingErrors)
+        .then(loadMissingFolders);
+    },
+    unlink: ({ folder }) => {
+      unlinking = folder;
+      unlinkingBooks = undefined;
+      void commands.libraryFolderBookCount(folder.id).then((books) => {
+        unlinkingBooks = books.status === "ok" ? books.data : undefined;
+      });
+    },
+    signIn: ({ folder }) => {
+      void rescanFolderWithProgress(folder.id, () => undefined)
+        .then(reportingErrors)
+        .then(loadMissingFolders);
+    },
+  });
+
+  function reportingErrors(result: {
+    readonly status: "ok" | "error";
+    readonly error?: IpcError;
+  }): void {
+    if (result.status === "error" && result.error !== undefined) {
+      reportError(result.error);
+    }
+  }
+
+  async function loadMissingFolders(): Promise<void> {
+    const [missing, hidden] = await Promise.all([
+      commands.missingLibraryFolders(),
+      commands.libraryHiddenSeriesCount(),
+    ]);
+    if (missing.status === "ok") {
+      folderNotices.show(missing.data);
+    }
+    hiddenSeries = hidden.status === "ok" ? hidden.data : 0;
+  }
+
+  async function unlink(folder: LibraryFolder): Promise<void> {
+    unlinking = undefined;
+    const removed = await commands.removeLibraryFolder(folder.id);
+    reportingErrors(removed);
+    await loadMissingFolders();
+  }
   const selection = new Selection<SeriesId>();
   setSeriesSelection(selection);
   let keepsLabels = $state(false);
@@ -416,7 +477,9 @@
     void loadTabs();
     void loadFilterChoices();
     void loadLabelSupport();
-    return listenForLibraryChanges(() => {
+    void loadMissingFolders();
+    const stopListening = listenForLibraryChanges(() => {
+      void loadMissingFolders();
       void loadCategories();
       void loadFilterChoices();
       if (chosenListing === undefined) {
@@ -427,6 +490,10 @@
         void seriesCount.load();
       }
     }, reportError);
+    return () => {
+      stopListening();
+      folderNotices.withdrawAll();
+    };
   });
 
   function returnFocusFromNotice(): void {
@@ -455,11 +522,22 @@
 
 {#snippet shownCount()}
   {#if seriesCount.count !== undefined}
-    <SeriesCount count={seriesCount.count} />
+    <SeriesCount count={seriesCount.count} hidden={hiddenSeries} />
   {/if}
 {/snippet}
 
 <svelte:window onkeydown={keyWhileSelecting} />
+
+<RemoveFolderDialog
+  folder={unlinking}
+  books={unlinkingBooks}
+  onConfirm={(folder: LibraryFolder) => {
+    void unlink(folder);
+  }}
+  onCancel={() => {
+    unlinking = undefined;
+  }}
+/>
 
 <LabelSeriesDialog
   bind:isOpen={isLabelling}
