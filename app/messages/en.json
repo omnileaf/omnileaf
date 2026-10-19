@@ -698,9 +698,35 @@
   "about_copy_failed": "Couldn't copy the version details. Try again.",
   "about_source_code": "Source code",
   "about_report_problem": "Report a problem",
-  "about_report_problem_hint": "Opens GitHub. You'll need a GitHub account.",
+  "about_report_problem_hint_phone": "Builds a report on this phone; you choose where it goes",
+  "about_report_problem_hint_tablet": "Builds a report on this tablet; you choose where it goes",
+  "about_report_problem_hint_computer": "Builds a report on this computer; you choose where it goes",
   "about_opens_in_browser": "Opens in your browser",
   "about_browser_unavailable": "Couldn't open your browser. Try again.",
+  "report_intro": "Nothing is sent until you choose. Names become stand-ins and anything 18+ is left out.",
+  "report_included": "What's included",
+  "report_version_and_device": "Version and device",
+  "report_version_on_system": "{version} · {system}",
+  "report_log": "Log",
+  "report_log_hint": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "The last line, names replaced",
+        "countPlural=other": "The last {formattedCount} lines, names replaced"
+      }
+    }
+  ],
+  "report_log_empty": "Nothing logged yet",
+  "report_log_show": "Show",
+  "report_log_hide": "Hide",
+  "report_failed": "Couldn't put the report together.",
+  "report_try_again": "Try again",
   "about_licences": "Open-source licences",
   "about_licences_hint": "The packages Omnileaf is built with",
   "licences_intro": [
