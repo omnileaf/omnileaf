@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { CircleAlert, RefreshCw } from "@lucide/svelte";
+  import { onMount, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { invalidate } from "$app/navigation";
@@ -24,13 +25,22 @@
   } from "#lib/library/library-changes.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
+  import EmptyState from "#lib/page/EmptyState.svelte";
   import PageToolbar from "#lib/page/PageToolbar.svelte";
+  import { Button } from "#lib/components/ui/button/index.ts";
+  import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
+  import SeriesSkeleton from "#lib/series/SeriesSkeleton.svelte";
+  import SeriesWithoutBooks from "#lib/series/SeriesWithoutBooks.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import ContinueCard from "#lib/series/ContinueCard.svelte";
   import { seriesBookList } from "#lib/series/series-books.svelte.ts";
-  import { SERIES_OVERVIEW } from "#lib/series/series-overview.ts";
+  import { focusPageHeading } from "#lib/navigation/page-heading.ts";
+  import {
+    SERIES_OVERVIEW,
+    type SeriesShown,
+  } from "#lib/series/series-overview.ts";
   import SeriesBooks from "#lib/series/SeriesBooks.svelte";
   import SeriesAbout from "#lib/series/SeriesAbout.svelte";
   import SeriesBand from "#lib/series/SeriesBand.svelte";
@@ -43,6 +53,7 @@
   import type { PageProps } from "./$types";
 
   const DESKTOPS: readonly Platform[] = ["linux", "macos", "windows"];
+  const TRY_AGAIN_ICON_SIZE = 16;
   const EVERY_BOOK_IN_ORDER: SeriesBookListing = {
     shown: "all",
     direction: "ascending",
@@ -50,8 +61,9 @@
 
   let { data }: PageProps = $props();
 
-  const shown = $derived(data.shown);
-  const found = $derived(shown.kind === "found" ? shown : undefined);
+  let settled: { id: string; shown: SeriesShown } | undefined = $state();
+  const shown = $derived(settled?.id === data.id ? settled.shown : undefined);
+  const found = $derived(shown?.kind === "found" ? shown : undefined);
 
   const screenshotMode = getScreenshotMode();
   const isWide = new MediaQuery(EXPANDED_QUERY);
@@ -102,6 +114,11 @@
     };
   }
 
+  async function rescan(): Promise<void> {
+    await rescanEveryFolder();
+    readAgain();
+  }
+
   function readAgain(): void {
     void invalidate(SERIES_OVERVIEW);
     void books?.load();
@@ -150,6 +167,29 @@
       });
     }
   }
+
+  $effect(() => {
+    const { id, shown: coming } = data;
+    if (!(coming instanceof Promise)) {
+      settled = { id, shown: coming };
+      return undefined;
+    }
+    let isAwaited = true;
+    void coming.then(async (read) => {
+      if (!isAwaited) {
+        return;
+      }
+      const isFirst = settled?.id !== id;
+      settled = { id, shown: read };
+      await tick();
+      if (isFirst && document.activeElement === document.body) {
+        focusPageHeading();
+      }
+    });
+    return () => {
+      isAwaited = false;
+    };
+  });
 
   $effect(() => {
     const listed = books;
@@ -215,7 +255,7 @@
 {/if}
 <div
   class={[
-    "@container relative isolate -me-page-end flex flex-col pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-gutter medium:ps-gutter",
+    "@container relative isolate -me-page-end flex flex-1 flex-col pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-gutter medium:ps-gutter",
     hasToolbar ? "pbs-xl" : "-mbs-page-top",
   ]}
 >
@@ -242,35 +282,44 @@
         onMarkAll={markAll}
       />
       <div class="flex flex-1 flex-col gap-lg min-inline-none">
-        <ContinueCard {overview} isWide={isWide.current} />
-        {#if books?.list.kind === "failed"}
-          <p class="text-body text-muted">{m.series_books_failed()}</p>
-        {:else if books?.list.kind === "loaded"}
-          {#key foundId}
-            <SeriesBooks
-              books={screenshotMode.isOn
-                ? books.list.items.map(bookStandIns(found.overview))
-                : books.list.items}
-              bookCount={found.overview.bookCount}
-              readCount={found.overview.readCount}
-              bookmarkCount={found.overview.bookmarkCount}
-              {listing}
-              onListing={(chosen: SeriesBookListing) => {
-                listing = chosen;
-                void books.start();
-              }}
-              isComplete={books.list.isComplete}
-              onNearEnd={() => {
-                void books.loadMore();
-              }}
-              onLoadAll={() => books.loadAll()}
-              onMark={mark}
-              platform={data.appInfo.platform}
-            />
-          {/key}
+        {#if overview.bookCount === 0}
+          <SeriesWithoutBooks
+            platform={data.appInfo.platform}
+            onRescan={rescan}
+          />
+        {:else}
+          <ContinueCard {overview} isWide={isWide.current} />
+          {#if books?.list.kind === "failed"}
+            <p class="text-body text-muted">{m.series_books_failed()}</p>
+          {:else if books?.list.kind === "loaded"}
+            {#key foundId}
+              <SeriesBooks
+                books={screenshotMode.isOn
+                  ? books.list.items.map(bookStandIns(found.overview))
+                  : books.list.items}
+                bookCount={found.overview.bookCount}
+                readCount={found.overview.readCount}
+                bookmarkCount={found.overview.bookmarkCount}
+                {listing}
+                onListing={(chosen: SeriesBookListing) => {
+                  listing = chosen;
+                  void books.start();
+                }}
+                isComplete={books.list.isComplete}
+                onNearEnd={() => {
+                  void books.loadMore();
+                }}
+                onLoadAll={() => books.loadAll()}
+                onMark={mark}
+                platform={data.appInfo.platform}
+              />
+            {/key}
+          {/if}
         {/if}
       </div>
     </div>
+  {:else if shown === undefined}
+    <SeriesSkeleton />
   {:else if shown.kind === "missing"}
     <div class="flex flex-col gap-sm">
       <h1 tabindex="-1" class="text-headline font-bold">
@@ -279,11 +328,24 @@
       <p class="text-body text-muted">{m.series_not_found_body()}</p>
     </div>
   {:else}
-    <div class="flex flex-col gap-sm">
-      <h1 tabindex="-1" class="text-headline font-bold">
-        {m.library_title()}
-      </h1>
-      <p class="text-body text-muted">{m.series_failed()}</p>
+    <h1 tabindex="-1" class="sr-only">{m.library_title()}</h1>
+    <div class="flex flex-1 flex-col">
+      <EmptyState
+        icon={CircleAlert}
+        role="alert"
+        title={m.series_failed()}
+        body={m.library_unchanged()}
+      >
+        <Button
+          type="button"
+          look="outline"
+          class="mbs-lg flex items-center gap-sm rounded-shadcn-control px-lg font-medium min-block-touch-target expanded:text-small expanded:min-block-pointer-button"
+          onclick={readAgain}
+        >
+          <RefreshCw size={TRY_AGAIN_ICON_SIZE} aria-hidden="true" />
+          {m.library_try_again()}
+        </Button>
+      </EmptyState>
     </div>
   {/if}
 </div>
