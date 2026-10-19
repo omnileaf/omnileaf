@@ -63,6 +63,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
     });
   },
   seriesBooks: () => ({ books: [], next: null }),
+  creatorSeries: () => [],
   markBooks: () => null,
   orientScreen: () => null,
   changeFullScreen: () => false,

@@ -52,6 +52,17 @@ pub struct SeriesCreator {
     pub name: String,
     /// Absent when the books' details name the creator without saying what they did.
     pub role: Option<CreatorRole>,
+    /// How many series in the library name this creator, this one included.
+    pub series_count: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatorSeries {
+    pub id: SeriesId,
+    pub title: String,
+    pub cover: Option<CoverPath>,
+    pub role: Option<CreatorRole>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]

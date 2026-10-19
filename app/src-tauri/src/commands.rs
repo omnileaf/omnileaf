@@ -3,8 +3,8 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AppInfo, AppLanguage, BookCursor, BookId, BookSessions, BooksRemoval, Core, CoversPerRow,
-    FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor, HistoryOf,
-    HistoryPage, HistorySeries, InterfaceError, Library, LibraryFilter, LibraryListing,
+    CreatorSeries, FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, HistoryCursor,
+    HistoryOf, HistoryPage, HistorySeries, InterfaceError, Library, LibraryFilter, LibraryListing,
     LibrarySearch, LibraryView, LocalDay, OpenedBook, ProbedFormat, ProjectLink, ReadMark,
     ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
     SeriesId, SeriesOverview, SeriesPage, UtcOffset,
@@ -45,6 +45,7 @@ macro_rules! app_commands {
             library_search_count,
             series_overview,
             series_books,
+            creator_series,
             mark_books,
             open_book,
             reading_restored,
@@ -284,6 +285,16 @@ async fn series_books(
     after: Option<BookCursor>,
 ) -> Result<SeriesBookPage, IpcError> {
     Ok(library.series_books(id, listing, after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+fn creator_series(library: State<'_, Library>, creator: String) -> Vec<CreatorSeries> {
+    library.creator_series(&creator)
 }
 
 #[tauri::command]
