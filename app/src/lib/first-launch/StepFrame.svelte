@@ -1,7 +1,14 @@
+<script module lang="ts">
+  export const STEP_TOAST_ROOM = "--step-toast-room";
+</script>
+
 <script lang="ts">
   import { ArrowLeft, ChevronLeft } from "@lucide/svelte";
   import type { Snippet } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
 
+  import { makesToastRoom } from "#lib/notices/toast-room.ts";
+  import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import StepButton from "./StepButton.svelte";
@@ -23,6 +30,7 @@
   } = $props();
 
   const position = $derived(numberOf(step));
+  const isDialog = new MediaQuery(EXPANDED_QUERY);
 </script>
 
 {#if position !== undefined}
@@ -61,6 +69,7 @@
   {@render children()}
 </div>
 <footer
+  {@attach !isDialog.current && makesToastRoom(STEP_TOAST_ROOM)}
   class="flex flex-col gap-xs px-xl pbs-sm pbe-sheet-bottom expanded:flex-row expanded:items-center expanded:gap-sm expanded:px-step-dialog-inline expanded:pbe-step-dialog-block"
 >
   {#if onBack !== undefined}
