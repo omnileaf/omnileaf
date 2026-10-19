@@ -248,6 +248,37 @@ test("shows the screen it went back to scrolled as it was during the swipe", asy
     .toBe(shownWhileSwiping);
 });
 
+test("keeps the screen it went back to scrolled past the heading it focuses", async ({
+  page,
+}) => {
+  await page.setViewportSize({
+    width: viewportOf(page).width,
+    height: SHORT_VIEWPORT_HEIGHT,
+  });
+  await page.goto(PARENT_URL);
+  await expect(heading(page, PARENT_TITLE)).toBeVisible();
+  await page.getByRole("main").evaluate((main) => {
+    main.scrollTop = main.scrollHeight;
+  });
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: NESTED_TITLE })
+    .dispatchEvent("click");
+  await expect(heading(page, NESTED_TITLE)).toBeVisible();
+
+  await swipe({ kind: "moved", progress: 0.7 });
+  const shownWhileSwiping = await previousScreen(page)
+    .locator(".contents > div")
+    .evaluate((copy) => copy.scrollTop);
+  await swipe({ kind: "released", progress: 0.7, velocity: 0 });
+
+  await expect(heading(page, PARENT_TITLE)).toBeFocused();
+  await expect(heading(page, PARENT_TITLE)).not.toBeInViewport();
+  await expect
+    .poll(() => page.getByRole("main").evaluate((main) => main.scrollTop))
+    .toBe(shownWhileSwiping);
+});
+
 test("shows no screen in a language the app has since left", async ({
   page,
 }) => {
