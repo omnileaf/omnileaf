@@ -91,6 +91,11 @@
     </div>
   </main>
 {/if}
-<div class="fixed inset-x-none inset-be-safe-bottom z-notice">
-  <Toasts {notices} platform={data.appInfo.platform} theme={theme.resolved} />
+<div class="fixed inset-x-none inset-be-none z-notice">
+  <Toasts
+    {notices}
+    platform={data.appInfo.platform}
+    theme={theme.resolved}
+    bottom="calc(var(--reader-toast-room, var(--spacing-safe-bottom)) + var(--spacing-lg))"
+  />
 </div>

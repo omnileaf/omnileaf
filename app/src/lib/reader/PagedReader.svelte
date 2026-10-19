@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Eye } from "@lucide/svelte";
+  import { BookOpen, Eye, Maximize, Languages } from "@lucide/svelte";
   import { onMount, untrack } from "svelte";
 
   import { goto } from "$app/navigation";
@@ -31,9 +31,12 @@
     readerSettings,
   } from "#lib/reader/reader-settings.svelte.ts";
   import ReaderMore from "#lib/reader/ReaderMore.svelte";
+  import { makesToastRoom } from "#lib/reader/toast-room.ts";
   import { spreadAt, spreadPosition, spreadsOf } from "#lib/reader/spreads.ts";
   import LayoutQuickSettings from "#lib/reader/LayoutQuickSettings.svelte";
+  import ReaderGuide from "#lib/reader/ReaderGuide.svelte";
   import ReadingSettings from "#lib/reader/ReadingSettings.svelte";
+  import { seenOnce } from "#lib/reader/seen-once.ts";
   import ReaderPanel from "#lib/reader/ReaderPanel.svelte";
   import ReaderTopBar from "#lib/reader/ReaderTopBar.svelte";
   import { isZoomedIn, zoneAction } from "#lib/reader/reader-zoom.ts";
@@ -106,6 +109,11 @@
     seriesReadingDirection(book.series, book.readingDirection),
   );
   const settings = untrack(() => readerSettings(book.series));
+  const TOUCH: readonly Platform[] = ["android", "ios"];
+  const guide = untrack(() =>
+    seenOnce(`omnileaf.readerGuide.${reading.direction}`),
+  );
+  let isGuideSeen = $state(untrack(() => guide.isSeen));
   const look = $derived(settings.look);
   let isSettingsOpen = $state(false);
   const BACKGROUNDS = {
@@ -201,7 +209,7 @@
         controls.toggle();
         return;
       case "fullScreen":
-        void commands.changeFullScreen("toggle");
+        void toggleFullScreen();
         return;
       case "leave":
         if (isSettingsOpen) {
@@ -272,6 +280,62 @@
     } else {
       controls.show();
     }
+  }
+
+  async function toggleFullScreen(): Promise<void> {
+    const changed = await commands.changeFullScreen("toggle");
+    if (changed.status === "ok" && !changed.data) {
+      notices.show({
+        tone: "plain",
+        icon: Maximize,
+        title: m.reader_full_screen(),
+        body: m.reader_full_screen_leave(),
+      });
+    }
+  }
+
+  function offerToStartOver(): void {
+    if (opensAtEnd || book.startPage === 0) {
+      return;
+    }
+    notices.show({
+      tone: "plain",
+      icon: BookOpen,
+      title: m.reader_back_on_page({
+        page: book.startPage + 1,
+        count: pageCount,
+      }),
+      action: {
+        label: m.reader_start_over(),
+        run: () => {
+          turnTo(0);
+        },
+      },
+    });
+  }
+
+  function sayDirectionFound(): void {
+    const noticed = seenOnce(`omnileaf.directionFound.${book.series}`);
+    if (
+      noticed.isSeen ||
+      !reading.isDetected ||
+      reading.direction !== "rightToLeft"
+    ) {
+      return;
+    }
+    noticed.see();
+    notices.show({
+      tone: "plain",
+      icon: Languages,
+      title: m.reader_reading_right_to_left(),
+      body: m.reader_found_in_details(),
+      action: {
+        label: m.reader_change(),
+        run: () => {
+          openSettings(true);
+        },
+      },
+    });
   }
 
   async function leaveFullScreenOrBook(): Promise<void> {
@@ -362,6 +426,14 @@
       return keepScreenOn();
     }
     return undefined;
+  });
+
+  onMount(() => {
+    if (!isGuideSeen) {
+      controls.hide();
+    }
+    offerToStartOver();
+    sayDirectionFound();
   });
 
   onMount(() => {
@@ -562,6 +634,7 @@
         !controls.isShown && "pointer-events-none opacity-0",
       ]}
       {...controlEvents}
+      {@attach makesToastRoom}
     >
       <ReaderPanel
         pages={book.pages}
@@ -587,6 +660,16 @@
         >
       </div>
     {/if}
+  {/if}
+  {#if !isGuideSeen && !turner.isPastEnd}
+    <ReaderGuide
+      direction={reading.direction}
+      isTouch={TOUCH.includes(platform)}
+      onDone={() => {
+        guide.see();
+        isGuideSeen = true;
+      }}
+    />
   {/if}
   <ReadingSettings
     isOpen={isSettingsOpen}
