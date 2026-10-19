@@ -191,6 +191,7 @@ export const TOKEN_THEME = {
     "dialog-inset",
     "dialog-limit",
     "dismiss",
+    "docked-panel",
     "downloaded-mark",
     "empty-art",
     "empty-icon",

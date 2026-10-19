@@ -142,8 +142,16 @@ function filterButton(page: Page): Locator {
     .getByRole("button", { name: /^Sort and filter/ });
 }
 
+function isDocked(page: Page): boolean {
+  return screenSizeOf(page) === "desktop";
+}
+
+function panelRole(page: Page): "complementary" | "dialog" {
+  return isDocked(page) ? "complementary" : "dialog";
+}
+
 function filterAndSort(page: Page): Locator {
-  return page.getByRole("dialog", { name: "Sort and filter" });
+  return page.getByRole(panelRole(page), { name: "Sort and filter" });
 }
 
 function isBesideTitle(box: Box, title: Box): boolean {
@@ -247,8 +255,10 @@ test("heads filter and sort with a round accent badge beside its title, with Res
       ];
     }),
   ).toEqual([true, true]);
-  const onTheTitleLine = [panel.getByRole("button", { name: "Reset" })];
-  if (!isPhone(page)) {
+  const onTheTitleLine = isDocked(page)
+    ? [panel.getByRole("button", { name: "Close sort and filter" })]
+    : [panel.getByRole("button", { name: "Reset" })];
+  if (screenSizeOf(page) === "tablet") {
     onTheTitleLine.push(panel.getByRole("button", { name: "Close" }));
   }
   for (const button of onTheTitleLine) {
@@ -373,10 +383,10 @@ test("puts the sort and every filter back as a new library has them on Reset", a
   await expect.poll(() => storedListing).toEqual(DEFAULT_LIBRARY_LISTING);
 });
 
-for (const { platform, weight, colour } of [
-  { platform: "linux", weight: "500", colour: "foreground" },
-  { platform: "android", weight: "500", colour: "accent" },
-  { platform: "ios", weight: "600", colour: "foreground" },
+for (const { platform, weight, colour, isTouch } of [
+  { platform: "linux", weight: "500", colour: "foreground", isTouch: false },
+  { platform: "android", weight: "500", colour: "accent", isTouch: true },
+  { platform: "ios", weight: "600", colour: "foreground", isTouch: true },
 ] as const) {
   test.describe(`on ${platform}`, () => {
     testOnlyInItsWebview(platform);
@@ -391,7 +401,12 @@ for (const { platform, weight, colour } of [
       page,
     }) => {
       await openLibrary(page);
-      const panel = await openFilterAndSort(page);
+      await filterButton(page).click();
+      const panel = isTouch
+        ? page.getByRole("dialog", { name: "Sort and filter" })
+        : filterAndSort(page);
+      await expect(panel).toBeVisible();
+      await settle(panel);
 
       const reset = panel.getByRole("button", { name: "Reset" });
 
@@ -471,6 +486,7 @@ test("moves between the read states with the arrow keys and picks one with Space
 test("slides up from the foot of a phone, and stands against the end of wider screens", async ({
   page,
 }) => {
+  test.skip(isDocked(page), "a desktop docks the panel beside the grid");
   await openLibrary(page);
   const panel = await openFilterAndSort(page);
 
@@ -517,7 +533,7 @@ test("keeps filter and sort inside the screen in a longer language", async ({
     .getByRole("button", { name: pseudoText("Sort and filter") })
     .click();
 
-  const panel = page.getByRole("dialog");
+  const panel = page.getByRole(panelRole(page));
   await expect(panel).toBeVisible();
   const overflows = await panel.evaluate(
     (element) => element.scrollWidth > element.clientWidth,
@@ -544,7 +560,7 @@ for (const language of ["en", "en-XA"] as const) {
       .locator("main header")
       .getByRole("button", { name: text("Sort and filter") })
       .click();
-    const panel = page.getByRole("dialog");
+    const panel = page.getByRole(panelRole(page));
     await expect(panel).toBeVisible();
     await settle(panel);
     const segments = panel
@@ -654,6 +670,7 @@ test.describe("when the library holds no series and a filter is stored", () => {
 test("slides in as it opens, which reduced motion turns into appearing at once", async ({
   page,
 }) => {
+  test.skip(isDocked(page), "a desktop docks the panel at once");
   await openLibrary(page);
   await filterButton(page).click();
   await expect(filterAndSort(page)).toBeVisible();
@@ -724,13 +741,15 @@ for (const platform of ["android", "ios"] as const) {
 
     test("sizes Sort by and its direction for a finger", async ({ page }) => {
       await openLibrary(page);
-      const panel = await openFilterAndSort(page);
+      await filterButton(page).click();
+      const panel = page.getByRole("dialog", { name: "Sort and filter" });
+      await settle(panel);
 
       const select = await boxOf(
         panel.getByRole("combobox", { name: "Sort by" }),
       );
       const direction = await boxOf(
-        directionButton(page, "Order: A to Z. Change to Z to A"),
+        panel.getByRole("button", { name: "Order: A to Z. Change to Z to A" }),
       );
 
       expect(select.height).toBeGreaterThanOrEqual(TOUCH_TARGET);
