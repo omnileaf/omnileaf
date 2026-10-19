@@ -742,6 +742,8 @@ test.describe("a long list of results", () => {
 test.describe("on Android", () => {
   const TOUCH_TARGET_PX = 48;
   const DRAWN_CLEAR_PX = 28;
+  const ANDROID_SEARCH_FIELD_PX = 48;
+  const ANDROID_SEARCH_ICON_GAP_PX = 12;
 
   testOnlyInItsWebview("android");
   test.use({
@@ -774,6 +776,28 @@ test.describe("on Android", () => {
     expect(target.height).toBeGreaterThanOrEqual(TOUCH_TARGET_PX);
     expect(touched).toBe("Clear");
     expect(drawn.width).toBe(DRAWN_CLEAR_PX);
+  });
+
+  test("draws the search field as a 48 dp pill with a muted icon 12 dp from its words", async ({
+    page,
+  }) => {
+    await page.goto("/search");
+
+    const field = searchField(page).locator("..");
+    const box = await boxOf(field);
+    const icon = await boxOf(field.locator("svg").first());
+    const words = await boxOf(searchField(page));
+    const radius = await field.evaluate((element) =>
+      Number.parseFloat(getComputedStyle(element).borderTopLeftRadius),
+    );
+
+    expect(box.height).toBe(ANDROID_SEARCH_FIELD_PX);
+    expect(radius).toBeGreaterThanOrEqual(box.height / 2);
+    expect(words.x - (icon.x + icon.width)).toBe(ANDROID_SEARCH_ICON_GAP_PX);
+    await expect(field.locator("svg").first()).toHaveCSS(
+      "color",
+      await tokenColour(page, "--secondary-text"),
+    );
   });
 
   for (const colorScheme of ["light", "dark"] as const) {
