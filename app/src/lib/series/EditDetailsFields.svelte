@@ -24,6 +24,7 @@
   import AddDetailChip from "./AddDetailChip.svelte";
   import { DETAIL_CHIP } from "./detail-chip.ts";
   import DetailFieldHead from "./DetailFieldHead.svelte";
+  import LockedAdultMark from "./LockedAdultMark.svelte";
 
   const PEOPLE_SHOWN_FIRST = 8;
   const ICON_SIZE = 16;
@@ -32,11 +33,13 @@
 
   let {
     details,
+    countsAgeRatings,
     draft,
     onDraft,
     offerUndo,
   }: {
     details: SeriesDetails;
+    countsAgeRatings: boolean;
     draft: DetailDraft;
     onDraft: (draft: DetailDraft) => void;
     offerUndo: (offer: UndoOffer) => void;
@@ -257,10 +260,14 @@
       <p id="{id}-summary-file" class={FROM_FILE}>{fromFile.summary}</p>
     {/if}
   </div>
-  {#if !details.isRatedAdult}
+  {#if details.isRatedAdult && countsAgeRatings}
+    <LockedAdultMark />
+  {:else}
     <SettingSwitch
       label={m.edit_details_mark_adult()}
-      description={m.edit_details_mark_adult_note()}
+      description={details.isRatedAdult
+        ? m.edit_details_mark_adult_ratings_off()
+        : m.edit_details_mark_adult_note()}
       isOn={draft.isMarkedAdult}
       onToggle={() => {
         onDraft({ ...draft, isMarkedAdult: !draft.isMarkedAdult });
