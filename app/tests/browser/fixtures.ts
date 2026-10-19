@@ -196,6 +196,16 @@ export const DEFAULT_BACKEND: FakeBackend = {
   sendCrashReport: () => null,
   copyCrashReport: () => null,
   declineCrashReport: () => null,
+  checkStorage: () => ({
+    omnileafBytes: 1_440_000_000,
+    cachedPagesBytes: 1_200_000_000,
+    coversBytes: 210_000_000,
+    freeBytes: 41_000_000_000,
+    totalBytes: 128_000_000_000,
+    isLow: false,
+  }),
+  clearCachedPages: () => null,
+  clearCovers: () => null,
   panicInCore: () => null,
   crashAndQuit: () => null,
 };
