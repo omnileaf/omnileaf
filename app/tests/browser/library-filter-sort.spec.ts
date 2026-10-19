@@ -133,7 +133,7 @@ function seriesList(page: Page): Locator {
 
 function filterButton(page: Page): Locator {
   return page
-    .locator("main header")
+    .locator("main header, main [data-title-bar]")
     .getByRole("button", { name: /^Filter and sort/ });
 }
 

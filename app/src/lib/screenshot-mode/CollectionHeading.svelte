@@ -1,7 +1,10 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import type { Platform } from "#lib/ipc/bindings.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
   import PageHeading from "#lib/page/PageHeading.svelte";
+  import { isPhone } from "#lib/page/platform.ts";
   import PageToolbar from "#lib/page/PageToolbar.svelte";
 
   import ScreenshotModeLabel from "./ScreenshotModeLabel.svelte";
@@ -11,14 +14,44 @@
     readonly showsLabel: boolean;
     readonly count?: Snippet | undefined;
     readonly actions?: Snippet;
+    readonly platform: Platform;
   }
 
-  let { title, showsLabel, count, actions }: Props = $props();
+  let { title, showsLabel, count, actions, platform }: Props = $props();
+
+  const width = new WindowWidth();
+  const hasLargeTitle = $derived(
+    platform === "ios" && isPhone(platform, width.current),
+  );
+  let bar = $state<HTMLElement | null>(null);
+  let isTitleUnderBar = $state(false);
+
+  $effect(() => {
+    const heading = header?.querySelector("h1");
+    if (!hasLargeTitle || bar === null || heading == null) {
+      return;
+    }
+    const barBottom = bar.getBoundingClientRect().bottom;
+    const watching = new IntersectionObserver(
+      ([seen]) => {
+        if (seen !== undefined) {
+          isTitleUnderBar =
+            !seen.isIntersecting &&
+            seen.boundingClientRect.bottom <= (seen.rootBounds?.top ?? 0);
+        }
+      },
+      { rootMargin: `${String(-barBottom)}px 0px 0px 0px` },
+    );
+    watching.observe(heading);
+    return () => {
+      watching.disconnect();
+    };
+  });
 
   const FITS = ["roomy", "crowded", "stacked"] as const;
 
   let header: HTMLElement | undefined = $state();
-  let buttons: HTMLElement | undefined = $state();
+  let buttons = $state<HTMLElement | null>(null);
   let fitIndex = $state(0);
   const roomNeeded: number[] = [];
   let fittedButtons = 0;
@@ -64,7 +97,7 @@
     };
     const observer = new ResizeObserver(fitSoon);
     observer.observe(heading);
-    if (buttons !== undefined) {
+    if (buttons !== null) {
       observer.observe(buttons);
     }
     return () => {
@@ -76,6 +109,30 @@
   });
 </script>
 
+{#if hasLargeTitle && actions !== undefined}
+  <div
+    bind:this={bar}
+    data-title-bar
+    class={[
+      "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top grid grid-cols-1 items-center border-be border-transparent pe-page-end pbs-page-top pbe-xs motion-safe:transition-colors motion-safe:duration-fade",
+      isTitleUnderBar &&
+        "border-ios-separator bg-ios-material backdrop-blur-ios",
+    ]}
+  >
+    <span
+      aria-hidden="true"
+      class={[
+        "pointer-events-none col-start-1 row-start-1 truncate px-4xl text-center text-body font-semibold motion-safe:transition-opacity motion-safe:duration-fade",
+        isTitleUnderBar ? "opacity-100" : "opacity-0",
+      ]}
+    >
+      {title}
+    </span>
+    <div class="col-start-1 row-start-1 flex items-center justify-self-end">
+      {@render actions()}
+    </div>
+  </div>
+{/if}
 <PageToolbar class="@container text-body">
   <header
     bind:this={header}
@@ -113,7 +170,7 @@
         <ScreenshotModeLabel />
       </div>
     {/if}
-    {#if actions !== undefined}
+    {#if actions !== undefined && !hasLargeTitle}
       <div
         bind:this={buttons}
         class="col-start-4 row-start-1 ms-title-count flex items-center justify-self-end medium:gap-sm heading-two-rows:order-2 heading-two-rows:ms-auto heading-stacked:order-6 heading-stacked:col-span-full heading-stacked:col-start-1 heading-stacked:row-start-auto heading-stacked:mbs-sm heading-stacked:basis-full heading-stacked:justify-end in-toolbar:ms-auto in-toolbar:shrink-0"

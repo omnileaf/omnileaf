@@ -205,6 +205,7 @@
 {/snippet}
 
 <CollectionHeading
+  platform={data.appInfo.platform}
   title={m.library_title()}
   showsLabel={screenshotMode.showsLabel}
   count={showsItemCounts && seriesCount.count !== undefined
