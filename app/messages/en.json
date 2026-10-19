@@ -1349,6 +1349,20 @@
   "reader_read_pages_that_work": "Read the {count} pages that work",
   "reader_page_failed_body": "Page {page} may be damaged. The rest of {title} still opens.",
   "reader_try_again": "Try again",
+  "reader_starting": "Starting {title}",
+  "reader_page_of": [
+    {
+      "declarations": [
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "Page {formattedPage} of {formattedCount}"
+      }
+    }
+  ],
   "reader_not_found": "This book isn't in your library",
   "reader_not_found_body": "It may have been removed, or the folder holding it taken out of the library.",
   "reader_unreadable": "This book couldn't be opened",

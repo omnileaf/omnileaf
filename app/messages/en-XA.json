@@ -1349,6 +1349,20 @@
   "reader_read_pages_that_work": "⟦Ŕéáð ţĥé {count} þáĝéš ţĥáţ ŵöŕķ·············⟧",
   "reader_page_failed_body": "⟦Þáĝé {page} ɱáý ƀé ðáɱáĝéð. Ţĥé ŕéšţ öƒ {title} šţíļļ öþéñš.························⟧",
   "reader_try_again": "⟦Ţŕý áĝáíñ····⟧",
+  "reader_starting": "⟦Šţáŕţíñĝ {title}·······⟧",
+  "reader_page_of": [
+    {
+      "declarations": [
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "⟦Þáĝé {formattedPage} öƒ {formattedCount}················⟧"
+      }
+    }
+  ],
   "reader_not_found": "⟦Ţĥíš ƀööķ íšñ'ţ íñ ýöûŕ ļíƀŕáŕý·············⟧",
   "reader_not_found_body": "⟦Íţ ɱáý ĥáṽé ƀééñ ŕéɱöṽéð, öŕ ţĥé ƒöļðéŕ ĥöļðíñĝ íţ ţáķéñ öûţ öƒ ţĥé ļíƀŕáŕý.·······························⟧",
   "reader_unreadable": "⟦Ţĥíš ƀööķ çöûļðñ'ţ ƀé öþéñéð············⟧",
