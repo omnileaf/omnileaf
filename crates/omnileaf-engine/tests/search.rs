@@ -11,6 +11,7 @@ mod support;
 
 use omnileaf_engine::{
     Inclusion, Library, LibraryError, LibraryFilter, LibraryListing, LibrarySearch,
+    SpellingSuggestion,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -139,4 +140,30 @@ async fn refuses_text_longer_than_a_search_reads_as_a_search_too_long() {
             .all(|refusal| matches!(refusal, Some(LibraryError::SearchTooLong { .. }))),
         "{refusals:?}"
     );
+}
+
+#[tokio::test]
+async fn suggests_the_closest_words_of_a_title_for_a_search_with_a_few_slips() {
+    let (library, _comics, _home) = library_with_the_sample_series("search-spelling").await;
+
+    let suggestion = library
+        .spelling_suggestion("smaple sereis 02".to_owned())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        suggestion,
+        Some(SpellingSuggestion {
+            text: "sample series 02".to_owned(),
+            chapter_of: None,
+        })
+    );
+}
+
+#[tokio::test]
+async fn suggests_nothing_for_text_longer_than_a_search_holds() {
+    let (library, _comics, _home) = library_with_the_sample_series("search-spelling-long").await;
+    let text = "a".repeat(usize::from(LibrarySearch::MAX_CHARS) + 1);
+
+    assert_eq!(library.spelling_suggestion(text).await.unwrap(), None);
 }

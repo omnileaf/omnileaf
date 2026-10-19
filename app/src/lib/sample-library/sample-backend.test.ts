@@ -556,3 +556,27 @@ test("remembers the library's tabs as they were set", async () => {
 
   expect(await backend.libraryTabs()).toEqual(tabs);
 });
+
+test("suggests the words of a chapter title close to a search, naming its series", async () => {
+  const { backend } = backendFor();
+
+  expect(await backend.librarySpellingSuggestion("harbor gat")).toEqual({
+    text: "harbour gate",
+    chapterOf: LONG_TITLE,
+  });
+});
+
+test("suggests the words of a series title close to a search", async () => {
+  const { backend } = backendFor();
+
+  expect(await backend.librarySpellingSuggestion("smaple")).toEqual({
+    text: "sample",
+    chapterOf: null,
+  });
+});
+
+test("suggests nothing for a search close to no title", async () => {
+  const { backend } = backendFor();
+
+  expect(await backend.librarySpellingSuggestion("quixotic")).toBeNull();
+});
