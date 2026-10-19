@@ -20,7 +20,10 @@ test.each<[ItemLook, string[]]>([
   ["about-version", ["flex-wrap", "ps-list-row", "min-block-4xl"]],
   ["history-phone", ["flex", "gap-md", "desktop:large:hidden"]],
   ["history-desktop", ["hidden", "min-inline-none", "desktop:large:flex"]],
-  ["settings-section", ["ps-list-row", "hover:bg-hover", "desktop:py-none"]],
+  [
+    "settings-section",
+    ["ps-list-row", "hover:bg-hover", "android:min-block-settings-entry"],
+  ],
 ])("lays out the %s row with its own spacing", (look, signature) => {
   const classes = cn(ITEM_LOOKS[look]).split(" ");
 
