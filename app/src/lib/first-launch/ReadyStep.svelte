@@ -23,18 +23,18 @@
 </script>
 
 <StepFrame step="ready">
-  <div class="flex flex-1 flex-col justify-center gap-lg">
-    <StepHeader scale="headline">
-      {#snippet badge()}
-        <StepBadge icon={Check} />
-      {/snippet}
-      {m.first_launch_ready_title()}
-    </StepHeader>
-    <p class="text-step-body text-muted">{m.first_launch_ready_body()}</p>
-    {#if outcome === "failed"}
-      <p role="alert">{m.first_launch_finish_failed()}</p>
-    {/if}
-  </div>
+  <StepHeader>
+    {#snippet badge()}
+      <StepBadge icon={Check} />
+    {/snippet}
+    {m.first_launch_ready_title()}
+    {#snippet lead()}
+      {m.first_launch_ready_body()}
+    {/snippet}
+  </StepHeader>
+  {#if outcome === "failed"}
+    <p role="alert" class="text-center">{m.first_launch_finish_failed()}</p>
+  {/if}
   {#snippet actions()}
     <StepButton
       kind="primary"

@@ -325,22 +325,16 @@ test.describe("with a pointer", () => {
       expect(await paintOf(start)).not.toBe(resting);
     });
 
-    test("tints a finished step's circle under the pointer", async ({
-      page,
-    }) => {
+    test("tints Back under the pointer", async ({ page }) => {
       await page.goto("/first-launch");
       await page.getByRole("button", { name: "Get started" }).click();
-      await page.getByRole("button", { name: "Continue" }).click();
       await page.mouse.move(0, 0);
-      const finished = page.getByRole("button", {
-        name: "Home folder, step 1 of 3",
-      });
-      const circle = finished.locator("xpath=*[1]");
-      const resting = await paintOf(circle);
+      const back = page.getByRole("button", { name: "Back" });
+      const resting = await paintOf(back);
 
-      await finished.hover();
+      await back.hover();
 
-      expect(await paintOf(circle)).not.toBe(resting);
+      expect(await paintOf(back)).not.toBe(resting);
     });
 
     test("tints a quiet step button under the pointer", async ({ page }) => {
