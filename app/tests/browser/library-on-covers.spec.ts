@@ -47,6 +47,7 @@ const UNREAD_BADGE_SIZE = 24;
 const FIRST_TITLE = "Sample Series 0001";
 const SECOND_TITLE = "Sample Series 0002";
 const FIRST_UNREAD = 3;
+const FIRST_BOOK = "0190a3e4-0000-8000-8001-000000000001";
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;
 
 let storedView: LibraryView = DEFAULT_LIBRARY_VIEW;
@@ -59,6 +60,9 @@ const COVERS_BACKEND: FakeBackend = {
       bookCount: 4,
       unreadCount: index === 0 ? FIRST_UNREAD : index === 1 ? 0 : 4,
       cover: `thumb/v1/0190a3e4-0000-8000-8000-000000000001/${String(index + 1)}/1`,
+      language: index === 0 ? "ja" : null,
+      hasDownloads: index === 0,
+      continuesFrom: index === 0 ? FIRST_BOOK : null,
     })),
   ),
   libraryView: () => storedView,
@@ -235,6 +239,75 @@ test.describe("unread count", () => {
       inset,
       0,
     );
+  });
+
+  test("marks the language, then the downloaded chapters, in the cover's top end corner once shown", async ({
+    page,
+  }) => {
+    await openWith(page, {
+      onCovers: {
+        ...DEFAULT_LIBRARY_VIEW.onCovers,
+        showsLanguage: true,
+        showsDownloaded: true,
+      },
+    });
+    const first = seriesNamed(page, FIRST_TITLE);
+
+    await expect(first.getByRole("img", { name: "Japanese" })).toBeVisible();
+    await expect(
+      first.getByRole("img", { name: "Downloaded chapters" }),
+    ).toBeVisible();
+    await expect(
+      seriesNamed(page, SECOND_TITLE).getByRole("img", {
+        name: "Downloaded chapters",
+      }),
+    ).toHaveCount(0);
+  });
+
+  test("offers Continue on a cover once shown, opening the book reading goes on from", async ({
+    page,
+  }) => {
+    await openWith(page, {
+      onCovers: {
+        ...DEFAULT_LIBRARY_VIEW.onCovers,
+        showsContinueButton: true,
+      },
+    });
+
+    await expect(
+      seriesNamed(page, FIRST_TITLE).getByRole("link", {
+        name: `Continue ${FIRST_TITLE}`,
+      }),
+    ).toHaveAttribute("href", `/read/${FIRST_BOOK}`);
+    await expect(
+      seriesNamed(page, SECOND_TITLE).getByRole("link", { name: /^Continue/ }),
+    ).toHaveCount(0);
+  });
+
+  test("keeps Continue off the covers until it's turned on", async ({
+    page,
+  }) => {
+    await openWith(page, {});
+
+    await expect(
+      seriesNamed(page, FIRST_TITLE).getByRole("link", { name: /^Continue/ }),
+    ).toHaveCount(0);
+  });
+
+  test("ends a list row with Continue once shown", async ({ page }) => {
+    await openWith(page, {
+      display: "list",
+      onCovers: {
+        ...DEFAULT_LIBRARY_VIEW.onCovers,
+        showsContinueButton: true,
+      },
+    });
+
+    await expect(
+      seriesNamed(page, FIRST_TITLE).getByRole("link", {
+        name: `Continue ${FIRST_TITLE}`,
+      }),
+    ).toBeVisible();
   });
 
   test("draws no unread count on a series with every book read", async ({

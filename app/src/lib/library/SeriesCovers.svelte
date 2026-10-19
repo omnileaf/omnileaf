@@ -16,6 +16,7 @@
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import CoverBadges from "./CoverBadges.svelte";
+  import ContinueDisc from "./ContinueDisc.svelte";
   import CoverImage from "./CoverImage.svelte";
   import ListCover from "./ListCover.svelte";
   import { coverLook } from "./cover-look";
@@ -88,6 +89,14 @@
   );
 
   const PERCENT = 100;
+  const NARROW_DISC =
+    "@max-cover-disc:continue-disc-small @max-cover-continue:hidden";
+
+  function continuedBook(one: LibrarySeries): string | undefined {
+    return view.onCovers.showsContinueButton && one.continuesFrom !== null
+      ? one.continuesFrom
+      : undefined;
+  }
 
   function reportsMostThatFit(report: (most: number) => void) {
     return (probe: HTMLElement) => {
@@ -125,111 +134,157 @@
 {#snippet gridCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
   {@const share = readShare(one)}
-  <a
-    href={resolve("/(app)/series/[id]", { id: one.id })}
-    class="flex flex-col gap-cover-caption min-inline-none medium:gap-sm"
-  >
-    <div
-      class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+  {@const href = resolve("/(app)/series/[id]", { id: one.id })}
+  {@const continues = continuedBook(one)}
+  <div class="@container relative min-inline-none">
+    <a
+      {href}
+      class="flex flex-col gap-cover-caption min-inline-none medium:gap-sm"
     >
-      <CoverImage cover={shown.cover} {coverUrl} />
-      <CoverBadges series={one} onCovers={view.onCovers} />
-    </div>
-    {#if share !== undefined}
-      <Progress
-        aria-label={m.library_books_read({
-          read: one.bookCount - one.unreadCount,
-          count: one.bookCount,
-        })}
-        value={share}
-        class="block-xs"
+      <div
+        class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+      >
+        <CoverImage cover={shown.cover} {coverUrl} />
+        <CoverBadges series={one} onCovers={view.onCovers} />
+      </div>
+      {#if share !== undefined}
+        <Progress
+          aria-label={m.library_books_read({
+            read: one.bookCount - one.unreadCount,
+            count: one.bookCount,
+          })}
+          value={share}
+          class="block-xs"
+        />
+      {/if}
+      <div class="min-inline-none">
+        <p class={["line-clamp-2 font-medium wrap-break-word", look.title]}>
+          {shown.title}
+        </p>
+        <p
+          class={[
+            "truncate text-caption text-muted medium:mbs-2xs",
+            look.bookCount,
+          ]}
+        >
+          {m.library_series_books({ count: one.bookCount })}
+        </p>
+      </div>
+    </a>
+    {#if continues !== undefined}
+      <ContinueDisc
+        book={continues}
+        series={shown.title}
+        class={["absolute inset-e-sm inset-bs-cover-end", NARROW_DISC]}
       />
     {/if}
-    <div class="min-inline-none">
-      <p class={["line-clamp-2 font-medium wrap-break-word", look.title]}>
-        {shown.title}
-      </p>
-      <p
-        class={[
-          "truncate text-caption text-muted medium:mbs-2xs",
-          look.bookCount,
-        ]}
-      >
-        {m.library_series_books({ count: one.bookCount })}
-      </p>
-    </div>
-  </a>
+  </div>
 {/snippet}
 
 {#snippet compactCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
-  <a
-    href={resolve("/(app)/series/[id]", { id: one.id })}
-    class="block min-inline-none"
-  >
-    <div
-      class="@container relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+  {@const continues = continuedBook(one)}
+  <div class="@container relative min-inline-none">
+    <a
+      href={resolve("/(app)/series/[id]", { id: one.id })}
+      class="block min-inline-none"
     >
-      <CoverImage cover={shown.cover} {coverUrl} />
-      <CoverBadges series={one} onCovers={view.onCovers} />
       <div
-        class="absolute inset-x-none inset-be-none bg-linear-to-t from-band from-55% to-transparent px-band pbs-band-fade pbe-sm medium:px-band-wide medium:pbe-band-wide @max-cover-title:bg-none @max-cover-title-wide:px-band"
+        class="@container relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
       >
-        <p
-          class="line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band @max-cover-title:sr-only"
+        <CoverImage cover={shown.cover} {coverUrl} />
+        <CoverBadges series={one} onCovers={view.onCovers} />
+        <div
+          class="absolute inset-x-none inset-be-none bg-linear-to-t from-band from-55% to-transparent px-band pbs-band-fade pbe-sm medium:px-band-wide medium:pbe-band-wide @max-cover-title:bg-none @max-cover-title-wide:px-band"
         >
-          {shown.title}
-        </p>
+          <p
+            class="line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band @max-cover-title:sr-only"
+          >
+            {shown.title}
+          </p>
+        </div>
       </div>
-    </div>
-  </a>
+    </a>
+    {#if continues !== undefined}
+      <ContinueDisc
+        book={continues}
+        series={shown.title}
+        class={[
+          "absolute inset-e-sm inset-be-compact-continue-lift",
+          NARROW_DISC,
+        ]}
+      />
+    {/if}
+  </div>
 {/snippet}
 
 {#snippet coversCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
-  <a
-    href={resolve("/(app)/series/[id]", { id: one.id })}
-    class="block min-inline-none"
-  >
-    <div
-      title={shown.title}
-      class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+  {@const continues = continuedBook(one)}
+  <div class="@container relative min-inline-none">
+    <a
+      href={resolve("/(app)/series/[id]", { id: one.id })}
+      class="block min-inline-none"
     >
-      <CoverImage cover={shown.cover} {coverUrl} />
-      <CoverBadges series={one} onCovers={view.onCovers} />
-      <p class="sr-only">{shown.title}</p>
-    </div>
-  </a>
+      <div
+        title={shown.title}
+        class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+      >
+        <CoverImage cover={shown.cover} {coverUrl} />
+        <CoverBadges series={one} onCovers={view.onCovers} />
+        <p class="sr-only">{shown.title}</p>
+      </div>
+    </a>
+    {#if continues !== undefined}
+      <ContinueDisc
+        book={continues}
+        series={shown.title}
+        class={["absolute inset-e-sm inset-be-sm", NARROW_DISC]}
+      />
+    {/if}
+  </div>
 {/snippet}
 
 {#snippet listRow(one: LibrarySeries)}
   {@const shown = lookOf(one)}
-  <a
-    href={resolve("/(app)/series/[id]", { id: one.id })}
-    class="box-content flex items-center gap-cover-gap border-be border-border py-sm min-block-series-row large:gap-lg large:py-series-row-pad-wide large:min-block-series-row-wide"
-  >
-    <ListCover
-      cover={shown.cover}
-      {coverUrl}
-      class="rounded-list-cover inline-list-cover large:inline-list-cover-wide"
-    />
-    <div
-      class="flex flex-1 flex-col gap-2xs min-inline-none large:flex-row large:items-center large:gap-lg"
+  {@const continues = continuedBook(one)}
+  <div class="flex items-center gap-sm border-be border-border">
+    <a
+      href={resolve("/(app)/series/[id]", { id: one.id })}
+      class="box-content flex flex-1 items-center gap-cover-gap py-sm min-block-series-row min-inline-none large:gap-lg large:py-series-row-pad-wide large:min-block-series-row-wide"
     >
-      <p class="truncate text-lead font-semibold large:flex-1">{shown.title}</p>
-      <p class="text-detail text-muted large:inline-list-detail">
-        {m.library_series_books({ count: one.bookCount })}
-      </p>
-    </div>
-    {#if view.onCovers.showsUnreadCount}
-      <div class="flex shrink-0 justify-end large:inline-list-unread">
-        <UnreadCount
-          count={one.unreadCount}
-          class="px-sm py-2xs text-caption"
-        />
+      <ListCover
+        cover={shown.cover}
+        {coverUrl}
+        class="rounded-list-cover inline-list-cover large:inline-list-cover-wide"
+      />
+      <div
+        class="flex flex-1 flex-col gap-2xs min-inline-none large:flex-row large:items-center large:gap-lg"
+      >
+        <p class="truncate text-lead font-semibold large:flex-1">
+          {shown.title}
+        </p>
+        <p class="text-detail text-muted large:inline-list-detail">
+          {m.library_series_books({ count: one.bookCount })}
+        </p>
       </div>
+      {#if view.onCovers.showsUnreadCount}
+        <div class="flex shrink-0 justify-end large:inline-list-unread">
+          <UnreadCount
+            count={one.unreadCount}
+            class="px-sm py-2xs text-caption"
+          />
+        </div>
+      {/if}
+    </a>
+    {#if continues !== undefined}
+      <ContinueDisc
+        book={continues}
+        series={shown.title}
+        class="shrink-0 bg-transparent text-foreground shadow-none hover:bg-hover"
+      />
     {/if}
-  </a>
+  </div>
 {/snippet}
 
 {#if onMostThatFit !== undefined && view.display !== "list"}

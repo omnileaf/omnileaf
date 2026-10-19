@@ -29,6 +29,9 @@ function seriesTitled(number: number, title: string): WireSeries {
     bookCount: 1,
     unreadCount: 1,
     cover: null,
+    language: null,
+    hasDownloads: false,
+    continuesFrom: null,
   };
 }
 

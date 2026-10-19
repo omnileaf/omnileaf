@@ -30,6 +30,9 @@ const SAMPLE_SERIES: WireSeries = {
   bookCount: 3,
   unreadCount: 3,
   cover: COVER,
+  language: null,
+  hasDownloads: false,
+  continuesFrom: null,
 };
 
 function settled(): Promise<void> {
