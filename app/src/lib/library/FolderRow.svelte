@@ -15,6 +15,8 @@
   import { folderTitle } from "./folder-title";
   import { ICON_SIZE } from "./icon-size";
 
+  const SEPARATOR = " · ";
+
   let {
     folder,
     isFoundEmpty = false,
@@ -49,19 +51,11 @@
     {/if}
   </ItemMedia>
   <ItemContent class="min-inline-none">
-    <ItemTitle class="truncate">{folderTitle(folder)}</ItemTitle>
-    {#if status !== undefined}
-      <span
-        class="mbs-2xs flex items-center gap-xs rounded-badge bg-warning-soft px-xs text-caption font-semibold inline-fit"
-      >
-        <span
-          aria-hidden="true"
-          class="shrink-0 rounded-full bg-warning-strong block-step-dot inline-step-dot"
-        ></span>
-        {status}
-      </span>
-    {/if}
-    <ItemDescription class="truncate text-caption">
+    <ItemTitle class="truncate text-body font-medium"
+      >{folderTitle(folder)}</ItemTitle
+    >
+    <ItemDescription class="truncate text-detail">
+      {#if status !== undefined}<span>{status}</span>{SEPARATOR}{/if}
       {#if location === undefined}
         {folder.location}
       {:else}

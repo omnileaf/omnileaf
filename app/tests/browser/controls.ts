@@ -18,8 +18,11 @@ export const THEME_OPTION: Control = {
 export const CONTROLS: readonly Control[] = [
   {
     name: "a filled button",
-    path: "/settings/library",
-    find: (page) => addFolderBesideFolders(page),
+    path: "/",
+    find: (page) =>
+      page
+        .getByRole("region", { name: "Your library is empty" })
+        .getByRole("button", { name: "Add a folder" }),
   },
   {
     name: "an outlined button",
@@ -71,7 +74,7 @@ export const WITH_THE_PICKER_OPEN: FakeBackend = {
   addLibraryFolder: () => new Promise<never>(() => undefined),
 };
 
-export function addFolderBesideFolders(page: Page): Locator {
+export function addFolderInFolders(page: Page): Locator {
   return page
     .getByRole("region", { name: "Folders" })
     .getByRole("button", { name: "Add a folder" });

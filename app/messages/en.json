@@ -747,7 +747,6 @@
   ],
   "licence_summary": "Version {version} · {licence}",
   "library_settings_folders": "Folders",
-  "library_settings_folders_hint": "Folders of comics, manga or books. Omnileaf reads them where they are.",
   "library_settings_home_folder": "Home folder",
   "library_settings_home_folder_hint": "Your library, reading progress and backups are kept here.",
   "library_folders_failed": "Couldn't load your folders. Try again later.",
