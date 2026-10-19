@@ -1575,6 +1575,7 @@
   ],
   "series_selection_toolbar": "⟦Šéļéçţéð ƀööķš······⟧",
   "series_clear_selection": "⟦Çļéáŕ ţĥé šéļéçţíöñ········⟧",
+  "series_clear_selection_with_key": "⟦{key}, çļéáŕ ţĥé šéļéçţíöñ···········⟧",
   "series_escape_key": "⟦Éšç··⟧",
   "series_column_actions": "⟦Áçţíöñš···⟧",
   "series_book_more": "⟦Ṁöŕé ƒöŕ {title}·······⟧",

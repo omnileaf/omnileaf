@@ -60,7 +60,9 @@
   <Tooltip
     label={m.series_clear_selection()}
     type="button"
-    aria-label={m.series_clear_selection()}
+    aria-label={m.series_clear_selection_with_key({
+      key: m.series_escape_key(),
+    })}
     aria-keyshortcuts="Escape"
     onclick={onClear}
   >

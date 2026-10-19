@@ -1575,6 +1575,7 @@
   ],
   "series_selection_toolbar": "Selected books",
   "series_clear_selection": "Clear the selection",
+  "series_clear_selection_with_key": "{key}, clear the selection",
   "series_escape_key": "Esc",
   "series_column_actions": "Actions",
   "series_book_more": "More for {title}",
