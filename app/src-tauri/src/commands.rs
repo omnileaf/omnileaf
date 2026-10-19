@@ -4,11 +4,11 @@ use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AppInfo, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval, CategoryId,
     Core, CoversPerRow, CreatorSeries, FolderCursor, FolderId, FolderPage, FolderRescan,
-    FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, InterfaceError, Library,
-    LibraryCategory, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch,
+    FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, InterfaceError, LabelChanges,
+    Library, LibraryCategory, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch,
     LibraryView, LocalDay, OpenedBook, ProbedFormat, ProjectLink, ReadMark, ReadingWeek,
     ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
-    SeriesOverview, SeriesPage, UtcOffset,
+    SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -44,6 +44,8 @@ macro_rules! app_commands {
             library_series_count,
             library_categories,
             library_filter_choices,
+            series_labels,
+            label_series,
             category_series,
             category_series_count,
             library_search,
@@ -260,6 +262,26 @@ async fn library_series_count(
 #[specta::specta]
 async fn library_categories(library: State<'_, Library>) -> Result<Vec<LibraryCategory>, IpcError> {
     Ok(library.categories()?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn series_labels(
+    library: State<'_, Library>,
+    series: Vec<SeriesId>,
+) -> Result<SeriesLabels, IpcError> {
+    Ok(library.series_labels(series)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    unused_variables,
+    clippy::needless_pass_by_value,
+    reason = "the library keeps no categories or tags yet, so the changes have nowhere to go"
+)]
+fn label_series(series: Vec<SeriesId>, changes: LabelChanges) -> Result<(), IpcError> {
+    Err(IpcError::labels_not_kept())
 }
 
 #[tauri::command]

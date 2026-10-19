@@ -30,6 +30,7 @@ const SHOWN_ON_FAILURE = {
   searchTooLong: FAILED,
   cursorForAnotherList: FAILED,
   bookmarksNotKept: FAILED,
+  labelsNotKept: FAILED,
   internal: FAILED,
 } satisfies Record<IpcErrorCode, BookProblem>;
 
