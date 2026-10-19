@@ -4,8 +4,6 @@ import {
   StoredPreference,
 } from "#lib/preferences/stored-preference.ts";
 
-type CategoryId = LibraryCategory["id"];
-
 export const ALL_SERIES = "all";
 export const LIBRARY_TAB_KEY = "omnileaf.libraryTab";
 
@@ -15,13 +13,6 @@ export function showsCategoryTabs(
   categories: readonly LibraryCategory[],
 ): boolean {
   return categories.length >= FEWEST_CATEGORIES_FOR_TABS;
-}
-
-export function categoryOf(
-  tab: string,
-  categories: readonly LibraryCategory[],
-): CategoryId | undefined {
-  return categories.find(({ id }) => id === tab)?.id;
 }
 
 export class LibraryTab {
