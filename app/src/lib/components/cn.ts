@@ -123,6 +123,7 @@ export const TOKEN_THEME = {
     "search-tile",
     "segment",
     "segment-outer",
+    "select",
     "series-check",
     "series-cover",
     "settings-chip-ios",
