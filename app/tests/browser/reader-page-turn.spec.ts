@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import { DEFAULT_BACKEND, expect, settle, test } from "./fixtures.ts";
 import {
   BOOK_ID,
   BOOK_TITLE,
@@ -136,6 +136,11 @@ test("chooses Slide under Pages in Reading settings", async ({ page }) => {
   await page
     .getByRole("button", { name: "Reading settings", exact: true })
     .click();
+  const settings = page
+    .getByRole("dialog", { name: "Reading settings" })
+    .or(page.getByRole("complementary", { name: "Reading settings" }));
+  await expect(settings).toBeVisible();
+  await settle(settings);
 
   const pages = page.getByRole("region", { name: "Pages" });
   await expect(pages.getByRole("group", { name: "Tap zones" })).toBeVisible();
@@ -147,11 +152,15 @@ test("chooses Slide under Pages in Reading settings", async ({ page }) => {
     .getByRole("radio", { name: "Slide" })
     .click();
 
-  const stored = await page.evaluate(
-    (key) => localStorage.getItem(key),
-    LOOK_KEY,
-  );
-  expect(JSON.parse(stored ?? "{}")).toMatchObject({ pageTurn: "slide" });
+  await expect
+    .poll(
+      async () =>
+        JSON.parse(
+          (await page.evaluate((key) => localStorage.getItem(key), LOOK_KEY)) ??
+            "{}",
+        ) as unknown,
+    )
+    .toMatchObject({ pageTurn: "slide" });
   await expect(
     page
       .getByRole("region", { name: "Screen" })
