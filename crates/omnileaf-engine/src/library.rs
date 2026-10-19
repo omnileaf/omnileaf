@@ -70,7 +70,7 @@ use crate::{
     scan::{Target, find_books_in, saturating_u32, scan, walk},
 };
 
-const DATABASE_FILE: &str = "library.sqlite";
+pub(crate) const DATABASE_FILE: &str = "library.sqlite";
 const BACKUP_FOLDER: &str = "backups";
 const FOLDERS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
