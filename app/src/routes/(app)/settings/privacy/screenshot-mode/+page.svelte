@@ -2,6 +2,7 @@
   import { ChevronLeft, ChevronRight, Keyboard } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
+  import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -49,6 +50,7 @@
   const KEYBOARD_ICON_SIZE = 18;
 
   const screenshotMode = getScreenshotMode();
+  const timeFormat = getTimeFormatSetting();
   const hasKeyboard = $derived(KEYBOARD_PLATFORMS.has(data.appInfo.platform));
   const id = $props.id();
 </script>
@@ -74,7 +76,10 @@
 >
   <SettingSwitch
     label={m.screenshot_mode_title()}
-    description={screenshotModeStatus(screenshotMode.activity)}
+    description={screenshotModeStatus(
+      screenshotMode.activity,
+      timeFormat.hourCycle,
+    )}
     isOn={screenshotMode.isOn}
     onToggle={() => {
       screenshotMode.toggle();
