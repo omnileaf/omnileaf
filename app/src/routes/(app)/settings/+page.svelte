@@ -13,6 +13,8 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import PageHeading from "#lib/page/PageHeading.svelte";
   import { m } from "#lib/paraglide/messages.js";
+  import { getNeedsAttention } from "#lib/problems/needs-attention.svelte.ts";
+  import NeedsAttentionCard from "#lib/problems/NeedsAttentionCard.svelte";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import type {
     SectionSummary,
@@ -42,6 +44,7 @@
   const theme = getThemeSetting();
   const opensOn = getOpensOnSetting();
   const screenshotMode = getScreenshotMode();
+  const needsAttention = getNeedsAttention();
   let librarySummary = $state<string | undefined>();
 
   onMount(() => {
@@ -103,7 +106,15 @@
     {m.settings_title()}
   </div>
   <PageHeading title={m.settings_title()} />
-  <div class="mbs-lg">
+  <div class="mbs-lg flex flex-col gap-xl">
+    {#if needsAttention.problems.length > 0}
+      <NeedsAttentionCard
+        count={needsAttention.problems.length}
+        onOpen={() => {
+          needsAttention.show();
+        }}
+      />
+    {/if}
     <SettingsIndex {summaries} />
   </div>
 </GroupedGround>
