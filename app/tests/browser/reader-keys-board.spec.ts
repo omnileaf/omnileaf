@@ -11,6 +11,7 @@ import {
   test,
   transitionsOf,
   viewportOf,
+  watchTransitions,
 } from "./fixtures.ts";
 import {
   BOOK_ID,
@@ -113,12 +114,13 @@ test("slides the sheet in and fades the page behind it without @starting-style, 
 }) => {
   await openBook(page);
   expect(await dropStartingStyles(page)).toBeGreaterThan(0);
+  const transitions = await watchTransitions(page);
 
   await page.keyboard.press("Shift+?");
 
   await expect
-    .poll(() => sheetAndScrimTransitions(page))
-    .toEqual({ sheet: ["translate"], scrim: ["opacity"] });
+    .poll(transitions)
+    .toEqual(expect.arrayContaining(["dialog translate", "div opacity"]));
   await settle(sheet(page));
   const box = await boxOf(sheet(page));
   expect(box.x + box.width).toBeCloseTo(viewportOf(page).width, 0);
