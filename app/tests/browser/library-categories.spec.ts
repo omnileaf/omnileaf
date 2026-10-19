@@ -11,6 +11,7 @@ import {
   fakeAppInfo,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  settle,
   targetOf,
   test,
   testOnlyInItsWebview,
@@ -178,6 +179,8 @@ test.describe("with two categories", () => {
 
     await page.getByRole("button", { name: "Every category" }).click();
     const sheet = page.getByRole("dialog", { name: "Categories" });
+    await expect(sheet).toBeVisible();
+    await settle(sheet);
     await sheet.getByRole("radio", { name: "Comics" }).click();
 
     await expect(sheet).toBeHidden();
