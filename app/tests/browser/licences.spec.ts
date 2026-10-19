@@ -23,7 +23,8 @@ const LICENCES_PAGE = "/settings/about/licences";
 const PACKAGES = licensedPackages({ rust, javascript });
 const GROUPS = groupByLicence(PACKAGES, new Intl.Collator("en"));
 const PREVIEW_SIZE = 3;
-const PHONE_ROW_HEIGHT = 60;
+const INTRO_GAP = 8;
+const PHONE_ROW_HEIGHT = 48;
 const PANE_PACKAGE_TEXT = "14px";
 const SMALL_PHONE = { width: 360, height: 800 };
 const BREAK_OPPORTUNITY = /[\s/-]/;
@@ -60,14 +61,19 @@ test("opens the licences from About", async ({ page }) => {
   ).toBeFocused();
 });
 
-test("counts every package the app is built with", async ({ page }) => {
+test("says what the list is made from, 8px above the first group", async ({
+  page,
+}) => {
   await openLicences(page);
 
-  await expect(
+  const intro = await boxOf(
     page.getByText(
-      `Omnileaf is built with ${PACKAGES.length.toLocaleString("en-US")} open-source packages, grouped by licence. Open one to read its licence.`,
+      "Made from the packages this build of Omnileaf uses. Each opens its licence text.",
     ),
-  ).toBeVisible();
+  );
+  const firstGroup = await boxOf(groupSection(page, MOST_USED.name));
+
+  expect(firstGroup.y - (intro.y + intro.height)).toBe(INTRO_GAP);
 });
 
 test("groups the packages by licence, the most used first", async ({
@@ -79,9 +85,6 @@ test("groups the packages by licence, the most used first", async ({
 
   await expect(headings).toHaveCount(GROUPS.length);
   await expect(headings.first()).toHaveText(MOST_USED.name);
-  await expect(groupSection(page, MOST_USED.name)).toContainText(
-    `${String(MOST_USED.packages.length)} packages`,
-  );
 });
 
 test("shows all of a group's packages when asked", async ({ page }) => {
@@ -107,7 +110,7 @@ test("opens a package's licence text", async ({ page }) => {
   await openLicences(page);
 
   await groupSection(page, MOST_USED.name)
-    .getByRole("link", { name: `${licensed.name} ${licensed.version}` })
+    .getByRole("link", { name: licensed.name, exact: true })
     .click();
 
   await expect(
@@ -128,7 +131,7 @@ test("lets a licence's text be selected", async ({ page }) => {
   }
   await openLicences(page);
   await groupSection(page, MOST_USED.name)
-    .getByRole("link", { name: `${licensed.name} ${licensed.version}` })
+    .getByRole("link", { name: licensed.name, exact: true })
     .click();
 
   const selected = await selectedByDoubleClick(
@@ -157,7 +160,7 @@ for (const platform of ["android", "ios"] as const) {
     testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
-    test("lists the packages on 60px rows and leads back to About", async ({
+    test("lists the packages on 48px rows and leads back to About", async ({
       page,
     }) => {
       await openLicences(page);
