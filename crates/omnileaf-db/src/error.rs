@@ -51,6 +51,8 @@ pub enum Error {
     UnsupportedLocator { kind: String },
     #[error("read the library view drawn as {name:?}, which this build can't draw")]
     UnsupportedLibraryDisplay { name: String },
+    #[error("read the library view grouped by {name:?}, which this build can't group by")]
+    UnsupportedLibraryGrouping { name: String },
     #[error("read {uri:?} as an Android folder's address, which isn't a document tree")]
     MalformedTreeUri { uri: String },
     #[error("read {name:?} as an Android folder's name, which isn't one folder name")]

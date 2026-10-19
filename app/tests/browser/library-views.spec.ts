@@ -90,6 +90,8 @@ const RANGE_LABELS = {
 const CHOSEN_VIEW: LibraryView = {
   ...DEFAULT_LIBRARY_VIEW,
   fitsCoversToWidth: false,
+  groupBy: "none",
+  showsCategoryTabs: true,
 };
 const SERIES_IN_CATALOG = 200;
 const LAST_TITLE = `Sample Series ${String(SERIES_IN_CATALOG).padStart(4, "0")}`;
