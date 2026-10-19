@@ -947,6 +947,27 @@ async fn remembers_the_listing_set_on_this_device_when_the_library_reopens() {
 }
 
 #[tokio::test]
+async fn remembers_listing_the_series_read_last_first_when_the_library_reopens() {
+    let home = ScratchFolder::new("library-listing-last-read");
+    let read_last_first = LibraryListing {
+        sort: LibrarySort {
+            by: LibrarySortBy::LastRead,
+            direction: SortDirection::Descending,
+        },
+        ..LibraryListing::default()
+    };
+    open(home.path())
+        .await
+        .set_listing(read_last_first.clone())
+        .await
+        .unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.listing().await.unwrap(), read_last_first);
+}
+
+#[tokio::test]
 async fn stores_the_fewest_and_the_most_covers_per_row_each_size_offers() {
     let home = ScratchFolder::new("library-view-ranges");
     let library = open(home.path()).await;

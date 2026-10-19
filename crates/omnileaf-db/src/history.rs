@@ -159,7 +159,8 @@ pub fn history_page(
             Position::Title { .. }
             | Position::Added { .. }
             | Position::Book { .. }
-            | Position::Root { .. },
+            | Position::Root { .. }
+            | Position::LastRead { .. },
         ) => return Err(Error::CursorForAnotherList),
     };
     let (first, before, filter) = match &of {

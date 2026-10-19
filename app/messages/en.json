@@ -203,6 +203,7 @@
   "library_close_filter_and_sort": "Close sort and filter",
   "library_sort_title": "Title",
   "library_sort_date_added": "Date added",
+  "library_sort_last_read": "Recently read",
   "library_sort_a_to_z": "A to Z",
   "library_sort_z_to_a": "Z to A",
   "library_sort_newest_first": "Newest first",
