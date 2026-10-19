@@ -96,3 +96,15 @@ test("keeps what it had and reports the error when the folders can't be read", a
     [UNREADABLE],
   ]);
 });
+
+test("starts with its sheet closed, opens it on asking and closes it again", () => {
+  const attention = gathering([COMICS]);
+
+  const shown = [attention.isShown];
+  attention.show();
+  shown.push(attention.isShown);
+  attention.hide();
+  shown.push(attention.isShown);
+
+  expect(shown).toEqual([false, true, false]);
+});

@@ -83,6 +83,9 @@
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
+  import { isPointer } from "#lib/page/platform.ts";
+  import { getNeedsAttention } from "#lib/problems/needs-attention.svelte.ts";
+  import NeedsAttentionDot from "#lib/problems/NeedsAttentionDot.svelte";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { deviceKindOf } from "#lib/first-launch/device.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
@@ -105,6 +108,10 @@
   const NONE_NEW = { status: "ok", data: 0 } as const;
 
   const screenshotMode = getScreenshotMode();
+  const needsAttention = getNeedsAttention();
+  const showsAttentionDot = $derived(
+    !isPointer(data.appInfo.platform) && needsAttention.problems.length > 0,
+  );
   const listing = new StoredChoice<LibraryListing>(
     {
       read: () => commands.libraryListing(),
@@ -605,6 +612,16 @@
   $effect(keepFocusOnPageOnceAddFolderGoes);
 </script>
 
+{#snippet attentionDot()}
+  <NeedsAttentionDot
+    count={needsAttention.problems.length}
+    isOpen={needsAttention.isShown}
+    onOpen={() => {
+      needsAttention.show();
+    }}
+  />
+{/snippet}
+
 {#snippet shownCount()}
   {#if seriesCount.count !== undefined}
     <SeriesCount count={seriesCount.count} hidden={hiddenSeries} />
@@ -674,6 +691,7 @@
     platform={data.appInfo.platform}
     title={m.library_title()}
     showsLabel={screenshotMode.showsLabel}
+    attention={showsAttentionDot ? attentionDot : undefined}
     count={showsItemCounts && seriesCount.count !== undefined
       ? shownCount
       : undefined}
