@@ -1147,6 +1147,21 @@
   "reader_settings": "Reading settings",
   "reader_settings_close": "Close reading settings",
   "reader_settings_done": "Done",
+  "reader_position_pair": [
+    {
+      "declarations": [
+        "input first",
+        "input last",
+        "input count",
+        "local formattedFirst = first: number",
+        "local formattedLast = last: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "{formattedFirst}–{formattedLast} / {formattedCount}"
+      }
+    }
+  ],
   "reader_applies_to_series": "Changes here apply to {series} only.",
   "reader_applies_to_all": "Changes here apply to every series.",
   "reader_apply_to": "Apply to",
@@ -1173,7 +1188,6 @@
   "reader_warmth": "Warmth",
   "reader_keep_screen_on": "Keep the screen on",
   "reader_crop_borders": "Crop white borders",
-  "reader_coming_with_layout": "Comes with two pages and fit, next.",
   "reader_more": "More",
   "reader_mark_read": "Mark read",
   "reader_start_over": "Start over",
