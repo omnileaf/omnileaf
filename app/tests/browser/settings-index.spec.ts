@@ -1,5 +1,6 @@
 import type { FakeBackend } from "./fake-backend.ts";
 import {
+  accessibilityViolations,
   EXPANDED_MIN_WIDTH,
   expect,
   FAKE_APP_VERSION,
@@ -89,3 +90,21 @@ test("points each section's chevron toward the end of the line in a right-to-lef
 
   await expect(chevron).toHaveCSS("scale", "-1 1");
 });
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`the Settings list has no accessibility violations in the ${colorScheme} theme`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto("/settings");
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "settings opens its first section beside the list",
+    );
+    await expect(
+      page.getByRole("main").getByRole("link", { name: /^About/ }),
+    ).toBeVisible();
+
+    expect(await accessibilityViolations(page)).toEqual([]);
+  });
+}
