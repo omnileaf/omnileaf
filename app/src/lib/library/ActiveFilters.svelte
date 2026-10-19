@@ -12,6 +12,7 @@
     FORMAT_LABELS,
     languageName,
     READ_STATE_LABELS,
+    SMART_LABELS,
   } from "./filter-labels";
   import FilterChips from "./FilterChips.svelte";
   import {
@@ -74,6 +75,11 @@
         id: `tag:${tag}`,
         label: tag,
         remove: (from: LibraryListing) => toggledIn(from, "tags", tag),
+      })),
+      ...filter.smart.map((smart) => ({
+        id: `smart:${smart}`,
+        label: SMART_LABELS[smart](),
+        remove: (from: LibraryListing) => toggledIn(from, "smart", smart),
       })),
       ...(filter.adult === "any"
         ? []

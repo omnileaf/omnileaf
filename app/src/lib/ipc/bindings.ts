@@ -91,7 +91,7 @@ export const events = {
 /* Constants */
 export const COVERS_PER_ROW = {"desktop":{"fewest":4,"most":12},"phone":{"fewest":2,"most":5},"tablet":{"fewest":3,"most":8}} as const;
 
-export const DEFAULT_LIBRARY_LISTING = {"filter":{"adult":"any","bookmarked":"any","finished":"any","formats":[],"languages":[],"started":"any","tags":[],"unread":"any"},"sort":{"by":"title","direction":"ascending"}} as const;
+export const DEFAULT_LIBRARY_LISTING = {"filter":{"adult":"any","bookmarked":"any","finished":"any","formats":[],"languages":[],"smart":[],"started":"any","tags":[],"unread":"any"},"sort":{"by":"title","direction":"ascending"}} as const;
 
 export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","fitsCoversToWidth":true,"onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsContinueRow":false,"showsItemCounts":true} as const;
 
@@ -274,6 +274,8 @@ export type LibraryFilter = {
 	adult: Inclusion,
 	/**  Has a bookmarked page. */
 	bookmarked: Inclusion,
+	/**  Meets every one of these smart filters. */
+	smart: SmartFilter[],
 };
 
 export type LibraryFilterChoices = {
@@ -282,6 +284,7 @@ export type LibraryFilterChoices = {
 	tags: string[],
 	ratesAdult: boolean,
 	keepsBookmarks: boolean,
+	smart: SmartFilter[],
 };
 
 export type LibraryFolder = {
@@ -499,6 +502,16 @@ export type SeriesPage = {
 	series: LibrarySeries[],
 	next: string & { readonly __brand: "SeriesCursor" } | null,
 };
+
+export type SmartFilter = 
+/**  Under 30 minutes left, at the reader's own reading speed. */
+"quickReads" | 
+/**  Not opened in three months. */
+"forgotten" | 
+/**  Holds the same book as another folder, even renamed. */
+"duplicates" | 
+/**  Downloaded and finished. */
+"readyToCleanUp";
 
 /**  Ascending lists titles from A to Z and series added earliest first. */
 export type SortDirection = "ascending" | "descending";
