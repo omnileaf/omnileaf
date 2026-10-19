@@ -2,6 +2,7 @@ import {
   COVERS_PER_ROW,
   type CoversPerRow,
   type LibraryDisplay,
+  type LibraryGrouping,
   type LibraryView,
   type OnCovers,
 } from "#lib/ipc/bindings.ts";
@@ -48,6 +49,13 @@ export function withContinueRow(
   showsContinueRow: boolean,
 ): LibraryView {
   return { ...view, showsContinueRow };
+}
+
+export function withGroupBy(
+  view: LibraryView,
+  groupBy: LibraryGrouping,
+): LibraryView {
+  return { ...view, groupBy };
 }
 
 export function withCategoryTabs(
