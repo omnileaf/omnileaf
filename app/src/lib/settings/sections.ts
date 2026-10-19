@@ -26,6 +26,7 @@ export type SettingsSubPage =
   | "/(app)/settings/advanced/animations"
   | "/(app)/settings/general/language"
   | "/(app)/settings/library/adult-content"
+  | "/(app)/settings/library/tags"
   | "/(app)/settings/privacy/screenshot-mode";
 
 export type SettingsPage = "/(app)/settings" | SettingsRoute | SettingsSubPage;
