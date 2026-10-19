@@ -33,6 +33,7 @@ mod library_series;
 mod library_tabs;
 mod library_view;
 mod linux_share;
+mod log_stand_ins;
 mod macos_share;
 mod missing_folder;
 mod moved_home;
@@ -104,6 +105,7 @@ pub use library_view::{
     TabletCoversPerRow,
 };
 pub use linux_share::{MountTables, unreachable_linux_share};
+pub use log_stand_ins::LogStandIns;
 pub use missing_folder::{FolderProblem, MissingFolder};
 pub use network_share::{NetworkShare, ShareAddress, ShareLookup, ShareSignIn, UnreachableShare};
 pub use omnileaf_db::catalog::{AndroidTree, AppleBookmark, RootLocator, TreeUri};
