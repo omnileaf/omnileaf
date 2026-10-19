@@ -140,6 +140,7 @@ test("removes a folder once the removal is confirmed", async ({ page }) => {
   const dialog = page.getByRole("alertdialog", {
     name: "Remove this folder?",
   });
+  await settle(dialog);
 
   await dialog.getByRole("button", { name: "Remove folder" }).click();
 
@@ -200,6 +201,7 @@ test("keeps a folder when a tap lands outside the removal question", async ({
   const folders = page.getByRole("region", { name: "Folders" });
   await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
   await expect(page.getByRole("alertdialog")).toBeVisible();
+  await settle(page.getByRole("alertdialog"));
 
   await page.mouse.click(8, 8);
 
@@ -218,6 +220,7 @@ test("keeps the removal question open when a press inside it ends outside", asyn
   const question = page.getByRole("alertdialog");
   const title = question.getByRole("heading");
   await expect(title).toBeVisible();
+  await settle(question);
   const box = await title.boundingBox();
 
   await page.mouse.move(box?.x ?? 0, box?.y ?? 0);
