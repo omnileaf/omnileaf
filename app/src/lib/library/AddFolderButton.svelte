@@ -22,7 +22,7 @@
     "page-heading":
       "-my-sm gap-sm min-block-touch-target max-medium:rounded-full max-medium:text-accent max-medium:inline-touch-target medium:rounded-control medium:border medium:border-field medium:bg-card medium:ps-md medium:pe-lg medium:text-foreground desktop:text-label desktop:medium:-my-xs desktop:medium:min-block-pointer-button touch:max-medium:-me-sm",
     "empty-state":
-      "gap-sm rounded-shadcn-control px-lg font-medium min-block-touch-target ios:max-medium:rounded-phone-button ios:max-medium:min-block-ios-control desktop:text-label desktop:min-block-pointer-button",
+      "gap-sm rounded-shadcn-button px-lg font-medium min-block-touch-target ios:max-medium:rounded-phone-button ios:max-medium:min-block-ios-control desktop:text-label desktop:min-block-pointer-button",
     "card-foot":
       "gap-sm rounded-full border-foreground px-lg transition-control inline-full block-folders-button enabled:hover:tint-hover enabled:active:tint-pressed desktop:text-label",
     "below-list":

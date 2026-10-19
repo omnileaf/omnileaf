@@ -1,10 +1,10 @@
 const FOCUS_RING = "focus-visible:focus-ring";
 
 const CONFIRM =
-  "rounded-full px-lg text-body font-semibold transition-control min-block-touch-button ios:max-medium:rounded-ios-button medium:rounded-dialog-button medium:text-label medium:font-medium medium:min-block-dialog-button linux:medium:shadow-raised macos:shadow-raised";
+  "rounded-full px-lg text-body font-semibold transition-control min-block-touch-button ios:max-medium:rounded-ios-button medium:rounded-shadcn-button medium:text-label medium:font-medium medium:min-block-shadcn-button linux:medium:shadow-raised macos:shadow-raised";
 
 const DIALOG_BUTTON =
-  "rounded-dialog-button px-lg font-medium transition-control min-block-dialog-button ios:max-medium:rounded-ios-button ios:max-medium:font-semibold medium:text-label linux:shadow-raised macos:shadow-raised";
+  "rounded-shadcn-button px-lg font-medium transition-control min-block-shadcn-button ios:max-medium:rounded-ios-button ios:max-medium:font-semibold medium:text-label linux:shadow-raised macos:shadow-raised";
 
 const OUTLINED =
   "border border-button-outline-edge bg-button-outline windows:border-be-windows-stroke-strong";
@@ -17,7 +17,7 @@ export const BUTTON_LOOKS = {
   outline: `rounded-control border border-border bg-card font-semibold ${FOCUS_RING}`,
   tinted: `transition-control enabled:hover:tint-hover enabled:active:tint-pressed ${FOCUS_RING}`,
   icon: `flex items-center justify-center rounded-full ${FOCUS_RING}`,
-  "header-control": `flex items-center justify-center gap-sm rounded-full transition-control large:rounded-control large:border large:border-field large:text-small large:font-medium ${FOCUS_RING}`,
+  "header-control": `flex items-center justify-center gap-sm rounded-full transition-control large:rounded-shadcn-button large:border large:border-button-outline-edge large:bg-button-outline large:text-small large:font-medium large:block-shadcn-control windows:large:border-be-windows-stroke-strong linux:large:shadow-raised macos:large:shadow-raised ${FOCUS_RING}`,
   chip: `rounded-full border border-border bg-card font-semibold hover:bg-hover ${FOCUS_RING}`,
   "bar-icon": `flex items-center justify-center gap-xs rounded-control text-foreground transition-control enabled:hover:bg-hover enabled:active:bg-pressed ${FOCUS_RING}`,
   row: "flex items-center text-start transition-control hover:bg-hover active:bg-pressed",
@@ -31,7 +31,7 @@ export const BUTTON_LOOKS = {
   "crash-phone-secondary": `rounded-full border border-quiet-edge text-callout font-bold min-block-crash-screen-button ios:rounded-crash-screen-button ${FOCUS_RING}`,
   "dialog-secondary": `${DIALOG_BUTTON} ${OUTLINED} enabled:hover:tint-hover enabled:active:tint-pressed ${FOCUS_RING}`,
   "dialog-primary": `${DIALOG_BUTTON} bg-accent text-on-accent enabled:hover:bg-accent-hover enabled:active:bg-accent-pressed ${FOCUS_RING}`,
-  "crash-dialog-copy": `rounded-dialog-button px-md text-label font-semibold text-accent min-block-dialog-button touch:min-block-touch-target ${FOCUS_RING}`,
+  "crash-dialog-copy": `rounded-shadcn-button px-md text-label font-semibold text-accent min-block-shadcn-button touch:min-block-touch-target ${FOCUS_RING}`,
 } satisfies Record<string, string>;
 
 export type ButtonLook = keyof typeof BUTTON_LOOKS;

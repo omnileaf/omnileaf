@@ -23,7 +23,7 @@
   const HEADING_ICON_SIZE = 20;
   const BUTTON_ICON_SIZE = 16;
   const BUTTON =
-    "flex shrink-0 items-center justify-center gap-sm rounded-shadcn-control px-lg text-body font-medium whitespace-nowrap transition-control min-block-touch-target expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control";
+    "flex shrink-0 items-center justify-center gap-sm rounded-shadcn-button px-lg text-body font-medium whitespace-nowrap transition-control min-block-touch-target expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control";
   const PRIMARY = `${BUTTON} bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed`;
   const OUTLINE = `${BUTTON} border border-border bg-card disabled:opacity-60 ios:border-transparent ios:bg-ios-fill`;
 
