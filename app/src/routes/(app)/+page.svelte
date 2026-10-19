@@ -18,6 +18,7 @@
   import CategoryTabs from "#lib/library/CategoryTabs.svelte";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import FilterAndSort from "#lib/library/FilterAndSort.svelte";
+  import LibraryMore from "#lib/library/LibraryMore.svelte";
   import FilterPanel from "#lib/library/FilterPanel.svelte";
   import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
   import FolderNotice from "#lib/library/FolderNotice.svelte";
@@ -406,6 +407,11 @@
           hasCategories={showsCategoryTabs(categories)}
           onChoose={(chosen: LibraryView) => {
             view.choose(chosen);
+          }}
+        />
+        <LibraryMore
+          onSelect={() => {
+            selection.begin();
           }}
         />
       {/if}

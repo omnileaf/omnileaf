@@ -11,6 +11,9 @@
   type ClickEvent = Parameters<
     NonNullable<TooltipPrimitive.TriggerProps["onclick"]>
   >[0];
+  type PointerEvent = Parameters<
+    NonNullable<TooltipPrimitive.TriggerProps["onpointerdown"]>
+  >[0];
 
   let {
     label,
@@ -18,6 +21,10 @@
     side = "top",
     ref = $bindable(null),
     onclick,
+    onpointerdown,
+    onpointerup,
+    onpointercancel,
+    onpointerleave,
     ...restProps
   }: TooltipPrimitive.TriggerProps & {
     label: string | undefined;
@@ -29,6 +36,7 @@
   let open = $state(false);
 
   function press(event: PointerEvent): void {
+    onpointerdown?.(event);
     longPress.pointerWentDown();
     if (label === undefined) {
       return;
@@ -58,9 +66,18 @@
       bind:ref
       {...restProps}
       onpointerdown={press}
-      onpointerup={release}
-      onpointercancel={release}
-      onpointerleave={release}
+      onpointerup={(event) => {
+        onpointerup?.(event);
+        release();
+      }}
+      onpointercancel={(event) => {
+        onpointercancel?.(event);
+        release();
+      }}
+      onpointerleave={(event) => {
+        onpointerleave?.(event);
+        release();
+      }}
       onclick={click}
     />
     <TooltipPrimitive.Portal>
