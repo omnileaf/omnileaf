@@ -483,6 +483,7 @@
   --spacing-reader-guide-wide: 26rem;
   --spacing-reader-guide-labels: 10rem;
   --spacing-reader-shortcuts: 24rem;
+  --spacing-reader-shortcuts-wide: 45rem;
   --spacing-reader-zoom-badge: calc(var(--spacing-safe-top) + 1rem);
   --spacing-series-columns: 2.5rem;
   --spacing-series-column-added: 6.5rem;
