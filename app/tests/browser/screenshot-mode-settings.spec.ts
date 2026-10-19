@@ -159,10 +159,29 @@ test("the keyboard shortcut is listed on a computer", async ({ page }) => {
   ).toContainText("Keyboard shortcut");
 });
 
+test.describe("in a narrow desktop window", () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+  test.skip(({ isMobile }) => isMobile, "desktop windows");
+
+  test("keeps the keyboard shortcut's keys inside their card", async ({
+    page,
+  }) => {
+    await page.goto("/settings/privacy/screenshot-mode");
+    const card = page.getByRole("region", { name: "Turn it on quickly" });
+
+    const lastKey = await boxOf(card.locator("kbd").last());
+    const cardBox = await boxOf(card);
+
+    expect(lastKey.x + lastKey.width).toBeLessThanOrEqual(
+      cardBox.x + cardBox.width,
+    );
+  });
+});
+
 const SHORTCUT_HINTS = [
-  { platform: "macos", keys: "⇧⌘H" },
-  { platform: "linux", keys: "Ctrl Shift H" },
-  { platform: "windows", keys: "Ctrl Shift H" },
+  { platform: "macos", keys: ["⌘", "Shift", "H"] },
+  { platform: "linux", keys: ["Ctrl", "Shift", "H"] },
+  { platform: "windows", keys: ["Ctrl", "Shift", "H"] },
 ] as const;
 
 for (const { platform, keys } of SHORTCUT_HINTS) {
@@ -170,13 +189,26 @@ for (const { platform, keys } of SHORTCUT_HINTS) {
     testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
-    test(`the shortcut is shown as ${keys}`, async ({ page }) => {
+    test(`the shortcut is shown as ${keys.join(" ")}`, async ({ page }) => {
       await openScreenshotMode(page);
 
-      await expect(page.getByRole("main").locator("kbd")).toHaveText([keys]);
+      await expect(page.getByRole("main").locator("kbd")).toHaveText(keys);
     });
   });
 }
+
+test("a shortcut chosen earlier is the one shown", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "omnileaf.screenshotModeShortcut",
+      JSON.stringify({ letter: "J", shift: false }),
+    );
+  });
+
+  await openScreenshotMode(page);
+
+  await expect(page.getByRole("main").locator("kbd")).toHaveText(["Ctrl", "J"]);
+});
 
 test("the label is said to show at the top of the window on a computer", async ({
   page,

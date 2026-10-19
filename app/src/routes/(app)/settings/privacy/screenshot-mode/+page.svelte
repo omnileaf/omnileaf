@@ -5,6 +5,7 @@
   import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import { getScreenshotModeShortcut } from "#lib/screenshot-mode/shortcut-setting.svelte.ts";
   import ShortcutKeys from "#lib/screenshot-mode/ShortcutKeys.svelte";
   import { screenshotModeSummary } from "#lib/screenshot-mode/status.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -28,6 +29,7 @@
   let { data }: PageProps = $props();
 
   const screenshotMode = getScreenshotMode();
+  const shortcut = getScreenshotModeShortcut();
   const timeFormat = getTimeFormatSetting();
   const hasKeyboard = $derived(isPointer(data.appInfo.platform));
   const quicklyId = $props.id();
@@ -106,7 +108,7 @@
       <h2 id={quicklyId} class="px-lg pbs-md pbe-xs text-small font-semibold">
         {m.screenshot_mode_quickly()}
       </h2>
-      <div class="flex items-center gap-md px-lg pbs-xs pbe-md">
+      <div class="flex flex-wrap items-center gap-md px-lg pbs-xs pbe-md">
         <span
           aria-hidden="true"
           class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile"
@@ -121,7 +123,10 @@
             {m.screenshot_mode_shortcut_help()}
           </span>
         </span>
-        <ShortcutKeys platform={data.appInfo.platform} />
+        <ShortcutKeys
+          combination={shortcut.combination}
+          platform={data.appInfo.platform}
+        />
       </div>
     </section>
   {/if}
