@@ -3,6 +3,7 @@
     Eye,
     FolderOpen,
     LibraryBig,
+    Pencil,
     Play,
     SquareCheck,
     Tags,
@@ -626,6 +627,16 @@
         >
           <Tags size={MENU_ICON_SIZE} aria-hidden="true" />
           {m.library_labels_menu()}
+        </ContextMenuItem>
+      {/if}
+      {#if menu.canEditDetails}
+        <ContextMenuItem
+          onSelect={() => {
+            menu.onEditDetails(target);
+          }}
+        >
+          <Pencil size={MENU_ICON_SIZE} aria-hidden="true" />
+          {m.edit_details_menu()}
         </ContextMenuItem>
       {/if}
       <ContextMenuItem
