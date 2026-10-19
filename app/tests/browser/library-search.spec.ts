@@ -20,6 +20,7 @@ import {
   targetOf,
   test,
   testOnlyInItsWebview,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 import { sampleSeries, type WireSeries } from "./series-catalog.ts";
@@ -774,4 +775,21 @@ test.describe("on Android", () => {
     expect(touched).toBe("Clear");
     expect(drawn.width).toBe(DRAWN_CLEAR_PX);
   });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`fills the search field with the high surface container and no edge in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/search");
+
+      const field = searchField(page).locator("..");
+
+      await expect(field).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--android-container-high", colorScheme),
+      );
+      await expect(field).toHaveCSS("border-top-width", "0px");
+    });
+  }
 });

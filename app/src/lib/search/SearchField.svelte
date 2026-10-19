@@ -80,7 +80,7 @@
 </script>
 
 <InputGroup
-  class="flex-1 gap-sm rounded-search-field border-2 border-border bg-card px-md block-search-field min-inline-none focus-within:border-accent large:rounded-card large:ps-search-field-inline large:pe-md large:block-search-field-wide"
+  class="flex-1 gap-sm rounded-search-field border-2 border-border bg-card px-md block-search-field min-inline-none focus-within:border-accent large:rounded-card large:ps-search-field-inline large:pe-md large:block-search-field-wide android:border-0 android:bg-android-container-high"
 >
   <Search size={SEARCH_ICON_SIZE} aria-hidden="true" class="shrink-0" />
   {#if conditions.length > 0}
