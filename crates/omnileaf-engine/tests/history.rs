@@ -579,3 +579,58 @@ async fn lists_the_books_started_and_not_finished_for_continuing() {
     let books: Vec<BookId> = page.entries.iter().map(|entry| entry.book).collect();
     assert_eq!(books, [started.id]);
 }
+
+async fn books_read(shelf: &Shelf) -> Vec<BookId> {
+    let of = HistoryOf::Books {
+        matching: String::new(),
+    };
+    shelf
+        .library
+        .history(None, of)
+        .await
+        .unwrap()
+        .entries
+        .iter()
+        .map(|entry| entry.book)
+        .collect()
+}
+
+async fn read_both_books(shelf: &Shelf) -> (BookId, BookId) {
+    let first = shelf.restore(0).await;
+    shelf.close(&first).await;
+    shelf.clock.advance(MINUTE_MS);
+    let second = shelf.restore(1).await;
+    shelf.close(&second).await;
+    shelf.clock.advance(MINUTE_MS);
+    (shelf.book(0).await, shelf.book(1).await)
+}
+
+#[tokio::test]
+async fn removes_a_book_from_history_and_puts_it_back_on_undo() {
+    let shelf = Shelf::with_two_books("history-remove").await;
+    let (first, second) = read_both_books(&shelf).await;
+
+    let mark = shelf.library.remove_from_history(first).await.unwrap();
+    let removed = books_read(&shelf).await;
+    shelf.library.restore_to_history(first, mark).await.unwrap();
+
+    assert_eq!(
+        (removed, books_read(&shelf).await),
+        (vec![second], vec![second, first])
+    );
+}
+
+#[tokio::test]
+async fn clears_history_and_puts_it_back_on_undo() {
+    let shelf = Shelf::with_two_books("history-clear").await;
+    let (first, second) = read_both_books(&shelf).await;
+
+    let mark = shelf.library.clear_history().await.unwrap();
+    let cleared = books_read(&shelf).await;
+    shelf.library.restore_history(mark).await.unwrap();
+
+    assert_eq!(
+        (cleared, books_read(&shelf).await),
+        (Vec::new(), vec![second, first])
+    );
+}

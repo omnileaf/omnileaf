@@ -50,8 +50,13 @@ pub enum ReadTo {
     End,
 }
 
+/// What a book, or the whole of History, was hidden behind before a change, so Undo can put it back; it crosses as a plain number of milliseconds.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(transparent)]
+pub struct HistoryMark(#[specta(type = i32)] pub(crate) i64);
+
 /// Which reading sessions a page of History lists.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Type)]
 #[serde(
     tag = "kind",
     rename_all = "camelCase",
@@ -67,6 +72,10 @@ pub enum HistoryOf {
     },
     /// The latest session of each book started and not finished, for the library's Continue reading row.
     Unfinished,
+    /// The latest session of each book read since History was cleared or the book removed from it, whose series or book title holds `matching` when it isn't empty.
+    Books {
+        matching: String,
+    },
 }
 
 impl From<HistoryOf> for history::HistoryOf {
@@ -76,6 +85,7 @@ impl From<HistoryOf> for history::HistoryOf {
             HistoryOf::Series { series } => Self::Series(series.0),
             HistoryOf::Book { book } => Self::Book(book.0),
             HistoryOf::Unfinished => Self::Unfinished,
+            HistoryOf::Books { matching } => Self::Books { matching },
         }
     }
 }
