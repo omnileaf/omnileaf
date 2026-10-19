@@ -5,9 +5,9 @@
     type WithoutChildrenOrChild,
   } from "bits-ui";
   import type { Snippet } from "svelte";
-  import type { Attachment } from "svelte/attachments";
 
   import { cn } from "#lib/components/cn.ts";
+  import { resolveFirstStyle } from "#lib/components/resolve-first-style.ts";
 
   let {
     ref = $bindable(null),
@@ -21,11 +21,6 @@
     dimsBehind?: boolean;
     children: Snippet;
   } = $props();
-
-  /** WebKit can skip @starting-style on an element inserted after the page loads, so this resolves the sheet's style in the one frame bits-ui marks with data-starting-style, giving the slide a place to start from. */
-  const resolveFirstStyle: Attachment<HTMLElement> = (sheet) => {
-    sheet.getBoundingClientRect();
-  };
 </script>
 
 <DialogPrimitive.Portal {to}>

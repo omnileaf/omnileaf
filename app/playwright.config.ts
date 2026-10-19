@@ -28,6 +28,7 @@ const SCREENS = {
 } as const;
 
 const SPEED_SPECS = "**/*.speed.ts";
+const DESKTOP_ONLY_SPECS = "**/*.desktop.spec.ts";
 
 const shard = shardFromEnvironment(process.env.PLAYWRIGHT_SHARD);
 
@@ -46,6 +47,7 @@ const PROJECT_ORDER = [
 
 const screenProjects = PROJECT_ORDER.map(([browserName, screen]) => ({
   name: `${browserName}-${screen}`,
+  testIgnore: screen === "desktop" ? [] : [DESKTOP_ONLY_SPECS],
   use: { browserName, ...SCREENS[screen] },
 })) satisfies Project[];
 

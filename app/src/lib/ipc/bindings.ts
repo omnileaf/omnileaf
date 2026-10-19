@@ -106,6 +106,12 @@ export const commands = {
 	rescanLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<FolderRescan, IpcError>(__TAURI_INVOKE("rescan_library_folder", { id, onProgress })),
 	rescanLibraryFolders: () => typedError<FolderRescan[], IpcError>(__TAURI_INVOKE("rescan_library_folders")),
 	removeBooksOfEmptiedFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<BooksRemoval, IpcError>(__TAURI_INVOKE("remove_books_of_emptied_folder", { id })),
+	foundLibrary: () => __TAURI_INVOKE<{
+	series: number,
+	books: number,
+	/**  Crosses as a plain number, which holds every such date exactly. */
+	lastBackupAtMs: number,
+} | null>("found_library"),
 	firstLaunchFinished: () => typedError<boolean, IpcError>(__TAURI_INVOKE("first_launch_finished")),
 	finishFirstLaunch: () => typedError<null, IpcError>(__TAURI_INVOKE("finish_first_launch")),
 	setAppLanguage: (language: string) => typedError<null, IpcError>(__TAURI_INVOKE("set_app_language", { language })),
@@ -303,6 +309,13 @@ export type FolderScan = {
 	unreadableBooks: number,
 	unsupportedBooks: number,
 	unreadableFolders: number,
+};
+
+export type FoundLibrary = {
+	series: number,
+	books: number,
+	/**  Crosses as a plain number, which holds every such date exactly. */
+	lastBackupAtMs: number,
 };
 
 export type FullScreenChange = "toggle" | "leave";

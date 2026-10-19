@@ -5,6 +5,7 @@ import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import { expect, onPlatform, settle, test } from "./fixtures.ts";
+import { goToStep } from "./first-launch-steps.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 type Messages = typeof english;
@@ -38,6 +39,7 @@ const PLATFORMS = {
 const TEXT_SCALES = [1, 1.3, 1.5, 2] as const;
 const WIDTHS = [320, 390, 744, 1024, 1440] as const;
 const HEIGHT = 844;
+const CHOICES_STEP = 3;
 const ONE_ROW_WIDTHS: readonly number[] = [390, 1440];
 const GLYPH_OVERSHOOT = 4;
 const SAME_WIDTH = 1;
@@ -125,18 +127,7 @@ const CONTROLS: readonly SegmentedControl[] = [
     hasIcons: false,
     backend: onFirstLaunch,
     open: async (page, messages) => {
-      await page.goto("/first-launch");
-      for (const name of [
-        messages.first_launch_get_started,
-        messages.first_launch_continue,
-        messages.first_launch_continue,
-      ]) {
-        await page
-          .getByRole("main")
-          .getByRole("button", { name, exact: true })
-          .click();
-        await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
-      }
+      await goToStep(page, CHOICES_STEP, messages);
       return page.getByRole("radiogroup", {
         name: messages.first_launch_choices_appearance,
       });
