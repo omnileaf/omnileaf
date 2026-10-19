@@ -31,9 +31,9 @@ const SWITCHES = {
 const SWITCH_NAMES = Object.keys(SWITCHES) as (keyof OnCovers)[];
 
 const SWITCH_ROW_HEIGHT = {
-  phone: 48,
-  tablet: 48,
-  desktop: 30,
+  phone: 56,
+  tablet: 56,
+  desktop: 48,
 } as const satisfies Record<ScreenSize, number>;
 
 const BADGE_INSET = {
@@ -106,7 +106,7 @@ test.describe("show on covers", () => {
       options.getByRole("group", { name: "Show on covers" }),
     ).toBeVisible();
     for (const name of SWITCH_NAMES) {
-      const toggle = options.getByRole("checkbox", { name: SWITCHES[name] });
+      const toggle = options.getByRole("switch", { name: SWITCHES[name] });
       await expect(toggle).toBeChecked({
         checked: DEFAULT_LIBRARY_VIEW.onCovers[name],
       });
@@ -121,7 +121,7 @@ test.describe("show on covers", () => {
     const options = await openViewOptions(page);
 
     for (const name of SWITCH_NAMES) {
-      const row = options.locator("label").filter({ hasText: SWITCHES[name] });
+      const row = options.getByRole("switch", { name: SWITCHES[name] });
 
       expect((await boxOf(row)).height).toBe(height);
     }
