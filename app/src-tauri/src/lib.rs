@@ -18,6 +18,7 @@ mod library_events;
 mod library_problem;
 mod omni_protocol;
 mod power_mode;
+mod problem_reporting;
 mod put_away;
 mod runtime_config;
 mod scheduled_rescans;
@@ -67,6 +68,7 @@ pub fn run() {
     let app = tauri::Builder::default()
         .manage(Core::new())
         .manage(recent_log)
+        .manage(problem_reporting::ShownProblemReport::default())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(
             tauri_plugin_opener::Builder::new()

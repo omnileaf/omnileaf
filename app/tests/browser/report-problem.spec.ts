@@ -6,6 +6,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   FAKE_APP_VERSION,
+  FAKE_REPORT_CODE,
   FAKE_SYSTEM,
   onPlatform,
   test,
@@ -34,6 +35,7 @@ test.describe("with a few lines logged", () => {
     backend: {
       ...DEFAULT_BACKEND,
       problemReport: () => ({
+        code: FAKE_REPORT_CODE,
         version: FAKE_APP_VERSION,
         system: FAKE_SYSTEM,
         log: LOGGED,
@@ -89,6 +91,7 @@ test.describe("with nothing logged", () => {
     backend: {
       ...DEFAULT_BACKEND,
       problemReport: () => ({
+        code: FAKE_REPORT_CODE,
         version: FAKE_APP_VERSION,
         system: null,
         log: [],
@@ -144,6 +147,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
         backend: {
           ...onPlatform(platform).backend,
           problemReport: () => ({
+            code: FAKE_REPORT_CODE,
             version: FAKE_APP_VERSION,
             system: FAKE_SYSTEM,
             log: LOGGED,
