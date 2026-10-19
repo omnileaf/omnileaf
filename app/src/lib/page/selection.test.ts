@@ -113,3 +113,17 @@ test("has not every book of an empty list", () => {
 
   expect(selection.hasAll([])).toBe(false);
 });
+
+test("picks only the books given, keeping what it picked before when asked", () => {
+  const selection = new Selection<string>();
+  selection.begin(at(0));
+
+  selection.pickOnly([at(1), at(2)]);
+  const replaced = selection.picked;
+  selection.pickOnly([at(3)], [at(1)]);
+
+  expect([replaced, selection.picked]).toEqual([
+    [at(1), at(2)],
+    [at(1), at(3)],
+  ]);
+});

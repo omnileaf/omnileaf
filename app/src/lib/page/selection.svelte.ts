@@ -51,6 +51,12 @@ export class Selection<Id> {
     }
   }
 
+  pickOnly(listed: readonly Id[], kept: readonly Id[] = []): void {
+    this.#picked.clear();
+    this.pickAll(kept);
+    this.pickAll(listed);
+  }
+
   /** Every item picked, in the order it was picked, whether the list shows it now or not. */
   get picked(): Id[] {
     return [...this.#picked];
