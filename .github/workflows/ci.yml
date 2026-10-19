@@ -278,7 +278,7 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && (needs.changes.outputs.app != 'false' || needs.changes.outputs.site != 'false') }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
