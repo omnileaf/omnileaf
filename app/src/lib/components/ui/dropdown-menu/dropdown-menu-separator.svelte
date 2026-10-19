@@ -12,6 +12,9 @@
 
 <DropdownMenuPrimitive.Separator
   bind:ref
-  class={cn("-mx-xs my-xs border-bs border-menu-edge", className)}
+  class={cn(
+    "-mx-menu-pad my-xs border-bs border-menu-edge android:mx-none",
+    className,
+  )}
   {...restProps}
 />
