@@ -38,6 +38,8 @@ pub struct RelatedSeries {
     pub book_count: u32,
     pub read_count: u32,
     pub reason: RelatedReason,
+    /// Counts as 18+, which a library that reads no age ratings and keeps no marks never does.
+    pub is_adult: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -136,6 +138,23 @@ mod tests {
     #[test]
     fn finds_no_related_series_until_the_library_reads_creators_and_tags() {
         assert_eq!(sample_overview().related, Vec::new());
+    }
+
+    #[test]
+    fn tells_the_interface_whether_a_related_series_counts_as_18_plus() {
+        let related = RelatedSeries {
+            id: sample_overview().id,
+            title: "Sample Series 07".to_owned(),
+            cover: None,
+            book_count: 5,
+            read_count: 3,
+            reason: RelatedReason::SameWriter,
+            is_adult: true,
+        };
+
+        let json = serde_json::to_value(related).unwrap();
+
+        assert_eq!(json["isAdult"], serde_json::json!(true));
     }
 
     #[test]

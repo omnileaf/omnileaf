@@ -1721,13 +1721,11 @@ test.describe("while Screenshot mode is on", () => {
       page.getByRole("heading", { level: 1, name: standIn ?? "" }),
     ).toBeFocused();
     await revealBooks(page);
-    await expect(books(page).first()).toContainText(
-      `${standIn ?? ""} · Book 1`,
-    );
-    await expect(books(page).nth(3)).toContainText(`${standIn ?? ""} · Book 4`);
+    await expect(books(page).first()).toContainText("Book 1");
+    await expect(books(page).nth(3)).toContainText("Book 4");
     await expect(
       page.getByRole("main").getByRole("link", {
-        name: `Continue ${standIn ?? ""} · Book 4 at page 15`,
+        name: "Continue Book 4 at page 15",
       }),
     ).toBeVisible();
     await expect(page.getByRole("main")).toContainText("Folder 571");
