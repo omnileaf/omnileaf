@@ -694,6 +694,24 @@ test("signs in to a share that wants it, which brings it back", async () => {
   ]).toEqual(["signedIn", [], 0]);
 });
 
+test("cancels or fails a sign-in once asked, leaving the share missing", async () => {
+  const outcomes = await Promise.all(
+    ["cancelled", "failed"].map(async (signIn) => {
+      const { backend } = backendFor(`?missing=sign-in&signin=${signIn}`);
+      const [missing] = await backend.missingLibraryFolders();
+      const signedIn = await backend.signInToLibraryFolder(
+        missing?.folder.id ?? "",
+      );
+      return [signedIn, (await backend.missingLibraryFolders()).length];
+    }),
+  );
+
+  expect(outcomes).toEqual([
+    ["cancelled", 1],
+    ["failed", 1],
+  ]);
+});
+
 test("tells a disconnected drive, lost access and each share apart", async () => {
   const problems = await Promise.all(
     ["drive", "access", "sign-in", "mount", "share"].map(async (kind) => {

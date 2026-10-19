@@ -109,6 +109,11 @@
   "missing_unlink": "Unlink it",
   "missing_sign_in": "Sign in",
   "missing_try_again": "Try again",
+  "missing_sign_in_again": "Sign in again",
+  "missing_sign_in_failed_title": "Couldn’t sign in to {name}",
+  "missing_sign_in_failed_body": "{share} still won’t let Omnileaf in. Check the name and password in the system’s sign-in, or that the server is on. Your reading progress is safe.",
+  "missing_back_title": "{name} is back",
+  "missing_back_body": "{share} is reachable again. Checking it for changes…",
   "library_hidden_count": [
     {
       "declarations": [

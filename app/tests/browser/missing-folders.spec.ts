@@ -3,6 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 import type {
   FolderProblem,
   MissingFolder,
+  SignInOutcome,
 } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
@@ -324,25 +325,97 @@ test.describe("with a network share that wants a sign-in", () => {
     "Manga",
     GVFS_MANGA,
   );
-  test.use({ backend: backendMissing(folder) });
+  let signIn: SignInOutcome = "cancelled";
+  test.use({
+    backend: {
+      ...backendMissing(folder),
+      signInToLibraryFolder: (id) => {
+        asked.push(`sign in ${id}`);
+        if (signIn === "signedIn") {
+          missing = [];
+        }
+        return signIn;
+      },
+    },
+  });
   test.beforeEach(() => {
     missing = [folder];
     asked = [];
   });
 
-  test("asks to sign in to the share it names, and reads the share again", async ({
-    page,
-  }) => {
+  test("asks to sign in to the share it names", async ({ page }) => {
     await page.goto("/");
-    const share = notice(page, "Sign in to see Manga");
-    await expect(share).toContainText(
+
+    await expect(notice(page, "Sign in to see Manga")).toContainText(
       "The network share nas/manga wants you to sign in again. Your reading progress is safe.",
     );
+  });
+
+  test("says the share is back once signed in, and checks it for changes", async ({
+    page,
+  }) => {
+    signIn = "signedIn";
+    await page.goto("/");
+
+    await notice(page, "Sign in to see Manga")
+      .getByRole("button", { name: "Sign in" })
+      .click();
+
+    await expect(notice(page, "Manga is back")).toContainText(
+      "nas/manga is reachable again. Checking it for changes…",
+    );
+    await expect(notice(page, "Sign in to see Manga")).toHaveCount(0);
+    expect(asked).toEqual([`sign in ${FOLDER_ID}`, `rescan ${FOLDER_ID}`]);
+  });
+
+  test("changes nothing when the sign-in is cancelled", async ({ page }) => {
+    signIn = "cancelled";
+    await page.goto("/");
+    const share = notice(page, "Sign in to see Manga");
 
     await share.getByRole("button", { name: "Sign in" }).click();
 
-    await expect.poll(() => asked).toEqual([`rescan ${FOLDER_ID}`]);
+    await expect.poll(() => asked).toEqual([`sign in ${FOLDER_ID}`]);
+    await expect(share.getByRole("button", { name: "Sign in" })).toBeVisible();
+    await expect(notice(page, "Manga is back")).toHaveCount(0);
   });
+
+  test("says it still couldn't sign in, and offers to sign in again", async ({
+    page,
+  }) => {
+    signIn = "failed";
+    await page.goto("/");
+
+    await notice(page, "Sign in to see Manga")
+      .getByRole("button", { name: "Sign in" })
+      .click();
+    const failed = notice(page, "Couldn’t sign in to Manga");
+    await expect(failed).toContainText(
+      "nas/manga still won’t let Omnileaf in. Check the name and password in the system’s sign-in, or that the server is on. Your reading progress is safe.",
+    );
+    await failed.getByRole("button", { name: "Sign in again" }).click();
+
+    await expect
+      .poll(() => asked)
+      .toEqual([`sign in ${FOLDER_ID}`, `sign in ${FOLDER_ID}`]);
+    await expect(notice(page, "Sign in to see Manga")).toHaveCount(0);
+  });
+
+  for (const theme of ["light", "dark"] as const) {
+    test(`has no accessibility violations once sign-in fails in the ${theme} theme`, async ({
+      page,
+    }) => {
+      signIn = "failed";
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto("/");
+      await notice(page, "Sign in to see Manga")
+        .getByRole("button", { name: "Sign in" })
+        .click();
+      await expect(notice(page, "Couldn’t sign in to Manga")).toBeVisible();
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
 });
 
 test.describe("with a network share the system mounts", () => {
