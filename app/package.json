@@ -11,7 +11,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy custom-chosen preferredLanguage baseLocale && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
-    "lint": "eslint . && prettier --check .",
+    "lint": "eslint . && prettier --check . && node scripts/check-starting-style.ts",
     "format": "prettier --write .",
     "test": "vitest run --project components --project harness",
     "test:e2e": "playwright test",

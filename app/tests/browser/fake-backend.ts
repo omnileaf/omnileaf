@@ -19,10 +19,16 @@ type CommandArguments = Record<string, unknown>;
 
 type Reply = { readonly value: unknown } | { readonly failure: IpcError };
 
+export interface CommandsAsked {
+  readonly asked: number;
+  readonly unanswered: number;
+}
+
 declare global {
   interface Window {
     __omnileafFakeChannelMessage?: (id: number, message: unknown) => void;
     __omnileafFakeEvent?: (event: string, payload: unknown) => void;
+    __omnileafFakeCommands?: () => CommandsAsked;
   }
 }
 
@@ -32,11 +38,23 @@ const FAKE_PROTOCOL_PREFIX = "__protocol__/";
 export function fakeProtocolRoute(protocol: string): string {
   return `**/${FAKE_PROTOCOL_PREFIX}${protocol}/**`;
 }
+
+export function fakeProtocolPath(url: string, protocol: string): string {
+  const { pathname } = new URL(url);
+  const base = `/${FAKE_PROTOCOL_PREFIX}${protocol}/`;
+  return decodeURIComponent(
+    pathname.slice(pathname.indexOf(base) + base.length),
+  );
+}
+
 const CHANNEL_PREFIX = "__CHANNEL__:";
 
 const INSTALL_BRIDGE = `const callbacks = new Map();
 const listeners = new Map();
 let lastCallback = 0;
+let asked = 0;
+let unanswered = 0;
+window.__omnileafFakeCommands = () => ({ asked, unanswered });
 window.__omnileafFakeChannelMessage = (id, message) => callbacks.get(id)?.(message);
 window.__omnileafFakeEvent = (event, payload) => {
   for (const handler of listeners.get(event) ?? []) {
@@ -69,11 +87,17 @@ Object.defineProperty(window, "__TAURI_INTERNALS__", {
       if (command in EVENT_COMMANDS) {
         return EVENT_COMMANDS[command](args);
       }
-      const reply = await window.${BRIDGE}(command, JSON.parse(JSON.stringify(args)));
-      if ("failure" in reply) {
-        throw reply.failure;
+      asked += 1;
+      unanswered += 1;
+      try {
+        const reply = await window.${BRIDGE}(command, JSON.parse(JSON.stringify(args)));
+        if ("failure" in reply) {
+          throw reply.failure;
+        }
+        return reply.value;
+      } finally {
+        unanswered -= 1;
       }
-      return reply.value;
     },
   },
 });`;
@@ -134,6 +158,16 @@ export async function emitFakeEvent(
     },
     [event, payload] as const,
   );
+}
+
+export function commandsAsked(page: Page): Promise<CommandsAsked> {
+  return page.evaluate(() => {
+    const commands = window.__omnileafFakeCommands;
+    if (commands === undefined) {
+      throw new Error("the page has no fake backend");
+    }
+    return commands();
+  });
 }
 
 export async function installFakeBackend(

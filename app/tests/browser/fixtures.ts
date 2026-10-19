@@ -1,9 +1,11 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import {
+  type BrowserContext,
   expect,
   test as base,
   type Locator,
   type Page,
+  type PlaywrightWorkerOptions,
   type ViewportSize,
 } from "@playwright/test";
 
@@ -21,6 +23,8 @@ import {
   type FakeBackend,
   installFakeBackend,
 } from "./fake-backend.ts";
+
+export { sidewaysOverflow } from "./sideways-overflow.ts";
 
 export const FAKE_APP_VERSION = "1.2.3";
 export const FAKE_SOURCE_CODE = "repo.example.org/omnileaf";
@@ -234,12 +238,15 @@ export function viewportOf(page: Page): ViewportSize {
   return viewport;
 }
 
-export function screenSizeOf(page: Page): ScreenSize {
-  const { width } = viewportOf(page);
+export function screenSizeAt(width: number): ScreenSize {
   if (width >= LARGE_MIN_WIDTH) {
     return "desktop";
   }
   return width >= MEDIUM_MIN_WIDTH ? "tablet" : "phone";
+}
+
+export function screenSizeOf(page: Page): ScreenSize {
+  return screenSizeAt(viewportOf(page).width);
 }
 
 export const LARGEST_TEXT_SCALE = 2;
@@ -256,6 +263,8 @@ export async function setTextScale(page: Page, scale: number): Promise<void> {
     `:root { --text-scale: ${String(scale)} !important; }`,
   );
 }
+
+type BrowserName = PlaywrightWorkerOptions["browserName"];
 
 type Box = NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>;
 
@@ -308,9 +317,9 @@ export function targetOf(
 const SETTLE_GRACE_MS = 2000;
 const FRAME_WAIT_MS = 50;
 
-/** Lists a part bits-ui still holds in its starting style as well, since no animation reports it until the frame its transition begins. */
-function animationsWithin(locator: Locator): Promise<string[]> {
-  return locator.evaluate(async (element, frameWaitMs) => {
+/** Waits two frames, or a moment when none come, since headless WebKit can stop drawing frames while nothing asks for one. */
+export async function framesPassed(page: Page): Promise<void> {
+  await page.evaluate(async (frameWaitMs) => {
     const nextFrame = new Promise<void>((resolve) => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -322,26 +331,31 @@ function animationsWithin(locator: Locator): Promise<string[]> {
       setTimeout(resolve, frameWaitMs);
     });
     await Promise.race([nextFrame, timer]);
-    return [
-      ...element.getAnimations({ subtree: true }).map((animation) => {
-        const target =
-          animation.effect instanceof KeyframeEffect
-            ? animation.effect.target
-            : null;
-        const name =
-          animation instanceof CSSTransition
-            ? animation.transitionProperty
-            : animation instanceof CSSAnimation
-              ? animation.animationName
-              : animation.id;
-        return `${name} on ${target?.tagName.toLowerCase() ?? "?"} ${target?.getAttribute("class") ?? ""}`;
-      }),
-      ...(element.closest("[data-starting-style]") === null &&
-      element.querySelector("[data-starting-style]") === null
-        ? []
-        : ["a part still held in its starting style"]),
-    ];
   }, FRAME_WAIT_MS);
+}
+
+/** Lists a part bits-ui still holds in its starting style as well, since no animation reports it until the frame its transition begins. */
+async function animationsWithin(locator: Locator): Promise<string[]> {
+  await framesPassed(locator.page());
+  return locator.evaluate((element) => [
+    ...element.getAnimations({ subtree: true }).map((animation) => {
+      const target =
+        animation.effect instanceof KeyframeEffect
+          ? animation.effect.target
+          : null;
+      const name =
+        animation instanceof CSSTransition
+          ? animation.transitionProperty
+          : animation instanceof CSSAnimation
+            ? animation.animationName
+            : animation.id;
+      return `${name} on ${target?.tagName.toLowerCase() ?? "?"} ${target?.getAttribute("class") ?? ""}`;
+    }),
+    ...(element.closest("[data-starting-style]") === null &&
+    element.querySelector("[data-starting-style]") === null
+      ? []
+      : ["a part still held in its starting style"]),
+  ]);
 }
 
 /** Finishes whatever still moves after a grace period, since headless WebKit can stop advancing its animations, and even its frames, while nothing asks for one. */
@@ -419,56 +433,6 @@ export const APP_PAGES = [
   "/read/0190a3e4-0000-8000-8000-00000000000f",
 ] as const;
 
-export function sidewaysOverflow(
-  page: Page,
-  within = "main",
-): Promise<string[]> {
-  return page.evaluate((scope) => {
-    const touchTargetBleedOf = (element: Element): number => {
-      const before = getComputedStyle(element, "::before");
-      if (before.position !== "absolute") {
-        return 0;
-      }
-      const bleed =
-        Number.parseFloat(before.width) - element.getBoundingClientRect().width;
-      return Number.isNaN(bleed) ? 0 : bleed;
-    };
-    const bleedOf = (element: Element): number =>
-      Math.max(
-        0,
-        touchTargetBleedOf(element),
-        ...[...element.querySelectorAll("*")].flatMap((descendant) => [
-          -Number.parseFloat(getComputedStyle(descendant).marginInlineEnd),
-          touchTargetBleedOf(descendant),
-        ]),
-      );
-    const overflowing: string[] = [];
-    for (const element of document.querySelectorAll(`${scope} *`)) {
-      const style = getComputedStyle(element);
-      const isClippedArt =
-        ["hidden", "clip"].includes(style.overflowX) &&
-        element.matches("[aria-hidden=true]");
-      const isCutOnPurpose =
-        style.textOverflow === "ellipsis" ||
-        style.clipPath !== "none" ||
-        isClippedArt;
-      const overflow = element.scrollWidth - element.clientWidth;
-      if (
-        !isCutOnPurpose &&
-        element.clientWidth > 0 &&
-        overflow > 0 &&
-        overflow > bleedOf(element)
-      ) {
-        overflowing.push(element.outerHTML.slice(0, 120));
-      }
-    }
-    if (document.documentElement.scrollWidth > window.innerWidth) {
-      overflowing.push("the page");
-    }
-    return overflowing;
-  }, within);
-}
-
 type Violations = Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"];
 
 function runningAnimations(page: Page): Promise<string[]> {
@@ -541,6 +505,24 @@ export async function selectedByDoubleClick(
   return page.evaluate(() => getSelection()?.toString() ?? "");
 }
 
+async function markReaderGuideSeen(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    for (const direction of ["leftToRight", "rightToLeft"]) {
+      localStorage.setItem(`omnileaf.readerGuide.${direction}`, "seen");
+    }
+  });
+}
+
+export async function openFakeApp(
+  context: BrowserContext,
+  backend: FakeBackend,
+): Promise<Page> {
+  const page = await context.newPage();
+  await markReaderGuideSeen(page);
+  await installFakeBackend(page, backend);
+  return page;
+}
+
 export const test = base.extend<{
   backend: FakeBackend;
   hasSeenReaderGuide: boolean;
@@ -549,34 +531,60 @@ export const test = base.extend<{
   hasSeenReaderGuide: [true, { option: true }],
   page: async ({ page, backend, hasSeenReaderGuide }, use) => {
     if (hasSeenReaderGuide) {
-      await page.addInitScript(() => {
-        for (const direction of ["leftToRight", "rightToLeft"]) {
-          localStorage.setItem(`omnileaf.readerGuide.${direction}`, "seen");
-        }
-      });
+      await markReaderGuideSeen(page);
     }
     await installFakeBackend(page, backend);
     await use(page);
   },
 });
 
-/** Android's WebView is Chromium and iOS's is WebKit, but the desktop interface, the same on every desktop, ships in both: WebView2 on Windows, WebKit on macOS and Linux. */
-const WEBVIEW_ENGINE = {
-  android: "chromium",
-  ios: "webkit",
-  windows: null,
-  macos: null,
-  linux: null,
-} as const satisfies Record<Platform, "chromium" | "webkit" | null>;
+type PlatformInterface = "android" | "ios" | "desktop";
+
+interface Webview {
+  readonly browserName: BrowserName;
+  readonly hasTouch: boolean;
+  readonly interface: PlatformInterface;
+}
+
+/** Android's WebView and Windows' WebView2 are Chromium, while iOS's and macOS's WKWebView and Linux's WebKitGTK are WebKit, so the one desktop interface ships in both engines. */
+const WEBVIEWS = {
+  android: { browserName: "chromium", hasTouch: true, interface: "android" },
+  ios: { browserName: "webkit", hasTouch: true, interface: "ios" },
+  windows: { browserName: "chromium", hasTouch: false, interface: "desktop" },
+  macos: { browserName: "webkit", hasTouch: false, interface: "desktop" },
+  linux: { browserName: "webkit", hasTouch: false, interface: "desktop" },
+} as const satisfies Record<Platform, Webview>;
+
+const PLATFORMS = Object.keys(WEBVIEWS).filter(
+  (key): key is Platform => key in WEBVIEWS,
+);
+
+export function platformsShownBy({
+  browserName,
+  hasTouch,
+}: Pick<Webview, "browserName" | "hasTouch">): Platform[] {
+  return PLATFORMS.filter(
+    (platform) =>
+      WEBVIEWS[platform].browserName === browserName &&
+      WEBVIEWS[platform].hasTouch === hasTouch,
+  );
+}
+
+function enginesShipping(shown: PlatformInterface): BrowserName[] {
+  return [
+    ...new Set(
+      PLATFORMS.filter(
+        (platform) => WEBVIEWS[platform].interface === shown,
+      ).map((platform) => WEBVIEWS[platform].browserName),
+    ),
+  ];
+}
 
 export function testOnlyInItsWebview(platform: Platform): void {
-  const engine = WEBVIEW_ENGINE[platform];
-  if (engine === null) {
-    return;
-  }
+  const engines = enginesShipping(WEBVIEWS[platform].interface);
   test.skip(
-    ({ browserName }) => browserName !== engine,
-    `${platform} shows the interface in ${engine}`,
+    ({ browserName }) => !engines.includes(browserName),
+    `${platform} shows the interface in ${engines.join(" and ")}`,
   );
 }
 
