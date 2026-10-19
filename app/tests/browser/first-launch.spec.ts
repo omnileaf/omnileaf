@@ -32,6 +32,14 @@ const HOME_FOLDER: WireFolder = {
   location: "/data/Omnileaf",
   isAvailable: true,
 };
+const MANGA: WireFolder = {
+  id: "3",
+  kind: "linked",
+  name: "Manga",
+  location: "/media/usb/Manga",
+  isAvailable: true,
+};
+const FOUND_HEADING = "Found 35 series and 45 books";
 const SAMPLE_COMICS: WireFolder = {
   id: "2",
   kind: "linked",
@@ -45,6 +53,7 @@ class Device {
   failsToFinish = false;
   folders: WireFolder[] = [];
   books = new Map<string, number>();
+  series = new Map<string, number>();
   adultContent: AdultContent = { treatment: "show", countsAgeRatings: false };
 
   reset(): void {
@@ -52,6 +61,7 @@ class Device {
     this.failsToFinish = false;
     this.folders = [HOME_FOLDER];
     this.books = new Map();
+    this.series = new Map();
     this.adultContent = { treatment: "show", countsAgeRatings: false };
   }
 }
@@ -73,6 +83,7 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
   },
   libraryFolders: () => ({ folders: [...device.folders], next: null }),
   libraryFolderBookCount: (id) => device.books.get(id) ?? 0,
+  folderSeriesCount: (id) => device.series.get(id) ?? 0,
   libraryAdultContent: () => device.adultContent,
   setLibraryAdultContent: (content) => {
     device.adultContent = content;
@@ -95,6 +106,7 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
 const HOME_HEADING = "Where your library lives";
 const LINK_HINT_ON_A_COMPUTER =
   "Folders on this computer, external drives and network shares all work.";
+const EMPTY_READY_HEADING = "Your library is empty for now";
 const IOS_HOME_HEADING = "Your backups and books are in Files";
 
 const STEPS = [
@@ -102,7 +114,7 @@ const STEPS = [
   { heading: HOME_HEADING, leaveWith: "Continue" },
   { heading: "Already have comics or books?", leaveWith: /^Skip/ },
   { heading: "A few choices", leaveWith: "Continue" },
-  { heading: "You're all set", leaveWith: "Open my library" },
+  { heading: EMPTY_READY_HEADING, leaveWith: "Open my library" },
 ] as const;
 
 function headingOn(platform: Platform, stepHeading: string): string {
@@ -128,7 +140,8 @@ async function goTo(
 ): Promise<void> {
   await page.goto("/first-launch");
   for (const step of STEPS) {
-    const shown = headingOn(platform, step.heading);
+    const shown =
+      step === STEPS[4] ? stepHeading : headingOn(platform, step.heading);
     await expect(heading(page, shown)).toBeVisible();
     if (shown === stepHeading) {
       return;
@@ -173,7 +186,7 @@ for (const step of STEPS) {
 
 const HEADER_SIZES = {
   badge: 56,
-  appIcon: 72,
+  mark: 72,
   title: 24,
   welcomeTitle: 28,
   body: 16,
@@ -195,7 +208,8 @@ for (const step of STEPS) {
 
     const badge = await boxOf(title.locator(BADGE_OF_TITLE));
 
-    const side = isWelcome ? HEADER_SIZES.appIcon : HEADER_SIZES.badge;
+    const isReady = step === STEPS[4];
+    const side = isWelcome || isReady ? HEADER_SIZES.mark : HEADER_SIZES.badge;
     expect([badge.width, badge.height]).toEqual([side, side]);
     expect(await fontSizeOf(title)).toBe(
       isWelcome ? HEADER_SIZES.welcomeTitle : HEADER_SIZES.title,
@@ -373,7 +387,7 @@ test("opens on the first launch until the device has finished it", async ({
 test("never shows the first launch again once it is finished", async ({
   page,
 }) => {
-  await goTo(page, "You're all set");
+  await goTo(page, EMPTY_READY_HEADING);
   await page.getByRole("button", { name: "Open my library" }).click();
   await expect(heading(page, "Library")).toBeVisible();
 
@@ -386,7 +400,7 @@ test("never shows the first launch again once it is finished", async ({
 test("leaves the app when going back from the library it finished on", async ({
   page,
 }) => {
-  await goTo(page, "You're all set");
+  await goTo(page, EMPTY_READY_HEADING);
   await page.getByRole("button", { name: "Open my library" }).click();
   await expect(heading(page, "Library")).toBeVisible();
 
@@ -1026,7 +1040,7 @@ test("starts 18+ covers on Blur and keeps it as the library's choice", async ({
   await expect(covers.getByRole("radio", { name: "Blur" })).toBeChecked();
   await page.getByRole("button", { name: "Continue" }).click();
 
-  await expect(heading(page, "You're all set")).toBeVisible();
+  await expect(heading(page, EMPTY_READY_HEADING)).toBeVisible();
   expect(device.adultContent).toEqual({
     treatment: "blur",
     countsAgeRatings: false,
@@ -1042,7 +1056,7 @@ test("keeps the 18+ covers choice made on the step", async ({ page }) => {
     .click();
   await page.getByRole("button", { name: "Continue" }).click();
 
-  await expect(heading(page, "You're all set")).toBeVisible();
+  await expect(heading(page, EMPTY_READY_HEADING)).toBeVisible();
   expect(device.adultContent.treatment).toBe("hide");
 });
 
@@ -1067,6 +1081,87 @@ test("turns the app dark from the choices", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
+test("says the library is empty for now when no folder was linked", async ({
+  page,
+}) => {
+  await goTo(page, EMPTY_READY_HEADING);
+
+  await expect(
+    page.getByText("Add folders from the empty library or Settings › Library."),
+  ).toBeVisible();
+  await expect(page.getByText(/is ready/)).toHaveCount(0);
+});
+
+test.describe("once folders are linked", () => {
+  test.beforeEach(() => {
+    device.folders = [HOME_FOLDER, SAMPLE_COMICS, MANGA];
+    device.books.set(SAMPLE_COMICS.id, 7).set(MANGA.id, 38);
+    device.series.set(SAMPLE_COMICS.id, 3).set(MANGA.id, 32);
+  });
+
+  test("sets the leaf beside the check badge without running past it", async ({
+    page,
+  }) => {
+    await goTo(page, FOUND_HEADING);
+
+    expect(await sidewaysOverflow(page)).toEqual([]);
+  });
+
+  test("says how many series and books it found, and in which folder", async ({
+    page,
+  }) => {
+    await goTo(page, FOUND_HEADING);
+    const rows = page
+      .getByRole("region", { name: "Folders" })
+      .getByRole("listitem");
+
+    await expect(
+      page.getByText(
+        "Your library is ready. Add or remove folders any time in Settings › Library.",
+      ),
+    ).toBeVisible();
+    await expect(rows.nth(0)).toContainText("3 series · 7 books");
+    await expect(rows.nth(1)).toContainText("32 series · 38 books");
+    await expect(
+      page.getByRole("region", { name: "Folders" }).getByRole("button", {
+        name: "Add a folder",
+      }),
+    ).toHaveCount(0);
+  });
+
+  test("names the folder that couldn't be read and says how to fix it", async ({
+    page,
+  }) => {
+    device.folders = [
+      HOME_FOLDER,
+      SAMPLE_COMICS,
+      { ...MANGA, isAvailable: false },
+    ];
+    await goTo(page, "Manga couldn't be read");
+
+    await expect(
+      page.getByText(
+        "Nothing in it changed. The rest of your library is ready.",
+      ),
+    ).toBeVisible();
+    await expect(page.getByRole("alert")).toContainText("How to fix it");
+    await expect(page.getByRole("alert")).toContainText(
+      "Check that you can open it in your file manager, then Rescan.",
+    );
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations once found, in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await goTo(page, FOUND_HEADING);
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
+});
+
 test("goes back a step with the browser's back", async ({ page }) => {
   await goTo(page, "Where your library lives");
 
@@ -1079,7 +1174,7 @@ test("stays on the last step and says so when finishing fails", async ({
   page,
 }) => {
   device.failsToFinish = true;
-  await goTo(page, "You're all set");
+  await goTo(page, EMPTY_READY_HEADING);
 
   await page.getByRole("button", { name: "Open my library" }).click();
 
