@@ -4,6 +4,7 @@
   import { MediaQuery } from "svelte/reactivity";
 
   import {
+    type AdultContent,
     commands,
     DEFAULT_LIBRARY_VIEW,
     type LibraryCategory,
@@ -19,6 +20,7 @@
   import { coverUrl } from "#lib/library/cover-url.ts";
   import FilterAndSort from "#lib/library/FilterAndSort.svelte";
   import LibraryMore from "#lib/library/LibraryMore.svelte";
+  import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
   import FilterPanel from "#lib/library/FilterPanel.svelte";
   import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
   import FolderNotice from "#lib/library/FolderNotice.svelte";
@@ -88,6 +90,16 @@
       read: () => commands.libraryView(),
       store: (chosen: LibraryView) => commands.setLibraryView(chosen),
       fallback: DEFAULT_LIBRARY_VIEW,
+    },
+    (error) => {
+      reportError(error);
+    },
+  );
+  const adultContent = new StoredChoice<AdultContent>(
+    {
+      read: () => commands.libraryAdultContent(),
+      store: (chosen: AdultContent) => commands.setLibraryAdultContent(chosen),
+      fallback: NEW_ADULT_CONTENT,
     },
     (error) => {
       reportError(error);
@@ -311,6 +323,7 @@
   onMount(() => {
     void listing.load();
     void view.load();
+    void adultContent.load();
     void loadCategories();
     void loadFilterChoices();
     void loadLabelSupport();
@@ -540,6 +553,9 @@
             {coverUrl}
             view={loaded.view}
             usesStandIns={screenshotMode.isOn}
+            adultTreatment={adultContent.reading.kind === "read"
+              ? adultContent.reading.value.treatment
+              : "show"}
             menu={{
               canLabel: keepsLabels,
               onMarkRead: (one: LibrarySeries) => {
