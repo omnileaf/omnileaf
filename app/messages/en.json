@@ -1320,6 +1320,11 @@
     }
   ],
   "reader_page_failed": "This page couldn't be shown.",
+  "reader_damaged_title": "Part of {title} is damaged",
+  "reader_damaged_count": "{readable} of its {promised} pages can be read.",
+  "reader_damaged_ends_early": "Pages {first}–{last}: the archive ends early",
+  "reader_damaged_ends_early_body": "The file may not have finished copying. Copy it again to get every page. Nothing else in your library has changed.",
+  "reader_read_pages_that_work": "Read the {count} pages that work",
   "reader_page_failed_body": "Page {page} may be damaged. The rest of {title} still opens.",
   "reader_try_again": "Try again",
   "reader_not_found": "This book isn't in your library",

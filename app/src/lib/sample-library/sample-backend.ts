@@ -39,6 +39,7 @@ const PLATFORMS = ["android", "ios", "macos", "windows", "linux"] as const;
 const LIBRARY_STATES = ["ready", "empty", "loading", "failed"] as const;
 const SERIES_STATES = ["ready", "loading", "failed", "empty"] as const;
 const SIXTH_VOLUME_FILES = ["present", "missing", "damaged"] as const;
+const DAMAGED_PAGES_LOST = 6;
 
 function oneOf<Choice extends string>(
   choices: readonly Choice[],
@@ -425,12 +426,16 @@ export function sampleBackend(
         throw failure("bookUnreadable", "the book's file is missing");
       }
       const number = index + 1;
+      const isDamaged = book.file === "damaged";
+      const readablePages = isDamaged
+        ? book.pageCount - DAMAGED_PAGES_LOST
+        : book.pageCount;
       return {
         id,
         title: book.title,
         series: sampleSeriesId(series.number),
         seriesTitle: series.title,
-        pages: Array.from({ length: book.pageCount }, (_, page) => {
+        pages: Array.from({ length: readablePages }, (_, page) => {
           const path = `pages/${String(series.number)}-${String(series.art)}-${String(number)}-${String(page + 1)}`;
           return {
             path,
@@ -444,6 +449,9 @@ export function sampleBackend(
         previous: neighbour(series, index - 1),
         next: neighbour(series, index + 1),
         readingDirection: series.readingDirection,
+        damage: isDamaged
+          ? { promisedPages: book.pageCount, cause: "archiveEndsEarly" }
+          : null,
         bookmarkedPages: [...(bookmarks.get(id) ?? [])].toSorted(
           (one, other) => one - other,
         ),
