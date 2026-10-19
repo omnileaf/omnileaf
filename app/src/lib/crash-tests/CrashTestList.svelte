@@ -99,8 +99,6 @@
         <Button
           type="button"
           look="row"
-          aria-labelledby="{id}-{row.test}-title"
-          aria-describedby="{id}-{row.test}-body"
           class="gap-md px-list-row py-sm inline-full min-block-row-compact touch:min-block-row touch:max-medium:gap-list-row touch:max-medium:py-action-row"
           onclick={RUNS[row.test]}
         >
@@ -119,13 +117,9 @@
           <span
             class="flex flex-1 flex-col min-inline-none touch:max-medium:gap-2xs"
           >
-            <span
-              id="{id}-{row.test}-title"
-              class="font-semibold desktop:text-callout">{row.title()}</span
+            <span class="font-semibold desktop:text-callout">{row.title()}</span
             >
-            <span id="{id}-{row.test}-body" class="text-detail text-muted"
-              >{row.body()}</span
-            >
+            <span class="text-detail text-muted">{row.body()}</span>
           </span>
           <Play
             size={PLAY_SIZE}
