@@ -1591,6 +1591,54 @@
   "reader_guide_strip_tap_body": "⟦Ţáþ ţĥé ţöþ ţö šçŕöļļ ûþ áñð ţĥé ƀöţţöɱ ţö šçŕöļļ ðöŵñ. Ţáþ ţĥé ɱíððļé ƒöŕ ţĥé çöñţŕöļš.····································⟧",
   "reader_guide_strip_click_title": "⟦Çļíçķ ţö šçŕöļļ······⟧",
   "reader_guide_strip_click_body": "⟦Çļíçķ ţĥé ţöþ ţö šçŕöļļ ûþ áñð ţĥé ƀöţţöɱ ţö šçŕöļļ ðöŵñ. Çļíçķ ţĥé ɱíððļé ƒöŕ ţĥé çöñţŕöļš. Ţĥé áŕŕöŵ ķéýš áñð ţĥé ŵĥééļ šçŕöļļ ţöö.······················································⟧",
+  "reader_auto_scroll": "⟦Áûţö šçŕöļļ·····⟧",
+  "reader_start_auto_scroll": "⟦Šţáŕţ áûţö šçŕöļļ·······⟧",
+  "reader_auto_scroll_your_pace": "⟦Ýöûŕ þáçé····⟧",
+  "reader_auto_scroll_paused": "⟦Þáûšéð···⟧",
+  "reader_tap_play": "⟦Ţáþ Þļáý ţö ŕéšûɱé········⟧",
+  "reader_space_pauses": "⟦Šþáçé þáûšéš·····⟧",
+  "reader_space_resumes": "⟦Šþáçé ŕéšûɱéš······⟧",
+  "reader_auto_scroll_play": "⟦Þļáý··⟧",
+  "reader_auto_scroll_pause": "⟦Þáûšé··⟧",
+  "reader_auto_scroll_slower": "⟦Šļöŵéŕ···⟧",
+  "reader_auto_scroll_faster": "⟦Ƒášţéŕ···⟧",
+  "reader_auto_scroll_speed": "⟦Šþééð··⟧",
+  "reader_auto_scroll_my_pace": "⟦Ṁý þáçé···⟧",
+  "reader_auto_scroll_set_speed": "⟦Šéţ šþééð····⟧",
+  "reader_auto_scroll_help": "⟦Ķééþš šçŕöļļíñĝ ŵíţĥ ŕéðûçéð ɱöţíöñ öñ, šíñçé ýöû šţáŕţéð íţ.·························⟧",
+  "reader_auto_scroll_rate": "⟦Þáĝéš á ɱíñûţé······⟧",
+  "reader_auto_scroll_rate_value": "⟦Þáĝéš á ɱíñûţé: {count}··········⟧",
+  "reader_pause_at_end": "⟦Þáûšé áûţö šçŕöļļ áţ ţĥé éñð öƒ á ƀööķ················⟧",
+  "reader_auto_scroll_pace": "⟦Áûţö šçŕöļļ áţ ɱý þáçé·········⟧",
+  "reader_auto_scroll_pace_help": "⟦Šţáŕţš áûţö šçŕöļļ áţ ýöûŕ öŵñ šþééð.···············⟧",
+  "reader_pages_a_minute": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} þáĝé á ɱíñûţé············⟧",
+        "countPlural=other": "⟦{formattedCount} þáĝéš á ɱíñûţé·············⟧"
+      }
+    }
+  ],
+  "reader_about_pages_a_minute": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Áƀöûţ {formattedCount} þáĝé á ɱíñûţé···············⟧",
+        "countPlural=other": "⟦Áƀöûţ {formattedCount} þáĝéš á ɱíñûţé···············⟧"
+      }
+    }
+  ],
   "reader_scroll_up": "⟦Šçŕöļļ ûþ····⟧",
   "reader_scroll_down": "⟦Šçŕöļļ ðöŵñ·····⟧",
   "reader_tap_zones": "⟦Ţáþ žöñéš····⟧",

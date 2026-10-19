@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { Slider } from "#lib/components/ui/slider/index.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import ApplyToChoice from "./ApplyToChoice.svelte";
+  import { FASTEST_SPEED, SLOWEST_SPEED, SPEED_STEP } from "./auto-scroll.ts";
   import CropBordersSwitch from "./CropBordersSwitch.svelte";
   import KeepScreenOnSwitch from "./KeepScreenOnSwitch.svelte";
   import LightSliders from "./LightSliders.svelte";
@@ -16,6 +18,7 @@
     ReaderControlsLook,
     TapZones,
     TapToScroll,
+    AutoScrollChoice,
     ReaderLight,
     ReaderSettings,
   } from "./reader-settings.svelte.ts";
@@ -28,11 +31,17 @@
     settings,
     reading,
     seriesTitle,
+    canUseMyPace,
   }: {
     settings: ReaderSettings;
     reading: SeriesReadingDirection;
     seriesTitle: string;
+    canUseMyPace: boolean;
   } = $props();
+
+  const autoScrollChoice = $derived(
+    canUseMyPace ? settings.look.autoScrollSpeed : "set",
+  );
 
   const isStrip = $derived(reading.mode === "longStrip");
   const features = getSmartFeatures();
@@ -90,6 +99,73 @@
             settings.change("light", light);
           }}
         />
+      </div>
+    </section>
+    <section
+      data-slot="setting-row"
+      aria-labelledby="{id}-auto"
+      class="flex flex-col border-be-0 pbs-xl"
+    >
+      <h3 id="{id}-auto" class="text-small font-semibold">
+        {m.reader_auto_scroll()}
+      </h3>
+      <div class="flex flex-col divide-y divide-border">
+        <SettingChoice
+          isInline
+          label={m.reader_auto_scroll_speed()}
+          choices={[
+            {
+              value: "myPace",
+              label: m.reader_auto_scroll_my_pace(),
+              disabled: !canUseMyPace,
+            },
+            { value: "set", label: m.reader_auto_scroll_set_speed() },
+          ]}
+          chosen={autoScrollChoice}
+          onChoose={(choice: AutoScrollChoice) => {
+            settings.change("autoScrollSpeed", choice);
+          }}
+        >
+          <p class="col-span-full text-caption text-muted">
+            {m.reader_auto_scroll_help()}
+          </p>
+        </SettingChoice>
+        {#if autoScrollChoice === "set"}
+          <div
+            class="grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row"
+          >
+            <p id="{id}-rate" class="text-small font-medium">
+              {m.reader_auto_scroll_rate_value({
+                count: look.pagesPerMinute,
+              })}
+            </p>
+            <Slider
+              aria-labelledby="{id}-rate"
+              aria-label={m.reader_auto_scroll_rate()}
+              class="inline-setting-control"
+              min={SLOWEST_SPEED}
+              max={FASTEST_SPEED}
+              step={SPEED_STEP}
+              bind:value={
+                () => look.pagesPerMinute,
+                (pages: number) => {
+                  settings.change("pagesPerMinute", pages);
+                }
+              }
+            />
+          </div>
+        {/if}
+        <Switch
+          bind:checked={
+            () => look.pausesAtEnd,
+            (isOn: boolean) => {
+              settings.change("pausesAtEnd", isOn);
+            }
+          }
+          class="flex items-center gap-md py-setting-grid-pad text-start text-small font-medium min-block-setting-grid-row focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <span class="flex-1">{m.reader_pause_at_end()}</span>
+        </Switch>
       </div>
     </section>
     <section
