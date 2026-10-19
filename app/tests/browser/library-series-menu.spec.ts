@@ -17,6 +17,7 @@ const LIBRARY = sampleSeries(3).map((series, index) => ({
   continuesFrom: index === 0 ? BOOK : null,
 }));
 let markedRead: string[][] = [];
+let shownInFolder: string[] = [];
 
 test.use({
   backend: {
@@ -38,6 +39,10 @@ test.use({
       markedRead = [...markedRead, [...series]];
       return [];
     },
+    showSeriesInFolder: (series) => {
+      shownInFolder = [...shownInFolder, series];
+      return null;
+    },
   } satisfies FakeBackend,
 });
 
@@ -45,6 +50,7 @@ test.skip(({ hasTouch }) => hasTouch, "a pointer right-clicks");
 
 test.beforeEach(() => {
   markedRead = [];
+  shownInFolder = [];
 });
 
 function seriesList(page: Page): Locator {
@@ -68,7 +74,7 @@ async function rightClick(page: Page, index: number): Promise<Locator> {
   return menuOf(page);
 }
 
-test("offers Continue reading, Open series, Mark as read, Categories and tags and Select on a right-click", async ({
+test("offers Continue reading, Open series, Mark as read, Categories and tags, Select and Show in folder on a right-click", async ({
   page,
 }) => {
   const menu = await rightClick(page, 0);
@@ -79,7 +85,16 @@ test("offers Continue reading, Open series, Mark as read, Categories and tags an
     "Mark as read",
     "Categories and tags…",
     "Select",
+    "Show in folder",
   ]);
+});
+
+test("shows the series right-clicked in its folder", async ({ page }) => {
+  const menu = await rightClick(page, 1);
+
+  await menu.getByRole("menuitem", { name: "Show in folder" }).click();
+
+  await expect.poll(() => shownInFolder).toEqual([LIBRARY[1]?.id]);
 });
 
 test("leaves out Continue reading for a series with nothing to continue", async ({
