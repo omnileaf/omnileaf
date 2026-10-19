@@ -1,22 +1,15 @@
 import type { Locator, Page } from "@playwright/test";
 
-import english from "../../messages/en.json" with { type: "json" };
-import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import {
   CommandFailure,
-  emitFakeEvent,
   type FakeBackend,
   fakeProtocolRoute,
 } from "./fake-backend.ts";
 import {
   accessibilityViolations,
-  boxOf,
   DEFAULT_BACKEND,
   expect,
-  fakeAppInfo,
   LARGE_MIN_WIDTH,
-  NOTHING_READ_THIS_WEEK,
-  MEDIUM_MIN_WIDTH,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -25,29 +18,14 @@ type WireEntry = Awaited<
   ReturnType<FakeBackend["readingHistory"]>
 >["entries"][number];
 
-const MONDAY_EVENING = new Date("2026-10-05T22:30:00Z");
-const TUESDAY_SMALL_HOURS = new Date("2026-10-06T01:00:00Z");
-const LIBRARY_CHANGED = "library-changed";
+const THURSDAY_EVENING = new Date("2026-10-08T22:30:00Z");
 const MINUTE = 60;
-const READ_THIS_WEEK = 3 * 60 * MINUTE + 12 * MINUTE;
-const READ_LAST_WEEK = 70 * MINUTE;
-const ENTRIES_PER_PAGE = 50;
 const DAY_MS = 86_400_000;
-const MONDAY = Date.UTC(2026, 9, 5) / DAY_MS;
-const LAST_WEEK_FIRST = MONDAY - 8;
-const LAST_WEEK_LAST = MONDAY - 2;
-const DESKTOP_SECTION_GAP = 18;
-const DESKTOP_ACTION_RADIUS = "8px";
-const PHONE_LIST_INSET = 20;
-const LANGUAGES = { en: english, "en-XA": pseudo } as const;
-
-interface Session {
-  readonly number: number;
-  readonly startedAt: string;
-  readonly minutes: number;
-  readonly readTo: WireEntry["readTo"];
-  readonly dayMinutes: number;
-}
+const ENTRIES_PER_PAGE = 50;
+const REMOVED_MARK = 1_790_000_000_000;
+const CLEARED_MARK = 1_780_000_000_000;
+const UNBROKEN_TITLE =
+  "Sample_Series_Scanned_From_The_Collectors_Edition_Box_Set_Volumes_01_To_24";
 
 function bookId(number: number): string {
   return `0190a3e4-0000-8000-8000-${String(number).padStart(12, "0")}`;
@@ -62,16 +40,14 @@ function seriesTitle(number: number): string {
 }
 
 function bookTitle(number: number): string {
-  return `${seriesTitle(number)} v${String(number).padStart(2, "0")}`;
+  return `Volume ${String(number)}`;
 }
 
-function entry({
-  number,
-  startedAt,
-  minutes,
-  readTo,
-  dayMinutes,
-}: Session): WireEntry {
+function entry(
+  number: number,
+  startedAt: string,
+  readTo: WireEntry["readTo"],
+): WireEntry {
   return {
     book: bookId(number),
     bookTitle: bookTitle(number),
@@ -81,7 +57,7 @@ function entry({
     cover: null,
     startedAtMs: Date.parse(startedAt),
     utcOffsetMinutes: 0,
-    readSeconds: minutes * MINUTE,
+    readSeconds: 20 * MINUTE,
     readTo,
     reading:
       readTo.state === "end"
@@ -89,416 +65,402 @@ function entry({
         : { state: "started", page: readTo.page },
     day: {
       day: Math.floor(Date.parse(startedAt) / DAY_MS),
-      readSeconds: dayMinutes * MINUTE,
+      readSeconds: 20 * MINUTE,
     },
   };
 }
 
-const ON_PAGE_14 = { state: "page", page: 14, pageCount: 30 } as const;
-
-const SESSIONS: readonly WireEntry[] = [
-  entry({
-    number: 4,
-    startedAt: "2026-10-05T21:40:00.000Z",
-    minutes: 24,
-    readTo: ON_PAGE_14,
-    dayMinutes: 52,
+const BOOKS: readonly WireEntry[] = [
+  entry(4, "2026-10-08T21:40:00.000Z", {
+    state: "page",
+    page: 14,
+    pageCount: 192,
   }),
-  entry({
-    number: 7,
-    startedAt: "2026-10-05T19:05:00.000Z",
-    minutes: 28,
-    readTo: { state: "end" },
-    dayMinutes: 52,
+  entry(7, "2026-10-08T08:12:00.000Z", { state: "end" }),
+  entry(1, "2026-10-07T22:05:00.000Z", {
+    state: "page",
+    page: 3,
+    pageCount: 24,
   }),
-  entry({
-    number: 1,
-    startedAt: "2026-10-04T22:15:00.000Z",
-    minutes: 46,
-    readTo: { state: "page", page: 88, pageCount: 192 },
-    dayMinutes: 70,
+  entry(3, "2026-10-05T19:30:00.000Z", {
+    state: "page",
+    page: 18,
+    pageCount: 40,
   }),
-  entry({
-    number: 9,
-    startedAt: "2026-10-04T08:30:00.000Z",
-    minutes: 24,
-    readTo: { state: "page", page: 3, pageCount: 24 },
-    dayMinutes: 70,
-  }),
-  entry({
-    number: 6,
-    startedAt: "2026-09-29T20:10:00.000Z",
-    minutes: 70,
-    readTo: { state: "page", page: 40, pageCount: 180 },
-    dayMinutes: 70,
+  entry(6, "2026-09-29T20:10:00.000Z", {
+    state: "page",
+    page: 40,
+    pageCount: 180,
   }),
 ];
 
-function pagedSessions(
-  sessions: readonly WireEntry[],
-): FakeBackend["readingHistory"] {
-  return (after) => {
-    const start = after === null ? 0 : Number(after);
-    const end = start + ENTRIES_PER_PAGE;
-    return {
-      entries: sessions.slice(start, end),
-      next: end < sessions.length ? String(end) : null,
-    };
+let removed = new Set<string>();
+let isCleared = false;
+let asked: string[] = [];
+
+function booksBackend(books: readonly WireEntry[]): FakeBackend {
+  return {
+    ...DEFAULT_BACKEND,
+    readingHistory: (after, of) => {
+      const matching = of.kind === "books" ? of.matching.toLowerCase() : "";
+      const shown = books.filter(
+        (one) =>
+          !isCleared &&
+          !removed.has(one.book) &&
+          (one.seriesTitle.toLowerCase().includes(matching) ||
+            one.bookTitle.toLowerCase().includes(matching)),
+      );
+      const start = after === null ? 0 : Number(after);
+      const end = start + ENTRIES_PER_PAGE;
+      return {
+        entries: shown.slice(start, end),
+        next: end < shown.length ? String(end) : null,
+      };
+    },
+    removeFromHistory: (book) => {
+      removed.add(book);
+      asked.push(`remove ${book}`);
+      return REMOVED_MARK;
+    },
+    restoreToHistory: (book, mark) => {
+      removed.delete(book);
+      asked.push(`restore ${book} ${String(mark)}`);
+      return null;
+    },
+    clearHistory: () => {
+      isCleared = true;
+      asked.push("clear");
+      return CLEARED_MARK;
+    },
+    restoreHistory: (mark) => {
+      isCleared = false;
+      asked.push(`restore all ${String(mark)}`);
+      return null;
+    },
   };
 }
 
-const READ_BACKEND: FakeBackend = {
-  ...DEFAULT_BACKEND,
-  readingHistory: pagedSessions(SESSIONS),
-  readingWeek: () => ({
-    readSeconds: READ_THIS_WEEK,
-    booksOpened: 6,
-    booksFinished: 2,
-    daysInARow: 4,
-  }),
-  readingTimeBetween: (firstDay, lastDay) =>
-    firstDay === LAST_WEEK_FIRST && lastDay === LAST_WEEK_LAST
-      ? READ_LAST_WEEK
-      : 0,
-};
+test.beforeEach(() => {
+  removed = new Set();
+  isCleared = false;
+  asked = [];
+});
 
 function isDesktop(page: Page): boolean {
   return viewportOf(page).width >= LARGE_MIN_WIDTH;
 }
 
-function days(page: Page): Locator {
-  return page
-    .getByRole("main")
-    .getByRole("region")
-    .filter({ has: page.getByRole("heading", { level: 2 }) });
-}
-
-function week(page: Page): Locator {
-  return page.getByRole("region", { name: "This week" });
+function groups(page: Page): Locator {
+  return page.getByRole("main").getByRole("heading", { level: 2 });
 }
 
 function rows(page: Page): Locator {
-  return days(page).getByRole("listitem");
+  return page.getByRole("main").getByRole("listitem");
 }
 
-async function openHistory(page: Page, title = "History"): Promise<void> {
-  await page.clock.setFixedTime(MONDAY_EVENING);
+function rowOf(page: Page, number: number): Locator {
+  return rows(page).filter({ hasText: seriesTitle(number) });
+}
+
+async function openHistory(page: Page): Promise<void> {
+  await page.clock.setFixedTime(THURSDAY_EVENING);
   await page.goto("/history");
   await expect(
-    page.getByRole("heading", { level: 1, name: title }),
+    page.getByRole("heading", { level: 1, name: "History" }),
   ).toBeVisible();
 }
 
-function startOf(message: string): RegExp {
-  const start = message.slice(0, message.indexOf("{"));
-  return new RegExp(
-    `^${start.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}`,
-  );
+async function openMenuOf(page: Page, number: number): Promise<Locator> {
+  await rowOf(page, number)
+    .getByRole("button", { name: `More for ${bookTitle(number)}` })
+    .click();
+  return isDesktop(page) ? page.getByRole("menu") : page.getByRole("dialog");
 }
 
-async function linesOf(
-  cells: Locator,
-): Promise<{ lines: number; fits: boolean }[]> {
-  return cells.evaluateAll((elements) =>
-    elements.map((element) => ({
-      lines: Math.round(
-        element.getBoundingClientRect().height /
-          Number.parseFloat(getComputedStyle(element).lineHeight),
-      ),
-      fits: element.scrollWidth <= element.clientWidth,
-    })),
-  );
+function menuAction(menu: Locator, page: Page, name: string): Locator {
+  return isDesktop(page)
+    ? menu.getByRole("menuitem", { name })
+    : menu.getByRole("button", { name });
 }
 
-test.describe("before anything is read", () => {
-  test("shows the title and that nothing is read yet, and nothing to switch, search or clear", async ({
-    page,
-  }) => {
-    await openHistory(page);
-
-    await expect(
-      page.getByRole("heading", { level: 2, name: "Nothing read yet" }),
-    ).toBeVisible();
-    await expect(
-      page.getByText(
-        "Books you open show up here, newest first, so you can pick up where you left off.",
-      ),
-    ).toBeVisible();
-    await expect(page.getByRole("tablist")).toHaveCount(0);
-    await expect(page.getByRole("tab")).toHaveCount(0);
-    await expect(page.getByRole("searchbox")).toHaveCount(0);
-    await expect(
-      page.getByRole("button", { name: "Clear history" }),
-    ).toHaveCount(0);
-    await expect(page.getByText("Read this week")).toHaveCount(0);
-  });
-});
+async function search(page: Page, text: string): Promise<void> {
+  const field = page.getByRole("searchbox", { name: "Search History" });
+  if (!(await field.isVisible())) {
+    await page.getByRole("button", { name: "Search History" }).click();
+  }
+  await field.fill(text);
+}
 
 test.describe("with books read", () => {
-  test.use({ backend: READ_BACKEND });
+  test.use({ backend: booksBackend(BOOKS) });
 
-  test("lists what was read newest first, a day at a time, with the time read each day", async ({
+  test("lists each book read once, newest first, under Today, Yesterday, This week and Earlier", async ({
     page,
   }) => {
     await openHistory(page);
 
-    await expect(days(page)).toHaveCount(3);
-    await expect(
-      page.getByRole("region", { name: "Today 52 min" }).getByRole("listitem"),
-    ).toHaveCount(2);
-    await expect(
-      page
-        .getByRole("region", { name: "Yesterday 1 h 10 min" })
-        .getByRole("listitem"),
-    ).toHaveCount(2);
-    await expect(
-      page
-        .getByRole("region", { name: "Last week 1 h 10 min" })
-        .getByRole("listitem"),
-    ).toHaveCount(1);
-    await expect(rows(page).first()).toContainText(seriesTitle(4));
-    await expect(rows(page).last()).toContainText(seriesTitle(6));
+    await expect(groups(page)).toHaveText([
+      "Today",
+      "Yesterday",
+      "This week",
+      "Earlier",
+    ]);
+    await expect(rows(page)).toHaveCount(BOOKS.length);
   });
 
-  test("gives the weekday with the time of a session read last week", async ({
-    page,
-  }) => {
+  test("says where each book was left and when", async ({ page }) => {
     await openHistory(page);
 
-    await expect(
-      page.getByRole("region", { name: /^Last week/ }).getByRole("listitem"),
-    ).toContainText(/Tue 8:10\sPM/);
-  });
-
-  test("sums up the week, with the books opened and finished from a tablet up", async ({
-    page,
-  }) => {
-    await openHistory(page);
-    const isPhone = viewportOf(page).width < MEDIUM_MIN_WIDTH;
-
-    const cards = week(page).getByRole("listitem");
-
-    await expect(cards).toHaveText(
-      isPhone
-        ? [/Read this week\s*3 h 12 min$/, /Days in a row\s*4$/]
-        : [
-            /Read this week\s*3 h 12 min$/,
-            /Books opened\s*6$/,
-            /Finished\s*2$/,
-            /Days in a row\s*4$/,
-          ],
+    await expect(rowOf(page, 4)).toContainText(
+      /Volume 4 · page 14 of 192 · 9:40\sPM/,
+    );
+    await expect(rowOf(page, 7)).toContainText("Volume 7 · finished ·");
+    await expect(rowOf(page, 3)).toContainText(
+      "Volume 3 · page 18 of 40 · Monday",
+    );
+    await expect(rowOf(page, 6)).toContainText(
+      /Volume 6 · page 40 of 180 · Sep 29/,
     );
   });
 
-  test("says where each session left its book, when it began and how long it went on", async ({
-    page,
-  }) => {
+  test("continues a book from its entry", async ({ page }) => {
     await openHistory(page);
 
-    const first = rows(page).first();
-    await expect(first).toContainText(bookTitle(4));
-    await expect(
-      first.getByRole("progressbar", { name: "Page 14 of 30" }),
-    ).toBeVisible();
-    await expect(first).toContainText("14 / 30");
-    await expect(rows(page).nth(1)).toContainText(bookTitle(7));
-    await expect(
-      rows(page).nth(1).getByText("Finished").filter({ visible: true }),
-    ).toBeVisible();
-    await expect(rows(page).nth(1).getByRole("progressbar")).toHaveCount(0);
-    if (isDesktop(page)) {
-      await expect(first).toContainText(/Started at 9:40\sPM/);
-      await expect(first).toContainText("Read for 24 min");
-    } else {
-      await expect(first).toContainText(/9:40\sPM · 24 min/);
-    }
-  });
-
-  test("continues a book in the reader from its session", async ({ page }) => {
-    await openHistory(page);
-
-    const continuing = isDesktop(page)
-      ? page.getByRole("link", {
-          name: `Continue ${seriesTitle(4)}, ${bookTitle(4)}`,
-        })
-      : rows(page).first().getByRole("link");
-    await continuing.click();
+    await rowOf(page, 4).getByRole("link").click();
 
     await expect(page).toHaveURL(new RegExp(`/read/${bookId(4)}$`));
   });
 
-  test("offers to read a finished book again", async ({ page }) => {
-    await openHistory(page);
-
-    const again = isDesktop(page)
-      ? page.getByRole("link", {
-          name: `Read again ${seriesTitle(7)}, ${bookTitle(7)}`,
-        })
-      : rows(page).nth(1).getByRole("link");
-    await again.click();
-
-    await expect(page).toHaveURL(new RegExp(`/read/${bookId(7)}$`));
-  });
-
-  test("draws a session as one link on a phone or tablet and as a row with its own button on a desktop", async ({
+  test("offers Continue reading, Open the series and Remove from History in an entry's menu", async ({
     page,
   }) => {
     await openHistory(page);
 
-    const links = rows(page).first().getByRole("link");
-    await expect(links).toHaveCount(1);
-    await expect(links).toHaveAccessibleName(
-      isDesktop(page)
-        ? `Continue ${seriesTitle(4)}, ${bookTitle(4)}`
-        : new RegExp(`^${seriesTitle(4)}`),
-    );
+    const menu = await openMenuOf(page, 7);
+
+    await expect(menuAction(menu, page, "Continue reading")).toBeVisible();
+    await expect(menuAction(menu, page, "Open the series")).toBeVisible();
+    await expect(menuAction(menu, page, "Remove from History")).toBeVisible();
   });
 
-  test("sets the week between the header and the days the way the desktop board does", async ({
-    page,
-  }) => {
-    test.skip(!isDesktop(page), "desktops only");
-    await openHistory(page);
-    const header = await boxOf(
-      page.getByRole("main").locator("[data-page-toolbar]"),
-    );
-
-    const summed = await boxOf(week(page));
-    const columns = await boxOf(
-      page.getByRole("main").getByText("Book", { exact: true }).locator(".."),
-    );
-
-    expect(summed.y - (header.y + header.height)).toBeCloseTo(
-      DESKTOP_SECTION_GAP,
-      0,
-    );
-    expect(columns.y - (summed.y + summed.height)).toBeCloseTo(
-      DESKTOP_SECTION_GAP,
-      0,
-    );
-  });
-
-  test("heads the columns of every day once on a desktop", async ({ page }) => {
-    test.skip(!isDesktop(page), "desktops only");
+  test("opens the series from an entry's menu", async ({ page }) => {
     await openHistory(page);
 
-    const headings = ["Book", "Started", "Read for", "Progress"].map((name) =>
-      page.getByRole("main").getByText(name, { exact: true }),
-    );
+    const menu = await openMenuOf(page, 7);
+    await menuAction(menu, page, "Open the series").click();
 
-    for (const heading of headings) {
-      await expect(heading).toHaveCount(1);
-      await expect(heading).toBeVisible();
-    }
+    await expect(page).toHaveURL(new RegExp(`/series/${seriesId(7)}$`));
   });
 
-  test("rounds each row's button the way the desktop board does", async ({
-    page,
-  }) => {
-    test.skip(!isDesktop(page), "desktops only");
-    await openHistory(page);
-
-    const action = page.getByRole("link", {
-      name: `Continue ${seriesTitle(4)}, ${bookTitle(4)}`,
-    });
-
-    await expect(action).toHaveCSS("border-radius", DESKTOP_ACTION_RADIUS);
-  });
-
-  test("names the days again from the date the list is read again on", async ({
+  test("removes an entry at once, and puts it back with Undo", async ({
     page,
   }) => {
     await openHistory(page);
+
+    const menu = await openMenuOf(page, 7);
+    await menuAction(menu, page, "Remove from History").click();
+    await expect(rowOf(page, 7)).toHaveCount(0);
+    await expect(page.getByText("Removed from History")).toBeVisible();
+    await page.getByRole("button", { name: "Undo" }).click();
+
+    await expect(rowOf(page, 7)).toHaveCount(1);
+    expect(asked).toEqual([
+      `remove ${bookId(7)}`,
+      `restore ${bookId(7)} ${String(REMOVED_MARK)}`,
+    ]);
+  });
+
+  test("clears History at once, and brings it back with Undo", async ({
+    page,
+  }) => {
+    await openHistory(page);
+
+    await page.getByRole("button", { name: "Clear History" }).click();
     await expect(
-      page.getByRole("region", { name: "Today 52 min" }),
+      page.getByRole("heading", { name: "History is empty" }),
     ).toBeVisible();
+    await expect(
+      page.getByText("Books you open from now on show up here."),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Undo" }).click();
 
-    await page.clock.setFixedTime(TUESDAY_SMALL_HOURS);
-    await emitFakeEvent(page, LIBRARY_CHANGED);
+    await expect(rows(page)).toHaveCount(BOOKS.length);
+    expect(asked).toEqual(["clear", `restore all ${String(CLEARED_MARK)}`]);
+  });
+
+  test("finds books by series or book title, and says when nothing matches", async ({
+    page,
+  }) => {
+    await openHistory(page);
+
+    await search(page, "series 04");
+    await expect(rows(page)).toHaveCount(1);
+    await search(page, "harbor");
 
     await expect(
-      page.getByRole("region", { name: "Yesterday 52 min" }),
+      page.getByRole("heading", {
+        name: "Nothing in History matches “harbor”",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("History searches series and book titles."),
     ).toBeVisible();
   });
 
-  for (const colorScheme of ["light", "dark"] as const) {
-    test(`has no accessibility violations in the ${colorScheme} theme`, async ({
+  test("searches with Ctrl F on a desktop", async ({ page }) => {
+    test.skip(!isDesktop(page), "desktops search from the keyboard");
+    await openHistory(page);
+    await rows(page).first().getByRole("link").focus();
+
+    await page.keyboard.press("Control+f");
+
+    await expect(
+      page.getByRole("searchbox", { name: "Search History" }),
+    ).toBeFocused();
+  });
+
+  test("moves between entries with the arrow keys and removes one with Delete on a desktop", async ({
+    page,
+  }) => {
+    test.skip(!isDesktop(page), "desktops move through History by key");
+    await openHistory(page);
+    await rowOf(page, 4).getByRole("link").focus();
+
+    await page.keyboard.press("ArrowDown");
+    await expect(rowOf(page, 7).getByRole("link")).toBeFocused();
+    await page.keyboard.press("Delete");
+
+    await expect(rowOf(page, 7)).toHaveCount(0);
+    await expect(page.getByText("Removed from History")).toBeVisible();
+  });
+
+  for (const theme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the ${theme} theme`, async ({
       page,
     }) => {
-      await page.emulateMedia({ colorScheme });
+      await page.emulateMedia({ colorScheme: theme });
       await openHistory(page);
-      await expect(rows(page)).toHaveCount(SESSIONS.length);
+      await expect(rows(page)).toHaveCount(BOOKS.length);
 
-      const violations = await accessibilityViolations(page);
-
-      expect(violations).toEqual([]);
+      expect(await accessibilityViolations(page)).toEqual([]);
     });
   }
 });
 
-for (const platform of ["ios", "android"] as const) {
-  test.describe(`on an ${platform} phone`, () => {
-    test.use({
-      backend: { ...READ_BACKEND, appInfo: () => fakeAppInfo(platform) },
-    });
+test.describe("before anything is read", () => {
+  test.use({ backend: booksBackend([]) });
 
-    test("sets the days and their sessions in from both sides of a phone as the board does", async ({
-      page,
-    }) => {
-      test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
-      await openHistory(page);
-
-      const firstDay = await boxOf(days(page).first());
-      const firstCard = await boxOf(days(page).first().getByRole("list"));
-
-      for (const box of [firstDay, firstCard]) {
-        expect(box.x).toBeCloseTo(PHONE_LIST_INSET, 0);
-        expect(viewportOf(page).width - (box.x + box.width)).toBeCloseTo(
-          PHONE_LIST_INSET,
-          0,
-        );
-      }
-    });
-  });
-}
-
-test.describe("with a day last week read only in a book no longer in the library", () => {
-  test.use({
-    backend: {
-      ...READ_BACKEND,
-      readingTimeBetween: () => READ_LAST_WEEK + 55 * MINUTE,
-    },
-  });
-
-  test("counts that day's time in last week's total, as the week's total counts it", async ({
+  test("says nothing is read yet, with a way to the library", async ({
     page,
   }) => {
     await openHistory(page);
 
     await expect(
-      page.getByRole("region", { name: "Last week 2 h 5 min" }),
+      page.getByRole("heading", { name: "Nothing read yet" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Books you open show up here, newest first."),
+    ).toBeVisible();
+    await page.getByRole("link", { name: "Go to the library" }).click();
+
+    await expect(page).toHaveURL(/\/$/);
+  });
+});
+
+test.describe("while History is read", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      readingHistory: () => new Promise(() => undefined),
+    },
+  });
+
+  test("shows rows in the list's own shape", async ({ page }) => {
+    await openHistory(page);
+
+    await expect(
+      page.getByRole("status", { name: "Loading History" }),
     ).toBeVisible();
   });
 });
 
-test.describe("on a device whose region starts its weeks on Monday", () => {
+test.describe("with a long history", () => {
+  const many = Array.from({ length: 2 * ENTRIES_PER_PAGE + 10 }, (_, index) =>
+    entry(
+      index + 1,
+      new Date(
+        THURSDAY_EVENING.getTime() - (index + 1) * 60 * MINUTE * 1000,
+      ).toISOString(),
+      { state: "page", page: 14, pageCount: 30 },
+    ),
+  );
+
+  test.use({ backend: booksBackend(many) });
+
+  test("reads older books as the list scrolls to its end", async ({ page }) => {
+    await openHistory(page);
+    await expect(rows(page)).toHaveCount(ENTRIES_PER_PAGE);
+
+    for (const shown of [2 * ENTRIES_PER_PAGE, many.length]) {
+      await rows(page).last().scrollIntoViewIfNeeded();
+      await expect(rows(page)).toHaveCount(shown);
+    }
+  });
+});
+
+test.describe("with a series whose title runs unbroken", () => {
   test.use({
-    locale: "en-GB",
+    backend: booksBackend([
+      {
+        ...entry(1, "2026-10-08T21:40:00.000Z", {
+          state: "page",
+          page: 3,
+          pageCount: 24,
+        }),
+        seriesTitle: UNBROKEN_TITLE,
+        bookTitle: `${UNBROKEN_TITLE} Volume 1`,
+      },
+    ]),
+  });
+
+  test("wraps an unbroken series title and its book's line inside the row", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    const row = rows(page).filter({ hasText: UNBROKEN_TITLE });
+
+    const hidden = await Promise.all(
+      [
+        row.getByText(UNBROKEN_TITLE, { exact: true }),
+        row.getByText(`${UNBROKEN_TITLE} Volume 1`),
+      ].map((line) =>
+        line.evaluate((span) => span.scrollWidth - span.clientWidth),
+      ),
+    );
+
+    expect(hidden).toEqual([0, 0]);
+  });
+});
+
+test.describe("when History can't be read", () => {
+  test.use({
     backend: {
-      ...READ_BACKEND,
-      readingWeek: (weekStart) => ({
-        ...NOTHING_READ_THIS_WEEK,
-        readSeconds: weekStart === MONDAY ? READ_THIS_WEEK : 0,
-      }),
+      ...DEFAULT_BACKEND,
+      readingHistory: () => {
+        throw new CommandFailure({
+          code: "internal",
+          message: "the library database is unreadable",
+        });
+      },
     },
   });
 
-  test("counts the time read this week from Monday", async ({ page }) => {
+  test("says History couldn't be loaded", async ({ page }) => {
     await openHistory(page);
 
-    await expect(week(page).getByRole("listitem").first()).toHaveText(
-      /3 h 12 min$/,
-    );
+    await expect(
+      page.getByText("Couldn't load your history. Try again later."),
+    ).toBeVisible();
   });
 });
 
@@ -506,15 +468,9 @@ test.describe("with Screenshot mode on", () => {
   let coverRequests = 0;
 
   test.use({
-    backend: {
-      ...READ_BACKEND,
-      readingHistory: pagedSessions(
-        SESSIONS.map((session) => ({
-          ...session,
-          cover: `thumb/v1/${session.book}/1/1`,
-        })),
-      ),
-    },
+    backend: booksBackend(
+      BOOKS.map((one) => ({ ...one, cover: `thumb/v1/${one.book}/1/1` })),
+    ),
   });
 
   test.beforeEach(async ({ page }) => {
@@ -535,493 +491,10 @@ test.describe("with Screenshot mode on", () => {
     page,
   }) => {
     await openHistory(page);
-    await expect(rows(page)).toHaveCount(SESSIONS.length);
+    await expect(rows(page)).toHaveCount(BOOKS.length);
 
-    const first = rows(page).first();
-    await expect(first).toContainText(/Series \d{2,3}.*Book 4\s*14 \/ 30/);
-    await expect(first).toContainText(/9:40\sPM/);
-    for (const link of await rows(page).getByRole("link").all()) {
-      await expect(link).not.toHaveAccessibleName(/Sample Series/);
-    }
+    await expect(rows(page).first()).toContainText(/9:40\sPM/);
     expect(await page.content()).not.toContain("Sample Series");
-    await expect(rows(page).getByRole("presentation")).toHaveCount(0);
     expect(coverRequests).toBe(0);
-  });
-});
-
-test.describe("with sessions at the widest times and lengths", () => {
-  const widest = [
-    entry({
-      number: 3,
-      startedAt: "2026-10-05T12:58:00.000Z",
-      minutes: 8 * 60 + 58,
-      readTo: ON_PAGE_14,
-      dayMinutes: 8 * 60 + 58,
-    }),
-    entry({
-      number: 5,
-      startedAt: "2026-09-30T12:58:00.000Z",
-      minutes: 118,
-      readTo: ON_PAGE_14,
-      dayMinutes: 118,
-    }),
-    entry({
-      number: 8,
-      startedAt: "2026-09-15T12:58:00.000Z",
-      minutes: 58,
-      readTo: ON_PAGE_14,
-      dayMinutes: 58,
-    }),
-  ];
-
-  test.use({
-    backend: { ...READ_BACKEND, readingHistory: pagedSessions(widest) },
-  });
-
-  test("names a day before last week by its full date", async ({ page }) => {
-    await openHistory(page);
-
-    await expect(
-      page.getByRole("region", { name: "Tuesday, September 15 58 min" }),
-    ).toBeVisible();
-  });
-
-  test("lines each session's time and length up in columns on a desktop", async ({
-    page,
-  }) => {
-    test.skip(!isDesktop(page), "desktops only");
-    await openHistory(page);
-    await page.evaluate(() => document.fonts.ready);
-    const widthsOf = (cells: Locator): Promise<number[]> =>
-      cells.evaluateAll((elements) =>
-        elements.map((element) => element.getBoundingClientRect().width),
-      );
-
-    const columns = [
-      await widthsOf(
-        rows(page)
-          .getByText(/^Started at /)
-          .locator("xpath=.."),
-      ),
-      await widthsOf(
-        rows(page)
-          .getByText(/^Read for /)
-          .locator("xpath=.."),
-      ),
-    ];
-
-    expect(columns.map((widths) => new Set(widths).size)).toEqual([1, 1]);
-  });
-
-  for (const [language, messages] of Object.entries(LANGUAGES)) {
-    test(`keeps each session's time and length on one line on a desktop in ${language}`, async ({
-      page,
-    }) => {
-      test.skip(!isDesktop(page), "desktops only");
-      await page.addInitScript((chosen) => {
-        window.localStorage.setItem("omnileaf.language", chosen);
-      }, language);
-      await openHistory(page, messages.history_title);
-      const times = rows(page)
-        .getByText(startOf(messages.history_started_at))
-        .locator("xpath=..");
-      const lengths = rows(page)
-        .getByText(startOf(messages.history_read_for))
-        .locator("xpath=..");
-      await expect(times).toHaveCount(widest.length);
-      await expect(lengths).toHaveCount(widest.length);
-      await page.evaluate(() => document.fonts.ready);
-
-      const cells = [...(await linesOf(times)), ...(await linesOf(lengths))];
-
-      expect(cells).toEqual(
-        Array.from({ length: 2 * widest.length }, () => ({
-          lines: 1,
-          fits: true,
-        })),
-      );
-    });
-  }
-});
-
-test.describe("with a series and book named past the width of a row", () => {
-  const LONG_NAME =
-    "Attack on Titan v01-v30 (Digital) (LostNerevarine+Hexer+danke-Empire) ".repeat(
-      3,
-    );
-
-  test.use({
-    backend: {
-      ...READ_BACKEND,
-      readingHistory: pagedSessions(
-        SESSIONS.map((session) => ({
-          ...session,
-          seriesTitle: LONG_NAME,
-          bookTitle: LONG_NAME,
-        })),
-      ),
-    },
-  });
-
-  test("keeps each row's button whole inside the list on a desktop", async ({
-    page,
-  }) => {
-    test.skip(!isDesktop(page), "desktops only");
-    await openHistory(page);
-    const list = days(page).first().getByRole("list");
-    const buttons = rows(page).getByRole("link").filter({ visible: true });
-    await expect(buttons).toHaveCount(SESSIONS.length);
-
-    const listEnd = (await boxOf(list)).x + (await boxOf(list)).width;
-    const buttonEnds = await buttons.evaluateAll((elements) =>
-      elements.map((element) => element.getBoundingClientRect().right),
-    );
-
-    expect(buttonEnds.every((end) => end <= listEnd + 0.5)).toBe(true);
-    expect(
-      new Set(
-        await buttons.evaluateAll((elements) =>
-          elements.map((element) => element.getBoundingClientRect().width),
-        ),
-      ).size,
-    ).toBe(1);
-  });
-
-  test("keeps a long series and book name to one line each", async ({
-    page,
-  }) => {
-    await openHistory(page);
-
-    const names = rows(page)
-      .first()
-      .getByText(LONG_NAME.trim())
-      .filter({ visible: true });
-
-    await expect(names).toHaveCount(2);
-    expect((await linesOf(names)).map(({ lines }) => lines)).toEqual([1, 1]);
-  });
-});
-
-test.describe("on an iPad as wide as a desktop", () => {
-  test.use({
-    backend: { ...READ_BACKEND, appInfo: () => fakeAppInfo("ios") },
-    viewport: { width: 1376, height: 1032 },
-  });
-
-  test("draws a session as one link, as on a phone, rather than a row with a button sized for a pointer", async ({
-    page,
-  }) => {
-    await openHistory(page);
-
-    const links = rows(page).first().getByRole("link");
-    await expect(links).toHaveCount(1);
-    await expect(links).toHaveAccessibleName(new RegExp(`^${seriesTitle(4)}`));
-  });
-});
-
-test.describe("with a long history", () => {
-  const many = Array.from({ length: 2 * ENTRIES_PER_PAGE + 10 }, (_, index) =>
-    entry({
-      number: index + 1,
-      startedAt: new Date(
-        MONDAY_EVENING.getTime() - (index + 1) * 60 * MINUTE * 1000,
-      ).toISOString(),
-      minutes: 30,
-      readTo: ON_PAGE_14,
-      dayMinutes: 300,
-    }),
-  );
-
-  test.use({
-    backend: { ...READ_BACKEND, readingHistory: pagedSessions(many) },
-  });
-
-  test("reads older sessions as the list scrolls to its end", async ({
-    page,
-  }) => {
-    await openHistory(page);
-    await expect(rows(page)).toHaveCount(ENTRIES_PER_PAGE);
-
-    for (const shown of [2 * ENTRIES_PER_PAGE, many.length]) {
-      await rows(page).last().scrollIntoViewIfNeeded();
-      await expect(rows(page)).toHaveCount(shown);
-    }
-    await expect(rows(page).last()).toContainText(seriesTitle(many.length));
-  });
-});
-
-test.describe("when history can't be read", () => {
-  test.use({
-    backend: {
-      ...DEFAULT_BACKEND,
-      readingHistory: () => {
-        throw new CommandFailure({
-          code: "internal",
-          message: "the library database is unreadable",
-        });
-      },
-    },
-  });
-
-  test("says history couldn't be loaded", async ({ page }) => {
-    await openHistory(page);
-
-    await expect(
-      page.getByText("Couldn't load your history. Try again later."),
-    ).toBeVisible();
-  });
-});
-
-test.describe("a book's reading sessions", () => {
-  const BOOK = 4;
-  const ofTheBook = [
-    SESSIONS[0],
-    entry({
-      number: BOOK,
-      startedAt: "2026-10-04T20:00:00.000Z",
-      minutes: 50,
-      readTo: { state: "page", page: 9, pageCount: 30 },
-      dayMinutes: 70,
-    }),
-    entry({
-      number: BOOK,
-      startedAt: "2026-10-02T18:30:00.000Z",
-      minutes: 38,
-      readTo: { state: "page", page: 4, pageCount: 30 },
-      dayMinutes: 38,
-    }),
-  ].flatMap((session) => (session === undefined ? [] : [session]));
-
-  test.use({
-    backend: {
-      ...READ_BACKEND,
-      readingHistory: (after, of) =>
-        pagedSessions(of.kind === "book" ? ofTheBook : SESSIONS)(after, of),
-      bookSessions: () => ({
-        sessions: 3,
-        readSeconds: 112 * MINUTE,
-        firstDay: MONDAY - 3,
-        lastDay: MONDAY,
-      }),
-    },
-  });
-
-  async function expectSessionsIn(shown: Locator): Promise<void> {
-    await expect(shown).toContainText(seriesTitle(BOOK));
-    await expect(shown.getByRole("term")).toHaveText([
-      "Time read",
-      "Sessions",
-      "First opened",
-      "Last read",
-    ]);
-    await expect(shown.getByRole("definition")).toHaveText([
-      "1 h 52 min",
-      "3",
-      "Friday, October 2",
-      "Today",
-    ]);
-    const sessions = shown.getByRole("listitem");
-    await expect(sessions).toHaveCount(3);
-    await expect(sessions.first()).toContainText(
-      /Today.*9:40\sPM · 24 min.*to page 14/,
-    );
-    await expect(sessions.last()).toContainText("to page 4");
-    await expect(
-      shown.getByRole("link", { name: "Open series" }),
-    ).toHaveAttribute("href", `/series/${seriesId(BOOK)}`);
-    await expect(shown.getByRole("link", { name: "Continue" })).toHaveAttribute(
-      "href",
-      `/read/${bookId(BOOK)}`,
-    );
-  }
-
-  test("opens in a sheet from the side by clicking a row on a desktop, and closes with Escape", async ({
-    page,
-  }) => {
-    test.skip(!isDesktop(page), "desktops only");
-    await openHistory(page);
-
-    const time = await boxOf(
-      rows(page)
-        .first()
-        .getByText(/^9:40\sPM$/),
-    );
-
-    await page.mouse.click(time.x + time.width / 2, time.y + time.height / 2);
-
-    const sheet = page.getByRole("dialog", { name: "Reading sessions" });
-    await expectSessionsIn(sheet);
-    await page.keyboard.press("Escape");
-    await expect(sheet).toHaveCount(0);
-  });
-
-  test("shows on a page of their own, with a way back to History", async ({
-    page,
-  }) => {
-    await page.clock.setFixedTime(MONDAY_EVENING);
-    await page.goto(`/history/${bookId(BOOK)}`);
-
-    await expect(
-      page.getByRole("heading", { level: 1, name: "Reading sessions" }),
-    ).toBeVisible();
-    await expectSessionsIn(page.getByRole("main"));
-    await page.getByRole("link", { name: "Back to History" }).click();
-    await expect(page).toHaveURL(/\/history$/);
-  });
-
-  for (const colorScheme of ["light", "dark"] as const) {
-    test(`has no accessibility violations in the sheet or on the page in the ${colorScheme} theme`, async ({
-      page,
-    }) => {
-      await page.emulateMedia({ colorScheme });
-      await page.clock.setFixedTime(MONDAY_EVENING);
-      if (isDesktop(page)) {
-        await page.goto("/history");
-        await page
-          .getByRole("button", { name: /^Reading sessions of / })
-          .first()
-          .click();
-      } else {
-        await page.goto(`/history/${bookId(BOOK)}`);
-      }
-      await expect(
-        page.getByRole("list", { name: "Sessions" }).getByRole("listitem"),
-      ).toHaveCount(3);
-
-      const violations = await accessibilityViolations(page);
-
-      expect(violations).toEqual([]);
-    });
-  }
-});
-
-test.describe("a session's menu", () => {
-  test.use({ backend: READ_BACKEND });
-
-  function moreFor(page: Page, number: number): Locator {
-    return page
-      .getByRole("button", { name: `More for ${bookTitle(number)}` })
-      .filter({ visible: true });
-  }
-
-  test("opens the book's reading sessions or its series from a menu on a desktop", async ({
-    page,
-  }) => {
-    test.skip(!isDesktop(page), "desktops only");
-    await openHistory(page);
-
-    await moreFor(page, 4).click();
-    await expect(page.getByRole("menuitem")).toHaveText([
-      "Reading sessions",
-      "Open series",
-    ]);
-    await page.getByRole("menuitem", { name: "Reading sessions" }).click();
-    await expect(
-      page.getByRole("dialog", { name: "Reading sessions" }),
-    ).toBeVisible();
-    await page.keyboard.press("Escape");
-    await moreFor(page, 4).click();
-    await page.getByRole("menuitem", { name: "Open series" }).click();
-
-    await expect(page).toHaveURL(new RegExp(`/series/${seriesId(4)}$`));
-  });
-
-  test("opens the book's actions in a sheet from the bottom on a phone or tablet", async ({
-    page,
-  }) => {
-    test.skip(isDesktop(page), "phones and tablets only");
-    await openHistory(page);
-
-    await moreFor(page, 7).click();
-
-    const sheet = page.getByRole("dialog", { name: seriesTitle(7) });
-    await expect(sheet.getByRole("link")).toHaveText([
-      "Read again",
-      "Reading sessions",
-      "Open series",
-    ]);
-    await expect(
-      sheet.getByRole("link", { name: "Reading sessions" }),
-    ).toHaveAttribute("href", `/history/${bookId(7)}`);
-    await expect(
-      sheet.getByRole("link", { name: "Open series" }),
-    ).toHaveAttribute("href", `/series/${seriesId(7)}`);
-  });
-
-  for (const colorScheme of ["light", "dark"] as const) {
-    test(`has no accessibility violations with it open in the ${colorScheme} theme`, async ({
-      page,
-    }) => {
-      await page.emulateMedia({ colorScheme });
-      await openHistory(page);
-
-      await moreFor(page, 4).click();
-      await expect(
-        page.getByRole(isDesktop(page) ? "menu" : "dialog"),
-      ).toBeVisible();
-      const violations = await accessibilityViolations(page);
-
-      expect(violations).toEqual([]);
-    });
-  }
-});
-
-test.describe("with a series chosen", () => {
-  test.use({
-    backend: {
-      ...READ_BACKEND,
-      historySeries: () =>
-        [1, 4, 7].map((number) => ({
-          id: seriesId(number),
-          title: seriesTitle(number),
-        })),
-      readingHistory: (after, of) =>
-        pagedSessions(
-          of.kind === "series"
-            ? SESSIONS.filter((session) => session.series === of.series)
-            : SESSIONS,
-        )(after, of),
-    },
-  });
-
-  test("shows only that series' sessions on a desktop, and every series again", async ({
-    page,
-  }) => {
-    test.skip(!isDesktop(page), "desktops only");
-    await openHistory(page);
-    const chooser = page.getByRole("combobox", { name: "Show sessions from" });
-    await expect(chooser.getByRole("option")).toHaveText([
-      "All series",
-      seriesTitle(1),
-      seriesTitle(4),
-      seriesTitle(7),
-    ]);
-
-    await chooser.selectOption({ label: seriesTitle(7) });
-
-    await expect(rows(page)).toHaveCount(1);
-    await expect(rows(page).first()).toContainText(seriesTitle(7));
-    await chooser.selectOption({ label: "All series" });
-    await expect(rows(page)).toHaveCount(SESSIONS.length);
-  });
-
-  test("names every series by its stand-in with Screenshot mode on", async ({
-    page,
-  }) => {
-    test.skip(!isDesktop(page), "desktops only");
-    await page.addInitScript(() => {
-      localStorage.setItem(
-        "omnileaf.screenshotMode",
-        JSON.stringify({ activity: { kind: "on" } }),
-      );
-    });
-    await openHistory(page);
-
-    const options = page
-      .getByRole("combobox", { name: "Show sessions from" })
-      .getByRole("option");
-
-    await expect(options).toHaveCount(4);
-    await expect(options.filter({ hasText: "Sample Series" })).toHaveCount(0);
   });
 });
