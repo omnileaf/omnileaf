@@ -16,7 +16,9 @@
   import {
     commands,
     type LibrarySearch,
+    DEFAULT_LIBRARY_VIEW,
     type LibrarySeries,
+    type LibraryView,
     type Platform,
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
@@ -27,6 +29,7 @@
   } from "#lib/library/library-listing.ts";
   import { librarySeriesList } from "#lib/library/library-series.svelte.ts";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
+  import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
   import {
     EXPANDED_QUERY,
@@ -62,6 +65,16 @@
 
   const screenshotMode = getScreenshotMode();
   const recent = new RecentSearches(browserPreferenceStore());
+  const libraryView = new StoredChoice<LibraryView>(
+    {
+      read: () => commands.libraryView(),
+      store: (chosen: LibraryView) => commands.setLibraryView(chosen),
+      fallback: DEFAULT_LIBRARY_VIEW,
+    },
+    (error) => {
+      reportError(error);
+    },
+  );
   const BACK_ICON_SIZE = 22;
   const DESKTOPS: readonly Platform[] = ["linux", "macos", "windows"];
   const isWide = new MediaQuery(EXPANDED_QUERY);
@@ -232,6 +245,10 @@
     }
   });
 
+  onMount(() => {
+    void libraryView.load();
+  });
+
   onMount(() =>
     listenForLibraryChanges(() => {
       if (isLookingFor) {
@@ -354,6 +371,10 @@
         {listId}
         activeKey={activeSeries?.id}
         onOpen={choose}
+        words={query.search.text}
+        view={libraryView.reading.kind === "read"
+          ? libraryView.reading.value
+          : undefined}
       />
     {/if}
   {/if}
