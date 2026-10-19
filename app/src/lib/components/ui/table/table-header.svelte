@@ -16,7 +16,7 @@
   bind:this={ref}
   data-slot="table-header"
   class={cn(
-    "border-be border-border bg-well text-caption font-semibold text-muted",
+    "border-be border-border text-caption font-semibold text-foreground",
     className,
   )}
   {...restProps}

@@ -10,6 +10,6 @@
 {#if onCovers.showsUnreadCount}
   <UnreadCount
     count={series.unreadCount}
-    class="absolute inset-s-badge-inset inset-bs-badge-inset px-badge-inline py-badge-block text-badge medium:inset-s-badge-inset-wide medium:inset-bs-badge-inset-wide medium:px-badge-inline-wide medium:py-badge-block-wide large:inset-s-sm large:inset-bs-sm"
+    class="absolute inset-s-badge-inset inset-bs-badge-inset flex items-center justify-center px-badge-inline text-caption min-block-xl min-inline-xl medium:inset-s-badge-inset-wide medium:inset-bs-badge-inset-wide large:inset-s-sm large:inset-bs-sm"
   />
 {/if}

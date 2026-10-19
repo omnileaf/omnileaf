@@ -81,6 +81,7 @@
   {@const isPicked = selection.has(book.id)}
   {#if selection.isSelecting}
     <label
+      data-picked={isPicked || undefined}
       class={[
         "relative flex cursor-pointer items-center gap-md ps-md pe-md min-block-book-row",
         isPicked && "bg-selected-row",

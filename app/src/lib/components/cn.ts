@@ -107,6 +107,7 @@ export const TOKEN_THEME = {
     "small-control",
     "tile",
     "toast",
+    "toast-action",
     "toast-wide",
   ],
   spacing: [
@@ -152,6 +153,7 @@ export const TOKEN_THEME = {
     "crash-screen-button",
     "crash-screen-inset",
     "crash-screen-top",
+    "crumb",
     "dialog",
     "dialog-badge",
     "dialog-button",
@@ -248,6 +250,7 @@ export const TOKEN_THEME = {
     "pill",
     "pill-inline",
     "pointer-button",
+    "pointer-minimum",
     "pointer-target",
     "preview",
     "problem-top",

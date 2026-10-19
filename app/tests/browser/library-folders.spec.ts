@@ -7,6 +7,7 @@ import {
   MEDIUM_MIN_WIDTH,
   settle,
   test,
+  tokenColour,
   transitionsOf,
   viewportOf,
   watchTransitions,
@@ -69,7 +70,6 @@ const LIBRARY_BACKEND: FakeBackend = {
   libraryFolderBookCount: () => 342,
 };
 
-const DANGER_SOFT = "rgb(246, 227, 227)";
 const DIALOG_BUTTON_HEIGHT = 40;
 const SHEET_BUTTON_HEIGHT = 52;
 const SHEET_INSET = 20;
@@ -140,6 +140,7 @@ test("removes a folder once the removal is confirmed", async ({ page }) => {
   const dialog = page.getByRole("alertdialog", {
     name: "Remove this folder?",
   });
+  await settle(dialog);
 
   await dialog.getByRole("button", { name: "Remove folder" }).click();
 
@@ -200,6 +201,7 @@ test("keeps a folder when a tap lands outside the removal question", async ({
   const folders = page.getByRole("region", { name: "Folders" });
   await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
   await expect(page.getByRole("alertdialog")).toBeVisible();
+  await settle(page.getByRole("alertdialog"));
 
   await page.mouse.click(8, 8);
 
@@ -218,6 +220,7 @@ test("keeps the removal question open when a press inside it ends outside", asyn
   const question = page.getByRole("alertdialog");
   const title = question.getByRole("heading");
   await expect(title).toBeVisible();
+  await settle(question);
   const box = await title.boundingBox();
 
   await page.mouse.move(box?.x ?? 0, box?.y ?? 0);
@@ -262,7 +265,10 @@ test("marks the removal question with a round danger badge", async ({
   const badge = page
     .getByRole("alertdialog")
     .locator("span:has(> svg.lucide-folder-minus)");
-  await expect(badge).toHaveCSS("background-color", DANGER_SOFT);
+  await expect(badge).toHaveCSS(
+    "background-color",
+    await tokenColour(page, "--color-danger-soft"),
+  );
   const { width, height } = await boxOf(badge);
   const radius = await badge.evaluate((element) =>
     parseFloat(getComputedStyle(element).borderRadius),

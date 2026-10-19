@@ -17,7 +17,15 @@ test("keeps every class of every look through the class merge", () => {
 });
 
 test.each<[ButtonLook, string[]]>([
-  ["text", ["font-semibold", "text-accent"]],
+  [
+    "text",
+    [
+      "font-medium",
+      "text-foreground",
+      "android:text-accent",
+      "ios:font-semibold",
+    ],
+  ],
   [
     "quiet",
     ["text-accent", "enabled:hover:bg-hover", "enabled:active:bg-pressed"],
@@ -30,12 +38,27 @@ test.each<[ButtonLook, string[]]>([
   ["header-control", ["rounded-full", "large:rounded-control", "large:border"]],
   [
     "row-action",
-    ["rounded-full", "text-muted", "enabled:hover:before:bg-hover"],
+    [
+      "isolate",
+      "rounded-full",
+      "text-foreground",
+      "before:z-behind",
+      "enabled:hover:before:bg-hover",
+    ],
   ],
   ["chip", ["rounded-full", "border-border", "hover:bg-hover"]],
   ["row", ["flex", "text-start", "hover:bg-hover", "active:bg-pressed"]],
-  ["inverse", ["rounded-full", "bg-foreground", "text-card"]],
-  ["dismiss", ["rounded-full", "opacity-70", "hover:before:bg-hover"]],
+  ["inverse", ["rounded-full", "bg-accent", "text-on-accent"]],
+  [
+    "dismiss",
+    [
+      "isolate",
+      "rounded-full",
+      "opacity-70",
+      "before:z-behind",
+      "hover:before:bg-hover",
+    ],
+  ],
   [
     "bar-icon",
     ["rounded-control", "text-foreground", "enabled:hover:bg-hover"],

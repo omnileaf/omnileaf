@@ -45,8 +45,17 @@ async function openInPseudoLocale(page: Page): Promise<void> {
   );
 }
 
+/** WebKit can report one document's time origin a millisecond apart from one read to the next. */
+const TIME_ORIGIN_JITTER_MS = 1;
+
 function documentStart(page: Page): Promise<number> {
   return page.evaluate(() => performance.timeOrigin);
+}
+
+async function expectSameDocument(page: Page, startedAt: number) {
+  expect(Math.abs((await documentStart(page)) - startedAt)).toBeLessThanOrEqual(
+    TIME_ORIGIN_JITTER_MS,
+  );
 }
 
 test("checks the system language until another is chosen", async ({ page }) => {
@@ -109,7 +118,7 @@ test("switches the interface to a chosen language without reloading", async ({
     page.locator(`[aria-label*="${PSEUDO_LOCALE_MARK}"]`),
   ).toHaveCount(0);
   await expect(option(page, "English")).toBeChecked();
-  expect(await documentStart(page)).toBe(startedAt);
+  await expectSameDocument(page, startedAt);
 });
 
 test("keeps the keyboard on the language it switched to", async ({ page }) => {
@@ -168,7 +177,7 @@ test("only moves the check when the chosen language is the one already showing",
   await expect(option(page, SYSTEM_OPTION).locator("svg")).toHaveCount(0);
   await expect(heading).toHaveAttribute("data-untouched");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  expect(await documentStart(page)).toBe(startedAt);
+  await expectSameDocument(page, startedAt);
 });
 
 test("names the system's own language while another is chosen", async ({

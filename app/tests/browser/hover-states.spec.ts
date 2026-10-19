@@ -11,7 +11,14 @@ import {
 } from "./controls.ts";
 import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
-import { boxOf, expect, onPlatform, settle, test } from "./fixtures.ts";
+import {
+  boxOf,
+  expect,
+  onPlatform,
+  settle,
+  test,
+  tokenColour,
+} from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 import { openViewOptions, viewOptionsButton } from "./view-options.ts";
 
@@ -64,6 +71,18 @@ async function inkOf(locator: Locator): Promise<string> {
   return locator.evaluate((element) => {
     const style = getComputedStyle(element);
     return `${style.color} ${style.opacity}`;
+  });
+}
+
+async function isIconOnTop(button: Locator): Promise<boolean> {
+  await settle(button);
+  return button.locator("svg").evaluate((icon) => {
+    const box = icon.getBoundingClientRect();
+    const hit = document.elementFromPoint(
+      box.x + box.width / 2,
+      box.y + box.height / 2,
+    );
+    return hit?.closest("svg") === icon;
   });
 }
 
@@ -121,18 +140,17 @@ test.describe("with a pointer", () => {
   test.describe("with a linked folder", () => {
     test.use({ backend: WITH_A_LINKED_FOLDER });
 
-    test("brings a row action's ink up to the foreground under the pointer", async ({
-      page,
-    }) => {
+    test("draws a row action's ink in the foreground", async ({ page }) => {
       await page.goto("/settings/library");
+
       const remove = page.getByRole("button", {
         name: "Remove Sample Comics",
       });
-      const resting = await inkOf(remove);
 
-      await remove.hover();
-
-      expect(await inkOf(remove)).not.toBe(resting);
+      await expect(remove).toHaveCSS(
+        "color",
+        await tokenColour(page, "--color-foreground"),
+      );
     });
 
     test("draws a 40px circle behind a row action under the pointer", async ({
@@ -155,6 +173,46 @@ test.describe("with a pointer", () => {
       });
       expect(await paintOf(remove, "::before")).not.toBe(resting);
       expect(circle).toEqual({ width: POINTER_TARGET, height: POINTER_TARGET });
+    });
+
+    for (const name of ["Remove Sample Comics", "Rescan Sample Comics"]) {
+      test(`keeps ${name}'s icon over its circle under the pointer`, async ({
+        page,
+      }) => {
+        await page.goto("/settings/library");
+        const action = page.getByRole("button", { name, exact: true });
+
+        await action.hover();
+
+        expect(await isIconOnTop(action)).toBe(true);
+      });
+
+      test(`keeps ${name}'s icon over its circle while pressed`, async ({
+        page,
+      }) => {
+        await page.goto("/settings/library");
+        const action = page.getByRole("button", { name, exact: true });
+        await action.hover();
+
+        await page.mouse.down();
+
+        expect(await isIconOnTop(action)).toBe(true);
+      });
+    }
+
+    test("keeps a toast's dismiss icon over its circle under the pointer", async ({
+      page,
+    }) => {
+      await page.goto("/settings/library");
+      await addFolderBesideFolders(page).click();
+      const toast = page.locator("[data-sonner-toast]");
+      await expect(toast).toBeVisible();
+      await settle(toast);
+      const dismiss = toast.getByRole("button", { name: "Dismiss" });
+
+      await dismiss.hover();
+
+      expect(await isIconOnTop(dismiss)).toBe(true);
     });
 
     for (const name of ["Remove folder", "Cancel"]) {

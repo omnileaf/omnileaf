@@ -158,6 +158,28 @@ export async function setTextScale(page: Page, scale: number): Promise<void> {
 
 type Box = NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>;
 
+/** The colour a theme token resolves to, as the browser writes computed colours, so a test follows whichever theme the app ships; naming a theme reads that theme's value of a role such as `--background`. */
+export function tokenColour(
+  page: Page,
+  token: string,
+  theme?: "light" | "dark",
+): Promise<string> {
+  return page.evaluate(
+    ([name, themed]) => {
+      const probe = document.createElement("span");
+      probe.style.color = `var(${name})`;
+      if (themed !== undefined) {
+        probe.dataset.theme = themed;
+      }
+      document.body.append(probe);
+      const colour = getComputedStyle(probe).color;
+      probe.remove();
+      return colour;
+    },
+    [token, theme] as const,
+  );
+}
+
 export async function boxOf(locator: Locator): Promise<Box> {
   const box = await locator.boundingBox();
   if (box === null) {
@@ -166,14 +188,68 @@ export async function boxOf(locator: Locator): Promise<Box> {
   return box;
 }
 
+export function targetOf(
+  locator: Locator,
+): Promise<{ width: number; height: number }> {
+  return locator.evaluate((element) => {
+    const drawn = element.getBoundingClientRect();
+    const bleed = getComputedStyle(element, "::before");
+    const hasBleed = bleed.content !== "none" && bleed.position === "absolute";
+    const bleedSize = (size: string) =>
+      hasBleed ? Number.parseFloat(size) || 0 : 0;
+    return {
+      width: Math.max(drawn.width, bleedSize(bleed.width)),
+      height: Math.max(drawn.height, bleedSize(bleed.height)),
+    };
+  });
+}
+
+const SETTLE_GRACE_MS = 2000;
+const FRAME_WAIT_MS = 50;
+
+function animationsWithin(locator: Locator): Promise<string[]> {
+  return locator.evaluate(async (element, frameWaitMs) => {
+    const nextFrame = new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    });
+    const timer = new Promise<void>((resolve) => {
+      setTimeout(resolve, frameWaitMs);
+    });
+    await Promise.race([nextFrame, timer]);
+    return element.getAnimations({ subtree: true }).map((animation) => {
+      const target =
+        animation.effect instanceof KeyframeEffect
+          ? animation.effect.target
+          : null;
+      const name =
+        animation instanceof CSSTransition
+          ? animation.transitionProperty
+          : animation instanceof CSSAnimation
+            ? animation.animationName
+            : animation.id;
+      return `${name} on ${target?.tagName.toLowerCase() ?? "?"} ${target?.getAttribute("class") ?? ""}`;
+    });
+  }, FRAME_WAIT_MS);
+}
+
+/** Finishes whatever still moves after a grace period, since headless WebKit can stop advancing its animations, and even its frames, while nothing asks for one. */
 export async function settle(locator: Locator): Promise<void> {
-  await expect
-    .poll(() =>
-      locator.evaluate(
-        (element) => element.getAnimations({ subtree: true }).length,
-      ),
-    )
-    .toBe(0);
+  try {
+    await expect
+      .poll(() => animationsWithin(locator), { timeout: SETTLE_GRACE_MS })
+      .toEqual([]);
+  } catch {
+    await locator.evaluate((element) => {
+      for (const animation of element.getAnimations({ subtree: true })) {
+        animation.finish();
+      }
+    });
+    await expect.poll(() => animationsWithin(locator)).toEqual([]);
+  }
 }
 
 function noteTransitions(): void {

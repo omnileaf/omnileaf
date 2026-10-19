@@ -13,7 +13,7 @@
 <TabsPrimitive.Trigger
   bind:ref
   class={cn(
-    "flex flex-auto items-center justify-center rounded-control px-sm text-lead font-medium min-block-segment not-aria-selected:text-muted aria-selected:bg-raised aria-selected:font-semibold aria-selected:shadow-raised",
+    "flex flex-auto items-center justify-center rounded-control px-sm text-lead font-medium min-block-segment not-aria-selected:text-foreground aria-selected:bg-raised aria-selected:font-semibold aria-selected:shadow-raised",
     className,
   )}
   {...restProps}

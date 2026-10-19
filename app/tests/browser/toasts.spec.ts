@@ -80,6 +80,33 @@ test("stacks the newest toast in front of the older one", async ({ page }) => {
   expect(behind.y + behind.height).toBeGreaterThan(front.y);
 });
 
+test("keeps each toast inside the list that holds them", async ({ page }) => {
+  const { newer, older } = await stackTwoWarnings(page);
+
+  const holder = await boxOf(
+    page.getByRole("region", { name: "Notifications F6" }).getByRole("list"),
+  );
+  for (const toast of [newer, older]) {
+    const box = await boxOf(toast);
+    expect(box.x).toBeGreaterThanOrEqual(holder.x);
+    expect(box.x + box.width).toBeLessThanOrEqual(holder.x + holder.width);
+  }
+});
+
+test.describe("in a window exactly as wide as the medium layout starts", () => {
+  test.use({ viewport: { width: MEDIUM_MIN_WIDTH, height: 800 } });
+
+  test("spans the toast across the window, as sonner lays out a phone", async ({
+    page,
+  }) => {
+    const { newer } = await stackTwoWarnings(page);
+
+    const box = await boxOf(newer);
+    expect(box.x).toBe(0);
+    expect(box.width).toBe(MEDIUM_MIN_WIDTH);
+  });
+});
+
 test("spreads the stack 8px apart while the pointer is over it", async ({
   page,
 }) => {

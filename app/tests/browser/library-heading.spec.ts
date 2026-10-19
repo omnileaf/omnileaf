@@ -481,6 +481,7 @@ test.describe("the heading as a filter changes the count", () => {
         .getByRole("button", { name: /^Filter and sort/ })
         .click();
       const panel = page.getByRole("dialog", { name: "Filter and sort" });
+      await settle(panel);
       await panel
         .getByRole("radiogroup", { name: "Unread" })
         .getByRole("radio", { name: "Only" })

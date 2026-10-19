@@ -20,6 +20,11 @@
     warning: "border-warning-edge bg-warning-soft text-on-warning",
   } satisfies Record<NoticeTone, string>;
 
+  const BODY_TONES = {
+    plain: "text-muted",
+    warning: "text-on-warning",
+  } satisfies Record<NoticeTone, string>;
+
   let {
     tone,
     icon,
@@ -47,28 +52,33 @@
     TONES[tone],
   ]}
 >
-  <span aria-hidden="true" class="flex shrink-0 self-start">
-    {@render icon()}
-  </span>
-  <div class="flex flex-1 flex-col gap-2xs min-inline-none">
-    <p class="text-label font-bold touch:max-medium:text-callout">
-      {#if typeof title === "string"}
-        {title}
-      {:else}
-        {@render title()}
+  <div class="flex flex-1 items-start gap-md min-inline-none">
+    <span
+      aria-hidden="true"
+      class="flex shrink-0 items-center text-label block-lh"
+    >
+      {@render icon()}
+    </span>
+    <div class="flex flex-1 flex-col gap-2xs min-inline-none">
+      <p class="text-label font-medium">
+        {#if typeof title === "string"}
+          {title}
+        {:else}
+          {@render title()}
+        {/if}
+      </p>
+      {#if body !== undefined}
+        <p class={["text-label", BODY_TONES[tone]]}>{body}</p>
       {/if}
-    </p>
-    {#if body !== undefined}
-      <p class="text-footnote opacity-85">{body}</p>
-    {/if}
-    {@render children?.()}
+      {@render children?.()}
+    </div>
   </div>
   {#if action !== undefined}
     <Button
       type="button"
       look="inverse"
       aria-keyshortcuts={shortcut?.keys}
-      class="px-lg text-detail max-inline-3/5 min-block-touch-target desktop:px-md desktop:min-block-compact-button"
+      class="px-lg text-label max-inline-3/5 min-block-touch-target desktop:rounded-toast-action desktop:px-sm desktop:text-caption desktop:min-block-xl"
       onclick={() => {
         onDismiss();
         action.run();
