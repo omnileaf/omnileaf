@@ -8,6 +8,7 @@ use std::{
 
 use omnileaf_db::{
     Config, Database,
+    adult_content::{adult_content, set_adult_content},
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookToRead, Cover, NewRoot, PageDimensions,
         PageRequest, PageSize, PlaceInSeries, RootId, RootKind, RootLocator, SeriesFilter,
@@ -34,13 +35,13 @@ use tokio::{
 };
 
 use crate::{
-    AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval, CategoryId,
-    CoversPerRowOutOfRange, CreatorSeries, FolderCursor, FolderId, FolderPage, FolderRescan,
-    FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, LibraryCategory,
-    LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryListing,
-    LibrarySearch, LibraryView, LocalDay, ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark,
-    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId, SeriesLabels,
-    SeriesOverview, SeriesPage, UtcOffset,
+    AdultContent, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
+    CategoryId, CoversPerRowOutOfRange, CreatorSeries, FolderCursor, FolderId, FolderPage,
+    FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries,
+    LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
+    LibraryListing, LibrarySearch, LibraryView, LocalDay, ReadMark, ReadingWeek, RescanOutcome,
+    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
+    SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -629,6 +630,21 @@ impl Library {
             .store
             .database()
             .write(move |transaction| set_library_view(transaction, &stored))
+            .await?)
+    }
+
+    pub async fn adult_content(&self) -> Result<AdultContent, LibraryError> {
+        let stored = self.store.database().read(adult_content).await?;
+        Ok(stored.map(AdultContent::from).unwrap_or_default())
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn set_adult_content(&self, content: AdultContent) -> Result<(), LibraryError> {
+        let stored = content.into();
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| set_adult_content(transaction, &stored))
             .await?)
     }
 

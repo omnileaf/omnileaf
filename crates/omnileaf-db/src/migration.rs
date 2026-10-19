@@ -59,6 +59,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0023_add_continue_row_to_library_view"),
     migration!("0024_add_fits_covers_to_width_to_library_view"),
     migration!("0025_add_category_tabs_and_grouping_to_library_view"),
+    migration!("0026_create_adult_content"),
 ];
 
 pub(crate) fn pending(

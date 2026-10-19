@@ -2,13 +2,13 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 #[cfg(debug_assertions)]
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
-    AppInfo, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval, CategoryId,
-    Core, CoversPerRow, CreatorSeries, FolderCursor, FolderId, FolderPage, FolderRescan,
-    FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, InterfaceError, LabelChanges,
-    Library, LibraryCategory, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch,
-    LibraryView, LocalDay, OpenedBook, ProbedFormat, ProjectLink, ReadMark, ReadingWeek,
-    ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
-    SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
+    AdultContent, AppInfo, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
+    CategoryId, Core, CoversPerRow, CreatorSeries, FolderCursor, FolderId, FolderPage,
+    FolderRescan, FolderScan, HistoryCursor, HistoryOf, HistoryPage, HistorySeries, InterfaceError,
+    LabelChanges, Library, LibraryCategory, LibraryFilter, LibraryFilterChoices, LibraryListing,
+    LibrarySearch, LibraryView, LocalDay, OpenedBook, ProbedFormat, ProjectLink, ReadMark,
+    ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
+    SeriesId, SeriesLabels, SeriesOverview, SeriesPage, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -73,6 +73,8 @@ macro_rules! app_commands {
             set_library_listing,
             library_view,
             set_library_view,
+            library_adult_content,
+            set_library_adult_content,
             remove_library_folder,
             library_folder_book_count,
             rescan_library_folder,
@@ -532,6 +534,21 @@ async fn library_view(library: State<'_, Library>) -> Result<LibraryView, IpcErr
 #[specta::specta]
 async fn set_library_view(library: State<'_, Library>, view: LibraryView) -> Result<(), IpcError> {
     Ok(library.set_view(view).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_adult_content(library: State<'_, Library>) -> Result<AdultContent, IpcError> {
+    Ok(library.adult_content().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn set_library_adult_content(
+    library: State<'_, Library>,
+    content: AdultContent,
+) -> Result<(), IpcError> {
+    Ok(library.set_adult_content(content).await?)
 }
 
 #[tauri::command]

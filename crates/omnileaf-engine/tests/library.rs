@@ -11,11 +11,11 @@ use std::{
 };
 
 use omnileaf_engine::{
-    AppleBookmark, CategoryId, Changed, CoversPerRow, DesktopCoversPerRow, FolderId, FolderKind,
-    Inclusion, Library, LibraryDisplay, LibraryError, LibraryFilter, LibraryFilterChoices,
-    LibraryFolder, LibraryGrouping, LibraryListing, LibrarySort, LibrarySortBy, LibraryView,
-    OnCovers, PhoneCoversPerRow, ResolvedBookmark, RootLocator, ScanProgress, SeriesLabels,
-    SortDirection, TabletCoversPerRow,
+    AdultContent, AdultTreatment, AppleBookmark, CategoryId, Changed, CoversPerRow,
+    DesktopCoversPerRow, FolderId, FolderKind, Inclusion, Library, LibraryDisplay, LibraryError,
+    LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryGrouping, LibraryListing,
+    LibrarySort, LibrarySortBy, LibraryView, OnCovers, PhoneCoversPerRow, ResolvedBookmark,
+    RootLocator, ScanProgress, SeriesLabels, SortDirection, TabletCoversPerRow,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -783,6 +783,39 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
     let reopened = open(home.path()).await;
 
     assert_eq!(reopened.view().await.unwrap(), list);
+}
+
+#[tokio::test]
+async fn shows_adult_content_counted_by_age_rating_in_a_new_library() {
+    let home = ScratchFolder::new("library-adult-new");
+
+    let content = open(home.path()).await.adult_content().await.unwrap();
+
+    assert_eq!(
+        content,
+        AdultContent {
+            treatment: AdultTreatment::Show,
+            counts_age_ratings: true,
+        }
+    );
+}
+
+#[tokio::test]
+async fn remembers_the_choice_for_adult_content_when_the_library_reopens() {
+    let home = ScratchFolder::new("library-adult-set");
+    let blurred = AdultContent {
+        treatment: AdultTreatment::Blur,
+        counts_age_ratings: false,
+    };
+    open(home.path())
+        .await
+        .set_adult_content(blurred)
+        .await
+        .unwrap();
+
+    let reopened = open(home.path()).await;
+
+    assert_eq!(reopened.adult_content().await.unwrap(), blurred);
 }
 
 #[tokio::test]
