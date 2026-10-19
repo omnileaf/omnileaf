@@ -6,16 +6,18 @@ export const ALERT_TONES = {
   plain: {
     alert: "border-border bg-card text-foreground",
     icon: "text-accent",
+    description: "text-muted",
     strongAction: "bg-foreground text-card",
   },
   warning: {
     alert: "border-warning-edge bg-warning-soft text-on-warning",
-    icon: "text-warning-strong",
+    icon: "text-on-warning",
+    description: "text-on-warning",
     strongAction: "bg-on-warning text-warning-soft",
   },
 } satisfies Record<
   AlertTone,
-  { alert: string; icon: string; strongAction: string }
+  { alert: string; icon: string; description: string; strongAction: string }
 >;
 
 export const [getAlertTone, setAlertTone] = createContext<() => AlertTone>();
