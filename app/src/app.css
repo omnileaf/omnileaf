@@ -1031,7 +1031,8 @@
   --radius-sidebar-row: var(--sidebar-row-radius);
   --spacing-sidebar-row: var(--sidebar-row-height);
   --radius-shadcn-control: var(--radius-md);
-  --radius-empty-media: var(--radius-lg);
+  --radius-empty-media: var(--empty-art-radius);
+  --radius-label-badge: var(--label-badge-radius);
   --radius-link: var(--radius-sm);
   --radius-reader-glass: var(--radius-xl);
   --radius-tooltip: var(--tooltip-radius);
@@ -1041,6 +1042,7 @@
   --blur-menu: var(--menu-blur);
   --color-menu: var(--menu-surface);
   --color-popover-surface: var(--popover-surface);
+  --color-empty-art: var(--empty-art-fill);
   --color-bottom-sheet: var(--bottom-sheet-surface);
   --color-sheet-handle: var(--sheet-handle);
   --color-menu-edge: var(--menu-edge);

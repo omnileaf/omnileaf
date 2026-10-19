@@ -98,6 +98,7 @@ export const TOKEN_THEME = {
     "ios-cell",
     "ios-segment",
     "ios-segment-item",
+    "label-badge",
     "link",
     "list",
     "list-cover",
