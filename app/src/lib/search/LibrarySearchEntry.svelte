@@ -27,7 +27,7 @@
     event: Event & { currentTarget: HTMLInputElement },
   ): void {
     void goto(
-      `${resolve("/(app)/search")}${searchQuery(event.currentTarget.value)}`,
+      resolve(`/(app)/search${searchQuery(event.currentTarget.value)}`),
     );
   }
 </script>

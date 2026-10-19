@@ -8,7 +8,10 @@
   }: { name: string; seriesCount: number; from: string } = $props();
 
   const href = $derived(
-    `${resolve("/(app)/creator/[name]", { name: encodeURIComponent(name) })}?${new URLSearchParams({ from }).toString()}`,
+    resolve(
+      `/(app)/creator/[name]?${new URLSearchParams({ from }).toString()}`,
+      { name: encodeURIComponent(name) },
+    ),
   );
 </script>
 
