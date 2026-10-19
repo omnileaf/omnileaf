@@ -463,3 +463,22 @@ test("remembers the choice for adult content", async () => {
 
   expect(await backend.libraryAdultContent()).toEqual(blurred);
 });
+
+test("lists every series in the sample's folder, and none in another", async () => {
+  const { backend } = backendFor();
+  const { folders } = await backend.libraryFolders(null);
+  const folder = folders[0]?.id;
+  if (folder === undefined) {
+    throw new Error("the sample library lists no folder");
+  }
+
+  const page = await backend.folderSeries(folder, null, NEWEST_FIRST);
+  const count = await backend.folderSeriesCount(folder, NEWEST_FIRST.filter);
+  const elsewhere = await backend.folderSeries(
+    "another-folder",
+    null,
+    NEWEST_FIRST,
+  );
+
+  expect([page.series.length, count, elsewhere.series]).toEqual([19, 19, []]);
+});

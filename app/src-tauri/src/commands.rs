@@ -48,6 +48,8 @@ macro_rules! app_commands {
             label_series,
             category_series,
             category_series_count,
+            folder_series,
+            folder_series_count,
             library_search,
             library_search_count,
             series_overview,
@@ -313,6 +315,27 @@ async fn category_series_count(
     filter: LibraryFilter,
 ) -> Result<u32, IpcError> {
     Ok(library.category_series_count(category, filter)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn folder_series(
+    library: State<'_, Library>,
+    folder: FolderId,
+    after: Option<SeriesCursor>,
+    listing: LibraryListing,
+) -> Result<SeriesPage, IpcError> {
+    Ok(library.folder_series(folder, listing, after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn folder_series_count(
+    library: State<'_, Library>,
+    folder: FolderId,
+    filter: LibraryFilter,
+) -> Result<u32, IpcError> {
+    Ok(library.folder_series_count(folder, filter).await?)
 }
 
 #[tauri::command]
