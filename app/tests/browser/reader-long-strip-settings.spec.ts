@@ -4,6 +4,7 @@ import type { FakeBackend } from "./fake-backend.ts";
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import {
   BOOK_ID,
+  BOOK_SERIES_ID,
   NOT_STARTED,
   readerBackend,
   readerBook,
@@ -29,6 +30,10 @@ const TALL_PAGES: FakeBackend = {
 test.use({ backend: TALL_PAGES });
 
 async function openSettings(page: Page): Promise<Locator> {
+  await page.addInitScript((series) => {
+    localStorage.setItem(`omnileaf.stripFound.${series}`, "seen");
+    localStorage.setItem("omnileaf.readerGuide.strip", "seen");
+  }, BOOK_SERIES_ID);
   await servePages(page);
   await page.goto(`/read/${BOOK_ID}`);
   await expect(page.locator("[data-strip]")).toBeVisible();
