@@ -67,15 +67,21 @@ export function sectionCurrent(
 
 const PREFERENCES: readonly SettingsSection[] = [
   {
-    route: "/(app)/settings/library",
-    label: m.library_title,
-    icon: LibraryGlyph,
+    route: "/(app)/settings/general",
+    label: m.general_title,
+    icon: Settings2,
     tone: "accent",
   },
   {
     route: "/(app)/settings/appearance",
     label: m.appearance_title,
     icon: Palette,
+    tone: "accent",
+  },
+  {
+    route: "/(app)/settings/library",
+    label: m.library_title,
+    icon: LibraryGlyph,
     tone: "accent",
   },
   {
@@ -88,12 +94,6 @@ const PREFERENCES: readonly SettingsSection[] = [
     route: "/(app)/settings/privacy",
     label: m.privacy_title,
     icon: Shield,
-    tone: "accent",
-  },
-  {
-    route: "/(app)/settings/general",
-    label: m.general_title,
-    icon: Settings2,
     tone: "accent",
   },
 ];

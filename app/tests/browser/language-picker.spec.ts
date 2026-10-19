@@ -286,9 +286,7 @@ test.describe("on a desktop", () => {
         .getByRole("navigation", { name: "Settings sections" })
         .getByRole("link", { name: "General" }),
     ).toHaveAttribute("aria-current", "true");
-    await expect(
-      page.getByRole("link", { name: "Back to General" }),
-    ).toBeHidden();
+    await expect(page.locator("a[data-back-link]")).toBeHidden();
   });
 
   test("leads back to General through a link under 600px", async ({ page }) => {

@@ -18,11 +18,14 @@
     class="hidden shrink-0 flex-col gap-lg border-e border-border px-md pbs-page-top pbe-xl two-pane:flex two-pane:inline-fit two-pane:max-inline-settings-list-widest two-pane:min-inline-settings-list"
   >
     <p
-      class="mbe-xs px-md text-page-title font-bold tracking-tight wrap-break-word"
+      class="mbe-xs px-md text-page-title font-bold tracking-tight wrap-break-word desktop:mbe-none desktop:px-sm desktop:text-caption desktop:font-semibold desktop:tracking-normal desktop:text-muted"
     >
       {m.settings_title()}
     </p>
-    <nav aria-label={m.settings_sections_label()} class="flex flex-col gap-lg">
+    <nav
+      aria-label={m.settings_sections_label()}
+      class="flex flex-col gap-lg desktop:-mbs-md desktop:gap-2xs"
+    >
       {#each SETTINGS_GROUPS as group, index (index)}
         <ul class="flex flex-col gap-2xs">
           {#each group as section (section.route)}
@@ -35,13 +38,16 @@
                 href={resolve(section.route)}
                 aria-current={current}
                 class={[
-                  "flex items-center gap-md rounded-row px-md text-label transition-control min-block-touch-target desktop:min-block-settings-row",
+                  "flex items-center gap-md rounded-row px-md text-label transition-control min-block-touch-target desktop:gap-sm desktop:rounded-sidebar-row desktop:px-sm desktop:text-small desktop:min-block-sidebar-row",
                   current !== undefined
-                    ? "bg-accent-soft font-bold text-accent"
-                    : "font-medium text-sidebar-ink hover:bg-hover active:bg-pressed",
+                    ? "bg-accent-soft font-bold text-accent desktop:bg-sidebar-accent desktop:font-medium desktop:text-on-sidebar-accent"
+                    : "font-medium text-sidebar-ink hover:bg-hover active:bg-pressed desktop:font-regular",
                 ]}
               >
-                <section.icon size={ICON_SIZE} class="shrink-0" />
+                <section.icon
+                  size={ICON_SIZE}
+                  class="shrink-0 desktop:block-sidebar-icon desktop:inline-sidebar-icon"
+                />
                 <span
                   data-label={section.label()}
                   class="room-for-bold-label wrap-break-word min-inline-none"
