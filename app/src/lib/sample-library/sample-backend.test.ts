@@ -162,3 +162,22 @@ test("shows a series with its books gone when asked to", async () => {
     [],
   ]);
 });
+
+test("relates Sample Series 04 to the series the boards draw beside it", async () => {
+  const { backend } = backendFor();
+
+  const overview = await backend.seriesOverview(sampleSeriesId(4));
+
+  expect(
+    overview.related.map(({ title, reason, readCount, bookCount }) => [
+      title,
+      reason,
+      readCount,
+      bookCount,
+    ]),
+  ).toEqual([
+    ["Sample Series 07", { kind: "sameWriter" }, 3, 5],
+    ["Sample Series 06", { kind: "sharedTag", tag: "Slice of life" }, 7, 9],
+    ["Sample Series 01", { kind: "sameWriter" }, 9, 12],
+  ]);
+});
