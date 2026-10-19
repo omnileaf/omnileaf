@@ -16,8 +16,8 @@
 
   import {
     QUICK_SETTING_ICON_SIZE,
+    QUICK_SETTING_LIT,
     QUICK_SETTING_LOOK,
-    QUICK_SETTING_ON,
   } from "#lib/reader/quick-setting.ts";
   import {
     DIRECTION_CHOICES,
@@ -69,7 +69,7 @@
   <DropdownMenu.Trigger
     class={[
       QUICK_SETTING_LOOK,
-      reading.direction === "rightToLeft" && QUICK_SETTING_ON,
+      reading.direction === "rightToLeft" && QUICK_SETTING_LIT,
     ]}
   >
     <ArrowLeftRight
