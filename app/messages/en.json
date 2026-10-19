@@ -1387,6 +1387,8 @@
   "edit_details_from_file_quoted": "From the file: “{value}”",
   "edit_details_from_file_listed": "From the file: {values}",
   "edit_details_file_title": "The file’s title",
+  "edit_details_title_left_empty": "Left empty, so the file’s title shows: “{value}”. Type to set your own.",
+  "edit_details_summary_left_empty": "Left empty, so the file’s summary shows. Type to set your own.",
   "edit_details_person": "{role} · {name}",
   "edit_details_remove_person": "Remove {name} as {role}",
   "edit_details_remove_named": "Remove {name}",
