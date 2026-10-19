@@ -68,6 +68,13 @@ export const commands = {
 	historySeries: () => typedError<HistorySeries[], IpcError>(__TAURI_INVOKE("history_series")),
 	readingTimeBetween: (firstDay: number, lastDay: number) => typedError<number, IpcError>(__TAURI_INVOKE("reading_time_between", { firstDay, lastDay })),
 	bookReadTime: (id: string & { readonly __brand: "BookId" }) => typedError<number, IpcError>(__TAURI_INVOKE("book_read_time", { id })),
+	readingSummary: (id: string & { readonly __brand: "BookId" }) => typedError<{
+	readSeconds: number,
+	/**  The book's length when it was last read. */
+	pageCount: number,
+	/**  The time spent spread over the pages read to, absent while no time is. */
+	secondsPerPage: number | null,
+} | null, IpcError>(__TAURI_INVOKE("reading_summary", { id })),
 	orientScreen: (orientation: ScreenOrientation) => typedError<null, IpcError>(__TAURI_INVOKE("orient_screen", { orientation })),
 	changeFullScreen: (change: FullScreenChange) => typedError<boolean, IpcError>(__TAURI_INVOKE("change_full_screen", { change })),
 	libraryListing: () => typedError<LibraryListing, IpcError>(__TAURI_INVOKE("library_listing")),
@@ -532,6 +539,15 @@ export type ReadingDirection = "leftToRight" | "rightToLeft";
 export type ReadingSaved = {
 	book: string & { readonly __brand: "BookId" },
 	series: string & { readonly __brand: "SeriesId" },
+};
+
+/**  A book's reading added up for the summary at its end. */
+export type ReadingSummary = {
+	readSeconds: number,
+	/**  The book's length when it was last read. */
+	pageCount: number,
+	/**  The time spent spread over the pages read to, absent while no time is. */
+	secondsPerPage: number | null,
 };
 
 export type ReadingWeek = {

@@ -78,7 +78,7 @@ pub use external_storage::{storage_by_device, storage_in_mountinfo, storage_of_w
 pub use folder_watch::{AppFiles, FolderWatch, FolderWatchSwitch};
 pub use history::{
     BookSessions, HistoryCursor, HistoryEntry, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
-    LocalDay, ReadTo, ReadingDay, ReadingWeek,
+    LocalDay, ReadTo, ReadingDay, ReadingSummary, ReadingWeek,
 };
 pub use lane::LaneStopped;
 pub use library::{Library, LibraryError, LibraryFolders, OpenTree};
