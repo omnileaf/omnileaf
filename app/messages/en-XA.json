@@ -740,6 +740,26 @@
   "report_saved_in_files_tablet": "⟦Íñ Ƒíļéš › Öñ Ṁý íÞáð › Öɱñíļéáƒ › Ŕéþöŕţš·················⟧",
   "report_save_failed": "⟦Çöûļðñ'ţ šáṽé ţĥé ŕéþöŕţ. Ţŕý áĝáíñ.···············⟧",
   "report_folder_unavailable": "⟦Çöûļðñ'ţ öþéñ ţĥé ƒöļðéŕ. Ţŕý áĝáíñ.···············⟧",
+  "your_reports_title": "⟦Ýöûŕ ŕéþöŕţš·····⟧",
+  "your_reports_intro_phone": "⟦Éáçĥ ŕéþöŕţ ĥáš á ŕáñðöɱ çöðé ķéþţ öñ ţĥíš þĥöñé; ñöţĥíñĝ éļšé íðéñţíƒíéš ýöû.································⟧",
+  "your_reports_intro_tablet": "⟦Éáçĥ ŕéþöŕţ ĥáš á ŕáñðöɱ çöðé ķéþţ öñ ţĥíš ţáƀļéţ; ñöţĥíñĝ éļšé íðéñţíƒíéš ýöû.································⟧",
+  "your_reports_intro_computer": "⟦Éáçĥ ŕéþöŕţ ĥáš á ŕáñðöɱ çöðé ķéþţ öñ ţĥíš çöɱþûţéŕ; ñöţĥíñĝ éļšé íðéñţíƒíéš ýöû.·································⟧",
+  "your_reports_sent": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šéñţ·········⟧",
+        "countPlural=other": "⟦{formattedCount} šéñţ·········⟧"
+      }
+    }
+  ],
+  "your_reports_code": "⟦Çöðé {code}·····⟧",
+  "your_reports_none": "⟦Ñö ŕéþöŕţš ýéţ.······⟧",
   "about_licences": "⟦Öþéñ-šöûŕçé ļíçéñçéš········⟧",
   "about_licences_hint": "⟦Ţĥé þáçķáĝéš Öɱñíļéáƒ íš ƀûíļţ ŵíţĥ··············⟧",
   "licences_intro": [

@@ -740,6 +740,26 @@
   "report_saved_in_files_tablet": "In Files › On My iPad › Omnileaf › Reports",
   "report_save_failed": "Couldn't save the report. Try again.",
   "report_folder_unavailable": "Couldn't open the folder. Try again.",
+  "your_reports_title": "Your reports",
+  "your_reports_intro_phone": "Each report has a random code kept on this phone; nothing else identifies you.",
+  "your_reports_intro_tablet": "Each report has a random code kept on this tablet; nothing else identifies you.",
+  "your_reports_intro_computer": "Each report has a random code kept on this computer; nothing else identifies you.",
+  "your_reports_sent": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} sent",
+        "countPlural=other": "{formattedCount} sent"
+      }
+    }
+  ],
+  "your_reports_code": "Code {code}",
+  "your_reports_none": "No reports yet.",
   "about_licences": "Open-source licences",
   "about_licences_hint": "The packages Omnileaf is built with",
   "licences_intro": [
