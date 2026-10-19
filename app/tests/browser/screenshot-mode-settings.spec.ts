@@ -116,6 +116,8 @@ test("sets the intro 8px above its card", async ({ page }) => {
   expect(card.y - (intro.y + intro.height)).toBe(INTRO_GAP);
 });
 
+const NARROW_DESKTOP_WIDTHS = [360, 390, 840] as const;
+
 test.describe("in a narrow desktop window", () => {
   test.use({ viewport: { width: 360, height: 800 } });
   test.skip(({ isMobile }) => isMobile, "desktop windows");
@@ -139,6 +141,32 @@ test.describe("in a narrow desktop window", () => {
       cardBox.x + cardBox.width,
     );
   });
+
+  for (const width of NARROW_DESKTOP_WIDTHS) {
+    test.describe(`${String(width)}px wide`, () => {
+      test.use({ viewport: { width, height: 800 } });
+
+      test("keeps the keyboard shortcut's keys and Change inside their card", async ({
+        page,
+      }) => {
+        await page.goto("/settings/privacy/screenshot-mode");
+        const card = page.getByRole("region", { name: "Turn it on quickly" });
+
+        const lastKey = await boxOf(card.locator("kbd").last());
+        const change = await boxOf(
+          card.getByRole("button", { name: "Change the keyboard shortcut" }),
+        );
+        const cardBox = await boxOf(card);
+
+        expect(lastKey.x + lastKey.width).toBeLessThanOrEqual(
+          cardBox.x + cardBox.width,
+        );
+        expect(change.x + change.width).toBeLessThanOrEqual(
+          cardBox.x + cardBox.width,
+        );
+      });
+    });
+  }
 });
 
 test("says what it changes before the switch", async ({ page }) => {
@@ -157,25 +185,6 @@ test("the keyboard shortcut is listed on a computer", async ({ page }) => {
   await expect(
     page.getByRole("region", { name: "Turn it on quickly" }),
   ).toContainText("Keyboard shortcut");
-});
-
-test.describe("in a narrow desktop window", () => {
-  test.use({ viewport: { width: 360, height: 800 } });
-  test.skip(({ isMobile }) => isMobile, "desktop windows");
-
-  test("keeps the keyboard shortcut's keys inside their card", async ({
-    page,
-  }) => {
-    await page.goto("/settings/privacy/screenshot-mode");
-    const card = page.getByRole("region", { name: "Turn it on quickly" });
-
-    const lastKey = await boxOf(card.locator("kbd").last());
-    const cardBox = await boxOf(card);
-
-    expect(lastKey.x + lastKey.width).toBeLessThanOrEqual(
-      cardBox.x + cardBox.width,
-    );
-  });
 });
 
 const SHORTCUT_HINTS = [
