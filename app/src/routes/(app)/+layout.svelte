@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { afterNavigate } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
+  import AppKeyboardShortcuts from "#lib/keyboard/AppKeyboardShortcuts.svelte";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import AppNavigation from "#lib/navigation/AppNavigation.svelte";
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
@@ -17,7 +19,8 @@
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import QuickOpen from "#lib/search/QuickOpen.svelte";
   import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
-  import { shortcut } from "#lib/shortcut.ts";
+  import { isPointer } from "#lib/page/platform.ts";
+  import { type Shortcut, shortcut } from "#lib/shortcut.ts";
 
   import type { LayoutProps } from "./$types";
 
@@ -32,6 +35,27 @@
   const backGoesUp = setBackGoesUp(makeBackGoUp());
   const quickOpen = new QuickOpenState();
   const sidebar = setSidebarSetting(sidebarSettingForDocument());
+  let isShowingShortcuts = $state(false);
+  const keyboardOnlyShortcuts = $derived<readonly Shortcut[]>(
+    isPointer(data.appInfo.platform)
+      ? [
+          {
+            key: "?",
+            run: () => {
+              isShowingShortcuts = true;
+            },
+          },
+          {
+            key: ",",
+            command: data.appInfo.platform,
+            shift: false,
+            run: () => {
+              void goto(resolve("/(app)/settings"));
+            },
+          },
+        ]
+      : [],
+  );
 
   afterNavigate(({ type }) => {
     const isProblem = page.error !== null;
@@ -52,6 +76,7 @@
       quickOpen.open();
     },
   })}
+  {@attach shortcut(...keyboardOnlyShortcuts)}
   {@attach shortcut({
     key: "b",
     command: data.appInfo.platform,
@@ -91,6 +116,13 @@
     {/key}
   </div>
 </div>
+<AppKeyboardShortcuts
+  isOpen={isShowingShortcuts}
+  platform={data.appInfo.platform}
+  onClose={() => {
+    isShowingShortcuts = false;
+  }}
+/>
 {#key language.resolved}
   <QuickOpen
     platform={data.appInfo.platform}
