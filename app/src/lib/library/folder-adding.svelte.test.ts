@@ -92,3 +92,22 @@ test("names the folder being added until its scan ends", async () => {
     undefined,
   ]);
 });
+
+test("adds a dropped folder through its own command without asking first", async () => {
+  const { addFolder, picks } = countingPicks();
+  const notices = new Notices();
+  let asked = 0;
+  const adding = new FolderAdding(
+    addFolder,
+    () => notices,
+    () => {},
+    () => {
+      asked += 1;
+      return Promise.resolve(true);
+    },
+  );
+
+  await adding.addWith(() => Promise.resolve({ status: "ok", data: SCAN }));
+
+  expect([asked, picks(), adding.outcome.kind]).toEqual([0, 0, "scanned"]);
+});

@@ -1001,6 +1001,16 @@
   "library_files_icloud_drive": "iCloud Drive",
   "library_files_on_my_iphone": "On My iPhone",
   "library_files_on_my_ipad": "On My iPad",
+  "first_launch_drop_title": "Drop folders here",
+  "first_launch_drop_to_link": "Drop to link {name}",
+  "first_launch_drop_to_link_many": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "Drop to link {formattedCount} folders"
+      }
+    }
+  ],
   "first_launch_ready_title": "You're all set",
   "first_launch_ready_body": "Your library is ready. Add or remove folders any time in Settings › Library.",
   "first_launch_ready_finding_body": "Omnileaf is still finding books. You can open your library now; scanning carries on.",
