@@ -3,13 +3,13 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AdultContent, AppInfo, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
-    CategoryId, Core, CoversPerRow, CreatorSeries, FolderCursor, FolderId, FolderPage,
+    CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits, FolderCursor, FolderId, FolderPage,
     FolderRescan, FolderScan, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
     InterfaceError, LabelChanges, Library, LibraryCategory, LibraryError, LibraryFilter,
     LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView,
     LocalDay, MissingFolder, OpenedBook, ProbedFormat, ProjectLink, ReadMark, ReadingWeek,
-    ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesId,
-    SeriesLabels, SeriesOverview, SeriesPage, SpellingSuggestion, UtcOffset,
+    ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
+    SeriesId, SeriesLabels, SeriesOverview, SeriesPage, SpellingSuggestion, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -47,6 +47,9 @@ macro_rules! app_commands {
             library_filter_choices,
             series_labels,
             label_series,
+            keeps_detail_edits,
+            series_details,
+            edit_series_details,
             library_tags,
             rename_library_tag,
             remove_library_tag,
@@ -345,6 +348,36 @@ async fn series_labels(
 )]
 fn label_series(series: Vec<SeriesId>, changes: LabelChanges) -> Result<(), IpcError> {
     Err(IpcError::labels_not_kept())
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+fn keeps_detail_edits(library: State<'_, Library>) -> bool {
+    library.keeps_detail_edits()
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn series_details(
+    library: State<'_, Library>,
+    series: SeriesId,
+) -> Result<SeriesDetails, IpcError> {
+    Ok(library.series_details(series).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    unused_variables,
+    clippy::needless_pass_by_value,
+    reason = "the library keeps no edits to series details yet, so they have nowhere to go"
+)]
+fn edit_series_details(series: SeriesId, edits: DetailEdits) -> Result<(), IpcError> {
+    Err(IpcError::details_not_kept())
 }
 
 #[tauri::command]

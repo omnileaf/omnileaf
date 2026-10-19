@@ -718,3 +718,102 @@ test("fails to read History when the library can't be read", async () => {
     backend.readingHistory(null, { kind: "books", matching: "" }),
   ).rejects.toThrow();
 });
+
+test("keeps edits to a series' details", async () => {
+  const { backend } = backendFor();
+
+  expect(await backend.keepsDetailEdits()).toBe(true);
+});
+
+test("gives a series' details as its files say, with nothing edited", async () => {
+  const { backend } = backendFor();
+
+  const details = await backend.seriesDetails(sampleSeriesId(4));
+
+  expect(details).toEqual({
+    title: { fromFile: "Sample Series 04", edited: null },
+    people: {
+      fromFile: [{ name: "Author A", role: "storyAndArt" }],
+      edited: null,
+    },
+    tags: {
+      fromFile: ["Slice of life", "Seinen", "Sea", "Letters"],
+      edited: null,
+    },
+    summary: {
+      fromFile:
+        "A lighthouse keeper’s apprentice spends a winter at the harbour gate, writing letters to a sister across the northern sea.",
+      edited: null,
+    },
+    isMarkedAdult: false,
+    isRatedAdult: false,
+  });
+});
+
+test("shows the edited details over the files' everywhere the series appears", async () => {
+  const { backend } = backendFor();
+  const series = sampleSeriesId(4);
+
+  await backend.editSeriesDetails(series, {
+    title: "The Harbour Gate",
+    people: [{ name: "Author C", role: "art" }],
+    tags: ["Seinen"],
+    summary: "Letters across the sea.",
+    isMarkedAdult: true,
+  });
+  const overview = await backend.seriesOverview(series);
+  const listed = (await backend.librarySeries(null, NEWEST_FIRST)).series.find(
+    ({ id }) => id === series,
+  );
+
+  expect({
+    title: overview.title,
+    creators: overview.creators.map(({ name, role }) => [name, role]),
+    tags: overview.tags,
+    summary: overview.summary,
+    listed: [listed?.title, listed?.isAdult],
+    edited: (await backend.seriesDetails(series)).title,
+  }).toEqual({
+    title: "The Harbour Gate",
+    creators: [["Author C", "art"]],
+    tags: ["Seinen"],
+    summary: "Letters across the sea.",
+    listed: ["The Harbour Gate", true],
+    edited: { fromFile: "Sample Series 04", edited: "The Harbour Gate" },
+  });
+});
+
+test("goes back to the file's value for each detail left out", async () => {
+  const { backend } = backendFor();
+  const series = sampleSeriesId(4);
+  await backend.editSeriesDetails(series, {
+    title: "The Harbour Gate",
+    people: [],
+    tags: [],
+    summary: "Letters across the sea.",
+    isMarkedAdult: true,
+  });
+
+  await backend.editSeriesDetails(series, {
+    title: null,
+    people: null,
+    tags: null,
+    summary: null,
+    isMarkedAdult: false,
+  });
+  const overview = await backend.seriesOverview(series);
+
+  expect([
+    overview.title,
+    overview.tags.length,
+    overview.creators.length,
+  ]).toEqual(["Sample Series 04", 4, 1]);
+});
+
+test("says the files rate a series 18+", async () => {
+  const { backend } = backendFor();
+
+  expect((await backend.seriesDetails(sampleSeriesId(13))).isRatedAdult).toBe(
+    true,
+  );
+});

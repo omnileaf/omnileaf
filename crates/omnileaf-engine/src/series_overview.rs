@@ -1,5 +1,5 @@
 use omnileaf_db::catalog::{self, BookSummary};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::{
@@ -67,7 +67,7 @@ pub struct CreatorSeries {
     pub role: Option<CreatorRole>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum CreatorRole {
     Story,
