@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
 
   import { goto } from "$app/navigation";
+  import type { ResolvedPathname } from "$app/types";
   import { assertNever } from "#lib/assert-never.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
   import { lastUnfinishedBookPage } from "#lib/history/last-book.ts";
@@ -24,7 +25,12 @@
   }
 
   async function continueReading(): Promise<void> {
-    const page = await lastUnfinishedBookPage();
+    await openBookPage(await lastUnfinishedBookPage());
+  }
+
+  async function openBookPage(
+    page: ResolvedPathname | undefined,
+  ): Promise<void> {
     if (page !== undefined) {
       await goto(page);
     }

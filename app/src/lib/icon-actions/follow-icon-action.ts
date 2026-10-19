@@ -1,11 +1,12 @@
 import { resolve } from "$app/paths";
+import type { ResolvedPathname } from "$app/types";
 import { assertNever } from "#lib/assert-never.ts";
 import type { IconAction } from "#lib/ipc/bindings.ts";
 
 export interface IconActionTargets {
   readonly toggleScreenshotMode: () => Promise<void>;
-  readonly lastUnfinishedBookPage: () => Promise<string | undefined>;
-  readonly open: (page: string) => Promise<void>;
+  readonly lastUnfinishedBookPage: () => Promise<ResolvedPathname | undefined>;
+  readonly open: (page: ResolvedPathname) => Promise<void>;
 }
 
 async function continueReading(targets: IconActionTargets): Promise<void> {

@@ -9,6 +9,7 @@
   } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
+  import type { ResolvedPathname } from "$app/types";
   import { cn } from "#lib/components/cn.ts";
   import {
     Breadcrumb,
@@ -49,7 +50,7 @@
     onSettings,
     onFullScreen,
   }: {
-    seriesHref: string;
+    seriesHref: ResolvedPathname;
     platform: Platform;
     seriesTitle: string;
     bookTitle: string;
