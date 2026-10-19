@@ -7,10 +7,10 @@ use omnileaf_engine::{
     FolderRescan, FolderScan, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
     InterfaceError, LabelChanges, Library, LibraryCategory, LibraryError, LibraryFilter,
     LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView,
-    LocalDay, MissingFolder, OpenedBook, ProbedFormat, ProjectLink, ReadMark, ReadingSummary,
-    ReadingWeek, ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
-    SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, SpellingSuggestion,
-    UtcOffset,
+    LocalDay, LogStandIns, MissingFolder, OpenedBook, ProbedFormat, ProblemReport,
+    ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary, ReadingWeek, RecentLog,
+    ResourceRouter, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
+    SeriesId, SeriesLabels, SeriesOverview, SeriesPage, SpellingSuggestion, UtcOffset,
 };
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -112,6 +112,7 @@ macro_rules! app_commands {
             set_scheduled_rescans,
             copy_version_details,
             open_project_link,
+            problem_report,
             offer_saved_crash_report,
             offer_interface_error_report,
             send_crash_report,
@@ -863,6 +864,21 @@ async fn open_project_link(app: AppHandle, link: ProjectLink) -> Result<(), IpcE
     app.opener()
         .open_url(link.url(), None::<&str>)
         .map_err(|error| IpcError::browser_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn problem_report(app: AppHandle) -> Result<ProblemReportPreview, IpcError> {
+    let stand_ins = match app.try_state::<Library>() {
+        Some(library) => library.log_stand_ins().await?,
+        None => LogStandIns::default(),
+    };
+    off_the_runtime(move || {
+        let details = version_details::current(app.state::<Core>().app_info().clone());
+        let logged = app.state::<RecentLog>().lines();
+        Ok(ProblemReport::new(details, &logged, &stand_ins).preview())
+    })
+    .await
 }
 
 #[tauri::command]
