@@ -1179,6 +1179,28 @@
   "reader_guide_click_body_rtl": "Click the left third for the next page and the right third to go back. Click the middle to show the controls. ← and Space work too.",
   "reader_guide_done": "Got it",
   "reader_shortcuts_close": "Close keyboard shortcuts",
+  "reader_jump_to_book": "Jump to a book",
+  "reader_jump_close": "Close Jump to a book",
+  "reader_jump_loading": "Loading the series' books",
+  "reader_jump_subtitle": [
+    {
+      "declarations": [
+        "input series",
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{series} · {formattedCount} book",
+        "countPlural=other": "{series} · {formattedCount} books"
+      }
+    }
+  ],
+  "reader_jump_reading": "Reading",
+  "reader_jump_file_missing": "File missing: moved or deleted",
+  "reader_jump_or_close": "Jump to a book, or close it",
+  "reader_shortcuts_typing": "While you type in a field, letter keys such as G type; Esc there clears the text first, then closes the panel.",
   "reader_shortcuts_turning": "Turning pages",
   "reader_shortcuts_reader": "Reader",
   "reader_shortcuts_zoom": "Zoom",
