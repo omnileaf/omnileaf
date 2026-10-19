@@ -193,7 +193,7 @@ test("keeps Settings at the far end of the rail and the sidebar", async ({
 });
 
 for (const { platform, rowHeight, iconSize } of [
-  { platform: "linux", rowHeight: 40, iconSize: 20 },
+  { platform: "linux", rowHeight: 32, iconSize: 16 },
   { platform: "android", rowHeight: 48, iconSize: 22 },
 ] as const) {
   test.describe(`on ${platform}`, () => {

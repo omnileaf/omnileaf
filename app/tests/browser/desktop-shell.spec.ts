@@ -1,0 +1,191 @@
+import type { Locator, Page } from "@playwright/test";
+
+import {
+  accessibilityViolations,
+  boxOf,
+  DEFAULT_BACKEND,
+  EXPANDED_MIN_WIDTH,
+  expect,
+  fakeAppInfo,
+  test,
+  tokenColour,
+  viewportOf,
+} from "./fixtures.ts";
+import { pagedSeries, sampleSeries } from "./series-catalog.ts";
+
+const SIDEBAR_WIDTH = 256;
+const HIDDEN_SIDEBAR_WIDTH = 56;
+const ITEM_HEIGHT = 32;
+const MACOS_ITEM_HEIGHT = 28;
+const MACOS_ITEM_CORNER = "6px";
+const WINDOWS_ITEM_HEIGHT = 36;
+const WINDOWS_ITEM_CORNER = "4px";
+const TOOLBAR_HEIGHT = 56;
+const TOOLBAR_TITLE_SIZE = "16px";
+const SERIES = sampleSeries(60);
+
+const LIBRARY_BACKEND = {
+  ...DEFAULT_BACKEND,
+  librarySeries: pagedSeries(() => SERIES),
+  librarySeriesCount: () => SERIES.length,
+};
+
+function navigation(page: Page): Locator {
+  return page.getByRole("navigation", { name: "Main" });
+}
+
+function toolbar(page: Page): Locator {
+  return page.locator("[data-page-toolbar]");
+}
+
+async function openLibrary(page: Page): Promise<void> {
+  await page.goto("/");
+  test.skip(
+    viewportOf(page).width < EXPANDED_MIN_WIDTH ||
+      test.info().project.use.isMobile === true,
+    "the desktop's sidebar",
+  );
+  await expect(page.getByRole("list", { name: "Series" })).toBeVisible();
+}
+
+test.describe("on a desktop", () => {
+  test.use({ backend: LIBRARY_BACKEND });
+
+  test("lists the sections in a 256px sidebar with 32px rows", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    const library = navigation(page).getByRole("link", { name: "Library" });
+
+    const sidebar = await boxOf(navigation(page));
+    const row = await boxOf(library);
+
+    expect(sidebar.width).toBe(SIDEBAR_WIDTH);
+    expect(row.height).toBe(ITEM_HEIGHT);
+    await expect(navigation(page)).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--sidebar"),
+    );
+    await expect(library).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--sidebar-accent"),
+    );
+    await expect(library).toHaveCSS("font-weight", "500");
+  });
+
+  test("hides the sidebar to its icons and brings it back", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+
+    await page.getByRole("button", { name: "Hide the sidebar" }).click();
+
+    expect((await boxOf(navigation(page))).width).toBe(HIDDEN_SIDEBAR_WIDTH);
+    await expect(
+      navigation(page).getByRole("link", { name: "History" }),
+    ).toBeVisible();
+    await page.reload();
+    expect((await boxOf(navigation(page))).width).toBe(HIDDEN_SIDEBAR_WIDTH);
+    await page.getByRole("button", { name: "Show the sidebar" }).click();
+    expect((await boxOf(navigation(page))).width).toBe(SIDEBAR_WIDTH);
+  });
+
+  test("hides and shows the sidebar with Ctrl B", async ({ page }) => {
+    await openLibrary(page);
+
+    await page.keyboard.press("Control+b");
+
+    expect((await boxOf(navigation(page))).width).toBe(HIDDEN_SIDEBAR_WIDTH);
+    await page.keyboard.press("Control+b");
+    expect((await boxOf(navigation(page))).width).toBe(SIDEBAR_WIDTH);
+  });
+
+  test("puts the page's title and tools in a 56px toolbar that stays as the page scrolls", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    const title = page.getByRole("heading", { level: 1, name: "Library" });
+
+    await page.locator("main").evaluate((main) => {
+      main.scrollTo({ top: 600 });
+    });
+
+    const bar = await boxOf(toolbar(page));
+    expect(bar.height).toBe(TOOLBAR_HEIGHT);
+    expect(bar.y).toBe(0);
+    await expect(title).toHaveCSS("font-size", TOOLBAR_TITLE_SIZE);
+    await expect(title).toHaveCSS("font-weight", "600");
+    await expect(title).toBeInViewport();
+  });
+
+  test("has no accessibility violations with the sidebar hidden", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await page.getByRole("button", { name: "Hide the sidebar" }).click();
+
+    const violations = await accessibilityViolations(page);
+
+    expect(violations).toEqual([]);
+  });
+});
+
+test.describe("on macOS", () => {
+  test.use({
+    backend: { ...LIBRARY_BACKEND, appInfo: () => fakeAppInfo("macos") },
+  });
+
+  test("hides and shows the sidebar with ⌘ B", async ({ page }) => {
+    await openLibrary(page);
+
+    await page.keyboard.press("Meta+b");
+
+    expect((await boxOf(navigation(page))).width).toBe(HIDDEN_SIDEBAR_WIDTH);
+  });
+
+  test("marks the current section with the macOS selection in a 28px row with 6px corners", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    const library = navigation(page).getByRole("link", { name: "Library" });
+
+    const row = await boxOf(library);
+
+    expect(row.height).toBe(MACOS_ITEM_HEIGHT);
+    await expect(library).toHaveCSS("border-radius", MACOS_ITEM_CORNER);
+    await expect(library).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--macos-selection"),
+    );
+    await expect(library).toHaveCSS(
+      "color",
+      await tokenColour(page, "--sidebar-foreground"),
+    );
+  });
+});
+
+test.describe("on Windows", () => {
+  test.use({
+    backend: { ...LIBRARY_BACKEND, appInfo: () => fakeAppInfo("windows") },
+  });
+
+  test("marks the current section with the Windows subtle fill in a 36px row with 4px corners", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    const library = navigation(page).getByRole("link", { name: "Library" });
+
+    const row = await boxOf(library);
+
+    expect(row.height).toBe(WINDOWS_ITEM_HEIGHT);
+    await expect(library).toHaveCSS("border-radius", WINDOWS_ITEM_CORNER);
+    await expect(library).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--windows-subtle"),
+    );
+    await expect(library).toHaveCSS(
+      "color",
+      await tokenColour(page, "--sidebar-foreground"),
+    );
+  });
+});
