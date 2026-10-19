@@ -679,6 +679,21 @@ test("finds a missing folder again where it went", async () => {
   ]).toEqual([[], 0]);
 });
 
+test("signs in to a share that wants it, which brings it back", async () => {
+  const { backend } = backendFor("?missing=sign-in");
+  const [missing] = await backend.missingLibraryFolders();
+
+  const signedIn = await backend.signInToLibraryFolder(
+    missing?.folder.id ?? "",
+  );
+
+  expect([
+    signedIn,
+    await backend.missingLibraryFolders(),
+    await backend.libraryHiddenSeriesCount(),
+  ]).toEqual(["signedIn", [], 0]);
+});
+
 test("tells a disconnected drive, lost access and each share apart", async () => {
   const problems = await Promise.all(
     ["drive", "access", "sign-in", "mount", "share"].map(async (kind) => {

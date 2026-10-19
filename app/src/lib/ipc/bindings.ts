@@ -91,6 +91,7 @@ export const commands = {
 	name: string,
 	outcome: RescanOutcome,
 } | null, IpcError>(__TAURI_INVOKE("relocate_library_folder", { id, onProgress })),
+	signInToLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<SignInOutcome, IpcError>(__TAURI_INVOKE("sign_in_to_library_folder", { id })),
 	showSeriesInFolder: (series: string & { readonly __brand: "SeriesId" }) => typedError<null, IpcError>(__TAURI_INVOKE("show_series_in_folder", { series })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
 	libraryFolderBookCount: (id: string & { readonly __brand: "FolderId" }) => typedError<number, IpcError>(__TAURI_INVOKE("library_folder_book_count", { id })),
@@ -658,6 +659,8 @@ export type SeriesPerson = {
 	name: string,
 	role: CreatorRole | null,
 };
+
+export type SignInOutcome = "signedIn" | "cancelled" | "failed";
 
 export type SmartFilter = 
 /**  Under 30 minutes left, at the reader's own reading speed. */
