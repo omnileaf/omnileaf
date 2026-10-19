@@ -33,21 +33,24 @@
   }
 </script>
 
-<div class="flex flex-col gap-icon-gap">
-  <span id={labelId} class="text-caption font-semibold text-muted">
+<div
+  class="grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row"
+>
+  <span id={labelId} class="text-small font-medium">
     {m.library_sort_by()}
   </span>
-  <ButtonGroup aria-labelledby={labelId}>
+  <ButtonGroup aria-labelledby={labelId} class="inline-setting-control">
     <NativeSelect
       aria-labelledby={labelId}
       value={sort.by}
-      class="flex-1"
+      class="flex-1 min-inline-none"
+      fieldClass="touch:text-body touch:block-touch-target"
       onchange={chooseSort}
     >
       {#each SORTS as by (by)}
         <option value={by}>{SORT_LABELS[by]()}</option>
       {/each}
     </NativeSelect>
-    <SortDirectionButton {sort} look="field" {onReverse} />
+    <SortDirectionButton {sort} look="icon" {onReverse} />
   </ButtonGroup>
 </div>

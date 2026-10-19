@@ -126,7 +126,7 @@ test("lays a state layer in the control's own colour under the pointer, instead 
 }) => {
   test.skip(isMobile, "touch screens have no pointer to hover with");
   await openLibrary(page);
-  const filter = page.getByRole("button", { name: /^Filter and sort/ });
+  const filter = page.getByRole("button", { name: /^Sort and filter/ });
 
   await filter.hover();
 

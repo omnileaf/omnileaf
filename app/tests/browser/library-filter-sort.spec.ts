@@ -13,6 +13,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   onPlatform,
+  fakeAppInfo,
   screenSizeOf,
   settle,
   test,
@@ -33,6 +34,7 @@ interface FakeSeries {
 const PANEL_WIDTH = 380;
 const BADGE_ON_PHONES = 40;
 const BADGE_ON_WIDER_SCREENS = 36;
+const TOUCH_TARGET = 48;
 
 function fakeSeries(
   number: number,
@@ -136,12 +138,12 @@ function seriesList(page: Page): Locator {
 
 function filterButton(page: Page): Locator {
   return page
-    .locator("main header, main [data-title-bar]")
-    .getByRole("button", { name: /^Filter and sort/ });
+    .getByRole("main")
+    .getByRole("button", { name: /^Sort and filter/ });
 }
 
 function filterAndSort(page: Page): Locator {
-  return page.getByRole("dialog", { name: "Filter and sort" });
+  return page.getByRole("dialog", { name: "Sort and filter" });
 }
 
 function isBesideTitle(box: Box, title: Box): boolean {
@@ -175,39 +177,23 @@ async function openFilterAndSort(page: Page): Promise<Locator> {
   return filterAndSort(page);
 }
 
-async function showFilters(panel: Locator, page: Page): Promise<void> {
-  if (isPhone(page)) {
-    await panel.getByRole("tab", { name: /^Filter/ }).click();
-  }
+function readStates(page: Page): Locator {
+  return filterAndSort(page).getByRole("group", { name: "Read state" });
 }
 
-async function showSorts(panel: Locator, page: Page): Promise<void> {
-  if (isPhone(page)) {
-    await panel.getByRole("tab", { name: "Sort" }).click();
-  }
-}
-
-async function filterBy(
+async function chooseReadState(
   page: Page,
-  condition: "Unread" | "Started" | "Finished",
-  inclusion: "Any" | "Only" | "Hide",
+  state: "Any" | "Unread" | "In progress" | "Read",
 ): Promise<void> {
-  const panel = filterAndSort(page);
-  await showFilters(panel, page);
-  await panel
-    .getByRole("radiogroup", { name: condition })
-    .getByRole("radio", { name: inclusion })
+  await readStates(page)
+    .getByRole("radio", { name: state, exact: true })
     .click();
 }
 
 async function sortBy(page: Page, sort: "Title" | "Date added") {
-  const panel = filterAndSort(page);
-  await showSorts(panel, page);
-  if (isPhone(page)) {
-    await panel.getByRole("radio", { name: sort }).click();
-  } else {
-    await panel.getByRole("combobox", { name: "Sort by" }).selectOption(sort);
-  }
+  await filterAndSort(page)
+    .getByRole("combobox", { name: "Sort by" })
+    .selectOption(sort);
 }
 
 function directionButton(page: Page, name: string): Locator {
@@ -220,18 +206,14 @@ test("opens filter and sort from the library's header", async ({ page }) => {
   const panel = await openFilterAndSort(page);
 
   await expect(
-    panel.getByRole("heading", { name: "Filter and sort" }),
+    panel.getByRole("heading", { name: "Sort and filter" }),
   ).toBeVisible();
-  if (isPhone(page)) {
-    await expect(panel.getByRole("tab", { name: "Filter" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-  } else {
-    await expect(panel.getByRole("combobox", { name: "Sort by" })).toHaveValue(
-      "title",
-    );
-  }
+  await expect(panel.getByRole("combobox", { name: "Sort by" })).toHaveValue(
+    "title",
+  );
+  await expect(
+    readStates(page).getByRole("radio", { name: "Any" }),
+  ).toBeChecked();
 });
 
 test("heads filter and sort with a round accent badge beside its title, with Reset on the same line", async ({
@@ -239,7 +221,7 @@ test("heads filter and sort with a round accent badge beside its title, with Res
 }) => {
   await openLibrary(page);
   const panel = await openFilterAndSort(page);
-  const title = panel.getByRole("heading", { name: "Filter and sort" });
+  const title = panel.getByRole("heading", { name: "Sort and filter" });
   const badge = title.locator("xpath=preceding-sibling::*[1]");
   const size = isPhone(page) ? BADGE_ON_PHONES : BADGE_ON_WIDER_SCREENS;
 
@@ -274,31 +256,34 @@ test("heads filter and sort with a round accent badge beside its title, with Res
   }
 });
 
-test("lists only the series with a book not marked read once Unread is set to Only, and stores it", async ({
+test("lists only the series never opened once Unread is chosen, and stores it", async ({
   page,
 }) => {
   await openLibrary(page);
   await openFilterAndSort(page);
 
-  await filterBy(page, "Unread", "Only");
+  await chooseReadState(page, "Unread");
 
-  await expectTitles(page, [1, 2, 3, 5]);
-  await expect.poll(() => storedListing.filter.unread).toBe("only");
-});
-
-test("leaves out the finished series once Finished is set to Hide, and those never opened once Started is set to Only", async ({
-  page,
-}) => {
-  await openLibrary(page);
-  await openFilterAndSort(page);
-
-  await filterBy(page, "Finished", "Hide");
-  await filterBy(page, "Started", "Only");
-
-  await expectTitles(page, [2, 3]);
+  await expectTitles(page, [1, 5]);
   await expect
     .poll(() => storedListing.filter)
-    .toEqual({ unread: "any", started: "only", finished: "hide" });
+    .toEqual({ unread: "any", started: "hide", finished: "any" });
+});
+
+test("lists the series opened and not finished once In progress is chosen, and the finished ones once Read is", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await openFilterAndSort(page);
+
+  await chooseReadState(page, "In progress");
+  await expectTitles(page, [2, 3]);
+  await chooseReadState(page, "Read");
+
+  await expectTitles(page, [4, 6]);
+  await expect
+    .poll(() => storedListing.filter)
+    .toEqual({ unread: "any", started: "any", finished: "only" });
 });
 
 test("lists the series added last first once date added is chosen, and reverses them on asking", async ({
@@ -323,7 +308,6 @@ test("lists the series added last first once date added is chosen, and reverses 
 test("lists the titles from Z to A on asking", async ({ page }) => {
   await openLibrary(page);
   await openFilterAndSort(page);
-  await showSorts(filterAndSort(page), page);
 
   await directionButton(page, "Order: A to Z. Change to Z to A").click();
 
@@ -337,7 +321,7 @@ test("says how many series the filter lets through", async ({ page }) => {
   await openLibrary(page);
   const panel = await openFilterAndSort(page);
 
-  await filterBy(page, "Unread", "Hide");
+  await chooseReadState(page, "Read");
 
   if (isPhone(page)) {
     await panel.getByRole("button", { name: "Show 2 series" }).click();
@@ -353,7 +337,7 @@ test("tells screen readers how many series match as the filter changes", async (
   await openLibrary(page);
   const panel = await openFilterAndSort(page);
 
-  await filterBy(page, "Unread", "Hide");
+  await chooseReadState(page, "Read");
 
   await expect(panel.getByRole("status")).toHaveText("2 series match");
 });
@@ -363,17 +347,14 @@ test("marks the filter button with how many filters are on", async ({
 }) => {
   await openLibrary(page);
   await openFilterAndSort(page);
-  await filterBy(page, "Unread", "Only");
-  await filterBy(page, "Finished", "Hide");
+  await chooseReadState(page, "In progress");
 
   await page.keyboard.press("Escape");
 
   await expect(filterButton(page)).toHaveAccessibleName(
-    "Filter and sort, 2 filters on",
+    "Sort and filter, 1 filter on",
   );
-  if (viewportOf(page).width >= 1200) {
-    await expect(filterButton(page)).toContainText("2");
-  }
+  await expect(filterButton(page)).toContainText("1");
 });
 
 test("puts the sort and every filter back as a new library has them on Reset", async ({
@@ -435,7 +416,7 @@ test("lists the library by the sort and filter stored on this device", async ({
 
   await expectTitles(page, [2, 1, 5, 3]);
   await expect(filterButton(page)).toHaveAccessibleName(
-    "Filter and sort, 1 filter on",
+    "Sort and filter, 1 filter on",
   );
 });
 
@@ -471,37 +452,20 @@ test("closes on Escape and hands focus back to the button that opened it", async
   await expect(filterButton(page)).toBeFocused();
 });
 
-test("moves between Any, Only and Hide with the arrow keys", async ({
+test("moves between the read states with the arrow keys and picks one with Space", async ({
   page,
 }) => {
   await openLibrary(page);
-  const panel = await openFilterAndSort(page);
-  const unread = panel.getByRole("radiogroup", { name: "Unread" });
-  await unread.getByRole("radio", { name: "Any" }).focus();
+  await openFilterAndSort(page);
+  await readStates(page).getByRole("radio", { name: "Any" }).focus();
 
   await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Space");
 
-  await expect(unread.getByRole("radio", { name: "Only" })).toBeChecked();
-  await expectTitles(page, [1, 2, 3, 5]);
-});
-
-test("moves between the filter and the sort with the arrow keys on a phone", async ({
-  page,
-}) => {
-  test.skip(
-    !isPhone(page),
-    "wider screens show the filter and the sort together",
-  );
-  await openLibrary(page);
-  const panel = await openFilterAndSort(page);
-  await panel.getByRole("tab", { name: "Filter" }).focus();
-
-  await page.keyboard.press("ArrowRight");
-
-  const sort = panel.getByRole("tab", { name: "Sort" });
-  await expect(sort).toBeFocused();
-  await expect(sort).toHaveAttribute("aria-selected", "true");
-  await expect(panel.getByRole("radio", { name: "Date added" })).toBeAttached();
+  await expect(
+    readStates(page).getByRole("radio", { name: "Unread" }),
+  ).toBeChecked();
+  await expectTitles(page, [1, 5]);
 });
 
 test("slides up from the foot of a phone, and stands against the end of wider screens", async ({
@@ -550,7 +514,7 @@ test("keeps filter and sort inside the screen in a longer language", async ({
   ).toBeVisible();
   await page
     .locator("main header")
-    .getByRole("button", { name: pseudoText("Filter and sort") })
+    .getByRole("button", { name: pseudoText("Sort and filter") })
     .click();
 
   const panel = page.getByRole("dialog");
@@ -566,7 +530,7 @@ for (const language of ["en", "en-XA"] as const) {
   const text = (english: string) =>
     language === "en" ? english : pseudoText(english);
 
-  test(`keeps the boxes of the tabs and of the Any, Only and Hide segments still as the choice changes in ${language}`, async ({
+  test(`keeps the read states' boxes still as the choice changes in ${language}`, async ({
     page,
   }) => {
     await page.addInitScript((language) => {
@@ -578,15 +542,14 @@ for (const language of ["en", "en-XA"] as const) {
     ).toBeVisible();
     await page
       .locator("main header")
-      .getByRole("button", { name: text("Filter and sort") })
+      .getByRole("button", { name: text("Sort and filter") })
       .click();
     const panel = page.getByRole("dialog");
     await expect(panel).toBeVisible();
     await settle(panel);
     const segments = panel
-      .getByRole("radiogroup", { name: text("Unread") })
+      .getByRole("group", { name: text("Read state") })
       .getByRole("radio");
-    const tabs = panel.getByRole("tab");
     const boxesOf = async (choices: Locator) => {
       const boxes = [];
       for (const choice of await choices.all()) {
@@ -594,43 +557,17 @@ for (const language of ["en", "en-XA"] as const) {
       }
       return boxes;
     };
-    const tabsBefore = await boxesOf(tabs);
 
-    if (isPhone(page)) {
-      for (const tab of [text("Sort"), text("Filter")]) {
-        await tabs.filter({ hasText: tab }).click();
-        await expect(tabs.filter({ hasText: tab })).toHaveAttribute(
-          "aria-selected",
-          "true",
-        );
-        expect(await boxesOf(tabs)).toEqual(tabsBefore);
-      }
-    }
     const segmentsBefore = await boxesOf(segments);
-    for (const choice of [text("Hide"), text("Only")]) {
-      await segments.filter({ hasText: choice }).click();
-      await expect(segments.filter({ hasText: choice })).toBeChecked();
+    for (const choice of [text("Read"), text("Unread")]) {
+      await segments.filter({ hasText: new RegExp(`^${choice}$`) }).click();
+      await expect(
+        segments.filter({ hasText: new RegExp(`^${choice}$`) }),
+      ).toBeChecked();
       expect(await boxesOf(segments)).toEqual(segmentsBefore);
     }
   });
 }
-
-test("explains the unread and finished conditions on phones, where the sheet has room", async ({
-  page,
-}) => {
-  await openLibrary(page);
-  const panel = await openFilterAndSort(page);
-  await showFilters(panel, page);
-
-  const hints = [
-    panel.getByText("Has books you haven't read"),
-    panel.getByText("You've read every book"),
-  ];
-
-  for (const hint of hints) {
-    await expect(hint).toBeVisible({ visible: isPhone(page) });
-  }
-});
 
 for (const colorScheme of ["light", "dark"] as const) {
   test(`filter and sort have no accessibility violations in the ${colorScheme} theme`, async ({
@@ -639,12 +576,12 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
     storedListing = {
       sort: DEFAULT_LIBRARY_LISTING.sort,
-      filter: { unread: "only", started: "any", finished: "any" },
+      filter: { unread: "any", started: "hide", finished: "any" },
     };
     await openLibrary(page);
-    const panel = await openFilterAndSort(page);
+    await openFilterAndSort(page);
     await expect(
-      panel.getByRole("radio", { name: "Only" }).first(),
+      readStates(page).getByRole("radio", { name: "Unread" }),
     ).toBeChecked();
 
     const violations = await accessibilityViolations(page);
@@ -655,8 +592,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
 test("the sort list has no accessibility violations", async ({ page }) => {
   await openLibrary(page);
-  const panel = await openFilterAndSort(page);
-  await showSorts(panel, page);
+  await openFilterAndSort(page);
 
   const violations = await accessibilityViolations(page);
 
@@ -680,12 +616,12 @@ test.describe("when a filter leaves no series", () => {
   }) => {
     await openLibrary(page);
     await openFilterAndSort(page);
-    await filterBy(page, "Started", "Only");
+    await chooseReadState(page, "In progress");
     await expect(
       page.getByText("No series match these filters."),
     ).toBeVisible();
 
-    await filterBy(page, "Started", "Any");
+    await chooseReadState(page, "Any");
 
     await expectTitles(page, [1, 2, 3, 4, 5, 6]);
     await expect(filterAndSort(page)).toBeVisible();
@@ -744,3 +680,64 @@ test("slides in as it opens, which reduced motion turns into appearing at once",
     ),
   ).toBe(0);
 });
+
+test("lists the filter in use as a chip under the library, and takes it off with its cross", async ({
+  page,
+}) => {
+  storedListing = {
+    ...DEFAULT_LIBRARY_LISTING,
+    filter: { unread: "any", started: "hide", finished: "any" },
+  };
+  await openLibrary(page);
+  const inUse = page.getByRole("list", { name: "Filters in use" });
+
+  await expect(inUse.getByRole("listitem")).toHaveText(["Unread"]);
+  await inUse.getByRole("button", { name: "Remove Unread" }).click();
+
+  await expectTitles(page, [1, 2, 3, 4, 5, 6]);
+  await expect(inUse).toHaveCount(0);
+});
+
+test("clears every filter in use with Clear all", async ({ page }) => {
+  storedListing = {
+    ...DEFAULT_LIBRARY_LISTING,
+    filter: { unread: "any", started: "any", finished: "only" },
+  };
+  await openLibrary(page);
+
+  await page.getByRole("button", { name: "Clear all" }).click();
+
+  await expectTitles(page, [1, 2, 3, 4, 5, 6]);
+  await expect
+    .poll(() => storedListing.filter)
+    .toEqual(DEFAULT_LIBRARY_LISTING.filter);
+});
+
+for (const platform of ["android", "ios"] as const) {
+  test.describe(`on ${platform}`, () => {
+    test.use({
+      backend: {
+        ...FILTERING_BACKEND,
+        appInfo: () => fakeAppInfo(platform),
+      },
+    });
+
+    test("sizes Sort by and its direction for a finger", async ({ page }) => {
+      await openLibrary(page);
+      const panel = await openFilterAndSort(page);
+
+      const select = await boxOf(
+        panel.getByRole("combobox", { name: "Sort by" }),
+      );
+      const direction = await boxOf(
+        directionButton(page, "Order: A to Z. Change to Z to A"),
+      );
+
+      expect(select.height).toBeGreaterThanOrEqual(TOUCH_TARGET);
+      expect([direction.width, direction.height]).toEqual([
+        TOUCH_TARGET,
+        TOUCH_TARGET,
+      ]);
+    });
+  });
+}
