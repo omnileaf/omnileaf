@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { MediaQuery, SvelteSet } from "svelte/reactivity";
   import type { ClassValue } from "svelte/elements";
 
   import { resolve } from "$app/paths";
@@ -11,6 +12,7 @@
     type LibraryView,
   } from "#lib/ipc/bindings.ts";
   import { Progress } from "#lib/components/ui/progress/index.ts";
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { columnsOf } from "#lib/virtual-grid/grid-keys.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
@@ -64,6 +66,26 @@
     (size) => `--${size}-covers-per-row: ${String(COVERS_PER_ROW[size].most)}`,
   ).join("; ");
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
+  const canHover = new MediaQuery("(hover: hover)");
+  const cutOffTitles = new SvelteSet<string>();
+
+  function notesCutOff(id: string): (title: HTMLElement) => () => void {
+    return (title) => {
+      const note = () => {
+        if (title.scrollHeight > title.clientHeight) {
+          cutOffTitles.add(id);
+        } else {
+          cutOffTitles.delete(id);
+        }
+      };
+      const observer = new ResizeObserver(note);
+      observer.observe(title);
+      return () => {
+        observer.disconnect();
+        cutOffTitles.delete(id);
+      };
+    };
+  }
 
   const layout = $derived(
     (
@@ -137,40 +159,52 @@
   {@const href = resolve("/(app)/series/[id]", { id: one.id })}
   {@const continues = continuedBook(one)}
   <div class="@container relative min-inline-none">
-    <a
-      {href}
-      class="flex flex-col gap-cover-caption min-inline-none medium:gap-sm"
+    <Tooltip
+      label={canHover.current && cutOffTitles.has(one.id)
+        ? shown.title
+        : undefined}
     >
-      <div
-        class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
-      >
-        <CoverImage cover={shown.cover} {coverUrl} />
-        <CoverBadges series={one} onCovers={view.onCovers} />
-      </div>
-      {#if share !== undefined}
-        <Progress
-          aria-label={m.library_books_read({
-            read: one.bookCount - one.unreadCount,
-            count: one.bookCount,
-          })}
-          value={share}
-          class="block-xs"
-        />
-      {/if}
-      <div class="min-inline-none">
-        <p class={["line-clamp-2 font-medium wrap-break-word", look.title]}>
-          {shown.title}
-        </p>
-        <p
-          class={[
-            "truncate text-caption text-muted medium:mbs-2xs",
-            look.bookCount,
-          ]}
+      {#snippet child({ props })}
+        <a
+          {...props}
+          {href}
+          class="flex flex-col gap-cover-caption min-inline-none medium:gap-sm"
         >
-          {m.library_series_books({ count: one.bookCount })}
-        </p>
-      </div>
-    </a>
+          <div
+            class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+          >
+            <CoverImage cover={shown.cover} {coverUrl} />
+            <CoverBadges series={one} onCovers={view.onCovers} />
+          </div>
+          {#if share !== undefined}
+            <Progress
+              aria-label={m.library_books_read({
+                read: one.bookCount - one.unreadCount,
+                count: one.bookCount,
+              })}
+              value={share}
+              class="block-xs"
+            />
+          {/if}
+          <div class="min-inline-none">
+            <p
+              {@attach notesCutOff(one.id)}
+              class={["line-clamp-2 font-medium wrap-break-word", look.title]}
+            >
+              {shown.title}
+            </p>
+            <p
+              class={[
+                "truncate text-caption text-muted medium:mbs-2xs",
+                look.bookCount,
+              ]}
+            >
+              {m.library_series_books({ count: one.bookCount })}
+            </p>
+          </div>
+        </a>
+      {/snippet}
+    </Tooltip>
     {#if continues !== undefined}
       <ContinueDisc
         book={continues}
