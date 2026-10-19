@@ -20,7 +20,7 @@
   type="single"
   data-slot="toggle-group"
   class={cn(
-    "flex items-stretch gap-2xs rounded-control bg-chip p-2xs",
+    "isolate flex flex-wrap items-stretch rounded-shadcn-control shadow-raised",
     className,
   )}
   {...restProps}

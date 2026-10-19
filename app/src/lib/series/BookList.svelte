@@ -25,7 +25,6 @@
 
   let {
     books,
-    dates,
     isComplete,
     onNearEnd,
     selection,
@@ -34,7 +33,6 @@
     onSwiped,
   }: {
     books: readonly SeriesBook[];
-    dates: Intl.DateTimeFormat;
     isComplete: boolean;
     onNearEnd: () => void;
     selection: BookSelection<BookId>;
@@ -83,7 +81,7 @@
     <label
       data-picked={isPicked || undefined}
       class={[
-        "relative flex cursor-pointer items-center gap-md ps-md pe-md min-block-book-row",
+        "relative flex cursor-pointer items-center gap-md py-sm ps-md pe-md min-block-book-row",
         isPicked && "bg-selected-row",
       ]}
     >
@@ -106,7 +104,7 @@
           pickRunOnShift(event, book);
         }}
       />
-      <BookRowText {book} {dates} />
+      <BookRowText {book} />
     </label>
   {:else}
     {@const side = swipe.sideOf(book.id)}
@@ -146,7 +144,7 @@
         role="presentation"
         data-swiped
         class={[
-          "relative flex touch-pan-y items-center gap-xs bg-card ps-md pe-2xs select-none min-block-book-row",
+          "relative flex touch-pan-y items-center gap-xs bg-card py-sm ps-md pe-2xs select-none min-block-book-row",
           !swipe.isDragging &&
             "motion-safe:transition-transform motion-safe:duration-slide",
         ]}
@@ -185,7 +183,7 @@
           draggable="false"
           class="flex flex-1 items-center self-stretch min-inline-none"
         >
-          <BookRowText {book} {dates} />
+          <BookRowText {book} />
         </a>
         <BookSheet
           {book}
@@ -210,7 +208,7 @@
   }}
 />
 
-<Card class="overflow-hidden">
+<Card class="overflow-hidden shadow-card-rest">
   <VirtualGrid
     items={books}
     key={(book: SeriesBook) => book.id}

@@ -23,9 +23,20 @@ export function sampleBookLink(position: number): Locator {
   );
 }
 
+const SCROLL_TO_THE_BOOKS = `const books = document.querySelector("table[aria-label='Books']");
+if (books === null) { return false; }
+books.scrollIntoView({ block: "start" });
+return true;`;
+
+/** Brings the series' books table into view, since it draws only the rows inside the window and sits under the series' details in a narrow window. */
+export async function showTheBooks(session: Session): Promise<void> {
+  await session.waitUntil(SCROLL_TO_THE_BOOKS, "the books table in view");
+}
+
 export async function openSampleSeries(session: Session): Promise<void> {
   await addSampleLibrary(session);
   await (await session.waitFor(FIRST_SERIES_COVER)).click();
+  await showTheBooks(session);
 }
 
 export async function openSampleBook(

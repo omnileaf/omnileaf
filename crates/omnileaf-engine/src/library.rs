@@ -354,10 +354,16 @@ impl Library {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(BOOKS_PER_PAGE)?,
         };
+        let Some(listing) = listing.in_catalog() else {
+            return Ok(SeriesBookPage {
+                books: Vec::new(),
+                next: None,
+            });
+        };
         let page = self
             .store
             .database()
-            .read(move |connection| series_books(connection, id.0, listing.into(), &request))
+            .read(move |connection| series_books(connection, id.0, listing, &request))
             .await?;
         Ok(SeriesBookPage::from(page))
     }

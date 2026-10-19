@@ -38,6 +38,9 @@ const READ = { state: "read" } as const;
 const NOT_STARTED = { state: "notStarted" } as const;
 const ON_PAGE_15 = { state: "started", page: 15 } as const;
 const CRUMB_GAP = 10;
+const ANDROID_TOUCH_TARGET_PX = 48;
+const TOUCH_EDGE_SLACK_PX = 0.25;
+const SHOW_CHOICES = ["All", "Unread", "Bookmarked"] as const;
 
 const TWELVE_BOOKS = [
   READ,
@@ -160,6 +163,67 @@ function shown(page: Page, name: string): Locator {
   return page
     .getByRole("group", { name: "Show" })
     .getByRole("radio", { name, exact: true });
+}
+
+function edgesMissedWithin(
+  segment: Locator,
+  target: number,
+): Promise<string[]> {
+  return segment.evaluate(
+    async (element, reach) => {
+      element.scrollIntoView({ block: "center" });
+      await new Promise((settled) =>
+        requestAnimationFrame(() => requestAnimationFrame(settled)),
+      );
+      const box = element.getBoundingClientRect();
+      const centreX = box.left + box.width / 2;
+      const centreY = box.top + box.height / 2;
+      const edges = {
+        left: [centreX - reach, centreY],
+        right: [centreX + reach, centreY],
+        top: [centreX, centreY - reach],
+        bottom: [centreX, centreY + reach],
+      } as const;
+      return Object.entries(edges)
+        .filter(
+          ([, [x, y]]) =>
+            document.elementFromPoint(x, y)?.closest("[role=radio]") !==
+            element,
+        )
+        .map(([edge]) => edge);
+    },
+    target / 2 - TOUCH_EDGE_SLACK_PX,
+  );
+}
+
+async function fitPhoneToShowRow(page: Page): Promise<void> {
+  const spare = await page
+    .getByRole("group", { name: "Show" })
+    .evaluate((group) =>
+      [...group.children].reduce((room, segment) => {
+        const alone = segment.cloneNode(true);
+        if (!(alone instanceof HTMLElement)) {
+          throw new Error("a Show segment is not an element");
+        }
+        alone.style.position = "absolute";
+        group.append(alone);
+        const natural = alone.getBoundingClientRect().width;
+        alone.remove();
+        const { marginInlineStart, marginInlineEnd } =
+          getComputedStyle(segment);
+        return (
+          room -
+          natural -
+          Number.parseFloat(marginInlineStart) -
+          Number.parseFloat(marginInlineEnd)
+        );
+      }, group.clientWidth),
+    );
+  const viewport = viewportOf(page);
+  await page.setViewportSize({
+    ...viewport,
+    width: viewport.width - Math.floor(spare),
+  });
 }
 
 async function revealSearch(page: Page): Promise<void> {
@@ -367,9 +431,7 @@ test("lists the series' books in order with how far each has been read", async (
   await expectListedAt(rows.filter({ hasText: shelf.titleOf(4) }), 5);
   await expect(rows.nth(0)).toContainText("Read");
   await expect(rows.nth(3)).toContainText("Page 15");
-  await expect(rows.nth(4)).toContainText(
-    isWide(page) ? "Unread" : "Added Sep 21, 2026",
-  );
+  await expect(rows.nth(4)).toContainText("Unread");
 });
 
 test("opens a series from its cover in the library, landing on its heading", async ({
@@ -1382,6 +1444,60 @@ test.describe("on Android", () => {
       ...SHELF_BACKEND,
       appInfo: onPlatform("android").backend.appInfo,
     },
+  });
+
+  test("gives each Show segment a 48 dp target while drawing All as wide as its name", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "only a phone draws All narrower than a touch",
+    );
+    await openSeries(page);
+    await fitPhoneToShowRow(page);
+
+    const missed = await Promise.all(
+      SHOW_CHOICES.map(async (name) => ({
+        name,
+        missed: await edgesMissedWithin(
+          shown(page, name),
+          ANDROID_TOUCH_TARGET_PX,
+        ),
+      })),
+    );
+
+    expect(missed).toEqual(SHOW_CHOICES.map((name) => ({ name, missed: [] })));
+    expect((await boxOf(shown(page, "All"))).width).toBeLessThan(
+      ANDROID_TOUCH_TARGET_PX,
+    );
+  });
+
+  test("lets the selected books bar take a touch over the All segment scrolled under it", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "the selected books bar reaches over All only on a phone",
+    );
+    await openSeries(page);
+    await pickBooks(page, 4);
+    const barTop = (await boxOf(selectedBooks(page))).y;
+
+    const touched = await shown(page, "All").evaluate(async (segment, top) => {
+      segment.closest("main")?.scrollBy({
+        top: segment.getBoundingClientRect().top - top - 1,
+      });
+      await new Promise((settled) =>
+        requestAnimationFrame(() => requestAnimationFrame(settled)),
+      );
+      const box = segment.getBoundingClientRect();
+      return document
+        .elementFromPoint(box.left + box.width / 2, box.top + 1)
+        ?.closest("[role=group]")
+        ?.getAttribute("aria-label");
+    }, barTop);
+
+    expect(touched).toBe("Selected books");
   });
 
   test("ends picking books with back, staying on the series, and leaves with back after", async ({
