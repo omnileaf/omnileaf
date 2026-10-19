@@ -10,10 +10,12 @@
   let {
     light,
     isInRows = false,
+    showsWarmth = true,
     onChange,
   }: {
     light: ReaderLight;
     isInRows?: boolean;
+    showsWarmth?: boolean;
     onChange: (light: ReaderLight) => void;
   } = $props();
 
@@ -45,26 +47,28 @@
       }
     />
   </div>
-  <div
-    class={[
-      "flex flex-col gap-sm",
-      isInRows &&
-        "grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row",
-    ]}
-  >
-    <p id="{id}-warmth" class="text-small font-medium">{m.reader_warmth()}</p>
-    <Slider
-      aria-labelledby="{id}-warmth"
-      class={isInRows ? "inline-setting-control" : undefined}
-      min={0}
-      max={HIGHEST}
-      step={STEP}
-      bind:value={
-        () => light.warmth,
-        (warmth: number) => {
-          onChange({ ...light, isOn: true, warmth });
+  {#if showsWarmth}
+    <div
+      class={[
+        "flex flex-col gap-sm",
+        isInRows &&
+          "grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row",
+      ]}
+    >
+      <p id="{id}-warmth" class="text-small font-medium">{m.reader_warmth()}</p>
+      <Slider
+        aria-labelledby="{id}-warmth"
+        class={isInRows ? "inline-setting-control" : undefined}
+        min={0}
+        max={HIGHEST}
+        step={STEP}
+        bind:value={
+          () => light.warmth,
+          (warmth: number) => {
+            onChange({ ...light, isOn: true, warmth });
+          }
         }
-      }
-    />
-  </div>
+      />
+    </div>
+  {/if}
 </div>
