@@ -1,7 +1,8 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import {
   accessibilityViolations,
+  boxOf,
   expect,
   onPlatform,
   test,
@@ -9,11 +10,11 @@ import {
 } from "./fixtures.ts";
 
 const TURNED_ON_AT = new Date("2026-10-03T21:14:00Z");
+const INTRO_GAP = 8;
 
 const OPTIONS = [
   "Blank the pages in the reader",
   "Show the Screenshot mode label",
-  "Turn off after 1 hour",
 ];
 
 async function openScreenshotMode(page: Page): Promise<void> {
@@ -30,6 +31,10 @@ function mainSwitch(page: Page) {
   return page.getByRole("switch", { name: "Screenshot mode", exact: true });
 }
 
+function cardHolding(page: Page, part: Locator) {
+  return page.locator("div:has(> [role=switch])").filter({ has: part });
+}
+
 function labelSwitch(page: Page) {
   return page.getByRole("switch", { name: "Show the Screenshot mode label" });
 }
@@ -43,8 +48,21 @@ test("turning it on says when it turns off again", async ({ page }) => {
 
   await expect(mainSwitch(page)).toBeChecked();
   await expect(mainSwitch(page)).toHaveAccessibleDescription(
-    "On · turns off at 10:14 PM",
+    "On until 10:14 PM",
   );
+});
+
+test("turns off after an hour until told never to", async ({ page }) => {
+  await openScreenshotMode(page);
+  const turnOffAfter = page.getByRole("combobox", { name: "Turn off after" });
+  await expect(turnOffAfter).toHaveValue("hour");
+
+  await turnOffAfter.selectOption({ label: "Never" });
+  await page.reload();
+  await mainSwitch(page).click();
+
+  await expect(turnOffAfter).toHaveValue("never");
+  await expect(mainSwitch(page)).toHaveAccessibleDescription("On");
 });
 
 test("it stays on after a restart and Privacy and security says so", async ({
@@ -89,23 +107,56 @@ test("Space turns it on from the keyboard", async ({ page }) => {
   await expect(mainSwitch(page)).toBeChecked();
 });
 
-test("the preview shows a sample title before and a stand-in after", async ({
-  page,
-}) => {
+test("sets the intro 8px above its card", async ({ page }) => {
   await openScreenshotMode(page);
 
-  const preview = page.getByRole("figure", { name: "Preview" });
+  const intro = await boxOf(page.getByText(/^Swaps names and covers/));
+  const card = await boxOf(cardHolding(page, mainSwitch(page)));
+
+  expect(card.y - (intro.y + intro.height)).toBe(INTRO_GAP);
+});
+
+test.describe("in a narrow desktop window", () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+  test.skip(({ isMobile }) => isMobile, "desktop windows");
+
+  test("puts Turn off after above its choice, inside the card", async ({
+    page,
+  }) => {
+    await page.goto("/settings/privacy/screenshot-mode");
+    const label = page.getByText("Turn off after", { exact: true });
+    const choice = page.getByRole("combobox", { name: "Turn off after" });
+
+    const labelBox = await boxOf(label);
+    const choiceBox = await boxOf(choice);
+    const cardBox = await boxOf(cardHolding(page, choice));
+
+    expect(
+      await label.evaluate((shown) => shown.scrollWidth - shown.clientWidth),
+    ).toBe(0);
+    expect(choiceBox.y).toBeGreaterThanOrEqual(labelBox.y + labelBox.height);
+    expect(choiceBox.x + choiceBox.width).toBeLessThanOrEqual(
+      cardBox.x + cardBox.width,
+    );
+  });
+});
+
+test("says what it changes before the switch", async ({ page }) => {
+  await openScreenshotMode(page);
 
   await expect(
-    preview.getByText("Sample Series 04", { exact: true }),
-  ).toHaveCount(1);
-  await expect(preview.getByText("Series 04", { exact: true })).toHaveCount(1);
+    page.getByText(
+      "Swaps names and covers for stand-ins, hides 18+ and leaves it out of counts, so screenshots show nothing private. Progress, dates and settings stay real.",
+    ),
+  ).toBeVisible();
 });
 
 test("the keyboard shortcut is listed on a computer", async ({ page }) => {
   await openScreenshotMode(page);
 
-  await expect(page.getByText("Keyboard shortcut")).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Turn it on quickly" }),
+  ).toContainText("Keyboard shortcut");
 });
 
 const SHORTCUT_HINTS = [
@@ -122,10 +173,7 @@ for (const { platform, keys } of SHORTCUT_HINTS) {
     test(`the shortcut is shown as ${keys}`, async ({ page }) => {
       await openScreenshotMode(page);
 
-      await expect(page.getByRole("main").locator("kbd")).toHaveText([
-        keys,
-        keys,
-      ]);
+      await expect(page.getByRole("main").locator("kbd")).toHaveText([keys]);
     });
   });
 }

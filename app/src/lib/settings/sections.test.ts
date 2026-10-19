@@ -1,7 +1,6 @@
 import { expect, test } from "vitest";
 
 import {
-  isListedBeside,
   isWithinSection,
   sectionCurrent,
   SETTINGS_GROUPS,
@@ -44,20 +43,6 @@ test("leaves another section unmarked", () => {
   ).toBeUndefined();
 });
 
-test("lists settings and its sections beside the open page", () => {
-  const listed = [
-    "/(app)/settings",
-    "/(app)/settings/general",
-    "/(app)/settings/about",
-  ] as const;
-
-  expect(listed.map(isListedBeside)).toEqual([true, true, true]);
-});
-
-test("leaves a page under a section out of the list beside it", () => {
-  expect(isListedBeside("/(app)/settings/about/licences")).toBe(false);
-});
-
 test("keeps About in a group of its own, after Advanced's", () => {
   const routes = SETTINGS_GROUPS.map(({ sections }) =>
     sections.map((section) => section.route),
@@ -67,10 +52,6 @@ test("keeps About in a group of its own, after Advanced's", () => {
     ["/(app)/settings/privacy", "/(app)/settings/advanced"],
     ["/(app)/settings/about"],
   ]);
-});
-
-test("lists Advanced beside the open page", () => {
-  expect(isListedBeside("/(app)/settings/advanced")).toBe(true);
 });
 
 test("lists every section in the order the Settings nav draws them", () => {
