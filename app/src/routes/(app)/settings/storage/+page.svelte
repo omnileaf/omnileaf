@@ -2,16 +2,21 @@
   import { onMount } from "svelte";
 
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import { formatBytes } from "#lib/storage/bytes.ts";
   import CacheRow from "#lib/storage/CacheRow.svelte";
+  import { type DeviceWord, deviceWordOf } from "#lib/storage/device.ts";
   import { getStorageCheck } from "#lib/storage/storage-check.svelte.ts";
   import StorageMeter from "#lib/storage/StorageMeter.svelte";
 
   import type { PageProps } from "./$types";
 
+  const DEVICE_NAMES = {
+    phone: m.storage_on_this_phone,
+    tablet: m.storage_on_this_tablet,
+    computer: m.storage_on_this_computer,
+  } satisfies Record<DeviceWord, () => string>;
   const CARD =
     "rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low";
 
@@ -21,14 +26,9 @@
   const width = new WindowWidth();
   const meterHeadingId = $props.id();
 
-  const deviceName = $derived.by(() => {
-    if (isPointer(data.appInfo.platform)) {
-      return m.storage_on_this_computer();
-    }
-    return isPhone(data.appInfo.platform, width.current)
-      ? m.storage_on_this_phone()
-      : m.storage_on_this_tablet();
-  });
+  const deviceName = $derived(
+    DEVICE_NAMES[deviceWordOf(data.appInfo.platform, width.current)](),
+  );
 
   onMount(() => {
     void storage.check();

@@ -26,7 +26,11 @@ const BODY_SIZE = "14px";
 const ICON_SIZE = 20;
 const POINTER_ACTION_HEIGHT = 24;
 const POINTER_ACTION_RADIUS = 4;
+const POINTER_ACTION_SIZE = "12px";
+const POINTER_ACTION_WEIGHT = "500";
 const TOUCH_ACTION_HEIGHT = 48;
+const ANDROID_ACTION_SIZE = "14px";
+const ANDROID_ACTION_WEIGHT = "600";
 const LONG_WAIT_MS = 60_000;
 const NARROW_WINDOW = { width: 360, height: 800 };
 const DESKTOP_PLATFORMS = ["linux", "macos", "windows"] as const;
@@ -190,7 +194,6 @@ test("reaches the warning from the keyboard after the page", async ({
   await page.keyboard.press("Tab");
   await expect(warning).toBeFocused();
   await page.keyboard.press("Tab");
-  await page.keyboard.press("Tab");
   await expect(warning.getByRole("button", { name: "Dismiss" })).toBeFocused();
   await page.keyboard.press("Enter");
 
@@ -294,16 +297,27 @@ test("draws the warning's action 24px tall with 4px corners on a desktop", async
   expect(box.height).toBe(POINTER_ACTION_HEIGHT);
   await expect(action).toHaveCSS(
     "background-color",
-    await colourOf(page, "--color-accent"),
+    await colourOf(page, "--color-on-warning"),
   );
   await expect(action).toHaveCSS(
     "color",
-    await colourOf(page, "--color-on-accent"),
+    await colourOf(page, "--color-warning-soft"),
   );
   const radius = await action.evaluate((element) =>
     Number.parseFloat(getComputedStyle(element).borderTopLeftRadius),
   );
   expect(radius).toBe(POINTER_ACTION_RADIUS);
+});
+
+test("sets the warning's action in 12px medium type on a desktop", async ({
+  page,
+}) => {
+  const { card } = await failToAddAFolder(page);
+
+  const action = card.getByRole("button", { name: "Choose another folder" });
+
+  await expect(action).toHaveCSS("font-size", POINTER_ACTION_SIZE);
+  await expect(action).toHaveCSS("font-weight", POINTER_ACTION_WEIGHT);
 });
 
 test.describe("on Android", () => {
@@ -333,5 +347,21 @@ test.describe("on Android", () => {
     const action = card.getByRole("button", { name: "Choose another folder" });
 
     expect((await boxOf(action)).height).toBe(TOUCH_ACTION_HEIGHT);
+  });
+
+  test("fills the warning's action in the warning ink with 14px semibold type on a phone", async ({
+    page,
+  }) => {
+    const { card } = await failToAddAFolder(page);
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+
+    const action = card.getByRole("button", { name: "Choose another folder" });
+
+    await expect(action).toHaveCSS(
+      "background-color",
+      await colourOf(page, "--color-on-warning"),
+    );
+    await expect(action).toHaveCSS("font-size", ANDROID_ACTION_SIZE);
+    await expect(action).toHaveCSS("font-weight", ANDROID_ACTION_WEIGHT);
   });
 });

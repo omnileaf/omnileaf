@@ -1,5 +1,7 @@
 <script lang="ts" module>
   export const TOAST_ICON_SIZE = 20;
+  export const WARNING_ACTION =
+    "bg-on-warning px-lg text-label font-medium text-warning-soft min-block-touch-target android:font-semibold desktop:rounded-toast-action desktop:px-sm desktop:text-caption desktop:min-block-xl";
 </script>
 
 <script lang="ts">
@@ -51,7 +53,7 @@
     action?: NoticeAction | undefined;
     shortcut?: { readonly label: string; readonly keys: string } | undefined;
     children?: Snippet;
-    actions?: Snippet;
+    actions?: Snippet | undefined;
     onDismiss: () => void;
   } = $props();
 </script>
