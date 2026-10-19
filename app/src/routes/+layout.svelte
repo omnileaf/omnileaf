@@ -49,6 +49,11 @@
     setSkipUpNextSetting,
     skipUpNextSettingForDocument,
   } from "#lib/up-next/skip-up-next.svelte.ts";
+  import {
+    ANIMATIONS_PREFERENCE_KEY,
+    animationsSettingForDocument,
+    setAnimationsSetting,
+  } from "#lib/appearance/animations.svelte.ts";
   import ScreenshotModeAnnouncement from "#lib/screenshot-mode/ScreenshotModeAnnouncement.svelte";
   import { shortcut } from "#lib/shortcut.ts";
 
@@ -71,6 +76,7 @@
     scheduledRescansSettingForDocument(),
   );
   setSkipUpNextSetting(skipUpNextSettingForDocument());
+  const animations = setAnimationsSetting(animationsSettingForDocument());
   setSwipeActionsSetting(swipeActionsSettingForDocument());
   setNotices(new Notices());
   const bookPresence = setBookPresence(new BookPresence());
@@ -116,6 +122,15 @@
   });
 
   $effect(() => {
+    const root = document.documentElement;
+    if (animations.stillGroups === "") {
+      delete root.dataset.still;
+    } else {
+      root.dataset.still = animations.stillGroups;
+    }
+  });
+
+  $effect(() => {
     if (data.libraryProblem === null) {
       void commands.setScheduledRescans(
         scheduledRescans.isOnFor(data.appInfo.platform),
@@ -154,6 +169,11 @@
   })}
   onfocus={settleScreenshotMode}
   onpageshow={settleScreenshotMode}
+  onstorage={(event: StorageEvent) => {
+    if (event.key === ANIMATIONS_PREFERENCE_KEY) {
+      animations.reread();
+    }
+  }}
 />
 <svelte:document onvisibilitychange={followVisibility} />
 
