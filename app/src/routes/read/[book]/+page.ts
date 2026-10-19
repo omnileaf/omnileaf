@@ -24,6 +24,7 @@ const SHOWN_ON_FAILURE = {
   seriesNotFound: FAILED,
   searchTooLong: FAILED,
   cursorForAnotherList: FAILED,
+  bookmarksNotKept: FAILED,
   internal: FAILED,
 } satisfies Record<IpcErrorCode, BookShown>;
 

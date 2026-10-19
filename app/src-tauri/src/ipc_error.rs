@@ -34,6 +34,7 @@ pub(crate) enum IpcErrorCode {
     CursorForAnotherList,
     BookNotFound,
     BookUnreadable,
+    BookmarksNotKept,
     Internal,
 }
 
@@ -80,6 +81,13 @@ impl IpcError {
         Self {
             code: IpcErrorCode::DevelopmentBuildOnly,
             message: "only development builds can crash on purpose",
+        }
+    }
+
+    pub(crate) fn bookmarks_not_kept() -> Self {
+        Self {
+            code: IpcErrorCode::BookmarksNotKept,
+            message: "the library keeps no bookmarks yet",
         }
     }
 
@@ -208,6 +216,14 @@ mod tests {
                 IpcErrorCode::CursorForAnotherList,
                 IpcErrorCode::Internal,
             ]
+        );
+    }
+
+    #[test]
+    fn tells_the_interface_the_library_keeps_no_bookmarks_yet() {
+        assert_eq!(
+            IpcError::bookmarks_not_kept().code,
+            IpcErrorCode::BookmarksNotKept
         );
     }
 

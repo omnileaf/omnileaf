@@ -1,8 +1,15 @@
 <script lang="ts">
-  import { BookOpen, Eye, Maximize, Languages } from "@lucide/svelte";
+  import {
+    BookmarkX,
+    BookOpen,
+    Eye,
+    Maximize,
+    Languages,
+  } from "@lucide/svelte";
   import { onMount, untrack } from "svelte";
   import type { Attachment } from "svelte/attachments";
   import { on } from "svelte/events";
+  import { SvelteSet } from "svelte/reactivity";
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -148,6 +155,14 @@
   );
   const spreadIndex = $derived(spreadAt(spreads, turner.shown));
   const spread = $derived(spreads[spreadIndex] ?? [turner.shown]);
+  const bookmarks = untrack(() =>
+    book.bookmarkedPages === null
+      ? null
+      : new SvelteSet<number>(book.bookmarkedPages),
+  );
+  const isBookmarked = $derived(
+    spread.some((page) => bookmarks?.has(page) === true),
+  );
   const pageNumber = $derived(turner.shown + 1);
   const pageCount = $derived(book.pages.length);
   const pageLine = $derived(
@@ -287,6 +302,65 @@
         });
       },
     });
+  }
+
+  function pagesWord(pages: readonly number[], isBookmarked: boolean): string {
+    const first = String((pages[0] ?? 0) + 1);
+    const last = String((pages.at(-1) ?? 0) + 1);
+    if (pages.length === 1) {
+      return isBookmarked
+        ? m.reader_page_bookmarked({ page: first })
+        : m.reader_page_bookmark_removed({ page: first });
+    }
+    return isBookmarked
+      ? m.reader_pages_bookmarked({ first, last })
+      : m.reader_pages_bookmark_removed({ first, last });
+  }
+
+  async function keepBookmarks(
+    kept: SvelteSet<number>,
+    pages: readonly number[],
+    isOn: boolean,
+  ): Promise<boolean> {
+    const mark = (on: boolean): void => {
+      for (const page of pages) {
+        if (on) {
+          kept.add(page);
+        } else {
+          kept.delete(page);
+        }
+      }
+    };
+    mark(isOn);
+    const saved = await commands.bookmarkPages(book.id, [...pages], isOn);
+    if (saved.status === "error") {
+      mark(!isOn);
+      reportError(saved.error);
+      notices.show({
+        tone: "warning",
+        icon: BookmarkX,
+        title: m.reader_bookmark_failed(),
+        body: m.reader_bookmark_failed_body(),
+      });
+      return false;
+    }
+    return true;
+  }
+
+  async function toggleBookmark(): Promise<void> {
+    if (bookmarks === null) {
+      return;
+    }
+    const isOn = !isBookmarked;
+    const pages = spread.filter((page) => bookmarks.has(page) !== isOn);
+    if (await keepBookmarks(bookmarks, pages, isOn)) {
+      notices.offerUndo({
+        title: pagesWord(pages, isOn),
+        undo: () => {
+          void keepBookmarks(bookmarks, pages, !isOn);
+        },
+      });
+    }
   }
 
   function zoomTo(scale: number): void {
@@ -674,6 +748,18 @@
         {more}
         {isSettingsOpen}
         {areShortcutsOpen}
+        bookmark={bookmarks === null
+          ? null
+          : {
+              label:
+                spread.length > 1
+                  ? m.reader_bookmark_pages()
+                  : m.reader_bookmark(),
+              isPressed: isBookmarked,
+            }}
+        onBookmark={() => {
+          void toggleBookmark();
+        }}
         onShortcuts={() => {
           act("shortcuts");
         }}

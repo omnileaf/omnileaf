@@ -58,6 +58,7 @@ const FAILURES = {
   cursorForAnotherList: ADDING_FAILED,
   bookNotFound: ADDING_FAILED,
   bookUnreadable: ADDING_FAILED,
+  bookmarksNotKept: ADDING_FAILED,
   internal: ADDING_FAILED,
 } satisfies Record<IpcErrorCode, Failure>;
 

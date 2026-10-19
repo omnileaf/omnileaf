@@ -81,6 +81,7 @@ test("shows no cover for the books either side of a book opened in Screenshot mo
       reading: { state: "notStarted" },
     },
     readingDirection: null,
+    bookmarkedPages: null,
   };
 
   const standIn = standInOpenedBook(book);
