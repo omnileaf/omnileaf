@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use crate::Storage;
 
-const NETWORK_FILE_SYSTEMS: &[&str] = &[
+pub(crate) const NETWORK_FILE_SYSTEMS: &[&str] = &[
     "9p",
     "afpfs",
     "ceph",
@@ -35,9 +35,10 @@ const WINDOWS_ISCSI_BUS: u32 = 9;
 const WINDOWS_SD_BUS: u32 = 12;
 const WINDOWS_MMC_BUS: u32 = 13;
 
-struct Mount<'a> {
-    point: PathBuf,
-    file_system: &'a str,
+pub(crate) struct Mount<'a> {
+    pub(crate) point: PathBuf,
+    pub(crate) file_system: &'a str,
+    pub(crate) source: &'a str,
 }
 
 impl Mount<'_> {
@@ -50,17 +51,20 @@ impl Mount<'_> {
 }
 
 /// A Linux mountinfo line's fields after the mount point end in `- type source options`.
-fn mount_in(line: &str) -> Option<Mount<'_>> {
+pub(crate) fn mount_in(line: &str) -> Option<Mount<'_>> {
     let mut fields = line.split(' ');
     let point = fields.nth(4)?;
-    let file_system = fields.skip_while(|field| *field != "-").nth(1)?;
+    let mut after_separator = fields.skip_while(|field| *field != "-").skip(1);
+    let file_system = after_separator.next()?;
+    let source = after_separator.next()?;
     Some(Mount {
         point: PathBuf::from(unescape_mount_point(point)),
         file_system,
+        source,
     })
 }
 
-fn unescape_mount_point(point: &str) -> String {
+pub(crate) fn unescape_mount_point(point: &str) -> String {
     point
         .replace("\\040", " ")
         .replace("\\011", "\t")
