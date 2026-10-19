@@ -2,10 +2,12 @@
   import {
     ItemContent,
     ItemDescription,
+    ItemMedia,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
+  import type { Glyph } from "#lib/page/glyph.ts";
 
-  import type { AboutLook, HintKind } from "./look";
+  import { type AboutLook, type HintKind, ROW_ICON_SIZES } from "./look";
 
   const LABELS = {
     phone: "",
@@ -13,11 +15,13 @@
   } satisfies Record<AboutLook, string>;
 
   let {
+    icon: Icon,
     label,
     hint,
     hintKind = "prose",
     look,
   }: {
+    icon: Glyph;
     label: string;
     hint: string;
     hintKind?: HintKind | undefined;
@@ -27,6 +31,9 @@
   const isAddress = $derived(hintKind === "address");
 </script>
 
+<ItemMedia aria-hidden="true" class="shrink-0">
+  <Icon size={ROW_ICON_SIZES[look]} />
+</ItemMedia>
 <ItemContent class="wrap-anywhere">
   <ItemTitle class={LABELS[look]}>{label}</ItemTitle>
   <ItemDescription

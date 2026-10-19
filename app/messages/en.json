@@ -689,6 +689,7 @@
     }
   ],
   "about_title": "About",
+  "about_version_details": "Version details",
   "about_licence": "Omnileaf is free software. You can share and change it under the GNU General Public License, version 3.",
   "about_version": "Version",
   "about_copy_version_details": "Copy version details",
