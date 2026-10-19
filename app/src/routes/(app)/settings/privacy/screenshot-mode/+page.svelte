@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Keyboard } from "@lucide/svelte";
+  import { AppWindow, Keyboard } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
@@ -25,7 +25,7 @@
   ];
   const AFTER_AN_HOUR = "hour";
   const NEVER = "never";
-  const KEYBOARD_ICON_SIZE = 18;
+  const ROW_ICON_SIZE = 18;
   const CARD =
     "flex flex-col overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low";
 
@@ -35,6 +35,11 @@
   const shortcut = getScreenshotModeShortcut();
   const timeFormat = getTimeFormatSetting();
   const hasKeyboard = $derived(isPointer(data.appInfo.platform));
+  const trayName = $derived(
+    data.appInfo.platform === "macos"
+      ? m.screenshot_mode_menu_bar()
+      : m.screenshot_mode_tray(),
+  );
   const quicklyId = $props.id();
 
   let isChangingShortcut = $state(false);
@@ -118,7 +123,7 @@
           aria-hidden="true"
           class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile"
         >
-          <Keyboard size={KEYBOARD_ICON_SIZE} />
+          <Keyboard size={ROW_ICON_SIZE} />
         </span>
         <span class="flex flex-1 flex-col gap-2xs">
           <span class="font-semibold desktop:text-callout">
@@ -143,6 +148,20 @@
         >
           {m.screenshot_mode_shortcut_change()}
         </Button>
+      </div>
+      <div class="flex items-center gap-md border-bs border-border px-lg py-md">
+        <span
+          aria-hidden="true"
+          class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile"
+        >
+          <AppWindow size={ROW_ICON_SIZE} />
+        </span>
+        <span class="flex flex-1 flex-col gap-2xs">
+          <span class="font-semibold desktop:text-callout">{trayName}</span>
+          <span class="text-detail text-muted">
+            {m.screenshot_mode_tray_help()}
+          </span>
+        </span>
       </div>
     </section>
   {/if}
