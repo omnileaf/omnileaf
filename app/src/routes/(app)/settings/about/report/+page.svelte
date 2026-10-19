@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CircleAlert, CircleCheck } from "@lucide/svelte";
+  import { CircleAlert } from "@lucide/svelte";
 
   import { invalidate } from "$app/navigation";
   import {
@@ -13,10 +13,14 @@
   import { m } from "#lib/paraglide/messages.js";
   import IncludedRows from "#lib/problem-report/IncludedRows.svelte";
   import { PROBLEM_REPORT } from "#lib/problem-report/problem-report.ts";
+  import { localDayOf } from "#lib/history/local-date.ts";
+  import { appleDeviceOf } from "#lib/library/folder-location.ts";
+  import { showFileLabel } from "#lib/page/show-file.ts";
   import {
     ReportSharing,
-    type ShareWay,
+    type Shared,
   } from "#lib/problem-report/report-sharing.svelte.ts";
+  import { sharedNotice } from "#lib/problem-report/shared-notice.ts";
   import WaysToSend from "#lib/problem-report/WaysToSend.svelte";
   import { yourReportsForDocument } from "#lib/problem-report/your-reports.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -27,21 +31,44 @@
 
   const notices = getNotices();
   const yourReports = yourReportsForDocument();
-  const sharing = new ReportSharing(commands, (way: ShareWay) => {
-    if (data.report.status !== "ok") {
-      return;
-    }
-    const { code } = data.report.data;
-    yourReports.keep({ code, madeAtMs: Date.now() });
-    if (way === "copy") {
+  const platform = $derived(data.appInfo.platform);
+
+  async function showSaved(): Promise<void> {
+    const shown = await commands.showSavedProblemReport();
+    if (shown.status === "error") {
       notices.show({
-        tone: "plain",
-        icon: CircleCheck,
-        title: m.report_copied(),
-        body: m.report_kept({ code }),
+        tone: "warning",
+        icon: CircleAlert,
+        title: m.report_folder_unavailable(),
       });
     }
-  });
+  }
+
+  const sharing = new ReportSharing(
+    commands,
+    () => localDayOf(new Date()),
+    (shared: Shared) => {
+      if (data.report.status !== "ok") {
+        return;
+      }
+      const { code } = data.report.data;
+      yourReports.keep({ code, madeAtMs: Date.now() });
+      const notice = sharedNotice(shared, {
+        code,
+        platform,
+        appleDevice: appleDeviceOf(navigator.userAgent),
+        showFolder: {
+          label: showFileLabel(platform),
+          run: () => {
+            void showSaved();
+          },
+        },
+      });
+      if (notice !== undefined) {
+        notices.show(notice);
+      }
+    },
+  );
 </script>
 
 <SectionHeading
@@ -52,7 +79,7 @@
   <p class="text-detail text-muted">{m.report_intro()}</p>
   {#if data.report.status === "ok"}
     <IncludedRows report={data.report.data} />
-    <WaysToSend {sharing} />
+    <WaysToSend {sharing} canSave={platform !== "android"} />
   {:else}
     <Alert tone="warning" icon={CircleAlert} role="alert">
       <AlertTitle>{m.report_failed()}</AlertTitle>
