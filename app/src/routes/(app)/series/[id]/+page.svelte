@@ -3,7 +3,7 @@
   import { onMount, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
-  import { invalidate } from "$app/navigation";
+  import { goto, invalidate } from "$app/navigation";
   import { resolve } from "$app/paths";
   import {
     commands,
@@ -44,6 +44,8 @@
   } from "#lib/series/series-overview.ts";
   import SeriesBooks from "#lib/series/SeriesBooks.svelte";
   import SeriesAbout from "#lib/series/SeriesAbout.svelte";
+  import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
+  import { showFolderLabel } from "#lib/page/show-file.ts";
   import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
   import type { EditedSeries } from "#lib/series/edited-series.ts";
   import SeriesBand from "#lib/series/SeriesBand.svelte";
@@ -94,6 +96,9 @@
   );
 
   let keepsDetailEdits = $state(false);
+  let keepsLabels = $state(false);
+  let isLabelling = $state(false);
+  const isDesktop = $derived(DESKTOPS.includes(data.appInfo.platform));
   let editedSeries = $state<EditedSeries | undefined>();
   let barHeight = $state(0);
   let isTitleUnderBar = $state(false);
@@ -212,6 +217,7 @@
 
   onMount(() => {
     void loadDetailEditSupport();
+    void loadLabelSupport();
     return listenForLibraryChanges(() => {
       readAgain();
     }, reportError);
@@ -219,6 +225,42 @@
 
   async function loadDetailEditSupport(): Promise<void> {
     keepsDetailEdits = await commands.keepsDetailEdits().catch(() => false);
+  }
+
+  async function loadLabelSupport(): Promise<void> {
+    const labels = await commands.seriesLabels([]);
+    if (labels.status === "ok") {
+      keepsLabels = labels.data.keepsLabels;
+    }
+  }
+
+  function editDetails(): void {
+    if (found !== undefined && cover !== undefined) {
+      editedSeries = {
+        id: found.overview.id,
+        title: overview?.title ?? found.overview.title,
+        cover,
+      };
+    }
+  }
+
+  function editDetailsFromMenu(): void {
+    if (isWide.current) {
+      editDetails();
+    } else {
+      void goto(resolve("/(app)/series/[id]/edit", { id: data.id }));
+    }
+  }
+
+  function showInFolder(): void {
+    if (foundId === undefined) {
+      return;
+    }
+    void commands.showSeriesInFolder(foundId).then((shown) => {
+      if (shown.status === "error") {
+        reportError(shown.error);
+      }
+    });
   }
 
   $effect(() => {
@@ -279,6 +321,18 @@
       {isTitleUnderBar}
       bind:height={barHeight}
       onMarkAll={found === undefined ? undefined : markAll}
+      onLabel={keepsLabels && found !== undefined
+        ? () => {
+            isLabelling = true;
+          }
+        : undefined}
+      onEditDetails={keepsDetailEdits && found !== undefined
+        ? editDetailsFromMenu
+        : undefined}
+      showFolder={{
+        label: showFolderLabel(data.appInfo.platform),
+        onShow: isDesktop ? showInFolder : undefined,
+      }}
     />
   {/if}
   {#if found !== undefined && overview !== undefined && cover !== undefined}
@@ -291,11 +345,7 @@
         {coverUrl}
         isWide={isWide.current}
         onMarkAll={markAll}
-        onEditDetails={keepsDetailEdits
-          ? () => {
-              editedSeries = { id: overview.id, title: overview.title, cover };
-            }
-          : undefined}
+        onEditDetails={keepsDetailEdits ? editDetails : undefined}
       />
       <div class="flex flex-1 flex-col gap-lg min-inline-none">
         {#if overview.bookCount === 0}
@@ -382,3 +432,12 @@
   }}
   onError={reportError}
 />
+
+{#if foundId !== undefined}
+  <LabelSeriesDialog
+    bind:isOpen={isLabelling}
+    series={[foundId]}
+    startsAtTags={false}
+    onError={reportError}
+  />
+{/if}

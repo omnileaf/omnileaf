@@ -6,15 +6,18 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
-  import { commands } from "#lib/ipc/bindings.ts";
   import type { CoverUrl } from "#lib/library/cover-url.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { lastShown } from "#lib/page/last-shown.svelte.ts";
-  import type { UndoOffer } from "#lib/notices/notices.ts";
+  import { getNotices, type UndoOffer } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { changesBetween, type DetailDraft, editsOf } from "./detail-edits.ts";
-  import { type DetailsBeingEdited, detailsToEdit } from "./details-to-edit.ts";
+  import { changesBetween, type DetailDraft } from "./detail-edits.ts";
+  import {
+    type DetailsBeingEdited,
+    detailsToEdit,
+    saveDetails,
+  } from "./details-to-edit.ts";
   import DetailUndoToast from "./DetailUndoToast.svelte";
   import DiscardDetailsDialog from "./DiscardDetailsDialog.svelte";
   import EditDetailsFields from "./EditDetailsFields.svelte";
@@ -35,6 +38,7 @@
   } = $props();
 
   const shown = lastShown(() => series);
+  const notices = getNotices();
   let editing = $state<DetailsBeingEdited | undefined>();
   let isAsking = $state(false);
   let undoOffer = $state<UndoOffer | undefined>();
@@ -80,15 +84,9 @@
     if (series === undefined || editing === undefined) {
       return;
     }
-    const saved = await commands.editSeriesDetails(
-      series.id,
-      editsOf(editing.details, editing.draft),
-    );
-    if (saved.status !== "ok") {
-      onError(saved.error);
-      return;
+    if (await saveDetails(series.id, editing, notices)) {
+      onSaved();
     }
-    onSaved();
   }
 </script>
 
