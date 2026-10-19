@@ -11,29 +11,38 @@
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import {
     commands,
+    type HistoryEntry,
     type LibrarySeries,
     type Platform,
     SEARCH_MAX_CHARS,
   } from "#lib/ipc/bindings.ts";
   import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
+  import { browserPreferenceStore } from "#lib/preferences/stored-preference.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
   import { isComposing } from "./composition";
-  import { placesMatching } from "./places";
+  import { PLACES, placesMatching } from "./places";
   import { type Choice, choiceKey } from "./quick-open-choice";
   import { quickOpenShortcutLabel } from "./quick-open-shortcut";
   import QuickOpenOption from "./QuickOpenOption.svelte";
   import type { QuickOpenState } from "./quick-open-state.svelte";
+  import { RecentSearches } from "./recent-searches.svelte";
+  import { searchQuery } from "./search-route";
 
   interface Group {
-    readonly name: "series" | "places";
+    readonly name: "continue" | "recent" | "series" | "actions";
     readonly label: string;
     readonly choices: readonly Choice[];
     readonly start: number;
   }
 
   const SERIES_SHOWN = 6;
+  const UNFINISHED_SHOWN = 2;
+  const RECENT_SHOWN = 3;
+  const SETTINGS_PLACE = PLACES.find(
+    (place) => place.route === "/(app)/settings",
+  );
   const SEARCH_ICON_SIZE = 20;
 
   let {
@@ -49,6 +58,8 @@
   let text = $state("");
   let answered = $state("");
   let series: readonly LibrarySeries[] = $state([]);
+  let unfinished: readonly HistoryEntry[] = $state([]);
+  let recent: readonly string[] = $state([]);
   let selectedKey = $state("");
   let latestSearch = 0;
 
@@ -56,31 +67,77 @@
   const listboxId = `${id}-results`;
   const nothingFoundId = `${id}-nothing-found`;
 
+  function groupsOf(
+    named: readonly Pick<Group, "name" | "label" | "choices">[],
+  ): Group[] {
+    let start = 0;
+    return named
+      .filter((group) => group.choices.length > 0)
+      .map((group) => {
+        const placed = { ...group, start };
+        start += group.choices.length;
+        return placed;
+      });
+  }
+
   const groups: readonly Group[] = $derived.by(() => {
-    const seriesChoices = series.map((one): Choice => ({
-      kind: "series",
-      series: one,
-    }));
-    const placeChoices = placesMatching(text, getLocale()).map(
-      (place): Choice => ({ kind: "place", place }),
-    );
-    return [
+    if (text.trim() === "") {
+      return groupsOf([
+        {
+          name: "continue",
+          label: m.quick_open_continue(),
+          choices: unfinished.map((entry): Choice => ({
+            kind: "continue",
+            entry,
+          })),
+        },
+        {
+          name: "recent",
+          label: m.quick_open_recent(),
+          choices: recent.map((searched): Choice => ({
+            kind: "search",
+            text: searched,
+            isRecent: true,
+          })),
+        },
+        {
+          name: "actions",
+          label: m.quick_open_actions(),
+          choices: [
+            { kind: "showUnread" },
+            ...(SETTINGS_PLACE === undefined
+              ? []
+              : [{ kind: "place" as const, place: SETTINGS_PLACE }]),
+          ],
+        },
+      ]);
+    }
+    return groupsOf([
       {
-        name: "series" as const,
+        name: "series",
         label: m.quick_open_series(),
-        choices: seriesChoices,
-        start: 0,
+        choices: series.map((one): Choice => ({ kind: "series", series: one })),
       },
       {
-        name: "places" as const,
-        label: m.quick_open_places(),
-        choices: placeChoices,
-        start: seriesChoices.length,
+        name: "actions",
+        label: m.quick_open_actions(),
+        choices: [
+          ...placesMatching(text, getLocale()).map((place): Choice => ({
+            kind: "place",
+            place,
+          })),
+          { kind: "search", text: text.trim(), isRecent: false },
+        ],
       },
-    ].filter((group) => group.choices.length > 0);
+    ]);
   });
   const choices = $derived(groups.flatMap((group) => group.choices));
   const isAnswered = $derived(answered === text);
+  const findsNothing = $derived(
+    isAnswered &&
+      text.trim() !== "" &&
+      choices.every((choice) => choice.kind === "search"),
+  );
   const active = $derived(
     Math.max(
       0,
@@ -98,8 +155,31 @@
     text = "";
     answered = "";
     series = [];
+    recent = new RecentSearches(browserPreferenceStore()).entries
+      .slice(0, RECENT_SHOWN)
+      .map((entry) => entry.text);
     selectFirstChoice();
     latestSearch += 1;
+    void loadUnfinished();
+  }
+
+  async function loadUnfinished(): Promise<void> {
+    const page = await commands.readingHistory(null, { kind: "unfinished" });
+    unfinished =
+      page.status === "ok" ? page.data.entries.slice(0, UNFINISHED_SHOWN) : [];
+    if (text === "") {
+      selectFirstChoice();
+    }
+  }
+
+  async function showUnread(): Promise<void> {
+    const kept = await commands.libraryListing();
+    const listing = kept.status === "ok" ? kept.data : NEW_LIBRARY_LISTING;
+    await commands.setLibraryListing({
+      ...listing,
+      filter: { ...NEW_LIBRARY_LISTING.filter, unread: "only" },
+    });
+    await goto(resolve("/(app)"));
   }
 
   async function lookFor(typed: string): Promise<void> {
@@ -151,10 +231,23 @@
     quickOpen.close();
     switch (choice.kind) {
       case "series":
-        void goto(resolve("/(app)/series/[id]", { id: choice.series.id }));
+        void goto(
+          choice.series.continuesFrom === null
+            ? resolve("/(app)/series/[id]", { id: choice.series.id })
+            : resolve("/read/[book]", { book: choice.series.continuesFrom }),
+        );
         return;
       case "place":
         void goto(resolve(choice.place.route));
+        return;
+      case "continue":
+        void goto(resolve("/read/[book]", { book: choice.entry.book }));
+        return;
+      case "search":
+        void goto(`${resolve("/(app)/search")}${searchQuery(choice.text)}`);
+        return;
+      case "showUnread":
+        void showUnread();
         return;
     }
   }
@@ -293,10 +386,10 @@
       role="status"
       class={[
         "text-small text-muted",
-        choices.length === 0 && "m-sm px-option-inline py-sm",
+        findsNothing && "m-sm px-option-inline py-sm",
       ]}
     >
-      {#if choices.length === 0 && isAnswered}
+      {#if findsNothing}
         {m.search_nothing_called({ text: text.trim() })}
       {/if}
     </p>
