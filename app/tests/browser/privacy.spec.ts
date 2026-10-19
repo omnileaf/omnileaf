@@ -62,11 +62,11 @@ test("changes the choice from the keyboard", async ({ page }) => {
 test.describe("on a touch screen", () => {
   test.use(onPlatform("android"));
 
-  test("summarises the crash report choice in the settings list", async ({
-    page,
-  }) => {
-    await openPrivacy(page);
-    await page.getByRole("radio", { name: "Always send" }).click();
+  test("summarises Screenshot mode in the settings list", async ({ page }) => {
+    await page.goto("/settings/privacy/screenshot-mode");
+    await page
+      .getByRole("switch", { name: "Screenshot mode", exact: true })
+      .click();
 
     await page.goto("/settings");
     test.skip(
@@ -76,7 +76,7 @@ test.describe("on a touch screen", () => {
 
     await expect(
       page.getByRole("main").getByRole("link", { name: /^Privacy/ }),
-    ).toContainText("Always send crash reports");
+    ).toContainText("Screenshot mode on");
   });
 });
 

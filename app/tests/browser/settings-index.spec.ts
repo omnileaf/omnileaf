@@ -1,3 +1,4 @@
+import type { FakeBackend } from "./fake-backend.ts";
 import {
   EXPANDED_MIN_WIDTH,
   expect,
@@ -9,12 +10,32 @@ import {
 
 const SUMMARIES = [
   { section: "Appearance", summary: "Follows the system" },
-  { section: "Privacy", summary: "Ask before sending crash reports" },
-  { section: "General", summary: "English" },
+  { section: "Privacy", summary: "Screenshot mode off" },
+  { section: "General", summary: "English · opens to Library" },
+  { section: "Library", summary: "2 folders · 128 series" },
+  { section: "Advanced", summary: "Animations" },
   { section: "About", summary: `Version ${FAKE_APP_VERSION}` },
 ] as const;
 
-test.use(onPlatform("android"));
+const FOLDER = {
+  kind: "linked",
+  location: "/media/Comics",
+  isAvailable: true,
+} as const;
+
+test.use({
+  backend: {
+    ...onPlatform("android").backend,
+    libraryFolders: () => ({
+      folders: [
+        { ...FOLDER, id: "comics", name: "Comics" },
+        { ...FOLDER, id: "manga", name: "Manga" },
+      ],
+      next: null,
+    }),
+    librarySeriesCount: () => 128,
+  } satisfies FakeBackend,
+});
 
 test("summarises each section from what the app stores", async ({ page }) => {
   await page.goto("/settings");
