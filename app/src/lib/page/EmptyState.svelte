@@ -14,29 +14,31 @@
     icon: Icon,
     title,
     body,
+    role,
     children,
   }: {
     icon: Glyph;
     title: string;
     body: string;
+    role?: "alert";
     children?: Snippet;
   } = $props();
 
-  const ICON_SIZE = 28;
+  const ICON_SIZE = 24;
 
   const titleId = $props.id();
 </script>
 
 <Empty
   aria-labelledby={titleId}
+  {role}
   class="flex-1 justify-center px-xl pbe-empty-lift"
 >
-  <EmptyMedia class="medium:text-accent">
+  <EmptyMedia>
     <Icon size={ICON_SIZE} class="block-empty-icon inline-empty-icon" />
   </EmptyMedia>
   <EmptyTitle id={titleId}>{title}</EmptyTitle>
-  <EmptyDescription class="text-callout max-inline-prose"
-    >{body}</EmptyDescription
+  <EmptyDescription class="text-small max-inline-prose">{body}</EmptyDescription
   >
   {@render children?.()}
 </Empty>

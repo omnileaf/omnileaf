@@ -87,7 +87,7 @@ const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height=
 
 const GRID_LOOKS = {
   phone: [
-    { columns: 3, gap: 14, titleSize: 13, showsBookCount: true },
+    { columns: 3, gap: 12, titleSize: 14, showsBookCount: true },
     { columns: 4, gap: 10, titleSize: 12, showsBookCount: false },
     { columns: 5, gap: 8, titleSize: 11, showsBookCount: false },
   ],
@@ -775,7 +775,7 @@ test.describe("view options", () => {
   test("shows how many series the library holds beside its title once item counts are on, or under it on a phone", async ({
     page,
   }) => {
-    await openWith(page, DEFAULT_LIBRARY_VIEW);
+    await openWith(page, { ...DEFAULT_LIBRARY_VIEW, showsItemCounts: false });
     const count = page
       .getByRole("main")
       .getByText(`${String(SERIES_IN_CATALOG)} series`, { exact: true });

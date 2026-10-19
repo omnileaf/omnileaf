@@ -23,8 +23,8 @@ export const CONTROLS: readonly Control[] = [
   },
   {
     name: "an outlined button",
-    path: "/",
-    find: (page) => addFolderInPageHeading(page),
+    path: "/settings/about",
+    find: (page) => page.getByRole("button", { name: "Copy version details" }),
   },
   {
     name: "a destination in the sidebar",
@@ -74,13 +74,6 @@ export const WITH_THE_PICKER_OPEN: FakeBackend = {
 export function addFolderBesideFolders(page: Page): Locator {
   return page
     .getByRole("region", { name: "Folders" })
-    .getByRole("button", { name: "Add a folder" });
-}
-
-export function addFolderInPageHeading(page: Page): Locator {
-  return page
-    .getByRole("main")
-    .locator("header")
     .getByRole("button", { name: "Add a folder" });
 }
 
