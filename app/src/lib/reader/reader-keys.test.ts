@@ -3,7 +3,7 @@ import { afterEach, expect, test } from "vitest";
 import { shortcut } from "#lib/shortcut.ts";
 
 import { type ReaderAction, readerShortcuts } from "./reader-keys";
-import type { ReadingDirection } from "./reading-direction.svelte";
+import type { ReadingDirection, ReadingMode } from "./reading-direction.svelte";
 import type { Platform } from "#lib/ipc/bindings.ts";
 
 const detachments: (() => void)[] = [];
@@ -19,6 +19,7 @@ function actionsFor(
   target: EventTarget = document.body,
   direction: ReadingDirection = "leftToRight",
   platform: Platform = "linux",
+  mode: ReadingMode = "paged",
 ): ReaderAction[] {
   const actions: ReaderAction[] = [];
   detachments.push(
@@ -29,6 +30,7 @@ function actionsFor(
         },
         () => direction,
         platform,
+        mode,
       ),
     )(window),
   );
@@ -217,4 +219,34 @@ test("goes back to the series with ⌘ [ on macOS, and not with Alt there", () =
   );
 
   expect(actions).toEqual(["back"]);
+});
+
+test("scrolls a long strip down with the down arrow and up with the up arrow", () => {
+  const actions = actionsFor(
+    [{ key: "ArrowDown" }, { key: "ArrowUp" }],
+    document.body,
+    "leftToRight",
+    "linux",
+    "longStrip",
+  );
+
+  expect(actions).toEqual(["next", "previous"]);
+});
+
+test("scrolls a long strip on with the right arrow whatever way its series reads", () => {
+  const actions = actionsFor(
+    [{ key: "ArrowRight" }, { key: "ArrowLeft" }],
+    document.body,
+    "rightToLeft",
+    "linux",
+    "longStrip",
+  );
+
+  expect(actions).toEqual(["next", "previous"]);
+});
+
+test("leaves the up and down arrows to the page while pages turn", () => {
+  const actions = actionsFor([{ key: "ArrowDown" }, { key: "ArrowUp" }]);
+
+  expect(actions).toEqual([]);
 });
