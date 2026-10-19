@@ -23,6 +23,7 @@
     addFolder,
     notices,
     rowAction,
+    rowDetail,
     rowNotice,
     isFoundEmpty,
     status,
@@ -35,6 +36,7 @@
     addFolder: AddFolder;
     notices: Notices;
     rowAction?: Snippet<[LibraryFolder]>;
+    rowDetail?: Snippet<[LibraryFolder]>;
     rowNotice?: Snippet<[LibraryFolder]>;
     isFoundEmpty?: (folder: LibraryFolder) => boolean;
     status?: Snippet;
@@ -175,7 +177,11 @@
             tabindex="-1"
             class="relative focus-visible:rounded-card focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent ios:not-last:after:absolute ios:not-last:after:inset-s-ios-folder-separator ios:not-last:after:inset-e-none ios:not-last:after:inset-be-none ios:not-last:after:border-be ios:not-last:after:border-ios-separator"
           >
-            <FolderRow {folder} isFoundEmpty={isFoundEmpty?.(folder) ?? false}>
+            <FolderRow
+              {folder}
+              isFoundEmpty={isFoundEmpty?.(folder) ?? false}
+              detail={rowDetail}
+            >
               {#snippet action()}
                 {@render rowAction?.(folder)}
                 <RowActionButton
