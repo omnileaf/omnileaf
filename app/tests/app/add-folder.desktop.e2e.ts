@@ -22,8 +22,8 @@ const LINKED_FOLDER_NAMES = xpath(
 const REMOVE_SAMPLE_LIBRARY = xpath(
   `//button[@aria-label='Remove ${SAMPLE_LIBRARY.name}']`,
 );
-const CONFIRM_REMOVAL = xpath(
-  "//*[@aria-modal='true'][@data-state='open']//button[normalize-space()='Remove folder']",
+const DISMISS_REMOVAL_UNDO = xpath(
+  `//li[@data-sonner-toast][.//p[normalize-space()='${SAMPLE_LIBRARY.name} removed']]//button[@aria-label='Dismiss']`,
 );
 const FOLDERS_WITHOUT_LINKED_FOLDERS = xpath(
   "//section[.//h2[normalize-space()='Folders']][not(.//li)]",
@@ -145,12 +145,12 @@ test("adds a folder from Settings › Library and lists it there", async () => {
   expect(await listed.text()).toBe(SAMPLE_LIBRARY.name);
 });
 
-test("removes a folder from Settings › Library once the removal is confirmed", async () => {
+test("removes a folder from Settings › Library once its Undo is dismissed", async () => {
   await openLibrarySettings();
   await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
   await (await appSession().waitFor(REMOVE_SAMPLE_LIBRARY)).click();
 
-  await (await appSession().waitFor(CONFIRM_REMOVAL)).click();
+  await (await appSession().waitFor(DISMISS_REMOVAL_UNDO)).click();
 
   await appSession().waitFor(FOLDERS_WITHOUT_LINKED_FOLDERS);
   await openLibrarySettings();

@@ -772,6 +772,8 @@
   "library_remove_folder_confirm": "⟦Ŕéɱöṽé ƒöļðéŕ······⟧",
   "library_remove_folder_cancel": "⟦Çáñçéļ···⟧",
   "library_remove_folder_failed": "⟦Çöûļðñ'ţ ŕéɱöṽé {name}. Ţŕý áĝáíñ.··············⟧",
+  "library_folder_removed": "⟦{name} ŕéɱöṽéð······⟧",
+  "library_folder_removed_files_stay": "⟦Íţš ƒíļéš šţáý ŵĥéŕé ţĥéý áŕé.············⟧",
   "library_rescan_folder": "⟦Ŕéšçáñ···⟧",
   "library_rescan_folder_label": "⟦Ŕéšçáñ {name}······⟧",
   "library_rescan_checking": "⟦Çĥéçķíñĝ {name} ƒöŕ çĥáñĝéš···········⟧",
