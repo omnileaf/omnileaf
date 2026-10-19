@@ -47,7 +47,7 @@ jobs:
           shared-key: xtask
           save-if: false
 
-      - uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
+      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
         with:
           tool: cargo-about@0.9.2
 
@@ -82,7 +82,7 @@ jobs:
     steps:
       - name: Get a token that starts CI on its commit
         id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ secrets.DEPENDABOT_LICENCES_APP_CLIENT_ID }}
           private-key: ${{ secrets.DEPENDABOT_LICENCES_APP_PRIVATE_KEY }}
