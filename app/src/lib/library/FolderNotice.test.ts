@@ -1,6 +1,6 @@
 import { tick } from "svelte";
 import { afterEach, expect, test, vi } from "vitest";
-import { page } from "vitest/browser";
+import { type Locator, page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import type {
@@ -64,8 +64,26 @@ function failed(code: IpcErrorCode): AddFolderResult {
 const CANCELLED: AddFolderResult = { status: "ok", data: null };
 
 afterEach(async () => {
+  delete document.documentElement.dataset.platform;
   await clearToasts();
 });
+
+function colourOf(token: string): string {
+  const probe = document.createElement("span");
+  probe.style.color = `var(${token})`;
+  document.body.append(probe);
+  const colour = getComputedStyle(probe).color;
+  probe.remove();
+  return colour;
+}
+
+function iconColourOf(toast: Locator): string {
+  const icon = toast.element().querySelector("svg");
+  if (icon === null) {
+    throw new Error("the toast has no icon");
+  }
+  return getComputedStyle(icon).color;
+}
 
 function toastSaying(text: string) {
   return page.getByRole("listitem").filter({ hasText: text });
@@ -264,6 +282,24 @@ test("turns the finding toast into the result in the same place", async () => {
     .toBeVisible();
   expect(toastSaying("Added 7 books").element()).toBe(shownWhileFinding);
   expect(page.getByRole("listitem").elements()).toHaveLength(1);
+});
+
+test("draws the scan's icons on Android in the snackbar's inverse primary", async () => {
+  document.documentElement.dataset.platform = "android";
+  const scan = new PendingScan();
+  const { button } = await renderWith(scan.addFolder);
+  await button.click();
+  scan.report({ stage: "finding", found: 3 });
+  const finding = toastSaying("Finding books");
+  await expect.element(finding).toBeVisible();
+  const whileFinding = iconColourOf(finding);
+
+  scan.finish(scanned({}));
+  const added = toastSaying("Added 7 books from Sample Library");
+  await expect.element(added).toBeVisible();
+
+  expect(whileFinding).toBe(colourOf("--android-inverse-primary"));
+  expect(iconColourOf(added)).toBe(colourOf("--android-inverse-primary"));
 });
 
 test("keeps one toast when the page swaps in another notice for the same scan", async () => {

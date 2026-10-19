@@ -120,6 +120,16 @@ function headingSpill(page: Page): Promise<number> {
 
 function textSpillingDown(page: Page): Promise<string[]> {
   return page.evaluate((overshoot) => {
+    function fontOvershootBelowLine(text: Text, lineHeight: string): number {
+      const range = document.createRange();
+      range.selectNodeContents(text);
+      const glyphHeight = range.getClientRects()[0]?.height ?? 0;
+      const lineHeightPx = Number.parseFloat(lineHeight);
+      return Number.isNaN(lineHeightPx)
+        ? 0
+        : Math.max(0, (glyphHeight - lineHeightPx) / 2);
+    }
+
     const spilled: string[] = [];
     for (const element of document.querySelectorAll("body *")) {
       const style = getComputedStyle(element);
@@ -132,14 +142,16 @@ function textSpillingDown(page: Page): Promise<string[]> {
       ) {
         continue;
       }
-      const hasText = [...element.childNodes].some(
-        (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
+      const text = [...element.childNodes].find(
+        (node): node is Text =>
+          node instanceof Text && node.textContent.trim() !== "",
       );
       const isScroller = ["auto", "scroll"].includes(style.overflowY);
       if (
-        hasText &&
+        text !== undefined &&
         !isScroller &&
-        element.scrollHeight - element.clientHeight > overshoot
+        element.scrollHeight - element.clientHeight >
+          overshoot + fontOvershootBelowLine(text, style.lineHeight)
       ) {
         spilled.push(element.outerHTML.slice(0, 140));
       }

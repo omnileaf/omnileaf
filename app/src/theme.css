@@ -206,6 +206,7 @@
   --font-windows:
     "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui,
     sans-serif;
+  --font-android: "Roboto Flex", Roboto, "Noto Sans", system-ui, sans-serif;
   --text-scale-ios: 1.0625;
   --text-scale-macos: 0.93;
   --radius-sm: 0.375rem;
@@ -219,6 +220,13 @@
   --radius-macos-panel: 10px;
   --radius-windows-control: 4px;
   --radius-windows-overlay: 8px;
+  --radius-android-xs: 4px;
+  --radius-android-sm: 8px;
+  --radius-android-md: 12px;
+  --radius-android-lg: 16px;
+  --radius-android-xl: 28px;
+  --state-hover: 8%;
+  --state-pressed: 10%;
   --control-ios: 50px;
   --control-macos: 28px;
   --control-windows: 32px;
@@ -258,6 +266,64 @@
   --sidebar-selection-foreground: var(--sidebar-accent-foreground);
   --sidebar-row-height: 2rem;
   --sidebar-row-radius: var(--radius-md);
+  --hover-fill: var(--accent);
+  --pressed-fill: color-mix(in oklab, var(--foreground) 8%, var(--accent));
+  --android-container-low: color-mix(
+    in oklch,
+    var(--foreground) 4%,
+    var(--background)
+  );
+  --android-container: color-mix(
+    in oklch,
+    var(--foreground) 6%,
+    var(--background)
+  );
+  --android-container-high: color-mix(
+    in oklch,
+    var(--foreground) 9%,
+    var(--background)
+  );
+  --android-tonal: color-mix(in oklch, var(--primary) 14%, var(--background));
+  --android-outline: color-mix(
+    in oklch,
+    var(--foreground) 45%,
+    var(--background)
+  );
+  --android-secondary-text: color-mix(
+    in oklch,
+    var(--foreground) 60%,
+    var(--background)
+  );
+  --android-tab-ink: color-mix(
+    in oklch,
+    var(--foreground) 80%,
+    var(--android-container)
+  );
+  --android-inverse-primary: color-mix(
+    in oklch,
+    var(--primary) 30%,
+    var(--background)
+  );
+}
+
+[data-platform="android"],
+[data-platform="android"] [data-theme] {
+  --platform-font: var(--font-android);
+  --secondary-text: var(--android-secondary-text);
+  --menu-surface: var(--android-container);
+  --menu-edge: transparent;
+  --menu-radius: var(--radius-android-xs);
+  --card-radius: var(--radius-android-md);
+  --hover-fill: color-mix(
+    in oklab,
+    currentColor var(--state-hover),
+    transparent
+  );
+  --pressed-fill: color-mix(
+    in oklab,
+    currentColor var(--state-pressed),
+    transparent
+  );
 }
 
 [data-platform="ios"],

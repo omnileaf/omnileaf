@@ -105,6 +105,23 @@ function tokenColour(token: string): string {
   return colour;
 }
 
+function colourOf(token: string): string {
+  const probe = document.createElement("span");
+  probe.style.color = `var(${token})`;
+  document.body.append(probe);
+  const colour = getComputedStyle(probe).color;
+  probe.remove();
+  return colour;
+}
+
+function cardOf(toast: Locator): Element {
+  const card = toast.element().querySelector(":scope > div");
+  if (card === null) {
+    throw new Error("the toast has no card");
+  }
+  return card;
+}
+
 function iconOf(toast: Locator): SVGSVGElement {
   const icon = toast.element().querySelector("svg");
   if (icon === null) {
@@ -463,14 +480,6 @@ test("sets a plain toast in 14px type with a 48px semibold action on Android", a
   });
 });
 
-function cardOf(toast: Locator): Element {
-  const card = toast.element().firstElementChild;
-  if (card === null) {
-    throw new Error("the toast has no card");
-  }
-  return card;
-}
-
 function cornerOf(element: Element): number {
   return Number.parseFloat(getComputedStyle(element).borderTopLeftRadius);
 }
@@ -515,4 +524,70 @@ test("rounds a warning toast on ios like a sheet rather than a pill", async () =
   const card = cardOf(toast);
 
   expect(cornerOf(card)).toBe(IOS_SHEET_CORNER);
+});
+
+test("draws a plain toast on Android as Material 3's snackbar, inverse at 4px corners with a quieter body and action", async () => {
+  const notices = await renderToastsOn("android");
+  notices.show({ ...READY, action: START_OVER });
+  const toast = toastSaying(READY.title);
+  await expect.element(toast).toBeVisible();
+
+  const card = getComputedStyle(cardOf(toast));
+  const title = getComputedStyle(
+    toast.getByText(READY.title, { exact: true }).element(),
+  );
+  const body = getComputedStyle(
+    toast.getByText("Every comic in it can be read now.").element(),
+  );
+  const action = getComputedStyle(
+    toast.getByRole("button", { name: START_OVER.label }).element(),
+  );
+
+  expect(card.backgroundColor).toBe(colourOf("--foreground"));
+  expect(card.borderTopColor).toBe("rgba(0, 0, 0, 0)");
+  expect(card.borderTopLeftRadius).toBe("4px");
+  expect(title.color).toBe(colourOf("--background"));
+  expect(body.color).toBe(colourOf("--color-snackbar-muted"));
+  expect(body.opacity).toBe("1");
+  expect(action.backgroundColor).toBe("rgba(0, 0, 0, 0)");
+  expect(action.color).toBe(colourOf("--android-inverse-primary"));
+  expect(action.fontWeight).toBe("600");
+});
+
+test("keeps a warning's own colours and filled action on Android, at the snackbar's 4px corners", async () => {
+  const notices = await renderToastsOn("android");
+  notices.show({ ...UNAVAILABLE, action: START_OVER });
+  const toast = toastSaying(UNAVAILABLE.title);
+  await expect.element(toast).toBeVisible();
+
+  const card = getComputedStyle(cardOf(toast));
+  const action = getComputedStyle(
+    toast.getByRole("button", { name: START_OVER.label }).element(),
+  );
+
+  expect(card.backgroundColor).toBe(colourOf("--color-warning-soft"));
+  expect(card.borderTopLeftRadius).toBe("4px");
+  expect(action.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+});
+
+test("draws a plain notice's icon on Android in the snackbar's inverse primary", async () => {
+  const notices = await renderToastsOn("android");
+  notices.show(READY);
+  const toast = toastSaying(READY.title);
+  await expect.element(toast).toBeVisible();
+
+  const icon = getComputedStyle(iconOf(toast));
+
+  expect(icon.color).toBe(colourOf("--android-inverse-primary"));
+});
+
+test("draws the undo icon on Android in the snackbar's muted ink", async () => {
+  const notices = await renderToastsOn("android");
+  notices.offerUndo({ title: "Letters deleted", undo: () => undefined });
+  const toast = toastSaying("Letters deleted");
+  await expect.element(toast).toBeVisible();
+
+  const icon = getComputedStyle(iconOf(toast));
+
+  expect(icon.color).toBe(colourOf("--color-snackbar-muted"));
 });
