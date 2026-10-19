@@ -72,5 +72,6 @@ test("lists the sorts in the order board 6.4 draws them", async () => {
     "Recently read",
     "Recently added",
     "Last updated",
+    "Unread count",
   ]);
 });

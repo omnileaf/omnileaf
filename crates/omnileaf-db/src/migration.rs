@@ -66,6 +66,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0030_hide_books_from_history"),
     migration!("0031_remember_the_page_each_reading_session_started_on"),
     migration!("0032_track_when_each_series_last_gained_a_book"),
+    migration!("0033_index_series_by_unread_count"),
 ];
 
 pub(crate) fn pending(
@@ -775,6 +776,46 @@ mod tests {
             .query_row("SELECT updated_at_ms FROM series", [], |row| row.get(0))
             .unwrap();
         assert_eq!(updated_at_ms, 9_000);
+    }
+
+    #[test]
+    fn counts_the_unread_books_of_each_series_kept_from_before_the_count_was_indexed() {
+        let scratch = ScratchLibrary::new("unread-count-upgrade");
+        let store = Store::new(
+            Database::open_with(&scratch.config, &MIGRATIONS[..32]).unwrap(),
+            StoppedClock,
+        );
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for number in 1..=3 {
+            connection
+                .execute(
+                    "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                     VALUES (?1, 1, 'Volume', x'', 0)",
+                    [book(number).as_bytes()],
+                )
+                .unwrap();
+        }
+        let written = store.write(|writer| writer.set_read(book(2), true));
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(written)
+            .unwrap();
+        drop(store);
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let unread_count: i64 = connection
+            .query_row("SELECT unread_count FROM series", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(unread_count, 2);
     }
 
     #[test]
