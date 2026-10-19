@@ -114,7 +114,7 @@ The `interface` group needs Node and pnpm (`pnpm install` first). It runs type c
 
 ### Browser tests
 
-The `browser` group runs the built interface in Chromium and WebKit at phone, tablet and desktop sizes, including an accessibility check in the light and dark themes. Install the browsers once with `pnpm --dir app exec playwright install chromium webkit`, adding `--with-deps` on Ubuntu or Debian to install the system libraries they need. Playwright's WebKit runs on Windows, macOS, Ubuntu and Debian. On other Linux distributions, run the Chromium tests with `pnpm --dir app test:e2e --project 'chromium-*'` and leave WebKit to CI.
+The `browser` group runs the built interface in Chromium and WebKit at phone, tablet and desktop sizes, including an accessibility check in the light and dark themes. A spec named `*.desktop.spec.ts`, such as the sweep of desktop window widths, runs only at the desktop size, since a phone or tablet screen doesn't resize like a window. Install the browsers once with `pnpm --dir app exec playwright install chromium webkit`, adding `--with-deps` on Ubuntu or Debian to install the system libraries they need. Playwright's WebKit runs on Windows, macOS, Ubuntu and Debian. On other Linux distributions, run the Chromium tests with `pnpm --dir app test:e2e --project 'chromium-*'` and leave WebKit to CI.
 
 CI splits the suite into ten shards, and its `browser tests` check passes once every shard has. `PLAYWRIGHT_SHARD=2/10 pnpm --dir app test:e2e` runs one of them.
 
