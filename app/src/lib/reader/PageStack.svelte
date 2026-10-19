@@ -1,8 +1,14 @@
 <script lang="ts">
+  import { ChevronRight, ImageOff, RefreshCw } from "@lucide/svelte";
   import { type Snippet, untrack } from "svelte";
   import type { Attachment } from "svelte/attachments";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
+  import {
+    EmptyDescription,
+    EmptyMedia,
+    EmptyTitle,
+  } from "#lib/components/ui/empty/index.ts";
   import { Spinner } from "#lib/components/ui/spinner/index.ts";
   import type { BookPage } from "#lib/ipc/bindings.ts";
   import { omniUrl } from "#lib/omni/omni-url.ts";
@@ -17,7 +23,9 @@
   const PAGES_AHEAD = 3;
   /** How long a page may take before a spinner says it's on its way, so a quick one never flashes one. */
   const SPINNER_DELAY_MS = 100;
-  const SPINNER_SIZE = 40;
+  const SPINNER_SIZE = 20;
+  const PROBLEM_ICON_SIZE = 20;
+  const BUTTON_ICON_SIZE = 16;
   /** Asks again for a page that failed once, as the core may have dropped its request for newer ones. */
   const RETRIES = 1;
 
@@ -29,6 +37,8 @@
     zoom,
     isReversed,
     overlay,
+    bookTitle,
+    onNextPage,
     onShownReady,
   }: {
     pages: readonly BookPage[];
@@ -38,6 +48,8 @@
     zoom: number;
     isReversed: boolean;
     overlay: Snippet;
+    bookTitle: string;
+    onNextPage: () => void;
     onShownReady: () => void;
   } = $props();
 
@@ -52,6 +64,8 @@
 
   const kept = $derived(pagesAround(shown, pages.length, PAGES_AHEAD));
   const isShownReady = $derived(decoded.has(shown) || failed.has(shown));
+  const isShownFailed = $derived(failed.has(shown));
+  const id = $props.id();
 
   function sizeOf(page: BookPage) {
     return page.size === null
@@ -95,6 +109,11 @@
     const retry = retries.get(index);
     const url = omniUrl(page.path);
     return retry === undefined ? url : `${url}?retry=${String(retry)}`;
+  }
+
+  function tryAgain(index: number): void {
+    failed.delete(index);
+    retries.set(index, (retries.get(index) ?? 0) + 1);
   }
 
   function onFailure(index: number): void {
@@ -157,9 +176,8 @@
         {@const isShown = spread.includes(index)}
         <div
           class={[
-            isShown
-              ? "relative shrink-0 bg-reader-page"
-              : "invisible absolute inset-none",
+            isShown ? "relative shrink-0" : "invisible absolute inset-none",
+            isShown && decoded.has(index) && "bg-reader-page",
             isShown &&
               (size === undefined
                 ? "block-full inline-full"
@@ -202,18 +220,63 @@
     style:height="{spaceHeight}px"
   >
     {@render overlay()}
-    <div
-      role="status"
-      class="pointer-events-none absolute inset-none flex items-center justify-center text-reader-muted"
+    <svelte:element
+      this={isShownFailed ? "section" : "div"}
+      aria-labelledby={isShownFailed ? `${id}-problem` : undefined}
+      class="pointer-events-none absolute inset-none flex flex-col items-center justify-center gap-lg px-xl"
     >
-      {#if failed.has(shown)}
-        <p class="px-xl text-center text-body">{m.reader_page_failed()}</p>
-      {:else if isSlow}
-        <Spinner
-          size={SPINNER_SIZE}
-          label={m.reader_page_loading({ page: shown + 1 })}
-        />
+      <div
+        role="status"
+        class="flex flex-col items-center gap-sm text-center max-inline-page-problem"
+      >
+        {#if isShownFailed}
+          <EmptyMedia>
+            <ImageOff size={PROBLEM_ICON_SIZE} aria-hidden="true" />
+          </EmptyMedia>
+          <EmptyTitle
+            id="{id}-problem"
+            class="text-group-title font-semibold expanded:text-body"
+            >{m.reader_page_failed()}</EmptyTitle
+          >
+          <EmptyDescription class="text-small"
+            >{m.reader_page_failed_body({
+              page: shown + 1,
+              title: bookTitle,
+            })}</EmptyDescription
+          >
+        {:else if isSlow}
+          <Spinner size={SPINNER_SIZE} class="text-muted" />
+          <p class="text-small text-muted">
+            {m.reader_page_loading({ page: shown + 1 })}
+          </p>
+        {/if}
+      </div>
+      {#if isShownFailed}
+        <div class="pointer-events-auto flex flex-wrap justify-center gap-sm">
+          <button
+            type="button"
+            class="flex items-center gap-sm rounded-shadcn-control border border-border bg-card px-lg text-body font-medium transition-control min-block-touch-target hover:bg-hover active:bg-pressed expanded:text-small expanded:min-block-pointer-button"
+            onclick={() => {
+              tryAgain(shown);
+            }}
+          >
+            <RefreshCw size={BUTTON_ICON_SIZE} aria-hidden="true" />
+            {m.reader_try_again()}
+          </button>
+          <button
+            type="button"
+            class="flex items-center gap-sm rounded-shadcn-control bg-accent px-lg text-body font-medium text-on-accent transition-control min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button"
+            onclick={onNextPage}
+          >
+            {m.reader_next_page()}
+            <ChevronRight
+              size={BUTTON_ICON_SIZE}
+              aria-hidden="true"
+              class="rtl:-scale-x-100"
+            />
+          </button>
+        </div>
       {/if}
-    </div>
+    </svelte:element>
   </div>
 </div>

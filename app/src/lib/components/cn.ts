@@ -251,6 +251,7 @@ export const TOKEN_THEME = {
     "package-row",
     "page-bottom",
     "page-end",
+    "page-problem",
     "page-start",
     "page-top",
     "pane",
