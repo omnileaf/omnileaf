@@ -61,21 +61,21 @@
     onValueCommit={() => {
       onDrag(false);
     }}
-    class="relative flex-1 rounded-full block-reader-slider has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-reader-accent expanded:block-reader-slider-wide"
+    class="relative flex-1 rounded-full block-reader-dense has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent desktop:expanded:block-lg"
     style={`--progress: ${String(progress)}`}
     onpointerdown={() => {
       onDrag(true);
     }}
   >
     <div
-      class="absolute inset-x-reader-track-inset inset-y-none my-auto rounded-full bg-reader-track block-reader-track expanded:inset-x-reader-track-inset-wide expanded:bg-reader-track-wide"
+      class="absolute inset-none my-auto overflow-hidden rounded-full bg-chip block-slider-track"
     >
       <div
-        class="absolute inset-y-none inset-s-none rounded-full bg-reader-accent reader-progress-fill"
+        class="absolute inset-y-none inset-s-none bg-accent reader-progress-fill"
       ></div>
     </div>
     <div
-      class="absolute inset-y-none reader-progress-thumb my-auto rounded-full bg-on-reader shadow-reader-thumb block-reader-thumb inline-reader-thumb expanded:shadow-reader-thumb-wide expanded:block-reader-thumb-wide expanded:inline-reader-thumb-wide"
+      class="absolute inset-y-none reader-progress-thumb my-auto rounded-full border border-accent bg-background shadow-card-rest block-lg inline-lg"
     ></div>
     <Slider.Thumb index={0}>
       {#snippet child({ props })}
@@ -87,7 +87,7 @@
           value={shown + 1}
           aria-label={m.reader_slider()}
           aria-valuetext={m.reader_slider_value({ page: shown + 1, count })}
-          class="absolute inset-none mx-none my-auto cursor-pointer opacity-0 block-full inline-full android:block-touch-target"
+          class="absolute inset-none mx-none my-auto cursor-pointer opacity-0 block-full inline-full android:block-touch-target desktop:expanded:block-pointer-minimum"
           oninput={(event) => {
             seekTo(Number(event.currentTarget.value));
           }}
