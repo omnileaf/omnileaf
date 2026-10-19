@@ -1889,6 +1889,7 @@
   "reader_guide_done": "⟦Ĝöţ íţ···⟧",
   "reader_shortcuts_close": "⟦Çļöšé ķéýƀöáŕð šĥöŕţçûţš··········⟧",
   "reader_jump_to_book": "⟦Ĵûɱþ ţö á ƀööķ······⟧",
+  "reader_jump_from_book": "⟦{title}, Ĵûɱþ ţö á ƀööķ··········⟧",
   "reader_jump_close": "⟦Çļöšé Ĵûɱþ ţö á ƀööķ········⟧",
   "reader_jump_loading": "⟦Ļöáðíñĝ ţĥé šéŕíéš' ƀööķš··········⟧",
   "reader_jump_subtitle": [

@@ -1889,6 +1889,7 @@
   "reader_guide_done": "Got it",
   "reader_shortcuts_close": "Close keyboard shortcuts",
   "reader_jump_to_book": "Jump to a book",
+  "reader_jump_from_book": "{title}, Jump to a book",
   "reader_jump_close": "Close Jump to a book",
   "reader_jump_loading": "Loading the series' books",
   "reader_jump_subtitle": [

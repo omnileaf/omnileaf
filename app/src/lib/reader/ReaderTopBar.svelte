@@ -161,7 +161,7 @@
           label={m.reader_jump_to_book()}
           keys={["G"]}
           type="button"
-          aria-label={m.reader_jump_to_book()}
+          aria-label={m.reader_jump_from_book({ title: bookTitle })}
           aria-expanded={isJumpOpen}
           aria-keyshortcuts="G"
           onclick={onJump}
