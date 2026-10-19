@@ -14,6 +14,7 @@ use omnileaf_engine::{
     SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
     SeriesOverview, SeriesPage, SpellingSuggestion, StorageUse, UtcOffset,
 };
+use omnileaf_icon_actions::IconAction;
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_opener::OpenerExt;
@@ -27,6 +28,7 @@ use crate::{
     folder_picker::pick_folder,
     folder_share::SystemShares,
     full_screen::{self, FullScreenChange},
+    icon_actions::{self, IconActionsMenu},
     ipc_error::IpcError,
     library_events::{LibraryChanged, ReadingSaved},
     library_problem::{LibraryAtLaunch, LibraryProblem},
@@ -133,6 +135,8 @@ macro_rules! app_commands {
             clear_cached_pages,
             clear_covers,
             show_tray_menu,
+            show_icon_actions,
+            watch_icon_actions,
             open_system_settings,
             $($development_only),*
         ]
@@ -976,6 +980,21 @@ fn show_tray_menu(
         IpcError::internal(&error)
     })?;
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn show_icon_actions(app: AppHandle, menu: IconActionsMenu) -> Result<(), IpcError> {
+    icon_actions::show(&app, &menu).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn watch_icon_actions(
+    app: AppHandle,
+    on_chosen: Channel<IconAction>,
+) -> Result<(), IpcError> {
+    icon_actions::watch(&app, on_chosen).await
 }
 
 #[tauri::command]

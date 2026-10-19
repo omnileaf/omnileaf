@@ -13,6 +13,7 @@ mod folder_storage;
 #[cfg(desktop)]
 mod folder_watch;
 mod full_screen;
+mod icon_actions;
 mod ipc_error;
 mod library_events;
 mod library_problem;
@@ -105,12 +106,14 @@ pub fn run() {
         .plugin(system_bars::plugin())
         .plugin(power_mode::plugin())
         .plugin(screen_orientation::plugin())
-        .plugin(system_settings::plugin());
+        .plugin(system_settings::plugin())
+        .plugin(icon_actions::plugin());
     #[cfg(target_os = "ios")]
     let app = app
         .plugin(omnileaf_folder_access::init())
         .plugin(omnileaf_system_bars::init())
-        .plugin(omnileaf_edge_swipe::init());
+        .plugin(omnileaf_edge_swipe::init())
+        .plugin(omnileaf_icon_actions::init());
     #[cfg(all(desktop, feature = "e2e"))]
     let app = app
         .manage(e2e::PickedFolder::from_environment())
