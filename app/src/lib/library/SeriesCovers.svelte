@@ -3,7 +3,6 @@
   import { MediaQuery, SvelteSet } from "svelte/reactivity";
   import type { ClassValue } from "svelte/elements";
 
-  import { resolve } from "$app/paths";
   import {
     COVERS_PER_ROW,
     DEFAULT_LIBRARY_VIEW,
@@ -21,6 +20,9 @@
   import ContinueDisc from "./ContinueDisc.svelte";
   import CoverImage from "./CoverImage.svelte";
   import ListCover from "./ListCover.svelte";
+  import SelectionMark from "./SelectionMark.svelte";
+  import { seriesSelection } from "./series-selection";
+  import SeriesLink from "./SeriesLink.svelte";
   import { coverLook } from "./cover-look";
   import { SCREEN_SIZES } from "./library-view";
   import type { CoverUrl } from "./cover-url";
@@ -67,6 +69,15 @@
   ).join("; ");
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
   const canHover = new MediaQuery("(hover: hover)");
+  const selection = seriesSelection();
+  const isSelecting = $derived(selection?.isSelecting === true);
+  const seriesOrder = () => series.map(({ id }) => id);
+
+  function pickedRing(one: LibrarySeries): ClassValue {
+    return selection?.has(one.id) === true
+      ? "outline-2 outline-offset-2 outline-foreground"
+      : "";
+  }
   const cutOffTitles = new SvelteSet<string>();
 
   function notesCutOff(id: string): (title: HTMLElement) => () => void {
@@ -156,25 +167,32 @@
 {#snippet gridCell(one: LibrarySeries)}
   {@const shown = lookOf(one)}
   {@const share = readShare(one)}
-  {@const href = resolve("/(app)/series/[id]", { id: one.id })}
   {@const continues = continuedBook(one)}
   <div class="@container relative min-inline-none">
     <Tooltip
-      label={canHover.current && cutOffTitles.has(one.id)
+      label={canHover.current && !isSelecting && cutOffTitles.has(one.id)
         ? shown.title
         : undefined}
     >
       {#snippet child({ props })}
-        <a
+        <SeriesLink
           {...props}
-          {href}
+          id={one.id}
+          title={shown.title}
+          order={seriesOrder}
           class="flex flex-col gap-cover-caption min-inline-none medium:gap-sm"
         >
           <div
-            class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+            class={[
+              "relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
+              pickedRing(one),
+            ]}
           >
             <CoverImage cover={shown.cover} {coverUrl} />
             <CoverBadges series={one} onCovers={view.onCovers} />
+            {#if isSelecting}
+              <SelectionMark isOn={selection?.has(one.id) === true} />
+            {/if}
           </div>
           {#if share !== undefined}
             <Progress
@@ -202,10 +220,10 @@
               {m.library_series_books({ count: one.bookCount })}
             </p>
           </div>
-        </a>
+        </SeriesLink>
       {/snippet}
     </Tooltip>
-    {#if continues !== undefined}
+    {#if continues !== undefined && !isSelecting}
       <ContinueDisc
         book={continues}
         series={shown.title}
@@ -219,15 +237,23 @@
   {@const shown = lookOf(one)}
   {@const continues = continuedBook(one)}
   <div class="@container relative min-inline-none">
-    <a
-      href={resolve("/(app)/series/[id]", { id: one.id })}
+    <SeriesLink
+      id={one.id}
+      title={shown.title}
+      order={seriesOrder}
       class="block min-inline-none"
     >
       <div
-        class="@container relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+        class={[
+          "@container relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
+          pickedRing(one),
+        ]}
       >
         <CoverImage cover={shown.cover} {coverUrl} />
         <CoverBadges series={one} onCovers={view.onCovers} />
+        {#if isSelecting}
+          <SelectionMark isOn={selection?.has(one.id) === true} />
+        {/if}
         <div
           class="absolute inset-x-none inset-be-none bg-linear-to-t from-band from-55% to-transparent px-band pbs-band-fade pbe-sm medium:px-band-wide medium:pbe-band-wide @max-cover-title:bg-none @max-cover-title-wide:px-band"
         >
@@ -238,8 +264,8 @@
           </p>
         </div>
       </div>
-    </a>
-    {#if continues !== undefined}
+    </SeriesLink>
+    {#if continues !== undefined && !isSelecting}
       <ContinueDisc
         book={continues}
         series={shown.title}
@@ -256,20 +282,28 @@
   {@const shown = lookOf(one)}
   {@const continues = continuedBook(one)}
   <div class="@container relative min-inline-none">
-    <a
-      href={resolve("/(app)/series/[id]", { id: one.id })}
+    <SeriesLink
+      id={one.id}
+      title={shown.title}
+      order={seriesOrder}
       class="block min-inline-none"
     >
       <div
         title={shown.title}
-        class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+        class={[
+          "relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
+          pickedRing(one),
+        ]}
       >
         <CoverImage cover={shown.cover} {coverUrl} />
         <CoverBadges series={one} onCovers={view.onCovers} />
+        {#if isSelecting}
+          <SelectionMark isOn={selection?.has(one.id) === true} />
+        {/if}
         <p class="sr-only">{shown.title}</p>
       </div>
-    </a>
-    {#if continues !== undefined}
+    </SeriesLink>
+    {#if continues !== undefined && !isSelecting}
       <ContinueDisc
         book={continues}
         series={shown.title}
@@ -283,10 +317,17 @@
   {@const shown = lookOf(one)}
   {@const continues = continuedBook(one)}
   <div class="flex items-center gap-sm border-be border-border">
-    <a
-      href={resolve("/(app)/series/[id]", { id: one.id })}
+    <SeriesLink
+      id={one.id}
+      title={shown.title}
+      order={seriesOrder}
       class="box-content flex flex-1 items-center gap-cover-gap py-sm min-block-series-row min-inline-none large:gap-lg large:py-series-row-pad-wide large:min-block-series-row-wide"
     >
+      {#if isSelecting}
+        <span class="relative shrink-0 block-series-check inline-series-check">
+          <SelectionMark isOn={selection?.has(one.id) === true} />
+        </span>
+      {/if}
       <ListCover
         cover={shown.cover}
         {coverUrl}
@@ -310,8 +351,8 @@
           />
         </div>
       {/if}
-    </a>
-    {#if continues !== undefined}
+    </SeriesLink>
+    {#if continues !== undefined && !isSelecting}
       <ContinueDisc
         book={continues}
         series={shown.title}
