@@ -9,6 +9,7 @@
     type LibraryCategory,
     type LibraryFilterChoices,
     type LibraryListing,
+    type LibrarySeries,
     type LibraryView,
   } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
@@ -121,6 +122,13 @@
   let keepsLabels = $state(false);
   let isLabelling = $state(false);
   let labelsFrom = $state<LabelsFrom>("categories");
+  let labelled = $state<SeriesId[]>([]);
+
+  function label(series: SeriesId[], from: LabelsFrom): void {
+    labelled = series;
+    labelsFrom = from;
+    isLabelling = true;
+  }
   const adding = new FolderAdding(addFolderWithProgress, () => notices);
 
   let isCountWanted = $state(false);
@@ -262,16 +270,15 @@
     }
   }
 
-  async function markSelectedRead(): Promise<void> {
-    const picked = selection.picked;
-    const marked = await commands.markSeriesRead(picked);
+  async function markRead(series: SeriesId[]): Promise<void> {
+    const marked = await commands.markSeriesRead(series);
     if (marked.status !== "ok") {
       reportError(marked.error);
       return;
     }
     selection.end();
     notices.offerUndo({
-      title: m.library_marked_read({ count: picked.length }),
+      title: m.library_marked_read({ count: series.length }),
       undo: () => {
         void commands.markBooks(marked.data, "unread");
       },
@@ -353,7 +360,7 @@
 
 <LabelSeriesDialog
   bind:isOpen={isLabelling}
-  series={selection.picked}
+  series={labelled}
   startsAtTags={labelsFrom === "tags"}
   onError={reportError}
 />
@@ -527,6 +534,18 @@
             {coverUrl}
             view={loaded.view}
             usesStandIns={screenshotMode.isOn}
+            menu={{
+              canLabel: keepsLabels,
+              onMarkRead: (one: LibrarySeries) => {
+                void markRead([one.id]);
+              },
+              onLabel: (one: LibrarySeries) => {
+                label([one.id], "categories");
+              },
+              onSelect: (one: LibrarySeries) => {
+                selection.begin(one.id);
+              },
+            }}
           />
         </div>
         {#if selection.isSelecting && selection.count > 0}
@@ -535,11 +554,10 @@
             isPill={docksFilter}
             {keepsLabels}
             onLabels={(from: LabelsFrom) => {
-              labelsFrom = from;
-              isLabelling = true;
+              label(selection.picked, from);
             }}
             onMarkRead={() => {
-              void markSelectedRead();
+              void markRead(selection.picked);
             }}
             onCancel={() => {
               selection.end();
