@@ -10,7 +10,7 @@ use crate::{
 
 const HOME_ROOT: &str = "SELECT
         id, kind, locator_kind, location, bookmark, tree_name, tree_place, added_at_ms,
-        unavailable_since_ms
+        unavailable_since_ms, shows_while_missing
     FROM library_root
     WHERE kind = ?1";
 

@@ -415,7 +415,7 @@ async fn reads_a_bookmarked_folder_as_available_once_its_bookmark_opens_again() 
 }
 
 #[tokio::test]
-async fn keeps_a_bookmarked_folder_and_its_books_when_its_bookmark_wont_open() {
+async fn keeps_a_bookmarked_folder_and_its_books_hidden_when_its_bookmark_wont_open() {
     let home = ScratchFolder::new("library-restore-failed-home");
     let comics = ScratchFolder::new("library-restore-failed-comics");
     write_sample_library(comics.path()).unwrap();
@@ -443,11 +443,14 @@ async fn keeps_a_bookmarked_folder_and_its_books_when_its_bookmark_wont_open() {
         }
     );
     assert_eq!(
-        library
-            .series_count(LibraryListing::default().filter)
-            .await
-            .unwrap(),
-        3
+        (
+            library
+                .series_count(LibraryListing::default().filter)
+                .await
+                .unwrap(),
+            library.hidden_series_count().await.unwrap()
+        ),
+        (0, 3)
     );
 }
 

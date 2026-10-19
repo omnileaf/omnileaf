@@ -32,6 +32,7 @@ mod library_search;
 mod library_series;
 mod library_tabs;
 mod library_view;
+mod missing_folder;
 mod moved_home;
 mod open_books;
 mod opened_book;
@@ -96,6 +97,7 @@ pub use library_view::{
     DesktopCoversPerRow, LibraryDisplay, LibraryGrouping, LibraryView, OnCovers, PhoneCoversPerRow,
     TabletCoversPerRow,
 };
+pub use missing_folder::{FolderProblem, MissingFolder};
 pub use omnileaf_db::catalog::{AndroidTree, AppleBookmark, RootLocator, TreeUri};
 pub use omnileaf_db::store::{Changed, Clock};
 pub use opened_book::{
