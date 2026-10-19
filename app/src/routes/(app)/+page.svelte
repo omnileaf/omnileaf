@@ -93,6 +93,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import { shownListing } from "#lib/screenshot-mode/shown-listing.ts";
   import LibrarySearchEntry from "#lib/search/LibrarySearchEntry.svelte";
 
   import type { PageProps } from "./$types";
@@ -398,7 +399,7 @@
         "the library's series were asked for before their listing was read",
       );
     }
-    return chosenListing;
+    return shownListing(chosenListing, screenshotMode.isOn);
   }
 
   function chooseListing(chosen: LibraryListing): void {
@@ -431,7 +432,10 @@
   const listed = $derived(
     chosenListing === undefined
       ? undefined
-      : { listing: chosenListing, tab: chosenTab },
+      : {
+          listing: shownListing(chosenListing, screenshotMode.isOn),
+          tab: chosenTab,
+        },
   );
 
   $effect(() => {
