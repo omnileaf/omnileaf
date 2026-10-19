@@ -61,7 +61,9 @@
   })}
 />
 
-<div class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row">
+<div
+  class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row desktop-shell:flex-row"
+>
   {#key language.resolved}
     <AppNavigation current={sectionOf(page.url.pathname)} />
   {/key}
@@ -71,7 +73,7 @@
     {/key}
   </SwipeableMain>
   <div
-    class="relative z-notice order-1 ios:max-medium:fixed ios:max-medium:inset-x-none ios:max-medium:inset-be-toast-lift"
+    class="relative z-notice order-1 ios:max-medium:fixed ios:max-medium:inset-x-none ios:max-medium:inset-be-toast-lift desktop-shell:max-medium:fixed desktop-shell:max-medium:inset-x-none desktop-shell:max-medium:inset-be-none"
   >
     {#key language.resolved}
       <Toasts
