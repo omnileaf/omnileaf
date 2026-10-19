@@ -2,18 +2,12 @@
 export type LocalDay = number;
 
 const MS_PER_DAY = 86_400_000;
-const NOON_MS = MS_PER_DAY / 2;
 const DAYS_PER_WEEK = 7;
 const MONDAY = 1;
 const WEEKDAY_OF_DAY_ZERO = 4;
 
 export function localDayOf(at: Date): LocalDay {
   return Date.UTC(at.getFullYear(), at.getMonth(), at.getDate()) / MS_PER_DAY;
-}
-
-/** Noon UTC of a day, which every zone's formatter puts on the same day once told the zone is UTC. */
-export function noonUtcOf(day: LocalDay): Date {
-  return new Date(day * MS_PER_DAY + NOON_MS);
 }
 
 /** The weekday of a day, 1 being Monday and 7 Sunday. */
