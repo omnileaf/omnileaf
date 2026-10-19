@@ -216,7 +216,7 @@
     {isComplete}
     {onNearEnd}
     class="grid-cols-1"
-    itemClass="border-be border-border last:border-be-0"
+    itemClass="border-be border-border last:border-be-0 ios-grouped:border-ios-separator"
     cell={row}
   />
 </Card>

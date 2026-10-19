@@ -28,7 +28,8 @@
   bind:clientHeight={height}
   class={[
     "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end flex items-center gap-sm border-be border-transparent ps-series-bar-start pe-series-bar-end pbs-series-bar-top pbe-sm motion-safe:transition-colors motion-safe:duration-fade while-picking:invisible",
-    isTitleUnderBar && "border-border bg-background",
+    isTitleUnderBar &&
+      "border-border bg-background ios:border-ios-separator ios:bg-ios-material ios:backdrop-blur-ios",
   ]}
 >
   <a
@@ -47,7 +48,7 @@
   <span
     aria-hidden="true"
     class={[
-      "flex-1 truncate text-body font-semibold motion-safe:transition-opacity motion-safe:duration-fade",
+      "flex-1 truncate text-body font-semibold motion-safe:transition-opacity motion-safe:duration-fade ios:text-center",
       isTitleUnderBar ? "opacity-100" : "opacity-0",
     ]}
   >
