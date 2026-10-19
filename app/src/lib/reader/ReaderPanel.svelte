@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Attachment } from "svelte/attachments";
+  import { on } from "svelte/events";
   import { Clock } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
@@ -28,6 +30,7 @@
     secondsLeft,
     isBlank,
     showsPreviews,
+    isShown,
     onSeek,
   }: {
     pages: readonly BookPage[];
@@ -40,11 +43,38 @@
     secondsLeft: number | undefined;
     isBlank: boolean;
     showsPreviews: boolean;
+    isShown: boolean;
     onSeek: (index: number) => void;
   } = $props();
 
   const count = $derived(pages.length);
   let isDragged = $state(false);
+  let isSliderFocused = $state(false);
+  let isHovered = $state(false);
+  let staysUp = $state(false);
+  const isPreviewing = $derived(
+    showsPreviews && (isDragged || isSliderFocused || isHovered || staysUp),
+  );
+
+  const tracksMouse: Attachment<HTMLElement> = (element) => {
+    const stopEntering = on(element, "pointerenter", (event) => {
+      isHovered = event.pointerType === "mouse";
+    });
+    const stopLeaving = on(element, "pointerleave", () => {
+      isHovered = false;
+    });
+    return () => {
+      stopEntering();
+      stopLeaving();
+    };
+  };
+
+  $effect(() => {
+    if (!isShown) {
+      staysUp = false;
+      isHovered = false;
+    }
+  });
 </script>
 
 <div
@@ -52,13 +82,15 @@
     READER_GLASS,
     "flex flex-col gap-sm p-sm expanded:justify-center expanded:min-block-reader-top-wide large:py-none",
   )}
+  {@attach tracksMouse}
 >
-  {#if isDragged && showsPreviews}
+  {#if isPreviewing}
     <NearbyPages
       {pages}
       {shown}
       {isBlank}
       isReversed={direction === "rightToLeft"}
+      onPick={onSeek}
     />
   {/if}
   <div
@@ -82,6 +114,10 @@
       {onSeek}
       onDrag={(dragged: boolean) => {
         isDragged = dragged;
+        staysUp ||= dragged;
+      }}
+      onFocusChange={(isFocused: boolean) => {
+        isSliderFocused = isFocused;
       }}
     />
     <BookStepLink step="next" neighbour={next} />
