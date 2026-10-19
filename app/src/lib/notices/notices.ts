@@ -1,9 +1,12 @@
 import { type Component, createContext } from "svelte";
 import { toast } from "svelte-sonner";
 
+import { CircleCheck } from "@lucide/svelte";
+
 import type { Glyph } from "#lib/page/glyph.ts";
 
 import NoticeToast from "./NoticeToast.svelte";
+import { NEW_UNDO_RULES, type UndoRules } from "./undo-setting.svelte";
 import UndoToast from "./UndoToast.svelte";
 
 export type NoticeTone = "plain" | "warning";
@@ -35,6 +38,7 @@ export interface ToastHandle {
 }
 
 export const UNDO_WINDOW_MS = 10_000;
+const MS_PER_SECOND = 1000;
 export const NOTICE_WINDOW_MS = 5_000;
 
 interface Lapse {
@@ -51,9 +55,14 @@ let toastsMade = 0;
 
 export class Notices {
   #isHeld = false;
+  readonly #undoRules: () => UndoRules;
   readonly #lapses = new Map<string, Lapse>();
   readonly #noticesShown = new Map<Notice, Shown>();
   #undoShown: (Shown & { readonly offer: UndoOffer }) | undefined;
+
+  constructor(undoRules: () => UndoRules = () => NEW_UNDO_RULES) {
+    this.#undoRules = undoRules;
+  }
 
   get undoOffer(): UndoOffer | undefined {
     return this.#undoShown?.offer;
@@ -72,6 +81,16 @@ export class Notices {
   }
 
   offerUndo(offer: UndoOffer): void {
+    const rules = this.#undoRules();
+    if (!rules.isOffered) {
+      this.show({
+        tone: "plain",
+        icon: CircleCheck,
+        title: offer.title,
+        ...(offer.body === undefined ? {} : { body: offer.body }),
+      });
+      return;
+    }
     this.#undoShown?.toast.dismiss();
     const shown = this.#present(
       UndoToast,
@@ -79,7 +98,7 @@ export class Notices {
       "polite",
     );
     this.#undoShown = { ...shown, offer };
-    shown.toast.lapse(UNDO_WINDOW_MS);
+    shown.toast.lapse(rules.windowSeconds * MS_PER_SECOND);
   }
 
   undo(): void {
@@ -96,6 +115,9 @@ export class Notices {
   }
 
   hold(): void {
+    if (!this.#undoRules().holdsWhileHoveredOrFocused) {
+      return;
+    }
     this.#isHeld = true;
     for (const lapse of this.#lapses.values()) {
       clearTimeout(lapse.timer);
