@@ -5,8 +5,11 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
-  let { count, class: className }: { count: number; class?: ClassValue } =
-    $props();
+  let {
+    count,
+    isSpelledOut = false,
+    class: className,
+  }: { count: number; isSpelledOut?: boolean; class?: ClassValue } = $props();
 
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
 </script>
@@ -18,6 +21,6 @@
     aria-label={m.library_unread_count({ count })}
     class={className}
   >
-    {numbers.format(count)}
+    {isSpelledOut ? m.library_unread_count({ count }) : numbers.format(count)}
   </Badge>
 {/if}

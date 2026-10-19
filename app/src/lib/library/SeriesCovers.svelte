@@ -35,6 +35,8 @@
   import ContinueDisc from "./ContinueDisc.svelte";
   import AdultVeil from "./AdultVeil.svelte";
   import CoverImage from "./CoverImage.svelte";
+  import DownloadedMark from "./DownloadedMark.svelte";
+  import LanguageBadge from "./LanguageBadge.svelte";
   import { DragSelect } from "./drag-select.svelte";
   import ListCover from "./ListCover.svelte";
   import type { SeriesId } from "#lib/series/series-id.ts";
@@ -456,10 +458,11 @@
 
 {#snippet listRow(one: LibrarySeries)}
   {@const shown = lookOf(one)}
+  {@const share = readShare(one)}
   {@const continues = continuedBook(one)}
   {@const veiled = isVeiled(one)}
   <div
-    class="flex items-center gap-sm border-be border-border"
+    class="flex items-center gap-xs border-be border-border"
     data-series-id={one.id}
   >
     <SeriesLink
@@ -467,37 +470,54 @@
       id={one.id}
       title={shown.title}
       order={seriesOrder}
-      class="box-content flex flex-1 items-center gap-cover-gap py-sm min-block-series-row min-inline-none large:gap-lg large:py-series-row-pad-wide large:min-block-series-row-wide"
+      class="flex flex-1 items-center gap-md rounded-control py-list-row-block min-inline-none"
     >
       {#if isSelecting}
         <span class="relative shrink-0 block-series-check inline-series-check">
           <SelectionMark isOn={selection?.has(one.id) === true} />
         </span>
       {/if}
-      <ListCover
-        cover={shown.cover}
-        {coverUrl}
-        isBlurred={veiled}
-        class="rounded-list-cover inline-list-cover large:inline-list-cover-wide"
-      />
-      <div
-        class="flex flex-1 flex-col gap-2xs min-inline-none large:flex-row large:items-center large:gap-lg"
-      >
-        <p class="truncate text-lead font-semibold large:flex-1">
+      <span class="relative shrink-0">
+        <ListCover
+          cover={shown.cover}
+          {coverUrl}
+          isBlurred={veiled}
+          class="rounded-list-cover inline-list-cover"
+        />
+        {#if view.onCovers.showsDownloaded && one.hasDownloads && !isSelecting && !veiled}
+          <DownloadedMark class="absolute inset-e-xs inset-bs-xs" />
+        {/if}
+      </span>
+      <span class="flex flex-col gap-xs min-inline-none">
+        <span class="line-clamp-2 font-medium wrap-break-word">
           {shown.title}
-        </p>
-        <p class="text-detail text-muted large:inline-list-detail">
-          {m.library_series_books({ count: one.bookCount })}
-        </p>
-      </div>
-      {#if view.onCovers.showsUnreadCount}
-        <div class="flex shrink-0 justify-end large:inline-list-unread">
-          <UnreadCount
-            count={one.unreadCount}
-            class="px-sm py-2xs text-caption"
+        </span>
+        <span class="flex flex-wrap items-center gap-sm">
+          <span class="text-detail text-muted">
+            {m.library_series_books({ count: one.bookCount })}
+          </span>
+          {#if view.onCovers.showsLanguage && one.language !== null && !veiled}
+            <LanguageBadge language={one.language} class="bg-chip" />
+          {/if}
+          {#if view.onCovers.showsUnreadCount && !veiled}
+            <UnreadCount
+              count={one.unreadCount}
+              isSpelledOut
+              class="px-sm py-2xs text-caption"
+            />
+          {/if}
+        </span>
+        {#if share !== undefined}
+          <Progress
+            aria-label={m.library_books_read({
+              read: one.bookCount - one.unreadCount,
+              count: one.bookCount,
+            })}
+            value={share}
+            class="block-xs inline-list-progress"
           />
-        </div>
-      {/if}
+        {/if}
+      </span>
     </SeriesLink>
     {#if continues !== undefined && !isSelecting && !veiled}
       <ContinueDisc
