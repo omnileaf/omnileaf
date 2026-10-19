@@ -35,7 +35,7 @@ use crate::{
     share_sign_in::{self, SignInOutcome},
     storage::StoragePlaces,
     system_bars::{self, Theme, ThemePreference},
-    system_sign_in,
+    system_settings, system_sign_in,
     tray::{TrayItemChosen, TrayMenu},
     version_details,
 };
@@ -133,6 +133,7 @@ macro_rules! app_commands {
             clear_cached_pages,
             clear_covers,
             show_tray_menu,
+            open_system_settings,
             $($development_only),*
         ]
     };
@@ -975,6 +976,12 @@ fn show_tray_menu(
         IpcError::internal(&error)
     })?;
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn open_system_settings(app: AppHandle) -> Result<(), IpcError> {
+    system_settings::open(&app).map_err(|error| IpcError::system_settings_unavailable(&error))
 }
 
 #[tauri::command]
