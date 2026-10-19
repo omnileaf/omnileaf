@@ -10,6 +10,7 @@ export type ReaderBackground = "black" | "grey" | "white";
 export type ReaderControlsLook = "dark" | "matchApp";
 export type SettingsScope = "series" | "all";
 export type TapZones = "edges" | "lShape" | "off";
+export type PageTurnStyle = "instant" | "slide";
 
 export interface ReaderLight {
   readonly isOn: boolean;
@@ -26,6 +27,7 @@ export interface ReaderLook {
   readonly keepsScreenOn: boolean;
   readonly cropsBorders: boolean;
   readonly tapZones: TapZones;
+  readonly pageTurn: PageTurnStyle;
 }
 
 export const PAGE_LAYOUTS: readonly PageLayout[] = ["automatic", "one", "two"];
@@ -36,6 +38,7 @@ export const READER_BACKGROUNDS: readonly ReaderBackground[] = [
   "white",
 ];
 export const TAP_ZONES: readonly TapZones[] = ["edges", "lShape", "off"];
+export const PAGE_TURN_STYLES: readonly PageTurnStyle[] = ["instant", "slide"];
 export const CONTROLS_LOOKS: readonly ReaderControlsLook[] = [
   "dark",
   "matchApp",
@@ -50,6 +53,7 @@ export const DEFAULT_LOOK: ReaderLook = {
   keepsScreenOn: true,
   cropsBorders: false,
   tapZones: "edges",
+  pageTurn: "instant",
 };
 
 const ALL_KEY = "omnileaf.readerSettings.all";
@@ -107,6 +111,7 @@ function lookIn(text: string | null): Partial<ReaderLook> {
     keepsScreenOn: flag(stored.keepsScreenOn),
     cropsBorders: flag(stored.cropsBorders),
     tapZones: oneOf(TAP_ZONES, stored.tapZones),
+    pageTurn: oneOf(PAGE_TURN_STYLES, stored.pageTurn),
   };
   return Object.fromEntries(
     Object.entries(read).filter(([, value]) => value !== undefined),

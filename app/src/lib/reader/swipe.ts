@@ -16,6 +16,16 @@ export class Swipe {
     this.#isClickSwallowed = false;
   }
 
+  moved(event: PointerEvent): number | undefined {
+    const start = this.#start;
+    if (start === undefined) {
+      return undefined;
+    }
+    const across = event.clientX - start.x;
+    const down = event.clientY - start.y;
+    return Math.abs(across) > Math.abs(down) ? across : undefined;
+  }
+
   ended(event: PointerEvent): SwipeTurn | undefined {
     const start = this.#start;
     this.#start = undefined;

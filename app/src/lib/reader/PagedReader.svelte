@@ -124,6 +124,8 @@
       }),
   );
   const swipe = new Swipe(SWIPE_MIN_PX);
+  let slide = $state(0);
+  let isSettling = $state(false);
   const controls = new ReaderControls(CONTROLS_HIDE_AFTER_MS);
   let hasOpened = false;
   const skipUpNext = getSkipUpNextSetting();
@@ -550,11 +552,39 @@
     },
   };
 
-  function onSwipeEnd(event: PointerEvent): void {
+  function onSwipeMove(event: PointerEvent): void {
+    if (look.pageTurn === "slide" && !isZoomedIn(viewportScale)) {
+      isSettling = false;
+      slide = swipe.moved(event) ?? 0;
+    }
+  }
+
+  function onSwipeEnd(
+    event: PointerEvent & { currentTarget: HTMLElement },
+  ): void {
     const turn = swipe.ended(event);
+    const before = turner.shown;
     if (turn !== undefined && !isZoomedIn(viewportScale)) {
       turnBy(TURN_STEPS[inReadingOrder(turn, reading.direction)]);
     }
+    if (turner.shown === before || slide === 0) {
+      settleSlide();
+    } else {
+      slideIn(event.currentTarget.clientWidth);
+    }
+  }
+
+  function settleSlide(): void {
+    isSettling = slide !== 0;
+    slide = 0;
+  }
+
+  function slideIn(width: number): void {
+    isSettling = false;
+    slide = slide < 0 ? slide + width : slide - width;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(settleSlide);
+    });
   }
 
   $effect(() => {
@@ -689,9 +719,11 @@
     onpointerdown={(event) => {
       swipe.started(event);
     }}
+    onpointermove={onSwipeMove}
     onpointerup={onSwipeEnd}
     onpointercancel={() => {
       swipe.cancelled();
+      settleSlide();
     }}
   >
     {#each zoneLayout as zone, index (index)}
@@ -759,6 +791,8 @@
       overlay={turnZones}
       bookTitle={named.title}
       isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
+      {slide}
+      {isSettling}
       onNextPage={() => {
         act("next");
       }}
