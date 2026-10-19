@@ -33,6 +33,6 @@
     index={0}
     aria-label={label}
     aria-labelledby={labelledBy}
-    class="block rounded-full border border-accent bg-background shadow-card-rest transition-control block-lg inline-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    class="block rounded-full border border-accent bg-background shadow-card-rest transition-control block-lg inline-lg focus-visible:focus-ring"
   />
 </SliderPrimitive.Root>
