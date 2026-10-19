@@ -10,7 +10,7 @@
 
   import type { AddFolder } from "./add-folder";
   import AddFolderButton from "./AddFolderButton.svelte";
-  import { FolderAdding } from "./folder-adding.svelte";
+  import { FolderAdding, type MayPick } from "./folder-adding.svelte";
   import { folderTitle } from "./folder-title";
   import FolderNotice from "./FolderNotice.svelte";
   import FolderRow from "./FolderRow.svelte";
@@ -30,6 +30,7 @@
     usesStandIns,
     hint,
     addPlacement = "card",
+    mayPick,
     onShowBooks,
   }: {
     folders: LibraryFolders;
@@ -44,6 +45,7 @@
     hint?: Snippet | undefined;
     onShowBooks?: (() => void) | undefined;
     addPlacement?: "card" | "below-list";
+    mayPick?: MayPick;
   } = $props();
 
   const adding = new FolderAdding(
@@ -52,6 +54,7 @@
     () => {
       void folders.load();
     },
+    () => mayPick?.() ?? Promise.resolve(true),
   );
 
   let addButton: HTMLElement | null = $state(null);
