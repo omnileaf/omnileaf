@@ -93,7 +93,7 @@
       "version": "0.11.1",
       "licence": "MIT",
       "texts": [
-        91
+        92
       ]
     },
     {
@@ -277,7 +277,7 @@
       "version": "0.6.2",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -398,7 +398,7 @@
       "version": "0.14.0",
       "licence": "MIT",
       "texts": [
-        84
+        85
       ]
     },
     {
@@ -574,7 +574,7 @@
       "version": "0.23.0",
       "licence": "MIT",
       "texts": [
-        85
+        86
       ]
     },
     {
@@ -582,7 +582,7 @@
       "version": "0.24.1",
       "licence": "MIT",
       "texts": [
-        85
+        86
       ]
     },
     {
@@ -590,7 +590,7 @@
       "version": "0.23.0",
       "licence": "MIT",
       "texts": [
-        85
+        86
       ]
     },
     {
@@ -598,7 +598,7 @@
       "version": "0.24.1",
       "licence": "MIT",
       "texts": [
-        85
+        86
       ]
     },
     {
@@ -606,7 +606,7 @@
       "version": "0.23.0",
       "licence": "MIT",
       "texts": [
-        85
+        86
       ]
     },
     {
@@ -614,7 +614,7 @@
       "version": "0.24.1",
       "licence": "MIT",
       "texts": [
-        85
+        86
       ]
     },
     {
@@ -702,7 +702,7 @@
       "version": "0.8.2",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -710,7 +710,7 @@
       "version": "0.4.3",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -726,7 +726,7 @@
       "version": "0.28.0",
       "licence": "MIT",
       "texts": [
-        94
+        95
       ]
     },
     {
@@ -743,7 +743,7 @@
       "licence": "Apache-2.0 AND MIT",
       "texts": [
         38,
-        96
+        97
       ]
     },
     {
@@ -1351,7 +1351,7 @@
       "version": "0.5.0",
       "licence": "MIT",
       "texts": [
-        86
+        87
       ]
     },
     {
@@ -1500,10 +1500,10 @@
     },
     {
       "name": "imagesize",
-      "version": "0.14.0",
+      "version": "0.15.0",
       "licence": "MIT",
       "texts": [
-        99
+        84
       ]
     },
     {
@@ -1519,7 +1519,7 @@
       "version": "0.22.0",
       "licence": "MIT",
       "texts": [
-        88
+        89
       ]
     },
     {
@@ -1551,7 +1551,7 @@
       "version": "0.2.0",
       "licence": "MIT",
       "texts": [
-        95
+        96
       ]
     },
     {
@@ -1559,7 +1559,7 @@
       "version": "0.4.0",
       "licence": "MIT",
       "texts": [
-        95
+        96
       ]
     },
     {
@@ -2065,7 +2065,7 @@
       "version": "0.6.4",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -2137,7 +2137,7 @@
       "version": "4.1.0",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -2153,7 +2153,7 @@
       "version": "0.3.2",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -2593,7 +2593,7 @@
       "version": "0.16.0",
       "licence": "MIT",
       "texts": [
-        93
+        94
       ]
     },
     {
@@ -2642,7 +2642,7 @@
       "version": "0.8.22",
       "licence": "MIT",
       "texts": [
-        89
+        90
       ]
     },
     {
@@ -2651,7 +2651,7 @@
       "licence": "MIT",
       "texts": [
         53,
-        89
+        90
       ]
     },
     {
@@ -2827,7 +2827,7 @@
       "version": "0.3.10",
       "licence": "MIT",
       "texts": [
-        98
+        99
       ]
     },
     {
@@ -2891,7 +2891,7 @@
       "version": "2.0.0-rc.25",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -2899,7 +2899,7 @@
       "version": "2.0.0-rc.25",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -2907,7 +2907,7 @@
       "version": "0.0.12",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -2915,7 +2915,7 @@
       "version": "0.0.12",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -2923,7 +2923,7 @@
       "version": "0.0.12",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -3091,7 +3091,7 @@
       "version": "2.0.0-rc.25",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -3099,7 +3099,7 @@
       "version": "2.0.0-rc.25",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -3171,7 +3171,7 @@
       "version": "0.11.3",
       "licence": "MIT",
       "texts": [
-        87
+        88
       ]
     },
     {
@@ -3219,7 +3219,7 @@
       "version": "1.53.2",
       "licence": "MIT",
       "texts": [
-        97
+        98
       ]
     },
     {
@@ -3227,7 +3227,7 @@
       "version": "2.7.2",
       "licence": "MIT",
       "texts": [
-        90
+        91
       ]
     },
     {
@@ -3235,7 +3235,7 @@
       "version": "0.7.19",
       "licence": "MIT",
       "texts": [
-        97
+        98
       ]
     },
     {
@@ -3477,7 +3477,7 @@
       "version": "0.6.0",
       "licence": "MIT",
       "texts": [
-        92
+        93
       ]
     },
     {
@@ -3606,7 +3606,7 @@
       "version": "0.39.1",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -3614,7 +3614,7 @@
       "version": "0.8.1",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -3622,7 +3622,7 @@
       "version": "0.39.1",
       "licence": "MIT",
       "texts": [
-        96
+        97
       ]
     },
     {
@@ -4397,6 +4397,10 @@
     },
     {
       "licence": "MIT",
+      "text": "MIT License\n\nCopyright (c) 2017 Maiddog\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "licence": "MIT",
       "text": "MIT License\n\nCopyright (c) 2017 Matthew D. Steele\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
     },
     {
@@ -4454,10 +4458,6 @@
     {
       "licence": "MIT",
       "text": "MIT License\n\nCopyright (c) [2021] [Marvin Countryman]\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
-    },
-    {
-      "licence": "MIT",
-      "text": "MIT License\n\nCopyright (c) 2017 Maiddog\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
     },
     {
       "licence": "MIT",
