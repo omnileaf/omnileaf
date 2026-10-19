@@ -13,7 +13,12 @@ pub(crate) async fn ask(window: &WebviewWindow, address: &ShareAddress) -> Syste
     windows::ask(window, address).await
 }
 
-#[cfg(not(any(target_os = "linux", windows)))]
+#[cfg(target_os = "macos")]
+pub(crate) async fn ask(_window: &WebviewWindow, address: &ShareAddress) -> SystemSignIn {
+    macos::ask(address).await
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
 pub(crate) fn ask(
     _window: &WebviewWindow,
     _address: &ShareAddress,
@@ -116,6 +121,96 @@ mod linux {
                 ],
                 [SystemSignIn::Failed, SystemSignIn::Failed]
             );
+        }
+    }
+}
+
+#[cfg(any(target_os = "macos", test))]
+mod macos_answer {
+    use crate::share_sign_in::SystemSignIn;
+
+    const CANCELLED_BY_THE_PERSON: &str = "(-128)";
+
+    pub(super) fn sign_in_of(failure: Option<&str>) -> SystemSignIn {
+        match failure {
+            None => SystemSignIn::Mounted,
+            Some(error) if error.contains(CANCELLED_BY_THE_PERSON) => SystemSignIn::Cancelled,
+            Some(error) => {
+                tracing::warn!(error = error.trim(), "sign in to a network share");
+                SystemSignIn::Failed
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn is_mounted_once_macos_mounts_the_share() {
+            assert_eq!(sign_in_of(None), SystemSignIn::Mounted);
+        }
+
+        #[test]
+        fn is_cancelled_when_the_person_closes_the_sign_in() {
+            assert_eq!(
+                sign_in_of(Some("execution error: User canceled. (-128)\n")),
+                SystemSignIn::Cancelled
+            );
+        }
+
+        #[test]
+        fn fails_when_macos_cannot_mount_the_share() {
+            assert_eq!(
+                sign_in_of(Some(
+                    "execution error: There was a problem connecting to the server. (-36)\n"
+                )),
+                SystemSignIn::Failed
+            );
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+mod macos {
+    use std::process::Command;
+
+    use omnileaf_engine::ShareAddress;
+
+    use super::macos_answer::sign_in_of;
+    use crate::share_sign_in::SystemSignIn;
+
+    const OSASCRIPT: &str = "/usr/bin/osascript";
+    const MOUNT_VOLUME: [&str; 6] = [
+        "-e",
+        "on run argv",
+        "-e",
+        "mount volume (item 1 of argv)",
+        "-e",
+        "end run",
+    ];
+
+    /// The `mount volume` scripting command shows macOS's own sign-in for the server, with its keychain choice, and waits for it, so the password goes to macOS without passing through Omnileaf.
+    pub(super) async fn ask(address: &ShareAddress) -> SystemSignIn {
+        let address = address.as_str().to_owned();
+        let answer = tauri::async_runtime::spawn_blocking(move || {
+            Command::new(OSASCRIPT)
+                .args(MOUNT_VOLUME)
+                .arg(&address)
+                .output()
+        })
+        .await;
+        match answer {
+            Ok(Ok(output)) if output.status.success() => sign_in_of(None),
+            Ok(Ok(output)) => sign_in_of(Some(&String::from_utf8_lossy(&output.stderr))),
+            Ok(Err(error)) => {
+                tracing::warn!(%error, "ask macOS to sign in to a network share");
+                SystemSignIn::Failed
+            }
+            Err(error) => {
+                tracing::warn!(%error, "ask macOS to sign in to a network share");
+                SystemSignIn::Failed
+            }
         }
     }
 }

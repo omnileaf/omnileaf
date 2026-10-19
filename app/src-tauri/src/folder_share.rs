@@ -50,6 +50,53 @@ fn unreachable_share(_folder: &Path) -> Option<UnreachableShare> {
     None
 }
 
+#[cfg(target_os = "macos")]
+pub(crate) use macos::{remember_shares, remember_shares_in_background};
+
+#[cfg(target_os = "macos")]
+mod macos {
+    use std::process::Command;
+
+    use omnileaf_engine::{Library, describe_error};
+    use tauri::{AppHandle, Manager, Runtime};
+
+    const MOUNT_TABLE_COMMAND: &str = "/sbin/mount";
+
+    /// macOS forgets which server a share came from once it's unmounted, so the library keeps each folder's share while it's mounted.
+    pub(crate) async fn remember_shares(library: &Library) {
+        let listed =
+            tauri::async_runtime::spawn_blocking(|| Command::new(MOUNT_TABLE_COMMAND).output())
+                .await;
+        let table = match listed {
+            Ok(Ok(output)) if output.status.success() => {
+                String::from_utf8_lossy(&output.stdout).into_owned()
+            }
+            Ok(Ok(output)) => {
+                tracing::warn!(status = %output.status, "list the mounted file systems");
+                return;
+            }
+            Ok(Err(error)) => {
+                tracing::warn!(%error, "list the mounted file systems");
+                return;
+            }
+            Err(error) => {
+                tracing::warn!(%error, "list the mounted file systems");
+                return;
+            }
+        };
+        if let Err(error) = library.remember_shares_in(table).await {
+            tracing::warn!(error = %describe_error(&error), "remember the share of each folder");
+        }
+    }
+
+    pub(crate) fn remember_shares_in_background<R: Runtime>(app: AppHandle<R>) {
+        tauri::async_runtime::spawn(async move {
+            let library = app.state::<Library>();
+            remember_shares(&library).await;
+        });
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

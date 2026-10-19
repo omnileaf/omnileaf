@@ -15,10 +15,10 @@ use omnileaf_db::{
         SeriesFilter, SeriesListing, add_root, book_to_read, bookmarked_roots, cover_file,
         folder_series_count, folder_series_page, hidden_series_count, home_root, library_root,
         library_roots, mark_root_available, mark_root_unavailable, missing_roots, page_dimensions,
-        place_in_series, record_page_count, relocate_roots, remove_book_files,
-        remove_books_without_files, remove_root, root_book_count, root_files, series_books,
-        series_count, series_overview, series_page, show_root_while_missing, store_page_dimensions,
-        unread_books, up_next,
+        place_in_series, record_page_count, relocate_roots, remember_root_share, remove_book_files,
+        remove_books_without_files, remove_root, root_book_count, root_files, root_share,
+        root_shares, series_books, series_count, series_overview, series_page,
+        show_root_while_missing, store_page_dimensions, unread_books, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     history::{
@@ -47,7 +47,7 @@ use crate::{
     LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder,
     ReadMark, ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing,
     SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview,
-    SeriesPage, ShareLookup, UnreachableShare, UtcOffset,
+    SeriesPage, ShareAddress, ShareLookup, UnreachableShare, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -58,8 +58,10 @@ use crate::{
     library_layout::folder_name,
     library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
+    macos_share::share_address_in_mount_table,
     missing_folder::problem_of,
     moved_home::move_home,
+    network_share::unreachable_share_of,
     reading_progress::{ReadingProgress, ReadingSaved},
     rescan::rescan,
     rescan_conditions::{RescanConditions, Storage},
@@ -927,25 +929,58 @@ impl Library {
         &self,
         shares: &impl ShareLookup,
     ) -> Result<Vec<MissingFolder>, LibraryError> {
-        let roots = self
+        let (roots, mut remembered) = self
             .store
             .database()
             .read(|connection| {
-                missing_roots(connection)?
+                let roots = missing_roots(connection)?
                     .into_iter()
                     .map(|root| {
                         let hidden = hidden_series_count(connection, Some(root.id))?;
                         Ok((root, hidden))
                     })
-                    .collect::<Result<Vec<_>, omnileaf_db::Error>>()
+                    .collect::<Result<Vec<_>, omnileaf_db::Error>>()?;
+                Ok::<_, omnileaf_db::Error>((roots, root_shares(connection)?))
             })
             .await?;
         let mut missing = Vec::with_capacity(roots.len());
         for (root, hidden) in roots {
-            let problem = problem_of(&root.locator, shares).await;
+            let share = remembered.remove(&root.id).map(ShareAddress::new);
+            let problem = problem_of(&root.locator, share, shares).await;
             missing.push(MissingFolder::of(root, problem, hidden));
         }
         Ok(missing)
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn remember_shares_in(&self, mount_table: String) -> Result<(), LibraryError> {
+        let folders = self.listed_folders().await?;
+        let shares = spawn_blocking(move || {
+            folders
+                .into_iter()
+                .filter_map(|(id, folder)| {
+                    let folder = folder?;
+                    folder.try_exists().unwrap_or(false).then(|| {
+                        let address = share_address_in_mount_table(&mount_table, &folder);
+                        (id.0, address)
+                    })
+                })
+                .collect::<Vec<_>>()
+        })
+        .await?;
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| {
+                shares.iter().try_for_each(|(id, address)| {
+                    remember_root_share(
+                        transaction,
+                        *id,
+                        address.as_ref().map(ShareAddress::as_str),
+                    )
+                })
+            })
+            .await?)
     }
 
     pub async fn unreachable_share(
@@ -953,13 +988,20 @@ impl Library {
         id: FolderId,
         shares: &impl ShareLookup,
     ) -> Result<Option<UnreachableShare>, LibraryError> {
-        let root = self
+        let (root, remembered) = self
             .store
             .database()
-            .read(move |connection| library_root(connection, id.0))
+            .read(move |connection| {
+                Ok::<_, omnileaf_db::Error>((
+                    library_root(connection, id.0)?,
+                    root_share(connection, id.0)?,
+                ))
+            })
             .await?;
         Ok(match root.locator.local_path() {
-            Some(folder) => shares.unreachable_share(folder).await,
+            Some(folder) => {
+                unreachable_share_of(folder, remembered.map(ShareAddress::new), shares).await
+            }
             None => None,
         })
     }
