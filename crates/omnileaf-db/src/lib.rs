@@ -17,6 +17,7 @@ pub mod library_listing;
 pub mod library_tabs;
 pub mod library_view;
 mod migration;
+pub mod reading_speed;
 #[cfg(test)]
 mod scratch;
 pub mod store;
