@@ -110,14 +110,34 @@ async fn counts_a_book_held_twice_in_a_folder_once() {
 }
 
 #[tokio::test]
+async fn names_the_folder_it_adds_before_finding_its_books() {
+    let comics = sample_library("scan-adding");
+    let folder = comics.path().join(SAMPLE_LIBRARY_NAME);
+
+    let (_, _, progress) = Scanned::folder("scan-adding", &folder).await;
+
+    assert_eq!(
+        progress[..2],
+        [
+            ScanProgress::Adding {
+                name: SAMPLE_LIBRARY_NAME.to_owned(),
+                location: folder.display().to_string(),
+            },
+            ScanProgress::Finding { found: 0 },
+        ]
+    );
+}
+
+#[tokio::test]
 async fn reports_finding_the_books_then_reading_each_one_found() {
     let comics = sample_library("scan-progress");
 
     let (_, _, progress) =
         Scanned::folder("scan-progress", &comics.path().join(SAMPLE_LIBRARY_NAME)).await;
 
-    let reading = &progress[finding_steps(&progress).len()..];
-    assert_eq!(progress.first(), Some(&ScanProgress::Finding { found: 0 }));
+    let scanning = &progress[1..];
+    let reading = &scanning[finding_steps(&progress).len()..];
+    assert_eq!(scanning.first(), Some(&ScanProgress::Finding { found: 0 }));
     assert_eq!(
         reading.first(),
         Some(&ScanProgress::Reading {
@@ -133,8 +153,8 @@ async fn reports_finding_the_books_then_reading_each_one_found() {
         })
     );
     assert!(reading.is_sorted_by_key(|step| match step {
-        ScanProgress::Finding { .. } => None,
         ScanProgress::Reading { scanned, .. } => Some(*scanned),
+        ScanProgress::Adding { .. } | ScanProgress::Finding { .. } => None,
     }));
 }
 
@@ -156,9 +176,10 @@ async fn counts_the_books_found_so_far_until_all_are_found() {
 fn finding_steps(progress: &[ScanProgress]) -> Vec<u32> {
     progress
         .iter()
+        .skip_while(|step| matches!(step, ScanProgress::Adding { .. }))
         .map_while(|step| match step {
             ScanProgress::Finding { found } => Some(*found),
-            ScanProgress::Reading { .. } => None,
+            ScanProgress::Adding { .. } | ScanProgress::Reading { .. } => None,
         })
         .collect()
 }
@@ -376,6 +397,10 @@ async fn counts_the_folders_it_cannot_read_and_carries_on() {
 #[test]
 fn tells_the_interface_each_stage_of_a_scan_by_name() {
     let stages = [
+        ScanProgress::Adding {
+            name: "Comics".to_owned(),
+            location: "/media/usb/Comics".to_owned(),
+        },
         ScanProgress::Finding { found: 4 },
         ScanProgress::Reading {
             scanned: 3,
@@ -388,6 +413,7 @@ fn tells_the_interface_each_stage_of_a_scan_by_name() {
     assert_eq!(
         sent,
         [
+            serde_json::json!({ "stage": "adding", "name": "Comics", "location": "/media/usb/Comics" }),
             serde_json::json!({ "stage": "finding", "found": 4 }),
             serde_json::json!({ "stage": "reading", "scanned": 3, "total": 7 }),
         ]
