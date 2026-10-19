@@ -1543,6 +1543,7 @@
     }
   ],
   "reader_time_left_short": "⟦Ļéšš ţĥáñ á ɱíñûţé ļéƒţ íñ ţĥíš çĥáþţéŕ················⟧",
+  "reader_blank_page": "⟦Þáĝé {page} öƒ {count}·········⟧",
   "reader_tap_zones": "⟦Ţáþ žöñéš····⟧",
   "reader_tap_zones_edges": "⟦Éðĝéš··⟧",
   "reader_tap_zones_l": "⟦Ļ šĥáþé···⟧",
