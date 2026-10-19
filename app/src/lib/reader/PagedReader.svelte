@@ -1,6 +1,8 @@
 <script lang="ts">
   import { BookOpen, Eye, Maximize, Languages } from "@lucide/svelte";
   import { onMount, untrack } from "svelte";
+  import type { Attachment } from "svelte/attachments";
+  import { on } from "svelte/events";
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -10,7 +12,9 @@
     type Platform,
   } from "#lib/ipc/bindings.ts";
   import { getNotices } from "#lib/notices/notices.ts";
+  import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import { standInOpenedBook } from "#lib/series/series-stand-ins.ts";
   import { shortcut } from "#lib/shortcut.ts";
@@ -34,6 +38,8 @@
   import { makesToastRoom } from "#lib/reader/toast-room.ts";
   import { spreadAt, spreadPosition, spreadsOf } from "#lib/reader/spreads.ts";
   import LayoutQuickSettings from "#lib/reader/LayoutQuickSettings.svelte";
+  import KeyboardShortcuts from "#lib/reader/KeyboardShortcuts.svelte";
+  import { fitPinch } from "#lib/reader/pinch-zoom.ts";
   import ReaderGuide from "#lib/reader/ReaderGuide.svelte";
   import ReadingSettings from "#lib/reader/ReadingSettings.svelte";
   import { seenOnce } from "#lib/reader/seen-once.ts";
@@ -109,13 +115,18 @@
     seriesReadingDirection(book.series, book.readingDirection),
   );
   const settings = untrack(() => readerSettings(book.series));
-  const TOUCH: readonly Platform[] = ["android", "ios"];
   const guide = untrack(() =>
     seenOnce(`omnileaf.readerGuide.${reading.direction}`),
   );
   let isGuideSeen = $state(untrack(() => guide.isSeen));
   const look = $derived(settings.look);
   let isSettingsOpen = $state(false);
+  let areShortcutsOpen = $state(false);
+  let zoom = $state(1);
+  const ZOOM_STEP = 1.25;
+  const ZOOM_MOST = 4;
+  const ZOOM_DOUBLE = 2;
+  const percent = new Intl.NumberFormat(getLocale(), { style: "percent" });
   const BACKGROUNDS = {
     black: "bg-reader-black",
     grey: "bg-reader-grey",
@@ -211,6 +222,19 @@
       case "fullScreen":
         void toggleFullScreen();
         return;
+      case "zoomIn":
+        zoomTo(zoom * ZOOM_STEP);
+        return;
+      case "zoomOut":
+        zoomTo(zoom / ZOOM_STEP);
+        return;
+      case "zoomFit":
+        zoomTo(1);
+        return;
+      case "shortcuts":
+        areShortcutsOpen = !areShortcutsOpen;
+        holdControls(areShortcutsOpen);
+        return;
       case "leave":
         if (isSettingsOpen) {
           openSettings(false);
@@ -235,6 +259,7 @@
       turner.goTo(pageCount - 1);
       turner.turn(1);
     }
+    zoom = 1;
     controls.hide();
     if (turner.isPastEnd && skipUpNext.isOn) {
       goStraightOn();
@@ -264,8 +289,28 @@
     });
   }
 
+  function zoomTo(scale: number): void {
+    zoom = Math.min(ZOOM_MOST, Math.max(1, scale));
+    controls.hide();
+  }
+
+  /** Takes Ctrl and the wheel as zoom, which the webview would otherwise give to its own zoom. */
+  const zoomsOnWheel: Attachment<HTMLElement> = (element) =>
+    on(
+      element,
+      "wheel",
+      (event: WheelEvent) => {
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          zoomTo(event.deltaY < 0 ? zoom * ZOOM_STEP : zoom / ZOOM_STEP);
+        }
+      },
+      { passive: false },
+    );
+
   function turnTo(index: number): void {
     turner.goTo(index);
+    zoom = 1;
     controls.hide();
   }
 
@@ -458,7 +503,7 @@
 </script>
 
 <svelte:window
-  {@attach shortcut(...readerShortcuts(act, () => reading.direction))}
+  {@attach shortcut(...readerShortcuts(act, () => reading.direction, platform))}
 />
 
 {#snippet quickSettings()}
@@ -535,6 +580,13 @@
       onclick={(event) => {
         onZone(event, "toggleControls");
       }}
+      ondblclick={() => {
+        if (isZoomedIn(viewportScale)) {
+          fitPinch();
+        } else {
+          zoomTo(zoom > 1 ? 1 : ZOOM_DOUBLE);
+        }
+      }}
     ></button>
     <button
       type="button"
@@ -548,6 +600,7 @@
 {/snippet}
 
 <main
+  {@attach zoomsOnWheel}
   data-theme={look.controls === "dark" ? "dark" : undefined}
   class={[
     "fixed inset-none overflow-hidden text-on-reader",
@@ -570,6 +623,7 @@
       shown={turner.shown}
       {spread}
       fit={look.fit}
+      {zoom}
       isReversed={reading.direction === "rightToLeft"}
       overlay={turnZones}
       onShownReady={() => {
@@ -619,6 +673,10 @@
         {quickSettings}
         {more}
         {isSettingsOpen}
+        {areShortcutsOpen}
+        onShortcuts={() => {
+          act("shortcuts");
+        }}
         onSettings={() => {
           openSettings(!isSettingsOpen);
         }}
@@ -661,10 +719,39 @@
       </div>
     {/if}
   {/if}
+  {#if zoom > 1 || isZoomedIn(viewportScale)}
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-x-none inset-bs-reader-zoom-badge flex justify-center"
+    >
+      <span
+        class="rounded-shadcn-control bg-chip px-md py-2xs text-caption font-medium text-foreground tabular-nums"
+      >
+        {isPointer(platform)
+          ? m.reader_zoom_key_to_fit({
+              percent: percent.format(zoom),
+              key: usesCommandKey(platform)
+                ? m.reader_key_command_mac({ key: "0" })
+                : m.reader_key_command({ key: "0" }),
+            })
+          : m.reader_zoom_tap_to_fit({
+              percent: percent.format(Math.max(zoom, viewportScale)),
+            })}
+      </span>
+    </div>
+  {/if}
+  <KeyboardShortcuts
+    isOpen={areShortcutsOpen}
+    {platform}
+    onClose={() => {
+      areShortcutsOpen = false;
+      holdControls(false);
+    }}
+  />
   {#if !isGuideSeen && !turner.isPastEnd}
     <ReaderGuide
       direction={reading.direction}
-      isTouch={TOUCH.includes(platform)}
+      isTouch={!isPointer(platform)}
       onDone={() => {
         guide.see();
         isGuideSeen = true;

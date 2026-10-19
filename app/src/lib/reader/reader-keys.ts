@@ -2,6 +2,7 @@ import {
   inReadingOrder,
   type ReadingDirection,
 } from "#lib/reader/reading-direction.svelte.ts";
+import type { Platform } from "#lib/ipc/bindings.ts";
 import type { Shortcut } from "#lib/shortcut.ts";
 
 export type ReaderAction =
@@ -11,12 +12,17 @@ export type ReaderAction =
   | "last"
   | "toggleControls"
   | "fullScreen"
-  | "leave";
+  | "leave"
+  | "zoomIn"
+  | "zoomOut"
+  | "zoomFit"
+  | "shortcuts";
 
 const ARROWS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowRight"]);
 
 type ReaderKey = Pick<Shortcut, "key" | "shift"> & {
   readonly action: ReaderAction;
+  readonly isCommand?: boolean;
 };
 
 const READER_KEYS: readonly ReaderKey[] = [
@@ -31,6 +37,11 @@ const READER_KEYS: readonly ReaderKey[] = [
   { key: "Escape", shift: false, action: "leave" },
   { key: "m", action: "toggleControls" },
   { key: "f", action: "fullScreen" },
+  { key: "?", action: "shortcuts" },
+  { key: "=", isCommand: true, action: "zoomIn" },
+  { key: "+", isCommand: true, action: "zoomIn" },
+  { key: "-", isCommand: true, action: "zoomOut" },
+  { key: "0", isCommand: true, action: "zoomFit" },
 ];
 
 function isPageTurn(action: ReaderAction): action is "next" | "previous" {
@@ -41,9 +52,11 @@ function isPageTurn(action: ReaderAction): action is "next" | "previous" {
 export function readerShortcuts(
   act: (action: ReaderAction) => void,
   direction: () => ReadingDirection,
+  platform: Platform,
 ): Shortcut[] {
-  return READER_KEYS.map(({ action, ...keys }) => ({
+  return READER_KEYS.map(({ action, isCommand = false, ...keys }) => ({
     ...keys,
+    ...(isCommand ? { command: platform } : {}),
     inTextFields: true,
     run: () => {
       act(

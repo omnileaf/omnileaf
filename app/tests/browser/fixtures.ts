@@ -208,6 +208,7 @@ export function targetOf(
 const SETTLE_GRACE_MS = 2000;
 const FRAME_WAIT_MS = 50;
 
+/** Lists a part bits-ui still holds in its starting style as well, since no animation reports it until the frame its transition begins. */
 function animationsWithin(locator: Locator): Promise<string[]> {
   return locator.evaluate(async (element, frameWaitMs) => {
     const nextFrame = new Promise<void>((resolve) => {
@@ -221,19 +222,25 @@ function animationsWithin(locator: Locator): Promise<string[]> {
       setTimeout(resolve, frameWaitMs);
     });
     await Promise.race([nextFrame, timer]);
-    return element.getAnimations({ subtree: true }).map((animation) => {
-      const target =
-        animation.effect instanceof KeyframeEffect
-          ? animation.effect.target
-          : null;
-      const name =
-        animation instanceof CSSTransition
-          ? animation.transitionProperty
-          : animation instanceof CSSAnimation
-            ? animation.animationName
-            : animation.id;
-      return `${name} on ${target?.tagName.toLowerCase() ?? "?"} ${target?.getAttribute("class") ?? ""}`;
-    });
+    return [
+      ...element.getAnimations({ subtree: true }).map((animation) => {
+        const target =
+          animation.effect instanceof KeyframeEffect
+            ? animation.effect.target
+            : null;
+        const name =
+          animation instanceof CSSTransition
+            ? animation.transitionProperty
+            : animation instanceof CSSAnimation
+              ? animation.animationName
+              : animation.id;
+        return `${name} on ${target?.tagName.toLowerCase() ?? "?"} ${target?.getAttribute("class") ?? ""}`;
+      }),
+      ...(element.closest("[data-starting-style]") === null &&
+      element.querySelector("[data-starting-style]") === null
+        ? []
+        : ["a part still held in its starting style"]),
+    ];
   }, FRAME_WAIT_MS);
 }
 
@@ -362,8 +369,8 @@ export function sidewaysOverflow(
 type Violations = Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"];
 
 function runningAnimations(page: Page): Promise<string[]> {
-  return page.evaluate(() =>
-    document
+  return page.evaluate(() => [
+    ...document
       .getAnimations()
       .filter(
         (animation) =>
@@ -387,12 +394,15 @@ function runningAnimations(page: Page): Promise<string[]> {
             : [target.tagName.toLowerCase(), ...target.classList].join(".");
         return `${name} on ${targetName}`;
       }),
-  );
+    ...(document.querySelector("[data-starting-style]") === null
+      ? []
+      : ["a part still held in its starting style"]),
+  ]);
 }
 
 const PAGE_ZOOM_RULE_LEFT_TO_THE_SYSTEM = "meta-viewport";
 
-/** Waits out animations that end first, since axe reads colours mid-fade as they are. */
+/** Waits out animations that end first, and a part bits-ui still holds in its starting style before its fade begins, since axe reads colours mid-fade as they are. */
 export async function accessibilityViolations(page: Page): Promise<Violations> {
   await expect
     .poll(() => runningAnimations(page), {
