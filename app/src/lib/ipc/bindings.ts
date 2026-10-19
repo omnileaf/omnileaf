@@ -128,6 +128,7 @@ export const commands = {
 	checkStorage: () => typedError<StorageUse, IpcError>(__TAURI_INVOKE("check_storage")),
 	clearCachedPages: () => typedError<null, IpcError>(__TAURI_INVOKE("clear_cached_pages")),
 	clearCovers: () => typedError<null, IpcError>(__TAURI_INVOKE("clear_covers")),
+	showTrayMenu: (menu: TrayMenu) => typedError<null, IpcError>(__TAURI_INVOKE("show_tray_menu", { menu })),
 	panicInCore: () => typedError<null, IpcError>(__TAURI_INVOKE("panic_in_core")),
 	crashAndQuit: () => typedError<null, IpcError>(__TAURI_INVOKE("crash_and_quit")),
 };
@@ -136,6 +137,7 @@ export const commands = {
 export const events = {
 	libraryChanged: makeEvent<LibraryChanged>("library-changed"),
 	readingSaved: makeEvent<ReadingSaved>("reading-saved"),
+	trayItemChosen: makeEvent<TrayItemChosen>("tray-item-chosen"),
 };
 
 /* Constants */
@@ -746,6 +748,24 @@ export type TagHeld = {
 export type Theme = "light" | "dark";
 
 export type ThemePreference = "system" | "light" | "dark";
+
+export type TrayItemChosen = "screenshotMode" | "continueReading";
+
+export type TrayMenu = {
+	open: string,
+	screenshotMode: string,
+	screenshotModeState: string,
+	isScreenshotModeOn: boolean,
+	screenshotModeShortcut: TrayShortcut,
+	continueReading: string,
+	hasBookToContinue: boolean,
+	quit: string,
+};
+
+export type TrayShortcut = {
+	letter: string,
+	shift: boolean,
+};
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {
