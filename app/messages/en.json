@@ -1605,9 +1605,13 @@
   ],
   "series_show_all_creators": [
     {
-      "declarations": ["input count", "local formattedCount = count: number"],
+      "declarations": [
+        "input more",
+        "input count",
+        "local formattedCount = count: number"
+      ],
       "match": {
-        "*": "Show all {formattedCount} creators in Details"
+        "*": "{more}, show all {formattedCount} creators in Details"
       }
     }
   ],

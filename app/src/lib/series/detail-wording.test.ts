@@ -12,7 +12,7 @@ test("names a person by what they did", () => {
 
   expect([personLabel(story), removePersonLabel(story)]).toEqual([
     "Story · Author A",
-    "Remove Author A as story",
+    "Remove Story · Author A",
   ]);
 });
 

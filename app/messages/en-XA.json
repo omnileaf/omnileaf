@@ -1605,9 +1605,13 @@
   ],
   "series_show_all_creators": [
     {
-      "declarations": ["input count", "local formattedCount = count: number"],
+      "declarations": [
+        "input more",
+        "input count",
+        "local formattedCount = count: number"
+      ],
       "match": {
-        "*": "⟦Šĥöŵ áļļ {formattedCount} çŕéáţöŕš íñ Ðéţáíļš··················⟧"
+        "*": "⟦{more}, šĥöŵ áļļ {formattedCount} çŕéáţöŕš íñ Ðéţáíļš······················⟧"
       }
     }
   ],

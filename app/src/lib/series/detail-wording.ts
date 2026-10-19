@@ -34,12 +34,7 @@ export function personLabel(person: SeriesPerson): string {
 }
 
 export function removePersonLabel(person: SeriesPerson): string {
-  return person.role === null
-    ? m.edit_details_remove_named({ name: person.name })
-    : m.edit_details_remove_person({
-        name: person.name,
-        role: roleName(person.role).toLocaleLowerCase(getLocale()),
-      });
+  return m.edit_details_remove_named({ name: personLabel(person) });
 }
 
 export function fileValuesWording(values: readonly string[]): string {
