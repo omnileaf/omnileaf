@@ -150,7 +150,7 @@ test("shows each detail with what the file says under it", async ({ page }) => {
     shown.getByRole("group", { name: "People" }).getByRole("button"),
   ).toHaveText(["Story · Author A", "Art · Author C", "Add a person"]);
   await expect(
-    shown.getByRole("button", { name: "Remove Author A as story" }),
+    shown.getByRole("button", { name: "Remove Story · Author A" }),
   ).toBeVisible();
   await expect(
     shown.getByRole("group", { name: "Tags" }).getByRole("button"),

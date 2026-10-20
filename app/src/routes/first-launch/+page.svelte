@@ -8,6 +8,7 @@
   import ChoicesStep from "#lib/first-launch/ChoicesStep.svelte";
   import { deviceKindOf } from "#lib/first-launch/device.ts";
   import FoundLibraryStep from "#lib/first-launch/FoundLibraryStep.svelte";
+  import { FIRST_LAUNCH_ROUTE } from "#lib/first-launch/gate.ts";
   import HomeStep from "#lib/first-launch/HomeStep.svelte";
   import LinkStep from "#lib/first-launch/LinkStep.svelte";
   import { PickerQuestion } from "#lib/first-launch/picker-question.svelte.ts";
@@ -85,7 +86,10 @@
   async function next(): Promise<void> {
     const after = stepAfter(step);
     if (after !== undefined) {
-      await goto("", { shallow: true, state: { firstLaunchStep: after } });
+      await goto(resolve(FIRST_LAUNCH_ROUTE), {
+        shallow: true,
+        state: { firstLaunchStep: after },
+      });
     }
   }
 

@@ -8,6 +8,7 @@
   import { commands } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { realLook } from "#lib/library/series-look.ts";
+  import { resolvedPathOf } from "#lib/navigation/app-path.ts";
   import { getNotices, type UndoOffer } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -65,7 +66,7 @@
       const { to } = navigation;
       leaveAgain = () => {
         if (to !== null) {
-          void goto(to.url);
+          void goto(resolvedPathOf(to.url));
         }
       };
     }

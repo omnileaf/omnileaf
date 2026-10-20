@@ -51,7 +51,10 @@
     {#if credits.more > 0}
       <button
         type="button"
-        aria-label={m.series_show_all_creators({ count: creators.length })}
+        aria-label={m.series_show_all_creators({
+          more: m.series_more_creators({ count: credits.more }),
+          count: creators.length,
+        })}
         class="font-medium text-foreground underline-offset-4 hover:underline focus-visible:underline touch:touch-target-around"
         onclick={onShowAll}
       >

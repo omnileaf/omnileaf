@@ -36,6 +36,7 @@
       <div class="flex flex-wrap gap-3">
         <a
           href={SOURCE_URL}
+          rel="external"
           class="inline-flex items-center rounded-control bg-accent px-5.5 font-semibold text-on-accent no-underline min-block-12"
           >Follow on GitHub</a
         >

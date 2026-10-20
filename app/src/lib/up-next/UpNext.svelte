@@ -9,6 +9,7 @@
   import { onMount } from "svelte";
 
   import { resolve } from "$app/paths";
+  import type { ResolvedPathname } from "$app/types";
   import { cn } from "#lib/components/cn.ts";
   import {
     Breadcrumb,
@@ -72,9 +73,9 @@
     book: BookId;
     title: string;
     seriesTitle: string;
-    seriesHref: string;
+    seriesHref: ResolvedPathname;
     next: SeriesNeighbour | null;
-    nextHref: string | undefined;
+    nextHref: ResolvedPathname | undefined;
     direction: ReadingDirection;
   } = $props();
 

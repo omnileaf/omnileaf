@@ -244,7 +244,7 @@
         void goto(resolve("/read/[book]", { book: choice.entry.book }));
         return;
       case "search":
-        void goto(`${resolve("/(app)/search")}${searchQuery(choice.text)}`);
+        void goto(resolve(`/(app)/search${searchQuery(choice.text)}`));
         return;
       case "showUnread":
         void showUnread();

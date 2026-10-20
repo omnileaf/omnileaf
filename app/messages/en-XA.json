@@ -1575,6 +1575,7 @@
   ],
   "series_selection_toolbar": "⟦Šéļéçţéð ƀööķš······⟧",
   "series_clear_selection": "⟦Çļéáŕ ţĥé šéļéçţíöñ········⟧",
+  "series_clear_selection_with_key": "⟦{key}, çļéáŕ ţĥé šéļéçţíöñ···········⟧",
   "series_escape_key": "⟦Éšç··⟧",
   "series_column_actions": "⟦Áçţíöñš···⟧",
   "series_book_more": "⟦Ṁöŕé ƒöŕ {title}·······⟧",
@@ -1604,9 +1605,13 @@
   ],
   "series_show_all_creators": [
     {
-      "declarations": ["input count", "local formattedCount = count: number"],
+      "declarations": [
+        "input more",
+        "input count",
+        "local formattedCount = count: number"
+      ],
       "match": {
-        "*": "⟦Šĥöŵ áļļ {formattedCount} çŕéáţöŕš íñ Ðéţáíļš··················⟧"
+        "*": "⟦{more}, šĥöŵ áļļ {formattedCount} çŕéáţöŕš íñ Ðéţáíļš······················⟧"
       }
     }
   ],
@@ -1640,7 +1645,6 @@
   "edit_details_title_left_empty": "⟦Ļéƒţ éɱþţý, šö ţĥé ƒíļé’š ţíţļé šĥöŵš: “{value}”. Ţýþé ţö šéţ ýöûŕ öŵñ.·····························⟧",
   "edit_details_summary_left_empty": "⟦Ļéƒţ éɱþţý, šö ţĥé ƒíļé’š šûɱɱáŕý šĥöŵš. Ţýþé ţö šéţ ýöûŕ öŵñ.·························⟧",
   "edit_details_person": "⟦{role} · {name}······⟧",
-  "edit_details_remove_person": "⟦Ŕéɱöṽé {name} áš {role}··········⟧",
   "edit_details_remove_named": "⟦Ŕéɱöṽé {name}······⟧",
   "edit_details_show_all": "⟦Šĥöŵ áļļ {count}·······⟧",
   "edit_details_add_person": "⟦Áðð á þéŕšöñ·····⟧",
@@ -1889,6 +1893,7 @@
   "reader_guide_done": "⟦Ĝöţ íţ···⟧",
   "reader_shortcuts_close": "⟦Çļöšé ķéýƀöáŕð šĥöŕţçûţš··········⟧",
   "reader_jump_to_book": "⟦Ĵûɱþ ţö á ƀööķ······⟧",
+  "reader_jump_from_book": "⟦{title}, Ĵûɱþ ţö á ƀööķ··········⟧",
   "reader_jump_close": "⟦Çļöšé Ĵûɱþ ţö á ƀööķ········⟧",
   "reader_jump_loading": "⟦Ļöáðíñĝ ţĥé šéŕíéš' ƀööķš··········⟧",
   "reader_jump_subtitle": [

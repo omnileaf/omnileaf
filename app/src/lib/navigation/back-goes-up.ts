@@ -7,14 +7,16 @@ import {
   onNavigate,
   type AfterNavigate,
 } from "$app/navigation";
+import type { ResolvedPathname } from "$app/types";
 
+import { resolvedPathOf } from "./app-path";
 import { type HistoryMove, moveTo } from "./up-history";
 
 type Replacing = Extract<HistoryMove, { kind: "replace" }>;
 
 export interface BackGoesUp {
   readonly isPassingThrough: boolean;
-  replaceWith(target: string | URL): Promise<void>;
+  replaceWith(target: ResolvedPathname): Promise<void>;
 }
 
 export function makeBackGoUp(): BackGoesUp {
@@ -57,7 +59,7 @@ export function makeBackGoUp(): BackGoesUp {
     }
   }
 
-  async function replaceWith(target: string | URL): Promise<void> {
+  async function replaceWith(target: ResolvedPathname): Promise<void> {
     const { pathname } = new URL(target, location.href);
     replacing.add(pathname);
     try {
@@ -67,7 +69,10 @@ export function makeBackGoUp(): BackGoesUp {
     }
   }
 
-  async function replace(move: Replacing, target: URL): Promise<void> {
+  async function replace(
+    move: Replacing,
+    target: ResolvedPathname,
+  ): Promise<void> {
     if (move.stepsBack > 0) {
       await passThrough(move.stepsBack);
     }
@@ -90,13 +95,14 @@ export function makeBackGoUp(): BackGoesUp {
   }
 
   function follow(planned: HistoryMove, target: URL): Promise<void> {
+    const path = resolvedPathOf(target);
     switch (planned.kind) {
       case "push":
-        return goto(target);
+        return goto(path);
       case "back":
         return move(goBack(planned.steps));
       case "replace":
-        return move(replace(planned, target));
+        return move(replace(planned, path));
       default:
         return assertNever(planned);
     }

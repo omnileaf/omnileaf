@@ -141,6 +141,19 @@ test("draws the breadcrumb's book name 32px tall as the desktop board does", asy
   expect(crumb.height).toBe(DESKTOP_CRUMB_TRIGGER_PX);
 });
 
+test("names the breadcrumb's book by its title, then Jump to a book", async ({
+  page,
+}) => {
+  test.skip(!isWide(page), "narrow screens open it from the title");
+  await openBook(page);
+
+  const crumb = page
+    .getByRole("navigation", { name: "Breadcrumb" })
+    .getByRole("button");
+
+  await expect(crumb).toHaveAccessibleName(`${BOOK_TITLE}, Jump to a book`);
+});
+
 test("opens and closes the list with G", async ({ page }) => {
   await openBook(page);
 

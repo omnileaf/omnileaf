@@ -480,6 +480,20 @@ test.describe("a series whose creators have no roles", () => {
       }),
     ).toHaveText("+2 more");
   });
+
+  test("names the more button by the count it shows, then where the rest are", async ({
+    page,
+  }) => {
+    await openSeries(page);
+
+    const more = about(page).getByRole("button", {
+      name: "Show all 4 creators in Details",
+    });
+
+    await expect(more).toHaveAccessibleName(
+      "+2 more, show all 4 creators in Details",
+    );
+  });
 });
 
 test.describe("a series the library knows nothing more about", () => {

@@ -1575,6 +1575,7 @@
   ],
   "series_selection_toolbar": "Selected books",
   "series_clear_selection": "Clear the selection",
+  "series_clear_selection_with_key": "{key}, clear the selection",
   "series_escape_key": "Esc",
   "series_column_actions": "Actions",
   "series_book_more": "More for {title}",
@@ -1604,9 +1605,13 @@
   ],
   "series_show_all_creators": [
     {
-      "declarations": ["input count", "local formattedCount = count: number"],
+      "declarations": [
+        "input more",
+        "input count",
+        "local formattedCount = count: number"
+      ],
       "match": {
-        "*": "Show all {formattedCount} creators in Details"
+        "*": "{more}, show all {formattedCount} creators in Details"
       }
     }
   ],
@@ -1640,7 +1645,6 @@
   "edit_details_title_left_empty": "Left empty, so the file’s title shows: “{value}”. Type to set your own.",
   "edit_details_summary_left_empty": "Left empty, so the file’s summary shows. Type to set your own.",
   "edit_details_person": "{role} · {name}",
-  "edit_details_remove_person": "Remove {name} as {role}",
   "edit_details_remove_named": "Remove {name}",
   "edit_details_show_all": "Show all {count}",
   "edit_details_add_person": "Add a person",
@@ -1889,6 +1893,7 @@
   "reader_guide_done": "Got it",
   "reader_shortcuts_close": "Close keyboard shortcuts",
   "reader_jump_to_book": "Jump to a book",
+  "reader_jump_from_book": "{title}, Jump to a book",
   "reader_jump_close": "Close Jump to a book",
   "reader_jump_loading": "Loading the series' books",
   "reader_jump_subtitle": [

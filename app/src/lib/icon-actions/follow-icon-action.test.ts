@@ -1,8 +1,11 @@
 import { expect, test } from "vitest";
 
+import type { ResolvedPathname } from "$app/types";
+
 import { type IconActionTargets, followIconAction } from "./follow-icon-action";
 
-const LAST_BOOK_PAGE = "/read/0190a3e4-0000-8000-8002-000000000001";
+const LAST_BOOK_PAGE: ResolvedPathname =
+  "/read/0190a3e4-0000-8000-8002-000000000001";
 
 interface Followed {
   readonly targets: IconActionTargets;
@@ -10,7 +13,7 @@ interface Followed {
   readonly toggles: () => number;
 }
 
-function following(lastBook: string | undefined): Followed {
+function following(lastBook: ResolvedPathname | undefined): Followed {
   const opened: string[] = [];
   let toggled = 0;
   return {

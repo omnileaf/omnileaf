@@ -871,6 +871,17 @@ test.describe("in the table on wide screens", () => {
     await expect(page.getByRole("checkbox", { checked: true })).toHaveCount(0);
   });
 
+  test("names the selection bar's clear button by the Esc key it shows", async ({
+    page,
+  }) => {
+    await openSeries(page);
+    await pickBooks(page, 4);
+
+    const clear = selectedBooks(page).getByRole("button").last();
+
+    await expect(clear).toHaveAccessibleName("Esc, clear the selection");
+  });
+
   test("floats the selection bar inside the table's edges", async ({
     page,
   }) => {

@@ -3,8 +3,9 @@
 
   import type { Snippet } from "svelte";
 
+  import { asset, resolve } from "$app/paths";
   import iconUrl from "#branding/icon.svg?url";
-  import { SECURITY_TXT_PATH, SOURCE_URL } from "#lib/links.ts";
+  import { SECURITY_TXT_ASSET, SOURCE_URL } from "#lib/links.ts";
 
   let { children }: { children: Snippet } = $props();
 
@@ -18,7 +19,10 @@
 <header
   class="mx-auto flex flex-wrap items-center justify-between gap-4 p-6 max-inline-page"
 >
-  <a href="/" class="flex items-center gap-3 text-foreground no-underline">
+  <a
+    href={resolve("/")}
+    class="flex items-center gap-3 text-foreground no-underline"
+  >
     <img src={iconUrl} alt="" class="block-10 inline-10" />
     <span
       class="font-display text-title font-bold tracking-tight text-foreground"
@@ -27,12 +31,13 @@
   </a>
   <nav aria-label="Main" class="flex flex-wrap gap-1">
     <a
-      href="/#security"
+      href={resolve("/#security")}
       class="inline-flex items-center rounded-control px-3.5 font-medium text-foreground no-underline min-block-11"
       >Security</a
     >
     <a
       href={SOURCE_URL}
+      rel="external"
       class="inline-flex items-center rounded-control px-3.5 font-medium text-foreground no-underline min-block-11"
       >GitHub</a
     >
@@ -47,9 +52,10 @@
   >
     <span>© {year} Omnileaf Pty Ltd</span>
     <div class="flex flex-wrap gap-5">
-      <a href={SOURCE_URL} class="text-muted">Source on GitHub</a>
+      <a href={SOURCE_URL} rel="external" class="text-muted">Source on GitHub</a
+      >
       <span>Licence GPL-3.0-only</span>
-      <a href={SECURITY_TXT_PATH} class="text-muted">security.txt</a>
+      <a href={asset(SECURITY_TXT_ASSET)} class="text-muted">security.txt</a>
     </div>
   </div>
 </footer>

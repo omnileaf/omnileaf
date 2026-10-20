@@ -28,7 +28,13 @@ function fakeTests() {
 async function renderList() {
   const { tests, ran } = fakeTests();
   const screen = await render(CrashTestList, { tests, version: "1.2.3" });
-  return { screen, ran, dialog: screen.getByRole("alertdialog") };
+  return {
+    screen,
+    ran,
+    dialog: screen.getByRole("alertdialog"),
+    crashTest: (title: string) =>
+      screen.getByRole("button", { name: new RegExp(`^${title} `, "u") }),
+  };
 }
 
 test("groups the crash tests under Crash reports", async () => {
@@ -36,38 +42,55 @@ test("groups the crash tests under Crash reports", async () => {
 
   const group = screen.getByRole("region", { name: "Crash reports" });
 
-  await expect
-    .element(group.getByRole("button", { name: "Panic in the core" }))
-    .toHaveAccessibleDescription(
-      "Panics on a background thread, then offers the report the way the next launch would.",
-    );
   expect(group.getByRole("listitem").elements()).toHaveLength(3);
 });
 
-test("panics in the core straight away", async () => {
-  const { screen, ran, dialog } = await renderList();
+test("names each crash test by its title and the line under it", async () => {
+  const { screen } = await renderList();
 
-  await screen.getByRole("button", { name: "Panic in the core" }).click();
+  const crashTests = screen
+    .getByRole("region", { name: "Crash reports" })
+    .getByRole("button");
+
+  await expect
+    .element(crashTests.nth(0))
+    .toHaveAccessibleName(
+      "Panic in the core Panics on a background thread, then offers the report the way the next launch would.",
+    );
+  await expect
+    .element(crashTests.nth(1))
+    .toHaveAccessibleName(
+      "Throw an interface error Throws an error the interface doesn't handle; its report is offered straight away.",
+    );
+  await expect
+    .element(crashTests.nth(2))
+    .toHaveAccessibleName(
+      "Crash and quit Panics and quits. Open Omnileaf again to see the report it kept.",
+    );
+});
+
+test("panics in the core straight away", async () => {
+  const { crashTest, ran, dialog } = await renderList();
+
+  await crashTest("Panic in the core").click();
 
   expect(ran).toEqual(["panicInCore"]);
   await expect.element(dialog).not.toBeInTheDocument();
 });
 
 test("throws an interface error straight away", async () => {
-  const { screen, ran, dialog } = await renderList();
+  const { crashTest, ran, dialog } = await renderList();
 
-  await screen
-    .getByRole("button", { name: "Throw an interface error" })
-    .click();
+  await crashTest("Throw an interface error").click();
 
   expect(ran).toEqual(["throwInterfaceError"]);
   await expect.element(dialog).not.toBeInTheDocument();
 });
 
 test("asks before crashing and quitting", async () => {
-  const { screen, ran, dialog } = await renderList();
+  const { crashTest, ran, dialog } = await renderList();
 
-  await screen.getByRole("button", { name: "Crash and quit" }).click();
+  await crashTest("Crash and quit").click();
 
   await expect.element(dialog).toHaveAccessibleName("Crash Omnileaf now?");
   await expect
@@ -79,9 +102,9 @@ test("asks before crashing and quitting", async () => {
 });
 
 test("starts the crash question on Cancel", async () => {
-  const { screen, dialog } = await renderList();
+  const { crashTest, dialog } = await renderList();
 
-  await screen.getByRole("button", { name: "Crash and quit" }).click();
+  await crashTest("Crash and quit").click();
 
   await expect
     .element(dialog.getByRole("button", { name: "Cancel" }))
@@ -89,8 +112,8 @@ test("starts the crash question on Cancel", async () => {
 });
 
 test("crashes and quits once the crash is confirmed", async () => {
-  const { screen, ran, dialog } = await renderList();
-  await screen.getByRole("button", { name: "Crash and quit" }).click();
+  const { crashTest, ran, dialog } = await renderList();
+  await crashTest("Crash and quit").click();
 
   await dialog.getByRole("button", { name: "Crash and quit" }).click();
 
@@ -99,8 +122,8 @@ test("crashes and quits once the crash is confirmed", async () => {
 });
 
 test("keeps running when the crash is cancelled", async () => {
-  const { screen, ran, dialog } = await renderList();
-  await screen.getByRole("button", { name: "Crash and quit" }).click();
+  const { crashTest, ran, dialog } = await renderList();
+  await crashTest("Crash and quit").click();
 
   await dialog.getByRole("button", { name: "Cancel" }).click();
 
@@ -109,8 +132,8 @@ test("keeps running when the crash is cancelled", async () => {
 });
 
 test("keeps running when the crash question is dismissed with Escape", async () => {
-  const { screen, ran, dialog } = await renderList();
-  await screen.getByRole("button", { name: "Crash and quit" }).click();
+  const { crashTest, ran, dialog } = await renderList();
+  await crashTest("Crash and quit").click();
   await expect.element(dialog).toBeVisible();
 
   await userEvent.keyboard("{Escape}");

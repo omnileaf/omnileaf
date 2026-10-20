@@ -125,6 +125,12 @@ function crashTests(page: Page): Locator {
   return page.getByRole("region", { name: "Crash reports" });
 }
 
+const CRASH_TEST_TITLES = [
+  "Panic in the core",
+  "Throw an interface error",
+  "Crash and quit",
+] as const;
+
 function crashTest(page: Page, name: string): Locator {
   return crashTests(page).getByRole("button", { name });
 }
@@ -201,8 +207,11 @@ for (const platform of ["android", "ios", "linux"] as const) {
       const look = LOOKS[lookOf(page, platform)];
       const list = await boxOf(crashTests(page).getByRole("list"));
 
-      await expect(crashTests(page).getByRole("button")).toHaveCount(3);
-      for (const row of await crashTests(page).getByRole("button").all()) {
+      await expect(crashTests(page).getByRole("button")).toHaveCount(
+        CRASH_TEST_TITLES.length,
+      );
+      for (const title of CRASH_TEST_TITLES) {
+        const row = crashTest(page, title);
         const box = await boxOf(row);
         const tile = await boxOf(row.locator("span[aria-hidden]").first());
         const icons = row.locator("svg");
@@ -213,7 +222,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
         expect((await boxOf(icons.first())).width).toBe(look.icon);
         expect((await boxOf(icons.last())).width).toBe(look.play);
         expect(
-          await styleOf(row.locator("span[id$='-title']"), "font-size"),
+          await styleOf(row.getByText(title, { exact: true }), "font-size"),
         ).toBe(look.title);
       }
       expect(
