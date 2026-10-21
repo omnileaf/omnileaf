@@ -1,9 +1,14 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
 
 import type { WidthClass } from "./breakpoints";
-import { isPhone, usesCommandKey } from "./platform";
+import {
+  currentPlatform,
+  followCorePlatform,
+  isPhone,
+  usesCommandKey,
+} from "./platform";
 
 const TOUCH: readonly Platform[] = ["android", "ios"];
 const DESKTOPS: readonly Platform[] = ["linux", "macos", "windows"];
@@ -32,4 +37,25 @@ test.each(APPLE)("uses the Command key on %s", (platform) => {
 
 test.each(OTHERS)("uses the Ctrl key on %s", (platform) => {
   expect(usesCommandKey(platform)).toBe(false);
+});
+
+test("reads as linux until the core reports a platform", async () => {
+  vi.resetModules();
+  const fresh = await import("./platform");
+
+  const platform = fresh.currentPlatform();
+
+  expect(platform).toBe("linux");
+});
+
+test.each(TOUCH)("keeps %s once the core reports it", (platform) => {
+  followCorePlatform(platform);
+
+  expect(currentPlatform()).toBe(platform);
+});
+
+test.each(DESKTOPS)("marks the page as %s for the styles", (platform) => {
+  followCorePlatform(platform);
+
+  expect(document.documentElement.dataset.platform).toBe(platform);
 });

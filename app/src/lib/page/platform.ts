@@ -29,3 +29,14 @@ const USES_COMMAND_KEY = {
 export function usesCommandKey(platform: Platform): boolean {
   return USES_COMMAND_KEY[platform];
 }
+
+let corePlatform: Platform = "linux";
+
+export function followCorePlatform(platform: Platform): void {
+  corePlatform = platform;
+  document.documentElement.dataset.platform = platform;
+}
+
+export function currentPlatform(): Platform {
+  return corePlatform;
+}
