@@ -3,6 +3,8 @@ import { afterEach, expect, test } from "vitest";
 import { type Locator, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
+import "../../app.css";
+
 import {
   commands,
   type FileChanges,
@@ -398,13 +400,11 @@ async function removeComicsThenManga(folders: Locator): Promise<void> {
     name: "Remove Sample Manga",
   });
   await expect.element(removeManga).toBeVisible();
-  await folders
-    .getByRole("button", { name: "Remove Sample Comics" })
-    .click({ force: true });
+  await folders.getByRole("button", { name: "Remove Sample Comics" }).click();
   await expect
     .element(folders.getByText("Sample Comics", { exact: true }))
     .not.toBeInTheDocument();
-  await removeManga.click({ force: true });
+  await removeManga.click();
 }
 
 test("says no folders are linked once the last one is removed", async () => {
