@@ -5,6 +5,7 @@ import { render } from "vitest-browser-svelte";
 import "../../../../app.css";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { resolvedColour } from "../../../../../tests/components/resolved-colour";
 
@@ -37,19 +38,19 @@ const LOOKS: readonly SwitchLook[] = [
     track: [52, 32],
     knobOff: 16,
     knobOn: 24,
-    trackOff: "--android-container-high",
-    trackOn: "--primary",
-    knobOffFill: "--android-outline",
-    edgeOff: "--android-outline",
+    trackOff: "#dbe5dc",
+    trackOn: "#326a4d",
+    knobOffFill: "#737d75",
+    edgeOff: "#737d75",
   },
   {
     platform: "ios",
-    track: [51, 31],
-    knobOff: 27,
-    knobOn: 27,
-    trackOff: "--ios-fill",
-    trackOn: "--ios-switch-on",
-    knobOffFill: "--ios-switch-thumb",
+    track: [64, 28],
+    knobOff: 38,
+    knobOn: 38,
+    trackOff: "rgba(60, 60, 67, 0.3)",
+    trackOn: "oklch(0.6 0.17 149)",
+    knobOffFill: "oklch(1 0 0)",
     edgeOff: "transparent",
   },
   {
@@ -102,7 +103,7 @@ function tickOf(name: string): "shown" | "hidden" | "absent" {
 }
 
 async function renderPair(platform: Platform): Promise<void> {
-  document.documentElement.dataset.platform = platform;
+  followCorePlatform(platform);
   document.documentElement.dataset.theme = "light";
   await render(Switch, { checked: true, "aria-label": "On" });
   await render(Switch, { checked: false, "aria-label": "Off" });
@@ -156,4 +157,13 @@ test("leaves the knob of a switched-on Linux switch unticked", async () => {
   await renderPair("linux");
 
   expect(tickOf("On")).toBe("hidden");
+});
+
+test("draws the iOS knob as a capsule, wider than it is tall", async () => {
+  await renderPair("ios");
+
+  const knob = knobOf("Off").getBoundingClientRect();
+
+  expect(knob.width).toBeCloseTo(38, 0);
+  expect(knob.height).toBeCloseTo(24, 0);
 });

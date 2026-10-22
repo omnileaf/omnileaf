@@ -33,7 +33,7 @@ const LOOKS: readonly PlatformLook[] = [
     menu: "--android-container",
     menuCorner: "4px",
     tooltip: "--primary",
-    switchOn: "--primary",
+    switchOn: "#326a4d",
     secondaryText: "--android-secondary-text",
     font: /^"Roboto Flex"/,
   },
@@ -42,7 +42,7 @@ const LOOKS: readonly PlatformLook[] = [
     menu: "--ios-material",
     menuCorner: "14px",
     tooltip: "--primary",
-    switchOn: "--ios-switch-on",
+    switchOn: "oklch(0.6 0.17 149)",
     secondaryText: "--ios-secondary-label",
     font: /^-apple-system/,
   },
@@ -68,7 +68,7 @@ const LOOKS: readonly PlatformLook[] = [
 
 function colourOf(token: string): string {
   const probe = document.createElement("span");
-  probe.style.color = `var(${token})`;
+  probe.style.color = token.startsWith("--") ? `var(${token})` : token;
   document.body.append(probe);
   const colour = getComputedStyle(probe).color;
   probe.remove();
