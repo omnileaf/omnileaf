@@ -1,6 +1,13 @@
 import { expect, test } from "vitest";
 
+import tokens from "../src/lib/theme/tokens.json";
 import { renderPlatformTokens } from "./platform-tokens.ts";
+
+const COMMITTED = import.meta.glob<string>("../src/lib/theme/generated/*.css", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
 
 const ACCENT = {
   name: "accent",
@@ -123,4 +130,17 @@ test("stops movement under reduced motion on every platform and every themed par
 }
 `,
   );
+});
+
+test("matches the committed files, so a change to the source is regenerated", () => {
+  const committed = Object.fromEntries(
+    Object.entries(COMMITTED).map(([path, css]) => [
+      path.replace("../src/lib/theme/generated/", ""),
+      css,
+    ]),
+  );
+
+  const rendered = Object.fromEntries(renderPlatformTokens(tokens));
+
+  expect(committed).toEqual(rendered);
 });

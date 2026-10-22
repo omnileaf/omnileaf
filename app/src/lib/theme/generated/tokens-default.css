@@ -1,0 +1,13 @@
+:root,
+[data-theme] {
+  --native-duration-fade: 150ms;
+  --native-duration-grow: 200ms;
+  --native-duration-move: 300ms;
+  --native-duration-slide: 350ms;
+  --native-duration-spin: 1s;
+  --native-duration-spin-slow: 2s;
+  --native-duration-band: 1.4s;
+  --native-ease-out: ease-out;
+  --native-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --native-ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
+}

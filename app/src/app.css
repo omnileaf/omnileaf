@@ -770,18 +770,6 @@
   --shadow-reader-thumb: 0 1px 4px rgb(0 0 0 / 0.5);
   --shadow-reader-thumb-wide: 0 1px 4px rgb(0 0 0 / 0.4);
 
-  --transition-duration-fade: 150ms;
-  --transition-duration-grow: 200ms;
-  --transition-duration-slide: 350ms;
-  --transition-duration-move: 300ms;
-  --transition-duration-spin: 1s;
-  --transition-duration-spin-slow: 2s;
-  --transition-duration-band: 1.4s;
-
-  --ease-out: ease-out;
-  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
-  --ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
-
   --animate-pill-grow: pill-grow var(--transition-duration-grow)
     var(--ease-emphasized);
   --animate-nav-pop: nav-pop var(--transition-duration-move) var(--ease-glass);
@@ -885,6 +873,8 @@
     }
   }
 }
+
+@import "./lib/theme/generated/index.css";
 
 :root {
   @variant medium {
