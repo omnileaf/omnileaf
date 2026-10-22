@@ -61,7 +61,7 @@ The tray on Linux and Windows shows `branding/tray.svg`, the green square with o
 
 `cargo xtask check` runs the same checks as CI, in groups. `--only <group>` runs one of them: `rust`, `portable`, `interface`, `browser`, `app`, `android` or `ios`. A plain `cargo xtask check` runs every group except `android` and `ios`, which need an emulator or a Simulator. `cargo xtask doctor` lists the tools the groups need and shows how to install any that are missing. Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically.
 
-CI runs the three macOS gates (`rust gate (macos)`, `app (macos)` and `fixtures (macos)`) when a pull request enters the merge queue, on every push to `main` and every night, not on each push to a pull request. GitHub gives a repository five macOS jobs at a time on every plan below Enterprise, so running them on every push left the merge queue waiting behind pull request runs. Those three checks show as skipped on a pull request, which still satisfies them, and Linux and Windows run on every push as before. Add the `macos` label to a pull request that changes platform-specific code to run them there before it is queued.
+CI runs the three macOS gates (`rust gate (macos)`, `app (macos)` and `fixtures (macos)`) on every push to `main` and every night, not on each push to a pull request. GitHub gives a repository five macOS jobs at a time on every plan below Enterprise, so running them on every pull request push would leave other runs waiting. Those three checks show as skipped on a pull request, which still satisfies them, and Linux and Windows run on every push as before. Add the `macos` label to a pull request that changes platform-specific code to run them there before it merges.
 
 ### Before you push
 
