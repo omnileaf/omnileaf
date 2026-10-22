@@ -305,7 +305,8 @@ jobs:
         run: |
           playwright=$(pnpm --dir app exec playwright --version)
           digest=$(printf '%s %s %s' "$ImageOS" "$ImageVersion" "$playwright" | sha256sum | cut -c1-16)
-          echo "key=playwright-system-packages-$digest" >> "$GITHUB_OUTPUT"
+          echo "prefix=playwright-system-packages-$digest" >> "$GITHUB_OUTPUT"
+          echo "key=playwright-system-packages-$digest-$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 
       - name: Restore the test browsers' system packages
         id: restore-browser-packages
@@ -313,6 +314,7 @@ jobs:
         with:
           path: ~/browser-packages
           key: ${{ steps.browser-packages.outputs.key }}
+          restore-keys: ${{ steps.browser-packages.outputs.prefix }}
 
       - name: Put the test browsers' system packages back
         run: |
@@ -327,6 +329,8 @@ jobs:
 
       - name: Collect the system packages the install downloaded
         run: |
+          sudo apt-get autoclean
+          rm -rf "$HOME/browser-packages"
           mkdir -p "$HOME/browser-packages"
           find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp -t "$HOME/browser-packages" {} +
           echo "Kept $(find "$HOME/browser-packages" -name '*.deb' | wc -l) system packages for the next run"
