@@ -2,6 +2,8 @@
 build/
 src/lib/paraglide/
 src/lib/theme/generated/
+src/lib/icons/*/
+src/lib/icons/icons.css
 project.inlang/*
 !project.inlang/settings.json
 src-tauri/gen/

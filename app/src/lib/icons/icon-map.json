@@ -1,0 +1,547 @@
+{
+  "activity": {
+    "framework7": "waveform_path_ecg",
+    "lucide": "activity",
+    "material": "monitoring"
+  },
+  "app-window": {
+    "framework7": "macwindow",
+    "lucide": "app-window",
+    "material": "web_asset"
+  },
+  "arrow-down": {
+    "framework7": "arrow_down",
+    "lucide": "arrow-down",
+    "material": "arrow_downward"
+  },
+  "arrow-down-up": {
+    "framework7": "arrow_up_arrow_down",
+    "lucide": "arrow-down-up",
+    "material": "swap_vert"
+  },
+  "arrow-left": {
+    "framework7": "arrow_left",
+    "lucide": "arrow-left",
+    "material": "arrow_back"
+  },
+  "arrow-left-right": {
+    "framework7": "arrow_left_right",
+    "lucide": "arrow-left-right",
+    "material": "swap_horiz"
+  },
+  "arrow-right": {
+    "framework7": "arrow_right",
+    "lucide": "arrow-right",
+    "material": "arrow_forward"
+  },
+  "arrow-up": {
+    "framework7": "arrow_up",
+    "lucide": "arrow-up",
+    "material": "arrow_upward"
+  },
+  "arrow-up-down": {
+    "framework7": "arrow_up_down",
+    "lucide": "arrow-up-down",
+    "material": "swap_vert"
+  },
+  "bell": {
+    "framework7": "bell",
+    "lucide": "bell",
+    "material": "notifications",
+    "materialFilled": "notifications-fill"
+  },
+  "book": {
+    "framework7": "book",
+    "lucide": "book",
+    "material": "book"
+  },
+  "book-open": {
+    "framework7": "book",
+    "lucide": "book-open",
+    "material": "menu_book",
+    "materialFilled": "menu_book-fill"
+  },
+  "bookmark": {
+    "framework7": "bookmark",
+    "framework7Filled": "bookmark_fill",
+    "lucide": "bookmark",
+    "material": "bookmark",
+    "materialFilled": "bookmark-fill"
+  },
+  "bookmark-filled": {
+    "framework7": "bookmark_fill",
+    "lucide": "bookmark",
+    "material": "bookmark-fill"
+  },
+  "bug": {
+    "framework7": "ant",
+    "lucide": "bug",
+    "material": "bug_report",
+    "materialFilled": "bug_report-fill"
+  },
+  "camera": {
+    "framework7": "camera",
+    "lucide": "camera",
+    "material": "photo_camera"
+  },
+  "check": {
+    "framework7": "checkmark",
+    "lucide": "check",
+    "material": "check"
+  },
+  "chevron-down": {
+    "framework7": "chevron_down",
+    "lucide": "chevron-down",
+    "material": "arrow_drop_down"
+  },
+  "chevron-left": {
+    "framework7": "chevron_left",
+    "lucide": "chevron-left",
+    "material": "chevron_left"
+  },
+  "chevron-right": {
+    "framework7": "chevron_right",
+    "lucide": "chevron-right",
+    "material": "chevron_right"
+  },
+  "chevron-up": {
+    "framework7": "chevron_up",
+    "lucide": "chevron-up",
+    "material": "keyboard_arrow_up"
+  },
+  "chevrons-left": {
+    "framework7": "chevron_left_2",
+    "lucide": "chevrons-left",
+    "material": "keyboard_double_arrow_left"
+  },
+  "chevrons-right": {
+    "framework7": "chevron_right_2",
+    "lucide": "chevrons-right",
+    "material": "keyboard_double_arrow_right"
+  },
+  "chevrons-up-down": {
+    "framework7": "chevron_up_chevron_down",
+    "lucide": "chevrons-up-down",
+    "material": "unfold_more"
+  },
+  "circle-alert": {
+    "framework7": "exclamationmark_circle",
+    "lucide": "circle-alert",
+    "material": "error"
+  },
+  "circle-check": {
+    "framework7": "checkmark_circle",
+    "lucide": "circle-check",
+    "material": "check_circle"
+  },
+  "clock": {
+    "framework7": "clock",
+    "framework7Filled": "clock_fill",
+    "lucide": "clock",
+    "material": "schedule"
+  },
+  "columns-2": {
+    "framework7": "square_split_2x1",
+    "lucide": "columns-2",
+    "material": "view_column_2"
+  },
+  "compass": {
+    "framework7": "compass",
+    "framework7Filled": "compass_fill",
+    "lucide": "compass",
+    "material": "explore",
+    "materialFilled": "explore-fill"
+  },
+  "copy": {
+    "framework7": "doc_on_doc",
+    "lucide": "copy",
+    "material": "content_copy"
+  },
+  "download": {
+    "framework7": "arrow_down_to_line",
+    "lucide": "download",
+    "material": "download"
+  },
+  "ellipsis": {
+    "framework7": "ellipsis",
+    "lucide": "ellipsis",
+    "material": "more_vert"
+  },
+  "eraser": {
+    "lucide": "eraser",
+    "material": "ink_eraser"
+  },
+  "external-link": {
+    "framework7": "arrow_up_right_square",
+    "lucide": "external-link",
+    "material": "open_in_new"
+  },
+  "eye": {
+    "framework7": "eye",
+    "lucide": "eye",
+    "material": "visibility",
+    "materialFilled": "visibility-fill"
+  },
+  "eye-off": {
+    "framework7": "eye_slash",
+    "lucide": "eye-off",
+    "material": "visibility_off"
+  },
+  "file-exclamation-point": {
+    "lucide": "file-exclamation-point",
+    "material": "problem"
+  },
+  "file-text": {
+    "framework7": "doc_text",
+    "lucide": "file-text",
+    "material": "description"
+  },
+  "file-x": {
+    "lucide": "file-x",
+    "material": "scan_delete"
+  },
+  "folder": {
+    "framework7": "folder",
+    "framework7Filled": "folder_fill",
+    "lucide": "folder",
+    "material": "folder",
+    "materialFilled": "folder-fill"
+  },
+  "folder-minus": {
+    "framework7": "folder_badge_minus",
+    "lucide": "folder-minus",
+    "material": "folder_delete"
+  },
+  "folder-open": {
+    "framework7": "folder",
+    "lucide": "folder-open",
+    "material": "folder_open"
+  },
+  "folder-plus": {
+    "framework7": "folder_badge_plus",
+    "lucide": "folder-plus",
+    "material": "create_new_folder"
+  },
+  "folder-search": {
+    "lucide": "folder-search",
+    "material": "folder_eye"
+  },
+  "globe": {
+    "framework7": "globe",
+    "lucide": "globe",
+    "material": "language"
+  },
+  "grip-vertical": {
+    "framework7": "line_horizontal_3",
+    "lucide": "grip-vertical",
+    "material": "drag_indicator"
+  },
+  "hand": {
+    "framework7": "hand_raised",
+    "lucide": "hand",
+    "material": "back_hand"
+  },
+  "hard-drive": {
+    "lucide": "hard-drive",
+    "material": "hard_drive",
+    "materialFilled": "hard_drive-fill"
+  },
+  "history": {
+    "framework7": "clock",
+    "framework7Filled": "clock_fill",
+    "lucide": "history",
+    "material": "history",
+    "materialFilled": "history-fill"
+  },
+  "house": {
+    "framework7": "house",
+    "framework7Filled": "house_fill",
+    "lucide": "house",
+    "material": "home",
+    "materialFilled": "home-fill"
+  },
+  "image-off": {
+    "lucide": "image-off",
+    "material": "hide_image"
+  },
+  "info": {
+    "framework7": "info_circle",
+    "lucide": "info",
+    "material": "info",
+    "materialFilled": "info-fill"
+  },
+  "keyboard": {
+    "framework7": "keyboard",
+    "lucide": "keyboard",
+    "material": "keyboard",
+    "materialFilled": "keyboard-fill"
+  },
+  "languages": {
+    "framework7": "globe",
+    "lucide": "languages",
+    "material": "translate"
+  },
+  "layout-grid": {
+    "framework7": "square_grid_2x2",
+    "lucide": "layout-grid",
+    "material": "grid_view",
+    "materialFilled": "grid_view-fill"
+  },
+  "leaf": {
+    "lucide": "leaf",
+    "material": "eco"
+  },
+  "library": {
+    "framework7": "rectangle_stack",
+    "framework7Filled": "rectangle_stack_fill",
+    "lucide": "library",
+    "material": "library_books",
+    "materialFilled": "library_books-fill"
+  },
+  "link": {
+    "framework7": "link",
+    "lucide": "link",
+    "material": "link"
+  },
+  "link-2": {
+    "framework7": "link",
+    "lucide": "link-2",
+    "material": "link"
+  },
+  "link-2-off": {
+    "lucide": "link-2-off",
+    "material": "link_off"
+  },
+  "list": {
+    "framework7": "list_bullet",
+    "lucide": "list",
+    "material": "list"
+  },
+  "list-checks": {
+    "framework7": "text_badge_checkmark",
+    "lucide": "list-checks",
+    "material": "checklist"
+  },
+  "list-filter": {
+    "framework7": "line_horizontal_3_decrease",
+    "lucide": "list-filter",
+    "material": "filter_list"
+  },
+  "loader-circle": {
+    "lucide": "loader-circle",
+    "material": "progress_activity"
+  },
+  "lock": {
+    "framework7": "lock",
+    "lucide": "lock",
+    "material": "lock",
+    "materialFilled": "lock-fill"
+  },
+  "maximize": {
+    "framework7": "arrow_up_left_arrow_down_right",
+    "lucide": "maximize",
+    "material": "open_in_full"
+  },
+  "menu": {
+    "framework7": "line_horizontal_3",
+    "lucide": "menu",
+    "material": "menu"
+  },
+  "minus": {
+    "framework7": "minus",
+    "lucide": "minus",
+    "material": "remove"
+  },
+  "mouse-pointer-click": {
+    "framework7": "cursor_rays",
+    "lucide": "mouse-pointer-click",
+    "material": "ads_click"
+  },
+  "move-vertical": {
+    "framework7": "arrow_up_down",
+    "lucide": "move-vertical",
+    "material": "height"
+  },
+  "panel-left": {
+    "framework7": "sidebar_left",
+    "lucide": "panel-left",
+    "material": "left_panel_open"
+  },
+  "pause": {
+    "framework7": "pause_fill",
+    "lucide": "pause",
+    "material": "pause"
+  },
+  "pencil": {
+    "framework7": "pencil",
+    "lucide": "pencil",
+    "material": "edit"
+  },
+  "play": {
+    "framework7": "play_fill",
+    "lucide": "play",
+    "material": "play_arrow"
+  },
+  "plus": {
+    "framework7": "plus",
+    "lucide": "plus",
+    "material": "add"
+  },
+  "power": {
+    "framework7": "power",
+    "lucide": "power",
+    "material": "power_settings_new"
+  },
+  "refresh-cw": {
+    "framework7": "arrow_clockwise",
+    "lucide": "refresh-cw",
+    "material": "refresh"
+  },
+  "rotate-ccw": {
+    "framework7": "arrow_counterclockwise",
+    "lucide": "rotate-ccw",
+    "material": "replay"
+  },
+  "save": {
+    "framework7": "square_arrow_down",
+    "lucide": "save",
+    "material": "save"
+  },
+  "scan": {
+    "framework7": "viewfinder",
+    "lucide": "scan",
+    "material": "crop_free"
+  },
+  "scan-eye": {
+    "framework7": "viewfinder_circle",
+    "lucide": "scan-eye",
+    "material": "frame_inspect"
+  },
+  "scroll-text": {
+    "framework7": "doc_plaintext",
+    "lucide": "scroll-text",
+    "material": "receipt_long"
+  },
+  "search": {
+    "framework7": "search",
+    "lucide": "search",
+    "material": "search"
+  },
+  "send": {
+    "framework7": "paperplane",
+    "lucide": "send",
+    "material": "send"
+  },
+  "settings": {
+    "framework7": "gear_alt",
+    "framework7Filled": "gear_alt_fill",
+    "lucide": "settings",
+    "material": "settings",
+    "materialFilled": "settings-fill"
+  },
+  "share-2": {
+    "framework7": "square_arrow_up",
+    "lucide": "share-2",
+    "material": "share"
+  },
+  "shield-check": {
+    "framework7": "checkmark_shield",
+    "lucide": "shield-check",
+    "material": "verified_user",
+    "materialFilled": "verified_user-fill"
+  },
+  "sliders-horizontal": {
+    "framework7": "slider_horizontal_3",
+    "lucide": "sliders-horizontal",
+    "material": "tune"
+  },
+  "smartphone": {
+    "framework7": "device_phone_portrait",
+    "lucide": "smartphone",
+    "material": "mobile"
+  },
+  "sparkles": {
+    "framework7": "sparkles",
+    "lucide": "sparkles",
+    "material": "wand_stars"
+  },
+  "square": {
+    "framework7": "square",
+    "lucide": "square",
+    "material": "check_box_outline_blank"
+  },
+  "square-check": {
+    "framework7": "checkmark_square",
+    "lucide": "square-check",
+    "material": "check_box"
+  },
+  "star": {
+    "framework7": "star",
+    "lucide": "star",
+    "material": "star",
+    "materialFilled": "star-fill"
+  },
+  "star-filled": {
+    "framework7": "star_fill",
+    "lucide": "star",
+    "material": "star-fill"
+  },
+  "sun": {
+    "framework7": "sun_max",
+    "lucide": "sun",
+    "material": "light_mode",
+    "materialFilled": "light_mode-fill"
+  },
+  "tag": {
+    "framework7": "tag",
+    "lucide": "tag",
+    "material": "sell",
+    "materialFilled": "sell-fill"
+  },
+  "tags": {
+    "framework7": "tag",
+    "lucide": "tags",
+    "material": "sell"
+  },
+  "trash": {
+    "framework7": "trash",
+    "lucide": "trash",
+    "material": "delete"
+  },
+  "triangle-alert": {
+    "framework7": "exclamationmark_triangle",
+    "lucide": "triangle-alert",
+    "material": "warning"
+  },
+  "type": {
+    "framework7": "textformat",
+    "lucide": "type",
+    "material": "text_fields"
+  },
+  "undo-2": {
+    "framework7": "arrow_uturn_left",
+    "lucide": "undo-2",
+    "material": "undo"
+  },
+  "unplug": {
+    "framework7": "bolt_slash",
+    "lucide": "unplug",
+    "material": "power_off"
+  },
+  "user": {
+    "framework7": "person",
+    "lucide": "user",
+    "material": "person",
+    "materialFilled": "person-fill"
+  },
+  "wifi": {
+    "framework7": "wifi",
+    "lucide": "wifi",
+    "material": "wifi"
+  },
+  "x": {
+    "framework7": "xmark",
+    "lucide": "x",
+    "material": "close"
+  }
+}
