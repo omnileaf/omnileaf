@@ -6,6 +6,7 @@ import {
   licenceOf,
   packageRootOf,
   type ShippedPackage,
+  shippedFilesOf,
 } from "./shipped-packages";
 
 const STORE = "/work/app/node_modules/.pnpm";
@@ -148,4 +149,29 @@ test("ships a ported folder named with Windows separators once a bundled module 
   ]);
 
   expect(isShipped).toBe(true);
+});
+
+test("ships a ported folder once an asset from it ships, though no module does", () => {
+  const files = shippedFilesOf(
+    [
+      { type: "chunk", moduleIds: ["/work/app/src/routes/+page.svelte"] },
+      { type: "asset", originalFileNames: ["src/lib/ported/mark.svg"] },
+    ],
+    "/work/app/",
+  );
+
+  const isShipped = isFolderShipped("/work/app/src/lib/ported", files);
+
+  expect(isShipped).toBe(true);
+});
+
+test("leaves out a ported folder when only another folder's assets ship", () => {
+  const files = shippedFilesOf(
+    [{ type: "asset", originalFileNames: ["src/lib/elsewhere/mark.svg"] }],
+    "/work/app",
+  );
+
+  const isShipped = isFolderShipped("/work/app/src/lib/ported", files);
+
+  expect(isShipped).toBe(false);
 });
