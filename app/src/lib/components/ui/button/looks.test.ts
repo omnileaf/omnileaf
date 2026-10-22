@@ -2,7 +2,9 @@ import { expect, test } from "vitest";
 
 import { cn } from "#lib/components/cn.ts";
 
-import { BUTTON_LOOKS, type ButtonLook } from "./looks.ts";
+import type { Platform } from "#lib/ipc/bindings.ts";
+
+import { BUTTON_LOOKS, type ButtonLook, buttonClasses } from "./looks.ts";
 
 function classesOf(look: ButtonLook): string[] {
   return cn(BUTTON_LOOKS[look]).split(" ");
@@ -80,4 +82,68 @@ test.each<[ButtonLook, string[]]>([
   const classes = classesOf(look);
 
   expect(classes).toEqual(expect.arrayContaining(signature));
+});
+
+const NATIVE_PLATFORMS: readonly Platform[] = ["android", "ios"];
+const DESKTOPS: readonly Platform[] = ["linux", "macos", "windows"];
+
+test.each(NATIVE_PLATFORMS)(
+  "draws a dialog's main button on %s's own button",
+  (platform) => {
+    const classes = buttonClasses("dialog-primary", platform).split(" ");
+
+    expect(classes).toContain("bg-native-button-primary");
+    expect(classes).toContain("min-block-native-button");
+  },
+);
+
+test.each(DESKTOPS)("keeps today's dialog button on %s", (platform) => {
+  const classes = buttonClasses("dialog-primary", platform);
+
+  expect(classes).toBe(BUTTON_LOOKS["dialog-primary"]);
+});
+
+test.each(NATIVE_PLATFORMS)(
+  "keeps today's look on %s for a button whose size its caller sets",
+  (platform) => {
+    const classes = buttonClasses("primary", platform);
+
+    expect(classes).toBe(BUTTON_LOOKS.primary);
+  },
+);
+
+test("rings every native look with the platform's focus ring", () => {
+  const nativeLooks = (Object.keys(BUTTON_LOOKS) as ButtonLook[]).filter(
+    (look) => buttonClasses(look, "ios") !== BUTTON_LOOKS[look],
+  );
+
+  const ringless = nativeLooks.filter(
+    (look) => !buttonClasses(look, "ios").includes("focus-visible:focus-ring"),
+  );
+
+  expect(nativeLooks).not.toEqual([]);
+  expect(ringless).toEqual([]);
+});
+
+test.each(NATIVE_PLATFORMS)(
+  "keeps today's look on %s for the buttons a sheet lays out",
+  (platform) => {
+    const classes = buttonClasses("confirm-danger", platform);
+
+    expect(classes).toBe(BUTTON_LOOKS["confirm-danger"]);
+  },
+);
+
+test.each<[ButtonLook, string]>([
+  ["dialog-primary", "primary"],
+  ["dialog-secondary", "secondary"],
+])("gives the native %s button its own hover and press", (look, variant) => {
+  const classes = buttonClasses(look, "android").split(" ");
+
+  expect(classes).toContain(
+    `enabled:hover:tint-native-button-${variant}-hover`,
+  );
+  expect(classes).toContain(
+    `enabled:active:tint-native-button-${variant}-pressed`,
+  );
 });
