@@ -17,6 +17,7 @@ const TAILWIND_NAME = {
   leading: "leading-native",
   weight: "font-weight-native",
   tracking: "tracking-native",
+  shadow: "shadow-native",
 } satisfies Record<Kind, string>;
 
 type Scope = "every" | "light" | "dark";
