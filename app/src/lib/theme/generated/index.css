@@ -29,6 +29,7 @@
   --leading-native-button: var(--native-leading-button);
   --font-weight-native-button: var(--native-weight-button);
   --tracking-native-button: var(--native-tracking-button);
+  --spacing-native-icon: var(--native-spacing-icon);
 }
 
 @media (prefers-reduced-motion: reduce) {

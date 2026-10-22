@@ -18,6 +18,7 @@
   --native-leading-button: calc(1.25 / 0.875);
   --native-weight-button: 500;
   --native-tracking-button: 0.1px;
+  --native-spacing-icon: 1.5rem;
 }
 
 :root[data-platform="android"],
