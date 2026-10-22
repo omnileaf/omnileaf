@@ -1,5 +1,7 @@
 import { defineConfig, type Project } from "@playwright/test";
 
+import type { Platform } from "./src/lib/ipc/bindings.ts";
+
 import { TEST_BROWSER_CONTEXT } from "./tests/browser-context.ts";
 import { shardFromEnvironment } from "./tests/shard.ts";
 
@@ -28,6 +30,7 @@ const SCREENS = {
 } as const;
 
 const SPEED_SPECS = "**/*.speed.ts";
+const NATIVE_SPECS = /@native/;
 const DESKTOP_ONLY_SPECS = "**/*.desktop.spec.ts";
 
 const shard = shardFromEnvironment(process.env.PLAYWRIGHT_SHARD);
@@ -51,20 +54,38 @@ const screenProjects = PROJECT_ORDER.map(([browserName, screen]) => ({
   use: { browserName, ...SCREENS[screen] },
 })) satisfies Project[];
 
+interface PlatformOption {
+  readonly platform: Platform | undefined;
+}
+
+const nativeProjects = (
+  [
+    ["ios", "webkit"],
+    ["android", "chromium"],
+  ] as const
+).map(([platform, browserName]) => ({
+  name: `${platform}-phone`,
+  grep: NATIVE_SPECS,
+  use: { browserName, ...SCREENS.phone, platform },
+})) satisfies Project<PlatformOption>[];
+
 /** Times the interface on its own, one spec at a time once every other spec has finished, so no other load can push a timing over its budget. */
 const speedProject: Project = {
   name: "speed",
   testMatch: SPEED_SPECS,
-  dependencies: screenProjects.map(({ name }) => name),
+  dependencies: [...screenProjects, ...nativeProjects].map(({ name }) => name),
   workers: 1,
   use: { browserName: "chromium", ...SCREENS.desktop },
 };
 
 /** A shard leaves the speed project out, since depending on every other project would pull them all into one shard. */
-const projects: Project[] =
-  shard === null ? [...screenProjects, speedProject] : screenProjects;
+const projects: Project<PlatformOption>[] = [
+  ...screenProjects,
+  ...nativeProjects,
+  ...(shard === null ? [speedProject] : []),
+];
 
-export default defineConfig({
+export default defineConfig<PlatformOption>({
   testDir: "tests/browser",
   forbidOnly: true,
   retries: 0,
