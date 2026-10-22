@@ -18,6 +18,7 @@ mod policy;
 mod port_forward;
 mod pre_push;
 mod process;
+mod sample;
 mod screenshot;
 mod test_device;
 mod workspace;
@@ -127,6 +128,12 @@ enum Command {
     },
     /// Have git run the repository's hooks, so a push is checked before it leaves.
     InstallHooks,
+    /// Serve the interface in a browser on the sample library, drawn as a platform if one is given.
+    Sample {
+        /// The platform the page draws, as `?platform=` in the address would choose it.
+        #[arg(long, value_enum)]
+        platform: Option<sample::Platform>,
+    },
     /// Save what a running phone, emulator or Simulator shows into `target/screenshots`.
     Screenshot {
         /// The device to capture, by name; the only running one when left out.
@@ -227,6 +234,7 @@ fn main() -> anyhow::Result<()> {
         Command::Policy => enforce_policy()?,
         Command::PrePush { remote, .. } => check_push(&remote)?,
         Command::InstallHooks => pre_push::install_hooks(&workspace::root())?,
+        Command::Sample { platform } => sample::serve(platform)?,
         Command::Screenshot { device } => take_screenshot(device.as_deref())?,
     }
     Ok(())
@@ -419,5 +427,15 @@ mod tests {
                 "{args:?}"
             );
         }
+    }
+
+    #[test]
+    fn takes_the_platform_to_preview_on_the_sample_library() {
+        let cli = Cli::try_parse_from(["xtask", "sample", "--platform", "android"]).unwrap();
+
+        let Command::Sample { platform } = cli.command else {
+            panic!("parsed a command other than sample");
+        };
+        assert_eq!(platform, Some(crate::sample::Platform::Android));
     }
 }
