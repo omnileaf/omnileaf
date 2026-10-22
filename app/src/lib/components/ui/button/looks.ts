@@ -1,4 +1,5 @@
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { hasNativeLook } from "#lib/page/platform.ts";
 
 const FOCUS_RING = "focus-visible:focus-ring";
 
@@ -44,14 +45,6 @@ export type ButtonLook = keyof typeof BUTTON_LOOKS;
 
 type ButtonVariant = "primary" | "secondary";
 
-const HAS_NATIVE_LOOK = {
-  android: true,
-  ios: true,
-  linux: false,
-  macos: false,
-  windows: false,
-} satisfies Record<Platform, boolean>;
-
 const NATIVE_VARIANT_OF: Partial<Record<ButtonLook, ButtonVariant>> = {
   "dialog-primary": "primary",
   "dialog-secondary": "secondary",
@@ -68,7 +61,7 @@ const NATIVE_VARIANTS = {
 
 export function buttonClasses(look: ButtonLook, platform: Platform): string {
   const variant = NATIVE_VARIANT_OF[look];
-  if (variant === undefined || !HAS_NATIVE_LOOK[platform]) {
+  if (variant === undefined || !hasNativeLook(platform)) {
     return BUTTON_LOOKS[look];
   }
   return `${NATIVE_BUTTON} ${NATIVE_VARIANTS[variant]}`;
