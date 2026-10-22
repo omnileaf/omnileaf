@@ -305,7 +305,7 @@ jobs:
         run: |
           playwright=$(pnpm --dir app exec playwright --version)
           digest=$(printf '%s %s %s' "$ImageOS" "$ImageVersion" "$playwright" | sha256sum | cut -c1-16)
-          echo "prefix=playwright-system-packages-$digest-" >> "$GITHUB_OUTPUT"
+          echo "prefix=playwright-system-packages-$digest" >> "$GITHUB_OUTPUT"
           echo "key=playwright-system-packages-$digest-$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 
       - name: Restore the test browsers' system packages
