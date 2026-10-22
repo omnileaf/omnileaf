@@ -45,9 +45,6 @@ const DESKTOP_SEGMENT_TRACK_CORNER = "8px";
 const DESKTOP_SEGMENT_CORNER = "6px";
 const DESKTOP_SEGMENT_TEXT = "12px";
 const PHONE_SEGMENT_HEIGHT = 40;
-const PHONE_SEGMENT_TRACK_HEIGHT = 48;
-const PHONE_SEGMENT_TRACK_CORNER = "10px";
-const PHONE_SEGMENT_CORNER = "8px";
 const PHONE_SEGMENT_TEXT = "13px";
 const DESKTOP_STEPPER_CORNER = "8px";
 const ON_PAGE_14 = { state: "started", page: 14 } as const;
@@ -496,7 +493,7 @@ test.describe("on an Android phone", () => {
       expect(await cornerOf(panel)).toBe(SHEET_CORNER);
     });
 
-    test("draws the View sheet's displays as 40px segments in a 10px track", async ({
+    test("draws the View sheet's displays as connected 40px buttons with round ends", async ({
       page,
     }) => {
       await page.goto("/");
@@ -504,11 +501,14 @@ test.describe("on an Android phone", () => {
       const panel = await openViewOptions(page);
       const track = displayTrack(panel);
       const grid = displaySegment(panel, "Grid");
+      const box = await boxOf(grid);
 
-      expect((await boxOf(grid)).height).toBe(PHONE_SEGMENT_HEIGHT);
-      expect((await boxOf(track)).height).toBe(PHONE_SEGMENT_TRACK_HEIGHT);
-      expect(await cornerOf(track)).toBe(PHONE_SEGMENT_TRACK_CORNER);
-      expect(await cornerOf(grid)).toBe(PHONE_SEGMENT_CORNER);
+      expect(box.height).toBe(PHONE_SEGMENT_HEIGHT);
+      expect((await boxOf(track)).height).toBe(PHONE_SEGMENT_HEIGHT);
+      expect(await cornerOf(track)).toBe("0px");
+      expect(parseFloat(await cornerOf(grid))).toBeGreaterThanOrEqual(
+        box.height / 2,
+      );
       await expect(grid).toHaveCSS("font-size", PHONE_SEGMENT_TEXT);
     });
   });

@@ -8,6 +8,7 @@
     RadioGroupItem,
   } from "#lib/components/ui/radio-group/index.ts";
 
+  import { currentPlatform, hasNativeLook } from "./platform";
   import { followFittingColumns } from "./segment-columns";
   import SegmentFace from "./SegmentFace.svelte";
 
@@ -50,6 +51,18 @@
     Record<"track" | "capped" | "segment" | "onRow" | "face" | "icon", string>
   >;
 
+  const NATIVE_LOOK = {
+    track:
+      "gap-native-segmented-gap rounded-native-segmented bg-native-segmented-track p-native-segmented-inset",
+    segment:
+      "rounded-native-segment min-block-native-segment first-of-type:rounded-s-native-segment-end last-of-type:rounded-e-native-segment-end",
+    face: "gap-sm px-native-segment-inline text-native-segment leading-native-segment tracking-native-segment",
+    chosen:
+      "rounded-native-segment-selected bg-native-segment-selected font-native-segment-selected text-native-on-segment-selected shadow-native-segment-lift",
+    unchosen:
+      "bg-native-segment-fill font-native-segment text-native-on-segment",
+  };
+
   let {
     options,
     labels,
@@ -64,6 +77,10 @@
   }: Props = $props();
 
   const look = $derived(LOOKS[size]);
+  const isNative = hasNativeLook(currentPlatform());
+  const face = $derived(
+    isNative && size === "regular" ? NATIVE_LOOK.face : look.face,
+  );
 
   let track = $state<HTMLElement | null>(null);
   let ruler: HTMLElement | undefined = $state();
@@ -93,9 +110,9 @@
     ? undefined
     : `grid-template-columns: repeat(${String(columns)}, minmax(0, 1fr))`}
   class={[
-    "relative bg-chip",
+    "relative",
     isOneRow ? "flex" : "grid",
-    look.track,
+    isNative ? NATIVE_LOOK.track : ["bg-chip", look.track],
     !isFullWidth && look.capped,
     className,
   ]}
@@ -104,15 +121,22 @@
     <RadioGroupItem
       value={option}
       class={[
-        "relative flex items-center justify-center transition-control before:absolute before:inset-x-none before:-inset-y-xs",
-        look.segment,
-        look.face,
+        "relative flex items-center justify-center transition-control",
+        isNative
+          ? "native-target"
+          : "before:absolute before:inset-x-none before:-inset-y-xs",
+        isNative ? NATIVE_LOOK.segment : look.segment,
+        face,
         isOneRow
           ? [look.onRow, "text-nowrap"]
           : "min-inline-none touch:min-block-touch-target",
-        chosen === option
-          ? "bg-raised font-semibold text-foreground shadow-raised"
-          : "font-medium text-foreground hover:bg-hover",
+        isNative
+          ? chosen === option
+            ? NATIVE_LOOK.chosen
+            : NATIVE_LOOK.unchosen
+          : chosen === option
+            ? "bg-raised font-semibold text-foreground shadow-raised"
+            : "font-medium text-foreground hover:bg-hover",
       ]}
     >
       <SegmentFace
@@ -129,7 +153,7 @@
     class="invisible absolute inset-x-none inset-bs-none flex overflow-hidden block-none"
   >
     {#each options as option (option)}
-      <span class={["flex flex-none items-center", look.face]}>
+      <span class={["flex flex-none items-center", face]}>
         <SegmentFace
           label={labels[option]()}
           icon={icons?.[option]}
