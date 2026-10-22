@@ -63,6 +63,11 @@
   --font-weight-native-segment-selected: var(--native-weight-segment-selected);
   --tracking-native-segment: var(--native-tracking-segment);
   --shadow-native-segment-lift: var(--native-shadow-segment-lift);
+  --color-native-progress-track: var(--native-color-progress-track);
+  --color-native-progress-fill: var(--native-color-progress-fill);
+  --color-native-progress-rest: var(--native-color-progress-rest);
+  --color-native-progress-idle-track: var(--native-color-progress-idle-track);
+  --spacing-native-progress-gap: var(--native-spacing-progress-gap);
 }
 
 @media (prefers-reduced-motion: reduce) {

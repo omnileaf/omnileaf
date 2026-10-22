@@ -41,6 +41,7 @@
   --native-weight-segment-selected: 590;
   --native-tracking-segment: -0.08px;
   --native-shadow-segment-lift: 0 3px 36px rgba(0, 0, 0, 0.05);
+  --native-spacing-progress-gap: 0px;
 }
 
 :root[data-platform="ios"],
@@ -64,6 +65,10 @@
   --native-color-on-segment: #000000;
   --native-color-segment-selected: #ffffff;
   --native-color-on-segment-selected: #000000;
+  --native-color-progress-track: rgba(118, 118, 128, 0.12);
+  --native-color-progress-fill: #2f6f4f;
+  --native-color-progress-rest: transparent;
+  --native-color-progress-idle-track: rgba(118, 118, 128, 0.12);
 }
 
 :root[data-platform="ios"][data-theme="dark"],
@@ -87,4 +92,8 @@
   --native-color-on-segment: #ffffff;
   --native-color-segment-selected: rgba(235, 235, 245, 0.3);
   --native-color-on-segment-selected: #ffffff;
+  --native-color-progress-track: rgba(118, 118, 128, 0.24);
+  --native-color-progress-fill: #7fcb9d;
+  --native-color-progress-rest: transparent;
+  --native-color-progress-idle-track: rgba(118, 118, 128, 0.24);
 }
