@@ -108,6 +108,26 @@ test("exposes colours under a native name and motion under the app's own motion 
   );
 });
 
+test("exposes type tokens under Tailwind's text, leading, weight and tracking names", () => {
+  const typeTokens = ["text", "leading", "weight", "tracking"].map((kind) => ({
+    name: "button",
+    kind,
+    value: { default: "1", ios: "2" },
+  }));
+
+  const files = render(...typeTokens);
+
+  expect(files.get("index.css")).toContain(
+    `@theme inline {
+  --text-native-button: var(--native-text-button);
+  --leading-native-button: var(--native-leading-button);
+  --font-weight-native-button: var(--native-weight-button);
+  --tracking-native-button: var(--native-tracking-button);
+}
+`,
+  );
+});
+
 test("imports the defaults before every platform file", () => {
   const files = render(ACCENT, MOVE);
 

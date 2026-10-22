@@ -13,6 +13,10 @@ const TAILWIND_NAME = {
   spacing: "spacing-native",
   duration: "transition-duration",
   ease: "ease",
+  text: "text-native",
+  leading: "leading-native",
+  weight: "font-weight-native",
+  tracking: "tracking-native",
 } satisfies Record<Kind, string>;
 
 type Scope = "every" | "light" | "dark";
