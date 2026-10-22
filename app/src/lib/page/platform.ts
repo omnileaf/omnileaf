@@ -30,13 +30,15 @@ export function usesCommandKey(platform: Platform): boolean {
   return USES_COMMAND_KEY[platform];
 }
 
-let corePlatform: Platform = "linux";
+function isPlatform(name: string | undefined): name is Platform {
+  return name !== undefined && Object.hasOwn(IS_POINTER, name);
+}
 
 export function followCorePlatform(platform: Platform): void {
-  corePlatform = platform;
   document.documentElement.dataset.platform = platform;
 }
 
 export function currentPlatform(): Platform {
-  return corePlatform;
+  const marked = document.documentElement.dataset.platform;
+  return isPlatform(marked) ? marked : "linux";
 }
