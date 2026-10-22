@@ -3,8 +3,9 @@
 
   import { cn } from "#lib/components/cn.ts";
   import { Spinner } from "#lib/components/ui/spinner/index.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
 
-  import { BUTTON_LOOKS, type ButtonLook } from "./looks.ts";
+  import { type ButtonLook, buttonClasses } from "./looks.ts";
 
   type ButtonElementProps = Extract<
     ButtonPrimitive.RootProps,
@@ -50,7 +51,7 @@
 <ButtonPrimitive.Root
   bind:ref
   class={cn(
-    BUTTON_LOOKS[look],
+    buttonClasses(look, currentPlatform()),
     isBusy && "inline-flex items-center justify-center gap-sm",
     className,
   )}

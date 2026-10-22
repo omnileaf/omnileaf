@@ -6,6 +6,7 @@ import { render } from "vitest-browser-svelte";
 import "../../../../app.css";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { resolvedColour } from "../../../../../tests/components/resolved-colour";
 import Button from "./button.svelte";
@@ -13,6 +14,7 @@ import type { ButtonLook } from "./looks.ts";
 
 interface DialogButtonLook {
   readonly platform: Platform;
+  readonly buttonLooks: readonly ButtonLook[];
   readonly corner: string;
   readonly height: number;
   readonly fill: string;
@@ -22,9 +24,15 @@ interface DialogButtonLook {
 
 const DESKTOP_WINDOW = { width: 1280, height: 800 } as const;
 
+const OUTLINED_LOOKS: readonly ButtonLook[] = [
+  "dialog-secondary",
+  "confirm-cancel",
+];
+
 const LOOKS: readonly DialogButtonLook[] = [
   {
     platform: "linux",
+    buttonLooks: OUTLINED_LOOKS,
     corner: "8px",
     height: 36,
     fill: "--background",
@@ -33,6 +41,7 @@ const LOOKS: readonly DialogButtonLook[] = [
   },
   {
     platform: "android",
+    buttonLooks: ["confirm-cancel"],
     corner: "9999px",
     height: 48,
     fill: "transparent",
@@ -41,6 +50,7 @@ const LOOKS: readonly DialogButtonLook[] = [
   },
   {
     platform: "ios",
+    buttonLooks: ["confirm-cancel"],
     corner: "8px",
     height: 48,
     fill: "--ios-fill",
@@ -49,6 +59,7 @@ const LOOKS: readonly DialogButtonLook[] = [
   },
   {
     platform: "macos",
+    buttonLooks: OUTLINED_LOOKS,
     corner: "6px",
     height: 28,
     fill: "--background",
@@ -57,17 +68,13 @@ const LOOKS: readonly DialogButtonLook[] = [
   },
   {
     platform: "windows",
+    buttonLooks: OUTLINED_LOOKS,
     corner: "4px",
     height: 32,
     fill: "--windows-control",
     edge: "--windows-stroke",
     bottomEdge: "--windows-stroke-strong",
   },
-];
-
-const OUTLINED_LOOKS: readonly ButtonLook[] = [
-  "dialog-secondary",
-  "confirm-cancel",
 ];
 
 const label = createRawSnippet(() => ({ render: () => "<span>Cancel</span>" }));
@@ -78,10 +85,10 @@ afterEach(() => {
 });
 
 for (const look of LOOKS) {
-  for (const buttonLook of OUTLINED_LOOKS) {
+  for (const buttonLook of look.buttonLooks) {
     test(`draws the ${buttonLook} button in a ${look.platform} dialog as the Parts boards do`, async () => {
       await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
-      document.documentElement.dataset.platform = look.platform;
+      followCorePlatform(look.platform);
       document.documentElement.dataset.theme = "light";
       await render(Button, {
         look: buttonLook,
