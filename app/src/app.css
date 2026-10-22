@@ -875,6 +875,7 @@
 }
 
 @import "./lib/theme/generated/index.css";
+@import "./lib/icons/icons.css" layer(base);
 
 :root {
   @variant medium {

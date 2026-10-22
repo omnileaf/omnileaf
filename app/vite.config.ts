@@ -34,7 +34,14 @@ const phoneAccess =
     ? {}
     : { host: true, hmr: { host: phoneDevHost, clientPort: DEV_SERVER_PORT } };
 
+const ICON_ARTWORK = "/src/lib/icons/";
+
+function keepIconArtworkOutOfTheCss(filePath: string): false | undefined {
+  return filePath.includes(ICON_ARTWORK) ? false : undefined;
+}
+
 export default defineConfig({
+  build: { assetsInlineLimit: keepIconArtworkOutOfTheCss },
   clearScreen: false,
   server: {
     port: DEV_SERVER_PORT,
