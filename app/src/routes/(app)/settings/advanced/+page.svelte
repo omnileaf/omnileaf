@@ -9,6 +9,7 @@
   import { CrashTests } from "#lib/crash-tests/crash-tests.ts";
   import CrashTestList from "#lib/crash-tests/CrashTestList.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScheduledRescansSetting } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -64,7 +65,10 @@
   />
   <section
     aria-labelledby={undoHeadingId}
-    class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
+    class={[
+      "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card",
+      GROUP_PLATE,
+    ]}
   >
     <h2 id={undoHeadingId} class="px-lg pbs-md pbe-xs text-small font-semibold">
       {m.advanced_undo()}

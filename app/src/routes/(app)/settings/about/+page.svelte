@@ -12,6 +12,7 @@
   import { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { yourReportsForDocument } from "#lib/problem-report/your-reports.svelte.ts";
@@ -62,7 +63,10 @@
   </div>
   <div>
     <ul
-      class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
+      class={[
+        "divide-y divide-border overflow-hidden rounded-list border border-border bg-card",
+        GROUP_PLATE,
+      ]}
     >
       <AboutPageRow
         route="/(app)/settings/about/report"

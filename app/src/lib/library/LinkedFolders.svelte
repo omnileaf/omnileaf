@@ -5,6 +5,7 @@
 
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
   import type { Notices, UndoOffer } from "#lib/notices/notices.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
@@ -162,7 +163,10 @@
 >
   <div
     class={isInCard
-      ? "flex flex-col overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low ios-grouped:rounded-ios-cell ios-grouped:border-transparent ios-grouped:bg-ios-cell"
+      ? [
+          "flex flex-col overflow-hidden rounded-card border border-border bg-card",
+          GROUP_PLATE,
+        ]
       : "contents"}
   >
     <h2

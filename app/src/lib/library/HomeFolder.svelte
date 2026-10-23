@@ -5,6 +5,7 @@
   import { HardDrive } from "@lucide/svelte";
 
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
+  import { CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { folderLocation } from "./folder-location";
@@ -32,7 +33,10 @@
   {#if folders.kind === "loaded" && folders.home !== undefined}
     {@const home = folders.home}
     <div
-      class="flex items-center gap-md rounded-card border border-border bg-card px-lg py-md android:rounded-android-md android:border-transparent android:bg-android-container-low ios-grouped:rounded-ios-cell ios-grouped:border-transparent ios-grouped:bg-ios-cell"
+      class={[
+        "flex items-center gap-md rounded-card border border-border bg-card px-lg py-md",
+        CARD_PLATE,
+      ]}
     >
       <span
         aria-hidden="true"

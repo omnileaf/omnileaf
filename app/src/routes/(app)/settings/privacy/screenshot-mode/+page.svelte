@@ -3,6 +3,7 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
@@ -26,8 +27,10 @@
   const AFTER_AN_HOUR = "hour";
   const NEVER = "never";
   const ROW_ICON_SIZE = 18;
-  const CARD =
-    "flex flex-col overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low";
+  const CARD = [
+    "flex flex-col overflow-hidden rounded-card border border-border bg-card",
+    GROUP_PLATE,
+  ];
 
   let { data }: PageProps = $props();
 

@@ -3,6 +3,7 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import type { ProblemReportPreview } from "#lib/ipc/bindings.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import IncludedRow from "./IncludedRow.svelte";
@@ -29,7 +30,10 @@
 
 <section
   aria-label={m.report_included()}
-  class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
+  class={[
+    "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card",
+    GROUP_PLATE,
+  ]}
 >
   <IncludedRow
     icon={Info}

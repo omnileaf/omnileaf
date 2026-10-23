@@ -13,6 +13,7 @@
   import { commands } from "#lib/ipc/bindings.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
     foldersDescription,
@@ -95,7 +96,10 @@
   <p class="text-detail text-muted">{m.permissions_intro()}</p>
   <ul
     aria-label={m.permissions_title()}
-    class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
+    class={[
+      "divide-y divide-border overflow-hidden rounded-list border border-border bg-card",
+      GROUP_PLATE,
+    ]}
   >
     {#each rows as row (row.label)}
       <li class={ROW}>

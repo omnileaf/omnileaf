@@ -4,6 +4,7 @@
   import { Alert, AlertTitle } from "#lib/components/ui/alert/index.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { ReportSharing, ShareWay } from "./report-sharing.svelte";
@@ -50,7 +51,10 @@
     {m.report_other_ways_to_send()}
   </h2>
   <ul
-    class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
+    class={[
+      "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card",
+      GROUP_PLATE,
+    ]}
   >
     {#each ways as { way, icon: Icon, label, opensBrowser } (way)}
       <li>

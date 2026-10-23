@@ -16,6 +16,8 @@
 
   import { resolve } from "$app/paths";
 
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
+
   let { entries }: { readonly entries: readonly SettingsEntry[] } = $props();
 
   const ICON_SIZE = 18;
@@ -23,7 +25,10 @@
 </script>
 
 <ul
-  class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low ios-grouped:rounded-ios-cell ios-grouped:border-transparent ios-grouped:bg-ios-cell"
+  class={[
+    "divide-y divide-border overflow-hidden rounded-list border border-border bg-card",
+    GROUP_PLATE,
+  ]}
 >
   {#each entries as entry (entry.route)}
     <li>

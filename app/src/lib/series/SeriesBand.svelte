@@ -19,6 +19,6 @@
     />
   {/if}
   <div
-    class="absolute inset-none bg-linear-to-b from-transparent from-30% to-background ios-grouped:to-ios-grouped"
+    class="absolute inset-none bg-linear-to-b from-transparent from-30% to-background grouped:to-native-grouped-ground"
   ></div>
 </div>

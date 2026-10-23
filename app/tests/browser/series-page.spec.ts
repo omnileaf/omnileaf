@@ -1499,7 +1499,7 @@ test.describe("on Android", () => {
     expect(touched).toBe("Selected books");
   });
 
-  test("lays its cards on the low surface container with no edge, as Material 3 does", async ({
+  test("lays its cards on the raised surface with no edge, as Material 3 does", async ({
     page,
   }) => {
     await openSeries(page);
@@ -1509,7 +1509,7 @@ test.describe("on Android", () => {
     await expect(card).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
     await expect(card).toHaveCSS(
       "background-color",
-      await tokenColour(page, "--android-container-low"),
+      await tokenColour(page, "--native-color-card"),
     );
   });
 

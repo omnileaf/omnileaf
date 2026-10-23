@@ -120,7 +120,7 @@
 
 <div
   data-ground="grouped"
-  class="pointer-events-none absolute inset-none flex flex-col bg-background text-foreground ios:bg-ios-grouped"
+  class="pointer-events-none absolute inset-none flex flex-col bg-background text-foreground touch:bg-native-grouped-ground"
 >
   <nav
     aria-label={m.reader_breadcrumb()}

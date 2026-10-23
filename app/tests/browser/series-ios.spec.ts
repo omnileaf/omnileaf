@@ -35,12 +35,12 @@ test("lays the series page on the iOS grouped ground, its cards as grouped cells
 
   await expect(page.locator('[data-ground="grouped"]')).toHaveCSS(
     "background-color",
-    await tokenColour(page, "--ios-grouped-bg"),
+    await tokenColour(page, "--native-color-grouped-ground"),
   );
   const card = page.locator('[data-slot="card"]').first();
   await expect(card).toHaveCSS(
     "background-color",
-    await tokenColour(page, "--ios-grouped-cell"),
+    await tokenColour(page, "--native-color-card"),
   );
   await expect(card).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
 });

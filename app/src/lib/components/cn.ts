@@ -109,6 +109,8 @@ export const TOKEN_THEME = {
     "menu",
     "menu-item",
     "native-button",
+    "native-card",
+    "native-group",
     "native-segment",
     "native-segment-end",
     "native-segment-selected",

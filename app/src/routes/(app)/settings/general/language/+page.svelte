@@ -14,6 +14,7 @@
   } from "#lib/language/language.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPhone } from "#lib/page/platform.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -65,7 +66,10 @@
     }}
     aria-label={m.language_label()}
     aria-describedby={onPhone ? footnoteId : undefined}
-    class="flex flex-col divide-y divide-border rounded-list border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
+    class={[
+      "flex flex-col divide-y divide-border rounded-list border border-border bg-card",
+      GROUP_PLATE,
+    ]}
   >
     {#each LANGUAGE_CHOICES as choice (choice)}
       {@const isChosen = language.choice === choice}

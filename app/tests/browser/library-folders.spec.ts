@@ -231,11 +231,11 @@ test.describe("on iOS", () => {
 
     await expect(page.locator("[data-ground=grouped]")).toHaveCSS(
       "background-color",
-      await tokenColour(page, "--ios-grouped-bg"),
+      await tokenColour(page, "--native-color-grouped-ground"),
     );
     await expect(folders.locator("> div").first()).toHaveCSS(
       "background-color",
-      await tokenColour(page, "--ios-grouped-cell"),
+      await tokenColour(page, "--native-color-group"),
     );
   });
 });
