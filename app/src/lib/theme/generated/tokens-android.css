@@ -34,7 +34,7 @@
   --native-radius-segmented: 0px;
   --native-radius-segment: 12px;
   --native-radius-segment-end: 20px;
-  --native-radius-segment-selected: 999px;
+  --native-radius-segment-selected: 20px;
   --native-text-segment: calc(0.875rem * var(--text-scale));
   --native-leading-segment: calc(1.25 / 0.875);
   --native-weight-segment: 500;

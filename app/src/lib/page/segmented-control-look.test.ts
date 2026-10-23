@@ -15,7 +15,9 @@ const LABELS = {
   system: () => "System",
 };
 
-async function renderThemeChoice(): Promise<void> {
+async function renderThemeChoice(
+  chosen: (typeof OPTIONS)[number] = "dark",
+): Promise<void> {
   document.documentElement.dataset.theme = "light";
   const heading = document.createElement("h2");
   heading.id = "theme-heading";
@@ -24,7 +26,7 @@ async function renderThemeChoice(): Promise<void> {
   await render(SegmentedControl<(typeof OPTIONS)[number]>, {
     options: OPTIONS,
     labels: LABELS,
-    chosen: "dark",
+    chosen,
     labelledBy: "theme-heading",
     onChoose: () => undefined,
   });
@@ -78,7 +80,7 @@ test("draws Android's connected buttons with the chosen one filled", async () =>
   expect(getComputedStyle(track()).backgroundColor).toBe("rgba(0, 0, 0, 0)");
   expect(chosen.backgroundColor).toBe("rgb(50, 106, 77)");
   expect(chosen.color).toBe("rgb(230, 255, 237)");
-  expect(chosen.borderTopLeftRadius).toBe("999px");
+  expect(chosen.borderTopLeftRadius).toBe("20px");
   expect(other.backgroundColor).toBe("rgb(233, 240, 232)");
   expect(other.color).toBe("rgb(88, 97, 90)");
   expect(
@@ -113,4 +115,22 @@ test("keeps today's raised segment on Linux", async () => {
   const classes = segment("Dark").className;
 
   expect(classes).toContain("bg-raised");
+});
+
+test("keeps the chosen first button round at its outer end on Android", async () => {
+  followCorePlatform("android");
+  await renderThemeChoice("light");
+
+  const first = segment("Light");
+  const style = getComputedStyle(first);
+  const width = first.getBoundingClientRect().width;
+  const height = first.getBoundingClientRect().height;
+  const topCorners =
+    parseFloat(style.borderTopLeftRadius) +
+    parseFloat(style.borderTopRightRadius);
+  const shrink = Math.min(1, width / topCorners);
+
+  expect(parseFloat(style.borderTopLeftRadius) * shrink).toBeGreaterThanOrEqual(
+    height / 2 - 0.5,
+  );
 });
