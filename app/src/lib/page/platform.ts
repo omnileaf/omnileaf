@@ -42,3 +42,15 @@ export function currentPlatform(): Platform {
   const marked = document.documentElement.dataset.platform;
   return isPlatform(marked) ? marked : "linux";
 }
+
+const HAS_NATIVE_LOOK = {
+  android: true,
+  ios: true,
+  linux: false,
+  macos: false,
+  windows: false,
+} satisfies Record<Platform, boolean>;
+
+export function hasNativeLook(platform: Platform): boolean {
+  return HAS_NATIVE_LOOK[platform];
+}

@@ -27,6 +27,20 @@
   --native-spacing-switch-knob-on-length: 38px;
   --native-spacing-switch-inset: 2px;
   --native-spacing-switch-inset-on: 2px;
+  --native-spacing-segmented-inset: 2px;
+  --native-spacing-segmented-gap: 4px;
+  --native-spacing-segment: 28px;
+  --native-spacing-segment-inline: 12px;
+  --native-radius-segmented: 999px;
+  --native-radius-segment: 999px;
+  --native-radius-segment-end: 999px;
+  --native-radius-segment-selected: 999px;
+  --native-text-segment: calc(0.8125rem * var(--text-scale));
+  --native-leading-segment: calc(1.125 / 0.8125);
+  --native-weight-segment: 510;
+  --native-weight-segment-selected: 590;
+  --native-tracking-segment: -0.08px;
+  --native-shadow-segment-lift: 0 3px 36px rgba(0, 0, 0, 0.05);
 }
 
 :root[data-platform="ios"],
@@ -45,6 +59,11 @@
   --native-color-switch-off-border: transparent;
   --native-color-switch-thumb: oklch(1 0 0);
   --native-color-switch-thumb-off: oklch(1 0 0);
+  --native-color-segmented-track: rgba(118, 118, 128, 0.12);
+  --native-color-segment-fill: transparent;
+  --native-color-on-segment: #000000;
+  --native-color-segment-selected: #ffffff;
+  --native-color-on-segment-selected: #000000;
 }
 
 :root[data-platform="ios"][data-theme="dark"],
@@ -63,4 +82,9 @@
   --native-color-switch-off-border: transparent;
   --native-color-switch-thumb: oklch(1 0 0);
   --native-color-switch-thumb-off: oklch(1 0 0);
+  --native-color-segmented-track: rgba(118, 118, 128, 0.24);
+  --native-color-segment-fill: transparent;
+  --native-color-on-segment: #ffffff;
+  --native-color-segment-selected: rgba(235, 235, 245, 0.3);
+  --native-color-on-segment-selected: #ffffff;
 }

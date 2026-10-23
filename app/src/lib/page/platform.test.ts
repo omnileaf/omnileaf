@@ -6,6 +6,7 @@ import type { WidthClass } from "./breakpoints";
 import {
   currentPlatform,
   followCorePlatform,
+  hasNativeLook,
   isPhone,
   usesCommandKey,
 } from "./platform";
@@ -78,3 +79,14 @@ test("reads as linux when the page is marked with a platform the app does not kn
 
   expect(read).toBe("linux");
 });
+
+test.each(TOUCH)("draws %s's own look", (platform) => {
+  expect(hasNativeLook(platform)).toBe(true);
+});
+
+test.each(DESKTOPS)(
+  "keeps the shared look on %s until its turn",
+  (platform) => {
+    expect(hasNativeLook(platform)).toBe(false);
+  },
+);

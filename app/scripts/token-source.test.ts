@@ -98,3 +98,21 @@ test("names a kind the app does not know", () => {
     'Token "move" has an unknown kind, volume.',
   );
 });
+
+test("names a colour and a text size that share a name, since Tailwind reads both as text-", () => {
+  const colour = { name: "label", kind: "color", value: { default: "red" } };
+  const size = { name: "label", kind: "text", value: { default: "1rem" } };
+
+  expect(() => parse(colour, size)).toThrow(
+    'Token "label" is both a colour and a text size; give one another name.',
+  );
+});
+
+test("names a colour and a shadow that share a name, since Tailwind reads both as shadow-", () => {
+  const colour = { name: "lift", kind: "color", value: { default: "red" } };
+  const shadow = { name: "lift", kind: "shadow", value: { default: "none" } };
+
+  expect(() => parse(colour, shadow)).toThrow(
+    'Token "lift" is both a colour and a shadow; give one another name.',
+  );
+});

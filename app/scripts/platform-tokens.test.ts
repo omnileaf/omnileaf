@@ -128,6 +128,20 @@ test("exposes type tokens under Tailwind's text, leading, weight and tracking na
   );
 });
 
+test("exposes shadows under Tailwind's shadow name", () => {
+  const knob = {
+    name: "knob",
+    kind: "shadow",
+    value: { default: "none", ios: "0 3px 8px rgba(0, 0, 0, 0.12)" },
+  };
+
+  const files = render(knob);
+
+  expect(files.get("index.css")).toContain(
+    "  --shadow-native-knob: var(--native-shadow-knob);\n",
+  );
+});
+
 test("imports the defaults before every platform file", () => {
   const files = render(ACCENT, MOVE);
 

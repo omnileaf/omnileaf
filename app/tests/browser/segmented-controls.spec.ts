@@ -180,14 +180,17 @@ function segmentsOf(group: Locator): Promise<Segment[]> {
     };
     return [...track.querySelectorAll("[role=radio]")].map((segment) => {
       const box = segment.getBoundingClientRect();
-      const cutOff = [segment, ...segment.querySelectorAll("*")]
-        .filter(
+      const isWiderThanItself = (element: Element): boolean =>
+        element.scrollWidth > element.clientWidth;
+      const cutOff = [
+        ...(isWiderThanItself(segment) ? [segment] : []),
+        ...[...segment.querySelectorAll("*")].filter(
           (element) =>
             element.closest("[aria-hidden=true]") === null &&
-            (element.scrollWidth > element.clientWidth ||
+            (isWiderThanItself(element) ||
               element.scrollHeight - element.clientHeight > overshoot),
-        )
-        .map((element) => element.outerHTML.slice(0, 120));
+        ),
+      ].map((element) => element.outerHTML.slice(0, 120));
       return {
         x: box.left - origin.left,
         y: box.top - origin.top,

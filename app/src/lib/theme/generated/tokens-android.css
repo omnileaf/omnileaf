@@ -27,6 +27,20 @@
   --native-spacing-switch-knob-on-length: 24px;
   --native-spacing-switch-inset: 6px;
   --native-spacing-switch-inset-on: 2px;
+  --native-spacing-segmented-inset: 0px;
+  --native-spacing-segmented-gap: 2px;
+  --native-spacing-segment: 40px;
+  --native-spacing-segment-inline: 0px;
+  --native-radius-segmented: 0px;
+  --native-radius-segment: 12px;
+  --native-radius-segment-end: 20px;
+  --native-radius-segment-selected: 20px;
+  --native-text-segment: calc(0.875rem * var(--text-scale));
+  --native-leading-segment: calc(1.25 / 0.875);
+  --native-weight-segment: 500;
+  --native-weight-segment-selected: 500;
+  --native-tracking-segment: 0.1px;
+  --native-shadow-segment-lift: none;
 }
 
 :root[data-platform="android"],
@@ -45,6 +59,11 @@
   --native-color-switch-off-border: #737d75;
   --native-color-switch-thumb: #e6ffed;
   --native-color-switch-thumb-off: #737d75;
+  --native-color-segmented-track: transparent;
+  --native-color-segment-fill: #e9f0e8;
+  --native-color-on-segment: #58615a;
+  --native-color-segment-selected: #326a4d;
+  --native-color-on-segment-selected: #e6ffed;
 }
 
 :root[data-platform="android"][data-theme="dark"],
@@ -63,4 +82,9 @@
   --native-color-switch-off-border: #6e7870;
   --native-color-switch-thumb: #1f4833;
   --native-color-switch-thumb-off: #6e7870;
+  --native-color-segmented-track: transparent;
+  --native-color-segment-fill: #141b17;
+  --native-color-on-segment: #a4aea5;
+  --native-color-segment-selected: #a4d1b4;
+  --native-color-on-segment-selected: #1f4833;
 }

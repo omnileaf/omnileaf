@@ -44,6 +44,25 @@
   --spacing-native-switch-knob-on-length: var(--native-spacing-switch-knob-on-length);
   --spacing-native-switch-inset: var(--native-spacing-switch-inset);
   --spacing-native-switch-inset-on: var(--native-spacing-switch-inset-on);
+  --color-native-segmented-track: var(--native-color-segmented-track);
+  --color-native-segment-fill: var(--native-color-segment-fill);
+  --color-native-on-segment: var(--native-color-on-segment);
+  --color-native-segment-selected: var(--native-color-segment-selected);
+  --color-native-on-segment-selected: var(--native-color-on-segment-selected);
+  --spacing-native-segmented-inset: var(--native-spacing-segmented-inset);
+  --spacing-native-segmented-gap: var(--native-spacing-segmented-gap);
+  --spacing-native-segment: var(--native-spacing-segment);
+  --spacing-native-segment-inline: var(--native-spacing-segment-inline);
+  --radius-native-segmented: var(--native-radius-segmented);
+  --radius-native-segment: var(--native-radius-segment);
+  --radius-native-segment-end: var(--native-radius-segment-end);
+  --radius-native-segment-selected: var(--native-radius-segment-selected);
+  --text-native-segment: var(--native-text-segment);
+  --leading-native-segment: var(--native-leading-segment);
+  --font-weight-native-segment: var(--native-weight-segment);
+  --font-weight-native-segment-selected: var(--native-weight-segment-selected);
+  --tracking-native-segment: var(--native-tracking-segment);
+  --shadow-native-segment-lift: var(--native-shadow-segment-lift);
 }
 
 @media (prefers-reduced-motion: reduce) {

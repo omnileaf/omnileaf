@@ -18,6 +18,7 @@ const KINDS = [
   "leading",
   "weight",
   "tracking",
+  "shadow",
 ] as const;
 
 export type Kind = (typeof KINDS)[number];
@@ -166,6 +167,24 @@ function requireEveryPlatform(
   }
 }
 
+const COLOUR_CLASHES = { text: "a text size", shadow: "a shadow" } as const;
+
+function rejectColourClashes(tokens: readonly Token[]): void {
+  for (const [kind, description] of Object.entries(COLOUR_CLASHES)) {
+    const names = new Set(
+      tokens.filter((token) => token.kind === kind).map((token) => token.name),
+    );
+    const clash = tokens.find(
+      (token) => token.kind === "color" && names.has(token.name),
+    );
+    if (clash !== undefined) {
+      throw new Error(
+        `Token "${clash.name}" is both a colour and ${description}; give one another name.`,
+      );
+    }
+  }
+}
+
 export function parseTokenSource(source: unknown): TokenSource {
   if (!isRecord(source) || !Array.isArray(source.tokens)) {
     throw new Error("The token source needs a tokens array.");
@@ -173,5 +192,6 @@ export function parseTokenSource(source: unknown): TokenSource {
   const tokens = source.tokens.map(parseToken);
   const platforms = platformsOf(tokens);
   requireEveryPlatform(tokens, platforms);
+  rejectColourClashes(tokens);
   return { tokens, platforms };
 }
