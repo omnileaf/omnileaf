@@ -1,0 +1,26 @@
+@import "./tokens-default.css";
+@import "./tokens-android.css";
+@import "./tokens-ios.css";
+
+@theme inline {
+  --transition-duration-fade: var(--native-duration-fade);
+  --transition-duration-grow: var(--native-duration-grow);
+  --transition-duration-move: var(--native-duration-move);
+  --transition-duration-slide: var(--native-duration-slide);
+  --transition-duration-spin: var(--native-duration-spin);
+  --transition-duration-spin-slow: var(--native-duration-spin-slow);
+  --transition-duration-band: var(--native-duration-band);
+  --ease-out: var(--native-ease-out);
+  --ease-emphasized: var(--native-ease-emphasized);
+  --ease-glass: var(--native-ease-glass);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  :root[data-platform],
+  [data-theme],
+  :root[data-platform] [data-theme] {
+    --native-duration-move: 0ms;
+    --native-duration-slide: 0ms;
+  }
+}

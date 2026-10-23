@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 
 import appCss from "../../app.css?raw";
+import platformTokensCss from "../theme/generated/index.css?raw";
 import { cn, TOKEN_THEME } from "./cn.ts";
 
 function tokenNames(namespace: string): string[] {
@@ -9,7 +10,11 @@ function tokenNames(namespace: string): string[] {
     "g",
   );
   return [
-    ...new Set([...appCss.matchAll(pattern)].map((match) => match[1] ?? "")),
+    ...new Set(
+      [...`${appCss}${platformTokensCss}`.matchAll(pattern)].map(
+        (match) => match[1] ?? "",
+      ),
+    ),
   ].sort();
 }
 
@@ -37,7 +42,7 @@ test("lets a later font weight win over an earlier one", () => {
   );
 });
 
-test("knows every token app.css defines", () => {
+test("knows every token the theme defines", () => {
   for (const [namespace, names] of Object.entries(TOKEN_THEME)) {
     expect([...names], namespace).toEqual(tokenNames(namespace));
   }

@@ -1,6 +1,7 @@
 .svelte-kit/
 build/
 src/lib/paraglide/
+src/lib/theme/generated/
 project.inlang/*
 !project.inlang/settings.json
 src-tauri/gen/
