@@ -10,4 +10,36 @@
   --native-ease-out: ease-out;
   --native-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
   --native-ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
+  --native-radius-button: 999px;
+  --native-spacing-button: 40px;
+  --native-spacing-button-inline: 16px;
+  --native-spacing-target: 48px;
+  --native-text-button: calc(0.875rem * var(--text-scale));
+  --native-leading-button: calc(1.25 / 0.875);
+  --native-weight-button: 500;
+  --native-tracking-button: 0.1px;
+}
+
+:root[data-platform="android"],
+:root[data-platform="android"] [data-theme="light"] {
+  --native-color-button-primary: #326a4d;
+  --native-color-on-button-primary: #e6ffed;
+  --native-color-button-secondary: #d0e8d7;
+  --native-color-on-button-secondary: #415749;
+  --native-color-button-primary-hover: #e6ffed14;
+  --native-color-button-primary-pressed: #e6ffed1a;
+  --native-color-button-secondary-hover: #41574914;
+  --native-color-button-secondary-pressed: #4157491a;
+}
+
+:root[data-platform="android"][data-theme="dark"],
+:root[data-platform="android"] [data-theme="dark"] {
+  --native-color-button-primary: #a4d1b4;
+  --native-color-on-button-primary: #1f4833;
+  --native-color-button-secondary: #2b4033;
+  --native-color-on-button-secondary: #adc5b4;
+  --native-color-button-primary-hover: #1f483314;
+  --native-color-button-primary-pressed: #1f48331a;
+  --native-color-button-secondary-hover: #adc5b414;
+  --native-color-button-secondary-pressed: #adc5b41a;
 }

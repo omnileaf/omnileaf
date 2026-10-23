@@ -10,4 +10,36 @@
   --native-ease-out: ease-out;
   --native-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
   --native-ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
+  --native-radius-button: 999px;
+  --native-spacing-button: 34px;
+  --native-spacing-button-inline: 14px;
+  --native-spacing-target: 44px;
+  --native-text-button: calc(0.9375rem * var(--text-scale));
+  --native-leading-button: calc(1.25 / 0.9375);
+  --native-weight-button: 400;
+  --native-tracking-button: -0.23px;
+}
+
+:root[data-platform="ios"],
+:root[data-platform="ios"] [data-theme="light"] {
+  --native-color-button-primary: #2f6f4f;
+  --native-color-on-button-primary: #ffffff;
+  --native-color-button-secondary: rgba(118, 118, 128, 0.12);
+  --native-color-on-button-secondary: #2f6f4f;
+  --native-color-button-primary-hover: rgba(0, 0, 0, 0.05);
+  --native-color-button-primary-pressed: rgba(0, 0, 0, 0.15);
+  --native-color-button-secondary-hover: rgba(0, 0, 0, 0.05);
+  --native-color-button-secondary-pressed: rgba(0, 0, 0, 0.1);
+}
+
+:root[data-platform="ios"][data-theme="dark"],
+:root[data-platform="ios"] [data-theme="dark"] {
+  --native-color-button-primary: #7fcb9d;
+  --native-color-on-button-primary: #0f2418;
+  --native-color-button-secondary: rgba(118, 118, 128, 0.24);
+  --native-color-on-button-secondary: #7fcb9d;
+  --native-color-button-primary-hover: rgba(0, 0, 0, 0.08);
+  --native-color-button-primary-pressed: rgba(0, 0, 0, 0.2);
+  --native-color-button-secondary-hover: rgba(255, 255, 255, 0.08);
+  --native-color-button-secondary-pressed: rgba(255, 255, 255, 0.15);
 }

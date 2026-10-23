@@ -10,4 +10,20 @@
   --native-ease-out: ease-out;
   --native-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
   --native-ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
+  --native-color-button-primary: var(--primary);
+  --native-color-on-button-primary: var(--primary-foreground);
+  --native-color-button-secondary: var(--secondary);
+  --native-color-on-button-secondary: var(--secondary-foreground);
+  --native-color-button-primary-hover: var(--accent);
+  --native-color-button-primary-pressed: var(--accent);
+  --native-color-button-secondary-hover: var(--accent);
+  --native-color-button-secondary-pressed: var(--accent);
+  --native-radius-button: var(--radius-shadcn-button);
+  --native-spacing-button: var(--spacing-shadcn-button);
+  --native-spacing-button-inline: var(--spacing-lg);
+  --native-spacing-target: var(--spacing-touch-target);
+  --native-text-button: var(--text-label);
+  --native-leading-button: var(--text-label--line-height);
+  --native-weight-button: var(--font-weight-medium);
+  --native-tracking-button: 0;
 }

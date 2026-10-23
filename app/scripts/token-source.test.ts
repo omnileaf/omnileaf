@@ -92,9 +92,9 @@ test("names a platform the app does not know", () => {
 });
 
 test("names a kind the app does not know", () => {
-  const unknownKind = { ...MOVE, kind: "weight" };
+  const unknownKind = { ...MOVE, kind: "volume" };
 
   expect(() => parse(unknownKind)).toThrow(
-    'Token "move" has an unknown kind, weight.',
+    'Token "move" has an unknown kind, volume.',
   );
 });

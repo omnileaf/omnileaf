@@ -8,7 +8,17 @@ const KNOWN_PLATFORMS = {
   windows: true,
 } satisfies Record<Platform, true>;
 
-const KINDS = ["color", "radius", "spacing", "duration", "ease"] as const;
+const KINDS = [
+  "color",
+  "radius",
+  "spacing",
+  "duration",
+  "ease",
+  "text",
+  "leading",
+  "weight",
+  "tracking",
+] as const;
 
 export type Kind = (typeof KINDS)[number];
 

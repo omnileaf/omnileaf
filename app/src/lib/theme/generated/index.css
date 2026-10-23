@@ -13,6 +13,22 @@
   --ease-out: var(--native-ease-out);
   --ease-emphasized: var(--native-ease-emphasized);
   --ease-glass: var(--native-ease-glass);
+  --color-native-button-primary: var(--native-color-button-primary);
+  --color-native-on-button-primary: var(--native-color-on-button-primary);
+  --color-native-button-secondary: var(--native-color-button-secondary);
+  --color-native-on-button-secondary: var(--native-color-on-button-secondary);
+  --color-native-button-primary-hover: var(--native-color-button-primary-hover);
+  --color-native-button-primary-pressed: var(--native-color-button-primary-pressed);
+  --color-native-button-secondary-hover: var(--native-color-button-secondary-hover);
+  --color-native-button-secondary-pressed: var(--native-color-button-secondary-pressed);
+  --radius-native-button: var(--native-radius-button);
+  --spacing-native-button: var(--native-spacing-button);
+  --spacing-native-button-inline: var(--native-spacing-button-inline);
+  --spacing-native-target: var(--native-spacing-target);
+  --text-native-button: var(--native-text-button);
+  --leading-native-button: var(--native-leading-button);
+  --font-weight-native-button: var(--native-weight-button);
+  --tracking-native-button: var(--native-tracking-button);
 }
 
 @media (prefers-reduced-motion: reduce) {

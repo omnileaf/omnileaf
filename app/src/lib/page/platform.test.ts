@@ -1,4 +1,4 @@
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test } from "vitest";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
 
@@ -9,6 +9,10 @@ import {
   isPhone,
   usesCommandKey,
 } from "./platform";
+
+afterEach(() => {
+  delete document.documentElement.dataset.platform;
+});
 
 const TOUCH: readonly Platform[] = ["android", "ios"];
 const DESKTOPS: readonly Platform[] = ["linux", "macos", "windows"];
@@ -39,11 +43,10 @@ test.each(OTHERS)("uses the Ctrl key on %s", (platform) => {
   expect(usesCommandKey(platform)).toBe(false);
 });
 
-test("reads as linux until the core reports a platform", async () => {
-  vi.resetModules();
-  const fresh = await import("./platform");
+test("reads as linux until the core reports a platform", () => {
+  delete document.documentElement.dataset.platform;
 
-  const platform = fresh.currentPlatform();
+  const platform = currentPlatform();
 
   expect(platform).toBe("linux");
 });
@@ -58,4 +61,20 @@ test.each(DESKTOPS)("marks the page as %s for the styles", (platform) => {
   followCorePlatform(platform);
 
   expect(document.documentElement.dataset.platform).toBe(platform);
+});
+
+test.each(TOUCH)("reads %s from the page, whoever marked it", (platform) => {
+  document.documentElement.dataset.platform = platform;
+
+  const read = currentPlatform();
+
+  expect(read).toBe(platform);
+});
+
+test("reads as linux when the page is marked with a platform the app does not know", () => {
+  document.documentElement.dataset.platform = "beos";
+
+  const read = currentPlatform();
+
+  expect(read).toBe("linux");
 });
