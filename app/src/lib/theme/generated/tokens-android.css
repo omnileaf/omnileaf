@@ -86,6 +86,14 @@
   --native-leading-tab: calc(16 / 12);
   --native-weight-tab: 500;
   --native-tracking-tab: 0.5px;
+  --native-radius-cover: 4px;
+  --native-radius-cover-badge: var(--radius-label-badge);
+  --native-spacing-cover-badge: var(--spacing-xl);
+  --native-spacing-downloaded-mark: 6px;
+  --native-radius-select: 2px;
+  --native-spacing-select: 18px;
+  --native-spacing-select-edge: 2px;
+  --native-shadow-select-ring-lift: none;
 }
 
 :root[data-platform="android"],
@@ -140,6 +148,11 @@
   --native-color-on-tab: #58615a;
   --native-color-on-tab-current: #326a4d;
   --native-color-on-tab-pill: #415749;
+  --native-color-cover-badge: #d0e8d7;
+  --native-color-on-cover-badge: #415749;
+  --native-color-cover-accent: #326a4d;
+  --native-color-on-cover-accent: #e6ffed;
+  --native-color-select-ring: #737d75;
 }
 
 :root[data-platform="android"][data-theme="dark"],
@@ -194,4 +207,9 @@
   --native-color-on-tab: #a4aea5;
   --native-color-on-tab-current: #a4d1b4;
   --native-color-on-tab-pill: #adc5b4;
+  --native-color-cover-badge: #2b4033;
+  --native-color-on-cover-badge: #adc5b4;
+  --native-color-cover-accent: #a4d1b4;
+  --native-color-on-cover-accent: #1f4833;
+  --native-color-select-ring: #6e7870;
 }

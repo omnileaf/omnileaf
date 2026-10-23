@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { LibrarySeries, OnCovers } from "#lib/ipc/bindings.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
 
+  import { coverTileLook } from "./cover-tile";
   import DownloadedMark from "./DownloadedMark.svelte";
   import LanguageBadge from "./LanguageBadge.svelte";
   import { seriesSelection } from "./series-selection";
@@ -10,6 +12,7 @@
     $props();
 
   const selection = seriesSelection();
+  const tile = coverTileLook(currentPlatform());
   const isSelecting = $derived(selection?.isSelecting === true);
   const language = $derived(
     onCovers.showsLanguage && series.language !== null
@@ -24,7 +27,10 @@
 {#if onCovers.showsUnreadCount}
   <UnreadCount
     count={series.unreadCount}
-    class="absolute inset-s-badge-inset inset-bs-badge-inset flex items-center justify-center px-badge-inline text-caption min-block-xl min-inline-xl medium:inset-s-badge-inset-wide medium:inset-bs-badge-inset-wide large:inset-s-sm large:inset-bs-sm"
+    class={[
+      "absolute inset-s-badge-inset inset-bs-badge-inset flex items-center justify-center px-badge-inline text-caption min-block-xl min-inline-xl medium:inset-s-badge-inset-wide medium:inset-bs-badge-inset-wide large:inset-s-sm large:inset-bs-sm",
+      tile.badge,
+    ]}
   />
 {/if}
 {#if !isSelecting && (language !== undefined || showsDownloads)}
@@ -34,11 +40,14 @@
     {#if language !== undefined}
       <LanguageBadge
         {language}
-        class="medium:px-badge-inline-wide medium:py-badge-block-wide"
+        class={[
+          "medium:px-badge-inline-wide medium:py-badge-block-wide",
+          tile.badge,
+        ]}
       />
     {/if}
     {#if showsDownloads}
-      <DownloadedMark />
+      <DownloadedMark class={tile.downloaded} iconClass={tile.downloadedIcon} />
     {/if}
   </span>
 {/if}
