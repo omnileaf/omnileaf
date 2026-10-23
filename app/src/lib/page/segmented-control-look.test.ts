@@ -87,6 +87,13 @@ test("draws Android's connected buttons with the chosen one filled", async () =>
   ).toBeCloseTo(2, 0);
 });
 
+test("pads Android's connected buttons like Material's segmented buttons, so three labels share a phone's row", async () => {
+  followCorePlatform("android");
+  await renderThemeChoice();
+
+  expect(getComputedStyle(segment("Light")).paddingInlineStart).toBe("12px");
+});
+
 test("rounds both outer ends of Android's connected buttons", async () => {
   followCorePlatform("android");
   await renderThemeChoice();
