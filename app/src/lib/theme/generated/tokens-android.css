@@ -30,7 +30,7 @@
   --native-spacing-segmented-inset: 0px;
   --native-spacing-segmented-gap: 2px;
   --native-spacing-segment: 40px;
-  --native-spacing-segment-inline: 12px;
+  --native-spacing-segment-inline: 0px;
   --native-radius-segmented: 0px;
   --native-radius-segment: 12px;
   --native-radius-segment-end: 20px;
