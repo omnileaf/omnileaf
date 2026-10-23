@@ -94,6 +94,12 @@
   --native-spacing-select: 22px;
   --native-spacing-select-edge: 1.5px;
   --native-shadow-select-ring-lift: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --native-radius-sheet: 38px;
+  --native-spacing-sheet-handle: 36px;
+  --native-spacing-sheet-handle-thickness: 5px;
+  --native-spacing-sheet-handle-start: 5px;
+  --native-spacing-sheet-handle-area: 10px;
+  --native-spacing-sheet-handle-end: 0px;
 }
 
 :root[data-platform="ios"],
@@ -153,6 +159,9 @@
   --native-color-cover-accent: #2f6f4f;
   --native-color-on-cover-accent: #ffffff;
   --native-color-select-ring: #ffffff;
+  --native-color-sheet: #ffffff;
+  --native-color-scrim: rgba(0, 0, 0, 0.4);
+  --native-color-sheet-handle: rgba(60, 60, 67, 0.3);
 }
 
 :root[data-platform="ios"][data-theme="dark"],
@@ -212,4 +221,7 @@
   --native-color-cover-accent: #7fcb9d;
   --native-color-on-cover-accent: #0f2418;
   --native-color-select-ring: #ffffff;
+  --native-color-sheet: #1c1c1e;
+  --native-color-scrim: rgba(0, 0, 0, 0.4);
+  --native-color-sheet-handle: rgba(235, 235, 245, 0.3);
 }

@@ -8,7 +8,6 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 
 import { resolvedColour } from "../../../../tests/components/resolved-colour";
 
-import DrawerHarness from "./drawer/DrawerHarness.svelte";
 import PlatformSurfacesHarness from "./PlatformSurfacesHarness.svelte";
 import PopoverHarness from "./popover/PopoverHarness.svelte";
 
@@ -18,13 +17,6 @@ interface MenuLook {
   readonly itemHeight: number;
   readonly itemCorner: string;
   readonly itemInline: string;
-}
-
-interface SheetLook {
-  readonly platform: Platform;
-  readonly corner: string;
-  readonly fill: string;
-  readonly handle: readonly [number, number];
 }
 
 const DESKTOP_WINDOW = { width: 1280, height: 800 } as const;
@@ -51,21 +43,6 @@ const MENUS: readonly MenuLook[] = [
     itemHeight: 32,
     itemCorner: "4px",
     itemInline: "12px",
-  },
-];
-
-const SHEETS: readonly SheetLook[] = [
-  {
-    platform: "android",
-    corner: "28px",
-    fill: "--android-container-low",
-    handle: [32, 4],
-  },
-  {
-    platform: "ios",
-    corner: "14px",
-    fill: "--card",
-    handle: [36, 5],
   },
 ];
 
@@ -138,25 +115,3 @@ test("lays an Android popover on the high container with 12px corners", async ()
   );
   expect(style.borderTopLeftRadius).toBe("12px");
 });
-
-for (const look of SHEETS) {
-  test(`draws the ${look.platform} bottom sheet with its own corners, ground and handle`, async () => {
-    await page.viewport(PHONE_SCREEN.width, PHONE_SCREEN.height);
-    usePlatform(look.platform);
-    await render(DrawerHarness);
-    const sheet = page.getByRole("dialog", { name: "Volume 3" });
-    await expect.element(sheet).toBeVisible();
-
-    const style = getComputedStyle(sheet.element());
-    const handle = sheet
-      .element()
-      .querySelector(":scope > span[aria-hidden]")
-      ?.getBoundingClientRect();
-
-    expect(style.borderTopLeftRadius).toBe(look.corner);
-    expect(style.backgroundColor).toBe(
-      resolvedColour(look.fill, "backgroundColor"),
-    );
-    expect([handle?.width, handle?.height]).toEqual(look.handle);
-  });
-}

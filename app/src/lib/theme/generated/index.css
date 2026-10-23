@@ -152,6 +152,15 @@
   --spacing-native-select: var(--native-spacing-select);
   --spacing-native-select-edge: var(--native-spacing-select-edge);
   --shadow-native-select-ring-lift: var(--native-shadow-select-ring-lift);
+  --color-native-sheet: var(--native-color-sheet);
+  --color-native-scrim: var(--native-color-scrim);
+  --color-native-sheet-handle: var(--native-color-sheet-handle);
+  --radius-native-sheet: var(--native-radius-sheet);
+  --spacing-native-sheet-handle: var(--native-spacing-sheet-handle);
+  --spacing-native-sheet-handle-thickness: var(--native-spacing-sheet-handle-thickness);
+  --spacing-native-sheet-handle-start: var(--native-spacing-sheet-handle-start);
+  --spacing-native-sheet-handle-area: var(--native-spacing-sheet-handle-area);
+  --spacing-native-sheet-handle-end: var(--native-spacing-sheet-handle-end);
 }
 
 @media (prefers-reduced-motion: reduce) {
