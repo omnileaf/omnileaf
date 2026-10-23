@@ -201,6 +201,22 @@ test.describe("with two categories", () => {
     );
   });
 
+  test("keeps the category while picking series, however the covers are swiped", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.use.hasTouch !== true, "a finger swipes");
+    await openLibrary(page);
+    await page.getByRole("button", { name: "More for the library" }).click();
+    await page.getByRole("menuitem", { name: "Select series" }).click();
+
+    await swipeCovers(page, { x: -SWIPE_PX, y: 0 });
+
+    await expect(seriesList(page).getByRole("listitem")).toHaveCount(
+      LIBRARY.length,
+    );
+    await expect(seriesList(page)).toHaveCSS("translate", "none");
+  });
+
   test("puts a tab for each category after All, and lists only the chosen category's series", async ({
     page,
   }) => {
