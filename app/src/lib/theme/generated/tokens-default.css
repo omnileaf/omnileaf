@@ -70,4 +70,22 @@
   --native-radius-group: var(--radius-list);
   --native-color-card: var(--card);
   --native-radius-card: var(--radius-shadcn-card);
+  --native-spacing-row: var(--spacing-4xl);
+  --native-spacing-row-two: var(--spacing-4xl);
+  --native-spacing-row-start: var(--spacing-list-row);
+  --native-spacing-row-end: var(--spacing-md);
+  --native-spacing-row-gap: var(--spacing-md);
+  --native-spacing-row-block: var(--spacing-sm);
+  --native-spacing-hairline: 1px;
+  --native-spacing-row-rule-start: 0px;
+  --native-spacing-row-rule-indent: 0px;
+  --native-color-row-rule: var(--border);
+  --native-text-row-title: var(--text-body);
+  --native-leading-row-title: var(--text-body--line-height);
+  --native-tracking-row-title: 0;
+  --native-weight-row-title: 600;
+  --native-text-row-subtitle: var(--text-detail);
+  --native-leading-row-subtitle: var(--text-detail--line-height);
+  --native-tracking-row-subtitle: 0;
+  --native-color-row-pressed: var(--pressed-fill);
 }

@@ -73,6 +73,24 @@
   --radius-native-group: var(--native-radius-group);
   --color-native-card: var(--native-color-card);
   --radius-native-card: var(--native-radius-card);
+  --spacing-native-row: var(--native-spacing-row);
+  --spacing-native-row-two: var(--native-spacing-row-two);
+  --spacing-native-row-start: var(--native-spacing-row-start);
+  --spacing-native-row-end: var(--native-spacing-row-end);
+  --spacing-native-row-gap: var(--native-spacing-row-gap);
+  --spacing-native-row-block: var(--native-spacing-row-block);
+  --spacing-native-hairline: var(--native-spacing-hairline);
+  --spacing-native-row-rule-start: var(--native-spacing-row-rule-start);
+  --spacing-native-row-rule-indent: var(--native-spacing-row-rule-indent);
+  --color-native-row-rule: var(--native-color-row-rule);
+  --text-native-row-title: var(--native-text-row-title);
+  --leading-native-row-title: var(--native-leading-row-title);
+  --tracking-native-row-title: var(--native-tracking-row-title);
+  --font-weight-native-row-title: var(--native-weight-row-title);
+  --text-native-row-subtitle: var(--native-text-row-subtitle);
+  --leading-native-row-subtitle: var(--native-leading-row-subtitle);
+  --tracking-native-row-subtitle: var(--native-tracking-row-subtitle);
+  --color-native-row-pressed: var(--native-color-row-pressed);
 }
 
 @media (prefers-reduced-motion: reduce) {

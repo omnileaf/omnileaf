@@ -1291,6 +1291,29 @@
   }
 }
 
+@utility row-rules {
+  & > * + * {
+    position: relative;
+  }
+
+  & > * + *::after {
+    content: "";
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: var(--native-spacing-row-rule-start);
+    inset-inline-end: 0;
+    block-size: var(--native-spacing-hairline);
+    background: var(--native-color-row-rule);
+  }
+
+  & > :has([data-slot="item-media"]) + :has([data-slot="item-media"])::after {
+    inset-inline-start: calc(
+      var(--native-spacing-row-rule-start) +
+        var(--native-spacing-row-rule-indent)
+    );
+  }
+}
+
 @utility native-target {
   position: relative;
 

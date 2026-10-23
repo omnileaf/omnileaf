@@ -44,6 +44,22 @@
   --native-spacing-progress-gap: 0px;
   --native-radius-group: 26px;
   --native-radius-card: 26px;
+  --native-spacing-row: 52px;
+  --native-spacing-row-two: 68px;
+  --native-spacing-row-start: 16px;
+  --native-spacing-row-end: 16px;
+  --native-spacing-row-gap: 12px;
+  --native-spacing-row-block: 11px;
+  --native-spacing-hairline: 0.5px;
+  --native-spacing-row-rule-start: 16px;
+  --native-spacing-row-rule-indent: 42px;
+  --native-text-row-title: calc(1.0625rem * var(--text-scale));
+  --native-leading-row-title: calc(1.375 / 1.0625);
+  --native-tracking-row-title: -0.43px;
+  --native-weight-row-title: 400;
+  --native-text-row-subtitle: calc(0.9375rem * var(--text-scale));
+  --native-leading-row-subtitle: calc(1.25 / 0.9375);
+  --native-tracking-row-subtitle: -0.23px;
 }
 
 :root[data-platform="ios"],
@@ -74,6 +90,8 @@
   --native-color-grouped-ground: #f2f2f7;
   --native-color-group: #ffffff;
   --native-color-card: #ffffff;
+  --native-color-row-rule: rgba(60, 60, 67, 0.29);
+  --native-color-row-pressed: rgba(0, 0, 0, 0.05);
 }
 
 :root[data-platform="ios"][data-theme="dark"],
@@ -104,4 +122,6 @@
   --native-color-grouped-ground: #000000;
   --native-color-group: #1c1c1e;
   --native-color-card: #1c1c1e;
+  --native-color-row-rule: rgba(84, 84, 88, 0.6);
+  --native-color-row-pressed: rgba(255, 255, 255, 0.08);
 }

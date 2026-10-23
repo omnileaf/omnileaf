@@ -1,4 +1,5 @@
 export { default as Item } from "./item.svelte";
+export { default as ItemChevron } from "./item-chevron.svelte";
 export { default as ItemContent } from "./item-content.svelte";
 export { default as ItemDescription } from "./item-description.svelte";
 export { default as ItemMedia } from "./item-media.svelte";
