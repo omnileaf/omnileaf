@@ -43,26 +43,79 @@ export const BUTTON_LOOKS = {
 
 export type ButtonLook = keyof typeof BUTTON_LOOKS;
 
-type ButtonVariant = "primary" | "secondary";
+export type ButtonVariant =
+  "primary" | "secondary" | "outline" | "plain" | "destructive" | "link";
+
+export type ButtonSize = "small" | "regular" | "large";
 
 const NATIVE_VARIANT_OF: Partial<Record<ButtonLook, ButtonVariant>> = {
   "dialog-primary": "primary",
   "dialog-secondary": "secondary",
 };
 
-const NATIVE_BUTTON = `native-target inline-flex items-center justify-center gap-sm rounded-native-button px-native-button-inline text-native-button leading-native-button font-native-button tracking-native-button transition-control min-block-native-button ${FOCUS_RING}`;
+const NATIVE_BUTTON = `native-target inline-flex items-center justify-center gap-sm rounded-native-button font-native-button transition-control ${FOCUS_RING}`;
+
+const NATIVE_SIZES = {
+  small:
+    "px-native-button-small-inline text-native-button leading-native-button tracking-native-button min-block-native-button-small",
+  regular:
+    "px-native-button-inline text-native-button leading-native-button tracking-native-button min-block-native-button",
+  large:
+    "px-native-button-large-inline text-native-button-large leading-native-button-large tracking-native-button-large min-block-native-button-large",
+} satisfies Record<ButtonSize, string>;
+
+const NATIVE_ICON_ONLY = {
+  small: "px-none block-native-button-small inline-native-button-small",
+  regular: "px-none block-native-button inline-native-button",
+  large: "px-none block-native-button-large inline-native-button-large",
+} satisfies Record<ButtonSize, string>;
+
+const PLAIN =
+  "bg-transparent text-native-on-button-plain enabled:hover:tint-native-button-plain-hover enabled:active:tint-native-button-plain-pressed";
 
 const NATIVE_VARIANTS = {
   primary:
     "bg-native-button-primary text-native-on-button-primary enabled:hover:tint-native-button-primary-hover enabled:active:tint-native-button-primary-pressed",
   secondary:
     "bg-native-button-secondary text-native-on-button-secondary enabled:hover:tint-native-button-secondary-hover enabled:active:tint-native-button-secondary-pressed",
+  outline:
+    "border border-native-button-outline-edge bg-native-button-outline text-native-on-button-outline enabled:hover:tint-native-button-outline-hover enabled:active:tint-native-button-outline-pressed",
+  plain: PLAIN,
+  link: PLAIN,
+  destructive:
+    "bg-native-button-destructive text-native-on-button-destructive enabled:hover:tint-native-button-destructive-hover enabled:active:tint-native-button-destructive-pressed",
 } satisfies Record<ButtonVariant, string>;
+
+const DESKTOP_VARIANTS = {
+  primary: BUTTON_LOOKS["dialog-primary"],
+  secondary: BUTTON_LOOKS["dialog-secondary"],
+  outline: BUTTON_LOOKS["dialog-secondary"],
+  plain: `${DIALOG_BUTTON} text-accent enabled:hover:bg-hover enabled:active:bg-pressed ${FOCUS_RING}`,
+  link: BUTTON_LOOKS.quiet,
+  destructive: `${DIALOG_BUTTON} bg-danger-fill text-on-danger enabled:hover:bg-danger-hover enabled:active:bg-danger-pressed ${FOCUS_RING}`,
+} satisfies Record<ButtonVariant, string>;
+
+const DESKTOP_ICON_ONLY = "px-none block-shadcn-button inline-shadcn-button";
+
+export function variantClasses(
+  variant: ButtonVariant,
+  size: ButtonSize,
+  isIconOnly: boolean,
+  platform: Platform,
+): string {
+  if (!hasNativeLook(platform)) {
+    return isIconOnly
+      ? `${DESKTOP_VARIANTS[variant]} ${DESKTOP_ICON_ONLY}`
+      : DESKTOP_VARIANTS[variant];
+  }
+  const shape = isIconOnly ? NATIVE_ICON_ONLY[size] : "";
+  return `${NATIVE_BUTTON} ${NATIVE_SIZES[size]} ${shape} ${NATIVE_VARIANTS[variant]}`;
+}
 
 export function buttonClasses(look: ButtonLook, platform: Platform): string {
   const variant = NATIVE_VARIANT_OF[look];
   if (variant === undefined || !hasNativeLook(platform)) {
     return BUTTON_LOOKS[look];
   }
-  return `${NATIVE_BUTTON} ${NATIVE_VARIANTS[variant]}`;
+  return variantClasses(variant, "regular", false, platform);
 }

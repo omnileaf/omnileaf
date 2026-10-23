@@ -60,6 +60,13 @@
   --native-text-row-subtitle: calc(0.875rem * var(--text-scale));
   --native-leading-row-subtitle: calc(1.25 / 0.875);
   --native-tracking-row-subtitle: 0.25px;
+  --native-spacing-button-small: 32px;
+  --native-spacing-button-large: 56px;
+  --native-spacing-button-small-inline: 12px;
+  --native-spacing-button-large-inline: 24px;
+  --native-text-button-large: calc(1rem * var(--text-scale));
+  --native-leading-button-large: 1.5;
+  --native-tracking-button-large: 0.15px;
 }
 
 :root[data-platform="android"],
@@ -92,6 +99,18 @@
   --native-color-card: #eff5ee;
   --native-color-row-rule: transparent;
   --native-color-row-pressed: #2c352e1a;
+  --native-color-button-outline: transparent;
+  --native-color-on-button-outline: #326a4d;
+  --native-color-button-outline-edge: #737d75;
+  --native-color-button-outline-hover: #326a4d14;
+  --native-color-button-outline-pressed: #326a4d1f;
+  --native-color-on-button-plain: #326a4d;
+  --native-color-button-plain-hover: #326a4d14;
+  --native-color-button-plain-pressed: #326a4d1f;
+  --native-color-button-destructive: transparent;
+  --native-color-on-button-destructive: #a83836;
+  --native-color-button-destructive-hover: #a8383614;
+  --native-color-button-destructive-pressed: #a838361f;
 }
 
 :root[data-platform="android"][data-theme="dark"],
@@ -124,4 +143,16 @@
   --native-color-card: #0f1511;
   --native-color-row-rule: transparent;
   --native-color-row-pressed: #dee8df1a;
+  --native-color-button-outline: transparent;
+  --native-color-on-button-outline: #a4d1b4;
+  --native-color-button-outline-edge: #6e7870;
+  --native-color-button-outline-hover: #a4d1b414;
+  --native-color-button-outline-pressed: #a4d1b41f;
+  --native-color-on-button-plain: #a4d1b4;
+  --native-color-button-plain-hover: #a4d1b414;
+  --native-color-button-plain-pressed: #a4d1b41f;
+  --native-color-button-destructive: transparent;
+  --native-color-on-button-destructive: #fa746f;
+  --native-color-button-destructive-hover: #fa746f14;
+  --native-color-button-destructive-pressed: #fa746f1f;
 }

@@ -60,6 +60,13 @@
   --native-text-row-subtitle: calc(0.9375rem * var(--text-scale));
   --native-leading-row-subtitle: calc(1.25 / 0.9375);
   --native-tracking-row-subtitle: -0.23px;
+  --native-spacing-button-small: 28px;
+  --native-spacing-button-large: 50px;
+  --native-spacing-button-small-inline: 10px;
+  --native-spacing-button-large-inline: 20px;
+  --native-text-button-large: calc(1.0625rem * var(--text-scale));
+  --native-leading-button-large: calc(1.375 / 1.0625);
+  --native-tracking-button-large: -0.43px;
 }
 
 :root[data-platform="ios"],
@@ -92,6 +99,18 @@
   --native-color-card: #ffffff;
   --native-color-row-rule: rgba(60, 60, 67, 0.29);
   --native-color-row-pressed: rgba(0, 0, 0, 0.05);
+  --native-color-button-outline: rgba(118, 118, 128, 0.12);
+  --native-color-on-button-outline: #2f6f4f;
+  --native-color-button-outline-edge: transparent;
+  --native-color-button-outline-hover: rgba(0, 0, 0, 0.05);
+  --native-color-button-outline-pressed: rgba(0, 0, 0, 0.1);
+  --native-color-on-button-plain: #2f6f4f;
+  --native-color-button-plain-hover: rgba(0, 0, 0, 0.05);
+  --native-color-button-plain-pressed: rgba(0, 0, 0, 0.1);
+  --native-color-button-destructive: #f6e3e3;
+  --native-color-on-button-destructive: #9b2c2c;
+  --native-color-button-destructive-hover: rgba(0, 0, 0, 0.05);
+  --native-color-button-destructive-pressed: rgba(0, 0, 0, 0.1);
 }
 
 :root[data-platform="ios"][data-theme="dark"],
@@ -124,4 +143,16 @@
   --native-color-card: #1c1c1e;
   --native-color-row-rule: rgba(84, 84, 88, 0.6);
   --native-color-row-pressed: rgba(255, 255, 255, 0.08);
+  --native-color-button-outline: rgba(118, 118, 128, 0.24);
+  --native-color-on-button-outline: #7fcb9d;
+  --native-color-button-outline-edge: transparent;
+  --native-color-button-outline-hover: rgba(255, 255, 255, 0.08);
+  --native-color-button-outline-pressed: rgba(255, 255, 255, 0.15);
+  --native-color-on-button-plain: #7fcb9d;
+  --native-color-button-plain-hover: rgba(255, 255, 255, 0.08);
+  --native-color-button-plain-pressed: rgba(255, 255, 255, 0.15);
+  --native-color-button-destructive: #3a2222;
+  --native-color-on-button-destructive: #f4a3a3;
+  --native-color-button-destructive-hover: rgba(255, 255, 255, 0.08);
+  --native-color-button-destructive-pressed: rgba(255, 255, 255, 0.15);
 }

@@ -5,26 +5,53 @@
   import { Spinner } from "#lib/components/ui/spinner/index.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
-  import { type ButtonLook, buttonClasses } from "./looks.ts";
+  import {
+    type ButtonLook,
+    type ButtonSize,
+    type ButtonVariant,
+    buttonClasses,
+    variantClasses,
+  } from "./looks.ts";
 
   type ButtonElementProps = Extract<
     ButtonPrimitive.RootProps,
     { href?: never }
   >;
   type ClickEvent = Parameters<NonNullable<ButtonElementProps["onclick"]>>[0];
+  type Look =
+    | {
+        look: ButtonLook;
+        variant?: never;
+        size?: never;
+        iconOnly?: never;
+        label?: never;
+      }
+    | ({ look?: never; variant?: ButtonVariant; size?: ButtonSize } & (
+        { iconOnly?: false; label?: never } | { iconOnly: true; label: string }
+      ));
 
   let {
     ref = $bindable(null),
     look,
+    variant = "secondary",
+    size = "regular",
+    iconOnly = false,
+    label,
     class: className,
     children,
     onclick,
     onClickPromise,
     ...restProps
-  }: ButtonElementProps & {
-    look: ButtonLook;
-    onClickPromise?: (event: MouseEvent) => Promise<void>;
-  } = $props();
+  }: ButtonElementProps &
+    Look & {
+      onClickPromise?: (event: MouseEvent) => Promise<void>;
+    } = $props();
+
+  const classes = $derived(
+    look === undefined
+      ? variantClasses(variant, size, iconOnly, currentPlatform())
+      : buttonClasses(look, currentPlatform()),
+  );
 
   const BUSY_ICON_SIZE = 18;
 
@@ -51,10 +78,11 @@
 <ButtonPrimitive.Root
   bind:ref
   class={cn(
-    buttonClasses(look, currentPlatform()),
+    classes,
     isBusy && "inline-flex items-center justify-center gap-sm",
     className,
   )}
+  aria-label={label}
   aria-busy={isBusy || undefined}
   aria-disabled={isBusy || undefined}
   onclick={click}
@@ -63,5 +91,7 @@
   {#if isBusy}
     <Spinner size={BUSY_ICON_SIZE} class="shrink-0" />
   {/if}
-  {@render children?.()}
+  {#if !(isBusy && iconOnly)}
+    {@render children?.()}
+  {/if}
 </ButtonPrimitive.Root>

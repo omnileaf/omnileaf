@@ -1320,7 +1320,7 @@
   &::before {
     content: "";
     position: absolute;
-    inset-inline: 0;
+    inset-inline: min(0px, calc((100% - var(--native-spacing-target)) / 2));
     inset-block: min(0px, calc((100% - var(--native-spacing-target)) / 2));
   }
 }

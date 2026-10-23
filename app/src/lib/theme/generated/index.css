@@ -91,6 +91,25 @@
   --leading-native-row-subtitle: var(--native-leading-row-subtitle);
   --tracking-native-row-subtitle: var(--native-tracking-row-subtitle);
   --color-native-row-pressed: var(--native-color-row-pressed);
+  --color-native-button-outline: var(--native-color-button-outline);
+  --color-native-on-button-outline: var(--native-color-on-button-outline);
+  --color-native-button-outline-edge: var(--native-color-button-outline-edge);
+  --color-native-button-outline-hover: var(--native-color-button-outline-hover);
+  --color-native-button-outline-pressed: var(--native-color-button-outline-pressed);
+  --color-native-on-button-plain: var(--native-color-on-button-plain);
+  --color-native-button-plain-hover: var(--native-color-button-plain-hover);
+  --color-native-button-plain-pressed: var(--native-color-button-plain-pressed);
+  --color-native-button-destructive: var(--native-color-button-destructive);
+  --color-native-on-button-destructive: var(--native-color-on-button-destructive);
+  --color-native-button-destructive-hover: var(--native-color-button-destructive-hover);
+  --color-native-button-destructive-pressed: var(--native-color-button-destructive-pressed);
+  --spacing-native-button-small: var(--native-spacing-button-small);
+  --spacing-native-button-large: var(--native-spacing-button-large);
+  --spacing-native-button-small-inline: var(--native-spacing-button-small-inline);
+  --spacing-native-button-large-inline: var(--native-spacing-button-large-inline);
+  --text-native-button-large: var(--native-text-button-large);
+  --leading-native-button-large: var(--native-leading-button-large);
+  --tracking-native-button-large: var(--native-tracking-button-large);
 }
 
 @media (prefers-reduced-motion: reduce) {
