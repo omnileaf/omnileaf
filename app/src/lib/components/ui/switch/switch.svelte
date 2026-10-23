@@ -30,14 +30,14 @@
   {@render children?.()}
   <span
     aria-hidden="true"
-    class="flex shrink-0 items-center rounded-full border border-switch-edge bg-switch-off px-switch-inset transition-colors block-switch-thickness inline-switch-length group-aria-checked/switch:justify-end group-aria-checked/switch:border-switch-edge-on group-aria-checked/switch:bg-switch-on group-aria-checked/switch:px-switch-inset-on motion-safe:duration-fade ios:border-0 android:border-2 macos:shadow-raised linux:shadow-raised"
+    class="flex shrink-0 items-center rounded-full border border-native-switch-off-border bg-native-switch-off px-native-switch-inset transition-colors block-native-switch-thickness inline-native-switch-length group-aria-checked/switch:justify-end group-aria-checked/switch:border-native-switch-on-border group-aria-checked/switch:bg-native-switch-on group-aria-checked/switch:px-native-switch-inset-on motion-safe:duration-fade ios:border-0 android:border-2 macos:shadow-raised linux:shadow-raised"
   >
     <SwitchPrimitive.Thumb
-      class="flex items-center justify-center rounded-full bg-switch-knob block-switch-knob inline-switch-knob group-aria-checked/switch:bg-switch-knob-on group-aria-checked/switch:block-switch-knob-on group-aria-checked/switch:inline-switch-knob-on ios:shadow-switch-knob macos:shadow-switch-knob"
+      class="flex items-center justify-center rounded-full bg-native-switch-thumb-off block-native-switch-knob inline-native-switch-knob-length group-aria-checked/switch:bg-native-switch-thumb group-aria-checked/switch:block-native-switch-knob-on group-aria-checked/switch:inline-native-switch-knob-on-length ios:shadow-switch-knob macos:shadow-switch-knob"
     >
       <Check
         size={TICK_SIZE}
-        class="hidden text-accent android:group-aria-checked/switch:block"
+        class="hidden text-native-switch-on android:group-aria-checked/switch:block"
       />
     </SwitchPrimitive.Thumb>
   </span>

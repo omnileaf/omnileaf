@@ -19,6 +19,14 @@
   --native-weight-button: 400;
   --native-tracking-button: -0.23px;
   --native-spacing-icon: 1.375rem;
+  --native-spacing-switch-length: 64px;
+  --native-spacing-switch-thickness: 28px;
+  --native-spacing-switch-knob: 24px;
+  --native-spacing-switch-knob-length: 38px;
+  --native-spacing-switch-knob-on: 24px;
+  --native-spacing-switch-knob-on-length: 38px;
+  --native-spacing-switch-inset: 2px;
+  --native-spacing-switch-inset-on: 2px;
 }
 
 :root[data-platform="ios"],
@@ -31,6 +39,12 @@
   --native-color-button-primary-pressed: rgba(0, 0, 0, 0.15);
   --native-color-button-secondary-hover: rgba(0, 0, 0, 0.05);
   --native-color-button-secondary-pressed: rgba(0, 0, 0, 0.1);
+  --native-color-switch-on: oklch(0.6 0.17 149);
+  --native-color-switch-on-border: transparent;
+  --native-color-switch-off: rgba(60, 60, 67, 0.3);
+  --native-color-switch-off-border: transparent;
+  --native-color-switch-thumb: oklch(1 0 0);
+  --native-color-switch-thumb-off: oklch(1 0 0);
 }
 
 :root[data-platform="ios"][data-theme="dark"],
@@ -43,4 +57,10 @@
   --native-color-button-primary-pressed: rgba(0, 0, 0, 0.2);
   --native-color-button-secondary-hover: rgba(255, 255, 255, 0.08);
   --native-color-button-secondary-pressed: rgba(255, 255, 255, 0.15);
+  --native-color-switch-on: oklch(0.6 0.17 149);
+  --native-color-switch-on-border: transparent;
+  --native-color-switch-off: rgba(235, 235, 245, 0.3);
+  --native-color-switch-off-border: transparent;
+  --native-color-switch-thumb: oklch(1 0 0);
+  --native-color-switch-thumb-off: oklch(1 0 0);
 }

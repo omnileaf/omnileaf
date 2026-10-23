@@ -30,6 +30,20 @@
   --font-weight-native-button: var(--native-weight-button);
   --tracking-native-button: var(--native-tracking-button);
   --spacing-native-icon: var(--native-spacing-icon);
+  --color-native-switch-on: var(--native-color-switch-on);
+  --color-native-switch-on-border: var(--native-color-switch-on-border);
+  --color-native-switch-off: var(--native-color-switch-off);
+  --color-native-switch-off-border: var(--native-color-switch-off-border);
+  --color-native-switch-thumb: var(--native-color-switch-thumb);
+  --color-native-switch-thumb-off: var(--native-color-switch-thumb-off);
+  --spacing-native-switch-length: var(--native-spacing-switch-length);
+  --spacing-native-switch-thickness: var(--native-spacing-switch-thickness);
+  --spacing-native-switch-knob: var(--native-spacing-switch-knob);
+  --spacing-native-switch-knob-length: var(--native-spacing-switch-knob-length);
+  --spacing-native-switch-knob-on: var(--native-spacing-switch-knob-on);
+  --spacing-native-switch-knob-on-length: var(--native-spacing-switch-knob-on-length);
+  --spacing-native-switch-inset: var(--native-spacing-switch-inset);
+  --spacing-native-switch-inset-on: var(--native-spacing-switch-inset-on);
 }
 
 @media (prefers-reduced-motion: reduce) {
