@@ -21,6 +21,7 @@
     "test:ios": "tauri ios build --debug --target aarch64-sim --no-sign && vitest run --project ios",
     "tauri": "tauri",
     "tokens": "node scripts/write-platform-tokens.ts",
+    "icons": "node scripts/write-icons.ts",
     "pseudo-locale": "node scripts/write-pseudo-locale.ts && prettier --write messages/en-XA.json"
   },
   "devDependencies": {

@@ -33,6 +33,24 @@ export const PORTED_CODE: readonly PortedCode[] = [
     licence: "MIT",
     folder: "src/lib/components/ui/drawer",
   },
+  {
+    name: "framework7-icons",
+    version: "5.0.5",
+    licence: "MIT",
+    folder: "src/lib/icons/framework7",
+  },
+  {
+    name: "@material-symbols/svg-400",
+    version: "0.48.0",
+    licence: "Apache-2.0",
+    folder: "src/lib/icons/material-symbols",
+  },
+  {
+    name: "lucide-static",
+    version: "1.58.0",
+    licence: "ISC",
+    folder: "src/lib/icons/lucide",
+  },
 ];
 
 const NODE_MODULES = "/node_modules/";

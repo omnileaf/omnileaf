@@ -1,0 +1,1383 @@
+[data-icon] {
+  display: inline-block;
+  flex-shrink: 0;
+  background-color: currentColor;
+  mask: var(--icon) center / contain no-repeat;
+  forced-color-adjust: none;
+}
+
+[data-icon="activity"] {
+  --icon: url("./lucide/activity.svg");
+}
+
+:root[data-platform="ios"] [data-icon="activity"] {
+  --icon: url("./framework7/waveform_path_ecg.svg");
+}
+
+:root[data-platform="android"] [data-icon="activity"] {
+  --icon: url("./material-symbols/monitoring.svg");
+}
+
+[data-icon="app-window"] {
+  --icon: url("./lucide/app-window.svg");
+}
+
+:root[data-platform="ios"] [data-icon="app-window"] {
+  --icon: url("./framework7/macwindow.svg");
+}
+
+:root[data-platform="android"] [data-icon="app-window"] {
+  --icon: url("./material-symbols/web_asset.svg");
+}
+
+[data-icon="arrow-down"] {
+  --icon: url("./lucide/arrow-down.svg");
+}
+
+:root[data-platform="ios"] [data-icon="arrow-down"] {
+  --icon: url("./framework7/arrow_down.svg");
+}
+
+:root[data-platform="android"] [data-icon="arrow-down"] {
+  --icon: url("./material-symbols/arrow_downward.svg");
+}
+
+[data-icon="arrow-down-up"] {
+  --icon: url("./lucide/arrow-down-up.svg");
+}
+
+:root[data-platform="ios"] [data-icon="arrow-down-up"] {
+  --icon: url("./framework7/arrow_up_arrow_down.svg");
+}
+
+:root[data-platform="android"] [data-icon="arrow-down-up"] {
+  --icon: url("./material-symbols/swap_vert.svg");
+}
+
+[data-icon="arrow-left"] {
+  --icon: url("./lucide/arrow-left.svg");
+}
+
+:root[data-platform="ios"] [data-icon="arrow-left"] {
+  --icon: url("./framework7/arrow_left.svg");
+}
+
+:root[data-platform="android"] [data-icon="arrow-left"] {
+  --icon: url("./material-symbols/arrow_back.svg");
+}
+
+[data-icon="arrow-left-right"] {
+  --icon: url("./lucide/arrow-left-right.svg");
+}
+
+:root[data-platform="ios"] [data-icon="arrow-left-right"] {
+  --icon: url("./framework7/arrow_left_right.svg");
+}
+
+:root[data-platform="android"] [data-icon="arrow-left-right"] {
+  --icon: url("./material-symbols/swap_horiz.svg");
+}
+
+[data-icon="arrow-right"] {
+  --icon: url("./lucide/arrow-right.svg");
+}
+
+:root[data-platform="ios"] [data-icon="arrow-right"] {
+  --icon: url("./framework7/arrow_right.svg");
+}
+
+:root[data-platform="android"] [data-icon="arrow-right"] {
+  --icon: url("./material-symbols/arrow_forward.svg");
+}
+
+[data-icon="arrow-up"] {
+  --icon: url("./lucide/arrow-up.svg");
+}
+
+:root[data-platform="ios"] [data-icon="arrow-up"] {
+  --icon: url("./framework7/arrow_up.svg");
+}
+
+:root[data-platform="android"] [data-icon="arrow-up"] {
+  --icon: url("./material-symbols/arrow_upward.svg");
+}
+
+[data-icon="arrow-up-down"] {
+  --icon: url("./lucide/arrow-up-down.svg");
+}
+
+:root[data-platform="ios"] [data-icon="arrow-up-down"] {
+  --icon: url("./framework7/arrow_up_down.svg");
+}
+
+:root[data-platform="android"] [data-icon="arrow-up-down"] {
+  --icon: url("./material-symbols/swap_vert.svg");
+}
+
+[data-icon="bell"] {
+  --icon: url("./lucide/bell.svg");
+}
+
+:root[data-platform="ios"] [data-icon="bell"] {
+  --icon: url("./framework7/bell.svg");
+}
+
+:root[data-platform="android"] [data-icon="bell"] {
+  --icon: url("./material-symbols/notifications.svg");
+}
+
+:root[data-platform="android"] [data-icon="bell"][data-filled] {
+  --icon: url("./material-symbols/notifications-fill.svg");
+}
+
+[data-icon="book"] {
+  --icon: url("./lucide/book.svg");
+}
+
+:root[data-platform="ios"] [data-icon="book"] {
+  --icon: url("./framework7/book.svg");
+}
+
+:root[data-platform="android"] [data-icon="book"] {
+  --icon: url("./material-symbols/book.svg");
+}
+
+[data-icon="book-open"] {
+  --icon: url("./lucide/book-open.svg");
+}
+
+:root[data-platform="ios"] [data-icon="book-open"] {
+  --icon: url("./framework7/book.svg");
+}
+
+:root[data-platform="android"] [data-icon="book-open"] {
+  --icon: url("./material-symbols/menu_book.svg");
+}
+
+:root[data-platform="android"] [data-icon="book-open"][data-filled] {
+  --icon: url("./material-symbols/menu_book-fill.svg");
+}
+
+[data-icon="bookmark"] {
+  --icon: url("./lucide/bookmark.svg");
+}
+
+:root[data-platform="ios"] [data-icon="bookmark"] {
+  --icon: url("./framework7/bookmark.svg");
+}
+
+:root[data-platform="ios"] [data-icon="bookmark"][data-filled] {
+  --icon: url("./framework7/bookmark_fill.svg");
+}
+
+:root[data-platform="android"] [data-icon="bookmark"] {
+  --icon: url("./material-symbols/bookmark.svg");
+}
+
+:root[data-platform="android"] [data-icon="bookmark"][data-filled] {
+  --icon: url("./material-symbols/bookmark-fill.svg");
+}
+
+[data-icon="bookmark-filled"] {
+  --icon: url("./lucide/bookmark.svg");
+}
+
+:root[data-platform="ios"] [data-icon="bookmark-filled"] {
+  --icon: url("./framework7/bookmark_fill.svg");
+}
+
+:root[data-platform="android"] [data-icon="bookmark-filled"] {
+  --icon: url("./material-symbols/bookmark-fill.svg");
+}
+
+[data-icon="bug"] {
+  --icon: url("./lucide/bug.svg");
+}
+
+:root[data-platform="ios"] [data-icon="bug"] {
+  --icon: url("./framework7/ant.svg");
+}
+
+:root[data-platform="android"] [data-icon="bug"] {
+  --icon: url("./material-symbols/bug_report.svg");
+}
+
+:root[data-platform="android"] [data-icon="bug"][data-filled] {
+  --icon: url("./material-symbols/bug_report-fill.svg");
+}
+
+[data-icon="camera"] {
+  --icon: url("./lucide/camera.svg");
+}
+
+:root[data-platform="ios"] [data-icon="camera"] {
+  --icon: url("./framework7/camera.svg");
+}
+
+:root[data-platform="android"] [data-icon="camera"] {
+  --icon: url("./material-symbols/photo_camera.svg");
+}
+
+[data-icon="check"] {
+  --icon: url("./lucide/check.svg");
+}
+
+:root[data-platform="ios"] [data-icon="check"] {
+  --icon: url("./framework7/checkmark.svg");
+}
+
+:root[data-platform="android"] [data-icon="check"] {
+  --icon: url("./material-symbols/check.svg");
+}
+
+[data-icon="chevron-down"] {
+  --icon: url("./lucide/chevron-down.svg");
+}
+
+:root[data-platform="ios"] [data-icon="chevron-down"] {
+  --icon: url("./framework7/chevron_down.svg");
+}
+
+:root[data-platform="android"] [data-icon="chevron-down"] {
+  --icon: url("./material-symbols/arrow_drop_down.svg");
+}
+
+[data-icon="chevron-left"] {
+  --icon: url("./lucide/chevron-left.svg");
+}
+
+:root[data-platform="ios"] [data-icon="chevron-left"] {
+  --icon: url("./framework7/chevron_left.svg");
+}
+
+:root[data-platform="android"] [data-icon="chevron-left"] {
+  --icon: url("./material-symbols/chevron_left.svg");
+}
+
+[data-icon="chevron-right"] {
+  --icon: url("./lucide/chevron-right.svg");
+}
+
+:root[data-platform="ios"] [data-icon="chevron-right"] {
+  --icon: url("./framework7/chevron_right.svg");
+}
+
+:root[data-platform="android"] [data-icon="chevron-right"] {
+  --icon: url("./material-symbols/chevron_right.svg");
+}
+
+[data-icon="chevron-up"] {
+  --icon: url("./lucide/chevron-up.svg");
+}
+
+:root[data-platform="ios"] [data-icon="chevron-up"] {
+  --icon: url("./framework7/chevron_up.svg");
+}
+
+:root[data-platform="android"] [data-icon="chevron-up"] {
+  --icon: url("./material-symbols/keyboard_arrow_up.svg");
+}
+
+[data-icon="chevrons-left"] {
+  --icon: url("./lucide/chevrons-left.svg");
+}
+
+:root[data-platform="ios"] [data-icon="chevrons-left"] {
+  --icon: url("./framework7/chevron_left_2.svg");
+}
+
+:root[data-platform="android"] [data-icon="chevrons-left"] {
+  --icon: url("./material-symbols/keyboard_double_arrow_left.svg");
+}
+
+[data-icon="chevrons-right"] {
+  --icon: url("./lucide/chevrons-right.svg");
+}
+
+:root[data-platform="ios"] [data-icon="chevrons-right"] {
+  --icon: url("./framework7/chevron_right_2.svg");
+}
+
+:root[data-platform="android"] [data-icon="chevrons-right"] {
+  --icon: url("./material-symbols/keyboard_double_arrow_right.svg");
+}
+
+[data-icon="chevrons-up-down"] {
+  --icon: url("./lucide/chevrons-up-down.svg");
+}
+
+:root[data-platform="ios"] [data-icon="chevrons-up-down"] {
+  --icon: url("./framework7/chevron_up_chevron_down.svg");
+}
+
+:root[data-platform="android"] [data-icon="chevrons-up-down"] {
+  --icon: url("./material-symbols/unfold_more.svg");
+}
+
+[data-icon="circle-alert"] {
+  --icon: url("./lucide/circle-alert.svg");
+}
+
+:root[data-platform="ios"] [data-icon="circle-alert"] {
+  --icon: url("./framework7/exclamationmark_circle.svg");
+}
+
+:root[data-platform="android"] [data-icon="circle-alert"] {
+  --icon: url("./material-symbols/error.svg");
+}
+
+[data-icon="circle-check"] {
+  --icon: url("./lucide/circle-check.svg");
+}
+
+:root[data-platform="ios"] [data-icon="circle-check"] {
+  --icon: url("./framework7/checkmark_circle.svg");
+}
+
+:root[data-platform="android"] [data-icon="circle-check"] {
+  --icon: url("./material-symbols/check_circle.svg");
+}
+
+[data-icon="clock"] {
+  --icon: url("./lucide/clock.svg");
+}
+
+:root[data-platform="ios"] [data-icon="clock"] {
+  --icon: url("./framework7/clock.svg");
+}
+
+:root[data-platform="ios"] [data-icon="clock"][data-filled] {
+  --icon: url("./framework7/clock_fill.svg");
+}
+
+:root[data-platform="android"] [data-icon="clock"] {
+  --icon: url("./material-symbols/schedule.svg");
+}
+
+[data-icon="columns-2"] {
+  --icon: url("./lucide/columns-2.svg");
+}
+
+:root[data-platform="ios"] [data-icon="columns-2"] {
+  --icon: url("./framework7/square_split_2x1.svg");
+}
+
+:root[data-platform="android"] [data-icon="columns-2"] {
+  --icon: url("./material-symbols/view_column_2.svg");
+}
+
+[data-icon="compass"] {
+  --icon: url("./lucide/compass.svg");
+}
+
+:root[data-platform="ios"] [data-icon="compass"] {
+  --icon: url("./framework7/compass.svg");
+}
+
+:root[data-platform="ios"] [data-icon="compass"][data-filled] {
+  --icon: url("./framework7/compass_fill.svg");
+}
+
+:root[data-platform="android"] [data-icon="compass"] {
+  --icon: url("./material-symbols/explore.svg");
+}
+
+:root[data-platform="android"] [data-icon="compass"][data-filled] {
+  --icon: url("./material-symbols/explore-fill.svg");
+}
+
+[data-icon="copy"] {
+  --icon: url("./lucide/copy.svg");
+}
+
+:root[data-platform="ios"] [data-icon="copy"] {
+  --icon: url("./framework7/doc_on_doc.svg");
+}
+
+:root[data-platform="android"] [data-icon="copy"] {
+  --icon: url("./material-symbols/content_copy.svg");
+}
+
+[data-icon="download"] {
+  --icon: url("./lucide/download.svg");
+}
+
+:root[data-platform="ios"] [data-icon="download"] {
+  --icon: url("./framework7/arrow_down_to_line.svg");
+}
+
+:root[data-platform="android"] [data-icon="download"] {
+  --icon: url("./material-symbols/download.svg");
+}
+
+[data-icon="ellipsis"] {
+  --icon: url("./lucide/ellipsis.svg");
+}
+
+:root[data-platform="ios"] [data-icon="ellipsis"] {
+  --icon: url("./framework7/ellipsis.svg");
+}
+
+:root[data-platform="android"] [data-icon="ellipsis"] {
+  --icon: url("./material-symbols/more_vert.svg");
+}
+
+[data-icon="eraser"] {
+  --icon: url("./lucide/eraser.svg");
+}
+
+:root[data-platform="ios"] [data-icon="eraser"] {
+  --icon: url("./lucide/light/eraser.svg");
+}
+
+:root[data-platform="android"] [data-icon="eraser"] {
+  --icon: url("./material-symbols/ink_eraser.svg");
+}
+
+[data-icon="external-link"] {
+  --icon: url("./lucide/external-link.svg");
+}
+
+:root[data-platform="ios"] [data-icon="external-link"] {
+  --icon: url("./framework7/arrow_up_right_square.svg");
+}
+
+:root[data-platform="android"] [data-icon="external-link"] {
+  --icon: url("./material-symbols/open_in_new.svg");
+}
+
+[data-icon="eye"] {
+  --icon: url("./lucide/eye.svg");
+}
+
+:root[data-platform="ios"] [data-icon="eye"] {
+  --icon: url("./framework7/eye.svg");
+}
+
+:root[data-platform="android"] [data-icon="eye"] {
+  --icon: url("./material-symbols/visibility.svg");
+}
+
+:root[data-platform="android"] [data-icon="eye"][data-filled] {
+  --icon: url("./material-symbols/visibility-fill.svg");
+}
+
+[data-icon="eye-off"] {
+  --icon: url("./lucide/eye-off.svg");
+}
+
+:root[data-platform="ios"] [data-icon="eye-off"] {
+  --icon: url("./framework7/eye_slash.svg");
+}
+
+:root[data-platform="android"] [data-icon="eye-off"] {
+  --icon: url("./material-symbols/visibility_off.svg");
+}
+
+[data-icon="file-exclamation-point"] {
+  --icon: url("./lucide/file-exclamation-point.svg");
+}
+
+:root[data-platform="ios"] [data-icon="file-exclamation-point"] {
+  --icon: url("./lucide/light/file-exclamation-point.svg");
+}
+
+:root[data-platform="android"] [data-icon="file-exclamation-point"] {
+  --icon: url("./material-symbols/problem.svg");
+}
+
+[data-icon="file-text"] {
+  --icon: url("./lucide/file-text.svg");
+}
+
+:root[data-platform="ios"] [data-icon="file-text"] {
+  --icon: url("./framework7/doc_text.svg");
+}
+
+:root[data-platform="android"] [data-icon="file-text"] {
+  --icon: url("./material-symbols/description.svg");
+}
+
+[data-icon="file-x"] {
+  --icon: url("./lucide/file-x.svg");
+}
+
+:root[data-platform="ios"] [data-icon="file-x"] {
+  --icon: url("./lucide/light/file-x.svg");
+}
+
+:root[data-platform="android"] [data-icon="file-x"] {
+  --icon: url("./material-symbols/scan_delete.svg");
+}
+
+[data-icon="folder"] {
+  --icon: url("./lucide/folder.svg");
+}
+
+:root[data-platform="ios"] [data-icon="folder"] {
+  --icon: url("./framework7/folder.svg");
+}
+
+:root[data-platform="ios"] [data-icon="folder"][data-filled] {
+  --icon: url("./framework7/folder_fill.svg");
+}
+
+:root[data-platform="android"] [data-icon="folder"] {
+  --icon: url("./material-symbols/folder.svg");
+}
+
+:root[data-platform="android"] [data-icon="folder"][data-filled] {
+  --icon: url("./material-symbols/folder-fill.svg");
+}
+
+[data-icon="folder-minus"] {
+  --icon: url("./lucide/folder-minus.svg");
+}
+
+:root[data-platform="ios"] [data-icon="folder-minus"] {
+  --icon: url("./framework7/folder_badge_minus.svg");
+}
+
+:root[data-platform="android"] [data-icon="folder-minus"] {
+  --icon: url("./material-symbols/folder_delete.svg");
+}
+
+[data-icon="folder-open"] {
+  --icon: url("./lucide/folder-open.svg");
+}
+
+:root[data-platform="ios"] [data-icon="folder-open"] {
+  --icon: url("./framework7/folder.svg");
+}
+
+:root[data-platform="android"] [data-icon="folder-open"] {
+  --icon: url("./material-symbols/folder_open.svg");
+}
+
+[data-icon="folder-plus"] {
+  --icon: url("./lucide/folder-plus.svg");
+}
+
+:root[data-platform="ios"] [data-icon="folder-plus"] {
+  --icon: url("./framework7/folder_badge_plus.svg");
+}
+
+:root[data-platform="android"] [data-icon="folder-plus"] {
+  --icon: url("./material-symbols/create_new_folder.svg");
+}
+
+[data-icon="folder-search"] {
+  --icon: url("./lucide/folder-search.svg");
+}
+
+:root[data-platform="ios"] [data-icon="folder-search"] {
+  --icon: url("./lucide/light/folder-search.svg");
+}
+
+:root[data-platform="android"] [data-icon="folder-search"] {
+  --icon: url("./material-symbols/folder_eye.svg");
+}
+
+[data-icon="globe"] {
+  --icon: url("./lucide/globe.svg");
+}
+
+:root[data-platform="ios"] [data-icon="globe"] {
+  --icon: url("./framework7/globe.svg");
+}
+
+:root[data-platform="android"] [data-icon="globe"] {
+  --icon: url("./material-symbols/language.svg");
+}
+
+[data-icon="grip-vertical"] {
+  --icon: url("./lucide/grip-vertical.svg");
+}
+
+:root[data-platform="ios"] [data-icon="grip-vertical"] {
+  --icon: url("./framework7/line_horizontal_3.svg");
+}
+
+:root[data-platform="android"] [data-icon="grip-vertical"] {
+  --icon: url("./material-symbols/drag_indicator.svg");
+}
+
+[data-icon="hand"] {
+  --icon: url("./lucide/hand.svg");
+}
+
+:root[data-platform="ios"] [data-icon="hand"] {
+  --icon: url("./framework7/hand_raised.svg");
+}
+
+:root[data-platform="android"] [data-icon="hand"] {
+  --icon: url("./material-symbols/back_hand.svg");
+}
+
+[data-icon="hard-drive"] {
+  --icon: url("./lucide/hard-drive.svg");
+}
+
+:root[data-platform="ios"] [data-icon="hard-drive"] {
+  --icon: url("./lucide/light/hard-drive.svg");
+}
+
+:root[data-platform="android"] [data-icon="hard-drive"] {
+  --icon: url("./material-symbols/hard_drive.svg");
+}
+
+:root[data-platform="android"] [data-icon="hard-drive"][data-filled] {
+  --icon: url("./material-symbols/hard_drive-fill.svg");
+}
+
+[data-icon="history"] {
+  --icon: url("./lucide/history.svg");
+}
+
+:root[data-platform="ios"] [data-icon="history"] {
+  --icon: url("./framework7/clock.svg");
+}
+
+:root[data-platform="ios"] [data-icon="history"][data-filled] {
+  --icon: url("./framework7/clock_fill.svg");
+}
+
+:root[data-platform="android"] [data-icon="history"] {
+  --icon: url("./material-symbols/history.svg");
+}
+
+:root[data-platform="android"] [data-icon="history"][data-filled] {
+  --icon: url("./material-symbols/history-fill.svg");
+}
+
+[data-icon="house"] {
+  --icon: url("./lucide/house.svg");
+}
+
+:root[data-platform="ios"] [data-icon="house"] {
+  --icon: url("./framework7/house.svg");
+}
+
+:root[data-platform="ios"] [data-icon="house"][data-filled] {
+  --icon: url("./framework7/house_fill.svg");
+}
+
+:root[data-platform="android"] [data-icon="house"] {
+  --icon: url("./material-symbols/home.svg");
+}
+
+:root[data-platform="android"] [data-icon="house"][data-filled] {
+  --icon: url("./material-symbols/home-fill.svg");
+}
+
+[data-icon="image-off"] {
+  --icon: url("./lucide/image-off.svg");
+}
+
+:root[data-platform="ios"] [data-icon="image-off"] {
+  --icon: url("./lucide/light/image-off.svg");
+}
+
+:root[data-platform="android"] [data-icon="image-off"] {
+  --icon: url("./material-symbols/hide_image.svg");
+}
+
+[data-icon="info"] {
+  --icon: url("./lucide/info.svg");
+}
+
+:root[data-platform="ios"] [data-icon="info"] {
+  --icon: url("./framework7/info_circle.svg");
+}
+
+:root[data-platform="android"] [data-icon="info"] {
+  --icon: url("./material-symbols/info.svg");
+}
+
+:root[data-platform="android"] [data-icon="info"][data-filled] {
+  --icon: url("./material-symbols/info-fill.svg");
+}
+
+[data-icon="keyboard"] {
+  --icon: url("./lucide/keyboard.svg");
+}
+
+:root[data-platform="ios"] [data-icon="keyboard"] {
+  --icon: url("./framework7/keyboard.svg");
+}
+
+:root[data-platform="android"] [data-icon="keyboard"] {
+  --icon: url("./material-symbols/keyboard.svg");
+}
+
+:root[data-platform="android"] [data-icon="keyboard"][data-filled] {
+  --icon: url("./material-symbols/keyboard-fill.svg");
+}
+
+[data-icon="languages"] {
+  --icon: url("./lucide/languages.svg");
+}
+
+:root[data-platform="ios"] [data-icon="languages"] {
+  --icon: url("./framework7/globe.svg");
+}
+
+:root[data-platform="android"] [data-icon="languages"] {
+  --icon: url("./material-symbols/translate.svg");
+}
+
+[data-icon="layout-grid"] {
+  --icon: url("./lucide/layout-grid.svg");
+}
+
+:root[data-platform="ios"] [data-icon="layout-grid"] {
+  --icon: url("./framework7/square_grid_2x2.svg");
+}
+
+:root[data-platform="android"] [data-icon="layout-grid"] {
+  --icon: url("./material-symbols/grid_view.svg");
+}
+
+:root[data-platform="android"] [data-icon="layout-grid"][data-filled] {
+  --icon: url("./material-symbols/grid_view-fill.svg");
+}
+
+[data-icon="leaf"] {
+  --icon: url("./lucide/leaf.svg");
+}
+
+:root[data-platform="ios"] [data-icon="leaf"] {
+  --icon: url("./lucide/light/leaf.svg");
+}
+
+:root[data-platform="android"] [data-icon="leaf"] {
+  --icon: url("./material-symbols/eco.svg");
+}
+
+[data-icon="library"] {
+  --icon: url("./lucide/library.svg");
+}
+
+:root[data-platform="ios"] [data-icon="library"] {
+  --icon: url("./framework7/rectangle_stack.svg");
+}
+
+:root[data-platform="ios"] [data-icon="library"][data-filled] {
+  --icon: url("./framework7/rectangle_stack_fill.svg");
+}
+
+:root[data-platform="android"] [data-icon="library"] {
+  --icon: url("./material-symbols/library_books.svg");
+}
+
+:root[data-platform="android"] [data-icon="library"][data-filled] {
+  --icon: url("./material-symbols/library_books-fill.svg");
+}
+
+[data-icon="link"] {
+  --icon: url("./lucide/link.svg");
+}
+
+:root[data-platform="ios"] [data-icon="link"] {
+  --icon: url("./framework7/link.svg");
+}
+
+:root[data-platform="android"] [data-icon="link"] {
+  --icon: url("./material-symbols/link.svg");
+}
+
+[data-icon="link-2"] {
+  --icon: url("./lucide/link-2.svg");
+}
+
+:root[data-platform="ios"] [data-icon="link-2"] {
+  --icon: url("./framework7/link.svg");
+}
+
+:root[data-platform="android"] [data-icon="link-2"] {
+  --icon: url("./material-symbols/link.svg");
+}
+
+[data-icon="link-2-off"] {
+  --icon: url("./lucide/link-2-off.svg");
+}
+
+:root[data-platform="ios"] [data-icon="link-2-off"] {
+  --icon: url("./lucide/light/link-2-off.svg");
+}
+
+:root[data-platform="android"] [data-icon="link-2-off"] {
+  --icon: url("./material-symbols/link_off.svg");
+}
+
+[data-icon="list"] {
+  --icon: url("./lucide/list.svg");
+}
+
+:root[data-platform="ios"] [data-icon="list"] {
+  --icon: url("./framework7/list_bullet.svg");
+}
+
+:root[data-platform="android"] [data-icon="list"] {
+  --icon: url("./material-symbols/list.svg");
+}
+
+[data-icon="list-checks"] {
+  --icon: url("./lucide/list-checks.svg");
+}
+
+:root[data-platform="ios"] [data-icon="list-checks"] {
+  --icon: url("./framework7/text_badge_checkmark.svg");
+}
+
+:root[data-platform="android"] [data-icon="list-checks"] {
+  --icon: url("./material-symbols/checklist.svg");
+}
+
+[data-icon="list-filter"] {
+  --icon: url("./lucide/list-filter.svg");
+}
+
+:root[data-platform="ios"] [data-icon="list-filter"] {
+  --icon: url("./framework7/line_horizontal_3_decrease.svg");
+}
+
+:root[data-platform="android"] [data-icon="list-filter"] {
+  --icon: url("./material-symbols/filter_list.svg");
+}
+
+[data-icon="loader-circle"] {
+  --icon: url("./lucide/loader-circle.svg");
+}
+
+:root[data-platform="ios"] [data-icon="loader-circle"] {
+  --icon: url("./lucide/light/loader-circle.svg");
+}
+
+:root[data-platform="android"] [data-icon="loader-circle"] {
+  --icon: url("./material-symbols/progress_activity.svg");
+}
+
+[data-icon="lock"] {
+  --icon: url("./lucide/lock.svg");
+}
+
+:root[data-platform="ios"] [data-icon="lock"] {
+  --icon: url("./framework7/lock.svg");
+}
+
+:root[data-platform="android"] [data-icon="lock"] {
+  --icon: url("./material-symbols/lock.svg");
+}
+
+:root[data-platform="android"] [data-icon="lock"][data-filled] {
+  --icon: url("./material-symbols/lock-fill.svg");
+}
+
+[data-icon="maximize"] {
+  --icon: url("./lucide/maximize.svg");
+}
+
+:root[data-platform="ios"] [data-icon="maximize"] {
+  --icon: url("./framework7/arrow_up_left_arrow_down_right.svg");
+}
+
+:root[data-platform="android"] [data-icon="maximize"] {
+  --icon: url("./material-symbols/open_in_full.svg");
+}
+
+[data-icon="menu"] {
+  --icon: url("./lucide/menu.svg");
+}
+
+:root[data-platform="ios"] [data-icon="menu"] {
+  --icon: url("./framework7/line_horizontal_3.svg");
+}
+
+:root[data-platform="android"] [data-icon="menu"] {
+  --icon: url("./material-symbols/menu.svg");
+}
+
+[data-icon="minus"] {
+  --icon: url("./lucide/minus.svg");
+}
+
+:root[data-platform="ios"] [data-icon="minus"] {
+  --icon: url("./framework7/minus.svg");
+}
+
+:root[data-platform="android"] [data-icon="minus"] {
+  --icon: url("./material-symbols/remove.svg");
+}
+
+[data-icon="mouse-pointer-click"] {
+  --icon: url("./lucide/mouse-pointer-click.svg");
+}
+
+:root[data-platform="ios"] [data-icon="mouse-pointer-click"] {
+  --icon: url("./framework7/cursor_rays.svg");
+}
+
+:root[data-platform="android"] [data-icon="mouse-pointer-click"] {
+  --icon: url("./material-symbols/ads_click.svg");
+}
+
+[data-icon="move-vertical"] {
+  --icon: url("./lucide/move-vertical.svg");
+}
+
+:root[data-platform="ios"] [data-icon="move-vertical"] {
+  --icon: url("./framework7/arrow_up_down.svg");
+}
+
+:root[data-platform="android"] [data-icon="move-vertical"] {
+  --icon: url("./material-symbols/height.svg");
+}
+
+[data-icon="panel-left"] {
+  --icon: url("./lucide/panel-left.svg");
+}
+
+:root[data-platform="ios"] [data-icon="panel-left"] {
+  --icon: url("./framework7/sidebar_left.svg");
+}
+
+:root[data-platform="android"] [data-icon="panel-left"] {
+  --icon: url("./material-symbols/left_panel_open.svg");
+}
+
+[data-icon="pause"] {
+  --icon: url("./lucide/pause.svg");
+}
+
+:root[data-platform="ios"] [data-icon="pause"] {
+  --icon: url("./framework7/pause_fill.svg");
+}
+
+:root[data-platform="android"] [data-icon="pause"] {
+  --icon: url("./material-symbols/pause.svg");
+}
+
+[data-icon="pencil"] {
+  --icon: url("./lucide/pencil.svg");
+}
+
+:root[data-platform="ios"] [data-icon="pencil"] {
+  --icon: url("./framework7/pencil.svg");
+}
+
+:root[data-platform="android"] [data-icon="pencil"] {
+  --icon: url("./material-symbols/edit.svg");
+}
+
+[data-icon="play"] {
+  --icon: url("./lucide/play.svg");
+}
+
+:root[data-platform="ios"] [data-icon="play"] {
+  --icon: url("./framework7/play_fill.svg");
+}
+
+:root[data-platform="android"] [data-icon="play"] {
+  --icon: url("./material-symbols/play_arrow.svg");
+}
+
+[data-icon="plus"] {
+  --icon: url("./lucide/plus.svg");
+}
+
+:root[data-platform="ios"] [data-icon="plus"] {
+  --icon: url("./framework7/plus.svg");
+}
+
+:root[data-platform="android"] [data-icon="plus"] {
+  --icon: url("./material-symbols/add.svg");
+}
+
+[data-icon="power"] {
+  --icon: url("./lucide/power.svg");
+}
+
+:root[data-platform="ios"] [data-icon="power"] {
+  --icon: url("./framework7/power.svg");
+}
+
+:root[data-platform="android"] [data-icon="power"] {
+  --icon: url("./material-symbols/power_settings_new.svg");
+}
+
+[data-icon="refresh-cw"] {
+  --icon: url("./lucide/refresh-cw.svg");
+}
+
+:root[data-platform="ios"] [data-icon="refresh-cw"] {
+  --icon: url("./framework7/arrow_clockwise.svg");
+}
+
+:root[data-platform="android"] [data-icon="refresh-cw"] {
+  --icon: url("./material-symbols/refresh.svg");
+}
+
+[data-icon="rotate-ccw"] {
+  --icon: url("./lucide/rotate-ccw.svg");
+}
+
+:root[data-platform="ios"] [data-icon="rotate-ccw"] {
+  --icon: url("./framework7/arrow_counterclockwise.svg");
+}
+
+:root[data-platform="android"] [data-icon="rotate-ccw"] {
+  --icon: url("./material-symbols/replay.svg");
+}
+
+[data-icon="save"] {
+  --icon: url("./lucide/save.svg");
+}
+
+:root[data-platform="ios"] [data-icon="save"] {
+  --icon: url("./framework7/square_arrow_down.svg");
+}
+
+:root[data-platform="android"] [data-icon="save"] {
+  --icon: url("./material-symbols/save.svg");
+}
+
+[data-icon="scan"] {
+  --icon: url("./lucide/scan.svg");
+}
+
+:root[data-platform="ios"] [data-icon="scan"] {
+  --icon: url("./framework7/viewfinder.svg");
+}
+
+:root[data-platform="android"] [data-icon="scan"] {
+  --icon: url("./material-symbols/crop_free.svg");
+}
+
+[data-icon="scan-eye"] {
+  --icon: url("./lucide/scan-eye.svg");
+}
+
+:root[data-platform="ios"] [data-icon="scan-eye"] {
+  --icon: url("./framework7/viewfinder_circle.svg");
+}
+
+:root[data-platform="android"] [data-icon="scan-eye"] {
+  --icon: url("./material-symbols/frame_inspect.svg");
+}
+
+[data-icon="scroll-text"] {
+  --icon: url("./lucide/scroll-text.svg");
+}
+
+:root[data-platform="ios"] [data-icon="scroll-text"] {
+  --icon: url("./framework7/doc_plaintext.svg");
+}
+
+:root[data-platform="android"] [data-icon="scroll-text"] {
+  --icon: url("./material-symbols/receipt_long.svg");
+}
+
+[data-icon="search"] {
+  --icon: url("./lucide/search.svg");
+}
+
+:root[data-platform="ios"] [data-icon="search"] {
+  --icon: url("./framework7/search.svg");
+}
+
+:root[data-platform="android"] [data-icon="search"] {
+  --icon: url("./material-symbols/search.svg");
+}
+
+[data-icon="send"] {
+  --icon: url("./lucide/send.svg");
+}
+
+:root[data-platform="ios"] [data-icon="send"] {
+  --icon: url("./framework7/paperplane.svg");
+}
+
+:root[data-platform="android"] [data-icon="send"] {
+  --icon: url("./material-symbols/send.svg");
+}
+
+[data-icon="settings"] {
+  --icon: url("./lucide/settings.svg");
+}
+
+:root[data-platform="ios"] [data-icon="settings"] {
+  --icon: url("./framework7/gear_alt.svg");
+}
+
+:root[data-platform="ios"] [data-icon="settings"][data-filled] {
+  --icon: url("./framework7/gear_alt_fill.svg");
+}
+
+:root[data-platform="android"] [data-icon="settings"] {
+  --icon: url("./material-symbols/settings.svg");
+}
+
+:root[data-platform="android"] [data-icon="settings"][data-filled] {
+  --icon: url("./material-symbols/settings-fill.svg");
+}
+
+[data-icon="share-2"] {
+  --icon: url("./lucide/share-2.svg");
+}
+
+:root[data-platform="ios"] [data-icon="share-2"] {
+  --icon: url("./framework7/square_arrow_up.svg");
+}
+
+:root[data-platform="android"] [data-icon="share-2"] {
+  --icon: url("./material-symbols/share.svg");
+}
+
+[data-icon="shield-check"] {
+  --icon: url("./lucide/shield-check.svg");
+}
+
+:root[data-platform="ios"] [data-icon="shield-check"] {
+  --icon: url("./framework7/checkmark_shield.svg");
+}
+
+:root[data-platform="android"] [data-icon="shield-check"] {
+  --icon: url("./material-symbols/verified_user.svg");
+}
+
+:root[data-platform="android"] [data-icon="shield-check"][data-filled] {
+  --icon: url("./material-symbols/verified_user-fill.svg");
+}
+
+[data-icon="sliders-horizontal"] {
+  --icon: url("./lucide/sliders-horizontal.svg");
+}
+
+:root[data-platform="ios"] [data-icon="sliders-horizontal"] {
+  --icon: url("./framework7/slider_horizontal_3.svg");
+}
+
+:root[data-platform="android"] [data-icon="sliders-horizontal"] {
+  --icon: url("./material-symbols/tune.svg");
+}
+
+[data-icon="smartphone"] {
+  --icon: url("./lucide/smartphone.svg");
+}
+
+:root[data-platform="ios"] [data-icon="smartphone"] {
+  --icon: url("./framework7/device_phone_portrait.svg");
+}
+
+:root[data-platform="android"] [data-icon="smartphone"] {
+  --icon: url("./material-symbols/mobile.svg");
+}
+
+[data-icon="sparkles"] {
+  --icon: url("./lucide/sparkles.svg");
+}
+
+:root[data-platform="ios"] [data-icon="sparkles"] {
+  --icon: url("./framework7/sparkles.svg");
+}
+
+:root[data-platform="android"] [data-icon="sparkles"] {
+  --icon: url("./material-symbols/wand_stars.svg");
+}
+
+[data-icon="square"] {
+  --icon: url("./lucide/square.svg");
+}
+
+:root[data-platform="ios"] [data-icon="square"] {
+  --icon: url("./framework7/square.svg");
+}
+
+:root[data-platform="android"] [data-icon="square"] {
+  --icon: url("./material-symbols/check_box_outline_blank.svg");
+}
+
+[data-icon="square-check"] {
+  --icon: url("./lucide/square-check.svg");
+}
+
+:root[data-platform="ios"] [data-icon="square-check"] {
+  --icon: url("./framework7/checkmark_square.svg");
+}
+
+:root[data-platform="android"] [data-icon="square-check"] {
+  --icon: url("./material-symbols/check_box.svg");
+}
+
+[data-icon="star"] {
+  --icon: url("./lucide/star.svg");
+}
+
+:root[data-platform="ios"] [data-icon="star"] {
+  --icon: url("./framework7/star.svg");
+}
+
+:root[data-platform="android"] [data-icon="star"] {
+  --icon: url("./material-symbols/star.svg");
+}
+
+:root[data-platform="android"] [data-icon="star"][data-filled] {
+  --icon: url("./material-symbols/star-fill.svg");
+}
+
+[data-icon="star-filled"] {
+  --icon: url("./lucide/star.svg");
+}
+
+:root[data-platform="ios"] [data-icon="star-filled"] {
+  --icon: url("./framework7/star_fill.svg");
+}
+
+:root[data-platform="android"] [data-icon="star-filled"] {
+  --icon: url("./material-symbols/star-fill.svg");
+}
+
+[data-icon="sun"] {
+  --icon: url("./lucide/sun.svg");
+}
+
+:root[data-platform="ios"] [data-icon="sun"] {
+  --icon: url("./framework7/sun_max.svg");
+}
+
+:root[data-platform="android"] [data-icon="sun"] {
+  --icon: url("./material-symbols/light_mode.svg");
+}
+
+:root[data-platform="android"] [data-icon="sun"][data-filled] {
+  --icon: url("./material-symbols/light_mode-fill.svg");
+}
+
+[data-icon="tag"] {
+  --icon: url("./lucide/tag.svg");
+}
+
+:root[data-platform="ios"] [data-icon="tag"] {
+  --icon: url("./framework7/tag.svg");
+}
+
+:root[data-platform="android"] [data-icon="tag"] {
+  --icon: url("./material-symbols/sell.svg");
+}
+
+:root[data-platform="android"] [data-icon="tag"][data-filled] {
+  --icon: url("./material-symbols/sell-fill.svg");
+}
+
+[data-icon="tags"] {
+  --icon: url("./lucide/tags.svg");
+}
+
+:root[data-platform="ios"] [data-icon="tags"] {
+  --icon: url("./framework7/tag.svg");
+}
+
+:root[data-platform="android"] [data-icon="tags"] {
+  --icon: url("./material-symbols/sell.svg");
+}
+
+[data-icon="trash"] {
+  --icon: url("./lucide/trash.svg");
+}
+
+:root[data-platform="ios"] [data-icon="trash"] {
+  --icon: url("./framework7/trash.svg");
+}
+
+:root[data-platform="android"] [data-icon="trash"] {
+  --icon: url("./material-symbols/delete.svg");
+}
+
+[data-icon="triangle-alert"] {
+  --icon: url("./lucide/triangle-alert.svg");
+}
+
+:root[data-platform="ios"] [data-icon="triangle-alert"] {
+  --icon: url("./framework7/exclamationmark_triangle.svg");
+}
+
+:root[data-platform="android"] [data-icon="triangle-alert"] {
+  --icon: url("./material-symbols/warning.svg");
+}
+
+[data-icon="type"] {
+  --icon: url("./lucide/type.svg");
+}
+
+:root[data-platform="ios"] [data-icon="type"] {
+  --icon: url("./framework7/textformat.svg");
+}
+
+:root[data-platform="android"] [data-icon="type"] {
+  --icon: url("./material-symbols/text_fields.svg");
+}
+
+[data-icon="undo-2"] {
+  --icon: url("./lucide/undo-2.svg");
+}
+
+:root[data-platform="ios"] [data-icon="undo-2"] {
+  --icon: url("./framework7/arrow_uturn_left.svg");
+}
+
+:root[data-platform="android"] [data-icon="undo-2"] {
+  --icon: url("./material-symbols/undo.svg");
+}
+
+[data-icon="unplug"] {
+  --icon: url("./lucide/unplug.svg");
+}
+
+:root[data-platform="ios"] [data-icon="unplug"] {
+  --icon: url("./framework7/bolt_slash.svg");
+}
+
+:root[data-platform="android"] [data-icon="unplug"] {
+  --icon: url("./material-symbols/power_off.svg");
+}
+
+[data-icon="user"] {
+  --icon: url("./lucide/user.svg");
+}
+
+:root[data-platform="ios"] [data-icon="user"] {
+  --icon: url("./framework7/person.svg");
+}
+
+:root[data-platform="android"] [data-icon="user"] {
+  --icon: url("./material-symbols/person.svg");
+}
+
+:root[data-platform="android"] [data-icon="user"][data-filled] {
+  --icon: url("./material-symbols/person-fill.svg");
+}
+
+[data-icon="wifi"] {
+  --icon: url("./lucide/wifi.svg");
+}
+
+:root[data-platform="ios"] [data-icon="wifi"] {
+  --icon: url("./framework7/wifi.svg");
+}
+
+:root[data-platform="android"] [data-icon="wifi"] {
+  --icon: url("./material-symbols/wifi.svg");
+}
+
+[data-icon="x"] {
+  --icon: url("./lucide/x.svg");
+}
+
+:root[data-platform="ios"] [data-icon="x"] {
+  --icon: url("./framework7/xmark.svg");
+}
+
+:root[data-platform="android"] [data-icon="x"] {
+  --icon: url("./material-symbols/close.svg");
+}
