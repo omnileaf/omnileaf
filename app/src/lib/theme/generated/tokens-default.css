@@ -60,4 +60,9 @@
   --native-weight-segment-selected: 600;
   --native-tracking-segment: 0;
   --native-shadow-segment-lift: var(--shadow-raised);
+  --native-color-progress-track: color-mix(in oklab, var(--primary) 20%, transparent);
+  --native-color-progress-fill: var(--primary);
+  --native-color-progress-rest: transparent;
+  --native-color-progress-idle-track: color-mix(in oklab, var(--primary) 20%, transparent);
+  --native-spacing-progress-gap: 0px;
 }

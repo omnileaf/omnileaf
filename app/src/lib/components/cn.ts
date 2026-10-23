@@ -292,6 +292,7 @@ export const TOKEN_THEME = {
     "native-button",
     "native-button-inline",
     "native-icon",
+    "native-progress-gap",
     "native-segment",
     "native-segment-inline",
     "native-segmented-gap",

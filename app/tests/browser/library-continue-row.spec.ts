@@ -3,6 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 import {
   DEFAULT_LIBRARY_VIEW,
   type LibraryView,
+  type Platform,
 } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
@@ -256,3 +257,36 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+const NATIVE_PROGRESS_FILLS: Readonly<Partial<Record<Platform, string>>> = {
+  ios: "rgb(47, 111, 79)",
+  android: "rgb(50, 106, 77)",
+};
+
+test.describe("the continue cards' progress", { tag: "@native" }, () => {
+  test("fills in the platform's own accent", async ({ page, platform }) => {
+    const expected =
+      platform === undefined ? undefined : NATIVE_PROGRESS_FILLS[platform];
+    test.skip(expected === undefined, "today's look on this platform");
+    await openWithTheRow(page);
+
+    const fill = cards(page)
+      .first()
+      .getByRole("progressbar")
+      .locator(":scope > div")
+      .first();
+
+    await expect(fill).toHaveCSS("background-color", expected ?? "");
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations with native progress in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await openWithTheRow(page);
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
+});
