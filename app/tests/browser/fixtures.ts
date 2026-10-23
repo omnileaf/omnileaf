@@ -526,14 +526,21 @@ export async function openFakeApp(
 export const test = base.extend<{
   backend: FakeBackend;
   hasSeenReaderGuide: boolean;
+  platform: Platform | undefined;
 }>({
   backend: [DEFAULT_BACKEND, { option: true }],
   hasSeenReaderGuide: [true, { option: true }],
-  page: async ({ page, backend, hasSeenReaderGuide }, use) => {
+  platform: [undefined, { option: true }],
+  page: async ({ page, backend, hasSeenReaderGuide, platform }, use) => {
     if (hasSeenReaderGuide) {
       await markReaderGuideSeen(page);
     }
-    await installFakeBackend(page, backend);
+    await installFakeBackend(
+      page,
+      platform === undefined
+        ? backend
+        : { ...backend, appInfo: () => fakeAppInfo(platform) },
+    );
     await use(page);
   },
 });
