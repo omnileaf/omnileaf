@@ -349,11 +349,6 @@
     var(--foreground) 60%,
     var(--background)
   );
-  --android-tab-ink: color-mix(
-    in oklch,
-    var(--foreground) 80%,
-    var(--android-container)
-  );
   --android-inverse-primary: color-mix(
     in oklch,
     var(--primary) 30%,
