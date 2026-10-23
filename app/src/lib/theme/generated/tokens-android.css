@@ -42,6 +42,8 @@
   --native-tracking-segment: 0.1px;
   --native-shadow-segment-lift: none;
   --native-spacing-progress-gap: 4px;
+  --native-radius-group: 0px;
+  --native-radius-card: 12px;
 }
 
 :root[data-platform="android"],
@@ -69,6 +71,9 @@
   --native-color-progress-fill: #326a4d;
   --native-color-progress-rest: #d0e8d7;
   --native-color-progress-idle-track: #d0e8d7;
+  --native-color-grouped-ground: var(--background);
+  --native-color-group: transparent;
+  --native-color-card: #eff5ee;
 }
 
 :root[data-platform="android"][data-theme="dark"],
@@ -96,4 +101,7 @@
   --native-color-progress-fill: #a4d1b4;
   --native-color-progress-rest: #2b4033;
   --native-color-progress-idle-track: #2b4033;
+  --native-color-grouped-ground: var(--background);
+  --native-color-group: transparent;
+  --native-color-card: #0f1511;
 }

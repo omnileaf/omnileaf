@@ -5,6 +5,7 @@
   import { resolve } from "$app/paths";
   import { type AboutLook, ROW_ICON_SIZES } from "#lib/about/look.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { LicenceGroup } from "./licences";
@@ -37,7 +38,10 @@
 
 <section
   aria-labelledby={headingId}
-  class="flex flex-col overflow-hidden rounded-list border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
+  class={[
+    "flex flex-col overflow-hidden rounded-list border border-border bg-card",
+    GROUP_PLATE,
+  ]}
 >
   <h2
     id={headingId}

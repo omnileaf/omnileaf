@@ -47,7 +47,7 @@
 <main
   data-theme={settings.look.controls === "dark" ? "dark" : undefined}
   data-ground="grouped"
-  class="flex flex-col bg-background text-foreground min-block-dvh ios:bg-ios-grouped"
+  class="flex flex-col bg-background text-foreground min-block-dvh touch:bg-native-grouped-ground"
 >
   <BookBackNav
     place={{

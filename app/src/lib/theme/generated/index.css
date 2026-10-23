@@ -68,6 +68,11 @@
   --color-native-progress-rest: var(--native-color-progress-rest);
   --color-native-progress-idle-track: var(--native-color-progress-idle-track);
   --spacing-native-progress-gap: var(--native-spacing-progress-gap);
+  --color-native-grouped-ground: var(--native-color-grouped-ground);
+  --color-native-group: var(--native-color-group);
+  --radius-native-group: var(--native-radius-group);
+  --color-native-card: var(--native-color-card);
+  --radius-native-card: var(--native-radius-card);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -4,6 +4,7 @@
   import { Alert, AlertTitle } from "#lib/components/ui/alert/index.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
+  import { CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { ReportSharing } from "./report-sharing.svelte";
@@ -24,7 +25,10 @@
 
 <div class="mbs-lg mbe-xs flex flex-col">
   <div
-    class="flex flex-col gap-sm rounded-card border border-border bg-card px-lg py-field-card-block android:rounded-android-md android:border-transparent android:bg-android-container-low"
+    class={[
+      "flex flex-col gap-sm rounded-card border border-border bg-card px-lg py-field-card-block",
+      CARD_PLATE,
+    ]}
   >
     <label for={fieldId} class="text-label font-medium">
       {m.report_reply_email()}

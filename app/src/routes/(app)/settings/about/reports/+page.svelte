@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -46,7 +47,10 @@
   {:else}
     <ul
       aria-label={m.your_reports_title()}
-      class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low"
+      class={[
+        "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card",
+        GROUP_PLATE,
+      ]}
     >
       {#each yourReports.reports as report (report.code)}
         <li class="flex flex-col gap-2xs px-lg py-md min-block-touch-target">

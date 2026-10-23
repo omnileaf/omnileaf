@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
 
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import { formatBytes } from "#lib/storage/bytes.ts";
@@ -17,8 +18,7 @@
     tablet: m.storage_on_this_tablet,
     computer: m.storage_on_this_computer,
   } satisfies Record<DeviceWord, () => string>;
-  const CARD =
-    "rounded-card border border-border bg-card android:rounded-android-md android:border-transparent android:bg-android-container-low";
+  const CARD = ["rounded-card border border-border bg-card", CARD_PLATE];
 
   let { data }: PageProps = $props();
 

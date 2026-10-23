@@ -9,6 +9,7 @@
     ItemMedia,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
 
   import {
     type SectionChip,
@@ -49,7 +50,10 @@
         aria-labelledby={group.heading === undefined
           ? undefined
           : `${headingId}-${String(index)}`}
-        class="divide-y divide-border overflow-hidden rounded-list border border-border bg-card ios:divide-y-0 ios:border-transparent ios:bg-ios-cell android:rounded-android-md android:border-transparent android:bg-android-container-low"
+        class={[
+          "divide-y divide-border overflow-hidden rounded-list border border-border bg-card ios:divide-y-0",
+          GROUP_PLATE,
+        ]}
       >
         {#each group.sections as section (section.route)}
           {@const summary = summaries[section.route]}

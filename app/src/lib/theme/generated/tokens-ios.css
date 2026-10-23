@@ -42,6 +42,8 @@
   --native-tracking-segment: -0.08px;
   --native-shadow-segment-lift: 0 3px 36px rgba(0, 0, 0, 0.05);
   --native-spacing-progress-gap: 0px;
+  --native-radius-group: 26px;
+  --native-radius-card: 26px;
 }
 
 :root[data-platform="ios"],
@@ -69,6 +71,9 @@
   --native-color-progress-fill: #2f6f4f;
   --native-color-progress-rest: transparent;
   --native-color-progress-idle-track: rgba(118, 118, 128, 0.12);
+  --native-color-grouped-ground: #f2f2f7;
+  --native-color-group: #ffffff;
+  --native-color-card: #ffffff;
 }
 
 :root[data-platform="ios"][data-theme="dark"],
@@ -96,4 +101,7 @@
   --native-color-progress-fill: #7fcb9d;
   --native-color-progress-rest: transparent;
   --native-color-progress-idle-track: rgba(118, 118, 128, 0.24);
+  --native-color-grouped-ground: #000000;
+  --native-color-group: #1c1c1e;
+  --native-color-card: #1c1c1e;
 }
