@@ -26,4 +26,5 @@
   --native-leading-button: var(--text-label--line-height);
   --native-weight-button: var(--font-weight-medium);
   --native-tracking-button: 0;
+  --native-spacing-icon: 1.25rem;
 }
