@@ -44,6 +44,22 @@
   --native-spacing-progress-gap: 4px;
   --native-radius-group: 0px;
   --native-radius-card: 12px;
+  --native-spacing-row: 56px;
+  --native-spacing-row-two: 72px;
+  --native-spacing-row-start: 16px;
+  --native-spacing-row-end: 24px;
+  --native-spacing-row-gap: 16px;
+  --native-spacing-row-block: 8px;
+  --native-spacing-hairline: 0px;
+  --native-spacing-row-rule-start: 0px;
+  --native-spacing-row-rule-indent: 0px;
+  --native-text-row-title: calc(1rem * var(--text-scale));
+  --native-leading-row-title: 1.5;
+  --native-tracking-row-title: 0.5px;
+  --native-weight-row-title: 400;
+  --native-text-row-subtitle: calc(0.875rem * var(--text-scale));
+  --native-leading-row-subtitle: calc(1.25 / 0.875);
+  --native-tracking-row-subtitle: 0.25px;
 }
 
 :root[data-platform="android"],
@@ -74,6 +90,8 @@
   --native-color-grouped-ground: var(--background);
   --native-color-group: transparent;
   --native-color-card: #eff5ee;
+  --native-color-row-rule: transparent;
+  --native-color-row-pressed: #2c352e1a;
 }
 
 :root[data-platform="android"][data-theme="dark"],
@@ -104,4 +122,6 @@
   --native-color-grouped-ground: var(--background);
   --native-color-group: transparent;
   --native-color-card: #0f1511;
+  --native-color-row-rule: transparent;
+  --native-color-row-pressed: #dee8df1a;
 }

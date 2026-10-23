@@ -2,6 +2,11 @@ const ABOUT_ROW =
   "flex inline-full items-center px-list-row text-start transition-control hover:bg-hover active:bg-pressed";
 
 export const ITEM_LOOKS = {
+  row: [
+    "flex inline-full items-center gap-native-row-gap text-start transition-control hover:bg-hover active:bg-native-row-pressed py-native-row-block ps-native-row-start pe-native-row-end min-block-native-row has-data-[slot=item-description]:min-block-native-row-two",
+    "**:data-[slot=item-title]:text-native-row-title **:data-[slot=item-title]:leading-native-row-title **:data-[slot=item-title]:font-native-row-title **:data-[slot=item-title]:tracking-native-row-title",
+    "**:data-[slot=item-description]:text-native-row-subtitle **:data-[slot=item-description]:leading-native-row-subtitle **:data-[slot=item-description]:tracking-native-row-subtitle",
+  ].join(" "),
   folder:
     "flex items-center gap-md py-sm ps-md pe-sm min-block-row expanded:min-block-row-compact",
   "settings-section":
