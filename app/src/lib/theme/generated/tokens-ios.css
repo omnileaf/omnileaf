@@ -67,6 +67,17 @@
   --native-text-button-large: calc(1.0625rem * var(--text-scale));
   --native-leading-button-large: calc(1.375 / 1.0625);
   --native-tracking-button-large: -0.43px;
+  --native-text-page-title: calc(2.125rem * var(--text-scale));
+  --native-leading-page-title: calc(41 / 34);
+  --native-weight-page-title: 700;
+  --native-tracking-page-title: 0.4px;
+  --native-text-bar-title: calc(1.0625rem * var(--text-scale));
+  --native-leading-bar-title: calc(22 / 17);
+  --native-weight-bar-title: 600;
+  --native-tracking-bar-title: -0.43px;
+  --native-spacing-top-bar: 0px;
+  --native-spacing-top-bar-lift: 0px;
+  --native-shadow-bar-button-lift: 0 1px 8px rgba(0, 0, 0, 0.12);
 }
 
 :root[data-platform="ios"],
@@ -111,6 +122,11 @@
   --native-color-on-button-destructive: #9b2c2c;
   --native-color-button-destructive-hover: rgba(0, 0, 0, 0.05);
   --native-color-button-destructive-pressed: rgba(0, 0, 0, 0.1);
+  --native-color-on-top-bar: #000000;
+  --native-color-top-bar-scrolled: var(--ios-material);
+  --native-color-top-bar-scrolled-edge: var(--ios-separator);
+  --native-color-bar-button: rgba(255, 255, 255, 0.78);
+  --native-color-on-bar-button: #2f6f4f;
 }
 
 :root[data-platform="ios"][data-theme="dark"],
@@ -155,4 +171,9 @@
   --native-color-on-button-destructive: #f4a3a3;
   --native-color-button-destructive-hover: rgba(255, 255, 255, 0.08);
   --native-color-button-destructive-pressed: rgba(255, 255, 255, 0.15);
+  --native-color-on-top-bar: #ffffff;
+  --native-color-top-bar-scrolled: var(--ios-material);
+  --native-color-top-bar-scrolled-edge: var(--ios-separator);
+  --native-color-bar-button: rgba(44, 44, 46, 0.72);
+  --native-color-on-bar-button: #7fcb9d;
 }

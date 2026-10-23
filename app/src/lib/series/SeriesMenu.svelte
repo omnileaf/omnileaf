@@ -17,9 +17,11 @@
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import type { ReadMark } from "#lib/ipc/bindings.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { SERIES_CHIP } from "./series-chip.ts";
+  import { barChip } from "./series-chip.ts";
 
   const ICON_SIZE = 20;
   const ITEM_ICON_SIZE = 16;
@@ -40,6 +42,9 @@
       readonly onShow: (() => void) | undefined;
     };
   } = $props();
+
+  const platform = currentPlatform();
+  const width = new WindowWidth();
 </script>
 
 <DropdownMenu>
@@ -49,7 +54,7 @@
         {...props}
         look="icon"
         aria-label={m.series_book_more({ title })}
-        class={SERIES_CHIP}
+        class={barChip(platform, width.current)}
       >
         <Ellipsis size={ICON_SIZE} aria-hidden="true" />
       </Button>

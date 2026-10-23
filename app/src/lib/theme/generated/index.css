@@ -110,6 +110,22 @@
   --text-native-button-large: var(--native-text-button-large);
   --leading-native-button-large: var(--native-leading-button-large);
   --tracking-native-button-large: var(--native-tracking-button-large);
+  --text-native-page-title: var(--native-text-page-title);
+  --leading-native-page-title: var(--native-leading-page-title);
+  --font-weight-native-page-title: var(--native-weight-page-title);
+  --tracking-native-page-title: var(--native-tracking-page-title);
+  --text-native-bar-title: var(--native-text-bar-title);
+  --leading-native-bar-title: var(--native-leading-bar-title);
+  --font-weight-native-bar-title: var(--native-weight-bar-title);
+  --tracking-native-bar-title: var(--native-tracking-bar-title);
+  --spacing-native-top-bar: var(--native-spacing-top-bar);
+  --spacing-native-top-bar-lift: var(--native-spacing-top-bar-lift);
+  --shadow-native-bar-button-lift: var(--native-shadow-bar-button-lift);
+  --color-native-on-top-bar: var(--native-color-on-top-bar);
+  --color-native-top-bar-scrolled: var(--native-color-top-bar-scrolled);
+  --color-native-top-bar-scrolled-edge: var(--native-color-top-bar-scrolled-edge);
+  --color-native-bar-button: var(--native-color-bar-button);
+  --color-native-on-bar-button: var(--native-color-on-bar-button);
 }
 
 @media (prefers-reduced-motion: reduce) {

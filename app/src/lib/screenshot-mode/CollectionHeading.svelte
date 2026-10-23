@@ -6,6 +6,7 @@
   import PageHeading from "#lib/page/PageHeading.svelte";
   import { isPhone } from "#lib/page/platform.ts";
   import PageToolbar from "#lib/page/PageToolbar.svelte";
+  import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
 
   import ScreenshotModeLabel from "./ScreenshotModeLabel.svelte";
 
@@ -116,26 +117,31 @@
     bind:this={bar}
     data-title-bar
     class={[
-      "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top grid grid-cols-1 items-center border-be border-transparent pe-page-end pbs-page-top pbe-xs motion-safe:transition-colors motion-safe:duration-fade",
-      isTitleUnderBar &&
-        "border-ios-separator bg-ios-material backdrop-blur-ios",
+      "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top flex items-center pe-page-end pbs-page-top pbe-xs motion-safe:transition-colors motion-safe:duration-fade",
+      NATIVE_TOP_BAR.edge,
+      isTitleUnderBar ? NATIVE_TOP_BAR.scrolled : "border-transparent",
     ]}
   >
     <span
       aria-hidden="true"
       class={[
-        "pointer-events-none col-start-1 row-start-1 truncate px-4xl text-center text-body font-semibold motion-safe:transition-opacity motion-safe:duration-fade",
+        "pointer-events-none flex-1 truncate px-sm text-center min-inline-none motion-safe:transition-opacity motion-safe:duration-fade",
+        NATIVE_TOP_BAR.barTitle,
         isTitleUnderBar ? "opacity-100" : "opacity-0",
       ]}
     >
       {title}
     </span>
-    <div class="col-start-1 row-start-1 flex items-center justify-self-end">
+    <div class={NATIVE_TOP_BAR.barButtonGroup}>
       {@render actions()}
     </div>
   </div>
 {/if}
-<PageToolbar class="@container text-body">
+<PageToolbar
+  class={isPhone(platform, width.current)
+    ? `@container text-body ${NATIVE_TOP_BAR.lift}`
+    : "@container text-body"}
+>
   <header
     bind:this={header}
     data-crowded={fitting !== "roomy" || undefined}

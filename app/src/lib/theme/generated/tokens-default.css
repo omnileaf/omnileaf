@@ -107,4 +107,20 @@
   --native-text-button-large: var(--text-label);
   --native-leading-button-large: var(--text-label--line-height);
   --native-tracking-button-large: 0;
+  --native-text-page-title: var(--text-page-title);
+  --native-leading-page-title: var(--text-page-title--line-height);
+  --native-weight-page-title: var(--font-weight-bold);
+  --native-tracking-page-title: var(--tracking-tight);
+  --native-text-bar-title: var(--text-body);
+  --native-leading-bar-title: var(--text-body--line-height);
+  --native-weight-bar-title: var(--font-weight-semibold);
+  --native-tracking-bar-title: 0;
+  --native-spacing-top-bar: 0px;
+  --native-spacing-top-bar-lift: 0px;
+  --native-shadow-bar-button-lift: var(--shadow-raised);
+  --native-color-on-top-bar: var(--foreground);
+  --native-color-top-bar-scrolled: var(--background);
+  --native-color-top-bar-scrolled-edge: var(--border);
+  --native-color-bar-button: var(--card);
+  --native-color-on-bar-button: var(--foreground);
 }

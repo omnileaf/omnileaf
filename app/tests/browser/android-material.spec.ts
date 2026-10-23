@@ -15,6 +15,7 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const SERIES_COUNT = 12;
 const NAVIGATION_BAR_HEIGHT = 80;
+const TOP_APP_BAR_HEIGHT = 64;
 const STATE_LAYER = /\/ 0\.08\)/;
 
 testOnlyInItsWebview("android");
@@ -61,7 +62,7 @@ test("sets a page's headline at regular weight, as Material 3 does", async ({
   await expect(libraryHeading(page)).toHaveCSS("font-weight", "400");
 });
 
-test("sets a phone's page headline at 30px on a 36px line, as the boards do", async ({
+test("sets a phone's page title as title large, 22px on a 28px line in a 64px top app bar", async ({
   page,
 }) => {
   await openLibrary(page);
@@ -69,8 +70,9 @@ test("sets a phone's page headline at 30px on a 36px line, as the boards do", as
 
   const heading = libraryHeading(page);
 
-  await expect(heading).toHaveCSS("font-size", "30px");
-  await expect(heading).toHaveCSS("line-height", "36px");
+  await expect(heading).toHaveCSS("font-size", "22px");
+  await expect(heading).toHaveCSS("line-height", "28px");
+  expect((await boxOf(heading)).height).toBe(TOP_APP_BAR_HEIGHT);
 });
 
 test("puts the 80px navigation bar on the surface container, with the tonal pill behind the current section", async ({

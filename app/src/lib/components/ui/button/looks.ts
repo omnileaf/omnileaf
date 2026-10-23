@@ -1,5 +1,7 @@
 import type { Platform } from "#lib/ipc/bindings.ts";
-import { hasNativeLook } from "#lib/page/platform.ts";
+import type { WidthClass } from "#lib/page/breakpoints.ts";
+import { hasNativeLook, isPhone } from "#lib/page/platform.ts";
+import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
 
 const FOCUS_RING = "focus-visible:focus-ring";
 
@@ -95,6 +97,8 @@ const DESKTOP_VARIANTS = {
   destructive: `${DIALOG_BUTTON} bg-danger-fill text-on-danger enabled:hover:bg-danger-hover enabled:active:bg-danger-pressed ${FOCUS_RING}`,
 } satisfies Record<ButtonVariant, string>;
 
+const NATIVE_HEADER_CONTROL = `flex items-center justify-center gap-sm transition-control ${NATIVE_TOP_BAR.barButton} ${FOCUS_RING}`;
+
 const DESKTOP_ICON_ONLY = "px-none block-shadcn-button inline-shadcn-button";
 
 export function variantClasses(
@@ -119,10 +123,19 @@ export function buttonClasses(
     variant?: ButtonVariant | undefined;
     size?: ButtonSize;
     isIconOnly?: boolean;
+    width?: WidthClass;
   } = {},
 ): string {
+  if (!hasNativeLook(platform)) {
+    return BUTTON_LOOKS[look];
+  }
+  if (look === "header-control") {
+    return phone.width !== undefined && isPhone(platform, phone.width)
+      ? NATIVE_HEADER_CONTROL
+      : BUTTON_LOOKS[look];
+  }
   const variant = phone.variant ?? NATIVE_VARIANT_OF[look];
-  if (variant === undefined || !hasNativeLook(platform)) {
+  if (variant === undefined) {
     return BUTTON_LOOKS[look];
   }
   return variantClasses(

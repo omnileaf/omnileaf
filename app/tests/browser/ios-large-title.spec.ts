@@ -71,3 +71,33 @@ test("raises no error when the window narrows from an iPad's width to an iPhone'
 
   expect(errors).toEqual([]);
 });
+
+test("keeps the folded title clear of its buttons, which share one glass capsule", async ({
+  page,
+}) => {
+  await page.goto("/");
+  test.skip(
+    viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+    "iPads keep the title beside its buttons",
+  );
+  const bar = page.locator("[data-title-bar]");
+  const barTitle = bar.getByText("Library", { exact: true });
+  const search = bar.getByRole("link", { name: "Search" });
+  const more = bar.getByRole("button", { name: "More" });
+  await page.getByRole("main").evaluate((main) => {
+    main.scrollTo({ top: 600 });
+  });
+  await expect(barTitle).toHaveCSS("opacity", "1");
+
+  const title = await boxOf(barTitle);
+  const first = await boxOf(search);
+  const capsule = await boxOf(search.locator(".."));
+
+  expect(title.x + title.width).toBeLessThanOrEqual(first.x);
+  expect(capsule.width).toBeCloseTo((await boxOf(more)).x + 44 - first.x, 0);
+  await expect(search).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(search.locator("..")).not.toHaveCSS(
+    "background-color",
+    "rgba(0, 0, 0, 0)",
+  );
+});

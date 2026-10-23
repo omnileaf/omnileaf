@@ -8,6 +8,9 @@
   import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { type Platform, SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { isPhone } from "#lib/page/platform.ts";
+  import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { shortcut } from "#lib/shortcut.ts";
 
@@ -18,6 +21,8 @@
   const FIELD_ICON_SIZE = 16;
 
   let { platform }: { platform: Platform } = $props();
+
+  const width = new WindowWidth();
 
   function searchTheLibrary(): void {
     void goto(resolve("/(app)/search"));
@@ -48,7 +53,12 @@
       {...props}
       href={resolve("/(app)/search")}
       aria-label={m.search_open()}
-      class="flex items-center justify-center rounded-full transition-control block-touch-target inline-touch-target hover:tint-hover active:tint-pressed large:hidden"
+      class={[
+        "flex items-center justify-center rounded-full transition-control hover:tint-hover active:tint-pressed large:hidden",
+        isPhone(platform, width.current)
+          ? NATIVE_TOP_BAR.barButton
+          : "block-touch-target inline-touch-target",
+      ]}
     >
       <Search size={ICON_SIZE} aria-hidden="true" />
     </a>

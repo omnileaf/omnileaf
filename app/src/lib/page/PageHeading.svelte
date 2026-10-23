@@ -1,10 +1,26 @@
 <script lang="ts">
+  import { WindowWidth } from "./breakpoints";
+  import { currentPlatform, isPhone } from "./platform";
+  import { NATIVE_TOP_BAR } from "./top-bar";
+
   let { title }: { title: string } = $props();
+
+  const TODAYS_TITLE =
+    "text-page-title font-bold tracking-tight android:font-regular android:tracking-normal in-toolbar:truncate in-toolbar:text-body in-toolbar:font-semibold in-toolbar:tracking-normal";
+
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const look = $derived(
+    isPhone(platform, width.current) ? NATIVE_TOP_BAR.pageTitle : TODAYS_TITLE,
+  );
 </script>
 
 <h1
   tabindex="-1"
-  class="text-page-title font-bold tracking-tight wrap-break-word android:font-regular android:tracking-normal touch:max-medium:ps-xs heading-stacked:wrap-anywhere in-toolbar:truncate in-toolbar:text-body in-toolbar:font-semibold in-toolbar:tracking-normal"
+  class={[
+    "wrap-break-word touch:max-medium:ps-xs heading-stacked:wrap-anywhere",
+    look,
+  ]}
 >
   {title}
 </h1>
