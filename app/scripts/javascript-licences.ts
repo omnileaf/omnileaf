@@ -13,6 +13,7 @@ import {
   PORTED_CODE,
   type PortedCode,
   type ShippedPackage,
+  shippedFilesOf,
 } from "../src/lib/licences/shipped-packages.ts";
 
 export type LicencesMode = "verify" | "write";
@@ -109,8 +110,9 @@ export function javascriptLicences(mode: LicencesMode): Plugin {
       for (const name of EMBEDDED_PACKAGES) {
         roots.add(await realpath(join(APP_ROOT, "node_modules", name)));
       }
+      const shippedFiles = shippedFilesOf(Object.values(bundle), APP_ROOT);
       const ported = PORTED_CODE.filter(({ folder }) =>
-        isFolderShipped(join(APP_ROOT, folder), moduleIds),
+        isFolderShipped(join(APP_ROOT, folder), shippedFiles),
       );
       const packages = await Promise.all([
         ...[...roots].map(shippedPackage),

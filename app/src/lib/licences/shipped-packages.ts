@@ -59,13 +59,33 @@ function withForwardSlashes(path: string): string {
   return path.replaceAll("\\", "/");
 }
 
+export type BundleOutput =
+  | { readonly type: "chunk"; readonly moduleIds: readonly string[] }
+  | { readonly type: "asset"; readonly originalFileNames: readonly string[] };
+
+export function shippedFilesOf(
+  outputs: readonly BundleOutput[],
+  appRoot: string,
+): readonly string[] {
+  const root = withForwardSlashes(appRoot).replace(/\/+$/u, "");
+  return outputs.flatMap((output) =>
+    output.type === "chunk"
+      ? output.moduleIds
+      : output.originalFileNames.map(
+          (name) => `${root}/${withForwardSlashes(name)}`,
+        ),
+  );
+}
+
 /** Matches paths of either separator, since Node names the folder with backslashes on Windows while Vite names modules with slashes. */
 export function isFolderShipped(
   folder: string,
-  moduleIds: readonly string[],
+  shippedFiles: readonly string[],
 ): boolean {
   const inside = `${withForwardSlashes(folder)}/`;
-  return moduleIds.some((id) => withForwardSlashes(id).startsWith(inside));
+  return shippedFiles.some((file) =>
+    withForwardSlashes(file).startsWith(inside),
+  );
 }
 
 /** The licence a package's manifest declares, else the one it is known to ship without declaring. */
