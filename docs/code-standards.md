@@ -161,7 +161,7 @@ Measure before optimising. Put benchmark or profile numbers in the pull request.
   - Tailwind's default palette and scales are removed, and arbitrary values such as `p-[13px]` fail lint. A value that's missing becomes a new token, reviewed like any other change.
   - Use logical directions (`ms-`, `me-`, `mbs-`) rather than left, right, top and bottom, so layouts follow the reading direction.
   - Prettier sorts classes.
-- **Themes and platforms override token variables** (dark mode today, platform and user themes later), never individual components.
+- **Themes and platforms override token variables** (dark mode and each platform's tokens today, user themes later), never individual components. [Platform looks](platform-looks.md) explains how a platform's tokens and a component's platform look are added.
 - **Widgets:** native elements first (`button`, `dialog`, the `popover` attribute, range inputs). Menus, selects, comboboxes, tooltips, tabs and sliders use Bits UI, styled with our tokens.
 - **Semantics:** native elements first (`button` for actions, `a` for navigation). ARIA only when no element fits.
 - **Keyboard and focus:** everything works from the keyboard. Focus moves on route changes, and dialogs trap focus.
