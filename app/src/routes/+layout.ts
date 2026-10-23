@@ -10,6 +10,7 @@ import {
   opensOnSettingForDocument,
 } from "#lib/general/opens-on.svelte.ts";
 import { commands } from "#lib/ipc/bindings.ts";
+import { followCorePlatform } from "#lib/page/platform.ts";
 import { followSystemTextSize } from "#lib/page/system-text-size.ts";
 
 import type { LayoutLoad } from "./$types";
@@ -21,7 +22,7 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
     commands.appInfo(),
     commands.libraryProblem(),
   ]);
-  document.documentElement.dataset.platform = appInfo.platform;
+  followCorePlatform(appInfo.platform);
   followSystemTextSize(appInfo.platform);
   if (libraryProblem !== null) {
     return { appInfo, libraryProblem, isFirstLaunch: false };
