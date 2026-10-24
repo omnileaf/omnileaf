@@ -15,22 +15,35 @@
   import { setUndoShortcut, undoShortcutOn } from "./undo-shortcut";
 
   type Side = "left" | "right";
+  type Edge = "top" | "bottom";
+
+  const PHONE_EDGE = {
+    android: "bottom",
+    ios: "top",
+    linux: "bottom",
+    macos: "bottom",
+    windows: "bottom",
+  } as const satisfies Record<Platform, Edge>;
 
   let {
     notices,
     platform,
     theme,
+    top,
     bottom,
   }: {
     notices: Notices;
     platform: Platform;
     theme: Theme;
+    top?: string;
     bottom?: string;
   } = $props();
 
   const phoneOffset = $derived({
     left: 0,
     right: 0,
+    top:
+      top ?? "calc(var(--spacing-safe-top) + var(--native-spacing-notice-top))",
     bottom: bottom ?? "var(--spacing-md)",
   });
   const cornerOffset = $derived({
@@ -42,10 +55,15 @@
   setUndoShortcut(untrack(() => undoShortcutOn(platform)));
 
   const endSide: Side = document.dir === "rtl" ? "left" : "right";
-  const position: ToasterProps["position"] = `bottom-${endSide}`;
   const isWide = new MediaQuery(MEDIUM_QUERY);
+  const isBannerFromTop = $derived(
+    !isWide.current && PHONE_EDGE[platform] === "top",
+  );
+  const position: ToasterProps["position"] = $derived(
+    isBannerFromTop ? "top-center" : (`bottom-${endSide}` as const),
+  );
   const swipeDirections: ToasterProps["swipeDirections"] = $derived(
-    isWide.current ? [endSide] : ["bottom"],
+    isWide.current ? [endSide] : [PHONE_EDGE[platform]],
   );
 
   let region: HTMLElement | undefined;
@@ -159,7 +177,9 @@
     offset={cornerOffset}
     mobileOffset={phoneOffset}
     containerAriaLabel={m.notice_region()}
-    class="max-medium:absolute! medium:toast-list-width!"
-    toastOptions={{ class: "max-medium:px-md" }}
+    class={isBannerFromTop
+      ? "medium:toast-list-width!"
+      : "max-medium:absolute! medium:toast-list-width!"}
+    toastOptions={{ class: "max-medium:px-native-notice-inline" }}
   />
 </div>

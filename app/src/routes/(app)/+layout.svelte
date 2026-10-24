@@ -167,7 +167,7 @@
     {/key}
   </SwipeableMain>
   <div
-    class="relative z-notice order-1 ios:max-medium:fixed ios:max-medium:inset-x-none ios:max-medium:inset-be-toast-lift desktop-shell:max-medium:fixed desktop-shell:max-medium:inset-x-none desktop-shell:max-medium:inset-be-none"
+    class="relative z-notice order-1 desktop-shell:max-medium:fixed desktop-shell:max-medium:inset-x-none desktop-shell:max-medium:inset-be-none"
   >
     {#key language.resolved}
       <Toasts
