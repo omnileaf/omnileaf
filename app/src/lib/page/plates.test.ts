@@ -44,6 +44,17 @@ test("raises iOS's dark plate a step under Increase Contrast", () => {
   expect(group.backgroundColor).toBe("rgb(36, 36, 38)");
 });
 
+test("deepens iOS's light grouped background under Increase Contrast", () => {
+  followDisplayModes({ contrast: "more", transparency: undefined });
+  followCorePlatform("ios");
+  document.documentElement.dataset.theme = "light";
+  const ground = document.createElement("div");
+  ground.className = "bg-native-grouped-ground";
+  document.body.append(ground);
+
+  expect(getComputedStyle(ground).backgroundColor).toBe("rgb(235, 235, 240)");
+});
+
 test("lays Android's grouped rows straight on the window, with no plate", () => {
   const group = groupOnGroundOf("android");
 
