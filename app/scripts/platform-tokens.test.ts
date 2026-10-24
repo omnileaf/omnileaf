@@ -96,6 +96,83 @@ test("leaves out the light and dark blocks for a platform with no themed values"
   );
 });
 
+test("draws each contrast and transparency setting after the platform's own values, transparency last", () => {
+  const glass = {
+    name: "glass",
+    kind: "color",
+    value: {
+      default: "transparent",
+      "ios-light": "rgba(242, 242, 242, 0.55)",
+      "ios-dark": "rgba(153, 153, 153, 0.17)",
+      "ios-light-transparency-reduced": "#f7f7f7",
+      "ios-dark-transparency-reduced": "#1c1c1e",
+      "ios-light-contrast-more": "rgba(255, 255, 255, 0.92)",
+      "ios-dark-contrast-more": "rgba(0, 0, 0, 0.85)",
+    },
+  };
+
+  const files = render(glass);
+
+  expect(files.get("tokens-ios.css")).toBe(
+    `:root[data-platform="ios"],
+:root[data-platform="ios"] [data-theme="light"] {
+  --native-color-glass: rgba(242, 242, 242, 0.55);
+}
+
+:root[data-platform="ios"][data-theme="dark"],
+:root[data-platform="ios"] [data-theme="dark"] {
+  --native-color-glass: rgba(153, 153, 153, 0.17);
+}
+
+:root[data-platform="ios"][data-contrast="more"],
+:root[data-platform="ios"][data-contrast="more"] [data-theme="light"] {
+  --native-color-glass: rgba(255, 255, 255, 0.92);
+}
+
+:root[data-platform="ios"][data-contrast="more"][data-theme="dark"],
+:root[data-platform="ios"][data-contrast="more"] [data-theme="dark"] {
+  --native-color-glass: rgba(0, 0, 0, 0.85);
+}
+
+:root[data-platform="ios"][data-transparency="reduced"],
+:root[data-platform="ios"][data-transparency="reduced"] [data-theme="light"] {
+  --native-color-glass: #f7f7f7;
+}
+
+:root[data-platform="ios"][data-transparency="reduced"][data-theme="dark"],
+:root[data-platform="ios"][data-transparency="reduced"] [data-theme="dark"] {
+  --native-color-glass: #1c1c1e;
+}
+`,
+  );
+});
+
+test("draws medium contrast before high contrast", () => {
+  const accent = {
+    ...ACCENT,
+    value: {
+      ...ACCENT.value,
+      "android-light-contrast-high": "#002a18",
+      "android-dark-contrast-high": "#c2f0d2",
+      "android-light-contrast-medium": "#114c32",
+      "android-dark-contrast-medium": "#a4d1b4",
+    },
+  };
+
+  const android = render(accent).get("tokens-android.css") ?? "";
+
+  expect(android.indexOf('[data-contrast="medium"]')).toBeLessThan(
+    android.indexOf('[data-contrast="high"]'),
+  );
+  expect(android).toContain(
+    `:root[data-platform="android"][data-contrast="high"][data-theme="dark"],
+:root[data-platform="android"][data-contrast="high"] [data-theme="dark"] {
+  --native-color-accent: #c2f0d2;
+}
+`,
+  );
+});
+
 test("exposes colours under a native name and motion under the app's own motion roles", () => {
   const files = render(ACCENT, MOVE);
 

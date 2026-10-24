@@ -2,6 +2,8 @@ import type { Platform } from "../src/lib/ipc/bindings.ts";
 import { byCodePoint } from "../src/lib/licences/order.ts";
 import {
   type Kind,
+  type Mode,
+  MODES,
   parseTokenSource,
   type PlatformValue,
   type Token,
@@ -48,8 +50,12 @@ function valueIn(value: PlatformValue, scope: Scope): string | undefined {
   return scope === "every" ? undefined : value[scope];
 }
 
-function platformSelector(platform: Platform, scope: Scope): string {
-  const root = `:root[data-platform="${platform}"]`;
+function platformSelector(
+  platform: Platform,
+  scope: Scope,
+  modeAttribute = "",
+): string {
+  const root = `:root[data-platform="${platform}"]${modeAttribute}`;
   switch (scope) {
     case "every":
       return `${root},\n${root} [data-theme]`;
@@ -58,6 +64,37 @@ function platformSelector(platform: Platform, scope: Scope): string {
     case "dark":
       return `${root}[data-theme="dark"],\n${root} [data-theme="dark"]`;
   }
+}
+
+type Theme = "light" | "dark";
+
+const THEMES: readonly Theme[] = ["light", "dark"];
+
+const MODE_ATTRIBUTE = {
+  "contrast-medium": '[data-contrast="medium"]',
+  "contrast-high": '[data-contrast="high"]',
+  "contrast-more": '[data-contrast="more"]',
+  "transparency-reduced": '[data-transparency="reduced"]',
+} satisfies Record<Mode, string>;
+
+function modeBlocks(tokens: readonly Token[], platform: Platform): string[] {
+  return MODES.flatMap((mode) =>
+    THEMES.flatMap((theme) => {
+      const declarations = tokens.flatMap((token) =>
+        token.modes
+          .filter((value) => value.platform === platform && value.mode === mode)
+          .map((value) => declaration(token, value[theme])),
+      );
+      return declarations.length === 0
+        ? []
+        : [
+            block(
+              platformSelector(platform, theme, MODE_ATTRIBUTE[mode]),
+              declarations,
+            ),
+          ];
+    }),
+  );
 }
 
 function platformFile(tokens: readonly Token[], platform: Platform): string {
@@ -72,7 +109,7 @@ function platformFile(tokens: readonly Token[], platform: Platform): string {
       ? []
       : [block(platformSelector(platform, scope), declarations)];
   });
-  return blocks.join("\n");
+  return [...blocks, ...modeBlocks(tokens, platform)].join("\n");
 }
 
 function platformFileName(platform: Platform): string {

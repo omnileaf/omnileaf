@@ -314,7 +314,7 @@
   --pressed-fill: color-mix(in oklab, var(--foreground) 8%, var(--accent));
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
-  --focus-ring-color: var(--primary);
+  --focus-ring-color: var(--native-color-focus-ring);
   --dialog-surface: var(--background);
   --dialog-edge: var(--border);
   --dialog-radius: var(--radius-lg);
@@ -376,7 +376,6 @@
   --radio-edge-on: var(--primary);
   --checkbox-off: transparent;
   --focus-ring-width: 3px;
-  --focus-ring-color: var(--foreground);
   --dialog-surface: var(--android-container-high);
   --dialog-edge: transparent;
   --dialog-radius: var(--radius-android-xl);
@@ -416,7 +415,6 @@
   --menu-blur: 24px;
   --focus-ring-width: 3px;
   --focus-ring-offset: 0px;
-  --focus-ring-color: color-mix(in oklch, var(--primary) 45%, transparent);
   --button-outline-fill: var(--ios-fill);
   --button-outline-edge: transparent;
   --input-group-fill: var(--ios-fill);

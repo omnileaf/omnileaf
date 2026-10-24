@@ -75,6 +75,130 @@ test("names a platform given one value and per-theme values at once", () => {
   );
 });
 
+test("reads a contrast or transparency value for a platform in each theme", () => {
+  const sharper = {
+    ...ACCENT,
+    value: {
+      ...ACCENT.value,
+      "ios-light-contrast-more": "#245a40",
+      "ios-dark-contrast-more": "#a8e0bf",
+    },
+  };
+
+  const [token] = parse(sharper).tokens;
+
+  expect(token?.modes).toEqual([
+    {
+      platform: "ios",
+      mode: "contrast-more",
+      light: "#245a40",
+      dark: "#a8e0bf",
+    },
+  ]);
+  expect(token?.platforms.get("ios")).toEqual({
+    themed: true,
+    light: "#2f7d4f",
+    dark: "#5cbf86",
+  });
+});
+
+test("names a contrast value given for one theme only", () => {
+  const lightOnly = {
+    ...ACCENT,
+    value: { ...ACCENT.value, "ios-light-contrast-more": "#245a40" },
+  };
+
+  expect(() => parse(lightOnly)).toThrow(
+    'Token "accent" needs both ios-light-contrast-more and ios-dark-contrast-more.',
+  );
+});
+
+test("names a contrast value given without a theme", () => {
+  const unthemed = {
+    ...ACCENT,
+    value: { ...ACCENT.value, "android-contrast-high": "#002a18" },
+  };
+
+  expect(() => parse(unthemed)).toThrow(
+    'Token "accent" needs both android-light-contrast-high and android-dark-contrast-high.',
+  );
+});
+
+test("names a contrast value for a platform with no value of its own to change", () => {
+  const orphan = {
+    ...MOVE,
+    value: {
+      default: "300ms",
+      "ios-light-transparency-reduced": "0ms",
+      "ios-dark-transparency-reduced": "0ms",
+    },
+  };
+
+  expect(() => parse(orphan)).toThrow(
+    'Token "move" changes ios under transparency-reduced but has no ios value.',
+  );
+});
+
+test("names a contrast setting drawn on a platform that does not have it", () => {
+  const borrowed = {
+    ...ACCENT,
+    value: {
+      ...ACCENT.value,
+      "android-light-contrast-more": "#245a40",
+      "android-dark-contrast-more": "#a8e0bf",
+    },
+  };
+
+  expect(() => parse(borrowed)).toThrow(
+    'Token "accent" sets contrast-more on android, but only ios has contrast-more.',
+  );
+});
+
+test("names an android contrast setting drawn on ios", () => {
+  const borrowed = {
+    ...ACCENT,
+    value: {
+      ...ACCENT.value,
+      "ios-light-contrast-high": "#002a18",
+      "ios-dark-contrast-high": "#c2f0d2",
+    },
+  };
+
+  expect(() => parse(borrowed)).toThrow(
+    'Token "accent" sets contrast-high on ios, but only android has contrast-high.',
+  );
+});
+
+test("names a reduced transparency value drawn on android", () => {
+  const borrowed = {
+    ...ACCENT,
+    value: {
+      ...ACCENT.value,
+      "android-light-transparency-reduced": "#f7f7f7",
+      "android-dark-transparency-reduced": "#1c1c1e",
+    },
+  };
+
+  expect(() => parse(borrowed)).toThrow(
+    'Token "accent" sets transparency-reduced on android, but only ios has transparency-reduced.',
+  );
+});
+
+test("names a token stilled under reduced motion that also changes under a setting, since the setting would outrank reduced motion", () => {
+  const both = {
+    ...MOVE,
+    value: {
+      ...MOVE.value,
+      "ios-light-transparency-reduced": "150ms",
+      "ios-dark-transparency-reduced": "150ms",
+    },
+  };
+
+  expect(() => parse(both)).toThrow(
+    'Token "move" sets reducedMotion and changes under transparency-reduced; reduced motion must win, so give one or the other.',
+  );
+});
+
 test("names a token without a default", () => {
   const withoutDefault = { ...MOVE, value: { ios: "400ms" } };
 
@@ -88,6 +212,17 @@ test("names a platform the app does not know", () => {
 
   expect(() => parse(misspelt)).toThrow(
     'Token "move" names an unknown platform, andriod.',
+  );
+});
+
+test("names a misspelt setting as an unknown platform", () => {
+  const misspelt = {
+    ...ACCENT,
+    value: { ...ACCENT.value, "ios-light-contrast-mor": "#245a40" },
+  };
+
+  expect(() => parse(misspelt)).toThrow(
+    'Token "accent" names an unknown platform, ios-light-contrast-mor.',
   );
 });
 

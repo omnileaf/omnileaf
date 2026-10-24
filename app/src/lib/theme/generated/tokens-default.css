@@ -177,6 +177,7 @@
   --native-color-on-notice: var(--foreground);
   --native-color-notice-action: var(--primary);
   --native-color-on-notice-action: var(--primary-foreground);
+  --native-color-focus-ring: var(--primary);
   --native-radius-notice: var(--toast-radius);
   --native-radius-notice-tall: var(--warning-toast-radius);
   --native-spacing-notice: 0px;
