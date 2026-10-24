@@ -4,6 +4,7 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
+import { followDisplayModes } from "./display-modes";
 import { followCorePlatform } from "./platform";
 import SegmentedControl from "./SegmentedControl.svelte";
 
@@ -50,6 +51,7 @@ function track(): HTMLElement {
 afterEach(() => {
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
+  followDisplayModes({ contrast: undefined, transparency: undefined });
   document.body.replaceChildren();
 });
 
@@ -67,6 +69,18 @@ test("draws iOS's capsule track with a raised pill under the chosen option", asy
   expect(chosen.backgroundColor).toBe("rgb(255, 255, 255)");
   expect(chosen.fontWeight).toBe("590");
   expect(chosen.fontSize).toBe("13px");
+});
+
+test("deepens Android's chosen segment under high contrast", async () => {
+  followCorePlatform("android");
+  followDisplayModes({ contrast: "high", transparency: undefined });
+
+  await renderThemeChoice();
+
+  expect(getComputedStyle(segment("Dark")).backgroundColor).toBe(
+    "rgb(0, 42, 24)",
+  );
+  expect(getComputedStyle(segment("Dark")).color).toBe("rgb(172, 231, 195)");
 });
 
 test("draws Android's connected buttons with the chosen one filled", async () => {

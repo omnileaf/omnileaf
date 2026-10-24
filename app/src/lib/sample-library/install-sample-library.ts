@@ -1,4 +1,8 @@
 import { type FakeIpc, installFakeIpc } from "#lib/ipc/fake-ipc.ts";
+import {
+  displayModesFrom,
+  followDisplayModes,
+} from "#lib/page/display-modes.ts";
 
 import { SAMPLE_ART_BASE } from "./sample-art.ts";
 import { sampleBackend, scenarioFrom } from "./sample-backend.ts";
@@ -23,7 +27,9 @@ function askedScenario(target: Window): URLSearchParams {
 
 export function installSampleLibrary(target: Window): void {
   const installed: FakeIpc[] = [];
-  const backend = sampleBackend(scenarioFrom(askedScenario(target)), {
+  const asked = askedScenario(target);
+  followDisplayModes(displayModesFrom(asked));
+  const backend = sampleBackend(scenarioFrom(asked), {
     emit: (event, payload) => {
       for (const ipc of installed) {
         ipc.emit(event, payload);

@@ -6,6 +6,7 @@ import { render } from "vitest-browser-svelte";
 import "../../app.css";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { followDisplayModes } from "#lib/page/display-modes.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { screenshotModeTurned } from "../../../tests/components/screenshot-mode.ts";
@@ -66,6 +67,7 @@ beforeEach(async () => {
 afterEach(() => {
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
+  followDisplayModes({ contrast: undefined, transparency: undefined });
   document.body.replaceChildren();
 });
 
@@ -95,6 +97,14 @@ test("sits iOS's current tab on a 54 tall pill inset 4, in the accent", async ()
   expect(getComputedStyle(tab("Library")).color).toBe("rgb(47, 111, 79)");
   expect(getComputedStyle(iconOf("Library")).color).toBe("rgb(47, 111, 79)");
   expect(getComputedStyle(tab("Browse")).color).toBe("rgb(0, 0, 0)");
+});
+
+test("fills iOS's glass tab bar solid under Reduce Transparency", async () => {
+  followDisplayModes({ contrast: undefined, transparency: "reduced" });
+
+  await renderOnPhoneInLight("ios");
+
+  expect(getComputedStyle(bar()).backgroundColor).toBe("rgb(247, 247, 247)");
 });
 
 test("sets iOS's tab labels at 10 on a 12 line, semibold, beside 22 icons", async () => {

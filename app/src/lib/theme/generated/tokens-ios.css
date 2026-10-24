@@ -205,6 +205,7 @@
   --native-color-on-notice: #000000;
   --native-color-notice-action: #ffffff;
   --native-color-on-notice-action: #2f6f4f;
+  --native-color-focus-ring: color-mix(in oklch, var(--primary) 45%, transparent);
   --native-shadow-notice-lift: 0 0 0 0.5px rgba(0, 0, 0, 0.12), -1px 0 0 -0.25px rgba(0, 0, 0, 0.22), 1px 0 0 -0.25px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 -1px 0 rgba(255, 255, 255, 0.7), inset 0 6px 6px -6px rgba(255, 255, 255, 0.3), inset 0 -12px 10px -6px rgba(255, 255, 255, 0.4), 0 8px 15px rgba(0, 0, 0, 0.02), 0 8px 48px rgba(0, 0, 0, 0.25);
 }
 
@@ -278,5 +279,90 @@
   --native-color-on-notice: #ffffff;
   --native-color-notice-action: #1c1c1e;
   --native-color-on-notice-action: #7fcb9d;
+  --native-color-focus-ring: color-mix(in oklch, var(--primary) 45%, transparent);
   --native-shadow-notice-lift: 0 0 0 0.5px rgba(0, 0, 0, 0.8), -1px 0 0 -0.25px rgba(0, 0, 0, 0.3), 1px 0 0 -0.25px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(255, 255, 255, 0.2), inset 0 6px 6px -6px rgba(255, 255, 255, 0.05), inset 0 -12px 10px -6px rgba(255, 255, 255, 0.06), 0 8px 15px rgba(0, 0, 0, 0.04), 0 8px 48px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-platform="ios"][data-contrast="more"],
+:root[data-platform="ios"][data-contrast="more"] [data-theme="light"] {
+  --native-color-button-primary: #245a40;
+  --native-color-button-secondary: rgba(0, 0, 0, 0.14);
+  --native-color-on-button-secondary: #245a40;
+  --native-color-switch-on: #248a3d;
+  --native-color-switch-off: rgba(60, 60, 67, 0.55);
+  --native-color-segmented-track: rgba(0, 0, 0, 0.14);
+  --native-color-progress-track: rgba(0, 0, 0, 0.14);
+  --native-color-progress-fill: #245a40;
+  --native-color-progress-idle-track: rgba(0, 0, 0, 0.14);
+  --native-color-row-rule: rgba(60, 60, 67, 0.6);
+  --native-color-button-outline: rgba(0, 0, 0, 0.14);
+  --native-color-on-button-outline: #245a40;
+  --native-color-on-button-plain: #245a40;
+  --native-color-top-bar-scrolled: rgba(255, 255, 255, 0.94);
+  --native-color-top-bar-scrolled-edge: rgba(60, 60, 67, 0.6);
+  --native-color-bar-button: rgba(255, 255, 255, 0.92);
+  --native-color-on-bar-button: #245a40;
+  --native-color-tab-bar: rgba(255, 255, 255, 0.92);
+  --native-color-tab-pill: rgba(0, 0, 0, 0.14);
+  --native-color-on-tab-current: #245a40;
+  --native-color-on-tab-pill: #245a40;
+  --native-color-cover-badge: rgba(255, 255, 255, 0.92);
+  --native-color-cover-accent: #245a40;
+  --native-color-menu: rgba(250, 250, 250, 0.96);
+  --native-color-menu-rule: rgba(60, 60, 67, 0.6);
+  --native-color-notice: rgba(250, 250, 250, 0.96);
+  --native-color-on-notice-action: #245a40;
+  --native-color-focus-ring: #245a40;
+}
+
+:root[data-platform="ios"][data-contrast="more"][data-theme="dark"],
+:root[data-platform="ios"][data-contrast="more"] [data-theme="dark"] {
+  --native-color-button-primary: #a8e0bf;
+  --native-color-button-secondary: rgba(255, 255, 255, 0.16);
+  --native-color-on-button-secondary: #a8e0bf;
+  --native-color-switch-on: #30db5b;
+  --native-color-switch-off: rgba(235, 235, 245, 0.55);
+  --native-color-segmented-track: rgba(255, 255, 255, 0.16);
+  --native-color-progress-track: rgba(255, 255, 255, 0.16);
+  --native-color-progress-fill: #a8e0bf;
+  --native-color-progress-idle-track: rgba(255, 255, 255, 0.16);
+  --native-color-row-rule: rgba(235, 235, 245, 0.45);
+  --native-color-button-outline: rgba(255, 255, 255, 0.16);
+  --native-color-on-button-outline: #a8e0bf;
+  --native-color-on-button-plain: #a8e0bf;
+  --native-color-top-bar-scrolled: rgba(0, 0, 0, 0.88);
+  --native-color-top-bar-scrolled-edge: rgba(235, 235, 245, 0.45);
+  --native-color-bar-button: rgba(0, 0, 0, 0.85);
+  --native-color-on-bar-button: #a8e0bf;
+  --native-color-tab-bar: rgba(0, 0, 0, 0.85);
+  --native-color-tab-pill: rgba(255, 255, 255, 0.2);
+  --native-color-on-tab-current: #a8e0bf;
+  --native-color-on-tab-pill: #a8e0bf;
+  --native-color-cover-badge: rgba(0, 0, 0, 0.85);
+  --native-color-cover-accent: #a8e0bf;
+  --native-color-menu: rgba(22, 22, 22, 0.96);
+  --native-color-menu-rule: rgba(235, 235, 245, 0.45);
+  --native-color-notice: rgba(22, 22, 22, 0.96);
+  --native-color-on-notice-action: #a8e0bf;
+  --native-color-focus-ring: #a8e0bf;
+}
+
+:root[data-platform="ios"][data-transparency="reduced"],
+:root[data-platform="ios"][data-transparency="reduced"] [data-theme="light"] {
+  --native-color-top-bar-scrolled: #f7f7f7;
+  --native-color-bar-button: #f7f7f7;
+  --native-color-tab-bar: #f7f7f7;
+  --native-color-cover-badge: #f7f7f7;
+  --native-color-menu: rgba(246, 246, 246, 0.98);
+  --native-color-notice: rgba(246, 246, 246, 0.98);
+}
+
+:root[data-platform="ios"][data-transparency="reduced"][data-theme="dark"],
+:root[data-platform="ios"][data-transparency="reduced"] [data-theme="dark"] {
+  --native-color-top-bar-scrolled: #1c1c1e;
+  --native-color-bar-button: #1c1c1e;
+  --native-color-tab-bar: #1c1c1e;
+  --native-color-cover-badge: #1c1c1e;
+  --native-color-menu: rgba(28, 28, 28, 0.98);
+  --native-color-notice: rgba(28, 28, 28, 0.98);
 }

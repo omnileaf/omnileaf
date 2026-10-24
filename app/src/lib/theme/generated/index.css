@@ -180,6 +180,7 @@
   --color-native-on-notice: var(--native-color-on-notice);
   --color-native-notice-action: var(--native-color-notice-action);
   --color-native-on-notice-action: var(--native-color-on-notice-action);
+  --color-native-focus-ring: var(--native-color-focus-ring);
   --radius-native-notice: var(--native-radius-notice);
   --radius-native-notice-tall: var(--native-radius-notice-tall);
   --spacing-native-notice: var(--native-spacing-notice);

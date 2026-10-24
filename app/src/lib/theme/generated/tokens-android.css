@@ -206,6 +206,7 @@
   --native-color-on-notice: #9a9e99;
   --native-color-notice-action: transparent;
   --native-color-on-notice-action: #bcf9d3;
+  --native-color-focus-ring: var(--foreground);
 }
 
 :root[data-platform="android"][data-theme="dark"],
@@ -277,4 +278,213 @@
   --native-color-on-notice: #525652;
   --native-color-notice-action: transparent;
   --native-color-on-notice-action: #3e6750;
+  --native-color-focus-ring: var(--foreground);
+}
+
+:root[data-platform="android"][data-contrast="medium"],
+:root[data-platform="android"][data-contrast="medium"] [data-theme="light"] {
+  --native-color-button-primary: #114c32;
+  --native-color-on-button-primary: #ace7c3;
+  --native-color-button-secondary: #647a6b;
+  --native-color-on-button-secondary: #ffffff;
+  --native-color-button-primary-hover: #ace7c314;
+  --native-color-button-primary-pressed: #ace7c31a;
+  --native-color-button-secondary-hover: #ffffff14;
+  --native-color-button-secondary-pressed: #ffffff1a;
+  --native-color-switch-on: #114c32;
+  --native-color-switch-on-border: #114c32;
+  --native-color-switch-off-border: #58615a;
+  --native-color-switch-thumb: #ace7c3;
+  --native-color-switch-thumb-off: #58615a;
+  --native-color-on-segment: #3c453e;
+  --native-color-segment-selected: #114c32;
+  --native-color-on-segment-selected: #ace7c3;
+  --native-color-progress-fill: #114c32;
+  --native-color-progress-rest: #647a6b;
+  --native-color-progress-idle-track: #647a6b;
+  --native-color-row-pressed: #1d26201a;
+  --native-color-on-button-outline: #114c32;
+  --native-color-button-outline-edge: #58615a;
+  --native-color-button-outline-hover: #114c3214;
+  --native-color-button-outline-pressed: #114c321f;
+  --native-color-on-button-plain: #114c32;
+  --native-color-button-plain-hover: #114c3214;
+  --native-color-button-plain-pressed: #114c321f;
+  --native-color-on-button-destructive: #811b1d;
+  --native-color-button-destructive-hover: #811b1d14;
+  --native-color-button-destructive-pressed: #811b1d1f;
+  --native-color-on-top-bar: #1d2620;
+  --native-color-on-bar-button: #1d2620;
+  --native-color-tab-pill: #647a6b;
+  --native-color-on-tab: #3c453e;
+  --native-color-on-tab-current: #114c32;
+  --native-color-on-tab-pill: #ffffff;
+  --native-color-cover-badge: #647a6b;
+  --native-color-on-cover-badge: #ffffff;
+  --native-color-cover-accent: #114c32;
+  --native-color-on-cover-accent: #ace7c3;
+  --native-color-select-ring: #58615a;
+  --native-color-sheet-handle: #3c453e66;
+  --native-color-on-menu: #1d2620;
+  --native-color-menu-chosen: #447d81;
+  --native-color-on-menu-chosen: #ffffff;
+  --native-color-menu-rule: #737d75;
+  --native-color-on-notice: #c2c6c1;
+  --native-color-on-notice-action: #bcf9d3;
+}
+
+:root[data-platform="android"][data-contrast="medium"][data-theme="dark"],
+:root[data-platform="android"][data-contrast="medium"] [data-theme="dark"] {
+  --native-color-button-primary: #a4d1b4;
+  --native-color-on-button-primary: #133e29;
+  --native-color-button-secondary: #647a6b;
+  --native-color-on-button-secondary: #ffffff;
+  --native-color-button-primary-hover: #133e2914;
+  --native-color-button-primary-pressed: #133e291a;
+  --native-color-button-secondary-hover: #ffffff14;
+  --native-color-button-secondary-pressed: #ffffff1a;
+  --native-color-switch-on: #a4d1b4;
+  --native-color-switch-on-border: #a4d1b4;
+  --native-color-switch-off-border: #8c968e;
+  --native-color-switch-thumb: #133e29;
+  --native-color-switch-thumb-off: #8c968e;
+  --native-color-on-segment: #b1bbb3;
+  --native-color-segment-selected: #a4d1b4;
+  --native-color-on-segment-selected: #133e29;
+  --native-color-progress-fill: #a4d1b4;
+  --native-color-progress-rest: #647a6b;
+  --native-color-progress-idle-track: #647a6b;
+  --native-color-row-pressed: #ffffff1a;
+  --native-color-on-button-outline: #a4d1b4;
+  --native-color-button-outline-edge: #8c968e;
+  --native-color-button-outline-hover: #a4d1b414;
+  --native-color-button-outline-pressed: #a4d1b41f;
+  --native-color-on-button-plain: #a4d1b4;
+  --native-color-button-plain-hover: #a4d1b414;
+  --native-color-button-plain-pressed: #a4d1b41f;
+  --native-color-on-button-destructive: #ff9f99;
+  --native-color-button-destructive-hover: #ff9f9914;
+  --native-color-button-destructive-pressed: #ff9f991f;
+  --native-color-on-top-bar: #ffffff;
+  --native-color-on-bar-button: #ffffff;
+  --native-color-tab-pill: #647a6b;
+  --native-color-on-tab: #b1bbb3;
+  --native-color-on-tab-current: #a4d1b4;
+  --native-color-on-tab-pill: #ffffff;
+  --native-color-cover-badge: #647a6b;
+  --native-color-on-cover-badge: #ffffff;
+  --native-color-cover-accent: #a4d1b4;
+  --native-color-on-cover-accent: #133e29;
+  --native-color-select-ring: #8c968e;
+  --native-color-sheet-handle: #b1bbb366;
+  --native-color-on-menu: #ffffff;
+  --native-color-menu-chosen: #bbf5f9;
+  --native-color-on-menu-chosen: #155559;
+  --native-color-menu-rule: #6e7870;
+  --native-color-on-notice: #353936;
+  --native-color-on-notice-action: #345d47;
+}
+
+:root[data-platform="android"][data-contrast="high"],
+:root[data-platform="android"][data-contrast="high"] [data-theme="light"] {
+  --native-color-button-primary: #002a18;
+  --native-color-on-button-primary: #ace7c3;
+  --native-color-button-secondary: #42574a;
+  --native-color-on-button-secondary: #ffffff;
+  --native-color-button-primary-hover: #ace7c314;
+  --native-color-button-primary-pressed: #ace7c31a;
+  --native-color-button-secondary-hover: #ffffff14;
+  --native-color-button-secondary-pressed: #ffffff1a;
+  --native-color-switch-on: #002a18;
+  --native-color-switch-on-border: #002a18;
+  --native-color-switch-off-border: #3c453e;
+  --native-color-switch-thumb: #ace7c3;
+  --native-color-switch-thumb-off: #3c453e;
+  --native-color-on-segment: #1d2620;
+  --native-color-segment-selected: #002a18;
+  --native-color-on-segment-selected: #ace7c3;
+  --native-color-progress-fill: #002a18;
+  --native-color-progress-rest: #42574a;
+  --native-color-progress-idle-track: #42574a;
+  --native-color-row-pressed: #0000001a;
+  --native-color-on-button-outline: #002a18;
+  --native-color-button-outline-edge: #3c453e;
+  --native-color-button-outline-hover: #002a1814;
+  --native-color-button-outline-pressed: #002a181f;
+  --native-color-on-button-plain: #002a18;
+  --native-color-button-plain-hover: #002a1814;
+  --native-color-button-plain-pressed: #002a181f;
+  --native-color-on-button-destructive: #510007;
+  --native-color-button-destructive-hover: #51000714;
+  --native-color-button-destructive-pressed: #5100071f;
+  --native-color-on-top-bar: #000000;
+  --native-color-on-bar-button: #000000;
+  --native-color-tab-pill: #42574a;
+  --native-color-on-tab: #1d2620;
+  --native-color-on-tab-current: #002a18;
+  --native-color-on-tab-pill: #ffffff;
+  --native-color-cover-badge: #42574a;
+  --native-color-on-cover-badge: #ffffff;
+  --native-color-cover-accent: #002a18;
+  --native-color-on-cover-accent: #ace7c3;
+  --native-color-select-ring: #3c453e;
+  --native-color-sheet-handle: #1d262066;
+  --native-color-on-menu: #000000;
+  --native-color-menu-chosen: #1d5a5e;
+  --native-color-on-menu-chosen: #ffffff;
+  --native-color-menu-rule: #4b544e;
+  --native-color-on-notice: #ffffff;
+  --native-color-on-notice-action: #bcf9d3;
+}
+
+:root[data-platform="android"][data-contrast="high"][data-theme="dark"],
+:root[data-platform="android"][data-contrast="high"] [data-theme="dark"] {
+  --native-color-button-primary: #c2f0d2;
+  --native-color-on-button-primary: #063320;
+  --native-color-button-secondary: #92a999;
+  --native-color-on-button-secondary: #000000;
+  --native-color-button-primary-hover: #06332014;
+  --native-color-button-primary-pressed: #0633201a;
+  --native-color-button-secondary-hover: #00000014;
+  --native-color-button-secondary-pressed: #0000001a;
+  --native-color-switch-on: #c2f0d2;
+  --native-color-switch-on-border: #c2f0d2;
+  --native-color-switch-off-border: #b1bbb3;
+  --native-color-switch-thumb: #063320;
+  --native-color-switch-thumb-off: #b1bbb3;
+  --native-color-on-segment: #dee8df;
+  --native-color-segment-selected: #c2f0d2;
+  --native-color-on-segment-selected: #063320;
+  --native-color-progress-fill: #c2f0d2;
+  --native-color-progress-rest: #92a999;
+  --native-color-progress-idle-track: #92a999;
+  --native-color-row-pressed: #ffffff1a;
+  --native-color-on-button-outline: #c2f0d2;
+  --native-color-button-outline-edge: #b1bbb3;
+  --native-color-button-outline-hover: #c2f0d214;
+  --native-color-button-outline-pressed: #c2f0d21f;
+  --native-color-on-button-plain: #c2f0d2;
+  --native-color-button-plain-hover: #c2f0d214;
+  --native-color-button-plain-pressed: #c2f0d21f;
+  --native-color-on-button-destructive: #ffdedb;
+  --native-color-button-destructive-hover: #ffdedb14;
+  --native-color-button-destructive-pressed: #ffdedb1f;
+  --native-color-on-top-bar: #ffffff;
+  --native-color-on-bar-button: #ffffff;
+  --native-color-tab-pill: #92a999;
+  --native-color-on-tab: #dee8df;
+  --native-color-on-tab-current: #c2f0d2;
+  --native-color-on-tab-pill: #000000;
+  --native-color-cover-badge: #92a999;
+  --native-color-on-cover-badge: #000000;
+  --native-color-cover-accent: #c2f0d2;
+  --native-color-on-cover-accent: #063320;
+  --native-color-select-ring: #b1bbb3;
+  --native-color-sheet-handle: #dee8df66;
+  --native-color-on-menu: #ffffff;
+  --native-color-menu-chosen: #bbf5f9;
+  --native-color-on-menu-chosen: #003638;
+  --native-color-menu-rule: #9ca69e;
+  --native-color-on-notice: #000000;
+  --native-color-on-notice-action: #16402b;
 }

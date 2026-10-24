@@ -5,6 +5,7 @@ import { render } from "vitest-browser-svelte";
 import "../../../../app.css";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { followDisplayModes } from "#lib/page/display-modes.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { resolvedColour } from "../../../../../tests/components/resolved-colour";
@@ -112,6 +113,7 @@ async function renderPair(platform: Platform): Promise<void> {
 afterEach(() => {
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
+  followDisplayModes({ contrast: undefined, transparency: undefined });
 });
 
 for (const look of LOOKS) {
@@ -167,3 +169,18 @@ test("draws the iOS knob as a capsule, wider than it is tall", async () => {
   expect(knob.width).toBeCloseTo(38, 0);
   expect(knob.height).toBeCloseTo(24, 0);
 });
+
+test.each([
+  { theme: "light", track: "rgb(36, 138, 61)" },
+  { theme: "dark", track: "rgb(48, 219, 91)" },
+])(
+  "darkens the iOS switch's green under Increase Contrast in $theme",
+  async ({ theme, track }) => {
+    await renderPair("ios");
+    document.documentElement.dataset.theme = theme;
+
+    followDisplayModes({ contrast: "more", transparency: undefined });
+
+    expect(getComputedStyle(trackOf("On")).backgroundColor).toBe(track);
+  },
+);
