@@ -1,17 +1,20 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import english from "../../messages/en.json" with { type: "json" };
 import { expect, test } from "./fixtures.ts";
 
 const RELEASE_BUILD = "build";
 const SHIPPED_FILES = /\.(?:js|css|html)$/;
-const SAMPLE_LIBRARY_MARKS = [
+const KIT_PAGE_HEADING = "Phone kit parts";
+const DEVELOPMENT_ONLY_MARKS = [
   "5a4d1e00-0000-4000",
   "__sample-library__",
   "Lighthouse Keeper’s Apprentice",
+  KIT_PAGE_HEADING,
 ] as const;
 
-test("the release build carries none of the sample library, though built with it turned on", async () => {
+test("the release build carries none of the sample library or the kit page, though built with both turned on", async () => {
   test.skip(
     test.info().project.name !== "chromium-desktop",
     "the build is the same for every project",
@@ -25,7 +28,7 @@ test("the release build carries none of the sample library, though built with it
   );
 
   expect(files.length).toBeGreaterThan(0);
-  for (const mark of SAMPLE_LIBRARY_MARKS) {
+  for (const mark of DEVELOPMENT_ONLY_MARKS) {
     expect(
       files.filter((_, index) => shipped[index]?.includes(mark)),
       mark,
@@ -39,4 +42,15 @@ test("a release build answers from the core even when the address asks for sampl
   await page.goto("/?platform=ios&library=ready");
 
   await expect(page.locator(":root")).toHaveAttribute("data-platform", "linux");
+});
+
+test("a release build answers the kit page's address with its missing page", async ({
+  page,
+}) => {
+  await page.goto("/kit?platform=ios");
+
+  await expect(
+    page.getByRole("heading", { name: english.problem_page_missing_title }),
+  ).toBeVisible();
+  await expect(page.getByText(KIT_PAGE_HEADING)).toHaveCount(0);
 });

@@ -133,6 +133,9 @@ enum Command {
         /// The platform the page draws, as `?platform=` in the address would choose it.
         #[arg(long, value_enum)]
         platform: Option<sample::Platform>,
+        /// Open the kit page, which shows every phone part, instead of the library.
+        #[arg(long)]
+        kit: bool,
     },
     /// Save what a running phone, emulator or Simulator shows into `target/screenshots`.
     Screenshot {
@@ -234,7 +237,7 @@ fn main() -> anyhow::Result<()> {
         Command::Policy => enforce_policy()?,
         Command::PrePush { remote, .. } => check_push(&remote)?,
         Command::InstallHooks => pre_push::install_hooks(&workspace::root())?,
-        Command::Sample { platform } => sample::serve(platform)?,
+        Command::Sample { platform, kit } => sample::serve(sample::page(kit), platform)?,
         Command::Screenshot { device } => take_screenshot(device.as_deref())?,
     }
     Ok(())
@@ -433,9 +436,19 @@ mod tests {
     fn takes_the_platform_to_preview_on_the_sample_library() {
         let cli = Cli::try_parse_from(["xtask", "sample", "--platform", "android"]).unwrap();
 
-        let Command::Sample { platform } = cli.command else {
+        let Command::Sample { platform, .. } = cli.command else {
             panic!("parsed a command other than sample");
         };
         assert_eq!(platform, Some(crate::sample::Platform::Android));
+    }
+
+    #[test]
+    fn takes_the_kit_page_to_open_on_the_sample_library() {
+        let cli = Cli::try_parse_from(["xtask", "sample", "--kit"]).unwrap();
+
+        let Command::Sample { kit, .. } = cli.command else {
+            panic!("parsed a command other than sample");
+        };
+        assert!(kit);
     }
 }
