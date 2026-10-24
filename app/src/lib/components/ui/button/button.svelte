@@ -4,6 +4,7 @@
   import { cn } from "#lib/components/cn.ts";
   import { Spinner } from "#lib/components/ui/spinner/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
   import {
@@ -46,6 +47,7 @@
   const BUSY_ICON_SIZE = 18;
 
   const platform = currentPlatform();
+  const width = new WindowWidth();
   const classes = $derived(
     look === undefined
       ? variantClasses(variant ?? "secondary", size, iconOnly, platform)
@@ -53,6 +55,7 @@
           variant,
           size,
           isIconOnly: iconOnly,
+          width: width.current,
         }),
   );
   const tooltip = $derived(

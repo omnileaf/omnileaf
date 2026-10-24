@@ -10,6 +10,9 @@
     BreadcrumbSeparator,
   } from "#lib/components/ui/breadcrumb/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { ParentPage } from "./sections";
@@ -26,6 +29,16 @@
   const SETTINGS_ROUTE = "/(app)/settings";
   const CRUMB_LINK =
     "block truncate text-muted transition-control min-inline-none hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent";
+
+  const TODAYS_TITLE =
+    "text-bar-title font-bold tracking-tight touch:medium:max-expanded:text-page-title";
+  const PHONE_TITLE = `${NATIVE_TOP_BAR.pageTitle} ios:ps-xs android:mbs-none`;
+
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const titleLook = $derived(
+    isPhone(platform, width.current) ? PHONE_TITLE : TODAYS_TITLE,
+  );
 
   const backLabel = $derived(m.back_to({ page: parent.title }));
   const isNested = $derived(parent.route !== SETTINGS_ROUTE);
@@ -107,12 +120,7 @@
   </Tooltip>
   <h1
     tabindex="-1"
-    class={[
-      "mbs-xs text-bar-title font-bold tracking-tight wrap-anywhere two-pane:mbs-none",
-      "android:max-medium:mbs-none android:max-medium:font-semibold android:max-medium:tracking-normal",
-      "ios:max-medium:ps-xs ios:max-medium:text-page-title",
-      "touch:medium:max-expanded:text-page-title",
-    ]}
+    class={["mbs-xs wrap-anywhere two-pane:mbs-none", titleLook]}
   >
     {title}
   </h1>

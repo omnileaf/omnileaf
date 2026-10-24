@@ -67,6 +67,17 @@
   --native-text-button-large: calc(1rem * var(--text-scale));
   --native-leading-button-large: 1.5;
   --native-tracking-button-large: 0.15px;
+  --native-text-page-title: calc(1.375rem * var(--text-scale));
+  --native-leading-page-title: calc(28 / 22);
+  --native-weight-page-title: 400;
+  --native-tracking-page-title: 0;
+  --native-text-bar-title: calc(1.375rem * var(--text-scale));
+  --native-leading-bar-title: calc(28 / 22);
+  --native-weight-bar-title: 400;
+  --native-tracking-bar-title: 0;
+  --native-spacing-top-bar: 64px;
+  --native-spacing-top-bar-lift: var(--spacing-title-gap);
+  --native-shadow-bar-button-lift: none;
 }
 
 :root[data-platform="android"],
@@ -111,6 +122,11 @@
   --native-color-on-button-destructive: #a83836;
   --native-color-button-destructive-hover: #a8383614;
   --native-color-button-destructive-pressed: #a838361f;
+  --native-color-on-top-bar: #191d1a;
+  --native-color-top-bar-scrolled: #e9f0e8;
+  --native-color-top-bar-scrolled-edge: transparent;
+  --native-color-bar-button: transparent;
+  --native-color-on-bar-button: #191d1a;
 }
 
 :root[data-platform="android"][data-theme="dark"],
@@ -155,4 +171,9 @@
   --native-color-on-button-destructive: #fa746f;
   --native-color-button-destructive-hover: #fa746f14;
   --native-color-button-destructive-pressed: #fa746f1f;
+  --native-color-on-top-bar: #e0e3df;
+  --native-color-top-bar-scrolled: #141b17;
+  --native-color-top-bar-scrolled-edge: transparent;
+  --native-color-bar-button: transparent;
+  --native-color-on-bar-button: #e0e3df;
 }
