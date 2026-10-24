@@ -27,12 +27,36 @@ export type PlatformValue =
   | { readonly themed: false; readonly value: string }
   | { readonly themed: true; readonly light: string; readonly dark: string };
 
+export const MODES = [
+  "contrast-medium",
+  "contrast-high",
+  "contrast-more",
+  "transparency-reduced",
+] as const;
+
+export type Mode = (typeof MODES)[number];
+
+const MODE_PLATFORM = {
+  "contrast-medium": "android",
+  "contrast-high": "android",
+  "contrast-more": "ios",
+  "transparency-reduced": "ios",
+} satisfies Record<Mode, Platform>;
+
+export interface ModeValue {
+  readonly platform: Platform;
+  readonly mode: Mode;
+  readonly light: string;
+  readonly dark: string;
+}
+
 export interface Token {
   readonly name: string;
   readonly kind: Kind;
   readonly defaultValue: string;
   readonly platforms: ReadonlyMap<Platform, PlatformValue>;
   readonly reducedMotion: string | undefined;
+  readonly modes: readonly ModeValue[];
 }
 
 export interface TokenSource {
@@ -40,7 +64,9 @@ export interface TokenSource {
   readonly platforms: readonly Platform[];
 }
 
-const VALUE_KEY = /^(?<platform>.+?)(?:-(?<theme>light|dark))?$/;
+const VALUE_KEY = new RegExp(
+  `^(?<platform>[a-z]+?)(?:-(?<theme>light|dark))?(?:-(?<mode>${MODES.join("|")}))?$`,
+);
 
 interface ThemedValues {
   plain?: string;
@@ -67,29 +93,78 @@ function requireString(value: unknown, what: string): string {
   return value;
 }
 
-function collectByPlatform(
+function isMode(name: string | undefined): name is Mode {
+  return MODES.some((mode) => mode === name);
+}
+
+interface ModeValues extends ThemedValues {
+  readonly platform: Platform;
+  readonly mode: Mode;
+}
+
+interface CollectedValues {
+  readonly byPlatform: Map<Platform, ThemedValues>;
+  readonly byMode: Map<string, ModeValues>;
+}
+
+function collectValues(
   name: string,
   values: Record<string, unknown>,
-): Map<Platform, ThemedValues> {
+): CollectedValues {
   const byPlatform = new Map<Platform, ThemedValues>();
+  const byMode = new Map<string, ModeValues>();
   for (const [key, raw] of Object.entries(values)) {
     if (key === "default") {
       continue;
     }
-    const { platform = key, theme } = VALUE_KEY.exec(key)?.groups ?? {};
+    const { platform = key, theme, mode } = VALUE_KEY.exec(key)?.groups ?? {};
     if (!isKnownPlatform(platform)) {
       throw new Error(`Token "${name}" names an unknown platform, ${key}.`);
     }
-    const entry = byPlatform.get(platform) ?? {};
     const value = requireString(raw, `Token "${name}" value ${key}`);
+    const entry = isMode(mode)
+      ? upsert(byMode, `${platform}-${mode}`, { platform, mode })
+      : upsert(byPlatform, platform, {});
     if (theme === "light" || theme === "dark") {
       entry[theme] = value;
     } else {
       entry.plain = value;
     }
-    byPlatform.set(platform, entry);
   }
-  return byPlatform;
+  return { byPlatform, byMode };
+}
+
+function upsert<Key, Entry>(
+  map: Map<Key, Entry>,
+  key: Key,
+  fresh: Entry,
+): Entry {
+  const entry = map.get(key) ?? fresh;
+  map.set(key, entry);
+  return entry;
+}
+
+function toModeValue(
+  name: string,
+  { platform, mode, plain, light, dark }: ModeValues,
+  platforms: ReadonlyMap<Platform, PlatformValue>,
+): ModeValue {
+  if (platform !== MODE_PLATFORM[mode]) {
+    throw new Error(
+      `Token "${name}" sets ${mode} on ${platform}, but only ${MODE_PLATFORM[mode]} has ${mode}.`,
+    );
+  }
+  if (plain !== undefined || light === undefined || dark === undefined) {
+    throw new Error(
+      `Token "${name}" needs both ${platform}-light-${mode} and ${platform}-dark-${mode}.`,
+    );
+  }
+  if (!platforms.has(platform)) {
+    throw new Error(
+      `Token "${name}" changes ${platform} under ${mode} but has no ${platform} value.`,
+    );
+  }
+  return { platform, mode, light, dark };
 }
 
 function toPlatformValue(
@@ -132,17 +207,27 @@ function parseToken(raw: unknown): Token {
     raw.value.default,
     `Token "${name}" default`,
   );
+  const { byPlatform, byMode } = collectValues(name, raw.value);
   const platforms = new Map(
-    [...collectByPlatform(name, raw.value)].map(([platform, values]) => [
+    [...byPlatform].map(([platform, values]) => [
       platform,
       toPlatformValue(name, platform, values),
     ]),
+  );
+  const modes = [...byMode.values()].map((values) =>
+    toModeValue(name, values, platforms),
   );
   const reducedMotion =
     raw.reducedMotion === undefined
       ? undefined
       : requireString(raw.reducedMotion, `Token "${name}" reducedMotion`);
-  return { name, kind, defaultValue, platforms, reducedMotion };
+  const [outranking] = modes;
+  if (reducedMotion !== undefined && outranking !== undefined) {
+    throw new Error(
+      `Token "${name}" sets reducedMotion and changes under ${outranking.mode}; reduced motion must win, so give one or the other.`,
+    );
+  }
+  return { name, kind, defaultValue, platforms, reducedMotion, modes };
 }
 
 function platformsOf(tokens: readonly Token[]): readonly Platform[] {
