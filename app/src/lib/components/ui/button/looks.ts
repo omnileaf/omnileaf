@@ -112,10 +112,23 @@ export function variantClasses(
   return `${NATIVE_BUTTON} ${NATIVE_SIZES[size]} ${shape} ${NATIVE_VARIANTS[variant]}`;
 }
 
-export function buttonClasses(look: ButtonLook, platform: Platform): string {
-  const variant = NATIVE_VARIANT_OF[look];
+export function buttonClasses(
+  look: ButtonLook,
+  platform: Platform,
+  phone: {
+    variant?: ButtonVariant | undefined;
+    size?: ButtonSize;
+    isIconOnly?: boolean;
+  } = {},
+): string {
+  const variant = phone.variant ?? NATIVE_VARIANT_OF[look];
   if (variant === undefined || !hasNativeLook(platform)) {
     return BUTTON_LOOKS[look];
   }
-  return variantClasses(variant, "regular", false, platform);
+  return variantClasses(
+    variant,
+    phone.size ?? "regular",
+    phone.isIconOnly ?? false,
+    platform,
+  );
 }
