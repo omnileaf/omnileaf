@@ -88,4 +88,23 @@
   --native-leading-row-subtitle: var(--text-detail--line-height);
   --native-tracking-row-subtitle: 0;
   --native-color-row-pressed: var(--pressed-fill);
+  --native-color-button-outline: var(--color-button-outline);
+  --native-color-on-button-outline: var(--color-foreground);
+  --native-color-button-outline-edge: var(--color-button-outline-edge);
+  --native-color-button-outline-hover: var(--color-hover);
+  --native-color-button-outline-pressed: var(--color-pressed);
+  --native-color-on-button-plain: var(--color-accent);
+  --native-color-button-plain-hover: var(--color-hover);
+  --native-color-button-plain-pressed: var(--color-pressed);
+  --native-color-button-destructive: var(--color-danger-fill);
+  --native-color-on-button-destructive: var(--color-on-danger);
+  --native-color-button-destructive-hover: var(--color-danger-hover);
+  --native-color-button-destructive-pressed: var(--color-danger-pressed);
+  --native-spacing-button-small: var(--spacing-shadcn-button);
+  --native-spacing-button-large: var(--spacing-shadcn-button);
+  --native-spacing-button-small-inline: var(--spacing-lg);
+  --native-spacing-button-large-inline: var(--spacing-lg);
+  --native-text-button-large: var(--text-label);
+  --native-leading-button-large: var(--text-label--line-height);
+  --native-tracking-button-large: 0;
 }
