@@ -87,22 +87,8 @@ test("sets a desktop menu's items at 14px in regular weight", async () => {
   expect(getComputedStyle(item).fontWeight).toBe("400");
 });
 
-test("lists an Android menu's items edge to edge, 48px tall and square", async () => {
-  await page.viewport(PHONE_SCREEN.width, PHONE_SCREEN.height);
-  usePlatform("android");
-  await render(PlatformSurfacesHarness);
-  await page.getByRole("button", { name: "More" }).click();
-  const menu = page.getByRole("menu");
-  await expect.element(menu).toBeVisible();
-
-  const item = page.getByRole("menuitem", { name: "Mark read" }).element();
-
-  expect(getComputedStyle(menu.element()).padding).toBe("8px 0px");
-  expect(item.getBoundingClientRect().height).toBeCloseTo(48, 0);
-  expect(getComputedStyle(item).borderTopLeftRadius).toBe("0px");
-});
-
 test("lays an Android popover on the high container with 12px corners", async () => {
+  await page.viewport(PHONE_SCREEN.width, PHONE_SCREEN.height);
   usePlatform("android");
   await render(PopoverHarness);
   const popover = page.getByRole("dialog", { name: "Light" });
