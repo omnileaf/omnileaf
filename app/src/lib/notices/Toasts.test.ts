@@ -39,7 +39,20 @@ const BACK_ON_PAGE: Notice = {
   title: "Back on page 12",
 };
 
+const PAGE_12: Notice = {
+  tone: "plain",
+  icon: BookOpen,
+  title: "Page 12",
+};
+
+const LONG_TITLE = "Back on page 12 of 48";
+
+const WIDE_FALLBACK_FONT = '"DejaVu Sans", "Verdana", serif';
+
 const IOS_SHEET_CORNER = 14;
+
+const PHONE = { width: 390, height: 844 };
+const TABLET = { width: 820, height: 1180 };
 
 const START_OVER: NoticeAction = {
   label: "Start over",
@@ -49,10 +62,12 @@ const START_OVER: NoticeAction = {
 const placed: HTMLElement[] = [];
 
 afterEach(async () => {
+  await page.viewport(PHONE.width, PHONE.height);
   for (const element of placed.splice(0)) {
     element.remove();
   }
   delete document.documentElement.dataset.platform;
+  document.documentElement.style.removeProperty("--platform-font");
   await clearToasts();
 });
 
@@ -406,17 +421,22 @@ test("starts the wait again once focus leaves the stack", async () => {
     .toHaveAttribute("data-removed", "true");
 });
 
-test.each<Platform>(["linux", "android"])(
-  "lines a one-line toast's icon up with its title, action and dismiss on %s",
-  async (platform) => {
+test.each<{ platform: Platform; size: typeof PHONE; screen: string }>([
+  { platform: "linux", size: PHONE, screen: "narrow window" },
+  { platform: "ios", size: PHONE, screen: "phone" },
+  { platform: "android", size: TABLET, screen: "tablet" },
+])(
+  "lines a one-line toast's icon up with its title, action and dismiss on a $platform $screen",
+  async ({ platform, size }) => {
+    await page.viewport(size.width, size.height);
     const notices = await renderToastsOn(platform);
-    notices.show({ ...BACK_ON_PAGE, action: START_OVER });
-    const toast = toastSaying(BACK_ON_PAGE.title);
+    notices.show({ ...PAGE_12, action: START_OVER });
+    const toast = toastSaying(PAGE_12.title);
     await expect.element(toast).toBeVisible();
 
     const icon = middleOf(iconOf(toast));
 
-    const title = toast.getByText(BACK_ON_PAGE.title, { exact: true });
+    const title = toast.getByText(PAGE_12.title, { exact: true });
     const action = toast.getByRole("button", { name: START_OVER.label });
     const dismiss = toast.getByRole("button", { name: "Dismiss" });
     expect(icon).toBeCloseTo(middleOf(title.element()), 0);
@@ -427,13 +447,13 @@ test.each<Platform>(["linux", "android"])(
 
 test("lines a one-line toast's icon up with its title and dismiss when it has no action", async () => {
   const notices = await renderToastsOn("linux");
-  notices.show(BACK_ON_PAGE);
-  const toast = toastSaying(BACK_ON_PAGE.title);
+  notices.show(PAGE_12);
+  const toast = toastSaying(PAGE_12.title);
   await expect.element(toast).toBeVisible();
 
   const icon = middleOf(iconOf(toast));
 
-  const title = toast.getByText(BACK_ON_PAGE.title, { exact: true });
+  const title = toast.getByText(PAGE_12.title, { exact: true });
   const dismiss = toast.getByRole("button", { name: "Dismiss" });
   expect(icon).toBeCloseTo(middleOf(title.element()), 0);
   expect(icon).toBeCloseTo(middleOf(dismiss.element()), 0);
@@ -490,7 +510,195 @@ test("sets a plain toast in 14px type with its body muted and a 24px action on a
   });
 });
 
-test("sets a plain toast in 14px type with a 48px semibold action on Android", async () => {
+function cornerOf(element: Element): number {
+  return Number.parseFloat(getComputedStyle(element).borderTopLeftRadius);
+}
+
+test.each<{ platform: Platform; corner: number }>([
+  { platform: "linux", corner: 8 },
+  { platform: "macos", corner: 10 },
+  { platform: "windows", corner: 8 },
+])(
+  "rounds a toast's corners by $corner px on $platform",
+  async ({ platform, corner }) => {
+    const notices = await renderToastsOn(platform);
+    notices.show(READY);
+    const toast = toastSaying(READY.title);
+    await expect.element(toast).toBeVisible();
+
+    const card = cardOf(toast);
+
+    expect(cornerOf(card)).toBe(corner);
+  },
+);
+
+function typeOf(element: Element): string[] {
+  const style = getComputedStyle(element);
+  return [
+    style.fontSize,
+    style.lineHeight,
+    style.fontWeight,
+    style.letterSpacing,
+  ];
+}
+
+test("draws a one-line toast on an iOS phone as a 48 tall glass capsule rounded by half its height with a 36 tall raised action", async () => {
+  await page.viewport(PHONE.width, PHONE.height);
+  const notices = await renderToastsOn("ios");
+  notices.show({ ...PAGE_12, action: START_OVER });
+  const toast = toastSaying(PAGE_12.title);
+  await expect.element(toast).toBeVisible();
+
+  const card = cardOf(toast);
+  const title = toast.getByText(PAGE_12.title, { exact: true }).element();
+  const action = toast
+    .getByRole("button", { name: START_OVER.label })
+    .element();
+
+  expect(getComputedStyle(card).backgroundColor).toBe(
+    "rgba(246, 246, 246, 0.73)",
+  );
+  expect(getComputedStyle(card).backdropFilter).toContain("blur(");
+  expect(getComputedStyle(card).borderTopWidth).toBe("0px");
+  expect(card.getBoundingClientRect().height).toBeCloseTo(48, 0);
+  expect(getComputedStyle(card).borderTopLeftRadius).toBe("24px");
+  expect(getComputedStyle(title).color).toBe("rgb(0, 0, 0)");
+  expect(typeOf(title)).toEqual(["15px", "20px", "590", "-0.23px"]);
+  expect(action.getBoundingClientRect().height).toBeCloseTo(36, 0);
+  expect(getComputedStyle(action).backgroundColor).toBe("rgb(255, 255, 255)");
+  expect(getComputedStyle(action).color).toBe("rgb(47, 111, 79)");
+  expect(typeOf(action)).toEqual(["15px", "20px", "590", "-0.23px"]);
+});
+
+test("rounds an iOS phone toast whose title wraps as a card as tall as one with a second line, its icon on the first line", async () => {
+  await page.viewport(PHONE.width, PHONE.height);
+  document.documentElement.style.setProperty(
+    "--platform-font",
+    WIDE_FALLBACK_FONT,
+  );
+  const notices = await renderToastsOn("ios");
+  notices.show({ ...BACK_ON_PAGE, title: LONG_TITLE, action: START_OVER });
+  const toast = toastSaying(LONG_TITLE);
+  await expect.element(toast).toBeVisible();
+
+  const card = cardOf(toast);
+  const title = toast.getByText(LONG_TITLE, { exact: true }).element();
+  const lineHeight = Number.parseFloat(getComputedStyle(title).lineHeight);
+  const firstLineMiddle = title.getBoundingClientRect().top + lineHeight / 2;
+
+  expect(title.getBoundingClientRect().height).toBeCloseTo(2 * lineHeight, 0);
+  expect(getComputedStyle(card).borderTopLeftRadius).toBe("24px");
+  expect(card.getBoundingClientRect().height).toBeCloseTo(60, 0);
+  expect(middleOf(iconOf(toast))).toBeCloseTo(firstLineMiddle, 0);
+});
+
+test("rounds an iOS phone toast with a second line to the grouped card's corner", async () => {
+  await page.viewport(PHONE.width, PHONE.height);
+  const notices = await renderToastsOn("ios");
+  notices.show(UNAVAILABLE);
+  const toast = toastSaying(UNAVAILABLE.title);
+  await expect.element(toast).toBeVisible();
+
+  const card = cardOf(toast);
+  const body = toast
+    .getByText(UNAVAILABLE.body ?? "", { exact: true })
+    .element();
+
+  expect(getComputedStyle(card).backgroundColor).toBe(
+    "rgba(246, 246, 246, 0.73)",
+  );
+  expect(getComputedStyle(card).borderTopLeftRadius).toBe("26px");
+  expect(getComputedStyle(body).color).toBe("rgb(0, 0, 0)");
+  expect(typeOf(body)).toEqual(["13px", "18px", "400", "-0.08px"]);
+});
+
+test("draws a toast on an Android phone as Material 3's snackbar, inverse with no icon and a 40 tall text action", async () => {
+  await page.viewport(PHONE.width, PHONE.height);
+  const notices = await renderToastsOn("android");
+  notices.show({ ...READY, action: START_OVER });
+  const toast = toastSaying(READY.title);
+  await expect.element(toast).toBeVisible();
+
+  const card = cardOf(toast);
+  const title = toast.getByText(READY.title, { exact: true }).element();
+  const body = toast.getByText(READY.body ?? "", { exact: true }).element();
+  const action = toast
+    .getByRole("button", { name: START_OVER.label })
+    .element();
+
+  expect(getComputedStyle(card).backgroundColor).toBe("rgb(11, 15, 12)");
+  expect(getComputedStyle(card).borderTopLeftRadius).toBe("4px");
+  expect(card.getBoundingClientRect().height).toBeGreaterThanOrEqual(48);
+  expect(iconOf(toast).getBoundingClientRect().width).toBe(0);
+  expect(getComputedStyle(title).color).toBe("rgb(154, 158, 153)");
+  expect(typeOf(title)).toEqual(["14px", "20px", "400", "0.25px"]);
+  expect(getComputedStyle(body).color).toBe("rgb(154, 158, 153)");
+  expect(action.getBoundingClientRect().height).toBeCloseTo(40, 0);
+  expect(getComputedStyle(action).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+  expect(getComputedStyle(action).color).toBe("rgb(188, 249, 211)");
+  expect(typeOf(action)).toEqual(["14px", "20px", "500", "0.1px"]);
+});
+
+test("draws a warning on an Android phone as the same snackbar with its action under the words", async () => {
+  await page.viewport(PHONE.width, PHONE.height);
+  const notices = await renderToastsOn("android");
+  notices.show({ ...UNAVAILABLE, action: START_OVER });
+  const toast = toastSaying(UNAVAILABLE.title);
+  await expect.element(toast).toBeVisible();
+
+  const card = getComputedStyle(cardOf(toast));
+  const action = toast
+    .getByRole("button", { name: START_OVER.label })
+    .element();
+
+  expect(card.backgroundColor).toBe("rgb(11, 15, 12)");
+  expect(action.getBoundingClientRect().height).toBeCloseTo(40, 0);
+  expect(getComputedStyle(action).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+  expect(getComputedStyle(action).color).toBe("rgb(188, 249, 211)");
+});
+
+test("keeps a toast's shared look on a Linux window as narrow as a phone", async () => {
+  await page.viewport(PHONE.width, PHONE.height);
+  const notices = await renderToastsOn("linux");
+  notices.show(READY);
+  const toast = toastSaying(READY.title);
+  await expect.element(toast).toBeVisible();
+
+  const card = getComputedStyle(cardOf(toast));
+
+  expect(card.backgroundColor).toBe(colourOf("--card"));
+  expect(card.backdropFilter).toBe("none");
+});
+
+test("draws a toast on an iOS tablet as a pill", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+  const notices = await renderToastsOn("ios");
+  notices.show(BACK_ON_PAGE);
+  const toast = toastSaying(BACK_ON_PAGE.title);
+  await expect.element(toast).toBeVisible();
+
+  const card = cardOf(toast);
+
+  expect(getComputedStyle(card).backgroundColor).toBe(colourOf("--card"));
+  expect(cornerOf(card)).toBeGreaterThanOrEqual(
+    card.getBoundingClientRect().height / 2,
+  );
+});
+
+test("rounds a warning toast on an iOS tablet like a sheet rather than a pill", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+  const notices = await renderToastsOn("ios");
+  notices.show(UNAVAILABLE);
+  const toast = toastSaying(UNAVAILABLE.title);
+  await expect.element(toast).toBeVisible();
+
+  const card = cardOf(toast);
+
+  expect(cornerOf(card)).toBe(IOS_SHEET_CORNER);
+});
+
+test("sets a plain toast on an Android tablet in 14px type with a 48px semibold action", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
   const notices = await renderToastsOn("android");
   notices.show({ ...BACK_ON_PAGE, action: START_OVER });
   const toast = toastSaying(BACK_ON_PAGE.title);
@@ -516,53 +724,8 @@ test("sets a plain toast in 14px type with a 48px semibold action on Android", a
   });
 });
 
-function cornerOf(element: Element): number {
-  return Number.parseFloat(getComputedStyle(element).borderTopLeftRadius);
-}
-
-test.each<{ platform: Platform; corner: number }>([
-  { platform: "linux", corner: 8 },
-  { platform: "macos", corner: 10 },
-  { platform: "windows", corner: 8 },
-])(
-  "rounds a toast's corners by $corner px on $platform",
-  async ({ platform, corner }) => {
-    const notices = await renderToastsOn(platform);
-    notices.show(READY);
-    const toast = toastSaying(READY.title);
-    await expect.element(toast).toBeVisible();
-
-    const card = cardOf(toast);
-
-    expect(cornerOf(card)).toBe(corner);
-  },
-);
-
-test("draws a toast on ios as a pill", async () => {
-  const notices = await renderToastsOn("ios");
-  notices.show(BACK_ON_PAGE);
-  const toast = toastSaying(BACK_ON_PAGE.title);
-  await expect.element(toast).toBeVisible();
-
-  const card = cardOf(toast);
-
-  expect(cornerOf(card)).toBeGreaterThanOrEqual(
-    card.getBoundingClientRect().height / 2,
-  );
-});
-
-test("rounds a warning toast on ios like a sheet rather than a pill", async () => {
-  const notices = await renderToastsOn("ios");
-  notices.show(UNAVAILABLE);
-  const toast = toastSaying(UNAVAILABLE.title);
-  await expect.element(toast).toBeVisible();
-
-  const card = cardOf(toast);
-
-  expect(cornerOf(card)).toBe(IOS_SHEET_CORNER);
-});
-
-test("draws a plain toast on Android as Material 3's snackbar, inverse at 4px corners with a quieter body and action", async () => {
+test("draws a plain toast on an Android tablet inverse at 4px corners with a quieter body and action", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
   const notices = await renderToastsOn("android");
   notices.show({ ...READY, action: START_OVER });
   const toast = toastSaying(READY.title);
@@ -590,7 +753,8 @@ test("draws a plain toast on Android as Material 3's snackbar, inverse at 4px co
   expect(action.fontWeight).toBe("600");
 });
 
-test("keeps a warning's own colours and filled action on Android, at the snackbar's 4px corners", async () => {
+test("keeps a warning's own colours and filled action on an Android tablet, at the snackbar's 4px corners", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
   const notices = await renderToastsOn("android");
   notices.show({ ...UNAVAILABLE, action: START_OVER });
   const toast = toastSaying(UNAVAILABLE.title);
@@ -606,7 +770,8 @@ test("keeps a warning's own colours and filled action on Android, at the snackba
   expect(action.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
 });
 
-test("draws a plain notice's icon on Android in the snackbar's inverse primary", async () => {
+test("draws a plain notice's icon on an Android tablet in the snackbar's inverse primary", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
   const notices = await renderToastsOn("android");
   notices.show(READY);
   const toast = toastSaying(READY.title);
@@ -617,7 +782,8 @@ test("draws a plain notice's icon on Android in the snackbar's inverse primary",
   expect(icon.color).toBe(colourOf("--android-inverse-primary"));
 });
 
-test("draws the undo icon on Android in the snackbar's muted ink", async () => {
+test("draws the undo icon on an Android tablet in the snackbar's muted ink", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
   const notices = await renderToastsOn("android");
   notices.offerUndo({ title: "Letters deleted", undo: () => undefined });
   const toast = toastSaying("Letters deleted");

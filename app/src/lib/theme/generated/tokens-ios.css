@@ -109,6 +109,28 @@
   --native-spacing-menu-item-inline: 16px;
   --native-spacing-menu-rule-inline: 16px;
   --native-spacing-menu-rule-block: 10px;
+  --native-radius-notice: 24px;
+  --native-radius-notice-tall: 26px;
+  --native-spacing-notice: 48px;
+  --native-spacing-notice-block: 6px;
+  --native-spacing-notice-tall-block: 10px;
+  --native-spacing-notice-one-line-words-block: 4px;
+  --native-spacing-notice-start: 20px;
+  --native-spacing-notice-end: 6px;
+  --native-spacing-notice-action: 36px;
+  --native-spacing-notice-action-inline: 14px;
+  --native-text-notice-title: calc(0.9375rem * var(--text-scale));
+  --native-leading-notice-title: calc(20 / 15);
+  --native-weight-notice-title: 590;
+  --native-tracking-notice-title: -0.23px;
+  --native-text-notice-body: calc(0.8125rem * var(--text-scale));
+  --native-leading-notice-body: calc(18 / 13);
+  --native-weight-notice-body: 400;
+  --native-tracking-notice-body: -0.08px;
+  --native-text-notice-label: calc(0.9375rem * var(--text-scale));
+  --native-leading-notice-label: calc(20 / 15);
+  --native-weight-notice-label: 590;
+  --native-tracking-notice-label: -0.23px;
 }
 
 :root[data-platform="ios"],
@@ -177,6 +199,11 @@
   --native-color-on-menu-chosen: #000000;
   --native-color-menu-rule: rgba(60, 60, 67, 0.29);
   --native-shadow-menu-lift: 0 8px 48px rgba(0, 0, 0, 0.25);
+  --native-color-notice: rgba(246, 246, 246, 0.73);
+  --native-color-on-notice: #000000;
+  --native-color-notice-action: #ffffff;
+  --native-color-on-notice-action: #2f6f4f;
+  --native-shadow-notice-lift: 0 0 0 0.5px rgba(0, 0, 0, 0.12), -1px 0 0 -0.25px rgba(0, 0, 0, 0.22), 1px 0 0 -0.25px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 -1px 0 rgba(255, 255, 255, 0.7), inset 0 6px 6px -6px rgba(255, 255, 255, 0.3), inset 0 -12px 10px -6px rgba(255, 255, 255, 0.4), 0 8px 15px rgba(0, 0, 0, 0.02), 0 8px 48px rgba(0, 0, 0, 0.25);
 }
 
 :root[data-platform="ios"][data-theme="dark"],
@@ -245,4 +272,9 @@
   --native-color-on-menu-chosen: #ffffff;
   --native-color-menu-rule: rgba(84, 84, 88, 0.6);
   --native-shadow-menu-lift: 0 8px 48px rgba(0, 0, 0, 0.45);
+  --native-color-notice: rgba(32, 32, 32, 0.8);
+  --native-color-on-notice: #ffffff;
+  --native-color-notice-action: #1c1c1e;
+  --native-color-on-notice-action: #7fcb9d;
+  --native-shadow-notice-lift: 0 0 0 0.5px rgba(0, 0, 0, 0.8), -1px 0 0 -0.25px rgba(0, 0, 0, 0.3), 1px 0 0 -0.25px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(255, 255, 255, 0.2), inset 0 6px 6px -6px rgba(255, 255, 255, 0.05), inset 0 -12px 10px -6px rgba(255, 255, 255, 0.06), 0 8px 15px rgba(0, 0, 0, 0.04), 0 8px 48px rgba(0, 0, 0, 0.45);
 }

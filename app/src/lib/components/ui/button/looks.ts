@@ -29,7 +29,7 @@ export const BUTTON_LOOKS = {
   chip: `rounded-full border border-border bg-card font-semibold hover:bg-hover ${FOCUS_RING}`,
   "bar-icon": `flex items-center justify-center gap-xs rounded-control text-foreground transition-control enabled:hover:bg-hover enabled:active:bg-pressed ${FOCUS_RING}`,
   row: "flex items-center text-start transition-control hover:bg-hover active:bg-pressed",
-  inverse: `rounded-full bg-accent font-medium text-on-accent transition-control hover:opacity-85 active:opacity-70 android:font-semibold ${FOCUS_RING}`,
+  inverse: `rounded-full bg-accent font-medium text-on-accent transition-control hover:opacity-85 active:opacity-70 android:medium:font-semibold ${FOCUS_RING}`,
   dismiss: `isolate flex items-center justify-center rounded-full opacity-70 transition-control before:absolute before:z-behind before:rounded-full before:transition-control hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed ${FOCUS_RING}`,
   "row-action": `isolate flex items-center justify-center rounded-full text-foreground transition-control before:absolute before:z-behind before:rounded-full before:transition-control enabled:hover:before:bg-hover enabled:active:before:bg-pressed disabled:opacity-60 ${FOCUS_RING}`,
   "about-copy": `flex shrink-0 items-center justify-center rounded-full text-muted transition-control block-touch-target inline-touch-target hover:bg-hover hover:text-foreground active:bg-pressed desktop:rounded-control desktop:block-pointer-button desktop:inline-pointer-button ${FOCUS_RING}`,

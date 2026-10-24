@@ -176,6 +176,33 @@
   --spacing-native-menu-rule-inline: var(--native-spacing-menu-rule-inline);
   --spacing-native-menu-rule-block: var(--native-spacing-menu-rule-block);
   --shadow-native-menu-lift: var(--native-shadow-menu-lift);
+  --color-native-notice: var(--native-color-notice);
+  --color-native-on-notice: var(--native-color-on-notice);
+  --color-native-notice-action: var(--native-color-notice-action);
+  --color-native-on-notice-action: var(--native-color-on-notice-action);
+  --radius-native-notice: var(--native-radius-notice);
+  --radius-native-notice-tall: var(--native-radius-notice-tall);
+  --spacing-native-notice: var(--native-spacing-notice);
+  --spacing-native-notice-block: var(--native-spacing-notice-block);
+  --spacing-native-notice-tall-block: var(--native-spacing-notice-tall-block);
+  --spacing-native-notice-one-line-words-block: var(--native-spacing-notice-one-line-words-block);
+  --spacing-native-notice-start: var(--native-spacing-notice-start);
+  --spacing-native-notice-end: var(--native-spacing-notice-end);
+  --spacing-native-notice-action: var(--native-spacing-notice-action);
+  --spacing-native-notice-action-inline: var(--native-spacing-notice-action-inline);
+  --text-native-notice-title: var(--native-text-notice-title);
+  --leading-native-notice-title: var(--native-leading-notice-title);
+  --font-weight-native-notice-title: var(--native-weight-notice-title);
+  --tracking-native-notice-title: var(--native-tracking-notice-title);
+  --text-native-notice-body: var(--native-text-notice-body);
+  --leading-native-notice-body: var(--native-leading-notice-body);
+  --font-weight-native-notice-body: var(--native-weight-notice-body);
+  --tracking-native-notice-body: var(--native-tracking-notice-body);
+  --text-native-notice-label: var(--native-text-notice-label);
+  --leading-native-notice-label: var(--native-leading-notice-label);
+  --font-weight-native-notice-label: var(--native-weight-notice-label);
+  --tracking-native-notice-label: var(--native-tracking-notice-label);
+  --shadow-native-notice-lift: var(--native-shadow-notice-lift);
 }
 
 @media (prefers-reduced-motion: reduce) {
