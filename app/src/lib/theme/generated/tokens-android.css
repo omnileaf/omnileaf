@@ -60,6 +60,8 @@
   --native-text-row-subtitle: calc(0.875rem * var(--text-scale));
   --native-leading-row-subtitle: calc(1.25 / 0.875);
   --native-tracking-row-subtitle: 0.25px;
+  --native-color-on-row-selected-muted: var(--secondary-text);
+  --native-color-on-row-selected-accent: var(--primary);
   --native-spacing-button-small: 32px;
   --native-spacing-button-large: 56px;
   --native-spacing-button-small-inline: 12px;
@@ -167,6 +169,7 @@
   --native-color-card: #eff5ee;
   --native-color-row-rule: transparent;
   --native-color-row-pressed: #2c352e1a;
+  --native-color-row-selected: #2c352e1a;
   --native-color-button-outline: transparent;
   --native-color-on-button-outline: #326a4d;
   --native-color-button-outline-edge: #737d75;
@@ -239,6 +242,7 @@
   --native-color-card: #0f1511;
   --native-color-row-rule: transparent;
   --native-color-row-pressed: #dee8df1a;
+  --native-color-row-selected: #dee8df1a;
   --native-color-button-outline: transparent;
   --native-color-on-button-outline: #a4d1b4;
   --native-color-button-outline-edge: #6e7870;
@@ -303,6 +307,7 @@
   --native-color-progress-rest: #647a6b;
   --native-color-progress-idle-track: #647a6b;
   --native-color-row-pressed: #1d26201a;
+  --native-color-row-selected: #1d26201a;
   --native-color-on-button-outline: #114c32;
   --native-color-button-outline-edge: #58615a;
   --native-color-button-outline-hover: #114c3214;
@@ -355,6 +360,7 @@
   --native-color-progress-rest: #647a6b;
   --native-color-progress-idle-track: #647a6b;
   --native-color-row-pressed: #ffffff1a;
+  --native-color-row-selected: #ffffff1a;
   --native-color-on-button-outline: #a4d1b4;
   --native-color-button-outline-edge: #8c968e;
   --native-color-button-outline-hover: #a4d1b414;
@@ -407,6 +413,7 @@
   --native-color-progress-rest: #42574a;
   --native-color-progress-idle-track: #42574a;
   --native-color-row-pressed: #0000001a;
+  --native-color-row-selected: #0000001a;
   --native-color-on-button-outline: #002a18;
   --native-color-button-outline-edge: #3c453e;
   --native-color-button-outline-hover: #002a1814;
@@ -459,6 +466,7 @@
   --native-color-progress-rest: #92a999;
   --native-color-progress-idle-track: #92a999;
   --native-color-row-pressed: #ffffff1a;
+  --native-color-row-selected: #ffffff1a;
   --native-color-on-button-outline: #c2f0d2;
   --native-color-button-outline-edge: #b1bbb3;
   --native-color-button-outline-hover: #c2f0d214;
