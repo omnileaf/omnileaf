@@ -24,6 +24,7 @@ export interface DarkModeQuery {
 export class ThemeSetting {
   preference: ThemePreference = $state("system");
   resolved: Theme = $state("light");
+  private previewed: ThemePreference | undefined = undefined;
 
   constructor(
     private readonly store: PreferenceStore | undefined,
@@ -45,8 +46,21 @@ export class ThemeSetting {
     rememberPreference(this.store, PREFERENCE_KEY, preference);
   }
 
+  preview(preference: ThemePreference): void {
+    this.previewed = preference;
+    this.apply();
+  }
+
+  endPreview(): void {
+    this.previewed = undefined;
+    this.apply();
+  }
+
   private apply(): void {
-    this.resolved = resolveTheme(this.preference, this.darkMode.matches);
+    this.resolved = resolveTheme(
+      this.previewed ?? this.preference,
+      this.darkMode.matches,
+    );
     this.root.dataset.theme = this.resolved;
   }
 }

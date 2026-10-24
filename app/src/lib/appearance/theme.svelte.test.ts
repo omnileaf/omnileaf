@@ -119,3 +119,39 @@ test("resolves to a chosen theme whatever the system's", () => {
 
   expect(setting.resolved).toBe("light");
 });
+
+test("previews a theme without remembering it", () => {
+  const root = document.createElement("div");
+  const store = memoryStore();
+  const setting = new ThemeSetting(store, darkModeQuery(false), root);
+
+  setting.preview("dark");
+
+  expect([root.dataset.theme, setting.resolved]).toEqual(["dark", "dark"]);
+  expect(store.values.has(PREFERENCE_KEY)).toBe(false);
+});
+
+test("keeps a previewed theme when the system changes", () => {
+  const root = document.createElement("div");
+  const darkMode = darkModeQuery(false);
+  const setting = new ThemeSetting(memoryStore(), darkMode, root);
+  setting.preview("light");
+
+  darkMode.change(true);
+
+  expect(root.dataset.theme).toBe("light");
+});
+
+test("goes back to the chosen theme once the preview ends", () => {
+  const root = document.createElement("div");
+  const setting = new ThemeSetting(
+    memoryStore({ [PREFERENCE_KEY]: "dark" }),
+    darkModeQuery(false),
+    root,
+  );
+  setting.preview("light");
+
+  setting.endPreview();
+
+  expect([root.dataset.theme, setting.preference]).toEqual(["dark", "dark"]);
+});

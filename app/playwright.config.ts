@@ -8,7 +8,7 @@ import { shardFromEnvironment } from "./tests/shard.ts";
 const PREVIEW_PORT = 4173;
 const PREVIEW_URL = `http://localhost:${String(PREVIEW_PORT)}`;
 
-const SCREENS = {
+export const SCREENS = {
   phone: {
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 3,
@@ -99,7 +99,7 @@ export default defineConfig<PlatformOption>({
   shard,
   webServer: {
     command: `pnpm build && pnpm preview --port ${String(PREVIEW_PORT)} --strictPort`,
-    env: { VITE_SAMPLE_LIBRARY: "on" },
+    env: { VITE_SAMPLE_LIBRARY: "on", VITE_KIT_PAGE: "on" },
     url: PREVIEW_URL,
     reuseExistingServer: false,
   },
