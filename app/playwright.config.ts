@@ -8,7 +8,7 @@ import { shardFromEnvironment } from "./tests/shard.ts";
 const PREVIEW_PORT = 4173;
 const PREVIEW_URL = `http://localhost:${String(PREVIEW_PORT)}`;
 
-const SCREENS = {
+export const SCREENS = {
   phone: {
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 3,
