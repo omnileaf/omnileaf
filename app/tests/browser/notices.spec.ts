@@ -34,6 +34,11 @@ const ANDROID_ACTION_HEIGHT = 40;
 const ANDROID_ACTION_SIZE = "14px";
 const ANDROID_ACTION_WEIGHT = "500";
 const ANDROID_ACTION_INK = "rgb(188, 249, 211)";
+const IOS_BANNER_TOP = 54;
+const IOS_BANNER_INSET = 8;
+const ANDROID_SNACKBAR_INSET = 16;
+const SWIPE_DISTANCE = 120;
+const SWIPE_STEPS = 12;
 const PHONE_NOTICES: Readonly<
   Partial<Record<Platform, { readonly fill: string; readonly corner: string }>>
 > = {
@@ -374,6 +379,55 @@ test.describe("on Android", () => {
 });
 
 test.describe("a notice on a phone", { tag: "@native" }, () => {
+  test("drops the iOS banner from the top, under the top bar's buttons", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "ios", "iOS phones only");
+    const { card } = await failToAddAFolder(page);
+
+    const box = await boxOf(card);
+
+    expect(box.y).toBe(IOS_BANNER_TOP);
+    expect(box.x).toBe(IOS_BANNER_INSET);
+    expect(viewportOf(page).width - (box.x + box.width)).toBe(IOS_BANNER_INSET);
+  });
+
+  test("swipes the iOS banner away upwards", async ({ page, platform }) => {
+    test.skip(platform !== "ios", "iOS phones only");
+    const { warning } = await failToAddAFolder(page);
+    const box = await boxOf(warning.getByText(UNREADABLE_TITLE));
+    const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(start.x, start.y - SWIPE_DISTANCE, {
+      steps: SWIPE_STEPS,
+    });
+    await page.mouse.up();
+
+    await expect(warning).toHaveCount(0);
+  });
+
+  test("sets the Android snackbar above the navigation bar, 16px in from each side", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "android", "Android phones only");
+    const { card } = await failToAddAFolder(page);
+
+    const box = await boxOf(card);
+    const navigation = await boxOf(
+      page.getByRole("navigation", { name: "Main" }),
+    );
+
+    expect(box.y + box.height).toBeLessThan(navigation.y);
+    expect(box.x).toBe(ANDROID_SNACKBAR_INSET);
+    expect(viewportOf(page).width - (box.x + box.width)).toBe(
+      ANDROID_SNACKBAR_INSET,
+    );
+  });
+
   test("draws the warning as the platform's own notice", async ({
     page,
     platform,

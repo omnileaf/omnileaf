@@ -133,6 +133,8 @@
   --native-weight-notice-label: 500;
   --native-tracking-notice-label: 0.1px;
   --native-shadow-notice-lift: 0px 1px 3px 0px rgba(0, 0, 0, 0.3), 0px 4px 8px 3px rgba(0, 0, 0, 0.15);
+  --native-spacing-notice-inline: 16px;
+  --native-spacing-notice-top: 0px;
 }
 
 :root[data-platform="android"],

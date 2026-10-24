@@ -422,11 +422,11 @@ test("starts the wait again once focus leaves the stack", async () => {
 });
 
 test.each<{ platform: Platform; size: typeof PHONE; screen: string }>([
-  { platform: "linux", size: PHONE, screen: "narrow window" },
+  { platform: "linux", size: PHONE, screen: "phone" },
   { platform: "ios", size: PHONE, screen: "phone" },
   { platform: "android", size: TABLET, screen: "tablet" },
 ])(
-  "lines a one-line toast's icon up with its title, action and dismiss on a $platform $screen",
+  "lines a one-line toast's icon up with its title, action and dismiss on $platform at $screen width",
   async ({ platform, size }) => {
     await page.viewport(size.width, size.height);
     const notices = await renderToastsOn(platform);
@@ -793,3 +793,27 @@ test("draws the undo icon on an Android tablet in the snackbar's muted ink", asy
 
   expect(icon.color).toBe(colourOf("--color-snackbar-muted"));
 });
+
+test.each<{
+  platform: Platform;
+  size: typeof PHONE;
+  screen: string;
+  edge: string;
+}>([
+  { platform: "ios", size: PHONE, screen: "phone", edge: "top" },
+  { platform: "ios", size: TABLET, screen: "tablet", edge: "bottom" },
+  { platform: "android", size: PHONE, screen: "phone", edge: "bottom" },
+  { platform: "linux", size: PHONE, screen: "phone", edge: "bottom" },
+])(
+  "brings a toast in from the $edge on $platform at $screen width",
+  async ({ platform, size, edge }) => {
+    await page.viewport(size.width, size.height);
+    const notices = await renderToastsOn(platform);
+    notices.show(READY);
+    await expect.element(toastSaying(READY.title)).toBeVisible();
+
+    const toaster = document.querySelector("[data-sonner-toaster]");
+
+    expect(toaster?.getAttribute("data-y-position")).toBe(edge);
+  },
+);

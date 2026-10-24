@@ -658,9 +658,6 @@
     var(--spacing-md),
     calc(var(--spacing-safe-bottom) - var(--spacing-md))
   );
-  --spacing-toast-lift: calc(
-    var(--spacing-floating-clearance) - var(--spacing-md)
-  );
   --spacing-floating-clearance: calc(
     var(--spacing-floating-bar) + var(--spacing-floating-gap) +
       var(--spacing-lg)

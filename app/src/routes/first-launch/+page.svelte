@@ -234,6 +234,7 @@
     {notices}
     platform={data.appInfo.platform}
     theme={theme.resolved}
+    top="calc(var(--spacing-safe-top) + var(--spacing-sm))"
     bottom="calc(var({STEP_TOAST_ROOM}, var(--spacing-safe-bottom)) + var(--spacing-md))"
   />
 </div>

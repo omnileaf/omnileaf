@@ -200,4 +200,6 @@
   --native-weight-notice-label: var(--font-weight-medium);
   --native-tracking-notice-label: 0;
   --native-shadow-notice-lift: var(--shadow-toast);
+  --native-spacing-notice-inline: var(--spacing-md);
+  --native-spacing-notice-top: 0px;
 }

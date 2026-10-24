@@ -131,6 +131,8 @@
   --native-leading-notice-label: calc(20 / 15);
   --native-weight-notice-label: 590;
   --native-tracking-notice-label: -0.23px;
+  --native-spacing-notice-inline: 8px;
+  --native-spacing-notice-top: 54px;
 }
 
 :root[data-platform="ios"],

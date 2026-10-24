@@ -203,6 +203,8 @@
   --font-weight-native-notice-label: var(--native-weight-notice-label);
   --tracking-native-notice-label: var(--native-tracking-notice-label);
   --shadow-native-notice-lift: var(--native-shadow-notice-lift);
+  --spacing-native-notice-inline: var(--native-spacing-notice-inline);
+  --spacing-native-notice-top: var(--native-spacing-notice-top);
 }
 
 @media (prefers-reduced-motion: reduce) {
