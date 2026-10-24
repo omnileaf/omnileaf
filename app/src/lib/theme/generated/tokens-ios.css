@@ -167,7 +167,6 @@
   --native-color-row-pressed: rgba(0, 0, 0, 0.05);
   --native-color-row-selected: #d1d1d6;
   --native-color-on-row-selected-muted: oklch(0.4 0.01 286);
-  --native-color-on-row-selected-accent: #245a40;
   --native-color-button-outline: rgba(118, 118, 128, 0.12);
   --native-color-on-button-outline: #2f6f4f;
   --native-color-button-outline-edge: transparent;
@@ -244,7 +243,6 @@
   --native-color-row-pressed: rgba(255, 255, 255, 0.08);
   --native-color-row-selected: #3a3a3c;
   --native-color-on-row-selected-muted: oklch(0.74 0.01 286);
-  --native-color-on-row-selected-accent: #7fcb9d;
   --native-color-button-outline: rgba(118, 118, 128, 0.24);
   --native-color-on-button-outline: #7fcb9d;
   --native-color-button-outline-edge: transparent;
@@ -306,7 +304,6 @@
   --native-color-card: #ffffff;
   --native-color-row-selected: #bcbcc0;
   --native-color-on-row-selected-muted: oklch(0.35 0.01 286);
-  --native-color-on-row-selected-accent: #1d4a34;
   --native-color-button-outline: rgba(118, 118, 128, 0.2);
   --native-color-on-button-outline: #245a40;
   --native-color-on-button-plain: #245a40;
@@ -340,7 +337,6 @@
   --native-color-card: #242426;
   --native-color-row-selected: #363638;
   --native-color-on-row-selected-muted: oklch(0.84 0.01 286);
-  --native-color-on-row-selected-accent: #a8e0bf;
   --native-color-button-outline: rgba(118, 118, 128, 0.32);
   --native-color-on-button-outline: #a8e0bf;
   --native-color-on-button-plain: #a8e0bf;
